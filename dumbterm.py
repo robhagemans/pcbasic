@@ -77,11 +77,11 @@ def set_mode(mode):
     if mode != 0:
         raise error.RunError(5)    
     
-def set_apage():
-    return False
+def set_apage(dummy):
+    return True
         
-def set_vpage():
-    return False
+def set_vpage(dummy):
+    return True
 
 def copy_page(src, dst):
     pass
