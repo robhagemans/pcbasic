@@ -533,11 +533,11 @@ def exec_strig(ins):
 # pen: not implemented        
 def exec_pen(ins):
     raise error.RunError(73)    
-     
-# wait: not implemented        
-def exec_wait(ins):
-    raise error.RunError(73)    
             
+# ioctl: not implemented
+def exec_ioctl(ins):
+    raise error.RunError(73)   
+    
 # do-nothing out       
 def exec_out(ins):
     addr = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
@@ -546,9 +546,18 @@ def exec_out(ins):
     require(ins, end_statement)
     
     #raise error.RunError(73)    
-       
-# ioctl: not implemented        
-def exec_ioctl(ins):
-    raise error.RunError(73)    
+     
+# do-nothing wait        
+def exec_wait(ins):
+    addr = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
+    require_read(ins, ',')
+    val = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
+    if skip_white(ins)==',':
+        j = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
+    
+    require(ins, end_statement)
+    
+    #raise error.RunError(73)    
+        
        
             
