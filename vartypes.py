@@ -15,10 +15,10 @@ import copy
 import fp
 import glob
 import error
-import util
+#import util
 
 floats = ['#','!']
-numeric = ['#','!','%']
+numeric = floats + ['%']
 strings = ['$']
 all_types = numeric + strings
 
@@ -148,9 +148,9 @@ def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=Fal
         return ('$', inp[1])
     elif inp[0]== '%':
         if screen and not write and inp[1]>=0:
-            return ('$', ' '+ util.int_to_str(inp[1]) )
+            return ('$', ' '+ int_to_str(inp[1]) )
         else:
-            return ('$', util.int_to_str(inp[1]))
+            return ('$', int_to_str(inp[1]))
     elif inp[0]=='!':
         return ('$', fp.to_str(fp.unpack(inp), screen, write) )
     elif inp[0]=='#':
@@ -164,6 +164,96 @@ def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=Fal
         raise error.RunError(2)    
 
     
+##################################################
+##################################################
+
+# unpack GW-BASIC numeric constants
+
+
+def ubyte_to_value(s):
+    return ord(s)
+    
+def uint_to_value(s):
+    s = map(ord, s)
+    # unsigned int. 
+    return 0x100 * s[1] + s[0]
+
+def sint_to_value(s):
+    # 2's complement signed int, least significant byte first, sign bit is most significant bit
+    s = map(ord, s)
+    value =  0x100 * (s[1] & 0x7f) + s[0]
+    if (s[1] & 0x80) == 0x80:
+        return -0x8000 + value 
+    else: 
+        return value
+
+# pack
+
+    
+# string representations    
+
+def int_to_str(num):
+    return str(num)   
+
+
+
+    
+   
+def uint_to_str(s):
+    return str(uint_to_value(s))
+
+def sint_to_str(s):
+    return str(sint_to_value(s))
+
+def ubyte_to_str(s):
+    return str(ord(s))
+    
+    
+    
+    
+
+def value_to_uint(n):
+    if n>0xffff:
+        # overflow
+        raise error.RunError(6)        
+    return chr(n&0xff)+ chr(n >> 8) 
+
+
+def value_to_sint(n):
+    if n>0xffff:  # 0x7fff ?
+        # overflow
+        raise error.RunError(6)     
+    if n<0:
+        n = 0x10000 + n        
+    return chr(n&0xff)+ chr(n >> 8) 
+
+
+def str_to_uint(s):
+    return value_to_uint(int(s))
+    
+
+
+def str_to_hex(word):
+    if len(word)<=2:
+        return 0
+    
+    word=word[2:]
+    return value_to_uint(int(word,16))
+
+def str_to_oct(word):
+    if len(word)<=2:
+        return 0
+    
+    word=word[2:]
+    return value_to_uint(int(word,8))
+                
+
+def hex_to_str(s):
+    return "&H" + hex(uint_to_value(s))[2:].upper()
+
+def oct_to_str(s):
+    return "&O" + oct(uint_to_value(s))[1:]
+   
 ########################################################### 
 
     

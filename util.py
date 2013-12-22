@@ -11,6 +11,7 @@
 
 
 import error
+import vartypes
 
 # tokens
 
@@ -119,7 +120,7 @@ def read_to(ins, findrange, linum=-1, break_on_first_char=True):
                 linum=-1
                 break
             off = ins.read(2)    
-            linum = uint_to_value(off) 
+            linum = vartypes.uint_to_value(off) 
             out += off
         else:
             out += c
@@ -139,11 +140,31 @@ def parse_line_number(ins):
     if len(off)<2:
         return -1
     else:
-        return uint_to_value(off)
+        return vartypes.uint_to_value(off)
         
     
+def getbasename(ins):
+    name = ''
+    d=ins.read(1).upper()
+    if not (d>='A' and d<='Z'):
+        # variable name must start with a letter
+        if d != '':
+            ins.seek(-1,1)
+        return ''
+    
+    while (d>='A' and d<='Z') or (d>='0' and d<='9') or d=='.':
+        name += d
+        d = ins.read(1).upper()
+    
+    if d in vartypes.all_types:
+        name += d
+    else:
+        if d != '':
+            ins.seek(-1,1)
+    return name
 
-def skip_to_next(ins, for_char, next_char):
+
+def skip_to_next(ins, for_char, next_char, allow_comma=False):
     
     stack = 0
     d = ''
@@ -154,15 +175,29 @@ def skip_to_next(ins, for_char, next_char):
         if d == for_char:
             ins.read(1)
             stack += 1
+        
         elif d == next_char:
-            if stack >0:
+            if stack <= 0:
+                break
+            else:    
                 ins.read(1)
                 stack -= 1
-            else:
-                break
+                
+                # NEXT I, J
+                if allow_comma: 
+                    while (skip_white(ins) not in end_statement):
+                        skip_to(ins, end_statement + (',',))
+                        if peek(ins)==',':
+                            if stack >0:
+                                ins.read(1)
+                                stack -= 1
+                            else:
+                                return linum
+                     
         elif d in ('', '\x1a'):
             ins.seek(-1)
             break
+            
     return linum
     
     
@@ -173,7 +208,7 @@ def parse_jumpnum(ins):
     jumpnum=-1
     if d in ('\x0d', '\x0e'):
     
-        jumpnum = uint_to_value(ins.read(2))    
+        jumpnum = vartypes.uint_to_value(ins.read(2))    
     else:
         # Syntax error
         raise error.RunError(2)
@@ -243,47 +278,3 @@ def skip_white_read_if(ins, char):
     return val
 
 
-##################################################
-##################################################
-
-# unpack GW-BASIC numeric constants
-
-
-def ubyte_to_value(s):
-    return ord(s)
-    
-def uint_to_value(s):
-    s = map(ord, s)
-    # unsigned int. 
-    return 0x100 * s[1] + s[0]
-
-def sint_to_value(s):
-    # 2's complement signed int, least significant byte first, sign bit is most significant bit
-    s = map(ord, s)
-    value =  0x100 * (s[1] & 0x7f) + s[0]
-    if (s[1] & 0x80) == 0x80:
-        return -0x8000 + value 
-    else: 
-        return value
-
-# pack
-
-    
-# string representations    
-
-def int_to_str(num):
-    return str(num)   
-
-
-
-    
-   
-def uint_to_str(s):
-    return str(uint_to_value(s))
-
-def sint_to_str(s):
-    return str(sint_to_value(s))
-
-def ubyte_to_str(s):
-    return str(ord(s))
-    
