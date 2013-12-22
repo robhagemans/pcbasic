@@ -1,3 +1,24 @@
 PC-BASIC 3.23
 REFERENCE
 
+
+
+ABS
+
+ABS(x) function
+---------------
+Returns the absolute value of x. x is an expression with a numeric value.
+If x has a string value, ABS raises a TYPE MISMATCH error.
+
+
+ASC
+
+ASC(x) function
+---------------
+Returns the ASCII code for the first character of x. x is an expression with a string value.
+If x has a numeric value, ASC raises TYPE MISMATCH.
+IF x="", ASC raises ILLEGAL FUNCTION CALL.
+
+
+
+
