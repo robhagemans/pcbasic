@@ -35,21 +35,18 @@ def parse_line_range(ins):
     from_line=-1
     to_line=-1
     d = skip_white(ins)
-    if d=='\x0e':   # line number starts
+    if d=='\x0E':   # line number starts
         ins.read(1)
         from_line=vartypes.uint_to_value(ins.read(2))
-        d = skip_white_read(ins)
-        if d=='\xEA':  # -
-            d = skip_white_read(ins)
-            if d=='\x0e':
+        if skip_white_read_if(ins, '\xEA'):  # -
+            if skip_white_read(ins)=='\x0e':
                 to_line=vartypes.uint_to_value(ins.read(2))
         else:
             to_line = from_line
     
     elif d=='\xEA':
         ins.read(1)
-        d = skip_white_read(ins)
-        if d=='\x0e':
+        if skip_white_read_if(ins, '\x0e'):
             to_line=vartypes.uint_to_value(ins.read(2))
             
     return (from_line, to_line)    
@@ -59,8 +56,8 @@ def parse_line_range(ins):
 
     
 def exec_delete(ins):
-    
     [from_line, to_line] = parse_line_range(ins)
+    require(ins, end_statement)
     program.delete_lines(from_line, to_line)
     # throws back to direct mode
     program.unset_runmode()
@@ -74,29 +71,19 @@ def exec_edit(ins):
         # don't list protected files
         raise error.RunError(5)
     
-    d = skip_white_read(ins)
-    
-    if d!='\x0e':   # line number starts
-        raise error.RunError(5)
-    
+    require_read(ins, '\x0E', err=5)   # line number starts
     from_line=vartypes.uint_to_value(ins.read(2))
-    d = skip_white(ins)
-    if d not in end_statement:
-        raise error.RunError(5)
-     
+    require(ins, end_statement, err=5)
     if from_line not in program.line_numbers:
         raise error.RunError(8)
-
     program.edit_line(from_line)
     
 
 
-#last_auto_increment=10
 auto_mode = False
 auto_increment = 10
 auto_linenum = 10
     
-#auto_linenum = 10
 def exec_auto(ins):
     global auto_increment , auto_linenum
     global auto_mode
@@ -122,14 +109,10 @@ def exec_auto(ins):
     else:
         auto_increment=10
             
-    if skip_white(ins) not in end_statement:
-        raise error.RunError(2)
-    
+    require(ins, end_statement)
     auto_linenum -= auto_increment
-    
     auto_mode=True
     program.unset_runmode()
-    return
         
     
     
