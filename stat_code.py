@@ -34,8 +34,9 @@ import fileio
 def parse_line_range(ins):
     from_line=-1
     to_line=-1
-    d = skip_white_read(ins)
+    d = skip_white(ins)
     if d=='\x0e':   # line number starts
+        ins.read(1)
         from_line=vartypes.uint_to_value(ins.read(2))
         d = skip_white_read(ins)
         if d=='\xEA':  # -
@@ -46,9 +47,11 @@ def parse_line_range(ins):
             to_line = from_line
     
     elif d=='\xEA':
+        ins.read(1)
         d = skip_white_read(ins)
         if d=='\x0e':
             to_line=vartypes.uint_to_value(ins.read(2))
+            
     return (from_line, to_line)    
 
 
