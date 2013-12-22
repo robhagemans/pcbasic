@@ -233,5 +233,5 @@ def handle_error(e):
 
 
 def exit():
-    fileio.close_all()
+    fileio.close_all_all_all()
     sys.exit(0)
