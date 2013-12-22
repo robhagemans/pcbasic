@@ -29,8 +29,6 @@ import os
 # for FRE() only
 import program
 
-
-
 def parse_int_list(ins, size, err=5):
     exprlist = parse_expr_list(ins, size, err)
     output = []
@@ -268,7 +266,7 @@ def parse_expr_unit(ins):
         
     elif d in tokenise.tokens_number:
         ins.seek(-1,1)
-        return tokenise.number_token_to_value(ins)    
+        return tokenise.parse_value(ins)    
     
     elif d == '\x85':   # INPUT
         return value_input(ins)

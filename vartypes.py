@@ -9,7 +9,6 @@
 # please see text file COPYING for licence terms.
 #
 
-
 import copy
 
 import fp
@@ -253,6 +252,15 @@ def hex_to_str(s):
 
 def oct_to_str(s):
     return "&O" + oct(uint_to_value(s))[1:]
+   
+
+   
+    
+
+
+
+   
+   
    
 ########################################################### 
 

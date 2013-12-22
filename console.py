@@ -445,31 +445,7 @@ def read():
             
             elif c[pos]== '\x1B':                   # ESC
                 
-                # find start of line
-                crow=row
-                while crow>1 and apage.wrap[crow-2]:
-                    crow-=1
-                
-                srow=crow
-                while True:
-                    apage.charbuf[crow-1] = [' ']*width
-                    apage.attrbuf[crow-1] = [attr]*width
-                    apage.end[crow-1] = width
-                    if apage.wrap[crow-1]:
-                        crow+=1
-                    else:
-                        break    
-                
-                redraw_row(0, srow)
-                
-                for r in range(crow, srow, -1):
-                    apage.end[r-1] = 0
-                    apage.wrap[r-1] = False
-                    scroll(r)
-                    
-                apage.end[srow-1] = 0
-                apage.wrap[srow-1]=False
-                set_pos(srow,1)
+                clear_line(row)
                 
                 
             elif c[pos] not in control + ('', '\x00', '\x08'): 
@@ -531,7 +507,35 @@ def read():
     return inp  
     
     
+def clear_line(the_row):
+    global apage
     
+    # find start of line
+    crow=the_row
+    while crow>1 and apage.wrap[crow-2]:
+        crow-=1
+    
+    srow=crow
+    while True:
+        apage.charbuf[crow-1] = [' ']*width
+        apage.attrbuf[crow-1] = [attr]*width
+        apage.end[crow-1] = width
+        if apage.wrap[crow-1]:
+            crow+=1
+        else:
+            break    
+    
+    redraw_row(0, srow)
+    
+    for r in range(crow, srow, -1):
+        apage.end[r-1] = 0
+        apage.wrap[r-1] = False
+        scroll(r)
+        
+    apage.end[srow-1] = 0
+    apage.wrap[srow-1]=False
+    set_pos(srow,1)
+                
     
 
 def start_line():
