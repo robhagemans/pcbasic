@@ -180,6 +180,7 @@ def convert(infile, outfile, mode):
     import dumbterm 
     import error
     import oslayer
+    import run
     
     error.warnings_on=True
     glob.scrn=dumbterm
