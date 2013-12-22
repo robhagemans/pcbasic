@@ -15,7 +15,8 @@ import var
 import os
 import StringIO
 
-from util import *
+#from util import *
+import util
 import oslayer
 
 
@@ -24,9 +25,19 @@ files = {}
 # fields are preserved on file close, so have a separate store
 fields= {}
 
+
+# close all non-system files
 def close_all():
     for f in files:
+        if f > 0:
+            files[f].fhandle.close()
+        
+        
+# close all files
+def close_all_all_all():
+    for f in files:
         files[f].fhandle.close()
+        
         
 def get_file(number):        
     return files[number]
@@ -156,12 +167,12 @@ class TextFile:
             elif c=='\x0A':
                 s += c
                 # special: allow \x0A\x0D to pass
-                if peek(self.fhandle) == '\x0D':
+                if util.peek(self.fhandle) == '\x0D':
                     self.fhandle.read(1)
                     s+= '\x0D'
             elif c=='\x0D':
                 # check for CR/LF
-                if peek(self.fhandle) == '\x0A':
+                if util.peek(self.fhandle) == '\x0A':
                     self.fhandle.read(1)
                 break
                 
@@ -241,7 +252,7 @@ class TextFile:
         # for EOF(i)
         if self.mode in ('A', 'O', 'P'):
             return False
-        return (peek(self.fhandle) in ('', '\x1a'))
+        return (util.peek(self.fhandle) in ('', '\x1a'))
     
     def lof(self):
         return self.fhandle.tell()
@@ -343,7 +354,7 @@ class RandomFile:
     def eof(self):
         # for EOF(i)
         
-        return self.recpos*self.reclen> self.lof() #   peek(self.fhandle)==''
+        return self.recpos*self.reclen> self.lof() #   util.peek(self.fhandle)==''
             
     def lof(self):
         current = self.fhandle.tell()
