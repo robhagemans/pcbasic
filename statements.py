@@ -552,7 +552,7 @@ def exec_wait(ins):
     addr = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
     require_read(ins, ',')
     val = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    if skip_white(ins)==',':
+    if skip_white_read_if(ins, ','):
         j = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
     
     require(ins, end_statement)
