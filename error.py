@@ -85,7 +85,7 @@ def write_error_message(msg, linenum):
     glob.scrn.write(msg) 
     if linenum > -1 and linenum < 65535:
         glob.scrn.write(' in %i' % linenum)
-    glob.scrn.write(glob.endl)          
+    glob.scrn.write(' ' + glob.endl)          
 
 
 
