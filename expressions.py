@@ -316,7 +316,7 @@ def parse_expr_unit(ins):
             cstr =  vartypes.pass_string_keep(expr)[1]
             if len(cstr) < 2:
                 raise error.RunError(5)
-            return ('%', sint_to_value(cstr[:2]))
+            return ('%', vartypes.sint_to_value(cstr[:2]))
         elif d=='\x82':            # CVS
             cstr =  vartypes.pass_string_keep(parse_bracket(ins))[1]
             if len(cstr) < 4:
@@ -329,7 +329,7 @@ def parse_expr_unit(ins):
             return ('#', cstr[:8])
         elif d=='\x84':   #MKI$
             cint = vartypes.pass_int_keep(parse_bracket(ins))[1]    
-            return ('$', tokenise.value_to_sint(cint))
+            return ('$', vartypes.value_to_sint(cint))
         elif d=='\x85':   #MKS$
             csng = vartypes.pass_single_keep(parse_bracket(ins))[1]    
             return ('$', "".join(csng))
@@ -351,7 +351,7 @@ def parse_expr_unit(ins):
         elif d== '\x95': # ERDEV
             return value_erdev(ins)
         elif d== '\x96': # IOCTL
-            return value_erdev(ins)
+            return value_ioctl(ins)
         elif d== '\x9B': # ENVIRON$
             return value_environ(ins)
         elif d== '\x9E': # PMAP
@@ -437,9 +437,9 @@ def parse_expr_unit(ins):
             # allow range -32768 to 65535
             val = vartypes.pass_int_keep(parse_bracket(ins), 0xffff)[1]
             if val <0:
-                return ('$', tokenise.oct_to_str(tokenise.value_to_sint(val))[2:])
+                return ('$', vartypes.oct_to_str(vartypes.value_to_sint(val))[2:])
             else:
-                return ('$', tokenise.oct_to_str(tokenise.value_to_uint(val))[2:])
+                return ('$', vartypes.oct_to_str(vartypes.value_to_uint(val))[2:])
         
         #    return ('$', oct(vartypes.pass_int_keep(parse_bracket(ins), 0xffff)[1])[1:] )
         
@@ -447,9 +447,9 @@ def parse_expr_unit(ins):
             # allow range -32768 to 65535
             val = vartypes.pass_int_keep(parse_bracket(ins), 0xffff)[1]
             if val <0:
-                return ('$', tokenise.hex_to_str(tokenise.value_to_sint(val))[2:])
+                return ('$', vartypes.hex_to_str(vartypes.value_to_sint(val))[2:])
             else:
-                return ('$', tokenise.hex_to_str(tokenise.value_to_uint(val))[2:])
+                return ('$', vartypes.hex_to_str(vartypes.value_to_uint(val))[2:])
                     
             #return ('$', hex(vartypes.pass_int_keep(parse_bracket(ins), 0xffff)[1])[2:].upper() )
         elif d == '\x9B':   # LPOS

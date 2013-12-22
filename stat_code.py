@@ -36,19 +36,19 @@ def parse_line_range(ins):
     to_line=-1
     d = skip_white_read(ins)
     if d=='\x0e':   # line number starts
-        from_line=uint_to_value(ins.read(2))
+        from_line=vartypes.uint_to_value(ins.read(2))
         d = skip_white_read(ins)
         if d=='\xEA':  # -
             d = skip_white_read(ins)
             if d=='\x0e':
-                to_line=uint_to_value(ins.read(2))
+                to_line=vartypes.uint_to_value(ins.read(2))
         else:
             to_line = from_line
     
     elif d=='\xEA':
         d = skip_white_read(ins)
         if d=='\x0e':
-            to_line=uint_to_value(ins.read(2))
+            to_line=vartypes.uint_to_value(ins.read(2))
     return (from_line, to_line)    
 
 
@@ -76,7 +76,7 @@ def exec_edit(ins):
     if d!='\x0e':   # line number starts
         raise error.RunError(5)
     
-    from_line=uint_to_value(ins.read(2))
+    from_line=vartypes.uint_to_value(ins.read(2))
     d = skip_white(ins)
     if d not in end_statement:
         raise error.RunError(5)
@@ -103,7 +103,7 @@ def exec_auto(ins):
     auto_linenum=10
     if d=='\x0e':   # line number starts
         ins.read(1)
-        auto_linenum=uint_to_value(ins.read(2))
+        auto_linenum=vartypes.uint_to_value(ins.read(2))
         skip_white(ins)
     elif d=='.':
         ins.read(1)
@@ -112,7 +112,7 @@ def exec_auto(ins):
         
     if d==',': 
         if skip_white_read(ins) =='\x0e':   # line number starts
-            auto_increment = uint_to_value(ins.read(2)) 
+            auto_increment = vartypes.uint_to_value(ins.read(2)) 
         else:
             pass
             #increment = last_auto_increment

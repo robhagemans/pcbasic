@@ -12,6 +12,7 @@
 
 import error
 import glob
+import vartypes
 import var
 import events
 import tokenise
@@ -334,7 +335,7 @@ def renumber(new_line=-1, start_line=-1, step=-1):
             break
         bytecode.seek(pairs[1])
         bytecode.read(3)
-        bytecode.write(tokenise.value_to_uint(pairs[2]))
+        bytecode.write(vartypes.value_to_uint(pairs[2]))
         
         
     #write the indirect line numbers
@@ -355,7 +356,7 @@ def renumber(new_line=-1, start_line=-1, step=-1):
                 newnum = triplets[2]
         if newnum != -1:    
             bytecode.seek(-2,1)
-            bytecode.write(tokenise.value_to_uint(newnum))
+            bytecode.write(vartypes.value_to_uint(newnum))
         else:
             # just a message, not an actual error. keep going.
             glob.scrn.write('Undefined line '+str(jumpnum)+' in '+str(linum)+glob.endl)

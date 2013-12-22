@@ -372,7 +372,7 @@ def exec_randomize(ins):
         raise error.RunError(5)
 
     if val[0]=='%':
-        val = ('$', tokenise.value_to_sint(val[1]))    
+        val = ('$', vartypes.value_to_sint(val[1]))    
     
     #rnd.randomize(val[1])         
     #def randomize(s):

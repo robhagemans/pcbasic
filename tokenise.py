@@ -98,7 +98,7 @@ def detokenise(ins, outs, from_line=-1, to_line=-1, pos=-1):
             error.warning(5, current_line, '')
     
         # always write one extra whitespace character after line number
-        output = int_to_str(current_line) + ' '         
+        output = vartypes.int_to_str(current_line) + ' '         
         # detokenise tokens until end of line
         output += detokenise_line(ins)
             
@@ -135,7 +135,7 @@ def detokenise_line(bytes):
         elif s in tokens_linenum: 
             # 0D: line pointer (unsigned int) - this token should not be here; interpret as line number and carry on
             # 0E: line number (unsigned int)
-            output += uint_to_str(bytes.read(2))
+            output += vartypes.uint_to_str(bytes.read(2))
             
         elif s in ('\x10', '\x1e'):                           
             # 1E/10: UNUSED: Flags numeric constant being processed/no longer being processed
@@ -159,17 +159,17 @@ def detokenise_number(bytes):
     s = bytes.read(1)
     output=''
     if s == '\x0b':                           # 0B: octal constant (unsigned int)
-        output += oct_to_str(bytes.read(2))
+        output += vartypes.oct_to_str(bytes.read(2))
     elif s == '\x0c':                           # 0C: hex constant (unsigned int)
-        output += hex_to_str(bytes.read(2))
+        output += vartypes.hex_to_str(bytes.read(2))
     elif s == '\x0f':                           # 0F: one byte constant
-        output += ubyte_to_str(bytes.read(1))
+        output += vartypes.ubyte_to_str(bytes.read(1))
     elif s >= '\x11' and s < '\x1b':            # 11-1B: constants 0 to 10
         output += chr(ord('0') + ord(s) - 0x11)
     elif s == '\x1b':               
         output += '10'
     elif s == '\x1c':                           # 1C: two byte signed int
-        output += sint_to_str(bytes.read(2))
+        output += vartypes.sint_to_str(bytes.read(2))
     elif s == '\x1d':                           # 1D: four-byte single-precision floating point constant
         output += fp.to_str(fp.from_bytes(bytes.read(4)), screen=False, write=False)
     elif s == '\x1f':                           # 1F: eight byte double-precision floating point constant
@@ -187,15 +187,15 @@ def number_token_to_value(ins):
     
     # note that hex and oct strings are interpreted signed here, but unsigned the other way!
     if d == '\x0b':                         # octal constant (unsigned)
-        return ('%', sint_to_value(ins.read(2)) )
+        return ('%', vartypes.sint_to_value(ins.read(2)) )
     elif d == '\x0c':                       # hex constant (unsigned)
-        return ('%', sint_to_value(ins.read(2)) )
+        return ('%', vartypes.sint_to_value(ins.read(2)) )
     elif d == '\x0f':                       # one byte constant
         return ('%', ord(ins.read(1)) )
     elif d >= '\x11' and d <= '\x1b':       # constants 0 to 10  
         return ('%', ord(d) - 0x11 )
     elif d == '\x1c':          # two byte data constant (signed)
-        return ('%', sint_to_value(ins.read(2)) )
+        return ('%', vartypes.sint_to_value(ins.read(2)) )
     elif d == '\x1d':          # four byte single-precision floating point constant
         return ('!', list(ins.read(4)) )
     elif d == '\x1f':          # eight byte double-precision floating point constant
@@ -592,7 +592,7 @@ def tokenise_line_number(ins, outs, onfile):
         # in direct mode, we'll know to expect a line number if the output starts with a  00
         outs.write('\x00')        
         # write line number. first two bytes are for internal use & can be anything nonzero; we use this.
-        outs.write('\xC0\xDE' + value_to_uint(int(linenum)))
+        outs.write('\xC0\xDE' + vartypes.value_to_uint(int(linenum)))
     
         # ignore single whitespace after line number, if any, unless line number is zero (as does GW)
         if peek(ins)==' ' and int(linenum) !=0 :
@@ -617,53 +617,10 @@ def tokenise_jump_number(ins, outs):
 
     # line number (jump)
     if word !='':
-        outs.write('\x0e' + str_to_uint(word))
+        outs.write('\x0e' + vartypes.str_to_uint(word))
 
 
 
-
-def value_to_uint(n):
-    if n>0xffff:
-        # overflow
-        raise error.RunError(6)        
-    return chr(n&0xff)+ chr(n >> 8) 
-
-
-def value_to_sint(n):
-    if n>0xffff:  # 0x7fff ?
-        # overflow
-        raise error.RunError(6)     
-    if n<0:
-        n = 0x10000 + n        
-    return chr(n&0xff)+ chr(n >> 8) 
-
-
-def str_to_uint(s):
-    return value_to_uint(int(s))
-    
-
-
-def str_to_hex(word):
-    if len(word)<=2:
-        return 0
-    
-    word=word[2:]
-    return value_to_uint(int(word,16))
-
-def str_to_oct(word):
-    if len(word)<=2:
-        return 0
-    
-    word=word[2:]
-    return value_to_uint(int(word,8))
-                
-
-def hex_to_str(s):
-    return "&H" + hex(uint_to_value(s))[2:].upper()
-
-def oct_to_str(s):
-    return "&O" + oct(uint_to_value(s))[1:]
-   
    
 # string to token             
 def tokenise_number(ins, outs):
@@ -680,7 +637,7 @@ def tokenise_number(ins, outs):
                     break
                 else:
                     word += ins.read(1).upper()
-            outs.write('\x0C' + str_to_hex(word))
+            outs.write('\x0C' + vartypes.str_to_hex(word))
             
         elif nxt == 'O': # octal constant
             word += ins.read(1)
@@ -689,7 +646,7 @@ def tokenise_number(ins, outs):
                     break
                 else:
                     word += ins.read(1).upper()
-            outs.write('\x0B' + str_to_oct(word))
+            outs.write('\x0B' + vartypes.str_to_oct(word))
        
         else:
             outs.write(c)
@@ -748,7 +705,7 @@ def tokenise_number(ins, outs):
                 outs.write('\x0f'+chr(int(word)))
             else:
                 # two-byte constant
-                outs.write('\x1c'+value_to_sint(int(word)))
+                outs.write('\x1c'+vartypes.value_to_sint(int(word)))
         else:
             mbf = fp.to_bytes(fp.from_str(word))
             if len(mbf) == 4:

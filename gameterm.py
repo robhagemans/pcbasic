@@ -18,14 +18,13 @@ import pygame
 import sys
 import numpy
 
-import util
-import tokenise
 import error
+import fp
+import vartypes
 import cpi_font
 import unicodepage 
 
 import events
-import fp
 
 import var
 
@@ -1400,8 +1399,8 @@ def set_area(x0,y0, array, operation):
     for i in range(4):
         byte_array.append( var.get_array_byte(array, i) )
     
-    dx = util.uint_to_value(byte_array[0:2])
-    dy = util.uint_to_value(byte_array[2:4])
+    dx = vartypes.uint_to_value(byte_array[0:2])
+    dy = vartypes.uint_to_value(byte_array[2:4])
 
     
     # in mode 1, number of x bits is given rather than pixels
@@ -1461,9 +1460,9 @@ def get_area(x0,y0,x1,y1, array):
    
     # in mode 1, number of x bits is given rather than pixels
     if console.screen_mode==1:
-        byte_array = list(tokenise.value_to_uint(dx*2)) + list(tokenise.value_to_uint(dy)) 
+        byte_array = list(vartypes.value_to_uint(dx*2)) + list(vartypes.value_to_uint(dy)) 
     else:
-        byte_array = list(tokenise.value_to_uint(dx)) + list(tokenise.value_to_uint(dy)) 
+        byte_array = list(vartypes.value_to_uint(dx)) + list(vartypes.value_to_uint(dy)) 
 
     for i in range(4):
         var.set_array_byte(array, i, byte_array[i])

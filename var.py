@@ -17,7 +17,6 @@ import vartypes
 import StringIO
 import fp
 import util
-import tokenise
 
 #######################################################################
 
@@ -100,36 +99,14 @@ def create_string_ptr(stream, offset, length):
 
 def complete_name(name):
     global deftype
-    
-    if name[-1] not in vartypes.all_types:
+    if name !='' and name[-1] not in vartypes.all_types:
         name += deftype[ ord(name[0].upper()) - ord('A') ]
     return name
     
-
+    
 def getvarname(ins):
-    global variables, arrays, array_base
-        
-    name = ''
-    d=ins.read(1).upper()
-    if not (d>='A' and d<='Z'):
-        # variable name must start with a letter
-        if d != '':
-            ins.seek(-1,1)
-        return ''
-    
-    while (d>='A' and d<='Z') or (d>='0' and d<='9') or d=='.':
-        name += d
-        d = ins.read(1).upper()
-    
-    if d in vartypes.all_types:
-        name += d
-    else:
-        if d != '':
-            ins.seek(-1,1)
-    
-        
     # append type specifier
-    name = complete_name(name)
+    name = complete_name(util.getbasename(ins))
     
     # only the first 40 chars are relevant in GW-BASIC, rest is discarded
     if len(name) > 41:
@@ -342,7 +319,7 @@ def get_array_byte(name, byte_num):
     byteindex = byte_num % bytespernumber        
     
     if name[-1]=='%':
-        return (tokenise.value_to_sint(number))[byteindex] 
+        return (vartypes.value_to_sint(number))[byteindex] 
     elif name[-1]=='!':
         return (number)[byteindex]
     elif name[-1]=='#':
@@ -369,11 +346,11 @@ def set_array_byte(name, byte_num, value):
     
     if name[-1]=='%':
         
-        bytepair = list(tokenise.value_to_sint(number))
+        bytepair = list(vartypes.value_to_sint(number))
         
         bytepair[byteindex] = value
-        #number = ('%', util.sint_to_value(bytepair) )
-        number = util.sint_to_value(bytepair)
+        #number = ('%', vartypes.sint_to_value(bytepair) )
+        number = vartypes.sint_to_value(bytepair)
         
     elif name[-1] in ('!', '#'):
         byte_array= list(number)

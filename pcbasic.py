@@ -18,8 +18,9 @@
 
 import sys
 import argparse
-
 import glob
+
+import fileio
                 
 #################################################################
 
@@ -88,7 +89,6 @@ def main():
     import oslayer
     import statements
     import nosound
-    import fileio
 
 
     ########################################

@@ -98,81 +98,117 @@ def exec_while(ins, first=True):
         ins.seek(wendpos)
 
 
-def exec_for(ins, first=True):
+def exec_for(ins): #, first=True):
 
-    if first:
-        # just after FOR opcode
-        forpos = ins.tell()
-        
-        # read variable  
-        d = skip_white(ins).upper()
-        if d<'A' or d>'Z':
-            raise error.RunError(2)
-        varname = var.getvarname(ins)
-        
-        vartype = varname[-1]
-        if vartype == '$':
-            raise error.RunError(13)
-        
-        require_read(ins, '\xE7') # =
-        start = expressions.parse_expression(ins)
-
-        require_read(ins, '\xCC')  # TO    
-        stop = vartypes.pass_type_keep(vartype, expressions.parse_expression(ins))
-
-        if skip_white_read_if(ins,'\xCF'): # STEP
-            step = vartypes.pass_type_keep(vartype, expressions.parse_expression(ins))
-        else:
-            # convert 1 to vartype
-            step = vartypes.pass_type_keep(vartype, ('%', 1))
-        
-        require(ins, end_statement)
-        
-        # set loopvar to start
-        # apply initial condition
-        loopvar = vartypes.pass_type_keep(vartype, start)
-        var.setvar(varname, start)
-        
-        # find matching NEXT
-        current = ins.tell()
-        nextline = skip_to_next(ins, '\x82', '\x83')  # FOR, NEXT
-        # FOR without NEXT
-        require_read(ins, '\x83', err=26)
-   
-        
-        # check var name for NEXT
-        varname2 = ''
-        skip_white(ins)
-        d = peek(ins).upper()
-        
-        if d<'A' or d>'Z':
-            pass
-        else:
-            varname2 = var.getvarname(ins)
-
-        skip_to(ins, end_statement)
-        nextpos = ins.tell()
-           
-        if varname2 == varname or varname2 == '':
-            program.for_next_stack.append([forpos, program.linenum, varname, nextpos, nextline, start, stop, step]) 
-        else:
-            # NEXT without FOR
-            raise error.RunError(1, nextline)
-            
-        ins.seek(current)    
-
-    else:
-        # not the first run
-        
-        skip_to(ins, end_statement)
-        [_, _, varname, _, _, start, stop, step] = program.for_next_stack[-1]
+    # just after FOR opcode
+    forpos = ins.tell()
     
-        # increment counter
-        loopvar = var.getvar(varname)
-        loopvar = vartypes.vplus(loopvar, step)
-        var.setvar(varname, loopvar)
-         
+    # read variable  
+    skip_white(ins)
+    varname = var.getvarname(ins)
+    if varname=='':
+        raise error.RunError(2)
+    
+    vartype = varname[-1]
+    if vartype == '$':
+        raise error.RunError(13)
+    
+    require_read(ins, '\xE7') # =
+    start = expressions.parse_expression(ins)
+
+    require_read(ins, '\xCC')  # TO    
+    stop = vartypes.pass_type_keep(vartype, expressions.parse_expression(ins))
+
+    if skip_white_read_if(ins,'\xCF'): # STEP
+        step = vartypes.pass_type_keep(vartype, expressions.parse_expression(ins))
+    else:
+        # convert 1 to vartype
+        step = vartypes.pass_type_keep(vartype, ('%', 1))
+    
+    require(ins, end_statement)
+    
+    # set loopvar to start
+    # apply initial condition
+    loopvar = vartypes.pass_type_keep(vartype, start)
+    var.setvar(varname, start)
+    
+    # find NEXT and push to stack
+    for_push_next(ins, forpos, varname, start, stop, step)
+
+    # check condition and jump if necessary
+    for_jump_if_ends(ins, loopvar, stop, step)
+    
+
+    
+def for_push_next(ins, forpos, varname, start, stop, step):    
+    # find matching NEXT
+    current = ins.tell()
+    nextline = skip_to_next(ins, '\x82', '\x83', allow_comma=True)  # FOR, NEXT
+    
+    # FOR without NEXT
+    require(ins, ('\x83', ','), err=26)
+    comma = (ins.read(1)==',')
         
+    
+    # check var name for NEXT
+    skip_white(ins)
+    varname2 = var.getvarname(ins)
+    skip_white(ins)
+    nextpos = ins.tell()
+    
+    # no-var only allowed in standalone NEXT
+    if varname2=='':
+        if peek(ins) not in end_statement:
+            # syntax error
+            raise error.RunError(2, nextline)
+        #if comma:
+        #    # NEXT without FOR
+        #    raise error.RunError(1, nextline)
+        # this error is only raised on reaching the NEXT statement
+            
+    if varname2 == varname or varname2 == '':
+        program.for_next_stack.append([forpos, program.linenum, varname, nextpos, nextline, start, stop, step]) 
+    else:
+        # NEXT without FOR
+        raise error.RunError(1, nextline)
+    ins.seek(current)    
+    
+    
+
+def for_iterate(ins):    
+    # skip to end of FOR statement
+    skip_to(ins, end_statement)
+    [_, _, varname, _, _, start, stop, step] = program.for_next_stack[-1]
+
+    # increment counter
+    loopvar = var.getvar(varname)
+    loopvar = vartypes.vplus(loopvar, step)
+    var.setvar(varname, loopvar)
+    
+    # check condition and jump if necessary
+    for_jump_if_ends(ins, loopvar, stop, step)
+    
+    
+    
+def for_jump_if_ends(ins, loopvar, stop, step):
+    if for_loop_ends(loopvar, stop, step):
+        # jump to just after NEXT
+        [_, program.linenum, _, nextpos, nextline, _, _, _] = program.for_next_stack.pop()
+        ins.seek(nextpos)
+        
+        d = skip_white(ins)
+        if d not in end_statement+(',',):
+            raise error.RunError(2, nextline)
+        elif d==',':
+            # we're jumping into a comma'ed NEXT, call exec_next (which may call for_iterate which will call us again)
+            ins.read(1)
+            exec_next(ins, True)
+          
+        # we should be at end statement at this point.
+
+
+    
+def for_loop_ends(loopvar, stop, step):
     # check TO condition
     loop_ends=False
     # step 0 is infinite loop
@@ -180,17 +216,49 @@ def exec_for(ins, first=True):
         loop_ends = vartypes.int_to_bool(vartypes.vgt(stop, loopvar)) 
     elif vartypes.vsgn(step)[1] > 0:
         loop_ends = vartypes.int_to_bool(vartypes.vgt(loopvar, stop)) 
+    return loop_ends
             
-    if loop_ends:
-        # jump to just after NEXT
-        #[forpos, program.linenum, varname, nextpos, nextline, start, stop, step] = program.for_next_stack.pop()
-        [_, program.linenum, _, nextpos, nextline, _, _, _] = program.for_next_stack.pop()
-        ins.seek(nextpos)
-        
-        ##require(ins, end_statement)
-        if skip_white(ins) not in end_statement:
-            raise error.RunError(2, nextline)
+
+def exec_next(ins, comma=False):
+    curpos = ins.tell()
+    skip_to(ins, end_statement+(',',))
     
+    while True:
+        if len(program.for_next_stack) == 0:
+            # next without for
+            raise error.RunError(1) #1  
+        [forpos, forline, varname, nextpos, nextline, start, stop, step] = program.for_next_stack[-1]
+        
+        if ins.tell() != nextpos:
+            # not the expected next, we must have jumped out
+            program.for_next_stack.pop()
+        else:
+            # found it
+            break
+    
+    ins.seek(curpos)
+    
+    # check if varname is correct, if provided
+    if skip_white(ins) in end_statement and not comma:
+        # no varname required if standalone NEXT
+        pass
+    else:
+        varname2 = var.getvarname(ins)
+        if varname==varname2:
+            skip_to(ins, end_statement)
+        #elif varname2=='':
+        #    raise error.RunError(2)    
+        else:
+            # next without for
+            raise error.RunError(1, nextline) #1    
+    
+    
+    # JUMP to FOR statement
+    program.linenum = forline
+    ins.seek(forpos)
+    for_iterate(ins)
+    
+
 
 
 def exec_goto(ins):    
@@ -320,49 +388,6 @@ def exec_wend(ins):
     program.linenum = whileline
     ins.seek(whilepos)
     exec_while(ins, False)
-
-
-def exec_next(ins):
-    #skip_white(ins)                
-        
-    curpos = ins.tell()
-    skip_to(ins, end_statement)
-    
-    while True:
-        if len(program.for_next_stack) == 0:
-            # next without for
-            raise error.RunError(1) #1  
-        [forpos, forline, varname, nextpos, nextline, start, stop, step] = program.for_next_stack[-1]
-        
-        if ins.tell() != nextpos:
-            # not the expected next, we must have jumped out
-            program.for_next_stack.pop()
-        else:
-            # found it
-            break
-    
-    ins.seek(curpos)
-    
-    # check if varname is correct, if provided
-    d = skip_white(ins).upper()
-    if d in end_statement:
-        pass
-    elif d >= 'A' and d <= 'Z':
-        varname2 = var.getvarname(ins)
-        if varname==varname2:
-            skip_to(ins, end_statement)
-        else:
-            # next without for
-            raise error.RunError(1) #1    
-    else:
-        raise error.RunError(2)
-    
-    program.linenum = forline
-    ins.seek(forpos)
-    exec_for(ins, False)
-
-
-
 
 def exec_on(ins):
     c = skip_white(ins)
