@@ -180,8 +180,12 @@ def detokenise_number(bytes):
     return output
 
 
+
+##########################################
+# TODO: these do not belong here...
+
 # token to value
-def number_token_to_value(ins):
+def parse_value(ins):
     
     d = ins.read(1)
     
@@ -202,7 +206,6 @@ def number_token_to_value(ins):
         return ('#', list(ins.read(8)) )
     
     return ('','')
-    
 
 
 def str_to_value_keep(strval):
@@ -211,11 +214,14 @@ def str_to_value_keep(strval):
     outs = StringIO.StringIO()
     tokenise_number(ins, outs)    
     outs.seek(0)
-    value = number_token_to_value(outs)
+    value = parse_value(outs)
     ins.close()
     outs.close()
     return value
     
+
+##########################################
+
 
 
 # de tokenise one- or two-byte token s

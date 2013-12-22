@@ -297,6 +297,7 @@ def edit_line(from_line, pos=-1):
     output.seek(0)
     bytecode.seek(current)
     
+    glob.scrn.clear_line(glob.scrn.row)
     glob.scrn.write(output.getvalue())
     output.close()
      

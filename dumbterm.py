@@ -76,6 +76,9 @@ def mode_info(mode):
 def set_mode(mode):
     if mode != 0:
         raise error.RunError(5)    
+
+def clear_line(row):
+    pass
     
 def set_apage(dummy):
     return True
