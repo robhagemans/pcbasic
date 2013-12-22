@@ -224,7 +224,7 @@ def str_to_value_keep(strval):
 
 
 
-# de tokenise one- or two-byte token s
+# de tokenise one- or two-byte tokens
 def detokenise_keyword(bytes, output):
     s = bytes.read(1)
     if not token_to_keyword.has_key(s):
@@ -270,7 +270,8 @@ def detokenise_keyword(bytes, output):
     
     # token followed by number is also separated by a space, except operator tokens and SPC(, TAB(
     nxt = peek(bytes)
-    if nxt in (tokens_number+tokens_linenum) and s not in (tokens_operator+tokens_with_bracket):
+    #if nxt.upper() in (ascii_uppercase+tokens_number+tokens_linenum) and s not in (tokens_operator+tokens_with_bracket):
+    if nxt.upper() not in (tokens_operator+['\xD9','"',':',',']) and s not in (tokens_operator+tokens_with_bracket):
         output+=' '
 
     return output, comment
