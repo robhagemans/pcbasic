@@ -263,6 +263,9 @@ def read_screenline(write_endl=True):
         else:
             break
     
+    # go to last line
+    row = crow
+    
     if write_endl:
         write(glob.endl)
     
@@ -270,8 +273,6 @@ def read_screenline(write_endl=True):
     while len(line)>0 and line[-1] in util.whitespace:
         line = line[:-1]
    
-    # go to last line
-    #row = crow+1
     
     return ''.join(line)    
 
