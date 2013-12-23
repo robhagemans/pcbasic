@@ -112,13 +112,15 @@ def preparse():
                 # fix that
                 bytecode.write('\x00\x00\x00\x1a')
                 # try again 
-                bytecode.seek(last)
+                bytecode.seek(-4,1) #last)
                 skip_to_read(bytecode, end_line)
                 parse_line_number(bytecode)
               
-            line_numbers[65536] = bytecode.tell() - 3  
+            # if parse_line_number returns -1, it leaves the stream pointer here: 00 _00_ 00 1A 
+            line_numbers[65536] = bytecode.tell() - 1  
             break
         
+        # -5 because we're eg at x in 00 C0 DE 00 0A _XX_ and we need to be on the line-ending 00: _00_ C0 DE 00 0A XX
         last = bytecode.tell() - 5   
         line_numbers[scanline] = last  
         
@@ -400,7 +402,8 @@ def load(g):
         g.seek(-1,1)
         protected = False
         tokenise.tokenise_stream(g, bytecode)
-    
+        # terminate bytecode stream properly
+        bytecode.write('\x00\x00\x00\x1a')
     preparse()
     
     
@@ -440,6 +443,7 @@ def merge(g):
 def save(g, mode='B'):
     global bytecode, protected
     
+    # skip first \x00 in bytecode, replace with appropriate magic number
     bytecode.seek(1)
     if mode=='B':
         if protected:

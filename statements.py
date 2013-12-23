@@ -72,6 +72,8 @@ def parse_statement():
         program.linenum = parse_line_number(ins)
 
         if program.linenum == -1:
+            # move back to the line-ending \x00 and break
+            ins.seek(-1,1)
             program.unset_runmode()
             return False
             
@@ -486,7 +488,9 @@ def exec_DEBUG(ins):
 
     glob.scrn.write(buf.getvalue())
     
-    
+# DEBUG utilities
+def debug_dump_program():
+    sys.stderr.write(program.bytecode.getvalue().encode('hex')+'\n')    
         
     
 # do-nothing POKE        
