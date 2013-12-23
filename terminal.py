@@ -140,18 +140,6 @@ def show_cursor(do_show, prev):
     
 
 
-def debug_write(row, pos, msg):
-    ansi.save_pos()
-    ansi.move_cursor(row,pos)
-    sys.stdout.write(str(msg))
-    ansi.restore_pos() 
-    sys.stdout.flush()    
-    
-def debug_write_char(row, pos, c):
-    if c != '':
-        debug_write(row, pos, c.encode('hex'))
-
-
 def check_events():
     check_keyboard()
     

@@ -344,16 +344,6 @@ def build_line_cursor(is_line):
 
 
 
-def debug_write(trow, tcol, msg):
-    global width
-    sys.stderr.write(msg)
-    return
-
-
-def debug_write_char(row, pos, c):
-    if c != '':
-        debug_write(row, pos, c.encode('hex'))
-
    
 def scroll(from_line):
     global font_height, scroll_area, screen_changed

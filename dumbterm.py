@@ -237,15 +237,6 @@ def hide_cursor():
     
 
 
-def debug_write(row, pos, msg):
-    sys.stderr.write(str(msg))
-    
-    
-def debug_write_char(row, pos, c):
-    if c != '':
-        debug_write(row, pos, c.encode('hex'))
-
-
 def read():
     global col, charbuf, attrbuf
     
