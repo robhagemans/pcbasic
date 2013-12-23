@@ -11,22 +11,17 @@
 # Acknowledgements:
 # Kosta Kostis/FreeDOS project for .CPI font files
 
-
-import console
-
 import pygame
 import sys
-import numpy
 
 import error
 import fp
 import vartypes
 import cpi_font
 import unicodepage 
-
 import events
-
 import var
+import console
 
 
 
@@ -75,39 +70,70 @@ workaround_palette= [ (0,0,0),(0,0,1),(0,0,2),(0,0,3),(0,0,4),(0,0,5),(0,0,6),(0
 # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
 # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
 #
-
 gamecolours16 = [ pygame.Color(*rgb) for rgb in colours16 ]
 gamecolours64 = [ pygame.Color(*rgb) for rgb in colours64 ]
 
-palette64=None
 
-
-glyphs = []
-
-#num_surfaces = 0
-#surfaces = []
-#surface0=None
-#surface1=None
-
-screen=None
-cursor0=None
-
-cycle=0
-
-screen_changed=True
-    
-scroll_area=None
-
-
-fonts=None
-font=None
-font_height=16
+# standard palettes
+palette64=[0,1,2,3,4,5,20,7,56,57,58,59,60,61,62,63]
 
 bitsperpixel=4
 
 
-# backend interface
+screen=None
+cursor0=None
+screen_changed=True
+    
+scroll_area=None
 
+glyphs = []
+fonts=None
+font=None
+font_height=16
+
+cursor_from = 0
+cursor_to = 0    
+
+cycle=0
+blink_state=0
+last_cycle=0
+cycle_time=120 #120
+blink_cycles=5
+
+last_row=1
+last_col=1    
+under_cursor=None
+under_top_left=None
+
+
+
+keycode_to_scancode = {
+    pygame.K_UP:    '\x00\x48',
+    pygame.K_DOWN:  '\x00\x50',
+    pygame.K_RIGHT: '\x00\x4D',
+    pygame.K_LEFT:  '\x00\x4B',
+    pygame.K_INSERT:'\x00\x52',
+    pygame.K_DELETE:'\x00\x53',
+    pygame.K_HOME:  '\x00\x47',
+    pygame.K_END:   '\x00\x4F',
+    pygame.K_PAGEUP:'\x00\x49',
+    pygame.K_PAGEDOWN:'\x00\x51',
+    pygame.K_F1:    '\x00\x3B',
+    pygame.K_F2:    '\x00\x3C',
+    pygame.K_F3:    '\x00\x3D',
+    pygame.K_F4:    '\x00\x3E',
+    pygame.K_F5:    '\x00\x3F',
+    pygame.K_F6:    '\x00\x40',
+    pygame.K_F7:    '\x00\x41',
+    pygame.K_F8:    '\x00\x42',
+    pygame.K_F9:    '\x00\x43',
+    pygame.K_F10:   '\x00\x44'
+}
+#K_PRINT               print screen
+#K_SYSREQ              sysrq
+
+
+    
 
 def init():
     global fonts
@@ -118,25 +144,23 @@ def init():
     fonts = cpi_font.load_codepage()
     console.set_mode(0)
     init_sound()
+
         
 def close():
     pygame.display.quit()    
 
+
 def pause():
     pass
+
 
 def cont():
     pass
     
     
-# standard palettes
-palette64=[0,1,2,3,4,5,20,7,56,57,58,59,60,61,62,63]
 
 def get_palette_entry(index):
     return palette64[index]
-
-
-
 
     
 def set_palette(new_palette=None):
@@ -189,6 +213,7 @@ def set_palette_entry(index, colour):
     screen.set_palette_at(index,gamecolor)
     under_cursor.set_palette_at(index,gamecolor)
     
+ 
     
 def clear_scroll_area(bg):
     global screen #, surface0,surface1
@@ -280,6 +305,7 @@ def copy_page(src,dst):
     console.pages[dst].surface0.blit(console.pages[src].surface0, (0,0))
     console.pages[dst].surface1.blit(console.pages[src].surface1, (0,0))
     screen_changed=True
+
     
 def set_scroll_area(view_start, scroll_height, width):    
     global scroll_area
@@ -292,8 +318,6 @@ def show_cursor(do_show, prev):
     screen_changed=True
     
 
-    
-
 def set_cursor_colour(color):
     global screen, cursor0
     cursor0.set_palette_at(254, screen.get_palette_at(color))
@@ -301,7 +325,6 @@ def set_cursor_colour(color):
 
 
 def build_line_cursor(is_line):
-    
     global font_height
     global cursor_from, cursor_to
     global screen_changed
@@ -317,9 +340,7 @@ def build_line_cursor(is_line):
         cursor_to = font_height-1
     
     build_cursor()
-    
     screen_changed=True
-                
 
 
 
@@ -327,24 +348,14 @@ def debug_write(trow, tcol, msg):
     global width
     sys.stderr.write(msg)
     return
-    
 
 
 def debug_write_char(row, pos, c):
     if c != '':
         debug_write(row, pos, c.encode('hex'))
 
-
-
-
-
-
-   
-
-
    
 def scroll(from_line):
-    #global surface0, surface1, 
     global font_height, scroll_area, screen_changed
   
     temp_scroll_area = pygame.Rect(0,(from_line-1)*font_height,console.width*8, (console.scroll_height-from_line+1)*font_height)
@@ -361,24 +372,18 @@ def scroll(from_line):
     fore, back = console.colours(console.attr)
     
     bg = back& 0xf
-  
     blank.set_palette(workaround_palette)
-    
     blank.fill(bg)
     console.apage.surface0.blit(blank, (0, (console.scroll_height-1)*font_height))
     console.apage.surface1.blit(blank, (0, (console.scroll_height-1)*font_height))
-        
     console.apage.surface0.set_clip(None)
     console.apage.surface1.set_clip(None)
-    
-    
     screen_changed=True
     
 
 
    
 def scroll_down(from_line):
-    #global surface0, surface1, 
     global font_height
     global screen_changed
 
@@ -397,7 +402,6 @@ def scroll_down(from_line):
   
     blank.set_palette(workaround_palette)
     
-    
     blank.fill(bg)
     console.apage.surface0.blit(blank, (0, (from_line-1)*font_height))
     console.apage.surface1.blit(blank, (0, (from_line-1)*font_height))
@@ -407,34 +411,16 @@ def scroll_down(from_line):
     
     screen_changed=True
     
-   
-
-
-
-
-blink_state=0
-
-cursor_from = 0
-cursor_to = 0    
-
-last_cycle=0
-cycle_time=120 #120
-blink_cycles=5
-
-
     
     
 def putc_at(row, col, c, attr):
     global font, font_height, gamecolours
-    #global surface0, surface1, 
     global blink_state 
     global glyphs    
     global screen_changed
     
     fore, back = console.colours(attr)
     
-    ##color = console.apage.surface0.get_palette_at(fore&0xf)
-    ##bg = console.apage.surface0.get_palette_at(back&0x7)
     color = (0,0,fore&0xf)
     bg = (0,0,back&0x7)
     
@@ -444,7 +430,9 @@ def putc_at(row, col, c, attr):
     glyph.set_palette_at(255, bg)
     glyph.set_palette_at(254, color)
     
-    blank = glyphs[32] # using SPACE for blank
+    blank = glyphs[32] # using SPACE for blank 
+    #blank = pygame.Surface(glyph.get_size(), depth=glyph.get_bitsize())
+    #blank.fill(255)
     blank.set_palette_at(255, bg)
     blank.set_palette_at(254, color)
     
@@ -460,10 +448,7 @@ def putc_at(row, col, c, attr):
     
     
     
-    
-    
 def build_glyph(c, font_face, glyph_height):
-    
     color = 254 
     bg = 255 
     
@@ -502,10 +487,6 @@ def build_cursor():
         
   
         
-last_row=1
-last_col=1    
-under_cursor=None
-under_top_left=None
 
 def refresh_screen():
     global blink_state, screen # surface0, console.apage.surface1
@@ -562,13 +543,12 @@ def refresh_cursor():
             
 
 def check_events():
-    global screen #, surface0, surface, 
+    global screen  
     global cursor0, font_height, last_row, last_col
     global cycle
     global blink_state
     global last_cycle, cycle_time, blink_cycles
     global screen_changed
-    
     
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
@@ -581,7 +561,6 @@ def check_events():
         elif cycle==blink_cycles*2: 
             blink_state=1
             screen_changed=True
-    
     
     tock = pygame.time.get_ticks() 
     if (tock - last_cycle) >= (cycle_time/blink_cycles):
@@ -603,6 +582,9 @@ def check_events():
             pygame.display.flip()             
         
         screen_changed=False
+
+
+# TODO: these should not be here...
         
         # check user events
         events.check_events()
@@ -631,41 +613,22 @@ def handle_key(e):
         c+= keycode_to_scancode[e.key]    
     elif len(e.unicode)>0 and ord(e.unicode)== 0:   # NUL
         c+= '\x00\x00'
-    elif len(e.unicode)>0 and ord(e.unicode)>=0x20:# and (ord(e.unicode) in unicodepage.from_unicode): 
+    elif len(e.unicode)>0 and ord(e.unicode)>=0x20: # and (ord(e.unicode) in unicodepage.from_unicode): 
         c += unicodepage.from_unicode(e.unicode)    
     elif e.key in keycode_to_scancode:
         c += keycode_to_scancode[e.key]
     elif len(e.unicode)>0 and ord(e.unicode) < 0x20:
         c += chr(ord(e.unicode))    
-    console.keybuf+= events.replace_key(c)
+    console.keybuf += events.replace_key(c)
 
 
-keycode_to_scancode = {
-    pygame.K_UP:    '\x00\x48',
-    pygame.K_DOWN:  '\x00\x50',
-    pygame.K_RIGHT: '\x00\x4D',
-    pygame.K_LEFT:  '\x00\x4B',
-    pygame.K_INSERT:'\x00\x52',
-    pygame.K_DELETE:'\x00\x53',
-    pygame.K_HOME:  '\x00\x47',
-    pygame.K_END:   '\x00\x4F',
-    pygame.K_PAGEUP:'\x00\x49',
-    pygame.K_PAGEDOWN:'\x00\x51',
-    pygame.K_F1:    '\x00\x3B',
-    pygame.K_F2:    '\x00\x3C',
-    pygame.K_F3:    '\x00\x3D',
-    pygame.K_F4:    '\x00\x3E',
-    pygame.K_F5:    '\x00\x3F',
-    pygame.K_F6:    '\x00\x40',
-    pygame.K_F7:    '\x00\x41',
-    pygame.K_F8:    '\x00\x42',
-    pygame.K_F9:    '\x00\x43',
-    pygame.K_F10:   '\x00\x44'
 
-}
-    #K_PRINT               print screen
-    #K_SYSREQ              sysrq
-    
+
+
+
+
+
+
 
 
 
@@ -673,41 +636,26 @@ keycode_to_scancode = {
 
 
 ###############################################
-
 # graphical
+
+
+
+# low-level methods (pygame implementation)
 
 graph_view=None
 view_graph_absolute=True
-graph_window=None
-graph_window_bounds=None
 
 
-last_point = (0,0)    
-pixel_aspect_ratio = fp.MBF_class.one
+def put_pixel(x,y, index):
+    global screen_changed
+    console.apage.surface0.set_at((x,y), index)
+    screen_changed=True
 
+def get_pixel(x,y):    
+    # need 1.9.2 for this:
+    #return console.apage.surface0.get_at_mapped(x,y)
+    return console.apage.surface0.get_at((x,y)).b
 
-            
-# cursor for graphics mode
-def xor_cursor_screen(row,col):
-    global screen, font_height, cursor_from, cursor_to
-    
-    fore, back = console.colours(console.attr)
-    index = fore&0xf
-    
-    
-    for x in range((col-1)*8,col*8):
-        for y in range((row-1)*font_height+cursor_from,(row-1)*font_height+cursor_to):
-        
-            pixel = console.apage.surface0.get_at((x,y)).b
-            screen.set_at((x,y), pixel^index)
-
-    
-def get_coord():
-    return last_point
-
-
-def get_aspect_ratio():
-    return pixel_aspect_ratio
 
 def set_graph_view(x0,y0,x1,y1, absolute=True):
     global graph_view, view_graph_absolute, last_point
@@ -723,6 +671,7 @@ def set_graph_view(x0,y0,x1,y1, absolute=True):
     last_point = graph_view.center
     if graph_window_bounds !=None:
         set_graph_window(*graph_window_bounds)
+
 
 def unset_graph_view():
     global graph_view, view_graph_absolute, last_point #, surface0
@@ -759,7 +708,6 @@ def view_coords(x,y):
 
 
 def clear_graphics_view():
-    #global surface0, 
     global screen_changed
     fore, back = console.colours(console.attr)
     bg = back&0x7    
@@ -770,10 +718,81 @@ def clear_graphics_view():
     
     screen_changed=True
     
+
+def draw_box_filled(x0,y0, x1,y1, c):
+    global last_point 
+    last_point=x1,y1
+    
+    x0,y0 = view_coords(x0,y0)
+    x1,y1 = view_coords(x1,y1)
+    
+    c = get_colour_index(c)
+    
+    if y1<y0:
+        y0,y1 = y1,y0
+    if x1<x0:
+        x0,x1 = x1,x0    
+    
+    rect = pygame.Rect(x0,y0,x1-x0+1,y1-y0+1)
+    
+    apply_graph_view()
+    console.apage.surface0.fill(c, rect)
+    remove_graph_view()
+
+
+
+# high level methods (implementation independent)
+
+graph_window=None
+graph_window_bounds=None
+
+
+last_point = (0,0)    
+pixel_aspect_ratio = fp.MBF_class.one
+
+
+def put_point(x, y, c):
+    global last_point
+    last_point = (x,y)
+    
+    apply_graph_view()
+    x, y = view_coords(x,y)
+    put_pixel(x,y,get_colour_index(c))
+    remove_graph_view()
+    
+    
+def get_point (x,y):
+    x,y = view_coords(x,y)
+    return get_pixel(x,y)
+
+            
+# cursor for graphics mode
+def xor_cursor_screen(row,col):
+    global screen, font_height, cursor_from, cursor_to
+    
+    fore, back = console.colours(console.attr)
+    index = fore&0xf
+    
+    
+    for x in range((col-1)*8,col*8):
+        for y in range((row-1)*font_height+cursor_from,(row-1)*font_height+cursor_to):
+        
+            pixel = console.apage.surface0.get_at((x,y)).b
+            screen.set_at((x,y), pixel^index)
+
+    
+def get_coord():
+    return last_point
+
+
+def get_aspect_ratio():
+    return pixel_aspect_ratio
+
+
+
     
 def set_graph_window(fx0, fy0, fx1, fy1, cartesian=True):
     global graph_view, view_graph_absolute, graph_window, graph_window_bounds
-    #global surface0
     
     if fp.gt(fy0,fy1):
         fy0, fy1 = fy1,fy0
@@ -817,6 +836,7 @@ def window_coords(fx, fy):
     
     return x, y
 
+
 # inverse function
 def get_window_coords(x, y):
     global graph_window
@@ -849,11 +869,6 @@ def window_scale(fx, fy):
     return x, y
 
 
-def put_pixel(x,y, index):
-    #global surface0, 
-    global screen_changed
-    console.apage.surface0.set_at((x,y), index)
-    screen_changed=True
 
 def get_colour_index(c):
     if c==-1:
@@ -870,28 +885,6 @@ def get_colour_index(c):
             c=console.num_colours-1
     return c
 
-
-
-
-
-def put_point(x, y, c):
-    global last_point
-    last_point = (x,y)
-    
-    apply_graph_view()
-    x, y = view_coords(x,y)
-    put_pixel(x,y,get_colour_index(c))
-    remove_graph_view()
-    
-    
-def get_point (x,y):
-    #global surface0
-    
-    # need 1.9.2 for this
-    #return console.apage.surface0.get_at_mapped(x,y)
-    
-    x,y = view_coords(x,y)
-    return console.apage.surface0.get_at((x,y)).b
     
     
 def draw_line(x0,y0, x1,y1, c, pattern=0xffff):
@@ -940,6 +933,7 @@ def draw_line(x0,y0, x1,y1, c, pattern=0xffff):
         
     remove_graph_view()
     
+    
 def draw_straight(p0,p1,q, c, pattern, mask, xy=0):
     sp = 1 if p1>p0 else -1
     for p in range (p0,p1+sp,sp):
@@ -974,62 +968,12 @@ def draw_box(x0,y0, x1,y1, c, pattern=0xffff):
     
     remove_graph_view()
 
+
         
-def draw_box_filled(x0,y0, x1,y1, c):
-    global last_point 
-    #, surface0
-    
-    last_point=x1,y1
-    
-    x0,y0 = view_coords(x0,y0)
-    x1,y1 = view_coords(x1,y1)
-    
-    c = get_colour_index(c)
-    
-    if y1<y0:
-        y0,y1 = y1,y0
-    if x1<x0:
-        x0,x1 = x1,x0    
-    
-    rect = pygame.Rect(x0,y0,x1-x0+1,y1-y0+1)
-    
-    apply_graph_view()
-    console.apage.surface0.fill(c, rect)
-    remove_graph_view()
     
 
-# causes problems with zero radius
-def draw_circle2(x0,y0,r,c):
-    global last_point, screen_changed
-    #global surface0
-    
-    last_point=x0,y0
-    c = get_colour_index(c)
-    
-    apply_graph_view()
-    x0,y0 = view_coords(x0,y0)
-    pygame.draw.circle(console.apage.surface0,c, (x0,y0), r+1, 1)
-    remove_graph_view()
-    screen_changed=True
 
-
-# pygrame.draw implementation - ellipses don't quite look right, won't do zero radius
-def draw_ellipse2(x0,y0,x1,y1,c):
-    global last_point, screen_changed
-    #global surface0
-    last_point=x0,y0
-    
-    c = get_colour_index(c)
-    rect = pygame.Rect(x0,y0,x1-x0+1,y1-y0+1)
-    apply_graph_view()
-    x0,y0 = view_coords(x0,y0)
-    
-    pygame.draw.ellipse(console.apage.surface0,c, rect, 1)
-    remove_graph_view()
-
-    screen_changed=True
-
-# http://en.wikipedia.org/wiki/Midpoint_circle_algorithm
+# see e.g. http://en.wikipedia.org/wiki/Midpoint_circle_algorithm
 def draw_circle(x0,y0,r,c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, line1=False):
     global last_point
     
@@ -1052,20 +996,7 @@ def draw_circle(x0,y0,r,c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, line
     # if oct1==oct0: 
     # ----|.....|--- : coo1 lt coo0 : print if y in [0,coo1] or in [coo0, r]  
     # ....|-----|... ; coo1 gte coo0: print if y in [coo0,coo1]
-    
-    
-    #ymin = 0 
-    #ymax = r+1 # won't trigger
-    ## limit y range for arcs that fall within one octant (essential to avoid drawing too much arc) 
-    ## or two consecutive octants (non-essential optimisation) 
-    #if oct0==oct1 and octant_gte(oct0, coo1, coo0):
-    #    ymin = min(coo0, coo1)
-    #    ymax = max(coo0, coo1)
-    #elif (oct1-oct0)%8==1:
-    #    if oct0%2==0:
-    #        ymin = min(coo0,coo1)    
-    #    else:
-    #        ymax = max(coo0,coo1)
+   
 
     x, y= r, 0
     error=1-r 
@@ -1101,9 +1032,6 @@ def draw_circle(x0,y0,r,c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, line
         else:
             x-=1
             error += 2*(y-x+1)
-        
-     #   if y>ymax:
-     #       break
     
     if line0:
         draw_line(x0,y0, *octant_coord(oct0, x0, y0, coo0x, coo0), c=c)
@@ -1279,8 +1207,6 @@ def quadrant_gte(quadrant, x,y, x0,y0):
 
 
 def check_scanline (line_seed, x_start, x_stop, y, c, border, ydir):
-    #global surface0
-    
     if x_stop< x_start:
         return line_seed
         
@@ -1300,10 +1226,9 @@ def check_scanline (line_seed, x_start, x_stop, y, c, border, ydir):
     return line_seed    
 
 
+
 def fill_scanline(x_start, x_stop, y, pattern):
     global screen_changed
-    #global surface0
-    
     mask = 7-x_start%8
     for x in range(x_start, x_stop+1):
         c=0
@@ -1316,14 +1241,12 @@ def fill_scanline(x_start, x_stop, y, pattern):
             mask=7
 
         console.apage.surface0.set_at((x,y),c)
-    
     screen_changed=True    
       
+
       
 # flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
 def flood_fill (x, y, pattern, c, border): 
-    #global surface0
-    
     if get_point(x,y)==border:
         return
 
@@ -1505,6 +1428,9 @@ def get_area(x0,y0,x1,y1, array):
             byte+=bitsperpixel*bytesperword
             hilo=0
 
+
+
+
     
     
    
@@ -1512,19 +1438,25 @@ def get_area(x0,y0,x1,y1, array):
 ####################################
 # SOUND
 #
-# http://stackoverflow.com/questions/7816294/simple-pygame-audio-at-a-frequency
+# see e.g. http://stackoverflow.com/questions/7816294/simple-pygame-audio-at-a-frequency
 
 
+import pygame
+import numpy
 
 mixer_bits=16
 mixer_samplerate= 44100*4
-#beepbuf=None
-
 sound_queue = []
+
+# quit sound server after quiet period of quiet_quit ticks, to avoid high-ish cpu load from the sound server.
+quiet_ticks = 0        
+quiet_quit = 100
+
 
 def pre_init_sound():
     global mixer_samplerate, mixer_bits
     pygame.mixer.pre_init(mixer_samplerate, -mixer_bits, channels=1, buffer=128) #4096
+
 
 def init_sound():    
     pygame.mixer.quit()
@@ -1538,8 +1470,7 @@ def check_init_sound():
     if pygame.mixer.get_init() ==None:
         pygame.mixer.init()
 
-quiet_ticks = 0        
-quiet_quit = 100
+
 def check_quit_sound():
     global sound_queue, quiet_ticks, quiet_quit
     
@@ -1558,7 +1489,6 @@ def check_quit_sound():
 def play_sound(frequency, duration):
     global sound_queue, mixer_samplerate, mixer_bits
     check_init_sound()
-    
     
     amplitude = 2**(mixer_bits - 1) - 1
 
@@ -1582,8 +1512,6 @@ def play_sound(frequency, duration):
             buf = numpy.concatenate((buf, wave2, wave3))
     
         rest-=int(rest)
-        
-        
     
     sound = pygame.sndarray.make_sound(buf)
     sound_queue.append(sound)
@@ -1617,9 +1545,11 @@ def wait_music():
     while len(sound_queue)>0 or pygame.mixer.get_busy():
         idle()
         check_events()
+
     
 def beep():
     play_sound(800, 0.25)
+
     
 def music_queue_length():
     global sound_queue
