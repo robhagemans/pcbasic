@@ -130,14 +130,18 @@ def read_to(ins, findrange, linum=-1, break_on_first_char=True):
     
     return out, linum    
     
-    
+
+# parse line number and leve pointer at first char of line
+# if end of program or truncated, leave pointer at start of line number C0 DE or 00 00    
 def parse_line_number(ins):
 
     off = ins.read(2)
     if off=='\x00\x00' or len(off) < 2:
+        ins.seek(-len(off),1)
         return -1
     off = ins.read(2)
     if len(off)<2:
+        ins.seek(-len(off)-2,1)
         return -1
     else:
         return vartypes.uint_to_value(off)

@@ -77,10 +77,11 @@ def detokenise(ins, outs, from_line=-1, to_line=-1, pos=-1):
             
         current_line = parse_line_number(ins)
         if current_line < 0:
-            # stream ends or end of file sequence \x00\x00
-            # in a proper ending, next character should be EOF \x1A, output warning if not 
-            eof = ins.read(1)
-            if eof != '\x1a':
+            # parse_line_number has returned -1 and left us here:  .. 00 | _00_ 00 1A
+            # stream ends or end of file sequence \x00\x00\x1A
+            # output warning if not \x00\x00\x1A 
+            eof = ins.read(3)
+            if eof != '\x00\x00\x1a':
                 info =''
                 if eof != '':
                     info = '&H' + hex(ord(eof))[2:]
