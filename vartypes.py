@@ -14,7 +14,6 @@ import copy
 import fp
 import glob
 import error
-#import util
 
 floats = ['#','!']
 numeric = floats + ['%']

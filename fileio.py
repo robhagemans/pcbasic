@@ -15,7 +15,6 @@ import var
 import os
 import StringIO
 
-#from util import *
 import util
 import oslayer
 

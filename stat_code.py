@@ -18,7 +18,7 @@ import glob
 import error
 import vartypes
 import var
-from util import *
+import util
 import expressions
 import tokenise
 import program
@@ -34,19 +34,19 @@ import fileio
 def parse_line_range(ins):
     from_line=-1
     to_line=-1
-    d = skip_white(ins)
+    d = util.skip_white(ins)
     if d=='\x0E':   # line number starts
         ins.read(1)
         from_line=vartypes.uint_to_value(ins.read(2))
-        if skip_white_read_if(ins, '\xEA'):  # -
-            if skip_white_read(ins)=='\x0e':
+        if util.skip_white_read_if(ins, '\xEA'):  # -
+            if util.skip_white_read(ins)=='\x0e':
                 to_line=vartypes.uint_to_value(ins.read(2))
         else:
             to_line = from_line
     
     elif d=='\xEA':
         ins.read(1)
-        if skip_white_read_if(ins, '\x0e'):
+        if util.skip_white_read_if(ins, '\x0e'):
             to_line=vartypes.uint_to_value(ins.read(2))
             
     return (from_line, to_line)    
@@ -57,7 +57,7 @@ def parse_line_range(ins):
     
 def exec_delete(ins):
     [from_line, to_line] = parse_line_range(ins)
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
     program.delete_lines(from_line, to_line)
     # throws back to direct mode
     program.unset_runmode()
@@ -71,9 +71,9 @@ def exec_edit(ins):
         # don't list protected files
         raise error.RunError(5)
     
-    require_read(ins, '\x0E', err=5)   # line number starts
+    util.require_read(ins, '\x0E', err=5)   # line number starts
     from_line=vartypes.uint_to_value(ins.read(2))
-    require(ins, end_statement, err=5)
+    util.require(ins, util.end_statement, err=5)
     if from_line not in program.line_numbers:
         raise error.RunError(8)
     program.edit_line(from_line)
@@ -88,7 +88,7 @@ def exec_auto(ins):
     global auto_increment, auto_linenum
     global auto_mode
     
-    d = skip_white(ins)
+    d = util.skip_white(ins)
     auto_linenum=10
     if d=='\x0e':   # line number starts
         ins.read(1)
@@ -97,15 +97,15 @@ def exec_auto(ins):
         ins.read(1)
         auto_linenum = program.linenum
         
-    if skip_white_read_if(ins, ','): 
-        if skip_white_read_if(ins, '\x0e'):   # line number starts
+    if util.skip_white_read_if(ins, ','): 
+        if util.skip_white_read_if(ins, '\x0e'):   # line number starts
             auto_increment = vartypes.uint_to_value(ins.read(2)) 
         else:
             pass
     else:
         auto_increment=10
             
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
 
     auto_linenum -= auto_increment
     auto_mode=True
@@ -119,7 +119,7 @@ def exec_list(ins, out=None):
         raise error.RunError(5)
     
     [from_line, to_line] = parse_line_range(ins)
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
 
     if out==None:
         out = glob.scrn
@@ -154,13 +154,13 @@ def exec_load(ins):
     name = oslayer.dospath_read(name, 'BAS', 53)
         
     close_files = True
-    if skip_white(ins) == ',':
+    if util.skip_white(ins) == ',':
         if ins.read(2).upper() != ',R':
             raise error.RunError(2)
         else:
             close_files = False
     
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
     
     g = oslayer.safe_open(name, 'rb')
     program.load(g)
@@ -176,7 +176,7 @@ def exec_load(ins):
         
 def exec_chain(ins):
     action = program.load
-    if skip_white_read_if(ins, '\xBD'): # MERGE
+    if util.skip_white_read_if(ins, '\xBD'): # MERGE
         action = program.merge
     
     name = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
@@ -184,10 +184,10 @@ def exec_chain(ins):
     name = oslayer.dospath_read(name, 'BAS', 53)
     
     jumpnum=-1    
-    d = skip_white(ins)
+    d = util.skip_white(ins)
     if d == ',':
         ins.read(1)
-        d = skip_white(ins)
+        d = util.skip_white(ins)
         
         # check for an expression that indicates a line in the other program. not stored as a jumpnum (to avoid RENUM)
         # NOTE in GW, negative numbers will be two's complemented into a line number!
@@ -197,7 +197,7 @@ def exec_chain(ins):
             if jumpnum <0:
                 jumpnum = 0x10000 + jumpnum            
         
-    elif d not in end_statement:
+    elif d not in util.end_statement:
         raise error.RunError(2)
     
     # preserve COMMON variables
@@ -213,22 +213,22 @@ def exec_chain(ins):
         if varname in var.arrays:
             common_arrays[varname] = var.arrays[varname]
     
-    d = skip_white(ins)
+    d = util.skip_white(ins)
     if d==',':
         ins.read(1)
-        if peek(ins, 3).upper() == 'ALL':
+        if util.peek(ins, 3).upper() == 'ALL':
             ins.read(3)
             common = copy.copy(var.variables)
             common_arrays = copy.copy(var.arrays)
             # preserve DEFTYPES
             common_deftype = copy.copy(var.deftype)
-    elif d not in end_statement:
+    elif d not in util.end_statement:
         raise error.RunError(2)
             
-    d = skip_white(ins)
+    d = util.skip_white(ins)
     if d==',':
         ins.read(1)
-        if peek(ins) == '\xa9': # DELETE
+        if util.peek(ins) == '\xa9': # DELETE
             ins.read(2)
             #delete lines from existing code before merge
             # (without MERGE, this is pointless)
@@ -236,7 +236,7 @@ def exec_chain(ins):
             program.delete_lines(from_line, to_line)
     
     # TODO: should the program be loaded or not if we see this error?
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
     
     # keep option base
     base = var.array_base    
@@ -282,9 +282,9 @@ def exec_save(ins):
     #        raise error.RunError(errdots)
     
     mode = 'B'
-    d = skip_white_read(ins)
+    d = util.skip_white_read(ins)
     if d== ',':
-        d = skip_white_read(ins)
+        d = util.skip_white_read(ins)
         if d.upper() not in ('A', 'P'):
             raise error.RunError(2)
             return False
@@ -305,7 +305,7 @@ def exec_save(ins):
     program.save(g, mode)
     g.close()
 
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
     
     
 def exec_merge(ins):
@@ -317,7 +317,7 @@ def exec_merge(ins):
     program.merge(g)
     g.close()    
         
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
     
     
 def exec_new():
@@ -329,7 +329,7 @@ def exec_new():
 
 
 def exec_renum(ins):
-    nums = parse_jumpnum_list(ins, size=3, err=2)
+    nums = util.parse_jumpnum_list(ins, size=3, err=2)
     program.renumber(*nums)    
 
     

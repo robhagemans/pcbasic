@@ -17,7 +17,7 @@ import var
 import events
 import tokenise
 import protect
-from util import *
+import util
 
 import StringIO 
 
@@ -104,17 +104,17 @@ def preparse():
     bytecode.seek(1)
     while True:
         
-        scanline = parse_line_number(bytecode)
+        scanline = util.parse_line_number(bytecode)
         if scanline == -1:
             # program ends
-            if peek(bytecode) == '':
+            if util.peek(bytecode) == '':
                 # truncated file, no \00\00\00\nn (\nn can be \1a or something else)
                 # fix that
                 bytecode.write('\x00\x00\x00\x1a')
                 # try again from cycle
                 bytecode.seek(last + 5)
-                skip_to_read(bytecode, end_line)
-                parse_line_number(bytecode)
+                util.skip_to_read(bytecode, util.end_line)
+                util.parse_line_number(bytecode)
               
             # if parse_line_number returns -1, it leaves the stream pointer here: 00 _00_ 00 1A 
             line_numbers[65536] = bytecode.tell() - 1  
@@ -124,7 +124,7 @@ def preparse():
         last = bytecode.tell() - 5   
         line_numbers[scanline] = last  
         
-        skip_to_read(bytecode, end_line)
+        util.skip_to_read(bytecode, util.end_line)
         
     reset_program()
     
@@ -192,11 +192,11 @@ def store_line(linebuf, auto_mode=False):
     start = linebuf.tell()
     # check if linebuf is an empty line after the line number
     linebuf.seek(5)
-    empty = (skip_white_read(linebuf) in end_line)
+    empty = (util.skip_white_read(linebuf) in util.end_line)
     
     # get the new line number
     linebuf.seek(1)
-    scanline = parse_line_number(linebuf)
+    scanline = util.parse_line_number(linebuf)
     
     
     # find the lowest line after this number
@@ -344,8 +344,8 @@ def renumber(new_line=-1, start_line=-1, step=-1):
     #write the indirect line numbers
     bytecode.seek(0)
     linum = -1
-    while peek(bytecode) != '':
-        linum = skip_to(bytecode, ['\x0d', '\x0e'], linum)
+    while util.peek(bytecode) != '':
+        linum = util.skip_to(bytecode, ['\x0d', '\x0e'], linum)
         if linum ==-1:
             break
         bytecode.read(1)
@@ -412,7 +412,7 @@ def load(g):
 
 def merge(g):
     
-    if peek(g) in ('\xFF', '\xFE', '\xFC', ''):
+    if util.peek(g) in ('\xFF', '\xFE', '\xFC', ''):
         # bad file mode
         raise error.RunError(54)
     else:
@@ -424,11 +424,11 @@ def merge(g):
             more = tokenise.tokenise_stream(g, tempbuf, one_line=True)
             tempbuf.seek(0)
             
-            c = peek(tempbuf) 
+            c = util.peek(tempbuf) 
             if c=='\x00':
                 # line starts with a number, add to program memory
                 store_line(tempbuf)
-            elif skip_white(tempbuf) in end_line:
+            elif util.skip_white(tempbuf) in util.end_line:
                 # empty line
                 pass
             else:

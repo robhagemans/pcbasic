@@ -27,9 +27,7 @@ import glob
 import error
 import fp 
 import vartypes
-
-from util import *
-
+import util
 
 
 tokens_number = ['\x0b','\x0c','\x0f',
@@ -75,7 +73,7 @@ def detokenise(ins, outs, from_line=-1, to_line=-1, pos=-1):
         # tell doesn't work on stdout
         #    textpos = outs.tell()
             
-        current_line = parse_line_number(ins)
+        current_line = util.parse_line_number(ins)
         if current_line < 0:
             # parse_line_number has returned -1 and left us here:  .. 00 | _00_ 00 1A
             # stream ends or end of file sequence \x00\x00\x1A
@@ -118,7 +116,7 @@ def detokenise_line(bytes):
     while True:
         s = bytes.read(1)
         
-        if s in end_line:
+        if s in util.end_line:
             # \x00 ends lines and comments when listed, if not inside a number constant
             # stream ended or end of line
             break
@@ -229,7 +227,7 @@ def str_to_value_keep(strval):
 def detokenise_keyword(bytes, output):
     s = bytes.read(1)
     if not token_to_keyword.has_key(s):
-        s += peek(bytes)
+        s += util.peek(bytes)
         if not token_to_keyword.has_key(s):
             return s[0], False
         else:
@@ -274,7 +272,7 @@ def detokenise_keyword(bytes, output):
     
     
     # token followed by number is also separated by a space, except operator tokens and SPC(, TAB(
-    nxt = peek(bytes)
+    nxt = util.peek(bytes)
     if nxt.upper() not in (tokens_operator+['\xD9','"',',',' ',':','(',')']) \
                 and s not in (tokens_operator+tokens_with_bracket+['\xD1']): # excluding TAB( SPC( and FN. \xD9 is ', \xD1 is FN.
         output+=' '
@@ -296,7 +294,7 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
     while True:
         
         # skip whitespace at start of line
-        d = skip(ins, tokenise_whitespace)
+        d = util.skip(ins, tokenise_whitespace)
         
         if d in tokenise_endfile:
             ins.read(1)
@@ -305,7 +303,7 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
         elif d in tokenise_endline_nonnul:
             # handle \x0d\x0a
             if ins.read(1)=='\x0d':
-                if peek(ins) == '\x0A':
+                if util.peek(ins) == '\x0A':
                     ins.read(1) 
 
             if one_line:
@@ -333,28 +331,28 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
             # non-parsing modes        
             if verbatim :
                 # anything after REM is passed as is till EOL
-                outs.write(ascii_read_to(ins, tokenise_endline))
+                outs.write(util.ascii_read_to(ins, tokenise_endline))
                 break
                 
             elif data:
                 # read DATA as is, till end of statement    
-                outs.write(ascii_read_to(ins, tokenise_endstatement))
+                outs.write(util.ascii_read_to(ins, tokenise_endstatement))
                 data = False
                 
-            elif peek(ins)=='"':
+            elif util.peek(ins)=='"':
                 # handle string literals    
                 outs.write(ins.read(1))
-                outs.write(ascii_read_to(ins, tokenise_endline + ['"'] ))
-                if peek(ins)=='"':
+                outs.write(util.ascii_read_to(ins, tokenise_endline + ['"'] ))
+                if util.peek(ins)=='"':
                     outs.write(ins.read(1))
             
             # read next character
-            char = peek(ins)
+            char = util.peek(ins)
             
             # anything after NUL is ignored till EOL
             if char=='\x00':
                 ins.read(1)
-                ascii_read_to(ins, tokenise_endline_nonnul)
+                util.ascii_read_to(ins, tokenise_endline_nonnul)
                 break
                             
             # end of line    
@@ -475,7 +473,7 @@ def tokenise_line_number(ins, outs, onfile):
         outs.write('\xC0\xDE' + vartypes.value_to_uint(int(linenum)))
     
         # ignore single whitespace after line number, if any, unless line number is zero (as does GW)
-        if peek(ins)==' ' and int(linenum) !=0 :
+        if util.peek(ins)==' ' and int(linenum) !=0 :
             ins.read(1)
     else:
         # direct line; internally, we need an anchor for the program pointer, so we encode a ':'
@@ -504,16 +502,16 @@ def tokenise_jump_number(ins, outs):
    
 # string to token             
 def tokenise_number(ins, outs):
-    c = peek(ins)
+    c = util.peek(ins)
     
     # handle hex or oct constants
     if c=='&':
         word = ins.read(1)
-        nxt = peek(ins).upper()
+        nxt = util.peek(ins).upper()
         if nxt == 'H': # hex constant
             word += ins.read(1)
             while True: 
-                if not peek(ins).upper() in ascii_hexits:
+                if not util.peek(ins).upper() in ascii_hexits:
                     break
                 else:
                     word += ins.read(1).upper()
@@ -522,7 +520,7 @@ def tokenise_number(ins, outs):
         elif nxt == 'O': # octal constant
             word += ins.read(1)
             while True: 
-                if not peek(ins).upper() in ascii_octits:
+                if not util.peek(ins).upper() in ascii_octits:
                     break
                 else:
                     word += ins.read(1).upper()
@@ -621,7 +619,7 @@ def tokenise_word(ins, outs):
             pos=ins.tell()
         
             # GO SUB allows 1 space
-            if peek(ins, 4) == ' SUB':
+            if util.peek(ins, 4) == ' SUB':
                 word='GOSUB'
                 ins.read(4)
             else:
@@ -636,7 +634,7 @@ def tokenise_word(ins, outs):
                    ins.seek(pos)
               
             if word in ('GOTO', 'GOSUB'):
-                nxt = peek(ins).upper()
+                nxt = util.peek(ins).upper()
                 if nxt in name_chars: #ascii_uppercase or nxt in ascii_digits or nxt=='.':
                     ins.seek(pos)
                     word='GO'
@@ -646,7 +644,7 @@ def tokenise_word(ins, outs):
         if word in keyword_to_token:
             # ignore if part of a longer name, except 'FN', 'SPC(', 'TAB('
             if word not in ('FN', 'SPC(', 'TAB('):
-                nxt = peek(ins).upper()
+                nxt = util.peek(ins).upper()
                 if nxt in name_chars:  #ascii_uppercase or nxt in ascii_digits or nxt=='.':
                     continue
             

@@ -22,8 +22,7 @@ import vartypes
 import expressions
 import oslayer
 
-from util import *
-
+import util
 
 
 def exec_chdir(ins):
@@ -33,7 +32,7 @@ def exec_chdir(ins):
         os.chdir(name)
     except EnvironmentError as ex:
         oslayer.handle_oserror(ex)
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
     
 
 def exec_mkdir(ins):
@@ -42,7 +41,7 @@ def exec_mkdir(ins):
         os.mkdir(oslayer.dospath_write_dir(name,'', 76))
     except EnvironmentError as ex:
         oslayer.handle_oserror(ex)
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
     
     
 
@@ -54,7 +53,7 @@ def exec_rmdir(ins):
         os.rmdir(name)
     except EnvironmentError as ex:
         oslayer.handle_oserror(ex)
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
     
 
 def exec_name(ins):
@@ -62,7 +61,7 @@ def exec_name(ins):
     oldname = oslayer.dospath_read(oldname, '', 76)
     
     # AS is not a tokenised word
-    word = skip_white_read(ins)+ins.read(1)
+    word = util.skip_white_read(ins)+ins.read(1)
     if word.upper() != 'AS':
         raise RunError(2)
             
@@ -78,13 +77,13 @@ def exec_name(ins):
     except EnvironmentError as ex:
         oslayer.handle_oserror(ex)
 
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
     
 
 def exec_kill(ins):
     name = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
     name = oslayer.dospath_read(name, '')
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
     try:
         os.remove(name)    
     except EnvironmentError as ex:
@@ -97,7 +96,7 @@ def exec_kill(ins):
 
 def exec_files(ins):
     path, mask = '.', '*.*'
-    if skip_white(ins) not in end_statement:
+    if util.skip_white(ins) not in util.end_statement:
         pathmask = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
         
         pathmask = pathmask.rsplit('\\',1)
@@ -147,25 +146,22 @@ def exec_files(ins):
     
     glob.scrn.write(str(oslayer.disk_free(path))+' Bytes free'+glob.endl)
     
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
     
     
     
 def exec_shell(ins):
     
-    if skip_white(ins) in end_statement:
+    if util.skip_white(ins) in util.end_statement:
         cmd = oslayer.shell
-        #oslayer.spawn_shell(cmd)
-    
     else:
         cmd = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
-        #oslayer.spawn_shell_in_window(cmd)
     
     glob.scrn.pause()
     oslayer.spawn_interactive_shell(cmd) 
     glob.scrn.cont()
     
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
     
         
 def exec_environ(ins):
@@ -177,14 +173,13 @@ def exec_environ(ins):
     val=envstr[eqs+1:]
     os.environ[var] = val
         
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
     
     
        
 def exec_time(ins):
     #time$=
-    if skip_white_read(ins)!= '\xe7': # =
-        raise error.RunError(2)
+    util.require_read(ins,'\xe7')
         
     # allowed formats:
     # hh
@@ -193,10 +188,7 @@ def exec_time(ins):
     # where hh 0-23, mm 0-59, ss 0-59
     
     timestr = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
-    
-    
-    if skip_white(ins) not in end_expression:
-        raise error.RunError(2)
+    util.require(ins, util.end_statement)
     
     now = datetime.datetime.today() + oslayer.time_offset
     timelist= [0,0,0]
@@ -232,8 +224,7 @@ def exec_time(ins):
         
 def exec_date(ins):
     #date$=
-    if skip_white_read(ins)!= '\xe7': # =
-        raise error.RunError(2)
+    util.require_read(ins,'\xe7') # =
         
     # allowed formats:
     # mm/dd/yy   mm 0--12 dd 0--31 yy 80--00--77
@@ -243,8 +234,7 @@ def exec_date(ins):
     
     datestr = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
     
-    #require(ins, end_expression)
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
     
     now = datetime.datetime.today() + oslayer.time_offset
     datelist= [1,1,1]

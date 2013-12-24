@@ -21,7 +21,7 @@ import var
 import rnd
 import fileio
 
-from util import *
+import util
 
 import expressions
 import tokenise
@@ -61,7 +61,7 @@ def parse_statement():
     program.current_statement = ins.tell()
 
     
-    c = skip_white_read(ins).upper()
+    c = util.skip_white_read(ins).upper()
     if c=='':
         # stream has ended.
         return False
@@ -69,7 +69,7 @@ def parse_statement():
     # code stream should either be at '\x00' or at ':' to start a statement
     if c=='\x00':
         # line number marker, new statement
-        program.linenum = parse_line_number(ins)
+        program.linenum = util.parse_line_number(ins)
 
         if program.linenum == -1:
             # move back to the line-ending \x00 and break
@@ -80,16 +80,16 @@ def parse_statement():
         if tron:
             glob.scrn.write('['+('%i' % program.linenum) +']')
             
-        c = skip_white_read(ins).upper()
+        c = util.skip_white_read(ins).upper()
     
     elif c==':':
         # new statement
-        c = skip_white_read(ins).upper()
+        c = util.skip_white_read(ins).upper()
     # else:
         #internal error  
       
         
-    if c in end_statement:
+    if c in util.end_statement:
         # empty statement, return to parse next
         if c!='':
             ins.seek(-1,1)
@@ -111,7 +111,7 @@ def parse_statement():
         exec_read(ins)
     elif c=='\x88' or c>= 'A' and c <= 'Z' :
         if c=='\x88':   # LET
-            d = skip_white_read(ins)
+            d = util.skip_white_read(ins)
             if d == '':
                 raise error.RunError(2)
         ins.seek(-1,1)
@@ -342,9 +342,7 @@ def parse_statement():
 #################################################################
 
 def exec_system(ins): 
-    if skip_white_read(ins) not in end_statement:
-        raise error.RunError(2)    
-    
+    util.require(ins, util.end_statement)
     run.exit() 
         
 def exec_tron(ins):
@@ -396,37 +394,36 @@ def exec_randomize(ins):
         mask = s[-4:-2]
     final_two = chr(ord(final_two[0]) ^ ord(mask[0])) + chr(ord(final_two[1]) ^ ord(mask[1]))
     rnd.randomize_int(sint_to_value(final_two))        
-    if skip_white(ins) not in end_statement:
-        raise error.RunError(2)
+    util.require(ins, util.end_statement)
     
 
 
 
 def exec_rem(ins):
-    # skip the rest, but parse numbers to avoid triggering EOL
-    skip_to(ins, end_line)
+    # util.skip the rest, but parse numbers to avoid triggering EOL
+    util.skip_to(ins, util.end_line)
     
 
 # do-nothing MOTOR
 def exec_motor(ins):
-    d = skip_white(ins)
+    d = util.skip_white(ins)
     
-    if d in end_statement:
+    if d in util.end_statement:
         return
     else:
         vartypes.pass_int_keep(expressions.parse_expression(ins))
-        require(ins, end_statement)
+        util.require(ins, util.end_statement)
 
 
 def exec_def(ins):
-    skip_white(ins)
-    if peek(ins,1)=='\xD1': #FN
+    util.skip_white(ins)
+    if util.peek(ins,1)=='\xD1': #FN
         ins.read(1)
         exec_def_fn(ins)
-    elif peek(ins,3)=='SEG':
+    elif util.peek(ins,3)=='SEG':
         ins.read(3)
         exec_def_seg(ins)
-    elif peek(ins,3)=='USR':
+    elif util.peek(ins,3)=='USR':
         ins.read(3)
         exec_def_usr(ins)
     else:        
@@ -434,7 +431,7 @@ def exec_def(ins):
 
 
 def exec_view(ins):
-    d=skip_white(ins)
+    d=util.skip_white(ins)
     if d == '\x91':  #PRINT
         ins.read(1)
         exec_view_print(ins)
@@ -444,7 +441,7 @@ def exec_view(ins):
 
     
 def exec_line(ins):
-    d = skip_white(ins)
+    d = util.skip_white(ins)
        
     if d == '\x85': #INPUT
         ins.read(1)
@@ -454,13 +451,13 @@ def exec_line(ins):
 
 
 def exec_get(ins):
-    if skip_white(ins)=='(':
+    if util.skip_white(ins)=='(':
         exec_get_graph(ins)
     else:    
         exec_get_file(ins)
     
 def exec_put(ins):
-    if skip_white(ins)=='(':
+    if util.skip_white(ins)=='(':
         exec_put_graph(ins)
     else:    
         exec_put_file(ins)
@@ -470,10 +467,10 @@ def exec_DEBUG(ins):
     # this is not a GW-BASIC behaviour, but helps debugging.
     # this is parsed like a REM by the tokeniser.
     # rest of the line is considered to be a python statement
-    d = skip_white(ins)
+    d = util.skip_white(ins)
     
     debug = ''
-    while peek(ins) not in end_line:
+    while util.peek(ins) not in util.end_line:
         d = ins.read(1)
         debug += d
         
@@ -496,24 +493,24 @@ def debug_dump_program():
 # do-nothing POKE        
 def exec_poke(ins):
     addr = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    require_read(ins, ',')
+    util.require_read(ins, ',')
     val = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
     
 # do-nothing DEF SEG    
 def exec_def_seg(ins):
-    if skip_white_read_if(ins, '\xE7'): #=
+    if util.skip_white_read_if(ins, '\xE7'): #=
         vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
         
 
 # do-nothing DEF USR    
 def exec_def_usr(ins):
-    if peek(ins) in tokenise.ascii_digits:
+    if util.peek(ins) in tokenise.ascii_digits:
         ins.read(1)
-    require_read(ins, '\xE7')     
+    util.require_read(ins, '\xE7')     
     vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
 
 
         
@@ -545,21 +542,21 @@ def exec_ioctl(ins):
 # do-nothing out       
 def exec_out(ins):
     addr = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    require_read(ins, ',')
+    util.require_read(ins, ',')
     val = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
     
     #raise error.RunError(73)    
      
 # do-nothing wait        
 def exec_wait(ins):
     addr = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    require_read(ins, ',')
+    util.require_read(ins, ',')
     val = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    if skip_white_read_if(ins, ','):
+    if util.skip_white_read_if(ins, ','):
         j = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
     
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
     
     #raise error.RunError(73)    
         
