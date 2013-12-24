@@ -20,8 +20,7 @@ import fp
 import vartypes
 import var
 import rnd
-
-from util import *
+import util
 
 import expressions
 import tokenise
@@ -38,7 +37,7 @@ keys_visible = False
 def exec_cls(ins):
     global keys_visible
     
-    if skip_white(ins) in end_statement:
+    if util.skip_white(ins) in util.end_statement:
         if glob.scrn.graphics_view_set:
             val=1
         elif glob.scrn.view_set:
@@ -57,8 +56,8 @@ def exec_cls(ins):
     elif val==2:
         glob.scrn.clear_view()                
       
-    if not skip_white(ins) in end_statement:
-        raise error.RunError(2)    
+    util.require(ins, util.end_statement)    
+    
     
 def exec_color(ins):
     [fore, back, bord] = expressions.parse_int_list(ins, 3, 5)          
@@ -130,13 +129,12 @@ def exec_color(ins):
     
     
 def exec_palette(ins):
-    d = skip_white(ins)
-    if d in end_statement:
+    d = util.skip_white(ins)
+    if d in util.end_statement:
         # reset palette
         glob.scrn.set_palette()
     elif d=='\xD7': # USING
         ins.read(1)
-        #skip_white(ins) 
         array_name = var.get_var_name(ins)
         start_index = vartypes.pass_int_keep(expressions.parse_bracket(ins))[1]
         new_palette=[]
@@ -158,8 +156,7 @@ def exec_palette(ins):
             glob.scrn.set_palette_entry(pair[0], pair[1])
     
     
-    if skip_white(ins) not in end_statement:
-        raise error.RunError(2)    
+    util.require(ins, util.end_statement)    
         
         
 def show_keys():
@@ -219,7 +216,7 @@ def hide_keys():
 def exec_key(ins):
     global keys_visible
     
-    d = skip_white(ins)
+    d = util.skip_white(ins)
     if d == '\x95': # ON
         if not keys_visible:
            show_keys()
@@ -240,7 +237,7 @@ def exec_key(ins):
         if num<0 or num>255:
             raise error.RunError(5)
 
-        d=skip_white_read(ins)
+        d=util.skip_white_read(ins)
         # others are ignored
         if num >=1 and num <= 20:
             if d=='\x95': # ON
@@ -259,7 +256,7 @@ def exec_key(ins):
         if keynum<1 or keynum>255:
             raise error.RunError(5)
         
-        d = skip_white(ins)
+        d = util.skip_white(ins)
         if d!= ',':
             raise error.RunError(5)
         else:
@@ -280,7 +277,7 @@ def exec_key(ins):
                 events.key_numbers[keynum-1] = text
                     
     
-    skip_to(ins, end_statement)
+    util.skip_to(ins, util.end_statement)
 
 
 
@@ -321,7 +318,7 @@ def exec_write(ins, screen=None):
                 screen.write('"'+expr[1]+'"')
             else:                
                 screen.write(vartypes.value_to_str_keep(expr, screen=True, write=True)[1])
-            if skip_white(ins) ==',':
+            if util.skip_white(ins) ==',':
                 ins.read(1)
                 screen.write(',')
             else:
@@ -332,8 +329,7 @@ def exec_write(ins, screen=None):
                 raise error.RunError(2)        
         
             
-    if skip_white(ins) not in end_statement:
-        raise error.RunError(2)        
+    util.require(ins, util.end_statement)        
 
     screen.write(glob.endl)
 
@@ -352,14 +348,13 @@ def exec_print(ins, screen=None):
     output = ''
     newline = True
 
-    if skip_white(ins)=='\xD7': # USING
-       ins.read(1)
+    if util.skip_white_read_if(ins, '\xD7'): # USING
        exec_print_using(ins, screen)
        return
         
     while True:
-        d = skip_white(ins)
-        if d in end_statement:
+        d = util.skip_white(ins)
+        if d in util.end_statement:
             
             screen.write(output)
             if newline:
@@ -402,7 +397,7 @@ def exec_print(ins, screen=None):
             numspaces = vartypes.pass_int_keep(expressions.parse_expression(ins), 0xffff)[1]
             numspaces %= screen.width
             
-            require_read(ins, ')')
+            util.require_read(ins, ')')
             
             screen.write(' '*numspaces)
             output=''
@@ -416,7 +411,7 @@ def exec_print(ins, screen=None):
             pos = vartypes.pass_int_keep(expressions.parse_expression(ins), 0xffff)[1]
             pos %= screen.width
             
-            require_read(ins, ')')
+            util.require_read(ins, ')')
             
             col = screen.get_col()
             if pos < col:
@@ -447,20 +442,17 @@ def exec_print(ins, screen=None):
 
 def get_next_expression(ins, fors=0):    
 
-    skip_white(ins)
+    util.skip_white(ins)
     expr = expressions.parse_expression(ins)
     
     # no semicolon: nothing more to read afterwards
-    if skip_white(ins) != ';':
+    if not util.skip_white_read_if(ins, ';'):
         more_data = False
         semicolon = False
         return more_data, semicolon, expr
     
-    # read the semicolon     
-    ins.read(1)    
-    
     # more to come?
-    if skip_white(ins) in end_statement:
+    if util.skip_white(ins) in util.end_statement:
         more_data = False
         semicolon = True
         return more_data, semicolon, expr
@@ -476,16 +468,14 @@ def exec_print_using(ins, screen):
     string_format_tokens = ('!','\\','&','_')
     number_format_tokens = ('#','**','$$','^^^^','_')
 
-    skip_white(ins)
+    util.skip_white(ins)
     format_expr = vartypes.pass_string_keep(expressions.parse_expression(ins))
     if format_expr[1]=='':
         raise error.RunError(5)
     
     fors = StringIO.StringIO(format_expr[1])
     
-    if skip_white_read(ins) != ';':
-        raise error.RunError(2)
-    #skip_white(ins)
+    util.require_read(ins,';')
     
     semicolon=False#=True    
     more_data = False
@@ -554,8 +544,8 @@ def exec_print_using(ins, screen):
         
                 
         elif c=='#' \
-                or (c in ('$', '*') and peek(fors)==c) \
-                or (c=='+' and  peek(fors) == '#' or peek(fors,2) in ('##', '**')) \
+                or (c in ('$', '*') and util.peek(fors)==c) \
+                or (c=='+' and  util.peek(fors) == '#' or util.peek(fors,2) in ('##', '**')) \
                 :    
             # numeric token
             format_chars = True
@@ -572,7 +562,7 @@ def exec_print_using(ins, screen):
     if not semicolon:
         screen.write(glob.endl)
         
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
        
 
 
@@ -590,19 +580,19 @@ def exec_lcopy(ins):
     value = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
     if value<0 or value>255:
         error.RunError(5)
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
        
             
                              
 def exec_view_print(ins):
-    d = skip_white(ins)
-    if d in end_statement:
+    d = util.skip_white(ins)
+    if d in util.end_statement:
         glob.scrn.set_view()
     else:
         start = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-        require_read(ins, '\xCC') # TO
+        util.require_read(ins, '\xCC') # TO
         stop = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-        require(ins, end_statement)
+        util.require(ins, util.end_statement)
             
         glob.scrn.set_view(start, stop)
 
@@ -624,7 +614,7 @@ def check_view(row, col):
 
     
 def exec_width(ins):
-    d=skip_white(ins)
+    d=util.skip_white(ins)
     
     if d=='#':
         dev = expressions.parse_file_number(ins)
@@ -637,44 +627,33 @@ def exec_width(ins):
         dev = glob.devices[device]
         
     else:
-        #device='SCRN:'
         dev = glob.scrn
         
     # we can do calculations, but they must be bracketed...
     w = vartypes.pass_int_keep(expressions.parse_expr_unit(ins))[1]
     # get the appropriate errors out there
     if dev==glob.scrn:
-        d = skip_white(ins)
         
         # two commas are accepted
-        if d == (','):
-            ins.read(1)
-            d = skip_white(ins)
+        util.skip_white_read_if(ins, ',')
             
-        if d == (','):
-            ins.read(1)
-            d = skip_white(ins)
-        elif d not in end_statement:
+        if not util.skip_white_read_if(ins, ','):
             # one comma, then stuff - illegal function call
-            raise error.RunError(5)
-
+            util.require(ins, util.end_statement, err=5)
+            
         # anything after that is a syntax error      
-        if d not in end_statement:
-            raise error.RunError(2)        
+        util.require(ins, util.end_statement)        
         
+        # and finally an error if the width value doesn't make sense
         if w not in (40,80):
             raise error.RunError(5)
-    
     else:
-        d = skip_white(ins)
-        if d not in end_statement:
-            raise error.RunError(2)
-    
+        util.require(ins, util.end_statement)
+        
     dev.set_width(w)    
     
     if dev==glob.scrn:
         glob.scrn.clear()
-        #exec_cls()        
         if keys_visible:
             show_keys()    
 
@@ -745,7 +724,7 @@ def format_number(value, fors):
     
     exp_form=False
     if c=='^':
-        if peek(fors,3)=='^^^':
+        if util.peek(fors,3)=='^^^':
             fors.read(3)
             c=fors.read(1)
             exp_form=True
@@ -883,7 +862,7 @@ def exec_screen(ins):
     global vpagenum, apagenum
     
     params = expressions.parse_int_list(ins, 4)
-    require(ins, end_statement)        
+    util.require(ins, util.end_statement)        
     
     mode = params[0]
     mode_info = glob.scrn.mode_info(mode) 
@@ -932,9 +911,9 @@ def exec_screen(ins):
 def exec_pcopy(ins):
     
     src = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    require_read(ins, ',')
+    util.require_read(ins, ',')
     dst = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
 
     if not glob.scrn.copy_page(src,dst):
         raise error.RunError(5)

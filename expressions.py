@@ -16,7 +16,7 @@ import rnd
 import tokenise
 
 import oslayer
-from util import *
+import util
 import error
 import var
 import fileio
@@ -48,14 +48,14 @@ def parse_expr_list(ins, size, err=5, separators=(',',)):
     pos=0
     output = [None] * size
     while True:
-        d = skip_white(ins)
+        d = util.skip_white(ins)
         if d in separators: #==',':
             ins.read(1)
             pos += 1
             if pos >= size:
                 # 5 = illegal function call
                 raise error.RunError(err)
-        elif d in end_expression:
+        elif d in util.end_expression:
             break
         else:  
             output[pos] = parse_expression(ins)
@@ -65,8 +65,7 @@ def parse_expr_list(ins, size, err=5, separators=(',',)):
 
 def parse_file_number(ins):
     screen = None
-    if skip_white(ins)=='#':
-        ins.read(1)
+    if util.skip_white_read_if(ins,'#'):
         number = vartypes.pass_int_keep(parse_expression(ins))[1]
         if number<0 or number>255:
             raise error.RunError(5)
@@ -74,8 +73,7 @@ def parse_file_number(ins):
             # bad file number
             raise error.RunError(52)
         screen = fileio.files[number]
-        if skip_white_read(ins) != ',':
-            raise error.RunError(2)
+        util.require_read(ins,',')
     
     return screen        
 
@@ -86,14 +84,14 @@ def get_var_or_array_name(ins):
     name = var.get_var_name(ins)
     # array?
     indices=[]
-    if skip_white(ins) in ('[', '('):
+    if util.skip_white(ins) in ('[', '('):
         ins.read(1)
         indices = parse_int_list(ins, 255, 9) # subscript out of range
         while len(indices)>0 and indices[-1]==None:
             indices = indices[:-1]
         if None in indices:
             raise error.RunError(2)
-        if skip_white(ins) not in (']', ')'):
+        if util.skip_white(ins) not in (']', ')'):
             raise error.RunError(2)
         else:
             ins.read(1) 
@@ -129,24 +127,24 @@ def parse_expression(ins, allow_empty=False):
     units = []
     operators = []
     
-    d = skip_white(ins)
+    d = util.skip_white(ins)
     
     
-    while d not in end_expression: # and d not in end_statement:
+    while d not in util.end_expression: # and d not in util.end_statement:
         
         units.append(parse_expr_unit(ins))
         
-        skip_white(ins)
+        util.skip_white(ins)
         # string lit breaks expression, number after string lit breaks expression, + or - doesnt (could be an operator...
-        #if d in end_expression or d in end_statement or d=='"' :
-        d = peek(ins)
+        #if d in util.end_expression or d in util.end_statement or d=='"' :
+        d = util.peek(ins)
         if d not in operator_tokens:
             break
         else:
             ins.read(1)
         
         if d in ['\xE6', '\xE7', '\xE8']:
-            next = skip_white(ins)
+            next = util.skip_white(ins)
             if next in ['\xE6', '\xE7', '\xE8']:
                 ins.read(1)
                 if d==next:
@@ -160,7 +158,7 @@ def parse_expression(ins, allow_empty=False):
                         d='\xe8\xe6'    
         
         operators.append(d)
-        d = skip_white(ins)           
+        d = util.skip_white(ins)           
         
     
     # empty expression is a syntax error (inside brackets) or Missing Operand (in an assignment) or ok (in print)
@@ -243,7 +241,7 @@ def value_operator(op, left, right):
 
 
 def parse_expr_unit(ins):
-    d = skip_white_read(ins)
+    d = util.skip_white_read(ins)
     
     if d=='"':
         output=''
@@ -252,7 +250,7 @@ def parse_expr_unit(ins):
         # a \00 character, even if inside a tokenised number, will break a string literal (and make the parser expect a 
         # line number afterwards, etc. We follow this.
         d = ins.read(1)
-        while d not in end_line + ('"',)  : # ['"', '\x00', '']:
+        while d not in util.end_line + ('"',)  : # ['"', '\x00', '']:
             output += d
             d = ins.read(1)        
         if d == '\x00':
@@ -372,8 +370,8 @@ def parse_expr_unit(ins):
         elif d == '\x87':   # SQR
             return vartypes.vsqrt(parse_bracket(ins))
         elif d == '\x88':   # RND
-            skip_white(ins)
-            if peek(ins) == '(':
+            util.skip_white(ins)
+            if util.peek(ins) == '(':
                 return rnd.vrnd(parse_bracket(ins))
             else:
                 return rnd.vrnd(('',''))
@@ -485,7 +483,7 @@ def parse_expr_unit(ins):
 
 
 def parse_bracket(ins):
-    if skip_white_read(ins) != '(':
+    if util.skip_white_read(ins) != '(':
         raise error.RunError(2)
     val = parse_expression(ins, allow_empty = True)
     if val==('',''):
@@ -504,7 +502,7 @@ def parse_bracket(ins):
     
     
 def value_instr(ins):
-    require_read(ins, '(')
+    util.require_read(ins, '(')
 
     s = parse_expression(ins, allow_empty=True)
     
@@ -523,18 +521,18 @@ def value_instr(ins):
         big = vartypes.pass_string_keep(s)[1]
         have_big= True
         
-    require_read(ins, ',')
+    util.require_read(ins, ',')
 
     if not have_big:
         s = parse_expression(ins, allow_empty=True)
         big = vartypes.pass_string_keep(s)[1]
         
-        require_read(ins, ',')
+        util.require_read(ins, ',')
 
     s = parse_expression(ins, allow_empty=True)
     small = vartypes.pass_string_keep(s)[1]
     
-    require_read(ins, ')')
+    util.require_read(ins, ')')
 
     if big == '' or n > len(big):
         return ('%',0)
@@ -546,17 +544,17 @@ def value_instr(ins):
 
 def value_mid(ins):
     # MID$
-    require_read(ins, '(')
+    util.require_read(ins, '(')
     s = vartypes.pass_string_keep(parse_expression(ins))[1]
-    require_read(ins, ',')
+    util.require_read(ins, ',')
     start = vartypes.pass_int_keep(parse_expression(ins))[1]
 
-    if skip_white_read_if(ins, ','):
+    if util.skip_white_read_if(ins, ','):
         num = vartypes.pass_int_keep(parse_expression(ins))[1]
     else:
         num = len(s)
     
-    require_read(ins, ')')
+    util.require_read(ins, ')')
     
     if start <1 or start>255:
         raise error.RunError(5)
@@ -575,11 +573,11 @@ def value_mid(ins):
     
 def value_left(ins):
     # LEFT$
-    require_read(ins, '(')
+    util.require_read(ins, '(')
     s = vartypes.pass_string_keep(parse_expression(ins))[1]
-    require_read(ins, ',')
+    util.require_read(ins, ',')
     num = vartypes.pass_int_keep(parse_expression(ins))[1]
-    require_read(ins, ')')
+    util.require_read(ins, ')')
     
     if num <0 or num>255:
         raise error.RunError(5)
@@ -595,11 +593,11 @@ def value_left(ins):
     
 def value_right(ins):
     # RIGHT$
-    require_read(ins, '(')
+    util.require_read(ins, '(')
     s = vartypes.pass_string_keep(parse_expression(ins))[1]
-    require_read(ins, ',')
+    util.require_read(ins, ',')
     num = vartypes.pass_int_keep(parse_expression(ins))[1]
-    require_read(ins, ')')
+    util.require_read(ins, ')')
     
     if num <0 or num>255:
         raise error.RunError(5)
@@ -615,9 +613,9 @@ def value_right(ins):
 
 def value_screen(ins):
     # SCREEN(x,y,[z])
-    require_read(ins, '(')
+    util.require_read(ins, '(')
     args = parse_int_list(ins, 3, 5) 
-    require_read(ins, ')')
+    util.require_read(ins, ')')
     
     if args[0] == None or args[1]==None:
         raise error.RunError(5)
@@ -641,18 +639,16 @@ def value_input(ins):    # INPUT$
     if ins.read(1) != '$':
         raise error.RunError(2)
     
-    require_read(ins, '(')
+    util.require_read(ins, '(')
         
     num = vartypes.pass_int_keep(parse_expression(ins))[1]
     if num<1 or num>255:
         raise error.RunError(5)
     
     screen = glob.scrn    
-    if skip_white(ins) ==',':
-        ins.read(1)
-        if skip_white(ins) =='#':
-            ins.read(1)
-    
+    if util.skip_white_read_if(ins, ','):
+        util.skip_white_read_if(ins, '#')
+        
         filenum = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
         
         if filenum<0 or filenum>255:
@@ -662,7 +658,7 @@ def value_input(ins):    # INPUT$
             raise error.RunError(52)
         screen = fileio.files[filenum]
     
-    if skip_white_read(ins) !=')':
+    if util.skip_white_read(ins) !=')':
         raise error.RunError(2)
          
     
@@ -671,7 +667,7 @@ def value_input(ins):    # INPUT$
     
            
 def value_string(ins): # STRING$
-    require_read(ins, '(')
+    util.require_read(ins, '(')
     n, j = parse_expr_list(ins, 2)    
     
     n = vartypes.pass_int_keep(n)[1]
@@ -686,14 +682,14 @@ def value_string(ins): # STRING$
     if j<0 or j> 255:
         raise error.RunError(5)
     
-    require_read(ins, ')')
+    util.require_read(ins, ')')
 
     return ('$', chr(j)*n)
 
 
 def value_loc(ins): # LOC
 
-    skip_white(ins)
+    util.skip_white(ins)
     num = vartypes.pass_int_keep(parse_bracket(ins), maxint=0xffff)[1]
     if num>255 or num<0 or num not in fileio.files:
         raise error.RunError(52)
@@ -708,7 +704,7 @@ def value_loc(ins): # LOC
 
 def value_eof(ins): # EOF
 
-    skip_white(ins)
+    util.skip_white(ins)
     num = vartypes.pass_int_keep(parse_bracket(ins), maxint=0xffff)[1]
     if num>255 or num<0 or num not in fileio.files:
         # bad file number
@@ -722,7 +718,7 @@ def value_eof(ins): # EOF
   
 def value_lof(ins): # LOF
 
-    skip_white(ins)
+    util.skip_white(ins)
     num = vartypes.pass_int_keep(parse_bracket(ins), maxint=0xffff)[1]
     if num>255 or num<0 or num not in fileio.files:
         raise error.RunError(52)
@@ -787,9 +783,9 @@ def value_date(ins):
 # graphics    
     
 def value_point(ins):
-    require_read(ins, '(')
+    util.require_read(ins, '(')
     lst = parse_expr_list(ins, 2, err=2)
-    require_read(ins, ')')
+    util.require_read(ins, ')')
 
     if lst[0]==None:
         raise error.RunError(2)
@@ -811,11 +807,11 @@ def value_point(ins):
         return ('%', glob.scrn.get_point(vartypes.pass_int_keep(lst[0])[1], vartypes.pass_int_keep(lst[1])[1]))        
 
 def value_pmap(ins):
-    require_read(ins, '(')
+    util.require_read(ins, '(')
     coord = fp.unpack(vartypes.pass_single_keep(parse_expression(ins)))
-    require_read(ins, ',')
+    util.require_read(ins, ',')
     mode = vartypes.pass_int_keep(parse_expression(ins))[1]
-    require_read(ins, ')')
+    util.require_read(ins, ')')
 
  
     if mode == 0:
@@ -846,7 +842,7 @@ def value_peek(ins):
         
 # do-nothing VARPTR, VARPTR$    
 def value_varptr(ins):    
-    if peek(ins,1)=='$':
+    if util.peek(ins,1)=='$':
         ins.read(1) 
         parse_bracket(ins)
         return ('$', '')
@@ -855,7 +851,7 @@ def value_varptr(ins):
         return ('%', 0)
         
 def value_usr(ins):
-    c= peek(ins,1)
+    c= util.peek(ins,1)
     if c>= '0' and c<='9':
         ins.read(1)
         
@@ -867,7 +863,7 @@ def value_inp(ins):
     return ('%', 0)
         
 def value_erdev(ins):
-    if peek(ins,1)=='$':
+    if util.peek(ins,1)=='$':
         ins.read(1) 
         return ('$', '')
     else:    

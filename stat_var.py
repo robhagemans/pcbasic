@@ -9,8 +9,6 @@
 # please see text file COPYING for licence terms.
 #
 
-
-
 import sys
 import StringIO
 
@@ -21,8 +19,7 @@ import vartypes
 import var
 import rnd
 
-from util import *
-
+import util
 import expressions
 import tokenise
 import program
@@ -77,7 +74,7 @@ def exec_clear(ins):
         vartypes.pass_int_keep(intexp)
     
     
-    if skip_white_read_if(ins, ','):
+    if util.skip_white_read_if(ins, ','):
 
         # NOT IMPLEMENTED
         
@@ -91,7 +88,7 @@ def exec_clear(ins):
             #  0 leads to illegal fn call
             raise error.RunError(5)
             
-        if skip_white_read_if(ins, ','):
+        if util.skip_white_read_if(ins, ','):
             
             # NOT IMPLEMENTED
             # expression2 sets aside stack space for GW-BASIC. The default is the previous stack space size. 
@@ -100,13 +97,13 @@ def exec_clear(ins):
             vartypes.pass_int_keep(expressions.parse_expression(ins))
        
     
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
     
 
 def exec_data(ins):
     # ignore rest of statement after DATA
-    #skip_to(ins, end_line + (':',))
-    skip_to(ins, end_statement)
+    #util.skip_to(ins, util.end_line + (':',))
+    util.skip_to(ins, util.end_statement)
 
 
  
@@ -115,7 +112,7 @@ def exec_dim(ins):
     
     while True:
         
-        #skip_white(ins)
+        #util.skip_white(ins)
         name = var.get_var_name(ins) 
         
         if name=='':
@@ -123,56 +120,56 @@ def exec_dim(ins):
         
         dimensions = [ 10 ]   
         
-        if skip_white(ins) in ('[', '('):
+        if util.skip_white(ins) in ('[', '('):
             ins.read(1)
             dimensions = expressions.parse_int_list(ins, 255, 9) # subscript out of range
             while len(dimensions)>0 and dimensions[-1]==None:
                 dimensions = dimensions[:-1]
             if None in dimensions:
                 raise error.RunError(2)
-            c= peek(ins)
+            c= util.peek(ins)
             if c not in (')', ']') :   
                 # yes, we can write dim gh[5) 
                 raise error.RunError(2)
             else:
                 ins.read(1)
                     
-        #d = skip_white(ins)
+        #d = util.skip_white(ins)
         
         var.dim_array(name, dimensions)            
 
-        if skip_white(ins)!=',':
+        if util.skip_white(ins)!=',':
             break
         else:
             ins.read(1)    
 
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
 
 def exec_deftype(typechar, ins):
     start = -1
     stop = -1
     while True:
-        d = skip_white_read(ins).upper()
+        d = util.skip_white_read(ins).upper()
         if d < 'A' or d > 'Z':
             raise error.RunError(2)
         else:
             start = ord(d)-ord('A')
             stop = start
             
-        d = skip_white_read(ins)
+        d = util.skip_white_read(ins)
         if d == '\xEA':  # token for -
-            d = skip_white_read(ins).upper()
+            d = util.skip_white_read(ins).upper()
         
             if d < 'A' or d > 'Z':
                 raise error.RunError(2)
             else:
                 stop = ord(d)-ord('A')
-            d = skip_white_read(ins)
+            d = util.skip_white_read(ins)
             
-        if d==',' or d in end_statement:
+        if d==',' or d in util.end_statement:
             var.deftype[start:stop+1] = [typechar]*(stop-start+1)    
        
-        if d in end_statement and d!= '':
+        if d in util.end_statement and d!= '':
             ins.seek(-1, 1)
             break         
 
@@ -183,12 +180,12 @@ def exec_deftype(typechar, ins):
 def exec_erase(ins):
     
     while True:
-        #skip_white(ins)
+        #util.skip_white(ins)
         name = var.get_var_name(ins)
         var.erase_array(name)
         
-        d = skip_white(ins)
-        if d in end_statement:
+        d = util.skip_white(ins)
+        if d in util.end_statement:
             break
         elif d != ',':
             raise error.RunError(2)
@@ -204,25 +201,25 @@ def exec_let(ins):
         # e.g. 'a[1,1]' gives a syntax error, but even so 'a[1]' is out fo range afterwards
         var.check_dim_array(name, indices)
     
-    require_read(ins, '\xe7')   # =
+    util.require_read(ins, '\xe7')   # =
     
     val = expressions.parse_expression(ins)
     var.set_var_or_array(name, indices, val)
 
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
    
    
 def exec_mid(ins):
     
     # MID$
-    require_read(ins, '(')
+    util.require_read(ins, '(')
     name, indices = expressions.get_var_or_array_name(ins)
     if indices != []:    
         # pre-dim even if this is not a legal statement!
         # e.g. 'a[1,1]' gives a syntax error, but even so 'a[1]' is out fo range afterwards
         var.check_dim_array(name, indices)
     
-    require_read(ins, ',')
+    util.require_read(ins, ',')
     
     
     arglist = expressions.parse_int_list(ins, size=2, err=2)
@@ -235,17 +232,17 @@ def exec_mid(ins):
     if arglist[1]!= None:
         num = arglist[1]
     
-    require_read(ins, ')')
+    util.require_read(ins, ')')
     
     if start <1 or start>255:
         raise error.RunError(5)
     if num <0 or num>255:
         raise error.RunError(5)
     
-    require_read(ins, '\xE7') # =
+    util.require_read(ins, '\xE7') # =
     val = list( vartypes.pass_string_keep(expressions.parse_expression(ins))[1] )
     
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
          
     s = list(var.get_var_or_array(name, indices)[1])
     start -= 1    
@@ -267,9 +264,9 @@ def exec_mid(ins):
    
 
 def exec_lset(ins, justify_right=False):
-    #skip_white(ins)
+    #util.skip_white(ins)
     name = var.get_var_name(ins)
-    require_read(ins,'\xe7')
+    util.require_read(ins,'\xe7')
     val = expressions.parse_expression(ins)
     var.lset(name, val, justify_right)
 
@@ -280,11 +277,11 @@ def exec_rset(ins):
 
 
 def exec_option(ins):
-    skip_white(ins)
+    util.skip_white(ins)
     word = ins.read(4)
     if word.upper() == 'BASE':
         # MUST be followed by ASCII '1' or '0', num constants or expressions are an error!
-        d = skip_white(ins)
+        d = util.skip_white(ins)
         if d == '0':
             var.base_array(0)
         elif d=='1':
@@ -294,7 +291,7 @@ def exec_option(ins):
     else:
         raise error.RunError(2)
         
-    skip_to(ins, end_statement)
+    util.skip_to(ins, util.end_statement)
     
 
 
@@ -303,11 +300,11 @@ def exec_option(ins):
 def parse_var_list(ins):
     readvar = []
     while True:
-        #skip_white(ins)
+        #util.skip_white(ins)
         name, indices = expressions.get_var_or_array_name(ins)
         readvar.append([name, indices])
         
-        if skip_white(ins) != ',':
+        if util.skip_white(ins) != ',':
             break
         else:
             ins.read(1)
@@ -328,9 +325,9 @@ def exec_read(ins):
     
      
     for v in readvar:
-        if peek(program.bytecode) in end_statement:
+        if util.peek(program.bytecode) in util.end_statement:
             # initialise - find first DATA
-            program.data_line = skip_to(program.bytecode, '\x84')  # DATA
+            program.data_line = util.skip_to(program.bytecode, '\x84')  # DATA
         
         c = program.bytecode.read(1)
         if c not in ('\x84', ','):
@@ -346,30 +343,30 @@ def exec_read(ins):
     program.data_pos = program.bytecode.tell()
     program.bytecode.seek(current)
     
-    skip_white(ins)
-    if peek(ins) not in end_statement:    
+    util.skip_white(ins)
+    if util.peek(ins) not in util.end_statement:    
         raise error.RunError(2)
 
     
-def read_entry(ins, end=end_line, ends=end_statement):
+def read_entry(ins, end=util.end_line, ends=util.end_statement):
     vals = ''
     word = ''
     verbatim=False
             
     while True:
         # read entry
-        c = peek(ins)
+        c = util.peek(ins)
         if not verbatim:    
-            c = skip_white(ins)
+            c = util.skip_white(ins)
         
         if c=='"':
             ins.read(1)
             if not verbatim:
                 verbatim=True
-                c=peek(ins)
+                c=util.peek(ins)
             else:
                 verbatim = False
-                c = skip_white(ins)
+                c = util.skip_white(ins)
                 if c not in ends+(',',):
                      raise error.RunError(2)
             
@@ -380,7 +377,7 @@ def read_entry(ins, end=end_line, ends=end_statement):
             break
         elif c in end or (not verbatim and c in ends):
             ## skip to next entry or end-of-program
-            #program.data_line = skip_to(program.bytecode, '\x84')  # DATA
+            #program.data_line = util.skip_to(program.bytecode, '\x84')  # DATA
             break
         else:        
             ins.read(1)
@@ -390,7 +387,7 @@ def read_entry(ins, end=end_line, ends=end_statement):
                 word += c
         
         # omit trailing whitespace                        
-        if c not in whitespace:    
+        if c not in util.whitespace:    
             vals += word
             word = ''
 
@@ -400,16 +397,16 @@ def read_entry(ins, end=end_line, ends=end_statement):
 def exec_common(ins):    
     
     #readvar = parse_var_list(ins)
-    skip_white(ins)
+    util.skip_white(ins)
     varlist = []
     arraylist = []
     while True:
-        #skip_white(ins)
+        #util.skip_white(ins)
         name = var.get_var_name(ins)
         # array?
-        if skip_white(ins) in ('[', '('):
+        if util.skip_white(ins) in ('[', '('):
             ins.read(1)
-            if skip_white(ins) not in (']', ')'):
+            if util.skip_white(ins) not in (']', ')'):
                 raise error.RunError(2)
             else:
                 ins.read(1)
@@ -417,7 +414,7 @@ def exec_common(ins):
         else:
             varlist.append(name)
         
-        if skip_white(ins) != ',':
+        if util.skip_white(ins) != ',':
             break
         else:
             ins.read(1)
@@ -431,16 +428,16 @@ def parse_prompt(ins):
     # parse prompt
     prompt = ''
     following = ';'
-    if skip_white_read_if(ins,'"'):
+    if util.skip_white_read_if(ins,'"'):
         # only literal allowed, not a string expression
         d = ins.read(1)
-        while d not in end_line + ('"',)  : 
+        while d not in util.end_line + ('"',)  : 
             prompt += d
             d = ins.read(1)        
         if d == '\x00':
             ins.seek(-1,1)  
         
-        following = skip_white_read(ins)
+        following = util.skip_white_read(ins)
         if following not in (';',','):
             raise error.RunError(2)
     
@@ -448,7 +445,7 @@ def parse_prompt(ins):
    
    
 def exec_input(ins):
-    skip_white(ins)
+    util.skip_white(ins)
     
     finp = expressions.parse_file_number(ins)
     if finp!=None:
@@ -462,12 +459,12 @@ def exec_input(ins):
                 valstr = input_string(finp)
                 
             var.setvar_read(*v, val=vals)
-        require(ins, end_statement)
+        util.require(ins, util.end_statement)
         return
     
             
     # ; to avoid echoing newline
-    newline = not skip_white_read_if(ins,';')
+    newline = not util.skip_white_read_if(ins,';')
     # get the prompt
     prompt, following = parse_prompt(ins)    
     if following == ';':
@@ -507,7 +504,7 @@ def exec_input(ins):
         else:
             break
     
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
            
 
 def text_skip(text_file, skip_range):
@@ -524,7 +521,7 @@ def input_number(text_file, hard_end=(',', '\x0d', '\x1a', ''), soft_end = (' ',
     end_entry = soft_end + hard_end
     # skip *leading* spaces and line feeds and NUL. 
     # cf READ skips whitespace inside numbers as well
-    c = text_skip(text_file, ascii_white)
+    c = text_skip(text_file, util.ascii_white)
     while True:
         # read entry
         c = text_file.read_chars(1)
@@ -548,7 +545,7 @@ def input_string(text_file, end_all = ('\x0d', '\x1a', ''), end_entry = (',', '\
     quoted=False
     # skip *leading* spaces and line feeds and NUL. 
     # cf READ skips whitespace inside numbers as well
-    c = text_skip(text_file, ascii_white)
+    c = text_skip(text_file, util.ascii_white)
     # check first char
     c = text_file.read_chars(1)
     if c=='"':
@@ -561,7 +558,7 @@ def input_string(text_file, end_all = ('\x0d', '\x1a', ''), end_entry = (',', '\
             break    
         elif quoted and c=='"':
             # ignore blanks after the quotes
-            c = text_skip(text_file, ascii_white)
+            c = text_skip(text_file, util.ascii_white)
             # but we need a comma if there's to be more input        
             c = text_file.read_chars(1)
             break
@@ -576,11 +573,11 @@ def input_string(text_file, end_all = ('\x0d', '\x1a', ''), end_entry = (',', '\
 
 
 def exec_line_input(ins):
-    skip_white(ins)
+    util.skip_white(ins)
     finp = expressions.parse_file_number(ins)
     if finp!=None:
         # get string variable
-        #skip_white(ins)
+        #util.skip_white(ins)
         readvar, indices = expressions.get_var_or_array_name(ins)
         # read the input
         inputs = finp.read()
@@ -588,7 +585,7 @@ def exec_line_input(ins):
         return
     
     # ; to avoid echoing newline
-    newline = not skip_white_read_if(ins,';')
+    newline = not util.skip_white_read_if(ins,';')
     # get prompt    
     prompt, following = parse_prompt(ins)    
     # get string variable
@@ -607,36 +604,36 @@ def exec_restore():
     
 
 def exec_swap(ins):
-    #skip_white(ins)
+    #util.skip_white(ins)
     name1 = var.get_var_name(ins)
-    require_read(ins,',')
-    #skip_white(ins)
+    util.require_read(ins,',')
+    #util.skip_white(ins)
     name2= var.get_var_name(ins)
     
     var.swapvar(name1, name2)
         
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
                              
                              
 def exec_def_fn(ins):
-    #skip_white(ins)
+    #util.skip_white(ins)
     fnname = var.get_var_name(ins)
     
     # read variables
     fnvars=[]
-    require_read(ins, '(')
+    util.require_read(ins, '(')
     while True:
-        #skip_white(ins)
+        #util.skip_white(ins)
         fnvars.append(var.get_var_name(ins))
-        if skip_white(ins) in end_statement+(')',):
+        if util.skip_white(ins) in util.end_statement+(')',):
             break    
-        require_read(ins,',')
-    require_read(ins, ')')
+        util.require_read(ins,',')
+    util.require_read(ins, ')')
     
     # read code
     fncode=''
-    require_read(ins, '\xe7') #=
-    while skip_white(ins) not in end_statement:
+    util.require_read(ins, '\xe7') #=
+    while util.skip_white(ins) not in util.end_statement:
         fncode+=ins.read(1)        
     
     if not program.runmode():
@@ -647,7 +644,7 @@ def exec_def_fn(ins):
     
     
 def value_fn(ins):
-    #skip_white(ins)
+    #util.skip_white(ins)
     fnname = var.get_var_name(ins)
     
     if fnname not in var.functions:
@@ -666,13 +663,13 @@ def value_fn(ins):
             varsave[name] = var.variables[name]
 
     # read variables
-    require_read(ins, '(')
+    util.require_read(ins, '(')
     exprs = expressions.parse_expr_list(ins, len(varnames), err=2)
     if None in exprs:
         raise error.RunError(2)
     for i in range(len(varnames)):
         var.setvar(varnames[i], exprs[i])
-    require_read(ins,')')
+    util.require_read(ins,')')
     
     fns = StringIO.StringIO(fncode)
     fns.seek(0)

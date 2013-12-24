@@ -16,8 +16,7 @@ import vartypes
 import var
 import expressions
 import fp
-
-from util import *
+import util
 import oslayer
 
 
@@ -30,8 +29,8 @@ access_modes = { 'I':'rb', 'O':'wb', 'R': 'rwb', 'A': 'wb' }
 position_modes = { 'I':0, 'O':0, 'R':0, 'A':-1 }
 
 def parse_file_number_opthash(ins):
-    if skip_white_read_if(ins, '#'):
-        skip_white(ins)
+    if util.skip_white_read_if(ins, '#'):
+        util.skip_white(ins)
     
     number = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
     if number<0 or number>255:
@@ -42,16 +41,14 @@ def parse_file_number_opthash(ins):
 # close all files
 def exec_reset(ins):
     fileio.close_all()
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
 
 
     
 def exec_open(ins):
-    
     first_expr = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
     
-    
-    d =skip_white(ins)
+    d =util.skip_white(ins)
     if d==',':
         
         # first syntax
@@ -60,13 +57,13 @@ def exec_open(ins):
         access= access_modes[mode]    
         position = position_modes[mode]
         
-        require_read(ins, ',')
+        util.require_read(ins, ',')
         number = parse_file_number_opthash(ins)
-        require_read(ins, ',')
+        util.require_read(ins, ',')
         
         name = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
       
-        if skip_white_read_if(ins, ','):
+        if util.skip_white_read_if(ins, ','):
             reclen = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
 
     else:
@@ -75,14 +72,14 @@ def exec_open(ins):
         name = first_expr
 
         mode='R' # RANDOM        
-        if skip_white(ins) == '\x82': # FOR
+        if util.skip_white(ins) == '\x82': # FOR
             
             ins.read(1)
-            c = skip_white_read(ins)
+            c = util.skip_white_read(ins)
             
             # read word
             word=''
-            while c not in whitespace:
+            while c not in util.whitespace:
                 word += c
                 c = ins.read(1) 
             
@@ -99,42 +96,42 @@ def exec_open(ins):
             position = position_modes[mode]
         
         # it seems to be *either* a FOR clause *or* an ACCESS clause is allowed
-        elif skip_white(ins) == 'A': 
-            if peek(ins, 6) != 'ACCESS':
+        elif util.skip_white(ins) == 'A': 
+            if util.peek(ins, 6) != 'ACCESS':
                 raise error.RunError(2)
             ins.read(6)
             position = 0
             
-            d = skip_white(ins)
+            d = util.skip_white(ins)
             if d == '\xB7': # WRITE
                 access = 'wb'        
             elif d == '\x87': # READ
-                if skip_white(ins) == '\xB7': # READ WRITE
+                if util.skip_white(ins) == '\xB7': # READ WRITE
                     access = 'rwb'
                 else:
                     access = 'rb'
         
         # lock clause
         lock = 'rw'
-        skip_white(ins) 
-        if peek(ins,2)=='\xFE\xA7':
+        util.skip_white(ins) 
+        if util.peek(ins,2)=='\xFE\xA7':
             ins.read(2)
             
-            d = skip_white(ins)
+            d = util.skip_white(ins)
             if d == '\xB7': # WRITE
                 lock = 'w'        
             elif d == '\x87': # READ
-                if skip_white(ins) == '\xB7': # READ WRITE
+                if util.skip_white(ins) == '\xB7': # READ WRITE
                     lock = 'rw'
                 else:
                     lock = 'r'
         
-        elif peek(ins,6)=='SHARED':
+        elif util.peek(ins,6)=='SHARED':
             ins.read(6)  
             lock=''     
             
-        skip_white(ins)
-        if peek(ins,2) != 'AS':
+        util.skip_white(ins)
+        if util.peek(ins,2) != 'AS':
             raise error.RunError(2)
         ins.read(2)
         
@@ -142,8 +139,8 @@ def exec_open(ins):
         number = parse_file_number_opthash(ins)
         
         
-        skip_white(ins)             
-        if peek(ins,2) == '\xFF\x92':  #LEN
+        util.skip_white(ins)             
+        if util.peek(ins,2) == '\xFF\x92':  #LEN
             ins.read(2)
             reclen = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
     
@@ -170,7 +167,7 @@ def exec_open(ins):
         # open the file
         fileio.fopen(number, name, mode, access, lock)    
     
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
 
     
                 
@@ -182,10 +179,10 @@ def exec_close(ins):
         if number in fileio.files:
             fileio.files[number].close()
         
-        if skip_white(ins) != ',':
+        if util.skip_white(ins) != ',':
             break
             
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
 
          
             
@@ -198,7 +195,7 @@ def exec_field(ins):
     if fileio.files[number].mode.upper() != 'R':
         raise error.RunError(54)    
     
-    require_read(ins,',')
+    util.require_read(ins,',')
     
     field = fileio.files[number].field 
     offset = 0    
@@ -208,21 +205,21 @@ def exec_field(ins):
         if width<0 or width>255:
             raise error.RunError(5)
         
-        skip_white(ins)
-        if peek(ins,2).upper() != 'AS':
+        util.skip_white(ins)
+        if util.peek(ins,2).upper() != 'AS':
             raise error.RunError(5)
         ins.read(2)
-        #skip_white(ins)
+        #util.skip_white(ins)
         name = var.get_var_name(ins)
         
         var.set_field_var(field, name, offset, width)         
         
         offset+= width
         
-        if not skip_white_read_if(ins,','):
+        if not util.skip_white_read_if(ins,','):
             break
             
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
         
         
 
@@ -235,7 +232,7 @@ def exec_put_file(ins):
     if fileio.files[number].mode.upper() != 'R':
         raise error.RunError(54)    
     
-    if skip_white(ins) == ',':
+    if util.skip_white(ins) == ',':
         ins.read(1)
         pos = fp.round_to_int(fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))))
         if pos<1 or pos>2**25:   # not 2^32-1 as the manual boasts! pos-1 apparently needs to fit in a single-prec mantissa
@@ -245,7 +242,7 @@ def exec_put_file(ins):
     
     fileio.files[number].write_field()    
         
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
         
             
 
@@ -258,7 +255,7 @@ def exec_get_file(ins):
     if fileio.files[number].mode.upper() != 'R':
         raise error.RunError(54)    
     
-    if skip_white(ins) == ',':
+    if util.skip_white(ins) == ',':
         ins.read(1)
         pos = fp.round_to_int(fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))))
         if pos<1 or pos>2**25:   # not 2^32-1 as the manual boasts!
@@ -268,7 +265,7 @@ def exec_get_file(ins):
     
     fileio.files[number].read_field()    
         
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
             
     
 
@@ -283,14 +280,14 @@ def do_lock(ins, lock='rw'):
     
     lock_start=0
     lock_length=0
-    if skip_white_read_if(ins, ','):
+    if util.skip_white_read_if(ins, ','):
         lock_start_rec = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
         lock_start = (lock_start_rec-1)*thefile.reclen
         lock_length = thefile.reclen
-    skip_white(ins)
+    util.skip_white(ins)
     
     
-    if peek(ins,2)=='TO':
+    if util.peek(ins,2)=='TO':
         lock_stop_rec = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
         lock_stop = lock_stop_rec*thefile.reclen
         lock_length = lock_stop-lock_start
@@ -300,7 +297,7 @@ def do_lock(ins, lock='rw'):
     else:
         oslayer.safe_lock(thefile.fhandle, thefile.access, lock, lock_start, lock_length)
                    
-    require(ins, end_statement)
+    util.require(ins, util.end_statement)
     
     return (thefile.fhandle,lock_start,lock_length)        
             
