@@ -93,10 +93,11 @@ def input_loop():
         # input loop, checks events
         line = glob.scrn.read_screenline(from_start=True) 
     except error.Break:
+        line = ''
+        
+    if line=='':
         program.prompt=False
-        # do not execute
-        return '' #False
-    
+            
     # store the direct line
     return line
 
@@ -148,8 +149,8 @@ def parse_start_direct(linebuf):
                 # don't list protected files
                 raise error.RunError(5)
     
-            linenum = program.store_line(linebuf, stat_code.auto_mode)
-            stat_code.auto_linenum = linenum
+            linenum = program.store_line(linebuf, automode.auto_mode)
+            automode.auto_linenum = linenum
             program.prompt = False
         
         except error.RunError as e:

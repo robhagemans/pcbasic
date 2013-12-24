@@ -107,6 +107,7 @@ def exec_auto(ins):
 
     automode.auto_linenum -= automode.auto_increment
     automode.auto_mode=True
+    program.prompt=False
     program.unset_runmode()
         
     
