@@ -111,8 +111,8 @@ def preparse():
                 # truncated file, no \00\00\00\nn (\nn can be \1a or something else)
                 # fix that
                 bytecode.write('\x00\x00\x00\x1a')
-                # try again 
-                bytecode.seek(-4,1) #last)
+                # try again from cycle
+                bytecode.seek(last + 5)
                 skip_to_read(bytecode, end_line)
                 parse_line_number(bytecode)
               
