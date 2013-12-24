@@ -157,20 +157,15 @@ def exec_load(ins):
     
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
     name = oslayer.dospath_read(name, 'BAS', 53)
-    
-    #if not os.path.exists(name):
-    #    # file not found
-    #    raise error.RunError(53)
         
-    close_files =True
-    d = skip_white(ins)
-    if d==',':
-        if ins.read(2).upper() !=',R':
+    close_files = True
+    if skip_white(ins) == ',':
+        if ins.read(2).upper() != ',R':
             raise error.RunError(2)
+        else:
             close_files = False
-        d = skip_white(ins)
-    if d not in end_statement:
-        raise error.RunError(2)
+    
+    require(ins, end_statement)
     
     g = oslayer.safe_open(name, 'rb')
     program.load(g)
@@ -178,8 +173,9 @@ def exec_load(ins):
     
     if close_files:
         fileio.close_all()
-
-    require(ins, end_statement)
+    else:
+        # in ,R mode, run the file
+        program.set_runmode()
     
 
         
