@@ -614,8 +614,6 @@ def exec_line_input(ins):
         d = skip_white(ins)
     
     prompt, following = parse_prompt(ins)    
-    #if peek(ins) in (';',','):
-    #    d = ins.read(1)
             
     # get string variable
     readvar,indices = expressions.get_var_or_array_name(ins)
@@ -624,9 +622,6 @@ def exec_line_input(ins):
     glob.scrn.write(prompt) 
     
     inputs = glob.scrn.read_screenline(write_endl=newline)
-    #if interrupt:
-    #    raise error.Break()
-    
     var.set_var_or_array(readvar, indices, ('$', inputs))
     
    
@@ -661,35 +656,21 @@ def exec_def_fn(ins):
     fnname = var.getvarname(ins)
     
     # read variables
-    if skip_white(ins) !='(':
-        raise error.RunError(2)
-    ins.read(1)    
-    
     fnvars=[]
+    require_read(ins, '(')
     while True:
         skip_white(ins)
         fnvars.append(var.getvarname(ins))
         if skip_white(ins) in end_statement+(')',):
             break    
-        elif skip_white(ins)==',':
-            ins.read(1)
-        else:
-            raise error.RunError(2)    
+        require_read(ins,',')
+    require_read(ins, ')')
     
-    if skip_white(ins) !=')':
-        raise error.RunError(2)
-    ins.read(1)
-    
-    if skip_white(ins) !='\xe7': #=
-        raise error.RunError(2)
-    ins.read(1)
-    
+    # read code
     fncode=''
-    while True:
-        d=skip_white_read(ins)
-        if d in end_statement:
-            break
-        fncode+=d        
+    require_read(ins, '\xe7') #=
+    while skip_white(ins) not in end_statement:
+        fncode+=ins.read(1)        
     
     if not program.runmode():
         # GW doesn't allow DEF FN in direct mode, neither do we (for no good reason, works fine)
@@ -697,7 +678,7 @@ def exec_def_fn(ins):
     
     var.functions[fnname] = [fnvars, fncode]
     
-
+    
 def value_fn(ins):
     skip_white(ins)
     fnname = var.getvarname(ins)
@@ -718,19 +699,13 @@ def value_fn(ins):
             varsave[name] = var.variables[name]
 
     # read variables
-    if skip_white_read(ins) !='(':
-        raise error.RunError(2)
-        
+    require_read(ins, '(')
     exprs = expressions.parse_expr_list(ins, len(varnames), err=2)
     if None in exprs:
         raise error.RunError(2)
-        
     for i in range(len(varnames)):
         var.setvar(varnames[i], exprs[i])
-    
-    if skip_white_read(ins) !=')':
-        raise error.RunError(2)
-    
+    require_read(ins,')')
     
     fns = StringIO.StringIO(fncode)
     fns.seek(0)
