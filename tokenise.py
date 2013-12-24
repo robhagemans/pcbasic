@@ -272,7 +272,9 @@ def detokenise_keyword(bytes, output):
     # token followed by number is also separated by a space, except operator tokens and SPC(, TAB(
     nxt = peek(bytes)
     #if nxt.upper() in (ascii_uppercase+tokens_number+tokens_linenum) and s not in (tokens_operator+tokens_with_bracket):
-    if nxt.upper() not in (tokens_operator+['\xD9','"',':',',',' ']) and s not in (tokens_operator+tokens_with_bracket):
+    if nxt.upper() not in (tokens_operator+['\xD9','"',':',',',' ','(',')']) \
+                and s not in (tokens_operator+tokens_with_bracket+['\xD1']):
+        # excluding TAB( SPC( and FN
         output+=' '
 
     return output, comment
