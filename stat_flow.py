@@ -23,9 +23,8 @@ import rnd
 import fileio
 import oslayer
 
-
-from stat_code import exec_load
-
+# for exec_load
+import stat_code 
 
 
 def exec_cont():
@@ -282,7 +281,7 @@ def exec_run(ins):
     
         program.jump(jumpnum)
     elif c not in util.end_statement:
-        exec_load(ins)
+        stat_code.exec_load(ins)
     else:
         program.reset_program()
     

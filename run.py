@@ -24,8 +24,7 @@ import program
 import statements 
 import oslayer
 import fileio
-
-import stat_code
+import automode
 
 #######################################################
 
@@ -70,12 +69,16 @@ def main_loop():
         prompt()
     
         # input loop, checks events
-        if stat_code.auto_mode:
-            if not auto_input_loop():
-                continue
+        if automode.auto_mode:
+            line = automode.auto_input_loop()
         else:
-            if not input_loop():
-                continue    
+            line = input_loop()
+        
+        if line=='':
+            continue    
+    
+        # store the direct line
+        get_command_line(line)
     
         # check for empty lines or lines that start with a line number & deal with them
         if parse_start_direct(program.direct_line):
@@ -92,48 +95,12 @@ def input_loop():
     except error.Break:
         program.prompt=False
         # do not execute
-        return False
+        return '' #False
     
     # store the direct line
-    get_command_line(line)
-    return True
-
-
-def auto_input_loop():
-    auto_mode_show_line()
-    try:
-        # input loop, checks events
-        line = glob.scrn.read_screenline(from_start=True) 
-    except error.Break:
-        program.prompt=True
-        stat_code.auto_mode=False
-        return False
-    
-    # store the direct line
-    get_command_line(auto_mode_remove_star(line))
-    return True
-            
-            
-def auto_mode_show_line():
-    stat_code.auto_linenum += stat_code.auto_increment
-    glob.scrn.write(str(stat_code.auto_linenum))
-    if stat_code.auto_linenum in program.line_numbers:
-        glob.scrn.write('*')
-    else:
-        glob.scrn.write(' ')
-
-                
-def auto_mode_remove_star(line):                
-    if stat_code.auto_linenum in program.line_numbers:
-        num_len=len(str(stat_code.auto_linenum))
-        if line[:num_len] == str(stat_code.auto_linenum):
-            line=list(line)
-            line[num_len]=' '
-            line=''.join(line)
     return line
 
 
-            
 
 # execute any commands
 def execution_loop():
