@@ -230,51 +230,6 @@ def write(s, scroll_ok=True):
 
 
 
-def read_screenline(write_endl=True, from_start=False):
-    global row,col, apage
-    prompt_row=row
-    prompt_col=col
-    
-    savecurs = show_cursor() 
-    read()
-    show_cursor(savecurs)
-    
-    # find start of wrapped block
-    crow = row
-    while crow>1 and apage.wrap[crow-2]:
-        crow-=1
-    
-    line = []
-    # add lines 
-    while crow<height:
-        add = apage.charbuf[crow-1][:apage.end[crow-1]]
-
-        # exclude prompt, if any
-        if crow==prompt_row and not from_start:
-            add = add[prompt_col-1:]
-    
-        line += add
-        
-        if apage.wrap[crow-1]:
-            if apage.end[crow-1]<width:
-                # wrap before end of line means LF
-                line += '\x0a'
-            crow+=1
-        else:
-            break
-    
-    # go to last line
-    row = crow
-    
-    if write_endl:
-        write(glob.endl)
-    
-    # remove trailing whitespace 
-    while len(line)>0 and line[-1] in util.whitespace:
-        line = line[:-1]
-   
-    
-    return ''.join(line)    
 
 
 
@@ -372,11 +327,11 @@ def delete_char(crow, ccol):
             if crow>1:
                 apage.wrap[crow-2]=False            
             
+
             
 
 def read():
-    global row, col, apage #, charbuf, attrbuf, end
-    
+    global row, col, apage 
     insert = False
     
     c = ''
@@ -507,6 +462,55 @@ def read():
                        
     return inp  
     
+
+def read_screenline(write_endl=True, from_start=False):
+    global row,col, apage
+    prompt_row=row
+    prompt_col=col
+    
+    savecurs = show_cursor() 
+    read()
+    show_cursor(savecurs)
+    
+    # find start of wrapped block
+    crow = row
+    while crow>1 and apage.wrap[crow-2]:
+        crow-=1
+    
+    line = []
+    # add lines 
+    while crow<height:
+        add = apage.charbuf[crow-1][:apage.end[crow-1]]
+
+        # exclude prompt, if any
+        if crow==prompt_row and not from_start:
+            add = add[prompt_col-1:]
+    
+        line += add
+        
+        if apage.wrap[crow-1]:
+            if apage.end[crow-1]<width:
+                # wrap before end of line means LF
+                line += '\x0a'
+            crow+=1
+        else:
+            break
+    
+    # go to last line
+    row = crow
+    
+    if write_endl:
+        write(glob.endl)
+    
+    # remove trailing whitespace 
+    while len(line)>0 and line[-1] in util.whitespace:
+        line = line[:-1]
+   
+    
+    return ''.join(line)    
+
+
+
     
 def clear_line(the_row):
     global apage
