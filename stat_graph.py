@@ -311,7 +311,7 @@ def exec_get_graph(ins):
     require_read(ins, '\xEA') #-
     x1,y1 = glob.graph.window_coords(*parse_coord(ins))
     require_read(ins, ',') 
-    array = var.getvarname(ins)    
+    array = var.get_var_name(ins)    
     require(ins, end_statement)
         
     byte_array = glob.graph.get_area(x0,y0,x1,y1, array)
@@ -323,7 +323,7 @@ def exec_put_graph(ins):
         raise error.RunError(5)
     x0,y0 = glob.graph.window_coords(*parse_coord(ins))
     require_read(ins, ',') 
-    array = var.getvarname(ins)    
+    array = var.get_var_name(ins)    
     action = glob.graph.operation_xor
     if skip_white_read_if(ins, ','):
         c =skip_white_read(ins) 
@@ -357,7 +357,7 @@ def draw_parse_value(gmls):
     
     if c=='=':
         gmls.read(1)    
-        step = var.getvar(var.getvarname(gmls))
+        step = var.getvar(var.get_var_name(gmls))
         require_read(gmls,';', err=5)
     else:
         sgn=1
@@ -390,7 +390,7 @@ def draw_parse_number(gmls):
 
 def draw_parse_string(gmls):
     skip(gmls, gml_whitespace)
-    sub = var.getvar(var.getvarname(gmls))
+    sub = var.getvar(var.get_var_name(gmls))
     require_read(gmls,';', err=5)
     return vartypes.pass_string_keep(sub, err=5)[1]
 

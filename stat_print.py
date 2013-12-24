@@ -136,8 +136,8 @@ def exec_palette(ins):
         glob.scrn.set_palette()
     elif d=='\xD7': # USING
         ins.read(1)
-        skip_white(ins) 
-        array_name = var.getvarname(ins)
+        #skip_white(ins) 
+        array_name = var.get_var_name(ins)
         start_index = vartypes.pass_int_keep(expressions.parse_bracket(ins))[1]
         new_palette=[]
         for i in range(glob.scrn.num_colours):
