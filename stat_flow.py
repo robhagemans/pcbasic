@@ -337,8 +337,9 @@ def exec_if(ins):
         while True:    
             d = skip_to_read(ins, end_statement + ('\xCD',))
              
-            if d == '\xCD': # THEN
-                # another THEN statement means another nesting step
+            if d == '\x8B': # IF
+                # another IF statement means another nesting step
+                # note it's less convenient to count THENs because they could be THEN, GOTO or THEN GOTO.
                 nesting_counter += 1            
             elif d==':':
                 if peek(ins) == '\xa1': # :ELSE is ELSE

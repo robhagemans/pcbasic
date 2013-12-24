@@ -235,8 +235,9 @@ def detokenise_keyword(bytes, output):
         else:
             bytes.read(1)
     
-    # number followed by token is separated by a space, except D2, CE: SPC(, TAB(
-    if (len(output)>0) and (output[-1] in ascii_digits) and (s not in tokens_operator+tokens_with_bracket):
+    # when we're here, s is an actualy keyword token.
+    # number followed by token is separated by a space 
+    if (len(output)>0) and (output[-1] in ascii_digits) and (s not in tokens_operator): #+tokens_with_bracket):
         output+=' '
     
     keyword = token_to_keyword[s]
@@ -265,16 +266,17 @@ def detokenise_keyword(bytes, output):
         output = output[:-1]        
     #   [:ELSE]  ->  [ELSE]
     elif len(output)>4 and output[-5:] == ":ELSE":
-        output = output[:-5] + "ELSE" 
+        if output[-6] in ascii_digits:
+            output = output[:-5] + " ELSE" 
+        else:
+            output = output[:-5] + "ELSE" 
     
     
     
     # token followed by number is also separated by a space, except operator tokens and SPC(, TAB(
     nxt = peek(bytes)
-    #if nxt.upper() in (ascii_uppercase+tokens_number+tokens_linenum) and s not in (tokens_operator+tokens_with_bracket):
-    if nxt.upper() not in (tokens_operator+['\xD9','"',':',',',' ','(',')']) \
-                and s not in (tokens_operator+tokens_with_bracket+['\xD1']):
-        # excluding TAB( SPC( and FN
+    if nxt.upper() not in (tokens_operator+['\xD9','"',',',' ',':','(',')']) \
+                and s not in (tokens_operator+tokens_with_bracket+['\xD1']): # excluding TAB( SPC( and FN. \xD9 is ', \xD1 is FN.
         output+=' '
 
     return output, comment
@@ -539,7 +541,6 @@ def tokenise_number(ins, outs):
         while True: 
             c = ins.read(1).upper()
   
-            
             if c=='.' and not have_point and not have_exp:
                 have_point = True
                 word += c
@@ -554,7 +555,8 @@ def tokenise_number(ins, outs):
             elif c in ascii_digits: # (c >='0' and numc <='9'):
                 word += c
             elif c in tokenise_whitespace:
-                pass    
+                # we'll remove this later but need to keep it for now so we can reposition the stream on removing trainling whitespace 
+                word += c
             elif c in ('!', '#') and not have_exp:
                 word += c
                 break
@@ -562,15 +564,22 @@ def tokenise_number(ins, outs):
                 if c != '':
                     ins.seek(-1,1)
                 break
-                
+           
+        
         # don't claim trailing whitespace, don't end in D or E            
-        while len(word)>0 and word[-1] in tokenise_whitespace + ['D', 'E']:
+        while len(word)>0 and (word[-1] in tokenise_whitespace + ['D', 'E']):
             if word[-1] in ('D', 'E'):
                 have_exp = False
             word = word[:-1]
             ins.seek(-1,1) # even if c==''
-            
-            
+       
+        # remove all internal whitespace
+        trimword = ''
+        for c in word:
+            if c not in tokenise_whitespace:
+                trimword += c
+        word = trimword
+        
         # write out the numbers
                 
         if len(word)==1 and word in ascii_digits:
