@@ -438,9 +438,7 @@ def parse_prompt(ins):
     # parse prompt
     prompt = ''
     following = ';'
-    d = peek(ins)
-    if d=='"':
-        ins.read(1)        
+    if skip_white_read_if(ins,'"'):
         # only literal allowed, not a string expression
         d = ins.read(1)
         while d not in end_line + ('"',)  : 
@@ -452,11 +450,12 @@ def parse_prompt(ins):
         following = skip_white_read(ins)
         if following not in (';',','):
             raise error.RunError(2)
+    
     return prompt, following
    
    
 def exec_input(ins):
-    d = skip_white(ins)
+    skip_white(ins)
     
     finp = expressions.parse_file_number(ins)
     if finp!=None:
@@ -470,29 +469,23 @@ def exec_input(ins):
                 valstr = input_string(finp)
                 
             var.setvar_read(*v, val=vals)
-        if skip_white(ins) not in end_statement:
-            raise error.RunError(2)
+        require(ins, end_statement)
         return
     
             
     # ; to avoid echoing newline
-    newline = True
-    if d==';':
-        newline=False
-        ins.read(1)
-        d = skip_white(ins)
-    
+    newline = not skip_white_read_if(ins,';')
+    # get the prompt
     prompt, following = parse_prompt(ins)    
-    if following ==';':
+    if following == ';':
         prompt += '? '
             
     # get list of variables
     readvar = parse_var_list(ins)
-        
+    
+    # read the input
     while True:
         glob.scrn.write(prompt) 
-        
-        # read the input
         line = glob.scrn.read_screenline(write_endl=newline)
         
         inputs = StringIO.StringIO(line) 
@@ -521,11 +514,7 @@ def exec_input(ins):
         else:
             break
     
-    #if newline:
-    #    glob.scrn.write(glob.endl)
-    
-    if skip_white(ins) not in end_statement:
-        raise error.RunError(2)
+    require(ins, end_statement)
            
 
 def text_skip(text_file, skip_range):
@@ -594,8 +583,7 @@ def input_string(text_file, end_all = ('\x0d', '\x1a', ''), end_entry = (',', '\
 
 
 def exec_line_input(ins):
-    d = skip_white(ins)
-    
+    skip_white(ins)
     finp = expressions.parse_file_number(ins)
     if finp!=None:
         # get string variable
@@ -607,20 +595,14 @@ def exec_line_input(ins):
         return
     
     # ; to avoid echoing newline
-    newline = True
-    if d==';':
-        newline=False
-        ins.read(1)
-        d = skip_white(ins)
-    
+    newline = not skip_white_read_if(ins,';')
+    # get prompt    
     prompt, following = parse_prompt(ins)    
-            
     # get string variable
     readvar,indices = expressions.get_var_or_array_name(ins)
 
     # read the input
     glob.scrn.write(prompt) 
-    
     inputs = glob.scrn.read_screenline(write_endl=newline)
     var.set_var_or_array(readvar, indices, ('$', inputs))
     
@@ -631,24 +613,16 @@ def exec_restore():
     program.data_pos = 0
     
 
-    
-
 def exec_swap(ins):
     skip_white(ins)
     name1 = var.getvarname(ins)
+    require_read(ins,',')
+    skip_white(ins)
+    name2= var.getvarname(ins)
     
-    d = skip_white(ins)
-    if d!=',':
-        raise error.RunError(2)
-    else:
-        ins.read(1)
-        skip_white(ins)
-        name2= var.getvarname(ins)
-        var.swapvar(name1, name2)
+    var.swapvar(name1, name2)
         
-    d = skip_white(ins)    
-    if d not in end_statement:
-        raise error.RunError(2)
+    require(ins, end_statement)
                              
                              
 def exec_def_fn(ins):
