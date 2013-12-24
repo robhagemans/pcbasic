@@ -137,19 +137,13 @@ def exec_list(ins, out=None):
     output.seek(0)
     program.bytecode.seek(current)
     
-    #lines = output.getvalue().split(glob.endl)
-    while True:
-        c = output.read(1)
-        if c=='\x0d':
-            c+= output.read(1)
-            
-            # allow interrupt of listing to screen
-            if out == glob.scrn:
-                glob.scrn.check_events()
-        elif c=='':
-            break
-        out.write(c)
-            
+    lines = output.getvalue().split(glob.endl)
+    for line in lines:
+        if out == glob.scrn:
+            glob.scrn.check_events()
+            glob.scrn.clear_line(glob.scrn.row)
+        out.write(line+glob.endl)
+    
     
 def exec_llist(ins):
     exec_list(ins, glob.lpt1)
