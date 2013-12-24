@@ -82,6 +82,12 @@ def clear_scroll_area(bg):
         ansi.clear_line()
     ansi.move_cursor(console.row,console.col)
 
+
+def clear_row(this_row, bg):
+    ansi.move_cursor(this_row,1)    
+    ansi.clear_line()
+    ansi.move_cursor(console.row,console.col)
+
     
 def redraw():
    for y in range(console.height):
@@ -127,16 +133,11 @@ def show_cursor(do_show, prev):
 def check_events():
     check_keyboard()
     
-    #console.check_cursor_move()
     if console.cursor:
         ansi.move_cursor(console.row,console.col)
        
     events.check_events()
     events.handle_events()
-
-
-#def move_cursor(last_row, last_col, row, col):
-#    ansi.move_cursor(row,col)
 
 
 def apply_palette(colour):

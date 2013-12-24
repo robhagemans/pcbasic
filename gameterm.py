@@ -231,7 +231,15 @@ def clear_scroll_area(bg):
     
     screen_changed=True
    
-        
+    # TODO: is fill_rect faster?
+    
+    
+def clear_row(this_row, bg):
+    rect = pygame.Rect(0,(this_row-1)*font_height, 1+console.width*8,1+font_height)
+    console.apage.surface0.fill(bg, rect)
+    console.apage.surface1.fill(bg, rect)
+    screen_changed = True
+
 
 def set_font_height(new_font_height):
     global fonts, font, font_height, under_cursor
@@ -341,7 +349,6 @@ def build_line_cursor(is_line):
     
     build_cursor()
     screen_changed=True
-
 
 
    
@@ -497,9 +504,6 @@ def refresh_screen():
     
 def remove_cursor():
     global under_top_left, under_cursor, screen
-    
-    #import sys
-    #sys.stderr.write(repr(screen)+repr(under_top_left)+repr(under_cursor))
     
     if under_top_left != None:
         screen.blit(under_cursor, under_top_left)
@@ -709,26 +713,12 @@ def clear_graphics_view():
     screen_changed=True
     
 
-def draw_box_filled(x0,y0, x1,y1, c):
-    global last_point 
-    last_point=x1,y1
-    
-    x0,y0 = view_coords(x0,y0)
-    x1,y1 = view_coords(x1,y1)
-    
-    c = get_colour_index(c)
-    
-    if y1<y0:
-        y0,y1 = y1,y0
-    if x1<x0:
-        x0,x1 = x1,x0    
-    
+def fill_rect(x0,y0, x1,y1, index):
     rect = pygame.Rect(x0,y0,x1-x0+1,y1-y0+1)
-    
-    apply_graph_view()
-    console.apage.surface0.fill(c, rect)
-    remove_graph_view()
+    console.apage.surface0.fill(index, rect)
+    screen_changed = True
 
+    # TODO: is this faster or should I blit a new surface?
 
 
 # high level methods (implementation independent)
@@ -755,6 +745,28 @@ def get_point (x,y):
     x,y = view_coords(x,y)
     return get_pixel(x,y)
 
+            
+            
+def draw_box_filled(x0,y0, x1,y1, c):
+    global last_point 
+    last_point=x1,y1
+    
+    x0,y0 = view_coords(x0,y0)
+    x1,y1 = view_coords(x1,y1)
+    
+    c = get_colour_index(c)
+    
+    if y1<y0:
+        y0,y1 = y1,y0
+    if x1<x0:
+        x0,x1 = x1,x0    
+    
+    #rect = pygame.Rect(x0,y0,x1-x0+1,y1-y0+1)
+    apply_graph_view()
+    fill_rect(x0,y0,x1,y1,c)
+    #console.apage.surface0.fill(c, rect)
+    remove_graph_view()
+            
             
 # cursor for graphics mode
 def xor_cursor_screen(row,col):
