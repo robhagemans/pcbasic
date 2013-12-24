@@ -10,6 +10,7 @@
 #
 
 import glob
+import error
 import program
 
 auto_mode = False
@@ -18,7 +19,7 @@ auto_linenum = 10
 
 
 def auto_input_loop():
-    global auto_mode
+    global auto_mode, auto_linenum, auto_increment
     
     auto_mode_show_line()
     try:
@@ -28,7 +29,12 @@ def auto_input_loop():
         program.prompt=True
         auto_mode=False
         return ''
-    
+
+    if line=='':
+        # linenum remains the same, remove increment
+        auto_linenum -= auto_increment
+        program.prompt=False
+                
     return auto_mode_remove_star(line)
             
             
