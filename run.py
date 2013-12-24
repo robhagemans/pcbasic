@@ -48,7 +48,6 @@ def init_run():
         except error.Error as e:
             if not handle_error(e):
                 exit()
-                #sys.exit(0)
         
     if glob.args.run and glob.args.cmd == None:
         # if a command is given, the program is only loaded.
@@ -57,68 +56,84 @@ def init_run():
     if glob.args.cmd != None:
         get_command_line(glob.args.cmd)
         program.set_runmode(False)
-        #program.current_codestream = program.direct_line
         execution_loop()
 
         if glob.args.quit:
             # we were running as a script, exit after completion
-            #sys.exit(0)
             exit()
-        
-def auto_mode_show_line():
-    if stat_code.auto_mode:
-        stat_code.auto_linenum += stat_code.auto_increment
-        glob.scrn.write(str(stat_code.auto_linenum))
-        if stat_code.auto_linenum in program.line_numbers:
-            glob.scrn.write('*')
-        else:
-            glob.scrn.write(' ')
-                
-def auto_mode_remove_star(line):                
-    if stat_code.auto_mode and stat_code.auto_linenum in program.line_numbers:
-        # AUTO: remove star
-        num_len=len(str(stat_code.auto_linenum))
-        
-        if line[:num_len] == str(stat_code.auto_linenum):
-            line=list(line)
-            line[num_len]=' '
-            line=''.join(line)
-
 
 
 
 def main_loop():
     while True:
-        
         # prompt for commands
         prompt()
-        auto_mode_show_line()
-                
-        # call input loop
-        try:
-            line = glob.scrn.read_screenline() 
-        except error.Break:
-            #program.unset_runmode()
-            if stat_code.auto_mode:
-                program.prompt=True
-                stat_code.auto_mode=False
-            else:
-                program.prompt=False
-            continue
     
-        auto_mode_remove_star(line)
-        get_command_line(line)
-        
+        # input loop, checks events
+        if stat_code.auto_mode:
+            if not auto_input_loop():
+                continue
+        else:
+            if not input_loop():
+                continue    
+    
         # check for empty lines or lines that start with a line number & deal with them
         if parse_start_direct(program.direct_line):
-            # no prompt
-            continue
-        
-        # run stuff             
-        execution_loop()
+            # execution loop, checks events
+            # execute program or direct command             
+            execution_loop()
 
 
 
+def input_loop():
+    try:
+        # input loop, checks events
+        line = glob.scrn.read_screenline(from_start=True) 
+    except error.Break:
+        program.prompt=False
+        # do not execute
+        return False
+    
+    # store the direct line
+    get_command_line(line)
+    return True
+
+
+def auto_input_loop():
+    auto_mode_show_line()
+    try:
+        # input loop, checks events
+        line = glob.scrn.read_screenline(from_start=True) 
+    except error.Break:
+        program.prompt=True
+        stat_code.auto_mode=False
+        return False
+    
+    # store the direct line
+    get_command_line(auto_mode_remove_star(line))
+    return True
+            
+            
+def auto_mode_show_line():
+    stat_code.auto_linenum += stat_code.auto_increment
+    glob.scrn.write(str(stat_code.auto_linenum))
+    if stat_code.auto_linenum in program.line_numbers:
+        glob.scrn.write('*')
+    else:
+        glob.scrn.write(' ')
+
+                
+def auto_mode_remove_star(line):                
+    if stat_code.auto_linenum in program.line_numbers:
+        num_len=len(str(stat_code.auto_linenum))
+        if line[:num_len] == str(stat_code.auto_linenum):
+            line=list(line)
+            line[num_len]=' '
+            line=''.join(line)
+    return line
+
+
+            
 
 # execute any commands
 def execution_loop():
@@ -132,7 +147,7 @@ def execution_loop():
         except error.Error as e:
             if not handle_error(e):
                 break
-
+    glob.scrn.show_cursor()
         
 
     
@@ -141,7 +156,6 @@ def execution_loop():
 # direct mode functions:               
                
 def prompt(force=False):
-    glob.scrn.show_cursor()    
     if program.prompt or force:
         glob.scrn.start_line()
         glob.scrn.write("Ok "+glob.endl)
@@ -152,7 +166,6 @@ def prompt(force=False):
 def get_command_line(line):
     program.direct_line.truncate(0)
     sline = StringIO.StringIO(line)
-
     tokenise.tokenise_stream(sline, program.direct_line, onfile=False)
     program.direct_line.seek(0)
     
@@ -162,7 +175,7 @@ def get_command_line(line):
 def parse_start_direct(linebuf):               
     c = util.peek(linebuf) 
     if c=='\x00':
-        # line starts with a number, add to program memory
+        # line starts with a number, add to program memory, no prompt
         try:
             if program.protected:
                 # don't list protected files
@@ -176,15 +189,16 @@ def parse_start_direct(linebuf):
             handle_error(e)
             
         linebuf.seek(0)
-        return True
+        return False
 
     # check for empty line, no prompt
     if util.skip_white(linebuf) in util.end_line:
         linebuf.seek(0)
         program.prompt = False
-        return True
-        
-    return False        
+        return False
+    
+    # it is a command, go and execute    
+    return True        
 
                                      
 
