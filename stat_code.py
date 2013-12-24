@@ -118,9 +118,6 @@ def exec_auto(ins):
     
 def exec_list(ins, out=None):
     
-    if out==None:
-        out = glob.scrn
-        
     if program.protected:
         # don't list protected files
         raise error.RunError(5)
@@ -128,21 +125,26 @@ def exec_list(ins, out=None):
     [from_line, to_line] = parse_line_range(ins)
     require(ins, end_statement)
 
+    if out==None:
+        out = glob.scrn
+    if out==glob.scrn:
+        output = StringIO.StringIO()
+    else:
+        output = out
+
     current = program.bytecode.tell()	        
     program.bytecode.seek(1)
-    
-    output = StringIO.StringIO()
     tokenise.detokenise(program.bytecode, output, from_line, to_line)
-    
-    output.seek(0)
     program.bytecode.seek(current)
     
-    lines = output.getvalue().split(glob.endl)
-    for line in lines:
-        if out == glob.scrn:
+    if out == glob.scrn:
+        lines = output.getvalue().split(glob.endl)
+        if lines[-1]=='':
+            lines = lines[:-1]
+        for line in lines:
             glob.scrn.check_events()
             glob.scrn.clear_line(glob.scrn.row)
-        out.write(line+glob.endl)
+            glob.scrn.write(line+glob.endl)
     
     
 def exec_llist(ins):
