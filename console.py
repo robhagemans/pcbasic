@@ -230,7 +230,7 @@ def write(s, scroll_ok=True):
 
 
 
-def read_screenline(write_endl=True):
+def read_screenline(write_endl=True, from_start=False):
     global row,col, apage
     prompt_row=row
     prompt_col=col
@@ -250,7 +250,7 @@ def read_screenline(write_endl=True):
         add = apage.charbuf[crow-1][:apage.end[crow-1]]
 
         # exclude prompt, if any
-        if crow==prompt_row:
+        if crow==prompt_row and not from_start:
             add = add[prompt_col-1:]
     
         line += add

@@ -187,7 +187,7 @@ def start_line():
         col=1
 
 
-def read_screenline(write_endl=True):
+def read_screenline(write_endl=True, from_start=False):
     global col
     line = read()
     col=1

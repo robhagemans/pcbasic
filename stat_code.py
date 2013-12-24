@@ -85,31 +85,28 @@ auto_increment = 10
 auto_linenum = 10
     
 def exec_auto(ins):
-    global auto_increment , auto_linenum
+    global auto_increment, auto_linenum
     global auto_mode
     
-    
-    d = skip_white_read(ins)
+    d = skip_white(ins)
     auto_linenum=10
     if d=='\x0e':   # line number starts
         ins.read(1)
         auto_linenum=vartypes.uint_to_value(ins.read(2))
-        skip_white(ins)
     elif d=='.':
         ins.read(1)
         auto_linenum = program.linenum
-        skip_white(ins)
         
-    if d==',': 
-        if skip_white_read(ins) =='\x0e':   # line number starts
+    if skip_white_read_if(ins, ','): 
+        if skip_white_read_if(ins, '\x0e'):   # line number starts
             auto_increment = vartypes.uint_to_value(ins.read(2)) 
         else:
             pass
-            #increment = last_auto_increment
     else:
         auto_increment=10
             
     require(ins, end_statement)
+
     auto_linenum -= auto_increment
     auto_mode=True
     program.unset_runmode()
@@ -117,7 +114,6 @@ def exec_auto(ins):
     
     
 def exec_list(ins, out=None):
-    
     if program.protected:
         # don't list protected files
         raise error.RunError(5)
@@ -154,7 +150,6 @@ def exec_llist(ins):
         
 def exec_load(ins):
     name = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
-    
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
     name = oslayer.dospath_read(name, 'BAS', 53)
         
@@ -180,14 +175,11 @@ def exec_load(ins):
 
         
 def exec_chain(ins):
-    
     action = program.load
-    if skip_white(ins) == '\xBD': # MERGE
-        ins.read(1)
+    if skip_white_read_if(ins, '\xBD'): # MERGE
         action = program.merge
     
     name = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
-    
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
     name = oslayer.dospath_read(name, 'BAS', 53)
     
@@ -242,12 +234,9 @@ def exec_chain(ins):
             # (without MERGE, this is pointless)
             [from_line, to_line] = parse_line_range(ins)
             program.delete_lines(from_line, to_line)
-    elif d not in end_statement:
-        raise error.RunError(2)
     
-    # TODO: at what point in the execution does this error happen? will the prg be loaded? does it happen at all?
+    # TODO: should the program be loaded or not if we see this error?
     require(ins, end_statement)
-        
     
     # keep option base
     base = var.array_base    
@@ -284,7 +273,6 @@ def exec_save(ins):
     # 76 is path not found
     name = oslayer.dospath_write(name, 'BAS', 76) 
 
-
     #    # cryptic errors given by GW-BASIC:    
     #    if len(name)>8 or len(ext)>3:
     #        # 52: bad file number 
@@ -292,7 +280,6 @@ def exec_save(ins):
     #    if ext.find('.') > -1:
     #        # 53: file not found
     #        raise error.RunError(errdots)
-    
     
     mode = 'B'
     d = skip_white_read(ins)
@@ -323,11 +310,10 @@ def exec_save(ins):
     
 def exec_merge(ins):
     name = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
-    
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
     name = oslayer.dospath_read(name, 'BAS', 53)
         
-    g =oslayer.safe_open(name, 'rb')
+    g = oslayer.safe_open(name, 'rb')
     program.merge(g)
     g.close()    
         
@@ -337,7 +323,6 @@ def exec_merge(ins):
 def exec_new():
     # NEW Command
     #   To delete the program currently in memory and clear all variables.
-    
     program.clear_program()
     var.clear_variables()
     fileio.close_all()
