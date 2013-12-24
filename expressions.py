@@ -83,7 +83,7 @@ def parse_file_number(ins):
 
 def get_var_or_array_name(ins):
    
-    name = var.getvarname(ins)
+    name = var.get_var_name(ins)
     # array?
     indices=[]
     if skip_white(ins) in ('[', '('):

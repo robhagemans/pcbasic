@@ -198,8 +198,7 @@ def exec_field(ins):
     if fileio.files[number].mode.upper() != 'R':
         raise error.RunError(54)    
     
-    if skip_white_read(ins) != ',':
-        raise error.RunError(2)
+    require_read(ins,',')
     
     field = fileio.files[number].field 
     offset = 0    
@@ -213,17 +212,15 @@ def exec_field(ins):
         if peek(ins,2).upper() != 'AS':
             raise error.RunError(5)
         ins.read(2)
-        skip_white(ins)
-        name = var.getvarname(ins)
+        #skip_white(ins)
+        name = var.get_var_name(ins)
         
         var.set_field_var(field, name, offset, width)         
         
         offset+= width
         
-        if skip_white(ins) != ',':
+        if not skip_white_read_if(ins,','):
             break
-            
-        ins.read(1)
             
     require(ins, end_statement)
         

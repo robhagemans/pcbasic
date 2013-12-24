@@ -104,7 +104,9 @@ def complete_name(name):
     return name
     
     
-def getvarname(ins):
+def get_var_name(ins):
+    util.skip_white(ins)
+
     # append type specifier
     name = complete_name(util.getbasename(ins))
     

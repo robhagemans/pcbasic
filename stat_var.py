@@ -115,8 +115,8 @@ def exec_dim(ins):
     
     while True:
         
-        skip_white(ins)
-        name = var.getvarname(ins) 
+        #skip_white(ins)
+        name = var.get_var_name(ins) 
         
         if name=='':
             raise error.RunError(2)
@@ -183,8 +183,8 @@ def exec_deftype(typechar, ins):
 def exec_erase(ins):
     
     while True:
-        skip_white(ins)
-        name = var.getvarname(ins)
+        #skip_white(ins)
+        name = var.get_var_name(ins)
         var.erase_array(name)
         
         d = skip_white(ins)
@@ -216,7 +216,6 @@ def exec_mid(ins):
     
     # MID$
     require_read(ins, '(')
-    #name = var.getvarname(ins)
     name, indices = expressions.get_var_or_array_name(ins)
     if indices != []:    
         # pre-dim even if this is not a legal statement!
@@ -268,16 +267,10 @@ def exec_mid(ins):
    
 
 def exec_lset(ins, justify_right=False):
-    skip_white(ins)
-    name = var.getvarname(ins)
-    d = skip_white_read(ins)
-    
-    if d != '\xe7':   # =
-        raise error.RunError(2)
-        return False
-    else:
-        val = expressions.parse_expression(ins)
-    
+    #skip_white(ins)
+    name = var.get_var_name(ins)
+    require_read(ins,'\xe7')
+    val = expressions.parse_expression(ins)
     var.lset(name, val, justify_right)
 
 
@@ -310,7 +303,7 @@ def exec_option(ins):
 def parse_var_list(ins):
     readvar = []
     while True:
-        skip_white(ins)
+        #skip_white(ins)
         name, indices = expressions.get_var_or_array_name(ins)
         readvar.append([name, indices])
         
@@ -411,8 +404,8 @@ def exec_common(ins):
     varlist = []
     arraylist = []
     while True:
-        skip_white(ins)
-        name = var.getvarname(ins)
+        #skip_white(ins)
+        name = var.get_var_name(ins)
         # array?
         if skip_white(ins) in ('[', '('):
             ins.read(1)
@@ -587,7 +580,7 @@ def exec_line_input(ins):
     finp = expressions.parse_file_number(ins)
     if finp!=None:
         # get string variable
-        skip_white(ins)
+        #skip_white(ins)
         readvar, indices = expressions.get_var_or_array_name(ins)
         # read the input
         inputs = finp.read()
@@ -614,11 +607,11 @@ def exec_restore():
     
 
 def exec_swap(ins):
-    skip_white(ins)
-    name1 = var.getvarname(ins)
+    #skip_white(ins)
+    name1 = var.get_var_name(ins)
     require_read(ins,',')
-    skip_white(ins)
-    name2= var.getvarname(ins)
+    #skip_white(ins)
+    name2= var.get_var_name(ins)
     
     var.swapvar(name1, name2)
         
@@ -626,15 +619,15 @@ def exec_swap(ins):
                              
                              
 def exec_def_fn(ins):
-    skip_white(ins)
-    fnname = var.getvarname(ins)
+    #skip_white(ins)
+    fnname = var.get_var_name(ins)
     
     # read variables
     fnvars=[]
     require_read(ins, '(')
     while True:
-        skip_white(ins)
-        fnvars.append(var.getvarname(ins))
+        #skip_white(ins)
+        fnvars.append(var.get_var_name(ins))
         if skip_white(ins) in end_statement+(')',):
             break    
         require_read(ins,',')
@@ -654,8 +647,8 @@ def exec_def_fn(ins):
     
     
 def value_fn(ins):
-    skip_white(ins)
-    fnname = var.getvarname(ins)
+    #skip_white(ins)
+    fnname = var.get_var_name(ins)
     
     if fnname not in var.functions:
         # undefined user function

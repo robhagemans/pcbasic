@@ -104,8 +104,8 @@ def exec_for(ins): #, first=True):
     forpos = ins.tell()
     
     # read variable  
-    skip_white(ins)
-    varname = var.getvarname(ins)
+    #skip_white(ins)
+    varname = var.get_var_name(ins)
     if varname=='':
         raise error.RunError(2)
     
@@ -151,8 +151,8 @@ def for_push_next(ins, forpos, varname, start, stop, step):
         
     
     # check var name for NEXT
-    skip_white(ins)
-    varname2 = var.getvarname(ins)
+    #skip_white(ins)
+    varname2 = var.get_var_name(ins)
     skip_white(ins)
     nextpos = ins.tell()
     
@@ -243,11 +243,9 @@ def exec_next(ins, comma=False):
         # no varname required if standalone NEXT
         pass
     else:
-        varname2 = var.getvarname(ins)
+        varname2 = var.get_var_name(ins)
         if varname==varname2:
             skip_to(ins, end_statement)
-        #elif varname2=='':
-        #    raise error.RunError(2)    
         else:
             # next without for
             raise error.RunError(1, nextline) #1    
