@@ -23,6 +23,7 @@ import expressions
 import tokenise
 import program
 import oslayer
+import automode
 
 # for rnd.clear() on CHAIN
 import rnd
@@ -80,35 +81,32 @@ def exec_edit(ins):
     
 
 
-auto_mode = False
-auto_increment = 10
-auto_linenum = 10
     
 def exec_auto(ins):
-    global auto_increment, auto_linenum
-    global auto_mode
+    #global auto_increment, auto_linenum
+    #global auto_mode
     
     d = util.skip_white(ins)
-    auto_linenum=10
+    automode.auto_linenum=10
     if d=='\x0e':   # line number starts
         ins.read(1)
-        auto_linenum=vartypes.uint_to_value(ins.read(2))
+        automode.auto_linenum=vartypes.uint_to_value(ins.read(2))
     elif d=='.':
         ins.read(1)
-        auto_linenum = program.linenum
+        automode.auto_linenum = program.linenum
         
     if util.skip_white_read_if(ins, ','): 
         if util.skip_white_read_if(ins, '\x0e'):   # line number starts
-            auto_increment = vartypes.uint_to_value(ins.read(2)) 
+            automode.auto_increment = vartypes.uint_to_value(ins.read(2)) 
         else:
             pass
     else:
-        auto_increment=10
+        automode.auto_increment=10
             
     util.require(ins, util.end_statement)
 
-    auto_linenum -= auto_increment
-    auto_mode=True
+    automode.auto_linenum -= automode.auto_increment
+    automode.auto_mode=True
     program.unset_runmode()
         
     

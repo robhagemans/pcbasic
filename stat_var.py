@@ -643,46 +643,5 @@ def exec_def_fn(ins):
     var.functions[fnname] = [fnvars, fncode]
     
     
-def value_fn(ins):
-    #util.skip_white(ins)
-    fnname = var.get_var_name(ins)
-    
-    if fnname not in var.functions:
-        # undefined user function
-        raise error.RunError(18)
-
-    varnames, fncode = var.functions[fnname]
-    
-    # save existing vars
-    varsave = {}
-    for name in varnames:
-        if name[0]=='$':
-            # we're just not doing strings
-            raise error.RunError(13)
-        if name in var.variables:
-            varsave[name] = var.variables[name]
-
-    # read variables
-    util.require_read(ins, '(')
-    exprs = expressions.parse_expr_list(ins, len(varnames), err=2)
-    if None in exprs:
-        raise error.RunError(2)
-    for i in range(len(varnames)):
-        var.setvar(varnames[i], exprs[i])
-    util.require_read(ins,')')
-    
-    fns = StringIO.StringIO(fncode)
-    fns.seek(0)
-    value= expressions.parse_expression(fns)    
-
-    # restore existing vars
-    
-    for name in varnames:
-        del var.variables[name]
-    for name in varsave:    
-        var.variables[name] = varsave[name]
-
-    return value    
-
                              
                              
