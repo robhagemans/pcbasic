@@ -83,9 +83,6 @@ def clear():
 def clear_view():
     pass
 
-
-def clear_graphics_view():
-    pass
     
     
 def mode_info(mode):

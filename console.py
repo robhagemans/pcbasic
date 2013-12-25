@@ -809,7 +809,6 @@ def setup_screen(to_height, to_width):
     
 def set_apage(page_num):
     global num_pages, apage
-    backend.screen_changed=True
     
     if page_num < num_pages:
         apage=pages[page_num]

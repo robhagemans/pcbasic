@@ -27,6 +27,8 @@ import tokenise
 import program
 import fileio
 
+# for clear_graphics_view
+import graphics
 
 # KEY ON?
 keys_visible = False
@@ -52,7 +54,10 @@ def exec_cls(ins):
         if keys_visible:
             show_keys()
     elif val==1:
-        glob.scrn.clear_graphics_view()
+        if graphics.is_graphics_mode():
+            graphics.clear_graphics_view()
+        else:
+            glob.scrn.clear_view()                
     elif val==2:
         glob.scrn.clear_view()                
       

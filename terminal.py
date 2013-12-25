@@ -200,11 +200,11 @@ def check_keyboard():
     console.keybuf += events.replace_key(ansi.translate_char(c))
 
 
-def clear_graphics_view():
-    pass 
-
+def copy_page(src, dst):
+    pass
+    
     
 def idle():
     pass
     
-    
+        
