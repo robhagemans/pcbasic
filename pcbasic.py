@@ -89,7 +89,7 @@ def main():
     import oslayer
     import statements
     import nosound
-
+    import graphics
 
     ########################################
     
@@ -112,12 +112,10 @@ def main():
         
     elif glob.args.text:
         import terminal
-        #import cursterm
         import console
     
         glob.scrn = console   
-        glob.scrn.backend = terminal
-        #glob.scrn.backend = cursterm
+        console.backend = terminal
         glob.sound = nosound
         
     else:   
@@ -125,8 +123,8 @@ def main():
         import console
     
         glob.scrn = console   
-        glob.scrn.backend = gameterm   
-        glob.graph = gameterm
+        console.backend = gameterm   
+        graphics.backend = gameterm
         glob.sound = gameterm
     
     if glob.args.nosound:

@@ -9,6 +9,7 @@
 # please see text file COPYING for licence terms.
 #
 
+import StringIO
 
 import glob
 import error
@@ -18,8 +19,11 @@ import util
 import tokenise
 import expressions
 import fp
-import StringIO
 import events
+import graphics
+
+
+
 
 def parse_coord(ins):
     util.require_read(ins, '(')
@@ -42,13 +46,13 @@ def exec_pset(ins, default_colour=-1):
         c = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
     util.require(ins, util.end_statement)    
     
-    x,y, = glob.graph.window_coords(x,y)
+    x,y, = graphics.window_coords(x,y)
     
     if relative:
-        x += glob.graph.last_point[0]
-        y += glob.graph.last_point[1]        
+        x += graphics.last_point[0]
+        y += graphics.last_point[1]        
     
-    glob.graph.put_point(x,y,c)
+    graphics.put_point(x,y,c)
         
 def exec_preset(ins):
     exec_pset(ins, -2)   
@@ -63,13 +67,13 @@ def exec_line_graph(ins):
     
     if util.skip_white(ins)=='(':
         coord = parse_coord(ins)
-        x0,y0=glob.graph.window_coords(*coord)
+        x0,y0=graphics.window_coords(*coord)
     else:
-        x0,y0=glob.graph.last_point
+        x0,y0=graphics.last_point
         
     util.require_read(ins, '\xEA') # -
         
-    x1,y1 = glob.graph.window_coords(*parse_coord(ins))
+    x1,y1 = graphics.window_coords(*parse_coord(ins))
     
     c = -1    
     mode='L'
@@ -90,12 +94,12 @@ def exec_line_graph(ins):
     util.require(ins, util.end_statement)    
     
     if mode=='L':
-        glob.graph.draw_line(x0,y0,x1,y1,c,mask)
+        graphics.draw_line(x0,y0,x1,y1,c,mask)
     elif mode=='B':
         # TODO: we don't exactly match GW's way of applying the pattern, haven't found the logic of it
-        glob.graph.draw_box(x0,y0,x1,y1,c,mask)
+        graphics.draw_box(x0,y0,x1,y1,c,mask)
     elif mode=='BF':
-        glob.graph.draw_box_filled(x0,y0,x1,y1,c)
+        graphics.draw_box_filled(x0,y0,x1,y1,c)
             
             
 def exec_view_graph(ins):
@@ -120,13 +124,13 @@ def exec_view_graph(ins):
             
         
         if fill != None:
-            glob.graph.draw_box_filled(x0,y0,x1,y1, fill)
+            graphics.draw_box_filled(x0,y0,x1,y1, fill)
         if border!= None:
-            glob.graph.draw_box(x0-1,y0-1,x1+1,y1+1, border)
-        glob.graph.set_graph_view(x0,y0, x1,y1, absolute)
+            graphics.draw_box(x0-1,y0-1,x1+1,y1+1, border)
+        graphics.set_graph_view(x0,y0, x1,y1, absolute)
         
     else:
-        glob.graph.unset_graph_view()
+        graphics.unset_graph_view()
                 
     util.require(ins, util.end_expression)        
     
@@ -141,10 +145,10 @@ def exec_window(ins):
         util.require_read(ins, '\xEA') #-
         x1,y1 = parse_coord(ins)
         
-        glob.graph.set_graph_window(x0,y0, x1,y1, cartesian)
+        graphics.set_graph_window(x0,y0, x1,y1, cartesian)
         
     else:
-        glob.graph.unset_graph_window()
+        graphics.unset_graph_window()
                 
     util.require(ins, util.end_expression)        
     
@@ -152,13 +156,13 @@ def exec_window(ins):
 def exec_circle(ins):
     if not glob.scrn.graphics_mode:
         raise error.RunError(5)
-    x0,y0 = glob.graph.window_coords(*parse_coord(ins))
+    x0,y0 = graphics.window_coords(*parse_coord(ins))
     util.require_read(ins, ',')
     r = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
     
     c = -1
     start, stop = ('',''), ('','')
-    aspect = glob.graph.get_aspect_ratio()
+    aspect = graphics.get_aspect_ratio()
     if util.skip_white_read_if(ins, ','):
         cval = expressions.parse_expression(ins, allow_empty=True)
         if cval != ('',''):
@@ -173,16 +177,16 @@ def exec_circle(ins):
 
     if fp.equals(aspect, aspect.one):
         # rx=r
-        rx, dummy = glob.graph.window_scale(r,fp.MBF_class.zero)
+        rx, dummy = graphics.window_scale(r,fp.MBF_class.zero)
         ry = rx
     else:
         if fp.gt(aspect, aspect.one):
             #ry = r
-            dummy, ry = glob.graph.window_scale(fp.MBF_class.zero,r)
+            dummy, ry = graphics.window_scale(fp.MBF_class.zero,r)
             rx = fp.round_to_int(fp.div(r, aspect))
         else:
             #rx = r
-            rx, dummy = glob.graph.window_scale(r,fp.MBF_class.zero)
+            rx, dummy = graphics.window_scale(r,fp.MBF_class.zero)
             ry = fp.round_to_int(fp.mul(r, aspect))
 
     start_octant, start_coord, start_line = -1, -1, False
@@ -196,7 +200,7 @@ def exec_circle(ins):
         
     
     if fp.equals(aspect, aspect.one):
-        glob.graph.draw_circle(x0,y0,rx,c, start_octant, start_coord, start_line, stop_octant, stop_coord, stop_line)
+        graphics.draw_circle(x0,y0,rx,c, start_octant, start_coord, start_line, stop_octant, stop_coord, stop_line)
     else:
         # TODO - make this all more sensible, calculate only once
         startx, starty, stopx, stopy = -1,-1,-1,-1
@@ -209,9 +213,9 @@ def exec_circle(ins):
             stopx = abs(fp.round_to_int(fp.mul(fp.from_int(fp.MBF_class, rx), fp.mbf_cos(stop))))
             stopy = abs(fp.round_to_int(fp.mul(fp.from_int(fp.MBF_class, ry), fp.mbf_sin(stop))))
         
-        glob.graph.draw_ellipse(x0,y0,rx,ry,c, start_octant/2, startx, starty, start_line, stop_octant/2, stopx, stopy, stop_line)
+        graphics.draw_ellipse(x0,y0,rx,ry,c, start_octant/2, startx, starty, start_line, stop_octant/2, stopx, stopy, stop_line)
          
-        #glob.graph.draw_ellipse1(x0-rx,y0-ry,x0+rx,y0+ry,c)
+        #graphics.draw_ellipse1(x0-rx,y0-ry,x0+rx,y0+ry,c)
             
 
 def get_octant(mbf, rx, ry):
@@ -239,8 +243,8 @@ def get_octant(mbf, rx, ry):
 
 
 def solid_pattern(c):
-    pattern=[0]*glob.graph.bitsperpixel
-    for b in range(glob.graph.bitsperpixel):
+    pattern=[0]*graphics.bitsperpixel
+    for b in range(graphics.bitsperpixel):
         if (c&(1<<b)!=0):
             pattern[b]=0xff
     return pattern
@@ -251,9 +255,9 @@ def solid_pattern(c):
 def exec_paint(ins):
     if not glob.scrn.graphics_mode:
         raise error.RunError(5)
-    x0,y0 = glob.graph.window_coords(*parse_coord(ins))
+    x0,y0 = graphics.window_coords(*parse_coord(ins))
     pattern = ''
-    c = glob.graph.get_colour_index(-1) 
+    c = graphics.get_colour_index(-1) 
     border= c
     
     if util.skip_white_read_if(ins, ','):
@@ -267,7 +271,7 @@ def exec_paint(ins):
             if len(pattern)==0:
                 # empty pattern "" is illegal function call
                 raise error.RunError(5)
-            while len(pattern)%glob.graph.bitsperpixel !=0:
+            while len(pattern)%graphics.bitsperpixel !=0:
                  # finish off the pattern with zeros
                  pattern.append(0)
             # default for border,  if pattern is specified as string
@@ -297,7 +301,7 @@ def exec_paint(ins):
         pattern = solid_pattern(c)
     
     util.require(ins, util.end_statement)         
-    glob.graph.flood_fill(x0,y0, pattern, c, border)        
+    graphics.flood_fill(x0,y0, pattern, c, border)        
             
     
     
@@ -306,39 +310,39 @@ def exec_paint(ins):
 def exec_get_graph(ins):
     if not glob.scrn.graphics_mode:
         raise error.RunError(5)
-    x0,y0 = glob.graph.window_coords(*parse_coord(ins))
+    x0,y0 = graphics.window_coords(*parse_coord(ins))
     util.require_read(ins, '\xEA') #-
-    x1,y1 = glob.graph.window_coords(*parse_coord(ins))
+    x1,y1 = graphics.window_coords(*parse_coord(ins))
     util.require_read(ins, ',') 
     array = var.get_var_name(ins)    
     util.require(ins, util.end_statement)
         
-    byte_array = glob.graph.get_area(x0,y0,x1,y1, array)
+    byte_array = graphics.get_area(x0,y0,x1,y1, array)
     
 
     
 def exec_put_graph(ins):
     if not glob.scrn.graphics_mode:
         raise error.RunError(5)
-    x0,y0 = glob.graph.window_coords(*parse_coord(ins))
+    x0,y0 = graphics.window_coords(*parse_coord(ins))
     util.require_read(ins, ',') 
     array = var.get_var_name(ins)    
-    action = glob.graph.operation_xor
+    action = graphics.operation_xor
     if util.skip_white_read_if(ins, ','):
         c =util.skip_white_read(ins) 
         if c == '\xC6': #PSET
-            action = glob.graph.operation_set
+            action = graphics.operation_set
         elif c == '\xC7': #PRESET
-            action = glob.graph.operation_not
+            action = graphics.operation_not
         elif c == '\xEE': #AND
-            action = glob.graph.operation_and
+            action = graphics.operation_and
         elif c == '\xEF': #OR
-            action = glob.graph.operation_or
+            action = graphics.operation_or
         elif c == '\xF0': #XOR
-            action = glob.graph.operation_xor
+            action = graphics.operation_xor
     util.require(ins, util.end_statement)
     
-    glob.graph.set_area(x0,y0, array, action)
+    graphics.set_area(x0,y0, array, action)
     
     
     
@@ -424,12 +428,12 @@ def draw_step(x0,y0, sx,sy, plot, goback):
     x1 += x0
     
     if plot:
-        glob.graph.draw_line(x0,y0,x1,y1,-1)    
+        graphics.draw_line(x0,y0,x1,y1,-1)    
     else:
-        glob.graph.last_point=(x1,y1)
+        graphics.last_point=(x1,y1)
         
     if goback:
-        glob.graph.last_point=(x0,y0)
+        graphics.last_point=(x0,y0)
         
     
             
@@ -478,7 +482,7 @@ def draw_parse_gml(gml):
         # one-variable movement commands:     
         elif c in ('U', 'D', 'L', 'R', 'E', 'F', 'G', 'H'):
             step = draw_parse_number(gmls)
-            x0,y0 = glob.graph.last_point
+            x0,y0 = graphics.last_point
             #x1,y1=x0,y0
             x1,y1 = 0,0
             if c in ('U', 'E', 'H'):
@@ -507,17 +511,17 @@ def draw_parse_gml(gml):
             y = draw_parse_number(gmls)
             
             
-            x0,y0 = glob.graph.last_point
+            x0,y0 = graphics.last_point
             if relative:
                 draw_step(x0,y0,x,y,  plot, goback)
                 
             else:
                 if plot:
-                    glob.graph.draw_line(x0,y0,x,y,-1)    
+                    graphics.draw_line(x0,y0,x,y,-1)    
                 else:
-                    glob.graph.last_point=(x,y)
+                    graphics.last_point=(x,y)
                 if goback:
-                    glob.graph.last_point=(x0,y0)
+                    graphics.last_point=(x0,y0)
             
             plot = True
             goback = False
@@ -526,14 +530,14 @@ def draw_parse_gml(gml):
         elif c =='P':
             # paint - flood fill
             
-            x0,y0 = glob.graph.last_point
+            x0,y0 = graphics.last_point
             
             colour = draw_parse_number(gmls)
             if util.skip(gmls, gml_whitespace) !=',':
                 raise error.RunError(5)
             bound = draw_parse_number(gmls)
             
-            glob.graph.flood_fill(x0,y0,solid_pattern(colour), colour, bound)    
+            graphics.flood_fill(x0,y0,solid_pattern(colour), colour, bound)    
         
     
 def exec_draw(ins):
