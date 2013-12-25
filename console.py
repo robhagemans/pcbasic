@@ -35,7 +35,6 @@ height = 25
 view_start=1
 scroll_height=24
 view_set=False
-graphics_view_set=False
 
 
 # cursor/current characteristics
@@ -185,17 +184,22 @@ def set_colour_depth(colours, palette):
 def colours_ok(c):
     return (c>=0 and c<= num_colours)
     
+    
 def check_events():
     backend.check_events()   
+    
     
 def set_palette(new_palette=None):
     backend.set_palette(new_palette)
 
+
 def set_palette_entry(index, colour):
     backend.set_palette_entry(index, colour)
 
+
 def get_palette_entry(index):
     return backend.get_palette_entry(index)
+
 
 def write(s, scroll_ok=True):
     global row, col, apage
@@ -234,7 +238,7 @@ def write(s, scroll_ok=True):
 
 
 def insert_char(crow, ccol, c, cattr):
-    global apage #, charbuf, attrbuf, end, wrap
+    global apage
     
     while True:
         apage.charbuf[crow-1].insert(ccol-1,c)
@@ -266,7 +270,7 @@ def insert_char(crow, ccol, c, cattr):
         
         
 def delete_char(crow, ccol):
-    global apage, width #, charbuf, attrbuf, end, wrap, width
+    global apage, width 
     save_col=ccol
     
     if crow>1 and ccol==apage.end[crow-1]+1 and apage.wrap[crow-1]:
@@ -393,7 +397,6 @@ def read():
                         scroll()
                         
                     scroll_down(row+1)
-                    #wrap[row]=True    
                             
                 # LF connects lines like word wrap
                 apage.wrap[row-1]=True
@@ -625,9 +628,11 @@ def get_pos():
     global row, col
     return (row, col)
 
+
 def get_row():
     global row
     return row
+
     
 def get_col():
     global col
@@ -683,6 +688,7 @@ def set_attr(fore, back):
     global attr
     blink = fore > 0xf
     attr = ((0x8 if blink else 0x0) + (back & 0x7))*0x10 + (fore & 0xf)                   
+
     
 def get_attr():
     global attr
@@ -700,8 +706,6 @@ def show_cursor(do_show = True):
     
 def hide_cursor():
     return show_cursor(False)
-
-
 
 
 def colours(at):
@@ -730,7 +734,6 @@ def cont():
 
 def clear():
     global view_set, view_start, scroll_height
-    
     save_view_set, save_view_start, save_scroll_height = view_set, view_start, scroll_height
     set_view(1,25)
     clear_view()
@@ -747,10 +750,7 @@ def set_view(start=1,stop=24):
     view_start = start
     scroll_height = stop       
     backend.set_scroll_area(view_start, scroll_height, width)
-    
     set_pos(start,1)
-
-
  
  
 def unset_view():
@@ -771,6 +771,7 @@ def last_row_on(on=True):
             backend.set_scroll_area(view_start, scroll_height, width)
         last_row_is_on=on
 
+
 def last_row_off():
     last_row_on(False)
     
@@ -778,11 +779,10 @@ def last_row_off():
 
 def resize(to_height, to_width):
     global height, width
-    
     width = to_width
     height = to_height
-    
     setup_screen(height, width)
+
     
 def clear_all():
     global width, height
@@ -863,8 +863,6 @@ def clear_view():
     fore, back = colours(attr)
     bg = back & 0xf
     
-    #backend.clear_scroll_area(bg)
-    
     row = view_start
     col = 1
      
@@ -929,7 +927,7 @@ def put_char(c):
 
 
 def redraw_row(start=0, crow=-1):
-    global apage #, charbuf, attrbuf, attr, end 
+    global apage
     global row, height
     if crow==-1:
         crow=row
@@ -955,16 +953,13 @@ def redraw_row(start=0, crow=-1):
 
 
 def scroll(from_line=-1): 
-
     global row, col, apage #,charbuf, attrbuf, end
     global count, width, attr
-   
 
     if from_line==-1:
         from_line=view_start
         
     save_curs = show_cursor(False)    
-    #sys.stderr.write('scroll'+repr(from_line))
     backend.scroll(from_line)
     
     # sync buffers with the new screen reality:
@@ -992,12 +987,7 @@ def scroll_down(from_line):
     global count, width,attr
 
     save_curs = show_cursor(False)    
-    #sys.stderr.write('scrolld'+repr(from_line))
-    
     backend.scroll_down(from_line)
-
-    
-    
     if row >= from_line:
         row = row+1
     

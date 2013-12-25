@@ -26,7 +26,6 @@ height = 25
 view_start=1
 scroll_height=24
 view_set=False
-graphics_view_set=False
 
 
 graphics_mode=False

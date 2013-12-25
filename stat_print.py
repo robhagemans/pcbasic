@@ -40,7 +40,7 @@ def exec_cls(ins):
     global keys_visible
     
     if util.skip_white(ins) in util.end_statement:
-        if glob.scrn.graphics_view_set:
+        if graphics.graph_view_set:
             val=1
         elif glob.scrn.view_set:
             val=2
@@ -96,7 +96,7 @@ def exec_color(ins):
             glob.scrn.set_palette([0,2,4,6])
         
         glob.scrn.set_palette_entry(0,back&0xf)
-    elif not glob.scrn.graphics_mode:
+    elif not graphics.is_graphics_mode():
         #screen 0
         
         fore_old, back_old = glob.scrn.get_attr()
@@ -189,7 +189,7 @@ def show_keys():
         else:
             glob.scrn.write(str(i+1))
             
-        if not glob.scrn.graphics_mode:
+        if not graphics.is_graphics_mode():
             if attr[1]==0:    
                 glob.scrn.set_attr(0,7)
             else:

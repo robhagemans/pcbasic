@@ -35,8 +35,7 @@ def parse_coord(ins):
 
 
 def exec_pset(ins, default_colour=-1):
-    if not glob.scrn.graphics_mode:
-        raise error.RunError(5)
+    graphics.require_graphics_mode()
     
     relative = util.skip_white_read_if(ins, '\xCF') # STEP
     x,y = parse_coord(ins)
@@ -60,10 +59,7 @@ def exec_preset(ins):
     
 
 def exec_line_graph(ins):
-    if not glob.scrn.graphics_mode:
-        raise error.RunError(5)
-    
-    
+    graphics.require_graphics_mode()
     
     if util.skip_white(ins)=='(':
         coord = parse_coord(ins)
@@ -103,8 +99,7 @@ def exec_line_graph(ins):
             
             
 def exec_view_graph(ins):
-    if not glob.scrn.graphics_mode:
-        raise error.RunError(5)
+    graphics.require_graphics_mode()
     absolute = util.skip_white_read_if(ins, '\xC8') #SCREEN
     
     if util.skip_white(ins)=='(':
@@ -136,8 +131,7 @@ def exec_view_graph(ins):
     
     
 def exec_window(ins):
-    if not glob.scrn.graphics_mode:
-        raise error.RunError(5)
+    graphics.require_graphics_mode()
     cartesian = not util.skip_white_read_if(ins, '\xC8') #SCREEN
     
     if util.skip_white(ins)=='(':
@@ -154,8 +148,7 @@ def exec_window(ins):
     
         
 def exec_circle(ins):
-    if not glob.scrn.graphics_mode:
-        raise error.RunError(5)
+    graphics.require_graphics_mode()
     x0,y0 = graphics.window_coords(*parse_coord(ins))
     util.require_read(ins, ',')
     r = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
@@ -253,8 +246,8 @@ def solid_pattern(c):
 # PAINT -if paint *colour* specified, border default= paint colour
 # if border *attribute* specified, border default=15      
 def exec_paint(ins):
-    if not glob.scrn.graphics_mode:
-        raise error.RunError(5)
+    graphics.require_graphics_mode()
+    
     x0,y0 = graphics.window_coords(*parse_coord(ins))
     pattern = ''
     c = graphics.get_colour_index(-1) 
@@ -308,8 +301,7 @@ def exec_paint(ins):
     
                 
 def exec_get_graph(ins):
-    if not glob.scrn.graphics_mode:
-        raise error.RunError(5)
+    graphics.require_graphics_mode()
     x0,y0 = graphics.window_coords(*parse_coord(ins))
     util.require_read(ins, '\xEA') #-
     x1,y1 = graphics.window_coords(*parse_coord(ins))
@@ -322,8 +314,7 @@ def exec_get_graph(ins):
 
     
 def exec_put_graph(ins):
-    if not glob.scrn.graphics_mode:
-        raise error.RunError(5)
+    graphics.require_graphics_mode()
     x0,y0 = graphics.window_coords(*parse_coord(ins))
     util.require_read(ins, ',') 
     array = var.get_var_name(ins)    
@@ -541,8 +532,7 @@ def draw_parse_gml(gml):
         
     
 def exec_draw(ins):
-    if not glob.scrn.graphics_mode:
-        raise error.RunError(5)
+    graphics.require_graphics_mode()
     
     # retrieve Graphics Macro Language string
     gml = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
