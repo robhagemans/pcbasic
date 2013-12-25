@@ -23,9 +23,12 @@ graph_window_bounds=None
 last_point = (0,0)    
 pixel_aspect_ratio = fp.MBF_class.one
 
-def require_graphics(err=5):
-    if (backend==None) or not glob.scrn.graphics_mode:
+def require_graphics_mode(err=5):
+    if not is_graphics_mode():
         raise error.RunError(err)
+
+def is_graphics_mode():
+    return (backend !=None) and glob.scrn.graphics_mode
 
 def put_point(x, y, c):
     global last_point
@@ -508,7 +511,6 @@ def check_scanline (line_seed, x_start, x_stop, y, c, border, ydir):
 
 
 def fill_scanline(x_start, x_stop, y, pattern):
-    global screen_changed
     mask = 7-x_start%8
     for x in range(x_start, x_stop+1):
         c=0
@@ -520,8 +522,7 @@ def fill_scanline(x_start, x_stop, y, pattern):
         if mask<0:
             mask=7
 
-        put_pixel_bare(x,y,c)
-    screen_changed=True    
+        put_pixel(x,y,c)
       
 
       
@@ -530,7 +531,7 @@ def flood_fill (x, y, pattern, c, border):
     if get_point(x,y)==border:
         return
 
-    bound_x0, bound_y0, bound_x1, bound_y1 = get_graph_view()  
+    bound_x0, bound_y0, bound_x1, bound_y1 = get_graph_clip()  
     x,y = view_coords(x,y)
             
     line_seed = [(x, x, y, 0)]
@@ -742,14 +743,10 @@ def view_coords(x,y):
     else:
         lefttop = get_graph_clip_lefttop()
         return x+lefttop[0], y+lefttop[1]
-        
-
+    
 
 def clear_graphics_view():
-    global screen_changed
-    bg = glob.scrn.colours(glob.scrn.attr)[1]&0x7    
-
-    clear_graph_clip()
+    clear_graph_clip(glob.scrn.colours(glob.scrn.attr)[1]&0x7)
     
-    screen_changed=True
-
+    
+    

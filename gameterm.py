@@ -215,25 +215,23 @@ def set_palette_entry(index, colour):
  
     
 def clear_scroll_area(bg):
-    global screen #, surface0,surface1
     global scroll_area
     global screen_changed
     
-    console.apage.surface0.set_clip(scroll_area)
-    console.apage.surface1.set_clip(scroll_area)
+#    console.apage.surface0.set_clip(scroll_area)
+#    console.apage.surface1.set_clip(scroll_area)
     
-    console.apage.surface0.fill(bg)
-    console.apage.surface1.fill(bg)
+    console.apage.surface0.fill(bg, scroll_area)
+    console.apage.surface1.fill(bg, scroll_area)
     
-    console.apage.surface0.set_clip(None)
-    console.apage.surface1.set_clip(None)
+#    console.apage.surface0.set_clip(None)
+#    console.apage.surface1.set_clip(None)
     
     screen_changed=True
-   
-    # TODO: is fill_rect faster?
     
     
 def clear_row(this_row, bg):
+    global screen_changed
     rect = pygame.Rect(0,(this_row-1)*font_height, 1+console.width*8,1+font_height)
     console.apage.surface0.fill(bg, rect)
     console.apage.surface1.fill(bg, rect)
@@ -263,19 +261,23 @@ def init_screen_mode(mode):
     glyphs = []
     for c in range(256):
         glyphs.append(build_glyph(c, font, font_height) )      
+   
         
+### FIXME: move to init_graphics_mode in graphics.py    
     if mode != 0:
         graphics.last_point = console.apage.surface0.get_rect().center
         # pixels e.g. 80*8 x 25*14, screen ratio 4x3 makes for pixel width/height (4/3)*(25*14/8*80)
-        pixel_aspect_ratio = fp.div(fp.from_int(fp.MBF_class, console.height*font_height), fp.from_int(fp.MBF_class, 6*console.width)) 
+        graphics.pixel_aspect_ratio = fp.div(fp.from_int(fp.MBF_class, console.height*font_height), fp.from_int(fp.MBF_class, 6*console.width)) 
         
     
     if mode in (1,10):
-        bitsperpixel=2
+        graphics.bitsperpixel=2
     elif mode==2:
-        bitsperpixel=1
+        graphics.bitsperpixel=1
     else:
-        bitsperpixel=4
+        graphics.bitsperpixel=4
+###
+   
         
     # set standard cursor
     build_line_cursor(True)
@@ -283,7 +285,6 @@ def init_screen_mode(mode):
     
 def setup_screen(to_height, to_width):
     global screen, font_height, palette64
-    #global surface0, surface1, 
     global cursor0
     global screen_changed
     
@@ -485,7 +486,7 @@ def build_cursor():
         
 
 def refresh_screen():
-    global blink_state, screen # surface0, console.apage.surface1
+    global blink_state, screen
     global last_row, last_col
     
     save_palette = screen.get_palette()
@@ -627,10 +628,7 @@ def put_pixel(x,y, index):
     global screen_changed
     console.apage.surface0.set_at((x,y), index)
     screen_changed=True
-
-def put_pixel_bare(x,y, index):
-    console.apage.surface0.set_at((x,y), index)
-    
+   
 
 def get_pixel(x,y):    
     # need 1.9.2 for this:
@@ -663,10 +661,12 @@ def get_graph_clip_lefttop():
     return graph_view.left, graph_view.top
 
 
-def clear_graph_clip():
+def clear_graph_clip(bg):
+    global screen_changed
     console.apage.surface0.set_clip(graph_view)
     console.apage.surface0.fill(bg)
     console.apage.surface0.set_clip(None)
+    screen_changed=True
 
 
 def remove_graph_clip():
