@@ -114,15 +114,15 @@ def main():
         console.backend = backend_dumb        
         
     elif args.text:
-        import terminal
-        console.backend = terminal
+        import backend_ansi
+        console.backend = backend_ansi
         
     else:   
-        import gameterm
-        console.backend = gameterm   
-        graphics.backend = gameterm
+        import backend_pygame
+        console.backend = backend_pygame   
+        graphics.backend = backend_pygame
         if not args.nosound:
-            sound.backend = gameterm
+            sound.backend = backend_pygame
     
     # initialise backends
     console.init()    
