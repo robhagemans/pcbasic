@@ -25,6 +25,8 @@ import graphics
 import sound
 
 
+# not an echoing terminal
+echo = False
 
 # CGA palette choices
 colours16 = [
@@ -148,14 +150,6 @@ def init():
 def close():
     pygame.display.quit()    
 
-
-def pause():
-    pass
-
-
-def cont():
-    pass
-    
     
 
 def get_palette_entry(index):

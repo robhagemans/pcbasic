@@ -59,13 +59,6 @@ def init():
     last_row_is_on=False
 
     
-def pause():
-    pass
-
-
-def cont():
-    pass    
-
         
 def close():
     pass
