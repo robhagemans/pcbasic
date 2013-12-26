@@ -13,9 +13,6 @@
 # console implementation
 console = None
 
-# sound implementation
-sound = None
-
 
 
 

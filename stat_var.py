@@ -26,7 +26,7 @@ import program
 import fileio
 
 # for music_foreground in CLEAR
-import draw_and_play
+import sound
 
 
 def exec_clear(ins):
@@ -64,8 +64,8 @@ def exec_clear(ins):
     error.error_resume = None
     
     # stop all sound
-    glob.sound.stop_all_sound()
-    draw_and_play.music_foreground=True
+    sound.stop_all_sound()
+    sound.music_foreground=True
 
     # integer expression allowed but ignored
     intexp = expressions.parse_expression(ins, allow_empty=True)

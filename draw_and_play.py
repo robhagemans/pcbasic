@@ -17,7 +17,7 @@ import tokenise
 import util
 import var
 import graphics
-
+import sound
 
 # generic for both macro languages
 
@@ -230,10 +230,9 @@ play_length=0.25
 
 notes = { 'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6, 'G-':6, 'G':7, 'G#':8, 'A-':8, 'A':9, 'A#':10, 'B-':10, 'B':11 }
 
-music_foreground=True
 
 def play_parse_mml(mml):
-    global play_octave, play_speed, play_length, play_tempo, music_foreground
+    global play_octave, play_speed, play_length, play_tempo
     gmls = StringIO.StringIO(mml)
     next_oct=0
     while True:
@@ -251,10 +250,10 @@ def play_parse_mml(mml):
         elif c=='N':
             note = ml_parse_number(gmls)
             if note>0 and note<=84:
-                glob.sound.play_sound(note_freq[note-1], play_length*play_speed*play_tempo)
+                sound.play_sound(note_freq[note-1], play_length*play_speed*play_tempo)
         
             if note==0:
-                glob.sound.play_pause(play_length*play_speed*play_tempo)
+                sound.play_pause(play_length*play_speed*play_tempo)
 
         elif c=='L':
             play_length = 1./ml_parse_number(gmls)    
@@ -303,10 +302,10 @@ def play_parse_mml(mml):
                 else:
                     break                    
             if note=='P':
-                glob.sound.play_pause(dur*play_speed*play_tempo)
+                sound.play_pause(dur*play_speed*play_tempo)
             
             else:        
-                glob.sound.play_sound(note_freq[(play_octave+next_oct)*12+notes[note]], dur*play_speed*play_tempo)
+                sound.play_sound(note_freq[(play_octave+next_oct)*12+notes[note]], dur*play_speed*play_tempo)
             next_oct=0
         
         elif c=='M':
@@ -319,15 +318,15 @@ def play_parse_mml(mml):
                 play_speed=3./4.        
             elif c=='F':
                 # foreground
-                music_foreground=True
+                sound.music_foreground=True
             elif c=='B':
                 # background
-                music_foreground=False
+                sound.music_foreground=False
             else:
                 raise error.RunError(5)    
         else:
             raise error.RunError(5)    
     
-    if music_foreground:
-        glob.sound.wait_music()
+    if sound.music_foreground:
+        sound.wait_music()
                                  
