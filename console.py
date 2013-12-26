@@ -22,6 +22,7 @@ import copy
 
 import util
 import error
+import graphics
 import sound
 
 backend=None
@@ -167,7 +168,8 @@ def set_mode(mode):
     resize(25,new_width)
     
     set_line_cursor(True)
-    backend.init_screen_mode(mode)        
+    backend.init_screen_mode(mode)  
+    graphics.init_graphics_mode(mode)      
     show_cursor(cursor)
 
     
