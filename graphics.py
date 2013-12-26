@@ -9,13 +9,15 @@
 # please see text file COPYING for licence terms.
 #
 
-from gameterm import *
-
 import glob
 import error
+import fp
 
 
 backend=None
+
+graph_view_set=False
+view_graph_absolute=True
 
 graph_window=None
 graph_window_bounds=None
@@ -23,36 +25,37 @@ graph_window_bounds=None
 last_point = (0,0)    
 pixel_aspect_ratio = fp.MBF_class.one
 
+
+
 def require_graphics_mode(err=5):
     if not is_graphics_mode():
         raise error.RunError(err)
 
+
 def is_graphics_mode():
     return (backend !=None) and glob.scrn.graphics_mode
+
 
 def put_point(x, y, c):
     global last_point
     last_point = (x,y)
-    
-    apply_graph_clip()
     x, y = view_coords(x,y)
-    put_pixel(x,y,get_colour_index(c))
-    remove_graph_clip()
+    
+    backend.apply_graph_clip()
+    backend.put_pixel(x,y,get_colour_index(c))
+    backend.remove_graph_clip()
     
     
 def get_point (x,y):
     x,y = view_coords(x,y)
-    return get_pixel(x,y)
+    return backend.get_pixel(x,y)
 
-            
             
 def draw_box_filled(x0,y0, x1,y1, c):
     global last_point 
     last_point=x1,y1
-    
     x0,y0 = view_coords(x0,y0)
     x1,y1 = view_coords(x1,y1)
-    
     c = get_colour_index(c)
     
     if y1<y0:
@@ -60,10 +63,9 @@ def draw_box_filled(x0,y0, x1,y1, c):
     if x1<x0:
         x0,x1 = x1,x0    
     
-    apply_graph_clip()
-    fill_rect(x0,y0,x1,y1,c)
-    remove_graph_clip()
-            
+    backend.apply_graph_clip()
+    backend.fill_rect(x0,y0,x1,y1,c)
+    backend.remove_graph_clip()
             
     
 def get_coord():
@@ -76,8 +78,6 @@ def get_aspect_ratio():
     return pixel_aspect_ratio
 
 
-
-    
 def set_graph_window(fx0, fy0, fx1, fy1, cartesian=True):
     global graph_view, view_graph_absolute, graph_window, graph_window_bounds
     
@@ -89,7 +89,7 @@ def set_graph_window(fx0, fy0, fx1, fy1, cartesian=True):
     if cartesian:
         fy0, fy1 = fy1, fy0
 
-    left,top, right,bottom = get_graph_clip()
+    left,top, right,bottom = backend.get_graph_clip()
         
     x0,y0 = fp.MBF_class.zero, fp.MBF_class.zero 
     x1,y1 = fp.from_int(fp.MBF_class, right-left), fp.from_int(fp.MBF_class, bottom-top)        
@@ -152,7 +152,6 @@ def window_scale(fx, fy):
     return x, y
 
 
-
 def get_colour_index(c):
     if c==-1:
         fore, back = glob.scrn.colours(glob.scrn.attr)
@@ -169,15 +168,10 @@ def get_colour_index(c):
     return c
 
     
-    
 def draw_line(x0,y0, x1,y1, c, pattern=0xffff):
     global last_point
-    
     last_point=x1,y1
-    
     c = get_colour_index(c)
-    apply_graph_clip()
-    
     x0,y0 = view_coords(x0,y0)
     x1,y1 = view_coords(x1,y1)
     
@@ -195,14 +189,14 @@ def draw_line(x0,y0, x1,y1, c, pattern=0xffff):
     mask = 0x8000
     error = dx/2
     x, y = x0, y0
-    #while x>=min(x0,x1) and x<=max(x0,x1):
     
+    backend.apply_graph_clip()
     for x in xrange(x0,x1+sx,sx):
         if pattern&mask!=0:
             if steep:
-                put_pixel(y, x, c)
+                backend.put_pixel(y, x, c)
             else:
-                put_pixel(x, y, c)
+                backend.put_pixel(x, y, c)
         
         mask= mask>>1
         if mask==0:
@@ -212,9 +206,8 @@ def draw_line(x0,y0, x1,y1, c, pattern=0xffff):
         if error<0:
             y += sy
             error += dx    
-        #x += sx    
         
-    remove_graph_clip()
+    backend.remove_graph_clip()
     
     
 def draw_straight(p0,p1,q, c, pattern, mask, xy=0):
@@ -222,34 +215,29 @@ def draw_straight(p0,p1,q, c, pattern, mask, xy=0):
     for p in range (p0,p1+sp,sp):
         if pattern&mask!=0:
             if xy==0:
-                put_pixel(p, q, c)
+                backend.put_pixel(p, q, c)
             else:
-                put_pixel(q, p, c)
+                backend.put_pixel(q, p, c)
         mask= mask>>1
         if mask==0:
             mask = 0x8000
-        
     return mask
 
                         
 def draw_box(x0,y0, x1,y1, c, pattern=0xffff):
     global last_point
-    
     last_point=x1,y1
-    
-    apply_graph_clip()
     x0,y0 = view_coords(x0,y0)
     x1,y1 = view_coords(x1,y1)
-    
     c = get_colour_index(c)
     mask = 0x8000
-    
+
+    backend.apply_graph_clip()
     mask = draw_straight(y0,y1,x0,c, pattern,mask,1)
     mask = draw_straight(x0,x1,y1,c, pattern,mask,0)
     mask = draw_straight(y1,y0,x1,c, pattern,mask,1)
     mask = draw_straight(x1,x0,y0,c, pattern,mask,0)
-    
-    remove_graph_clip()
+    backend.remove_graph_clip()
 
 
         
@@ -259,15 +247,9 @@ def draw_box(x0,y0, x1,y1, c, pattern=0xffff):
 # see e.g. http://en.wikipedia.org/wiki/Midpoint_circle_algorithm
 def draw_circle(x0,y0,r,c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, line1=False):
     global last_point
-    
-    #x0,y0 = window_coords(x0,y0)
-    
     last_point=x0,y0
-    
     c = get_colour_index(c)
-    apply_graph_clip()
     x0,y0 = view_coords(x0,y0)
-    
      
     if oct0==-1:
         hide_oct = range(0,0)
@@ -280,11 +262,11 @@ def draw_circle(x0,y0,r,c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, line
     # ----|.....|--- : coo1 lt coo0 : print if y in [0,coo1] or in [coo0, r]  
     # ....|-----|... ; coo1 gte coo0: print if y in [coo0,coo1]
    
-
+    backend.apply_graph_clip()
+    
     x, y= r, 0
     error=1-r 
     while x>=y:
-      #  if y>=ymin:
         for octant in range(0,8):
             if octant in hide_oct:
                 continue
@@ -300,7 +282,7 @@ def draw_circle(x0,y0,r,c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, line
                     if octant_gte(oct0, y, coo1) and octant_gte(oct0, coo0, y):
                         continue
             
-            put_pixel(*octant_coord(octant, x0,y0,x,y),index=c) 
+            backend.put_pixel(*octant_coord(octant, x0,y0,x,y),index=c) 
             
         # remember endpoints for pie sectors
         if y==coo0:
@@ -321,7 +303,7 @@ def draw_circle(x0,y0,r,c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, line
     if line1:
         draw_line(x0,y0, *octant_coord(oct1, x0, y0, coo1x, coo1), c=c)
 
-    remove_graph_clip()
+    backend.remove_graph_clip()
     
     
 def octant_coord(octant, x0,y0, x,y):    
@@ -383,14 +365,9 @@ def octant_gte(octant, y, coord):
 # for algorithm see http://members.chello.at/~easyfilter/bresenham.html
 def draw_ellipse(cx,cy,rx,ry,c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1, x1=-1,y1=-1, line1=False):
     global last_point
-    
-    #x0,y0 = window_coords(x0,y0)
-    
     last_point=x0,y0
-    
     c = get_colour_index(c)
     
-    apply_graph_clip()        
     cx,cy = view_coords(cx,cy)
     
     # find invisible quadrants
@@ -410,6 +387,7 @@ def draw_ellipse(cx,cy,rx,ry,c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1, x1=
     # error for first step
     err = dx+dy   
 
+    backend.apply_graph_clip()        
     x, y = rx, 0
     while True: 
         
@@ -430,7 +408,7 @@ def draw_ellipse(cx,cy,rx,ry,c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1, x1=
                     if quadrant_gte(qua0, x,y, x1,y1) and quadrant_gte(qua0, x0, y0, x, y):
                         continue
             
-            put_pixel(*quadrant_coord(quadrant, cx,cy,x,y), index=c) 
+            backend.put_pixel(*quadrant_coord(quadrant, cx,cy,x,y), index=c) 
         
         # bresenham error step
         e2 = 2*err
@@ -451,18 +429,16 @@ def draw_ellipse(cx,cy,rx,ry,c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1, x1=
     # too early stop of flat vertical ellipses
     # finish tip of ellipse
     while (y < ry): 
-        put_pixel(cx, cy+y, c) 
-        put_pixel(cx, cy-y, c) 
+        backend.put_pixel(cx, cy+y, c) 
+        backend.put_pixel(cx, cy-y, c) 
         y += 1 
-    
     
     if line0:
         draw_line(cx,cy, *quadrant_coord(qua0, cx, cy, x0, y0), c=c)
     if line1:
         draw_line(cx,cy, *quadrant_coord(qua1, cx, cy, x1, y1), c=c)
 
-        
-    remove_graph_clip()     
+    backend.remove_graph_clip()     
                 
 
     
@@ -497,7 +473,7 @@ def check_scanline (line_seed, x_start, x_stop, y, c, border, ydir):
     x_stop_next = x_start_next-1
     for x in range(x_start, x_stop+1):
         # here we check for border *as well as* fill colour, to avoid infinite loops over bits already painted (eg. 00 shape)
-        if get_pixel(x,y) not in (border,c):
+        if backend.get_pixel(x,y) not in (border,c):
             x_stop_next = x
         else:
             if x_stop_next >= x_start_next:
@@ -522,7 +498,7 @@ def fill_scanline(x_start, x_stop, y, pattern):
         if mask<0:
             mask=7
 
-        put_pixel(x,y,c)
+        backend.put_pixel(x,y,c)
       
 
       
@@ -531,7 +507,7 @@ def flood_fill (x, y, pattern, c, border):
     if get_point(x,y)==border:
         return
 
-    bound_x0, bound_y0, bound_x1, bound_y1 = get_graph_clip()  
+    bound_x0, bound_y0, bound_x1, bound_y1 = backend.get_graph_clip()  
     x,y = view_coords(x,y)
             
     line_seed = [(x, x, y, 0)]
@@ -541,12 +517,12 @@ def flood_fill (x, y, pattern, c, border):
         
         # check left extension
         x_left = x_start
-        while x_left-1 >= bound_x0 and get_pixel(x_left-1,y) != border:
+        while x_left-1 >= bound_x0 and backend.get_pixel(x_left-1,y) != border:
             x_left -= 1
         
         # check right extension
         x_right = x_stop
-        while x_right+1 <= bound_x1 and get_pixel(x_right+1,y) != border:
+        while x_right+1 <= bound_x1 and backend.get_pixel(x_right+1,y) != border:
             x_right+=1
         
         if ydir==0:
@@ -568,7 +544,7 @@ def flood_fill (x, y, pattern, c, border):
         fill_scanline(x_left, x_right, y, pattern)
         
         # show progress
-        check_events()
+        backend.check_events()
 
 
 
@@ -610,8 +586,7 @@ def set_area(x0,y0, array, operation):
     bytesperword=2
     bitsperword = bytesperword*8
     
-    
-    apply_graph_clip()
+    backend.apply_graph_clip()
     x0,y0 = view_coords(x0,y0)
     x1,y1 = view_coords(x1,y1)
 
@@ -621,7 +596,7 @@ def set_area(x0,y0, array, operation):
     for y in range(y0,y1+1):
         for x in range(x0,x1+1):
     
-            pixel = get_pixel(x,y)
+            pixel = backend.get_pixel(x,y)
            
             index = 0
             
@@ -639,7 +614,7 @@ def set_area(x0,y0, array, operation):
                 else:
                     hilo+=1
         
-            put_pixel(x,y, operation(pixel, index)) 
+            backend.put_pixel(x,y, operation(pixel, index)) 
     
         # left align next row
         if mask !=0x80:
@@ -647,7 +622,7 @@ def set_area(x0,y0, array, operation):
             byte+=bitsperpixel*bytesperword
             hilo=0
     
-    remove_graph_clip()        
+    backend.remove_graph_clip()        
                 
         
 def get_area(x0,y0,x1,y1, array):
@@ -665,10 +640,8 @@ def get_area(x0,y0,x1,y1, array):
     for i in range(4):
         var.set_array_byte(array, i, byte_array[i])
 
-
     bytesperword=2
     bitsperword=bytesperword*8
-    
     
     x0,y0 = view_coords(x0,y0)
     x1,y1 = view_coords(x1,y1)
@@ -679,7 +652,7 @@ def get_area(x0,y0,x1,y1, array):
     hilo=0
     for y in range(y0,y1+1):
         for x in range(x0,x1+1):
-            pixel = get_pixel(x,y)
+            pixel = backend.get_pixel(x,y)
             
             for b in range(bitsperpixel):
                 if pixel&(1<<b) != 0:
@@ -704,10 +677,6 @@ def get_area(x0,y0,x1,y1, array):
             hilo=0
 
 
-graph_view_set=False
-view_graph_absolute=True
-
-
 def set_graph_view(x0,y0,x1,y1, absolute=True):
     global graph_view_set, view_graph_absolute, last_point, graph_window_bounds
     
@@ -719,7 +688,7 @@ def set_graph_view(x0,y0,x1,y1, absolute=True):
         
     view_graph_absolute=absolute
     graph_view_set=True
-    last_point = set_graph_clip(x0, y0, x1, y1)
+    last_point = backend.set_graph_clip(x0, y0, x1, y1)
     if graph_window_bounds !=None:
         set_graph_window(*graph_window_bounds)
 
@@ -728,7 +697,7 @@ def unset_graph_view():
     global graph_view_set, view_graph_absolute, last_point, graph_window_bounds
     view_graph_absolute=False
     graph_view_set=False
-    last_point = unset_graph_clip()
+    last_point = backend.unset_graph_clip()
     if graph_window_bounds !=None:
         set_graph_window(*graph_window_bounds)
 
@@ -741,12 +710,12 @@ def view_coords(x,y):
     if (not graph_view_set) or view_graph_absolute:
         return x,y
     else:
-        lefttop = get_graph_clip_lefttop()
+        lefttop = backend.get_graph_clip_lefttop()
         return x+lefttop[0], y+lefttop[1]
     
 
 def clear_graphics_view():
-    clear_graph_clip(glob.scrn.colours(glob.scrn.attr)[1]&0x7)
+    backend.clear_graph_clip(glob.scrn.colours(glob.scrn.attr)[1]&0x7)
     
     
     
