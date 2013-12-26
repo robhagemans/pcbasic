@@ -26,6 +26,9 @@ import ansi, unicodepage
 import events
 import error
 
+# not an echoing terminal
+echo = False
+
 palette = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
 
 term_echo_on=True
@@ -46,17 +49,6 @@ def init_screen_mode(mode):
 def setup_screen(height, width):
     ansi.resize_term(height, width)   
     set_palette()
-    
-    
-def pause():
-    ansi.set_colour(7,0)
-    term_echo()
-    build_line_cursor(True)
-    show_cursor(True, False)
-    
-        
-def cont():
-    term_echo(False)
     
         
 def close():

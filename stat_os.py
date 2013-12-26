@@ -149,17 +149,15 @@ def exec_files(ins):
     util.require(ins, util.end_statement)
     
     
-    
 def exec_shell(ins):
-    
     if util.skip_white(ins) in util.end_statement:
         cmd = oslayer.shell
     else:
         cmd = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
     
-    glob.console.pause()
+    savecurs = glob.console.show_cursor()
     oslayer.spawn_interactive_shell(cmd) 
-    glob.console.cont()
+    glob.console.show_cursor(savecurs)
     
     util.require(ins, util.end_statement)
     

@@ -22,6 +22,7 @@ import copy
 
 import util
 import error
+import sound
 
 backend=None
 
@@ -222,7 +223,7 @@ def write(s, scroll_ok=True):
                 
         elif c == '\x0D':   set_pos(row+1, 1,scroll_ok)     # CR
         elif c == '\x00':   put_char('\x00')                # NUL
-        elif c == '\x07':   backend.beep()                  # BEL
+        elif c == '\x07':   sound.beep()                  # BEL
         elif c == '\x0B':   set_pos(1,1, scroll_ok)         # HOME
         elif c == '\x0C':   clear()
         elif c == '\x1C':   set_pos(row, col+1,scroll_ok)
@@ -413,7 +414,7 @@ def read():
                     redraw_row(col-1, row)
                     set_pos(row, col+1)
                 else:    
-                    put_char(c[pos])
+                    put_char(c[pos], echo=True)
                     
             elif c[pos] == '\x00' and pos+1<len(c):
                 pos+=1
@@ -508,7 +509,6 @@ def read_screenline(write_endl=True, from_start=False):
     while len(line)>0 and line[-1] in util.whitespace:
         line = line[:-1]
    
-    
     return ''.join(line)    
 
 
@@ -715,21 +715,6 @@ def colours(at):
 
 
 
-pause_savecurs = False
-def pause():
-    backend.pause()
-    set_line_cursor(True)
-    pause_savecurs = show_cursor()
-    
-        
-def cont():
-    global pause_savecurs
-    backend.cont()
-    show_cursor(pause_savecurs)
-    set_attr(*colours(attr))
-    set_line_cursor(True)
-    set_pos(row,col)        
-
 
 def clear():
     global view_set, view_start, scroll_height
@@ -895,7 +880,7 @@ def set_line_cursor(is_line=True):
 
 
 
-def put_char(c):
+def put_char(c, echo=False):
     global row, col, attr, height, width, apage #, charbuf, attrbuf, end
     
     # check if scroll& repositioning needed
@@ -906,7 +891,8 @@ def put_char(c):
         # no blink, bg=0
         attr = attr & 0xf
         
-    backend.putc_at(row, col, c, attr)    
+    if not echo or not backend.echo:    
+        backend.putc_at(row, col, c, attr)    
     show_cursor(save_curs)
     
     if row >0 and row <= height and col > 0 and col <= width:   

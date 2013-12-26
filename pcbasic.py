@@ -105,19 +105,23 @@ def main():
             expressions.peek_values[int(addr)]=int(val)
 
     ########################################
-    
+    sound.backend = nosound
+        
     # choose the screen 
     if args.dumb or not sys.stdout.isatty() or not sys.stdin.isatty():
-        import dumbterm
-        glob.console = dumbterm
-        sound.backend = nosound
+        #import dumbterm
+        #glob.console = dumbterm
+        import backend_dumb
+        import console
+        
+        glob.console = console
+        console.backend = backend_dumb        
         
     elif args.text:
         import terminal
         import console
         glob.console = console   
         console.backend = terminal
-        sound.backend = nosound
         
     else:   
         import gameterm
@@ -125,10 +129,8 @@ def main():
         glob.console = console   
         console.backend = gameterm   
         graphics.backend = gameterm
-        sound.backend = gameterm
-    
-    if args.nosound: 
-        sound.backend = nosound
+        if not args.nosound:
+            sound.backend = gameterm
     
     # initialise backends
     glob.console.init()    
