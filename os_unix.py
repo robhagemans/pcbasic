@@ -49,7 +49,9 @@ def spawn_interactive_shell(cmd):
     
     while True:
         c = console.get_char()
-        if c != '':
+        if c=='\x08': # BACKSPACE
+            shell.send('\x7f')
+        elif c != '':
             shell.send(c)
             
         c = ''
@@ -62,6 +64,9 @@ def spawn_interactive_shell(cmd):
             if c=='\r':
                 console.idle()
                 console.check_events()
+            elif c=='\x08':
+                if console.col !=1:
+                    console.col -= 1
             else:
                 console.write(c)
                 
