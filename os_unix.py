@@ -22,6 +22,7 @@ import pexpect
 import glob
     
 shell = '/bin/sh'
+shell_cmd = shell + ' -c'
 
 def disk_free(path):
     st = os.statvfs(path)
@@ -41,10 +42,12 @@ def unlock(fd):
     
   
 def spawn_interactive_shell(cmd):
-    shell = pexpect.spawn(cmd)
+    try:
+        shell = pexpect.spawn(cmd)
+    except Exception:
+        return 
     
     while True:
-        #console.idle()
         c = console.get_char()
         if c != '':
             shell.send(c)

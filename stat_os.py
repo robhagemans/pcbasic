@@ -153,7 +153,7 @@ def exec_shell(ins):
     if util.skip_white(ins) in util.end_statement:
         cmd = oslayer.shell
     else:
-        cmd = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
+        cmd = oslayer.shell_cmd + ' ' + vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
     
     savecurs = console.show_cursor()
     oslayer.spawn_interactive_shell(cmd) 

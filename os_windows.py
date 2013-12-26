@@ -20,7 +20,7 @@ import error
 import console
  
 shell = 'CMD'    
-
+shell_cmd = shell + ' /c'
 
     
 def disk_free(path):
