@@ -56,11 +56,11 @@ def spawn_interactive_shell(cmd):
             pass
             
         if c != '':
-            if c!='\r':
-                console.write(c)
-            else:
+            if c=='\r':
                 console.idle()
                 console.check_events()
+            else:
+                console.write(c)
                 
         elif not shell.isalive(): 
             break

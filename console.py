@@ -210,7 +210,7 @@ def write(s, scroll_ok=True):
             put_char(c)
                 
         elif c=='\x09':                                     # TAB
-            num = (tab - (col - tab*int((col-1)/tab)))
+            num = (tab - (col-1 - tab*int((col-1)/tab)))
             for _ in range(num):
                 put_char(' ')
                  
