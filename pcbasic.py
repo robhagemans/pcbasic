@@ -22,6 +22,19 @@ import argparse
 import glob
 import fileio
                 
+import run
+import error
+import var
+import deviceio
+import util
+import printer
+import oslayer
+import statements
+import nosound
+import graphics
+import tokenise
+import program
+    
 #################################################################
 
 
@@ -64,7 +77,6 @@ def main():
     ########################################
     
     # converter invocations
-
     if args.conv_asc:
         convert(args.infile, args.save, 'A')
     elif args.conv_byte:
@@ -77,24 +89,15 @@ def main():
     ########################################
     
     # DEBUG mode
-    
-    glob.debug = args.debug
-
-    # ensure tokenise module is not imported before here, as debug variable influences import
-    
-    import run
-    import error
-    import var
-    import deviceio
-    import util
-    import printer
-    import oslayer
-    import statements
-    import nosound
-    import graphics
+    tokenise.init_DEBUG(args.debug)
+    if args.debug:
+        debugstr=' [DEBUG mode]'
+    else:
+        debugstr=''
 
     ########################################
     
+    # PEEK presets
     if args.peek !=None:
         for a in args.peek:
             [addr,val] = a.split(':')
@@ -102,9 +105,6 @@ def main():
 
     ########################################
     
-    
-    
-    ########################################
     # choose the screen 
     if args.dumb or not sys.stdout.isatty() or not sys.stdin.isatty():
         import dumbterm
@@ -134,8 +134,6 @@ def main():
     
     glob.console.init()    
         
-        
-        
     # choose peripherals    
     deviceio.scrn = glob.console
     deviceio.kybd = glob.console
@@ -153,10 +151,6 @@ def main():
         
         if not args.run and args.cmd == None:
             statements.show_keys()
-            debugstr=''
-            if glob.debug:
-                debugstr=' [DEBUG mode]'
-                
             glob.console.write("PC-BASIC 3.23"+debugstr+util.endl)
             glob.console.write('(C) Copyright 2013 PC-BASIC authors. Type RUN "INFO" for more.'+util.endl)
             glob.console.write(("%d Bytes free" % var.free_mem) +util.endl)
@@ -170,11 +164,7 @@ def main():
 
 
 def convert(infile, outfile, mode):
-    import program
     import dumbterm 
-    import error
-    import oslayer
-    import run
     
     error.warnings_on=True
     glob.console=dumbterm
