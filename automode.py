@@ -12,6 +12,7 @@
 import glob
 import error
 import program
+import console
 
 auto_mode = False
 auto_increment = 10
@@ -24,7 +25,7 @@ def auto_input_loop():
     auto_mode_show_line()
     try:
         # input loop, checks events
-        line = glob.console.read_screenline(from_start=True) 
+        line = console.read_screenline(from_start=True) 
     except error.Break:
         program.prompt=True
         auto_mode=False
@@ -42,11 +43,11 @@ def auto_mode_show_line():
     global auto_linenum, auto_increment
     
     auto_linenum += auto_increment
-    glob.console.write(str(auto_linenum))
+    console.write(str(auto_linenum))
     if auto_linenum in program.line_numbers:
-        glob.console.write('*')
+        console.write('*')
     else:
-        glob.console.write(' ')
+        console.write(' ')
 
                 
 def auto_mode_remove_star(line):                

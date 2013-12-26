@@ -12,7 +12,7 @@
 import glob
 import error
 import fp
-
+import console
 
 backend=None
 
@@ -33,7 +33,7 @@ def require_graphics_mode(err=5):
 
 
 def is_graphics_mode():
-    return (backend !=None) and glob.console.graphics_mode
+    return (backend !=None) and console.graphics_mode
 
 
 def put_point(x, y, c):
@@ -154,17 +154,17 @@ def window_scale(fx, fy):
 
 def get_colour_index(c):
     if c==-1:
-        fore, back = glob.console.colours(glob.console.attr)
+        fore, back = console.colours(console.attr)
         c = fore&0xf
     elif c==-2:
-        fore, back = glob.console.colours(glob.console.attr)
+        fore, back = console.colours(console.attr)
         c = back&0x7    
     
     else:
         if c<0:
             c=0
-        if c>=glob.console.num_colours:
-            c=glob.console.num_colours-1
+        if c>=console.num_colours:
+            c=console.num_colours-1
     return c
 
     
@@ -578,7 +578,7 @@ def set_area(x0,y0, array, operation):
 
     
     # in mode 1, number of x bits is given rather than pixels
-    if glob.console.screen_mode==1:
+    if console.screen_mode==1:
         dx/=2
     
     x1,y1 = x0+dx-1, y0+dy-1
@@ -632,7 +632,7 @@ def get_area(x0,y0,x1,y1, array):
     dy = (y1-y0+1)
    
     # in mode 1, number of x bits is given rather than pixels
-    if glob.console.screen_mode==1:
+    if console.screen_mode==1:
         byte_array = list(vartypes.value_to_uint(dx*2)) + list(vartypes.value_to_uint(dy)) 
     else:
         byte_array = list(vartypes.value_to_uint(dx)) + list(vartypes.value_to_uint(dy)) 
@@ -715,7 +715,7 @@ def view_coords(x,y):
     
 
 def clear_graphics_view():
-    backend.clear_graph_clip(glob.console.colours(glob.console.attr)[1]&0x7)
+    backend.clear_graph_clip(console.colours(console.attr)[1]&0x7)
     
     
     

@@ -27,6 +27,7 @@ import os
 # for FRE() only
 import program
 
+import console
 
 
 
@@ -291,14 +292,14 @@ def parse_expr_unit(ins):
         return value_varptr(ins)
     
     elif d == '\xDB':       # CSRLIN
-        return ('%', glob.console.get_row())
+        return ('%', console.get_row())
     elif d == '\xDC':       # POINT
         return value_point(ins)
     
     elif d == '\xDE':       # INKEY$
         # wait a tick
-        glob.console.idle()
-        return ('$', glob.console.get_char())
+        console.idle()
+        return ('$', console.get_char())
     
     elif d == '\xE9':        # unary +
         return parse_expr_unit(ins)
@@ -399,7 +400,7 @@ def parse_expr_unit(ins):
         elif d == '\x91':   # POS
             # parse the dummy argument, doesnt matter what it is as long as it's a legal expression
             parse_bracket(ins)
-            return ('%', glob.console.get_col())
+            return ('%', console.get_col())
         elif d == '\x92':   # LEN
             val= ('%', len(vartypes.pass_string_keep(parse_bracket(ins))[1]) )
             d = ins.read(1)
@@ -620,15 +621,15 @@ def value_screen(ins):
     
     if args[0] == None or args[1]==None:
         raise error.RunError(5)
-    if args[0]<1 or args[0] > glob.console.height:
+    if args[0]<1 or args[0] > console.height:
         raise error.RunError(5)
-    if glob.console.view_set and args[0]<glob.console.view_start or args[0] > glob.console.scroll_height:
-        raise error.RunError(5)
-    
-    if args[1]<1 or args[1] > glob.console.width:
+    if console.view_set and args[0]<console.view_start or args[0] > console.scroll_height:
         raise error.RunError(5)
     
-    (char, attr) = glob.console.read_screen(args[0], args[1])
+    if args[1]<1 or args[1] > console.width:
+        raise error.RunError(5)
+    
+    (char, attr) = console.read_screen(args[0], args[1])
     
     if args[2] != None and args[2] != 0:
         return ('%', attr)
@@ -646,7 +647,7 @@ def value_input(ins):    # INPUT$
     if num<1 or num>255:
         raise error.RunError(5)
     
-    screen = glob.console    
+    screen = console    
     if util.skip_white_read_if(ins, ','):
         util.skip_white_read_if(ins, '#')
         
@@ -835,7 +836,7 @@ def value_point(ins):
         raise error.RunError(2)
     if lst[1]==None:
         # single-argument version
-        x,y = glob.console.get_coord()
+        x,y = console.get_coord()
         fn = vartypes.pass_int_keep(lst[0])[1]
         if fn==0:
             return ('%', x)
@@ -848,7 +849,7 @@ def value_point(ins):
             # FIXME: WINDOW not implemented
             return ('%', y)
     else:       
-        return ('%', glob.console.get_point(vartypes.pass_int_keep(lst[0])[1], vartypes.pass_int_keep(lst[1])[1]))        
+        return ('%', console.get_point(vartypes.pass_int_keep(lst[0])[1], vartypes.pass_int_keep(lst[1])[1]))        
 
 def value_pmap(ins):
     util.require_read(ins, '(')
@@ -859,16 +860,16 @@ def value_pmap(ins):
 
  
     if mode == 0:
-        value, dummy = glob.console.window_coords(coord,fp.MBF_class.zero)       
+        value, dummy = console.window_coords(coord,fp.MBF_class.zero)       
         value = ('%', value)        
     elif mode == 1:
-        dummy, value = glob.console.window_coords(fp.MBF_class.zero,coord)       
+        dummy, value = console.window_coords(fp.MBF_class.zero,coord)       
         value = ('%', value)        
     elif mode == 2:
-        value, dummy = glob.console.get_window_coords(fp.round_to_int(coord),0)       
+        value, dummy = console.get_window_coords(fp.round_to_int(coord),0)       
         value = fp.pack(value)
     elif mode == 3:
-        dummy, value = glob.console.get_window_coords(0,fp.round_to_int(coord))       
+        dummy, value = console.get_window_coords(0,fp.round_to_int(coord))       
         value = fp.pack(value)
     else:
         raise error.RunError(5)

@@ -10,8 +10,6 @@
 #
 
 
-# console implementation
-console = None
 
 
 

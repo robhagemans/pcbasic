@@ -25,6 +25,7 @@ import statements
 import oslayer
 import fileio
 import automode
+import console
 
 #######################################################
 
@@ -90,7 +91,7 @@ def main_loop():
 def input_loop():
     try:
         # input loop, checks events
-        line = glob.console.read_screenline(from_start=True) 
+        line = console.read_screenline(from_start=True) 
     except error.Break:
         line = ''
         
@@ -104,17 +105,17 @@ def input_loop():
 
 # execute any commands
 def execution_loop():
-    glob.console.hide_cursor()
+    console.hide_cursor()
     while True:
         try:
-            glob.console.check_events()
+            console.check_events()
             events.handle_events()
             if not statements.parse_statement():
                 break
         except error.Error as e:
             if not handle_error(e):
                 break
-    glob.console.show_cursor()
+    console.show_cursor()
         
 
     
@@ -124,8 +125,8 @@ def execution_loop():
                
 def prompt(force=False):
     if program.prompt or force:
-        glob.console.start_line()
-        glob.console.write("Ok "+util.endl)
+        console.start_line()
+        console.write("Ok "+util.endl)
     else:
         program.prompt = True
               

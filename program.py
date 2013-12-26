@@ -18,6 +18,7 @@ import events
 import tokenise
 import protect
 import util
+import console
 
 import StringIO 
 
@@ -299,15 +300,15 @@ def edit_line(from_line, pos=-1):
     output.seek(0)
     bytecode.seek(current)
     
-    glob.console.clear_line(glob.console.row)
-    glob.console.write(output.getvalue())
+    console.clear_line(console.row)
+    console.write(output.getvalue())
     output.close()
      
     # throws back to direct mode
     unset_runmode()
     #suppress prompt, move cursor?
     prompt=False
-    glob.console.set_pos(glob.console.get_row()-1, 1)
+    console.set_pos(console.get_row()-1, 1)
     
     
 def renumber(new_line=-1, start_line=-1, step=-1):
@@ -362,7 +363,7 @@ def renumber(new_line=-1, start_line=-1, step=-1):
             bytecode.write(vartypes.value_to_uint(newnum))
         else:
             # just a message, not an actual error. keep going.
-            glob.console.write('Undefined line '+str(jumpnum)+' in '+str(linum)+util.endl)
+            console.write('Undefined line '+str(jumpnum)+' in '+str(linum)+util.endl)
     
     # rebuild the line number dictionary    
     preparse()    

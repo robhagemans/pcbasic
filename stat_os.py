@@ -23,7 +23,7 @@ import expressions
 import oslayer
 
 import util
-
+import console
 
 def exec_chdir(ins):
     name = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
@@ -130,8 +130,8 @@ def exec_files(ins):
     # get working dir, replace / with \
     cwd=os.path.abspath(path).replace(os.sep,'\\')
     
-    glob.console.write(cwd+util.endl)
-    num = glob.console.width/20
+    console.write(cwd+util.endl)
+    num = console.width/20
     
     if len(output)==0:
         # file not found
@@ -140,11 +140,11 @@ def exec_files(ins):
     while len(output)>0:
         line = ' '.join(output[:num])
         output = output[num:]
-        glob.console.write(line+util.endl)       
+        console.write(line+util.endl)       
         # allow to break during dir listing & show names flowing on screen
-        glob.console.check_events()             
+        console.check_events()             
     
-    glob.console.write(str(oslayer.disk_free(path))+' Bytes free'+util.endl)
+    console.write(str(oslayer.disk_free(path))+' Bytes free'+util.endl)
     
     util.require(ins, util.end_statement)
     
@@ -155,9 +155,9 @@ def exec_shell(ins):
     else:
         cmd = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
     
-    savecurs = glob.console.show_cursor()
+    savecurs = console.show_cursor()
     oslayer.spawn_interactive_shell(cmd) 
-    glob.console.show_cursor(savecurs)
+    console.show_cursor(savecurs)
     
     util.require(ins, util.end_statement)
     

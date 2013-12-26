@@ -16,6 +16,10 @@ import fcntl
 import fnmatch
 
 import error
+import console
+
+import pexpect
+import glob
     
 shell = '/bin/sh'
 
@@ -35,15 +39,13 @@ def lock(fd, access, lock, length=0, start=0, whence=0):
 def unlock(fd):
     fcntl.flock(ins.fhandle, fcntl.LOCK_UN)
     
-import pexpect
-import glob
   
 def spawn_interactive_shell(cmd):
     shell = pexpect.spawn(cmd)
     
     while True:
-        #glob.console.idle()
-        c = glob.console.get_char()
+        #console.idle()
+        c = console.get_char()
         if c != '':
             shell.send(c)
             
@@ -55,10 +57,10 @@ def spawn_interactive_shell(cmd):
             
         if c != '':
             if c!='\r':
-                glob.console.write(c)
+                console.write(c)
             else:
-                glob.console.idle()
-                glob.console.check_events()
+                console.idle()
+                console.check_events()
                 
         elif not shell.isalive(): 
             break

@@ -16,7 +16,7 @@ import glob
 import util
 import program
 import tokenise
-
+import console
 
 def exec_DEBUG(ins):
     # this is not a GW-BASIC behaviour, but helps debugging.
@@ -38,7 +38,7 @@ def exec_DEBUG(ins):
         pass    
     sys.stdout = sys.__stdout__
 
-    glob.console.write(buf.getvalue())
+    console.write(buf.getvalue())
 
     
 # DEBUG utilities

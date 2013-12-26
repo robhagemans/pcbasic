@@ -24,6 +24,7 @@ import tokenise
 import program
 import oslayer
 import automode
+import console
 
 # for rnd.clear() on CHAIN
 import rnd
@@ -121,8 +122,8 @@ def exec_list(ins, out=None):
     util.require(ins, util.end_statement)
 
     if out==None:
-        out = glob.console
-    if out==glob.console:
+        out = console
+    if out==console:
         output = StringIO.StringIO()
     else:
         output = out
@@ -132,14 +133,14 @@ def exec_list(ins, out=None):
     tokenise.detokenise(program.bytecode, output, from_line, to_line)
     program.bytecode.seek(current)
     
-    if out == glob.console:
+    if out == console:
         lines = output.getvalue().split(util.endl)
         if lines[-1]=='':
             lines = lines[:-1]
         for line in lines:
-            glob.console.check_events()
-            glob.console.clear_line(glob.console.row)
-            glob.console.write(line+util.endl)
+            console.check_events()
+            console.clear_line(console.row)
+            console.write(line+util.endl)
     
     
 def exec_llist(ins):

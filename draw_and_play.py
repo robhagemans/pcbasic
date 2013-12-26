@@ -18,6 +18,7 @@ import util
 import var
 import graphics
 import sound
+import console
 
 # generic for both macro languages
 
@@ -143,7 +144,7 @@ def draw_parse_gml(gml):
         elif c=='C':
             # set foreground colour
             colour = ml_parse_number(gmls)
-            glob.console.set_attr(colour,0)
+            console.set_attr(colour,0)
         elif c=='S':
             # set scale
             draw_scale = ml_parse_number(gmls)
