@@ -27,6 +27,7 @@ import os
 # for FRE() only
 import program
 
+import graphics
 import console
 
 
@@ -836,7 +837,7 @@ def value_point(ins):
         raise error.RunError(2)
     if lst[1]==None:
         # single-argument version
-        x,y = console.get_coord()
+        x,y = graphics.get_coord()
         fn = vartypes.pass_int_keep(lst[0])[1]
         if fn==0:
             return ('%', x)
@@ -849,7 +850,7 @@ def value_point(ins):
             # FIXME: WINDOW not implemented
             return ('%', y)
     else:       
-        return ('%', console.get_point(vartypes.pass_int_keep(lst[0])[1], vartypes.pass_int_keep(lst[1])[1]))        
+        return ('%', graphics.get_point(vartypes.pass_int_keep(lst[0])[1], vartypes.pass_int_keep(lst[1])[1]))        
 
 def value_pmap(ins):
     util.require_read(ins, '(')
@@ -860,16 +861,16 @@ def value_pmap(ins):
 
  
     if mode == 0:
-        value, dummy = console.window_coords(coord,fp.MBF_class.zero)       
+        value, dummy = graphics.window_coords(coord,fp.MBF_class.zero)       
         value = ('%', value)        
     elif mode == 1:
-        dummy, value = console.window_coords(fp.MBF_class.zero,coord)       
+        dummy, value = graphics.window_coords(fp.MBF_class.zero,coord)       
         value = ('%', value)        
     elif mode == 2:
-        value, dummy = console.get_window_coords(fp.round_to_int(coord),0)       
+        value, dummy = graphics.get_window_coords(fp.round_to_int(coord),0)       
         value = fp.pack(value)
     elif mode == 3:
-        dummy, value = console.get_window_coords(0,fp.round_to_int(coord))       
+        dummy, value = graphics.get_window_coords(0,fp.round_to_int(coord))       
         value = fp.pack(value)
     else:
         raise error.RunError(5)

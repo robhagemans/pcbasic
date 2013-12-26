@@ -211,16 +211,8 @@ def set_palette_entry(index, colour):
 def clear_scroll_area(bg):
     global scroll_area
     global screen_changed
-    
-#    console.apage.surface0.set_clip(scroll_area)
-#    console.apage.surface1.set_clip(scroll_area)
-    
     console.apage.surface0.fill(bg, scroll_area)
     console.apage.surface1.fill(bg, scroll_area)
-    
-#    console.apage.surface0.set_clip(None)
-#    console.apage.surface1.set_clip(None)
-    
     screen_changed=True
     
     
@@ -257,20 +249,6 @@ def init_screen_mode(mode):
         glyphs.append(build_glyph(c, font, font_height) )      
    
         
-### FIXME: move to init_graphics_mode in graphics.py    
-    if mode != 0:
-        graphics.last_point = console.apage.surface0.get_rect().center
-        # pixels e.g. 80*8 x 25*14, screen ratio 4x3 makes for pixel width/height (4/3)*(25*14/8*80)
-        graphics.pixel_aspect_ratio = fp.div(fp.from_int(fp.MBF_class, console.height*font_height), fp.from_int(fp.MBF_class, 6*console.width)) 
-        
-    
-    if mode in (1,10):
-        graphics.bitsperpixel=2
-    elif mode==2:
-        graphics.bitsperpixel=1
-    else:
-        graphics.bitsperpixel=4
-###
    
         
     # set standard cursor

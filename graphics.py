@@ -36,6 +36,31 @@ def is_graphics_mode():
     return (backend !=None) and console.graphics_mode
 
 
+def init_graphics_mode(mode):
+    global last_point, pixel_aspect_ratio, bitsperpixel
+    if mode==0:
+        return
+
+    #console.apage.surface0.get_rect().center
+    # FIXME - can't have a console.backend reference here
+    last_point = (console.width*4, console.height*console.backend.font_height/2)
+    
+    # pixels e.g. 80*8 x 25*14, screen ratio 4x3 makes for pixel width/height (4/3)*(25*14/8*80)
+    pixel_aspect_ratio = fp.div(
+        fp.from_int(fp.MBF_class,console.height*console.backend.font_height), 
+        fp.from_int(fp.MBF_class,6*console.width)) 
+    
+    if mode in (1,10):
+        bitsperpixel=2
+    elif mode==2:
+        bitsperpixel=1
+    else:
+        bitsperpixel=4
+
+
+
+
+
 def put_point(x, y, c):
     global last_point
     last_point = (x,y)
