@@ -31,6 +31,7 @@ import printer
 import oslayer
 import statements
 import nosound
+import sound
 import graphics
 import tokenise
 import program
@@ -108,32 +109,33 @@ def main():
     # choose the screen 
     if args.dumb or not sys.stdout.isatty() or not sys.stdin.isatty():
         import dumbterm
-        
         glob.console = dumbterm
-        glob.sound = nosound
+        sound.backend = nosound
         
     elif args.text:
         import terminal
         import console
-    
         glob.console = console   
         console.backend = terminal
-        glob.sound = nosound
+        sound.backend = nosound
         
     else:   
         import gameterm
         import console
-    
         glob.console = console   
         console.backend = gameterm   
         graphics.backend = gameterm
-        glob.sound = gameterm
+        sound.backend = gameterm
     
-    if args.nosound:
-        glob.sound = nosound
+    if args.nosound: 
+        sound.backend = nosound
     
+    # initialise backends
     glob.console.init()    
-        
+    if not sound.init_sound():
+        # fallback warning here?
+        sound.backend = nosound
+    
     # choose peripherals    
     deviceio.scrn = glob.console
     deviceio.kybd = glob.console

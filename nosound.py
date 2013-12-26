@@ -9,29 +9,21 @@
 # please see text file COPYING for licence terms.
 #
 
-import sys
-
-def pre_init_sound():
+def init_sound():
+    return True
+    
+def stop_all_sound():
     pass
 
-def init_sound():    
+def append_sound(frequency, duration):
     pass
     
-def play_sound(frequency, duration):
-    pass
-    
-def play_pause(duration):
+def append_pause(duration):
     pass
     
 def wait_music():
     pass    
 
-def music_queue_length():
-    return 0
-    
-def beep():
-    sys.stdout.write('\x07')
+def check_sound():
+    pass    
 
-def stop_all_sound():
-    pass
-    

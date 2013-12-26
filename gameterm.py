@@ -22,7 +22,7 @@ import events
 import var
 import console
 import graphics
-
+import sound
 
 
 
@@ -136,13 +136,13 @@ keycode_to_scancode = {
 
 def init():
     global fonts
-    pre_init_sound()    
+    pre_init_mixer()    
     pygame.init()
     pygame.display.set_caption('PC-BASIC 3.23')
     pygame.key.set_repeat(500,24)
     fonts = cpi_font.load_codepage()
     console.set_mode(0)
-    init_sound()
+    init_mixer()
 
         
 def close():
@@ -585,7 +585,7 @@ def check_events():
         events.handle_events()
             
         # manage sound queue
-        check_sound()
+        sound.check_sound()
             
             
             
@@ -708,43 +708,49 @@ def xor_cursor_screen(row,col):
 # see e.g. http://stackoverflow.com/questions/7816294/simple-pygame-audio-at-a-frequency
 
 
-import pygame
-import numpy
-
 mixer_bits=16
 mixer_samplerate= 44100*4
-sound_queue = []
 
 # quit sound server after quiet period of quiet_quit ticks, to avoid high-ish cpu load from the sound server.
 quiet_ticks = 0        
 quiet_quit = 100
 
 
-def pre_init_sound():
+
+def pre_init_mixer():
     global mixer_samplerate, mixer_bits
     pygame.mixer.pre_init(mixer_samplerate, -mixer_bits, channels=1, buffer=128) #4096
 
 
-def init_sound():    
+def init_mixer():    
     pygame.mixer.quit()
     
+def init_sound():
+    global numpy
+    try:
+        import numpy
+        return True
+    except Exception:
+        return False    
+            
     
 def stop_all_sound():
     pygame.mixer.quit()
         
     
-def check_init_sound():
+def check_init_mixer():
     if pygame.mixer.get_init() ==None:
         pygame.mixer.init()
-
-
+        
+        
+        
 def check_quit_sound():
     global sound_queue, quiet_ticks, quiet_quit
     
     if pygame.mixer.get_init() == None:
         return
         
-    if len(sound_queue)>0 or pygame.mixer.get_busy():
+    if len(sound.sound_queue)>0 or pygame.mixer.get_busy():
         quiet_ticks=0
     else:
         quiet_ticks+=1    
@@ -752,10 +758,10 @@ def check_quit_sound():
             # this is to avoid high pulseaudio cpu load
             pygame.mixer.quit()
             
-     
-def play_sound(frequency, duration):
-    global sound_queue, mixer_samplerate, mixer_bits
-    check_init_sound()
+    
+def append_sound(frequency, duration):
+    global mixer_samplerate, mixer_bits
+    check_init_mixer()
     
     amplitude = 2**(mixer_bits - 1) - 1
 
@@ -780,45 +786,31 @@ def play_sound(frequency, duration):
     
         rest-=int(rest)
     
-    sound = pygame.sndarray.make_sound(buf)
-    sound_queue.append(sound)
+    the_sound = pygame.sndarray.make_sound(buf)
+    sound.sound_queue.append(the_sound)
         
-    
-def play_pause(duration):
-    global sound_queue
-    check_init_sound()
-    
+        
+def append_pause(duration):
+    check_init_mixer()
     buf = numpy.zeros(duration*mixer_samplerate/4)
-    sound = pygame.sndarray.make_sound(buf)
-    
-    sound_queue.append(sound)
+    pause = pygame.sndarray.make_sound(buf)
+    sound.sound_queue.append(pause)
     
 
-# process qound queue in event loop
+# process sound queue in event loop
 def check_sound():
-    global sound_queue
-    
-    if len(sound_queue)>0:
-        check_init_sound()
+    if len(sound.sound_queue)>0:
+        check_init_mixer()
     
         if pygame.mixer.Channel(0).get_queue() == None:
-            pygame.mixer.Channel(0).queue(sound_queue.pop(0))
+            pygame.mixer.Channel(0).queue(sound.sound_queue.pop(0))
     else:
         check_quit_sound()
-    
 
-    
+        
 def wait_music():
-    while len(sound_queue)>0 or pygame.mixer.get_busy():
+    while len(sound.sound_queue)>0 or pygame.mixer.get_busy():
         idle()
         check_events()
-
-    
-def beep():
-    play_sound(800, 0.25)
-
-    
-def music_queue_length():
-    global sound_queue
-    return len(sound_queue)       
-    
+        
+        

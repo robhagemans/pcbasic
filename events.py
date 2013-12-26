@@ -11,6 +11,7 @@
 
 
 import glob
+import sound
 import vartypes
 # for timer
 import oslayer
@@ -138,7 +139,7 @@ def handle_events():
             program.jump(jumpnum)
    
     if play_enabled and play_event !=-1 and not play_stopped:
-        play_now = glob.sound.music_queue_length()
+        play_now = sound.music_queue_length()
         
         if play_last >= play_trig and play_now < play_trig:    
             jumpnum = play_event

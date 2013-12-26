@@ -15,14 +15,15 @@ import vartypes
 import util
 import expressions
 import events
+import sound
 import draw_and_play
 
 
 def exec_beep(ins):
     util.require(ins, util.end_statement)
-    glob.sound.beep() 
-    if draw_and_play.music_foreground:
-        glob.sound.wait_music()
+    sound.beep() 
+    if sound.music_foreground:
+        sound.wait_music()
     
     
 def exec_sound(ins):
@@ -31,14 +32,14 @@ def exec_sound(ins):
     dur = vartypes.pass_int_keep(expressions.parse_expression(ins), maxint=65535)[1]
     util.require(ins, util.end_statement)
     if freq == 32767:
-        glob.sound.play_pause(float(dur)/18.2)
+        sound.play_pause(float(dur)/18.2)
     elif freq>=37 and freq<32767:    
-        glob.sound.play_sound(freq, float(dur)/18.2)
+        sound.play_sound(freq, float(dur)/18.2)
     else:
         raise error.RunError(5)
     
-    if draw_and_play.music_foreground:
-        glob.sound.wait_music()
+    if sound.music_foreground:
+        sound.wait_music()
 
     
 def exec_play(ins):
