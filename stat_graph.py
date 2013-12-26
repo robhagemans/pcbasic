@@ -9,19 +9,14 @@
 # please see text file COPYING for licence terms.
 #
 
-import StringIO
-
-import glob
 import error
 import vartypes
 import var
 import util
-import tokenise
 import expressions
 import fp
-import events
 import graphics
-
+import draw_and_play
 
 
 
@@ -52,10 +47,10 @@ def exec_pset(ins, default_colour=-1):
         y += graphics.last_point[1]        
     
     graphics.put_point(x,y,c)
+
         
 def exec_preset(ins):
     exec_pset(ins, -2)   
-    
     
 
 def exec_line_graph(ins):
@@ -116,7 +111,6 @@ def exec_view_graph(ins):
         fill, border = None, None
         if util.skip_white_read_if(ins, ','):
             [fill, border] = expressions.parse_int_list(ins, 2, err=2)
-            
         
         if fill != None:
             graphics.draw_box_filled(x0,y0,x1,y1, fill)
@@ -127,7 +121,7 @@ def exec_view_graph(ins):
     else:
         graphics.unset_graph_view()
                 
-    util.require(ins, util.end_expression)        
+    util.require(ins, util.end_statement)        
     
     
 def exec_window(ins):
@@ -138,13 +132,11 @@ def exec_window(ins):
         x0,y0 = parse_coord(ins)
         util.require_read(ins, '\xEA') #-
         x1,y1 = parse_coord(ins)
-        
         graphics.set_graph_window(x0,y0, x1,y1, cartesian)
-        
     else:
         graphics.unset_graph_window()
                 
-    util.require(ins, util.end_expression)        
+    util.require(ins, util.end_statement)        
     
         
 def exec_circle(ins):
@@ -166,19 +158,16 @@ def exec_circle(ins):
             stop = expressions.parse_expression(ins, allow_empty=True)
             if util.skip_white_read_if(ins, ','):
                 aspect = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
-    util.require(ins, util.end_expression)        
+    util.require(ins, util.end_statement)        
 
     if fp.equals(aspect, aspect.one):
-        # rx=r
         rx, dummy = graphics.window_scale(r,fp.MBF_class.zero)
         ry = rx
     else:
         if fp.gt(aspect, aspect.one):
-            #ry = r
             dummy, ry = graphics.window_scale(fp.MBF_class.zero,r)
             rx = fp.round_to_int(fp.div(r, aspect))
         else:
-            #rx = r
             rx, dummy = graphics.window_scale(r,fp.MBF_class.zero)
             ry = fp.round_to_int(fp.mul(r, aspect))
 
@@ -198,17 +187,13 @@ def exec_circle(ins):
         # TODO - make this all more sensible, calculate only once
         startx, starty, stopx, stopy = -1,-1,-1,-1
         if start!=('',''):
-            #start = fp.unpack(vartypes.pass_single_keep(start))
             startx = abs(fp.round_to_int(fp.mul(fp.from_int(fp.MBF_class, rx), fp.mbf_cos(start))))
             starty = abs(fp.round_to_int(fp.mul(fp.from_int(fp.MBF_class, ry), fp.mbf_sin(start))))
         if stop!=('',''):
-            #stop = fp.unpack(vartypes.pass_single_keep(stop))
             stopx = abs(fp.round_to_int(fp.mul(fp.from_int(fp.MBF_class, rx), fp.mbf_cos(stop))))
             stopy = abs(fp.round_to_int(fp.mul(fp.from_int(fp.MBF_class, ry), fp.mbf_sin(stop))))
         
         graphics.draw_ellipse(x0,y0,rx,ry,c, start_octant/2, startx, starty, start_line, stop_octant/2, stopx, stopy, stop_line)
-         
-        #graphics.draw_ellipse1(x0-rx,y0-ry,x0+rx,y0+ry,c)
             
 
 def get_octant(mbf, rx, ry):
@@ -297,8 +282,6 @@ def exec_paint(ins):
     graphics.flood_fill(x0,y0, pattern, c, border)        
             
     
-    
-    
                 
 def exec_get_graph(ins):
     graphics.require_graphics_mode()
@@ -336,368 +319,10 @@ def exec_put_graph(ins):
     graphics.set_area(x0,y0, array, action)
     
     
-    
-# GRAPHICS MACRO LANGUAGE
-    
-gml_whitespace = (' ')
-deg_to_rad = fp.div( fp.mbf_twopi, fp.from_int(fp.MBF_class, 360))
-
-draw_scale=4
-draw_angle=0
-    
-    
-def draw_parse_value(gmls):
-    c = util.skip(gmls, gml_whitespace)
-    
-    if c=='=':
-        gmls.read(1)    
-        step = var.getvar(var.get_var_name(gmls))
-        util.require_read(gmls,';', err=5)
-    else:
-        sgn=1
-        if c=='+':
-            gmls.read(1)
-            c = util.peek(gmls)
-        elif c=='-':
-            gmls.read(1)
-            c = util.peek(gmls)
-            sgn=-1   
-        
-        if c in tokenise.ascii_digits:     
-            numstr=''
-            while c in tokenise.ascii_digits:
-                gmls.read(1)
-                numstr+=c 
-                c = util.skip(gmls, gml_whitespace) 
-            step = tokenise.str_to_value_keep(('$', numstr))
-            if sgn==-1:
-                step = vartypes.vneg(step)
-        else:
-            raise error.RunError(5)
-    return step
-
-
-
-def draw_parse_number(gmls):
-    return vartypes.pass_int_keep(draw_parse_value(gmls), err=5)[1]
-    
-
-def draw_parse_string(gmls):
-    util.skip(gmls, gml_whitespace)
-    sub = var.getvar(var.get_var_name(gmls))
-    util.require_read(gmls,';', err=5)
-    return vartypes.pass_string_keep(sub, err=5)[1]
-
-
-
-
-
-def draw_step(x0,y0, sx,sy, plot, goback):
-    global draw_scale, draw_angle
-    scale = draw_scale
-    rotate = draw_angle
-    
-    x1 = (scale*sx)/4  
-    y1 = (scale*sy)/4
-    
-    if rotate==0:
-        pass
-    elif rotate==90:
-        x1,y1 = y1,-x1
-    elif rotate==180:
-        x1,y1 = -x1,-y1
-    elif rotate==270:
-        x1,y1 = -y1,x1
-    else:
-        fx,fy = fp.from_int(fp.MBF_class, x1), fp.from_int(fp.MBF_class, y1)
-        phi = fp.mul(fp.from_int(fp.MBF_class, rotate), deg_to_rad)
-        sinr, cosr = fp.mbf_sin(phi), fp.mbf_cos(phi)
-        fx,fy = fp.add(fp.mul(cosr,fx), fp.mul(sinr,fy)), fp.sub(fp.mul(cosr,fy), fp.mul(sinr,fx)) 
-        x1,y1 = fp.round_to_int(fx), fp.round_to_int(fy)
-        
-    y1 += y0
-    x1 += x0
-    
-    if plot:
-        graphics.draw_line(x0,y0,x1,y1,-1)    
-    else:
-        graphics.last_point=(x1,y1)
-        
-    if goback:
-        graphics.last_point=(x0,y0)
-        
-    
-            
-
-def draw_parse_gml(gml):
-    global draw_scale, draw_angle
-    
-    gmls = StringIO.StringIO(gml)
-    plot=True
-    goback=False
-    
-    while True:
-        c = util.skip_read(gmls, gml_whitespace).upper()
-        
-        if c=='':
-            break
-        elif c==';':
-            continue
-        elif c=='B':
-            # do not draw
-            plot=False
-        elif c=='N':
-            # return to postiton after move
-            goback=True            
-        elif c=='X':
-            # execute substring
-            sub = draw_parse_string(gmls)
-            draw_parse_gml(sub)            
-            
-        elif c=='C':
-            # set foreground colour
-            colour = draw_parse_number(gmls)
-            glob.scrn.set_attr(colour,0)
-        elif c=='S':
-            # set scale
-            draw_scale = draw_parse_number(gmls)
-        elif c=='A':
-            # set angle
-            draw_angle = 90*draw_parse_number(gmls)   
-        elif c=='T':
-            # 'turn angle' - set (don't turn) the angle to any value
-            if gmls.read(1).upper() != 'A':
-                raise error.RunError(5)
-            draw_angle = draw_parse_number(gmls)
-                
-        # one-variable movement commands:     
-        elif c in ('U', 'D', 'L', 'R', 'E', 'F', 'G', 'H'):
-            step = draw_parse_number(gmls)
-            x0,y0 = graphics.last_point
-            #x1,y1=x0,y0
-            x1,y1 = 0,0
-            if c in ('U', 'E', 'H'):
-                y1 -= step
-            elif c in ('D', 'F', 'G'):
-                y1 += step
-            if c in ('L', 'G', 'H'):
-                x1 -= step
-            elif c in ('R', 'E', 'F'):
-                x1 += step
-            
-            draw_step(x0,y0,x1,y1, plot, goback)
-            plot = True
-            goback = False
-                
-        # two-variable movement command
-        elif c =='M':
-            relative =  util.skip(gmls,gml_whitespace) in ('+','-')
-            x = draw_parse_number(gmls)
-            
-            if util.skip(gmls, gml_whitespace) !=',':
-                raise error.RunError(5)
-            else:
-                gmls.read(1)
-            
-            y = draw_parse_number(gmls)
-            
-            
-            x0,y0 = graphics.last_point
-            if relative:
-                draw_step(x0,y0,x,y,  plot, goback)
-                
-            else:
-                if plot:
-                    graphics.draw_line(x0,y0,x,y,-1)    
-                else:
-                    graphics.last_point=(x,y)
-                if goback:
-                    graphics.last_point=(x0,y0)
-            
-            plot = True
-            goback = False
-            
-            
-        elif c =='P':
-            # paint - flood fill
-            
-            x0,y0 = graphics.last_point
-            
-            colour = draw_parse_number(gmls)
-            if util.skip(gmls, gml_whitespace) !=',':
-                raise error.RunError(5)
-            bound = draw_parse_number(gmls)
-            
-            graphics.flood_fill(x0,y0,solid_pattern(colour), colour, bound)    
-        
-    
 def exec_draw(ins):
     graphics.require_graphics_mode()
-    
-    # retrieve Graphics Macro Language string
     gml = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
     util.require(ins, util.end_expression)
-    
-    draw_parse_gml(gml)
-    
+    draw_and_play.draw_parse_gml(gml)
     
     
-
-def exec_beep(ins):
-    util.require(ins, util.end_statement)
-    glob.sound.beep() 
-    if music_foreground:
-        glob.sound.wait_music()
-    
-def exec_sound(ins):
-    freq = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    util.require_read(ins, ',')
-    dur = vartypes.pass_int_keep(expressions.parse_expression(ins), maxint=65535)[1]
-    util.require(ins, util.end_statement)
-    if freq == 32767:
-        glob.sound.play_pause(float(dur)/18.2)
-    elif freq>=37 and freq<32767:    
-        glob.sound.play_sound(freq, float(dur)/18.2)
-    else:
-        raise error.RunError(5)
-    
-    if music_foreground:
-        glob.sound.wait_music()
-    
-def exec_play(ins):
-    
-    d = util.skip_white(ins)
-    if d == '\x95': # ON
-        ins.read(1)
-        events.play_enabled = True
-    elif d == '\xdd': # OFF
-        ins.read(1)
-        events.play_enabled = False
-    elif d== '\x90': #STOP
-        ins.read(1)
-        events.play_stopped = True
-    
-    else:
-        # retrieve Music Macro Language string
-        mml = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
-        util.require(ins, util.end_expression)
-        
-        play_parse_mml(mml)
-    
-    util.require(ins, util.end_statement)                
-                    
-# 12-tone equal temperament
-# C, C#, D, D#, E, F, F#, G, G#, A, A#, B
-note_freq = [ 440.*2**((i-33.)/12.) for i in range(84) ]
-play_octave=4
-play_speed=7./8.
-play_tempo= 2. # 2*0.25 =0.5 seconds per quarter note
-play_length=0.25
-
-notes = { 'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6, 'G-':6, 'G':7, 'G#':8, 'A-':8, 'A':9, 'A#':10, 'B-':10, 'B':11 }
-
-music_foreground=True
-
-def play_parse_mml(mml):
-    global play_octave, play_speed, play_length, play_tempo, music_foreground
-    gmls = StringIO.StringIO(mml)
-    next_oct=0
-    while True:
-        c = util.skip_read(gmls, gml_whitespace).upper()
-        
-        if c=='':
-            break
-        elif c==';':
-            continue
-        elif c=='X':
-            # execute substring
-            sub = draw_parse_string(gmls)
-            play_parse_mml(sub)
-            
-        elif c=='N':
-            note = draw_parse_number(gmls)
-            if note>0 and note<=84:
-                glob.sound.play_sound(note_freq[note-1], play_length*play_speed*play_tempo)
-        
-            if note==0:
-                glob.sound.play_pause(play_length*play_speed*play_tempo)
-
-        elif c=='L':
-            play_length = 1./draw_parse_number(gmls)    
-        elif c=='T':
-            play_tempo = 240./draw_parse_number(gmls)    
-        
-        
-        elif c=='O':
-            play_octave = draw_parse_number(gmls)
-            if play_octave<0:
-                play_octave=0
-            if play_octave>6:
-                play_octave=6        
-        elif c=='>':
-            #next_oct=1
-            play_octave += 1
-            if play_octave>6:
-                play_octave=6
-        elif c=='<':
-            #next_oct=-1
-            play_octave -=1
-            if play_octave<0:
-                play_octave=0
-                        
-        elif c in ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'P'):
-            note=c
-            dur=play_length
-            while True:    
-                c = util.skip(gmls, gml_whitespace).upper()
-                if c=='.':
-                    gmls.read(1)
-                    dur *= 1.5
-                elif c in tokenise.ascii_digits:
-                    numstr=''
-                    
-                    while c in tokenise.ascii_digits:
-                        gmls.read(1)
-                        numstr+=c 
-                        c = util.skip(gmls, gml_whitespace) 
-                    length = vartypes.pass_int_keep(tokenise.str_to_value_keep(('$', numstr)))[1]
-                    dur = 2./float(length)
-                elif c in ('#', '+'):
-                    gmls.read(1)
-                    note+='#'
-                elif c == '-':
-                    gmls.read(1)
-                    note+='-'
-                else:
-                    break                    
-            if note=='P':
-                glob.sound.play_pause(dur*play_speed*play_tempo)
-            
-            else:        
-                glob.sound.play_sound(note_freq[(play_octave+next_oct)*12+notes[note]], dur*play_speed*play_tempo)
-            next_oct=0
-        
-        elif c=='M':
-            c = util.skip_read(gmls, gml_whitespace).upper()
-            if c=='N':
-                play_speed=7./8.
-            elif c=='L':
-                play_speed==1.
-            elif c=='S':
-                play_speed=3./4.        
-            elif c=='F':
-                # foreground
-                music_foreground=True
-            elif c=='B':
-                # background
-                music_foreground=False
-                            
-            
-            else:
-                raise error.RunError(5)    
-        else:
-            raise error.RunError(5)    
-    
-    if music_foreground:
-        glob.sound.wait_music()
-                             

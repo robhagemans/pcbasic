@@ -621,8 +621,6 @@ def handle_key(e):
 # graphical
 # low-level methods (pygame implementation)
 
-graph_view=None
-
 
 def put_pixel(x,y, index):
     global screen_changed
@@ -683,7 +681,9 @@ def fill_rect(x0,y0, x1,y1, index):
     screen_changed = True
     # TODO: is this faster or should I blit a new surface?
 
+######## end interface
 
+graph_view=None
 
 # cursor for graphics mode
 def xor_cursor_screen(row,col):
