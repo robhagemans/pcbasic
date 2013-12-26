@@ -41,7 +41,7 @@ tron = False
 
 
 
-# parses one statement at the current stream pointer in glob.current_codestream
+# parses one statement at the current stream pointer in current_codestream
 # return value False: stream ends
 def parse_statement():
     global tron
