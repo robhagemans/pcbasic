@@ -29,8 +29,7 @@ import automode
 #######################################################
 
 
-
-def init_run():
+def init_run(arg_run, arg_load, arg_quit, arg_cmd, arg_infile):
     
     # initialise
     program.clear_program()
@@ -38,26 +37,26 @@ def init_run():
     rnd.clear()
     program.set_runmode(False)
     
-    if glob.args.run or glob.args.load:
+    if arg_run or arg_load:
         fin = sys.stdin
         try:
-            if glob.args.run != '':
-                fin = oslayer.safe_open(glob.args.infile, 'rb')
+            if arg_run != '':
+                fin = oslayer.safe_open(arg_infile, 'rb')
             program.load(fin)
         except error.Error as e:
             if not handle_error(e):
                 exit()
         
-    if glob.args.run and glob.args.cmd == None:
+    if arg_run and arg_cmd == None:
         # if a command is given, the program is only loaded.
-        glob.args.cmd = 'RUN'
+        arg_cmd = 'RUN'
         
-    if glob.args.cmd != None:
-        get_command_line(glob.args.cmd)
+    if arg_cmd != None:
+        get_command_line(arg_cmd)
         program.set_runmode(False)
         execution_loop()
 
-        if glob.args.quit:
+        if arg_quit:
             # we were running as a script, exit after completion
             exit()
 
