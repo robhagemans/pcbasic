@@ -16,9 +16,6 @@ console = None
 # sound implementation
 sound = None
 
-# debug mode - enables DEBUG keyword
-debug = False
-
 
 
 

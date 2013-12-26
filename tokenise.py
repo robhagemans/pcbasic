@@ -29,6 +29,7 @@ import fp
 import vartypes
 import util
 
+debug=False
 
 tokens_number = ['\x0b','\x0c','\x0f',
     '\x11','\x12','\x13','\x14','\x15','\x16','\x17','\x18','\x19','\x1a','\x1b',
@@ -289,7 +290,7 @@ def detokenise_keyword(bytes, output):
 # Tokenise functions
 
 def tokenise_stream(ins, outs, one_line=False, onfile=True):
-    
+    global debug
     
     while True:
         
@@ -403,7 +404,7 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
                 word = tokenise_word(ins, outs)
                 
                 # handle non-parsing modes
-                if word in ('REM', "'") or glob.debug and word=='DEBUG':  # note: DEBUG - this is not GW-BASIC behaviour
+                if word in ('REM', "'") or debug and word=='DEBUG':  # note: DEBUG - this is not GW-BASIC behaviour
                     verbatim = True
                 elif word == "DATA":    
                     data = True
@@ -714,11 +715,18 @@ token_to_keyword = {
     '\xFF\xA3': 'EOF',    '\xFF\xA4': 'LOC',     '\xFF\xA5': 'LOF'          
 }
 
-# Note - I have implemented this as my own debugging command, executes python string.
-if glob.debug:
-    token_to_keyword['\xFE\xA4']='DEBUG'
     
 keyword_to_token = dict((reversed(item) for item in token_to_keyword.items()))
+
+def init_DEBUG(on=False):
+    global debug
+    
+    # Note - I have implemented this as my own debugging command, executes python string.
+    debug=on
+    if on:
+        token_to_keyword['\xFE\xA4']='DEBUG'
+        keyword_to_token['DEBUG']='\xFE\xA4'
+        
 
 
 # other keywords documented on http://www.chebucto.ns.ca/~af380/GW-BASIC-tokens.html :

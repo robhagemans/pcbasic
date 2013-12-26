@@ -15,6 +15,8 @@ import sys
 import glob
 import util
 import program
+import tokenise
+
 
 def exec_DEBUG(ins):
     # this is not a GW-BASIC behaviour, but helps debugging.
