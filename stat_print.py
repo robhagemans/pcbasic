@@ -26,11 +26,10 @@ import expressions
 import tokenise
 import program
 import fileio
-
+import deviceio
+import console
 # for clear_graphics_view
 import graphics
-
-import console
 
 # KEY ON?
 keys_visible = False
@@ -578,8 +577,8 @@ def exec_print_using(ins, screen):
 
 
 def exec_lprint(ins):
-    exec_print(ins, glob.lpt1)
-    glob.lpt1.flush()
+    exec_print(ins, deviceio.lpt1)
+    deviceio.lpt1.flush()
     
 
 # does nothing in GWBASIC except give some errors. See e.g. http://shadowsshot.ho.ua/docs001.htm#LCOPY    
@@ -628,10 +627,10 @@ def exec_width(ins):
        
     elif d in ('"', ','):
         device = vartypes.pass_string_keep(expressions.parse_expression(ins))[1].upper()
-        if device not in glob.devices:
+        if device not in deviceio.devices:
             # bad file name
             raise error.RunError(64)
-        dev = glob.devices[device]
+        dev = deviceio.devices[device]
         
     else:
         dev = console

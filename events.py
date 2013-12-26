@@ -15,7 +15,7 @@ import sound
 import vartypes
 # for timer
 import oslayer
-
+import deviceio
 import console
 
 def reset_events():
@@ -155,10 +155,10 @@ def handle_events():
         if com_enabled[comport] and com_event[comport] !=-1 and not com_stopped[comport]:
             
             comc = ''
-            if comport == 0 and glob.com1!=None:
-                comc = glob.com1.peek_chars(1)
-            elif comport == 1 and glob.com2!=None:
-                comc = glob.com2.peek_chars(1)
+            if comport == 0 and deviceio.com1!=None:
+                comc = deviceio.com1.peek_chars(1)
+            elif comport == 1 and deviceio.com2!=None:
+                comc = deviceio.com2.peek_chars(1)
             
             if comc != '':    
                 jumpnum = com_event[comport]

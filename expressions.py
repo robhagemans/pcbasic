@@ -453,7 +453,7 @@ def parse_expr_unit(ins):
         elif d == '\x9B':   # LPOS
             # parse the dummy argument, doesnt matter what it is as long as it's a legal expression
             parse_bracket(ins)
-            return ('%', glob.lpt1.get_col())
+            return ('%', deviceio.lpt1.get_col())
         elif d == '\x9C':   # CINT
             return vartypes.pass_int_keep(parse_bracket(ins))
         elif d == '\x9D':   # CSNG
@@ -697,7 +697,7 @@ def value_loc(ins): # LOC
         raise error.RunError(52)
         
     # refuse for output devices, such as SCRN: (bad file mode). Kybd: and com1: etc should be allowed
-    if fileio.files[num] in glob.devices:
+    if fileio.files[num] in deviceio.devices:
         # bad file mode
         raise error.RunError(54)
     

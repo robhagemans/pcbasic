@@ -25,6 +25,7 @@ import program
 import oslayer
 import automode
 import console
+import deviceio
 
 # for rnd.clear() on CHAIN
 import rnd
@@ -144,8 +145,8 @@ def exec_list(ins, out=None):
     
     
 def exec_llist(ins):
-    exec_list(ins, glob.lpt1)
-    glob.lpt1.flush()
+    exec_list(ins, deviceio.lpt1)
+    deviceio.lpt1.flush()
     
         
 def exec_load(ins):
