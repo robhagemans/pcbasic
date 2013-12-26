@@ -43,13 +43,11 @@ from stat_print import *
 from stat_file import *
 # graphics
 from stat_graph import *
+# sound
+from stat_sound import *
 
 tron = False
 
-#######################################################
-#
-# STATEMENTS
-#
 
 
 # parses one statement at the current stream pointer in glob.current_codestream
@@ -85,8 +83,6 @@ def parse_statement():
     elif c==':':
         # new statement
         c = util.skip_white_read(ins).upper()
-    # else:
-        #internal error  
       
         
     if c in util.end_statement:
@@ -239,12 +235,13 @@ def parse_statement():
     
     elif c=='\xFD':
         c = ins.read(1).upper()
+        # these are all expression tokens, not statement tokens.
         # syntax error
         raise error.RunError(2)
     
     elif c=='\xFE':
         c = ins.read(1).upper()
-        if c=='\x81':    # FILES
+        if c=='\x81':      # FILES
             exec_files(ins)
         elif c=='\x82':    # FIELD
             exec_field(ins)
@@ -321,11 +318,11 @@ def parse_statement():
     
     elif c=='\xFF':
         c = ins.read(1).upper()
-        if c == '\x83':     # MID$ statement
+        if c == '\x83':       # MID$ statement
             exec_mid(ins)
         elif c == '\xA0':     # PEN statement
             exec_pen(ins)
-        elif c == '\xA2':     # Strig statement
+        elif c == '\xA2':     # STRIG statement
             exec_strig(ins)
         else:
             # syntax error
@@ -341,13 +338,16 @@ def parse_statement():
 #################################################################    
 #################################################################
 
+
 def exec_system(ins): 
     util.require(ins, util.end_statement)
     run.exit() 
+
         
 def exec_tron(ins):
     global tron
     tron=True
+
 
 def exec_troff(ins):
     global tron
@@ -365,7 +365,6 @@ def exec_randomize(ins):
             raise error.Break()
         
         # should be interpreted as integer sint if it is
-        #val = fp.pack(fp.from_str(line))
         val = tokenise.str_to_value_keep(('$', ''.join(line)))
         
     if val[0]=='$':
@@ -374,8 +373,6 @@ def exec_randomize(ins):
     if val[0]=='%':
         val = ('$', vartypes.value_to_sint(val[1]))    
     
-    #rnd.randomize(val[1])         
-    #def randomize(s):
     s = val[1]
     
     # on a program line, if a number outside the signed int range (or -32768) is entered,
@@ -404,7 +401,7 @@ def exec_rem(ins):
     util.skip_to(ins, util.end_line)
     
 
-# do-nothing MOTOR
+# MOTOR does nothing
 def exec_motor(ins):
     d = util.skip_white(ins)
     
@@ -413,6 +410,9 @@ def exec_motor(ins):
     else:
         vartypes.pass_int_keep(expressions.parse_expression(ins))
         util.require(ins, util.end_statement)
+
+
+##########################################################
 
 
 def exec_def(ins):
@@ -431,9 +431,7 @@ def exec_def(ins):
 
 
 def exec_view(ins):
-    d=util.skip_white(ins)
-    if d == '\x91':  #PRINT
-        ins.read(1)
+    if util.skip_white_read_if(ins, '\x91'):  #PRINT
         exec_view_print(ins)
     else:
         exec_view_graph(ins)
@@ -441,13 +439,10 @@ def exec_view(ins):
 
     
 def exec_line(ins):
-    d = util.skip_white(ins)
-       
-    if d == '\x85': #INPUT
-        ins.read(1)
-        return exec_line_input(ins)
-    
-    exec_line_graph(ins)
+    if util.skip_white_read_if(ins, '\x85'): #INPUT
+        exec_line_input(ins)
+    else:
+        exec_line_graph(ins)
 
 
 def exec_get(ins):
@@ -456,12 +451,15 @@ def exec_get(ins):
     else:    
         exec_get_file(ins)
     
+    
 def exec_put(ins):
     if util.skip_white(ins)=='(':
         exec_put_graph(ins)
     else:    
         exec_put_file(ins)
 
+
+##########################################################
 
 def exec_DEBUG(ins):
     # this is not a GW-BASIC behaviour, but helps debugging.
@@ -484,11 +482,14 @@ def exec_DEBUG(ins):
     sys.stdout = sys.__stdout__
 
     glob.scrn.write(buf.getvalue())
+
     
 # DEBUG utilities
 def debug_dump_program():
     sys.stderr.write(program.bytecode.getvalue().encode('hex')+'\n')    
         
+
+##########################################################
     
 # do-nothing POKE        
 def exec_poke(ins):
@@ -496,6 +497,7 @@ def exec_poke(ins):
     util.require_read(ins, ',')
     val = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
     util.require(ins, util.end_statement)
+
     
 # do-nothing DEF SEG    
 def exec_def_seg(ins):
@@ -518,6 +520,7 @@ def exec_def_usr(ins):
 def exec_bload(ins):
     raise error.RunError(73)    
 
+
 # bsave: not implemented        
 def exec_bsave(ins):
     raise error.RunError(73)    
@@ -526,28 +529,31 @@ def exec_bsave(ins):
 # call: not implemented        
 def exec_call(ins):
     raise error.RunError(73)    
+
     
 # strig: not implemented        
 def exec_strig(ins):
     raise error.RunError(73)    
 
+
 # pen: not implemented        
 def exec_pen(ins):
     raise error.RunError(73)    
+
             
 # ioctl: not implemented
 def exec_ioctl(ins):
     raise error.RunError(73)   
     
+
 # do-nothing out       
 def exec_out(ins):
     addr = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
     util.require_read(ins, ',')
     val = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
     util.require(ins, util.end_statement)
-    
-    #raise error.RunError(73)    
      
+
 # do-nothing wait        
 def exec_wait(ins):
     addr = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
@@ -555,10 +561,7 @@ def exec_wait(ins):
     val = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
     if util.skip_white_read_if(ins, ','):
         j = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    
     util.require(ins, util.end_statement)
-    
-    #raise error.RunError(73)    
         
        
             
