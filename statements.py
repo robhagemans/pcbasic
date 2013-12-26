@@ -46,7 +46,6 @@ def parse_statement():
             
     ins = program.current_codestream
     program.current_statement = ins.tell()
-
     
     c = util.skip_white_read(ins).upper()
     if c=='':
@@ -65,14 +64,13 @@ def parse_statement():
             return False
             
         if tron:
-            glob.scrn.write('['+('%i' % program.linenum) +']')
+            glob.console.write('['+('%i' % program.linenum) +']')
             
         c = util.skip_white_read(ins).upper()
     
     elif c==':':
         # new statement
         c = util.skip_white_read(ins).upper()
-      
         
     if c in util.end_statement:
         # empty statement, return to parse next
@@ -122,7 +120,7 @@ def parse_statement():
     elif c=='\x92':     # CLEAR
         exec_clear(ins)  
     elif c=='\x93':     # LIST
-        exec_list(ins, glob.scrn)      
+        exec_list(ins, glob.console)      
     elif c=='\x94':     # NEW
         exec_new()
     elif c=='\x95':     # ON

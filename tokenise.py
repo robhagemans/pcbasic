@@ -102,7 +102,7 @@ def detokenise(ins, outs, from_line=-1, to_line=-1, pos=-1):
         output += detokenise_line(ins)
             
         if (from_line==-1 or current_line>=from_line) and (to_line==-1 or current_line<=to_line):
-            outs.write(output + glob.endl) 
+            outs.write(output + util.endl) 
 
     return textpos
 

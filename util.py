@@ -32,6 +32,10 @@ end_expression = end_statement + (')', ']', ',', ';', '\xCC', '\x89', '\x8D', '\
 ascii_white = (' ', '\x00', '\x0a')
 
 
+# ascii CR/LF
+endl='\x0d\x0a'
+
+
 # stream utility functions
 
 

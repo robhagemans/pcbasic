@@ -36,7 +36,7 @@ def exec_DEBUG(ins):
         pass    
     sys.stdout = sys.__stdout__
 
-    glob.scrn.write(buf.getvalue())
+    glob.console.write(buf.getvalue())
 
     
 # DEBUG utilities

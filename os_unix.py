@@ -42,8 +42,8 @@ def spawn_interactive_shell(cmd):
     shell = pexpect.spawn(cmd)
     
     while True:
-        #glob.scrn.idle()
-        c = glob.scrn.get_char()
+        #glob.console.idle()
+        c = glob.console.get_char()
         if c != '':
             shell.send(c)
             
@@ -55,10 +55,10 @@ def spawn_interactive_shell(cmd):
             
         if c != '':
             if c!='\r':
-                glob.scrn.write(c)
+                glob.console.write(c)
             else:
-                glob.scrn.idle()
-                glob.scrn.check_events()
+                glob.console.idle()
+                glob.console.check_events()
                 
         elif not shell.isalive(): 
             break

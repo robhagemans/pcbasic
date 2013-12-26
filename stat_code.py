@@ -121,8 +121,8 @@ def exec_list(ins, out=None):
     util.require(ins, util.end_statement)
 
     if out==None:
-        out = glob.scrn
-    if out==glob.scrn:
+        out = glob.console
+    if out==glob.console:
         output = StringIO.StringIO()
     else:
         output = out
@@ -132,14 +132,14 @@ def exec_list(ins, out=None):
     tokenise.detokenise(program.bytecode, output, from_line, to_line)
     program.bytecode.seek(current)
     
-    if out == glob.scrn:
-        lines = output.getvalue().split(glob.endl)
+    if out == glob.console:
+        lines = output.getvalue().split(util.endl)
         if lines[-1]=='':
             lines = lines[:-1]
         for line in lines:
-            glob.scrn.check_events()
-            glob.scrn.clear_line(glob.scrn.row)
-            glob.scrn.write(line+glob.endl)
+            glob.console.check_events()
+            glob.console.clear_line(glob.console.row)
+            glob.console.write(line+util.endl)
     
     
 def exec_llist(ins):

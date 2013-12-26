@@ -92,25 +92,6 @@ def handle_oserror(e):
         # unknown; internal error
         raise error.RunError(51)
 
-#############################################
-# subprocesses
-
-## spawn shell command in calling shell (unix) or separate window (windows)
-#def spawn_noninteractive_shell(cmd):    
-#    glob.scrn.pause()
-#    os.system(cmd)
-#    glob.scrn.cont()
-    
-    
-## spawn noninteractive command inside BASIC window    
-#def spawn_noninteractive_shell_in_window(cmd):
-#    import subprocess
-#    try:
-#        p = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, shell=True)    
-#        output, _ = p.communicate()
-#    except EnvironmentError as ex:
-#        handle_oserror(ex)
-#    glob.scrn.write(output)
 
 
 #############################################

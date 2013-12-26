@@ -55,10 +55,10 @@ def process_stdout(p, stream):
             
         if c != '': # and c != '\r':
             if c!= '\r':
-                glob.scrn.write(c)
+                glob.console.write(c)
                 
             else:
-                glob.scrn.check_events()
+                glob.console.check_events()
             
         elif p.poll() != None:
             break        
@@ -76,8 +76,8 @@ def spawn_interactive_shell(cmd):
     chars = 0
     while p.poll() == None:
         #c = sys.stdin.read(1)
-        glob.scrn.idle()
-        c = glob.scrn.get_char()
+        glob.console.idle()
+        c = glob.console.get_char()
         
         #sys.stderr.write(c)
         if p.poll () != None:
@@ -86,7 +86,7 @@ def spawn_interactive_shell(cmd):
             if c in ('\r', '\n'): 
                 
                 # fix double echo after enter press
-                glob.scrn.write('\x1D'*chars)
+                glob.console.write('\x1D'*chars)
                 chars = 0
                 
                 p.stdin.write('\r\n')
@@ -94,7 +94,7 @@ def spawn_interactive_shell(cmd):
             elif c != '':
                 p.stdin.write(c)
                 # windows only seems to echo this to the pipe after enter pressed
-                glob.scrn.write(c)
+                glob.console.write(c)
                 chars +=1
                 
     outp.join()

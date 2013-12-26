@@ -475,8 +475,8 @@ def exec_input(ins):
     
     # read the input
     while True:
-        glob.scrn.write(prompt) 
-        line = glob.scrn.read_screenline(write_endl=newline)
+        glob.console.write(prompt) 
+        line = glob.console.read_screenline(write_endl=newline)
         
         inputs = StringIO.StringIO(line) 
         text_file = fileio.pseudo_textfile(inputs)
@@ -499,7 +499,7 @@ def exec_input(ins):
                 break
                 
         if not success:
-            glob.scrn.write('?Redo from start'+glob.endl)  # ... good old Redo!
+            glob.console.write('?Redo from start'+util.endl)  # ... good old Redo!
             continue
         else:
             break
@@ -592,8 +592,8 @@ def exec_line_input(ins):
     readvar,indices = expressions.get_var_or_array_name(ins)
 
     # read the input
-    glob.scrn.write(prompt) 
-    inputs = glob.scrn.read_screenline(write_endl=newline)
+    glob.console.write(prompt) 
+    inputs = glob.console.read_screenline(write_endl=newline)
     var.set_var_or_array(readvar, indices, ('$', inputs))
     
    
@@ -648,8 +648,8 @@ def exec_randomize(ins):
     val = expressions.parse_expression(ins, allow_empty=True)
     if val==('',''):
         # prompt for random seed
-        glob.scrn.write("Random number seed (-32768 to 32767)? ")
-        line, interrupt = glob.scrn.read_screenline()
+        glob.console.write("Random number seed (-32768 to 32767)? ")
+        line, interrupt = glob.console.read_screenline()
         if interrupt:
             raise error.Break()
         

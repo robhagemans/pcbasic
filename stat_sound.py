@@ -9,8 +9,6 @@
 # please see text file COPYING for licence terms.
 #
 
-import StringIO
-
 import glob
 import error
 import vartypes

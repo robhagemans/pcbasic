@@ -21,8 +21,11 @@ import graphics
 
 # generic for both macro languages
 
+ml_whitepace = (' ')
+
+
 def ml_parse_value(gmls):
-    c = util.skip(gmls, gml_whitespace)
+    c = util.skip(gmls, ml_whitepace)
     
     if c=='=':
         gmls.read(1)    
@@ -43,7 +46,7 @@ def ml_parse_value(gmls):
             while c in tokenise.ascii_digits:
                 gmls.read(1)
                 numstr+=c 
-                c = util.skip(gmls, gml_whitespace) 
+                c = util.skip(gmls, ml_whitepace) 
             step = tokenise.str_to_value_keep(('$', numstr))
             if sgn==-1:
                 step = vartypes.vneg(step)
@@ -58,7 +61,7 @@ def ml_parse_number(gmls):
     
 
 def ml_parse_string(gmls):
-    util.skip(gmls, gml_whitespace)
+    util.skip(gmls, ml_whitepace)
     sub = var.getvar(var.get_var_name(gmls))
     util.require_read(gmls,';', err=5)
     return vartypes.pass_string_keep(sub, err=5)[1]
@@ -68,8 +71,6 @@ def ml_parse_string(gmls):
 
     
 # GRAPHICS MACRO LANGUAGE
-    
-gml_whitespace = (' ')
 deg_to_rad = fp.div( fp.mbf_twopi, fp.from_int(fp.MBF_class, 360))
 
 draw_scale=4
@@ -122,7 +123,7 @@ def draw_parse_gml(gml):
     goback=False
     
     while True:
-        c = util.skip_read(gmls, gml_whitespace).upper()
+        c = util.skip_read(gmls, ml_whitepace).upper()
         
         if c=='':
             break
@@ -142,7 +143,7 @@ def draw_parse_gml(gml):
         elif c=='C':
             # set foreground colour
             colour = ml_parse_number(gmls)
-            glob.scrn.set_attr(colour,0)
+            glob.console.set_attr(colour,0)
         elif c=='S':
             # set scale
             draw_scale = ml_parse_number(gmls)
@@ -176,10 +177,10 @@ def draw_parse_gml(gml):
                 
         # two-variable movement command
         elif c =='M':
-            relative =  util.skip(gmls,gml_whitespace) in ('+','-')
+            relative =  util.skip(gmls,ml_whitepace) in ('+','-')
             x = ml_parse_number(gmls)
             
-            if util.skip(gmls, gml_whitespace) !=',':
+            if util.skip(gmls, ml_whitepace) !=',':
                 raise error.RunError(5)
             else:
                 gmls.read(1)
@@ -209,7 +210,7 @@ def draw_parse_gml(gml):
             x0,y0 = graphics.last_point
             
             colour = ml_parse_number(gmls)
-            if util.skip(gmls, gml_whitespace) !=',':
+            if util.skip(gmls, ml_whitepace) !=',':
                 raise error.RunError(5)
             bound = ml_parse_number(gmls)
             
@@ -236,7 +237,7 @@ def play_parse_mml(mml):
     gmls = StringIO.StringIO(mml)
     next_oct=0
     while True:
-        c = util.skip_read(gmls, gml_whitespace).upper()
+        c = util.skip_read(gmls, ml_whitepace).upper()
         
         if c=='':
             break
@@ -280,7 +281,7 @@ def play_parse_mml(mml):
             note=c
             dur=play_length
             while True:    
-                c = util.skip(gmls, gml_whitespace).upper()
+                c = util.skip(gmls, ml_whitepace).upper()
                 if c=='.':
                     gmls.read(1)
                     dur *= 1.5
@@ -290,7 +291,7 @@ def play_parse_mml(mml):
                     while c in tokenise.ascii_digits:
                         gmls.read(1)
                         numstr+=c 
-                        c = util.skip(gmls, gml_whitespace) 
+                        c = util.skip(gmls, ml_whitepace) 
                     length = vartypes.pass_int_keep(tokenise.str_to_value_keep(('$', numstr)))[1]
                     dur = 2./float(length)
                 elif c in ('#', '+'):
@@ -309,7 +310,7 @@ def play_parse_mml(mml):
             next_oct=0
         
         elif c=='M':
-            c = util.skip_read(gmls, gml_whitespace).upper()
+            c = util.skip_read(gmls, ml_whitepace).upper()
             if c=='N':
                 play_speed=7./8.
             elif c=='L':
@@ -322,8 +323,6 @@ def play_parse_mml(mml):
             elif c=='B':
                 # background
                 music_foreground=False
-                            
-            
             else:
                 raise error.RunError(5)    
         else:

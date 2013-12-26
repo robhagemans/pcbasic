@@ -39,6 +39,11 @@ common_names = []
 common_array_names = []
 
 
+# 'free memory' as reported by FRE
+total_mem = 60300    
+free_mem = total_mem    
+    
+
 # string pointer implementation, allows for unions of strings (for FIELD)
 class StringPtr:
     def get_str(self):

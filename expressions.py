@@ -27,6 +27,9 @@ import os
 # for FRE() only
 import program
 
+
+
+
 def parse_int_list(ins, size, err=5):
     exprlist = parse_expr_list(ins, size, err)
     output = []
@@ -288,14 +291,14 @@ def parse_expr_unit(ins):
         return value_varptr(ins)
     
     elif d == '\xDB':       # CSRLIN
-        return ('%', glob.scrn.get_row())
+        return ('%', glob.console.get_row())
     elif d == '\xDC':       # POINT
         return value_point(ins)
     
     elif d == '\xDE':       # INKEY$
         # wait a tick
-        glob.scrn.idle()
-        return ('$', glob.scrn.get_char())
+        glob.console.idle()
+        return ('$', glob.console.get_char())
     
     elif d == '\xE9':        # unary +
         return parse_expr_unit(ins)
@@ -390,13 +393,13 @@ def parse_expr_unit(ins):
         elif d == '\x8F':   # FRE
             # GW does grabge collection if a string-valued argument is specified. We don't.
             parse_bracket(ins)
-            return ('%', glob.free_mem - (len(program.bytecode.getvalue())-4) - var.variables_memory_size() )
+            return ('%', var.free_mem - (len(program.bytecode.getvalue())-4) - var.variables_memory_size() )
         elif d == '\x90':   # INP
             return value_inp(ins)
         elif d == '\x91':   # POS
             # parse the dummy argument, doesnt matter what it is as long as it's a legal expression
             parse_bracket(ins)
-            return ('%', glob.scrn.get_col())
+            return ('%', glob.console.get_col())
         elif d == '\x92':   # LEN
             val= ('%', len(vartypes.pass_string_keep(parse_bracket(ins))[1]) )
             d = ins.read(1)
@@ -617,15 +620,15 @@ def value_screen(ins):
     
     if args[0] == None or args[1]==None:
         raise error.RunError(5)
-    if args[0]<1 or args[0] > glob.scrn.height:
+    if args[0]<1 or args[0] > glob.console.height:
         raise error.RunError(5)
-    if glob.scrn.view_set and args[0]<glob.scrn.view_start or args[0] > glob.scrn.scroll_height:
-        raise error.RunError(5)
-    
-    if args[1]<1 or args[1] > glob.scrn.width:
+    if glob.console.view_set and args[0]<glob.console.view_start or args[0] > glob.console.scroll_height:
         raise error.RunError(5)
     
-    (char, attr) = glob.scrn.read_screen(args[0], args[1])
+    if args[1]<1 or args[1] > glob.console.width:
+        raise error.RunError(5)
+    
+    (char, attr) = glob.console.read_screen(args[0], args[1])
     
     if args[2] != None and args[2] != 0:
         return ('%', attr)
@@ -643,7 +646,7 @@ def value_input(ins):    # INPUT$
     if num<1 or num>255:
         raise error.RunError(5)
     
-    screen = glob.scrn    
+    screen = glob.console    
     if util.skip_white_read_if(ins, ','):
         util.skip_white_read_if(ins, '#')
         
@@ -832,7 +835,7 @@ def value_point(ins):
         raise error.RunError(2)
     if lst[1]==None:
         # single-argument version
-        x,y = glob.scrn.get_coord()
+        x,y = glob.console.get_coord()
         fn = vartypes.pass_int_keep(lst[0])[1]
         if fn==0:
             return ('%', x)
@@ -845,7 +848,7 @@ def value_point(ins):
             # FIXME: WINDOW not implemented
             return ('%', y)
     else:       
-        return ('%', glob.scrn.get_point(vartypes.pass_int_keep(lst[0])[1], vartypes.pass_int_keep(lst[1])[1]))        
+        return ('%', glob.console.get_point(vartypes.pass_int_keep(lst[0])[1], vartypes.pass_int_keep(lst[1])[1]))        
 
 def value_pmap(ins):
     util.require_read(ins, '(')
@@ -856,16 +859,16 @@ def value_pmap(ins):
 
  
     if mode == 0:
-        value, dummy = glob.scrn.window_coords(coord,fp.MBF_class.zero)       
+        value, dummy = glob.console.window_coords(coord,fp.MBF_class.zero)       
         value = ('%', value)        
     elif mode == 1:
-        dummy, value = glob.scrn.window_coords(fp.MBF_class.zero,coord)       
+        dummy, value = glob.console.window_coords(fp.MBF_class.zero,coord)       
         value = ('%', value)        
     elif mode == 2:
-        value, dummy = glob.scrn.get_window_coords(fp.round_to_int(coord),0)       
+        value, dummy = glob.console.get_window_coords(fp.round_to_int(coord),0)       
         value = fp.pack(value)
     elif mode == 3:
-        dummy, value = glob.scrn.get_window_coords(0,fp.round_to_int(coord))       
+        dummy, value = glob.console.get_window_coords(0,fp.round_to_int(coord))       
         value = fp.pack(value)
     else:
         raise error.RunError(5)
@@ -875,11 +878,16 @@ def value_pmap(ins):
 #########################################################
 # not implemented
 
+# pre-defined PEEK outputs
+peek_values={}
+
+
 # do-nothing PEEK    
 def value_peek(ins):
+    global peek_values
     addr = vartypes.pass_int_keep(parse_bracket(ins))[1]
-    if addr in glob.peek_values:
-        return ('%', glob.peek_values[addr])
+    if addr in peek_values:
+        return ('%', peek_values[addr])
     else:    
         return ('%',0)
         
