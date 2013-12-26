@@ -109,8 +109,6 @@ def main():
         
     # choose the screen 
     if args.dumb or not sys.stdout.isatty() or not sys.stdin.isatty():
-        #import dumbterm
-        #glob.console = dumbterm
         import backend_dumb
         import console
         
@@ -168,10 +166,12 @@ def main():
 
 
 def convert(infile, outfile, mode):
-    import dumbterm 
+    import backend_dumb 
+    import console
     
     error.warnings_on=True
-    glob.console=dumbterm
+    glob.console=console
+    glob.console.backend=backend_dumb
     glob.console.init()
 
     fin = sys.stdin
