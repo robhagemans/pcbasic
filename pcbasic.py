@@ -18,8 +18,8 @@
 
 import sys
 import argparse
-import glob
 
+import glob
 import fileio
                 
 #################################################################
