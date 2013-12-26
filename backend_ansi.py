@@ -1,5 +1,5 @@
 #
-# PC-BASIC 3.23 - terminal.py
+# PC-BASIC 3.23 - backend_ansi.py
 #
 # ANSI backend for Console
 #

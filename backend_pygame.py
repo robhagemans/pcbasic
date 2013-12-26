@@ -1,5 +1,5 @@
 #
-# PC-BASIC 3.23 - gameterm.py
+# PC-BASIC 3.23 - backend_pygame.py
 #
 # Graphical console backend based on PyGame
 # 
