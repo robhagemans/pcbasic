@@ -30,6 +30,8 @@ import fileio
 # for clear_graphics_view
 import graphics
 
+import console
+
 # KEY ON?
 keys_visible = False
 
@@ -42,7 +44,7 @@ def exec_cls(ins):
     if util.skip_white(ins) in util.end_statement:
         if graphics.graph_view_set:
             val=1
-        elif glob.console.view_set:
+        elif console.view_set:
             val=2
         else:        
             val=0
@@ -50,16 +52,16 @@ def exec_cls(ins):
         val = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
 
     if val==0:
-        glob.console.clear()  
+        console.clear()  
         if keys_visible:
             show_keys()
     elif val==1:
         if graphics.is_graphics_mode():
             graphics.clear_graphics_view()
         else:
-            glob.console.clear_view()                
+            console.clear_view()                
     elif val==2:
-        glob.console.clear_view()                
+        console.clear_view()                
       
     util.require(ins, util.end_statement)    
     
@@ -70,17 +72,17 @@ def exec_color(ins):
     if bord==None:
         bord =0 
             
-    if glob.console.get_mode()==2: 
+    if console.get_mode()==2: 
         # screen 2: illegal fn call
         raise error.RunError(5)
-    elif glob.console.get_mode()==1:
+    elif console.get_mode()==1:
         # screen 1
         # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
         # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
     
     
-        fore_old, dummy = glob.console.get_attr()
-        back_old = glob.console.get_palette_entry(0)
+        fore_old, dummy = console.get_attr()
+        back_old = console.get_palette_entry(0)
         
         pal, back = back, fore
 
@@ -91,15 +93,15 @@ def exec_color(ins):
         if back==None: 
             back=back_old
         if pal%2==1:
-            glob.console.set_palette([0,3,5,7])
+            console.set_palette([0,3,5,7])
         elif pal%2==0:
-            glob.console.set_palette([0,2,4,6])
+            console.set_palette([0,2,4,6])
         
-        glob.console.set_palette_entry(0,back&0xf)
+        console.set_palette_entry(0,back&0xf)
     elif not graphics.is_graphics_mode():
         #screen 0
         
-        fore_old, back_old = glob.console.get_attr()
+        fore_old, back_old = console.get_attr()
         
         if fore==None:
             fore=fore_old
@@ -107,58 +109,58 @@ def exec_color(ins):
             back=back_old
         
         
-        if not (glob.console.colours_ok(fore) and glob.console.colours_ok(back) and glob.console.colours_ok(bord)):
+        if not (console.colours_ok(fore) and console.colours_ok(back) and console.colours_ok(bord)):
             raise error.RunError(5)
        
         
-        glob.console.set_attr(fore, back)
+        console.set_attr(fore, back)
         # border not implemented
     else:
     
-        fore_old, dummy = glob.console.get_attr()
-        back_old = glob.console.get_palette_entry(0)
+        fore_old, dummy = console.get_attr()
+        back_old = console.get_palette_entry(0)
         
         if fore==None:
             fore=fore_old
         if back==None: 
             back=back_old
         
-        #if fore >glob.console.num_colours or fore<=0 or back<0 or back>glob.console.num_colours or bord<0 or bord>255:
-        if fore==0 or not glob.console.colours_ok(fore) or not glob.console.colours_ok(back) or not glob.console.colours_ok(fore) :
+        #if fore >console.num_colours or fore<=0 or back<0 or back>console.num_colours or bord<0 or bord>255:
+        if fore==0 or not console.colours_ok(fore) or not console.colours_ok(back) or not console.colours_ok(fore) :
             raise error.RunError(5)
 
         # screen 7-10:
         # in graphics mode, bg colour is always 0 and controlled by palette
-        glob.console.set_attr(fore, 0)
-        glob.console.set_palette_entry(0,back)
+        console.set_attr(fore, 0)
+        console.set_palette_entry(0,back)
     
     
 def exec_palette(ins):
     d = util.skip_white(ins)
     if d in util.end_statement:
         # reset palette
-        glob.console.set_palette()
+        console.set_palette()
     elif d=='\xD7': # USING
         ins.read(1)
         array_name = var.get_var_name(ins)
         start_index = vartypes.pass_int_keep(expressions.parse_bracket(ins))[1]
         new_palette=[]
-        for i in range(glob.console.num_colours):
+        for i in range(console.num_colours):
             val = vartypes.pass_int_keep(var.get_array(array_name, [start_index+i]))[1]
             if val==-1:
-                val = glob.console.get_palette_entry(i)
+                val = console.get_palette_entry(i)
             if val<-1 or val>63:
                 raise error.RunError(5) 
             new_palette.append(val)
-        glob.console.set_palette(new_palette)
+        console.set_palette(new_palette)
         
     else:
         pair = expressions.parse_int_list(ins, 2, err=5)
         
-        if pair[0]<0 or pair[0]>glob.console.num_palette or pair[1]<-1 or pair[1]>glob.console.num_palette:
+        if pair[0]<0 or pair[0]>console.num_palette or pair[1]<-1 or pair[1]>console.num_palette:
             raise error.RunError(5)
         if pair[1]>-1:
-            glob.console.set_palette_entry(pair[0], pair[1])
+            console.set_palette_entry(pair[0], pair[1])
     
     
     util.require(ins, util.end_statement)    
@@ -168,54 +170,54 @@ def show_keys():
     global keys_visible
     
     keys_visible = True
-    pos = glob.console.get_pos()
-    attr = glob.console.get_attr()
+    pos = console.get_pos()
+    attr = console.get_attr()
     
-    save_curs = glob.console.show_cursor(False)
+    save_curs = console.show_cursor(False)
     
-    #glob.console.bottom_line(True)
-    for i in range(glob.console.width/8):
+    #console.bottom_line(True)
+    for i in range(console.width/8):
         text = list(events.key_replace[i][:6])
         for j in range(len(text)):
             if text[j]=='\x0d':   #  CR
                 text[j] = '\x1b'  # arrow left
     
         # allow pos=25 without scroll, this is reset as soon as row changes again.
-        glob.console.last_row_on()
-        glob.console.set_pos(25,1+i*8)
-        glob.console.set_attr(*attr)
+        console.last_row_on()
+        console.set_pos(25,1+i*8)
+        console.set_attr(*attr)
         if i==9:
-            glob.console.write('0')
+            console.write('0')
         else:
-            glob.console.write(str(i+1))
+            console.write(str(i+1))
             
         if not graphics.is_graphics_mode():
             if attr[1]==0:    
-                glob.console.set_attr(0,7)
+                console.set_attr(0,7)
             else:
-                glob.console.set_attr(7,0)
+                console.set_attr(7,0)
         	
-        glob.console.write(''.join(text))
-        glob.console.set_attr(*attr)
-        glob.console.write(' '*(6-len(text)))
-        glob.console.write(' ')
+        console.write(''.join(text))
+        console.set_attr(*attr)
+        console.write(' '*(6-len(text)))
+        console.write(' ')
     
-    glob.console.set_pos(*pos)
-    glob.console.set_attr(*attr)
-    #glob.console.bottom_line(False)
-    glob.console.show_cursor(save_curs)
+    console.set_pos(*pos)
+    console.set_attr(*attr)
+    #console.bottom_line(False)
+    console.show_cursor(save_curs)
         
 def hide_keys():
     global keys_visible
     
     keys_visible = False
-    pos = glob.console.get_pos()
-    #glob.console.bottom_line(True)
-    glob.console.last_row_on()
-    glob.console.set_pos(25,1)
-    glob.console.write(' '*(glob.console.width), scroll_ok=False)
+    pos = console.get_pos()
+    #console.bottom_line(True)
+    console.last_row_on()
+    console.set_pos(25,1)
+    console.write(' '*(console.width), scroll_ok=False)
     
-    glob.console.set_pos(*pos)
+    console.set_pos(*pos)
         
 
 def exec_key(ins):
@@ -234,7 +236,7 @@ def exec_key(ins):
             for j in range(len(text)):
                 if text[j]=='\x0d':   #  CR
                     text[j] = '\x1b'  # arrow left
-            glob.console.write('F'+str(i+1)+' '+''.join(text)+util.endl)    
+            console.write('F'+str(i+1)+' '+''.join(text)+util.endl)    
     
     elif d=='(':
         # key (n)
@@ -292,16 +294,16 @@ def exec_key(ins):
 def exec_locate(ins):
     [row, col, cursor, start, stop] = expressions.parse_int_list(ins, 5, 2)          
 
-    [crow, ccol] = [glob.console.get_row(), glob.console.get_col()]            
+    [crow, ccol] = [console.get_row(), console.get_col()]            
     if row==None:
         row = crow
     if col==None:
         col = ccol
     
     check_view(row,col)
-    glob.console.set_pos(row, col, scroll_ok=False)    
+    console.set_pos(row, col, scroll_ok=False)    
     if cursor!=None:
-        glob.console.show_cursor(cursor)
+        console.show_cursor(cursor)
     
     # cursor shape not implemented
 
@@ -313,7 +315,7 @@ def exec_write(ins, screen=None):
     screen = expressions.parse_file_number(ins)
     
     if screen==None:
-        screen=glob.console
+        screen=console
         
     expr = expressions.parse_expression(ins, allow_empty=True)
 
@@ -346,7 +348,7 @@ def exec_print(ins, screen=None):
         screen = expressions.parse_file_number(ins)
         
         if screen==None:
-            screen=glob.console
+            screen=console
 
     zone_width = 14 #15
     number_zones = int(screen.width/zone_width)
@@ -592,30 +594,30 @@ def exec_lcopy(ins):
 def exec_view_print(ins):
     d = util.skip_white(ins)
     if d in util.end_statement:
-        glob.console.set_view()
+        console.set_view()
     else:
         start = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
         util.require_read(ins, '\xCC') # TO
         stop = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
         util.require(ins, util.end_statement)
             
-        glob.console.set_view(start, stop)
+        console.set_view(start, stop)
 
 
 def check_view(row, col):
     global keys_visible
     
-    if row==glob.console.height and keys_visible:
+    if row==console.height and keys_visible:
         raise error.RunError(5)
-    elif glob.console.view_set:
-        if row > glob.console.scroll_height or col > glob.console.width or row<glob.console.view_start or col<1:
+    elif console.view_set:
+        if row > console.scroll_height or col > console.width or row<console.view_start or col<1:
             raise error.RunError(5)
     else:
-        if row > glob.console.height or col > glob.console.width or row<1 or col<1:
+        if row > console.height or col > console.width or row<1 or col<1:
             raise error.RunError(5)
-        if row== glob.console.height:
+        if row== console.height:
             # temporarily allow writing on last row
-            glob.console.last_row_on()       
+            console.last_row_on()       
 
     
 def exec_width(ins):
@@ -632,12 +634,12 @@ def exec_width(ins):
         dev = glob.devices[device]
         
     else:
-        dev = glob.console
+        dev = console
         
     # we can do calculations, but they must be bracketed...
     w = vartypes.pass_int_keep(expressions.parse_expr_unit(ins))[1]
     # get the appropriate errors out there
-    if dev==glob.console:
+    if dev==console:
         
         # two commas are accepted
         util.skip_white_read_if(ins, ',')
@@ -657,8 +659,8 @@ def exec_width(ins):
         
     dev.set_width(w)    
     
-    if dev==glob.console:
-        glob.console.clear()
+    if dev==console:
+        console.clear()
         if keys_visible:
             show_keys()    
 
@@ -870,7 +872,7 @@ def exec_screen(ins):
     util.require(ins, util.end_statement)        
     
     mode = params[0]
-    mode_info = glob.console.mode_info(mode) 
+    mode_info = console.mode_info(mode) 
     
     # backend does not support mode
     if  mode_info == None:
@@ -887,28 +889,28 @@ def exec_screen(ins):
        raise error.RunError(5)
 
 
-    glob.console.set_palette()
+    console.set_palette()
     
     if mode!=screen_mode:
-        glob.console.set_mode(mode)
+        console.set_mode(mode)
         if keys_visible:
             show_keys()
         screen_mode=mode    
 
     # set active page & visible page, counting from 0. if higher than max pages, illegal fn call.            
-    if not glob.console.set_apage(apagenum):
+    if not console.set_apage(apagenum):
        raise error.RunError(5)
-    if not glob.console.set_vpage(vpagenum):
+    if not console.set_vpage(vpagenum):
        raise error.RunError(5)
     
     
     # in SCREEN 0, the colorswitch parameter doesn't actually switch colors on and off
     # but if it's different from the existing one, the screen is cleared.
     if params[1] != None:
-        if (params[1]!=0) != glob.console.colorswitch:
-            glob.console.set_colorswitch( params[1]!=0 )
+        if (params[1]!=0) != console.colorswitch:
+            console.set_colorswitch( params[1]!=0 )
             # clear all screen pages
-            glob.console.clear_all()
+            console.clear_all()
             if keys_visible:
                 show_keys()
                 
@@ -920,7 +922,7 @@ def exec_pcopy(ins):
     dst = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
     util.require(ins, util.end_statement)
 
-    if not glob.console.copy_page(src,dst):
+    if not console.copy_page(src,dst):
         raise error.RunError(5)
     
         

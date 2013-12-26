@@ -30,9 +30,11 @@ import util
 import printer
 import oslayer
 import statements
+import backend_dumb
 import nosound
 import sound
 import graphics
+import console
 import tokenise
 import program
     
@@ -109,36 +111,28 @@ def main():
         
     # choose the screen 
     if args.dumb or not sys.stdout.isatty() or not sys.stdin.isatty():
-        import backend_dumb
-        import console
-        
-        glob.console = console
         console.backend = backend_dumb        
         
     elif args.text:
         import terminal
-        import console
-        glob.console = console   
         console.backend = terminal
         
     else:   
         import gameterm
-        import console
-        glob.console = console   
         console.backend = gameterm   
         graphics.backend = gameterm
         if not args.nosound:
             sound.backend = gameterm
     
     # initialise backends
-    glob.console.init()    
+    console.init()    
     if not sound.init_sound():
         # fallback warning here?
         sound.backend = nosound
     
     # choose peripherals    
-    deviceio.scrn = glob.console
-    deviceio.kybd = glob.console
+    deviceio.scrn = console
+    deviceio.kybd = console
     deviceio.lpt1 = parse_arg_device(args.lpt1, printer)
     deviceio.lpt2 = parse_arg_device(args.lpt2)
     deviceio.lpt3 = parse_arg_device(args.lpt3)
@@ -148,31 +142,27 @@ def main():
     
         
     try:
-        glob.console.set_attr(7, 0)
-        glob.console.clear()
+        console.set_attr(7, 0)
+        console.clear()
         
         if not args.run and args.cmd == None:
             statements.show_keys()
-            glob.console.write("PC-BASIC 3.23"+debugstr+util.endl)
-            glob.console.write('(C) Copyright 2013 PC-BASIC authors. Type RUN "INFO" for more.'+util.endl)
-            glob.console.write(("%d Bytes free" % var.free_mem) +util.endl)
+            console.write("PC-BASIC 3.23"+debugstr+util.endl)
+            console.write('(C) Copyright 2013 PC-BASIC authors. Type RUN "INFO" for more.'+util.endl)
+            console.write(("%d Bytes free" % var.free_mem) +util.endl)
         
         run.init_run(args.run, args.load, args.quit, args.cmd, args.infile)
         run.main_loop()    
     finally:
         # fix the terminal
-        glob.console.close()
+        console.close()
 
 
 
 def convert(infile, outfile, mode):
-    import backend_dumb 
-    import console
-    
     error.warnings_on=True
-    glob.console=console
-    glob.console.backend=backend_dumb
-    glob.console.init()
+    console.backend=backend_dumb
+    console.init()
 
     fin = sys.stdin
     if infile != None:
@@ -186,7 +176,7 @@ def convert(infile, outfile, mode):
     program.protected=False
     program.save(fout,mode)
     
-    glob.console.close()
+    console.close()
     run.exit()
 
 

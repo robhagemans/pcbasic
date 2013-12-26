@@ -28,6 +28,7 @@ import fileio
 # for music_foreground in CLEAR
 import sound
 
+import console
 
 def exec_clear(ins):
     # CLEAR Command
@@ -475,8 +476,8 @@ def exec_input(ins):
     
     # read the input
     while True:
-        glob.console.write(prompt) 
-        line = glob.console.read_screenline(write_endl=newline)
+        console.write(prompt) 
+        line = console.read_screenline(write_endl=newline)
         
         inputs = StringIO.StringIO(line) 
         text_file = fileio.pseudo_textfile(inputs)
@@ -499,7 +500,7 @@ def exec_input(ins):
                 break
                 
         if not success:
-            glob.console.write('?Redo from start'+util.endl)  # ... good old Redo!
+            console.write('?Redo from start'+util.endl)  # ... good old Redo!
             continue
         else:
             break
@@ -592,8 +593,8 @@ def exec_line_input(ins):
     readvar,indices = expressions.get_var_or_array_name(ins)
 
     # read the input
-    glob.console.write(prompt) 
-    inputs = glob.console.read_screenline(write_endl=newline)
+    console.write(prompt) 
+    inputs = console.read_screenline(write_endl=newline)
     var.set_var_or_array(readvar, indices, ('$', inputs))
     
    
@@ -648,8 +649,8 @@ def exec_randomize(ins):
     val = expressions.parse_expression(ins, allow_empty=True)
     if val==('',''):
         # prompt for random seed
-        glob.console.write("Random number seed (-32768 to 32767)? ")
-        line, interrupt = glob.console.read_screenline()
+        console.write("Random number seed (-32768 to 32767)? ")
+        line, interrupt = console.read_screenline()
         if interrupt:
             raise error.Break()
         

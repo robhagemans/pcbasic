@@ -16,6 +16,7 @@ import vartypes
 # for timer
 import oslayer
 
+import console
 
 def reset_events():
     global key_events, key_numbers, key_enabled, key_stopped, key_triggered
@@ -86,7 +87,7 @@ def check_events():
     if not program.runmode():
         return
     
-    c = glob.console.peek_char()
+    c = console.peek_char()
     if len(c) >0:
         keynum=-1
         if c in key_numbers:
@@ -94,7 +95,7 @@ def check_events():
         if keynum >-1 and keynum<20:
             if key_enabled[keynum]: #and not key_disabled[keynum]:
                 # remove the char from buffer
-                glob.console.pass_char(c)
+                console.pass_char(c)
                 
                 # trigger only once at most
                 key_triggered[keynum] = True

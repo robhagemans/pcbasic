@@ -16,7 +16,7 @@ import util
 import expressions
 import program
 import run
-
+import console
 
 # OS statements
 from stat_os import *
@@ -66,7 +66,7 @@ def parse_statement():
             return False
             
         if tron:
-            glob.console.write('['+('%i' % program.linenum) +']')
+            console.write('['+('%i' % program.linenum) +']')
             
         c = util.skip_white_read(ins).upper()
     
@@ -122,7 +122,7 @@ def parse_statement():
     elif c=='\x92':     # CLEAR
         exec_clear(ins)  
     elif c=='\x93':     # LIST
-        exec_list(ins, glob.console)      
+        exec_list(ins, console)      
     elif c=='\x94':     # NEW
         exec_new()
     elif c=='\x95':     # ON

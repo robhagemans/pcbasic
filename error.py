@@ -12,6 +12,7 @@
 import sys
 import glob
 import util
+import console
 
 # number and line number of last error
 errn=-1
@@ -88,11 +89,11 @@ def write_error_message(msg, linenum):
     if msg=='':
         msg = default_msg
     
-    glob.console.start_line()
-    glob.console.write(msg) 
+    console.start_line()
+    console.write(msg) 
     if linenum > -1 and linenum < 65535:
-        glob.console.write(' in %i' % linenum)
-    glob.console.write(' ' + util.endl)          
+        console.write(' in %i' % linenum)
+    console.write(' ' + util.endl)          
 
         
 warnings_on=False
