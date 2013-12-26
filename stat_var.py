@@ -26,7 +26,7 @@ import program
 import fileio
 
 # for music_foreground in CLEAR
-import stat_graph
+import draw_and_play
 
 
 def exec_clear(ins):
@@ -65,7 +65,7 @@ def exec_clear(ins):
     
     # stop all sound
     glob.sound.stop_all_sound()
-    stat_graph.music_foreground=True
+    draw_and_play.music_foreground=True
 
     # integer expression allowed but ignored
     intexp = expressions.parse_expression(ins, allow_empty=True)
@@ -644,4 +644,41 @@ def exec_def_fn(ins):
     
     
                              
-                             
+def exec_randomize(ins):
+    val = expressions.parse_expression(ins, allow_empty=True)
+    if val==('',''):
+        # prompt for random seed
+        glob.scrn.write("Random number seed (-32768 to 32767)? ")
+        line, interrupt = glob.scrn.read_screenline()
+        if interrupt:
+            raise error.Break()
+        
+        # should be interpreted as integer sint if it is
+        val = tokenise.str_to_value_keep(('$', ''.join(line)))
+        
+    if val[0]=='$':
+        raise error.RunError(5)
+
+    if val[0]=='%':
+        val = ('$', vartypes.value_to_sint(val[1]))    
+    
+    s = val[1]
+    
+    # on a program line, if a number outside the signed int range (or -32768) is entered,
+    # the number is stored as a MBF double or float. Randomize then:
+    #   - ignores the first 4 bytes (if it's a double)
+    #   - reads the next two
+    #   - xors them with the final two (most signifant including sign bit, and exponent)
+    # and interprets them as a signed int 
+    # e.g. 1#    = /x00/x00/x00/x00 /x00/x00/x00/x81 gets read as /x00/x00 ^ /x00/x81 = /x00/x81 -> 0x10000-0x8100 = -32512 (sign bit set)
+    #      0.25# = /x00/x00/x00/x00 /x00/x00/x00/x7f gets read as /x00/x00 ^ /x00/x7f = /x00/x7F -> 0x7F00 = 32512 (sign bit not set)
+    #              /xDE/xAD/xBE/xEF /xFF/x80/x00/x80 gets read as /xFF/x80 ^ /x00/x80 = /xFF/x00 -> 0x00FF = 255   
+
+    final_two = s[-2:]
+    mask = '\x00\x00'
+    if len(s) >= 4:
+        mask = s[-4:-2]
+    final_two = chr(ord(final_two[0]) ^ ord(mask[0])) + chr(ord(final_two[1]) ^ ord(mask[1]))
+    rnd.randomize_int(sint_to_value(final_two))        
+    util.require(ins, util.end_statement)
+    

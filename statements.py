@@ -9,25 +9,14 @@
 # please see text file COPYING for licence terms.
 #
 
-
-import sys
-import StringIO
-
 import glob
 import error
-import fp
 import vartypes
-import var
-import rnd
-import fileio
-
 import util
-
 import expressions
-import tokenise
 import program
-
 import run
+
 
 # OS statements
 from stat_os import *
@@ -340,6 +329,7 @@ def parse_statement():
 
 
 def exec_system(ins): 
+    # SYSTEM LAH does not execute 
     util.require(ins, util.end_statement)
     run.exit() 
 
@@ -347,57 +337,18 @@ def exec_system(ins):
 def exec_tron(ins):
     global tron
     tron=True
-
+    # TRON LAH gives error, but TRON has been executed
+    util.require(ins, util.end_statement)
+    
 
 def exec_troff(ins):
     global tron
     tron=False
-   
-
-    
-def exec_randomize(ins):
-    val = expressions.parse_expression(ins, allow_empty=True)
-    if val==('',''):
-        # prompt for random seed
-        glob.scrn.write("Random number seed (-32768 to 32767)? ")
-        line, interrupt = glob.scrn.read_screenline()
-        if interrupt:
-            raise error.Break()
-        
-        # should be interpreted as integer sint if it is
-        val = tokenise.str_to_value_keep(('$', ''.join(line)))
-        
-    if val[0]=='$':
-        raise error.RunError(5)
-
-    if val[0]=='%':
-        val = ('$', vartypes.value_to_sint(val[1]))    
-    
-    s = val[1]
-    
-    # on a program line, if a number outside the signed int range (or -32768) is entered,
-    # the number is stored as a MBF double or float. Randomize then:
-    #   - ignores the first 4 bytes (if it's a double)
-    #   - reads the next two
-    #   - xors them with the final two (most signifant including sign bit, and exponent)
-    # and interprets them as a signed int 
-    # e.g. 1#    = /x00/x00/x00/x00 /x00/x00/x00/x81 gets read as /x00/x00 ^ /x00/x81 = /x00/x81 -> 0x10000-0x8100 = -32512 (sign bit set)
-    #      0.25# = /x00/x00/x00/x00 /x00/x00/x00/x7f gets read as /x00/x00 ^ /x00/x7f = /x00/x7F -> 0x7F00 = 32512 (sign bit not set)
-    #              /xDE/xAD/xBE/xEF /xFF/x80/x00/x80 gets read as /xFF/x80 ^ /x00/x80 = /xFF/x00 -> 0x00FF = 255   
-
-    final_two = s[-2:]
-    mask = '\x00\x00'
-    if len(s) >= 4:
-        mask = s[-4:-2]
-    final_two = chr(ord(final_two[0]) ^ ord(mask[0])) + chr(ord(final_two[1]) ^ ord(mask[1]))
-    rnd.randomize_int(sint_to_value(final_two))        
     util.require(ins, util.end_statement)
-    
-
-
+       
 
 def exec_rem(ins):
-    # util.skip the rest, but parse numbers to avoid triggering EOL
+    # skip the rest of the line, but parse numbers to avoid triggering EOL
     util.skip_to(ins, util.end_line)
     
 
@@ -413,7 +364,7 @@ def exec_motor(ins):
 
 
 ##########################################################
-
+# statements that require further qualification
 
 def exec_def(ins):
     util.skip_white(ins)
@@ -460,108 +411,14 @@ def exec_put(ins):
 
 
 ##########################################################
+# not yet implemented
 
-def exec_DEBUG(ins):
-    # this is not a GW-BASIC behaviour, but helps debugging.
-    # this is parsed like a REM by the tokeniser.
-    # rest of the line is considered to be a python statement
-    d = util.skip_white(ins)
-    
-    debug = ''
-    while util.peek(ins) not in util.end_line:
-        d = ins.read(1)
-        debug += d
-        
-    buf = StringIO.StringIO()
-    sys.stdout = buf
-    try:
-        exec(debug)
-    except Exception:
-        print "[exception]"
-        pass    
-    sys.stdout = sys.__stdout__
-
-    glob.scrn.write(buf.getvalue())
-
-    
-# DEBUG utilities
-def debug_dump_program():
-    sys.stderr.write(program.bytecode.getvalue().encode('hex')+'\n')    
-        
-
-##########################################################
-    
-# do-nothing POKE        
-def exec_poke(ins):
-    addr = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    util.require_read(ins, ',')
-    val = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    util.require(ins, util.end_statement)
-
-    
-# do-nothing DEF SEG    
-def exec_def_seg(ins):
-    if util.skip_white_read_if(ins, '\xE7'): #=
-        vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    util.require(ins, util.end_statement)
-        
-
-# do-nothing DEF USR    
-def exec_def_usr(ins):
-    if util.peek(ins) in tokenise.ascii_digits:
-        ins.read(1)
-    util.require_read(ins, '\xE7')     
-    vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    util.require(ins, util.end_statement)
-
-
-        
-# bload: not implemented        
-def exec_bload(ins):
-    raise error.RunError(73)    
-
-
-# bsave: not implemented        
-def exec_bsave(ins):
-    raise error.RunError(73)    
-        
-        
-# call: not implemented        
-def exec_call(ins):
-    raise error.RunError(73)    
-
-    
 # strig: not implemented        
 def exec_strig(ins):
     raise error.RunError(73)    
 
-
 # pen: not implemented        
 def exec_pen(ins):
-    raise error.RunError(73)    
+    raise error.RunError(73) 
 
-            
-# ioctl: not implemented
-def exec_ioctl(ins):
-    raise error.RunError(73)   
-    
 
-# do-nothing out       
-def exec_out(ins):
-    addr = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    util.require_read(ins, ',')
-    val = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    util.require(ins, util.end_statement)
-     
-
-# do-nothing wait        
-def exec_wait(ins):
-    addr = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    util.require_read(ins, ',')
-    val = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    if util.skip_white_read_if(ins, ','):
-        j = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    util.require(ins, util.end_statement)
-        
-       
-            
