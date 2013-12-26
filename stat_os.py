@@ -130,8 +130,8 @@ def exec_files(ins):
     # get working dir, replace / with \
     cwd=os.path.abspath(path).replace(os.sep,'\\')
     
-    glob.scrn.write(cwd+glob.endl)
-    num = glob.scrn.width/20
+    glob.console.write(cwd+util.endl)
+    num = glob.console.width/20
     
     if len(output)==0:
         # file not found
@@ -140,11 +140,11 @@ def exec_files(ins):
     while len(output)>0:
         line = ' '.join(output[:num])
         output = output[num:]
-        glob.scrn.write(line+glob.endl)       
+        glob.console.write(line+util.endl)       
         # allow to break during dir listing & show names flowing on screen
-        glob.scrn.check_events()             
+        glob.console.check_events()             
     
-    glob.scrn.write(str(oslayer.disk_free(path))+' Bytes free'+glob.endl)
+    glob.console.write(str(oslayer.disk_free(path))+' Bytes free'+util.endl)
     
     util.require(ins, util.end_statement)
     
@@ -157,9 +157,9 @@ def exec_shell(ins):
     else:
         cmd = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
     
-    glob.scrn.pause()
+    glob.console.pause()
     oslayer.spawn_interactive_shell(cmd) 
-    glob.scrn.cont()
+    glob.console.cont()
     
     util.require(ins, util.end_statement)
     

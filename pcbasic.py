@@ -84,7 +84,9 @@ def main():
     
     import run
     import error
-
+    import var
+    import deviceio
+    import util
     import printer
     import oslayer
     import statements
@@ -96,7 +98,7 @@ def main():
     if glob.args.peek !=None:
         for a in glob.args.peek:
             [addr,val] = a.split(':')
-            glob.peek_values[int(addr)]=int(val)
+            expressions.peek_values[int(addr)]=int(val)
 
     ########################################
     
@@ -107,14 +109,14 @@ def main():
     if glob.args.dumb or not sys.stdout.isatty() or not sys.stdin.isatty():
         import dumbterm
         
-        glob.scrn = dumbterm
+        glob.console = dumbterm
         glob.sound = nosound
         
     elif glob.args.text:
         import terminal
         import console
     
-        glob.scrn = console   
+        glob.console = console   
         console.backend = terminal
         glob.sound = nosound
         
@@ -122,7 +124,7 @@ def main():
         import gameterm
         import console
     
-        glob.scrn = console   
+        glob.console = console   
         console.backend = gameterm   
         graphics.backend = gameterm
         glob.sound = gameterm
@@ -130,30 +132,24 @@ def main():
     if glob.args.nosound:
         glob.sound = nosound
     
-    glob.scrn.init()    
+    glob.console.init()    
         
         
         
     # choose peripherals    
-    glob.lpt1 = parse_arg_device(glob.args.lpt1, printer)
-    glob.lpt2 = parse_arg_device(glob.args.lpt2)
-    glob.lpt3 = parse_arg_device(glob.args.lpt3)
-    glob.com1 = parse_arg_device(glob.args.com1)
-    glob.com2 = parse_arg_device(glob.args.com2)
-
-    # these are the *output* devices
-    glob.devices = { 'SCRN:': glob.scrn, 'LPT1:': glob.lpt1, 
-            'LPT2:': glob.lpt2,  'LPT3:': glob.lpt3, 'COM1:': glob.com1, 'COM2:': glob.com2 }    
-    # input devices
-    glob.input_devices = { 'KYBD:': glob.scrn, 'COM1:': glob.com1, 'COM2:': glob.com2 }
-    # random access devices
-    glob.random_devices = { 'COM1:': glob.com1, 'COM2:': glob.com2 }
-    
+    deviceio.scrn = glob.console
+    deviceio.kybd = glob.console
+    deviceio.lpt1 = parse_arg_device(glob.args.lpt1, printer)
+    deviceio.lpt2 = parse_arg_device(glob.args.lpt2)
+    deviceio.lpt3 = parse_arg_device(glob.args.lpt3)
+    deviceio.com1 = parse_arg_device(glob.args.com1)
+    deviceio.com2 = parse_arg_device(glob.args.com2)
+    deviceio.init_devices()
     
         
     try:
-        glob.scrn.set_attr(7, 0)
-        glob.scrn.clear()
+        glob.console.set_attr(7, 0)
+        glob.console.clear()
         
         if not glob.args.run and glob.args.cmd == None:
             statements.show_keys()
@@ -161,15 +157,15 @@ def main():
             if glob.debug:
                 debugstr=' [DEBUG mode]'
                 
-            glob.scrn.write("PC-BASIC 3.23"+debugstr+glob.endl)
-            glob.scrn.write('(C) Copyright 2013 PC-BASIC authors. Type RUN "INFO" for more.'+glob.endl)
-            glob.scrn.write(("%d Bytes free" % glob.free_mem) +glob.endl)
+            glob.console.write("PC-BASIC 3.23"+debugstr+util.endl)
+            glob.console.write('(C) Copyright 2013 PC-BASIC authors. Type RUN "INFO" for more.'+util.endl)
+            glob.console.write(("%d Bytes free" % var.free_mem) +util.endl)
         
         run.init_run()
         run.main_loop()    
     finally:
         # fix the terminal
-        glob.scrn.close()
+        glob.console.close()
 
 
 
@@ -181,8 +177,8 @@ def convert(infile, outfile, mode):
     import run
     
     error.warnings_on=True
-    glob.scrn=dumbterm
-    glob.scrn.init()
+    glob.console=dumbterm
+    glob.console.init()
 
     fin = sys.stdin
     if infile != None:
@@ -196,7 +192,7 @@ def convert(infile, outfile, mode):
     program.protected=False
     program.save(fout,mode)
     
-    glob.scrn.close()
+    glob.console.close()
     run.exit()
 
 

@@ -42,7 +42,7 @@ def exec_cls(ins):
     if util.skip_white(ins) in util.end_statement:
         if graphics.graph_view_set:
             val=1
-        elif glob.scrn.view_set:
+        elif glob.console.view_set:
             val=2
         else:        
             val=0
@@ -50,16 +50,16 @@ def exec_cls(ins):
         val = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
 
     if val==0:
-        glob.scrn.clear()  
+        glob.console.clear()  
         if keys_visible:
             show_keys()
     elif val==1:
         if graphics.is_graphics_mode():
             graphics.clear_graphics_view()
         else:
-            glob.scrn.clear_view()                
+            glob.console.clear_view()                
     elif val==2:
-        glob.scrn.clear_view()                
+        glob.console.clear_view()                
       
     util.require(ins, util.end_statement)    
     
@@ -70,17 +70,17 @@ def exec_color(ins):
     if bord==None:
         bord =0 
             
-    if glob.scrn.get_mode()==2: 
+    if glob.console.get_mode()==2: 
         # screen 2: illegal fn call
         raise error.RunError(5)
-    elif glob.scrn.get_mode()==1:
+    elif glob.console.get_mode()==1:
         # screen 1
         # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
         # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
     
     
-        fore_old, dummy = glob.scrn.get_attr()
-        back_old = glob.scrn.get_palette_entry(0)
+        fore_old, dummy = glob.console.get_attr()
+        back_old = glob.console.get_palette_entry(0)
         
         pal, back = back, fore
 
@@ -91,15 +91,15 @@ def exec_color(ins):
         if back==None: 
             back=back_old
         if pal%2==1:
-            glob.scrn.set_palette([0,3,5,7])
+            glob.console.set_palette([0,3,5,7])
         elif pal%2==0:
-            glob.scrn.set_palette([0,2,4,6])
+            glob.console.set_palette([0,2,4,6])
         
-        glob.scrn.set_palette_entry(0,back&0xf)
+        glob.console.set_palette_entry(0,back&0xf)
     elif not graphics.is_graphics_mode():
         #screen 0
         
-        fore_old, back_old = glob.scrn.get_attr()
+        fore_old, back_old = glob.console.get_attr()
         
         if fore==None:
             fore=fore_old
@@ -107,58 +107,58 @@ def exec_color(ins):
             back=back_old
         
         
-        if not (glob.scrn.colours_ok(fore) and glob.scrn.colours_ok(back) and glob.scrn.colours_ok(bord)):
+        if not (glob.console.colours_ok(fore) and glob.console.colours_ok(back) and glob.console.colours_ok(bord)):
             raise error.RunError(5)
        
         
-        glob.scrn.set_attr(fore, back)
+        glob.console.set_attr(fore, back)
         # border not implemented
     else:
     
-        fore_old, dummy = glob.scrn.get_attr()
-        back_old = glob.scrn.get_palette_entry(0)
+        fore_old, dummy = glob.console.get_attr()
+        back_old = glob.console.get_palette_entry(0)
         
         if fore==None:
             fore=fore_old
         if back==None: 
             back=back_old
         
-        #if fore >glob.scrn.num_colours or fore<=0 or back<0 or back>glob.scrn.num_colours or bord<0 or bord>255:
-        if fore==0 or not glob.scrn.colours_ok(fore) or not glob.scrn.colours_ok(back) or not glob.scrn.colours_ok(fore) :
+        #if fore >glob.console.num_colours or fore<=0 or back<0 or back>glob.console.num_colours or bord<0 or bord>255:
+        if fore==0 or not glob.console.colours_ok(fore) or not glob.console.colours_ok(back) or not glob.console.colours_ok(fore) :
             raise error.RunError(5)
 
         # screen 7-10:
         # in graphics mode, bg colour is always 0 and controlled by palette
-        glob.scrn.set_attr(fore, 0)
-        glob.scrn.set_palette_entry(0,back)
+        glob.console.set_attr(fore, 0)
+        glob.console.set_palette_entry(0,back)
     
     
 def exec_palette(ins):
     d = util.skip_white(ins)
     if d in util.end_statement:
         # reset palette
-        glob.scrn.set_palette()
+        glob.console.set_palette()
     elif d=='\xD7': # USING
         ins.read(1)
         array_name = var.get_var_name(ins)
         start_index = vartypes.pass_int_keep(expressions.parse_bracket(ins))[1]
         new_palette=[]
-        for i in range(glob.scrn.num_colours):
+        for i in range(glob.console.num_colours):
             val = vartypes.pass_int_keep(var.get_array(array_name, [start_index+i]))[1]
             if val==-1:
-                val = glob.scrn.get_palette_entry(i)
+                val = glob.console.get_palette_entry(i)
             if val<-1 or val>63:
                 raise error.RunError(5) 
             new_palette.append(val)
-        glob.scrn.set_palette(new_palette)
+        glob.console.set_palette(new_palette)
         
     else:
         pair = expressions.parse_int_list(ins, 2, err=5)
         
-        if pair[0]<0 or pair[0]>glob.scrn.num_palette or pair[1]<-1 or pair[1]>glob.scrn.num_palette:
+        if pair[0]<0 or pair[0]>glob.console.num_palette or pair[1]<-1 or pair[1]>glob.console.num_palette:
             raise error.RunError(5)
         if pair[1]>-1:
-            glob.scrn.set_palette_entry(pair[0], pair[1])
+            glob.console.set_palette_entry(pair[0], pair[1])
     
     
     util.require(ins, util.end_statement)    
@@ -168,54 +168,54 @@ def show_keys():
     global keys_visible
     
     keys_visible = True
-    pos = glob.scrn.get_pos()
-    attr = glob.scrn.get_attr()
+    pos = glob.console.get_pos()
+    attr = glob.console.get_attr()
     
-    save_curs = glob.scrn.show_cursor(False)
+    save_curs = glob.console.show_cursor(False)
     
-    #glob.scrn.bottom_line(True)
-    for i in range(glob.scrn.width/8):
+    #glob.console.bottom_line(True)
+    for i in range(glob.console.width/8):
         text = list(events.key_replace[i][:6])
         for j in range(len(text)):
             if text[j]=='\x0d':   #  CR
                 text[j] = '\x1b'  # arrow left
     
         # allow pos=25 without scroll, this is reset as soon as row changes again.
-        glob.scrn.last_row_on()
-        glob.scrn.set_pos(25,1+i*8)
-        glob.scrn.set_attr(*attr)
+        glob.console.last_row_on()
+        glob.console.set_pos(25,1+i*8)
+        glob.console.set_attr(*attr)
         if i==9:
-            glob.scrn.write('0')
+            glob.console.write('0')
         else:
-            glob.scrn.write(str(i+1))
+            glob.console.write(str(i+1))
             
         if not graphics.is_graphics_mode():
             if attr[1]==0:    
-                glob.scrn.set_attr(0,7)
+                glob.console.set_attr(0,7)
             else:
-                glob.scrn.set_attr(7,0)
+                glob.console.set_attr(7,0)
         	
-        glob.scrn.write(''.join(text))
-        glob.scrn.set_attr(*attr)
-        glob.scrn.write(' '*(6-len(text)))
-        glob.scrn.write(' ')
+        glob.console.write(''.join(text))
+        glob.console.set_attr(*attr)
+        glob.console.write(' '*(6-len(text)))
+        glob.console.write(' ')
     
-    glob.scrn.set_pos(*pos)
-    glob.scrn.set_attr(*attr)
-    #glob.scrn.bottom_line(False)
-    glob.scrn.show_cursor(save_curs)
+    glob.console.set_pos(*pos)
+    glob.console.set_attr(*attr)
+    #glob.console.bottom_line(False)
+    glob.console.show_cursor(save_curs)
         
 def hide_keys():
     global keys_visible
     
     keys_visible = False
-    pos = glob.scrn.get_pos()
-    #glob.scrn.bottom_line(True)
-    glob.scrn.last_row_on()
-    glob.scrn.set_pos(25,1)
-    glob.scrn.write(' '*(glob.scrn.width), scroll_ok=False)
+    pos = glob.console.get_pos()
+    #glob.console.bottom_line(True)
+    glob.console.last_row_on()
+    glob.console.set_pos(25,1)
+    glob.console.write(' '*(glob.console.width), scroll_ok=False)
     
-    glob.scrn.set_pos(*pos)
+    glob.console.set_pos(*pos)
         
 
 def exec_key(ins):
@@ -234,7 +234,7 @@ def exec_key(ins):
             for j in range(len(text)):
                 if text[j]=='\x0d':   #  CR
                     text[j] = '\x1b'  # arrow left
-            glob.scrn.write('F'+str(i+1)+' '+''.join(text)+glob.endl)    
+            glob.console.write('F'+str(i+1)+' '+''.join(text)+util.endl)    
     
     elif d=='(':
         # key (n)
@@ -292,16 +292,16 @@ def exec_key(ins):
 def exec_locate(ins):
     [row, col, cursor, start, stop] = expressions.parse_int_list(ins, 5, 2)          
 
-    [crow, ccol] = [glob.scrn.get_row(), glob.scrn.get_col()]            
+    [crow, ccol] = [glob.console.get_row(), glob.console.get_col()]            
     if row==None:
         row = crow
     if col==None:
         col = ccol
     
     check_view(row,col)
-    glob.scrn.set_pos(row, col, scroll_ok=False)    
+    glob.console.set_pos(row, col, scroll_ok=False)    
     if cursor!=None:
-        glob.scrn.show_cursor(cursor)
+        glob.console.show_cursor(cursor)
     
     # cursor shape not implemented
 
@@ -313,7 +313,7 @@ def exec_write(ins, screen=None):
     screen = expressions.parse_file_number(ins)
     
     if screen==None:
-        screen=glob.scrn
+        screen=glob.console
         
     expr = expressions.parse_expression(ins, allow_empty=True)
 
@@ -336,7 +336,7 @@ def exec_write(ins, screen=None):
             
     util.require(ins, util.end_statement)        
 
-    screen.write(glob.endl)
+    screen.write(util.endl)
 
         
         
@@ -346,7 +346,7 @@ def exec_print(ins, screen=None):
         screen = expressions.parse_file_number(ins)
         
         if screen==None:
-            screen=glob.scrn
+            screen=glob.console
 
     zone_width = 14 #15
     number_zones = int(screen.width/zone_width)
@@ -363,7 +363,7 @@ def exec_print(ins, screen=None):
             
             screen.write(output)
             if newline:
-                 screen.write(glob.endl)
+                 screen.write(util.endl)
             output = ''
             break 
             
@@ -377,7 +377,7 @@ def exec_print(ins, screen=None):
             col = screen.get_col()
             next_zone = int((col-1)/zone_width)+1
             if next_zone >= number_zones:
-                output += glob.endl
+                output += util.endl
             else:            
                 output += ' '*(1+zone_width*next_zone-col)
             
@@ -420,7 +420,7 @@ def exec_print(ins, screen=None):
             
             col = screen.get_col()
             if pos < col:
-                screen.write(output+glob.endl+' '*(pos-1))
+                screen.write(output+util.endl+' '*(pos-1))
             else:
                 screen.write(output+' '*(pos-col))
             output=''    
@@ -436,7 +436,7 @@ def exec_print(ins, screen=None):
             
             if screen.col + len(word) -1 > screen.width and screen.col != 1:
                 # prevent breaking up of numbers through newline
-                output += glob.endl
+                output += util.endl
             output += word    
             
             
@@ -565,7 +565,7 @@ def exec_print_using(ins, screen):
             screen.write( c )
              
     if not semicolon:
-        screen.write(glob.endl)
+        screen.write(util.endl)
         
     util.require(ins, util.end_statement)
        
@@ -592,30 +592,30 @@ def exec_lcopy(ins):
 def exec_view_print(ins):
     d = util.skip_white(ins)
     if d in util.end_statement:
-        glob.scrn.set_view()
+        glob.console.set_view()
     else:
         start = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
         util.require_read(ins, '\xCC') # TO
         stop = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
         util.require(ins, util.end_statement)
             
-        glob.scrn.set_view(start, stop)
+        glob.console.set_view(start, stop)
 
 
 def check_view(row, col):
     global keys_visible
     
-    if row==glob.scrn.height and keys_visible:
+    if row==glob.console.height and keys_visible:
         raise error.RunError(5)
-    elif glob.scrn.view_set:
-        if row > glob.scrn.scroll_height or col > glob.scrn.width or row<glob.scrn.view_start or col<1:
+    elif glob.console.view_set:
+        if row > glob.console.scroll_height or col > glob.console.width or row<glob.console.view_start or col<1:
             raise error.RunError(5)
     else:
-        if row > glob.scrn.height or col > glob.scrn.width or row<1 or col<1:
+        if row > glob.console.height or col > glob.console.width or row<1 or col<1:
             raise error.RunError(5)
-        if row== glob.scrn.height:
+        if row== glob.console.height:
             # temporarily allow writing on last row
-            glob.scrn.last_row_on()       
+            glob.console.last_row_on()       
 
     
 def exec_width(ins):
@@ -632,12 +632,12 @@ def exec_width(ins):
         dev = glob.devices[device]
         
     else:
-        dev = glob.scrn
+        dev = glob.console
         
     # we can do calculations, but they must be bracketed...
     w = vartypes.pass_int_keep(expressions.parse_expr_unit(ins))[1]
     # get the appropriate errors out there
-    if dev==glob.scrn:
+    if dev==glob.console:
         
         # two commas are accepted
         util.skip_white_read_if(ins, ',')
@@ -657,8 +657,8 @@ def exec_width(ins):
         
     dev.set_width(w)    
     
-    if dev==glob.scrn:
-        glob.scrn.clear()
+    if dev==glob.console:
+        glob.console.clear()
         if keys_visible:
             show_keys()    
 
@@ -870,7 +870,7 @@ def exec_screen(ins):
     util.require(ins, util.end_statement)        
     
     mode = params[0]
-    mode_info = glob.scrn.mode_info(mode) 
+    mode_info = glob.console.mode_info(mode) 
     
     # backend does not support mode
     if  mode_info == None:
@@ -887,28 +887,28 @@ def exec_screen(ins):
        raise error.RunError(5)
 
 
-    glob.scrn.set_palette()
+    glob.console.set_palette()
     
     if mode!=screen_mode:
-        glob.scrn.set_mode(mode)
+        glob.console.set_mode(mode)
         if keys_visible:
             show_keys()
         screen_mode=mode    
 
     # set active page & visible page, counting from 0. if higher than max pages, illegal fn call.            
-    if not glob.scrn.set_apage(apagenum):
+    if not glob.console.set_apage(apagenum):
        raise error.RunError(5)
-    if not glob.scrn.set_vpage(vpagenum):
+    if not glob.console.set_vpage(vpagenum):
        raise error.RunError(5)
     
     
     # in SCREEN 0, the colorswitch parameter doesn't actually switch colors on and off
     # but if it's different from the existing one, the screen is cleared.
     if params[1] != None:
-        if (params[1]!=0) != glob.scrn.colorswitch:
-            glob.scrn.set_colorswitch( params[1]!=0 )
+        if (params[1]!=0) != glob.console.colorswitch:
+            glob.console.set_colorswitch( params[1]!=0 )
             # clear all screen pages
-            glob.scrn.clear_all()
+            glob.console.clear_all()
             if keys_visible:
                 show_keys()
                 
@@ -920,7 +920,7 @@ def exec_pcopy(ins):
     dst = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
     util.require(ins, util.end_statement)
 
-    if not glob.scrn.copy_page(src,dst):
+    if not glob.console.copy_page(src,dst):
         raise error.RunError(5)
     
         

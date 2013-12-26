@@ -20,7 +20,6 @@
 
 import copy
 
-import glob
 import util
 import error
 
@@ -503,7 +502,7 @@ def read_screenline(write_endl=True, from_start=False):
     row = crow
     
     if write_endl:
-        write(glob.endl)
+        write(util.endl)
     
     # remove trailing whitespace 
     while len(line)>0 and line[-1] in util.whitespace:

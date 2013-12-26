@@ -11,7 +11,7 @@
 
 import sys
 import glob
-import dumbterm
+import util
 
 # number and line number of last error
 errn=-1
@@ -20,15 +20,19 @@ erl=65535
 # jump line number 
 on_error = None
 error_handle_mode = False
+
 ###################
+
             
 class Error (Exception):
     pass            
+
         
 class Break(Error):
     def __init__(self):
         self.erl = -1
         self.msg = "Break"
+
                     
 class RunError(Error):
     def __init__(self, value, linum=-1):
@@ -38,6 +42,7 @@ class RunError(Error):
             self.msg = errors[value]
         
         # set_error                
+
                 
 class AdHocError(Error):
     def __init__(self, msg, linum=-1):
@@ -56,6 +61,7 @@ def reset_error():
     erl = 0         
     errn=0
 
+
 def set_error(errnum, linenum):
     global errn, erl
     if errnum>0 and errnum <256:
@@ -70,6 +76,7 @@ def print_error(errnum, linenum):
     msg = get_message(errnum)
     write_error_message(msg,linenum)
 
+
 def get_message(errnum):
     msg = default_msg
     if errnum in errors:
@@ -81,16 +88,12 @@ def write_error_message(msg, linenum):
     if msg=='':
         msg = default_msg
     
-    glob.scrn.start_line()
-    glob.scrn.write(msg) 
+    glob.console.start_line()
+    glob.console.write(msg) 
     if linenum > -1 and linenum < 65535:
-        glob.scrn.write(' in %i' % linenum)
-    glob.scrn.write(' ' + glob.endl)          
+        glob.console.write(' in %i' % linenum)
+    glob.console.write(' ' + util.endl)          
 
-
-
-    
-    
         
 warnings_on=False
 # non-fatal warning to stderr
