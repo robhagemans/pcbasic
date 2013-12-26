@@ -58,27 +58,27 @@ def main():
     parser.add_argument('-s1', '--com1', nargs='*', metavar=('TYPE:VAL'), help='set COM1: to FILE:file_name or CUPS:printer_name.')
     parser.add_argument('-s2', '--com2', nargs='*', metavar=('TYPE:VAL'), help='set COM2: to FILE:file_name or CUPS:printer_name.')
 
-    glob.args = parser.parse_args()
+    args = parser.parse_args()
     
 
     ########################################
     
     # converter invocations
 
-    if glob.args.conv_asc:
-        convert(glob.args.infile, glob.args.save, 'A')
-    elif glob.args.conv_byte:
-        convert(glob.args.infile, glob.args.save, 'B')
-    elif glob.args.conv_prot:
-        convert(glob.args.infile, glob.args.save, 'P')
-    elif glob.args.run or (not glob.args.load and glob.args.infile != None):
-        glob.args.run = True    
+    if args.conv_asc:
+        convert(args.infile, args.save, 'A')
+    elif args.conv_byte:
+        convert(args.infile, args.save, 'B')
+    elif args.conv_prot:
+        convert(args.infile, args.save, 'P')
+    elif args.run or (not args.load and args.infile != None):
+        args.run = True    
     
     ########################################
     
     # DEBUG mode
     
-    glob.debug = glob.args.debug
+    glob.debug = args.debug
 
     # ensure tokenise module is not imported before here, as debug variable influences import
     
@@ -95,8 +95,8 @@ def main():
 
     ########################################
     
-    if glob.args.peek !=None:
-        for a in glob.args.peek:
+    if args.peek !=None:
+        for a in args.peek:
             [addr,val] = a.split(':')
             expressions.peek_values[int(addr)]=int(val)
 
@@ -106,13 +106,13 @@ def main():
     
     ########################################
     # choose the screen 
-    if glob.args.dumb or not sys.stdout.isatty() or not sys.stdin.isatty():
+    if args.dumb or not sys.stdout.isatty() or not sys.stdin.isatty():
         import dumbterm
         
         glob.console = dumbterm
         glob.sound = nosound
         
-    elif glob.args.text:
+    elif args.text:
         import terminal
         import console
     
@@ -129,7 +129,7 @@ def main():
         graphics.backend = gameterm
         glob.sound = gameterm
     
-    if glob.args.nosound:
+    if args.nosound:
         glob.sound = nosound
     
     glob.console.init()    
@@ -139,11 +139,11 @@ def main():
     # choose peripherals    
     deviceio.scrn = glob.console
     deviceio.kybd = glob.console
-    deviceio.lpt1 = parse_arg_device(glob.args.lpt1, printer)
-    deviceio.lpt2 = parse_arg_device(glob.args.lpt2)
-    deviceio.lpt3 = parse_arg_device(glob.args.lpt3)
-    deviceio.com1 = parse_arg_device(glob.args.com1)
-    deviceio.com2 = parse_arg_device(glob.args.com2)
+    deviceio.lpt1 = parse_arg_device(args.lpt1, printer)
+    deviceio.lpt2 = parse_arg_device(args.lpt2)
+    deviceio.lpt3 = parse_arg_device(args.lpt3)
+    deviceio.com1 = parse_arg_device(args.com1)
+    deviceio.com2 = parse_arg_device(args.com2)
     deviceio.init_devices()
     
         
@@ -151,7 +151,7 @@ def main():
         glob.console.set_attr(7, 0)
         glob.console.clear()
         
-        if not glob.args.run and glob.args.cmd == None:
+        if not args.run and args.cmd == None:
             statements.show_keys()
             debugstr=''
             if glob.debug:
@@ -161,7 +161,7 @@ def main():
             glob.console.write('(C) Copyright 2013 PC-BASIC authors. Type RUN "INFO" for more.'+util.endl)
             glob.console.write(("%d Bytes free" % var.free_mem) +util.endl)
         
-        run.init_run()
+        run.init_run(args.run, args.load, args.quit, args.cmd, args.infile)
         run.main_loop()    
     finally:
         # fix the terminal
