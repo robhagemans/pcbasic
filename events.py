@@ -1,7 +1,7 @@
 #
 # PC-BASIC 3.23 - events.py
 #
-# Event handling 
+# User-defined event handling 
 # 
 # (c) 2013 Rob Hagemans 
 #
@@ -13,10 +13,21 @@
 import glob
 import sound
 import vartypes
-# for timer
 import oslayer
 import deviceio
 import console
+import program
+
+
+# create variables    
+reset_events()    
+
+# default codes for KEY autotext
+key_replace = [ 'LIST ', 'RUN\x0d', 'LOAD"', 'SAVE"', 'CONT\x0d', ',"LPT1:"\x0d','TRON\x0d', 'TROFF\x0d', 'KEY ', 'SCREEN 0,0,0\x0d' ]
+
+# ON KEY handling
+events_stopped = False    
+
 
 def reset_events():
     global key_events, key_numbers, key_enabled, key_stopped, key_triggered
@@ -49,17 +60,9 @@ def reset_events():
     com_stopped = [False, False]
     com_event = [-1,-1]
     
-    
-reset_events()    
-    
-# depends on reset_events
-import program
-
-
 
 
 # KEY replacement    
-
 # apply KEY autotext to scancodes
 def replace_key(c):
     if len(c) < 2 or c[0]!='\x00':
@@ -72,17 +75,10 @@ def replace_key(c):
     
     return c
     
-# default codes for KEY autotext
-key_replace = [ 'LIST ', 'RUN\x0d', 'LOAD"', 'SAVE"', 'CONT\x0d', ',"LPT1:"\x0d','TRON\x0d', 'TROFF\x0d', 'KEY ', 'SCREEN 0,0,0\x0d' ]
-
-# ON KEY handling
-events_stopped = False    
-#events_enabled = False
     
     
 def check_events():
     global key_numbers, key_enabled, key_triggered
-    
     
     if not program.runmode():
         return
