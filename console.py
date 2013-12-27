@@ -631,7 +631,6 @@ def read_chars(num):
 # blocking keystroke read
 def wait_char():
     global keybuf
-    
     while len(keybuf)==0:
         idle()
         check_events()
