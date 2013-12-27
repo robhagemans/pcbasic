@@ -505,10 +505,19 @@ def idle():
     pygame.time.wait(cycle_time/blink_cycles)  
       
 
-def check_events():
-    check_keyboard()
+def check_events(pause=False):
+    # check and handle pygame events    
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN:
+            if not pause:
+                handle_key(event)
+            else:
+                return True    
+    
+    #pygame.event.clear()
     check_screen()
-
+    return False
+    
     
 def check_screen():
     global screen  
@@ -548,11 +557,6 @@ def check_screen():
         screen_changed=False
 
     
-# check and handle keyboard events    
-def check_keyboard():
-    for event in pygame.event.get(pygame.KEYDOWN):
-        handle_key(event)
-    
     
 def handle_key(e):
     c=''
@@ -582,10 +586,9 @@ def pause_key():
     # TODO: does background music play ??
     while True:
         idle()
-        check_screen()
-        if pygame.event.peek(pygame.KEYDOWN):
-            pygame.event.get(pygame.KEYDOWN)
+        if check_events(pause=True):
             break
+            
             
   
 
