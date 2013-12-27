@@ -189,9 +189,8 @@ def colours_ok(c):
     return (c>=0 and c< num_colours)
     
     
+# core event handler    
 def check_events():
-    
-# TODO: move all to check_core_events routine of sorts
     
     # check console events
     backend.check_events()   

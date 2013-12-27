@@ -126,9 +126,7 @@ def check_events():
     if console.cursor:
         ansi.move_cursor(console.row,console.col)
        
-    events.check_events()
-    events.handle_events()
-
+    
 
 def apply_palette(colour):
     return colour&0x8 | palette[colour&0x7]
