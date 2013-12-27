@@ -134,6 +134,12 @@ def exec_color(ins):
     
 def exec_palette(ins):
     d = util.skip_white(ins)
+    
+    # can't set blinking colours separately
+    num_palette_entries = console.num_colours
+    if num_palette_entries==32:
+        num_palette_entries=16
+        
     if d in util.end_statement:
         # reset palette
         console.set_palette()
@@ -142,7 +148,7 @@ def exec_palette(ins):
         array_name = var.get_var_name(ins)
         start_index = vartypes.pass_int_keep(expressions.parse_bracket(ins))[1]
         new_palette=[]
-        for i in range(console.num_colours):
+        for i in range(num_palette_entries):
             val = vartypes.pass_int_keep(var.get_array(array_name, [start_index+i]))[1]
             if val==-1:
                 val = console.get_palette_entry(i)
@@ -154,7 +160,7 @@ def exec_palette(ins):
     else:
         pair = expressions.parse_int_list(ins, 2, err=5)
         
-        if pair[0]<0 or pair[0]>=console.num_colours or pair[1]<-1 or pair[1]>=console.num_palette:
+        if pair[0]<0 or pair[0]>=num_palette_entries or pair[1]<-1 or pair[1]>=console.num_palette:
             raise error.RunError(5)
         if pair[1]>-1:
             console.set_palette_entry(pair[0], pair[1])
