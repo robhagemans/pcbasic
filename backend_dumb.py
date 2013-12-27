@@ -11,13 +11,19 @@
 #
 
 import sys
+import time
+import select
+import os
+
 import error
 import unicodepage
-import time
+import console
+
 
 # echoing terminal
 echo = True
 
+last_row=1
 
 # this is called by set_vpage
 screen_changed=False
@@ -100,11 +106,6 @@ def build_line_cursor(is_line):
 #################
 
 
-import select
-import os
-import console
-
-last_row=1
 
 def check_row(row):    
     global last_row
@@ -122,10 +123,10 @@ def check_keys():
         c = os.read(fd,1)
     
     if c=='\x0A':
-        console.keybuf += '\x0D\x0A'
+        console.insert_key('\x0D\x0A')
         last_row+=1
     else:
-        console.keybuf += c
+        console.insert_key(c)
 
     
     
