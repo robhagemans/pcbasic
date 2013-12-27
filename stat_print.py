@@ -107,10 +107,8 @@ def exec_color(ins):
         if back==None: 
             back=back_old
         
-        
         if not (console.colours_ok(fore) and console.colours_ok(back) and console.colours_ok(bord)):
             raise error.RunError(5)
-       
         
         console.set_attr(fore, back)
         # border not implemented
@@ -148,7 +146,7 @@ def exec_palette(ins):
             val = vartypes.pass_int_keep(var.get_array(array_name, [start_index+i]))[1]
             if val==-1:
                 val = console.get_palette_entry(i)
-            if val<-1 or val>63:
+            if val<-1 or val>=console.num_palette:
                 raise error.RunError(5) 
             new_palette.append(val)
         console.set_palette(new_palette)
@@ -156,7 +154,7 @@ def exec_palette(ins):
     else:
         pair = expressions.parse_int_list(ins, 2, err=5)
         
-        if pair[0]<0 or pair[0]>console.num_palette or pair[1]<-1 or pair[1]>console.num_palette:
+        if pair[0]<0 or pair[0]>=console.num_palette or pair[1]<-1 or pair[1]>=console.num_palette:
             raise error.RunError(5)
         if pair[1]>-1:
             console.set_palette_entry(pair[0], pair[1])
