@@ -24,6 +24,7 @@ graph_window_bounds=None
 
 last_point = (0,0)    
 pixel_aspect_ratio = fp.MBF_class.one
+bitsperpixel=4
 
 
 
@@ -736,7 +737,7 @@ def view_coords(x,y):
     if (not graph_view_set) or view_graph_absolute:
         return x,y
     else:
-        lefttop = backend.get_graph_clip_lefttop()
+        lefttop = backend.get_graph_clip()
         return x+lefttop[0], y+lefttop[1]
     
 
