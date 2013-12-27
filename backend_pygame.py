@@ -18,7 +18,6 @@ import fp
 import vartypes
 import cpi_font
 import unicodepage 
-import events
 import var
 import console
 import graphics
@@ -575,8 +574,8 @@ def handle_key(e):
         c += keycode_to_scancode[e.key]
     elif len(e.unicode)>0 and ord(e.unicode) < 0x20:
         c += chr(ord(e.unicode))    
-    console.keybuf += events.replace_key(c)
-
+    console.insert_key(c) 
+    
 
 def pause_key():
     # pause key press waits for any key down. continues to process screen events (blink) but not user events.

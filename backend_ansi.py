@@ -24,7 +24,6 @@ import sys, tty, termios, select
 import os
 
 import ansi, unicodepage
-import events
 import error
 import console
 
@@ -181,10 +180,9 @@ def check_keyboard():
     if c == '\x03': # ctrl-C
         raise error.Break() 
     
-    
     # move scancodes (starting \x00) or ascii into keybuf
     # also apply KEY replacements as they work at a low level
-    console.keybuf += events.replace_key(ansi.translate_char(c))
+    console.insert_key(ansi.translate_char(c))
 
 
 def copy_page(src, dst):
