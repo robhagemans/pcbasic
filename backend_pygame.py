@@ -617,8 +617,7 @@ def get_graph_clip():
 def set_graph_clip(x0, y0, x1, y1):
     global graph_view
     graph_view=pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)    
-    return graph_view.center
-
+    
     
 def unset_graph_clip():
     global graph_view
