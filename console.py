@@ -83,6 +83,10 @@ graphics_mode=False
 screen_mode=0
 
 
+num_colours=32    
+num_palette=64
+
+
 def init():
     backend.init()
 
@@ -173,9 +177,6 @@ def set_mode(mode):
     show_cursor(cursor)
 
     
-num_colours=32    
-num_palette=64
-
 def set_colour_depth(colours, palette):
     global num_colours
     global num_palette

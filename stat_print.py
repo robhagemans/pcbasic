@@ -154,7 +154,7 @@ def exec_palette(ins):
     else:
         pair = expressions.parse_int_list(ins, 2, err=5)
         
-        if pair[0]<0 or pair[0]>=console.num_palette or pair[1]<-1 or pair[1]>=console.num_palette:
+        if pair[0]<0 or pair[0]>=console.num_colours or pair[1]<-1 or pair[1]>=console.num_palette:
             raise error.RunError(5)
         if pair[1]>-1:
             console.set_palette_entry(pair[0], pair[1])
