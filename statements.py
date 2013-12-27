@@ -410,6 +410,41 @@ def exec_put(ins):
         exec_put_file(ins)
 
 
+def exec_on(ins):
+    c = util.skip_white(ins)
+    if c =='\xA7': # ERROR:
+        ins.read(1)
+        exec_on_error(ins)
+        return
+    elif c=='\xC9': # KEY
+        ins.read(1)
+        exec_on_key(ins)
+        return
+    elif c=='\xFE':
+        c = util.peek(ins,2)
+        if c== '\xFE\x94': # FE94 TIMER
+            ins.read(2)
+            exec_on_timer(ins)
+            return
+        elif c == '\xFE\x93':   # PLAY
+            ins.read(2)
+            exec_on_play(ins)
+            return
+        elif c in ('\xFE\x90'):   # COM
+            ins.read(2)
+            exec_on_com(ins)
+            return
+    elif c== '\xFF':
+        if util.peek(ins,2) in ('\xFF\xA0','\xFF\xA2'):  # PEN, STRIG
+            # TODO: not implemented
+            ins.read(2)
+            # advanced feature
+            raise error.RunError(73)
+
+    exec_on_jump(ins)
+
+
+
 ##########################################################
 # not yet implemented
 
