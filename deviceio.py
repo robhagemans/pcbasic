@@ -34,3 +34,8 @@ def init_devices():
     # random access devices
     random_devices = { 'COM1:': com1, 'COM2:': com2 }
     
+    
+def is_device(afile):
+    return afile in output_devices or afile in input_devices or afile in random_devices
+
+    

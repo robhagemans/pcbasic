@@ -28,16 +28,6 @@ lock_modes = ['SHARED', '\xFE\xA7 \x87', '\xFE\xA7 \xB7', '\xFE\xA7 \x87 \xB7'] 
 access_modes = { 'I':'rb', 'O':'wb', 'R': 'rwb', 'A': 'wb' }
 position_modes = { 'I':0, 'O':0, 'R':0, 'A':-1 }
 
-def parse_file_number_opthash(ins):
-    if util.skip_white_read_if(ins, '#'):
-        util.skip_white(ins)
-    
-    number = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    if number<0 or number>255:
-        raise error.RunError(5)
-        
-    return number    
-
 # close all files
 def exec_reset(ins):
     fileio.close_all()
@@ -58,7 +48,7 @@ def exec_open(ins):
         position = position_modes[mode]
         
         util.require_read(ins, ',')
-        number = parse_file_number_opthash(ins)
+        number = expressions.parse_file_number_opthash(ins)
         util.require_read(ins, ',')
         
         name = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
@@ -136,7 +126,7 @@ def exec_open(ins):
         ins.read(2)
         
         
-        number = parse_file_number_opthash(ins)
+        number = expressions.parse_file_number_opthash(ins)
         
         
         util.skip_white(ins)             
@@ -174,7 +164,7 @@ def exec_open(ins):
 def exec_close(ins):
                     
     while True:
-        number = parse_file_number_opthash(ins)
+        number = expressions.parse_file_number_opthash(ins)
             
         if number in fileio.files:
             fileio.files[number].close()
@@ -187,7 +177,7 @@ def exec_close(ins):
          
             
 def exec_field(ins):
-    number = parse_file_number_opthash(ins)
+    number = expressions.parse_file_number_opthash(ins)
         
     if number not in fileio.files:
         raise error.RunError(52)
@@ -224,7 +214,7 @@ def exec_field(ins):
         
 
 def exec_put_file(ins):
-    number = parse_file_number_opthash(ins)
+    number = expressions.parse_file_number_opthash(ins)
         
     if number not in fileio.files:
         raise error.RunError(52)
@@ -247,7 +237,7 @@ def exec_put_file(ins):
             
 
 def exec_get_file(ins):
-    number = parse_file_number_opthash(ins)
+    number = expressions.parse_file_number_opthash(ins)
         
     if number not in fileio.files:
         raise error.RunError(52)
@@ -269,14 +259,20 @@ def exec_get_file(ins):
             
     
 
+
 def do_lock(ins, lock='rw'):
-    number = parse_file_number_opthash(ins)
+    number = expressions.parse_file_number_opthash(ins)
     
     if number not in fileio.files:
         raise error.RunError(52)
     
+    if deviceio.is_device(thefile):
+        # permission denied
+        raise error.RunError(70)
+        
     
     thefile =fileio.files[number]
+    
     
     lock_start=0
     lock_length=0
@@ -292,14 +288,10 @@ def do_lock(ins, lock='rw'):
         lock_stop = lock_stop_rec*thefile.reclen
         lock_length = lock_stop-lock_start
     
-    if isinstance(thefile, TextFile):
-        oslayer.safe_lock(thefile.fhandle, thefile.access, lock)
-    else:
-        oslayer.safe_lock(thefile.fhandle, thefile.access, lock, lock_start, lock_length)
-                   
+    fileio.lock_file(thefile, lock, lock_start, lock_length)                   
     util.require(ins, util.end_statement)
     
-    return (thefile.fhandle,lock_start,lock_length)        
+    return (thefile.number, lock_start, lock_length)        
             
             
             

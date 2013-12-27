@@ -16,6 +16,7 @@ import os
 import StringIO
 
 import util
+import expressions
 import oslayer
 
 
@@ -40,6 +41,7 @@ def close_all_all_all():
         
 def get_file(number):        
     return files[number]
+
     
 def open_system_text_file(unixpath, access='rb'):
     inst = TextFile()
@@ -122,6 +124,20 @@ def pseudo_textfile(stringio):
     text_file.mode='P'
     text_file.init()
     return text_file        
+
+
+
+            
+def lock_file(thefile, lock, lock_start, lock_length):
+
+    if deviceio.is_device(thefile):
+        # permission denied
+        raise error.RunError(70)
+        
+    if isinstance(thefile, TextFile):
+        oslayer.safe_lock(thefile.fhandle, thefile.access, lock)
+    else:
+        oslayer.safe_lock(thefile.fhandle, thefile.access, lock, lock_start, lock_length)
 
 
 class TextFile:
@@ -366,3 +382,5 @@ class RandomFile:
     def flush(self):
         pass
             
+            
+
