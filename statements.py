@@ -36,6 +36,8 @@ from stat_graph import *
 from stat_sound import *
 # debugging
 from stat_debug import *
+# machine access
+from stat_machine import *
 
 tron = False
 
