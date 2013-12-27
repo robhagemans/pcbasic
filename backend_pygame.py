@@ -501,8 +501,17 @@ def refresh_cursor():
     
     
             
+def idle():
+    global cycle_time, blink_cycles
+    pygame.time.wait(cycle_time/blink_cycles)  
+      
 
 def check_events():
+    check_keyboard()
+    check_screen()
+
+    
+def check_screen():
     global screen  
     global cursor0, font_height, last_row, last_col
     global cycle
@@ -510,10 +519,6 @@ def check_events():
     global last_cycle, cycle_time, blink_cycles
     global screen_changed
     
-    for event in pygame.event.get():
-        if event.type == pygame.KEYDOWN:
-            handle_key(event)
-
     if not console.graphics_mode:
         if cycle==0:
             blink_state=0
@@ -543,25 +548,13 @@ def check_events():
         
         screen_changed=False
 
-
-# TODO: these should not be here...
-        
-        # check user events
-        events.check_events()
-        events.handle_events()
-            
-        # manage sound queue
-        sound.check_sound()
-            
-            
-            
-            
-def idle():
-    global cycle_time, blink_cycles
-    pygame.time.wait(cycle_time/blink_cycles)  
-  
-
-  
+    
+# check and handle keyboard events    
+def check_keyboard():
+    for event in pygame.event.get(pygame.KEYDOWN):
+        handle_key(event)
+    
+    
 def handle_key(e):
     c=''
     if e.key in (pygame.K_PAUSE, pygame.K_BREAK):
@@ -569,6 +562,9 @@ def handle_key(e):
         if mods & pygame.KMOD_CTRL:
             # ctrl-break
             raise error.Break()
+        else:
+            # pause until keypress
+            pause_key()    
     elif e.key==pygame.K_DELETE:
         c+= keycode_to_scancode[e.key]    
     elif len(e.unicode)>0 and ord(e.unicode)== 0:   # NUL
@@ -582,6 +578,17 @@ def handle_key(e):
     console.keybuf += events.replace_key(c)
 
 
+def pause_key():
+    # pause key press waits for any key down. continues to process screen events (blink) but not user events.
+    # TODO: does background music play ??
+    while True:
+        idle()
+        check_screen()
+        if pygame.event.peek(pygame.KEYDOWN):
+            pygame.event.get(pygame.KEYDOWN)
+            break
+            
+  
 
 ###############################################
 # graphical
@@ -772,6 +779,6 @@ def check_sound():
 def wait_music():
     while len(sound.sound_queue)>0 or pygame.mixer.get_busy():
         idle()
-        check_events()
+        console.check_events()
         
         

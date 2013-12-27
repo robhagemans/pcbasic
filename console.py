@@ -24,6 +24,7 @@ import util
 import error
 import graphics
 import sound
+import events
 
 backend=None
 
@@ -189,8 +190,19 @@ def colours_ok(c):
     
     
 def check_events():
-    backend.check_events()   
     
+# TODO: move all to check_core_events routine of sorts
+    
+    # check console events
+    backend.check_events()   
+        
+    # check&handle user events
+    events.check_events()
+    events.handle_events()
+        
+    # manage sound queue
+    sound.check_sound()
+        
     
 def set_palette(new_palette=None):
     backend.set_palette(new_palette)
@@ -577,7 +589,7 @@ def read_screen(crow, ccol):
 
 # non-blocking keystroke read
 def get_char():
-    backend.check_events()
+    check_events()
     return pass_char( peek_char() )
 
     
@@ -606,7 +618,7 @@ def read_chars(num):
         a = ''
         savecurs = show_cursor(False)
         while a =='':
-            backend.idle()            
+            idle()            
             a = get_char()
         word += a[0]
         show_cursor(savecurs)
@@ -619,8 +631,8 @@ def wait_char():
     global keybuf
     
     while len(keybuf)==0:
-        backend.idle()
-        backend.check_events()
+        idle()
+        check_events()
     
     return get_char()
        

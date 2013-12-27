@@ -571,7 +571,7 @@ def flood_fill (x, y, pattern, c, border):
         fill_scanline(x_left, x_right, y, pattern)
         
         # show progress
-        backend.check_events()
+        console.check_events()
 
 
 
