@@ -224,7 +224,7 @@ def clear_row(this_row, bg):
     screen_changed = True
 
 
-def set_font_height(new_font_height):
+def set_font(new_font_height):
     global fonts, font, font_height, under_cursor
     font_height = new_font_height
     if font_height==16:
@@ -238,19 +238,19 @@ def set_font_height(new_font_height):
     under_cursor = pygame.Surface((8,font_height),depth=8)    
 
 
-def init_screen_mode(mode):
+def init_screen_mode(mode, new_font_height):
     global surface0, pixel_aspect_ratio, bitsperpixel, screen_changed
-    global glyphs
+    global glyphs, cursor0
     
+    set_font(new_font_height)    
+    
+    cursor0 = pygame.Surface((8, font_height), depth=8)
     build_cursor()            
     
     glyphs = []
     for c in range(256):
         glyphs.append(build_glyph(c, font, font_height) )      
    
-        
-   
-        
     # set standard cursor
     build_line_cursor(True)
     
@@ -265,15 +265,14 @@ def setup_screen(to_height, to_width):
     
     # whole screen (blink on & off)
     for i in range(console.num_pages):
-        console.pages[i].surface1 = pygame.Surface(size, depth=8)
         console.pages[i].surface0 = pygame.Surface(size, depth=8)
-    ##
+        console.pages[i].surface1 = pygame.Surface(size, depth=8)
+    
         console.pages[i].surface0.set_palette(workaround_palette)
         console.pages[i].surface1.set_palette(workaround_palette)
-    ##  
-
-    cursor0 = pygame.Surface((8, font_height), depth=8)
-    build_cursor()            
+    
+    #cursor0 = pygame.Surface((8, font_height), depth=8)
+    #build_cursor()            
     set_palette()
     
     screen_changed=True

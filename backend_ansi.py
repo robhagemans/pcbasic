@@ -41,7 +41,7 @@ def init():
     console.set_mode(0)
     
     
-def init_screen_mode(mode):
+def init_screen_mode(mode, new_font_height):
     if mode != 0:
         raise error.RunError(5)
     
@@ -57,11 +57,7 @@ def close():
     show_cursor(True, False)
     ansi.clear_screen()
     ansi.reset()
-        
 
-def set_font_height(new_font_height):
-    pass
-    
     
 def init_graphics():
     pass
@@ -147,7 +143,6 @@ def putc_at(row, col, c, attr):
       
    
 def scroll(from_line):
-    #FIXME: set temp scroll area
     ansi.scroll_up(1)
 
     
