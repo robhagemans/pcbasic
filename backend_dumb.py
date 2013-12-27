@@ -13,6 +13,7 @@
 import sys
 import error
 import unicodepage
+import time
 
 # echoing terminal
 echo = True
@@ -23,8 +24,8 @@ screen_changed=False
 
     
 def idle():
-    pass    
-
+    time.sleep(0.024)
+    
 def init():
     pass
         

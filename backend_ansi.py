@@ -18,13 +18,15 @@
 # reading escape sequences with os.read, see http://stackoverflow.com/questions/8620878/check-for-extra-characters-in-linux-terminal-buffer
 
 
-import console
 
+import time
 import sys, tty, termios, select
 import os
+
 import ansi, unicodepage
 import events
 import error
+import console
 
 # not an echoing terminal
 echo = False
@@ -192,6 +194,5 @@ def copy_page(src, dst):
     
     
 def idle():
-    pass
-    
+    time.sleep(0.024)
         

@@ -19,9 +19,6 @@ import console
 import program
 
 
-# create variables    
-reset_events()    
-
 # default codes for KEY autotext
 key_replace = [ 'LIST ', 'RUN\x0d', 'LOAD"', 'SAVE"', 'CONT\x0d', ',"LPT1:"\x0d','TRON\x0d', 'TROFF\x0d', 'KEY ', 'SCREEN 0,0,0\x0d' ]
 
@@ -60,6 +57,9 @@ def reset_events():
     com_stopped = [False, False]
     com_event = [-1,-1]
     
+
+# create variables    
+reset_events()    
 
 
 # KEY replacement    
