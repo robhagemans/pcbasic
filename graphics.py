@@ -36,18 +36,17 @@ def is_graphics_mode():
     return (backend !=None) and console.graphics_mode
 
 
-def init_graphics_mode(mode):
+def init_graphics_mode(mode, new_font_height):
     global last_point, pixel_aspect_ratio, bitsperpixel
     if mode==0:
         return
 
-    #console.apage.surface0.get_rect().center
-    # FIXME - can't have a console.backend reference here
-    last_point = (console.width*4, console.height*console.backend.font_height/2)
+    # centre of new graphics screen
+    last_point = (console.width*4, console.height*new_font_height/2)
     
     # pixels e.g. 80*8 x 25*14, screen ratio 4x3 makes for pixel width/height (4/3)*(25*14/8*80)
     pixel_aspect_ratio = fp.div(
-        fp.from_int(fp.MBF_class,console.height*console.backend.font_height), 
+        fp.from_int(fp.MBF_class,console.height*new_font_height), 
         fp.from_int(fp.MBF_class,6*console.width)) 
     
     if mode in (1,10):
@@ -132,6 +131,7 @@ def unset_graph_window():
     graph_window_bounds=None
 
 
+# input logical coords, output physical coords
 def window_coords(fx, fy):
     global graph_window
     if graph_window!=None:
@@ -146,6 +146,7 @@ def window_coords(fx, fy):
 
 
 # inverse function
+# input physical coords, output logical coords
 def get_window_coords(x, y):
     global graph_window
     

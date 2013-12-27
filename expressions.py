@@ -844,11 +844,11 @@ def value_point(ins):
         elif fn==1:
             return ('%', y)
         elif fn==2:
-            # FIXME: WINDOW not implemented
-            return ('%', x)
+            fx, fy = graphics.get_window_coords(x,y)
+            return fx
         elif fn==3:
-            # FIXME: WINDOW not implemented
-            return ('%', y)
+            fx, fy = graphics.get_window_coords(x,y)
+            return fy
     else:       
         return ('%', graphics.get_point(vartypes.pass_int_keep(lst[0])[1], vartypes.pass_int_keep(lst[1])[1]))        
 

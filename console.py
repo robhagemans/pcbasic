@@ -161,15 +161,16 @@ def set_mode(mode):
     
     (graphics_mode, font_height, attr, colour_depth, new_width, num_pages) = mode_info(mode)
 
-    backend.set_font_height(font_height)
+    #backend.set_font_height(font_height)
     set_attr (*attr)
     set_colour_depth(*colour_depth)
+    
+    backend.init_screen_mode(mode, font_height)  
     
     resize(25,new_width)
     
     set_line_cursor(True)
-    backend.init_screen_mode(mode)  
-    graphics.init_graphics_mode(mode)      
+    graphics.init_graphics_mode(mode, font_height)      
     show_cursor(cursor)
 
     

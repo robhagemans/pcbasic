@@ -42,9 +42,12 @@ def clear_row(the_row, bg):
 def clear_scroll_area(bg):
     pass  
     
-def init_screen_mode(mode):
+def init_screen_mode(mode, new_font_height):
     if mode != 0:
         raise error.RunError(5)    
+
+def setup_screen(to_height, to_width):
+    pass
 
 def copy_page(src, dst):
     pass
@@ -60,9 +63,6 @@ def scroll_down(from_line):
 def set_cursor_colour(c):
     pass
 
-def set_font_height(h):
-    pass
-    
         
 def set_palette(new_palette=[]):
     pass
@@ -77,9 +77,6 @@ def show_cursor(do_show, prev):
     pass    
 
 def set_scroll_area(view_start, scroll_height, width):
-    pass
-
-def setup_screen(to_height, to_width):
     pass
 
 def putc_at(row, col, c, attr):
