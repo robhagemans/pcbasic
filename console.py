@@ -584,7 +584,10 @@ def read_screen(crow, ccol):
     return (char, att)
 
 
-
+# insert character into keyboard buffer (for use by backends)
+def insert_key(c):
+    global keybuf
+    keybuf += events.replace_key(c)
 
 # non-blocking keystroke read
 def get_char():
