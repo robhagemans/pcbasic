@@ -715,7 +715,13 @@ def set_graph_view(x0,y0,x1,y1, absolute=True):
         
     view_graph_absolute=absolute
     graph_view_set=True
-    last_point = backend.set_graph_clip(x0, y0, x1, y1)
+    backend.set_graph_clip(x0, y0, x1, y1)
+    
+    if view_graph_absolute:
+        last_point = x1 + (x1-x0)/2, y1 + (y1-y0)/2
+    else:
+        last_point = (x1-x0)/2, (y1-y0)/2
+        
     if graph_window_bounds !=None:
         set_graph_window(*graph_window_bounds)
 
