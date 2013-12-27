@@ -23,7 +23,9 @@ import console
 # echoing terminal
 echo = True
 
+
 last_row=1
+enter_pressed=False
 
 # this is called by set_vpage
 screen_changed=False
@@ -108,13 +110,18 @@ def build_line_cursor(is_line):
 
 
 def check_row(row):    
-    global last_row
-    while row > last_row:
-        sys.stdout.write('\n')
-        last_row += 1#row
+    global last_row, enter_pressed
+    #sys.stderr.write('[CHECK]'+repr(last_row)+' '+repr(console.row)+' '+repr(row)+'\n')
+
+    #while row > last_row:
+    if row != last_row:    
+        if not enter_pressed:
+            sys.stdout.write('\n')
+        enter_pressed=False
+        last_row = row
 
 def check_keys():
-    global last_row
+    global last_row, enter_pressed
     fd = sys.stdin.fileno()
     c = ''
     # check if stdin has characters to read
@@ -124,7 +131,9 @@ def check_keys():
     
     if c=='\x0A':
         console.insert_key('\x0D\x0A')
-        last_row+=1
+        #sys.stderr.write('[ENTER]'+repr(last_row)+' '+repr(console.row)+'\n')
+        last_row = console.row
+        enter_pressed=True
     else:
         console.insert_key(c)
 
