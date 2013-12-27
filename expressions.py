@@ -698,7 +698,7 @@ def value_loc(ins): # LOC
         raise error.RunError(52)
         
     # refuse for output devices, such as SCRN: (bad file mode). Kybd: and com1: etc should be allowed
-    if fileio.files[num] in deviceio.devices:
+    if fileio.files[num] in deviceio.output_devices:
         # bad file mode
         raise error.RunError(54)
     

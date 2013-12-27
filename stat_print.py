@@ -631,10 +631,10 @@ def exec_width(ins):
        
     elif d in ('"', ','):
         device = vartypes.pass_string_keep(expressions.parse_expression(ins))[1].upper()
-        if device not in deviceio.devices:
+        if device not in deviceio.output_devices:
             # bad file name
             raise error.RunError(64)
-        dev = deviceio.devices[device]
+        dev = deviceio.output_devices[device]
         
     else:
         dev = console

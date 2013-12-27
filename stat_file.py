@@ -146,9 +146,9 @@ def exec_open(ins):
     
     
     dev_name = name.upper().split(':')[0] + ':' 
-    if ':' in name and dev_name in deviceio.devices or dev_name in deviceio.input_devices:
-        if mode.upper() in ('O', 'A') and dev_name in deviceio.devices:
-            fileio.device_open(number, deviceio.devices[dev_name], mode, access)
+    if ':' in name and dev_name in deviceio.output_devices or dev_name in deviceio.input_devices:
+        if mode.upper() in ('O', 'A') and dev_name in deviceio.output_devices:
+            fileio.device_open(number, deviceio.output_devices[dev_name], mode, access)
         elif mode.upper() in ('I') and dev_name in deviceio.input_devices:
             fileio.device_open(number, deviceio.input_devices[dev_name], mode, access)
         elif mode.upper() in ('R') and dev_name in deviceio.random_devices:
