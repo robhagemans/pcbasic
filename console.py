@@ -184,7 +184,7 @@ def set_colour_depth(colours, palette):
     
     
 def colours_ok(c):
-    return (c>=0 and c<= num_colours)
+    return (c>=0 and c< num_colours)
     
     
 def check_events():
