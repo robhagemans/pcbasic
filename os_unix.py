@@ -38,7 +38,7 @@ def lock(fd, access, lock, length=0, start=0, whence=0):
 
 
 def unlock(fd):
-    fcntl.flock(ins.fhandle, fcntl.LOCK_UN)
+    fcntl.flock(fd, fcntl.LOCK_UN)
     
   
 def spawn_interactive_shell(cmd):

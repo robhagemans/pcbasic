@@ -81,6 +81,16 @@ def parse_file_number(ins):
     return screen        
 
 
+def parse_file_number_opthash(ins):
+    if util.skip_white_read_if(ins, '#'):
+        util.skip_white(ins)
+    
+    number = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
+    if number<0 or number>255:
+        raise error.RunError(5)
+        
+    return number    
+
 
 def get_var_or_array_name(ins):
    
