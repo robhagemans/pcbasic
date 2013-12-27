@@ -64,9 +64,6 @@ colours64= [
  (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff)
 ]
 
-# for use with get_at
-workaround_palette= [ (0,0,0),(0,0,1),(0,0,2),(0,0,3),(0,0,4),(0,0,5),(0,0,6),(0,0,7),(0,0,8),(0,0,9),(0,0,10),(0,0,11),(0,0,12),(0,0,13),(0,0,14),(0,0,15) ]
-
 
 # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
 # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
@@ -75,10 +72,14 @@ gamecolours16 = [ pygame.Color(*rgb) for rgb in colours16 ]
 gamecolours64 = [ pygame.Color(*rgb) for rgb in colours64 ]
 
 
+
+# for use with get_at
+workaround_palette= [ (0,0,0),(0,0,1),(0,0,2),(0,0,3),(0,0,4),(0,0,5),(0,0,6),(0,0,7),(0,0,8),(0,0,9),(0,0,10),(0,0,11),(0,0,12),(0,0,13),(0,0,14),(0,0,15) ]
+
+
 # standard palettes
 palette64=[0,1,2,3,4,5,20,7,56,57,58,59,60,61,62,63]
 
-bitsperpixel=4
 
 
 screen=None
@@ -157,7 +158,7 @@ def get_palette_entry(index):
 
     
 def set_palette(new_palette=None):
-    global palette64 #, surface0, surface1, 
+    global palette64 
     global cursor0, screen
     
     if console.num_palette==64:
@@ -194,7 +195,7 @@ def set_palette(new_palette=None):
     
     
 def set_palette_entry(index, colour):
-    global palette64 #, surface0, surface1, 
+    global palette64 
     global cursor0, screen
     palette64[index] = colour
     
@@ -223,7 +224,7 @@ def clear_row(this_row, bg):
     console.apage.surface1.fill(bg, rect)
     screen_changed = True
 
-
+# not in interface
 def set_font(new_font_height):
     global fonts, font, font_height, under_cursor
     font_height = new_font_height
@@ -239,7 +240,7 @@ def set_font(new_font_height):
 
 
 def init_screen_mode(mode, new_font_height):
-    global surface0, pixel_aspect_ratio, bitsperpixel, screen_changed
+    global surface0
     global glyphs, cursor0
     
     set_font(new_font_height)    
@@ -256,7 +257,7 @@ def init_screen_mode(mode, new_font_height):
     
     
 def setup_screen(to_height, to_width):
-    global screen, font_height, palette64
+    global screen, font_height, workaround_palette
     global cursor0
     global screen_changed
     
@@ -267,20 +268,15 @@ def setup_screen(to_height, to_width):
     for i in range(console.num_pages):
         console.pages[i].surface0 = pygame.Surface(size, depth=8)
         console.pages[i].surface1 = pygame.Surface(size, depth=8)
-    
         console.pages[i].surface0.set_palette(workaround_palette)
         console.pages[i].surface1.set_palette(workaround_palette)
-    
-    #cursor0 = pygame.Surface((8, font_height), depth=8)
-    #build_cursor()            
+
     set_palette()
-    
     screen_changed=True
     
 
 def copy_page(src,dst):
     global screen_changed
-    
     console.pages[dst].surface0.blit(console.pages[src].surface0, (0,0))
     console.pages[dst].surface1.blit(console.pages[src].surface1, (0,0))
     screen_changed=True
@@ -289,7 +285,6 @@ def copy_page(src,dst):
 def set_scroll_area(view_start, scroll_height, width):    
     global scroll_area
     scroll_area = pygame.Rect(0,(view_start-1)*font_height, width*8, (scroll_height-view_start+1)*font_height)    
-
     
    
 def show_cursor(do_show, prev):
@@ -600,9 +595,8 @@ def put_pixel(x,y, index):
    
 
 def get_pixel(x,y):    
-    # need 1.9.2 for this:
-    #return console.apage.surface0.get_at_mapped(x,y)
     return console.apage.surface0.get_at((x,y)).b
+
 
 def get_graph_clip():
     global graph_view
@@ -625,11 +619,6 @@ def unset_graph_clip():
     return console.apage.surface0.get_rect().center
 
 
-def get_graph_clip_lefttop():
-    global graph_view
-    return graph_view.left, graph_view.top
-
-
 def clear_graph_clip(bg):
     global screen_changed
     console.apage.surface0.set_clip(graph_view)
@@ -650,11 +639,12 @@ def fill_rect(x0,y0, x1,y1, index):
     rect = pygame.Rect(x0,y0,x1-x0+1,y1-y0+1)
     console.apage.surface0.fill(index, rect)
     screen_changed = True
-    # TODO: is this faster or should I blit a new surface?
+
 
 ######## end interface
 
 graph_view=None
+
 
 # cursor for graphics mode
 def xor_cursor_screen(row,col):

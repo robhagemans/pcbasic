@@ -161,7 +161,6 @@ def set_mode(mode):
     
     (graphics_mode, font_height, attr, colour_depth, new_width, num_pages) = mode_info(mode)
 
-    #backend.set_font_height(font_height)
     set_attr (*attr)
     set_colour_depth(*colour_depth)
     
