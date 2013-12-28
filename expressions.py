@@ -927,6 +927,43 @@ def value_pen(ins):
         raise error.RunError(5)
         
 
+# coordinated run 1..200 (says http://www.qb64.net/wiki/index.php?title=STICK)
+# STICK(0) is required to get values from the other STICK functions. Always read it first!
+def value_stick(ins):
+    fn = vartypes.pass_int_keep(parse_bracket(ins))[1]
+    
+    if fn == 0:
+        x,y = console.stick_coord(0)
+        return ('%', x)
+    elif fn == 1:
+        x,y = console.stick_coord(0)
+        return ('%', y)
+    elif fn == 2:
+        x,y = console.stick_coord(1)
+        return ('%', x)
+    elif fn == 3:
+        x,y = console.stick_coord(1)
+        return ('%', y)
+    else:
+        raise error.RunError(5)
+    
+    
+    
+def value_strig(ins):
+    fn = vartypes.pass_int_keep(parse_bracket(ins))[1]
+    # 0,1 -> [0][0] 2,3 -> [0][1]  4,5-> [1][0]  6,7 -> [1][1]
+    if fn<0 or fn>7:
+        raise error.RunError(5)
+    
+    joy = fn//4
+    trig = (fn//2)%2
+    if fn%2==0:
+        return vartypes.bool_to_int_keep(console.stick_has_been_trig(joy,trig))
+    else:
+        return vartypes.bool_to_int_keep(console.stick_trig(joy,trig))
+    
+    
+    
 #########################################################
 # not implemented
 
@@ -981,14 +1018,6 @@ def value_ioctl(ins):
     if ins.read(1) != '$':
         raise error.RunError(2)
         
-    parse_bracket(ins)
-    return ('%', 0)
-    
-def value_stick(ins):
-    parse_bracket(ins)
-    return ('%', 0)
-        
-def value_strig(ins):
     parse_bracket(ins)
     return ('%', 0)
             

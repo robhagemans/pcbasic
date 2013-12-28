@@ -30,6 +30,7 @@ def reset_events():
     global play_enabled, play_stopped, play_event, play_last, play_trig
     global com_enabled, com_stopped, com_event
     global pen_enabled, pen_stopped, pen_triggered, pen_event
+    global stick_enabled, stick_stopped, stick_triggered, stick_event
     
     key_events = [-1]*20    
     key_numbers = [ '\x00\x3b', '\x00\x3c', '\x00\x3d', '\x00\x3e', '\x00\x3f',     # F1-F5 
@@ -56,10 +57,15 @@ def reset_events():
     com_stopped = [False, False]
     com_event = [-1,-1]
     
-    pen_enabled = True
+    pen_enabled = False
     pen_stopped = False
     pen_triggered = False
     pen_event = -1
+        
+    stick_enabled = [[False, False], [False, False]]
+    stick_stopped = [[False, False], [False, False]]
+    stick_triggered = [[False, False], [False, False]]
+    stick_event = [[-1,-1],[-1,-1]]
         
 # create variables    
 reset_events()    
@@ -107,6 +113,7 @@ def handle_events():
     global play_enabled, play_event, play_stopped, play_last, play_trig
     global com_enabled, com_event, com_stopped
     global pen_enabled, pen_stopped, pen_triggered, pen_event
+    global stick_enabled, stick_stopped, stick_triggered, stick_event
     
     if not program.runmode():
         return
@@ -170,13 +177,24 @@ def handle_events():
     
     if not pen_enabled:
         pen_triggered=False
-    #import sys
-    #sys.stderr.write(repr(pen_enabled)+repr(pen_triggered)+repr(pen_event)+repr(pen_stopped)+'\n')    
     if pen_enabled and pen_triggered and pen_event !=-1 and not pen_stopped:
         pen_triggered=False
         jumpnum = pen_event
         # execute 'on pen' subroutine
         program.gosub_return.append([program.current_codestream.tell(), program.linenum, program.current_codestream, keynum+1])
         program.jump(jumpnum)
+        
+    for stick in (0,1):
+        for trig in (0,1):
+            if not stick_enabled[stick][trig]:
+                stick_triggered[stick][trig] = False
+    
+            if stick_enabled[stick][trig] and stick_triggered[stick][trig] \
+                    and stick_event[stick][trig] !=-1 and not stick_stopped[stick][trig]:
+                stick_triggered[stick][trig] =False
+                jumpnum = stick_event[stick][trig]
+                # execute 'on strig' subroutine
+                program.gosub_return.append([program.current_codestream.tell(), program.linenum, program.current_codestream, keynum+1])
+                program.jump(jumpnum)
         
         

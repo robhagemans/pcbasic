@@ -468,6 +468,15 @@ def exec_on_pen(ins):
     events.pen_event = jumpnum
     
     
+def exec_on_strig(ins):
+    strigval, jumpnum = parse_on_event(ins)
+    strigval = vartypes.pass_int_keep(strigval)[1]
+    # 0 -> [0][0] 2 -> [0][1]  4-> [1][0]  6 -> [1][1]
+    joy = strigval//4
+    trig = (strigval//2)%2
+    events.stick_event[joy][trig] = jumpnum
+    
+    
 def exec_on_com(ins):
     keynum, jumpnum = parse_on_event(ins)
     keynum = vartypes.pass_int_keep(keynum)[1]
@@ -476,29 +485,28 @@ def exec_on_com(ins):
     
     events.com_event[keynum-1] = jumpnum
 
+
 def exec_com(ins):    
     if util.skip_white(ins)=='(':
-        # key (n)
+        # com (n)
         num = vartypes.pass_int_keep(expressions.parse_bracket(ins))[1]
         if num<1 or num>2:
             raise error.RunError(5)
-
         d=util.skip_white_read(ins)
-        # others are ignored
-        if num >=1 and num <= 20:
-            if d=='\x95': # ON
-                events.key_enabled[num-1] = True
-                events.key_stopped[num-1]= False
-            elif d=='\xDD': # OFF
-                events.key_enabled[num-1] = True
-            elif d=='\x90': # STOP
-                events.key_stopped[num-1]=True
-            else:
-                raise error.RunError(2)
+        if d=='\x95': # ON
+            events.com_enabled[num-1] = True
+            events.com_stopped[num-1] = False
+        elif d=='\xDD': # OFF
+            events.com_enabled[num-1] = False
+        elif d=='\x90': # STOP
+            events.com_stopped[num-1] = True
+        else:
+            raise error.RunError(2)
     else:
         raise error.RunError(2)
 
     util.require(ins, util.end_statement)
+
 
 def exec_timer(ins):
     # ON, OFF, STOP

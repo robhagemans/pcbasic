@@ -130,10 +130,10 @@ keycode_to_scancode = {
 #K_SYSREQ              sysrq
 
 
-    
+joysticks = []    
 
 def init():
-    global fonts
+    global fonts, num_sticks, joysticks
     pre_init_mixer()    
     pygame.init()
     pygame.display.set_caption('PC-BASIC 3.23')
@@ -141,9 +141,13 @@ def init():
     fonts = cpi_font.load_codepage()
     console.set_mode(0)
     init_mixer()
-
+    
+    pygame.joystick.init()
+    joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
+ 
         
 def close():
+    pygame.joystick.quit()
     pygame.display.quit()    
 
     
@@ -563,8 +567,14 @@ def handle_mouse(e):
         pen_down = True
         pen_down_pos = e.pos
                 
-    
-    
+
+def handle_stick(e):
+    global stick_fired
+    if e.joy<2 and e.button<2:
+        stick_fired[joy][button]=True
+        events.stick_triggered[joy][button]=True
+        
+        
 def handle_key(e):
     c=''
     if e.key in (pygame.K_PAUSE, pygame.K_BREAK):
@@ -600,11 +610,13 @@ def pause_key():
 # light pen (emulated by mouse)
 
 supports_pen = True
-supports_stick = False
+supports_stick = True
 
 # should be True on mouse click events
 pen_down = False
 pen_down_pos = (0,0)
+
+stick_fired = [[False, False], [False, False]]
 
 def get_pen_pos():
     x,y = pygame.mouse.get_pos()
@@ -642,16 +654,45 @@ def pen_has_been_down():
     pen_down = False
     return pen_down_old
 
+
 def get_pen_pos_char():
     global font_height
     x,y = get_pen_pos()
     return 1 + x//8, 1+ y//font_height
+
       
 def get_last_pen_down_pos_char():
     global font_height
     x,y = get_last_pen_down_pos()
     return 1 + x//8, 1+ y//font_height
     return (1,1)
+
+
+
+def stick_coord(stick_num):
+    global joysticks
+    if len(joysticks)<stick_num+1:
+        return 0,0
+    else:
+        return int(joysticks[stick_num].get_axis(0)*100)+100, int(joysticks[stick_num].get_axis(1)*100)+100
+    
+
+def stick_trig(stick_num, trig_num):
+    global joysticks
+    if len(joysticks)<stick_num+1 or joysticks[stick_num].get_numbuttons()<trig_num+1:
+        return False
+    else:
+        return joysticks[stick_num].get_button(trig_num)
+    
+    
+def stick_has_been_trig(stick_num, trig_num):
+    global joysticks, stick_fired
+    if len(joysticks)<stick_num+1 or joysticks[stick_num].get_numbuttons()<trig_num+1:
+        return False
+    else:
+        stick_trig_old = stick_fired
+        stick_fired[stick_num][trig_num]=False
+        return stick_trig_old[stick_num][trig_num]
 
 
 ###############################################
