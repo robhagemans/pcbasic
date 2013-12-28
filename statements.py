@@ -436,7 +436,11 @@ def exec_on(ins):
             exec_on_com(ins)
             return
     elif c== '\xFF':
-        if util.peek(ins,2) in ('\xFF\xA0','\xFF\xA2'):  # PEN, STRIG
+        if util.peek(ins,2) == '\xFF\xA0':  # PEN
+            ins.read(2)
+            exec_on_pen(ins)
+            return
+        if util.peek(ins,2) == '\xFF\xA2':  # STRIG
             # TODO: not implemented
             ins.read(2)
             # advanced feature
@@ -447,14 +451,27 @@ def exec_on(ins):
 
 
 ##########################################################
-# not yet implemented
+# pen and stick
 
 # strig: not implemented        
 def exec_strig(ins):
     raise error.RunError(73)    
 
-# pen: not implemented        
+# pen        
 def exec_pen(ins):
-    raise error.RunError(73) 
+    d = util.skip_white(ins)
+    if d=='\x95': # ON
+        ins.read(1)
+        events.pen_enabled = True
+        events.pen_stopped = False
+        console.pen_on()
+    elif d=='\xDD': # OFF
+        ins.read(1)
+        events.pen_enabled = False
+        console.pen_off()
+    elif d=='\x90': # STOP
+        ins.read(1)
+        events.pen_stopped = True
+    util.require(ins, util.end_statement)
 
-
+    

@@ -30,6 +30,11 @@ import console
 # not an echoing terminal
 echo = False
 
+# console backend capabilities
+supports_pen = False
+supports_stick = False
+
+
 palette = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
 
 term_echo_on=True

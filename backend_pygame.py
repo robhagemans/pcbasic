@@ -18,7 +18,7 @@ import cpi_font
 import unicodepage 
 import console
 import sound
-
+import events
 
 # not an echoing terminal
 echo = False
@@ -510,7 +510,9 @@ def check_events(pause=False):
                 handle_key(event)
             else:
                 return True    
-    
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            handle_mouse(event)
+            
     #pygame.event.clear()
     check_screen()
     return False
@@ -554,6 +556,14 @@ def check_screen():
         screen_changed=False
 
     
+def handle_mouse(e):
+    global pen_down, pen_down_pos
+    if e.button==1: # LEFT BUTTON
+        events.pen_triggered = True
+        pen_down = True
+        pen_down_pos = e.pos
+                
+    
     
 def handle_key(e):
     c=''
@@ -586,8 +596,63 @@ def pause_key():
         if check_events(pause=True):
             break
             
+##############################################
+# light pen (emulated by mouse)
+
+supports_pen = True
+supports_stick = False
+
+# should be True on mouse click events
+pen_down = False
+pen_down_pos = (0,0)
+
+def get_pen_pos():
+    x,y = pygame.mouse.get_pos()
+    if x<0:
+        x=0
+    if y<0:
+        y=0
+    if x>=console.width*8:
+        x=console.width*8-1
+    if y>=console.height*font_height:
+        y=console.height*font_height-1
             
-  
+    return (x,y)
+    
+def get_last_pen_down_pos():
+    global pen_down_pos
+    x,y = pen_down_pos
+    if x<0:
+        x=0
+    if y<0:
+        y=0
+    if x>=console.width*8:
+        x=console.width*8-1
+    if y>=console.height*font_height:
+        y=console.height*font_height-1
+            
+    return (x,y)
+                
+def pen_is_down():
+    return (pygame.mouse.get_pressed()[0]==1)
+
+def pen_has_been_down():
+    global pen_down
+    pen_down_old = pen_down
+    pen_down = False
+    return pen_down_old
+
+def get_pen_pos_char():
+    global font_height
+    x,y = get_pen_pos()
+    return 1 + x//8, 1+ y//font_height
+      
+def get_last_pen_down_pos_char():
+    global font_height
+    x,y = get_last_pen_down_pos()
+    return 1 + x//8, 1+ y//font_height
+    return (1,1)
+
 
 ###############################################
 # graphical

@@ -459,6 +459,15 @@ def exec_on_play(ins):
     events.play_event = jumpnum
     
     
+def exec_on_pen(ins):
+    util.require_read(ins,'\x8D') # GOSUB
+    jumpnum = util.parse_jumpnum(ins)
+    if jumpnum==0:
+        jumpnum=-1
+    util.require(ins, util.end_statement)    
+    events.pen_event = jumpnum
+    
+    
 def exec_on_com(ins):
     keynum, jumpnum = parse_on_event(ins)
     keynum = vartypes.pass_int_keep(keynum)[1]

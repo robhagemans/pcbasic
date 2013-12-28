@@ -891,6 +891,42 @@ def value_pmap(ins):
                
     return value
 
+#####################################################################
+
+def value_pen(ins):
+    fn = vartypes.pass_int_keep(parse_bracket(ins))[1]
+    if fn == 0:
+        return vartypes.bool_to_int_keep(console.pen_has_been_down())
+    elif fn == 1:
+        x,y = console.get_last_pen_down_pos()
+        return ('%', x)
+    elif fn == 2:
+        x,y = console.get_last_pen_down_pos()
+        return ('%', y)
+    elif fn == 3:
+        return vartypes.bool_to_int_keep(console.pen_is_down())
+    elif fn == 4:
+        x,y = console.get_pen_pos()
+        return ('%', x)
+    elif fn == 5:
+        x,y = console.get_pen_pos()
+        return ('%', y)
+    elif fn == 6:
+        col, row = console.get_last_pen_down_pos_char()
+        return ('%', row)
+    elif fn == 7:
+        col, row = console.get_last_pen_down_pos_char()
+        return ('%', col)
+    elif fn == 8:
+        col, row = console.get_pen_pos_char()
+        return ('%', row)
+    elif fn == 9:
+        col, row = console.get_pen_pos_char()
+        return ('%', col)
+    else:
+        raise error.RunError(5)
+        
+
 #########################################################
 # not implemented
 
@@ -956,8 +992,3 @@ def value_strig(ins):
     parse_bracket(ins)
     return ('%', 0)
             
-def value_pen(ins):
-    parse_bracket(ins)
-    return ('%', 0)
-        
-

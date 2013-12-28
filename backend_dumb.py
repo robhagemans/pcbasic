@@ -23,6 +23,10 @@ import console
 # echoing terminal
 echo = True
 
+# console backend capabilities
+supports_pen = False
+supports_stick = False
+
 
 last_row=1
 enter_pressed=False
