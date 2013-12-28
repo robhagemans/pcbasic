@@ -11,7 +11,6 @@
 
 
 import error
-import glob
 import vartypes
 import var
 import events
@@ -103,6 +102,7 @@ def preparse():
     # preparse to build line number dictionary
     line_numbers = {}
     bytecode.seek(1)
+    last=1
     while True:
         
         scanline = util.parse_line_number(bytecode)
@@ -132,7 +132,7 @@ def preparse():
     
             
 def reset_program():
-    global bytecode, gosub_return, for_next_stack, linenum, data_line, data_pos
+    global bytecode, gosub_return, for_next_stack, linenum, data_line, data_pos, stop
     
     gosub_return = []
     for_next_stack=[]
@@ -190,7 +190,8 @@ def truncate_program(rest):
 def store_line(linebuf, auto_mode=False):
     global bytecode, line_numbers, linenum
     
-    start = linebuf.tell()
+    #start = 
+    linebuf.tell()
     # check if linebuf is an empty line after the line number
     linebuf.seek(5)
     empty = (util.skip_white_read(linebuf) in util.end_line)
@@ -352,7 +353,7 @@ def renumber(new_line=-1, start_line=-1, step=-1):
         bytecode.read(1)
         s = bytecode.read(2)
         
-        jumpnum = uint_to_value(s)
+        jumpnum = vartypes.uint_to_value(s)
         newnum = -1
         
         for triplets in lines:
@@ -373,7 +374,7 @@ def renumber(new_line=-1, start_line=-1, step=-1):
 
 
 def load(g):
-    global bytecode, protected
+    global bytecode, protected, linenum
     
     bytecode.truncate(0)
     
@@ -391,7 +392,7 @@ def load(g):
         protect.unprotect(g, bytecode)
     elif c=='\xFC':
         # QuickBASIC file
-        error.warning(6, program.linenum, '')
+        error.warning(6, linenum, '')
         return
     elif c=='':
         # empty file

@@ -14,13 +14,9 @@
 import pygame
 
 import error
-import fp
-import vartypes
 import cpi_font
 import unicodepage 
-import var
 import console
-import graphics
 import sound
 
 
@@ -241,6 +237,7 @@ def set_font(new_font_height):
 def init_screen_mode(mode, new_font_height):
     global surface0
     global glyphs, cursor0
+    global font
     
     set_font(new_font_height)    
     
@@ -644,6 +641,7 @@ def apply_graph_clip():
 
     
 def fill_rect(x0,y0, x1,y1, index):
+    global screen_changed
     rect = pygame.Rect(x0,y0,x1-x0+1,y1-y0+1)
     console.apage.surface0.fill(index, rect)
     screen_changed = True
@@ -684,7 +682,11 @@ mixer_samplerate= 44100*4
 quiet_ticks = 0        
 quiet_quit = 100
 
-
+try:
+    import numpy
+except Exception:
+    numpy=None
+        
 
 def pre_init_mixer():
     global mixer_samplerate, mixer_bits
@@ -696,11 +698,7 @@ def init_mixer():
     
 def init_sound():
     global numpy
-    try:
-        import numpy
-        return True
-    except Exception:
-        return False    
+    return numpy != None
             
     
 def stop_all_sound():

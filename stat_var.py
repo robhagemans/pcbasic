@@ -9,12 +9,9 @@
 # please see text file COPYING for licence terms.
 #
 
-import sys
 import StringIO
 
-import glob
 import error
-import fp
 import vartypes
 import var
 import rnd
@@ -680,6 +677,6 @@ def exec_randomize(ins):
     if len(s) >= 4:
         mask = s[-4:-2]
     final_two = chr(ord(final_two[0]) ^ ord(mask[0])) + chr(ord(final_two[1]) ^ ord(mask[1]))
-    rnd.randomize_int(sint_to_value(final_two))        
+    rnd.randomize_int(vartypes.sint_to_value(final_two))        
     util.require(ins, util.end_statement)
     

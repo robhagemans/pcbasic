@@ -12,14 +12,12 @@
 
 import error
 import var
-import os
 import StringIO
 
 
 import util
-import expressions
 import oslayer
-import console
+import deviceio
 
 # file numbers
 files = {}
@@ -111,19 +109,21 @@ def lock_file(thefile, lock, lock_start, lock_length):
 
 class TextFile:
 
-    # width=255 means line wrap
-    width = 255
-    col=1
     
-    # fhandle
-    # number
-    # access
-    # mode    
+    def __init__(self):
+        # width=255 means line wrap
+        self.width = 255
+        self.col=1
+    
+        self.fhandle= None
+        self.number=0
+        self.mode=''
+        self.access=''
     
 #    def get_stream(self):
 #        return self.fhandle
         
-    def init(self, answer=42):
+    def init(self, dummy=42):
         if self.mode.upper() in ('I', 'O', 'R', 'P'):
             self.fhandle.seek(0)
         else:
@@ -210,7 +210,7 @@ class TextFile:
     # write one or more chars
     def write(self, s):
         s_out = ''
-        last = ''
+        #last = ''
         for c in s:
                 
             if self.col >= self.width and self.width != 255:  # width 255 means wrapping enabled
@@ -228,7 +228,7 @@ class TextFile:
             if ord(c)>=32:
                 self.col+=1
                 
-            last=c    
+            #last=c    
         self.fhandle.write(s_out)
 
 
@@ -264,8 +264,16 @@ class TextFile:
  
 class RandomFile:
 
-    width = 255
-    col=1
+    def __init__(self):
+        # width=255 means line wrap
+        self.width = 255
+        self.col=1
+    
+        self.fhandle= None
+        self.number=0
+        self.mode=''
+        self.access=''
+    
     
     # all text-file operations on a RANDOM file number actually work on the FIELD buffer
 #    def get_stream(self):
@@ -385,9 +393,11 @@ class DeviceFile(TextFile):
         
     def __init__(self, unixpath, access='rb'):
     
-    #if 'W' in access.upper() and not os.path.exists(unixpath):
-    #    tempf = oslayer.safe_open(unixpath,'wb')
-    #    tempf.close() 
+        #if 'W' in access.upper() and not os.path.exists(unixpath):
+        #    tempf = oslayer.safe_open(unixpath,'wb')
+        #    tempf.close() 
+        
+        TextFile.__init__(self)
         self.fhandle = oslayer.safe_open(unixpath, access)
         self.number = 0 # number
         self.access = access
@@ -395,6 +405,7 @@ class DeviceFile(TextFile):
             self.mode = 'O'
         else:
             self.mode = 'I'
+            
         self.init()
 
         

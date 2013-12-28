@@ -12,10 +12,8 @@
 import StringIO
 import sys
 
-import glob
 import util
 import program
-import tokenise
 import console
 
 def exec_DEBUG(ins):

@@ -11,15 +11,11 @@
 
 
 import os
-import string
 import fcntl
-import fnmatch
+import pexpect
 
-import error
 import console
 
-import pexpect
-import glob
     
 shell = '/bin/sh'
 shell_cmd = shell + ' -c'
@@ -43,20 +39,20 @@ def unlock(fd):
   
 def spawn_interactive_shell(cmd):
     try:
-        shell = pexpect.spawn(cmd)
+        p = pexpect.spawn(cmd)
     except Exception:
         return 
     
     while True:
         c = console.get_char()
         if c=='\x08': # BACKSPACE
-            shell.send('\x7f')
+            p.send('\x7f')
         elif c != '':
-            shell.send(c)
+            p.send(c)
             
         c = ''
         try:
-            c = shell.read_nonblocking(1, timeout=0)
+            c = p.read_nonblocking(1, timeout=0)
         except: 
             pass
             
@@ -70,7 +66,7 @@ def spawn_interactive_shell(cmd):
             else:
                 console.write(c)
                 
-        elif not shell.isalive(): 
+        elif not p.isalive(): 
             break
         
         

@@ -23,7 +23,6 @@
 #################################################################
 import StringIO
 
-import glob
 import error
 import fp 
 import vartypes

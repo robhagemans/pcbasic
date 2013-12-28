@@ -12,7 +12,6 @@
 import sys
 import StringIO
 
-import glob
 import error
 import util
 import var
@@ -26,6 +25,9 @@ import oslayer
 import fileio
 import automode
 import console
+import fp
+fp.error_console = console
+
 
 #######################################################
 
@@ -182,7 +184,7 @@ def handle_error(e):
         errline = program.linenum
     
     if isinstance(e, error.Break):
-        error.write_error_message(e.msg, errline)
+        console.write_error_message(e.msg, errline)
         if program.runmode():
             program.stop = [program.bytecode.tell()-1, program.linenum]
             program.unset_runmode()
@@ -202,7 +204,7 @@ def handle_error(e):
         return True
     else:
         # not handled by ON ERROR, stop execution
-        error.write_error_message(e.msg, errline)   
+        console.write_error_message(e.msg, errline)   
         error.error_handle_mode = False
         program.unset_runmode()
         program.prompt = True

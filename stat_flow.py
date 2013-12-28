@@ -9,7 +9,6 @@
 # please see text file COPYING for licence terms.
 #
 
-import glob
 import error
 import events
 import program

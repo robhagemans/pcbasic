@@ -10,22 +10,16 @@
 #
 
 
-import sys
 import StringIO
 
-import glob
 import error
 import events
 import fp
 import vartypes
 import var
-import rnd
 import util
 
 import expressions
-import tokenise
-import program
-import fileio
 import deviceio
 import console
 # for clear_graphics_view
@@ -450,7 +444,7 @@ def exec_print(ins, screen=None):
 
 
 
-def get_next_expression(ins, fors=0):    
+def get_next_expression(ins): #, fors=0):    
 
     util.skip_white(ins)
     expr = expressions.parse_expression(ins)
@@ -475,8 +469,8 @@ def get_next_expression(ins, fors=0):
 
 
 def exec_print_using(ins, screen):
-    string_format_tokens = ('!','\\','&','_')
-    number_format_tokens = ('#','**','$$','^^^^','_')
+    #string_format_tokens = ('!','\\','&','_')
+    #number_format_tokens = ('#','**','$$','^^^^','_')
 
     util.skip_white(ins)
     format_expr = vartypes.pass_string_keep(expressions.parse_expression(ins))
@@ -515,12 +509,12 @@ def exec_print_using(ins, screen):
                         
         elif c=='!':
             format_chars = True
-            more_data, semicolon, expr = get_next_expression(ins, fors)
+            more_data, semicolon, expr = get_next_expression(ins) #, fors)
             screen.write(vartypes.pass_string_keep(expr)[1][0])
                         
         elif c=='&':
             format_chars = True
-            more_data, semicolon, expr = get_next_expression(ins, fors)
+            more_data, semicolon, expr = get_next_expression(ins) #, fors)
             screen.write(vartypes.pass_string_keep(expr)[1])
             
         elif c=='\\':
@@ -541,7 +535,7 @@ def exec_print_using(ins, screen):
                 
             if is_token:
                 format_chars = True
-                more_data, semicolon, expr = get_next_expression(ins, fors)
+                more_data, semicolon, expr = get_next_expression(ins) #, fors)
             
                 eword = vartypes.pass_string_keep(expr)[1]
                 if len(eword)>len(word):
@@ -559,7 +553,7 @@ def exec_print_using(ins, screen):
                 :    
             # numeric token
             format_chars = True
-            more_data, semicolon, expr = get_next_expression(ins, fors)
+            more_data, semicolon, expr = get_next_expression(ins) #, fors)
             
             # feed back c, we need it
             fors.seek(-1,1)
@@ -680,7 +674,7 @@ def exec_width(ins):
                 
 def format_number(value, fors):
     
-    mbf = fp.unpack(value)
+    #mbf = fp.unpack(value)
     
     if value[0] =='#':
         type_sign, exp_sign = '#', 'D'
@@ -718,12 +712,12 @@ def format_number(value, fors):
     else:
         fill_char=' '
     
-    commas=False        
+    #commas=False        
     while c=='#':
         digits_before+=1
         c = fors.read(1)
         if c==',':
-            commas=True
+            #commas=True
             digits_before+=1
             c = fors.read(1)            
     

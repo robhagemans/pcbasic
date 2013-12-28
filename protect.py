@@ -27,9 +27,9 @@ def unprotect(ins, outs):
     s = ins.read(1)
     while s != '': 
         
-        next = ins.read(1)
+        nxt = ins.read(1)
         # drop last char (EOF 0x1a)
-        if next == '':
+        if nxt == '':
             break
 
         c = ord(s)
@@ -42,7 +42,7 @@ def unprotect(ins, outs):
         
         outs.write(chr(c%256))
         index = (index+1) % (13*11);
-        s = next
+        s = nxt
         
     return True
     
@@ -54,9 +54,9 @@ def protect(ins, outs):
     s = ins.read(1)
     while s != '': 
         
-        next = ins.read(1)
+        nxt = ins.read(1)
         # drop last char (EOF 0x1a)
-        if next == '':
+        if nxt == '':
             break
 
         c = ord(s)
@@ -69,7 +69,7 @@ def protect(ins, outs):
 
         outs.write(chr(c%256))
         index = (index+1) % (13*11);
-        s = next
+        s = nxt
         
     return True
     

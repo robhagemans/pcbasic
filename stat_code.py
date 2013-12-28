@@ -11,10 +11,8 @@
 
 
 import StringIO
-import os
 import copy
 
-import glob
 import error
 import vartypes
 import var

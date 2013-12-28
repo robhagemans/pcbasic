@@ -220,12 +220,6 @@ def get_octant(mbf, rx, ry):
 
 
 
-def solid_pattern(c):
-    pattern=[0]*graphics.bitsperpixel
-    for b in range(graphics.bitsperpixel):
-        if (c&(1<<b)!=0):
-            pattern[b]=0xff
-    return pattern
       
       
 # PAINT -if paint *colour* specified, border default= paint colour
@@ -276,7 +270,7 @@ def exec_paint(ins):
                 # as far as I can see, this is ignored in GW-Basic as long as it's a string, otherwise error 5
     
     if pattern=='':
-        pattern = solid_pattern(c)
+        pattern = draw_and_play.solid_pattern(c)
     
     util.require(ins, util.end_statement)         
     graphics.flood_fill(x0,y0, pattern, c, border)        
@@ -292,7 +286,7 @@ def exec_get_graph(ins):
     array = var.get_var_name(ins)    
     util.require(ins, util.end_statement)
         
-    byte_array = graphics.get_area(x0,y0,x1,y1, array)
+    graphics.get_area(x0,y0,x1,y1, array)
     
 
     

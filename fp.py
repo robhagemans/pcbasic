@@ -9,10 +9,9 @@
 # please see text file COPYING for licence terms.
 
 
-import glob
 import copy
 import error
-
+error_console = None
 
 # description of MBF found here:
 # http://www.experts-exchange.com/Programming/Languages/Pascal/Delphi/Q_20245266.html
@@ -123,7 +122,7 @@ def to_bytes(n_in):
     n = apply_carry(n_in)    
     # extract bytes    
     s=[]
-    for i in range(n_in.byte_size-1):
+    for _ in range(n_in.byte_size-1):
         n.man = n.man >> 8
         s.append(n.man&0xff)
     
@@ -357,7 +356,7 @@ def normalise(n):
     if n.exp > 0xff:
         # overflow
         # message does not break execution, no line number
-        error.print_error(6, -1)
+        print_error(6, -1)
         n.exp = 0xff
         n.man = n.carry_mask #0xffffffffffffff00L
         
@@ -450,7 +449,7 @@ def div(left_in, right_in):
         return copy.copy(left_in)
     
     if is_zero(right_in):
-        error.print_error(11, -1)
+        print_error(11, -1)
         return mbfd_max # copy.copy(right_in)
         
 
@@ -714,7 +713,7 @@ kill_char = ('\x1c', '\x1d', '\x1f')
 
 
 def from_str(s, allow_nonnum = True):
-    found_digits = False
+    #found_digits = False
     found_sign = False
     found_point = False
     found_exp = False
@@ -756,7 +755,7 @@ def from_str(s, allow_nonnum = True):
         # parse numbers and decimal points, until 'E' or 'D' is found
         if (not found_exp):
             if c >= '0' and c <= '9':
-                found_digits = True
+                #found_digits = True
                 mantissa *=10
                 mantissa += ord(c)-ord('0')
                 if found_point:
@@ -944,13 +943,13 @@ def mbf_sqrt(target):
     n.exp = (n.exp - n.bias+24)/2 + n.bias-24
     
     # iterate to convergence, max_iter = 7
-    for step in range (0,7):
-        next = sub(n, mul(mbf_one_half, div( sub(sq(n), target), n )))  
+    for _ in range (0,7):
+        nxt = sub(n, mul(mbf_one_half, div( sub(sq(n), target), n )))  
         
         # check convergence
-        if equals_inc_carry(next,n):
+        if equals_inc_carry(nxt,n):
             break
-        n = next
+        n = nxt
         
     return n
 
@@ -1191,3 +1190,11 @@ def mbf_log(n_in):
     return apply_carry(loge) 
     
     
+    
+def print_error(errnum, linenum):
+    global error_console
+    if error_console==None:
+        return
+    msg = error.get_message(errnum)
+    error_console.write_error_message(msg,linenum)
+

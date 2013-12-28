@@ -27,16 +27,16 @@ def chars_to_uint(c):
 def load_codepage():
     path = os.path.dirname(os.path.realpath(__file__))
     cpi = open (os.path.join(path,'ega.cpi'),'rb')
+    
     # skip general header
     cpi.read(53)
     # skip version number
     cpi.read(2)
     num_fonts = chars_to_uint(cpi.read(2))
     
-    size = chars_to_uint(cpi.read(2))
+    chars_to_uint(cpi.read(2))  # size
     
     fonts= []
-    
     # for each font:
     for font in range(num_fonts):
         height = ord(cpi.read(1))
@@ -44,10 +44,9 @@ def load_codepage():
         cpi.read(2)
         num_chars = chars_to_uint(cpi.read(2))
         fonts += [[]]
-        
-        for char in range(num_chars):
             
-            lines = ''.join(cpi.read(height*(width/8)))    # we assume width==8
+        for _ in range(num_chars):
+            lines = ''.join(cpi.read(height*(width//8)))    # we assume width==8
             fonts[font] += [lines]
 
     return fonts        

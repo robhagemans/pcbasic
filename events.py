@@ -10,9 +10,7 @@
 #
 
 
-import glob
 import sound
-import vartypes
 import oslayer
 import deviceio
 import console
