@@ -12,6 +12,8 @@
 import glob
 import error
 import fp
+import vartypes
+import var
 import console
 
 backend=None
