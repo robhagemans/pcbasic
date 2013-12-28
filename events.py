@@ -29,7 +29,8 @@ def reset_events():
     global timer_enabled, timer_event, timer_period, timer_start, timer_stopped
     global play_enabled, play_stopped, play_event, play_last, play_trig
     global com_enabled, com_stopped, com_event
-
+    global pen_enabled, pen_stopped, pen_triggered, pen_event
+    
     key_events = [-1]*20    
     key_numbers = [ '\x00\x3b', '\x00\x3c', '\x00\x3d', '\x00\x3e', '\x00\x3f',     # F1-F5 
                     '\x00\x40', '\x00\x41', '\x00\x42', '\x00\x43', '\x00\x44',     # F6-F10
@@ -55,7 +56,11 @@ def reset_events():
     com_stopped = [False, False]
     com_event = [-1,-1]
     
-
+    pen_enabled = True
+    pen_stopped = False
+    pen_triggered = False
+    pen_event = -1
+        
 # create variables    
 reset_events()    
 
@@ -101,6 +106,7 @@ def handle_events():
     global timer_enabled, timer_event, timer_stopped, timer_start, timer_period
     global play_enabled, play_event, play_stopped, play_last, play_trig
     global com_enabled, com_event, com_stopped
+    global pen_enabled, pen_stopped, pen_triggered, pen_event
     
     if not program.runmode():
         return
@@ -160,7 +166,17 @@ def handle_events():
                 # execute 'on play' subroutine
                 program.gosub_return.append([program.current_codestream.tell(), program.linenum, program.current_codestream, keynum+1])
                 program.jump(jumpnum)
-                   
-            
+
+    
+    if not pen_enabled:
+        pen_triggered=False
+    #import sys
+    #sys.stderr.write(repr(pen_enabled)+repr(pen_triggered)+repr(pen_event)+repr(pen_stopped)+'\n')    
+    if pen_enabled and pen_triggered and pen_event !=-1 and not pen_stopped:
+        pen_triggered=False
+        jumpnum = pen_event
+        # execute 'on pen' subroutine
+        program.gosub_return.append([program.current_codestream.tell(), program.linenum, program.current_codestream, keynum+1])
+        program.jump(jumpnum)
         
         
