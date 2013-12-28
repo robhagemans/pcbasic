@@ -625,7 +625,7 @@ def check_view(row, col):
     
 def exec_width(ins):
     d=util.skip_white(ins)
-    
+    device=''
     if d=='#':
         dev = expressions.parse_file_number(ins)
        
@@ -634,15 +634,22 @@ def exec_width(ins):
         if device not in deviceio.output_devices:
             # bad file name
             raise error.RunError(64)
-        dev = deviceio.output_devices[device]
-        
+        # WIDTH "SCRN:, 40 works directy on console 
+        # whereas OPEN "SCRN:" FOR OUTPUT AS 1: WIDTH #1,23 works on the wrapper text file
+        # WIDTH "LPT1:" works on lpt1 for the next time it's opened
+        # for other devices, the model of LPT1 is followed - not sure what GW-BASIC does there.
+        if device=='SCRN:':
+            dev = console
+        else:
+            dev = deviceio.output_devices[device]
+        util.require_read(ins, ',')
     else:
         dev = console
         
     # we can do calculations, but they must be bracketed...
     w = vartypes.pass_int_keep(expressions.parse_expr_unit(ins))[1]
-    # get the appropriate errors out there
-    if dev==console:
+    # get the appropriate errors out there for WIDTH [40|80] [,[,]]
+    if dev==console and device=='':
         
         # two commas are accepted
         util.skip_white_read_if(ins, ',')
@@ -650,23 +657,23 @@ def exec_width(ins):
         if not util.skip_white_read_if(ins, ','):
             # one comma, then stuff - illegal function call
             util.require(ins, util.end_statement, err=5)
-            
-        # anything after that is a syntax error      
-        util.require(ins, util.end_statement)        
-        
+    
+    # anything after that is a syntax error      
+    util.require(ins, util.end_statement)        
+    
+    if dev==console:        
         # and finally an error if the width value doesn't make sense
         if w not in (40,80):
             raise error.RunError(5)
-    else:
-        util.require(ins, util.end_statement)
         
-    dev.set_width(w)    
+        if w!= console.width:    
+            dev.set_width(w)    
+            #console.clear()
+            if keys_visible:
+                show_keys()    
+    else:
+        dev.set_width(w)    
     
-    if dev==console:
-        console.clear()
-        if keys_visible:
-            show_keys()    
-
 
     
     

@@ -70,7 +70,7 @@ def device_open(number, device_name, mode='I', access='rb'):
         # bad file mode
         raise error.RunError(54)
     
-    # create a clone of the object
+    # create a clone of the object, inheriting WIDTH settings etc.
     inst = copy.copy(device)
 
     if number <0 or number>255:

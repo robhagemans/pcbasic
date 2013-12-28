@@ -380,7 +380,7 @@ class RandomFile:
         pass
             
           
-
+# essentially just a text file that doesn't close if asked to
 class DeviceFile(TextFile):
         
     def __init__(self, unixpath, access='rb'):
