@@ -1045,6 +1045,7 @@ def write_error_message(msg, linenum):
 ### pen and stick
 
 pen_is_on = False
+stick_is_on = False
 
 def pen_on():
     global pen_is_on
@@ -1091,10 +1092,45 @@ def pen_is_down():
         return False
 
 def pen_has_been_down():
+    global pen_is_on
     if pen_is_on and backend.supports_pen:
         return backend.pen_has_been_down()
     else:
         return False
   
+  
+  
+def stick_on():
+    global stick_is_on
+    stick_is_on = True
 
 
+def stick_off():
+    global stick_is_on
+    stick_is_on=False    
+  
+  
+def stick_coord(num):
+    global stick_is_on
+    if stick_is_on and backend.supports_stick:
+        return backend.stick_coord(num)
+    else:    
+        return 0,0
+  
+  
+def stick_trig(num, ntrig):
+    global stick_is_on
+    if stick_is_on and backend.supports_stick:
+        return backend.stick_trig(num, ntrig)
+    else:    
+        return False
+    
+    
+def stick_has_been_trig(num, ntrig):
+    global stick_is_on
+    if stick_is_on and backend.supports_stick:
+        return backend.stick_has_been_trig(num, ntrig)
+    else:    
+        return False
+    
+    

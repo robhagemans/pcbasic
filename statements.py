@@ -441,11 +441,10 @@ def exec_on(ins):
             exec_on_pen(ins)
             return
         if util.peek(ins,2) == '\xFF\xA2':  # STRIG
-            # TODO: not implemented
             ins.read(2)
-            # advanced feature
-            raise error.RunError(73)
-
+            exec_on_strig(ins)
+            return
+            
     exec_on_jump(ins)
 
 
@@ -453,9 +452,6 @@ def exec_on(ins):
 ##########################################################
 # pen and stick
 
-# strig: not implemented        
-def exec_strig(ins):
-    raise error.RunError(73)    
 
 # pen        
 def exec_pen(ins):
@@ -474,4 +470,39 @@ def exec_pen(ins):
         events.pen_stopped = True
     util.require(ins, util.end_statement)
 
+# strig: stick trigger        
+def exec_strig(ins):
+    d = util.skip_white(ins)
+    if d=='(':
+        # strig (n)
+        num = vartypes.pass_int_keep(expressions.parse_bracket(ins))[1]
+        if num not in (0,2,4,6):
+            raise error.RunError(5)
+        joy = num//4
+        trig = (num//2)%2
+    
+        d=util.skip_white_read(ins)
+        if d=='\x95': # ON
+            events.stick_enabled[joy][trig] = True
+            events.stick_stopped[joy][trig] = True
+            
+        elif d=='\xDD': # OFF
+            events.stick_enabled[joy][trig] = False
+            
+        elif d=='\x90': # STOP
+            events.stick_stopped[joy][trig] = True
+        else:
+            raise error.RunError(2)
+
+    else:
+        if d=='\x95': # ON
+            ins.read(1)
+            console.stick_on()
+        elif d=='\xDD': # OFF
+            ins.read(1)
+            console.stick_off()
+        else:
+            raise error.RunError(2)
+            
+    util.require(ins, util.end_statement)
     

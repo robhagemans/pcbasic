@@ -246,11 +246,11 @@ def exec_key(ins):
         if num >=1 and num <= 20:
             if d=='\x95': # ON
                 events.key_enabled[num-1] = True
-                events.key_stopped[num-1]= False
+                events.key_stopped[num-1] = False
             elif d=='\xDD': # OFF
-                events.key_enabled[num-1] = True
+                events.key_enabled[num-1] = False
             elif d=='\x90': # STOP
-                events.key_stopped[num-1]=True
+                events.key_stopped[num-1] = True
             else:
                 raise error.RunError(2)
     else:
