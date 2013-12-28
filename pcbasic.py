@@ -19,15 +19,13 @@
 import sys
 import argparse
 
-import glob
-import fileio
                 
 import run
 import error
 import var
 import deviceio
 import util
-import printer
+import expressions
 import oslayer
 import statements
 import backend_dumb
