@@ -136,24 +136,13 @@ def exec_open(ins):
     
     
     dev_name = name.upper().split(':')[0] + ':' 
-    if ':' in name and dev_name in deviceio.output_devices or dev_name in deviceio.input_devices:
-        if mode.upper() in ('O', 'A') and dev_name in deviceio.output_devices:
-            fileio.device_open(number, deviceio.output_devices[dev_name], mode, access)
-        elif mode.upper() in ('I') and dev_name in deviceio.input_devices:
-            fileio.device_open(number, deviceio.input_devices[dev_name], mode, access)
-        elif mode.upper() in ('R') and dev_name in deviceio.random_devices:
-            fileio.device_open(number, deviceio.random_devices[dev_name], mode, access)
-        
-        else:
-            # bad file mode
-            raise error.RunError(54)
+    if deviceio.is_device(dev_name): 
+        deviceio.device_open(number, dev_name, mode, access)
     else:    
         if 'R' in access.upper():    #=='r' or access=='rb':
             name = oslayer.dospath_read(name, '', 53)
         else:
             name = oslayer.dospath_write(name, '', 76)
-             
-                
         # open the file
         fileio.fopen(number, name, mode, access, lock)    
     

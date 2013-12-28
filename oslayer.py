@@ -236,4 +236,19 @@ def pass_dosnames(files, mask='*.*'):
         
     return dosfiles
 
-    
+
+##########################
+
+# print to LPR printer (ok for CUPS)
+# TODO: Windows XP reference says it has an LPR command, but is it standard on all windows or part of a POSIX module?
+def line_print(printbuf, printer_name=''):
+    options = ''
+    if printer_name != '':
+        options += ' -P ' + printer_name
+    if printbuf != '':
+        pr = os.popen("lpr "+ options, "w")
+        pr.write(printbuf)
+        pr.close()
+        
+            
+                

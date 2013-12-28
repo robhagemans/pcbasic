@@ -129,16 +129,10 @@ def main():
     if not sound.init_sound():
         # fallback warning here?
         sound.backend = nosound
+
     
     # choose peripherals    
-    deviceio.scrn = console
-    deviceio.kybd = console
-    deviceio.lpt1 = parse_arg_device(args.lpt1, printer)
-    deviceio.lpt2 = parse_arg_device(args.lpt2)
-    deviceio.lpt3 = parse_arg_device(args.lpt3)
-    deviceio.com1 = parse_arg_device(args.com1)
-    deviceio.com2 = parse_arg_device(args.com2)
-    deviceio.init_devices()
+    deviceio.init_devices(args)
     
         
     try:
@@ -180,27 +174,6 @@ def convert(infile, outfile, mode):
     run.exit()
 
 
-
-def parse_arg_device(arg, default=None):
-    device = None
-    if arg !=None:
-        for a in arg:
-            [addr,val] = a.split(':')
-            if addr.upper()=='CUPS':
-                device = printer
-                device.set_printer(val)            
-            elif addr.upper()=='FILE':
-                fileio.open_system_text_file(val, access='wb')
-                device = fileio.files[-1]
-    else:
-        device= default
-        
-    if device != None:
-        device.init()
-    
-    return device
-    
-        
     
      
 #################################################################

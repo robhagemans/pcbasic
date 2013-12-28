@@ -439,7 +439,7 @@ def exec_print(ins, screen=None):
             if expr[0] in ('%', '!', '#'):
                 word += ' '
             
-            if screen.col + len(word) -1 > screen.width and screen.col != 1:
+            if screen.get_col() + len(word) -1 > screen.width and screen.get_col() != 1:
                 # prevent breaking up of numbers through newline
                 output += util.endl
             output += word    

@@ -459,7 +459,7 @@ def exec_input(ins):
             else:    
                 valstr = input_string(finp)
                 
-            var.setvar_read(*v, val=vals)
+            var.setvar_read(*v, val=valstr)
         util.require(ins, util.end_statement)
         return
     
@@ -509,10 +509,10 @@ def exec_input(ins):
            
 
 def text_skip(text_file, skip_range):
-    d = text_file.peek_chars(1)
+    d = text_file.peek_char()
     while d in skip_range:
         text_file.read_chars(1) 
-        d = text_file.peek_chars(1)
+        d = text_file.peek_char()
     return d
 
 # hard end: means a null entry is read if they're repeated. soft ends can be repeated between entries.
