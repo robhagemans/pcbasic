@@ -9,7 +9,6 @@
 # please see text file COPYING for licence terms.
 #
 
-import glob
 import fileio
 import error
 import vartypes
@@ -22,7 +21,7 @@ import deviceio
 
 short_modes = ['I','O','R','A']
 long_modes = ['\x85', 'OUTPUT', 'RANDOM', 'APPEND']  # \x85 is INPUT token
-access = ['\x87', '\xB7', '\x87 \xB7'] # READ, WRITE, READ WRITE
+access_tokens = ['\x87', '\xB7', '\x87 \xB7'] # READ, WRITE, READ WRITE
 lock_modes = ['SHARED', '\xFE\xA7 \x87', '\xFE\xA7 \xB7', '\xFE\xA7 \x87 \xB7'] # SHARED, LOCK READ, LOCK WRITE, LOCK READ WRITE
 
 access_modes = { 'I':'rb', 'O':'wb', 'R': 'rwb', 'A': 'wb' }
@@ -44,8 +43,8 @@ def exec_open(ins):
         # first syntax
         mode = first_expr[0].upper()
         
-        access= access_modes[mode]    
-        position = position_modes[mode]
+        access = access_modes[mode]    
+        #position = position_modes[mode]
         
         util.require_read(ins, ',')
         number = expressions.parse_file_number_opthash(ins)
@@ -83,14 +82,14 @@ def exec_open(ins):
                 mode = word[0].upper()           
             
             access= access_modes[mode]    
-            position = position_modes[mode]
+            #position = position_modes[mode]
         
         # it seems to be *either* a FOR clause *or* an ACCESS clause is allowed
         elif util.skip_white(ins) == 'A': 
             if util.peek(ins, 6) != 'ACCESS':
                 raise error.RunError(2)
             ins.read(6)
-            position = 0
+            #position = 0
             
             d = util.skip_white(ins)
             if d == '\xB7': # WRITE
@@ -255,13 +254,13 @@ def do_lock(ins, lock='rw'):
     if number not in fileio.files:
         raise error.RunError(52)
     
+    
+    thefile = fileio.files[number]
+    
     if deviceio.is_device(thefile):
         # permission denied
         raise error.RunError(70)
         
-    
-    thefile =fileio.files[number]
-    
     
     lock_start=0
     lock_length=0
@@ -287,7 +286,7 @@ def do_lock(ins, lock='rw'):
 lock_list = []
             
 def exec_lock(ins):
-    lock_list.append(do_lock(ins, rw))
+    lock_list.append(do_lock(ins, 'rw'))
             
 def exec_unlock(ins):
     unlock = do_lock(ins, '')

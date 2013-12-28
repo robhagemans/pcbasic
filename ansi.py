@@ -9,8 +9,7 @@
 # please see text file COPYING for licence terms.
 #
 
-import sys, tty, termios
-
+import sys 
 
 # ANSI escape sequences
 

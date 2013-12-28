@@ -10,14 +10,10 @@
 #
 
 import os
-import fp
 import datetime
 
-import StringIO
-import sys
 
 import error
-import glob
 import vartypes
 import expressions
 import oslayer
@@ -63,14 +59,14 @@ def exec_name(ins):
     # AS is not a tokenised word
     word = util.skip_white_read(ins)+ins.read(1)
     if word.upper() != 'AS':
-        raise RunError(2)
+        raise error.RunError(2)
             
     newname = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
     newname = oslayer.dospath_write(newname, '', 76)
     
     if os.path.exists(newname):
         # file already exists
-        raise RunError(58)
+        raise error.RunError(58)
     
     try:
         os.rename(oldname, newname)

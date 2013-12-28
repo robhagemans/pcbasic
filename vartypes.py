@@ -12,7 +12,6 @@
 import copy
 
 import fp
-import glob
 import error
 
 floats = ['#','!']
@@ -66,7 +65,6 @@ def pass_single_keep(num):
             val= num[1][4:]    
     elif num[0] == '$':
         raise error.RunError(13)
-        val= inp
     else:
         raise error.RunError(2)
     
@@ -83,7 +81,6 @@ def pass_double_keep(num):
         val = ('\x00', '\x00', '\x00', '\x00', num[1][0], num[1][1], num[1][2], num[1][3])    
     elif num[0] == '$':
         raise error.RunError(13)
-        val = inp
     else:
         raise error.RunError(2)
     return ('#', val)
@@ -155,7 +152,7 @@ def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=Fal
         return ('$', fp.to_str(fp.unpack(inp), screen, write) )
     elif inp[0]=='':
         if allow_empty_expression:
-            return ''
+            return ('$', '')
         else:
             raise error.RunError(2)    
     else:
@@ -360,8 +357,7 @@ def vint(inp):
     else:     
         # type mismatch
         raise error.RunError(13)
-    return val        
-
+    
 
 def vsgn(inp):
     if inp[0]=='%':
@@ -378,8 +374,7 @@ def vsgn(inp):
     else:     
         # type mismatch
         raise error.RunError(13)
-    return val        
-
+    
 
 def vfix(inp):
     if inp[0]=='%':
@@ -394,7 +389,6 @@ def vfix(inp):
     else:     
         # type mismatch
         raise error.RunError(13)
-    return val        
     
     
     
@@ -532,9 +526,6 @@ def veq(left, right):
             return bool_to_int_keep(fp.equals(fp.unpack(left),fp.unpack(right)) )
         else:
             return bool_to_int_keep(left[1]==right[1])    
-    
-def vneq(left, right):
-    return vnot(veq(left, right))
     
     
 # two's complement int

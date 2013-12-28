@@ -10,7 +10,7 @@
 #
 import StringIO
 
-import glob
+import error
 import fp
 import vartypes
 import tokenise
@@ -218,6 +218,13 @@ def draw_parse_gml(gml):
             graphics.flood_fill(x0,y0,solid_pattern(colour), colour, bound)    
         
 
+def solid_pattern(c):
+    pattern=[0]*graphics.bitsperpixel
+    for b in range(graphics.bitsperpixel):
+        if (c&(1<<b)!=0):
+            pattern[b]=0xff
+    return pattern
+    
 # MUSIC MACRO LANGUAGE
 
 
@@ -314,7 +321,7 @@ def play_parse_mml(mml):
             if c=='N':
                 play_speed=7./8.
             elif c=='L':
-                play_speed==1.
+                play_speed=1.
             elif c=='S':
                 play_speed=3./4.        
             elif c=='F':

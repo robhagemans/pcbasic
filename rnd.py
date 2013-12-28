@@ -9,10 +9,11 @@
 # please see text file COPYING for licence terms.
 #
 
-
+import error
 import fp
 import vartypes
    
+
 
 def clear():
     global rnd_seed
@@ -27,7 +28,7 @@ def clear():
     rnd_a = 214013
     rnd_c = 2531011
 
-
+clear()
 
 
 def randomize_int(n):

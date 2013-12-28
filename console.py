@@ -19,14 +19,12 @@
 
 
 import copy
-import StringIO
 
 import util
 import error
 import graphics
 import sound
 import events
-import fileio
 
 backend=None
 
@@ -62,12 +60,12 @@ last_row_is_on=False
 class ScreenBuffer:
     def __init__(self, bwidth, bheight):
         # screen buffer, initialised to spaces, dim white on black
-        self.charbuf = [[' ']*bwidth for x in xrange(bheight)]
-        self.attrbuf = [[7]*bwidth for x in xrange(bheight)]
+        self.charbuf = [[' ']*bwidth for _ in xrange(bheight)]
+        self.attrbuf = [[7]*bwidth for _ in xrange(bheight)]
         # last non-white character
-        self.end = [0 for x in xrange(bheight)]
+        self.end = [0 for _ in xrange(bheight)]
         # line continues on next row (either LF or word wrap happened)
-        self.wrap = [False for x in xrange(bheight)]
+        self.wrap = [False for _ in xrange(bheight)]
             
                         
         
@@ -107,56 +105,55 @@ def idle():
 def mode_info(mode):
     global width
     
-    graphics_mode=True
+    info_graphics_mode=True
     
     if mode==0:
-        graphics_mode=False
-        font_height = 16
-        attr = (7,0)
-        colour_depth = (32,64)
-        new_width = width
-        num_pages=4
+        info_graphics_mode=False
+        info_font_height = 16
+        info_attr = (7,0)
+        info_colour_depth = (32,64)
+        info_new_width = width
+        info_num_pages=4
         
     elif mode ==1:
-        font_height =8
-        attr = (3,0)
-        colour_depth = (4,16)
-        new_width=40
-        num_pages=1
+        info_font_height =8
+        info_attr = (3,0)
+        info_colour_depth = (4,16)
+        info_new_width=40
+        info_num_pages=1
         
     elif mode==2:
-        font_height =8
-        attr = (1,0)
-        colour_depth = (2,16)
-        new_width=80
-        num_pages=1    
+        info_font_height =8
+        info_attr = (1,0)
+        info_colour_depth = (2,16)
+        info_new_width=80
+        info_num_pages=1    
         
     elif mode ==7:
-        font_height = 8
-        attr =(15,0)
-        colour_depth = (16,16)
-        new_width=40
-        num_pages = 8
-        
+        info_font_height = 8
+        info_attr =(15,0)
+        info_colour_depth = (16,16)
+        info_new_width=40
+        info_num_pages = 8
         
     elif mode==8:
-        font_height = 8
-        attr = (15,0)
-        colour_depth = (16,16)
-        new_width=80
-        num_pages=4
+        info_font_height = 8
+        info_attr = (15,0)
+        info_colour_depth = (16,16)
+        info_new_width=80
+        info_num_pages=4
         
     elif mode==9:
-        font_height =14
-        attr = (15,0)
-        colour_depth = (16,64)
-        new_width=80
-        num_pages=2
+        info_font_height =14
+        info_attr = (15,0)
+        info_colour_depth = (16,64)
+        info_new_width=80
+        info_num_pages=2
         
     else:
         return None
     
-    return (graphics_mode, font_height, attr, colour_depth, new_width, num_pages)
+    return (info_graphics_mode, info_font_height, info_attr, info_colour_depth, info_new_width, info_num_pages)
     
 
 def set_mode(mode):
@@ -166,9 +163,9 @@ def set_mode(mode):
 
     screen_mode=mode
     
-    (graphics_mode, font_height, attr, colour_depth, new_width, num_pages) = mode_info(mode)
+    (graphics_mode, font_height, new_attr, colour_depth, new_width, num_pages) = mode_info(mode)
 
-    set_attr (*attr)
+    set_attr (*new_attr)
     set_colour_depth(*colour_depth)
     
     backend.init_screen_mode(mode, font_height)  
@@ -796,7 +793,7 @@ def setup_screen(to_height, to_width):
     global row, col
     
     pages = []
-    for i in range(num_pages):
+    for _ in range(num_pages):
         pages.append(ScreenBuffer(to_width, to_height))
         
     vpage = pages[0]
@@ -1032,5 +1029,15 @@ class ConsoleStream:
 
     
 
+
+def write_error_message(msg, linenum):
+    #if msg=='':
+    #    msg = default_msg
+    
+    start_line()
+    write(msg) 
+    if linenum > -1 and linenum < 65535:
+        write(' in %i' % linenum)
+    write(' ' + util.endl)          
 
 

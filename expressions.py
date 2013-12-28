@@ -9,7 +9,12 @@
 # please see text file COPYING for licence terms.
 #
 
-import glob
+
+
+import datetime
+import os
+import StringIO
+
 import fp
 import vartypes
 import rnd
@@ -22,8 +27,6 @@ import var
 import fileio
 import deviceio
 
-import datetime
-import os
 
 # for FRE() only
 import program
@@ -158,13 +161,13 @@ def parse_expression(ins, allow_empty=False):
             ins.read(1)
         
         if d in ['\xE6', '\xE7', '\xE8']:
-            next = util.skip_white(ins)
-            if next in ['\xE6', '\xE7', '\xE8']:
+            nxt = util.skip_white(ins)
+            if nxt in ['\xE6', '\xE7', '\xE8']:
                 ins.read(1)
-                if d==next:
+                if d==nxt:
                     raise error.RunError(2)
                 else:    
-                    d += next
+                    d += nxt
                     if d[0] == '\xe7': #= 
                         # =>, =<
                         d= d[1]+d[0]
@@ -663,7 +666,7 @@ def value_input(ins):    # INPUT$
     if util.skip_white_read_if(ins, ','):
         util.skip_white_read_if(ins, '#')
         
-        filenum = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
+        filenum = vartypes.pass_int_keep(parse_expression(ins))[1]
         
         if filenum<0 or filenum>255:
             raise error.RunError(5)
@@ -750,7 +753,7 @@ def value_environ(ins):
     if ins.read(1)!='$':
         raise error.RunError(2)
         
-    expr = expressions.parse_bracket(ins)
+    expr = parse_bracket(ins)
     if expr[0]=='$':
         val = os.getenv(expr[1])
     
@@ -815,7 +818,7 @@ def value_fn(ins):
 
     # read variables
     util.require_read(ins, '(')
-    exprs = expressions.parse_expr_list(ins, len(varnames), err=2)
+    exprs = parse_expr_list(ins, len(varnames), err=2)
     if None in exprs:
         raise error.RunError(2)
     for i in range(len(varnames)):
@@ -824,7 +827,7 @@ def value_fn(ins):
     
     fns = StringIO.StringIO(fncode)
     fns.seek(0)
-    value= expressions.parse_expression(fns)    
+    value= parse_expression(fns)    
 
     # restore existing vars
     

@@ -9,10 +9,11 @@
 # please see text file COPYING for licence terms.
 #
 
-import glob
 import os 
 import datetime
 import errno
+import fnmatch
+import string
 
 import error
         

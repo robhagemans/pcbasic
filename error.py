@@ -10,9 +10,6 @@
 #
 
 import sys
-import glob
-import util
-import console
 
 # number and line number of last error
 errn=-1
@@ -21,6 +18,8 @@ erl=65535
 # jump line number 
 on_error = None
 error_handle_mode = False
+
+error_resume = None
 
 ###################
 
@@ -73,10 +72,6 @@ def set_error(errnum, linenum):
        erl = 65535
 
 
-def print_error(errnum, linenum):
-    msg = get_message(errnum)
-    write_error_message(msg,linenum)
-
 
 def get_message(errnum):
     msg = default_msg
@@ -84,16 +79,6 @@ def get_message(errnum):
         msg = errors[errnum]
     return msg    
 
-
-def write_error_message(msg, linenum):
-    if msg=='':
-        msg = default_msg
-    
-    console.start_line()
-    console.write(msg) 
-    if linenum > -1 and linenum < 65535:
-        console.write(' in %i' % linenum)
-    console.write(' ' + util.endl)          
 
         
 warnings_on=False

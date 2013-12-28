@@ -9,19 +9,11 @@
 # please see text file COPYING for licence terms.
 #
 
-
-
-import glob
 import error
 import vartypes
 import StringIO
 import fp
 import util
-
-#######################################################################
-
-
-
 
 
 # default type for variable name starting with a-z
@@ -46,6 +38,12 @@ free_mem = total_mem
 
 # string pointer implementation, allows for unions of strings (for FIELD)
 class StringPtr:
+
+    def __init__(self):
+        self.stream = None
+        self.offset = 0
+        self.length = 0
+        
     def get_str(self):
         pos = self.stream.tell()
         self.stream.seek(self.offset)
@@ -58,7 +56,7 @@ class StringPtr:
         pos = self.stream.tell()
         ins = StringIO.StringIO(in_str)
         self.stream.seek(self.offset)    
-        for i in range(self.length):
+        for _ in range(self.length):
             c = ins.read(1)
             if c=='':
                 c=' '

@@ -9,7 +9,7 @@
 # please see text file COPYING for licence terms.
 #
 
-import glob
+#import glob
 import error
 import fp
 import vartypes
@@ -613,7 +613,7 @@ def set_area(x0,y0, array, operation):
     x1,y1 = x0+dx-1, y0+dy-1
     
     bytesperword=2
-    bitsperword = bytesperword*8
+    #bitsperword = bytesperword*8
     
     backend.apply_graph_clip()
     x0,y0 = view_coords(x0,y0)
@@ -670,7 +670,7 @@ def get_area(x0,y0,x1,y1, array):
         var.set_array_byte(array, i, byte_array[i])
 
     bytesperword=2
-    bitsperword=bytesperword*8
+    #bitsperword=bytesperword*8
     
     x0,y0 = view_coords(x0,y0)
     x1,y1 = view_coords(x1,y1)

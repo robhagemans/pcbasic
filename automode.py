@@ -9,7 +9,7 @@
 # please see text file COPYING for licence terms.
 #
 
-import glob
+#import glob
 import error
 import program
 import console
