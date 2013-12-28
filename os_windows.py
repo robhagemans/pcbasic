@@ -16,8 +16,12 @@ import ctypes
 import string
 import fnmatch
 
+import subprocess
+import threading
+
 import error
 import console
+
  
 shell = 'CMD'    
 shell_cmd = shell + ' /c'
@@ -43,10 +47,6 @@ def unlock(fd):
     fd.seek(curpos)
     
     
-import subprocess
-import threading
-import glob
-import sys    
 
 def process_stdout(p, stream):
     while True:
