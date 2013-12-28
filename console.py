@@ -19,12 +19,14 @@
 
 
 import copy
+import StringIO
 
 import util
 import error
 import graphics
 import sound
 import events
+import fileio
 
 backend=None
 
@@ -1005,4 +1007,30 @@ def scroll_down(from_line):
     del apage.wrap[scroll_height-1]
     
     show_cursor(save_curs)
+
+
+
+class ConsoleStream:
+
+    def write(self, c):
+        write(c)
+        
+    def read(self, n):
+        return read_chars(n)
+    
+    def seek(self, a, b=0):
+        pass
+        
+    def tell(self):
+        return 1
+
+    def flush(self):
+        pass
+
+    def close(self):
+        pass
+
+    
+
+
 

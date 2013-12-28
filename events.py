@@ -152,9 +152,9 @@ def handle_events():
             
             comc = ''
             if comport == 0 and deviceio.com1!=None:
-                comc = deviceio.com1.peek_chars(1)
+                comc = deviceio.com1.peek_char()
             elif comport == 1 and deviceio.com2!=None:
-                comc = deviceio.com2.peek_chars(1)
+                comc = deviceio.com2.peek_char()
             
             if comc != '':    
                 jumpnum = com_event[comport]

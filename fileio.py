@@ -15,10 +15,11 @@ import var
 import os
 import StringIO
 
+
 import util
 import expressions
 import oslayer
-
+import console
 
 # file numbers
 files = {}
@@ -27,62 +28,38 @@ fields= {}
 
 
 # close all non-system files
+# system files have negative file number
 def close_all():
-    for f in files:
+    for f in list(files):
         if f > 0:
-            files[f].fhandle.close()
+            files[f].close()
         
         
 # close all files
 def close_all_all_all():
-    for f in files:
-        files[f].fhandle.close()
+    for f in list(files):
+        files[f].close()
         
         
 def get_file(number):        
     return files[number]
 
     
-def open_system_text_file(unixpath, access='rb'):
-    inst = TextFile()
-    
+def pseudo_textfile(stringio):
+    # open a pseudo text file over a byte stream
+    text_file = TextFile()
+
     number = -1
     while number in files:
         number -= 1
-            
-    if 'W' in access.upper() and not os.path.exists(unixpath):
-        tempf = oslayer.safe_open(unixpath,'wb')
-        tempf.close() 
-        
-    inst.fhandle = oslayer.safe_open(unixpath, access)
-    inst.number = number
-    inst.access = access
-    if 'W' in access.upper():
-        inst.mode = 'O'
-    else:
-        inst.mode = 'I'
-    inst.init()
-    files[number] = inst
 
+    text_file.fhandle = stringio
+    text_file.mode='P'
+    text_file.number = number
+    text_file.access = 'rwb'
+    text_file.init()
+    return text_file        
 
-def device_open(number, device, mode='I', access='rb'):
-    inst = device
-    if number <0 or number>255:
-        # bad file number
-        raise error.RunError(52)
-    if number in files:
-        # file already open
-        raise error.RunError(55)
-
-    if device==None:
-        # device unavailable
-        raise error.RunError(68)
-
-    inst.number = number
-    inst.access = access
-    inst.mode = mode.upper()
-    
-    files[number] = inst
 
    
 def fopen(number, unixpath, mode='I', access='rb', reclen=128, lock='rw'):
@@ -101,9 +78,9 @@ def fopen(number, unixpath, mode='I', access='rb', reclen=128, lock='rw'):
 
     # create file if writing and doesn't exist yet    
     # TODO: CHECK: this still necessaary? there's no w in r+b
-    if 'W' in access.upper() and not os.path.exists(unixpath):
-        tempf = oslayer.safe_open(unixpath,'wb')
-        tempf.close() 
+#    if 'W' in access.upper() and not os.path.exists(unixpath):
+#        tempf = oslayer.safe_open(unixpath,'wb')
+#        tempf.close() 
         
     inst.fhandle = oslayer.safe_open(unixpath, access)
     oslayer.safe_lock(inst.fhandle, access, lock)
@@ -116,15 +93,6 @@ def fopen(number, unixpath, mode='I', access='rb', reclen=128, lock='rw'):
     files[number] = inst
 
 
-def pseudo_textfile(stringio):
-    # open a pseudo text file over a byte stream
-    text_file = TextFile()
-    text_file.fhandle = stringio
-    #text_file.fhandle.seek(0)
-    text_file.mode='P'
-    text_file.init()
-    return text_file        
-
 
 
             
@@ -136,8 +104,9 @@ def lock_file(thefile, lock, lock_start, lock_length):
         
     if isinstance(thefile, TextFile):
         oslayer.safe_lock(thefile.fhandle, thefile.access, lock)
-    else:
+    elif isinstance(thefile, RandomFile):
         oslayer.safe_lock(thefile.fhandle, thefile.access, lock, lock_start, lock_length)
+
 
 
 class TextFile:
@@ -146,8 +115,13 @@ class TextFile:
     width = 255
     col=1
     
-    def get_stream(self):
-        return self.fhandle
+    # fhandle
+    # number
+    # access
+    # mode    
+    
+#    def get_stream(self):
+#        return self.fhandle
         
     def init(self, answer=42):
         if self.mode.upper() in ('I', 'O', 'R', 'P'):
@@ -162,7 +136,8 @@ class TextFile:
             # write EOF char
             self.fhandle.write('\x1a')
         self.fhandle.close()
-        del files[self.number]
+        if self.number != 0:
+            del files[self.number]
     
     
         
@@ -196,6 +171,7 @@ class TextFile:
         
         return s
 
+
     def read_chars(self, num):
         s=''
         for _ in range(num):
@@ -206,12 +182,14 @@ class TextFile:
             s+=c
             
         if self.eof():    
-        # eof error if len<num?
-        #if len(s)<num:
             # input past end
             raise error.RunError(62)
         
         return s 
+        
+        
+    def peek_char(self):
+        return self.peek_chars()
         
         
     def peek_chars(self,num=1):
@@ -235,7 +213,7 @@ class TextFile:
         last = ''
         for c in s:
                 
-            if self.col > self.width:
+            if self.col >= self.width and self.width != 255:  # width 255 means wrapping enabled
                 s_out+= '\x0d\x0a'
                 self.col=1
    
@@ -244,7 +222,9 @@ class TextFile:
                 self.col = 1
             else:    
                 s_out+=c
-                
+            
+            # nonprinting characters including tabs are not counted for WIDTH
+            # FIXME: this is true for text files, but not for SCRN: and LPT1:    
             if ord(c)>=32:
                 self.col+=1
                 
@@ -253,11 +233,15 @@ class TextFile:
 
 
 
+
     def get_col(self):
         return self.col
     
     def set_width(self, new_width=255):
         self.width = new_width
+    
+    def get_width(self):
+        return self.width
     
     def loc(self):
         # for LOC(i)
@@ -274,6 +258,7 @@ class TextFile:
  
  
     def flush(self):
+        self.fhandle.flush()
         pass
  
  
@@ -283,8 +268,8 @@ class RandomFile:
     col=1
     
     # all text-file operations on a RANDOM file number actually work on the FIELD buffer
-    def get_stream(self):
-        return self.field_text_file.fhandle
+#    def get_stream(self):
+#        return self.field_text_file.fhandle
     
     # read line (from field buffer)    
     def read(self):
@@ -298,6 +283,10 @@ class RandomFile:
             raise error.RunError(50) # FIELD overflow
         return self.field_text_file.read_chars(num)
 
+
+    def peek_char(self):
+        return self.peek_chars()
+        
     def peek_chars(self, num=1):
         return self.field_text_file.peek_chars(num)
 
@@ -310,6 +299,12 @@ class RandomFile:
             self.field_text_file.write(ins.read(1))
         if ins.tell()<len(s):
             raise error.RunError(50) # FIELD overflow
+    
+    def set_width(self, new_width=255):
+        self.width = new_width
+    
+    def get_width(self):
+        return self.width
         
     
     def init(self, reclen=128):
@@ -329,7 +324,8 @@ class RandomFile:
         
     def close(self):
         self.fhandle.close()
-        del files[self.number]
+        if self.number !=0:
+            del files[self.number]
         
     # read record    
     def read_field(self):
@@ -380,7 +376,33 @@ class RandomFile:
         return lof
         
     def flush(self):
+        self.fhandle.flush()
         pass
             
-            
+          
 
+class DeviceFile(TextFile):
+        
+    def __init__(self, unixpath, access='rb'):
+    
+    #if 'W' in access.upper() and not os.path.exists(unixpath):
+    #    tempf = oslayer.safe_open(unixpath,'wb')
+    #    tempf.close() 
+        self.fhandle = oslayer.safe_open(unixpath, access)
+        self.number = 0 # number
+        self.access = access
+        if 'W' in access.upper():
+            self.mode = 'O'
+        else:
+            self.mode = 'I'
+        self.init()
+
+        
+    def close(self):
+        # don't close the file handle as we may have copies
+        if self.number !=0:
+            del files[self.number]
+        
+        
+    
+    

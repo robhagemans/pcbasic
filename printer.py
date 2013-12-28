@@ -1,7 +1,7 @@
 #
 # PC-BASIC 3.23  - printer.py
 #
-# Printer implementation using LPR
+# Printer device implementation
 # 
 # (c) 2013 Rob Hagemans 
 #
@@ -9,73 +9,50 @@
 # please see text file COPYING for licence terms.
 #
 
-import os
+import oslayer
+import StringIO
 
-### interface
+class PrinterStream(StringIO.StringIO):
 
-# number of columns, counting 1..width
-width = 80
-
-
-def init():
-    pass
-
-
-def set_width(to_width):
-    global width
-    width = to_width
+    def __init__(self, name=''):
+        self.printer_name=name
+        StringIO.StringIO.__init__(self)
     
+    
+    # flush buffer to LPR printer    
+    def flush(self):
+        oslayer.line_print(self.getvalue(), self.printer_name)
+        self.truncate(0)
+        self.seek(0)
 
-def get_col():
-    global col
-    return col        
-
-
-def write(s):
-    global printbuf, col, width
-    tab = 8
-    last=''
-    for c in s:
-        # enforce width setting, unles wrapping is enabled (width=255)
-        if col == width and width !=255:
-            col=1
-            printbuf+='\n'
+    def close(self):
+        self.flush()
         
-        if c=='\x0d' or c=='\x0a' and width!=255: # CR, LF
-            if c=='\x0a' and last=='\x0d':
-                pass
+        # don't actually close the stream, there may be copies
+        #StringIO.StringIO.close(self)
+
+'''
+    def write(self, s):
+        tab = 8
+        last=''
+        for c in s:
+            # enforce width setting, unles wrapping is enabled (width=255)
+            if self.col == width and self.width !=255:
+                self.col=1
+                self.printbuf+='\n'
+            
+            if c=='\x0d' or c=='\x0a' and self.width!=255: # CR, LF
+                if c=='\x0a' and last=='\x0d':
+                    pass
+                else:
+                    self.col = 1
+                    self.printbuf += '\n'#c
+            elif c=='\x09': # TAB
+                num = (tab - (self.col-1 - tab*int((self.col-1)/tab)))
+                self.printbuf +=' '*num
             else:
-                col = 1
-                printbuf += '\n'#c
-        elif c=='\x09': # TAB
-            num = (tab - (col - tab*int((col-1)/tab)))
-            printbuf +=' '*num
-        else:
-            col+=1    
-            printbuf += c    
-        last=c
-
-
-def set_printer(name=''):
-    global printer_name
-    printer_name=name
-    
-    
-# flush buffer to LPR printer    
-def flush():
-    global printbuf
-    options=''
-    if printer_name!='':
-        options += ' -P '+printer_name
-    if printbuf!='':
-        pr=os.popen("lpr "+ options, "w")
-        pr.write(printbuf)
-        pr.close()
-        printbuf = ''
-    
-### implementation
-
-col = 1
-printbuf = ''
-printer_name=''
-
+                self.col+=1    
+                self.printbuf += c    
+            last=c
+'''
+        
