@@ -29,6 +29,9 @@ import fp
 fp.error_console = console
 
 
+#import cProfile
+    
+
 #######################################################
 
 
@@ -86,8 +89,8 @@ def main_loop():
         if parse_start_direct(program.direct_line):
             # execution loop, checks events
             # execute program or direct command             
+            #cProfile.run('run.execution_loop()')
             execution_loop()
-
 
 
 def input_loop():
