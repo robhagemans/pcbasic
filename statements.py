@@ -33,14 +33,15 @@ from stat_file import *
 from stat_graph import *
 # sound
 from stat_sound import *
-# debugging
-from stat_debug import *
 # machine access
 from stat_machine import *
 
 tron = False
 
 
+# debugging
+from stat_debug import *
+    
 
 # parses one statement at the current stream pointer in current_codestream
 # return value False: stream ends
@@ -68,7 +69,9 @@ def parse_statement():
             
         if tron:
             console.write('['+('%i' % program.linenum) +']')
-            
+        
+        debug_step(program.linenum)
+        
         c = util.skip_white_read(ins).upper()
     
     elif c==':':
@@ -109,7 +112,7 @@ def parse_statement():
     elif c=='\x8B':     # IF
         exec_if(ins)
     elif c=='\x8C':     # RESTORE
-        exec_restore()
+        exec_restore(ins)
     elif c=='\x8D':     # GOSUB
         exec_gosub(ins)
     elif c=='\x8E':     # RETURN

@@ -596,9 +596,15 @@ def exec_line_input(ins):
     
    
 
-def exec_restore():
-    program.data_line =-1
-    program.data_pos = 0
+def exec_restore(ins):
+    if not util.skip_white(ins) in util.end_statement:
+        datanum = util.parse_jumpnum(ins)
+    else:
+        datanum = -1
+    util.require(ins, util.end_statement)
+        
+    program.data_line = datanum
+    program.data_pos = program.line_numbers[datanum]
     
 
 def exec_swap(ins):

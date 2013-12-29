@@ -237,6 +237,22 @@ def erase_array(name):
         raise error.RunError(5)    
 
 
+def index_array(index, dimensions):
+    global array_base
+    bigindex = 0
+    area = 1
+    for i in range(len(index)):
+        # WARNING: dimensions is the *maximum index number*, regardless of array_base!
+        bigindex += area*(index[i]-array_base)
+        #area *= dimensions[i]
+        area *= (dimensions[i]+1-array_base)
+    return bigindex 
+
+    
+def array_len(dimensions):
+    return index_array(dimensions, dimensions)+1    
+
+
 def dim_array(name, dimensions):
     global variables, arrays, array_base
     name = complete_name(name)
@@ -245,7 +261,7 @@ def dim_array(name, dimensions):
         # duplicate definition
         raise error.RunError(10)
         
-    size = 1
+    #size = 1
     for d in dimensions:
         if d < 0:
             # illegal function call
@@ -253,7 +269,8 @@ def dim_array(name, dimensions):
         elif d < array_base:
             # subscript out of range
             raise error.RunError (9)
-        size *= d + 1 - array_base 
+    #    size *= d + 1 - array_base   # WARNING: dimensions is the *maximum index number*, regardless of array_base! 
+    size = array_len(dimensions)
     
     arrays[name] = [ dimensions, [vartypes.null_keep(name[-1])[1]]*size ]  
 
@@ -275,9 +292,10 @@ def check_dim_array(name, index):
     for i in range(len(index)):
         if index[i] < 0:
             raise error.RunError(5)
-        elif index[i] < array_base or index[i] - array_base > dimensions[i]:
+        elif index[i] < array_base or index[i] > dimensions[i]: 
+            # WARNING: dimensions is the *maximum index number*, regardless of array_base!
             raise error.RunError(9)
-
+            
     return [dimensions, lst]
 
 
@@ -300,9 +318,10 @@ def array_size_bytes(name):
     
     [dimensions, lst] = arrays[name]
     
-    size=1
-    for dim in dimensions:
-        size*= (dim + 1 - array_base)
+    #size=1
+    #for dim in dimensions:
+    #    size*= (dim + 1 - array_base)
+    size = array_len(dimensions)
     
     return size*var_size_bytes(name)     
 
@@ -382,17 +401,7 @@ def base_array(base):
 
 
 
-def index_array(index, dimensions):
-    global variables, arrays, array_base
-    
-    bigindex = 0
-    area = 1
-    for i in range(len(index)):
-        bigindex += area*(index[i]-array_base)
-        area *= dimensions[i]
-    return bigindex 
-    
-    
+
 
 def get_array(name, index):
     global variables, arrays, array_base
