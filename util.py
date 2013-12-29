@@ -220,7 +220,7 @@ def parse_jumpnum(ins):
     else:
         # Syntax error
         raise error.RunError(2)
-        return
+
     return jumpnum
 
 

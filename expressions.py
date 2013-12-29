@@ -281,7 +281,12 @@ def parse_expr_unit(ins):
         
     elif d in tokenise.tokens_number:
         ins.seek(-1,1)
-        return tokenise.parse_value(ins)    
+        return tokenise.parse_value(ins)   
+        
+    # gw-basic allows adding line numbers to numbers     
+    elif d in tokenise.tokens_linenum:
+        ins.seek(-1,1)
+        return ('%', util.parse_jumpnum(ins))    
     
     elif d == '\x85':   # INPUT
         return value_input(ins)
@@ -295,9 +300,9 @@ def parse_expr_unit(ins):
     elif d == '\xD3':       # NOT
         return vartypes.vnot(parse_expr_unit(ins))
     elif d == '\xD4':       # ERL
-        return ('%', error.get_error()[1])
+        return value_erl(ins)
     elif d == '\xD5':       # ERR
-        return ('%', error.get_error()[0])
+        return value_err(ins)
     elif d == '\xD6':       # STRING$
         return value_string(ins)
     
@@ -500,15 +505,17 @@ def parse_expr_unit(ins):
 
 
 def parse_bracket(ins):
-    if util.skip_white_read(ins) != '(':
-        raise error.RunError(2)
+    #if util.skip_white_read(ins) != '(':
+    #    raise error.RunError(2)
+    util.require_read(ins, '(')
     val = parse_expression(ins, allow_empty = True)
     if val==('',''):
         # we need a Syntax error, not a Missing operand
         raise error.RunError(2)
-    d = ins.read(1)
-    if d != ')':
-        raise error.RunError(2)
+    util.require_read(ins, ')')
+    #d = ins.read(1)
+    #if d != ')':
+    #    raise error.RunError(2)
     return val
 
 
@@ -890,7 +897,16 @@ def value_pmap(ins):
         raise error.RunError(5)
                
     return value
+    
+#####################################################################
 
+def value_erl(ins):
+    return ('%', error.get_error()[1])
+
+
+def value_err(ins):
+    return ('%', error.get_error()[0])
+    
 #####################################################################
 
 def value_pen(ins):
@@ -1020,4 +1036,6 @@ def value_ioctl(ins):
         
     parse_bracket(ins)
     return ('%', 0)
+            
+            
             

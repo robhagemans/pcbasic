@@ -58,8 +58,8 @@ ascii_uppercase = map(chr, range(ord('A'),ord('Z')+1))
 name_chars = ascii_uppercase + ascii_digits + ['.']
 
 # keywords followed by one or more line numbers
-linenum_words = ['GOTO', 'THEN', 'GOSUB', 'LIST', 'RENUM', 'EDIT', 'LLIST', 'DELETE', 'RUN', 'RESUME', 'ERR', 'ERL', 'AUTO']
-
+linenum_words = ['GOTO', 'THEN', 'GOSUB', 'LIST', 'RENUM', 'EDIT', 'LLIST', 'DELETE', 'RUN', 'RESUME', 'AUTO', 'ERL']
+#'ERR', 'ERL', 
 
 #################################################################
 
