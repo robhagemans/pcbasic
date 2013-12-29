@@ -54,11 +54,12 @@ def debug_step(linum):
     
     if debug_tron:
         debug_print('['+('%i' % linum) +']')
-    for expr in watch_list:
-        expr.seek(0)
-        debug_print(' ' + expr.getvalue()+' = ')
+    for (expr, outs) in watch_list:
+        
+        debug_print(' ' + expr +' = ')
+        outs.seek(2)
         try:
-            val = expressions.parse_expression(expr)
+            val = expressions.parse_expression(outs)
             st = vartypes.value_to_str_keep(val, screen=False)[1]
             debug_print(st+'\n')        
         except Exception as e:
@@ -77,5 +78,7 @@ def trace(on=True):
 
 def watch(expr):
     global watch_list    
-    watch_list.append(StringIO.StringIO(expr))
+    outs = StringIO.StringIO()
+    tokenise.tokenise_stream(StringIO.StringIO('?'+expr), outs, True, False) 
+    watch_list.append((expr, outs))
    
