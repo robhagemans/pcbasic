@@ -154,10 +154,15 @@ def dospath_action(s, defext, err, action, isdir):
     elements = string.split(s, '\\')
     name = elements.pop()
     
-    
+    if len(elements)>0 and elements[0]=='':
+        elements[0]='/'
+        
     # find a matching 
     test = ''
     for e in elements:
+        # skip double slashes
+        if e=='':
+            continue
         test += dosname_read(e, '', test, err, isdir)
         test += os.sep
     
