@@ -340,6 +340,11 @@ def exec_if(ins):
                     if  nesting_counter==0:
                         # drop ELSE token and continue from here
                         ins.read(1)
+                        
+                        # line number?
+                        if util.skip_white(ins) in ('\x0d', '\x0e'):
+                            exec_goto(ins)
+                        # continue execution from here    
                         break
                     else:
                         nesting_counter -= 1
