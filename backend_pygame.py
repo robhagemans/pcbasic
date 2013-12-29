@@ -838,8 +838,8 @@ def append_sound(frequency, duration):
     
     amplitude = 2**(mixer_bits - 1) - 1
 
-    # not clear why 4*freq instead of 2* ?
-    numf = mixer_samplerate/(4*frequency)
+    # not clear why 8*freq instead of 2* ?
+    numf = mixer_samplerate/(8*frequency)
     num = int(numf)
     rest = 0
     
