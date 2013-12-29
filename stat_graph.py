@@ -154,10 +154,10 @@ def exec_circle(ins):
             c = vartypes.pass_int_keep(cval)[1]
         if util.skip_white_read_if(ins, ','):
             start = expressions.parse_expression(ins, allow_empty=True)
-            util.require_read(ins, ',')
-            stop = expressions.parse_expression(ins, allow_empty=True)
             if util.skip_white_read_if(ins, ','):
-                aspect = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
+                stop = expressions.parse_expression(ins, allow_empty=True)
+                if util.skip_white_read_if(ins, ','):
+                    aspect = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
     util.require(ins, util.end_statement)        
 
     if fp.equals(aspect, aspect.one):
