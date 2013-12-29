@@ -82,7 +82,7 @@ def detokenise(ins, outs, from_line=-1, to_line=-1, pos=-1):
             if eof != '\x00\x00\x1a':
                 info =''
                 if eof != '':
-                    info = '&H' + hex(ord(eof))[2:]
+                    info = '&H' + hex(ord(eof[2:]))
                 error.warning(2, -1, info)
             # gather everything past the end of file as a hex string to be sent to stderr
             eof_str = ins.read()    
@@ -273,7 +273,7 @@ def detokenise_keyword(bytes, output):
     
     # token followed by number is also separated by a space, except operator tokens and SPC(, TAB(
     nxt = util.peek(bytes)
-    if nxt.upper() not in (tokens_operator+['\xD9','"',',',' ',':','(',')']) \
+    if not comment and nxt.upper() not in (tokens_operator+['\xD9','"',',',' ',':','(',')']) \
                 and s not in (tokens_operator+tokens_with_bracket+['\xD1']): # excluding TAB( SPC( and FN. \xD9 is ', \xD1 is FN.
         output+=' '
 
