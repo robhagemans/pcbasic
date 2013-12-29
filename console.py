@@ -55,7 +55,8 @@ keybuf = ''
 # writing on bottom row is allowed    
 last_row_is_on=False
 
-
+# caps lock
+caps = False
 
 class ScreenBuffer:
     def __init__(self, bwidth, bheight):
@@ -585,7 +586,13 @@ def read_screen(crow, ccol):
 
 # insert character into keyboard buffer (for use by backends)
 def insert_key(c):
-    global keybuf
+    global keybuf, caps
+    # this is already handled by X11 if you press caps (and haven't disabled it)
+    #if caps:
+    #    if (c>='a' and c<='z'):
+    #        c = chr(ord(c)-32) 
+    #    elif (c>='A' and c<='Z'):
+    #        c = chr(ord(c)+32) 
     keybuf += events.replace_key(c)
 
 # non-blocking keystroke read

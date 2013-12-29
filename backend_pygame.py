@@ -577,15 +577,22 @@ def handle_stick(e):
         
 def handle_key(e):
     c=''
+    mods = pygame.key.get_mods() 
     if e.key in (pygame.K_PAUSE, pygame.K_BREAK):
-        mods = pygame.key.get_mods() 
         if mods & pygame.KMOD_CTRL:
             # ctrl-break
             raise error.Break()
         else:
             # pause until keypress
             pause_key()    
-    elif e.key==pygame.K_DELETE:
+    elif e.key == pygame.K_SCROLLOCK:
+        # ctrl+SCROLLLOCK breaks too
+        if mods & pygame.KMOD_CTRL:
+            # ctrl-break
+            raise error.Break()
+    elif e.key == pygame.K_CAPSLOCK:
+        console.caps = not console.caps        
+    elif e.key == pygame.K_DELETE:
         c+= keycode_to_scancode[e.key]    
     elif len(e.unicode)>0 and ord(e.unicode)== 0:   # NUL
         c+= '\x00\x00'
