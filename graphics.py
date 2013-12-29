@@ -18,6 +18,9 @@ import console
 
 backend=None
 
+# screen width and height in pixels
+size=(0,0)
+
 graph_view_set=False
 view_graph_absolute=True
 
@@ -40,10 +43,11 @@ def is_graphics_mode():
 
 
 def init_graphics_mode(mode, new_font_height):
-    global last_point, pixel_aspect_ratio, bitsperpixel
+    global last_point, pixel_aspect_ratio, bitsperpixel, size
     if mode==0:
         return
 
+    size = (console.width*8, console.height*new_font_height)
     # centre of new graphics screen
     last_point = (console.width*4, console.height*new_font_height/2)
     
@@ -596,7 +600,7 @@ def operation_xor(pix0, pix1):
    
    
 def set_area(x0,y0, array, operation):
-    global bitsperpixel
+    global bitsperpixel, size
     
     byte_array = []
     for i in range(4):
@@ -622,10 +626,14 @@ def set_area(x0,y0, array, operation):
     byte = 4
     mask=0x80
     hilo=0
+    
     for y in range(y0,y1+1):
         for x in range(x0,x1+1):
-    
-            pixel = backend.get_pixel(x,y)
+            
+            if x<0 or x>=size[0] or y<0 or y>=size[1]:
+                pixel = 0
+            else:
+                pixel = backend.get_pixel(x,y)
            
             index = 0
             
@@ -643,7 +651,8 @@ def set_area(x0,y0, array, operation):
                 else:
                     hilo+=1
         
-            backend.put_pixel(x,y, operation(pixel, index)) 
+            if x>=0 and x<size[0] and y>=0 and y<size[1]:
+                backend.put_pixel(x,y, operation(pixel, index)) 
     
         # left align next row
         if mask !=0x80:
@@ -655,7 +664,7 @@ def set_area(x0,y0, array, operation):
                 
         
 def get_area(x0,y0,x1,y1, array):
-    global bitsperpixel
+    global bitsperpixel, size
     
     dx = (x1-x0+1)
     dy = (y1-y0+1)
@@ -681,8 +690,11 @@ def get_area(x0,y0,x1,y1, array):
     hilo=0
     for y in range(y0,y1+1):
         for x in range(x0,x1+1):
-            pixel = backend.get_pixel(x,y)
-            
+            if x>=0 and x<size[0] and y>=0 and y<size[1]:
+                pixel = backend.get_pixel(x,y)
+            else:
+                pixel = 0
+                
             for b in range(bitsperpixel):
                 if pixel&(1<<b) != 0:
                     var.set_array_byte(  array, byte+hilo+b*bytesperword,  \

@@ -81,6 +81,9 @@ screen=None
 cursor0=None
 screen_changed=True
     
+# screen width and height in pixels
+size = (0,0)
+
 scroll_area=None
 
 glyphs = []
@@ -101,7 +104,6 @@ last_row=1
 last_col=1    
 under_cursor=None
 under_top_left=None
-
 
 
 keycode_to_scancode = {
@@ -257,7 +259,7 @@ def init_screen_mode(mode, new_font_height):
     
     
 def setup_screen(to_height, to_width):
-    global screen, font_height, workaround_palette
+    global screen, size, font_height, workaround_palette
     global cursor0
     global screen_changed
     
