@@ -291,7 +291,8 @@ def set_scroll_area(view_start, scroll_height, width):
    
 def show_cursor(do_show, prev):
     global screen_changed
-    screen_changed=True
+    if do_show != prev:
+        screen_changed=True
     
 
 def set_cursor_colour(color):
