@@ -135,6 +135,25 @@ def read_to(ins, findrange, linum=-1, break_on_first_char=True):
     return out, linum    
     
 
+def skip_white_read_if(ins, char):
+    val = (skip_white(ins) == char)
+    if val:
+        ins.read(1)
+    return val
+
+
+def require_read(ins, char, err=2):
+    if skip_white_read(ins) != char:
+        raise error.RunError(err)
+    
+def require(ins, rnge, err=2):
+    if skip_white(ins) not in rnge:
+        raise error.RunError(err)
+    
+
+
+
+
 # parse line number and leve pointer at first char of line
 # if end of program or truncated, leave pointer at start of line number C0 DE or 00 00    
 def parse_line_number(ins):
@@ -248,41 +267,27 @@ def parse_jumpnum_list(ins, size, err=2):
   
   
   
-def map_list(action, ins, size, err):
-    pos=0
-    output = [None] * size
-    while True:
-        skip_white(ins)
-        d= peek(ins)
-        
-        if d==',':
-            ins.read(1)
-            pos += 1
-            if pos >= size:
-                # 5 = illegal function call
-                raise error.RunError(err)
-                return output
-        elif d in end_expression:
-            break
-        else:  
-            output[pos] = action(ins)
-    return output
+#def map_list(action, ins, size, err):
+#    pos=0
+#    output = [None] * size
+#    while True:
+#        skip_white(ins)
+#        d= peek(ins)
+#        
+#        if d==',':
+#            ins.read(1)
+#            pos += 1
+#            if pos >= size:
+#                # 5 = illegal function call
+#                raise error.RunError(err)
+#                return output
+#        elif d in end_expression:
+#            break
+#        else:  
+#            output[pos] = action(ins)
+#    return output
 
 
 
-def require_read(ins, char, err=2):
-    if skip_white_read(ins) != char:
-        raise error.RunError(err)
-    
-def require(ins, rnge, err=2):
-    if skip_white(ins) not in rnge:
-        raise error.RunError(err)
-    
-
-def skip_white_read_if(ins, char):
-    val = (skip_white(ins) == char)
-    if val:
-        ins.read(1)
-    return val
 
 

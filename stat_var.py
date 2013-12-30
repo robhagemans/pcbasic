@@ -517,7 +517,7 @@ def input_number(text_file, hard_end=(',', '\x0d', '\x1a', ''), soft_end = (' ',
     word = ''
     #soft_end = end_entry
     end_entry = soft_end + hard_end
-    # skip *leading* spaces and line feeds and NUL. 
+    # skip *leading* spaces and line feeds and NUL. (not TABs)
     # cf READ skips whitespace inside numbers as well
     c = text_skip(text_file, util.ascii_white)
     while True:
