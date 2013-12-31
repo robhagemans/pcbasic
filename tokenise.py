@@ -207,6 +207,8 @@ def parse_value(ins):
 
 
 def str_to_value_keep(strval):
+    if strval==('$',''):
+        return ('%',0)
     strval = vartypes.pass_string_keep(strval)[1]
     ins = StringIO.StringIO(strval)
     outs = StringIO.StringIO()
