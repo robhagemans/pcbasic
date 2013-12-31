@@ -505,17 +505,12 @@ def parse_expr_unit(ins):
 
 
 def parse_bracket(ins):
-    #if util.skip_white_read(ins) != '(':
-    #    raise error.RunError(2)
     util.require_read(ins, '(')
     val = parse_expression(ins, allow_empty = True)
     if val==('',''):
         # we need a Syntax error, not a Missing operand
         raise error.RunError(2)
     util.require_read(ins, ')')
-    #d = ins.read(1)
-    #if d != ')':
-    #    raise error.RunError(2)
     return val
 
 
