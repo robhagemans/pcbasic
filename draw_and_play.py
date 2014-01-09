@@ -8,7 +8,7 @@
 # This file is released under the GNU GPL version 3. 
 # please see text file COPYING for licence terms.
 #
-import StringIO
+from cStringIO import StringIO
 
 import error
 import fp
@@ -119,7 +119,7 @@ def draw_step(x0,y0, sx,sy, plot, goback):
 def draw_parse_gml(gml):
     global draw_scale, draw_angle
     
-    gmls = StringIO.StringIO(gml)
+    gmls = StringIO(gml)
     plot=True
     goback=False
     
@@ -241,7 +241,7 @@ notes = { 'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6, 'G
 
 def play_parse_mml(mml):
     global play_octave, play_speed, play_length, play_tempo
-    gmls = StringIO.StringIO(mml)
+    gmls = StringIO(mml)
     next_oct=0
     while True:
         c = util.skip_read(gmls, ml_whitepace).upper()

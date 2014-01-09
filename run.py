@@ -10,7 +10,7 @@
 
 
 import sys
-import StringIO
+from cStringIO import StringIO
 
 import error
 import util
@@ -114,7 +114,6 @@ def execution_loop():
     while True:
         try:
             console.check_events()
-            events.handle_events()
             if not statements.parse_statement():
                 break
         except error.Error as e:
@@ -138,7 +137,7 @@ def prompt(force=False):
               
 def get_command_line(line):
     program.direct_line.truncate(0)
-    sline = StringIO.StringIO(line)
+    sline = StringIO(line)
     tokenise.tokenise_stream(sline, program.direct_line, onfile=False)
     program.direct_line.seek(0)
     

@@ -10,7 +10,7 @@
 #
 
 
-import StringIO
+from cStringIO import StringIO
 import copy
 
 import error
@@ -123,7 +123,7 @@ def exec_list(ins, out=None):
     if out==None:
         out = console
     if out==console:
-        output = StringIO.StringIO()
+        output = StringIO()
     else:
         output = out
 

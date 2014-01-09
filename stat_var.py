@@ -9,7 +9,7 @@
 # please see text file COPYING for licence terms.
 #
 
-import StringIO
+from cStringIO import StringIO
 
 import error
 import vartypes
@@ -476,7 +476,7 @@ def exec_input(ins):
         console.write(prompt) 
         line = console.read_screenline(write_endl=newline)
         
-        inputs = StringIO.StringIO(line) 
+        inputs = StringIO(line) 
         text_file = fileio.pseudo_textfile(inputs)
         
         inputs.seek(0)
