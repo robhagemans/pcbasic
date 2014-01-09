@@ -13,7 +13,7 @@
 
 import datetime
 import os
-import StringIO
+from cStringIO import StringIO
 
 import fp
 import vartypes
@@ -827,7 +827,7 @@ def value_fn(ins):
         var.setvar(varnames[i], exprs[i])
     util.require_read(ins,')')
     
-    fns = StringIO.StringIO(fncode)
+    fns = StringIO(fncode)
     fns.seek(0)
     value= parse_expression(fns)    
 

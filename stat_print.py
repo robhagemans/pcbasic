@@ -10,7 +10,7 @@
 #
 
 
-import StringIO
+from cStringIO import StringIO
 
 import error
 import events
@@ -477,7 +477,7 @@ def exec_print_using(ins, screen):
     if format_expr[1]=='':
         raise error.RunError(5)
     
-    fors = StringIO.StringIO(format_expr[1])
+    fors = StringIO(format_expr[1])
     
     util.require_read(ins,';')
     

@@ -12,7 +12,7 @@
 
 import error
 import var
-import StringIO
+from cStringIO import StringIO
 
 
 import util
@@ -301,7 +301,7 @@ class RandomFile:
 
     # write one or more chars to field buffer
     def write(self, s):
-        ins = StringIO.StringIO(s)
+        ins = StringIO(s)
         
         while self.field_text_file.fhandle.tell() < self.reclen:
             self.field_text_file.write(ins.read(1))

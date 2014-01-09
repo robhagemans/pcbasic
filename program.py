@@ -19,15 +19,15 @@ import protect
 import util
 import console
 
-import StringIO 
+from cStringIO import StringIO 
 
 
 #######################################################
 
 # program bytecode buffer
-bytecode = StringIO.StringIO()
+bytecode = StringIO()
 # direct line buffer
-direct_line = StringIO.StringIO()
+direct_line = StringIO()
 
 
 # for error handling - can be in program bytecode or in linebuf
@@ -295,7 +295,7 @@ def edit_line(from_line, pos=-1):
     current = bytecode.tell()	        
     bytecode.seek(1)
     
-    output = StringIO.StringIO()
+    output = StringIO()
     tokenise.detokenise(bytecode, output, from_line, from_line, pos)
     
     output.seek(0)
@@ -421,7 +421,7 @@ def merge(g):
         
         more=True
         while (more): #peek(g)=='' and not peek(g)=='\x1A':
-            tempbuf = StringIO.StringIO()
+            tempbuf = StringIO()
     
             more = tokenise.tokenise_stream(g, tempbuf, one_line=True)
             tempbuf.seek(0)

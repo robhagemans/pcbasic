@@ -11,7 +11,7 @@
 
 import error
 import vartypes
-import StringIO
+from cStringIO import StringIO
 import fp
 import util
 
@@ -54,7 +54,7 @@ class StringPtr:
          
     def set_str(self, in_str):
         pos = self.stream.tell()
-        ins = StringIO.StringIO(in_str)
+        ins = StringIO(in_str)
         self.stream.seek(self.offset)    
         for _ in range(self.length):
             c = ins.read(1)
@@ -79,7 +79,7 @@ def create_string_ptr(stream, offset, length):
         new.stream, new.offset, new.length = stream.stream, stream.offset+offset, length     
         max_length = stream.length
     else:
-        new.stream= StringIO.StringIO(stream)
+        new.stream= StringIO(stream)
         new.stream.seek(0)    
         max_length = len(stream)
             
