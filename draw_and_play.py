@@ -72,7 +72,7 @@ def ml_parse_string(gmls):
 
     
 # GRAPHICS MACRO LANGUAGE
-deg_to_rad = fp.div( fp.mbf_twopi, fp.from_int(fp.MBF_class, 360))
+deg_to_rad = fp.div( fp.Single.twopi, fp.Single.from_int(360))
 
 draw_scale=4
 draw_angle=0
@@ -96,8 +96,8 @@ def draw_step(x0,y0, sx,sy, plot, goback):
     elif rotate==270:
         x1,y1 = -y1,x1
     else:
-        fx,fy = fp.from_int(fp.MBF_class, x1), fp.from_int(fp.MBF_class, y1)
-        phi = fp.mul(fp.from_int(fp.MBF_class, rotate), deg_to_rad)
+        fx,fy = fp.Single.from_int(x1), fp.Single.from_int(y1)
+        phi = fp.mul(fp.Single.from_int(rotate), deg_to_rad)
         sinr, cosr = fp.mbf_sin(phi), fp.mbf_cos(phi)
         fx,fy = fp.add(fp.mul(cosr,fx), fp.mul(sinr,fy)), fp.sub(fp.mul(cosr,fy), fp.mul(sinr,fx)) 
         x1,y1 = fp.round_to_int(fx), fp.round_to_int(fy)

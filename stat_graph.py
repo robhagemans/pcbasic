@@ -161,14 +161,14 @@ def exec_circle(ins):
     util.require(ins, util.end_statement)        
 
     if fp.equals(aspect, aspect.one):
-        rx, dummy = graphics.window_scale(r,fp.MBF_class.zero)
+        rx, dummy = graphics.window_scale(r,fp.Single.zero)
         ry = rx
     else:
         if fp.gt(aspect, aspect.one):
-            dummy, ry = graphics.window_scale(fp.MBF_class.zero,r)
+            dummy, ry = graphics.window_scale(fp.Single.zero,r)
             rx = fp.round_to_int(fp.div(r, aspect))
         else:
-            rx, dummy = graphics.window_scale(r,fp.MBF_class.zero)
+            rx, dummy = graphics.window_scale(r,fp.Single.zero)
             ry = fp.round_to_int(fp.mul(r, aspect))
 
     start_octant, start_coord, start_line = -1, -1, False
@@ -187,35 +187,35 @@ def exec_circle(ins):
         # TODO - make this all more sensible, calculate only once
         startx, starty, stopx, stopy = -1,-1,-1,-1
         if start!=('',''):
-            startx = abs(fp.round_to_int(fp.mul(fp.from_int(fp.MBF_class, rx), fp.mbf_cos(start))))
-            starty = abs(fp.round_to_int(fp.mul(fp.from_int(fp.MBF_class, ry), fp.mbf_sin(start))))
+            startx = abs(fp.round_to_int(fp.mul(fp.Single.from_int(rx), fp.mbf_cos(start))))
+            starty = abs(fp.round_to_int(fp.mul(fp.Single.from_int(ry), fp.mbf_sin(start))))
         if stop!=('',''):
-            stopx = abs(fp.round_to_int(fp.mul(fp.from_int(fp.MBF_class, rx), fp.mbf_cos(stop))))
-            stopy = abs(fp.round_to_int(fp.mul(fp.from_int(fp.MBF_class, ry), fp.mbf_sin(stop))))
+            stopx = abs(fp.round_to_int(fp.mul(fp.Single.from_int(rx), fp.mbf_cos(stop))))
+            stopy = abs(fp.round_to_int(fp.mul(fp.Single.from_int(ry), fp.mbf_sin(stop))))
         
         graphics.draw_ellipse(x0,y0,rx,ry,c, start_octant/2, startx, starty, start_line, stop_octant/2, stopx, stopy, stop_line)
             
 
 def get_octant(mbf, rx, ry):
     
-    neg = fp.sign(mbf) == -1
+    neg = mbf.neg 
     if neg:
         mbf = fp.neg(mbf)
 
     octant=0
-    comp = fp.mbf_pi4
+    comp = fp.Single.pi4
     while fp.gt(mbf,comp):
-        comp = fp.add(comp, fp.mbf_pi4)
+        comp = fp.add(comp, fp.Single.pi4)
         octant += 1
         if octant >= 8:
             raise error.RunError(5) # ill fn call
     
     if octant in (0,3,4,7):
         # running var is y
-        coord = abs(fp.round_to_int(fp.mul(fp.from_int(fp.MBF_class, ry), fp.mbf_sin(mbf))))
+        coord = abs(fp.round_to_int(fp.mul(fp.Single.from_int(ry), fp.mbf_sin(mbf))))
     else:
         # running var is x    
-        coord = abs(fp.round_to_int(fp.mul(fp.from_int(fp.MBF_class, rx), fp.mbf_cos(mbf))))
+        coord = abs(fp.round_to_int(fp.mul(fp.Single.from_int(rx), fp.mbf_cos(mbf))))
     return octant, coord, neg                 
 
 

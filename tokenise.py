@@ -373,9 +373,9 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
             # note we don't include leading signs, they're encoded as unary operators
             elif expect_number and c in ascii_digits + ['&', '.']:
                 if number_is_line:
-                    outs.write(tokenise_jump_number(ins, outs))
+                    tokenise_jump_number(ins, outs) 
                 else:        
-                    outs.write(tokenise_number(ins, outs))
+                    tokenise_number(ins, outs)
             
             # operator keywords ('+', '-', '=', '/', '\\', '^', '*', '<', '>'):    
             elif c in ascii_operators: 
@@ -593,7 +593,7 @@ def tokenise_number(ins, outs):
                 # two-byte constant
                 outs.write('\x1c'+vartypes.value_to_sint(int(word)))
         else:
-            mbf = fp.to_bytes(fp.from_str(word))
+            mbf = fp.from_str(word).to_bytes()
             if len(mbf) == 4:
                 # single
                 outs.write('\x1d'+''.join(mbf))
