@@ -9,7 +9,7 @@
 # please see text file COPYING for licence terms.
 #
 
-import copy
+#import copy
 
 import fp
 import error
@@ -37,8 +37,6 @@ def pass_int_keep(inp, maxint=0x7fff, err=13):
         val= inp[1]
     elif inp[0] in ('!', '#'):
         val= fp.round_to_int(fp.unpack(inp))
-    #elif inp[0]=='#':
-    #    val= fp.round_to_int(fp.mbfd_frombytes(inp[1]))
     elif inp[0]=='':
         raise error.RunError(2)    
     else:     
@@ -54,37 +52,35 @@ def pass_int_keep(inp, maxint=0x7fff, err=13):
 def pass_single_keep(num):
     
     if num[0] == '!':
-        val= num[1]
+        return num
     elif num[0] == '%':
-        val= fp.to_bytes(fp.from_int(fp.MBF_class,num[1]))
+        return fp.pack(fp.Single.from_int(num[1]))
     elif num[0] == '#':
         # TODO: *round* to single
         if (ord(num[1][6]) & 0x80) == 0: 
             val= num[1][4:]
         else:
-            val= num[1][4:]    
+            val= num[1][4:]
+        return ('!', val)        
     elif num[0] == '$':
         raise error.RunError(13)
     else:
         raise error.RunError(2)
-    
-    return ('!', val)
     
     
 
 def pass_double_keep(num):
     if num[0] == '#':
-        val = num[1]
+        return num
     elif num[0] == '%':
-        val = fp.to_bytes(fp.from_int(fp.MBFD_class, num[1]))
+        return fp.pack(fp.Double.from_int(num[1]))
     elif num[0] == '!':
-        val = ('\x00', '\x00', '\x00', '\x00', num[1][0], num[1][1], num[1][2], num[1][3])    
+        return ('#', ['\x00', '\x00', '\x00', '\x00', num[1][0], num[1][1], num[1][2], num[1][3]])    
     elif num[0] == '$':
         raise error.RunError(13)
     else:
         raise error.RunError(2)
-    return ('#', val)
-
+    
 
 def pass_float_keep(num):
     if num[0] == '#':
@@ -266,11 +262,11 @@ def null_keep(typechar):
     if typechar=='$':
         return ('$', '')
     elif typechar == '%':
-        return  ('%', 0)
+        return ('%', 0)
     elif typechar == '!':
-        return  fp.pack(fp.MBF_class.zero)
+        return fp.pack(fp.Single.zero)
     elif typechar == '#':
-        return  fp.pack(fp.MBFD_class.zero)
+        return fp.pack(fp.Double.zero)
             
     
 
@@ -284,9 +280,9 @@ def vsqrt(inp):
         
 def vexp(inp):
     if inp[0] == '#' and option_double:
-        return fp.pack(fp.mbfd_pow(fp.mbfd_e, fp.unpack(pass_double_keep(inp)))) 
+        return fp.pack(fp.mbfd_exp(fp.unpack(pass_double_keep(inp)))) 
     else:
-        return fp.pack(fp.mbf_pow(fp.mbf_e, fp.unpack(pass_single_keep(inp)))) 
+        return fp.pack(fp.mbf_exp(fp.unpack(pass_single_keep(inp)))) 
             
 def vsin(inp):
     if inp[0] == '#' and option_double:
@@ -331,13 +327,9 @@ def vabs(inp):
     elif inp[0]== '%':
         return (inp[0], abs(inp[1]))
     elif inp[0] in ('!','#'):
-        out = copy.deepcopy(inp) 
+        out = (inp[0], inp[1][:]) #copy.deepcopy(inp) 
         out[1][-2] = chr( ord(out[1][-2]) & 0x7F ) 
         return out  
-    #elif inp[0]=='#':
-    #    out = copy.copy(inp)
-    #    out[1][6] = chr( ord(out[1][6]) & 0x7F ) 
-    #    return out  
     elif inp[0]=='':
         raise error.RunError(2)    
     else:     
@@ -348,10 +340,8 @@ def vabs(inp):
 def vint(inp):
     if inp[0]=='%':
         return inp
-    elif inp[0]=='!':
-        return fp.pack(fp.floor(fp.unpack(inp))) 
-    elif inp[0]=='#':
-        return fp.pack(fp.floor(fp.unpack(inp))) 
+    elif inp[0] in ('!', '#'):
+        return fp.pack(fp.unpack(inp).floor()) 
     elif inp[0]=='':
         raise error.RunError(2)    
     else:     
@@ -368,7 +358,7 @@ def vsgn(inp):
         else:
             return ('%', 0)
     elif inp[0] in ('!','#'):
-        return ('%', fp.sign(fp.unpack(inp)) )
+        return ('%', fp.unpack(inp).sign() )
     elif inp[0]=='':
         raise error.RunError(2)    
     else:     
@@ -381,9 +371,9 @@ def vfix(inp):
         return inp
     elif inp[0]=='!':
         # needs to be a float to avoid overflow
-        return fp.pack(fp.from_int(fp.MBF_class,fp.trunc_to_int(fp.unpack(inp)))) 
+        return fp.pack(fp.Single.from_int(fp.unpack(inp).trunc_to_int())) 
     elif inp[0]=='#':
-        return fp.pack(fp.from_int(fp.MBFD_class,fp.trunc_to_int(fp.unpack(inp)))) 
+        return fp.pack(fp.Double.from_int(fp.unpack(inp).trunc_to_int())) 
     elif inp[0]=='':
         raise error.RunError(2)    
     else:     
@@ -408,11 +398,11 @@ def vneg(inp):
     elif inp[0]== '%':
         return (inp[0], -inp[1])
     elif inp[0] == '!':
-        out = copy.deepcopy(inp)
+        out = (inp[0], inp[1][:]) #copy.deepcopy(inp) 
         out[1][2] = chr( ord(out[1][2]) ^ 0x80 ) 
         return out  
     elif inp[0]=='#':
-        out = copy.deepcopy(inp)
+        out = (inp[0], inp[1][:]) #copy.deepcopy(inp) 
         out[1][6] = chr( ord(inp[1][6]) ^ 0x80 ) 
         return out 
     elif inp[0]=='':
@@ -431,7 +421,7 @@ def vcaret(left, right):
         #    return fp.pack( fp.mbf_pow(fp.unpack(pass_single_keep(left)), fp.unpack(pass_single_keep(right))) )
     else:
         if right[0]=='%':
-            return fp.pack( fp.ipow(fp.unpack(pass_single_keep(left)), right[1]) )
+            return fp.pack( fp.pow_int(fp.unpack(pass_single_keep(left)), right[1]) )
         else:
             return fp.pack( fp.mbf_pow(fp.unpack(pass_single_keep(left)), fp.unpack(pass_single_keep(right))) )
 

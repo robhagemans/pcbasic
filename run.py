@@ -60,6 +60,7 @@ def init_run(arg_run, arg_load, arg_quit, arg_cmd, arg_infile):
     if arg_cmd != None:
         get_command_line(arg_cmd)
         program.set_runmode(False)
+        #cProfile.run('run.execution_loop()')
         execution_loop()
 
         if arg_quit:

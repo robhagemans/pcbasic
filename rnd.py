@@ -74,6 +74,6 @@ def vrnd(inp):
         rnd_seed = (rnd_seed*rnd_a + rnd_c) % rnd_period       
 
     #return rnd_seed*1.0/rnd_period
-    return fp.pack(fp.div(fp.from_int(fp.MBF_class, rnd_seed), fp.from_int(fp.MBF_class,rnd_period)))
+    return fp.pack(fp.div(fp.Single.from_int(rnd_seed), fp.Single.from_int(rnd_period)))
 
     

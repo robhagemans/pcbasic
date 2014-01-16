@@ -773,10 +773,10 @@ def format_number(value, fors):
 
         if work_digits>0:
             # scientific representation
-            lim_bot = fp.just_under(fp.ipow(expr.ten, work_digits-1))
+            lim_bot = fp.just_under(fp.pow_int(expr.ten, work_digits-1))
         
              
-            #lim_bot = fp.just_under(fp.from_int(expr.__class__, 10L**(work_digits-1)))
+            #lim_bot = fp.just_under(expr.from_int(10L**(work_digits-1)))
         else:
             # special case when work_digits == 0, see also below
             # setting to 0.1 results in incorrect rounding (why?)
@@ -799,13 +799,13 @@ def format_number(value, fors):
     
     else:
         # fixed-point representation
-        factor = fp.ipow(expr.ten, decimals) 
+        factor = fp.pow_int(expr.ten, decimals) 
         unrounded = fp.mul(expr, factor)
-        num = fp.round(unrounded) 
+        num = unrounded.copy().round()
         
         # find exponent 
         exp10 = 1
-        pow10 = fp.ipow(expr.ten, exp10) # pow10 = 10L**exp10
+        pow10 = fp.pow_int(expr.ten, exp10) # pow10 = 10L**exp10
         while fp.gt(num, pow10) or fp.equals(num, pow10): # while pow10 <= num:
             pow10 = fp.mul10(pow10) #pow10*=10
             exp10 += 1
@@ -815,12 +815,11 @@ def format_number(value, fors):
         
         if exp10 > expr.digits:
             diff = exp10 - expr.digits
-            factor = fp.ipow(expr.ten, diff) # pow10 = 10L**exp10
-            unrounded = fp.div(unrounded, factor) #fp.from_int(expr.__class__, 10L**diff))
-            num = fp.round(unrounded)  
+            factor = fp.pow_int(expr.ten, diff) # pow10 = 10L**exp10
+            num = fp.div(unrounded, factor).round() #expr.from_int(10L**diff))
             work_digits -= diff
         
-        num = fp.trunc_to_int(num)   
+        num = num.trunc_to_int()   
         # argument work_digits-1 means we're getting work_digits==exp10+1-diff digits
         digitstr = fp.get_digits(num, work_digits-1, remove_trailing=False)
         # fill up with zeros

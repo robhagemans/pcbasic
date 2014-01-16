@@ -781,7 +781,7 @@ def value_environ(ins):
         
 def value_timer(ins):
     # precision of GWBASIC TIMER is about 1/20 of a second
-    timer = fp.div( fp.from_int(fp.MBF_class, oslayer.timer_milliseconds()/50), fp.from_int(fp.MBF_class,20))
+    timer = fp.div( fp.Single.from_int(oslayer.timer_milliseconds()/50), fp.Single.from_int(20))
     return fp.pack(timer)
     
     
@@ -877,10 +877,10 @@ def value_pmap(ins):
 
  
     if mode == 0:
-        value, dummy = graphics.window_coords(coord,fp.MBF_class.zero)       
+        value, dummy = graphics.window_coords(coord,fp.Single.zero)       
         value = ('%', value)        
     elif mode == 1:
-        dummy, value = graphics.window_coords(fp.MBF_class.zero,coord)       
+        dummy, value = graphics.window_coords(fp.Single.zero,coord)       
         value = ('%', value)        
     elif mode == 2:
         value, dummy = graphics.get_window_coords(fp.round_to_int(coord),0)       

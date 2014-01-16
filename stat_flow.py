@@ -453,7 +453,7 @@ def exec_on_key(ins):
 def exec_on_timer(ins):
     timeval, jumpnum = parse_on_event(ins)
     timeval = vartypes.pass_single_keep(timeval)
-    events.timer_period = fp.round_to_int(fp.mul(fp.unpack(timeval), fp.from_int(fp.MBF_class, 1000)))
+    events.timer_period = fp.round_to_int(fp.mul(fp.unpack(timeval), fp.Single.from_int(1000)))
     events.timer_event = jumpnum
     
 

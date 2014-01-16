@@ -28,7 +28,7 @@ graph_window=None
 graph_window_bounds=None
 
 last_point = (0,0)    
-pixel_aspect_ratio = fp.MBF_class.one
+pixel_aspect_ratio = fp.Single.one
 bitsperpixel=4
 
 
@@ -53,8 +53,8 @@ def init_graphics_mode(mode, new_font_height):
     
     # pixels e.g. 80*8 x 25*14, screen ratio 4x3 makes for pixel width/height (4/3)*(25*14/8*80)
     pixel_aspect_ratio = fp.div(
-        fp.from_int(fp.MBF_class,console.height*new_font_height), 
-        fp.from_int(fp.MBF_class,6*console.width)) 
+        fp.Single.from_int(console.height*new_font_height), 
+        fp.Single.from_int(6*console.width)) 
     
     if mode in (1,10):
         bitsperpixel=2
@@ -122,8 +122,8 @@ def set_graph_window(fx0, fy0, fx1, fy1, cartesian=True):
 
     left,top, right,bottom = backend.get_graph_clip()
         
-    x0,y0 = fp.MBF_class.zero, fp.MBF_class.zero 
-    x1,y1 = fp.from_int(fp.MBF_class, right-left), fp.from_int(fp.MBF_class, bottom-top)        
+    x0,y0 = fp.Single.zero, fp.Single.zero 
+    x1,y1 = fp.Single.from_int(right-left), fp.Single.from_int(bottom-top)        
 
     scalex, scaley = fp.div(fp.sub(x1, x0), fp.sub(fx1,fx0)), fp.div(fp.sub(y1, y0), fp.sub(fy1,fy0)) 
     offsetx, offsety = fp.sub(x0, fp.mul(fx0,scalex)), fp.sub(y0, fp.mul(fy0,scaley))
@@ -157,8 +157,8 @@ def window_coords(fx, fy):
 def get_window_coords(x, y):
     global graph_window
     
-    x = fp.from_int(fp.MBF_class, x)
-    y = fp.from_int(fp.MBF_class, y)
+    x = fp.Single.from_int(x)
+    y = fp.Single.from_int(y)
     
     if graph_window!=None:
         scalex, scaley, offsetx, offsety = graph_window
