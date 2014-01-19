@@ -112,10 +112,10 @@ def get_aspect_ratio():
 def set_graph_window(fx0, fy0, fx1, fy1, cartesian=True):
     global graph_view, view_graph_absolute, graph_window, graph_window_bounds
     
-    if fp.gt(fy0,fy1):
-        fy0, fy1 = fy1,fy0
-    if fp.gt(fx0,fx1):
-        fx0, fx1 = fx1,fx0
+    if fy0.gt(fy1):
+        fy0, fy1 = fy1, fy0
+    if fx0.gt(fx1):
+        fx0, fx1 = fx1, fx0
     
     if cartesian:
         fy0, fy1 = fy1, fy0
