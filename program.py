@@ -74,6 +74,7 @@ def set_runmode(new_runmode=True):
     
 def unset_runmode():
     set_runmode(False)
+
 def runmode():
     return run_mode
 

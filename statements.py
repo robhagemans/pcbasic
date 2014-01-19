@@ -478,7 +478,7 @@ def exec_strig(ins):
     d = util.skip_white(ins)
     if d=='(':
         # strig (n)
-        num = vartypes.pass_int_keep(expressions.parse_bracket(ins))[1]
+        num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
         if num not in (0,2,4,6):
             raise error.RunError(5)
         joy = num//4

@@ -25,8 +25,8 @@ from cStringIO import StringIO
 
 import error
 import fp 
-import vartypes
 import util
+import vartypes
 
 debug=False
 
@@ -59,6 +59,27 @@ name_chars = ascii_uppercase + ascii_digits + ['.']
 
 # keywords followed by one or more line numbers
 linenum_words = ['GOTO', 'THEN', 'ELSE', 'GOSUB', 'LIST', 'RENUM', 'EDIT', 'LLIST', 'DELETE', 'RUN', 'RESUME', 'AUTO', 'ERL', 'RESTORE']
+
+
+
+
+##########################################
+# TODO: these do not belong here...
+
+
+def str_to_value_keep(strval):
+    if strval==('$',''):
+        return ('%',0)
+    strval = vartypes.pass_string_unpack(strval)
+    ins = StringIO(strval)
+    outs = StringIO()
+    tokenise_number(ins, outs)    
+    outs.seek(0)
+    value = util.parse_value(outs)
+    ins.close()
+    outs.close()
+    return value
+
 
 #################################################################
 
@@ -178,8 +199,6 @@ def detokenise_number(bytes):
     return output
 
 
-
-##########################################
 
 
     
@@ -461,13 +480,11 @@ def tokenise_jump_number(ins, outs):
     while True:
         c = ins.read(1)
         if c not in ascii_digits:
-            #number_is_line=False
             if c!= '':
                 ins.seek(-1,1)
             break
         else:
             word += c   
-
     # line number (jump)
     if word !='':
         outs.write('\x0e' + vartypes.str_to_uint(word))
@@ -578,28 +595,6 @@ def tokenise_number(ins, outs):
     elif c!='':
             ins.seek(-1,1)
 
-
-
-
-##########################################
-# TODO: these do not belong here...
-
-
-
-def str_to_value_keep(strval):
-    if strval==('$',''):
-        return ('%',0)
-    strval = vartypes.pass_string_keep(strval)[1]
-    ins = StringIO(strval)
-    outs = StringIO()
-    tokenise_number(ins, outs)    
-    outs.seek(0)
-    value = util.parse_value(outs)
-    ins.close()
-    outs.close()
-    return value
-    
-############################################
 
             
     

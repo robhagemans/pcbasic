@@ -26,9 +26,9 @@ def exec_beep(ins):
     
     
 def exec_sound(ins):
-    freq = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
+    freq = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.require_read(ins, ',')
-    dur = vartypes.pass_int_keep(expressions.parse_expression(ins), maxint=65535)[1]
+    dur = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=65535)
     util.require(ins, util.end_statement)
     if freq == 32767:
         sound.play_pause(float(dur)/18.2)
@@ -36,28 +36,26 @@ def exec_sound(ins):
         sound.play_sound(freq, float(dur)/18.2)
     else:
         raise error.RunError(5)
-    
     if sound.music_foreground:
         sound.wait_music()
 
     
 def exec_play(ins):
     d = util.skip_white(ins)
-    if d == '\x95': # ON
+    if d == '\x95':   # ON
         ins.read(1)
         events.play_enabled = True
     elif d == '\xdd': # OFF
         ins.read(1)
         events.play_enabled = False
-    elif d== '\x90': #STOP
+    elif d== '\x90':  # STOP
         ins.read(1)
         events.play_stopped = True
     else:
         # retrieve Music Macro Language string
-        mml = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
+        mml = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_expression)
         draw_and_play.play_parse_mml(mml)
-    
     util.require(ins, util.end_statement)                
                     
                              

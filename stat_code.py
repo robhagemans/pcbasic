@@ -121,7 +121,7 @@ def exec_llist(ins):
     
         
 def exec_load(ins):
-    name = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
+    name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
     name = oslayer.dospath_read(name, 'BAS', 53)
         
@@ -151,7 +151,7 @@ def exec_chain(ins):
     if util.skip_white_read_if(ins, ('\xBD',)): # MERGE
         action = program.merge
     
-    name = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
+    name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
     name = oslayer.dospath_read(name, 'BAS', 53)
     
@@ -165,7 +165,7 @@ def exec_chain(ins):
         # NOTE in GW, negative numbers will be two's complemented into a line number!
         expr = expressions.parse_expression(ins, allow_empty=True)
         if expr != ('',''):
-            jumpnum = vartypes.pass_int_keep(expr, maxint=0xffff)[1]
+            jumpnum = vartypes.pass_int_unpack(expr, maxint=0xffff)
             if jumpnum <0:
                 jumpnum = 0x10000 + jumpnum            
         
@@ -241,7 +241,7 @@ def exec_chain(ins):
 
     
 def exec_save(ins):
-    name = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
+    name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # 76 is path not found
     name = oslayer.dospath_write(name, 'BAS', 76) 
 
@@ -281,14 +281,12 @@ def exec_save(ins):
     
     
 def exec_merge(ins):
-    name = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
+    name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
     name = oslayer.dospath_read(name, 'BAS', 53)
-        
     g = oslayer.safe_open(name, 'rb')
     program.merge(g)
     g.close()    
-        
     util.require(ins, util.end_statement)
     
     

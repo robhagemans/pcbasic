@@ -70,7 +70,7 @@ def exec_clear(ins):
         # expression1 is a memory location that, if specified, sets the maximum number of bytes available for use by GW-BASIC        
         exp1 = expressions.parse_expression(ins, allow_empty=True)
         if exp1 != ('',''):
-            exp1 = vartypes.pass_int_keep(exp1)[1]
+            exp1 = vartypes.pass_int_unpack(exp1)
         if exp1==0:
             #  0 leads to illegal fn call
             raise error.RunError(5)
@@ -210,7 +210,7 @@ def exec_mid(ins):
         raise error.RunError(5)
     
     util.require_read(ins, '\xE7') # =
-    val = list( vartypes.pass_string_keep(expressions.parse_expression(ins))[1] )
+    val = list( vartypes.pass_string_unpack(expressions.parse_expression(ins)) )
     util.require(ins, util.end_statement)
          
     s = list(var.get_var_or_array(name, indices)[1])
@@ -569,9 +569,11 @@ def exec_randomize(ins):
         val = tokenise.str_to_value_keep(('$', ''.join(line)))
     if val[0]=='$':
         raise error.RunError(5)
-    if val[0]=='%':
-        val = ('$', vartypes.value_to_sint(val[1]))    
-    s = val[1]
+    elif val[0]=='%':
+        s = vartypes.value_to_sint(vartypes.unpack_int(val))    
+    else:
+        # get the bytes
+        s = val[1]
     # on a program line, if a number outside the signed int range (or -32768) is entered,
     # the number is stored as a MBF double or float. Randomize then:
     #   - ignores the first 4 bytes (if it's a double)

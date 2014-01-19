@@ -28,7 +28,7 @@ def skip_read(ins, skip_range):
     while True: 
         d = ins.read(1)
         # skip_range must not include ''
-        if d not in skip_range:
+        if d=='' or d not in skip_range:
             return d
 
 # skip chars in skip_range, then peek next
@@ -74,7 +74,8 @@ skip_white_read = partial(skip_read, skip_range=whitespace)
 skip_white = partial(skip, skip_range=whitespace)
 
 def skip_white_read_if(ins, in_range):
-    if skip_white(ins) in in_range:
+    d = skip_white(ins)
+    if d!='' and d in in_range:
         ins.read(1)
         return True
     return False

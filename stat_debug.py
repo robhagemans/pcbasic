@@ -60,7 +60,7 @@ def debug_step(linum):
         outs.seek(2)
         try:
             val = expressions.parse_expression(outs)
-            st = vartypes.value_to_str_keep(val, screen=False)[1]
+            st = vartypes.unpack_string(vartypes.value_to_str_keep(val, screen=False))
             debug_print(st+'\n')        
         except Exception as e:
             debug_print(repr(type(e))+'\n')

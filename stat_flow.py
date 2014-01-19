@@ -27,11 +27,11 @@ import stat_code
 
 
 def exec_cont():
-    if program.stop==None:
+    if program.stop == None:
         raise error.RunError(17)
     else:    
         program.bytecode.seek(program.stop[0])
-        program.linenum=program.stop[1]
+        program.linenum = program.stop[1]
         program.set_runmode()
 
 
@@ -47,7 +47,7 @@ def exec_cont():
     
 
 def exec_error(ins):
-    errn = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
+    errn = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     if errn<1 or errn>255:
         # illegal function call
         errn=5 
@@ -186,9 +186,10 @@ def for_loop_ends(loopvar, stop, step):
     # check TO condition
     loop_ends=False
     # step 0 is infinite loop
-    if vartypes.vsgn(step)[1] < 0:
+    sgn = vartypes.unpack_int(vartypes.vsgn(step)) 
+    if sgn < 0:
         loop_ends = vartypes.int_to_bool(vartypes.vgt(stop, loopvar)) 
-    elif vartypes.vsgn(step)[1] > 0:
+    elif sgn > 0:
         loop_ends = vartypes.int_to_bool(vartypes.vgt(loopvar, stop)) 
     return loop_ends
             
@@ -344,7 +345,7 @@ def exec_on_jump(ins):
     if on==('',''):
         onvar=0
     else:
-        onvar = vartypes.pass_int_keep(on)[1]
+        onvar = vartypes.pass_int_unpack(on)
     command = util.skip_white_read(ins)
     jumps = []
     while True:
@@ -390,7 +391,7 @@ def parse_on_event(ins):
 
 def exec_on_key(ins):
     keynum, jumpnum = parse_on_event(ins)
-    keynum = vartypes.pass_int_keep(keynum)[1]
+    keynum = vartypes.pass_int_unpack(keynum)
     if keynum<1 or keynum>20:    
         raise error.RunError(5)
     
@@ -406,7 +407,7 @@ def exec_on_timer(ins):
 
 def exec_on_play(ins):
     playval, jumpnum = parse_on_event(ins)
-    playval = vartypes.pass_int_keep(playval)[1]
+    playval = vartypes.pass_int_unpack(playval)
     events.play_trig = playval
     events.play_event = jumpnum
     
@@ -422,7 +423,7 @@ def exec_on_pen(ins):
     
 def exec_on_strig(ins):
     strigval, jumpnum = parse_on_event(ins)
-    strigval = vartypes.pass_int_keep(strigval)[1]
+    strigval = vartypes.pass_int_unpack(strigval)
     # 0 -> [0][0] 2 -> [0][1]  4-> [1][0]  6 -> [1][1]
     joy = strigval//4
     trig = (strigval//2)%2
@@ -431,7 +432,7 @@ def exec_on_strig(ins):
     
 def exec_on_com(ins):
     keynum, jumpnum = parse_on_event(ins)
-    keynum = vartypes.pass_int_keep(keynum)[1]
+    keynum = vartypes.pass_int_unpack(keynum)
     if keynum<1 or keynum>2:    
         raise error.RunError(5)
     
@@ -441,7 +442,7 @@ def exec_on_com(ins):
 def exec_com(ins):    
     if util.skip_white(ins)=='(':
         # com (n)
-        num = vartypes.pass_int_keep(expressions.parse_bracket(ins))[1]
+        num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
         if num<1 or num>2:
             raise error.RunError(5)
         d = util.skip_white_read(ins)

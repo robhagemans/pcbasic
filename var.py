@@ -9,13 +9,9 @@
 # please see text file COPYING for licence terms.
 #
 
-from cStringIO import StringIO
-
 import error
-import fp
 import vartypes
-import util
-
+from string_ptr import StringPtr
 
 variables = {}
 arrays= {}
@@ -27,67 +23,10 @@ array_base = 0
 common_names = []
 common_array_names = []
 
-
 # 'free memory' as reported by FRE
 total_mem = 60300    
 free_mem = total_mem    
 
-
-
-# string pointer implementation, allows for unions of strings (for FIELD)
-class StringPtr:
-    def __init__(self):
-        self.stream = None
-        self.offset = 0
-        self.length = 0
-        
-    def get_str(self):
-        pos = self.stream.tell()
-        self.stream.seek(self.offset)
-        sstr = self.stream.read(self.length)
-        self.stream.seek(pos)
-        return sstr
-         
-    def set_str(self, in_str):
-        pos = self.stream.tell()
-        ins = StringIO(in_str)
-        self.stream.seek(self.offset)    
-        for _ in range(self.length):
-            c = ins.read(1)
-            if c=='':
-                c=' '
-            self.stream.write(c)    
-        self.stream.seek(pos)
-        
-    def __str__(self):
-        return self.get_str()
-        
-    def __len__(self):
-        return self.length
-
-    
-def create_string_ptr(stream, offset, length):
-    new = StringPtr()
-    if isinstance(stream, StringPtr):
-        new.stream, new.offset, new.length = stream.stream, stream.offset+offset, length     
-        max_length = stream.length
-    else:
-        new.stream= StringIO(stream)
-        new.stream.seek(0)    
-        max_length = len(stream)
-        new.offset, new.length = offset, length
-    # BASIC string length limit
-    if new.length>255:
-        new.length=255
-    if new.offset+new.length > max_length:
-        new.length = max_length-new.offset
-        if new.length<0:
-            new.length=0    
-    return new
-    
-    
-
-##########################################################
 
 def clear_variables():
     global variables, arrays, array_base, functions, common_names, common_array_names
@@ -105,9 +44,9 @@ def set_var(name, value):
     global variables
     name = vartypes.complete_name(name)
     if value[0]=='$':
-        if len(str(value[1]))>255:
+        if len(str(vartypes.unpack_string(value)))>255:
             # this is a copy if we use StringPtr!
-            value = ('$', str(value[1][:255]))
+            value = ('$', str(vartypes.unpack_string(value)[:255]))
     variables[name] = vartypes.pass_type_keep(name[-1], value)[1]
     
     
@@ -301,7 +240,7 @@ def set_field_var(field, varname, offset, length):
     if varname[-1] != '$':
         # type mismatch
         raise error.RunError(13)
-    str_ptr = create_string_ptr(field, offset, length)
+    str_ptr = StringPtr(field, offset, length)
     # assign the string ptr to the variable name
     # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
     set_var(varname, ('$', str_ptr))
@@ -311,7 +250,7 @@ def lset(varname, value, justify_right=False):
     if varname[-1] != '$' or value[0] != '$':
         # type mismatch
         raise error.RunError(13)
-    s = value[1]
+    s = vartypes.unpack_string(value)
     try:
         el = len(variables[varname])    
     except KeyError:

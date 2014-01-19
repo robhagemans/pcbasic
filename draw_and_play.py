@@ -58,14 +58,14 @@ def ml_parse_value(gmls):
 
 
 def ml_parse_number(gmls):
-    return vartypes.pass_int_keep(ml_parse_value(gmls), err=5)[1]
+    return vartypes.pass_int_unpack(ml_parse_value(gmls), err=5)
     
 
 def ml_parse_string(gmls):
     util.skip(gmls, ml_whitepace)
     sub = var.get_var(util.get_var_name(gmls))
     util.require_read(gmls,';', err=5)
-    return vartypes.pass_string_keep(sub, err=5)[1]
+    return vartypes.pass_string_unpack(sub, err=5)
 
 
 
@@ -299,7 +299,7 @@ def play_parse_mml(mml):
                         gmls.read(1)
                         numstr+=c 
                         c = util.skip(gmls, ml_whitepace) 
-                    length = vartypes.pass_int_keep(tokenise.str_to_value_keep(('$', numstr)))[1]
+                    length = vartypes.pass_int_unpack(tokenise.str_to_value_keep(('$', numstr)))
                     dur = 2./float(length)
                 elif c in ('#', '+'):
                     gmls.read(1)
