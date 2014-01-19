@@ -444,8 +444,7 @@ def exec_print(ins, screen=None):
 
 
 
-def get_next_expression(ins): #, fors=0):    
-
+def get_next_expression(ins): 
     util.skip_white(ins)
     expr = expressions.parse_expression(ins)
     
@@ -469,26 +468,19 @@ def get_next_expression(ins): #, fors=0):
 
 
 def exec_print_using(ins, screen):
-    #string_format_tokens = ('!','\\','&','_')
-    #number_format_tokens = ('#','**','$$','^^^^','_')
-
     util.skip_white(ins)
     format_expr = vartypes.pass_string_keep(expressions.parse_expression(ins))
     if format_expr[1]=='':
         raise error.RunError(5)
-    
     fors = StringIO(format_expr[1])
-    
     util.require_read(ins,';')
     
-    semicolon=False#=True    
+    semicolon = False    
     more_data = False
     format_chars = False    
-                             
     while True:
         c = fors.read(1)
         if c=='':
-            
             if not format_chars:
                 # there were no format chars in the string, illegal fn call
                 raise error.RunError(5) 
@@ -499,24 +491,20 @@ def exec_print_using(ins, screen):
             else:
                 # no more data, no more format chars -> done
                 break
-                        
-        if c=='_':
+        elif c=='_':
             c = fors.read(1)
             if c != '':
                 screen.write(c)
             else:
                 screen.write('_')
-                        
         elif c=='!':
             format_chars = True
-            more_data, semicolon, expr = get_next_expression(ins) #, fors)
+            more_data, semicolon, expr = get_next_expression(ins) 
             screen.write(vartypes.pass_string_keep(expr)[1][0])
-                        
         elif c=='&':
             format_chars = True
-            more_data, semicolon, expr = get_next_expression(ins) #, fors)
+            more_data, semicolon, expr = get_next_expression(ins) 
             screen.write(vartypes.pass_string_keep(expr)[1])
-            
         elif c=='\\':
             pos=0
             word = c
@@ -532,10 +520,9 @@ def exec_print_using(ins, screen):
                     break 
                 elif c !=' ':
                     is_token = False
-                
             if is_token:
                 format_chars = True
-                more_data, semicolon, expr = get_next_expression(ins) #, fors)
+                more_data, semicolon, expr = get_next_expression(ins) 
             
                 eword = vartypes.pass_string_keep(expr)[1]
                 if len(eword)>len(word):
@@ -545,27 +532,24 @@ def exec_print_using(ins, screen):
                     screen.write( ' '*(len(word)-len(eword)) )
             else:
                 screen.write( word )
-        
-                
-        elif c=='#' \
-                or (c in ('$', '*') and util.peek(fors)==c) \
-                or (c=='+' and  util.peek(fors) == '#' or util.peek(fors,2) in ('##', '**')) \
-                :    
+        elif (c=='#' 
+                or (c in ('$', '*') and util.peek(fors)==c) 
+                or (c=='+' and  util.peek(fors) == '#' or util.peek(fors,2) in ('##', '**')) 
+                ):    
             # numeric token
             format_chars = True
-            more_data, semicolon, expr = get_next_expression(ins) #, fors)
-            
+            more_data, semicolon, expr = get_next_expression(ins) 
+            import sys
+            sys.stderr.write(repr(expr))
             # feed back c, we need it
             fors.seek(-1,1)
             varstring = format_number(vartypes.pass_float_keep(expr), fors)     
             screen.write( varstring )
-        
         else:
             screen.write( c )
              
     if not semicolon:
         screen.write(util.endl)
-        
     util.require(ins, util.end_statement)
        
 
@@ -674,13 +658,10 @@ def exec_width(ins):
                 
 def format_number(value, fors):
     
-    #mbf = fp.unpack(value)
-    
     if value[0] =='#':
         type_sign, exp_sign = '#', 'D'
     else:
         type_sign, exp_sign = '!', 'E'
-
 
     c=fors.read(1)
     width = 0
@@ -774,15 +755,13 @@ def format_number(value, fors):
         if work_digits>0:
             # scientific representation
             lim_bot = fp.just_under(fp.pow_int(expr.ten, work_digits-1))
-        
-             
-            #lim_bot = fp.just_under(expr.from_int(10L**(work_digits-1)))
         else:
             # special case when work_digits == 0, see also below
             # setting to 0.1 results in incorrect rounding (why?)
             lim_bot = expr.one
-        lim_top = fp.mul10(lim_bot)
-
+        lim_top = lim_bot.copy()
+        lim_top.imul10()
+        
         num, exp10 = fp.bring_to_range(expr, lim_bot, lim_top)
         digitstr = fp.get_digits(num, work_digits)
         
@@ -801,13 +780,13 @@ def format_number(value, fors):
         # fixed-point representation
         factor = fp.pow_int(expr.ten, decimals) 
         unrounded = fp.mul(expr, factor)
-        num = unrounded.copy().round()
+        num = unrounded.copy().iround()
         
         # find exponent 
         exp10 = 1
         pow10 = fp.pow_int(expr.ten, exp10) # pow10 = 10L**exp10
-        while fp.gt(num, pow10) or fp.equals(num, pow10): # while pow10 <= num:
-            pow10 = fp.mul10(pow10) #pow10*=10
+        while num.gt(pow10) or num.equals(pow10): # while pow10 <= num:
+            pow10.imul10() #pow10*=10
             exp10 += 1
         
         work_digits = exp10 + 1
@@ -816,7 +795,7 @@ def format_number(value, fors):
         if exp10 > expr.digits:
             diff = exp10 - expr.digits
             factor = fp.pow_int(expr.ten, diff) # pow10 = 10L**exp10
-            num = fp.div(unrounded, factor).round() #expr.from_int(10L**diff))
+            num = fp.div(unrounded, factor).iround() #expr.from_int(10L**diff))
             work_digits -= diff
         
         num = num.trunc_to_int()   

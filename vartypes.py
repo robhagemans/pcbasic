@@ -9,7 +9,7 @@
 # please see text file COPYING for licence terms.
 #
 
-#import copy
+from functools import partial
 
 import fp
 import error
@@ -36,7 +36,7 @@ def pass_int_keep(inp, maxint=0x7fff, err=13):
     if inp[0]=='%':
         val= inp[1]
     elif inp[0] in ('!', '#'):
-        val= fp.round_to_int(fp.unpack(inp))
+        val= fp.unpack(inp).round_to_int()
     elif inp[0]=='':
         raise error.RunError(2)    
     else:     
@@ -82,8 +82,8 @@ def pass_double_keep(num):
         raise error.RunError(2)
     
 
-def pass_float_keep(num):
-    if num[0] == '#':
+def pass_float_keep(num, allow_double=True):
+    if num[0] == '#' and allow_double:
         return num
     else:
         return pass_single_keep(num)
@@ -156,10 +156,7 @@ def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=Fal
 
     
 ##################################################
-##################################################
-
-# unpack GW-BASIC numeric constants
-
+# unpack tokenised numeric constants
 
 def ubyte_to_value(s):
     return ord(s)
@@ -178,18 +175,12 @@ def sint_to_value(s):
     else: 
         return value
 
-# pack
-
     
 # string representations    
 
 def int_to_str(num):
     return str(num)   
 
-
-
-    
-   
 def uint_to_str(s):
     return str(uint_to_value(s))
 
@@ -199,16 +190,19 @@ def sint_to_str(s):
 def ubyte_to_str(s):
     return str(ord(s))
     
+def hex_to_str(s):
+    return "&H" + hex(uint_to_value(s))[2:].upper()
+
+def oct_to_str(s):
+    return "&O" + oct(uint_to_value(s))[1:]
     
-    
-    
+# python ints to tokenised ints
 
 def value_to_uint(n):
     if n>0xffff:
         # overflow
         raise error.RunError(6)        
     return chr(n&0xff)+ chr(n >> 8) 
-
 
 def value_to_sint(n):
     if n>0xffff:  # 0x7fff ?
@@ -219,10 +213,10 @@ def value_to_sint(n):
     return chr(n&0xff)+ chr(n >> 8) 
 
 
+# string value
+
 def str_to_uint(s):
     return value_to_uint(int(s))
-    
-
 
 def str_to_hex(word):
     if len(word)<=2:
@@ -238,18 +232,6 @@ def str_to_oct(word):
     word=word[2:]
     return value_to_uint(int(word,8))
                 
-
-def hex_to_str(s):
-    return "&H" + hex(uint_to_value(s))[2:].upper()
-
-def oct_to_str(s):
-    return "&O" + oct(uint_to_value(s))[1:]
-   
-
-   
-    
-
-
 
    
    
@@ -269,56 +251,24 @@ def null_keep(typechar):
         return fp.pack(fp.Double.zero)
             
     
-
-# single & double precision math
-
-def vsqrt(inp):
-    if inp[0] == '#' and option_double:
-        return fp.pack(fp.mbfd_sqrt(fp.unpack(pass_double_keep(inp))))
-    else:
-        return fp.pack(fp.mbf_sqrt(fp.unpack(pass_single_keep(inp))))
-        
-def vexp(inp):
-    if inp[0] == '#' and option_double:
-        return fp.pack(fp.mbfd_exp(fp.unpack(pass_double_keep(inp)))) 
-    else:
-        return fp.pack(fp.mbf_exp(fp.unpack(pass_single_keep(inp)))) 
-            
-def vsin(inp):
-    if inp[0] == '#' and option_double:
-        return fp.pack(fp.mbfd_sin(fp.unpack(pass_double_keep(inp)))) 
-    else:
-        return fp.pack(fp.mbf_sin(fp.unpack(pass_single_keep(inp)))) 
-
-def vcos(inp):
-    if inp[0] == '#' and option_double:
-        return fp.pack(fp.mbfd_cos(fp.unpack(pass_double_keep(inp))))
-    else:
-        return fp.pack(fp.mbf_cos(fp.unpack(pass_single_keep(inp))))
-
-def vtan(inp):
-    if inp[0] == '#' and option_double:
-        return fp.pack(fp.mbfd_tan(fp.unpack(pass_double_keep(inp))))
-    else:
-        return fp.pack(fp.mbf_tan(fp.unpack(pass_single_keep(inp)))) 
-
-def vatn(inp):
-    if inp[0] == '#' and option_double:
-        return fp.pack(fp.mbfd_atn(fp.unpack(pass_double_keep(inp)))) 
-    else:
-        return fp.pack(fp.mbf_atn(fp.unpack(pass_single_keep(inp)))) 
-
-def vlog(inp):
-    if inp[0] == '#' and option_double:
-        return fp.pack(fp.mbfd_log(fp.unpack(pass_double_keep(inp))))
-    else:
-        return fp.pack(fp.mbf_log(fp.unpack(pass_single_keep(inp)))) 
-
-
-
 ###########################################################
-# functions
+# unary functions
 
+
+# option_double regulated single & double precision math
+
+def vunary(inp, fn):
+    return fp.pack(fn(fp.unpack(pass_float_keep(inp, option_double))))
+
+vsqrt = partial(vunary, fn=fp.sqrt)
+vexp = partial(vunary, fn=fp.exp)
+vsin = partial(vunary, fn=fp.sin)
+vcos = partial(vunary, fn=fp.cos)
+vtan = partial(vunary, fn=fp.tan)
+vatn = partial(vunary, fn=fp.atn)
+vlog = partial(vunary, fn=fp.log)
+ 
+# others
 
 def vabs(inp):
     if inp[0] == '$':
@@ -341,7 +291,7 @@ def vint(inp):
     if inp[0]=='%':
         return inp
     elif inp[0] in ('!', '#'):
-        return fp.pack(fp.unpack(inp).floor()) 
+        return fp.pack(fp.unpack(inp).ifloor()) 
     elif inp[0]=='':
         raise error.RunError(2)    
     else:     
@@ -381,16 +331,6 @@ def vfix(inp):
         raise error.RunError(13)
     
     
-    
-    
-
-def vnot(inp):
-    # two's complement
-    return ('%', -pass_int_keep(inp)[1]-1)
-
-
-# unary operators
-    
 def vneg(inp):
     if inp[0] == '$':
         raise error.RunError(13)
@@ -410,27 +350,25 @@ def vneg(inp):
     else:     
         # type mismatch
         raise error.RunError(13)
+
     
 # binary operators
         
 def vcaret(left, right):
     if (left[0] == '#' or right[0] == '#') and option_double:
-        #if option_double:
-            return fp.pack( fp.mbfd_pow(fp.unpack(pass_double_keep(left)), fp.unpack(pass_double_keep(right))) )
-        #else:
-        #    return fp.pack( fp.mbf_pow(fp.unpack(pass_single_keep(left)), fp.unpack(pass_single_keep(right))) )
+        return fp.pack( fp.power(fp.unpack(pass_double_keep(left)), fp.unpack(pass_double_keep(right))) )
     else:
         if right[0]=='%':
-            return fp.pack( fp.pow_int(fp.unpack(pass_single_keep(left)), right[1]) )
+            return fp.pack( fp.unpack(pass_single_keep(left)).ipow_int(right[1]) )
         else:
-            return fp.pack( fp.mbf_pow(fp.unpack(pass_single_keep(left)), fp.unpack(pass_single_keep(right))) )
+            return fp.pack( fp.power(fp.unpack(pass_single_keep(left)), fp.unpack(pass_single_keep(right))) )
 
 
 def vtimes(left, right):
     if left[0] == '#' or right[0] == '#':
-        return fp.pack( fp.mul(fp.unpack(pass_double_keep(left)), fp.unpack(pass_double_keep(right))) )
+        return fp.pack( fp.unpack(pass_double_keep(left)).imul(fp.unpack(pass_double_keep(right))) )
     else:
-        return fp.pack( fp.mul(fp.unpack(pass_single_keep(left)), fp.unpack(pass_single_keep(right))) )
+        return fp.pack( fp.unpack(pass_single_keep(left)).imul(fp.unpack(pass_single_keep(right))) )
 
 
 def vdiv(left, right):
@@ -443,9 +381,9 @@ def vdiv(left, right):
 def vidiv(left, right):
     return ('%', pass_int_keep(left)[1] / pass_int_keep(right)[1])    
     
+    
 def vmod(left, right):
     return ('%', pass_int_keep(left)[1] % pass_int_keep(right)[1])    
-
 
 
 def vplus(left, right):
@@ -453,13 +391,10 @@ def vplus(left, right):
         return ('$', pass_string_keep(left)[1] + pass_string_keep(right)[1] )
     else:
         left, right = pass_most_precise_keep(left, right)
-        if left[0] == '#':
-            return fp.pack(fp.add(fp.unpack(left), fp.unpack(right)))
-        elif left[0] == '!':
-            return fp.pack(fp.add(fp.unpack(left), fp.unpack(right)))
+        if left[0] in ('#', '!'):
+            return fp.pack(fp.unpack(left).iadd(fp.unpack(right)))
         else:
             return ('%', left[1]+right[1])           
-    
     
 
 def vminus(left, right):
@@ -481,16 +416,16 @@ def str_gt(left,right):
         return True
     # left is shorter, or equal strings
     return False                    
+
     
 def vgt(left, right):
     gt = False
     if left[0]=='$':
         gt = str_gt(pass_string_keep(left)[1], pass_string_keep(right)[1])
-        #gt = (len(pass_string_keep(left)[1]) > len(pass_string_keep(right)[1]))
     else:
         left, right = pass_most_precise_keep(left, right)
         if left[0] in ('#', '!'):
-            gt = fp.gt(fp.unpack(left), fp.unpack(right)) 
+            gt = fp.unpack(left).gt(fp.unpack(right)) 
         else:
             gt = left[1]>right[1]           
     
@@ -499,9 +434,11 @@ def vgt(left, right):
 
 def vlt(left, right):
     return vnot(vgte(left, right))
+
     
 def vgte(left, right):
     return vor(vgt(left,right), veq(left, right))
+
     
 def vlte(left, right):
     return vnot(vgt(left, right))
@@ -513,12 +450,12 @@ def veq(left, right):
     else:
         left, right = pass_most_precise_keep(left, right)
         if left[0] in ('#', '!'):
-            return bool_to_int_keep(fp.equals(fp.unpack(left),fp.unpack(right)) )
+            return bool_to_int_keep(fp.unpack(left).equals(fp.unpack(right)) )
         else:
             return bool_to_int_keep(left[1]==right[1])    
     
     
-# two's complement int
+# boolean functions - two's complement int
 
 def bool_to_int_keep(boo):
     if boo:
@@ -542,10 +479,14 @@ def pass_twoscomp(num):
 def twoscomp_to_int(num):
     if num > 0x7fff:
         num -= 0x10000 
-        
-    return ('%', num )    
+    return ('%', num)    
     
         
+def vnot(inp):
+    # two's complement
+    return ('%', -pass_int_keep(inp)[1]-1)
+
+
 def vneq(left, right):
     return vnot(veq(left,right))
     

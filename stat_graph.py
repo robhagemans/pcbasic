@@ -160,11 +160,11 @@ def exec_circle(ins):
                     aspect = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
     util.require(ins, util.end_statement)        
 
-    if fp.equals(aspect, aspect.one):
+    if aspect.equals(aspect.one):
         rx, dummy = graphics.window_scale(r,fp.Single.zero)
         ry = rx
     else:
-        if fp.gt(aspect, aspect.one):
+        if aspect.gt(aspect.one):
             dummy, ry = graphics.window_scale(fp.Single.zero,r)
             rx = fp.round_to_int(fp.div(r, aspect))
         else:
@@ -181,7 +181,7 @@ def exec_circle(ins):
         stop_octant, stop_coord, stop_line = get_octant(stop, rx, ry)
         
     
-    if fp.equals(aspect, aspect.one):
+    if aspect.equals(aspect.one):
         graphics.draw_circle(x0,y0,rx,c, start_octant, start_coord, start_line, stop_octant, stop_coord, stop_line)
     else:
         # TODO - make this all more sensible, calculate only once
@@ -200,12 +200,12 @@ def get_octant(mbf, rx, ry):
     
     neg = mbf.neg 
     if neg:
-        mbf = fp.neg(mbf)
+        mbf.negate()
 
     octant=0
-    comp = fp.Single.pi4
-    while fp.gt(mbf,comp):
-        comp = fp.add(comp, fp.Single.pi4)
+    comp = fp.Single.pi4.copy()
+    while mbf.gt(comp):
+        comp.iadd(fp.Single.pi4)
         octant += 1
         if octant >= 8:
             raise error.RunError(5) # ill fn call
