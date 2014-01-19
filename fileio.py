@@ -9,11 +9,9 @@
 # please see text file COPYING for licence terms.
 #
 
-
-import error
-import var
 from cStringIO import StringIO
 
+import error
 from string_ptr import StringPtr
 import util
 import oslayer

@@ -140,23 +140,19 @@ def exec_deftype(typechar, ins):
         else:
             start = ord(d)-ord('A')
             stop = start
-            
-        d = util.skip_white_read(ins)
-        if d == '\xEA':  # token for -
+        if util.skip_white_read_if(ins, '\xEA'):  # token for -
             d = util.skip_white_read(ins).upper()
-        
             if d < 'A' or d > 'Z':
                 raise error.RunError(2)
             else:
                 stop = ord(d)-ord('A')
-            d = util.skip_white_read(ins)
-            
-        if d==',' or d in util.end_statement:
-            var.deftype[start:stop+1] = [typechar]*(stop-start+1)    
-       
-        if d in util.end_statement and d!= '':
-            ins.seek(-1, 1)
-            break         
+        vartypes.deftype[start:stop+1] = [typechar]*(stop-start+1)    
+        d = util.skip_white(ins)
+        if d in util.end_statement:
+            break
+        elif d != ',':
+            raise error.RunError(2)
+        ins.read(1)        
 
 
 def exec_erase(ins):
@@ -164,13 +160,11 @@ def exec_erase(ins):
         #util.skip_white(ins)
         name = util.get_var_name(ins)
         var.erase_array(name)
-        
         d = util.skip_white(ins)
         if d in util.end_statement:
             break
         elif d != ',':
             raise error.RunError(2)
-            
         ins.read(1)        
 
 
@@ -203,29 +197,25 @@ def exec_mid(ins):
     if arglist[1]!= None:
         num = arglist[1]
     util.require_read(ins, ')')
-    
-    if start <1 or start>255:
+    if start<1 or start>255:
         raise error.RunError(5)
     if num <0 or num>255:
         raise error.RunError(5)
-    
     util.require_read(ins, '\xE7') # =
     val = list( vartypes.pass_string_unpack(expressions.parse_expression(ins)) )
     util.require(ins, util.end_statement)
-         
+    ### str_mid     
     s = list(var.get_var_or_array(name, indices)[1])
     start -= 1    
     stop = start + num 
     if arglist[1] == None or stop > len(s):
         stop = len(s)
-    
     if start==stop or start>len(s):
         return 
-    
     if len(val) > stop-start:
         val = val[:stop-start]
-    
     s[start:stop] = val
+    ###
     var.set_var_or_array(name, indices, ('$', ''.join(s)))
     
 
@@ -293,18 +283,18 @@ def read_entry(ins, end=util.end_line, ends=util.end_statement):
     vals = ''
     word = ''
     verbatim=False
-            
     while True:
         # read entry
-        c = util.peek(ins)
         if not verbatim:    
             c = util.skip_white(ins)
+        else:
+            c = util.peek(ins)
         
-        if c=='"':
+        if c == '"':
             ins.read(1)
             if not verbatim:
                 verbatim=True
-                c=util.peek(ins)
+                c = util.peek(ins)
             else:
                 verbatim = False
                 c = util.skip_white(ins)
@@ -313,7 +303,6 @@ def read_entry(ins, end=util.end_line, ends=util.end_statement):
             
         if c == '':
             break
-                             
         elif not verbatim and c==',':
             break
         elif c in end or (not verbatim and c in ends):
@@ -329,27 +318,7 @@ def read_entry(ins, end=util.end_line, ends=util.end_statement):
         if c not in util.whitespace:    
             vals += word
             word = ''
-
     return vals
-
-
-# set var from text value (e.g. READ, INPUT) 
-def set_var_read(name, indices, val): 
-    if name[-1] == '$':
-        num = ('$', val)    
-    else:
-        num = fp.from_str(val, False)
-        if num == None:
-            return False
-        num = fp.pack(num)    
-    var.set_var_or_array(name, indices, num)
-    return True
-
-
-
-# whitespace for INPUT#, INPUT
-# TAB x09 is not whitespace for input#. NUL \x00 and LF \x0a are. 
-ascii_white = (' ', '\x00', '\x0a')
 
 
 def parse_prompt(ins):
@@ -385,50 +354,60 @@ def exec_input(ins):
             set_var_read(*v, val=valstr)
         util.require(ins, util.end_statement)
         return
-            
     # ; to avoid echoing newline
     newline = not util.skip_white_read_if(ins,';')
     # get the prompt
     prompt, following = parse_prompt(ins)    
     if following == ';':
         prompt += '? '
-            
     # get list of variables
     readvar = parse_var_list(ins)
-    
     # read the input
     while True:
         console.write(prompt) 
         line = console.read_screenline(write_endl=newline)
-        
         inputs = StringIO(line) 
         text_file = fileio.pseudo_textfile(inputs)
-        
         inputs.seek(0)
         success = True
         for v in readvar:
             if v[0] !='' and v[0][-1] in vartypes.numeric:
                 # don't stop reading on blanks and line feeds
-                valstr= input_number(text_file, hard_end = (',', '\x0d', ''), soft_end = () )
+                valstr = input_number(text_file, hard_end = (',', '\x0d', ''), soft_end = () )
             else:    
-                valstr= input_string(text_file, end_all = ('\x0d', ''), end_entry = (',',) )
-            
+                valstr = input_string(text_file, end_all = ('\x0d', ''), end_entry = (',',) )
             if v[0]=='':
                 # error is only raised after the input in read!
                 raise error.RunError(2)
-                
             if not set_var_read(*v, val=valstr):
                 success = False
                 break
-                
         if not success:
             console.write('?Redo from start'+util.endl)  # ... good old Redo!
             continue
         else:
             break
-    
     util.require(ins, util.end_statement)
-           
+
+################################################
+
+# whitespace for INPUT#, INPUT
+# TAB x09 is not whitespace for input#. NUL \x00 and LF \x0a are. 
+ascii_white = (' ', '\x00', '\x0a')
+
+
+# set var from text value (e.g. READ, INPUT) 
+def set_var_read(name, indices, val): 
+    if name[-1] == '$':
+        num = ('$', val)    
+    else:
+        num = fp.from_str(val, False)
+        if num == None:
+            return False
+        num = fp.pack(num)    
+    var.set_var_or_array(name, indices, num)
+    return True
+
 
 def text_skip(text_file, skip_range):
     d = text_file.peek_char()
@@ -491,6 +470,8 @@ def input_string(text_file, end_all=('\x0d', '\x1a', ''), end_entry=(',', '\x0a'
         c = text_file.read_chars(1)
     return word
 
+
+##################################################
 
 def exec_line_input(ins):
     util.skip_white(ins)

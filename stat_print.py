@@ -386,12 +386,6 @@ def exec_print(ins, screen=None):
                 output += util.endl
             output += word    
             
-            
-
-
-
-
-
 def get_next_expression(ins): 
     util.skip_white(ins)
     expr = expressions.parse_expression(ins)
@@ -655,7 +649,7 @@ def format_number(value, fors):
             lim_bot = expr.one
         lim_top = lim_bot.copy()
         lim_top.imul10()
-        num, exp10 = fp.bring_to_range(expr, lim_bot, lim_top)
+        num, exp10 = expr.bring_to_range(lim_bot, lim_top)
         digitstr = fp.get_digits(num, work_digits)
         if len(digitstr) < digits_before+decimals:
             digitstr+='0'*(digits_before+decimals-len(digitstr))

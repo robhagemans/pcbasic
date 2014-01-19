@@ -81,7 +81,7 @@ def skip_white_read_if(ins, in_range):
     return False
 
 
-def skip_to(ins, findrange, linum=-1, break_on_first_char=True):        
+def skip_to(ins, findrange, break_on_first_char=True):        
     found = True
     while True: 
         c = ins.read(1)
