@@ -182,6 +182,21 @@ def detokenise_number(bytes):
 ##########################################
 
 
+    
+def ascii_read_to(ins, findrange):
+    out = ''
+    while True:
+        d = ins.read(1)
+        if d=='':
+            break
+        if d in findrange:
+            break
+        out += d
+    
+    if d != '':    
+        ins.seek(-1,1)    
+    return out
+    
 
 # de tokenise one- or two-byte tokens
 def detokenise_keyword(bytes, output):
@@ -291,18 +306,18 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
             # non-parsing modes        
             if verbatim :
                 # anything after REM is passed as is till EOL
-                outs.write(util.ascii_read_to(ins, tokenise_endline))
+                outs.write(ascii_read_to(ins, tokenise_endline))
                 break
                 
             elif data:
                 # read DATA as is, till end of statement    
-                outs.write(util.ascii_read_to(ins, tokenise_endstatement))
+                outs.write(ascii_read_to(ins, tokenise_endstatement))
                 data = False
                 
             elif util.peek(ins)=='"':
                 # handle string literals    
                 outs.write(ins.read(1))
-                outs.write(util.ascii_read_to(ins, tokenise_endline + ['"'] ))
+                outs.write(ascii_read_to(ins, tokenise_endline + ['"'] ))
                 if util.peek(ins)=='"':
                     outs.write(ins.read(1))
             
@@ -312,7 +327,7 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
             # anything after NUL is ignored till EOL
             if char=='\x00':
                 ins.read(1)
-                util.ascii_read_to(ins, tokenise_endline_nonnul)
+                ascii_read_to(ins, tokenise_endline_nonnul)
                 break
                             
             # end of line    

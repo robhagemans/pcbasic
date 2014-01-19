@@ -12,6 +12,7 @@
 from cStringIO import StringIO
 
 import error
+import fp
 import vartypes
 import var
 import rnd
@@ -24,21 +25,8 @@ import fileio
 
 # for music_foreground in CLEAR
 import sound
-
+# for randomize
 import console
-
-
-def parse_var_list(ins):
-    readvar = []
-    while True:
-        name, indices = expressions.get_var_or_array_name(ins)
-        readvar.append([name, indices])
-        if not util.skip_white_read_if(ins, ','):
-            break
-    return readvar
-
-
-##################################
 
 
 # CLEAR Command
@@ -93,7 +81,24 @@ def exec_clear(ins):
             # whichever is smaller.
             vartypes.pass_int_keep(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
-    
+
+
+def exec_common(ins):    
+    varlist = []
+    arraylist = []
+    while True:
+        name = util.get_var_name(ins)
+        # array?
+        if util.skip_white_read_if(ins, ('[', '(')):
+            util.require_read(ins, (']', ')'))
+            arraylist.append(name)            
+        else:
+            varlist.append(name)
+        if not util.skip_white_read_if(ins, ','):
+            break
+    var.common_names += varlist
+    var.common_array_names += arraylist
+
 
 def exec_data(ins):
     # ignore rest of statement after DATA
@@ -223,9 +228,6 @@ def exec_mid(ins):
     s[start:stop] = val
     var.set_var_or_array(name, indices, ('$', ''.join(s)))
     
-    
-   
-   
 
 def exec_lset(ins, justify_right=False):
     name = util.get_var_name(ins)
@@ -236,7 +238,6 @@ def exec_lset(ins, justify_right=False):
 
 def exec_rset(ins):
     exec_lset(ins, justify_right=True)
-    
 
 
 def exec_option(ins):
@@ -254,7 +255,6 @@ def exec_option(ins):
     else:
         raise error.RunError(2)
     util.skip_to(ins, util.end_statement)
-    
 
 
 def exec_read(ins):
@@ -272,11 +272,21 @@ def exec_read(ins):
             raise error.RunError(4)
         vals = read_entry(program.bytecode)
         # syntax error in DATA line (not type mismatch!) if can't convert to var type
-        if not var.set_var_read(*v, val=vals): 
+        if not set_var_read(*v, val=vals): 
             raise error.RunError(2, program.data_line)
     program.data_pos = program.bytecode.tell()
     program.bytecode.seek(current)
     util.require(ins, util.end_statement)
+
+
+def parse_var_list(ins):
+    readvar = []
+    while True:
+        name, indices = expressions.get_var_or_array_name(ins)
+        readvar.append([name, indices])
+        if not util.skip_white_read_if(ins, ','):
+            break
+    return readvar
 
     
 def read_entry(ins, end=util.end_line, ends=util.end_statement):
@@ -323,23 +333,24 @@ def read_entry(ins, end=util.end_line, ends=util.end_statement):
     return vals
 
 
-def exec_common(ins):    
-    varlist = []
-    arraylist = []
-    while True:
-        name = util.get_var_name(ins)
-        # array?
-        if util.skip_white_read_if(ins, ('[', '(')):
-            util.require_read(ins, (']', ')'))
-            arraylist.append(name)            
-        else:
-            varlist.append(name)
-        if not util.skip_white_read_if(ins, ','):
-            break
-    var.common_names += varlist
-    var.common_array_names += arraylist
+# set var from text value (e.g. READ, INPUT) 
+def set_var_read(name, indices, val): 
+    if name[-1] == '$':
+        num = ('$', val)    
+    else:
+        num = fp.from_str(val, False)
+        if num == None:
+            return False
+        num = fp.pack(num)    
+    var.set_var_or_array(name, indices, num)
+    return True
 
-   
+
+
+# whitespace for INPUT#, INPUT
+# TAB x09 is not whitespace for input#. NUL \x00 and LF \x0a are. 
+ascii_white = (' ', '\x00', '\x0a')
+
 
 def parse_prompt(ins):
     # parse prompt
@@ -371,7 +382,7 @@ def exec_input(ins):
                 valstr = input_number(finp)
             else:    
                 valstr = input_string(finp)
-            var.set_var_read(*v, val=valstr)
+            set_var_read(*v, val=valstr)
         util.require(ins, util.end_statement)
         return
             
@@ -406,7 +417,7 @@ def exec_input(ins):
                 # error is only raised after the input in read!
                 raise error.RunError(2)
                 
-            if not var.set_var_read(*v, val=valstr):
+            if not set_var_read(*v, val=valstr):
                 success = False
                 break
                 
@@ -433,7 +444,7 @@ def input_number(text_file, hard_end=(',', '\x0d', '\x1a', ''), soft_end=(' ', '
     end_entry = soft_end + hard_end
     # skip *leading* spaces and line feeds and NUL. (not TABs)
     # cf READ skips whitespace inside numbers as well
-    c = text_skip(text_file, util.ascii_white)
+    c = text_skip(text_file, ascii_white)
     while True:
         # read entry
         c = text_file.read_chars(1)
@@ -456,7 +467,7 @@ def input_string(text_file, end_all=('\x0d', '\x1a', ''), end_entry=(',', '\x0a'
     quoted=False
     # skip *leading* spaces and line feeds and NUL. 
     # cf READ skips whitespace inside numbers as well
-    c = text_skip(text_file, util.ascii_white)
+    c = text_skip(text_file, ascii_white)
     # check first char
     c = text_file.read_chars(1)
     if c=='"':
@@ -469,7 +480,7 @@ def input_string(text_file, end_all=('\x0d', '\x1a', ''), end_entry=(',', '\x0a'
             break    
         elif quoted and c=='"':
             # ignore blanks after the quotes
-            c = text_skip(text_file, util.ascii_white)
+            c = text_skip(text_file, ascii_white)
             # but we need a comma if there's to be more input        
             c = text_file.read_chars(1)
             break
@@ -519,7 +530,7 @@ def exec_swap(ins):
     name1 = util.get_var_name(ins)
     util.require_read(ins,',')
     name2 = util.get_var_name(ins)
-    var.swapvar(name1, name2)
+    var.swap_var(name1, name2)
     # if syntax error. the swap has happened
     util.require(ins, util.end_statement)
                              
