@@ -347,7 +347,7 @@ def exec_tron(ins):
 
 def exec_troff(ins):
     global tron
-    tron=False
+    tron = False
     util.require(ins, util.end_statement)
        
 
@@ -358,9 +358,7 @@ def exec_rem(ins):
 
 # MOTOR does nothing
 def exec_motor(ins):
-    d = util.skip_white(ins)
-    
-    if d in util.end_statement:
+    if util.skip_white(ins) in util.end_statement:
         return
     else:
         vartypes.pass_int_keep(expressions.parse_expression(ins))
@@ -391,7 +389,6 @@ def exec_view(ins):
     else:
         exec_view_graph(ins)
         
-
     
 def exec_line(ins):
     if util.skip_white_read_if(ins, '\x85'): #INPUT
@@ -416,15 +413,15 @@ def exec_put(ins):
 
 def exec_on(ins):
     c = util.skip_white(ins)
-    if c =='\xA7': # ERROR:
+    if c == '\xA7': # ERROR:
         ins.read(1)
         exec_on_error(ins)
         return
-    elif c=='\xC9': # KEY
+    elif c == '\xC9': # KEY
         ins.read(1)
         exec_on_key(ins)
         return
-    elif c=='\xFE':
+    elif c == '\xFE':
         c = util.peek(ins,2)
         if c== '\xFE\x94': # FE94 TIMER
             ins.read(2)
@@ -438,7 +435,7 @@ def exec_on(ins):
             ins.read(2)
             exec_on_com(ins)
             return
-    elif c== '\xFF':
+    elif c == '\xFF':
         if util.peek(ins,2) == '\xFF\xA0':  # PEN
             ins.read(2)
             exec_on_pen(ins)
@@ -447,7 +444,6 @@ def exec_on(ins):
             ins.read(2)
             exec_on_strig(ins)
             return
-            
     exec_on_jump(ins)
 
 
@@ -483,29 +479,24 @@ def exec_strig(ins):
             raise error.RunError(5)
         joy = num//4
         trig = (num//2)%2
-    
-        d=util.skip_white_read(ins)
-        if d=='\x95': # ON
+        d = util.skip_white_read(ins)
+        if d == '\x95': # ON
             events.stick_enabled[joy][trig] = True
             events.stick_stopped[joy][trig] = True
-            
-        elif d=='\xDD': # OFF
+        elif d == '\xDD': # OFF
             events.stick_enabled[joy][trig] = False
-            
-        elif d=='\x90': # STOP
+        elif d == '\x90': # STOP
             events.stick_stopped[joy][trig] = True
         else:
             raise error.RunError(2)
-
     else:
-        if d=='\x95': # ON
+        if d == '\x95': # ON
             ins.read(1)
             console.stick_on()
-        elif d=='\xDD': # OFF
+        elif d == '\xDD': # OFF
             ins.read(1)
             console.stick_off()
         else:
             raise error.RunError(2)
-            
     util.require(ins, util.end_statement)
     
