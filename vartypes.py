@@ -9,8 +9,6 @@
 # please see text file COPYING for licence terms.
 #
 
-from functools import partial
-
 import fp
 import error
 
@@ -20,22 +18,14 @@ strings = ['$']
 all_types = numeric + strings
 
 
-# command line option /d
-# allow double precision math for ^, ATN, COS, EXP, LOG, SIN, SQR, and TAN
-option_double = False
-
-
 # default type for variable name starting with a-z
 deftype = ['!']*26
-
-
 
 
 def complete_name(name):
     if name != '' and name[-1] not in all_types:
         name += deftype[ ord(name[0].upper()) - ord('A') ]
     return name
-
 
 
 def is_type(typechars, value):
@@ -61,7 +51,6 @@ def pass_int_keep(inp, maxint=0x7fff, err=13):
 
 
 def pass_single_keep(num):
-    
     if num[0] == '!':
         return num
     elif num[0] == '%':
@@ -134,18 +123,12 @@ def pass_most_precise_keep(left, right, err=13):
         return (pass_type_keep('%', left), pass_type_keep('%', right))
     else:
         raise error.RunError(err)
-        
-
-
-
-
 
 
 # string output
 # screen=False means in a program listing
 # screen=True is used for screen, str$ and sequential files
 def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=False):
-    
     if inp[0] == '$':
         return ('$', inp[1])
     elif inp[0]== '%':
@@ -187,10 +170,12 @@ def sint_to_value(s):
         return value
 
     
-# string representations    
+# python int to python str
 
 def int_to_str(num):
     return str(num)   
+
+# tokenised ints to python str
 
 def uint_to_str(s):
     return str(uint_to_value(s))
@@ -224,7 +209,7 @@ def value_to_sint(n):
     return chr(n&0xff)+ chr(n >> 8) 
 
 
-# string value
+# python str to tokenised int
 
 def str_to_uint(s):
     return value_to_uint(int(s))
@@ -232,17 +217,40 @@ def str_to_uint(s):
 def str_to_hex(word):
     if len(word)<=2:
         return 0
-    
     word=word[2:]
     return value_to_uint(int(word,16))
 
 def str_to_oct(word):
     if len(word)<=2:
         return 0
-    
     word=word[2:]
     return value_to_uint(int(word,8))
                 
+    
+# boolean functions - two's complement int
+
+def bool_to_int_keep(boo):
+    if boo:
+        return ('%', -1)
+    else:
+        return ('%', 0)
+
+
+def int_to_bool(iboo):
+    return not (iboo[1] == 0)
+
+def pass_twoscomp(num):
+    val = pass_int_keep(num)[1]
+    if val<0:
+        return 0x10000 + val
+    else:
+        return val
+
+def twoscomp_to_int(num):
+    if num > 0x7fff:
+        num -= 0x10000 
+    return ('%', num)    
+    
 
    
    
@@ -261,6 +269,21 @@ def null_keep(typechar):
     elif typechar == '#':
         return fp.pack(fp.Double.zero)
             
+
+
+
+###########################################################
+###########################################################
+###########################################################
+
+
+from functools import partial
+
+# command line option /d
+# allow double precision math for ^, ATN, COS, EXP, LOG, SIN, SQR, and TAN
+option_double = False
+
+
     
 ###########################################################
 # unary functions
@@ -362,6 +385,11 @@ def vneg(inp):
         # type mismatch
         raise error.RunError(13)
 
+        
+def vnot(inp):
+    # two's complement
+    return ('%', -pass_int_keep(inp)[1]-1)
+
     
 # binary operators
         
@@ -445,15 +473,12 @@ def vgt(left, right):
 
 def vlt(left, right):
     return vnot(vgte(left, right))
-
     
 def vgte(left, right):
     return vor(vgt(left,right), veq(left, right))
-
     
 def vlte(left, right):
     return vnot(vgt(left, right))
-    
     
 def veq(left, right):
     if left[0] == '$':
@@ -464,39 +489,6 @@ def veq(left, right):
             return bool_to_int_keep(fp.unpack(left).equals(fp.unpack(right)) )
         else:
             return bool_to_int_keep(left[1]==right[1])    
-    
-    
-# boolean functions - two's complement int
-
-def bool_to_int_keep(boo):
-    if boo:
-        return ('%', -1)
-    else:
-        return ('%', 0)
-
-
-def int_to_bool(iboo):
-    return not (iboo[1] == 0)
-       
-
-
-def pass_twoscomp(num):
-    val = pass_int_keep(num)[1]
-    if val<0:
-        return 0x10000 + val
-    else:
-        return val
-
-def twoscomp_to_int(num):
-    if num > 0x7fff:
-        num -= 0x10000 
-    return ('%', num)    
-    
-        
-def vnot(inp):
-    # two's complement
-    return ('%', -pass_int_keep(inp)[1]-1)
-
 
 def vneq(left, right):
     return vnot(veq(left,right))

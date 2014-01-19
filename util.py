@@ -43,28 +43,9 @@ def skip(ins, skip_range):
 
 # ascii streams
 
-# whitespace for INPUT#, INPUT
-# TAB x09 is not whitespace for input#. NUL \x00 and LF \x0a are. 
-ascii_white = (' ', '\x00', '\x0a')
-
 # ascii CR/LF
 endl='\x0d\x0a'
-
     
-def ascii_read_to(ins, findrange):
-    out = ''
-    while True:
-        d = ins.read(1)
-        if d=='':
-            break
-        if d in findrange:
-            break
-        out += d
-    
-    if d != '':    
-        ins.seek(-1,1)    
-    return out
-        
 ##################################################
 ##################################################
 
@@ -234,10 +215,10 @@ def parse_jumpnum_list(ins, size, err=2):
 def parse_line_range(ins):
     from_line=-1
     to_line=-1
-    if util.skip_white_read_if(ins, ('\x0E',)):   # line number starts
+    if skip_white_read_if(ins, ('\x0E',)):   # line number starts
         from_line = vartypes.uint_to_value(ins.read(2))
-    if util.skip_white_read_if(ins, ('\xEA',)):   # -
-        if util.skip_white_read_if(ins, ('\x0E',)):
+    if skip_white_read_if(ins, ('\xEA',)):   # -
+        if skip_white_read_if(ins, ('\x0E',)):
             to_line = vartypes.uint_to_value(ins.read(2))
     else:
         to_line = from_line

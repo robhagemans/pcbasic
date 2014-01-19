@@ -257,9 +257,6 @@ def store_line(linebuf, auto_mode=False):
 
 def delete_lines(fromline, toline):
     global bytecode, line_numbers
-    import sys
-    sys.stderr.write(repr((fromline, toline)))
-    
     startline = 0
     startpos = 0
     # fromline and toline must both exist, if specified
