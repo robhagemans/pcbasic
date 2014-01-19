@@ -211,7 +211,6 @@ def ascii_read_to(ins, findrange):
         if d in findrange:
             break
         out += d
-    
     if d != '':    
         ins.seek(-1,1)    
     return out
