@@ -48,11 +48,9 @@ def exec_cont():
 
 def exec_error(ins):
     errn = vartypes.pass_int_keep(expressions.parse_expression(ins))[1]
-    
     if errn<1 or errn>255:
         # illegal function call
         errn=5 
-    
     raise error.RunError(errn)                
     
 
@@ -70,11 +68,9 @@ def exec_else(ins):
 def exec_while(ins, first=True):
     # just after WHILE opcode
     whilepos = ins.tell()
-    
     # evaluate the 'boolean' expression 
     # use double to avoid overflows  
     boolvar = vartypes.pass_double_keep(expressions.parse_expression(ins))
-    
     if first:
         # find matching WEND
         current = ins.tell()
@@ -87,7 +83,6 @@ def exec_while(ins, first=True):
             # WHILE without WEND
             raise error.RunError(29)
         ins.seek(current)    
-
     # condition is zero?
     if fp.is_zero(fp.unpack(boolvar)) :
         # jump to WEND
@@ -96,41 +91,30 @@ def exec_while(ins, first=True):
 
 
 def exec_for(ins): #, first=True):
-
     # just after FOR opcode
     forpos = ins.tell()
-    
     # read variable  
-    varname = var.get_var_name(ins)
+    varname = util.get_var_name(ins)
     if varname=='':
         raise error.RunError(2)
-    
     vartype = varname[-1]
     if vartype == '$':
         raise error.RunError(13)
-    
     util.require_read(ins, '\xE7') # =
     start = expressions.parse_expression(ins)
-
     util.require_read(ins, '\xCC')  # TO    
     stop = vartypes.pass_type_keep(vartype, expressions.parse_expression(ins))
-
     if util.skip_white_read_if(ins,'\xCF'): # STEP
         step = vartypes.pass_type_keep(vartype, expressions.parse_expression(ins))
     else:
         # convert 1 to vartype
         step = vartypes.pass_type_keep(vartype, ('%', 1))
-    
     util.require(ins, util.end_statement)
-    
-    # set loopvar to start
-    # apply initial condition
+    # apply initial condition: set loopvar to start
     loopvar = vartypes.pass_type_keep(vartype, start)
-    var.setvar(varname, start)
-    
+    var.set_var(varname, start)
     # find NEXT and push to stack
     for_push_next(ins, forpos, varname, start, stop, step)
-
     # check condition and jump if necessary
     for_jump_if_ends(ins, loopvar, stop, step)
     
@@ -139,31 +123,25 @@ def exec_for(ins): #, first=True):
 def for_push_next(ins, forpos, varname, start, stop, step):    
     # find matching NEXT
     current = ins.tell()
-    nextline = util.skip_to_next(ins, '\x82', '\x83', allow_comma=True)  # FOR, NEXT
-    
+    util.skip_to_next(ins, '\x82', '\x83', allow_comma=True)  # FOR, NEXT
     # FOR without NEXT
     util.require(ins, ('\x83', ','), err=26)
     comma = (ins.read(1)==',')
-        
-    
     # check var name for NEXT
-    #util.skip_white(ins)
-    varname2 = var.get_var_name(ins)
+    varname2 = util.get_var_name(ins)
     util.skip_white(ins)
     nextpos = ins.tell()
-    
     # no-var only allowed in standalone NEXT
     if varname2=='':
         if util.peek(ins) not in util.end_statement:
+            if program.runmode():
+                nextline = program.get_line_number(nextpos)
+            else:
+                nextline = -1
             # syntax error
             raise error.RunError(2, nextline)
-        #if comma:
-        #    # NEXT without FOR
-        #    raise error.RunError(1, nextline)
-        # this error is only raised on reaching the NEXT statement
-            
     if varname2 == varname or varname2 == '':
-        program.for_next_stack.append([forpos, program.linenum, varname, nextpos, nextline, start, stop, step]) 
+        program.for_next_stack.append((forpos, program.linenum, varname, nextpos, start, stop, step)) 
     else:
         # NEXT without FOR
         raise error.RunError(1, nextline)
@@ -174,13 +152,11 @@ def for_push_next(ins, forpos, varname, start, stop, step):
 def for_iterate(ins):    
     # skip to end of FOR statement
     util.skip_to(ins, util.end_statement)
-    [_, _, varname, _, _, start, stop, step] = program.for_next_stack[-1]
-
+    (_, _, varname, _, start, stop, step) = program.for_next_stack[-1]
     # increment counter
-    loopvar = var.getvar(varname)
+    loopvar = var.get_var(varname)
     loopvar = vartypes.vplus(loopvar, step)
-    var.setvar(varname, loopvar)
-    
+    var.set_var(varname, loopvar)
     # check condition and jump if necessary
     for_jump_if_ends(ins, loopvar, stop, step)
     
@@ -189,17 +165,19 @@ def for_iterate(ins):
 def for_jump_if_ends(ins, loopvar, stop, step):
     if for_loop_ends(loopvar, stop, step):
         # jump to just after NEXT
-        [_, program.linenum, _, nextpos, nextline, _, _, _] = program.for_next_stack.pop()
+        (_, program.linenum, _, nextpos, _, _, _) = program.for_next_stack.pop()
         ins.seek(nextpos)
-        
         d = util.skip_white(ins)
         if d not in util.end_statement+(',',):
+            if program.runmode():
+                nextline = program.get_line_number(nextpos)
+            else:
+                nextline = -1
             raise error.RunError(2, nextline)
         elif d==',':
             # we're jumping into a comma'ed NEXT, call exec_next (which may call for_iterate which will call us again)
             ins.read(1)
             exec_next(ins, True)
-          
         # we should be at end statement at this point.
 
 
@@ -218,35 +196,33 @@ def for_loop_ends(loopvar, stop, step):
 def exec_next(ins, comma=False):
     curpos = ins.tell()
     util.skip_to(ins, util.end_statement+(',',))
-    
     while True:
         if len(program.for_next_stack) == 0:
             # next without for
             raise error.RunError(1) #1  
-        [forpos, forline, varname, nextpos, nextline, start, stop, step] = program.for_next_stack[-1]
-        
+        (forpos, forline, varname, nextpos, start, stop, step) = program.for_next_stack[-1]
         if ins.tell() != nextpos:
             # not the expected next, we must have jumped out
             program.for_next_stack.pop()
         else:
             # found it
             break
-    
     ins.seek(curpos)
-    
     # check if varname is correct, if provided
     if util.skip_white(ins) in util.end_statement and not comma:
         # no varname required if standalone NEXT
         pass
     else:
-        varname2 = var.get_var_name(ins)
+        varname2 = util.get_var_name(ins)
         if varname==varname2:
             util.skip_to(ins, util.end_statement)
         else:
+            if program.runmode():
+                nextline = program.get_line_number(nextpos)
+            else:
+                nextline = -1
             # next without for
             raise error.RunError(1, nextline) #1    
-    
-    
     # JUMP to FOR statement
     program.linenum = forline
     ins.seek(forpos)
@@ -262,31 +238,21 @@ def exec_goto(ins):
 
     
 def exec_run(ins):
-    
     # reset random number generator
     rnd.clear()
-
     # close all open files
     fileio.close_all()
-    
     c = util.skip_white(ins)
-
-    
     if c in ('\x0d', '\x0e'):
         jumpnum = util.parse_jumpnum(ins)
         util.skip_to(ins, util.end_statement)
-    
         program.reset_program()
-    
         program.jump(jumpnum)
     elif c not in util.end_statement:
         stat_code.exec_load(ins)
     else:
         program.reset_program()
-    
-    
     program.set_runmode()
-    
 
                 
 def exec_gosub(ins):
@@ -296,8 +262,6 @@ def exec_gosub(ins):
     # set return position
     program.gosub_return.append([ins.tell(), program.linenum, ins])
     program.jump(jumpnum)
-    
-
 
  
 def exec_if(ins):
@@ -357,37 +321,23 @@ def exec_if(ins):
 
 
 def exec_wend(ins):
-    #util.skip_white(ins)                
-    
     # while will actually syntax error on the first run if anything is in the way.
     util.require(ins, util.end_statement)
-    
-    #curpos = ins.tell()
     while True:
         if len(program.while_wend_stack) == 0:
             # WEND without WHILE
             raise error.RunError(30) #1  
         [whilepos, whileline, wendpos] = program.while_wend_stack[-1]
-        
         if ins.tell() != wendpos:
             # not the expected WEND, we must have jumped out
             program.while_wend_stack.pop()
         else:
             # found it
             break
-    
-    #ins.seek(curpos)
-    
-    #if len(program.while_wend_stack) == 0:
-    #    # WEND without WHILE
-    #    raise error.RunError(30)
-    #    
-    ## jump to WHILE
-    #[whilepos, whileline, wendpos] = program.while_wend_stack[-1]
-    
     program.linenum = whileline
     ins.seek(whilepos)
     exec_while(ins, False)
+
 
 def exec_on_jump(ins):    
     on = expressions.parse_expression(ins)
@@ -396,7 +346,6 @@ def exec_on_jump(ins):
     else:
         onvar = vartypes.pass_int_keep(on)[1]
     command = util.skip_white_read(ins)
-
     jumps = []
     while True:
         d = util.skip_white_read(ins)
@@ -431,11 +380,9 @@ def exec_on_jump(ins):
 def parse_on_event(ins):
     num = expressions.parse_bracket(ins)
     util.require_read(ins,'\x8D') # GOSUB
-    
     jumpnum = util.parse_jumpnum(ins)
     if jumpnum==0:
         jumpnum=-1
- 
     util.require(ins, util.end_statement)    
     return num, jumpnum   
     
@@ -497,19 +444,18 @@ def exec_com(ins):
         num = vartypes.pass_int_keep(expressions.parse_bracket(ins))[1]
         if num<1 or num>2:
             raise error.RunError(5)
-        d=util.skip_white_read(ins)
-        if d=='\x95': # ON
+        d = util.skip_white_read(ins)
+        if d == '\x95': # ON
             events.com_enabled[num-1] = True
             events.com_stopped[num-1] = False
-        elif d=='\xDD': # OFF
+        elif d == '\xDD': # OFF
             events.com_enabled[num-1] = False
-        elif d=='\x90': # STOP
+        elif d == '\x90': # STOP
             events.com_stopped[num-1] = True
         else:
             raise error.RunError(2)
     else:
         raise error.RunError(2)
-
     util.require(ins, util.end_statement)
 
 
@@ -528,7 +474,6 @@ def exec_timer(ins):
         events.timer_stopped = True
     else:
         raise error.RunError(2)      
-
     util.require(ins, util.end_statement)      
 
 
@@ -537,12 +482,10 @@ def exec_timer(ins):
 def exec_on_error(ins):
     util.require_read(ins,'\x89')  # GOTO
     error.on_error = util.parse_jumpnum(ins)
-    
     # ON ERROR GOTO 0 in error handler
     if error.on_error==0 and error.error_handle_mode:
         # re-raise the error so that execution stops
         raise error.RunError(error.errn)
-    
     # this will be caught by the trapping routine just set
     util.require(ins, util.end_statement)
     
@@ -578,12 +521,6 @@ def exec_resume(ins):
     error.errn=0
     error.error_handle_mode = False
     error.error_resume= None
-                 
-
-
-
-   
-    
 
 
 def exec_return(ins):
@@ -603,26 +540,15 @@ def exec_return(ins):
             else:
                 # ON TIMER
                 events.timer_stopped =False
-                
         if buf != ins:
             # move to end of program to avoid executing anything else on the RETURN line if called from direct mode   
             ins.seek(-1)
             program.unset_runmode()
-        
         # go back to position of GOSUB
         buf.seek(pos)
-        
-        
-        
+
 
 def exec_stop(ins):
-    
-    d = util.skip_white_read(ins)
-    if d in util.end_statement:
-        raise error.Break()
-    else:
-        raise error.RunError(2)
-     
-
-
+    util.require_read(ins, util.end_statement)
+    raise error.Break()
 

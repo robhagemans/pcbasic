@@ -30,7 +30,7 @@ def ml_parse_value(gmls):
     
     if c=='=':
         gmls.read(1)    
-        step = var.getvar(var.get_var_name(gmls))
+        step = var.get_var(util.get_var_name(gmls))
         util.require_read(gmls,';', err=5)
     else:
         sgn=1
@@ -63,7 +63,7 @@ def ml_parse_number(gmls):
 
 def ml_parse_string(gmls):
     util.skip(gmls, ml_whitepace)
-    sub = var.getvar(var.get_var_name(gmls))
+    sub = var.get_var(util.get_var_name(gmls))
     util.require_read(gmls,';', err=5)
     return vartypes.pass_string_keep(sub, err=5)[1]
 

@@ -25,6 +25,17 @@ all_types = numeric + strings
 option_double = False
 
 
+# default type for variable name starting with a-z
+deftype = ['!']*26
+
+
+
+
+def complete_name(name):
+    if name != '' and name[-1] not in all_types:
+        name += deftype[ ord(name[0].upper()) - ord('A') ]
+    return name
+
 
 
 def is_type(typechars, value):
