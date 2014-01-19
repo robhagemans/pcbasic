@@ -84,7 +84,7 @@ def exec_while(ins, first=True):
             raise error.RunError(29)
         ins.seek(current)    
     # condition is zero?
-    if fp.is_zero(fp.unpack(boolvar)) :
+    if fp.unpack(boolvar).is_zero():
         # jump to WEND
         [whilepos, program.linenum, wendpos] = program.while_wend_stack.pop()
         ins.seek(wendpos)
@@ -277,7 +277,7 @@ def exec_if(ins):
         raise error.RunError(2)
     
     # if TRUE, continue after THEN
-    if not fp.is_zero(fp.unpack(val)): #val != 0:
+    if not fp.unpack(val).is_zero(): #val != 0:
         # line number or statement is implied GOTO
         d = util.skip_white(ins)
         
@@ -401,7 +401,7 @@ def exec_on_key(ins):
 def exec_on_timer(ins):
     timeval, jumpnum = parse_on_event(ins)
     timeval = vartypes.pass_single_keep(timeval)
-    events.timer_period = fp.round_to_int(fp.mul(fp.unpack(timeval), fp.Single.from_int(1000)))
+    events.timer_period = fp.mul(fp.unpack(timeval), fp.Single.from_int(1000).round_to_int())
     events.timer_event = jumpnum
     
 

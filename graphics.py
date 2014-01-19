@@ -143,11 +143,11 @@ def window_coords(fx, fy):
     global graph_window
     if graph_window!=None:
         scalex, scaley, offsetx, offsety = graph_window
-        x = fp.round_to_int(fp.add(offsetx, fp.mul(fx, scalex)))
-        y = fp.round_to_int(fp.add(offsety, fp.mul(fy, scaley)))
+        x = fp.add(offsetx, fp.mul(fx, scalex)).round_to_int()
+        y = fp.add(offsety, fp.mul(fy, scaley)).round_to_int()
     else:
-        x = fp.round_to_int(fx)
-        y = fp.round_to_int(fy)
+        x = fx.round_to_int()
+        y = fy.round_to_int()
     
     return x, y
 
@@ -176,11 +176,11 @@ def window_scale(fx, fy):
     
     if graph_window!=None:
         scalex, scaley, offsetx, offsety = graph_window
-        x = fp.round_to_int(fp.mul(fx, scalex))
-        y = fp.round_to_int(fp.mul(fy, scaley))
+        x = fp.mul(fx, scalex).round_to_int()
+        y = fp.mul(fy, scaley).round_to_int()
     else:
-        x = fp.round_to_int(fx)
-        y = fp.round_to_int(fy)
+        x = fx.round_to_int()
+        y = fy.round_to_int()
     
     return x, y
 

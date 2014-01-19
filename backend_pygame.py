@@ -574,8 +574,8 @@ def handle_mouse(e):
 def handle_stick(e):
     global stick_fired
     if e.joy<2 and e.button<2:
-        stick_fired[joy][button]=True
-        events.stick_triggered[joy][button]=True
+        stick_fired[e.joy][e.button]=True
+        events.stick_triggered[e.joy][e.button]=True
         
         
 def handle_key(e):

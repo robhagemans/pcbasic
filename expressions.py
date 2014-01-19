@@ -791,10 +791,10 @@ def value_pmap(ins):
         dummy, value = graphics.window_coords(fp.Single.zero,coord)       
         value = ('%', value)        
     elif mode == 2:
-        value, dummy = graphics.get_window_coords(fp.round_to_int(coord),0)       
+        value, dummy = graphics.get_window_coords(coord.round_to_int(), 0)       
         value = fp.pack(value)
     elif mode == 3:
-        dummy, value = graphics.get_window_coords(0,fp.round_to_int(coord))       
+        dummy, value = graphics.get_window_coords(0, coord.round_to_int())       
         value = fp.pack(value)
     else:
         raise error.RunError(5)

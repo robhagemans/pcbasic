@@ -89,10 +89,10 @@ def exec_view_graph(ins):
         util.require_read(ins, '\xEA') #-
         x1, y1 = parse_coord(ins)
         # not scaled by WINDOW
-        x0 = fp.round_to_int(x0)
-        x1 = fp.round_to_int(x1)
-        y0 = fp.round_to_int(y0)
-        y1 = fp.round_to_int(y1)        
+        x0 = x0.round_to_int()
+        x1 = x1.round_to_int()
+        y0 = y0.round_to_int()
+        y1 = y1.round_to_int()        
         fill, border = None, None
         if util.skip_white_read_if(ins, ','):
             [fill, border] = expressions.parse_int_list(ins, 2, err=2)
@@ -144,10 +144,10 @@ def exec_circle(ins):
     else:
         if aspect.gt(aspect.one):
             dummy, ry = graphics.window_scale(fp.Single.zero,r)
-            rx = fp.round_to_int(fp.div(r, aspect))
+            rx = fp.div(r, aspect).round_to_int()
         else:
             rx, dummy = graphics.window_scale(r,fp.Single.zero)
-            ry = fp.round_to_int(fp.mul(r, aspect))
+            ry = fp.mul(r, aspect).round_to_int()
     start_octant, start_coord, start_line = -1, -1, False
     if start != ('',''):
         start = fp.unpack(vartypes.pass_single_keep(start))
@@ -162,11 +162,11 @@ def exec_circle(ins):
         # TODO - make this all more sensible, calculate only once
         startx, starty, stopx, stopy = -1,-1,-1,-1
         if start!=('',''):
-            startx = abs(fp.round_to_int(fp.mul(fp.Single.from_int(rx), fp.mbf_cos(start))))
-            starty = abs(fp.round_to_int(fp.mul(fp.Single.from_int(ry), fp.mbf_sin(start))))
+            startx = abs(fp.mul(fp.Single.from_int(rx), fp.cos(start)).round_to_int())
+            starty = abs(fp.mul(fp.Single.from_int(ry), fp.sin(start)).round_to_int())
         if stop!=('',''):
-            stopx = abs(fp.round_to_int(fp.mul(fp.Single.from_int(rx), fp.mbf_cos(stop))))
-            stopy = abs(fp.round_to_int(fp.mul(fp.Single.from_int(ry), fp.mbf_sin(stop))))
+            stopx = abs(fp.mul(fp.Single.from_int(rx), fp.cos(stop)).round_to_int())
+            stopy = abs(fp.mul(fp.Single.from_int(ry), fp.sin(stop)).round_to_int())
         graphics.draw_ellipse(x0,y0,rx,ry,c, start_octant/2, startx, starty, start_line, stop_octant/2, stopx, stopy, stop_line)
             
 
@@ -183,10 +183,10 @@ def get_octant(mbf, rx, ry):
             raise error.RunError(5) # ill fn call
     if octant in (0,3,4,7):
         # running var is y
-        coord = abs(fp.round_to_int(fp.mul(fp.Single.from_int(ry), fp.mbf_sin(mbf))))
+        coord = abs(fp.mul(fp.Single.from_int(ry), fp.sin(mbf)).round_to_int())
     else:
         # running var is x    
-        coord = abs(fp.round_to_int(fp.mul(fp.Single.from_int(rx), fp.mbf_cos(mbf))))
+        coord = abs(fp.mul(fp.Single.from_int(rx), fp.cos(mbf)).round_to_int())
     return octant, coord, neg                 
   
       

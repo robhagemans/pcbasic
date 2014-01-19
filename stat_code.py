@@ -193,7 +193,7 @@ def exec_chain(ins):
             common = copy.copy(var.variables)
             common_arrays = copy.copy(var.arrays)
             # preserve DEFTYPES
-            common_deftype = copy.copy(var.deftype)
+            common_deftype = copy.copy(vartypes.deftype)
     elif d not in util.end_statement:
         raise error.RunError(2)
             
@@ -231,7 +231,7 @@ def exec_chain(ins):
     # keep option base
     var.array_base = base
     # keep deftypes (if ALL specified)
-    var.deftype = common_deftype
+    vartypes.deftype = common_deftype
     # don't close files!
     
     # RUN

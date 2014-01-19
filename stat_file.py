@@ -27,7 +27,7 @@ lock_modes = ['SHARED', '\xFE\xA7 \x87', '\xFE\xA7 \xB7', '\xFE\xA7 \x87 \xB7'] 
 access_modes = { 'I':'rb', 'O':'wb', 'R': 'rwb', 'A': 'wb' }
 position_modes = { 'I':0, 'O':0, 'R':0, 'A':-1 }
             
-lock_list = []
+lock_list = {}
 
 # close all files
 def exec_reset(ins):
@@ -162,7 +162,7 @@ def exec_put_file(ins):
     if fileio.files[number].mode.upper() != 'R':
         raise error.RunError(54)    
     if util.skip_white_read_if(ins, ','):
-        pos = fp.round_to_int(fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))))
+        pos = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)).round_to_int())
         if pos<1 or pos>2**25:   # not 2^32-1 as the manual boasts! pos-1 apparently needs to fit in a single-prec mantissa
             raise error.RunError(63)
         fileio.files[number].set_pos(pos)    
@@ -177,7 +177,7 @@ def exec_get_file(ins):
     if fileio.files[number].mode.upper() != 'R':
         raise error.RunError(54)    
     if util.skip_white_read_if(ins, ','):
-        pos = fp.round_to_int(fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))))
+        pos = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)).round_to_int())
         if pos<1 or pos>2**25:   # not 2^32-1 as the manual boasts!
             raise error.RunError(63)
         fileio.files[number].set_pos(pos)    
@@ -185,7 +185,7 @@ def exec_get_file(ins):
     util.require(ins, util.end_statement)
 
 
-def get_lock(ins):
+def parse_lock(ins):
     number = expressions.parse_file_number_opthash(ins)
     if number not in fileio.files:
         raise error.RunError(52)
@@ -193,10 +193,6 @@ def get_lock(ins):
     if deviceio.is_device(thefile):
         # permission denied
         raise error.RunError(70)
-    return (thefile.number, lock_start, lock_length)        
-
-
-def do_lock(ins, lock='rw'):
     lock_start=0
     lock_length=0
     if util.skip_white_read_if(ins, ','):
@@ -209,22 +205,25 @@ def do_lock(ins, lock='rw'):
         lock_stop_rec = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         lock_stop = lock_stop_rec * thefile.reclen
         lock_length = lock_stop - lock_start
-    fileio.lock_file(thefile, lock, lock_start, lock_length)                   
-    util.require(ins, util.end_statement)
-
+    return thefile.number, lock_start, lock_length     
+           
             
 def exec_lock(ins):
-    lock_list.append(get_lock(ins))
-    do_lock(ins, 'rw')
-        
+    nr,start,length = parse_lock(ins) 
+    lock_list.append((nr,start,length))
+    fileio.lock_file(nr, 'rw', start, length)                   
+    util.require(ins, util.end_statement)
+           
             
 def exec_unlock(ins):
-    unlock = get_lock(ins)
+    unlock = parse_lock(ins)
     # permission denied if the exact record range wasn't given before
     if unlock not in lock_list:
         raise error.RunError(70)
     else:
-        lock_list.remove(unlock)    
-        do_lock(ins, '')
+        lock_list.remove(unlock)
+        (nr,start,length) = unlock    
+        fileio.lock_file(nr, '', start, length)                   
+        util.require(ins, util.end_statement)
     
     

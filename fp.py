@@ -309,7 +309,7 @@ class Float(object):
     def ipow_int(self, exp):
         if exp < 0:
             self.ipow_int(-exp)
-            self = div(base.one, self)
+            self = div(self.one, self)
         elif exp > 1:
             if (exp%2) == 0:
                 self.ipow_int(exp/2)
@@ -544,7 +544,7 @@ def sqrt(target):
     n = target.copy()
     
     #n.exp = (n.exp - n.bias + 24)/2 + n.bias-24
-    n.exp = (n.exp - n.bias + n_mantissa_bits)/2 + n.bias - n_mantissa_bits
+    n.exp = (n.exp - n.bias + n.mantissa_bits)/2 + n.bias - n.mantissa_bits
     
     # iterate to convergence, max_iter = 7
     for _ in range (0,7):
@@ -767,7 +767,7 @@ Double.type_sign, Double.exp_sign = '#', 'D'
 
 def just_under(n_in):
     # decrease mantissa by one (leaving carry unchanged)
-    return n.__class__(n_in.neg, n_in.man - 0x100, n_in.exp)
+    return n_in.__class__(n_in.neg, n_in.man - 0x100, n_in.exp)
     
 
 # for Ints?    
