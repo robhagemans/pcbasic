@@ -10,55 +10,46 @@
 #
 
 
-import error
-import vartypes
 
-# tokens
 
-# LF is just whitespace if not preceded by CR
-# (what about TAB? are there other whitespace chars in a tokenised file?)
-whitespace = (' ', '\t', '\x0a')
-# line ending tokens
-end_line = ('', '\x00')
-# statement ending tokens
-end_statement = end_line + (':',) 
-# expression ending tokens
-end_expression = end_statement + (')', ']', ',', ';', '\xCC', '\x89', '\x8D', '\xCF', '\xCD') 
-# '\xCC is 'TO', \x89 is GOTO, \x8D is GOSUB, \xCF is STEP, \xCD is THEN 
+##################################################
+##################################################
 
+# basic stream utility functions
+
+# peek next char in stream
+def peek(ins, n=1):
+    d = ins.read(n)
+    ins.seek(-len(d), 1)
+    return d
+
+# skip chars in skip_range, then read next
+def skip_read(ins, skip_range):
+    while True: 
+        d = ins.read(1)
+        # skip_range must not include ''
+        if d not in skip_range:
+            return d
+
+# skip chars in skip_range, then peek next
+def skip(ins, skip_range):
+    d = skip_read(ins, skip_range) 
+    ins.seek(-len(d), 1)
+    return d
+    
+
+##################################################
+##################################################
+
+# ascii streams
 
 # whitespace for INPUT#, INPUT
 # TAB x09 is not whitespace for input#. NUL \x00 and LF \x0a are. 
 ascii_white = (' ', '\x00', '\x0a')
 
-
 # ascii CR/LF
 endl='\x0d\x0a'
 
-
-# stream utility functions
-
-
-# StringIO does not seem to have a peek() function    
-def peek(ins, n=1):
-    d = ins.read(n)
-    ins.seek(-len(d),1)
-    return d
-
-
-def skip_read(ins, skip_range):
-    d = ins.read(1)
-    while d in skip_range: 
-        d = ins.read(1)
-        if d=='':
-            break
-    return d
-
-def skip(ins, skip_range):
-    d = skip_read(ins, skip_range) 
-    if d != '':
-        ins.seek(-1,1)
-    return d
     
 def ascii_read_to(ins, findrange):
     out = ''
@@ -77,22 +68,37 @@ def ascii_read_to(ins, findrange):
 ##################################################
 ##################################################
 
+from functools import partial
+
+
+# tokens
+
+# LF is just whitespace if not preceded by CR
+# (what about TAB? are there other whitespace chars in a tokenised file?)
+whitespace = (' ', '\t', '\x0a')
+# line ending tokens
+end_line = ('', '\x00')
+# statement ending tokens
+end_statement = end_line + (':',) 
+# expression ending tokens
+end_expression = end_statement + (')', ']', ',', ';', '\xCC', '\x89', '\x8D', '\xCF', '\xCD') 
+# '\xCC is 'TO', \x89 is GOTO, \x8D is GOSUB, \xCF is STEP, \xCD is THEN 
+
+
 # these are for tokenised streams only
 
-def skip_white_read(ins):
-    return skip_read(ins, whitespace)
+skip_white_read = partial(skip_read, skip_range=whitespace)
+skip_white = partial(skip, skip_range=whitespace)
 
-def skip_white(ins):
-    return skip(ins, whitespace)
 
+def skip_to(ins, findrange, linum=-1, break_on_first_char=True):        
+    out, linum = read_to(ins, findrange, linum, break_on_first_char)
+    return linum
 
 def skip_to_read(ins, findrange):
     skip_to(ins, findrange)
     return ins.read(1)
 
-def skip_to(ins, findrange, linum=-1, break_on_first_char=True):        
-    out, linum = read_to(ins, findrange, linum, break_on_first_char)
-    return linum
     
 def read_to(ins, findrange, linum=-1, break_on_first_char=True):        
     out = ''
@@ -104,7 +110,6 @@ def read_to(ins, findrange, linum=-1, break_on_first_char=True):
         if c in findrange:
             if out != '' or break_on_first_char:
                 break
-        
         if c == '\x0f':
             out += c + ins.read(1)
         elif c in ('\x0b', '\x0c', '\x0d', '\x0e', '\x1c'):
@@ -142,6 +147,16 @@ def skip_white_read_if(ins, char):
     return val
 
 
+
+########################################################
+
+# parsing
+
+
+import error
+import vartypes
+
+
 def require_read(ins, char, err=2):
     if skip_white_read(ins) != char:
         raise error.RunError(err)
@@ -151,13 +166,9 @@ def require(ins, rnge, err=2):
         raise error.RunError(err)
     
 
-
-
-
 # parse line number and leve pointer at first char of line
 # if end of program or truncated, leave pointer at start of line number C0 DE or 00 00    
 def parse_line_number(ins):
-
     off = ins.read(2)
     if off=='\x00\x00' or len(off) < 2:
         ins.seek(-len(off),1)
@@ -172,17 +183,15 @@ def parse_line_number(ins):
     
 def getbasename(ins):
     name = ''
-    d=ins.read(1).upper()
+    d = ins.read(1).upper()
     if not (d>='A' and d<='Z'):
         # variable name must start with a letter
         if d != '':
             ins.seek(-1,1)
         return ''
-    
     while (d>='A' and d<='Z') or (d>='0' and d<='9') or d=='.':
         name += d
         d = ins.read(1).upper()
-    
     if d in vartypes.all_types:
         name += d
     else:
@@ -192,7 +201,6 @@ def getbasename(ins):
 
 
 def skip_to_next(ins, for_char, next_char, allow_comma=False):
-    
     stack = 0
     d = ''
     while True:
@@ -234,58 +242,31 @@ def parse_jumpnum(ins):
     d = skip_white_read(ins)
     jumpnum=-1
     if d in ('\x0d', '\x0e'):
-    
         jumpnum = vartypes.uint_to_value(ins.read(2))    
     else:
         # Syntax error
         raise error.RunError(2)
-
     return jumpnum
 
 
 # parses a list of line numbers
 def parse_jumpnum_list(ins, size, err=2):
-    pos=0
+    pos = 0
     output = [-1] * size
     while True:
-        skip_white(ins)
-        d= peek(ins)
-        
+        d = skip_white(ins)
         if d==',':
             ins.read(1)
             pos += 1
             if pos >= size:
                 # 5 = illegal function call
                 raise error.RunError(err)
-
         elif d in end_expression:
             break
         else:  
             output[pos] = parse_jumpnum(ins)
     return output
     
-  
-  
-  
-#def map_list(action, ins, size, err):
-#    pos=0
-#    output = [None] * size
-#    while True:
-#        skip_white(ins)
-#        d= peek(ins)
-#        
-#        if d==',':
-#            ins.read(1)
-#            pos += 1
-#            if pos >= size:
-#                # 5 = illegal function call
-#                raise error.RunError(err)
-#                return output
-#        elif d in end_expression:
-#            break
-#        else:  
-#            output[pos] = action(ins)
-#    return output
 
 
 
