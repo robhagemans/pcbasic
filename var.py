@@ -9,17 +9,14 @@
 # please see text file COPYING for licence terms.
 #
 
-import error
-import vartypes
 from cStringIO import StringIO
+
+import error
 import fp
+import vartypes
 import util
 
 
-# default type for variable name starting with a-z
-deftype = ['!']*26
-
-#fields = {}
 variables = {}
 arrays= {}
 functions = {}
@@ -34,11 +31,30 @@ common_array_names = []
 # 'free memory' as reported by FRE
 total_mem = 60300    
 free_mem = total_mem    
-    
+
+
+
+# set var from text value (e.g. READ, INPUT) 
+def set_var_read(name, indices, val): 
+    if name[-1] == '$':
+        if indices==[]:
+            set_var(name, ('$', val))
+        else:
+            set_array(name, indices, ('$', val))   
+    else:
+        num = fp.from_str(val, False)
+        if num == None:
+            return False
+        num = fp.pack(num)    
+        set_var_or_array(name, indices, num)
+    return True
+
+
+##########################################################    
+
 
 # string pointer implementation, allows for unions of strings (for FIELD)
 class StringPtr:
-
     def __init__(self):
         self.stream = None
         self.offset = 0
@@ -93,98 +109,28 @@ def create_string_ptr(stream, offset, length):
         new.length = max_length-new.offset
         if new.length<0:
             new.length=0    
-    #new.stream.seek(0)    
     return new
     
     
 
-
-
-def complete_name(name):
-    global deftype
-    if name !='' and name[-1] not in vartypes.all_types:
-        name += deftype[ ord(name[0].upper()) - ord('A') ]
-    return name
+##########################################################
     
-    
-def get_var_name(ins):
-    util.skip_white(ins)
-
-    # append type specifier
-    name = complete_name(util.getbasename(ins))
-    
-    # only the first 40 chars are relevant in GW-BASIC, rest is discarded
-    if len(name) > 41:
-        name = name[:40]+name[-1]
-    
-    return name
    
 
-# for reporting by FRE()        
-def variables_memory_size():
+
+
+def set_var(name, value):
     global variables
-    mem_used = 0
-    
-    for name in variables:
-        mem_used += 1
-
-        mem_used += max(3, len(name))
-        
-        if name[-1] == '$':
-            mem_used += 3+len(variables[name])
-        else:
-            mem_used += var_size_bytes(name)
-        
-    for name in arrays:
-        mem_used += 4
-        mem_used += array_size_bytes(name)
-        mem_used += max(3, len(name))
-        
-        dimensions, dummy = arrays[name]
-        mem_used += 2*len(dimensions)    
-
-        # can't have array of strings
-        
-    return mem_used
-
-def setvar(name, value):
-    global variables, arrays, array_base
-    
-    name = complete_name(name)
+    name = vartypes.complete_name(name)
     if value[0]=='$':
         if len(str(value[1]))>255:
             # this is a copy if we use StringPtr!
             value = ('$', str(value[1][:255]))
-            
     variables[name] = vartypes.pass_type_keep(name[-1], value)[1]
     
-
-# set var from text value (e.g. READ, INPUT) 
-def setvar_read(name, indices, val): #, err, erl):
     
-    if name[-1] == '$':
-        if indices==[]:
-            setvar(name, ('$', val))
-        else:
-            set_array(name, indices, ('$', val))   
-    else:
-        num = fp.from_str(val, False)
-        if num == None:
-            return False
-        num = fp.pack(num)    
-            
-        set_var_or_array(name, indices, num)
-
-    return True
-
-    
-    
-    
-    
-def getvar(name):
-    global variables, arrays, array_base
-    
-    name = complete_name(name)
+def get_var(name):
+    name = vartypes.complete_name(name)
     if name in variables:
         if name[-1] == '$':
             return ('$', str(variables[name]) ) # cast StringPtrs, if any
@@ -194,12 +140,28 @@ def getvar(name):
         return vartypes.null_keep(name[-1])
 
 
+# for reporting by FRE()        
+def variables_memory_size():
+    mem_used = 0
+    for name in variables:
+        mem_used += 1 + max(3, len(name))
+        if name[-1] == '$':
+            mem_used += 3+len(variables[name])
+        else:
+            mem_used += var_size_bytes(name)
+    for name in arrays:
+        mem_used += 4 + array_size_bytes(name) + max(3, len(name))
+        dimensions, dummy = arrays[name]
+        mem_used += 2*len(dimensions)    
+        # can't have array of strings
+    return mem_used
+
 
 def swapvar(name1, name2):
     global variables, arrays, array_base
     
-    name1 = complete_name(name1)
-    name2 = complete_name(name2)
+    name1 = vartypes.complete_name(name1)
+    name2 = vartypes.complete_name(name2)
     if name1[-1] != name2[-1]:
         # type mismatch
         raise error.RunError(13)
@@ -207,21 +169,21 @@ def swapvar(name1, name2):
         # illegal function call
         raise error.RunError(5)
     else:
-        val1 = variables[name1] # we need a pointer swap #getvar(name1)
+        val1 = variables[name1] # we need a pointer swap #get_var(name1)
         variables[name1] = variables[name2]
         variables[name2] = val1
             
       
         
 def clear_variables():
-    global variables, arrays, array_base, functions, deftype, common_names, common_array_names
+    global variables, arrays, array_base, functions, common_names, common_array_names
     
     variables = {}
     arrays = {}
     array_base = 0
     
     functions={}
-    deftype = ['!']*26
+    vartypes.deftype = ['!']*26
 
     # at least I think these should be cleared by CLEAR?
     common_names = []
@@ -255,7 +217,7 @@ def array_len(dimensions):
 
 def dim_array(name, dimensions):
     global variables, arrays, array_base
-    name = complete_name(name)
+    name = vartypes.complete_name(name)
 
     if name in arrays:
         # duplicate definition
@@ -312,17 +274,10 @@ def var_size_bytes(name):
 
 def array_size_bytes(name):
     global arrays, array_base
-    
     if name not in arrays:
         return 0
-    
     [dimensions, lst] = arrays[name]
-    
-    #size=1
-    #for dim in dimensions:
-    #    size*= (dim + 1 - array_base)
     size = array_len(dimensions)
-    
     return size*var_size_bytes(name)     
 
 
@@ -353,15 +308,11 @@ def get_array_byte(name, byte_num):
 
 
 def set_array_byte(name, byte_num, value):
-    
     if name not in arrays:
         return 0
-        
     [dimensions, lst] = arrays[name]
-
     bytespernumber = var_size_bytes(name)
     bigindex = byte_num / bytespernumber
-    
     if bigindex>=len(lst):
         return 0
     
@@ -388,15 +339,12 @@ def set_array_byte(name, byte_num, value):
 
 def base_array(base):
     global variables, arrays, array_base
-    
     if base not in (1, 0):
         # syntax error
         raise error.RunError(2)    
-    
     if arrays != {}:
         # duplicate definition
         raise error.RunError(10)
-    
     array_base = base
 
 
@@ -405,7 +353,6 @@ def base_array(base):
 
 def get_array(name, index):
     global variables, arrays, array_base
-    
     [dimensions, lst] = check_dim_array(name, index)
     bigindex = index_array(index, dimensions)
     return (name[-1], lst[bigindex])
@@ -415,7 +362,7 @@ def get_array(name, index):
     
 def get_var_or_array(name, indices):
     if indices==[]:
-        return getvar(name)            
+        return get_var(name)            
     else:
         return get_array(name, indices)
     
@@ -432,7 +379,7 @@ def set_var_or_array(name, indices, value):
     if indices != []:    
         set_array(name, indices, value)
     else:
-        setvar(name, value)
+        set_var(name, value)
 
 
 
@@ -444,7 +391,7 @@ def set_field_var(field, varname, offset, length):
     str_ptr = create_string_ptr(field, offset, length)
     # assign the string ptr to the variable name
     # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
-    setvar(varname, ('$', str_ptr))
+    set_var(varname, ('$', str_ptr))
 
     
 def lset(varname, value, justify_right=False):

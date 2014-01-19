@@ -78,7 +78,19 @@ def runmode():
     return run_mode
 
 
-
+def get_line_number(pos, after=False):
+    pre = -1
+    post = 65536
+    for linum in line_numbers:
+        linum_pos = line_numbers[linum] 
+        if linum_pos > pos and linum > post:
+            post = linum
+        if linum_pos <= pos and linum < pre:
+            pre = linum
+    if after:
+        return post
+    else:
+        return pre
     
 # jump to line number    
 def jump(jumpnum):
@@ -157,16 +169,12 @@ def reset_program():
     
 def clear_program():
     global bytecode, protected, line_numbers, data_line, data_pos
-    
     bytecode.truncate(0)
     bytecode.write('\x00\x00\x00\x1A')
     protected = False
     line_numbers = {}    
     reset_program()
 
-    #data_line =-1
-    #data_pos = 0
-    
     
 def truncate_program(rest):
     global bytecode
@@ -249,6 +257,8 @@ def store_line(linebuf, auto_mode=False):
 
 def delete_lines(fromline, toline):
     global bytecode, line_numbers
+    import sys
+    sys.stderr.write(repr((fromline, toline)))
     
     startline = 0
     startpos = 0
@@ -260,16 +270,12 @@ def delete_lines(fromline, toline):
     else:
         startline = fromline
         startpos = line_numbers[startline]
-        
-    
     afterline = 65536
     afterpos = 0 
     if toline == -1:
-        toline = 65535
-        pass
+        toline = 65535 # FIXME: 35??
     elif toline not in line_numbers:
         raise error.RunError(5)
-    
     for num in line_numbers:
         # lowest number above range
         if num > toline and num <= afterline:
@@ -280,6 +286,7 @@ def delete_lines(fromline, toline):
     bytecode.seek(afterpos)
     rest = bytecode.read()
     
+        
     bytecode.seek(startpos)
     truncate_program(rest)
     
@@ -347,8 +354,9 @@ def renumber(new_line=-1, start_line=-1, step=-1):
     bytecode.seek(0)
     linum = -1
     while util.peek(bytecode) != '':
-        linum = util.skip_to(bytecode, ['\x0d', '\x0e'], linum)
-        if linum ==-1:
+        util.skip_to(bytecode, ['\x0d', '\x0e'])
+        linum = get_line_number(bytecode.tell())
+        if linum == 65536:
             break
         bytecode.read(1)
         s = bytecode.read(2)
@@ -369,9 +377,6 @@ def renumber(new_line=-1, start_line=-1, step=-1):
     # rebuild the line number dictionary    
     preparse()    
     
-    
-    
-
 
 def load(g):
     global bytecode, protected, linenum
@@ -408,17 +413,12 @@ def load(g):
         bytecode.write('\x00\x00\x00\x1a')
     preparse()
     
-    
-    
-    
 
 def merge(g):
-    
     if util.peek(g) in ('\xFF', '\xFE', '\xFC', ''):
         # bad file mode
         raise error.RunError(54)
     else:
-        
         more=True
         while (more): #peek(g)=='' and not peek(g)=='\x1A':
             tempbuf = StringIO()
@@ -438,8 +438,6 @@ def merge(g):
                 raise error.RunError(66)                
     
             tempbuf.close()    
-        
-    
     
 
 def save(g, mode='B'):

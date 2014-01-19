@@ -283,9 +283,9 @@ def exec_get_graph(ins):
     util.require_read(ins, '\xEA') #-
     x1,y1 = graphics.window_coords(*parse_coord(ins))
     util.require_read(ins, ',') 
-    array = var.get_var_name(ins)    
+    array = util.get_var_name(ins)    
     util.require(ins, util.end_statement)
-        
+    # do it    
     graphics.get_area(x0,y0,x1,y1, array)
     
 
@@ -294,10 +294,10 @@ def exec_put_graph(ins):
     graphics.require_graphics_mode()
     x0,y0 = graphics.window_coords(*parse_coord(ins))
     util.require_read(ins, ',') 
-    array = var.get_var_name(ins)    
+    array = util.get_var_name(ins)    
     action = graphics.operation_xor
     if util.skip_white_read_if(ins, ','):
-        c =util.skip_white_read(ins) 
+        c = util.skip_white_read(ins) 
         if c == '\xC6': #PSET
             action = graphics.operation_set
         elif c == '\xC7': #PRESET
@@ -309,7 +309,7 @@ def exec_put_graph(ins):
         elif c == '\xF0': #XOR
             action = graphics.operation_xor
     util.require(ins, util.end_statement)
-    
+    # do it
     graphics.set_area(x0,y0, array, action)
     
     

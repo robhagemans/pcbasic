@@ -44,14 +44,12 @@ def parse_int_list(ins, size, err=5):
             output.append(None)
         else:
             output.append(vartypes.pass_int_keep(expr)[1])
-    
     return output
 
 
 
 
 def parse_expr_list(ins, size, err=5, separators=(',',)):
-    
     pos=0
     output = [None] * size
     while True:
@@ -66,7 +64,6 @@ def parse_expr_list(ins, size, err=5, separators=(',',)):
             break
         else:  
             output[pos] = parse_expression(ins)
-                    
     return output
 
 
@@ -81,7 +78,6 @@ def parse_file_number(ins):
             raise error.RunError(52)
         screen = fileio.files[number]
         util.require_read(ins,',')
-    
     return screen        
 
 
@@ -97,8 +93,7 @@ def parse_file_number_opthash(ins):
 
 
 def get_var_or_array_name(ins):
-   
-    name = var.get_var_name(ins)
+    name = util.get_var_name(ins)
     # array?
     indices=[]
     if util.skip_white(ins) in ('[', '('):
@@ -281,7 +276,7 @@ def parse_expr_unit(ins):
         
     elif d in tokenise.tokens_number:
         ins.seek(-1,1)
-        return tokenise.parse_value(ins)   
+        return util.parse_value(ins)   
         
     # gw-basic allows adding line numbers to numbers     
     elif d in tokenise.tokens_linenum:
@@ -801,7 +796,7 @@ def value_date(ins):
 # functions
 
 def value_fn(ins):
-    fnname = var.get_var_name(ins)
+    fnname = util.get_var_name(ins)
     
     if fnname not in var.functions:
         # undefined user function
@@ -824,7 +819,7 @@ def value_fn(ins):
     if None in exprs:
         raise error.RunError(2)
     for i in range(len(varnames)):
-        var.setvar(varnames[i], exprs[i])
+        var.set_var(varnames[i], exprs[i])
     util.require_read(ins,')')
     
     fns = StringIO(fncode)

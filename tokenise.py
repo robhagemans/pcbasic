@@ -180,47 +180,6 @@ def detokenise_number(bytes):
 
 
 ##########################################
-# TODO: these do not belong here...
-
-# token to value
-def parse_value(ins):
-    
-    d = ins.read(1)
-    
-    # note that hex and oct strings are interpreted signed here, but unsigned the other way!
-    if d == '\x0b':                         # octal constant (unsigned)
-        return ('%', vartypes.sint_to_value(ins.read(2)) )
-    elif d == '\x0c':                       # hex constant (unsigned)
-        return ('%', vartypes.sint_to_value(ins.read(2)) )
-    elif d == '\x0f':                       # one byte constant
-        return ('%', ord(ins.read(1)) )
-    elif d >= '\x11' and d <= '\x1b':       # constants 0 to 10  
-        return ('%', ord(d) - 0x11 )
-    elif d == '\x1c':          # two byte data constant (signed)
-        return ('%', vartypes.sint_to_value(ins.read(2)) )
-    elif d == '\x1d':          # four byte single-precision floating point constant
-        return ('!', list(ins.read(4)) )
-    elif d == '\x1f':          # eight byte double-precision floating point constant
-        return ('#', list(ins.read(8)) )
-    
-    return ('','')
-
-
-def str_to_value_keep(strval):
-    if strval==('$',''):
-        return ('%',0)
-    strval = vartypes.pass_string_keep(strval)[1]
-    ins = StringIO(strval)
-    outs = StringIO()
-    tokenise_number(ins, outs)    
-    outs.seek(0)
-    value = parse_value(outs)
-    ins.close()
-    outs.close()
-    return value
-    
-
-##########################################
 
 
 
@@ -605,6 +564,27 @@ def tokenise_number(ins, outs):
             ins.seek(-1,1)
 
 
+
+
+##########################################
+# TODO: these do not belong here...
+
+
+
+def str_to_value_keep(strval):
+    if strval==('$',''):
+        return ('%',0)
+    strval = vartypes.pass_string_keep(strval)[1]
+    ins = StringIO(strval)
+    outs = StringIO()
+    tokenise_number(ins, outs)    
+    outs.seek(0)
+    value = util.parse_value(outs)
+    ins.close()
+    outs.close()
+    return value
+    
+############################################
 
             
     

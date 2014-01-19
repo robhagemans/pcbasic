@@ -32,39 +32,12 @@ import fileio
 
 
     
-def parse_line_range(ins):
-    from_line=-1
-    to_line=-1
-    d = util.skip_white(ins)
-    if d=='\x0E':   # line number starts
-        ins.read(1)
-        from_line=vartypes.uint_to_value(ins.read(2))
-        if util.skip_white_read_if(ins, '\xEA'):  # -
-            if util.skip_white_read(ins)=='\x0e':
-                to_line=vartypes.uint_to_value(ins.read(2))
-        else:
-            to_line = from_line
-    
-    elif d=='\xEA':
-        ins.read(1)
-        if util.skip_white_read_if(ins, '\x0e'):
-            to_line=vartypes.uint_to_value(ins.read(2))
-            
-    return (from_line, to_line)    
-
-
-
-
-    
 def exec_delete(ins):
-    [from_line, to_line] = parse_line_range(ins)
+    from_line, to_line = util.parse_line_range(ins)
     util.require(ins, util.end_statement)
     program.delete_lines(from_line, to_line)
     # throws back to direct mode
     program.unset_runmode()
-    
-    
-    
 
 
 def exec_edit(ins):
@@ -72,7 +45,7 @@ def exec_edit(ins):
         # don't list protected files
         raise error.RunError(5)
     
-    util.require_read(ins, '\x0E', err=5)   # line number starts
+    util.require_read(ins, ('\x0E',), err=5)   # line number starts
     from_line=vartypes.uint_to_value(ins.read(2))
     util.require(ins, util.end_statement, err=5)
     if from_line not in program.line_numbers:
@@ -96,7 +69,7 @@ def exec_auto(ins):
         automode.auto_linenum = program.linenum
         
     if util.skip_white_read_if(ins, ','): 
-        if util.skip_white_read_if(ins, '\x0e'):   # line number starts
+        if util.skip_white_read_if(ins, ('\x0E',)):   # line number starts
             automode.auto_increment = vartypes.uint_to_value(ins.read(2)) 
         else:
             pass
@@ -106,8 +79,8 @@ def exec_auto(ins):
     util.require(ins, util.end_statement)
 
     automode.auto_linenum -= automode.auto_increment
-    automode.auto_mode=True
-    program.prompt=False
+    automode.auto_mode = True
+    program.prompt = False
     program.unset_runmode()
         
     
@@ -117,7 +90,7 @@ def exec_list(ins, out=None):
         # don't list protected files
         raise error.RunError(5)
     
-    [from_line, to_line] = parse_line_range(ins)
+    [from_line, to_line] = util.parse_line_range(ins)
     util.require(ins, util.end_statement)
 
     if out==None:
@@ -175,7 +148,7 @@ def exec_load(ins):
         
 def exec_chain(ins):
     action = program.load
-    if util.skip_white_read_if(ins, '\xBD'): # MERGE
+    if util.skip_white_read_if(ins, ('\xBD',)): # MERGE
         action = program.merge
     
     name = vartypes.pass_string_keep(expressions.parse_expression(ins))[1]
@@ -231,7 +204,7 @@ def exec_chain(ins):
             ins.read(2)
             #delete lines from existing code before merge
             # (without MERGE, this is pointless)
-            [from_line, to_line] = parse_line_range(ins)
+            [from_line, to_line] = util.parse_line_range(ins)
             program.delete_lines(from_line, to_line)
     
     # TODO: should the program be loaded or not if we see this error?

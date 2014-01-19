@@ -139,7 +139,7 @@ def exec_palette(ins):
         console.set_palette()
     elif d=='\xD7': # USING
         ins.read(1)
-        array_name = var.get_var_name(ins)
+        array_name = util.get_var_name(ins)
         start_index = vartypes.pass_int_keep(expressions.parse_bracket(ins))[1]
         new_palette=[]
         for i in range(num_palette_entries):

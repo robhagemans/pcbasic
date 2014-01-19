@@ -188,7 +188,7 @@ def exec_field(ins):
             raise error.RunError(5)
         ins.read(2)
         #util.skip_white(ins)
-        name = var.get_var_name(ins)
+        name = util.get_var_name(ins)
         
         var.set_field_var(field, name, offset, width)         
         
