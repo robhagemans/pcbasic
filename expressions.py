@@ -138,14 +138,9 @@ operator_tokens = [item for sublist in priority for item in sublist]
 def parse_expression(ins, allow_empty=False):
     units = []
     operators = []
-    
     d = util.skip_white(ins)
-    
-    
     while d not in util.end_expression: # and d not in util.end_statement:
-        
         units.append(parse_expr_unit(ins))
-        
         util.skip_white(ins)
         # string lit breaks expression, number after string lit breaks expression, + or - doesnt (could be an operator...
         #if d in util.end_expression or d in util.end_statement or d=='"' :
@@ -154,7 +149,6 @@ def parse_expression(ins, allow_empty=False):
             break
         else:
             ins.read(1)
-        
         if d in ['\xE6', '\xE7', '\xE8']:
             nxt = util.skip_white(ins)
             if nxt in ['\xE6', '\xE7', '\xE8']:
@@ -168,27 +162,21 @@ def parse_expression(ins, allow_empty=False):
                         d = d[1]+d[0]
                     elif d == '\xe6\xe8': # ><
                         d = '\xe8\xe6'    
-        
         operators.append(d)
         d = util.skip_white(ins)           
-        
-    
     # empty expression is a syntax error (inside brackets) or Missing Operand (in an assignment) or ok (in print)
     if len(units) == 0:
         if allow_empty:
             return ('', '')
         else:    
             raise error.RunError(22)
-    
     if len(units) <= len(operators):
         # missing operand
         raise error.RunError(22)
-    
     return parse_operators(operators, units)
         
 
 def parse_operators(operators, units):
-    
     for current_priority in priority:
         pos = 0
         while pos < len(operators):
@@ -198,14 +186,11 @@ def parse_operators(operators, units):
                 del operators[pos]
             else:
                 pos += 1
-        
         if len(operators)==0:
             break
-    
     if len(operators)>0:
         # unrecognised operator, syntax error
         raise error.RunError(2)
-    
     return units[0]    
     
     
@@ -254,7 +239,6 @@ def value_operator(op, left, right):
 
 def parse_expr_unit(ins):
     d = util.skip_white_read(ins)
-    
     if d=='"':
         output=''
         # string literal
@@ -490,7 +474,6 @@ def parse_expr_unit(ins):
         if ins.read(1) != ')':
             raise error.RunError(2)                    
         return val    
-       
     return ('', '')
 
 
@@ -512,9 +495,7 @@ def parse_bracket(ins):
     
 def value_instr(ins):
     util.require_read(ins, '(')
-
     s = parse_expression(ins, allow_empty=True)
-    
     big = ''
     small = ''
     have_big = False
@@ -529,24 +510,17 @@ def value_instr(ins):
     else:
         big = vartypes.pass_string_unpack(s)
         have_big= True
-        
     util.require_read(ins, ',')
-
     if not have_big:
         s = parse_expression(ins, allow_empty=True)
         big = vartypes.pass_string_unpack(s)
-        
         util.require_read(ins, ',')
-
     s = parse_expression(ins, allow_empty=True)
     small = vartypes.pass_string_unpack(s)
-    
     util.require_read(ins, ')')
-
     if big == '' or n > len(big):
         return ('%',0)
-    
-    # basic counts string positions from 1
+    # BASIC counts string positions from 1
     return ('%', n + big[n-1:].find(small))   
    
         
@@ -557,22 +531,17 @@ def value_mid(ins):
     s = vartypes.pass_string_unpack(parse_expression(ins))
     util.require_read(ins, ',')
     start = vartypes.pass_int_unpack(parse_expression(ins))
-
     if util.skip_white_read_if(ins, ','):
         num = vartypes.pass_int_unpack(parse_expression(ins))
     else:
         num = len(s)
-    
     util.require_read(ins, ')')
-    
     if start <1 or start>255:
         raise error.RunError(5)
     if num <0 or num>255:
         raise error.RunError(5)
-    
     if num==0 or start>len(s):
         return ('$', '')
-    
     start -= 1    
     stop = start + num 
     if stop > len(s):
@@ -587,13 +556,10 @@ def value_left(ins):
     util.require_read(ins, ',')
     num = vartypes.pass_int_unpack(parse_expression(ins))
     util.require_read(ins, ')')
-    
     if num <0 or num>255:
         raise error.RunError(5)
-    
     if num==0:
         return ('$', '')
-    
     stop = num 
     if stop > len(s):
         stop = len(s)
@@ -607,13 +573,10 @@ def value_right(ins):
     util.require_read(ins, ',')
     num = vartypes.pass_int_unpack(parse_expression(ins))
     util.require_read(ins, ')')
-    
     if num <0 or num>255:
         raise error.RunError(5)
-    
     if num==0:
         return ('$', '')
-    
     stop = num 
     if stop > len(s):
         stop = len(s)
@@ -679,41 +642,34 @@ def value_string(ins): # STRING$
 
 
 def value_loc(ins): # LOC
-
     util.skip_white(ins)
     num = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
     if num>255 or num<0 or num not in fileio.files:
         raise error.RunError(52)
-        
     # refuse for output devices, such as SCRN: (bad file mode). Kybd: and com1: etc should be allowed
     if fileio.files[num] in deviceio.output_devices:
         # bad file mode
         raise error.RunError(54)
-    
     return ('%', fileio.files[num].loc())
   
 
 def value_eof(ins): # EOF
-
     util.skip_white(ins)
     num = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
     if num>255 or num<0 or num not in fileio.files:
         # bad file number
         raise error.RunError(52)
-    
     if fileio.files[num].mode == 'O':
         # bad file mode
         raise error.RunError(54)
-        
     return vartypes.bool_to_int_keep(fileio.files[num].eof())
+
   
 def value_lof(ins): # LOF
-
     util.skip_white(ins)
     num = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
     if num>255 or num<0 or num not in fileio.files:
         raise error.RunError(52)
-    
     return ('%', fileio.files[num].lof() )
     
 
@@ -764,13 +720,11 @@ def value_date(ins):
 
 def value_fn(ins):
     fnname = util.get_var_name(ins)
-    
-    if fnname not in var.functions:
+    try:
+        varnames, fncode = var.functions[fnname]
+    except KeyError:
         # undefined user function
         raise error.RunError(18)
-
-    varnames, fncode = var.functions[fnname]
-    
     # save existing vars
     varsave = {}
     for name in varnames:
@@ -779,7 +733,6 @@ def value_fn(ins):
             raise error.RunError(13)
         if name in var.variables:
             varsave[name] = var.variables[name]
-
     # read variables
     util.require_read(ins, '(')
     exprs = parse_expr_list(ins, len(varnames), err=2)
@@ -788,18 +741,14 @@ def value_fn(ins):
     for i in range(len(varnames)):
         var.set_var(varnames[i], exprs[i])
     util.require_read(ins,')')
-    
     fns = StringIO(fncode)
     fns.seek(0)
-    value= parse_expression(fns)    
-
+    value = parse_expression(fns)    
     # restore existing vars
-    
     for name in varnames:
         del var.variables[name]
     for name in varsave:    
         var.variables[name] = varsave[name]
-
     return value    
 
 
@@ -835,8 +784,6 @@ def value_pmap(ins):
     util.require_read(ins, ',')
     mode = vartypes.pass_int_unpack(parse_expression(ins))
     util.require_read(ins, ')')
-
- 
     if mode == 0:
         value, dummy = graphics.window_coords(coord,fp.Single.zero)       
         value = ('%', value)        
@@ -851,7 +798,6 @@ def value_pmap(ins):
         value = fp.pack(value)
     else:
         raise error.RunError(5)
-               
     return value
     
 #####################################################################
@@ -903,7 +849,6 @@ def value_pen(ins):
 # STICK(0) is required to get values from the other STICK functions. Always read it first!
 def value_stick(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
-    
     if fn == 0:
         x,y = console.stick_coord(0)
         return ('%', x)
@@ -950,6 +895,7 @@ def value_peek(ins):
         return ('%', peek_values[addr])
     else:    
         return ('%',0)
+
         
 # do-nothing VARPTR, VARPTR$    
 def value_varptr(ins):    
@@ -960,18 +906,20 @@ def value_varptr(ins):
     else:
         parse_bracket(ins)
         return ('%', 0)
+
         
 def value_usr(ins):
     c= util.peek(ins,1)
     if c>= '0' and c<='9':
         ins.read(1)
-        
     parse_bracket(ins)
     return ('%', 0)
+
     
 def value_inp(ins):
     parse_bracket(ins)
     return ('%', 0)
+
         
 def value_erdev(ins):
     if util.peek(ins,1)=='$':
@@ -979,16 +927,17 @@ def value_erdev(ins):
         return ('$', '')
     else:    
         return ('%', 0)
+
         
 def value_exterr(ins):
     parse_bracket(ins)
     return ('%', 0)
+
     
 # ioctl$    
 def value_ioctl(ins):
     if ins.read(1) != '$':
         raise error.RunError(2)
-        
     parse_bracket(ins)
     return ('%', 0)
             
