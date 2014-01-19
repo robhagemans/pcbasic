@@ -14,7 +14,7 @@ import error
 import var
 from cStringIO import StringIO
 
-
+from string_ptr import StringPtr
 import util
 import oslayer
 import deviceio
@@ -322,7 +322,7 @@ class RandomFile:
         if self.number in fields:
             self.field = fields[self.number]
         else:
-            self.field = var.create_string_ptr('\x00'*reclen,0, self.reclen)
+            self.field = StringPtr('\x00'*reclen,0, self.reclen)
             fields[self.number] = self.field
             
         # open a pseudo text file over the buffer stream

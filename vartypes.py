@@ -10,13 +10,13 @@
 #
 
 import fp
+#import string_ptr
 import error
 
 floats = ['#','!']
 numeric = floats + ['%']
 strings = ['$']
 all_types = numeric + strings
-
 
 # default type for variable name starting with a-z
 deftype = ['!']*26
@@ -68,7 +68,6 @@ def pass_single_keep(num):
         raise error.RunError(2)
     
     
-
 def pass_double_keep(num):
     if num[0] == '#':
         return num
@@ -147,6 +146,37 @@ def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=Fal
             raise error.RunError(2)    
     else:
         raise error.RunError(2)    
+
+
+def null_keep(typechar):
+    if typechar=='$':
+        return ('$', '')
+    elif typechar == '%':
+        return ('%', 0)
+    elif typechar == '!':
+        return fp.pack(fp.Single.zero)
+    elif typechar == '#':
+        return fp.pack(fp.Double.zero)
+
+##################################################
+
+def unpack_int(inp):
+    return inp[1]
+
+def unpack_string(inp):
+    return inp[1]
+    
+def pack_int(inp):
+    return ('%', inp)
+            
+def pack_string(inp):
+    return ('$', inp)
+
+def pass_int_unpack(inp, maxint=0x7fff, err=13):
+    return pass_int_keep(inp, maxint, err)[1]
+
+def pass_string_unpack(inp, allow_empty=False, err=13):
+    return pass_string_keep(inp, allow_empty, err)[1]
 
     
 ##################################################
@@ -235,12 +265,11 @@ def bool_to_int_keep(boo):
     else:
         return ('%', 0)
 
-
 def int_to_bool(iboo):
     return not (iboo[1] == 0)
 
 def pass_twoscomp(num):
-    val = pass_int_keep(num)[1]
+    val = pass_int_unpack(num)
     if val<0:
         return 0x10000 + val
     else:
@@ -252,30 +281,12 @@ def twoscomp_to_int(num):
     return ('%', num)    
     
 
-   
-   
-   
-########################################################### 
-
-    
-
-def null_keep(typechar):
-    if typechar=='$':
-        return ('$', '')
-    elif typechar == '%':
-        return ('%', 0)
-    elif typechar == '!':
-        return fp.pack(fp.Single.zero)
-    elif typechar == '#':
-        return fp.pack(fp.Double.zero)
-            
-
-
 
 ###########################################################
 ###########################################################
 ###########################################################
 
+# maths functions
 
 from functools import partial
 
@@ -388,7 +399,7 @@ def vneg(inp):
         
 def vnot(inp):
     # two's complement
-    return ('%', -pass_int_keep(inp)[1]-1)
+    return ('%', -pass_int_unpack(inp)-1)
 
     
 # binary operators
@@ -418,16 +429,16 @@ def vdiv(left, right):
 
 
 def vidiv(left, right):
-    return ('%', pass_int_keep(left)[1] / pass_int_keep(right)[1])    
+    return ('%', pass_int_unpack(left) / pass_int_unpack(right))    
     
     
 def vmod(left, right):
-    return ('%', pass_int_keep(left)[1] % pass_int_keep(right)[1])    
+    return ('%', pass_int_unpack(left) % pass_int_unpack(right))    
 
 
 def vplus(left, right):
     if left[0] == '$':
-        return ('$', pass_string_keep(left)[1] + pass_string_keep(right)[1] )
+        return ('$', pass_string_unpack(left) + pass_string_unpack(right) )
     else:
         left, right = pass_most_precise_keep(left, right)
         if left[0] in ('#', '!'):
@@ -460,7 +471,7 @@ def str_gt(left,right):
 def vgt(left, right):
     gt = False
     if left[0]=='$':
-        gt = str_gt(pass_string_keep(left)[1], pass_string_keep(right)[1])
+        gt = str_gt(pass_string_unpack(left), pass_string_unpack(right))
     else:
         left, right = pass_most_precise_keep(left, right)
         if left[0] in ('#', '!'):
@@ -482,7 +493,7 @@ def vlte(left, right):
     
 def veq(left, right):
     if left[0] == '$':
-        return bool_to_int_keep(pass_string_keep(left)[1] == pass_string_keep(right)[1])
+        return bool_to_int_keep(pass_string_unpack(left) == pass_string_unpack(right))
     else:
         left, right = pass_most_precise_keep(left, right)
         if left[0] in ('#', '!'):
@@ -509,10 +520,3 @@ def vimp(left, right):
     return vor(vnot(left), right)
 
     
-    
-    
-    
-    
-    
-    
-        

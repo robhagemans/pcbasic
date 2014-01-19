@@ -43,7 +43,7 @@ def parse_int_list(ins, size, err=5):
         if expr==None:
             output.append(None)
         else:
-            output.append(vartypes.pass_int_keep(expr)[1])
+            output.append(vartypes.pass_int_unpack(expr))
     return output
 
 
@@ -70,7 +70,7 @@ def parse_expr_list(ins, size, err=5, separators=(',',)):
 def parse_file_number(ins):
     screen = None
     if util.skip_white_read_if(ins,'#'):
-        number = vartypes.pass_int_keep(parse_expression(ins))[1]
+        number = vartypes.pass_int_unpack(parse_expression(ins))
         if number<0 or number>255:
             raise error.RunError(5)
         if number not in fileio.files:
@@ -85,7 +85,7 @@ def parse_file_number_opthash(ins):
     if util.skip_white_read_if(ins, '#'):
         util.skip_white(ins)
     
-    number = vartypes.pass_int_keep(parse_expression(ins))[1]
+    number = vartypes.pass_int_unpack(parse_expression(ins))
     if number<0 or number>255:
         raise error.RunError(5)
         
@@ -165,9 +165,9 @@ def parse_expression(ins, allow_empty=False):
                     d += nxt
                     if d[0] == '\xe7': #= 
                         # =>, =<
-                        d= d[1]+d[0]
+                        d = d[1]+d[0]
                     elif d == '\xe6\xe8': # ><
-                        d='\xe8\xe6'    
+                        d = '\xe8\xe6'    
         
         operators.append(d)
         d = util.skip_white(ins)           
@@ -326,22 +326,22 @@ def parse_expr_unit(ins):
         d = ins.read(1)
         if d== '\x81':            # CVI
             expr = parse_bracket(ins)
-            cstr =  vartypes.pass_string_keep(expr)[1]
+            cstr =  vartypes.pass_string_unpack(expr)
             if len(cstr) < 2:
                 raise error.RunError(5)
             return ('%', vartypes.sint_to_value(cstr[:2]))
         elif d=='\x82':            # CVS
-            cstr =  vartypes.pass_string_keep(parse_bracket(ins))[1]
+            cstr =  vartypes.pass_string_unpack(parse_bracket(ins))
             if len(cstr) < 4:
                 raise error.RunError(5)
             return ('!', cstr[:4]) #('!', list(cstr[:4]))
         elif d=='\x83':            # CVD
-            cstr =  vartypes.pass_string_keep(parse_bracket(ins))[1]
+            cstr =  vartypes.pass_string_unpack(parse_bracket(ins))
             if len(cstr) < 8:
                 raise error.RunError(5)
             return ('#', cstr[:8])
         elif d=='\x84':   #MKI$
-            cint = vartypes.pass_int_keep(parse_bracket(ins))[1]    
+            cint = vartypes.pass_int_unpack(parse_bracket(ins))    
             return ('$', vartypes.value_to_sint(cint))
         elif d=='\x85':   #MKS$
             csng = vartypes.pass_single_keep(parse_bracket(ins))[1]    
@@ -417,7 +417,7 @@ def parse_expr_unit(ins):
             parse_bracket(ins)
             return ('%', console.get_col())
         elif d == '\x92':   # LEN
-            val= ('%', len(vartypes.pass_string_keep(parse_bracket(ins))[1]) )
+            val= ('%', len(vartypes.pass_string_unpack(parse_bracket(ins))) )
             d = ins.read(1)
             if d !='':
                 ins.seek(-1,1)
@@ -431,40 +431,35 @@ def parse_expr_unit(ins):
         elif d == '\x94':   # VAL
             return tokenise.str_to_value_keep(parse_bracket(ins))
         elif d == '\x95':   # ASC
-            s =vartypes.pass_string_keep(parse_bracket(ins))[1]
+            s =vartypes.pass_string_unpack(parse_bracket(ins))
             if s!='':
                 return ('%', ord(s[0]))
             else:
                 raise error.RunError(5)
         elif d == '\x96':   # CHR$
-            return ('$', chr(vartypes.pass_int_keep(parse_bracket(ins))[1]) )
+            return ('$', chr(vartypes.pass_int_unpack(parse_bracket(ins))) )
         elif d == '\x97':   # PEEK
             return value_peek(ins)
             
         elif d == '\x98':   # SPACE$
-            num = vartypes.pass_int_keep(parse_bracket(ins))[1]
+            num = vartypes.pass_int_unpack(parse_bracket(ins))
             if num <0 or num > 255:
                 raise error.RunError(5)
             return ('$', ' '*num )
         elif d == '\x99':   # OCT$
             # allow range -32768 to 65535
-            val = vartypes.pass_int_keep(parse_bracket(ins), 0xffff)[1]
+            val = vartypes.pass_int_unpack(parse_bracket(ins), 0xffff)
             if val <0:
                 return ('$', vartypes.oct_to_str(vartypes.value_to_sint(val))[2:])
             else:
                 return ('$', vartypes.oct_to_str(vartypes.value_to_uint(val))[2:])
-        
-        #    return ('$', oct(vartypes.pass_int_keep(parse_bracket(ins), 0xffff)[1])[1:] )
-        
         elif d == '\x9A':   # HEX$
             # allow range -32768 to 65535
-            val = vartypes.pass_int_keep(parse_bracket(ins), 0xffff)[1]
+            val = vartypes.pass_int_unpack(parse_bracket(ins), 0xffff)
             if val <0:
                 return ('$', vartypes.hex_to_str(vartypes.value_to_sint(val))[2:])
             else:
                 return ('$', vartypes.hex_to_str(vartypes.value_to_uint(val))[2:])
-                    
-            #return ('$', hex(vartypes.pass_int_keep(parse_bracket(ins), 0xffff)[1])[2:].upper() )
         elif d == '\x9B':   # LPOS
             # parse the dummy argument, doesnt matter what it is as long as it's a legal expression
             parse_bracket(ins)
@@ -527,24 +522,24 @@ def value_instr(ins):
     if s[0] == '':
         raise error.RunError(2)
     elif s[0] != '$':
-        n = vartypes.pass_int_keep(s)[1]
+        n = vartypes.pass_int_unpack(s)
         if n<1 or n>255:
             # illegal fn call
             raise error.RunError(5)
     else:
-        big = vartypes.pass_string_keep(s)[1]
+        big = vartypes.pass_string_unpack(s)
         have_big= True
         
     util.require_read(ins, ',')
 
     if not have_big:
         s = parse_expression(ins, allow_empty=True)
-        big = vartypes.pass_string_keep(s)[1]
+        big = vartypes.pass_string_unpack(s)
         
         util.require_read(ins, ',')
 
     s = parse_expression(ins, allow_empty=True)
-    small = vartypes.pass_string_keep(s)[1]
+    small = vartypes.pass_string_unpack(s)
     
     util.require_read(ins, ')')
 
@@ -559,12 +554,12 @@ def value_instr(ins):
 def value_mid(ins):
     # MID$
     util.require_read(ins, '(')
-    s = vartypes.pass_string_keep(parse_expression(ins))[1]
+    s = vartypes.pass_string_unpack(parse_expression(ins))
     util.require_read(ins, ',')
-    start = vartypes.pass_int_keep(parse_expression(ins))[1]
+    start = vartypes.pass_int_unpack(parse_expression(ins))
 
     if util.skip_white_read_if(ins, ','):
-        num = vartypes.pass_int_keep(parse_expression(ins))[1]
+        num = vartypes.pass_int_unpack(parse_expression(ins))
     else:
         num = len(s)
     
@@ -588,9 +583,9 @@ def value_mid(ins):
 def value_left(ins):
     # LEFT$
     util.require_read(ins, '(')
-    s = vartypes.pass_string_keep(parse_expression(ins))[1]
+    s = vartypes.pass_string_unpack(parse_expression(ins))
     util.require_read(ins, ',')
-    num = vartypes.pass_int_keep(parse_expression(ins))[1]
+    num = vartypes.pass_int_unpack(parse_expression(ins))
     util.require_read(ins, ')')
     
     if num <0 or num>255:
@@ -608,9 +603,9 @@ def value_left(ins):
 def value_right(ins):
     # RIGHT$
     util.require_read(ins, '(')
-    s = vartypes.pass_string_keep(parse_expression(ins))[1]
+    s = vartypes.pass_string_unpack(parse_expression(ins))
     util.require_read(ins, ',')
-    num = vartypes.pass_int_keep(parse_expression(ins))[1]
+    num = vartypes.pass_int_unpack(parse_expression(ins))
     util.require_read(ins, ')')
     
     if num <0 or num>255:
@@ -630,19 +625,15 @@ def value_screen(ins):
     util.require_read(ins, '(')
     args = parse_int_list(ins, 3, 5) 
     util.require_read(ins, ')')
-    
-    if args[0] == None or args[1]==None:
+    if args[0] == None or args[1] == None:
         raise error.RunError(5)
     if args[0]<1 or args[0] > console.height:
         raise error.RunError(5)
     if console.view_set and args[0]<console.view_start or args[0] > console.scroll_height:
         raise error.RunError(5)
-    
     if args[1]<1 or args[1] > console.width:
         raise error.RunError(5)
-    
     (char, attr) = console.read_screen(args[0], args[1])
-    
     if args[2] != None and args[2] != 0:
         return ('%', attr)
     else:
@@ -652,30 +643,21 @@ def value_screen(ins):
 def value_input(ins):    # INPUT$
     if ins.read(1) != '$':
         raise error.RunError(2)
-    
     util.require_read(ins, '(')
-        
-    num = vartypes.pass_int_keep(parse_expression(ins))[1]
+    num = vartypes.pass_int_unpack(parse_expression(ins))
     if num<1 or num>255:
         raise error.RunError(5)
-    
     screen = console    
     if util.skip_white_read_if(ins, ','):
         util.skip_white_read_if(ins, '#')
-        
-        filenum = vartypes.pass_int_keep(parse_expression(ins))[1]
-        
+        filenum = vartypes.pass_int_unpack(parse_expression(ins))
         if filenum<0 or filenum>255:
             raise error.RunError(5)
         if filenum not in fileio.files:
             # bad file number
             raise error.RunError(52)
         screen = fileio.files[filenum]
-    
-    if util.skip_white_read(ins) !=')':
-        raise error.RunError(2)
-         
-    
+    util.require_read(ins, ')')
     word = screen.read_chars(num)
     return ('$', word)        
     
@@ -683,28 +665,23 @@ def value_input(ins):    # INPUT$
 def value_string(ins): # STRING$
     util.require_read(ins, '(')
     n, j = parse_expr_list(ins, 2)    
-    
-    n = vartypes.pass_int_keep(n)[1]
+    n = vartypes.pass_int_unpack(n)
     if n<0 or n> 255:
         raise error.RunError(5)
-    
     if j[0]=='$':
-        j = ord(j[1][0])
+        j = ord(vartypes.unpack_string(j)[0])
     else:
-        j = vartypes.pass_int_keep(j)[1]        
-    
+        j = vartypes.pass_int_unpack(j)        
     if j<0 or j> 255:
         raise error.RunError(5)
-    
     util.require_read(ins, ')')
-
     return ('$', chr(j)*n)
 
 
 def value_loc(ins): # LOC
 
     util.skip_white(ins)
-    num = vartypes.pass_int_keep(parse_bracket(ins), maxint=0xffff)[1]
+    num = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
     if num>255 or num<0 or num not in fileio.files:
         raise error.RunError(52)
         
@@ -719,7 +696,7 @@ def value_loc(ins): # LOC
 def value_eof(ins): # EOF
 
     util.skip_white(ins)
-    num = vartypes.pass_int_keep(parse_bracket(ins), maxint=0xffff)[1]
+    num = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
     if num>255 or num<0 or num not in fileio.files:
         # bad file number
         raise error.RunError(52)
@@ -733,7 +710,7 @@ def value_eof(ins): # EOF
 def value_lof(ins): # LOF
 
     util.skip_white(ins)
-    num = vartypes.pass_int_keep(parse_bracket(ins), maxint=0xffff)[1]
+    num = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
     if num>255 or num<0 or num not in fileio.files:
         raise error.RunError(52)
     
@@ -741,38 +718,28 @@ def value_lof(ins): # LOF
     
 
 ######################################################################
-
 ######################################################################
-
-
        
 def value_environ(ins):
     if ins.read(1)!='$':
         raise error.RunError(2)
-        
     expr = parse_bracket(ins)
     if expr[0]=='$':
-        val = os.getenv(expr[1])
-    
+        val = os.getenv(vartypes.unpack_string(expr))
         if val==None:
             val=''
         return ('$', val)
-    
     else:
-        expr = vartypes.pass_int_keep(expr)[1]
+        expr = vartypes.pass_int_unpack(expr)
         envlist = list(os.environ)
-            
         if expr<1 :
             raise error.RunError(5)
         if expr>len(envlist):
             return ('$', '')            
         else:
             val = os.getenv(envlist[expr-1])
-            
             return ('$', envlist[expr-1]+'='+val)
-    
 
-        
         
 def value_timer(ins):
     # precision of GWBASIC TIMER is about 1/20 of a second
@@ -843,13 +810,12 @@ def value_point(ins):
     util.require_read(ins, '(')
     lst = parse_expr_list(ins, 2, err=2)
     util.require_read(ins, ')')
-
     if lst[0]==None:
         raise error.RunError(2)
     if lst[1]==None:
         # single-argument version
         x,y = graphics.get_coord()
-        fn = vartypes.pass_int_keep(lst[0])[1]
+        fn = vartypes.pass_int_unpack(lst[0])
         if fn==0:
             return ('%', x)
         elif fn==1:
@@ -861,13 +827,13 @@ def value_point(ins):
             fx, fy = graphics.get_window_coords(x,y)
             return fy
     else:       
-        return ('%', graphics.get_point(vartypes.pass_int_keep(lst[0])[1], vartypes.pass_int_keep(lst[1])[1]))        
+        return ('%', graphics.get_point(vartypes.pass_int_unpack(lst[0]), vartypes.pass_int_unpack(lst[1])))        
 
 def value_pmap(ins):
     util.require_read(ins, '(')
     coord = fp.unpack(vartypes.pass_single_keep(parse_expression(ins)))
     util.require_read(ins, ',')
-    mode = vartypes.pass_int_keep(parse_expression(ins))[1]
+    mode = vartypes.pass_int_unpack(parse_expression(ins))
     util.require_read(ins, ')')
 
  
@@ -900,7 +866,7 @@ def value_err(ins):
 #####################################################################
 
 def value_pen(ins):
-    fn = vartypes.pass_int_keep(parse_bracket(ins))[1]
+    fn = vartypes.pass_int_unpack(parse_bracket(ins))
     if fn == 0:
         return vartypes.bool_to_int_keep(console.pen_has_been_down())
     elif fn == 1:
@@ -936,7 +902,7 @@ def value_pen(ins):
 # coordinated run 1..200 (says http://www.qb64.net/wiki/index.php?title=STICK)
 # STICK(0) is required to get values from the other STICK functions. Always read it first!
 def value_stick(ins):
-    fn = vartypes.pass_int_keep(parse_bracket(ins))[1]
+    fn = vartypes.pass_int_unpack(parse_bracket(ins))
     
     if fn == 0:
         x,y = console.stick_coord(0)
@@ -956,11 +922,10 @@ def value_stick(ins):
     
     
 def value_strig(ins):
-    fn = vartypes.pass_int_keep(parse_bracket(ins))[1]
+    fn = vartypes.pass_int_unpack(parse_bracket(ins))
     # 0,1 -> [0][0] 2,3 -> [0][1]  4,5-> [1][0]  6,7 -> [1][1]
     if fn<0 or fn>7:
         raise error.RunError(5)
-    
     joy = fn//4
     trig = (fn//2)%2
     if fn%2==0:
@@ -980,7 +945,7 @@ peek_values={}
 # do-nothing PEEK    
 def value_peek(ins):
     global peek_values
-    addr = vartypes.pass_int_keep(parse_bracket(ins))[1]
+    addr = vartypes.pass_int_unpack(parse_bracket(ins))
     if addr in peek_values:
         return ('%', peek_values[addr])
     else:    
