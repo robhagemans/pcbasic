@@ -191,10 +191,11 @@ class Float(object):
         # discards carry & truncates towards neg infty, returns mbf
         if self.is_zero():
             return
-        n = self.copy()    
-        self.from_int(self.trunc_to_int())
-        if self.neg and not self.equals(n):
-            self = sub(self, self.one) 
+        n = self.from_int(self.trunc_to_int())
+        if n.neg and not self.equals(n):
+            self = sub(n, n.one)
+        else:
+            self = n     
         return self
         
 
