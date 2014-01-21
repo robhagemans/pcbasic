@@ -188,7 +188,7 @@ def get_array(name, index):
     if name[-1]=='%':
         return ('%', vartypes.sint_to_value(value))
     else:
-        return (name[-1], map(chr, value))
+        return (name[-1], value)
     
     
 def set_array(name, index, value):

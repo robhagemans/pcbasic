@@ -601,8 +601,8 @@ def operation_xor(pix0, pix1):
    
 def set_area(x0,y0, array, operation):
     byte_array = var.get_bytearray(array)
-    dx = vartypes.uint_to_value(map(chr, byte_array[0:2]))
-    dy = vartypes.uint_to_value(map(chr, byte_array[2:4]))
+    dx = vartypes.uint_to_value(byte_array[0:2])
+    dy = vartypes.uint_to_value(byte_array[2:4])
     # in mode 1, number of x bits is given rather than pixels
     if console.screen_mode==1:
         dx/=2
