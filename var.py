@@ -27,7 +27,7 @@ common_array_names = []
 # 'free memory' as reported by FRE
 total_mem = 60300    
 free_mem = total_mem    
-
+byte_size = {'$':3, '%':2, '!':4, '#':8}
 
 def clear_variables():
     global variables, arrays, array_base, functions, common_names, common_array_names
@@ -87,8 +87,6 @@ def erase_array(name):
         raise error.RunError(5)    
 
 #######################################
-
-byte_size = {'%':2, '!':4, '#':8}
 
 def index_array(index, dimensions):
     bigindex = 0
@@ -190,7 +188,7 @@ def get_array(name, index):
     if name[-1]=='%':
         return ('%', vartypes.sint_to_value(value))
     else:
-        return (name[-1], map(chr, list(value)))
+        return (name[-1], map(chr, value))
     
     
 def set_array(name, index, value):
@@ -265,9 +263,11 @@ def variables_memory_size():
             mem_used += var_size_bytes(name)
     for name in arrays:
         mem_used += 4 + array_size_bytes(name) + max(3, len(name))
-        dimensions, dummy = arrays[name]
+        dimensions, lst = arrays[name]
         mem_used += 2*len(dimensions)    
-        # can't have array of strings
+        if name[-1] == '$':
+            for mem in lst:
+                mem_used += len(mem)
     return mem_used
 
 
