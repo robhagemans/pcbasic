@@ -600,122 +600,88 @@ def operation_xor(pix0, pix1):
    
    
 def set_area(x0,y0, array, operation):
-    global bitsperpixel, size
-    
-    byte_array = []
-    for i in range(4):
-        byte_array.append( var.get_array_byte(array, i) )
-    
-    dx = vartypes.uint_to_value(byte_array[0:2])
-    dy = vartypes.uint_to_value(byte_array[2:4])
-
-    
+    byte_array = var.get_bytearray(array)
+    dx = vartypes.uint_to_value(map(chr, byte_array[0:2]))
+    dy = vartypes.uint_to_value(map(chr, byte_array[2:4]))
     # in mode 1, number of x bits is given rather than pixels
     if console.screen_mode==1:
         dx/=2
-    
     x1,y1 = x0+dx-1, y0+dy-1
-    
     bytesperword=2
-    #bitsperword = bytesperword*8
-    
     backend.apply_graph_clip()
     x0,y0 = view_coords(x0,y0)
     x1,y1 = view_coords(x1,y1)
-
     byte = 4
-    mask=0x80
-    hilo=0
-    
+    mask = 0x80
+    hilo = 0
     for y in range(y0,y1+1):
         for x in range(x0,x1+1):
-            
             if x<0 or x>=size[0] or y<0 or y>=size[1]:
                 pixel = 0
             else:
                 pixel = backend.get_pixel(x,y)
-           
             index = 0
-            
             for b in range(bitsperpixel):
-                if ord( var.get_array_byte(array, byte+hilo+b*bytesperword) )&mask !=0:
-                    index |= 1<<b  
-            mask>>=1
-            
-            if mask==0: 
-                mask=0x80
-                
-                if hilo==bytesperword-1:
-                    byte+=bitsperpixel*bytesperword
-                    hilo=0
+                try:
+                    if byte_array[byte+hilo+b*bytesperword] & mask != 0:
+                        index |= 1<<b  
+                except IndexError:
+                    pass
+            mask >>= 1
+            if mask == 0: 
+                mask = 0x80
+                if hilo == bytesperword-1:
+                    byte += bitsperpixel*bytesperword
+                    hilo = 0
                 else:
-                    hilo+=1
-        
+                    hilo += 1
             if x>=0 and x<size[0] and y>=0 and y<size[1]:
                 backend.put_pixel(x,y, operation(pixel, index)) 
-    
         # left align next row
         if mask !=0x80:
-            mask=0x80
-            byte+=bitsperpixel*bytesperword
-            hilo=0
-    
+            mask = 0x80
+            byte += bitsperpixel*bytesperword
+            hilo = 0
     backend.remove_graph_clip()        
                 
         
 def get_area(x0,y0,x1,y1, array):
     global bitsperpixel, size
-    
     dx = (x1-x0+1)
     dy = (y1-y0+1)
-   
-    # in mode 1, number of x bits is given rather than pixels
+    byte_array = var.get_bytearray(array)
     if console.screen_mode==1:
-        byte_array = list(vartypes.value_to_uint(dx*2)) + list(vartypes.value_to_uint(dy)) 
+        byte_array[0:4] = vartypes.value_to_uint(dx*2) + vartypes.value_to_uint(dy)
     else:
-        byte_array = list(vartypes.value_to_uint(dx)) + list(vartypes.value_to_uint(dy)) 
-
-    for i in range(4):
-        var.set_array_byte(array, i, byte_array[i])
-
+        byte_array[0:4] = vartypes.value_to_uint(dx) + vartypes.value_to_uint(dy) 
     bytesperword=2
-    #bitsperword=bytesperword*8
-    
     x0,y0 = view_coords(x0,y0)
     x1,y1 = view_coords(x1,y1)
-    
     byte = 4
-    
-    mask=0x80
-    hilo=0
+    mask = 0x80
+    hilo = 0
     for y in range(y0,y1+1):
         for x in range(x0,x1+1):
             if x>=0 and x<size[0] and y>=0 and y<size[1]:
                 pixel = backend.get_pixel(x,y)
             else:
                 pixel = 0
-                
             for b in range(bitsperpixel):
                 if pixel&(1<<b) != 0:
-                    var.set_array_byte(  array, byte+hilo+b*bytesperword,  \
-                               chr(ord(var.get_array_byte(array, byte+hilo+b*bytesperword)) | mask)  )
-
-            mask>>=1
-            
-            if mask==0: 
-                mask=0x80
-                
-                if hilo==bytesperword-1:
-                    byte+=bitsperpixel*bytesperword
-                    hilo=0
+                    byte_array[byte+hilo+b*bytesperword] |= mask 
+            mask >>= 1
+            if mask == 0: 
+                mask = 0x80
+                if hilo == bytesperword-1:
+                    byte += bitsperpixel*bytesperword
+                    hilo = 0
                 else:
-                    hilo+=1
-        
+                    hilo += 1
         # left align next row
         if mask !=0x80:
-            mask=0x80
-            byte+=bitsperpixel*bytesperword
-            hilo=0
+            mask = 0x80
+            byte += bitsperpixel*bytesperword
+            hilo = 0
 
 
 def set_graph_view(x0,y0,x1,y1, absolute=True):
