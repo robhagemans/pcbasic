@@ -9,6 +9,7 @@
 # please see text file COPYING for licence terms.
 #
 
+
 import error
 import vartypes
 from string_ptr import StringPtr
@@ -85,6 +86,9 @@ def erase_array(name):
         # illegal fn call
         raise error.RunError(5)    
 
+#######################################
+
+byte_size = {'%':2, '!':4, '#':8}
 
 def index_array(index, dimensions):
     bigindex = 0
@@ -100,6 +104,22 @@ def array_len(dimensions):
     return index_array(dimensions, dimensions)+1    
 
 
+def var_size_bytes(name):
+    try:
+        return byte_size[name[-1]]  
+    except KeyError:
+        raise error.RunError(5)
+
+
+def array_size_bytes(name):
+    try:
+        [dimensions, lst] = arrays[name]
+    except KeyError:
+        return 0
+    size = array_len(dimensions)
+    return size*var_size_bytes(name)     
+
+
 def dim_array(name, dimensions):
     global arrays
     name = vartypes.complete_name(name)
@@ -109,12 +129,16 @@ def dim_array(name, dimensions):
     for d in dimensions:
         if d < 0:
             # illegal function call
-            raise error.RunError (5)
+            raise error.RunError(5)
         elif d < array_base:
             # subscript out of range
-            raise error.RunError (9)
+            raise error.RunError(9)
     size = array_len(dimensions)
-    arrays[name] = [ dimensions, [vartypes.null_keep(name[-1])[1]]*size ]  
+    if name[-1]=='$':
+        arrays[name] = [ dimensions, ['']*size ]  
+    else:
+        arrays[name] = [ dimensions, bytearray(size*var_size_bytes(name)) ]  
+
 
 
 def check_dim_array(name, index):
@@ -135,68 +159,15 @@ def check_dim_array(name, index):
     return [dimensions, lst]
 
 
-def var_size_bytes(name):
-    if name[-1] == '$':
-        raise error.RunError(5)
-    elif name[-1] == '%':
-        return 2
-    elif name[-1] == '!':
-        return 4    
-    elif name[-1] == '#':
-        return 8        
-
-
-def array_size_bytes(name):
+def get_bytearray(name):
+    if name[-1]=='$':
+        # can't use string arrays for get/put
+        raise error.RunError(13) # type mismatch
     try:
-        [dimensions, lst] = arrays[name]
+        [_, lst] = arrays[name]
+        return lst
     except KeyError:
-        return 0
-    size = array_len(dimensions)
-    return size*var_size_bytes(name)     
-
-
-def get_array_byte(name, byte_num):
-    try:
-        [dimensions, lst] = arrays[name]
-    except KeyError:
-        return '\x00'
-    bytespernumber = var_size_bytes(name)
-    bigindex = byte_num / bytespernumber
-    if bigindex >= len(lst):
-        return '\x00'
-    number = lst[bigindex]    
-    byteindex = byte_num % bytespernumber        
-    if name[-1]=='%':
-        return (vartypes.value_to_sint(number))[byteindex] 
-    elif name[-1]=='!':
-        return (number)[byteindex]
-    elif name[-1]=='#':
-        return (number)[byteindex]
-    return '\x00'       
-
-
-def set_array_byte(name, byte_num, value):
-    try:    
-        [dimensions, lst] = arrays[name]
-    except KeyError:
-        return 0
-    bytespernumber = var_size_bytes(name)
-    bigindex = byte_num / bytespernumber
-    if bigindex >= len(lst):
-        return 0
-    number = lst[bigindex]    
-    byteindex = byte_num % bytespernumber        
-    if name[-1]=='%':
-        bytepair = list(vartypes.value_to_sint(number))
-        bytepair[byteindex] = value
-        #number = ('%', vartypes.sint_to_value(bytepair) )
-        number = vartypes.sint_to_value(bytepair)
-    elif name[-1] in ('!', '#'):
-        byte_array = list(number)
-        byte_array[byteindex] = value
-        number=byte_array
-    # still referencing the stored array
-    lst[bigindex] = number    
+        return bytearray()
 
 
 def base_array(base):
@@ -213,13 +184,28 @@ def base_array(base):
 def get_array(name, index):
     [dimensions, lst] = check_dim_array(name, index)
     bigindex = index_array(index, dimensions)
-    return (name[-1], lst[bigindex])
-
+    if name[-1]=='$':
+        return (name[-1], lst[bigindex])
+    value = lst[bigindex*var_size_bytes(name):(bigindex+1)*var_size_bytes(name)]
+    if name[-1]=='%':
+        return ('%', vartypes.sint_to_value(value))
+    else:
+        return (name[-1], map(chr, list(value)))
+    
     
 def set_array(name, index, value):
     [dimensions, lst] = check_dim_array(name, index)
     bigindex = index_array(index, dimensions)
-    lst[bigindex] = vartypes.pass_type_keep(name[-1], value)[1]
+    value = vartypes.pass_type_keep(name[-1], value)[1]
+    if name[-1]=='$':
+       lst[bigindex] = value
+       return 
+    bytesize = var_size_bytes(name)
+    if name[-1]=='%':
+        lst[bigindex*bytesize:(bigindex+1)*bytesize] = vartypes.value_to_sint(value)
+    else:
+        lst[bigindex*bytesize:(bigindex+1)*bytesize] = value
+
 
     
 def get_var_or_array(name, indices):

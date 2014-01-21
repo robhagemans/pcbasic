@@ -192,13 +192,12 @@ def uint_to_value(s):
 
 def sint_to_value(s):
     # 2's complement signed int, least significant byte first, sign bit is most significant bit
-    s = map(ord, s)
+    s = bytearray(s)
     value =  0x100 * (s[1] & 0x7f) + s[0]
     if (s[1] & 0x80) == 0x80:
         return -0x8000 + value 
     else: 
         return value
-
     
 # python int to python str
 
