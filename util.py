@@ -179,7 +179,7 @@ def parse_line_number(ins):
         ins.seek(-len(off)-2,1)
         return -1
     else:
-        return vartypes.uint_to_value(off)
+        return vartypes.uint_to_value(bytearray(off))
     
   
 # parses a line number when referred toindirectly as in GOTO, GOSUB, LIST, RENUM, EDIT, etc.
@@ -187,7 +187,7 @@ def parse_jumpnum(ins):
     d = skip_white_read(ins)
     jumpnum=-1
     if d in ('\x0d', '\x0e'):
-        jumpnum = vartypes.uint_to_value(ins.read(2))    
+        jumpnum = vartypes.uint_to_value(bytearray(ins.read(2)))    
     else:
         # Syntax error
         raise error.RunError(2)
@@ -217,10 +217,10 @@ def parse_line_range(ins):
     from_line=-1
     to_line=-1
     if skip_white_read_if(ins, ('\x0E',)):   # line number starts
-        from_line = vartypes.uint_to_value(ins.read(2))
+        from_line = vartypes.uint_to_value(bytearray(ins.read(2)))
     if skip_white_read_if(ins, ('\xEA',)):   # -
         if skip_white_read_if(ins, ('\x0E',)):
-            to_line = vartypes.uint_to_value(ins.read(2))
+            to_line = vartypes.uint_to_value(bytearray(ins.read(2)))
     else:
         to_line = from_line
     return (from_line, to_line)    
@@ -231,19 +231,19 @@ def parse_value(ins):
     d = ins.read(1)
     # note that hex and oct strings are interpreted signed here, but unsigned the other way!
     if d == '\x0b':                         # octal constant (unsigned)
-        return ('%', vartypes.sint_to_value(ins.read(2)) )
+        return ('%', vartypes.sint_to_value(bytearray(ins.read(2))) )
     elif d == '\x0c':                       # hex constant (unsigned)
-        return ('%', vartypes.sint_to_value(ins.read(2)) )
+        return ('%', vartypes.sint_to_value(bytearray(ins.read(2))) )
     elif d == '\x0f':                       # one byte constant
         return ('%', ord(ins.read(1)) )
     elif d >= '\x11' and d <= '\x1b':       # constants 0 to 10  
         return ('%', ord(d) - 0x11 )
     elif d == '\x1c':          # two byte data constant (signed)
-        return ('%', vartypes.sint_to_value(ins.read(2)) )
+        return ('%', vartypes.sint_to_value(bytearray(ins.read(2))) )
     elif d == '\x1d':          # four byte single-precision floating point constant
-        return ('!', list(ins.read(4)) )
+        return ('!', bytearray(ins.read(4)) )
     elif d == '\x1f':          # eight byte double-precision floating point constant
-        return ('#', list(ins.read(8)) )
+        return ('#', bytearray(ins.read(8)) )
     return ('','')
 
 

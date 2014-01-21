@@ -183,22 +183,36 @@ def pass_string_unpack(inp, allow_empty=False, err=13):
 # unpack tokenised numeric constants
 
 def ubyte_to_value(s):
-    return ord(s)
+    return s[0]
     
 def uint_to_value(s):
-    s = map(ord, s)
     # unsigned int. 
     return 0x100 * s[1] + s[0]
 
 def sint_to_value(s):
     # 2's complement signed int, least significant byte first, sign bit is most significant bit
-    s = bytearray(s)
     value =  0x100 * (s[1] & 0x7f) + s[0]
     if (s[1] & 0x80) == 0x80:
         return -0x8000 + value 
     else: 
         return value
     
+# python ints to tokenised ints
+
+def value_to_uint(n):
+    if n>0xffff:
+        # overflow
+        raise error.RunError(6)        
+    return bytearray((n&0xff, n >> 8)) 
+
+def value_to_sint(n):
+    if n>0xffff:  # 0x7fff ?
+        # overflow
+        raise error.RunError(6)     
+    if n<0:
+        n = 0x10000 + n        
+    return bytearray((n&0xff, n >> 8)) 
+
 # python int to python str
 
 def int_to_str(num):
@@ -213,7 +227,7 @@ def sint_to_str(s):
     return str(sint_to_value(s))
 
 def ubyte_to_str(s):
-    return str(ord(s))
+    return str(ubyte_to_value(s))
     
 def hex_to_str(s):
     return "&H" + hex(uint_to_value(s))[2:].upper()
@@ -221,22 +235,6 @@ def hex_to_str(s):
 def oct_to_str(s):
     return "&O" + oct(uint_to_value(s))[1:]
     
-# python ints to tokenised ints
-
-def value_to_uint(n):
-    if n>0xffff:
-        # overflow
-        raise error.RunError(6)        
-    return chr(n&0xff)+ chr(n >> 8) 
-
-def value_to_sint(n):
-    if n>0xffff:  # 0x7fff ?
-        # overflow
-        raise error.RunError(6)     
-    if n<0:
-        n = 0x10000 + n        
-    return chr(n&0xff)+ chr(n >> 8) 
-
 
 # python str to tokenised int
 
@@ -321,8 +319,8 @@ def vabs(inp):
     elif inp[0]== '%':
         return (inp[0], abs(inp[1]))
     elif inp[0] in ('!','#'):
-        out = (inp[0], inp[1][:]) #copy.deepcopy(inp) 
-        out[1][-2] = chr( ord(out[1][-2]) & 0x7F ) 
+        out = (inp[0], inp[1][:])  
+        out[1][-2] &= 0x7F 
         return out  
     elif inp[0]=='':
         raise error.RunError(2)    
@@ -382,12 +380,12 @@ def vneg(inp):
     elif inp[0]== '%':
         return (inp[0], -inp[1])
     elif inp[0] == '!':
-        out = (inp[0], inp[1][:]) #copy.deepcopy(inp) 
-        out[1][2] = chr( ord(out[1][2]) ^ 0x80 ) 
+        out = (inp[0], inp[1][:]) 
+        out[1][2] ^= 0x80 
         return out  
     elif inp[0]=='#':
-        out = (inp[0], inp[1][:]) #copy.deepcopy(inp) 
-        out[1][6] = chr( ord(inp[1][6]) ^ 0x80 ) 
+        out = (inp[0], inp[1][:]) 
+        out[1][6] ^= 0x80  
         return out 
     elif inp[0]=='':
         raise error.RunError(2)    

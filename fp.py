@@ -76,7 +76,6 @@ class Float(object):
 
     @classmethod
     def from_bytes(cls,s):
-        s = map(ord, s) 
         # put mantissa in form . 1 f1 f2 f3 ... f23
         # internal representation has four bytes, last byte is carry for intermediate results
         # put mantissa in form . 1 f1 f2 f3 ... f55
@@ -92,7 +91,7 @@ class Float(object):
         #n = self.copy()
         self.apply_carry()
         # extract bytes    
-        s=[]
+        s = bytearray()
         man = self.man
         for _ in range(self.byte_size-1):
             man >>= 8
@@ -103,7 +102,7 @@ class Float(object):
         s[-2] &= 0x7f
         if (self.neg):
             s[-2] |= 0x80
-        return map(chr, s)
+        return s
 
     def is_zero(self):
         return self.exp==0
@@ -422,15 +421,15 @@ class Single(Float):
     bias = true_bias + mantissa_bits
     carry_mask = 0xffffff00
     
-Single.zero    = from_bytes('\x00\x00\x00\x00')
-Single.half    = from_bytes('\x00\x00\x00\x80')
-Single.one     = from_bytes('\x00\x00\x00\x81')
-Single.two     = from_bytes('\x00\x00\x00\x82')
-Single.ten     = from_bytes('\x00\x00\x20\x84')
-Single.max     = from_bytes('\xff\xff\x7f\xff')
-Single.e       = from_bytes('\x54\xf8\x2d\x82')
-Single.pi      = from_bytes('\xdb\x0f\x49\x82')
-Single.log2    = from_bytes('\x16\x72\x31\x80')    # ln 2
+Single.zero    = from_bytes(bytearray('\x00\x00\x00\x00'))
+Single.half    = from_bytes(bytearray('\x00\x00\x00\x80'))
+Single.one     = from_bytes(bytearray('\x00\x00\x00\x81'))
+Single.two     = from_bytes(bytearray('\x00\x00\x00\x82'))
+Single.ten     = from_bytes(bytearray('\x00\x00\x20\x84'))
+Single.max     = from_bytes(bytearray('\xff\xff\x7f\xff'))
+Single.e       = from_bytes(bytearray('\x54\xf8\x2d\x82'))
+Single.pi      = from_bytes(bytearray('\xdb\x0f\x49\x82'))
+Single.log2    = from_bytes(bytearray('\x16\x72\x31\x80'))    # ln 2
 Single.twopi   = mul(Single.pi, Single.two) 
 Single.pi2     = mul(Single.pi, Single.half)
 Single.pi4     = mul(Single.pi2, Single.half)
@@ -440,15 +439,15 @@ Single.taylor = [
     Single.one,                      # 1/0!
     Single.one,                      # 1/1!
     Single.half,                     # 1/2
-    from_bytes('\xab\xaa\x2a\x7e'),  # 1/6
-    from_bytes('\xab\xaa\x2a\x7c'),  # 1/24
-    from_bytes('\x89\x88\x08\x7a'),  # 1/120
-    from_bytes('\x61\x0b\x36\x77'),  # 1/720
-    from_bytes('\x01\x0D\x50\x74'),  # 1/5040
-    from_bytes('\x01\x0D\x50\x71'),  # 1/40320
-    from_bytes('\x1d\xef\x38\x6e'),  # 1/362880
-    from_bytes('\x7e\xf2\x13\x6b'),  # 1/3628800
-    from_bytes('\x2b\x32\x57\x67'),  # 1/39916800
+    from_bytes(bytearray('\xab\xaa\x2a\x7e')),  # 1/6
+    from_bytes(bytearray('\xab\xaa\x2a\x7c')),  # 1/24
+    from_bytes(bytearray('\x89\x88\x08\x7a')),  # 1/120
+    from_bytes(bytearray('\x61\x0b\x36\x77')),  # 1/720
+    from_bytes(bytearray('\x01\x0D\x50\x74')),  # 1/5040
+    from_bytes(bytearray('\x01\x0D\x50\x71')),  # 1/40320
+    from_bytes(bytearray('\x1d\xef\x38\x6e')),  # 1/362880
+    from_bytes(bytearray('\x7e\xf2\x13\x6b')),  # 1/3628800
+    from_bytes(bytearray('\x2b\x32\x57\x67')),  # 1/39916800
     ]
 
 
@@ -459,14 +458,14 @@ class Double(Float):
     bias = true_bias + mantissa_bits
     carry_mask = 0xffffffffffffff00    
 
-Double.zero = from_bytes('\x00\x00\x00\x00\x00\x00\x00\x00')
-Double.half = from_bytes('\x00\x00\x00\x00\x00\x00\x00\x80')
-Double.one  = from_bytes('\x00\x00\x00\x00\x00\x00\x00\x81')
-Double.two  = from_bytes('\x00\x00\x00\x00\x00\x00\x00\x82')
-Double.ten  = from_bytes('\x00\x00\x00\x00\x00\x00\x20\x84')
-Double.max  = from_bytes('\xff\xff\xff\xff\xff\xff\x7f\xff')
-Double.e    = from_bytes('\x4b\xbb\xa2\x58\x54\xf8\x2d\x82')
-Double.pi   = from_bytes('\xc2\x68\x21\xa2\xda\x0f\x49\x82')
+Double.zero = from_bytes(bytearray('\x00\x00\x00\x00\x00\x00\x00\x00'))
+Double.half = from_bytes(bytearray('\x00\x00\x00\x00\x00\x00\x00\x80'))
+Double.one  = from_bytes(bytearray('\x00\x00\x00\x00\x00\x00\x00\x81'))
+Double.two  = from_bytes(bytearray('\x00\x00\x00\x00\x00\x00\x00\x82'))
+Double.ten  = from_bytes(bytearray('\x00\x00\x00\x00\x00\x00\x20\x84'))
+Double.max  = from_bytes(bytearray('\xff\xff\xff\xff\xff\xff\x7f\xff'))
+Double.e    = from_bytes(bytearray('\x4b\xbb\xa2\x58\x54\xf8\x2d\x82'))
+Double.pi   = from_bytes(bytearray('\xc2\x68\x21\xa2\xda\x0f\x49\x82'))
 
 
 ##########################################
@@ -757,12 +756,12 @@ kill_char = ('\x1c', '\x1d', '\x1f')
 
 # string representations
 
-Single.lim_top = from_bytes('\x7f\x96\x18\x98') # 9999999, highest float less than 10e+7
-Single.lim_bot = from_bytes('\xff\x23\x74\x94') # 999999.9, highest float  less than 10e+6
+Single.lim_top = from_bytes(bytearray('\x7f\x96\x18\x98')) # 9999999, highest float less than 10e+7
+Single.lim_bot = from_bytes(bytearray('\xff\x23\x74\x94')) # 999999.9, highest float  less than 10e+6
 Single.type_sign, Single.exp_sign = '!', 'E'
 
-Double.lim_top = from_bytes('\xff\xff\x03\xbf\xc9\x1b\x0e\xb6') # highest float less than 10e+16
-Double.lim_bot = from_bytes('\xff\xff\x9f\x31\xa9\x5f\x63\xb2') # highest float less than 10e+15 
+Double.lim_top = from_bytes(bytearray('\xff\xff\x03\xbf\xc9\x1b\x0e\xb6')) # highest float less than 10e+16
+Double.lim_bot = from_bytes(bytearray('\xff\xff\x9f\x31\xa9\x5f\x63\xb2')) # highest float less than 10e+15 
 Double.type_sign, Double.exp_sign = '#', 'D'
 
 

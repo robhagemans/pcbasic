@@ -202,8 +202,7 @@ def exec_paint(ins):
         cval = expressions.parse_expression(ins, allow_empty=True)
         if cval[0]=='$':
             # pattern given
-            pattern = vartypes.pass_string_unpack(cval)
-            pattern = map(ord, list(pattern))
+            pattern = bytearray(vartypes.pass_string_unpack(cval))
             if len(pattern)==0:
                 # empty pattern "" is illegal function call
                 raise error.RunError(5)
