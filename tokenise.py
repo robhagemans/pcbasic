@@ -178,21 +178,21 @@ def detokenise_number(bytes):
     s = bytes.read(1)
     output=''
     if s == '\x0b':                           # 0B: octal constant (unsigned int)
-        output += vartypes.oct_to_str(bytes.read(2))
+        output += vartypes.oct_to_str(bytearray(bytes.read(2)))
     elif s == '\x0c':                           # 0C: hex constant (unsigned int)
-        output += vartypes.hex_to_str(bytes.read(2))
+        output += vartypes.hex_to_str(bytearray(bytes.read(2)))
     elif s == '\x0f':                           # 0F: one byte constant
-        output += vartypes.ubyte_to_str(bytes.read(1))
+        output += vartypes.ubyte_to_str(bytearray(bytes.read(1)))
     elif s >= '\x11' and s < '\x1b':            # 11-1B: constants 0 to 10
         output += chr(ord('0') + ord(s) - 0x11)
     elif s == '\x1b':               
         output += '10'
     elif s == '\x1c':                           # 1C: two byte signed int
-        output += vartypes.sint_to_str(bytes.read(2))
+        output += vartypes.sint_to_str(bytearray(bytes.read(2)))
     elif s == '\x1d':                           # 1D: four-byte single-precision floating point constant
-        output += fp.to_str(fp.from_bytes(bytes.read(4)), screen=False, write=False)
+        output += fp.to_str(fp.from_bytes(bytearray(bytes.read(4))), screen=False, write=False)
     elif s == '\x1f':                           # 1F: eight byte double-precision floating point constant
-        output += fp.to_str(fp.from_bytes(bytes.read(8)), screen=False, write=False)
+        output += fp.to_str(fp.from_bytes(bytearray(bytes.read(8))), screen=False, write=False)
     else:
         if s!='':
             bytes.seek(-1,1)  
@@ -583,13 +583,13 @@ def tokenise_number(ins, outs):
                 # two-byte constant
                 outs.write('\x1c'+vartypes.value_to_sint(int(word)))
         else:
-            mbf = fp.from_str(word).to_bytes()
+            mbf = str(fp.from_str(word).to_bytes())
             if len(mbf) == 4:
                 # single
-                outs.write('\x1d'+''.join(mbf))
+                outs.write('\x1d'+mbf)
             else:    
                 # double
-                outs.write('\x1f'+''.join(mbf))
+                outs.write('\x1f'+mbf)
     
     elif c!='':
             ins.seek(-1,1)

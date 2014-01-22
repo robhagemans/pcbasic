@@ -22,23 +22,22 @@ all_types = numeric + strings
 deftype = ['!']*26
 
 
+null = { '$': ('$', ''), '%': ('%',0), '!':('!', bytearray('\x00')*4), '#':('#', bytearray('\x00')*8) }
+
+
 def complete_name(name):
     if name != '' and name[-1] not in all_types:
         name += deftype[ ord(name[0].upper()) - ord('A') ]
     return name
 
 
-def is_type(typechars, value):
-    return (value[0] in typechars)
-
-
-def pass_int_keep(inp, maxint=0x7fff, err=13):
-    val = 0
-    if inp[0]=='%':
-        val= inp[1]
-    elif inp[0] in ('!', '#'):
-        val= fp.unpack(inp).round_to_int()
-    elif inp[0]=='':
+def pass_int_unpack(inp, maxint=0x7fff, err=13):
+    typechar = inp[0]
+    if typechar == '%':
+        val = inp[1]
+    elif typechar in ('!', '#'):
+        val = fp.unpack(inp).round_to_int()
+    elif typechar == '':
         raise error.RunError(2)    
     else:     
         # type mismatch
@@ -46,36 +45,40 @@ def pass_int_keep(inp, maxint=0x7fff, err=13):
     if val > maxint or val < -0x8000:
         # overflow
         raise error.RunError(6)
-    
-    return ('%', val)
+    return val
+
+
+
+def pass_int_keep(inp, maxint=0x7fff, err=13):
+    return ('%', pass_int_unpack(inp, maxint, err))
 
 
 def pass_single_keep(num):
-    if num[0] == '!':
+    typechar = num[0]
+    if typechar == '!':
         return num
-    elif num[0] == '%':
+    elif typechar == '%':
         return fp.pack(fp.Single.from_int(num[1]))
-    elif num[0] == '#':
+    elif typechar == '#':
+        val = num[1][4:]
         # TODO: *round* to single
-        if (ord(num[1][6]) & 0x80) == 0: 
-            val= num[1][4:]
-        else:
-            val= num[1][4:]
+        #if (num[1][3] & 0x80) == 1: 
         return ('!', val)        
-    elif num[0] == '$':
+    elif typechar == '$':
         raise error.RunError(13)
     else:
         raise error.RunError(2)
     
     
 def pass_double_keep(num):
-    if num[0] == '#':
+    typechar = num[0]
+    if typechar == '#':
         return num
-    elif num[0] == '%':
+    elif typechar == '%':
         return fp.pack(fp.Double.from_int(num[1]))
-    elif num[0] == '!':
-        return ('#', ['\x00', '\x00', '\x00', '\x00', num[1][0], num[1][1], num[1][2], num[1][3]])    
-    elif num[0] == '$':
+    elif typechar == '!':
+        return ('#', bytearray('\x00\x00\x00\x00')+num[1])    
+    elif typechar == '$':
         raise error.RunError(13)
     else:
         raise error.RunError(2)
@@ -105,9 +108,9 @@ def pass_type_keep(typechar, value):
         return pass_string_keep(value)
     elif typechar == '%':
         return pass_int_keep(value)
-    elif typechar=='!':
+    elif typechar == '!':
         return pass_single_keep(value)
-    elif typechar=='#':
+    elif typechar == '#':
         return pass_double_keep(value)
     else:
         raise error.RunError(2)
@@ -129,18 +132,19 @@ def pass_most_precise_keep(left, right, err=13):
 # screen=False means in a program listing
 # screen=True is used for screen, str$ and sequential files
 def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=False):
-    if inp[0] == '$':
+    typechar = inp[0]
+    if typechar == '$':
         return ('$', inp[1])
-    elif inp[0]== '%':
+    elif typechar == '%':
         if screen and not write and inp[1]>=0:
             return ('$', ' '+ int_to_str(inp[1]) )
         else:
             return ('$', int_to_str(inp[1]))
-    elif inp[0]=='!':
+    elif typechar == '!':
         return ('$', fp.to_str(fp.unpack(inp), screen, write) )
-    elif inp[0]=='#':
+    elif typechar == '#':
         return ('$', fp.to_str(fp.unpack(inp), screen, write) )
-    elif inp[0]=='':
+    elif typechar == '':
         if allow_empty_expression:
             return ('$', '')
         else:
@@ -149,15 +153,6 @@ def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=Fal
         raise error.RunError(2)    
 
 
-def null_keep(typechar):
-    if typechar=='$':
-        return ('$', '')
-    elif typechar == '%':
-        return ('%', 0)
-    elif typechar == '!':
-        return fp.pack(fp.Single.zero)
-    elif typechar == '#':
-        return fp.pack(fp.Double.zero)
 
 ##################################################
 
@@ -172,9 +167,6 @@ def pack_int(inp):
             
 def pack_string(inp):
     return ('$', inp)
-
-def pass_int_unpack(inp, maxint=0x7fff, err=13):
-    return pass_int_keep(inp, maxint, err)[1]
 
 def pass_string_unpack(inp, allow_empty=False, err=13):
     return pass_string_keep(inp, allow_empty, err)[1]
@@ -258,11 +250,8 @@ def str_to_oct(word):
 # boolean functions - two's complement int
 
 def bool_to_int_keep(boo):
-    if boo:
-        return ('%', -1)
-    else:
-        return ('%', 0)
-
+    return ('%', -boo)
+    
 def int_to_bool(iboo):
     return not (iboo[1] == 0)
 
@@ -377,12 +366,11 @@ def vfix(inp):
 def vneg(inp):
     if inp[0] == '$':
         raise error.RunError(13)
-        return inp
-    elif inp[0]== '%':
+    elif inp[0] == '%':
         return (inp[0], -inp[1])
     elif inp[0] in ('!', '#'):
         out = (inp[0], inp[1][:]) 
-        out[1][2] ^= 0x80 
+        out[1][-2] ^= 0x80 
         return out  
     elif inp[0]=='':
         raise error.RunError(2)    
