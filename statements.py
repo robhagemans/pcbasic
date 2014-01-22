@@ -9,6 +9,8 @@
 # please see text file COPYING for licence terms.
 #
 
+from functools import partial
+
 import error
 import vartypes
 import util
@@ -85,7 +87,7 @@ def parse_statement():
         return True
         
     elif c=='\x81':     # END
-        exec_end()
+        exec_end(ins)
     elif c=='\x82':     # FOR
         exec_for(ins)
     elif c=='\x83':     # NEXT
@@ -126,9 +128,9 @@ def parse_statement():
     elif c=='\x92':     # CLEAR
         exec_clear(ins)  
     elif c=='\x93':     # LIST
-        exec_list(ins, console)      
+        exec_list(ins)      
     elif c=='\x94':     # NEW
-        exec_new()
+        exec_new(ins)
     elif c=='\x95':     # ON
         exec_on(ins)
     elif c=='\x96':     # WAIT
@@ -138,7 +140,7 @@ def parse_statement():
     elif c=='\x98':     # POKE
         exec_poke(ins)
     elif c=='\x99':     # CONT
-        exec_cont()
+        exec_cont(ins)
     elif c=='\x9C':     # OUT
         exec_out(ins)
     elif c=='\x9D':     # LPRINT
@@ -170,13 +172,13 @@ def parse_statement():
     elif c=='\xAB':    # RENUM
         exec_renum(ins)
     elif c=='\xAC':   # DEFSTR    
-        exec_deftype('$', ins)
+        exec_defstr(ins)
     elif c=='\xAD':   # DEFINT   
-        exec_deftype('%', ins)
+        exec_defint(ins)
     elif c=='\xAE':   # DEFSNG    
-        exec_deftype('!', ins)
+        exec_defsng(ins)
     elif c=='\xAF':   # DEFDBL    
-        exec_deftype('#', ins)    
+        exec_defdbl(ins)    
     elif c=='\xB0':     # LINE
         exec_line(ins)
     elif c=='\xB1':     # WHILE
@@ -330,6 +332,14 @@ def parse_statement():
 
 #################################################################    
 #################################################################
+
+
+
+exec_defstr = partial(exec_deftype, typechar='$')
+exec_defint = partial(exec_deftype, typechar='%')
+exec_defsng = partial(exec_deftype, typechar='!')
+exec_defdbl = partial(exec_deftype, typechar='#')
+
 
 
 def exec_system(ins): 

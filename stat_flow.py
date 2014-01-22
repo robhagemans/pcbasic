@@ -26,7 +26,7 @@ import oslayer
 import stat_code 
 
 
-def exec_cont():
+def exec_cont(ins):
     if program.stop == None:
         raise error.RunError(17)
     else:    
@@ -54,7 +54,7 @@ def exec_error(ins):
     raise error.RunError(errn)                
     
 
-def exec_end():
+def exec_end(ins):
     program.bytecode.seek(0)
     program.unset_runmode()
     fileio.close_all()
