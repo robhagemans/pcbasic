@@ -48,10 +48,10 @@ def debug_print(s):
     sys.stderr.write(s)    
         
 def debug_step(linum):
-    global debug_tron
     if not tokenise.debug:
         return
     
+    global debug_tron
     if debug_tron:
         debug_print('['+('%i' % linum) +']')
     for (expr, outs) in watch_list:
