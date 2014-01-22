@@ -44,48 +44,43 @@ tron = False
 # debugging
 from stat_debug import *
     
+    
 
 # parses one statement at the current stream pointer in current_codestream
 # return value False: stream ends
 def parse_statement():
     global tron
-            
     ins = program.current_codestream
     program.current_statement = ins.tell()
-    
     c = util.skip_white_read(ins).upper()
     if c=='':
         # stream has ended.
         return False
-    
     # code stream should either be at '\x00' or at ':' to start a statement
-    if c=='\x00':
+    elif c=='\x00':
         # line number marker, new statement
         program.linenum = util.parse_line_number(ins)
-
         if program.linenum == -1:
             # move back to the line-ending \x00 and break
             ins.seek(-1,1)
             program.unset_runmode()
             return False
-            
         if tron:
             console.write('['+('%i' % program.linenum) +']')
-        
         debug_step(program.linenum)
-        
         c = util.skip_white_read(ins).upper()
-    
     elif c==':':
         # new statement
         c = util.skip_white_read(ins).upper()
-        
     if c in util.end_statement:
         # empty statement, return to parse next
         if c!='':
             ins.seek(-1,1)
         return True
-        
+    elif c >= 'A' and c <= 'Z' :
+        # implicit LET
+        ins.seek(-1,1)
+        exec_let(ins)
     elif c=='\x81':     # END
         exec_end(ins)
     elif c=='\x82':     # FOR
@@ -100,12 +95,7 @@ def parse_statement():
         exec_dim(ins)
     elif c=='\x87':     # READ
         exec_read(ins)
-    elif c=='\x88' or c>= 'A' and c <= 'Z' :
-        if c=='\x88':   # LET
-            d = util.skip_white_read(ins)
-            if d == '':
-                raise error.RunError(2)
-        ins.seek(-1,1)
+    elif c=='\x88':    # LET
         exec_let(ins)
     elif c=='\x89':     # GOTO
         exec_goto(ins)
@@ -227,15 +217,15 @@ def parse_statement():
         exec_key(ins)
     elif c=='\xCA':     # LOCATE
         exec_locate(ins)
-    
+    # two-byte tokens
     elif c=='\xFD':
-        c = ins.read(1).upper()
+        ins.read(1)
         # these are all expression tokens, not statement tokens.
         # syntax error
         raise error.RunError(2)
-    
+    # two-byte tokens
     elif c=='\xFE':
-        c = ins.read(1).upper()
+        c = ins.read(1)
         if c=='\x81':      # FILES
             exec_files(ins)
         elif c=='\x82':    # FIELD
@@ -276,7 +266,6 @@ def parse_statement():
             exec_play(ins)
         elif c=='\x94':    # TIMER
             exec_timer(ins)
-        
         elif c=='\x96':    # IOCTL
             exec_ioctl(ins)
         elif c=='\x97':    # CHDIR
@@ -297,12 +286,10 @@ def parse_statement():
             exec_palette(ins)
         elif c=='\xA0':    # LCOPY
             exec_lcopy(ins)
-        
         elif c=='\xA4':     # DEBUG
             exec_DEBUG(ins)
         elif c=='\xA5':     # PCOPY
             exec_pcopy(ins)
-        
         elif c== '\xA7':    # LOCK
             exec_lock(ins)
         elif c== '\xA8':    # UNLOCK
@@ -310,9 +297,9 @@ def parse_statement():
         else:
             # syntax error
             raise error.RunError(2)
-    
+    # two-byte tokens    
     elif c=='\xFF':
-        c = ins.read(1).upper()
+        c = ins.read(1)
         if c == '\x83':       # MID$ statement
             exec_mid(ins)
         elif c == '\xA0':     # PEN statement
@@ -322,11 +309,9 @@ def parse_statement():
         else:
             # syntax error
             raise error.RunError(2)
-    
     else:
         # syntax error
         raise error.RunError(2)
-        
     return True
 
 
@@ -510,3 +495,5 @@ def exec_strig(ins):
             raise error.RunError(2)
     util.require(ins, util.end_statement)
     
+    
+

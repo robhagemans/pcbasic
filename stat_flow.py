@@ -129,11 +129,11 @@ def for_push_next(ins, forpos, varname, start, stop, step):
     comma = (ins.read(1)==',')
     # check var name for NEXT
     varname2 = util.get_var_name(ins)
-    util.skip_white(ins)
+    d = util.skip_white(ins)
     nextpos = ins.tell()
     # no-var only allowed in standalone NEXT
     if varname2=='':
-        if util.peek(ins) not in util.end_statement:
+        if d not in util.end_statement:
             if program.runmode():
                 nextline = program.get_line_number(nextpos)
             else:

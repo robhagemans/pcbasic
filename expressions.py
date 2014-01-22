@@ -84,29 +84,23 @@ def parse_file_number(ins):
 def parse_file_number_opthash(ins):
     if util.skip_white_read_if(ins, '#'):
         util.skip_white(ins)
-    
     number = vartypes.pass_int_unpack(parse_expression(ins))
     if number<0 or number>255:
         raise error.RunError(5)
-        
     return number    
 
 
 def get_var_or_array_name(ins):
     name = util.get_var_name(ins)
-    # array?
     indices=[]
-    if util.skip_white(ins) in ('[', '('):
-        ins.read(1)
+    if util.skip_white_read_if(ins, ('[', '(')):
+        # it's an array, read indices
         indices = parse_int_list(ins, 255, 9) # subscript out of range
         while len(indices)>0 and indices[-1]==None:
             indices = indices[:-1]
         if None in indices:
             raise error.RunError(2)
-        if util.skip_white(ins) not in (']', ')'):
-            raise error.RunError(2)
-        else:
-            ins.read(1) 
+        util.require_read(ins, (']', ')'))
     return name, indices
 
 
@@ -141,19 +135,17 @@ def parse_expression(ins, allow_empty=False):
     d = util.skip_white(ins)
     while d not in util.end_expression: # and d not in util.end_statement:
         units.append(parse_expr_unit(ins))
-        util.skip_white(ins)
+        d = util.skip_white(ins)
         # string lit breaks expression, number after string lit breaks expression, + or - doesnt (could be an operator...
-        #if d in util.end_expression or d in util.end_statement or d=='"' :
-        d = util.peek(ins)
         if d not in operator_tokens:
             break
         else:
             ins.read(1)
-        if d in ['\xE6', '\xE7', '\xE8']:
+        if d in ('\xE6', '\xE7', '\xE8'):
             nxt = util.skip_white(ins)
-            if nxt in ['\xE6', '\xE7', '\xE8']:
+            if nxt in ('\xE6', '\xE7', '\xE8'):
                 ins.read(1)
-                if d==nxt:
+                if d == nxt:
                     raise error.RunError(2)
                 else:    
                     d += nxt
@@ -163,7 +155,6 @@ def parse_expression(ins, allow_empty=False):
                     elif d == '\xe6\xe8': # ><
                         d = '\xe8\xe6'    
         operators.append(d)
-        d = util.skip_white(ins)           
     # empty expression is a syntax error (inside brackets) or Missing Operand (in an assignment) or ok (in print)
     if len(units) == 0:
         if allow_empty:
@@ -252,26 +243,21 @@ def parse_expr_unit(ins):
         if d == '\x00':
             ins.seek(-1,1)
         return ('$', output)
-            
     elif d >= 'A' and d <= 'Z': # variable name
         ins.seek(-1,1)
         name, indices = get_var_or_array_name(ins)
         return var.get_var_or_array(name, indices)
-        
     elif d in tokenise.tokens_number:
         ins.seek(-1,1)
         return util.parse_value(ins)   
-        
     # gw-basic allows adding line numbers to numbers     
     elif d in tokenise.tokens_linenum:
         ins.seek(-1,1)
         return ('%', util.parse_jumpnum(ins))    
-    
-    elif d == '\x85':   # INPUT
+    elif d == '\x85':       # INPUT
         return value_input(ins)
-    elif d == '\xC8':   # SCREEN
+    elif d == '\xC8':       # SCREEN
         return value_screen(ins)
-    
     elif d == '\xD0':       # USR
         return value_usr(ins)
     elif d == '\xD1':       # FN
@@ -284,22 +270,18 @@ def parse_expr_unit(ins):
         return value_err(ins)
     elif d == '\xD6':       # STRING$
         return value_string(ins)
-    
     elif d == '\xD8':       # INSTR
         return value_instr(ins)    
     elif d == '\xDA':       # VARPTR
         return value_varptr(ins)
-    
     elif d == '\xDB':       # CSRLIN
         return ('%', console.get_row())
     elif d == '\xDC':       # POINT
         return value_point(ins)
-    
     elif d == '\xDE':       # INKEY$
         # wait a tick
         console.idle()
         return ('$', console.get_char())
-    
     elif d == '\xE9':        # unary +
         return parse_expr_unit(ins)
     elif d == '\xEA':       # unary -
