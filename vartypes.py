@@ -21,15 +21,15 @@ null = { '$': ('$', ''), '%': ('%',0), '!':('!', bytearray('\x00')*4), '#':('#',
 
 def complete_name(name):
     if name != '' and name[-1] not in ('$', '%', '!', '#'):
-        return name + deftype[ord(name[0].upper()) - 65] # ord('A') 
-    
+        name += deftype[ord(name[0].upper()) - 65] # ord('A') 
+    return name
 
 def pass_int_unpack(inp, maxint=0x7fff, err=13):
     typechar = inp[0]
     if typechar == '%':
-        return inp[1]
+        val = inp[1]
     elif typechar in ('!', '#'):
-        return fp.unpack(inp).round_to_int()
+        val = fp.unpack(inp).round_to_int()
     elif typechar == '':
         raise error.RunError(2)    
     else:     
@@ -38,7 +38,7 @@ def pass_int_unpack(inp, maxint=0x7fff, err=13):
     if val > maxint or val < -0x8000:
         # overflow
         raise error.RunError(6)
-    
+    return val
 
 
 def pass_int_keep(inp, maxint=0x7fff, err=13):
