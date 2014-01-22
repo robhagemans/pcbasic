@@ -260,39 +260,68 @@ def twoscomp_to_int(num):
     return ('%', num)    
     
 
-
-###########################################################
-###########################################################
-###########################################################
-
-# maths functions
-
-from functools import partial
-
-# command line option /d
-# allow double precision math for ^, ATN, COS, EXP, LOG, SIN, SQR, and TAN
-option_double = False
+##################################################
 
 
+def str_gt(left,right):
+    shortest = min(len(left), len(right))
+    for i in range(shortest):
+        if left[i]>right[i]:
+            return True
+        elif left[i]<right[i]:
+            return False
+    # the same so far...
     
-###########################################################
-# unary functions
+    # the shorter string is said to be less than the longer, 
+    # provided they are the same up till the length of the shorter.
+    if len(left)>len(right):
+        return True
+    # left is shorter, or equal strings
+    return False                    
 
 
-# option_double regulated single & double precision math
+def vgt(left, right):
+    gt = False
+    if left[0]=='$':
+        gt = str_gt(pass_string_unpack(left), pass_string_unpack(right))
+    else:
+        left, right = pass_most_precise_keep(left, right)
+        if left[0] in ('#', '!'):
+            gt = fp.unpack(left).gt(fp.unpack(right)) 
+        else:
+            gt = left[1]>right[1]           
+    
+    return bool_to_int_keep(gt) 
+    
+    
+def vplus(left, right):
+    if left[0] == '$':
+        return ('$', pass_string_unpack(left) + pass_string_unpack(right) )
+    else:
+        left, right = pass_most_precise_keep(left, right)
+        if left[0] in ('#', '!'):
+            return fp.pack(fp.unpack(left).iadd(fp.unpack(right)))
+        else:
+            return ('%', left[1]+right[1])           
+    
+    
+def vsgn(inp):
+    if inp[0]=='%':
+        if inp[1]>0:
+            return ('%', 1)
+        elif inp[1] <0:
+            return ('%', -1)
+        else:
+            return ('%', 0)
+    elif inp[0] in ('!','#'):
+        return ('%', fp.unpack(inp).sign() )
+    elif inp[0]=='':
+        raise error.RunError(2)    
+    else:     
+        # type mismatch
+        raise error.RunError(13)
 
-def vunary(inp, fn):
-    return fp.pack(fn(fp.unpack(pass_float_keep(inp, option_double))))
 
-vsqrt = partial(vunary, fn=fp.sqrt)
-vexp = partial(vunary, fn=fp.exp)
-vsin = partial(vunary, fn=fp.sin)
-vcos = partial(vunary, fn=fp.cos)
-vtan = partial(vunary, fn=fp.tan)
-vatn = partial(vunary, fn=fp.atn)
-vlog = partial(vunary, fn=fp.log)
- 
-# others
 
 def vabs(inp):
     if inp[0] == '$':
@@ -311,50 +340,7 @@ def vabs(inp):
         raise error.RunError(13)
     
 
-def vint(inp):
-    if inp[0]=='%':
-        return inp
-    elif inp[0] in ('!', '#'):
-        return fp.pack(fp.unpack(inp).ifloor()) 
-    elif inp[0]=='':
-        raise error.RunError(2)    
-    else:     
-        # type mismatch
-        raise error.RunError(13)
-    
 
-def vsgn(inp):
-    if inp[0]=='%':
-        if inp[1]>0:
-            return ('%', 1)
-        elif inp[1] <0:
-            return ('%', -1)
-        else:
-            return ('%', 0)
-    elif inp[0] in ('!','#'):
-        return ('%', fp.unpack(inp).sign() )
-    elif inp[0]=='':
-        raise error.RunError(2)    
-    else:     
-        # type mismatch
-        raise error.RunError(13)
-    
-
-def vfix(inp):
-    if inp[0]=='%':
-        return inp
-    elif inp[0]=='!':
-        # needs to be a float to avoid overflow
-        return fp.pack(fp.Single.from_int(fp.unpack(inp).trunc_to_int())) 
-    elif inp[0]=='#':
-        return fp.pack(fp.Double.from_int(fp.unpack(inp).trunc_to_int())) 
-    elif inp[0]=='':
-        raise error.RunError(2)    
-    else:     
-        # type mismatch
-        raise error.RunError(13)
-    
-    
 def vneg(inp):
     if inp[0] == '$':
         raise error.RunError(13)
@@ -370,127 +356,4 @@ def vneg(inp):
         # type mismatch
         raise error.RunError(13)
 
-        
-def vnot(inp):
-    # two's complement
-    return ('%', -pass_int_unpack(inp)-1)
-
-    
-# binary operators
-        
-def vcaret(left, right):
-    if (left[0] == '#' or right[0] == '#') and option_double:
-        return fp.pack( fp.power(fp.unpack(pass_double_keep(left)), fp.unpack(pass_double_keep(right))) )
-    else:
-        if right[0]=='%':
-            return fp.pack( fp.unpack(pass_single_keep(left)).ipow_int(right[1]) )
-        else:
-            return fp.pack( fp.power(fp.unpack(pass_single_keep(left)), fp.unpack(pass_single_keep(right))) )
-
-
-def vtimes(left, right):
-    if left[0] == '#' or right[0] == '#':
-        return fp.pack( fp.unpack(pass_double_keep(left)).imul(fp.unpack(pass_double_keep(right))) )
-    else:
-        return fp.pack( fp.unpack(pass_single_keep(left)).imul(fp.unpack(pass_single_keep(right))) )
-
-
-def vdiv(left, right):
-    if left[0] == '#' or right[0] == '#':
-        return fp.pack( fp.div(fp.unpack(pass_double_keep(left)), fp.unpack(pass_double_keep(right))) )
-    else:
-        return fp.pack( fp.div(fp.unpack(pass_single_keep(left)), fp.unpack(pass_single_keep(right))) )
-
-
-def vidiv(left, right):
-    return ('%', pass_int_unpack(left) / pass_int_unpack(right))    
-    
-    
-def vmod(left, right):
-    return ('%', pass_int_unpack(left) % pass_int_unpack(right))    
-
-
-def vplus(left, right):
-    if left[0] == '$':
-        return ('$', pass_string_unpack(left) + pass_string_unpack(right) )
-    else:
-        left, right = pass_most_precise_keep(left, right)
-        if left[0] in ('#', '!'):
-            return fp.pack(fp.unpack(left).iadd(fp.unpack(right)))
-        else:
-            return ('%', left[1]+right[1])           
-    
-
-def vminus(left, right):
-    return vplus(left, vneg(right))
-    
-    
-def str_gt(left,right):
-    shortest = min(len(left), len(right))
-    for i in range(shortest):
-        if left[i]>right[i]:
-            return True
-        elif left[i]<right[i]:
-            return False
-    # the same so far...
-    
-    # the shorter string is said to be less than the longer, 
-    # provided they are the same up till the length of the shorter.
-    if len(left)>len(right):
-        return True
-    # left is shorter, or equal strings
-    return False                    
-
-    
-def vgt(left, right):
-    gt = False
-    if left[0]=='$':
-        gt = str_gt(pass_string_unpack(left), pass_string_unpack(right))
-    else:
-        left, right = pass_most_precise_keep(left, right)
-        if left[0] in ('#', '!'):
-            gt = fp.unpack(left).gt(fp.unpack(right)) 
-        else:
-            gt = left[1]>right[1]           
-    
-    return bool_to_int_keep(gt) 
-    
-
-def vlt(left, right):
-    return vnot(vgte(left, right))
-    
-def vgte(left, right):
-    return vor(vgt(left,right), veq(left, right))
-    
-def vlte(left, right):
-    return vnot(vgt(left, right))
-    
-def veq(left, right):
-    if left[0] == '$':
-        return bool_to_int_keep(pass_string_unpack(left) == pass_string_unpack(right))
-    else:
-        left, right = pass_most_precise_keep(left, right)
-        if left[0] in ('#', '!'):
-            return bool_to_int_keep(fp.unpack(left).equals(fp.unpack(right)) )
-        else:
-            return bool_to_int_keep(left[1]==right[1])    
-
-def vneq(left, right):
-    return vnot(veq(left,right))
-    
-def vand(left, right):
-    return twoscomp_to_int( pass_twoscomp(left) & pass_twoscomp(right) )
             
-def vor(left, right):
-    return twoscomp_to_int( pass_twoscomp(left) | pass_twoscomp(right) )
-                       
-def vxor(left, right):
-    return twoscomp_to_int( pass_twoscomp(left) ^ pass_twoscomp(right) )
-
-def veqv(left, right):
-    return vnot(vxor(left, right))
-
-def vimp(left, right):
-    return vor(vnot(left), right)
-
-    

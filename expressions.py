@@ -187,41 +187,41 @@ def parse_operators(operators, units):
     
 def value_operator(op, left, right):
     if op == '\xED':
-        return vartypes.vcaret(left, right)
+        return vcaret(left, right)
     elif op == '\xEB':
-        return vartypes.vtimes(left, right)
+        return vtimes(left, right)
     elif op == '\xEC':
-        return vartypes.vdiv(left, right)
+        return vdiv(left, right)
     elif op == '\xF4':
-        return vartypes.vidiv(left, right)
+        return vidiv(left, right)
     elif op == '\xF3':
-        return vartypes.vmod(left, right)
+        return vmod(left, right)
     elif op == '\xE9':
-        return vartypes.vplus(left, right)
+        return vplus(left, right)
     elif op == '\xEA':
-        return vartypes.vminus(left, right)
+        return vminus(left, right)
     elif op ==  '\xE6':
-        return vartypes.vgt(left, right)
+        return vgt(left, right)
     elif op ==  '\xE7':
-        return vartypes.veq(left, right)
+        return veq(left, right)
     elif op ==  '\xE8':
-        return vartypes.vlt(left, right)
+        return vlt(left, right)
     elif op ==  '\xE6\xE7':
-        return vartypes.vgte(left, right)
+        return vgte(left, right)
     elif op ==  '\xE8\xE7':
-        return vartypes.vlte(left, right)
+        return vlte(left, right)
     elif op ==  '\xE8\xE6':
-        return vartypes.vneq(left, right)
+        return vneq(left, right)
     elif op ==  '\xEE':
-        return vartypes.vand(left, right)
+        return vand(left, right)
     elif op ==  '\xEF':
-        return vartypes.vor(left, right)
+        return vor(left, right)
     elif op ==  '\xF0':
-        return vartypes.vxor(left, right)
-    elif op ==  '\xF1':
-        return vartypes.veqv(left, right)
+        return vxor(left, right)
+    elif op == '\xF1':
+        return veqv(left, right)
     elif op ==  '\xF2':
-        return vartypes.vimp(left, right)
+        return vimp(left, right)
     else:
         raise error.RunError(2)
     
@@ -263,7 +263,7 @@ def parse_expr_unit(ins):
     elif d == '\xD1':       # FN
         return value_fn(ins)
     elif d == '\xD3':       # NOT
-        return vartypes.vnot(parse_expr_unit(ins))
+        return vnot(parse_expr_unit(ins))
     elif d == '\xD4':       # ERL
         return value_erl(ins)
     elif d == '\xD5':       # ERR
@@ -285,7 +285,7 @@ def parse_expr_unit(ins):
     elif d == '\xE9':        # unary +
         return parse_expr_unit(ins)
     elif d == '\xEA':       # unary -
-        return vartypes.vneg(parse_expr_unit(ins))     
+        return vneg(parse_expr_unit(ins))     
 
 
     elif d == '\xFD':
@@ -311,10 +311,10 @@ def parse_expr_unit(ins):
             return ('$', vartypes.value_to_sint(cint))
         elif d=='\x85':   #MKS$
             csng = vartypes.pass_single_keep(parse_bracket(ins))[1]    
-            return ('$', "".join(csng))
+            return ('$', str(csng))
         elif d=='\x86':   #MKD$
             cdbl = vartypes.pass_double_keep(parse_bracket(ins))[1]    
-            return ('$', "".join(cdbl))
+            return ('$', str(cdbl))
         elif d== '\x8b': # EXTERR
             return value_exterr(ins)
 
@@ -345,13 +345,13 @@ def parse_expr_unit(ins):
         elif d == '\x83':     # MID$
             return value_mid(ins)
         elif d == '\x84':   # SGN
-            return vartypes.vsgn(parse_bracket(ins))
+            return vsgn(parse_bracket(ins))
         elif d == '\x85':   # INT
-            return vartypes.vint(parse_bracket(ins))
+            return vint(parse_bracket(ins))
         elif d == '\x86':   # ABS
-            return vartypes.vabs(parse_bracket(ins))
+            return vabs(parse_bracket(ins))
         elif d == '\x87':   # SQR
-            return vartypes.vsqrt(parse_bracket(ins))
+            return vsqrt(parse_bracket(ins))
         elif d == '\x88':   # RND
             util.skip_white(ins)
             if util.peek(ins) == '(':
@@ -359,17 +359,17 @@ def parse_expr_unit(ins):
             else:
                 return rnd.vrnd(('',''))
         elif d == '\x89':   # SIN
-            return vartypes.vsin(parse_bracket(ins))
+            return vsin(parse_bracket(ins))
         elif d == '\x8a':   # LOG
-            return vartypes.vlog(parse_bracket(ins))
+            return vlog(parse_bracket(ins))
         elif d == '\x8b':   # EXP
-            return vartypes.vexp(parse_bracket(ins))
+            return vexp(parse_bracket(ins))
         elif d == '\x8c':   # COS
-            return vartypes.vcos(parse_bracket(ins))
+            return vcos(parse_bracket(ins))
         elif d == '\x8D':   # TAN
-            return vartypes.vtan(parse_bracket(ins))
+            return vtan(parse_bracket(ins))
         elif d == '\x8E':   # ATN
-            return vartypes.vatn(parse_bracket(ins))
+            return vatn(parse_bracket(ins))
        
             
         elif d == '\x8F':   # FRE
@@ -437,7 +437,7 @@ def parse_expr_unit(ins):
         elif d == '\x9E':   # CDBL
             return vartypes.pass_double_keep(parse_bracket(ins))
         elif d == '\x9F':   # FIX
-            return vartypes.vfix(parse_bracket(ins))    
+            return vfix(parse_bracket(ins))    
         elif d == '\xA0':   # PEN
             return value_pen(ins)
         elif d == '\xA1':   # STICK
@@ -924,4 +924,221 @@ def value_ioctl(ins):
     return ('%', 0)
             
             
+###########################################################
+###########################################################
+###########################################################
+
+# maths functions
+
+from functools import partial
+
+# command line option /d
+# allow double precision math for ^, ATN, COS, EXP, LOG, SIN, SQR, and TAN
+option_double = False
+
+
+    
+###########################################################
+# unary functions
+
+
+# option_double regulated single & double precision math
+
+def vunary(inp, fn):
+    return fp.pack(fn(fp.unpack(vartypes.pass_float_keep(inp, option_double))))
+
+vsqrt = partial(vunary, fn=fp.sqrt)
+vexp = partial(vunary, fn=fp.exp)
+vsin = partial(vunary, fn=fp.sin)
+vcos = partial(vunary, fn=fp.cos)
+vtan = partial(vunary, fn=fp.tan)
+vatn = partial(vunary, fn=fp.atn)
+vlog = partial(vunary, fn=fp.log)
+ 
+# others
+
+def vabs(inp):
+    if inp[0] == '$':
+        raise error.RunError(13)
+        return inp
+    elif inp[0]== '%':
+        return (inp[0], abs(vartype.unpack_int(inp)))
+    elif inp[0] in ('!','#'):
+        out = (inp[0], inp[1][:])  
+        out[1][-2] &= 0x7F 
+        return out  
+    elif inp[0]=='':
+        raise error.RunError(2)    
+    else:     
+        # type mismatch
+        raise error.RunError(13)
+    
+
+def vint(inp):
+    if inp[0]=='%':
+        return inp
+    elif inp[0] in ('!', '#'):
+        return fp.pack(fp.unpack(inp).ifloor()) 
+    elif inp[0]=='':
+        raise error.RunError(2)    
+    else:     
+        # type mismatch
+        raise error.RunError(13)
+    
+
+def vsgn(inp):
+    if inp[0]=='%':
+        inp_int = vartypes.unpack_int(inp) 
+        if inp_int >0:
+            return ('%', 1)
+        elif inp_int <0:
+            return ('%', -1)
+        else:
+            return ('%', 0)
+    elif inp[0] in ('!','#'):
+        return ('%', fp.unpack(inp).sign() )
+    elif inp[0]=='':
+        raise error.RunError(2)    
+    else:     
+        # type mismatch
+        raise error.RunError(13)
+    
+
+def vfix(inp):
+    if inp[0]=='%':
+        return inp
+    elif inp[0]=='!':
+        # needs to be a float to avoid overflow
+        return fp.pack(fp.Single.from_int(fp.unpack(inp).trunc_to_int())) 
+    elif inp[0]=='#':
+        return fp.pack(fp.Double.from_int(fp.unpack(inp).trunc_to_int())) 
+    elif inp[0]=='':
+        raise error.RunError(2)    
+    else:     
+        # type mismatch
+        raise error.RunError(13)
+    
+    
+def vneg(inp):
+    if inp[0] == '$':
+        raise error.RunError(13)
+    elif inp[0] == '%':
+        return vartypes.pack_int(-vartypes.unpack_int(inp))
+    elif inp[0] in ('!', '#'):
+        out = (inp[0], inp[1][:]) 
+        out[1][-2] ^= 0x80 
+        return out  
+    elif inp[0]=='':
+        raise error.RunError(2)    
+    else:     
+        # type mismatch
+        raise error.RunError(13)
+
+        
+def vnot(inp):
+    # two's complement
+    return ('%', -vartypes.pass_int_unpack(inp)-1)
+
+    
+# binary operators
+        
+def vcaret(left, right):
+    if (left[0] == '#' or right[0] == '#') and option_double:
+        return fp.pack( fp.power(fp.unpack(vartypes.pass_double_keep(left)), fp.unpack(vartypes.pass_double_keep(right))) )
+    else:
+        if right[0]=='%':
+            return fp.pack( fp.unpack(vartypes.pass_single_keep(left)).ipow_int(right[1]) )
+        else:
+            return fp.pack( fp.power(fp.unpack(vartypes.pass_single_keep(left)), fp.unpack(vartypes.pass_single_keep(right))) )
+
+
+def vtimes(left, right):
+    if left[0] == '#' or right[0] == '#':
+        return fp.pack( fp.unpack(vartypes.pass_double_keep(left)).imul(fp.unpack(vartypes.pass_double_keep(right))) )
+    else:
+        return fp.pack( fp.unpack(vartypes.pass_single_keep(left)).imul(fp.unpack(vartypes.pass_single_keep(right))) )
+
+
+def vdiv(left, right):
+    if left[0] == '#' or right[0] == '#':
+        return fp.pack( fp.div(fp.unpack(vartypes.pass_double_keep(left)), fp.unpack(vartypes.pass_double_keep(right))) )
+    else:
+        return fp.pack( fp.div(fp.unpack(vartypes.pass_single_keep(left)), fp.unpack(vartypes.pass_single_keep(right))) )
+
+
+def vidiv(left, right):
+    return ('%', vartypes.pass_int_unpack(left) / vartypes.pass_int_unpack(right))    
+    
+    
+def vmod(left, right):
+    return ('%', vartypes.pass_int_unpack(left) % vartypes.pass_int_unpack(right))    
+
+
+def vplus(left, right):
+    if left[0] == '$':
+        return ('$', vartypes.pass_string_unpack(left) + vartypes.pass_string_unpack(right) )
+    else:
+        left, right = vartypes.pass_most_precise_keep(left, right)
+        if left[0] in ('#', '!'):
+            return fp.pack(fp.unpack(left).iadd(fp.unpack(right)))
+        else:
+            return ('%', left[1]+right[1])           
+    
+
+def vminus(left, right):
+    return vplus(left, vneg(right))
+    
+    
+    
+def vgt(left, right):
+    gt = False
+    if left[0]=='$':
+        gt = vartypes.str_gt(vartypes.pass_string_unpack(left), vartypes.pass_string_unpack(right))
+    else:
+        left, right = vartypes.pass_most_precise_keep(left, right)
+        if left[0] in ('#', '!'):
+            gt = fp.unpack(left).gt(fp.unpack(right)) 
+        else:
+            gt = vartypes.unpack_int(left)>vartypes.unpack_int(right)           
+    return vartypes.bool_to_int_keep(gt) 
+    
+
+def vlt(left, right):
+    return vnot(vgte(left, right))
+    
+def vgte(left, right):
+    return vor(vgt(left,right), veq(left, right))
+    
+def vlte(left, right):
+    return vnot(vgt(left, right))
+    
+def veq(left, right):
+    if left[0] == '$':
+        return vartypes.bool_to_int_keep(vartypes.pass_string_unpack(left) == vartypes.pass_string_unpack(right))
+    else:
+        left, right = vartypes.pass_most_precise_keep(left, right)
+        if left[0] in ('#', '!'):
+            return vartypes.bool_to_int_keep(fp.unpack(left).equals(fp.unpack(right)) )
+        else:
+            return vartypes.bool_to_int_keep(vartypes.unpack_int(left)==vartypes.unpack_int(right))    
+
+def vneq(left, right):
+    return vnot(veq(left,right))
+    
+def vand(left, right):
+    return vartypes.twoscomp_to_int( vartypes.pass_twoscomp(left) & vartypes.pass_twoscomp(right) )
+            
+def vor(left, right):
+    return vartypes.twoscomp_to_int( vartypes.pass_twoscomp(left) | vartypes.pass_twoscomp(right) )
+                       
+def vxor(left, right):
+    return vartypes.twoscomp_to_int( vartypes.pass_twoscomp(left) ^ vartypes.pass_twoscomp(right) )
+
+def veqv(left, right):
+    return vnot(vxor(left, right))
+
+def vimp(left, right):
+    return vor(vnot(left), right)
+
+    
             
