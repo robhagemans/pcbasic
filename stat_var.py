@@ -347,7 +347,7 @@ def exec_input(ins):
         # get list of variables
         readvar = parse_var_list(ins)
         for v in readvar:
-            if v[0][-1] in vartypes.numeric:
+            if v[0][-1] in ('%', '!', '#'):
                 valstr = input_number(finp)
             else:    
                 valstr = input_string(finp)

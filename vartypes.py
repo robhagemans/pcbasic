@@ -13,30 +13,23 @@ import fp
 #import string_ptr
 import error
 
-floats = ['#','!']
-numeric = floats + ['%']
-strings = ['$']
-all_types = numeric + strings
-
 # default type for variable name starting with a-z
 deftype = ['!']*26
-
-
+# zeroed out
 null = { '$': ('$', ''), '%': ('%',0), '!':('!', bytearray('\x00')*4), '#':('#', bytearray('\x00')*8) }
 
 
 def complete_name(name):
-    if name != '' and name[-1] not in all_types:
-        name += deftype[ ord(name[0].upper()) - ord('A') ]
-    return name
-
+    if name != '' and name[-1] not in ('$', '%', '!', '#'):
+        return name + deftype[ord(name[0].upper()) - 65] # ord('A') 
+    
 
 def pass_int_unpack(inp, maxint=0x7fff, err=13):
     typechar = inp[0]
     if typechar == '%':
-        val = inp[1]
+        return inp[1]
     elif typechar in ('!', '#'):
-        val = fp.unpack(inp).round_to_int()
+        return fp.unpack(inp).round_to_int()
     elif typechar == '':
         raise error.RunError(2)    
     else:     
@@ -45,8 +38,7 @@ def pass_int_unpack(inp, maxint=0x7fff, err=13):
     if val > maxint or val < -0x8000:
         # overflow
         raise error.RunError(6)
-    return val
-
+    
 
 
 def pass_int_keep(inp, maxint=0x7fff, err=13):
@@ -102,6 +94,9 @@ def pass_string_keep(inp, allow_empty=False, err=13):
     else:     
         raise error.RunError(err)
 
+def pass_string_unpack(inp, allow_empty=False, err=13):
+    return pass_string_keep(inp, allow_empty, err)[1]
+
 
 def pass_type_keep(typechar, value):     
     if typechar == '$':
@@ -154,30 +149,18 @@ def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=Fal
 
 
 
-##################################################
-
-def unpack_int(inp):
-    return inp[1]
-
-def unpack_string(inp):
-    return inp[1]
-    
-def pack_int(inp):
-    return ('%', inp)
-            
-def pack_string(inp):
-    return ('$', inp)
-
-def pass_string_unpack(inp, allow_empty=False, err=13):
-    return pass_string_keep(inp, allow_empty, err)[1]
 
     
 ##################################################
 # unpack tokenised numeric constants
 
-def ubyte_to_value(s):
-    return s[0]
-    
+
+def unpack_int(inp):
+    return inp[1]
+
+def pack_int(inp):
+    return ('%', inp)
+   
 def uint_to_value(s):
     # unsigned int. 
     return 0x100 * s[1] + s[0]
@@ -206,6 +189,15 @@ def value_to_sint(n):
         n = 0x10000 + n        
     return bytearray((n&0xff, n >> 8)) 
 
+##################################################
+
+def unpack_string(inp):
+    return inp[1]
+            
+def pack_string(inp):
+    return ('$', inp)
+
+
 # python int to python str
 
 def int_to_str(num):
@@ -220,7 +212,7 @@ def sint_to_str(s):
     return str(sint_to_value(s))
 
 def ubyte_to_str(s):
-    return str(ubyte_to_value(s))
+    return str(s[0])
     
 def hex_to_str(s):
     return "&H" + hex(uint_to_value(s))[2:].upper()
