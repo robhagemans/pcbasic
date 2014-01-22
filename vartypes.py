@@ -114,12 +114,13 @@ def pass_type_keep(typechar, value):
   
  
 def pass_most_precise_keep(left, right, err=13):
-    if is_type('#', left) or is_type('#', right):
-        return (pass_type_keep('#', left), pass_type_keep('#', right))
-    elif is_type('!', left) or is_type('!', right):
-        return (pass_type_keep('!', left), pass_type_keep('!', right))
-    elif is_type('%', left) or is_type('%', right):
-        return (pass_type_keep('%', left), pass_type_keep('%', right))
+    left_type, right_type = left[0][-1], right[0][-1]
+    if left_type=='#' or right_type=='#':
+        return (pass_double_keep(left), pass_double_keep(right))
+    elif left_type=='!' or right_type=='!':
+        return (pass_single_keep(left), pass_single_keep(right))
+    elif left_type=='%' or right_type=='%':
+        return (pass_int_keep(left), pass_int_keep(right))
     else:
         raise error.RunError(err)
 
@@ -379,14 +380,10 @@ def vneg(inp):
         return inp
     elif inp[0]== '%':
         return (inp[0], -inp[1])
-    elif inp[0] == '!':
+    elif inp[0] in ('!', '#'):
         out = (inp[0], inp[1][:]) 
         out[1][2] ^= 0x80 
         return out  
-    elif inp[0]=='#':
-        out = (inp[0], inp[1][:]) 
-        out[1][6] ^= 0x80  
-        return out 
     elif inp[0]=='':
         raise error.RunError(2)    
     else:     
