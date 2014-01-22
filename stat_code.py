@@ -290,7 +290,7 @@ def exec_merge(ins):
     util.require(ins, util.end_statement)
     
     
-def exec_new():
+def exec_new(ins):
     # NEW Command
     #   To delete the program currently in memory and clear all variables.
     program.clear_program()
