@@ -59,7 +59,7 @@ def get_var(name):
         else:
             return (name[-1], variables[name])
     except KeyError:
-        return vartypes.null_keep(name[-1])
+        return vartypes.null[name[-1]]
 
 
 def swap_var(name1, name2):

@@ -133,12 +133,10 @@ class Float(object):
     
     def trunc_to_int(self):
         man = self.man >> 8 
-        
         if self.exp > self.bias :
             val = long(man << (self.exp-self.bias))
         else:
             val = long(man >> (-self.exp+self.bias))
-
         if self.neg:
             return -val
         else:
@@ -149,12 +147,10 @@ class Float(object):
             man = long(self.man << (self.exp-self.bias))
         else:
             man = long(self.man >> (-self.exp+self.bias))
-
         # carry bit set? then round up (affect mantissa only, note we can be bigger than our byte_size allows)
         #if (n_in.man & 0xff) > 0x7f:
         if (man & 0xff) > 0x7f:
             man += 0x100 
-        
         if self.neg:
             return -(man >> 8)
         else:
@@ -204,7 +200,6 @@ class Float(object):
         else:
             self.man = long(self.man / 2**(-self.exp+self.bias))
         self.exp = self.bias
-        
         # carry bit set? then round up (moves exponent on overflow)
         self.apply_carry()
         self.normalise()
