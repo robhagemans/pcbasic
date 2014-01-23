@@ -31,7 +31,6 @@ import console
 # for FRE() only
 import program
 
-
 # binary operator priority, lowest index is tightest bound 
 # operators of the same priority are evaluated left to right      
 priority = [
@@ -60,7 +59,6 @@ peek_values={}
 
 ######################################################################
 ######################################################################
-
 
 def parse_expression(ins, allow_empty=False):
     units = []
@@ -98,7 +96,6 @@ def parse_expression(ins, allow_empty=False):
         # missing operand
         raise error.RunError(22)
     return parse_operators(operators, units)
-        
 
 def parse_operators(operators, units):
     for current_priority in priority:
@@ -116,7 +113,6 @@ def parse_operators(operators, units):
         # unrecognised operator, syntax error
         raise error.RunError(2)
     return units[0]    
-    
     
 def parse_expr_unit(ins):
     d = util.skip_white_read(ins)
@@ -296,11 +292,9 @@ def parse_expr_unit(ins):
     return ('', '')
 
 
-
 ######################################################################
 ######################################################################
 # expression parsing utility functions 
-
 
 def parse_bracket(ins):
     util.require_read(ins, '(')
@@ -504,12 +498,12 @@ def value_mid(ins):
     if num <0 or num>255:
         raise error.RunError(5)
     if num==0 or start>len(s):
-        return ('$', '')
+        return vartypes.null['$']
     start -= 1    
     stop = start + num 
     if stop > len(s):
         stop = len(s)
-    return ('$', s[start:stop])  
+    return vartypes.pack_string(s[start:stop])  
     
 def value_left(ins):
     # LEFT$
@@ -521,11 +515,11 @@ def value_left(ins):
     if num <0 or num>255:
         raise error.RunError(5)
     if num==0:
-        return ('$', '')
+        return vartypes.null['$']
     stop = num 
     if stop > len(s):
         stop = len(s)
-    return ('$', s[:stop])  
+    return vartypes.pack_string(s[:stop])  
     
 def value_right(ins):
     # RIGHT$
@@ -537,11 +531,11 @@ def value_right(ins):
     if num <0 or num>255:
         raise error.RunError(5)
     if num==0:
-        return ('$', '')
+        return vartypes.null['$']
     stop = num 
     if stop > len(s):
         stop = len(s)
-    return ('$', s[-stop:])  
+    return vartypes.pack_string(s[-stop:])  
 
 def value_string(ins): # STRING$
     util.require_read(ins, '(')
@@ -606,7 +600,7 @@ def value_input(ins):    # INPUT$
         screen = fileio.files[filenum]
     util.require_read(ins, ')')
     word = screen.read_chars(num)
-    return ('$', word)        
+    return vartypes.pack_string(word)        
     
 def value_inkey(ins):
     # wait a tick
@@ -670,17 +664,17 @@ def value_environ(ins):
         val = os.getenv(vartypes.unpack_string(expr))
         if val==None:
             val=''
-        return ('$', val)
+        return vartypes.pack_string(val)
     else:
         expr = vartypes.pass_int_unpack(expr)
         envlist = list(os.environ)
         if expr<1 :
             raise error.RunError(5)
         if expr>len(envlist):
-            return ('$', '')            
+            return vartypes.null['$']            
         else:
             val = os.getenv(envlist[expr-1])
-            return ('$', envlist[expr-1]+'='+val)
+            return vartypes.pack_string(envlist[expr-1]+'='+val)
         
 def value_timer(ins):
     # precision of GWBASIC TIMER is about 1/20 of a second
@@ -691,13 +685,13 @@ def value_time(ins):
     #time$
     now = datetime.datetime.today() + oslayer.time_offset
     timestr = now.strftime('%H:%M:%S')
-    return ('$', timestr)
+    return vartypes.pack_string(timestr)
     
 def value_date(ins):
     #date$
     now = datetime.datetime.today() + oslayer.time_offset
     timestr = now.strftime('%m-%d-%Y')
-    return ('$', timestr)
+    return vartypes.pack_string(timestr)
 
 #######################################################
 # user-defined functions
@@ -951,8 +945,8 @@ def value_rnd(ins):
 
 def value_abs(ins):
     inp = parse_bracket(ins)
-    if inp[0]== '%':
-        return (inp[0], abs(vartype.unpack_int(inp)))
+    if inp[0] == '%':
+        return vartypes.pack_int(abs(vartype.unpack_int(inp)))
     elif inp[0] in ('!', '#'):
         out = (inp[0], inp[1][:])  
         out[1][-2] &= 0x7F 
@@ -979,14 +973,14 @@ def value_sgn(ins):
     inp = parse_bracket(ins)
     if inp[0]=='%':
         inp_int = vartypes.unpack_int(inp) 
-        if inp_int >0:
-            return ('%', 1)
-        elif inp_int <0:
-            return ('%', -1)
+        if inp_int > 0:
+            return vartypes.pack_int(1)
+        elif inp_int < 0:
+            return vartypes.pack_int(-1)
         else:
-            return ('%', 0)
+            return vartypes.null['%']
     elif inp[0] in ('!','#'):
-        return ('%', fp.unpack(inp).sign() )
+        return vartypes.pack_int(fp.unpack(inp).sign() )
     elif inp[0]=='':
         raise error.RunError(2)    
     else:     
