@@ -155,7 +155,7 @@ def for_iterate(ins):
     (_, _, varname, _, start, stop, step) = program.for_next_stack[-1]
     # increment counter
     loopvar = var.get_var(varname)
-    loopvar = vartypes.vplus(loopvar, step)
+    loopvar = vartypes.number_add(loopvar, step)
     var.set_var(varname, loopvar)
     # check condition and jump if necessary
     for_jump_if_ends(ins, loopvar, stop, step)
@@ -186,11 +186,11 @@ def for_loop_ends(loopvar, stop, step):
     # check TO condition
     loop_ends=False
     # step 0 is infinite loop
-    sgn = vartypes.unpack_int(vartypes.vsgn(step)) 
+    sgn = vartypes.unpack_int(vartypes.number_sgn(step)) 
     if sgn < 0:
-        loop_ends = vartypes.int_to_bool(vartypes.vgt(stop, loopvar)) 
+        loop_ends = vartypes.int_to_bool(vartypes.number_gt(stop, loopvar)) 
     elif sgn > 0:
-        loop_ends = vartypes.int_to_bool(vartypes.vgt(loopvar, stop)) 
+        loop_ends = vartypes.int_to_bool(vartypes.number_gt(loopvar, stop)) 
     return loop_ends
             
 
