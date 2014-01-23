@@ -83,6 +83,7 @@ def pass_float_keep(num, allow_double=True):
         return pass_single_keep(num)
 
 
+
 def pass_string_keep(inp, allow_empty=False, err=13):
     if inp[0] == '$':
         return inp
@@ -259,6 +260,7 @@ def twoscomp_to_int(num):
         num -= 0x10000 
     return ('%', num)    
     
+    
 
 ##################################################
 
@@ -280,80 +282,73 @@ def str_gt(left,right):
     return False                    
 
 
-def vgt(left, right):
-    gt = False
-    if left[0]=='$':
-        gt = str_gt(pass_string_unpack(left), pass_string_unpack(right))
+def number_gt(left, right):
+    left, right = pass_most_precise_keep(left, right)
+    if left[0] in ('#', '!'):
+        gt = fp.unpack(left).gt(fp.unpack(right)) 
     else:
-        left, right = pass_most_precise_keep(left, right)
-        if left[0] in ('#', '!'):
-            gt = fp.unpack(left).gt(fp.unpack(right)) 
-        else:
-            gt = left[1]>right[1]           
-    
+        gt = left[1]>right[1]           
     return bool_to_int_keep(gt) 
     
     
-def vplus(left, right):
-    if left[0] == '$':
-        return ('$', pass_string_unpack(left) + pass_string_unpack(right) )
+def number_add(left, right):
+    left, right = pass_most_precise_keep(left, right)
+    if left[0] in ('#', '!'):
+        return fp.pack(fp.unpack(left).iadd(fp.unpack(right)))
     else:
-        left, right = pass_most_precise_keep(left, right)
-        if left[0] in ('#', '!'):
-            return fp.pack(fp.unpack(left).iadd(fp.unpack(right)))
-        else:
-            return ('%', left[1]+right[1])           
+        return ('%', left[1]+right[1])           
+
     
-    
-def vsgn(inp):
-    if inp[0]=='%':
-        if inp[1]>0:
+def number_sgn(inp):
+    if inp[0] == '%':
+        if inp[1] > 0:
             return ('%', 1)
-        elif inp[1] <0:
+        elif inp[1] < 0:
             return ('%', -1)
         else:
             return ('%', 0)
     elif inp[0] in ('!','#'):
         return ('%', fp.unpack(inp).sign() )
-    elif inp[0]=='':
-        raise error.RunError(2)    
-    else:     
-        # type mismatch
-        raise error.RunError(13)
+    return inp
 
 
-
-def vabs(inp):
-    if inp[0] == '$':
-        raise error.RunError(13)
-        return inp
-    elif inp[0]== '%':
+def number_abs(inp):
+    if inp[0]== '%':
         return (inp[0], abs(inp[1]))
-    elif inp[0] in ('!','#'):
+    elif inp[0] in ('!', '#'):
         out = (inp[0], inp[1][:])  
         out[1][-2] &= 0x7F 
         return out  
-    elif inp[0]=='':
-        raise error.RunError(2)    
-    else:     
-        # type mismatch
-        raise error.RunError(13)
-    
+    return inp
 
 
-def vneg(inp):
-    if inp[0] == '$':
-        raise error.RunError(13)
-    elif inp[0] == '%':
+def number_neg(inp):
+    if inp[0] == '%':
         return (inp[0], -inp[1])
     elif inp[0] in ('!', '#'):
         out = (inp[0], inp[1][:]) 
         out[1][-2] ^= 0x80 
         return out  
-    elif inp[0]=='':
-        raise error.RunError(2)    
-    else:     
-        # type mismatch
-        raise error.RunError(13)
-
+    # pass strings on, let error happen somewhere else.    
+    return inp
             
+def equals(left,right): 
+    if left[0] == '$':
+        return vartypes.pass_string_unpack(left) == vartypes.pass_string_unpack(right)
+    else:
+        left, right = vartypes.pass_most_precise_keep(left, right)
+        if left[0] in ('#', '!'):
+            return fp.unpack(left).equals(fp.unpack(right)) 
+        else:
+            return vartypes.unpack_int(left)==vartypes.unpack_int(right)
+
+def gt(left, right):
+    if left[0]=='$':
+        return vartypes.str_gt(vartypes.pass_string_unpack(left), vartypes.pass_string_unpack(right))
+    else:
+        left, right = vartypes.pass_most_precise_keep(left, right)
+        if left[0] in ('#', '!'):
+            return fp.unpack(left).gt(fp.unpack(right)) 
+        else:
+            return vartypes.unpack_int(left)>vartypes.unpack_int(right)           
+

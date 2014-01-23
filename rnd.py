@@ -41,7 +41,7 @@ def randomize_int(n):
     
     
     
-def vrnd(inp):
+def get_random(inp):
     global rnd_seed
     n = 1
     if inp[0]=='':

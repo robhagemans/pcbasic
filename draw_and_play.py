@@ -50,7 +50,7 @@ def ml_parse_value(gmls):
                 c = util.skip(gmls, ml_whitepace) 
             step = tokenise.str_to_value_keep(('$', numstr))
             if sgn==-1:
-                step = vartypes.vneg(step)
+                step = vartypes.number_neg(step)
         else:
             raise error.RunError(5)
     return step

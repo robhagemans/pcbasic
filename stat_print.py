@@ -631,7 +631,7 @@ def format_number(value, fors):
     ###########                
 
     # format to string
-    expr = fp.unpack(vartypes.vabs(value))
+    expr = fp.unpack(vartypes.number_abs(value))
     if exp_form:
         if not plus_sign and not sign_after and digits_before > 0:
             # reserve space for sign
@@ -692,7 +692,7 @@ def format_number(value, fors):
     if dollar_sign:
         valstr+='$'
     valstr += fp_repr    
-    sign = vartypes.unpack_int(vartypes.vsgn(value))
+    sign = vartypes.unpack_int(vartypes.number_sgn(value))
     if sign_after:
         sign_str = ' '
     else:
