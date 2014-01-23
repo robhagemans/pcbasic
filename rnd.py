@@ -41,10 +41,10 @@ def randomize_int(n):
     
     
     
-def get_random(inp):
+def get_random(inp=None):
     global rnd_seed
     n = 1
-    if inp[0]=='':
+    if inp==None or inp[0]=='':
         pass
     elif inp[0]=='$':
         raise error.RunError(5)
