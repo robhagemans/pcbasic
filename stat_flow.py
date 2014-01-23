@@ -108,7 +108,7 @@ def exec_for(ins): #, first=True):
         step = vartypes.pass_type_keep(vartype, expressions.parse_expression(ins))
     else:
         # convert 1 to vartype
-        step = vartypes.pass_type_keep(vartype, ('%', 1))
+        step = vartypes.pass_type_keep(vartype, vartypes.pack_int(1))
     util.require(ins, util.end_statement)
     # apply initial condition: set loopvar to start
     loopvar = vartypes.pass_type_keep(vartype, start)

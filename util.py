@@ -231,15 +231,15 @@ def parse_value(ins):
     d = ins.read(1)
     # note that hex and oct strings are interpreted signed here, but unsigned the other way!
     if d == '\x0b':                         # octal constant (unsigned)
-        return ('%', vartypes.sint_to_value(bytearray(ins.read(2))) )
+        return vartypes.pack_int(vartypes.sint_to_value(bytearray(ins.read(2))) )
     elif d == '\x0c':                       # hex constant (unsigned)
-        return ('%', vartypes.sint_to_value(bytearray(ins.read(2))) )
+        return vartypes.pack_int(vartypes.sint_to_value(bytearray(ins.read(2))) )
     elif d == '\x0f':                       # one byte constant
-        return ('%', ord(ins.read(1)) )
+        return vartypes.pack_int(ord(ins.read(1)))
     elif d >= '\x11' and d <= '\x1b':       # constants 0 to 10  
-        return ('%', ord(d) - 0x11 )
+        return vartypes.pack_int(ord(d) - 0x11)
     elif d == '\x1c':          # two byte data constant (signed)
-        return ('%', vartypes.sint_to_value(bytearray(ins.read(2))) )
+        return vartypes.pack_int(vartypes.sint_to_value(bytearray(ins.read(2))) )
     elif d == '\x1d':          # four byte single-precision floating point constant
         return ('!', bytearray(ins.read(4)) )
     elif d == '\x1f':          # eight byte double-precision floating point constant

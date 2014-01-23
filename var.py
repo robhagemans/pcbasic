@@ -175,7 +175,7 @@ def get_array(name, index):
         return (name[-1], lst[bigindex])
     value = lst[bigindex*var_size_bytes(name):(bigindex+1)*var_size_bytes(name)]
     if name[-1]=='%':
-        return ('%', vartypes.sint_to_value(value))
+        return vartypes.pack_int(vartypes.sint_to_value(value))
     else:
         return (name[-1], value)
     
