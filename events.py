@@ -9,13 +9,12 @@
 # please see text file COPYING for licence terms.
 #
 
-
 import sound
 import oslayer
 import deviceio
 import console
 import program
-
+import vartypes
 
 # default codes for KEY autotext
 key_replace = [ 'LIST ', 'RUN\x0d', 'LOAD"', 'SAVE"', 'CONT\x0d', ',"LPT1:"\x0d','TRON\x0d', 'TROFF\x0d', 'KEY ', 'SCREEN 0,0,0\x0d' ]
@@ -42,8 +41,8 @@ def reset_events():
     key_triggered = [False]*20
 
     timer_event = -1
-    timer_period = ('%', 0)
-    timer_start = ('%', 0)
+    timer_period = vartypes.null['%']
+    timer_start = vartypes.null['%']
     timer_enabled = False
     timer_stopped = False
     

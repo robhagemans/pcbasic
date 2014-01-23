@@ -141,7 +141,7 @@ def parse_expr_unit(ins):
     # gw-basic allows adding line numbers to numbers     
     elif d in tokenise.tokens_linenum:
         ins.seek(-1,1)
-        return ('%', util.parse_jumpnum(ins))
+        return vartypes.pack_int(util.parse_jumpnum(ins))
     # brackets
     elif d == '(':
         val = parse_expression(ins)

@@ -69,7 +69,7 @@ linenum_words = ['GOTO', 'THEN', 'ELSE', 'GOSUB', 'LIST', 'RENUM', 'EDIT', 'LLIS
 
 def str_to_value_keep(strval):
     if strval==('$',''):
-        return ('%',0)
+        return vartypes.null['%']
     strval = vartypes.pass_string_unpack(strval)
     ins = StringIO(strval)
     outs = StringIO()
