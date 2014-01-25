@@ -334,21 +334,21 @@ def number_neg(inp):
             
 def equals(left,right): 
     if left[0] == '$':
-        return vartypes.pass_string_unpack(left) == vartypes.pass_string_unpack(right)
+        return pass_string_unpack(left) == pass_string_unpack(right)
     else:
-        left, right = vartypes.pass_most_precise_keep(left, right)
+        left, right = pass_most_precise_keep(left, right)
         if left[0] in ('#', '!'):
             return fp.unpack(left).equals(fp.unpack(right)) 
         else:
-            return vartypes.unpack_int(left)==vartypes.unpack_int(right)
+            return unpack_int(left)==unpack_int(right)
 
 def gt(left, right):
     if left[0]=='$':
-        return vartypes.str_gt(vartypes.pass_string_unpack(left), vartypes.pass_string_unpack(right))
+        return str_gt(pass_string_unpack(left), pass_string_unpack(right))
     else:
-        left, right = vartypes.pass_most_precise_keep(left, right)
+        left, right = pass_most_precise_keep(left, right)
         if left[0] in ('#', '!'):
             return fp.unpack(left).gt(fp.unpack(right)) 
         else:
-            return vartypes.unpack_int(left)>vartypes.unpack_int(right)           
+            return unpack_int(left) > unpack_int(right)           
 
