@@ -1004,7 +1004,7 @@ def value_fix(inp):
     
     
 def value_neg(ins):
-    inp = parse_bracket(ins)
+    inp = parse_expr_unit(ins)
     if inp[0] == '%':
         return vartypes.pack_int(-vartypes.unpack_int(inp))
     elif inp[0] in ('!', '#'):
@@ -1019,7 +1019,7 @@ def value_neg(ins):
 
 def value_not(ins):
     # two's complement not, -x-1
-    return vartypes.pack_int(~vartypes.pass_int_unpack(parse_bracket(ins)))
+    return vartypes.pack_int(~vartypes.pass_int_unpack(parse_expr_unit(ins)))
 
     
 # binary operators
