@@ -371,7 +371,7 @@ def exec_input(ins):
         inputs.seek(0)
         success = True
         for v in readvar:
-            if v[0] !='' and v[0][-1] in vartypes.numeric:
+            if v[0] !='' and v[0][-1] in ('%', '!', '#'):
                 # don't stop reading on blanks and line feeds
                 valstr = input_number(text_file, hard_end = (',', '\x0d', ''), soft_end = () )
             else:    
