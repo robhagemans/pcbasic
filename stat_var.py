@@ -223,7 +223,7 @@ def exec_lset(ins, justify_right=False):
     name = util.get_var_name(ins)
     util.require_read(ins,'\xe7')
     val = expressions.parse_expression(ins)
-    var.lset(name, val, justify_right)
+    var.assign_field_var(name, val, justify_right)
 
 
 def exec_rset(ins):

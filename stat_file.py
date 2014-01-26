@@ -113,7 +113,7 @@ def exec_open(ins):
         else:
             name = oslayer.dospath_write(name, '', 76)
         # open the file
-        fileio.fopen(number, name, mode, access, lock)    
+        fileio.open_file(number, name, mode, access, lock)    
     util.require(ins, util.end_statement)
 
     
