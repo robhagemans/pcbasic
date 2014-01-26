@@ -43,16 +43,17 @@ def set_var(name, value):
     global variables
     name = vartypes.complete_name(name)
     if value[0]=='$':
-        if len(str(vartypes.unpack_string(value)))>255:
-            # this is a copy if we use StringPtr!
-            value = vartypes.pack_string(str(vartypes.unpack_string(value)[:255]))
+        unpacked = vartypes.unpack_string(value) 
+        if len(unpacked)>255:
+            # this is a copy if we use bytearray!
+            value = vartypes.pack_string(unpacked[:255])
     variables[name] = vartypes.pass_type_keep(name[-1], value)[1]
     
 def get_var(name):
     name = vartypes.complete_name(name)
     try:
         if name[-1] == '$':
-            return vartypes.pack_string(str(variables[name]) ) # cast StringPtrs, if any
+            return vartypes.pack_string(variables[name]) 
         else:
             return (name[-1], variables[name])
     except KeyError:
@@ -213,7 +214,7 @@ def set_field_var(field, varname, offset, length):
     # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
     set_var(varname, vartypes.pack_string(str_ptr))
     
-def lset(varname, value, justify_right=False):
+def assign_field_var(varname, value, justify_right=False):
     if varname[-1] != '$' or value[0] != '$':
         # type mismatch
         raise error.RunError(13)
@@ -232,7 +233,7 @@ def lset(varname, value, justify_right=False):
     if isinstance(variables[varname], StringPtr):
         variables[varname].set_str(s)    
     else:
-        variables[varname] = s    
+        variables[varname][:] = s    
 
 # for reporting by FRE()        
 def variables_memory_size():

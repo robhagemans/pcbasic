@@ -12,7 +12,6 @@
 from cStringIO import StringIO
 
 import error
-from string_ptr import StringPtr
 import util
 import oslayer
 import deviceio
@@ -20,10 +19,70 @@ import deviceio
 # file numbers
 files = {}
 # fields are preserved on file close, so have a separate store
-fields= {}
+fields = {}
 
 
-class TextFile:
+'''ByteStream is a wrapper for bytearray that keeps track of a location. '''        
+class ByteStream(object):
+    def __init__(self, contents=''):       
+        self.setvalue(contents)
+
+    '''assign a bytearray s, move location to 0. this does not create a copy, changes affect the original bytearray'''
+    def setvalue(self, contents=''):
+        self._contents = contents
+        self._loc = 0
+    
+    '''retrieve the bytearray. changes will affect the bytestream.'''
+    def getvalue(self):
+        return self._contents
+        
+    '''get the current location'''    
+    def tell(self):
+        return self._loc
+        
+    '''moves loc by n bytes from start(w=0), current(w=1) or end(w=2)'''    
+    def seek(self, n_bytes, from_where=0):
+        if from_where == 0:
+            self._loc = n_bytes
+        elif from_where == 1:
+            self._loc += n_bytes
+        elif from_where == 2:
+            self._loc = len(self._contents)-n_bytes        
+        if self._loc < 0:
+            self._loc = 0
+        elif self._loc > len(self._contents):
+            self._loc = len(self._contents)    
+    
+    '''get an n-length string and move the location n forward. if loc>len, returns empty'''
+    def read(self, n_bytes=None):
+        if n_bytes==None:
+            n_bytes = len(self._contents) - self._loc
+        if self._loc >= len(self._contents):
+            self._loc = len(self._contents)
+            return ''
+        peeked = self._contents[self._loc:self._loc+n_bytes]
+        self._loc += len(peeked)   
+        return peeked
+            
+    '''writes a str or bytearray or char s to the current location. overwrite, not insert'''    
+    def write(self, substr):
+        if self._loc >= len(self._contents):
+            self._contents += substr
+            self._loc = len(self._contents)    
+        else:    
+            self._contents[self._loc:self._loc+len(substr)] = substr
+            self._loc += len(substr)
+
+    '''clips off the bytearray after position n'''
+    def truncate(self, n=None):
+        if n==None:
+            n=self._loc
+        self._contents = self._contents[:n]
+        if self._loc >= len(self._contents):
+            self._loc = len(self._contents)
+            
+    
+class TextFile(object):
     def __init__(self):
         # width=255 means line wrap
         self.width = 255
@@ -149,7 +208,7 @@ class TextFile:
         pass
  
  
-class RandomFile:
+class RandomFile(object):
     def __init__(self):
         # width=255 means line wrap
         self.width = 255
@@ -196,16 +255,16 @@ class RandomFile:
     
     def init(self, reclen=128):
         self.reclen = reclen
-        self.recpos=0
+        self.recpos = 0
         self.fhandle.seek(0)
         if self.number in fields:
             self.field = fields[self.number]
         else:
-            self.field = StringPtr('\x00'*reclen,0, self.reclen)
+            self.field = bytearray('\x00')*reclen
             fields[self.number] = self.field
         # open a pseudo text file over the buffer stream
         # to make WRITE# etc possible
-        self.field_text_file = pseudo_textfile(self.field.stream)
+        self.field_text_file = pseudo_textfile(ByteStream(self.field))
         
     def close(self):
         self.fhandle.close()
@@ -214,13 +273,11 @@ class RandomFile:
         
     # read record    
     def read_field(self):
-        self.field.stream.seek(0)
         if self.eof():
-            self.field.stream.write('\x00'*self.reclen)
+            self.field[:] = '\x00'*self.reclen
         else:
-            self.field.stream.write(self.fhandle.read(self.reclen))
+            self.field[:] = self.fhandle.read(self.reclen)
         self.recpos += 1
-        self.field.stream.seek(0)
         return True
         
     #write record
@@ -230,9 +287,8 @@ class RandomFile:
             self.fhandle.seek(0,2)
             numrecs = self.recpos-current_length
             self.fhandle.write('\x00'*numrecs*self.reclen)
-        self.fhandle.write(str(self.field))
+        self.fhandle.write(self.field)
         self.recpos+=1
-        self.field.stream.seek(0)
         
     def set_pos(self, newpos):
         # first record is newpos number 1
@@ -306,7 +362,7 @@ def pseudo_textfile(stringio):
     text_file.init()
     return text_file        
    
-def fopen(number, unixpath, mode='I', access='rb', reclen=128, lock='rw'):
+def open_file(number, unixpath, mode='I', access='rb', lock='rw', reclen=128):
     if mode.upper() in ('I','O','A'):
         inst = TextFile()
     else:
@@ -341,4 +397,6 @@ def lock_file(thefile, lock, lock_start, lock_length):
         oslayer.safe_lock(thefile.fhandle, thefile.access, lock, lock_start, lock_length)
         
     
-    
+
+
+

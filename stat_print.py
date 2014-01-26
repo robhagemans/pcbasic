@@ -232,38 +232,25 @@ def exec_key(ins):
     util.skip_to(ins, util.end_statement)
 
 
-
-    
-    
-
 def exec_locate(ins):
     [row, col, cursor, start, stop] = expressions.parse_int_list(ins, 5, 2)          
-
     [crow, ccol] = [console.get_row(), console.get_col()]            
     if row==None:
         row = crow
     if col==None:
         col = ccol
-    
-    check_view(row,col)
+    check_view(row, col)
     console.set_pos(row, col, scroll_ok=False)    
     if cursor!=None:
         console.show_cursor(cursor)
-    
-    # cursor shape not implemented
-
-
+    # FIXME: cursor shape not implemented
 
 
 def exec_write(ins, screen=None):
-    
     screen = expressions.parse_file_number(ins)
-    
     if screen==None:
         screen=console
-        
     expr = expressions.parse_expression(ins, allow_empty=True)
-
     if expr!=('',''):
         while True:
             if expr[0]=='$':
@@ -275,96 +262,69 @@ def exec_write(ins, screen=None):
                 screen.write(',')
             else:
                 break
-
             expr = expressions.parse_expression(ins, allow_empty=True)
             if expr==('',''):
                 raise error.RunError(2)        
-        
-            
     util.require(ins, util.end_statement)        
-
     screen.write(util.endl)
 
         
         
 def exec_print(ins, screen=None):
-    
     if screen==None:
         screen = expressions.parse_file_number(ins)
-        
         if screen==None:
             screen=console
-
     zone_width = 14 #15
     number_zones = int(screen.width/zone_width)
     output = ''
     newline = True
-
     if util.skip_white_read_if(ins, '\xD7'): # USING
        exec_print_using(ins, screen)
        return
-        
     while True:
         d = util.skip_white(ins)
         if d in util.end_statement:
-            
             screen.write(output)
             if newline:
                  screen.write(util.endl)
             output = ''
             break 
-            
         elif d==',':
             newline = False
             ins.read(1)
-            
             screen.write(output)
-            output = ''
-            
             col = screen.get_col()
             next_zone = int((col-1)/zone_width)+1
             if next_zone >= number_zones:
-                output += util.endl
+                output = util.endl
             else:            
-                output += ' '*(1+zone_width*next_zone-col)
-            
-            
+                output = ' '*(1+zone_width*next_zone-col)
             screen.write(output)
             output=''
-        
         elif d==';':
             newline = False
             ins.read(1)
-            
             screen.write(output)
             output = ''
-
         elif d=='\xD2': #SPC(
             newline=False
             ins.read(1)
-            
             screen.write(output)
             output = ''
-            
             numspaces = vartypes.pass_int_unpack(expressions.parse_expression(ins), 0xffff)
             numspaces %= screen.width
-            
             util.require_read(ins, ')')
-            
             screen.write(' '*numspaces)
             output=''
         elif d=='\xCE': #TAB(
             newline=False
             ins.read(1)
-            
             screen.write(output)
             output = ''
-            
             pos = vartypes.pass_int_unpack(expressions.parse_expression(ins), 0xffff)
             pos %= screen.width
-            
             util.require_read(ins, ')')
-            
             col = screen.get_col()
             if pos < col:
                 screen.write(output+util.endl+' '*(pos-1))
@@ -373,18 +333,16 @@ def exec_print(ins, screen=None):
             output=''    
         else:
             newline = True
-            
             expr = expressions.parse_expression(ins)
             word = vartypes.unpack_string(vartypes.value_to_str_keep(expr, screen=True))
-            
             # numbers always followed by a space
             if expr[0] in ('%', '!', '#'):
                 word += ' '
-            
             if screen.get_col() + len(word) -1 > screen.width and screen.get_col() != 1:
                 # prevent breaking up of numbers through newline
                 output += util.endl
-            output += word    
+            output += str(word)
+            
             
 def get_next_expression(ins): 
     util.skip_white(ins)

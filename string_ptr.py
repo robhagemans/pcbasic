@@ -9,33 +9,14 @@
 # please see text file COPYING for licence terms.
 #
 
-from cStringIO import StringIO
-
 
 # string pointer implementation, allows for unions of strings (for FIELD)
 class StringPtr:
-    def get_str(self):
-        pos = self.stream.tell()
-        self.stream.seek(self.offset)
-        sstr = self.stream.read(self.length)
-        self.stream.seek(pos)
-        return sstr
-         
     def set_str(self, in_str):
-        pos = self.stream.tell()
-        #ins = StringIO(in_str)
-        self.stream.seek(self.offset)    
-        #for _ in range(self.length):
-        #    c = ins.read(1)
-        #    if c=='':
-        #        c=' '
-        #    self.stream.write(c)
-        self.stream.write(in_str[:self.length] + ' '*(self.length-len(in_str)))
-        #
-        self.stream.seek(pos)
+        self.stream[self.offset:self.offset+self.length] = in_str[:self.length] + ' '*(self.length-len(in_str))
         
     def __str__(self):
-        return self.get_str()
+        return str(self.stream[self.offset:self.offset+self.length])
         
     def __len__(self):
         return self.length
@@ -45,8 +26,7 @@ class StringPtr:
             self.stream, self.offset, self.length = stream.stream, stream.offset+offset, length     
             max_length = stream.length
         else:
-            self.stream = StringIO(stream)
-            self.stream.seek(0)    
+            self.stream = stream  # this must be a mutable type - list or bytearray
             max_length = len(stream)
             self.offset, self.length = offset, length
         # BASIC string length limit
@@ -56,4 +36,5 @@ class StringPtr:
             self.length = max_length-self.offset
             if self.length < 0:
                 self.length = 0    
+        
         
