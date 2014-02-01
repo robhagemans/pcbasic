@@ -532,7 +532,7 @@ def exec_randomize(ins):
     mask = '\x00\x00'
     if len(s) >= 4:
         mask = s[-4:-2]
-    final_two = chr(ord(final_two[0]) ^ ord(mask[0])) + chr(ord(final_two[1]) ^ ord(mask[1]))
+    final_two = bytearray(chr(final_two[0]^mask[0]) + chr(final_two[1]^mask[1]))
     rnd.randomize_int(vartypes.sint_to_value(final_two))        
     util.require(ins, util.end_statement)
     
