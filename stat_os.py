@@ -12,12 +12,10 @@
 import os
 import datetime
 
-
 import error
 import vartypes
 import expressions
 import oslayer
-
 import util
 import console
 
@@ -29,7 +27,6 @@ def exec_chdir(ins):
     except EnvironmentError as ex:
         oslayer.handle_oserror(ex)
     util.require(ins, util.end_statement)
-    
 
 def exec_mkdir(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
@@ -38,8 +35,6 @@ def exec_mkdir(ins):
     except EnvironmentError as ex:
         oslayer.handle_oserror(ex)
     util.require(ins, util.end_statement)
-    
-    
 
 def exec_rmdir(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
@@ -49,13 +44,12 @@ def exec_rmdir(ins):
     except EnvironmentError as ex:
         oslayer.handle_oserror(ex)
     util.require(ins, util.end_statement)
-    
 
 def exec_name(ins):
     oldname = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     oldname = oslayer.dospath_read(oldname, '', 76)
     # AS is not a tokenised word
-    word = util.skip_white_read(ins)+ins.read(1)
+    word = util.skip_white_read(ins) + ins.read(1)
     if word.upper() != 'AS':
         raise error.RunError(2)
     newname = vartypes.pass_string_unpack(expressions.parse_expression(ins))
@@ -79,60 +73,47 @@ def exec_kill(ins):
     except EnvironmentError as ex:
         oslayer.handle_oserror(ex)
 
-
 def exec_files(ins):
     path, mask = '.', '*.*'
     if util.skip_white(ins) not in util.end_statement:
         pathmask = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-        pathmask = pathmask.rsplit('\\',1)
+        pathmask = pathmask.rsplit('\\', 1)
         if len(pathmask)>1:
             path = pathmask[0]
             mask = pathmask[1]
         else:
             if pathmask[0]!='':
-                mask=pathmask[0]            
-    
+                mask = pathmask[0]            
     mask = mask.upper()
-        
     # get top level directory for '.'
     try:
         for root, dirs, files in os.walk(path):
             break
     except EnvironmentError as ex:
         oslayer.handle_oserror(ex)
-
     dosfiles = oslayer.pass_dosnames(files, mask)
-    dosfiles =[ name+'     ' for name in dosfiles ]
-    dirs += ['.','..']
+    dosfiles = [ name+'     ' for name in dosfiles ]
+    dirs += ['.', '..']
     dosdirs = oslayer.pass_dosnames(dirs, mask)
-    #dosdirs = ['        .   ', '        ..  '] + pass_dosnames(dirs)
     dosdirs = [ name+'<DIR>' for name in dosdirs ]
-    
     dosfiles.sort()
     dosdirs.sort()    
     output = dosdirs+dosfiles
-    
     # get working dir, replace / with \
-    cwd=os.path.abspath(path).replace(os.sep,'\\')
-    
-    console.write(cwd+util.endl)
+    cwd = os.path.abspath(path).replace(os.sep,'\\')
+    console.write(cwd + util.endl)
     num = console.width/20
-    
-    if len(output)==0:
+    if len(output) == 0:
         # file not found
         raise error.RunError(53)
-        
-    while len(output)>0:
+    while len(output) > 0:
         line = ' '.join(output[:num])
         output = output[num:]
         console.write(line+util.endl)       
         # allow to break during dir listing & show names flowing on screen
         console.check_events()             
-    
-    console.write(str(oslayer.disk_free(path))+' Bytes free'+util.endl)
-    
+    console.write(str(oslayer.disk_free(path)) + ' Bytes free' + util.endl)
     util.require(ins, util.end_statement)
-    
     
 def exec_shell(ins):
     if util.skip_white(ins) in util.end_statement:
@@ -143,19 +124,16 @@ def exec_shell(ins):
     oslayer.spawn_interactive_shell(cmd) 
     console.show_cursor(savecurs)
     util.require(ins, util.end_statement)
-    
         
 def exec_environ(ins):
     envstr = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     eqs = envstr.find('=')
-    if eqs<=0:
+    if eqs <= 0:
         raise error.RunError(5)
-    var=envstr[:eqs]
-    val=envstr[eqs+1:]
+    var = envstr[:eqs]
+    val = envstr[eqs+1:]
     os.environ[var] = val
     util.require(ins, util.end_statement)
-    
-    
        
 def exec_time(ins):
     #time$=
@@ -226,16 +204,15 @@ def exec_date(ins):
         pos += 1
     if word !='':
         datelist[listpos] = int(word)     
-    if datelist[0] > 12 or datelist[1]>31 or (datelist[2]>77 and datelist[2]<80) or \
-                (datelist[2]>99 and datelist[2]<1980 or datelist[2]>2099):
+    if (datelist[0] > 12 or datelist[1] > 31 or
+            (datelist[2] > 77 and datelist[2] < 80) or 
+            (datelist[2] > 99 and datelist[2] < 1980 or datelist[2] > 2099)):
         raise error.RunError(5)
-    if datelist[2]<77:
-        datelist[2] = 2000+datelist[2]
-    if datelist[2]<100 and datelist[2]>79:
-        datelist[2] = 1900+datelist[2]
+    if datelist[2] < 77:
+        datelist[2] = 2000 + datelist[2]
+    if datelist[2] < 100 and datelist[2] > 79:
+        datelist[2] = 1900 + datelist[2]
     newtime = datetime.datetime(datelist[2], datelist[0], datelist[1], now.hour, now.minute, now.second, now.microsecond)
     oslayer.time_offset += newtime - now    
         
-        
-    
-    
+
