@@ -14,7 +14,7 @@ import vartypes
 from string_ptr import StringPtr
 
 variables = {}
-arrays= {}
+arrays = {}
 functions = {}
 
 array_base = 0
@@ -230,10 +230,10 @@ def assign_field_var(varname, value, justify_right=False):
             s = ' '*(el-len(s)) + s
         else:
             s += ' '*(el-len(s))
-    if isinstance(variables[varname], StringPtr):
-        variables[varname].set_str(s)    
-    else:
-        variables[varname][:] = s    
+    #if isinstance(variables[varname], StringPtr):
+    #    variables[varname].set_str(s)    
+    #else:
+    variables[varname][:] = s    
 
 # for reporting by FRE()        
 def variables_memory_size():

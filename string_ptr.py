@@ -9,32 +9,51 @@
 # please see text file COPYING for licence terms.
 #
 
+def apply_slice(slice0, slice1):
+    if isinstance(slice1, slice):
+        start, stop = slice0.start + slice1.start, slice0.start + slice1.stop
+    else:
+        start, stop = slice0.start + slice1, slice0.start + slice1 + 1
+    if stop > slice0.stop:
+        stop = slice0.stop
+    return slice(start, stop) 
+
 
 # string pointer implementation, allows for unions of strings (for FIELD)
 class StringPtr:
-    def set_str(self, in_str):
-        self.stream[self.offset:self.offset+self.length] = in_str[:self.length] + ' '*(self.length-len(in_str))
+    def assign(self, in_str):
+        self.stream[self.slice] = in_str[len(self)] + ' '*(len(self)-len(in_str))
+    
+    def get(self):
+        return self.stream[self.slice]
         
     def __str__(self):
-        return str(self.stream[self.offset:self.offset+self.length])
+        return str(self.stream[self.slice])
         
     def __len__(self):
-        return self.length
+        return self.slice.stop - self.slice.start
 
     def __init__(self, stream, offset, length):
+        if length < 0:
+            length = 0
         if isinstance(stream, StringPtr):
-            self.stream, self.offset, self.length = stream.stream, stream.offset+offset, length     
-            max_length = stream.length
+            self.stream = stream.stream
+            self.slice = slice(stream.slice.start + offset, stream.slice.start+offset+length)
+            max_length = stream.length-offset
         else:
-            self.stream = stream  # this must be a mutable type - list or bytearray
+            # this must be a mutable type - list or bytearray
+            self.stream = stream  
             max_length = len(stream)
-            self.offset, self.length = offset, length
+            self.slice = slice(offset, offset+length)
         # BASIC string length limit
-        if self.length > 255:
-            self.length = 255
-        if self.offset+self.length > max_length:
-            self.length = max_length-self.offset
-            if self.length < 0:
-                self.length = 0    
-        
+        if max_length > 255:
+            max_length = 255
+        if self.slice.stop - self.slice.start > max_length:
+            self.slice.stop = self.slice.start + max_length
+    
+    def __getitem__(self, key):
+        return self.stream[self.slice][key]
+
+    def __setitem__(self, key, value):
+        self.stream[apply_slice(self.slice, key)] = value    
         
