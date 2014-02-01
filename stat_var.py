@@ -210,6 +210,7 @@ def exec_mid(ins):
     val = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
     ### str_mid     
+    # get a reference to the actual stored bytearray
     s = vartypes.pass_string_unpack(var.get_var_or_array(name, indices))
     start -= 1    
     stop = start + num 
@@ -220,9 +221,7 @@ def exec_mid(ins):
     if len(val) > stop-start:
         val = val[:stop-start]
     s[start:stop] = val
-    ###
-    var.set_var_or_array(name, indices, ('$', s))
-
+    
 def exec_lset(ins, justify_right=False):
     name = util.get_var_name(ins)
     util.require_read(ins,'\xe7')
