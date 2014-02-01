@@ -463,7 +463,7 @@ def tokenise_line_number(ins, outs, onfile):
         # in direct mode, we'll know to expect a line number if the output starts with a  00
         outs.write('\x00')        
         # write line number. first two bytes are for internal use & can be anything nonzero; we use this.
-        outs.write('\xC0\xDE' + vartypes.value_to_uint(int(linenum)))
+        outs.write('\xC0\xDE' + str(vartypes.value_to_uint(int(linenum))))
     
         # ignore single whitespace after line number, if any, unless line number is zero (as does GW)
         if util.peek(ins)==' ' and int(linenum) !=0 :
