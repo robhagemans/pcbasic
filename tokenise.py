@@ -490,7 +490,7 @@ def tokenise_number(ins, outs):
                 outs.write('\x0f'+chr(int(word)))
             else:
                 # two-byte constant
-                outs.write('\x1c'+vartypes.value_to_sint(int(word)))
+                outs.write('\x1c'+str(vartypes.value_to_sint(int(word))))
         else:
             mbf = str(fp.from_str(word).to_bytes())
             if len(mbf) == 4:
