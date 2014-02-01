@@ -66,7 +66,6 @@ prompt = True
 def set_runmode(new_runmode=True):
     global run_mode, bytecode, direct_line, current_codestream
     run_mode= new_runmode
-
     if run_mode:
         current_codestream = bytecode
     if not run_mode:
@@ -77,7 +76,6 @@ def unset_runmode():
 
 def runmode():
     return run_mode
-
 
 def get_line_number(pos, after=False):
     pre = -1
@@ -96,28 +94,23 @@ def get_line_number(pos, after=False):
 # jump to line number    
 def jump(jumpnum):
     global bytecode, linenum
-    
     if jumpnum in line_numbers:
         # jump to target
         bytecode.seek(line_numbers[jumpnum])
         linenum = jumpnum
         set_runmode()
-        
     else:
         # Undefined line number
         raise error.RunError(8)
 
-
 # build list of line numbers and positions
 def preparse():
     global bytecode, line_numbers
-    
     # preparse to build line number dictionary
     line_numbers = {}
     bytecode.seek(1)
-    last=1
+    last = 1
     while True:
-        
         scanline = util.parse_line_number(bytecode)
         if scanline == -1:
             # program ends
@@ -129,87 +122,73 @@ def preparse():
                 bytecode.seek(last + 5)
                 util.skip_to_read(bytecode, util.end_line)
                 util.parse_line_number(bytecode)
-              
             # if parse_line_number returns -1, it leaves the stream pointer here: 00 _00_ 00 1A 
             line_numbers[65536] = bytecode.tell() - 1  
             break
-        
         # -5 because we're eg at x in 00 C0 DE 00 0A _XX_ and we need to be on the line-ending 00: _00_ C0 DE 00 0A XX
         last = bytecode.tell() - 5   
         line_numbers[scanline] = last  
-        
         util.skip_to_read(bytecode, util.end_line)
-        
     reset_program()
-    
-    
             
 def reset_program():
-    global bytecode, gosub_return, for_next_stack, linenum, data_line, data_pos, stop
-    
+    global bytecode, gosub_return, for_next_stack, while_wend_stack, linenum, data_line, data_pos, stop
+    # reset loop stacks
     gosub_return = []
-    for_next_stack=[]
-    
+    for_next_stack = []
+    while_wend_stack = []
     # disable error trapping
     error.error_resume = None
     error.on_error=0
     # reset err and erl
     error.reset_error()
-        
     # reset event trapping
     events.reset_events()    
-        
-    stop=None
-    linenum=-1
+    # reset stop/cont
+    stop = None
+    # current line number
+    linenum = -1
+    # clear all variables
     var.clear_variables()
+    # reset program pointer
     bytecode.seek(0)
-    
-    data_line =-1
+    # reset data reader
+    data_line = -1
     data_pos = 0
     
-    
 def clear_program():
-    global bytecode, protected, line_numbers, data_line, data_pos
+    global bytecode, protected, line_numbers
     bytecode.truncate(0)
     bytecode.write('\x00\x00\x00\x1A')
     protected = False
     line_numbers = {}    
     reset_program()
-
-    
+   
 def truncate_program(rest):
     global bytecode
-    
     if rest=='':
         bytecode.write('\x00\x00\x00\x1a')
     else:
         bytecode.write(rest)
-    
     pos = bytecode.tell()
-    
     # clear out the rest of the buffer
     # no more elegant way?
+    # FIXME: can use truncate in one line here
     program = bytecode.getvalue()
     program = program[:pos]
-    
     bytecode.truncate(0) 
     bytecode.write(program)    
 
     
 def store_line(linebuf, auto_mode=False):
     global bytecode, line_numbers, linenum
-    
-    #start = 
     linebuf.tell()
     # check if linebuf is an empty line after the line number
     linebuf.seek(5)
     empty = (util.skip_white_read(linebuf) in util.end_line)
-    
     # get the new line number
     linebuf.seek(1)
     scanline = util.parse_line_number(linebuf)
-    
-    
     # find the lowest line after this number
     after = 65536
     afterpos = 0 
@@ -218,11 +197,9 @@ def store_line(linebuf, auto_mode=False):
             after = num
             afterpos = line_numbers[after]        
             # if not found, afterpos will be the number stored at 65536, ie the end of program
-    
     # read the remainder of the program into a buffer to be pasted back after the write
     bytecode.seek(afterpos)
     rest = bytecode.read()
-    
     # replace or insert?
     if scanline in line_numbers and not (auto_mode and empty):
         # line number exists, replace line
@@ -233,26 +210,17 @@ def store_line(linebuf, auto_mode=False):
                 # undefined line number
                 raise error.RunError(8)
             else:
-                ### assign to global linenum, needed for AUTO
-                #linenum = scanline
-                ###
-    
                 return scanline
-                
         # insert    
         bytecode.seek(afterpos)
-            
     # write the line buffer to the program buffer
     if not empty:
         linebuf.seek(0)
         bytecode.write(linebuf.read())
-    
     # write back the remainder of the program
     truncate_program(rest)
-            
     bytecode.seek(0)
     preparse()
-
     return scanline #linenum = scanline
 
 
@@ -283,11 +251,8 @@ def delete_lines(fromline, toline):
     # if not found, afterpos will be the number stored at 65536, ie the end of program
     bytecode.seek(afterpos)
     rest = bytecode.read()
-    
-        
     bytecode.seek(startpos)
     truncate_program(rest)
-    
     bytecode.seek(0)
     preparse()
 
@@ -295,21 +260,16 @@ def delete_lines(fromline, toline):
 
 def edit_line(from_line, pos=-1):
     global bytecode, prompt
-    
     # list line
     current = bytecode.tell()	        
     bytecode.seek(1)
-    
     output = StringIO()
     tokenise.detokenise(bytecode, output, from_line, from_line, pos)
-    
     output.seek(0)
     bytecode.seek(current)
-    
     console.clear_line(console.row)
     console.write(output.getvalue())
     output.close()
-     
     # throws back to direct mode
     unset_runmode()
     #suppress prompt, move cursor?
@@ -319,26 +279,23 @@ def edit_line(from_line, pos=-1):
     
 def renumber(new_line=-1, start_line=-1, step=-1):
     global bytecode, line_numbers
-    
+    # set defaults
     if new_line==-1:
         new_line=10
     if start_line==-1:
         start_line=0
     if step==-1:
         step=10        
-    
     # get line number dict in the form it should've been in anyway had I implemented it sensibly
     lines = []
     for num in line_numbers:
         if num >= start_line:
             lines.append([num, line_numbers[num]])        
     lines.sort()    
-    
     # assign the new numbers
     for pairs in lines:
         pairs.append(new_line)
         new_line += step    
-    
     # write the new numbers
     for pairs in lines:
         if pairs[0]==65536:
@@ -346,9 +303,7 @@ def renumber(new_line=-1, start_line=-1, step=-1):
         bytecode.seek(pairs[1])
         bytecode.read(3)
         bytecode.write(vartypes.value_to_uint(pairs[2]))
-        
-        
-    #write the indirect line numbers
+    # write the indirect line numbers
     bytecode.seek(0)
     linum = -1
     while util.peek(bytecode) != '':
@@ -358,10 +313,8 @@ def renumber(new_line=-1, start_line=-1, step=-1):
             break
         bytecode.read(1)
         s = bytecode.read(2)
-        
         jumpnum = vartypes.uint_to_value(s)
         newnum = -1
-        
         for triplets in lines:
             if triplets[0]==jumpnum:
                 newnum = triplets[2]
@@ -371,18 +324,14 @@ def renumber(new_line=-1, start_line=-1, step=-1):
         else:
             # just a message, not an actual error. keep going.
             console.write('Undefined line '+str(jumpnum)+' in '+str(linum)+util.endl)
-    
     # rebuild the line number dictionary    
     preparse()    
     
 
 def load(g):
     global bytecode, protected, linenum
-    
     bytecode.truncate(0)
-    
     c = g.read(1)
-    
     if c == '\xFF':
         # bytecode file
         bytecode.write('\x00')
@@ -420,10 +369,8 @@ def merge(g):
         more=True
         while (more): #peek(g)=='' and not peek(g)=='\x1A':
             tempbuf = StringIO()
-    
             more = tokenise.tokenise_stream(g, tempbuf, one_line=True)
             tempbuf.seek(0)
-            
             c = util.peek(tempbuf) 
             if c=='\x00':
                 # line starts with a number, add to program memory
@@ -434,13 +381,11 @@ def merge(g):
             else:
                 # direct statement in file
                 raise error.RunError(66)                
-    
             tempbuf.close()    
     
 
 def save(g, mode='B'):
     global bytecode, protected
-    
     # skip first \x00 in bytecode, replace with appropriate magic number
     bytecode.seek(1)
     if mode=='B':
@@ -460,10 +405,4 @@ def save(g, mode='B'):
             # fix \x1A eof
             g.write('\x1a')        
                     
-                        
-                
-                
-            
-            
-            
 
