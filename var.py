@@ -175,10 +175,7 @@ def get_array(name, index):
     if name[-1]=='$':
         return (name[-1], lst[bigindex])
     value = lst[bigindex*var_size_bytes(name):(bigindex+1)*var_size_bytes(name)]
-    if name[-1]=='%':
-        return vartypes.pack_int(vartypes.sint_to_value(value))
-    else:
-        return (name[-1], value)
+    return (name[-1], value)
     
 def set_array(name, index, value):
     [dimensions, lst] = check_dim_array(name, index)
@@ -188,10 +185,7 @@ def set_array(name, index, value):
        lst[bigindex] = value
        return 
     bytesize = var_size_bytes(name)
-    if name[-1]=='%':
-        lst[bigindex*bytesize:(bigindex+1)*bytesize] = vartypes.value_to_sint(value)
-    else:
-        lst[bigindex*bytesize:(bigindex+1)*bytesize] = value
+    lst[bigindex*bytesize:(bigindex+1)*bytesize] = value
     
 def get_var_or_array(name, indices):
     if indices == []:
