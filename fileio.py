@@ -374,11 +374,6 @@ def open_file(number, unixpath, mode='I', access='rb', lock='rw', reclen=128):
     if number in files:
         # file already open
         raise error.RunError(55)
-    # create file if writing and doesn't exist yet    
-    # TODO: CHECK: this still necessaary? there's no w in r+b
-#    if 'W' in access.upper() and not os.path.exists(unixpath):
-#        tempf = oslayer.safe_open(unixpath,'wb')
-#        tempf.close() 
     inst.fhandle = oslayer.safe_open(unixpath, access)
     oslayer.safe_lock(inst.fhandle, access, lock)
     inst.number = number

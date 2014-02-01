@@ -24,7 +24,7 @@ long_modes = ['\x85', 'OUTPUT', 'RANDOM', 'APPEND']  # \x85 is INPUT token
 access_tokens = ['\x87', '\xB7', '\x87 \xB7'] # READ, WRITE, READ WRITE
 lock_modes = ['SHARED', '\xFE\xA7 \x87', '\xFE\xA7 \xB7', '\xFE\xA7 \x87 \xB7'] # SHARED, LOCK READ, LOCK WRITE, LOCK READ WRITE
 
-access_modes = { 'I':'rb', 'O':'wb', 'R': 'rwb', 'A': 'wb' }
+access_modes = { 'I':'rb', 'O':'wb', 'R':'r+b', 'A':'wb' }
 position_modes = { 'I':0, 'O':0, 'R':0, 'A':-1 }
             
 lock_list = {}
@@ -76,7 +76,7 @@ def exec_open(ins):
                 access = 'wb'        
             elif d == '\x87': # READ
                 if util.skip_white(ins) == '\xB7': # READ WRITE
-                    access = 'rwb'
+                    access = 'r+b'
                 else:
                     access = 'rb'
         # lock clause
@@ -108,7 +108,7 @@ def exec_open(ins):
     if deviceio.is_device(dev_name): 
         deviceio.device_open(number, dev_name, mode, access)
     else:    
-        if 'R' in access.upper():    #=='r' or access=='rb':
+        if access.upper()=='RB' or access.upper()=='R':
             name = oslayer.dospath_read(name, '', 53)
         else:
             name = oslayer.dospath_write(name, '', 76)
