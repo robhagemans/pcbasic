@@ -57,7 +57,6 @@ linenum_words = ['GOTO', 'THEN', 'ELSE', 'GOSUB', 'LIST', 'RENUM', 'EDIT', 'LLIS
 
 
 ##########################################
-# TODO: this does not belong here...
 
 def str_to_value_keep(strval):
     if strval==('$',''):
