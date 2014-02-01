@@ -80,26 +80,26 @@ class ByteStream(object):
         self._contents = self._contents[:n]
         if self._loc >= len(self._contents):
             self._loc = len(self._contents)
-            
+
+    def close(self):
+        pass            
     
 class TextFile(object):
-    def __init__(self):
+    def __init__(self, fhandle, number, mode, access):
         # width=255 means line wrap
         self.width = 255
-        self.col=1
-        self.fhandle= None
-        self.number=0
-        self.mode=''
-        self.access=''
-        
-    def init(self, dummy=42):
+        self.col = 1
+        self.fhandle = fhandle
+        self.number = number
+        self.mode = mode
+        self.access = access
         if self.mode.upper() in ('I', 'O', 'R', 'P'):
             self.fhandle.seek(0)
         else:
             self.fhandle.seek(0, 2)
         
     def close(self):
-        if self.access=='wb':
+        if self.access == 'wb':
             # write EOF char
             self.fhandle.write('\x1a')
         self.fhandle.close()
@@ -149,36 +149,35 @@ class TextFile(object):
         return self.peek_chars()
         
     def peek_chars(self,num=1):
-        s=''
+        s = ''
         for _ in range(num):
             c = self.fhandle.read(1)
             # check for \x1A (EOF char - this will actually stop further reading)
             if c =='':
                 break
-            if c=='\x1a':
-                self.fhandle.seek(-1,1)
+            if c == '\x1a':
+                self.fhandle.seek(-1, 1)
                 break
             s+=c
-        self.fhandle.seek(-len(s),1)
+        self.fhandle.seek(-len(s), 1)
         return s
 
     # write one or more chars
     def write(self, s):
         s_out = ''
-        #last = ''
         for c in s:
             if self.col >= self.width and self.width != 255:  # width 255 means wrapping enabled
-                s_out+= '\x0d\x0a'
+                s_out += '\x0d\x0a'
                 self.col=1
             if c in ('\x0a','\x0d'): # CR, LF
-                s_out+=c
+                s_out += c
                 self.col = 1
             else:    
-                s_out+=c
+                s_out += c
             # nonprinting characters including tabs are not counted for WIDTH
             # FIXME: this is true for text files, but not for SCRN: and LPT1:    
-            if ord(c)>=32:
-                self.col+=1
+            if ord(c) >= 32:
+                self.col += 1
         self.fhandle.write(s_out)
 
     def get_col(self):
@@ -209,15 +208,26 @@ class TextFile(object):
  
  
 class RandomFile(object):
-    def __init__(self):
+    def __init__(self, fhandle, number, mode, access, reclen=128):
         # width=255 means line wrap
         self.width = 255
-        self.col=1
-        self.fhandle= None
-        self.number=0
-        self.mode=''
-        self.access=''
-    
+        self.col = 1
+        self.fhandle = fhandle
+        self.number = number
+        self.mode = mode
+        self.access = access
+        self.reclen = reclen
+        self.recpos = 0
+        self.fhandle.seek(0)
+        if self.number in fields:
+            self.field = fields[self.number]
+        else:
+            self.field = bytearray('\x00')*reclen
+            fields[self.number] = self.field
+        # open a pseudo text file over the buffer stream
+        # to make WRITE# etc possible
+        self.field_text_file = pseudo_textfile(ByteStream(self.field))
+        
     # all text-file operations on a RANDOM file number actually work on the FIELD buffer
 #    def get_stream(self):
 #        return self.field_text_file.fhandle
@@ -244,7 +254,7 @@ class RandomFile(object):
         ins = StringIO(s)
         while self.field_text_file.fhandle.tell() < self.reclen:
             self.field_text_file.write(ins.read(1))
-        if ins.tell()<len(s):
+        if ins.tell() < len(s):
             raise error.RunError(50) # FIELD overflow
     
     def set_width(self, new_width=255):
@@ -253,22 +263,9 @@ class RandomFile(object):
     def get_width(self):
         return self.width
     
-    def init(self, reclen=128):
-        self.reclen = reclen
-        self.recpos = 0
-        self.fhandle.seek(0)
-        if self.number in fields:
-            self.field = fields[self.number]
-        else:
-            self.field = bytearray('\x00')*reclen
-            fields[self.number] = self.field
-        # open a pseudo text file over the buffer stream
-        # to make WRITE# etc possible
-        self.field_text_file = pseudo_textfile(ByteStream(self.field))
-        
     def close(self):
         self.fhandle.close()
-        if self.number !=0:
+        if self.number != 0:
             del files[self.number]
         
     # read record    
@@ -280,20 +277,20 @@ class RandomFile(object):
         self.recpos += 1
         return True
         
-    #write record
+    # write record
     def write_field(self):
         current_length = self.lof()
         if self.recpos > current_length:
-            self.fhandle.seek(0,2)
+            self.fhandle.seek(0, 2)
             numrecs = self.recpos-current_length
             self.fhandle.write('\x00'*numrecs*self.reclen)
         self.fhandle.write(self.field)
-        self.recpos+=1
+        self.recpos += 1
         
     def set_pos(self, newpos):
         # first record is newpos number 1
         self.fhandle.seek((newpos-1)*self.reclen)
-        self.recpos = newpos-1
+        self.recpos = newpos - 1
 
     def loc(self):
         # for LOC(i)
@@ -306,7 +303,7 @@ class RandomFile(object):
             
     def lof(self):
         current = self.fhandle.tell()
-        self.fhandle.seek(0,2)
+        self.fhandle.seek(0, 2)
         lof = self.fhandle.tell()
         self.fhandle.seek(current)
         return lof
@@ -345,41 +342,32 @@ def close_all():
 def close_all_all_all():
     for f in list(files):
         files[f].close()
-        
+                
 def get_file(number):        
     return files[number]
     
 def pseudo_textfile(stringio):
     # open a pseudo text file over a byte stream
-    text_file = TextFile()
     number = -1
     while number in files:
         number -= 1
-    text_file.fhandle = stringio
-    text_file.mode='P'
-    text_file.number = number
-    text_file.access = 'rwb'
-    text_file.init()
+    text_file = TextFile(stringio, number, 'P', 'r+b')
+    files[number] = text_file
     return text_file        
    
 def open_file(number, unixpath, mode='I', access='rb', lock='rw', reclen=128):
-    if mode.upper() in ('I','O','A'):
-        inst = TextFile()
-    else:
-        inst = RandomFile()
-        access = 'r+b'
     if number <0 or number>255:
         # bad file number
         raise error.RunError(52)
     if number in files:
         # file already open
         raise error.RunError(55)
-    inst.fhandle = oslayer.safe_open(unixpath, access)
+    if mode.upper() in ('I', 'O', 'A'):
+        inst = TextFile(oslayer.safe_open(unixpath, access), number, mode.upper(), access)
+    else:
+        access = 'r+b'
+        inst = RandomFile(oslayer.safe_open(unixpath, access), number, mode.upper(), access, reclen)
     oslayer.safe_lock(inst.fhandle, access, lock)
-    inst.number = number
-    inst.access = access
-    inst.mode = mode.upper()
-    inst.init(reclen)
     files[number] = inst
             
 def lock_file(thefile, lock, lock_start, lock_length):
@@ -391,7 +379,4 @@ def lock_file(thefile, lock, lock_start, lock_length):
     elif isinstance(thefile, RandomFile):
         oslayer.safe_lock(thefile.fhandle, thefile.access, lock, lock_start, lock_length)
         
-    
-
-
 
