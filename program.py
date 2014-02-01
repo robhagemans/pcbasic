@@ -351,7 +351,6 @@ def load(g):
         pass
     else:
         # TODO: check allowed first chars for ASCII file - > whitespace + nums? letters?
-    
         # ASCII file, maybe
         g.seek(-1,1)
         protected = False
