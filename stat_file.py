@@ -45,12 +45,12 @@ def exec_open(ins):
         util.require_read(ins, ',')
         number = expressions.parse_file_number_opthash(ins)
         util.require_read(ins, ',')
-        name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+        name = str(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
         if util.skip_white_read_if(ins, ','):
             reclen = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     else:
         # second syntax
-        name = first_expr
+        name = str(first_expr)
         mode = 'R' # RANDOM        
         if util.skip_white_read_if(ins, '\x82'): # FOR
             c = util.skip_white_read(ins)
