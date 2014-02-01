@@ -173,7 +173,7 @@ def truncate_program(rest):
     pos = bytecode.tell()
     # clear out the rest of the buffer
     # no more elegant way?
-    # FIXME: can use truncate in one line here
+    # TODO: can use truncate in one line here
     program = bytecode.getvalue()
     program = program[:pos]
     bytecode.truncate(0) 
