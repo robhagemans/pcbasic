@@ -16,15 +16,44 @@ import error
 # default type for variable name starting with a-z
 deftype = ['!']*26
 # zeroed out
-null = { '$': ('$', ''), '%': ('%',0), '!':('!', bytearray('\x00')*4), '#':('#', bytearray('\x00')*8) }
+old__null = { '$': ('$', ''), '%': ('%',0), '!':('!', bytearray('\x00')*4), '#':('#', bytearray('\x00')*8) }
 
+null = { '$': ('$', ''), '%': ('%', bytearray('\x00')*2), '!': ('!', bytearray('\x00')*4), '#': ('#', bytearray('\x00')*8) }
 
 def complete_name(name):
     if name != '' and name[-1] not in ('$', '%', '!', '#'):
         name += deftype[ord(name[0].upper()) - 65] # ord('A') 
     return name
 
+
+def pass_int_keep(inp, maxint=0x7fff, err=13):
+    typechar = inp[0]
+    if typechar == '%':
+        return inp
+    elif typechar in ('!', '#'):
+        val = fp.unpack(inp).round_to_int()
+        if val > maxint or val < -0x8000:
+            # overflow
+            raise error.RunError(6)
+        return pack_int(val)
+    elif typechar == '':
+        raise error.RunError(2)    
+    else:     
+        # type mismatch
+        raise error.RunError(err)
+    
 def pass_int_unpack(inp, maxint=0x7fff, err=13):
+    return unpack_int(pass_int_keep(inp, maxint, err))
+
+def unpack_int(inp):
+    return sint_to_value(inp[1])
+
+def pack_int(inp):
+    return ('%', value_to_sint(inp))
+       
+######################################
+
+def old__pass_int_unpack(inp, maxint=0x7fff, err=13):
     typechar = inp[0]
     if typechar == '%':
         val = inp[1]
@@ -41,7 +70,7 @@ def pass_int_unpack(inp, maxint=0x7fff, err=13):
     return val
 
 
-def pass_int_keep(inp, maxint=0x7fff, err=13):
+def old__pass_int_keep(inp, maxint=0x7fff, err=13):
     return ('%', pass_int_unpack(inp, maxint, err))
 
 
@@ -50,7 +79,7 @@ def pass_single_keep(num):
     if typechar == '!':
         return num
     elif typechar == '%':
-        return fp.pack(fp.Single.from_int(num[1]))
+        return fp.pack(fp.Single.from_int(unpack_int(num)))
     elif typechar == '#':
         val = num[1][4:]
         # TODO: *round* to single
@@ -67,7 +96,7 @@ def pass_double_keep(num):
     if typechar == '#':
         return num
     elif typechar == '%':
-        return fp.pack(fp.Double.from_int(num[1]))
+        return fp.pack(fp.Double.from_int(unpack_int(num)))
     elif typechar == '!':
         return ('#', bytearray('\x00\x00\x00\x00')+num[1])    
     elif typechar == '$':
@@ -132,10 +161,10 @@ def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=Fal
     if typechar == '$':
         return ('$', inp[1])
     elif typechar == '%':
-        if screen and not write and inp[1]>=0:
-            return ('$', ' '+ int_to_str(inp[1]) )
+        if screen and not write and unpack_int(inp) >= 0:
+            return ('$', ' '+ int_to_str(unpack_int(inp)) )
         else:
-            return ('$', int_to_str(inp[1]))
+            return ('$', int_to_str(unpack_int(inp)))
     elif typechar == '!':
         return ('$', fp.to_str(fp.unpack(inp), screen, write) )
     elif typechar == '#':
@@ -156,10 +185,10 @@ def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=Fal
 # unpack tokenised numeric constants
 
 
-def unpack_int(inp):
+def old__unpack_int(inp):
     return inp[1]
 
-def pack_int(inp):
+def old__pack_int(inp):
     return ('%', inp)
    
 def uint_to_value(s):
@@ -243,14 +272,14 @@ def str_to_oct(word):
 # boolean functions - two's complement int
 
 def bool_to_int_keep(boo):
-    return ('%', -boo)
+    return pack_int(-boo)
     
 def int_to_bool(iboo):
-    return not (iboo[1] == 0)
+    return not (unpack_int(iboo) == 0)
 
 def pass_twoscomp(num):
     val = pass_int_unpack(num)
-    if val<0:
+    if val < 0:
         return 0x10000 + val
     else:
         return val
@@ -258,8 +287,7 @@ def pass_twoscomp(num):
 def twoscomp_to_int(num):
     if num > 0x7fff:
         num -= 0x10000 
-    return ('%', num)    
-    
+    return pack_int(num)    
     
 
 ##################################################
@@ -287,7 +315,7 @@ def number_gt(left, right):
     if left[0] in ('#', '!'):
         gt = fp.unpack(left).gt(fp.unpack(right)) 
     else:
-        gt = left[1]>right[1]           
+        gt = unpack_int(left) > unpack_int(right)           
     return bool_to_int_keep(gt) 
     
     
@@ -296,35 +324,33 @@ def number_add(left, right):
     if left[0] in ('#', '!'):
         return fp.pack(fp.unpack(left).iadd(fp.unpack(right)))
     else:
-        return ('%', left[1]+right[1])           
+        return pack_int(unpack_int(left) + unpack_int(right))           
 
-    
 def number_sgn(inp):
     if inp[0] == '%':
-        if inp[1] > 0:
-            return ('%', 1)
-        elif inp[1] < 0:
-            return ('%', -1)
+        i = unpack_int(inp)
+        if i > 0:
+            return pack_int(1)
+        elif i < 0:
+            return pack_int(-1)
         else:
-            return ('%', 0)
-    elif inp[0] in ('!','#'):
-        return ('%', fp.unpack(inp).sign() )
+            return pack_int(0)
+    elif inp[0] in ('!', '#'):
+        return pack_int(fp.unpack(inp).sign())
     return inp
 
-
 def number_abs(inp):
-    if inp[0]== '%':
-        return (inp[0], abs(inp[1]))
+    if inp[0] == '%':
+        return pack_int(abs(unpack_int(inp)))
     elif inp[0] in ('!', '#'):
         out = (inp[0], inp[1][:])  
         out[1][-2] &= 0x7F 
         return out  
     return inp
 
-
 def number_neg(inp):
     if inp[0] == '%':
-        return (inp[0], -inp[1])
+        return pack_int(-unpack_int(inp))
     elif inp[0] in ('!', '#'):
         out = (inp[0], inp[1][:]) 
         out[1][-2] ^= 0x80 
