@@ -508,13 +508,10 @@ def exec_def_fn(ins):
 def exec_randomize(ins):
     val = expressions.parse_expression(ins, allow_empty=True)
     # prompt for random seed if not specified
-    if val == ('',''):
+    if val == ('', ''):
         console.write("Random number seed (-32768 to 32767)? ")
-        line, interrupt = console.read_screenline()
-        if interrupt:
-            raise error.Break()
         # should be interpreted as integer sint if it is
-        val = tokenise.str_to_value_keep(('$', line))
+        val = tokenise.str_to_value_keep(('$', console.read_screenline()))
     # RANDOMIZE converts to int in a non-standard way - looking at the first two bytes in the internal representation
     if val[0] == '$':
         raise error.RunError(5)
