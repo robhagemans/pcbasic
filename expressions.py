@@ -862,7 +862,7 @@ def value_strig(ins):
 def value_fre(ins):
     # GW does grabge collection if a string-valued argument is specified. We don't.
     parse_bracket(ins)
-    return vartypes.pack_int(var.free_mem - (len(program.bytecode.getvalue())-4) - var.variables_memory_size() )
+    return vartypes.pack_int(var.total_mem - program.memory_size() - var.variables_memory_size() )
 
 # do-nothing PEEK    
 def value_peek(ins):

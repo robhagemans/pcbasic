@@ -141,7 +141,7 @@ def main():
             statements.show_keys()
             console.write("PC-BASIC 3.23"+debugstr+util.endl)
             console.write('(C) Copyright 2013 PC-BASIC authors. Type RUN "INFO" for more.'+util.endl)
-            console.write(("%d Bytes free" % var.free_mem) +util.endl)
+            console.write(("%d Bytes free" % var.total_mem) + util.endl)
         
         run.init_run(args.run, args.load, args.quit, args.cmd, args.infile)
         run.main_loop()    
