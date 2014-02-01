@@ -40,6 +40,7 @@ def timer_milliseconds():
     return long(seconds)*1000 + long(micro)/1000 
 
 def safe_open(name, access):
+    name = str(name)
     try:
         # create file if writing and doesn't exist yet    
         if '+' in access and not os.path.exists(name):
@@ -87,6 +88,7 @@ def handle_oserror(e):
         raise error.RunError(51)
 
 def istype(name, isdir):
+    name = str(name)
     return os.path.exists(name) and ((isdir and os.path.isdir(name)) or (not isdir and os.path.isfile(name)))
         
 # put name in 8x3, all upper-case format            
