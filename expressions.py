@@ -374,8 +374,7 @@ def get_var_or_array_name(ins):
 # conversion
 
 def value_cvi(ins):            
-    expr = parse_bracket(ins)
-    cstr =  vartypes.pass_string_unpack(expr)
+    cstr =  vartypes.pass_string_unpack(parse_bracket(ins))
     if len(cstr) < 2:
         raise error.RunError(5)
     return vartypes.pack_int(vartypes.sint_to_value(cstr[:2]))
@@ -398,11 +397,11 @@ def value_mki(ins):
 
 def value_mks(ins):            
     csng = vartypes.pass_single_keep(parse_bracket(ins))[1]    
-    return vartypes.pack_string(str(csng))
+    return vartypes.pack_string(csng)
 
 def value_mkd(ins):       
     cdbl = vartypes.pass_double_keep(parse_bracket(ins))[1]    
-    return vartypes.pack_string(str(cdbl))
+    return vartypes.pack_string(cdbl)
 
 def value_cint(ins):            
     return vartypes.pass_int_keep(parse_bracket(ins))
@@ -450,7 +449,7 @@ def value_len(ins):
 def value_asc(ins):            
     s = vartypes.pass_string_unpack(parse_bracket(ins))
     if s!='':
-        return vartypes.pack_int(ord(s[0]))
+        return vartypes.pack_int(s[0])
     else:
         raise error.RunError(5)
 
