@@ -130,7 +130,7 @@ def exec_dim(ins):
     util.require(ins, util.end_statement)
 
 
-def exec_deftype(typechar, ins):
+def exec_deftype(ins, typechar):
     start = -1
     stop = -1
     while True:
