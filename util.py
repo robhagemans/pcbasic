@@ -259,7 +259,7 @@ def parse_name(ins):
     while (d>='A' and d<='Z') or (d>='0' and d<='9') or d=='.':
         name += d
         d = ins.read(1).upper()
-    if d in ('$', '#', '!', '#'):
+    if d in ('$', '%', '!', '#'):
         name += d
     else:
         if d != '':
