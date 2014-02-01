@@ -49,6 +49,9 @@ def timer_milliseconds():
 
 def safe_open(name, access):
     try:
+        # create file if writing and doesn't exist yet    
+        if '+' in access and not os.path.exists(name):
+            open(name, 'wb').close() 
         return open(name, access)
     except EnvironmentError as e:
         handle_oserror(e)
