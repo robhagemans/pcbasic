@@ -404,4 +404,6 @@ def save(g, mode='B'):
             # fix \x1A eof
             g.write('\x1a')        
                     
-
+def memory_size():
+    return len(bytecode.getvalue()) - 4
+    
