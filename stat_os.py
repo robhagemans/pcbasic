@@ -72,7 +72,7 @@ def exec_name(ins):
 
 def exec_kill(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    name = oslayer.dospath_read(name, '')
+    name = oslayer.dospath_read(name, '', 53)
     util.require(ins, util.end_statement)
     try:
         os.remove(name)    

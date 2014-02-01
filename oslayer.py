@@ -14,9 +14,9 @@ import datetime
 import errno
 import fnmatch
 import string
+from functools import partial
 
 import error
-        
 
 # platform-specific:
 import platform
@@ -25,27 +25,19 @@ if platform.system() == 'Windows':
 else:    
     from os_unix import *
 
-
- 
 # datetime offset for duration of the run (so that we don't need permission to touch the system clock)
 # given in seconds        
 time_offset = datetime.timedelta()
 
-# max time value Unix can handle (2038 ish)
-#unix_epoch = time.mktime(0x7fffffff)
-       
+
 def timer_milliseconds():
     global time_offset
-    
     now = datetime.datetime.today() + time_offset
     midnight = datetime.datetime(now.year, now.month, now.day)
-    
     diff = now-midnight
     seconds = diff.seconds
     micro = diff.microseconds
-
     return long(seconds)*1000 + long(micro)/1000 
-
 
 def safe_open(name, access):
     try:
@@ -61,14 +53,12 @@ def safe_lock(fd, access, locktype, length=0, start=0, whence=0):
         lock(fd, access, locktype, length, start, whence)
     except EnvironmentError as e:
         handle_oserror(e)
-    
 
 def safe_unlock(fd):
     try:
         unlock(fd)
     except EnvironmentError as e:
         handle_oserror(e)
-    
         
 def handle_oserror(e):        
     if e.errno in (errno.ENOENT, errno.EISDIR, errno.ENOTDIR):
@@ -96,19 +86,14 @@ def handle_oserror(e):
         # unknown; internal error
         raise error.RunError(51)
 
-
-
-#############################################
-# handle 8.3 file names
-        
-        
+def istype(name, isdir):
+    return os.path.exists(name) and ((isdir and os.path.isdir(name)) or (not isdir and os.path.isfile(name)))
         
 # put name in 8x3, all upper-case format            
 def dosname_write(s, defext='BAS', path='', dummy=0, isdir_dummy=False):
     pre=path
     if path != '':
-        pre +='/'
-        
+        pre += '/'
     s = s.upper()
     if '.' in s:
         name = s[:s.find('.')]
@@ -116,50 +101,37 @@ def dosname_write(s, defext='BAS', path='', dummy=0, isdir_dummy=False):
     else:
         name = s[:8]
         ext = defext
-    
     name = name[:8].strip()
     ext = ext[:3].strip()
-    
-    if len(ext)>0:    
+    if len(ext) > 0:    
         return pre + name+'.'+ext            
     else:
         return pre + name
 
-
-def istype(name, isdir):
-    return os.path.exists(name) and ((isdir and os.path.isdir(name)) or (not isdir and os.path.isfile(name)))
-
 # if name does not exist, put name in 8x3, all upper-case format with standard extension            
 def dosname_read(s, defext='BAS', path='', err=53, isdir=False):
-    pre=path
+    pre = path
     if path != '':
-        pre +='/'
-        
+        pre += '/'
     if istype(pre+s, isdir):
         return s
-    
     s = dosname_write(s, '', pre)
     if istype(pre+s, isdir):    
         return s
-    
     if defext != '':
         s = dosname_write(s, defext, pre)
         if istype(pre+s, isdir):    
             return s
-    
     # 53: file not found
     raise error.RunError(err)
-    
-      
 
+# find a unix path to match the given dos-style path
 def dospath_action(s, defext, err, action, isdir):
     # split over backslashes
     elements = string.split(s, '\\')
     name = elements.pop()
-    
-    if len(elements)>0 and elements[0]=='':
-        elements[0]='/'
-        
+    if len(elements)>0 and elements[0] == '':
+        elements[0] = '/'
     # find a matching 
     test = ''
     for e in elements:
@@ -168,81 +140,52 @@ def dospath_action(s, defext, err, action, isdir):
             continue
         test += dosname_read(e, '', test, err, isdir)
         test += os.sep
-    
-        
     test += action(name, defext, test, err, isdir)
-        
     return test
 
+dospath_read = partial(dospath_action, action=dosname_read, isdir=False)
+dospath_write = partial(dospath_action, action=dosname_write, isdir=False)
+dospath_read_dir = partial(dospath_action, action=dosname_read, isdir=True)
+dospath_write_dir = partial(dospath_action, action=dosname_write, isdir=True)
 
-# find a unix path to match the given dos-style path
-def dospath_read(s, defext='BAS', err=53):
-    return dospath_action(s, defext, err, dosname_read, isdir=False)
-    
-def dospath_write(s, defext='BAS', err=53):
-    return dospath_action(s, defext, err, dosname_write, isdir=False)
-
-def dospath_read_dir(s, defext='BAS', err=76):
-    return dospath_action(s, defext, err, dosname_read, isdir=True)
-    
-def dospath_write_dir(s, defext='BAS', err=76):
-    return dospath_action(s, defext, err, dosname_write, isdir=True)
-
-
-
-# for FILES
+# for FILES command
 # apply filename filter and DOSify names
 def pass_dosnames(files, mask='*.*'):
-    mask = mask.rsplit('.',1)
-    
-    if len(mask)==2:
+    mask = mask.rsplit('.', 1)
+    if len(mask) == 2:
         trunkmask, extmask = mask
     else:
         trunkmask = mask[0]
-        extmask=''    
-        
+        extmask = ''    
     dosfiles = []
     for name in files:
-        
-        #if name != name.upper():
-        #    continue       
-
-        if name.find('.')>-1:
+        if name.find('.') > -1:
             trunk = name[:name.find('.')][:8]
             ext = name[name.find('.')+1:][:3]
         else:
             trunk = name[:8]
-            ext= ''
-        
-        # non-DOSnames passed as UnixName ...    
+            ext = ''
+        # non-DOSnames passed as UnixName....    
         if len(ext)>0 and name != trunk+'.'+ext:
-            ext='...'
-            #continue       
+            ext = '...'
         elif ext=='' and name != trunk and name!='.':
-            ext='...'
-            #continue       
-
-        if name in ('.','..'):
-            trunk =''
-            ext=''
-            
+            ext = '...'
+        if name in ('.', '..'):
+            trunk = ''
+            ext = ''
         # apply mask separately to trunk and extension, dos-style.
         if not fnmatch.fnmatch(trunk, trunkmask) or not fnmatch.fnmatch(ext, extmask):
             continue
-                
-        trunk += ' '*(8-len(trunk))
+        trunk += ' ' * (8-len(trunk))
         if len(ext) > 0:
-            ext = '.'+ext + ' '*(3-len(ext)) 
-            #ext += 
-        elif name=='.':
+            ext = '.' + ext + ' ' * (3-len(ext)) 
+        elif name == '.':
             ext = '.   '
-        elif name=='..':
+        elif name == '..':
             ext = '..  '
         else:
             ext = '    '    
-        
         dosfiles.append(trunk+ext)
-        
     return dosfiles
 
 
@@ -255,9 +198,8 @@ def line_print(printbuf, printer_name=''):
     if printer_name != '':
         options += ' -P ' + printer_name
     if printbuf != '':
-        pr = os.popen("lpr "+ options, "w")
+        pr = os.popen("lpr " + options, "w")
         pr.write(printbuf)
         pr.close()
         
-            
-                
+
