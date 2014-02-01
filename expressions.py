@@ -118,7 +118,7 @@ def parse_expr_unit(ins):
     d = util.skip_white_read(ins)
     # string literal
     if d=='"':
-        output=''
+        output = bytearray()
         # while tokenised nmbers inside a string lieral will be printed as tokenised numbers, they don't actually execute as such:
         # a \00 character, even if inside a tokenised number, will break a string literal (and make the parser expect a 
         # line number afterwards, etc. We follow this.

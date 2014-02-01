@@ -207,10 +207,10 @@ def exec_mid(ins):
     if num < 0 or num > 255:
         raise error.RunError(5)
     util.require_read(ins, '\xE7') # =
-    val = list(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+    val = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
     ### str_mid     
-    s = list(var.get_var_or_array(name, indices)[1])
+    s = vartypes.pass_string_unpack(var.get_var_or_array(name, indices))
     start -= 1    
     stop = start + num 
     if arglist[1] == None or stop > len(s):
@@ -221,7 +221,7 @@ def exec_mid(ins):
         val = val[:stop-start]
     s[start:stop] = val
     ###
-    var.set_var_or_array(name, indices, ('$', ''.join(s)))
+    var.set_var_or_array(name, indices, ('$', s))
 
 def exec_lset(ins, justify_right=False):
     name = util.get_var_name(ins)
