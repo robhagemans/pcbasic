@@ -63,10 +63,11 @@ def clear_variables():
 
 
 def set_var(name, value):
-    global variables, var_current, var_memory
+    global variables, var_current, var_memory, string_current
     name = vartypes.complete_name(name)
-    if value[0]=='$':
-        unpacked = vartypes.unpack_string(value) 
+    type_char = name[-1]
+    if type_char=='$':
+        unpacked = vartypes.pass_string_unpack(value) 
         if len(unpacked)>255:
             # this is a copy if we use bytearray!
             unpacked = unpacked[:255]
@@ -79,8 +80,21 @@ def set_var(name, value):
         name_ptr = var_current
         var_ptr = name_ptr + max(3, len(name)) + 1 # byte_size first_letter second_letter_or_nul remaining_length_or_nul 
         var_current += max(3, len(name)) + 1 + byte_size[name[-1]]
-        str_ptr = 0
+        if type_char=='$':
+            string_current -= len(unpacked)
+            str_ptr = string_current + 1 
+        else:
+            str_ptr = 0
         var_memory[name] = (name_ptr, var_ptr, str_ptr)
+    elif type_char == '$':
+        # every assignment to string leads to new pointer being allocated
+        # TODO: string literals in programs have the var ptr point to program space.
+        # TODO: if string space expanded to var space, collect garbage
+        name_ptr, var_ptr, str_ptr = var_memory[name]
+        string_current -= len(unpacked)
+        str_ptr = string_current + 1 
+        var_memory[name] = (name_ptr, var_ptr, str_ptr)
+    
      
 def get_var(name):
     name = vartypes.complete_name(name)
@@ -344,13 +358,13 @@ def get_var_memory(address):
                 the_var = name
         if the_var == None:
             return -1        
-        if address >= var_ptr:
-            offset = address - var_ptr
+        if address >= var_addr:
+            offset = address - var_addr
             if offset >= byte_size[name[-1]]:
                 return -1
             if name[-1] == '$':
                 # string is represented as 3 bytes: length + uint pointer
-                var_rep = bytearray(chr(len(variables[name]))) + vartypes.value_to_uint(str_ptr)
+                var_rep = bytearray(chr(len(variables[name]))) + vartypes.value_to_uint(str_addr)
             else:
                 var_rep = variables[name]
             return var_rep[offset]
@@ -368,8 +382,8 @@ def get_var_memory(address):
                 the_arr = name
         if the_arr == None:
             return -1        
-        if address >= var_current + arr_ptr:
-            offset = address - arr_ptr - var_current
+        if address >= var_current + arr_addr:
+            offset = address - arr_addr - var_current
             if offset >= array_size_bytes(name):
                 return -1
             if name[-1] == '$':
