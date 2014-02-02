@@ -864,24 +864,42 @@ def value_fre(ins):
     parse_bracket(ins)
     return vartypes.pack_int(var.total_mem - program.memory_size() - var.variables_memory_size() )
 
-# do-nothing PEEK    
+# read memory location 
+# currently, var memory and preset values only    
 def value_peek(ins):
+    # TODO: take into account DEF SEG
     global peek_values
     addr = vartypes.pass_int_unpack(parse_bracket(ins))
     if addr in peek_values:
         return vartypes.pack_int(peek_values[addr])
+    elif addr >= var.var_mem_start:
+        val = var.get_var_memory(addr)
+        if val < 0:
+            val = 0      
+        return vartypes.pack_int(val)
     else:    
         return vartypes.null['%']
 
-# do-nothing VARPTR, VARPTR$    
+# VARPTR, VARPTR$    
 def value_varptr(ins):    
-    if util.peek(ins,1)=='$':
+    if util.peek(ins) == '$':
         ins.read(1) 
-        parse_bracket(ins)
-        return vartypes.null['$']
+        util.require_read(ins, '(')
+        name, indices = get_var_or_array_name(ins)
+        util.require_read(ins, ')')
+        var_ptr = var.get_var_ptr(name, indices)
+        if var_ptr < 0:
+            raise error.RunError(5) # ill fn cll
+        return vartypes.pack_string(bytearray(chr(var.byte_size[name[-1]])) + vartypes.value_to_uint(var_ptr))
     else:
-        parse_bracket(ins)
-        return vartypes.null['%']
+        # TODO: strings, file control blocks not yet implemented 
+        util.require_read(ins, '(')
+        name, indices = get_var_or_array_name(ins)
+        util.require_read(ins, ')')
+        var_ptr = var.get_var_ptr(name, indices)
+        if var_ptr < 0:
+            raise error.RunError(5) # ill fn cll
+        return vartypes.pack_int(var_ptr)
         
 def value_usr(ins):
     c= util.peek(ins,1)
