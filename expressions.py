@@ -860,7 +860,7 @@ def value_strig(ins):
 # memory and machine
 
 def value_fre(ins):
-    # GW does grabge collection if a string-valued argument is specified. We don't.
+    # TODO: GW does grabge collection if a string-valued argument is specified. We don't.
     parse_bracket(ins)
     return vartypes.pack_int(var.total_mem - program.memory_size() - var.variables_memory_size() )
 
@@ -892,7 +892,7 @@ def value_varptr(ins):
             raise error.RunError(5) # ill fn cll
         return vartypes.pack_string(bytearray(chr(var.byte_size[name[-1]])) + vartypes.value_to_uint(var_ptr))
     else:
-        # TODO: strings, file control blocks not yet implemented 
+        # TODO: strings, fields, file control blocks not yet implemented 
         util.require_read(ins, '(')
         name, indices = get_var_or_array_name(ins)
         util.require_read(ins, ')')
