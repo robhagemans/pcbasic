@@ -11,7 +11,9 @@
 
 import error
 import vartypes
+import program
 from string_ptr import StringPtr
+
 
 variables = {}
 arrays = {}
@@ -25,11 +27,20 @@ common_array_names = []
 
 # 'free memory' as reported by FRE
 total_mem = 60300    
-free_mem = total_mem    
 byte_size = {'$':3, '%':2, '!':4, '#':8}
 
+# memory model
+var_mem_start = 4720
+var_current = var_mem_start
+string_current = var_current + total_mem # 65020
+var_memory = {}
+# arrays are always kept after all vars
+array_current = 0
+array_memory = {}
+
 def clear_variables():
-    global variables, arrays, array_base, functions, common_names, common_array_names
+    global variables, arrays, array_base, functions, common_names, common_array_names, memory, var_mem, string_mem
+    global var_current, string_current, var_memory, array_current, array_memory
     variables = {}
     arrays = {}
     array_base = 0
@@ -38,17 +49,39 @@ def clear_variables():
     # at least I think these should be cleared by CLEAR?
     common_names = []
     common_array_names = []
+    # reset memory model
+    memory = bytearray('\x00')*(total_mem-program.memory_size())
+    var_mem = 0
+    string_mem = total_mem
+    # memory model
+    var_current = var_mem_start
+    string_current = var_current + total_mem # 65020
+    var_memory = {}
+    # arrays are always kept after all vars
+    array_current = 0
+    array_memory = {}
+
 
 def set_var(name, value):
-    global variables
+    global variables, var_current, var_memory
     name = vartypes.complete_name(name)
     if value[0]=='$':
         unpacked = vartypes.unpack_string(value) 
         if len(unpacked)>255:
             # this is a copy if we use bytearray!
-            value = vartypes.pack_string(unpacked[:255])
-    variables[name] = vartypes.pass_type_keep(name[-1], value)[1]
-    
+            unpacked = unpacked[:255]
+        variables[name] = unpacked
+    else:
+        variables[name] = vartypes.pass_type_keep(name[-1], value)[1]
+    # update memory model
+    # first two bytes: chars of name or 0 if name is one byte long
+    if name not in var_memory:
+        name_ptr = var_current
+        var_ptr = name_ptr + max(3, len(name)) + 1 # byte_size first_letter second_letter_or_nul remaining_length_or_nul 
+        var_current += max(3, len(name)) + 1 + byte_size[name[-1]]
+        str_ptr = 0
+        var_memory[name] = (name_ptr, var_ptr, str_ptr)
+     
 def get_var(name):
     name = vartypes.complete_name(name)
     try:
@@ -58,6 +91,7 @@ def get_var(name):
             return (name[-1], variables[name])
     except KeyError:
         return vartypes.null[name[-1]]
+
 
 def swap_var(name1, name2):
     global variables
@@ -112,7 +146,7 @@ def array_size_bytes(name):
     return size*var_size_bytes(name)     
 
 def dim_array(name, dimensions):
-    global arrays
+    global arrays, array_memory, var_current, array_current
     name = vartypes.complete_name(name)
     if name in arrays:
         # duplicate definition
@@ -129,6 +163,14 @@ def dim_array(name, dimensions):
         arrays[name] = [ dimensions, ['']*size ]  
     else:
         arrays[name] = [ dimensions, bytearray(size*var_size_bytes(name)) ]  
+    # update memory model
+    # first two bytes: chars of name or 0 if name is one byte long
+    name_ptr = array_current
+    record_len = 1 + max(3, len(name)) + 3 + 2*len(dimensions)
+    array_ptr = name_ptr + record_len
+    array_current += record_len + array_size_bytes(name)
+    array_memory[name] = (name_ptr, array_ptr)
+
 
 def check_dim_array(name, index):
     try:
@@ -229,8 +271,13 @@ def assign_field_var(varname, value, justify_right=False):
     #else:
     variables[varname][:] = s    
 
+###########################################################
+
+# memory model
+
 # for reporting by FRE()        
 def variables_memory_size():
+#    return var_current + array_current + (var_current + total_mem - string_current)
     mem_used = 0
     for name in variables:
         mem_used += 1 + max(3, len(name))
@@ -247,4 +294,97 @@ def variables_memory_size():
                 mem_used += len(mem)
     return mem_used
 
+def get_var_ptr(name, indices):
+    name = vartypes.complete_name(name)
+    if indices == []:
+        try:
+            name_ptr, var_ptr, str_ptr = var_memory[name]
+            return var_ptr
+        except KeyError:
+            return -1
+    else:
+        try:
+            [dimensions, lst] = arrays[name]
+            name_ptr, array_ptr = array_memory[name]
+            # arrays are kept at the end of the var list
+            return var_current + array_ptr + var_size_bytes(name) * index_array(indices, dimensions) 
+        except KeyError:
+            return -1
 
+def get_name_in_memory(name, offset):
+    if offset == 0:
+        return byte_size[name[-1]]
+    elif offset == 1:
+        return ord(name[0].upper())
+    elif offset == 2:
+        if len(name) > 2:
+            return ord(name[1].upper())
+        else:
+            return 0                    
+    elif offset == 3:
+        if len(name) > 3:
+            return len(name)-3        
+        else:
+            return 0
+    else:
+        # rest of name is encoded such that c1 == 'A'
+        return ord(name[offset-1].upper()) - ord('A') + 0xC1
+                            
+def get_var_memory(address):
+    if address < var_current:
+        # find the variable we're in
+        name_addr = -1
+        var_addr = -1
+        str_addr = -1
+        the_var = None 
+        for name in var_memory:
+            name_ptr, var_ptr, str_ptr = var_memory[name]
+            if name_ptr <= address and name_ptr > name_addr:
+                name_addr, var_addr, str_addr = name_ptr, var_ptr, str_ptr
+                the_var = name
+        if the_var == None:
+            return -1        
+        if address >= var_ptr:
+            offset = address - var_ptr
+            if offset >= byte_size[name[-1]]:
+                return -1
+            if name[-1] == '$':
+                # string is represented as 3 bytes: length + uint pointer
+                var_rep = bytearray(chr(len(variables[name]))) + vartypes.value_to_uint(str_ptr)
+            else:
+                var_rep = variables[name]
+            return var_rep[offset]
+        else:
+            offset = address - name_ptr
+            return get_name_in_memory(name, offset)
+    elif address < var_current + array_current:
+        name_addr = -1
+        arr_addr = -1
+        the_arr = None 
+        for name in array_memory:
+            name_ptr, arr_ptr = array_memory[name]
+            if name_ptr <= address and name_ptr > name_addr:
+                name_addr, arr_addr = name_ptr, arr_ptr
+                the_arr = name
+        if the_arr == None:
+            return -1        
+        if address >= var_current + arr_ptr:
+            offset = address - arr_ptr - var_current
+            if offset >= array_size_bytes(name):
+                return -1
+            if name[-1] == '$':
+                # TODO: not implemented for arrays of strings
+                return 0
+            return get_bytearray(name)[offset]
+        else:
+            offset = address - name_ptr - var_current
+            if offset < max(3, len(name))+1:
+                return get_name_in_memory(name, offset)
+            else:
+                offset -= max(3, len(name))+1
+                [dimensions, lst] = arrays[name]
+                data_rep = vartypes.value_to_uint(array_size_bytes(name) + 1 + 2*len(dimensions)) + chr(len(dimensions)) 
+                for d in dimensions:
+                    data_rep += vartypes.value_to_uint(d + 1 - array_base)
+                return data_rep[offset]               
+                  
