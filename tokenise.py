@@ -134,7 +134,7 @@ def detokenise_line(bytes):
         elif s in tokens_linenum: 
             # 0D: line pointer (unsigned int) - this token should not be here; interpret as line number and carry on
             # 0E: line number (unsigned int)
-            output += vartypes.uint_to_str(bytes.read(2))
+            output += str(vartypes.uint_to_str(bytes.read(2)))
         elif s in ('\x10', '\x1e'):                           
             # 1E/10: UNUSED: Flags numeric constant being processed/no longer being processed
             pass
@@ -151,7 +151,7 @@ def detokenise_line(bytes):
 # token to string
 def detokenise_number(bytes):
     s = bytes.read(1)
-    output=''
+    output=bytearray()
     if s == '\x0b':                           # 0B: octal constant (unsigned int)
         output += vartypes.oct_to_str(bytearray(bytes.read(2)))
     elif s == '\x0c':                           # 0C: hex constant (unsigned int)
@@ -171,7 +171,7 @@ def detokenise_number(bytes):
     else:
         if s!='':
             bytes.seek(-1,1)  
-    return output
+    return str(output)
 
     
 def ascii_read_to(ins, findrange):
@@ -409,7 +409,7 @@ def tokenise_jump_number(ins, outs):
             word += c   
     # line number (jump)
     if word !='':
-        outs.write('\x0e' + vartypes.str_to_uint(word))
+        outs.write('\x0e' + str(vartypes.str_to_uint(word)))
 
    
 # string to token             
@@ -426,7 +426,7 @@ def tokenise_number(ins, outs):
                     break
                 else:
                     word += ins.read(1).upper()
-            outs.write('\x0C' + vartypes.str_to_hex(word))
+            outs.write('\x0C' + str(vartypes.str_to_hex(word)))
         elif nxt == 'O': # octal constant
             word += ins.read(1)
             while True: 
@@ -434,7 +434,7 @@ def tokenise_number(ins, outs):
                     break
                 else:
                     word += ins.read(1).upper()
-            outs.write('\x0B' + vartypes.str_to_oct(word))
+            outs.write('\x0B' + str(vartypes.str_to_oct(word)))
         else:
             outs.write(c)
     # handle other numbers

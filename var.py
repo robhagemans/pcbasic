@@ -84,7 +84,7 @@ def set_var(name, value):
             string_current -= len(unpacked)
             str_ptr = string_current + 1 
         else:
-            str_ptr = 0
+            str_ptr = -1
         var_memory[name] = (name_ptr, var_ptr, str_ptr)
     elif type_char == '$':
         # every assignment to string leads to new pointer being allocated
@@ -401,4 +401,23 @@ def get_var_memory(address):
                 for d in dimensions:
                     data_rep += vartypes.value_to_uint(d + 1 - array_base)
                 return data_rep[offset]               
-                  
+    elif address > string_current:
+        # string space
+        # find the variable we're in
+        name_addr = -1
+        var_addr = -1
+        str_addr = -1
+        the_var = None 
+        for name in var_memory:
+            name_ptr, var_ptr, str_ptr = var_memory[name]
+            if str_ptr <= address and str_ptr > str_addr:
+                name_addr, var_addr, str_addr = name_ptr, var_ptr, str_ptr
+                the_var = name
+        if the_var == None:
+            return -1
+        offset = address - str_addr
+        return variables[name][offset]
+    else:
+        # unallocated var space
+        return 0 
+        

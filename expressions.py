@@ -869,7 +869,9 @@ def value_fre(ins):
 def value_peek(ins):
     # TODO: take into account DEF SEG
     global peek_values
-    addr = vartypes.pass_int_unpack(parse_bracket(ins))
+    addr = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
+    if addr < 0: 
+        addr += 0x10000
     if addr in peek_values:
         return vartypes.pack_int(peek_values[addr])
     elif addr >= var.var_mem_start:
