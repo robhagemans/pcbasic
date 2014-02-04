@@ -422,7 +422,7 @@ def value_val(ins):
     return tokenise.str_to_value_keep(parse_bracket(ins))
 
 def value_chr(ins):            
-    return vartypes.pack_string(chr(vartypes.pass_int_unpack(parse_bracket(ins))) )
+    return vartypes.pack_string(bytearray(chr(vartypes.pass_int_unpack(parse_bracket(ins))) ))
 
 def value_oct(ins):            
     # allow range -32768 to 65535
@@ -449,6 +449,9 @@ def value_len(ins):
 def value_asc(ins):            
     s = vartypes.pass_string_unpack(parse_bracket(ins))
     if s!='':
+        import sys
+        sys.stderr.write(repr(s))
+        sys.stderr.write(repr(s[0]))
         return vartypes.pack_int(s[0])
     else:
         raise error.RunError(5)
@@ -543,13 +546,13 @@ def value_string(ins): # STRING$
     if n<0 or n> 255:
         raise error.RunError(5)
     if j[0]=='$':
-        j = ord(vartypes.unpack_string(j)[0])
+        j = vartypes.unpack_string(j)[0]
     else:
         j = vartypes.pass_int_unpack(j)        
     if j<0 or j> 255:
         raise error.RunError(5)
     util.require_read(ins, ')')
-    return vartypes.pack_string(chr(j)*n)
+    return vartypes.pack_string(bytearray(chr(j)*n))
 
 def value_space(ins):            
     num = vartypes.pass_int_unpack(parse_bracket(ins))
@@ -599,12 +602,12 @@ def value_input(ins):    # INPUT$
         screen = fileio.files[filenum]
     util.require_read(ins, ')')
     word = screen.read_chars(num)
-    return vartypes.pack_string(word)        
+    return vartypes.pack_string(bytearray(word))
     
 def value_inkey(ins):
     # wait a tick
     console.idle()
-    return vartypes.pack_string(console.get_char())
+    return vartypes.pack_string(bytearray(console.get_char()))
 
 def value_csrlin(ins):
     return vartypes.pack_int(console.get_row())
