@@ -1,9 +1,67 @@
-PC-BASIC 3.23
-REFERENCE
+PC-BASIC 3.23 REFERENCE
+Copyright (c) 2014 Rob Hagemans.
+This file is licensed under a 
+Creative Commons Attribution-ShareAlike 4.0 International License.
 
 
+EDITING
+-------
+The screen is divided into 'logical lines' whose length can exceed the width
+of the physical line. The logical line includes all the text on the line. If 
+the line has been wrapped or broken by <CTRL+J>, the logical line extends 
+into the next physical line. 
+The following keys have a special effect:
+<UP> or <CTRL+6>            Move the cursor up, except at line 1.
+<DOWN> or <CTRL+->          Move the cursor down, except at line 24. Line 25
+                            cannot be reached with the arrow keys. 
+<LEFT> or <CTRL+]>          Move the cursor left. The left edge of the screen 
+                            wraps around, except at line 1.
+<RIGHT> or <CTRL+/>         Move the cursor right. The right edge of the 
+                            screen wraps around, except at line 24.
+<CTRL+LEFT> or <CTRL+B>     Move to the first letter of the previous word. A 
+                            word consists of letters A-Z and figures 0-9.
+<CTRL+RIGHT> or <CTRL+F>    Move to the first letter of the next word.
+<TAB> or <CTRL+I>           Move the cursor to the next tab stop. Tab stops
+                            are 8 columns wide.
+<BACKSPACE> or <CTRL+H>     Delete the character left of the cursor, shift 
+                            all further characters on the logical line one 
+                            position to the left and change the attributes of 
+                            those characters to the current attribute. At the 
+                            left edge of the screen, this does the same as 
+                            <DEL>.
+<DEL> or <CTRL+BACKSPACE>   Delete the character at the cursor and shift all 
+                            further characters one position to the left, 
+                            changing attributes to current.
+<ESC> or <CTRL+[>           Delete the current logical line
+<CTRL+END> or <CTRL+E>      Delete all characters from the cursor to the end 
+                            of the logical line.
+<CTRL+BREAK> or <CTRL+C>    Jump to the first column of the next line, 
+or <CTRL+SCROLL_LOCK>       without executing or storing the line under the 
+                            cursor.
+<ENTER> or <CTRL+M>         Execute or store the current screen line. The 
+                            complete line on the screen is considered part of 
+                            the command, including any text you did not type. 
+                            A line starting with a number is stored as a 
+                            program line.
+<END> or <CTRL+N>           Move the cursor to the first position after the 
+                            end of the logical line.
+<HOME> or <CTRL+K>          Move the cursor to the top left of the screen.
+<CTRL+HOME> or <CTRL+L>     clear the screen and move the cursor to the top 
+                            left of the screen.
+<CTRL+ENTER> or <CTRL+J>    Move to the first column of the next line, 
+                            connecting the two lines into one logical line.
+<CTRL+G>                    Beep.
+<PAUSE> or <CTRL+NUM_LOCK>  Pause. Press another key to resume.
+<CTRL+PRT_SC>               Echo screen output to the printer.
+<SHIFT+PRT_SC>              Print the screen.
+<INS> or <CTRL+R>           Toggle INSERT mode. In INSERT mode, characters  
+                            are inserted rather than overwritten at the 
+                            current location. If insertion causes the line to 
+                            extend the physical screen width, the logical 
+                            line extends onto the next line. Arrow keys exit 
+                            INSERT mode.
 
-ABS
+
 
 ABS(x) function
 ---------------
@@ -11,14 +69,49 @@ Returns the absolute value of x. x is an expression with a numeric value.
 If x has a string value, ABS raises a TYPE MISMATCH error.
 
 
-ASC
-
 ASC(x) function
 ---------------
-Returns the ASCII code for the first character of x. x is an expression with a string value.
+Returns the ASCII code for the first character of x. x is an expression with 
+a string value.
 If x has a numeric value, ASC raises TYPE MISMATCH.
-IF x="", ASC raises ILLEGAL FUNCTION CALL.
+If x="", ASC raises ILLEGAL FUNCTION CALL.
 
 
+ATN(x) function
+---------------
+Returns the inverse tangent of x. x is an expression with a numeric value in 
+radians. Unless BASIC is run with the --double option, ATN(x) returns a 
+single-precision value.
+If x has a string value, ABS raises a TYPE MISMATCH error.
 
+
+AUTO statement
+AUTO [line_number|.][,[increment]] 
+--------------
+Enter automatic line numbering mode (AUTO mode). In AUTO mode, line numbers 
+are automatically generated when <ENTER> is pressed.
+Line numbering starts at line_number, if specified. If . is specified, line 
+numbering starts at the current line. Otherwise, line numbering starts at 10. 
+Each next line number is incremented by increment, if specified. If a comma 
+is used withoud specifying an increment, the last increment specified in an 
+AUTO command is used. If not, increment defaults to 10.
+If a program line exists at a generated line number, a '*' is shown after the 
+line number. To avoid overwriting this line, leave it empty and press <ENTER>.
+To exit AUTO mode, press <CTRL+BREAK> or <CTRL+C>. The line being edited at 
+that point is not saved. BASIC will return to command mode, even if AUTO was 
+run from a program line.
+If line_number is not an integer value between 0 and 65529, inclusive, SYNTAX 
+ERROR is raised.
+In AUTO mode, pressing <ENTER> on an empty line with number larger than 
+65519, UNDEFINED LINE NUMBER is raised.
+
+
+BEEP statement
+BEEP
+--------------
+Beeps at 800 Hz for 0.25s.
+
+
+BLOAD statement
+BLOAD
 
