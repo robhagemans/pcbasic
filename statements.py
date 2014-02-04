@@ -202,7 +202,7 @@ def parse_statement():
     elif c=='\xC2':     # BSAVE
         exec_bsave(ins)        
     elif c=='\xC3':     # BLOAD
-        exec_sound(ins)        
+        exec_bload(ins)        
     elif c=='\xC4':     # SOUND
         exec_sound(ins)        
     elif c=='\xC5':     # BEEP
