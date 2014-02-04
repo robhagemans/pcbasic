@@ -52,16 +52,19 @@ def exec_edit(ins):
     
 def exec_auto(ins):
     d = util.skip_white(ins)
-    automode.auto_linenum = 10
     if d == '\x0e':   # line number starts
         ins.read(1)
         automode.auto_linenum = vartypes.uint_to_value(bytearray(ins.read(2)))
     elif d == '.':
         ins.read(1)
-        automode.auto_linenum = program.linenum
+        # use current auto_linenum; if not specified before, this is zero.
+        automode.auto_linenum = automode.auto_last_stored
+    else:
+        # default to 10
+        automode.auto_linenum = 10
     if util.skip_white_read_if(ins, ','): 
         if util.skip_white_read_if(ins, ('\x0E',)):   # line number starts
-            automode.auto_increment = vartypes.uint_to_value(ins.read(2)) 
+            automode.auto_increment = vartypes.uint_to_value(bytearray(ins.read(2))) 
         else:
             pass
     else:
