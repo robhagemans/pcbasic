@@ -39,12 +39,10 @@ def exec_delete(ins):
     # throws back to direct mode
     program.unset_runmode()
 
-
 def exec_edit(ins):
     if program.protected:
         # don't list protected files
         raise error.RunError(5)
-    
     util.require_read(ins, ('\x0E',), err=5)   # line number starts
     from_line=vartypes.uint_to_value(ins.read(2))
     util.require(ins, util.end_statement, err=5)
@@ -52,59 +50,44 @@ def exec_edit(ins):
         raise error.RunError(8)
     program.edit_line(from_line)
     
-
-
-    
 def exec_auto(ins):
-    #global auto_increment, auto_linenum
-    #global auto_mode
-    
     d = util.skip_white(ins)
-    automode.auto_linenum=10
-    if d=='\x0e':   # line number starts
+    automode.auto_linenum = 10
+    if d == '\x0e':   # line number starts
         ins.read(1)
-        automode.auto_linenum=vartypes.uint_to_value(ins.read(2))
-    elif d=='.':
+        automode.auto_linenum = vartypes.uint_to_value(bytearray(ins.read(2)))
+    elif d == '.':
         ins.read(1)
         automode.auto_linenum = program.linenum
-        
     if util.skip_white_read_if(ins, ','): 
         if util.skip_white_read_if(ins, ('\x0E',)):   # line number starts
             automode.auto_increment = vartypes.uint_to_value(ins.read(2)) 
         else:
             pass
     else:
-        automode.auto_increment=10
-            
+        automode.auto_increment = 10
     util.require(ins, util.end_statement)
-
     automode.auto_linenum -= automode.auto_increment
     automode.auto_mode = True
     program.prompt = False
     program.unset_runmode()
-        
-    
     
 def exec_list(ins, out=None):
     if program.protected:
         # don't list protected files
         raise error.RunError(5)
-    
     [from_line, to_line] = util.parse_line_range(ins)
     util.require(ins, util.end_statement)
-
-    if out==None:
+    if out == None:
         out = console
-    if out==console:
+    if out == console:
         output = StringIO()
     else:
         output = out
-
     current = program.bytecode.tell()	        
     program.bytecode.seek(1)
     tokenise.detokenise(program.bytecode, output, from_line, to_line)
     program.bytecode.seek(current)
-    
     if out == console:
         lines = output.getvalue().split(util.endl)
         if lines[-1]=='':
@@ -112,55 +95,42 @@ def exec_list(ins, out=None):
         for line in lines:
             console.check_events()
             console.clear_line(console.row)
-            console.write(line+util.endl)
-    
+            console.write(line + util.endl)
     
 def exec_llist(ins):
     exec_list(ins, deviceio.lpt1)
     deviceio.lpt1.flush()
-    
         
 def exec_load(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
     name = oslayer.dospath_read(name, 'BAS', 53)
-        
     close_files = True
     if util.skip_white(ins) == ',':
         if ins.read(2).upper() != ',R':
             raise error.RunError(2)
         else:
             close_files = False
-    
     util.require(ins, util.end_statement)
-    
     g = oslayer.safe_open(name, 'rb')
     program.load(g)
     g.close()    
-    
     if close_files:
         fileio.close_all()
     else:
         # in ,R mode, run the file
         program.set_runmode()
-    
-
         
 def exec_chain(ins):
     action = program.load
     if util.skip_white_read_if(ins, ('\xBD',)): # MERGE
         action = program.merge
-    
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
     name = oslayer.dospath_read(name, 'BAS', 53)
-    
-    jumpnum=-1    
-    d = util.skip_white(ins)
-    if d == ',':
-        ins.read(1)
-        d = util.skip_white(ins)
-        
+    jumpnum = -1    
+    if util.skip_white_read_if(ins, (',',)):
+        util.skip_white(ins)
         # check for an expression that indicates a line in the other program. not stored as a jumpnum (to avoid RENUM)
         # NOTE in GW, negative numbers will be two's complemented into a line number!
         expr = expressions.parse_expression(ins, allow_empty=True)
@@ -168,63 +138,47 @@ def exec_chain(ins):
             jumpnum = vartypes.pass_int_unpack(expr, maxint=0xffff)
             if jumpnum <0:
                 jumpnum = 0x10000 + jumpnum            
-        
-    elif d not in util.end_statement:
-        raise error.RunError(2)
-    
-    # preserve COMMON variables
-    common = {}
-    common_arrays= {}
-    # reset deftypes unless ALL specified
-    common_deftype = ['!']*26
-    
-    for varname in var.common_names:
-        if varname in var.variables:
-            common[varname] = var.variables[varname]
-    for varname in var.common_array_names:
-        if varname in var.arrays:
-            common_arrays[varname] = var.arrays[varname]
-    
-    d = util.skip_white(ins)
-    if d==',':
-        ins.read(1)
-        if util.peek(ins, 3).upper() == 'ALL':
-            ins.read(3)
-            common = copy.copy(var.variables)
-            common_arrays = copy.copy(var.arrays)
-            # preserve DEFTYPES
-            common_deftype = copy.copy(vartypes.deftype)
-    elif d not in util.end_statement:
-        raise error.RunError(2)
-            
-    d = util.skip_white(ins)
-    if d==',':
-        ins.read(1)
-        if util.peek(ins) == '\xa9': # DELETE
-            ins.read(2)
-            #delete lines from existing code before merge
-            # (without MERGE, this is pointless)
-            [from_line, to_line] = util.parse_line_range(ins)
-            program.delete_lines(from_line, to_line)
-    
+        if util.skip_white_read_if(ins, (',',)):
+            util.skip_white(ins)
+            if util.peek(ins, 3).upper() == 'ALL':
+                ins.read(3)
+                common = copy.copy(var.variables)
+                common_arrays = copy.copy(var.arrays)
+                # preserve DEFTYPES
+                common_deftype = copy.copy(vartypes.deftype)
+            else:
+                # preserve COMMON variables
+                common = {}
+                common_arrays = {}
+                # reset deftypes unless ALL specified
+                common_deftype = ['!']*26
+                for varname in var.common_names:
+                    if varname in var.variables:
+                        common[varname] = var.variables[varname]
+                for varname in var.common_array_names:
+                    if varname in var.arrays:
+                        common_arrays[varname] = var.arrays[varname]
+            if util.skip_white_read_if(ins, (',',)):
+                if util.skip_white(ins) == '\xa9': # DELETE
+                    ins.read(2)
+                    #delete lines from existing code before merge
+                    # (without MERGE, this is pointless)
+                    [from_line, to_line] = util.parse_line_range(ins)
+                    program.delete_lines(from_line, to_line)
     # TODO: should the program be loaded or not if we see this error?
+    # should lines be deleted?
     util.require(ins, util.end_statement)
-    
     # keep option base
     base = var.array_base    
-    
     # load & merge call preparse call reset_program, 
     # data restore
     # erase def fn
     # erase defint etc
-    
     g = oslayer.safe_open(name, 'rb')
     action(g)
     g.close()    
-    
     # reset random number generator
     rnd.clear()
-    
     # keep only common variables
     var.variables = common
     var.arrays = common_arrays
@@ -233,18 +187,15 @@ def exec_chain(ins):
     # keep deftypes (if ALL specified)
     vartypes.deftype = common_deftype
     # don't close files!
-    
     # RUN
     program.set_runmode()
     if jumpnum !=-1:
         program.jump(jumpnum)
-
     
 def exec_save(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # 76 is path not found
     name = oslayer.dospath_write(name, 'BAS', 76) 
-
     #    # cryptic errors given by GW-BASIC:    
     #    if len(name)>8 or len(ext)>3:
     #        # 52: bad file number 
@@ -252,33 +203,16 @@ def exec_save(ins):
     #    if ext.find('.') > -1:
     #        # 53: file not found
     #        raise error.RunError(errdots)
-    
     mode = 'B'
-    d = util.skip_white_read(ins)
-    if d== ',':
+    if util.skip_white_read_if(ins, (',',)):
         d = util.skip_white_read(ins)
         if d.upper() not in ('A', 'P'):
             raise error.RunError(2)
-            return False
-        mode=d.upper()
-    elif d== ':':
-        ins.seek(-1,1)
-    elif d in ('', '\x00'):
-        pass
-    else:
-        raise error.RunError(2)
-        return False
-
-    # append BAS if no extension specified    
-    if name.find('.') < 0:
-        name = name + '.BAS'
-        
+        mode = d.upper()
     g = oslayer.safe_open(name, 'wb')
     program.save(g, mode)
     g.close()
-
     util.require(ins, util.end_statement)
-    
     
 def exec_merge(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
@@ -289,14 +223,11 @@ def exec_merge(ins):
     g.close()    
     util.require(ins, util.end_statement)
     
-    
 def exec_new(ins):
-    # NEW Command
-    #   To delete the program currently in memory and clear all variables.
+    # deletes the program currently in memory and clears all variables.
     program.clear_program()
     var.clear_variables()
     fileio.close_all()
-
 
 def exec_renum(ins):
     nums = util.parse_jumpnum_list(ins, size=3, err=2)
