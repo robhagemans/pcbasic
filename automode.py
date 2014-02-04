@@ -16,8 +16,8 @@ import console
 
 auto_mode = False
 auto_increment = 10
-auto_linenum = 10
-
+auto_linenum = 0
+auto_last_stored = 0
 
 def auto_input_loop():
     global auto_mode, auto_linenum

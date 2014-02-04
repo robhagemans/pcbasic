@@ -91,7 +91,8 @@ AUTO [line_number | .] [, [increment]]
 Enter automatic line numbering mode (AUTO mode). In AUTO mode, line numbers 
 are automatically generated when <ENTER> is pressed.
 Line numbering starts at 'line_number', if specified. If . is specified, line 
-numbering starts at the current line. Otherwise, line numbering starts at 10. 
+numbering starts at the last program line that was stored. Otherwise, line
+numbering starts at 10. 
 Each next line number is incremented by 'increment', if specified. If a comma 
 is used withoud specifying an increment, the last increment specified in an 
 AUTO command is used. If not, increment defaults to 10.
