@@ -305,11 +305,10 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
             # handle numbers
             # numbers following var names with no operator or token in between should not be parsed, eg OPTION BASE 1
             # note we don't include leading signs, they're encoded as unary operators
-            elif expect_number and c in ascii_digits + ['&', '.']:
-                if number_is_line:
-                    tokenise_jump_number(ins, outs) 
-                else:        
-                    tokenise_number(ins, outs)
+            elif expect_number and number_is_line and c in ascii_digits:
+                tokenise_jump_number(ins, outs) 
+            elif expect_number and not number_is_line and c in ascii_digits + ['&', '.']:
+                tokenise_number(ins, outs)
             # operator keywords ('+', '-', '=', '/', '\\', '^', '*', '<', '>'):    
             elif c in ascii_operators: 
                 ins.read(1)
@@ -344,22 +343,22 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
                     spc_or_tab = True
             elif c==',' or c=='#':
                 ins.read(1)
-                expect_number=True
+                expect_number = True
                 outs.write(c)
             elif c in ('(', '['):
                 ins.read(1)
                 number_is_line = False
-                expect_number=True
+                expect_number = True
                 outs.write(c)
             elif c== ')' and spc_or_tab:
                 ins.read(1)
                 number_is_line = False
-                expect_number=True
+                expect_number = True
                 outs.write(c)
             else:
                 ins.read(1)
                 number_is_line = False
-                expect_number=False
+                expect_number = False
                 outs.write(c)
 
 
@@ -402,13 +401,13 @@ def tokenise_jump_number(ins, outs):
     while True:
         c = ins.read(1)
         if c not in ascii_digits:
-            if c!= '':
+            if c != '':
                 ins.seek(-1,1)
             break
         else:
             word += c   
     # line number (jump)
-    if word !='':
+    if word != '':
         outs.write('\x0e' + str(vartypes.str_to_uint(word)))
 
    
