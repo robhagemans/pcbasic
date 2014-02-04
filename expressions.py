@@ -964,12 +964,8 @@ def value_rnd(ins):
 
 def value_abs(ins):
     inp = parse_bracket(ins)
-    if inp[0] == '%':
-        return vartypes.pack_int(abs(vartype.unpack_int(inp)))
-    elif inp[0] in ('!', '#'):
-        out = (inp[0], inp[1][:])  
-        out[1][-2] &= 0x7F 
-        return out  
+    if inp[0] in ('%', '!', '#'):
+        return vartypes.number_abs(inp)
     elif inp[0]=='':
         raise error.RunError(2)    
     else:     
@@ -1024,12 +1020,8 @@ def value_fix(inp):
     
 def value_neg(ins):
     inp = parse_expr_unit(ins)
-    if inp[0] == '%':
-        return vartypes.pack_int(-vartypes.unpack_int(inp))
-    elif inp[0] in ('!', '#'):
-        out = (inp[0], inp[1][:]) 
-        out[1][-2] ^= 0x80 
-        return out  
+    if inp[0] in ('%', '!', '#'):
+        return vartypes.number_neg(inp)    
     elif inp[0]=='':
         raise error.RunError(2)    
     else:     

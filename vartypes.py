@@ -341,7 +341,11 @@ def number_sgn(inp):
 
 def number_abs(inp):
     if inp[0] == '%':
-        return pack_int(abs(unpack_int(inp)))
+        val = abs(unpack_int(inp))
+        if val == 32768:
+            return fp.pack(fp.Single.from_int(val))
+        else:
+            return pack_int(val)
     elif inp[0] in ('!', '#'):
         out = (inp[0], inp[1][:])  
         out[1][-2] &= 0x7F 
@@ -350,7 +354,11 @@ def number_abs(inp):
 
 def number_neg(inp):
     if inp[0] == '%':
-        return pack_int(-unpack_int(inp))
+        val = -unpack_int(inp)
+        if val == 32768:
+            return fp.pack(fp.Single.from_int(val))
+        else:
+            return pack_int(val)
     elif inp[0] in ('!', '#'):
         out = (inp[0], inp[1][:]) 
         out[1][-2] ^= 0x80 
