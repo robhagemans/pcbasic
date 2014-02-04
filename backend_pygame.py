@@ -357,7 +357,7 @@ def build_glyph(c, font_face, glyph_height):
             bit = (c >> (7-xx)) & 1
             if bit == 1:
                 glyph.set_at(pos, color)
-   return glyph            
+    return glyph            
     
     
 def build_cursor():
