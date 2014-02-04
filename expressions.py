@@ -449,9 +449,6 @@ def value_len(ins):
 def value_asc(ins):            
     s = vartypes.pass_string_unpack(parse_bracket(ins))
     if s!='':
-        import sys
-        sys.stderr.write(repr(s))
-        sys.stderr.write(repr(s[0]))
         return vartypes.pack_int(s[0])
     else:
         raise error.RunError(5)

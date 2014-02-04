@@ -125,12 +125,25 @@ keycode_to_scancode = {
     pygame.K_F7:    '\x00\x41',
     pygame.K_F8:    '\x00\x42',
     pygame.K_F9:    '\x00\x43',
-    pygame.K_F10:   '\x00\x44'
+    pygame.K_F10:   '\x00\x44',
+    pygame.K_PRINT: '\x00\x37',
 }
-#K_PRINT               print screen
 #K_SYSREQ              sysrq
 
+ctrl_keycode_to_scancode = {
+    pygame.K_RIGHT: '\x00\x74',
+    pygame.K_LEFT:  '\x00\x73',
+    pygame.K_HOME:  '\x00\x77',
+    pygame.K_END:   '\x00\x75',
+    pygame.K_PAGEUP:'\x00\x84',
+    pygame.K_PAGEDOWN:'\x00\x76',
+    pygame.K_2:       '\x00\x03',
+    pygame.K_9:       '\x00\x84',
+    pygame.K_F2:    '\x00\x5F',
+    pygame.K_F3:    '\x00\x60',
+}
 
+# shift+tab -> \x00\x0F (scancode for TAB) but TAB -> \x09
 
 def init():
     global fonts, num_sticks, joysticks
@@ -479,6 +492,9 @@ def handle_key(e):
         else:
             # pause until keypress
             pause_key()    
+    elif e.key == pygame.K_NUMLOCK:
+        if mods & pygame.KMOD_CTRL:
+            pause_key()    
     elif e.key == pygame.K_SCROLLOCK:
         # ctrl+SCROLLLOCK breaks too
         if mods & pygame.KMOD_CTRL:
@@ -492,8 +508,10 @@ def handle_key(e):
         c+= '\x00\x00'
     elif len(e.unicode)>0 and ord(e.unicode)>=0x20: # and (ord(e.unicode) in unicodepage.from_unicode): 
         c += unicodepage.from_unicode(e.unicode)    
-    elif e.key in keycode_to_scancode:
+    elif not(mods & pygame.KMOD_CTRL) and e.key in keycode_to_scancode:
         c += keycode_to_scancode[e.key]
+    elif (mods & pygame.KMOD_CTRL) and e.key in ctrl_keycode_to_scancode:
+        c += ctrl_keycode_to_scancode[e.key]
     elif len(e.unicode)>0 and ord(e.unicode) < 0x20:
         c += chr(ord(e.unicode))    
     console.insert_key(c) 
