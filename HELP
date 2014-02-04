@@ -65,16 +65,16 @@ or <CTRL+SCROLL_LOCK>       without executing or storing the line under the
 
 ABS(x) function
 ---------------
-Returns the absolute value of x. x is an expression with a numeric value.
-If x has a string value, ABS raises a TYPE MISMATCH error.
+Returns the absolute value of 'x'. 'x' is an expression with a numeric value.
+If 'x' has a string value, ABS raises TYPE MISMATCH.
 
 
 ASC(x) function
 ---------------
 Returns the ASCII code for the first character of x. x is an expression with 
 a string value.
-If x has a numeric value, ASC raises TYPE MISMATCH.
-If x="", ASC raises ILLEGAL FUNCTION CALL.
+If 'x' has a numeric value, ASC raises TYPE MISMATCH.
+If 'x' equals "", ASC raises ILLEGAL FUNCTION CALL.
 
 
 ATN(x) function
@@ -82,17 +82,17 @@ ATN(x) function
 Returns the inverse tangent of x. x is an expression with a numeric value in 
 radians. Unless BASIC is run with the --double option, ATN(x) returns a 
 single-precision value.
-If x has a string value, ABS raises a TYPE MISMATCH error.
+If x has a string value, ABS raises TYPE MISMATCH.
 
 
 AUTO statement
-AUTO [line_number|.][,[increment]] 
+AUTO [line_number | .] [, [increment]] 
 --------------
 Enter automatic line numbering mode (AUTO mode). In AUTO mode, line numbers 
 are automatically generated when <ENTER> is pressed.
-Line numbering starts at line_number, if specified. If . is specified, line 
+Line numbering starts at 'line_number', if specified. If . is specified, line 
 numbering starts at the current line. Otherwise, line numbering starts at 10. 
-Each next line number is incremented by increment, if specified. If a comma 
+Each next line number is incremented by 'increment', if specified. If a comma 
 is used withoud specifying an increment, the last increment specified in an 
 AUTO command is used. If not, increment defaults to 10.
 If a program line exists at a generated line number, a '*' is shown after the 
@@ -100,8 +100,8 @@ line number. To avoid overwriting this line, leave it empty and press <ENTER>.
 To exit AUTO mode, press <CTRL+BREAK> or <CTRL+C>. The line being edited at 
 that point is not saved. BASIC will return to command mode, even if AUTO was 
 run from a program line.
-If line_number is not an integer value between 0 and 65529, inclusive, SYNTAX 
-ERROR is raised.
+If line_number is not an unsigned-integer value between 0 and 65529, 
+inclusive, SYNTAX ERROR is raised.
 In AUTO mode, pressing <ENTER> on an empty line with number larger than 
 65519, UNDEFINED LINE NUMBER is raised.
 
@@ -113,5 +113,45 @@ Beeps at 800 Hz for 0.25s.
 
 
 BLOAD statement
-BLOAD
+BLOAD filename [, offset]
+---------------
+Raises ADVANCED FEATURE.
+In GW-BASIC, BLOAD loads an image file into memory. 
+This is not implemented in PC-BASIC 3.23.   
+
+
+BSAVE statement
+BSAVE filename, offset, length
+---------------
+Raises ADVANCED FEATURE.
+In GW-BASIC, BLOAD saves a stretch of memory to an image file. 
+This is not implemented in PC-BASIC 3.23.  
+
+
+CALL statement
+CALL address, variables
+--------------
+Raises ADVANCED FEATURE.
+In GW-BASIC, CALL executes a machine language subroutine.
+This is not implemented in PC-BASIC 3.23.  
+
+
+CDBL(x) function
+----------------
+Converts the numeric-valued expression 'x' to a double-precision value.
+If 'x' has a string value, TYPE MISMATCH is raised.
+
+
+CHAIN statement
+CHAIN [MERGE] program [, [line_number] [, [ALL] [, DELETE range]]]
+---------------
+Loads 'program' into memory and runs it, optionally transferring variables.
+If 'line_number' is specified, it must be a numeric-valued expression. It 
+will be interpreted as a line number is the new program. If 'line_number' is negative, it will be interpreted as its two's-complement. 
+If ALL is specified, all variables are transferred. If not, the variables 
+specified in a COMMON statement are transferred. 
+IF MERGE is specified, 'program' is overlaid into the existing program. In 
+this case, 'program' must be saved as ASCII.
+If DELETE is specified, the 'range' of line numbers is deleted from the existing code before the merge. This is pointless without MERGE.
+
 
