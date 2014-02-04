@@ -943,7 +943,7 @@ def value_ioctl(ins):
 # option_double regulated single & double precision math
 
 def value_unary(ins, fn):
-    return fp.pack(fn(fp.unpack(vartypes.pass_float_keep(parse_backet(ins), option_double))))
+    return fp.pack(fn(fp.unpack(vartypes.pass_float_keep(parse_bracket(ins), option_double))))
 
 value_sqrt = partial(value_unary, fn=fp.sqrt)
 value_exp = partial(value_unary, fn=fp.exp)
