@@ -23,7 +23,7 @@ def exec_chdir(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     name = oslayer.dospath_read_dir(name, '', 76)
     try:
-        os.chdir(name)
+        os.chdir(str(name))
     except EnvironmentError as ex:
         oslayer.handle_oserror(ex)
     util.require(ins, util.end_statement)
@@ -58,7 +58,7 @@ def exec_name(ins):
         # file already exists
         raise error.RunError(58)
     try:
-        os.rename(oldname, newname)
+        os.rename(str(oldname), str(newname))
     except EnvironmentError as ex:
         oslayer.handle_oserror(ex)
     util.require(ins, util.end_statement)
@@ -69,7 +69,7 @@ def exec_kill(ins):
     name = oslayer.dospath_read(name, '', 53)
     util.require(ins, util.end_statement)
     try:
-        os.remove(name)    
+        os.remove(str(name))    
     except EnvironmentError as ex:
         oslayer.handle_oserror(ex)
 
