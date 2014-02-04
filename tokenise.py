@@ -134,7 +134,7 @@ def detokenise_line(bytes):
         elif s in tokens_linenum: 
             # 0D: line pointer (unsigned int) - this token should not be here; interpret as line number and carry on
             # 0E: line number (unsigned int)
-            output += str(vartypes.uint_to_str(bytes.read(2)))
+            output += vartypes.uint_to_str(bytearray(bytes.read(2)))
         elif s in ('\x10', '\x1e'):                           
             # 1E/10: UNUSED: Flags numeric constant being processed/no longer being processed
             pass
