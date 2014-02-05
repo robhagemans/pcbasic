@@ -22,8 +22,6 @@ error_resume = None
 # allow non-GW warnings
 warnings_on = False
 
-###################
-
             
 class Error (Exception):
     pass            
@@ -85,9 +83,10 @@ def warning(warnum, linenum, info):
     sys.stderr.write('\n')
 
 
+# these are the errors documented for GW-BASIC
+
 default_msg = 'Unprintable error'
 
-# these are the errors documented for GW-BASIC
 errors = {
     1: 'NEXT without FOR',                    
     2: 'Syntax error',
