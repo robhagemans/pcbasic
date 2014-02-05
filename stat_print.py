@@ -463,14 +463,12 @@ def exec_width(ins):
             util.require(ins, util.end_statement, err=5)
     # anything after that is a syntax error      
     util.require(ins, util.end_statement)        
-    if dev==console:        
+    if dev == console:        
         # and finally an error if the width value doesn't make sense
-        if w not in (40,80):
+        if w not in (40, 80):
             raise error.RunError(5)
-        if w!= console.width:    
+        if w != console.width:    
             dev.set_width(w)    
-            if console.keys_visible:
-                console.show_keys()    
     else:
         dev.set_width(w)    
     
@@ -624,49 +622,37 @@ def format_number(value, fors):
     return valstr
     
 
-# current screen mode    
-screen_mode=0    
-vpagenum = 0
-apagenum = 0
 
 def exec_screen(ins):
-    global screen_mode
-    global vpagenum, apagenum
     params = expressions.parse_int_list(ins, 4)
     util.require(ins, util.end_statement)        
     mode = params[0]
     mode_info = console.mode_info(mode) 
     # backend does not support mode
-    if  mode_info == None:
+    if mode_info == None:
         raise error.RunError(5)
     # vpage and apage nums are persistent on mode switch
     # if the new mode has fewer pages than current vpage/apage, illegal fn call.
-    if params[2] !=None:            
-        apagenum = params[2]
-    if params[3] !=None:
-        vpagenum = params[3]       
-    if apagenum >= mode_info[5] or vpagenum >= mode_info[5]:
+    if params[2] == None:
+        params[2] = console.apagenum
+    if params[3] == None:
+        params[3] = console.vpagenum    
+    if params[2] >= mode_info[5] or params[3] >= mode_info[5]:
        raise error.RunError(5)
     console.set_palette()
-    if mode != screen_mode:
+    if mode != console.screen_mode:
         console.set_mode(mode)
-        if console.keys_visible:
-            console.show_keys()
-        screen_mode=mode    
     # set active page & visible page, counting from 0. if higher than max pages, illegal fn call.            
-    if not console.set_apage(apagenum):
+    if not console.set_apage(console.apagenum):
        raise error.RunError(5)
-    if not console.set_vpage(vpagenum):
+    if not console.set_vpage(console.vpagenum):
        raise error.RunError(5)
     # in SCREEN 0, the colorswitch parameter doesn't actually switch colors on and off
     # but if it's different from the existing one, the screen is cleared.
-    if params[1] != None:
-        if (params[1]!=0) != console.colorswitch:
-            console.set_colorswitch( params[1]!=0 )
-            # clear all screen pages
-            console.clear_all()
-            if console.keys_visible:
-                console.show_keys()
+    if params[1] != None and (params[1]!=0) != console.colorswitch:
+        console.set_colorswitch( params[1]!=0 )
+        # clear all screen pages
+        console.clear_all()
                 
     
 def exec_pcopy(ins):

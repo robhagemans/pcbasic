@@ -98,6 +98,7 @@ def main():
         if not args.nosound:
             sound.backend = backend_pygame
     # initialise backends
+    console.keys_visible = (not args.run and args.cmd == None)
     console.init()    
     if not sound.init_sound():
         # fallback warning here?
@@ -106,9 +107,6 @@ def main():
     deviceio.init_devices(args)
     # prepare screen
     try:
-        console.set_attr(7, 0)
-        console.keys_visible = (not args.run and args.cmd == None)
-        console.clear()
         if not args.run and args.cmd == None:
             console.write("PC-BASIC 3.23"+debugstr+util.endl)
             console.write('(C) Copyright 2013 PC-BASIC authors. Type RUN "INFO" for more.'+util.endl)
