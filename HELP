@@ -148,11 +148,13 @@ CHAIN [MERGE] program [, [line_number] [, [ALL] [, DELETE range]]]
 ---------------
 Loads 'program' into memory and runs it, optionally transferring variables.
 If 'line_number' is specified, it must be a numeric-valued expression. It 
-will be interpreted as a line number is the new program. If 'line_number' is negative, it will be interpreted as its two's-complement. 
+will be interpreted as a line number is the new program. If 'line_number' is
+negative, it will be interpreted as its two's-complement. 
 If ALL is specified, all variables are transferred. If not, the variables 
 specified in a COMMON statement are transferred. 
-IF MERGE is specified, 'program' is overlaid into the existing program. In 
-this case, 'program' must be saved as ASCII.
-If DELETE is specified, the 'range' of line numbers is deleted from the existing code before the merge. This is pointless without MERGE.
+IF MERGE is specified, 'program' is merged into the existing program. To be 
+able to use this, 'program' must be saved as ASCII.
+If DELETE is specified, the 'range' of line numbers is deleted from the 
+existing code before the merge. This is pointless without MERGE.
 
 
