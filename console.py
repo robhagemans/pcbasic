@@ -449,6 +449,7 @@ def clear_line(the_row):
     crow = the_row
     while crow>1 and apage.wrap[crow-2]:
         crow -= 1
+    srow = crow    
     while True:
         apage.charbuf[crow-1] = [' ']*width
         apage.attrbuf[crow-1] = [attr]*width
@@ -457,14 +458,14 @@ def clear_line(the_row):
             crow += 1
         else:
             break    
-    for r in range(crow, the_row, -1):
+    for r in range(crow, srow, -1):
         apage.end[r-1] = 0
         apage.wrap[r-1] = False
         scroll(r)
-    apage.end[the_row-1] = 0
-    apage.wrap[the_row-1]=False
-    set_pos(the_row,1)
-    backend.clear_row(the_row, colours(attr)[1] & 0xf)
+    apage.end[srow-1] = 0
+    apage.wrap[srow-1]=False
+    set_pos(srow,1)
+    backend.clear_row(srow, colours(attr)[1] & 0xf)
     
 
 def start_line():
