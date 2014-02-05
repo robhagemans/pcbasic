@@ -137,6 +137,12 @@ def exec_circle(ins):
                 stop = expressions.parse_expression(ins, allow_empty=True)
                 if util.skip_white_read_if(ins, ','):
                     aspect = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
+                elif stop == ('', ''):
+                    raise error.RunError(22) # missing operand
+            elif start == ('', ''):
+                raise error.RunError(22) 
+        elif cval == ('', ''):
+            raise error.RunError(22)                     
     util.require(ins, util.end_statement)        
     if aspect.equals(aspect.one):
         rx, dummy = graphics.window_scale(r,fp.Single.zero)
