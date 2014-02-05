@@ -12,14 +12,15 @@
 import sys
 
 # number and line number of last error
-errn=-1
-erl=65535
+errn = -1
+erl = 65535
 
 # jump line number 
 on_error = None
 error_handle_mode = False
-
 error_resume = None
+# allow non-GW warnings
+warnings_on = False
 
 ###################
 
@@ -32,7 +33,6 @@ class Break(Error):
     def __init__(self):
         self.erl = -1
         self.msg = "Break"
-
                     
 class RunError(Error):
     def __init__(self, value, linum=-1):
@@ -40,27 +40,22 @@ class RunError(Error):
         self.erl = linum # -1 means not set, will be program.linenum if we're running
         if value in errors:
             self.msg = errors[value]
-        
         # set_error                
-
                 
 class AdHocError(Error):
     def __init__(self, msg, linum=-1):
         self.err = 0
         self.erl = linum
         self.msg = msg    
-        
      
 def get_error():
     global errn, erl
     return (errn, erl)     
-           
 
 def reset_error():
     global erl, errn
     erl = 0         
-    errn=0
-
+    errn = 0
 
 def set_error(errnum, linenum):
     global errn, erl
@@ -71,23 +66,17 @@ def set_error(errnum, linenum):
     else:
        erl = 65535
 
-
-
 def get_message(errnum):
     msg = default_msg
     if errnum in errors:
         msg = errors[errnum]
     return msg    
-
-
         
-warnings_on=False
 # non-fatal warning to stderr
 def warning(warnum, linenum, info):           
     # only output warnings if asked
     if not warnings_on:
         return
-        
     sys.stderr.write(warnings[warnum])
     if linenum > -1:
         sys.stderr.write(' in ' +str(linenum))
