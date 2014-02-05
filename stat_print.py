@@ -25,9 +25,6 @@ import console
 # for clear_graphics_view
 import graphics
 
-# KEY ON?
-keys_visible = False
-
 
 
 
@@ -43,8 +40,6 @@ def exec_cls(ins):
         val = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     if val==0:
         console.clear()  
-        if keys_visible:
-            show_keys()
     elif val==1:
         if graphics.is_graphics_mode():
             graphics.clear_graphics_view()
@@ -135,58 +130,17 @@ def exec_palette(ins):
             console.set_palette_entry(pair[0], pair[1])
     util.require(ins, util.end_statement)    
         
-        
-def show_keys():
-    global keys_visible
-    keys_visible = True
-    pos = console.get_pos()
-    attr = console.get_attr()
-    save_curs = console.show_cursor(False)
-    for i in range(console.width/8):
-        text = list(events.key_replace[i][:6])
-        for j in range(len(text)):
-            if text[j] == '\x0d':   #  CR
-                text[j] = '\x1b'  # arrow left
-        # allow pos=25 without scroll, this is reset as soon as row changes again.
-        console.last_row_on()
-        console.set_pos(25,1+i*8)
-        console.set_attr(*attr)
-        if i==9:
-            console.write('0')
-        else:
-            console.write(str(i+1))
-        if not graphics.is_graphics_mode():
-            if attr[1]==0:    
-                console.set_attr(0,7)
-            else:
-                console.set_attr(7,0)
-        console.write(''.join(text))
-        console.set_attr(*attr)
-        console.write(' '*(6-len(text)))
-        console.write(' ')
-    console.set_pos(*pos)
-    console.set_attr(*attr)
-    console.show_cursor(save_curs)
 
-        
-def hide_keys():
-    global keys_visible
-    keys_visible = False
-    pos = console.get_pos()
-    console.last_row_on()
-    console.set_pos(25,1)
-    console.write(' '*(console.width), scroll_ok=False)
-    console.set_pos(*pos)
         
 
 def exec_key(ins):
     d = util.skip_white(ins)
     if d == '\x95': # ON
-        if not keys_visible:
-           show_keys()
+        if not console.keys_visible:
+           console.show_keys()
     elif d == '\xdd': # OFF
-        if keys_visible:
-           hide_keys()   
+        if console.keys_visible:
+           console.hide_keys()   
     elif d== '\x93': # LIST
         for i in range(10):
             text = list(events.key_replace[i])
@@ -464,7 +418,7 @@ def exec_view_print(ins):
 
 
 def check_view(row, col):
-    if row == console.height and keys_visible:
+    if row == console.height and console.keys_visible:
         raise error.RunError(5)
     elif console.view_set:
         if row > console.scroll_height or col > console.width or row<console.view_start or col<1:
@@ -515,8 +469,8 @@ def exec_width(ins):
             raise error.RunError(5)
         if w!= console.width:    
             dev.set_width(w)    
-            if keys_visible:
-                show_keys()    
+            if console.keys_visible:
+                console.show_keys()    
     else:
         dev.set_width(w)    
     
@@ -696,8 +650,8 @@ def exec_screen(ins):
     console.set_palette()
     if mode != screen_mode:
         console.set_mode(mode)
-        if keys_visible:
-            show_keys()
+        if console.keys_visible:
+            console.show_keys()
         screen_mode=mode    
     # set active page & visible page, counting from 0. if higher than max pages, illegal fn call.            
     if not console.set_apage(apagenum):
@@ -711,8 +665,8 @@ def exec_screen(ins):
             console.set_colorswitch( params[1]!=0 )
             # clear all screen pages
             console.clear_all()
-            if keys_visible:
-                show_keys()
+            if console.keys_visible:
+                console.show_keys()
                 
     
 def exec_pcopy(ins):

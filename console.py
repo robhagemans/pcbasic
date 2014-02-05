@@ -88,6 +88,11 @@ num_palette = 64
 pen_is_on = False
 stick_is_on = False
 
+
+# KEY ON?
+keys_visible = False
+
+
 def init():
     backend.init()
 
@@ -385,6 +390,8 @@ def read():
                 while apage.wrap[row-1] and row<height:
                     row += 1
                 set_pos(row, apage.end[row-1]+1)
+            elif d == '\x00\x77' or d == '\x0C':    # <CTRL+HOME> <CTRL+L>   
+                clear()
             elif d[0] not in control + ('\x00',): 
                 inp += d
                 if insert:
@@ -595,6 +602,52 @@ def clear():
         set_view(save_view_start, save_scroll_height)
     else:
         unset_view()
+    if keys_visible:
+        show_keys()
+
+
+def hide_keys():
+    global keys_visible
+    keys_visible = False
+    pos = get_pos()
+    last_row_on()
+    set_pos(25, 1)
+    write(' '*width, scroll_ok=False)
+    set_pos(*pos)
+        
+                    
+def show_keys():
+    global keys_visible
+    keys_visible = True
+    pos = get_pos()
+    attr = get_attr()
+    save_curs = show_cursor(False)
+    for i in range(width/8):
+        text = list(events.key_replace[i][:6])
+        for j in range(len(text)):
+            if text[j] == '\x0d':   #  CR
+                text[j] = '\x1b'  # arrow left
+        # allow pos=25 without scroll, this is reset as soon as row changes again.
+        last_row_on()
+        set_pos(25, 1+i*8)
+        set_attr(*attr)
+        if i == 9:
+            write('0')
+        else:
+            write(str(i+1))
+        if not graphics.is_graphics_mode():
+            if attr[1]==0:    
+                set_attr(0, 7)
+            else:
+                set_attr(7, 0)
+        write(''.join(text))
+        set_attr(*attr)
+        write(' '*(6-len(text)))
+        write(' ')
+    set_pos(*pos)
+    set_attr(*attr)
+    show_cursor(save_curs)
+
         
 def set_view(start=1,stop=24):
     global view_start, scroll_height, view_set
