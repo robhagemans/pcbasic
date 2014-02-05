@@ -158,3 +158,24 @@ If DELETE is specified, the 'range' of line numbers is deleted from the
 existing code before the merge. This is pointless without MERGE.
 
 
+CHDIR statement
+CHDIR pathname
+---------------
+Change the working directory to 'pathname'. 'pathname' is a string-valued 
+expression which can be absolute or relative to the current path. 'pathname'
+must be specified with MS-DOS path separators (\). CHDIR first looks for the
+exact, case-sensitive (on Unix) path 'pathname'; if this does not exist then
+an uppercase version truncated to 8.3 is attempted.
+If no matching path is found, PATH NOT FOUND is raised.
+If 'pathname' is not string-valued, TYPE MISMATCH is raised.
+If 'pathname' is empty, BAD FILE NAME is raised.
+
+
+CHR$(x) function
+----------------
+Returns the character with ASCII code 'x'. 'x' must have a numeric value 
+between 0 and 255 (inclusive). 
+If 'x' is a string value, TYPE MISMATCH is raised.
+If 'x' is not 0<=x<=255, ILLEGAL FUNCTION CALL is raised.
+
+
