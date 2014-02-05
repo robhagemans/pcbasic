@@ -145,7 +145,7 @@ def parse_expr_unit(ins):
     # brackets
     elif d == '(':
         val = parse_expression(ins)
-        util.require_read(ins, ')')
+        util.require_read(ins, (')',))
         return val    
     # single-byte tokens        
     elif d == '\x85':       # INPUT
@@ -297,12 +297,12 @@ def parse_expr_unit(ins):
 # expression parsing utility functions 
 
 def parse_bracket(ins):
-    util.require_read(ins, '(')
+    util.require_read(ins, ('(',))
     val = parse_expression(ins, allow_empty = True)
     if val==('',''):
         # we need a Syntax error, not a Missing operand
         raise error.RunError(2)
-    util.require_read(ins, ')')
+    util.require_read(ins, (')',))
     return val
 
 def parse_int_list(ins, size, err=5):
@@ -342,7 +342,7 @@ def parse_file_number(ins):
             # bad file number
             raise error.RunError(52)
         screen = fileio.files[number]
-        util.require_read(ins,',')
+        util.require_read(ins, (',',))
     return screen        
 
 def parse_file_number_opthash(ins):
@@ -454,7 +454,7 @@ def value_asc(ins):
         raise error.RunError(5)
 
 def value_instr(ins):
-    util.require_read(ins, '(')
+    util.require_read(ins, ('(',))
     big = ''
     small = ''
     have_big = False
@@ -470,12 +470,12 @@ def value_instr(ins):
     else:
         big = vartypes.pass_string_unpack(s)
         have_big= True
-    util.require_read(ins, ',')
+    util.require_read(ins, (',',))
     if not have_big:
         big = vartypes.pass_string_unpack(parse_expression(ins, allow_empty=True))
-        util.require_read(ins, ',')
+        util.require_read(ins, (',',))
     small = vartypes.pass_string_unpack(parse_expression(ins, allow_empty=True))
-    util.require_read(ins, ')')
+    util.require_read(ins, (')',))
     if big == '' or n > len(big):
         return vartypes.null['%']
     # BASIC counts string positions from 1
@@ -483,15 +483,15 @@ def value_instr(ins):
 
 def value_mid(ins):
     # MID$
-    util.require_read(ins, '(')
+    util.require_read(ins, ('(',))
     s = vartypes.pass_string_unpack(parse_expression(ins))
-    util.require_read(ins, ',')
+    util.require_read(ins, (',',))
     start = vartypes.pass_int_unpack(parse_expression(ins))
     if util.skip_white_read_if(ins, ','):
         num = vartypes.pass_int_unpack(parse_expression(ins))
     else:
         num = len(s)
-    util.require_read(ins, ')')
+    util.require_read(ins, (')',))
     if start <1 or start>255:
         raise error.RunError(5)
     if num <0 or num>255:
@@ -506,11 +506,11 @@ def value_mid(ins):
     
 def value_left(ins):
     # LEFT$
-    util.require_read(ins, '(')
+    util.require_read(ins, ('(',))
     s = vartypes.pass_string_unpack(parse_expression(ins))
-    util.require_read(ins, ',')
+    util.require_read(ins, (',',))
     num = vartypes.pass_int_unpack(parse_expression(ins))
-    util.require_read(ins, ')')
+    util.require_read(ins, (')',))
     if num <0 or num>255:
         raise error.RunError(5)
     if num==0:
@@ -522,11 +522,11 @@ def value_left(ins):
     
 def value_right(ins):
     # RIGHT$
-    util.require_read(ins, '(')
+    util.require_read(ins, ('(',))
     s = vartypes.pass_string_unpack(parse_expression(ins))
-    util.require_read(ins, ',')
+    util.require_read(ins, (',',))
     num = vartypes.pass_int_unpack(parse_expression(ins))
-    util.require_read(ins, ')')
+    util.require_read(ins, (')',))
     if num <0 or num>255:
         raise error.RunError(5)
     if num==0:
@@ -537,7 +537,7 @@ def value_right(ins):
     return vartypes.pack_string(s[-stop:])  
 
 def value_string(ins): # STRING$
-    util.require_read(ins, '(')
+    util.require_read(ins, ('(',))
     n, j = parse_expr_list(ins, 2)    
     n = vartypes.pass_int_unpack(n)
     if n<0 or n> 255:
@@ -548,7 +548,7 @@ def value_string(ins): # STRING$
         j = vartypes.pass_int_unpack(j)        
     if j<0 or j> 255:
         raise error.RunError(5)
-    util.require_read(ins, ')')
+    util.require_read(ins, (')',))
     return vartypes.pack_string(bytearray(chr(j)*n))
 
 def value_space(ins):            
@@ -563,9 +563,9 @@ def value_space(ins):
 
 def value_screen(ins):
     # SCREEN(x,y,[z])
-    util.require_read(ins, '(')
+    util.require_read(ins, ('(',))
     args = parse_int_list(ins, 3, 5) 
-    util.require_read(ins, ')')
+    util.require_read(ins, (')',))
     if args[0] == None or args[1] == None:
         raise error.RunError(5)
     if args[0]<1 or args[0] > console.height:
@@ -583,7 +583,7 @@ def value_screen(ins):
 def value_input(ins):    # INPUT$
     if ins.read(1) != '$':
         raise error.RunError(2)
-    util.require_read(ins, '(')
+    util.require_read(ins, ('(',))
     num = vartypes.pass_int_unpack(parse_expression(ins))
     if num<1 or num>255:
         raise error.RunError(5)
@@ -597,7 +597,7 @@ def value_input(ins):    # INPUT$
             # bad file number
             raise error.RunError(52)
         screen = fileio.files[filenum]
-    util.require_read(ins, ')')
+    util.require_read(ins, (')',))
     word = screen.read_chars(num)
     return vartypes.pack_string(bytearray(word))
     
@@ -711,13 +711,13 @@ def value_fn(ins):
         if name in var.variables:
             varsave[name] = var.variables[name]
     # read variables
-    util.require_read(ins, '(')
+    util.require_read(ins, ('(',))
     exprs = parse_expr_list(ins, len(varnames), err=2)
     if None in exprs:
         raise error.RunError(2)
     for i in range(len(varnames)):
         var.set_var(varnames[i], exprs[i])
-    util.require_read(ins,')')
+    util.require_read(ins, (')',))
     fns = StringIO(fncode)
     fns.seek(0)
     value = parse_expression(fns)    
@@ -733,9 +733,9 @@ def value_fn(ins):
 # graphics    
     
 def value_point(ins):
-    util.require_read(ins, '(')
+    util.require_read(ins, ('(',))
     lst = parse_expr_list(ins, 2, err=2)
-    util.require_read(ins, ')')
+    util.require_read(ins, (')',))
     if lst[0]==None:
         raise error.RunError(2)
     if lst[1]==None:
@@ -756,11 +756,11 @@ def value_point(ins):
         return vartypes.pack_int(graphics.get_point(vartypes.pass_int_unpack(lst[0]), vartypes.pass_int_unpack(lst[1])))        
 
 def value_pmap(ins):
-    util.require_read(ins, '(')
+    util.require_read(ins, ('(',))
     coord = fp.unpack(vartypes.pass_single_keep(parse_expression(ins)))
-    util.require_read(ins, ',')
+    util.require_read(ins, (',',))
     mode = vartypes.pass_int_unpack(parse_expression(ins))
-    util.require_read(ins, ')')
+    util.require_read(ins, (')',))
     if mode == 0:
         value, dummy = graphics.window_coords(coord,fp.Single.zero)       
         value = vartypes.pack_int(value)        
@@ -886,18 +886,18 @@ def value_peek(ins):
 def value_varptr(ins):    
     if util.peek(ins) == '$':
         ins.read(1) 
-        util.require_read(ins, '(')
+        util.require_read(ins, ('(',))
         name, indices = get_var_or_array_name(ins)
-        util.require_read(ins, ')')
+        util.require_read(ins, (')',))
         var_ptr = var.get_var_ptr(name, indices)
         if var_ptr < 0:
             raise error.RunError(5) # ill fn cll
         return vartypes.pack_string(bytearray(chr(var.byte_size[name[-1]])) + vartypes.value_to_uint(var_ptr))
     else:
         # TODO: strings, fields, file control blocks not yet implemented 
-        util.require_read(ins, '(')
+        util.require_read(ins, ('(',))
         name, indices = get_var_or_array_name(ins)
-        util.require_read(ins, ')')
+        util.require_read(ins, (')',))
         var_ptr = var.get_var_ptr(name, indices)
         if var_ptr < 0:
             raise error.RunError(5) # ill fn cll

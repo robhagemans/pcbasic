@@ -170,7 +170,7 @@ def exec_key(ins):
         keynum = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         if keynum<1 or keynum>255:
             raise error.RunError(5)
-        util.require_read(ins, ',', err=5)
+        util.require_read(ins, (',',), err=5)
         text = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         # only length-2 expressions can be assigned to KEYs over 10
         # (in which case it's a key scancode definition, which is not implemented)
@@ -268,7 +268,7 @@ def exec_print(ins, screen=None):
             output = ''
             numspaces = vartypes.pass_int_unpack(expressions.parse_expression(ins), 0xffff)
             numspaces %= screen.width
-            util.require_read(ins, ')')
+            util.require_read(ins, (')',))
             screen.write(' '*numspaces)
             output=''
         elif d=='\xCE': #TAB(
@@ -278,7 +278,7 @@ def exec_print(ins, screen=None):
             output = ''
             pos = vartypes.pass_int_unpack(expressions.parse_expression(ins), 0xffff)
             pos %= screen.width
-            util.require_read(ins, ')')
+            util.require_read(ins, (')',))
             col = screen.get_col()
             if pos < col:
                 screen.write(output+util.endl+' '*(pos-1))
@@ -317,7 +317,7 @@ def exec_print_using(ins, screen):
     if format_expr == '':
         raise error.RunError(5)
     fors = StringIO(format_expr)
-    util.require_read(ins,';')
+    util.require_read(ins, (';',))
     semicolon = False    
     more_data = False
     format_chars = False    
@@ -411,7 +411,7 @@ def exec_view_print(ins):
         console.set_view()
     else:
         start = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-        util.require_read(ins, '\xCC') # TO
+        util.require_read(ins, ('\xCC',)) # TO
         stop = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_statement)
         console.set_view(start, stop)
@@ -449,7 +449,7 @@ def exec_width(ins):
             dev = console
         else:
             dev = deviceio.output_devices[device]
-        util.require_read(ins, ',')
+        util.require_read(ins, (',',))
     else:
         dev = console
     # we can do calculations, but they must be bracketed...
@@ -657,7 +657,7 @@ def exec_screen(ins):
     
 def exec_pcopy(ins):
     src = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-    util.require_read(ins, ',')
+    util.require_read(ins, (',',))
     dst = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
     if not console.copy_page(src,dst):

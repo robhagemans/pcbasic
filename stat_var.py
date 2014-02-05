@@ -181,19 +181,19 @@ def exec_let(ins):
         # pre-dim even if this is not a legal statement!
         # e.g. 'a[1,1]' gives a syntax error, but even so 'a[1]' is out fo range afterwards
         var.check_dim_array(name, indices)
-    util.require_read(ins, '\xe7')   # =
+    util.require_read(ins, ('\xE7',))   # =
     var.set_var_or_array(name, indices, expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
    
 def exec_mid(ins):
     # MID$
-    util.require_read(ins, '(')
+    util.require_read(ins, ('(',))
     name, indices = expressions.get_var_or_array_name(ins)
     if indices != []:    
         # pre-dim even if this is not a legal statement!
         # e.g. 'a[1,1]' gives a syntax error, but even so 'a[1]' is out fo range afterwards
         var.check_dim_array(name, indices)
-    util.require_read(ins, ',')
+    util.require_read(ins, (',',))
     arglist = expressions.parse_int_list(ins, size=2, err=2)
     if arglist[0] == None:
         raise error.RunError(2)
@@ -201,12 +201,12 @@ def exec_mid(ins):
     num = 0
     if arglist[1] != None:
         num = arglist[1]
-    util.require_read(ins, ')')
+    util.require_read(ins, (')',))
     if start < 1 or start > 255:
         raise error.RunError(5)
     if num < 0 or num > 255:
         raise error.RunError(5)
-    util.require_read(ins, '\xE7') # =
+    util.require_read(ins, ('\xE7',)) # =
     val = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
     ### str_mid     
@@ -224,7 +224,7 @@ def exec_mid(ins):
     
 def exec_lset(ins, justify_right=False):
     name = util.get_var_name(ins)
-    util.require_read(ins,'\xe7')
+    util.require_read(ins, ('\xE7',))
     val = expressions.parse_expression(ins)
     var.assign_field_var(name, val, justify_right)
 
@@ -477,7 +477,7 @@ def exec_restore(ins):
 
 def exec_swap(ins):
     name1 = util.get_var_name(ins)
-    util.require_read(ins, ',')
+    util.require_read(ins, (',',))
     name2 = util.get_var_name(ins)
     var.swap_var(name1, name2)
     # if syntax error. the swap has happened
@@ -486,17 +486,17 @@ def exec_swap(ins):
 def exec_def_fn(ins):
     fnname = util.get_var_name(ins)
     # read variables
-    util.require_read(ins, '(')
+    util.require_read(ins, ('(',))
     fnvars = []
     while True:
         fnvars.append(util.get_var_name(ins))
         if util.skip_white(ins) in util.end_statement+(')',):
             break    
-        util.require_read(ins,',')
-    util.require_read(ins, ')')
+        util.require_read(ins, (',',))
+    util.require_read(ins, (')',))
     # read code
     fncode = ''
-    util.require_read(ins, '\xe7') #=
+    util.require_read(ins, ('\xE7',)) #=
     while util.skip_white(ins) not in util.end_statement:
         fncode += ins.read(1)        
     if not program.runmode():

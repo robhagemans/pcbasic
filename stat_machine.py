@@ -19,7 +19,7 @@ import error
 # do-nothing POKE        
 def exec_poke(ins):
     vartypes.pass_int_keep(expressions.parse_expression(ins)) #addr
-    util.require_read(ins, ',')
+    util.require_read(ins, (',',))
     vartypes.pass_int_keep(expressions.parse_expression(ins)) #val
     util.require(ins, util.end_statement)
 
@@ -35,7 +35,7 @@ def exec_def_seg(ins):
 def exec_def_usr(ins):
     if util.peek(ins) in tokenise.ascii_digits:
         ins.read(1)
-    util.require_read(ins, '\xE7')     
+    util.require_read(ins, ('\xE7',))     
     vartypes.pass_int_keep(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
 
@@ -64,7 +64,7 @@ def exec_ioctl(ins):
 # do-nothing out       
 def exec_out(ins):
     vartypes.pass_int_keep(expressions.parse_expression(ins)) #addr
-    util.require_read(ins, ',')
+    util.require_read(ins, (',',))
     vartypes.pass_int_keep(expressions.parse_expression(ins)) #val
     util.require(ins, util.end_statement)
      
@@ -72,7 +72,7 @@ def exec_out(ins):
 # do-nothing wait        
 def exec_wait(ins):
     vartypes.pass_int_keep(expressions.parse_expression(ins))
-    util.require_read(ins, ',')
+    util.require_read(ins, (',',))
     vartypes.pass_int_keep(expressions.parse_expression(ins))
     if util.skip_white_read_if(ins, ','):
         vartypes.pass_int_keep(expressions.parse_expression(ins))

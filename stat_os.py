@@ -137,7 +137,7 @@ def exec_environ(ins):
        
 def exec_time(ins):
     #time$=
-    util.require_read(ins, '\xe7')
+    util.require_read(ins, ('\xE7',))
     # allowed formats:
     # hh
     # hh:mm
@@ -173,7 +173,7 @@ def exec_time(ins):
         
 def exec_date(ins):
     #date$=
-    util.require_read(ins,'\xe7') # =
+    util.require_read(ins, ('\xE7',)) # =
     # allowed formats:
     # mm/dd/yy   mm 0--12 dd 0--31 yy 80--00--77
     # mm-dd-yy
