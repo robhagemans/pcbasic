@@ -315,15 +315,11 @@ class RandomFile(object):
 # essentially just a text file that doesn't close if asked to
 class DeviceFile(TextFile):
     def __init__(self, unixpath, access='rb'):
-        TextFile.__init__(self)
-        self.fhandle = oslayer.safe_open(unixpath, access)
-        self.number = 0 # number
-        self.access = access
         if 'W' in access.upper():
-            self.mode = 'O'
+            mode = 'O'
         else:
-            self.mode = 'I'
-        self.init()
+            mode = 'I'
+        TextFile.__init__(self, oslayer.safe_open(unixpath, access), 0, mode, access)
         
     def close(self):
         # don't close the file handle as we may have copies
