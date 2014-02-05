@@ -509,7 +509,9 @@ def handle_key(e):
         # ctrl+SCROLLLOCK breaks too
         raise error.Break()
     elif e.key == pygame.K_CAPSLOCK:
-        console.caps = not console.caps   
+        console.caps = not console.caps 
+    elif e.key == pygame.K_PRINT and  mods & pygame.KMOD_CTRL:
+        console.echo_printer = not console.echo_printer     
     elif e.key == pygame.K_TAB and mods & pygame.KMOD_SHIFT:
         # shift+tab -> \x00\x0F (scancode for TAB) but TAB -> \x09
         c = '\x00\x0F'

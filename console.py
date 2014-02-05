@@ -24,6 +24,8 @@ import error
 import graphics
 import sound
 import events
+# for print_screen
+import deviceio
 
 # back end implememtation
 backend = None
@@ -56,6 +58,8 @@ keybuf = ''
 # caps lock
 caps = False
 
+# echo to printer
+echo_printer = False
 
 class ScreenBuffer:
     def __init__(self, bwidth, bheight):
@@ -195,6 +199,8 @@ def get_palette_entry(index):
 
 def write(s, scroll_ok=True):
     global row, col, apage
+    if echo_printer:
+        deviceio.lpt1.write(s)
     tab = 8
     last = ''
     for c in s:
@@ -309,6 +315,8 @@ def read():
     while c != '\x0d': 
         # wait_char returns a string of ascii and MS-DOS/GW-BASIC style keyscan codes
         c = wait_char() 
+        if echo_printer:
+            deviceio.lpt1.write(c)
         pos = 0
         while pos<len(c):
             d = c[pos]
@@ -402,6 +410,8 @@ def read():
                 set_pos(row, apage.end[row-1]+1)
             elif d == '\x00\x77' or d == '\x0C':    # <CTRL+HOME> <CTRL+L>   
                 clear()
+            elif d == '\x00\x37':                   # <SHIFT+PRT_SC>
+                print_screen()
             elif d[0] not in control + ('\x00',): 
                 inp += d
                 if insert:
@@ -532,6 +542,11 @@ def skip_word_left():
             break
     set_pos(last_row, last_col)                            
         
+
+def print_screen():
+    for crow in range(1, height+1):
+        deviceio.lpt1.write(''.join(vpage.charbuf[crow-1]) + util.endl)
+    deviceio.lpt1.flush()    
         
 def start_line():
     if col!=1:
