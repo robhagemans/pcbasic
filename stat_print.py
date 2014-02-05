@@ -464,7 +464,8 @@ def exec_width(ins):
     # anything after that is a syntax error      
     util.require(ins, util.end_statement)        
     if dev == console:        
-        # and finally an error if the width value doesn't make sense
+        # FIXME: WIDTH should do mode changes if not in text mode
+        # raise an error if the width value doesn't make sense
         if w not in (40, 80):
             raise error.RunError(5)
         if w != console.width:    
