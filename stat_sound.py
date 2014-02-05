@@ -27,7 +27,7 @@ def exec_beep(ins):
     
 def exec_sound(ins):
     freq = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-    util.require_read(ins, ',')
+    util.require_read(ins, (',',))
     dur = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=65535)
     util.require(ins, util.end_statement)
     if freq == 32767:

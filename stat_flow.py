@@ -100,11 +100,11 @@ def exec_for(ins): #, first=True):
     vartype = varname[-1]
     if vartype == '$':
         raise error.RunError(13)
-    util.require_read(ins, '\xE7') # =
+    util.require_read(ins, ('\xE7',)) # =
     start = expressions.parse_expression(ins)
-    util.require_read(ins, '\xCC')  # TO    
+    util.require_read(ins, ('\xCC',))  # TO    
     stop = vartypes.pass_type_keep(vartype, expressions.parse_expression(ins))
-    if util.skip_white_read_if(ins,'\xCF'): # STEP
+    if util.skip_white_read_if(ins, '\xCF'): # STEP
         step = vartypes.pass_type_keep(vartype, expressions.parse_expression(ins))
     else:
         # convert 1 to vartype
@@ -380,7 +380,7 @@ def exec_on_jump(ins):
 
 def parse_on_event(ins):
     num = expressions.parse_bracket(ins)
-    util.require_read(ins,'\x8D') # GOSUB
+    util.require_read(ins, ('\x8D',)) # GOSUB
     jumpnum = util.parse_jumpnum(ins)
     if jumpnum==0:
         jumpnum=-1
@@ -413,7 +413,7 @@ def exec_on_play(ins):
     
     
 def exec_on_pen(ins):
-    util.require_read(ins,'\x8D') # GOSUB
+    util.require_read(ins, ('\x8D',)) # GOSUB
     jumpnum = util.parse_jumpnum(ins)
     if jumpnum==0:
         jumpnum=-1
@@ -481,7 +481,7 @@ def exec_timer(ins):
 
 
 def exec_on_error(ins):
-    util.require_read(ins,'\x89')  # GOTO
+    util.require_read(ins, ('\x89',))  # GOTO
     error.on_error = util.parse_jumpnum(ins)
     # ON ERROR GOTO 0 in error handler
     if error.on_error==0 and error.error_handle_mode:

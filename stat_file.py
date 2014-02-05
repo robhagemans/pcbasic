@@ -42,9 +42,9 @@ def exec_open(ins):
         # first syntax
         mode = first_expr[0].upper()
         access = access_modes[mode]    
-        util.require_read(ins, ',')
+        util.require_read(ins, (',',))
         number = expressions.parse_file_number_opthash(ins)
-        util.require_read(ins, ',')
+        util.require_read(ins, (',',))
         name = str(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
         if util.skip_white_read_if(ins, ','):
             reclen = vartypes.pass_int_unpack(expressions.parse_expression(ins))
@@ -135,7 +135,7 @@ def exec_field(ins):
         raise error.RunError(52)
     if fileio.files[number].mode.upper() != 'R':
         raise error.RunError(54)    
-    util.require_read(ins,',')
+    util.require_read(ins, (',',))
     field = fileio.files[number].field 
     offset = 0    
     while True:

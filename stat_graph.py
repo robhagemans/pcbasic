@@ -21,11 +21,11 @@ import draw_and_play
 
 
 def parse_coord(ins):
-    util.require_read(ins, '(')
+    util.require_read(ins, ('(',))
     x = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
-    util.require_read(ins, ',')
+    util.require_read(ins, (',',))
     y = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
-    util.require_read(ins, ')')
+    util.require_read(ins, (')',))
     return x,y    
 
 
@@ -55,7 +55,7 @@ def exec_line_graph(ins):
         x0, y0 = graphics.window_coords(*coord)
     else:
         x0, y0 = graphics.last_point
-    util.require_read(ins, '\xEA') # -
+    util.require_read(ins, ('\xEA',)) # -
     x1,y1 = graphics.window_coords(*parse_coord(ins))
     c = -1    
     mode='L'
@@ -86,7 +86,7 @@ def exec_view_graph(ins):
     absolute = util.skip_white_read_if(ins, '\xC8') #SCREEN
     if util.skip_white(ins) == '(':
         x0, y0 = parse_coord(ins)
-        util.require_read(ins, '\xEA') #-
+        util.require_read(ins, ('\xEA',)) #-
         x1, y1 = parse_coord(ins)
         # not scaled by WINDOW
         x0 = x0.round_to_int()
@@ -111,7 +111,7 @@ def exec_window(ins):
     cartesian = not util.skip_white_read_if(ins, '\xC8') #SCREEN
     if util.skip_white(ins)=='(':
         x0, y0 = parse_coord(ins)
-        util.require_read(ins, '\xEA') #-
+        util.require_read(ins, ('\xEA',)) #-
         x1, y1 = parse_coord(ins)
         graphics.set_graph_window(x0,y0, x1,y1, cartesian)
     else:
@@ -122,7 +122,7 @@ def exec_window(ins):
 def exec_circle(ins):
     graphics.require_graphics_mode()
     x0,y0 = graphics.window_coords(*parse_coord(ins))
-    util.require_read(ins, ',')
+    util.require_read(ins, (',',))
     r = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
     c = -1
     start, stop = ('',''), ('','')
@@ -238,9 +238,9 @@ def exec_paint(ins):
 def exec_get_graph(ins):
     graphics.require_graphics_mode()
     x0,y0 = graphics.window_coords(*parse_coord(ins))
-    util.require_read(ins, '\xEA') #-
+    util.require_read(ins, ('\xEA',)) #-
     x1,y1 = graphics.window_coords(*parse_coord(ins))
-    util.require_read(ins, ',') 
+    util.require_read(ins, (',',)) 
     array = util.get_var_name(ins)    
     util.require(ins, util.end_statement)
     # do it    
@@ -251,10 +251,10 @@ def exec_get_graph(ins):
 def exec_put_graph(ins):
     graphics.require_graphics_mode()
     x0,y0 = graphics.window_coords(*parse_coord(ins))
-    util.require_read(ins, ',') 
+    util.require_read(ins, (',',)) 
     array = util.get_var_name(ins)    
     action = graphics.operation_xor
-    if util.skip_white_read_if(ins, ','):
+    if util.skip_white_read_if(ins, (',',)):
         c = util.skip_white_read(ins) 
         if c == '\xC6': #PSET
             action = graphics.operation_set
