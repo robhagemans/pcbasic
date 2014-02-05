@@ -422,7 +422,10 @@ def value_val(ins):
     return tokenise.str_to_value_keep(parse_bracket(ins))
 
 def value_chr(ins):            
-    return vartypes.pack_string(bytearray(chr(vartypes.pass_int_unpack(parse_bracket(ins))) ))
+    val = vartypes.pass_int_unpack(parse_bracket(ins))
+    if val < 0 or val > 255:
+        raise error.RunError(5)
+    return vartypes.pack_string(bytearray(chr(val)))
 
 def value_oct(ins):            
     # allow range -32768 to 65535
