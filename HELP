@@ -110,7 +110,7 @@ In AUTO mode, pressing <ENTER> on an empty line with number larger than
 BEEP statement
 BEEP
 --------------
-Beeps at 800 Hz for 0.25s.
+Beeps at 800Hz for 0.25s.
 
 
 BLOAD statement
@@ -125,7 +125,7 @@ BSAVE statement
 BSAVE filename, offset, length
 ---------------
 Raises ADVANCED FEATURE.
-In GW-BASIC, BLOAD saves a stretch of memory to an image file. 
+In GW-BASIC, BSAVE saves a region of memory to an image file. 
 This is not implemented in PC-BASIC 3.23.  
 
 

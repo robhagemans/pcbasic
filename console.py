@@ -381,6 +381,10 @@ def read():
                 insert = False
                 set_line_cursor(True)
                 set_pos(row, col-1, scroll_ok=False)
+            elif d == '\x00\x74' or d == '\x06':   # <CTRL+RIGHT> or <CTRL+F>
+                skip_word_right()    
+            elif d == '\x00\x73' or d == '\x02':   # <CTRL+LEFT> or <CTRL+B>
+                skip_word_left() 
             elif d == '\x00\x52' or d == '\x12':   # <INS> <CTRL+R>
                 insert = not insert
                 set_line_cursor(not insert)  
@@ -472,6 +476,63 @@ def clear_rest_of_line(srow, scol):
     if scol>1:
         redraw_row(0, srow)
 
+def skip_word_right():
+    crow, ccol = row, col
+    # find non-alphanumeric chars
+    while True:
+        c = apage.charbuf[crow-1][ccol-1].upper() 
+        if (c<'0' or c>'9') and (c<'A' or c>'Z'):
+            break
+        ccol += 1
+        if ccol > width:
+            if crow >= scroll_height:
+                # nothing found
+                return
+            crow += 1
+            ccol = 1
+    # find alphanumeric chars
+    while True:
+        c = apage.charbuf[crow-1][ccol-1].upper() 
+        if not ((c<'0' or c>'9') and (c<'A' or c>'Z')):
+            break
+        ccol += 1
+        if ccol > width:
+            if crow >= scroll_height:
+                # nothing found
+                return
+            crow += 1
+            ccol = 1
+    set_pos(crow, ccol)                            
+        
+def skip_word_left():
+    crow, ccol = row, col
+    # find alphanumeric chars
+    while True:
+        ccol -= 1
+        if ccol < 1:
+            if crow <= view_start:
+                # not found
+                return
+            crow -= 1
+            ccol = width
+        c = apage.charbuf[crow-1][ccol-1].upper() 
+        if not ((c<'0' or c>'9') and (c<'A' or c>'Z')):
+            break
+    # find non-alphanumeric chars
+    while True:
+        last_row, last_col = crow, ccol
+        ccol -= 1
+        if ccol < 1:
+            if crow <= view_start:
+                break
+            crow -= 1
+            ccol = width
+        c = apage.charbuf[crow-1][ccol-1].upper() 
+        if (c<'0' or c>'9') and (c<'A' or c>'Z'):
+            break
+    set_pos(last_row, last_col)                            
+        
+        
 def start_line():
     if col!=1:
         set_pos(row+1, 1)        
