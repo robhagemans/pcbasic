@@ -239,7 +239,36 @@ CHR$(x) function
 Returns the character with ASCII code 'x'. 'x' must have a numeric value 
 between 0 and 255 (inclusive). 
 If 'x' is a string value, TYPE MISMATCH is raised.
+If 'x' is not -32768<=x<=32767, OVERFLOW is raised.
 If 'x' is not 0<=x<=255, ILLEGAL FUNCTION CALL is raised.
-If 'x' is too large to fit a two-byte signed integer, OVERFLOW is raised.
 
+
+CINT(x) function
+----------------
+Converts the numeric-valued expression 'x' to a signed integer.
+If 'x' is a string value, TYPE MISMATCH is raised.
+If 'x' is not -32768<=x<=32767, OVERFLOW is raised.
+
+
+CIRCLE statement
+CIRCLE (x, y), radius [, [colour] [, [start] [, [end] [, aspect] ] ]
+----------------
+Draw an ellipse or ellipse sector. The midpoint of the ellipse is at 'x','y'.
+'radius' is the radius, in pixels, along the long axis.
+'colour' is the colour attribute.
+If 'start' and 'end' are specified, a sector of the ellipse is drawn from 
+'start' radians to 'end' radians, with zero radians the intersection with the 
+right-hand x axis. If a negative value is specified, the arc sector is 
+connected by a line to the midpoint.
+'aspect' specifies, the ratio between the y radius and the x radius. If it is
+not specified, the standard value for the SCREEN mode is used (see there), so
+as to make the ellipse appear like a circle on the original hardware. 
+NOTES: 
+- The rectangular pixels of some screen modes are currently not faithfully 
+  reproduced by PC-BASIC 3.23, making default circles look like ellipses.
+- For 'aspect'<>1, the midpoint algorithm used does not pixel-perfectly 
+  reproduce GW-BASIC's ellipses.
+In text mode (SCREEN 0), CIRCLE raises ILLEGAL FUNCTION CALL.
+If 'start' or 'end' is not between 0 and 2pi, ILLEGAL FUNCTION CALL is raised.
+If the statement ends with a comma, MISSING OPERAND is raised.
 
