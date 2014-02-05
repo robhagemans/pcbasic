@@ -203,7 +203,7 @@ def write(s, scroll_ok=True):
                 set_pos(row+1, 1,scroll_ok)
         elif c == '\x0D':   set_pos(row+1, 1,scroll_ok)     # CR
         elif c == '\x00':   put_char('\x00')                # NUL
-        elif c == '\x07':   sound.beep()                  # BEL
+        elif c == '\x07':   sound.beep()                    # BEL
         elif c == '\x0B':   set_pos(1,1, scroll_ok)         # HOME
         elif c == '\x0C':   clear()
         elif c == '\x1C':   set_pos(row, col+1,scroll_ok)
@@ -302,9 +302,16 @@ def read():
         c = wait_char() 
         pos = 0
         while pos<len(c):
-            if c[pos] == '\x03':            # ctrl-C, probably already caught in wait_char()
+            d = c[pos]
+            pos += 1
+            if d == '\x00' and len(c)>pos:
+                d += c[pos]
+                pos += 1
+            if d == '\x03':            # <CTRL+C>, probably already caught in wait_char()
                 raise error.Break()
-            if c[pos] == '\x08':            # backspace
+            elif d == '\x07':                   # <CTRL+G>
+                sound.beep()    
+            elif d == '\x08':                   # <BACKSPACE>
                 inp = inp[:-1]
                 if col==1:
                     if row>1 and apage.wrap[row-2]:
@@ -319,16 +326,16 @@ def read():
                     set_pos(row, col)
                 else:
                     set_pos(row, 1)
-            if c[pos] == '\x09':                  #  TAB
+            elif d == '\x09':                  #  <TAB> or <CTRL+I>
                 inp = inp[:-1]
                 if not insert:
                     set_pos(row, col+8, scroll_ok=False)
                 else:
                     for _ in range(8):
-                        insert_char(row,col,' ', attr)
+                        insert_char(row, col, ' ', attr)
                     redraw_row(col-1, row)
-                    set_pos(row,col+8)
-            if c[pos] == '\x0A':                   #  LF
+                    set_pos(row, col+8)
+            elif d == '\x0A':                   #  <CTRL+ENTER> or <CTRL+J>
                 # moves rest of line to next line
                 if col < apage.end[row-1]:
                     for _ in range(width-col+1):
@@ -343,52 +350,49 @@ def read():
                         scroll()
                     scroll_down(row+1)
                 # LF connects lines like word wrap
-                apage.wrap[row-1]=True
+                apage.wrap[row-1] = True
                 set_pos(row+1, 1)
-            elif c[pos]== '\x1B':                   # ESC
+            elif d == '\x1B':                      # <ESC> or <CTRL+[>
                 clear_line(row)
-            elif c[pos] not in control + ('', '\x00', '\x08'): 
-                inp += c[pos]
+            elif d == '\x00\x48' or d == '\x1E':   # <UP> <CTRL+6>
+                insert = False
+                set_line_cursor(True)
+                set_pos(row-1, col, scroll_ok=False)
+            elif d == '\x00\x50' or d == '\x1F':   # <DOWN> <CTRL+->
+                insert = False
+                set_line_cursor(True)
+                set_pos(row+1, col, scroll_ok=False)
+            elif d == '\x00\x4D' or d == '\x1C':   # <RIGHT> <CTRL+\>
+                insert = False
+                set_line_cursor(True)
+                set_pos(row, col+1, scroll_ok=False)
+            elif d == '\x00\x4B' or d == '\x1D':   # <LEFT> <CTRL+]>
+                insert = False
+                set_line_cursor(True)
+                set_pos(row, col-1, scroll_ok=False)
+            elif d == '\x00\x52' or d == '\x12':   # <INS> <CTRL+R>
+                insert = not insert
+                set_line_cursor(not insert)  
+            elif d == '\x00\x53' or d == '\x7F':   # <DEL> <CTRL+BACKSPACE>
+                delete_char(row, col)
+            elif d == '\x00\x47' or d == '\x0B':   # <HOME> <CTRL+K>
+                insert = False
+                set_line_cursor(True)
+                set_pos(1,1)
+            elif d == '\x00\x4F' or d == '\x0E':   # <END> <CTRL+N>
+                insert = False
+                set_line_cursor(True)
+                while apage.wrap[row-1] and row<height:
+                    row += 1
+                set_pos(row, apage.end[row-1]+1)
+            elif d[0] not in control + ('\x00',): 
+                inp += d
                 if insert:
-                    insert_char(row,col, c[pos], attr)
+                    insert_char(row,col, d, attr)
                     redraw_row(col-1, row)
                     set_pos(row, col+1)
                 else:    
-                    put_char(c[pos], echo=True)
-            elif c[pos] == '\x00' and pos+1<len(c):
-                pos += 1
-                if c[pos] == '\x48':                    # up
-                    insert = False
-                    set_line_cursor(True)
-                    set_pos(row-1, col, scroll_ok=False)
-                elif c[pos] == '\x50':                  # down
-                    insert = False
-                    set_line_cursor(True)
-                    set_pos(row+1, col, scroll_ok=False)
-                elif c[pos] == '\x4D':                  # right
-                    insert = False
-                    set_line_cursor(True)
-                    set_pos(row, col+1, scroll_ok=False)
-                elif c[pos] == '\x4B':                  # left
-                    insert = False
-                    set_line_cursor(True)
-                    set_pos(row, col-1, scroll_ok=False)
-                elif c[pos] == '\x52':                  # INS
-                    insert = not insert
-                    set_line_cursor(not insert)  
-                elif c[pos] == '\x53':                  # DEL
-                    delete_char(row,col)
-                elif c[pos] == '\x47':                  # HOME
-                    insert = False
-                    set_line_cursor(True)
-                    set_pos(1,1)
-                elif c[pos] == '\x4F':                  # END
-                    insert = False
-                    set_line_cursor(True)
-                    while apage.wrap[row-1] and row<height:
-                        row += 1
-                    set_pos(row, apage.end[row-1]+1)
-            pos += 1
+                    put_char(d, echo=True)
     insert = False
     set_line_cursor(True)
     return inp  

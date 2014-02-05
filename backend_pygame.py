@@ -152,6 +152,7 @@ ctrl_keycode_to_scancode = {
     pygame.K_0:         '',
     pygame.K_F2:        '\x00\x5F',
     pygame.K_F3:        '\x00\x60',
+    pygame.K_MINUS:     '\x1F',
 }
 
     
