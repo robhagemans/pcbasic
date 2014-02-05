@@ -72,13 +72,15 @@ num_pages = 1
 pages = [ ScreenBuffer(width, height) ]
 vpage = pages[0]
 apage = pages[0]
+vpagenum = 0
+apagenum = 0
 
 # officially, whether colours are displayed. in reality, SCREEN just clears the screen if this value is changed
 colorswitch = True
 
 # graphics vs text mode 
-graphics_mode=False
-screen_mode=0
+graphics_mode = False
+screen_mode = 0
 
 # palette
 num_colours = 32    
@@ -160,6 +162,8 @@ def set_mode(mode):
     set_line_cursor(True)
     graphics.init_graphics_mode(mode, font_height)      
     show_cursor(cursor)
+    if keys_visible:
+        show_keys()
 
 def set_colour_depth(colours, palette):
     global num_colours
@@ -469,6 +473,8 @@ def start_line():
 
 def set_width(to_width):
     resize(height, to_width)    
+    if keys_visible:
+        show_keys()
 
 def set_colorswitch(new_val):
     global colorswitch
@@ -683,6 +689,9 @@ def resize(to_height, to_width):
     
 def clear_all():
     setup_screen(height, width)
+    if keys_visible:
+        show_keys()
+            
     
 def setup_screen(to_height, to_width):    
     global pages, vpage, apage    
@@ -697,18 +706,20 @@ def setup_screen(to_height, to_width):
     col = 1
 
 def set_apage(page_num):
-    global apage
+    global apage, apagenum
     if page_num < num_pages:
         apage = pages[page_num]
+        apagenum = page_num
         return True
     else:
         return False    
         
 def set_vpage(page_num):
-    global vpage
+    global vpage, vpagenum
     backend.screen_changed=True
     if page_num < num_pages:
         vpage = pages[page_num]
+        vpagenum = page_num
         return True
     else:
         return False 
