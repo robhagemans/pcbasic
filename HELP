@@ -136,8 +136,9 @@ ASC(x) function
 ---------------
 Returns the ASCII code for the first character of x. x is an expression with 
 a string value.
-If 'x' has a numeric value, ASC raises TYPE MISMATCH.
-If 'x' equals "", ASC raises ILLEGAL FUNCTION CALL.
+ERRORS:
+-  If 'x' has a numeric value, ASC raises TYPE MISMATCH.
+-  If 'x' equals "", ASC raises ILLEGAL FUNCTION CALL.
 
 
 ATN(x) function
@@ -145,7 +146,8 @@ ATN(x) function
 Returns the inverse tangent of x. x is an expression with a numeric value in 
 radians. Unless BASIC is run with the --double option, ATN(x) returns a 
 single-precision value.
-If x has a string value, ABS raises TYPE MISMATCH.
+ERRORS:
+-  If x has a string value, ABS raises TYPE MISMATCH.
 
 
 AUTO statement
@@ -164,10 +166,11 @@ line number. To avoid overwriting this line, leave it empty and press <ENTER>.
 To exit AUTO mode, press <CTRL+BREAK> or <CTRL+C>. The line being edited at 
 that point is not saved. BASIC will return to command mode, even if AUTO was 
 run from a program line.
-If line_number is not an unsigned-integer value between 0 and 65529, 
-inclusive, SYNTAX ERROR is raised.
-In AUTO mode, pressing <ENTER> on an empty line with number larger than 
-65519, UNDEFINED LINE NUMBER is raised.
+ERRORS:
+-  If line_number is not an unsigned-integer value between 0 and 65529, 
+   inclusive, SYNTAX ERROR is raised.
+-  In AUTO mode, pressing <ENTER> on an empty line with number larger than 
+   65519, UNDEFINED LINE NUMBER is raised.
 
 
 BEEP statement
@@ -180,30 +183,34 @@ BLOAD statement
 BLOAD filename [, offset]
 ---------------
 Raises ADVANCED FEATURE.
-In GW-BASIC, BLOAD loads an image file into memory. 
-This is not implemented in PC-BASIC 3.23.   
+NOTES:
+-  In GW-BASIC, BLOAD loads an image file into memory. 
+   This is not implemented in PC-BASIC 3.23.   
 
 
 BSAVE statement
 BSAVE filename, offset, length
 ---------------
 Raises ADVANCED FEATURE.
-In GW-BASIC, BSAVE saves a region of memory to an image file. 
-This is not implemented in PC-BASIC 3.23.  
+NOTES:
+-  In GW-BASIC, BSAVE saves a region of memory to an image file. 
+   This is not implemented in PC-BASIC 3.23.  
 
 
 CALL statement
 CALL address, variables
 --------------
 Raises ADVANCED FEATURE.
-In GW-BASIC, CALL executes a machine language subroutine.
-This is not implemented in PC-BASIC 3.23.  
+NOTES:
+-  In GW-BASIC, CALL executes a machine language subroutine.
+   This is not implemented in PC-BASIC 3.23.  
 
 
 CDBL(x) function
 ----------------
 Converts the numeric-valued expression 'x' to a double-precision value.
-If 'x' has a string value, TYPE MISMATCH is raised.
+ERRORS:
+-  If 'x' has a string value, TYPE MISMATCH is raised.
 
 
 CHAIN statement
@@ -229,25 +236,28 @@ expression which can be absolute or relative to the current path. 'pathname'
 must be specified with MS-DOS path separators (\). CHDIR first looks for the
 exact, case-sensitive (on Unix) path 'pathname'; if this does not exist then
 an uppercase version truncated to 8.3 is attempted.
-If no matching path is found, PATH NOT FOUND is raised.
-If 'pathname' is not string-valued, TYPE MISMATCH is raised.
-If 'pathname' is empty, BAD FILE NAME is raised.
+ERRORS:
+-  If no matching path is found, PATH NOT FOUND is raised.
+-  If 'pathname' is not string-valued, TYPE MISMATCH is raised.
+-  If 'pathname' is empty, BAD FILE NAME is raised.
 
 
 CHR$(x) function
 ----------------
 Returns the character with ASCII code 'x'. 'x' must have a numeric value 
 between 0 and 255 (inclusive). 
-If 'x' is a string value, TYPE MISMATCH is raised.
-If 'x' is not -32768<=x<=32767, OVERFLOW is raised.
-If 'x' is not 0<=x<=255, ILLEGAL FUNCTION CALL is raised.
+ERRORS:
+-  If 'x' is a string value, TYPE MISMATCH is raised.
+-  If 'x' is not -32768<=x<=32767, OVERFLOW is raised.
+-  If 'x' is not 0<=x<=255, ILLEGAL FUNCTION CALL is raised.
 
 
 CINT(x) function
 ----------------
 Converts the numeric-valued expression 'x' to a signed integer.
-If 'x' is a string value, TYPE MISMATCH is raised.
-If 'x' is not -32768<=x<=32767, OVERFLOW is raised.
+ERRORS:
+-  If 'x' is a string value, TYPE MISMATCH is raised.
+-  If 'x' is not -32768<=x<=32767, OVERFLOW is raised.
 
 
 CIRCLE statement
@@ -264,11 +274,33 @@ connected by a line to the midpoint.
 not specified, the standard value for the SCREEN mode is used (see there), so
 as to make the ellipse appear like a circle on the original hardware. 
 NOTES: 
-- The rectangular pixels of some screen modes are currently not faithfully 
-  reproduced by PC-BASIC 3.23, making default circles look like ellipses.
-- For 'aspect'<>1, the midpoint algorithm used does not pixel-perfectly 
-  reproduce GW-BASIC's ellipses.
-In text mode (SCREEN 0), CIRCLE raises ILLEGAL FUNCTION CALL.
-If 'start' or 'end' is not between 0 and 2pi, ILLEGAL FUNCTION CALL is raised.
-If the statement ends with a comma, MISSING OPERAND is raised.
+-  The rectangular pixels of some screen modes are currently not faithfully 
+   reproduced by PC-BASIC 3.23, making default circles look like ellipses.
+-  For 'aspect'<>1, the midpoint algorithm used does not pixel-perfectly 
+   reproduce GW-BASIC's ellipses.
+ERRORS:
+-  In text mode (SCREEN 0), CIRCLE raises ILLEGAL FUNCTION CALL.
+-  If 'start' or 'end' is not between 0 and 2pi, ILLEGAL FUNCTION CALL raised.
+-  If the statement ends with a comma, MISSING OPERAND is raised.
+
+
+CLEAR statement
+CLEAR [expr] [, [mem_limit] [, stack_size] ]
+---------------
+Sets all variables to null. Closes all files. Clears all DEF FN functions. 
+Clears all COMMON declarations. Turns off all sound. Resets music foreground.
+Turns PEN and STRIG off. Clears all ON ERROR traps. Resets ERR and ERL to zero.
+Resets the random number generator.
+NOTES:
+-  In GW-BASIC, 'mem_limit' specifies the upper limit of usable memory, and 
+   'stack_size' specifies the amount of memory available to the stack and to
+   string space. These are not implemented.
+-  In GW-BASIC, If 'mem_limit' or 'expr' are too low, OUT OF MEMORY is raised.
+-  The meaning of 'expr' is unknown.
+ERRORS:
+-  If 'mem_limit' or 'stack_size' equal 0, ILLEGAL FUNCTION CALL is raised.
+-  If 'expr' is negative, ILLEGAL FUNCTION CALL is raised.
+-  If 'expr','mem_limit','stack_size' don't fit a 2-byte signed int, OVERFLOW.
+  
+
 
