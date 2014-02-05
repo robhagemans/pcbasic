@@ -62,6 +62,69 @@ or <CTRL+SCROLL_LOCK>       without executing or storing the line under the
                             INSERT mode.
 
 
+ERROR CODES
+-----------
+1   NEXT without FOR
+2   Syntax error
+3   RETURN without GOSUB
+4   Out of DATA
+5   Illegal function call
+6   Overflow
+7   Out of memory
+8   Undefined line number
+9   Subscript out of range
+10  Duplicate Definition
+11  Division by zero
+12  Illegal direct
+13  Type mismatch
+14  Out of string space
+15  String too long
+16  String formula too complex
+17  Can't continue
+18  Undefined user function
+19  No RESUME
+20  RESUME without error
+21
+22  Missing operand
+23  Line buffer overflow
+24  Device Timeout
+25  Device Fault
+26  FOR without NEXT
+27  Out of paper
+28
+29  WHILE without WEND
+30  WEND without WHILE
+31--49
+50  FIELD overflow
+51  Internal error
+52  Bad file number
+53  File not found
+54  Bad file mode
+55  File already open
+56
+57  Device I/O error
+58  File already exists
+59--60
+61  Disk full
+62  Input past end
+63  Bad record number
+64  Bad file name
+65
+66  Direct statement in file
+67  Too many files
+68  Device Unavailable
+69  Communication buffer overflow
+70  Permission Denied
+71  Disk not Ready
+72  Disk media error
+73  Advanced Feature
+74  Rename across disks
+75  Path/File access error
+76  Path not found
+Any error code that does not have a message associated to it will generate
+the message "Unprintable error".
+
+
 
 ABS(x) function
 ---------------
@@ -177,5 +240,6 @@ Returns the character with ASCII code 'x'. 'x' must have a numeric value
 between 0 and 255 (inclusive). 
 If 'x' is a string value, TYPE MISMATCH is raised.
 If 'x' is not 0<=x<=255, ILLEGAL FUNCTION CALL is raised.
+If 'x' is too large to fit a two-byte signed integer, OVERFLOW is raised.
 
 
