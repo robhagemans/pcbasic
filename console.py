@@ -363,6 +363,8 @@ def read():
                 set_pos(row+1, 1)
             elif d == '\x1B':                      # <ESC> or <CTRL+[>
                 clear_line(row)
+            elif d == '\x00\x75' or d == '\x05':   # <CTRL+END> <CTRL+E>
+                clear_rest_of_line(row, col)   
             elif d == '\x00\x48' or d == '\x1E':   # <UP> <CTRL+6>
                 insert = False
                 set_line_cursor(True)
@@ -446,27 +448,29 @@ def read_screenline(write_endl=True, from_start=False):
 def clear_line(the_row):
     global apage
     # find start of line
-    crow = the_row
-    while crow>1 and apage.wrap[crow-2]:
-        crow -= 1
-    srow = crow    
-    while True:
+    srow = the_row
+    while srow>1 and apage.wrap[srow-2]:
+        srow -= 1
+    clear_rest_of_line(srow, 1)
+
+def clear_rest_of_line(srow, scol):
+    crow = srow    
+    apage.charbuf[crow-1] = apage.charbuf[crow-1][:scol-1] + [' ']*(width-scol+1)
+    apage.attrbuf[crow-1] = apage.attrbuf[crow-1][:scol-1] + [attr]*(width-scol+1)
+    apage.end[crow-1] = min(apage.end[crow-1], scol-1)
+    while apage.wrap[crow-1]:
+        crow += 1
         apage.charbuf[crow-1] = [' ']*width
         apage.attrbuf[crow-1] = [attr]*width
-        apage.end[crow-1] = width
-        if apage.wrap[crow-1]:
-            crow += 1
-        else:
-            break    
+        apage.end[crow-1] = 0
     for r in range(crow, srow, -1):
-        apage.end[r-1] = 0
         apage.wrap[r-1] = False
         scroll(r)
-    apage.end[srow-1] = 0
-    apage.wrap[srow-1]=False
-    set_pos(srow,1)
+    apage.wrap[srow-1] = False
+    set_pos(srow, scol)
     backend.clear_row(srow, colours(attr)[1] & 0xf)
-    
+    if scol>1:
+        redraw_row(0, srow)
 
 def start_line():
     if col!=1:
