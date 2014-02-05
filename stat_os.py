@@ -21,6 +21,8 @@ import console
 
 def exec_chdir(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    if name == '':
+        raise error.RunError(64)
     name = oslayer.dospath_read_dir(name, '', 76)
     try:
         os.chdir(str(name))
@@ -30,8 +32,10 @@ def exec_chdir(ins):
 
 def exec_mkdir(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    if name == '':
+        raise error.RunError(64)
     try:
-        os.mkdir(oslayer.dospath_write_dir(name,'', 76))
+        os.mkdir(str(oslayer.dospath_write_dir(name,'', 76)))
     except EnvironmentError as ex:
         oslayer.handle_oserror(ex)
     util.require(ins, util.end_statement)
@@ -40,7 +44,7 @@ def exec_rmdir(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     name = oslayer.dospath_read_dir(name, '', 76)
     try:
-        os.rmdir(name)
+        os.rmdir(str(name))
     except EnvironmentError as ex:
         oslayer.handle_oserror(ex)
     util.require(ins, util.end_statement)
@@ -54,7 +58,7 @@ def exec_name(ins):
         raise error.RunError(2)
     newname = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     newname = oslayer.dospath_write(newname, '', 76)
-    if os.path.exists(newname):
+    if os.path.exists(str(newname)):
         # file already exists
         raise error.RunError(58)
     try:
