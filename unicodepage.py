@@ -7,27 +7,28 @@ def to_utf8(s):
     output = ''
     for c in s:
         output += cp437_to_unicode[ord(c)].encode('utf-8')
-            
     return output
 
 def from_unicode(s):
     output=''
     for c in s:
-        if c in unicode_to_cp437:
+        if ord(c) == 0:
+            # double NUL characters as single NUL signals scan code
+            output += '\x00\x00'
+        elif c in unicode_to_cp437:
             output += chr(unicode_to_cp437[c])
         elif ord(c) <= 0xff:
             output += chr(ord(c))
     return output
 
-def from_utf8(s):
-    return from_unicode(s.decode('utf-8'))
+#def from_utf8(s):
+#    return from_unicode(s.decode('utf-8'))
     
         
 cp437_to_unicode = {
 
 # Special Graphic Characters:
-
-    0x00:   u'\u0020',  # whitespace
+    0x00:   u'\u0000',  # whitespace
     0x01:   u'\u263A',  # smiley face
     0x02:   u'\u263B',  # smiley face inverted
     0x03:   u'\u2665',  # hearts
@@ -340,6 +341,4 @@ cp437_to_unicode = {
 }
 
 unicode_to_cp437 = dict((reversed(item) for item in cp437_to_unicode.items()))
-#cp437_to_utf8 = { c: cp437[c].encode('utf-8') for c in cp437 }
-#utf8_to_cp437 = dict((reversed(item) for item in cp437_to_utf8.items()))
 

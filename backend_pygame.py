@@ -131,20 +131,30 @@ keycode_to_scancode = {
 #K_SYSREQ              sysrq
 
 ctrl_keycode_to_scancode = {
-    pygame.K_RIGHT: '\x00\x74',
-    pygame.K_LEFT:  '\x00\x73',
-    pygame.K_HOME:  '\x00\x77',
-    pygame.K_END:   '\x00\x75',
-    pygame.K_PAGEUP:'\x00\x84',
-    pygame.K_PAGEDOWN:'\x00\x76',
-    pygame.K_2:       '\x00\x03',
-    pygame.K_9:       '\x00\x84',
-    pygame.K_F2:    '\x00\x5F',
-    pygame.K_F3:    '\x00\x60',
+    pygame.K_RIGHT:     '\x00\x74',
+    pygame.K_LEFT:      '\x00\x73',
+    pygame.K_HOME:      '\x00\x77',
+    pygame.K_END:       '\x00\x75',
+    pygame.K_PAGEUP:    '\x00\x84',
+    pygame.K_PAGEDOWN:  '\x00\x76',
+    pygame.K_BACKSPACE: '\x7F',
+    pygame.K_RETURN:    '\x0A',
+    pygame.K_TAB:       '',
+    pygame.K_1:         '',
+    pygame.K_2:         '\x00\x03',
+    pygame.K_3:         '',
+    pygame.K_4:         '',
+    pygame.K_5:         '',
+    # <CTRL+6> is passed normally
+    pygame.K_7:         '',
+    pygame.K_8:         '',
+    pygame.K_9:         '\x00\x84',
+    pygame.K_0:         '',
+    pygame.K_F2:        '\x00\x5F',
+    pygame.K_F3:        '\x00\x60',
 }
 
-# shift+tab -> \x00\x0F (scancode for TAB) but TAB -> \x09
-
+    
 def init():
     global fonts, num_sticks, joysticks
     pre_init_mixer()    
@@ -492,38 +502,35 @@ def handle_key(e):
         else:
             # pause until keypress
             pause_key()    
-    elif e.key == pygame.K_NUMLOCK:
-        if mods & pygame.KMOD_CTRL:
-            pause_key()    
-    elif e.key == pygame.K_SCROLLOCK:
+    elif e.key == pygame.K_NUMLOCK and mods & pygame.KMOD_CTRL:
+        pause_key()    
+    elif e.key == pygame.K_SCROLLOCK and mods & pygame.KMOD_CTRL:
         # ctrl+SCROLLLOCK breaks too
-        if mods & pygame.KMOD_CTRL:
-            # ctrl-break
-            raise error.Break()
+        raise error.Break()
     elif e.key == pygame.K_CAPSLOCK:
-        console.caps = not console.caps        
-    elif e.key == pygame.K_DELETE:
-        c+= keycode_to_scancode[e.key]    
-    elif len(e.unicode)>0 and ord(e.unicode)== 0:   # NUL
-        c+= '\x00\x00'
-    elif len(e.unicode)>0 and ord(e.unicode)>=0x20: # and (ord(e.unicode) in unicodepage.from_unicode): 
-        c += unicodepage.from_unicode(e.unicode)    
-    elif not(mods & pygame.KMOD_CTRL) and e.key in keycode_to_scancode:
-        c += keycode_to_scancode[e.key]
-    elif (mods & pygame.KMOD_CTRL) and e.key in ctrl_keycode_to_scancode:
-        c += ctrl_keycode_to_scancode[e.key]
-    elif len(e.unicode)>0 and ord(e.unicode) < 0x20:
-        c += chr(ord(e.unicode))    
+        console.caps = not console.caps   
+    elif e.key == pygame.K_TAB and mods & pygame.KMOD_SHIFT:
+        # shift+tab -> \x00\x0F (scancode for TAB) but TAB -> \x09
+        c = '\x00\x0F'
+    else:
+        if (mods & pygame.KMOD_CTRL):
+            try:
+                c = ctrl_keycode_to_scancode[e.key]
+            except KeyError:
+                c = unicodepage.from_unicode(e.unicode)
+        else:    
+            try:
+                c = keycode_to_scancode[e.key]
+            except KeyError:
+                c = unicodepage.from_unicode(e.unicode)
     console.insert_key(c) 
     
 
 def pause_key():
     # pause key press waits for any key down. continues to process screen events (blink) but not user events.
     # TODO: does background music play ??
-    while True:
+    while not check_events(pause=True):
         idle()
-        if check_events(pause=True):
-            break
             
 ##############################################
 # light pen (emulated by mouse)
