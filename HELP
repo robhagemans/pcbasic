@@ -414,4 +414,24 @@ ERRORS:
 
 
 
+CLS statement
+CLS [x][,]
+------------
+Clears the screen or part of it. 
+'x' is a numeric valued expression:
+-  If 'x' equals 0, the whole screen is cleared.
+-  If 'x' equals 1, the graphics view region is cleared.
+-  If 'x' equals 2, the text view region is cleared.
+If 'x' is not specified, in SCREEN 0 the text view region is cleared;
+in other screens, the graphics view region is cleared.
+The comma is optional and has no effect.
+ERRORS:
+-  If 'x' is string valued, TYPE MISMATCH is raised.
+-  If 'x' is not 0,1, or 2, ILLEGAL FUNCTION CALL is raised.
+-  If 'x' is not in [-32768, 32767], OVERFLOW is raised.
+-  If no comma is specified but more text follows, ILLEGAL FUNCTION CALL.
+-  If a comma is specified followed by more, SYNTAX ERROR.
+-  If an error occurs, the screen is not cleared.
+
+
 
