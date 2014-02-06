@@ -123,7 +123,7 @@ def exec_close(ins):
         number = expressions.parse_file_number_opthash(ins)
         if number in fileio.files:
             fileio.files[number].close()
-        if util.skip_white(ins) != ',':
+        if not util.skip_white_read_if(ins, (',',)):
             break
     util.require(ins, util.end_statement)
 
