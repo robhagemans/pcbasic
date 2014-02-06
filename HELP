@@ -400,3 +400,18 @@ ERRORS:
   
 
 
+CLOSE statement
+CLOSE [[#] file_1 [, [#] file_2 [, ...] ]
+---------------
+Closes files. 'file_1', 'file_2' etc are numeric-valued expressions yielding 
+file numbers. If no file numbers are specified, all open files are closed.
+The hash (#) is optional and has no effect.
+ERRORS:
+-  If 'file_1' etc. is not an open file, no error is raised.
+-  If 'file_1' etc. is string-valued, TYPE MISMATCH is raised.
+-  If an error occurs, the files before the erratic value are closed.
+-  If the statement ends in a comma, MISSING OPERAND is raised.
+
+
+
+
