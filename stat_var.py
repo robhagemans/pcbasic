@@ -78,14 +78,16 @@ def exec_clear(ins):
     # integer expression allowed but ignored
     intexp = expressions.parse_expression(ins, allow_empty=True)
     if intexp != ('','')  and intexp != None:
-        vartypes.pass_int_keep(intexp)
+        expr = vartypes.pass_int_unpack(intexp)
+        if expr < 0:
+            raise error.RunError(5)
     if util.skip_white_read_if(ins, ','):
         # NOT IMPLEMENTED
         # expression1 is a memory location that, if specified, sets the maximum number of bytes available for use by GW-BASIC        
         exp1 = expressions.parse_expression(ins, allow_empty=True)
         if exp1 != ('',''):
             exp1 = vartypes.pass_int_unpack(exp1)
-        if exp1==0:
+        if exp1 == 0:
             #  0 leads to illegal fn call
             raise error.RunError(5)
         if util.skip_white_read_if(ins, ','):
@@ -93,7 +95,12 @@ def exec_clear(ins):
             # expression2 sets aside stack space for GW-BASIC. The default is the previous stack space size. 
             # When GW-BASIC is first executed, the stack space is set to 512 bytes, or one-eighth of the available memory, 
             # whichever is smaller.
-            vartypes.pass_int_keep(expressions.parse_expression(ins))
+            exp2 = expressions.parse_expression(ins, allow_empty=True)
+            if exp2 == ('', ''):
+                raise error.RunError(2)
+            if vartypes.pass_int_unpack(exp2) == 0:
+                #  0 leads to illegal fn call
+                raise error.RunError(5)
     util.require(ins, util.end_statement)
 
 def exec_common(ins):    

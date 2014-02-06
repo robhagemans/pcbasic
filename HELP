@@ -392,7 +392,7 @@ NOTES:
    'stack_size' specifies the amount of memory available to the stack and to
    string space. These are not implemented.
 -  In GW-BASIC, If 'mem_limit' or 'expr' are too low, OUT OF MEMORY is raised.
--  The meaning of 'expr' is unknown.
+-  The purpose of 'expr' is unknown.
 ERRORS:
 -  If 'mem_limit' or 'stack_size' equal 0, ILLEGAL FUNCTION CALL is raised.
 -  If 'expr' is negative, ILLEGAL FUNCTION CALL is raised.
