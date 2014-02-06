@@ -38,16 +38,20 @@ def exec_cls(ins):
             val=0
     else:
         val = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    if util.skip_white_read_if(ins, (',',)):
+        # comma is ignored, but a number after means syntax error
+        util.require(ins, util.end_statement)    
+    else:
+        util.require(ins, util.end_statement, err=5)    
+    # cls is only executed if no errors have occurred    
     if val==0:
         console.clear()  
-    elif val==1:
-        if graphics.is_graphics_mode():
-            graphics.clear_graphics_view()
-        else:
-            console.clear_view()                
+    elif val==1 and graphics.is_graphics_mode():
+        graphics.clear_graphics_view()
     elif val==2:
-        console.clear_view()                
-    util.require(ins, util.end_statement)    
+        console.clear_view()  
+    else:
+        raise error.RunError(5)                  
     
     
 def exec_color(ins):
@@ -409,7 +413,7 @@ def exec_view_print(ins):
     d = util.skip_white(ins)
     if d in util.end_statement:
         console.set_view()
-    else:
+    else:  
         start = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         util.require_read(ins, ('\xCC',)) # TO
         stop = vartypes.pass_int_unpack(expressions.parse_expression(ins))
@@ -642,6 +646,7 @@ def exec_screen(ins):
        raise error.RunError(5)
     console.set_palette()
     if mode != console.screen_mode:
+        console.set_view()
         console.set_mode(mode)
     # set active page & visible page, counting from 0. if higher than max pages, illegal fn call.            
     if not console.set_apage(console.apagenum):
@@ -654,6 +659,7 @@ def exec_screen(ins):
         console.set_colorswitch( params[1]!=0 )
         # clear all screen pages
         console.clear_all()
+        console.set_view()
                 
     
 def exec_pcopy(ins):
