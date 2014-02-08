@@ -157,7 +157,7 @@ def exec_time(ins):
     while pos<len(timestr):
         if listpos>2:
             break
-        c = timestr[pos]
+        c = chr(timestr[pos])
         if c in (':', '.'):
             timelist[listpos] = int(word)
             listpos += 1
@@ -193,7 +193,7 @@ def exec_date(ins):
     while pos<len(datestr):
         if listpos>2:
             break
-        c = datestr[pos]
+        c = chr(datestr[pos])
         if c in ('-', '/'):
             datelist[listpos] = int(word)
             listpos += 1
@@ -206,17 +206,20 @@ def exec_date(ins):
         else:
             word += c
         pos += 1
-    if word !='':
+    if word != '':
         datelist[listpos] = int(word)     
     if (datelist[0] > 12 or datelist[1] > 31 or
             (datelist[2] > 77 and datelist[2] < 80) or 
             (datelist[2] > 99 and datelist[2] < 1980 or datelist[2] > 2099)):
         raise error.RunError(5)
-    if datelist[2] < 77:
+    if datelist[2] <= 77:
         datelist[2] = 2000 + datelist[2]
-    if datelist[2] < 100 and datelist[2] > 79:
+    elif datelist[2] < 100 and datelist[2] > 79:
         datelist[2] = 1900 + datelist[2]
-    newtime = datetime.datetime(datelist[2], datelist[0], datelist[1], now.hour, now.minute, now.second, now.microsecond)
+    try:
+        newtime = datetime.datetime(datelist[2], datelist[0], datelist[1], now.hour, now.minute, now.second, now.microsecond)
+    except ValueError:
+        raise error.RunError(5)
     oslayer.time_offset += newtime - now    
         
 
