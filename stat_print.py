@@ -58,10 +58,11 @@ def exec_color(ins):
     [fore, back, bord] = expressions.parse_int_list(ins, 3, 5)          
     if bord == None:
         bord = 0 
-    if console.get_mode()==2: 
+    mode = console.get_mode()
+    if mode == 2: 
         # screen 2: illegal fn call
         raise error.RunError(5)
-    elif console.get_mode()==1:
+    elif mode == 1:
         # screen 1
         # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
         # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
@@ -77,31 +78,44 @@ def exec_color(ins):
         elif pal%2 == 0:
             console.set_palette([0,2,4,6])
         console.set_palette_entry(0,back&0xf)
-    elif not graphics.is_graphics_mode():
-        #screen 0
+    elif mode == 0:
+        # screen 0
         fore_old, back_old = console.get_attr()
         if fore==None:
             fore=fore_old
         if back==None: 
             back=back_old
-        if not (console.colours_ok(fore) and console.colours_ok(back) and console.colours_ok(bord)):
+        if not (console.colours_ok(fore) and back>=0 and back<16 and bord>=0 and bord<16):
             raise error.RunError(5)
         console.set_attr(fore, back)
         # border not implemented
-    else:
+    elif mode == 9:
+        # screen 9
         fore_old, dummy = console.get_attr()
         back_old = console.get_palette_entry(0)
         if fore==None:
             fore=fore_old
         if back==None: 
             back=back_old
-        #if fore >console.num_colours or fore<=0 or back<0 or back>console.num_colours or bord<0 or bord>255:
-        if fore==0 or not console.colours_ok(fore) or not console.colours_ok(back) or not console.colours_ok(fore) :
+        if not (console.colours_ok(fore) and back>=0 and back<console.num_palette):
             raise error.RunError(5)
-        # screen 7-10:
         # in graphics mode, bg colour is always 0 and controlled by palette
         console.set_attr(fore, 0)
-        console.set_palette_entry(0,back)
+        console.set_palette_entry(0, back)
+    else:
+        # screen 7,8
+        fore_old, dummy = console.get_attr()
+        back_old = console.get_palette_entry(0)
+        if fore==None:
+            fore=fore_old
+        if back==None: 
+            back=back_old
+        if fore==0 or not console.colours_ok(fore) or not console.colours_ok(back):
+            raise error.RunError(5)
+        # in graphics mode, bg colour is always 0 and controlled by palette
+        console.set_attr(fore, 0)
+        # in screen 7 and 8, only low intensity palette is used.
+        console.set_palette_entry(0, back%8)    
     
     
 def exec_palette(ins):
