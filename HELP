@@ -222,6 +222,17 @@ Boolean:
     NOT, AND, OR, XOR, EQV, IMP
 
 
+INTERNAL REPRESENTATION OF NUMBERS AND THE MICROSOFT BINARY FORMAT
+------------------------------------------------------------------
+
+
+ATTRIBUTES, PALETTES AND COLOURS
+--------------------------------
+
+
+
+
+
 ABS(x) function
 ---------------
 Returns the absolute value of 'x'. 'x' is an expression with a numeric value.
@@ -233,17 +244,19 @@ ASC(x) function
 Returns the ASCII code for the first character of x. x is an expression with 
 a string value.
 ERRORS:
--  If 'x' has a numeric value, ASC raises TYPE MISMATCH.
--  If 'x' equals "", ASC raises ILLEGAL FUNCTION CALL.
+-   If 'x' has a numeric value, ASC raises TYPE MISMATCH.
+-   If 'x' equals "", ASC raises ILLEGAL FUNCTION CALL.
 
 
 ATN(x) function
 ---------------
-Returns the inverse tangent of x. x is an expression with a numeric value in 
-radians. Unless BASIC is run with the --double option, ATN(x) returns a 
-single-precision value.
+Returns the inverse tangent of x. 'x' is a numeric-valued expression that gives 
+the angle in radians. Unless BASIC is run with the --double option, ATN(x) 
+returns a single-precision value.
+NOTES:
+-   ATN(1) differs in the least significant digit from GW-BASIC.
 ERRORS:
--  If x has a string value, ABS raises TYPE MISMATCH.
+-   If 'x' has a string value, ATN raises TYPE MISMATCH.
 
 
 AUTO statement
@@ -515,4 +528,63 @@ ERRORS:
 -   If no program is loaded, a program has not been run, after a program line 
     has been modified and after CLEAR, CONT raises CAN'T CONTINUE.
 -   If the break occurred in a direct line, CONT raises CAN'T CONTINUE    
+
+
+COS(x) function
+---------------
+Returns the cosine of 'x'. 'x' is a numeric-valued expression that gives the 
+angle in radians. 
+Unless BASIC is run with the --double option, COS(x) returns a 
+single-precision value.
+NOTES:
+-   COS(x) usually differs from the value returned by GW-BASIC. For one-digit 
+    values, the difference is only in the least significant figure, but it
+    increases with the size of the angle.
+ERRORS:
+-   If 'x' has a string value, COS raises TYPE MISMATCH.
+     
+
+CSNG(x) function
+----------------
+Converts the numeric-valued expression 'x' to a single-precision value.
+ERRORS:
+-   If 'x' has a string value, CSNG raises TYPE MISMATCH.
+
+
+CSRLIN function
+---------------
+Returns the screen row of the cursor on the active page. 
+CSRLIN is between 1 and 25, inclusive. Note that CSRLIN has no brackets.
+
+
+CVI(x) function
+---------------
+Converts a two-byte string to a signed integer.
+'x' should be a string-valued expression that represents an integer using
+little-endian two's complement encoding. Only the first two bytes are used.
+ERRORS:
+-   If 'x' has a number value, TYPE MISMATCH is raised.
+
+
+CVS(x) function
+---------------
+Converts a four-byte string to a single-precision floating-point number.
+'x' should be a string-valued expression that represents a single-precision
+number in Microsoft Binary Format.. Only the first four bytes are used.
+ERRORS:
+-   If 'x' has a number value, TYPE MISMATCH is raised.
+
+
+CVD(x) function
+---------------
+Converts an eight-byte string (internal representation) to a single.
+'x' should be a string-valued expression. Only the first eight bytes are used.
+ERRORS:
+-   If 'x' has a number value, TYPE MISMATCH is raised.
+ 
+
+
+
+
+
      
