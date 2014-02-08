@@ -55,6 +55,8 @@ def exec_error(ins):
     
 
 def exec_end(ins):
+    util.require(ins, util.end_statement)
+    program.stop = [program.bytecode.tell(), program.linenum]
     program.bytecode.seek(0)
     program.unset_runmode()
     fileio.close_all()
@@ -267,45 +269,34 @@ def exec_gosub(ins):
  
 def exec_if(ins):
     util.skip_white(ins) 
-    
     # GW-BASIC doesn't overflow in IFs, so uses double rather than bool?
     expr = expressions.parse_expression(ins)
     val = vartypes.pass_single_keep(expr)
-    
-    d = util.skip_white_read(ins)
-    if d not in ('\xCD', '\x89'): # THEN, GOTO
+    if util.skip_white_read(ins) not in ('\xCD', '\x89'): # THEN, GOTO
         raise error.RunError(2)
-    
     # if TRUE, continue after THEN
     if not fp.unpack(val).is_zero(): #val != 0:
         # line number or statement is implied GOTO
-        d = util.skip_white(ins)
-        
-        if d in ('\x0d', '\x0e'):  
+        if util.skip_white(ins) in ('\x0d', '\x0e'):  
             # line number (jump)
             exec_goto(ins)    
-        
         # continue parsing as normal, :ELSE will be ignored anyway
         return
-            
     else:
         # find ELSE block or end of line
         # ELSEs are nesting on the line
         nesting_counter = 0
-        
         while True:    
             d = util.skip_to_read(ins, util.end_statement + ('\xCD',))
-             
             if d == '\x8B': # IF
                 # another IF statement means another nesting step
                 # note it's less convenient to count THENs because they could be THEN, GOTO or THEN GOTO.
                 nesting_counter += 1            
-            elif d==':':
+            elif d == ':':
                 if util.peek(ins) == '\xa1': # :ELSE is ELSE
-                    if  nesting_counter==0:
+                    if  nesting_counter == 0:
                         # drop ELSE token and continue from here
                         ins.read(1)
-                        
                         # line number?
                         if util.skip_white(ins) in ('\x0d', '\x0e'):
                             exec_goto(ins)
@@ -313,7 +304,6 @@ def exec_if(ins):
                         break
                     else:
                         nesting_counter -= 1
-                
             elif d in util.end_line:
                 if d!='':
                     ins.seek(-1,1)
@@ -362,19 +352,16 @@ def exec_on_jump(ins):
             pass    
         else:  
             raise error.RunError(2)
-    
     if jumps == []:
         raise error.RunError(2)
     if onvar < 0:
         raise error.RunError(5)
     elif onvar > 0 and onvar <= len(jumps):
         ins.seek(jumps[onvar-1])        
-        
         if command == '\x89': # GOTO
             exec_goto(ins)
         elif command == '\x8d': # GOSUB
             exec_gosub(ins)
-        
     util.skip_to(ins, util.end_statement)    
 
 
@@ -435,7 +422,6 @@ def exec_on_com(ins):
     keynum = vartypes.pass_int_unpack(keynum)
     if keynum<1 or keynum>2:    
         raise error.RunError(5)
-    
     events.com_event[keynum-1] = jumpnum
 
 
@@ -495,31 +481,26 @@ def exec_resume(ins):
     if error.error_resume == None: # resume without error
         error.on_error=0
         raise error.RunError(20)
-    
     start_statement, codestream, runmode = error.error_resume  
-       
-    c= util.skip_white(ins)
-    jumpnum=0
+    c = util.skip_white(ins)
+    jumpnum = 0
     if c == '\x83': # NEXT
         # RESUME NEXT
         codestream.seek(start_statement)        
         util.skip_to(codestream, util.end_statement, break_on_first_char=False)
         program.set_runmode(runmode)
         # what happens if something is on the line after NEXT?
-        
     elif c not in util.end_statement:
         jumpnum = util.parse_jumpnum(ins)
         if jumpnum != 0:
             # RESUME n
             program.jump(jumpnum)
             program.set_runmode()
-            
     if c != '\x83' and jumpnum==0: 
         # RESUME or RESUME 0 
         codestream.seek(start_statement)        
         program.set_runmode(runmode)
-    
-    error.errn=0
+    error.errn = 0
     error.error_handle_mode = False
     error.error_resume= None
 
@@ -550,6 +531,6 @@ def exec_return(ins):
 
 
 def exec_stop(ins):
-    util.require_read(ins, util.end_statement)
+    util.require(ins, util.end_statement)
     raise error.Break()
 

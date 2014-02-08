@@ -154,7 +154,7 @@ def handle_error(e):
     if isinstance(e, error.Break):
         console.write_error_message(e.msg, errline)
         if program.runmode():
-            program.stop = [program.bytecode.tell()-1, program.linenum]
+            program.stop = [program.bytecode.tell(), program.linenum]
             program.unset_runmode()
         return False
     # set ERR and ERL
