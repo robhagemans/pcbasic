@@ -77,33 +77,18 @@ def str_to_value_keep(strval):
 # Detokenise functions
 
 def detokenise(ins, outs, from_line=-1, to_line=-1, pos=-1):
-    textpos=0
+    textpos = 0
     while True:
         # TODO - an attempt to reproduce the cursor positioning after a syntax error
-        #if pos <= ins.tell():
-        # tell doesn't work on stdout
-        #    textpos = outs.tell()
+        # 65529 is max line number for GW-BASIC 3.23. 
+        # however, 65530-65535 are executed if present in tokenised form.
+        # in GW-BASIC, 65530 appears in LIST, 65531 and above are hidden
         current_line = util.parse_line_number(ins)
         if current_line < 0:
             # parse_line_number has returned -1 and left us here:  .. 00 | _00_ 00 1A
             # stream ends or end of file sequence \x00\x00\x1A
             # output warning if not \x00\x00\x1A 
             eof = ins.read(3)
-            if eof != '\x00\x00\x1a':
-                info =''
-                if eof != '':
-                    info = '&H' + hex(ord(eof[2:]))
-                error.warning(2, -1, info)
-            # gather everything past the end of file as a hex string to be sent to stderr
-            eof_str = ins.read()    
-            if eof_str != '':    
-                error.warning(3, -1, eof_str.encode('hex'))
-            break
-        # 65529 is max line number for GW-BASIC 3.23. 
-        # however, 65530-65535 are executed if present in tokenised form.
-        # in GW-BASIC, 65530 appears in LIST, 65531 and above are hidden
-        if current_line > 65530:
-            error.warning(5, current_line, '')
         # always write one extra whitespace character after line number
         output = vartypes.int_to_str(current_line) + ' '         
         # detokenise tokens until end of line

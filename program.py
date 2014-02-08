@@ -337,15 +337,13 @@ def load(g):
         bytecode.write('\x00')
         protected = False
         bytecode.write(g.read())
-    elif c=='\xFE':
+    elif c == '\xFE':
         # protected file
         bytecode.write('\x00')
         protected = True                
         protect.unprotect(g, bytecode)
-    elif c=='\xFC':
+    #elif c=='\xFC':
         # QuickBASIC file
-        error.warning(6, linenum, '')
-        return
     elif c=='':
         # empty file
         pass
