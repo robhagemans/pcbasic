@@ -71,8 +71,11 @@ def main_loop():
             line = input_loop()
         if line == '':
             continue    
-        # store the direct line
-        get_command_line(line)
+        try:
+            # store the direct line
+            get_command_line(line)
+        except error.Error as e:
+            handle_error(e)
         # check for empty lines or lines that start with a line number & deal with them
         if parse_start_direct(program.direct_line):
             # execution loop, checks events
