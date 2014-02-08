@@ -190,6 +190,8 @@ def exec_date(ins):
     pos = 0
     listpos = 0
     word = ''
+    if len(datestr) < 8:
+        raise error.RunError(5)
     while pos<len(datestr):
         if listpos>2:
             break
