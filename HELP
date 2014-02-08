@@ -470,7 +470,7 @@ In SCREENs 7,8,9:
     change colour. 
     In SCREEN 7 and 8, the 'palette_0' colour is taken from the first 8 of 
     the 16-colour EGA set. 'palette_0' is taken MOD 8.
-    IN SCREEN 9, the aplette colour value is taken from the 64-colour VGA set.
+    IN SCREEN 9, the palette colour value is taken from the 64-colour VGA set.
 NOTES:
 -   In GW-BASIC, the 'border' value in SCREEN 0 sets the attribute of the 
     screen border. This is not implemented in PC-BASIC 3.23.     
@@ -486,3 +486,33 @@ ERRORS:
     in [0,15], ILLEGAL FUNCTION CALL is raised.
     
  
+COM(port) statement
+COM(port) [ ON | OFF | STOP ]
+----------------
+When using ON, enables ON COM(x) event trapping of the emulated serial port. 
+When using OFF, disables trapping.
+When using STOP, halts trapping until COM(x) ON is used. Events that occur 
+while trapping is halted will trigger immediately when trapping is re-enabled.
+'port' is a numeric expression with a value of 1 or 2. This specified which
+serial port (COM1: or COM2:) is trapped.
+
+
+COMMON statement
+COMMON [ [var_0] [, [var_1] [, [...] ] ] ]
+----------------
+Specifies variables to be passed as common variables to the program called 
+with CHAIN. 'var_0', 'var_1', ... are names of variables or arrays. Array names
+must be followed by round or square brackets. Brackets may also be mixed (] [).
+The statement may end with one or more commas. 
+
+
+CONT statement
+CONT [ anything ]
+--------------
+Resumes execution of a program that has been halted by STOP, END, <CTRL+C>, or 
+ <CTRL+BREAK>.
+ERRORS:
+-   If no program is loaded, a program has not been run, after a program line 
+    has been modified and after CLEAR, CONT raises CAN'T CONTINUE.
+-   If the break occurred in a direct line, CONT raises CAN'T CONTINUE    
+     
