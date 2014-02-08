@@ -498,15 +498,15 @@ def exec_swap(ins):
                              
 def exec_def_fn(ins):
     fnname = util.get_var_name(ins)
-    # read variables
-    util.require_read(ins, ('(',))
+    # read parameters
     fnvars = []
-    while True:
-        fnvars.append(util.get_var_name(ins))
-        if util.skip_white(ins) in util.end_statement+(')',):
-            break    
-        util.require_read(ins, (',',))
-    util.require_read(ins, (')',))
+    if util.skip_white_read_if(ins, ('(',)):
+        while True:
+            fnvars.append(util.get_var_name(ins))
+            if util.skip_white(ins) in util.end_statement+(')',):
+                break    
+            util.require_read(ins, (',',))
+        util.require_read(ins, (')',))
     # read code
     fncode = ''
     util.require_read(ins, ('\xE7',)) #=

@@ -714,13 +714,14 @@ def value_fn(ins):
         if name in var.variables:
             varsave[name] = var.variables[name]
     # read variables
-    util.require_read(ins, ('(',))
-    exprs = parse_expr_list(ins, len(varnames), err=2)
-    if None in exprs:
-        raise error.RunError(2)
-    for i in range(len(varnames)):
-        var.set_var(varnames[i], exprs[i])
-    util.require_read(ins, (')',))
+    if util.skip_white_read_if(ins, ('(',)):
+        exprs = parse_expr_list(ins, len(varnames), err=2)
+        if None in exprs:
+            raise error.RunError(2)
+        for i in range(len(varnames)):
+            var.set_var(varnames[i], exprs[i])
+        util.require_read(ins, (')',))
+    # execute the code
     fns = StringIO(fncode)
     fns.seek(0)
     value = parse_expression(fns)    
