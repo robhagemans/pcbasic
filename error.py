@@ -19,8 +19,6 @@ erl = 65535
 on_error = None
 error_handle_mode = False
 error_resume = None
-# allow non-GW warnings
-warnings_on = False
 
             
 class Error (Exception):
@@ -70,19 +68,6 @@ def get_message(errnum):
         msg = errors[errnum]
     return msg    
         
-# non-fatal warning to stderr
-def warning(warnum, linenum, info):           
-    # only output warnings if asked
-    if not warnings_on:
-        return
-    sys.stderr.write(warnings[warnum])
-    if linenum > -1:
-        sys.stderr.write(' in ' +str(linenum))
-    if info != '':
-        sys.stderr.write(': '+info)
-    sys.stderr.write('\n')
-
-
 # these are the errors documented for GW-BASIC
 
 default_msg = 'Unprintable error'
@@ -146,15 +131,4 @@ errors = {
     75: 'Path/File access error',
     76: 'Path not found'
 }
-
-# these are not GW-BASIC warnings    
-warnings = {
-    1: 'Unexpected token',
-    2: 'No EOF (&H1A) at end of file',    
-    3: 'Unexpected string past end of file',
-    4: 'Trucated line at end of file',
-    5: 'Line number exceeds 65530',
-    6: "Can't read QuickBASIC files"
-}
-
 
