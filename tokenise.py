@@ -89,6 +89,7 @@ def detokenise(ins, outs, from_line=-1, to_line=-1, pos=-1):
             # stream ends or end of file sequence \x00\x00\x1A
             # output warning if not \x00\x00\x1A 
             eof = ins.read(3)
+            break
         # always write one extra whitespace character after line number
         output = vartypes.int_to_str(current_line) + ' '         
         # detokenise tokens until end of line

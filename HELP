@@ -583,6 +583,15 @@ ERRORS:
 -   If 'x' has a number value, TYPE MISMATCH is raised.
  
 
+DATA statement
+DATA [ [const_0] [, [const_1] [, ... ]
+--------------
+Specifies the data that can be read by the READ statement. 'const_0', ...
+are string and number literals or may be empty. String literals can be given
+with or without quotation marks. If quotation marks are omitted, leading and
+trailing whitespace is ignored and commas or colons will terminate the data
+statement.
+
 
 
 
