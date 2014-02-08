@@ -79,7 +79,9 @@ def exec_list(ins, out=None):
     if program.protected:
         # don't list protected files
         raise error.RunError(5)
-    [from_line, to_line] = util.parse_line_range(ins)
+    from_line, to_line = util.parse_line_range(ins)
+    if to_line == -1:
+        to_line = 65530
     util.require(ins, util.end_statement)
     if out == None:
         out = console

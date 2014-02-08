@@ -365,40 +365,29 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
 
 
 def tokenise_line_number(ins, outs, onfile):
-    linenum = ''
-    while True:
-        d = ins.read(1)
-        if d not in ascii_digits:
-            if d!='':
-                ins.seek(-1,1)
-            break
-        linenum += d
-    # no line number, if we're reading a file this is a Direct Statement In File error
-    if (linenum=='') and onfile:
-        raise error.RunError(66, -1)    
-    if linenum != '':
-        if int(linenum) not in range (0, 65530):
-            # note: anything >= 65530 is illegal in GW-BASIC
-            # in loading an ASCII file, GWBASIC would interpret these as '6553 1' etcetera, generating a syntax error on execution.
-            error.warning(5, int(linenum), '')
-            
-            # keep 6553 as line number and push back the last number:
-            linenum = linenum[:4]
-            ins.seek(-1,1)
+    linenum = tokenise_uint(ins)
+    if linenum != '':    
         # terminates last line and fills up the first char in the buffer (that would be the magic number when written to file)
         # in direct mode, we'll know to expect a line number if the output starts with a  00
         outs.write('\x00')        
         # write line number. first two bytes are for internal use & can be anything nonzero; we use this.
-        outs.write('\xC0\xDE' + str(vartypes.value_to_uint(int(linenum))))
+        outs.write('\xC0\xDE' + linenum)
         # ignore single whitespace after line number, if any, unless line number is zero (as does GW)
-        if util.peek(ins)==' ' and int(linenum) !=0 :
+        if util.peek(ins) == ' ' and linenum != '\x00\x00' :
             ins.read(1)
     else:
+        if onfile:
+        # no line number, if we're reading a file this is a Direct Statement In File error
+            raise error.RunError(66, -1)    
         # direct line; internally, we need an anchor for the program pointer, so we encode a ':'
         outs.write(':')
- 
             
 def tokenise_jump_number(ins, outs):
+    word = tokenise_uint(ins)
+    if word != '':
+        outs.write('\x0e' + word)
+    
+def tokenise_uint(ins):
     word = ''
     while True:
         c = ins.read(1)
@@ -410,8 +399,15 @@ def tokenise_jump_number(ins, outs):
             word += c   
     # line number (jump)
     if word != '':
-        outs.write('\x0e' + str(vartypes.str_to_uint(word)))
-
+        if int(word) >= 65530:
+            # note: anything >= 65530 is illegal in GW-BASIC
+            # in loading an ASCII file, GWBASIC would interpret these as '6553 1' etcetera, generating a syntax error on execution.
+            # keep 6553 as line number and push back the last number:
+            ins.seek(4-len(word), 1)
+            word = word[:4]
+        return str(vartypes.str_to_uint(word))
+    else:
+        return ''    
    
 # string to token             
 def tokenise_number(ins, outs):
