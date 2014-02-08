@@ -113,7 +113,7 @@ def main():
             console.write(("%d Bytes free" % var.total_mem) + util.endl)
         run.init_run(args.run, args.load, args.quit, args.cmd, args.infile)
         run.main_loop()    
-     finally:
+    finally:
         # fix the terminal
         console.close()
 
