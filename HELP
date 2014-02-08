@@ -591,8 +591,36 @@ are string and number literals or may be empty. String literals can be given
 with or without quotation marks. If quotation marks are omitted, leading and
 trailing whitespace is ignored and commas or colons will terminate the data
 statement.
+ERRORS:
+-   If the type of the literal does not match that of the corresponding READ 
+    statement, a SYNTAX ERROR occurs on the DATA statement.
+    
+
+DATE$ function
+--------------
+Returns the system date as a string in the format "mm-dd-yyyy".
+Note that DATE$ has no brackets.
 
 
+DATE$ statement
+DATE$=date
+---------------
+Sets the system date. 'date' is a string-valued expression that represents a 
+date in one of the formats: "mm-dd-yyyy", "mm/dd/yyyy", "mm-dd-yy", "mm/dd/yy".
+Of these, mm must be in [01, 12], dd must be in [01, 31]. If specified as yyyy,
+the year must be in [1980, 2099]. If specified as yy, the year must be in the
+range [00, 77], in which case it is interpreted as 2000--2077, or in the range
+ [80, 99], which is interpreted as 1980-1999.
+NOTES:
+-   The system date is not actually changed; rather, PC-BASIC remembers the 
+    offset from the true system date. This avoids requiring user permission
+    to change the system time
+-   GW-BASIC appears to accept invalid dates such as "02-31-2000". PC-BASIC
+    raises ILLEGAL FUNCTION CALL for these.
+ERRORS:
+-   If the value of 'date' is not in the format specified above, DATE$ raises
+    ILLEGAL FUNCTION CALL.
+-   If 'date' yields a numeric value, TYPE MISMATCH is raised.
 
 
 
