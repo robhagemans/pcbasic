@@ -87,8 +87,6 @@ def detokenise(ins, outs, from_line=-1, to_line=-1, pos=-1):
         if current_line < 0:
             # parse_line_number has returned -1 and left us here:  .. 00 | _00_ 00 1A
             # stream ends or end of file sequence \x00\x00\x1A
-            # output warning if not \x00\x00\x1A 
-            eof = ins.read(3)
             break
         # always write one extra whitespace character after line number
         output = vartypes.int_to_str(current_line) + ' '         
@@ -179,17 +177,19 @@ def ascii_read_to(ins, findrange):
 def detokenise_keyword(bytes):
     output = bytearray('')
     s = bytes.read(1)
-    if not token_to_keyword.has_key(s):
+    try:
+        keyword = token_to_keyword[s]
+    except KeyError:
         s += util.peek(bytes)
-        if not token_to_keyword.has_key(s):
-            return s[0], False
-        else:
+        try:
+            keyword = token_to_keyword[s]
             bytes.read(1)
+        except KeyError:
+            return s[0], False
     # when we're here, s is an actualy keyword token.
     # number followed by token is separated by a space 
-    if (len(output)>0) and (output[-1] in ascii_digits) and (s not in tokens_operator): #+tokens_with_bracket):
-        output+=' '
-    keyword = token_to_keyword[s]
+    if (len(output)>0) and (output[-1] in ascii_digits) and (s not in tokens_operator):
+        output += ' '
     output += keyword
     comment = False
     if keyword == "'":
@@ -219,8 +219,9 @@ def detokenise_keyword(bytes):
             output = output[:-5] + "ELSE" 
     # token followed by number is also separated by a space, except operator tokens and SPC(, TAB(
     nxt = util.peek(bytes)
-    if not comment and nxt.upper() not in (tokens_operator+['\xD9','"',',',' ',':','(',')']) \
-                and s not in (tokens_operator+tokens_with_bracket+['\xD1']): # excluding TAB( SPC( and FN. \xD9 is ', \xD1 is FN.
+    if (not comment and nxt.upper() not in (tokens_operator + ['\xD9', '"', ',', ' ', ':', '(', ')']) 
+                and s not in (tokens_operator + tokens_with_bracket + ['\xD1'])): 
+        # excluding TAB( SPC( and FN. \xD9 is ', \xD1 is FN.
         output += ' '
     return output, comment
     
@@ -305,12 +306,12 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
                 outs.write(keyword_to_token[c])    
                 expect_number = True
             # special case ' -> :REM'
-            elif c=="'":
+            elif c == "'":
                 ins.read(1)
                 verbatim = True
                 outs.write(':\x8F\xD9')
             # special case ? -> PRINT 
-            elif (c=='?'):
+            elif c == '?':
                 ins.read(1)
                 outs.write(keyword_to_token['PRINT'])
                 expect_number = True
@@ -329,7 +330,7 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
                 expect_number = (word in keyword_to_token) or word=='AS'
                 if word in ('SPC(', 'TAB('):
                     spc_or_tab = True
-            elif c==',' or c=='#':
+            elif c == ',' or c == '#':
                 ins.read(1)
                 expect_number = True
                 outs.write(c)
@@ -338,7 +339,7 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
                 number_is_line = False
                 expect_number = True
                 outs.write(c)
-            elif c== ')' and spc_or_tab:
+            elif c == ')' and spc_or_tab:
                 ins.read(1)
                 number_is_line = False
                 expect_number = True
