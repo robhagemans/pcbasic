@@ -671,6 +671,34 @@ are letters of the alphabet separated by commas or ranges specified with a
 dash: for example, DEFSTR A,B,C-Z.
 
 
+DEF SEG statement
+DEF SEG [=address]
+-----------------
+Does nothing. 'address' is a numeric-valued expression in [-32768, 65535].
+NOTES:
+-   In GW-BASIC, sets the segment address to be used by BLOAD, BSAVE, CALL, 
+    PEEK, POKE, or USR. This is not implemented in PC-BASIC.
+-   If 'address' is negative, it is interpreted as its two's complement.
+-   If 'address' is not specified, the segment is set to the GW-BASIC data
+    segment.
+ERRORS:
+-   If 'address' is not in [-32768, 65535], OVERFLOW is raised.
+-   If 'address' has a string value, TYPE MISMATCH is raised.
 
 
+DEF USR statement
+DEF USR[n] = address
+-----------------
+Does nothing. 'n' is a digit between 0 and 9 inclusive. 'address' is a numeric-
+valued expression in [-32768, 65535].
+NOTES:
+-   In GW-BASIC, sets the starting address of an assembly-language function. 
+    This is not implemented in PC-BASIC.
+-   If 'address' is negative, it is interpreted as its two's complement.
+ERRORS:
+-   If 'address' is not in [-32768, 65535], OVERFLOW is raised.
+-   If 'address' has a string value, TYPE MISMATCH is raised.
+
+
+ 
 
