@@ -194,7 +194,7 @@ Arrays of any type can be generated. Arrays are indexed with round or square
 brackets; even mixing brackets is allowed. The following work: A[0] A(0) 
 A(0] A[0). Multidimensional arrays are specified with commas: A(0,0) etc.
 By default, arrays are counted from 0. This can be changed to 1 using 
-OPTION BASE 1. Arrays can be allocated using DIM. If all indices of the array 
+ OPTION BASE 1. Arrays can be allocated using DIM. If all indices of the array
 are 10 or less, arrays can be used without using the DIM command. The first 
 referencing of the array (read or write) will automatically dimension it with 
 a maximum index of 10 and the same number of indices as in the first 
@@ -397,7 +397,6 @@ ERRORS:
 -  If 'mem_limit' or 'stack_size' equal 0, ILLEGAL FUNCTION CALL is raised.
 -  If 'expr' is negative, ILLEGAL FUNCTION CALL is raised.
 -  If 'expr','mem_limit','stack_size' are not in [-32768, 32767], OVERFLOW.
-  
 
 
 CLOSE statement
@@ -411,7 +410,6 @@ ERRORS:
 -  If 'file_1' etc. is string-valued, TYPE MISMATCH is raised.
 -  If an error occurs, the files before the erratic value are closed.
 -  If the statement ends in a comma, MISSING OPERAND is raised.
-
 
 
 CLS statement
@@ -434,4 +432,57 @@ ERRORS:
 -  If an error occurs, the screen is not cleared.
 
 
-
+COLOR statement
+COLOR [foreground] [, [background] [, border] ]    (in SCREEN 0)
+COLOR [palette_0] [, palette]                      (in SCREEN 1)
+COLOR [foreground] [, palette_0]                   (in SCREEN 7,8,9)
+---------------
+Changes the current colour attributes and/or palette colours. The syntax and
+working of this command are different in different SCREEN modes.
+In SCREEN 0 (text mode):
+    'foreground' is a numeric expression with a value between 0 and 31 (incl.)
+    This specifies the new foreground attribute. Attributes 16--31 incl. are 
+    blinking versions of attributes 0--15 incl.
+    'background' is a numeric expression with a value between 0 and 15 (incl.)
+    This specifies the new background attribute. It is taken MOD 16: Values 
+    8--15 incl. produce the same colour as 0--7 incl.
+    'border' is a numeric expression between 0 and 15 (incl.). This is 
+    optional and has no effect.
+    All new characters printed will take the newly set attributes. Existing
+    characters on the screen are not affected.
+In SCREEN 1 (CGA graphics):
+    'palette_0' is a numeric expression with a value between 0 and 255 (incl.)
+    This sets the palette colour associated with attribute 0; by default, the
+    background has this attribute. All pixels with this attribute will 
+    change colour. The palette colour value is taken from the VGA 64-colour
+    set. 'palette_0' is taken MOD 64.  
+    'palette' is a numeric expression with a value between 0 and 255 (incl.)
+    If 'palette' is odd, the standard CGA palette (cyan, magenta, grey) is set.
+    If 'palette' is even, the alternative palette (green, red, brown) is set.
+    All pixels with attributes 1,2,3 will change colour to the new palette.
+In SCREENs 7,8,9:
+    'foreground' is a numeric expression with a value between 1 and 15 (incl.)
+    This sets the new foreground attribute. This applies only to new characters
+    printed or pixels plotted.
+    'palette_0' is a numeric expression with a value between 0 and 15 (incl.)
+    This sets the palette colour associated with attribute 0; by default, the
+    background has this attribute. All pixels with this attribute will 
+    change colour. 
+    In SCREEN 7 and 8, the 'palette_0' colour is taken from the first 8 of 
+    the 16-colour EGA set. 'palette_0' is taken MOD 8.
+    IN SCREEN 9, the aplette colour value is taken from the 64-colour VGA set.
+NOTES:
+-   In GW-BASIC, the 'border' value in SCREEN 0 sets the attribute of the 
+    screen border. This is not implemented in PC-BASIC 3.23.     
+ERRORS:
+-   If any of the parameters has a string value, TYPE MISMATCH is raised.
+-   If any of the parameters is not in [-32768,32667], OVERFLOW is raised.
+-   In SCREEN 0, if 'foreground' is not in [0,31], 'background' is not in 
+    [0,15] or 'border' is not in [0,15], ILLEGAL FUNCTION CALL is raised.
+-   In SCREEN 1, if any of the parameters is not in [0,255], ILLEGAL FUNCTION
+    CALL is raised.
+-   In SCREEN 2, ILLEGAL FUNCTION CALL is raised.         
+-   In SCREENs 7,8,9, if 'foreground' is not in [1,15] or 'background' is not
+    in [0,15], ILLEGAL FUNCTION CALL is raised.
+    
+ 
