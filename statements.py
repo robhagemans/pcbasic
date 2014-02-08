@@ -364,16 +364,16 @@ def exec_motor(ins):
 # statements that require further qualification
 
 def exec_def(ins):
-    util.skip_white(ins)
-    if util.peek(ins,1)=='\xD1': #FN
+    c = util.skip_white(ins)
+    if c == '\xD1': #FN
         ins.read(1)
         exec_def_fn(ins)
-    elif util.peek(ins,3)=='SEG':
+    elif c == '\xD0': #USR
+        ins.read(1)
+        exec_def_usr(ins)
+    elif util.peek(ins,3) == 'SEG':
         ins.read(3)
         exec_def_seg(ins)
-    elif util.peek(ins,3)=='USR':
-        ins.read(3)
-        exec_def_usr(ins)
     else:        
         raise error.RunError(2)      
 
