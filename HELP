@@ -623,5 +623,54 @@ ERRORS:
 -   If 'date' yields a numeric value, TYPE MISMATCH is raised.
 
 
+DEF FN statement
+DEF FN name[( arg_0 [, arg_1 [, ...] )] = expression
+----------------
+Defines a function. 'name' must be a legal variable name. The function will 
+then be called FNname (or FN name). Spaces between FN and name are optional.
+'arg0', ... must be legal variable names; these are the parameters of the
+function. 'expression' must be a legal PC-BASIC expression that may use the
+parameters 'arg_0', 'arg_1', ... . On calling FNname(...), 'expression' is 
+evaluated with the supplied parameters substituted. The result of the 
+evaluation is then the value of FNname.
 
-     
+
+DEFINT statement
+DEFINT letters
+----------------
+Sets the default type for variables starting with 'letters' to integer (%). 
+This is the type that is assumed if no type character is specified. 'letters' 
+are letters of the alphabet separated by commas or ranges specified with a 
+dash: for example, DEFINT A,B,C-Z
+
+
+DEFDBL statement
+DEFDBL letters
+----------------
+Sets the default type for variables starting with 'letters' to double (#). 
+This is the type that is assumed if no type character is specified. 'letters' 
+are letters of the alphabet separated by commas or ranges specified with a 
+dash: for example, DEFDBL A,B,C-Z
+
+
+DEFSNG statement
+DEFSNG letters
+----------------
+Sets the default type for variables starting with 'letters' to single (!). 
+This is the type that is assumed if no type character is specified. 'letters' 
+are letters of the alphabet separated by commas or ranges specified with a 
+dash: for example, DEFSNG A,B,C-Z. DEFSNG A-Z is the default setting.
+
+
+DEFSTR statement
+DEFSTR letters
+----------------
+Sets the default type for variables starting with 'letters' to string ($). 
+This is the type that is assumed if no type character is specified. 'letters' 
+are letters of the alphabet separated by commas or ranges specified with a 
+dash: for example, DEFSTR A,B,C-Z.
+
+
+
+
+
