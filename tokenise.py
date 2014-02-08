@@ -217,11 +217,11 @@ def detokenise_keyword(bytes):
             output = output[:-5] + " ELSE" 
         else:
             output = output[:-5] + "ELSE" 
-    # token followed by number is also separated by a space, except operator tokens and SPC(, TAB(
+    # token followed by number is also separated by a space, except operator tokens and SPC(, TAB(, FN, USR
     nxt = util.peek(bytes)
     if (not comment and nxt.upper() not in (tokens_operator + ['\xD9', '"', ',', ' ', ':', '(', ')']) 
-                and s not in (tokens_operator + tokens_with_bracket + ['\xD1'])): 
-        # excluding TAB( SPC( and FN. \xD9 is ', \xD1 is FN.
+                and s not in (tokens_operator + tokens_with_bracket + ['\xD0', '\xD1'])): 
+        # excluding TAB( SPC( and FN. \xD9 is ', \xD1 is FN, \xD0 is USR.
         output += ' '
     return output, comment
     
@@ -516,8 +516,8 @@ def tokenise_word(ins, outs):
                 else:
                     pass
         if word in keyword_to_token:
-            # ignore if part of a longer name, except 'FN', 'SPC(', 'TAB('
-            if word not in ('FN', 'SPC(', 'TAB('):
+            # ignore if part of a longer name, except 'FN', 'SPC(', 'TAB(', 'USR'
+            if word not in ('FN', 'SPC(', 'TAB(', 'USR'):
                 nxt = util.peek(ins).upper()
                 if nxt in name_chars:  #ascii_uppercase or nxt in ascii_digits or nxt=='.':
                     continue

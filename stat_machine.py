@@ -27,16 +27,16 @@ def exec_poke(ins):
 # do-nothing DEF SEG    
 def exec_def_seg(ins):
     if util.skip_white_read_if(ins, '\xE7'): #=
-        vartypes.pass_int_keep(expressions.parse_expression(ins))
+        vartypes.pass_int_keep(expressions.parse_expression(ins), maxint=0xffff)
     util.require(ins, util.end_statement)
         
 
 # do-nothing DEF USR    
 def exec_def_usr(ins):
-    if util.peek(ins) in tokenise.ascii_digits:
+    if util.peek(ins) in ('\x11','\x12','\x13','\x14','\x15','\x16','\x17','\x18','\x19','\x1a'): # digits 0--9
         ins.read(1)
     util.require_read(ins, ('\xE7',))     
-    vartypes.pass_int_keep(expressions.parse_expression(ins))
+    vartypes.pass_int_keep(expressions.parse_expression(ins), maxint=0xffff)
     util.require(ins, util.end_statement)
 
 
