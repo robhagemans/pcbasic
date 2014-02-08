@@ -331,6 +331,7 @@ def parse_prompt(ins):
     return prompt, following
    
 def exec_input(ins):
+    startpos = program.current_statement
     util.skip_white(ins)
     finp = expressions.parse_file_number(ins)
     if finp!=None:
@@ -353,6 +354,10 @@ def exec_input(ins):
         prompt += '? '
     # get list of variables
     readvar = parse_var_list(ins)
+    # move the program pointer to the start of the statement
+    # to ensure correct behaviour for CONT
+    pos = ins.tell()
+    ins.seek(startpos)
     # read the input
     while True:
         console.write(prompt) 
@@ -378,6 +383,7 @@ def exec_input(ins):
             continue
         else:
             break
+    ins.seek(pos)        
     util.require(ins, util.end_statement)
 
 # set var from text value (e.g. READ, INPUT) 
