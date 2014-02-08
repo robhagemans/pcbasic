@@ -109,12 +109,12 @@ def detokenise(ins, outs, from_line=-1, to_line=-1, pos=-1):
         # detokenise tokens until end of line
         output += detokenise_line(ins)
         if (from_line==-1 or current_line>=from_line) and (to_line==-1 or current_line<=to_line):
-            outs.write(output + util.endl) 
+            outs.write(str(output + util.endl)) 
     return textpos
     
 
 def detokenise_line(bytes):
-    output = ''
+    output = bytearray('')
     litstring = False
     comment = False
     while True:
@@ -144,7 +144,8 @@ def detokenise_line(bytes):
             # try for single-byte token or two-byte token
             # if no match, first char is passed unchanged
             bytes.seek(-1,1)
-            output, comment = detokenise_keyword(bytes, output)
+            word, comment = detokenise_keyword(bytes)
+            output += word
     return output
 
 
@@ -189,7 +190,8 @@ def ascii_read_to(ins, findrange):
     
 
 # de tokenise one- or two-byte tokens
-def detokenise_keyword(bytes, output):
+def detokenise_keyword(bytes):
+    output = bytearray('')
     s = bytes.read(1)
     if not token_to_keyword.has_key(s):
         s += util.peek(bytes)
