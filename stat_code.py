@@ -31,10 +31,31 @@ import rnd
 import fileio
 
 
+def parse_line_range(ins):
+    from_line = -1
+    to_line = -1
+    if util.skip_white_read_if(ins, ('\x0E',)):   # line number starts
+        from_line = vartypes.uint_to_value(bytearray(ins.read(2)))
+    elif util.skip_white_read_if(ins, ('.',)):
+        # use current auto_linenum; if not specified before, this is zero.
+        from_line = automode.auto_last_stored    
+    if util.skip_white_read_if(ins, ('\xEA',)):   # -
+        if util.skip_white_read_if(ins, ('\x0E',)):
+            to_line = vartypes.uint_to_value(bytearray(ins.read(2)))
+        elif util.skip_white_read_if(ins, ('.',)):
+            # use current auto_linenum; if not specified before, this is zero.
+            to_line = automode.auto_last_stored    
+    else:
+        to_line = from_line
+    return (from_line, to_line)    
+
+
     
 def exec_delete(ins):
-    from_line, to_line = util.parse_line_range(ins)
+    from_line, to_line = parse_line_range(ins)
     util.require(ins, util.end_statement)
+    #if from_line == to_line and from_line not in program.line_numbers:
+    #    raise error.RunError(5)
     program.delete_lines(from_line, to_line)
     # throws back to direct mode
     program.unset_runmode()
@@ -79,7 +100,7 @@ def exec_list(ins, out=None):
     if program.protected:
         # don't list protected files
         raise error.RunError(5)
-    from_line, to_line = util.parse_line_range(ins)
+    from_line, to_line = parse_line_range(ins)
     if to_line == -1:
         to_line = 65530
     util.require(ins, util.end_statement)
@@ -168,7 +189,7 @@ def exec_chain(ins):
                     ins.read(2)
                     #delete lines from existing code before merge
                     # (without MERGE, this is pointless)
-                    [from_line, to_line] = util.parse_line_range(ins)
+                    [from_line, to_line] = parse_line_range(ins)
                     program.delete_lines(from_line, to_line)
     # TODO: should the program be loaded or not if we see this error?
     # should lines be deleted?
