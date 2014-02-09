@@ -60,7 +60,7 @@ peek_values={}
 ######################################################################
 ######################################################################
 
-def parse_expression(ins, allow_empty=False):
+def parse_expression(ins, allow_empty=False, empty_err=22):
     units = []
     operators = []
     d = util.skip_white(ins)
@@ -91,7 +91,7 @@ def parse_expression(ins, allow_empty=False):
         if allow_empty:
             return ('', '')
         else:    
-            raise error.RunError(22)
+            raise error.RunError(empty_err)
     if len(units) <= len(operators):
         # missing operand
         raise error.RunError(22)
@@ -336,26 +336,24 @@ def parse_expr_list(ins, size, err=5, separators=(',',)):
     return output
 
 def parse_int_list_var(ins, size, err=5):
-    pos = 0
-    output = []
+    output = [ vartypes.pass_int_unpack(parse_expression(ins, empty_err=2)) ]   
     while True:
         d = util.skip_white(ins)
         if d == ',': 
             ins.read(1)
-            pos += 1
-            if pos >= size:
-                # 5 = illegal function call
-                raise error.RunError(err)
-        elif d == '':
-            # missing operand
-            raise error.RunError(22)        
-        elif d in util.end_expression:
-            if len(output)-1 < pos:
+            c = util.peek(ins)
+            if c in util.end_statement:
                 # missing operand
-                raise error.RunError(22)    
+                raise error.RunError(22)
+            # if end_expression, syntax error    
+            output.append(vartypes.pass_int_unpack(parse_expression(ins, empty_err=2)))
+        elif d in util.end_statement:
+            # statement ends - syntax error
+            raise error.RunError(2)        
+        elif d in util.end_expression:
             break
         else:  
-            output.append(vartypes.pass_int_unpack(parse_expression(ins)))
+            raise error.RunError(2)
     return output
 
 
