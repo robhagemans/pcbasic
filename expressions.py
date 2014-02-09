@@ -335,6 +335,30 @@ def parse_expr_list(ins, size, err=5, separators=(',',)):
             output[pos] = parse_expression(ins)
     return output
 
+def parse_int_list_var(ins, size, err=5):
+    pos = 0
+    output = []
+    while True:
+        d = util.skip_white(ins)
+        if d == ',': 
+            ins.read(1)
+            pos += 1
+            if pos >= size:
+                # 5 = illegal function call
+                raise error.RunError(err)
+        elif d == '':
+            # missing operand
+            raise error.RunError(22)        
+        elif d in util.end_expression:
+            if len(output)-1 < pos:
+                # missing operand
+                raise error.RunError(22)    
+            break
+        else:  
+            output.append(vartypes.pass_int_unpack(parse_expression(ins)))
+    return output
+
+
 def parse_file_number(ins):
     screen = None
     if util.skip_white_read_if(ins,'#'):
