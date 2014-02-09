@@ -134,8 +134,6 @@ def exec_dim(ins):
             ins.read(1)
             # at most 255 indices, but there's no way to fit those in a 255-byte command line...
             dimensions = expressions.parse_int_list_var(ins, 255)
-            import sys
-            sys.stderr.write(repr(dimensions))
             while len(dimensions) > 0 and dimensions[-1] == None:
                 dimensions = dimensions[:-1]
             if None in dimensions:
