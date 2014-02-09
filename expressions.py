@@ -326,9 +326,6 @@ def parse_expr_list(ins, size, err=5, separators=(',',)):
             if pos >= size:
                 # 5 = illegal function call
                 raise error.RunError(err)
-        elif d == '':
-            # missing operand
-            raise error.RunError(22)        
         elif d in util.end_expression:
             break
         else:  
