@@ -124,9 +124,13 @@ def get_command_line(line):
     tokenise.tokenise_stream(sline, program.direct_line, onfile=False)
     program.direct_line.seek(0)
                
-def parse_start_direct(linebuf):               
-    c = util.peek(linebuf) 
-    if c=='\x00':
+def parse_start_direct(linebuf): 
+    # ignore anything beyond 255
+    pos = linebuf.tell()
+    linebuf.truncate(255)              
+    # restore position; this should not be necessary, but is.
+    linebuf.seek(pos)
+    if util.peek(linebuf) == '\x00':
         # line starts with a number, add to program memory, no prompt
         try:
             if program.protected:
