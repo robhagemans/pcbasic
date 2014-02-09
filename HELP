@@ -154,6 +154,7 @@ ERROR CODES
 74  Rename across disks
 75  Path/File access error
 76  Path not found
+77  Deadlock
 Any error code that does not have a message associated to it will generate
 the message "Unprintable error".
 
@@ -912,6 +913,16 @@ No brackets.
 NOTES:
 -   If the last error was a SYNTAX ERROR in interactive mode, returns 0.
 
+
+ERROR statement
+ERROR error_number
+---------------
+Raises the error with number 'error_number'. 'error_number' is an expression 
+with a numeric value. 
+ERRORS:
+-   If 'error_number' is a string value, raises TYPE MISMATCH.
+-   If 'error_number' is not in  [-32768, 32767], raises OVERFLOW.
+-   If 'error_number' is not in [1,255], raises ILLEGAL FUNCTON CALL.
 
 
 
