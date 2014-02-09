@@ -791,6 +791,20 @@ ERRORS:
 -   If a variable in the gml_string is of incorrect type, TYPE MISMATCH.
 
 
+EDIT statement
+EDIT line_number
+--------------
+Displays the specified program line with the cursor positioned for editing.
+'line_number' must be a line that exists in the program, or a period (.) to 
+indicate the last line stored.
+ERRORS:
+-   If no line_number is specified, raises UNDEFINED LINE NUMBER.
+-   If more characters are written after the line number, raises ILLEGAL 
+    FUNCTION CALL.
+-   If 'line_number' is not in [0,65529], raises ILLEGAL FUNCTION CALL.    
+-   If the specified line number dos not exist, raises UNDEFINED LINE NUMBER.
+
+
 
 
 
