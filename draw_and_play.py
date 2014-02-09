@@ -40,31 +40,53 @@ play_tempo = 2. # 2*0.25 =0 .5 seconds per quarter note
 play_length = 0.25
 notes = { 'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6, 'G-':6, 'G':7, 'G#':8, 'A-':8, 'A':9, 'A#':10, 'B-':10, 'B':11 }
 
-    
+
+def get_value_for_varptrstr(varptrstr):
+    if len(varptrstr) < 3:    
+        raise error.RunError(5)
+    varptrstr = bytearray(varptrstr)
+    varptr = vartypes.uint_to_value(bytearray(varptrstr[1:3]))
+    found_name = ''
+    for name in var.var_memory:
+        _, var_ptr, _ = var.var_memory[name]
+        if var_ptr == varptr:
+            found_name = name
+            break
+    if found_name == '':
+        raise error.RunError(5)
+    return var.get_var(found_name)
+        
 
 def ml_parse_value(gmls):
     c = util.skip(gmls, ml_whitepace)
     if c == '=':
-        gmls.read(1)    
-        step = var.get_var(util.get_var_name(gmls))
-        util.require_read(gmls, (';',), err=5)
+        gmls.read(1)
+        c = util.peek(gmls)
+        if len(c) == 0:
+            raise error.RunError(5)
+        elif ord(c) > 8:
+            step = var.get_var(util.get_var_name(gmls))
+            util.require_read(gmls, (';',), err=5)
+        else:
+            # varptr$
+            step = get_value_for_varptrstr(gmls.read(3))
     else:
-        sgn=1
-        if c=='+':
+        sgn = 1
+        if c == '+':
             gmls.read(1)
             c = util.peek(gmls)
         elif c=='-':
             gmls.read(1)
             c = util.peek(gmls)
-            sgn=-1   
+            sgn = -1   
         if c in tokenise.ascii_digits:     
-            numstr=''
+            numstr = ''
             while c in tokenise.ascii_digits:
                 gmls.read(1)
-                numstr+=c 
+                numstr += c 
                 c = util.skip(gmls, ml_whitepace) 
             step = tokenise.str_to_value_keep(('$', numstr))
-            if sgn==-1:
+            if sgn == -1:
                 step = vartypes.number_neg(step)
         else:
             raise error.RunError(5)
@@ -74,13 +96,19 @@ def ml_parse_value(gmls):
 def ml_parse_number(gmls):
     return vartypes.pass_int_unpack(ml_parse_value(gmls), err=5)
     
-
 def ml_parse_string(gmls):
-    util.skip(gmls, ml_whitepace)
-    sub = var.get_var(util.get_var_name(gmls))
-    util.require_read(gmls, (';',), err=5)
-    return vartypes.pass_string_unpack(sub, err=5)
-
+    c = util.skip(gmls, ml_whitepace)
+    if len(c) == 0:
+        raise error.RunError(5)
+    elif ord(c) > 8:
+        sub = var.get_var(util.get_var_name(gmls))
+        util.require_read(gmls, (';',), err=5)
+        return vartypes.pass_string_unpack(sub, err=5)
+    else:
+        # varptr$
+        return vartypes.pass_string_unpack(get_value_for_varptrstr(gmls.read(3)))
+                    
+        
 # GRAPHICS MACRO LANGUAGE
 
 def draw_step(x0,y0, sx,sy, plot, goback):
