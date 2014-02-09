@@ -584,7 +584,7 @@ def set_graph_view(x0,y0,x1,y1, absolute=True):
     graph_view_set = True
     backend.set_graph_clip(x0, y0, x1, y1)
     if view_graph_absolute:
-        last_point = x1 + (x1-x0)/2, y1 + (y1-y0)/2
+        last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
     else:
         last_point = (x1-x0)/2, (y1-y0)/2
     if graph_window_bounds != None:
@@ -613,7 +613,7 @@ def reset_graphics():
     global last_point
     x0, y0, x1, y1 = backend.get_graph_clip()
     if view_graph_absolute:
-        last_point = x1 + (x1-x0)/2, y1 + (y1-y0)/2
+        last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
     else:
         last_point = (x1-x0)/2, (y1-y0)/2
     draw_and_play.draw_scale = 4
