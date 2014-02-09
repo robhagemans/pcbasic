@@ -862,6 +862,27 @@ ERRORS:
 -   If 'x' is a number not in [-32768,32767], raises OVERFLOW.
 
 
+EOF(x) function
+---------------
+Returns -1 if file with number 'x' has reached end-of-file; 0 otherwise.
+The file must be open in OUTPUT or RANDOM mode.
+ERRORS:
+-   If 'x' is not the number of an open file, raises BAD FILE NUMBER.
+-   If file with number 'x' is in INPUT or APPEND mode, raises BAD FILE MODE.
+
+
+ERASE statement
+ERASE array_0 [, array_1 [, ...] ] 
+---------------
+Disallocates arrays to allow them to be re-dimensioned. The data stored in the
+array is lost. 'array_0', ... are names of existing arrays. The names must be
+specified without brackets.
+NOTES:
+-   If an error occurs, the arrays named before the error occurred are erased.
+ERRORS:
+-   If no array names are given, raises SYNTAX ERROR.
+-   If 'array_0', ... does not exist, raises ILLEGAL FUNCTION CALL.
+
 
 
 
