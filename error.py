@@ -34,10 +34,8 @@ class RunError(Error):
     def __init__(self, value, linum=-1):
         self.err = value
         self.erl = linum # -1 means not set, will be program.linenum if we're running
-        if value in errors:
-            self.msg = errors[value]
-        # set_error                
-                
+        self.msg = get_message(value)
+
 class AdHocError(Error):
     def __init__(self, msg, linum=-1):
         self.err = 0
@@ -56,19 +54,19 @@ def reset_error():
 def set_error(errnum, linenum):
     global errn, erl
     if errnum>0 and errnum <256:
-        errn = errnum
+       errn = errnum
     if linenum > -1 and linenum < 65535:
        erl = linenum
     else:
        erl = 65535
 
 def get_message(errnum):
-    msg = default_msg
-    if errnum in errors:
+    try:
         msg = errors[errnum]
+    except KeyError:
+        msg = default_msg
     return msg    
         
-# these are the errors documented for GW-BASIC
 
 default_msg = 'Unprintable error'
 
@@ -93,32 +91,32 @@ errors = {
     18: 'Undefined user function',
     19: 'No RESUME',
     20: 'RESUME without error',
-    
+    # 21    
     22: 'Missing operand',
     23: 'Line buffer overflow',
     24: 'Device Timeout',
     25: 'Device Fault',
     26: 'FOR without NEXT',
     27: 'Out of paper',
-    
+    # 28
     29: 'WHILE without WEND',
     30: 'WEND without WHILE',
-    
+    # 31--49
     50: 'FIELD overflow',
     51: 'Internal error',
     52: 'Bad file number',
     53: 'File not found',
     54: 'Bad file mode',
     55: 'File already open',
-    
+    # 56
     57: 'Device I/O error',
     58: 'File already exists',
-    
+    # 59--60
     61: 'Disk full',
     62: 'Input past end',
     63: 'Bad record number',
     64: 'Bad file name',
-    
+    # 65
     66: 'Direct statement in file',
     67: 'Too many files',
     68: 'Device Unavailable',
@@ -129,6 +127,7 @@ errors = {
     73: 'Advanced Feature',
     74: 'Rename across disks',
     75: 'Path/File access error',
-    76: 'Path not found'
+    76: 'Path not found',
+    77: 'Deadlock',
 }
 
