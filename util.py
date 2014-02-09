@@ -65,7 +65,7 @@ end_statement = end_line + (':',)
 # '\xCC is 'TO', \x89 is GOTO, \x8D is GOSUB, \xCF is STEP, \xCD is THEN 
 end_expression = end_statement + (')', ']', ',', ';', '\xCC', '\x89', '\x8D', '\xCF', '\xCD') 
 ## tokens followed by one or more bytes to be skipped
-#plus_bytes = {'\x0f':1, '\xff':1 , '\xfe':1, '\x0b':2, '\x0c':2, '\x0d':2, '\x0e':2, '\x1c':2, '\x1d':4, '\x1f':8, '\x00':4}
+plus_bytes = {'\x0f':1, '\xff':1 , '\xfe':1, '\x0b':2, '\x0c':2, '\x0d':2, '\x0e':2, '\x1c':2, '\x1d':4, '\x1f':8, '\x00':4}
 
 
 # these are for tokenised streams only
@@ -217,22 +217,25 @@ def parse_jumpnum_list(ins, size, err=2):
 def parse_value(ins):
     d = ins.read(1)
     # note that hex and oct strings are interpreted signed here, but unsigned the other way!
-    if d == '\x0b':                         # octal constant (unsigned)
-        return vartypes.pack_int(vartypes.sint_to_value(bytearray(ins.read(2))) )
-    elif d == '\x0c':                       # hex constant (unsigned)
-        return vartypes.pack_int(vartypes.sint_to_value(bytearray(ins.read(2))) )
+    try:
+        length = plus_bytes[d]
+    except KeyError:
+        length = 0
+    val = bytearray(ins.read(length))
+    if len(val) < length:
+        # truncated stream
+        raise error.RunError(2)
+    if d in ('\x0b', '\x0C', '\x1C'):       # octal, hex, signed int
+        return ('%', val)
     elif d == '\x0f':                       # one byte constant
-        return vartypes.pack_int(ord(ins.read(1)))
+        return ('%', val + '\x00') 
     elif d >= '\x11' and d <= '\x1b':       # constants 0 to 10  
-        return vartypes.pack_int(ord(d) - 0x11)
-    elif d == '\x1c':          # two byte data constant (signed)
-        return vartypes.pack_int(vartypes.sint_to_value(bytearray(ins.read(2))) )
-    elif d == '\x1d':          # four byte single-precision floating point constant
-        return ('!', bytearray(ins.read(4)) )
-    elif d == '\x1f':          # eight byte double-precision floating point constant
-        return ('#', bytearray(ins.read(8)) )
+        return ('%', bytearray(chr(ord(d)-0x11) + '\x00'))
+    elif d == '\x1d':                       # four byte single-precision floating point constant
+        return ('!', val)
+    elif d == '\x1f':                       # eight byte double-precision floating point constant
+        return ('#', val)
     return ('','')
-
 
 
 def parse_name(ins):
