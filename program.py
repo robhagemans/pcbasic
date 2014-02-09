@@ -64,8 +64,8 @@ prompt = True
 #######################################################
 
 def set_runmode(new_runmode=True):
-    global run_mode, bytecode, direct_line, current_codestream
-    run_mode= new_runmode
+    global run_mode, current_codestream
+    run_mode = new_runmode
     if run_mode:
         current_codestream = bytecode
     if not run_mode:
@@ -77,23 +77,24 @@ def unset_runmode():
 def runmode():
     return run_mode
 
-def get_line_number(pos, after=False):
+# get line number for stream position
+def get_line_number(pos): #, after=False):
     pre = -1
-    post = 65536
+    #post = 65536
     for linum in line_numbers:
         linum_pos = line_numbers[linum] 
-        if linum_pos > pos and linum > post:
-            post = linum
+        #if linum_pos > pos and linum > post:
+        #    post = linum
         if linum_pos <= pos and linum < pre:
             pre = linum
-    if after:
-        return post
-    else:
-        return pre
-    
+    #if after:
+    #    return post
+    #else:
+    return pre
+
 # jump to line number    
 def jump(jumpnum):
-    global bytecode, linenum
+    global linenum
     if jumpnum in line_numbers:
         # jump to target
         bytecode.seek(line_numbers[jumpnum])
@@ -105,7 +106,7 @@ def jump(jumpnum):
 
 # build list of line numbers and positions
 def preparse():
-    global bytecode, line_numbers
+    global line_numbers
     # preparse to build line number dictionary
     line_numbers = {}
     bytecode.seek(1)
@@ -132,7 +133,7 @@ def preparse():
     reset_program()
             
 def reset_program():
-    global bytecode, gosub_return, for_next_stack, while_wend_stack, linenum, data_line, data_pos, stop
+    global gosub_return, for_next_stack, while_wend_stack, linenum, data_line, data_pos, stop
     # reset loop stacks
     gosub_return = []
     for_next_stack = []
@@ -157,7 +158,7 @@ def reset_program():
     data_pos = 0
     
 def clear_program():
-    global bytecode, protected, line_numbers
+    global protected, line_numbers
     bytecode.truncate(0)
     bytecode.write('\x00\x00\x00\x1A')
     protected = False
@@ -165,7 +166,6 @@ def clear_program():
     reset_program()
    
 def truncate_program(rest):
-    global bytecode
     if rest=='':
         bytecode.write('\x00\x00\x00\x1a')
     else:
@@ -181,7 +181,7 @@ def truncate_program(rest):
 
     
 def store_line(linebuf, auto_mode=False):
-    global bytecode, line_numbers, linenum
+    global line_numbers
     linebuf.tell()
     # check if linebuf is an empty line after the line number
     linebuf.seek(5)
@@ -225,37 +225,41 @@ def store_line(linebuf, auto_mode=False):
 
 
 def delete_lines(fromline, toline):
-    global bytecode, line_numbers
-    startline = 0
-    startpos = 0
-    # fromline and toline must both exist, if specified
-    if fromline == -1:
-        pass
-    elif fromline not in line_numbers: 
-        raise error.RunError(5)
-    else:
-        startline = fromline
-        startpos = line_numbers[startline]
+    keys = sorted(line_numbers.keys())
+    # find lowest number within range
+    startline = -1
+    if fromline != -1:
+        for num in keys:
+            if num >= fromline:
+                startline = num
+                break
+    # find lowest number strictly above range
     afterline = 65536
-    afterpos = 0 
-    if toline == -1:
-        toline = 65535 # FIXME: 35??
-    elif toline not in line_numbers:
+    if toline != -1:
+        for num in keys:
+            if num > toline:
+                afterline = num
+                break
+    # if toline not specified, afterpos will be the number stored at 65536, ie the end of program
+    try:
+        if startline == -1:
+            startpos = 0
+        else:
+            startpos = line_numbers[startline]        
+        afterpos = line_numbers[afterline]
+    except KeyError:
+        # no program stored
         raise error.RunError(5)
-    for num in line_numbers:
-        # lowest number above range
-        if num > toline and num <= afterline:
-            afterline = num
-            afterpos = line_numbers[afterline]        
-    
-    # if not found, afterpos will be the number stored at 65536, ie the end of program
+    if afterpos <= startpos:
+        # no lines selected
+        raise error.RunError(5)
+    # do the delete
     bytecode.seek(afterpos)
     rest = bytecode.read()
     bytecode.seek(startpos)
     truncate_program(rest)
     bytecode.seek(0)
     preparse()
-
 
 
 def edit_line(from_line, pos=-1):

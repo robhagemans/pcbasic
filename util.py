@@ -213,19 +213,6 @@ def parse_jumpnum_list(ins, size, err=2):
     return output
     
 
-def parse_line_range(ins):
-    from_line=-1
-    to_line=-1
-    if skip_white_read_if(ins, ('\x0E',)):   # line number starts
-        from_line = vartypes.uint_to_value(bytearray(ins.read(2)))
-    if skip_white_read_if(ins, ('\xEA',)):   # -
-        if skip_white_read_if(ins, ('\x0E',)):
-            to_line = vartypes.uint_to_value(bytearray(ins.read(2)))
-    else:
-        to_line = from_line
-    return (from_line, to_line)    
-
-
 # token to value
 def parse_value(ins):
     d = ins.read(1)
