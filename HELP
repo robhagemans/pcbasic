@@ -734,7 +734,8 @@ NOTES:
     it is limited by the 255-byte limit on the length of program lines.
 ERRORS:
 -   If 'name' has already been dimensioned, DUPLICATE DEFINITION is raised.
--   If an index is empty, MISSING OPERAND is raised.
+-   If an index is empty, SYNTAX ERROR is raised.
+-   If an index is missing at the end, MISSING OPERAND is raised.
 -   If 'limit_0', ... are not within [-32768, 32767], OVERFLOW is raised.        
 -   If 'limit_0', ... are negative, ILLEGAL FUNCTION CALL is raised.
 
