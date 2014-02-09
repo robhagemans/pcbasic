@@ -865,10 +865,10 @@ ERRORS:
 EOF(x) function
 ---------------
 Returns -1 if file with number 'x' has reached end-of-file; 0 otherwise.
-The file must be open in OUTPUT or RANDOM mode.
+The file must be open in INPUT or RANDOM mode.
 ERRORS:
 -   If 'x' is not the number of an open file, raises BAD FILE NUMBER.
--   If file with number 'x' is in INPUT or APPEND mode, raises BAD FILE MODE.
+-   If file with number 'x' is in OUTPUT or APPEND mode, raises BAD FILE MODE.
 
 
 ERASE statement
