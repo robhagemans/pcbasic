@@ -190,9 +190,18 @@ Octal literals can be specified as &o777.
 
 VARIABLES
 ---------
-Variable names must start with a letter; all chaacters of the variable name
+Variable names must start with a letter; all characters of the variable name
 (except the type character) must be letters (A-Z), figures (0-9), or a dot (.)
-Only the first 40 characters in the name are significant.
+Only the first 40 characters in the name are significant. For each name, four
+different variables may exist corresponding to the four types. That is, you can
+have A$, A%, A! and A# with different values. Which one of those is called A 
+depends on the settings in DEFINT/DEFDBL/DEFSNG/DEFSTR. The default is A==A!.
+In addition, you can have arrays A$(), A%(), A!(), A#() which are separate from
+the scalar variables of the same name.
+
+
+TYPES
+-----
 PC-BASIC recognises four variable types, distinguished by their type character
 which is the last character of the variable's name:
 char    type                    size
@@ -204,13 +213,18 @@ If the type character is not specified, the first letter of the name determines
 the type through DEFINT/DEFSTR/DEFSNG/DEFDBL. Unless otherwise specified, all
 variables are single-precision floats.
 Internal representation:
--  Line numbers are two-byte unsigned little-endian.
--  Integers are two-byte signed little-endian two's complement ints.
--  Booleans are represented as 0 (FALSE); -1 or other non-zero (TRUE). 
--  Floats are represented in the Microsoft Binary Format (MBF). This is a non-
-   IEEE representation.
-
-
+-   Line numbers are two-byte unsigned little-endian.
+-   Integers are two-byte signed little-endian two's complement ints.
+-   Booleans are represented as 0 (FALSE); -1 or other non-zero (TRUE). 
+-   Floats are represented in the Microsoft Binary Format (MBF).
+Machine limits:
+    Line numbers are in [0, 65529]. 65530-65535 are unused.
+    Integers are in [-32768, 32767]. 
+    Floats: largest 1.701412E+38; smallest 2.938726E-39
+    Double-precision floats can hold more decimals but not larger or smaller 
+    numbers.
+    
+    
 ARRAYS
 ------
 Arrays of any type can be generated. Arrays are indexed with round or square 
@@ -922,11 +936,20 @@ with a numeric value.
 ERRORS:
 -   If 'error_number' is a string value, raises TYPE MISMATCH.
 -   If 'error_number' is not in  [-32768, 32767], raises OVERFLOW.
--   If 'error_number' is not in [1,255], raises ILLEGAL FUNCTON CALL.
+-   If 'error_number' is not in [1,255], raises ILLEGAL FUNCTION CALL.
 
 
-
-
+EXP(x) function
+---------------
+Returns the exponential of 'x', i.e. e to the power 'x'. 'x' must be a number-
+valued expression. 
+NOTES:
+-   Unless BASIC is run with the --double option, EXP(x) returns a single-
+    precision value.
+ERRORS:
+-   If 'x' has a string value, raises TYPE MISMATCH.
+-   If 'x' is larger than the natural logarithm of the maximum single-precision
+    value, raises OVERFLOW.
 
 
 
