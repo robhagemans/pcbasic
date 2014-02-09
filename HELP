@@ -734,6 +734,7 @@ NOTES:
 ERRORS:
 -   If 'name' has already been dimensioned, DUPLICATE DEFINITION is raised.
 -   If no indices are specified, SYNTAX ERROR is raised.
+-   If an index is empty, MISSING OPERAND is raised.
 -   If 'limit_0', ... are not within [-32768, 32767], OVERFLOW is raised.        
 -   If 'limit_0', ... are negative, ILLEGAL FUNCTION CALL is raised.
 
