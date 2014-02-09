@@ -723,8 +723,9 @@ brackets are allowed. The least index allowed is determined by OPTION BASE.
 The DIM statement also fixes the number of indices of the array. 
 An array can only de dimensioned once; to re-dimension an array, ERASE or 
  CLEAR must be executed first. 
-If an array is used without a DIM statement, its maximum indices are set at
-10 for each index position used.
+If an array is used without a DIM statement, its maximum indices are set at 10
+for each index position used. If an array's DIM statement specifies no indices,
+ it is dimensioned with a single index with maximum 10.
 NOTES:
 -   The size of arrays is limited by the available memory. In GW-BASIC, an 
     OUT OF MEMORY is raised if the array exceeds the size of available variable
@@ -733,7 +734,6 @@ NOTES:
     it is limited by the 255-byte limit on the length of program lines.
 ERRORS:
 -   If 'name' has already been dimensioned, DUPLICATE DEFINITION is raised.
--   If no indices are specified, SYNTAX ERROR is raised.
 -   If an index is empty, MISSING OPERAND is raised.
 -   If 'limit_0', ... are not within [-32768, 32767], OVERFLOW is raised.        
 -   If 'limit_0', ... are negative, ILLEGAL FUNCTION CALL is raised.
