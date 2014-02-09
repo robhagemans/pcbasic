@@ -165,7 +165,7 @@ def draw_parse_gml(gml):
             plot = True
             goback = False
         # two-variable movement command
-        elif c =='M':
+        elif c == 'M':
             relative =  util.skip(gmls,ml_whitepace) in ('+','-')
             x = ml_parse_number(gmls)
             if util.skip(gmls, ml_whitepace) != ',':
