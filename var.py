@@ -173,10 +173,14 @@ def dim_array(name, dimensions):
             # subscript out of range
             raise error.RunError(9)
     size = array_len(dimensions)
-    if name[-1]=='$':
-        arrays[name] = [ dimensions, ['']*size ]  
-    else:
-        arrays[name] = [ dimensions, bytearray(size*var_size_bytes(name)) ]  
+    try:
+        if name[-1]=='$':
+            arrays[name] = [ dimensions, ['']*size ]  
+        else:
+            arrays[name] = [ dimensions, bytearray(size*var_size_bytes(name)) ]  
+    except OverflowError:
+        # out of memory
+        raise error.RunError(7) 
     # update memory model
     # first two bytes: chars of name or 0 if name is one byte long
     name_ptr = array_current
