@@ -884,6 +884,38 @@ ERRORS:
 -   If 'array_0', ... does not exist, raises ILLEGAL FUNCTION CALL.
 
 
+ERDEV function
+--------------
+Returns 0. No brackets.
+NOTES:
+-   In GW-BASIC, returns the value of a device error. This is not implemented.
+
+
+ERDEV$ function
+---------------
+Returns the empty string. No brackets.
+NOTES:
+-   In GW-BASIC, the device name of a device error. This is not implemented.
+
+
+ERL function
+------------
+Returns the line number where the last error was raised. If the error was 
+raised in interactive mode, returns 65535. If no error has been raised, 
+returns 0. No brackets.
+
+
+ERR function
+------------
+Returns the number of the last error. If no error has been raised, returns 0.
+No brackets.
+NOTES:
+-   If the last error was a SYNTAX ERROR in interactive mode, returns 0.
+
+
+
+
+
 
 
 
