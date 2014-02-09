@@ -15,6 +15,7 @@ import fp
 import vartypes
 import var
 import console
+import draw_and_play
 
 backend = None
 
@@ -606,6 +607,15 @@ def view_coords(x,y):
 
 def clear_graphics_view():
     backend.clear_graph_clip(console.colours(console.attr)[1]&0x7)
-    
-    
-    
+
+# reset graphics state    
+def reset_graphics():
+    global last_point
+    x0, y0, x1, y1 = backend.get_graph_clip()
+    if view_graph_absolute:
+        last_point = x1 + (x1-x0)/2, y1 + (y1-y0)/2
+    else:
+        last_point = (x1-x0)/2, (y1-y0)/2
+    draw_and_play.draw_scale = 4
+    draw_and_play.draw_angle = 0
+
