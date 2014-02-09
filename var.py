@@ -181,6 +181,9 @@ def dim_array(name, dimensions):
     except OverflowError:
         # out of memory
         raise error.RunError(7) 
+    except MemoryError:
+        # out of memory
+        raise error.RunError(7) 
     # update memory model
     # first two bytes: chars of name or 0 if name is one byte long
     name_ptr = array_current
