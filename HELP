@@ -788,4 +788,9 @@ NOTES:
 ERRORS:
 -   If 'gml_string' has a numeric value, TYPE MISMATCH is raised.
 -   If 'gml_string' has errors in the GML, ILLEGAL FUNCTION CALL is raised.
+-   If a variable in the gml_string is of incorrect type, TYPE MISMATCH.
+
+
+
+
 
