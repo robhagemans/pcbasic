@@ -26,16 +26,14 @@ import console
 import graphics
 
 
-
-
 def exec_cls(ins):
     if util.skip_white(ins) in util.end_statement:
         if graphics.graph_view_set:
-            val=1
+            val = 1
         elif console.view_set:
-            val=2
+            val = 2
         else:        
-            val=0
+            val = 0
     else:
         val = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     if util.skip_white_read_if(ins, (',',)):
@@ -44,11 +42,14 @@ def exec_cls(ins):
     else:
         util.require(ins, util.end_statement, err=5)    
     # cls is only executed if no errors have occurred    
-    if val==0:
+    if val == 0:
         console.clear()  
-    elif val==1 and graphics.is_graphics_mode():
+        if graphics.is_graphics_mode():
+            graphics.reset_graphics()
+    elif val == 1 and graphics.is_graphics_mode():
         graphics.clear_graphics_view()
-    elif val==2:
+        graphics.reset_graphics()
+    elif val == 2:
         console.clear_view()  
     else:
         raise error.RunError(5)                  
@@ -426,7 +427,7 @@ def exec_lcopy(ins):
 def exec_view_print(ins):
     d = util.skip_white(ins)
     if d in util.end_statement:
-        console.set_view()
+        console.unset_view()
     else:  
         start = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         util.require_read(ins, ('\xCC',)) # TO
@@ -660,7 +661,7 @@ def exec_screen(ins):
        raise error.RunError(5)
     console.set_palette()
     if mode != console.screen_mode:
-        console.set_view()
+        console.unset_view()
         console.set_mode(mode)
     # set active page & visible page, counting from 0. if higher than max pages, illegal fn call.            
     if not console.set_apage(console.apagenum):
@@ -673,7 +674,7 @@ def exec_screen(ins):
         console.set_colorswitch( params[1]!=0 )
         # clear all screen pages
         console.clear_all()
-        console.set_view()
+        console.unset_view()
                 
     
 def exec_pcopy(ins):
