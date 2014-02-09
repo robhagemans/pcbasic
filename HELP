@@ -699,6 +699,13 @@ ERRORS:
 -   If 'address' is not in [-32768, 65535], OVERFLOW is raised.
 -   If 'address' has a string value, TYPE MISMATCH is raised.
 
-
  
+DELETE statement
+DELETE [ [line_number_0] - [line_number_1] ]
+DELETE [line_number_0]
+----------------
+Deletes lines from the program, starting with 'line_number_0' up to 
+'line_number_1', which must be line numbers in the range [0, 65529] or a .
+to indicate the last line edited.
+
 
