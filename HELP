@@ -707,5 +707,35 @@ DELETE [line_number_0]
 Deletes lines from the program, starting with 'line_number_0' up to 
 'line_number_1', which must be line numbers in the range [0, 65529] or a .
 to indicate the last line edited.
+ERRORS:
+-   If a line number is greater than 65529, SYNTAX ERROR is raised.
+-   If the range specified does not include any program lines stored, DELETE
+    raises ILLEGAL FUNCTION CALL.
+    
+    
+DIM statement
+DIM name [ ( | [ ] limit_0 [, limit_1 [, ...] ] [ ) | ] ]   
+-------------
+Dimensions (allocates memory for) arrays. 'name' is a legal variable name
+specifying the array to be dimensioned. 'limit_0', ... are number-valued 
+expressions that specify the greatest index allowed at that position. Mixed
+brackets are allowed. The least index allowed is determined by OPTION BASE.
+The DIM statement also fixes the number of indices of the array. 
+An array can only de dimensioned once; to re-dimension an array, ERASE or 
+ CLEAR must be executed first. 
+If an array is used without a DIM statement, its maximum indices are set at
+10 for each index position used.
+NOTES:
+-   The size of arrays is limited by the available memory. In GW-BASIC, an 
+    OUT OF MEMORY is raised if the array exceeds the size of available variable
+    space. This is not currently implemented in PC-BASIC.
+-   The maximum number of indices is, theoretically, 255. However, in practice,
+    it is limited by the 255-byte limit on the length of program lines.
+ERRORS:
+-   If 'name' has already been dimensioned, DUPLICATE DEFINITION is raised.
+-   If no indices are specified, SYNTAX ERROR is raised.
+-   If 'limit_0', ... are not within [-32768, 32767], OVERFLOW is raised.        
+-   If 'limit_0', ... are negative, ILLEGAL FUNCTION CALL is raised.
+
 
 
