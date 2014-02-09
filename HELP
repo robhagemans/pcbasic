@@ -740,4 +740,52 @@ ERRORS:
 -   If 'limit_0', ... are negative, ILLEGAL FUNCTION CALL is raised.
 
 
+DRAW statement
+DRAW gml_string
+--------------
+In graphics mode, draws the shape specified by 'gml_string'. 'gml_string' must
+be a string-valued expression in Graphics Macro Language (GML). 
+GML reference:
+Movement commands have the form 
+    [B][N] movement
+where the default is to move and draw; the optional prefixes mean:
+    B       move but do not plot
+    N       return to original point after move
+and 'movement' is one of:
+    Un      up n steps
+    Ln      left n steps
+    Dn      down n steps
+    Rn      right n steps
+    En      up+right n steps
+    Fn      down+right n steps
+    Gn      down+left n steps
+    Hn      up+left n steps
+    M[+|-]x,[+|-|]y
+            move (x,y) steps
+    Mx,y    move to view region coordinates x,y  
+where 'n','x','y' must be integers in [0, 9999].
+Scale commands are:
+    Sn      sets the step size to n/4. The default step size is 1 pixel.  
+            'n' must be an integer in [1, 255]
+    TAn     sets the angle to n degrees. The default angle is 0 degrees.
+            'n' must be an integer in [-360, 360]
+    An      sets the angle to 0 for n=0, 90 for n=1, 180 for n=2, 270 for n=3.    
+            'n' must be an integer in [0, 3]
+Colour commands:    
+    Cn      sets the colour attribute to n. See COLOR.
+    Pn,b    flood fills with attribute n and boundary attribute b. See PAINT.
+Subroutine command:
+    Xs      execute substring. 's' is one of the following:
+            -   a string variable name followed by semicolon (;)
+            -   the result of VARPTR$() on a string variable
+Numeric variables 'n','x','y','b' in the commands above can be:
+    -   an integer literal e.g. "100"
+    -   a numeric variable name preceded by = and followed by ; e.g. "=name;"
+    -   the result of VARPTR$() on a numeric variable, preceded by =.               
+NOTES:
+-   CLS resets the step size to 1 pixel, angle to 0 degrees and position to the
+    centre of the view region.                 
+ERRORS:
+-   If 'gml_string' has a numeric value, TYPE MISMATCH is raised.
+-   If 'gml_string' has errors in the GML, ILLEGAL FUNCTION CALL is raised.
 
