@@ -37,13 +37,11 @@ def parse_line_range(ins):
     if util.skip_white_read_if(ins, ('\x0E',)):   # line number starts
         from_line = vartypes.uint_to_value(bytearray(ins.read(2)))
     elif util.skip_white_read_if(ins, ('.',)):
-        # use current auto_linenum; if not specified before, this is zero.
         from_line = automode.auto_last_stored    
     if util.skip_white_read_if(ins, ('\xEA',)):   # -
         if util.skip_white_read_if(ins, ('\x0E',)):
             to_line = vartypes.uint_to_value(bytearray(ins.read(2)))
         elif util.skip_white_read_if(ins, ('.',)):
-            # use current auto_linenum; if not specified before, this is zero.
             to_line = automode.auto_last_stored    
     else:
         to_line = from_line
@@ -64,11 +62,17 @@ def exec_edit(ins):
     if program.protected:
         # don't list protected files
         raise error.RunError(5)
-    util.require_read(ins, ('\x0E',), err=5)   # line number starts
-    from_line=vartypes.uint_to_value(ins.read(2))
-    util.require(ins, util.end_statement, err=5)
-    if from_line not in program.line_numbers:
-        raise error.RunError(8)
+    util.require(ins, ('\x0E', '.'), err=5)   # line number starts
+    c = ins.read(1)
+    if c == '\x0E':
+        from_line = vartypes.uint_to_value(bytearray(ins.read(2)))
+        util.require(ins, util.end_statement, err=5)
+        if from_line not in program.line_numbers:
+            raise error.RunError(8)
+    elif c == '.':
+        from_line = automode.auto_last_stored
+        if from_line == -1:
+            raise error.RunError(8)
     program.edit_line(from_line)
     
 def exec_auto(ins):
@@ -78,8 +82,10 @@ def exec_auto(ins):
         automode.auto_linenum = vartypes.uint_to_value(bytearray(ins.read(2)))
     elif d == '.':
         ins.read(1)
-        # use current auto_linenum; if not specified before, this is zero.
+        # use current auto_linenum; if not specified before, set to 0.
         automode.auto_linenum = automode.auto_last_stored
+        if automode.auto_linenum == -1:
+            automode.auto_linenum = 0
     else:
         # default to 10
         automode.auto_linenum = 10
