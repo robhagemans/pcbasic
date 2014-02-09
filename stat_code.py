@@ -62,6 +62,9 @@ def exec_edit(ins):
     if program.protected:
         # don't list protected files
         raise error.RunError(5)
+    if util.skip_white(ins) in util.end_statement:
+        # undefined line number
+        raise error.RunError(8)    
     util.require(ins, ('\x0E', '.'), err=5)   # line number starts
     c = ins.read(1)
     if c == '\x0E':
