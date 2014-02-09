@@ -126,13 +126,15 @@ def exec_data(ins):
 def exec_dim(ins):
     while True:
         name = util.get_var_name(ins) 
-        if name=='':
+        if name == '':
+            # syntax error
             raise error.RunError(2)
         dimensions = [ 10 ]   
         if util.skip_white(ins) in ('[', '('):
             ins.read(1)
-            dimensions = expressions.parse_int_list(ins, 255, 9) # subscript out of range
-            while len(dimensions)>0 and dimensions[-1]==None:
+            # at most 255 indices, but there's no way to fit those in a 255-byte command line...
+            dimensions = expressions.parse_int_list(ins, 255)
+            while len(dimensions) > 0 and dimensions[-1] == None:
                 dimensions = dimensions[:-1]
             if None in dimensions:
                 raise error.RunError(2)

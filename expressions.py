@@ -316,16 +316,19 @@ def parse_int_list(ins, size, err=5):
     return output
 
 def parse_expr_list(ins, size, err=5, separators=(',',)):
-    pos=0
+    pos = 0
     output = [None] * size
     while True:
         d = util.skip_white(ins)
-        if d in separators: #==',':
+        if d in separators: 
             ins.read(1)
             pos += 1
             if pos >= size:
                 # 5 = illegal function call
                 raise error.RunError(err)
+        elif d == '':
+            # missing operand
+            raise error.RunError(22)        
         elif d in util.end_expression:
             break
         else:  
