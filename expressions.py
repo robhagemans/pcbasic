@@ -681,24 +681,27 @@ def value_lof(ins): # LOF
 # os functions
        
 def value_environ(ins):
-    if ins.read(1)!='$':
+    if ins.read(1) != '$':
         raise error.RunError(2)
     expr = parse_bracket(ins)
-    if expr[0]=='$':
-        val = os.getenv(vartypes.unpack_string(expr))
-        if val==None:
-            val=''
+    if expr[0] == '$':
+        parm = str(vartypes.unpack_string(expr))
+        if parm == '':
+            raise error.RunError(5)
+        val = os.getenv(parm)
+        if val == None:
+            val = ''
         return vartypes.pack_string(val)
     else:
         expr = vartypes.pass_int_unpack(expr)
         envlist = list(os.environ)
-        if expr<1 :
+        if expr < 1 or expr > 255:
             raise error.RunError(5)
         if expr>len(envlist):
             return vartypes.null['$']            
         else:
             val = os.getenv(envlist[expr-1])
-            return vartypes.pack_string(envlist[expr-1]+'='+val)
+            return vartypes.pack_string(bytearray(envlist[expr-1]+'='+val))
         
 def value_timer(ins):
     # precision of GWBASIC TIMER is about 1/20 of a second

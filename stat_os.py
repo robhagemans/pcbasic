@@ -134,8 +134,8 @@ def exec_environ(ins):
     eqs = envstr.find('=')
     if eqs <= 0:
         raise error.RunError(5)
-    var = envstr[:eqs]
-    val = envstr[eqs+1:]
+    var = str(envstr[:eqs])
+    val = str(envstr[eqs+1:])
     os.environ[var] = val
     util.require(ins, util.end_statement)
        
