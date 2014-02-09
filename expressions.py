@@ -664,7 +664,7 @@ def value_eof(ins): # EOF
     if num>255 or num<0 or num not in fileio.files:
         # bad file number
         raise error.RunError(52)
-    if fileio.files[num].mode == 'O':
+    if fileio.files[num].mode.upper() in ('O', 'A'):
         # bad file mode
         raise error.RunError(54)
     return vartypes.bool_to_int_keep(fileio.files[num].eof())
