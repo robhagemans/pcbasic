@@ -1,11 +1,11 @@
 PC-BASIC 3.23 REFERENCE
-Copyright (c) 2014 Rob Hagemans.
-This file is licensed under a 
+
+This file is copyright (c) 2014 Rob Hagemans and licensed under a 
 Creative Commons Attribution-ShareAlike 4.0 International License.
 
 
-EDITING
--------
+INTERACTIVE MODE
+----------------
 The screen is divided into 'logical lines' whose length can exceed the width
 of the physical line. The logical line includes all the text on the line. If 
 the line has been wrapped or broken by <CTRL+J>, the logical line extends 
@@ -71,6 +71,30 @@ exist in loaded programs. Lines between 65530 and 65535 are not visible in
 the program's LIST.
 Within one program line, statements are separated by colons (:). The maximum
 length of a program line is 255 characters.
+Programs can be saved to disk with SAVE and loaded with LOAD. A program can 
+be started using RUN or GOTO.
+
+
+RUNMODE
+-------
+When a program is started, the commands in the program are followed until the
+program quits and returns to interactive mode or until user input is required.
+In program mode, a few keys have immediate effect:
+<PAUSE> or <CTRL+NUM_LOCK>  Pause execution. Press another key to resume.
+<CTRL+BREAK>                Stop execution and return to interactive mode.
+or <CTRL+SCROLL_LOCK>       A BREAK message is printed.
+
+
+INPUT MODE
+----------
+If user input is required by the statements INPUT, LINE INPUT, or RANDOMIZE, 
+BASIC goes into input mode. In input mode, keys have the same effect as in
+interactive mode. However, the following keys have different effect:
+<CTRL+BREAK> or <CTRL+C>    Stop execution and return to interactive mode.
+or <CTRL+SCROLL_LOCK>       A BREAK message is printed.
+<ENTER>                     Finish input and return to the previous mode.
+
+
 
 
 ERROR CODES
@@ -707,6 +731,7 @@ DELETE [line_number_0]
 Deletes lines from the program, starting with 'line_number_0' up to 
 'line_number_1', which must be line numbers in the range [0, 65529] or a .
 to indicate the last line edited.
+Also stops program execution and returns to interactive mode.
 ERRORS:
 -   If a line number is greater than 65529, SYNTAX ERROR is raised.
 -   If the range specified does not include any program lines stored, DELETE
@@ -805,6 +830,12 @@ ERRORS:
 -   If the specified line number dos not exist, raises UNDEFINED LINE NUMBER.
 
 
+END statement
+END
+-------------
+Closes all files, stops program execution and returns to interactive mode.
+No message is printed. It is possible to resume execution at the next statement
+using CONT.
 
 
 
