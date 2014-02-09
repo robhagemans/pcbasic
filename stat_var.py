@@ -176,6 +176,8 @@ def exec_deftype(ins, typechar):
 def exec_erase(ins):
     while True:
         name = util.get_var_name(ins)
+        if name == '':
+            raise error.RunError(2)
         var.erase_array(name)
         d = util.skip_white(ins)
         if d in util.end_statement:
