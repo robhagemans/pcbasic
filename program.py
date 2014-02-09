@@ -166,19 +166,12 @@ def clear_program():
     reset_program()
    
 def truncate_program(rest):
-    if rest=='':
+    if rest == '':
         bytecode.write('\x00\x00\x00\x1a')
     else:
         bytecode.write(rest)
-    pos = bytecode.tell()
-    # clear out the rest of the buffer
-    # no more elegant way?
-    # TODO: can use truncate in one line here
-    program = bytecode.getvalue()
-    program = program[:pos]
-    bytecode.truncate(0) 
-    bytecode.write(program)    
-
+    # cut off at current position    
+    bytecode.truncate()    
     
 def store_line(linebuf, auto_mode=False):
     global line_numbers
@@ -263,7 +256,7 @@ def delete_lines(fromline, toline):
 
 
 def edit_line(from_line, pos=-1):
-    global bytecode, prompt
+    global prompt
     # list line
     current = bytecode.tell()	        
     bytecode.seek(1)
@@ -276,20 +269,19 @@ def edit_line(from_line, pos=-1):
     output.close()
     # throws back to direct mode
     unset_runmode()
-    #suppress prompt, move cursor?
-    prompt=False
+    # suppress prompt, move cursor?
+    prompt = False
     console.set_pos(console.get_row()-1, 1)
     
     
 def renumber(new_line=-1, start_line=-1, step=-1):
-    global bytecode, line_numbers
     # set defaults
-    if new_line==-1:
-        new_line=10
-    if start_line==-1:
-        start_line=0
-    if step==-1:
-        step=10        
+    if new_line == -1:
+        new_line = 10
+    if start_line == -1:
+        start_line = 0
+    if step == -1:
+        step = 10        
     # get line number dict in the form it should've been in anyway had I implemented it sensibly
     lines = []
     for num in line_numbers:
@@ -333,7 +325,7 @@ def renumber(new_line=-1, start_line=-1, step=-1):
     
 
 def load(g):
-    global bytecode, protected, linenum
+    global protected
     bytecode.truncate(0)
     c = g.read(1)
     if c == '\xFF':
@@ -348,7 +340,7 @@ def load(g):
         protect.unprotect(g, bytecode)
     #elif c=='\xFC':
         # QuickBASIC file
-    elif c=='':
+    elif c == '':
         # empty file
         pass
     else:
@@ -386,16 +378,15 @@ def merge(g):
     
 
 def save(g, mode='B'):
-    global bytecode, protected
     # skip first \x00 in bytecode, replace with appropriate magic number
     bytecode.seek(1)
-    if mode=='B':
+    if mode == 'B':
         if protected:
             raise error.RunError(5)
         else:
             g.write('\xff')
             g.write(bytecode.read())
-    elif mode=='P':
+    elif mode == 'P':
         g.write('\xfe')
         protect.protect(bytecode, g)    
     else:
