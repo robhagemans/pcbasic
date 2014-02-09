@@ -95,8 +95,6 @@ or <CTRL+SCROLL_LOCK>       A BREAK message is printed.
 <ENTER>                     Finish input and return to the previous mode.
 
 
-
-
 ERROR CODES
 -----------
 1   NEXT without FOR
@@ -836,6 +834,36 @@ END
 Closes all files, stops program execution and returns to interactive mode.
 No message is printed. It is possible to resume execution at the next statement
 using CONT.
+
+
+ENVIRON statement
+ENVIRON command_string
+-----------------
+Sets a shell environment parameter. 'command_string' must be a string-valued
+expression of one of the following forms:
+    "PARAMETER=VALUE"   to set PARAMETER to VALUE
+    "PARAMETER="        to unset PARAMETER
+ERRORS:
+-   If 'command_string' has a numeric value, TYPE MISMATCH is raised.
+-   If 'command_string' is not of the required form, ILLEGAL FUNCTION CALL is 
+    raised.
+
+
+ENVIRON$(x) function    
+--------------------
+Returns an environment parameter. 'x' is an expression.
+If 'x' has a string value, returns the value for the parameter 'x' or the empty
+string if no parameter with the name 'x' is set.
+If 'x' has a numeric value, it must be in [1, 255]. Returns the 'x'th entry in 
+the environment table.
+ERRORS:
+-   If 'x' is the empty string, raises ILLEGAL FUNCTION CALL.
+-   If 'x' is a number not in [1,255], raises ILLEGAL FUNCTION CALL.
+-   If 'x' is a number not in [-32768,32767], raises OVERFLOW.
+
+
+
+
 
 
 
