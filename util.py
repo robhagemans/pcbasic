@@ -82,16 +82,18 @@ def skip_white_read_if(ins, in_range):
 
 
 def skip_to(ins, findrange, break_on_first_char=True):        
-    found = True
     while True: 
         c = ins.read(1)
         if c == '':
             break
         elif c in findrange:
-            if found or break_on_first_char:
+            if break_on_first_char:
                 ins.seek(-1,1)
                 break
-        elif c in ('\xff', '\xfe', '\x0f'):
+            else: 
+                break_on_first_char = True    
+        # not elif! if not break_on_first_char, c needs to be properly processed.
+        if c in ('\xff', '\xfe', '\x0f'):
             ins.read(1)
         elif c in ('\x0b', '\x0c', '\x0d', '\x0e', '\x1c'):
             ins.read(2)
@@ -101,11 +103,10 @@ def skip_to(ins, findrange, break_on_first_char=True):
             ins.read(8)
         elif c == '\x00':  # offset and line number follow
             off = ins.read(2)
-            if len(off)<2 or off=='\x00\x00':
+            if len(off) < 2 or off == '\x00\x00':
                 break
             ins.read(2)
-        found=True
-
+        
 
 def skip_to_read(ins, findrange):
     skip_to(ins, findrange)

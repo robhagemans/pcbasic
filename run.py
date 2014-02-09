@@ -167,7 +167,7 @@ def handle_error(e):
     # set ERR and ERL
     error.set_error(e.err, errline)
     # don't jump if we're already busy handling an error
-    if error.on_error != None and error.on_error !=0 and not error.error_handle_mode:
+    if error.on_error != None and error.on_error != 0 and not error.error_handle_mode:
         error.error_resume = program.current_statement, program.current_codestream, program.runmode()
         program.jump(error.on_error)
         error.error_handle_mode = True
@@ -184,6 +184,9 @@ def handle_error(e):
         if e.err == 2 and errline != -1:
             prompt()
             program.edit_line(errline)
+        # for some reason, err is reset to zero by GW-BASIC in this case.
+        if e.err == 2:
+            error.errn = 0
         return False    
 
 def exit():

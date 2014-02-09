@@ -810,7 +810,7 @@ def value_pmap(ins):
 # error functions
 
 def value_erl(ins):
-    return vartypes.pack_int(error.get_error()[1])
+    return fp.pack(fp.Single.from_int(error.get_error()[1]))
 
 def value_err(ins):
     return vartypes.pack_int(error.get_error()[0])

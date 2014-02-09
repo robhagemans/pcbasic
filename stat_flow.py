@@ -464,8 +464,6 @@ def exec_timer(ins):
     util.require(ins, util.end_statement)      
 
 
-
-
 def exec_on_error(ins):
     util.require_read(ins, ('\x89',))  # GOTO
     error.on_error = util.parse_jumpnum(ins)
@@ -479,25 +477,27 @@ def exec_on_error(ins):
         
 def exec_resume(ins):
     if error.error_resume == None: # resume without error
-        error.on_error=0
+        error.on_error = 0
         raise error.RunError(20)
     start_statement, codestream, runmode = error.error_resume  
     c = util.skip_white(ins)
     jumpnum = 0
     if c == '\x83': # NEXT
         # RESUME NEXT
+        util.require(ins, util.end_statement)
         codestream.seek(start_statement)        
         util.skip_to(codestream, util.end_statement, break_on_first_char=False)
         program.set_runmode(runmode)
-        # what happens if something is on the line after NEXT?
     elif c not in util.end_statement:
         jumpnum = util.parse_jumpnum(ins)
+        util.require(ins, util.end_statement)
         if jumpnum != 0:
             # RESUME n
             program.jump(jumpnum)
             program.set_runmode()
-    if c != '\x83' and jumpnum==0: 
+    if c != '\x83' and jumpnum == 0: 
         # RESUME or RESUME 0 
+        util.require(ins, util.end_statement)
         codestream.seek(start_statement)        
         program.set_runmode(runmode)
     error.errn = 0
