@@ -46,7 +46,7 @@
 # information on the string representation of floating point numbers can be found in the manual:
 # http://www.antonis.de/qbebooks/gwbasman/chapter%206.html
 
-
+from util import endl
 import error
 
 # this is where in-calculation error messages (Overflow, Division by Zero) go
@@ -55,13 +55,16 @@ error_console = None
 # the exponent is biased by 128
 true_bias = 128
 
+overflow = False
+zero_div = False
+
 ######################################
 
 
 class Float(object):
     def __init__(self, neg=False, man=0, exp=0):
         self.neg, self.man, self.exp = neg, man, exp
-    
+            
     def copy(self):
         return self.__class__(self.neg, self.man, self.exp)
     
@@ -161,7 +164,6 @@ class Float(object):
         if self.man == 0 or self.exp == 0:
             self.neg, self.man, self.exp = self.zero.neg, self.zero.man, self.zero.exp
             return self
-        
         # FIXME: are these correct?        
         while self.man <= 2**(self.mantissa_bits+8-1): # 0x7fffffffffffffff: # < 2**63
             self.exp -= 1
@@ -169,7 +171,6 @@ class Float(object):
         while self.man > 2**(self.mantissa_bits+8): #0xffffffffffffffff: # 2**64 or 0x100**8
             self.exp += 1
             self.man >>= 1
-        
         # underflow
         if self.exp < 0:
             self.exp = 0
@@ -177,7 +178,7 @@ class Float(object):
         if self.exp > 0xff:
             # overflow
             # message does not break execution, no line number
-            print_error(6, -1)
+            msg_overflow()
             self.exp = 0xff
             self.man = self.carry_mask #0xffffffffffffff00L
         return self
@@ -273,7 +274,7 @@ class Float(object):
         if self.is_zero():
             return self
         if right_in.is_zero():
-            print_error(11, -1)
+            msg_zero_div()
             self.neg, self.man, self.exp = self.max.neg, self.max.man, self.max.exp
             return self
         # signs
@@ -315,10 +316,9 @@ class Float(object):
                 self.isq()
                 self.imul(base)
         elif exp == 0:
-            return self.one.copy()
-        else:
-            return self.copy()
-        return self      
+            self = self.one.copy()
+        return self
+              
         
     # absolute value is greater than
     def abs_gt(self, right):
@@ -376,6 +376,9 @@ def from_bytes(s):
         return Double.from_bytes(s)
     
 def unpack(value):
+    global overflow, zero_div
+    overflow = False
+    zero_div = False
     return from_bytes(value[1])
 
 def pack(n):
@@ -472,57 +475,45 @@ Double.pi   = from_bytes(bytearray('\xc2\x68\x21\xa2\xda\x0f\x49\x82'))
 def power(base_in, exp_in):
     base = base_in.copy()
     exp = exp_in.copy()
-    
     if exp.is_zero():
         # 0^0 returns 1 too
         return base.one.copy()
-        
     elif exp.neg:
+        # y^-x = 1/(y^x)
         exp.neg = False
         return div(base.one, power(base, exp))
-
-    else:
+    else:   
         shift = exp.exp - true_bias - 1
         exp.exp = true_bias+1
-        
         while shift < 0:
             base = sqrt(base)
             shift += 1
-
         # to avoid doing sqrt(sq( ...
         roots = []
         while shift > 0:
-            roots.append(base)
+            roots.append(base.copy())
             base.isq()
             shift -= 1
-        
         # exp.exp = 0x81 means exp's exponent is one  
         # and most significant mantissa bit must be 1  
-        
         # we have 0x80 00 00 (00) <=exp.mant <= 0xff ff ff (ff) 
         # exp.mant == 1011... means exp == 1 + 0/2 + 1/4 + 1/8 + ...
         # meaning we return base * 0**sqrt(base) * 1**sqrt(sqrt(base)) * 1**sqrt(sqrt(sqrt(base))) * ...
-        
         #bit = 0x40000000 # skip most significant bit, we know it's one
-        bit = 0x4 * (0x100 ** base.byte_size)
-        #exp.man &= 0x7fffffff
-        exp.man &= 2**(exp.mantissa_bits+8-1)-1
-
+        bit = 0x40 * (0x100 ** (base.byte_size-1))
+        exp.man &= 2**(exp.mantissa_bits+8-1)-1 #exp.man &= 0x7fffffff
         out = base.copy()
         count = 0
         while exp.man >= 0x7f and bit >= 0x7f :
-            
             if len(roots) > count:
                 base = roots[-count-1]
             else:
                 base = sqrt(base)
             count += 1
-
             if exp.man & bit:
                 out.imul(base)
             exp.man &= ~bit
             bit >>= 1
-            
         return out
 
 
@@ -534,13 +525,10 @@ def sqrt(target):
         raise error.RunError(5)
     if target.is_zero() or target.equals(target.one):
         return target
-
     # initial guess, divide exponent by 2
     n = target.copy()
-    
     #n.exp = (n.exp - n.bias + 24)/2 + n.bias-24
     n.exp = (n.exp - n.bias + n.mantissa_bits)/2 + n.bias - n.mantissa_bits
-    
     # iterate to convergence, max_iter = 7
     for _ in range (0,7):
         nxt = sub(n, mul(n.half, div(sub(sq(n), target),n)))  
@@ -548,7 +536,6 @@ def sqrt(target):
         if nxt.equals_inc_carry(n):
             break
         n = nxt
-        
     return n
 
 
@@ -560,6 +547,10 @@ def exp(arg_in):
     if arg.neg:
         arg.neg = False
         return div(arg.one, exp(arg))
+    if arg.gt(arg_in.one):
+        arg_int = arg.copy().ifloor()
+        arg.isub(arg_int)
+        return arg.e.copy().ipow_int(arg_int.trunc_to_int()).imul(exp(arg))
     exp_out = arg.zero.copy()
     for npow in range(0,12):
         term = mul(arg.taylor[npow], pow_int(arg, npow)) 
@@ -571,11 +562,9 @@ def sin(n_in):
     if n_in.is_zero():
         return n_in
     n = n_in.copy()
-    
     neg = n.neg
     n.neg = False 
     sin_out = n.zero.copy()
-    
     if n.gt(n.twopi):
         n.isub(mul(n.twopi, div(n, n.twopi).ifloor()))
     if n.gt(n.pi):
@@ -594,7 +583,6 @@ def sin(n_in):
             term.neg = termsgn
             termsgn = not termsgn
             sin_out.iadd(term) 
-        
     sin_out.neg ^= neg    
     return sin_out
 
@@ -603,7 +591,6 @@ def cos(n_in):
     if n_in.is_zero():
         return Single.one.copy()
     n = n_in.copy()
-    
     neg = False
     n.neg = False 
     cos_out = n.one.copy()
@@ -627,7 +614,6 @@ def cos(n_in):
             term.neg = termsgn
             termsgn = not termsgn
             cos_out.iadd(term) 
-        
     cos_out.neg ^= neg    
     return cos_out
 
@@ -653,16 +639,12 @@ def atn(n_in):
         n = atn(n)
         n.neg = True
         return n
-        
     # calculate atn of x between 0 and 1 which is between 0 and pi/4
     # also, in that range, atn(x) <= x and atn(x) >= x*pi/4
-
     last = n_in.pi4.copy()
     tan_last = n_in.one.copy()
-
     guess = mul(n_in.pi4, n_in)
     tan_out = tan(guess)    
-    
     count = 0 
     while (guess.exp != last.exp or abs(guess.man-last.man) > 0x100) and count<30:
         count+=1
@@ -680,38 +662,30 @@ def log(n_in):
         return n_in.zero.copy()
     if n_in.equals(Single.two):
         return n_in.log2.copy()
-    
     if n_in.neg or n_in.is_zero():
         raise error.RunError(5)
-    
     if n_in.gt(n_in.one):
         # log (1/x) = -log(x)
         n = log(div(n_in.one, n_in).apply_carry())
         n.neg = not n.neg
         return n
-    
     # if n = a*2^b, log(n) = log(a) + b*log(2)
     expt = n_in.exp - n_in.bias + n_in.mantissa_bits
     loge = mul(n_in.log2, n_in.from_int(expt))
-    
     n = n_in.copy()
     n.exp = n.bias - n.mantissa_bits
-    
     # our remaining input a is the mantissa, between 0.5 and 1.
     # lo is log(0.5) = -log(2), hi is zero
     # also log(x) above -log(2) + x- 0.5
     # and below 1-x
-    
     # 1-n
     hi = n.__class__(True, 0x100**(n.byte_size+1) - 1 - n.man, n.exp) 
     #hi = sub(n.one, n)
     #hi = n.copy()
     #hi.man = 0xffffffff - hi.man
     #hi.neg = True
-    
     lo = n.log2.copy()
     lo.neg = True 
-    
     last = hi
     guess = lo
     f_last = exp(last)
@@ -731,14 +705,22 @@ def log(n_in):
     
 ######################################    
                        
-def print_error(errnum, linenum):
-    global error_console
-    if error_console==None:
+
+
+def msg_overflow():
+    global overflow
+    if error_console==None or overflow:
         return
-    msg = error.get_message(errnum)
-    error_console.write_error_message(msg,linenum)
+    overflow = True    
+    error_console.write(error.get_message(6) + endl)
 
 
+
+def msg_zero_div():
+    global zero_div
+    if error_console==None or zero_div:
+        return
+    error_console.write(error.get_message(11) + endl)
 
 
 ################################
@@ -820,12 +802,10 @@ def decimal_notation(digitstr, exp10, type_sign='!', force_dot=False):
     return valstr
 
 
-
 # screen=True (ie PRINT) - leading space, no type sign
 # screen='w' (ie WRITE) - no leading space, no type sign
 # default mode is for LIST    
 def to_str(n_in, screen=False, write=False):
-    
     # zero exponent byte means zero
     if n_in.is_zero(): 
         if screen and not write:
@@ -833,7 +813,6 @@ def to_str(n_in, screen=False, write=False):
         else:
             valstr = '0' + n_in.type_sign
         return valstr
-    
     # print sign
     if n_in.neg:
         valstr = '-'
@@ -842,14 +821,11 @@ def to_str(n_in, screen=False, write=False):
             valstr = ' '
         else:
             valstr = ''
-    
     mbf = n_in.copy()
     num, exp10 = mbf.bring_to_range(mbf.lim_bot, mbf.lim_top)
     digitstr = get_digits(num, mbf.digits)
-    
     # exponent for scientific notation
     exp10 += mbf.digits-1  
-    
     if (exp10>mbf.digits-1 or len(digitstr)-exp10>mbf.digits+1):
         # use scientific notation
         valstr += scientific_notation(digitstr, exp10, n_in.exp_sign)
@@ -860,7 +836,6 @@ def to_str(n_in, screen=False, write=False):
         else:
             type_sign = n_in.type_sign    
         valstr += decimal_notation(digitstr, exp10, type_sign)
-    
     return valstr
     
     
@@ -889,7 +864,6 @@ def from_str(s, allow_nonnum = True):
             continue
         if c in kill_char:
             return Single.zero
-                
         # find sign
         if (not found_sign):
             if c=='+':
@@ -902,7 +876,6 @@ def from_str(s, allow_nonnum = True):
             else:
                 # number has started, sign must be pos. parse chars below.
                 found_sign=True
-
         # parse numbers and decimal points, until 'E' or 'D' is found
         if (not found_exp):
             if c >= '0' and c <= '9':
@@ -940,7 +913,6 @@ def from_str(s, allow_nonnum = True):
                     break    
                 else:
                     return None
-                    
         elif (not found_exp_sign):
             if c=='+':
                 found_exp_sign = True
@@ -952,8 +924,6 @@ def from_str(s, allow_nonnum = True):
             else:
                 # number has started, sign must be pos. parse chars below.
                 found_exp_sign = True
-        
-        
         if (c >= '0' and c <= '9'):
             exponent *= 10
             exponent += ord(c)-ord('0')
@@ -963,16 +933,13 @@ def from_str(s, allow_nonnum = True):
                 break    
             else:    
                 return None
-                               
     if exp_neg:
         exp10 -= exponent
     else:           
         exp10 += exponent
-    
     # eight or more digits means double, unless single override
     if digits - zeros > 7 and not is_single:
         is_double = True
-        
     cls = Double if is_double else Single
     mbf = cls(neg, mantissa * 0x100, cls.bias).normalise() 
     while (exp10 < 0):
@@ -985,5 +952,3 @@ def from_str(s, allow_nonnum = True):
     return mbf
         
         
- 
- 

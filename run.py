@@ -159,7 +159,7 @@ def handle_error(e):
     else:
         errline = program.linenum
     if isinstance(e, error.Break):
-        console.write_error_message(e.msg, errline)
+        write_error_message(e.msg, errline)
         if program.runmode():
             program.stop = [program.bytecode.tell(), program.linenum]
             program.unset_runmode()
@@ -176,7 +176,7 @@ def handle_error(e):
         return True
     else:
         # not handled by ON ERROR, stop execution
-        console.write_error_message(e.msg, errline)   
+        write_error_message(e.msg, errline)   
         error.error_handle_mode = False
         program.unset_runmode()
         program.prompt = True
@@ -189,7 +189,16 @@ def handle_error(e):
             error.errn = 0
         return False    
 
+def write_error_message(msg, linenum):
+    console.start_line()
+    console.write(msg) 
+    if linenum > -1 and linenum < 65535:
+        console.write(' in %i' % linenum)
+    console.write(' ' + util.endl)          
+
 def exit():
     fileio.close_all_all_all()
     sys.exit(0)
     
+    
+

@@ -925,14 +925,6 @@ def scroll_down(from_line):
     del apage.wrap[scroll_height-1]
     show_cursor(save_curs)
 
-def write_error_message(msg, linenum):
-    start_line()
-    write(msg) 
-    if linenum > -1 and linenum < 65535:
-        write(' in %i' % linenum)
-    write(' ' + util.endl)          
-
-
 def pen_on():
     global pen_is_on
     pen_is_on = True
