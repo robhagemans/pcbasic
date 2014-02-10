@@ -94,11 +94,9 @@ def set_scroll_area(view_start, scroll_height, width):
 
 def putc_at(row, col, c, attr):
     global last_row
-    
     # don't print bottom line
     if row==25:
         return
-        
     check_row(row)    
     sys.stdout.write(unicodepage.to_utf8(c))
     sys.stdout.flush()
@@ -115,9 +113,6 @@ def build_line_cursor(is_line):
 
 def check_row(row):    
     global last_row, enter_pressed
-    #sys.stderr.write('[CHECK]'+repr(last_row)+' '+repr(console.row)+' '+repr(row)+'\n')
-
-    #while row > last_row:
     if row != last_row:    
         if not enter_pressed:
             sys.stdout.write('\n')
@@ -132,10 +127,8 @@ def check_keys():
     d = select.select([sys.stdin], [], [], 0) 
     if d[0] != []:
         c = os.read(fd,1)
-    
     if c=='\x0A':
         console.insert_key('\x0D\x0A')
-        #sys.stderr.write('[ENTER]'+repr(last_row)+' '+repr(console.row)+'\n')
         last_row = console.row
         enter_pressed=True
     else:
