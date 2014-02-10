@@ -951,8 +951,11 @@ def value_erdev(ins):
     else:    
         return vartypes.null['%']
         
+# exterr        
 def value_exterr(ins):
-    parse_bracket(ins)
+    x = vartypes.pass_int_unpack(parse_bracket(ins))
+    if x<0 or x>3:
+        raise error.RunError(5)
     return vartypes.null['%']
     
 # ioctl$    
