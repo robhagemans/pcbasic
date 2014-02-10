@@ -946,11 +946,24 @@ valued expression.
 NOTES:
 -   Unless BASIC is run with the --double option, EXP(x) returns a single-
     precision value.
+-   Exp sometimes differs in the least significant digit from GW-BASIC. For 
+    large values of 'x', the difference may be 3 digits.
 ERRORS:
 -   If 'x' has a string value, raises TYPE MISMATCH.
 -   If 'x' is larger than the natural logarithm of the maximum single-precision
     value, raises OVERFLOW.
 
+
+EXTERR(x) function
+------------------
+Returns 0. 'x' must be a number-valued expression in [0, 3].
+NOTES:
+-   In GW-BASIC, EXTERR returns extended error information from MS-DOS. 
+    This is not implemented.
+ERRORS:
+-   If 'x' is a string value, raises TYPE MISMATCH.
+-   If 'x' is not in [-32768, 32767], raises OVERFLOW.
+-   If 'x' is not in [0,3], raises ILLEGAL FUNCTION CALL.
 
 
 
