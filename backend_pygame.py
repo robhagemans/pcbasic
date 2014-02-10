@@ -19,6 +19,7 @@ import unicodepage
 import console
 import sound
 import events
+import deviceio
 
 # not an echoing terminal
 echo = False
@@ -511,7 +512,12 @@ def handle_key(e):
     elif e.key == pygame.K_CAPSLOCK:
         console.caps = not console.caps 
     elif e.key == pygame.K_PRINT and  mods & pygame.KMOD_CTRL:
-        console.echo_printer = not console.echo_printer     
+        if console.echo_read == None:
+            console.echo_read = deviceio.lpt1
+            console.echo_write = deviceio.lpt1
+        else:  
+            console.echo_read = None
+            console.echo_write = None
     elif e.key == pygame.K_TAB and mods & pygame.KMOD_SHIFT:
         # shift+tab -> \x00\x0F (scancode for TAB) but TAB -> \x09
         c = '\x00\x0F'

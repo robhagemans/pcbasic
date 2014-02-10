@@ -59,7 +59,8 @@ keybuf = ''
 caps = False
 
 # echo to printer
-echo_printer = False
+echo_read = None
+echo_write = None
 
 class ScreenBuffer:
     def __init__(self, bwidth, bheight):
@@ -199,8 +200,9 @@ def get_palette_entry(index):
 
 def write(s, scroll_ok=True):
     global row, col, apage
-    if echo_printer:
-        deviceio.lpt1.write(s)
+    if echo_write != None and row < 25:
+        # don't echo row 25 (keys line)
+        echo_write.write(s)
     tab = 8
     last = ''
     for c in s:
@@ -315,8 +317,8 @@ def read():
     while c != '\x0d': 
         # wait_char returns a string of ascii and MS-DOS/GW-BASIC style keyscan codes
         c = wait_char() 
-        if echo_printer:
-            deviceio.lpt1.write(c)
+        if echo_read != None:
+            echo_read.write(c)
         pos = 0
         while pos<len(c):
             d = c[pos]
