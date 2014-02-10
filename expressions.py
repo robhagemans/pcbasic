@@ -985,8 +985,7 @@ value_log = partial(value_unary, fn=fp.log)
 # others
 
 def value_rnd(ins):
-    util.skip_white(ins)
-    if util.peek(ins) == '(':
+    if util.skip_white(ins) == '(':
         return rnd.get_random(parse_bracket(ins))
     else:
         return rnd.get_random(('',''))
@@ -1109,7 +1108,7 @@ def vcaret(left, right):
         return fp.pack( fp.power(fp.unpack(vartypes.pass_double_keep(left)), fp.unpack(vartypes.pass_double_keep(right))) )
     else:
         if right[0]=='%':
-            return fp.pack( fp.unpack(vartypes.pass_single_keep(left)).ipow_int(right[1]) )
+            return fp.pack( fp.unpack(vartypes.pass_single_keep(left)).ipow_int(vartypes.unpack_int(right)) )
         else:
             return fp.pack( fp.power(fp.unpack(vartypes.pass_single_keep(left)), fp.unpack(vartypes.pass_single_keep(right))) )
 
