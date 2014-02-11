@@ -993,5 +993,30 @@ ERRORS:
 -   If 'name_0', ... specify a non-string variable, raises TYPE MISMATCH.
 
 
+FILES statement
+FILES path_and_filter
+---------------
+Displays the files fitting the specified filter in the specified directory. If
+'path_and_filter' is not specified, displays all files in the current working 
+directory. If specified, 'path_and_filter' is a string-valued expression that
+consists of two optional parts: the first part is the path to the directory; 
+the second part is the filename filter. The file part is a path list separated
+by backslashes (\) as in MS-DOS. The filename filter consists of file name
+parts and the wildcards ?, matching any character but not the \ or .; and the 
+* matching any series of characters excluding . or \. If specified, a filter
+will only match MS-DOS style 8.3 all-uppercase filenames. If all files in a 
+specified directory are required, end the directory name with a backslash \.
+The path directories, however, can be case sentitive and longer according to
+the host OS's standards.
+ERRORS:
+-   If 'path_and_filter' has a numeric value, TYPE MISMATCH is raised.
+-   If 'path_and_filter' is the empty string, BAD FILE NAME is raised.
+-   If the specified filter does not match any files, FILE NOT FOUND is raised.
+
+
+
+ 
+
+
 
 
