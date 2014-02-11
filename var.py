@@ -266,6 +266,9 @@ def set_field_var(field, varname, offset, length):
     if varname[-1] != '$':
         # type mismatch
         raise error.RunError(13)
+    if offset+length > len(field):
+        # FIELD overflow
+        raise error.RunError(50)    
     str_ptr = StringPtr(field, offset, length)
     # assign the string ptr to the variable name
     # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.

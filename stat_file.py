@@ -134,23 +134,23 @@ def exec_field(ins):
     if number not in fileio.files:
         raise error.RunError(52)
     if fileio.files[number].mode.upper() != 'R':
-        raise error.RunError(54)    
-    util.require_read(ins, (',',))
-    field = fileio.files[number].field 
-    offset = 0    
-    while True:
-        width = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-        if width<0 or width>255:
-            raise error.RunError(5)
-        util.skip_white(ins)
-        if util.peek(ins,2).upper() != 'AS':
-            raise error.RunError(5)
-        ins.read(2)
-        name = util.get_var_name(ins)
-        var.set_field_var(field, name, offset, width)         
-        offset+= width
-        if not util.skip_white_read_if(ins,','):
-            break
+        raise error.RunError(54) 
+    if util.skip_white_read_if(ins, (',',)):
+        field = fileio.files[number].field 
+        offset = 0    
+        while True:
+            width = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+            if width<0 or width>255:
+                raise error.RunError(5)
+            util.skip_white(ins)
+            if util.peek(ins,2).upper() != 'AS':
+                raise error.RunError(5)
+            ins.read(2)
+            name = util.get_var_name(ins)
+            var.set_field_var(field, name, offset, width)         
+            offset += width
+            if not util.skip_white_read_if(ins,','):
+                break
     util.require(ins, util.end_statement)
         
         
