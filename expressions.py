@@ -1034,7 +1034,7 @@ def value_sgn(ins):
         raise error.RunError(13)
 
 def value_fix(inp):
-    inp = parse_bracket(ins)
+    inp = parse_bracket(inp)
     if inp[0]=='%':
         return inp
     elif inp[0]=='!':
