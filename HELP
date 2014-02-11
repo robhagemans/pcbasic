@@ -1014,6 +1014,14 @@ ERRORS:
 -   If the specified filter does not match any files, FILE NOT FOUND is raised.
 
 
+FIX(x) function
+---------------
+Truncates 'x' towards zero. 'x' must be a numeric-values expression.
+NOTES:
+-   While 'x' truncates towards zero (i.e. removes the fractional part), INT
+    truncates towards negative infinity. For negative 'x', FIX(x)-INT(x)==1.
+ERRORS:
+-   If 'x' is a string-valued expression, TYPE MISMATCH is raised.
 
  
 
