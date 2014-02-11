@@ -81,20 +81,37 @@ def exec_files(ins):
     path, mask = '.', '*.*'
     if util.skip_white(ins) not in util.end_statement:
         pathmask = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+        if pathmask == '':
+            # bad file name
+            raise error.RunError(64)
         pathmask = pathmask.rsplit('\\', 1)
         if len(pathmask)>1:
-            path = pathmask[0]
-            mask = pathmask[1]
+            path = str(pathmask[0])
+            if path == '':
+                path = '\\'
+            mask = str(pathmask[1])
         else:
-            if pathmask[0]!='':
-                mask = pathmask[0]            
+            if pathmask[0] != '':
+                path = '.'
+                mask = str(pathmask[0])            
     mask = mask.upper()
+    if mask == '':
+        mask = '*.*'
     # get top level directory for '.'
+    path = os.path.abspath(path.replace('\\', os.sep))
+    roots, dirs, files = [], [], []
     try:
         for root, dirs, files in os.walk(path):
             break
     except EnvironmentError as ex:
         oslayer.handle_oserror(ex)
+    except OSError as ex:
+        oslayer.handle_oserror(ex)
+    # get working dir, replace / with \
+    cwd = path.replace(os.sep,'\\')
+    console.write(cwd + util.endl)
+    if (roots, dirs, files) == ([], [], []):
+        raise error.RunError(53)
     dosfiles = oslayer.pass_dosnames(files, mask)
     dosfiles = [ name+'     ' for name in dosfiles ]
     dirs += ['.', '..']
@@ -103,9 +120,6 @@ def exec_files(ins):
     dosfiles.sort()
     dosdirs.sort()    
     output = dosdirs+dosfiles
-    # get working dir, replace / with \
-    cwd = os.path.abspath(path).replace(os.sep,'\\')
-    console.write(cwd + util.endl)
     num = console.width/20
     if len(output) == 0:
         # file not found
