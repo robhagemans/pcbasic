@@ -966,4 +966,32 @@ ERRORS:
 -   If 'x' is not in [0,3], raises ILLEGAL FUNCTION CALL.
 
 
+FIELD statement
+FIELD [#] file_number [, width_0 AS name_0 [, width_1 AS name_1 [, ...] ] ]
+---------------
+Maps variables to the random-access record buffer. The record buffer is a 
+region of memory of length defined by the OPEN statement; the default record
+length is 128 bytes. The FIELD statement associates a portion of this region to
+one or more fixed-length string variables, so that the value of these strings
+is whatever happens to be in the record buffer at that location. 
+'file_number' is a numeric expression that yields the number of an open random-
+access file. The # is optional and has no effect. 'width_0' is a numeric 
+expression giving the length of the first string variable; 'name_0' is a valid 
+string variable name, and so on for further variables. A FIELD statement 
+without any variables specified has no effect.
+A FIELD statement on the same file will specify an alternative mapping of the 
+same file buffer; all mappings will be in effect simultaneously.
+A subsequent assignment or LET or MID$ statement on 'name_0', ... will dis-
+associate the string variable from the field buffer. Use LSET or RSET to change
+values in the field buffer. Use GET to read values from the file into the field
+buffer, changing the variables. Use PUT to write the field buffer to the file.
+ERRORS:
+-   If the statement ends in a comma, raises MISSING OPERAND.
+-   If no file number is specified, raises MISSING OPERAND.
+-   If the lengths in a FIELD statement add up to a number larger than the 
+    record length of the field buffer, FIELD OVERFLOW is raised.
+-   If 'name_0', ... specify a non-string variable, raises TYPE MISMATCH.
+
+
+
 
