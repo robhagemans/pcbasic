@@ -1024,7 +1024,21 @@ ERRORS:
 -   If 'x' is a string-valued expression, TYPE MISMATCH is raised.
 
  
-
-
+FOR statement
+FOR loop_var = start TO stop [STEP step]
+----------------------------------------
+Initiates a FOR--NEXT loop. 'loop_var' is a valid numeric variable name. 
+'start', 'stop' and 'step' are number-valued expressions. 
+Initially, 'loop_var' is set to 'start' Then, the statements between the FOR 
+statement and the NEXT statement are executed and 'loop_var' is incremented by
+'step' (if 'step' is not specified, by 1). This is repeated until 'loop_var' 
+has become greater than or equal to 'stop'. Execution then continues at the 
+statement following NEXT.
+ERRORS:
+-   If no NEXT statement is found to match the FOR statement, FOR WITHOUT NEXT
+    is raised at the FOR statement.
+-   If 'loop_var' is a string name or 'start','stop','end' are string-valued,
+    TYPE MISMATCH is raised.
+        
 
 
