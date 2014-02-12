@@ -9,6 +9,8 @@
 # please see text file COPYING for licence terms.
 #
 
+from operator import itemgetter
+
 import error
 import vartypes
 import program
@@ -32,7 +34,7 @@ byte_size = {'$':3, '%':2, '!':4, '#':8}
 # memory model
 var_mem_start = 4720
 var_current = var_mem_start
-string_current = var_current + total_mem # 65020
+string_current = var_mem_start + total_mem # 65020
 var_memory = {}
 # arrays are always kept after all vars
 array_current = 0
@@ -75,6 +77,18 @@ def set_var(name, value):
     else:
         variables[name] = vartypes.pass_type_keep(name[-1], value)[1]
     # update memory model
+    # check if grabge needs collecting (before allocating mem)
+    free = mem_free() - (max(3, len(name)) + 1 + byte_size[name[-1]]) 
+    if name[-1] == '$':
+        free -= len(unpacked)
+    if free <= 0:
+        # TODO: GARBTEST difference is because string literal is currently stored in string space, whereas GW stores it in code space.
+        collect_garbage()
+        if mem_free() <= 0:
+            # out of memory
+            del variables[name]
+            del var_memory[name]
+            raise error.RunError(7)
     # first two bytes: chars of name or 0 if name is one byte long
     if name not in var_memory:
         name_ptr = var_current
@@ -89,13 +103,13 @@ def set_var(name, value):
     elif type_char == '$':
         # every assignment to string leads to new pointer being allocated
         # TODO: string literals in programs have the var ptr point to program space.
+        # TODO: field strings point to field buffer
         # TODO: if string space expanded to var space, collect garbage
         name_ptr, var_ptr, str_ptr = var_memory[name]
         string_current -= len(unpacked)
         str_ptr = string_current + 1 
         var_memory[name] = (name_ptr, var_ptr, str_ptr)
-    
-     
+        
 def get_var(name):
     name = vartypes.complete_name(name)
     try:
@@ -290,9 +304,6 @@ def assign_field_var(varname, value, justify_right=False):
             s = ' '*(el-len(s)) + s
         else:
             s += ' '*(el-len(s))
-    #if isinstance(variables[varname], StringPtr):
-    #    variables[varname].set_str(s)    
-    #else:
     variables[varname][:] = s    
 
 ###########################################################
@@ -305,10 +316,11 @@ def variables_memory_size():
     mem_used = 0
     for name in variables:
         mem_used += 1 + max(3, len(name))
-        if name[-1] == '$':
-            mem_used += 3+len(variables[name])
-        else:
-            mem_used += var_size_bytes(name)
+        #if name[-1] == '$':
+        #    mem_used += 3+len(variables[name])
+        #else:
+        # string length incorporated through use of string_current
+        mem_used += var_size_bytes(name)
     for name in arrays:
         mem_used += 4 + array_size_bytes(name) + max(3, len(name))
         dimensions, lst = arrays[name]
@@ -431,3 +443,23 @@ def get_var_memory(address):
         # unallocated var space
         return 0 
         
+        
+def mem_free():
+    return string_current - var_mem_start - program.memory_size() - variables_memory_size()
+    
+def collect_garbage():
+    global string_current
+    string_list = []
+    for name in var_memory:
+        if name[-1] == '$':
+            mem = var_memory[name]
+            string_list.append( (name, mem[0], mem[1], mem[2], len(variables[name])) )
+    # sort by str_ptr, largest first        
+    string_list.sort(key=itemgetter(3), reverse=True)        
+    new_string_current = var_mem_start + total_mem              
+    for item in string_list:
+        new_string_current -= item[4]
+        var_memory[item[0]] = (item[1], item[2], new_string_current + 1)     
+    string_current = new_string_current
+     
+     
