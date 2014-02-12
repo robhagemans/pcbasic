@@ -1041,4 +1041,11 @@ ERRORS:
     TYPE MISMATCH is raised.
         
 
+FRE(x) function
+---------------
+Returns the available model memory. 'x' is an expression. If 'x' is number-
+valued, it is ignored. If 'x'is string valued, garbage collection is performed
+before returning available model memory.
+
+
 
