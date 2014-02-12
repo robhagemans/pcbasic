@@ -889,9 +889,11 @@ def value_strig(ins):
 # memory and machine
 
 def value_fre(ins):
-    # TODO: GW does grabge collection if a string-valued argument is specified. We don't.
-    parse_bracket(ins)
-    return vartypes.pack_int(var.total_mem - program.memory_size() - var.variables_memory_size() )
+    val = parse_bracket(ins)
+    if val[0] == '$':
+        # grabge collection if a string-valued argument is specified.
+        var.collect_garbage()
+    return fp.pack(fp.Single.from_int(var.mem_free() ))
 
 # read memory location 
 # currently, var memory and preset values only    
