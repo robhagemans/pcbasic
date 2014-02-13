@@ -177,7 +177,7 @@ def exec_get_file(ins):
     if fileio.files[number].mode.upper() != 'R':
         raise error.RunError(54)    
     if util.skip_white_read_if(ins, ','):
-        pos = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
+        pos = fp.unpack(vartypes.pass_double_keep(expressions.parse_expression(ins))).round_to_int()
         if pos<1 or pos>2**25:   # not 2^32-1 as the manual boasts!
             raise error.RunError(63)
         fileio.files[number].set_pos(pos)    
