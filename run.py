@@ -197,7 +197,7 @@ def write_error_message(msg, linenum):
     console.write(' ' + util.endl)          
 
 def exit():
-    fileio.close_all_all_all()
+    fileio.close_all()
     sys.exit(0)
     
     

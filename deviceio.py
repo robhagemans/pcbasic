@@ -33,9 +33,9 @@ com2 = None
 def init_devices(args):
     global input_devices, output_devices, random_devices
     global scrn, kybd, lpt1, lpt2, lpt3, com1, com2
-    scrn = fileio.pseudo_textfile(ConsoleStream())
-    kybd = fileio.pseudo_textfile(ConsoleStream())
-    lpt1 = create_device(args.lpt1, fileio.pseudo_textfile(PrinterStream()))
+    scrn = fileio.PseudoFile(ConsoleStream())
+    kybd = fileio.PseudoFile(ConsoleStream())
+    lpt1 = create_device(args.lpt1, fileio.PseudoFile(PrinterStream()))
     lpt2 = create_device(args.lpt2)
     lpt3 = create_device(args.lpt3)
     com1 = create_device(args.com1)
@@ -83,7 +83,7 @@ def create_device(arg, default=None):
         for a in arg:
             [addr,val] = a.split(':')
             if addr.upper()=='CUPS':
-                device = fileio.pseudo_textfile(PrinterStream(val))      
+                device = fileio.PseudoFile(PrinterStream(val))      
             elif addr.upper()=='FILE':
                 device = fileio.DeviceFile(val, access='wb')
     else:
