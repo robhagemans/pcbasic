@@ -33,8 +33,8 @@ com2 = None
 def init_devices(args):
     global input_devices, output_devices, random_devices
     global scrn, kybd, lpt1, lpt2, lpt3, com1, com2
-    scrn = fileio.pseudo_textfile(console.ConsoleStream())
-    kybd = fileio.pseudo_textfile(console.ConsoleStream())
+    scrn = fileio.pseudo_textfile(ConsoleStream())
+    kybd = fileio.pseudo_textfile(ConsoleStream())
     lpt1 = create_device(args.lpt1, fileio.pseudo_textfile(PrinterStream()))
     lpt2 = create_device(args.lpt2)
     lpt3 = create_device(args.lpt3)
@@ -112,6 +112,26 @@ def create_device(arg, default=None):
 #   set_width()
 #   get_col()
 
+
+class ConsoleStream:
+    def write(self, c):
+        console.write(c)
+        
+    def read(self, n):
+        return console.read_chars(n)
+    
+    def seek(self, a, b=0):
+        pass
+        
+    def tell(self):
+        return 1
+
+    def flush(self):
+        pass
+
+    def close(self):
+        pass
+    
 
 class PrinterStream(StringIO.StringIO):
     def __init__(self, name=''):

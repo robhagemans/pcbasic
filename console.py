@@ -998,22 +998,3 @@ def stick_has_been_trig(num, ntrig):
         return False
 
     
-class ConsoleStream:
-    def write(self, c):
-        write(c)
-        
-    def read(self, n):
-        return read_chars(n)
-    
-    def seek(self, a, b=0):
-        pass
-        
-    def tell(self):
-        return 1
-
-    def flush(self):
-        pass
-
-    def close(self):
-        pass
-    
