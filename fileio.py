@@ -112,7 +112,7 @@ class TextFile(object):
             # input past end
             raise error.RunError(62)
         # readline breaks line on \x0A, we can only break on \x0D or \x0D\x0A
-        s=''
+        s = ''
         while True:
             c = self.fhandle.read(1)
             if c in ('', '\x1a'):
@@ -146,19 +146,7 @@ class TextFile(object):
         return s 
         
     def peek_char(self):
-        return self.peek_chars()
-        
-    def peek_chars(self,num=1):
-        s = ''
-        for _ in range(num):
-            c = self.fhandle.read(1)
-            # check for \x1A (EOF char - this will actually stop further reading)
-            if c =='':
-                break
-            if c == '\x1a':
-                self.fhandle.seek(-1, 1)
-                break
-            s+=c
+        s = self.fhandle.read(1)
         self.fhandle.seek(-len(s), 1)
         return s
 
@@ -175,10 +163,34 @@ class TextFile(object):
             else:    
                 s_out += c
             # nonprinting characters including tabs are not counted for WIDTH
-            # FIXME: this is true for text files, but not for SCRN: and LPT1:    
+            # FIXME: this is true for text files, but not for SCRN: and LPT1: , see below   
             if ord(c) >= 32:
                 self.col += 1
         self.fhandle.write(s_out)
+
+    # old printer version:
+    #def write(self, s):
+    #    tab = 8
+    #    last=''
+    #    for c in s:
+    #        # enforce width setting, unles wrapping is enabled (width=255)
+    #        if self.col == width and self.width !=255:
+    #            self.col=1
+    #            self.printbuf+='\n'
+    #        
+    #        if c=='\x0d' or c=='\x0a' and self.width!=255: # CR, LF
+    #            if c=='\x0a' and last=='\x0d':
+    #                pass
+    #            else:
+    #                self.col = 1
+    #                self.printbuf += '\n'#c
+    #        elif c=='\x09': # TAB
+    #            num = (tab - (self.col-1 - tab*int((self.col-1)/tab)))
+    #            self.printbuf +=' '*num
+    #        else:
+    #            self.col+=1    
+    #            self.printbuf += c    
+    #        last=c
 
     def get_col(self):
         return self.col
@@ -227,10 +239,7 @@ class RandomFile(object):
         # open a pseudo text file over the buffer stream
         # to make WRITE# etc possible
         self.field_text_file = pseudo_textfile(ByteStream(self.field))
-        
-    # all text-file operations on a RANDOM file number actually work on the FIELD buffer
-#    def get_stream(self):
-#        return self.field_text_file.fhandle
+        # all text-file operations on a RANDOM file number actually work on the FIELD buffer
     
     # read line (from field buffer)    
     def read(self):
@@ -244,10 +253,7 @@ class RandomFile(object):
         return self.field_text_file.read_chars(num)
 
     def peek_char(self):
-        return self.peek_chars()
-        
-    def peek_chars(self, num=1):
-        return self.field_text_file.peek_chars(num)
+        return self.field_text_file.peek_char()
 
     # write one or more chars to field buffer
     def write(self, s):
