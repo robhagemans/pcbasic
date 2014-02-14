@@ -367,7 +367,7 @@ def exec_input(ins):
         console.write(prompt) 
         line = console.read_screenline(write_endl=newline)
         inputs = StringIO(line) 
-        text_file = fileio.pseudo_textfile(inputs)
+        text_file = fileio.PseudoFile(inputs)
         inputs.seek(0)
         success = True
         for v in readvar:

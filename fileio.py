@@ -97,7 +97,9 @@ class TextFile(object):
             self.fhandle.seek(0)
         else:
             self.fhandle.seek(0, 2)
-        
+        if number != 0:
+            files[number] = self
+    
     def close(self):
         if self.access == 'wb':
             # write EOF char
@@ -238,8 +240,10 @@ class RandomFile(object):
             fields[self.number] = self.field
         # open a pseudo text file over the buffer stream
         # to make WRITE# etc possible
-        self.field_text_file = pseudo_textfile(ByteStream(self.field))
+        self.field_text_file = PseudoFile(ByteStream(self.field))
         # all text-file operations on a RANDOM file number actually work on the FIELD buffer
+        if number != 0:
+            files[number] = self
     
     # read line (from field buffer)    
     def read(self):
@@ -331,32 +335,19 @@ class DeviceFile(TextFile):
         # don't close the file handle as we may have copies
         if self.number !=0:
             del files[self.number]
-        
 
-# close all non-system files
-# system files have negative file number
+class PseudoFile(TextFile):
+    def __init__(self, stream):
+        TextFile.__init__(self, stream, 0, 'P', 'r+b')
+    
 def close_all():
     for f in list(files):
         if f > 0:
             files[f].close()
-        
-# close all files
-def close_all_all_all():
-    for f in list(files):
-        files[f].close()
                 
 def get_file(number):        
     return files[number]
     
-def pseudo_textfile(stringio):
-    # open a pseudo text file over a byte stream
-    number = -1
-    while number in files:
-        number -= 1
-    text_file = TextFile(stringio, number, 'P', 'r+b')
-    files[number] = text_file
-    return text_file        
-   
 def open_file(number, unixpath, mode='I', access='rb', lock='rw', reclen=128):
     if number <0 or number>255:
         # bad file number
@@ -370,7 +361,6 @@ def open_file(number, unixpath, mode='I', access='rb', lock='rw', reclen=128):
         access = 'r+b'
         inst = RandomFile(oslayer.safe_open(unixpath, access), number, mode.upper(), access, reclen)
     oslayer.safe_lock(inst.fhandle, access, lock)
-    files[number] = inst
             
 def lock_file(thefile, lock, lock_start, lock_length):
     if deviceio.is_device(thefile):
