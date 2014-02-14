@@ -986,6 +986,11 @@ associate the string variable from the field buffer. Use LSET or RSET to change
 values in the field buffer. Use GET to read values from the file into the field
 buffer, changing the variables. Use PUT to write the field buffer to the file.
 ERRORS:
+-   If 'file_number' is not in [0,255], raises ILLEGAL FUNCTION CALL.
+-   If 'file_number' is not the number of an open file, raises
+    BAD FILE NUMBER.
+-   If 'file_number' is open under a mode other than RANDOM, raises
+    BAD FILE MODE.
 -   If the statement ends in a comma, raises MISSING OPERAND.
 -   If no file number is specified, raises MISSING OPERAND.
 -   If the lengths in a FIELD statement add up to a number larger than the 
@@ -1048,4 +1053,42 @@ valued, it is ignored. If 'x'is string valued, garbage collection is performed
 before returning available model memory.
 
 
+GET statement   (random-access files)
+GET [#] file_number [, record_number]
+-------------
+Read a record from the random-access file 'file_number' at position
+'record_number'. 'file_number' is a numeric expression that yields the number 
+of an open random-access file. The # is optional and has no effect. 
+'record_number' is a numeric expression that gives a number between 1 and 
+33554432 (2^25), inclusive, and is interpreted as the record number. 
+NOTES:
+-   If the record number is beyond the end of the file, the file buffer is 
+    filled with null bytes.
+ERRORS:
+-   If 'record_number' is not in [1, 33554432], raises BAD RECORD NUMBER.
+-   If 'file_number' is not in [0,255], raises ILLEGAL FUNCTION CALL.
+-   If 'file_number' is not the number of an open file, raises
+    BAD FILE NUMBER.
+-   If 'file_number' is open under a mode other than RANDOM, raises
+    BAD FILE MODE.
+    
 
+GET statement   (communications)
+GET [#] com_file_number, [, number_bytes]
+-------------
+Read 'number_bytes' bytes from the communications buffer opened under file 
+number 'com_file_number'. 'number_bytes' is a numeric expression between 0
+and the COM buffer length, inclusive.
+NOTES:
+-   This is not implemented in PC-BASIC 3.23.
+ERRORS:
+-   If 'bytes' is less than 0 or greater than the COM buffer length,
+    ... ?
+-   If 'com_file_number' is not in [0,255], raises ILLEGAL FUNCTION CALL.
+-   If 'com_file_number' is not the number of an open file, raises
+    BAD FILE NUMBER.
+    
+    
+    
+    
+    
