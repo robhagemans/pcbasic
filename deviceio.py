@@ -10,10 +10,11 @@
 #
 
 import copy
+import StringIO
 
+import oslayer
 import error
 import fileio
-import printer
 import console
 
 input_devices = {}
@@ -34,7 +35,7 @@ def init_devices(args):
     global scrn, kybd, lpt1, lpt2, lpt3, com1, com2
     scrn = fileio.pseudo_textfile(console.ConsoleStream())
     kybd = fileio.pseudo_textfile(console.ConsoleStream())
-    lpt1 = create_device(args.lpt1, fileio.pseudo_textfile(printer.PrinterStream()))
+    lpt1 = create_device(args.lpt1, fileio.pseudo_textfile(PrinterStream()))
     lpt2 = create_device(args.lpt2)
     lpt3 = create_device(args.lpt3)
     com1 = create_device(args.com1)
@@ -82,7 +83,7 @@ def create_device(arg, default=None):
         for a in arg:
             [addr,val] = a.split(':')
             if addr.upper()=='CUPS':
-                device = fileio.pseudo_textfile(printer.PrinterStream(val))      
+                device = fileio.pseudo_textfile(PrinterStream(val))      
             elif addr.upper()=='FILE':
                 device = fileio.DeviceFile(val, access='wb')
     else:
@@ -112,3 +113,19 @@ def create_device(arg, default=None):
 #   get_col()
 
 
+class PrinterStream(StringIO.StringIO):
+    def __init__(self, name=''):
+        self.printer_name=name
+        StringIO.StringIO.__init__(self)
+    
+    # flush buffer to LPR printer    
+    def flush(self):
+        oslayer.line_print(self.getvalue(), self.printer_name)
+        self.truncate(0)
+        self.seek(0)
+
+    def close(self):
+        self.flush()
+        # don't actually close the stream, there may be copies
+        
+        
