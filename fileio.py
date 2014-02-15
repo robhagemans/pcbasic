@@ -155,10 +155,10 @@ class TextFile(object):
     # write one or more chars
     def write(self, s):
         s_out = ''
-        for c in s:
+        for c in str(s):
             if self.col >= self.width and self.width != 255:  # width 255 means wrapping enabled
                 s_out += '\x0d\x0a'
-                self.col=1
+                self.col = 1
             if c in ('\x0a','\x0d'): # CR, LF
                 s_out += c
                 self.col = 1
@@ -361,5 +361,3 @@ def close_all():
             files[f].close()
 
 
-### move to deviceio
-          
