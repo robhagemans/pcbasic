@@ -11,11 +11,18 @@
 
 import copy
 import StringIO
+import serial
 
 import oslayer
 import error
 import fileio
+from fileio import RandomBase, TextFile
 import console
+
+
+# buffer sizes (/c switch in GW-BASIC)
+serial_in_size = 256
+serial_out_size = 128
 
 input_devices = {}
 output_devices = {}
@@ -85,7 +92,7 @@ def create_device(arg, default=None):
             if addr.upper()=='CUPS':
                 device = fileio.PseudoFile(PrinterStream(val))      
             elif addr.upper()=='FILE':
-                device = fileio.DeviceFile(val, access='wb')
+                device = DeviceFile(val, access='wb')
     else:
         device = default
     return device
@@ -148,4 +155,52 @@ class PrinterStream(StringIO.StringIO):
         self.flush()
         # don't actually close the stream, there may be copies
         
+
+# essentially just a text file that doesn't close if asked to
+class DeviceFile(TextFile):
+    def __init__(self, unixpath, access='rb'):
+        if 'W' in access.upper():
+            mode = 'O'
+        else:
+            mode = 'I'
+        TextFile.__init__(self, oslayer.safe_open(unixpath, access), 0, mode, access)
+        
+    def close(self):
+        # don't close the file handle as we may have copies
+        if self.number !=0:
+            del files[self.number]
+
+
+
+    
+class SerialFile(RandomBase):
+    # communications buffer overflow
+    overflow_error = 69
+    
+    def __init__(self, port, number, reclen=128):
+        RandomBase.__itnit__(self, serial.Serial(port), number, 'R', 'r+b', reclen)
+    
+    # read (GET)    
+    def read_field(self, num):
+        # blocking read of num bytes
+        self.field[:] = self.fhandle.read(num)
+        
+    # write (PUT)
+    def write_field(self, num):
+        self.fhandle.write(self.field[:num])
+        
+    def loc(self):
+        # for LOC(i) (comms files)
+        # returns numer of chars waiting to be read
+        return min(serial_in_size, self.fhandle.inWaiting())
+            
+    def eof(self):
+        # for EOF(i)
+        return self.fhandle.inWaiting() <= 0
+    
+    def lof(self):
+        return max(0, serial_in_size - self.fhandle.inWaiting())
+        
+        
+                
         
