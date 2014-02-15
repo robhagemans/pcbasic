@@ -206,12 +206,18 @@ def parse_lock(ins):
         lock_stop = lock_stop_rec * thefile.reclen
         lock_length = lock_stop - lock_start
     return thefile.number, lock_start, lock_length     
-           
-            
+                 
 def exec_lock(ins):
     nr,start,length = parse_lock(ins) 
     lock_list.append((nr,start,length))
-    fileio.lock_file(nr, 'rw', start, length)                   
+    thefile = fileio.files[nr]
+    if deviceio.is_device(thefile):
+        # permission denied
+        raise error.RunError(70)
+    if isinstance(thefile, fileio.TextFile):
+        start = 0
+        length = 0
+    oslayer.safe_lock(thefile.fhandle, 'rw', start, length)                   
     util.require(ins, util.end_statement)
            
             
@@ -220,10 +226,16 @@ def exec_unlock(ins):
     # permission denied if the exact record range wasn't given before
     if unlock not in lock_list:
         raise error.RunError(70)
-    else:
-        lock_list.remove(unlock)
-        (nr,start,length) = unlock    
-        fileio.lock_file(nr, '', start, length)                   
-        util.require(ins, util.end_statement)
+    lock_list.remove(unlock)
+    (nr,start,length) = unlock    
+    thefile = fileio.files[nr]
+    if deviceio.is_device(thefile):
+        # permission denied
+        raise error.RunError(70)
+    if isinstance(thefile, fileio.TextFile):
+        start = 0
+        length = 0
+    oslayer.safe_lock(thefile.fhandle, '', start, length)                   
+    util.require(ins, util.end_statement)
     
     
