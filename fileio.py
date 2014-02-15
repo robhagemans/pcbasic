@@ -379,6 +379,10 @@ class DeviceFile(TextFile):
 
 
 import serial
+# buffer sizes (/c /s switches in GW-BASIC)
+serial_in_size = 256
+serial_out_size = 128
+
     
 class SerialFile(RandomBase):
     # communications buffer overflow
@@ -399,14 +403,14 @@ class SerialFile(RandomBase):
     def loc(self):
         # for LOC(i) (comms files)
         # returns numer of chars waiting to be read
-        return self.fhandle.inWaiting()
+        return min(serial_in_size, self.fhandle.inWaiting())
             
     def eof(self):
         # for EOF(i)
         return self.fhandle.inWaiting() <= 0
     
     def lof(self):
-        return max(0, self.reclen - self.fhandle.inWaiting())
+        return max(0, serial_in_size - self.fhandle.inWaiting())
         
         
                 
