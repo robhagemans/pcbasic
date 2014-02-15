@@ -218,10 +218,14 @@ class TextFile(object):
  
     def flush(self):
         self.fhandle.flush()
-        pass
- 
- 
-class RandomFile(object):
+
+
+class PseudoFile(TextFile):
+    def __init__(self, stream):
+        TextFile.__init__(self, stream, 0, 'P', 'r+b')
+
+
+class RandomBase(object):
     def __init__(self, fhandle, number, mode, access, reclen=128):
         # width=255 means line wrap
         self.width = 255
@@ -231,13 +235,13 @@ class RandomFile(object):
         self.mode = mode
         self.access = access
         self.reclen = reclen
-        self.recpos = 0
-        self.fhandle.seek(0)
-        if self.number in fields:
+        # replace with empty field if already exists    
+        try:
             self.field = fields[self.number]
-        else:
-            self.field = bytearray('\x00')*reclen
+        except KeyError:
+            self.field = bytearray()
             fields[self.number] = self.field
+        self.field[:] = bytearray('\x00')*reclen
         # open a pseudo text file over the buffer stream
         # to make WRITE# etc possible
         self.field_text_file = PseudoFile(ByteStream(self.field))
@@ -248,35 +252,52 @@ class RandomFile(object):
     # read line (from field buffer)    
     def read(self):
         if self.field_text_file.fhandle.tell() >= self.reclen:
-            raise error.RunError(50) # FIELD overflow
+            raise error.RunError(self.overflow_error) # FIELD overflow
         return self.field_text_file.read()
         
     def read_chars(self, num):
         if self.field_text_file.fhandle.tell() + num > self.reclen:
-            raise error.RunError(50) # FIELD overflow
+            raise error.RunError(self.overflow_error) # FIELD overflow
         return self.field_text_file.read_chars(num)
-
-    def peek_char(self):
-        return self.field_text_file.peek_char()
-
+    
     # write one or more chars to field buffer
     def write(self, s):
         ins = StringIO(s)
         while self.field_text_file.fhandle.tell() < self.reclen:
             self.field_text_file.write(ins.read(1))
         if ins.tell() < len(s):
-            raise error.RunError(50) # FIELD overflow
+            raise error.RunError(overflow_error) 
     
     def set_width(self, new_width=255):
         self.width = new_width
     
     def get_width(self):
         return self.width
+
+    def peek_char(self):
+        return self.field_text_file.peek_char()
     
     def close(self):
-        self.fhandle.close()
         if self.number != 0:
             del files[self.number]
+    
+    def flush(self):
+        self.fhandle.flush()
+
+
+class RandomFile(RandomBase):
+    # FIELD overflow
+    overflow_error = 50
+    
+    def __init__(self, fhandle, number, mode, access, reclen=128):
+        RandomBase.__init__(self, fhandle, number, mode, access, reclen=128)
+        # position at start of file
+        self.recpos = 0
+        self.fhandle.seek(0)
+    
+    def close(self):
+        RandomBase.close(self)
+        self.fhandle.close()
         
     # read record    
     def read_field(self):
@@ -285,7 +306,6 @@ class RandomFile(object):
         else:
             self.field[:] = self.fhandle.read(self.reclen)
         self.recpos += 1
-        return True
         
     # write record
     def write_field(self):
@@ -318,9 +338,30 @@ class RandomFile(object):
         self.fhandle.seek(current)
         return lof
         
-    def flush(self):
-        self.fhandle.flush()
+
+
+def open_file(number, unixpath, mode='I', access='rb', lock='rw', reclen=128):
+    if number <0 or number>255:
+        # bad file number
+        raise error.RunError(52)
+    if number in files:
+        # file already open
+        raise error.RunError(55)
+    if mode.upper() in ('I', 'O', 'A'):
+        inst = TextFile(oslayer.safe_open(unixpath, access), number, mode.upper(), access)
+    else:
+        access = 'r+b'
+        inst = RandomFile(oslayer.safe_open(unixpath, access), number, mode.upper(), access, reclen)
+    oslayer.safe_lock(inst.fhandle, access, lock)
             
+            
+def close_all():
+    for f in list(files):
+        if f > 0:
+            files[f].close()
+
+
+### move to deviceio
           
 # essentially just a text file that doesn't close if asked to
 class DeviceFile(TextFile):
@@ -336,65 +377,24 @@ class DeviceFile(TextFile):
         if self.number !=0:
             del files[self.number]
 
-class PseudoFile(TextFile):
-    def __init__(self, stream):
-        TextFile.__init__(self, stream, 0, 'P', 'r+b')
 
-
-class SerialFile(object):
+import serial
+    
+class SerialFile(RandomBase):
+    # communications buffer overflow
+    overflow_error = 69
+    
     def __init__(self, port, number, reclen=128):
-        # width=255 means line wrap
-        self.width = 255
-        self.col = 1
-        self.fhandle = serial.Serial(port)
-        self.number = number
-        self.mode = 'R'
-        self.access = 'r+b'
-        self.reclen = reclen
-        #self.recpos = 0
-        #self.fhandle.seek(0)
-        self.field = bytearray('\x00')*reclen
-        # open a pseudo text file over the buffer stream
-        # to make WRITE# etc possible
-        self.field_text_file = PseudoFile(ByteStream(self.field))
-        # all text-file operations on a RANDOM file number actually work on the FIELD buffer
-        if number != 0:
-            files[number] = self
+        RandomBase.__itnit__(self, serial.Serial(port), number, 'R', 'r+b', reclen)
     
-    # read line (from field buffer)    
-    def read(self):
-        if self.field_text_file.fhandle.tell() >= self.reclen:
-            raise error.RunError(69) # communications buffer overflow
-        return self.field_text_file.read()
+    # read (GET)    
+    def read_field(self, num):
+        # blocking read of num bytes
+        self.field[:] = self.fhandle.read(num)
         
-    def read_chars(self, num):
-        if self.field_text_file.fhandle.tell() + num > self.reclen:
-            raise error.RunError(69) # communications buffer overflow
-        return self.field_text_file.read_chars(num)
-
-    def peek_char(self):
-        return self.field_text_file.peek_char()
-
-    # write one or more chars to field buffer
-    def write(self, s):
-        ins = StringIO(s)
-        while self.field_text_file.fhandle.tell() < self.reclen:
-            self.field_text_file.write(ins.read(1))
-        if ins.tell() < len(s):
-            raise error.RunError(69) # communications buffer overflow
-    
-    def set_width(self, new_width=255):
-        self.width = new_width
-    
-    def get_width(self):
-        return self.width
-    
-    def close(self):
-        #self.fhandle.close()
-        if self.number != 0:
-            del files[self.number]
-    
-    #####
+    # write (PUT)
+    def write_field(self, num):
+        self.fhandle.write(self.field[:num])
         
     def loc(self):
         # for LOC(i) (comms files)
@@ -408,33 +408,6 @@ class SerialFile(object):
     def lof(self):
         return max(0, self.reclen - self.fhandle.inWaiting())
         
-    # read (GET)    
-    def read_field(self, num):
-        # blocking read of num bytes
-        self.field[:] = self.fhandle.read(num)
-        return True
-        
-    # write (PUT)
-    def write_field(self, num):
-        self.fhandle.write(self.field[:num])
         
                 
-def open_file(number, unixpath, mode='I', access='rb', lock='rw', reclen=128):
-    if number <0 or number>255:
-        # bad file number
-        raise error.RunError(52)
-    if number in files:
-        # file already open
-        raise error.RunError(55)
-    if mode.upper() in ('I', 'O', 'A'):
-        inst = TextFile(oslayer.safe_open(unixpath, access), number, mode.upper(), access)
-    else:
-        access = 'r+b'
-        inst = RandomFile(oslayer.safe_open(unixpath, access), number, mode.upper(), access, reclen)
-    oslayer.safe_lock(inst.fhandle, access, lock)
-            
-def close_all():
-    for f in list(files):
-        if f > 0:
-            files[f].close()
 
