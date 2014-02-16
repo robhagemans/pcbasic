@@ -434,21 +434,21 @@ def input_string(text_file, end_all=('\x0d', '\x1a', ''), end_entry=(',', '\x0a'
     end_entry += end_all  
     max_len = 255
     word = ''
-    quoted=False
+    quoted = False
     # skip *leading* spaces and line feeds and NUL. 
     # cf READ skips whitespace inside numbers as well
     c = text_skip(text_file, ascii_white)
     # check first char
     c = text_file.read_chars(1)
-    if c=='"':
-        quoted=True
+    if c == '"':
+        quoted = True
         c = text_file.read_chars(1)
     while True:
         if c in end_all:
             break
         elif not quoted and c in end_entry:
             break    
-        elif quoted and c=='"':
+        elif quoted and c == '"':
             # ignore blanks after the quotes
             c = text_skip(text_file, ascii_white)
             # but we need a comma if there's to be more input        

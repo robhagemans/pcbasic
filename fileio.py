@@ -21,6 +21,9 @@ files = {}
 # fields are preserved on file close, so have a separate store
 fields = {}
 
+# maximum file number = maximum number of open files
+# in GW, this is a command line option
+max_files = 3
 
 '''ByteStream is a wrapper for bytearray that keeps track of a location. '''        
 class ByteStream(object):
@@ -274,8 +277,6 @@ class RandomBase(object):
     def get_width(self):
         return self.width
 
-    def peek_char(self):
-        return self.field_text_file.peek_char()
     
     def close(self):
         if self.number != 0:
@@ -284,7 +285,19 @@ class RandomBase(object):
     def flush(self):
         self.fhandle.flush()
 
-
+    def peek_char(self):
+        return self.field_text_file.peek_char()
+    
+    def get_col(self):
+        return self.field_text_file.col
+    
+    def set_width(self, new_width=255):
+        self.field_test_file.width = new_width
+    
+    def get_width(self):
+        return self.field_text_file.width
+        
+        
 class RandomFile(RandomBase):
     # FIELD overflow
     overflow_error = 50
@@ -300,7 +313,7 @@ class RandomFile(RandomBase):
         self.fhandle.close()
         
     # read record    
-    def read_field(self):
+    def read_field(self, dummy=None):
         if self.eof():
             self.field[:] = '\x00'*self.reclen
         else:
@@ -308,7 +321,7 @@ class RandomFile(RandomBase):
         self.recpos += 1
         
     # write record
-    def write_field(self):
+    def write_field(self, dummy=None):
         current_length = self.lof()
         if self.recpos > current_length:
             self.fhandle.seek(0, 2)
@@ -341,7 +354,7 @@ class RandomFile(RandomBase):
 
 
 def open_file(number, unixpath, mode='I', access='rb', lock='rw', reclen=128):
-    if number <0 or number>255:
+    if number < 0 or number > max_files:
         # bad file number
         raise error.RunError(52)
     if number in files:

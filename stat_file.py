@@ -162,31 +162,46 @@ def exec_field(ins):
 
 def exec_put_file(ins):
     number = expressions.parse_file_number_opthash(ins)
-    if number not in fileio.files:
+    try:
+        the_file = fileio.files[number]
+    except KeyError:
         raise error.RunError(52)
-    if fileio.files[number].mode.upper() != 'R':
+    if the_file.mode.upper() != 'R':
         raise error.RunError(54)    
+    # for COM files
+    num_bytes = the_file.reclen
     if util.skip_white_read_if(ins, ','):
         pos = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)).round_to_int())
         if pos<1 or pos>2**25:   # not 2^32-1 as the manual boasts! pos-1 apparently needs to fit in a single-prec mantissa
             raise error.RunError(63)
-        fileio.files[number].set_pos(pos)    
-    fileio.files[number].write_field()    
+        if not isinstance(the_file, deviceio.SerialFile):
+            the_file.set_pos(pos)    
+        else:
+            num_bytes = pos    
+    the_file.write_field(num_bytes)
     util.require(ins, util.end_statement)
             
 
 def exec_get_file(ins):
     number = expressions.parse_file_number_opthash(ins)
-    if number not in fileio.files:
+    try:
+        the_file = fileio.files[number]
+    except KeyError:
         raise error.RunError(52)
-    if fileio.files[number].mode.upper() != 'R':
+    if the_file.mode.upper() != 'R':
         raise error.RunError(54)    
+    # for COM files
+    num_bytes = the_file.reclen
     if util.skip_white_read_if(ins, ','):
         pos = fp.unpack(vartypes.pass_double_keep(expressions.parse_expression(ins))).round_to_int()
         if pos<1 or pos>2**25:   # not 2^32-1 as the manual boasts!
             raise error.RunError(63)
-        fileio.files[number].set_pos(pos)    
-    fileio.files[number].read_field()    
+        if not isinstance(the_file, deviceio.SerialFile):
+            the_file.set_pos(pos)
+        else:
+            # 'pos' means number of bytes for COM files
+            num_bytes = pos                
+    the_file.read_field(num_bytes)
     util.require(ins, util.end_statement)
 
 
