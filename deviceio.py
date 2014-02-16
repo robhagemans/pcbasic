@@ -12,6 +12,8 @@
 import copy
 import StringIO
 import serial
+import socket
+import select
 
 import oslayer
 import error
@@ -68,9 +70,13 @@ def device_open(number, device_name, mode='I', access='rb'):
     else:
         # bad file mode
         raise error.RunError(54)
-    # create a clone of the object, inheriting WIDTH settings etc.
-    inst = copy.copy(device)
-    if number < 0 or number > 255:
+    if isinstance(device, SerialFile):
+        device.open()
+        inst = device
+    else:    
+        # create a clone of the object, inheriting WIDTH settings etc.
+        inst = copy.copy(device)
+    if number < 0 or number > fileio.max_files:
         # bad file number
         raise error.RunError(52)
     if number in fileio.files:
@@ -88,11 +94,13 @@ def create_device(arg, default=None):
     device = None
     if arg != None:
         for a in arg:
-            [addr,val] = a.split(':')
-            if addr.upper()=='CUPS':
+            [addr, val] = a.split(':', 1)
+            if addr.upper() == 'CUPS':
                 device = fileio.PseudoFile(PrinterStream(val))      
-            elif addr.upper()=='FILE':
+            elif addr.upper() == 'FILE':
                 device = DeviceFile(val, access='wb')
+            elif addr.upper() == 'PORT':
+                device = SerialFile(val)    
     else:
         device = default
     return device
@@ -176,14 +184,62 @@ class DeviceFile(TextFile):
 class SerialFile(RandomBase):
     # communications buffer overflow
     overflow_error = 69
+
+    def __init__(self, port, number=0, reclen=128):
+        self._in_buffer = bytearray()
+        RandomBase.__init__(self, serial.serial_for_url(port, timeout=0, do_not_open=True), number, 'R', 'r+b', reclen)
+        if port.split(':', 1)[0] == 'socket':
+            self.fhandle = SocketSerialWrapper(self.fhandle)
     
-    def __init__(self, port, number, reclen=128):
-        RandomBase.__itnit__(self, serial.Serial(port), number, 'R', 'r+b', reclen)
+    # fill up buffer - non-blocking    
+    def check_read(self):
+        # fill buffer at most up to buffer size        
+        try:
+            self._in_buffer += self.fhandle.read(serial_in_size - len(self._in_buffer))
+        except serial.SerialException:
+            # device I/O
+            raise error.RunError(57)
+        
+    # blocking read
+    def read_chars(self, num=1):
+        out = bytearray('')
+        while len(out) < num:
+            # non blocking read
+            self.check_read()
+            to_read = min(len(self._in_buffer), num - len(out))
+            out += self._in_buffer[:to_read]
+            del self._in_buffer[:to_read]
+            # allow for break & screen updates
+            console.idle()        
+            console.check_events()                       
+        return str(out)
+    
+    # blocking read line (from com port directly - NOT from field buffer!)    
+    def read(self):
+        out = ''
+        while True:
+            c = self.read_chars()
+            if c == '\r':
+                c = self.read_chars()
+                out += c
+                if c == '\n':    
+                    break
+            out += c
+        return out
+    
+    def peek_char(self):
+        if self._in_buffer:
+            return str(self._in_buffer[0])
+        else:
+            return ''    
+        
+    def write(self, s):
+        self.fhandle.write(s)
     
     # read (GET)    
     def read_field(self, num):
         # blocking read of num bytes
-        self.field[:] = self.fhandle.read(num)
+        self.field[:] = self.read_chars(num)
         
     # write (PUT)
     def write_field(self, num):
@@ -192,15 +248,65 @@ class SerialFile(RandomBase):
     def loc(self):
         # for LOC(i) (comms files)
         # returns numer of chars waiting to be read
-        return min(serial_in_size, self.fhandle.inWaiting())
+        # don't use inWaiting() as SocketSerial.inWaiting() returns dummy 0    
+        # fill up buffer insofar possible
+        self.check_read()
+        return len(self._in_buffer) 
             
     def eof(self):
         # for EOF(i)
-        return self.fhandle.inWaiting() <= 0
-    
+        return self.loc() <= 0
+        
     def lof(self):
-        return max(0, serial_in_size - self.fhandle.inWaiting())
+        return serial_in_size - self.loc()
+    
+    def open(self):
+        if self.fhandle._isOpen:
+            # file already open
+            raise error.RunError(55)
+        else:
+            self.fhandle.open()
+    
+    def close(self):
+        self.fhandle.close()
+        RandomBase.close(self)
+
+
+class SocketSerialWrapper(object):
+    ''' workaround for some limitations of SocketSerial with timeout==0 '''
+    
+    def __init__(self, socketserial):
+        self._serial = socketserial    
+        self._isOpen = self._serial._isOpen
+    
+    def open(self):
+        self._serial.open()
+        self._isOpen = self._serial._isOpen
+    
+    def close(self):
+        self._serial.close()
+        self._isOpen = self._serial._isOpen
         
-        
-                
-        
+    # non-blocking read   
+    # SocketSerial.read always returns '' if timeout==0
+    def read(self, num=1):
+        self._serial._socket.setblocking(0)
+        if not self._serial._isOpen: 
+            raise serial.serialutil.portNotOpenError
+        # poll for bytes (timeout = 0)
+        ready, _, _ = select.select([self._serial._socket], [], [], 0)
+        if not ready:
+            # no bytes present after poll
+            return ''
+        try:
+            # fill buffer at most up to buffer size        
+            return self._serial._socket.recv(num)
+        except socket.timeout:
+            pass
+        except socket.error, e:
+            raise serial.SerialException('connection failed (%s)' % e)
+    
+    def write(self, s):
+        self._serial.write(s)                    
+
+
