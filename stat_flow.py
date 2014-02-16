@@ -506,6 +506,13 @@ def exec_resume(ins):
 
 
 def exec_return(ins):
+    # return *can* have a line number
+    if util.skip_white(ins) not in util.end_statement:    
+        jumpnum = util.parse_jumpnum(ins)    
+        # rest of line is ignored
+        util.skip_to(ins, util.end_statement)    
+    else:
+        jumpnum = None
     if program.gosub_return == []: 
         # RETURN without GOSUB
         raise error.RunError(3)
@@ -522,13 +529,17 @@ def exec_return(ins):
             else:
                 # ON TIMER
                 events.timer_stopped =False
+            # FIXME: all other events ... ?    
         if buf != ins:
             # move to end of program to avoid executing anything else on the RETURN line if called from direct mode   
             ins.seek(-1)
             program.unset_runmode()
-        # go back to position of GOSUB
-        buf.seek(pos)
-
+        if jumpnum == None:
+            # go back to position of GOSUB
+            buf.seek(pos)
+        else:
+            # jump to specified line number 
+            program.jump(jumpnum)
 
 def exec_stop(ins):
     util.require(ins, util.end_statement)
