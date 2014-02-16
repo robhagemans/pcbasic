@@ -38,7 +38,7 @@ def exec_reset(ins):
 def exec_open(ins):
     first_expr = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     d = util.skip_white(ins)
-    if d==',':
+    if d == ',':
         # first syntax
         mode = first_expr[0].upper()
         access = access_modes[mode]    
@@ -52,10 +52,10 @@ def exec_open(ins):
         # second syntax
         name = str(first_expr)
         mode = 'R' # RANDOM        
-        if util.skip_white_read_if(ins, '\x82'): # FOR
+        if util.skip_white_read_if(ins, ('\x82',)): # FOR
             c = util.skip_white_read(ins)
             # read word
-            word=''
+            word = ''
             while c not in util.whitespace:
                 word += c
                 c = ins.read(1) 
@@ -65,9 +65,10 @@ def exec_open(ins):
                 mode = 'I'
             else:
                 mode = word[0].upper()           
-            access= access_modes[mode]    
+            access = access_modes[mode]    
         # it seems to be *either* a FOR clause *or* an ACCESS clause is allowed
-        elif util.skip_white(ins) == 'A': 
+        # could be 'AS' too
+        elif util.peek(ins,2) == 'AC': 
             if util.peek(ins, 6) != 'ACCESS':
                 raise error.RunError(2)
             ins.read(6)
@@ -79,6 +80,10 @@ def exec_open(ins):
                     access = 'r+b'
                 else:
                     access = 'rb'
+        else:
+            # neither specified -> it is a RANDOM (or COM) file
+            mode = 'R'
+            access = access_modes[mode]
         # lock clause
         lock = 'rw'
         util.skip_white(ins) 
