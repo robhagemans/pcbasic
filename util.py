@@ -9,8 +9,8 @@
 # please see text file COPYING for licence terms.
 #
 
-
-
+# ascii CR/LF
+endl = '\x0d\x0a'
 
 ##################################################
 ##################################################
@@ -28,7 +28,7 @@ def skip_read(ins, skip_range):
     while True: 
         d = ins.read(1)
         # skip_range must not include ''
-        if d=='' or d not in skip_range:
+        if d == '' or d not in skip_range:
             return d
 
 # skip chars in skip_range, then peek next
@@ -37,20 +37,10 @@ def skip(ins, skip_range):
     ins.seek(-len(d), 1)
     return d
     
-
-##################################################
-##################################################
-
-# ascii streams
-
-# ascii CR/LF
-endl='\x0d\x0a'
-    
 ##################################################
 ##################################################
 
 from functools import partial
-
 
 # tokens
 
@@ -75,11 +65,10 @@ skip_white = partial(skip, skip_range=whitespace)
 
 def skip_white_read_if(ins, in_range):
     d = skip_white(ins)
-    if d!='' and d in in_range:
+    if d != '' and d in in_range:
         ins.read(1)
         return True
     return False
-
 
 def skip_to(ins, findrange, break_on_first_char=True):        
     while True: 
@@ -106,25 +95,18 @@ def skip_to(ins, findrange, break_on_first_char=True):
             if len(off) < 2 or off == '\x00\x00':
                 break
             ins.read(2)
-        
 
 def skip_to_read(ins, findrange):
     skip_to(ins, findrange)
     return ins.read(1)
 
-    
-   
-
-
-
-########################################################
+##################################################
+##################################################
 
 # parsing
 
-
 import error
 import vartypes
-
 
 def require_read(ins, in_range, err=2):
     if skip_white_read(ins) not in in_range:
@@ -133,10 +115,6 @@ def require_read(ins, in_range, err=2):
 def require(ins, rnge, err=2):
     if skip_white(ins) not in rnge:
         raise error.RunError(err)
-    
-
-        
-    
 
 def skip_to_next(ins, for_char, next_char, allow_comma=False):
     stack = 0
@@ -166,7 +144,6 @@ def skip_to_next(ins, for_char, next_char, allow_comma=False):
         elif d in ('', '\x1a'):
             ins.seek(-1)
             break
-
     
 # parse line number and leve pointer at first char of line
 # if end of program or truncated, leave pointer at start of line number C0 DE or 00 00    
@@ -176,17 +153,16 @@ def parse_line_number(ins):
         ins.seek(-len(off),1)
         return -1
     off = ins.read(2)
-    if len(off)<2:
+    if len(off) < 2:
         ins.seek(-len(off)-2,1)
         return -1
     else:
         return vartypes.uint_to_value(bytearray(off))
-    
   
 # parses a line number when referred toindirectly as in GOTO, GOSUB, LIST, RENUM, EDIT, etc.
 def parse_jumpnum(ins):
     d = skip_white_read(ins)
-    jumpnum=-1
+    jumpnum = -1
     if d in ('\x0d', '\x0e'):
         jumpnum = vartypes.uint_to_value(bytearray(ins.read(2)))    
     else:
@@ -194,14 +170,13 @@ def parse_jumpnum(ins):
         raise error.RunError(2)
     return jumpnum
 
-
 # parses a list of line numbers
 def parse_jumpnum_list(ins, size, err=2):
     pos = 0
     output = [-1] * size
     while True:
         d = skip_white(ins)
-        if d==',':
+        if d == ',':
             ins.read(1)
             pos += 1
             if pos >= size:
@@ -212,7 +187,6 @@ def parse_jumpnum_list(ins, size, err=2):
         else:  
             output[pos] = parse_jumpnum(ins)
     return output
-    
 
 # token to value
 def parse_value(ins):
@@ -236,13 +210,12 @@ def parse_value(ins):
         return ('!', val)
     elif d == '\x1f':                       # eight byte double-precision floating point constant
         return ('#', val)
-    return ('','')
-
+    return ('', '')
 
 def parse_name(ins):
     name = ''
     d = ins.read(1).upper()
-    if not (d>='A' and d<='Z'):
+    if not (d >= 'A' and d <= 'Z'):
         # variable name must start with a letter
         if d != '':
             ins.seek(-1,1)
@@ -256,8 +229,6 @@ def parse_name(ins):
         if d != '':
             ins.seek(-1,1)
     return name
-
-
 
 def get_var_name(ins):
     skip_white(ins)
