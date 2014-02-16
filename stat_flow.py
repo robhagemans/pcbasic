@@ -48,9 +48,9 @@ def exec_cont(ins):
 
 def exec_error(ins):
     errn = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-    if errn<1 or errn>255:
+    if errn < 1 or errn > 255:
         # illegal function call
-        errn=5 
+        errn = 5 
     raise error.RunError(errn)                
     
 
@@ -77,7 +77,7 @@ def exec_while(ins, first=True):
         # find matching WEND
         current = ins.tell()
         util.skip_to_next(ins, '\xB1', '\xB2')  # WHILE, WEND
-        if ins.read(1)=='\xB2':
+        if ins.read(1) == '\xB2':
             util.skip_to(ins, util.end_statement)
             wendpos = ins.tell()
             program.while_wend_stack.append([whilepos, program.linenum, wendpos]) 
@@ -97,7 +97,7 @@ def exec_for(ins): #, first=True):
     forpos = ins.tell()
     # read variable  
     varname = util.get_var_name(ins)
-    if varname=='':
+    if varname == '':
         raise error.RunError(2)
     vartype = varname[-1]
     if vartype == '$':
@@ -134,7 +134,7 @@ def for_push_next(ins, forpos, varname, start, stop, step):
     d = util.skip_white(ins)
     nextpos = ins.tell()
     # no-var only allowed in standalone NEXT
-    if varname2=='':
+    if varname2 == '':
         if d not in util.end_statement:
             if program.runmode():
                 nextline = program.get_line_number(nextpos)
@@ -186,7 +186,7 @@ def for_jump_if_ends(ins, loopvar, stop, step):
     
 def for_loop_ends(loopvar, stop, step):
     # check TO condition
-    loop_ends=False
+    loop_ends = False
     # step 0 is infinite loop
     sgn = vartypes.unpack_int(vartypes.number_sgn(step)) 
     if sgn < 0:
@@ -217,7 +217,7 @@ def exec_next(ins, comma=False):
         pass
     else:
         varname2 = util.get_var_name(ins)
-        if varname==varname2:
+        if varname == varname2:
             util.skip_to(ins, util.end_statement)
         else:
             if program.runmode():
@@ -332,8 +332,8 @@ def exec_wend(ins):
 
 def exec_on_jump(ins):    
     on = expressions.parse_expression(ins)
-    if on==('',''):
-        onvar=0
+    if on == ('',''):
+        onvar = 0
     else:
         onvar = vartypes.pass_int_unpack(on)
     command = util.skip_white_read(ins)
@@ -341,7 +341,7 @@ def exec_on_jump(ins):
     while True:
         d = util.skip_white_read(ins)
         if d in util.end_statement:
-            if d!='':
+            if d != '':
                 ins.seek(-1,1)
             break
         elif d in ('\x0d', '\x0e'):
@@ -369,8 +369,8 @@ def parse_on_event(ins):
     num = expressions.parse_bracket(ins)
     util.require_read(ins, ('\x8D',)) # GOSUB
     jumpnum = util.parse_jumpnum(ins)
-    if jumpnum==0:
-        jumpnum=-1
+    if jumpnum == 0:
+        jumpnum = -1
     util.require(ins, util.end_statement)    
     return num, jumpnum   
     
@@ -379,7 +379,7 @@ def parse_on_event(ins):
 def exec_on_key(ins):
     keynum, jumpnum = parse_on_event(ins)
     keynum = vartypes.pass_int_unpack(keynum)
-    if keynum<1 or keynum>20:    
+    if keynum < 1 or keynum > 20:    
         raise error.RunError(5)
     
     events.key_events[keynum-1] = jumpnum
@@ -402,8 +402,8 @@ def exec_on_play(ins):
 def exec_on_pen(ins):
     util.require_read(ins, ('\x8D',)) # GOSUB
     jumpnum = util.parse_jumpnum(ins)
-    if jumpnum==0:
-        jumpnum=-1
+    if jumpnum == 0:
+        jumpnum = -1
     util.require(ins, util.end_statement)    
     events.pen_event = jumpnum
     
@@ -412,15 +412,15 @@ def exec_on_strig(ins):
     strigval, jumpnum = parse_on_event(ins)
     strigval = vartypes.pass_int_unpack(strigval)
     # 0 -> [0][0] 2 -> [0][1]  4-> [1][0]  6 -> [1][1]
-    joy = strigval//4
-    trig = (strigval//2)%2
+    joy = strigval // 4
+    trig = (strigval // 2)%2
     events.stick_event[joy][trig] = jumpnum
     
     
 def exec_on_com(ins):
     keynum, jumpnum = parse_on_event(ins)
     keynum = vartypes.pass_int_unpack(keynum)
-    if keynum<1 or keynum>2:    
+    if keynum < 1 or keynum > 2:    
         raise error.RunError(5)
     events.com_event[keynum-1] = jumpnum
 
@@ -429,7 +429,7 @@ def exec_com(ins):
     if util.skip_white(ins)=='(':
         # com (n)
         num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
-        if num<1 or num>2:
+        if num < 1 or num > 2:
             raise error.RunError(5)
         d = util.skip_white_read(ins)
         if d == '\x95': # ON
@@ -456,7 +456,7 @@ def exec_timer(ins):
     elif d == '\xdd': # OFF
         ins.read(1)
         events.timer_enabled = False
-    elif d== '\x90': #STOP
+    elif d == '\x90': #STOP
         ins.read(1)
         events.timer_stopped = True
     else:
@@ -502,7 +502,7 @@ def exec_resume(ins):
         program.set_runmode(runmode)
     error.errn = 0
     error.error_handle_mode = False
-    error.error_resume= None
+    error.error_resume = None
 
 
 def exec_return(ins):
@@ -519,16 +519,16 @@ def exec_return(ins):
     else:
         # a tad inelegant...
         data = program.gosub_return.pop()
-        if len(data) ==3:
+        if len(data) == 3:
             [pos, program.linenum, buf] = data
-        elif len(data)==4:
+        elif len(data) == 4:
             # returning from ON KEY GOSUB, re-enable key
             [pos, program.linenum, buf, keynum] = data
-            if keynum >0:
+            if keynum > 0:
                 events.key_stopped[keynum-1] = False
             else:
                 # ON TIMER
-                events.timer_stopped =False
+                events.timer_stopped = False
             # FIXME: all other events ... ?    
         if buf != ins:
             # move to end of program to avoid executing anything else on the RETURN line if called from direct mode   
