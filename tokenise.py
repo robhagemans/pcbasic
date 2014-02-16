@@ -52,8 +52,12 @@ ascii_uppercase = map(chr, range(ord('A'),ord('Z')+1))
 # allowable as chars 2.. in a variable name (first char must be a letter)
 name_chars = ascii_uppercase + ascii_digits + ['.']
 
-# keywords followed by one or more line numbers
-linenum_words = ['GOTO', 'THEN', 'ELSE', 'GOSUB', 'LIST', 'RENUM', 'EDIT', 'LLIST', 'DELETE', 'RUN', 'RESUME', 'AUTO', 'ERL', 'RESTORE']
+# keywords than can followed by one or more line numbers
+linenum_words = [
+    'GOTO', 'THEN', 'ELSE', 'GOSUB', 
+    'LIST', 'RENUM', 'EDIT', 'LLIST', 
+    'DELETE', 'RUN', 'RESUME', 'AUTO', 
+    'ERL', 'RESTORE', 'RETURN']
 
 
 ##########################################
