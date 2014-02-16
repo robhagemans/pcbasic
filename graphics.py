@@ -32,7 +32,6 @@ pixel_aspect_ratio = fp.Single.one
 bitsperpixel = 4
 
 
-
 def require_graphics_mode(err=5):
     if not is_graphics_mode():
         raise error.RunError(err)
@@ -63,7 +62,7 @@ def put_point(x, y, c):
     last_point = (x,y)
     x, y = view_coords(x,y)
     backend.apply_graph_clip()
-    backend.put_pixel(x,y,get_colour_index(c))
+    backend.put_pixel(x, y, get_colour_index(c))
     backend.remove_graph_clip()
     
 def get_point (x,y):
@@ -178,8 +177,8 @@ def draw_line(x0, y0, x1, y1, c, pattern=0xffff):
     error = dx / 2
     x, y = x0, y0
     backend.apply_graph_clip()
-    for x in xrange(x0,x1+sx,sx):
-        if pattern&mask!=0:
+    for x in xrange(x0, x1+sx, sx):
+        if pattern&mask != 0:
             if steep:
                 backend.put_pixel(y, x, c)
             else:
@@ -243,18 +242,18 @@ def draw_circle(x0,y0,r,c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, line
         for octant in range(0,8):
             if octant in hide_oct:
                 continue
-            elif oct0!=oct1 and (octant==oct0 and octant_gte(oct0, coo0, y)):
+            elif oct0 != oct1 and (octant == oct0 and octant_gte(oct0, coo0, y)):
                 continue
-            elif oct0!=oct1 and (octant==oct1 and octant_gte(oct1, y, coo1)):
+            elif oct0 != oct1 and (octant == oct1 and octant_gte(oct1, y, coo1)):
                 continue
-            elif oct0==oct1 and octant==oct0:
+            elif oct0 == oct1 and octant == oct0:
                 if octant_gte(oct0, coo1, coo0):
                     if octant_gte(oct0, y, coo1) or octant_gte(oct0, coo0,y):
                         continue
                 else:
                     if octant_gte(oct0, y, coo1) and octant_gte(oct0, coo0, y):
                         continue
-            backend.put_pixel(*octant_coord(octant, x0,y0,x,y),index=c) 
+            backend.put_pixel(*octant_coord(octant, x0, y0, x, y), index=c) 
         # remember endpoints for pie sectors
         if y == coo0:
             coo0x = x
@@ -333,19 +332,19 @@ def draw_ellipse(cx, cy, rx, ry, c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1,
     c = get_colour_index(c)
     cx, cy = view_coords(cx, cy)
     # find invisible quadrants
-    if qua0==-1:
+    if qua0 == -1:
         hide_qua = range(0,0)
-    elif qua0<qua1 or qua0==qua1 and quadrant_gte(qua0, x1,y1,x0,y0):
+    elif qua0 < qua1 or qua0 == qua1 and quadrant_gte(qua0, x1, y1, x0, y0):
         hide_qua = range(0, qua0) + range(qua1+1, 4)
     else:
         hide_qua = range(qua1+1,qua0)
     # error increment
-    dx = 16*(1-2*rx)*ry*ry    
-    dy = 16*rx*rx 
-    ddy = 32*rx*rx
-    ddx = 32*ry*ry
+    dx = 16 * (1-2*rx) * ry * ry    
+    dy = 16 * rx * rx 
+    ddy = 32 * rx * rx
+    ddx = 32 * ry * ry
     # error for first step
-    err = dx+dy   
+    err = dx + dy   
     backend.apply_graph_clip()        
     x, y = rx, 0
     while True: 
@@ -353,20 +352,20 @@ def draw_ellipse(cx, cy, rx, ry, c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1,
             # skip invisible arc sectors
             if quadrant in hide_qua:
                 continue
-            elif qua0!=qua1 and (quadrant==qua0 and quadrant_gte(qua0, x0,y0, x, y)):
+            elif qua0 != qua1 and (quadrant == qua0 and quadrant_gte(qua0, x0, y0, x, y)):
                 continue
-            elif qua0!=qua1 and (quadrant==qua1 and quadrant_gte(qua1, x, y, x1,y1)):
+            elif qua0 != qua1 and (quadrant == qua1 and quadrant_gte(qua1, x, y, x1, y1)):
                 continue
-            elif qua0==qua1 and quadrant==qua0:
+            elif qua0 == qua1 and quadrant == qua0:
                 if quadrant_gte(qua0, x1,y1, x0,y0):
-                    if quadrant_gte(qua0, x,y, x1,y1) or quadrant_gte(qua0, x0,y0, x, y):
+                    if quadrant_gte(qua0, x, y, x1, y1) or quadrant_gte(qua0, x0, y0, x, y):
                         continue
                 else:
-                    if quadrant_gte(qua0, x,y, x1,y1) and quadrant_gte(qua0, x0, y0, x, y):
+                    if quadrant_gte(qua0, x, y, x1, y1) and quadrant_gte(qua0, x0, y0, x, y):
                         continue
             backend.put_pixel(*quadrant_coord(quadrant, cx,cy,x,y), index=c) 
         # bresenham error step
-        e2 = 2*err
+        e2 = 2 * err
         if (e2 <= dy):
             y += 1
             dy += ddy
@@ -397,7 +396,7 @@ def quadrant_coord(quadrant, x0,y0, x,y):
     elif quadrant == 1:     return x0-x, y0-y
     
 def quadrant_gte(quadrant, x,y, x0,y0):
-    if quadrant%2==0:
+    if quadrant%2 == 0:
         if y!=y0: return y>y0
         else: return x<=x0
     else:
@@ -422,7 +421,7 @@ def check_scanline (line_seed, x_start, x_stop, y, c, border, ydir):
         else:
             if x_stop_next >= x_start_next:
                 line_seed.append([x_start_next, x_stop_next, y, ydir])
-            x_start_next = x+1
+            x_start_next = x + 1
     if x_stop_next >= x_start_next:
         line_seed.append([x_start_next, x_stop_next, y, ydir])
     return line_seed    
@@ -446,7 +445,7 @@ def flood_fill (x, y, pattern, c, border):
     bound_x0, bound_y0, bound_x1, bound_y1 = backend.get_graph_clip()  
     x, y = view_coords(x, y)
     line_seed = [(x, x, y, 0)]
-    while len(line_seed)>0:
+    while len(line_seed) > 0:
         x_start, x_stop, y, ydir = line_seed.pop()
         # check left extension
         x_left = x_start
@@ -455,7 +454,7 @@ def flood_fill (x, y, pattern, c, border):
         # check right extension
         x_right = x_stop
         while x_right+1 <= bound_x1 and backend.get_pixel(x_right+1,y) != border:
-            x_right+=1
+            x_right += 1
         if ydir == 0:
             if y + 1 <= bound_y1:
                 line_seed = check_scanline(line_seed, x_left, x_right, y+1, c, border, 1)
@@ -526,10 +525,10 @@ def set_area(x0,y0, array, operation):
                     hilo = 0
                 else:
                     hilo += 1
-            if x>=0 and x<size[0] and y>=0 and y<size[1]:
+            if x >= 0 and x < size[0] and y >= 0 and y < size[1]:
                 backend.put_pixel(x,y, operation(pixel, index)) 
         # left align next row
-        if mask !=0x80:
+        if mask != 0x80:
             mask = 0x80
             byte += bitsperpixel*bytesperword
             hilo = 0
@@ -543,15 +542,15 @@ def get_area(x0,y0,x1,y1, array):
         byte_array[0:4] = vartypes.value_to_uint(dx*2) + vartypes.value_to_uint(dy)
     else:
         byte_array[0:4] = vartypes.value_to_uint(dx) + vartypes.value_to_uint(dy) 
-    bytesperword=2
+    bytesperword = 2
     x0,y0 = view_coords(x0,y0)
     x1,y1 = view_coords(x1,y1)
     byte = 4
     mask = 0x80
     hilo = 0
-    for y in range(y0,y1+1):
-        for x in range(x0,x1+1):
-            if x>=0 and x<size[0] and y>=0 and y<size[1]:
+    for y in range(y0, y1+1):
+        for x in range(x0, x1+1):
+            if x >= 0 and x < size[0] and y >= 0 and y < size[1]:
                 pixel = backend.get_pixel(x,y)
             else:
                 pixel = 0
@@ -567,7 +566,7 @@ def get_area(x0,y0,x1,y1, array):
                 else:
                     hilo += 1
         # left align next row
-        if mask !=0x80:
+        if mask != 0x80:
             mask = 0x80
             byte += bitsperpixel*bytesperword
             hilo = 0
