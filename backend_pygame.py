@@ -298,7 +298,7 @@ def set_cursor_colour(color):
 
 
 def build_line_cursor(is_line):
-    global cursor_from, cursor_to
+    global cursor_from, cursor_to, screen_changed
     if is_line and not console.graphics_mode:
         cursor_from = font_height-2
         cursor_to = font_height-2
