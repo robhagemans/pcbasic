@@ -241,6 +241,6 @@ def get_var_name(ins):
 
 def range_check(lower, upper, *allvars):
     for v in allvars:
-        if v < lower or v > upper:
+        if v != None and v < lower or v > upper:
             raise error.RunError(5)
 
