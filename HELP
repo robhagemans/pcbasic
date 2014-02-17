@@ -1126,14 +1126,14 @@ Format in array:
     4...pixel data (many bytes)
 Pixel data format:
     Data is arranged in 2-byte words. The first 16-bit word holds the bit 0 of 
-    the first 16 pixels on the top row. The second word holds the secknd bit,
+    the first 16 pixels on the top row. The second word holds the second bit,
     etc. Data is word-aligned at the end of each row. Thus, in a screen mode 
     with 4 bits per pixel, the first row takes at least 8 bytes (4 words), even
     if it consists of only one pixel. The number of bits per pixel depends on 
     the SCREEN mode.
 ERRORS:
 -   If the area is too large for the array, raises ILLEGAL FUNCTION CALL.  
--   If 'array_name' refers to a string array, raises ILLEGAL FUNCTION CALL.
+-   If 'array_name' refers to a string array, raises TYPE MISMATCH.
 -   If 'x0', ... 'y1' are string expressions, raises TYPE MISMATCH.
 -   If 'x0', ... 'y1' are not in [-32768, 32767], raises OVERFLOW.
 -   If 'x0', ... 'y1' are outside the current VIEW or WINDOW, raises
