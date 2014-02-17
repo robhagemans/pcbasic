@@ -664,9 +664,9 @@ def exec_screen(ins):
         console.unset_view()
         console.set_mode(mode)
     # set active page & visible page, counting from 0. if higher than max pages, illegal fn call.            
-    if not console.set_apage(console.apagenum):
+    if not console.set_apage(params[2]):
        raise error.RunError(5)
-    if not console.set_vpage(console.vpagenum):
+    if not console.set_vpage(params[3]):
        raise error.RunError(5)
     # in SCREEN 0, the colorswitch parameter doesn't actually switch colors on and off
     # but if it's different from the existing one, the screen is cleared.
