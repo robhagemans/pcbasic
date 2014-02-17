@@ -11,6 +11,7 @@
 
 import StringIO
 import sys
+import traceback
 
 import util
 import program
@@ -28,20 +29,19 @@ def exec_DEBUG(ins):
     # this is parsed like a REM by the tokeniser.
     # rest of the line is considered to be a python statement
     d = util.skip_white(ins)
-    
     debug = ''
     while util.peek(ins) not in util.end_line:
         d = ins.read(1)
         debug += d
-        
     buf = StringIO.StringIO()
     sys.stdout = buf
     try:
         exec(debug)
     except Exception as e:
-        print type(e) #"[exception]"
+        #print type(e) #"[exception]"
+        sys.stderr.write(repr(type(e))+'\n')    
+        traceback.print_tb(sys.exc_info()[2])
     sys.stdout = sys.__stdout__
-
     console.write(buf.getvalue())
 
 def debug_print(s):
@@ -50,12 +50,10 @@ def debug_print(s):
 def debug_step(linum):
     if not tokenise.debug:
         return
-    
     global debug_tron
     if debug_tron:
         debug_print('['+('%i' % linum) +']')
     for (expr, outs) in watch_list:
-        
         debug_print(' ' + expr +' = ')
         outs.seek(2)
         try:
@@ -81,4 +79,8 @@ def watch(expr):
     outs = StringIO.StringIO()
     tokenise.tokenise_stream(StringIO.StringIO('?'+expr), outs, True, False) 
     watch_list.append((expr, outs))
+
+
+    
+    
    
