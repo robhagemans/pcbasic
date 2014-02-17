@@ -799,8 +799,8 @@ def set_apage(page_num):
         
 def set_vpage(page_num):
     global vpage, vpagenum
-    backend.screen_changed=True
     if page_num < num_pages:
+        backend.screen_changed = True
         vpage = pages[page_num]
         vpagenum = page_num
         return True

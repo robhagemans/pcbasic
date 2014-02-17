@@ -102,6 +102,7 @@ blink_cycles = 5
 # current cursor location
 last_row = 1
 last_col = 1    
+cursor_visible = True
 under_cursor = None
 under_top_left = None
 
@@ -415,6 +416,8 @@ def refresh_screen():
             
     
 def remove_cursor():
+    if not console.cursor or console.vpage != console.apage:
+        return
     if under_top_left != None:
         screen.blit(under_cursor, under_top_left)
 
@@ -473,7 +476,8 @@ def check_screen():
         cycle += 1
         if cycle == blink_cycles*4: 
             cycle = 0
-        cursor_changed = (not console.graphics_mode and cycle%blink_cycles == 0) or (console.row != last_row) or (console.col != last_col)
+        cursor_changed = ( (not console.graphics_mode and cycle%blink_cycles == 0) 
+                           or (console.row != last_row) or (console.col != last_col) )
         if screen_changed:
             refresh_screen()
             refresh_cursor()
