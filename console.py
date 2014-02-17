@@ -157,7 +157,7 @@ def mode_info(mode):
     
 
 def set_mode(mode):
-    global screen_mode, graphics_mode
+    global screen_mode, graphics_mode, num_pages
     screen_mode = mode
     (graphics_mode, font_height, new_attr, colour_depth, new_width, num_pages) = mode_info(mode)
     set_attr(*new_attr)
