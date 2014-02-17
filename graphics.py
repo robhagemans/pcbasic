@@ -538,6 +538,8 @@ def get_area(x0,y0,x1,y1, array):
     dx = (x1-x0+1)
     dy = (y1-y0+1)
     byte_array = var.get_bytearray(array)
+    # clear existing array
+    byte_array[:] = '\x00'*len(byte_array)
     if console.screen_mode==1:
         byte_array[0:4] = vartypes.value_to_uint(dx*2) + vartypes.value_to_uint(dy)
     else:
@@ -556,7 +558,10 @@ def get_area(x0,y0,x1,y1, array):
                 pixel = 0
             for b in range(bitsperpixel):
                 if pixel&(1<<b) != 0:
-                    byte_array[byte+hilo+b*bytesperword] |= mask 
+                    try:
+                        byte_array[byte+hilo+b*bytesperword] |= mask 
+                    except IndexError:
+                        raise error.RunError(5)   
             mask >>= 1
             if mask == 0: 
                 mask = 0x80
