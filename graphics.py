@@ -502,7 +502,7 @@ def set_area(x0,y0, array, operation_char):
     if backend.fast_put(x0, y0, array, operation_char):
         return
     operation = operations[operation_char]
-    byte_array = var.get_bytearray(array)
+    byte_array, version = var.get_bytearray(array)
     dx = vartypes.uint_to_value(byte_array[0:2])
     dy = vartypes.uint_to_value(byte_array[2:4])
     # in mode 1, number of x bits is given rather than pixels
@@ -551,7 +551,7 @@ def get_area(x0,y0,x1,y1, array):
     backend.fast_get(x0, y0, x1, y1, array)
     dx = (x1-x0+1)
     dy = (y1-y0+1)
-    byte_array = var.get_bytearray(array)
+    byte_array, version = var.get_bytearray(array)
     # clear existing array
     byte_array[:] = '\x00'*len(byte_array)
     if console.screen_mode==1:

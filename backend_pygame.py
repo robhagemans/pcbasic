@@ -21,6 +21,8 @@ import sound
 import events
 import deviceio
 import graphics
+# for fast get & put only
+import var
 
 # not an echoing terminal
 echo = False
@@ -702,22 +704,28 @@ fast_operations = {
     }
 
 def fast_get(x0, y0, x1, y1, varname):
+    # arrays[varname] must exist at this point (or GET would have raised error 5)
+    version = var.arrays[varname][2]
     # copy a numpy array of the target area
     clip = pygame.surfarray.array2d(console.apage.surface0.subsurface(pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)))
-    get_put_store[varname] = ( x1-x0+1, y1-y0+1, clip )
+    get_put_store[varname] = ( x1-x0+1, y1-y0+1, clip, version )
 
 def fast_put(x0, y0, varname, operation_char):
     global screen_changed
     try:
-        stored = get_put_store[varname]
+        width, height, clip, version = get_put_store[varname]
     except KeyError:
         # not yet stored, do it the slow way
-        return False    
+        return False
+    # varname must exist at this point (or PUT would have raised error 5)       
+    # if the versions are not the same, use the slow method (array has changed since clip was stored)
+    if version != var.arrays[varname][2]:
+        return False
     # reference the destination area
-    dest_array = pygame.surfarray.pixels2d(console.apage.surface0.subsurface(pygame.Rect(x0, y0, stored[0], stored[1]))) 
+    dest_array = pygame.surfarray.pixels2d(console.apage.surface0.subsurface(pygame.Rect(x0, y0, width, height))) 
     # apply the operation
     operation = fast_operations[operation_char]
-    operation(dest_array, stored[2])
+    operation(dest_array, clip)
     screen_changed = True
     return True
 

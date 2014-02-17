@@ -167,7 +167,7 @@ def var_size_bytes(name):
 
 def array_size_bytes(name):
     try:
-        [dimensions, lst] = arrays[name]
+        [dimensions, lst, _] = arrays[name]
     except KeyError:
         return 0
     size = array_len(dimensions)
@@ -189,9 +189,9 @@ def dim_array(name, dimensions):
     size = array_len(dimensions)
     try:
         if name[-1]=='$':
-            arrays[name] = [ dimensions, ['']*size ]  
+            arrays[name] = [ dimensions, ['']*size, 0 ]  
         else:
-            arrays[name] = [ dimensions, bytearray(size*var_size_bytes(name)) ]  
+            arrays[name] = [ dimensions, bytearray(size*var_size_bytes(name)), 0 ]  
     except OverflowError:
         # out of memory
         raise error.RunError(7) 
@@ -209,13 +209,13 @@ def dim_array(name, dimensions):
 
 def check_dim_array(name, index):
     try:
-        [dimensions, lst] = arrays[name]
+        [dimensions, lst, _] = arrays[name]
     except KeyError:
         # auto-dimension - 0..10 or 1..10 
         # this even fixes the dimensions if the index turns out to be out of range!
         dimensions = [ 10 ] * len(index)
         dim_array(name, dimensions)
-        [dimensions, lst] = arrays[name]
+        [dimensions, lst, _] = arrays[name]
     if len(index) != len(dimensions):
         raise error.RunError(9)
     for i in range(len(index)):
@@ -231,10 +231,10 @@ def get_bytearray(name):
         # can't use string arrays for get/put
         raise error.RunError(13) # type mismatch
     try:
-        [_, lst] = arrays[name]
-        return lst
+        [_, lst, version] = arrays[name]
+        return (lst, version)
     except KeyError:
-        return bytearray()
+        return (bytearray(), 0)
 
 def base_array(base):
     global array_base
@@ -263,6 +263,8 @@ def set_array(name, index, value):
        return 
     bytesize = var_size_bytes(name)
     lst[bigindex*bytesize:(bigindex+1)*bytesize] = value
+    # inc version
+    arrays[name][2] += 1
     
 def get_var_or_array(name, indices):
     if indices == []:
@@ -323,7 +325,7 @@ def variables_memory_size():
         mem_used += var_size_bytes(name)
     for name in arrays:
         mem_used += 4 + array_size_bytes(name) + max(3, len(name))
-        dimensions, lst = arrays[name]
+        dimensions, lst, _ = arrays[name]
         mem_used += 2*len(dimensions)    
         if name[-1] == '$':
             for mem in lst:
@@ -340,7 +342,7 @@ def get_var_ptr(name, indices):
             return -1
     else:
         try:
-            [dimensions, lst] = arrays[name]
+            [dimensions, lst, _] = arrays[name]
             name_ptr, array_ptr = array_memory[name]
             # arrays are kept at the end of the var list
             return var_current + array_ptr + var_size_bytes(name) * index_array(indices, dimensions) 
@@ -418,7 +420,7 @@ def get_var_memory(address):
                 return get_name_in_memory(name, offset)
             else:
                 offset -= max(3, len(name))+1
-                [dimensions, lst] = arrays[name]
+                [dimensions, lst, _] = arrays[name]
                 data_rep = vartypes.value_to_uint(array_size_bytes(name) + 1 + 2*len(dimensions)) + chr(len(dimensions)) 
                 for d in dimensions:
                     data_rep += vartypes.value_to_uint(d + 1 - array_base)
