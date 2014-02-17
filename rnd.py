@@ -35,7 +35,8 @@ def randomize_int(n):
     # this reproduces gwbasic for anything entered on the randomize prompt in the allowed range (-32768..32767)
     # on a program line, the range (-32787..32787) gives the same result reproduced here.
     rnd_seed &= 0xff
-    vrnd(('','')) # RND(1)
+    # vrnd(('',''))
+    get_random() # RND(1)
     rnd_seed += n*rnd_step
     rnd_seed %= rnd_period
     
