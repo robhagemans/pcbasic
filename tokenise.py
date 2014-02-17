@@ -134,6 +134,19 @@ def detokenise_line(bytes):
             bytes.seek(-1,1)
             word, comment = detokenise_keyword(bytes)
             output += word
+            # check for special cases
+            #   [:REM']   ->  [']
+            if len(output)>4 and output[-5:] ==  ":REM'":
+                output = output[:-5] + "'"  
+            #   [WHILE+]  ->  [WHILE]
+            elif len(output)>5 and output[-6:] == "WHILE+":
+                output = output[:-1]        
+            #   [:ELSE]  ->  [ELSE]
+            elif len(output)>4 and output[-5:] == ":ELSE":
+                if output[-6] in ascii_digits:
+                    output = output[:-5] + " ELSE" 
+                else:
+                    output = output[:-5] + "ELSE" 
     return output
 
 
@@ -209,18 +222,6 @@ def detokenise_keyword(bytes):
             # otherwise, it's part of the comment or an EOL or whatever, pass back to stream so it can be processed
             bytes.seek(-1,1)
         comment = True
-    #   [:REM']   ->  [']
-    if len(output)>4 and output[-5:] ==  ":REM'":
-        output = output[:-5] + "'"  
-    #   [WHILE+]  ->  [WHILE]
-    elif len(output)>5 and output[-6:] == "WHILE+":
-        output = output[:-1]        
-    #   [:ELSE]  ->  [ELSE]
-    elif len(output)>4 and output[-5:] == ":ELSE":
-        if output[-6] in ascii_digits:
-            output = output[:-5] + " ELSE" 
-        else:
-            output = output[:-5] + "ELSE" 
     # token followed by number is also separated by a space, except operator tokens and SPC(, TAB(, FN, USR
     nxt = util.peek(bytes)
     if (not comment and nxt.upper() not in (tokens_operator + ['\xD9', '"', ',', ' ', ':', '(', ')']) 
