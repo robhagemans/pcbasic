@@ -259,19 +259,10 @@ def exec_put_graph(ins):
     x0,y0 = graphics.window_coords(*parse_coord(ins))
     util.require_read(ins, (',',)) 
     array = util.get_var_name(ins)    
-    action = graphics.operation_xor
+    action = '\xF0' # graphics.operation_xor
     if util.skip_white_read_if(ins, (',',)):
-        c = util.skip_white_read(ins) 
-        if c == '\xC6': #PSET
-            action = graphics.operation_set
-        elif c == '\xC7': #PRESET
-            action = graphics.operation_not
-        elif c == '\xEE': #AND
-            action = graphics.operation_and
-        elif c == '\xEF': #OR
-            action = graphics.operation_or
-        elif c == '\xF0': #XOR
-            action = graphics.operation_xor
+        util.require(ins, ('\xC6', '\xC7', '\xEE', '\xEF', '\xF0')) #PSET, PRESET, AND, OR, XOR
+        action = ins.read(1)
     util.require(ins, util.end_statement)
     # do it
     graphics.set_area(x0,y0, array, action)
