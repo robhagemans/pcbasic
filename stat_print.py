@@ -59,7 +59,7 @@ def exec_color(ins):
     [fore, back, bord] = expressions.parse_int_list(ins, 3, 5)          
     if bord == None:
         bord = 0 
-    mode = console.get_mode()
+    mode = console.screen_mode
     if mode == 2: 
         # screen 2: illegal fn call
         raise error.RunError(5)

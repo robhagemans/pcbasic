@@ -113,12 +113,10 @@ mode_data = {
 
 def init():
     backend.init()
-
+    set_mode(0)
+    
 def close():
     backend.close()
-
-def get_mode():
-    return screen_mode
 
 def idle():
     backend.idle()
