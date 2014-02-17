@@ -477,8 +477,8 @@ def operation_set(pix0, pix1):
     return pix1
 
 def operation_not(pix0, pix1):
-    global bitsperpixel
-    return pix1^((1<<bitsperpixel)-1)
+#    return ~pix1
+    return pix1 ^ ((1<<bitsperpixel)-1)
 
 def operation_and(pix0, pix1):
     return pix0 & pix1
@@ -488,8 +488,20 @@ def operation_or(pix0, pix1):
 
 def operation_xor(pix0, pix1):
     return pix0 ^ pix1
+
+operations = {
+    '\xC6': operation_set, #PSET
+    '\xC7': operation_not, #PRESET
+    '\xEE': operation_and,
+    '\xEF': operation_or,
+    '\xF0': operation_xor,
+    }
+     
    
-def set_area(x0,y0, array, operation):
+def set_area(x0,y0, array, operation_char):
+    if backend.fast_put(x0, y0, array, operation_char):
+        return
+    operation = operations[operation_char]
     byte_array = var.get_bytearray(array)
     dx = vartypes.uint_to_value(byte_array[0:2])
     dy = vartypes.uint_to_value(byte_array[2:4])
@@ -535,6 +547,8 @@ def set_area(x0,y0, array, operation):
     backend.remove_graph_clip()        
         
 def get_area(x0,y0,x1,y1, array):
+    # store a copy in the fast-put store
+    backend.fast_get(x0, y0, x1, y1, array)
     dx = (x1-x0+1)
     dy = (y1-y0+1)
     byte_array = var.get_bytearray(array)

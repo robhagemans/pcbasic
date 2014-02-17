@@ -20,6 +20,7 @@ import console
 import sound
 import events
 import deviceio
+import graphics
 
 # not an echoing terminal
 echo = False
@@ -105,6 +106,8 @@ under_top_left = None
 # available joy sticks
 joysticks = []    
 
+# store for fast get & put arrays
+get_put_store = {}
 
 keycode_to_scancode = {
     pygame.K_UP:    '\x00\x48',
@@ -674,9 +677,53 @@ def fill_rect(x0,y0, x1,y1, index):
     screen_changed = True
 
 
+def numpy_set(left, right):
+    left[:] = right
+
+def numpy_not(left, right):
+    left[:] = right
+    left ^= (1<<graphics.bitsperpixel)-1
+
+def numpy_iand(left, right):
+    left &= right
+
+def numpy_ior(left, right):
+    left |= right
+
+def numpy_ixor(left, right):
+    left ^= right
+        
+fast_operations = {
+    '\xC6': numpy_set, #PSET
+    '\xC7': numpy_not, #PRESET
+    '\xEE': numpy_iand,
+    '\xEF': numpy_ior,
+    '\xF0': numpy_ixor,
+    }
+
+def fast_get(x0, y0, x1, y1, varname):
+    # copy a numpy array of the target area
+    clip = pygame.surfarray.array2d(console.apage.surface0.subsurface(pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)))
+    get_put_store[varname] = ( x1-x0+1, y1-y0+1, clip )
+
+def fast_put(x0, y0, varname, operation_char):
+    global screen_changed
+    try:
+        stored = get_put_store[varname]
+    except KeyError:
+        # not yet stored, do it the slow way
+        return False    
+    # reference the destination area
+    dest_array = pygame.surfarray.pixels2d(console.apage.surface0.subsurface(pygame.Rect(x0, y0, stored[0], stored[1]))) 
+    # apply the operation
+    operation = fast_operations[operation_char]
+    operation(dest_array, stored[2])
+    screen_changed = True
+    return True
+
 ######## end interface
 
-graph_view=None
+graph_view = None
 
 
 # cursor for graphics mode
