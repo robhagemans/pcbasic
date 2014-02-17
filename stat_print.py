@@ -644,7 +644,12 @@ def format_number(value, fors):
 
 
 def exec_screen(ins):
+    # in GW, screen 0,0,0,0,0,0 raises error after changing the palette... this raises error before:
     mode, colorswitch, apagenum, vpagenum = expressions.parse_int_list(ins, 4)
+    # if any parameter not in [0,255], error 5 without doing anything 
+    util.range_check(0, 255, mode, colorswitch, apagenum, vpagenum)
+    # if the parameters are outside narrow ranges (e.g. not implemented screen mode, pagenum beyond max)
+    # then the error is only raised after changing the palette.
     util.require(ins, util.end_statement)        
     console.set_mode(mode, colorswitch, apagenum, vpagenum)
                 

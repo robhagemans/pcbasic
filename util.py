@@ -239,3 +239,8 @@ def get_var_name(ins):
         name = name[:40]+name[-1]
     return name
 
+def range_check(lower, upper, *allvars):
+    for v in allvars:
+        if v < lower or v > upper:
+            raise error.RunError(5)
+
