@@ -85,7 +85,8 @@ colorswitch = True
 
 # graphics vs text mode 
 graphics_mode = False
-screen_mode = 0
+# force building screen on start
+screen_mode = -1
 
 # palette
 num_colours = 32    
@@ -98,6 +99,16 @@ stick_is_on = False
 
 # KEY ON?
 keys_visible = False
+
+mode_data = {
+    #  font_height, attr, colour_depth, width, num_pages
+    0: ( 16, ( 7, 0), (32, 64), 80, 4 ),
+    1: (  8, ( 3, 0), ( 4, 16), 40, 1 ),
+    2: (  8, ( 1, 0), ( 2, 16), 80, 1 ), 
+    7: (  8, (15, 0), (16, 16), 40, 8 ),
+    8: (  8, (15, 0), (16, 16), 80, 4 ),
+    9: ( 14, (15, 0), (16, 64), 80, 2 ),
+    }
 
 
 def init():
@@ -112,64 +123,56 @@ def get_mode():
 def idle():
     backend.idle()
 
-def mode_info(mode):
-    info_graphics_mode=True
-    if mode == 0:
-        info_graphics_mode = False
-        info_font_height = 16
-        info_attr = (7, 0)
-        info_colour_depth = (32, 64)
-        info_new_width = width
-        info_num_pages = 4
-    elif mode == 1:
-        info_font_height = 8
-        info_attr = (3, 0)
-        info_colour_depth = (4, 16)
-        info_new_width = 40
-        info_num_pages = 1
-    elif mode == 2:
-        info_font_height = 8
-        info_attr = (1, 0)
-        info_colour_depth = (2, 16)
-        info_new_width = 80
-        info_num_pages = 1    
-    elif mode ==7:
-        info_font_height = 8
-        info_attr = (15, 0)
-        info_colour_depth = (16, 16)
-        info_new_width = 40
-        info_num_pages = 8
-    elif mode==8:
-        info_font_height = 8
-        info_attr = (15, 0)
-        info_colour_depth = (16, 16)
-        info_new_width = 80
-        info_num_pages = 4
-    elif mode==9:
-        info_font_height = 14
-        info_attr = (15,0)
-        info_colour_depth = (16,64)
-        info_new_width = 80
-        info_num_pages = 2
+def set_mode(mode, new_colorswitch=None, new_apagenum=None, new_vpagenum=None):
+    global screen_mode, graphics_mode, num_pages, colorswitch, apagenum, vpagenum, apage, vpage
+    if new_colorswitch == None:
+        new_colorswitch = colorswitch
     else:
-        return None
-    return (info_graphics_mode, info_font_height, info_attr, info_colour_depth, info_new_width, info_num_pages)
+        new_colorswitch = (new_colorswitch != 0)
+    if new_apagenum == None:
+        new_apagenum = apagenum
+    if new_vpagenum == None:
+        new_vpagenum = vpagenum
+    try:
+        info = mode_data[mode]
+    except KeyError:
+        set_palette()
+        # backend does not support mode
+        raise error.RunError(5)
+    # vpage and apage nums are persistent on mode switch
+    # if the new mode has fewer pages than current vpage/apage, illegal fn call before anything happens.
+    if new_apagenum >= info[4] or new_vpagenum >= info[4]:
+        set_palette()
+        raise error.RunError(5)    
+    # switch modes if needed
+    if mode != screen_mode or new_colorswitch != colorswitch:
+        colorswitch = new_colorswitch 
+        screen_mode = mode
+        graphics_mode = mode != 0
+        (font_height, new_attr, colour_depth, new_width, num_pages) = info
+        # wisth persists on change to screen 0
+        if mode == 0:
+            new_width = width
+        set_attr(*new_attr)
+        set_colour_depth(*colour_depth)
+        backend.init_screen_mode(mode, font_height)  
+        resize(25, new_width)
+        set_line_cursor(True)
+        graphics.init_graphics_mode(mode, font_height)      
+        show_cursor(cursor)
+        unset_view()
+        if keys_visible:
+            show_keys()
+    # reset palette     
+    set_palette()
+    # set active page & visible page, counting from 0. if higher than max pages, illegal fn call.            
+    # this needs to be done after setup_screen!
+    apagenum = new_apagenum
+    vpagenum = new_vpagenum
+    apage = pages[apagenum]
+    vpage = pages[vpagenum]
+    backend.screen_changed = True
     
-
-def set_mode(mode):
-    global screen_mode, graphics_mode, num_pages
-    screen_mode = mode
-    (graphics_mode, font_height, new_attr, colour_depth, new_width, num_pages) = mode_info(mode)
-    set_attr(*new_attr)
-    set_colour_depth(*colour_depth)
-    backend.init_screen_mode(mode, font_height)  
-    resize(25, new_width)
-    set_line_cursor(True)
-    graphics.init_graphics_mode(mode, font_height)      
-    show_cursor(cursor)
-    if keys_visible:
-        show_keys()
-
 def set_colour_depth(colours, palette):
     global num_colours
     global num_palette
@@ -559,10 +562,6 @@ def set_width(to_width):
     if keys_visible:
         show_keys()
 
-def set_colorswitch(new_val):
-    global colorswitch
-    colorswitch = new_val
-
 def read_screen(crow, ccol):
     char = apage.charbuf[crow-1][ccol-1]
     att = apage.attrbuf[crow-1][ccol-1]
@@ -769,13 +768,7 @@ def resize(to_height, to_width):
     width = to_width
     height = to_height
     setup_screen(height, width)
-    
-def clear_all():
-    setup_screen(height, width)
-    if keys_visible:
-        show_keys()
-            
-    
+        
 def setup_screen(to_height, to_width):    
     global pages, vpage, apage    
     global row, col
@@ -788,25 +781,6 @@ def setup_screen(to_height, to_width):
     row = 1
     col = 1
 
-def set_apage(page_num):
-    global apage, apagenum
-    if page_num < num_pages:
-        apage = pages[page_num]
-        apagenum = page_num
-        return True
-    else:
-        return False    
-        
-def set_vpage(page_num):
-    global vpage, vpagenum
-    if page_num < num_pages:
-        backend.screen_changed = True
-        vpage = pages[page_num]
-        vpagenum = page_num
-        return True
-    else:
-        return False 
-   
 def copy_page(src, dst):
     global pages
     if src < num_pages and dst < num_pages:

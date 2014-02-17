@@ -644,37 +644,9 @@ def format_number(value, fors):
 
 
 def exec_screen(ins):
-    params = expressions.parse_int_list(ins, 4)
+    mode, colorswitch, apagenum, vpagenum = expressions.parse_int_list(ins, 4)
     util.require(ins, util.end_statement)        
-    mode = params[0]
-    mode_info = console.mode_info(mode) 
-    # backend does not support mode
-    if mode_info == None:
-        raise error.RunError(5)
-    # vpage and apage nums are persistent on mode switch
-    # if the new mode has fewer pages than current vpage/apage, illegal fn call.
-    if params[2] == None:
-        params[2] = console.apagenum
-    if params[3] == None:
-        params[3] = console.vpagenum    
-    if params[2] >= mode_info[5] or params[3] >= mode_info[5]:
-       raise error.RunError(5)
-    console.set_palette()
-    if mode != console.screen_mode:
-        console.unset_view()
-        console.set_mode(mode)
-    # set active page & visible page, counting from 0. if higher than max pages, illegal fn call.            
-    if not console.set_apage(params[2]):
-       raise error.RunError(5)
-    if not console.set_vpage(params[3]):
-       raise error.RunError(5)
-    # in SCREEN 0, the colorswitch parameter doesn't actually switch colors on and off
-    # but if it's different from the existing one, the screen is cleared.
-    if params[1] != None and (params[1]!=0) != console.colorswitch:
-        console.set_colorswitch( params[1]!=0 )
-        # clear all screen pages
-        console.clear_all()
-        console.unset_view()
+    console.set_mode(mode, colorswitch, apagenum, vpagenum)
                 
     
 def exec_pcopy(ins):
@@ -685,6 +657,4 @@ def exec_pcopy(ins):
     if not console.copy_page(src,dst):
         raise error.RunError(5)
     
-        
-           
-                
+
