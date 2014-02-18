@@ -170,7 +170,6 @@ def init():
     pygame.display.set_caption('PC-BASIC 3.23')
     pygame.key.set_repeat(500,24)
     fonts = cpi_font.load_codepage()
-    #console.set_mode(0)
     init_mixer()
     pygame.joystick.init()
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
@@ -721,6 +720,9 @@ def fast_put(x0, y0, varname, operation_char):
     except KeyError:
         # not yet stored, do it the slow way
         return False
+    if x0 < 0 or x0+width > size[0] or y0 < 0 or y0+ height > size[1]:
+        # let the normal version handle errors
+        return False    
     # varname must exist at this point (or PUT would have raised error 5)       
     # if the versions are not the same, use the slow method (array has changed since clip was stored)
     if version != var.arrays[varname][2]:

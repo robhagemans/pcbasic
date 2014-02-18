@@ -238,7 +238,6 @@ def exec_paint(ins):
         pattern = draw_and_play.solid_pattern(c)
     util.require(ins, util.end_statement)         
     graphics.flood_fill(x0,y0, pattern, c, border)        
-            
     
                 
 def exec_get_graph(ins):
@@ -249,10 +248,12 @@ def exec_get_graph(ins):
     util.require_read(ins, (',',)) 
     array = util.get_var_name(ins)    
     util.require(ins, util.end_statement)
-    # do it    
-    graphics.get_area(x0,y0,x1,y1, array)
+    if array not in var.arrays:
+        raise error.RunError(5)
+    elif array[-1] == '$':
+        raise error.RunError(13) # type mismatch    
+    graphics.get_area(x0, y0, x1, y1, array)
     
-
     
 def exec_put_graph(ins):
     graphics.require_graphics_mode()
@@ -264,8 +265,11 @@ def exec_put_graph(ins):
         util.require(ins, ('\xC6', '\xC7', '\xEE', '\xEF', '\xF0')) #PSET, PRESET, AND, OR, XOR
         action = ins.read(1)
     util.require(ins, util.end_statement)
-    # do it
-    graphics.set_area(x0,y0, array, action)
+    if array not in var.arrays:
+        raise error.RunError(5)
+    elif array[-1] == '$':
+        raise error.RunError(13) # type mismatch    
+    graphics.set_area(x0, y0, array, action)
     
     
 def exec_draw(ins):

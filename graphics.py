@@ -15,7 +15,7 @@ import vartypes
 import var
 import console
 import draw_and_play
-
+import util
 backend = None
 
 # screen width and height in pixels
@@ -501,18 +501,21 @@ operations = {
 def set_area(x0,y0, array, operation_char):
     if backend.fast_put(x0, y0, array, operation_char):
         return
-    operation = operations[operation_char]
     byte_array, version = var.get_bytearray(array)
     dx = vartypes.uint_to_value(byte_array[0:2])
     dy = vartypes.uint_to_value(byte_array[2:4])
     # in mode 1, number of x bits is given rather than pixels
     if console.screen_mode == 1:
         dx /= 2
-    x1,y1 = x0+dx-1, y0+dy-1
-    bytesperword = 2
-    backend.apply_graph_clip()
+    x1, y1 = x0+dx-1, y0+dy-1
     x0, y0 = view_coords(x0, y0)
     x1, y1 = view_coords(x1, y1)
+    # illegal fn call if outside screen boundary
+    util.range_check(0, size[0]-1, x0, x1)
+    util.range_check(0, size[1]-1, y0, y1)
+    operation = operations[operation_char]
+    backend.apply_graph_clip()
+    bytesperword = 2
     byte = 4
     mask = 0x80
     hilo = 0
@@ -547,10 +550,13 @@ def set_area(x0,y0, array, operation_char):
     backend.remove_graph_clip()        
         
 def get_area(x0,y0,x1,y1, array):
-    # store a copy in the fast-put store
-    backend.fast_get(x0, y0, x1, y1, array)
     dx = (x1-x0+1)
     dy = (y1-y0+1)
+    x0, y0 = view_coords(x0,y0)
+    x1, y1 = view_coords(x1,y1)
+    # illegal fn call if outside screen boundary
+    util.range_check(0, size[0]-1, x0, x1)
+    util.range_check(0, size[1]-1, y0, y1)
     byte_array, version = var.get_bytearray(array)
     # clear existing array
     byte_array[:] = '\x00'*len(byte_array)
@@ -559,17 +565,12 @@ def get_area(x0,y0,x1,y1, array):
     else:
         byte_array[0:4] = vartypes.value_to_uint(dx) + vartypes.value_to_uint(dy) 
     bytesperword = 2
-    x0,y0 = view_coords(x0,y0)
-    x1,y1 = view_coords(x1,y1)
     byte = 4
     mask = 0x80
     hilo = 0
     for y in range(y0, y1+1):
         for x in range(x0, x1+1):
-            if x >= 0 and x < size[0] and y >= 0 and y < size[1]:
-                pixel = backend.get_pixel(x,y)
-            else:
-                pixel = 0
+            pixel = backend.get_pixel(x,y)
             for b in range(bitsperpixel):
                 if pixel&(1<<b) != 0:
                     try:
@@ -589,7 +590,9 @@ def get_area(x0,y0,x1,y1, array):
             mask = 0x80
             byte += bitsperpixel*bytesperword
             hilo = 0
-
+    # store a copy in the fast-put store
+    backend.fast_get(x0, y0, x1, y1, array)
+    
 def set_graph_view(x0,y0,x1,y1, absolute=True):
     global graph_view_set, view_graph_absolute, last_point
     # VIEW orders the coordinates
