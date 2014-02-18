@@ -17,8 +17,6 @@
 # non-blocking input with select, see http://repolinux.wordpress.com/2012/10/09/non-blocking-read-from-stdin-in-python/ 
 # reading escape sequences with os.read, see http://stackoverflow.com/questions/8620878/check-for-extra-characters-in-linux-terminal-buffer
 
-
-
 import time
 import sys, tty, termios, select
 import os
@@ -31,11 +29,10 @@ import console
 supports_pen = False
 supports_stick = False
 
-
 palette = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
 
-term_echo_on=True
-term_attr=None
+term_echo_on = True
+term_attr = None
 
 
 def init():
@@ -43,17 +40,14 @@ def init():
     term_echo(False)
     console.set_mode(0)
     
-    
 def init_screen_mode(mode, new_font_height):
     if mode != 0:
         raise error.RunError(5)
-    
     
 def setup_screen(height, width):
     ansi.clear_screen()
     ansi.resize_term(height, width)   
     set_palette()
-    
         
 def close():
     term_echo()
@@ -61,11 +55,9 @@ def close():
     show_cursor(True, False)
     ansi.clear_screen()
     ansi.reset()
-
     
 def init_graphics():
     pass
-   
 
 def clear_scroll_area(bg):
     ansi.set_colour(0, apply_palette(bg))
@@ -74,18 +66,14 @@ def clear_scroll_area(bg):
         ansi.clear_line()
     ansi.move_cursor(console.row,console.col)
 
-
 def clear_row(this_row, bg):
     ansi.move_cursor(this_row,1)    
     ansi.clear_line()
     ansi.move_cursor(console.row,console.col)
-
     
 def redraw():
    for y in range(console.height):
         console.redraw_row(0, y+1)
-    
-         
 
 def set_palette(new_palette=None):
     global palette
@@ -98,41 +86,30 @@ def set_palette_entry(index, colour):
     global palette
     palette[index] = colour
     redraw()
-
     
 def get_palette_entry(index):
     return palette[index]
 
-
 def set_scroll_area(view_start, height, width):
     ansi.set_scroll_region(view_start, height)    
-
     
 def set_cursor_colour(color):
     ansi.set_cursor_colour(apply_palette(color))
-    
 
 def build_line_cursor( is_line):
     #ansi.set_cursor_shape(is_line, True)
     pass
-
     
 def show_cursor(do_show, prev):
     ansi.show_cursor(do_show)
-    
-
 
 def check_events():
     check_keyboard()
-    
     if console.cursor:
         ansi.move_cursor(console.row,console.col)
-       
-    
 
 def apply_palette(colour):
     return colour&0x8 | palette[colour&0x7]
-
 
 def putc_at(row, col, c, attr):
     ansi.move_cursor(row, col)
@@ -141,56 +118,43 @@ def putc_at(row, col, c, attr):
     ansi.set_cursor_colour(apply_palette(fore))    
     sys.stdout.write(unicodepage.to_utf8(c))
     sys.stdout.flush()
-    
-      
    
 def scroll(from_line):
     ansi.scroll_up(1)
-
     
 def scroll_down(from_line):
     ansi.scroll_down(1)
-    
 
 def term_echo(on=True):
     global term_attr, term_echo_on
-    
     # sets raw terminal - no echo, by the character rather than by the line
-    
     fd = sys.stdin.fileno()
-      
     if (not on) and term_echo_on:
         term_attr = termios.tcgetattr(fd)
         tty.setraw(sys.stdin.fileno())
     elif not term_echo_on and term_attr != None:
         termios.tcsetattr(fd, termios.TCSADRAIN, term_attr)
-        
     previous = term_echo_on
     term_echo_on = on    
     return previous
-    
 
 def check_keyboard():
     fd = sys.stdin.fileno()
     c = ''
     # check if stdin has characters to read
     d = select.select([sys.stdin], [], [], 0) 
-
+    # longest escape sequence I use is 5 bytes
     if d[0] != []:
         c = os.read(fd,5)
-    
     # handle key
     if c == '\x03': # ctrl-C
         raise error.Break() 
-    
     # move scancodes (starting \x00) or ascii into keybuf
     # also apply KEY replacements as they work at a low level
     console.insert_key(ansi.translate_char(c))
 
-
 def copy_page(src, dst):
     pass
-    
     
 def idle():
     time.sleep(0.024)
