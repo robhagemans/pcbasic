@@ -24,8 +24,8 @@ import graphics
 # for fast get & put only
 import var
 
-# not an echoing terminal
-echo = False
+# not built on an echoing terminal
+echoing = False
 
 # CGA palette choices
 colours16 = [
