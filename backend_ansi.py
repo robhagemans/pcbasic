@@ -27,9 +27,6 @@ import ansi, unicodepage
 import error
 import console
 
-# not an echoing terminal
-echoing = False
-
 # console backend capabilities
 supports_pen = False
 supports_stick = False

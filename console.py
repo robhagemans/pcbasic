@@ -422,7 +422,7 @@ def read():
                     redraw_row(col-1, row)
                     set_pos(row, col+1)
                 else:    
-                    put_char(d, on_read=True)
+                    put_char(d)
     insert = False
     set_line_cursor(True)
     return inp  
@@ -822,7 +822,7 @@ def set_line_cursor(is_line=True):
         cursor_is_line = is_line
         backend.build_line_cursor(is_line)
 
-def put_char(c, on_read=False):
+def put_char(c):
     global row, col, attr, apage
     # check if scroll& repositioning needed
     check_pos(scroll_ok=True)
@@ -830,9 +830,7 @@ def put_char(c, on_read=False):
     if graphics_mode:
         # no blink, bg=0
         attr &= 0xf
-    # on_read: this is the echo of a read keystroke; backend.echoing: echoing terminal    
-    if not on_read or not backend.echoing:    
-        backend.putc_at(row, col, c, attr)    
+    backend.putc_at(row, col, c, attr)    
     show_cursor(save_curs)
     if row >0 and row <= height and col > 0 and col <= width:   
         apage.charbuf[row-1][col-1] = c
