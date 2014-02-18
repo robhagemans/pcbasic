@@ -199,10 +199,10 @@ def set_palette_entry(index, colour):
 def get_palette_entry(index):
     return backend.get_palette_entry(index)
 
-def write(s, scroll_ok=True):
+def write(s, scroll_ok=True, no_echo=False):
     global row, col, apage
-    if echo_write != None and row < 25:
-        # don't echo row 25 (keys line)
+    if echo_write != None and not no_echo:
+        # don't echo keys line
         echo_write.write(s)
     tab = 8
     last = ''
@@ -422,7 +422,7 @@ def read():
                     redraw_row(col-1, row)
                     set_pos(row, col+1)
                 else:    
-                    put_char(d, echo=True)
+                    put_char(d, on_read=True)
     insert = False
     set_line_cursor(True)
     return inp  
@@ -698,7 +698,7 @@ def hide_keys():
     pos = get_pos()
     last_row_on()
     set_pos(25, 1)
-    write(' '*width, scroll_ok=False)
+    write(' '*width, scroll_ok=False, no_echo=True)
     set_pos(*pos)
         
                     
@@ -718,18 +718,18 @@ def show_keys():
         set_pos(25, 1+i*8)
         set_attr(*attr)
         if i == 9:
-            write('0')
+            write('0', no_echo=True)
         else:
-            write(str(i+1))
+            write(str(i+1), no_echo=True)
         if not graphics.is_graphics_mode():
             if attr[1]==0:    
                 set_attr(0, 7)
             else:
                 set_attr(7, 0)
-        write(''.join(text))
+        write(''.join(text), no_echo=True)
         set_attr(*attr)
-        write(' '*(6-len(text)))
-        write(' ')
+        write(' '*(6-len(text)), no_echo=True)
+        write(' ', no_echo=True)
     set_pos(*pos)
     set_attr(*attr)
     show_cursor(save_curs)
@@ -822,7 +822,7 @@ def set_line_cursor(is_line=True):
         cursor_is_line = is_line
         backend.build_line_cursor(is_line)
 
-def put_char(c, echo=False):
+def put_char(c, on_read=False):
     global row, col, attr, apage
     # check if scroll& repositioning needed
     check_pos(scroll_ok=True)
@@ -830,7 +830,8 @@ def put_char(c, echo=False):
     if graphics_mode:
         # no blink, bg=0
         attr &= 0xf
-    if not echo or not backend.echo:    
+    # on_read: this is the echo of a read keystroke; backend.echoing: echoing terminal    
+    if not on_read or not backend.echoing:    
         backend.putc_at(row, col, c, attr)    
     show_cursor(save_curs)
     if row >0 and row <= height and col > 0 and col <= width:   
