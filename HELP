@@ -1132,8 +1132,9 @@ Pixel data format:
     if it consists of only one pixel. The number of bits per pixel depends on 
     the SCREEN mode.
 ERRORS:
--   If the area is too large for the array, raises ILLEGAL FUNCTION CALL.  
+-   If the array does not exist, raises ILLEGAL FUNCTION CALL.
 -   If 'array_name' refers to a string array, raises TYPE MISMATCH.
+-   If the area is too large for the array, raises ILLEGAL FUNCTION CALL.  
 -   If 'x0', ... 'y1' are string expressions, raises TYPE MISMATCH.
 -   If 'x0', ... 'y1' are not in [-32768, 32767], raises OVERFLOW.
 -   If 'x0', ... 'y1' are outside the current VIEW or WINDOW, raises
