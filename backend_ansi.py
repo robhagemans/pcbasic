@@ -28,7 +28,7 @@ import error
 import console
 
 # not an echoing terminal
-echo = False
+echoing = False
 
 # console backend capabilities
 supports_pen = False
