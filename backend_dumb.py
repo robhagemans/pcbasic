@@ -19,20 +19,63 @@ import error
 import unicodepage
 import console
 
-
-# echoing terminal
-echo = True
+class DumbTerm(object):
+    def write(self, s):
+        global enter_pressed
+        c = ''
+        for i in range(len(s)):
+            last = c
+            c = s[i]
+            # ignore CR/LF if enter has been pressed (and echoed!)
+            if last == '\x0d':
+                if c == '\x0a':
+                    if enter_pressed:
+                        enter_pressed = False
+                    else:
+                        sys.stdout.write(last + c)
+                    continue
+                else:
+                    sys.stdout.write(last)        
+                    # parse as normal
+            if c == '\x0d' and i < len(s)-1:
+                # first CR, hold till next char
+                continue
+            if c in console.control:    
+                sys.stdout.write(c)    
+            else:
+                sys.stdout.write(unicodepage.to_utf8(c))    
+        sys.stdout.flush()
+    
+    
+class DumberTerm(object):
+    def write(self, s):
+        sys.stdout.write(s)    
+        
+def set_dumbterm():
+    global echoing            
+    console.echo_read = None
+    console.echo_write = DumbTerm()
+    # echoing terminal
+    echoing = True
+    
+def set_dumberterm():
+    global echoing            
+    console.echo_read = DumberTerm()
+    console.echo_write = DumberTerm()
+    # pretend it's not an echoing terminal
+    echoing = False
+    
+set_dumbterm()
 
 # console backend capabilities
 supports_pen = False
 supports_stick = False
 
-
-last_row=1
-enter_pressed=False
+# keep track of enter presses, to work well on echoing terminal with human operator
+enter_pressed = False
 
 # this is called by set_vpage
-screen_changed=False
+screen_changed = False
 
     
 def idle():
@@ -46,8 +89,6 @@ def close():
 
 def check_events():
     check_keys()
-    check_row(console.row)
-
     
 def clear_row(the_row, bg):
     pass
@@ -66,16 +107,13 @@ def copy_page(src, dst):
     pass
 
 def scroll(from_line):
-    global last_row
-    last_row -=1
+    pass
     
 def scroll_down(from_line):
-    global last_row
-    last_row +=1
+    pass
 
 def set_cursor_colour(c):
     pass
-
         
 def set_palette(new_palette=[]):
     pass
@@ -93,32 +131,13 @@ def set_scroll_area(view_start, scroll_height, width):
     pass
 
 def putc_at(row, col, c, attr):
-    global last_row
-    # don't print bottom line
-    if row==25:
-        return
-    check_row(row)    
-    sys.stdout.write(unicodepage.to_utf8(c))
-    sys.stdout.flush()
-    
+    pass    
 
 def build_line_cursor(is_line):
     pass
-    
-    
 
 #################
-
-
-
-def check_row(row):    
-    global last_row, enter_pressed
-    if row != last_row:    
-        if not enter_pressed:
-            sys.stdout.write('\n')
-        enter_pressed=False
-        last_row = row
-
+    
 def check_keys():
     global last_row, enter_pressed
     fd = sys.stdin.fileno()
