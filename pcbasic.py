@@ -40,25 +40,27 @@ def main():
         help='Input program file to run (default), load or convert.')
     parser.add_argument('save', metavar='out_file', nargs='?', 
         help='Output program file. If no convert option is specified, this is ignored.')
-    parser.add_argument('-d', '--dumb', action='store_true', 
-        help='use dumb unicode terminal (no escape codes). This is the standard if redirecting input or output')
+    parser.add_argument('-b', '--dumb', action='store_true', 
+        help='Use dumb text terminal. Echo input. This is the default if redirecting input or output')
+    parser.add_argument('-u', '--uni', action='store_true', 
+        help='Use unicode text terminal. Do not echo input (the terminal does). Translate graphic characters into unicode.')
     parser.add_argument('-t', '--text', action='store_true', 
-        help='use textmode terminal')
-    parser.add_argument('-ca', '--conv-asc', action='store_true', help='convert to DOS text file (code page 347, CR/LF, EOF \\1A)')
-    parser.add_argument('-cb', '--conv-byte', action='store_true', help='convert to bytecode file')
-    parser.add_argument('-cp', '--conv-prot', action='store_true', help='convert to protected (encrypted) file')
-    parser.add_argument('-l', '--load', action='store_true', help='load in_file only, do not execute')
-    parser.add_argument('-r', '--run', action='store_true', help='execute input file (default if in_file given)')
-    parser.add_argument('-c', '--cmd', metavar='CMD', help='execute BASIC command line')
-    parser.add_argument('-q', '--quit', action='store_true', help='quit interpreter when execution stops')
-    parser.add_argument('--debug', action='store_true', help='enable DEBUG keyword')
-    parser.add_argument('--nosound', action='store_true', help='disable sound output')
-    parser.add_argument('--peek', nargs='*', metavar=('ADDR:VAL'), help='define PEEK values')
-    parser.add_argument('-p1', '--lpt1', nargs='*', metavar=('TYPE:VAL'), help='set LPT1: to FILE:file_name or CUPS:printer_name. Default is CUPS:default')
-    parser.add_argument('-p2', '--lpt2', nargs='*', metavar=('TYPE:VAL'), help='set LPT2: to FILE:file_name or CUPS:printer_name.')
-    parser.add_argument('-p3', '--lpt3', nargs='*', metavar=('TYPE:VAL'), help='set LPT3: to FILE:file_name or CUPS:printer_name.')
-    parser.add_argument('-s1', '--com1', nargs='*', metavar=('TYPE:VAL'), help='set COM1: to FILE:file_name or CUPS:printer_name.')
-    parser.add_argument('-s2', '--com2', nargs='*', metavar=('TYPE:VAL'), help='set COM2: to FILE:file_name or CUPS:printer_name.')
+        help='Use ANSI textmode terminal')
+    parser.add_argument('-ca', '--conv-asc', action='store_true', help='Convert to DOS text file (code page 347, CR/LF, EOF \\1A)')
+    parser.add_argument('-cb', '--conv-byte', action='store_true', help='Convert to bytecode file')
+    parser.add_argument('-cp', '--conv-prot', action='store_true', help='Convert to protected (encrypted) file')
+    parser.add_argument('-l', '--load', action='store_true', help='Load in_file only, do not execute')
+    parser.add_argument('-r', '--run', action='store_true', help='Execute input file (default if in_file given)')
+    parser.add_argument('-c', '--cmd', metavar='CMD', help='Execute BASIC command line')
+    parser.add_argument('-q', '--quit', action='store_true', help='Quit interpreter when execution stops')
+    parser.add_argument('--debug', action='store_true', help='Enable DEBUG keyword')
+    parser.add_argument('--nosound', action='store_true', help='Disable sound output (faster)')
+    parser.add_argument('--peek', nargs='*', metavar=('ADDR:VAL'), help='Define PEEK preset values')
+    parser.add_argument('-p1', '--lpt1', nargs='*', metavar=('TYPE:VAL'), help='Set LPT1: to FILE:file_name or CUPS:printer_name. Default is CUPS:default')
+    parser.add_argument('-p2', '--lpt2', nargs='*', metavar=('TYPE:VAL'), help='Set LPT2: to FILE:file_name or CUPS:printer_name.')
+    parser.add_argument('-p3', '--lpt3', nargs='*', metavar=('TYPE:VAL'), help='Set LPT3: to FILE:file_name or CUPS:printer_name.')
+    parser.add_argument('-s1', '--com1', nargs='*', metavar=('TYPE:VAL'), help='Set COM1: to FILE:file_name or CUPS:printer_name or PORT:device_name.')
+    parser.add_argument('-s2', '--com2', nargs='*', metavar=('TYPE:VAL'), help='Set COM2: to FILE:file_name or CUPS:printer_name PORT:device_name.')
     args = parser.parse_args()
     ########################################
     # converter invocations
@@ -87,7 +89,11 @@ def main():
     # choose the screen 
     sound.backend = nosound
     if args.dumb or not sys.stdout.isatty() or not sys.stdin.isatty():
-        console.backend = backend_dumb        
+        console.backend = backend_dumb
+        console.backend.set_dumberterm()
+    elif args.uni:                
+        console.backend = backend_dumb
+        console.backend.set_dumbterm()
     elif args.text:
         import backend_ansi
         console.backend = backend_ansi

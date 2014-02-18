@@ -47,19 +47,24 @@ class DumbTerm(object):
         sys.stdout.flush()
     
     
-class DumberTerm(object):
+class DumberTermRead(object):
     def write(self, s):
-        sys.stdout.write(s)    
-        
+        if s not in ('\r', '\n'):
+            sys.stdout.write(s)    
+
+class DumberTermWrite(object):
+    def write(self, s):
+        sys.stdout.write(s)
+                    
+                    
 def set_dumbterm():
     console.echo_read = None
     console.echo_write = DumbTerm()
     
 def set_dumberterm():
-    console.echo_read = DumberTerm()
-    console.echo_write = DumberTerm()
+    console.echo_read = DumberTermRead()
+    console.echo_write = DumberTermWrite()
     
-set_dumbterm()
 
 # console backend capabilities
 supports_pen = False
