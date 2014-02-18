@@ -1140,5 +1140,21 @@ ERRORS:
 -   If 'x0', ... 'y1' are outside the current VIEW or WINDOW, raises
     ILLEGAL FUNCTION CALL
     
+
+GOSUB statement
+GOSUB line_number [ anything ]
+---------------
+Jumps to a subroutine at 'line_number'. The next RETURN satement jumps back to
+the statement after GOSUB. Anything after 'line_number' until the end of the 
+statement is ignored. If executed in interactive mode, GOSUB enters runmode and
+the following RETURN returns execution to the direct line.
+'line_number' must be an existing line number literal.
+NOTES:
+-   If no RETURN is encountered, no problem.
+ERRORS:
+-   If 'line_number' does not exist, raises UNDEFINED LINE NUMBER.
+
+
+
             
     
