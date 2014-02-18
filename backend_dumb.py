@@ -52,18 +52,12 @@ class DumberTerm(object):
         sys.stdout.write(s)    
         
 def set_dumbterm():
-    global echoing            
     console.echo_read = None
     console.echo_write = DumbTerm()
-    # echoing terminal
-    echoing = True
     
 def set_dumberterm():
-    global echoing            
     console.echo_read = DumberTerm()
     console.echo_write = DumberTerm()
-    # pretend it's not an echoing terminal
-    echoing = False
     
 set_dumbterm()
 
