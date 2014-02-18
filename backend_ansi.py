@@ -50,6 +50,7 @@ def init_screen_mode(mode, new_font_height):
     
     
 def setup_screen(height, width):
+    ansi.clear_screen()
     ansi.resize_term(height, width)   
     set_palette()
     
