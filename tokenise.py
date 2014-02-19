@@ -129,8 +129,6 @@ def detokenise_line(bytes):
         elif comment or litstring or (s >= '\x20' and s <= '\x7e'):   # honest ASCII
             output += s
         else:
-            # try for single-byte token or two-byte token
-            # if no match, first char is passed unchanged
             bytes.seek(-1,1)
             comment = detokenise_keyword(bytes, output)
     return output
@@ -179,6 +177,8 @@ def ascii_read_to(ins, findrange):
 # de tokenise one- or two-byte tokens
 # output must be mutable
 def detokenise_keyword(bytes, output):
+    # try for single-byte token or two-byte token
+    # if no match, first char is passed unchanged
     s = bytes.read(1)
     try:
         keyword = token_to_keyword[s]
@@ -209,12 +209,6 @@ def detokenise_keyword(bytes, output):
             # otherwise, it's part of the comment or an EOL or whatever, pass back to stream so it can be processed
             bytes.seek(-1,1)
         comment = True
-    # token followed by number is also separated by a space, except operator tokens and SPC(, TAB(, FN, USR
-    nxt = util.peek(bytes)
-    if (not comment and nxt.upper() not in (tokens_operator + ['\xD9', '"', ',', ' ', ':', '(', ')']) 
-                and s not in (tokens_operator + tokens_with_bracket + ['\xD0', '\xD1'])): 
-        # excluding TAB( SPC( and FN. \xD9 is ', \xD1 is FN, \xD0 is USR.
-        output += ' '
     # check for special cases
     #   [:REM']   ->  [']
     if len(output) > 4 and str(output[-5:]) ==  ":REM'":
@@ -223,11 +217,19 @@ def detokenise_keyword(bytes, output):
     elif len(output) > 5 and str(output[-6:]) == "WHILE+":
         output[:] = output[:-1]        
     #   [:ELSE]  ->  [ELSE]
-    elif len(output) > 4 and str(output[-5:]) == ":ELSE":
+    # note that anything before ELSE gets cut off, e.g. if we have 1ELSE instead of :ELSE it also becomes ELSE
+    # SIC: len(output) > 4 and str(output[-4:])
+    elif len(output) > 4 and str(output[-4:]) == "ELSE":
         if chr(output[-5]) == ':' and chr(output[-6]) in ascii_digits:
             output[:] = output[:-5] + " ELSE" 
         else:
             output[:] = output[:-5] + "ELSE"
+    # token followed by token or number is separated by a space, except operator tokens and SPC(, TAB(, FN, USR
+    nxt = util.peek(bytes)
+    if (not comment and nxt.upper() not in (tokens_operator + ['\xD9', '"', ',', ' ', ':', '(', ')']) 
+                and s not in (tokens_operator + tokens_with_bracket + ['\xD0', '\xD1'])): 
+        # excluding TAB( SPC( and FN. \xD9 is ', \xD1 is FN, \xD0 is USR.
+        output += ' '
     return comment
     
 #################################################################
