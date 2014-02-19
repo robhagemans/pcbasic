@@ -165,7 +165,9 @@ String literals can be specified between double quotes. There is no escaping
 mechanism. To include a double quote or a special character in a string, use
 the CHR$() function.
 Numeric literals:
-  [{+|-}] [figures] [.] [figures] [ { {E|D} [{+|-}] [figures] | # | ! | % } ]
+  [{+|-}] [digits] [.] [digits] [ { {E|D} [{+|-}] [digits] | # | ! | % } ]
+  &{H|h}hexadecimal_digits
+  &[O|o]octal_digits
 Trailing % is ignored, ! or # specify the type.
 Examples of valid numeric literals:
   -1
@@ -183,9 +185,12 @@ Examples of valid numeric literals:
   1.1d+7
   1e2
   1e-2
+  &7
+  &hffff
+  &O20
 Hexadecimal literals can be specified like &HFFFF. They must range between 
 -&H7FFF and &HFFFF. &HFFFF = -&H1 = &H-1 .
-Octal literals can be specified as &o777.
+Octal literals can be specified as &o777 or &777.
 
 
 VARIABLES
