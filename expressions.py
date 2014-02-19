@@ -935,14 +935,13 @@ def value_varptr(ins):
         return vartypes.pack_int(var_ptr)
         
 def value_usr(ins):
-    c= util.peek(ins,1)
-    if c>= '0' and c<='9':
+    if util.peek(ins) in ('\x11','\x12','\x13','\x14','\x15','\x16','\x17','\x18','\x19','\x1a'): # digits 0--9
         ins.read(1)
     parse_bracket(ins)
     return vartypes.null['%']
     
 def value_inp(ins):
-    parse_bracket(ins)
+    vartypes.pass_int_keep(parse_bracket(ins), maxint=0xffff)
     return vartypes.null['%']
 
 #  erdev, erdev$        
