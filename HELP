@@ -165,7 +165,7 @@ String literals can be specified between double quotes. There is no escaping
 mechanism. To include a double quote or a special character in a string, use
 the CHR$() function.
 Numeric literals:
-  [+|-] [figures] [.] [figures] [ E|D [+|-] [figures] | # | ! | % ]
+  [{+|-}] [figures] [.] [figures] [ { {E|D} [{+|-}] [figures] | # | ! | % } ]
 Trailing % is ignored, ! or # specify the type.
 Examples of valid numeric literals:
   -1
@@ -297,7 +297,7 @@ ERRORS:
 
 
 AUTO statement
-AUTO [line_number | .] [, [increment]] 
+AUTO [ { line_number | . } ] [, [increment]] 
 --------------
 Enter automatic line numbering mode (AUTO mode). In AUTO mode, line numbers 
 are automatically generated when <ENTER> is pressed.
@@ -537,7 +537,7 @@ ERRORS:
     
  
 COM(port) statement
-COM(port) [ ON | OFF | STOP ]
+COM(port) { ON | OFF | STOP }
 ----------------
 When using ON, enables ON COM(x) event trapping of the emulated serial port. 
 When using OFF, disables trapping.
@@ -752,7 +752,7 @@ ERRORS:
     
     
 DIM statement
-DIM name [ ( | [ ] limit_0 [, limit_1 [, ...] ] [ ) | ] ]   
+DIM name  { ( | [ } limit_0 [, limit_1 [, ...] ] { ) | } ]   
 -------------
 Dimensions (allocates memory for) arrays. 'name' is a legal variable name
 specifying the array to be dimensioned. 'limit_0', ... are number-valued 
@@ -798,7 +798,7 @@ and 'movement' is one of:
     Fn      down+right n steps
     Gn      down+left n steps
     Hn      up+left n steps
-    M[+|-]x,[+|-|]y
+    M{+|-}x,{+|-|}y
             move (x,y) steps
     Mx,y    move to view region coordinates x,y  
 where 'n','x','y' must be integers in [0, 9999].
@@ -841,6 +841,14 @@ ERRORS:
     FUNCTION CALL.
 -   If 'line_number' is not in [0,65529], raises ILLEGAL FUNCTION CALL.    
 -   If the specified line number dos not exist, raises UNDEFINED LINE NUMBER.
+
+
+ELSE statement
+ELSE [anything]
+--------------
+Unless part of an IF statement on the same line, anything after ELSE is ignored
+in the same way as after the apostrophe (') or :REM. No colon (:) preceding 
+the ELSE statement is necessary. See IF for normal usage.
 
 
 END statement
@@ -1148,12 +1156,51 @@ Jumps to a subroutine at 'line_number'. The next RETURN satement jumps back to
 the statement after GOSUB. Anything after 'line_number' until the end of the 
 statement is ignored. If executed in interactive mode, GOSUB enters runmode and
 the following RETURN returns execution to the direct line.
-'line_number' must be an existing line number literal.
+'line_number' must be an existing line number literal. Further characters on 
+the line are ignored until end of statement.
 NOTES:
 -   If no RETURN is encountered, no problem.
 ERRORS:
 -   If 'line_number' does not exist, raises UNDEFINED LINE NUMBER.
+-   If 'line_number' is greater than 65529, only the first 4 characters are 
+    read (e.g. 6553)
 
+
+GOTO statement
+GOTO line_number [anything]
+--------------
+Jumps to 'line_number'.  Anything after 'line_number' until the end of the 
+statement is ignored. If executed in interactive mode, GOTO enters runmode and
+the following RETURN returns execution to the direct line.
+'line_number' must be an existing line number literal. Further characters on 
+the line are ignored until end of statement.
+ERRORS:
+-   If 'line_number' does not exist, raises UNDEFINED LINE NUMBER.
+-   If 'line_number' is greater than 65529, only the first 4 characters are 
+    read (e.g. 6553)
+    
+
+HEX$(x) function
+----------------
+Returns a string with the hexadecimal representation of 'x'. 'x' must be a 
+number-valued expression between -32768 and 65535, inclusive. Values for 
+negative 'x' are shown as two's-complement. 
+ERRORS:
+-   If 'x' is not in [-32768, 65535], OVERFLOW is raised.
+-   If 'x' has a string value, TYPE MISMATCH is raised.
+
+
+IF statement
+IF truth_value [,] { THEN | GOTO } [ {statements_1 | line_number_1 [anything] } ] 
+    [ ELSE [ {statements_0| line_number_0 [anything] } ] ]
+------------
+
+NOTES:
+-   THEN and GOTO are interchangeable; which one is chosen is independent
+    of whether a statement or a line number is given. GOTO PRINT 1 is fine.
+-   As in GOTO, anything after the line number is ignored.
+    
+    
 
 
             
