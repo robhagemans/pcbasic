@@ -123,9 +123,10 @@ def detokenise_line(bytes):
             # 0D: line pointer (unsigned int) - this token should not be here; interpret as line number and carry on
             # 0E: line number (unsigned int)
             output += vartypes.uint_to_str(bytearray(bytes.read(2)))
-        elif s in ('\x10', '\x1e'):                           
-            # 1E/10: UNUSED: Flags numeric constant being processed/no longer being processed
-            pass
+        # elif s in ('\x10', '\x1e'):                           
+        #   # 1E/10: UNUSED: Flags numeric constant being processed/no longer being processed
+        #   # this token in code has strange results in GW, don't know how to reproduce.
+        #   pass
         elif comment or litstring or (s >= '\x20' and s <= '\x7e'):   # honest ASCII
             output += s
         else:
