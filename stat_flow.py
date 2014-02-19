@@ -272,10 +272,11 @@ def exec_if(ins):
     # GW-BASIC doesn't overflow in IFs, so uses double rather than bool?
     expr = expressions.parse_expression(ins)
     val = vartypes.pass_single_keep(expr)
-    if util.skip_white_read(ins) not in ('\xCD', '\x89'): # THEN, GOTO
-        raise error.RunError(2)
+    # optional comma
+    util.skip_white_read_if(ins, (',',))
+    util.require_read(ins, ('\xCD', '\x89')) # THEN, GOTO
     # if TRUE, continue after THEN
-    if not fp.unpack(val).is_zero(): #val != 0:
+    if not fp.unpack(val).is_zero(): 
         # line number or statement is implied GOTO
         if util.skip_white(ins) in ('\x0d', '\x0e'):  
             # line number (jump)
@@ -287,14 +288,14 @@ def exec_if(ins):
         # ELSEs are nesting on the line
         nesting_counter = 0
         while True:    
-            d = util.skip_to_read(ins, util.end_statement + ('\xCD',))
+            d = util.skip_to_read(ins, util.end_statement + ('\x8B',)) # IF 
             if d == '\x8B': # IF
                 # another IF statement means another nesting step
                 # note it's less convenient to count THENs because they could be THEN, GOTO or THEN GOTO.
                 nesting_counter += 1            
             elif d == ':':
-                if util.peek(ins) == '\xa1': # :ELSE is ELSE
-                    if  nesting_counter == 0:
+                if util.peek(ins) == '\xa1': # :ELSE is ELSE; no : means it's ignored by GW and us.
+                    if nesting_counter == 0:
                         # drop ELSE token and continue from here
                         ins.read(1)
                         # line number?
@@ -305,7 +306,7 @@ def exec_if(ins):
                     else:
                         nesting_counter -= 1
             elif d in util.end_line:
-                if d!='':
+                if d != '':
                     ins.seek(-1,1)
                 break
         return            
