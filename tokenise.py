@@ -252,6 +252,7 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
                 continue
         # read the line number
         tokenise_line_number(ins, outs, onfile)
+        
         # non-parsing modes
         verbatim = False  # REM: pass unchnaged until e-o-line
         data = False      # DATA: pass unchanged until :
@@ -261,6 +262,16 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
         expect_number=False
         # flag for SPC( or TAB( as numbers can follow the closing bracket
         spc_or_tab=False
+        # line must not start with a number
+        while True:
+            c = util.peek(ins)
+            if c in tokenise_whitespace:
+                ins.read(1)
+                outs.write(char)
+            elif c in ascii_digits:
+                raise error.RunError(2)
+            else:
+                break
         # parse through elements of line
         while True: 
             # non-parsing modes        
@@ -378,20 +389,29 @@ def tokenise_jump_number(ins, outs):
         outs.write('\x0e' + word)
     
 def tokenise_uint(ins):
-    word = ''
+    word = bytearray()
     while True:
         c = ins.read(1)
-        if c not in ascii_digits:
-            if c != '':
-                ins.seek(-1,1)
+        if c in ascii_digits + tokenise_whitespace:
+            word += c
+        else:    
+            ins.seek(-len(c), 1)
             break
-        else:
-            word += c   
+    # don't claim trailing w/s
+    while len(word)>0 and chr(word[-1]) in tokenise_whitespace:
+        del word[-1]        
+        ins.seek(-1, 1)
+    # remove all whitespace
+    trimword = bytearray()
+    for c in word:
+        if chr(c) not in tokenise_whitespace:
+            trimword += chr(c)
+    word = trimword        
     # line number (jump)
-    if word != '':
+    if len(word) > 0:
         if int(word) >= 65530:
             # note: anything >= 65530 is illegal in GW-BASIC
-            # in loading an ASCII file, GWBASIC would interpret these as '6553 1' etcetera, generating a syntax error on execution.
+            # in loading an ASCII file, GWBASIC would interpret these as '6553 1' etcetera, generating a syntax error on load.
             # keep 6553 as line number and push back the last number:
             ins.seek(4-len(word), 1)
             word = word[:4]
