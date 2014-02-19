@@ -305,12 +305,14 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
             if c in tokenise_whitespace:
                 ins.read(1)
                 outs.write(char)
+            # handle jump numbers
+            elif expect_number and number_is_line and c in ascii_digits:
+                tokenise_jump_number(ins, outs) 
             # handle numbers
             # numbers following var names with no operator or token in between should not be parsed, eg OPTION BASE 1
             # note we don't include leading signs, they're encoded as unary operators
-            elif expect_number and number_is_line and c in ascii_digits:
-                tokenise_jump_number(ins, outs) 
-            elif expect_number and not number_is_line and c in ascii_digits + ['&', '.']:
+            # number starting with . or & are always parsed
+            elif c in ('&', '.') or (expect_number and not number_is_line and c in ascii_digits):
                 tokenise_number(ins, outs)
             # operator keywords ('+', '-', '=', '/', '\\', '^', '*', '<', '>'):    
             elif c in ascii_operators: 
