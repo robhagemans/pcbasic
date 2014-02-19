@@ -520,27 +520,28 @@ def exec_return(ins):
         # a tad inelegant...
         data = program.gosub_return.pop()
         if len(data) == 3:
-            [pos, program.linenum, buf] = data
+            [pos, orig_linenum, buf] = data
         elif len(data) == 4:
             # returning from ON KEY GOSUB, re-enable key
-            [pos, program.linenum, buf, keynum] = data
+            [pos, orig_linenum, buf, keynum] = data
             if keynum > 0:
                 events.key_stopped[keynum-1] = False
             else:
                 # ON TIMER
                 events.timer_stopped = False
             # FIXME: all other events ... ?    
-        if buf != ins:
-            # move to end of program to avoid executing anything else on the RETURN line if called from direct mode   
-            ins.seek(-1)
-            program.unset_runmode()
         if jumpnum == None:
+            if buf != ins:
+                # move to end of program to avoid executing anything else on the RETURN line if called from direct mode   
+                ins.seek(-1)
+                program.unset_runmode()
             # go back to position of GOSUB
+            program.linenum = orig_linenum 
             buf.seek(pos)
         else:
             # jump to specified line number 
             program.jump(jumpnum)
-
+        
 def exec_stop(ins):
     util.require(ins, util.end_statement)
     raise error.Break()
