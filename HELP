@@ -1196,16 +1196,80 @@ ERRORS:
 
 
 IF statement
-IF truth_value [,] { THEN | GOTO } [ {statements_1 | line_number_1 [anything] } ] 
-    [ ELSE [ {statements_0| line_number_0 [anything] } ] ]
+IF truth_value [,] { THEN | GOTO } [ statements_1 | line_number_1 [anything] ]
+    [ ELSE [ statements_0| line_number_0 [anything] ] ]
 ------------
-
+If 'truth_value' is non-zero, executes statements_1 / jumps to line_number_1. 
+If it is zero, executes statements_0 or jumps to line_number_1. 'truth_value' 
+is a number-valued expression. The comma is optional and ignored. 
+'line_number_0' and 'line_number_1' are valid existing line numbers. 
+Statements 'statements_0' and 'statements_1' can be compound statements with
+one or more colons (:) separating single statements. The compound statements 
+can contain nested IF..THEN..ELSE statements. ELSE clauses are optional; they
+are bound to the innermost free IF statement if nested. Additional ELSE 
+clauses that have no matching IF are ignored. All clauses must be on the same 
+program line.
 NOTES:
 -   THEN and GOTO are interchangeable; which one is chosen is independent
     of whether a statement or a line number is given. GOTO PRINT 1 is fine.
 -   As in GOTO, anything after the line number is ignored.
+-   If 'truth_value' has a string value, raises TYPE MISMATCH.
     
     
+INKEY$ function 
+---------------
+Returns one keypress from the keyboard buffer. If the keyboard buffer is 
+empty, returns the empty string. Otherwise, the return value is either a one
+character string or a two-character string of which the first is CHR$(0) and
+the second a keyboard scancode.
+The hex values for keyboard scancodes returned by INKEY$ are:
+    <UP>            48
+    <DOWN>          50
+    <RIGHT>         4D
+    <LEFT>          4B
+    <INSERT>        52
+    <DELETE>        53
+    <HOME>          47
+    <END>           4F
+    <PAGEUP>        49
+    <PAGEDOWN>      51
+    <F1>            3B
+    <F2>            3C
+    <F3>            3D
+    <F4>            3E
+    <F5>            3F
+    <F6>            40
+    <F7>            41
+    <F8>            42
+    <F9>            43
+    <F10>           44
+    <PRINT>         37
+    <CTRL+RIGHT>    74
+    <CTRL+LEFT>     73
+    <CTRL+HOME>     77
+    <CTRL+END>      75
+    <CTRL+PAGEUP>   84
+    <CTRL+PAGEDOWN> 76
+    <CTRL+2>        03
+    <CTRL+9>        84
+    <CTRL+F2>       5F
+    <CTRL+F3>       60
+
+
+
+INP(x) function
+---------------
+Returns zero. 
+'x' is a numeric expression with a value between 0 and 65535, inclusive.
+NOTES:
+-   In GW-BASIC, returns a byte read from machine port 'x'. This is not 
+    implemented in PC_BASIC 3.23.
+-   One of the most common uses is to get enhanced keyboard scan codes 
+    through INP(&H60)
+ERRORS:
+-   If 'address' is not in [-32768, 65535], OVERFLOW is raised.
+-   If 'address' has a string value, TYPE MISMATCH is raised.
+        
 
 
             
