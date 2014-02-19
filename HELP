@@ -1197,7 +1197,7 @@ ERRORS:
 
 IF statement
 IF truth_value [,] { THEN | GOTO } [ statements_1 | line_number_1 [anything] ]
-    [ ELSE [ statements_0| line_number_0 [anything] ] ]
+    [ ELSE [ statements_0 | line_number_0 [anything] ] ]
 ------------
 If 'truth_value' is non-zero, executes statements_1 / jumps to line_number_1. 
 If it is zero, executes statements_0 or jumps to line_number_1. 'truth_value' 
@@ -1358,6 +1358,26 @@ ERRORS:
 -   If 'address' has a string value, TYPE MISMATCH is raised.
         
 
-
-            
+INPUT statement
+INPUT [;] [ prompt {;|,} ] var_0 [, var_1 [, ... ] ]
+---------------
+Prints 'prompt' to the screen and waits for the user to input values for var_0,
+ ... . Values entered must be separated by commas. String values can be entered
+with or without double quotes ("). If a string with a comma is needed, quotes
+are the only way to enter it. If a given 'var_n' is a numeric variable, the 
+value entered must be a valid number literal. 'prompt' is a string literal. 
+'var_0', ... are variable names or or fully indexed array elements. 
+The semicolon before the prompt, if present, stops a newline from being printed
+after the values have been entered.
+If the prompt is followed by a semicolon, it is printed with a trailing ?. If 
+the prompt is followed by a comma, no question mark is added. 
+ERRORS:
+-   If the value entered for a numeric variable is not a valid numeric literal,
+    or the number of values entered does not match the number of variables in 
+    the statement,
+    ?REDO FROM START is printed and all values must be entered again. 
+-   A SYNTAX ERROR that is caused after the prompt is printed is only raised
+    after the value shave been entered. No values are stored.
     
+
+        
