@@ -160,6 +160,101 @@ ctrl_keycode_to_scancode = {
 }
 
     
+   
+keycode_to_inpcode = {
+    # top row
+    pygame.K_ESCAPE:    '\x01',
+    pygame.K_1:         '\x02',
+    pygame.K_2:         '\x03',
+    pygame.K_3:         '\x04',
+    pygame.K_4:         '\x05',
+    pygame.K_5:         '\x06',
+    pygame.K_6:         '\x07',
+    pygame.K_7:         '\x08',
+    pygame.K_8:         '\x09',
+    pygame.K_9:         '\x0A',
+    pygame.K_0:         '\x0B',
+    pygame.K_MINUS:     '\x0C',
+    pygame.K_EQUALS:    '\x0D',
+    pygame.K_BACKSPACE: '\x0E',
+    # row 1
+    pygame.K_TAB:       '\x0F',
+    pygame.K_q:         '\x10',
+    pygame.K_w:         '\x11',
+    pygame.K_e:         '\x12',
+    pygame.K_r:         '\x13',
+    pygame.K_t:         '\x14',
+    pygame.K_y:         '\x15',
+    pygame.K_u:         '\x16',
+    pygame.K_i:         '\x17',
+    pygame.K_o:         '\x18',
+    pygame.K_p:         '\x19',
+    pygame.K_LEFTBRACKET:'\x1A',
+    pygame.K_RIGHTBRACKET:'\x1B',
+    pygame.K_RETURN:    '\x1C',
+    # row 2
+    pygame.K_RCTRL:     '\x1D',
+    pygame.K_LCTRL:     '\x1D',
+    pygame.K_a:         '\x1E',
+    pygame.K_s:         '\x1F',
+    pygame.K_d:         '\x20',
+    pygame.K_f:         '\x21',
+    pygame.K_g:         '\x22',
+    pygame.K_h:         '\x23',
+    pygame.K_j:         '\x24',
+    pygame.K_k:         '\x25',
+    pygame.K_l:         '\x26',
+    pygame.K_SEMICOLON: '\x27',
+    pygame.K_QUOTE:     '\x28',
+    pygame.K_BACKQUOTE :     '\x29',
+    # row 3        
+    pygame.K_LSHIFT:    '\x2A',
+    pygame.K_HASH:      '\x2B',     # assumes UK keyboard?
+    pygame.K_z:         '\x2C',
+    pygame.K_x:         '\x2D',
+    pygame.K_c:         '\x2E',
+    pygame.K_v:         '\x2F',
+    pygame.K_b:         '\x30',
+    pygame.K_n:         '\x31',
+    pygame.K_m:         '\x32',
+    pygame.K_COMMA:     '\x33',
+    pygame.K_PERIOD:    '\x34',
+    pygame.K_SLASH:     '\x35',
+    pygame.K_RSHIFT:    '\x36',
+    pygame.K_PRINT:     '\x37',
+    pygame.K_SYSREQ:    '\x37',
+    pygame.K_RALT:      '\x38',
+    pygame.K_LALT:      '\x38',
+    pygame.K_SPACE:     '\x39',
+    pygame.K_CAPSLOCK:  '\x3A',
+    # others    
+    pygame.K_F1:        '\x3B',
+    pygame.K_F2:        '\x3C',
+    pygame.K_F3:        '\x3D',
+    pygame.K_F4:        '\x3E',
+    pygame.K_F5:        '\x3F',
+    pygame.K_F6:        '\x40',
+    pygame.K_F7:        '\x41',
+    pygame.K_F8:        '\x42',
+    pygame.K_F9:        '\x43',
+    pygame.K_F10:       '\x44',
+    pygame.K_NUMLOCK:   '\x45',
+    pygame.K_SCROLLOCK: '\x46',
+    pygame.K_HOME:      '\x47',
+    pygame.K_UP:        '\x48',
+    pygame.K_PAGEUP:    '\x49',
+    pygame.K_KP_MINUS:  '\x4A',
+    pygame.K_LEFT:      '\x4B',
+    pygame.K_KP5:       '\x4C',
+    pygame.K_RIGHT:     '\x4D',
+    pygame.K_KP_PLUS:   '\x4E',
+    pygame.K_END:       '\x4F',
+    pygame.K_DOWN:      '\x50',
+    pygame.K_PAGEDOWN:  '\x51',
+    pygame.K_INSERT:    '\x52',
+    pygame.K_DELETE:    '\x53',
+}
+
 def init():
     global fonts, num_sticks, joysticks
     pre_init_mixer()    
@@ -449,6 +544,9 @@ def check_events(pause=False):
                 handle_key(event)
             else:
                 return True    
+        if event.type == pygame.KEYUP:
+            if not pause:
+                handle_key_up(event)
         elif event.type == pygame.MOUSEBUTTONDOWN:
             handle_mouse(event)
     check_screen()
@@ -538,8 +636,14 @@ def handle_key(e):
             except KeyError:
                 c = unicodepage.from_unicode(e.unicode)
     console.insert_key(c) 
+    # current key pressed; modifiers ignored 
+    console.inp_key = ord(keycode_to_inpcode[e.key])
     
-
+def handle_key_up(e):
+    # last key released gets remembered
+    console.inp_key = 0x80 + ord(keycode_to_inpcode[e.key])
+    pass
+        
 def pause_key():
     # pause key press waits for any key down. continues to process screen events (blink) but not user events.
     # TODO: does background music play ??
