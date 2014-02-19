@@ -92,7 +92,10 @@ def detokenise(ins, outs, from_line=-1, to_line=-1, pos=-1):
             # parse_line_number has returned -1 and left us here:  .. 00 | _00_ 00 1A
             # stream ends or end of file sequence \x00\x00\x1A
             break
-        # always write one extra whitespace character after line number
+        elif current_line == 0 and util.peek(ins)==' ':
+            # ignore up to one space after line number 0
+            ins.read(1)
+        # write one extra whitespace character after line number
         output = vartypes.int_to_str(current_line) + ' '         
         # detokenise tokens until end of line
         output += detokenise_line(ins)
@@ -102,7 +105,7 @@ def detokenise(ins, outs, from_line=-1, to_line=-1, pos=-1):
     
 
 def detokenise_line(bytes):
-    output = bytearray('')
+    output = bytearray()
     litstring = False
     comment = False
     while True:
@@ -118,15 +121,11 @@ def detokenise_line(bytes):
             litstring = not litstring  
         elif s in tokens_number:
             bytes.seek(-1,1)
-            output += detokenise_number(bytes)
+            detokenise_number(bytes, output)
         elif s in tokens_linenum: 
             # 0D: line pointer (unsigned int) - this token should not be here; interpret as line number and carry on
             # 0E: line number (unsigned int)
             output += vartypes.uint_to_str(bytearray(bytes.read(2)))
-        # elif s in ('\x10', '\x1e'):                           
-        #   # 1E/10: UNUSED: Flags numeric constant being processed/no longer being processed
-        #   # this token in code has strange results in GW, don't know how to reproduce.
-        #   pass
         elif comment or litstring or (s >= '\x20' and s <= '\x7e'):   # honest ASCII
             output += s
         else:
@@ -136,9 +135,8 @@ def detokenise_line(bytes):
 
 
 # token to string
-def detokenise_number(bytes):
+def detokenise_number(bytes, output):
     s = bytes.read(1)
-    output=bytearray()
     if s == '\x0b':                           # 0B: octal constant (unsigned int)
         output += vartypes.oct_to_str(bytearray(bytes.read(2)))
     elif s == '\x0c':                           # 0C: hex constant (unsigned int)
@@ -156,22 +154,19 @@ def detokenise_number(bytes):
     elif s == '\x1f':                           # 1F: eight byte double-precision floating point constant
         output += fp.to_str(fp.from_bytes(bytearray(bytes.read(8))), screen=False, write=False)
     else:
-        if s!='':
-            bytes.seek(-1,1)  
-    return str(output)
-
+        bytes.seek(-len(s),1)  
+    
     
 def ascii_read_to(ins, findrange):
     out = ''
     while True:
         d = ins.read(1)
-        if d=='':
+        if d == '':
             break
         if d in findrange:
             break
         out += d
-    if d != '':    
-        ins.seek(-1,1)    
+    ins.seek(-len(d),1)    
     return out
     
 
