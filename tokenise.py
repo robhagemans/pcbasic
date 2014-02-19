@@ -132,21 +132,7 @@ def detokenise_line(bytes):
             # try for single-byte token or two-byte token
             # if no match, first char is passed unchanged
             bytes.seek(-1,1)
-            word, comment = detokenise_keyword(bytes)
-            output += word
-            # check for special cases
-            #   [:REM']   ->  [']
-            if len(output)>4 and output[-5:] ==  ":REM'":
-                output = output[:-5] + "'"  
-            #   [WHILE+]  ->  [WHILE]
-            elif len(output)>5 and output[-6:] == "WHILE+":
-                output = output[:-1]        
-            #   [:ELSE]  ->  [ELSE]
-            elif len(output)>4 and output[-5:] == ":ELSE":
-                if output[-6] in ascii_digits:
-                    output = output[:-5] + " ELSE" 
-                else:
-                    output = output[:-5] + "ELSE" 
+            comment = detokenise_keyword(bytes, output)
     return output
 
 
@@ -191,8 +177,8 @@ def ascii_read_to(ins, findrange):
     
 
 # de tokenise one- or two-byte tokens
-def detokenise_keyword(bytes):
-    output = bytearray('')
+# output must be mutable
+def detokenise_keyword(bytes, output):
     s = bytes.read(1)
     try:
         keyword = token_to_keyword[s]
@@ -202,11 +188,12 @@ def detokenise_keyword(bytes):
             keyword = token_to_keyword[s]
             bytes.read(1)
         except KeyError:
-            return s[0], False
-    # when we're here, s is an actualy keyword token.
+            output += s[0]
+            return False
+    # when we're here, s is an actual keyword token.
     # number followed by token is separated by a space 
-    if (len(output)>0) and (output[-1] in ascii_digits) and (s not in tokens_operator):
-        output += ' '
+    if (len(output)>0) and (chr(output[-1]) in ascii_digits) and (s not in tokens_operator):
+            output += ' '
     output += keyword
     comment = False
     if keyword == "'":
@@ -228,7 +215,20 @@ def detokenise_keyword(bytes):
                 and s not in (tokens_operator + tokens_with_bracket + ['\xD0', '\xD1'])): 
         # excluding TAB( SPC( and FN. \xD9 is ', \xD1 is FN, \xD0 is USR.
         output += ' '
-    return output, comment
+    # check for special cases
+    #   [:REM']   ->  [']
+    if len(output)>4 and output[-5:] ==  ":REM'":
+        output = output[:-5] + "'"  
+    #   [WHILE+]  ->  [WHILE]
+    elif len(output)>5 and output[-6:] == "WHILE+":
+        output = output[:-1]        
+    #   [:ELSE]  ->  [ELSE]
+    elif len(output)>4 and output[-5:] == ":ELSE":
+        if output[-6] in ascii_digits:
+            output = output[:-5] + " ELSE" 
+        else:
+            output = output[:-5] + "ELSE"
+    return comment
     
 #################################################################
 #################################################################
