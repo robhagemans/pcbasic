@@ -216,7 +216,7 @@ def detokenise_keyword(bytes, output):
     # note that anything before ELSE gets cut off, e.g. if we have 1ELSE instead of :ELSE it also becomes ELSE
     # SIC: len(output) > 4 and str(output[-4:])
     elif len(output) > 4 and str(output[-4:]) == "ELSE":
-        if chr(output[-5]) == ':' and chr(output[-6]) in ascii_digits:
+        if len(output) > 5 and chr(output[-5]) == ':' and chr(output[-6]) in ascii_digits:
             output[:] = output[:-5] + " ELSE" 
         else:
             output[:] = output[:-5] + "ELSE"
