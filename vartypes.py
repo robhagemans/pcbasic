@@ -251,22 +251,6 @@ def oct_to_str(s):
     return "&O" + oct(uint_to_value(s))[1:]
     
 
-# python str to tokenised int
-
-def str_to_uint(s):
-    return value_to_uint(int(s))
-
-def str_to_hex(word):
-    if len(word)<=2:
-        return 0
-    word=word[2:]
-    return value_to_uint(int(word,16))
-
-def str_to_oct(word):
-    if len(word)<=2:
-        return 0
-    word=word[2:]
-    return value_to_uint(int(word,8))
                 
     
 # boolean functions - two's complement int

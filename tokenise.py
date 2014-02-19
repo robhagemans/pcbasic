@@ -252,16 +252,15 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
                 continue
         # read the line number
         tokenise_line_number(ins, outs, onfile)
-        
         # non-parsing modes
         verbatim = False  # REM: pass unchnaged until e-o-line
         data = False      # DATA: pass unchanged until :
         # expect line number
         number_is_line = False
         # expect number
-        expect_number=False
+        expect_number = False
         # flag for SPC( or TAB( as numbers can follow the closing bracket
-        spc_or_tab=False
+        spc_or_tab = False
         # line must not start with a number
         while True:
             c = util.peek(ins)
@@ -417,35 +416,37 @@ def tokenise_uint(ins):
             # keep 6553 as line number and push back the last number:
             ins.seek(4-len(word), 1)
             word = word[:4]
-        return str(vartypes.str_to_uint(word))
+        return str(vartypes.value_to_uint(int(word)))
     else:
         return ''    
-   
+
+
 # string to token             
 def tokenise_number(ins, outs):
     c = util.peek(ins)
     # handle hex or oct constants
     if c == '&':
-        word = ins.read(1)
+        ins.read(1)
         nxt = util.peek(ins).upper()
         if nxt == 'H': # hex constant
-            word += ins.read(1)
+            ins.read(1)
+            word = ''
             while True: 
                 if not util.peek(ins).upper() in ascii_hexits:
                     break
                 else:
                     word += ins.read(1).upper()
-            outs.write('\x0C' + str(vartypes.str_to_hex(word)))
-        elif nxt == 'O': # octal constant
-            word += ins.read(1)
+            outs.write('\x0C' + str(vartypes.value_to_uint(int(word,16))))
+        else: # nxt == 'O': # octal constant
+            if nxt == 'O':
+                ins.read(1)
+            word = ''    
             while True: 
                 if not util.peek(ins).upper() in ascii_octits:
                     break
                 else:
                     word += ins.read(1).upper()
-            outs.write('\x0B' + str(vartypes.str_to_oct(word)))
-        else:
-            outs.write(c)
+            outs.write('\x0B' + str(vartypes.value_to_uint(int(word,8))))
     # handle other numbers
     # note GW passes signs separately as a token and only stores positive numbers in the program        
     elif (c in ascii_digits or c=='.' or c in ('+','-')):
