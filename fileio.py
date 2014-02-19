@@ -155,6 +155,9 @@ class TextFile(object):
         self.fhandle.seek(-len(s), 1)
         return s
 
+    def seek(self, num, from_where=0):    
+        self.fhandle.seek(num, from_where)
+        
     # write one or more chars
     def write(self, s):
         s_out = ''

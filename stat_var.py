@@ -317,6 +317,21 @@ def read_entry(ins, end=util.end_line, ends=util.end_statement):
             word = ''
     return vals
 
+
+# set var from text value (e.g. READ, INPUT) 
+def set_var_read(name, indices, val):
+    if val == None:
+        return False 
+    if name[-1] == '$':
+        num = ('$', bytearray(val))    
+    else:
+        num = fp.from_str(val, False)
+        if num == None:
+            return False
+        num = fp.pack(num)    
+    var.set_var_or_array(name, indices, num)
+    return True
+
 def parse_prompt(ins):
     # parse prompt
     prompt = ''
@@ -333,25 +348,23 @@ def parse_prompt(ins):
         if following not in (';', ','):
             raise error.RunError(2)
     return prompt, following
-   
+
+def text_skip(text_file, skip_range):
+    while True:
+        d = text_file.read_chars(1) 
+        if d not in skip_range:
+            break
+    text_file.seek(-len(d), 1)
+    return d
+
 def exec_input(ins):
     startpos = program.current_statement
     util.skip_white(ins)
     finp = expressions.parse_file_number(ins)
-    if finp!=None:
-        # INPUT#
-        # get list of variables
-        readvar = parse_var_list(ins)
-        for v in readvar:
-            if v[0][-1] in ('%', '!', '#'):
-                valstr = input_number(finp)
-            else:    
-                valstr = input_string(finp)
-            set_var_read(*v, val=valstr)
-        util.require(ins, util.end_statement)
-        return
+    if finp != None:
+        exec_input_file(ins, finp)
     # ; to avoid echoing newline
-    newline = not util.skip_white_read_if(ins,';')
+    newline = not util.skip_white_read_if(ins, ';')
     # get the prompt
     prompt, following = parse_prompt(ins)    
     if following == ';':
@@ -365,73 +378,111 @@ def exec_input(ins):
     # read the input
     while True:
         console.write(prompt) 
-        line = console.read_screenline(write_endl=newline)
-        inputs = StringIO(line) 
-        text_file = fileio.PseudoFile(inputs)
-        inputs.seek(0)
-        success = True
+        text_file = fileio.PseudoFile(StringIO(console.read_screenline(write_endl=newline)))
+        values = []
+        count_commas = 0    
         for v in readvar:
-            if v[0] !='' and v[0][-1] in ('%', '!', '#'):
-                # don't stop reading on blanks and line feeds
-                valstr = input_number(text_file, hard_end = (',', '\x0d', ''), soft_end = () )
-            else:    
-                valstr = input_string(text_file, end_all = ('\x0d', ''), end_entry = (',',) )
-            if v[0]=='':
-                # error is only raised after the input in read!
-                raise error.RunError(2)
-            if not set_var_read(*v, val=valstr):
-                success = False
+            val = scrub_and_pack(input_entry(text_file), v[0][-1])
+            values.append(val)
+            if text_file.read_chars(1) != ',':
                 break
-        if not success:
-            console.write('?Redo from start'+util.endl)  # ... good old Redo!
-            continue
+            else:
+                count_commas += 1    
+        if len(readvar) != len(values) or count_commas != len(readvar)-1 or None in values:
+            console.write('?Redo from start' + util.endl)  # ... good old Redo!
         else:
             break
+    for i in range(len(readvar)):
+        var.set_var_or_array(*readvar[i], value=values[i])
     ins.seek(pos)        
     util.require(ins, util.end_statement)
 
-# set var from text value (e.g. READ, INPUT) 
-def set_var_read(name, indices, val): 
-    if name[-1] == '$':
-        num = ('$', val)    
-    else:
-        num = fp.from_str(val, False)
-        if num == None:
-            return False
-        num = fp.pack(num)    
-    var.set_var_or_array(name, indices, num)
-    return True
-
-def text_skip(text_file, skip_range):
-    d = text_file.peek_char()
-    while d in skip_range:
-        text_file.read_chars(1) 
-        d = text_file.peek_char()
-    return d
-
-# hard end: means a null entry is read if they're repeated. soft ends can be repeated between entries.
-def input_number(text_file, hard_end=(',', '\x0d', '\x1a', ''), soft_end=(' ', '\x0a') ):
+# returns everything until next comma, skipping leading blanks (but not trailing ones)
+def input_entry(text_file):
     word = ''
-    end_entry = soft_end + hard_end
+    # skip leading spaces and line feeds and NUL. 
+    c = text_skip(text_file, ascii_white)
+    if c == '"':
+        quoted = True
+        word += text_file.read_chars(1)
+    else:
+        quoted = False
+    while True:
+        # read entry
+        c = text_file.read_chars(1)
+        if c in ('', ',') and not quoted:
+            text_file.seek(-len(c), 1)
+            break
+        elif c == '"' and quoted:
+            quoted = False
+            word += c    
+        else:
+            word += c
+    return word
+
+def scrub_and_pack(word, type_char):
+    if type_char == '$':
+        # scrub quoted strings:
+        if len(word) > 0 and word[0] == '"':
+            # remove trailing white
+            while len(word) > 0 and word[-1] in ascii_white:
+                word = word[:-1]
+            # must end in ", be at least 2 long
+            if len(word) < 2 or word[-1] != '"':
+                return None        
+            word = word[1:-1]
+            # no further quotes allowed
+            for s in word:
+                if s == '"':
+                    return None            
+        return vartypes.pack_string(bytearray(word))
+    else:
+        num = fp.from_str(word, False)
+        if num == None:
+            return None
+        return fp.pack(num)
+            
+            
+            
+def exec_input_file(ins, finp):
+    # INPUT#
+    # get list of variables
+    readvar = parse_var_list(ins)
+    for v in readvar:
+        if v[0][-1] in ('%', '!', '#'):
+            valstr = input_number_file(finp)
+        else:    
+            valstr = input_string_file(finp)
+        set_var_read(*v, val=valstr)
+        # process the ending char
+        c = text_file.read_chars(1)
+    util.require(ins, util.end_statement)
+   
+def input_number_file(text_file):
+    soft_end = (' ', '\x0a') 
+    end_entry = (',', '\x0d', '\x1a', '') + soft_end
+    word = ''
     # skip *leading* spaces and line feeds and NUL. (not TABs)
     # cf READ skips whitespace inside numbers as well
     c = text_skip(text_file, ascii_white)
     while True:
         # read entry
-        c = text_file.read_chars(1)
+        c = text_file.peek_char()
         if c in end_entry:
             # TextFile filters 0d0a ->0d
             # repeated soft ends are ignored
             # TODO: I think \0a\0d is soft too
             text_skip(text_file, soft_end)
             break
-        else:        
+        else:
+            text_file.read_chars(1)        
             word += c
     return word
 
 # , is hard, LF is soft but will be caught as part of the whitespace skipping.
-def input_string(text_file, end_all=('\x0d', '\x1a', ''), end_entry=(',', '\x0a')):
-    end_entry += end_all  
+def input_string_file(text_file):
+    end_all = ('\x0d', '\x1a', '')
+    end_entry = end_all + (',', '\x0a')
     max_len = 255
     word = ''
     quoted = False
@@ -444,22 +495,24 @@ def input_string(text_file, end_all=('\x0d', '\x1a', ''), end_entry=(',', '\x0a'
         quoted = True
         c = text_file.read_chars(1)
     while True:
-        if c in end_all:
-            break
-        elif not quoted and c in end_entry:
+        if c in end_all or (not quoted and c in end_entry):
             break    
         elif quoted and c == '"':
             # ignore blanks after the quotes
             c = text_skip(text_file, ascii_white)
             # but we need a comma if there's to be more input        
-            c = text_file.read_chars(1)
+            text_file.read_chars(1)
             break
         else:        
             word += c
         if len(word) >= max_len:
             break        
         c = text_file.read_chars(1)
+    text_file.seek(-len(c), 1)
     return word
+
+
+    
 
 def exec_line_input(ins):
     util.skip_white(ins)
@@ -552,4 +605,5 @@ def exec_randomize(ins):
     final_two = bytearray(chr(final_two[0]^mask[0]) + chr(final_two[1]^mask[1]))
     rnd.randomize_int(vartypes.sint_to_value(final_two))        
     util.require(ins, util.end_statement)
-    
+
+
