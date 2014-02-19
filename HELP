@@ -1259,13 +1259,100 @@ The hex values for keyboard scancodes returned by INKEY$ are:
 
 INP(x) function
 ---------------
-Returns zero. 
+If 'x'==&H60, returns the keyboard scancode for the last key pressed
 'x' is a numeric expression with a value between 0 and 65535, inclusive.
+Returns zero otherwise. 
+The scancodes returned by INP(&H60) are listed below. If the key is currently
+down, the scancode is returned; if it has been released, the scancode is 
+incremented by 128.
+Scancodes returned by INP(&H60):
+    <ESC>       01
+    <1>         02
+    <2>         03
+    <3>         04
+    <4>         05
+    <5>         06
+    <6>         07
+    <7>         08
+    <8>         09
+    <9>         0A
+    <0>         0B
+    <->         0C
+    <=>         0D
+    <BACKSPACE> 0E
+    <TAB>       0F
+    <q>         10
+    <w>         11
+    <e>         12
+    <r>         13
+    <t>         14
+    <y>         15
+    <u>         16
+    <i>         17
+    <o>         18
+    <p>         19
+    <[>         1A
+    <]>         1B
+    <ENTER>     1C
+    <CTRL>      1D
+    <a>         1E
+    <s>         1F
+    <d>         20
+    <f>         21
+    <g>         22
+    <h>         23
+    <j>         24
+    <k>         25
+    <l>         26
+    <;>         27
+    <'>         28
+    <`>         29
+    <LSHIFT>    2A
+    <#>         2B
+    <z>         2C
+    <x>         2D
+    <c>         2E
+    <v>         2F
+    <b>         30
+    <n>         31
+    <m>         32
+    <,>         33
+    <.>         34
+    </>         35
+    <RSHIFT>    36
+    <PRTSC>     37
+    <SYSRQ>     37
+    <ALT>       38
+    <SPACE>     39
+    <CAPSLOCK>  3A
+    <F1>        3B
+    <F2>        3C
+    <F3>        3D
+    <F4>        3E
+    <F5>        3F
+    <F6>        40
+    <F7>        41
+    <F8>        42
+    <F9>        43
+    <F10>       44
+    <NUMLOCK>   45
+    <SCROLLOCK> 46
+    <HOME>      47
+    <UP>        48
+    <PGUP>      49
+    <KEYPAD ->  4A
+    <LEFT>      4B
+    <KEYPAD 5>  4C
+    <RIGHT>     4D
+    <KEYPAD +>  4E
+    <END>       4F
+    <DOWN>      50
+    <PGDN>      51
+    <INS>       52
+    <DEL>       53
 NOTES:
 -   In GW-BASIC, returns a byte read from machine port 'x'. This is not 
-    implemented in PC_BASIC 3.23.
--   One of the most common uses is to get enhanced keyboard scan codes 
-    through INP(&H60)
+    implemented in PC_BASIC 3.23, except for the common use case of INP(&H60).
 ERRORS:
 -   If 'address' is not in [-32768, 65535], OVERFLOW is raised.
 -   If 'address' has a string value, TYPE MISMATCH is raised.
