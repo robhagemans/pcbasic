@@ -217,17 +217,17 @@ def detokenise_keyword(bytes, output):
         output += ' '
     # check for special cases
     #   [:REM']   ->  [']
-    if len(output)>4 and output[-5:] ==  ":REM'":
-        output = output[:-5] + "'"  
+    if len(output) > 4 and str(output[-5:]) ==  ":REM'":
+        output[:] = output[:-5] + "'"  
     #   [WHILE+]  ->  [WHILE]
-    elif len(output)>5 and output[-6:] == "WHILE+":
-        output = output[:-1]        
+    elif len(output) > 5 and str(output[-6:]) == "WHILE+":
+        output[:] = output[:-1]        
     #   [:ELSE]  ->  [ELSE]
-    elif len(output)>4 and output[-5:] == ":ELSE":
-        if output[-6] in ascii_digits:
-            output = output[:-5] + " ELSE" 
+    elif len(output) > 4 and str(output[-5:]) == ":ELSE":
+        if chr(output[-5]) == ':' and chr(output[-6]) in ascii_digits:
+            output[:] = output[:-5] + " ELSE" 
         else:
-            output = output[:-5] + "ELSE"
+            output[:] = output[:-5] + "ELSE"
     return comment
     
 #################################################################
