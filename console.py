@@ -52,8 +52,10 @@ cursor_is_line = False
 # non-printing characters
 control = ('\x07', '\x08', '\x09', '\x0a','\x0b','\x0c', '\x0d', '\x1c', '\x1d', '\x1e', '\x1f')
 
-# incoming keys, either ascii or \00 followed by scancode 
+# incoming keys, either ascii or \00 followed by INKEY$ scancode 
 keybuf = ''
+# INP(&H60) scancode
+inp_key = 0
 
 # caps lock
 caps = False

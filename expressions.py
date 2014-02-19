@@ -941,7 +941,11 @@ def value_usr(ins):
     return vartypes.null['%']
     
 def value_inp(ins):
-    vartypes.pass_int_keep(parse_bracket(ins), maxint=0xffff)
+    console.idle()
+    console.check_events()
+    port = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
+    if port == 0x60:
+        return vartypes.pack_int(console.inp_key) 
     return vartypes.null['%']
 
 #  erdev, erdev$        
