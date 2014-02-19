@@ -138,17 +138,16 @@ def build_line_cursor(is_line):
 #################
     
 def check_keys():
-    global last_row, enter_pressed
+    global enter_pressed
     fd = sys.stdin.fileno()
     c = ''
     # check if stdin has characters to read
     d = select.select([sys.stdin], [], [], 0) 
     if d[0] != []:
         c = os.read(fd,1)
-    if c=='\x0A':
+    if c == '\x0A':
         console.insert_key('\x0D\x0A')
-        last_row = console.row
-        enter_pressed=True
+        enter_pressed = True
     else:
         console.insert_key(c)
 
