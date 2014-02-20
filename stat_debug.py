@@ -69,6 +69,15 @@ def dump_program():
 
 def dump_vars():
     debug_print(repr(var.variables)+'\n')    
+    
+def dump_screen():
+    debug_print('  +' + '-'*console.width+'+\n')
+    i = 0
+    for row in console.apage.charbuf:
+        i += 1
+        debug_print('{0:2}'.format(i) + '|' + ''.join(row)+'|\n')    
+    debug_print('  +' + '-'*console.width+'+\n')
+            
         
 def trace(on=True):
     global debug_tron
