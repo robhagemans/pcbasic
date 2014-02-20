@@ -965,8 +965,14 @@ def value_exterr(ins):
 def value_ioctl(ins):
     if ins.read(1) != '$':
         raise error.RunError(2)
-    parse_bracket(ins)
-    return vartypes.null['%']
+    util.require_read(ins, ('(',))
+    number = parse_file_number_opthash(ins)
+    util.require_read(ins, (')',))
+    try:
+        the_file = fileio.files[number]
+    except KeyError:
+        raise error.RunError(52)
+    raise error.RunError(5)   
             
             
 ###########################################################
