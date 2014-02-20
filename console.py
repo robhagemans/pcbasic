@@ -462,7 +462,7 @@ def read_screenline(write_endl=True, from_start=False):
     # remove trailing whitespace 
     while len(line)>0 and line[-1] in util.whitespace:
         line = line[:-1]
-    return ''.join(line)    
+    return ''.join(line[:255])    
 
 def clear_line(the_row):
     global apage
