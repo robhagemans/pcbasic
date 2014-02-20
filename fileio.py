@@ -377,3 +377,13 @@ def close_all():
             files[f].close()
 
 
+def get_file(num, mode='IOAR'):
+    try:
+        the_file = files[num]
+    except KeyError:
+        # bad file number
+        raise error.RunError(52)
+    if the_file.mode.upper() not in mode:
+        raise error.RunError(54)    
+    return the_file    
+    

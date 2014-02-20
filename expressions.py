@@ -55,7 +55,7 @@ operator_tokens = [item for sublist in priority for item in sublist]
 option_double = False
 
 # pre-defined PEEK outputs
-peek_values={}
+peek_values = {}
 
 ######################################################################
 ######################################################################
@@ -299,7 +299,7 @@ def parse_expr_unit(ins):
 def parse_bracket(ins):
     util.require_read(ins, ('(',))
     val = parse_expression(ins, allow_empty = True)
-    if val==('',''):
+    if val == ('',''):
         # we need a Syntax error, not a Missing operand
         raise error.RunError(2)
     util.require_read(ins, (')',))
@@ -309,7 +309,7 @@ def parse_int_list(ins, size, err=5):
     exprlist = parse_expr_list(ins, size, err)
     output = []
     for expr in exprlist:
-        if expr==None:
+        if expr == None:
             output.append(None)
         else:
             output.append(vartypes.pass_int_unpack(expr))
@@ -353,31 +353,24 @@ def parse_int_list_var(ins, size, err=5):
             raise error.RunError(2)
     return output
 
-
 def parse_file_number(ins):
     screen = None
     if util.skip_white_read_if(ins,'#'):
         number = vartypes.pass_int_unpack(parse_expression(ins))
-        if number<0 or number>255:
-            raise error.RunError(5)
-        if number not in fileio.files:
-            # bad file number
-            raise error.RunError(52)
-        screen = fileio.files[number]
+        util.range_check(0, 255, number)
+        screen = fileio.get_file(number)
         util.require_read(ins, (',',))
     return screen        
 
 def parse_file_number_opthash(ins):
-    if util.skip_white_read_if(ins, '#'):
-        util.skip_white(ins)
+    util.skip_white_read_if(ins, '#')
     number = vartypes.pass_int_unpack(parse_expression(ins))
-    if number<0 or number>255:
-        raise error.RunError(5)
+    util.range_check(0, 255, number)
     return number    
 
 def get_var_or_array_name(ins):
     name = util.get_var_name(ins)
-    indices=[]
+    indices = []
     if util.skip_white_read_if(ins, ('[', '(')):
         # it's an array, read indices
         indices = parse_int_list(ins, 255, 9) # subscript out of range
@@ -387,7 +380,6 @@ def get_var_or_array_name(ins):
             raise error.RunError(2)
         util.require_read(ins, (']', ')'))
     return name, indices
-
 
 ######################################################################
 ######################################################################
@@ -414,16 +406,13 @@ def value_cvd(ins):
     return ('#', cstr[:8])
 
 def value_mki(ins):            
-    cint = vartypes.pass_int_unpack(parse_bracket(ins))    
-    return vartypes.pack_string(vartypes.value_to_sint(cint))
+    return vartypes.pack_string(vartypes.value_to_sint(vartypes.pass_int_unpack(parse_bracket(ins))))
 
 def value_mks(ins):            
-    csng = vartypes.pass_single_keep(parse_bracket(ins))[1]    
-    return vartypes.pack_string(csng)
+    return vartypes.pack_string(vartypes.pass_single_keep(parse_bracket(ins))[1])
 
 def value_mkd(ins):       
-    cdbl = vartypes.pass_double_keep(parse_bracket(ins))[1]    
-    return vartypes.pack_string(cdbl)
+    return vartypes.pack_string(vartypes.pass_double_keep(parse_bracket(ins))[1])
 
 def value_cint(ins):            
     return vartypes.pass_int_keep(parse_bracket(ins))
@@ -436,7 +425,7 @@ def value_cdbl(ins):
 
 def value_str(ins):            
     s = parse_bracket(ins)
-    if s[0]=='$':
+    if s[0] == '$':
         raise error.RunError(13)
     return vartypes.value_to_str_keep(s, screen=True)
         
@@ -445,25 +434,18 @@ def value_val(ins):
 
 def value_chr(ins):            
     val = vartypes.pass_int_unpack(parse_bracket(ins))
-    if val < 0 or val > 255:
-        raise error.RunError(5)
+    util.range_check(0, 255, val)
     return vartypes.pack_string(bytearray(chr(val)))
 
 def value_oct(ins):            
     # allow range -32768 to 65535
     val = vartypes.pass_int_unpack(parse_bracket(ins), 0xffff)
-    if val < 0:
-        return vartypes.pack_string(vartypes.oct_to_str(vartypes.value_to_sint(val))[2:])
-    else:
-        return vartypes.pack_string(vartypes.oct_to_str(vartypes.value_to_uint(val))[2:])
+    return vartypes.pack_string(vartypes.oct_to_str(vartypes.value_to_sint(val))[2:])
 
 def value_hex(ins):            
     # allow range -32768 to 65535
     val = vartypes.pass_int_unpack(parse_bracket(ins), 0xffff)
-    if val < 0:
-        return vartypes.pack_string(vartypes.hex_to_str(vartypes.value_to_sint(val))[2:])
-    else:
-        return vartypes.pack_string(vartypes.hex_to_str(vartypes.value_to_uint(val))[2:])
+    return vartypes.pack_string(vartypes.hex_to_str(vartypes.value_to_sint(val))[2:])
 
 ######################################################################
 # string maniulation            
@@ -473,7 +455,7 @@ def value_len(ins):
 
 def value_asc(ins):            
     s = vartypes.pass_string_unpack(parse_bracket(ins))
-    if s!='':
+    if s != '':
         return vartypes.pack_int(s[0])
     else:
         raise error.RunError(5)
@@ -483,18 +465,16 @@ def value_instr(ins):
     big = ''
     small = ''
     have_big = False
-    n=1
+    n = 1
     s = parse_expression(ins, allow_empty=True)
     if s[0] == '':
         raise error.RunError(2)
     elif s[0] != '$':
         n = vartypes.pass_int_unpack(s)
-        if n<1 or n>255:
-            # illegal fn call
-            raise error.RunError(5)
+        util.range_check(1, 255, n)
     else:
         big = vartypes.pass_string_unpack(s)
-        have_big= True
+        have_big = True
     util.require_read(ins, (',',))
     if not have_big:
         big = vartypes.pass_string_unpack(parse_expression(ins, allow_empty=True))
@@ -507,7 +487,6 @@ def value_instr(ins):
     return vartypes.pack_int(n + big[n-1:].find(small))   
 
 def value_mid(ins):
-    # MID$
     util.require_read(ins, ('(',))
     s = vartypes.pass_string_unpack(parse_expression(ins))
     util.require_read(ins, (',',))
@@ -517,11 +496,9 @@ def value_mid(ins):
     else:
         num = len(s)
     util.require_read(ins, (')',))
-    if start <1 or start>255:
-        raise error.RunError(5)
-    if num <0 or num>255:
-        raise error.RunError(5)
-    if num==0 or start>len(s):
+    util.range_check(1, 255, start)
+    util.range_check(0, 255, num)
+    if num == 0 or start > len(s):
         return vartypes.null['$']
     start -= 1    
     stop = start + num 
@@ -530,33 +507,27 @@ def value_mid(ins):
     return vartypes.pack_string(s[start:stop])  
     
 def value_left(ins):
-    # LEFT$
     util.require_read(ins, ('(',))
     s = vartypes.pass_string_unpack(parse_expression(ins))
     util.require_read(ins, (',',))
-    num = vartypes.pass_int_unpack(parse_expression(ins))
+    stop = vartypes.pass_int_unpack(parse_expression(ins))
     util.require_read(ins, (')',))
-    if num <0 or num>255:
-        raise error.RunError(5)
-    if num==0:
+    util.range_check(0, 255, stop)
+    if stop == 0:
         return vartypes.null['$']
-    stop = num 
     if stop > len(s):
         stop = len(s)
     return vartypes.pack_string(s[:stop])  
     
 def value_right(ins):
-    # RIGHT$
     util.require_read(ins, ('(',))
     s = vartypes.pass_string_unpack(parse_expression(ins))
     util.require_read(ins, (',',))
-    num = vartypes.pass_int_unpack(parse_expression(ins))
+    stop = vartypes.pass_int_unpack(parse_expression(ins))
     util.require_read(ins, (')',))
-    if num <0 or num>255:
-        raise error.RunError(5)
-    if num==0:
+    util.range_check(0, 255, stop)
+    if stop == 0:
         return vartypes.null['$']
-    stop = num 
     if stop > len(s):
         stop = len(s)
     return vartypes.pack_string(s[-stop:])  
@@ -565,22 +536,19 @@ def value_string(ins): # STRING$
     util.require_read(ins, ('(',))
     n, j = parse_expr_list(ins, 2)    
     n = vartypes.pass_int_unpack(n)
-    if n<0 or n> 255:
-        raise error.RunError(5)
+    util.range_check(0, 255, n)
     if j[0]=='$':
         j = vartypes.unpack_string(j)[0]
     else:
         j = vartypes.pass_int_unpack(j)        
-    if j<0 or j> 255:
-        raise error.RunError(5)
+    util.range_check(0, 255, j)
     util.require_read(ins, (')',))
     return vartypes.pack_string(bytearray(chr(j)*n))
 
 def value_space(ins):            
     num = vartypes.pass_int_unpack(parse_bracket(ins))
-    if num <0 or num > 255:
-        raise error.RunError(5)
-    return vartypes.pack_string(' '*num)
+    util.range_check(0, 255, num)
+    return vartypes.pack_string(bytearray(' '*num))
 
     
 ######################################################################
@@ -589,18 +557,16 @@ def value_space(ins):
 def value_screen(ins):
     # SCREEN(x,y,[z])
     util.require_read(ins, ('(',))
-    args = parse_int_list(ins, 3, 5) 
+    row, col, z = parse_int_list(ins, 3, 5) 
     util.require_read(ins, (')',))
-    if args[0] == None or args[1] == None:
+    if row == None or col == None:
         raise error.RunError(5)
-    if args[0]<1 or args[0] > console.height:
-        raise error.RunError(5)
-    if console.view_set and args[0]<console.view_start or args[0] > console.scroll_height:
-        raise error.RunError(5)
-    if args[1]<1 or args[1] > console.width:
-        raise error.RunError(5)
-    (char, attr) = console.read_screen(args[0], args[1])
-    if args[2] != None and args[2] != 0:
+    util.range_check(1, console.height, row)
+    if console.view_set:
+        util.range_check(console.view_start, console.scroll_height, row)
+    util.range_check(1, console.width, col)
+    (char, attr) = console.read_screen(row, col)
+    if z: 
         return vartypes.pack_int(attr)
     else:
         return vartypes.pack_int(ord(char))
@@ -613,13 +579,7 @@ def value_input(ins):    # INPUT$
     util.range_check(1, 255, num)
     screen = console    
     if util.skip_white_read_if(ins, ','):
-        util.skip_white_read_if(ins, '#')
-        filenum = vartypes.pass_int_unpack(parse_expression(ins))
-        util.range_check(0, 255, filenum)
-        if filenum not in fileio.files:
-            # bad file number
-            raise error.RunError(52)
-        screen = fileio.files[filenum]
+        screen = fileio.get_file(parse_file_number_opthash(ins))
     util.require_read(ins, (')',))
     word = screen.read_chars(num)
     return vartypes.pack_string(bytearray(word))
@@ -648,31 +608,29 @@ def value_lpos(ins):
 def value_loc(ins): # LOC
     util.skip_white(ins)
     num = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
-    if num>255 or num<0 or num not in fileio.files:
-        raise error.RunError(52)
+    range_check(0, 255, num)
+    the_file = fileio.get_file(num)
     # refuse for output devices, such as SCRN: (bad file mode). Kybd: and com1: etc should be allowed
-    if fileio.files[num] in deviceio.output_devices:
+    if the_file in deviceio.output_devices:
         # bad file mode
         raise error.RunError(54)
-    return vartypes.pack_int(fileio.files[num].loc())
+    return vartypes.pack_int(the_file.loc())
 
 def value_eof(ins): # EOF
     util.skip_white(ins)
     num = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
-    if num>255 or num<0 or num not in fileio.files:
-        # bad file number
-        raise error.RunError(52)
-    if fileio.files[num].mode.upper() in ('O', 'A'):
-        # bad file mode
-        raise error.RunError(54)
-    return vartypes.bool_to_int_keep(fileio.files[num].eof())
+    if num == 0:
+        return vartypes.null['%']
+    range_check(0, 255, num)
+    the_file = fileio.get_file(num, 'IR')
+    return vartypes.bool_to_int_keep(the_file.eof())
   
 def value_lof(ins): # LOF
     util.skip_white(ins)
     num = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
-    if num>255 or num<0 or num not in fileio.files:
-        raise error.RunError(52)
-    return vartypes.pack_int(fileio.files[num].lof() )
+    range_check(0, 255, num)
+    the_file = fileio.get_file(num)
+    return vartypes.pack_int(the_file.lof() )
     
 
 ######################################################################
@@ -707,13 +665,11 @@ def value_timer(ins):
     return fp.pack(timer)
     
 def value_time(ins):
-    #time$
     now = datetime.datetime.today() + oslayer.time_offset
     timestr = now.strftime('%H:%M:%S')
     return vartypes.pack_string(timestr)
     
 def value_date(ins):
-    #date$
     now = datetime.datetime.today() + oslayer.time_offset
     timestr = now.strftime('%m-%d-%Y')
     return vartypes.pack_string(timestr)
@@ -754,7 +710,6 @@ def value_fn(ins):
     for name in varsave:    
         var.variables[name] = varsave[name]
     return value    
-
 
 ###############################################################
 # graphics    
@@ -812,7 +767,6 @@ def value_erl(ins):
 
 def value_err(ins):
     return vartypes.pack_int(error.get_error()[0])
-    
     
 #####################################################################
 # pen, stick and strig
@@ -872,16 +826,13 @@ def value_stick(ins):
 def value_strig(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     # 0,1 -> [0][0] 2,3 -> [0][1]  4,5-> [1][0]  6,7 -> [1][1]
-    if fn<0 or fn>7:
-        raise error.RunError(5)
+    util.range_check(0, 7, fn)
     joy = fn//4
     trig = (fn//2)%2
-    if fn%2==0:
+    if fn%2 == 0:
         return vartypes.bool_to_int_keep(console.stick_has_been_trig(joy,trig))
     else:
         return vartypes.bool_to_int_keep(console.stick_trig(joy,trig))
-    
-    
     
 #########################################################
 # memory and machine
@@ -957,8 +908,7 @@ def value_erdev(ins):
 # exterr        
 def value_exterr(ins):
     x = vartypes.pass_int_unpack(parse_bracket(ins))
-    if x<0 or x>3:
-        raise error.RunError(5)
+    util.range_check(0, 3, x)
     return vartypes.null['%']
     
 # ioctl$    
@@ -966,17 +916,11 @@ def value_ioctl(ins):
     if ins.read(1) != '$':
         raise error.RunError(2)
     util.require_read(ins, ('(',))
-    number = parse_file_number_opthash(ins)
+    num = parse_file_number_opthash(ins)
     util.require_read(ins, (')',))
-    try:
-        the_file = fileio.files[number]
-    except KeyError:
-        raise error.RunError(52)
+    the_file = fileio.get_file(num)
     raise error.RunError(5)   
             
-            
-###########################################################
-###########################################################
 ###########################################################
 ###########################################################
 # unary math functions
@@ -1057,7 +1001,6 @@ def value_fix(inp):
         # type mismatch
         raise error.RunError(13)
     
-    
 def value_neg(ins):
     inp = parse_expr_unit(ins)
     if inp[0] in ('%', '!', '#'):
@@ -1071,7 +1014,6 @@ def value_neg(ins):
 def value_not(ins):
     # two's complement not, -x-1
     return vartypes.pack_int(~vartypes.pass_int_unpack(parse_expr_unit(ins)))
-
     
 # binary operators
         

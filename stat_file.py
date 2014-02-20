@@ -34,7 +34,6 @@ def exec_reset(ins):
     fileio.close_all()
     util.require(ins, util.end_statement)
 
-    
 def exec_open(ins):
     first_expr = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     d = util.skip_white(ins)
@@ -120,33 +119,26 @@ def exec_open(ins):
         # open the file
         fileio.open_file(number, name, mode, access, lock)    
     util.require(ins, util.end_statement)
-
-    
                 
 def exec_close(ins):
     while True:
         number = expressions.parse_file_number_opthash(ins)
-        if number in fileio.files:
+        try:    
             fileio.files[number].close()
+        except KeyError:
+            pass    
         if not util.skip_white_read_if(ins, (',',)):
             break
     util.require(ins, util.end_statement)
-
-         
             
 def exec_field(ins):
-    number = expressions.parse_file_number_opthash(ins)
-    if number not in fileio.files:
-        raise error.RunError(52)
-    if fileio.files[number].mode.upper() != 'R':
-        raise error.RunError(54) 
+    the_file = fileio.get_file(expressions.parse_file_number_opthash(ins), 'R')
     if util.skip_white_read_if(ins, (',',)):
-        field = fileio.files[number].field 
+        field = the_file.field 
         offset = 0    
         while True:
             width = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-            if width<0 or width>255:
-                raise error.RunError(5)
+            util.range_check(0, 255, width)
             util.skip_white(ins)
             if util.peek(ins,2).upper() != 'AS':
                 raise error.RunError(5)
@@ -157,17 +149,9 @@ def exec_field(ins):
             if not util.skip_white_read_if(ins,','):
                 break
     util.require(ins, util.end_statement)
-        
-        
 
 def exec_put_file(ins):
-    number = expressions.parse_file_number_opthash(ins)
-    try:
-        the_file = fileio.files[number]
-    except KeyError:
-        raise error.RunError(52)
-    if the_file.mode.upper() != 'R':
-        raise error.RunError(54)    
+    the_file = fileio.get_file(expressions.parse_file_number_opthash(ins), 'R')
     # for COM files
     num_bytes = the_file.reclen
     if util.skip_white_read_if(ins, ','):
@@ -180,16 +164,9 @@ def exec_put_file(ins):
             num_bytes = pos    
     the_file.write_field(num_bytes)
     util.require(ins, util.end_statement)
-            
 
 def exec_get_file(ins):
-    number = expressions.parse_file_number_opthash(ins)
-    try:
-        the_file = fileio.files[number]
-    except KeyError:
-        raise error.RunError(52)
-    if the_file.mode.upper() != 'R':
-        raise error.RunError(54)    
+    the_file = fileio.get_file(expressions.parse_file_number_opthash(ins), 'R')
     # for COM files
     num_bytes = the_file.reclen
     if util.skip_white_read_if(ins, ','):
@@ -204,23 +181,19 @@ def exec_get_file(ins):
     the_file.read_field(num_bytes)
     util.require(ins, util.end_statement)
 
-
 def parse_lock(ins):
-    number = expressions.parse_file_number_opthash(ins)
-    if number not in fileio.files:
-        raise error.RunError(52)
-    thefile = fileio.files[number]
+    thefile = fileio.get_file(expressions.parse_file_number_opthash(ins))
     if deviceio.is_device(thefile):
         # permission denied
         raise error.RunError(70)
-    lock_start=0
-    lock_length=0
+    lock_start = 0
+    lock_length = 0
     if util.skip_white_read_if(ins, ','):
         lock_start_rec = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         lock_start = (lock_start_rec-1) * thefile.reclen
         lock_length = thefile.reclen
     util.skip_white(ins)
-    if util.peek(ins,2)=='TO':
+    if util.peek(ins,2) == 'TO':
         ins.read(2)
         lock_stop_rec = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         lock_stop = lock_stop_rec * thefile.reclen
@@ -228,9 +201,9 @@ def parse_lock(ins):
     return thefile.number, lock_start, lock_length     
                  
 def exec_lock(ins):
-    nr,start,length = parse_lock(ins) 
-    lock_list.append((nr,start,length))
-    thefile = fileio.files[nr]
+    nr, start, length = parse_lock(ins) 
+    lock_list.append((nr, start, length))
+    thefile = fileio.get_file(nr)
     if deviceio.is_device(thefile):
         # permission denied
         raise error.RunError(70)
@@ -239,7 +212,6 @@ def exec_lock(ins):
         length = 0
     oslayer.safe_lock(thefile.fhandle, 'rw', start, length)                   
     util.require(ins, util.end_statement)
-           
             
 def exec_unlock(ins):
     unlock = parse_lock(ins)
@@ -247,8 +219,8 @@ def exec_unlock(ins):
     if unlock not in lock_list:
         raise error.RunError(70)
     lock_list.remove(unlock)
-    (nr,start,length) = unlock    
-    thefile = fileio.files[nr]
+    nr, start, length = unlock    
+    thefile = fileio.get_file(nr)
     if deviceio.is_device(thefile):
         # permission denied
         raise error.RunError(70)
@@ -260,10 +232,7 @@ def exec_unlock(ins):
     
 # ioctl: not implemented
 def exec_ioctl(ins):
-    number = expressions.parse_file_number_opthash(ins)
-    try:
-        the_file = fileio.files[number]
-    except KeyError:
-        raise error.RunError(52)
+    fileio.get_file(expressions.parse_file_number_opthash(ins))
     raise error.RunError(5)   
+    
     
