@@ -273,8 +273,10 @@ def exec_read(ins):
             raise error.RunError(4)
         vals = read_entry(program.bytecode)
         # syntax error in DATA line (not type mismatch!) if can't convert to var type
-        if not set_var_read(*v, val=vals): 
+        num = str_to_type(vals, v[0][-1])
+        if num == None: 
             raise error.RunError(2, program.data_line)
+        var.set_var_or_array(*v, value=num)
     program.data_pos = program.bytecode.tell()
     program.bytecode.seek(current)
     util.require(ins, util.end_statement)
@@ -292,7 +294,7 @@ def read_entry(ins, end=util.end_line, ends=util.end_statement):
         if c == '"':
             ins.read(1)
             if not verbatim:
-                verbatim=True
+                verbatim = True
                 c = util.peek(ins)
             else:
                 verbatim = False
@@ -318,19 +320,6 @@ def read_entry(ins, end=util.end_line, ends=util.end_statement):
     return vals
 
 
-# set var from text value (e.g. READ, INPUT) 
-def set_var_read(name, indices, val):
-    if val == None:
-        return False 
-    if name[-1] == '$':
-        num = ('$', bytearray(val))    
-    else:
-        num = fp.from_str(val, False)
-        if num == None:
-            return False
-        num = fp.pack(num)    
-    var.set_var_or_array(name, indices, num)
-    return True
 
 def parse_prompt(ins):
     # parse prompt
@@ -351,10 +340,10 @@ def parse_prompt(ins):
 
 def text_skip(text_file, skip_range):
     while True:
-        d = text_file.read_chars(1) 
+        d = text_file.peek_char() 
         if d not in skip_range:
             break
-    text_file.seek(-len(d), 1)
+        text_file.read_chars(1)    
     return d
 
 def exec_input(ins):
@@ -362,7 +351,7 @@ def exec_input(ins):
     util.skip_white(ins)
     finp = expressions.parse_file_number(ins)
     if finp != None:
-        exec_input_file(ins, finp)
+        return exec_input_file(ins, finp)
     # ; to avoid echoing newline
     newline = not util.skip_white_read_if(ins, ';')
     # get the prompt
@@ -371,8 +360,7 @@ def exec_input(ins):
         prompt += '? '
     # get list of variables
     readvar = parse_var_list(ins)
-    # move the program pointer to the start of the statement
-    # to ensure correct behaviour for CONT
+    # move the program pointer to the start of the statement to ensure correct behaviour for CONT
     pos = ins.tell()
     ins.seek(startpos)
     # read the input
@@ -382,12 +370,14 @@ def exec_input(ins):
         values = []
         count_commas = 0    
         for v in readvar:
-            val = scrub_and_pack(input_entry(text_file), v[0][-1])
+            typechar = v[0][-1]
+            val = str_to_type(input_entry(text_file, allow_quotes=(typechar=='$')), typechar)
             values.append(val)
-            if text_file.read_chars(1) != ',':
+            if text_file.peek_char() != ',':
                 break
             else:
-                count_commas += 1    
+                text_file.read_chars(1)
+                count_commas += 1
         if len(readvar) != len(values) or count_commas != len(readvar)-1 or None in values:
             console.write('?Redo from start' + util.endl)  # ... good old Redo!
         else:
@@ -396,123 +386,68 @@ def exec_input(ins):
         var.set_var_or_array(*readvar[i], value=values[i])
     ins.seek(pos)        
     util.require(ins, util.end_statement)
+            
+def exec_input_file(ins, text_file):
+    # INPUT#
+    # get list of variables
+    readvar = parse_var_list(ins)
+    # read the input
+    for v in readvar:
+        typechar = v[0][-1]
+        if typechar == '$':
+            valstr = input_entry(text_file, allow_quotes=True, end_all = ('\x0d', '\x1a', ''), end_not_quoted = (',', '\x0a'))
+        else:
+            valstr = input_entry(text_file, allow_quotes=False, end_all = ('\x0d', '\x1a', '', ',', '\x0a', ' '))
+        value = str_to_type(valstr, typechar)    
+        if value == None:
+            value = vartypes.null[typechar]
+        var.set_var_or_array(*v, value=value)
+        # process the ending char
+        if text_file.peek_char() not in ('', '\x1a'):
+            text_file.read_chars(1)
+    util.require(ins, util.end_statement)
 
-# returns everything until next comma, skipping leading blanks (but not trailing ones)
-def input_entry(text_file):
-    word = ''
+
+def input_entry(text_file, allow_quotes, end_all=('',), end_not_quoted=(',',)):
+    word, blanks = '', ''
     # skip leading spaces and line feeds and NUL. 
     c = text_skip(text_file, ascii_white)
-    if c == '"':
+    if c == '"' and allow_quotes:
         quoted = True
-        word += text_file.read_chars(1)
+        text_file.read_chars(1)
     else:
         quoted = False
     while True:
         # read entry
         c = text_file.read_chars(1)
-        if c in ('', ',') and not quoted:
-            text_file.seek(-len(c), 1)
-            break
-        elif c == '"' and quoted:
+        if c == '"' and quoted:
             quoted = False
-            word += c    
-        else:
-            word += c
-    return word
-
-def scrub_and_pack(word, type_char):
-    if type_char == '$':
-        # scrub quoted strings:
-        if len(word) > 0 and word[0] == '"':
-            # remove trailing white
-            while len(word) > 0 and word[-1] in ascii_white:
-                word = word[:-1]
-            # must end in ", be at least 2 long
-            if len(word) < 2 or word[-1] != '"':
-                return None        
-            word = word[1:-1]
-            # no further quotes allowed
-            for s in word:
-                if s == '"':
-                    return None            
-        return vartypes.pack_string(bytearray(word))
-    else:
-        num = fp.from_str(word, False)
-        if num == None:
-            return None
-        return fp.pack(num)
-            
-            
-            
-def exec_input_file(ins, finp):
-    # INPUT#
-    # get list of variables
-    readvar = parse_var_list(ins)
-    for v in readvar:
-        if v[0][-1] in ('%', '!', '#'):
-            valstr = input_number_file(finp)
-        else:    
-            valstr = input_string_file(finp)
-        set_var_read(*v, val=valstr)
-        # process the ending char
-        c = text_file.read_chars(1)
-    util.require(ins, util.end_statement)
-   
-def input_number_file(text_file):
-    soft_end = (' ', '\x0a') 
-    end_entry = (',', '\x0d', '\x1a', '') + soft_end
-    word = ''
-    # skip *leading* spaces and line feeds and NUL. (not TABs)
-    # cf READ skips whitespace inside numbers as well
-    c = text_skip(text_file, ascii_white)
-    while True:
-        # read entry
-        c = text_file.peek_char()
-        if c in end_entry:
-            # TextFile filters 0d0a ->0d
-            # repeated soft ends are ignored
-            # TODO: I think \0a\0d is soft too
-            text_skip(text_file, soft_end)
-            break
-        else:
-            text_file.read_chars(1)        
-            word += c
-    return word
-
-# , is hard, LF is soft but will be caught as part of the whitespace skipping.
-def input_string_file(text_file):
-    end_all = ('\x0d', '\x1a', '')
-    end_entry = end_all + (',', '\x0a')
-    max_len = 255
-    word = ''
-    quoted = False
-    # skip *leading* spaces and line feeds and NUL. 
-    # cf READ skips whitespace inside numbers as well
-    c = text_skip(text_file, ascii_white)
-    # check first char
-    c = text_file.read_chars(1)
-    if c == '"':
-        quoted = True
-        c = text_file.read_chars(1)
-    while True:
-        if c in end_all or (not quoted and c in end_entry):
-            break    
-        elif quoted and c == '"':
-            # ignore blanks after the quotes
-            c = text_skip(text_file, ascii_white)
-            # but we need a comma if there's to be more input        
+            # ignore blanks after the quotes, position on first non-blank (in correct file, a comma)
+            text_skip(text_file, ascii_white)
             text_file.read_chars(1)
             break
-        else:        
-            word += c
-        if len(word) >= max_len:
-            break        
-        c = text_file.read_chars(1)
-    text_file.seek(-len(c), 1)
+        elif c in ascii_white and not quoted:
+            blanks += c    
+        else:
+            word += blanks + c
+        if len(word) >= 255:
+            break
+        c = text_file.peek_char()
+        if c in end_all:
+            break
+        elif c in end_not_quoted and not quoted:
+            break
     return word
 
+def str_to_type(word, type_char):
+    if type_char == '$':
+        return vartypes.pack_string(bytearray(word))
+    else:
+        try:
+            return fp.pack(fp.from_str(word, False))
+        except AttributeError:
+            return None
 
-    
 
 def exec_line_input(ins):
     util.skip_white(ins)
