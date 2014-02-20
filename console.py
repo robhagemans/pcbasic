@@ -594,15 +594,15 @@ def pass_char(ch):
 
 # blocking keystroke read
 def read_chars(num):
+    word = ''
+    savecurs = show_cursor(False)
     for _ in range(num):
-        word = ''
         a = ''
-        savecurs = show_cursor(False)
-        while a =='':
+        while a == '':
             idle()            
             a = get_char()
         word += a[0]
-        show_cursor(savecurs)
+    show_cursor(savecurs)
     return word
 
 # blocking keystroke read
