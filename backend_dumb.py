@@ -146,7 +146,7 @@ def check_keys():
     if d[0] != []:
         c = os.read(fd,1)
     if c == '\x0A':
-        console.insert_key('\x0D\x0A')
+        console.insert_key('\x0D') #\x0A')
         enter_pressed = True
     else:
         console.insert_key(c)
