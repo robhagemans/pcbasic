@@ -460,11 +460,14 @@ CLOSE [[#] file_1 [, [#] file_2 [, ...] ]
 Closes files. 'file_1', 'file_2' etc are numeric-valued expressions yielding 
 file numbers. If no file numbers are specified, all open files are closed.
 The hash (#) is optional and has no effect.
-ERRORS:
+NOTES:
 -  If 'file_1' etc. is not an open file, no error is raised.
+ERRORS:
+-  If 'file_1' etc. is not in [-32768,32767], raises OVERFLOW.
+-  If 'file_1' etc. is not in [0,255], raises ILLEGAL FUNCTION CALL.
 -  If 'file_1' etc. is string-valued, TYPE MISMATCH is raised.
--  If an error occurs, the files before the erratic value are closed.
 -  If the statement ends in a comma, MISSING OPERAND is raised.
+-  If an error occurs, the files before the erratic value are closed.
 
 
 CLS statement
@@ -645,7 +648,7 @@ Note that DATE$ has no brackets.
 
 
 DATE$ statement
-DATE$=date
+DATE$ = date
 ---------------
 Sets the system date. 'date' is a string-valued expression that represents a 
 date in one of the formats: "mm-dd-yyyy", "mm/dd/yyyy", "mm-dd-yy", "mm/dd/yy".
@@ -877,7 +880,8 @@ ERRORS:
     raised.
 
 
-ENVIRON$(x) function    
+ENVIRON$ function    
+value = ENVIRON$(x)
 --------------------
 Returns an environment parameter. 'x' is an expression.
 If 'x' has a string value, returns the value for the parameter 'x' or the empty
@@ -890,13 +894,18 @@ ERRORS:
 -   If 'x' is a number not in [-32768,32767], raises OVERFLOW.
 
 
-EOF(x) function
----------------
-Returns -1 if file with number 'x' has reached end-of-file; 0 otherwise.
-The file must be open in INPUT or RANDOM mode.
+EOF function
+is_at_end = EOF(file_num) 
+------------
+Returns -1 if file with number 'file_num' has reached end-of-file; 0 otherwise.
+The file must be open in INPUT or RANDOM mode. EOF(0) returns 0.
 ERRORS:
--   If 'x' is not the number of an open file, raises BAD FILE NUMBER.
--   If file with number 'x' is in OUTPUT or APPEND mode, raises BAD FILE MODE.
+-   If 'file_num' is a number not in [0,255], raises ILLEGAL FUNCTION CALL.
+-   If 'file_num' is a number not in [-32768,32767], raises OVERFLOW.
+-   If 'file_num' is not 0 or the number of an open file, raises 
+    BAD FILE NUMBER.
+-   If file with number 'file_num' is in OUTPUT or APPEND mode, raises 
+    BAD FILE MODE.
 
 
 ERASE statement
@@ -913,6 +922,7 @@ ERRORS:
 
 
 ERDEV function
+zero = ERDEV
 --------------
 Returns 0. No brackets.
 NOTES:
@@ -920,6 +930,7 @@ NOTES:
 
 
 ERDEV$ function
+empty = ERDEV$
 ---------------
 Returns the empty string. No brackets.
 NOTES:
@@ -927,6 +938,7 @@ NOTES:
 
 
 ERL function
+error_line = ERL
 ------------
 Returns the line number where the last error was raised. If the error was 
 raised in interactive mode, returns 65535. If no error has been raised, 
@@ -934,6 +946,7 @@ returns 0. No brackets.
 
 
 ERR function
+error_code = ERR
 ------------
 Returns the number of the last error. If no error has been raised, returns 0.
 No brackets.
@@ -967,8 +980,9 @@ ERRORS:
     value, raises OVERFLOW.
 
 
-EXTERR(x) function
-------------------
+EXTERR function
+zero = EXTERR(x)
+---------------
 Returns 0. 'x' must be a number-valued expression in [0, 3].
 NOTES:
 -   In GW-BASIC, EXTERR returns extended error information from MS-DOS. 
@@ -1061,10 +1075,11 @@ ERRORS:
     TYPE MISMATCH is raised.
         
 
-FRE(x) function
----------------
+FRE function
+free_mem = FRE(x)
+------------
 Returns the available model memory. 'x' is an expression. If 'x' is number-
-valued, it is ignored. If 'x'is string valued, garbage collection is performed
+valued, it is ignored. If 'x' is string valued, garbage collection is performed
 before returning available model memory.
 
 
@@ -1187,7 +1202,8 @@ ERRORS:
     read (e.g. 6553)
     
 
-HEX$(x) function
+HEX$ function
+hex_repr = HEX(x)
 ----------------
 Returns a string with the hexadecimal representation of 'x'. 'x' must be a 
 number-valued expression between -32768 and 65535, inclusive. Values for 
@@ -1259,8 +1275,9 @@ The hex values for keyboard scancodes returned by INKEY$ are:
 
 
 
-INP(x) function
----------------
+INP function
+code = INP(x)
+------------
 If 'x'==&H60, returns the keyboard scancode for the last key pressed
 'x' is a numeric expression with a value between 0 and 65535, inclusive.
 Returns zero otherwise. 
