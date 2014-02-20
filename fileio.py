@@ -255,12 +255,13 @@ class RandomBase(object):
     
     # read line (from field buffer)    
     def read(self):
-        if self.field_text_file.fhandle.tell() >= self.reclen:
+        # FIELD overflow happens if last byte in record is actually read
+        if self.field_text_file.fhandle.tell() >= self.reclen-1:
             raise error.RunError(self.overflow_error) # FIELD overflow
         return self.field_text_file.read()
         
     def read_chars(self, num):
-        if self.field_text_file.fhandle.tell() + num > self.reclen:
+        if self.field_text_file.fhandle.tell() + num > self.reclen-1:
             raise error.RunError(self.overflow_error) # FIELD overflow
         return self.field_text_file.read_chars(num)
     
@@ -319,6 +320,7 @@ class RandomFile(RandomBase):
             self.field[:] = '\x00'*self.reclen
         else:
             self.field[:] = self.fhandle.read(self.reclen)
+        self.field_text_file.seek(0)    
         self.recpos += 1
         
     # write record

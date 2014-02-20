@@ -338,13 +338,6 @@ def parse_prompt(ins):
             raise error.RunError(2)
     return prompt, following
 
-def text_skip(text_file, skip_range):
-    while True:
-        d = text_file.peek_char() 
-        if d not in skip_range:
-            break
-        text_file.read_chars(1)    
-    return d
 
 def exec_input(ins):
     startpos = program.current_statement
@@ -401,12 +394,20 @@ def exec_input_file(ins, text_file):
         value = str_to_type(valstr, typechar)    
         if value == None:
             value = vartypes.null[typechar]
-        var.set_var_or_array(*v, value=value)
-        # process the ending char
+        # process the ending char (this may raise FIELD OVERFLOW but should avoid INPUT PAST END)
         if text_file.peek_char() not in ('', '\x1a'):
             text_file.read_chars(1)
+        # and then set the value
+        var.set_var_or_array(*v, value=value)
     util.require(ins, util.end_statement)
 
+def text_skip(text_file, skip_range):
+    while True:
+        d = text_file.peek_char() 
+        if d not in skip_range:
+            break
+        text_file.read_chars(1)    
+    return d
 
 def input_entry(text_file, allow_quotes, end_all=('',), end_not_quoted=(',',)):
     word, blanks = '', ''
