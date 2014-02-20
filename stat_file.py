@@ -258,4 +258,12 @@ def exec_unlock(ins):
     oslayer.safe_lock(thefile.fhandle, '', start, length)                   
     util.require(ins, util.end_statement)
     
+# ioctl: not implemented
+def exec_ioctl(ins):
+    number = expressions.parse_file_number_opthash(ins)
+    try:
+        the_file = fileio.files[number]
+    except KeyError:
+        raise error.RunError(52)
+    raise error.RunError(5)   
     

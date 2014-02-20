@@ -56,9 +56,6 @@ def exec_call(ins):
     raise error.RunError(73)    
 
        
-# ioctl: not implemented
-def exec_ioctl(ins):
-    raise error.RunError(73)   
     
 
 # do-nothing out       
