@@ -412,19 +412,18 @@ def input_entry(text_file, allow_quotes, end_all=('',), end_not_quoted=(',',)):
     word, blanks = '', ''
     # skip leading spaces and line feeds and NUL. 
     c = text_skip(text_file, ascii_white)
-    if c == '"' and allow_quotes:
-        quoted = True
+    if c in end_all + end_not_quoted:
+        return ''
+    quoted = (c == '"' and allow_quotes)
+    if quoted:
         text_file.read_chars(1)
-    else:
-        quoted = False
     while True:
         # read entry
         c = text_file.read_chars(1)
         if c == '"' and quoted:
             quoted = False
-            # ignore blanks after the quotes, position on first non-blank (in correct file, a comma)
-            text_skip(text_file, ascii_white)
-            text_file.read_chars(1)
+            # ignore blanks after the quotes
+            c = text_skip(text_file, ascii_white)
             break
         elif c in ascii_white and not quoted:
             blanks += c    
