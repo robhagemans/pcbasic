@@ -138,16 +138,14 @@ class TextFile(object):
         return s
 
     def read_chars(self, num):
-        s=''
+        s = ''
         for _ in range(num):
-            c=self.fhandle.read(1)
+            c = self.fhandle.read(1)
             # check for \x1A (EOF char - this will actually stop further reading)
             if c in ('\x1a', ''):
-                break
-            s+=c
-        if self.eof():    
-            # input past end
-            raise error.RunError(62)
+                # input past end
+                raise error.RunError(62)
+            s += c
         return s 
         
     def peek_char(self):
