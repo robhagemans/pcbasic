@@ -610,14 +610,12 @@ def value_input(ins):    # INPUT$
         raise error.RunError(2)
     util.require_read(ins, ('(',))
     num = vartypes.pass_int_unpack(parse_expression(ins))
-    if num<1 or num>255:
-        raise error.RunError(5)
+    util.range_check(1, 255, num)
     screen = console    
     if util.skip_white_read_if(ins, ','):
         util.skip_white_read_if(ins, '#')
         filenum = vartypes.pass_int_unpack(parse_expression(ins))
-        if filenum<0 or filenum>255:
-            raise error.RunError(5)
+        util.range_check(0, 255, filenum)
         if filenum not in fileio.files:
             # bad file number
             raise error.RunError(52)
