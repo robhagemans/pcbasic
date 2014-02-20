@@ -56,7 +56,7 @@ def exec_cls(ins):
     
     
 def exec_color(ins):
-    [fore, back, bord] = expressions.parse_int_list(ins, 3, 5)          
+    fore, back, bord = expressions.parse_int_list(ins, 3, 5)          
     if bord == None:
         bord = 0 
     mode = console.screen_mode
@@ -70,8 +70,7 @@ def exec_color(ins):
         fore_old, dummy = console.get_attr()
         back_old = console.get_palette_entry(0)
         pal, back = back, fore
-        if pal <0 or back<0 or bord<0 or pal >255 or back>255 or bord>255:
-            raise error.RunError(5)
+        util.range_check(0, 255, pal, back, bord)
         if back == None: 
             back=back_old
         if pal%2 == 1:
@@ -82,10 +81,10 @@ def exec_color(ins):
     elif mode == 0:
         # screen 0
         fore_old, back_old = console.get_attr()
-        if fore==None:
-            fore=fore_old
-        if back==None: 
-            back=back_old
+        if fore == None:
+            fore = fore_old
+        if back == None: 
+            back = back_old
         if not (console.colours_ok(fore) and back>=0 and back<16 and bord>=0 and bord<16):
             raise error.RunError(5)
         console.set_attr(fore, back)
@@ -94,11 +93,11 @@ def exec_color(ins):
         # screen 9
         fore_old, dummy = console.get_attr()
         back_old = console.get_palette_entry(0)
-        if fore==None:
-            fore=fore_old
-        if back==None: 
-            back=back_old
-        if not (console.colours_ok(fore) and back>=0 and back<console.num_palette):
+        if fore == None:
+            fore = fore_old
+        if back == None: 
+            back = back_old
+        if not (console.colours_ok(fore) and back >= 0 and back < console.num_palette):
             raise error.RunError(5)
         # in graphics mode, bg colour is always 0 and controlled by palette
         console.set_attr(fore, 0)
@@ -107,11 +106,11 @@ def exec_color(ins):
         # screen 7,8
         fore_old, dummy = console.get_attr()
         back_old = console.get_palette_entry(0)
-        if fore==None:
-            fore=fore_old
-        if back==None: 
-            back=back_old
-        if fore==0 or not console.colours_ok(fore) or not console.colours_ok(back):
+        if fore == None:
+            fore = fore_old
+        if back == None: 
+            back = back_old
+        if fore == 0 or not console.colours_ok(fore) or not console.colours_ok(back):
             raise error.RunError(5)
         # in graphics mode, bg colour is always 0 and controlled by palette
         console.set_attr(fore, 0)
@@ -137,8 +136,7 @@ def exec_palette(ins):
             val = vartypes.pass_int_unpack(var.get_array(array_name, [start_index+i]))
             if val==-1:
                 val = console.get_palette_entry(i)
-            if val<-1 or val>=console.num_palette:
-                raise error.RunError(5) 
+            util.range_check(-1, console.num_palette-1, val)
             new_palette.append(val)
         console.set_palette(new_palette)
     else:
@@ -148,8 +146,6 @@ def exec_palette(ins):
         if pair[1]>-1:
             console.set_palette_entry(pair[0], pair[1])
     util.require(ins, util.end_statement)    
-        
-
         
 
 def exec_key(ins):
@@ -170,11 +166,10 @@ def exec_key(ins):
     elif d=='(':
         # key (n)
         num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
-        if num<0 or num>255:
-            raise error.RunError(5)
+        util.range_check(0, 255, num)
         d = util.skip_white_read(ins)
         # others are ignored
-        if num >=1 and num <= 20:
+        if num >= 1 and num <= 20:
             if d=='\x95': # ON
                 events.key_enabled[num-1] = True
                 events.key_stopped[num-1] = False
@@ -187,44 +182,43 @@ def exec_key(ins):
     else:
         # key n, "TEXT"    
         keynum = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-        if keynum<1 or keynum>255:
-            raise error.RunError(5)
+        util.range_check(1, 255, keynum)
         util.require_read(ins, (',',), err=5)
         text = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         # only length-2 expressions can be assigned to KEYs over 10
         # (in which case it's a key scancode definition, which is not implemented)
-        if keynum <=10:
+        if keynum <= 10:
             events.key_replace[keynum] = text
         else:
-            if len(text)!=2:
+            if len(text) != 2:
                raise error.RunError(5)
             # can't redefine scancodes for keys 1-14
-            if keynum >=15 and keynum <= 20:    
+            if keynum >= 15 and keynum <= 20:    
                 events.key_numbers[keynum-1] = text
     # rest of statement is ignored
     util.skip_to(ins, util.end_statement)
 
 
 def exec_locate(ins):
-    [row, col, cursor, start, stop] = expressions.parse_int_list(ins, 5, 2)          
-    [crow, ccol] = [console.get_row(), console.get_col()]            
-    if row==None:
+    row, col, cursor, start, stop = expressions.parse_int_list(ins, 5, 2)          
+    crow, ccol = console.get_row(), console.get_col()
+    if row == None:
         row = crow
-    if col==None:
+    if col == None:
         col = ccol
     check_view(row, col)
     console.set_pos(row, col, scroll_ok=False)    
-    if cursor!=None:
+    if cursor != None:
         console.show_cursor(cursor)
     # FIXME: cursor shape not implemented
 
 
 def exec_write(ins, screen=None):
     screen = expressions.parse_file_number(ins)
-    if screen==None:
-        screen=console
+    if screen == None:
+        screen = console
     expr = expressions.parse_expression(ins, allow_empty=True)
-    if expr!=('',''):
+    if expr != ('',''):
         while True:
             if expr[0]=='$':
                 screen.write('"'+vartypes.unpack_string(expr)+'"')
@@ -240,7 +234,6 @@ def exec_write(ins, screen=None):
                 raise error.RunError(2)        
     util.require(ins, util.end_statement)        
     screen.write(util.endl)
-
         
         
 def exec_print(ins, screen=None):
@@ -408,7 +401,6 @@ def exec_print_using(ins, screen):
     if not semicolon:
         screen.write(util.endl)
     util.require(ins, util.end_statement)
-       
 
 
 def exec_lprint(ins):
@@ -419,14 +411,12 @@ def exec_lprint(ins):
 # does nothing in GWBASIC except give some errors. See e.g. http://shadowsshot.ho.ua/docs001.htm#LCOPY    
 def exec_lcopy(ins):    
     value = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-    if value<0 or value>255:
-        error.RunError(5)
+    util.range_check(0, 255, value)
     util.require(ins, util.end_statement)
        
                              
 def exec_view_print(ins):
-    d = util.skip_white(ins)
-    if d in util.end_statement:
+    if util.skip_white(ins) in util.end_statement:
         console.unset_view()
     else:  
         start = vartypes.pass_int_unpack(expressions.parse_expression(ins))
@@ -440,12 +430,12 @@ def check_view(row, col):
     if row == console.height and console.keys_visible:
         raise error.RunError(5)
     elif console.view_set:
-        if row > console.scroll_height or col > console.width or row<console.view_start or col<1:
-            raise error.RunError(5)
+        util.range_check(console.view_start, console.scroll_height, row)
+        util.range_check(1, console.width, col)
     else:
-        if row > console.height or col > console.width or row<1 or col<1:
-            raise error.RunError(5)
-        if row== console.height:
+        util.range_check(1, console.height, row)
+        util.range_check(1, console.width, col)
+        if row == console.height:
             # temporarily allow writing on last row
             console.last_row_on()       
 
@@ -659,7 +649,7 @@ def exec_pcopy(ins):
     util.require_read(ins, (',',))
     dst = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
-    if not console.copy_page(src,dst):
+    if not console.copy_page(src, dst):
         raise error.RunError(5)
     
 
