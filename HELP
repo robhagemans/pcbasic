@@ -1032,14 +1032,16 @@ ERRORS:
 -   If the specified filter does not match any files, FILE NOT FOUND is raised.
 
 
-FIX(x) function
----------------
-Truncates 'x' towards zero. 'x' must be a numeric-values expression.
+FIX function
+whole = FIX(number)
+------------
+Returns 'number' truncated towards zero.    
+'number' must be a numeric-valued expression.
 NOTES:
--   While 'x' truncates towards zero (i.e. removes the fractional part), INT
+-   While FIX truncates towards zero (i.e. removes the fractional part), INT
     truncates towards negative infinity. For negative 'x', FIX(x)-INT(x)==1.
 ERRORS:
--   If 'x' is a string-valued expression, TYPE MISMATCH is raised.
+-   If 'number' is a string-valued expression, TYPE MISMATCH is raised.
 
  
 FOR statement
@@ -1419,7 +1421,7 @@ ERRORS:
     
 
 INPUT$ function
-result = INPUT$(num_chars [, [#] file_num])
+chars = INPUT$(num_chars [, [#] file_num])
 ---------------
 Returns a string of 'num_chars' characters from the keyboard or a file. 
 'num_chars' must be a number-valued expression between 1 and 255, inclusive.
@@ -1442,6 +1444,62 @@ ERRORS:
 -   If 'num_chars' or 'file_num' are strings, raises TYPE MISMATCH.
     
     
+INSTR function
+position = INSTR([start,] parent, child)
+--------------
+Returns the location of the first occurrence of the substring 'child' in 
+'parent'. 'parent' and 'child' must be string-valued expressions. If 'start' is
+provided, it must be a number-valued expression between 1 and 255, specifying
+the starting position from where to look; if not specified, the search starts 
+at character 1.
+NOTES:
+-   If 'child' is not a substring of 'parent' occurring at or before 'start', 
+    INSTR returns 0.
+ERRORS:
+-   If 'start' is not in [-32768, 32768], raises OVERFLOW.
+-   If 'start' is not in [1, 255], raises ILLEGAL FUNCTION CALL.
+-   If 'start' has a string value or 'parent' or 'child' have number values, 
+    raises TYPE MISMATCH.
 
 
+INT function
+whole = INT(number)
+------------
+Returns 'number' truncated towards negative infinity.    
+'number' must be a numeric-valued expression.
+NOTES:
+-   While FIX truncates towards zero (i.e. removes the fractional part), INT
+    truncates towards negative infinity. For negative 'x', FIX(x)-INT(x)==1.
+ERRORS:
+-   If 'number' is a string-valued expression, TYPE MISMATCH is raised.
+ 
 
+IOCTL statement
+IOCTL [#] file_num, control_string
+---------------
+Raises ILLEGAL FUNCTION CALL.
+NOTES:
+-   In GW-BASIC, IOCTL send a control string to a device. This is not 
+    implemented in PC-BASIC 3.23.
+ERRORS:
+-   If file_num is not an open file, raises BAD FILE NUMBER.
+-   If file_num is not in [-32768, 32767], raises OVERFLOW.
+-   Otherwise, raises ILLEGAL FUNCTION CALL
+
+
+IOCTL$ function
+result = IOCTL$([#] file_num)
+---------------
+Raises ILLEGAL FUNCTION CALL.
+NOTES:
+-   In GW-BASIC, IOCTL$ reads the reply to IOCTL from a device. This is not 
+    implemented in PC-BASIC 3.23.
+ERRORS:
+-   If file_num is not an open file, raises BAD FILE NUMBER.
+-   If file_num is not in [-32768, 32767], raises OVERFLOW.
+-   Otherwise, raises ILLEGAL FUNCTION CALL
+
+    
+
+
+ 
