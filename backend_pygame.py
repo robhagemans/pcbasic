@@ -253,6 +253,7 @@ keycode_to_inpcode = {
     pygame.K_PAGEDOWN:  '\x51',
     pygame.K_INSERT:    '\x52',
     pygame.K_DELETE:    '\x53',
+    pygame.K_BACKSLASH: '\x56',
 }
 
 def init():
@@ -637,12 +638,17 @@ def handle_key(e):
                 c = unicodepage.from_unicode(e.unicode)
     console.insert_key(c) 
     # current key pressed; modifiers ignored 
-    console.inp_key = ord(keycode_to_inpcode[e.key])
+    try:
+        console.inp_key = ord(keycode_to_inpcode[e.key])
+    except KeyError:
+        pass    
     
 def handle_key_up(e):
     # last key released gets remembered
-    console.inp_key = 0x80 + ord(keycode_to_inpcode[e.key])
-    pass
+    try:
+        console.inp_key = 0x80 + ord(keycode_to_inpcode[e.key])
+    except KeyError:
+        pass    
         
 def pause_key():
     # pause key press waits for any key down. continues to process screen events (blink) but not user events.
