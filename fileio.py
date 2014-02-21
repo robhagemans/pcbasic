@@ -271,7 +271,7 @@ class RandomBase(object):
         while self.field_text_file.fhandle.tell() < self.reclen:
             self.field_text_file.write(ins.read(1))
         if ins.tell() < len(s):
-            raise error.RunError(overflow_error) 
+            raise error.RunError(self.overflow_error) 
     
     def set_width(self, new_width=255):
         self.width = new_width

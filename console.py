@@ -708,7 +708,7 @@ def show_keys():
     global keys_visible
     keys_visible = True
     pos = get_pos()
-    attr = get_attr()
+    store_attr = get_attr()
     save_curs = show_cursor(False)
     for i in range(width/8):
         text = list(events.key_replace[i][:6])
@@ -718,22 +718,22 @@ def show_keys():
         # allow pos=25 without scroll, this is reset as soon as row changes again.
         last_row_on()
         set_pos(25, 1+i*8)
-        set_attr(*attr)
+        set_attr(*store_attr)
         if i == 9:
             write('0', no_echo=True)
         else:
             write(str(i+1), no_echo=True)
         if not graphics.is_graphics_mode():
-            if attr[1]==0:    
+            if store_attr[1]==0:    
                 set_attr(0, 7)
             else:
                 set_attr(7, 0)
         write(''.join(text), no_echo=True)
-        set_attr(*attr)
+        set_attr(*store_attr)
         write(' '*(6-len(text)), no_echo=True)
         write(' ', no_echo=True)
     set_pos(*pos)
-    set_attr(*attr)
+    set_attr(*store_attr)
     show_cursor(save_curs)
 
         

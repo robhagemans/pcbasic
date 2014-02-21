@@ -176,7 +176,7 @@ class DeviceFile(TextFile):
     def close(self):
         # don't close the file handle as we may have copies
         if self.number !=0:
-            del files[self.number]
+            del fileio.files[self.number]
 
 
 

@@ -628,7 +628,7 @@ def value_eof(ins): # EOF
 def value_lof(ins): # LOF
     util.skip_white(ins)
     num = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
-    range_check(0, 255, num)
+    util.range_check(0, 255, num)
     the_file = fileio.get_file(num)
     return vartypes.pack_int(the_file.lof() )
     
@@ -918,8 +918,9 @@ def value_ioctl(ins):
     util.require_read(ins, ('(',))
     num = parse_file_number_opthash(ins)
     util.require_read(ins, (')',))
-    the_file = fileio.get_file(num)
+    fileio.get_file(num)
     raise error.RunError(5)   
+    
             
 ###########################################################
 ###########################################################
