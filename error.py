@@ -9,8 +9,6 @@
 # please see text file COPYING for licence terms.
 #
 
-import sys
-
 # number and line number of last error
 errn = -1
 erl = 65535

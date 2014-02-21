@@ -273,7 +273,7 @@ class Float(object):
     def idiv(self, right_in):
         if right_in.is_zero():
             msg_zero_div()
-            self.neg, self.man, self.exp = self.neg, self.max.man, self.max.exp
+            self.man, self.exp = self.max.man, self.max.exp
             return self
         if self.is_zero():
             return self
