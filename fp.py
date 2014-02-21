@@ -186,7 +186,7 @@ class Float(object):
     def ifloor(self):
         # discards carry & truncates towards neg infty, returns mbf
         if self.is_zero():
-            return
+            return self
         n = self.from_int(self.trunc_to_int())
         if n.neg and not self.equals(n):
             self = sub(n, n.one)

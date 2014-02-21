@@ -535,7 +535,7 @@ def exec_randomize(ins):
     #      0.25# = /x00/x00/x00/x00 /x00/x00/x00/x7f gets read as /x00/x00 ^ /x00/x7f = /x00/x7F -> 0x7F00 = 32512 (sign bit not set)
     #              /xDE/xAD/xBE/xEF /xFF/x80/x00/x80 gets read as /xFF/x80 ^ /x00/x80 = /xFF/x00 -> 0x00FF = 255   
     final_two = s[-2:]
-    mask = '\x00\x00'
+    mask = bytearray('\x00\x00')
     if len(s) >= 4:
         mask = s[-4:-2]
     final_two = bytearray(chr(final_two[0]^mask[0]) + chr(final_two[1]^mask[1]))

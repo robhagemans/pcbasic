@@ -266,7 +266,7 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
             c = util.peek(ins)
             if c in tokenise_whitespace:
                 ins.read(1)
-                outs.write(char)
+                outs.write(c)
             elif c in ascii_digits:
                 raise error.RunError(2)
             else:
