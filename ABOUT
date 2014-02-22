@@ -1,6 +1,8 @@
-PC-BASIC 3.23 is a BASIC interpreter that aims to be fully compatible 
+PC-BASIC 3.23 is a BASIC interpreter that aims to be fully compatible
 with Microsoft(R) GW-BASIC 3.23. 
 
+Press 'Q' to exit INFO; then type SYSTEM to close PC-BASIC.
+ 
 Authors_______________________________________________________________________
 * Rob Hagemans
 
@@ -11,9 +13,11 @@ Acknowledgements______________________________________________________________
      http://www.danvk.org/wp/2008-02-03/reading-old-gw-basic-programs/
 * Julian Bucknall  and  asburgoyne  described the Microsoft Binary Format:
      http://www.boyet.com/Articles/MBFSinglePrecision.html
-     http://www.experts-exchange.com/Programming/Languages/Pascal/Delphi/Q_20245266.html
+     http://www.experts-exchange.com/Programming/Languages/Pascal/Delphi/
+     Q_20245266.html
 * Paul Kocher  unravelled the decryption algorithm:
-     The Cryptogram computer supplement #19, American Cryptogram Association, Summer 1994 
+     The Cryptogram computer supplement #19, American Cryptogram Association, 
+     Summer 1994 
 * Henrique Peron  created DOS codepage pack (using Kosta Kostis' software)
 
 
