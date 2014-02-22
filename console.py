@@ -188,7 +188,6 @@ def check_events():
     backend.check_events()   
     # check&handle user events
     events.check_events()
-    events.handle_events()
     # manage sound queue
     sound.check_sound()
     
