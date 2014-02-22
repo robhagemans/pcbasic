@@ -171,12 +171,12 @@ def exec_key(ins):
         # others are ignored
         if num >= 1 and num <= 20:
             if d=='\x95': # ON
-                events.key_enabled[num-1] = True
-                events.key_stopped[num-1] = False
+                events.key_handlers[num-1].enabled = True
+                events.key_handlers[num-1].stopped = False
             elif d=='\xDD': # OFF
-                events.key_enabled[num-1] = False
+                events.key_handlers[num-1].enabled = False
             elif d=='\x90': # STOP
-                events.key_stopped[num-1] = True
+                events.key_handlers[num-1].stopped = True
             else:
                 raise error.RunError(2)
     else:
@@ -194,7 +194,7 @@ def exec_key(ins):
                raise error.RunError(5)
             # can't redefine scancodes for keys 1-14
             if keynum >= 15 and keynum <= 20:    
-                events.key_numbers[keynum-1] = text
+                events.event_keys[keynum-1] = text
     # rest of statement is ignored
     util.skip_to(ins, util.end_statement)
 

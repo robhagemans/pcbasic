@@ -26,6 +26,8 @@ import sound
 import events
 # for print_screen
 import deviceio
+# for replace key
+import program
 
 # back end implememtation
 backend = None
@@ -124,7 +126,7 @@ def replace_key(c):
     # only check F1-F10
     for keynum in range(10):
         # enabled means enabled for ON KEY events 
-        if c == key_numbers[keynum] and (not program.runmode() or not events.key_enabled[keynum]): 
+        if c == events.event_keys[keynum] and (not program.runmode() or not events.key_handlers[keynum].enabled): 
             return key_replace[keynum]
     return c
 
@@ -576,7 +578,7 @@ def read_screen(crow, ccol):
 # insert character into keyboard buffer (for use by backends)
 def insert_key(c):
     global keybuf 
-    keybuf += events.replace_key(c)
+    keybuf += replace_key(c)
 
 # non-blocking keystroke read
 def get_char():

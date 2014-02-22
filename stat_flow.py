@@ -382,22 +382,21 @@ def exec_on_key(ins):
     keynum = vartypes.pass_int_unpack(keynum)
     if keynum < 1 or keynum > 20:    
         raise error.RunError(5)
-    
-    events.key_events[keynum-1] = jumpnum
+    events.key_handlers[keynum-1].gosub = jumpnum
     
 
 def exec_on_timer(ins):
     timeval, jumpnum = parse_on_event(ins)
     timeval = vartypes.pass_single_keep(timeval)
     events.timer_period = fp.mul(fp.unpack(timeval), fp.Single.from_int(1000).round_to_int())
-    events.timer_event = jumpnum
+    events.timer_handler.gosub = jumpnum
     
 
 def exec_on_play(ins):
     playval, jumpnum = parse_on_event(ins)
     playval = vartypes.pass_int_unpack(playval)
     events.play_trig = playval
-    events.play_event = jumpnum
+    events.play_handler.gosub = jumpnum
     
     
 def exec_on_pen(ins):
@@ -406,42 +405,38 @@ def exec_on_pen(ins):
     if jumpnum == 0:
         jumpnum = -1
     util.require(ins, util.end_statement)    
-    events.pen_event = jumpnum
+    events.pen_handler.gosub = jumpnum
     
     
 def exec_on_strig(ins):
     strigval, jumpnum = parse_on_event(ins)
     strigval = vartypes.pass_int_unpack(strigval)
-    # 0 -> [0][0] 2 -> [0][1]  4-> [1][0]  6 -> [1][1]
-    joy = strigval // 4
-    trig = (strigval // 2)%2
-    events.stick_event[joy][trig] = jumpnum
+    ## 0 -> [0][0] 2 -> [0][1]  4-> [1][0]  6 -> [1][1]
+    #joy = strigval // 4
+    #trig = (strigval // 2)%2
+    events.strig_handler[strigval//2].gosub = jumpnum
     
     
 def exec_on_com(ins):
     keynum, jumpnum = parse_on_event(ins)
     keynum = vartypes.pass_int_unpack(keynum)
-    if keynum < 1 or keynum > 2:    
-        raise error.RunError(5)
-    events.com_event[keynum-1] = jumpnum
+    util.range_check(1, 2, num)
+    events.com_handlers[keynum-1].gosub = jumpnum
 
 
 def exec_com(ins):    
-    if util.skip_white(ins)=='(':
-        # com (n)
-        num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
-        if num < 1 or num > 2:
-            raise error.RunError(5)
-        d = util.skip_white_read(ins)
-        if d == '\x95': # ON
-            events.com_enabled[num-1] = True
-            events.com_stopped[num-1] = False
-        elif d == '\xDD': # OFF
-            events.com_enabled[num-1] = False
-        elif d == '\x90': # STOP
-            events.com_stopped[num-1] = True
-        else:
-            raise error.RunError(2)
+    util.require(ins, ('(',))
+    # com (n)
+    num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
+    util.range_check(1, 2, num)
+    d = util.skip_white_read(ins)
+    if d == '\x95': # ON
+        events.com_handlers[num-1].enabled = True
+        events.com_handlers[num-1].stopped = False
+    elif d == '\xDD': # OFF
+        events.com_handlers[num-1].enabled = False
+    elif d == '\x90': # STOP
+        events.com_handlers[num-1].stopped = True
     else:
         raise error.RunError(2)
     util.require(ins, util.end_statement)
@@ -453,13 +448,13 @@ def exec_timer(ins):
     if d == '\x95': # ON
         ins.read(1)
         events.timer_start = oslayer.timer_milliseconds()
-        events.timer_enabled = True
+        events.timer_handler.enabled = True
     elif d == '\xdd': # OFF
         ins.read(1)
-        events.timer_enabled = False
+        events.timer_handler.enabled = False
     elif d == '\x90': #STOP
         ins.read(1)
-        events.timer_stopped = True
+        events.timer_handler.stopped = True
     else:
         raise error.RunError(2)      
     util.require(ins, util.end_statement)      
@@ -523,14 +518,10 @@ def exec_return(ins):
         if len(data) == 3:
             [pos, orig_linenum, buf] = data
         elif len(data) == 4:
-            # returning from ON KEY GOSUB, re-enable key
-            [pos, orig_linenum, buf, keynum] = data
-            if keynum > 0:
-                events.key_stopped[keynum-1] = False
-            else:
-                # ON TIMER
-                events.timer_stopped = False
-            # FIXME: all other events ... ?    
+            # returning from ON (event) GOSUB, re-enable event
+            [pos, orig_linenum, buf, handler] = data
+            if handler:
+                handler.stopped = False
         if jumpnum == None:
             if buf != ins:
                 # move to end of program to avoid executing anything else on the RETURN line if called from direct mode   

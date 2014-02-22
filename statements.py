@@ -452,16 +452,16 @@ def exec_pen(ins):
     d = util.skip_white(ins)
     if d=='\x95': # ON
         ins.read(1)
-        events.pen_enabled = True
-        events.pen_stopped = False
+        events.pen_handler.enabled = True
+        events.pen_handler.stopped = False
         console.pen_on()
     elif d=='\xDD': # OFF
         ins.read(1)
-        events.pen_enabled = False
+        events.pen_handler.enabled = False
         console.pen_off()
     elif d=='\x90': # STOP
         ins.read(1)
-        events.pen_stopped = True
+        events.pen_handler.stopped = True
     util.require(ins, util.end_statement)
 
 # strig: stick trigger        
@@ -472,27 +472,26 @@ def exec_strig(ins):
         num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
         if num not in (0,2,4,6):
             raise error.RunError(5)
-        joy = num//4
-        trig = (num//2)%2
+        #joy = num//4
+        #trig = (num//2)%2
         d = util.skip_white_read(ins)
         if d == '\x95': # ON
-            events.stick_enabled[joy][trig] = True
-            events.stick_stopped[joy][trig] = True
+            events.strig_handlers[num//2].enabled = True
+            events.strig_handlers[num//2].stopped = True
         elif d == '\xDD': # OFF
-            events.stick_enabled[joy][trig] = False
+            events.strig_handlers[num//2].enabled = False
         elif d == '\x90': # STOP
-            events.stick_stopped[joy][trig] = True
+            events.strig_handlers[num//2].stopped = True
         else:
             raise error.RunError(2)
+    elif d == '\x95': # ON
+        ins.read(1)
+        console.stick_on()
+    elif d == '\xDD': # OFF
+        ins.read(1)
+        console.stick_off()
     else:
-        if d == '\x95': # ON
-            ins.read(1)
-            console.stick_on()
-        elif d == '\xDD': # OFF
-            ins.read(1)
-            console.stick_off()
-        else:
-            raise error.RunError(2)
+        raise error.RunError(2)
     util.require(ins, util.end_statement)
     
     
