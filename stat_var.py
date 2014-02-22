@@ -319,18 +319,17 @@ def read_entry(ins, end=util.end_line, ends=util.end_statement):
             word = ''
     return vals
 
-
-
 def parse_prompt(ins, question_mark):
     # parse prompt
     if util.skip_white_read_if(ins, '"'):
+        prompt = ''
         # only literal allowed, not a string expression
         d = ins.read(1)
         while d not in util.end_line + ('"',)  : 
             prompt += d
             d = ins.read(1)        
         if d == '\x00':
-            ins.seek(-1,1)  
+            ins.seek(-1, 1)  
         following = util.skip_white_read(ins)
         if following == ';':
             prompt += question_mark
@@ -339,7 +338,6 @@ def parse_prompt(ins, question_mark):
     else:
         prompt = question_mark
     return prompt
-
 
 def exec_input(ins):
     finp = expressions.parse_file_number(ins)
