@@ -1499,8 +1499,8 @@ NOTES:
 -   In GW-BASIC, IOCTL send a control string to a device. This is not 
     implemented in PC-BASIC 3.23.
 ERRORS:
--   If file_num is not an open file, raises BAD FILE NUMBER.
--   If file_num is not in [-32768, 32767], raises OVERFLOW.
+-   If 'file_num' is not an open file, raises BAD FILE NUMBER.
+-   If 'file_num' is not in [-32768, 32767], raises OVERFLOW.
 -   Otherwise, raises ILLEGAL FUNCTION CALL
 
 
@@ -1512,11 +1512,76 @@ NOTES:
 -   In GW-BASIC, IOCTL$ reads the reply to IOCTL from a device. This is not 
     implemented in PC-BASIC 3.23.
 ERRORS:
--   If file_num is not an open file, raises BAD FILE NUMBER.
--   If file_num is not in [-32768, 32767], raises OVERFLOW.
+-   If 'file_num' is not an open file, raises BAD FILE NUMBER.
+-   If 'file_num' is not in [-32768, 32767], raises OVERFLOW.
 -   Otherwise, raises ILLEGAL FUNCTION CALL
 
     
+KEY statement (string macro control)
+KEY { ON | OFF | LIST }
+-------------
+Turns string macros ON or OFF; if LIST is specified, produces a list of
+the 10 function keys with the string macros defined for those keys. A character
+chr$(13) is represented as a back arrow. 
+
+
+KEY statement (string macro definition)
+KEY key_id, string_value
+-------------
+Defines the string macro for key 'key_id'. 'key_id' must be a number-valued 
+expression in the range 1--10, inclusive. 'string_value' must be a string-
+valued expression. Only the first 15 caracters of 'string_value' are stored.
+NOES:
+-   IF 'key_id' is not in the range [1, 10], the statement is interpreted as an
+    event trapping key definition (see below).
+ERRORS:
+-   If 'key_id' is not in [-32768, 32767], raises OVERFLOW.
+-   If 'key_id' is not in [1, 255], raises ILLEGAL FUNCTION CALL.
+
+
+KEY statement (event trapping control)
+KEY ( key_id ) { ON | OFF | STOP } 
+-------------
+Controls event trapping of the key with identifier 'key_id'. 
+'key_id' must be a number-valued expression in the range 1--20, inclusive. 
+Keys 1--10 are F1--F10. Keys 11--14 are:
+    11  <UP>
+    12  <LEFT>
+    13  <RIGHT>
+    14  <DOWN>
+Keys 15 to 20 are defined using the event trapping KEY definition statement
+as described below.    
+ERRORS:
+-   If 'key_id' is not in [-32768, 32767], raises OVERFLOW.
+-   If 'key_id' is not in [0, 20], raises ILLEGAL FUNCTION CALL.
+ 
+
+KEY statement (event trapping key definition)
+KEY key_id, two_char_string
+-------------
+Defines the key to trap for 'key_id'. 'key_id' must be a number-valued 
+expression in the range 15--20, inclusive. 'string_value' must be a string-
+valued expression of length 2. The first character is interpreted as a modifier
+while the second character is interpreted as a scan code. See INP for scan
+codes. Modifiers are:
+    &h80    Extended
+    &h40    <CAPSLOCK>
+    &h20    <NUMLOCK>
+    &h08    <ALT>
+    &h04    <CTRL>
+    &h02    <SHIFT> (either side)
+    &h01    <SHIFT> (either side)
+NOTES:
+-   If 'key_id' is not in [15,20], no error is raised, but strange things can 
+    happen in GW-BASIC: screen anomalies and crashes suggestive of unintended
+    memory access. This is not implemented in PC-BASIC: such values are 
+    ignored.
+-   If 'key_id' is in 1--10, the statement is interpreted as a string macro
+    definition, see above.
+ERRORS:
+-   If 'key_id' is not in [-32768, 32767], raises OVERFLOW.
+-   If 'key_id' is not in [1, 255], raises ILLEGAL FUNCTION CALL.
+-   If 'two_char_string' is longer than two, raises ILLEGAL FUNCTION CALL. 
 
 
 LCOPY
