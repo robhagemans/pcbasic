@@ -16,19 +16,6 @@ import console
 import program
 import vartypes
 
-# default codes for KEY autotext
-key_replace = [ 'LIST ', 'RUN\x0d', 'LOAD"', 'SAVE"', 'CONT\x0d', ',"LPT1:"\x0d','TRON\x0d', 'TROFF\x0d', 'KEY ', 'SCREEN 0,0,0\x0d' ]
-
-# KEY replacement    
-# apply KEY autotext to scancodes
-def replace_key(c):
-    if len(c) < 2 or c[0] != '\x00':
-        return c
-    # only check F1-F10
-    for keynum in range(10):
-        if c == key_numbers[keynum] and (not program.runmode() or not key_enabled[keynum]): # enabled means enabled for ON KEY events 
-            return key_replace[keynum]
-    return c
 
 def reset_events():
     reset_key_events()

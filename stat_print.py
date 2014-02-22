@@ -158,7 +158,7 @@ def exec_key(ins):
            console.hide_keys()   
     elif d== '\x93': # LIST
         for i in range(10):
-            text = list(events.key_replace[i])
+            text = list(console.key_replace[i])
             for j in range(len(text)):
                 if text[j]=='\x0d':   #  CR
                     text[j] = '\x1b'  # arrow left
@@ -188,7 +188,7 @@ def exec_key(ins):
         # only length-2 expressions can be assigned to KEYs over 10
         # (in which case it's a key scancode definition, which is not implemented)
         if keynum <= 10:
-            events.key_replace[keynum] = text
+            console.key_replace[keynum] = text
         else:
             if len(text) != 2:
                raise error.RunError(5)
