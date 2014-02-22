@@ -608,7 +608,7 @@ def value_lpos(ins):
 def value_loc(ins): # LOC
     util.skip_white(ins)
     num = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
-    range_check(0, 255, num)
+    util.range_check(0, 255, num)
     the_file = fileio.get_file(num)
     # refuse for output devices, such as SCRN: (bad file mode). Kybd: and com1: etc should be allowed
     if the_file in deviceio.output_devices:
@@ -621,7 +621,7 @@ def value_eof(ins): # EOF
     num = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
     if num == 0:
         return vartypes.null['%']
-    range_check(0, 255, num)
+    util.range_check(0, 255, num)
     the_file = fileio.get_file(num, 'IR')
     return vartypes.bool_to_int_keep(the_file.eof())
   
