@@ -432,7 +432,7 @@ def read_screenline(write_endl=True, from_start=False):
         crow -= 1
     line = []
     # add lines 
-    while crow < height:
+    while crow <= height:
         add = apage.charbuf[crow-1][:apage.end[crow-1]]
         # exclude prompt, if any
         if crow == prompt_row and not from_start:
