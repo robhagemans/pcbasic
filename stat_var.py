@@ -347,9 +347,7 @@ def exec_input(ins):
         return exec_input_file(ins, finp)
     # ; to avoid echoing newline
     newline = not util.skip_white_read_if(ins, ';')
-    # get the prompt
     prompt = parse_prompt(ins, '? ')    
-    # get list of variables
     readvar = parse_var_list(ins)
     # move the program pointer to the start of the statement to ensure correct behaviour for CONT
     pos = ins.tell()
