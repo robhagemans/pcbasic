@@ -172,6 +172,7 @@ def handle_error(e):
         program.jump(error.on_error)
         error.error_handle_mode = True
         program.set_runmode()
+        # FIXME: this is undefined, does not get reset
         events.enable_events = False
         return True
     else:
