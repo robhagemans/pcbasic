@@ -321,10 +321,8 @@ def read_entry(ins, end=util.end_line, ends=util.end_statement):
 
 
 
-def parse_prompt(ins):
+def parse_prompt(ins, question_mark):
     # parse prompt
-    prompt = ''
-    following = ';'
     if util.skip_white_read_if(ins, '"'):
         # only literal allowed, not a string expression
         d = ins.read(1)
@@ -334,28 +332,28 @@ def parse_prompt(ins):
         if d == '\x00':
             ins.seek(-1,1)  
         following = util.skip_white_read(ins)
-        if following not in (';', ','):
+        if following == ';':
+            prompt += question_mark
+        elif following != ',':
             raise error.RunError(2)
-    return prompt, following
+    else:
+        prompt = question_mark
+    return prompt
 
 
 def exec_input(ins):
-    startpos = program.current_statement
-    util.skip_white(ins)
     finp = expressions.parse_file_number(ins)
     if finp != None:
         return exec_input_file(ins, finp)
     # ; to avoid echoing newline
     newline = not util.skip_white_read_if(ins, ';')
     # get the prompt
-    prompt, following = parse_prompt(ins)    
-    if following == ';':
-        prompt += '? '
+    prompt = parse_prompt(ins, '? ')    
     # get list of variables
     readvar = parse_var_list(ins)
     # move the program pointer to the start of the statement to ensure correct behaviour for CONT
     pos = ins.tell()
-    ins.seek(startpos)
+    ins.seek(program.current_statement)
     # read the input
     while True:
         console.write(prompt) 
@@ -453,7 +451,7 @@ def str_to_type(word, type_char):
 def exec_line_input(ins):
     util.skip_white(ins)
     finp = expressions.parse_file_number(ins)
-    if finp!=None:
+    if finp != None:
         # get string variable
         #util.skip_white(ins)
         readvar, indices = expressions.get_var_or_array_name(ins)
@@ -464,7 +462,7 @@ def exec_line_input(ins):
     # ; to avoid echoing newline
     newline = not util.skip_white_read_if(ins,';')
     # get prompt    
-    prompt, following = parse_prompt(ins)    
+    prompt = parse_prompt(ins, '')    
     # get string variable
     readvar,indices = expressions.get_var_or_array_name(ins)
     # read the input
