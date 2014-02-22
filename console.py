@@ -314,19 +314,18 @@ def delete_char(crow, ccol):
 
 def read():
     global row, col, apage 
-    insert = False
-    c = ''
-    inp = ''
+    set_line_cursor(True) 
+    c, inp = '', ''
     while c != '\x0d': 
         # wait_char returns a string of ascii and MS-DOS/GW-BASIC style keyscan codes
         c = wait_char() 
         if echo_read != None:
             echo_read.write(c)
         pos = 0
-        while pos<len(c):
+        while pos < len(c):
             d = c[pos]
             pos += 1
-            if d == '\x00' and len(c)>pos:
+            if d == '\x00' and len(c) > pos:
                 d += c[pos]
                 pos += 1
             if d == '\x03':            # <CTRL+C>, probably already caught in wait_char()
@@ -335,22 +334,22 @@ def read():
                 sound.beep()    
             elif d == '\x08':                   # <BACKSPACE>
                 inp = inp[:-1]
-                if col==1:
-                    if row>1 and apage.wrap[row-2]:
-                        col=apage.end[row-2] #+1
-                        row-=1
+                if col == 1:
+                    if row > 1 and apage.wrap[row-2]:
+                        col = apage.end[row-2] 
+                        row -= 1
                     else:
-                        col=1
+                        col = 1
                 else: 
-                    col=col-1
-                delete_char(row,col)
+                    col -= 1
+                delete_char(row, col)
                 if col >= 1:
                     set_pos(row, col)
                 else:
                     set_pos(row, 1)
             elif d == '\x09':                  #  <TAB> or <CTRL+I>
                 inp = inp[:-1]
-                if not insert:
+                if cursor_is_line:
                     set_pos(row, col+8, scroll_ok=False)
                 else:
                     for _ in range(8):
@@ -363,12 +362,12 @@ def read():
                     for _ in range(width-col+1):
                         insert_char(row, col, ' ', attr)
                     redraw_row(col-1, row)
-                    apage.end[row-1]=col-1 
+                    apage.end[row-1] = col-1 
                 else:
                     crow = row
-                    while apage.wrap[crow-1] and crow<scroll_height:
-                        crow+=1
-                    if crow>=scroll_height:
+                    while apage.wrap[crow-1] and crow < scroll_height:
+                        crow += 1
+                    if crow >= scroll_height:
                         scroll()
                     scroll_down(row+1)
                 # LF connects lines like word wrap
@@ -379,19 +378,15 @@ def read():
             elif d == '\x00\x75' or d == '\x05':   # <CTRL+END> <CTRL+E>
                 clear_rest_of_line(row, col)   
             elif d == '\x00\x48' or d == '\x1E':   # <UP> <CTRL+6>
-                insert = False
                 set_line_cursor(True)
                 set_pos(row-1, col, scroll_ok=False)
             elif d == '\x00\x50' or d == '\x1F':   # <DOWN> <CTRL+->
-                insert = False
                 set_line_cursor(True)
                 set_pos(row+1, col, scroll_ok=False)
             elif d == '\x00\x4D' or d == '\x1C':   # <RIGHT> <CTRL+\>
-                insert = False
                 set_line_cursor(True)
                 set_pos(row, col+1, scroll_ok=False)
             elif d == '\x00\x4B' or d == '\x1D':   # <LEFT> <CTRL+]>
-                insert = False
                 set_line_cursor(True)
                 set_pos(row, col-1, scroll_ok=False)
             elif d == '\x00\x74' or d == '\x06':   # <CTRL+RIGHT> or <CTRL+F>
@@ -399,16 +394,13 @@ def read():
             elif d == '\x00\x73' or d == '\x02':   # <CTRL+LEFT> or <CTRL+B>
                 skip_word_left() 
             elif d == '\x00\x52' or d == '\x12':   # <INS> <CTRL+R>
-                insert = not insert
-                set_line_cursor(not insert)  
+                set_line_cursor(not cursor_is_line)  
             elif d == '\x00\x53' or d == '\x7F':   # <DEL> <CTRL+BACKSPACE>
                 delete_char(row, col)
             elif d == '\x00\x47' or d == '\x0B':   # <HOME> <CTRL+K>
-                insert = False
                 set_line_cursor(True)
                 set_pos(1,1)
             elif d == '\x00\x4F' or d == '\x0E':   # <END> <CTRL+N>
-                insert = False
                 set_line_cursor(True)
                 while apage.wrap[row-1] and row<height:
                     row += 1
@@ -419,40 +411,38 @@ def read():
                 print_screen()
             elif d[0] not in control + ('\x00',): 
                 inp += d
-                if insert:
-                    insert_char(row,col, d, attr)
+                if not cursor_is_line:
+                    insert_char(row, col, d, attr)
                     redraw_row(col-1, row)
                     set_pos(row, col+1)
                 else:    
                     put_char(d)
-    insert = False
     set_line_cursor(True)
     return inp  
 
 def read_screenline(write_endl=True, from_start=False):
     global row, col, apage
-    prompt_row = row
-    prompt_col = col
+    prompt_row, prompt_col = row, col
     savecurs = show_cursor() 
     read()
     show_cursor(savecurs)
     # find start of wrapped block
     crow = row
-    while crow>1 and apage.wrap[crow-2]:
-        crow-=1
+    while crow > 1 and apage.wrap[crow-2]:
+        crow -= 1
     line = []
     # add lines 
-    while crow<height:
+    while crow < height:
         add = apage.charbuf[crow-1][:apage.end[crow-1]]
         # exclude prompt, if any
         if crow == prompt_row and not from_start:
             add = add[prompt_col-1:]
         line += add
         if apage.wrap[crow-1]:
-            if apage.end[crow-1]<width:
+            if apage.end[crow-1] < width:
                 # wrap before end of line means LF
                 line += '\x0a'
-            crow+=1
+            crow += 1
         else:
             break
     # go to last line
@@ -460,7 +450,7 @@ def read_screenline(write_endl=True, from_start=False):
     if write_endl:
         write(util.endl)
     # remove trailing whitespace 
-    while len(line)>0 and line[-1] in util.whitespace:
+    while len(line) > 0 and line[-1] in util.whitespace:
         line = line[:-1]
     return ''.join(line[:255])    
 
