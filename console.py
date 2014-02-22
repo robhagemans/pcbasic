@@ -94,14 +94,6 @@ screen_mode = -1
 num_colours = 32    
 num_palette = 64
 
-# pen and stick
-pen_is_on = False
-stick_is_on = False
-
-
-# KEY ON?
-keys_visible = False
-
 mode_data = {
     #  font_height, attr, colour_depth, width, num_pages
     0: ( 16, ( 7, 0), (32, 64), 80, 4 ),
@@ -111,6 +103,31 @@ mode_data = {
     8: (  8, (15, 0), (16, 16), 80, 4 ),
     9: ( 14, (15, 0), (16, 64), 80, 2 ),
     }
+
+
+# pen and stick
+pen_is_on = False
+stick_is_on = False
+
+
+# KEY ON?
+keys_visible = False
+
+# default codes for KEY autotext
+key_replace = [ 'LIST ', 'RUN\x0d', 'LOAD"', 'SAVE"', 'CONT\x0d', ',"LPT1:"\x0d','TRON\x0d', 'TROFF\x0d', 'KEY ', 'SCREEN 0,0,0\x0d' ]
+
+# KEY replacement    
+# apply KEY autotext to scancodes
+def replace_key(c):
+    if len(c) < 2 or c[0] != '\x00':
+        return c
+    # only check F1-F10
+    for keynum in range(10):
+        # enabled means enabled for ON KEY events 
+        if c == key_numbers[keynum] and (not program.runmode() or not events.key_enabled[keynum]): 
+            return key_replace[keynum]
+    return c
+
 
 
 def init():
@@ -700,7 +717,7 @@ def show_keys():
     store_attr = get_attr()
     save_curs = show_cursor(False)
     for i in range(width/8):
-        text = list(events.key_replace[i][:6])
+        text = list(key_replace[i][:6])
         for j in range(len(text)):
             if text[j] == '\x0d':   #  CR
                 text[j] = '\x1b'  # arrow left
