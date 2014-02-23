@@ -719,10 +719,10 @@ def show_keys():
     store_attr = get_attr()
     save_curs = show_cursor(False)
     for i in range(width/8):
-        text = list(key_replace[i][:6])
+        text = bytearray(key_replace[i][:6])
         for j in range(len(text)):
-            if text[j] == '\x0d':   #  CR
-                text[j] = '\x1b'  # arrow left
+            if text[j] == 0x0d:   #  CR
+                text[j] = 0x1b  # arrow left
         # allow pos=25 without scroll, this is reset as soon as row changes again.
         last_row_on()
         set_pos(25, 1+i*8)
@@ -736,7 +736,7 @@ def show_keys():
                 set_attr(0, 7)
             else:
                 set_attr(7, 0)
-        write(''.join(text), no_echo=True)
+        write(str(text), no_echo=True)
         set_attr(*store_attr)
         write(' '*(6-len(text)), no_echo=True)
         write(' ', no_echo=True)

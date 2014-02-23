@@ -151,18 +151,21 @@ def exec_palette(ins):
 def exec_key(ins):
     d = util.skip_white(ins)
     if d == '\x95': # ON
+        ins.read(1)
         if not console.keys_visible:
            console.show_keys()
     elif d == '\xdd': # OFF
+        ins.read(1)
         if console.keys_visible:
            console.hide_keys()   
     elif d == '\x93': # LIST
+        ins.read(1)
         for i in range(10):
-            text = list(console.key_replace[i])
+            text = bytearray(console.key_replace[i])
             for j in range(len(text)):
-                if text[j]=='\x0d':   #  CR
-                    text[j] = '\x1b'  # arrow left
-            console.write('F'+str(i+1)+' '+''.join(text)+util.endl)    
+                if text[j] == 0x0d:   #  CR
+                    text[j] = 0x1b  # arrow left
+            console.write('F'+str(i+1)+' '+str(text)+util.endl)    
     elif d == '(':
         # key (n)
         num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
@@ -183,13 +186,14 @@ def exec_key(ins):
         # only length-2 expressions can be assigned to KEYs over 10
         # (in which case it's a key scancode definition, which is not implemented)
         if keynum <= 10:
-            console.key_replace[keynum] = text
+            console.key_replace[keynum-1] = str(text)
+            console.show_keys()
         else:
             if len(text) != 2:
                raise error.RunError(5)
             # can't redefine scancodes for keys 1-14
             if keynum >= 15 and keynum <= 20:    
-                events.event_keys[keynum-1] = text
+                events.event_keys[keynum-1] = str(text)
     util.require(ins, util.end_statement)        
 
 
