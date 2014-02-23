@@ -40,7 +40,7 @@ class EventHandler(object):
         if command_char == '\x95': 
             # ON
             self.enabled = True
-            self.stopped = True
+            self.stopped = False
         elif command_char == '\xDD': 
             # OFF
             self.enabled = False

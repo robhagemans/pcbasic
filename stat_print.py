@@ -156,18 +156,18 @@ def exec_key(ins):
     elif d == '\xdd': # OFF
         if console.keys_visible:
            console.hide_keys()   
-    elif d== '\x93': # LIST
+    elif d == '\x93': # LIST
         for i in range(10):
             text = list(console.key_replace[i])
             for j in range(len(text)):
                 if text[j]=='\x0d':   #  CR
                     text[j] = '\x1b'  # arrow left
             console.write('F'+str(i+1)+' '+''.join(text)+util.endl)    
-    elif d=='(':
+    elif d == '(':
         # key (n)
         num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
         util.range_check(0, 255, num)
-        d = util.skip_white_read(ins)
+        d = util.skip_white(ins)
         # others are ignored
         if num >= 1 and num <= 20:
             if events.key_handlers[num-1].command(d):
@@ -190,8 +190,7 @@ def exec_key(ins):
             # can't redefine scancodes for keys 1-14
             if keynum >= 15 and keynum <= 20:    
                 events.event_keys[keynum-1] = text
-    # rest of statement is ignored
-    util.skip_to(ins, util.end_statement)
+    util.require(ins, util.end_statement)        
 
 
 def exec_locate(ins):
