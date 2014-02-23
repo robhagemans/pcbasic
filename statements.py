@@ -460,5 +460,70 @@ def exec_strig(ins):
         raise error.RunError(2)
     util.require(ins, util.end_statement)
 
+# COM (n) ON, OFF, STOP
+def exec_com(ins):    
+    util.require(ins, ('(',))
+    num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
+    util.range_check(1, 2, num)
+    if events.com_handlers[num].command(util.skip_white(ins)):
+        ins.read(1)
+    else:    
+        raise error.RunError(2)
+    util.require(ins, util.end_statement)
 
+# TIMER ON, OFF, STOP
+def exec_timer(ins):
+    if events.timer_handler.command(util.skip_white(ins)):
+        ins.read(1)
+    else:    
+        raise error.RunError(2)
+    util.require(ins, util.end_statement)      
+
+# event definitions
+
+def parse_on_event(ins, bracket=True):
+    if bracket:
+        num = expressions.parse_bracket(ins)
+    util.require_read(ins, ('\x8D',)) # GOSUB
+    jumpnum = util.parse_jumpnum(ins)
+    if jumpnum == 0:
+        jumpnum = None
+    util.require(ins, util.end_statement)    
+    return num, jumpnum   
+
+def exec_on_key(ins):
+    keynum, jumpnum = parse_on_event(ins)
+    keynum = vartypes.pass_int_unpack(keynum)
+    util.range_check(1, 20, keynum)
+    events.key_handlers[keynum-1].gosub = jumpnum
+
+def exec_on_timer(ins):
+    timeval, jumpnum = parse_on_event(ins)
+    timeval = vartypes.pass_single_keep(timeval)
+    events.timer_period = fp.mul(fp.unpack(timeval), fp.Single.from_int(1000).round_to_int())
+    events.timer_handler.gosub = jumpnum
+
+def exec_on_play(ins):
+    playval, jumpnum = parse_on_event(ins)
+    playval = vartypes.pass_int_unpack(playval)
+    events.play_trig = playval
+    events.play_handler.gosub = jumpnum
+    
+def exec_on_pen(ins):
+    strigval, jumpnum = parse_on_event(ins, bracket=False)
+    events.pen_handler.gosub = jumpnum
+    
+def exec_on_strig(ins):
+    strigval, jumpnum = parse_on_event(ins)
+    strigval = vartypes.pass_int_unpack(strigval)
+    ## 0 -> [0][0] 2 -> [0][1]  4-> [1][0]  6 -> [1][1]
+    if num not in (0,2,4,6):
+        raise error.RunError(5)
+    events.strig_handler[strigval//2].gosub = jumpnum
+    
+def exec_on_com(ins):
+    keynum, jumpnum = parse_on_event(ins)
+    keynum = vartypes.pass_int_unpack(keynum)
+    util.range_check(1, 2, num)
+    events.com_handlers[keynum-1].gosub = jumpnum
 
