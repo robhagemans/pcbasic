@@ -32,9 +32,24 @@ class EventHandler(object):
             # stop event while handling it
             self.stopped = True 
             # execute 'ON ... GOSUB' subroutine; attach self to allow un-stopping event on RETURN
-            program.gosub_return.append([program.current_codestream.tell(), program.linenum, program.current_codestream, self])
+            program.gosub_return.append((program.current_codestream.tell(), program.linenum, program.current_codestream, self))
             # and go there.
             program.jump(self.gosub)
+
+    def command(self, command_char):
+        if command_char == '\x95': 
+            # ON
+            self.enabled = True
+            self.stopped = True
+        elif command_char == '\xDD': 
+            # OFF
+            self.enabled = False
+        elif command_char == '\x90': 
+            # STOP
+            self.stopped = True
+        else:
+            return False
+        return True
         
 
 def reset_events():

@@ -170,14 +170,9 @@ def exec_key(ins):
         d = util.skip_white_read(ins)
         # others are ignored
         if num >= 1 and num <= 20:
-            if d=='\x95': # ON
-                events.key_handlers[num-1].enabled = True
-                events.key_handlers[num-1].stopped = False
-            elif d=='\xDD': # OFF
-                events.key_handlers[num-1].enabled = False
-            elif d=='\x90': # STOP
-                events.key_handlers[num-1].stopped = True
-            else:
+            if events.key_handlers[num-1].command(d):
+                ins.read(1)
+            else:    
                 raise error.RunError(2)
     else:
         # key n, "TEXT"    

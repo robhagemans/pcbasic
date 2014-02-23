@@ -908,57 +908,43 @@ def scroll_down(from_line):
     del apage.wrap[scroll_height-1]
     show_cursor(save_curs)
 
-def pen_on():
-    global pen_is_on
-    pen_is_on = True
-
-def pen_off():
-    global pen_is_on
-    pen_is_on=False    
 
 def get_pen_pos():
-    if pen_is_on and backend.supports_pen:
+    if events.pen_handler.enabled and backend.supports_pen:
         return backend.get_pen_pos()
     else:    
         return (0,0)
     
 def get_pen_pos_char():
-    if pen_is_on and backend.supports_pen:
+    if events.pen_handler.enabled and backend.supports_pen:
         return backend.get_pen_pos_char()
     else:    
         return (1, 1)
     
 def get_last_pen_down_pos():
-    if pen_is_on and backend.supports_pen:
+    if events.pen_handler.enabled and backend.supports_pen:
         return backend.get_last_pen_down_pos()
     else:    
         return (0, 0)
            
 def get_last_pen_down_pos_char():
-    if pen_is_on and backend.supports_pen:
+    if events.pen_handler.enabled and backend.supports_pen:
         return backend.get_last_pen_down_pos_char()
     else:    
         return (1, 1)
                 
 def pen_is_down():
-    if pen_is_on and backend.supports_pen:
+    if events.pen_handler.enabled and backend.supports_pen:
         return backend.pen_is_down()
     else:
         return False
 
 def pen_has_been_down():
-    if pen_is_on and backend.supports_pen:
+    if events.pen_handler.enabled and backend.supports_pen:
         return backend.pen_has_been_down()
     else:
         return False
   
-def stick_on():
-    global stick_is_on
-    stick_is_on = True
-
-def stick_off():
-    global stick_is_on
-    stick_is_on = False    
   
 def stick_coord(num):
     if stick_is_on and backend.supports_stick:
