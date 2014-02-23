@@ -311,26 +311,23 @@ def exec_on_jump(ins):
         onvar = 0
     else:
         onvar = vartypes.pass_int_unpack(on)
+    util.range_check(0, 255, onvar)
     command = util.skip_white_read(ins)
     jumps = []
     while True:
         d = util.skip_white_read(ins)
         if d in util.end_statement:
-            if d != '':
-                ins.seek(-1,1)
+            ins.seek(-len(d), 1)
             break
         elif d in ('\x0d', '\x0e'):
             jumps.append( ins.tell()-1 ) 
             ins.read(2)
-            #uint_to_value(ins.read(2)))
         elif d == ',':
             pass    
         else:  
             raise error.RunError(2)
     if jumps == []:
         raise error.RunError(2)
-    if onvar < 0:
-        raise error.RunError(5)
     elif onvar > 0 and onvar <= len(jumps):
         ins.seek(jumps[onvar-1])        
         if command == '\x89': # GOTO
@@ -343,7 +340,7 @@ def exec_on_error(ins):
     util.require_read(ins, ('\x89',))  # GOTO
     error.on_error = util.parse_jumpnum(ins)
     # ON ERROR GOTO 0 in error handler
-    if error.on_error==0 and error.error_handle_mode:
+    if error.on_error == 0 and error.error_handle_mode:
         # re-raise the error so that execution stops
         raise error.RunError(error.errn)
     # this will be caught by the trapping routine just set
