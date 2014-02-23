@@ -41,18 +41,9 @@ def exec_sound(ins):
 
     
 def exec_play(ins):
-    d = util.skip_white(ins)
-    if d == '\x95':   # ON
+    if events.play_handler.command(util.skip_white(ins)):
         ins.read(1)
-        events.play_handler.enabled = True
-        events.play_handler.stopped = False
-    elif d == '\xdd': # OFF
-        ins.read(1)
-        events.play_handler.enabled = False
-    elif d== '\x90':  # STOP
-        ins.read(1)
-        events.play_handler.stopped = True
-    else:
+    else:    
         # retrieve Music Macro Language string
         mml = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_expression)

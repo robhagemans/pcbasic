@@ -33,18 +33,13 @@ def exec_cont(ins):
         program.bytecode.seek(program.stop[0])
         program.linenum = program.stop[1]
         program.set_runmode()
-
-
     # IN GW-BASIC, weird things happen if you do GOSUB nn :PRINT "x"
     # and there's a STOP in the subroutine. 
     # CONT then continues and the rest of the original line is executed, printing x
     # However, CONT:PRINT triggers a bug - a syntax error in a nonexistant line number is reported.
     # CONT:PRINT "y" results in neither x nor y being printed.
     # if a command is executed before CONT, x is not printed.
-    
     # in this implementation, the CONT command will overwrite the line buffer so x is not printed.
-    
-    
 
 def exec_error(ins):
     errn = vartypes.pass_int_unpack(expressions.parse_expression(ins))
@@ -52,7 +47,6 @@ def exec_error(ins):
         # illegal function call
         errn = 5 
     raise error.RunError(errn)                
-    
 
 def exec_end(ins):
     util.require(ins, util.end_statement)
@@ -60,12 +54,10 @@ def exec_end(ins):
     program.bytecode.seek(0)
     program.unset_runmode()
     fileio.close_all()
-
               
 def exec_else(ins):
     # any else statement by itself means the THEN has already been executed, so it's really like a REM.
     util.skip_to(ins, util.end_line)    
-
 
 def exec_while(ins, first=True):
     # just after WHILE opcode
@@ -91,8 +83,7 @@ def exec_while(ins, first=True):
         [whilepos, program.linenum, wendpos] = program.while_wend_stack.pop()
         ins.seek(wendpos)
 
-
-def exec_for(ins): #, first=True):
+def exec_for(ins): 
     # just after FOR opcode
     forpos = ins.tell()
     # read variable  
@@ -120,8 +111,6 @@ def exec_for(ins): #, first=True):
     # check condition and jump if necessary
     for_jump_if_ends(ins, loopvar, stop, step)
     
-
-    
 def for_push_next(ins, forpos, varname, start, stop, step):    
     # find matching NEXT
     current = ins.tell()
@@ -148,8 +137,6 @@ def for_push_next(ins, forpos, varname, start, stop, step):
         # NEXT without FOR
         raise error.RunError(1, nextline)
     ins.seek(current)    
-    
-    
 
 def for_iterate(ins):    
     # skip to end of FOR statement
@@ -161,8 +148,6 @@ def for_iterate(ins):
     var.set_var(varname, loopvar)
     # check condition and jump if necessary
     for_jump_if_ends(ins, loopvar, stop, step)
-    
-    
     
 def for_jump_if_ends(ins, loopvar, stop, step):
     if for_loop_ends(loopvar, stop, step):
@@ -181,8 +166,6 @@ def for_jump_if_ends(ins, loopvar, stop, step):
             ins.read(1)
             exec_next(ins, True)
         # we should be at end statement at this point.
-
-
     
 def for_loop_ends(loopvar, stop, step):
     # check TO condition
@@ -194,7 +177,6 @@ def for_loop_ends(loopvar, stop, step):
     elif sgn > 0:
         loop_ends = vartypes.int_to_bool(vartypes.number_gt(loopvar, stop)) 
     return loop_ends
-            
 
 def exec_next(ins, comma=False):
     curpos = ins.tell()
@@ -230,15 +212,11 @@ def exec_next(ins, comma=False):
     program.linenum = forline
     ins.seek(forpos)
     for_iterate(ins)
-    
-
-
 
 def exec_goto(ins):    
     jumpnum = util.parse_jumpnum(ins)    
     util.skip_to(ins, util.end_statement)
     program.jump(jumpnum)
-
     
 def exec_run(ins):
     # reset random number generator
@@ -256,16 +234,14 @@ def exec_run(ins):
     else:
         program.reset_program()
     program.set_runmode()
-
                 
 def exec_gosub(ins):
     jumpnum = util.parse_jumpnum(ins)
     # ignore rest of statement ('GOSUB 100 LAH' works just fine..) 
     util.skip_to(ins, util.end_statement)
     # set return position
-    program.gosub_return.append([ins.tell(), program.linenum, ins])
+    program.gosub_return.append((ins.tell(), program.linenum, ins, None))
     program.jump(jumpnum)
-
  
 def exec_if(ins):
     util.skip_white(ins) 
@@ -311,7 +287,6 @@ def exec_if(ins):
                 break
         return            
 
-
 def exec_wend(ins):
     # while will actually syntax error on the first run if anything is in the way.
     util.require(ins, util.end_statement)
@@ -329,7 +304,6 @@ def exec_wend(ins):
     program.linenum = whileline
     ins.seek(whilepos)
     exec_while(ins, False)
-
 
 def exec_on_jump(ins):    
     on = expressions.parse_expression(ins)
@@ -365,32 +339,27 @@ def exec_on_jump(ins):
             exec_gosub(ins)
     util.skip_to(ins, util.end_statement)    
 
-
-def parse_on_event(ins):
-    num = expressions.parse_bracket(ins)
+def parse_on_event(ins, bracket=True):
+    if bracket:
+        num = expressions.parse_bracket(ins)
     util.require_read(ins, ('\x8D',)) # GOSUB
     jumpnum = util.parse_jumpnum(ins)
     if jumpnum == 0:
-        jumpnum = -1
+        jumpnum = None
     util.require(ins, util.end_statement)    
     return num, jumpnum   
-    
-
 
 def exec_on_key(ins):
     keynum, jumpnum = parse_on_event(ins)
     keynum = vartypes.pass_int_unpack(keynum)
-    if keynum < 1 or keynum > 20:    
-        raise error.RunError(5)
+    util.range_check(1, 20, keynum)
     events.key_handlers[keynum-1].gosub = jumpnum
-    
 
 def exec_on_timer(ins):
     timeval, jumpnum = parse_on_event(ins)
     timeval = vartypes.pass_single_keep(timeval)
     events.timer_period = fp.mul(fp.unpack(timeval), fp.Single.from_int(1000).round_to_int())
     events.timer_handler.gosub = jumpnum
-    
 
 def exec_on_play(ins):
     playval, jumpnum = parse_on_event(ins)
@@ -398,24 +367,17 @@ def exec_on_play(ins):
     events.play_trig = playval
     events.play_handler.gosub = jumpnum
     
-    
 def exec_on_pen(ins):
-    util.require_read(ins, ('\x8D',)) # GOSUB
-    jumpnum = util.parse_jumpnum(ins)
-    if jumpnum == 0:
-        jumpnum = -1
-    util.require(ins, util.end_statement)    
+    strigval, jumpnum = parse_on_event(ins, bracket=False)
     events.pen_handler.gosub = jumpnum
-    
     
 def exec_on_strig(ins):
     strigval, jumpnum = parse_on_event(ins)
     strigval = vartypes.pass_int_unpack(strigval)
     ## 0 -> [0][0] 2 -> [0][1]  4-> [1][0]  6 -> [1][1]
-    #joy = strigval // 4
-    #trig = (strigval // 2)%2
+    if num not in (0,2,4,6):
+        raise error.RunError(5)
     events.strig_handler[strigval//2].gosub = jumpnum
-    
     
 def exec_on_com(ins):
     keynum, jumpnum = parse_on_event(ins)
@@ -423,42 +385,24 @@ def exec_on_com(ins):
     util.range_check(1, 2, num)
     events.com_handlers[keynum-1].gosub = jumpnum
 
-
+# COM (n) ON, OFF, STOP
 def exec_com(ins):    
     util.require(ins, ('(',))
-    # com (n)
     num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
     util.range_check(1, 2, num)
-    d = util.skip_white_read(ins)
-    if d == '\x95': # ON
-        events.com_handlers[num-1].enabled = True
-        events.com_handlers[num-1].stopped = False
-    elif d == '\xDD': # OFF
-        events.com_handlers[num-1].enabled = False
-    elif d == '\x90': # STOP
-        events.com_handlers[num-1].stopped = True
-    else:
+    if events.com_handlers[num].command(util.skip_white(ins)):
+        ins.read(1)
+    else:    
         raise error.RunError(2)
     util.require(ins, util.end_statement)
 
-
+# TIMER ON, OFF, STOP
 def exec_timer(ins):
-    # ON, OFF, STOP
-    d = util.skip_white(ins)
-    if d == '\x95': # ON
+    if events.timer_handler.command(util.skip_white(ins)):
         ins.read(1)
-        events.timer_start = oslayer.timer_milliseconds()
-        events.timer_handler.enabled = True
-    elif d == '\xdd': # OFF
-        ins.read(1)
-        events.timer_handler.enabled = False
-    elif d == '\x90': #STOP
-        ins.read(1)
-        events.timer_handler.stopped = True
-    else:
-        raise error.RunError(2)      
+    else:    
+        raise error.RunError(2)
     util.require(ins, util.end_statement)      
-
 
 def exec_on_error(ins):
     util.require_read(ins, ('\x89',))  # GOTO
@@ -469,7 +413,6 @@ def exec_on_error(ins):
         raise error.RunError(error.errn)
     # this will be caught by the trapping routine just set
     util.require(ins, util.end_statement)
-    
         
 def exec_resume(ins):
     if error.error_resume == None: # resume without error
@@ -500,7 +443,6 @@ def exec_resume(ins):
     error.error_handle_mode = False
     error.error_resume = None
 
-
 def exec_return(ins):
     # return *can* have a line number
     if util.skip_white(ins) not in util.end_statement:    
@@ -509,30 +451,26 @@ def exec_return(ins):
         util.skip_to(ins, util.end_statement)    
     else:
         jumpnum = None
-    if program.gosub_return == []: 
+    try:
+        pos, orig_linenum, buf, handler = program.gosub_return.pop()
+    except IndexError:
         # RETURN without GOSUB
         raise error.RunError(3)
+    # returning from ON (event) GOSUB, re-enable event
+    if handler:
+        # TODO: what if it was stopped explicitly using (event) STOP?
+        handler.stopped = False
+    if jumpnum == None:
+        if buf != ins:
+            # move to end of program to avoid executing anything else on the RETURN line if called from direct mode   
+            ins.seek(-1)
+            program.unset_runmode()
+        # go back to position of GOSUB
+        program.linenum = orig_linenum 
+        buf.seek(pos)
     else:
-        # a tad inelegant...
-        data = program.gosub_return.pop()
-        if len(data) == 3:
-            [pos, orig_linenum, buf] = data
-        elif len(data) == 4:
-            # returning from ON (event) GOSUB, re-enable event
-            [pos, orig_linenum, buf, handler] = data
-            if handler:
-                handler.stopped = False
-        if jumpnum == None:
-            if buf != ins:
-                # move to end of program to avoid executing anything else on the RETURN line if called from direct mode   
-                ins.seek(-1)
-                program.unset_runmode()
-            # go back to position of GOSUB
-            program.linenum = orig_linenum 
-            buf.seek(pos)
-        else:
-            # jump to specified line number 
-            program.jump(jumpnum)
+        # jump to specified line number 
+        program.jump(jumpnum)
         
 def exec_stop(ins):
     util.require(ins, util.end_statement)

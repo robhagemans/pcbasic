@@ -314,42 +314,33 @@ def parse_statement():
         raise error.RunError(2)
     return True
 
-
 #################################################################    
 #################################################################
-
-
 
 exec_defstr = partial(exec_deftype, typechar='$')
 exec_defint = partial(exec_deftype, typechar='%')
 exec_defsng = partial(exec_deftype, typechar='!')
 exec_defdbl = partial(exec_deftype, typechar='#')
 
-
-
 def exec_system(ins): 
     # SYSTEM LAH does not execute 
     util.require(ins, util.end_statement)
     run.exit() 
-
         
 def exec_tron(ins):
     global tron
-    tron=True
+    tron = True
     # TRON LAH gives error, but TRON has been executed
     util.require(ins, util.end_statement)
-    
 
 def exec_troff(ins):
     global tron
     tron = False
     util.require(ins, util.end_statement)
-       
 
 def exec_rem(ins):
     # skip the rest of the line, but parse numbers to avoid triggering EOL
     util.skip_to(ins, util.end_line)
-    
 
 # MOTOR does nothing
 def exec_motor(ins):
@@ -358,7 +349,6 @@ def exec_motor(ins):
     else:
         vartypes.pass_int_keep(expressions.parse_expression(ins))
         util.require(ins, util.end_statement)
-
 
 ##########################################################
 # statements that require further qualification
@@ -377,13 +367,11 @@ def exec_def(ins):
     else:        
         raise error.RunError(2)      
 
-
 def exec_view(ins):
     if util.skip_white_read_if(ins, '\x91'):  #PRINT
         exec_view_print(ins)
     else:
         exec_view_graph(ins)
-        
     
 def exec_line(ins):
     if util.skip_white_read_if(ins, '\x85'): #INPUT
@@ -391,20 +379,17 @@ def exec_line(ins):
     else:
         exec_line_graph(ins)
 
-
 def exec_get(ins):
     if util.skip_white(ins)=='(':
         exec_get_graph(ins)
     else:    
         exec_get_file(ins)
     
-    
 def exec_put(ins):
     if util.skip_white(ins)=='(':
         exec_put_graph(ins)
     else:    
         exec_put_file(ins)
-
 
 def exec_on(ins):
     c = util.skip_white(ins)
@@ -441,58 +426,39 @@ def exec_on(ins):
             return
     exec_on_jump(ins)
 
-
-
 ##########################################################
-# pen and stick
-
+# event switches (except PLAY, KEY)
 
 # pen        
 def exec_pen(ins):
-    d = util.skip_white(ins)
-    if d=='\x95': # ON
+    if events.pen_handler.command(util.skip_white(ins)):
         ins.read(1)
-        events.pen_handler.enabled = True
-        events.pen_handler.stopped = False
-        console.pen_on()
-    elif d=='\xDD': # OFF
-        ins.read(1)
-        events.pen_handler.enabled = False
-        console.pen_off()
-    elif d=='\x90': # STOP
-        ins.read(1)
-        events.pen_handler.stopped = True
+    else:    
+        raise error.RunError(2)
     util.require(ins, util.end_statement)
 
 # strig: stick trigger        
 def exec_strig(ins):
     d = util.skip_white(ins)
-    if d=='(':
+    if d == '(':
         # strig (n)
         num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
         if num not in (0,2,4,6):
             raise error.RunError(5)
-        #joy = num//4
-        #trig = (num//2)%2
-        d = util.skip_white_read(ins)
-        if d == '\x95': # ON
-            events.strig_handlers[num//2].enabled = True
-            events.strig_handlers[num//2].stopped = True
-        elif d == '\xDD': # OFF
-            events.strig_handlers[num//2].enabled = False
-        elif d == '\x90': # STOP
-            events.strig_handlers[num//2].stopped = True
-        else:
+        # TODO: are they enabled if STRIG ON has not been called?
+        if events.strig_handlers[num//2].command(util.skip_white(ins)):
+            ins.read(1)
+        else:    
             raise error.RunError(2)
     elif d == '\x95': # ON
         ins.read(1)
-        console.stick_on()
+        console.stick_is_on = True
     elif d == '\xDD': # OFF
         ins.read(1)
-        console.stick_off()
+        console.stick_is_on = False
     else:
         raise error.RunError(2)
     util.require(ins, util.end_statement)
-    
-    
+
+
 
