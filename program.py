@@ -9,7 +9,6 @@
 # please see text file COPYING for licence terms.
 #
 
-
 import error
 import vartypes
 import var
@@ -21,14 +20,10 @@ import console
 
 from cStringIO import StringIO 
 
-
-#######################################################
-
 # program bytecode buffer
 bytecode = StringIO()
 # direct line buffer
 direct_line = StringIO()
-
 
 # for error handling - can be in program bytecode or in linebuf
 current_codestream = None
@@ -48,8 +43,8 @@ gosub_return = []
 for_next_stack = []
 while_wend_stack = []
 
+# stream position for CONT
 stop = None  
-
 
 # where are we READing DATA?
 data_pos=0
@@ -61,35 +56,22 @@ run_mode = False
 # show a prompt?
 prompt = True
 
-#######################################################
 
 def set_runmode(new_runmode=True):
     global run_mode, current_codestream
     run_mode = new_runmode
-    if run_mode:
-        current_codestream = bytecode
-    if not run_mode:
-        current_codestream = direct_line
+    current_codestream = bytecode if run_mode else direct_line
     
 def unset_runmode():
     set_runmode(False)
 
-def runmode():
-    return run_mode
-
 # get line number for stream position
 def get_line_number(pos): #, after=False):
     pre = -1
-    #post = 65536
     for linum in line_numbers:
         linum_pos = line_numbers[linum] 
-        #if linum_pos > pos and linum > post:
-        #    post = linum
         if linum_pos <= pos and linum < pre:
             pre = linum
-    #if after:
-    #    return post
-    #else:
     return pre
 
 # jump to line number    
@@ -140,7 +122,7 @@ def reset_program():
     while_wend_stack = []
     # disable error trapping
     error.error_resume = None
-    error.on_error=0
+    error.on_error = 0
     # reset err and erl
     error.reset_error()
     # reset event trapping
@@ -214,8 +196,7 @@ def store_line(linebuf, auto_mode=False):
     truncate_program(rest)
     bytecode.seek(0)
     preparse()
-    return scanline #linenum = scanline
-
+    return scanline 
 
 def delete_lines(fromline, toline):
     keys = sorted(line_numbers.keys())
@@ -254,7 +235,6 @@ def delete_lines(fromline, toline):
     bytecode.seek(0)
     preparse()
 
-
 def edit_line(from_line, pos=-1):
     global prompt
     # list line
@@ -272,7 +252,6 @@ def edit_line(from_line, pos=-1):
     # suppress prompt, move cursor?
     prompt = False
     console.set_pos(console.get_row()-1, 1)
-    
     
 def renumber(new_line=-1, start_line=-1, step=-1):
     # set defaults
@@ -312,10 +291,10 @@ def renumber(new_line=-1, start_line=-1, step=-1):
         jumpnum = vartypes.uint_to_value(s)
         newnum = -1
         for triplets in lines:
-            if triplets[0]==jumpnum:
+            if triplets[0] == jumpnum:
                 newnum = triplets[2]
         if newnum != -1:    
-            bytecode.seek(-2,1)
+            bytecode.seek(-2, 1)
             bytecode.write(vartypes.value_to_uint(newnum))
         else:
             # just a message, not an actual error. keep going.
@@ -346,7 +325,7 @@ def load(g):
     else:
         # TODO: check allowed first chars for ASCII file - > whitespace + nums? letters?
         # ASCII file, maybe
-        g.seek(-1,1)
+        g.seek(-1, 1)
         protected = False
         tokenise.tokenise_stream(g, bytecode)
         # terminate bytecode stream properly
@@ -359,13 +338,13 @@ def merge(g):
         # bad file mode
         raise error.RunError(54)
     else:
-        more=True
+        more = True
         while (more): #peek(g)=='' and not peek(g)=='\x1A':
             tempbuf = StringIO()
             more = tokenise.tokenise_stream(g, tempbuf, one_line=True)
             tempbuf.seek(0)
             c = util.peek(tempbuf) 
-            if c=='\x00':
+            if c == '\x00':
                 # line starts with a number, add to program memory
                 store_line(tempbuf)
             elif util.skip_white(tempbuf) in util.end_line:

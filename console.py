@@ -126,7 +126,7 @@ def replace_key(c):
     # only check F1-F10
     for keynum in range(10):
         # enabled means enabled for ON KEY events 
-        if c == events.event_keys[keynum] and (not program.runmode() or not events.key_handlers[keynum].enabled): 
+        if c == events.event_keys[keynum] and (not program.run_mode or not events.key_handlers[keynum].enabled): 
             return key_replace[keynum]
     return c
 
