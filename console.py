@@ -250,6 +250,7 @@ def write(s, scroll_ok=True, no_echo=False):
         elif c == '\x1F':   set_pos(row+1, col,scroll_ok)
         last = c
 
+
 def insert_char(crow, ccol, c, cattr):
     global apage
     while True:
@@ -476,7 +477,7 @@ def clear_line(the_row):
     global apage
     # find start of line
     srow = the_row
-    while srow>1 and apage.wrap[srow-2]:
+    while srow > 1 and apage.wrap[srow-2]:
         srow -= 1
     clear_rest_of_line(srow, 1)
 
@@ -496,7 +497,7 @@ def clear_rest_of_line(srow, scol):
     apage.wrap[srow-1] = False
     set_pos(srow, scol)
     backend.clear_row(srow, colours(attr)[1] & 0xf)
-    if scol>1:
+    if scol > 1:
         redraw_row(0, srow)
 
 def skip_word_right():
@@ -702,49 +703,62 @@ def clear():
         show_keys()
 
 
+keys_line_replace_chars = { 
+        '\x07': '\x0e',
+        '\x08': '\xfe',
+        '\x09': '\x1a',
+        '\x0A': '\x1b',
+        '\x0B': '\x7f',
+        '\x0C': '\x16',
+        '\x0D': '\x1b',
+        '\x1C': '\x10',
+        '\x1D': '\x11',
+        '\x1E': '\x18',
+        '\x1F': '\x19',
+    }        
+    
+def write_for_keys(s, col, cattr):
+    # write chars for the keys line - yes, it's different :)
+    # with no echo
+    for c in s:
+        if c == '\x00':
+            break
+        else:
+            try:
+                c = keys_line_replace_chars[c]
+            except KeyError:
+                pass    
+            backend.putc_at(25, col, c, cattr)    
+            apage.charbuf[24][col-1] = c
+            apage.attrbuf[24][col-1] = cattr
+        col += 1
+
+def clear_key_row():
+    apage.charbuf[24] = [' ']*width
+    apage.attrbuf[24] = [attr]*width
+    backend.clear_row(25, colours(attr)[1] & 0xf)
+
 def hide_keys():
     global keys_visible
     keys_visible = False
-    pos = get_pos()
-    last_row_on()
-    set_pos(25, 1)
-    write(' '*width, scroll_ok=False, no_echo=True)
-    set_pos(*pos)
-        
-                    
+    clear_key_row()
+                            
 def show_keys():
     global keys_visible
     keys_visible = True
-    pos = get_pos()
-    store_attr = get_attr()
-    save_curs = show_cursor(False)
+    clear_key_row()
     for i in range(width/8):
-        text = bytearray(key_replace[i][:6])
-        for j in range(len(text)):
-            if text[j] == 0x0d:   #  CR
-                text[j] = 0x1b  # arrow left
-        # allow pos=25 without scroll, this is reset as soon as row changes again.
-        last_row_on()
-        set_pos(25, 1+i*8)
-        set_attr(*store_attr)
-        if i == 9:
-            write('0', no_echo=True)
+        text = str(key_replace[i][:6])
+        kcol = 1+8*i
+        write_for_keys(str(i+1)[-1], kcol, attr)
+        if graphics.is_graphics_mode():
+            write_for_keys(text, kcol+1, attr)
         else:
-            write(str(i+1), no_echo=True)
-        if not graphics.is_graphics_mode():
-            if store_attr[1]==0:    
-                set_attr(0, 7)
+            if (attr>>4) & 0x7 == 0:    
+                write_for_keys(text, kcol+1, 0x70)
             else:
-                set_attr(7, 0)
-        write(str(text), no_echo=True)
-        set_attr(*store_attr)
-        write(' '*(6-len(text)), no_echo=True)
-        write(' ', no_echo=True)
-    set_pos(*pos)
-    set_attr(*store_attr)
-    show_cursor(save_curs)
+                write_for_keys(text, kcol+1, 0x07)
 
-        
 def set_view(start=1,stop=24):
     global view_start, scroll_height, view_set
     view_set = True    
@@ -842,7 +856,7 @@ def put_char(c):
         attr &= 0xf
     backend.putc_at(row, col, c, attr)    
     show_cursor(save_curs)
-    if row >0 and row <= height and col > 0 and col <= width:   
+    if row > 0 and row <= height and col > 0 and col <= width:   
         apage.charbuf[row-1][col-1] = c
         apage.attrbuf[row-1][col-1] = attr
         if apage.end[row-1] <= col-1:
