@@ -153,14 +153,14 @@ def parse_start_direct(linebuf):
    
 # error handler                
 def handle_error(e):
-    program.prompt=True  
-    if not program.runmode() or e.erl != -1:
+    program.prompt = True  
+    if not program.run_mode or e.erl != -1:
         errline = e.erl
     else:
         errline = program.linenum
     if isinstance(e, error.Break):
         write_error_message(e.msg, errline)
-        if program.runmode():
+        if program.run_mode:
             program.stop = [program.bytecode.tell(), program.linenum]
             program.unset_runmode()
         return False
@@ -168,7 +168,7 @@ def handle_error(e):
     error.set_error(e.err, errline)
     # don't jump if we're already busy handling an error
     if error.on_error != None and error.on_error != 0 and not error.error_handle_mode:
-        error.error_resume = program.current_statement, program.current_codestream, program.runmode()
+        error.error_resume = program.current_statement, program.current_codestream, program.run_mode
         program.jump(error.on_error)
         error.error_handle_mode = True
         program.set_runmode()

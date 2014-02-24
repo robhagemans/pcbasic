@@ -125,7 +125,7 @@ def for_push_next(ins, forpos, varname, start, stop, step):
     # no-var only allowed in standalone NEXT
     if varname2 == '':
         if d not in util.end_statement:
-            if program.runmode():
+            if program.run_mode:
                 nextline = program.get_line_number(nextpos)
             else:
                 nextline = -1
@@ -156,7 +156,7 @@ def for_jump_if_ends(ins, loopvar, stop, step):
         ins.seek(nextpos)
         d = util.skip_white(ins)
         if d not in util.end_statement+(',',):
-            if program.runmode():
+            if program.run_mode:
                 nextline = program.get_line_number(nextpos)
             else:
                 nextline = -1
@@ -202,7 +202,7 @@ def exec_next(ins, comma=False):
         if varname == varname2:
             util.skip_to(ins, util.end_statement)
         else:
-            if program.runmode():
+            if program.run_mode:
                 nextline = program.get_line_number(nextpos)
             else:
                 nextline = -1
