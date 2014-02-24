@@ -163,8 +163,10 @@ def exec_key(ins):
         for i in range(10):
             text = bytearray(console.key_replace[i])
             for j in range(len(text)):
-                if text[j] == 0x0d:   #  CR
-                    text[j] = 0x1b  # arrow left
+                try:
+                    text[j] = console.keys_line_replace_chars[chr(text[j])]
+                except KeyError:
+                    pass    
             console.write('F'+str(i+1)+' '+str(text)+util.endl)    
     elif d == '(':
         # key (n)
