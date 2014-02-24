@@ -500,7 +500,7 @@ def exec_on_key(ins):
 def exec_on_timer(ins):
     timeval, jumpnum = parse_on_event(ins)
     timeval = vartypes.pass_single_keep(timeval)
-    events.timer_period = fp.mul(fp.unpack(timeval), fp.Single.from_int(1000).round_to_int())
+    events.timer_period = fp.mul(fp.unpack(timeval), fp.Single.from_int(1000)).round_to_int()
     events.timer_handler.gosub = jumpnum
 
 def exec_on_play(ins):

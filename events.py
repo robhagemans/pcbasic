@@ -58,7 +58,7 @@ def reset_events():
     global pen_handler, strig_handlers
     global all_handlers
     # TIMER
-    timer_period, timer_start = vartypes.null['%'], vartypes.null['%']
+    timer_period, timer_start = 0, 0
     timer_handler = EventHandler()
     # KEY
     event_keys = [ 
@@ -90,9 +90,10 @@ def check_events():
     check_play_event()
     check_com_events()
     # PEN and STRIG are triggered elsewhere
-    # handle all events       
-    for handler in all_handlers:
-        handler.handle()
+    # handle all events
+    if program.run_mode:
+        for handler in all_handlers:
+            handler.handle()
 
 def check_timer_event():
     global timer_start
