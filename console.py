@@ -219,10 +219,9 @@ def set_palette_entry(index, colour):
 def get_palette_entry(index):
     return backend.get_palette_entry(index)
 
-def write(s, scroll_ok=True, no_echo=False):
+def write(s, scroll_ok=True): #, no_echo=False):
     global row, col, apage
-    if echo_write != None and not no_echo:
-        # don't echo keys line
+    if echo_write != None: # and not no_echo:
         echo_write.write(s)
     tab = 8
     last = ''
