@@ -54,7 +54,6 @@ def exec_name(ins):
         raise error.RunError(58)
     oslayer.safe(os.rename, str(oldname), str(newname))
     util.require(ins, util.end_statement)
-    
 
 def exec_kill(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
@@ -70,13 +69,13 @@ def exec_files(ins):
             # bad file name
             raise error.RunError(64)
         pathmask = pathmask.rsplit('\\', 1)
-        if len(pathmask)>1:
+        if len(pathmask) > 1:
             path = str(pathmask[0])
             if path == '':
                 path = '\\'
             mask = str(pathmask[1])
         else:
-            if pathmask[0] != '':
+            if pathmask[0]:
                 path = '.'
                 mask = str(pathmask[0])            
     mask = mask.upper()
@@ -99,7 +98,7 @@ def exec_files(ins):
     dosdirs = [ name+'<DIR>' for name in dosdirs ]
     dosfiles.sort()
     dosdirs.sort()    
-    output = dosdirs+dosfiles
+    output = dosdirs + dosfiles
     num = console.width/20
     if len(output) == 0:
         # file not found
@@ -161,7 +160,6 @@ def exec_time(ins):
     newtime = datetime.datetime(now.year, now.month, now.day, timelist[0], timelist[1], timelist[2], now.microsecond)
     oslayer.time_offset += newtime - now    
         
-        
 def exec_date(ins):
     util.require_read(ins, ('\xE7',)) # date$=
     # allowed formats:
@@ -175,7 +173,7 @@ def exec_date(ins):
     if len(datestr) < 8:
         raise error.RunError(5)
     while pos < len(datestr):
-        if listpos>2:
+        if listpos > 2:
             break
         c = chr(datestr[pos])
         if c in ('-', '/'):
@@ -205,5 +203,4 @@ def exec_date(ins):
     except ValueError:
         raise error.RunError(5)
     oslayer.time_offset += newtime - now    
-        
-
+    
