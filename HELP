@@ -1521,8 +1521,10 @@ KEY statement (string macro control)
 KEY { ON | OFF | LIST }
 -------------
 Turns string macros ON or OFF; if LIST is specified, produces a list of
-the 10 function keys with the string macros defined for those keys. A character
-chr$(13) is represented as a back arrow. 
+the 10 function keys with the string macros defined for those keys. Special 
+characters are represented by their symbol equivalent in the loaded codepage;
+some characters get a special representaation. E.g. chr$(13) is represented 
+as a back arrow. 
 
 
 KEY statement (string macro definition)
@@ -1542,7 +1544,12 @@ ERRORS:
 KEY statement (event trapping control)
 KEY ( key_id ) { ON | OFF | STOP } 
 -------------
-Controls event trapping of the key with identifier 'key_id'. 
+Controls event trapping of the key with identifier 'key_id'. If ON is specified
+event trapping is switched on; if OFF, off. STOP suspends event trapping until 
+another KEY() ON is executed. Up to one event can be triggered during 
+suspension, provided that event handling was switched on prior to suspension. 
+he event triggered during suspension is handled immediately after the next ..ON
+statement.
 'key_id' must be a number-valued expression in the range 1--20, inclusive. 
 Keys 1--10 are F1--F10. Keys 11--14 are:
     11  <UP>
@@ -1582,6 +1589,22 @@ ERRORS:
 -   If 'key_id' is not in [-32768, 32767], raises OVERFLOW.
 -   If 'key_id' is not in [1, 255], raises ILLEGAL FUNCTION CALL.
 -   If 'two_char_string' is longer than two, raises ILLEGAL FUNCTION CALL. 
+
+
+KILL statement
+KILL file_path
+--------------
+Deletes a file. 'file_path' must be a string-valued expression that specifies a
+valid path to an existing file with MS-DOS path separators (\). The extension 
+must be specified: no default extensions are assumed. KILL will first attempt 
+to delete a file with the name exactly as provided; this is case-sensitive if
+the file system is. If such a file does not exist, KILL attempts to delete the
+UPPERCASE 8.3 variant of the file name.  
+ERRORS:
+-   If the file 'file_path' is open, raises ...
+-   If the file 'file_path' does not exist, raises ...
+-   If the path does not exist, raises ...
+-   If the user has no write permission on the file, raises .... 
 
 
 LCOPY
