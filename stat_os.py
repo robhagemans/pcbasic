@@ -24,29 +24,20 @@ def exec_chdir(ins):
     if name == '':
         raise error.RunError(64)
     name = oslayer.dospath_read_dir(name, '', 76)
-    try:
-        os.chdir(str(name))
-    except EnvironmentError as ex:
-        oslayer.handle_oserror(ex)
+    oslayer.safe(os.chdir, str(name))
     util.require(ins, util.end_statement)
 
 def exec_mkdir(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     if name == '':
         raise error.RunError(64)
-    try:
-        os.mkdir(str(oslayer.dospath_write_dir(name,'', 76)))
-    except EnvironmentError as ex:
-        oslayer.handle_oserror(ex)
+    oslayer.safe(os.mkdir, str(oslayer.dospath_write_dir(name,'', 76)))
     util.require(ins, util.end_statement)
 
 def exec_rmdir(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     name = oslayer.dospath_read_dir(name, '', 76)
-    try:
-        os.rmdir(str(name))
-    except EnvironmentError as ex:
-        oslayer.handle_oserror(ex)
+    oslayer.safe(os.rmdir, str(name))
     util.require(ins, util.end_statement)
 
 def exec_name(ins):
@@ -61,10 +52,7 @@ def exec_name(ins):
     if os.path.exists(str(newname)):
         # file already exists
         raise error.RunError(58)
-    try:
-        os.rename(str(oldname), str(newname))
-    except EnvironmentError as ex:
-        oslayer.handle_oserror(ex)
+    oslayer.safe(os.rename, str(oldname), str(newname))
     util.require(ins, util.end_statement)
     
 
@@ -72,10 +60,7 @@ def exec_kill(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     name = oslayer.dospath_read(name, '', 53)
     util.require(ins, util.end_statement)
-    try:
-        os.remove(str(name))    
-    except EnvironmentError as ex:
-        oslayer.handle_oserror(ex)
+    oslayer.safe(os.remove, str(name))    
 
 def exec_files(ins):
     path, mask = '.', '*.*'
@@ -100,13 +85,8 @@ def exec_files(ins):
     # get top level directory for '.'
     path = os.path.abspath(path.replace('\\', os.sep))
     roots, dirs, files = [], [], []
-    try:
-        for root, dirs, files in os.walk(path):
-            break
-    except EnvironmentError as ex:
-        oslayer.handle_oserror(ex)
-    except OSError as ex:
-        oslayer.handle_oserror(ex)
+    for root, dirs, files in oslayer.safe(os.walk(path)):
+        break
     # get working dir, replace / with \
     cwd = path.replace(os.sep,'\\')
     console.write(cwd + util.endl)
@@ -154,22 +134,15 @@ def exec_environ(ins):
     util.require(ins, util.end_statement)
        
 def exec_time(ins):
-    #time$=
-    util.require_read(ins, ('\xE7',))
-    # allowed formats:
-    # hh
-    # hh:mm
-    # hh:mm:ss
-    # where hh 0-23, mm 0-59, ss 0-59
+    util.require_read(ins, ('\xE7',)) #time$=
+    # allowed formats:  hh   hh:mm   hh:mm:ss  where hh 0-23, mm 0-59, ss 0-59
     timestr = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
     now = datetime.datetime.today() + oslayer.time_offset
-    timelist = [0,0,0]
-    pos = 0
-    listpos = 0
-    word = ''
-    while pos<len(timestr):
-        if listpos>2:
+    timelist = [0, 0, 0]
+    pos. listpos, word = 0, 0, ''
+    while pos < len(timestr):
+        if listpos > 2:
             break
         c = chr(timestr[pos])
         if c in (':', '.'):
@@ -181,32 +154,27 @@ def exec_time(ins):
         else:
             word += c
         pos += 1
-    if word !='':
+    if word:
         timelist[listpos] = int(word)     
-    if timelist[0]>23 or timelist[1]>59 or timelist[2]>59:
+    if timelist[0] > 23 or timelist[1] > 59 or timelist[2] > 59:
         raise error.RunError(5)
     newtime = datetime.datetime(now.year, now.month, now.day, timelist[0], timelist[1], timelist[2], now.microsecond)
     oslayer.time_offset += newtime - now    
         
         
 def exec_date(ins):
-    #date$=
-    util.require_read(ins, ('\xE7',)) # =
+    util.require_read(ins, ('\xE7',)) # date$=
     # allowed formats:
-    # mm/dd/yy   mm 0--12 dd 0--31 yy 80--00--77
-    # mm-dd-yy
-    # mm/dd/yyyy   yyyy 1980--2099
-    # mm-dd-yyyy   
+    # mm/dd/yy  or mm-dd-yy  mm 0--12 dd 0--31 yy 80--00--77
+    # mm/dd/yyyy  or mm-dd-yyyy  yyyy 1980--2099
     datestr = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
     now = datetime.datetime.today() + oslayer.time_offset
-    datelist = [1,1,1]
-    pos = 0
-    listpos = 0
-    word = ''
+    datelist = [1, 1, 1]
+    pos, listpos, word = 0, 0, ''
     if len(datestr) < 8:
         raise error.RunError(5)
-    while pos<len(datestr):
+    while pos < len(datestr):
         if listpos>2:
             break
         c = chr(datestr[pos])
@@ -215,14 +183,14 @@ def exec_date(ins):
             listpos += 1
             word = ''
         elif (c < '0' or c > '9'): 
-            if listpos==2:
+            if listpos == 2:
                 break
             else:
                 raise error.RunError(5)
         else:
             word += c
         pos += 1
-    if word != '':
+    if word:
         datelist[listpos] = int(word)     
     if (datelist[0] > 12 or datelist[1] > 31 or
             (datelist[2] > 77 and datelist[2] < 80) or 

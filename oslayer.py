@@ -50,16 +50,17 @@ def safe_open(name, access):
         handle_oserror(e)
     
 def safe_lock(fd, access, locktype, length=0, start=0, whence=0):
-    try:
-        lock(fd, access, locktype, length, start, whence)
-    except EnvironmentError as e:
-        handle_oserror(e)
+    safe(lock, fd, access, locktype, length, start, whence) 
 
 def safe_unlock(fd):
+    safe(unlock, fd)
+        
+def safe(fnname, *fnargs):
     try:
-        unlock(fd)
+        return fnname(*fnargs)
     except EnvironmentError as e:
         handle_oserror(e)
+                
         
 def handle_oserror(e):        
     if e.errno in (errno.ENOENT, errno.EISDIR, errno.ENOTDIR):
@@ -93,9 +94,9 @@ def istype(name, isdir):
         
 # put name in 8x3, all upper-case format            
 def dosname_write(s, defext='BAS', path='', dummy=0, isdir_dummy=False):
-    pre=path
-    if path != '':
-        pre += '/'
+    pre = str(path)
+    if path:
+        pre += os.sep
     s = s.upper()
     if '.' in s:
         name = s[:s.find('.')]
@@ -105,22 +106,22 @@ def dosname_write(s, defext='BAS', path='', dummy=0, isdir_dummy=False):
         ext = defext
     name = name[:8].strip()
     ext = ext[:3].strip()
-    if len(ext) > 0:    
+    if ext:    
         return pre + name+'.'+ext            
     else:
         return pre + name
 
 # if name does not exist, put name in 8x3, all upper-case format with standard extension            
 def dosname_read(s, defext='BAS', path='', err=53, isdir=False):
-    pre = path
-    if path != '':
-        pre += '/'
+    pre = str(path)
+    if path:
+        pre += os.sep
     if istype(pre+s, isdir):
         return s
     s = dosname_write(s, '', pre)
     if istype(pre+s, isdir):    
         return s
-    if defext != '':
+    if defext:
         s = dosname_write(s, defext, pre)
         if istype(pre+s, isdir):    
             return s
@@ -132,16 +133,15 @@ def dospath_action(s, defext, err, action, isdir):
     # split over backslashes
     elements = string.split(s, '\\')
     name = elements.pop()
-    if len(elements)>0 and elements[0] == '':
+    if len(elements) > 0 and elements[0] == '':
         elements[0] = '/'
     # find a matching 
     test = ''
     for e in elements:
         # skip double slashes
-        if e=='':
-            continue
-        test += dosname_read(e, '', test, err, isdir)
-        test += os.sep
+        if e:
+            test += dosname_read(e, '', test, err, isdir)
+            test += os.sep
     test += action(name, defext, test, err, isdir)
     return test
 
@@ -157,29 +157,23 @@ def pass_dosnames(files, mask='*.*'):
     if len(mask) == 2:
         trunkmask, extmask = mask
     else:
-        trunkmask = mask[0]
-        extmask = ''    
+        trunkmask, extmask = mask[0], ''
     dosfiles = []
     for name in files:
         if name.find('.') > -1:
-            trunk = name[:name.find('.')][:8]
-            ext = name[name.find('.')+1:][:3]
+            trunk, ext = name[:name.find('.')][:8], name[name.find('.')+1:][:3]
         else:
-            trunk = name[:8]
-            ext = ''
+            trunk, ext = name[:8], ''
         # non-DOSnames passed as UnixName....    
-        if len(ext)>0 and name != trunk+'.'+ext:
-            ext = '...'
-        elif ext=='' and name != trunk and name!='.':
+        if (ext and name != trunk+'.'+ext) or (ext == '' and name != trunk and name != '.'):
             ext = '...'
         if name in ('.', '..'):
-            trunk = ''
-            ext = ''
+            trunk, ext = '', ''
         # apply mask separately to trunk and extension, dos-style.
         if not fnmatch.fnmatch(trunk, trunkmask) or not fnmatch.fnmatch(ext, extmask):
             continue
         trunk += ' ' * (8-len(trunk))
-        if len(ext) > 0:
+        if ext:
             ext = '.' + ext + ' ' * (3-len(ext)) 
         elif name == '.':
             ext = '.   '
@@ -187,11 +181,8 @@ def pass_dosnames(files, mask='*.*'):
             ext = '..  '
         else:
             ext = '    '    
-        dosfiles.append(trunk+ext)
+        dosfiles.append(trunk + ext)
     return dosfiles
-
-
-##########################
 
 # print to LPR printer (ok for CUPS)
 # TODO: Windows XP reference says it has an LPR command, but is it standard on all windows or part of a POSIX module?
