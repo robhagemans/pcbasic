@@ -84,7 +84,7 @@ def exec_files(ins):
     # get top level directory for '.'
     path = os.path.abspath(path.replace('\\', os.sep))
     roots, dirs, files = [], [], []
-    for root, dirs, files in oslayer.safe(os.walk(path)):
+    for root, dirs, files in oslayer.safe(os.walk, path):
         break
     # get working dir, replace / with \
     cwd = path.replace(os.sep,'\\')
