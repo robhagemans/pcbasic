@@ -18,6 +18,7 @@ import expressions
 import oslayer
 import util
 import console
+import fileio
 
 def exec_chdir(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
@@ -58,8 +59,13 @@ def exec_name(ins):
 def exec_kill(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     name = oslayer.dospath_read(name, '', 53)
+    # don't delete open files
+    for f in fileio.files:
+        if name == fileio.files[f].fhandle.name:
+            raise error.RunError(55)
+    oslayer.safe(os.remove, str(name))
     util.require(ins, util.end_statement)
-    oslayer.safe(os.remove, str(name))    
+        
 
 def exec_files(ins):
     path, mask = '.', '*.*'
