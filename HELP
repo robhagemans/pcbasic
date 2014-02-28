@@ -1601,10 +1601,11 @@ to delete a file with the name exactly as provided; this is case-sensitive if
 the file system is. If such a file does not exist, KILL attempts to delete the
 UPPERCASE 8.3 variant of the file name.  
 ERRORS:
--   If the file 'file_path' is open, raises ...
--   If the file 'file_path' does not exist, raises ...
--   If the path does not exist, raises ...
--   If the user has no write permission on the file, raises .... 
+-   If the file 'file_path' is open, raises FILE ALREADY OPEN
+-   If the file or path 'file_path' does not exist, raises FILE NOT FOUND
+-   If the user has no write permission, raises PERMISSION DENIED 
+-   If a syntax error occurs after the closing quote, the file is removed 
+    anyway.
 
 
 LCOPY
