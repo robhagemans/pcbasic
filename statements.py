@@ -344,15 +344,13 @@ def exec_rem(ins):
 
 # does nothing in GWBASIC except give some errors. See e.g. http://shadowsshot.ho.ua/docs001.htm#LCOPY    
 def exec_lcopy(ins):    
-    value = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-    util.range_check(0, 255, value)
-    util.require(ins, util.end_statement)
+    if util.skip_white(ins) not in util.end_statement:
+        util.range_check(0, 255, vartypes.pass_int_unpack(expressions.parse_expression(ins)))
+        util.require(ins, util.end_statement)
 
 # MOTOR does nothing
 def exec_motor(ins):
-    if util.skip_white(ins) in util.end_statement:
-        return
-    else:
+    if util.skip_white(ins) not in util.end_statement:
         vartypes.pass_int_keep(expressions.parse_expression(ins))
         util.require(ins, util.end_statement)
 
