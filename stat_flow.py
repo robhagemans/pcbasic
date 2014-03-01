@@ -306,11 +306,7 @@ def exec_wend(ins):
     exec_while(ins, False)
 
 def exec_on_jump(ins):    
-    on = expressions.parse_expression(ins)
-    if on == ('',''):
-        onvar = 0
-    else:
-        onvar = vartypes.pass_int_unpack(on)
+    onvar = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.range_check(0, 255, onvar)
     command = util.skip_white_read(ins)
     jumps = []

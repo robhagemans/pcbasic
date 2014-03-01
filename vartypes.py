@@ -16,17 +16,16 @@ import error
 # default type for variable name starting with a-z
 deftype = ['!']*26
 # zeroed out
-old__null = { '$': ('$', ''), '%': ('%',0), '!':('!', bytearray('\x00')*4), '#':('#', bytearray('\x00')*8) }
-
 null = { '$': ('$', ''), '%': ('%', bytearray('\x00')*2), '!': ('!', bytearray('\x00')*4), '#': ('#', bytearray('\x00')*8) }
 
 def complete_name(name):
-    if name != '' and name[-1] not in ('$', '%', '!', '#'):
+    if name and name[-1] not in ('$', '%', '!', '#'):
         name += deftype[ord(name[0].upper()) - 65] # ord('A') 
     return name
 
-
 def pass_int_keep(inp, maxint=0x7fff, err=13):
+    if not inp:
+        raise error.RunError(2)    
     typechar = inp[0]
     if typechar == '%':
         return inp
@@ -36,8 +35,6 @@ def pass_int_keep(inp, maxint=0x7fff, err=13):
             # overflow
             raise error.RunError(6)
         return pack_int(val)
-    elif typechar == '':
-        raise error.RunError(2)    
     else:     
         # type mismatch
         raise error.RunError(err)
@@ -53,28 +50,9 @@ def pack_int(inp):
        
 ######################################
 
-def old__pass_int_unpack(inp, maxint=0x7fff, err=13):
-    typechar = inp[0]
-    if typechar == '%':
-        val = inp[1]
-    elif typechar in ('!', '#'):
-        val = fp.unpack(inp).round_to_int()
-    elif typechar == '':
-        raise error.RunError(2)    
-    else:     
-        # type mismatch
-        raise error.RunError(err)
-    if val > maxint or val < -0x8000:
-        # overflow
-        raise error.RunError(6)
-    return val
-
-
-def old__pass_int_keep(inp, maxint=0x7fff, err=13):
-    return ('%', pass_int_unpack(inp, maxint, err))
-
-
 def pass_single_keep(num):
+    if not num:
+        raise error.RunError(2)
     typechar = num[0]
     if typechar == '!':
         return num
@@ -87,11 +65,10 @@ def pass_single_keep(num):
         return ('!', val)        
     elif typechar == '$':
         raise error.RunError(13)
-    else:
-        raise error.RunError(2)
-    
     
 def pass_double_keep(num):
+    if not num:
+        raise error.RunError(2)
     typechar = num[0]
     if typechar == '#':
         return num
@@ -101,32 +78,26 @@ def pass_double_keep(num):
         return ('#', bytearray('\x00\x00\x00\x00')+num[1])    
     elif typechar == '$':
         raise error.RunError(13)
-    else:
-        raise error.RunError(2)
-    
 
 def pass_float_keep(num, allow_double=True):
-    if num[0] == '#' and allow_double:
+    if num and num[0] == '#' and allow_double:
         return num
     else:
         return pass_single_keep(num)
 
-
-
 def pass_string_keep(inp, allow_empty=False, err=13):
-    if inp[0] == '$':
-        return inp
-    elif inp[0]=='':
+    if not inp:
         if not allow_empty:
             raise error.RunError(2)    
         else:
             return ('$', '')
+    if inp[0] == '$':
+        return inp
     else:     
         raise error.RunError(err)
 
 def pass_string_unpack(inp, allow_empty=False, err=13):
     return pass_string_keep(inp, allow_empty, err)[1]
-
 
 def pass_type_keep(typechar, value):     
     if typechar == '$':
@@ -139,7 +110,6 @@ def pass_type_keep(typechar, value):
         return pass_double_keep(value)
     else:
         raise error.RunError(2)
-  
  
 def pass_most_precise_keep(left, right, err=13):
     left_type, right_type = left[0][-1], right[0][-1]
@@ -152,11 +122,15 @@ def pass_most_precise_keep(left, right, err=13):
     else:
         raise error.RunError(err)
 
-
 # string output
 # screen=False means in a program listing
 # screen=True is used for screen, str$ and sequential files
 def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=False):
+    if not inp:
+        if allow_empty_expression:
+            return ('$', '')
+        else:
+            raise error.RunError(2)    
     typechar = inp[0]
     if typechar == '$':
         return ('$', inp[1])
@@ -169,27 +143,12 @@ def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=Fal
         return ('$', fp.to_str(fp.unpack(inp), screen, write) )
     elif typechar == '#':
         return ('$', fp.to_str(fp.unpack(inp), screen, write) )
-    elif typechar == '':
-        if allow_empty_expression:
-            return ('$', '')
-        else:
-            raise error.RunError(2)    
     else:
         raise error.RunError(2)    
-
-
-
     
 ##################################################
 # unpack tokenised numeric constants
 
-
-def old__unpack_int(inp):
-    return inp[1]
-
-def old__pack_int(inp):
-    return ('%', inp)
-   
 def uint_to_value(s):
     # unsigned int. 
     return 0x100 * s[1] + s[0]
@@ -226,7 +185,6 @@ def unpack_string(inp):
 def pack_string(inp):
     return ('$', inp)
 
-
 # python int to python str
 
 def int_to_str(num):
@@ -249,9 +207,6 @@ def hex_to_str(s):
 def oct_to_str(s):
     return "&O" + oct(uint_to_value(s))[1:]
     
-
-                
-    
 # boolean functions - two's complement int
 
 def bool_to_int_keep(boo):
@@ -271,10 +226,8 @@ def twoscomp_to_int(num):
     if num > 0x7fff:
         num -= 0x10000 
     return pack_int(num)    
-    
 
 ##################################################
-
 
 def str_gt(left,right):
     shortest = min(len(left), len(right))
@@ -360,7 +313,7 @@ def equals(left,right):
             return unpack_int(left)==unpack_int(right)
 
 def gt(left, right):
-    if left[0]=='$':
+    if left[0] == '$':
         return str_gt(pass_string_unpack(left), pass_string_unpack(right))
     else:
         left, right = pass_most_precise_keep(left, right)
@@ -368,6 +321,4 @@ def gt(left, right):
             return fp.unpack(left).gt(fp.unpack(right)) 
         else:
             return unpack_int(left) > unpack_int(right)           
-
-
-
+            

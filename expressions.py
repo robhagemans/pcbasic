@@ -89,7 +89,7 @@ def parse_expression(ins, allow_empty=False, empty_err=22):
     # empty expression is a syntax error (inside brackets) or Missing Operand (in an assignment) or ok (in print)
     if len(units) == 0:
         if allow_empty:
-            return ('', '')
+            return None
         else:    
             raise error.RunError(empty_err)
     if len(units) <= len(operators):
@@ -107,9 +107,9 @@ def parse_operators(operators, units):
                 del operators[pos]
             else:
                 pos += 1
-        if len(operators)==0:
+        if len(operators) == 0:
             break
-    if len(operators)>0:
+    if len(operators) > 0:
         # unrecognised operator, syntax error
         raise error.RunError(2)
     return units[0]    
@@ -117,7 +117,7 @@ def parse_operators(operators, units):
 def parse_expr_unit(ins):
     d = util.skip_white_read(ins)
     # string literal
-    if d=='"':
+    if d == '"':
         output = bytearray()
         # while tokenised nmbers inside a string lieral will be printed as tokenised numbers, they don't actually execute as such:
         # a \00 character, even if inside a tokenised number, will break a string literal (and make the parser expect a 
@@ -131,16 +131,16 @@ def parse_expr_unit(ins):
         return ('$', output)
     # variable name
     elif d >= 'A' and d <= 'Z':
-        ins.seek(-1,1)
+        ins.seek(-1, 1)
         name, indices = get_var_or_array_name(ins)
         return var.get_var_or_array(name, indices)
     # number literals
     elif d in tokenise.tokens_number:
-        ins.seek(-1,1)
+        ins.seek(-1, 1)
         return util.parse_value(ins)   
     # gw-basic allows adding line numbers to numbers     
     elif d in tokenise.tokens_linenum:
-        ins.seek(-1,1)
+        ins.seek(-1, 1)
         return vartypes.pack_int(util.parse_jumpnum(ins))
     # brackets
     elif d == '(':
@@ -289,7 +289,7 @@ def parse_expr_unit(ins):
             return value_loc(ins)
         elif d == '\xA5':   # LOF
             return value_lof(ins)
-    return ('', '')
+    return None
 
 
 ######################################################################
@@ -299,7 +299,7 @@ def parse_expr_unit(ins):
 def parse_bracket(ins):
     util.require_read(ins, ('(',))
     val = parse_expression(ins, allow_empty = True)
-    if val == ('',''):
+    if val == None:
         # we need a Syntax error, not a Missing operand
         raise error.RunError(2)
     util.require_read(ins, (')',))
@@ -374,7 +374,7 @@ def get_var_or_array_name(ins):
     if util.skip_white_read_if(ins, ('[', '(')):
         # it's an array, read indices
         indices = parse_int_list(ins, 255, 9) # subscript out of range
-        while len(indices)>0 and indices[-1]==None:
+        while len(indices) > 0 and indices[-1] == None:
             indices = indices[:-1]
         if None in indices:
             raise error.RunError(2)
@@ -455,7 +455,7 @@ def value_len(ins):
 
 def value_asc(ins):            
     s = vartypes.pass_string_unpack(parse_bracket(ins))
-    if s != '':
+    if s:
         return vartypes.pack_int(s[0])
     else:
         raise error.RunError(5)
@@ -467,7 +467,7 @@ def value_instr(ins):
     have_big = False
     n = 1
     s = parse_expression(ins, allow_empty=True)
-    if s[0] == '':
+    if s == None:
         raise error.RunError(2)
     elif s[0] != '$':
         n = vartypes.pass_int_unpack(s)
@@ -537,7 +537,7 @@ def value_string(ins): # STRING$
     n, j = parse_expr_list(ins, 2)    
     n = vartypes.pass_int_unpack(n)
     util.range_check(0, 255, n)
-    if j[0]=='$':
+    if j[0] == '$':
         j = vartypes.unpack_string(j)[0]
     else:
         j = vartypes.pass_int_unpack(j)        
@@ -945,33 +945,29 @@ def value_rnd(ins):
     if util.skip_white(ins) == '(':
         return rnd.get_random(parse_bracket(ins))
     else:
-        return rnd.get_random(('',''))
+        return rnd.get_random()
 
 def value_abs(ins):
     inp = parse_bracket(ins)
     if inp[0] in ('%', '!', '#'):
         return vartypes.number_abs(inp)
-    elif inp[0]=='':
-        raise error.RunError(2)    
     else:     
         # type mismatch
         raise error.RunError(13)
 
 def value_int(ins):
     inp = parse_bracket(ins)
-    if inp[0]=='%':
+    if inp[0] == '%':
         return inp
     elif inp[0] in ('!', '#'):
         return fp.pack(fp.unpack(inp).ifloor()) 
-    elif inp[0]=='':
-        raise error.RunError(2)    
     else:     
         # type mismatch
         raise error.RunError(13)
 
 def value_sgn(ins):
     inp = parse_bracket(ins)
-    if inp[0]=='%':
+    if inp[0] == '%':
         inp_int = vartypes.unpack_int(inp) 
         if inp_int > 0:
             return vartypes.pack_int(1)
@@ -979,25 +975,21 @@ def value_sgn(ins):
             return vartypes.pack_int(-1)
         else:
             return vartypes.null['%']
-    elif inp[0] in ('!','#'):
+    elif inp[0] in ('!', '#'):
         return vartypes.pack_int(fp.unpack(inp).sign() )
-    elif inp[0]=='':
-        raise error.RunError(2)    
     else:     
         # type mismatch
         raise error.RunError(13)
 
 def value_fix(inp):
     inp = parse_bracket(inp)
-    if inp[0]=='%':
+    if inp[0] == '%':
         return inp
-    elif inp[0]=='!':
+    elif inp[0] == '!':
         # needs to be a float to avoid overflow
         return fp.pack(fp.Single.from_int(fp.unpack(inp).trunc_to_int())) 
-    elif inp[0]=='#':
+    elif inp[0] == '#':
         return fp.pack(fp.Double.from_int(fp.unpack(inp).trunc_to_int())) 
-    elif inp[0]=='':
-        raise error.RunError(2)    
     else:     
         # type mismatch
         raise error.RunError(13)
@@ -1006,8 +998,6 @@ def value_neg(ins):
     inp = parse_expr_unit(ins)
     if inp[0] in ('%', '!', '#'):
         return vartypes.number_neg(inp)    
-    elif inp[0]=='':
-        raise error.RunError(2)    
     else:     
         # type mismatch
         raise error.RunError(13)
