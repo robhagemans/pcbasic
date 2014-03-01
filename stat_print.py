@@ -72,9 +72,9 @@ def exec_color(ins):
         util.range_check(0, 255, pal, back, bord)
         if back == None: 
             back=back_old
-        if pal%2 == 1:
+        if pal % 2 == 1:
             console.set_palette([0,3,5,7])
-        elif pal%2 == 0:
+        elif pal % 2 == 0:
             console.set_palette([0,2,4,6])
         console.set_palette_entry(0,back&0xf)
     elif mode == 0:
@@ -119,8 +119,8 @@ def exec_color(ins):
 def exec_palette(ins):
     # can't set blinking colours separately
     num_palette_entries = console.num_colours
-    if num_palette_entries==32:
-        num_palette_entries=16
+    if num_palette_entries == 32:
+        num_palette_entries = 16
     d = util.skip_white(ins)
     if d in util.end_statement:
         # reset palette
@@ -129,19 +129,19 @@ def exec_palette(ins):
         ins.read(1)
         array_name = util.get_var_name(ins)
         start_index = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
-        new_palette=[]
+        new_palette = []
         for i in range(num_palette_entries):
             val = vartypes.pass_int_unpack(var.get_array(array_name, [start_index+i]))
-            if val==-1:
+            if val == -1:
                 val = console.get_palette_entry(i)
             util.range_check(-1, console.num_palette-1, val)
             new_palette.append(val)
         console.set_palette(new_palette)
     else:
         pair = expressions.parse_int_list(ins, 2, err=5)
-        if pair[0]<0 or pair[0]>=num_palette_entries or pair[1]<-1 or pair[1]>=console.num_palette:
-            raise error.RunError(5)
-        if pair[1]>-1:
+        util.range_check(0, num_palette_entries-1, pair[0])
+        util.range_check(-1, console.num_palette-1, pair[1])
+        if pair[1] > -1:
             console.set_palette_entry(pair[0], pair[1])
     util.require(ins, util.end_statement)    
 
@@ -164,7 +164,7 @@ def exec_key(ins):
                     text[j] = console.keys_line_replace_chars[chr(text[j])]
                 except KeyError:
                     pass    
-            console.write('F'+str(i+1)+' '+str(text)+util.endl)    
+            console.write('F' + str(i+1) + ' ' + str(text) + util.endl)    
     elif d == '(':
         # key (n)
         num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
@@ -228,17 +228,16 @@ def exec_write(ins, screen=None):
     screen.write(util.endl)
         
 def exec_print(ins, screen=None):
-    if screen==None:
+    if screen == None:
         screen = expressions.parse_file_number(ins)
-        if screen==None:
-            screen=console
+        if screen == None:
+            screen = console
     zone_width = 14 #15
     number_zones = int(screen.width/zone_width)
     output = ''
     newline = True
     if util.skip_white_read_if(ins, '\xD7'): # USING
-       exec_print_using(ins, screen)
-       return
+       return exec_print_using(ins, screen)
     while True:
         d = util.skip_white(ins)
         if d in util.end_statement:
@@ -324,7 +323,7 @@ def exec_print_using(ins, screen):
     format_chars = False    
     while True:
         c = fors.read(1)
-        if c=='':
+        if c == '':
             if not format_chars:
                 # there were no format chars in the string, illegal fn call
                 raise error.RunError(5) 
@@ -334,59 +333,59 @@ def exec_print_using(ins, screen):
             else:
                 # no more data, no more format chars -> done
                 break
-        elif c=='_':
+        elif c == '_':
             c = fors.read(1)
             if c != '':
                 screen.write(c)
             else:
                 screen.write('_')
-        elif c=='!':
+        elif c == '!':
             format_chars = True
             more_data, semicolon, expr = get_next_expression(ins) 
             screen.write(vartypes.pass_string_unpack(expr)[0])
-        elif c=='&':
+        elif c == '&':
             format_chars = True
             more_data, semicolon, expr = get_next_expression(ins) 
             screen.write(vartypes.pass_string_unpack(expr))
-        elif c=='\\':
-            pos=0
+        elif c == '\\':
+            pos = 0
             word = c
             is_token = True
             while True: 
                 c = fors.read(1)
-                pos+=1
+                pos += 1
                 word += c
-                if c=='\\':
+                if c == '\\':
                     break
-                elif c=='':
-                    is_token=False
+                elif c == '':
+                    is_token = False
                     break 
-                elif c !=' ':
+                elif c != ' ':
                     is_token = False
             if is_token:
                 format_chars = True
                 more_data, semicolon, expr = get_next_expression(ins) 
                 eword = vartypes.pass_string_unpack(expr)
-                if len(eword)>len(word):
-                    screen.write( eword[:len(word)] )
+                if len(eword) > len(word):
+                    screen.write(eword[:len(word)])
                 else:
-                    screen.write( eword ) 
-                    screen.write( ' '*(len(word)-len(eword)) )
+                    screen.write(eword) 
+                    screen.write(' ' * (len(word)-len(eword)))
             else:
                 screen.write( word )
-        elif (c=='#' 
-                or (c in ('$', '*') and util.peek(fors)==c) 
-                or (c=='+' and  util.peek(fors) == '#' or util.peek(fors,2) in ('##', '**')) 
+        elif (c == '#' 
+                or (c in ('$', '*') and util.peek(fors) == c) 
+                or (c == '+' and util.peek(fors) == '#' or util.peek(fors,2) in ('##', '**')) 
                 ):    
             # numeric token
             format_chars = True
             more_data, semicolon, expr = get_next_expression(ins) 
             # feed back c, we need it
-            fors.seek(-1,1)
+            fors.seek(-1, 1)
             varstring = vartypes.format_number(vartypes.pass_float_keep(expr), fors)     
-            screen.write( varstring )
+            screen.write(varstring)
         else:
-            screen.write( c )
+            screen.write(c)
     if not semicolon:
         screen.write(util.endl)
     util.require(ins, util.end_statement)
@@ -421,7 +420,7 @@ def check_view(row, col):
 def exec_width(ins):
     device = ''
     d = util.skip_white(ins)
-    if d=='#':
+    if d == '#':
         dev = expressions.parse_file_number(ins)
     elif d in ('"', ','):
         device = vartypes.pass_string_unpack(expressions.parse_expression(ins)).upper()
@@ -432,7 +431,7 @@ def exec_width(ins):
         # whereas OPEN "SCRN:" FOR OUTPUT AS 1: WIDTH #1,23 works on the wrapper text file
         # WIDTH "LPT1:" works on lpt1 for the next time it's opened
         # for other devices, the model of LPT1 is followed - not sure what GW-BASIC does there.
-        if device=='SCRN:':
+        if device == 'SCRN:':
             dev = console
         else:
             dev = deviceio.output_devices[device]
@@ -442,7 +441,7 @@ def exec_width(ins):
     # we can do calculations, but they must be bracketed...
     w = vartypes.pass_int_unpack(expressions.parse_expr_unit(ins))
     # get the appropriate errors out there for WIDTH [40|80] [,[,]]
-    if dev==console and device=='':
+    if dev == console and device == '':
         # two commas are accepted
         util.skip_white_read_if(ins, ',')
         if not util.skip_white_read_if(ins, ','):
