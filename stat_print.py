@@ -76,11 +76,11 @@ def exec_color(ins):
         console.set_attr(fore, 0)
         console.set_palette_entry(0, back)
     
-def exec_color_mode_1(back, pal, bord):
+def exec_color_mode_1(back, pal, override):
     back = console.get_palette_entry(0) if back == None else back
-    if bord:
+    if override:
         # uses last entry as palette if given
-        pal = bord
+        pal = override
     util.range_check(0, 255, back)
     if pal:
         util.range_check(0, 255, pal)
@@ -90,7 +90,6 @@ def exec_color_mode_1(back, pal, bord):
         else:
             # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
             console.set_palette([back & 0xf, 2, 4, 6])
-    
     
 def exec_palette(ins):
     # can't set blinking colours separately
