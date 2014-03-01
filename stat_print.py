@@ -407,13 +407,6 @@ def exec_lprint(ins):
     exec_print(ins, deviceio.lpt1)
     deviceio.lpt1.flush()
     
-
-# does nothing in GWBASIC except give some errors. See e.g. http://shadowsshot.ho.ua/docs001.htm#LCOPY    
-def exec_lcopy(ins):    
-    value = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-    util.range_check(0, 255, value)
-    util.require(ins, util.end_statement)
-       
                              
 def exec_view_print(ins):
     if util.skip_white(ins) in util.end_statement:
