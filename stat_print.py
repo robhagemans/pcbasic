@@ -25,14 +25,10 @@ import graphics
 
 def exec_cls(ins):
     if util.skip_white(ins) in util.end_statement:
-        if graphics.graph_view_set:
-            val = 1
-        elif console.view_set:
-            val = 2
-        else:        
-            val = 0
+        val = 1 if graphics.graph_view_set else (2 if console.view_set else 0)
     else:
         val = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    util.range_check(0, 2, val)
     if util.skip_white_read_if(ins, (',',)):
         # comma is ignored, but a number after means syntax error
         util.require(ins, util.end_statement)    
@@ -48,70 +44,53 @@ def exec_cls(ins):
         graphics.reset_graphics()
     elif val == 2:
         console.clear_view()  
-    else:
-        raise error.RunError(5)                  
-    
+
 def exec_color(ins):
     fore, back, bord = expressions.parse_int_list(ins, 3, 5)          
-    if bord == None:
-        bord = 0 
     mode = console.screen_mode
-    if mode == 2: 
+    if mode == 1:
+        return exec_color_mode_1(fore, back, bord)
+    elif mode == 2: 
         # screen 2: illegal fn call
         raise error.RunError(5)
-    elif mode == 1:
-        # screen 1
-        # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
-        # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
-        fore_old, dummy = console.get_attr()
-        back_old = console.get_palette_entry(0)
-        pal, back = back, fore
-        util.range_check(0, 255, pal, back, bord)
-        if back == None: 
-            back = back_old
-        if pal % 2 == 1:
-            console.set_palette([0, 3, 5, 7])
-        elif pal % 2 == 0:
-            console.set_palette([0, 2, 4, 6])
-        console.set_palette_entry(0, back&0xf)
-    elif mode == 0:
-        # screen 0
-        fore_old, back_old = console.get_attr()
-        if fore == None:
-            fore = fore_old
-        if back == None: 
-            back = back_old
-        if not (console.colours_ok(fore) and back>=0 and back<16 and bord>=0 and bord<16):
-            raise error.RunError(5)
+    fore_old, back_old = console.get_attr()
+    bord = 0 if bord == None else bord
+    util.range_check(0, 255, bord)
+    fore = fore_old if fore == None else fore
+    # graphics mode bg is always 0; sets palette instead
+    back = back_old if mode == 0 and back == None else (console.get_palette_entry(0) if back == None else back)
+    if mode == 0:
+        util.range_check(0, console.num_colours-1, fore)
+        util.range_check(0, 15, back, bord)
         console.set_attr(fore, back)
         # border not implemented
-    elif mode == 9:
-        # screen 9
-        fore_old, dummy = console.get_attr()
-        back_old = console.get_palette_entry(0)
-        if fore == None:
-            fore = fore_old
-        if back == None: 
-            back = back_old
-        if not (console.colours_ok(fore) and back >= 0 and back < console.num_palette):
-            raise error.RunError(5)
-        # in graphics mode, bg colour is always 0 and controlled by palette
-        console.set_attr(fore, 0)
-        console.set_palette_entry(0, back)
-    else:
-        # screen 7,8
-        fore_old, dummy = console.get_attr()
-        back_old = console.get_palette_entry(0)
-        if fore == None:
-            fore = fore_old
-        if back == None: 
-            back = back_old
-        if fore == 0 or not console.colours_ok(fore) or not console.colours_ok(back):
-            raise error.RunError(5)
-        # in graphics mode, bg colour is always 0 and controlled by palette
+    elif mode in (7, 8):
+        util.range_check(1, console.num_colours-1, fore)
+        util.range_check(0, console.num_colours-1, back)
         console.set_attr(fore, 0)
         # in screen 7 and 8, only low intensity palette is used.
-        console.set_palette_entry(0, back%8)    
+        console.set_palette_entry(0, back % 8)    
+    elif mode == 9:
+        util.range_check(0, console.num_colours-1, fore)
+        util.range_check(0, console.num_palette-1, back)
+        console.set_attr(fore, 0)
+        console.set_palette_entry(0, back)
+    
+def exec_color_mode_1(back, pal, bord):
+    back = console.get_palette_entry(0) if back == None else back
+    if bord:
+        # uses last entry as palette if given
+        pal = bord
+    util.range_check(0, 255, back)
+    if pal:
+        util.range_check(0, 255, pal)
+        if pal % 2 == 1:
+            # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
+            console.set_palette([back & 0xf, 3, 5, 7])
+        else:
+            # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
+            console.set_palette([back & 0xf, 2, 4, 6])
+    
     
 def exec_palette(ins):
     # can't set blinking colours separately
