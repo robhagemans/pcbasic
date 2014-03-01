@@ -198,9 +198,6 @@ def set_colour_depth(colours, palette):
     num_colours = colours
     num_palette = palette
     
-def colours_ok(c):
-    return (c >= 0 and c < num_colours)
-    
 # core event handler    
 def check_events():
     # check console events
