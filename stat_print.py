@@ -476,81 +476,78 @@ def exec_width(ins):
 #############################################################        
                 
 def format_number(value, fors):
-    if value[0] =='#':
+    if value[0] == '#':
         type_sign, exp_sign = '#', 'D'
     else:
         type_sign, exp_sign = '!', 'E'
     c = fors.read(1)
     width = 0
-    plus_sign = (c=='+')
+    plus_sign = (c == '+')
     if plus_sign:
         c = fors.read(1)
-        width+=1
+        width += 1
     digits_before = 0
-    dollar_sign = (c=='$')
-    if c =='$':
+    dollar_sign = (c == '$')
+    if dollar_sign:
         fors.read(1)
         c = fors.read(1)        
-        digits_before +=2
-    asterisk = (c=='*')    
-    if c=='*':    
+        digits_before += 2
+    asterisk = (c == '*')    
+    if asterisk:    
         fors.read(1)
         c = fors.read(1)
         digits_before += 2        
-        if c=='$':
-            dollar_sign=True
-            c= fors.read(1)
+        if c == '$':
+            dollar_sign = True
+            c = fors.read(1)
             digits_before += 1
     if asterisk:
-        fill_char='*'
+        fill_char = '*'
     else:
-        fill_char=' '
-    while c=='#':
-        digits_before+=1
+        fill_char = ' '
+    while c == '#':
+        digits_before += 1
         c = fors.read(1)
-        if c==',':
+        if c == ',':
             digits_before+=1
             c = fors.read(1)            
-    decimals=0    
-    dots=0
-    if c=='.':
-        dots+=1
-        c=fors.read(1)
-        while c=='#':
+    decimals = 0    
+    dots = 0
+    if c == '.':
+        dots += 1
+        c = fors.read(1)
+        while c == '#':
             decimals += 1
             c = fors.read(1)
     width += digits_before + decimals + dots
-    exp_form=False
-    if c=='^':
-        if util.peek(fors,3)=='^^^':
+    exp_form = False
+    if c == '^':
+        if util.peek(fors,3) == '^^^':
             fors.read(3)
-            c=fors.read(1)
-            exp_form=True
-            width+=4
+            c = fors.read(1)
+            exp_form = True
+            width += 4
     sign_after = c in ('-','+') and not plus_sign
     if sign_after:
-        if c=='+':
-            plus_sign=True
+        if c == '+':
+            plus_sign = True
         c = fors.read(1)
         width+=1
-    if digits_before+decimals > 24:
+    if digits_before + decimals > 24:
         # illegal function call
         raise error.RunError(5)
-
-    ###########                
-    ###########                
-
+    ##############################################
     # format to string
     expr = fp.unpack(vartypes.number_abs(value))
     if exp_form:
         if not plus_sign and not sign_after and digits_before > 0:
             # reserve space for sign
-            digits_before -=1
+            digits_before -= 1
         work_digits = digits_before + decimals
         if work_digits > expr.digits:
             # decimal precision of the type
             work_digits = expr.digits
-        if work_digits>0:
+        if work_digits > 0:
             # scientific representation
             lim_bot = fp.just_under(fp.pow_int(expr.ten, work_digits-1))
         else:
@@ -561,15 +558,14 @@ def format_number(value, fors):
         lim_top.imul10()
         num, exp10 = expr.bring_to_range(lim_bot, lim_top)
         digitstr = fp.get_digits(num, work_digits)
-        if len(digitstr) < digits_before+decimals:
-            digitstr+='0'*(digits_before+decimals-len(digitstr))
+        if len(digitstr) < digits_before + decimals:
+            digitstr += '0' * (digits_before+decimals-len(digitstr))
         # this is just to reproduce GW results for no digits: 
         # e.g. PRINT USING "#^^^^";1 gives " E+01" not " E+00"
-        if work_digits==0:
-            exp10+=1
+        if work_digits == 0:
+            exp10 += 1
         exp10 += digits_before + decimals - 1  
         fp_repr = fp.scientific_notation(digitstr, exp10, exp_sign, digits_to_dot=digits_before, force_dot=(dots>0))
-    
     else:
         # fixed-point representation
         factor = fp.pow_int(expr.ten, decimals) 
@@ -592,15 +588,12 @@ def format_number(value, fors):
         # argument work_digits-1 means we're getting work_digits==exp10+1-diff digits
         digitstr = fp.get_digits(num, work_digits-1, remove_trailing=False)
         # fill up with zeros
-        digitstr+='0'*diff
+        digitstr += '0' * diff
         fp_repr = fp.decimal_notation(digitstr, work_digits-1-1-decimals+diff, '', (dots>0))
-    
-    ##########
-    ##########
-    
+    ##########################################
     valstr = ''
     if dollar_sign:
-        valstr+='$'
+        valstr += '$'
     valstr += fp_repr    
     sign = vartypes.unpack_int(vartypes.number_sgn(value))
     if sign_after:
@@ -615,10 +608,10 @@ def format_number(value, fors):
         valstr += sign_str
     else:
         valstr = sign_str + valstr
-    if len(valstr)>width:
-        valstr='%'+valstr
+    if len(valstr) > width:
+        valstr = '%' + valstr
     else:
-        valstr=fill_char*(width-len(valstr)) + valstr
+        valstr = fill_char*(width-len(valstr)) + valstr
     return valstr
     
 
