@@ -9,7 +9,6 @@
 # please see text file COPYING for licence terms.
 #
 
-
 from cStringIO import StringIO
 
 import error
@@ -18,11 +17,9 @@ import fp
 import vartypes
 import var
 import util
-
 import expressions
 import deviceio
 import console
-# for clear_graphics_view
 import graphics
 
 
@@ -71,12 +68,12 @@ def exec_color(ins):
         pal, back = back, fore
         util.range_check(0, 255, pal, back, bord)
         if back == None: 
-            back=back_old
+            back = back_old
         if pal % 2 == 1:
-            console.set_palette([0,3,5,7])
+            console.set_palette([0, 3, 5, 7])
         elif pal % 2 == 0:
-            console.set_palette([0,2,4,6])
-        console.set_palette_entry(0,back&0xf)
+            console.set_palette([0, 2, 4, 6])
+        console.set_palette_entry(0, back&0xf)
     elif mode == 0:
         # screen 0
         fore_old, back_old = console.get_attr()
@@ -125,7 +122,7 @@ def exec_palette(ins):
     if d in util.end_statement:
         # reset palette
         console.set_palette()
-    elif d=='\xD7': # USING
+    elif d == '\xD7': # USING
         ins.read(1)
         array_name = util.get_var_name(ins)
         start_index = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
@@ -232,7 +229,7 @@ def exec_print(ins, screen=None):
         screen = expressions.parse_file_number(ins)
         if screen == None:
             screen = console
-    zone_width = 14 #15
+    zone_width = 14
     number_zones = int(screen.width/zone_width)
     output = ''
     newline = True
@@ -246,7 +243,7 @@ def exec_print(ins, screen=None):
                  screen.write(util.endl)
             output = ''
             break 
-        elif d==',':
+        elif d == ',':
             newline = False
             ins.read(1)
             screen.write(output)
@@ -257,24 +254,24 @@ def exec_print(ins, screen=None):
             else:            
                 output = ' '*(1+zone_width*next_zone-col)
             screen.write(output)
-            output=''
-        elif d==';':
+            output = ''
+        elif d == ';':
             newline = False
             ins.read(1)
             screen.write(output)
             output = ''
-        elif d=='\xD2': #SPC(
-            newline=False
+        elif d == '\xD2': #SPC(
+            newline = False
             ins.read(1)
             screen.write(output)
             output = ''
             numspaces = vartypes.pass_int_unpack(expressions.parse_expression(ins), 0xffff)
             numspaces %= screen.width
             util.require_read(ins, (')',))
-            screen.write(' '*numspaces)
-            output=''
-        elif d=='\xCE': #TAB(
-            newline=False
+            screen.write(' ' * numspaces)
+            output = ''
+        elif d == '\xCE': #TAB(
+            newline = False
             ins.read(1)
             screen.write(output)
             output = ''
@@ -283,10 +280,10 @@ def exec_print(ins, screen=None):
             util.require_read(ins, (')',))
             col = screen.get_col()
             if pos < col:
-                screen.write(output+util.endl+' '*(pos-1))
+                screen.write(output + util.endl + ' '*(pos-1))
             else:
-                screen.write(output+' '*(pos-col))
-            output=''    
+                screen.write(output + ' '*(pos-col))
+            output = ''    
         else:
             newline = True
             expr = expressions.parse_expression(ins)
