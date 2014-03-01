@@ -85,7 +85,6 @@ apagenum = 0
 
 # officially, whether colours are displayed. in reality, SCREEN just clears the screen if this value is changed
 colorswitch = True
-
 # graphics vs text mode 
 graphics_mode = False
 # force building screen on start
@@ -94,9 +93,8 @@ screen_mode = -1
 # palette
 num_colours = 32    
 num_palette = 64
-
+#  font_height, attr, colour_depth, width, num_pages
 mode_data = {
-    #  font_height, attr, colour_depth, width, num_pages
     0: ( 16, ( 7, 0), (32, 64), 80, 4 ),
     1: (  8, ( 3, 0), ( 4, 16), 40, 1 ),
     2: (  8, ( 1, 0), ( 2, 16), 80, 1 ), 
@@ -111,9 +109,23 @@ stick_is_on = False
 
 # KEY ON?
 keys_visible = False
-
 # default codes for KEY autotext
 key_replace = [ 'LIST ', 'RUN\x0d', 'LOAD"', 'SAVE"', 'CONT\x0d', ',"LPT1:"\x0d','TRON\x0d', 'TROFF\x0d', 'KEY ', 'SCREEN 0,0,0\x0d' ]
+# on the keys line 25, what characters to replace & with which
+keys_line_replace_chars = { 
+        '\x07': '\x0e',
+        '\x08': '\xfe',
+        '\x09': '\x1a',
+        '\x0A': '\x1b',
+        '\x0B': '\x7f',
+        '\x0C': '\x16',
+        '\x0D': '\x1b',
+        '\x1C': '\x10',
+        '\x1D': '\x11',
+        '\x1E': '\x18',
+        '\x1F': '\x19',
+    }        
+
 
 # KEY replacement    
 # apply KEY autotext to scancodes
@@ -633,7 +645,7 @@ def check_pos(scroll_ok=True):
             else:
                 col = 1   
         # adjust viewport if necessary
-        last_row_off()
+        last_row_on(False)
         if row > scroll_height:
             if scroll_ok:
                 scroll()                # Scroll Here
@@ -677,21 +689,6 @@ def clear():
     if keys_visible:
         show_keys()
 
-
-keys_line_replace_chars = { 
-        '\x07': '\x0e',
-        '\x08': '\xfe',
-        '\x09': '\x1a',
-        '\x0A': '\x1b',
-        '\x0B': '\x7f',
-        '\x0C': '\x16',
-        '\x0D': '\x1b',
-        '\x1C': '\x10',
-        '\x1D': '\x11',
-        '\x1E': '\x18',
-        '\x1F': '\x19',
-    }        
-    
 def write_for_keys(s, col, cattr):
     # write chars for the keys line - yes, it's different :)
     # with no echo
@@ -756,9 +753,6 @@ def last_row_on(on=True):
         else:
             backend.set_scroll_area(view_start, scroll_height, width)
         last_row_is_on = on
-
-def last_row_off():
-    last_row_on(False)
 
 def resize(to_height, to_width):
     global height, width
