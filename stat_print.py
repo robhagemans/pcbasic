@@ -172,11 +172,8 @@ def exec_key(ins):
 
 def exec_locate(ins):
     row, col, cursor, start, stop = expressions.parse_int_list(ins, 5, 2)          
-    crow, ccol = console.row, console.col
-    if row == None:
-        row = crow
-    if col == None:
-        col = ccol
+    row = console.row if row == None else row
+    col = console.col if col == None else col
     if row == console.height and console.keys_visible:
         raise error.RunError(5)
     elif console.view_set:
