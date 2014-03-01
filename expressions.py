@@ -577,17 +577,17 @@ def value_inkey(ins):
     return vartypes.pack_string(bytearray(console.get_char()))
 
 def value_csrlin(ins):
-    return vartypes.pack_int(console.get_row())
+    return vartypes.pack_int(console.row)
 
 def value_pos(ins):            
     # parse the dummy argument, doesnt matter what it is as long as it's a legal expression
     parse_bracket(ins)
-    return vartypes.pack_int(console.get_col())
+    return vartypes.pack_int(console.col)
 
 def value_lpos(ins):            
     # parse the dummy argument, doesnt matter what it is as long as it's a legal expression
     parse_bracket(ins)
-    return vartypes.pack_int(deviceio.lpt1.get_col())
+    return vartypes.pack_int(deviceio.lpt1.col)
            
 ######################################################################
 # file access

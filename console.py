@@ -617,15 +617,6 @@ def wait_char():
         check_events()
     return get_char()
 
-def get_pos():
-    return (row, col)
-
-def get_row():
-    return row
-    
-def get_col():
-    return col        
-
 def check_pos(scroll_ok=True):
     global row, col
     oldrow = row

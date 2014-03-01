@@ -198,9 +198,6 @@ class TextFile(object):
     #            self.printbuf += c    
     #        last=c
 
-    def get_col(self):
-        return self.col
-    
     def set_width(self, new_width=255):
         self.width = new_width
     
@@ -290,7 +287,8 @@ class RandomBase(object):
     def peek_char(self):
         return self.field_text_file.peek_char()
     
-    def get_col(self):
+    @property
+    def col(self):
         return self.field_text_file.col
     
     def set_width(self, new_width=255):

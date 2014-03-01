@@ -251,7 +251,7 @@ def edit_line(from_line, pos=-1):
     unset_runmode()
     # suppress prompt, move cursor?
     prompt = False
-    console.set_pos(console.get_row()-1, 1)
+    console.set_pos(console.row-1, 1)
     
 def renumber(new_line=-1, start_line=-1, step=-1):
     # set defaults

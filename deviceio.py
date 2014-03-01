@@ -110,6 +110,7 @@ def create_device(arg, default=None):
 #   number
 #   access
 #   mode
+#   col
 #   init()
 #   close()
 #   loc()
@@ -125,10 +126,9 @@ def create_device(arg, default=None):
 #   write()
 #   flush()
 #   set_width()
-#   get_col()
 
 
-class ConsoleStream:
+class ConsoleStream(object):
     def write(self, c):
         console.write(c)
         
