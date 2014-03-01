@@ -172,7 +172,7 @@ def exec_key(ins):
 
 def exec_locate(ins):
     row, col, cursor, start, stop = expressions.parse_int_list(ins, 5, 2)          
-    crow, ccol = console.get_row(), console.get_col()
+    crow, ccol = console.row, console.col
     if row == None:
         row = crow
     if col == None:
@@ -235,7 +235,7 @@ def exec_print(ins, screen=None):
             newline = False
             ins.read(1)
             screen.write(output)
-            col = screen.get_col()
+            col = screen.col
             next_zone = int((col-1)/zone_width)+1
             if next_zone >= number_zones:
                 output = util.endl
@@ -266,7 +266,7 @@ def exec_print(ins, screen=None):
             pos = vartypes.pass_int_unpack(expressions.parse_expression(ins), 0xffff)
             pos %= screen.width
             util.require_read(ins, (')',))
-            col = screen.get_col()
+            col = screen.col
             if pos < col:
                 screen.write(output + util.endl + ' '*(pos-1))
             else:
@@ -279,7 +279,7 @@ def exec_print(ins, screen=None):
             # numbers always followed by a space
             if expr[0] in ('%', '!', '#'):
                 word += ' '
-            if screen.get_col() + len(word) -1 > screen.width and screen.get_col() != 1:
+            if screen.col + len(word) -1 > screen.width and screen.col != 1:
                 # prevent breaking up of numbers through newline
                 output += util.endl
             output += str(word)
