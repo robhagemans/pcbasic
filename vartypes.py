@@ -155,7 +155,7 @@ def uint_to_value(s):
 
 def sint_to_value(s):
     # 2's complement signed int, least significant byte first, sign bit is most significant bit
-    value =  0x100 * (s[1] & 0x7f) + s[0]
+    value = 0x100 * (s[1] & 0x7f) + s[0]
     if (s[1] & 0x80) == 0x80:
         return -0x8000 + value 
     else: 
@@ -164,16 +164,16 @@ def sint_to_value(s):
 # python ints to tokenised ints
 
 def value_to_uint(n):
-    if n>0xffff:
+    if n > 0xffff:
         # overflow
         raise error.RunError(6)        
     return bytearray((n&0xff, n >> 8)) 
 
 def value_to_sint(n):
-    if n>0xffff:  # 0x7fff ?
+    if n > 0xffff:  # 0x7fff ?
         # overflow
         raise error.RunError(6)     
-    if n<0:
+    if n < 0:
         n = 0x10000 + n        
     return bytearray((n&0xff, n >> 8)) 
 
@@ -232,15 +232,14 @@ def twoscomp_to_int(num):
 def str_gt(left,right):
     shortest = min(len(left), len(right))
     for i in range(shortest):
-        if left[i]>right[i]:
+        if left[i] > right[i]:
             return True
-        elif left[i]<right[i]:
+        elif left[i] < right[i]:
             return False
     # the same so far...
-    
     # the shorter string is said to be less than the longer, 
     # provided they are the same up till the length of the shorter.
-    if len(left)>len(right):
+    if len(left) > len(right):
         return True
     # left is shorter, or equal strings
     return False                    
