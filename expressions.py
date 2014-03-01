@@ -900,11 +900,7 @@ def value_ioctl(ins):
     fileio.get_file(num)
     raise error.RunError(5)   
     
-            
 ###########################################################
-###########################################################
-# unary math functions
-
 # option_double regulated single & double precision math
 
 def value_unary(ins, fn):
