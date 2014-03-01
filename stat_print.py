@@ -54,7 +54,6 @@ def exec_cls(ins):
     else:
         raise error.RunError(5)                  
     
-    
 def exec_color(ins):
     fore, back, bord = expressions.parse_int_list(ins, 3, 5)          
     if bord == None:
@@ -117,7 +116,6 @@ def exec_color(ins):
         # in screen 7 and 8, only low intensity palette is used.
         console.set_palette_entry(0, back%8)    
     
-    
 def exec_palette(ins):
     # can't set blinking colours separately
     num_palette_entries = console.num_colours
@@ -146,7 +144,6 @@ def exec_palette(ins):
         if pair[1]>-1:
             console.set_palette_entry(pair[0], pair[1])
     util.require(ins, util.end_statement)    
-        
 
 def exec_key(ins):
     d = util.skip_white(ins)
@@ -198,7 +195,6 @@ def exec_key(ins):
                 events.event_keys[keynum-1] = str(text)
     util.require(ins, util.end_statement)        
 
-
 def exec_locate(ins):
     row, col, cursor, start, stop = expressions.parse_int_list(ins, 5, 2)          
     crow, ccol = console.get_row(), console.get_col()
@@ -211,7 +207,6 @@ def exec_locate(ins):
     if cursor != None:
         console.show_cursor(cursor)
     # FIXME: cursor shape not implemented
-
 
 def exec_write(ins, screen=None):
     screen = expressions.parse_file_number(ins)
@@ -231,7 +226,6 @@ def exec_write(ins, screen=None):
             expr = expressions.parse_expression(ins, empty_err=2)
     util.require(ins, util.end_statement)        
     screen.write(util.endl)
-        
         
 def exec_print(ins, screen=None):
     if screen==None:
@@ -306,7 +300,6 @@ def exec_print(ins, screen=None):
                 output += util.endl
             output += str(word)
             
-            
 def get_next_expression(ins): 
     util.skip_white(ins)
     expr = expressions.parse_expression(ins)
@@ -318,7 +311,6 @@ def get_next_expression(ins):
         return False, True, expr
     #return more_data, semicolon, expr
     return True, True, expr
-
 
 def exec_print_using(ins, screen):
     util.skip_white(ins)
@@ -391,7 +383,7 @@ def exec_print_using(ins, screen):
             more_data, semicolon, expr = get_next_expression(ins) 
             # feed back c, we need it
             fors.seek(-1,1)
-            varstring = format_number(vartypes.pass_float_keep(expr), fors)     
+            varstring = vartypes.format_number(vartypes.pass_float_keep(expr), fors)     
             screen.write( varstring )
         else:
             screen.write( c )
@@ -399,11 +391,9 @@ def exec_print_using(ins, screen):
         screen.write(util.endl)
     util.require(ins, util.end_statement)
 
-
 def exec_lprint(ins):
     exec_print(ins, deviceio.lpt1)
     deviceio.lpt1.flush()
-    
                              
 def exec_view_print(ins):
     if util.skip_white(ins) in util.end_statement:
@@ -414,7 +404,6 @@ def exec_view_print(ins):
         stop = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_statement)
         console.set_view(start, stop)
-
 
 def check_view(row, col):
     if row == console.height and console.keys_visible:
@@ -428,7 +417,6 @@ def check_view(row, col):
         if row == console.height:
             # temporarily allow writing on last row
             console.last_row_on()       
-
     
 def exec_width(ins):
     device = ''
@@ -472,150 +460,6 @@ def exec_width(ins):
     else:
         dev.set_width(w)    
     
-        
-#############################################################        
-                
-def format_number(value, fors):
-    if value[0] == '#':
-        type_sign, exp_sign = '#', 'D'
-    else:
-        type_sign, exp_sign = '!', 'E'
-    c = fors.read(1)
-    width = 0
-    plus_sign = (c == '+')
-    if plus_sign:
-        c = fors.read(1)
-        width += 1
-    digits_before = 0
-    dollar_sign = (c == '$')
-    if dollar_sign:
-        fors.read(1)
-        c = fors.read(1)        
-        digits_before += 2
-    asterisk = (c == '*')    
-    if asterisk:    
-        fors.read(1)
-        c = fors.read(1)
-        digits_before += 2        
-        if c == '$':
-            dollar_sign = True
-            c = fors.read(1)
-            digits_before += 1
-    if asterisk:
-        fill_char = '*'
-    else:
-        fill_char = ' '
-    while c == '#':
-        digits_before += 1
-        c = fors.read(1)
-        if c == ',':
-            digits_before+=1
-            c = fors.read(1)            
-    decimals = 0    
-    dots = 0
-    if c == '.':
-        dots += 1
-        c = fors.read(1)
-        while c == '#':
-            decimals += 1
-            c = fors.read(1)
-    width += digits_before + decimals + dots
-    exp_form = False
-    if c == '^':
-        if util.peek(fors,3) == '^^^':
-            fors.read(3)
-            c = fors.read(1)
-            exp_form = True
-            width += 4
-    sign_after = c in ('-','+') and not plus_sign
-    if sign_after:
-        if c == '+':
-            plus_sign = True
-        c = fors.read(1)
-        width+=1
-    if digits_before + decimals > 24:
-        # illegal function call
-        raise error.RunError(5)
-    ##############################################
-    # format to string
-    expr = fp.unpack(vartypes.number_abs(value))
-    if exp_form:
-        if not plus_sign and not sign_after and digits_before > 0:
-            # reserve space for sign
-            digits_before -= 1
-        work_digits = digits_before + decimals
-        if work_digits > expr.digits:
-            # decimal precision of the type
-            work_digits = expr.digits
-        if work_digits > 0:
-            # scientific representation
-            lim_bot = fp.just_under(fp.pow_int(expr.ten, work_digits-1))
-        else:
-            # special case when work_digits == 0, see also below
-            # setting to 0.1 results in incorrect rounding (why?)
-            lim_bot = expr.one
-        lim_top = lim_bot.copy()
-        lim_top.imul10()
-        num, exp10 = expr.bring_to_range(lim_bot, lim_top)
-        digitstr = fp.get_digits(num, work_digits)
-        if len(digitstr) < digits_before + decimals:
-            digitstr += '0' * (digits_before+decimals-len(digitstr))
-        # this is just to reproduce GW results for no digits: 
-        # e.g. PRINT USING "#^^^^";1 gives " E+01" not " E+00"
-        if work_digits == 0:
-            exp10 += 1
-        exp10 += digits_before + decimals - 1  
-        fp_repr = fp.scientific_notation(digitstr, exp10, exp_sign, digits_to_dot=digits_before, force_dot=(dots>0))
-    else:
-        # fixed-point representation
-        factor = fp.pow_int(expr.ten, decimals) 
-        unrounded = fp.mul(expr, factor)
-        num = unrounded.copy().iround()
-        # find exponent 
-        exp10 = 1
-        pow10 = fp.pow_int(expr.ten, exp10) # pow10 = 10L**exp10
-        while num.gt(pow10) or num.equals(pow10): # while pow10 <= num:
-            pow10.imul10() #pow10*=10
-            exp10 += 1
-        work_digits = exp10 + 1
-        diff = 0
-        if exp10 > expr.digits:
-            diff = exp10 - expr.digits
-            factor = fp.pow_int(expr.ten, diff) # pow10 = 10L**exp10
-            num = fp.div(unrounded, factor).iround() #expr.from_int(10L**diff))
-            work_digits -= diff
-        num = num.trunc_to_int()   
-        # argument work_digits-1 means we're getting work_digits==exp10+1-diff digits
-        digitstr = fp.get_digits(num, work_digits-1, remove_trailing=False)
-        # fill up with zeros
-        digitstr += '0' * diff
-        fp_repr = fp.decimal_notation(digitstr, work_digits-1-1-decimals+diff, '', (dots>0))
-    ##########################################
-    valstr = ''
-    if dollar_sign:
-        valstr += '$'
-    valstr += fp_repr    
-    sign = vartypes.unpack_int(vartypes.number_sgn(value))
-    if sign_after:
-        sign_str = ' '
-    else:
-        sign_str = ''    
-    if sign < 0:
-        sign_str = '-'
-    elif plus_sign:
-        sign_str = '+'    
-    if sign_after:
-        valstr += sign_str
-    else:
-        valstr = sign_str + valstr
-    if len(valstr) > width:
-        valstr = '%' + valstr
-    else:
-        valstr = fill_char*(width-len(valstr)) + valstr
-    return valstr
-    
-
-
 def exec_screen(ins):
     # in GW, screen 0,0,0,0,0,0 raises error after changing the palette... this raises error before:
     mode, colorswitch, apagenum, vpagenum = expressions.parse_int_list(ins, 4)
@@ -625,7 +469,6 @@ def exec_screen(ins):
     # then the error is only raised after changing the palette.
     util.require(ins, util.end_statement)        
     console.set_mode(mode, colorswitch, apagenum, vpagenum)
-                
     
 def exec_pcopy(ins):
     src = vartypes.pass_int_unpack(expressions.parse_expression(ins))
