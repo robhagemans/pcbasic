@@ -1620,7 +1620,7 @@ ERRORS:
 
 
 LCOPY statement
-LCOPY num
+LCOPY [num]
 ---------------
 Does nothing. 'num' is a number-valued expression between 0 and 255, inclusive.
 NOTES:
