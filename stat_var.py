@@ -441,28 +441,27 @@ def str_to_type(word, type_char):
         except AttributeError:
             return None
 
-
 def exec_line_input(ins):
     util.skip_white(ins)
     finp = expressions.parse_file_number(ins)
-    if finp != None:
-        # get string variable
-        #util.skip_white(ins)
-        readvar, indices = expressions.get_var_or_array_name(ins)
-        # read the input
-        inputs = finp.read()
-        var.set_var_or_array(readvar, indices, ('$', inputs))
-        return
-    # ; to avoid echoing newline
-    newline = not util.skip_white_read_if(ins,';')
-    # get prompt    
-    prompt = parse_prompt(ins, '')    
+    if not finp:
+        # ; to avoid echoing newline
+        newline = not util.skip_white_read_if(ins, ';')
+        # get prompt    
+        prompt = parse_prompt(ins, '')
     # get string variable
-    readvar,indices = expressions.get_var_or_array_name(ins)
+    readvar, indices = expressions.get_var_or_array_name(ins)
+    if not readvar or readvar[0] == '':
+        raise error.RunError(2)
+    elif readvar[-1] != '$':
+        raise error.RunError(13)    
     # read the input
-    console.write(prompt) 
-    inputs = console.read_screenline(write_endl=newline)
-    var.set_var_or_array(readvar, indices, ('$', inputs))
+    if finp:
+        inputs = finp.read()
+    else:    
+        console.write(prompt) 
+        inputs = console.read_screenline(write_endl=newline)
+    var.set_var_or_array(readvar, indices, vartypes.pack_string(inputs))
 
 def exec_restore(ins):
     if not util.skip_white(ins) in util.end_statement:
