@@ -97,7 +97,7 @@ def input_loop():
 
 # execute any commands
 def execution_loop():
-    console.hide_cursor()
+    console.show_cursor(False)
     while True:
         try:
             console.check_events()

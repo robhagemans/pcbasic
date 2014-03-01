@@ -36,13 +36,12 @@ backend = None
 width = 80
 # number of rows, counting 1..height
 height = 25
-
 # viewport parameters
 view_start = 1
 scroll_height = 24
 view_set = False
 # writing on bottom row is allowed    
-last_row_is_on=False
+last_row_is_on = False
 
 # cursor/current characteristics
 attr = 7
@@ -106,11 +105,9 @@ mode_data = {
     9: ( 14, (15, 0), (16, 64), 80, 2 ),
     }
 
-
 # pen and stick
 pen_is_on = False
 stick_is_on = False
-
 
 # KEY ON?
 keys_visible = False
@@ -129,8 +126,6 @@ def replace_key(c):
         if c == events.event_keys[keynum] and (not program.run_mode or not events.key_handlers[keynum].enabled): 
             return key_replace[keynum]
     return c
-
-
 
 def init():
     backend.init()
@@ -246,7 +241,6 @@ def write(s, scroll_ok=True): #, no_echo=False):
         elif c == '\x1F':   set_pos(row+1, col,scroll_ok)
         last = c
 
-
 def insert_char(crow, ccol, c, cattr):
     global apage
     while True:
@@ -273,7 +267,6 @@ def insert_char(crow, ccol, c, cattr):
             crow += 1
             ccol = 1
     return crow            
-        
         
 def delete_char(crow, ccol):
     global apage
@@ -551,7 +544,6 @@ def skip_word_left():
         if (c<'0' or c>'9') and (c<'A' or c>'Z'):
             break
     set_pos(last_row, last_col)                            
-        
 
 def print_screen():
     for crow in range(1, height+1):
@@ -652,7 +644,6 @@ def check_pos(scroll_ok=True):
         # signal position change
         return False
     return True
-    
 
 def set_attr(fore, back):
     global attr
@@ -668,9 +659,6 @@ def show_cursor(do_show = True):
     cursor = do_show
     backend.show_cursor(do_show, prev)
     return prev
-
-def hide_cursor():
-    return show_cursor(False)
 
 def colours(at):
     back = (at>>4) & 0x7
@@ -852,13 +840,15 @@ def put_char(c):
     if col > width:
         # wrap line
         apage.wrap[row-1] = True
+        # scroll down
+        scroll_down(row+1)
         row += 1
         col = 1
-
+        
 def redraw_row(start=0, crow=-1):
     if crow == -1:
-        crow=row
-    save_curs = hide_cursor()
+        crow = row
+    save_curs = show_cursor(False)
     while True:
         if crow >= height or crow <0:
             break
