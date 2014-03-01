@@ -66,7 +66,7 @@ def exec_line_graph(ins):
                 if util.skip_white_read_if(ins, 'F'):         
                     mode = 'BF'
             if util.skip_white_read_if(ins, ','):
-                mask = vartypes.pass_int_unpack(expressions.parse_expression(ins, allow_empty=True), maxint=0xffff)
+                mask = vartypes.pass_int_unpack(expressions.parse_expression(ins, allow_empty=True), maxint=0x7fff)
     util.require(ins, util.end_statement)    
     if mode == 'L':
         graphics.draw_line(x0, y0, x1, y1, c, mask)
