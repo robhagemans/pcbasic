@@ -349,10 +349,7 @@ def exec_lcopy(ins):
         util.require(ins, util.end_statement)
 
 # MOTOR does nothing
-def exec_motor(ins):
-    if util.skip_white(ins) not in util.end_statement:
-        vartypes.pass_int_keep(expressions.parse_expression(ins))
-        util.require(ins, util.end_statement)
+exec_motor = exec_lcopy
 
 ##########################################################
 # statements that require further qualification
@@ -514,7 +511,7 @@ def exec_on_play(ins):
     events.play_handler.gosub = jumpnum
     
 def exec_on_pen(ins):
-    strigval, jumpnum = parse_on_event(ins, bracket=False)
+    _, jumpnum = parse_on_event(ins, bracket=False)
     events.pen_handler.gosub = jumpnum
     
 def exec_on_strig(ins):
