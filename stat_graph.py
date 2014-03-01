@@ -214,9 +214,7 @@ def exec_paint(ins):
         border = c    
         if util.skip_white_read_if(ins, ','):
             bval = expressions.parse_expression(ins, allow_empty=True)
-            if bval == None:
-                pass
-            else:
+            if bval:
                 border = vartypes.pass_int_unpack(bval)
             if util.skip_white_read_if(ins, ','):
                 background_pattern = vartypes.pass_string_unpack(expressions.parse_expression(ins), err=5)

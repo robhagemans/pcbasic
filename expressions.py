@@ -298,10 +298,8 @@ def parse_expr_unit(ins):
 
 def parse_bracket(ins):
     util.require_read(ins, ('(',))
-    val = parse_expression(ins, allow_empty = True)
-    if val == None:
-        # we need a Syntax error, not a Missing operand
-        raise error.RunError(2)
+    # we need a Syntax error, not a Missing operand
+    val = parse_expression(ins, empty_err=2)
     util.require_read(ins, (')',))
     return val
 
@@ -466,10 +464,8 @@ def value_instr(ins):
     small = ''
     have_big = False
     n = 1
-    s = parse_expression(ins, allow_empty=True)
-    if s == None:
-        raise error.RunError(2)
-    elif s[0] != '$':
+    s = parse_expression(ins, empty_err=2)
+    if s[0] != '$':
         n = vartypes.pass_int_unpack(s)
         util.range_check(1, 255, n)
     else:
