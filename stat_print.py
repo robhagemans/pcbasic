@@ -199,7 +199,17 @@ def exec_locate(ins):
         row = crow
     if col == None:
         col = ccol
-    check_view(row, col)
+    if row == console.height and console.keys_visible:
+        raise error.RunError(5)
+    elif console.view_set:
+        util.range_check(console.view_start, console.scroll_height, row)
+        util.range_check(1, console.width, col)
+    else:
+        util.range_check(1, console.height, row)
+        util.range_check(1, console.width, col)
+        if row == console.height:
+            # temporarily allow writing on last row
+            console.last_row_on()       
     console.set_pos(row, col, scroll_ok=False)    
     if cursor != None:
         console.show_cursor(cursor)
@@ -400,19 +410,6 @@ def exec_view_print(ins):
         stop = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_statement)
         console.set_view(start, stop)
-
-def check_view(row, col):
-    if row == console.height and console.keys_visible:
-        raise error.RunError(5)
-    elif console.view_set:
-        util.range_check(console.view_start, console.scroll_height, row)
-        util.range_check(1, console.width, col)
-    else:
-        util.range_check(1, console.height, row)
-        util.range_check(1, console.width, col)
-        if row == console.height:
-            # temporarily allow writing on last row
-            console.last_row_on()       
     
 def exec_width(ins):
     device = ''
