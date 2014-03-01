@@ -1694,18 +1694,29 @@ from ('x0', 'y0') to ('x1', 'y1'), endpoints inclusive. If B is specified, a
 rectangle is drawn with sides parallel to the screen and two opposing corners 
 specified by ('x0', 'y0') and ('x1', 'y1'). If the starting point is not given, 
 the current graphics position is used as a staring point. LINE moves the 
-current graphics position to ('x1', 'y1'). 'attr' must be a number-valued 
-expression between 0 and 255, inclusive, which specifies the colour attribute 
-of the line. If it is not given, the current attribute is used. If F is 
-specified with B, the rectangle is filled with the specified attribute. F and
-B may be separated by zero or more spaces. If 'pattern' is specified, it must 
-be a number-valued expression between -32768 and 32767, inclusive. This is 
-interpreted as a 16-bit binary pattern mask apllied to consecutive pixels in 
-the line: a 1 bit indicates a pixel plotted; a 0 bit indicates a pixel left 
-untouched. The pattern starts at the most significant bit, which is applied
-to the topmost endpoint. 
-
-
+current graphics position to ('x1', 'y1'). 
+If F is specified with B, the rectangle is filled with the specified attribute. 
+F and B may be separated by zero or more spaces. 
+'attr' must be a number-valued expression between 0 and 255, inclusive, which 
+    specifies the colour attribute of the line. If it is not given, the current 
+    attribute is used. 
+If 'pattern' is specified, it must be a number-valued expression between -32768 
+    and 32767, inclusive. This is interpreted as a 16-bit binary pattern mask 
+    applied to consecutive pixels in the line: a 1 bit indicates a pixel 
+    plotted; a 0 bit indicates a pixel left untouched. The pattern starts at 
+    the most significant bit, which is applied to the topmost endpoint. If a 
+    box is drawn, the pattern is applied in the following counter-intuitive 
+    sequence: (x1, y1)-(x0, y1), (x1, y0)-(x0, y0), then (x1, y0)-(x1, y1), 
+    (x0, y0)-(x0, y1) if y0<y1 and y0,y1 reversed if y1<y0. When drawing a 
+    filled box, LINE ignores the pattern.
+NOTES:
+-   If a coordinate is outside the screen boundary, it is replaced with -1 (if
+    less than 0) or the screen dimension (if larger than the screen dimension).
+ERRORS:
+-   If LINE ends in a comma and it is the first or third, MISSING OPERAND is
+    raised. if it is the second, SYNTAX ERROR is raised.
+-   If any of the coordinates is not in [-32768, 32767], OVERFLOW is raised.
+    
 
 
 MOTOR statement
