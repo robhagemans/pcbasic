@@ -47,15 +47,12 @@ def exec_preset(ins):
 def exec_line_graph(ins):
     graphics.require_graphics_mode()
     if util.skip_white(ins) == '(':
-        coord = parse_coord(ins)
-        x0, y0 = graphics.window_coords(*coord)
+        x0, y0 = graphics.window_coords(*parse_coord(ins))
     else:
         x0, y0 = graphics.last_point
     util.require_read(ins, ('\xEA',)) # -
-    x1,y1 = graphics.window_coords(*parse_coord(ins))
-    c = -1    
-    mode = 'L'
-    mask = 0xffff
+    x1, y1 = graphics.window_coords(*parse_coord(ins))
+    c, mode, mask = -1, 'L', 0xffff
     if util.skip_white_read_if(ins, ','):
         expr = expressions.parse_expression(ins, allow_empty=True)
         if expr:
@@ -65,13 +62,18 @@ def exec_line_graph(ins):
                 mode = 'B'
                 if util.skip_white_read_if(ins, 'F'):         
                     mode = 'BF'
+                else:
+                    util.require(ins, util.end_statement + (',',))
+            else:
+                util.require(ins, (',',))
             if util.skip_white_read_if(ins, ','):
-                mask = vartypes.pass_int_unpack(expressions.parse_expression(ins, allow_empty=True), maxint=0x7fff)
+                mask = vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=22), maxint=0x7fff)
+        elif not expr:
+            raise error.RunError(22)        
     util.require(ins, util.end_statement)    
     if mode == 'L':
         graphics.draw_line(x0, y0, x1, y1, c, mask)
     elif mode == 'B':
-        # TODO: we don't exactly match GW's way of applying the pattern, haven't found the logic of it
         graphics.draw_box(x0, y0, x1, y1, c, mask)
     elif mode == 'BF':
         graphics.draw_box_filled(x0, y0, x1, y1, c)
