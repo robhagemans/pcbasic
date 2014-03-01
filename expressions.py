@@ -18,7 +18,6 @@ import fp
 import vartypes
 import rnd
 import tokenise
-
 import oslayer
 import util
 import error
@@ -27,7 +26,6 @@ import fileio
 import deviceio
 import graphics
 import console
-
 # for FRE() only
 import program
 
@@ -49,16 +47,12 @@ priority = [
 
 # flatten list
 operator_tokens = [item for sublist in priority for item in sublist]
-
 # command line option /d
 # allow double precision math for ^, ATN, COS, EXP, LOG, SIN, SQR, and TAN
 option_double = False
-
 # pre-defined PEEK outputs
 peek_values = {}
 
-######################################################################
-######################################################################
 
 def parse_expression(ins, allow_empty=False, empty_err=22):
     units = []
@@ -291,8 +285,6 @@ def parse_expr_unit(ins):
             return value_lof(ins)
     return None
 
-
-######################################################################
 ######################################################################
 # expression parsing utility functions 
 
@@ -380,9 +372,6 @@ def get_var_or_array_name(ins):
     return name, indices
 
 ######################################################################
-######################################################################
-# expression units
-
 # conversion
 
 def value_cvi(ins):            
@@ -545,7 +534,6 @@ def value_space(ins):
     num = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 255, num)
     return vartypes.pack_string(bytearray(' '*num))
-
     
 ######################################################################
 # console functions
@@ -649,26 +637,21 @@ def value_environ(ins):
         envlist = list(os.environ)
         if expr < 1 or expr > 255:
             raise error.RunError(5)
-        if expr>len(envlist):
+        if expr > len(envlist):
             return vartypes.null['$']            
         else:
             val = os.getenv(envlist[expr-1])
-            return vartypes.pack_string(bytearray(envlist[expr-1]+'='+val))
+            return vartypes.pack_string(bytearray(envlist[expr-1] + '=' + val))
         
 def value_timer(ins):
     # precision of GWBASIC TIMER is about 1/20 of a second
-    timer = fp.div( fp.Single.from_int(oslayer.timer_milliseconds()/50), fp.Single.from_int(20))
-    return fp.pack(timer)
+    return fp.pack(fp.div( fp.Single.from_int(oslayer.timer_milliseconds()/50), fp.Single.from_int(20)))
     
 def value_time(ins):
-    now = datetime.datetime.today() + oslayer.time_offset
-    timestr = now.strftime('%H:%M:%S')
-    return vartypes.pack_string(timestr)
+    return vartypes.pack_string((datetime.datetime.today() + oslayer.time_offset).strftime('%H:%M:%S'))
     
 def value_date(ins):
-    now = datetime.datetime.today() + oslayer.time_offset
-    timestr = now.strftime('%m-%d-%Y')
-    return vartypes.pack_string(timestr)
+    return vartypes.pack_string((datetime.datetime.today() + oslayer.time_offset).strftime('%m-%d-%Y'))
 
 #######################################################
 # user-defined functions
@@ -683,7 +666,7 @@ def value_fn(ins):
     # save existing vars
     varsave = {}
     for name in varnames:
-        if name[0]=='$':
+        if name[0] == '$':
             # we're just not doing strings
             raise error.RunError(13)
         if name in var.variables:
@@ -714,20 +697,20 @@ def value_point(ins):
     util.require_read(ins, ('(',))
     lst = parse_expr_list(ins, 2, err=2)
     util.require_read(ins, (')',))
-    if lst[0]==None:
+    if not lst[0]:
         raise error.RunError(2)
-    if lst[1]==None:
+    if not lst[1]:
         # single-argument version
         x,y = graphics.get_coord()
         fn = vartypes.pass_int_unpack(lst[0])
-        if fn==0:
+        if fn == 0:
             return vartypes.pack_int(x)
-        elif fn==1:
+        elif fn == 1:
             return vartypes.pack_int(y)
-        elif fn==2:
+        elif fn == 2:
             fx, fy = graphics.get_window_coords(x,y)
             return fx
-        elif fn==3:
+        elif fn == 3:
             fx, fy = graphics.get_window_coords(x,y)
             return fy
     else:       
@@ -1048,7 +1031,7 @@ def vcaret(left, right):
     if (left[0] == '#' or right[0] == '#') and option_double:
         return fp.pack( fp.power(fp.unpack(vartypes.pass_double_keep(left)), fp.unpack(vartypes.pass_double_keep(right))) )
     else:
-        if right[0]=='%':
+        if right[0] == '%':
             return fp.pack( fp.unpack(vartypes.pass_single_keep(left)).ipow_int(vartypes.unpack_int(right)) )
         else:
             return fp.pack( fp.power(fp.unpack(vartypes.pass_single_keep(left)), fp.unpack(vartypes.pass_single_keep(right))) )
