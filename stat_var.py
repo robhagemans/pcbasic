@@ -77,26 +77,26 @@ def exec_clear(ins):
     sound.music_foreground = True
     # integer expression allowed but ignored
     intexp = expressions.parse_expression(ins, allow_empty=True)
-    if intexp != ('','')  and intexp != None:
+    if intexp:
         expr = vartypes.pass_int_unpack(intexp)
         if expr < 0:
             raise error.RunError(5)
     if util.skip_white_read_if(ins, ','):
-        # NOT IMPLEMENTED
+        # TODO: NOT IMPLEMENTED
         # expression1 is a memory location that, if specified, sets the maximum number of bytes available for use by GW-BASIC        
         exp1 = expressions.parse_expression(ins, allow_empty=True)
-        if exp1 != ('',''):
+        if exp1:
             exp1 = vartypes.pass_int_unpack(exp1)
         if exp1 == 0:
             #  0 leads to illegal fn call
             raise error.RunError(5)
         if util.skip_white_read_if(ins, ','):
-            # NOT IMPLEMENTED
+            # TODO: NOT IMPLEMENTED
             # expression2 sets aside stack space for GW-BASIC. The default is the previous stack space size. 
             # When GW-BASIC is first executed, the stack space is set to 512 bytes, or one-eighth of the available memory, 
             # whichever is smaller.
             exp2 = expressions.parse_expression(ins, allow_empty=True)
-            if exp2 == ('', ''):
+            if exp2 == None:
                 raise error.RunError(2)
             if vartypes.pass_int_unpack(exp2) == 0:
                 #  0 leads to illegal fn call
@@ -507,7 +507,7 @@ def exec_def_fn(ins):
 def exec_randomize(ins):
     val = expressions.parse_expression(ins, allow_empty=True)
     # prompt for random seed if not specified
-    if val == ('', ''):
+    if val == None:
         console.write("Random number seed (-32768 to 32767)? ")
         # should be interpreted as integer sint if it is
         val = tokenise.str_to_value_keep(('$', console.read_screenline()))

@@ -210,7 +210,7 @@ def parse_value(ins):
         return ('!', val)
     elif d == '\x1f':                       # eight byte double-precision floating point constant
         return ('#', val)
-    return ('', '')
+    return None
 
 def parse_name(ins):
     name = ''

@@ -169,9 +169,9 @@ def exec_chain(ins):
         # check for an expression that indicates a line in the other program. not stored as a jumpnum (to avoid RENUM)
         # NOTE in GW, negative numbers will be two's complemented into a line number!
         expr = expressions.parse_expression(ins, allow_empty=True)
-        if expr != ('',''):
+        if expr != None:
             jumpnum = vartypes.pass_int_unpack(expr, maxint=0xffff)
-            if jumpnum <0:
+            if jumpnum < 0:
                 jumpnum = 0x10000 + jumpnum            
         if util.skip_white_read_if(ins, (',',)):
             util.skip_white(ins)
