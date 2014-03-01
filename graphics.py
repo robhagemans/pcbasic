@@ -19,7 +19,7 @@ import util
 backend = None
 
 # screen width and height in pixels
-size = (0,0)
+size = (0, 0)
 
 graph_view_set = False
 view_graph_absolute = True
@@ -27,7 +27,7 @@ view_graph_absolute = True
 graph_window = None
 graph_window_bounds = None
 
-last_point = (0,0)    
+last_point = (0, 0)    
 pixel_aspect_ratio = fp.Single.one
 bitsperpixel = 4
 
@@ -119,6 +119,9 @@ def window_coords(fx, fy):
     else:
         x = fx.round_to_int()
         y = fy.round_to_int()
+    # overflow check
+    if x < -0x8000 or y < -0x8000 or x > 0x7fff or y > 0x7fff:
+        raise error.RunError(6)    
     return x, y
 
 # inverse function
@@ -159,12 +162,26 @@ def get_colour_index(c):
             c = console.num_colours-1
     return c
 
+def check_coords(x, y):
+    if x < 0:
+        x = -1
+    elif x > size[0]:
+        x = size[0]
+    if y < 0:
+        y = -1
+    elif y > size[1]:
+        y = size[1]        
+    return x, y
+    
 def draw_line(x0, y0, x1, y1, c, pattern=0xffff):
     global last_point
     last_point = x1,y1
     c = get_colour_index(c)
-    x0, y0 = view_coords(x0, y0)
-    x1, y1 = view_coords(x1, y1)
+    x0, y0 = check_coords(*view_coords(x0, y0))
+    x1, y1 = check_coords(*view_coords(x1, y1))
+    if y1 <= y0:
+        # work from top to bottom, or from x1,y1 if at the same height. this matters for mask.
+        x1, y1, x0, y0 = x0, y0, x1, y1
     # Bresenham algorithm
     dx, dy = abs(x1-x0), abs(y1-y0)
     steep = dy > dx
@@ -192,11 +209,15 @@ def draw_line(x0, y0, x1, y1, c, pattern=0xffff):
             error += dx    
     backend.remove_graph_clip()
     
-def draw_straight(p0, p1, q, c, pattern, mask, xy=0):
+def draw_straight(x0, y0, x1, y1, c, pattern, mask):
+    if x0 == x1:
+        p0, p1, q, direction = y0, y1, x0, 'y' 
+    else:
+        p0, p1, q, direction = x0, x1, y0, 'x'
     sp = 1 if p1 > p0 else -1
     for p in range (p0, p1+sp, sp):
-        if pattern&mask != 0:
-            if xy == 0:
+        if pattern & mask != 0:
+            if direction == 'x':
                 backend.put_pixel(p, q, c)
             else:
                 backend.put_pixel(q, p, c)
@@ -205,20 +226,22 @@ def draw_straight(p0, p1, q, c, pattern, mask, xy=0):
             mask = 0x8000
     return mask
                         
-def draw_box(x0,y0, x1,y1, c, pattern=0xffff):
+def draw_box(x0, y0, x1, y1, c, pattern=0xffff):
     global last_point
     last_point = x1, y1
-    x0, y0 = view_coords(x0, y0)
-    x1, y1 = view_coords(x1, y1)
+    x0, y0 = check_coords(*view_coords(x0, y0))
+    x1, y1 = check_coords(*view_coords(x1, y1))
     c = get_colour_index(c)
     mask = 0x8000
     backend.apply_graph_clip()
-    mask = draw_straight(y0, y1, x0, c, pattern, mask, 1)
-    mask = draw_straight(x0, x1, y1, c, pattern, mask, 0)
-    mask = draw_straight(y1, y0, x1, c, pattern, mask, 1)
-    mask = draw_straight(x1, x0, y0, c, pattern, mask, 0)
+    mask = draw_straight(x1, y1, x0, y1, c, pattern, mask)
+    mask = draw_straight(x1, y0, x0, y0, c, pattern, mask)
+    # verticals always drawn top to bottom
+    if y0 < y1:
+        y0, y1 = y1, y0
+    mask = draw_straight(x1, y1, x1, y0, c, pattern, mask)
+    mask = draw_straight(x0, y1, x0, y0, c, pattern, mask)
     backend.remove_graph_clip()
-
 
 # see e.g. http://en.wikipedia.org/wiki/Midpoint_circle_algorithm
 def draw_circle(x0,y0,r,c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, line1=False):
