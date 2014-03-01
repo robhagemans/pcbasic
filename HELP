@@ -197,12 +197,15 @@ VARIABLES
 ---------
 Variable names must start with a letter; all characters of the variable name
 (except the type character) must be letters (A-Z), figures (0-9), or a dot (.)
-Only the first 40 characters in the name are significant. For each name, four
-different variables may exist corresponding to the four types. That is, you can
-have A$, A%, A! and A# with different values. Which one of those is called A 
-depends on the settings in DEFINT/DEFDBL/DEFSNG/DEFSTR. The default is A==A!.
-In addition, you can have arrays A$(), A%(), A!(), A#() which are separate from
-the scalar variables of the same name.
+Only the first 40 characters in the name are significant. Variable names must
+not be identical to keywords -- roughly, statement or function names; more 
+accurately, anything that has a defined keyword token, including such words as
+TO but not, for instace, AS. There is no particular logic to this. For each 
+name, four different variables may exist corresponding to the four types. 
+That is, you can have A$, A%, A! and A# with different values. Which one of 
+those is called A depends on the settings in DEFINT/DEFDBL/DEFSNG/DEFSTR. 
+The default is A==A!. In addition, you can have arrays A$(), A%(), A!(), A#() 
+which are separate from the scalar variables of the same name.
 
 
 TYPES
@@ -264,15 +267,16 @@ Boolean:
     NOT, AND, OR, XOR, EQV, IMP
 
 
-INTERNAL REPRESENTATION OF NUMBERS AND THE MICROSOFT BINARY FORMAT
-------------------------------------------------------------------
-
-
 ATTRIBUTES, PALETTES AND COLOURS
 --------------------------------
 
 
+INTERNAL REPRESENTATION OF NUMBERS AND THE MICROSOFT BINARY FORMAT
+------------------------------------------------------------------
 
+
+KEYWORD LIST
+------------
 
 
 ABS(x) function
@@ -1501,6 +1505,7 @@ NOTES:
 ERRORS:
 -   If 'file_num' is not an open file, raises BAD FILE NUMBER.
 -   If 'file_num' is not in [-32768, 32767], raises OVERFLOW.
+-   If 'file_num' has a string value, raises TYPE MISMATCH.
 -   Otherwise, raises ILLEGAL FUNCTION CALL
 
 
@@ -1514,6 +1519,7 @@ NOTES:
 ERRORS:
 -   If 'file_num' is not an open file, raises BAD FILE NUMBER.
 -   If 'file_num' is not in [-32768, 32767], raises OVERFLOW.
+-   If 'file_num' has a string value, raises TYPE MISMATCH.
 -   Otherwise, raises ILLEGAL FUNCTION CALL
 
     
@@ -1539,6 +1545,7 @@ NOES:
 ERRORS:
 -   If 'key_id' is not in [-32768, 32767], raises OVERFLOW.
 -   If 'key_id' is not in [1, 255], raises ILLEGAL FUNCTION CALL.
+-   If 'key_id' has a string value, raises TYPE MISMATCH.
 
 
 KEY statement (event trapping control)
@@ -1561,6 +1568,7 @@ as described below.
 ERRORS:
 -   If 'key_id' is not in [-32768, 32767], raises OVERFLOW.
 -   If 'key_id' is not in [0, 20], raises ILLEGAL FUNCTION CALL.
+-   If 'key_id' has a string value, raises TYPE MISMATCH.
  
 
 KEY statement (event trapping key definition)
@@ -1588,7 +1596,9 @@ NOTES:
 ERRORS:
 -   If 'key_id' is not in [-32768, 32767], raises OVERFLOW.
 -   If 'key_id' is not in [1, 255], raises ILLEGAL FUNCTION CALL.
+-   If 'key_id' has a string value, raises TYPE MISMATCH.
 -   If 'two_char_string' is longer than two, raises ILLEGAL FUNCTION CALL. 
+-   If 'two_char_string' has a numeric value, raises TYPE MISMATCH.
 
 
 KILL statement
@@ -1606,9 +1616,81 @@ ERRORS:
 -   If the user has no write permission, raises PERMISSION DENIED 
 -   If a syntax error occurs after the closing quote, the file is removed 
     anyway.
+-   If 'file_path' has a number value, raises TYPE MISMATCH.
 
 
-LCOPY
+LCOPY statement
+LCOPY num
+---------------
+Does nothing. 'num' is a number-valued expression between 0 and 255, inclusive.
+NOTES:
+-   This statement does nothing in GW-BASIC. Presumably, it is left over from a
+    statement in older versions of MS Basic that would copy the screen to the 
+    printer.
+ERRORS:
+-   If 'num' is not in [-32768, 32767], raises OVERFLOW.
+-   If 'num' is not in [0, 255], raises ILLEGAL FUNCTION CALL.
+-   If 'num' has a string value, raises TYPE MISMATCH. 
+
+
+LEFT$ function
+child = LEFT$(parent, num_chars)
+--------------
+Returns the leftmost 'num_chars' characters of 'parent'. 'parent' must be a 
+string-valued expression. 'num_chars' must be a numeric expression between 0 
+and 255, inclusive. If 'num_chars' is zero or 'parent' is empty, LEFT$ returns
+an empty string "". If 'num_chars' is greater than the length of 'parent', 
+returns 'parent'.
+ERRORS:
+-   If 'num_chars' is not in [-32768, 32767], raises OVERFLOW.
+-   If 'num_chars' is not in [0, 255], raises ILLEGAL FUNCTION CALL.
+-   If 'num_chars' has a string value, raises TYPE MISMATCH.
+
+
+LEN function
+length = LEN(string)
+--------------
+Returns the number of characters in 'string'. 'string' is a string-valued
+expression.
+ERRORS:
+-   If 'string' has a number value, raises TYPE MISMATCH.
+
+
+LET statement
+[LET] name = expression
+-------------
+Assigns the value of 'expression' to the variable or array element 'name'. 
+'name' must be a valid variable name that may or may not already exist. The
+type of 'expression' must match that of 'name': that is, all numeric types can 
+be assigned to each other but strings can only be assigned to strings.
+ERRORS:
+-   If 'name' and 'expression' are not of matching types, raises TYPE MISMATCH.
+
+
+LINE statement
+LINE [(x0, y0)] - (x1, y1) [, [attr] [, [B [F]] [, pattern]]]
+--------------
+Draws a line or a box in graphics mode. If B is not specified, a line is drawn
+from ('x0', 'y0') to ('x1', 'y1'), endpoints inclusive. If B is specified, a 
+rectangle is drawn with sides parallel to the screen and two opposing corners 
+specified by ('x0', 'y0') and ('x1', 'y1'). If the starting point is not given, 
+the current graphics position is used as a staring point. LINE moves the 
+current graphics position to ('x1', 'y1'). 'attr' must be a number-valued 
+expression between 0 and 255, inclusive, which specifies the colour attribute 
+of the line. If it is not given, the current attribute is used. If F is 
+specified with B, the rectangle is filled with the specified attribute. F and
+B may be separated by zero or more spaces. If 'pattern' is specified, it must 
+be a number-valued expression between -32768 and 32767, inclusive. This is 
+interpreted as a 16-bit binary pattern mask apllied to consecutive pixels in 
+the line: a 1 bit indicates a pixel plotted; a 0 bit indicates a pixel left 
+untouched. 
+
+
+
+
+
+
+
 MOTOR 
 
 
