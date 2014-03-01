@@ -1683,7 +1683,8 @@ B may be separated by zero or more spaces. If 'pattern' is specified, it must
 be a number-valued expression between -32768 and 32767, inclusive. This is 
 interpreted as a 16-bit binary pattern mask apllied to consecutive pixels in 
 the line: a 1 bit indicates a pixel plotted; a 0 bit indicates a pixel left 
-untouched. 
+untouched. The pattern starts at the most significant bit, which is applied
+to the topmost endpoint. 
 
 
 
