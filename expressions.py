@@ -320,6 +320,9 @@ def parse_expr_list(ins, size, err=5, separators=(',',)):
             break
         else:  
             output[pos] = parse_expression(ins)
+    # can't end on a comma: Missing Operand  
+    if not output[pos]:
+        raise error.RunError(22)
     return output
 
 def parse_int_list_var(ins, size, err=5):
