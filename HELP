@@ -1689,9 +1689,17 @@ to the topmost endpoint.
 
 
 
-
-
-
-MOTOR 
+MOTOR statement
+MOTOR [num]
+---------------
+Does nothing. 'num' is a number-valued expression between 0 and 255, inclusive.
+NOTES:
+-   This statement does nothing in GW-BASIC. Presumably, it is left over from a
+    statement in older versions of MS Basic that would drive the cassette tape 
+    player.
+ERRORS:
+-   If 'num' is not in [-32768, 32767], raises OVERFLOW.
+-   If 'num' is not in [0, 255], raises ILLEGAL FUNCTION CALL.
+-   If 'num' has a string value, raises TYPE MISMATCH. 
 
 
