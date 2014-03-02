@@ -1719,19 +1719,26 @@ ERRORS:
     
 
 LINE INPUT statement
-LINE INPUT [;] [prompt_literal ;] string_name
+LINE INPUT [;] [prompt_literal {;|,}] string_name
 --------------------
 Displays the prompt given in 'prompt_literal' and reads user input from the 
 keyboard, storing it into the variable 'string_name'. All input is read until
 <ENTER> is pressed; the first 255 characters are stored. If the ; is given 
 right after LINE INPUT, the <ENTER> ending user input is not echoed to the 
 screen. 
-'prompt_literal' must be a string literal. 
+'prompt_literal' must be a string literal. It makes no difference whether it is
+followed by a comma or a semicolon.
 'string_name' must be a valid string variable name or array element.
 NOTES:
 -   If user input is interrupted by <CTRL+BREAK>, CONT will re-execute the LINE 
     INPUT statement.
 -   Unlike INPUT, LINE INPUT does not end the prompt with a question mark (?).
+
+
+LINE INPUT# statement
+LINE INPUT # file_num, string_name
+--------------------
+
 
 
 MOTOR statement
