@@ -134,6 +134,7 @@ def list_to_file(out, from_line, to_line):
     program.bytecode.seek(1)
     tokenise.detokenise(program.bytecode, out, from_line, to_line)
     program.bytecode.seek(current)
+    program.unset_runmode()
     
 def exec_llist(ins):
     from_line, to_line = parse_line_range(ins)
