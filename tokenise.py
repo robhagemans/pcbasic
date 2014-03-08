@@ -305,7 +305,7 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
                 ins.read(1)
                 outs.write(char)
             # handle jump numbers
-            elif expect_number and number_is_line and c in ascii_digits:
+            elif expect_number and number_is_line and c in ascii_digits + ['.',]:
                 tokenise_jump_number(ins, outs) 
             # handle numbers
             # numbers following var names with no operator or token in between should not be parsed, eg OPTION BASE 1
@@ -388,6 +388,9 @@ def tokenise_jump_number(ins, outs):
     word = tokenise_uint(ins)
     if word != '':
         outs.write('\x0e' + word)
+    elif util.peek(ins) == '.':
+        ins.read(1)
+        outs.write('.')
     
 def tokenise_uint(ins):
     word = bytearray()
@@ -536,7 +539,7 @@ def tokenise_word(ins, outs):
                    ins.seek(pos)
             if word in ('GOTO', 'GOSUB'):
                 nxt = util.peek(ins).upper()
-                if nxt in name_chars: #ascii_uppercase or nxt in ascii_digits or nxt=='.':
+                if nxt in name_chars:
                     ins.seek(pos)
                     word='GO'
                 else:
@@ -545,7 +548,7 @@ def tokenise_word(ins, outs):
             # ignore if part of a longer name, except 'FN', 'SPC(', 'TAB(', 'USR'
             if word not in ('FN', 'SPC(', 'TAB(', 'USR'):
                 nxt = util.peek(ins).upper()
-                if nxt in name_chars:  #ascii_uppercase or nxt in ascii_digits or nxt=='.':
+                if nxt in name_chars:  
                     continue
             token = keyword_to_token[word]
             # handle special case ELSE -> :ELSE
