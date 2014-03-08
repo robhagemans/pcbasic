@@ -1749,6 +1749,38 @@ NOTES:
 LINE INPUT# statement
 LINE INPUT # file_num, string_name
 --------------------
+Reads string or numeric variables from a text file, device, or the FIELD buffer
+of a random access file. All input is read until <ENTER> is pressed; the first 
+255 characters are stored. 'file_num' must be the number of a file open in 
+INPUT mode or a device or random-access file open in RANDOM mode. 
+'string_name' must be a valid string variable name or array element.
+NOTES:
+-   The # is mandatory. There may or may not be whitepace between INPUT and #.        
+-   Input is only terminated by a <CR>.
+-   If 'file_num' is open to KYBD:, INPUT# reads from the keyboard until a
+    return or comma is encountered (as in a file). Arrow keys and delete are
+    passed as their control characters (NOT scancodes!) preceded by CHR$(&HFF).
+ERRORS:
+-   If input is requested after the end of a text file has been reached or an
+    EOF char has been encountered, raises INPUT PAST END.
+-   If the last character of the field buffer is read, raises FIELD OVERFLOW.     
+-   If 'file_num' is not an open file, raises BAD FILE NUMBER.
+-   If 'file_num' is less than zero, raises ILLEGAL FUNCTION CALL.
+-   If 'file_num' is greater than 32767, raises OVERFLOW.
+-   If 'file_num' is not open for INPUT or RANDOM, raises BAD FILE MODE.
+-   If 'file_num' is a string, raises TYPE MISMATCH.
+
+LIST statement
+LIST [ [line_number_0] - [line_number_1] ] [, file_name]
+LIST [line_number_0] [, file_name]
+----------------
+Prints lines from the program, starting with 'line_number_0' up to and 
+including 'line_number_1', which must be line numbers in the range [0, 65529]
+or a . to indicate the last line edited. The line numbers do not need to exist;
+they specify a range. If the range is empty, nothing is printed.
+Also stops program execution and returns to interactive mode.
+ERRORS:
+-   If a line number is greater than 65529, SYNTAX ERROR is raised.
 
 
 
