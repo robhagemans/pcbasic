@@ -1774,13 +1774,27 @@ LIST statement
 LIST [ [line_number_0] - [line_number_1] ] [, file_name]
 LIST [line_number_0] [, file_name]
 ----------------
-Prints lines from the program, starting with 'line_number_0' up to and 
+Prints the program to the screen, starting with 'line_number_0' up to and 
 including 'line_number_1', which must be line numbers in the range [0, 65529]
 or a . to indicate the last line edited. The line numbers do not need to exist;
 they specify a range. If the range is empty, nothing is printed.
 Also stops program execution and returns to interactive mode.
 ERRORS:
 -   If a line number is greater than 65529, SYNTAX ERROR is raised.
+
+
+LLIST statement
+LIST [ [line_number_0] - [line_number_1] ] 
+LIST [line_number_0] 
+----------------
+Prints the program to LPT1:, starting with 'line_number_0' up to and 
+including 'line_number_1', which must be line numbers in the range [0, 65529]
+or a . to indicate the last line edited. The line numbers do not need to exist;
+they specify a range. If the range is empty, nothing is printed.
+Also stops program execution and returns to interactive mode.
+ERRORS:
+-   If a line number is greater than 65529, SYNTAX ERROR is raised.
+
 
 
 
