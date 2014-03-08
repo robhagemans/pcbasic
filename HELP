@@ -922,6 +922,10 @@ is_at_end = EOF(file_num)
 ------------
 Returns -1 if file with number 'file_num' has reached end-of-file; 0 otherwise.
 The file must be open in INPUT or RANDOM mode. EOF(0) returns 0.
+NOTES:
+-   If 'file_num' is open to KYBD:, performs a blocking read and returns -1 if 
+    <CTRL+Z> is entered, 0 otherwise. The character entered is then echoed to 
+    the console.
 ERRORS:
 -   If 'file_num' is a number not in [0,255], raises ILLEGAL FUNCTION CALL.
 -   If 'file_num' is a number not in [-32768,32767], raises OVERFLOW.
@@ -1449,6 +1453,9 @@ NOTES:
 -   Leading and trailing whitespace is discarded.
 -   If the entry cannot be converted to the requested type, a zero value is
     returned.
+-   If 'file_num' is open to KYBD:, INPUT# reads from the keyboard until a
+    return or comma is encountered (as in a file). Arrow keys and delete are
+    passed as their control characters (NOT scancodes!) preceded by CHR$(&HFF).
 ERRORS:
 -   If input is requested after the end of a text file has been reached or an
     EOF char has been encountered, raises INPUT PAST END.
@@ -1473,7 +1480,11 @@ NOTES:
     in the buffer.
 -   All control characters except <CTRL+BREAK>, <CTRL+SCROLLOCK> and <PAUSE> 
     are passed to the string by INPUT$. <CTRL+BREAK> and <CTRL+SCROLLOCK> break
-    execution whereas <PAUSE> halts until aother key is pressed (and not read).
+    execution whereas <PAUSE> halts until another key is pressed (and not read).
+-   When reading from the keyboard directly or through KYBD:, arrow keys, <DEL>,
+    <HOME>, <END>, <PGUP>, <PGDN> are passed as NUL characters. Function keys
+    are ignored if they are event-trapped, otherwise keyword replacement is
+    active as normal.    
 ERRORS:
 -   If 'num_chars' is not in [-32768, 32767], raises OVERFLOW.
 -   If 'num_chars' is not in [1, 255], raises ILLEGAL FUNCTION CALL.
@@ -1754,4 +1765,10 @@ ERRORS:
 -   If 'num' is not in [0, 255], raises ILLEGAL FUNCTION CALL.
 -   If 'num' has a string value, raises TYPE MISMATCH. 
 
+
+
+OPEN statement
+
+ERRORS:
+-   If 'file_name' is empty or equals "keyb:", raises BAD FILE NUMBER
 
