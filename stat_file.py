@@ -108,16 +108,7 @@ def exec_open(ins):
         if util.peek(ins,2) == '\xFF\x92':  #LEN
             ins.read(2)
             reclen = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-    dev_name = name.upper().split(':')[0] + ':' 
-    if deviceio.is_device(dev_name): 
-        deviceio.device_open(number, dev_name, mode, access)
-    else:    
-        if access.upper()=='RB' or access.upper()=='R':
-            name = oslayer.dospath_read(name, '', 53)
-        else:
-            name = oslayer.dospath_write(name, '', 76)
-        # open the file
-        fileio.open_file(number, name, mode, access, lock)    
+    fileio.open_dosname(number, name, mode, access, lock) 
     util.require(ins, util.end_statement)
                 
 def exec_close(ins):
