@@ -103,25 +103,19 @@ def exec_auto(ins):
     program.prompt = False
     program.unset_runmode()
     
-def exec_list(ins, out=None):
-    if program.protected:
-        # don't list protected files
-        raise error.RunError(5)
+def exec_list(ins):
     from_line, to_line = parse_line_range(ins)
-    if to_line == -1:
-        to_line = 65530
-    util.require(ins, util.end_statement)
-    if out == None:
-        out = console
-    if out == console:
-        output = StringIO()
+    out = None
+    if util.skip_white_read_if(ins, (',',)):
+        filename = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+        util.require(ins, util.end_statement)
+        out = fileio.open_dosname(0, filename, 'O', 'wb')
+        list_to_file(out, from_line, to_line)    
+        out.close()        
     else:
-        output = out
-    current = program.bytecode.tell()	        
-    program.bytecode.seek(1)
-    tokenise.detokenise(program.bytecode, output, from_line, to_line)
-    program.bytecode.seek(current)
-    if out == console:
+        util.require(ins, util.end_statement)
+        output = StringIO()
+        list_to_file(output, from_line, to_line)
         lines = output.getvalue().split(util.endl)
         if lines[-1] == '':
             lines = lines[:-1]
@@ -130,8 +124,21 @@ def exec_list(ins, out=None):
             console.clear_line(console.row)
             console.write(line + util.endl)
     
+def list_to_file(out, from_line, to_line):
+    if program.protected:
+        # don't list protected files
+        raise error.RunError(5)
+    if to_line == -1:
+        to_line = 65530
+    current = program.bytecode.tell()	        
+    program.bytecode.seek(1)
+    tokenise.detokenise(program.bytecode, out, from_line, to_line)
+    program.bytecode.seek(current)
+    
 def exec_llist(ins):
-    exec_list(ins, deviceio.lpt1)
+    from_line, to_line = parse_line_range(ins)
+    util.require(ins, util.end_statement)
+    list_to_file(deviceio.lpt1, from_line, to_line)
     deviceio.lpt1.flush()
         
 def exec_load(ins):

@@ -76,19 +76,15 @@ def device_open(number, device_name, mode='I', access='rb'):
     else:    
         # create a clone of the object, inheriting WIDTH settings etc.
         inst = copy.copy(device)
-    if number < 0 or number > fileio.max_files:
-        # bad file number
-        raise error.RunError(52)
-    if number in fileio.files:
-        # file already open
-        raise error.RunError(55)
-    if inst==None:
+    if inst == None:
         # device unavailable
         raise error.RunError(68)
     inst.number = number
     inst.access = access
     inst.mode = mode.upper()
-    fileio.files[number] = inst
+    if number != 0:
+        fileio.files[number] = inst
+    return inst    
 
 def create_device(arg, default=None):
     device = None
@@ -158,8 +154,8 @@ class ConsoleStream(object):
     def flush(self):
         pass
 
-    def close(self):
-        pass
+    #def close(self):
+    #    pass
 
 class ConsoleFile(fileio.TextFile):
     def __init__(self):
@@ -178,6 +174,11 @@ class ConsoleFile(fileio.TextFile):
             return False
         # blocking read
         return (console.wait_char() == '\x1a')
+
+    def close(self):
+        # don't write EOF \x1A to SCRN:
+        if self.number != 0:
+            del fileio.files[self.number]
         
 
 class PrinterStream(StringIO.StringIO):
@@ -207,10 +208,8 @@ class DeviceFile(TextFile):
         
     def close(self):
         # don't close the file handle as we may have copies
-        if self.number !=0:
+        if self.number != 0:
             del fileio.files[self.number]
-
-
 
     
 class SerialFile(RandomBase):

@@ -355,24 +355,32 @@ class RandomFile(RandomBase):
         lof = self.fhandle.tell()
         self.fhandle.seek(current)
         return lof
-        
 
-
-def open_file(number, unixpath, mode='I', access='rb', lock='rw', reclen=128):
+def open_dosname(number, name, mode='I', access='rb', lock='rw', reclen=128):
     if number < 0 or number > max_files:
         # bad file number
         raise error.RunError(52)
     if number in files:
         # file already open
         raise error.RunError(55)
-    if mode.upper() in ('I', 'O', 'A'):
-        inst = TextFile(oslayer.safe_open(unixpath, access), number, mode.upper(), access)
-    else:
-        access = 'r+b'
-        inst = RandomFile(oslayer.safe_open(unixpath, access), number, mode.upper(), access, reclen)
-    oslayer.safe_lock(inst.fhandle, access, lock)
-            
-            
+    name = str(name)
+    dev_name = name.upper().split(':')[0] + ':' 
+    if deviceio.is_device(dev_name): 
+        inst = deviceio.device_open(number, dev_name, mode, access)
+    else:    
+        if access.upper()=='RB' or access.upper()=='R':
+            name = oslayer.dospath_read(name, '', 53)
+        else:
+            name = oslayer.dospath_write(name, '', 76)
+        # open the file
+        if mode.upper() in ('I', 'O', 'A'):
+            inst = TextFile(oslayer.safe_open(name, access), number, mode.upper(), access)
+        else:
+            access = 'r+b'
+            inst = RandomFile(oslayer.safe_open(name, access), number, mode.upper(), access, reclen)
+        oslayer.safe_lock(inst.fhandle, access, lock)
+    return inst    
+           
 def close_all():
     for f in list(files):
         if f > 0:
