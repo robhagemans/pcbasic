@@ -568,12 +568,18 @@ def value_input(ins):    # INPUT$
     if util.skip_white_read_if(ins, ','):
         screen = fileio.get_file(parse_file_number_opthash(ins))
     util.require_read(ins, (')',))
-    word = screen.read_chars(num)
+    word = bytearray()
+    for char in screen.read_chars(num):
+        if len(char) > 1 and char[0] == '\x00':
+            # replace some scancodes than console can return
+            if char[1] in ('\x4b', '\x4d', '\x48', '\x50', '\x47', '\x49', '\x4f', '\x51', '\x53'):
+                word += '\x00'
+            # ignore all others    
+        else:
+            word += char                        
     return vartypes.pack_string(bytearray(word))
     
 def value_inkey(ins):
-    # wait a tick
-    console.idle()
     return vartypes.pack_string(bytearray(console.get_char()))
 
 def value_csrlin(ins):

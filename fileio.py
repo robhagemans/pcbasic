@@ -113,7 +113,7 @@ class TextFile(object):
         
     # read line    
     def read(self):
-        if self.eof():
+        if self.end_of_file():
             # input past end
             raise error.RunError(62)
         # readline breaks line on \x0A, we can only break on \x0D or \x0D\x0A
@@ -125,12 +125,12 @@ class TextFile(object):
             elif c=='\x0A':
                 s += c
                 # special: allow \x0A\x0D to pass
-                if util.peek(self.fhandle) == '\x0D':
+                if self.peek_char() == '\x0D':
                     self.fhandle.read(1)
                     s+= '\x0D'
             elif c=='\x0D':
                 # check for CR/LF
-                if util.peek(self.fhandle) == '\x0A':
+                if self.peek_char() == '\x0A':
                     self.fhandle.read(1)
                 break
             else:        
@@ -138,14 +138,14 @@ class TextFile(object):
         return s
 
     def read_chars(self, num):
-        s = ''
+        s = []
         for _ in range(num):
             c = self.fhandle.read(1)
-            # check for \x1A (EOF char - this will actually stop further reading)
+            # check for \x1A (EOF char - this will actually stop further reading FIXME: that's true in files but not devices)
             if c in ('\x1a', ''):
                 # input past end
                 raise error.RunError(62)
-            s += c
+            s.append(c)
         return s 
         
     def peek_char(self):
@@ -207,10 +207,14 @@ class TextFile(object):
     def loc(self):
         # for LOC(i)
         return self.fhandle.tell()/128
+
+    # for internal use    
+    def end_of_file(self):
+        return (util.peek(self.fhandle) in ('', '\x1a'))
     
     def eof(self):
         # for EOF(i)
-        if self.mode in ('A', 'O', 'P'):
+        if self.mode in ('A', 'O'):
             return False
         return (util.peek(self.fhandle) in ('', '\x1a'))
     
