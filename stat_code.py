@@ -52,8 +52,6 @@ def parse_line_range(ins):
 def exec_delete(ins):
     from_line, to_line = parse_line_range(ins)
     util.require(ins, util.end_statement)
-    #if from_line == to_line and from_line not in program.line_numbers:
-    #    raise error.RunError(5)
     program.delete_lines(from_line, to_line)
     # throws back to direct mode
     program.unset_runmode()
@@ -125,7 +123,7 @@ def exec_list(ins, out=None):
     program.bytecode.seek(current)
     if out == console:
         lines = output.getvalue().split(util.endl)
-        if lines[-1]=='':
+        if lines[-1] == '':
             lines = lines[:-1]
         for line in lines:
             console.check_events()
