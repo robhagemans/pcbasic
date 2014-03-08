@@ -356,7 +356,7 @@ def exec_input(ins):
         count_commas = 0    
         for v in readvar:
             typechar = v[0][-1]
-            val = str_to_type(input_entry(text_file, allow_quotes=(typechar=='$')), typechar)
+            val = str_to_type(input_entry(text_file, allow_quotes=(typechar=='$'), end_all=('',)), typechar)
             values.append(val)
             if text_file.peek_char() != ',':
                 break
@@ -380,28 +380,32 @@ def exec_input_file(ins, text_file):
     for v in readvar:
         typechar = v[0][-1]
         if typechar == '$':
-            valstr = input_entry(text_file, allow_quotes=True, end_all = ('\x0d', '\x1a', ''), end_not_quoted = (',', '\x0a'))
+            valstr = input_entry(text_file, allow_quotes=True, end_all = ('\x0d', '\x1a'), end_not_quoted = (',', '\x0a'))
         else:
-            valstr = input_entry(text_file, allow_quotes=False, end_all = ('\x0d', '\x1a', '', ',', '\x0a', ' '))
+            valstr = input_entry(text_file, allow_quotes=False, end_all = ('\x0d', '\x1a', ',', '\x0a', ' '))
         value = str_to_type(valstr, typechar)    
         if value == None:
             value = vartypes.null[typechar]
         # process the ending char (this may raise FIELD OVERFLOW but should avoid INPUT PAST END)
-        if text_file.peek_char() not in ('', '\x1a'):
+        if not text_file.end_of_file() and text_file.peek_char() not in ('', '\x1a'):
             text_file.read_chars(1)
         # and then set the value
         var.set_var_or_array(*v, value=value)
     util.require(ins, util.end_statement)
 
 def text_skip(text_file, skip_range):
+    d = ''
     while True:
+        if text_file.end_of_file():
+            break
         d = text_file.peek_char() 
         if d not in skip_range:
             break
-        text_file.read_chars(1)    
+        text_file.read_chars(1)
     return d
 
-def input_entry(text_file, allow_quotes, end_all=('',), end_not_quoted=(',',)):
+
+def input_entry(text_file, allow_quotes, end_all=(), end_not_quoted=(',',)):
     word, blanks = '', ''
     # skip leading spaces and line feeds and NUL. 
     c = text_skip(text_file, ascii_white)
@@ -412,8 +416,14 @@ def input_entry(text_file, allow_quotes, end_all=('',), end_not_quoted=(',',)):
         text_file.read_chars(1)
     while True:
         # read entry
-        c = text_file.read_chars(1)
-        if c == '"' and quoted:
+        if text_file.end_of_file():
+            break
+        c = ''.join(text_file.read_chars(1))
+        if c in end_all or (c in end_not_quoted and not quoted):
+            # on KYBD: text file, this will do nothing - comma is swallowed
+            text_file.seek(-len(c), 1)
+            break
+        elif c == '"' and quoted:
             quoted = False
             # ignore blanks after the quotes
             c = text_skip(text_file, ascii_white)
@@ -424,11 +434,6 @@ def input_entry(text_file, allow_quotes, end_all=('',), end_not_quoted=(',',)):
             word += blanks + c
         if len(word)+len(blanks) >= 255:
             text_file.seek(-len(c), 1)
-            break
-        c = text_file.peek_char()
-        if c in end_all:
-            break
-        elif c in end_not_quoted and not quoted:
             break
     return word
 

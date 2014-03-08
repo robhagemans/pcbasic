@@ -337,8 +337,9 @@ def read():
     set_line_cursor(True) 
     c, inp = '', ''
     while c != '\x0d': 
-        # wait_char returns a string of ascii and MS-DOS/GW-BASIC style keyscan codes
-        c = wait_char() 
+        # get_char returns a string of ascii and MS-DOS/GW-BASIC style keyscan codes
+        wait_char() 
+        c = get_char()
         if echo_read != None:
             echo_read.write(c)
         pos = 0
@@ -583,6 +584,7 @@ def insert_key(c):
 
 # non-blocking keystroke read
 def get_char():
+    idle()    
     check_events()
     return pass_char( peek_char() )
     
@@ -603,23 +605,18 @@ def pass_char(ch):
 
 # blocking keystroke read
 def read_chars(num):
-    word = ''
-    savecurs = show_cursor(False)
+    word = []
     for _ in range(num):
-        a = ''
-        while a == '':
-            idle()            
-            a = get_char()
-        word += a[0]
-    show_cursor(savecurs)
+        wait_char()
+        word.append(get_char())
     return word
 
-# blocking keystroke read
+# blocking keystroke peek
 def wait_char():
     while len(keybuf)==0:
         idle()
         check_events()
-    return get_char()
+    return peek_char()
 
 def check_pos(scroll_ok=True):
     global row, col

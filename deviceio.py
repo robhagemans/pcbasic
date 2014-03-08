@@ -42,8 +42,8 @@ com2 = None
 def init_devices(args):
     global input_devices, output_devices, random_devices
     global scrn, kybd, lpt1, lpt2, lpt3, com1, com2
-    scrn = fileio.PseudoFile(ConsoleStream())
-    kybd = fileio.PseudoFile(ConsoleStream())
+    scrn = ConsoleFile()
+    kybd = ConsoleFile()
     lpt1 = create_device(args.lpt1, fileio.PseudoFile(PrinterStream()))
     lpt2 = create_device(args.lpt2)
     lpt3 = create_device(args.lpt3)
@@ -127,17 +127,31 @@ def create_device(arg, default=None):
 #   flush()
 #   set_width()
 
+input_replace = { 
+    '\x00\x47': '\xFF\x0B', '\x00\x48': '\xFF\x1E', '\x00\x49': '\xFE', 
+    '\x00\x4B': '\xFF\x1D', '\x00\x4D': '\xFF\x1C', '\x00\x4F': '\xFF\x0E',
+    '\x00\x50': '\xFF\x1F', '\x00\x51': '\xFE', '\x00\x53': '\xFF\x7F', '\x00\x52': '\xFF\x12'
+    }
 
 class ConsoleStream(object):
     def write(self, c):
         console.write(c)
         
     def read(self, n):
-        return console.read_chars(n)
-    
+        word = ''
+        for c in console.read_chars(n):
+            if len(c) > 1 and c[0] == '\x00':
+                try:
+                    word += input_replace[c]
+                except KeyError:
+                    pass
+            else:
+                word += c        
+        return word
+        
     def seek(self, a, b=0):
         pass
-        
+    
     def tell(self):
         return 1
 
@@ -146,7 +160,25 @@ class ConsoleStream(object):
 
     def close(self):
         pass
+
+class ConsoleFile(fileio.TextFile):
+    def __init__(self):
+        TextFile.__init__(self, ConsoleStream(), 0, 'P', 'r+b')
+
+    # console read_char is blocking so we need to avoid calling it here.
+    def peek_char(self):
+        return console.peek_char()
     
+    def end_of_file(self):
+        return False
+        
+    def eof(self):
+        # KYBD only EOF if ^Z is read
+        if self.mode in ('A', 'O'):
+            return False
+        # blocking read
+        return (console.wait_char() == '\x1a')
+        
 
 class PrinterStream(StringIO.StringIO):
     def __init__(self, name=''):
@@ -202,17 +234,17 @@ class SerialFile(RandomBase):
         
     # blocking read
     def read_chars(self, num=1):
-        out = bytearray('')
+        out = []
         while len(out) < num:
             # non blocking read
             self.check_read()
             to_read = min(len(self._in_buffer), num - len(out))
-            out += self._in_buffer[:to_read]
+            out.append(self._in_buffer[:to_read])
             del self._in_buffer[:to_read]
             # allow for break & screen updates
             console.idle()        
             console.check_events()                       
-        return str(out)
+        return out
     
     # blocking read line (from com port directly - NOT from field buffer!)    
     def read(self):
@@ -221,10 +253,10 @@ class SerialFile(RandomBase):
             c = self.read_chars()
             if c == '\r':
                 c = self.read_chars()
-                out += c
+                out += ''.join(c)
                 if c == '\n':    
                     break
-            out += c
+            out += ''.join(c)
         return out
     
     def peek_char(self):
@@ -239,7 +271,7 @@ class SerialFile(RandomBase):
     # read (GET)    
     def read_field(self, num):
         # blocking read of num bytes
-        self.field[:] = self.read_chars(num)
+        self.field[:] = ''.join(self.read_chars(num))
         
     # write (PUT)
     def write_field(self, num):
