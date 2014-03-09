@@ -17,13 +17,12 @@ import events
 import sound
 import draw_and_play
 
-
 def exec_beep(ins):
-    util.require(ins, util.end_statement)
     sound.beep() 
+    # if a syntax error happens, we still beeped.
+    util.require(ins, util.end_statement)
     if sound.music_foreground:
         sound.wait_music()
-    
     
 def exec_sound(ins):
     freq = vartypes.pass_int_unpack(expressions.parse_expression(ins))
@@ -38,7 +37,6 @@ def exec_sound(ins):
         raise error.RunError(5)
     if sound.music_foreground:
         sound.wait_music()
-
     
 def exec_play(ins):
     if events.play_handler.command(util.skip_white(ins)):
@@ -49,5 +47,4 @@ def exec_play(ins):
         util.require(ins, util.end_expression)
         draw_and_play.play_parse_mml(mml)
     util.require(ins, util.end_statement)                
-                    
                              
