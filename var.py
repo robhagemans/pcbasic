@@ -16,32 +16,14 @@ import vartypes
 import program
 from string_ptr import StringPtr
 
-
-variables = {}
-arrays = {}
-functions = {}
-
-array_base = 0
-
-# set by COMMON
-common_names = []
-common_array_names = []
-
 # 'free memory' as reported by FRE
 total_mem = 60300    
 byte_size = {'$':3, '%':2, '!':4, '#':8}
-
-# memory model
+# memory model: start of variables section
 var_mem_start = 4720
-var_current = var_mem_start
-string_current = var_mem_start + total_mem # 65020
-var_memory = {}
-# arrays are always kept after all vars
-array_current = 0
-array_memory = {}
 
 def clear_variables():
-    global variables, arrays, array_base, functions, common_names, common_array_names, memory, var_mem, string_mem
+    global variables, arrays, array_base, functions, common_names, common_array_names, memory
     global var_current, string_current, var_memory, array_current, array_memory
     variables = {}
     arrays = {}
@@ -53,8 +35,6 @@ def clear_variables():
     common_array_names = []
     # reset memory model
     memory = bytearray('\x00')*(total_mem-program.memory_size())
-    var_mem = 0
-    string_mem = total_mem
     # memory model
     var_current = var_mem_start
     string_current = var_current + total_mem # 65020
@@ -62,6 +42,8 @@ def clear_variables():
     # arrays are always kept after all vars
     array_current = 0
     array_memory = {}
+
+clear_variables()
 
 
 def set_var(name, value):
@@ -144,8 +126,6 @@ def erase_array(name):
         # illegal fn call
         raise error.RunError(5)    
 
-#######################################
-
 def index_array(index, dimensions):
     bigindex = 0
     area = 1
@@ -154,7 +134,6 @@ def index_array(index, dimensions):
         bigindex += area*(index[i]-array_base)
         area *= (dimensions[i]+1-array_base)
     return bigindex 
-
     
 def array_len(dimensions):
     return index_array(dimensions, dimensions)+1    
