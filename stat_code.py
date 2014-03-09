@@ -102,7 +102,6 @@ def exec_auto(ins):
     
 def exec_list(ins):
     from_line, to_line = parse_line_range(ins)
-    out = None
     if util.skip_white_read_if(ins, (',',)):
         filename = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_statement)
@@ -111,9 +110,9 @@ def exec_list(ins):
         out.close()        
     else:
         util.require(ins, util.end_statement)
-        output = StringIO()
-        list_to_file(output, from_line, to_line)
-        lines = output.getvalue().split(util.endl)
+        out = StringIO()
+        list_to_file(out, from_line, to_line)
+        lines = out.getvalue().split(util.endl)
         if lines[-1] == '':
             lines = lines[:-1]
         for line in lines:
@@ -157,73 +156,69 @@ def exec_load(ins):
         program.set_runmode()
         
 def exec_chain(ins):
-    action = program.load
-    if util.skip_white_read_if(ins, ('\xBD',)): # MERGE
-        action = program.merge
+    action = program.merge if util.skip_white_read_if(ins, ('\xBD',)) else program.load     # MERGE
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    jumpnum = -1    
+    jumpnum, common_all = None, False    
     if util.skip_white_read_if(ins, (',',)):
-        util.skip_white(ins)
-        # check for an expression that indicates a line in the other program. not stored as a jumpnum (to avoid RENUM)
-        # NOTE in GW, negative numbers will be two's complemented into a line number!
+        # check for an expression that indicates a line in the other program. This is not stored as a jumpnum (to avoid RENUM)
         expr = expressions.parse_expression(ins, allow_empty=True)
         if expr != None:
             jumpnum = vartypes.pass_int_unpack(expr, maxint=0xffff)
+            # negative numbers will be two's complemented into a line number
             if jumpnum < 0:
                 jumpnum = 0x10000 + jumpnum            
         if util.skip_white_read_if(ins, (',',)):
             util.skip_white(ins)
             if util.peek(ins, 3).upper() == 'ALL':
                 ins.read(3)
-                common = copy.copy(var.variables)
-                common_arrays = copy.copy(var.arrays)
-                # preserve DEFTYPES
-                common_deftype = copy.copy(vartypes.deftype)
-            else:
-                # preserve COMMON variables
-                common = {}
-                common_arrays = {}
-                # reset deftypes unless ALL specified
-                common_deftype = ['!']*26
-                for varname in var.common_names:
-                    if varname in var.variables:
-                        common[varname] = var.variables[varname]
-                for varname in var.common_array_names:
-                    if varname in var.arrays:
-                        common_arrays[varname] = var.arrays[varname]
-            if util.skip_white_read_if(ins, (',',)):
-                if util.skip_white(ins) == '\xa9': # DELETE
-                    ins.read(2)
-                    #delete lines from existing code before merge
-                    # (without MERGE, this is pointless)
-                    [from_line, to_line] = parse_line_range(ins)
-                    program.delete_lines(from_line, to_line)
-    # TODO: should the program be loaded or not if we see this error?
-    # should lines be deleted?
+                common_all = True
+            delete_lines = None            
+            if util.skip_white_read_if(ins, (',',)) and util.skip_white_read_if(ins, ('\xa9',)):
+                delete_lines = parse_line_range(ins) # , DELETE
     util.require(ins, util.end_statement)
-    # keep option base
-    base = var.array_base    
-    # load & merge call preparse call reset_program, 
-    # data restore
-    # erase def fn
-    # erase defint etc
     g = fileio.open_dosname(0, name, mode='L', access='rb', defext='BAS')  
-    #g = oslayer.safe_open(name, 'rb')
+    chain(action, g, jumpnum, common_all, delete_lines)
+    g.close()
+
+def chain(action, g, jumpnum, common_all, delete_lines):    
+    if delete_lines:
+        # delete lines from existing code before merge (without MERGE, this is pointless)
+        program.delete_lines(*delete_lines)
+    if common_all:
+        common, common_arrays = copy.copy(var.variables), copy.copy(var.arrays)
+    else:
+        # preserve COMMON variables
+        common, common_arrays = {}, {}
+        for varname in var.common_names:
+            try:
+                common[varname] = var.variables[varname]
+            except KeyError: 
+                pass    
+        for varname in var.common_array_names:
+            try:
+                common_arrays[varname] = var.arrays[varname]
+            except KeyError:
+                pass    
+    # preserve deftypes (only for MERGE)
+    common_deftype = copy.copy(vartypes.deftype) 
+    # preserve option base
+    base = var.array_base    
+    # load & merge call preparse call reset_program:  # data restore  # erase def fn   # erase defint etc
     action(g)
-    g.close()    
     # reset random number generator
     rnd.clear()
-    # keep only common variables
+    # restore only common variables
     var.variables = common
     var.arrays = common_arrays
-    # keep option base
+    # restore option base
     var.array_base = base
-    # keep deftypes (if ALL specified)
-    vartypes.deftype = common_deftype
+    # restore deftypes (if MERGE specified)
+    if action == program.merge:
+        vartypes.deftype = common_deftype
     # don't close files!
     # RUN
     program.set_runmode()
-    if jumpnum !=-1:
+    if jumpnum != None:
         program.jump(jumpnum)
     
 def exec_save(ins):
