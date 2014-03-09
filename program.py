@@ -19,6 +19,7 @@ import util
 import console
 
 from cStringIO import StringIO 
+import copy
 
 # program bytecode buffer
 bytecode = StringIO()
@@ -301,7 +302,6 @@ def renumber(new_line=-1, start_line=-1, step=-1):
             console.write('Undefined line '+str(jumpnum)+' in '+str(linum)+util.endl)
     # rebuild the line number dictionary    
     preparse()    
-    
 
 def load(g):
     global protected
@@ -331,7 +331,6 @@ def load(g):
         # terminate bytecode stream properly
         bytecode.write('\x00\x00\x00\x1a')
     preparse()
-    
 
 def merge(g):
     if util.peek(g) in ('\xFF', '\xFE', '\xFC', ''):
@@ -354,10 +353,51 @@ def merge(g):
                 # direct statement in file
                 raise error.RunError(66)                
             tempbuf.close()    
-    
+
+def chain(action, g, jumpnum, common_all, delete_lines):    
+    if delete_lines:
+        # delete lines from existing code before merge (without MERGE, this is pointless)
+        delete_lines(*delete_lines)
+    if common_all:
+        common, common_arrays = copy.copy(var.variables), copy.copy(var.arrays)
+    else:
+        # preserve COMMON variables
+        common, common_arrays = {}, {}
+        for varname in var.common_names:
+            try:
+                common[varname] = var.variables[varname]
+            except KeyError: 
+                pass    
+        for varname in var.common_array_names:
+            try:
+                common_arrays[varname] = var.arrays[varname]
+            except KeyError:
+                pass    
+    # preserve deftypes (only for MERGE)
+    common_deftype = copy.copy(vartypes.deftype) 
+    # preserve option base
+    base = var.array_base    
+    # load & merge call preparse call reset_program:  # data restore  # erase def fn   # erase defint etc
+    action(g)
+    # reset random number generator
+    rnd.clear()
+    # restore only common variables
+    var.variables = common
+    var.arrays = common_arrays
+    # restore option base
+    var.array_base = base
+    # restore deftypes (if MERGE specified)
+    if action == merge:
+        vartypes.deftype = common_deftype
+    # don't close files!
+    # RUN
+    set_runmode()
+    if jumpnum != None:
+        jump(jumpnum)
 
 def save(g, mode='B'):
     # skip first \x00 in bytecode, replace with appropriate magic number
+    # TODO: what happens if we SAVE during a running program?
     bytecode.seek(1)
     if mode == 'B':
         if protected:
@@ -375,7 +415,19 @@ def save(g, mode='B'):
             tokenise.detokenise(bytecode, g) 
             # fix \x1A eof
             g.write('\x1a')        
-                    
+
+def list_to_file(out, from_line, to_line):
+    if protected:
+        # don't list protected files
+        raise error.RunError(5)
+    if to_line == -1:
+        to_line = 65530
+    current = bytecode.tell()	        
+    bytecode.seek(1)
+    tokenise.detokenise(bytecode, out, from_line, to_line)
+    bytecode.seek(current)
+    unset_runmode()
+                        
 def memory_size():
     return len(bytecode.getvalue()) - 4
     
