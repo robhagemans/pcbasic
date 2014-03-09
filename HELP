@@ -332,6 +332,8 @@ BEEP statement
 BEEP
 --------------
 Beeps at 800Hz for 0.25s.
+ERRORS:
+-   If a SYNTAX ERROR is raised, the beep is still produced.
 
 
 BLOAD statement
@@ -369,18 +371,35 @@ ERRORS:
 
 
 CHAIN statement
-CHAIN [MERGE] program [, [line_number] [, [ALL] [, DELETE range]]]
+CHAIN [MERGE] program [, [line_number_expr] [, [ALL] [, DELETE range]]]
 ---------------
 Loads 'program' into memory and runs it, optionally transferring variables.
-If 'line_number' is specified, it must be a numeric-valued expression. It 
-will be interpreted as a line number is the new program. If 'line_number' is
-negative, it will be interpreted as its two's-complement. 
+If 'line_number_expr' is specified, it must be a numeric-valued expression. It 
+will be interpreted as a line number in the new program and execution will 
+start from this line number. If 'line_number_expr' is negative, it will be 
+interpreted as its two's-complement. 
 If ALL is specified, all variables are transferred. If not, the variables 
 specified in a COMMON statement are transferred. 
 IF MERGE is specified, 'program' is merged into the existing program. To be 
 able to use this, 'program' must be saved as ASCII.
 If DELETE is specified, the 'range' of line numbers is deleted from the 
 existing code before the merge. This is pointless without MERGE.
+NOTES:
+-   CHAIN preserves the OPTION BASE setting.
+-   Only if ALL is specified, DEF FN definitions are preserved.
+-   Only if MERGE is specified, DEFINT, DEFSTR, DEFSNG, DEFDBL definitions 
+    are preserved.
+ERRORS:
+-   If MERGE is specified and 'program' was not saved in ASCII mode, 
+    BAD FILE MODE is raised.
+-   If a SYNTAX ERROR is raised by CHAIN, no lines are deleted and the new
+    program is not loaded.
+-   If a line number in 'range' is greater than 65529, SYNTAX ERROR is raised.
+-   If the 'range' does not include any program lines stored, CHAIN
+    raises ILLEGAL FUNCTION CALL.
+-   If 'line_number_expr' does not evaluate to an existing line number in the
+    new program, ILLEGAL FUNCTION CALL is raised but the load or merge is 
+    being performed.
 
 
 CHDIR statement
@@ -1084,6 +1103,18 @@ NOTES:
 ERRORS:
 -   If 'number' is a string-valued expression, TYPE MISMATCH is raised.
 
+
+FN function
+result = FN name (arg_0 [, arg_1 [, ...] ])
+-----------
+Evaluates a user_defined function. 'name' must be a legal variable name. 
+Spaces between FN and name are optional.
+'arg0', ... must be legal variable names; these are the parameters of the
+function. 
+ERRORS:
+-   If no function named 'name' is defined, raises 
+    UNDEFINED USER FUNCTION.
+
  
 FOR statement
 FOR loop_var = start TO stop [STEP step]
@@ -1748,7 +1779,7 @@ NOTES:
 
 LINE INPUT# statement
 LINE INPUT # file_num, string_name
---------------------
+---------------------
 Reads string or numeric variables from a text file, device, or the FIELD buffer
 of a random access file. All input is read until <ENTER> is pressed; the first 
 255 characters are stored. 'file_num' must be the number of a file open in 
@@ -1770,23 +1801,29 @@ ERRORS:
 -   If 'file_num' is not open for INPUT or RANDOM, raises BAD FILE MODE.
 -   If 'file_num' is a string, raises TYPE MISMATCH.
 
+
 LIST statement
 LIST [ [line_number_0] - [line_number_1] ] [, file_name]
 LIST [line_number_0] [, file_name]
-----------------
+--------------
 Prints the program to the screen, starting with 'line_number_0' up to and 
 including 'line_number_1', which must be line numbers in the range [0, 65529]
 or a . to indicate the last line edited. The line numbers do not need to exist;
 they specify a range. If the range is empty, nothing is printed.
+'file_name' is a valid file name. This file will be created; if it already 
+exists, it will be overwritten.
 Also stops program execution and returns to interactive mode.
 ERRORS:
 -   If a line number is greater than 65529, SYNTAX ERROR is raised.
-
+-   If 'file_name' has a numeric value, TYPE MISMATCH is raised.
+-   If 'file_name' ends in a colon but is not a device name or drive letter,
+    BAD FILE NUMBER is raised.
+    
 
 LLIST statement
-LIST [ [line_number_0] - [line_number_1] ] 
-LIST [line_number_0] 
-----------------
+LLIST [ [line_number_0] - [line_number_1] ] 
+LLIST [line_number_0] 
+---------------
 Prints the program to LPT1:, starting with 'line_number_0' up to and 
 including 'line_number_1', which must be line numbers in the range [0, 65529]
 or a . to indicate the last line edited. The line numbers do not need to exist;
@@ -1796,6 +1833,20 @@ ERRORS:
 -   If a line number is greater than 65529, SYNTAX ERROR is raised.
 
 
+LOAD statement
+LOAD file_name [, R]
+--------------
+Loads the program stored in file 'file_name' into memory.
+'file_name' must be the name of an existing program file stored in ASCII, 
+bytecode or protected format. If ,R is specified, runs the file after loading.
+LOAD,R keeps all data files open (unlike RUN). Existing variables will be 
+cleared and any program in memory will be erased.
+NOTES:
+-   If 'file_name' does not include an extension, LOAD will try the name 
+    specified, then an all-caps version, then an all-caps version with a .BAS 
+    extension.
+ERRORS:
+-   If 'file_name' cannot be found, raises FILE NOT FOUND.
 
 
 MOTOR statement
