@@ -106,12 +106,12 @@ def exec_list(ins):
         filename = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_statement)
         out = fileio.open_dosname(0, filename, 'O', 'wb')
-        list_to_file(out, from_line, to_line)    
+        program.list_to_file(out, from_line, to_line)    
         out.close()        
     else:
         util.require(ins, util.end_statement)
         out = StringIO()
-        list_to_file(out, from_line, to_line)
+        program.list_to_file(out, from_line, to_line)
         lines = out.getvalue().split(util.endl)
         if lines[-1] == '':
             lines = lines[:-1]
@@ -119,18 +119,6 @@ def exec_list(ins):
             console.check_events()
             console.clear_line(console.row)
             console.write(line + util.endl)
-    
-def list_to_file(out, from_line, to_line):
-    if program.protected:
-        # don't list protected files
-        raise error.RunError(5)
-    if to_line == -1:
-        to_line = 65530
-    current = program.bytecode.tell()	        
-    program.bytecode.seek(1)
-    tokenise.detokenise(program.bytecode, out, from_line, to_line)
-    program.bytecode.seek(current)
-    program.unset_runmode()
     
 def exec_llist(ins):
     from_line, to_line = parse_line_range(ins)
@@ -177,50 +165,9 @@ def exec_chain(ins):
                 delete_lines = parse_line_range(ins) # , DELETE
     util.require(ins, util.end_statement)
     g = fileio.open_dosname(0, name, mode='L', access='rb', defext='BAS')  
-    chain(action, g, jumpnum, common_all, delete_lines)
+    program.chain(action, g, jumpnum, common_all, delete_lines)
     g.close()
 
-def chain(action, g, jumpnum, common_all, delete_lines):    
-    if delete_lines:
-        # delete lines from existing code before merge (without MERGE, this is pointless)
-        program.delete_lines(*delete_lines)
-    if common_all:
-        common, common_arrays = copy.copy(var.variables), copy.copy(var.arrays)
-    else:
-        # preserve COMMON variables
-        common, common_arrays = {}, {}
-        for varname in var.common_names:
-            try:
-                common[varname] = var.variables[varname]
-            except KeyError: 
-                pass    
-        for varname in var.common_array_names:
-            try:
-                common_arrays[varname] = var.arrays[varname]
-            except KeyError:
-                pass    
-    # preserve deftypes (only for MERGE)
-    common_deftype = copy.copy(vartypes.deftype) 
-    # preserve option base
-    base = var.array_base    
-    # load & merge call preparse call reset_program:  # data restore  # erase def fn   # erase defint etc
-    action(g)
-    # reset random number generator
-    rnd.clear()
-    # restore only common variables
-    var.variables = common
-    var.arrays = common_arrays
-    # restore option base
-    var.array_base = base
-    # restore deftypes (if MERGE specified)
-    if action == program.merge:
-        vartypes.deftype = common_deftype
-    # don't close files!
-    # RUN
-    program.set_runmode()
-    if jumpnum != None:
-        program.jump(jumpnum)
-    
 def exec_save(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     g = fileio.open_dosname(0, name, mode='S', access='wb', defext='BAS')  
