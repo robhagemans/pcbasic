@@ -20,7 +20,6 @@ import util
 import expressions
 import tokenise
 import program
-import oslayer
 import automode
 import console
 import deviceio
@@ -46,8 +45,6 @@ def parse_line_range(ins):
     else:
         to_line = from_line
     return (from_line, to_line)    
-
-
     
 def exec_delete(ins):
     from_line, to_line = parse_line_range(ins)
@@ -145,15 +142,12 @@ def exec_llist(ins):
 def exec_load(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
-    name = oslayer.dospath_read(name, 'BAS', 53)
     close_files = True
-    if util.skip_white(ins) == ',':
-        if ins.read(2).upper() != ',R':
-            raise error.RunError(2)
-        else:
-            close_files = False
+    if util.skip_white_read_if(ins, (',',)):
+        util.require_read(ins, 'R')
+        close_files = False
     util.require(ins, util.end_statement)
-    g = oslayer.safe_open(name, 'rb')
+    g = fileio.open_dosname(0, name, mode='L', access='rb', defext='BAS')  
     program.load(g)
     g.close()    
     if close_files:
@@ -167,8 +161,6 @@ def exec_chain(ins):
     if util.skip_white_read_if(ins, ('\xBD',)): # MERGE
         action = program.merge
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    # check if file exists, make some guesses (all uppercase, +.BAS) if not
-    name = oslayer.dospath_read(name, 'BAS', 53)
     jumpnum = -1    
     if util.skip_white_read_if(ins, (',',)):
         util.skip_white(ins)
@@ -215,7 +207,8 @@ def exec_chain(ins):
     # data restore
     # erase def fn
     # erase defint etc
-    g = oslayer.safe_open(name, 'rb')
+    g = fileio.open_dosname(0, name, mode='L', access='rb', defext='BAS')  
+    #g = oslayer.safe_open(name, 'rb')
     action(g)
     g.close()    
     # reset random number generator
@@ -235,8 +228,7 @@ def exec_chain(ins):
     
 def exec_save(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    # 76 is path not found
-    name = oslayer.dospath_write(name, 'BAS', 76) 
+    g = fileio.open_dosname(0, name, mode='S', access='wb', defext='BAS')  
     #    # cryptic errors given by GW-BASIC:    
     #    if len(name)>8 or len(ext)>3:
     #        # 52: bad file number 
@@ -250,7 +242,6 @@ def exec_save(ins):
         if d.upper() not in ('A', 'P'):
             raise error.RunError(2)
         mode = d.upper()
-    g = oslayer.safe_open(name, 'wb')
     program.save(g, mode)
     g.close()
     util.require(ins, util.end_statement)
@@ -258,8 +249,7 @@ def exec_save(ins):
 def exec_merge(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
-    name = oslayer.dospath_read(name, 'BAS', 53)
-    g = oslayer.safe_open(name, 'rb')
+    g = fileio.open_dosname(0, name, mode='L', access='rb', defext='BAS')  
     program.merge(g)
     g.close()    
     util.require(ins, util.end_statement)

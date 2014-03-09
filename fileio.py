@@ -86,30 +86,60 @@ class ByteStream(object):
 
     def close(self):
         pass            
-    
-class TextFile(object):
+
+
+class BaseFile(object):
     def __init__(self, fhandle, number, mode, access):
         # width=255 means line wrap
-        self.width = 255
-        self.col = 1
         self.fhandle = fhandle
         self.number = number
         self.mode = mode
         self.access = access
-        if self.mode.upper() in ('I', 'O', 'R', 'P'):
+        if self.mode.upper() in ('I', 'O', 'R', 'S', 'L'):
             self.fhandle.seek(0)
         else:
             self.fhandle.seek(0, 2)
         if number != 0:
             files[number] = self
+
+    def close(self):
+        self.fhandle.close()
+        if self.number != 0:
+            del files[self.number]
+    
+    def read_chars(self, num):
+        return list(self.fhandle.read(num)) 
+        
+    def peek_char(self):
+        s = self.fhandle.read(1)
+        self.fhandle.seek(-len(s), 1)
+        return s
+    
+    def seek(self, num, from_where=0):    
+        self.fhandle.seek(num, from_where)
+    
+    def write(self, s):
+        self.fhandle.write(str(s))
+
+    def end_of_file(self):
+        return peek_char() == ''
+        
+    def flush(self):
+        self.fhandle.flush()
+
+
+class TextFile(BaseFile):
+    def __init__(self, fhandle, number, mode, access):
+        BaseFile.__init__(self, fhandle, number, mode, access)
+        # width=255 means line wrap
+        self.width = 255
+        self.col = 1
     
     def close(self):
         if self.access == 'wb':
             # write EOF char
             self.fhandle.write('\x1a')
-        self.fhandle.close()
-        if self.number != 0:
-            del files[self.number]
+        BaseFile.close(self)
         
     # read line    
     def read(self):
@@ -147,14 +177,6 @@ class TextFile(object):
                 raise error.RunError(62)
             s.append(c)
         return s 
-        
-    def peek_char(self):
-        s = self.fhandle.read(1)
-        self.fhandle.seek(-len(s), 1)
-        return s
-
-    def seek(self, num, from_where=0):    
-        self.fhandle.seek(num, from_where)
         
     # write one or more chars
     def write(self, s):
@@ -227,7 +249,7 @@ class TextFile(object):
 
 class PseudoFile(TextFile):
     def __init__(self, stream):
-        TextFile.__init__(self, stream, 0, 'P', 'r+b')
+        TextFile.__init__(self, stream, 0, 'A', 'r+b')
 
 
 class RandomBase(object):
@@ -356,28 +378,34 @@ class RandomFile(RandomBase):
         self.fhandle.seek(current)
         return lof
 
-def open_dosname(number, name, mode='I', access='rb', lock='rw', reclen=128):
+
+def open_dosname(number, name, mode='I', access='rb', lock='rw', reclen=128, defext=''):
     if number < 0 or number > max_files:
         # bad file number
         raise error.RunError(52)
     if number in files:
         # file already open
         raise error.RunError(55)
-    name = str(name)
+    name, access, mode = str(name), access.lower(), mode.upper()
     dev_name = name.upper().split(':')[0] + ':' 
     if deviceio.is_device(dev_name): 
         inst = deviceio.device_open(number, dev_name, mode, access)
+    elif len(dev_name) > 2:
+        # devname could be A:, B:, C:, etc.. but anything longer is an error (bad file number, for some reason).
+        raise error.RunError(52)   
     else:    
-        if access.upper()=='RB' or access.upper()=='R':
-            name = oslayer.dospath_read(name, '', 53)
+        if access == 'rb' or access == 'r':
+            name = oslayer.dospath_read(name, defext, 53)
         else:
-            name = oslayer.dospath_write(name, '', 76)
+            name = oslayer.dospath_write(name, defext, 76)
         # open the file
-        if mode.upper() in ('I', 'O', 'A'):
-            inst = TextFile(oslayer.safe_open(name, access), number, mode.upper(), access)
+        if mode in ('S', 'L'): # save, load
+            inst = BaseFile(oslayer.safe_open(name, access), number, mode, access)
+        elif mode in ('I', 'O', 'A'):
+            inst = TextFile(oslayer.safe_open(name, access), number, mode, access)
         else:
             access = 'r+b'
-            inst = RandomFile(oslayer.safe_open(name, access), number, mode.upper(), access, reclen)
+            inst = RandomFile(oslayer.safe_open(name, access), number, mode, access, reclen)
         oslayer.safe_lock(inst.fhandle, access, lock)
     return inst    
            
@@ -385,7 +413,6 @@ def close_all():
     for f in list(files):
         if f > 0:
             files[f].close()
-
 
 def get_file(num, mode='IOAR'):
     try:

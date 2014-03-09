@@ -61,9 +61,9 @@ def is_device(aname):
             
 def device_open(number, device_name, mode='I', access='rb'):
     global output_devices, input_devices, random_devices
-    if mode.upper() in ('O', 'A') and device_name in output_devices:
+    if mode.upper() in ('O', 'A', 'S') and device_name in output_devices:
         device = output_devices[device_name]
-    elif mode.upper() in ('I') and device_name in input_devices:
+    elif mode.upper() in ('I', 'L') and device_name in input_devices:
         device = input_devices[device_name]
     elif mode.upper() in ('R') and device_name in random_devices:
         device = random_devices[device_name]
@@ -159,7 +159,7 @@ class ConsoleStream(object):
 
 class ConsoleFile(fileio.TextFile):
     def __init__(self):
-        TextFile.__init__(self, ConsoleStream(), 0, 'P', 'r+b')
+        TextFile.__init__(self, ConsoleStream(), 0, 'A', 'r+b')
 
     # console read_char is blocking so we need to avoid calling it here.
     def peek_char(self):
