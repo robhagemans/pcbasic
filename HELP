@@ -1797,7 +1797,7 @@ ERRORS:
 -   If the last character of the field buffer is read, raises FIELD OVERFLOW.     
 -   If 'file_num' is not an open file, raises BAD FILE NUMBER.
 -   If 'file_num' is less than zero, raises ILLEGAL FUNCTION CALL.
--   If 'file_num' is greater than 32767, raises OVERFLOW.
+-   If 'file_num' is not in [-32768,32767], raises OVERFLOW.
 -   If 'file_num' is not open for INPUT or RANDOM, raises BAD FILE MODE.
 -   If 'file_num' is a string, raises TYPE MISMATCH.
 
@@ -1870,8 +1870,38 @@ NOTES:
 ERRORS:
 -   If 'file_num' is not an open file, raises BAD FILE NUMBER.
 -   If 'file_num' is less than zero, raises ILLEGAL FUNCTION CALL.
--   If 'file_num' is greater than 32767, raises OVERFLOW.
+-   If 'file_num' is not in [-32768,32767], raises OVERFLOW.
+-   If 'file_num' is a string, raises TYPE MISMATCH.
 
+
+LOCATE statement
+LOCATE [row] [, [col] [, [cursor_visible] [, [start_line] [, [stop_line] [,] ] ] 
+----------------
+Positions the cursor at 'row', 'col' on the screen and changes the cursor.
+If 'cursor_visible' is 0, makes the cursor invisible; if it si 1, makes the 
+cursor visible. The cursor shape is adjusted within a character cell to start
+from 'start_line' and end on 'end_line' where 'start_line' and 'end_line' are 
+in [0,31]. If 'start_line' or 'end_line' is greater than the character cell 
+height (15), substitute 15. Cursor shape and visibility options have no effect 
+in graphics mode. 
+NOTES:
+-   In GW-BASIC, the cursor shape option calls DOS INT 10h;01. What happens
+    to the cursor is then determined by the video card; the result is
+    fairly unlogical. PC-BASIC does not implement this quirk.
+-   In GW-BASIC, cursor shape is preserved after changing to INSERT mode and 
+    back; the INSERT cursor is different from the usual half-block. 
+    In PC-BASIC, INSERT mode resets the cursor shape to default.
+-   Locate accepts a 5th comma at the end, which is ignored.    
+ERRORS:
+-   If 'row' is outside the current view area, raises ILLEGAL FUNCTION CALL.
+-   If 'col' is greater than the current width, raises ILLEGAL FUNCTION CALL.
+-   If 'cursor_visible' is not in [0, 1], raises ILLEGAL FUNCTION CALL.
+-   If any parameter is not in [-32768,32767], raises OVERFLOW.
+-   If any parameter is a string, raises TYPE MISMATCH.
+
+
+LOCK statement
+LOCK [#] file_number, 
 
 MOTOR statement
 MOTOR [num]
@@ -1889,7 +1919,8 @@ ERRORS:
 
 
 OPEN statement
+--------------
 
 ERRORS:
--   If 'file_name' is empty or equals "keyb:", raises BAD FILE NUMBER
+-   If 'file_name' is empty or equals "KEYB:", raises BAD FILE NUMBER
 
