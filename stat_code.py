@@ -146,7 +146,7 @@ def exec_load(ins):
 def exec_chain(ins):
     action = program.merge if util.skip_white_read_if(ins, ('\xBD',)) else program.load     # MERGE
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    jumpnum, common_all = None, False    
+    jumpnum, common_all, delete_lines = None, False, None    
     if util.skip_white_read_if(ins, (',',)):
         # check for an expression that indicates a line in the other program. This is not stored as a jumpnum (to avoid RENUM)
         expr = expressions.parse_expression(ins, allow_empty=True)
@@ -160,7 +160,6 @@ def exec_chain(ins):
             if util.peek(ins, 3).upper() == 'ALL':
                 ins.read(3)
                 common_all = True
-            delete_lines = None            
             if util.skip_white_read_if(ins, (',',)) and util.skip_white_read_if(ins, ('\xa9',)):
                 delete_lines = parse_line_range(ins) # , DELETE
     util.require(ins, util.end_statement)
@@ -180,10 +179,9 @@ def exec_save(ins):
     #        raise error.RunError(errdots)
     mode = 'B'
     if util.skip_white_read_if(ins, (',',)):
-        d = util.skip_white_read(ins)
-        if d.upper() not in ('A', 'P'):
+        mode = util.skip_white_read(ins).upper()
+        if mode not in ('A', 'P'):
             raise error.RunError(2)
-        mode = d.upper()
     program.save(g, mode)
     g.close()
     util.require(ins, util.end_statement)

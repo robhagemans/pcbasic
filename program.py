@@ -306,12 +306,14 @@ def renumber(new_line=-1, start_line=-1, step=-1):
 def load(g):
     global protected
     bytecode.truncate(0)
-    c = g.read(1)
+    c = ''.join(g.read_chars(1))
     if c == '\xFF':
         # bytecode file
         bytecode.write('\x00')
         protected = False
-        bytecode.write(g.read())
+        while c != '':
+            c = ''.join(g.read_chars(1))
+            bytecode.write(c)
     elif c == '\xFE':
         # protected file
         bytecode.write('\x00')
@@ -333,7 +335,7 @@ def load(g):
     preparse()
 
 def merge(g):
-    if util.peek(g) in ('\xFF', '\xFE', '\xFC', ''):
+    if g.peek_char() in ('\xFF', '\xFE', '\xFC', ''):
         # bad file mode
         raise error.RunError(54)
     else:

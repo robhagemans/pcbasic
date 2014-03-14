@@ -42,7 +42,7 @@ def init_run(arg_run, arg_load, arg_quit, arg_cmd, arg_infile):
         fin = sys.stdin
         try:
             if arg_run != '':
-                fin = oslayer.safe_open(arg_infile, 'rb')
+                fin = fileio.open_dosname(0, arg_infile, mode='L', access='rb', defext='BAS')
             program.load(fin)
         except error.Error as e:
             if not handle_error(e):
@@ -172,8 +172,7 @@ def handle_error(e):
         program.jump(error.on_error)
         error.error_handle_mode = True
         program.set_runmode()
-        # FIXME: this is undefined, does not get reset
-        events.enable_events = False
+        # TODO: are events being trapped during error handling?
         return True
     else:
         # not handled by ON ERROR, stop execution
