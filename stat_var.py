@@ -462,7 +462,7 @@ def exec_line_input(ins):
         raise error.RunError(13)    
     # read the input
     if finp:
-        inputs = finp.read()
+        inputs = finp.read_line()
     else:    
         console.write(prompt) 
         inputs = console.read_screenline(write_endl=newline)

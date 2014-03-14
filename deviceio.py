@@ -113,8 +113,9 @@ def create_device(arg, default=None):
 #   lof()
 
 # input:
-#   read()
+#   read_line()
 #   read_chars()
+#   read()
 #   peek_char()
 #   eof()
 

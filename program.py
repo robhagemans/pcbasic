@@ -17,6 +17,8 @@ import tokenise
 import protect
 import util
 import console
+# for clear()
+import rnd
 
 from cStringIO import StringIO 
 import copy

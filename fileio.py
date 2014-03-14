@@ -110,6 +110,9 @@ class BaseFile(object):
     def read_chars(self, num):
         return list(self.fhandle.read(num)) 
         
+    def read(self, num):
+        return ''.join(self.read_chars(num))
+            
     def peek_char(self):
         s = self.fhandle.read(1)
         self.fhandle.seek(-len(s), 1)
@@ -142,7 +145,7 @@ class TextFile(BaseFile):
         BaseFile.close(self)
         
     # read line    
-    def read(self):
+    def read_line(self):
         if self.end_of_file():
             # input past end
             raise error.RunError(62)
@@ -277,16 +280,19 @@ class RandomBase(object):
             files[number] = self
     
     # read line (from field buffer)    
-    def read(self):
+    def read_line(self):
         # FIELD overflow happens if last byte in record is actually read
         if self.field_text_file.fhandle.tell() >= self.reclen-1:
             raise error.RunError(self.overflow_error) # FIELD overflow
-        return self.field_text_file.read()
+        return self.field_text_file.read_line()
         
     def read_chars(self, num):
         if self.field_text_file.fhandle.tell() + num > self.reclen-1:
             raise error.RunError(self.overflow_error) # FIELD overflow
         return self.field_text_file.read_chars(num)
+    
+    def read(self, num):
+        return ''.join(self.read_chars(num))
     
     # write one or more chars to field buffer
     def write(self, s):
