@@ -387,10 +387,11 @@ def open_dosname(number, name, mode='I', access='rb', lock='rw', reclen=128, def
         # file already open
         raise error.RunError(55)
     name, access, mode = str(name), access.lower(), mode.upper()
-    dev_name = name.upper().split(':')[0] + ':' 
+    split_colon = name.upper().split(':')
+    dev_name = split_colon[0] + ':' 
     if deviceio.is_device(dev_name): 
         inst = deviceio.device_open(number, dev_name, mode, access)
-    elif len(dev_name) > 2:
+    elif len(split_colon) > 1 and len(dev_name) > 2:
         # devname could be A:, B:, C:, etc.. but anything longer is an error (bad file number, for some reason).
         raise error.RunError(52)   
     else:    
