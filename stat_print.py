@@ -171,7 +171,10 @@ def exec_key(ins):
     util.require(ins, util.end_statement)        
 
 def exec_locate(ins):
-    row, col, cursor, start, stop = expressions.parse_int_list(ins, 5, 2)          
+    row, col, cursor, start, stop, dummy = expressions.parse_int_list(ins, 6, 2, allow_last_empty=True)          
+    if dummy != None:
+        # can end on a 5th comma but no stuff allowed after it
+        raise error.RunError(2)
     row = console.row if row == None else row
     col = console.col if col == None else col
     if row == console.height and console.keys_visible:
@@ -185,10 +188,15 @@ def exec_locate(ins):
         if row == console.height:
             # temporarily allow writing on last row
             console.last_row_on()       
-    console.set_pos(row, col, scroll_ok=False)    
+    console.set_pos(row, col, scroll_ok=False) 
     if cursor != None:
-        console.show_cursor(cursor)
-    # FIXME: cursor shape not implemented
+        util.range_check(0, 1, cursor)   
+        console.show_cursor(cursor != 0)
+    if stop == None:
+        stop = start
+    if start != None:    
+        util.range_check(0, 31, start, stop)
+        console.set_cursor_shape(start, stop)
 
 def exec_write(ins, screen=None):
     screen = expressions.parse_file_number(ins)

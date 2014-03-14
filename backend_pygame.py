@@ -404,7 +404,15 @@ def build_line_cursor(is_line):
     build_cursor()
     screen_changed = True
 
-   
+def build_shape_cursor(from_line, to_line):
+    global cursor_from, cursor_to, screen_changed
+    if console.graphics_mode:
+        return
+    cursor_from = max(0, min(from_line, font_height-1))
+    cursor_to = max(0, min(to_line, font_height-1))
+    build_cursor()
+    screen_changed = True
+
 def scroll(from_line):
     global screen_changed
     temp_scroll_area = pygame.Rect(0,(from_line-1)*font_height,console.width*8, (console.scroll_height-from_line+1)*font_height)
