@@ -128,6 +128,14 @@ def parse_expr_unit(ins):
         ins.seek(-1, 1)
         name, indices = get_var_or_array_name(ins)
         return var.get_var_or_array(name, indices)
+    # number literals as ASCII are accepted in tokenised streams. only if they start with a figure (not & or .)
+    # this happens e.g. after non-keywords like AS. They are not acceptable as line numbers.
+    elif d >= '0' and d <= '9':
+        ins.seek(-1, 1)
+        outs = StringIO()
+        tokenise.tokenise_number(ins, outs)
+        outs.seek(0)
+        return util.parse_value(outs)
     # number literals
     elif d in tokenise.tokens_number:
         ins.seek(-1, 1)
