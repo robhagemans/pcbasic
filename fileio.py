@@ -231,6 +231,8 @@ class TextFile(BaseFile):
     
     def loc(self):
         # for LOC(i)
+        if self.mode == 'I':
+            return max(1, (127+self.fhandle.tell())/128)
         return self.fhandle.tell()/128
 
     # for internal use    
