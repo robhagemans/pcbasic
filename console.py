@@ -332,7 +332,7 @@ def delete_char(crow, ccol):
             if crow > 1:
                 apage.wrap[crow-2] = False            
 
-def read():
+def read_line():
     global row, col, apage 
     set_line_cursor(True) 
     c, inp = '', ''
@@ -445,7 +445,7 @@ def read_screenline(write_endl=True, from_start=False):
     global row, col, apage
     prompt_row, prompt_col = row, col
     savecurs = show_cursor() 
-    read()
+    read_line()
     show_cursor(savecurs)
     # find start of wrapped block
     crow = row

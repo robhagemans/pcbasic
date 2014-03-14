@@ -25,7 +25,7 @@ import console
 import deviceio
 
 # for rnd.clear() on CHAIN
-import rnd
+#import rnd
 # for fileio.close_all() on LOAD, NEW
 import fileio
 
