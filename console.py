@@ -812,6 +812,9 @@ def set_line_cursor(is_line=True):
         cursor_is_line = is_line
         backend.build_line_cursor(is_line)
 
+def set_cursor_shape(from_line, to_line):
+    backend.build_shape_cursor(from_line, to_line)
+
 def put_char(c):
     global row, col, attr, apage
     # check if scroll& repositioning needed

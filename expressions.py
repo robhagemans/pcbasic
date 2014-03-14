@@ -303,8 +303,8 @@ def parse_bracket(ins):
     util.require_read(ins, (')',))
     return val
 
-def parse_int_list(ins, size, err=5):
-    exprlist = parse_expr_list(ins, size, err)
+def parse_int_list(ins, size, err=5, allow_last_empty=False):
+    exprlist = parse_expr_list(ins, size, err, allow_last_empty=allow_last_empty)
     output = []
     for expr in exprlist:
         if expr == None:
@@ -313,7 +313,7 @@ def parse_int_list(ins, size, err=5):
             output.append(vartypes.pass_int_unpack(expr))
     return output
 
-def parse_expr_list(ins, size, err=5, separators=(',',)):
+def parse_expr_list(ins, size, err=5, separators=(',',), allow_last_empty=False):
     pos = 0
     output = [None] * size
     while True:
@@ -329,7 +329,7 @@ def parse_expr_list(ins, size, err=5, separators=(',',)):
         else:  
             output[pos] = parse_expression(ins)
     # can't end on a comma: Missing Operand  
-    if not output[pos]:
+    if not allow_last_empty and not output[pos]:
         raise error.RunError(22)
     return output
 

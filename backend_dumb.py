@@ -135,6 +135,9 @@ def putc_at(row, col, c, attr):
 def build_line_cursor(is_line):
     pass
 
+def build_shape_cursor(from_line, to_line):
+    pass
+
 #################
     
 def check_keys():
