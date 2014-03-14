@@ -42,7 +42,7 @@ def exec_DEBUG(ins):
         sys.stderr.write(repr(type(e))+'\n')    
         traceback.print_tb(sys.exc_info()[2])
     sys.stdout = sys.__stdout__
-    console.write(buf.getvalue())
+    debug_print(buf.getvalue())
 
 def debug_print(s):
     sys.stderr.write(s)    
