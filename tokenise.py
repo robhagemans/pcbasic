@@ -253,7 +253,7 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
         # read the line number
         tokenise_line_number(ins, outs, onfile)
         # non-parsing modes
-        verbatim = False  # REM: pass unchnaged until e-o-line
+        verbatim = False  # REM: pass unchanged until e-o-line
         data = False      # DATA: pass unchanged until :
         # expect line number
         number_is_line = False
@@ -341,8 +341,8 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
                     data = True
                 elif word in linenum_words: 
                     number_is_line = True
-                # numbers can follow tokenised keywords and the word 'AS'    
-                expect_number = (word in keyword_to_token) or word=='AS'
+                # numbers can follow tokenised keywords (which does not include the word 'AS')
+                expect_number = (word in keyword_to_token) #or word=='AS'
                 if word in ('SPC(', 'TAB('):
                     spc_or_tab = True
             elif c == ',' or c == '#':
