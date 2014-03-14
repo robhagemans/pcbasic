@@ -21,7 +21,7 @@ import console
 import rnd
 
 from cStringIO import StringIO 
-import copy
+from copy import copy 
 
 # program bytecode buffer
 bytecode = StringIO()
@@ -363,10 +363,10 @@ def chain(action, g, jumpnum, common_all, delete_lines):
         # delete lines from existing code before merge (without MERGE, this is pointless)
         delete_lines(*delete_lines)
     if common_all:
-        common, common_arrays = copy.copy(var.variables), copy.copy(var.arrays)
+        common, common_arrays, common_functions = copy(var.variables), copy(var.arrays), copy(var.functions)
     else:
         # preserve COMMON variables
-        common, common_arrays = {}, {}
+        common, common_arrays, common_functions = {}, {}, {}
         for varname in var.common_names:
             try:
                 common[varname] = var.variables[varname]
@@ -378,7 +378,7 @@ def chain(action, g, jumpnum, common_all, delete_lines):
             except KeyError:
                 pass    
     # preserve deftypes (only for MERGE)
-    common_deftype = copy.copy(vartypes.deftype) 
+    common_deftype = copy(vartypes.deftype) 
     # preserve option base
     base = var.array_base    
     # load & merge call preparse call reset_program:  # data restore  # erase def fn   # erase defint etc
@@ -388,6 +388,8 @@ def chain(action, g, jumpnum, common_all, delete_lines):
     # restore only common variables
     var.variables = common
     var.arrays = common_arrays
+    # restore user functions (if ALL specified)
+    var.functions = common_functions
     # restore option base
     var.array_base = base
     # restore deftypes (if MERGE specified)
