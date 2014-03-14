@@ -78,7 +78,7 @@ def get_line_number(pos): #, after=False):
     return pre
 
 # jump to line number    
-def jump(jumpnum):
+def jump(jumpnum, err=8):
     global linenum
     if jumpnum in line_numbers:
         # jump to target
@@ -87,7 +87,7 @@ def jump(jumpnum):
         set_runmode()
     else:
         # Undefined line number
-        raise error.RunError(8)
+        raise error.RunError(err)
 
 # build list of line numbers and positions
 def preparse():
@@ -399,7 +399,7 @@ def chain(action, g, jumpnum, common_all, delete_lines):
     # RUN
     set_runmode()
     if jumpnum != None:
-        jump(jumpnum)
+        jump(jumpnum, err=5)
 
 def save(g, mode='B'):
     # skip first \x00 in bytecode, replace with appropriate magic number
