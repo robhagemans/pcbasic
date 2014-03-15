@@ -56,8 +56,8 @@ def init_run(arg_run, arg_load, arg_quit, arg_cmd, arg_infile):
             # we were running as a script, exit after completion
             exit()
 
-def main_loop(arg_run, arg_load, arg_quit, arg_cmd, arg_infile)
-    init_run(arg_run, arg_load, arg_quit, arg_cmd, arg_infile):
+def main_loop(arg_run, arg_load, arg_quit, arg_cmd, arg_infile):
+    init_run(arg_run, arg_load, arg_quit, arg_cmd, arg_infile)
     while True:
         # prompt for commands
         prompt()
