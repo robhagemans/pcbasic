@@ -8,15 +8,14 @@
 # please see text file COPYING for licence terms.
 #
 
-
 import sys
 from cStringIO import StringIO
+#import cProfile
 
 import error
 import util
 import var
 import rnd
-
 import events
 import tokenise 
 import program
@@ -26,10 +25,8 @@ import fileio
 import automode
 import console
 import fp
+# allow floating-point functions to write messages to the screen (Overflow etc.)
 fp.error_console = console
-#import cProfile
-
-#######################################################
 
 
 def init_run(arg_run, arg_load, arg_quit, arg_cmd, arg_infile):
@@ -59,8 +56,8 @@ def init_run(arg_run, arg_load, arg_quit, arg_cmd, arg_infile):
             # we were running as a script, exit after completion
             exit()
 
-
-def main_loop():
+def main_loop(arg_run, arg_load, arg_quit, arg_cmd, arg_infile)
+    init_run(arg_run, arg_load, arg_quit, arg_cmd, arg_infile):
     while True:
         # prompt for commands
         prompt()
@@ -94,7 +91,6 @@ def input_loop():
     # store the direct line
     return line
 
-
 # execute any commands
 def execution_loop():
     console.show_cursor(False)
@@ -107,7 +103,6 @@ def execution_loop():
             if not handle_error(e):
                 break
     console.show_cursor()
-
                    
 # direct mode functions:               
                
@@ -200,5 +195,3 @@ def exit():
     fileio.close_all()
     sys.exit(0)
     
-    
-
