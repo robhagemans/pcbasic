@@ -108,7 +108,7 @@ def exec_open(ins):
         if util.peek(ins,2) == '\xFF\x92':  #LEN
             ins.read(2)
             reclen = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-    fileio.open_dosname(number, name, mode, access, lock) 
+    fileio.open_file_or_device(number, name, mode, access, lock) 
     util.require(ins, util.end_statement)
                 
 def exec_close(ins):

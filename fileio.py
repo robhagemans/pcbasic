@@ -248,7 +248,6 @@ class TextFile(BaseFile):
         lof = self.fhandle.tell()
         self.fhandle.seek(current)
         return lof
- 
 
 
 class PseudoFile(TextFile):
@@ -303,8 +302,8 @@ class RandomBase(object):
         if ins.tell() < len(s):
             raise error.RunError(self.overflow_error) 
     
-    
     def close(self):
+        # don't close the handle in case it's a serial device
         if self.number != 0:
             del files[self.number]
     
@@ -381,7 +380,7 @@ class RandomFile(RandomBase):
         return lof
 
 
-def open_dosname(number, name, mode='I', access='rb', lock='rw', reclen=128, defext=''):
+def open_file_or_device(number, name, mode='I', access='rb', lock='rw', reclen=128, defext=''):
     if number < 0 or number > max_files:
         # bad file number
         raise error.RunError(52)
