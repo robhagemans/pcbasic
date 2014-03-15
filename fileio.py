@@ -130,9 +130,11 @@ class BaseFile(object):
     def flush(self):
         self.fhandle.flush()
 
+    def truncate(self):
+        self.fhandle.truncate()
 
 class TextFile(BaseFile):
-    def __init__(self, fhandle, number, mode, access):
+    def __init__(self, fhandle, number=0, mode='A', access='r+b'):
         BaseFile.__init__(self, fhandle, number, mode, access)
         # width=255 means line wrap
         self.width = 255
@@ -183,45 +185,25 @@ class TextFile(BaseFile):
         
     # write one or more chars
     def write(self, s):
-        s_out = ''
         for c in str(s):
             if self.col >= self.width and self.width != 255:  # width 255 means wrapping enabled
-                s_out += '\x0d\x0a'
+                self.fhandle.write('\x0d\x0a')
                 self.col = 1
             if c in ('\x0a','\x0d'): # CR, LF
-                s_out += c
+                self.fhandle.write(c)
                 self.col = 1
+            elif c == '\x08':
+                if self.col > 1:
+                    self.col -= 1
+                self.fhandle.seek(-1, 1)
+                self.truncate()                    
             else:    
-                s_out += c
-            # nonprinting characters including tabs are not counted for WIDTH
-            # FIXME: this is true for text files, but not for SCRN: and LPT1: , see below   
-            if ord(c) >= 32:
-                self.col += 1
-        self.fhandle.write(s_out)
-
-    # old printer version:
-    #def write(self, s):
-    #    tab = 8
-    #    last=''
-    #    for c in s:
-    #        # enforce width setting, unles wrapping is enabled (width=255)
-    #        if self.col == width and self.width !=255:
-    #            self.col=1
-    #            self.printbuf+='\n'
-    #        
-    #        if c=='\x0d' or c=='\x0a' and self.width!=255: # CR, LF
-    #            if c=='\x0a' and last=='\x0d':
-    #                pass
-    #            else:
-    #                self.col = 1
-    #                self.printbuf += '\n'#c
-    #        elif c=='\x09': # TAB
-    #            num = (tab - (self.col-1 - tab*int((self.col-1)/tab)))
-    #            self.printbuf +=' '*num
-    #        else:
-    #            self.col+=1    
-    #            self.printbuf += c    
-    #        last=c
+                self.fhandle.write(c)
+                # nonprinting characters including tabs are not counted for WIDTH
+                # FIXME: this is true for text files, but not for SCRN:  
+                # for lpt1 and files , nonprinting chars are not counted in LPOS; but chr$(8) will take a byte out of the buffer
+                if ord(c) >= 32:
+                    self.col += 1
 
     def set_width(self, new_width=255):
         self.width = new_width
@@ -249,11 +231,8 @@ class TextFile(BaseFile):
         self.fhandle.seek(current)
         return lof
 
-
-class PseudoFile(TextFile):
-    def __init__(self, stream):
-        TextFile.__init__(self, stream, 0, 'A', 'r+b')
-
+# D
+PseudoFile = TextFile
 
 class RandomBase(object):
     def __init__(self, fhandle, number, mode, access, reclen=128):
@@ -313,6 +292,9 @@ class RandomBase(object):
     def peek_char(self):
         return self.field_text_file.peek_char()
     
+    def seek(self, n, from_where):
+        return self.field_text_file.seek(n, from_where)
+        
     @property
     def col(self):
         return self.field_text_file.col
@@ -323,6 +305,10 @@ class RandomBase(object):
     
     def set_width(self, new_width=255):
         self.field_test_file.width = new_width
+
+    def truncate(self):
+    # this is only used when writing chr$(8), not sure how to implement for random files
+        pass
         
         
 class RandomFile(RandomBase):
