@@ -1869,6 +1869,7 @@ NOTES:
     is read, LOC returns 2. 
 ERRORS:
 -   If 'file_num' is not an open file, raises BAD FILE NUMBER.
+-   If 'file_num' is open for output to a device, raises BAD FILE MODE.
 -   If 'file_num' is not in [0,255], raises ILLEGAL FUNCTION CALL.
 -   If 'file_num' is not in [-32768,32767], raises OVERFLOW.
 -   If 'file_num' is a string, raises TYPE MISMATCH.
@@ -1937,9 +1938,10 @@ NOTES:
     free in the input buffer.
 ERRORS:
 -   If 'file_num' is not an open file, raises BAD FILE NUMBER.
+-   If 'file_num' is open for output to a device, raises BAD FILE MODE.
 -   If 'file_num' is not in [0,255], raises ILLEGAL FUNCTION CALL.
--   If 'file_num' is not in [-32768,32767], raises OVERFLOW.
 -   If 'file_num' is a string, raises TYPE MISMATCH.
+-   If 'file_num' is not in [-32768,32767], raises OVERFLOW.
 
 
 LOG function
@@ -1959,9 +1961,12 @@ ERRORS:
 LPOS function
 position = LPOS(printer_number)
 -------------
-Returns the column position for a printer. If printer 
+Returns the column position for a printer. 
+'printer_number' is a number-valued expression in the range [0,3]. If it is 0
+or 1, the position for LPT1 is returned. If it is 2, LPT2; 3, LPT3.
 NOTES:
--   When entering interactive mode, the printer position is reset to 1.
+-   In GW-BASIC, when entering interactive mode, LPT1 is flushed and its 
+    position is reset to 1.
 ERRORS:
 -   If 'printer_number' is not in [0,3], raises ILLEGAL FUNCTION CALL.
 -   If 'printer_number' is not in [-32768,32767], raises OVERFLOW.
