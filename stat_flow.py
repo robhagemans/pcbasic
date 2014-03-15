@@ -108,6 +108,8 @@ def exec_for(ins):
     for_push_next(ins, forpos, varname, start, stop, step)
     # check condition and jump if necessary
     for_jump_if_ends(ins, loopvar, stop, step)
+
+###
     
 def for_push_next(ins, forpos, varname, start, stop, step):    
     # find matching NEXT
@@ -120,6 +122,7 @@ def for_push_next(ins, forpos, varname, start, stop, step):
     varname2 = util.get_var_name(ins, allow_empty=True)
     d = util.skip_white(ins)
     nextpos = ins.tell()
+    ins.seek(current)    
     # no-var only allowed in standalone NEXT
     if varname2 == '':
         if d not in util.end_statement:
@@ -134,8 +137,7 @@ def for_push_next(ins, forpos, varname, start, stop, step):
     else:
         # NEXT without FOR
         raise error.RunError(1, nextline)
-    ins.seek(current)    
-
+    
 def for_iterate(ins):    
     # skip to end of FOR statement
     util.skip_to(ins, util.end_statement)
@@ -175,6 +177,8 @@ def for_loop_ends(loopvar, stop, step):
     elif sgn > 0:
         loop_ends = vartypes.int_to_bool(vartypes.number_gt(loopvar, stop)) 
     return loop_ends
+
+###
 
 def exec_next(ins, comma=False):
     curpos = ins.tell()
