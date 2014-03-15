@@ -183,18 +183,13 @@ class ConsoleFile(BaseFile):
         return word
 
     def write(self, inp):
-        import sys
-        sys.stderr.write(repr(inp)+'\n')
         last = ''
         for s in inp:
-            import sys
-            sys.stderr.write(repr(s)+repr(self.col)+'\n')
             if s == '\x0a' and last == '\x0d':
                 console.write('\x0d\x0a')
             elif s == '\x0d':
                 pass
             elif self.col > self.width and self.width != 255:  # width 255 means wrapping enabled
-                sys.stderr.write('CRLF')
                 console.write('\x0d\x0a'+s)
             else:        
                 console.write(s)
