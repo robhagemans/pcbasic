@@ -18,7 +18,7 @@ import select
 import oslayer
 import error
 import fileio
-from fileio import RandomBase, TextFile
+from fileio import RandomBase, TextFile, BaseFile
 import console
 
 
@@ -124,27 +124,23 @@ def create_device(arg, default=None):
 #   flush()
 #   set_width()
 
+
 input_replace = { 
     '\x00\x47': '\xFF\x0B', '\x00\x48': '\xFF\x1E', '\x00\x49': '\xFE', 
     '\x00\x4B': '\xFF\x1D', '\x00\x4D': '\xFF\x1C', '\x00\x4F': '\xFF\x0E',
     '\x00\x50': '\xFF\x1F', '\x00\x51': '\xFE', '\x00\x53': '\xFF\x7F', '\x00\x52': '\xFF\x12'
     }
 
-class ConsoleStream(object):
-    def write(self, c):
-        console.write(c)
-        
-    def read(self, n):
-        word = ''
-        for c in console.read_chars(n):
-            if len(c) > 1 and c[0] == '\x00':
-                try:
-                    word += input_replace[c]
-                except KeyError:
-                    pass
-            else:
-                word += c        
-        return word
+# wrapper for console for reading from KYBD: and writing to SCRN:
+class ConsoleFile(BaseFile):
+    def __init__(self):
+        self.fhandle = console
+        self.number = 0
+        self.mode = 'A'
+        self.access = 'r+b'
+        # SCRN file uses a separate width setting from the console
+        self.width = console.width
+
         
     def seek(self, a, b=0):
         pass
@@ -157,14 +153,74 @@ class ConsoleStream(object):
 
     def truncate(self):
         pass
+
+    def read_line(self):
+        s = ''
+        while True:
+            c = self.read(1)
+            if c == '\x0D':
+                # don't check for CR/LF when reading KYBD:
+                break
+            else:        
+                s += c    
+        return s
+
+    # for INPUT$
+    def read_chars(self, num):
+        return console.read_chars(num)
+
+    # for INPUT and LINE INPUT
+    def read(self, n):
+        word = ''
+        for c in console.read_chars(n):
+            if len(c) > 1 and c[0] == '\x00':
+                try:
+                    word += input_replace[c]
+                except KeyError:
+                    pass
+            else:
+                word += c        
+        return word
+
+    def write(self, inp):
+        import sys
+        sys.stderr.write(repr(inp)+'\n')
+        last = ''
+        for s in inp:
+            import sys
+            sys.stderr.write(repr(s)+repr(self.col)+'\n')
+            if s == '\x0a' and last == '\x0d':
+                console.write('\x0d\x0a')
+            elif s == '\x0d':
+                pass
+            elif self.col > self.width and self.width != 255:  # width 255 means wrapping enabled
+                sys.stderr.write('CRLF')
+                console.write('\x0d\x0a'+s)
+            else:        
+                console.write(s)
+            last = s
+        if last == '\x0d':
+            console.write(last)    
+            
+    def set_width(self, new_width=255):
+        self.width = new_width
+
+    # for internal use    
+    def end_of_file(self):
+        return (util.peek(self.fhandle) in ('', '\x1a'))
+    
+    def eof(self):
+        # for EOF(i)
+        if self.mode in ('A', 'O'):
+            return False
+        return (util.peek(self.fhandle) in ('', '\x1a'))
+    
+    def lof(self):
+        return 1
+
+    def loc(self):
+        return 0
         
-    def close(self):
-        pass
-
-class ConsoleFile(TextFile):
-    def __init__(self):
-        TextFile.__init__(self, ConsoleStream(), 0, 'A', 'r+b')
-
     # console read_char is blocking so we need to avoid calling it here.
     def peek_char(self):
         return console.peek_char()
@@ -184,6 +240,10 @@ class ConsoleFile(TextFile):
         if self.number != 0:
             del fileio.files[self.number]
         
+    @property
+    def col(self):
+        return console.col
+
 
 class PrinterStream(StringIO.StringIO):
     def __init__(self, name=''):
