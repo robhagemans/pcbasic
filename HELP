@@ -300,7 +300,7 @@ Returns the inverse tangent of x. 'x' is a numeric-valued expression that gives
 the angle in radians. Unless BASIC is run with the --double option, ATN(x) 
 returns a single-precision value.
 NOTES:
--   ATN(1) differs in the least significant digit from GW-BASIC.
+-   ATN(x) differs in the least significant digit from GW-BASIC.
 ERRORS:
 -   If 'x' has a string value, ATN raises TYPE MISMATCH.
 
@@ -1869,7 +1869,7 @@ NOTES:
     is read, LOC returns 2. 
 ERRORS:
 -   If 'file_num' is not an open file, raises BAD FILE NUMBER.
--   If 'file_num' is less than zero, raises ILLEGAL FUNCTION CALL.
+-   If 'file_num' is not in [0,255], raises ILLEGAL FUNCTION CALL.
 -   If 'file_num' is not in [-32768,32767], raises OVERFLOW.
 -   If 'file_num' is a string, raises TYPE MISMATCH.
 
@@ -1922,7 +1922,7 @@ ERRORS:
 -   Attempting to LOCK (part of) a file already locked raises PERMISSION DENIED.
 -   If 'record_0' or 'record_1' is not in [1, 2^25-2], raises BAD RECORD NUMBER.
 -   If 'file_num' is not an open file, raises BAD FILE NUMBER.
--   If 'file_num' is less than zero, raises ILLEGAL FUNCTION CALL.
+-   If 'file_num' is not in [0,255], raises ILLEGAL FUNCTION CALL.
 -   If 'file_num' is not in [-32768,32767], raises OVERFLOW.
 -   If any parameter is a string, raises TYPE MISMATCH.
     
@@ -1937,11 +1937,35 @@ NOTES:
     free in the input buffer.
 ERRORS:
 -   If 'file_num' is not an open file, raises BAD FILE NUMBER.
--   If 'file_num' is less than zero, raises ILLEGAL FUNCTION CALL.
+-   If 'file_num' is not in [0,255], raises ILLEGAL FUNCTION CALL.
 -   If 'file_num' is not in [-32768,32767], raises OVERFLOW.
 -   If 'file_num' is a string, raises TYPE MISMATCH.
 
 
+LOG function
+y = LOG(x)
+------------
+Returns the natural logarithm of 'x'.
+'x' is a number-valued expression greater than zero.
+NOTES:
+-   Unless BASIC is run with the --double option, LOG(x) returns a single-
+    precision value.
+-   LOG(x) can differ from GW-BASIC by 1 in the least significant digit.
+ERRORS:
+-   If 'x' is a string, raises TYPE MISMATCH.
+-   If 'x' is zero or less, raises ILLEGAL FUNCTION CALL.
+
+
+LPOS function
+position = LPOS(printer_number)
+-------------
+Returns the column position for a printer. If printer 
+NOTES:
+-   When entering interactive mode, the printer position is reset to 1.
+ERRORS:
+-   If 'printer_number' is not in [0,3], raises ILLEGAL FUNCTION CALL.
+-   If 'printer_number' is not in [-32768,32767], raises OVERFLOW.
+-   If 'printer_number' is a string, raises TYPE MISMATCH.
 
 
 MOTOR statement
