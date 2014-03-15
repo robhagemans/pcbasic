@@ -237,11 +237,11 @@ def exec_print(ins, screen=None):
                 else:            
                     screen.write(' '*(1+zone_width*next_zone-screen.col))
             elif d == '\xD2': #SPC(
-                numspaces = vartypes.pass_int_unpack(expressions.parse_expression(ins), 0xffff) % screen.width
+                numspaces = max(0, vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=2), 0xffff)) % screen.width
                 util.require_read(ins, (')',))
                 screen.write(' ' * numspaces)
             elif d == '\xCE': #TAB(
-                pos = vartypes.pass_int_unpack(expressions.parse_expression(ins), 0xffff) % screen.width
+                pos = max(0, vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=2), 0xffff)) % screen.width
                 util.require_read(ins, (')',))
                 if pos < screen.col:
                     screen.write(util.endl + ' '*(pos-1))
