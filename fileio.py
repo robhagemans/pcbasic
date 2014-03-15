@@ -261,7 +261,6 @@ class RandomBase(object):
     def __init__(self, fhandle, number, mode, access, reclen=128):
         # width=255 means line wrap
         self.width = 255
-        self.col = 1
         self.fhandle = fhandle
         self.number = number
         self.mode = mode
@@ -277,6 +276,7 @@ class RandomBase(object):
         # open a pseudo text file over the buffer stream
         # to make WRITE# etc possible
         self.field_text_file = PseudoFile(ByteStream(self.field))
+        self.field_text_file.col = 1
         # all text-file operations on a RANDOM file number actually work on the FIELD buffer
         if number != 0:
             files[number] = self
@@ -309,7 +309,6 @@ class RandomBase(object):
     
     def get_width(self):
         return self.width
-
     
     def close(self):
         if self.number != 0:
