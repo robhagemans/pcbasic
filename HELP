@@ -1905,6 +1905,7 @@ LOCK [#] file_number [, record_0 ]
 LOCK [#] file_number, [record_0] TO record_1
 --------------
 Locks a file or part of a file against access by other users. On a RANDOM file,
+'file_number' is a number-valued expression in the range [0,255]. 
 If specified, 'record_0' is the first record locked and 'record_1' is the last 
 record locked. On any other kind of file 'record_0' and 'record_1' have no 
 effect. If 'record_0' is not specified, it is assumed to be 1. If no records 
@@ -1925,6 +1926,22 @@ ERRORS:
 -   If 'file_num' is not in [-32768,32767], raises OVERFLOW.
 -   If any parameter is a string, raises TYPE MISMATCH.
     
+
+LOF function
+length = LOF(file_num)
+------------
+Returns the number of bytes in the file open under 'file_num'
+'file_num' is a number-valued expression in the range [0,255]. 
+NOTES:
+-   If 'file_num' is open to a COM: device, LOF returns the number of bytes
+    free in the input buffer.
+ERRORS:
+-   If 'file_num' is not an open file, raises BAD FILE NUMBER.
+-   If 'file_num' is less than zero, raises ILLEGAL FUNCTION CALL.
+-   If 'file_num' is not in [-32768,32767], raises OVERFLOW.
+-   If 'file_num' is a string, raises TYPE MISMATCH.
+
+
 
 
 MOTOR statement
