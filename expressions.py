@@ -146,7 +146,7 @@ def parse_expr_unit(ins):
         return vartypes.pack_int(util.parse_jumpnum(ins))
     # brackets
     elif d == '(':
-        val = parse_expression(ins)
+        val = parse_expression(ins, empty_err=2)
         util.require_read(ins, (')',))
         return val    
     # single-byte tokens        
