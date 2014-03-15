@@ -599,9 +599,14 @@ def value_pos(ins):
     return vartypes.pack_int(console.col)
 
 def value_lpos(ins):            
-    # parse the dummy argument, doesnt matter what it is as long as it's a legal expression
-    parse_bracket(ins)
-    return vartypes.pack_int(deviceio.lpt1.col)
+    num = vartypes.pass_int_unpack(parse_bracket(ins))
+    util.range_check(0, 3, num)
+    printer = deviceio.lpt1
+    if num == 2:
+        printer = deviceio.lpt2
+    elif num ==3:
+        printer = deviceio.lpt3    
+    return vartypes.pack_int(printer.col)
            
 ######################################################################
 # file access
