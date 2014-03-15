@@ -686,6 +686,17 @@ def clear():
     if keys_visible:
         show_keys()
 
+
+def list_keys():
+    for i in range(10):
+        text = bytearray(key_replace[i])
+        for j in range(len(text)):
+            try:
+                text[j] = keys_line_replace_chars[chr(text[j])]
+            except KeyError:
+                pass    
+        write('F' + str(i+1) + ' ' + str(text) + util.endl)    
+
 def write_for_keys(s, col, cattr):
     # write chars for the keys line - yes, it's different :)
     # with no echo
