@@ -155,10 +155,10 @@ class ConsoleStream(object):
     def flush(self):
         pass
 
-    #def close(self):
-    #    pass
+    def close(self):
+        pass
 
-class ConsoleFile(fileio.TextFile):
+class ConsoleFile(TextFile):
     def __init__(self):
         TextFile.__init__(self, ConsoleStream(), 0, 'A', 'r+b')
 
