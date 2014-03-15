@@ -22,6 +22,8 @@ import deviceio
 import console
 import graphics
 
+zone_width = 14
+        
 
 def exec_cls(ins):
     if util.skip_white(ins) in util.end_statement:
@@ -121,55 +123,53 @@ def exec_palette(ins):
     util.require(ins, util.end_statement)    
 
 def exec_key(ins):
-    d = util.skip_white(ins)
+    d = util.skip_white_read(ins)
     if d == '\x95': # ON
-        ins.read(1)
         if not console.keys_visible:
            console.show_keys()
     elif d == '\xdd': # OFF
-        ins.read(1)
         if console.keys_visible:
            console.hide_keys()   
     elif d == '\x93': # LIST
-        ins.read(1)
-        for i in range(10):
-            text = bytearray(console.key_replace[i])
-            for j in range(len(text)):
-                try:
-                    text[j] = console.keys_line_replace_chars[chr(text[j])]
-                except KeyError:
-                    pass    
-            console.write('F' + str(i+1) + ' ' + str(text) + util.endl)    
+        console.list_keys()
     elif d == '(':
         # key (n)
-        num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
-        util.range_check(0, 255, num)
-        d = util.skip_white(ins)
-        # others are ignored
-        if num >= 1 and num <= 20:
-            if events.key_handlers[num-1].command(d):
-                ins.read(1)
-            else:    
-                raise error.RunError(2)
+        ins.seek(-1, 1)
+        exec_key_events(ins)
     else:
         # key n, "TEXT"    
-        keynum = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-        util.range_check(1, 255, keynum)
-        util.require_read(ins, (',',), err=5)
-        text = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-        # only length-2 expressions can be assigned to KEYs over 10
-        # (in which case it's a key scancode definition, which is not implemented)
-        if keynum <= 10:
-            console.key_replace[keynum-1] = str(text)
-            console.show_keys()
-        else:
-            if len(text) != 2:
-               raise error.RunError(5)
-            # can't redefine scancodes for keys 1-14
-            if keynum >= 15 and keynum <= 20:    
-                events.event_keys[keynum-1] = str(text)
+        ins.seek(-len(d), 1)
+        exec_key_define(ins)
     util.require(ins, util.end_statement)        
 
+def exec_key_events(ins):        
+    num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
+    util.range_check(0, 255, num)
+    d = util.skip_white(ins)
+    # others are ignored
+    if num >= 1 and num <= 20:
+        if events.key_handlers[num-1].command(d):
+            ins.read(1)
+        else:    
+            raise error.RunError(2)
+
+def exec_key_define(ins):        
+    keynum = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    util.range_check(1, 255, keynum)
+    util.require_read(ins, (',',), err=5)
+    text = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    # only length-2 expressions can be assigned to KEYs over 10
+    # (in which case it's a key scancode definition, which is not implemented)
+    if keynum <= 10:
+        console.key_replace[keynum-1] = str(text)
+        console.show_keys()
+    else:
+        if len(text) != 2:
+           raise error.RunError(5)
+        # can't redefine scancodes for keys 1-14
+        if keynum >= 15 and keynum <= 20:    
+            events.event_keys[keynum-1] = str(text)
+    
 def exec_locate(ins):
     row, col, cursor, start, stop, dummy = expressions.parse_int_list(ins, 6, 2, allow_last_empty=True)          
     if dummy != None:
@@ -181,13 +181,12 @@ def exec_locate(ins):
         raise error.RunError(5)
     elif console.view_set:
         util.range_check(console.view_start, console.scroll_height, row)
-        util.range_check(1, console.width, col)
     else:
         util.range_check(1, console.height, row)
-        util.range_check(1, console.width, col)
-        if row == console.height:
-            # temporarily allow writing on last row
-            console.last_row_on()       
+    util.range_check(1, console.width, col)
+    if row == console.height:
+        # temporarily allow writing on last row
+        console.last_row_on()       
     console.set_pos(row, col, scroll_ok=False) 
     if cursor != None:
         util.range_check(0, 1, cursor)   
@@ -200,8 +199,7 @@ def exec_locate(ins):
 
 def exec_write(ins, screen=None):
     screen = expressions.parse_file_number(ins)
-    if screen == None:
-        screen = console
+    screen = console if screen == None else screen
     expr = expressions.parse_expression(ins, allow_empty=True)
     if expr:
         while True:
@@ -216,67 +214,39 @@ def exec_write(ins, screen=None):
             expr = expressions.parse_expression(ins, empty_err=2)
     util.require(ins, util.end_statement)        
     screen.write(util.endl)
-        
+
 def exec_print(ins, screen=None):
     if screen == None:
         screen = expressions.parse_file_number(ins)
-        if screen == None:
-            screen = console
-    zone_width = 14
-    number_zones = int(screen.width/zone_width)
-    output = ''
-    newline = True
+        screen = console if screen == None else screen
     if util.skip_white_read_if(ins, '\xD7'): # USING
        return exec_print_using(ins, screen)
+    number_zones = max(1, int(screen.width/zone_width))
+    newline = True
     while True:
         d = util.skip_white(ins)
         if d in util.end_statement:
-            screen.write(output)
-            if newline:
-                 screen.write(util.endl)
-            output = ''
             break 
-        elif d == ',':
-            newline = False
+        elif d in (',', ';', '\xD2', '\xCE'):    
             ins.read(1)
-            screen.write(output)
-            col = screen.col
-            next_zone = int((col-1)/zone_width)+1
-            if next_zone >= number_zones:
-                output = util.endl
-            else:            
-                output = ' '*(1+zone_width*next_zone-col)
-            screen.write(output)
-            output = ''
-        elif d == ';':
             newline = False
-            ins.read(1)
-            screen.write(output)
-            output = ''
-        elif d == '\xD2': #SPC(
-            newline = False
-            ins.read(1)
-            screen.write(output)
-            output = ''
-            numspaces = vartypes.pass_int_unpack(expressions.parse_expression(ins), 0xffff)
-            numspaces %= screen.width
-            util.require_read(ins, (')',))
-            screen.write(' ' * numspaces)
-            output = ''
-        elif d == '\xCE': #TAB(
-            newline = False
-            ins.read(1)
-            screen.write(output)
-            output = ''
-            pos = vartypes.pass_int_unpack(expressions.parse_expression(ins), 0xffff)
-            pos %= screen.width
-            util.require_read(ins, (')',))
-            col = screen.col
-            if pos < col:
-                screen.write(output + util.endl + ' '*(pos-1))
-            else:
-                screen.write(output + ' '*(pos-col))
-            output = ''    
+            if d == ',':
+                next_zone = int((screen.col-1)/zone_width)+1
+                if next_zone >= number_zones and screen.width >= 14:
+                    screen.write(util.endl)
+                else:            
+                    screen.write(' '*(1+zone_width*next_zone-screen.col))
+            elif d == '\xD2': #SPC(
+                numspaces = vartypes.pass_int_unpack(expressions.parse_expression(ins), 0xffff) % screen.width
+                util.require_read(ins, (')',))
+                screen.write(' ' * numspaces)
+            elif d == '\xCE': #TAB(
+                pos = vartypes.pass_int_unpack(expressions.parse_expression(ins), 0xffff) % screen.width
+                util.require_read(ins, (')',))
+                if pos < screen.col:
+                    screen.write(util.endl + ' '*(pos-1))
+                else:
+                    screen.write(' '*(pos-screen.col))
         else:
             newline = True
             expr = expressions.parse_expression(ins)
@@ -284,13 +254,13 @@ def exec_print(ins, screen=None):
             # numbers always followed by a space
             if expr[0] in ('%', '!', '#'):
                 word += ' '
-            if screen.col + len(word) -1 > screen.width and screen.col != 1:
-                # prevent breaking up of numbers through newline
-                output += util.endl
-            output += str(word)
+            if screen.col + len(word) - 1 > screen.width and screen.col != 1:
+                screen.write(util.endl)
+            screen.write(str(word))
+    if newline:
+         screen.write(util.endl)
             
 def get_next_expression(ins): 
-    util.skip_white(ins)
     expr = expressions.parse_expression(ins)
     # no semicolon: nothing more to read afterwards
     if not util.skip_white_read_if(ins, ';'):
@@ -302,15 +272,12 @@ def get_next_expression(ins):
     return True, True, expr
 
 def exec_print_using(ins, screen):
-    util.skip_white(ins)
     format_expr = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     if format_expr == '':
         raise error.RunError(5)
-    fors = StringIO(format_expr)
     util.require_read(ins, (';',))
-    semicolon = False    
-    more_data = False
-    format_chars = False    
+    fors = StringIO(format_expr)
+    semicolon, more_data, format_chars = False, False, False    
     while True:
         c = fors.read(1)
         if c == '':
@@ -372,8 +339,7 @@ def exec_print_using(ins, screen):
             more_data, semicolon, expr = get_next_expression(ins) 
             # feed back c, we need it
             fors.seek(-1, 1)
-            varstring = vartypes.format_number(vartypes.pass_float_keep(expr), fors)     
-            screen.write(varstring)
+            screen.write(vartypes.format_number(vartypes.pass_float_keep(expr), fors))
         else:
             screen.write(c)
     if not semicolon:
@@ -427,7 +393,7 @@ def exec_width(ins):
     # anything after that is a syntax error      
     util.require(ins, util.end_statement)        
     if dev == console:        
-        # FIXME: WIDTH should do mode changes if not in text mode
+        # TODO: WIDTH should do mode changes if not in text mode
         # raise an error if the width value doesn't make sense
         if w not in (40, 80):
             raise error.RunError(5)
@@ -453,5 +419,4 @@ def exec_pcopy(ins):
     util.require(ins, util.end_statement)
     if not console.copy_page(src, dst):
         raise error.RunError(5)
-    
-
+        
