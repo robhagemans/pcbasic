@@ -351,7 +351,7 @@ def exec_input(ins):
     # read the input
     while True:
         console.write(prompt) 
-        text_file = fileio.PseudoFile(StringIO(console.read_screenline(write_endl=newline)))
+        text_file = fileio.TextFile(StringIO(console.read_screenline(write_endl=newline)))
         values = []
         count_commas = 0    
         for v in readvar:
