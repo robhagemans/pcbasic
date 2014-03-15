@@ -226,9 +226,6 @@ class TextFile(BaseFile):
     def set_width(self, new_width=255):
         self.width = new_width
     
-    def get_width(self):
-        return self.width
-    
     def loc(self):
         # for LOC(i)
         if self.mode == 'I':
@@ -246,10 +243,12 @@ class TextFile(BaseFile):
         return (util.peek(self.fhandle) in ('', '\x1a'))
     
     def lof(self):
-        return self.fhandle.tell()
+        current = self.fhandle.tell()
+        self.fhandle.seek(0, 2)
+        lof = self.fhandle.tell()
+        self.fhandle.seek(current)
+        return lof
  
-    def flush(self):
-        self.fhandle.flush()
 
 
 class PseudoFile(TextFile):
@@ -259,8 +258,6 @@ class PseudoFile(TextFile):
 
 class RandomBase(object):
     def __init__(self, fhandle, number, mode, access, reclen=128):
-        # width=255 means line wrap
-        self.width = 255
         self.fhandle = fhandle
         self.number = number
         self.mode = mode
@@ -275,9 +272,11 @@ class RandomBase(object):
         self.field[:] = bytearray('\x00')*reclen
         # open a pseudo text file over the buffer stream
         # to make WRITE# etc possible
+        # all text-file operations on a RANDOM file number actually work on the FIELD buffer
         self.field_text_file = PseudoFile(ByteStream(self.field))
         self.field_text_file.col = 1
-        # all text-file operations on a RANDOM file number actually work on the FIELD buffer
+        # width=255 means line wrap
+        self.field_text_file.width = 255
         if number != 0:
             files[number] = self
     
@@ -304,11 +303,6 @@ class RandomBase(object):
         if ins.tell() < len(s):
             raise error.RunError(self.overflow_error) 
     
-    def set_width(self, new_width=255):
-        self.width = new_width
-    
-    def get_width(self):
-        return self.width
     
     def close(self):
         if self.number != 0:
@@ -324,11 +318,12 @@ class RandomBase(object):
     def col(self):
         return self.field_text_file.col
     
+    @property
+    def width(self):
+        return self.field_text_file.width
+    
     def set_width(self, new_width=255):
         self.field_test_file.width = new_width
-    
-    def get_width(self):
-        return self.field_text_file.width
         
         
 class RandomFile(RandomBase):
