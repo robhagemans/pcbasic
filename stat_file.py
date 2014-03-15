@@ -112,6 +112,9 @@ def exec_open(ins):
     util.require(ins, util.end_statement)
                 
 def exec_close(ins):
+    # allow empty CLOSE
+    if util.skip_white(ins) in util.end_statement:
+        return
     while True:
         number = expressions.parse_file_number_opthash(ins)
         try:    
