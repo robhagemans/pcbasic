@@ -155,6 +155,9 @@ class ConsoleStream(object):
     def flush(self):
         pass
 
+    def truncate(self):
+        pass
+        
     def close(self):
         pass
 
