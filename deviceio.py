@@ -26,19 +26,6 @@ import console
 serial_in_size = 256
 serial_out_size = 128
 
-input_devices = {}
-output_devices = {}
-random_devices = {}
-
-# device implementations
-scrn = None
-kybd = None
-lpt1 = None
-lpt2 = None
-lpt3 = None
-com1 = None
-com2 = None
-
 def init_devices(args):
     global input_devices, output_devices, random_devices
     global scrn, kybd, lpt1, lpt2, lpt3, com1, com2
@@ -140,7 +127,6 @@ class ConsoleFile(BaseFile):
         self.access = 'r+b'
         # SCRN file uses a separate width setting from the console
         self.width = console.width
-
         
     def seek(self, a, b=0):
         pass
