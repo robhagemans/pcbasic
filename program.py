@@ -89,6 +89,47 @@ def jump(jumpnum, err=8):
         # Undefined line number
         raise error.RunError(err)
 
+# READ a unit of DATA
+def read_entry():
+    global data_line, data_pos
+    current = bytecode.tell()
+    bytecode.seek(data_pos)
+    if util.peek(bytecode) in util.end_statement:
+        # initialise - find first DATA
+        util.skip_to(bytecode, '\x84')  # DATA
+        data_line = get_line_number(bytecode.tell())
+    if bytecode.read(1) not in ('\x84', ','):
+        # out of DATA
+        raise error.RunError(4)
+    vals, word, verbatim = '', '', False
+    while True:
+        # read next char
+        if not verbatim:    
+            c = util.skip_white(bytecode)
+        else:
+            c = util.peek(bytecode)
+        # parse char
+        if c == '' or (not verbatim and c == ',') or (c in util.end_line or (not verbatim and c in util.end_statement)):
+            break
+        elif c == '"':
+            bytecode.read(1)
+            verbatim = not verbatim
+            if not verbatim:
+                util.require(bytecode, util.end_statement+(',',))
+        else:        
+            bytecode.read(1)
+            if verbatim:
+                vals += c
+            else:
+                word += c
+            # omit trailing whitespace                        
+            if c not in util.whitespace:    
+                vals += word
+                word = ''
+    data_pos = bytecode.tell()
+    bytecode.seek(current)
+    return vals
+
 # build list of line numbers and positions
 def preparse():
     global line_numbers
@@ -436,4 +477,5 @@ def list_to_file(out, from_line, to_line):
                         
 def memory_size():
     return len(bytecode.getvalue()) - 4
+    
     
