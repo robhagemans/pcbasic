@@ -679,11 +679,8 @@ def log(n_in):
     # also log(x) above -log(2) + x- 0.5
     # and below 1-x
     # 1-n
-    hi = n.__class__(True, 0x100**(n.byte_size+1) - 1 - n.man, n.exp) 
-    #hi = sub(n.one, n)
-    #hi = n.copy()
-    #hi.man = 0xffffffff - hi.man
-    #hi.neg = True
+    # hi.man = 0xffffffff - n.man
+    hi = n.__class__(True, 0x100**n.byte_size - 1 - n.man, n.exp) 
     lo = n.log2.copy()
     lo.neg = True 
     last = hi
