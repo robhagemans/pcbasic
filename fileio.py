@@ -231,8 +231,6 @@ class TextFile(BaseFile):
         self.fhandle.seek(current)
         return lof
 
-# D
-PseudoFile = TextFile
 
 class RandomBase(object):
     def __init__(self, fhandle, number, mode, access, reclen=128):
@@ -251,7 +249,7 @@ class RandomBase(object):
         # open a pseudo text file over the buffer stream
         # to make WRITE# etc possible
         # all text-file operations on a RANDOM file number actually work on the FIELD buffer
-        self.field_text_file = PseudoFile(ByteStream(self.field))
+        self.field_text_file = TextFile(ByteStream(self.field))
         self.field_text_file.col = 1
         # width=255 means line wrap
         self.field_text_file.width = 255
