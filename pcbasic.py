@@ -130,10 +130,10 @@ def convert(infile, outfile, mode):
     console.init()
     fin = sys.stdin
     if infile:
-        fin = fileio.open_dosname(0, infile, mode='L', access='rb', defext='')
+        fin = fileio.open_file_or_device(0, infile, mode='L', access='rb', defext='')
     fout = sys.stdout
     if outfile:
-        fout = fileio.open_dosname(0, outfile, mode='S', access='wb', defext='')
+        fout = fileio.open_file_or_device(0, outfile, mode='S', access='wb', defext='')
     program.load(fin)
     # allow conversion of protected files
     program.protected = False
