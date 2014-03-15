@@ -212,28 +212,25 @@ def parse_value(ins):
         return ('#', val)
     return None
 
-def parse_name(ins):
+
+def get_var_name(ins, allow_empty=False):
     name = ''
-    d = ins.read(1).upper()
+    d = skip_white_read(ins).upper()
     if not (d >= 'A' and d <= 'Z'):
         # variable name must start with a letter
-        if d != '':
-            ins.seek(-1,1)
-        return ''
-    while (d>='A' and d<='Z') or (d>='0' and d<='9') or d=='.':
-        name += d
-        d = ins.read(1).upper()
-    if d in ('$', '%', '!', '#'):
-        name += d
+        ins.seek(-len(d), 1)
     else:
-        if d != '':
-            ins.seek(-1,1)
-    return name
-
-def get_var_name(ins):
-    skip_white(ins)
+        while (d>='A' and d<='Z') or (d>='0' and d<='9') or d=='.':
+            name += d
+            d = ins.read(1).upper()
+        if d in ('$', '%', '!', '#'):
+            name += d
+        else:
+            ins.seek(-len(d), 1)
+    if not name and not allow_empty:
+        raise error.RunError(2)    
     # append type specifier
-    name = vartypes.complete_name(parse_name(ins))
+    name = vartypes.complete_name(name)
     # only the first 40 chars are relevant in GW-BASIC, rest is discarded
     if len(name) > 41:
         name = name[:40]+name[-1]

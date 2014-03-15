@@ -13,7 +13,6 @@ import error
 import fp
 import vartypes
 
-
 def clear():
     global rnd_seed
     global rnd_step
@@ -28,8 +27,28 @@ def clear():
 
 clear()
 
-def randomize_int(n):
+def randomize(val):        
     global rnd_seed
+    if val[0] == '%':
+        s = vartypes.value_to_sint(vartypes.unpack_int(val))    
+    else:
+        # get the bytes
+        s = val[1]
+    # on a program line, if a number outside the signed int range (or -32768) is entered,
+    # the number is stored as a MBF double or float. Randomize then:
+    #   - ignores the first 4 bytes (if it's a double)
+    #   - reads the next two
+    #   - xors them with the final two (most signifant including sign bit, and exponent)
+    # and interprets them as a signed int 
+    # e.g. 1#    = /x00/x00/x00/x00 /x00/x00/x00/x81 gets read as /x00/x00 ^ /x00/x81 = /x00/x81 -> 0x10000-0x8100 = -32512 (sign bit set)
+    #      0.25# = /x00/x00/x00/x00 /x00/x00/x00/x7f gets read as /x00/x00 ^ /x00/x7f = /x00/x7F -> 0x7F00 = 32512 (sign bit not set)
+    #              /xDE/xAD/xBE/xEF /xFF/x80/x00/x80 gets read as /xFF/x80 ^ /x00/x80 = /xFF/x00 -> 0x00FF = 255   
+    final_two = s[-2:]
+    mask = bytearray('\x00\x00')
+    if len(s) >= 4:
+        mask = s[-4:-2]
+    final_two = bytearray(chr(final_two[0]^mask[0]) + chr(final_two[1]^mask[1]))
+    n = vartypes.sint_to_value(final_two)
     # this reproduces gwbasic for anything entered on the randomize prompt in the allowed range (-32768..32767)
     # on a program line, the range (-32787..32787) gives the same result reproduced here.
     rnd_seed &= 0xff

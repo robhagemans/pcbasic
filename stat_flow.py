@@ -88,8 +88,6 @@ def exec_for(ins):
     forpos = ins.tell()
     # read variable  
     varname = util.get_var_name(ins)
-    if varname == '':
-        raise error.RunError(2)
     vartype = varname[-1]
     if vartype == '$':
         raise error.RunError(13)
@@ -119,7 +117,7 @@ def for_push_next(ins, forpos, varname, start, stop, step):
     util.require(ins, ('\x83', ','), err=26)
     comma = (ins.read(1)==',')
     # check var name for NEXT
-    varname2 = util.get_var_name(ins)
+    varname2 = util.get_var_name(ins, allow_empty=True)
     d = util.skip_white(ins)
     nextpos = ins.tell()
     # no-var only allowed in standalone NEXT
