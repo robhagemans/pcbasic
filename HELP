@@ -1901,7 +1901,31 @@ ERRORS:
 
 
 LOCK statement
-LOCK [#] file_number, 
+LOCK [#] file_number [, record_0 ]
+LOCK [#] file_number, [record_0] TO record_1
+--------------
+Locks a file or part of a file against access by other users. On a RANDOM file,
+If specified, 'record_0' is the first record locked and 'record_1' is the last 
+record locked. On any other kind of file 'record_0' and 'record_1' have no 
+effect. If 'record_0' is not specified, it is assumed to be 1. If no records 
+are specified, the whole file is locked.
+NOTES:
+-   In GW-BASIC under MS-DOS, the LOCK command required SHARE.EXE to be loaded.
+    The maximum number of locks is specified in the SHARE command. If SHARE has
+    not been activated or all locks are used, LOCK raises PERMISSION DENIED.
+    PC-BASIC behaves as if SHARE has been activated with unlimited locks.
+-   If 'file_number' is open for RANDOM, LOCK and UNLOCK statements must match 
+    in terms of 'record_0' and 'record_1'. An unmatching UNLOCK will raise 
+    PERMISSION DENIED.    
+ERRORS:
+-   Attempting to LOCK (part of) a file already locked raises PERMISSION DENIED.
+-   If 'record_0' or 'record_1' is not in [1, 2^25-2], raises BAD RECORD NUMBER.
+-   If 'file_num' is not an open file, raises BAD FILE NUMBER.
+-   If 'file_num' is less than zero, raises ILLEGAL FUNCTION CALL.
+-   If 'file_num' is not in [-32768,32767], raises OVERFLOW.
+-   If any parameter is a string, raises TYPE MISMATCH.
+    
+
 
 MOTOR statement
 MOTOR [num]
@@ -1923,4 +1947,13 @@ OPEN statement
 
 ERRORS:
 -   If 'file_name' is empty or equals "KEYB:", raises BAD FILE NUMBER
+
+
+UNLOCK statement
+----------------
+    
+ERRORS:
+-   If 'file_number' is open for RANDOM, LOCK and UNLOCK statements must match 
+    in terms of 'record_0' and 'record_1'. An unmatching UNLOCK will raise      
+    PERMISSION DENIED.
 
