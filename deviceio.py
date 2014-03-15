@@ -189,10 +189,10 @@ class ConsoleFile(BaseFile):
                 console.write('\x0d\x0a')
             elif s == '\x0d':
                 pass
-            elif self.col > self.width and self.width != 255:  # width 255 means wrapping enabled
-                console.write('\x0d\x0a'+s)
             else:        
                 console.write(s)
+                if self.col > self.width and self.width != 255:
+                    console.write('\x0d\x0a')
             last = s
         if last == '\x0d':
             console.write(last)    
