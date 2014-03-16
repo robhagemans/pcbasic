@@ -464,7 +464,7 @@ CLEAR [expr] [, [mem_limit] [, stack_size] ]
 Sets all variables to null. Closes all files. Clears all DEF FN functions. 
 Clears all COMMON declarations. Turns off all sound. Resets music foreground.
 Turns PEN and STRIG off. Clears all ON ERROR traps. Resets ERR and ERL to zero.
-Resets the random number generator.
+Disables all events. Resets the random number generator.
 NOTES:
 -  In GW-BASIC, 'mem_limit' specifies the upper limit of usable memory, and 
    'stack_size' specifies the amount of memory available to the stack and to
@@ -2060,15 +2060,44 @@ ERRORS:
 
 
 MKDIR statement
+MKDIR path
+---------------
+Creates a directory. 'path' is a string-valued expression that specifies the 
+path of the new directory.  
+NOTES:
+-   'path' will be modified into all-uppercase 8.3 format.
+ERRORS:
+-   If 'path' is not a string, raises TYPE MISMATCH.
+-   If the parent directory of 'path' does not exist, raises PATH NOT FOUND.
+-   If the pathname already exists, raises PATH/FILE ACCESS ERROR.
+-   If the user has no write permission, raises PERMISSION DENIED.
 
 
 MKD$ function
+bytes = MKD$(double)
+-------------
+Retuns the internal 8-byte Microsoft Binary Format representation of a double-
+precision number.
+ERRORS:
+-   If 'double' is a string, raises TYPE MISMATCH.
 
 
 MKI$ function
+bytes = MKI$(int)
+-------------
+Returns the internal 2-byte little-endian representation of an integer.
+ERRORS:
+-   If 'int' is a string, raises TYPE MISMATCH.
+-   If 'int' is not in [-32768,32767], raises OVERFLOW.
 
 
 MKS$ function
+bytes = MKS$(single)
+-------------
+Retuns the internal 4-byte Microsoft Binary Format representation of a single-
+precision number.
+ERRORS:
+-   If 'single' is a string, raises TYPE MISMATCH.
 
 
 MOTOR statement
@@ -2086,9 +2115,30 @@ ERRORS:
 
 
 NAME statement
+NAME old_name AS new_name
+--------------
+Renames the file 'old_name' into 'new_name'
+'old_name' and 'new_name' are string-valued expressions.
+NOTES:
+-   'new_name' will be modified into all-uppercase 8.3 format.
+ERRORS:
+-   If 'old_name' or 'new_name' have number values, raises TYPE MISMATCH.
+-   If 'old_name' does not exist, raises FILE NOT FOUND.
+-   If 'old_name' is open, raises FILE ALREADY OPEN.
+-   If 'new_name' exists, raises FILE ALREADY EXISTS.   
 
 
 NEW statement
+NEW 
+-------------
+Deletes the program in memory. Clears all variables, arrays and user functions.
+Resets the DATA pointer. Removes DEFtype definitions. Clears COMMON 
+declarations. Closes all files. Turns off all sound. Resets music foreground. 
+Turns PEN and STRIG off. Clears all ON ERROR traps. Resets ERR and ERL to zero.
+Disables all events. Resets the random number generator.    
+Returns to interactive mode.
+NOTE:
+-   NEW implies CLEAR
 
 
 NEXT statement
