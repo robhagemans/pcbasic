@@ -179,9 +179,12 @@ def reset_program():
     clear_all()
 
 # RESTORE
-def restore_data(datanum=-1)
+def restore_data(datanum=-1):
     data_line = datanum
-    data_pos = line_numbers[datanum]
+    if datanum == -1:
+        datapos = 0
+    else:    
+        data_pos = line_numbers[datanum]
 
 # CLEAR
 def clear_all():
