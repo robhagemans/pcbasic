@@ -260,91 +260,213 @@ def exec_print(ins, screen=None):
     if newline:
          screen.write(util.endl)
             
-def get_next_expression(ins): 
-    expr = expressions.parse_expression(ins)
-    # no semicolon: nothing more to read afterwards
-    if not util.skip_white_read_if(ins, ';'):
-        return False, False, expr
-    # more to come?
-    if util.skip_white(ins) in util.end_statement:
-        return False, True, expr
-    #return more_data, semicolon, expr
-    return True, True, expr
-
 def exec_print_using(ins, screen):
     format_expr = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     if format_expr == '':
         raise error.RunError(5)
     util.require_read(ins, (';',))
     fors = StringIO(format_expr)
-    semicolon, more_data, format_chars = False, False, False    
+    semicolon, format_chars = False, False
     while True:
-        c = fors.read(1)
+        data_ends = util.skip_white(ins) in util.end_statement
+        c = util.peek(fors)
         if c == '':
             if not format_chars:
-                # there were no format chars in the string, illegal fn call
+                # there were no format chars in the string, illegal fn call (avoids infinite loop)
                 raise error.RunError(5) 
-            # loop the format string if more variables to come
-            if more_data:
-                fors.seek(0)
-            else:
-                # no more data, no more format chars -> done
+            if data_ends:
                 break
+            # loop the format string if more variables to come
+            fors.seek(0)
         elif c == '_':
-            c = fors.read(1)
-            if c != '':
-                screen.write(c)
-            else:
-                screen.write('_')
-        elif c == '!':
-            format_chars = True
-            more_data, semicolon, expr = get_next_expression(ins) 
-            screen.write(vartypes.pass_string_unpack(expr)[0])
-        elif c == '&':
-            format_chars = True
-            more_data, semicolon, expr = get_next_expression(ins) 
-            screen.write(vartypes.pass_string_unpack(expr))
-        elif c == '\\':
-            pos = 0
-            word = c
-            is_token = True
-            while True: 
-                c = fors.read(1)
-                pos += 1
-                word += c
-                if c == '\\':
-                    break
-                elif c == '':
-                    is_token = False
-                    break 
-                elif c != ' ':
-                    is_token = False
-            if is_token:
-                format_chars = True
-                more_data, semicolon, expr = get_next_expression(ins) 
-                eword = vartypes.pass_string_unpack(expr)
-                if len(eword) > len(word):
-                    screen.write(eword[:len(word)])
-                else:
-                    screen.write(eword) 
-                    screen.write(' ' * (len(word)-len(eword)))
-            else:
-                screen.write( word )
-        elif (c == '#' 
-                or (c in ('$', '*') and util.peek(fors) == c) 
-                or (c == '+' and util.peek(fors) == '#' or util.peek(fors,2) in ('##', '**')) 
-                ):    
-            # numeric token
-            format_chars = True
-            more_data, semicolon, expr = get_next_expression(ins) 
-            # feed back c, we need it
-            fors.seek(-1, 1)
-            screen.write(vartypes.format_number(vartypes.pass_float_keep(expr), fors))
+            # escape char; write next char in fors or _ if this is the last char
+            screen.write(fors.read(2)[-1])
         else:
-            screen.write(c)
+            string_field = get_string_tokens(fors)
+            if string_field:
+                if not data_ends:
+                    s = str(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+                    if string_field == '&':
+                        screen.write(s)    
+                    else:
+                        screen.write(s[:len(string_field)] + ' '*(len(string_field)-len(s)))
+            else:
+                number_field, digits_before, decimals = get_number_tokens(fors)
+                if number_field:
+                    if not data_ends:
+                        num = vartypes.pass_float_keep(expressions.parse_expression(ins))
+                        screen.write(format_number(num, number_field, digits_before, decimals))
+                else:
+                    screen.write(fors.read(1))       
+            if string_field or number_field:
+                format_chars = True
+                semicolon = util.skip_white_read_if(ins, (';',))    
     if not semicolon:
         screen.write(util.endl)
     util.require(ins, util.end_statement)
+
+########################################
+
+def get_string_tokens(fors):
+    word = ''
+    c = util.peek(fors)
+    if c in ('!', '&'):
+        format_chars = True
+        word += fors.read(1)
+    elif c == '\\':
+        word += fors.read(1)
+        # count the width of the \ \ token; only spaces allowed and closing \ is necessary
+        while True: 
+            c = fors.read(1)
+            word += c
+            if c == '\\':
+                format_chars = True
+                s = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+                semicolon = util.skip_white_read_if(ins, (';',))    
+                break
+            elif c != ' ': # can be empty as well
+                fors.seek(-len(word), 1)
+                return ''
+    return word
+
+def get_number_tokens(fors):
+    word, digits_before, decimals = '', 0, 0
+    # + comes first
+    leading_plus = (util.peek(fors) == '+')
+    if leading_plus:
+        word += fors.read(1)
+    # $ and * combinations
+    c = util.peek(fors)
+    if c in ('$', '*'):
+        word += fors.read(2)
+        if word[-1] != c:
+            fors.seek(-len(word), 1)
+            return '', 0, 0
+        if c == '*':
+            digits_before += 2
+            if util.peek(fors) == '$':
+                word += fors.read(1)                
+        else:
+            digits_before += 1        
+    # number field
+    c = util.peek(fors)
+    dot = (c == '.')
+    if dot:
+        word += fors.read(1)
+    if c in ('.', '#'):
+        while True:
+            c = util.peek(fors)
+            if not dot and c == '.':
+                word += fors.read(1)
+                dot = True
+            elif c == '#' or (not dot and c == ','):
+                word += fors.read(1)
+                if dot:
+                    decimals += 1
+                else:
+                    digits_before += 1    
+            else:
+                break
+    if digits_before + decimals == 0:
+        fors.seek(-len(word), 1)
+        return '', 0, 0    
+    # post characters        
+    if util.peek(fors, 4) == '^^^^':
+        word += fors.read(4)
+    if not leading_plus and util.peek(fors) in ('-', '+'):
+        word += fors.read(1)
+    return word, digits_before, decimals    
+                
+def format_number(value, tokens, digits_before, decimals):
+    # illegal function call if too many digits
+    if digits_before + decimals > 24:
+         raise error.RunError(5)
+    # leading sign, if any        
+    sign = '-' if vartypes.unpack_int(vartypes.number_sgn(value)) < 0 else '+'
+    valstr, post_sign = '', ''
+    if tokens[0] == '+':
+        valstr += sign
+    elif tokens[-1] == '+':
+        post_sign = sign
+    elif tokens[-1] == '-':
+        post_sign = '-' if sign == '-' else ' '
+    else:
+        valstr += '-' if sign == '-' else ''
+        # reserve space for sign in scientific notation by taking away a digit position
+        digits_before -= 1
+        if digits_before < 0:
+            digits_before = 0
+    # currency sign, if any
+    if '$' in tokens:
+        valstr += '$'    
+    # format to string
+    if '^' in tokens:
+        valstr += format_float_scientific(fp.unpack(vartypes.number_abs(value)), digits_before, decimals, '.' in tokens)
+    else:
+        valstr += format_float_fixed(fp.unpack(vartypes.number_abs(value)), decimals, '.' in tokens)
+    # trailing signs, if any
+    valstr += post_sign
+    if len(valstr) > len(tokens):
+        valstr = '%' + valstr
+    else:
+        # filler
+        valstr = ('*' if '*' in tokens else ' ') * (len(tokens) - len(valstr)) + valstr
+    return valstr
+    
+def format_float_scientific(expr, digits_before, decimals, force_dot):
+    work_digits = digits_before + decimals
+    if work_digits > expr.digits:
+        # decimal precision of the type
+        work_digits = expr.digits
+    if expr.is_zero():
+        if not force_dot:
+            if expr.exp_sign == 'E':
+                return 'E+00'
+            return '0D+00'  # matches GW output. odd, odd, odd    
+        digitstr, exp10 = '0'*(digits_before+decimals), 0
+    else:    
+        if work_digits > 0:
+            # scientific representation
+            lim_bot = fp.just_under(fp.pow_int(expr.ten, work_digits-1))
+        else:
+            # special case when work_digits == 0, see also below
+            # setting to 0.1 results in incorrect rounding (why?)
+            lim_bot = expr.one.copy()
+        lim_top = lim_bot.copy().imul10()
+        num, exp10 = expr.bring_to_range(lim_bot, lim_top)
+        digitstr = fp.get_digits(num, work_digits)
+        if len(digitstr) < digits_before + decimals:
+            digitstr += '0' * (digits_before + decimals - len(digitstr))
+    # this is just to reproduce GW results for no digits: 
+    # e.g. PRINT USING "#^^^^";1 gives " E+01" not " E+00"
+    if work_digits == 0:
+        exp10 += 1
+    exp10 += digits_before + decimals - 1  
+    return fp.scientific_notation(digitstr, exp10, expr.exp_sign, digits_to_dot=digits_before, force_dot=force_dot)
+    
+def format_float_fixed(expr, decimals, force_dot):
+    # fixed-point representation
+    unrounded = fp.mul(expr, fp.pow_int(expr.ten, decimals)) # expr * 10**decimals
+    num = unrounded.copy().iround()
+    # find exponent 
+    exp10 = 1
+    pow10 = fp.pow_int(expr.ten, exp10) # pow10 = 10L**exp10
+    while num.gt(pow10) or num.equals(pow10): # while pow10 <= num:
+        pow10.imul10() # pow10 *= 10
+        exp10 += 1
+    work_digits = exp10 + 1
+    diff = 0
+    if exp10 > expr.digits:
+        diff = exp10 - expr.digits
+        num = fp.div(unrounded, fp.pow_int(expr.ten, diff)).iround()  # unrounded / 10**diff
+        work_digits -= diff
+    num = num.trunc_to_int()   
+    # argument work_digits-1 means we're getting work_digits==exp10+1-diff digits
+    # fill up with zeros
+    digitstr = fp.get_digits(num, work_digits-1, remove_trailing=False) + ('0' * diff)
+    return fp.decimal_notation(digitstr, work_digits-1-1-decimals+diff, '', force_dot)
+
+########################################
 
 def exec_lprint(ins):
     exec_print(ins, deviceio.lpt1)
