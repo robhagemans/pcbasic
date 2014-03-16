@@ -2142,7 +2142,81 @@ NOTE:
 
 
 NEXT statement
+NEXT [var_0 [, var_1 [, ...] ] ]
+--------------
+Iterates a FOR--NEXT loop: increments the loop variable and jumps to the FOR 
+statement. If no variables are specified, next matches the most recent FOR 
+statement. Several nested NEXT statements can be consolidated into one by 
+using the variable list. If one or more variables are specified, their order 
+must match the order of earlier FOR statements.  
+ERRORS:
+-   If no FOR statement is found to match the NEXT statement and variables, 
+    NEXT WITHOUT FOR is raised.
+-   If 'var_0', ... are string names, NEXT WITHOUT FOR is raised.
 
+
+OCT$ function
+octal = OCT$(x)
+-------------
+Returns a string with the octal representation of 'x'. 'x' must be a 
+number-valued expression between -32768 and 65535, inclusive. Values for 
+negative 'x' are shown as two's-complement. 
+ERRORS:
+-   If 'x' is not in [-32768, 65535], OVERFLOW is raised.
+-   If 'x' has a string value, TYPE MISMATCH is raised.
+
+
+ON statement (switched jump)
+ON n {GOTO|GOSUB} line_number_0 [, line_number_1 [, ...] ]
+------------
+Jumps to the 'n'th line number specified in the list. If 'n' is 0 or greater 
+than the number of line_numbers in the list, no jump is performed. 'n' must 
+be a number-valued expression in the range [0, 255]. IF GOTO is specified, 
+the jump is unconditional; if GOSUB is specified, jumps to a subroutine.
+ERRORS:
+-   If 'n' is a string, raises TYPE MISMATCH.
+-   If 'n' is not in [0,255], raises ILLEGAL FUNCTION CALL.
+-   If 'n' is not in [-32768, 32767], OVERFLOW is raised.
+
+
+ON statement (event trapping)
+ON event_type GOSUB line_number
+------------
+Defines an event trapping subroutine. 
+'event_type' must be one of the following keywords:
+COM(n)      'n' in [1,2] is the COM1 or COM2 port. The event is triggered 
+            if data is present in the input buffer of the port.
+KEY(n)      'n' is the key number: 1-10 are <F1>-<F10>, 11: <UP>, 12: <LEFT>, 
+            13: <RIGHT>, 14: <DOWN>. 15-20 are user-definable. The event is
+            triggered if the key is pressed.
+STRIG(n)    'n' in [0,2,4,6] refer to the two fire triggers on two joysticks. 
+            They event is triggered if the button is pressed.
+PEN         In GW-BASIC, the event is triggered if the light pen is on the 
+            screen. In PC-BASIC, the event is triggered if the left mouse 
+            button is pressed. 
+PLAY (n)    The event is triggered if there are exactly 'n' notes left on the
+            music background queue. 'n' is a number-valued expression in [1,32]    
+TIMER (x)   The event is triggered every 'x' seconds after the TIMER ON 
+            statement. 'x' is a number-valued expression in [1, 86400].
+Before event trapping is active, the event needs to be enabled using the event
+statements: COM(n) ON | KEY(n) ON | STRIG(n) ON | PEN ON | PLAY ON | TIMER ON.
+Events are not trapped in interactive mode.
+ERRORS:
+-   If 'n' or 'x' is a string, raises TYPE MISMATCH.
+-   If 'n' or 'x' is outside the specified range, raises ILLEGAL FUNCTION CALL.
+-   If 'n' is not in [-32768, 32767], raises OVERFLOW.
+
+
+ON ERROR statement 
+ON ERROR GOTO line_number
+------------------
+Defines an error handler. After this statement, any error causes the handler
+routine to be called; no message is printed and execution is not stopped. The
+handler routine is ended by a RESUME statement.
+While in an error handling routine, events are paused and error trapping is
+disabled. After the RESUME statement, events are picked up in the following 
+order: KEY, TIMER, PLAY - the order of the others is unknown.
+Error trapping remains active in interactive mode.
 
 
 
