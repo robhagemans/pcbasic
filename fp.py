@@ -8,43 +8,21 @@
 # This file is released under the GNU GPL version 3. 
 # please see text file COPYING for licence terms.
 
-
-# description of MBF found here:
+# descriptions of the Microsoft Binary Format found here:
 # http://www.experts-exchange.com/Programming/Languages/Pascal/Delphi/Q_20245266.html
-
-#     /* MS Binary Format                         */
-#     /* byte order =>    m3 | m2 | m1 | exponent */
-#     /* m1 is most significant byte => sbbb|bbbb */
-#     /* m3 is the least significant byte         */
-#     /*      m = mantissa byte                   */
-#     /*      s = sign bit                        */
-#     /*      b = bit                             */
-
-#   /* MS Binary Format                                           */
-#   /* byte order =>  m7 | m6 | m5 | m4 | m3 | m2 | m1 | exponent */
-#   /* m1 is most significant byte => smmm|mmmm                   */
-#   /* m7 is the least significant byte                           */
-#   /*      m = mantissa byte                                     */
-#   /*      s = sign bit                                          */
-#   /*      b = bit                                               */
-
-
-# Another description of the single-precision format found here:
 # http://www.boyet.com/Articles/MBFSinglePrecision.html
-
-# Microsoft Binary Format (single precision)
-# =======================           
-# 32 bits long (4 bytes)
 #
-# exponent (8 bits) | sign (1 bit) | fraction (23 bits)
+# single precision:                      m3 | m2 | m1 | exponent
+# double precision:  m7 | m6 | m5 | m4 | m3 | m2 | m1 | exponent
+# where:
+#     m1 is most significant byte => sbbb|bbbb                  
+#     m7 is the least significant byte           
+#     m = mantissa byte                             
+#     s = sign bit                                   
+#     b = bit                                              
 #
 # The exponent is biased by 128. 
-# There is an assumed 1 bit after the radix point 
-#  (so the assumed mantissa is 0.1ffff... where f's are the fraction bits)
-
-
-# information on the string representation of floating point numbers can be found in the manual:
-# http://www.antonis.de/qbebooks/gwbasman/chapter%206.html
+# There is an assumed 1 bit after the radix point (so the assumed mantissa is 0.1ffff... where f's are the fraction bits)
 
 from util import endl
 import error
@@ -57,8 +35,6 @@ true_bias = 128
 
 overflow = False
 zero_div = False
-
-######################################
 
 
 class Float(object):
@@ -88,7 +64,6 @@ class Float(object):
             man += s[-cls.byte_size+i] * 0x100**i
         man <<= 8
         return cls( (s[-2] >= 0x80), man, s[-1])
-    
     
     def to_bytes(self):
         #n = self.copy()
@@ -164,7 +139,7 @@ class Float(object):
         if self.man == 0 or self.exp == 0:
             self.neg, self.man, self.exp = self.zero.neg, self.zero.man, self.zero.exp
             return self
-        # FIXME: are these correct?        
+        # are these correct?        
         while self.man <= 2**(self.mantissa_bits+8-1): # 0x7fffffffffffffff: # < 2**63
             self.exp -= 1
             self.man <<= 1
@@ -193,7 +168,6 @@ class Float(object):
         else:
             self = n     
         return self
-        
 
     def iround(self):
         if self.exp-self.bias > 0:
@@ -319,7 +293,6 @@ class Float(object):
             self = self.one.copy()
         return self
               
-        
     # absolute value is greater than
     def abs_gt(self, right):
         if self.exp != right.exp:
@@ -337,13 +310,13 @@ class Float(object):
         
     def equals_inc_carry(self, right, grace_bits=0):
         return (self.neg==right.neg and self.exp==right.exp and abs(self.man-right.man) < (1<<grace_bits)) 
-        
      
     def bring_to_range(self, lim_bot, lim_top):
         exp10 = 0    
         while self.abs_gt(lim_top):
             self.idiv10()
             exp10 += 1
+        self.apply_carry()
         while lim_bot.abs_gt(self):
             self.imul10()
             exp10 -= 1
@@ -387,7 +360,6 @@ def pack(n):
         return ('#', s)
     elif len(s) == 4:
         return ('!', s)
-        
 
 ####################################
 
@@ -410,7 +382,6 @@ def pow_int(left_in, right_in):
     return left_in.copy().ipow_int(right_in)
     
 ####################################
-
         
 class Single(Float):
     digits = 7
@@ -432,7 +403,6 @@ Single.twopi   = mul(Single.pi, Single.two)
 Single.pi2     = mul(Single.pi, Single.half)
 Single.pi4     = mul(Single.pi2, Single.half)
 
-
 Single.taylor = [
     Single.one,                      # 1/0!
     Single.one,                      # 1/1!
@@ -447,7 +417,6 @@ Single.taylor = [
     from_bytes(bytearray('\x7e\xf2\x13\x6b')),  # 1/3628800
     from_bytes(bytearray('\x2b\x32\x57\x67')),  # 1/39916800
     ]
-
 
 class Double(Float):
     digits = 16
@@ -465,11 +434,8 @@ Double.max  = from_bytes(bytearray('\xff\xff\xff\xff\xff\xff\x7f\xff'))
 Double.e    = from_bytes(bytearray('\x4b\xbb\xa2\x58\x54\xf8\x2d\x82'))
 Double.pi   = from_bytes(bytearray('\xc2\x68\x21\xa2\xda\x0f\x49\x82'))
 
-
 ##########################################
-
 # math        
-        
         
 # Float raised to Float exponent
 def power(base_in, exp_in):
@@ -516,7 +482,6 @@ def power(base_in, exp_in):
             bit >>= 1
         return out
 
-
 # square root
 # Newton's method
 def sqrt(target):
@@ -538,7 +503,6 @@ def sqrt(target):
         n = nxt
     return n
 
-
 # e raised to mbf exponent
 def exp(arg_in):
     if arg_in.is_zero():
@@ -556,7 +520,6 @@ def exp(arg_in):
         term = mul(arg.taylor[npow], pow_int(arg, npow)) 
         exp_out.iadd(term) 
     return exp_out
-
             
 def sin(n_in):
     if n_in.is_zero():
@@ -585,7 +548,6 @@ def sin(n_in):
             sin_out.iadd(term) 
     sin_out.neg ^= neg    
     return sin_out
-
 
 def cos(n_in):
     if n_in.is_zero():
@@ -617,10 +579,8 @@ def cos(n_in):
     cos_out.neg ^= neg    
     return cos_out
 
-
 def tan(n_in):
     return div(sin(n_in), cos(n_in))
-
 
 # atn and log, don't know what algorithm MS use.
 
@@ -654,7 +614,6 @@ def atn(n_in):
         guess.iadd(offset)
         tan_out = tan(guess)
     return guess
-
 
 # natural logarithm
 def log(n_in):
@@ -699,10 +658,7 @@ def log(n_in):
     loge.apply_carry()
     return loge 
     
-    
 ######################################    
-                       
-
 
 def msg_overflow():
     global overflow
@@ -711,14 +667,11 @@ def msg_overflow():
     overflow = True    
     error_console.write(error.get_message(6) + endl)
 
-
-
 def msg_zero_div():
     global zero_div
     if error_console==None or zero_div:
         return
     error_console.write(error.get_message(11) + endl)
-
 
 ################################
 
@@ -742,7 +695,6 @@ Double.type_sign, Double.exp_sign = '#', 'D'
 def just_under(n_in):
     # decrease mantissa by one (leaving carry unchanged)
     return n_in.__class__(n_in.neg, n_in.man - 0x100, n_in.exp)
-    
 
 # for Ints?    
 def get_digits(num, digits, remove_trailing=True):    
@@ -760,7 +712,6 @@ def get_digits(num, digits, remove_trailing=True):
         while len(digitstr)>1 and digitstr[-1] == '0': 
             digitstr = digitstr[:-1]
     return digitstr
-    
 
 def scientific_notation(digitstr, exp10, exp_sign='E', digits_to_dot=1, force_dot=False):
     valstr = digitstr[:digits_to_dot] 
@@ -776,7 +727,6 @@ def scientific_notation(digitstr, exp10, exp_sign='E', digits_to_dot=1, force_do
         valstr+= '+'
     valstr += get_digits(abs(exponent),2,False)    
     return valstr
-
 
 def decimal_notation(digitstr, exp10, type_sign='!', force_dot=False):
     valstr = ''
@@ -797,7 +747,6 @@ def decimal_notation(digitstr, exp10, type_sign='!', force_dot=False):
         if type_sign=='#':
             valstr += type_sign
     return valstr
-
 
 # screen=True (ie PRINT) - leading space, no type sign
 # screen='w' (ie WRITE) - no leading space, no type sign
@@ -840,32 +789,37 @@ def format_number(value, tokens, digits_before, decimals):
     # illegal function call if too many digits
     if digits_before + decimals > 24:
          raise error.RunError(5)
-    # extract abs value and sign     
+    # extract sign, mantissa, exponent     
     value = unpack(value)
+    # dollar sign, decimal point
+    has_dollar, force_dot = '$' in tokens, '.' in tokens 
     # leading sign, if any        
-    sign = '-' if value.neg else '+'
-    value.neg = False
     valstr, post_sign = '', ''
     if tokens[0] == '+':
-        valstr += sign
+        valstr += '-' if value.neg else '+'
     elif tokens[-1] == '+':
-        post_sign = sign
+        post_sign = '-' if value.neg else '+'
     elif tokens[-1] == '-':
-        post_sign = '-' if sign == '-' else ' '
+        post_sign = '-' if value.neg else ' '
     else:
-        valstr += '-' if sign == '-' else ''
+        valstr += '-' if value.neg else ''
         # reserve space for sign in scientific notation by taking away a digit position
-        digits_before -= 1
-        if digits_before < 0:
-            digits_before = 0
+        if not has_dollar:
+            digits_before -= 1
+            if digits_before < 0:
+                digits_before = 0
+            # just one of those things GW does
+            if force_dot and digits_before == 0 and decimals == 0:
+                valstr += '0'
+    # take absolute value 
+    value.neg = False
     # currency sign, if any
-    if '$' in tokens:
-        valstr += '$'    
+    valstr += '$' if has_dollar else '' 
     # format to string
     if '^' in tokens:
-        valstr += format_float_scientific(value, digits_before, decimals, '.' in tokens)
+        valstr += format_float_scientific(value, digits_before, decimals, force_dot)
     else:
-        valstr += format_float_fixed(value, decimals, '.' in tokens)
+        valstr += format_float_fixed(value, decimals, force_dot)
     # trailing signs, if any
     valstr += post_sign
     if len(valstr) > len(tokens):
@@ -1039,5 +993,4 @@ def from_str(s, allow_nonnum = True):
         exp10 -= 1
     mbf.normalise()    
     return mbf
-        
         
