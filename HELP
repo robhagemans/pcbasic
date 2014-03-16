@@ -1974,6 +1974,16 @@ ERRORS:
 -   If 'printer_number' is a string, raises TYPE MISMATCH.
 
 
+LPRINT statement
+----------------
+See PRINT.
+
+
+LPRINT USING statement
+----------------------
+See PRINT USING.
+
+
 MOTOR statement
 MOTOR [num]
 ---------------
@@ -1988,13 +1998,98 @@ ERRORS:
 -   If 'num' has a string value, raises TYPE MISMATCH. 
 
 
-
 OPEN statement
 --------------
-
 ERRORS:
 -   If 'file_name' is empty or equals "KEYB:", raises BAD FILE NUMBER
 
+
+PRINT statement
+{LPRINT| {PRINT|?} [# file_num,]} [expr_0] [;|,|SPC(n)|TAB(n)] [expr_1] [...]
+---------------
+Writes expressions to the screen, printer, file or device. If LPRINT is used, 
+output goes to LPT1. If 'file_num' is specified, output goes to the file or 
+device open under that number. ? is a shorthand for PRINT and has the same 
+effect. 'expr_0' ... are expressions. 
+Expressions can be separated by one of the following tokens:
+;   The semicolon attaches two expressions tight together; strings will be 
+    printed without any space in between, numbers will have one space 
+    separating them, in addition to the space or minus sign that indicate 
+    the sign of the number.
+,   The expression after a comma will be positioned at the next available
+    zone. The output file is divided in 14-character zones; if the width of the
+    file is not a multiple of 14, the remaining spaces are unused and the first 
+    zone ofn the next line is used instead. If the file has a width of less 
+    than 14 characters, the zones are determined as if the file were wrapping 
+    continuously.
+SPC The expression SPC(n) produces 'n' spaces, where 'n' is a number-valued 
+    expression. if 'n' is less than zero, it defaults to zero. If 'n' is 
+    greater than the file width, it is taken modulo the file width.      
+TAB The expression TAB(n) moves to column 'n', where 'n' is a number-valued 
+    expression. if 'n' is less than zero, it defaults to zero. If 'n' is 
+    greater than the file width, it is taken modulo the file width. If the 
+    current column is greater than 'n', TAB moves to column 'n' on the next 
+    line.     
+If the print statement does not end in one of these four tokens, a newline is 
+printed after the last expression.         
+String expressions can be separated by one or more spaces, which has the same
+effect as separating by semicolons
+NOTES:
+-   If an error is raised, the output before the error was encountered is 
+    printed as normal.
+ERRORS:
+-   If 'n' is not in [-32768,65535], raises OVERFLOW.
+-   If 'n' is a string, raises TYPE MISMATCH.
+
+
+PRINT USING statement
+{LPRINT| {PRINT|?} [# file,]} USING format; [ expr_0 [; expr_1 [; ...] ] ] [;]
+---------------------
+Writes a formatted string to the screen, printer, file or device.  If LPRINT is
+used, output goes to LPT1. If 'file_num' is specified, output goes to the file 
+or device open under that number. ? is a shorthand for PRINT and has the same 
+effect. 'expr_0' ... are expressions. 
+'format' is a string-valued expression that specifies the output format of the 
+matching expression. The format tokens recognised are -
+_   Escape character; causes the next character in the format string to be 
+    printed as is rather than interpreted as a format token.
+For string expressions:
+!   Prints the first character of a string.
+\\  Prints 2 or more characters of a string. A greater number of characters is 
+    selected by separating the \s by spaces.
+&   Prints the whole string.    
+For numeric expressions, the format string specifies a width and alignment.
+#   indicates a position for a digit.
+.   indicates the decimal point.
+,   before the decimal point causes digits to be grouped in threes separated by
+    commas. After the decimal point it is not a token.
+The number of characters i the field must not exceed 24.     
+Tokens preceding the number field:
++   causes the sign to be printed for positive as well as negative numbers.
+    If before the number field, the sign is to be printed to the left of the 
+    number. If after the number field, the sign will be printed to the right.
+**  causes any leading spaces to be replaced with *s.
+$$  causes a $ to be printed to the left of the number.
+Tokens trailing the number field:
++   causes the sign to be printed for positive as well as negative numbers.
+    If before the number field, the sign is to be printed to the left of the 
+    number. If after the number field, the sign will be printed to the right.
+-   after the number field causes the sign for negative numbers to be printed
+    to the right of the number. Note that - preceding the field is not a token
+    but printed literally.
+^^^^ specify that scientific notation E+00 is to be used.    
+Numeric expressions are always fully printed, even if they do not fit in the 
+positions specified. If the number does not fit in the allowed space, a % is 
+printed preceding it.
+NOTES:
+-   If there are more expressions than format fields, the format string is 
+    wrapped around.
+ERRORS:
+-   If the expression doesn't match the format token type, TYPE MISMATCH is 
+    raised.
+-   If a number field exceeds 24 characters, ILLEGAL FUNCTION CALL is raised.
+-   If the format string contains no tokens, ILLEGAL FUNCTION CALL is raised.   
+-   If a number field contains no # characters, ILLEGAL FUCTION CALL is raised.
 
 UNLOCK statement
 ----------------
