@@ -1847,6 +1847,8 @@ NOTES:
     extension.
 ERRORS:
 -   If 'file_name' cannot be found, raises FILE NOT FOUND.
+-   If a loaded ASCII file contains lines without line numbers, raises
+    DIRECT STATEMENT IN FILE.
 
 
 LOC function
@@ -1984,6 +1986,65 @@ LPRINT USING statement
 See PRINT USING.
 
 
+LSET and RSET statements
+{L|R}SET string_name = expression
+--------------
+Assigns a value to a FIELD variable such that it overwrites the FIELD record.
+With LSET, the value will be left-justified if it is shorter than the length of
+the FIELD variable. With RSET, it will be right-justified.
+'string_name' is a valid name of a string variable.
+'expression' is a string-valued expression.
+NOTES:
+-   If 'string_name' is not a FIELD variable, the value is justified into the 
+    existing string, which retains its length.
+-   If 'expression' has a value that is longer than the length of the variable,
+    it is truncated at the back at the length of the variable.
+-   If LET is used on a FIELD variable instead of L|RSET, the variable is 
+    detached from the field and becomes a normal string variable.
+ERRORS:
+-   If 'string_name' is not a string variable, TYPE MISMATCH is raised.
+-   If 'expression' does not have a string value, TTYPE MISMATCH is raised.
+
+
+MERGE statement
+MERGE file_name
+---------------
+Overlays the lines of program 'file_name' into the existing program. The loaded
+lines overwrite existing lines if they have the same line number. 'file_name' 
+must be the name of an existing program file stored in ASCII format only. 
+NOTES:
+-   If 'file_name' does not include an extension, MERGE will try the name 
+    specified, then an all-caps version, then an all-caps version with a .BAS 
+    extension.
+ERRORS:
+-   If 'file_name' cannot be found, raises FILE NOT FOUND.
+-   If 'file_name' was not saved as ASCII, raises BAD FILE MODE.
+-   If a loaded ASCII file contains lines without line numbers, raises
+    DIRECT STATEMENT IN FILE.
+    
+
+MID$ function
+substring = MID$(string, position [, length])
+-------------
+
+
+MID$ statement
+MID$(string_name, position [, length]) = substring
+--------------
+
+
+MKDIR statement
+
+
+MKD$ function
+
+
+MKI$ function
+
+
+MKS$ function
+
+
 MOTOR statement
 MOTOR [num]
 ---------------
@@ -1998,13 +2059,26 @@ ERRORS:
 -   If 'num' has a string value, raises TYPE MISMATCH. 
 
 
+NAME statement
+
+
+NEW statement
+
+
+NEXT statement
+
+
+
+
+
+
 OPEN statement
 --------------
 ERRORS:
 -   If 'file_name' is empty or equals "KEYB:", raises BAD FILE NUMBER
 
 
-PRINT statement
+PRINT, PRINT# and LPRINT statements
 {LPRINT| {PRINT|?} [# file_num,]} [expr_0] [;|,|SPC(n)|TAB(n)] [expr_1] [...]
 ---------------
 Writes expressions to the screen, printer, file or device. If LPRINT is used, 
@@ -2042,7 +2116,7 @@ ERRORS:
 -   If 'n' is a string, raises TYPE MISMATCH.
 
 
-PRINT USING statement
+PRINT USING, PRINT# USING and LPRINT USING statements
 {LPRINT| {PRINT|?} [# file,]} USING format; [ expr_0 [; expr_1 [; ...] ] ] [;]
 ---------------------
 Writes a formatted string to the screen, printer, file or device.  If LPRINT is
@@ -2062,14 +2136,17 @@ For numeric expressions, the format string specifies a width and alignment.
 #   indicates a position for a digit.
 .   indicates the decimal point.
 ,   before the decimal point causes digits to be grouped in threes separated by
-    commas. After the decimal point it is not a token.
+    commas. After the decimal point it is not a token. 
+    Provides one digit position.
 The number of characters i the field must not exceed 24.     
 Tokens preceding the number field:
 +   causes the sign to be printed for positive as well as negative numbers.
     If before the number field, the sign is to be printed to the left of the 
     number. If after the number field, the sign will be printed to the right.
-**  causes any leading spaces to be replaced with *s.
+**  causes any leading spaces to be replaced with *s. 
+    Provides two digit positions.
 $$  causes a $ to be printed to the left of the number.
+    Provides one digit position.
 Tokens trailing the number field:
 +   causes the sign to be printed for positive as well as negative numbers.
     If before the number field, the sign is to be printed to the left of the 
@@ -2091,9 +2168,14 @@ ERRORS:
 -   If the format string contains no tokens, ILLEGAL FUNCTION CALL is raised.   
 -   If a number field contains no # characters, ILLEGAL FUCTION CALL is raised.
 
+
+RSET statement
+--------------
+See LSET.
+
+
 UNLOCK statement
 ----------------
-    
 ERRORS:
 -   If 'file_number' is open for RANDOM, LOCK and UNLOCK statements must match 
     in terms of 'record_0' and 'record_1'. An unmatching UNLOCK will raise      
