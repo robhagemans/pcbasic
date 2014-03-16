@@ -144,7 +144,7 @@ def exec_deftype(ins, typechar):
         vartypes.deftype[start:stop+1] = [typechar] * (stop-start+1)    
         if not util.skip_white_read_if(ins, (',',)):
             break
-    util.require(ins, end_statement)
+    util.require(ins, util.end_statement)
 
 def exec_erase(ins):
     while True:
