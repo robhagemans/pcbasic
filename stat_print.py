@@ -295,7 +295,7 @@ def exec_print_using(ins, screen):
                 if number_field:
                     if not data_ends:
                         num = vartypes.pass_float_keep(expressions.parse_expression(ins))
-                        screen.write(format_number(num, number_field, digits_before, decimals))
+                        screen.write(fp.format_number(num, number_field, digits_before, decimals))
                 else:
                     screen.write(fors.read(1))       
             if string_field or number_field:
@@ -377,95 +377,6 @@ def get_number_tokens(fors):
         word += fors.read(1)
     return word, digits_before, decimals    
                 
-def format_number(value, tokens, digits_before, decimals):
-    # illegal function call if too many digits
-    if digits_before + decimals > 24:
-         raise error.RunError(5)
-    # leading sign, if any        
-    sign = '-' if vartypes.unpack_int(vartypes.number_sgn(value)) < 0 else '+'
-    valstr, post_sign = '', ''
-    if tokens[0] == '+':
-        valstr += sign
-    elif tokens[-1] == '+':
-        post_sign = sign
-    elif tokens[-1] == '-':
-        post_sign = '-' if sign == '-' else ' '
-    else:
-        valstr += '-' if sign == '-' else ''
-        # reserve space for sign in scientific notation by taking away a digit position
-        digits_before -= 1
-        if digits_before < 0:
-            digits_before = 0
-    # currency sign, if any
-    if '$' in tokens:
-        valstr += '$'    
-    # format to string
-    if '^' in tokens:
-        valstr += format_float_scientific(fp.unpack(vartypes.number_abs(value)), digits_before, decimals, '.' in tokens)
-    else:
-        valstr += format_float_fixed(fp.unpack(vartypes.number_abs(value)), decimals, '.' in tokens)
-    # trailing signs, if any
-    valstr += post_sign
-    if len(valstr) > len(tokens):
-        valstr = '%' + valstr
-    else:
-        # filler
-        valstr = ('*' if '*' in tokens else ' ') * (len(tokens) - len(valstr)) + valstr
-    return valstr
-    
-def format_float_scientific(expr, digits_before, decimals, force_dot):
-    work_digits = digits_before + decimals
-    if work_digits > expr.digits:
-        # decimal precision of the type
-        work_digits = expr.digits
-    if expr.is_zero():
-        if not force_dot:
-            if expr.exp_sign == 'E':
-                return 'E+00'
-            return '0D+00'  # matches GW output. odd, odd, odd    
-        digitstr, exp10 = '0'*(digits_before+decimals), 0
-    else:    
-        if work_digits > 0:
-            # scientific representation
-            lim_bot = fp.just_under(fp.pow_int(expr.ten, work_digits-1))
-        else:
-            # special case when work_digits == 0, see also below
-            # setting to 0.1 results in incorrect rounding (why?)
-            lim_bot = expr.one.copy()
-        lim_top = lim_bot.copy().imul10()
-        num, exp10 = expr.bring_to_range(lim_bot, lim_top)
-        digitstr = fp.get_digits(num, work_digits)
-        if len(digitstr) < digits_before + decimals:
-            digitstr += '0' * (digits_before + decimals - len(digitstr))
-    # this is just to reproduce GW results for no digits: 
-    # e.g. PRINT USING "#^^^^";1 gives " E+01" not " E+00"
-    if work_digits == 0:
-        exp10 += 1
-    exp10 += digits_before + decimals - 1  
-    return fp.scientific_notation(digitstr, exp10, expr.exp_sign, digits_to_dot=digits_before, force_dot=force_dot)
-    
-def format_float_fixed(expr, decimals, force_dot):
-    # fixed-point representation
-    unrounded = fp.mul(expr, fp.pow_int(expr.ten, decimals)) # expr * 10**decimals
-    num = unrounded.copy().iround()
-    # find exponent 
-    exp10 = 1
-    pow10 = fp.pow_int(expr.ten, exp10) # pow10 = 10L**exp10
-    while num.gt(pow10) or num.equals(pow10): # while pow10 <= num:
-        pow10.imul10() # pow10 *= 10
-        exp10 += 1
-    work_digits = exp10 + 1
-    diff = 0
-    if exp10 > expr.digits:
-        diff = exp10 - expr.digits
-        num = fp.div(unrounded, fp.pow_int(expr.ten, diff)).iround()  # unrounded / 10**diff
-        work_digits -= diff
-    num = num.trunc_to_int()   
-    # argument work_digits-1 means we're getting work_digits==exp10+1-diff digits
-    # fill up with zeros
-    digitstr = fp.get_digits(num, work_digits-1, remove_trailing=False) + ('0' * diff)
-    return fp.decimal_notation(digitstr, work_digits-1-1-decimals+diff, '', force_dot)
-
 ########################################
 
 def exec_lprint(ins):
