@@ -32,9 +32,6 @@ fp.error_console = console
 def init_run(arg_run, arg_load, arg_quit, arg_cmd, arg_infile):
     # initialise
     program.clear_program()
-    var.clear_variables()
-    rnd.clear()
-    program.set_runmode(False)
     if arg_run or arg_load:
         fin = sys.stdin
         try:
@@ -49,7 +46,6 @@ def init_run(arg_run, arg_load, arg_quit, arg_cmd, arg_infile):
         arg_cmd = 'RUN'
     if arg_cmd != None:
         get_command_line(arg_cmd)
-        program.set_runmode(False)
         #cProfile.run('run.execution_loop()')
         execution_loop()
         if arg_quit:
