@@ -60,33 +60,31 @@ def safe(fnname, *fnargs):
         return fnname(*fnargs)
     except EnvironmentError as e:
         handle_oserror(e)
-                
+
+os_error = {
+    # file not found
+    errno.ENOENT: 53, errno.EISDIR: 53, errno.ENOTDIR: 53,
+    # permission denied
+    errno.EACCES: 70, errno.EBUSY: 70, errno.EROFS: 70, errno.EPERM: 70,
+    # file already exists
+    errno.EEXIST: 58,
+    # disk full
+    errno.ENOSPC: 61, 
+    # disk not ready
+    errno.ENXIO: 71, errno.ENODEV: 71,
+    # disk media error
+    errno.EIO: 72,
+    # path/file access error
+    errno.ENOTEMPTY: 75,
+    }
         
 def handle_oserror(e):        
-    if e.errno in (errno.ENOENT, errno.EISDIR, errno.ENOTDIR):
-        # file not found
-        raise error.RunError(53)
-    elif e.errno in (errno.EACCES, errno.EBUSY, errno.EROFS, errno.EPERM):
-        # permission denied
-        raise error.RunError(70)
-    elif e.errno == errno.EEXIST:
-        # file already exists
-        raise error.RunError(58)
-    elif e.errno == errno.ENOSPC:
-        # disk full
-        raise error.RunError(61) 
-    elif e.errno in (errno.ENXIO, errno.ENODEV):
-        # disk not ready
-        raise error.RunError(71) 
-    elif e.errno == errno.EIO:
-        # disk media error    
-        raise error.RunError(72) 
-    elif e.errno == errno.ENOTEMPTY:
-        # path/file access error
-        raise error.RunError(75)  
-    else:
+    try:
+        basic_err = os_error[e.errno]
+    except KeyError:
         # unknown; internal error
-        raise error.RunError(51)
+        basic_err = 51
+    raise error.RunError(basic_err) 
 
 def istype(name, isdir):
     name = str(name)
