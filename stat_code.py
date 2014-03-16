@@ -197,8 +197,7 @@ def exec_merge(ins):
 def exec_new(ins):
     # deletes the program currently in memory and clears all variables.
     program.clear_program()
-    var.clear_variables()
-    fileio.close_all()
+    stat_var.clear_all()
 
 def exec_renum(ins):
     nums = util.parse_jumpnum_list(ins, size=3, err=2)

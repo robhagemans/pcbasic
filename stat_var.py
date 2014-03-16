@@ -42,27 +42,9 @@ def parse_var_list(ins):
 
 ################################################
 
+
 def exec_clear(ins):
-    #   Resets the stack and string space
-    #   Clears all COMMON and user variables
-    var.clear_variables()
-    # reset random number generator
-    rnd.clear()
-    # close all files
-    fileio.close_all()
-    # release all disk buffers (FIELD)?
-    fileio.fields = {}
-    # clear ERR and ERL
-    error.reset_error()
-    # disable error trapping
-    error.on_error = None
-    error.error_resume = None
-    # stop all sound
-    sound.stop_all_sound()
-    #   Resets sound to music foreground
-    sound.music_foreground = True
-    #   TODO: Resets PEN to off
-    #   TODO: Resets STRIG to off
+    program.clear_all()
     # integer expression allowed but ignored
     intexp = expressions.parse_expression(ins, allow_empty=True)
     if intexp:
@@ -379,8 +361,7 @@ def exec_restore(ins):
     else:
         datanum = -1
     util.require(ins, util.end_statement)
-    program.data_line = datanum
-    program.data_pos = program.line_numbers[datanum]
+    program.restore_data(datanum)
 
 def exec_swap(ins):
     name1 = util.get_var_name(ins)

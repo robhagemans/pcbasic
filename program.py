@@ -19,6 +19,8 @@ import util
 import console
 # for clear()
 import rnd
+import fileio
+import sound
 
 from cStringIO import StringIO 
 from copy import copy 
@@ -160,29 +162,55 @@ def preparse():
             
 def reset_program():
     global gosub_return, for_next_stack, while_wend_stack, linenum, data_line, data_pos, stop
+    # stop running if we were
+    unset_runmode()
     # reset loop stacks
     gosub_return = []
     for_next_stack = []
     while_wend_stack = []
-    # disable error trapping
-    error.error_resume = None
-    error.on_error = 0
-    # reset err and erl
-    error.reset_error()
-    # reset event trapping
-    events.reset_events()    
     # reset stop/cont
     stop = None
     # current line number
     linenum = -1
-    # clear all variables
-    var.clear_variables()
     # reset program pointer
     bytecode.seek(0)
     # reset data reader
-    data_line = -1
-    data_pos = 0
-    
+    restore_data()
+    clear_all()
+
+# RESTORE
+def restore_data(datanum=-1)
+    data_line = datanum
+    data_pos = line_numbers[datanum]
+
+# CLEAR
+def clear_all():
+    #   Resets the stack and string space
+    #   Clears all COMMON and user variables
+    var.clear_variables()
+    # reset random number generator
+    rnd.clear()
+    # close all files
+    fileio.close_all()
+    # release all disk buffers (FIELD)?
+    fileio.fields = {}
+    # clear ERR and ERL
+    error.reset_error()
+    # disable error trapping
+    error.on_error = None
+    error.error_resume = None
+    # stop all sound
+    sound.stop_all_sound()
+    #   Resets sound to music foreground
+    sound.music_foreground = True
+    #   Resets PEN to off
+    console.pen_is_on = False
+    #   Resets STRIG to off
+    console.stick_is_on = False
+    # disable all event trapping
+    events.reset_events()
+
+# NEW    
 def clear_program():
     global protected, line_numbers
     bytecode.truncate(0)
