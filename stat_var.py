@@ -176,14 +176,16 @@ def exec_mid(ins):
     if arglist[0] == None:
         raise error.RunError(2)
     start = arglist[0]
-    num = arglist[1] if arglist[1] else 0
+    num = arglist[1] if arglist[1] != None else 255
     util.require_read(ins, (')',))
-    util.range_check(1, 255, start)
+    s = vartypes.pass_string_unpack(var.get_var_or_array(name, indices))
     util.range_check(0, 255, num)
+    if num > 0:
+        util.range_check(1, len(s), start)
     util.require_read(ins, ('\xE7',)) # =
     val = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
-    vartypes.str_replace_mid(pass_string_unpack(var.get_var_or_array(name, indices)), num, val)     
+    vartypes.str_replace_mid(s, start, num, val)     
     
 def exec_lset(ins, justify_right=False):
     name = util.get_var_name(ins)

@@ -244,11 +244,11 @@ def str_gt(left,right):
     # left is shorter, or equal strings
     return False                    
 
-def str_replace_mid(s, num, val):    
+def str_replace_mid(s, start, num, val):    
     # s is a reference to the actual stored bytearray
     start -= 1    
     stop = start + num 
-    if arglist[1] == None or stop > len(s):
+    if stop > len(s):
         stop = len(s)
     if start == stop or start > len(s):
         return 
