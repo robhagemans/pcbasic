@@ -427,8 +427,9 @@ def value_str(ins):
         raise error.RunError(13)
     return vartypes.value_to_str_keep(s, screen=True)
         
-def value_val(ins):            
-    return tokenise.str_to_value_keep(parse_bracket(ins))
+def value_val(ins):  
+    val = tokenise.str_to_value_keep(parse_bracket(ins))
+    return val if val else vartypes.null['%']
 
 def value_chr(ins):            
     val = vartypes.pass_int_unpack(parse_bracket(ins))
