@@ -345,7 +345,7 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
                 expect_number = (word in keyword_to_token) #or word=='AS'
                 if word in ('SPC(', 'TAB('):
                     spc_or_tab = True
-            elif c == ',' or c == '#':
+            elif c in (',', '#', ';'):
                 ins.read(1)
                 expect_number = True
                 outs.write(c)
@@ -355,6 +355,7 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
                 expect_number = True
                 outs.write(c)
             elif c == ')' and spc_or_tab:
+                spc_or_tab = False
                 ins.read(1)
                 number_is_line = False
                 expect_number = True
