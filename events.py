@@ -27,7 +27,7 @@ class EventHandler(object):
         self.triggered = False
 
     def handle(self):
-        if self.enabled and self.triggered and not self.stopped and self.gosub != None:
+        if program.run_mode and self.enabled and self.triggered and not self.stopped and self.gosub != None and not suspend_all_events:
             self.triggered = False
             # stop event while handling it
             self.stopped = True 
@@ -57,6 +57,7 @@ def reset_events():
     global com_handlers, play_handler, play_last, play_trig
     global pen_handler, strig_handlers
     global all_handlers
+    global suspend_all_events
     # TIMER
     timer_period, timer_start = 0, 0
     timer_handler = EventHandler()
@@ -81,17 +82,17 @@ def reset_events():
     # key events are not handled FIFO but first 11-20 in that order, then 1-10.
     all_handlers += [key_handlers[num] for num in (range(10, 20) + range(10))]
     all_handlers += [play_handler] + com_handlers + [pen_handler] + strig_handlers
-
+    suspend_all_events = False
 reset_events()    
     
 def check_events():
-    check_timer_event()
-    check_key_events()
-    check_play_event()
-    check_com_events()
-    # PEN and STRIG are triggered elsewhere
-    # handle all events
     if program.run_mode:
+        check_timer_event()
+        check_key_events()
+        check_play_event()
+        check_com_events()
+        # PEN and STRIG are triggered elsewhere
+        # handle all events
         for handler in all_handlers:
             handler.handle()
 

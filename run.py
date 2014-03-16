@@ -163,7 +163,7 @@ def handle_error(e):
         program.jump(error.on_error)
         error.error_handle_mode = True
         program.set_runmode()
-        # TODO: are events being trapped during error handling?
+        events.suspend_all_events = True
         return True
     else:
         # not handled by ON ERROR, stop execution

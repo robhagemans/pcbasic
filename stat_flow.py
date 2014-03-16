@@ -124,12 +124,11 @@ def for_push_next(ins, forpos, varname, start, stop, step):
     nextpos = ins.tell()
     ins.seek(current)    
     # no-var only allowed in standalone NEXT
+    nextline = -1
     if varname2 == '':
         if d not in util.end_statement:
             if program.run_mode:
                 nextline = program.get_line_number(nextpos)
-            else:
-                nextline = -1
             # syntax error
             raise error.RunError(2, nextline)
     if varname2 == varname or varname2 == '':
@@ -352,6 +351,7 @@ def exec_resume(ins):
     c = util.skip_white(ins)
     jumpnum = 0
     if c == '\x83': # NEXT
+        ins.read(1)
         # RESUME NEXT
         util.require(ins, util.end_statement)
         codestream.seek(start_statement)        
@@ -372,6 +372,7 @@ def exec_resume(ins):
     error.errn = 0
     error.error_handle_mode = False
     error.error_resume = None
+    events.suspend_all_events = False
 
 def exec_return(ins):
     # return *can* have a line number
