@@ -2026,11 +2026,37 @@ ERRORS:
 MID$ function
 substring = MID$(string, position [, length])
 -------------
+Returns a substring of 'string' starting at 'position', counting from 1. The 
+substring has length 'length' if specified, defaulting to 1.
+'string' is a string-valued expression.
+'position' is a number-valued expression between 1 and the string length.
+'length' is a number-valued expression between 0 and 255, inclusive.
+ERRORS:
+-   If 'string' has a number value or 'position' or 'length' have string values,
+    raises TYPE MISMATCH.
+-   If 'position' is not in [1,255], raises ILLEGAL FUNCTION CALL.    
+-   If 'length' is not in [0,255], raises ILLEGAL FUNCTION CALL.    
+-   If 'position' or 'length' are not in [-32768,32767], raises OVERFLOW.
 
 
 MID$ statement
 MID$(string_name, position [, length]) = substring
 --------------
+Replaces part of 'string_name' with 'substring'.
+'string_name' is a valid string variable name.
+'position' is a number-valued expression between 1 and the string length.
+'length' is a number-valued expression between 0 and 255, inclusive.
+NOTES:
+-   If 'substring' is longer than 'length', only the first 'length' characters
+    are used.
+-   If 'substring' is shorter than 'length', only LEN(substring) characters
+    are replaced.
+ERRORS:
+-   If 'position' is greater than the length of 'string_name',
+    raises ILLEGAL FUNCTION CALL, except if 'length' is specified as 0.
+-   If 'position' is not in [1,255], raises ILLEGAL FUNCTION CALL.    
+-   If 'length' is not in [0,255], raises ILLEGAL FUNCTION CALL.    
+-   If 'position' or 'length' are not in [-32768,32767], raises OVERFLOW.
 
 
 MKDIR statement
