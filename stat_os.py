@@ -32,7 +32,15 @@ def exec_mkdir(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     if name == '':
         raise error.RunError(64)
-    oslayer.safe(os.mkdir, str(oslayer.dospath_write_dir(name,'', 76)))
+    try:
+        oslayer.safe(os.mkdir, str(oslayer.dospath_write_dir(name,'', 76)))
+    except error.RunError as e:
+        # file already exists
+        if e.err == 58:
+            # path/file access error
+            raise error.RunError(75)
+        else:
+            raise e    
     util.require(ins, util.end_statement)
 
 def exec_rmdir(ins):
@@ -43,7 +51,11 @@ def exec_rmdir(ins):
 
 def exec_name(ins):
     oldname = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    oldname = oslayer.dospath_read(oldname, '', 76)
+    oldname = oslayer.dospath_read(oldname, '', 53)
+    # don't delete open files
+    for f in fileio.files:
+        if oldname == fileio.files[f].fhandle.name:
+            raise error.RunError(55)
     # AS is not a tokenised word
     word = util.skip_white_read(ins) + ins.read(1)
     if word.upper() != 'AS':
