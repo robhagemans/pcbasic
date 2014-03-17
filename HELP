@@ -275,8 +275,85 @@ INTERNAL REPRESENTATION OF NUMBERS AND THE MICROSOFT BINARY FORMAT
 ------------------------------------------------------------------
 
 
+DEVICES
+-------
+PC-BASIC recognises the following DOS-style devices, which can be opened, input
+to and output from much like normal files. 
+device      allowed modes   description
+SCRN:       OUTPUT          The screen. Output to SCRN: has largely the same 
+                            effect as straight output using PRINT. A difference
+                            is the WIDTH setting which is independent of the 
+                            real screen width.
+KYBD:       INPUT           The keyboard. Input read from KYBD: is not echoed 
+                            to the screen. Special keys like arrow keys are
+                            registered differently than when using INPUT or
+                            INPUT$ straight (see the keyword reference).
+LPT1:       OUTPUT          Parallel ports 1--3. These are usually used to 
+LPT2:                       connect a printer. In PC-BASIC, output to the LPT
+LPT3:                       ports can be redirected to a printer connected to 
+                            the OS or to a text file. Direct access of the 
+                            parallel port is not implemented.
+COM1:       INPUT, OUTPUT,  Serial ports 1--2. In PC-BASIC 3.23, direct access
+COM2:       APPEND, RANDOM  of the serial port is allowed; alternatively, i/o
+                            can be redirected through a UNIX socket or a text
+                            file.                   
+CONS:       OUTPUT          The screen (console). Output to CONS is displayed 
+                            directly at the cursor position when <ENTER> is 
+                            pressed. It does not update the end-of-line value
+                            for the interpreter, which means that it does not 
+                            move with <BACKSPACE> or <DELETE> and is not 
+                            stored in program lines if it appears beyond the 
+                            end of the existing line. CONS: can be opened with
+                            any access mode, but the effect is always to open 
+                            it for OUTPUT. This device is not implemented in 
+                            PC-BASIC 3.23.                             
+                                                            
+
 KEYWORD LIST
 ------------
+Not all keywords are statements or functions; some parts of statement or 
+function syntax are not keywords. The relevance of this is that keywords are 
+not legal variable names. Therefore, you cannot name a variable TO! but you can
+name it AS!. The keywords are here listed with the bytecode token used to 
+represent them in a BASIC file.
+ 81 END     82 FOR     83 NEXT    84 DATA    85 INPUT   86 DIM     87 READ  
+ 88 LET     89 GOTO    8A RUN     8B IF      8C RESTORE 8D GOSUB   8E RETURN  
+ 8F REM     90 STOP    91 PRINT   92 CLEAR   93 LIST    94 NEW     95 ON  
+ 96 WAIT    97 DEF     98 POKE    99 CONT    9C OUT     9D LPRINT  9E LLIST  
+ A0 WIDTH   A1 ELSE    A2 TRON    A3 TROFF   A4 SWAP    A5 ERASE   A6 EDIT  
+ A7 ERROR   A8 RESUME  A9 DELETE  AA AUTO    AB RENUM   AC DEFSTR  AD DEFINT  
+ AE DEFSNG  AF DEFDBL  B0 LINE    B1 WHILE   B2 WEND    B3 CALL    B7 WRITE  
+ B8 OPTION B9 RANDOMIZE BA OPEN   BB CLOSE   BC LOAD    BD MERGE   BE SAVE      
+ BF COLOR   C0 CLS     C1 MOTOR   C2 BSAVE   C3 BLOAD   C4 SOUND   C5 BEEP
+ C6 PSET    C7 PRESET  C8 SCREEN  C9 KEY     CA LOCATE  CC TO      CD THEN  
+ CE TAB(    CF STEP    D0 USR     D1 FN      D2 SPC(    D3 NOT     D4 ERL
+ D5 ERR     D6 STRING$ D7 USING   D8 INSTR   D9 '       DA VARPTR  DB CSRLIN  
+ DC POINT   DD OFF     DE INKEY$  E6 >       E7 =       E8 <       E9 + 
+ EA -       EB *       EC /       ED ^       EE AND     EF OR      F0 XOR  
+ F1 EQV     F2 IMP     F3 MOD     F4 \\
+ FD81 CVI     FD82 CVS     FD83 CVD     FD84 MKI$    FD85 MKS$    FD86 MKD$
+ FD8B EXTERR  FE81 FILES   FE82 FIELD   FE83 SYSTEM  FE84 NAME    FE85 LSET  
+ FE86 RSET    FE87 KILL    FE88 PUT     FE89 GET     FE8A RESET   FE8B COMMON
+ FE8C CHAIN   FE8D DATE$   FE8E TIME$   FE8F PAINT   FE90 COM     FE91 CIRCLE 
+ FE92 DRAW    FE93 PLAY    FE94 TIMER   FE95 ERDEV   FE96 IOCTL   FE97 CHDIR 
+ FE98 MKDIR   FE99 RMDIR   FE9A SHELL   FE9B ENVIRON FE9C VIEW    FE9D WINDOW
+ FE9E PMAP    FE9F PALETTE FEA0 LCOPY   FEA1 CALLS   FEA5 PCOPY 
+ FEA7 LOCK    FEA8 UNLOCK  FF81 LEFT$   FF82 RIGHT$  FF83 MID$    FF84 SGN    
+ FF85 INT     FF86 ABS     FF87 SQR     FF88 RND     FF89 SIN     FF8A LOG   
+ FF8B EXP     FF8C COS     FF8D TAN     FF8E ATN     FF8F FRE     FF90 INP   
+ FF91 POS     FF92 LEN     FF93 STR$    FF94 VAL     FF95 ASC     FF96 CHR$   
+ FF97 PEEK    FF98 SPACE$  FF99 OCT$    FF9A HEX$    FF9B LPOS    FF9C CINT  
+ FF9D CSNG    FF9E CDBL    FF9F FIX     FFA0 PEN     FFA1 STICK   FFA2 STRIG  
+ FFA3 EOF     FFA4 LOC     FFA5 LOF          
+NOTES:
+-   If PC-BASIC 3.23 is run with the --debug flag, the following additional 
+    keyword is reserved, which is not present in standard versions of GW-BASIC:
+        FEA4 DEBUG
+    When the --debug flag is specified, variable names like DEBUG$ are not 
+    allowed.
+-   On the IBM PCjr's version of GW-BASIC, some additional these keywords were 
+    present that are not implemented in PC-BASIC 3.23. They are:
+        FEA4 NOISE   FEA6 TERM
 
 
 ABS(x) function
@@ -361,6 +438,17 @@ Raises ADVANCED FEATURE.
 NOTES:
 -  In GW-BASIC, CALL executes a machine language subroutine.
    This is not implemented in PC-BASIC 3.23.  
+
+
+CALLS statement
+CALLS name
+------------
+Raises SYNTAX ERROR.
+NOTES:
+-   This keyword is undocumented in GW-BASIC. When called with a numeric 
+    variable name, it hangs the interpreter. When called with a string
+    variable name, it raises TYPE MISMATCH. When called with a literal, it
+    raises SYNTAX ERROR. This is not implemented in PC-BASIC 3.23.
 
 
 CDBL(x) function
@@ -2180,10 +2268,10 @@ ERRORS:
 
 
 ON statement (event trapping)
-ON event_type GOSUB line_number
+ON { COM(n) | KEY(n) | STRIG(n) | PEN | PLAY(n) | TIMER (x) } GOSUB line_number
 ------------
 Defines an event trapping subroutine. 
-'event_type' must be one of the following keywords:
+The type of event is given by one of the following keywords:
 COM(n)      'n' in [1,2] is the COM1 or COM2 port. The event is triggered 
             if data is present in the input buffer of the port.
 KEY(n)      'n' is the key number: 1-10 are <F1>-<F10>, 11: <UP>, 12: <LEFT>, 
@@ -2219,13 +2307,71 @@ order: KEY, TIMER, PLAY - the order of the others is unknown.
 Error trapping remains active in interactive mode.
 
 
-
-
-
 OPEN statement
+OPEN mode_char, [#] file_num, file_name [, rec_len]
+OPEN file_name 
+    [ FOR { INPUT | OUTPUT | APPEND | RANDOM } ] 
+    [ ACCESS { READ | WRITE | READ WRITE } ] 
+    [ SHARED | LOCK { READ | WRITE | READ WRITE } ] 
+    AS [#] file_num [ LEN = rec_len ]
 --------------
+Opens a data file or device.
+'file_name' is a string-valued expression: the name of the file or device.
+'file_num' is a number-valued expression in [1,3].
+'rec_len' is a number-valued expression in [1,128]: the record length.
+In the first syntax only:
+-   'mode_char' is a string-valued expression of which the first character is
+    one of "I" for INPUT, "O" for OUTPUT, "A" for APPEND, "R" for RANDOM.
+The FOR modes:
+-   INPUT opens a text file for reading and positions the file pointer at the 
+    start.
+-   OUTPUT truncates a text file at the start and opens it for writing. Any 
+    data previously present in the file will be deleted.
+-   APPEND opens a text file for writing at the end of any existing data.
+-   RANDOM opens a file for random access; the file is divided in records of
+    length 'rec_len'. If LEN is not specified, the record length defaults to 
+    128. The file contents can be accessed using GET and PUT of the FIELD
+    buffer; the FIELD buffer can be accessed through FIELD variables or through
+    PRINT# and INPUT# statements. If a COM port is opened for RANDOM, access is
+    byte-for-byte rather than through FIELD records; PRINT# and INPUT# access 
+    the port directly. 
+-   If no FOR mode / mode_char is specified, the file is opened for RANDOM.
+The ACCESS modes:
+-   If no ACCESS mode is specified, the default is READ WRITE for RANDOM,
+    READ for INPUT, WRITE for OUTPUT, READ WRITE for APPEND.
+-   If both FOR and ACCESS are specified, any ACCESS mode is allowed for
+    RANDOM but for the other modes the access must match as above.
+The SHARED/LOCK modes:    
+    
+NOTES:
+-   For INPUT, OUTPUT and APPEND modes, LEN may be specified but is ignored.
+-   In GW-BASIC, when opening one of the COM devices, the string 'file_name' 
+    may contain additional qualifiers after the colon. This string has the form
+    "COMn:[spd][,pty][,data][,stop][,RS][,CS[n]][,DS[n]][,CD[n]][,LF][,PE]"
+    This is not implemented in PC-BASIC 3.23. 
+-   If i/o is attempted contravening the FOR mode specified, the PRINT or INPUT
+    statement will raise BAD FILE MODE.
+-   If RANDOM i/o is attempted contravening the ACCESS mode specified, the 
+    PUT or GET statement will raise PATH/FILE ACCESS ERROR.
+-   The # is optional and has no effect.    
 ERRORS:
--   If 'file_name' is empty or equals "KEYB:", raises BAD FILE NUMBER
+-   If 'file_name' is empty or a non-existant device, raises BAD FILE NUMBER.
+-   If FOR APPEND ACCESS WRITE is specified, raises PATH/FILE ACCESS ERROR.
+-   If FOR and ACCESS mismatch in other ways, raises SYNTAX ERROR.
+-   In GW-BASIC, if the COM: file_name does not follow the specification,
+    BAD FILE NAME is raised.
+-   If a file is already open for OUTPUT or APPEND, raises FILE ALREADY OPEN.
+    This is not the case for devices.
+-   IF 'rec_len' or 'file_num' have string values, raises TYPE MISMATCH.
+-   If 'file_name' or 'mode_char' have number values, raises TYPE MISMATCH.
+-   If 'file_num' is not in [1,3], raises BAD FILE NUMBER.
+-   If 'file_num' is not in [0,255], raises ILLEGAL FUNCTION CALL.
+-   If 'file_num' is not in [-32768,32767], raises OVERFLOW.
+-   If 'rec_len' is not in [1,128], raises ILLEGAL FUNCTION CALL.
+-   If 'rec_len' is not in [-32768,32767], raises OVERFLOW.
+-   If 'mode_char' shorter than 1 or the first character is not in  
+    ["I", "O", "A", "R"], raises BAD FILE MODE.
+    
 
 
 PRINT, PRINT# and LPRINT statements
