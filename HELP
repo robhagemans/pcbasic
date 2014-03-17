@@ -2362,9 +2362,9 @@ The SHARED/LOCK modes:
         LOCK WRITE          yes     no      no
         LOCK READ WRITE     no      no      no
 In GW-BASIC under MS-DOS with SHARE active, these locks should be functioning
-across a network as well as inside a single BASIC process. In PC-BASIC, the 
-locks are only implemented internally; whether other processes may access the 
-file will depend on the host OS.
+across a network as well as inside a single BASIC process. In PC-BASIC 3.23,  
+the locks are only implemented internally; whether other processes may access 
+the file will depend on the host OS.
 NOTES:
 -   For INPUT, OUTPUT and APPEND modes, LEN may be specified but is ignored.
 -   In GW-BASIC, when opening one of the COM devices, the string 'file_name' 
@@ -2395,10 +2395,26 @@ ERRORS:
     ["I", "O", "A", "R"], raises BAD FILE MODE.
     
 
+OPTION BASE statement
+OPTION BASE n
+---------------------
+Sets the starting index of all arrays to 'n', where 'n' must be a literal digit
+ 0 or 1. Note that expressions are not allowed for n.
+NOTES:
+-   If OPTION BASE is not called, the first array DIM defaults to starting 
+    index 0.
+ERRORS:
+-   If 'n' is not a digit 0 or 1, SYNTAX ERROR is raised.
+-   If OPTION BASE 1 is called but any array has already been DIMmed or indexed
+    before calling OPTION BASE 
+    with a different starting index, DUPLICATE DEFINITION is raised.
+-   If OPTION BASE is called more than once with different starting index,
+    DUPLICATE DEFINITION is raised.
+
 
 PRINT, PRINT# and LPRINT statements
 {LPRINT| {PRINT|?} [# file_num,]} [expr_0] [;|,|SPC(n)|TAB(n)] [expr_1] [...]
----------------
+-----------------------------------
 Writes expressions to the screen, printer, file or device. If LPRINT is used, 
 output goes to LPT1. If 'file_num' is specified, output goes to the file or 
 device open under that number. ? is a shorthand for PRINT and has the same 
@@ -2436,7 +2452,7 @@ ERRORS:
 
 PRINT USING, PRINT# USING and LPRINT USING statements
 {LPRINT| {PRINT|?} [# file,]} USING format; [ expr_0 [; expr_1 [; ...] ] ] [;]
----------------------
+-----------------------------------------------------
 Writes a formatted string to the screen, printer, file or device.  If LPRINT is
 used, output goes to LPT1. If 'file_num' is specified, output goes to the file 
 or device open under that number. ? is a shorthand for PRINT and has the same 
