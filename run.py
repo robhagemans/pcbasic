@@ -36,7 +36,7 @@ def init_run(arg_run, arg_load, arg_quit, arg_cmd, arg_infile):
         fin = sys.stdin
         try:
             if arg_run != '':
-                fin = fileio.open_file_or_device(0, arg_infile, mode='L', access='rb', defext='BAS')
+                fin = fileio.open_file_or_device(0, arg_infile, mode='L', defext='BAS')
             program.load(fin)
         except error.Error as e:
             if not handle_error(e):

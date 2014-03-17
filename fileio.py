@@ -93,9 +93,9 @@ class BaseFile(object):
         # width=255 means line wrap
         self.fhandle = fhandle
         self.number = number
-        self.mode = mode
+        self.mode = mode.upper()
         self.access = access
-        if self.mode.upper() in ('I', 'O', 'R', 'S', 'L'):
+        if self.mode in ('I', 'O', 'R', 'S', 'L'):
             self.fhandle.seek(0)
         else:
             self.fhandle.seek(0, 2)
@@ -236,7 +236,7 @@ class RandomBase(object):
     def __init__(self, fhandle, number, mode, access, reclen=128):
         self.fhandle = fhandle
         self.number = number
-        self.mode = mode
+        self.mode = mode.upper()
         self.access = access
         self.reclen = reclen
         # replace with empty field if already exists    
@@ -308,6 +308,8 @@ class RandomBase(object):
     # this is only used when writing chr$(8), not sure how to implement for random files
         pass
         
+    def end_of_file(self):
+        return self.peek_char() == ''
         
 class RandomFile(RandomBase):
     # FIELD overflow
@@ -363,36 +365,48 @@ class RandomFile(RandomBase):
         self.fhandle.seek(current)
         return lof
 
+# posix access modes for BASIC modes INPUT ,OUTPUT, RANDOM, APPEND and internal LOAD and SAVE modes
+access_modes = { 'I':'rb', 'O':'wb', 'R':'r+b', 'A':'ab', 'L': 'rb', 'S': 'wb' }
+# posix access modes for BASIC ACCESS mode for RANDOM files only
+access_access = { 'R': 'rb', 'W': 'wb', 'RW': 'r+b' }
 
-def open_file_or_device(number, name, mode='I', access='rb', lock='rw', reclen=128, defext=''):
+def open_file_or_device(number, name, mode='I', access='', lock='rw', reclen=128, defext=''):
     if number < 0 or number > max_files:
         # bad file number
         raise error.RunError(52)
     if number in files:
         # file already open
         raise error.RunError(55)
-    name, access, mode = str(name), access.lower(), mode.upper()
+    name, mode = str(name), mode.upper()
+    if not access or mode != 'R':
+        access = access_modes[mode]
+    else:
+        access = access_access[access]    
     split_colon = name.upper().split(':')
-    dev_name = split_colon[0] + ':' 
-    if deviceio.is_device(dev_name): 
-        inst = deviceio.device_open(number, dev_name, mode, access)
-    elif len(split_colon) > 1 and len(dev_name) > 2:
-        # devname could be A:, B:, C:, etc.. but anything longer is an error (bad file number, for some reason).
-        raise error.RunError(52)   
+    if len(split_colon) > 1: # : found
+        dev_name = split_colon[0] + ':' 
+        if deviceio.is_device(dev_name): 
+            inst = deviceio.device_open(number, dev_name, mode, access)
+        elif len(dev_name) > 2:
+            # devname could be A:, B:, C:, etc.. but anything longer is an error (bad file number, for some reason).
+            raise error.RunError(52)   
     else:    
+        # translate the file name to something DOS-ish is necessary
         if access == 'rb' or access == 'r':
             name = oslayer.dospath_read(name, defext, 53)
         else:
             name = oslayer.dospath_write(name, defext, 76)
         # open the file
+        fhandle = oslayer.safe_open(name, access)
+        # obtain a lock
+        oslayer.safe(oslayer.lock, fhandle, lock)
+        # apply the BASIC file wrapper
         if mode in ('S', 'L'): # save, load
-            inst = BaseFile(oslayer.safe_open(name, access), number, mode, access)
+            inst = BaseFile(fhandle, number, mode, access)
         elif mode in ('I', 'O', 'A'):
-            inst = TextFile(oslayer.safe_open(name, access), number, mode, access)
+            inst = TextFile(fhandle, number, mode, access)
         else:
-            access = 'r+b'
-            inst = RandomFile(oslayer.safe_open(name, access), number, mode, access, reclen)
-        oslayer.safe_lock(inst.fhandle, access, lock)
+            inst = RandomFile(fhandle, number, mode, access, reclen)
     return inst    
            
 def close_all():

@@ -46,15 +46,17 @@ def init_devices(args):
 def is_device(aname):
     return aname in output_devices or aname in input_devices or aname in random_devices
             
+# posix access not BASIC access here            
 def device_open(number, device_name, mode='I', access='rb'):
     global output_devices, input_devices, random_devices
-    if mode.upper() in ('O', 'A', 'S') and device_name in output_devices:
-        device = output_devices[device_name]
-    elif mode.upper() in ('I', 'L') and device_name in input_devices:
-        device = input_devices[device_name]
-    elif mode.upper() in ('R') and device_name in random_devices:
-        device = random_devices[device_name]
-    else:
+    try:
+        if mode.upper() in ('O', 'A', 'S'):
+            device = output_devices[device_name]
+        elif mode.upper() in ('I', 'L'):
+            device = input_devices[device_name]
+        elif mode.upper() in ('R'):
+            device = random_devices[device_name]
+    except KeyError:
         # bad file mode
         raise error.RunError(54)
     if isinstance(device, SerialFile):

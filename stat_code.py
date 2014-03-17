@@ -105,7 +105,7 @@ def exec_list(ins):
     if util.skip_white_read_if(ins, (',',)):
         filename = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_statement)
-        out = fileio.open_file_or_device(0, filename, 'O', 'wb')
+        out = fileio.open_file_or_device(0, filename, 'O')
         program.list_to_file(out, from_line, to_line)    
         out.close()        
     else:
@@ -134,7 +134,7 @@ def exec_load(ins):
         util.require_read(ins, 'R')
         close_files = False
     util.require(ins, util.end_statement)
-    g = fileio.open_file_or_device(0, name, mode='L', access='rb', defext='BAS')  
+    g = fileio.open_file_or_device(0, name, mode='L', defext='BAS')  
     program.load(g)
     g.close()    
     if close_files:
@@ -163,13 +163,13 @@ def exec_chain(ins):
             if util.skip_white_read_if(ins, (',',)) and util.skip_white_read_if(ins, ('\xa9',)):
                 delete_lines = parse_line_range(ins) # , DELETE
     util.require(ins, util.end_statement)
-    g = fileio.open_file_or_device(0, name, mode='L', access='rb', defext='BAS')  
+    g = fileio.open_file_or_device(0, name, mode='L', defext='BAS')  
     program.chain(action, g, jumpnum, common_all, delete_lines)
     g.close()
 
 def exec_save(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    g = fileio.open_file_or_device(0, name, mode='S', access='wb', defext='BAS')  
+    g = fileio.open_file_or_device(0, name, mode='S', defext='BAS')  
     #    # cryptic errors given by GW-BASIC:    
     #    if len(name)>8 or len(ext)>3:
     #        # 52: bad file number 
@@ -189,7 +189,7 @@ def exec_save(ins):
 def exec_merge(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
-    g = fileio.open_file_or_device(0, name, mode='L', access='rb', defext='BAS')  
+    g = fileio.open_file_or_device(0, name, mode='L', defext='BAS')  
     program.merge(g)
     g.close()    
     util.require(ins, util.end_statement)
