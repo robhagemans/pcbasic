@@ -2344,15 +2344,27 @@ The ACCESS modes:
 -   If both FOR and ACCESS are specified, any ACCESS mode is allowed for
     RANDOM but for the other modes the access must match as above.
 The SHARED/LOCK modes:    
--   SHARED - no restrictions to other prcesses also opening the file as SHARED.
--   LOCK READ - no other process may read to the file.
--   LOCK WRITE - no other process may write to the file.
--   LOCK READ WRITE - exclusive lock: no other process may read or write.
--   In the default mode, the file is locked exclusively for use by the 
+-   If not specified, the file is locked exclusively for use by the 
     current BASIC process. Inside this process, a file may be opened multiple
-    times for INPUT or RANDOM but only once for OUTPUT or APPEND.   
-The implementation of these locks is dependent on the hosting OS and is far
-from perfect in PC-BASIC 3.23.    
+    times for INPUT or RANDOM but only once for OUTPUT or APPEND, as long as it
+    is again opened in default mode. It may not be opened in SHARED or any LOCK 
+    modes.
+-   If specified as SHARED, LOCK READ, LOCK WRITE or LOCK READ WRITE, whether 
+    two OPEN statements may access the same file depends on one's LOCK status
+    and the other's ACCESS status and vice versa. ASssuming the following:
+        OPEN "file" ACCESS acc_1 lock_1 AS 1
+        OPEN "file" ACCESS acc_2 lock_2 AS 2
+    The following combinations are allowed, and vice versa:
+               acc_2 >      READ    WRITE    READ WRITE
+        lock_1 
+        SHARED              yes     yes     yes      
+        LOCK READ           no      yes     no
+        LOCK WRITE          yes     no      no
+        LOCK READ WRITE     no      no      no
+In GW-BASIC under MS-DOS with SHARE active, these locks should be functioning
+across a network as well as inside a single BASIC process. In PC-BASIC, the 
+locks are only implemented internally; whether other processes may access the 
+file will depend on the host OS.
 NOTES:
 -   For INPUT, OUTPUT and APPEND modes, LEN may be specified but is ignored.
 -   In GW-BASIC, when opening one of the COM devices, the string 'file_name' 
