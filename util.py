@@ -24,16 +24,16 @@ def peek(ins, n=1):
     return d
 
 # skip chars in skip_range, then read next
-def skip_read(ins, skip_range):
+def skip_read(ins, skip_range, n=1):
     while True: 
         d = ins.read(1)
         # skip_range must not include ''
         if d == '' or d not in skip_range:
-            return d
+            return d + ins.read(n-1)
 
 # skip chars in skip_range, then peek next
-def skip(ins, skip_range):
-    d = skip_read(ins, skip_range) 
+def skip(ins, skip_range, n=1):
+    d = skip_read(ins, skip_range, n) 
     ins.seek(-len(d), 1)
     return d
     
@@ -64,7 +64,7 @@ skip_white_read = partial(skip_read, skip_range=whitespace)
 skip_white = partial(skip, skip_range=whitespace)
 
 def skip_white_read_if(ins, in_range):
-    d = skip_white(ins)
+    d = skip_white(ins, n=len(in_range[0]))
     if d != '' and d in in_range:
         ins.read(1)
         return True
