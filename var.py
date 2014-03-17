@@ -27,7 +27,7 @@ def clear_variables():
     global var_current, string_current, var_memory, array_current, array_memory
     variables = {}
     arrays = {}
-    array_base = 0
+    array_base = None
     functions = {}
     vartypes.deftype = ['!']*26
     # at least I think these should be cleared by CLEAR?
@@ -153,7 +153,9 @@ def array_size_bytes(name):
     return size*var_size_bytes(name)     
 
 def dim_array(name, dimensions):
-    global arrays, array_memory, var_current, array_current
+    global arrays, array_memory, var_current, array_current, array_base
+    if array_base == None:
+        array_base = 0
     name = vartypes.complete_name(name)
     if name in arrays:
         # duplicate definition
@@ -220,7 +222,7 @@ def base_array(base):
     if base not in (1, 0):
         # syntax error
         raise error.RunError(2)    
-    if arrays != {}:
+    if array_base != None and base != array_base: 
         # duplicate definition
         raise error.RunError(10)
     array_base = base
