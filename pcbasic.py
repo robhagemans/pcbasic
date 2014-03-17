@@ -19,6 +19,7 @@ import run
 import error
 import var
 import deviceio
+import fileio
 import util
 import expressions
 import oslayer
@@ -34,15 +35,6 @@ import program
 
 def main():
     args = build_parser().parse_args()
-    # converter and RUN invocations
-    if args.conv_asc:
-        convert(args.infile, args.save, 'A')
-    elif args.conv_byte:
-        convert(args.infile, args.save, 'B')
-    elif args.conv_prot:
-        convert(args.infile, args.save, 'P')
-    elif args.run or (not args.load and args.infile != None):
-        args.run = True    
     # DEBUG mode
     tokenise.init_DEBUG(args.debug)
     debugstr = ' [DEBUG mode]' if args.debug else ''
@@ -53,6 +45,15 @@ def main():
             expressions.peek_values[int(addr)]=int(val)
     # choose the screen backends and other devices 
     prepare_devices(args)
+    # converter and RUN invocations
+    if args.conv_asc:
+        convert(args.infile, args.save, 'A')
+    elif args.conv_byte:
+        convert(args.infile, args.save, 'B')
+    elif args.conv_prot:
+        convert(args.infile, args.save, 'P')
+    elif args.run or (not args.load and args.infile != None):
+        args.run = True    
     # announce ourselves; go!
     try:
         if not args.run and args.cmd == None:
@@ -64,7 +65,7 @@ def main():
 
 def prepare_devices(args):
     sound.backend = nosound
-    if args.dumb or not sys.stdout.isatty() or not sys.stdin.isatty():
+    if args.dumb or not sys.stdout.isatty() or not sys.stdin.isatty() or args.conv_asc or args.conv_byte or args.conv_prot:
         console.backend = backend_dumb
         console.backend.set_dumberterm()
     elif args.uni:                
