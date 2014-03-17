@@ -51,19 +51,21 @@ def exec_call(ins):
 
 # do-nothing out       
 def exec_out(ins):
-    vartypes.pass_int_keep(expressions.parse_expression(ins)) #addr
+    addr = vartypes.pass_int_keep(expressions.parse_expression(ins), maxint=0xffff)
     util.require_read(ins, (',',))
-    vartypes.pass_int_keep(expressions.parse_expression(ins)) #val
+    val = vartypes.pass_int_keep(expressions.parse_expression(ins))
+    util.check_range(0, 255, value)
     util.require(ins, util.end_statement)
 
 # do-nothing wait        
 def exec_wait(ins):
-    vartypes.pass_int_keep(expressions.parse_expression(ins))
+    addr = vartypes.pass_int_keep(expressions.parse_expression(ins), maxint=0xffff)
     util.require_read(ins, (',',))
-    vartypes.pass_int_keep(expressions.parse_expression(ins))
+    ander = vartypes.pass_int_keep(expressions.parse_expression(ins))
+    util.check_range(0, 255, ander)
+    xorer = 0
     if util.skip_white_read_if(ins, (',',)):
-        vartypes.pass_int_keep(expressions.parse_expression(ins))
+        xorer = vartypes.pass_int_keep(expressions.parse_expression(ins))
+    util.check_range(0, 255, xorer)
     util.require(ins, util.end_statement)
-        
-       
             
