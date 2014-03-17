@@ -356,7 +356,7 @@ def parse_int_list_var(ins, size, err=5):
 
 def parse_file_number(ins):
     screen = None
-    if util.skip_white_read_if(ins,'#'):
+    if util.skip_white_read_if(ins, ('#',)):
         number = vartypes.pass_int_unpack(parse_expression(ins))
         util.range_check(0, 255, number)
         screen = fileio.get_file(number)
@@ -364,7 +364,7 @@ def parse_file_number(ins):
     return screen        
 
 def parse_file_number_opthash(ins):
-    util.skip_white_read_if(ins, '#')
+    util.skip_white_read_if(ins, ('#',))
     number = vartypes.pass_int_unpack(parse_expression(ins))
     util.range_check(0, 255, number)
     return number    
@@ -488,7 +488,7 @@ def value_mid(ins):
     s = vartypes.pass_string_unpack(parse_expression(ins))
     util.require_read(ins, (',',))
     start = vartypes.pass_int_unpack(parse_expression(ins))
-    if util.skip_white_read_if(ins, ','):
+    if util.skip_white_read_if(ins, (',',)):
         num = vartypes.pass_int_unpack(parse_expression(ins))
     else:
         num = len(s)
@@ -574,7 +574,7 @@ def value_input(ins):    # INPUT$
     num = vartypes.pass_int_unpack(parse_expression(ins))
     util.range_check(1, 255, num)
     screen = console    
-    if util.skip_white_read_if(ins, ','):
+    if util.skip_white_read_if(ins, (',',)):
         screen = fileio.get_file(parse_file_number_opthash(ins))
     util.require_read(ins, (')',))
     word = bytearray()

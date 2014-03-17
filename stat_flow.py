@@ -43,9 +43,7 @@ def exec_cont(ins):
 
 def exec_error(ins):
     errn = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-    if errn < 1 or errn > 255:
-        # illegal function call
-        errn = 5 
+    util.range_check(1, 255, errn)
     raise error.RunError(errn)                
 
 def exec_end(ins):
@@ -95,7 +93,7 @@ def exec_for(ins):
     start = expressions.parse_expression(ins)
     util.require_read(ins, ('\xCC',))  # TO    
     stop = vartypes.pass_type_keep(vartype, expressions.parse_expression(ins))
-    if util.skip_white_read_if(ins, '\xCF'): # STEP
+    if util.skip_white_read_if(ins, ('\xCF',)): # STEP
         step = vartypes.pass_type_keep(vartype, expressions.parse_expression(ins))
     else:
         # convert 1 to vartype

@@ -36,12 +36,11 @@ def parse_var_list(ins):
     readvar = []
     while True:
         readvar.append(expressions.get_var_or_array_name(ins))
-        if not util.skip_white_read_if(ins, ','):
+        if not util.skip_white_read_if(ins, (',',)):
             break
     return readvar
 
 ################################################
-
 
 def exec_clear(ins):
     program.clear_all()
@@ -51,7 +50,7 @@ def exec_clear(ins):
         expr = vartypes.pass_int_unpack(intexp)
         if expr < 0:
             raise error.RunError(5)
-    if util.skip_white_read_if(ins, ','):
+    if util.skip_white_read_if(ins, (',',)):
         # TODO: NOT IMPLEMENTED
         # expression1 is a memory location that, if specified, sets the maximum number of bytes available for use by GW-BASIC        
         exp1 = expressions.parse_expression(ins, allow_empty=True)
@@ -60,7 +59,7 @@ def exec_clear(ins):
         if exp1 == 0:
             #  0 leads to illegal fn call
             raise error.RunError(5)
-        if util.skip_white_read_if(ins, ','):
+        if util.skip_white_read_if(ins, (',',)):
             # TODO: NOT IMPLEMENTED
             # expression2 sets aside stack space for GW-BASIC. The default is the previous stack space size. 
             # When GW-BASIC is first executed, the stack space is set to 512 bytes, or one-eighth of the available memory, 
@@ -81,7 +80,7 @@ def exec_common(ins):
             arraylist.append(name)            
         else:
             varlist.append(name)
-        if not util.skip_white_read_if(ins, ','):
+        if not util.skip_white_read_if(ins, (',',)):
             break
     var.common_names += varlist
     var.common_array_names += arraylist
@@ -117,7 +116,7 @@ def exec_deftype(ins, typechar):
         else:
             start = ord(d) - ord('A')
             stop = start
-        if util.skip_white_read_if(ins, '\xEA'):  # token for -
+        if util.skip_white_read_if(ins, ('\xEA',)):  # token for -
             d = util.skip_white_read(ins).upper()
             if d < 'A' or d > 'Z':
                 raise error.RunError(2)
@@ -179,11 +178,9 @@ def exec_rset(ins):
     exec_lset(ins, justify_right=True)
 
 def exec_option(ins):
-    util.skip_white(ins)
-    if util.peek(ins, 4).upper() == 'BASE':
-        ins.read(4)
+    if util.skip_white_read_if(ins, ('BASE',)):
         # MUST be followed by ASCII '1' or '0', num constants or expressions are an error!
-        d = util.skip_white(ins)
+        d = util.skip_white_read(ins)
         if d == '0':
             var.base_array(0)
         elif d == '1':
@@ -206,7 +203,7 @@ def exec_read(ins):
 
 def parse_prompt(ins, question_mark):
     # parse prompt
-    if util.skip_white_read_if(ins, '"'):
+    if util.skip_white_read_if(ins, ('"',)):
         prompt = ''
         # only literal allowed, not a string expression
         d = ins.read(1)
@@ -230,7 +227,7 @@ def exec_input(ins):
         input_vars_file(parse_var_list(ins), finp)
     else:
         # ; to avoid echoing newline
-        newline = not util.skip_white_read_if(ins, ';')
+        newline = not util.skip_white_read_if(ins, (';',))
         prompt = parse_prompt(ins, '? ')    
         readvar = parse_var_list(ins)
         # move the program pointer to the start of the statement to ensure correct behaviour for CONT
@@ -338,7 +335,7 @@ def exec_line_input(ins):
     finp = expressions.parse_file_number(ins)
     if not finp:
         # ; to avoid echoing newline
-        newline = not util.skip_white_read_if(ins, ';')
+        newline = not util.skip_white_read_if(ins, (';',))
         # get prompt    
         prompt = parse_prompt(ins, '')
     # get string variable
@@ -404,6 +401,4 @@ def exec_randomize(ins):
         raise error.RunError(5)
     rnd.randomize(val)
     util.require(ins, util.end_statement)
-        
-
-
+    

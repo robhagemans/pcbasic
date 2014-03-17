@@ -22,14 +22,12 @@ def exec_poke(ins):
     util.require_read(ins, (',',))
     vartypes.pass_int_keep(expressions.parse_expression(ins)) #val
     util.require(ins, util.end_statement)
-
     
 # do-nothing DEF SEG    
 def exec_def_seg(ins):
-    if util.skip_white_read_if(ins, '\xE7'): #=
+    if util.skip_white_read_if(ins, ('\xE7',)): #=
         vartypes.pass_int_keep(expressions.parse_expression(ins), maxint=0xffff)
     util.require(ins, util.end_statement)
-        
 
 # do-nothing DEF USR    
 def exec_def_usr(ins):
@@ -38,25 +36,18 @@ def exec_def_usr(ins):
     util.require_read(ins, ('\xE7',))     
     vartypes.pass_int_keep(expressions.parse_expression(ins), maxint=0xffff)
     util.require(ins, util.end_statement)
-
-
         
 # bload: not implemented        
 def exec_bload(ins):
     raise error.RunError(73)    
 
-
 # bsave: not implemented        
 def exec_bsave(ins):
     raise error.RunError(73)    
         
-        
 # call: not implemented        
 def exec_call(ins):
     raise error.RunError(73)    
-
-       
-    
 
 # do-nothing out       
 def exec_out(ins):
@@ -64,14 +55,13 @@ def exec_out(ins):
     util.require_read(ins, (',',))
     vartypes.pass_int_keep(expressions.parse_expression(ins)) #val
     util.require(ins, util.end_statement)
-     
 
 # do-nothing wait        
 def exec_wait(ins):
     vartypes.pass_int_keep(expressions.parse_expression(ins))
     util.require_read(ins, (',',))
     vartypes.pass_int_keep(expressions.parse_expression(ins))
-    if util.skip_white_read_if(ins, ','):
+    if util.skip_white_read_if(ins, (',',)):
         vartypes.pass_int_keep(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
         

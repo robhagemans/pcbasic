@@ -29,10 +29,10 @@ def parse_coord(ins):
 
 def exec_pset(ins, default_colour=-1):
     graphics.require_graphics_mode()
-    relative = util.skip_white_read_if(ins, '\xCF') # STEP
+    relative = util.skip_white_read_if(ins, ('\xCF',)) # STEP
     x, y = parse_coord(ins)
     c = default_colour
-    if util.skip_white_read_if(ins, ','):
+    if util.skip_white_read_if(ins, (',',)):
         c = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)    
     x, y = graphics.window_coords(x,y)
@@ -53,20 +53,20 @@ def exec_line_graph(ins):
     util.require_read(ins, ('\xEA',)) # -
     x1, y1 = graphics.window_coords(*parse_coord(ins))
     c, mode, mask = -1, 'L', 0xffff
-    if util.skip_white_read_if(ins, ','):
+    if util.skip_white_read_if(ins, (',',)):
         expr = expressions.parse_expression(ins, allow_empty=True)
         if expr:
             c = vartypes.pass_int_unpack(expr)
-        if util.skip_white_read_if(ins, ','):
-            if util.skip_white_read_if(ins, 'B'):
+        if util.skip_white_read_if(ins, (',',)):
+            if util.skip_white_read_if(ins, ('B',)):
                 mode = 'B'
-                if util.skip_white_read_if(ins, 'F'):         
+                if util.skip_white_read_if(ins, ('F',)):         
                     mode = 'BF'
                 else:
                     util.require(ins, util.end_statement + (',',))
             else:
                 util.require(ins, (',',))
-            if util.skip_white_read_if(ins, ','):
+            if util.skip_white_read_if(ins, (',',)):
                 mask = vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=22), maxint=0x7fff)
         elif not expr:
             raise error.RunError(22)        
@@ -80,7 +80,7 @@ def exec_line_graph(ins):
             
 def exec_view_graph(ins):
     graphics.require_graphics_mode()
-    absolute = util.skip_white_read_if(ins, '\xC8') #SCREEN
+    absolute = util.skip_white_read_if(ins, ('\xC8',)) #SCREEN
     if util.skip_white(ins) == '(':
         x0, y0 = parse_coord(ins)
         util.require_read(ins, ('\xEA',)) #-
@@ -88,7 +88,7 @@ def exec_view_graph(ins):
         # not scaled by WINDOW
         x0, x1, y0, y1 = x0.round_to_int(), x1.round_to_int(), y0.round_to_int(), y1.round_to_int()
         fill, border = None, None
-        if util.skip_white_read_if(ins, ','):
+        if util.skip_white_read_if(ins, (',',)):
             [fill, border] = expressions.parse_int_list(ins, 2, err=2)
         if fill != None:
             graphics.draw_box_filled(x0, y0, x1, y1, fill)
@@ -101,7 +101,7 @@ def exec_view_graph(ins):
     
 def exec_window(ins):
     graphics.require_graphics_mode()
-    cartesian = not util.skip_white_read_if(ins, '\xC8') #SCREEN
+    cartesian = not util.skip_white_read_if(ins, ('\xC8',)) #SCREEN
     if util.skip_white(ins) == '(':
         x0, y0 = parse_coord(ins)
         util.require_read(ins, ('\xEA',)) #-
@@ -119,15 +119,15 @@ def exec_circle(ins):
     c = -1
     start, stop = None, None
     aspect = graphics.get_aspect_ratio()
-    if util.skip_white_read_if(ins, ','):
+    if util.skip_white_read_if(ins, (',',)):
         cval = expressions.parse_expression(ins, allow_empty=True)
         if cval:
             c = vartypes.pass_int_unpack(cval)
-        if util.skip_white_read_if(ins, ','):
+        if util.skip_white_read_if(ins, (',',)):
             start = expressions.parse_expression(ins, allow_empty=True)
-            if util.skip_white_read_if(ins, ','):
+            if util.skip_white_read_if(ins, (',',)):
                 stop = expressions.parse_expression(ins, allow_empty=True)
-                if util.skip_white_read_if(ins, ','):
+                if util.skip_white_read_if(ins, (',',)):
                     aspect = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
                 elif stop == None:
                     raise error.RunError(22) # missing operand
@@ -194,7 +194,7 @@ def exec_paint(ins):
     pattern = ''
     c = graphics.get_colour_index(-1) 
     border= c
-    if util.skip_white_read_if(ins, ','):
+    if util.skip_white_read_if(ins, (',',)):
         cval = expressions.parse_expression(ins, allow_empty=True)
         if cval[0] == '$':
             # pattern given
@@ -214,11 +214,11 @@ def exec_paint(ins):
         else:
             c = vartypes.pass_int_unpack(cval)
         border = c    
-        if util.skip_white_read_if(ins, ','):
+        if util.skip_white_read_if(ins, (',',)):
             bval = expressions.parse_expression(ins, allow_empty=True)
             if bval:
                 border = vartypes.pass_int_unpack(bval)
-            if util.skip_white_read_if(ins, ','):
+            if util.skip_white_read_if(ins, (',',)):
                 background_pattern = vartypes.pass_string_unpack(expressions.parse_expression(ins), err=5)
                 # background attribute - I can't find anything this does at all.
                 # as far as I can see, this is ignored in GW-Basic as long as it's a string, otherwise error 5
