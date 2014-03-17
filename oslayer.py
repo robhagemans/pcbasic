@@ -18,13 +18,6 @@ from functools import partial
 
 import error
 
-# platform-specific:
-import platform
-if platform.system() == 'Windows':
-    from os_windows import *
-else:    
-    from os_unix import *
-
 # datetime offset for duration of the run (so that we don't need permission to touch the system clock)
 # given in seconds        
 time_offset = datetime.timedelta()
@@ -174,6 +167,13 @@ def pass_dosnames(files, mask='*.*'):
         dosfiles.append(trunk + ext)
     return dosfiles
 
+# these would implement external locking if defined
+def lock(fd, lock, length=0, start=0, whence=0):
+    pass
+         
+def unlock(fd, length=0, start=0, whence=0):
+    pass
+
 # print to LPR printer (ok for CUPS)
 # TODO: use Windows printing subsystem for Windows, LPR is not standard there.
 def line_print(printbuf, printer_name=''):
@@ -185,4 +185,10 @@ def line_print(printbuf, printer_name=''):
         pr.write(printbuf)
         pr.close()
         
+# platform-specific:
+import platform
+if platform.system() == 'Windows':
+    from os_windows import *
+else:    
+    from os_unix import *
 

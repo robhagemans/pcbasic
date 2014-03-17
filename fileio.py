@@ -99,6 +99,7 @@ class BaseFile(object):
             self.fhandle.seek(0)
         else:
             self.fhandle.seek(0, 2)
+        self.lock_list = set()    
         if number != 0:
             files[number] = self
 
@@ -239,6 +240,7 @@ class RandomBase(object):
         self.mode = mode.upper()
         self.access = access
         self.reclen = reclen
+        self.lock_list = set()
         # replace with empty field if already exists    
         try:
             self.field = fields[self.number]
@@ -374,6 +376,9 @@ def check_file_not_open(name):
     for f in files:
         if name == files[f].fhandle.name:
             raise error.RunError(55)
+
+def find_files_by_name(name):
+    return [files[f] for f in files if files[f].fhandle.name == name]
     
 def open_file_or_device(number, name, mode='I', access='', lock='RW', reclen=128, defext=''):
     if number < 0 or number > max_files:
@@ -431,4 +436,41 @@ def get_file(num, mode='IOAR'):
     if the_file.mode.upper() not in mode:
         raise error.RunError(54)    
     return the_file    
+
+def lock_records(nr, start, stop):
+    thefile = get_file(nr)
+    if deviceio.is_device(thefile):
+        # permission denied
+        raise error.RunError(70)
+    lock_list = set()
+    for f in find_files_by_name(thefile.fhandle.name):
+        lock_list |= f.lock_list
+    if isinstance(thefile, TextFile):
+        bstart, bstop = 0, -1
+        if lock_list:
+            raise error.RunError(70)    
+    else:
+        bstart, bstop = (start-1) * thefile.reclen, stop*thefile.reclen - 1
+        for start_1, stop_1 in lock_list:
+            if stop_1 == -1 or (bstart >= start_1 and bstart <= stop_1) or (bstop >= start_1 and bstop <= stop_1):
+                raise error.RunError(70)
+    thefile.lock_list.add((bstart, bstop))
+    oslayer.safe(oslayer.lock, thefile.fhandle, 'RW', start, bstop-bstart+1)                   
+
+def unlock_records(nr, start, stop):    
+    thefile = get_file(nr)
+    if deviceio.is_device(thefile):
+        # permission denied
+        raise error.RunError(70)
+    if isinstance(thefile, TextFile):
+        bstart, bstop = 0, -1
+    else:
+        bstart, bstop = (start-1) * thefile.reclen, stop*thefile.reclen - 1
+    # permission denied if the exact record range wasn't given before
+    try:
+        thefile.lock_list.remove((bstart, bstop))
+    except KeyError:
+        raise error.RunError(70)
+    oslayer.safe(oslayer.unlock, thefile.fhandle, start, bstop-bstart+1)                   
     
+

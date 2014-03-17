@@ -21,7 +21,6 @@ import deviceio
 
 long_modes = {'\x85': 'I', 'OUTPUT':'O', 'RANDOM':'R', 'APPEND':'A'}  # \x85 is INPUT
 allowed_access_modes = { 'I':'R', 'O':'W', 'A':'RW' }
-lock_list = set()
 
 # close all files
 def exec_reset(ins):
@@ -135,7 +134,7 @@ def exec_put_file(ins):
     num_bytes = the_file.reclen
     if util.skip_white_read_if(ins, (',',)):
         pos = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)).round_to_int())
-        if pos<1 or pos>2**25:   # not 2^32-1 as the manual boasts! pos-1 apparently needs to fit in a single-prec mantissa
+        if pos < 1 or pos > 2**25:   # not 2^32-1 as the manual boasts! pos-1 apparently needs to fit in a single-prec mantissa
             raise error.RunError(63)
         if not isinstance(the_file, deviceio.SerialFile):
             the_file.set_pos(pos)    
@@ -165,53 +164,22 @@ def parse_lock(ins):
     if deviceio.is_device(thefile):
         # permission denied
         raise error.RunError(70)
-    lock_start, lock_length = 0, 0
     lock_start_rec = 1
     if util.skip_white_read_if(ins, (',',)):
         lock_start_rec = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
-        lock_start = (lock_start_rec-1) * thefile.reclen
-        lock_length = thefile.reclen
-    util.skip_white(ins)
     lock_stop_rec = lock_start_rec
     if util.skip_white_read_if(ins, ('\xCC',)): # TO
         lock_stop_rec = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
-        lock_stop = lock_stop_rec * thefile.reclen
-        lock_length = lock_stop - lock_start
     if lock_start_rec < 1 or lock_start_rec > 2**25-2 or lock_stop_rec < 1 or lock_stop_rec > 2**25-2:   
         raise error.RunError(63)
-    return thefile.number, lock_start, lock_length     
-                 
+    return thefile.number, lock_start_rec, lock_stop_rec     
+
 def exec_lock(ins):
-    nr, start, length = parse_lock(ins) 
-    thefile = fileio.get_file(nr)
-    if deviceio.is_device(thefile):
-        # permission denied
-        raise error.RunError(70)
-    if isinstance(thefile, fileio.TextFile):
-        start, length = 0, 0
-    else:
-        for nr_1, start_1, length_1 in lock_list:
-            if (start >= start_1 and start < start_1+length_1) or (start+length >= start_1 and start+length < start_1+length_1):
-                raise error.RunError(70)
-    lock_list.add((nr, start, length))
-    oslayer.safe(oslayer.lock, thefile.fhandle, 'RW', start, length)                   
+    fileio.lock_records(*parse_lock(ins))
     util.require(ins, util.end_statement)
             
 def exec_unlock(ins):
-    unlock = parse_lock(ins)
-    nr, start, length = unlock    
-    thefile = fileio.get_file(nr)
-    if deviceio.is_device(thefile):
-        # permission denied
-        raise error.RunError(70)
-    if isinstance(thefile, fileio.TextFile):
-        start, length = 0, 0
-    # permission denied if the exact record range wasn't given before
-    try:
-        lock_list.remove(unlock)
-    except KeyError:
-        raise error.RunError(70)
-    oslayer.safe(oslayer.unlock, thefile.fhandle, start, length)                   
+    fileio.unlock_records(*parse_lock(ins))
     util.require(ins, util.end_statement)
     
 # ioctl: not implemented
