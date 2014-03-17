@@ -29,18 +29,18 @@ def disk_free(path):
     ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(path), None, None, ctypes.pointer(free_bytes))
     return free_bytes.value
 
-def lock(fd, lock, length=0, start=0, whence=0):
-    curpos = fd.tell()
-    fd.seek(start)
-    msvcrt.locking(fd.fileno(), msvcrt.LK_NBLCK, length)
-    fd.seek(curpos)
-     
-def unlock(fd, length=0, start=0, whence=0):
-    curpos = fd.tell()   
-    fd.seek(start)
-    msvcrt.locking(fd.fileno(), msvcrt.LK_UNLCK, length)
-    fd.seek(curpos)
-
+#def lock(fd, lock, length=0, start=0, whence=0):
+#    curpos = fd.tell()
+#    fd.seek(start)
+#    msvcrt.locking(fd.fileno(), msvcrt.LK_NBLCK, length)
+#    fd.seek(curpos)
+         
+#def unlock(fd, length=0, start=0, whence=0):
+#    curpos = fd.tell()   
+#    fd.seek(start)
+#    msvcrt.locking(fd.fileno(), msvcrt.LK_UNLCK, length)
+#    fd.seek(curpos)
+    
 def process_stdout(p, stream):
     while True:
         c = stream.read(1)
