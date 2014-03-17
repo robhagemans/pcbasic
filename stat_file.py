@@ -19,14 +19,8 @@ import util
 import oslayer
 import deviceio
 
-short_modes = ['I','O','R','A']
-long_modes = ['\x85', 'OUTPUT', 'RANDOM', 'APPEND']  # \x85 is INPUT token
-access_tokens = ['\x87', '\xB7', '\x87 \xB7'] # READ, WRITE, READ WRITE
-lock_modes = ['SHARED', '\xFE\xA7 \x87', '\xFE\xA7 \xB7', '\xFE\xA7 \x87 \xB7'] # SHARED, LOCK READ, LOCK WRITE, LOCK READ WRITE
-
-access_modes = { 'I':'rb', 'O':'wb', 'R':'r+b', 'A':'wb' }
-position_modes = { 'I':0, 'O':0, 'R':0, 'A':-1 }
-            
+long_modes = {'\x85': 'I', 'OUTPUT':'O', 'RANDOM':'R', 'APPEND':'A'}  # \x85 is INPUT
+allowed_access_modes = { 'I':'R', 'O':'W', 'A':'RW' }
 lock_list = set()
 
 # close all files
@@ -35,12 +29,16 @@ def exec_reset(ins):
     util.require(ins, util.end_statement)
 
 def exec_open(ins):
-    first_expr = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    d = util.skip_white(ins)
-    if d == ',':
+    first_expr = str(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+    mode, access, lock, reclen = 'R', '', 'rw', 128
+    if util.skip_white_read_if(ins, (',',)):
         # first syntax
-        mode = first_expr[0].upper()
-        access = access_modes[mode]    
+        try:
+            mode = first_expr[0].upper()
+            access = access_modes[mode]    
+        except (IndexError, KeyError):
+            # Bad file mode
+            raise error.RunError(54)
         util.require_read(ins, (',',))
         number = expressions.parse_file_number_opthash(ins)
         util.require_read(ins, (',',))
@@ -49,66 +47,59 @@ def exec_open(ins):
             reclen = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     else:
         # second syntax
-        name = str(first_expr)
-        mode = 'R' # RANDOM        
+        name = first_expr
         if util.skip_white_read_if(ins, ('\x82',)): # FOR
             c = util.skip_white_read(ins)
             # read word
             word = ''
             while c not in util.whitespace:
                 word += c
-                c = ins.read(1) 
-            if word.upper() not in long_modes:
+                c = ins.read(1).upper()
+            try:
+                mode = long_modes[word]
+            except KeyError:
                 raise error.RunError(2)
-            if word=='\x85':
-                mode = 'I'
-            else:
-                mode = word[0].upper()           
-            access = access_modes[mode]    
-        # it seems to be *either* a FOR clause *or* an ACCESS clause is allowed
-        # could be 'AS' too
-        elif util.peek(ins,2) == 'AC': 
-            if util.peek(ins, 6) != 'ACCESS':
-                raise error.RunError(2)
+        util.skip_white(ins)
+        if util.peek(ins, 6) == 'ACCESS': 
             ins.read(6)
             d = util.skip_white(ins)
             if d == '\xB7': # WRITE
-                access = 'wb'        
+                access = 'W'        
             elif d == '\x87': # READ
-                if util.skip_white(ins) == '\xB7': # READ WRITE
-                    access = 'r+b'
-                else:
-                    access = 'rb'
-        else:
-            # neither specified -> it is a RANDOM (or COM) file
-            mode = 'R'
-            access = access_modes[mode]
+                access = 'RW' if util.skip_white_read_if(ins, ('\xB7',)) else 'R' # WRITE
         # lock clause
-        lock = 'rw'
         util.skip_white(ins) 
-        if util.peek(ins,2)=='\xFE\xA7':
+        if util.peek(ins, 2) == '\xFE\xA7': # LOCK
             ins.read(2)
             d = util.skip_white(ins)
             if d == '\xB7': # WRITE
                 lock = 'w'        
             elif d == '\x87': # READ
-                if util.skip_white(ins) == '\xB7': # READ WRITE
+                if util.skip_white_read_if(ins, ('\xB7',)): # READ WRITE
                     lock = 'rw'
                 else:
                     lock = 'r'
-        elif util.peek(ins,6)=='SHARED':
+        elif util.peek(ins, 6) == 'SHARED':
             ins.read(6)  
-            lock=''     
+            lock = ''     
         util.skip_white(ins)
-        if util.peek(ins,2) != 'AS':
+        if util.peek(ins, 2) != 'AS':
             raise error.RunError(2)
         ins.read(2)
         number = expressions.parse_file_number_opthash(ins)
         util.skip_white(ins)             
-        if util.peek(ins,2) == '\xFF\x92':  #LEN
+        if util.peek(ins, 2) == '\xFF\x92':  #LEN
             ins.read(2)
             reclen = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-    fileio.open_file_or_device(number, name, mode, access, lock) 
+    # mode and access must match if not a RANDOM file
+    # If FOR APPEND ACCESS WRITE is specified, raises PATH/FILE ACCESS ERROR
+    # If FOR and ACCESS mismatch in other ways, raises SYNTAX ERROR.
+    if mode == 'A' and access == 'W':
+            raise error.RunError(75)
+    elif mode != 'R' and access and access != allowed_access_modes[mode]:
+        raise error.RunError(2)        
+    util.range_check(1, 128, reclen)        
+    fileio.open_file_or_device(number, name, mode, access, lock, reclen) 
     util.require(ins, util.end_statement)
                 
 def exec_close(ins):
@@ -209,7 +200,7 @@ def exec_lock(ins):
             if (start >= start_1 and start < start_1+length_1) or (start+length >= start_1 and start+length < start_1+length_1):
                 raise error.RunError(70)
     lock_list.add((nr, start, length))
-    oslayer.safe_lock(thefile.fhandle, 'rw', start, length)                   
+    oslayer.safe(oslayer.lock, thefile.fhandle, 'rw', start, length)                   
     util.require(ins, util.end_statement)
             
 def exec_unlock(ins):
@@ -226,7 +217,7 @@ def exec_unlock(ins):
         lock_list.remove(unlock)
     except KeyError:
         raise error.RunError(70)
-    oslayer.safe_lock(thefile.fhandle, '', start, length)                   
+    oslayer.safe(oslayer.unlock, thefile.fhandle, start, length)                   
     util.require(ins, util.end_statement)
     
 # ioctl: not implemented

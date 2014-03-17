@@ -91,8 +91,8 @@ def prepare_devices(args):
 def convert(infile, outfile, mode):
     console.backend = backend_dumb
     console.init()
-    fin = fileio.open_file_or_device(0, infile, mode='L', access='rb', defext='') if infile else sys.stdin
-    fout = fileio.open_file_or_device(0, outfile, mode='S', access='wb', defext='') if outfile else sys.stdout
+    fin = fileio.open_file_or_device(0, infile, mode='L', defext='') if infile else sys.stdin
+    fout = fileio.open_file_or_device(0, outfile, mode='S', defext='') if outfile else sys.stdout
     program.load(fin)
     # allow conversion of protected files
     program.protected = False

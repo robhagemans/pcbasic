@@ -49,12 +49,6 @@ def safe_open(name, access):
     except EnvironmentError as e:
         handle_oserror(e)
     
-def safe_lock(fd, access, locktype, length=0, start=0, whence=0):
-    safe(lock, fd, access, locktype, length, start, whence) 
-
-def safe_unlock(fd):
-    safe(unlock, fd)
-        
 def safe(fnname, *fnargs):
     try:
         return fnname(*fnargs)
@@ -82,6 +76,8 @@ def handle_oserror(e):
     try:
         basic_err = os_error[e.errno]
     except KeyError:
+        import sys
+        sys.stderr.write(repr(e))
         # unknown; internal error
         basic_err = 51
     raise error.RunError(basic_err) 
@@ -182,7 +178,7 @@ def pass_dosnames(files, mask='*.*'):
     return dosfiles
 
 # print to LPR printer (ok for CUPS)
-# TODO: Windows XP reference says it has an LPR command, but is it standard on all windows or part of a POSIX module?
+# TODO: use Windows printing subsystem for Windows, LPR is not standard there.
 def line_print(printbuf, printer_name=''):
     options = ''
     if printer_name != '':
