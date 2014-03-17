@@ -28,9 +28,19 @@ def exec_reset(ins):
     fileio.close_all()
     util.require(ins, util.end_statement)
 
+def parse_read_write(ins):
+    d = util.skip_white(ins)
+    if d == '\xB7': # WRITE
+        ins.read(1)
+        access = 'W'        
+    elif d == '\x87': # READ
+        ins.read(1)
+        access = 'RW' if util.skip_white_read_if(ins, ('\xB7',)) else 'R' # WRITE
+    return access
+
 def exec_open(ins):
     first_expr = str(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
-    mode, access, lock, reclen = 'R', '', 'rw', 128
+    mode, access, lock, reclen = 'R', '', 'RW', 128
     if util.skip_white_read_if(ins, (',',)):
         # first syntax
         try:
@@ -48,6 +58,7 @@ def exec_open(ins):
     else:
         # second syntax
         name = first_expr
+        # FOR clause
         if util.skip_white_read_if(ins, ('\x82',)): # FOR
             c = util.skip_white_read(ins)
             # read word
@@ -59,28 +70,21 @@ def exec_open(ins):
                 mode = long_modes[word]
             except KeyError:
                 raise error.RunError(2)
+        # ACCESS clause
         if util.skip_white_read_if(ins, ('ACCESS',)):
             d = util.skip_white(ins)
-            if d == '\xB7': # WRITE
-                ins.read(1)
-                access = 'W'        
-            elif d == '\x87': # READ
-                ins.read(1)
-                access = 'RW' if util.skip_white_read_if(ins, ('\xB7',)) else 'R' # WRITE
-        # lock clause
+            access = parse_read_write(ins)
+        # LOCK clause
         if util.skip_white_read_if(ins, ('\xFE\xA7',)): # LOCK
             d = util.skip_white(ins)
-            if d == '\xB7': # WRITE
-                ins.read(1)
-                lock = 'w'        
-            elif d == '\x87': # READ
-                ins.read(1)
-                lock = 'rw' if util.skip_white_read_if(ins, ('\xB7',)) else 'r' # READ WRITE
+            lock = parse_read_write(ins)
         elif util.skip_white_read_if(ins, ('SHARED',)):
-            lock = ''     
+            lock = ''  
+        # AS file number clause       
         if not util.skip_white_read_if(ins, ('AS',)):
             raise error.RunError(2)
         number = expressions.parse_file_number_opthash(ins)
+        # LEN clause
         if util.skip_white_read_if(ins, ('\xFF\x92',)):  # LEN
             util.require_read(ins, '\xE7') # =
             reclen = vartypes.pass_int_unpack(expressions.parse_expression(ins))
@@ -190,7 +194,7 @@ def exec_lock(ins):
             if (start >= start_1 and start < start_1+length_1) or (start+length >= start_1 and start+length < start_1+length_1):
                 raise error.RunError(70)
     lock_list.add((nr, start, length))
-    oslayer.safe(oslayer.lock, thefile.fhandle, 'rw', start, length)                   
+    oslayer.safe(oslayer.lock, thefile.fhandle, 'RW', start, length)                   
     util.require(ins, util.end_statement)
             
 def exec_unlock(ins):
