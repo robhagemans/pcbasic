@@ -73,7 +73,6 @@ def exec_kill(ins):
     fileio.check_file_not_open(name)
     oslayer.safe(os.remove, str(name))
     util.require(ins, util.end_statement)
-        
 
 def exec_files(ins):
     path, mask = '.', '*.*'

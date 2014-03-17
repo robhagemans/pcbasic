@@ -59,7 +59,7 @@ os_error = {
     # file not found
     errno.ENOENT: 53, errno.EISDIR: 53, errno.ENOTDIR: 53,
     # permission denied
-    errno.EACCES: 70, errno.EBUSY: 70, errno.EROFS: 70, errno.EPERM: 70,
+    errno.EAGAIN: 70, errno.EACCES: 70, errno.EBUSY: 70, errno.EROFS: 70, errno.EPERM: 70,
     # file already exists
     errno.EEXIST: 58,
     # disk full

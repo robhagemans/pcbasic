@@ -375,7 +375,7 @@ def check_file_not_open(name):
         if name == files[f].fhandle.name:
             raise error.RunError(55)
     
-def open_file_or_device(number, name, mode='I', access='', lock='rw', reclen=128, defext=''):
+def open_file_or_device(number, name, mode='I', access='', lock='RW', reclen=128, defext=''):
     if number < 0 or number > max_files:
         # bad file number
         raise error.RunError(52)
