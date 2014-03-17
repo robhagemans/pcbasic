@@ -2342,7 +2342,15 @@ The ACCESS modes:
 -   If both FOR and ACCESS are specified, any ACCESS mode is allowed for
     RANDOM but for the other modes the access must match as above.
 The SHARED/LOCK modes:    
-    
+-   SHARED - no restrictions to other prcesses also opening the file as SHARED.
+-   LOCK READ - no other process may read to the file.
+-   LOCK WRITE - no other process may write to the file.
+-   LOCK READ WRITE - exclusive lock: no other process may read or write.
+-   In the default mode, the file is locked exclusively for use by the 
+    current BASIC process. Inside this process, a file may be opened multiple
+    times for INPUT or RANDOM but only once for OUTPUT or APPEND.   
+The implementation of these locks is dependent on the hosting OS and is far
+from perfect in PC-BASIC 3.23.    
 NOTES:
 -   For INPUT, OUTPUT and APPEND modes, LEN may be specified but is ignored.
 -   In GW-BASIC, when opening one of the COM devices, the string 'file_name' 
