@@ -369,13 +369,13 @@ def exec_def(ins):
         raise error.RunError(2)      
 
 def exec_view(ins):
-    if util.skip_white_read_if(ins, '\x91'):  #PRINT
+    if util.skip_white_read_if(ins, ('\x91',)):  # PRINT
         exec_view_print(ins)
     else:
         exec_view_graph(ins)
     
 def exec_line(ins):
-    if util.skip_white_read_if(ins, '\x85'): #INPUT
+    if util.skip_white_read_if(ins, ('\x85',)):  # INPUT
         exec_line_input(ins)
     else:
         exec_line_graph(ins)

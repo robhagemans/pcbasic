@@ -219,7 +219,7 @@ def exec_print(ins, screen=None):
     if screen == None:
         screen = expressions.parse_file_number(ins)
         screen = console if screen == None else screen
-    if util.skip_white_read_if(ins, '\xD7'): # USING
+    if util.skip_white_read_if(ins, ('\xD7',)): # USING
        return exec_print_using(ins, screen)
     number_zones = max(1, int(screen.width/zone_width))
     newline = True
@@ -419,8 +419,8 @@ def exec_width(ins):
     # get the appropriate errors out there for WIDTH [40|80] [,[,]]
     if dev == console and device == '':
         # two commas are accepted
-        util.skip_white_read_if(ins, ',')
-        if not util.skip_white_read_if(ins, ','):
+        util.skip_white_read_if(ins, (',',))
+        if not util.skip_white_read_if(ins, (',',)):
             # one comma, then stuff - illegal function call
             util.require(ins, util.end_statement, err=5)
     # anything after that is a syntax error      

@@ -48,7 +48,7 @@ from functools import partial
 # (what about TAB? are there other whitespace chars in a tokenised file?)
 whitespace = (' ', '\t', '\x0a')
 # line ending tokens
-end_line = ('', '\x00')
+end_line = ('\x00', '')
 # statement ending tokens
 end_statement = end_line + (':',) 
 # expression ending tokens
@@ -66,7 +66,7 @@ skip_white = partial(skip, skip_range=whitespace)
 def skip_white_read_if(ins, in_range):
     d = skip_white(ins, n=len(in_range[0]))
     if d != '' and d in in_range:
-        ins.read(1)
+        ins.read(len(d))
         return True
     return False
 
@@ -113,7 +113,8 @@ def require_read(ins, in_range, err=2):
         raise error.RunError(err)
     
 def require(ins, rnge, err=2):
-    if skip_white(ins) not in rnge:
+    a = skip_white(ins)
+    if a not in rnge:
         raise error.RunError(err)
 
 def skip_to_next(ins, for_char, next_char, allow_comma=False):

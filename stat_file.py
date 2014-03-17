@@ -43,7 +43,7 @@ def exec_open(ins):
         number = expressions.parse_file_number_opthash(ins)
         util.require_read(ins, (',',))
         name = str(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
-        if util.skip_white_read_if(ins, ','):
+        if util.skip_white_read_if(ins, (',',)):
             reclen = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     else:
         # second syntax
@@ -59,37 +59,30 @@ def exec_open(ins):
                 mode = long_modes[word]
             except KeyError:
                 raise error.RunError(2)
-        util.skip_white(ins)
-        if util.peek(ins, 6) == 'ACCESS': 
-            ins.read(6)
+        if util.skip_white_read_if(ins, ('ACCESS',)):
             d = util.skip_white(ins)
             if d == '\xB7': # WRITE
+                ins.read(1)
                 access = 'W'        
             elif d == '\x87': # READ
+                ins.read(1)
                 access = 'RW' if util.skip_white_read_if(ins, ('\xB7',)) else 'R' # WRITE
         # lock clause
-        util.skip_white(ins) 
-        if util.peek(ins, 2) == '\xFE\xA7': # LOCK
-            ins.read(2)
+        if util.skip_white_read_if(ins, ('\xFE\xA7',)): # LOCK
             d = util.skip_white(ins)
             if d == '\xB7': # WRITE
+                ins.read(1)
                 lock = 'w'        
             elif d == '\x87': # READ
-                if util.skip_white_read_if(ins, ('\xB7',)): # READ WRITE
-                    lock = 'rw'
-                else:
-                    lock = 'r'
-        elif util.peek(ins, 6) == 'SHARED':
-            ins.read(6)  
+                ins.read(1)
+                lock = 'rw' if util.skip_white_read_if(ins, ('\xB7',)) else 'r' # READ WRITE
+        elif util.skip_white_read_if(ins, ('SHARED',)):
             lock = ''     
-        util.skip_white(ins)
-        if util.peek(ins, 2) != 'AS':
+        if not util.skip_white_read_if(ins, ('AS',)):
             raise error.RunError(2)
-        ins.read(2)
         number = expressions.parse_file_number_opthash(ins)
-        util.skip_white(ins)             
-        if util.peek(ins, 2) == '\xFF\x92':  #LEN
-            ins.read(2)
+        if util.skip_white_read_if(ins, ('\xFF\x92',)):  # LEN
+            util.require_read(ins, '\xE7') # =
             reclen = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     # mode and access must match if not a RANDOM file
     # If FOR APPEND ACCESS WRITE is specified, raises PATH/FILE ACCESS ERROR
@@ -124,14 +117,11 @@ def exec_field(ins):
         while True:
             width = vartypes.pass_int_unpack(expressions.parse_expression(ins))
             util.range_check(0, 255, width)
-            util.skip_white(ins)
-            if util.peek(ins,2).upper() != 'AS':
-                raise error.RunError(5)
-            ins.read(2)
+            util.require_read(ins, ('AS',), err=5)
             name = util.get_var_name(ins)
             var.set_field_var(field, name, offset, width)         
             offset += width
-            if not util.skip_white_read_if(ins,','):
+            if not util.skip_white_read_if(ins, (',',)):
                 break
     util.require(ins, util.end_statement)
 
@@ -139,7 +129,7 @@ def exec_put_file(ins):
     the_file = fileio.get_file(expressions.parse_file_number_opthash(ins), 'R')
     # for COM files
     num_bytes = the_file.reclen
-    if util.skip_white_read_if(ins, ','):
+    if util.skip_white_read_if(ins, (',',)):
         pos = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)).round_to_int())
         if pos<1 or pos>2**25:   # not 2^32-1 as the manual boasts! pos-1 apparently needs to fit in a single-prec mantissa
             raise error.RunError(63)
@@ -154,7 +144,7 @@ def exec_get_file(ins):
     the_file = fileio.get_file(expressions.parse_file_number_opthash(ins), 'R')
     # for COM files
     num_bytes = the_file.reclen
-    if util.skip_white_read_if(ins, ','):
+    if util.skip_white_read_if(ins, (',',)):
         pos = fp.unpack(vartypes.pass_double_keep(expressions.parse_expression(ins))).round_to_int()
         if pos < 1 or pos > 2**25:   
             raise error.RunError(63)
@@ -173,7 +163,7 @@ def parse_lock(ins):
         raise error.RunError(70)
     lock_start, lock_length = 0, 0
     lock_start_rec = 1
-    if util.skip_white_read_if(ins, ','):
+    if util.skip_white_read_if(ins, (',',)):
         lock_start_rec = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
         lock_start = (lock_start_rec-1) * thefile.reclen
         lock_length = thefile.reclen
@@ -224,5 +214,4 @@ def exec_unlock(ins):
 def exec_ioctl(ins):
     fileio.get_file(expressions.parse_file_number_opthash(ins))
     raise error.RunError(5)   
-    
     

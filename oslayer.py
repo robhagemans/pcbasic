@@ -76,8 +76,6 @@ def handle_oserror(e):
     try:
         basic_err = os_error[e.errno]
     except KeyError:
-        import sys
-        sys.stderr.write(repr(e))
         # unknown; internal error
         basic_err = 51
     raise error.RunError(basic_err) 

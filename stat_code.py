@@ -87,7 +87,7 @@ def exec_auto(ins):
     else:
         # default to 10
         automode.auto_linenum = 10
-    if util.skip_white_read_if(ins, ','): 
+    if util.skip_white_read_if(ins, (',',)): 
         if util.skip_white_read_if(ins, ('\x0E',)):   # line number starts
             automode.auto_increment = vartypes.uint_to_value(bytearray(ins.read(2))) 
         else:
@@ -156,9 +156,7 @@ def exec_chain(ins):
             if jumpnum < 0:
                 jumpnum = 0x10000 + jumpnum            
         if util.skip_white_read_if(ins, (',',)):
-            util.skip_white(ins)
-            if util.peek(ins, 3).upper() == 'ALL':
-                ins.read(3)
+            if util.skip_white_read_if(ins, ('ALL',)):
                 common_all = True
             if util.skip_white_read_if(ins, (',',)) and util.skip_white_read_if(ins, ('\xa9',)):
                 delete_lines = parse_line_range(ins) # , DELETE
