@@ -121,7 +121,7 @@ def dosname_read(s, defext='BAS', path='', err=53, isdir=False):
     raise error.RunError(err)
 
 # find a unix path to match the given dos-style path
-def dospath_action(s, defext, err, action, isdir):
+def dospath(s, defext, err, action, isdir):
     # split over backslashes
     elements = string.split(s, '\\')
     name = elements.pop()
@@ -133,13 +133,12 @@ def dospath_action(s, defext, err, action, isdir):
         # skip double slashes
         if e:
             test += dosname_read(e, '', test, err, True) + os.sep
-    test += action(name, defext, test, err, isdir)
-    return test
+    return action(name, defext, test, err, isdir)
 
-dospath_read = partial(dospath_action, action=dosname_read, isdir=False)
-dospath_write = partial(dospath_action, action=dosname_write, isdir=False)
-dospath_read_dir = partial(dospath_action, action=dosname_read, isdir=True)
-dospath_write_dir = partial(dospath_action, action=dosname_write, isdir=True)
+dospath_read = partial(dospath, action=dosname_read, isdir=False)
+dospath_write = partial(dospath, action=dosname_write, isdir=False)
+dospath_read_dir = partial(dospath, action=dosname_read, isdir=True)
+dospath_write_dir = partial(dospath, action=dosname_write, isdir=True)
 
 # for FILES command
 # apply filename filter and DOSify names

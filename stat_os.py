@@ -52,10 +52,8 @@ def exec_rmdir(ins):
 def exec_name(ins):
     oldname = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     oldname = oslayer.dospath_read(oldname, '', 53)
-    # don't delete open files
-    for f in fileio.files:
-        if oldname == fileio.files[f].fhandle.name:
-            raise error.RunError(55)
+    # don't rename open files
+    fileio.check_file_not_open(oldname)
     # AS is not a tokenised word
     word = util.skip_white_read(ins) + ins.read(1)
     if word.upper() != 'AS':
@@ -72,9 +70,7 @@ def exec_kill(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     name = oslayer.dospath_read(name, '', 53)
     # don't delete open files
-    for f in fileio.files:
-        if name == fileio.files[f].fhandle.name:
-            raise error.RunError(55)
+    fileio.check_file_not_open(name)
     oslayer.safe(os.remove, str(name))
     util.require(ins, util.end_statement)
         
