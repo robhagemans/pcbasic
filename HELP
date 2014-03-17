@@ -2305,6 +2305,8 @@ While in an error handling routine, events are paused and error trapping is
 disabled. After the RESUME statement, events are picked up in the following 
 order: KEY, TIMER, PLAY - the order of the others is unknown.
 Error trapping remains active in interactive mode.
+NOTES:
+-   If 'line_number' is 0, turns off error trapping.
 
 
 OPEN statement
