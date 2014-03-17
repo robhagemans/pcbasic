@@ -370,6 +370,11 @@ access_modes = { 'I':'rb', 'O':'wb', 'R':'r+b', 'A':'ab', 'L': 'rb', 'S': 'wb' }
 # posix access modes for BASIC ACCESS mode for RANDOM files only
 access_access = { 'R': 'rb', 'W': 'wb', 'RW': 'r+b' }
 
+def check_file_not_open(name):
+    for f in files:
+        if name == files[f].fhandle.name:
+            raise error.RunError(55)
+    
 def open_file_or_device(number, name, mode='I', access='', lock='rw', reclen=128, defext=''):
     if number < 0 or number > max_files:
         # bad file number
@@ -396,6 +401,9 @@ def open_file_or_device(number, name, mode='I', access='', lock='rw', reclen=128
             name = oslayer.dospath_read(name, defext, 53)
         else:
             name = oslayer.dospath_write(name, defext, 76)
+        if mode in ('O', 'A'):
+            # don't open output or append files more than once
+            check_file_not_open(name)
         # open the file
         fhandle = oslayer.safe_open(name, access)
         # obtain a lock
