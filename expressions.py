@@ -775,66 +775,21 @@ def value_err(ins):
 
 def value_pen(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
-    if fn == 0:
-        return vartypes.bool_to_int_keep(console.pen_has_been_down())
-    elif fn == 1:
-        x, _ = console.get_last_pen_down_pos()
-        return vartypes.pack_int(x)
-    elif fn == 2:
-        _, y = console.get_last_pen_down_pos()
-        return vartypes.pack_int(y)
-    elif fn == 3:
-        return vartypes.bool_to_int_keep(console.pen_is_down())
-    elif fn == 4:
-        x, _ = console.get_pen_pos()
-        return vartypes.pack_int(x)
-    elif fn == 5:
-        _, y = console.get_pen_pos()
-        return vartypes.pack_int(y)
-    elif fn == 6:
-        _, row = console.get_last_pen_down_pos_char()
-        return vartypes.pack_int(row)
-    elif fn == 7:
-        col, _ = console.get_last_pen_down_pos_char()
-        return vartypes.pack_int(col)
-    elif fn == 8:
-        _, row = console.get_pen_pos_char()
-        return vartypes.pack_int(row)
-    elif fn == 9:
-        col, _ = console.get_pen_pos_char()
-        return vartypes.pack_int(col)
-    else:
-        raise error.RunError(5)
-
+    util.range_check(0, 9, fn)
+    return vartypes.pack_int(console.get_pen(fn))
+    
 # coordinated run 1..200 (says http://www.qb64.net/wiki/index.php?title=STICK)
 # STICK(0) is required to get values from the other STICK functions. Always read it first!
 def value_stick(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
-    if fn == 0:
-        x, _ = console.stick_coord(0)
-        return vartypes.pack_int(x)
-    elif fn == 1:
-        _, y = console.stick_coord(0)
-        return vartypes.pack_int(y)
-    elif fn == 2:
-        x, _ = console.stick_coord(1)
-        return vartypes.pack_int(x)
-    elif fn == 3:
-        _, y = console.stick_coord(1)
-        return vartypes.pack_int(y)
-    else:
-        raise error.RunError(5)
+    util.range_check(0, 3, fn)
+    return vartypes.pack_int(console.get_stick(fn))
     
 def value_strig(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     # 0,1 -> [0][0] 2,3 -> [0][1]  4,5-> [1][0]  6,7 -> [1][1]
     util.range_check(0, 7, fn)
-    joy = fn//4
-    trig = (fn//2)%2
-    if fn%2 == 0:
-        return vartypes.bool_to_int_keep(console.stick_has_been_trig(joy,trig))
-    else:
-        return vartypes.bool_to_int_keep(console.stick_trig(joy,trig))
+    return vartypes.bool_to_int_keep(console.get_strig(fn))
     
 #########################################################
 # memory and machine

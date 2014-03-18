@@ -60,14 +60,11 @@ colours64= [
  (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff)
 ]
 
-
 # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
 # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
 #
 gamecolours16 = [ pygame.Color(*rgb) for rgb in colours16 ]
 gamecolours64 = [ pygame.Color(*rgb) for rgb in colours64 ]
-
-
 
 # for use with get_at
 workaround_palette= [ (0,0,0),(0,0,1),(0,0,2),(0,0,3),(0,0,4),(0,0,5),(0,0,6),(0,0,7),(0,0,8),(0,0,9),(0,0,10),(0,0,11),(0,0,12),(0,0,13),(0,0,14),(0,0,15) ]
@@ -158,8 +155,6 @@ ctrl_keycode_to_scancode = {
     pygame.K_F3:        '\x00\x60',
     pygame.K_MINUS:     '\x1F',
 }
-
-    
    
 keycode_to_inpcode = {
     # top row
@@ -266,17 +261,14 @@ def init():
     init_mixer()
     pygame.joystick.init()
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
- 
         
 def close():
     pygame.joystick.quit()
     pygame.display.quit()    
-    
 
 def get_palette_entry(index):
     return palette64[index]
 
-    
 def set_palette(new_palette=None):
     global palette64 
     if console.num_palette==64:
@@ -340,7 +332,6 @@ def set_font(new_font_height):
         font=None
     under_cursor = pygame.Surface((8,font_height),depth=8)    
 
-
 def init_screen_mode(mode, new_font_height):
     global glyphs, cursor0
     set_font(new_font_height)    
@@ -351,7 +342,6 @@ def init_screen_mode(mode, new_font_height):
         glyphs.append(build_glyph(c, font, font_height) )      
     # set standard cursor
     build_line_cursor(True)
-    
     
 def setup_screen(to_height, to_width):
     global screen, size 
@@ -366,29 +356,24 @@ def setup_screen(to_height, to_width):
         console.pages[i].surface1.set_palette(workaround_palette)
     set_palette()
     screen_changed = True
-    
 
 def copy_page(src,dst):
     global screen_changed
     console.pages[dst].surface0.blit(console.pages[src].surface0, (0,0))
     console.pages[dst].surface1.blit(console.pages[src].surface1, (0,0))
     screen_changed = True
-
     
 def set_scroll_area(view_start, scroll_height, width):    
     global scroll_area
     scroll_area = pygame.Rect(0,(view_start-1)*font_height, width*8, (scroll_height-view_start+1)*font_height)    
     
-   
 def show_cursor(do_show, prev):
     global screen_changed
     if do_show != prev:
         screen_changed = True
-    
 
 def set_cursor_colour(color):
     cursor0.set_palette_at(254, screen.get_palette_at(color))
-
 
 def build_line_cursor(is_line):
     global cursor_from, cursor_to, screen_changed
@@ -432,7 +417,6 @@ def scroll(from_line):
     console.apage.surface0.set_clip(None)
     console.apage.surface1.set_clip(None)
     screen_changed = True
-
    
 def scroll_down(from_line):
     global screen_changed
@@ -452,7 +436,6 @@ def scroll_down(from_line):
     console.apage.surface0.set_clip(None)
     console.apage.surface1.set_clip(None)
     screen_changed = True
-    
     
 def putc_at(row, col, c, attr):
     global screen_changed
@@ -474,7 +457,6 @@ def putc_at(row, col, c, attr):
         console.apage.surface0.blit(glyph, top_left )
     screen_changed = True
 
-    
 def build_glyph(c, font_face, glyph_height):
     color = 254 
     bg = 255 
@@ -489,7 +471,6 @@ def build_glyph(c, font_face, glyph_height):
             if bit == 1:
                 glyph.set_at(pos, color)
     return glyph            
-    
     
 def build_cursor():
     color = 254
@@ -514,13 +495,11 @@ def refresh_screen():
         screen.blit(console.vpage.surface1, (0, 0))
         console.vpage.surface1.set_palette(workaround_palette)
             
-    
 def remove_cursor():
     if not console.cursor or console.vpage != console.apage:
         return
     if under_top_left != None:
         screen.blit(under_cursor, under_top_left)
-
 
 def refresh_cursor():
     global last_row, last_col, under_top_left
@@ -538,12 +517,9 @@ def refresh_cursor():
         xor_cursor_screen(console.row, console.col)        
     last_row = console.row
     last_col = console.col
-    
-    
             
 def idle():
     pygame.time.wait(cycle_time/blink_cycles)  
-      
 
 def check_events(pause=False):
     # check and handle pygame events    
@@ -560,7 +536,6 @@ def check_events(pause=False):
             handle_mouse(event)
     check_screen()
     return False
-    
     
 def check_screen():
     global cycle, last_cycle
@@ -591,20 +566,17 @@ def check_screen():
             pygame.display.flip()             
         screen_changed = False
 
-    
 def handle_mouse(e):
     global pen_down, pen_down_pos
     if e.button == 1: # LEFT BUTTON
         events.pen_triggered = True
-        pen_down = True
+        pen_down = -1 # TRUE
         pen_down_pos = e.pos
                 
-
 def handle_stick(e):
     if e.joy<2 and e.button<2:
         stick_fired[e.joy][e.button]=True
         events.stick_triggered[e.joy][e.button]=True
-        
         
 def handle_key(e):
     c = ''
@@ -665,95 +637,73 @@ def pause_key():
         idle()
             
 ##############################################
-# light pen (emulated by mouse)
+# light pen (emulated by mouse) & joystick
 
 supports_pen = True
 supports_stick = True
 
 # should be True on mouse click events
-pen_down = False
+pen_down = 0
 pen_down_pos = (0,0)
 
 stick_fired = [[False, False], [False, False]]
 
-def get_pen_pos():
-    x, y = pygame.mouse.get_pos()
-    if x < 0:
-        x = 0
-    if y < 0:
-        y = 0
-    if x >= console.width*8:
-        x = console.width*8-1
-    if y >= console.height*font_height:
-        y = console.height*font_height-1
-    return (x,y)
-    
-def get_last_pen_down_pos():
-    x, y = pen_down_pos
-    if x < 0:
-        x = 0
-    if y < 0:
-        y = 0
-    if x >= console.width*8:
-        x = console.width*8-1
-    if y >= console.height*font_height:
-        y = console.height*font_height-1
-    return (x,y)
-                
-def pen_is_down():
-    return (pygame.mouse.get_pressed()[0]==1)
-
-def pen_has_been_down():
+def get_pen(fn):
     global pen_down
-    pen_down_old = pen_down
-    pen_down = False
-    return pen_down_old
-
-def get_pen_pos_char():
-    x, y = get_pen_pos()
-    return 1 + x//8, 1 + y//font_height
-      
-def get_last_pen_down_pos_char():
-    x, y = get_last_pen_down_pos()
-    return 1 + x//8, 1 + y//font_height
-
-def stick_coord(stick_num):
-    if len(joysticks)<stick_num+1:
-        return 0,0
+    if fn == 0:
+        pen_down_old, pen_down = pen_down, 0
+        return pen_down_old
+    elif fn == 1:
+        return min(console.size[0]-1, max(0, pen_down_pos[0]))
+    elif fn == 2:
+        return min(console.size[1]-1, max(0, pen_down_pos[1]))  
+    elif fn == 3:
+        return -pygame.mouse.get_pressed()[0]
+    elif fn == 4:
+        x, _ = console.get_pen_pos()
+        return min(console.size[0]-1, max(0, pygame.mouse.get_pos()[0]))
+    elif fn == 5:
+        return min(console.size[1]-1, max(0, pygame.mouse.get_pos()[1]))
+    elif fn == 6:
+        return min(console.width, max(1, 1+pen_down_pos[0]//8))
+    elif fn == 7:
+        return min(console.height, max(1, 1+pen_down_pos[1]//font_height)) 
+    elif fn == 8:
+        return min(console.width, max(1, 1+pygame.mouse.get_pos()[0]//8))
+    elif fn == 9:
+        return min(console.height, max(1, 1+pygame.mouse.get_pos()[1]//font_height))     
+       
+def get_stick(fn):
+    stick_num, axis = fn//2, fn%2
+    if len(joysticks) < stick_num + 1:
+        return 0
     else:
-        return int(joysticks[stick_num].get_axis(0)*100)+100, int(joysticks[stick_num].get_axis(1)*100)+100
-    
+        return int(joysticks[stick_num].get_axis(axis)*100)+100
 
-def stick_trig(stick_num, trig_num):
-    if len(joysticks)<stick_num+1 or joysticks[stick_num].get_numbuttons()<trig_num+1:
+def get_strig(fn):       
+    joy, trig = fn//4, (fn//2)%2
+    if len(joysticks) < stick_num + 1 or joysticks[stick_num].get_numbuttons() < trig_num + 1:
         return False
-    else:
-        return joysticks[stick_num].get_button(trig_num)
-    
-    
-def stick_has_been_trig(stick_num, trig_num):
-    if len(joysticks)<stick_num+1 or joysticks[stick_num].get_numbuttons()<trig_num+1:
-        return False
-    else:
+    if fn%2 == 0:
+        # has been trig
         stick_trig_old = stick_fired
-        stick_fired[stick_num][trig_num]=False
+        stick_fired[stick_num][trig_num] = False
         return stick_trig_old[stick_num][trig_num]
-
-
+    else:
+        # trig
+        return joysticks[stick_num].get_button(trig_num)
+      
 ###############################################
 # graphical
 # low-level methods (pygame implementation)
-
 
 def put_pixel(x,y, index):
     global screen_changed
     console.apage.surface0.set_at((x,y), index)
     screen_changed=True
-   
 
 def get_pixel(x,y):    
     return console.apage.surface0.get_at((x,y)).b
-
 
 def get_graph_clip():
     if graph_view == None:
@@ -762,17 +712,14 @@ def get_graph_clip():
         view = graph_view
     return view.left, view.top, view.right-1, view.bottom-1
 
-
 def set_graph_clip(x0, y0, x1, y1):
     global graph_view
     graph_view = pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)    
-    
     
 def unset_graph_clip():
     global graph_view
     graph_view = None    
     return console.apage.surface0.get_rect().center
-
 
 def clear_graph_clip(bg):
     global screen_changed
@@ -781,21 +728,17 @@ def clear_graph_clip(bg):
     console.apage.surface0.set_clip(None)
     screen_changed = True
 
-
 def remove_graph_clip():
     console.apage.surface0.set_clip(None)
-
 
 def apply_graph_clip():
     console.apage.surface0.set_clip(graph_view)
 
-    
 def fill_rect(x0,y0, x1,y1, index):
     global screen_changed
     rect = pygame.Rect(x0,y0,x1-x0+1,y1-y0+1)
     console.apage.surface0.fill(index, rect)
     screen_changed = True
-
 
 def numpy_set(left, right):
     left[:] = right
@@ -850,10 +793,9 @@ def fast_put(x0, y0, varname, operation_char):
     screen_changed = True
     return True
 
-######## end interface
+###################################
 
 graph_view = None
-
 
 # cursor for graphics mode
 def xor_cursor_screen(row,col):
@@ -864,15 +806,10 @@ def xor_cursor_screen(row,col):
             pixel = get_pixel(x,y)
             screen.set_at((x,y), pixel^index)
 
-    
-    
-   
-
 ####################################
 # SOUND
 #
 # see e.g. http://stackoverflow.com/questions/7816294/simple-pygame-audio-at-a-frequency
-
 
 mixer_bits = 16
 mixer_samplerate = 44100*4
@@ -885,12 +822,10 @@ try:
     import numpy
 except Exception:
     numpy = None
-        
 
 def pre_init_mixer():
     global mixer_samplerate, mixer_bits
     pygame.mixer.pre_init(mixer_samplerate, -mixer_bits, channels=1, buffer=128) #4096
-
 
 def init_mixer():    
     pygame.mixer.quit()
@@ -900,12 +835,10 @@ def init_sound():
     
 def stop_all_sound():
     pygame.mixer.quit()
-        
     
 def check_init_mixer():
     if pygame.mixer.get_init() ==None:
         pygame.mixer.init()
-        
         
 def check_quit_sound():
     global quiet_ticks
@@ -918,7 +851,6 @@ def check_quit_sound():
         if quiet_ticks > quiet_quit:
             # this is to avoid high pulseaudio cpu load
             pygame.mixer.quit()
-            
     
 def append_sound(frequency, duration):
     check_init_mixer()
@@ -943,13 +875,11 @@ def append_sound(frequency, duration):
     the_sound = pygame.sndarray.make_sound(buf)
     sound.sound_queue.append(the_sound)
         
-        
 def append_pause(duration):
     check_init_mixer()
     buf = numpy.zeros(duration*mixer_samplerate/4)
     pause = pygame.sndarray.make_sound(buf)
     sound.sound_queue.append(pause)
-    
 
 # process sound queue in event loop
 def check_sound():
@@ -959,11 +889,9 @@ def check_sound():
             pygame.mixer.Channel(0).queue(sound.sound_queue.pop(0))
     else:
         check_quit_sound()
-
         
 def wait_music():
     while len(sound.sound_queue)>0 or pygame.mixer.get_busy():
         idle()
         console.check_events()
-        
         
