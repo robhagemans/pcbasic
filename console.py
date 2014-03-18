@@ -904,60 +904,17 @@ def scroll_down(from_line):
     del apage.wrap[scroll_height-1]
     show_cursor(save_curs)
 
-
-def get_pen_pos():
+def get_pen(fn):
     if events.pen_handler.enabled and backend.supports_pen:
-        return backend.get_pen_pos()
-    else:    
-        return (0,0)
-    
-def get_pen_pos_char():
-    if events.pen_handler.enabled and backend.supports_pen:
-        return backend.get_pen_pos_char()
-    else:    
-        return (1, 1)
-    
-def get_last_pen_down_pos():
-    if events.pen_handler.enabled and backend.supports_pen:
-        return backend.get_last_pen_down_pos()
-    else:    
-        return (0, 0)
-           
-def get_last_pen_down_pos_char():
-    if events.pen_handler.enabled and backend.supports_pen:
-        return backend.get_last_pen_down_pos_char()
-    else:    
-        return (1, 1)
-                
-def pen_is_down():
-    if events.pen_handler.enabled and backend.supports_pen:
-        return backend.pen_is_down()
+        return backend.get_pen(fn)
+    elif fn >= 6:
+        return 1
     else:
-        return False
+        return 0    
 
-def pen_has_been_down():
-    if events.pen_handler.enabled and backend.supports_pen:
-        return backend.pen_has_been_down()
-    else:
-        return False
+def get_stick(fn):
+    return backend.get_stick(fn) if (stick_is_on and backend.supports_stick) else 0
   
-  
-def stick_coord(num):
-    if stick_is_on and backend.supports_stick:
-        return backend.stick_coord(num)
-    else:    
-        return 0,0
-  
-def stick_trig(num, ntrig):
-    if stick_is_on and backend.supports_stick:
-        return backend.stick_trig(num, ntrig)
-    else:    
-        return False
-    
-def stick_has_been_trig(num, ntrig):
-    if stick_is_on and backend.supports_stick:
-        return backend.stick_has_been_trig(num, ntrig)
-    else:    
-        return False
-
-    
+def get_strig(fn):
+    return stick_is_on and backend.supports_stick and backend.get_strig(fn)
+   
