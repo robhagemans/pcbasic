@@ -97,7 +97,7 @@ def convert(infile, outfile, mode):
     program.load(fin)
     # allow conversion of protected files
     program.protected = False
-    program.save(fout,mode)
+    program.save(fout, mode)
     console.close()
     run.exit()
 

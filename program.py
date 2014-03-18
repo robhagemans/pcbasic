@@ -407,7 +407,8 @@ def load(g):
         # terminate bytecode stream properly
         bytecode.write('\x00\x00\x00\x1a')
     preparse()
-
+    g.close()
+    
 def merge(g):
     if g.peek_char() in ('\xFF', '\xFE', '\xFC', ''):
         # bad file mode
@@ -429,7 +430,8 @@ def merge(g):
                 # direct statement in file
                 raise error.RunError(66)                
             tempbuf.close()    
-
+    g.close()
+    
 def chain(action, g, jumpnum, common_all, delete_lines):    
     if delete_lines:
         # delete lines from existing code before merge (without MERGE, this is pointless)
@@ -493,7 +495,8 @@ def save(g, mode='B'):
             tokenise.detokenise(bytecode, g) 
             # fix \x1A eof
             g.write('\x1a')        
-
+    g.close()
+    
 def list_to_file(out, from_line, to_line):
     if protected:
         # don't list protected files
