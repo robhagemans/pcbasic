@@ -96,6 +96,11 @@ def pass_string_keep(inp, allow_empty=False, err=13):
     else:     
         raise error.RunError(err)
 
+def pass_number_keep(inp, err=13):
+    if inp[0] not in ('%', '!', '#'):
+        raise error.RunError(err)
+    return inp    
+
 def pass_string_unpack(inp, allow_empty=False, err=13):
     return pass_string_keep(inp, allow_empty, err)[1]
 
