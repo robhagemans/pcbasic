@@ -377,10 +377,10 @@ def set_cursor_colour(color):
 
 def build_line_cursor(is_line):
     global cursor_from, cursor_to, screen_changed
-    if is_line and not console.graphics_mode:
+    if is_line and not console.screen_mode:
         cursor_from = font_height-2
         cursor_to = font_height-2
-    elif is_line and console.graphics_mode:
+    elif is_line and console.screen_mode:
         cursor_from = 0
         cursor_to = font_height
     else:
@@ -391,7 +391,7 @@ def build_line_cursor(is_line):
 
 def build_shape_cursor(from_line, to_line):
     global cursor_from, cursor_to, screen_changed
-    if console.graphics_mode:
+    if console.screen_mode:
         return
     cursor_from = max(0, min(from_line, font_height-1))
     cursor_to = max(0, min(to_line, font_height-1))
@@ -408,8 +408,7 @@ def scroll(from_line):
     console.apage.surface1.scroll(0, -font_height)
     # empty new line
     blank = pygame.Surface( (console.width*8, font_height) , depth=8)
-    fore, back = console.colours(console.attr)
-    bg = back & 0xf
+    bg = (console.attr>>4) & 0x7
     blank.set_palette(workaround_palette)
     blank.fill(bg)
     console.apage.surface0.blit(blank, (0, (console.scroll_height-1)*font_height))
@@ -427,8 +426,7 @@ def scroll_down(from_line):
     console.apage.surface1.scroll(0, font_height)
     # empty new line
     blank = pygame.Surface( (console.width*8, font_height), depth=8 )
-    fore, back = console.colours(console.attr)
-    bg = back & 0xf
+    bg = (console.attr>>4) & 0x7
     blank.set_palette(workaround_palette)
     blank.fill(bg)
     console.apage.surface0.blit(blank, (0, (from_line-1)*font_height))
@@ -436,22 +434,28 @@ def scroll_down(from_line):
     console.apage.surface0.set_clip(None)
     console.apage.surface1.set_clip(None)
     screen_changed = True
-    
-def putc_at(row, col, c, attr):
+
+last_attr = None
+
+def set_attr(cattr):
+    global last_attr
+    if cattr == last_attr:
+        return    
+    color = (0, 0, cattr & 0xf)
+    bg = (0, 0, (cattr>>4) & 0x7)    
+    for glyph in glyphs:
+        glyph.set_palette_at(255, bg)
+        glyph.set_palette_at(254, color)
+    last_attr = cattr
+        
+def putc_at(row, col, c):
     global screen_changed
-    fore, back = console.colours(attr)
-    color = (0, 0, fore & 0xf)
-    bg = (0, 0, back & 0x7)
-    blink = (fore>15 and fore<32)     
     glyph = glyphs[ord(c)]
-    glyph.set_palette_at(255, bg)
-    glyph.set_palette_at(254, color)
     blank = glyphs[32] # using SPACE for blank 
-    blank.set_palette_at(255, bg)
-    blank.set_palette_at(254, color)
     top_left = ((col-1)*8, (row-1)*font_height)
-    console.apage.surface1.blit(glyph, top_left )
-    if blink:
+    if not console.screen_mode:
+        console.apage.surface1.blit(glyph, top_left )
+    if last_attr>>7: #blink:
         console.apage.surface0.blit(blank, top_left )
     else:
         console.apage.surface0.blit(glyph, top_left )
@@ -473,8 +477,7 @@ def build_glyph(c, font_face, glyph_height):
     return glyph            
     
 def build_cursor():
-    color = 254
-    bg = 255
+    color, bg = 254, 255
     cursor0.set_colorkey(bg)
     cursor0.fill(bg)
     for yy in range(font_height):
@@ -486,7 +489,7 @@ def build_cursor():
 
 def refresh_screen():
     save_palette = screen.get_palette()
-    if console.graphics_mode or blink_state == 0:
+    if console.screen_mode or blink_state == 0:
         console.vpage.surface0.set_palette(save_palette)
         screen.blit(console.vpage.surface0, (0, 0))
         console.vpage.surface0.set_palette(workaround_palette)
@@ -509,7 +512,7 @@ def refresh_cursor():
     under_top_left = ( (console.col-1)*8, (console.row-1)*font_height)
     under_char_area = pygame.Rect((console.col-1)*8, (console.row-1)*font_height, console.col*8, console.row*font_height)
     under_cursor.blit(screen, (0,0), area=under_char_area)
-    if not console.graphics_mode:
+    if not console.screen_mode:
         # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
         if (cycle/blink_cycles==1 or cycle/blink_cycles==3): 
             screen.blit(cursor0, ( (console.col-1)*8, (console.row-1)*font_height) )
@@ -541,7 +544,7 @@ def check_screen():
     global cycle, last_cycle
     global screen_changed
     global blink_state
-    if not console.graphics_mode:
+    if not console.screen_mode:
         if cycle == 0:
             blink_state = 0
             screen_changed = True
@@ -554,7 +557,7 @@ def check_screen():
         cycle += 1
         if cycle == blink_cycles*4: 
             cycle = 0
-        cursor_changed = ( (not console.graphics_mode and cycle%blink_cycles == 0) 
+        cursor_changed = ( (not console.screen_mode and cycle%blink_cycles == 0) 
                            or (console.row != last_row) or (console.col != last_col) )
         if screen_changed:
             refresh_screen()
@@ -799,12 +802,15 @@ graph_view = None
 
 # cursor for graphics mode
 def xor_cursor_screen(row,col):
-    fore, back = console.colours(console.attr)
-    index = fore & 0xf
+    index = console.attr & 0xf
     for x in range((col-1)*8,col*8):
         for y in range((row-1)*font_height+cursor_from,(row-1)*font_height+cursor_to):
             pixel = get_pixel(x,y)
             screen.set_at((x,y), pixel^index)
+#    # reference the destination area
+#    dest_array = pygame.surfarray.pixels2d(console.apage.surface0.subsurface(pygame.Rect(
+#                        (col-1)*8, (row-1)*font_height+cursor_from, 8, cursor_to-cursor_from+1))) 
+#    dest_array ^= cursor
 
 ####################################
 # SOUND

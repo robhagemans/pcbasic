@@ -48,10 +48,7 @@ attr = 7
 row = 1
 col = 1
 cursor = True
-cursor_is_line = False
-
-# non-printing characters
-control = ('\x07', '\x08', '\x09', '\x0a','\x0b','\x0c', '\x0d', '\x1c', '\x1d', '\x1e', '\x1f')
+overwrite_mode = False
 
 # incoming keys, either ascii or \00 followed by INKEY$ scancode 
 keybuf = ''
@@ -64,17 +61,23 @@ caps = False
 # echo to printer
 echo_read = None
 echo_write = None
-
-class ScreenBuffer:
-    def __init__(self, bwidth, bheight):
+    
+class ScreenRow(object):
+    def __init__(self, bwidth):
         # screen buffer, initialised to spaces, dim white on black
-        self.charbuf = [[' ']*bwidth for _ in xrange(bheight)]
-        self.attrbuf = [[7]*bwidth for _ in xrange(bheight)]
-        # last non-white character
-        self.end = [0 for _ in xrange(bheight)]
+        self.clear()
         # line continues on next row (either LF or word wrap happened)
-        self.wrap = [False for _ in xrange(bheight)]
+        self.wrap = False
+    
+    def clear(self):
+        self.buf = [(' ', attr)] * width
+        # last non-white character
+        self.end = 0    
 
+class ScreenBuffer(object):
+    def __init__(self, bwidth, bheight):
+        self.row = [ScreenRow(bwidth) for _ in xrange(bheight)]
+        
 # screen pages        
 num_pages = 1            
 pages = [ ScreenBuffer(width, height) ]
@@ -84,23 +87,21 @@ vpagenum = 0
 apagenum = 0
 
 # officially, whether colours are displayed. in reality, SCREEN just clears the screen if this value is changed
-colorswitch = True
-# graphics vs text mode 
-graphics_mode = False
+colorswitch = None
 # force building screen on start
-screen_mode = -1
+screen_mode = None
 
 # palette
 num_colours = 32    
 num_palette = 64
 #  font_height, attr, colour_depth, width, num_pages
 mode_data = {
-    0: ( 16, ( 7, 0), (32, 64), 80, 4 ),
-    1: (  8, ( 3, 0), ( 4, 16), 40, 1 ),
-    2: (  8, ( 1, 0), ( 2, 16), 80, 1 ), 
-    7: (  8, (15, 0), (16, 16), 40, 8 ),
-    8: (  8, (15, 0), (16, 16), 80, 4 ),
-    9: ( 14, (15, 0), (16, 64), 80, 2 ),
+    0: ( 16,  7, (32, 64), 80, 4 ),
+    1: (  8,  3, ( 4, 16), 40, 1 ),
+    2: (  8,  1, ( 2, 16), 80, 1 ), 
+    7: (  8, 15, (16, 16), 40, 8 ),
+    8: (  8, 15, (16, 16), 80, 4 ),
+    9: ( 14, 15, (16, 64), 80, 2 ),
     }
 
 # pen and stick
@@ -141,27 +142,32 @@ def replace_key(c):
 
 def init():
     backend.init()
-    set_mode(0)
+    set_mode(0, 1, 0, 0)
     
 def close():
     backend.close()
 
 def idle():
     backend.idle()
+    
+def set_palette(new_palette=None):
+    backend.set_palette(new_palette)
 
-def set_mode(mode, new_colorswitch=None, new_apagenum=None, new_vpagenum=None):
-    global screen_mode, graphics_mode, num_pages, colorswitch, apagenum, vpagenum, apage, vpage
-    if new_colorswitch == None:
-        new_colorswitch = colorswitch
-    else:
-        new_colorswitch = (new_colorswitch != 0)
-    if new_apagenum == None:
-        new_apagenum = apagenum
-    if new_vpagenum == None:
-        new_vpagenum = vpagenum
+def set_palette_entry(index, colour):
+    backend.set_palette_entry(index, colour)
+
+def get_palette_entry(index):
+    return backend.get_palette_entry(index)
+
+def set_mode(mode, new_colorswitch, new_apagenum, new_vpagenum):
+    global screen_mode, num_pages, colorswitch, apagenum, vpagenum, apage, vpage, attr
+    new_colorswitch = colorswitch if new_colorswitch == None else (new_colorswitch != 0)
+    new_vpagenum = vpagenum if new_vpagenum == None else new_vpagenum
+    new_apagenum = apagenum if new_apagenum == None else new_apagenum
     try:
         info = mode_data[mode]
     except KeyError:
+        # palette is reset if this happens
         set_palette()
         # backend does not support mode
         raise error.RunError(5)
@@ -172,18 +178,13 @@ def set_mode(mode, new_colorswitch=None, new_apagenum=None, new_vpagenum=None):
         raise error.RunError(5)    
     # switch modes if needed
     if mode != screen_mode or new_colorswitch != colorswitch:
-        colorswitch = new_colorswitch 
-        screen_mode = mode
-        graphics_mode = mode != 0
-        (font_height, new_attr, colour_depth, new_width, num_pages) = info
-        # wisth persists on change to screen 0
-        if mode == 0:
-            new_width = width
-        set_attr(*new_attr)
+        screen_mode, colorswitch = mode, new_colorswitch 
+        font_height, attr, colour_depth, new_width, num_pages = info
         set_colour_depth(*colour_depth)
         backend.init_screen_mode(mode, font_height)  
-        resize(25, new_width)
-        set_line_cursor(True)
+        # width persists on change to screen 0
+        resize(25, width if mode == 0 else new_width)
+        set_overwrite_mode(True)
         graphics.init_graphics_mode(mode, font_height)      
         show_cursor(cursor)
         unset_view()
@@ -193,10 +194,8 @@ def set_mode(mode, new_colorswitch=None, new_apagenum=None, new_vpagenum=None):
     set_palette()
     # set active page & visible page, counting from 0. if higher than max pages, illegal fn call.            
     # this needs to be done after setup_screen!
-    apagenum = new_apagenum
-    vpagenum = new_vpagenum
-    apage = pages[apagenum]
-    vpage = pages[vpagenum]
+    vpagenum, apagenum = new_vpagenum, new_apagenum
+    vpage, apage = pages[apagenum], pages[vpagenum]
     backend.screen_changed = True
     
 def set_colour_depth(colours, palette):
@@ -213,134 +212,113 @@ def check_events():
     events.check_events()
     # manage sound queue
     sound.check_sound()
-    
-def set_palette(new_palette=None):
-    backend.set_palette(new_palette)
 
-def set_palette_entry(index, colour):
-    backend.set_palette_entry(index, colour)
-
-def get_palette_entry(index):
-    return backend.get_palette_entry(index)
-
-def write(s, scroll_ok=True): #, no_echo=False):
-    global row, col, apage
-    if echo_write != None: # and not no_echo:
+def write(s, scroll_ok=True): 
+    if echo_write != None: 
         echo_write.write(s)
-    tab = 8
     last = ''
     for c in s:
-        if c not in control or c=='\x08':                  # char 08 is written as symbol
-            put_char(c)
-        elif c=='\x09':                                     # TAB
-            num = (tab - (col-1 - tab*int((col-1)/tab)))
+        if c == '\x09':                                     # TAB
+            num = (8 - (col-1 - 8*int((col-1)/8)))
             for _ in range(num):
                 put_char(' ')
         elif c == '\x0A':                                   # LF
             # exclude CR/LF
             if last != '\x0D': 
                 # LF connects lines like word wrap
-                apage.wrap[row-1]=True
-                set_pos(row+1, 1,scroll_ok)
-        elif c == '\x0D':   set_pos(row+1, 1,scroll_ok)     # CR
+                apage.row[row-1].wrap = True
+                set_pos(row+1, 1, scroll_ok)
+        elif c == '\x0D':   set_pos(row+1, 1, scroll_ok)     # CR
         elif c == '\x00':   put_char('\x00')                # NUL
         elif c == '\x07':   sound.beep()                    # BEL
-        elif c == '\x0B':   set_pos(1,1, scroll_ok)         # HOME
+        elif c == '\x0B':   set_pos(1, 1, scroll_ok)         # HOME
         elif c == '\x0C':   clear()
-        elif c == '\x1C':   set_pos(row, col+1,scroll_ok)
-        elif c == '\x1D':   set_pos(row, col-1,scroll_ok)
-        elif c == '\x1E':   set_pos(row-1, col,scroll_ok )
-        elif c == '\x1F':   set_pos(row+1, col,scroll_ok)
+        elif c == '\x1C':   set_pos(row, col+1, scroll_ok)
+        elif c == '\x1D':   set_pos(row, col-1, scroll_ok)
+        elif c == '\x1E':   set_pos(row-1, col, scroll_ok )
+        elif c == '\x1F':   set_pos(row+1, col, scroll_ok)
+        else:
+            # \x08, \x00, and non-control chars
+            put_char(c)
         last = c
 
 def insert_char(crow, ccol, c, cattr):
-    global apage
     while True:
-        apage.charbuf[crow-1].insert(ccol-1,c)
-        apage.attrbuf[crow-1].insert(ccol-1,cattr)
-        if apage.end[crow-1]<width:
-            apage.charbuf[crow-1].pop()
-            apage.attrbuf[crow-1].pop()
-            if apage.end[crow-1] > ccol-1:
-                apage.end[crow-1] += 1
+        therow = apage.row[crow-1]
+        therow.buf.insert(ccol-1, (c, cattr))
+        if therow.end < width:
+            therow.buf.pop()
+            if therow.end > ccol-1:
+                therow.end += 1
             else:
-                apage.end[crow-1] = ccol
+                therow.end = ccol
             break
         else:
-            if crow==scroll_height:
+            if crow == scroll_height:
                 scroll()
                 # this is not the global row which is changed by scroll()
-                crow-=1
-            if not apage.wrap[crow-1]:
+                crow -= 1
+            if not therow.wrap:
                 scroll_down(crow+1)
-                apage.wrap[crow-1]=True    
-            c = apage.charbuf[crow-1].pop()
-            cattr = apage.attrbuf[crow-1].pop()
+                therow.wrap = True    
+            c, cattr = therow.buf.pop()
             crow += 1
             ccol = 1
     return crow            
         
 def delete_char(crow, ccol):
-    global apage
     save_col = ccol
-    if crow>1 and ccol == apage.end[crow-1]+1 and apage.wrap[crow-1]:
+    therow, nextrow = apage.row[crow-1], apage.row[crow]
+    if crow > 1 and ccol == therow.end+1 and therow.wrap:
         # row was a LF-ending row
-        apage.charbuf[crow-1] = apage.charbuf[crow-1][:ccol-1] + apage.charbuf[crow][:width-ccol+1] 
-        apage.attrbuf[crow-1] = apage.attrbuf[crow-1][:ccol-1] + apage.attrbuf[crow][:width-ccol+1] 
-        apage.end[crow-1] += apage.end[crow]
-        if apage.end[crow-1] > width:
-            apage.end[crow-1] = width
-        while apage.wrap[crow] and crow < scroll_height:
-            apage.charbuf[crow] = apage.charbuf[crow][width-ccol+1:] + apage.charbuf[crow+1][:width-ccol+1]  
-            apage.attrbuf[crow] = apage.attrbuf[crow][width-ccol+1:] + apage.attrbuf[crow+1][:width-ccol+1]
-            apage.end[crow] += apage.end[crow+1]
-            if apage.end[crow] > width:
-                apage.end[crow] = width
-            crow += 1    
-        apage.charbuf[crow] = apage.charbuf[crow][width-ccol+1:] + [' ']*(width-ccol+1) 
-        apage.attrbuf[crow] = apage.attrbuf[crow][width-ccol+1:] + [attr]*(width-ccol+1)
-        apage.end[crow] -= width-ccol    
-        redraw_row(save_col-1)
-        if apage.end[crow] <= 0:
-            apage.end[crow] = 0
+        therow.buf[ccol-1:] = nextrow.buf[:width-ccol+1] 
+        therow.end = min(therow.end + nextrow.end, width)
+        while nexrow.wrap and crow < scroll_height:
+            nextrow2 = apage.row[crow+1]
+            nextrow.buf = nextrow.buf[width-ccol+1:] + nextrow2.buf[:width-ccol+1]  
+            nextrow.end = min(nextrow.end + nextrow2.end, width)
+            crow += 1
+            therow, nextrow = apage.row[crow-1], apage.row[crow]
+        nextrow.buf = nextrow.buf[width-ccol+1:] + [(' ', attr)]*(width-ccol+1) 
+        nextrow.end -= width - ccol    
+        redraw_row(save_col-1, row)
+        if nextrow.end <= 0:
+            nextrow.end = 0
             ccol += 1
-            apage.wrap[crow-1] = False
+            therow.wrap = False
             scroll(crow+1)
-    elif ccol <= apage.end[crow-1]:
+    elif ccol <= therow.end:
         while True:            
-            if (not apage.wrap[crow-1]) or (apage.end[crow-1]<width) or crow==scroll_height:
-                apage.charbuf[crow-1] = (apage.charbuf[crow-1][:ccol-1] + apage.charbuf[crow-1][ccol:apage.end[crow-1]] 
-                                        + [' '] + apage.charbuf[crow-1][apage.end[crow-1]:])
-                apage.attrbuf[crow-1] = (apage.attrbuf[crow-1][:ccol-1] + apage.attrbuf[crow-1][ccol:apage.end[crow-1]] 
-                                        + [attr] + apage.attrbuf[crow-1][apage.end[crow-1]:])
+            if therow.end < width or crow == scroll_height or not therow.wrap:
+                del therow.buf[ccol-1]
+                therow.buf.insert(therow.end-1, (' ', attr))
                 break
             else:
                 # wrap and end[row-1]==width
-                apage.charbuf[crow-1] = (apage.charbuf[crow-1][:ccol-1] + apage.charbuf[crow-1][ccol:apage.end[crow-1]] 
-                                        + [ apage.charbuf[crow][0] ] )
-                apage.attrbuf[crow-1] = (apage.attrbuf[crow-1][:ccol-1] + apage.attrbuf[crow-1][ccol:apage.end[crow-1]] 
-                                        + [ apage.attrbuf[crow][0] ] )
+                del therow.buf[ccol-1]
+                therow.buf.insert(therow.end-1, nextrow.buf[0])
                 crow += 1
+                therow, nextrow = apage.row[crow-1], apage.row[crow]
                 ccol = 1
         # this works from *global* row onwrds
-        redraw_row(save_col-1)
+        redraw_row(save_col-1, row)
         # this works on *local* row (last row edited)
-        if apage.end[crow-1] > 0:
-            apage.end[crow-1] -= 1
+        if therow.end > 0:
+            therow.end -= 1
         else:
             scroll(crow)
             if crow > 1:
-                apage.wrap[crow-2] = False            
+                apage.row[crow-2].wrap = False            
 
 def read_line():
-    global row, col, apage 
-    set_line_cursor(True) 
+    global row, col
+    set_overwrite_mode(True) 
     c, inp = '', ''
     while c != '\x0d': 
         # get_char returns a string of ascii and MS-DOS/GW-BASIC style keyscan codes
         wait_char() 
         c = get_char()
-        if echo_read != None:
+        if echo_read:
             echo_read.write(c)
         pos = 0
         while pos < len(c):
@@ -356,8 +334,8 @@ def read_line():
             elif d == '\x08':                   # <BACKSPACE>
                 inp = inp[:-1]
                 if col == 1:
-                    if row > 1 and apage.wrap[row-2]:
-                        col = apage.end[row-2] 
+                    if row > 1 and apage.row[row-2].wrap:
+                        col = apage.row[row-2].end
                         row -= 1
                     else:
                         col = 1
@@ -370,7 +348,7 @@ def read_line():
                     set_pos(row, 1)
             elif d == '\x09':                  #  <TAB> or <CTRL+I>
                 inp = inp[:-1]
-                if cursor_is_line:
+                if overwrite_mode:
                     set_pos(row, col+8, scroll_ok=False)
                 else:
                     for _ in range(8):
@@ -379,88 +357,89 @@ def read_line():
                     set_pos(row, col+8)
             elif d == '\x0A':                   #  <CTRL+ENTER> or <CTRL+J>
                 # moves rest of line to next line
-                if col < apage.end[row-1]:
+                if col < apage.row[row-1].end:
                     for _ in range(width-col+1):
                         insert_char(row, col, ' ', attr)
                     redraw_row(col-1, row)
-                    apage.end[row-1] = col-1 
+                    apage.row[row-1].end = col-1 
                 else:
                     crow = row
-                    while apage.wrap[crow-1] and crow < scroll_height:
+                    while apage.row[crow-1].wrap and crow < scroll_height:
                         crow += 1
                     if crow >= scroll_height:
                         scroll()
                     scroll_down(row+1)
                 # LF connects lines like word wrap
-                apage.wrap[row-1] = True
+                apage.row[row-1].wrap = True
                 set_pos(row+1, 1)
             elif d == '\x1B':                      # <ESC> or <CTRL+[>
                 clear_line(row)
             elif d == '\x00\x75' or d == '\x05':   # <CTRL+END> <CTRL+E>
                 clear_rest_of_line(row, col)   
             elif d == '\x00\x48' or d == '\x1E':   # <UP> <CTRL+6>
-                set_line_cursor(True)
+                set_overwrite_mode(True)
                 set_pos(row-1, col, scroll_ok=False)
             elif d == '\x00\x50' or d == '\x1F':   # <DOWN> <CTRL+->
-                set_line_cursor(True)
+                set_overwrite_mode(True)
                 set_pos(row+1, col, scroll_ok=False)
             elif d == '\x00\x4D' or d == '\x1C':   # <RIGHT> <CTRL+\>
-                set_line_cursor(True)
+                set_overwrite_mode(True)
                 set_pos(row, col+1, scroll_ok=False)
             elif d == '\x00\x4B' or d == '\x1D':   # <LEFT> <CTRL+]>
-                set_line_cursor(True)
+                set_overwrite_mode(True)
                 set_pos(row, col-1, scroll_ok=False)
             elif d == '\x00\x74' or d == '\x06':   # <CTRL+RIGHT> or <CTRL+F>
                 skip_word_right()    
             elif d == '\x00\x73' or d == '\x02':   # <CTRL+LEFT> or <CTRL+B>
                 skip_word_left() 
             elif d == '\x00\x52' or d == '\x12':   # <INS> <CTRL+R>
-                set_line_cursor(not cursor_is_line)  
+                set_overwrite_mode(not overwrite_mode)  
             elif d == '\x00\x53' or d == '\x7F':   # <DEL> <CTRL+BACKSPACE>
                 delete_char(row, col)
             elif d == '\x00\x47' or d == '\x0B':   # <HOME> <CTRL+K>
-                set_line_cursor(True)
+                set_overwrite_mode(True)
                 set_pos(1,1)
             elif d == '\x00\x4F' or d == '\x0E':   # <END> <CTRL+N>
-                set_line_cursor(True)
-                while apage.wrap[row-1] and row<height:
+                set_overwrite_mode(True)
+                while apage.row[row-1].wrap and row < height:
                     row += 1
-                set_pos(row, apage.end[row-1]+1)
+                set_pos(row, apage.row[row-1].end+1)
             elif d == '\x00\x77' or d == '\x0C':    # <CTRL+HOME> <CTRL+L>   
                 clear()
             elif d == '\x00\x37':                   # <SHIFT+PRT_SC>
                 print_screen()
-            elif d[0] not in control + ('\x00',): 
+            elif d[0] not in ('\x00', '\x0d'): 
                 inp += d
-                if not cursor_is_line:
+                if not overwrite_mode:
                     insert_char(row, col, d, attr)
                     redraw_row(col-1, row)
                     set_pos(row, col+1)
                 else:    
                     put_char(d)
-    set_line_cursor(True)
+    set_overwrite_mode(True)
     return inp  
 
 def read_screenline(write_endl=True, from_start=False):
-    global row, col, apage
+    global row, col
     prompt_row, prompt_col = row, col
     savecurs = show_cursor() 
     read_line()
     show_cursor(savecurs)
     # find start of wrapped block
     crow = row
-    while crow > 1 and apage.wrap[crow-2]:
+    while crow > 1 and apage.row[crow-2].wrap:
         crow -= 1
     line = []
     # add lines 
     while crow <= height:
-        add = apage.charbuf[crow-1][:apage.end[crow-1]]
+        therow = apage.row[crow-1]
+        add = therow.buf[:therow.end]
         # exclude prompt, if any
         if crow == prompt_row and not from_start:
             add = add[prompt_col-1:]
         line += add
-        if apage.wrap[crow-1]:
-            if apage.end[crow-1] < width:
+        if therow.wrap:
+            if therow.end < width:
                 # wrap before end of line means LF
                 line += '\x0a'
             crow += 1
@@ -473,41 +452,46 @@ def read_screenline(write_endl=True, from_start=False):
     # remove trailing whitespace 
     while len(line) > 0 and line[-1] in util.whitespace:
         line = line[:-1]
-    return ''.join(line[:255])    
+    outstr = ''    
+    for c, _ in line:
+        outstr += c
+    return outstr    
 
 def clear_line(the_row):
-    global apage
     # find start of line
     srow = the_row
-    while srow > 1 and apage.wrap[srow-2]:
+    while srow > 1 and apage.row[srow-2].wrap:
         srow -= 1
     clear_rest_of_line(srow, 1)
 
 def clear_rest_of_line(srow, scol):
-    crow = srow    
-    apage.charbuf[crow-1] = apage.charbuf[crow-1][:scol-1] + [' ']*(width-scol+1)
-    apage.attrbuf[crow-1] = apage.attrbuf[crow-1][:scol-1] + [attr]*(width-scol+1)
-    apage.end[crow-1] = min(apage.end[crow-1], scol-1)
-    while apage.wrap[crow-1]:
+    therow = apage.row[srow-1] 
+    therow.buf = therow.buf[:scol-1] + [(' ', attr)]*(width-scol+1)
+    therow.end = min(therow.end, scol-1)
+    crow = srow
+    while apage.row[crow-1].wrap:
         crow += 1
-        apage.charbuf[crow-1] = [' ']*width
-        apage.attrbuf[crow-1] = [attr]*width
-        apage.end[crow-1] = 0
+        apage.row[crow-1].clear() 
     for r in range(crow, srow, -1):
-        apage.wrap[r-1] = False
+        apage.row[r-1].wrap = False
         scroll(r)
-    apage.wrap[srow-1] = False
+    therow = apage.row[srow-1]    
+    therow.wrap = False
     set_pos(srow, scol)
-    backend.clear_row(srow, colours(attr)[1] & 0xf)
+    save_end = therow.end
+    therow.end = width
     if scol > 1:
-        redraw_row(0, srow)
-
+        redraw_row(scol-1, srow)
+    else:
+        backend.clear_row(srow, (attr>>4) & 0x7)
+    therow.end = save_end
+    
 def skip_word_right():
     crow, ccol = row, col
     # find non-alphanumeric chars
     while True:
-        c = apage.charbuf[crow-1][ccol-1].upper() 
-        if (c<'0' or c>'9') and (c<'A' or c>'Z'):
+        c = apage.row[crow-1].buf[ccol-1][0].upper()
+        if (c < '0' or c > '9') and (c < 'A' or c > 'Z'):
             break
         ccol += 1
         if ccol > width:
@@ -518,8 +502,8 @@ def skip_word_right():
             ccol = 1
     # find alphanumeric chars
     while True:
-        c = apage.charbuf[crow-1][ccol-1].upper() 
-        if not ((c<'0' or c>'9') and (c<'A' or c>'Z')):
+        c = apage.row[crow-1].buf[ccol-1][0].upper()
+        if not ((c < '0' or c > '9') and (c < 'A' or c > 'Z')):
             break
         ccol += 1
         if ccol > width:
@@ -541,8 +525,8 @@ def skip_word_left():
                 return
             crow -= 1
             ccol = width
-        c = apage.charbuf[crow-1][ccol-1].upper() 
-        if not ((c<'0' or c>'9') and (c<'A' or c>'Z')):
+        c = apage.row[crow-1].buf[ccol-1][0].upper()
+        if not ((c < '0' or c > '9') and (c < 'A' or c > 'Z')):
             break
     # find non-alphanumeric chars
     while True:
@@ -553,18 +537,21 @@ def skip_word_left():
                 break
             crow -= 1
             ccol = width
-        c = apage.charbuf[crow-1][ccol-1].upper() 
-        if (c<'0' or c>'9') and (c<'A' or c>'Z'):
+        c = apage.row[crow-1].buf[ccol-1][0].upper()
+        if (c < '0' or c > '9') and (c < 'A' or c > 'Z'):
             break
     set_pos(last_row, last_col)                            
 
 def print_screen():
     for crow in range(1, height+1):
-        deviceio.lpt1.write(''.join(vpage.charbuf[crow-1]) + util.endl)
+        line = ''
+        for c, _ in vpage[crow-1].buf:
+            line += c
+        deviceio.lpt1.write(line + util.endl)
     deviceio.lpt1.flush()    
         
 def start_line():
-    if col!=1:
+    if col != 1:
         set_pos(row+1, 1)        
 
 def set_width(to_width):
@@ -573,9 +560,7 @@ def set_width(to_width):
         show_keys()
 
 def read_screen(crow, ccol):
-    char = apage.charbuf[crow-1][ccol-1]
-    att = apage.attrbuf[crow-1][ccol-1]
-    return (char, att)
+    return apage.row[crow-1].buf[ccol-1]
 
 # insert character into keyboard buffer (for use by backends)
 def insert_key(c):
@@ -620,47 +605,37 @@ def wait_char():
 
 def check_pos(scroll_ok=True):
     global row, col
-    oldrow = row
-    oldcol = col
-    if last_row_is_on and row == height:
-        if col > width:
-            col = width
-        elif col < 1:
-            col += 1    
-    else:
-        # if row > height, we also end up here
-        if col > width:
-            if row < scroll_height or scroll_ok:
-                col -= width
-                row += 1
-            else:
-                col = width        
-        elif col < 1:
-            if row > view_start:
-                col += width
-                row -= 1
-            else:
-                col = 1   
-        # adjust viewport if necessary
-        last_row_on(False)
-        if row > scroll_height:
-            if scroll_ok:
-                scroll()                # Scroll Here
-            row = scroll_height
-        elif row < view_start:
-            row = view_start
-    if row != oldrow or col != oldcol:
-        # signal position change
-        return False
-    return True
-
-def set_attr(fore, back):
-    global attr
-    blink = fore > 0xf
-    attr = ((0x8 if blink else 0x0) + (back & 0x7))*0x10 + (fore & 0xf)                   
-    
-def get_attr():
-    return colours(attr)            
+    oldrow, oldcol = row, col
+    if last_row_is_on:
+        if row == height:
+            col = min(width, col)
+            if col < 1:
+                col += 1    
+            return col == oldcol    
+        else:
+             # adjust viewport if necessary
+            last_row_on(False)            
+    # if row > height, we also end up here
+    if col > width:
+        if row < scroll_height or scroll_ok:
+            col -= width
+            row += 1
+        else:
+            col = width        
+    elif col < 1:
+        if row > view_start:
+            col += width
+            row -= 1
+        else:
+            col = 1   
+    if row > scroll_height:
+        if scroll_ok:
+            scroll()                # Scroll Here
+        row = scroll_height
+    elif row < view_start:
+        row = view_start
+    # signal position change
+    return row == oldrow and col == oldcol
 
 def show_cursor(do_show = True):
     global cursor
@@ -668,12 +643,6 @@ def show_cursor(do_show = True):
     cursor = do_show
     backend.show_cursor(do_show, prev)
     return prev
-
-def colours(at):
-    back = (at>>4) & 0x7
-    blink = (at>>7)
-    fore = (blink*0x10) + (at&0xf)
-    return (fore, back)
 
 def clear():
     save_view_set, save_view_start, save_scroll_height = view_set, view_start, scroll_height
@@ -685,7 +654,6 @@ def clear():
         unset_view()
     if keys_visible:
         show_keys()
-
 
 def list_keys():
     for i in range(10):
@@ -708,15 +676,14 @@ def write_for_keys(s, col, cattr):
                 c = keys_line_replace_chars[c]
             except KeyError:
                 pass    
-            backend.putc_at(25, col, c, cattr)    
-            apage.charbuf[24][col-1] = c
-            apage.attrbuf[24][col-1] = cattr
+            backend.set_attr(cattr)    
+            backend.putc_at(25, col, c)    
+            apage.row[24].buf[col-1] = c, cattr
         col += 1
 
 def clear_key_row():
-    apage.charbuf[24] = [' ']*width
-    apage.attrbuf[24] = [attr]*width
-    backend.clear_row(25, colours(attr)[1] & 0xf)
+    apage.row[24].clear()
+    backend.clear_row(25, (attr>>4) & 0x7)
 
 def hide_keys():
     global keys_visible
@@ -731,7 +698,7 @@ def show_keys():
         text = str(key_replace[i][:6])
         kcol = 1+8*i
         write_for_keys(str(i+1)[-1], kcol, attr)
-        if graphics.is_graphics_mode():
+        if screen_mode:
             write_for_keys(text, kcol+1, attr)
         else:
             if (attr>>4) & 0x7 == 0:    
@@ -764,30 +731,24 @@ def last_row_on(on=True):
 
 def resize(to_height, to_width):
     global height, width
-    width = to_width
-    height = to_height
-    setup_screen(height, width)
-        
-def setup_screen(to_height, to_width):    
     global pages, vpage, apage    
     global row, col
+    width, height = to_width, to_height
     pages = []
     for _ in range(num_pages):
-        pages.append(ScreenBuffer(to_width, to_height))
-    vpage = pages[0]
-    apage = pages[0]
-    backend.setup_screen(to_height, to_width)
-    row = 1
-    col = 1
+        pages.append(ScreenBuffer(width, height))
+    vpage, apage = pages[0], pages[0]
+    backend.setup_screen(height, width)
+    row, col = 1, 1
 
 def copy_page(src, dst):
     global pages
     if src < num_pages and dst < num_pages:
         for x in range(height):
-            pages[dst].charbuf[x] = copy.copy(pages[src].charbuf[x])
-            pages[dst].attrbuf[x] = copy.copy(pages[src].attrbuf[x])
-            pages[dst].end[x] = pages[src].end[x]
-            pages[dst].wrap[x] = pages[src].wrap[x]
+            dstrow, srcrow = pages[dst].row[x], pages[src].row[x]
+            dstrow.buf = copy.copy(srcrow.buf)
+            dstrow.end = srcrow.end
+            dstrow.wrap = srcrow.wrap            
         backend.copy_page(src,dst)
         return True
     else:
@@ -796,113 +757,79 @@ def copy_page(src, dst):
 def clear_view():
     global row, col, apage 
     for r in range(view_start, scroll_height+1):
-        apage.charbuf[r-1] = [' ']*width
-        apage.attrbuf[r-1] = [attr]*width
-        apage.end[r-1] = 0
-        apage.wrap[r-1]=False
-    fore, back = colours(attr)
-    bg = back & 0xf
-    row = view_start
-    col = 1
-    backend.clear_scroll_area(bg)
+        apage.row[r-1].clear()
+        apage.row[r-1].wrap = False
+    row, col = view_start, 1
+    backend.clear_scroll_area((attr>>4) & 0x7)
     
 def set_pos(to_row, to_col, scroll_ok=True):
     global row, col
-    row = to_row
-    col = to_col
+    row, col = to_row, to_col
     check_pos(scroll_ok)
-    fore, back = colours(apage.attrbuf[row-1][col-1])
-    color = fore & 0xf
-    backend.set_cursor_colour(color)
+    backend.set_cursor_colour(apage.row[row-1].buf[col-1][1] & 0xf)
     
-def set_line_cursor(is_line=True):
-    global cursor_is_line
-    if is_line==cursor_is_line:
-        return
-    else:
-        cursor_is_line = is_line
-        backend.build_line_cursor(is_line)
+def set_overwrite_mode(new_overwrite=True):
+    global overwrite_mode
+    if new_overwrite != overwrite_mode:
+        overwrite_mode = new_overwrite
+        backend.build_line_cursor(new_overwrite)
 
 def set_cursor_shape(from_line, to_line):
     backend.build_shape_cursor(from_line, to_line)
 
 def put_char(c):
-    global row, col, attr, apage
+    global row, col, attr
     # check if scroll& repositioning needed
     check_pos(scroll_ok=True)
-    save_curs = show_cursor(False)
-    if graphics_mode:
-        # no blink, bg=0
-        attr &= 0xf
-    backend.putc_at(row, col, c, attr)    
-    show_cursor(save_curs)
-    if row > 0 and row <= height and col > 0 and col <= width:   
-        apage.charbuf[row-1][col-1] = c
-        apage.attrbuf[row-1][col-1] = attr
-        if apage.end[row-1] <= col-1:
-            apage.end[row-1] = col
+    # no blink, bg=0
+    cattr = attr & 0xf if screen_mode else attr
+    backend.set_attr(cattr)
+    backend.putc_at(row, col, c)    
+    therow = apage.row[row-1]
+    therow.buf[col-1] = (c, cattr)
+    therow.end = max(col, therow.end)
     col += 1
     if col > width:
         # wrap line
-        apage.wrap[row-1] = True
+        therow.wrap = True
         # scroll down
         scroll_down(row+1)
         row += 1
         col = 1
         
-def redraw_row(start=0, crow=-1):
-    if crow == -1:
-        crow = row
-    save_curs = show_cursor(False)
+def redraw_row(start, crow):
     while True:
-        if crow >= height or crow <0:
-            break
-        for i in range(start, apage.end[crow-1]): 
+        therow = apage.row[crow-1]    
+        backend.set_attr(attr)
+        for i in range(start, therow.end): 
             # redrawing changes colour attributes to current foreground (cf. GW)
-            apage.attrbuf[crow-1][i] = attr
-            backend.putc_at(crow, i+1, apage.charbuf[crow-1][i], apage.attrbuf[crow-1][i])
-        if apage.wrap[crow-1]:
+            therow.buf[i] = (therow.buf[i][0], attr)
+            backend.putc_at(crow, i+1, therow.buf[i][0])
+        if therow.wrap and crow >= 0 and crow < height-1:
             crow += 1
             start = 0
         else:
             break    
-    show_cursor(save_curs)
-
+    
 def scroll(from_line=-1): 
-    global row, col, apage
+    global row, col
     if from_line == -1:
         from_line = view_start
-    save_curs = show_cursor(False)    
     backend.scroll(from_line)
     # sync buffers with the new screen reality:
     if row > from_line:
         row = row-1
-    apage.charbuf.insert(scroll_height, [' ']*width)
-    apage.attrbuf.insert(scroll_height, [attr]*width)
-    apage.end.insert(scroll_height, 0)
-    apage.wrap.insert(scroll_height, False)
-    del apage.charbuf[from_line-1] 
-    del apage.attrbuf[from_line-1]
-    del apage.end[from_line-1]
-    del apage.wrap[from_line-1]
-    show_cursor(save_curs)
+    apage.row.insert(scroll_height, ScreenRow(width))
+    del apage.row[from_line-1]
    
 def scroll_down(from_line):
     global row, col, apage
-    save_curs = show_cursor(False)    
     backend.scroll_down(from_line)
     if row >= from_line:
         row = row+1
     # sync buffers with the new screen reality:
-    apage.charbuf.insert(from_line-1, [' ']*width)
-    apage.attrbuf.insert(from_line-1, [attr]*width)
-    apage.end.insert(from_line-1, 0)
-    apage.wrap.insert(from_line-1, False)
-    del apage.charbuf[scroll_height-1] 
-    del apage.attrbuf[scroll_height-1]
-    del apage.end[scroll_height-1]
-    del apage.wrap[scroll_height-1]
-    show_cursor(save_curs)
+    apage.row.insert(from_line-1, ScreenRow(width))
+    del apage.row[scroll_height-1] 
 
 def get_pen(fn):
     if events.pen_handler.enabled and backend.supports_pen:

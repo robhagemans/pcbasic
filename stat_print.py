@@ -55,7 +55,7 @@ def exec_color(ins):
     elif mode == 2: 
         # screen 2: illegal fn call
         raise error.RunError(5)
-    fore_old, back_old = console.get_attr()
+    fore_old, back_old = (console.attr>>7)*0x10 + (console.attr&0xf), (console.attr>>4) & 0x7
     bord = 0 if bord == None else bord
     util.range_check(0, 255, bord)
     fore = fore_old if fore == None else fore
@@ -64,18 +64,18 @@ def exec_color(ins):
     if mode == 0:
         util.range_check(0, console.num_colours-1, fore)
         util.range_check(0, 15, back, bord)
-        console.set_attr(fore, back)
+        console.attr = ((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10 + (fore & 0xf) 
         # border not implemented
     elif mode in (7, 8):
         util.range_check(1, console.num_colours-1, fore)
         util.range_check(0, console.num_colours-1, back)
-        console.set_attr(fore, 0)
+        console.attr = fore
         # in screen 7 and 8, only low intensity palette is used.
         console.set_palette_entry(0, back % 8)    
     elif mode == 9:
         util.range_check(0, console.num_colours-1, fore)
         util.range_check(0, console.num_palette-1, back)
-        console.set_attr(fore, 0)
+        console.attr = fore
         console.set_palette_entry(0, back)
     
 def exec_color_mode_1(back, pal, override):

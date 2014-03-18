@@ -19,6 +19,10 @@ import error
 import unicodepage
 import console
 
+
+# non-printing characters
+control = ('\x07', '\x08', '\x09', '\x0a','\x0b','\x0c', '\x0d', '\x1c', '\x1d', '\x1e', '\x1f')
+
 class DumbTerm(object):
     def write(self, s):
         global enter_pressed
@@ -40,7 +44,7 @@ class DumbTerm(object):
             if c == '\x0d' and i < len(s)-1:
                 # first CR, hold till next char
                 continue
-            if c in console.control:    
+            if c in control:    
                 sys.stdout.write(c)    
             else:
                 sys.stdout.write(unicodepage.to_utf8(c))    
@@ -129,7 +133,10 @@ def show_cursor(do_show, prev):
 def set_scroll_area(view_start, scroll_height, width):
     pass
 
-def putc_at(row, col, c, attr):
+def set_attr(cattr):
+    pass
+
+def putc_at(row, col, c):
     pass    
 
 def build_line_cursor(is_line):

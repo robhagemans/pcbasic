@@ -38,7 +38,6 @@ term_attr = None
 def init():
     # we need raw terminal the whole time to keep control of stdin and keep it from waiting for 'enter'
     term_echo(False)
-    console.set_mode(0)
     
 def init_screen_mode(mode, new_font_height):
     if mode != 0:
@@ -111,11 +110,17 @@ def check_events():
 def apply_palette(colour):
     return colour&0x8 | palette[colour&0x7]
 
+last_attr = None
+def set_attr(attr):
+    if attr == last_attr:
+        return
+    fore, back = attr & 0xf, (attr>>4) & 0x7
+    ansi.set_colour(apply_palette(fore),apply_palette(back))
+    ansi.set_cursor_colour(apply_palette(fore))  
+    last_attr = attr
+
 def putc_at(row, col, c, attr):
     ansi.move_cursor(row, col)
-    fore, back = console.colours(attr)
-    ansi.set_colour(apply_palette(fore),apply_palette(back))
-    ansi.set_cursor_colour(apply_palette(fore))    
     sys.stdout.write(unicodepage.to_utf8(c))
     sys.stdout.flush()
    
