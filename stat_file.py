@@ -134,7 +134,7 @@ def exec_field(ins):
                 break
     util.require(ins, util.end_statement)
 
-def exec_get_or_put_file(ins, action):
+def parse_get_or_put_file(ins):
     the_file = fileio.get_file(expressions.parse_file_number_opthash(ins), 'R')
     # for COM files
     num_bytes = the_file.reclen
@@ -145,12 +145,16 @@ def exec_get_or_put_file(ins, action):
             the_file.set_pos(pos)    
         else:
             num_bytes = pos    
-    action(num_bytes)
+    return the_file        
+    
+def exec_put_file(ins):
+    parse_get_or_put_file(ins).write_field(num_bytes)
+    util.require(ins, util.end_statement)
+
+def exec_get_file(ins):
+    parse_get_or_put_file(ins).read_field(num_bytes)
     util.require(ins, util.end_statement)
     
-exec_put_file = partial(exec_get_or_put_file, action = the_file.write_field)
-exec_get_file = partial(exec_get_or_put_file, action = the_file.read_field)
-
 def exec_lock_or_unlock(ins, action):
     thefile = fileio.get_file(expressions.parse_file_number_opthash(ins))
     if deviceio.is_device(thefile):

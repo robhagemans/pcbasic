@@ -109,11 +109,11 @@ import error
 import vartypes
 
 def require_read(ins, in_range, err=2):
-    if skip_white_read(ins) not in in_range:
+    if skip_white_read(ins, n=len(in_range[0])) not in in_range:
         raise error.RunError(err)
     
 def require(ins, rnge, err=2):
-    a = skip_white(ins)
+    a = skip_white(ins, n=len(rnge[0]))
     if a not in rnge:
         raise error.RunError(err)
 
