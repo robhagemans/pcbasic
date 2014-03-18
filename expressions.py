@@ -421,9 +421,7 @@ def value_cdbl(ins):
     return vartypes.pass_double_keep(parse_bracket(ins))
 
 def value_str(ins):            
-    s = parse_bracket(ins)
-    if s[0] == '$':
-        raise error.RunError(13)
+    s = vartypes.pass_number_keep(parse_bracket(ins))
     return vartypes.value_to_str_keep(s, screen=True)
         
 def value_val(ins):  
@@ -676,9 +674,8 @@ def value_fn(ins):
     # save existing vars
     varsave = {}
     for name in varnames:
-        if name[0] == '$':
-            # we're just not doing strings
-            raise error.RunError(13)
+        # we're just not doing strings
+        vartypes.pass_number_keep(name)
         if name in var.variables:
             varsave[name] = var.variables[name]
     # read variables
@@ -786,7 +783,7 @@ def value_fre(ins):
     if val[0] == '$':
         # grabge collection if a string-valued argument is specified.
         var.collect_garbage()
-    return fp.pack(fp.Single.from_int(var.mem_free() ))
+    return fp.pack(fp.Single.from_int(var.mem_free()))
 
 # read memory location 
 # currently, var memory and preset values only    
@@ -799,10 +796,7 @@ def value_peek(ins):
     if addr in peek_values:
         return vartypes.pack_int(peek_values[addr])
     elif addr >= var.var_mem_start:
-        val = var.get_var_memory(addr)
-        if val < 0:
-            val = 0      
-        return vartypes.pack_int(val)
+        return vartypes.pack_int(max(0, var.get_var_memory(addr)))
     else:    
         return vartypes.null['%']
 
@@ -843,7 +837,7 @@ def value_inp(ins):
 
 #  erdev, erdev$        
 def value_erdev(ins):
-    if util.peek(ins,1)=='$':
+    if util.peek(ins, 1)=='$':
         ins.read(1) 
         return vartypes.null['$']
     else:    
