@@ -55,8 +55,7 @@ peek_values = {}
 
 
 def parse_expression(ins, allow_empty=False, empty_err=22):
-    units = []
-    operators = []
+    units, operators = [], []
     d = util.skip_white(ins)
     while d not in util.end_expression: 
         units.append(parse_expr_unit(ins))
@@ -454,17 +453,13 @@ def value_len(ins):
 
 def value_asc(ins):            
     s = vartypes.pass_string_unpack(parse_bracket(ins))
-    if s:
-        return vartypes.pack_int(s[0])
-    else:
+    if not s:
         raise error.RunError(5)
-
+    return vartypes.pack_int(s[0])
+    
 def value_instr(ins):
     util.require_read(ins, ('(',))
-    big = ''
-    small = ''
-    have_big = False
-    n = 1
+    big, small, have_big, n = '', '', False, 1
     s = parse_expression(ins, empty_err=2)
     if s[0] != '$':
         n = vartypes.pass_int_unpack(s)
@@ -499,8 +494,7 @@ def value_mid(ins):
         return vartypes.null['$']
     start -= 1    
     stop = start + num 
-    if stop > len(s):
-        stop = len(s)
+    stop = min(stop, len(s))
     return vartypes.pack_string(s[start:stop])  
     
 def value_left(ins):
@@ -512,8 +506,7 @@ def value_left(ins):
     util.range_check(0, 255, stop)
     if stop == 0:
         return vartypes.null['$']
-    if stop > len(s):
-        stop = len(s)
+    stop = min(stop, len(s))
     return vartypes.pack_string(s[:stop])  
     
 def value_right(ins):
@@ -525,8 +518,7 @@ def value_right(ins):
     util.range_check(0, 255, stop)
     if stop == 0:
         return vartypes.null['$']
-    if stop > len(s):
-        stop = len(s)
+    stop = min(stop, len(s))
     return vartypes.pack_string(s[-stop:])  
 
 def value_string(ins): # STRING$
@@ -602,11 +594,7 @@ def value_pos(ins):
 def value_lpos(ins):            
     num = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 3, num)
-    printer = deviceio.lpt1
-    if num == 2:
-        printer = deviceio.lpt2
-    elif num ==3:
-        printer = deviceio.lpt3    
+    printer = (deviceio.lpt1, deviceio.lpt1, deviceio.lpt2, deviceio.lpt3)[num]
     return vartypes.pack_int(printer.col)
            
 ######################################################################
@@ -658,8 +646,7 @@ def value_environ(ins):
     else:
         expr = vartypes.pass_int_unpack(expr)
         envlist = list(os.environ)
-        if expr < 1 or expr > 255:
-            raise error.RunError(5)
+        util.range_check(1, 255, expr)
         if expr > len(envlist):
             return vartypes.null['$']            
         else:
@@ -901,41 +888,22 @@ def value_rnd(ins):
         return rnd.get_random()
 
 def value_abs(ins):
-    inp = parse_bracket(ins)
-    if inp[0] in ('%', '!', '#'):
-        return vartypes.number_abs(inp)
-    else:     
-        # type mismatch
-        raise error.RunError(13)
+    return vartypes.number_abs(vartypes.pass_number_keep(parse_bracket(ins)))
 
 def value_int(ins):
-    inp = parse_bracket(ins)
-    if inp[0] == '%':
-        return inp
-    elif inp[0] in ('!', '#'):
-        return fp.pack(fp.unpack(inp).ifloor()) 
-    else:     
-        # type mismatch
-        raise error.RunError(13)
+    inp = vartypes.pass_number_keep(parse_bracket(ins))
+    return inp if inp[0] == '%' else fp.pack(fp.unpack(inp).ifloor()) 
 
 def value_sgn(ins):
-    inp = parse_bracket(ins)
+    inp = vartypes.pass_number_keep(parse_bracket(ins))
     if inp[0] == '%':
         inp_int = vartypes.unpack_int(inp) 
-        if inp_int > 0:
-            return vartypes.pack_int(1)
-        elif inp_int < 0:
-            return vartypes.pack_int(-1)
-        else:
-            return vartypes.null['%']
-    elif inp[0] in ('!', '#'):
+        return vartypes.pack_int(0 if inp_int==0 else (1 if inp_int > 0 else -1))
+    else:
         return vartypes.pack_int(fp.unpack(inp).sign() )
-    else:     
-        # type mismatch
-        raise error.RunError(13)
 
 def value_fix(inp):
-    inp = parse_bracket(inp)
+    inp = vartypes.pass_number_keep(parse_bracket(ins))
     if inp[0] == '%':
         return inp
     elif inp[0] == '!':
@@ -943,17 +911,9 @@ def value_fix(inp):
         return fp.pack(fp.Single.from_int(fp.unpack(inp).trunc_to_int())) 
     elif inp[0] == '#':
         return fp.pack(fp.Double.from_int(fp.unpack(inp).trunc_to_int())) 
-    else:     
-        # type mismatch
-        raise error.RunError(13)
-    
+
 def value_neg(ins):
-    inp = parse_expr_unit(ins)
-    if inp[0] in ('%', '!', '#'):
-        return vartypes.number_neg(inp)    
-    else:     
-        # type mismatch
-        raise error.RunError(13)
+    return vartypes.number_neg(vartypes.pass_number_keep(parse_expr_unit(ins)))
 
 def value_not(ins):
     # two's complement not, -x-1
