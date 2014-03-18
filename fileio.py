@@ -89,12 +89,13 @@ class ByteStream(object):
 
 
 class BaseFile(object):
-    def __init__(self, fhandle, number, mode, access):
+    def __init__(self, fhandle, number, mode, access, lock):
         # width=255 means line wrap
         self.fhandle = fhandle
         self.number = number
         self.mode = mode.upper()
         self.access = access
+        self.lock = lock
         if self.mode in ('I', 'O', 'R', 'S', 'L'):
             self.fhandle.seek(0)
         else:
@@ -126,7 +127,7 @@ class BaseFile(object):
         self.fhandle.write(str(s))
 
     def end_of_file(self):
-        return peek_char() == ''
+        return self.peek_char() == ''
         
     def flush(self):
         self.fhandle.flush()
@@ -135,14 +136,14 @@ class BaseFile(object):
         self.fhandle.truncate()
 
 class TextFile(BaseFile):
-    def __init__(self, fhandle, number=0, mode='A', access='r+b'):
-        BaseFile.__init__(self, fhandle, number, mode, access)
+    def __init__(self, fhandle, number=0, mode='A', access='RW', lock=''):
+        BaseFile.__init__(self, fhandle, number, mode, access, lock)
         # width=255 means line wrap
         self.width = 255
         self.col = 1
     
     def close(self):
-        if self.access == 'wb':
+        if self.mode in ('O', 'A', 'S'):
             # write EOF char
             self.fhandle.write('\x1a')
         BaseFile.close(self)
@@ -233,14 +234,10 @@ class TextFile(BaseFile):
         return lof
 
 
-class RandomBase(object):
-    def __init__(self, fhandle, number, mode, access, reclen=128):
-        self.fhandle = fhandle
-        self.number = number
-        self.mode = mode.upper()
-        self.access = access
+class RandomBase(BaseFile):
+    def __init__(self, fhandle, number, mode, access, lock, reclen=128):
+        BaseFile.__init__(self, fhandle, number, mode, access, lock)
         self.reclen = reclen
-        self.lock_list = set()
         # replace with empty field if already exists    
         try:
             self.field = fields[self.number]
@@ -255,9 +252,12 @@ class RandomBase(object):
         self.field_text_file.col = 1
         # width=255 means line wrap
         self.field_text_file.width = 255
-        if number != 0:
-            files[number] = self
     
+    def close(self):
+        # don't close the handle in case it's a serial device
+        if self.number != 0:
+            del files[self.number]
+     
     # read line (from field buffer)    
     def read_line(self):
         # FIELD overflow happens if last byte in record is actually read
@@ -270,9 +270,6 @@ class RandomBase(object):
             raise error.RunError(self.overflow_error) # FIELD overflow
         return self.field_text_file.read_chars(num)
     
-    def read(self, num):
-        return ''.join(self.read_chars(num))
-    
     # write one or more chars to field buffer
     def write(self, s):
         ins = StringIO(s)
@@ -281,14 +278,6 @@ class RandomBase(object):
         if ins.tell() < len(s):
             raise error.RunError(self.overflow_error) 
     
-    def close(self):
-        # don't close the handle in case it's a serial device
-        if self.number != 0:
-            del files[self.number]
-    
-    def flush(self):
-        self.fhandle.flush()
-
     def peek_char(self):
         return self.field_text_file.peek_char()
     
@@ -310,15 +299,12 @@ class RandomBase(object):
     # this is only used when writing chr$(8), not sure how to implement for random files
         pass
         
-    def end_of_file(self):
-        return self.peek_char() == ''
-        
 class RandomFile(RandomBase):
     # FIELD overflow
     overflow_error = 50
     
-    def __init__(self, fhandle, number, mode, access, reclen=128):
-        RandomBase.__init__(self, fhandle, number, mode, access, reclen=128)
+    def __init__(self, fhandle, number, mode, access, lock, reclen=128):
+        RandomBase.__init__(self, fhandle, number, mode, access, lock, reclen=128)
         # position at start of file
         self.recpos = 0
         self.fhandle.seek(0)
@@ -367,11 +353,6 @@ class RandomFile(RandomBase):
         self.fhandle.seek(current)
         return lof
 
-# posix access modes for BASIC modes INPUT ,OUTPUT, RANDOM, APPEND and internal LOAD and SAVE modes
-access_modes = { 'I':'rb', 'O':'wb', 'R':'r+b', 'A':'ab', 'L': 'rb', 'S': 'wb' }
-# posix access modes for BASIC ACCESS mode for RANDOM files only
-access_access = { 'R': 'rb', 'W': 'wb', 'RW': 'r+b' }
-
 def check_file_not_open(name):
     for f in files:
         if name == files[f].fhandle.name:
@@ -380,7 +361,7 @@ def check_file_not_open(name):
 def find_files_by_name(name):
     return [files[f] for f in files if files[f].fhandle.name == name]
     
-def open_file_or_device(number, name, mode='I', access='', lock='RW', reclen=128, defext=''):
+def open_file_or_device(number, name, mode='I', access='R', lock='', reclen=128, defext=''):
     if number < 0 or number > max_files:
         # bad file number
         raise error.RunError(52)
@@ -388,10 +369,6 @@ def open_file_or_device(number, name, mode='I', access='', lock='RW', reclen=128
         # file already open
         raise error.RunError(55)
     name, mode = str(name), mode.upper()
-    if not access or mode != 'R':
-        access = access_modes[mode]
-    else:
-        access = access_access[access]    
     split_colon = name.upper().split(':')
     if len(split_colon) > 1: # : found
         dev_name = split_colon[0] + ':' 
@@ -402,24 +379,24 @@ def open_file_or_device(number, name, mode='I', access='', lock='RW', reclen=128
             raise error.RunError(52)   
     else:    
         # translate the file name to something DOS-ish is necessary
-        if access == 'rb' or access == 'r':
+        if mode in ('I', 'L', 'R'):
             name = oslayer.dospath_read(name, defext, 53)
         else:
             name = oslayer.dospath_write(name, defext, 76)
         if mode in ('O', 'A'):
             # don't open output or append files more than once
             check_file_not_open(name)
-        # open the file
-        fhandle = oslayer.safe_open(name, access)
         # obtain a lock
-        oslayer.safe(oslayer.lock, fhandle, lock)
+        request_lock(name, lock, access)
+        # open the file
+        fhandle = oslayer.safe_open(name, mode, access)
         # apply the BASIC file wrapper
         if mode in ('S', 'L'): # save, load
-            inst = BaseFile(fhandle, number, mode, access)
+            inst = BaseFile(fhandle, number, mode, access, lock)
         elif mode in ('I', 'O', 'A'):
-            inst = TextFile(fhandle, number, mode, access)
+            inst = TextFile(fhandle, number, mode, access, lock)
         else:
-            inst = RandomFile(fhandle, number, mode, access, reclen)
+            inst = RandomFile(fhandle, number, mode, access, lock, reclen)
     return inst    
            
 def close_all():
@@ -455,7 +432,6 @@ def lock_records(nr, start, stop):
             if stop_1 == -1 or (bstart >= start_1 and bstart <= stop_1) or (bstop >= start_1 and bstop <= stop_1):
                 raise error.RunError(70)
     thefile.lock_list.add((bstart, bstop))
-    oslayer.safe(oslayer.lock, thefile.fhandle, 'RW', start, bstop-bstart+1)                   
 
 def unlock_records(nr, start, stop):    
     thefile = get_file(nr)
@@ -471,6 +447,21 @@ def unlock_records(nr, start, stop):
         thefile.lock_list.remove((bstart, bstop))
     except KeyError:
         raise error.RunError(70)
-    oslayer.safe(oslayer.unlock, thefile.fhandle, start, bstop-bstart+1)                   
     
+def request_lock(name, lock, access):
+    same_files = find_files_by_name(name)
+    if not lock: # default mode; don't accept default mode if SHARED/LOCK present
+        for f in same_files:
+            if f.lock:
+                raise error.RunError(70)    
+    elif lock == 'RW':  # LOCK READ WRITE
+        raise error.RunError(70)    
+    elif lock == 'S':   # SHARED
+        for f in same_files:
+            if not f.lock:
+                raise error.RunError(70)       
+    else:               # LOCK READ or LOCK WRITE
+        for f in same_files:
+            if f.access == lock or lock == 'RW':
+                raise error.RunError(70)
 

@@ -46,8 +46,7 @@ def init_devices(args):
 def is_device(aname):
     return aname in output_devices or aname in input_devices or aname in random_devices
             
-# posix access not BASIC access here            
-def device_open(number, device_name, mode='I', access='rb'):
+def device_open(number, device_name, mode, access):
     global output_devices, input_devices, random_devices
     try:
         if mode.upper() in ('O', 'A', 'S'):
@@ -251,7 +250,7 @@ class DeviceFile(TextFile):
             mode = 'O'
         else:
             mode = 'I'
-        TextFile.__init__(self, oslayer.safe_open(unixpath, access), 0, mode, access)
+        TextFile.__init__(self, oslayer.safe_open(unixpath, mode, access), 0, mode, access)
         
     def close(self):
         # don't close the file handle as we may have copies
