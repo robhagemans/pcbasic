@@ -134,9 +134,7 @@ def exec_load(ins):
         util.require_read(ins, 'R')
         close_files = False
     util.require(ins, util.end_statement)
-    g = fileio.open_file_or_device(0, name, mode='L', defext='BAS')  
-    program.load(g)
-    g.close()    
+    program.load(fileio.open_file_or_device(0, name, mode='L', defext='BAS'))
     if close_files:
         fileio.close_all()
     else:
@@ -161,13 +159,10 @@ def exec_chain(ins):
             if util.skip_white_read_if(ins, (',',)) and util.skip_white_read_if(ins, ('\xa9',)):
                 delete_lines = parse_line_range(ins) # , DELETE
     util.require(ins, util.end_statement)
-    g = fileio.open_file_or_device(0, name, mode='L', defext='BAS')  
-    program.chain(action, g, jumpnum, common_all, delete_lines)
-    g.close()
+    program.chain(action, fileio.open_file_or_device(0, name, mode='L', defext='BAS'), jumpnum, common_all, delete_lines)
 
 def exec_save(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    g = fileio.open_file_or_device(0, name, mode='S', defext='BAS')  
     #    # cryptic errors given by GW-BASIC:    
     #    if len(name)>8 or len(ext)>3:
     #        # 52: bad file number 
@@ -180,16 +175,13 @@ def exec_save(ins):
         mode = util.skip_white_read(ins).upper()
         if mode not in ('A', 'P'):
             raise error.RunError(2)
-    program.save(g, mode)
-    g.close()
+    program.save(fileio.open_file_or_device(0, name, mode='S', defext='BAS'), mode)
     util.require(ins, util.end_statement)
     
 def exec_merge(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
-    g = fileio.open_file_or_device(0, name, mode='L', defext='BAS')  
-    program.merge(g)
-    g.close()    
+    program.merge(fileio.open_file_or_device(0, name, mode='L', defext='BAS') )
     util.require(ins, util.end_statement)
     
 def exec_new(ins):
@@ -197,7 +189,6 @@ def exec_new(ins):
     program.clear_program()
 
 def exec_renum(ins):
-    nums = util.parse_jumpnum_list(ins, size=3, err=2)
-    program.renumber(*nums)    
+    program.renumber(*util.parse_jumpnum_list(ins, size=3, err=2))    
 
     
