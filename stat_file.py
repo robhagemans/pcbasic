@@ -8,6 +8,7 @@
 # This file is released under the GNU GPL version 3. 
 # please see text file COPYING for licence terms.
 #
+from functools import partial
 
 import fileio
 import error
@@ -133,38 +134,24 @@ def exec_field(ins):
                 break
     util.require(ins, util.end_statement)
 
-def exec_put_file(ins):
+def exec_get_or_put_file(ins, action):
     the_file = fileio.get_file(expressions.parse_file_number_opthash(ins), 'R')
     # for COM files
     num_bytes = the_file.reclen
     if util.skip_white_read_if(ins, (',',)):
         pos = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)).round_to_int())
-        if pos < 1 or pos > 2**25:   # not 2^32-1 as the manual boasts! pos-1 apparently needs to fit in a single-prec mantissa
-            raise error.RunError(63)
+        util.range_check_err(1, 2**25, pos, err=63) # not 2^32-1 as the manual boasts! pos-1 needs to fit in a single-prec mantissa
         if not isinstance(the_file, deviceio.SerialFile):
             the_file.set_pos(pos)    
         else:
             num_bytes = pos    
-    the_file.write_field(num_bytes)
+    action(num_bytes)
     util.require(ins, util.end_statement)
+    
+exec_put_file = partial(exec_get_or_put_file, action = the_file.write_field)
+exec_get_file = partial(exec_get_or_put_file, action = the_file.read_field)
 
-def exec_get_file(ins):
-    the_file = fileio.get_file(expressions.parse_file_number_opthash(ins), 'R')
-    # for COM files
-    num_bytes = the_file.reclen
-    if util.skip_white_read_if(ins, (',',)):
-        pos = fp.unpack(vartypes.pass_double_keep(expressions.parse_expression(ins))).round_to_int()
-        if pos < 1 or pos > 2**25:   
-            raise error.RunError(63)
-        if not isinstance(the_file, deviceio.SerialFile):
-            the_file.set_pos(pos)
-        else:
-            # 'pos' means number of bytes for COM files
-            num_bytes = pos                
-    the_file.read_field(num_bytes)
-    util.require(ins, util.end_statement)
-
-def parse_lock(ins):
+def exec_lock_or_unlock(ins, action):
     thefile = fileio.get_file(expressions.parse_file_number_opthash(ins))
     if deviceio.is_device(thefile):
         # permission denied
@@ -177,15 +164,11 @@ def parse_lock(ins):
         lock_stop_rec = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
     if lock_start_rec < 1 or lock_start_rec > 2**25-2 or lock_stop_rec < 1 or lock_stop_rec > 2**25-2:   
         raise error.RunError(63)
-    return thefile.number, lock_start_rec, lock_stop_rec     
+    action(thefile.number, lock_start_rec, lock_stop_rec)
+    util.require(ins, util.end_statement)
 
-def exec_lock(ins):
-    fileio.lock_records(*parse_lock(ins))
-    util.require(ins, util.end_statement)
-            
-def exec_unlock(ins):
-    fileio.unlock_records(*parse_lock(ins))
-    util.require(ins, util.end_statement)
+exec_lock = partial(exec_lock_or_unlock, action = fileio.lock_records)
+exec_unlock = partial(exec_lock_or_unlock, action = fileio.unlock_records)
     
 # ioctl: not implemented
 def exec_ioctl(ins):
