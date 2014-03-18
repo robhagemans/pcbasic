@@ -241,4 +241,10 @@ def range_check(lower, upper, *allvars):
     for v in allvars:
         if v != None and v < lower or v > upper:
             raise error.RunError(5)
+            
+def range_check_err(lower, upper, v, err=5):
+    if v != None and v < lower or v > upper:
+        raise error.RunError(err)
+            
+            
 
