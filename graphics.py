@@ -37,7 +37,7 @@ def require_graphics_mode(err=5):
         raise error.RunError(err)
 
 def is_graphics_mode():
-    return (backend !=None) and console.graphics_mode
+    return backend and console.screen_mode
 
 def init_graphics_mode(mode, new_font_height):
     global last_point, pixel_aspect_ratio, bitsperpixel, size
@@ -149,12 +149,10 @@ def window_scale(fx, fy):
     return x, y
 
 def get_colour_index(c):
-    if c == -1:
-        fore, back = console.colours(console.attr)
-        c = fore & 0xf
-    elif c == -2:
-        fore, back = console.colours(console.attr)
-        c = back & 0x7    
+    if c == -1: # foreground
+        c = console.attr & 0xf
+    elif c == -2: # background
+        c = (console.attr>>4) & 0x7    
     else:
         if c < 0:
             c = 0
@@ -649,7 +647,7 @@ def view_coords(x,y):
         return x + lefttop[0], y + lefttop[1]
 
 def clear_graphics_view():
-    backend.clear_graph_clip(console.colours(console.attr)[1]&0x7)
+    backend.clear_graph_clip((console.attr>>4) & 0x7)
 
 # reset graphics state    
 def reset_graphics():

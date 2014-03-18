@@ -163,8 +163,7 @@ def draw_parse_gml(gml):
             draw_parse_gml(sub)            
         elif c == 'C':
             # set foreground colour
-            colour = ml_parse_number(gmls)
-            console.set_attr(colour, 0)
+            console.attr = ml_parse_number(gmls) 
         elif c == 'S':
             # set scale
             draw_scale = ml_parse_number(gmls)
