@@ -22,6 +22,11 @@ import error
 # given in seconds        
 time_offset = datetime.timedelta()
 
+# posix access modes for BASIC modes INPUT ,OUTPUT, RANDOM, APPEND and internal LOAD and SAVE modes
+access_modes = { 'I':'rb', 'O':'wb', 'R':'r+b', 'A':'ab', 'L': 'rb', 'S': 'wb' }
+# posix access modes for BASIC ACCESS mode for RANDOM files only
+access_access = { 'R': 'rb', 'W': 'wb', 'RW': 'r+b' }
+
 
 def timer_milliseconds():
     global time_offset
@@ -32,13 +37,14 @@ def timer_milliseconds():
     micro = diff.microseconds
     return long(seconds)*1000 + long(micro)/1000 
 
-def safe_open(name, access):
+def safe_open(name, mode, access):
     name = str(name)
+    posix_access = access_access[access] if (access and mode == 'R') else access_modes[mode]  
     try:
         # create file if writing and doesn't exist yet    
-        if '+' in access and not os.path.exists(name):
+        if '+' in posix_access and not os.path.exists(name):
             open(name, 'wb').close() 
-        return open(name, access)
+        return open(name, posix_access)
     except EnvironmentError as e:
         handle_oserror(e)
     
@@ -166,13 +172,6 @@ def pass_dosnames(files, mask='*.*'):
             ext = '    '    
         dosfiles.append(trunk + ext)
     return dosfiles
-
-# these would implement external locking if defined
-def lock(fd, lock, length=0, start=0, whence=0):
-    pass
-         
-def unlock(fd, length=0, start=0, whence=0):
-    pass
 
 # print to LPR printer (ok for CUPS)
 # TODO: use Windows printing subsystem for Windows, LPR is not standard there.

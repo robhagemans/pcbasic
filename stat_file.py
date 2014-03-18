@@ -20,7 +20,7 @@ import oslayer
 import deviceio
 
 long_modes = {'\x85': 'I', 'OUTPUT':'O', 'RANDOM':'R', 'APPEND':'A'}  # \x85 is INPUT
-allowed_access_modes = { 'I':'R', 'O':'W', 'A':'RW' }
+default_access_modes = { 'I':'R', 'O':'W', 'A':'RW', 'R':'RW' }
 
 # close all files
 def exec_reset(ins):
@@ -39,12 +39,12 @@ def parse_read_write(ins):
 
 def exec_open(ins):
     first_expr = str(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
-    mode, access, lock, reclen = 'R', '', 'RW', 128
+    mode, access, lock, reclen = 'R', 'RW', '', 128
     if util.skip_white_read_if(ins, (',',)):
         # first syntax
         try:
             mode = first_expr[0].upper()
-            access = access_modes[mode]    
+            access = default_access_modes[mode]    
         except (IndexError, KeyError):
             # Bad file mode
             raise error.RunError(54)
@@ -69,6 +69,11 @@ def exec_open(ins):
                 mode = long_modes[word]
             except KeyError:
                 raise error.RunError(2)
+        try:
+            access = default_access_modes[mode]    
+        except (KeyError):
+            # Bad file mode
+            raise error.RunError(54)        
         # ACCESS clause
         if util.skip_white_read_if(ins, ('ACCESS',)):
             d = util.skip_white(ins)
@@ -78,7 +83,7 @@ def exec_open(ins):
             d = util.skip_white(ins)
             lock = parse_read_write(ins)
         elif util.skip_white_read_if(ins, ('SHARED',)):
-            lock = ''  
+            lock = 'S'  
         # AS file number clause       
         if not util.skip_white_read_if(ins, ('AS',)):
             raise error.RunError(2)
@@ -92,7 +97,7 @@ def exec_open(ins):
     # If FOR and ACCESS mismatch in other ways, raises SYNTAX ERROR.
     if mode == 'A' and access == 'W':
             raise error.RunError(75)
-    elif mode != 'R' and access and access != allowed_access_modes[mode]:
+    elif mode != 'R' and access and access != default_access_modes[mode]:
         raise error.RunError(2)        
     util.range_check(1, 128, reclen)        
     fileio.open_file_or_device(number, name, mode, access, lock, reclen) 
