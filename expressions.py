@@ -108,11 +108,12 @@ def parse_operators(operators, units):
     return units[0]    
     
 def parse_expr_unit(ins):
-    d = util.skip_white_read(ins)
+    d = util.skip_white(ins)
     # string literal
     if d == '"':
+        ins.read(1)
         output = bytearray()
-        # while tokenised nmbers inside a string lieral will be printed as tokenised numbers, they don't actually execute as such:
+        # while tokenised nmbers inside a string literal will be printed as tokenised numbers, they don't actually execute as such:
         # a \00 character, even if inside a tokenised number, will break a string literal (and make the parser expect a 
         # line number afterwards, etc. We follow this.
         d = ins.read(1)
@@ -120,177 +121,108 @@ def parse_expr_unit(ins):
             output += d
             d = ins.read(1)        
         if d == '\x00':
-            ins.seek(-1,1)
-        return ('$', output)
+            ins.seek(-1, 1)
+        return vartypes.pack_string(output)
     # variable name
     elif d >= 'A' and d <= 'Z':
-        ins.seek(-1, 1)
         name, indices = get_var_or_array_name(ins)
         return var.get_var_or_array(name, indices)
     # number literals as ASCII are accepted in tokenised streams. only if they start with a figure (not & or .)
     # this happens e.g. after non-keywords like AS. They are not acceptable as line numbers.
     elif d >= '0' and d <= '9':
-        ins.seek(-1, 1)
         outs = StringIO()
         tokenise.tokenise_number(ins, outs)
         outs.seek(0)
         return util.parse_value(outs)
     # number literals
     elif d in tokenise.tokens_number:
-        ins.seek(-1, 1)
         return util.parse_value(ins)   
     # gw-basic allows adding line numbers to numbers     
     elif d in tokenise.tokens_linenum:
-        ins.seek(-1, 1)
         return vartypes.pack_int(util.parse_jumpnum(ins))
     # brackets
     elif d == '(':
-        val = parse_expression(ins, empty_err=2)
-        util.require_read(ins, (')',))
-        return val    
-    # single-byte tokens        
-    elif d == '\x85':       # INPUT
-        return value_input(ins)
-    elif d == '\xC8':       # SCREEN
-        return value_screen(ins)
-    elif d == '\xD0':       # USR
-        return value_usr(ins)
-    elif d == '\xD1':       # FN
-        return value_fn(ins)
-    elif d == '\xD3':       # NOT
-        return value_not(ins)
-    elif d == '\xD4':       # ERL
-        return value_erl(ins)
-    elif d == '\xD5':       # ERR
-        return value_err(ins)
-    elif d == '\xD6':       # STRING$
-        return value_string(ins)
-    elif d == '\xD8':       # INSTR
-        return value_instr(ins)    
-    elif d == '\xDA':       # VARPTR
-        return value_varptr(ins)
-    elif d == '\xDB':       # CSRLIN
-        return value_csrlin(ins)
-    elif d == '\xDC':       # POINT
-        return value_point(ins)
-    elif d == '\xDE':       # INKEY$
-        return value_inkey(ins)
-    elif d == '\xE9':       # unary +
-        return parse_expr_unit(ins)
-    elif d == '\xEA':       # unary -
-        return value_neg(ins)     
-    # two-byte tokens
-    elif d == '\xFD':
-        d = ins.read(1)
-        if d== '\x81':      # CVI
-            return value_cvi(ins)
-        elif d=='\x82':     # CVS
-            return value_cvs(ins)
-        elif d=='\x83':     # CVD
-            return value_cvd(ins)
-        elif d=='\x84':     # MKI$
-            return value_mki(ins)
-        elif d=='\x85':     # MKS$
-            return value_mks(ins)
-        elif d=='\x86':     # MKD$
-            return value_mkd(ins)
-        elif d== '\x8b':    # EXTERR
-            return value_exterr(ins)
-    # two-byte tokens
-    elif d == '\xFE':
-        d = ins.read(1)        
-        if d== '\x8D':      # DATE$
-            return value_date(ins)
-        elif d== '\x8E':    # TIME$
-            return value_time(ins)
-        elif d== '\x94':    # TIMER
-            return value_timer(ins)
-        elif d== '\x95':    # ERDEV
-            return value_erdev(ins)
-        elif d== '\x96':    # IOCTL
-            return value_ioctl(ins)
-        elif d== '\x9B':    # ENVIRON$
-            return value_environ(ins)
-        elif d== '\x9E':    # PMAP
-            return value_pmap(ins)
-    # two-byte tokens                    
-    elif d == '\xFF':
-        d = ins.read(1)
-        if d == '\x81':     # LEFT$
-            return value_left(ins)
-        elif d == '\x82':   # RIGHT$
-            return value_right(ins)
-        elif d == '\x83':   # MID$
-            return value_mid(ins)
-        elif d == '\x84':   # SGN
-            return value_sgn(ins)
-        elif d == '\x85':   # INT
-            return value_int(ins)
-        elif d == '\x86':   # ABS
-            return value_abs(ins)
-        elif d == '\x87':   # SQR
-            return value_sqrt(ins)
-        elif d == '\x88':   # RND
-            return value_rnd(ins)
-        elif d == '\x89':   # SIN
-            return value_sin(ins)
-        elif d == '\x8a':   # LOG
-            return value_log(ins)
-        elif d == '\x8b':   # EXP
-            return value_exp(ins)
-        elif d == '\x8c':   # COS
-            return value_cos(ins)
-        elif d == '\x8D':   # TAN
-            return value_tan(ins)
-        elif d == '\x8E':   # ATN
-            return value_atn(ins)
-        elif d == '\x8F':   # FRE
-            return value_fre(ins)
-        elif d == '\x90':   # INP
-            return value_inp(ins)
-        elif d == '\x91':   # POS
-            return value_pos(ins)
-        elif d == '\x92':   # LEN
-            return value_len(ins)
-        elif d == '\x93':   # STR$
-            return value_str(ins)
-        elif d == '\x94':   # VAL
-            return value_val(ins)
-        elif d == '\x95':   # ASC
-            return value_asc(ins)
-        elif d == '\x96':   # CHR$
-            return value_chr(ins)
-        elif d == '\x97':   # PEEK
-            return value_peek(ins)
-        elif d == '\x98':   # SPACE$
-            return value_space(ins)
-        elif d == '\x99':   # OCT$
-            return value_oct(ins)
-        elif d == '\x9A':   # HEX$
-            return value_hex(ins)
-        elif d == '\x9B':   # LPOS
-            return value_lpos(ins)
-        elif d == '\x9C':   # CINT
-            return value_cint(ins)
-        elif d == '\x9D':   # CSNG
-            return value_csng(ins)
-        elif d == '\x9E':   # CDBL
-            return value_cdbl(ins)
-        elif d == '\x9F':   # FIX
-            return value_fix(ins)    
-        elif d == '\xA0':   # PEN
-            return value_pen(ins)
-        elif d == '\xA1':   # STICK
-            return value_stick(ins)
-        elif d == '\xA2':   # STRIG
-            return value_strig(ins)
-        elif d == '\xA3':   # EOF
-            return value_eof(ins)
-        elif d == '\xA4':   # LOC
-            return value_loc(ins)
-        elif d == '\xA5':   # LOF
-            return value_lof(ins)
-    return None
+        return parse_bracket(ins)
+    # single-byte tokens 
+    else:
+        ins.read(1)       
+        if d == '\x85':         return value_input(ins)
+        elif d == '\xC8':       return value_screen(ins)
+        elif d == '\xD0':       return value_usr(ins)
+        elif d == '\xD1':       return value_fn(ins)
+        elif d == '\xD3':       return value_not(ins)
+        elif d == '\xD4':       return value_erl(ins)
+        elif d == '\xD5':       return value_err(ins)
+        elif d == '\xD6':       return value_string(ins)
+        elif d == '\xD8':       return value_instr(ins)    
+        elif d == '\xDA':       return value_varptr(ins)
+        elif d == '\xDB':       return value_csrlin(ins)
+        elif d == '\xDC':       return value_point(ins)
+        elif d == '\xDE':       return value_inkey(ins)
+        elif d == '\xE9':       return parse_expr_unit(ins)
+        elif d == '\xEA':       return value_neg(ins)     
+        # two-byte tokens
+        elif d == '\xFD':
+            d = ins.read(1)
+            if d == '\x81':      return value_cvi(ins)
+            elif d =='\x82':     return value_cvs(ins)
+            elif d =='\x83':     return value_cvd(ins)
+            elif d =='\x84':     return value_mki(ins)
+            elif d =='\x85':     return value_mks(ins)
+            elif d =='\x86':     return value_mkd(ins)
+            elif d == '\x8b':    return value_exterr(ins)
+        # two-byte tokens
+        elif d == '\xFE':
+            d = ins.read(1)        
+            if d == '\x8D':      return value_date(ins)
+            elif d == '\x8E':    return value_time(ins)
+            elif d == '\x94':    return value_timer(ins)
+            elif d == '\x95':    return value_erdev(ins)
+            elif d == '\x96':    return value_ioctl(ins)
+            elif d == '\x9B':    return value_environ(ins)
+            elif d == '\x9E':    return value_pmap(ins)
+        # two-byte tokens                    
+        elif d == '\xFF':
+            d = ins.read(1)
+            if d == '\x81':     return value_left(ins)
+            elif d == '\x82':   return value_right(ins)
+            elif d == '\x83':   return value_mid(ins)
+            elif d == '\x84':   return value_sgn(ins)
+            elif d == '\x85':   return value_int(ins)
+            elif d == '\x86':   return value_abs(ins)
+            elif d == '\x87':   return value_sqrt(ins)
+            elif d == '\x88':   return value_rnd(ins)
+            elif d == '\x89':   return value_sin(ins)
+            elif d == '\x8a':   return value_log(ins)
+            elif d == '\x8b':   return value_exp(ins)
+            elif d == '\x8c':   return value_cos(ins)
+            elif d == '\x8D':   return value_tan(ins)
+            elif d == '\x8E':   return value_atn(ins)
+            elif d == '\x8F':   return value_fre(ins)
+            elif d == '\x90':   return value_inp(ins)
+            elif d == '\x91':   return value_pos(ins)
+            elif d == '\x92':   return value_len(ins)
+            elif d == '\x93':   return value_str(ins)
+            elif d == '\x94':   return value_val(ins)
+            elif d == '\x95':   return value_asc(ins)
+            elif d == '\x96':   return value_chr(ins)
+            elif d == '\x97':   return value_peek(ins)
+            elif d == '\x98':   return value_space(ins)
+            elif d == '\x99':   return value_oct(ins)
+            elif d == '\x9A':   return value_hex(ins)
+            elif d == '\x9B':   return value_lpos(ins)
+            elif d == '\x9C':   return value_cint(ins)
+            elif d == '\x9D':   return value_csng(ins)
+            elif d == '\x9E':   return value_cdbl(ins)
+            elif d == '\x9F':   return value_fix(ins)    
+            elif d == '\xA0':   return value_pen(ins)
+            elif d == '\xA1':   return value_stick(ins)
+            elif d == '\xA2':   return value_strig(ins)
+            elif d == '\xA3':   return value_eof(ins)
+            elif d == '\xA4':   return value_loc(ins)
+            elif d == '\xA5':   return value_lof(ins)
+        else:
+            return None
 
 ######################################################################
 # expression parsing utility functions 
