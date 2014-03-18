@@ -607,9 +607,8 @@ def value_fn(ins):
     varsave = {}
     for name in varnames:
         # we're just not doing strings
-        vartypes.pass_number_keep(name)
         if name in var.variables:
-            varsave[name] = var.variables[name]
+            varsave[name] = vartypes.pass_number_keep(var.variables[name])
     # read variables
     if util.skip_white_read_if(ins, ('(',)):
         exprs = parse_expr_list(ins, len(varnames), err=2)
