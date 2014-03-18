@@ -597,7 +597,8 @@ def handle_key(e):
         # ctrl+SCROLLLOCK breaks too
         raise error.Break()
     elif e.key == pygame.K_CAPSLOCK:
-        console.caps = not console.caps 
+        # let CAPS LOCK be handled by the window manager
+        pass
     elif e.key == pygame.K_PRINT and  mods & pygame.KMOD_CTRL:
         if console.echo_read == None:
             console.echo_read = deviceio.lpt1
