@@ -121,17 +121,19 @@ def putc_at(row, col, c):
     term.flush()
    
 def scroll(from_line):
-    ansi.set_scroll_region(console.view_start, console.scroll_height)    
+    ansi.set_scroll_region(from_line, console.scroll_height)    
     ansi.scroll_up(1)
     term.write(esc_scroll_screen)
-    ansi.move_cursor(console.row, console.col)
+    if console.row > 0:
+        ansi.move_cursor(console.row-1, console.col)
     term.flush()
     
 def scroll_down(from_line):
-    ansi.set_scroll_region(console.view_start, console.scroll_height)    
+    ansi.set_scroll_region(from_line, console.scroll_height)    
     ansi.scroll_down(1)
     sys.stdout.write(esc_scroll_screen)
-    ansi.move_cursor(console.row, console.col)
+    if console.row < console.height:
+        ansi.move_cursor(console.row+1, console.col)
     sys.stdout.flush()
 
 def term_echo(on=True):
