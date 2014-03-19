@@ -191,9 +191,7 @@ def get_octant(mbf, rx, ry):
 def exec_paint(ins):
     graphics.require_graphics_mode()
     x0, y0 = graphics.window_coords(*parse_coord(ins))
-    pattern = ''
-    c = graphics.get_colour_index(-1) 
-    border = c
+    pattern, c, border = '', -1, -1
     if util.skip_white_read_if(ins, (',',)):
         cval = expressions.parse_expression(ins, allow_empty=True)
         if not cval:
@@ -204,12 +202,10 @@ def exec_paint(ins):
             if not pattern:
                 # empty pattern "" is illegal function call
                 raise error.RunError(5)
-            while len(pattern)%graphics.bitsperpixel != 0:
+            while len(pattern) % graphics.bitsperpixel != 0:
                  # finish off the pattern with zeros
                  pattern.append(0)
-            # default for border,  if pattern is specified as string
-            # foreground attr
-            c = -1
+            # default for border, if pattern is specified as string: foreground attr
         else:
             c = vartypes.pass_int_unpack(cval)
         border = c    
@@ -218,11 +214,10 @@ def exec_paint(ins):
             if bval:
                 border = vartypes.pass_int_unpack(bval)
             if util.skip_white_read_if(ins, (',',)):
-                background_pattern = vartypes.pass_string_unpack(expressions.parse_expression(ins), err=5)
                 # background attribute - I can't find anything this does at all.
                 # as far as I can see, this is ignored in GW-Basic as long as it's a string, otherwise error 5
-    if pattern == '':
-        pattern = draw_and_play.solid_pattern(c)
+                background_pattern = vartypes.pass_string_unpack(expressions.parse_expression(ins), err=5)
+    pattern = pattern if pattern else draw_and_play.solid_pattern(c)
     util.require(ins, util.end_statement)         
     graphics.flood_fill(x0, y0, pattern, c, border)        
                 
