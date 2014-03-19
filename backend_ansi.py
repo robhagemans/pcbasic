@@ -115,7 +115,7 @@ def setup_screen(height, width):
     
 def close():
     term_echo()
-    build_line_cursor(True)
+    build_default_cursor(0, True)
     term.write(esc_show_cursor)
     term.write(esc_clear_screen)
     term.write(esc_reset)
@@ -260,7 +260,7 @@ def debug_print(s):
 def copy_page(src, dst):
     pass
         
-def build_line_cursor( is_line):
+def build_default_cursor(mode, is_line):
     # works on xterm, not on xfce
     # on xfce, gibberish is printed
     #term.write(esc_set_cursor_shape % 2*(is_line+1) - 1)

@@ -227,7 +227,8 @@ def copy_page(src, dst):
     
 # sort out the terminal, close the window, etc
 def close():
-    backend.close()
+    if backend:
+        backend.close()
     
 def get_screen_char_attr(crow, ccol, want_attr):
     ca = apage.row[crow-1].buf[ccol-1][want_attr]
@@ -280,7 +281,7 @@ def set_overwrite_mode(new_overwrite=True):
     global overwrite_mode
     if new_overwrite != overwrite_mode:
         overwrite_mode = new_overwrite
-        backend.build_line_cursor(new_overwrite)
+        backend.build_default_cursor(screen_mode, new_overwrite)
       
 def insert_char(crow, ccol, c, cattr):
     while True:
@@ -741,8 +742,7 @@ def clear_view():
 def allow_bottom_row(on=True):
     global bottom_row_allowed
     # allow writing on bottom line    
-    if bottom_row_allowed != on:
-        bottom_row_allowed = on
+    bottom_row_allowed = on
 
 #####################
     
