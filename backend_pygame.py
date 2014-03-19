@@ -258,7 +258,7 @@ def init():
     pre_init_mixer()    
     pygame.init()
     pygame.display.set_caption('PC-BASIC 3.23')
-    pygame.key.set_repeat(500,24)
+    pygame.key.set_repeat(500, 24)
     fonts = cpi_font.load_codepage()
     init_mixer()
     pygame.joystick.init()
@@ -334,13 +334,10 @@ def set_font(new_font_height):
 def init_screen_mode(mode, new_font_height):
     global glyphs, cursor0
     set_font(new_font_height)    
-    cursor0 = pygame.Surface((8, font_height), depth=8)
-    build_cursor()            
-    glyphs = []
-    for c in range(256):
-        glyphs.append(build_glyph(c, font, font_height) )      
+    glyphs = [ build_glyph(c, font, font_height) for c in range(256) ]
     # set standard cursor
-    build_line_cursor(True)
+    cursor0 = pygame.Surface((8, font_height), depth=8)
+    build_default_cursor(mode, True)
     
 def setup_screen(to_height, to_width):
     global screen, size 
@@ -370,28 +367,24 @@ def show_cursor(do_show, prev):
 def set_cursor_colour(color):
     cursor0.set_palette_at(254, screen.get_palette_at(color))
 
-def build_line_cursor(is_line):
+def build_default_cursor(mode, overwrite):
     global cursor_from, cursor_to, screen_changed
-    if is_line and not console.screen_mode:
-        cursor_from = font_height-2
-        cursor_to = font_height-2
-    elif is_line and console.screen_mode:
-        cursor_from = 0
-        cursor_to = font_height
+    if overwrite and not mode:
+        cursor_from, cursor_to = font_height-2, font_height-2
+    elif overwrite and mode:
+        cursor_from, cursor_to = 0, font_height-1
     else:
-        cursor_from = font_height/2
-        cursor_to = font_height-1
+        cursor_from, cursor_to = font_height/2, font_height-1
     build_cursor()
     screen_changed = True
 
 def build_shape_cursor(from_line, to_line):
     global cursor_from, cursor_to, screen_changed
-    if console.screen_mode:
-        return
-    cursor_from = max(0, min(from_line, font_height-1))
-    cursor_to = max(0, min(to_line, font_height-1))
-    build_cursor()
-    screen_changed = True
+    if not console.screen_mode:
+        cursor_from = max(0, min(from_line, font_height-1))
+        cursor_to = max(0, min(to_line, font_height-1))
+        build_cursor()
+        screen_changed = True
 
 def scroll(from_line):
     global screen_changed
@@ -477,7 +470,7 @@ def build_cursor():
     cursor0.fill(bg)
     for yy in range(font_height):
         for xx in range(8):
-            if yy<cursor_from or yy>cursor_to:
+            if yy < cursor_from or yy > cursor_to:
                 pass
             else:
                 cursor0.set_at((xx, yy), color)
@@ -512,7 +505,11 @@ def refresh_cursor():
         if (cycle/blink_cycles==1 or cycle/blink_cycles==3): 
             screen.blit(cursor0, ( (console.col-1)*8, (console.row-1)*font_height) )
     else:
-        xor_cursor_screen(console.row, console.col)        
+        index = console.attr & 0xf
+        # reference the destination area
+        dest_array = pygame.surfarray.pixels2d(screen.subsurface(pygame.Rect(
+                            (console.col-1)*8, (console.row-1)*font_height + cursor_from, 8, cursor_to - cursor_from + 1))) 
+        dest_array ^= index       
     last_row = console.row
     last_col = console.col
             
@@ -563,6 +560,7 @@ def check_screen():
             refresh_cursor()
             pygame.display.flip()             
         screen_changed = False
+
 
 def handle_mouse(e):
     global pen_down, pen_down_pos
@@ -693,6 +691,9 @@ def get_strig(fn):
 # graphical
 # low-level methods (pygame implementation)
 
+graph_view = None
+
+
 def put_pixel(x,y, index):
     global screen_changed
     console.apage.surface0.set_at((x,y), index)
@@ -791,19 +792,6 @@ def fast_put(x0, y0, varname, operation_char):
 
 ###################################
 
-graph_view = None
-
-# cursor for graphics mode
-def xor_cursor_screen(row,col):
-    index = console.attr & 0xf
-    for x in range((col-1)*8,col*8):
-        for y in range((row-1)*font_height+cursor_from,(row-1)*font_height+cursor_to):
-            pixel = get_pixel(x,y)
-            screen.set_at((x,y), pixel^index)
-#    # reference the destination area
-#    dest_array = pygame.surfarray.pixels2d(console.apage.surface0.subsurface(pygame.Rect(
-#                        (col-1)*8, (row-1)*font_height+cursor_from, 8, cursor_to-cursor_from+1))) 
-#    dest_array ^= cursor
 
 ####################################
 # SOUND
