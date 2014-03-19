@@ -697,16 +697,16 @@ graph_view = None
 def put_pixel(x,y, index):
     global screen_changed
     console.apage.surface0.set_at((x,y), index)
-    screen_changed=True
+    # empty the console buffer of affected characters
+    cx, cy = x//8, y//font_height
+    console.apage.row[cy].buf[cx] = (' ', console.attr)
+    screen_changed = True
 
 def get_pixel(x,y):    
     return console.apage.surface0.get_at((x,y)).b
 
 def get_graph_clip():
-    if graph_view == None:
-        view = console.apage.surface0.get_rect()
-    else:
-        view = graph_view
+    view = graph_view if graph_view else console.apage.surface0.get_rect()
     return view.left, view.top, view.right-1, view.bottom-1
 
 def set_graph_clip(x0, y0, x1, y1):
@@ -731,10 +731,13 @@ def remove_graph_clip():
 def apply_graph_clip():
     console.apage.surface0.set_clip(graph_view)
 
-def fill_rect(x0,y0, x1,y1, index):
+def fill_rect(x0, y0, x1, y1, index):
     global screen_changed
-    rect = pygame.Rect(x0,y0,x1-x0+1,y1-y0+1)
+    rect = pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)
     console.apage.surface0.fill(index, rect)
+    cx0, cy0, cx1, cy1 = x0//8, y0//font_height, x1//8, y1//font_height
+    for r in range(cy0, cy1+1):
+        console.apage.row[r].buf[cx0:cx1+1] = [(' ', console.attr)] * (cx1 - cx0 + 1)
     screen_changed = True
 
 def numpy_set(left, right):

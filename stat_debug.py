@@ -71,9 +71,10 @@ def dump_vars():
 def dump_screen():
     debug_print('  +' + '-'*console.width+'+\n')
     i = 0
-    for row in console.apage.charbuf:
+    for row in console.apage.row:
+        s = [ c[0] for c in row.buf ]
         i += 1
-        debug_print('{0:2}'.format(i) + '|' + ''.join(row)+'|\n')    
+        debug_print('{0:2}'.format(i) + '|' + ''.join(s)+'|\n')    
     debug_print('  +' + '-'*console.width+'+\n')
         
 def trace(on=True):
