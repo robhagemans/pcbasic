@@ -28,32 +28,18 @@ import fp
 # allow floating-point functions to write messages to the screen (Overflow etc.)
 fp.error_console = console
 
-
-def init_run(arg_run, arg_load, arg_quit, arg_cmd, arg_infile):
-    # initialise
-    program.clear_program()
-    if arg_run or arg_load:
-        fin = sys.stdin
-        try:
-            if arg_run != '':
-                fin = fileio.open_file_or_device(0, arg_infile, mode='L', defext='BAS')
-            program.load(fin)
-        except error.Error as e:
-            if not handle_error(e):
-                exit()
-    if arg_run and arg_cmd == None:
-        # if a command is given, the program is only loaded.
-        arg_cmd = 'RUN'
+def once(arg_cmd, arg_quit):
     if arg_cmd != None:
-        get_command_line(arg_cmd)
-        #cProfile.run('run.execution_loop()')
+        try:
+            get_command_line(line)
+        except error.Error as e:
+            handle_error(e)
         execution_loop()
         if arg_quit:
             # we were running as a script, exit after completion
             exit()
 
-def main_loop(arg_run, arg_load, arg_quit, arg_cmd, arg_infile):
-    init_run(arg_run, arg_load, arg_quit, arg_cmd, arg_infile)
+def main_loop():
     while True:
         # prompt for commands
         prompt()
