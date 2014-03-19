@@ -43,8 +43,6 @@ def main():
         for a in args.peek:
             [addr,val] = a.split(':')
             expressions.peek_values[int(addr)]=int(val)
-    # choose the screen backends and other devices 
-    prepare_devices(args)
     # converter and RUN invocations
     if args.conv_asc:
         convert(args.infile, args.save, 'A')
@@ -56,6 +54,8 @@ def main():
         args.run = True    
     # announce ourselves; go!
     try:
+        # choose the screen backends and other devices 
+        prepare_devices(args)
         if not args.run and args.cmd == None:
             console.write(greeting(debugstr))
         run.main_loop(args.run, args.load, args.quit, args.cmd, args.infile)
@@ -91,7 +91,12 @@ def prepare_devices(args):
     
 def convert(infile, outfile, mode):
     console.backend = backend_dumb
+    console.backend.set_dumberterm()
+    console.keys_visible = False
     console.init()
+    sound.backend = nosound
+    # choose peripherals    
+    deviceio.init_devices(args)
     fin = fileio.open_file_or_device(0, infile, mode='L', defext='') if infile else sys.stdin
     fout = fileio.open_file_or_device(0, outfile, mode='S', defext='') if outfile else sys.stdout
     program.load(fin)
