@@ -184,9 +184,10 @@ def set_mode(mode, new_colorswitch, new_apagenum, new_vpagenum):
         raise error.RunError(5)    
     # switch modes if needed
     if mode != screen_mode or new_colorswitch != colorswitch:
+        new_font_height = info[0]
+        backend.init_screen_mode(mode, new_font_height) # this can fail with err(5)
         screen_mode, colorswitch = mode, new_colorswitch 
-        font_height, attr, num_colours, num_palette, new_width, num_pages = info
-        backend.init_screen_mode(mode, font_height)  
+        font_height, attr, num_colours, num_palette, new_width, num_pages = info  
         # width persists on change to screen 0
         resize(25, width if mode == 0 else new_width)
         set_overwrite_mode(True)
