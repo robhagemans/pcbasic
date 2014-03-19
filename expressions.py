@@ -56,8 +56,9 @@ peek_values = {}
 
 def parse_expression(ins, allow_empty=False, empty_err=22):
     units, operators = [], []
-    d = util.skip_white(ins)
-    while d not in util.end_expression: 
+    while True: 
+        if util.skip_white(ins) in util.end_expression:
+            break    
         units.append(parse_expr_unit(ins))
         d = util.skip_white(ins)
         # string lit breaks expression, number after string lit breaks expression, + or - doesnt (could be an operator...
