@@ -113,12 +113,11 @@ def exec_window(ins):
         
 def exec_circle(ins):
     graphics.require_graphics_mode()
-    x0,y0 = graphics.window_coords(*parse_coord(ins))
+    x0, y0 = graphics.window_coords(*parse_coord(ins))
     util.require_read(ins, (',',))
     r = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
-    c = -1
-    start, stop = None, None
-    aspect = graphics.get_aspect_ratio()
+    start, stop, c = None, None, -1
+    aspect = graphics.pixel_aspect_ratio
     if util.skip_white_read_if(ins, (',',)):
         cval = expressions.parse_expression(ins, allow_empty=True)
         if cval:
@@ -135,56 +134,8 @@ def exec_circle(ins):
                 raise error.RunError(22) 
         elif cval == None:
             raise error.RunError(22)                     
-    util.require(ins, util.end_statement)        
-    if aspect.equals(aspect.one):
-        rx, dummy = graphics.window_scale(r,fp.Single.zero)
-        ry = rx
-    else:
-        if aspect.gt(aspect.one):
-            dummy, ry = graphics.window_scale(fp.Single.zero,r)
-            rx = fp.div(r, aspect).round_to_int()
-        else:
-            rx, dummy = graphics.window_scale(r,fp.Single.zero)
-            ry = fp.mul(r, aspect).round_to_int()
-    start_octant, start_coord, start_line = -1, -1, False
-    if start:
-        start = fp.unpack(vartypes.pass_single_keep(start))
-        start_octant, start_coord, start_line = get_octant(start, rx, ry)
-    stop_octant, stop_coord, stop_line = -1, -1, False
-    if stop:
-        stop = fp.unpack(vartypes.pass_single_keep(stop))
-        stop_octant, stop_coord, stop_line = get_octant(stop, rx, ry)
-    if aspect.equals(aspect.one):
-        graphics.draw_circle(x0,y0,rx,c, start_octant, start_coord, start_line, stop_octant, stop_coord, stop_line)
-    else:
-        # TODO - make this all more sensible, calculate only once
-        startx, starty, stopx, stopy = -1, -1, -1, -1
-        if start != None:
-            startx = abs(fp.mul(fp.Single.from_int(rx), fp.cos(start)).round_to_int())
-            starty = abs(fp.mul(fp.Single.from_int(ry), fp.sin(start)).round_to_int())
-        if stop != None:
-            stopx = abs(fp.mul(fp.Single.from_int(rx), fp.cos(stop)).round_to_int())
-            stopy = abs(fp.mul(fp.Single.from_int(ry), fp.sin(stop)).round_to_int())
-        graphics.draw_ellipse(x0,y0,rx,ry,c, start_octant/2, startx, starty, start_line, stop_octant/2, stopx, stopy, stop_line)
-
-def get_octant(mbf, rx, ry):
-    neg = mbf.neg 
-    if neg:
-        mbf.negate()
-    octant = 0
-    comp = fp.Single.pi4.copy()
-    while mbf.gt(comp):
-        comp.iadd(fp.Single.pi4)
-        octant += 1
-        if octant >= 8:
-            raise error.RunError(5) # ill fn call
-    if octant in (0, 3, 4, 7):
-        # running var is y
-        coord = abs(fp.mul(fp.Single.from_int(ry), fp.sin(mbf)).round_to_int())
-    else:
-        # running var is x    
-        coord = abs(fp.mul(fp.Single.from_int(rx), fp.cos(mbf)).round_to_int())
-    return octant, coord, neg                 
+    util.require(ins, util.end_statement)    
+    graphics.draw_circle_or_ellipse(x0, y0, r, start, stop, c, aspect)
       
 # PAINT -if paint *colour* specified, border default= paint colour
 # if paint *attribute* specified, border default=15      

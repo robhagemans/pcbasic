@@ -16,6 +16,7 @@ import var
 import console
 import draw_and_play
 import util
+
 backend = None
 
 # screen width and height in pixels
@@ -57,6 +58,31 @@ def init_graphics_mode(mode, new_font_height):
     else:
         bitsperpixel = 4
 
+# reset graphics state    
+def reset_graphics():
+    global last_point
+    x0, y0, x1, y1 = backend.get_graph_clip()
+    if view_graph_absolute:
+        last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
+    else:
+        last_point = (x1-x0)/2, (y1-y0)/2
+    draw_and_play.draw_scale = 4
+    draw_and_play.draw_angle = 0
+
+def get_colour_index(c):
+    if c == -1: # foreground
+        c = console.attr & 0xf
+    elif c == -2: # background
+        c = (console.attr>>4) & 0x7    
+    else:
+        c = min(console.num_colours - 1, max(0, c))
+    return c
+
+def check_coords(x, y):
+    return min(size[0], max(-1, x)), min(size[1], max(-1, y))
+    
+### PSET, POINT
+
 def put_point(x, y, c):
     global last_point
     last_point = (x,y)
@@ -68,26 +94,8 @@ def put_point(x, y, c):
 def get_point (x,y):
     x, y = view_coords(x,y)
     return backend.get_pixel(x,y)
-            
-def draw_box_filled(x0,y0, x1,y1, c):
-    global last_point 
-    last_point = x1,y1
-    x0, y0 = view_coords(x0,y0)
-    x1, y1 = view_coords(x1,y1)
-    c = get_colour_index(c)
-    if y1 < y0:
-        y0, y1 = y1, y0
-    if x1 < x0:
-        x0, x1 = x1, x0    
-    backend.apply_graph_clip()
-    backend.fill_rect(x0,y0,x1,y1,c)
-    backend.remove_graph_clip()
-    
-def get_coord():
-    return last_point
 
-def get_aspect_ratio():
-    return pixel_aspect_ratio
+### WINDOW coords
 
 def set_graph_window(fx0, fy0, fx1, fy1, cartesian=True):
     global graph_window, graph_window_bounds
@@ -148,28 +156,21 @@ def window_scale(fx, fy):
         y = fy.round_to_int()
     return x, y
 
-def get_colour_index(c):
-    if c == -1: # foreground
-        c = console.attr & 0xf
-    elif c == -2: # background
-        c = (console.attr>>4) & 0x7    
-    else:
-        if c < 0:
-            c = 0
-        if c >= console.num_colours:
-            c = console.num_colours-1
-    return c
-
-def check_coords(x, y):
-    if x < 0:
-        x = -1
-    elif x > size[0]:
-        x = size[0]
-    if y < 0:
-        y = -1
-    elif y > size[1]:
-        y = size[1]        
-    return x, y
+### LINE
+            
+def draw_box_filled(x0,y0, x1,y1, c):
+    global last_point 
+    last_point = x1,y1
+    x0, y0 = view_coords(x0,y0)
+    x1, y1 = view_coords(x1,y1)
+    c = get_colour_index(c)
+    if y1 < y0:
+        y0, y1 = y1, y0
+    if x1 < x0:
+        x0, x1 = x1, x0    
+    backend.apply_graph_clip()
+    backend.fill_rect(x0,y0,x1,y1,c)
+    backend.remove_graph_clip()
     
 def draw_line(x0, y0, x1, y1, c, pattern=0xffff):
     global last_point
@@ -240,6 +241,59 @@ def draw_box(x0, y0, x1, y1, c, pattern=0xffff):
     mask = draw_straight(x1, y1, x1, y0, c, pattern, mask)
     mask = draw_straight(x0, y1, x0, y0, c, pattern, mask)
     backend.remove_graph_clip()
+
+### circle, ellipse, sectors
+
+def draw_circle_or_ellipse(x0, y0, r, start, stop, c, aspect):
+    if aspect.equals(aspect.one):
+        rx, dummy = window_scale(r,fp.Single.zero)
+        ry = rx
+    else:
+        if aspect.gt(aspect.one):
+            dummy, ry = window_scale(fp.Single.zero,r)
+            rx = fp.div(r, aspect).round_to_int()
+        else:
+            rx, dummy = window_scale(r,fp.Single.zero)
+            ry = fp.mul(r, aspect).round_to_int()
+    start_octant, start_coord, start_line = -1, -1, False
+    if start:
+        start = fp.unpack(vartypes.pass_single_keep(start))
+        start_octant, start_coord, start_line = get_octant(start, rx, ry)
+    stop_octant, stop_coord, stop_line = -1, -1, False
+    if stop:
+        stop = fp.unpack(vartypes.pass_single_keep(stop))
+        stop_octant, stop_coord, stop_line = get_octant(stop, rx, ry)
+    if aspect.equals(aspect.one):
+        draw_circle(x0, y0, rx, c, start_octant, start_coord, start_line, stop_octant, stop_coord, stop_line)
+    else:
+        # TODO - make this all more sensible, calculate only once
+        startx, starty, stopx, stopy = -1, -1, -1, -1
+        if start != None:
+            startx = abs(fp.mul(fp.Single.from_int(rx), fp.cos(start)).round_to_int())
+            starty = abs(fp.mul(fp.Single.from_int(ry), fp.sin(start)).round_to_int())
+        if stop != None:
+            stopx = abs(fp.mul(fp.Single.from_int(rx), fp.cos(stop)).round_to_int())
+            stopy = abs(fp.mul(fp.Single.from_int(ry), fp.sin(stop)).round_to_int())
+        draw_ellipse(x0, y0, rx, ry, c, start_octant/2, startx, starty, start_line, stop_octant/2, stopx, stopy, stop_line)
+
+def get_octant(mbf, rx, ry):
+    neg = mbf.neg 
+    if neg:
+        mbf.negate()
+    octant = 0
+    comp = fp.Single.pi4.copy()
+    while mbf.gt(comp):
+        comp.iadd(fp.Single.pi4)
+        octant += 1
+        if octant >= 8:
+            raise error.RunError(5) # ill fn call
+    if octant in (0, 3, 4, 7):
+        # running var is y
+        coord = abs(fp.mul(fp.Single.from_int(ry), fp.sin(mbf)).round_to_int())
+    else:
+        # running var is x    
+        coord = abs(fp.mul(fp.Single.from_int(rx), fp.cos(mbf)).round_to_int())
+    return octant, coord, neg          
 
 # see e.g. http://en.wikipedia.org/wiki/Midpoint_circle_algorithm
 def draw_circle(x0,y0,r,c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, line1=False):
@@ -495,6 +549,8 @@ def flood_fill (x, y, pattern, c, border):
         # show progress
         console.check_events()
 
+### PUT and GET
+
 def operation_set(pix0, pix1):
     return pix1
 
@@ -615,6 +671,8 @@ def get_area(x0,y0,x1,y1, array):
     # store a copy in the fast-put store
     backend.fast_get(x0, y0, x1, y1, array)
     
+## VIEW    
+    
 def set_graph_view(x0,y0,x1,y1, absolute=True):
     global graph_view_set, view_graph_absolute, last_point
     # VIEW orders the coordinates
@@ -649,15 +707,4 @@ def view_coords(x,y):
 
 def clear_graphics_view():
     backend.clear_graph_clip((console.attr>>4) & 0x7)
-
-# reset graphics state    
-def reset_graphics():
-    global last_point
-    x0, y0, x1, y1 = backend.get_graph_clip()
-    if view_graph_absolute:
-        last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
-    else:
-        last_point = (x1-x0)/2, (y1-y0)/2
-    draw_and_play.draw_scale = 4
-    draw_and_play.draw_angle = 0
 
