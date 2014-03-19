@@ -160,7 +160,7 @@ def window_scale(fx, fy):
             
 def draw_box_filled(x0,y0, x1,y1, c):
     global last_point 
-    last_point = x1,y1
+    last_point = x1, y1
     x0, y0 = view_coords(x0,y0)
     x1, y1 = view_coords(x1,y1)
     c = get_colour_index(c)
@@ -169,7 +169,7 @@ def draw_box_filled(x0,y0, x1,y1, c):
     if x1 < x0:
         x0, x1 = x1, x0    
     backend.apply_graph_clip()
-    backend.fill_rect(x0,y0,x1,y1,c)
+    backend.fill_rect(x0, y0, x1, y1, c)
     backend.remove_graph_clip()
     
 def draw_line(x0, y0, x1, y1, c, pattern=0xffff):
@@ -187,8 +187,8 @@ def draw_line(x0, y0, x1, y1, c, pattern=0xffff):
     if steep:
         x0, y0, x1, y1 = y0, x0, y1, x1
         dx, dy = dy, dx
-    sx = 1 if x1>x0 else -1
-    sy = 1 if y1>y0 else -1
+    sx = 1 if x1 > x0 else -1
+    sy = 1 if y1 > y0 else -1
     mask = 0x8000
     error = dx / 2
     x, y = x0, y0
