@@ -177,11 +177,15 @@ def set_attr(attr):
     global last_attr
     if attr == last_attr:
         return
+    term.write(esc_set_colour % 0) 
+    if attr & 0x80:
+        # blink
+        term.write(esc_set_colour % 5)   
     fore, back = apply_palette(attr & 0xf), apply_palette((attr>>4) & 0x7)
     if (fore%16)<8:
         term.write(esc_set_colour % (30+colours[fore%8]))
     else:
-        term.write(esc_set_colour % (90+colours[fore%8]))
+        term.write(esc_set_colour % (90+colours[fore%8]))       
     term.write(esc_set_colour % (40+colours[back%8]))
     term.write(esc_set_cursor_colour % colournames[fore%16])
     term.flush()  
