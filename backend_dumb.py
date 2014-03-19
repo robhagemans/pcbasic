@@ -69,11 +69,6 @@ def set_dumberterm():
     console.echo_read = DumberTermRead()
     console.echo_write = DumberTermWrite()
     
-
-# console backend capabilities
-supports_pen = False
-supports_stick = False
-
 # keep track of enter presses, to work well on echoing terminal with human operator
 enter_pressed = False
 
@@ -145,6 +140,18 @@ def build_line_cursor(is_line):
 def build_shape_cursor(from_line, to_line):
     pass
 
+# no pen, stick
+
+def get_pen(fn):
+    # fn 6,7,8,9 refer to character coordinates, 0 not allowed
+    return 1 if fn >= 6 else 0 
+
+def get_stick(fn):
+    return 0
+  
+def get_strig(fn):
+    return False 
+
 #################
     
 def check_keys():
@@ -161,6 +168,3 @@ def check_keys():
     else:
         console.insert_key(c)
 
-    
-    
-    

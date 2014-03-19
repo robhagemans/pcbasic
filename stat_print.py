@@ -450,6 +450,6 @@ def exec_pcopy(ins):
     util.require_read(ins, (',',))
     dst = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
-    if not console.copy_page(src, dst):
-        raise error.RunError(5)
+    util.range_check(0, console.num_pages-1, src, dst)
+    console.copy_page(src, dst)
         

@@ -17,8 +17,6 @@
 # - gameterm (text, graphics and sound, using pygame)
 # - terminal (textmode only, using escape sequences)
 
-import copy
-
 import util
 import error
 import graphics
@@ -122,12 +120,20 @@ keys_line_replace_chars = {
     }        
 
 #############################
+# core event handler    
 
-def close():
-    backend.close()
+def check_events():
+    # check console events
+    backend.check_events()   
+    # check&handle user events
+    events.check_events()
+    # manage sound queue
+    sound.check_sound()
 
 def idle():
     backend.idle()
+
+#############################
     
 def set_palette(new_palette=None):
     backend.set_palette(new_palette)
@@ -138,22 +144,14 @@ def set_palette_entry(index, colour):
 def get_palette_entry(index):
     return backend.get_palette_entry(index)
 
-def read_screen(crow, ccol):
-    return apage.row[crow-1].buf[ccol-1]
-
 def get_pen(fn):
-    if events.pen_handler.enabled and backend.supports_pen:
-        return backend.get_pen(fn)
-    elif fn >= 6:
-        return 1
-    else:
-        return 0    
+    return backend.get_pen(fn)
 
 def get_stick(fn):
-    return backend.get_stick(fn) if (stick_is_on and backend.supports_stick) else 0
+    return backend.get_stick(fn) 
   
 def get_strig(fn):
-    return stick_is_on and backend.supports_stick and backend.get_strig(fn)
+    return backend.get_strig(fn)
    
 #############################
 # init
@@ -214,28 +212,21 @@ def resize(to_height, to_width):
 
 def copy_page(src, dst):
     global pages
-    if src < num_pages and dst < num_pages:
-        for x in range(height):
-            dstrow, srcrow = pages[dst].row[x], pages[src].row[x]
-            dstrow.buf = copy.copy(srcrow.buf)
-            dstrow.end = srcrow.end
-            dstrow.wrap = srcrow.wrap            
-        backend.copy_page(src,dst)
-        return True
-    else:
-        return False
+    for x in range(height):
+        dstrow, srcrow = pages[dst].row[x], pages[src].row[x]
+        dstrow.buf[:] = srcrow.buf[:]
+        dstrow.end = srcrow.end
+        dstrow.wrap = srcrow.wrap            
+    backend.copy_page(src,dst)
     
-##############################
-# core event handler    
-
-def check_events():
-    # check console events
-    backend.check_events()   
-    # check&handle user events
-    events.check_events()
-    # manage sound queue
-    sound.check_sound()
-
+# sort out the terminal, close the window, etc
+def close():
+    backend.close()
+    
+def get_screen_char_attr(crow, ccol, want_attr):
+    ca = apage.row[crow-1].buf[ccol-1][want_attr]
+    return ca if want_attr else ord(ca)
+    
 ############################### 
 # interactive mode         
 
@@ -517,7 +508,7 @@ def clear():
     if keys_visible:
         show_keys()
 
-##### i/o methods (fileio interface)
+##### i/o methods
         
 def write(s, scroll_ok=True): 
     if echo_write != None: 

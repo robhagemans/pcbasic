@@ -206,11 +206,9 @@ def clear_all():
     sound.stop_all_sound()
     #   Resets sound to music foreground
     sound.music_foreground = True
-    #   Resets PEN to off
-    console.pen_is_on = False
     #   Resets STRIG to off
     console.stick_is_on = False
-    # disable all event trapping
+    # disable all event trapping (resets PEN to OFF too)
     events.reset_events()
 
 # NEW    
