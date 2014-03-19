@@ -25,10 +25,6 @@ import ansi, unicodepage
 import error
 import console
 
-# console backend capabilities
-supports_pen = False
-supports_stick = False
-
 palette = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
 
 term_echo_on = True
@@ -166,4 +162,16 @@ def idle():
         
 def build_shape_cursor(from_line, to_line):
     pass
-            
+
+# no pen, stick
+
+def get_pen(fn):
+    # fn 6,7,8,9 refer to character coordinates, 0 not allowed
+    return 1 if fn >= 6 else 0 
+
+def get_stick(fn):
+    return 0
+  
+def get_strig(fn):
+    return False 
+    

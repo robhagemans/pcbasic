@@ -643,9 +643,6 @@ def pause_key():
 ##############################################
 # light pen (emulated by mouse) & joystick
 
-supports_pen = True
-supports_stick = True
-
 # should be True on mouse click events
 pen_down = 0
 pen_down_pos = (0,0)

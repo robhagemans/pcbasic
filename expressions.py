@@ -483,11 +483,7 @@ def value_screen(ins):
     if console.view_set:
         util.range_check(console.view_start, console.scroll_height, row)
     util.range_check(1, console.width, col)
-    (char, attr) = console.read_screen(row, col)
-    if z: 
-        return vartypes.pack_int(attr)
-    else:
-        return vartypes.pack_int(ord(char))
+    return vartypes.pack_int(console.get_screen_char_attr(row, col, z))
     
 def value_input(ins):    # INPUT$
     if ins.read(1) != '$':
@@ -687,24 +683,29 @@ def value_err(ins):
     
 #####################################################################
 # pen, stick and strig
+import events
 
 def value_pen(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 9, fn)
-    return vartypes.pack_int(console.get_pen(fn))
+    pen = console.get_pen(fn)
+    if pen == None or not events.pen_handler.enabled:
+        # should return 0 or char pos 1 if PEN not ON    
+        pen = 1 if fn >= 6 else 0 
+    return vartypes.pack_int(pen)
     
 # coordinated run 1..200 (says http://www.qb64.net/wiki/index.php?title=STICK)
 # STICK(0) is required to get values from the other STICK functions. Always read it first!
 def value_stick(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 3, fn)
-    return vartypes.pack_int(console.get_stick(fn))
+    return vartypes.pack_int(console.get_stick(fn) if console.stick_is_on else 0)
     
 def value_strig(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     # 0,1 -> [0][0] 2,3 -> [0][1]  4,5-> [1][0]  6,7 -> [1][1]
     util.range_check(0, 7, fn)
-    return vartypes.bool_to_int_keep(console.get_strig(fn))
+    return vartypes.bool_to_int_keep(console.stick_is_on and console.get_strig(fn))
     
 #########################################################
 # memory and machine
