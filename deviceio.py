@@ -82,7 +82,7 @@ def create_device(arg, default=None):
             if addr.upper() == 'CUPS':
                 device = fileio.TextFile(PrinterStream(val))      
             elif addr.upper() == 'FILE':
-                device = DeviceFile(val, access='wb')
+                device = DeviceFile(val, access='W')
             elif addr.upper() == 'PORT':
                 device = SerialFile(val)    
     else:
@@ -125,7 +125,7 @@ class ConsoleFile(BaseFile):
         self.fhandle = console
         self.number = 0
         self.mode = 'A'
-        self.access = 'r+b'
+        self.access = 'R'
         # SCRN file uses a separate width setting from the console
         self.width = console.width
         
@@ -245,8 +245,8 @@ class PrinterStream(StringIO.StringIO):
 
 # essentially just a text file that doesn't close if asked to
 class DeviceFile(TextFile):
-    def __init__(self, unixpath, access='rb'):
-        if 'W' in access.upper():
+    def __init__(self, unixpath, access='R'):
+        if access == 'W':
             mode = 'O'
         else:
             mode = 'I'
@@ -264,7 +264,7 @@ class SerialFile(RandomBase):
 
     def __init__(self, port, number=0, reclen=128):
         self._in_buffer = bytearray()
-        RandomBase.__init__(self, serial.serial_for_url(port, timeout=0, do_not_open=True), number, 'R', 'r+b', reclen)
+        RandomBase.__init__(self, serial.serial_for_url(port, timeout=0, do_not_open=True), number, 'R', 'RW', '', reclen)
         if port.split(':', 1)[0] == 'socket':
             self.fhandle = SocketSerialWrapper(self.fhandle)
     
