@@ -23,6 +23,9 @@ import deviceio
 import graphics
 # for fast get & put only
 import var
+# for debug_print only
+import sys
+
 
 # CGA palette choices
 colours16 = [
@@ -266,6 +269,9 @@ def close():
     pygame.joystick.quit()
     pygame.display.quit()    
 
+def debug_print(s):
+    sys.stderr.write(s)    
+
 def get_palette_entry(index):
     return palette64[index]
 
@@ -310,10 +316,6 @@ def clear_rows(bg, start, stop):
     console.apage.surface0.fill(bg, scroll_area)
     console.apage.surface1.fill(bg, scroll_area)
     screen_changed = True
-    
-def set_scroll_area(view_start, height, width):
-    # this one is only needed for backend_ansi
-    pass
     
 # not in interface
 def set_font(new_font_height):

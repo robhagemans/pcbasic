@@ -23,6 +23,12 @@ import console
 # non-printing characters
 control = ('\x07', '\x08', '\x09', '\x0a','\x0b','\x0c', '\x0d', '\x1c', '\x1d', '\x1e', '\x1f')
 
+# keep track of enter presses, to work well on echoing terminal with human operator
+enter_pressed = False
+
+# this is called by set_vpage
+screen_changed = False
+    
 class DumbTerm(object):
     def write(self, s):
         global enter_pressed
@@ -50,7 +56,6 @@ class DumbTerm(object):
                 sys.stdout.write(unicodepage.to_utf8(c))    
         sys.stdout.flush()
     
-    
 class DumberTermRead(object):
     def write(self, s):
         if s not in ('\r', '\n'):
@@ -68,13 +73,9 @@ def set_dumbterm():
 def set_dumberterm():
     console.echo_read = DumberTermRead()
     console.echo_write = DumberTermWrite()
-    
-# keep track of enter presses, to work well on echoing terminal with human operator
-enter_pressed = False
 
-# this is called by set_vpage
-screen_changed = False
-
+def debug_print(s):
+    sys.stderr.write(s)    
     
 def idle():
     time.sleep(0.024)
@@ -105,9 +106,6 @@ def scroll(from_line):
     pass
     
 def scroll_down(from_line):
-    pass
-
-def set_scroll_area(view_start, height, width):
     pass
 
 def set_cursor_colour(c):

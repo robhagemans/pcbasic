@@ -21,6 +21,8 @@ import vartypes
 import expressions
 import tokenise
 
+from console import debug_print
+
 debug_tron = False
 watch_list = []
 
@@ -42,9 +44,6 @@ def exec_DEBUG(ins):
         traceback.print_tb(sys.exc_info()[2])
     sys.stdout = sys.__stdout__
     debug_print(buf.getvalue())
-
-def debug_print(s):
-    sys.stderr.write(s)    
         
 def debug_step(linum):
     if not tokenise.debug:
