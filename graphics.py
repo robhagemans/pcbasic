@@ -461,6 +461,7 @@ def fill_scanline(x_start, x_stop, y, pattern):
       
 # flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
 def flood_fill (x, y, pattern, c, border): 
+    c, border = get_colour_index(c), get_colour_index(border)
     if get_point(x, y) == border:
         return
     bound_x0, bound_y0, bound_x1, bound_y1 = backend.get_graph_clip()  
