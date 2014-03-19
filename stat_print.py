@@ -391,6 +391,7 @@ def exec_view_print(ins):
         util.require_read(ins, ('\xCC',)) # TO
         stop = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_statement)
+        util.range_check(1, 24, start, stop)
         console.set_view(start, stop)
     
 def exec_width(ins):
