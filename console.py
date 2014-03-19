@@ -157,8 +157,10 @@ def get_strig(fn):
 # init
 
 def init():
-    backend.init()
+    if not backend.init():
+        return False
     set_mode(0, 1, 0, 0)
+    return True
 
 def set_mode(mode, new_colorswitch, new_apagenum, new_vpagenum):
     global screen_mode, num_pages, colorswitch, apagenum, vpagenum, apage, vpage, attr, num_colours, num_palette
