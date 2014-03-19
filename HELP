@@ -2431,6 +2431,32 @@ ERRORS:
 PAINT statement
 PAINT (x, y) [, attrib [, border [, dummy ] ] ]
 ---------------
+Flood-fills the screen with a colour or pattern.
+'x', 'y' are number-valued expressions in the range [-32768, 32767] which give
+the seed point for the flood fill. If 'x', 'y' are outside the visible screen 
+area, no flood fill is performed.
+'attrib' is an expression that specifies the fill attribute or pattern. If not 
+specified, the current foreground attribute is used. 
+If 'attrib' has a number value, it must be in [0, 255]; it specifies the colour 
+attribute used to fill. 
+If 'attrib' has a string value, it specifies a tile pattern (see below).
+'border' is a number-valued expression in [0,255]. It specifies the attribute
+of the fill boundary - the flood fill stops when it encounters pixels of this 
+attribute. If 'attrib' is not specified, the boundary attribute is the same as
+the fill attribute, if that was speified as a number; if a tile pattern was 
+specified, the default border attribute is the current foreground attribute.
+'dummy' is a string-valued expression that is optional and has no effect.
+TILE PATTERNS
+    A tile pattern can be specified by a string of up to 255 characters. The 
+    interpretation of the string depends on the number of bits per pixel in 
+    the current screen mode.
+    8 pixels wide.
+
+
+NOTES:
+-   The GW-BASIC manual suggests the value of 'dummy' is used to determine the
+    boundary of a tile pattern. However, in practice this appears to have no
+    discernable effect. It is not implemented in PC-BASIC 3.23.
 
 
 PRINT, PRINT# and LPRINT statements
