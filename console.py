@@ -739,11 +739,6 @@ def clear_view():
     row, col = view_start, 1
     backend.clear_rows((attr>>4) & 0x7, view_start, height if bottom_row_allowed else scroll_height)
 
-def allow_bottom_row(on=True):
-    global bottom_row_allowed
-    # allow writing on bottom line    
-    bottom_row_allowed = on
-
 #####################
     
 def put_char(c):
@@ -773,7 +768,7 @@ def set_pos(to_row, to_col, scroll_ok=True):
     backend.set_cursor_colour(apage.row[row-1].buf[col-1][1] & 0xf)
 
 def check_pos(scroll_ok=True):
-    global row, col
+    global row, col, bottom_row_allowed
     oldrow, oldcol = row, col
     if bottom_row_allowed:
         if row == height:
@@ -783,7 +778,7 @@ def check_pos(scroll_ok=True):
             return col == oldcol    
         else:
              # adjust viewport if necessary
-            allow_bottom_row(False)            
+            bottom_row_allowed = False
     # if row > height, we also end up here
     if col > width:
         if row < scroll_height or scroll_ok:

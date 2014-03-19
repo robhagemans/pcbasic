@@ -186,7 +186,7 @@ def exec_locate(ins):
     util.range_check(1, console.width, col)
     if row == console.height:
         # temporarily allow writing on last row
-        console.allow_bottom_row()       
+        console.bottom_row_allowed = True       
     console.set_pos(row, col, scroll_ok=False) 
     if cursor != None:
         util.range_check(0, 1, cursor)   
