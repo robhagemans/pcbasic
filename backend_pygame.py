@@ -74,8 +74,7 @@ palette64=[0,1,2,3,4,5,20,7,56,57,58,59,60,61,62,63]
 
 # screen width and height in pixels
 size = (0,0)
-# screen scroll area rect
-scroll_area = None
+
 # letter shapes
 glyphs = []
 fonts = None
@@ -294,7 +293,6 @@ def set_palette(new_palette=None):
     screen.set_palette(gamepalette)
     under_cursor.set_palette(gamepalette) 
 
-    
 def set_palette_entry(index, colour):
     global palette64 
     palette64[index] = colour
@@ -305,19 +303,17 @@ def set_palette_entry(index, colour):
     screen.set_palette_at(index,gamecolor)
     under_cursor.set_palette_at(index,gamecolor)
     
-def clear_scroll_area(bg):
+def clear_rows(bg, start, stop):
     global screen_changed
+    scroll_area = pygame.Rect(0, (start-1)*font_height, size[0], (stop-start+1)*font_height) 
     console.apage.surface0.fill(bg, scroll_area)
     console.apage.surface1.fill(bg, scroll_area)
     screen_changed = True
     
-def clear_row(this_row, bg):
-    global screen_changed
-    rect = pygame.Rect(0,(this_row-1)*font_height, 1+console.width*8,1+font_height)
-    console.apage.surface0.fill(bg, rect)
-    console.apage.surface1.fill(bg, rect)
-    screen_changed = True
-
+def set_scroll_area(view_start, height, width):
+    # this one is only needed for backend_ansi
+    pass
+    
 # not in interface
 def set_font(new_font_height):
     global fonts, font, font_height, under_cursor
@@ -362,10 +358,6 @@ def copy_page(src,dst):
     console.pages[dst].surface0.blit(console.pages[src].surface0, (0,0))
     console.pages[dst].surface1.blit(console.pages[src].surface1, (0,0))
     screen_changed = True
-    
-def set_scroll_area(view_start, scroll_height, width):    
-    global scroll_area
-    scroll_area = pygame.Rect(0,(view_start-1)*font_height, width*8, (scroll_height-view_start+1)*font_height)    
     
 def show_cursor(do_show, prev):
     global screen_changed

@@ -384,7 +384,7 @@ def clear_rest_of_line(srow, scol):
     if scol > 1:
         redraw_row(scol-1, srow)
     else:
-        backend.clear_row(srow, (attr>>4) & 0x7)
+        backend.clear_rows((attr>>4) & 0x7, srow, srow)
     therow.end = save_end
 
 def backspace():
@@ -672,7 +672,7 @@ def list_keys():
 
 def clear_key_row():
     apage.row[24].clear()
-    backend.clear_row(25, (attr>>4) & 0x7)
+    backend.clear_rows((attr>>4) & 0x7, 25, 25)
 
 def hide_keys():
     global keys_visible
@@ -710,14 +710,14 @@ def write_for_keys(s, col, cattr):
             backend.putc_at(25, col, c)    
             apage.row[24].buf[col-1] = c, cattr
         col += 1
-        
+    backend.set_attr(attr)     
+    
 #####################
 
-def set_view(start=1,stop=24):
+def set_view(start=1, stop=24):
     global view_start, scroll_height, view_set
-    view_set = True    
-    view_start, scroll_heigh = start, stop
-    backend.set_scroll_area(view_start, scroll_height, width)
+    view_set, view_start, scroll_height = True, start, stop
+    backend.set_scroll_area(view_start, height if bottom_row_allowed else scroll_height, width)
     set_pos(start, 1)
  
 def unset_view():
@@ -731,14 +731,14 @@ def clear_view():
         apage.row[r-1].clear()
         apage.row[r-1].wrap = False
     row, col = view_start, 1
-    backend.clear_scroll_area((attr>>4) & 0x7)
+    backend.clear_rows((attr>>4) & 0x7, view_start, height if bottom_row_allowed else scroll_height)
 
 def allow_bottom_row(on=True):
     global bottom_row_allowed
     # allow writing on bottom line    
     if bottom_row_allowed != on:
-        backend.set_scroll_area(view_start, height if on else scroll_height, width)
         bottom_row_allowed = on
+        backend.set_scroll_area(view_start, height if bottom_row_allowed else scroll_height, width)
 
 #####################
     
@@ -748,7 +748,7 @@ def put_char(c):
     check_pos(scroll_ok=True)
     # no blink, bg=0
     cattr = attr & 0xf if screen_mode else attr
-    backend.set_attr(cattr)
+    backend.set_attr(cattr) 
     backend.putc_at(row, col, c)    
     therow = apage.row[row-1]
     therow.buf[col-1] = (c, cattr)

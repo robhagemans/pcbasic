@@ -20,6 +20,7 @@
 import time
 import sys, tty, termios, select
 import os
+import sys
 
 import ansi, unicodepage
 import error
@@ -29,7 +30,11 @@ palette = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
 
 term_echo_on = True
 term_attr = None
+term = sys.stdout
 
+esc_scroll_screen = '\x1b[r'
+esc_clear_screen = '\x1b[2J'
+esc_clear_line = '\x1b[2K'
 
 def init():
     # we need raw terminal the whole time to keep control of stdin and keep it from waiting for 'enter'
@@ -40,7 +45,7 @@ def init_screen_mode(mode, new_font_height):
         raise error.RunError(5)
     
 def setup_screen(height, width):
-    ansi.clear_screen()
+    term.write(esc_clear_screen)
     ansi.resize_term(height, width)   
     set_palette()
         
@@ -48,33 +53,26 @@ def close():
     term_echo()
     build_line_cursor(True)
     show_cursor(True, False)
-    ansi.clear_screen()
+    term.write(esc_clear_screen)
     ansi.reset()
     
 def init_graphics():
     pass
 
-def clear_scroll_area(bg):
-    ansi.set_colour(0, apply_palette(bg))
-    for r in range(console.view_start, console.scroll_height+1):
+def clear_rows(bg, start, stop):
+    for r in range(start, stop+1):
         ansi.move_cursor(r,1)    
-        ansi.clear_line()
-    ansi.move_cursor(console.row,console.col)
+        term.write(esc_clear_line)
+    ansi.move_cursor(console.row, console.col)
+    term.flush()
 
-def clear_row(this_row, bg):
-    ansi.move_cursor(this_row,1)    
-    ansi.clear_line()
-    ansi.move_cursor(console.row,console.col)
-    
 def redraw():
    for y in range(console.height):
         console.redraw_row(0, y+1)
 
 def set_palette(new_palette=None):
     global palette
-    if new_palette==None:
-        new_palette=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-    palette= new_palette
+    palette = new_palette if new_palette else [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] 
     redraw()
     
 def set_palette_entry(index, colour):
@@ -86,7 +84,8 @@ def get_palette_entry(index):
     return palette[index]
 
 def set_scroll_area(view_start, height, width):
-    ansi.set_scroll_region(view_start, height)    
+    pass
+    #ansi.set_scroll_region(view_start, height)    
     
 def set_cursor_colour(color):
     ansi.set_cursor_colour(apply_palette(color))
@@ -108,23 +107,32 @@ def apply_palette(colour):
 
 last_attr = None
 def set_attr(attr):
+    global last_attr
     if attr == last_attr:
         return
     fore, back = attr & 0xf, (attr>>4) & 0x7
-    ansi.set_colour(apply_palette(fore),apply_palette(back))
+    ansi.set_colour(apply_palette(fore), apply_palette(back))
     ansi.set_cursor_colour(apply_palette(fore))  
     last_attr = attr
 
-def putc_at(row, col, c, attr):
+def putc_at(row, col, c):
     ansi.move_cursor(row, col)
-    sys.stdout.write(unicodepage.to_utf8(c))
-    sys.stdout.flush()
+    term.write(unicodepage.to_utf8(c))
+    term.flush()
    
 def scroll(from_line):
+    ansi.set_scroll_region(console.view_start, console.scroll_height)    
     ansi.scroll_up(1)
+    term.write(esc_scroll_screen)
+    ansi.move_cursor(console.row, console.col)
+    term.flush()
     
 def scroll_down(from_line):
+    ansi.set_scroll_region(console.view_start, console.scroll_height)    
     ansi.scroll_down(1)
+    sys.stdout.write(esc_scroll_screen)
+    ansi.move_cursor(console.row, console.col)
+    sys.stdout.flush()
 
 def term_echo(on=True):
     global term_attr, term_echo_on

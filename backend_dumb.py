@@ -88,12 +88,9 @@ def close():
 def check_events():
     check_keys()
     
-def clear_row(the_row, bg):
+def clear_rows(the_row, bg):
     pass
 
-def clear_scroll_area(bg):
-    pass  
-    
 def init_screen_mode(mode, new_font_height):
     if mode != 0:
         raise error.RunError(5)    
@@ -110,6 +107,9 @@ def scroll(from_line):
 def scroll_down(from_line):
     pass
 
+def set_scroll_area(view_start, height, width):
+    pass
+
 def set_cursor_colour(c):
     pass
         
@@ -124,9 +124,6 @@ def get_palette_entry(index):
 
 def show_cursor(do_show, prev):
     pass    
-
-def set_scroll_area(view_start, scroll_height, width):
-    pass
 
 def set_attr(cattr):
     pass
