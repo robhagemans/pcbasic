@@ -80,7 +80,7 @@ def idle():
     time.sleep(0.024)
     
 def init():
-    pass
+    return True
         
 def close():
     pass
@@ -88,7 +88,7 @@ def close():
 def check_events():
     check_keys()
     
-def clear_rows(the_row, bg):
+def clear_rows(bg, start, stop):
     pass
 
 def init_screen_mode(mode, new_font_height):

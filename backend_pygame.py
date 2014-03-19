@@ -260,6 +260,7 @@ def init():
     init_mixer()
     pygame.joystick.init()
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
+    return True
         
 def close():
     pygame.joystick.quit()

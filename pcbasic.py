@@ -82,10 +82,18 @@ def prepare_devices(args):
             sound.backend = backend_pygame
     # initialise backends
     console.keys_visible = (not args.run and args.cmd == None)
-    console.init()    
+    # fallbacks
+    if not console.init():
+        # fallback warning here?
+        console.close()
+        console.backend = backend_dumb   
+        console.backend.set_dumbterm()
+        console.init()
+        pass
     if not sound.init_sound():
         # fallback warning here?
         sound.backend = nosound
+        sound.init_sound()
     # choose peripherals    
     deviceio.init_devices(args)
     

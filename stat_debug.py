@@ -38,7 +38,6 @@ def exec_DEBUG(ins):
     try:
         exec(debug)
     except Exception as e:
-        #print type(e) #"[exception]"
         sys.stderr.write(repr(type(e))+'\n')    
         traceback.print_tb(sys.exc_info()[2])
     sys.stdout = sys.__stdout__
@@ -77,7 +76,6 @@ def dump_screen():
         i += 1
         debug_print('{0:2}'.format(i) + '|' + ''.join(row)+'|\n')    
     debug_print('  +' + '-'*console.width+'+\n')
-            
         
 def trace(on=True):
     global debug_tron
@@ -89,7 +87,3 @@ def watch(expr):
     tokenise.tokenise_stream(StringIO.StringIO('?'+expr), outs, True, False) 
     watch_list.append((expr, outs))
 
-
-    
-    
-   

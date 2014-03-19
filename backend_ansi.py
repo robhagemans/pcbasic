@@ -30,12 +30,10 @@ term_echo_on = True
 term_attr = None
 term = sys.stdout
 
-palette = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-
 # black, blue, green, cyan, red, magenta, yellow, white
-colours = [0, 4, 2, 6, 1, 5, 3, 7]
-colournames = ['Black','Dark Blue','Dark Green','Dark Cyan','Dark Red','Dark Magenta','Brown','Light Gray',
-'Dark Gray','Blue','Green','Cyan','Red','Magenta','Yellow','White']
+colours = (0, 4, 2, 6, 1, 5, 3, 7)
+colournames = ('Black','Dark Blue','Dark Green','Dark Cyan','Dark Red','Dark Magenta','Brown','Light Gray',
+'Dark Gray','Blue','Green','Cyan','Red','Magenta','Yellow','White')
 
 # ANSI escape sequences
 # for reference, see:
@@ -55,25 +53,11 @@ esc_resize_term = '\x1b[8;%i;%i;t'
 esc_move_cursor = '\x1b[%i;%if' 
 esc_save_cursor_pos = '\x1b[s'
 esc_restore_cursor_pos = '\x1b[u'
+esc_request_size = '\x1b[18;t'
+esc_set_cursor_colour = '\x1b]12;%s\x07'
+esc_set_cursor_shape = '\x1b[%i q'  #% (2*(is_line+1) - blinks)    # 1 blinking block 2 block 3 blinking line 4 line
+esc_set_colour = '\x1b[%im'      
 
-def esc_set_cursor_colour(fore):
-    return '\x1b]12;' +colournames[fore%16] +'\x07'
-        
-def esc_set_colour(fore=None, back=None):
-    seq = ''
-    if fore != None:
-        if (fore%16)<8:
-            seq += '\x1b[%im' % (30+colours[fore%8])
-        else:
-            seq += '\x1b[%im' % (90+colours[fore%8])
-    if back != None:
-        seq += '\x1b[%im' % (40+colours[back%8])
-    return seq    
-
-def esc_set_cursor_shape(is_line=False, blinks=False):
-    return '\x1b[%i q' % (2*(is_line+1) - blinks)    # 1,2,3,4
-    
-    
 # escape sequence to scancode dictionary
 # for scan codes, see e.g. http://www.antonis.de/qbebooks/gwbasman/appendix%20h.html
 esc_to_scan = {
@@ -101,22 +85,35 @@ esc_to_scan = {
     '\xc2\xa3': '\x9c'  # pound sterling symbol
 }
  
+def get_size():
+    sys.stdout.write(esc_request_size)
+    sys.stdout.flush()
+    # Read response one char at a time until 't'
+    resp = char = ""
+    while char != 't':
+        char = sys.stdin.read(1)
+        resp += char
+    return resp[4:-1].split(';')
 
 ######
 
 def init():
-    # we need raw terminal the whole time to keep control of stdin and keep it from waiting for 'enter'
+    # see if the resize has worked; if not, allowWindowOps needs to be enabled
     term_echo(False)
+    term.write(esc_resize_term % (25, 80))
+    term.flush()
+    return True
     
 def init_screen_mode(mode, new_font_height):
     if mode != 0:
         raise error.RunError(5)
     
 def setup_screen(height, width):
+    set_palette()
     term.write(esc_clear_screen)
     term.write(esc_resize_term % (height, width))
-    set_palette()
-        
+    term.flush()
+    
 def close():
     term_echo()
     build_line_cursor(True)
@@ -145,7 +142,7 @@ def redraw():
 
 def set_palette(new_palette=None):
     global palette
-    palette = new_palette if new_palette else [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] 
+    palette = new_palette if new_palette else list(range(16)) 
     redraw()
     
 def set_palette_entry(index, colour):
@@ -162,7 +159,7 @@ def set_scroll_area(start, stop, width):
     pass
     
 def set_cursor_colour(color):
-    term.write(esc_set_cursor_colour(apply_palette(color)))
+    term.write(esc_set_cursor_colour % colournames[apply_palette(color)%16])
     term.flush()
     
 def show_cursor(do_show, prev):
@@ -183,9 +180,13 @@ def set_attr(attr):
     global last_attr
     if attr == last_attr:
         return
-    fore, back = attr & 0xf, (attr>>4) & 0x7
-    term.write(esc_set_colour(apply_palette(fore), apply_palette(back)))
-    term.write(esc_set_cursor_colour(apply_palette(fore)))
+    fore, back = apply_palette(attr & 0xf), apply_palette((attr>>4) & 0x7)
+    if (fore%16)<8:
+        term.write(esc_set_colour % (30+colours[fore%8]))
+    else:
+        term.write(esc_set_colour % (90+colours[fore%8]))
+    term.write(esc_set_colour % (40+colours[back%8]))
+    term.write(esc_set_cursor_colour % colournames[fore%16])
     term.flush()  
     last_attr = attr
 
@@ -218,7 +219,7 @@ def term_echo(on=True):
     fd = sys.stdin.fileno()
     if (not on) and term_echo_on:
         term_attr = termios.tcgetattr(fd)
-        tty.setraw(sys.stdin.fileno())
+        tty.setraw(fd)
     elif not term_echo_on and term_attr != None:
         termios.tcsetattr(fd, termios.TCSADRAIN, term_attr)
     previous = term_echo_on
@@ -249,7 +250,7 @@ def check_keyboard():
             # all other codes are chopped off, 
             # so other escape sequences will register as an escape keypress.
             console.insert_key(c[0])    
-
+        
 ########
 
 def copy_page(src, dst):
@@ -258,7 +259,7 @@ def copy_page(src, dst):
 def build_line_cursor( is_line):
     # works on xterm, not on xfce
     # on xfce, gibberish is printed
-    #term.write(esc_set_cursor_shape(is_line, blink=True))
+    #term.write(esc_set_cursor_shape % 2*(is_line+1) - 1)
     pass
     
 def build_shape_cursor(from_line, to_line):
