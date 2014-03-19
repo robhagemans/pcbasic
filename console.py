@@ -152,7 +152,10 @@ def get_stick(fn):
   
 def get_strig(fn):
     return backend.get_strig(fn)
-   
+    
+def debug_print(s):
+    return backend.debug_print(s)
+        
 #############################
 # init
 
@@ -719,7 +722,6 @@ def write_for_keys(s, col, cattr):
 def set_view(start=1, stop=24):
     global view_start, scroll_height, view_set
     view_set, view_start, scroll_height = True, start, stop
-    backend.set_scroll_area(view_start, height if bottom_row_allowed else scroll_height, width)
     set_pos(start, 1)
  
 def unset_view():
@@ -740,7 +742,6 @@ def allow_bottom_row(on=True):
     # allow writing on bottom line    
     if bottom_row_allowed != on:
         bottom_row_allowed = on
-        backend.set_scroll_area(view_start, height if bottom_row_allowed else scroll_height, width)
 
 #####################
     

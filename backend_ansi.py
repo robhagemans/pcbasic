@@ -155,9 +155,6 @@ def get_palette_entry(index):
 
 ####
 
-def set_scroll_area(start, stop, width):
-    pass
-    
 def set_cursor_colour(color):
     term.write(esc_set_cursor_colour % colournames[apply_palette(color)%16])
     term.flush()
@@ -252,6 +249,10 @@ def check_keyboard():
             console.insert_key(c[0])    
         
 ########
+
+def debug_print(s):
+    # rpint to screen as normal, to avoid corrupting the screen by using stderr
+    console.write(s)
 
 def copy_page(src, dst):
     pass
