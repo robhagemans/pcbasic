@@ -120,7 +120,7 @@ def build_parser():
         help='Use unicode text terminal. Do not echo input (the terminal does). Translate graphic characters into unicode.')
     parser.add_argument('-t', '--text', action='store_true', 
         help='Use ANSI textmode terminal')
-    parser.add_argument('--conv', metavar='MODE', help='Convert to (A)SCII, (B)ytecode or (P)rotected mode')
+    parser.add_argument('--conv', metavar='MODE', help='Convert file to (A)SCII, (B)ytecode or (P)rotected mode')
     parser.add_argument('-l', '--load', action='store_true', help='Load in_file only, do not execute')
     parser.add_argument('-r', '--run', action='store_true', help='Execute input file (default if in_file given)')
     parser.add_argument('-c', '--cmd', metavar='CMD', help='Execute BASIC command line')
