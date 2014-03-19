@@ -187,30 +187,29 @@ def get_octant(mbf, rx, ry):
     return octant, coord, neg                 
       
 # PAINT -if paint *colour* specified, border default= paint colour
-# if border *attribute* specified, border default=15      
+# if paint *attribute* specified, border default=15      
 def exec_paint(ins):
     graphics.require_graphics_mode()
     x0, y0 = graphics.window_coords(*parse_coord(ins))
     pattern = ''
     c = graphics.get_colour_index(-1) 
-    border= c
+    border = c
     if util.skip_white_read_if(ins, (',',)):
         cval = expressions.parse_expression(ins, allow_empty=True)
-        if cval[0] == '$':
-            # pattern given
+        if not cval:
+            pass
+        elif cval[0] == '$':
+            # pattern given; copy
             pattern = bytearray(vartypes.pass_string_unpack(cval))
-            if len(pattern) == 0:
+            if not pattern:
                 # empty pattern "" is illegal function call
                 raise error.RunError(5)
-            while len(pattern)%graphics.bitsperpixel !=0:
+            while len(pattern)%graphics.bitsperpixel != 0:
                  # finish off the pattern with zeros
                  pattern.append(0)
             # default for border,  if pattern is specified as string
             # foreground attr
             c = -1
-        elif cval == None:
-            # default
-            pass
         else:
             c = vartypes.pass_int_unpack(cval)
         border = c    
@@ -225,7 +224,7 @@ def exec_paint(ins):
     if pattern == '':
         pattern = draw_and_play.solid_pattern(c)
     util.require(ins, util.end_statement)         
-    graphics.flood_fill(x0,y0, pattern, c, border)        
+    graphics.flood_fill(x0, y0, pattern, c, border)        
                 
 def exec_get_graph(ins):
     graphics.require_graphics_mode()
