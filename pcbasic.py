@@ -43,29 +43,41 @@ def main():
         for a in args.peek:
             [addr,val] = a.split(':')
             expressions.peek_values[int(addr)]=int(val)
-    # converter and RUN invocations
-    if args.conv_asc:
-        convert(args.infile, args.save, 'A')
-    elif args.conv_byte:
-        convert(args.infile, args.save, 'B')
-    elif args.conv_prot:
-        convert(args.infile, args.save, 'P')
-    elif args.run or (not args.load and args.infile != None):
+    # implied RUN invocations
+    if args.infile and not args.load and not args.conv:
         args.run = True    
     # announce ourselves; go!
     try:
         # choose the screen backends and other devices 
         prepare_devices(args)
-        if not args.run and args.cmd == None:
+        # initialise program memory
+        program.clear_program()
+        if not args.run and not args.cmd and not args.conv:
             console.write(greeting(debugstr))
-        run.main_loop(args.run, args.load, args.quit, args.cmd, args.infile)
+        try:
+            if args.run or args.load or args.conv:
+                program.load(fileio.open_file_or_device(0, args.infile, mode='L', defext='BAS') if args.infile else sys.stdin)
+            if args.conv:
+                # allow conversion of protected files
+                program.protected = False
+                program.save(fileio.open_file_or_device(0, args.outfile, mode='S', defext='') if args.outfile else sys.stdout, args.conv)
+                run.exit()
+        except error.Error as e:
+            # give BASIC error message and exit
+            if not run.handle_error(e):
+                run.exit()
+        if args.run and not args.cmd:
+            # if a command is given, the program is only loaded.
+            arg_cmd = 'RUN'
+        run.once(args.cmd, args.quit)
+        run.main_loop()
     finally:
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
         console.close()
 
 def prepare_devices(args):
     sound.backend = nosound
-    if args.dumb or not sys.stdout.isatty() or not sys.stdin.isatty() or args.conv_asc or args.conv_byte or args.conv_prot:
+    if args.dumb or not sys.stdout.isatty() or not sys.stdin.isatty() or args.conv:
         console.backend = backend_dumb
         console.backend.set_dumberterm()
     elif args.uni:                
@@ -82,14 +94,7 @@ def prepare_devices(args):
             sound.backend = backend_pygame
     # initialise backends
     console.keys_visible = (not args.run and args.cmd == None)
-    # fallbacks
-    if not console.init():
-        # fallback warning here?
-        console.close()
-        console.backend = backend_dumb   
-        console.backend.set_dumbterm()
-        console.init()
-        pass
+    console.init()
     if not sound.init_sound():
         # fallback warning here?
         sound.backend = nosound
@@ -97,23 +102,6 @@ def prepare_devices(args):
     # choose peripherals    
     deviceio.init_devices(args)
     
-def convert(infile, outfile, mode):
-    console.backend = backend_dumb
-    console.backend.set_dumberterm()
-    console.keys_visible = False
-    console.init()
-    sound.backend = nosound
-    # choose peripherals    
-    deviceio.init_devices(args)
-    fin = fileio.open_file_or_device(0, infile, mode='L', defext='') if infile else sys.stdin
-    fout = fileio.open_file_or_device(0, outfile, mode='S', defext='') if outfile else sys.stdout
-    program.load(fin)
-    # allow conversion of protected files
-    program.protected = False
-    program.save(fout, mode)
-    console.close()
-    run.exit()
-
 def greeting(debugstr):
     return ('PC-BASIC 3.23' + debugstr + util.endl +
              '(C) Copyright 2013 PC-BASIC authors. Type RUN "INFO" for more.'+ util.endl +
@@ -124,7 +112,7 @@ def build_parser():
         description='PC-BASIC 3.23 interpreter. If no options are present, the interpreter will run in interactive mode.')
     parser.add_argument('infile', metavar='in_file', nargs='?', 
         help='Input program file to run (default), load or convert.')
-    parser.add_argument('save', metavar='out_file', nargs='?', 
+    parser.add_argument('outfile', metavar='out_file', nargs='?', 
         help='Output program file. If no convert option is specified, this is ignored.')
     parser.add_argument('-b', '--dumb', action='store_true', 
         help='Use dumb text terminal. Echo input. This is the default if redirecting input or output')
@@ -132,9 +120,7 @@ def build_parser():
         help='Use unicode text terminal. Do not echo input (the terminal does). Translate graphic characters into unicode.')
     parser.add_argument('-t', '--text', action='store_true', 
         help='Use ANSI textmode terminal')
-    parser.add_argument('-ca', '--conv-asc', action='store_true', help='Convert to DOS text file (code page 347, CR/LF, EOF \\1A)')
-    parser.add_argument('-cb', '--conv-byte', action='store_true', help='Convert to bytecode file')
-    parser.add_argument('-cp', '--conv-prot', action='store_true', help='Convert to protected (encrypted) file')
+    parser.add_argument('--conv', metavar='MODE', help='Convert to (A)SCII, (B)ytecode or (P)rotected mode')
     parser.add_argument('-l', '--load', action='store_true', help='Load in_file only, do not execute')
     parser.add_argument('-r', '--run', action='store_true', help='Execute input file (default if in_file given)')
     parser.add_argument('-c', '--cmd', metavar='CMD', help='Execute BASIC command line')
@@ -149,6 +135,6 @@ def build_parser():
     parser.add_argument('-s2', '--com2', nargs='*', metavar=('TYPE:VAL'), help='Set COM2: to FILE:file_name or CUPS:printer_name PORT:device_name.')
     return parser
 
-  
+
 main()
 
