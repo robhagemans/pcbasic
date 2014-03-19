@@ -9,8 +9,7 @@
 # please see text file COPYING for licence terms.
 #
 
-## implements text screen I/O functions on an ANSI/AIX terminal
-# using raw escape sequences (as curses module doesn't do UTF8 it seems)
+# implements text screen I/O functions on an ANSI/AIX terminal using escape sequences 
 
 # silent get character with no enter,  using raw terminal
 # raw terminal, see http://stackoverflow.com/questions/1052107/reading-a-single-character-wait_char-style-in-python-is-not-working-in-unix
@@ -57,6 +56,7 @@ esc_request_size = '\x1b[18;t'
 esc_set_cursor_colour = '\x1b]12;%s\x07'
 esc_set_cursor_shape = '\x1b[%i q'  #% (2*(is_line+1) - blinks)    # 1 blinking block 2 block 3 blinking line 4 line
 esc_set_colour = '\x1b[%im'      
+esc_set_title = '\x1b]2;%s\x07'
 
 # escape sequence to scancode dictionary
 # for scan codes, see e.g. http://www.antonis.de/qbebooks/gwbasman/appendix%20h.html
@@ -98,9 +98,8 @@ def get_size():
 ######
 
 def init():
-    # see if the resize has worked; if not, allowWindowOps needs to be enabled
     term_echo(False)
-    term.write(esc_resize_term % (25, 80))
+    term.write(esc_set_title % 'PC-BASIC 3.23')
     term.flush()
     return True
     
