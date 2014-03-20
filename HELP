@@ -2572,6 +2572,7 @@ ERRORS:
     The array will not be automatically dimensioned.
 -   If 'int_array_name' is not an integer array, raises TYPE MISMATCH.
 -   If 'int_array_name' is too short, raises ILLEGAL FUNCTION CALL.
+-   If 'start_index' is a string, raises TYPE MISMATCH.
 -   If 'start_index' is outside array dimensions, raises SUBSCRIPT OUT OF RANGE
 -   If 'start_index' is not in [-32768,32767], raises OVERFLOW 
 
@@ -2584,6 +2585,7 @@ replaced by those of 'src'.
 'src' and 'dst' are number-valued expressions between 0 and the current video 
 mode's number of pages, less one. 
 ERRORS:
+-   If 'src' or 'dst' are string, raises TYPE MISMATCH.
 -   If 'src' or 'dst' are out of range, raises ILLEGAL FUNCTION CALL.
 -   If 'src' or 'dst' are not in [-32768,32767], raises OVERFLOW. 
 
@@ -2604,6 +2606,7 @@ NOTES:
 -   Outside these emulated areas, PEEK returns 0. In particular, if the current
     segment is not the data segment, PEEK returns 0.   
 ERRORS:
+-   If 'address' is a string, raises TYPE MISMATCH.
 -   If 'address' is not in [-32768, 65536], raises OVERFLOW.
 
 
@@ -2638,6 +2641,7 @@ NOTES:
 -   In PC-BASIC 3.23, for 'pen down' read 'left mouse button pressed'. For 'pen
     position' read 'mouse pointer position'.
 ERRORS:
+-   If 'mode' is a string, raises TYPE MISMATCH.
 -   If 'mode' is not in [0, 9], raises ILLEGAL FUNCTION CALL.
 -   If 'mode' is not in [-32768, 32767], raises OVERFLOW.
     
@@ -2684,6 +2688,17 @@ ERRORS:
 -   If 'mml_string' has a numeric value, TYPE MISMATCH is raised.
 -   If 'mml_string' has errors in the MML, ILLEGAL FUNCTION CALL is raised.
 -   If a variable in the mml_string is of incorrect type, TYPE MISMATCH.
+
+
+PLAY function
+length = PLAY(dummy)
+-------------
+Returns the number of notes in the background music queue.
+'dummy' is a number-valued expression in [0,255]. Is value has no effect.
+ERRORS:
+-   If 'dummy' is a string, raises TYPE MISMATCH.
+-   If 'dummy' is not in [0, 255], raises ILLEGAL FUNCTION CALL.
+-   If 'dummy' is not in [-32768, 32767], raises OVERFLOW.
 
 
 PRINT, PRINT# and LPRINT statements
