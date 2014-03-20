@@ -29,9 +29,9 @@ import fp
 fp.error_console = console
 
 def once(arg_cmd, arg_quit):
-    if arg_cmd != None:
+    if arg_cmd:
         try:
-            get_command_line(line)
+            get_command_line(arg_cmd)
         except error.Error as e:
             handle_error(e)
         execution_loop()
@@ -39,7 +39,7 @@ def once(arg_cmd, arg_quit):
             # we were running as a script, exit after completion
             exit()
 
-def main_loop():
+def loop():
     while True:
         # prompt for commands
         prompt()

@@ -68,9 +68,10 @@ def main():
                 run.exit()
         if args.run and not args.cmd:
             # if a command is given, the program is only loaded.
-            arg_cmd = 'RUN'
+            args.cmd = 'RUN'
+        print args    
         run.once(args.cmd, args.quit)
-        run.main_loop()
+        run.loop()
     finally:
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
         console.close()
