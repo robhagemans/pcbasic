@@ -14,7 +14,7 @@ import tokenise
 import vartypes
 import expressions
 import error
-
+import var
 
 # do-nothing POKE        
 def exec_poke(ins):
@@ -23,10 +23,13 @@ def exec_poke(ins):
     vartypes.pass_int_keep(expressions.parse_expression(ins)) #val
     util.require(ins, util.end_statement)
     
-# do-nothing DEF SEG    
+# DEF SEG    
 def exec_def_seg(ins):
+    # &hb800: text screen buffer; &h13d: data segment
     if util.skip_white_read_if(ins, ('\xE7',)): #=
-        vartypes.pass_int_keep(expressions.parse_expression(ins), maxint=0xffff)
+        var.segment = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=0xffff)
+    else:
+        var.segment = var.data_segment    
     util.require(ins, util.end_statement)
 
 # do-nothing DEF USR    

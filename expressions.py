@@ -50,8 +50,6 @@ operator_tokens = [item for sublist in priority for item in sublist]
 # command line option /d
 # allow double precision math for ^, ATN, COS, EXP, LOG, SIN, SQR, and TAN
 option_double = False
-# pre-defined PEEK outputs
-peek_values = {}
 
 
 def parse_expression(ins, allow_empty=False, empty_err=22):
@@ -689,17 +687,16 @@ def value_fre(ins):
 # read memory location 
 # currently, var memory and preset values only    
 def value_peek(ins):
-    # TODO: take into account DEF SEG
-    global peek_values
     addr = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
     if addr < 0: 
         addr += 0x10000
-    if addr in peek_values:
-        return vartypes.pack_int(peek_values[addr])
-    elif addr >= var.var_mem_start:
-        return vartypes.pack_int(max(0, var.get_var_memory(addr)))
-    else:    
-        return vartypes.null['%']
+    try:
+        return vartypes.pack_int(var.peek_values[(var.segment, addr)])
+    except KeyError:   
+        if var.segment == var.data_segment and addr >= var.var_mem_start:
+            return vartypes.pack_int(max(0, var.get_var_memory(addr)))
+        else:    
+            return vartypes.null['%']
 
 # VARPTR, VARPTR$    
 def value_varptr(ins):    
