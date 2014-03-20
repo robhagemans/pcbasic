@@ -237,53 +237,21 @@ def parse_bracket(ins):
 
 def parse_int_list(ins, size, err=5, allow_last_empty=False):
     exprlist = parse_expr_list(ins, size, err, allow_last_empty=allow_last_empty)
-    output = []
-    for expr in exprlist:
-        if expr == None:
-            output.append(None)
-        else:
-            output.append(vartypes.pass_int_unpack(expr))
-    return output
+    return [(vartypes.pass_int_unpack(expr) if expr else None) for expr in exprlist]
 
 def parse_expr_list(ins, size, err=5, separators=(',',), allow_last_empty=False):
-    pos = 0
-    output = [None] * size
+    output = []
     while True:
-        d = util.skip_white(ins)
-        if d in separators: 
-            ins.read(1)
-            pos += 1
-            if pos >= size:
-                # 5 = illegal function call
-                raise error.RunError(err)
-        elif d in util.end_expression:
+        output.append(parse_expression(ins, allow_empty=True))
+        if not skip_white_read_if(ins, separators):
             break
-        else:  
-            output[pos] = parse_expression(ins)
+    if len(output) > size:            
+        raise error.RunError(err)
     # can't end on a comma: Missing Operand  
-    if not allow_last_empty and not output[pos]:
+    if not allow_last_empty and output and output[-1] == None:
         raise error.RunError(22)
-    return output
-
-def parse_int_list_var(ins, size, err=5):
-    output = [ vartypes.pass_int_unpack(parse_expression(ins, empty_err=2)) ]   
-    while True:
-        d = util.skip_white(ins)
-        if d == ',': 
-            ins.read(1)
-            c = util.peek(ins)
-            if c in util.end_statement:
-                # missing operand
-                raise error.RunError(22)
-            # if end_expression, syntax error    
-            output.append(vartypes.pass_int_unpack(parse_expression(ins, empty_err=2)))
-        elif d in util.end_statement:
-            # statement ends - syntax error
-            raise error.RunError(2)        
-        elif d in util.end_expression:
-            break
-        else:  
-            raise error.RunError(2)
+    while len(output) < size:
+        output.append(None)
     return output
 
 def parse_file_number(ins):
