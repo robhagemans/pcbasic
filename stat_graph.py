@@ -31,18 +31,18 @@ def parse_coord(ins, absolute=False):
     graphics.last_point = graphics.window_coords(x, y, step)
     return graphics.last_point
 
-def exec_pset(ins, default_colour=-1):
+def exec_pset(ins, c=-1):
     graphics.require_graphics_mode()
     x, y = parse_coord(ins)
     graphics.last_point = x, y
-    c = default_colour
     if util.skip_white_read_if(ins, (',',)):
         c = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    util.range_check(-1, 255, c)
     util.require(ins, util.end_statement)    
     graphics.put_point(x, y, c)
 
 def exec_preset(ins):
-    exec_pset(ins, -2)   
+    exec_pset(ins, 0)   
 
 def exec_line_graph(ins):
     graphics.require_graphics_mode()
