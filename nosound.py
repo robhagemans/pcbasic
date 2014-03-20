@@ -9,21 +9,26 @@
 # please see text file COPYING for licence terms.
 #
 
+music_foreground = True
+
+def music_queue_length():
+    return 0       
+    
+def beep():
+    pass
+    
 def init_sound():
     return True
     
 def stop_all_sound():
     pass
-
-def append_sound(frequency, duration):
-    pass
     
-def append_pause(duration):
+def play_sound(frequency, duration):
+    pass
+        
+def check_sound():
     pass
     
 def wait_music():
-    pass    
-
-def check_sound():
-    pass    
-
+    pass
+      

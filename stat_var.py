@@ -23,8 +23,6 @@ import tokenise
 import program
 import fileio
 
-# for music_foreground in CLEAR
-import sound
 # for randomize
 import console
 

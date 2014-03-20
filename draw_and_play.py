@@ -17,7 +17,6 @@ import tokenise
 import util
 import var
 import graphics
-import sound
 import console
 
 # generic for both macro languages
@@ -249,9 +248,9 @@ def play_parse_mml(mml):
         elif c == 'N':
             note = ml_parse_number(gmls)
             if note > 0 and note <= 84:
-                sound.play_sound(note_freq[note-1], play_length*play_speed*play_tempo)
+                console.sound.play_sound(note_freq[note-1], play_length*play_speed*play_tempo)
             elif note == 0:
-                sound.play_sound(0, play_length*play_speed*play_tempo)
+                console.sound.play_sound(0, play_length*play_speed*play_tempo)
         elif c == 'L':
             play_length = 1./ml_parse_number(gmls)    
         elif c == 'T':
@@ -291,21 +290,21 @@ def play_parse_mml(mml):
                 else:
                     break                    
             if note == 'P':
-                sound.play_pause(dur*play_speed*play_tempo)
+                console.sound.play_pause(dur*play_speed*play_tempo)
             else:        
-                sound.play_sound(note_freq[(play_octave+next_oct)*12+notes[note]], dur*play_speed*play_tempo)
+                console.sound.play_sound(note_freq[(play_octave+next_oct)*12+notes[note]], dur*play_speed*play_tempo)
             next_oct = 0
         elif c == 'M':
             c = util.skip_read(gmls, ml_whitepace).upper()
             if c == 'N':        play_speed = 7./8.
             elif c == 'L':      play_speed = 1.
             elif c == 'S':      play_speed = 3./4.        
-            elif c == 'F':      sound.music_foreground = True
-            elif c == 'B':      sound.music_foreground = False
+            elif c == 'F':      console.sound.music_foreground = True
+            elif c == 'B':      console.sound.music_foreground = False
             else:
                 raise error.RunError(5)    
         else:
             raise error.RunError(5)    
-    if sound.music_foreground:
-        sound.wait_music()
+    if console.sound.music_foreground:
+        console.sound.wait_music()
                                  

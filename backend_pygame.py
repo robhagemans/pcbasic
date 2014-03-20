@@ -17,7 +17,6 @@ import error
 import cpi_font
 import unicodepage 
 import console
-import sound
 import events
 import deviceio
 import graphics
@@ -792,13 +791,71 @@ def fast_put(x0, y0, varname, operation_char):
     screen_changed = True
     return True
 
-###################################
-
 
 ####################################
 # SOUND
-#
 # see e.g. http://stackoverflow.com/questions/7816294/simple-pygame-audio-at-a-frequency
+
+# interface
+
+music_foreground = True
+sound_queue = []
+
+
+def music_queue_length():
+    return len(sound_queue)       
+    
+def init_sound():
+    return numpy != None
+    
+def beep():
+    play_sound(800, 0.25)
+
+def stop_all_sound():
+    pygame.mixer.quit()
+    
+# process sound queue in event loop
+def check_sound():
+    if len(sound_queue)>0:
+        check_init_mixer()
+        if pygame.mixer.Channel(0).get_queue() == None:
+            pygame.mixer.Channel(0).queue(sound_queue.pop(0))
+    else:
+        check_quit_sound()
+        
+def wait_music():
+    while len(sound_queue)>0 or pygame.mixer.get_busy():
+        idle()
+        console.check_events()
+        
+def play_sound(frequency, duration):
+    check_init_mixer()
+    if frequency == 0 or frequency == 32767:
+        # pause
+        buf = numpy.zeros(duration*mixer_samplerate/4)
+        sound_queue.append(pygame.sndarray.make_sound(buf))
+    else:    
+        amplitude = 2**(mixer_bits - 1) - 1
+        # not clear why 8*freq instead of 2* ?
+        numf = mixer_samplerate/(8*frequency)
+        num = int(numf)
+        rest = 0
+        wave0 = numpy.ones(num, numpy.int16) * amplitude
+        wave1 = -wave0
+        wave2 = numpy.ones(num+1, numpy.int16) * amplitude    
+        wave3 = -wave2
+        # not clear why sample rate /4 ?
+        buf = numpy.array([])
+        while len(buf) < duration*mixer_samplerate/4:
+            rest += (numf-num)
+            if int(rest)>0:
+                buf = numpy.concatenate((buf, wave0, wave1))
+            else:
+                buf = numpy.concatenate((buf, wave2, wave3))
+            rest -= int(rest)
+        sound_queue.append(pygame.sndarray.make_sound(buf))
+        
+# implementation
 
 mixer_bits = 16
 mixer_samplerate = 44100*4
@@ -819,12 +876,6 @@ def pre_init_mixer():
 def init_mixer():    
     pygame.mixer.quit()
     
-def init_sound():
-    return numpy != None
-    
-def stop_all_sound():
-    pygame.mixer.quit()
-    
 def check_init_mixer():
     if pygame.mixer.get_init() ==None:
         pygame.mixer.init()
@@ -833,54 +884,12 @@ def check_quit_sound():
     global quiet_ticks
     if pygame.mixer.get_init() == None:
         return
-    if len(sound.sound_queue) > 0 or pygame.mixer.get_busy():
+    if len(sound_queue) > 0 or pygame.mixer.get_busy():
         quiet_ticks = 0
     else:
         quiet_ticks += 1    
         if quiet_ticks > quiet_quit:
             # this is to avoid high pulseaudio cpu load
             pygame.mixer.quit()
-    
-def append_sound(frequency, duration):
-    check_init_mixer()
-    amplitude = 2**(mixer_bits - 1) - 1
-    # not clear why 8*freq instead of 2* ?
-    numf = mixer_samplerate/(8*frequency)
-    num = int(numf)
-    rest = 0
-    wave0 = numpy.ones(num, numpy.int16) * amplitude
-    wave1 = -wave0
-    wave2 = numpy.ones(num+1, numpy.int16) * amplitude    
-    wave3 = -wave2
-    # not clear why sample rate /4 ?
-    buf = numpy.array([])
-    while len(buf) < duration*mixer_samplerate/4:
-        rest += (numf-num)
-        if int(rest)>0:
-            buf = numpy.concatenate((buf, wave0, wave1))
-        else:
-            buf = numpy.concatenate((buf, wave2, wave3))
-        rest -= int(rest)
-    the_sound = pygame.sndarray.make_sound(buf)
-    sound.sound_queue.append(the_sound)
         
-def append_pause(duration):
-    check_init_mixer()
-    buf = numpy.zeros(duration*mixer_samplerate/4)
-    pause = pygame.sndarray.make_sound(buf)
-    sound.sound_queue.append(pause)
-
-# process sound queue in event loop
-def check_sound():
-    if len(sound.sound_queue)>0:
-        check_init_mixer()
-        if pygame.mixer.Channel(0).get_queue() == None:
-            pygame.mixer.Channel(0).queue(sound.sound_queue.pop(0))
-    else:
-        check_quit_sound()
-        
-def wait_music():
-    while len(sound.sound_queue)>0 or pygame.mixer.get_busy():
-        idle()
-        console.check_events()
         

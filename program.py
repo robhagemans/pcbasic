@@ -20,7 +20,6 @@ import console
 # for clear()
 import rnd
 import fileio
-import sound
 
 from cStringIO import StringIO 
 from copy import copy 
@@ -203,9 +202,9 @@ def clear_all():
     error.on_error = None
     error.error_resume = None
     # stop all sound
-    sound.stop_all_sound()
+    console.sound.stop_all_sound()
     #   Resets sound to music foreground
-    sound.music_foreground = True
+    console.sound.music_foreground = True
     #   Resets STRIG to off
     console.stick_is_on = False
     # disable all event trapping (resets PEN to OFF too)
