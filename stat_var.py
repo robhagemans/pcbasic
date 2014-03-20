@@ -89,13 +89,35 @@ def exec_data(ins):
     # ignore rest of statement after DATA
     util.skip_to(ins, util.end_statement)
 
+
+def parse_int_list_var(ins, size, err=5):
+    output = [ vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=2)) ]   
+    while True:
+        d = util.skip_white(ins)
+        if d == ',': 
+            ins.read(1)
+            c = util.peek(ins)
+            if c in util.end_statement:
+                # missing operand
+                raise error.RunError(22)
+            # if end_expression, syntax error    
+            output.append(vartypes.pass_int_unpack(expressios.parse_expression(ins, empty_err=2)))
+        elif d in util.end_statement:
+            # statement ends - syntax error
+            raise error.RunError(2)        
+        elif d in util.end_expression:
+            break
+        else:  
+            raise error.RunError(2)
+    return output
+    
 def exec_dim(ins):
     while True:
         name = util.get_var_name(ins) 
         dimensions = [ 10 ]   
         if util.skip_white_read_if(ins, ('[', '(')):
             # at most 255 indices, but there's no way to fit those in a 255-byte command line...
-            dimensions = expressions.parse_int_list_var(ins, 255)
+            dimensions = parse_int_list_var(ins, 255)
             while len(dimensions) > 0 and dimensions[-1] == None:
                 dimensions = dimensions[:-1]
             if None in dimensions:
