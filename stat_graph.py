@@ -166,8 +166,10 @@ def exec_paint(ins):
                 border = vartypes.pass_int_unpack(bval)
             if util.skip_white_read_if(ins, (',',)):
                 # background attribute - I can't find anything this does at all.
-                # as far as I can see, this is ignored in GW-Basic as long as it's a string, otherwise error 5
+                # as far as I can see, this is ignored in GW-Basic as long as it's a string not equal to pattern, otherwise error 5
                 background_pattern = vartypes.pass_string_unpack(expressions.parse_expression(ins), err=5)
+                if background_pattern == pattern:
+                    raise error.RunError(5)
     pattern = pattern if pattern else draw_and_play.solid_pattern(c)
     util.require(ins, util.end_statement)         
     graphics.flood_fill(x0, y0, pattern, c, border)        
