@@ -412,12 +412,11 @@ def exec_def_fn(ins):
 def exec_randomize(ins):
     val = expressions.parse_expression(ins, allow_empty=True)
     # prompt for random seed if not specified
-    if val == None:
+    if not val:
         console.write("Random number seed (-32768 to 32767)? ")
-        # should be interpreted as integer sint if it is
-        val = tokenise.str_to_value_keep(('$', console.read_screenline()))
-    # RANDOMIZE converts to int in a non-standard way - looking at the first two bytes in the internal representation
-    if val[0] == '$':
+        # seed entered on prompt is rounded to int
+        val = vartypes.pass_int_keep(tokenise.str_to_value_keep(vartypes.pack_string(console.read_screenline())))
+    elif val[0] == '$':
         raise error.RunError(5)
     rnd.randomize(val)
     util.require(ins, util.end_statement)
