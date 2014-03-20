@@ -620,25 +620,25 @@ def value_point(ins):
 
 def value_pmap(ins):
     util.require_read(ins, ('(',))
-    coord = fp.unpack(vartypes.pass_single_keep(parse_expression(ins)))
+    coord = parse_expression(ins)
     util.require_read(ins, (',',))
     mode = vartypes.pass_int_unpack(parse_expression(ins))
     util.require_read(ins, (')',))
+    util.range_check(0, 3, mode)
+    if not console.screen_mode:
+        return vartypes.null['%']
     if mode == 0:
-        value, dummy = graphics.window_coords(coord,fp.Single.zero)       
-        value = vartypes.pack_int(value)        
+        value, _ = graphics.window_coords(fp.unpack(vartypes.pass_single_keep(coord)), fp.Single.zero)       
+        return vartypes.pack_int(value)        
     elif mode == 1:
-        dummy, value = graphics.window_coords(fp.Single.zero,coord)       
-        value = vartypes.pack_int(value)        
+        _, value = graphics.window_coords(fp.Single.zero, fp.unpack(vartypes.pass_single_keep(coord)))       
+        return vartypes.pack_int(value)        
     elif mode == 2:
-        value, dummy = graphics.get_window_coords(coord.round_to_int(), 0)       
-        value = fp.pack(value)
+        value, _ = graphics.get_window_coords(vartypes.pass_int_unpack(coord), 0)       
+        return fp.pack(value)
     elif mode == 3:
-        dummy, value = graphics.get_window_coords(0, coord.round_to_int())       
-        value = fp.pack(value)
-    else:
-        raise error.RunError(5)
-    return value
+        _, value = graphics.get_window_coords(0, vartypes.pass_int_unpack(coord))       
+        return fp.pack(value)
     
 #####################################################################
 # sound functions
