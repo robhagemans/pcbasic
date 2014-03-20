@@ -2464,7 +2464,7 @@ ERRORS:
 
 
 PAINT statement
-PAINT (x, y) [, attrib [, border [, dummy ] ] ]
+PAINT [STEP] (x, y) [, attrib [, border [, dummy ] ] ]
 ---------------
 Flood-fills the screen with a colour or pattern.
 'x', 'y' are number-valued expressions in the range [-32768, 32767] which give
@@ -2552,14 +2552,18 @@ ERRORS:
 
 
 PALETTE USING statement
-PALETTE USING array_name (start_index)
+PALETTE USING int_array_name { ( | [ } start_index { ) | ] }
 -----------------------
 Assigns new colours to all attributes.
-
+'int_array_name' is the name of an array of integers (I%) that will supply the
+new values for the palette. 'start_index' is a number-valued expression that 
+indicates at which index in the array to start mapping to the palette. If an 
+array index equals -1, the matching attribute is left unchanged.
 ERRORS:
 -   If the array is too short, raises ILLEGAL FUNCTION CALL.
 -   If the array is not an integer array, raises TYPE MISMATCH.
-
+-   If 'start_index' is outside array dimensions, raises SUBSCRIPT OUT OF RANGE
+-   If 'start_index' is not in [-32768,32767], raises OVERFLOW 
 
 
 PRINT, PRINT# and LPRINT statements
