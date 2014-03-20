@@ -123,6 +123,7 @@ input_replace = {
 class ConsoleFile(BaseFile):
     def __init__(self):
         self.fhandle = console
+        self.fhandle.name = 'SCRN:'
         self.number = 0
         self.mode = 'A'
         self.access = 'R'
@@ -229,7 +230,7 @@ class ConsoleFile(BaseFile):
 
 class PrinterStream(StringIO.StringIO):
     def __init__(self, name=''):
-        self.printer_name=name
+        self.printer_name = name
         StringIO.StringIO.__init__(self)
     
     # flush buffer to LPR printer    
