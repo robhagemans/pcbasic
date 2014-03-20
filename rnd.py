@@ -29,11 +29,9 @@ clear()
 
 def randomize(val):        
     global rnd_seed
-    if val[0] == '%':
-        s = vartypes.value_to_sint(vartypes.unpack_int(val))    
-    else:
-        # get the bytes
-        s = val[1]
+    # get the bytes
+    s = val[1]
+    # RANDOMIZE converts to int in a non-standard way - looking at the first two bytes in the internal representation
     # on a program line, if a number outside the signed int range (or -32768) is entered,
     # the number is stored as a MBF double or float. Randomize then:
     #   - ignores the first 4 bytes (if it's a double)
