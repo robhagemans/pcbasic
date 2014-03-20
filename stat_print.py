@@ -94,33 +94,42 @@ def exec_color_mode_1(back, pal, override):
             console.set_palette([back & 0xf, 2, 4, 6])
     
 def exec_palette(ins):
-    # can't set blinking colours separately
-    num_palette_entries = console.num_colours
-    if num_palette_entries == 32:
-        num_palette_entries = 16
     d = util.skip_white(ins)
     if d in util.end_statement:
         # reset palette
         console.set_palette()
     elif d == '\xD7': # USING
         ins.read(1)
-        array_name = util.get_var_name(ins)
-        start_index = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
-        new_palette = []
-        for i in range(num_palette_entries):
-            val = vartypes.pass_int_unpack(var.get_array(array_name, [start_index+i]))
-            if val == -1:
-                val = console.get_palette_entry(i)
-            util.range_check(-1, console.num_palette-1, val)
-            new_palette.append(val)
-        console.set_palette(new_palette)
+        exec_palette_using(ins)
     else:
+        # can't set blinking colours separately
+        num_palette_entries = console.num_colours if console.num_colours != 32 else 16
         pair = expressions.parse_int_list(ins, 2, err=5)
         util.range_check(0, num_palette_entries-1, pair[0])
         util.range_check(-1, console.num_palette-1, pair[1])
         if pair[1] > -1:
             console.set_palette_entry(pair[0], pair[1])
-    util.require(ins, util.end_statement)    
+        util.require(ins, util.end_statement)    
+
+def exec_palette_using(ins):
+    num_palette_entries = console.num_colours if console.num_colours != 32 else 16
+    array_name, start_indices = expressions.get_var_or_array_name(ins)
+    if array_name[-1] != '%':
+        raise error.RunError(13)
+    try:     
+        dimensions, lst, _ = var.arrays[array_name]    
+    except KeyError:
+        raise error.RunError(5)    
+    start = var.index_array(start_indices, dimensions)
+    if var.array_len(dimensions) - start  < num_palette_entries:
+        raise error.RunError(5)
+    new_palette = []
+    for i in range(num_palette_entries):
+        val = vartypes.pass_int_unpack(('%', lst[(start+i)*2:(start+i+1)*2]))
+        util.range_check(-1, console.num_palette-1, val)
+        new_palette.append(val if val > -1 else console.get_palette_entry(i))
+    console.set_palette(new_palette)
+    util.require(ins, util.end_statement) 
 
 def exec_key(ins):
     d = util.skip_white_read(ins)
