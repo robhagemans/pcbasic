@@ -175,6 +175,7 @@ def parse_expr_unit(ins):
             d = ins.read(1)        
             if d == '\x8D':      return value_date(ins)
             elif d == '\x8E':    return value_time(ins)
+            elif d == '\x93':    return value_play(ins)
             elif d == '\x94':    return value_timer(ins)
             elif d == '\x95':    return value_erdev(ins)
             elif d == '\x96':    return value_ioctl(ins)
@@ -638,6 +639,14 @@ def value_pmap(ins):
     else:
         raise error.RunError(5)
     return value
+    
+#####################################################################
+# sound functions
+    
+def value_play(ins):
+    dummy = vartypes.pass_int_unpack(parse_bracket(ins))    
+    util.range_check(0, 255, dummy)
+    return vartypes.pack_int(console.sound.music_queue_length())
     
 #####################################################################
 # error functions
