@@ -648,16 +648,15 @@ def get_pen(fn):
         pen_down_old, pen_down = pen_down, 0
         return pen_down_old
     elif fn == 1:
-        return min(console.size[0]-1, max(0, pen_down_pos[0]))
+        return min(size[0]-1, max(0, pen_down_pos[0]))
     elif fn == 2:
-        return min(console.size[1]-1, max(0, pen_down_pos[1]))  
+        return min(size[1]-1, max(0, pen_down_pos[1]))  
     elif fn == 3:
         return -pygame.mouse.get_pressed()[0]
     elif fn == 4:
-        x, _ = console.get_pen_pos()
-        return min(console.size[0]-1, max(0, pygame.mouse.get_pos()[0]))
+        return min(size[0]-1, max(0, pygame.mouse.get_pos()[0]))
     elif fn == 5:
-        return min(console.size[1]-1, max(0, pygame.mouse.get_pos()[1]))
+        return min(size[1]-1, max(0, pygame.mouse.get_pos()[1]))
     elif fn == 6:
         return min(console.width, max(1, 1+pen_down_pos[0]//8))
     elif fn == 7:
