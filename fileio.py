@@ -120,6 +120,9 @@ class BaseFile(object):
         self.fhandle.seek(-len(s), 1)
         return s
     
+    def tell(self):
+        return self.fhandle.tell()
+        
     def seek(self, num, from_where=0):    
         self.fhandle.seek(num, from_where)
     
