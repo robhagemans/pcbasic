@@ -20,15 +20,16 @@
 import util
 import error
 import graphics
-import sound
+import nosound
 import events
 # for print_screen
 import deviceio
 # for replace key
 import program
 
-# back end implememtation
+# back end implementations
 backend = None
+sound = nosound
 
 # number of columns, counting 1..width
 width = 80

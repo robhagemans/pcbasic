@@ -26,7 +26,6 @@ import oslayer
 import statements
 import backend_dumb
 import nosound
-import sound
 import graphics
 import console
 import tokenise
@@ -76,7 +75,7 @@ def main():
         console.close()
 
 def prepare_devices(args):
-    sound.backend = nosound
+    console.sound = nosound
     if args.dumb or not sys.stdout.isatty() or not sys.stdin.isatty() or args.conv:
         console.backend = backend_dumb
         console.backend.set_dumberterm()
@@ -91,14 +90,13 @@ def prepare_devices(args):
         console.backend = backend_pygame   
         graphics.backend = backend_pygame
         if not args.nosound:
-            sound.backend = backend_pygame
+            console.sound = backend_pygame
     # initialise backends
     console.keys_visible = (not args.run and args.cmd == None)
     console.init()
-    if not sound.init_sound():
+    if not console.sound.init_sound():
         # fallback warning here?
-        sound.backend = nosound
-        sound.init_sound()
+        console.sound = nosound
     # choose peripherals    
     deviceio.init_devices(args)
     

@@ -9,7 +9,6 @@
 # please see text file COPYING for licence terms.
 #
 
-import sound
 import oslayer
 import deviceio
 import console
@@ -119,7 +118,7 @@ def check_key_events():
 
 def check_play_event():
     global play_stopped, play_last
-    play_now = sound.music_queue_length()
+    play_now = console.sound.music_queue_length()
     if play_last >= play_trig and play_now < play_trig:    
         play_handler.triggered = True     
     play_last = play_now
