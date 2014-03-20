@@ -603,21 +603,24 @@ def value_point(ins):
         raise error.RunError(2)
     if not lst[1]:
         # single-argument version
-        x,y = graphics.last_point
+        x, y = graphics.last_point
         fn = vartypes.pass_int_unpack(lst[0])
         if fn == 0:
             return vartypes.pack_int(x)
         elif fn == 1:
             return vartypes.pack_int(y)
         elif fn == 2:
-            fx, _ = graphics.get_window_coords(x,y)
+            fx, _ = graphics.get_window_coords(x, y)
             return fp.pack(fx)
         elif fn == 3:
-            _, fy = graphics.get_window_coords(x,y)
+            _, fy = graphics.get_window_coords(x, y)
             return fp.pack(fy)
     else:       
+        # two-argument mode
         graphics.require_graphics_mode()
-        return vartypes.pack_int(graphics.get_point(vartypes.pass_int_unpack(lst[0]), vartypes.pass_int_unpack(lst[1])))        
+        return vartypes.pack_int(graphics.get_point(*graphics.window_coords(
+                        fp.unpack(vartypes.pass_single_keep(lst[0])), 
+                        fp.unpack(vartypes.pass_single_keep(lst[1])))))     
 
 def value_pmap(ins):
     util.require_read(ins, ('(',))
