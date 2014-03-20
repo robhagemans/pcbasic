@@ -1319,15 +1319,14 @@ ERRORS:
         
     
 GET statement   (graphics)
-GET [STEP] (x0,y0) - [STEP] (x1,y1), array_name
+GET (x0,y0) - [STEP] (x1,y1), array_name
 -------------
 Stores a rectangular area of the graphics screen in an array. 'array_name' must
 be the name of a numeric array dimensioned with enough space to store the area. 
 The area stored is a rectangle parallel to the screen edges, bounded by the 
 top-left and bottom-right coordinates 'x0','y0' and 'x1','y1'. If STEP is 
-specified, 'x0','y0' is an offset from the current position and 'x1','y1' is an
-offset from 'x0','y0'. The area is such that these corner points are inside it. 
-'x0', ... 'y1' are number-valued expressions. 
+specified, 'x1','y1' is an offset from 'x0','y0'. The area is such that these 
+corner points are inside it. 'x0', ... 'y1' are number-valued expressions. 
 The image stored in the array can then be put on the screen using PUT. For the 
 purposes of GET, any array is considered a string of bytes. The byte size of an
 array can be calculated as number_elements * byte_size with bytes_size equal to
@@ -2896,6 +2895,70 @@ ERRORS:
 -   If a number field contains no # characters, ILLEGAL FUCTION CALL is raised.
 
 
+
+PUT statement   (random-access files)
+PUT [#] file_number [, record_number]
+-------------
+Writes a record to the random-access file 'file_number' at position
+'record_number'. 'file_number' is a numeric expression that yields the number 
+of an open random-access file. The # is optional and has no effect. 
+'record_number' is a numeric expression that gives a number between 1 and 
+33554432 (2^25), inclusive, and is interpreted as the record number. 
+ERRORS:
+-   If 'record_number' is not in [1, 33554432], raises BAD RECORD NUMBER.
+-   If 'file_number' is not in [0,255], raises ILLEGAL FUNCTION CALL.
+-   If 'file_number' is not the number of an open file, raises
+    BAD FILE NUMBER.
+-   If 'file_number' is open under a mode other than RANDOM, raises
+    BAD FILE MODE.
+-   If 'file_number' is not specified, raises MISSING OPERAND.
+    
+
+PUT statement   (communications)
+PUT [#] com_file_number, [, number_bytes]
+-------------
+Writes 'number_bytes' bytes to the communications buffer opened under file 
+number 'com_file_number'. 'number_bytes' is a numeric expression between 1
+and the COM buffer length, inclusive.
+NOTES:
+-   In GW-BASIC, DEVICE I/O ERROR is raised for overrun error, framing error,
+    and break interrupt. DEVICE FAULT is raised if DSR is lost during I/O. A
+    PARITY ERROR is raised if parity is enabled and incorrect parity is 
+    encountered. This is according to the manual; it is untested.
+ERRORS:
+-   If 'bytes' is less than 1, raises BAD RECORD NUMBER
+-   If 'bytes' is less than 32768 and greater than the COM buffer length,
+    raises ILLEGAL FUNCTION CALL
+-   If 'com_file_number' is not specified, raises MISSING OPERAND.
+-   If 'com_file_number' is not in [0,255], raises ILLEGAL FUNCTION CALL.
+-   If 'com_file_number' is not the number of an open file, raises
+    BAD FILE NUMBER.
+-   If the serial input buffer is full, i.e. LOF(com_file_number) == 0, and 
+    LOC(com_file_number)==255, raises COMMUNICATION BUFFER OVERFLOW
+        
+    
+PUT statement   (graphics)
+PUT (x0, y0), array_name [, {PSET|PRESET|AND|OR|XOR}]
+-------------
+Displays an array to a rectangular area of the graphics screen. 'array_name' must
+be the name of a numeric array. 'x0', 'y0' are number-valued expressions. 
+Usually, PUT is used with arrays that have been stored using GET. See GET for the
+format of the array. 
+If specified, the keywords have the following effect:
+PSET    Overwrite the screen location with the new image
+PRESET  Overwrite the screen location with the inverse image
+AND     Combines the old and new attributes with bitwise AND
+OR      Combines the old and new attributes with bitwise OR
+XOR     Combines the old and new attributes with bitwise XOR
+ERRORS:
+-   If the array does not exist, raises ILLEGAL FUNCTION CALL.
+-   If 'array_name' refers to a string array, raises TYPE MISMATCH.
+-   If 'x0', 'y0' are string expressions, raises TYPE MISMATCH.
+-   If 'x0', 'y0' are not in [-32768, 32767], raises OVERFLOW.
+-   If 'x0', 'y0' is outside the current VIEW or WINDOW, raises
+    ILLEGAL FUNCTION CALL
+
+    
 RSET statement
 --------------
 See LSET.
