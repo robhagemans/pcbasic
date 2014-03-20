@@ -457,9 +457,10 @@ def exec_screen(ins):
     
 def exec_pcopy(ins):
     src = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    util.range_check(0, console.num_pages-1, src)
     util.require_read(ins, (',',))
     dst = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
-    util.range_check(0, console.num_pages-1, src, dst)
+    util.range_check(0, console.num_pages-1, dst)
     console.copy_page(src, dst)
         

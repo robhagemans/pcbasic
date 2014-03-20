@@ -19,8 +19,15 @@ from string_ptr import StringPtr
 # 'free memory' as reported by FRE
 total_mem = 60300    
 byte_size = {'$':3, '%':2, '!':4, '#':8}
+# memory model: data segment
+data_segment = 0x13ad
+# memory model: current segment
+segment = data_segment
 # memory model: start of variables section
 var_mem_start = 4720
+# memory model: pre-defined PEEK outputs
+peek_values = {}
+
 
 def clear_variables():
     global variables, arrays, array_base, functions, common_names, common_array_names, memory

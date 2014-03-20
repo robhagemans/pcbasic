@@ -41,8 +41,8 @@ def main():
     # PEEK presets
     if args.peek != None:
         for a in args.peek:
-            [addr,val] = a.split(':')
-            expressions.peek_values[int(addr)]=int(val)
+            seg, addr, val = a.split(':')
+            expressions.peek_values[(int(seg), int(addr))] = int(val)
     # implied RUN invocations
     if args.infile and not args.load and not args.conv:
         args.run = True    
@@ -127,7 +127,7 @@ def build_parser():
     parser.add_argument('-q', '--quit', action='store_true', help='Quit interpreter when execution stops')
     parser.add_argument('--debug', action='store_true', help='Enable DEBUG keyword')
     parser.add_argument('--nosound', action='store_true', help='Disable sound output (faster)')
-    parser.add_argument('--peek', nargs='*', metavar=('ADDR:VAL'), help='Define PEEK preset values')
+    parser.add_argument('--peek', nargs='*', metavar=('SEG:ADDR:VAL'), help='Define PEEK preset values')
     parser.add_argument('-p1', '--lpt1', nargs='*', metavar=('TYPE:VAL'), help='Set LPT1: to FILE:file_name or CUPS:printer_name. Default is CUPS:default')
     parser.add_argument('-p2', '--lpt2', nargs='*', metavar=('TYPE:VAL'), help='Set LPT2: to FILE:file_name or CUPS:printer_name.')
     parser.add_argument('-p3', '--lpt3', nargs='*', metavar=('TYPE:VAL'), help='Set LPT3: to FILE:file_name or CUPS:printer_name.')
