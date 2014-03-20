@@ -29,12 +29,8 @@ def exec_sound(ins):
     util.require_read(ins, (',',))
     dur = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=65535)
     util.require(ins, util.end_statement)
-    if freq == 32767:
-        sound.play_pause(float(dur)/18.2)
-    elif freq>=37 and freq<32767:    
-        sound.play_sound(freq, float(dur)/18.2)
-    else:
-        raise error.RunError(5)
+    util.range_check(37, 32767, freq) # 32767 is pause
+    sound.play_sound(freq, float(dur)/18.2)
     if sound.music_foreground:
         sound.wait_music()
     
