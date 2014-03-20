@@ -34,6 +34,7 @@ def parse_coord(ins, absolute=False):
 def exec_pset(ins, default_colour=-1):
     graphics.require_graphics_mode()
     x, y = parse_coord(ins)
+    graphics.last_point = x, y
     c = default_colour
     if util.skip_white_read_if(ins, (',',)):
         c = vartypes.pass_int_unpack(expressions.parse_expression(ins))
@@ -53,18 +54,14 @@ def exec_line_graph(ins):
     util.require_read(ins, ('\xEA',)) # -
     x1, y1 = parse_coord(ins)
     graphics.last_point = x1, y1
-    c, mode, mask = -1, 'L', 0xffff
+    c, mode, mask = -1, '', 0xffff
     if util.skip_white_read_if(ins, (',',)):
         expr = expressions.parse_expression(ins, allow_empty=True)
         if expr:
             c = vartypes.pass_int_unpack(expr)
         if util.skip_white_read_if(ins, (',',)):
             if util.skip_white_read_if(ins, ('B',)):
-                mode = 'B'
-                if util.skip_white_read_if(ins, ('F',)):         
-                    mode = 'BF'
-                else:
-                    util.require(ins, util.end_statement + (',',))
+                mode = 'BF' if util.skip_white_read_if(ins, ('F',)) else 'B'
             else:
                 util.require(ins, (',',))
             if util.skip_white_read_if(ins, (',',)):
@@ -72,7 +69,7 @@ def exec_line_graph(ins):
         elif not expr:
             raise error.RunError(22)        
     util.require(ins, util.end_statement)    
-    if mode == 'L':
+    if mode == '':
         graphics.draw_line(x0, y0, x1, y1, c, mask)
     elif mode == 'B':
         graphics.draw_box(x0, y0, x1, y1, c, mask)
@@ -115,6 +112,7 @@ def exec_window(ins):
 def exec_circle(ins):
     graphics.require_graphics_mode()
     x0, y0 = parse_coord(ins)
+    graphics.last_point = x0, y0
     util.require_read(ins, (',',))
     r = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
     start, stop, c = None, None, -1

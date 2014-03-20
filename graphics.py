@@ -84,14 +84,12 @@ def check_coords(x, y):
 ### PSET, POINT
 
 def put_point(x, y, c):
-    global last_point
-    last_point = (x,y)
     x, y = view_coords(x,y)
     backend.apply_graph_clip()
     backend.put_pixel(x, y, get_colour_index(c))
     backend.remove_graph_clip()
     
-def get_point (x,y):
+def get_point(x, y):
     x, y = view_coords(x,y)
     return backend.get_pixel(x,y)
 
@@ -155,11 +153,9 @@ def window_scale(fx, fy):
 
 ### LINE
             
-def draw_box_filled(x0,y0, x1,y1, c):
-    global last_point 
-    last_point = x1, y1
-    x0, y0 = view_coords(x0,y0)
-    x1, y1 = view_coords(x1,y1)
+def draw_box_filled(x0, y0, x1, y1, c):
+    x0, y0 = view_coords(x0, y0)
+    x1, y1 = view_coords(x1, y1)
     c = get_colour_index(c)
     if y1 < y0:
         y0, y1 = y1, y0
@@ -170,8 +166,6 @@ def draw_box_filled(x0,y0, x1,y1, c):
     backend.remove_graph_clip()
     
 def draw_line(x0, y0, x1, y1, c, pattern=0xffff):
-    global last_point
-    last_point = x1,y1
     c = get_colour_index(c)
     x0, y0 = check_coords(*view_coords(x0, y0))
     x1, y1 = check_coords(*view_coords(x1, y1))
@@ -223,8 +217,6 @@ def draw_straight(x0, y0, x1, y1, c, pattern, mask):
     return mask
                         
 def draw_box(x0, y0, x1, y1, c, pattern=0xffff):
-    global last_point
-    last_point = x1, y1
     x0, y0 = check_coords(*view_coords(x0, y0))
     x1, y1 = check_coords(*view_coords(x1, y1))
     c = get_colour_index(c)
@@ -293,9 +285,7 @@ def get_octant(mbf, rx, ry):
     return octant, coord, neg          
 
 # see e.g. http://en.wikipedia.org/wiki/Midpoint_circle_algorithm
-def draw_circle(x0,y0,r,c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, line1=False):
-    global last_point
-    last_point = x0, y0
+def draw_circle(x0, y0, r, c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, line1=False):
     c = get_colour_index(c)
     x0, y0 = view_coords(x0, y0)
     if oct0 == -1:
@@ -398,9 +388,7 @@ def octant_gte(octant, y, coord):
     
 # ellipse using midpoint algorithm
 # for algorithm see http://members.chello.at/~easyfilter/bresenham.html
-def draw_ellipse(cx, cy, rx, ry, c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1, x1=-1,y1=-1, line1=False):
-    global last_point
-    last_point = x0, y0
+def draw_ellipse(cx, cy, rx, ry, c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1, x1=-1, y1=-1, line1=False):
     c = get_colour_index(c)
     cx, cy = view_coords(cx, cy)
     # find invisible quadrants
