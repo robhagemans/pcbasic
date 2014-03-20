@@ -69,7 +69,6 @@ def main():
         if args.run and not args.cmd:
             # if a command is given, the program is only loaded.
             args.cmd = 'RUN'
-        print args    
         run.once(args.cmd, args.quit)
         run.loop()
     finally:
