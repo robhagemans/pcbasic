@@ -558,9 +558,10 @@ ERRORS:
 
 
 CIRCLE statement
-CIRCLE (x, y), radius [, [colour] [, [start] [, [end] [, aspect] ] ]
+CIRCLE [STEP] (x, y), radius [, [colour] [, [start] [, [end] [, aspect] ] ]
 ----------------
 Draw an ellipse or ellipse sector. The midpoint of the ellipse is at 'x','y'.
+If STEP is specified, the midpoint is 'x','y' away from the current position.
 'radius' is the radius, in pixels, along the long axis.
 'colour' is the colour attribute.
 If 'start' and 'end' are specified, a sector of the ellipse is drawn from 
@@ -1316,13 +1317,15 @@ ERRORS:
         
     
 GET statement   (graphics)
-GET (x0,y0)-(x1,y1), array_name
+GET [STEP] (x0,y0) - [STEP] (x1,y1), array_name
 -------------
 Stores a rectangular area of the graphics screen in an array. 'array_name' must
 be the name of a numeric array dimensioned with enough space to store the area. 
 The area stored is a rectangle parallel to the screen edges, bounded by the 
-top-left and bottom-right coordinates 'x0','y0' and 'x1','y1'. The area is such
-that these points are inside it. 'x0', ... 'y1' are number-valued expressions. 
+top-left and bottom-right coordinates 'x0','y0' and 'x1','y1'. If STEP is 
+specified, 'x0','y0' is an offset from the current position and 'x1','y1' is an
+offset from 'x0','y0'. The area is such that these corner points are inside it. 
+'x0', ... 'y1' are number-valued expressions. 
 The image stored in the array can then be put on the screen using PUT. For the 
 purposes of GET, any array is considered a string of bytes. The byte size of an
 array can be calculated as number_elements * byte_size with bytes_size equal to
@@ -1415,7 +1418,8 @@ NOTES:
 -   If 'truth_value' has a string value, raises TYPE MISMATCH.
     
     
-INKEY$ function 
+INKEY$ function
+key = INKEY$
 ---------------
 Returns one keypress from the keyboard buffer. If the keyboard buffer is 
 empty, returns the empty string. Otherwise, the return value is either a one
@@ -1453,7 +1457,6 @@ The hex values for keyboard scancodes returned by INKEY$ are:
     <CTRL+9>        84
     <CTRL+F2>       5F
     <CTRL+F3>       60
-
 
 
 INP function
@@ -1852,14 +1855,16 @@ ERRORS:
 
 
 LINE statement
-LINE [(x0, y0)] - (x1, y1) [, [attr] [, [B [F]] [, pattern]]]
+LINE [ [STEP] (x0, y0)] - [STEP] (x1, y1) [, [attr] [, [B [F]] [, pattern]]]
 --------------
 Draws a line or a box in graphics mode. If B is not specified, a line is drawn
 from ('x0', 'y0') to ('x1', 'y1'), endpoints inclusive. If B is specified, a 
 rectangle is drawn with sides parallel to the screen and two opposing corners 
 specified by ('x0', 'y0') and ('x1', 'y1'). If the starting point is not given, 
-the current graphics position is used as a staring point. LINE moves the 
-current graphics position to ('x1', 'y1'). 
+the current graphics position is used as a staring point.  If STEP is 
+specified, 'x0','y0' is an offset from the current position and 'x1','y1' is an
+offset from 'x0','y0'. 
+LINE moves the current graphics position to the last given endpoint. 
 If F is specified with B, the rectangle is filled with the specified attribute. 
 F and B may be separated by zero or more spaces. 
 'attr' must be a number-valued expression between 0 and 255, inclusive, which 
@@ -2468,7 +2473,8 @@ PAINT [STEP] (x, y) [, attrib [, border [, dummy ] ] ]
 ---------------
 Flood-fills the screen with a colour or pattern.
 'x', 'y' are number-valued expressions in the range [-32768, 32767] which give
-the seed point for the flood fill. If 'x', 'y' are outside the visible screen 
+the seed point for the flood fill. If STEP is specified, 'x' 'y' are offsets 
+from the current position. If the seed point is outside the visible screen 
 area, no flood fill is performed.
 'attrib' is an expression that specifies the fill attribute or pattern. If not 
 specified, the current foreground attribute is used. 
