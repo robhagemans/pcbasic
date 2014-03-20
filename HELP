@@ -2560,8 +2560,10 @@ new values for the palette. 'start_index' is a number-valued expression that
 indicates at which index in the array to start mapping to the palette. If an 
 array index equals -1, the matching attribute is left unchanged.
 ERRORS:
--   If the array is too short, raises ILLEGAL FUNCTION CALL.
--   If the array is not an integer array, raises TYPE MISMATCH.
+-   If 'int_array_name' has not been dimensioned, raises ILLEGAL FUNCTION CALL.
+    The array will not be automatically dimensioned.
+-   If 'int_array_name' is not an integer array, raises TYPE MISMATCH.
+-   If 'int_array_name' is too short, raises ILLEGAL FUNCTION CALL.
 -   If 'start_index' is outside array dimensions, raises SUBSCRIPT OUT OF RANGE
 -   If 'start_index' is not in [-32768,32767], raises OVERFLOW 
 
