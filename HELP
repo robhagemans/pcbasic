@@ -885,10 +885,12 @@ dash: for example, DEFSTR A,B,C-Z.
 DEF SEG statement
 DEF SEG [=address]
 -----------------
-Does nothing. 'address' is a numeric-valued expression in [-32768, 65535].
+Sets the memory segment to be used by BLOAD, BSAVE, CALL, PEEK, POKE, or USR.
+'address' is a numeric-valued expression in [-32768, 65535].
+the following segments are implemented/known:
+    data            &h13ad
+    screen buffer   &Hb800  (not implemented)
 NOTES:
--   In GW-BASIC, sets the segment address to be used by BLOAD, BSAVE, CALL, 
-    PEEK, POKE, or USR. This is not implemented in PC-BASIC.
 -   If 'address' is negative, it is interpreted as its two's complement.
 -   If 'address' is not specified, the segment is set to the GW-BASIC data
     segment.
@@ -2572,6 +2574,36 @@ ERRORS:
 -   If 'int_array_name' is too short, raises ILLEGAL FUNCTION CALL.
 -   If 'start_index' is outside array dimensions, raises SUBSCRIPT OUT OF RANGE
 -   If 'start_index' is not in [-32768,32767], raises OVERFLOW 
+
+
+PCOPY statement
+PCOPY src, dst
+---------------
+Copies the screen page 'src' to 'dst'. All text and graphics on 'dst' is 
+replaced by those of 'src'.
+'src' and 'dst' are number-valued expressions between 0 and the current video 
+mode's number of pages, less one. 
+ERRORS:
+-   If 'src' or 'dst' are out of range, raises ILLEGAL FUNCTION CALL.
+-   If 'src' or 'dst' are not in [-32768,32767], raises OVERFLOW. 
+
+
+PEEK function
+value = PEEK(address)
+-------------
+Returns the value of the memory at the DEF SEG segement + 'address'.
+'address' must be in [-32768, 65536]. Negative values are interpreted as their 
+two's complement.
+NOTES:
+-   The memory is only partly emulated in PC-BASIC 3.23. PEEK can be used to
+    access variable and string space (using VARPTR), but not arrays of strings,
+    the stored program, or file descriptors.
+-   Values for particular memory address can be preset on the command line 
+    using the --peek option. This can be used for compatibility with old 
+    programs.
+-   Outside these emulated areas, PEEK returns 0.    
+ERRORS:
+-   If 'address' is not in [-32768, 65536], raises OVERFLOW
 
 
 PRINT, PRINT# and LPRINT statements
