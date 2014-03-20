@@ -2762,6 +2762,23 @@ ERRORS:
     [-32768, 32767], raises OVERFLOW.
 
 
+POKE statement
+POKE address, value
+--------------
+Does nothing.
+'address' is anumber-valued expression in [-32768, 65535]. Negative values are
+interpreted as their two's complement.
+'value' is a number-valued expression in [0, 255].
+NOTES:
+-   In GW-BASIC, POKE sets memory location 'address' to 'value'. This is not 
+    implemented in PC-BASIC 3.23, whose memory emulation is read-only.
+ERRORS:
+-   If 'address' or 'value' has a string value, raises TYPE MISMATCH.
+-   If 'value' is not in [0, 255], raises ILLEGAL FUNCTION CALL.
+-   If 'address' is not in [-32768, 65535], raises OVERFLOW.
+-   If 'value' is not in [-32768, 32767], raises OVERFLOW.
+    
+
 PRINT, PRINT# and LPRINT statements
 {LPRINT| {PRINT|?} [# file_num,]} [expr_0] [;|,|SPC(n)|TAB(n)] [expr_1] [...]
 -----------------------------------
