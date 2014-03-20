@@ -2591,7 +2591,7 @@ ERRORS:
 PEEK function
 value = PEEK(address)
 -------------
-Returns the value of the memory at the DEF SEG segement + 'address'.
+Returns the value of the memory at the current DEF SEG segment + 'address'.
 'address' must be in [-32768, 65536]. Negative values are interpreted as their 
 two's complement.
 NOTES:
@@ -2601,9 +2601,10 @@ NOTES:
 -   Values for particular memory address can be preset on the command line 
     using the --peek option. This can be used for compatibility with old 
     programs.
--   Outside these emulated areas, PEEK returns 0.    
+-   Outside these emulated areas, PEEK returns 0. In particular, if the current
+    segment is not the data segment, PEEK returns 0.   
 ERRORS:
--   If 'address' is not in [-32768, 65536], raises OVERFLOW
+-   If 'address' is not in [-32768, 65536], raises OVERFLOW.
 
 
 PRINT, PRINT# and LPRINT statements
