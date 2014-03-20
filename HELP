@@ -2695,10 +2695,32 @@ length = PLAY(dummy)
 -------------
 Returns the number of notes in the background music queue.
 'dummy' is a number-valued expression in [0,255]. Is value has no effect.
+The return value is in [0,32].
 ERRORS:
 -   If 'dummy' is a string, raises TYPE MISMATCH.
 -   If 'dummy' is not in [0, 255], raises ILLEGAL FUNCTION CALL.
 -   If 'dummy' is not in [-32768, 32767], raises OVERFLOW.
+
+
+PMAP function
+physical = PMAP(logical, fn)
+-------------
+Maps between physical and logical coordinates, taking into account the settings
+of the last WINDOW statement (but not VIEW!). The operation depends on 'fn':
+'fn'    operation
+  0     return physical x given logical coordinates
+  1     return physical y given logical coordinates
+  2     return logical x given physical coordinates
+  3     return logical y given physical coordinates
+NOTES:
+-   Initially, in text mode, PMAP returns 0.
+-   In GW-BASIC, PMAP behaves anomalously on SCREEN changes, where it sometimes
+    returns results as if the last WINDOW setting had persisted. This is not
+    implemented in PC-BASIC 3.23. 
+ERRORS:
+-   If a physical coordinate is not in [-32768, 32767], raises OVERFLOW.
+-   If 'fn' is not in [0,3], raises ILLEGAL FUNCTION CALL.
+
 
 
 PRINT, PRINT# and LPRINT statements
