@@ -243,7 +243,7 @@ def parse_expr_list(ins, size, err=5, separators=(',',), allow_last_empty=False)
     output = []
     while True:
         output.append(parse_expression(ins, allow_empty=True))
-        if not skip_white_read_if(ins, separators):
+        if not util.skip_white_read_if(ins, separators):
             break
     if len(output) > size:            
         raise error.RunError(err)
