@@ -250,24 +250,20 @@ def play_parse_mml(mml):
             note = ml_parse_number(gmls)
             if note > 0 and note <= 84:
                 sound.play_sound(note_freq[note-1], play_length*play_speed*play_tempo)
-            if note == 0:
-                sound.play_pause(play_length*play_speed*play_tempo)
+            elif note == 0:
+                sound.play_sound(0, play_length*play_speed*play_tempo)
         elif c == 'L':
             play_length = 1./ml_parse_number(gmls)    
         elif c == 'T':
             play_tempo = 240./ml_parse_number(gmls)    
         elif c == 'O':
-            play_octave = ml_parse_number(gmls)
-            if play_octave<0:
-                play_octave=0
-            if play_octave>6:
-                play_octave=6        
+            play_octave = min(6, max(0, ml_parse_number(gmls)))
         elif c == '>':
             play_octave += 1
             if play_octave > 6:
                 play_octave = 6
         elif c == '<':
-            play_octave -=1
+            play_octave -= 1
             if play_octave < 0:
                 play_octave = 0
         elif c in ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'P'):
@@ -301,18 +297,11 @@ def play_parse_mml(mml):
             next_oct = 0
         elif c == 'M':
             c = util.skip_read(gmls, ml_whitepace).upper()
-            if c == 'N':
-                play_speed=7./8.
-            elif c == 'L':
-                play_speed=1.
-            elif c == 'S':
-                play_speed=3./4.        
-            elif c == 'F':
-                # foreground
-                sound.music_foreground=True
-            elif c == 'B':
-                # background
-                sound.music_foreground=False
+            if c == 'N':        play_speed = 7./8.
+            elif c == 'L':      play_speed = 1.
+            elif c == 'S':      play_speed = 3./4.        
+            elif c == 'F':      sound.music_foreground = True
+            elif c == 'B':      sound.music_foreground = False
             else:
                 raise error.RunError(5)    
         else:
