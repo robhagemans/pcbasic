@@ -610,12 +610,13 @@ def value_point(ins):
         elif fn == 1:
             return vartypes.pack_int(y)
         elif fn == 2:
-            fx, fy = graphics.get_window_coords(x,y)
-            return fx
+            fx, _ = graphics.get_window_coords(x,y)
+            return fp.pack(fx)
         elif fn == 3:
-            fx, fy = graphics.get_window_coords(x,y)
-            return fy
+            _, fy = graphics.get_window_coords(x,y)
+            return fp.pack(fy)
     else:       
+        graphics.require_graphics_mode()
         return vartypes.pack_int(graphics.get_point(vartypes.pass_int_unpack(lst[0]), vartypes.pass_int_unpack(lst[1])))        
 
 def value_pmap(ins):
