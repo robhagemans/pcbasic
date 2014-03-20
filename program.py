@@ -97,15 +97,15 @@ def read_entry():
     bytecode.seek(data_pos)
     if util.peek(bytecode) in util.end_statement:
         # initialise - find first DATA
-        util.skip_to(bytecode, '\x84')  # DATA
+        util.skip_to(bytecode, ('\x84',))  # DATA
         data_line = get_line_number(bytecode.tell())
     if bytecode.read(1) not in ('\x84', ','):
         # out of DATA
         raise error.RunError(4)
     vals, word, verbatim = '', '', False
     while True:
-        # read next char
-        if not verbatim:    
+        # read next char; omit leading whitespace
+        if not verbatim and vals == '':    
             c = util.skip_white(bytecode)
         else:
             c = util.peek(bytecode)
@@ -179,11 +179,9 @@ def reset_program():
 
 # RESTORE
 def restore_data(datanum=-1):
+    global data_line, data_pos
     data_line = datanum
-    if datanum == -1:
-        datapos = 0
-    else:    
-        data_pos = line_numbers[datanum]
+    data_pos = 0 if datanum==-1 else line_numbers[datanum]
 
 # CLEAR
 def clear_all():
