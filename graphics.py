@@ -119,14 +119,18 @@ def unset_graph_window():
     graph_window_bounds = None
 
 # input logical coords, output physical coords
-def window_coords(fx, fy):
-    if graph_window != None:
+def window_coords(fx, fy, step=False):
+    if graph_window:
         scalex, scaley, offsetx, offsety = graph_window
-        x = fp.add(offsetx, fp.mul(fx, scalex)).round_to_int()
-        y = fp.add(offsety, fp.mul(fy, scaley)).round_to_int()
+        if step:
+            fx0, fy0 = get_window_coords(last_point) if step else (fp.Single.zero.copy(), fp.Single.zero.copy())    
+        else:
+            x = fp.add(offsetx, fp.mul(fx0.iadd(fx), scalex)).round_to_int()
+            y = fp.add(offsety, fp.mul(fy0.iadd(fy), scaley)).round_to_int()
     else:
-        x = fx.round_to_int()
-        y = fy.round_to_int()
+        x, y = last_point if step else (0, 0)
+        x += fx.round_to_int()
+        y += fy.round_to_int()
     # overflow check
     if x < -0x8000 or y < -0x8000 or x > 0x7fff or y > 0x7fff:
         raise error.RunError(6)    
@@ -135,26 +139,19 @@ def window_coords(fx, fy):
 # inverse function
 # input physical coords, output logical coords
 def get_window_coords(x, y):
-    x = fp.Single.from_int(x)
-    y = fp.Single.from_int(y)
-    if graph_window != None:
+    x, y = fp.Single.from_int(x), fp.Single.from_int(y)
+    if graph_window:
         scalex, scaley, offsetx, offsety = graph_window
-        fx = fp.div(fp.sub(x, offsetx), scalex)
-        fy = fp.div(fp.sub(y, offsety), scaley)
+        return fp.div(fp.sub(x, offsetx), scalex), fp.div(fp.sub(y, offsety), scaley)
     else:
-        fx = x
-        fy = y
-    return fx, fy
+        return x, y
 
 def window_scale(fx, fy):
-    if graph_window != None:
+    if graph_window:
         scalex, scaley, offsetx, offsety = graph_window
-        x = fp.mul(fx, scalex).round_to_int()
-        y = fp.mul(fy, scaley).round_to_int()
+        return fp.mul(fx, scalex).round_to_int(), fp.mul(fy, scaley).round_to_int()
     else:
-        x = fx.round_to_int()
-        y = fy.round_to_int()
-    return x, y
+        return fx.round_to_int(), fy.round_to_int()
 
 ### LINE
             
