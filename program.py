@@ -305,13 +305,13 @@ def delete_lines(fromline, toline):
     bytecode.seek(0)
     preparse()
 
-def edit_line(from_line, pos=-1):
+def edit_line(from_line, bytepos=None):
     global prompt
     # list line
     current = bytecode.tell()	        
     bytecode.seek(1)
     output = StringIO()
-    tokenise.detokenise(bytecode, output, from_line, from_line, pos)
+    textpos = tokenise.detokenise(bytecode, output, from_line, from_line, bytepos)
     output.seek(0)
     bytecode.seek(current)
     console.clear_line(console.row)
@@ -321,7 +321,7 @@ def edit_line(from_line, pos=-1):
     unset_runmode()
     # suppress prompt, move cursor?
     prompt = False
-    console.set_pos(console.row-1, 1)
+    console.set_pos(console.row-1, textpos+1 if bytepos else 1)
     
 def renumber(new_line=-1, start_line=-1, step=-1):
     # set defaults

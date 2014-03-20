@@ -160,7 +160,8 @@ def handle_error(e):
         # for syntax error, line edit gadget appears
         if e.err == 2 and errline != -1:
             prompt()
-            program.edit_line(errline)
+            textpos = program.edit_line(errline, program.bytecode.tell())
+            console.debug_print(repr(textpos))
         # for some reason, err is reset to zero by GW-BASIC in this case.
         if e.err == 2:
             error.errn = 0

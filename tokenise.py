@@ -80,10 +80,9 @@ def str_to_value_keep(strval):
 
 # Detokenise functions
 
-def detokenise(ins, outs, from_line=-1, to_line=-1, pos=-1):
+def detokenise(ins, outs, from_line=-1, to_line=-1, bytepos=None):
     textpos = 0
     while True:
-        # TODO - an attempt to reproduce the cursor positioning after a syntax error
         # 65529 is max line number for GW-BASIC 3.23. 
         # however, 65530-65535 are executed if present in tokenised form.
         # in GW-BASIC, 65530 appears in LIST, 65531 and above are hidden
@@ -95,21 +94,22 @@ def detokenise(ins, outs, from_line=-1, to_line=-1, pos=-1):
         elif current_line == 0 and util.peek(ins)==' ':
             # ignore up to one space after line number 0
             ins.read(1)
-        # write one extra whitespace character after line number
-        output = vartypes.int_to_str(current_line) + ' '         
         # detokenise tokens until end of line
-        output += detokenise_line(ins)
+        output, textpos = detokenise_line(ins, bytepos)
         if (from_line==-1 or current_line>=from_line) and (to_line==-1 or current_line<=to_line):
-            outs.write(str(output + util.endl)) 
-    return textpos
+            # write one extra whitespace character after line number
+            outs.write(str(vartypes.int_to_str(current_line) + ' ' + output + util.endl)) 
+    return textpos + len(vartypes.int_to_str(current_line) + ' ')
     
 
-def detokenise_line(bytes):
+def detokenise_line(bytes, bytepos=None):
     output = bytearray()
-    litstring = False
-    comment = False
+    litstring, comment = False, False
+    textpos = 0
     while True:
         s = bytes.read(1)
+        if not textpos and bytes.tell() >= bytepos:
+            textpos = len(output)
         if s in util.end_line:
             # \x00 ends lines and comments when listed, if not inside a number constant
             # stream ended or end of line
@@ -131,7 +131,7 @@ def detokenise_line(bytes):
         else:
             bytes.seek(-1,1)
             comment = detokenise_keyword(bytes, output)
-    return output
+    return output, textpos
 
 
 # token to string
