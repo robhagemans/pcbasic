@@ -78,7 +78,7 @@ def debug_print(s):
     sys.stderr.write(s)    
     
 def idle():
-    time.sleep(0.024)
+    time.sleep(0.004)
     
 def init():
     return True
