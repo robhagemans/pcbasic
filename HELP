@@ -2607,6 +2607,41 @@ ERRORS:
 -   If 'address' is not in [-32768, 65536], raises OVERFLOW.
 
 
+PEN statement
+PEN { ON | OFF | STOP }
+-------------
+Controls event trapping and read access of the light pen (in PC-BASIC 3.23,
+emulated through the mouse). If ON is specified pen reading and trapping is 
+switched on; if OFF, off. STOP suspends event trapping until another PEN ON is
+executed. Up to one event can be triggered during suspension, provided that 
+event handling was switched on prior to suspension. The event triggered during 
+suspension is handled immediately after the next PEN ON statement.
+
+
+PEN function
+x = PEN(mode)
+------------
+Reads the light pen. What PEN returns depends on 'mode'.
+'mode' is a number-valued expression in [0, 9]. PEN returns the following:
+'mode'  PEN result
+  0     boolean: whether the light pen has been down since last poll.
+  1     x coordinate of last pen down position
+  2     y coordinate of last pen down position
+  3     boolean: if the pen is currently down
+  4     x coordinate of current pen position  
+  5     y coordinate of current pen position  
+  6     character row coordinate of last pen down position
+  7     character column coordinate of last pen down position
+  8     character row coordinate of current pen position
+  9     character column coordinate of current pen position
+NOTES:
+-   In PC-BASIC 3.23, for 'pen down' read 'left mouse button pressed'. For 'pen
+    position' read 'mouse pointer position'.
+ERRORS:
+-   If 'mode' is not in [0, 9], raises ILLEGAL FUNCTION CALL.
+-   If 'mode' is not in [-32768, 32767], raises OVERFLOW.
+    
+
 PRINT, PRINT# and LPRINT statements
 {LPRINT| {PRINT|?} [# file_num,]} [expr_0] [;|,|SPC(n)|TAB(n)] [expr_1] [...]
 -----------------------------------
