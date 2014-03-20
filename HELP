@@ -2752,7 +2752,7 @@ POINT function (pixel attribute)
 attrib = POINT (x, y)
 --------------
 Returns the attribute of the pixel at logical coordinate 'x','y'.
-'x', 'y' are number-valued expressions
+'x', 'y' are number-valued expressions in [-32768, 32768].
 NOTES:
 -   If 'x','y' is outside the screen, returns -1.
 ERRORS:
@@ -2777,7 +2777,33 @@ ERRORS:
 -   If 'value' is not in [0, 255], raises ILLEGAL FUNCTION CALL.
 -   If 'address' is not in [-32768, 65535], raises OVERFLOW.
 -   If 'value' is not in [-32768, 32767], raises OVERFLOW.
-    
+
+
+POS function
+pos = POS(dummy)
+------------
+Returns the current cursor column position, in the range [1, 80].
+'dummy' is a valid expression of any type; its value has no effect.
+
+
+PSET and PRESET statements
+P[RE]SET [STEP] (x, y) [, attrib]
+----------------
+Change the attribute of a pixel on the screen at position 'x', 'y'.
+If STEP is specified, 'x','y' is an offset from the current position.
+'x', 'y' are number-valued expressions in [-32768, 32768].
+'attrib' is a number-valued expression in [0,255]. If 'attrib' is specified
+and between 0 and the screen mode's palette size, the pixel is changed to 
+attribute 'attrib'. If 'attrib' is larger than the palette size, the pixel's
+attribute is changed to the highest legal attribute value. 
+If 'attrib' is not specified, PSET changes the attribute to the current 
+foreground attribute while PRESET changes it to zero.
+ERRORS:
+-   If 'x' or 'y' has a string value, raises TYPE MISMATCH.
+-   If 'attrib' is not in [0,255], raises ILLEGAL FUNCTION CALL.
+-   If 'attrib', 'x' or 'y' or the physical coordinates they translate into are not in
+    [-32768, 32767], raises OVERFLOW.
+ 
 
 PRINT, PRINT# and LPRINT statements
 {LPRINT| {PRINT|?} [# file_num,]} [expr_0] [;|,|SPC(n)|TAB(n)] [expr_1] [...]
