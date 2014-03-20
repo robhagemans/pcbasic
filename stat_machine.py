@@ -18,9 +18,10 @@ import var
 
 # do-nothing POKE        
 def exec_poke(ins):
-    vartypes.pass_int_keep(expressions.parse_expression(ins)) #addr
+    addr = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=0xffff) 
     util.require_read(ins, (',',))
-    vartypes.pass_int_keep(expressions.parse_expression(ins)) #val
+    val = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    util.range_check(0, 255, val)
     util.require(ins, util.end_statement)
     
 # DEF SEG    
@@ -54,21 +55,21 @@ def exec_call(ins):
 
 # do-nothing out       
 def exec_out(ins):
-    addr = vartypes.pass_int_keep(expressions.parse_expression(ins), maxint=0xffff)
+    addr = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=0xffff)
     util.require_read(ins, (',',))
-    val = vartypes.pass_int_keep(expressions.parse_expression(ins))
-    util.check_range(0, 255, value)
+    val = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    util.range_check(0, 255, val)
     util.require(ins, util.end_statement)
 
 # do-nothing wait        
 def exec_wait(ins):
-    addr = vartypes.pass_int_keep(expressions.parse_expression(ins), maxint=0xffff)
+    addr = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=0xffff)
     util.require_read(ins, (',',))
-    ander = vartypes.pass_int_keep(expressions.parse_expression(ins))
-    util.check_range(0, 255, ander)
+    ander = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    util.range_check(0, 255, ander)
     xorer = 0
     if util.skip_white_read_if(ins, (',',)):
-        xorer = vartypes.pass_int_keep(expressions.parse_expression(ins))
-    util.check_range(0, 255, xorer)
+        xorer = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    util.range_check(0, 255, xorer)
     util.require(ins, util.end_statement)
             
