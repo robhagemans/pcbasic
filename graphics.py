@@ -70,10 +70,8 @@ def reset_graphics():
     draw_and_play.draw_angle = 0
 
 def get_colour_index(c):
-    if c == -1: # foreground
+    if c == -1: # foreground; graphics 'background' attrib is always 0
         c = console.attr & 0xf
-    elif c == -2: # background
-        c = (console.attr>>4) & 0x7    
     else:
         c = min(console.num_colours - 1, max(0, c))
     return c
