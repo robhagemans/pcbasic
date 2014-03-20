@@ -2978,6 +2978,22 @@ ERRORS:
 -   If 'expr' is a string, raises ILLEGAL FUNCTION CALL.
 -   If the user provides a seed outside [-32768, 32767], raises OVERFLOW.
 
+
+READ statement
+READ var_0 [, var_1 [, ... ] ]
+--------------
+Assigns data from a DATA statement to variables. Reading starts at the current
+DATA position, which is the DATA entry immediately after the last one read by 
+previous READ statements. The DATA position is reset to the start by the RUN 
+and RESTORE statements.
+'var_0', 'var_1' are valid variable names or array elements.
+ERRORS:
+-   If not enough data is present in DATA statements, raises OUT OF DATA.
+-   If the type of the variable is not compatible with that of the data entry
+    being read, a SYNTAX ERROR is raised on the DATA line.
+
+
+    
     
 RSET statement
 --------------
