@@ -2642,6 +2642,50 @@ ERRORS:
 -   If 'mode' is not in [-32768, 32767], raises OVERFLOW.
     
 
+PLAY statement
+PLAY mml_string
+--------------
+Plays the tune defined by string-valued expression 'mml_string'. 'mml_string' 
+must be a string-valued expression in Music Macro Language (MML). 
+MML reference:
+Notes:
+    { A|B|C|D|E|F|G }[ #|+|- ][n]   Plays the correspoding note, with or + for 
+                                    sharp and - for flat. If 'n' follows, it
+                                    indicates duration as in L below.
+    Nn  Play note 'n', in the range [0, 84] (7 octaves). 'n' = 0 means rest.                                    
+    On  Sets the current octave to 'n', in the range [0,6]. Default is 4.
+    >   Increases the current octave by 1, with a maximum of 6.   
+    <   Decreases the current octave by 1, with a minimum of 0.   
+    Pn  Pause for duration 'n' as in L below.
+Duration:
+    .   Increase the duration of the preceding note by 1/2 times its normal
+        duration. Periods can be repeated to increase duration further.
+    Ln  Set the duration of following note. 'n'=4 is a quarter note, etc.
+        'n' is in the range [1, 64].
+    MN  Normal: 7/8 of the duration is played. Default mode.
+    ML  Legato: full duration is played.
+    MS  Staccato: 3/4 of the duration is played. 
+Tempo:    
+    Tn  Sets the tempo to 'n' (legato) L4s per minute. Default is 120.
+Background mode (affects SOUND, PLAY and BEEP)
+    MB  Turns on background mode; sound commands exit without waiting for the 
+        music to finish. The music keeps playing while other commands are 
+        executed.
+    MF  Turns off background mode; sound commands block. Default mode.
+Subroutine command:
+    Xs      execute substring. 's' is one of the following:
+            -   a string variable name followed by semicolon (;)
+            -   the result of VARPTR$() on a string variable
+Numeric variables 'n' in the commands above can be:
+    -   an integer literal e.g. "100"
+    -   a numeric variable name preceded by = and followed by ; e.g. "=name;"
+    -   the result of VARPTR$() on a numeric variable, preceded by =.               
+ERRORS:
+-   If 'mml_string' has a numeric value, TYPE MISMATCH is raised.
+-   If 'mml_string' has errors in the MML, ILLEGAL FUNCTION CALL is raised.
+-   If a variable in the mml_string is of incorrect type, TYPE MISMATCH.
+
+
 PRINT, PRINT# and LPRINT statements
 {LPRINT| {PRINT|?} [# file_num,]} [expr_0] [;|,|SPC(n)|TAB(n)] [expr_1] [...]
 -----------------------------------
