@@ -99,18 +99,15 @@ def exec_for(ins):
         # convert 1 to vartype
         step = vartypes.pass_type_keep(vartype, vartypes.pack_int(1))
     util.require(ins, util.end_statement)
-    # apply initial condition: set loopvar to start
-    loopvar = vartypes.pass_type_keep(vartype, start)
-    var.set_var(varname, start)
-    # find NEXT and push to stack
-    for_push_next(ins, forpos, varname, start, stop, step)
-    # check condition and jump if necessary
-    for_jump_if_ends(ins, loopvar, stop, step)
-
-###
-    
-def for_push_next(ins, forpos, varname, start, stop, step):    
-    # find matching NEXT
+    # find NEXT
+    nextpos, nextline = find_next(ins, varname)
+    # apply initial condition, jump if necessary
+    if program.loop_init(ins, forpos, program.linenum, varname, nextpos, nextline, start, stop, step):
+        if util.skip_white_read_if(ins, (',')):
+            # we're jumping into a comma'ed NEXT, call exec_next
+            return exec_next(ins, True)
+        
+def find_next(ins, varname):
     current = ins.tell()
     util.skip_to_next(ins, '\x82', '\x83', allow_comma=True)  # FOR, NEXT
     # FOR without NEXT
@@ -122,48 +119,15 @@ def for_push_next(ins, forpos, varname, start, stop, step):
     util.skip_white(ins)
     nextpos = ins.tell()
     nextline = program.get_line_number(nextpos) if program.run_mode else -1
-    ins.seek(current)    
-    # no-var only allowed in standalone NEXT
+    # no-var only allowed in standalone NEXT   
     if varname2 == '':
         util.require(ins, util.end_statement)
-    if varname2 == varname or varname2 == '':
-        program.for_next_stack.append((forpos, program.linenum, varname, nextpos, nextline, start, stop, step)) 
-    else:
+    if varname2 and varname2 != varname:
         # NEXT without FOR
-        raise error.RunError(1, nextline)
-    
-def for_iterate(ins):    
-    # skip to end of FOR statement
-    util.skip_to(ins, util.end_statement)
-    _, _, varname, _, _, start, stop, step = program.for_next_stack[-1]
-    # increment counter
-    loopvar = var.get_var(varname)
-    loopvar = vartypes.number_add(loopvar, step)
-    var.set_var(varname, loopvar)
-    # check condition and jump if necessary
-    for_jump_if_ends(ins, loopvar, stop, step)
-    
-def for_jump_if_ends(ins, loopvar, stop, step):
-    sgn = vartypes.unpack_int(vartypes.number_sgn(step)) 
-    if sgn < 0:
-        loop_ends = vartypes.int_to_bool(vartypes.number_gt(stop, loopvar)) 
-    elif sgn > 0:
-        loop_ends = vartypes.int_to_bool(vartypes.number_gt(loopvar, stop)) 
-    else:
-        # step 0 is infinite loop
-        loop_ends = False
-    if loop_ends:
-        # jump to just after NEXT
-        _, _, _, nextpos, program.linenum, _, _, _ = program.for_next_stack.pop()
-        ins.seek(nextpos)
-        if util.skip_white_read_if(ins, (',')):
-            # we're jumping into a comma'ed NEXT, call exec_next (which may call for_iterate which will call us again)
-            exec_next(ins, True)
-        # we should be at end statement at this point.
-        util.require(ins, util.end_statement)
-    return loop_ends
-    
-###
+        errline = program.get_line_number(nextpos-1) if program.run_mode else -1
+        raise error.RunError(1, errline)    
+    ins.seek(current)
+    return nextpos, nextline
 
 def exec_next(ins, comma=False):
     curpos = ins.tell()
@@ -189,11 +153,12 @@ def exec_next(ins, comma=False):
         else:
             # next without for
             raise error.RunError(1, nextline) #1    
-    # JUMP to FOR statement
-    program.linenum = forline
-    ins.seek(forpos)
-    for_iterate(ins)
-
+    # JUMP to end of FOR statement, increment counter, check condition
+    if program.loop_iterate(ins):
+        if util.skip_white_read_if(ins, (',')):
+            # we're jumping into a comma'ed NEXT, call exec_next
+            return exec_next(ins, True)
+    
 def exec_goto(ins):    
     jumpnum = util.parse_jumpnum(ins)    
     util.skip_to(ins, util.end_statement)

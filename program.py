@@ -106,6 +106,9 @@ def truncate_program(rest):
     bytecode.write(rest if rest else '\x00\x00\x00\x1a')
     # cut off at current position    
     bytecode.truncate()    
+          
+def memory_size():
+    return len(bytecode.getvalue()) - 4
     
 # get line number for stream position
 def get_line_number(pos):
@@ -463,8 +466,40 @@ def list_to_file(out, from_line, to_line):
     tokenise.detokenise(bytecode, out, from_line, to_line)
     bytecode.seek(current)
     set_runmode(False)
-                        
-def memory_size():
-    return len(bytecode.getvalue()) - 4
+                  
+                  
+def loop_init(ins, forpos, forline, varname, nextpos, nextline, start, stop, step):
+    loopvar = vartypes.pass_type_keep(varname[-1], start)
+    var.set_var(varname, start)
+    for_next_stack.append((forpos, forline, varname, nextpos, nextline, start, stop, step)) 
+    return loop_jump_if_ends(ins, loopvar, stop, step)
     
+def loop_iterate(ins):            
+    # JUMP to FOR statement
+    forpos, forline, varname, _, _, start, stop, step = for_next_stack[-1]
+    linenum = forline
+    ins.seek(forpos)
+    # skip to end of FOR statement
+    util.skip_to(ins, util.end_statement)
+    # increment counter
+    loopvar = var.get_var(varname)
+    loopvar = vartypes.number_add(loopvar, step)
+    var.set_var(varname, loopvar)
+    return loop_jump_if_ends(ins, loopvar, stop, step)
+        
+def loop_jump_if_ends(ins, loopvar, stop, step):
+    global linenum
+    sgn = vartypes.unpack_int(vartypes.number_sgn(step)) 
+    if sgn < 0:
+        loop_ends = vartypes.int_to_bool(vartypes.number_gt(stop, loopvar)) 
+    elif sgn > 0:
+        loop_ends = vartypes.int_to_bool(vartypes.number_gt(loopvar, stop)) 
+    else:
+        # step 0 is infinite loop
+        loop_ends = False
+    if loop_ends:
+        # jump to just after NEXT
+        _, _, _, nextpos, linenum, _, _, _ = for_next_stack.pop()
+        ins.seek(nextpos)
+    return loop_ends
     
