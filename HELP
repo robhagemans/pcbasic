@@ -1980,8 +1980,8 @@ LOAD file_name [, R]
 Loads the program stored in file 'file_name' into memory.
 'file_name' must be the name of an existing program file stored in ASCII, 
 bytecode or protected format. If ,R is specified, runs the file after loading.
-LOAD,R keeps all data files open (unlike RUN). Existing variables will be 
-cleared and any program in memory will be erased.
+LOAD,R keeps all data files open. Existing variables will be 
+cleared and any program in memory will be erased. LOAD implies a CLEAR.
 NOTES:
 -   If 'file_name' does not include an extension, LOAD will try the name 
     specified, then an all-caps version, then an all-caps version with a .BAS 
@@ -3108,10 +3108,71 @@ ERRORS:
 -   If 'num_chars' has a string value, raises TYPE MISMATCH.
     
     
+RMDIR statement
+RMDIR path
+---------------
+Removes an empty directory. 'path' is a string-valued expression that specifies 
+the path of the directory.  RMDIR first looks for the exact, case-sensitive (on
+Unix) path 'pathname'; if this does not exist then an uppercase version 
+truncated to 8.3 is attempted.
+ERRORS:
+-  If no matching path is found, PATH NOT FOUND is raised.
+-  If 'pathname' is not string-valued, TYPE MISMATCH is raised.
+-  If 'pathname' is empty, BAD FILE NAME is raised.
+    
+
+RND function
+random = RND[(x)]
+------------
+Returns a pseudorandom number in the range [0,1].
+'x' is a number-valued expression. If 'x' is zero, RND repeats the last pseudo-
+random number. If 'x' is greater than zero, a new pseudorandom number is 
+returned. If 'x' is negative, the value of 'x' is used to generate a new 
+random number seed; after that, a new pseudorandom number is returned.
+Note that the seed is generated in a different way than by RANDOMIZE.
+ERRORS:
+-   If 'x' is a string, TYPE MISMATCH is raised.
+
     
 RSET statement
 --------------
 See LSET.
+
+
+RUN statement
+RUN [line|filename] [,R]
+-------------
+Executes the program in memory.
+If 'line' is specified, it must be a valid line number in the current program. 
+Execution starts from this line number.
+If 'filename' is specified, the file with that name is loaded and executed.
+RUN,R keeps all data files open. Existing variables will be 
+cleared and any program in memory will be erased. RUN implies a CLEAR.
+ERRORS:
+-   If 'line' does not exist, raises UNDEFINED LINE NUMBER.
+-   If 'filename' cannot be found, raises FILE NOT FOUND.
+-   If a loaded ASCII file contains lines without line numbers, raises
+    DIRECT STATEMENT IN FILE.
+
+
+SAVE statement
+SAVE filename [,{A|P}]
+--------------
+Stores the program in file 'filename'. If 'filename' is not in 8.3 uppercase
+format, additional characters will be clipped off and the name is converted to
+uppercase. If 'filename' contains no dot (.), a default extension of .BAS will
+be added. If the resulting file name already exists, it will be overwritten.
+If ,A is specified, the program will be saved as plain ASCII. 
+If ,P is specified, the program will be saved in encrypted form. When an 
+encrypted program is loaded, it cannot be LISTed or SAVEd in non-encrypted 
+form.
+NOTES:
+-   In PC-BASIC 3.23, use the --conv option to convert any file type to any 
+    other file type, including encrypted to ASCII or bytecode.
+ERRORS:
+-   If 'filename' has a number value, raises TYPE MISMATCH.
+-   If the current program is encrypted and ,P is not specified, raises
+    ILLEGAL FUNCTION CALL.
 
 
 UNLOCK statement
