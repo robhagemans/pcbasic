@@ -48,7 +48,6 @@ def exec_error(ins):
 def exec_end(ins):
     util.require(ins, util.end_statement)
     program.stop = [program.bytecode.tell(), program.linenum]
-    program.bytecode.seek(0)
     program.set_runmode(False)
     fileio.close_all()
               
@@ -136,77 +135,64 @@ def exec_next(ins, comma=False):
             return exec_next(ins, True)
     
 def exec_goto(ins):    
-    jumpnum = util.parse_jumpnum(ins)    
-    util.skip_to(ins, util.end_statement)
-    program.jump(jumpnum)
+    # parse line number, ignore rest of line and jump
+    program.jump(util.parse_jumpnum(ins))
     
 def exec_run(ins):
     # reset random number generator
     rnd.clear()
     # close all open files
     fileio.close_all()
+    program.init_program()
+    program.clear_all()
     c = util.skip_white(ins)
-    if c in ('\x0d', '\x0e'):
-        jumpnum = util.parse_jumpnum(ins)
-        util.skip_to(ins, util.end_statement)
-        program.init_program()
-        program.clear_all()
-        program.jump(jumpnum)
-    elif c not in util.end_statement:
-        stat_code.exec_load(ins)
-    else:
-        program.init_program()
-        program.clear_all()
+    if c not in util.end_statement:
+        name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+        util.require(ins, util.end_statement)
+        program.load(fileio.open_file_or_device(0, name, mode='L', defext='BAS'))
+    elif c in ('\x0d', '\x0e'):   
+        # parse line number, ignore rest of line and jump
+        program.jump(util.parse_jumpnum(ins))
     program.set_runmode()
                 
 def exec_gosub(ins):
     jumpnum = util.parse_jumpnum(ins)
-    # ignore rest of statement ('GOSUB 100 LAH' works just fine..) 
+    # ignore rest of statement ('GOSUB 100 LAH' works just fine..); we need to be able to RETURN
     util.skip_to(ins, util.end_statement)
     # set return position
     program.gosub_return.append((ins.tell(), program.linenum, ins, None))
     program.jump(jumpnum)
  
 def exec_if(ins):
-    util.skip_white(ins) 
-    # GW-BASIC doesn't overflow in IFs, so uses double rather than bool?
-    expr = expressions.parse_expression(ins)
-    val = vartypes.pass_single_keep(expr)
-    # optional comma
-    util.skip_white_read_if(ins, (',',))
+    # ovoid overflow: don't use bools.
+    val = vartypes.pass_single_keep(expressions.parse_expression(ins))
+    util.skip_white_read_if(ins, (',',)) # optional comma
     util.require_read(ins, ('\xCD', '\x89')) # THEN, GOTO
-    # if TRUE, continue after THEN
     if not fp.unpack(val).is_zero(): 
-        # line number or statement is implied GOTO
+        # TRUE: continue after THEN. line number or statement is implied GOTO
         if util.skip_white(ins) in ('\x0d', '\x0e'):  
-            # line number (jump)
-            return exec_goto(ins)    
+            program.jump(util.parse_jumpnum(ins))    
         # continue parsing as normal, :ELSE will be ignored anyway
     else:
-        # find ELSE block or end of line
-        # ELSEs are nesting on the line
-        nesting_counter = 0
+        # FALSE: find ELSE block or end of line; ELSEs are nesting on the line
+        nesting_level = 0
         while True:    
             d = util.skip_to_read(ins, util.end_statement + ('\x8B',)) # IF 
             if d == '\x8B': # IF
-                # another IF statement means another nesting step
-                # note it's less convenient to count THENs because they could be THEN, GOTO or THEN GOTO.
-                nesting_counter += 1            
+                # nexting step on IF. (it's less convenient to count THENs because they could be THEN, GOTO or THEN GOTO.)
+                nesting_level += 1            
             elif d == ':':
-                if util.peek(ins) == '\xa1': # :ELSE is ELSE; no : means it's ignored by GW and us.
-                    if nesting_counter == 0:
-                        # drop ELSE token and continue from here
-                        ins.read(1)
-                        # line number?
+                if util.skip_white_read_if(ins, '\xa1'): # :ELSE is ELSE; may be whitespace in between. no : means it's ignored.
+                    if nesting_level > 0:
+                        nesting_level -= 1
+                    else:    
+                        # line number: jump
                         if util.skip_white(ins) in ('\x0d', '\x0e'):
-                            return exec_goto(ins)
+                            program.jump(util.parse_jumpnum(ins))
                         # continue execution from here    
                         break
-                    else:
-                        nesting_counter -= 1
-            elif d in util.end_line:
-                if d != '':
-                    ins.seek(-1,1)
+            else:
+                ins.seek(-len(d), 1)
                 break
 
 def exec_while(ins, first=True):
@@ -273,7 +259,7 @@ def exec_on_jump(ins):
     elif onvar > 0 and onvar <= len(jumps):
         ins.seek(jumps[onvar-1])        
         if command == '\x89': # GOTO
-            exec_goto(ins)
+            program.jump(util.parse_jumpnum(ins))
         elif command == '\x8d': # GOSUB
             exec_gosub(ins)
     util.skip_to(ins, util.end_statement)    
