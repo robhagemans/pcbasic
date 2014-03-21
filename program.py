@@ -70,11 +70,11 @@ def unset_runmode():
     set_runmode(False)
 
 # get line number for stream position
-def get_line_number(pos): #, after=False):
-    pre = 65536
+def get_line_number(pos):
+    pre = -1
     for linum in line_numbers:
         linum_pos = line_numbers[linum] 
-        if linum_pos <= pos and linum < pre:
+        if linum_pos <= pos and linum > pre:
             pre = linum
     return pre
 
@@ -234,7 +234,7 @@ def store_line(linebuf, auto_mode=False):
     # get the new line number
     linebuf.seek(1)
     scanline = util.parse_line_number(linebuf)
-    # find the lowest line after this number
+    # find the lowest line after scanline
     after = 65536
     afterpos = 0 
     for num in line_numbers:
