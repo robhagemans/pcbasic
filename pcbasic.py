@@ -5,12 +5,12 @@
 #
 # GW-BASIC (R) compatible interpreter 
 # 
-# (c) 2013 Rob Hagemans 
+# (c) 2013, 2014 Rob Hagemans 
 #
 # This file is released under the GNU GPL version 3. 
 # please see text file COPYING for licence terms.
 #
-# (GW-BASIC is a trademark of Microsoft Corporation)
+# GW-BASIC is a trademark of Microsoft Corporation.
 
 import sys
 import argparse
@@ -31,7 +31,7 @@ import console
 import tokenise
 import program
 
-greeting = 'PC-BASIC 3.23%s\r\n(C) Copyright 2013 PC-BASIC authors. Type RUN "INFO" for more.\r\n%d Bytes free\r\n'
+greeting = 'PC-BASIC 3.23%s\r\n(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "INFO" for more.\r\n%d Bytes free\r\n'
 
 def main():
     args = get_args()
