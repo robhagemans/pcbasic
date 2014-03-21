@@ -195,7 +195,7 @@ def clear_all():
     # release all disk buffers (FIELD)?
     fileio.fields = {}
     # clear ERR and ERL
-    error.reset_error()
+    error.errn, error.erl = 0, 0
     # disable error trapping
     error.on_error = None
     error.error_resume = None
