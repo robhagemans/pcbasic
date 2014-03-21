@@ -76,14 +76,15 @@ init_program()
 erase_program()
 
 # CLEAR
-def clear_all():
+def clear_all(close_files=False):
     #   Resets the stack and string space
     #   Clears all COMMON and user variables
     var.clear_variables()
     # reset random number generator
     rnd.clear()
-    # close all files
-    fileio.close_all()
+    if close_files:
+        # close all files
+        fileio.close_all()
     # release all disk buffers (FIELD)?
     fileio.fields = {}
     # clear ERR and ERL
@@ -438,8 +439,8 @@ def chain(action, g, jumpnum, common_all, delete_lines):
         jump(jumpnum, err=5)
 
 def save(g, mode='B'):
+    current = bytecode.tell()
     # skip first \x00 in bytecode, replace with appropriate magic number
-    # TODO: what happens if we SAVE during a running program?
     bytecode.seek(1)
     if mode == 'B':
         if protected:
@@ -456,7 +457,8 @@ def save(g, mode='B'):
         else:
             tokenise.detokenise(bytecode, g) 
             # fix \x1A eof
-            g.write('\x1a')        
+            g.write('\x1a')       
+    bytecode.seek(current)         
     g.close()
     
 def list_to_file(out, from_line, to_line):

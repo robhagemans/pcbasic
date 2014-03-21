@@ -139,20 +139,19 @@ def exec_goto(ins):
     program.jump(util.parse_jumpnum(ins))
     
 def exec_run(ins):
-    # reset random number generator
-    rnd.clear()
-    # close all open files
-    fileio.close_all()
-    program.init_program()
-    program.clear_all()
+    comma = util.skip_white_read_if(ins, (',',))
+    if comma:
+        util.require_read(ins, 'R')
     c = util.skip_white(ins)
-    if c not in util.end_statement:
+    if c == '\x0e':   
+        # parse line number, ignore rest of line and jump
+        program.jump(util.parse_jumpnum(ins))
+    elif c not in util.end_statement:
         name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_statement)
         program.load(fileio.open_file_or_device(0, name, mode='L', defext='BAS'))
-    elif c in ('\x0d', '\x0e'):   
-        # parse line number, ignore rest of line and jump
-        program.jump(util.parse_jumpnum(ins))
+    program.init_program()
+    program.clear_all(close_files=not comma)
     program.set_runmode()
                 
 def exec_gosub(ins):
