@@ -21,8 +21,7 @@ import fileio
 
 def exec_chdir(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    name = oslayer.dospath_read_dir(name, '', 76)
-    oslayer.safe(os.chdir, str(name))
+    oslayer.safe(os.chdir, str(oslayer.dospath_read_dir(name, '', 76)))
     util.require(ins, util.end_statement)
 
 def exec_mkdir(ins):
@@ -32,8 +31,7 @@ def exec_mkdir(ins):
 
 def exec_rmdir(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    name = oslayer.dospath_read_dir(name, '', 76)
-    oslayer.safe(os.rmdir, str(name))
+    oslayer.safe(os.rmdir, str(oslayer.dospath_read_dir(name, '', 76)))
     util.require(ins, util.end_statement)
 
 def exec_name(ins):
