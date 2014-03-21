@@ -3196,6 +3196,23 @@ ERRORS:
 -   If 'col' is not in [1, width], raises ILLEGAL FUNCTION CALL.
 
 
+SCREEN statement
+SCREEN [mode] [, [switch] [, [apage] [, vpage] ] ]
+----------------
+Change the screen resolution mode. The modes are described at the start of this
+document.
+
+NOTE:
+-   At least one parameter must be specified.
+ERRORS:
+-   If no parameters are specified, raises MISSING OPERAND.
+-   If any parameter has a string value, raises TYPE MISMATCH.
+-   If any parameter is not in [-32768, 32767], raises OVERFLOW.
+-   If 'mode' is not in 0,1,2,7,8,9, raises ILLEGAL FUNCTION CALL.
+-   If 'vpage', 'apage' are not between 0 and the number of pages for the 
+    screen chosen, less one, raises ILLEGAL FUNCION CALL.
+-   If 'switch' is not in [0,255], raises ILLEGAL FUNCTION CALL.
+
 
 UNLOCK statement
 ----------------
