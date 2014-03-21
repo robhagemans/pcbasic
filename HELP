@@ -735,6 +735,13 @@ CONT [ anything ]
 --------------
 Resumes execution of a program that has been halted by STOP, END, <CTRL+C>, or 
  <CTRL+BREAK>.
+NOTES:
+-   If a break is encountered in a GAOSUB routine called from a continuing 
+    direct line (e.g. GOSUB 100:PRINT A$), GW-BASIC CONT will not overwrite the
+    running direct line, allowing its continuing execution after the subroutine 
+    returns. However, CONT:PRINT returns strange SYNTAX ERROR in non-existing
+    progam lines. Neither behaviour is implemented in PC-BASIC 3.23, where the
+    direct line is replaced by CONT and execution terminates after RETURN.
 ERRORS:
 -   If no program is loaded, a program has not been run, after a program line 
     has been modified and after CLEAR, CONT raises CAN'T CONTINUE.
