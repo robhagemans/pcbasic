@@ -324,7 +324,7 @@ def exec_return(ins):
         raise error.RunError(3)
     # returning from ON (event) GOSUB, re-enable event
     if handler:
-        # TODO: what if it was stopped explicitly using (event) STOP?
+        # if stopped explicitly using STOP, we wouldn't have got here; it STOP is run  inside the trap, no effect. OFF in trap: event off.
         handler.stopped = False
     if jumpnum == None:
         if buf != ins:
