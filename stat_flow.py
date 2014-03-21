@@ -263,7 +263,11 @@ def exec_on_jump(ins):
 
 def exec_on_error(ins):
     util.require_read(ins, ('\x89',))  # GOTO
-    error.on_error = util.parse_jumpnum(ins)
+    linenum = util.parse_jumpnum(ins)
+    if linenum != 0 and linenum not in program.line_numbers:
+        # undefined line number
+        raise error.RunError(8)
+    error.on_error = linenum
     # ON ERROR GOTO 0 in error handler
     if error.on_error == 0 and error.error_handle_mode:
         # re-raise the error so that execution stops
