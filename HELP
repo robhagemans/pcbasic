@@ -2909,7 +2909,6 @@ ERRORS:
 -   If a number field contains no # characters, ILLEGAL FUCTION CALL is raised.
 
 
-
 PUT statement   (random-access files)
 PUT [#] file_number [, record_number]
 -------------
@@ -3151,6 +3150,7 @@ cleared and any program in memory will be erased. RUN implies a CLEAR.
 ERRORS:
 -   If 'line' does not exist, raises UNDEFINED LINE NUMBER.
 -   If 'filename' cannot be found, raises FILE NOT FOUND.
+-   If 'filename' is an empty string, raises BAD FILE NUMBER.
 -   If a loaded ASCII file contains lines without line numbers, raises
     DIRECT STATEMENT IN FILE.
 
@@ -3171,8 +3171,30 @@ NOTES:
     other file type, including encrypted to ASCII or bytecode.
 ERRORS:
 -   If 'filename' has a number value, raises TYPE MISMATCH.
+-   If 'filename' is an empty string, raises BAD FILE NUMBER.
 -   If the current program is encrypted and ,P is not specified, raises
     ILLEGAL FUNCTION CALL.
+
+
+SCREEN function
+value = SCREEN(row, column [, fn])
+---------------
+Returns the ASCII code or colour attribute for the character at position 
+'row', 'col'. 
+'row' is a number-valued expression in the range [1,25].
+'col' is a number-valued expression between 1 and the screen width (40 or 80).
+'fn' is a number-valued expression in [0,255]. If it is zero or not specified,
+the ASCII code of the character is returned. If it is non-zero, in SCREEN 0 the
+attribute is returned; in other screens, 0 is returned.
+ERRORS:
+-   If any parameter has a string value, raises TYPE MISMATCH.
+-   If 'fn' is not in [0,255], raises ILLEGAL FUNCTION CALL.
+-   If 'fn' is not in [-32768,32767], raises OVERFLOW.
+-   If 'row' is not inside the current VIEW PRINT area, raises 
+    ILLEGAL FUNCTION CALL.
+-   If KEY ON and 'row'=25, raises ILLEGAL FUNCTION CALL.
+-   If 'col' is not in [1, width], raises ILLEGAL FUNCTION CALL.
+
 
 
 UNLOCK statement
