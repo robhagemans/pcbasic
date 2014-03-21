@@ -3077,6 +3077,7 @@ ERRORS:
     RESUME WITHOUT ERROR.
 -   If the program ends inside an error trapping routine without a RESUME 
     or END statement, raises NO RESUME.
+-   If 'line' is not an existing line number, raises UNDEFINED LINE NUMBER.
     
 
 
