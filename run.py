@@ -114,7 +114,6 @@ def parse_start_direct(linebuf):
                 # don't list protected files
                 raise error.RunError(5)
             linenum = program.store_line(linebuf, automode.auto_mode)
-            automode.auto_last_stored = linenum
             program.prompt = False
         except error.RunError as e:
             handle_error(e)

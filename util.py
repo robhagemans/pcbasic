@@ -161,15 +161,14 @@ def parse_line_number(ins):
         return vartypes.uint_to_value(bytearray(off))
   
 # parses a line number when referred toindirectly as in GOTO, GOSUB, LIST, RENUM, EDIT, etc.
-def parse_jumpnum(ins):
-    d = skip_white_read(ins)
-    jumpnum = -1
-    if d in ('\x0d', '\x0e'):
-        jumpnum = vartypes.uint_to_value(bytearray(ins.read(2)))    
+def parse_jumpnum(ins, allow_empty=False, err=2):
+    if skip_white_read_if(ins, ('\x0e',)):
+        return vartypes.uint_to_value(bytearray(ins.read(2)))    
     else:
+        if allow_empty:
+            return -1
         # Syntax error
-        raise error.RunError(2)
-    return jumpnum
+        raise error.RunError(err)
 
 # token to value
 def parse_value(ins):

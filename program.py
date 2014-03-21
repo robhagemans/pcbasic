@@ -50,12 +50,13 @@ def init_program():
     restore_data()
 
 def erase_program():
-    global protected, line_numbers, current_statement
+    global protected, line_numbers, current_statement, last_stored
     bytecode.truncate(0)
     bytecode.write('\x00\x00\x00\x1A')
     protected = False
     line_numbers = {}
-    current_statement =  0
+    current_statement = 0
+    last_stored = None
 
 def set_runmode(new_runmode=True):
     global run_mode, current_codestream
@@ -202,7 +203,7 @@ def preparse():
     clear_all()
 
 def store_line(linebuf, auto_mode=False):
-    global line_numbers
+    global line_numbers, last_stored
     linebuf.tell()
     # check if linebuf is an empty line after the line number
     linebuf.seek(5)
@@ -242,30 +243,28 @@ def store_line(linebuf, auto_mode=False):
     truncate_program(rest)
     bytecode.seek(0)
     preparse()
+    last_stored = scanline
     return scanline 
 
 def delete_lines(fromline, toline):
     keys = sorted(line_numbers.keys())
     # find lowest number within range
-    startline = -1
-    if fromline != -1:
+    startline = None
+    if fromline != None:
         for num in keys:
             if num >= fromline:
                 startline = num
                 break
     # find lowest number strictly above range
     afterline = 65536
-    if toline != -1:
+    if toline != None:
         for num in keys:
             if num > toline:
                 afterline = num
                 break
     # if toline not specified, afterpos will be the number stored at 65536, ie the end of program
     try:
-        if startline == -1:
-            startpos = 0
-        else:
-            startpos = line_numbers[startline]        
+        startpos = 0 if startline == None else line_numbers[startline]        
         afterpos = line_numbers[afterline]
     except KeyError:
         # no program stored
@@ -299,18 +298,28 @@ def edit_line(from_line, bytepos=None):
     prompt = False
     console.set_pos(console.row-1, textpos+1 if bytepos else 1)
     
-def renumber(new_line, start_line, step):
+def renum(new_line, start_line, step):
+    global last_stored
     new_line = 10 if new_line == None else new_line
     start_line = 0 if start_line == None else start_line
     step = 10 if step == None else step 
-    # get a sorted list of line numbers & positions      
-    lines = [ [num, line_numbers[num]] for num in line_numbers if num >= start_line ]
+    # get a sorted list of line numbers & positions
+    lines = []      
+    for num in line_numbers:
+        if num < start_line:
+            if num >= new_line:
+                raise error.RunError(5)
+        else:
+            lines.append([num, line_numbers[num]])
     lines.sort()
     # assign the new numbers
     for pairs in lines:
+        if pairs[0] < 65535 and new_line > 65529:
+            raise error.RunError(5)
         pairs.append(new_line)
         new_line += step    
     # write the new numbers
+    last_stored = None
     for pairs in lines:
         if pairs[0] == 65536:
             break
@@ -318,6 +327,7 @@ def renumber(new_line, start_line, step):
         # skip the \x00\xC0\xDE & overwrite line number
         bytecode.read(3)
         bytecode.write(str(vartypes.value_to_uint(pairs[2])))
+        last_stored = pairs[2]
     # write the indirect line numbers
     bytecode.seek(0)
     while True:
@@ -351,8 +361,6 @@ def load(g):
         bytecode.write('\x00')
         protected = True                
         protect.unprotect(g, bytecode)
-    #elif c=='\xFC':
-        # QuickBASIC file
     elif c == '':
         # empty file
         pass
@@ -373,7 +381,7 @@ def merge(g):
         raise error.RunError(54)
     else:
         more = True
-        while (more): #peek(g)=='' and not peek(g)=='\x1A':
+        while (more):
             tempbuf = StringIO()
             more = tokenise.tokenise_stream(g, tempbuf, one_line=True)
             tempbuf.seek(0)
@@ -459,14 +467,13 @@ def list_to_file(out, from_line, to_line):
     if protected:
         # don't list protected files
         raise error.RunError(5)
-    if to_line == -1:
+    if to_line == None:
         to_line = 65530
     current = bytecode.tell()	        
     bytecode.seek(1)
     tokenise.detokenise(bytecode, out, from_line, to_line)
     bytecode.seek(current)
     set_runmode(False)
-                  
                   
 def loop_init(ins, forpos, forline, varname, nextpos, nextline, start, stop, step):
     loopvar = vartypes.pass_type_keep(varname[-1], start)

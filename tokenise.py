@@ -80,7 +80,9 @@ def str_to_value_keep(strval):
 
 # Detokenise functions
 
-def detokenise(ins, outs, from_line=-1, to_line=-1, bytepos=None):
+def detokenise(ins, outs, from_line=None, to_line=None, bytepos=None):
+    if from_line == None:   from_line = -1
+    if to_line == None:     to_line = -1
     textpos = 0
     while True:
         # 65529 is max line number for GW-BASIC 3.23. 
