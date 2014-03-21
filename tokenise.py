@@ -100,7 +100,7 @@ def detokenise(ins, outs, from_line=None, to_line=None, bytepos=None):
         output, textpos = detokenise_line(ins, bytepos)
         if (from_line==-1 or current_line>=from_line) and (to_line==-1 or current_line<=to_line):
             # write one extra whitespace character after line number
-            outs.write(str(vartypes.int_to_str(current_line) + ' ' + output + util.endl)) 
+            outs.write(str(vartypes.int_to_str(current_line) + ' ' + output + '\r\n')) 
     return textpos + len(vartypes.int_to_str(current_line) + ' ')
     
 

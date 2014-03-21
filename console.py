@@ -502,7 +502,7 @@ def print_screen():
         line = ''
         for c, _ in vpage[crow-1].buf:
             line += c
-        deviceio.lpt1.write(line + util.endl)
+        deviceio.lpt1.write(line + '\r\n')
     deviceio.lpt1.flush()    
 
 def clear():
@@ -576,7 +576,7 @@ def read_screenline(write_endl=True, from_start=False):
     # go to last line
     row = crow
     if write_endl:
-        write(util.endl)
+        write('\r\n')
     # remove trailing whitespace 
     while len(line) > 0 and line[-1] in util.whitespace:
         line = line[:-1]
@@ -595,7 +595,7 @@ def set_width(to_width):
 def start_line():
     if col != 1:
         if echo_write != None: 
-            echo_write.write(util.endl)
+            echo_write.write('\r\n')
         set_pos(row+1, 1)
                 
 ##############################
@@ -676,7 +676,7 @@ def list_keys():
                 text[j] = keys_line_replace_chars[chr(text[j])]
             except KeyError:
                 pass    
-        write('F' + str(i+1) + ' ' + str(text) + util.endl)    
+        write('F' + str(i+1) + ' ' + str(text) + '\r\n')    
 
 def clear_key_row():
     apage.row[24].clear()

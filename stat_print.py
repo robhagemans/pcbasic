@@ -222,7 +222,7 @@ def exec_write(ins, screen=None):
                 break
             expr = expressions.parse_expression(ins, empty_err=2)
     util.require(ins, util.end_statement)        
-    screen.write(util.endl)
+    screen.write('\r\n')
 
 def exec_print(ins, screen=None):
     if screen == None:
@@ -242,7 +242,7 @@ def exec_print(ins, screen=None):
             if d == ',':
                 next_zone = int((screen.col-1)/zone_width)+1
                 if next_zone >= number_zones and screen.width >= 14:
-                    screen.write(util.endl)
+                    screen.write('\r\n')
                 else:            
                     screen.write(' '*(1+zone_width*next_zone-screen.col))
             elif d == '\xD2': #SPC(
@@ -253,7 +253,7 @@ def exec_print(ins, screen=None):
                 pos = max(0, vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=2), 0xffff)) % screen.width
                 util.require_read(ins, (')',))
                 if pos < screen.col:
-                    screen.write(util.endl + ' '*(pos-1))
+                    screen.write('\r\n' + ' '*(pos-1))
                 else:
                     screen.write(' '*(pos-screen.col))
         else:
@@ -264,10 +264,10 @@ def exec_print(ins, screen=None):
             if expr[0] in ('%', '!', '#'):
                 word += ' '
             if screen.col + len(word) - 1 > screen.width and screen.col != 1:
-                screen.write(util.endl)
+                screen.write('\r\n')
             screen.write(str(word))
     if newline:
-         screen.write(util.endl)
+         screen.write('\r\n')
             
 def exec_print_using(ins, screen):
     format_expr = vartypes.pass_string_unpack(expressions.parse_expression(ins))
@@ -311,7 +311,7 @@ def exec_print_using(ins, screen):
                 format_chars = True
                 semicolon = util.skip_white_read_if(ins, (';',))    
     if not semicolon:
-        screen.write(util.endl)
+        screen.write('\r\n')
     util.require(ins, util.end_statement)
 
 ########################################

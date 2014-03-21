@@ -9,12 +9,6 @@
 # please see text file COPYING for licence terms.
 #
 
-# ascii CR/LF
-endl = '\x0d\x0a'
-
-##################################################
-##################################################
-
 # basic stream utility functions
 
 # peek next char in stream

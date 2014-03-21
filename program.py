@@ -337,7 +337,7 @@ def renum(new_line, start_line, step):
             bytecode.write(str(vartypes.value_to_uint(old_to_new[jumpnum])))
         except StopIteration:
             linum = get_line_number(bytecode.tell())
-            console.write('Undefined line ' + str(jumpnum) + ' in ' + str(linum) + util.endl)
+            console.write('Undefined line ' + str(jumpnum) + ' in ' + str(linum) + '\r\n')
     # rebuild the line number dictionary    
     preparse()    
 
