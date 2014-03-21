@@ -60,7 +60,7 @@ def parse_statement():
         if program.linenum == -1:
             # move back to the line-ending \x00 and break
             ins.seek(-1, 1)
-            program.unset_runmode()
+            program.set_runmode(False)
             return False
         if tron:
             console.write('['+('%i' % program.linenum) +']')

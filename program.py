@@ -29,46 +29,84 @@ bytecode = StringIO()
 # direct line buffer
 direct_line = StringIO()
 
-# for error handling - can be in program bytecode or in linebuf
-current_codestream = None
-current_statement =  0
-
-# bookkeeping of file positions and line numbers for jumps
-line_numbers = {}
-
-# protected flag, disallow LIST, LLIST and SAVE to ascii
-protected = False
-
-# current line number, here as a convenient place for globals used by many modules
-linenum = -1        
-
-# return positions    
-gosub_return = []
-for_next_stack = []
-while_wend_stack = []
-
-# stream position for CONT
-stop = None  
-
-# where are we READing DATA?
-data_pos=0
-data_line = -1
-
-# is the program running?    
-run_mode = False
-
 # show a prompt?
 prompt = True
 
+def init_program():
+    global gosub_return, for_next_stack, while_wend_stack, linenum, stop
+    # stop running if we were
+    set_runmode(False)
+    # reset loop stacks
+    gosub_return = []
+    for_next_stack = []
+    while_wend_stack = []
+    # reset stop/cont
+    stop = None
+    # current line number
+    linenum = -1
+    # reset program pointer
+    bytecode.seek(0)
+    # reset data reader
+    restore_data()
+
+def erase_program():
+    global protected, line_numbers, current_statement
+    bytecode.truncate(0)
+    bytecode.write('\x00\x00\x00\x1A')
+    protected = False
+    line_numbers = {}
+    current_statement =  0
 
 def set_runmode(new_runmode=True):
     global run_mode, current_codestream
     run_mode = new_runmode
     current_codestream = bytecode if run_mode else direct_line
     
-def unset_runmode():
-    set_runmode(False)
+# RESTORE
+def restore_data(datanum=-1):
+    global data_line, data_pos
+    data_line = datanum
+    data_pos = 0 if datanum==-1 else line_numbers[datanum]
 
+init_program()
+erase_program()
+
+# CLEAR
+def clear_all():
+    #   Resets the stack and string space
+    #   Clears all COMMON and user variables
+    var.clear_variables()
+    # reset random number generator
+    rnd.clear()
+    # close all files
+    fileio.close_all()
+    # release all disk buffers (FIELD)?
+    fileio.fields = {}
+    # clear ERR and ERL
+    error.errn, error.erl = 0, 0
+    # disable error trapping
+    error.on_error = None
+    error.error_resume = None
+    # stop all sound
+    console.sound.stop_all_sound()
+    #   Resets sound to music foreground
+    console.sound.music_foreground = True
+    #   Resets STRIG to off
+    console.stick_is_on = False
+    # disable all event trapping (resets PEN to OFF too)
+    events.reset_events()
+
+# NEW    
+def clear_program():
+    erase_program()    
+    init_program()
+    clear_all()
+
+def truncate_program(rest):
+    bytecode.write(rest if rest else '\x00\x00\x00\x1a')
+    # cut off at current position    
+    bytecode.truncate()    
+    
 # get line number for stream position
 def get_line_number(pos):
     pre = -1
@@ -157,74 +195,9 @@ def preparse():
         last = bytecode.tell() - 5   
         line_numbers[scanline] = last  
         util.skip_to_read(bytecode, util.end_line)
-    reset_program()
-            
-def reset_program():
-    global gosub_return, for_next_stack, while_wend_stack, linenum, data_line, data_pos, stop
-    # stop running if we were
-    unset_runmode()
-    # reset loop stacks
-    gosub_return = []
-    for_next_stack = []
-    while_wend_stack = []
-    # reset stop/cont
-    stop = None
-    # current line number
-    linenum = -1
-    # reset program pointer
-    bytecode.seek(0)
-    # reset data reader
-    restore_data()
+    init_program()
     clear_all()
 
-# RESTORE
-def restore_data(datanum=-1):
-    global data_line, data_pos
-    data_line = datanum
-    data_pos = 0 if datanum==-1 else line_numbers[datanum]
-
-# CLEAR
-def clear_all():
-    #   Resets the stack and string space
-    #   Clears all COMMON and user variables
-    var.clear_variables()
-    # reset random number generator
-    rnd.clear()
-    # close all files
-    fileio.close_all()
-    # release all disk buffers (FIELD)?
-    fileio.fields = {}
-    # clear ERR and ERL
-    error.errn, error.erl = 0, 0
-    # disable error trapping
-    error.on_error = None
-    error.error_resume = None
-    # stop all sound
-    console.sound.stop_all_sound()
-    #   Resets sound to music foreground
-    console.sound.music_foreground = True
-    #   Resets STRIG to off
-    console.stick_is_on = False
-    # disable all event trapping (resets PEN to OFF too)
-    events.reset_events()
-
-# NEW    
-def clear_program():
-    global protected, line_numbers
-    bytecode.truncate(0)
-    bytecode.write('\x00\x00\x00\x1A')
-    protected = False
-    line_numbers = {}    
-    reset_program()
-   
-def truncate_program(rest):
-    if rest == '':
-        bytecode.write('\x00\x00\x00\x1a')
-    else:
-        bytecode.write(rest)
-    # cut off at current position    
-    bytecode.truncate()    
-    
 def store_line(linebuf, auto_mode=False):
     global line_numbers
     linebuf.tell()
@@ -318,7 +291,7 @@ def edit_line(from_line, bytepos=None):
     console.write(output.getvalue())
     output.close()
     # throws back to direct mode
-    unset_runmode()
+    set_runmode(False)
     # suppress prompt, move cursor?
     prompt = False
     console.set_pos(console.row-1, textpos+1 if bytepos else 1)
@@ -489,7 +462,7 @@ def list_to_file(out, from_line, to_line):
     bytecode.seek(1)
     tokenise.detokenise(bytecode, out, from_line, to_line)
     bytecode.seek(current)
-    unset_runmode()
+    set_runmode(False)
                         
 def memory_size():
     return len(bytecode.getvalue()) - 4
