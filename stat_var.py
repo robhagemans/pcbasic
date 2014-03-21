@@ -292,7 +292,7 @@ def input_vars(prompt, readvar, newline):
                 text_file.read_chars(1)
                 count_commas += 1
         if len(readvar) != len(values) or count_commas != len(readvar)-1 or None in values:
-            console.write('?Redo from start' + util.endl)  # ... good old Redo!
+            console.write('?Redo from start\r\n')  # ... good old Redo!
         else:
             break
     for i in range(len(readvar)):

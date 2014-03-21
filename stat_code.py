@@ -96,13 +96,13 @@ def exec_list(ins):
         util.require(ins, util.end_statement)
         out = StringIO()
         program.list_to_file(out, from_line, to_line)
-        lines = out.getvalue().split(util.endl)
+        lines = out.getvalue().split('\r\n')
         if lines[-1] == '':
             lines = lines[:-1]
         for line in lines:
             console.check_events()
             console.clear_line(console.row)
-            console.write(line + util.endl)
+            console.write(line + '\r\n')
     
 def exec_llist(ins):
     from_line, to_line = parse_line_range(ins)

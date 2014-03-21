@@ -33,7 +33,7 @@ def once(arg_cmd, arg_quit):
         try:
             get_command_line(arg_cmd)
         except error.Error as e:
-            handle_error(e)
+            e.handle() 
         execution_loop()
         if arg_quit:
             # we were running as a script, exit after completion
@@ -54,7 +54,7 @@ def loop():
             # store the direct line
             get_command_line(line)
         except error.Error as e:
-            handle_error(e)
+            e.handle() 
         # check for empty lines or lines that start with a line number & deal with them
         if parse_start_direct(program.direct_line):
             # execution loop, checks events
@@ -69,7 +69,7 @@ def input_loop():
     except error.Break:
         line = ''
     if line == '':
-        program.prompt=False
+        program.prompt = False
     # store the direct line
     return line
 
@@ -82,7 +82,7 @@ def execution_loop():
             if not statements.parse_statement():
                 break
         except error.Error as e:
-            if not handle_error(e):
+            if not e.handle():
                 break
     console.show_cursor()
                    
@@ -91,7 +91,7 @@ def execution_loop():
 def prompt(force=False):
     if program.prompt or force:
         console.start_line()
-        console.write("Ok "+util.endl)
+        console.write("Ok \r\n")
     else:
         program.prompt = True
               
@@ -116,7 +116,7 @@ def parse_start_direct(linebuf):
             linenum = program.store_line(linebuf, automode.auto_mode)
             program.prompt = False
         except error.RunError as e:
-            handle_error(e)
+            e.handle() 
         linebuf.seek(0)
         return False
     # check for empty line, no prompt
@@ -126,48 +126,6 @@ def parse_start_direct(linebuf):
         return False
     # it is a command, go and execute    
     return True        
-   
-# error handler                
-def handle_error(e):
-    program.prompt = True  
-    errline = e.erl if not program.run_mode or e.erl != -1 else program.linenum
-    if isinstance(e, error.Break):
-        write_error_message(e.msg, errline)
-        if program.run_mode:
-            program.stop = [program.bytecode.tell(), program.linenum]
-            program.set_runmode(False)
-        return False
-    # set ERR and ERL
-    error.errn = e.err
-    error.erl = errline if errline and errline > -1 and errline < 65535 else 65536
-    # don't jump if we're already busy handling an error
-    if error.on_error != None and error.on_error != 0 and not error.error_handle_mode:
-        error.error_resume = program.current_statement, program.current_codestream, program.run_mode
-        program.jump(error.on_error)
-        error.error_handle_mode = True
-        program.set_runmode()
-        events.suspend_all_events = True
-        return True
-    else:
-        # not handled by ON ERROR, stop execution
-        write_error_message(e.msg, errline)   
-        error.error_handle_mode = False
-        program.set_runmode(False)
-        # for syntax error, line edit gadget appears
-        if e.err == 2 and errline != -1:
-            prompt()
-            textpos = program.edit_line(errline, program.bytecode.tell())
-        # for some reason, err is reset to zero by GW-BASIC in this case.
-        if e.err == 2:
-            error.errn = 0
-        return False    
-
-def write_error_message(msg, linenum):
-    console.start_line()
-    console.write(msg) 
-    if linenum != None and linenum > -1 and linenum < 65535:
-        console.write(' in %i' % linenum)
-    console.write(' ' + util.endl)          
 
 def exit():
     fileio.close_all()

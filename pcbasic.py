@@ -31,9 +31,10 @@ import console
 import tokenise
 import program
 
+greeting = 'PC-BASIC 3.23%s\r\n(C) Copyright 2013 PC-BASIC authors. Type RUN "INFO" for more.\r\n%d Bytes free\r\n'
 
 def main():
-    args = build_parser().parse_args()
+    args = get_args()
     # DEBUG mode
     tokenise.init_DEBUG(args.debug)
     debugstr = ' [DEBUG mode]' if args.debug else ''
@@ -52,7 +53,7 @@ def main():
         # initialise program memory
         program.clear_program()
         if not args.run and not args.cmd and not args.conv:
-            console.write(greeting(debugstr))
+            console.write(greeting % (debugstr, var.total_mem))
         try:
             if args.run or args.load or args.conv:
                 program.load(fileio.open_file_or_device(0, args.infile, mode='L', defext='BAS') if args.infile else sys.stdin)
@@ -100,12 +101,7 @@ def prepare_devices(args):
     # choose peripherals    
     deviceio.init_devices(args)
     
-def greeting(debugstr):
-    return ('PC-BASIC 3.23' + debugstr + util.endl +
-             '(C) Copyright 2013 PC-BASIC authors. Type RUN "INFO" for more.'+ util.endl +
-             ("%d Bytes free" % var.total_mem) + util.endl )
-
-def build_parser():
+def get_args():
     parser = argparse.ArgumentParser(
         description='PC-BASIC 3.23 interpreter. If no options are present, the interpreter will run in interactive mode.')
     parser.add_argument('infile', metavar='in_file', nargs='?', 
@@ -131,7 +127,7 @@ def build_parser():
     parser.add_argument('-p3', '--lpt3', nargs='*', metavar=('TYPE:VAL'), help='Set LPT3: to FILE:file_name or CUPS:printer_name.')
     parser.add_argument('-s1', '--com1', nargs='*', metavar=('TYPE:VAL'), help='Set COM1: to FILE:file_name or CUPS:printer_name or PORT:device_name.')
     parser.add_argument('-s2', '--com2', nargs='*', metavar=('TYPE:VAL'), help='Set COM2: to FILE:file_name or CUPS:printer_name PORT:device_name.')
-    return parser
+    return parser.parse_args()
 
 
 main()

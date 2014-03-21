@@ -8,6 +8,9 @@
 # This file is released under the GNU GPL version 3. 
 # please see text file COPYING for licence terms.
 #
+import console
+import program
+import events
 
 # number and line number of last error
 errn = -1
@@ -88,12 +91,51 @@ class Break(Error):
     def __init__(self):
         self.erl = -1
         self.msg = "Break"
-                    
+        
+    def handle(self):
+        program.prompt = True  
+        errline = self.erl if not program.run_mode or self.erl != -1 else program.linenum 
+        write_error_message(self.msg, errline)
+        if program.run_mode:
+            program.stop = [program.bytecode.tell(), program.linenum]
+            program.set_runmode(False)
+        return False    
+        
 class RunError(Error):
     def __init__(self, value, linum=-1):
         self.err = value
         self.erl = linum # -1 means not set, will be program.linenum if we're running
         self.msg = get_message(value)
+
+    def handle(self):
+        global errm, erl, error_resume, error_handle_mode
+        program.prompt = True  
+        errline = self.erl if not program.run_mode or self.erl != -1 else program.linenum     
+        # set ERR and ERL
+        errn = self.err
+        erl = errline if errline and errline > -1 and errline < 65535 else 65536
+        # don't jump if we're already busy handling an error
+        if on_error != None and on_error != 0 and not error_handle_mode:
+            error_resume = program.current_statement, program.current_codestream, program.run_mode
+            program.jump(on_error)
+            error_handle_mode = True
+            program.set_runmode()
+            events.suspend_all_events = True
+            return True
+        else:
+            # not handled by ON ERROR, stop execution
+            write_error_message(self.msg, errline)   
+            error_handle_mode = False
+            program.set_runmode(False)
+            # for syntax error, line edit gadget appears
+            if self.err == 2 and errline != -1:
+                console.start_line()
+                console.write("Ok \r\n")
+                textpos = program.edit_line(errline, program.bytecode.tell())
+            # for some reason, err is reset to zero by GW-BASIC in this case.
+            if self.err == 2:
+                errn = 0
+            return False    
 
 def get_message(errnum):
     try:
@@ -101,5 +143,11 @@ def get_message(errnum):
     except KeyError:
         msg = default_msg
     return msg    
-        
+
+def write_error_message(msg, linenum):
+    console.start_line()
+    console.write(msg) 
+    if linenum != None and linenum > -1 and linenum < 65535:
+        console.write(' in %i' % linenum)
+    console.write(' \r\n')                  
 
