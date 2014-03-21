@@ -25,7 +25,7 @@ def disk_free(path):
     
 def spawn_interactive_shell(cmd):
     try:
-        p = pexpect.spawn(cmd)
+        p = pexpect.spawn(str(cmd))
     except Exception:
         return 
     while True:
@@ -34,21 +34,20 @@ def spawn_interactive_shell(cmd):
             p.send('\x7f')
         elif c != '':
             p.send(c)
-        c = ''
-        try:
-            c = p.read_nonblocking(1, timeout=0)
-        except: 
-            pass
-        if c != '':
-            if c == '\r':
-                console.idle()
-                console.check_events()
+        while True:
+            try:
+                c = p.read_nonblocking(1, timeout=0)
+            except: 
+                c = ''
+            if c == '' or c == '\n':
+                break
+            elif c == '\r':
+                console.write('\r\n')    
             elif c == '\x08':
-                if console.col !=1:
+                if console.col != 1:
                     console.col -= 1
             else:
                 console.write(c)
-        elif not p.isalive(): 
-            break
-        
-
+        if c == '' and not p.isalive(): 
+            return
+            

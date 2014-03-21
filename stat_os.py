@@ -75,23 +75,13 @@ def exec_kill(ins):
     util.require(ins, util.end_statement)
 
 def exec_files(ins):
-    path, mask = '.', '*.*'
+    pathmask = ''
     if util.skip_white(ins) not in util.end_statement:
         pathmask = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-        if pathmask == '':
+        if not pathmask:
             # bad file name
             raise error.RunError(64)
-        pathmask = pathmask.rsplit('\\', 1)
-        if len(pathmask) > 1:
-            path = str(pathmask[0])
-            if path == '':
-                path = '\\'
-            mask = str(pathmask[1])
-        else:
-            if pathmask[0]:
-                path = '.'
-                mask = str(pathmask[0])            
-    oslayer.files(path, mask, console)
+    oslayer.files(pathmask, console)
     util.require(ins, util.end_statement)
     
 def exec_shell(ins):

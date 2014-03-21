@@ -27,6 +27,23 @@ access_modes = { 'I':'rb', 'O':'wb', 'R':'r+b', 'A':'ab', 'L': 'rb', 'S': 'wb' }
 # posix access modes for BASIC ACCESS mode for RANDOM files only
 access_access = { 'R': 'rb', 'W': 'wb', 'RW': 'r+b' }
 
+os_error = {
+    # file not found
+    errno.ENOENT: 53, errno.EISDIR: 53, errno.ENOTDIR: 53,
+    # permission denied
+    errno.EAGAIN: 70, errno.EACCES: 70, errno.EBUSY: 70, errno.EROFS: 70, errno.EPERM: 70,
+    # file already exists
+    errno.EEXIST: 58,
+    # disk full
+    errno.ENOSPC: 61, 
+    # disk not ready
+    errno.ENXIO: 71, errno.ENODEV: 71,
+    # disk media error
+    errno.EIO: 72,
+    # path/file access error
+    errno.ENOTEMPTY: 75,
+    }
+       
 
 def timer_milliseconds():
     global time_offset
@@ -53,24 +70,7 @@ def safe(fnname, *fnargs):
         return fnname(*fnargs)
     except EnvironmentError as e:
         handle_oserror(e)
-
-os_error = {
-    # file not found
-    errno.ENOENT: 53, errno.EISDIR: 53, errno.ENOTDIR: 53,
-    # permission denied
-    errno.EAGAIN: 70, errno.EACCES: 70, errno.EBUSY: 70, errno.EROFS: 70, errno.EPERM: 70,
-    # file already exists
-    errno.EEXIST: 58,
-    # disk full
-    errno.ENOSPC: 61, 
-    # disk not ready
-    errno.ENXIO: 71, errno.ENODEV: 71,
-    # disk media error
-    errno.EIO: 72,
-    # path/file access error
-    errno.ENOTEMPTY: 75,
-    }
-        
+ 
 def handle_oserror(e):        
     try:
         basic_err = os_error[e.errno]
@@ -176,7 +176,16 @@ def pass_dosnames(files, mask='*.*'):
         dosfiles.append(trunk + ext)
     return dosfiles
 
-def files(path, mask, console):
+def files(pathmask, console):
+    path, mask = '.', '*.*'
+    pathmask = pathmask.rsplit('\\', 1)
+    if len(pathmask) > 1:
+        path = str(pathmask[0])
+        path = path if path else '\\'
+        mask = str(pathmask[1])
+    else:
+        if pathmask[0]:
+            mask = str(pathmask[0])           
     mask = mask.upper()
     if mask == '':
         mask = '*.*'
