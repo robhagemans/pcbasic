@@ -3041,6 +3041,28 @@ ERRORS:
     number less than old, raises ILLEGAL FUNCTION CALL.
     
     
+RESET statement
+RESET
+---------------
+Closes all open files.
+
+
+RESTORE statement
+RESTORE [line]
+-----------------
+Resets the DATA pointer.
+'line' is a line number. If 'line' is not specified, the DATA pointer os reset
+to the first DATA entry in the program. If it is specified, the DATA pointer is
+reset to the first DATA entry in or after 'line'.
+ERRORS:
+-   If 'line' is not an existing line number, raises UNDEFINED LINE NUMBER.
+-   If 'line' is not a line number, raises UNDEFINED LINE NUMBER.
+
+
+
+
+
+    
 RSET statement
 --------------
 See LSET.
