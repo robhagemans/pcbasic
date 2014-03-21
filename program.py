@@ -303,31 +303,24 @@ def renum(new_line, start_line, step):
     new_line = 10 if new_line == None else new_line
     start_line = 0 if start_line == None else start_line
     step = 10 if step == None else step 
-    # get a sorted list of line numbers & positions
-    lines = []      
-    for num in line_numbers:
-        if num < start_line:
-            if num >= new_line:
-                raise error.RunError(5)
-        else:
-            lines.append([num, line_numbers[num]])
-    lines.sort()
+    # get a sorted list of line numbers 
+    keys = sorted([ k for k in line_numbers.keys() if k >= start_line])
     # assign the new numbers
-    for pairs in lines:
-        if pairs[0] < 65535 and new_line > 65529:
+    old_to_new = {}
+    for old_line in keys:
+        if old_line < 65535 and new_line > 65529:
             raise error.RunError(5)
-        pairs.append(new_line)
+        if old_line == 65536:
+            break
+        old_to_new[old_line] = new_line
+        last_stored = new_line
         new_line += step    
     # write the new numbers
-    last_stored = None
-    for pairs in lines:
-        if pairs[0] == 65536:
-            break
-        bytecode.seek(pairs[1])
+    for old_line in old_to_new:
+        bytecode.seek(line_numbers[old_line])
         # skip the \x00\xC0\xDE & overwrite line number
         bytecode.read(3)
-        bytecode.write(str(vartypes.value_to_uint(pairs[2])))
-        last_stored = pairs[2]
+        bytecode.write(str(vartypes.value_to_uint(old_to_new[old_line])))
     # write the indirect line numbers
     bytecode.seek(0)
     while True:
@@ -336,12 +329,11 @@ def renum(new_line, start_line, step):
         # get the old jump number
         jumpnum = vartypes.uint_to_value(bytearray(bytecode.read(2)))
         try:
-            newnum = next(triplet[2] for triplet in lines if triplet[0]==jumpnum)
             bytecode.seek(-2, 1)
-            bytecode.write(str(vartypes.value_to_uint(newnum)))
+            bytecode.write(str(vartypes.value_to_uint(old_to_new[jumpnum])))
         except StopIteration:
             linum = get_line_number(bytecode.tell())
-            console.write('Undefined line '+str(jumpnum)+' in '+str(linum)+util.endl)
+            console.write('Undefined line ' + str(jumpnum) + ' in ' + str(linum) + util.endl)
     # rebuild the line number dictionary    
     preparse()    
 
