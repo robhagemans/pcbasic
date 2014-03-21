@@ -1900,6 +1900,7 @@ ERRORS:
 -   If any of the coordinates is not in [-32768, 32767], OVERFLOW is raised.
 -   If any of the parameters has a string value, raises TYPE MISMATCH.
 
+
 LINE INPUT statement
 LINE INPUT [;] [prompt_literal {;|,}] string_name
 --------------------
@@ -3092,6 +3093,21 @@ trapping which was stopped on entering the trap routine.
 ERRORS:
 -   If 'line' is not an existing line number, raises UNDEFINED LINE NUMBER.
 
+
+RIGHT$ function
+child = RIGHT$(parent, num_chars)
+--------------
+Returns the rightmost 'num_chars' characters of 'parent'. 'parent' must be a 
+string-valued expression. 'num_chars' must be a numeric expression between 0 
+and 255, inclusive. If 'num_chars' is zero or 'parent' is empty, RIGHT$ returns
+an empty string "". If 'num_chars' is greater than the length of 'parent', 
+returns 'parent'.
+ERRORS:
+-   If 'num_chars' is not in [-32768, 32767], raises OVERFLOW.
+-   If 'num_chars' is not in [0, 255], raises ILLEGAL FUNCTION CALL.
+-   If 'num_chars' has a string value, raises TYPE MISMATCH.
+    
+    
     
 RSET statement
 --------------
