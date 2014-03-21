@@ -656,10 +656,10 @@ def value_play(ins):
 # error functions
 
 def value_erl(ins):
-    return fp.pack(fp.Single.from_int(error.get_error()[1]))
+    return fp.pack(fp.Single.from_int(error.erl))
 
 def value_err(ins):
-    return vartypes.pack_int(error.get_error()[0])
+    return vartypes.pack_int(error.errn)
     
 #####################################################################
 # pen, stick and strig

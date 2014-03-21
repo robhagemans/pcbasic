@@ -131,10 +131,7 @@ def parse_start_direct(linebuf):
 # error handler                
 def handle_error(e):
     program.prompt = True  
-    if not program.run_mode or e.erl != -1:
-        errline = e.erl
-    else:
-        errline = program.linenum
+    errline = e.erl if not program.run_mode or e.erl != -1 else program.linenum
     if isinstance(e, error.Break):
         write_error_message(e.msg, errline)
         if program.run_mode:
@@ -142,7 +139,8 @@ def handle_error(e):
             program.unset_runmode()
         return False
     # set ERR and ERL
-    error.set_error(e.err, errline)
+    error.errn = e.err
+    error.erl = errline if errline and errline > -1 and errline < 65535 else 65536
     # don't jump if we're already busy handling an error
     if error.on_error != None and error.on_error != 0 and not error.error_handle_mode:
         error.error_resume = program.current_statement, program.current_codestream, program.run_mode
@@ -156,7 +154,6 @@ def handle_error(e):
         write_error_message(e.msg, errline)   
         error.error_handle_mode = False
         program.unset_runmode()
-        program.prompt = True
         # for syntax error, line edit gadget appears
         if e.err == 2 and errline != -1:
             prompt()

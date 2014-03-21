@@ -17,57 +17,8 @@ erl = 65535
 on_error = None
 error_handle_mode = False
 error_resume = None
-
             
-class Error (Exception):
-    pass            
-
-        
-class Break(Error):
-    def __init__(self):
-        self.erl = -1
-        self.msg = "Break"
-                    
-class RunError(Error):
-    def __init__(self, value, linum=-1):
-        self.err = value
-        self.erl = linum # -1 means not set, will be program.linenum if we're running
-        self.msg = get_message(value)
-
-class AdHocError(Error):
-    def __init__(self, msg, linum=-1):
-        self.err = 0
-        self.erl = linum
-        self.msg = msg    
-     
-def get_error():
-    global errn, erl
-    return (errn, erl)     
-
-def reset_error():
-    global erl, errn
-    erl = 0         
-    errn = 0
-
-def set_error(errnum, linenum):
-    global errn, erl
-    if errnum>0 and errnum <256:
-       errn = errnum
-    if linenum > -1 and linenum < 65535:
-       erl = linenum
-    else:
-       erl = 65535
-
-def get_message(errnum):
-    try:
-        msg = errors[errnum]
-    except KeyError:
-        msg = default_msg
-    return msg    
-        
-
 default_msg = 'Unprintable error'
-
 errors = {
     1: 'NEXT without FOR',                    
     2: 'Syntax error',
@@ -128,4 +79,27 @@ errors = {
     76: 'Path not found',
     77: 'Deadlock',
 }
+
+
+class Error(Exception):
+    pass            
+        
+class Break(Error):
+    def __init__(self):
+        self.erl = -1
+        self.msg = "Break"
+                    
+class RunError(Error):
+    def __init__(self, value, linum=-1):
+        self.err = value
+        self.erl = linum # -1 means not set, will be program.linenum if we're running
+        self.msg = get_message(value)
+
+def get_message(errnum):
+    try:
+        msg = errors[errnum]
+    except KeyError:
+        msg = default_msg
+    return msg    
+        
 
