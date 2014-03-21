@@ -290,13 +290,14 @@ def edit_line(from_line, bytepos=None):
     output.seek(0)
     bytecode.seek(current)
     console.clear_line(console.row)
-    console.write(output.getvalue())
+    # cut off CR/LF at end
+    console.write(output.getvalue()[:-2])
     output.close()
     # throws back to direct mode
     set_runmode(False)
     # suppress prompt, move cursor?
     prompt = False
-    console.set_pos(console.row-1, textpos+1 if bytepos else 1)
+    console.set_pos(console.row, textpos+1 if bytepos else 1)
     
 def renum(new_line, start_line, step):
     global last_stored
