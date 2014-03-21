@@ -24,7 +24,6 @@
 # The exponent is biased by 128. 
 # There is an assumed 1 bit after the radix point (so the assumed mantissa is 0.1ffff... where f's are the fraction bits)
 
-from util import endl
 import error
 
 # this is where in-calculation error messages (Overflow, Division by Zero) go
@@ -665,13 +664,13 @@ def msg_overflow():
     if error_console==None or overflow:
         return
     overflow = True    
-    error_console.write(error.get_message(6) + endl)
+    error_console.write(error.get_message(6) + '\r\n')
 
 def msg_zero_div():
     global zero_div
     if error_console==None or zero_div:
         return
-    error_console.write(error.get_message(11) + endl)
+    error_console.write(error.get_message(11) + '\r\n')
 
 ################################
 
