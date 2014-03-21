@@ -83,7 +83,11 @@ def istype(name, isdir):
     name = str(name)
     return os.path.exists(name) and ((isdir and os.path.isdir(name)) or (not isdir and os.path.isfile(name)))
         
-# put name in 8x3, all upper-case format            
+# put name in 8x3, all upper-case format          
+    #    # cryptic errors given by GW-BASIC:    
+    #    if ext.find('.') > -1:
+    #        # 53: file not found
+    #        raise error.RunError(errdots)
 def dosname_write(s, defext='BAS', path='', dummy=0, isdir_dummy=False):
     pre = str(path)
     if path:

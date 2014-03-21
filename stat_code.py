@@ -31,21 +31,25 @@ import fileio
 
 
 def parse_line_range(ins):
-    from_line = -1
-    to_line = -1
-    if util.skip_white_read_if(ins, ('\x0E',)):   # line number starts
-        from_line = vartypes.uint_to_value(bytearray(ins.read(2)))
-    elif util.skip_white_read_if(ins, ('.',)):
-        from_line = automode.auto_last_stored    
+    from_line = parse_jumpnum_or_dot(ins, allow_empty=True)    
     if util.skip_white_read_if(ins, ('\xEA',)):   # -
-        if util.skip_white_read_if(ins, ('\x0E',)):
-            to_line = vartypes.uint_to_value(bytearray(ins.read(2)))
-        elif util.skip_white_read_if(ins, ('.',)):
-            to_line = automode.auto_last_stored    
+        to_line = parse_jumpnum_or_dot(ins, allow_empty=True)
     else:
         to_line = from_line
     return (from_line, to_line)    
-    
+
+def parse_jumpnum_or_dot(ins, allow_empty=False, err=2):
+    c = util.skip_white_read(ins)
+    if c == '\x0E':
+        return vartypes.uint_to_value(bytearray(ins.read(2)))
+    elif c == '.':
+        return program.last_stored
+    else:        
+        if allow_empty:
+            ins.seek(-len(c), 1)
+            return None
+        raise error.RunError(err)
+            
 def exec_delete(ins):
     from_line, to_line = parse_line_range(ins)
     util.require(ins, util.end_statement)
@@ -60,38 +64,18 @@ def exec_edit(ins):
     if util.skip_white(ins) in util.end_statement:
         # undefined line number
         raise error.RunError(8)    
-    util.require(ins, ('\x0E', '.'), err=5)   # line number starts
-    c = ins.read(1)
-    if c == '\x0E':
-        from_line = vartypes.uint_to_value(bytearray(ins.read(2)))
-        util.require(ins, util.end_statement, err=5)
-        if from_line not in program.line_numbers:
-            raise error.RunError(8)
-    elif c == '.':
-        from_line = automode.auto_last_stored
-        if from_line == -1:
-            raise error.RunError(8)
+    from_line = parse_jumpnum_or_dot(ins, err=5)
+    if from_line == None or from_line not in program.line_numbers:
+        raise error.RunError(8)
+    util.require(ins, util.end_statement, err=5)
     program.edit_line(from_line)
     
 def exec_auto(ins):
-    d = util.skip_white(ins)
-    if d == '\x0e':   # line number starts
-        ins.read(1)
-        automode.auto_linenum = vartypes.uint_to_value(bytearray(ins.read(2)))
-    elif d == '.':
-        ins.read(1)
-        # use current auto_linenum; if not specified before, set to 0.
-        automode.auto_linenum = automode.auto_last_stored
-        if automode.auto_linenum == -1:
-            automode.auto_linenum = 0
-    else:
-        # default to 10
-        automode.auto_linenum = 10
+    automode.auto_linenum = parse_jumpnum_or_dot(ins, allow_empty=True)
+    if automode.auto_linenum == None:
+        automode.auto_linenum = 10        
     if util.skip_white_read_if(ins, (',',)): 
-        if util.skip_white_read_if(ins, ('\x0E',)):   # line number starts
-            automode.auto_increment = vartypes.uint_to_value(bytearray(ins.read(2))) 
-        else:
-            pass
+        automode.auto_increment = util.parse_jumpnum(ins, allow_empty=True)
     else:
         automode.auto_increment = 10
     util.require(ins, util.end_statement)
@@ -129,17 +113,16 @@ def exec_llist(ins):
 def exec_load(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
-    close_files = True
-    if util.skip_white_read_if(ins, (',',)):
+    comma = util.skip_white_read_if(ins, (',',))
+    if comma:
         util.require_read(ins, 'R')
-        close_files = False
     util.require(ins, util.end_statement)
     program.load(fileio.open_file_or_device(0, name, mode='L', defext='BAS'))
-    if close_files:
-        fileio.close_all()
-    else:
-        # in ,R mode, run the file
+    if comma:
+        # in ,R mode, don't close files; run the program
         program.set_runmode()
+    else:
+        fileio.close_all()
         
 def exec_chain(ins):
     action = program.merge if util.skip_white_read_if(ins, ('\xBD',)) else program.load     # MERGE
@@ -163,13 +146,6 @@ def exec_chain(ins):
 
 def exec_save(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    #    # cryptic errors given by GW-BASIC:    
-    #    if len(name)>8 or len(ext)>3:
-    #        # 52: bad file number 
-    #        raise error.RunError(errlen)
-    #    if ext.find('.') > -1:
-    #        # 53: file not found
-    #        raise error.RunError(errdots)
     mode = 'B'
     if util.skip_white_read_if(ins, (',',)):
         mode = util.skip_white_read(ins).upper()
@@ -191,12 +167,13 @@ def exec_new(ins):
 def exec_renum(ins):
     new, old, step = None, None, None
     if util.skip_white(ins) not in util.end_statement: 
-        new = parse_jumpnum(ins)
+        new = parse_jumpnum_or_dot(ins, allow_empty=True)
         if util.skip_white_read_if(ins, (',',)):
-            old = parse_jumpnum(ins)
+            old = parse_jumpnum_or_dot(ins, allow_empty=True)
             if util.skip_white_read_if(ins, (',',)):
-                step = parse_jumpnum(ins)
+                step = util.parse_jumpnum(ins, allow_empty=True) # returns -1 if empty
     util.require(ins, util.end_statement)            
-    program.renumber(new, old, step)
-
+    if step != None and step < 1: 
+        raise error.RunError(5)
+    program.renum(new, old, step)
     
