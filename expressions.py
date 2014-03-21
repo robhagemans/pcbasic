@@ -441,17 +441,22 @@ def value_space(ins):
 # console functions
 
 def value_screen(ins):
-    # SCREEN(x,y,[z])
     util.require_read(ins, ('(',))
     row, col, z = parse_int_list(ins, 3, 5) 
-    util.require_read(ins, (')',))
     if row == None or col == None:
         raise error.RunError(5)
+    if z == None:
+        z = 0    
     util.range_check(1, console.height, row)
     if console.view_set:
         util.range_check(console.view_start, console.scroll_height, row)
     util.range_check(1, console.width, col)
-    return vartypes.pack_int(console.get_screen_char_attr(row, col, z))
+    util.range_check(0, 255, z)
+    util.require_read(ins, (')',))
+    if z and console.screen_mode:
+        return vartypes.null['%']    
+    else:
+        return vartypes.pack_int(console.get_screen_char_attr(row, col, z!=0))
     
 def value_input(ins):    # INPUT$
     if ins.read(1) != '$':
