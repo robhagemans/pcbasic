@@ -25,7 +25,6 @@ import oslayer
 # for exec_load
 import stat_code 
 
-
 def exec_cont(ins):
     if program.stop == None:
         raise error.RunError(17)
@@ -57,31 +56,8 @@ def exec_else(ins):
     # any else statement by itself means the THEN has already been executed, so it's really like a REM.
     util.skip_to(ins, util.end_line)    
 
-def exec_while(ins, first=True):
-    # just after WHILE opcode
-    whilepos = ins.tell()
-    # evaluate the 'boolean' expression 
-    # use double to avoid overflows  
-    boolvar = vartypes.pass_double_keep(expressions.parse_expression(ins))
-    if first:
-        # find matching WEND
-        current = ins.tell()
-        util.skip_to_next(ins, '\xB1', '\xB2')  # WHILE, WEND
-        if ins.read(1) == '\xB2':
-            util.skip_to(ins, util.end_statement)
-            wendpos = ins.tell()
-            program.while_wend_stack.append([whilepos, program.linenum, wendpos]) 
-        else: 
-            # WHILE without WEND
-            raise error.RunError(29)
-        ins.seek(current)    
-    # condition is zero?
-    if fp.unpack(boolvar).is_zero():
-        # jump to WEND
-        [whilepos, program.linenum, wendpos] = program.while_wend_stack.pop()
-        ins.seek(wendpos)
-
 def exec_for(ins): 
+    global override_token
     # just after FOR opcode
     forpos = ins.tell()
     # read variable  
@@ -204,9 +180,8 @@ def exec_if(ins):
         # line number or statement is implied GOTO
         if util.skip_white(ins) in ('\x0d', '\x0e'):  
             # line number (jump)
-            exec_goto(ins)    
+            return exec_goto(ins)    
         # continue parsing as normal, :ELSE will be ignored anyway
-        return
     else:
         # find ELSE block or end of line
         # ELSEs are nesting on the line
@@ -224,7 +199,7 @@ def exec_if(ins):
                         ins.read(1)
                         # line number?
                         if util.skip_white(ins) in ('\x0d', '\x0e'):
-                            exec_goto(ins)
+                            return exec_goto(ins)
                         # continue execution from here    
                         break
                     else:
@@ -233,7 +208,30 @@ def exec_if(ins):
                 if d != '':
                     ins.seek(-1,1)
                 break
-        return            
+
+def exec_while(ins, first=True):
+    # just after WHILE opcode
+    whilepos = ins.tell()
+    # evaluate the 'boolean' expression 
+    # use double to avoid overflows  
+    boolvar = vartypes.pass_double_keep(expressions.parse_expression(ins))
+    if first:
+        # find matching WEND
+        current = ins.tell()
+        util.skip_to_next(ins, '\xB1', '\xB2')  # WHILE, WEND
+        if ins.read(1) == '\xB2':
+            util.skip_to(ins, util.end_statement)
+            wendpos = ins.tell()
+            program.while_wend_stack.append([whilepos, program.linenum, wendpos]) 
+        else: 
+            # WHILE without WEND
+            raise error.RunError(29)
+        ins.seek(current)    
+    # condition is zero?
+    if fp.unpack(boolvar).is_zero():
+        # jump to WEND
+        [whilepos, program.linenum, wendpos] = program.while_wend_stack.pop()
+        ins.seek(wendpos)
 
 def exec_wend(ins):
     # while will actually syntax error on the first run if anything is in the way.
@@ -251,7 +249,7 @@ def exec_wend(ins):
             break
     program.linenum = whileline
     ins.seek(whilepos)
-    exec_while(ins, False)
+    return exec_while(ins, False)
 
 def exec_on_jump(ins):    
     onvar = vartypes.pass_int_unpack(expressions.parse_expression(ins))
