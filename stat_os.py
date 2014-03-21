@@ -91,38 +91,7 @@ def exec_files(ins):
             if pathmask[0]:
                 path = '.'
                 mask = str(pathmask[0])            
-    mask = mask.upper()
-    if mask == '':
-        mask = '*.*'
-    # get top level directory for '.'
-    path = os.path.abspath(path.replace('\\', os.sep))
-    roots, dirs, files = [], [], []
-    for root, dirs, files in oslayer.safe(os.walk, path):
-        break
-    # get working dir, replace / with \
-    cwd = path.replace(os.sep,'\\')
-    console.write(cwd + util.endl)
-    if (roots, dirs, files) == ([], [], []):
-        raise error.RunError(53)
-    dosfiles = oslayer.pass_dosnames(files, mask)
-    dosfiles = [ name+'     ' for name in dosfiles ]
-    dirs += ['.', '..']
-    dosdirs = oslayer.pass_dosnames(dirs, mask)
-    dosdirs = [ name+'<DIR>' for name in dosdirs ]
-    dosfiles.sort()
-    dosdirs.sort()    
-    output = dosdirs + dosfiles
-    num = console.width/20
-    if len(output) == 0:
-        # file not found
-        raise error.RunError(53)
-    while len(output) > 0:
-        line = ' '.join(output[:num])
-        output = output[num:]
-        console.write(line+util.endl)       
-        # allow to break during dir listing & show names flowing on screen
-        console.check_events()             
-    console.write(str(oslayer.disk_free(path)) + ' Bytes free' + util.endl)
+    oslayer.files(path, mask, console)
     util.require(ins, util.end_statement)
     
 def exec_shell(ins):

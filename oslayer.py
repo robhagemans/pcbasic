@@ -90,7 +90,7 @@ def istype(name, isdir):
     #        raise error.RunError(errdots)
 def dosname_write(s, defext='BAS', path='', dummy=0, isdir_dummy=False):
     pre = str(path)
-    if path:
+    if path and pre[-1] != os.sep:
         pre += os.sep
     s = s.upper()
     if '.' in s:
@@ -109,18 +109,17 @@ def dosname_write(s, defext='BAS', path='', dummy=0, isdir_dummy=False):
 # if name does not exist, put name in 8x3, all upper-case format with standard extension            
 def dosname_read(s, defext='BAS', path='', err=53, isdir=False):
     pre = str(path)
-    if path:
+    if path and pre[-1] != os.sep:
         pre += os.sep
     if istype(pre+s, isdir):
-        return s
-    s = dosname_write(s, '', pre)
-    if istype(pre+s, isdir):    
-        return s
+        return pre+s
+    full = dosname_write(s, '', pre)
+    if istype(full, isdir):    
+        return full
     if defext:
-        s = dosname_write(s, defext, pre)
-        if istype(pre+s, isdir):    
-            return s
-    # 53: file not found
+        full = dosname_write(s, defext, pre)
+        if istype(full, isdir):    
+            return full
     raise error.RunError(err)
 
 # find a unix path to match the given dos-style path
@@ -176,6 +175,40 @@ def pass_dosnames(files, mask='*.*'):
             ext = '    '    
         dosfiles.append(trunk + ext)
     return dosfiles
+
+def files(path, mask, console):
+    mask = mask.upper()
+    if mask == '':
+        mask = '*.*'
+    # get top level directory for '.'
+    path = os.path.abspath(path.replace('\\', os.sep))
+    roots, dirs, files = [], [], []
+    for root, dirs, files in safe(os.walk, path):
+        break
+    # get working dir, replace / with \
+    cwd = '\\'.join(map(str.strip, pass_dosnames(path.split(os.sep)))) # path.replace(os.sep,'\\')
+    console.write('C:' + cwd + '\n')
+    if (roots, dirs, files) == ([], [], []):
+        raise error.RunError(53)
+    dosfiles = pass_dosnames(files, mask)
+    dosfiles = [ name+'     ' for name in dosfiles ]
+    dirs += ['.', '..']
+    dosdirs = pass_dosnames(dirs, mask)
+    dosdirs = [ name+'<DIR>' for name in dosdirs ]
+    dosfiles.sort()
+    dosdirs.sort()    
+    output = dosdirs + dosfiles
+    num = console.width/20
+    if len(output) == 0:
+        # file not found
+        raise error.RunError(53)
+    while len(output) > 0:
+        line = ' '.join(output[:num])
+        output = output[num:]
+        console.write(line+'\n')       
+        # allow to break during dir listing & show names flowing on screen
+        console.check_events()             
+    console.write(str(disk_free(path)) + ' Bytes free\n')
 
 # print to LPR printer (ok for CUPS)
 # TODO: use Windows printing subsystem for Windows, LPR is not standard there.
