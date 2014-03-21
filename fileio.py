@@ -365,8 +365,8 @@ def find_files_by_name(name):
     return [files[f] for f in files if files[f].fhandle.name == name]
     
 def open_file_or_device(number, name, mode='I', access='R', lock='', reclen=128, defext=''):
-    if number < 0 or number > max_files:
-        # bad file number
+    if not name or number < 0 or number > max_files:
+        # bad file number; also for name='', for some reason
         raise error.RunError(52)
     if number in files:
         # file already open
