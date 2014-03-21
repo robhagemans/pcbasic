@@ -374,11 +374,12 @@ def exec_line_input(ins):
 
 def exec_restore(ins):
     if not util.skip_white(ins) in util.end_statement:
-        datanum = util.parse_jumpnum(ins)
+        datanum = util.parse_jumpnum(ins, err=8)
     else:
         datanum = -1
-    util.require(ins, util.end_statement)
-    program.restore_data(datanum)
+    # undefined line number for all syntax errors
+    util.require(ins, util.end_statement, err=8)
+    program.restore(datanum)
 
 def exec_swap(ins):
     name1 = util.get_var_name(ins)

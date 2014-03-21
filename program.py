@@ -47,7 +47,7 @@ def init_program():
     # reset program pointer
     bytecode.seek(0)
     # reset data reader
-    restore_data()
+    restore()
 
 def erase_program():
     global protected, line_numbers, current_statement, last_stored
@@ -64,11 +64,14 @@ def set_runmode(new_runmode=True):
     current_codestream = bytecode if run_mode else direct_line
     
 # RESTORE
-def restore_data(datanum=-1):
+def restore(datanum=-1):
     global data_line, data_pos
     data_line = datanum
-    data_pos = 0 if datanum==-1 else line_numbers[datanum]
-
+    try:
+        data_pos = 0 if datanum==-1 else line_numbers[datanum]
+    except KeyError:
+        raise error.RunError(8)
+        
 init_program()
 erase_program()
 
