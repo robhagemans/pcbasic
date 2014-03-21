@@ -189,6 +189,14 @@ def exec_new(ins):
     program.clear_program()
 
 def exec_renum(ins):
-    program.renumber(*util.parse_jumpnum_list(ins, size=3, err=2))    
+    new, old, step = None, None, None
+    if util.skip_white(ins) not in util.end_statement: 
+        new = parse_jumpnum(ins)
+        if util.skip_white_read_if(ins, (',',)):
+            old = parse_jumpnum(ins)
+            if util.skip_white_read_if(ins, (',',)):
+                step = parse_jumpnum(ins)
+    util.require(ins, util.end_statement)            
+    program.renumber(new, old, step)
 
     

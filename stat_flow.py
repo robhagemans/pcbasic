@@ -122,17 +122,16 @@ def for_push_next(ins, forpos, varname, start, stop, step):
     nextpos = ins.tell()
     ins.seek(current)    
     # no-var only allowed in standalone NEXT
-    nextline = -1
     if varname2 == '':
         if d not in util.end_statement:
-            if program.run_mode:
-                nextline = program.get_line_number(nextpos)
+            nextline = program.get_line_number(nextpos) if program.run_mode else -1
             # syntax error
             raise error.RunError(2, nextline)
     if varname2 == varname or varname2 == '':
         program.for_next_stack.append((forpos, program.linenum, varname, nextpos, start, stop, step)) 
     else:
         # NEXT without FOR
+        nextline = program.get_line_number(nextpos) if program.run_mode else -1
         raise error.RunError(1, nextline)
     
 def for_iterate(ins):    
@@ -153,10 +152,7 @@ def for_jump_if_ends(ins, loopvar, stop, step):
         ins.seek(nextpos)
         d = util.skip_white(ins)
         if d not in util.end_statement+(',',):
-            if program.run_mode:
-                nextline = program.get_line_number(nextpos)
-            else:
-                nextline = -1
+            nextline = program.get_line_number(nextpos) if program.run_mode else -1
             raise error.RunError(2, nextline)
         elif d==',':
             # we're jumping into a comma'ed NEXT, call exec_next (which may call for_iterate which will call us again)
@@ -201,10 +197,7 @@ def exec_next(ins, comma=False):
         if varname == varname2:
             util.skip_to(ins, util.end_statement)
         else:
-            if program.run_mode:
-                nextline = program.get_line_number(nextpos)
-            else:
-                nextline = -1
+            nextline = program.get_line_number(nextpos) if program.run_mode else -1
             # next without for
             raise error.RunError(1, nextline) #1    
     # JUMP to FOR statement

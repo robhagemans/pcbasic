@@ -171,24 +171,6 @@ def parse_jumpnum(ins):
         raise error.RunError(2)
     return jumpnum
 
-# parses a list of line numbers
-def parse_jumpnum_list(ins, size, err=2):
-    pos = 0
-    output = [-1] * size
-    while True:
-        d = skip_white(ins)
-        if d == ',':
-            ins.read(1)
-            pos += 1
-            if pos >= size:
-                # 5 = illegal function call
-                raise error.RunError(err)
-        elif d in end_expression:
-            break
-        else:  
-            output[pos] = parse_jumpnum(ins)
-    return output
-
 # token to value
 def parse_value(ins):
     d = ins.read(1)
