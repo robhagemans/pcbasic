@@ -161,7 +161,6 @@ def handle_error(e):
         if e.err == 2 and errline != -1:
             prompt()
             textpos = program.edit_line(errline, program.bytecode.tell())
-            console.debug_print(repr(textpos))
         # for some reason, err is reset to zero by GW-BASIC in this case.
         if e.err == 2:
             error.errn = 0
@@ -170,7 +169,7 @@ def handle_error(e):
 def write_error_message(msg, linenum):
     console.start_line()
     console.write(msg) 
-    if linenum > -1 and linenum < 65535:
+    if linenum != None and linenum > -1 and linenum < 65535:
         console.write(' in %i' % linenum)
     console.write(' ' + util.endl)          
 
