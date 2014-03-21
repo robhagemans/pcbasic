@@ -136,7 +136,7 @@ def handle_error(e):
         write_error_message(e.msg, errline)
         if program.run_mode:
             program.stop = [program.bytecode.tell(), program.linenum]
-            program.unset_runmode()
+            program.set_runmode(False)
         return False
     # set ERR and ERL
     error.errn = e.err
@@ -153,7 +153,7 @@ def handle_error(e):
         # not handled by ON ERROR, stop execution
         write_error_message(e.msg, errline)   
         error.error_handle_mode = False
-        program.unset_runmode()
+        program.set_runmode(False)
         # for syntax error, line edit gadget appears
         if e.err == 2 and errline != -1:
             prompt()

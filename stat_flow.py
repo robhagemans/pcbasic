@@ -50,7 +50,7 @@ def exec_end(ins):
     util.require(ins, util.end_statement)
     program.stop = [program.bytecode.tell(), program.linenum]
     program.bytecode.seek(0)
-    program.unset_runmode()
+    program.set_runmode(False)
     fileio.close_all()
               
 def exec_else(ins):
@@ -208,12 +208,14 @@ def exec_run(ins):
     if c in ('\x0d', '\x0e'):
         jumpnum = util.parse_jumpnum(ins)
         util.skip_to(ins, util.end_statement)
-        program.reset_program()
+        program.init_program()
+        program.clear_all()
         program.jump(jumpnum)
     elif c not in util.end_statement:
         stat_code.exec_load(ins)
     else:
-        program.reset_program()
+        program.init_program()
+        program.clear_all()
     program.set_runmode()
                 
 def exec_gosub(ins):
@@ -375,7 +377,7 @@ def exec_return(ins):
         if buf != ins:
             # move to end of program to avoid executing anything else on the RETURN line if called from direct mode   
             ins.seek(-1)
-            program.unset_runmode()
+            program.set_runmode(False)
         # go back to position of GOSUB
         program.linenum = orig_linenum 
         buf.seek(pos)

@@ -51,7 +51,7 @@ def exec_delete(ins):
     util.require(ins, util.end_statement)
     program.delete_lines(from_line, to_line)
     # throws back to direct mode
-    program.unset_runmode()
+    program.set_runmode(False)
 
 def exec_edit(ins):
     if program.protected:
@@ -98,7 +98,7 @@ def exec_auto(ins):
     automode.auto_linenum -= automode.auto_increment
     automode.auto_mode = True
     program.prompt = False
-    program.unset_runmode()
+    program.set_runmode(False)
     
 def exec_list(ins):
     from_line, to_line = parse_line_range(ins)
