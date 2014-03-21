@@ -71,7 +71,7 @@ def unset_runmode():
 
 # get line number for stream position
 def get_line_number(pos): #, after=False):
-    pre = -1
+    pre = 65536
     for linum in line_numbers:
         linum_pos = line_numbers[linum] 
         if linum_pos <= pos and linum < pre:
@@ -323,51 +323,38 @@ def edit_line(from_line, bytepos=None):
     prompt = False
     console.set_pos(console.row-1, textpos+1 if bytepos else 1)
     
-def renumber(new_line=-1, start_line=-1, step=-1):
-    # set defaults
-    if new_line == -1:
-        new_line = 10
-    if start_line == -1:
-        start_line = 0
-    if step == -1:
-        step = 10        
-    # get line number dict in the form it should've been in anyway had I implemented it sensibly
-    lines = []
-    for num in line_numbers:
-        if num >= start_line:
-            lines.append([num, line_numbers[num]])        
-    lines.sort()    
+def renumber(new_line, start_line, step):
+    new_line = 10 if new_line == None else new_line
+    start_line = 0 if start_line == None else start_line
+    step = 10 if step == None else step 
+    # get a sorted list of line numbers & positions      
+    lines = [ [num, line_numbers[num]] for num in line_numbers if num >= start_line ]
+    lines.sort()
     # assign the new numbers
     for pairs in lines:
         pairs.append(new_line)
         new_line += step    
     # write the new numbers
     for pairs in lines:
-        if pairs[0]==65536:
+        if pairs[0] == 65536:
             break
         bytecode.seek(pairs[1])
+        # skip the \x00\xC0\xDE & overwrite line number
         bytecode.read(3)
-        bytecode.write(vartypes.value_to_uint(pairs[2]))
+        bytecode.write(str(vartypes.value_to_uint(pairs[2])))
     # write the indirect line numbers
     bytecode.seek(0)
-    linum = -1
-    while util.peek(bytecode) != '':
-        util.skip_to(bytecode, ['\x0d', '\x0e'])
-        linum = get_line_number(bytecode.tell())
-        if linum == 65536:
+    while True:
+        if util.skip_to_read(bytecode, ('\x0d', '\x0e')) not in ('\x0d', '\x0e'):
             break
-        bytecode.read(1)
-        s = bytecode.read(2)
-        jumpnum = vartypes.uint_to_value(s)
-        newnum = -1
-        for triplets in lines:
-            if triplets[0] == jumpnum:
-                newnum = triplets[2]
-        if newnum != -1:    
+        # get the old jump number
+        jumpnum = vartypes.uint_to_value(bytearray(bytecode.read(2)))
+        try:
+            newnum = next(triplet[2] for triplet in lines if triplet[0]==jumpnum)
             bytecode.seek(-2, 1)
-            bytecode.write(vartypes.value_to_uint(newnum))
-        else:
-            # just a message, not an actual error. keep going.
+            bytecode.write(str(vartypes.value_to_uint(newnum)))
+        except StopIteration:
+            linum = get_line_number(bytecode.tell())
             console.write('Undefined line '+str(jumpnum)+' in '+str(linum)+util.endl)
     # rebuild the line number dictionary    
     preparse()    
