@@ -530,32 +530,21 @@ def value_environ(ins):
         raise error.RunError(2)
     expr = parse_bracket(ins)
     if expr[0] == '$':
-        parm = str(vartypes.unpack_string(expr))
-        if parm == '':
-            raise error.RunError(5)
-        val = os.getenv(parm)
-        if val == None:
-            val = ''
-        return vartypes.pack_string(val)
+        return vartypes.pack_string(oslayer.get_env(vartypes.unpack_string(expr)))
     else:
         expr = vartypes.pass_int_unpack(expr)
-        envlist = list(os.environ)
         util.range_check(1, 255, expr)
-        if expr > len(envlist):
-            return vartypes.null['$']            
-        else:
-            val = os.getenv(envlist[expr-1])
-            return vartypes.pack_string(bytearray(envlist[expr-1] + '=' + val))
-        
+        return vartypes.pack_string(oslayer.get_env_entry(expr))
+
 def value_timer(ins):
     # precision of GWBASIC TIMER is about 1/20 of a second
     return fp.pack(fp.div( fp.Single.from_int(oslayer.timer_milliseconds()/50), fp.Single.from_int(20)))
     
 def value_time(ins):
-    return vartypes.pack_string((datetime.datetime.today() + oslayer.time_offset).strftime('%H:%M:%S'))
+    return vartypes.pack_string(oslayer.get_time())
     
 def value_date(ins):
-    return vartypes.pack_string((datetime.datetime.today() + oslayer.time_offset).strftime('%m-%d-%Y'))
+    return vartypes.pack_string(oslayer.get_date())
 
 #######################################################
 # user-defined functions

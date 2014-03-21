@@ -116,6 +116,28 @@ def set_date(datestr):
         raise error.RunError(5)
     time_offset += newtime - now    
     
+def get_time(ins):
+    return bytearray(datetime.datetime.today() + time_offset).strftime('%H:%M:%S')
+    
+def get_date(ins):
+    return bytearray(datetime.datetime.today() + time_offset).strftime('%m-%d-%Y')
+
+def get_env(parm):
+    if not parm:
+        raise error.RunError(5)
+    val = os.getenv(str(parm))
+    if val == None:
+        val = ''
+    return bytearray(val)    
+        
+def get_env_entry(expr):
+    envlist = list(os.environ)
+    if expr > len(envlist):
+        return bytearray()            
+    else:
+        val = os.getenv(envlist[expr-1])
+        return bytearray(envlist[expr-1] + '=' + val)   
+    
 def safe_open(name, mode, access):
     name = str(name)
     posix_access = access_access[access] if (access and mode == 'R') else access_modes[mode]  
