@@ -2993,6 +2993,34 @@ ERRORS:
     being read, a SYNTAX ERROR is raised on the DATA line.
 
 
+REM statement
+REM [anything]
+' [anything]
+-------------
+Ignores everything until the end of the line. The REM statement is intended for
+comments. Everything after REM will be stored in the program unaltered and 
+uninterpreted. ' (apostrophe) is an alias for :REM; it can be placed at any 
+point in the program line and will ensure that the rest of the line is ignored.
+
+
+RENUM statement
+RENUM [new] [, old [,increment] ]
+---------------
+
+NOTES:
+-   The following keywords can reference line numbers, which will be renumbered
+    by renum: AUTO, EDIT, ELSE, ERL, DELETE, GOSUB, GOTO, LIST, LLIST, RENUM, 
+    RESTORE, RESUME, RETURN, RUN, THEN. 
+-   Some keywords contain line numbers in a different program, which will not be 
+    renumbered: CHAIN, MERGE. However, a line number in a RUN statement that 
+    opens a new file *will* be (incorrectly) renumbered. Furthermore, any RENUM 
+    or AUTO statements in a program will have all their arguments 'renumbered',
+    including line number offsets. This agrees with GW-BASIC's behaviour.    
+-   If a referenced line number does not exist in the program, RENUM prints a
+    message (not an error) "Undefined line [ref] in [old_line]" where old_line
+    is the line number prior to renumbering. The referenced line number will be
+    left unchanged, but the line's old line number will be renumbered.
+    
     
     
 RSET statement
