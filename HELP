@@ -3071,7 +3071,7 @@ RESUME [ 0 | NEXT | line ]
 Continues normal execution after an error handling routine. 
 If 0 or no option is specified, re-executes the statement that caused the 
 error. If NEXT is specified, executes the statement following the one that 
-caused the error. If 'line' is specified, it must be a valid line number
+caused the error. If 'line' is specified, it must be a valid line number.
 ERRORS:
 -   If RESUME is encountered outside of an error trapping routine, raises      
     RESUME WITHOUT ERROR.
@@ -3080,6 +3080,17 @@ ERRORS:
 -   If 'line' is not an existing line number, raises UNDEFINED LINE NUMBER.
     
 
+RETURN statement
+RETURN [line]
+----------------
+Returns from a GOSUB subroutine. If 'line' is not specified, RETURN jumps back
+to the statement after the GOSUB that jumped into the subroutine. 
+If 'line' is specified, it must be a valid line number. RETURN jumps to that 
+line (and pops the GOSUB stack).
+When returning from an error trapping routine, RETURN re-enables the event 
+trapping which was stopped on entering the trap routine.
+ERRORS:
+-   If 'line' is not an existing line number, raises UNDEFINED LINE NUMBER.
 
     
 RSET statement
