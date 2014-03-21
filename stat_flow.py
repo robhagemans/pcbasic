@@ -22,9 +22,6 @@ import rnd
 import fileio
 import oslayer
 
-# for exec_load
-import stat_code 
-
 def exec_cont(ins):
     if program.stop == None:
         raise error.RunError(17)
