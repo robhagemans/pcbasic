@@ -736,12 +736,16 @@ CONT [ anything ]
 Resumes execution of a program that has been halted by STOP, END, <CTRL+C>, or 
  <CTRL+BREAK>.
 NOTES:
--   If a break is encountered in a GAOSUB routine called from a continuing 
-    direct line (e.g. GOSUB 100:PRINT A$), GW-BASIC CONT will not overwrite the
-    running direct line, allowing its continuing execution after the subroutine 
-    returns. However, CONT:PRINT returns strange SYNTAX ERROR in non-existing
-    progam lines. Neither behaviour is implemented in PC-BASIC 3.23, where the
-    direct line is replaced by CONT and execution terminates after RETURN.
+-   If a break is encountered in a GOSUB routine called from a continuing 
+    direct line (e.g. GOSUB 100:PRINT A$), CONT will overwrite the running 
+    direct line. As the subroutine RETURNs to the position after the GOSUB in
+    the old direct line, strange things may happen if commands are given after
+    CONT. In GW-BASIC, this can lead to strange errors in non-existing
+    progam lines as the parser executes bytes that are not part of a program 
+    line. In PC-BASIC 3.23, if the new direct line is shorter, execution stops
+    after RETURN; but if the direct line is extended beyond the old return
+    position, the parser tries to resume at that return position, with strange
+    effects.
 ERRORS:
 -   If no program is loaded, a program has not been run, after a program line 
     has been modified and after CLEAR, CONT raises CAN'T CONTINUE.
@@ -2355,6 +2359,8 @@ order: KEY, TIMER, PLAY - the order of the others is unknown.
 Error trapping remains active in interactive mode.
 NOTES:
 -   If 'line_number' is 0, turns off error trapping.
+ERRORS:
+-   If 'line_number' does not exist, raises UNDEFINED LINE NUMBER.
 
 
 OPEN statement
@@ -3059,7 +3065,19 @@ ERRORS:
 -   If 'line' is not a line number, raises UNDEFINED LINE NUMBER.
 
 
-
+RESUME statement
+RESUME [ 0 | NEXT | line ]
+----------------
+Continues normal execution after an error handling routine. 
+If 0 or no option is specified, re-executes the statement that caused the 
+error. If NEXT is specified, executes the statement following the one that 
+caused the error. If 'line' is specified, it must be a valid line number
+ERRORS:
+-   If RESUME is encountered outside of an error trapping routine, raises      
+    RESUME WITHOUT ERROR.
+-   If the program ends inside an error trapping routine without a RESUME 
+    or END statement, raises NO RESUME.
+    
 
 
     
