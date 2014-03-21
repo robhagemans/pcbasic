@@ -1013,7 +1013,7 @@ ERRORS:
 
 
 EDIT statement
-EDIT line_number
+EDIT {line_number | .}
 --------------
 Displays the specified program line with the cursor positioned for editing.
 'line_number' must be a line that exists in the program, or a period (.) to 
@@ -1939,8 +1939,8 @@ ERRORS:
 
 
 LIST statement
-LIST [ [line_number_0] - [line_number_1] ] [, file_name]
-LIST [line_number_0] [, file_name]
+LIST [ [line_number_0 | . ] - [line_number_1 | .] ] [, file_name]
+LIST [line_number_0 | .] [, file_name]
 --------------
 Prints the program to the screen, starting with 'line_number_0' up to and 
 including 'line_number_1', which must be line numbers in the range [0, 65529]
@@ -1957,8 +1957,8 @@ ERRORS:
     
 
 LLIST statement
-LLIST [ [line_number_0] - [line_number_1] ] 
-LLIST [line_number_0] 
+LLIST [ [line_number_0|.] - [line_number_1|.] ] 
+LLIST [line_number_0|.] 
 ---------------
 Prints the program to LPT1:, starting with 'line_number_0' up to and 
 including 'line_number_1', which must be line numbers in the range [0, 65529]
@@ -3011,15 +3011,19 @@ point in the program line and will ensure that the rest of the line is ignored.
 
 
 RENUM statement
-RENUM [new] [, old [,increment] ]
+RENUM [new | .] [, [old | .] [, increment] ]
 ---------------
-
+Replaces the line numbers in the program by a systematic enumeration starting
+from 'new' and increasing by 'increment'. If 'old' is specified, line numbers 
+less than 'old remain unchanged.
+'new', 'old' are line numbers; the dot . signifies the last line edited.
+'increment' is a line number but must not be a dot or zero.
 NOTES:
 -   The following keywords can reference line numbers, which will be renumbered
     by renum: AUTO, EDIT, ELSE, ERL, DELETE, GOSUB, GOTO, LIST, LLIST, RENUM, 
     RESTORE, RESUME, RETURN, RUN, THEN. 
 -   Some keywords contain line numbers in a different program, which will not be 
-    renumbered: CHAIN, MERGE. However, a line number in a RUN statement that 
+    renumbered: CHAIN. However, a line number in a RUN statement that 
     opens a new file *will* be (incorrectly) renumbered. Furthermore, any RENUM 
     or AUTO statements in a program will have all their arguments 'renumbered',
     including line number offsets. This agrees with GW-BASIC's behaviour.    
@@ -3027,7 +3031,14 @@ NOTES:
     message (not an error) "Undefined line [ref] in [old_line]" where old_line
     is the line number prior to renumbering. The referenced line number will be
     left unchanged, but the line's old line number will be renumbered.
-    
+ERRORS:
+-   If any of the parameters is not in [0, 65529], raises SYNTAX ERROR.    
+-   If any of the newly generated line numbers is greater than 65529, raises
+    ILLEGAL FUNCTION CALL. The line numbers up to the error have not been 
+    changed.
+-   If 'increment' is empty or zero, raises ILLEGAL FUNCTION CALL.    
+-   If 'old' is specified and 'new' is less than or equal to an existing line 
+    number less than old, raises ILLEGAL FUNCTION CALL.
     
     
 RSET statement
