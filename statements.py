@@ -56,12 +56,18 @@ def parse_statement():
     elif c == '\x00':
         ins.read(1)
         # line number marker, new statement
-        program.linenum = util.parse_line_number(ins)
-        if program.linenum == -1:
+        linenum = util.parse_line_number(ins)
+        if linenum == -1:
+            if error.error_resume:
+                # unfinished error handler: no RESUME (don't trap this)
+                error.error_handle_mode = True
+                raise error.RunError(19) 
             # move back to the line-ending \x00 and break
             ins.seek(-1, 1)
             program.set_runmode(False)
+            program.linenum = linenum 
             return False
+        program.linenum = linenum    
         if tron:
             console.write('['+('%i' % program.linenum) +']')
         debug_step(program.linenum)

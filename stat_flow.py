@@ -46,6 +46,9 @@ def exec_end(ins):
     util.require(ins, util.end_statement)
     program.stop = [program.bytecode.tell(), program.linenum]
     program.set_runmode(False)
+    # avoid NO RESUME
+    error.error_handle_mode = False
+    error.error_resume = None
     fileio.close_all()
               
 def exec_else(ins):
