@@ -2680,9 +2680,9 @@ Duration:
         duration. Periods can be repeated to increase duration further.
     Ln  Set the duration of following note. 'n'=4 is a quarter note, etc.
         'n' is in the range [1, 64].
-    MN  Normal: 7/8 of the duration is played. Default mode.
-    ML  Legato: full duration is played.
-    MS  Staccato: 3/4 of the duration is played. 
+    MN  Normal: 7/8 of the duration is sound, with 1/8 silence. Default mode.
+    ML  Legato: full duration is sound.
+    MS  Staccato: 3/4 of the duration is sound, with 1/4 silence. 
 Tempo:    
     Tn  Sets the tempo to 'n' (legato) L4s per minute. Default is 120.
 Background mode (affects SOUND, PLAY and BEEP)
