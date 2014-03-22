@@ -27,14 +27,10 @@ import fileio
 # for randomize
 import console
 
-# whitespace for INPUT#, INPUT
-# TAB x09 is not whitespace for input#. NUL \x00 and LF \x0a are. 
-ascii_white = (' ', '\x00', '\x0a')
-
 def parse_var_list(ins):
     readvar = []
     while True:
-        readvar.append(expressions.get_var_or_array_name(ins))
+        readvar.append(list(expressions.get_var_or_array_name(ins)))
         if not util.skip_white_read_if(ins, (',',)):
             break
     return readvar
@@ -88,7 +84,7 @@ def exec_data(ins):
     # ignore rest of statement after DATA
     util.skip_to(ins, util.end_statement)
 
-
+#
 def parse_int_list_var(ins, size, err=5):
     output = [ vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=2)) ]   
     while True:
@@ -245,7 +241,9 @@ def parse_prompt(ins, question_mark):
 def exec_input(ins):
     finp = expressions.parse_file_number(ins)
     if finp != None:
-        input_vars_file(parse_var_list(ins), finp)
+        varlist = representation.input_vars_file(parse_var_list(ins), finp)
+        for v in varlist:
+            var.set_var_or_array(*v)
     else:
         # ; to avoid echoing newline
         newline = not util.skip_white_read_if(ins, (';',))
@@ -255,103 +253,19 @@ def exec_input(ins):
         pos = ins.tell()
         ins.seek(program.current_statement)
         # read the input
-        input_vars(prompt, readvar, newline)
+        while True:
+            console.write(prompt) 
+            varlist = [ v[:] for v in readvar ]
+            varlist = representation.input_vars(varlist, fileio.TextFile(StringIO(console.read_screenline(write_endl=newline)), mode='I'))
+            if not varlist:
+                console.write('?Redo from start\r\n')  # ... good old Redo!
+            else:
+                break
+        for v in varlist:
+            var.set_var_or_array(*v)
         ins.seek(pos)        
     util.require(ins, util.end_statement)
-
-####
-
-def input_vars_file(readvar, text_file):
-    for v in readvar:
-        typechar = v[0][-1]
-        if typechar == '$':
-            valstr = input_entry(text_file, allow_quotes=True, end_all = ('\x0d', '\x1a'), end_not_quoted = (',', '\x0a'))
-        else:
-            valstr = input_entry(text_file, allow_quotes=False, end_all = ('\x0d', '\x1a', ',', '\x0a', ' '))
-        value = str_to_type(valstr, typechar)    
-        if value == None:
-            value = vartypes.null[typechar]
-        # process the ending char (this may raise FIELD OVERFLOW but should avoid INPUT PAST END)
-        if not text_file.end_of_file() and text_file.peek_char() not in ('', '\x1a'):
-            text_file.read_chars(1)
-        # and then set the value
-        var.set_var_or_array(*v, value=value)
-
-def input_vars(prompt, readvar, newline):
-    while True:
-        console.write(prompt) 
-        text_file = fileio.TextFile(StringIO(console.read_screenline(write_endl=newline)), mode='I')
-        values, count_commas = [], 0
-        for v in readvar:
-            typechar = v[0][-1]
-            valstr = input_entry(text_file, allow_quotes=(typechar=='$'), end_all=('',))
-            val = str_to_type(valstr, typechar)
-            values.append(val)
-            if text_file.peek_char() != ',':
-                break
-            else:
-                text_file.read_chars(1)
-                count_commas += 1
-        if len(readvar) != len(values) or count_commas != len(readvar)-1 or None in values:
-            console.write('?Redo from start\r\n')  # ... good old Redo!
-        else:
-            break
-    for i in range(len(readvar)):
-        var.set_var_or_array(*readvar[i], value=values[i])
-            
-def text_skip(text_file, skip_range):
-    d = ''
-    while True:
-        if text_file.end_of_file():
-            break
-        d = text_file.peek_char() 
-        if d not in skip_range:
-            break
-        text_file.read_chars(1)
-    return d
-
-def input_entry(text_file, allow_quotes, end_all=(), end_not_quoted=(',',)):
-    word, blanks = '', ''
-    # skip leading spaces and line feeds and NUL. 
-    c = text_skip(text_file, ascii_white)
-    if c in end_all + end_not_quoted:
-        return ''
-    quoted = (c == '"' and allow_quotes)
-    if quoted:
-        text_file.read_chars(1)
-    while True:
-        # read entry
-        if text_file.end_of_file():
-            break
-        c = ''.join(text_file.read_chars(1))
-        if c in end_all or (c in end_not_quoted and not quoted):
-            # on KYBD: text file, this will do nothing - comma is swallowed
-            text_file.seek(-len(c), 1)
-            break
-        elif c == '"' and quoted:
-            quoted = False
-            # ignore blanks after the quotes
-            c = text_skip(text_file, ascii_white)
-            break
-        elif c in ascii_white and not quoted:
-            blanks += c    
-        else:
-            word += blanks + c
-        if len(word)+len(blanks) >= 255:
-            text_file.seek(-len(c), 1)
-            break
-    return word
-
-def str_to_type(word, type_char):
-    if type_char == '$':
-        return vartypes.pack_string(bytearray(word))
-    else:
-        try:
-            return fp.pack(representation.from_str(word, False))
-        except AttributeError:
-            return None
-#####
-
+    
 def exec_line_input(ins):
     finp = expressions.parse_file_number(ins)
     if not finp:
