@@ -24,9 +24,7 @@ import oslayer
 import fileio
 import automode
 import console
-import fp
-# allow floating-point functions to write messages to the screen (Overflow etc.)
-fp.error_console = console
+
 
 def once(arg_cmd, arg_quit):
     if arg_cmd:
