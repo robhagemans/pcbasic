@@ -10,7 +10,7 @@
 #
 
 import fp
-#import string_ptr
+import representation
 import error
 
 # default type for variable name starting with a-z
@@ -145,9 +145,9 @@ def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=Fal
         else:
             return ('$', int_to_str(unpack_int(inp)))
     elif typechar == '!':
-        return ('$', fp.to_str(fp.unpack(inp), screen, write) )
+        return ('$', representation.to_str(fp.unpack(inp), screen, write) )
     elif typechar == '#':
-        return ('$', fp.to_str(fp.unpack(inp), screen, write) )
+        return ('$', representation.to_str(fp.unpack(inp), screen, write) )
     else:
         raise error.RunError(2)    
     
