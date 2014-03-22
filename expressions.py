@@ -18,7 +18,6 @@ import fp
 import vartypes
 import representation
 import rnd
-import tokenise
 import oslayer
 import util
 import error
@@ -131,14 +130,15 @@ def parse_expr_unit(ins):
     # this happens e.g. after non-keywords like AS. They are not acceptable as line numbers.
     elif d >= '0' and d <= '9':
         outs = StringIO()
-        tokenise.tokenise_number(ins, outs)
+        representation.tokenise_number(ins, outs)
         outs.seek(0)
         return util.parse_value(outs)
     # number literals
-    elif d in tokenise.tokens_number:
+    elif d in ('\x0b','\x0c','\x0f', '\x11','\x12','\x13','\x14','\x15','\x16',
+                '\x17','\x18','\x19','\x1a','\x1b', '\x1c','\x1d', '\x1f'):
         return util.parse_value(ins)   
     # gw-basic allows adding line numbers to numbers     
-    elif d in tokenise.tokens_linenum:
+    elif d == '\x0e':
         return vartypes.pack_int(util.parse_jumpnum(ins))
     # brackets
     elif d == '(':
