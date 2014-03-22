@@ -8,6 +8,8 @@
 # This file is released under the GNU GPL version 3. 
 # please see text file COPYING for licence terms.
 
+from cStringIO import StringIO
+
 import util
 import fp
 from fp import Single, Double
