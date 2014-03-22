@@ -23,7 +23,7 @@ def init_sound():
 def stop_all_sound():
     pass
     
-def play_sound(frequency, duration):
+def play_sound(frequency, duration, fill=1):
     pass
         
 def check_sound():
