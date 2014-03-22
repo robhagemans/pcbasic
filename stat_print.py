@@ -23,8 +23,6 @@ import deviceio
 import console
 import graphics
 
-zone_width = 14
-        
 
 def exec_cls(ins):
     if util.skip_white(ins) in util.end_statement:
@@ -231,7 +229,7 @@ def exec_print(ins, screen=None):
         screen = console if screen == None else screen
     if util.skip_white_read_if(ins, ('\xD7',)): # USING
        return exec_print_using(ins, screen)
-    number_zones = max(1, int(screen.width/zone_width))
+    number_zones = max(1, int(screen.width/14))
     newline = True
     while True:
         d = util.skip_white(ins)
@@ -241,11 +239,11 @@ def exec_print(ins, screen=None):
             ins.read(1)
             newline = False
             if d == ',':
-                next_zone = int((screen.col-1)/zone_width)+1
+                next_zone = int((screen.col-1)/14)+1
                 if next_zone >= number_zones and screen.width >= 14:
                     screen.write('\r\n')
                 else:            
-                    screen.write(' '*(1+zone_width*next_zone-screen.col))
+                    screen.write(' '*(1+14*next_zone-screen.col))
             elif d == '\xD2': #SPC(
                 numspaces = max(0, vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=2), 0xffff)) % screen.width
                 util.require_read(ins, (')',))
