@@ -409,9 +409,9 @@ def exec_on_strig(ins):
     strigval, jumpnum = parse_on_event(ins)
     strigval = vartypes.pass_int_unpack(strigval)
     ## 0 -> [0][0] 2 -> [0][1]  4-> [1][0]  6 -> [1][1]
-    if num not in (0,2,4,6):
+    if strigval not in (0,2,4,6):
         raise error.RunError(5)
-    events.strig_handler[strigval//2].gosub = jumpnum
+    events.strig_handlers[strigval//2].gosub = jumpnum
     
 def exec_on_com(ins):
     keynum, jumpnum = parse_on_event(ins)

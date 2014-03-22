@@ -11,11 +11,9 @@
 
 
 from cStringIO import StringIO
-import copy
 
 import error
 import vartypes
-import var
 import util
 import expressions
 import program

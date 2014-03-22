@@ -15,12 +15,9 @@ import program
 
 import fp
 import vartypes
-import var
 import util
 import expressions
-import rnd
 import fileio
-import oslayer
 
 def exec_cont(ins):
     if program.stop == None:

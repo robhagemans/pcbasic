@@ -56,7 +56,7 @@ def set_time(timestr):
     global time_offset
     now = datetime.datetime.today() + time_offset
     timelist = [0, 0, 0]
-    pos. listpos, word = 0, 0, ''
+    pos, listpos, word = 0, 0, ''
     while pos < len(timestr):
         if listpos > 2:
             break

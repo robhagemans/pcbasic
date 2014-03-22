@@ -191,13 +191,7 @@ class ConsoleFile(BaseFile):
     # for internal use    
     def end_of_file(self):
         return (util.peek(self.fhandle) in ('', '\x1a'))
-    
-    def eof(self):
-        # for EOF(i)
-        if self.mode in ('A', 'O'):
-            return False
-        return (util.peek(self.fhandle) in ('', '\x1a'))
-    
+       
     def lof(self):
         return 1
 
@@ -210,6 +204,12 @@ class ConsoleFile(BaseFile):
     
     def end_of_file(self):
         return False
+        
+#    def eof(self):
+#        # for EOF(i)
+#        if self.mode in ('A', 'O'):
+#            return False
+#        return (util.peek(self.fhandle) in ('', '\x1a'))
         
     def eof(self):
         # KYBD only EOF if ^Z is read
@@ -293,7 +293,7 @@ class SerialFile(RandomBase):
         return out
     
     # blocking read line (from com port directly - NOT from field buffer!)    
-    def read(self):
+    def read_line(self):
         out = ''
         while True:
             c = self.read_chars()

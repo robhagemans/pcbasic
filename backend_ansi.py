@@ -19,7 +19,6 @@
 import time
 import sys, tty, termios, select
 import os
-import sys
 
 import unicodepage
 import error

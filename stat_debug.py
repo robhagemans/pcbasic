@@ -80,7 +80,7 @@ def dump_screen():
         
 def trace(on=True):
     global debug_tron
-    debug_tron=True        
+    debug_tron = on        
 
 def watch(expr):
     global watch_list    
