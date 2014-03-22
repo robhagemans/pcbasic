@@ -18,7 +18,6 @@ import vartypes
 import var
 import util
 import expressions
-import tokenise
 import program
 import automode
 import console

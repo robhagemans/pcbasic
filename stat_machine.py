@@ -10,7 +10,6 @@
 #
 
 import util
-import tokenise
 import vartypes
 import expressions
 import error

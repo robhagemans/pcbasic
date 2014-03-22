@@ -169,7 +169,7 @@ def exec_if(ins):
     util.require_read(ins, ('\xCD', '\x89')) # THEN, GOTO
     if not fp.unpack(val).is_zero(): 
         # TRUE: continue after THEN. line number or statement is implied GOTO
-        if util.skip_white(ins) in ('\x0d', '\x0e'):  
+        if util.skip_white(ins) in ('\x0e',):  
             program.jump(util.parse_jumpnum(ins))    
         # continue parsing as normal, :ELSE will be ignored anyway
     else:
@@ -186,7 +186,7 @@ def exec_if(ins):
                         nesting_level -= 1
                     else:    
                         # line number: jump
-                        if util.skip_white(ins) in ('\x0d', '\x0e'):
+                        if util.skip_white(ins) in ('\x0e',):
                             program.jump(util.parse_jumpnum(ins))
                         # continue execution from here    
                         break
@@ -246,7 +246,7 @@ def exec_on_jump(ins):
         if d in util.end_statement:
             ins.seek(-len(d), 1)
             break
-        elif d in ('\x0d', '\x0e'):
+        elif d in ('\x0e',):
             jumps.append( ins.tell()-1 ) 
             ins.read(2)
         elif d == ',':

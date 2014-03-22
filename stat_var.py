@@ -20,7 +20,6 @@ import rnd
 
 import util
 import expressions
-import tokenise
 import program
 import fileio
 

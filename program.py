@@ -329,7 +329,7 @@ def renum(new_line, start_line, step):
     # write the indirect line numbers
     bytecode.seek(0)
     while True:
-        if util.skip_to_read(bytecode, ('\x0d', '\x0e')) not in ('\x0d', '\x0e'):
+        if util.skip_to_read(bytecode, ('\x0e',)) != '\x0e':
             break
         # get the old jump number
         jumpnum = vartypes.uint_to_value(bytearray(bytecode.read(2)))
