@@ -674,7 +674,7 @@ def value_pen(ins):
 def value_stick(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 3, fn)
-    return vartypes.pack_int(console.get_stick(fn) if console.stick_is_on else 0)
+    return vartypes.pack_int(console.get_stick(fn))
     
 def value_strig(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))

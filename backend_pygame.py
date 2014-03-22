@@ -262,6 +262,8 @@ def init():
     init_mixer()
     pygame.joystick.init()
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
+    for j in joysticks:
+        j.init()
     return True
         
 def close():
@@ -664,13 +666,13 @@ def get_pen(fn):
         return min(console.width, max(1, 1+pygame.mouse.get_pos()[0]//8))
     elif fn == 9:
         return min(console.height, max(1, 1+pygame.mouse.get_pos()[1]//font_height))     
-       
+
 def get_stick(fn):
     stick_num, axis = fn//2, fn%2
     if len(joysticks) < stick_num + 1:
-        return 0
+        return 128
     else:
-        return int(joysticks[stick_num].get_axis(axis)*100)+100
+        return int(joysticks[stick_num].get_axis(axis)*127)+128
 
 def get_strig(fn):       
     joy, trig = fn//4, (fn//2)%2
