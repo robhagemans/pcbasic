@@ -696,7 +696,7 @@ def put_pixel(x,y, index):
     global screen_changed
     console.apage.surface0.set_at((x,y), index)
     # empty the console buffer of affected characters
-    cx, cy = x//8, y//font_height
+    cx, cy = min(console.width-1, max(0, x//8)), min(console.height-1, max(0, y//font_height)) 
     console.apage.row[cy].buf[cx] = (' ', console.attr)
     screen_changed = True
 
@@ -733,7 +733,8 @@ def fill_rect(x0, y0, x1, y1, index):
     global screen_changed
     rect = pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)
     console.apage.surface0.fill(index, rect)
-    cx0, cy0, cx1, cy1 = x0//8, y0//font_height, x1//8, y1//font_height
+    cx0, cy0 = min(console.width-1, max(0, x0//8)), min(console.height-1, max(0, y0//font_height)) 
+    cx1, cy1 = min(console.width-1, max(0, x1//8)), min(console.height-1, max(0, y1//font_height))
     for r in range(cy0, cy1+1):
         console.apage.row[r].buf[cx0:cx1+1] = [(' ', console.attr)] * (cx1 - cx0 + 1)
     screen_changed = True
@@ -788,6 +789,10 @@ def fast_put(x0, y0, varname, operation_char):
     # apply the operation
     operation = fast_operations[operation_char]
     operation(dest_array, clip)
+    cx0, cy0 = min(console.width-1, max(0, x0//8)), min(console.height-1, max(0, y0//font_height)) 
+    cx1, cy1 = min(console.width-1, max(0, (x0+width)//8)), min(console.height-1, max(0, (y0+height)//font_height))
+    for r in range(cy0, cy1+1):
+        console.apage.row[r].buf[cx0:cx1+1] = [(' ', console.attr)] * (cx1 - cx0 + 1)
     screen_changed = True
     return True
 
@@ -800,6 +805,7 @@ def fast_put(x0, y0, varname, operation_char):
 
 music_foreground = True
 sound_queue = []
+
 
 def music_queue_length():
     # top of sound_queue is currently playing
@@ -844,7 +850,6 @@ def play_sound(frequency, total_duration, fill=1):
     chunk_length = 1192*2
     # actual duration and gap length
     duration, gap = fill * total_duration, (1-fill) * total_duration
-    print frequency, duration, gap
     if frequency == 0 or frequency == 32767:
         chunk = numpy.zeros(chunk_length)
     else:
@@ -874,7 +879,6 @@ def play_sound(frequency, total_duration, fill=1):
         sound_list.append(pygame.sndarray.make_sound(chunk))
     # at most 16 notes in the sound queue (not 32 as the guide says!)
     wait_music(15)
-    print rest_length, sound_list
     sound_queue.append(sound_list)
 
 # implementation

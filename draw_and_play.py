@@ -133,8 +133,7 @@ def draw_step(x0,y0, sx,sy, plot, goback):
     x1 += x0
     if plot:
         graphics.draw_line(x0,y0,x1,y1,-1)    
-    else:
-        graphics.last_point=(x1,y1)
+    graphics.last_point=(x1,y1)
     if goback:
         graphics.last_point=(x0,y0)
             
@@ -205,8 +204,7 @@ def draw_parse_gml(gml):
             else:
                 if plot:
                     graphics.draw_line(x0, y0, x, y, -1)    
-                else:
-                    graphics.last_point = (x, y)
+                graphics.last_point = (x, y)
                 if goback:
                     graphics.last_point = (x0, y0)
             plot = True
