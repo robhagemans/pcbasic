@@ -21,7 +21,7 @@ def exec_beep(ins):
     # if a syntax error happens, we still beeped.
     util.require(ins, util.end_statement)
     if console.sound.music_foreground:
-        console.sound.wait_music()
+        console.sound.wait_music(wait_last=False)
     
 def exec_sound(ins):
     freq = vartypes.pass_int_unpack(expressions.parse_expression(ins))
@@ -31,7 +31,7 @@ def exec_sound(ins):
     util.range_check(37, 32767, freq) # 32767 is pause
     console.sound.play_sound(freq, float(dur)/18.2)
     if console.sound.music_foreground:
-        console.sound.wait_music()
+        console.sound.wait_music(wait_last=False)
     
 def exec_play(ins):
     if events.play_handler.command(util.skip_white(ins)):
