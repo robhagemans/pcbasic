@@ -79,11 +79,11 @@ def exec_color(ins):
     
 def exec_color_mode_1(back, pal, override):
     back = console.get_palette_entry(0) if back == None else back
-    if override:
+    if override != None:
         # uses last entry as palette if given
         pal = override
     util.range_check(0, 255, back)
-    if pal:
+    if pal != None:
         util.range_check(0, 255, pal)
         if pal % 2 == 1:
             # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
