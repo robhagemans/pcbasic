@@ -810,7 +810,7 @@ sound_queue = []
 def music_queue_length():
     # top of sound_queue is currently playing
     return max(0, len(sound_queue)-1)
-    
+        
 def init_sound():
     return numpy != None
     
@@ -861,7 +861,7 @@ def check_sound():
         
 def wait_music(wait_length=0, wait_last=True):
     while not loop_sound_playing and (
-            music_queue_length() > wait_length 
+            len(sound_queue) + wait_last - 1 > wait_length 
             or (wait_last and music_queue_length()==0 and pygame.mixer.get_busy())):
         idle()
         console.check_events()
