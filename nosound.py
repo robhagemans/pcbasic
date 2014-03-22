@@ -29,6 +29,6 @@ def play_sound(frequency, duration):
 def check_sound():
     pass
     
-def wait_music():
+def wait_music(wait_length=0, wait_last=True):
     pass
       

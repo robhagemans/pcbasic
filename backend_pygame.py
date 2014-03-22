@@ -803,7 +803,7 @@ sound_queue = []
 
 
 def music_queue_length():
-    return len(sound_queue)       
+    return len(sound_queue) + (pygame.mixer.get_init() != None and pygame.mixer.Channel(0).get_queue() != None)      
     
 def init_sound():
     return numpy != None
@@ -816,15 +816,15 @@ def stop_all_sound():
     
 # process sound queue in event loop
 def check_sound():
-    if len(sound_queue)>0:
+    if len(sound_queue) > 0:
         check_init_mixer()
         if pygame.mixer.Channel(0).get_queue() == None:
             pygame.mixer.Channel(0).queue(sound_queue.pop(0))
     else:
         check_quit_sound()
         
-def wait_music():
-    while len(sound_queue)>0 or pygame.mixer.get_busy():
+def wait_music(wait_length=0, wait_last=True):
+    while music_queue_length() > wait_length or (wait_last and music_queue_length()==0 and pygame.mixer.get_busy()):
         idle()
         console.check_events()
         
@@ -833,6 +833,8 @@ def play_sound(frequency, duration):
     if frequency == 0 or frequency == 32767:
         # pause
         buf = numpy.zeros(duration*mixer_samplerate/4)
+        # at most 16 notes in the sound queue (not 32 as the guide says!)
+        wait_music(15)
         sound_queue.append(pygame.sndarray.make_sound(buf))
     else:    
         amplitude = 2**(mixer_bits - 1) - 1
@@ -853,8 +855,10 @@ def play_sound(frequency, duration):
             else:
                 buf = numpy.concatenate((buf, wave2, wave3))
             rest -= int(rest)
+        # at most 16 notes in the sound queue (not 32 as the guide says!)
+        wait_music(15)
         sound_queue.append(pygame.sndarray.make_sound(buf))
-        
+
 # implementation
 
 mixer_bits = 16
@@ -877,14 +881,14 @@ def init_mixer():
     pygame.mixer.quit()
     
 def check_init_mixer():
-    if pygame.mixer.get_init() ==None:
+    if pygame.mixer.get_init() == None:
         pygame.mixer.init()
         
 def check_quit_sound():
     global quiet_ticks
     if pygame.mixer.get_init() == None:
         return
-    if len(sound_queue) > 0 or pygame.mixer.get_busy():
+    if music_queue_length() > 0 or pygame.mixer.get_busy():
         quiet_ticks = 0
     else:
         quiet_ticks += 1    
