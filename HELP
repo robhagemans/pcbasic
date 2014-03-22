@@ -2688,7 +2688,8 @@ Tempo:
 Background mode (affects SOUND, PLAY and BEEP)
     MB  Turns on background mode; sound commands exit without waiting for the 
         music to finish. The music keeps playing while other commands are 
-        executed.
+        executed. There can be up to 16 notes in the background music queue;
+        if more notes are played, PLAY will block until there are only 16 left.
     MF  Turns off background mode; sound commands block. Default mode.
 Subroutine command:
     Xs      execute substring. 's' is one of the following:
@@ -2709,7 +2710,11 @@ length = PLAY(dummy)
 -------------
 Returns the number of notes in the background music queue.
 'dummy' is a number-valued expression in [0,255]. Is value has no effect.
-The return value is in [0,32].
+The return value is in [0,16].
+NOTES:
+-   There are at most 16 notes in the music queue. Some GW-BASIC manuals
+    claim there can be up to 32, but in reality PLAY only returns at the
+    last 16 notes.
 ERRORS:
 -   If 'dummy' is a string, raises TYPE MISMATCH.
 -   If 'dummy' is not in [0, 255], raises ILLEGAL FUNCTION CALL.
@@ -3265,16 +3270,20 @@ SOUND frequency, duration
 ---------------
 Produces a sound at 'frequency' Hz for 'duration'/18.2 seconds.
 'frequency' is a number-valued expression in [37, 32767].
-'duration' is a number-valued expression in [0, 65535].
-If music is set to foreground (default) in the PLAY statement, the statement
-blocks until the sound has veen played. If music is set to background, the
-execution returns while the sound plays in the background.
+'duration' is a number-valued expression in [0, 65535]. 
+If PLAY "MB" has been executed, SOUND playes in the background. If PLAY "MF" 
+has been executed, sound plays in the foreground and the interpreter blocks
+until the sound is finished. Foreground mode is default. Unlike PLAY, the 
+sound played by the most recent SOUND statement always plays in the background,
+even if PLAY "MF" has been entered. In background mode, each SOUND statement 
+counts as 1 toward the length of the queue reported by the PLAY function.
 NOTES:
--   If 'duration' is zero, any active sound is stopped.
--   If 'duration' is less than .022 but nonzero, the sound produced will 
-    continue indefinitely in the background until another sound statement
-    is executed.
--   If 'frequency' equals 32767, a silent pause is played.
+-   If 'duration' is zero, any active background sound is stopped and 
+    the sound queue is emptied.
+-   If 'duration' is less than .022 but nonzero, the sound will be played in 
+    background and continue indefinitely until another sound statement is 
+    executed. This is also the behaviour for negative 'duration'.
+-   If 'frequency' equals 32767, a silence of length 'duration' is queued.
 ERRORS:
 -   If 'frequency' is not in [37, 32767], and 'duration' is not zero, raises 
     ILLEGAL FUNCTION CALL.
