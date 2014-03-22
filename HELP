@@ -752,18 +752,19 @@ ERRORS:
 -   If the break occurred in a direct line, CONT raises CAN'T CONTINUE    
 
 
-COS(x) function
+COS function
+cosine = COS(angle)
 ---------------
-Returns the cosine of 'x'. 'x' is a numeric-valued expression that gives the 
-angle in radians. 
-Unless BASIC is run with the --double option, COS(x) returns a 
-single-precision value.
+Returns the cosine of 'angle'. 'angle' is a numeric-valued expression that 
+gives the angle in radians. 
+Unless BASIC is run with the --double option, SIN(x) returns a single-precision
+value.
 NOTES:
--   COS(x) usually differs from the value returned by GW-BASIC. For one-digit 
+-   COS usually differs from the value returned by GW-BASIC. For one-digit 
     values, the difference is only in the least significant figure, but it
     increases with the size of the angle.
 ERRORS:
--   If 'x' has a string value, COS raises TYPE MISMATCH.
+-   If 'angle' has a string value, COS raises TYPE MISMATCH.
      
 
 CSNG(x) function
@@ -3201,7 +3202,11 @@ SCREEN [mode] [, [switch] [, [apage] [, vpage] ] ]
 ----------------
 Change the screen resolution mode. The modes are described at the start of this
 document.
-
+'mode' is a number-valued expression that sets the screen mode.
+'apage' is a number-valued expression that sets the active page.
+'vpage' is a number-valued expression that sets the visible page.
+'switch' is a number-valued expression; if the switch setting changes between 
+zero and non-zero, the screen is cleared.
 NOTE:
 -   At least one parameter must be specified.
 ERRORS:
@@ -3212,6 +3217,65 @@ ERRORS:
 -   If 'vpage', 'apage' are not between 0 and the number of pages for the 
     screen chosen, less one, raises ILLEGAL FUNCION CALL.
 -   If 'switch' is not in [0,255], raises ILLEGAL FUNCTION CALL.
+
+
+SGN function
+sign = SGN(number)
+------------
+Returns the sign of 'number'. 'number' is a number-valued expression.
+If 'number' is greater than zero, returns 1; 
+if 'number' equals zero, returns 0;
+if 'number' is less than zero, returns -1.
+ERRORS:
+-   If 'number' has a string value, raises TYPE MISMATCH.
+
+
+SHELL statement
+SHELL [command]
+---------------
+Starts a subshell on the console.   
+The type of shell is determined by your OS> On Unix systems, an sh shell is 
+started. On Windows systems, a CMD.EXE shell is started. 
+'command' is a string-valued expression.
+If 'command' is specified, the command is executed on the shell and execution
+returns to the program.
+ERRORS:
+-   If 'command' has a number value, raises TYPE MISMATCH.
+-   All output including errors from the operating system subshell is displayed
+    on the PC-BASIC 3.23 screen.
+
+
+SIN function
+sine = SIN(angle)
+------------
+Returns the sine of 'angle'. 'angle' is a numeric-valued expression that gives 
+the angle in radians. 
+Unless BASIC is run with the --double option, SIN(x) returns a single-precision
+value.
+NOTES:
+-   SIN(x) usually differs from the value returned by GW-BASIC. For one-digit 
+    values, the difference is only in the least significant figure, but it
+    increases with the size of the angle.
+ERRORS:
+-   If 'x' has a string value, SIN raises TYPE MISMATCH.
+     
+
+SOUND statement
+SOUND frequency, duration
+---------------
+Produces a sound at 'frequency' Hz for 'duration'/18.2 seconds.
+'frequency' is a number-valued expression in [32, 32767].
+'duration' is a number-valued expression in [0, 65535].
+If music is set to foreground (default) in the PLAY statement, the statement
+blocks until the sound has veen played. If music is set to background, the
+execution returns while the sound plays in the background.
+NOTES:
+-   If 'duration' is zero, any active sound is stopped.
+-   If 'frequency' equals 32767, a silent pause is played.
+ERRORS:
+-   If 'frequency' is not in [-32768, 32767], raises ILLEGAL FUNCTION CALL.
+-   If 'duration' is not in [-65535, 65535], raises ILLEGAL FUNCTION CALL.
+
 
 
 UNLOCK statement
