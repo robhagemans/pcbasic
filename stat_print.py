@@ -14,6 +14,7 @@ from cStringIO import StringIO
 import error
 import events
 import fp
+import representation
 import vartypes
 import var
 import util
@@ -304,7 +305,7 @@ def exec_print_using(ins, screen):
                 if number_field:
                     if not data_ends:
                         num = vartypes.pass_float_keep(expressions.parse_expression(ins))
-                        screen.write(fp.format_number(num, number_field, digits_before, decimals))
+                        screen.write(representation.format_number(num, number_field, digits_before, decimals))
                 else:
                     screen.write(fors.read(1))       
             if string_field or number_field:

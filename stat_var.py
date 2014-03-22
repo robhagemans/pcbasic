@@ -13,6 +13,7 @@ from cStringIO import StringIO
 
 import error
 import fp
+import representation
 import vartypes
 import var
 import rnd
@@ -346,7 +347,7 @@ def str_to_type(word, type_char):
         return vartypes.pack_string(bytearray(word))
     else:
         try:
-            return fp.pack(fp.from_str(word, False))
+            return fp.pack(representation.from_str(word, False))
         except AttributeError:
             return None
 #####
