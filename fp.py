@@ -32,9 +32,27 @@ import error
 # the exponent is biased by 128
 true_bias = 128
 
+######################################    
+
 overflow = False
 zero_div = False
 
+def msg_overflow():
+    global overflow
+    if overflow:
+        return
+    overflow = True    
+    error.math_error(6)
+
+def msg_zero_div():
+    global zero_div
+    if zero_div:
+        return
+    zero_div = True
+    error.math_error(11)
+
+
+####################################
 
 class Float(object):
     def __init__(self, neg=False, man=0, exp=0):
@@ -345,10 +363,25 @@ class Float(object):
         fexp = math.log(abs(value), 2) - cls.mantissa_bits
         man = int(abs(value) * 0.5**int(fexp-8))
         exp = int(fexp) + cls.bias
-#        man <<= 8
         return cls(neg, man, exp).normalise()
 
-########################
+        
+class Single(Float):
+    digits = 7
+    mantissa_bits = 24
+    byte_size = 4
+    bias = true_bias + mantissa_bits
+    carry_mask = 0xffffff00
+
+    
+class Double(Float):
+    digits = 16
+    mantissa_bits = 56
+    byte_size = 8
+    bias = true_bias + mantissa_bits
+    carry_mask = 0xffffffffffffff00    
+
+####################################
 
 def from_bytes(s):
     if len(s) == 4:   
@@ -369,7 +402,9 @@ def pack(n):
     elif len(s) == 4:
         return ('!', s)
 
+
 ####################################
+# standalone arithmetic operators
 
 def add(left_in, right_in):
     return left_in.copy().iadd(right_in)
@@ -390,63 +425,9 @@ def pow_int(left_in, right_in):
     return left_in.copy().ipow_int(right_in)
     
 ####################################
-        
-class Single(Float):
-    digits = 7
-    mantissa_bits = 24
-    byte_size = 4
-    bias = true_bias + mantissa_bits
-    carry_mask = 0xffffff00
-    
-Single.zero    = from_bytes(bytearray('\x00\x00\x00\x00'))
-Single.half    = from_bytes(bytearray('\x00\x00\x00\x80'))
-Single.one     = from_bytes(bytearray('\x00\x00\x00\x81'))
-Single.two     = from_bytes(bytearray('\x00\x00\x00\x82'))
-Single.ten     = from_bytes(bytearray('\x00\x00\x20\x84'))
-Single.max     = from_bytes(bytearray('\xff\xff\x7f\xff'))
-Single.e       = from_bytes(bytearray('\x54\xf8\x2d\x82'))
-Single.pi      = from_bytes(bytearray('\xdb\x0f\x49\x82'))
-Single.log2    = from_bytes(bytearray('\x16\x72\x31\x80'))    # ln 2
-Single.twopi   = mul(Single.pi, Single.two) 
-Single.pi2     = mul(Single.pi, Single.half)
-Single.pi4     = mul(Single.pi2, Single.half)
+# math function       
 
-Single.taylor = [
-    Single.one,                      # 1/0!
-    Single.one,                      # 1/1!
-    Single.half,                     # 1/2
-    from_bytes(bytearray('\xab\xaa\x2a\x7e')),  # 1/6
-    from_bytes(bytearray('\xab\xaa\x2a\x7c')),  # 1/24
-    from_bytes(bytearray('\x89\x88\x08\x7a')),  # 1/120
-    from_bytes(bytearray('\x61\x0b\x36\x77')),  # 1/720
-    from_bytes(bytearray('\x01\x0D\x50\x74')),  # 1/5040
-    from_bytes(bytearray('\x01\x0D\x50\x71')),  # 1/40320
-    from_bytes(bytearray('\x1d\xef\x38\x6e')),  # 1/362880
-    from_bytes(bytearray('\x7e\xf2\x13\x6b')),  # 1/3628800
-    from_bytes(bytearray('\x2b\x32\x57\x67')),  # 1/39916800
-    ]
-
-class Double(Float):
-    digits = 16
-    mantissa_bits = 56
-    byte_size = 8
-    bias = true_bias + mantissa_bits
-    carry_mask = 0xffffffffffffff00    
-
-Double.zero = from_bytes(bytearray('\x00\x00\x00\x00\x00\x00\x00\x00'))
-Double.half = from_bytes(bytearray('\x00\x00\x00\x00\x00\x00\x00\x80'))
-Double.one  = from_bytes(bytearray('\x00\x00\x00\x00\x00\x00\x00\x81'))
-Double.two  = from_bytes(bytearray('\x00\x00\x00\x00\x00\x00\x00\x82'))
-Double.ten  = from_bytes(bytearray('\x00\x00\x00\x00\x00\x00\x20\x84'))
-Double.max  = from_bytes(bytearray('\xff\xff\xff\xff\xff\xff\x7f\xff'))
-Double.e    = from_bytes(bytearray('\x4b\xbb\xa2\x58\x54\xf8\x2d\x82'))
-Double.pi   = from_bytes(bytearray('\xc2\x68\x21\xa2\xda\x0f\x49\x82'))
-
-##########################################
-# math        
-
-# convert to IEEE, do library math operations, convert back
-
+# convert to IEEE 754, do library math operations, convert back
 def power(base_in, exp_in):
     try:
         return base_in.__class__().from_value(base_in.to_value() ** exp_in.to_value())    
@@ -469,20 +450,33 @@ tan  = partial(unary, fn=math.tan )
 atn  = partial(unary, fn=math.atan)
 log  = partial(unary, fn=math.log )
 
+####################################
+# constants
+    
+Single.zero     = from_bytes(bytearray('\x00\x00\x00\x00'))
+Single.half     = from_bytes(bytearray('\x00\x00\x00\x80'))
+Single.one      = from_bytes(bytearray('\x00\x00\x00\x81'))
+Single.two      = from_bytes(bytearray('\x00\x00\x00\x82'))
+Single.ten      = from_bytes(bytearray('\x00\x00\x20\x84'))
+Single.max      = from_bytes(bytearray('\xff\xff\x7f\xff'))
+Single.e        = from_bytes(bytearray('\x54\xf8\x2d\x82'))
+Single.pi       = from_bytes(bytearray('\xdb\x0f\x49\x82'))
+Single.log2     = from_bytes(bytearray('\x16\x72\x31\x80'))    # rounding not correct but extracted from GW-BASIC
+Single.twopi    = mul(Single.pi, Single.two) 
+Single.pi2      = mul(Single.pi, Single.half)
+Single.pi4      = mul(Single.pi2, Single.half)
 
-######################################    
-
-def msg_overflow():
-    global overflow
-    if overflow:
-        return
-    overflow = True    
-    error.math_error(6)
-
-def msg_zero_div():
-    global zero_div
-    if zero_div:
-        return
-    zero_div = True
-    error.math_error(11)
+Double.zero     = from_bytes(bytearray('\x00\x00\x00\x00\x00\x00\x00\x00'))
+Double.half     = from_bytes(bytearray('\x00\x00\x00\x00\x00\x00\x00\x80'))
+Double.one      = from_bytes(bytearray('\x00\x00\x00\x00\x00\x00\x00\x81'))
+Double.two      = from_bytes(bytearray('\x00\x00\x00\x00\x00\x00\x00\x82'))
+Double.ten      = from_bytes(bytearray('\x00\x00\x00\x00\x00\x00\x20\x84'))
+Double.max      = from_bytes(bytearray('\xff\xff\xff\xff\xff\xff\x7f\xff'))
+Double.e        = from_bytes(bytearray('\x4b\xbb\xa2\x58\x54\xf8\x2d\x82'))
+Double.pi       = from_bytes(bytearray('\xc2\x68\x21\xa2\xda\x0f\x49\x82'))
+Double.log2     = from_bytes(bytearray('\x7a\xcf\xd1\xf7\x17\x72\x31\x80'))
+Double.twopi    = mul(Double.pi, Double.two) 
+Double.pi2      = mul(Double.pi, Double.half)
+Double.pi4      = mul(Double.pi2, Double.half)
+    
 

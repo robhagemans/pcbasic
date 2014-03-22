@@ -9,6 +9,22 @@
 # please see text file COPYING for licence terms.
 
 import fp
+from fp import Single, from_bytes, mul, div, pow_int, sub, add
+
+Single.taylor = [
+    Single.one,                      # 1/0!
+    Single.one,                      # 1/1!
+    Single.half,                     # 1/2
+    from_bytes(bytearray('\xab\xaa\x2a\x7e')),  # 1/6
+    from_bytes(bytearray('\xab\xaa\x2a\x7c')),  # 1/24
+    from_bytes(bytearray('\x89\x88\x08\x7a')),  # 1/120
+    from_bytes(bytearray('\x61\x0b\x36\x77')),  # 1/720
+    from_bytes(bytearray('\x01\x0D\x50\x74')),  # 1/5040
+    from_bytes(bytearray('\x01\x0D\x50\x71')),  # 1/40320
+    from_bytes(bytearray('\x1d\xef\x38\x6e')),  # 1/362880
+    from_bytes(bytearray('\x7e\xf2\x13\x6b')),  # 1/3628800
+    from_bytes(bytearray('\x2b\x32\x57\x67')),  # 1/39916800
+    ]
 
 ### experimental MBF math functions (finding BASIC's algorithms)        
         
@@ -22,7 +38,7 @@ def _power(base_in, exp_in):
     elif exp.neg:
         # y^-x = 1/(y^x)
         exp.neg = False
-        return div(base.one, power(base, exp))
+        return div(base.one, _power(base, exp))
     else:   
         shift = exp.exp - fp.true_bias - 1
         exp.exp = fp.true_bias+1
@@ -113,7 +129,7 @@ def _sin(n_in):
         n.iadd(n.pi)    
     if n.gt(n.pi4):
         n.isub(n.pi2)
-        sin_out = cos(n)    
+        sin_out = _cos(n)    
     else:
         termsgn = False
         for expt in range(1,12,2):
@@ -143,7 +159,7 @@ def _cos(n_in):
     if n.gt(n.pi4):
         neg = not neg
         n.isub(n.pi2)
-        cos_out = sin(n)    
+        cos_out = _sin(n)    
     else:
         termsgn = True
         for expt in range(2,11,2):
@@ -155,7 +171,7 @@ def _cos(n_in):
     return cos_out
 
 def _tan(n_in):
-    return div(sin(n_in), cos(n_in))
+    return div(_sin(n_in), _cos(n_in))
 
 # atn and log, don't know what algorithm MS use.
 
@@ -167,7 +183,7 @@ def _atn(n_in):
         return n_in.pi4.copy()
     if n_in.gt(n_in.one):
         # atn (1/x) = pi/2 - atn(x) 
-        return sub(n_in.pi2, atn(div(n_in.one, n_in)))
+        return sub(n_in.pi2, _atn(div(n_in.one, n_in)))
     if n_in.neg:
         n = n_in.copy()
         n.neg = False
@@ -179,7 +195,7 @@ def _atn(n_in):
     last = n_in.pi4.copy()
     tan_last = n_in.one.copy()
     guess = mul(n_in.pi4, n_in)
-    tan_out = tan(guess)    
+    tan_out = _tan(guess)    
     count = 0 
     while (guess.exp != last.exp or abs(guess.man-last.man) > 0x100) and count<30:
         count+=1
@@ -187,7 +203,7 @@ def _atn(n_in):
         last.neg, last.man, last.exp = guess.neg, guess.man, guess.exp
         tan_last.neg, tan_last.man, tan_last.exp = tan_out.neg, tan_out.man, tan_out.exp
         guess.iadd(offset)
-        tan_out = tan(guess)
+        tan_out = _tan(guess)
     return guess
 
 # natural logarithm
@@ -200,7 +216,7 @@ def _log(n_in):
         raise error.RunError(5)
     if n_in.gt(n_in.one):
         # log (1/x) = -log(x)
-        n = log(div(n_in.one, n_in).apply_carry())
+        n = _log(div(n_in.one, n_in).apply_carry())
         n.neg = not n.neg
         return n
     # if n = a*2^b, log(n) = log(a) + b*log(2)
@@ -219,8 +235,8 @@ def _log(n_in):
     lo.neg = True 
     last = hi
     guess = lo
-    f_last = exp(last)
-    f_guess = exp(guess)
+    f_last = _exp(last)
+    f_guess = _exp(guess)
     count = 0 
     while not guess.equals(last) and not f_guess.equals(f_last) and count<30:
         count += 1
@@ -228,7 +244,7 @@ def _log(n_in):
         last.neg, last.man, last.exp = guess.neg, guess.man, guess.exp
         f_last.neg, f_last.man, f_last.exp = f_guess.neg, f_guess.man, f_guess.exp
         guess.iadd(offset)
-        f_guess = exp(guess)
+        f_guess = _exp(guess)
     loge.iadd(guess)
     loge.apply_carry()
     return loge 
