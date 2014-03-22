@@ -108,12 +108,12 @@ class RunError(Error):
         self.msg = get_message(value)
 
     def handle(self):
-        global errm, erl, error_resume, error_handle_mode
+        global errn, erl, error_resume, error_handle_mode
         program.prompt = True  
         errline = self.erl if not program.run_mode or self.erl != -1 else program.linenum     
         # set ERR and ERL
         errn = self.err
-        erl = errline if errline and errline > -1 and errline < 65535 else 65536
+        erl = errline if errline and errline > -1 and errline < 65535 else 65535
         # don't jump if we're already busy handling an error
         if on_error != None and on_error != 0 and not error_handle_mode:
             error_resume = program.current_statement, program.current_codestream, program.run_mode
@@ -127,15 +127,20 @@ class RunError(Error):
             write_error_message(self.msg, errline)   
             error_handle_mode = False
             program.set_runmode(False)
-            # for syntax error, line edit gadget appears
-            if self.err == 2 and errline != -1:
-                console.start_line()
-                console.write("Ok \r\n")
-                textpos = program.edit_line(errline, program.bytecode.tell())
-            # for some reason, err is reset to zero by GW-BASIC in this case.
+            # special case
             if self.err == 2:
-                errn = 0
+                handle_syntax_error(errline)
             return False    
+
+def handle_syntax_error(errline):
+    global errn
+    # for syntax error, line edit gadget appears
+    if errline != -1:
+        console.start_line()
+        console.write("Ok \r\n")
+        textpos = program.edit_line(errline, program.bytecode.tell())
+    # for some reason, err is reset to zero by GW-BASIC in this case.
+    errn = 0
 
 def get_message(errnum):
     try:
@@ -150,4 +155,14 @@ def write_error_message(msg, linenum):
     if linenum != None and linenum > -1 and linenum < 65535:
         console.write(' in %i' % linenum)
     console.write(' \r\n')                  
+
+# math errors only break execution if handler is set
+def math_error(errnum):
+    if on_error: 
+        # also raises exception in error_handle_mode! in that case, prints a normal error message
+        raise(RunError(errnum))
+    else:
+        # write a message & continue as normal
+        # start_line() ?
+        console.write(get_message(errnum) + '\r\n') # no space, no line number
 

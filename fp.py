@@ -29,9 +29,6 @@ from functools import partial
 
 import error
 
-# this is where in-calculation error messages (Overflow, Division by Zero) go
-error_console = None
-
 # the exponent is biased by 128
 true_bias = 128
 
@@ -700,16 +697,17 @@ def _log(n_in):
 
 def msg_overflow():
     global overflow
-    if error_console==None or overflow:
+    if overflow:
         return
     overflow = True    
-    error_console.write(error.get_message(6) + '\r\n')
+    error.math_error(6)
 
 def msg_zero_div():
     global zero_div
-    if error_console==None or zero_div:
+    if zero_div:
         return
-    error_console.write(error.get_message(11) + '\r\n')
+    zero_div = True
+    error.math_error(11)
 
 ################################
 
