@@ -801,9 +801,9 @@ def fast_put(x0, y0, varname, operation_char):
 music_foreground = True
 sound_queue = []
 
-
 def music_queue_length():
-    return len(sound_queue) + (pygame.mixer.get_init() != None and pygame.mixer.Channel(0).get_queue() != None)      
+    # top of sound_queue is currently playing
+    return max(0, len(sound_queue)-1)
     
 def init_sound():
     return numpy != None
@@ -812,52 +812,70 @@ def beep():
     play_sound(800, 0.25)
 
 def stop_all_sound():
+    global sound_queue
     pygame.mixer.quit()
+    sound_queue = []
     
 # process sound queue in event loop
 def check_sound():
-    if len(sound_queue) > 0:
+    if not sound_queue:
+        check_quit_sound()
+    else:    
         check_init_mixer()
         if pygame.mixer.Channel(0).get_queue() == None:
-            pygame.mixer.Channel(0).queue(sound_queue.pop(0))
-    else:
-        check_quit_sound()
+            current_list = sound_queue[0]
+            if not current_list:
+                sound_queue.pop(0)
+                try:
+                    current_list = sound_queue[0]
+                except IndexError:
+                    check_quit_sound()
+                    return
+            pygame.mixer.Channel(0).queue(current_list.pop(0))
         
 def wait_music(wait_length=0, wait_last=True):
     while music_queue_length() > wait_length or (wait_last and music_queue_length()==0 and pygame.mixer.get_busy()):
         idle()
         console.check_events()
         
-def play_sound(frequency, duration):
+def play_sound(frequency, total_duration, fill=1):
     check_init_mixer()
+    # one wavelength at 37 Hz is 1192 samples at 44100 Hz
+    chunk_length = 1192*2
+    # actual duration and gap length
+    duration, gap = fill * total_duration, (1-fill) * total_duration
+    print frequency, duration, gap
     if frequency == 0 or frequency == 32767:
-        # pause
-        buf = numpy.zeros(duration*mixer_samplerate/4)
-        # at most 16 notes in the sound queue (not 32 as the guide says!)
-        wait_music(15)
-        sound_queue.append(pygame.sndarray.make_sound(buf))
-    else:    
+        chunk = numpy.zeros(chunk_length)
+    else:
         amplitude = 2**(mixer_bits - 1) - 1
         # not clear why 8*freq instead of 2* ?
         numf = mixer_samplerate/(8*frequency)
         num = int(numf)
         rest = 0
+        # basic wave
         wave0 = numpy.ones(num, numpy.int16) * amplitude
         wave1 = -wave0
-        wave2 = numpy.ones(num+1, numpy.int16) * amplitude    
-        wave3 = -wave2
-        # not clear why sample rate /4 ?
-        buf = numpy.array([])
-        while len(buf) < duration*mixer_samplerate/4:
-            rest += (numf-num)
-            if int(rest)>0:
-                buf = numpy.concatenate((buf, wave0, wave1))
-            else:
-                buf = numpy.concatenate((buf, wave2, wave3))
-            rest -= int(rest)
-        # at most 16 notes in the sound queue (not 32 as the guide says!)
-        wait_music(15)
-        sound_queue.append(pygame.sndarray.make_sound(buf))
+        # build chunk
+        chunk = numpy.array([])
+        while len(chunk) < chunk_length:
+            chunk = numpy.concatenate((chunk, wave0, wave1))
+        chunk_length = len(chunk)    
+    # make the last chunk longer than a normal chunk rather than shorter, to avoid jumping sound    
+    floor_num_chunks = max(0, -1 + int((duration*mixer_samplerate)/(4*chunk_length)))
+    sound_list = [] if floor_num_chunks == 0 else [ pygame.sndarray.make_sound(chunk) ]*floor_num_chunks
+    rest_length = int((duration*mixer_samplerate)/4) - chunk_length*floor_num_chunks
+    # create the sound queue entry
+    sound_list.append(pygame.sndarray.make_sound(chunk[:rest_length]))
+    # append quiet gap if requested
+    if gap:
+        gap_length = (gap*mixer_samplerate)/4
+        chunk = numpy.zeros(gap_length)
+        sound_list.append(pygame.sndarray.make_sound(chunk))
+    # at most 16 notes in the sound queue (not 32 as the guide says!)
+    wait_music(15)
+    print rest_length, sound_list
+    sound_queue.append(sound_list)
 
 # implementation
 
@@ -866,7 +884,7 @@ mixer_samplerate = 44100*4
 
 # quit sound server after quiet period of quiet_quit ticks, to avoid high-ish cpu load from the sound server.
 quiet_ticks = 0        
-quiet_quit = 100
+quiet_quit = 200
 
 try:
     import numpy
