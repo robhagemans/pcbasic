@@ -3291,27 +3291,73 @@ ERRORS:
 
 
 SPACE$ function
+spaces = SPACE$(number)
+---------------
+Returns a string of 'number' spaces.
+'number' is a number-valued expression in [0, 255].
+ERRORS:
+-   If 'number' is a string, raises TYPE MISMATCH
+-   If 'number' is not in [0,255], raises ILLEGAL FUNCTION CALL.
+-   If 'number' is not in [-32768,32767], raises OVERFLOW.
 
 
 SQR function
+root = SQR(number)
+------------
+Returns the square root of 'number'. 
+'number' is a number-valued expression.
+The return value is a single-precision float unless PC-BASIC 3.23 is run with
+the --double option, in which case the precision matches that of 'number'.
+ERRORS:
+-   If 'number' is a string, raises TYPE MISMATCH
 
 
 STICK function
+pos = STICK(axis)
+--------------
+Returns the value of a joystick axis. 
+'axis' is a number-valued expression in [0,3] and indicates which axis to read.
+'axis'  return value
+    0   1st joystick x coordinate
+    1   1st joystick y coordinate
+    2   2nd joystick x coordinate
+    3   2nd joystick y coordinate
+ERRORS:
+-   If 'axis' is a string, raises TYPE MISMATCH
+-   If 'axis' is not in [0,3], raises ILLEGAL FUNCTION CALL.
+-   If 'axis' is not in [-32768,32767], raises OVERFLOW.
 
 
 STOP statement
+STOP
+--------------
+Breaks program execution and returns to interactive mode. STOP prints a Break 
+message on the console. Files are not closed. It is possible to resume 
+execution at the next statement using CONT.
 
 
 STR$ function
+repr = STR$(number)
+-------------
+Returns the string representation of 'number'.
+'number' is a number-valued expression.
+ERRORS:
+-   If 'number' is a string, raises TYPE MISMATCH.
 
 
-STRIG statement
+STRIG statement (overall)
+STRIG { ON | OFF }
+---------------
 
 
 STRIG statement (events)
+STRIG(button) { ON | OFF | STOP }
+---------------
 
 
 STRIG function
+result = STRIG(fn)
+--------------
 
 
 STRING$ function
