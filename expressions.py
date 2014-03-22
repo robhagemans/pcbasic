@@ -326,7 +326,7 @@ def value_str(ins):
     return representation.value_to_str_keep(s, screen=True)
         
 def value_val(ins):  
-    val = tokenise.str_to_value_keep(parse_bracket(ins))
+    val = representation.str_to_value_keep(parse_bracket(ins))
     return val if val else vartypes.null['%']
 
 def value_chr(ins):            

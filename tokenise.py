@@ -29,6 +29,10 @@ import representation
 import util
 import vartypes
 
+from representation import ascii_digits
+# newline is considered whitespace
+tokenise_whitespace = list(representation.whitespace) #[' ', '\t', '\x0a']
+
 debug = False
 tokens_number = ['\x0b','\x0c','\x0f',
     '\x11','\x12','\x13','\x14','\x15','\x16','\x17','\x18','\x19','\x1a','\x1b',
@@ -37,16 +41,11 @@ tokens_linenum = ['\x0d','\x0e' ]
 tokens_operator = map(chr, range(0xe6, 0xed+1))
 tokens_with_bracket = ['\xd2', '\xce']
 
-# newline is considered whitespace
-tokenise_whitespace = [' ', '\t', '\x0a']
 tokenise_endfile = ['', '\x1a']
 tokenise_endline_nonnul =  tokenise_endfile + ['\x0d']
 tokenise_endline = tokenise_endline_nonnul + ['\x00'] # after NUL everything is ignored untile EOL 
 tokenise_endstatement = tokenise_endline + [':']
 
-ascii_octits = ['0','1','2','3','4','5','6','7']
-ascii_digits = ascii_octits + ['8','9']
-ascii_hexits = ascii_digits + ['A','B','C','D','E','F']
 ascii_operators = ['+', '-', '=', '/', '\\', '^', '*', '<', '>']        
 ascii_uppercase = map(chr, range(ord('A'),ord('Z')+1))        
 
@@ -60,26 +59,20 @@ linenum_words = [
     'DELETE', 'RUN', 'RESUME', 'AUTO', 
     'ERL', 'RESTORE', 'RETURN']
 
-
-##########################################
-
-def str_to_value_keep(strval):
-    if strval==('$',''):
-        return vartypes.null['%']
-    strval = vartypes.pass_string_unpack(strval)
-    ins = StringIO(strval)
-    outs = StringIO()
-    tokenise_number(ins, outs)    
-    outs.seek(0)
-    value = util.parse_value(outs)
-    ins.close()
-    outs.close()
-    return value
-
-
 #################################################################
-
 # Detokenise functions
+
+def ascii_read_to(ins, findrange):
+    out = ''
+    while True:
+        d = ins.read(1)
+        if d == '':
+            break
+        if d in findrange:
+            break
+        out += d
+    ins.seek(-len(d),1)    
+    return out
 
 def detokenise(ins, outs, from_line=None, to_line=None, bytepos=None):
     if from_line == None:   from_line = -1
@@ -103,7 +96,6 @@ def detokenise(ins, outs, from_line=None, to_line=None, bytepos=None):
             # write one extra whitespace character after line number
             outs.write(str(representation.int_to_str(current_line) + ' ' + output + '\r\n')) 
     return textpos + len(representation.int_to_str(current_line) + ' ')
-    
 
 def detokenise_line(bytes, bytepos=None):
     output = bytearray()
@@ -124,7 +116,7 @@ def detokenise_line(bytes, bytepos=None):
             litstring = not litstring  
         elif s in tokens_number:
             bytes.seek(-1,1)
-            detokenise_number(bytes, output)
+            representation.detokenise_number(bytes, output)
         elif s in tokens_linenum: 
             # 0D: line pointer (unsigned int) - this token should not be here; interpret as line number and carry on
             # 0E: line number (unsigned int)
@@ -135,43 +127,6 @@ def detokenise_line(bytes, bytepos=None):
             bytes.seek(-1,1)
             comment = detokenise_keyword(bytes, output)
     return output, textpos
-
-
-# token to string
-def detokenise_number(bytes, output):
-    s = bytes.read(1)
-    if s == '\x0b':                           # 0B: octal constant (unsigned int)
-        output += representation.oct_to_str(bytearray(bytes.read(2)))
-    elif s == '\x0c':                           # 0C: hex constant (unsigned int)
-        output += representation.hex_to_str(bytearray(bytes.read(2)))
-    elif s == '\x0f':                           # 0F: one byte constant
-        output += representation.ubyte_to_str(bytearray(bytes.read(1)))
-    elif s >= '\x11' and s < '\x1b':            # 11-1B: constants 0 to 10
-        output += chr(ord('0') + ord(s) - 0x11)
-    elif s == '\x1b':               
-        output += '10'
-    elif s == '\x1c':                           # 1C: two byte signed int
-        output += representation.sint_to_str(bytearray(bytes.read(2)))
-    elif s == '\x1d':                           # 1D: four-byte single-precision floating point constant
-        output += representation.float_to_str(fp.Single.from_bytes(bytearray(bytes.read(4))), screen=False, write=False)
-    elif s == '\x1f':                           # 1F: eight byte double-precision floating point constant
-        output += representation.float_to_str(fp.Double.from_bytes(bytearray(bytes.read(8))), screen=False, write=False)
-    else:
-        bytes.seek(-len(s),1)  
-    
-    
-def ascii_read_to(ins, findrange):
-    out = ''
-    while True:
-        d = ins.read(1)
-        if d == '':
-            break
-        if d in findrange:
-            break
-        out += d
-    ins.seek(-len(d),1)    
-    return out
-    
 
 # de tokenise one- or two-byte tokens
 # output must be mutable
@@ -232,9 +187,6 @@ def detokenise_keyword(bytes, output):
     return comment
     
 #################################################################
-#################################################################
-#################################################################
-
 # Tokenise functions
 
 def tokenise_stream(ins, outs, one_line=False, onfile=True):
@@ -315,7 +267,7 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
             # note we don't include leading signs, they're encoded as unary operators
             # number starting with . or & are always parsed
             elif c in ('&', '.') or (expect_number and not number_is_line and c in ascii_digits):
-                tokenise_number(ins, outs)
+                representation.tokenise_number(ins, outs)
             # operator keywords ('+', '-', '=', '/', '\\', '^', '*', '<', '>'):    
             elif c in ascii_operators: 
                 ins.read(1)
@@ -368,7 +320,6 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
                 number_is_line = False
                 expect_number = False
                 outs.write(c)
-
 
 def tokenise_line_number(ins, outs, onfile):
     linenum = tokenise_uint(ins)
@@ -427,99 +378,6 @@ def tokenise_uint(ins):
     else:
         return ''    
 
-
-# string to token             
-def tokenise_number(ins, outs):
-    c = util.peek(ins)
-    # handle hex or oct constants
-    if c == '&':
-        ins.read(1)
-        nxt = util.peek(ins).upper()
-        if nxt == 'H': # hex constant
-            ins.read(1)
-            word = ''
-            while True: 
-                if not util.peek(ins).upper() in ascii_hexits:
-                    break
-                else:
-                    word += ins.read(1).upper()
-            outs.write('\x0C' + str(vartypes.value_to_uint(int(word,16))))
-        else: # nxt == 'O': # octal constant
-            if nxt == 'O':
-                ins.read(1)
-            word = ''    
-            while True: 
-                if not util.peek(ins).upper() in ascii_octits:
-                    break
-                else:
-                    word += ins.read(1).upper()
-            outs.write('\x0B' + str(vartypes.value_to_uint(int(word,8))))
-    # handle other numbers
-    # note GW passes signs separately as a token and only stores positive numbers in the program        
-    elif (c in ascii_digits or c=='.' or c in ('+','-')):
-        have_exp = False
-        have_point = False
-        word = ''
-        while True: 
-            c = ins.read(1).upper()
-            if c == '.' and not have_point and not have_exp:
-                have_point = True
-                word += c
-            elif c in ('E', 'D') and not have_exp:    
-                have_exp = True
-                word += c
-            elif c in ('-','+') and word=='':
-                # must be first token
-                word += c              
-            elif c in ('+', '-') and word[-1] in ('E', 'D'):
-                word += c
-            elif c in ascii_digits: # (c >='0' and numc <='9'):
-                word += c
-            elif c in tokenise_whitespace:
-                # we'll remove this later but need to keep it for now so we can reposition the stream on removing trainling whitespace 
-                word += c
-            elif c in ('!', '#') and not have_exp:
-                word += c
-                break
-            else:
-                if c != '':
-                    ins.seek(-1,1)
-                break
-        # don't claim trailing whitespace, don't end in D or E            
-        while len(word)>0 and (word[-1] in tokenise_whitespace + ['D', 'E']):
-            if word[-1] in ('D', 'E'):
-                have_exp = False
-            word = word[:-1]
-            ins.seek(-1,1) # even if c==''
-        # remove all internal whitespace
-        trimword = ''
-        for c in word:
-            if c not in tokenise_whitespace:
-                trimword += c
-        word = trimword
-        # write out the numbers
-        if len(word) == 1 and word in ascii_digits:
-            # digit
-            outs.write(chr(0x11+int(word)))
-        elif not (have_exp or have_point or word[-1] in ('!', '#')) and int(word) <= 0x7fff and int(word) >= -0x8000:
-            if int(word) <= 0xff and int(word)>=0:
-                # one-byte constant
-                outs.write('\x0f'+chr(int(word)))
-            else:
-                # two-byte constant
-                outs.write('\x1c'+str(vartypes.value_to_sint(int(word))))
-        else:
-            mbf = str(representation.from_str(word).to_bytes())
-            if len(mbf) == 4:
-                # single
-                outs.write('\x1d'+mbf)
-            else:    
-                # double
-                outs.write('\x1f'+mbf)
-    elif c!='':
-            ins.seek(-1,1)
-            
-    
 def tokenise_word(ins, outs):
     word = ''
     while True: 

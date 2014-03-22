@@ -15,7 +15,16 @@ from fp import from_bytes, unpack
 from fp import mul, div, pow_int
 import vartypes
 
+# whitespace for INPUT#, INPUT
+# TAB x09 is not whitespace for input#. NUL \x00 and LF \x0a are. 
+ascii_white = (' ', '\x00', '\x0a')
 
+
+ascii_octits = ['0','1','2','3','4','5','6','7']
+ascii_digits = ascii_octits + ['8','9']
+ascii_hexits = ascii_digits + ['A','B','C','D','E','F']
+
+    
 # BASIC number to BASIC string
 # screen=False means in a program listing
 # screen=True is used for screen, str$ and sequential files
@@ -64,14 +73,15 @@ def oct_to_str(s):
     return "&O" + oct(vartypes.uint_to_value(s))[1:]
     
 
+
 # floating point to string
 
 # for to_str
 # for numbers, tab and LF are whitespace    
 whitespace = (' ', '\x09', '\x0a')
+#tokenise_whitespace = [' ', '\t', '\x0a']
 # these seem to lead to a zero outcome all the time
 kill_char = ('\x1c', '\x1d', '\x1f')
-
 
 # string representations
 
@@ -463,10 +473,6 @@ def get_number_tokens(fors):
 ########################################
 ####
 
-# whitespace for INPUT#, INPUT
-# TAB x09 is not whitespace for input#. NUL \x00 and LF \x0a are. 
-ascii_white = (' ', '\x00', '\x0a')
-
 
 def input_vars_file(readvar, text_file):
     for v in readvar:
@@ -556,4 +562,136 @@ def str_to_type(word, type_char):
             return fp.pack(from_str(word, False))
         except AttributeError:
             return None
-#####        
+#####      
+
+# string to token             
+def tokenise_number(ins, outs):
+    c = util.peek(ins)
+    # handle hex or oct constants
+    if c == '&':
+        ins.read(1)
+        nxt = util.peek(ins).upper()
+        if nxt == 'H': # hex constant
+            ins.read(1)
+            word = ''
+            while True: 
+                if not util.peek(ins).upper() in ascii_hexits:
+                    break
+                else:
+                    word += ins.read(1).upper()
+            outs.write('\x0C' + str(vartypes.value_to_uint(int(word,16))))
+        else: # nxt == 'O': # octal constant
+            if nxt == 'O':
+                ins.read(1)
+            word = ''    
+            while True: 
+                if not util.peek(ins).upper() in ascii_octits:
+                    break
+                else:
+                    word += ins.read(1).upper()
+            outs.write('\x0B' + str(vartypes.value_to_uint(int(word,8))))
+    # handle other numbers
+    # note GW passes signs separately as a token and only stores positive numbers in the program        
+    elif (c in ascii_digits or c=='.' or c in ('+','-')):
+        have_exp = False
+        have_point = False
+        word = ''
+        while True: 
+            c = ins.read(1).upper()
+            if c == '.' and not have_point and not have_exp:
+                have_point = True
+                word += c
+            elif c in ('E', 'D') and not have_exp:    
+                have_exp = True
+                word += c
+            elif c in ('-','+') and word=='':
+                # must be first token
+                word += c              
+            elif c in ('+', '-') and word[-1] in ('E', 'D'):
+                word += c
+            elif c in ascii_digits: # (c >='0' and numc <='9'):
+                word += c
+            elif c in whitespace:
+                # we'll remove this later but need to keep it for now so we can reposition the stream on removing trainling whitespace 
+                word += c
+            elif c in ('!', '#') and not have_exp:
+                word += c
+                break
+            else:
+                if c != '':
+                    ins.seek(-1,1)
+                break
+        # don't claim trailing whitespace, don't end in D or E            
+        while len(word)>0 and (word[-1] in whitespace + ('D', 'E')):
+            if word[-1] in ('D', 'E'):
+                have_exp = False
+            word = word[:-1]
+            ins.seek(-1,1) # even if c==''
+        # remove all internal whitespace
+        trimword = ''
+        for c in word:
+            if c not in whitespace:
+                trimword += c
+        word = trimword
+        # write out the numbers
+        if len(word) == 1 and word in ascii_digits:
+            # digit
+            outs.write(chr(0x11+int(word)))
+        elif not (have_exp or have_point or word[-1] in ('!', '#')) and int(word) <= 0x7fff and int(word) >= -0x8000:
+            if int(word) <= 0xff and int(word)>=0:
+                # one-byte constant
+                outs.write('\x0f'+chr(int(word)))
+            else:
+                # two-byte constant
+                outs.write('\x1c'+str(vartypes.value_to_sint(int(word))))
+        else:
+            mbf = str(from_str(word).to_bytes())
+            if len(mbf) == 4:
+                # single
+                outs.write('\x1d'+mbf)
+            else:    
+                # double
+                outs.write('\x1f'+mbf)
+    elif c!='':
+            ins.seek(-1,1)
+            
+      
+##########################################
+
+def str_to_value_keep(strval):
+    if strval==('$',''):
+        return vartypes.null['%']
+    strval = vartypes.pass_string_unpack(strval)
+    ins = StringIO(strval)
+    outs = StringIO()
+    tokenise_number(ins, outs)    
+    outs.seek(0)
+    value = util.parse_value(outs)
+    ins.close()
+    outs.close()
+    return value
+
+
+# token to string
+def detokenise_number(bytes, output):
+    s = bytes.read(1)
+    if s == '\x0b':                           # 0B: octal constant (unsigned int)
+        output += oct_to_str(bytearray(bytes.read(2)))
+    elif s == '\x0c':                           # 0C: hex constant (unsigned int)
+        output += hex_to_str(bytearray(bytes.read(2)))
+    elif s == '\x0f':                           # 0F: one byte constant
+        output += ubyte_to_str(bytearray(bytes.read(1)))
+    elif s >= '\x11' and s < '\x1b':            # 11-1B: constants 0 to 10
+        output += chr(ord('0') + ord(s) - 0x11)
+    elif s == '\x1b':               
+        output += '10'
+    elif s == '\x1c':                           # 1C: two byte signed int
+        output += sint_to_str(bytearray(bytes.read(2)))
+    elif s == '\x1d':                           # 1D: four-byte single-precision floating point constant
+        output += float_to_str(fp.Single.from_bytes(bytearray(bytes.read(4))), screen=False, write=False)
+    elif s == '\x1f':                           # 1F: eight byte double-precision floating point constant
+        output += float_to_str(fp.Double.from_bytes(bytearray(bytes.read(8))), screen=False, write=False)
+    else:
+        bytes.seek(-len(s),1)  
+    
+

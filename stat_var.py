@@ -212,7 +212,7 @@ def exec_read(ins):
     # reading loop
     for v in parse_var_list(ins):
         # syntax error in DATA line (not type mismatch!) if can't convert to var type
-        num = str_to_type(program.read_entry(), v[0][-1])
+        num = representation.str_to_type(program.read_entry(), v[0][-1])
         if num == None: 
             raise error.RunError(2, program.data_line)
         var.set_var_or_array(*v, value=num)
@@ -331,7 +331,7 @@ def exec_randomize(ins):
     if not val:
         console.write("Random number seed (-32768 to 32767)? ")
         # seed entered on prompt is rounded to int
-        val = vartypes.pass_int_keep(tokenise.str_to_value_keep(vartypes.pack_string(console.read_screenline())))
+        val = vartypes.pass_int_keep(representation.str_to_value_keep(vartypes.pack_string(console.read_screenline())))
     elif val[0] == '$':
         raise error.RunError(5)
     rnd.randomize(val)

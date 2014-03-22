@@ -13,7 +13,7 @@ from cStringIO import StringIO
 import error
 import fp
 import vartypes
-import tokenise
+import representation
 import util
 import var
 import graphics
@@ -78,13 +78,13 @@ def ml_parse_value(gmls):
             gmls.read(1)
             c = util.peek(gmls)
             sgn = -1   
-        if c in tokenise.ascii_digits:     
+        if c in representation.ascii_digits:     
             numstr = ''
-            while c in tokenise.ascii_digits:
+            while c in representation.ascii_digits:
                 gmls.read(1)
                 numstr += c 
                 c = util.skip(gmls, ml_whitepace) 
-            step = tokenise.str_to_value_keep(('$', numstr))
+            step = representation.str_to_value_keep(('$', numstr))
             if sgn == -1:
                 step = vartypes.number_neg(step)
         else:
@@ -273,13 +273,13 @@ def play_parse_mml(mml):
                 if c == '.':
                     gmls.read(1)
                     dur *= 1.5
-                elif c in tokenise.ascii_digits:
+                elif c in representation.ascii_digits:
                     numstr = ''
-                    while c in tokenise.ascii_digits:
+                    while c in representation.ascii_digits:
                         gmls.read(1)
                         numstr+=c 
                         c = util.skip(gmls, ml_whitepace) 
-                    length = vartypes.pass_int_unpack(tokenise.str_to_value_keep(('$', numstr)))
+                    length = vartypes.pass_int_unpack(representation.str_to_value_keep(('$', numstr)))
                     dur = 2./float(length)
                 elif c in ('#', '+'):
                     gmls.read(1)
