@@ -9,7 +9,6 @@
 # please see text file COPYING for licence terms.
 #
 
-import error
 import fp
 import vartypes
 

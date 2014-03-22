@@ -14,13 +14,9 @@ from cStringIO import StringIO
 
 import error
 import util
-import var
-import rnd
-import events
 import tokenise 
 import program
 import statements 
-import oslayer
 import fileio
 import automode
 import console
@@ -111,7 +107,7 @@ def parse_start_direct(linebuf):
             if program.protected:
                 # don't list protected files
                 raise error.RunError(5)
-            linenum = program.store_line(linebuf, automode.auto_mode)
+            program.store_line(linebuf, automode.auto_mode)
             program.prompt = False
         except error.RunError as e:
             e.handle() 

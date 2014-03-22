@@ -12,7 +12,6 @@
 from cStringIO import StringIO
 
 import error
-import fp
 import representation
 import vartypes
 import var
@@ -84,7 +83,7 @@ def exec_data(ins):
     util.skip_to(ins, util.end_statement)
 
 #
-def parse_int_list_var(ins, size, err=5):
+def parse_int_list_var(ins):
     output = [ vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=2)) ]   
     while True:
         d = util.skip_white(ins)
@@ -95,7 +94,7 @@ def parse_int_list_var(ins, size, err=5):
                 # missing operand
                 raise error.RunError(22)
             # if end_expression, syntax error    
-            output.append(vartypes.pass_int_unpack(expressios.parse_expression(ins, empty_err=2)))
+            output.append(vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=2)))
         elif d in util.end_statement:
             # statement ends - syntax error
             raise error.RunError(2)        
@@ -111,7 +110,7 @@ def exec_dim(ins):
         dimensions = [ 10 ]   
         if util.skip_white_read_if(ins, ('[', '(')):
             # at most 255 indices, but there's no way to fit those in a 255-byte command line...
-            dimensions = parse_int_list_var(ins, 255)
+            dimensions = parse_int_list_var(ins)
             while len(dimensions) > 0 and dimensions[-1] == None:
                 dimensions = dimensions[:-1]
             if None in dimensions:

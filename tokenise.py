@@ -24,7 +24,6 @@
 from cStringIO import StringIO
 
 import error
-import fp 
 import representation
 import util
 import vartypes
