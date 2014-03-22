@@ -292,7 +292,7 @@ def exec_print_using(ins, screen):
             # escape char; write next char in fors or _ if this is the last char
             screen.write(fors.read(2)[-1])
         else:
-            string_field = get_string_tokens(fors)
+            string_field = representation.get_string_tokens(fors)
             if string_field:
                 if not data_ends:
                     s = str(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
@@ -301,7 +301,7 @@ def exec_print_using(ins, screen):
                     else:
                         screen.write(s[:len(string_field)] + ' '*(len(string_field)-len(s)))
             else:
-                number_field, digits_before, decimals = get_number_tokens(fors)
+                number_field, digits_before, decimals = representation.get_number_tokens(fors)
                 if number_field:
                     if not data_ends:
                         num = vartypes.pass_float_keep(expressions.parse_expression(ins))
@@ -314,80 +314,6 @@ def exec_print_using(ins, screen):
     if not semicolon:
         screen.write('\r\n')
     util.require(ins, util.end_statement)
-
-########################################
-
-def get_string_tokens(fors):
-    word = ''
-    c = util.peek(fors)
-    if c in ('!', '&'):
-        format_chars = True
-        word += fors.read(1)
-    elif c == '\\':
-        word += fors.read(1)
-        # count the width of the \ \ token; only spaces allowed and closing \ is necessary
-        while True: 
-            c = fors.read(1)
-            word += c
-            if c == '\\':
-                format_chars = True
-                s = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-                semicolon = util.skip_white_read_if(ins, (';',))    
-                break
-            elif c != ' ': # can be empty as well
-                fors.seek(-len(word), 1)
-                return ''
-    return word
-
-def get_number_tokens(fors):
-    word, digits_before, decimals = '', 0, 0
-    # + comes first
-    leading_plus = (util.peek(fors) == '+')
-    if leading_plus:
-        word += fors.read(1)
-    # $ and * combinations
-    c = util.peek(fors)
-    if c in ('$', '*'):
-        word += fors.read(2)
-        if word[-1] != c:
-            fors.seek(-len(word), 1)
-            return '', 0, 0
-        if c == '*':
-            digits_before += 2
-            if util.peek(fors) == '$':
-                word += fors.read(1)                
-        else:
-            digits_before += 1        
-    # number field
-    c = util.peek(fors)
-    dot = (c == '.')
-    if dot:
-        word += fors.read(1)
-    if c in ('.', '#'):
-        while True:
-            c = util.peek(fors)
-            if not dot and c == '.':
-                word += fors.read(1)
-                dot = True
-            elif c == '#' or (not dot and c == ','):
-                word += fors.read(1)
-                if dot:
-                    decimals += 1
-                else:
-                    digits_before += 1    
-            else:
-                break
-    if digits_before + decimals == 0:
-        fors.seek(-len(word), 1)
-        return '', 0, 0    
-    # post characters        
-    if util.peek(fors, 4) == '^^^^':
-        word += fors.read(4)
-    if not leading_plus and util.peek(fors) in ('-', '+'):
-        word += fors.read(1)
-    return word, digits_before, decimals    
-                
-########################################
 
 def exec_lprint(ins):
     exec_print(ins, deviceio.lpt1)
