@@ -18,6 +18,7 @@ import program
 import console
 import var
 import vartypes
+import representation
 import expressions
 import tokenise
 
@@ -56,7 +57,7 @@ def debug_step(linum):
         outs.seek(2)
         try:
             val = expressions.parse_expression(outs)
-            st = vartypes.unpack_string(vartypes.value_to_str_keep(val, screen=False))
+            st = vartypes.unpack_string(representation.value_to_str_keep(val, screen=False))
             debug_print(st+'\n')        
         except Exception as e:
             debug_print(repr(type(e))+'\n')

@@ -127,29 +127,6 @@ def pass_most_precise_keep(left, right, err=13):
     else:
         raise error.RunError(err)
 
-# string output
-# screen=False means in a program listing
-# screen=True is used for screen, str$ and sequential files
-def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=False):
-    if not inp:
-        if allow_empty_expression:
-            return ('$', '')
-        else:
-            raise error.RunError(2)    
-    typechar = inp[0]
-    if typechar == '$':
-        return ('$', inp[1])
-    elif typechar == '%':
-        if screen and not write and unpack_int(inp) >= 0:
-            return ('$', ' '+ int_to_str(unpack_int(inp)) )
-        else:
-            return ('$', int_to_str(unpack_int(inp)))
-    elif typechar == '!':
-        return ('$', representation.to_str(fp.unpack(inp), screen, write) )
-    elif typechar == '#':
-        return ('$', representation.to_str(fp.unpack(inp), screen, write) )
-    else:
-        raise error.RunError(2)    
     
 ##################################################
 # unpack tokenised numeric constants
@@ -190,28 +167,6 @@ def unpack_string(inp):
 def pack_string(inp):
     return ('$', inp)
 
-# python int to python str
-
-def int_to_str(num):
-    return str(num)   
-
-# tokenised ints to python str
-
-def uint_to_str(s):
-    return str(uint_to_value(s))
-
-def sint_to_str(s):
-    return str(sint_to_value(s))
-
-def ubyte_to_str(s):
-    return str(s[0])
-    
-def hex_to_str(s):
-    return "&H" + hex(uint_to_value(s))[2:].upper()
-
-def oct_to_str(s):
-    return "&O" + oct(uint_to_value(s))[1:]
-    
 # boolean functions - two's complement int
 
 def bool_to_int_keep(boo):

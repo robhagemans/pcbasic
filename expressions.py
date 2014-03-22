@@ -16,6 +16,7 @@ from functools import partial
 
 import fp
 import vartypes
+import representation
 import rnd
 import tokenise
 import oslayer
@@ -322,7 +323,7 @@ def value_cdbl(ins):
 
 def value_str(ins):            
     s = vartypes.pass_number_keep(parse_bracket(ins))
-    return vartypes.value_to_str_keep(s, screen=True)
+    return representation.value_to_str_keep(s, screen=True)
         
 def value_val(ins):  
     val = tokenise.str_to_value_keep(parse_bracket(ins))
@@ -336,12 +337,12 @@ def value_chr(ins):
 def value_oct(ins):            
     # allow range -32768 to 65535
     val = vartypes.pass_int_unpack(parse_bracket(ins), 0xffff)
-    return vartypes.pack_string(vartypes.oct_to_str(vartypes.value_to_sint(val))[2:])
+    return vartypes.pack_string(representation.oct_to_str(vartypes.value_to_sint(val))[2:])
 
 def value_hex(ins):            
     # allow range -32768 to 65535
     val = vartypes.pass_int_unpack(parse_bracket(ins), 0xffff)
-    return vartypes.pack_string(vartypes.hex_to_str(vartypes.value_to_sint(val))[2:])
+    return vartypes.pack_string(representation.hex_to_str(vartypes.value_to_sint(val))[2:])
 
 ######################################################################
 # string maniulation            

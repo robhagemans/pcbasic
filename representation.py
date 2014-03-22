@@ -15,11 +15,63 @@ from fp import from_bytes, unpack
 from fp import mul, div, pow_int
 import vartypes
 
+
+# BASIC number to BASIC string
+# screen=False means in a program listing
+# screen=True is used for screen, str$ and sequential files
+def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=False):
+    if not inp:
+        if allow_empty_expression:
+            return ('$', '')
+        else:
+            raise error.RunError(2)    
+    typechar = inp[0]
+    if typechar == '$':
+        return ('$', inp[1])
+    elif typechar == '%':
+        if screen and not write and vartypes.unpack_int(inp) >= 0:
+            return ('$', ' '+ int_to_str(vartypes.unpack_int(inp)) )
+        else:
+            return ('$', int_to_str(vartypes.unpack_int(inp)))
+    elif typechar == '!':
+        return ('$', float_to_str(fp.unpack(inp), screen, write) )
+    elif typechar == '#':
+        return ('$', float_to_str(fp.unpack(inp), screen, write) )
+    else:
+        raise error.RunError(2)    
+        
+        
+# python int to python str
+
+def int_to_str(num):
+    return str(num)   
+
+# tokenised ints to python str
+
+def uint_to_str(s):
+    return str(vartypes.uint_to_value(s))
+
+def sint_to_str(s):
+    return str(vartypes.sint_to_value(s))
+
+def ubyte_to_str(s):
+    return str(s[0])
+    
+def hex_to_str(s):
+    return "&H" + hex(vartypes.uint_to_value(s))[2:].upper()
+
+def oct_to_str(s):
+    return "&O" + oct(vartypes.uint_to_value(s))[1:]
+    
+
+# floating point to string
+
 # for to_str
 # for numbers, tab and LF are whitespace    
 whitespace = (' ', '\x09', '\x0a')
 # these seem to lead to a zero outcome all the time
 kill_char = ('\x1c', '\x1d', '\x1f')
+
 
 # string representations
 
@@ -91,7 +143,7 @@ def decimal_notation(digitstr, exp10, type_sign='!', force_dot=False):
 # screen=True (ie PRINT) - leading space, no type sign
 # screen='w' (ie WRITE) - no leading space, no type sign
 # default mode is for LIST    
-def to_str(n_in, screen=False, write=False):
+def float_to_str(n_in, screen=False, write=False):
     # zero exponent byte means zero
     if n_in.is_zero(): 
         if screen and not write:

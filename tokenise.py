@@ -101,8 +101,8 @@ def detokenise(ins, outs, from_line=None, to_line=None, bytepos=None):
         output, textpos = detokenise_line(ins, bytepos)
         if (from_line==-1 or current_line>=from_line) and (to_line==-1 or current_line<=to_line):
             # write one extra whitespace character after line number
-            outs.write(str(vartypes.int_to_str(current_line) + ' ' + output + '\r\n')) 
-    return textpos + len(vartypes.int_to_str(current_line) + ' ')
+            outs.write(str(representation.int_to_str(current_line) + ' ' + output + '\r\n')) 
+    return textpos + len(representation.int_to_str(current_line) + ' ')
     
 
 def detokenise_line(bytes, bytepos=None):
@@ -128,7 +128,7 @@ def detokenise_line(bytes, bytepos=None):
         elif s in tokens_linenum: 
             # 0D: line pointer (unsigned int) - this token should not be here; interpret as line number and carry on
             # 0E: line number (unsigned int)
-            output += vartypes.uint_to_str(bytearray(bytes.read(2)))
+            output += representation.uint_to_str(bytearray(bytes.read(2)))
         elif comment or litstring or (s >= '\x20' and s <= '\x7e'):   # honest ASCII
             output += s
         else:
@@ -141,21 +141,21 @@ def detokenise_line(bytes, bytepos=None):
 def detokenise_number(bytes, output):
     s = bytes.read(1)
     if s == '\x0b':                           # 0B: octal constant (unsigned int)
-        output += vartypes.oct_to_str(bytearray(bytes.read(2)))
+        output += representation.oct_to_str(bytearray(bytes.read(2)))
     elif s == '\x0c':                           # 0C: hex constant (unsigned int)
-        output += vartypes.hex_to_str(bytearray(bytes.read(2)))
+        output += representation.hex_to_str(bytearray(bytes.read(2)))
     elif s == '\x0f':                           # 0F: one byte constant
-        output += vartypes.ubyte_to_str(bytearray(bytes.read(1)))
+        output += representation.ubyte_to_str(bytearray(bytes.read(1)))
     elif s >= '\x11' and s < '\x1b':            # 11-1B: constants 0 to 10
         output += chr(ord('0') + ord(s) - 0x11)
     elif s == '\x1b':               
         output += '10'
     elif s == '\x1c':                           # 1C: two byte signed int
-        output += vartypes.sint_to_str(bytearray(bytes.read(2)))
+        output += representation.sint_to_str(bytearray(bytes.read(2)))
     elif s == '\x1d':                           # 1D: four-byte single-precision floating point constant
-        output += representation.to_str(fp.Single.from_bytes(bytearray(bytes.read(4))), screen=False, write=False)
+        output += representation.float_to_str(fp.Single.from_bytes(bytearray(bytes.read(4))), screen=False, write=False)
     elif s == '\x1f':                           # 1F: eight byte double-precision floating point constant
-        output += representation.to_str(fp.Double.from_bytes(bytearray(bytes.read(8))), screen=False, write=False)
+        output += representation.float_to_str(fp.Double.from_bytes(bytearray(bytes.read(8))), screen=False, write=False)
     else:
         bytes.seek(-len(s),1)  
     
