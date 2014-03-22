@@ -821,13 +821,26 @@ def stop_all_sound():
     global sound_queue
     pygame.mixer.quit()
     sound_queue = []
+
     
 # process sound queue in event loop
 def check_sound():
+    global last_chunk, same_chunk_ticks
     if not sound_queue:
         check_quit_sound()
     else:    
         check_init_mixer()
+        # check for hangups
+        current_chunk = pygame.mixer.Channel(0).get_queue() 
+        if current_chunk == last_chunk:
+            same_chunk_ticks +=1
+            if same_chunk_ticks > max_ticks_same:
+                # too long for the sort of chunks we use, it's hung.
+                pygame.mixer.quit()
+                pygame.mixer.init()
+        else:
+            same_chunk_ticks = 0    
+        last_chunk = current_chunk
         if pygame.mixer.Channel(0).get_queue() == None:
             current_list = sound_queue[0]
             if not current_list:
@@ -889,6 +902,11 @@ mixer_samplerate = 44100*4
 # quit sound server after quiet period of quiet_quit ticks, to avoid high-ish cpu load from the sound server.
 quiet_ticks = 0        
 quiet_quit = 200
+
+# kill the mixer after encountering the same chunk for may times - it has a tendency to hang.
+last_chunk = None
+same_chunk_ticks = 0
+max_ticks_same = 35
 
 try:
     import numpy
