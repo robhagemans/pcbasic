@@ -3264,18 +3264,69 @@ SOUND statement
 SOUND frequency, duration
 ---------------
 Produces a sound at 'frequency' Hz for 'duration'/18.2 seconds.
-'frequency' is a number-valued expression in [32, 32767].
+'frequency' is a number-valued expression in [37, 32767].
 'duration' is a number-valued expression in [0, 65535].
 If music is set to foreground (default) in the PLAY statement, the statement
 blocks until the sound has veen played. If music is set to background, the
 execution returns while the sound plays in the background.
 NOTES:
 -   If 'duration' is zero, any active sound is stopped.
+-   If 'duration' is less than .022 but nonzero, the sound produced will 
+    continue indefinitely in the background until another sound statement
+    is executed.
 -   If 'frequency' equals 32767, a silent pause is played.
 ERRORS:
--   If 'frequency' is not in [-32768, 32767], raises ILLEGAL FUNCTION CALL.
+-   If 'frequency' is not in [37, 32767], and 'duration' is not zero, raises 
+    ILLEGAL FUNCTION CALL.
 -   If 'duration' is not in [-65535, 65535], raises ILLEGAL FUNCTION CALL.
 
+
+SPACE$ function
+
+
+SQR function
+
+
+STICK function
+
+
+STOP statement
+
+
+STR$ function
+
+
+STRIG statement
+
+
+STRIG statement (events)
+
+
+STRIG function
+
+
+STRING$ function
+
+
+SWAP statement
+
+
+SYSTEM statement
+
+
+TAN function
+
+
+TIME$ function
+
+
+TIME$ statement
+
+
+TIMER function
+
+
+TRON and TROFF statements
 
 
 UNLOCK statement
@@ -3284,4 +3335,46 @@ ERRORS:
 -   If 'file_number' is open for RANDOM, LOCK and UNLOCK statements must match 
     in terms of 'record_0' and 'record_1'. An unmatching UNLOCK will raise      
     PERMISSION DENIED.
+
+
+USR function
+
+
+VAL function
+
+
+VARPTR function
+
+
+VARPTR$ function
+
+
+VIEW statement
+
+
+VIEW PRINT statement
+
+
+WAIT statement
+
+
+WEND statement
+
+
+WHILE statement
+
+
+WIDTH statement
+
+
+WINDOW statement
+
+
+WRITE and WRITE# statements
+
+
+
+
+
+
 
