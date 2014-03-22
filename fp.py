@@ -24,6 +24,9 @@
 # The exponent is biased by 128. 
 # There is an assumed 1 bit after the radix point (so the assumed mantissa is 0.1ffff... where f's are the fraction bits)
 
+import math
+from functools import partial
+
 import error
 
 # this is where in-calculation error messages (Overflow, Division by Zero) go
@@ -334,10 +337,19 @@ class Float(object):
         return num, exp10
 
     # get python float
-    def get_value(self):
+    def to_value(self):
         self.apply_carry()
         man = self.man >> 8
         return man * 2**(self.exp - self.bias) * (1-2*self.neg)
+
+    @classmethod
+    def from_value(cls, value):
+        neg = value < 0
+        fexp = math.log(abs(value), 2) - cls.mantissa_bits
+        man = int(abs(value) * 0.5**int(fexp-8))
+        exp = int(fexp) + cls.bias
+#        man <<= 8
+        return cls(neg, man, exp).normalise()
 
 ########################
 
@@ -435,9 +447,28 @@ Double.pi   = from_bytes(bytearray('\xc2\x68\x21\xa2\xda\x0f\x49\x82'))
 
 ##########################################
 # math        
+
+# convert to IEEE, do library math operations, convert back
+
+def power(base_in, exp_in):
+    return base_in.__class__().from_value(base_in.to_value() ** exp_in.to_value())    
+
+def unary(mbf_in, fn):
+    return mbf_in.__class__().from_value(fn(mbf_in.to_value()))
+
+sqrt = partial(unary, fn=math.sqrt)
+exp  = partial(unary, fn=math.exp )
+sin  = partial(unary, fn=math.sin )
+cos  = partial(unary, fn=math.cos )
+tan  = partial(unary, fn=math.tan )
+atn  = partial(unary, fn=math.atan)
+log  = partial(unary, fn=math.log )
+
+
+### experimental MBF math functions (finding BASIC's algorithms)        
         
 # Float raised to Float exponent
-def power(base_in, exp_in):
+def _power(base_in, exp_in):
     base = base_in.copy()
     exp = exp_in.copy()
     if exp.is_zero():
@@ -483,7 +514,7 @@ def power(base_in, exp_in):
 
 # square root
 # Newton's method
-def sqrt(target):
+def _sqrt(target):
     if target.neg:
         # illegal function call
         raise error.RunError(5)
@@ -503,7 +534,7 @@ def sqrt(target):
     return n
 
 # e raised to mbf exponent
-def exp(arg_in):
+def _exp(arg_in):
     if arg_in.is_zero():
         return arg_in.one.copy()
     arg = arg_in.copy()
@@ -520,7 +551,7 @@ def exp(arg_in):
         exp_out.iadd(term) 
     return exp_out
             
-def sin(n_in):
+def _sin(n_in):
     if n_in.is_zero():
         return n_in
     n = n_in.copy()
@@ -548,7 +579,7 @@ def sin(n_in):
     sin_out.neg ^= neg    
     return sin_out
 
-def cos(n_in):
+def _cos(n_in):
     if n_in.is_zero():
         return Single.one.copy()
     n = n_in.copy()
@@ -578,13 +609,13 @@ def cos(n_in):
     cos_out.neg ^= neg    
     return cos_out
 
-def tan(n_in):
+def _tan(n_in):
     return div(sin(n_in), cos(n_in))
 
 # atn and log, don't know what algorithm MS use.
 
 # find arctangent using secant method
-def atn(n_in):
+def _atn(n_in):
     if n_in.is_zero():
         return n_in.copy()
     if n_in.equals(n_in.one):
@@ -615,7 +646,7 @@ def atn(n_in):
     return guess
 
 # natural logarithm
-def log(n_in):
+def _log(n_in):
     if n_in.equals(n_in.one):
         return n_in.zero.copy()
     if n_in.equals(Single.two):
