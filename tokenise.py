@@ -153,9 +153,9 @@ def detokenise_number(bytes, output):
     elif s == '\x1c':                           # 1C: two byte signed int
         output += vartypes.sint_to_str(bytearray(bytes.read(2)))
     elif s == '\x1d':                           # 1D: four-byte single-precision floating point constant
-        output += representation.to_str(fp.from_bytes(bytearray(bytes.read(4))), screen=False, write=False)
+        output += representation.to_str(fp.Single.from_bytes(bytearray(bytes.read(4))), screen=False, write=False)
     elif s == '\x1f':                           # 1F: eight byte double-precision floating point constant
-        output += representation.to_str(fp.from_bytes(bytearray(bytes.read(8))), screen=False, write=False)
+        output += representation.to_str(fp.Double.from_bytes(bytearray(bytes.read(8))), screen=False, write=False)
     else:
         bytes.seek(-len(s),1)  
     
