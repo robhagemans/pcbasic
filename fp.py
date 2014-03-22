@@ -451,11 +451,19 @@ Double.pi   = from_bytes(bytearray('\xc2\x68\x21\xa2\xda\x0f\x49\x82'))
 # convert to IEEE, do library math operations, convert back
 
 def power(base_in, exp_in):
-    return base_in.__class__().from_value(base_in.to_value() ** exp_in.to_value())    
+    try:
+        return base_in.__class__().from_value(base_in.to_value() ** exp_in.to_value())    
+    except OverflowError:
+        msg_overflow()
+        return base_in.__class__(mbf_in.neg, mbf_in.carry_mask, 0xff)
 
 def unary(mbf_in, fn):
-    return mbf_in.__class__().from_value(fn(mbf_in.to_value()))
-
+    try:
+        return mbf_in.__class__().from_value(fn(mbf_in.to_value()))    
+    except OverflowError:
+        msg_overflow()
+        return mbf_in.__class__(mbf_in.neg, mbf_in.carry_mask, 0xff)
+    
 sqrt = partial(unary, fn=math.sqrt)
 exp  = partial(unary, fn=math.exp )
 sin  = partial(unary, fn=math.sin )

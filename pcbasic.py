@@ -46,6 +46,8 @@ def main():
     # implied RUN invocations
     if args.infile and not args.load and not args.conv:
         args.run = True    
+    if args.double:
+        expressions.option_double = True    
     # announce ourselves; go!
     try:
         # choose the screen backends and other devices 
@@ -119,6 +121,7 @@ def get_args():
     parser.add_argument('-r', '--run', action='store_true', help='Execute input file (default if in_file given)')
     parser.add_argument('-c', '--cmd', metavar='CMD', help='Execute BASIC command line')
     parser.add_argument('-q', '--quit', action='store_true', help='Quit interpreter when execution stops')
+    parser.add_argument('-d', '--double', action='store_true', help='Allow double-precision math functions')
     parser.add_argument('--debug', action='store_true', help='Enable DEBUG keyword')
     parser.add_argument('--nosound', action='store_true', help='Disable sound output (faster)')
     parser.add_argument('--peek', nargs='*', metavar=('SEG:ADDR:VAL'), help='Define PEEK preset values')
