@@ -821,43 +821,52 @@ def stop_all_sound():
     global sound_queue
     pygame.mixer.quit()
     sound_queue = []
-
     
 # process sound queue in event loop
 def check_sound():
-    global last_chunk, same_chunk_ticks
+    global last_chunk, same_chunk_ticks, loop_sound, loop_sound_playing
     if not sound_queue:
         check_quit_sound()
     else:    
         check_init_mixer()
         # check for hangups
-        current_chunk = pygame.mixer.Channel(0).get_queue() 
-        if current_chunk == last_chunk:
-            same_chunk_ticks +=1
-            if same_chunk_ticks > max_ticks_same:
-                # too long for the sort of chunks we use, it's hung.
-                pygame.mixer.quit()
-                pygame.mixer.init()
-        else:
-            same_chunk_ticks = 0    
-        last_chunk = current_chunk
+        check_hangs()
+        # stop looping sound, allow queue to pass
+        if loop_sound_playing:
+            loop_sound_playing.stop()
+            loop_sound_playing = None
         if pygame.mixer.Channel(0).get_queue() == None:
-            current_list = sound_queue[0]
-            if not current_list:
+            if loop_sound:
+                # loop the current playing sound; ok to interrupt it with play cos it's the same sound as is playing
+                pygame.mixer.Channel(0).play(loop_sound, loops=-1)
                 sound_queue.pop(0)
-                try:
-                    current_list = sound_queue[0]
-                except IndexError:
-                    check_quit_sound()
-                    return
-            pygame.mixer.Channel(0).queue(current_list.pop(0))
+                loop_sound_playing = loop_sound                
+                loop_sound = None
+            else:
+                current_list = sound_queue[0]
+                if not current_list:
+                    sound_queue.pop(0)
+                    try:
+                        current_list = sound_queue[0]
+                    except IndexError:
+                        check_quit_sound()
+                        return
+                pair_to_play = current_list.pop(0)         
+                pygame.mixer.Channel(0).queue(pair_to_play[0])
+                if pair_to_play[1]:
+                    loop_sound = pair_to_play[0] 
+                    # any next sound in the sound queue qill stop this looping sound
+                else:   
+                    loop_sound = None
         
 def wait_music(wait_length=0, wait_last=True):
-    while music_queue_length() > wait_length or (wait_last and music_queue_length()==0 and pygame.mixer.get_busy()):
+    while not loop_sound_playing and (
+            music_queue_length() > wait_length 
+            or (wait_last and music_queue_length()==0 and pygame.mixer.get_busy())):
         idle()
         console.check_events()
         
-def play_sound(frequency, total_duration, fill=1):
+def play_sound(frequency, total_duration, fill=1, loop=False):
     check_init_mixer()
     # one wavelength at 37 Hz is 1192 samples at 44100 Hz
     chunk_length = 1192*2
@@ -866,30 +875,31 @@ def play_sound(frequency, total_duration, fill=1):
     if frequency == 0 or frequency == 32767:
         chunk = numpy.zeros(chunk_length)
     else:
-        amplitude = 2**(mixer_bits - 1) - 1
+        # build one square wave wavelength at max amplitude
         # not clear why 8*freq instead of 2* ?
-        numf = mixer_samplerate/(8*frequency)
-        num = int(numf)
-        rest = 0
-        # basic wave
-        wave0 = numpy.ones(num, numpy.int16) * amplitude
+        wave0 = numpy.ones(int(mixer_samplerate/(8*frequency)), numpy.int16) * (2**(mixer_bits - 1) - 1)
         wave1 = -wave0
         # build chunk
         chunk = numpy.array([])
         while len(chunk) < chunk_length:
             chunk = numpy.concatenate((chunk, wave0, wave1))
         chunk_length = len(chunk)    
-    # make the last chunk longer than a normal chunk rather than shorter, to avoid jumping sound    
-    floor_num_chunks = max(0, -1 + int((duration*mixer_samplerate)/(4*chunk_length)))
-    sound_list = [] if floor_num_chunks == 0 else [ pygame.sndarray.make_sound(chunk) ]*floor_num_chunks
-    rest_length = int((duration*mixer_samplerate)/4) - chunk_length*floor_num_chunks
+    if not loop:    
+        # make the last chunk longer than a normal chunk rather than shorter, to avoid jumping sound    
+        floor_num_chunks = max(0, -1 + int((duration*mixer_samplerate)/(4*chunk_length)))
+        sound_list = [] if floor_num_chunks == 0 else [ (pygame.sndarray.make_sound(chunk), False) ]*floor_num_chunks
+        rest_length = int((duration*mixer_samplerate)/4) - chunk_length*floor_num_chunks
+    else:
+        # attach one chunk to loop
+        sound_list = []
+        rest_length = chunk_length
     # create the sound queue entry
-    sound_list.append(pygame.sndarray.make_sound(chunk[:rest_length]))
+    sound_list.append((pygame.sndarray.make_sound(chunk[:rest_length]), loop))
     # append quiet gap if requested
     if gap:
         gap_length = (gap*mixer_samplerate)/4
         chunk = numpy.zeros(gap_length)
-        sound_list.append(pygame.sndarray.make_sound(chunk))
+        sound_list.append((pygame.sndarray.make_sound(chunk), False))
     # at most 16 notes in the sound queue (not 32 as the guide says!)
     wait_music(15)
     sound_queue.append(sound_list)
@@ -907,6 +917,11 @@ quiet_quit = 200
 last_chunk = None
 same_chunk_ticks = 0
 max_ticks_same = 35
+
+# loop the sound  in the mixer queue
+loop_sound = None
+# currrent sound that is looping
+loop_sound_playing = None
 
 try:
     import numpy
@@ -935,5 +950,17 @@ def check_quit_sound():
         if quiet_ticks > quiet_quit:
             # this is to avoid high pulseaudio cpu load
             pygame.mixer.quit()
-        
+
+def check_hangs():
+    global last_chunk, same_chunk_ticks
+    current_chunk = pygame.mixer.Channel(0).get_queue() 
+    if current_chunk == last_chunk:
+        same_chunk_ticks += 1
+        if same_chunk_ticks > max_ticks_same:
+            # too long for the sort of chunks we use, it's hung.
+            pygame.mixer.quit()
+            pygame.mixer.init()
+    else:
+        same_chunk_ticks = 0    
+    last_chunk = current_chunk
         
