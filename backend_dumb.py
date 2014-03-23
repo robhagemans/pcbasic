@@ -71,14 +71,7 @@ class DumberTermWrite(object):
         sys.stdout.write(s)
     
     
-    
-def set_dumbterm():
-    global check_keys
-    check_keys = check_keys_interactive
-    console.echo_read = None
-    console.echo_write = DumbTermWrite()
-    
-def set_dumberterm():
+def init():
     global check_keys
     if sys.stdin.isatty():
         check_keys = check_keys_interactive
@@ -124,13 +117,6 @@ def check_keys_interactive():
     else:
         console.insert_key(c)
         
-#term_attr = None
-#def close():
-#    if term_attr:
-#        fd = sys.stdin.fileno()
-#        termios.tcsetattr(fd, termios.TCSANOW, term_attr)        
-#    pass
-
 def close():
     pass
     
@@ -140,9 +126,6 @@ def debug_print(s):
 def idle():
     time.sleep(0.004)
     
-def init():
-    return True
-
 def check_events():
     check_keys()
     
