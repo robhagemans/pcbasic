@@ -669,8 +669,6 @@ def value_pen(ins):
         pen = 1 if fn >= 6 else 0 
     return vartypes.pack_int(pen)
     
-# coordinated run 1..200 (says http://www.qb64.net/wiki/index.php?title=STICK)
-# STICK(0) is required to get values from the other STICK functions. Always read it first!
 def value_stick(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 3, fn)
@@ -680,7 +678,7 @@ def value_strig(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     # 0,1 -> [0][0] 2,3 -> [0][1]  4,5-> [1][0]  6,7 -> [1][1]
     util.range_check(0, 7, fn)
-    return vartypes.bool_to_int_keep(console.stick_is_on and console.get_strig(fn))
+    return vartypes.bool_to_int_keep(console.get_strig(fn))
     
 #########################################################
 # memory and machine
