@@ -20,9 +20,7 @@ import program
 import automode
 import console
 import deviceio
-
-# for rnd.clear() on CHAIN
-#import rnd
+import run
 # for fileio.close_all() on LOAD, NEW
 import fileio
 
@@ -66,6 +64,8 @@ def exec_edit(ins):
         raise error.RunError(8)
     util.require(ins, util.end_statement, err=5)
     program.edit_line(from_line)
+    # suppress prompt, move cursor?
+    run.prompt = False
     
 def exec_auto(ins):
     linenum = parse_jumpnum_or_dot(ins, allow_empty=True)
