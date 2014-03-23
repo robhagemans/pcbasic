@@ -3372,6 +3372,9 @@ results, all boolean values:
   5     whether 1st joystick, 2nd trigger is currently pressed.
   6     whether 2nd joystick, 2nd trigger has been pressed since last poll.
   7     whether 2nd joystick, 2nd trigger is currently pressed.
+NOTES:
+-   The STRIG function returns correct results regardless of the STRIG ON 
+    status or whether STRIG(0) has been called first.
 ERRORS:
 -   If 'mode' is a string, raises TYPE MISMATCH.
 -   If 'mode' is not in [0, 97, raises ILLEGAL FUNCTION CALL.
