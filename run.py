@@ -20,18 +20,21 @@ import statements
 import fileio
 import console
 
+# suppress one prompt by setting to False (used by EDIT)
+prompt = True
+
 def loop():
     # main loop 
     while True:
         line = get_line()
         execute(line)
 
-def prompt(force=False):
-    if program.prompt or force:
+def show_prompt():
+    global prompt
+    if prompt:
         console.start_line()
         console.write("Ok\xff\r\n")
-    else:
-        program.prompt = True
+    prompt = True
                           
 def get_line():
     while True:
@@ -55,7 +58,7 @@ def execute(line, ignore_empty_number=False):
     elif c != '':    
         # it is a command, go and execute    
         execution_loop()
-        prompt()
+        show_prompt()
                
 # execute any commands
 def execution_loop():

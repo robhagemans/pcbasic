@@ -29,9 +29,6 @@ bytecode = StringIO()
 # direct line buffer
 direct_line = StringIO()
 
-# show a prompt?
-prompt = True
-
 def init_program():
     global gosub_return, for_next_stack, while_wend_stack, linenum, stop
     # stop running if we were
@@ -298,8 +295,6 @@ def edit_line(from_line, bytepos=None):
     output.close()
     # throws back to direct mode
     set_runmode(False)
-    # suppress prompt, move cursor?
-    prompt = False
     console.set_pos(console.row, textpos+1 if bytepos else 1)
     
 def renum(new_line, start_line, step):
