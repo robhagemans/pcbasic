@@ -865,33 +865,32 @@ def check_sound():
 def wait_music(wait_length=0, wait_last=True):
     while not loop_sound_playing and (
             len(sound_queue) + wait_last - 1 > wait_length 
-            or (wait_last and music_queue_length()==0 and pygame.mixer.get_busy())):
+            or (wait_last and music_queue_length() == 0 and pygame.mixer.get_busy())):
         idle()
         console.check_events()
         
 def play_sound(frequency, total_duration, fill=1, loop=False):
     check_init_mixer()
     # one wavelength at 37 Hz is 1192 samples at 44100 Hz
-    chunk_length = 1192*2
+    chunk_length = 1192 * 2
     # actual duration and gap length
     duration, gap = fill * total_duration, (1-fill) * total_duration
     if frequency == 0 or frequency == 32767:
         chunk = numpy.zeros(chunk_length)
     else:
-        # build one square wave wavelength at max amplitude
-        # not clear why 8*freq instead of 2* ?
-        wave0 = numpy.ones(int(mixer_samplerate/(8*frequency)), numpy.int16) * (1<<mixer_bits - 1)
+        # build wavelength of a square wave at max amplitude
+        wave0 = numpy.ones(int(sample_rate / (2*frequency)), numpy.int16) * (1<<mixer_bits - 1)
         wave1 = -wave0
-        # build chunk
+        # build chunk of waves
         chunk = numpy.array([])
         while len(chunk) < chunk_length:
             chunk = numpy.concatenate((chunk, wave0, wave1))
         chunk_length = len(chunk)    
     if not loop:    
         # make the last chunk longer than a normal chunk rather than shorter, to avoid jumping sound    
-        floor_num_chunks = max(0, -1 + int((duration*mixer_samplerate)/(4*chunk_length)))
+        floor_num_chunks = max(0, -1 + int((duration * sample_rate) / chunk_length))
         sound_list = [] if floor_num_chunks == 0 else [ (pygame.sndarray.make_sound(chunk), False) ]*floor_num_chunks
-        rest_length = int((duration*mixer_samplerate)/4) - chunk_length*floor_num_chunks
+        rest_length = int(duration * sample_rate) - chunk_length * floor_num_chunks
     else:
         # attach one chunk to loop
         sound_list = []
@@ -900,7 +899,7 @@ def play_sound(frequency, total_duration, fill=1, loop=False):
     sound_list.append((pygame.sndarray.make_sound(chunk[:rest_length]), loop))
     # append quiet gap if requested
     if gap:
-        gap_length = (gap*mixer_samplerate)/4
+        gap_length = gap * sample_rate
         chunk = numpy.zeros(gap_length)
         sound_list.append((pygame.sndarray.make_sound(chunk), False))
     # at most 16 notes in the sound queue (not 32 as the guide says!)
@@ -910,7 +909,7 @@ def play_sound(frequency, total_duration, fill=1, loop=False):
 # implementation
 
 mixer_bits = 16
-mixer_samplerate = 44100*4
+sample_rate = 44100
 
 # quit sound server after quiet period of quiet_quit ticks, to avoid high-ish cpu load from the sound server.
 quiet_ticks = 0        
@@ -932,8 +931,8 @@ except Exception:
     numpy = None
 
 def pre_init_mixer():
-    global mixer_samplerate, mixer_bits
-    pygame.mixer.pre_init(mixer_samplerate, -mixer_bits, channels=1, buffer=128) #4096
+    global sample_rate, mixer_bits
+    pygame.mixer.pre_init(sample_rate*4, -mixer_bits, channels=1, buffer=128) #4096
 
 def init_mixer():    
     pygame.mixer.quit()
