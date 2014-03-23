@@ -3315,7 +3315,8 @@ ERRORS:
 STICK function
 pos = STICK(axis)
 --------------
-Returns the value of a joystick axis. 
+Returns q coordinate of a joystick axis. All coordinates returned are in the 
+range [1,254] with 128 indicating the neutral position.
 'axis' is a number-valued expression in [0,3] and indicates which axis to read.
 'axis'  return value
     0   1st joystick x coordinate
@@ -3348,6 +3349,7 @@ ERRORS:
 STRIG statement (overall)
 STRIG { ON | OFF }
 ---------------
+No effect?
 
 
 STRIG statement (events)
@@ -3356,8 +3358,24 @@ STRIG(button) { ON | OFF | STOP }
 
 
 STRIG function
-result = STRIG(fn)
+result = STRIG(mode)
 --------------
+Returns the status of the joystick trigger buttons.
+'mode' is a number-valued expression in [0, 7]. STRIG returns the following 
+results, all boolean values:
+'mode'  STRIG result
+  0     whether 1st joystick, 1st trigger has been pressed since last poll.
+  1     whether 1st joystick, 1st trigger is currently pressed.
+  2     whether 2nd joystick, 1st trigger has been pressed since last poll.
+  3     whether 2nd joystick, 1st trigger is currently pressed.
+  4     whether 1st joystick, 2nd trigger has been pressed since last poll.
+  5     whether 1st joystick, 2nd trigger is currently pressed.
+  6     whether 2nd joystick, 2nd trigger has been pressed since last poll.
+  7     whether 2nd joystick, 2nd trigger is currently pressed.
+ERRORS:
+-   If 'mode' is a string, raises TYPE MISMATCH.
+-   If 'mode' is not in [0, 97, raises ILLEGAL FUNCTION CALL.
+-   If 'mode' is not in [-32768, 32767], raises OVERFLOW.
 
 
 STRING$ function
