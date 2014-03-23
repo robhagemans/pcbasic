@@ -571,9 +571,9 @@ def handle_mouse(e):
         pen_down_pos = e.pos
                 
 def handle_stick(e):
-    if e.joy<2 and e.button<2:
-        stick_fired[e.joy][e.button]=True
-        events.stick_triggered[e.joy][e.button]=True
+    if e.joy < 2 and e.button < 2:
+        stick_fired[e.joy][e.button] = True
+        events.stick_triggered[e.joy][e.button] = True
         
 def handle_key(e):
     c = ''
@@ -630,8 +630,9 @@ def handle_key_up(e):
         
 def pause_key():
     # pause key press waits for any key down. continues to process screen events (blink) but not user events.
-    # TODO: does background music play ??
     while not check_events(pause=True):
+        # continue playing background music
+        console.sound.check_sound()
         idle()
             
 ##############################################
@@ -857,7 +858,7 @@ def check_sound():
                 pygame.mixer.Channel(0).queue(pair_to_play[0])
                 if pair_to_play[1]:
                     loop_sound = pair_to_play[0] 
-                    # any next sound in the sound queue qill stop this looping sound
+                    # any next sound in the sound queue will stop this looping sound
                 else:   
                     loop_sound = None
         
@@ -879,7 +880,7 @@ def play_sound(frequency, total_duration, fill=1, loop=False):
     else:
         # build one square wave wavelength at max amplitude
         # not clear why 8*freq instead of 2* ?
-        wave0 = numpy.ones(int(mixer_samplerate/(8*frequency)), numpy.int16) * (2**(mixer_bits - 1) - 1)
+        wave0 = numpy.ones(int(mixer_samplerate/(8*frequency)), numpy.int16) * (1<<mixer_bits - 1)
         wave1 = -wave0
         # build chunk
         chunk = numpy.array([])
