@@ -46,7 +46,7 @@ def get_line():
         line = console.read_screenline(from_start=True) 
     except error.Break:
         line = ''
-    if line == '':
+    if not line:
         program.prompt = False
     # store the direct line
     return line
