@@ -30,7 +30,14 @@ def loop():
         line = get_line()
         # run it 
         execute(line)
-            
+               
+def prompt(force=False):
+    if program.prompt or force:
+        console.start_line()
+        console.write("Ok \r\n")
+    else:
+        program.prompt = True
+                          
 def get_line():
     if automode.auto_mode:
         return automode.auto_input_loop()
@@ -59,6 +66,12 @@ def execute(line):
         #cProfile.run('run.execution_loop()')
         execution_loop()
 
+def get_command_line(line):
+    program.direct_line.truncate(0)
+    sline = StringIO(line)
+    tokenise.tokenise_stream(sline, program.direct_line, onfile=False)
+    program.direct_line.seek(0)
+               
 # execute any commands
 def execution_loop():
     console.show_cursor(False)
@@ -72,21 +85,6 @@ def execution_loop():
                 break
     console.show_cursor()
                    
-# direct mode functions:               
-               
-def prompt(force=False):
-    if program.prompt or force:
-        console.start_line()
-        console.write("Ok \r\n")
-    else:
-        program.prompt = True
-              
-def get_command_line(line):
-    program.direct_line.truncate(0)
-    sline = StringIO(line)
-    tokenise.tokenise_stream(sline, program.direct_line, onfile=False)
-    program.direct_line.seek(0)
-               
 def parse_start_direct(linebuf): 
     # ignore anything beyond 255
     pos = linebuf.tell()

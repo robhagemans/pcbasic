@@ -54,20 +54,23 @@ def main():
         prepare_devices(args)
         # initialise program memory
         program.clear_program()
+        # print greeting
         if not args.run and not args.cmd and not args.conv:
             console.write(greeting % (debugstr, var.total_mem))
-        try:
-            if args.run or args.load or args.conv:
-                program.load(fileio.open_file_or_device(0, args.infile, mode='L', defext='BAS') if args.infile else sys.stdin)
-            if args.conv:
-                # allow conversion of protected files
-                program.protected = False
-                program.save(fileio.open_file_or_device(0, args.outfile, mode='S', defext='') if args.outfile else sys.stdout, args.conv)
-                run.exit()
-        except error.Error as e:
-            # give BASIC error message and exit
-            if not run.handle_error(e):
-                run.exit()
+        # execute arguments
+        if args.run or args.load or args.conv:
+            if args.infile:
+                run.execute('LOAD "'+args.infile+'"')
+            else:
+                program.load(sys.stdin)        
+        if args.conv:
+            # allow conversion of protected files
+            program.protected = False
+            if args.outfile:
+                run.execute('SAVE "'+args.outfile+'",'+args.conv)
+            else:
+                program.save(sys.stdout, args.conv)   
+            run.execute('SYSTEM')
         if args.cmd:
             run.execute(args.cmd)
         elif args.run:
@@ -75,6 +78,7 @@ def main():
             run.execute('RUN')    
         if args.quit:
             run.execute('SYSTEM')
+        # go into interactive mode    
         run.loop()
     finally:
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
