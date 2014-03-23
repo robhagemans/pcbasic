@@ -21,6 +21,7 @@ import util
 import error
 import graphics
 import nosound
+import nopenstick
 import events
 # for print_screen
 import deviceio
@@ -30,6 +31,7 @@ import program
 # back end implementations
 backend = None
 sound = nosound
+penstick = nopenstick
 
 # number of columns, counting 1..width
 width = 80
@@ -144,15 +146,6 @@ def set_palette_entry(index, colour):
 
 def get_palette_entry(index):
     return backend.get_palette_entry(index)
-
-def get_pen(fn):
-    return backend.get_pen(fn)
-
-def get_stick(fn):
-    return backend.get_stick(fn) 
-  
-def get_strig(fn):
-    return backend.get_strig(fn)
     
 def debug_print(s):
     return backend.debug_print(s)

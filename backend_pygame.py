@@ -623,8 +623,17 @@ def handle_key_up(e):
         console.inp_key = 0x80 + ord(keycode_to_inpcode[e.key])
     except KeyError:
         pass    
+           
+def handle_mouse(e):
+    if e.button == 1: # LEFT BUTTON
+        console.penstick.trigger_pen(e.pos)
+                
+def handle_stick(e):
+    if e.joy < 2 and e.button < 2:
+        console.penstick.trigger_stick(e.joy, e.button)
             
 ##############################################
+# penstick interface
 # light pen (emulated by mouse) & joystick
 
 # should be True on mouse click events
@@ -633,17 +642,15 @@ pen_down_pos = (0,0)
 
 stick_fired = [[False, False], [False, False]]
 
-def handle_mouse(e):
+def trigger_pen(pos):
     global pen_down, pen_down_pos
-    if e.button == 1: # LEFT BUTTON
-        events.pen_triggered = True
-        pen_down = -1 # TRUE
-        pen_down_pos = e.pos
+    events.pen_triggered = True
+    pen_down = -1 # TRUE
+    pen_down_pos = pos
                 
-def handle_stick(e):
-    if e.joy < 2 and e.button < 2:
-        stick_fired[e.joy][e.button] = True
-        events.strig_handlers[e.joy*2 + e.button] = True
+def trigger_stick(joy, button):
+    stick_fired[joy][button] = True
+    events.strig_handlers[joy*2 + button] = True
 
 def get_pen(fn):
     global pen_down
@@ -681,7 +688,6 @@ def get_strig(fn):
     if joy >= len(joysticks) or trig >= joysticks[joy].get_numbuttons():
         return False
     if fn%2 == 0:
-        print stick_fired
         # has been trig
         stick_was_trig = stick_fired[joy][trig]
         stick_fired[joy][trig] = False
@@ -691,7 +697,7 @@ def get_strig(fn):
         return joysticks[joy].get_button(trig)
       
 ###############################################
-# graphical
+# graphics backend interface
 # low-level methods (pygame implementation)
 
 graph_view = None
@@ -801,16 +807,10 @@ def fast_put(x0, y0, varname, operation_char):
     screen_changed = True
     return True
 
-
 ####################################
-# SOUND
-# see e.g. http://stackoverflow.com/questions/7816294/simple-pygame-audio-at-a-frequency
-
-# interface
+# sound interface
 
 music_foreground = True
-sound_queue = []
-
 
 def music_queue_length():
     # top of sound_queue is currently playing
@@ -870,7 +870,7 @@ def wait_music(wait_length=0, wait_last=True):
             or (wait_last and music_queue_length() == 0 and pygame.mixer.get_busy())):
         idle()
         console.check_events()
-        
+
 def play_sound(frequency, total_duration, fill=1, loop=False):
     check_init_mixer()
     # one wavelength at 37 Hz is 1192 samples at 44100 Hz
@@ -909,6 +909,8 @@ def play_sound(frequency, total_duration, fill=1, loop=False):
     sound_queue.append(sound_list)
 
 # implementation
+
+sound_queue = []
 
 mixer_bits = 16
 sample_rate = 44100
