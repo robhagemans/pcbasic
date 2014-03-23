@@ -68,17 +68,12 @@ def exec_edit(ins):
     program.edit_line(from_line)
     
 def exec_auto(ins):
-    automode.auto_linenum = parse_jumpnum_or_dot(ins, allow_empty=True)
-    if automode.auto_linenum == None:
-        automode.auto_linenum = 10        
+    linenum = parse_jumpnum_or_dot(ins, allow_empty=True)
+    increment = None
     if util.skip_white_read_if(ins, (',',)): 
-        automode.auto_increment = util.parse_jumpnum(ins, allow_empty=True)
-    else:
-        automode.auto_increment = 10
+        increment = util.parse_jumpnum(ins, allow_empty=True)
     util.require(ins, util.end_statement)
-    automode.auto_linenum -= automode.auto_increment
-    automode.auto_mode = True
-    program.prompt = False
+    automode.auto_loop(linenum, increment)
     program.set_runmode(False)
     
 def exec_list(ins):

@@ -12,46 +12,38 @@
 import error
 import program
 import console
+import run
+import util
 
 auto_mode = False
-auto_increment = 10
-auto_linenum = 0
 
-def auto_input_loop():
-    global auto_mode, auto_linenum
-    auto_mode_show_line()
-    try:
-        # input loop, checks events
-        line = console.read_screenline(from_start=True) 
-    except error.Break:
-        program.prompt = True
+def auto_loop(linenum=None, increment=None):
+    global auto_mode
+    # don't nest
+    if not auto_mode:
+        auto_mode = True   
+        linenum = linenum if linenum else 10
+        increment = increment if increment != None else 10    
+        while True:
+            numstr = str(linenum)
+            console.write(numstr)
+            try:
+                if linenum in program.line_numbers:
+                    console.write('*')
+                    line = console.read_screenline(from_start=True)
+                    if line[:len(numstr)+1] == numstr+'*':
+                        line[len(numstr)] = ' '
+                else:
+                    console.write(' ')
+                    line = console.read_screenline(from_start=True)
+            except error.Break:
+                # exit auto mode
+                break
+            while len(line) > 0 and line[-1] in util.whitespace:
+                line = line[:-1]
+            # run or store it; don't clear lines or raise undefined line number
+            stored_line = run.execute(line, ignore_empty_number=True)
+            if stored_line != None:
+                linenum = stored_line + increment
         auto_mode = False
-        return ''
-    if line == '':
-        # linenum remains the same, remove increment
-        auto_linenum -= auto_increment
-        program.prompt = False
-    return auto_mode_remove_star(line)
-            
-def auto_mode_show_line():
-    global auto_linenum
-    auto_linenum += auto_increment
-    console.write(str(auto_linenum))
-    if auto_linenum in program.line_numbers:
-        console.write('*')
-    else:
-        console.write(' ')
-                
-def auto_mode_remove_star(line):                
-    if auto_linenum in program.line_numbers:
-        num_len = len(str(auto_linenum))
-        if line[:num_len] == str(auto_linenum):
-            line = list(line)
-            line[num_len] = ' '
-            line = ''.join(line)
-    return line
-
-
-            
-
 
