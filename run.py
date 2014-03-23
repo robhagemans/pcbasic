@@ -21,42 +21,19 @@ import fileio
 import automode
 import console
 
-
-def once(arg_cmd, arg_quit):
-    if arg_cmd:
-        try:
-            get_command_line(arg_cmd)
-        except error.Error as e:
-            e.handle() 
-        execution_loop()
-        if arg_quit:
-            # we were running as a script, exit after completion
-            exit()
-
 def loop():
+    # main loop    
     while True:
         # prompt for commands
         prompt()
         # input loop, checks events
-        if automode.auto_mode:
-            line = automode.auto_input_loop()
-        else:
-            line = input_loop()
-        if line == '':
-            continue    
-        try:
-            # store the direct line
-            get_command_line(line)
-        except error.Error as e:
-            e.handle() 
-        # check for empty lines or lines that start with a line number & deal with them
-        if parse_start_direct(program.direct_line):
-            # execution loop, checks events
-            # execute program or direct command             
-            #cProfile.run('run.execution_loop()')
-            execution_loop()
-
-def input_loop():
+        line = get_line()
+        # run it 
+        execute(line)
+            
+def get_line():
+    if automode.auto_mode:
+        return automode.auto_input_loop()
     try:
         # input loop, checks events
         line = console.read_screenline(from_start=True) 
@@ -66,6 +43,21 @@ def input_loop():
         program.prompt = False
     # store the direct line
     return line
+            
+def execute(line):
+    if not line:
+        return
+    try:
+        # store the direct line
+        get_command_line(line)
+    except error.Error as e:
+        e.handle() 
+    # check for empty lines or lines that start with a line number & deal with them
+    if parse_start_direct(program.direct_line):
+        # execution loop, checks events
+        # execute program or direct command             
+        #cProfile.run('run.execution_loop()')
+        execution_loop()
 
 # execute any commands
 def execution_loop():

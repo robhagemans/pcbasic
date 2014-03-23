@@ -68,17 +68,20 @@ def main():
             # give BASIC error message and exit
             if not run.handle_error(e):
                 run.exit()
-        if args.run and not args.cmd:
+        if args.cmd:
+            run.execute(args.cmd)
+        elif args.run:
             # if a command is given, the program is only loaded.
-            args.cmd = 'RUN'
-        run.once(args.cmd, args.quit)
+            run.execute('RUN')    
+        if args.quit:
+            run.execute('SYSTEM')
         run.loop()
     finally:
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
         console.close()
 
 def prepare_devices(args):
-    if args.dumb or not sys.stdout.isatty() or not sys.stdin.isatty() or args.conv:
+    if args.dumb or args.conv or (not args.graphical and not args.text and (not sys.stdout.isatty() or not sys.stdin.isatty())):
         console.backend = backend_dumb
         console.backend.set_dumberterm()
     elif args.uni:                
@@ -102,8 +105,18 @@ def prepare_devices(args):
         console.sound = nosound
     # choose peripherals    
     deviceio.init_devices(args)
-    
+
+   
 def get_args():
+    # GWBASIC invocation, for reference:
+    # GWBASIC [filename] [<stdin] [[>]>stdout] [/f:n] [/i] [/s:n] [/c:n] [/m:[n][,n]] [/d]
+    #   /d      Allow double-precision ATN, COS, EXP, LOG, SIN, SQR, and TAN. Implemented as -d or --double. 
+    # NOT IMPLEMENTED:
+    #   /f:n    set maximum number of open files to n. Default is 3. Each additional file reduces free memory by 322 bytes.
+    #   /s:n    sets the maximum record length for RANDOM files. Default is 128, maximum is 32768.
+    #   /c:n    sets the COM receive buffer to n bytes. If n==0, disable the COM ports.   
+    #   /i      statically allocate file control blocks and data buffer.
+    #   /m:n,m  sets the highest memory location to n and maximum block size to m
     parser = argparse.ArgumentParser(
         description='PC-BASIC 3.23 interpreter. If no options are present, the interpreter will run in interactive mode.')
     parser.add_argument('infile', metavar='in_file', nargs='?', 
@@ -116,10 +129,12 @@ def get_args():
         help='Use unicode text terminal. Do not echo input (the terminal does). Translate graphic characters into unicode.')
     parser.add_argument('-t', '--text', action='store_true', 
         help='Use ANSI textmode terminal')
+    parser.add_argument('-g', '--graphical', action='store_true', 
+        help='Use graphical terminal. This is the normal default; use to override when redirecting i/o.')
     parser.add_argument('--conv', metavar='MODE', help='Convert file to (A)SCII, (B)ytecode or (P)rotected mode')
     parser.add_argument('-l', '--load', action='store_true', help='Load in_file only, do not execute')
     parser.add_argument('-r', '--run', action='store_true', help='Execute input file (default if in_file given)')
-    parser.add_argument('-c', '--cmd', metavar='CMD', help='Execute BASIC command line')
+    parser.add_argument('-e', '--cmd', metavar='CMD', help='Execute BASIC command line')
     parser.add_argument('-q', '--quit', action='store_true', help='Quit interpreter when execution stops')
     parser.add_argument('-d', '--double', action='store_true', help='Allow double-precision math functions')
     parser.add_argument('--debug', action='store_true', help='Enable DEBUG keyword')
