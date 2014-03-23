@@ -58,9 +58,14 @@ keybuf = ''
 # INP(&H60) scancode
 inp_key = 0
 
+    
+class NoneTerm(object):
+    def write(self, s):
+        pass    
+
 # echo to printer
-echo_read = None
-echo_write = None
+echo_read = NoneTerm()
+echo_write = NoneTerm()
 
 # input has closed
 input_closed = False
@@ -245,7 +250,7 @@ def interactive():
         if not d:
             # input stream closed
             run.exit()
-        if echo_read:
+        if d != '\x0d':
             echo_read.write(d)
         if d in ('\x00\x48', '\x1E', '\x00\x50', '\x1F',  '\x00\x4D', '\x1C', '\x00\x4B', 
                     '\x1D', '\x00\x47', '\x0B', '\x00\x4F', '\x0E' ):
@@ -520,8 +525,7 @@ def clear():
 ##### i/o methods
         
 def write(s, scroll_ok=True): 
-    if echo_write != None: 
-        echo_write.write(s)
+    echo_write.write(s)
     last = ''
     for c in s:
         if c == '\x09':                                     # TAB
@@ -576,8 +580,10 @@ def read_screenline(write_endl=True, from_start=False):
             break
     # go to last line
     row = crow
+    # echo the CR, if requested
     if write_endl:
-        write('\r\n')
+        echo_read.write('\r')
+        set_pos(row+1, 1)
     # remove trailing whitespace 
     while len(line) > 0 and line[-1] in util.whitespace:
         line = line[:-1]
@@ -595,8 +601,7 @@ def set_width(to_width):
           
 def start_line():
     if col != 1:
-        if echo_write != None: 
-            echo_write.write('\r\n')
+        echo_read.write('\r')
         set_pos(row+1, 1)
                 
 ##############################
