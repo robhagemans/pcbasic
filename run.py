@@ -34,7 +34,7 @@ def loop():
 def prompt(force=False):
     if program.prompt or force:
         console.start_line()
-        console.write("Ok \r\n")
+        console.write("Ok\xff\r\n")
     else:
         program.prompt = True
                           
