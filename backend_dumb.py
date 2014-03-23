@@ -36,9 +36,14 @@ class DumbTermWrite(object):
                     
 class DumberTermRead(object):
     def write(self, s):
-        if s not in ('\r', '\n'):
-            sys.stdout.write(s)    
-
+        for c in s:
+            if c == '\r':
+                sys.stdout.write('\r\n')
+            elif c in control:    
+                sys.stdout.write(c)    
+            else:
+                sys.stdout.write(unicodepage.to_utf8(c))       
+            
 class DumberTermWrite(object):
     def write(self, s):
         sys.stdout.write(s)
