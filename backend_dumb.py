@@ -135,18 +135,6 @@ def build_default_cursor(mode, is_line):
 def build_shape_cursor(from_line, to_line):
     pass
 
-# no pen, stick
-
-def get_pen(fn):
-    # fn 6,7,8,9 refer to character coordinates, 0 not allowed
-    return 1 if fn >= 6 else 0 
-
-def get_stick(fn):
-    return 0
-  
-def get_strig(fn):
-    return False 
-
 #################
     
 def check_keys():

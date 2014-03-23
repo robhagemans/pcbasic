@@ -78,7 +78,6 @@ def main():
         console.close()
 
 def prepare_devices(args):
-    console.sound = nosound
     if args.dumb or not sys.stdout.isatty() or not sys.stdin.isatty() or args.conv:
         console.backend = backend_dumb
         console.backend.set_dumberterm()
@@ -92,6 +91,7 @@ def prepare_devices(args):
         import backend_pygame
         console.backend = backend_pygame   
         graphics.backend = backend_pygame
+        console.penstick = backend_pygame
         if not args.nosound:
             console.sound = backend_pygame
     # initialise backends
