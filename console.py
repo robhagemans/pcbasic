@@ -581,10 +581,10 @@ def read_screenline(write_endl=True, from_start=False):
     # remove trailing whitespace 
     while len(line) > 0 and line[-1] in util.whitespace:
         line = line[:-1]
-    outstr = ''    
+    outstr = bytearray()
     for c, _ in line:
         outstr += c
-    return outstr    
+    return outstr[:255]    
 
 def set_width(to_width):
     resize(height, to_width)    

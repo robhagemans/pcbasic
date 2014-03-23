@@ -57,6 +57,7 @@ def main():
         # print greeting
         if not args.run and not args.cmd and not args.conv:
             console.write(greeting % (debugstr, var.total_mem))
+            run.prompt()
         # execute arguments
         if args.run or args.load or args.conv:
             if args.infile:

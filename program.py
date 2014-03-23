@@ -206,8 +206,10 @@ def preparse():
     init_program()
     clear_all()
 
-def store_line(linebuf, auto_mode=False):
+def store_line(linebuf, ignore_empty_number=False): 
     global line_numbers, last_stored
+    if protected:
+        raise error.RunError(5)
     linebuf.tell()
     # check if linebuf is an empty line after the line number
     linebuf.seek(5)
@@ -215,9 +217,10 @@ def store_line(linebuf, auto_mode=False):
     # get the new line number
     linebuf.seek(1)
     scanline = util.parse_line_number(linebuf)
+    if empty and ignore_empty_number:
+        return scanline
     # find the lowest line after scanline
-    after = 65536
-    afterpos = 0 
+    after, afterpos = 65536, 0
     for num in line_numbers:
         if num > scanline and num <= after:
             after = num
@@ -227,16 +230,12 @@ def store_line(linebuf, auto_mode=False):
     bytecode.seek(afterpos)
     rest = bytecode.read()
     # replace or insert?
-    if scanline in line_numbers and not (auto_mode and empty):
+    if scanline in line_numbers: # and not (auto_mode and empty):
         # line number exists, replace line
         bytecode.seek(line_numbers[scanline])
     else:
         if empty:
-            if not auto_mode:
-                # undefined line number
-                raise error.RunError(8)
-            else:
-                return scanline
+            raise error.RunError(8)
         # insert    
         bytecode.seek(afterpos)
     # write the line buffer to the program buffer
@@ -248,7 +247,7 @@ def store_line(linebuf, auto_mode=False):
     bytecode.seek(0)
     preparse()
     last_stored = scanline
-    return scanline 
+    return scanline
 
 def delete_lines(fromline, toline):
     keys = sorted(line_numbers.keys())
