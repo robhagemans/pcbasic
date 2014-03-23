@@ -24,19 +24,10 @@ import run
 # non-printing characters
 control = ('\x07', '\x08', '\x09', '\x0a','\x0b','\x0c', '\x0d', '\x1c', '\x1d', '\x1e', '\x1f')
 
-# this is called by set_vpage
-screen_changed = False
 
-######################################
-
-# works fine if input & output are the same interactive tty
-    
 class DumbTermWrite(object):
     def write(self, s):
-        c = ''
-        for i in range(len(s)):
-            last = c
-            c = s[i]
+        for c in s:
             if c in control:    
                 sys.stdout.write(c)    
             else:
