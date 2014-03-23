@@ -93,7 +93,6 @@ class Break(Error):
         self.msg = "Break"
         
     def handle(self):
-        program.prompt = True  
         errline = self.erl if not program.run_mode or self.erl != -1 else program.linenum 
         write_error_message(self.msg, errline)
         if program.run_mode:
@@ -109,7 +108,6 @@ class RunError(Error):
 
     def handle(self):
         global errn, erl, error_resume, error_handle_mode
-        program.prompt = True  
         errline = self.erl if not program.run_mode or self.erl != -1 else program.linenum     
         # set ERR and ERL
         errn = self.err
