@@ -41,19 +41,16 @@ def prompt(force=False):
 def get_line():
     if automode.auto_mode:
         return automode.auto_input_loop()
-    try:
-        # input loop, checks events
-        line = console.read_screenline(from_start=True) 
-    except error.Break:
-        line = ''
-    if not line:
-        program.prompt = False
-    # store the direct line
-    return line
+    while True:
+        try:
+            # input loop, checks events
+            line = console.read_screenline(from_start=True) 
+        except error.Break:
+            line = ''
+        if line:
+            return line    
             
 def execute(line):
-    if not line:
-        return
     try:
         # store the direct line
         get_command_line(line)
