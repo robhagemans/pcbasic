@@ -27,6 +27,8 @@ import events
 import deviceio
 # for replace key
 import program
+# for exit
+import run
 
 # back end implementations
 backend = None
@@ -59,6 +61,9 @@ inp_key = 0
 # echo to printer
 echo_read = None
 echo_write = None
+
+# input has closed
+input_closed = False
     
 class ScreenRow(object):
     def __init__(self, bwidth):
@@ -237,6 +242,9 @@ def interactive():
     while True: 
         # wait_char returns one ascii ar MS-DOS/GW-BASIC style keyscan code
         d = pass_char(wait_char())
+        if not d:
+            # input stream closed
+            run.exit()
         if echo_read:
             echo_read.write(d)
         if d in ('\x00\x48', '\x1E', '\x00\x50', '\x1F',  '\x00\x4D', '\x1C', '\x00\x4B', 
@@ -562,7 +570,7 @@ def read_screenline(write_endl=True, from_start=False):
         if therow.wrap:
             if therow.end < width:
                 # wrap before end of line means LF
-                line += '\x0a'
+                line += ('\n', attr),
             crow += 1
         else:
             break
@@ -642,7 +650,7 @@ def read_chars(num):
 
 # blocking keystroke peek
 def wait_char():
-    while len(keybuf)==0:
+    while len(keybuf)==0 and not input_closed:
         idle()
         check_events()
     return peek_char()
