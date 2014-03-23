@@ -87,10 +87,6 @@ def main():
 def prepare_devices(args):
     if args.dumb or args.conv or (not args.graphical and not args.text and (not sys.stdout.isatty() or not sys.stdin.isatty())):
         console.backend = backend_dumb
-        console.backend.set_dumberterm()
-    elif args.uni:                
-        console.backend = backend_dumb
-        console.backend.set_dumbterm()
     elif args.text:
         import backend_ansi
         console.backend = backend_ansi
