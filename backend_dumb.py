@@ -24,9 +24,6 @@ import run
 # non-printing characters
 control = ('\x07', '\x08', '\x09', '\x0a','\x0b','\x0c', '\x0d', '\x1c', '\x1d', '\x1e', '\x1f')
 
-# keep track of enter presses, to work well on echoing terminal with human operator
-enter_pressed = False
-
 # this is called by set_vpage
 screen_changed = False
 
@@ -36,25 +33,10 @@ screen_changed = False
     
 class DumbTermWrite(object):
     def write(self, s):
-        global enter_pressed
         c = ''
         for i in range(len(s)):
             last = c
             c = s[i]
-            # ignore CR/LF if enter has been pressed (and echoed!)
-            if last == '\x0d':
-                if c == '\x0a':
-                    if enter_pressed:
-                        enter_pressed = False
-                    else:
-                        sys.stdout.write(last + c)
-                    continue
-                else:
-                    sys.stdout.write(last)        
-                    # parse as normal
-            if c == '\x0d' and i < len(s)-1:
-                # first CR, hold till next char
-                continue
             if c in control:    
                 sys.stdout.write(c)    
             else:
@@ -70,7 +52,6 @@ class DumberTermWrite(object):
     def write(self, s):
         sys.stdout.write(s)
     
-    
 def init():
     global check_keys
     if sys.stdin.isatty():
@@ -84,7 +65,7 @@ def init():
         console.echo_write = DumberTermWrite()
     # if both are ttys, avoid doubling input echo
     if sys.stdin.isatty() and sys.stdout.isatty():
-        console.echo_read = None
+        console.echo_read = console.NoneTerm()
     else:    
         console.echo_read = DumberTermRead()
     return True    
@@ -113,7 +94,6 @@ def check_keys_interactive():
     # terminals send \n instead of \r on enter press
     if c == '\n':
         console.insert_key('\r') 
-        enter_pressed = True
     else:
         console.insert_key(c)
         
