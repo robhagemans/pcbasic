@@ -513,7 +513,14 @@ def refresh_cursor():
         dest_array ^= index       
     last_row = console.row
     last_col = console.col
-            
+        
+def pause_key():
+    # pause key press waits for any key down. continues to process screen events (blink) but not user events.
+    while not check_events(pause=True):
+        # continue playing background music
+        console.sound.check_sound()
+        idle()
+        
 def idle():
     pygame.time.wait(cycle_time/blink_cycles)  
 
@@ -530,6 +537,8 @@ def check_events(pause=False):
                 handle_key_up(event)
         elif event.type == pygame.MOUSEBUTTONDOWN:
             handle_mouse(event)
+        elif event.type == pygame.JOYBUTTONDOWN:
+            handle_stick(event)    
     check_screen()
     return False
     
@@ -562,19 +571,6 @@ def check_screen():
             pygame.display.flip()             
         screen_changed = False
 
-
-def handle_mouse(e):
-    global pen_down, pen_down_pos
-    if e.button == 1: # LEFT BUTTON
-        events.pen_triggered = True
-        pen_down = -1 # TRUE
-        pen_down_pos = e.pos
-                
-def handle_stick(e):
-    if e.joy < 2 and e.button < 2:
-        stick_fired[e.joy][e.button] = True
-        events.stick_triggered[e.joy][e.button] = True
-        
 def handle_key(e):
     c = ''
     mods = pygame.key.get_mods() 
@@ -627,13 +623,6 @@ def handle_key_up(e):
         console.inp_key = 0x80 + ord(keycode_to_inpcode[e.key])
     except KeyError:
         pass    
-        
-def pause_key():
-    # pause key press waits for any key down. continues to process screen events (blink) but not user events.
-    while not check_events(pause=True):
-        # continue playing background music
-        console.sound.check_sound()
-        idle()
             
 ##############################################
 # light pen (emulated by mouse) & joystick
@@ -643,6 +632,18 @@ pen_down = 0
 pen_down_pos = (0,0)
 
 stick_fired = [[False, False], [False, False]]
+
+def handle_mouse(e):
+    global pen_down, pen_down_pos
+    if e.button == 1: # LEFT BUTTON
+        events.pen_triggered = True
+        pen_down = -1 # TRUE
+        pen_down_pos = e.pos
+                
+def handle_stick(e):
+    if e.joy < 2 and e.button < 2:
+        stick_fired[e.joy][e.button] = True
+        events.strig_handlers[e.joy*2 + e.button] = True
 
 def get_pen(fn):
     global pen_down
@@ -677,16 +678,17 @@ def get_stick(fn):
 
 def get_strig(fn):       
     joy, trig = fn//4, (fn//2)%2
-    if len(joysticks) < stick_num + 1 or joysticks[stick_num].get_numbuttons() < trig_num + 1:
+    if joy >= len(joysticks) or trig >= joysticks[joy].get_numbuttons():
         return False
     if fn%2 == 0:
+        print stick_fired
         # has been trig
-        stick_trig_old = stick_fired
-        stick_fired[stick_num][trig_num] = False
-        return stick_trig_old[stick_num][trig_num]
+        stick_was_trig = stick_fired[joy][trig]
+        stick_fired[joy][trig] = False
+        return stick_was_trig
     else:
         # trig
-        return joysticks[stick_num].get_button(trig_num)
+        return joysticks[joy].get_button(trig)
       
 ###############################################
 # graphical
