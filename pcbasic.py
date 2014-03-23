@@ -61,15 +61,15 @@ def main():
         if args.run or args.load or args.conv:
             if args.infile:
                 run.execute('LOAD "'+args.infile+'"')
-            else:
-                program.load(sys.stdin)        
+            else:   
+                program.load(fileio.BaseFile(sys.stdin, 0, "L", "R", ""))        
         if args.conv:
             # allow conversion of protected files
             program.protected = False
             if args.outfile:
                 run.execute('SAVE "'+args.outfile+'",'+args.conv)
             else:
-                program.save(sys.stdout, args.conv)   
+                program.save(fileio.BaseFile(sys.stdout, 0, "S", "W", ""), args.conv)   
             run.execute('SYSTEM')
         if args.cmd:
             run.execute(args.cmd)
