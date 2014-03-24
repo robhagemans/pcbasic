@@ -206,7 +206,7 @@ def exec_locate(ins):
         console.set_cursor_shape(start, stop)
 
 def exec_write(ins, screen=None):
-    screen = expressions.parse_file_number(ins)
+    screen = expressions.parse_file_number(ins, 'OAR')
     screen = console if screen == None else screen
     expr = expressions.parse_expression(ins, allow_empty=True)
     if expr:
@@ -225,7 +225,7 @@ def exec_write(ins, screen=None):
 
 def exec_print(ins, screen=None):
     if screen == None:
-        screen = expressions.parse_file_number(ins)
+        screen = expressions.parse_file_number(ins, 'OAR')
         screen = console if screen == None else screen
     if util.skip_white_read_if(ins, ('\xD7',)): # USING
        return exec_print_using(ins, screen)
