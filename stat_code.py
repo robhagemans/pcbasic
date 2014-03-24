@@ -112,7 +112,7 @@ def exec_load(ins):
     program.load(fileio.open_file_or_device(0, name, mode='L', defext='BAS'))
     if comma:
         # in ,R mode, don't close files; run the program
-        program.set_runmode()
+        program.jump(None)
     else:
         fileio.close_all()
         

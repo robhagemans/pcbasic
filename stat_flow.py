@@ -35,10 +35,10 @@ def exec_stop(ins):
 def exec_cont(ins):
     if program.stop == None:
         raise error.RunError(17)
-    else:    
+    else: 
+        program.set_runmode()   
         program.bytecode.seek(program.stop[0])
         program.linenum = program.stop[1]
-        program.set_runmode()
     # IN GW-BASIC, weird things happen if you do GOSUB nn :PRINT "x"
     # and there's a STOP in the subroutine. 
     # CONT then continues and the rest of the original line is executed, printing x
@@ -135,16 +135,17 @@ def exec_run(ins):
     if comma:
         util.require_read(ins, 'R')
     c = util.skip_white(ins)
+    jumpnum = None
     if c == '\x0e':   
         # parse line number, ignore rest of line and jump
-        program.jump(util.parse_jumpnum(ins))
+        jumpnum = util.parse_jumpnum(ins)
     elif c not in util.end_statement:
         name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_statement)
         program.load(fileio.open_file_or_device(0, name, mode='L', defext='BAS'))
     program.init_program()
     program.clear_all(close_files=not comma)
-    program.set_runmode()
+    program.jump(jumpnum)
                 
 def exec_if(ins):
     # ovoid overflow: don't use bools.

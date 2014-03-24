@@ -117,7 +117,6 @@ class RunError(Error):
             error_resume = program.current_statement, program.linenum, program.run_mode
             program.jump(on_error)
             error_handle_mode = True
-            program.set_runmode()
             events.suspend_all_events = True
             return True
             
@@ -150,15 +149,16 @@ def resume(jumpnum):
         # RESUME or RESUME 0 
         program.set_runmode(runmode)
         program.current_codestream.seek(start_statement)
+        program.linenum = linenum
     elif jumpnum == -1:
         # RESUME NEXT
         program.set_runmode(runmode)        
         program.current_codestream.seek(start_statement)        
+        program.linenum = linenum
         util.skip_to(program.current_codestream, util.end_statement, break_on_first_char=False)
     else:
         # RESUME n
         program.jump(jumpnum)
-        program.set_runmode()              
 
 def set_err(e):
     global errn, erl
