@@ -44,7 +44,9 @@ class DumbTermWrite(object):
 
 class DumberTermWrite(object):
     def write(self, s):
-        sys.stdout.write(s)
+    def write(self, s):
+        for c in s:
+            putc(c)
         sys.stdout.flush()
                     
 class DumberTermRead(object):
@@ -95,8 +97,31 @@ def check_keys_interactive():
     else:
         console.insert_key(c)
         
-##############################################        
+##############################################
+
+putc_last = ''
+# CR/LF compensating stdout write.
+# LF -> LF, CR -> CRLF, CRLF -> CRLF
+def putc(s):
+    for c in s:
+        if putc_last == '\r':
+            if c == '\n':
+                sys.stdout.write('\r')
+            else:
+                sys.stdout.write('\r\n')
+        if c != '\r':
+            sys.stdout.write(c)    
+        putc_last = c        
+
+def putc_utf8(c):
+    if c in control:    
+        putc(c)    
+    else:
+        putc(unicodepage.cp437_to_utf8[c])          
         
+##############################################        
+
+# non-blocking read of one char        
 def getc():
     fd = sys.stdin.fileno()
     # check if stdin has characters to read
@@ -119,12 +144,6 @@ def getc_utf8():
         return unicodepage.utf8_to_cp437[utf8]
     except KeyError:        
         return utf8
-
-def putc_utf8(c):
-    if c in control:    
-        sys.stdout.write(c)    
-    else:
-        sys.stdout.write(unicodepage.cp437_to_utf8[c])  
 
 ##############################################
         
