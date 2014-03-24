@@ -222,7 +222,7 @@ def dospath(s, defext, err, action, isdir):
     for e in elements:
         # skip double slashes
         if e:
-            test += dosname_read(e, '', test, err, True) + os.sep
+            test = dosname_read(e, '', test, err, True) + os.sep
     return action(name, defext, test, err, isdir)
 
 dospath_read = partial(dospath, action=dosname_read, isdir=False)
