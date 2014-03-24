@@ -56,7 +56,8 @@ def main():
         program.clear_program()
         # print greeting
         if not args.run and not args.cmd and not args.conv:
-            console.write(greeting % (debugstr, var.total_mem))
+            if sys.stdin.isatty():
+                console.write(greeting % (debugstr, var.total_mem))
             run.show_prompt()
         # execute arguments
         if args.run or args.load or args.conv:
@@ -86,9 +87,10 @@ def main():
         console.close()
 
 def prepare_devices(args):
-    if args.dumb or args.conv or (not args.graphical and not args.text and (not sys.stdout.isatty() or not sys.stdin.isatty())):
+    if args.dumb or args.conv or (not args.graphical and not args.text and not sys.stdin.isatty()):
+        # redirected input leads to dumbterm use
         console.backend = backend_dumb
-    elif args.text:
+    elif args.text and sys.stdout.isatty():
         import backend_ansi
         console.backend = backend_ansi
     else:   
@@ -98,6 +100,10 @@ def prepare_devices(args):
         console.penstick = backend_pygame
         if not args.nosound:
             console.sound = backend_pygame
+        # redirected output is split between graphical screen and redirected file    
+        if not sys.stdout.isatty():
+            console.echo_write = backend_dumb.DumberTermWrite() 
+            console.echo_read = backend_dumb.DumberTermRead()        
     # initialise backends
     console.keys_visible = (not args.run and args.cmd == None)
     console.init()
