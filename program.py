@@ -335,7 +335,7 @@ def renum(new_line, start_line, step):
                 newjump = jumpnum
             else:    
                 linum = get_line_number(bytecode.tell())
-                console.write('Undefined line ' + str(jumpnum) + ' in ' + str(linum) + '\r\n')
+                console.write_line('Undefined line ' + str(jumpnum) + ' in ' + str(linum))
         bytecode.seek(-2, 1)
         bytecode.write(str(vartypes.value_to_uint(newjump)))
 

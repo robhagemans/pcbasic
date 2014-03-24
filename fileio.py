@@ -128,6 +128,9 @@ class BaseFile(object):
     
     def write(self, s):
         self.fhandle.write(str(s))
+    
+    def write_line(self, s=''):
+        self.fhandle.write(str(s) + '\r\n')    
 
     def end_of_file(self):
         return self.peek_char() == ''

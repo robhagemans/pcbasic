@@ -221,7 +221,7 @@ def exec_write(ins, screen=None):
                 break
             expr = expressions.parse_expression(ins, empty_err=2)
     util.require(ins, util.end_statement)        
-    screen.write('\r\n')
+    screen.write_line()
 
 def exec_print(ins, screen=None):
     if screen == None:
@@ -241,7 +241,7 @@ def exec_print(ins, screen=None):
             if d == ',':
                 next_zone = int((screen.col-1)/14)+1
                 if next_zone >= number_zones and screen.width >= 14:
-                    screen.write('\r\n')
+                    screen.write_line()
                 else:            
                     screen.write(' '*(1+14*next_zone-screen.col))
             elif d == '\xD2': #SPC(
@@ -252,7 +252,8 @@ def exec_print(ins, screen=None):
                 pos = max(0, vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=2), 0xffff)) % screen.width
                 util.require_read(ins, (')',))
                 if pos < screen.col:
-                    screen.write('\r\n' + ' '*(pos-1))
+                    screen_write_line()
+                    screen.write(' '*(pos-1))
                 else:
                     screen.write(' '*(pos-screen.col))
         else:
@@ -263,12 +264,10 @@ def exec_print(ins, screen=None):
             if expr[0] in ('%', '!', '#'):
                 word += ' '
             if screen.col + len(word) - 1 > screen.width and screen.col != 1:
-                screen.write('\r\n')
-            for c in word:    
-                # print separately to force replacement of every CR by CRLF; CRLF -> CRLF LF
-                screen.write(chr(c))
+                screen.write_line()
+            screen.write(str(word))
     if newline:
-         screen.write('\r\n')
+         screen.write_line()
             
 def exec_print_using(ins, screen):
     format_expr = vartypes.pass_string_unpack(expressions.parse_expression(ins))
@@ -312,7 +311,7 @@ def exec_print_using(ins, screen):
                 format_chars = True
                 semicolon = util.skip_white_read_if(ins, (';',))    
     if not semicolon:
-        screen.write('\r\n')
+        screen.write_line()
     util.require(ins, util.end_statement)
 
 def exec_lprint(ins):

@@ -94,7 +94,7 @@ def exec_list(ins):
         for line in lines:
             console.check_events()
             console.clear_line(console.row)
-            console.write(line + '\r\n')
+            console.write_line(line)
     
 def exec_llist(ins):
     from_line, to_line = parse_line_range(ins)

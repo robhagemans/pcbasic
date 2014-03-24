@@ -174,7 +174,11 @@ class ConsoleFile(BaseFile):
         for s in inp:
             console.write(s)
             if self.col > self.width and self.width != 255:
-                console.write('\r\n')
+                console.write_line()
+            
+    def write_line(self, inp):
+        write(inp)
+        console.write_line(inp)
             
     def set_width(self, new_width=255):
         self.width = new_width

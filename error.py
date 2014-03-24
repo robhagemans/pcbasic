@@ -135,7 +135,7 @@ def handle_syntax_error(errline):
     # for syntax error, line edit gadget appears
     if errline != -1:
         console.start_line()
-        console.write("Ok \r\n")
+        console.write_line("Ok\xff")
         textpos = program.edit_line(errline, program.bytecode.tell())
     # for some reason, err is reset to zero by GW-BASIC in this case.
     errn = 0
@@ -152,7 +152,7 @@ def write_error_message(msg, linenum):
     console.write(msg) 
     if linenum != None and linenum > -1 and linenum < 65535:
         console.write(' in %i' % linenum)
-    console.write(' \r\n')                  
+    console.write_line(' ')                  
 
 # math errors only break execution if handler is set
 def math_error(errnum):
@@ -162,5 +162,5 @@ def math_error(errnum):
     else:
         # write a message & continue as normal
         # start_line() ?
-        console.write(get_message(errnum) + '\r\n') # no space, no line number
+        console.write_line(get_message(errnum)) # no space, no line number
 

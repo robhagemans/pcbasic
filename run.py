@@ -34,7 +34,7 @@ def show_prompt():
     global prompt
     if prompt:
         console.start_line()
-        console.write("Ok\xff\r\n")
+        console.write_line("Ok\xff")
     prompt = True
                           
 def wait_line():

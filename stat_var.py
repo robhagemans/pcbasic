@@ -257,7 +257,7 @@ def exec_input(ins):
             varlist = [ v[:] for v in readvar ]
             varlist = representation.input_vars(varlist, fileio.TextFile(StringIO(line), mode='I'))
             if not varlist:
-                console.write('?Redo from start\r\n')  # ... good old Redo!
+                console.write_line('?Redo from start')  # ... good old Redo!
             else:
                 break
         for v in varlist:

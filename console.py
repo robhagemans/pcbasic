@@ -554,7 +554,7 @@ def print_screen():
         line = ''
         for c, _ in vpage[crow-1].buf:
             line += c
-        deviceio.lpt1.write(line + '\r\n')
+        deviceio.lpt1.write_line(line)
     deviceio.lpt1.flush()    
 
 def clear():
@@ -571,19 +571,8 @@ def clear():
 ##### i/o methods
 
 def replace_cr_with_crlf(s):
-    # CR -> CRLF, CRLF (in ONE STRING) -> CRLF
-    last = ''
-    out = ''
-    for c in s:
-        if c == '\r':
-            out += '\r\n'  
-        elif c == '\n':
-            if last != '\r':
-               out += c
-        else:
-            out += c    
-        last = c
-    return out    
+    # CR -> CRLF, CRLF -> CRLF LF
+    return ''.join([ ('\r\n' if c == '\r' else c) for c in s ])
     
 def write(s, scroll_ok=True): 
     echo_write.write(replace_cr_with_crlf(s))
@@ -612,6 +601,11 @@ def write(s, scroll_ok=True):
             put_char(c)
         last = c
 
+def write_line(s='', scroll_ok=True): 
+    write(s, scroll_ok=True)
+    echo_write.write('\r\n')
+    set_pos(row+1, 1)
+
 def set_width(to_width):
     resize(height, to_width)    
     if keys_visible:
@@ -628,7 +622,7 @@ def list_keys():
                 text[j] = keys_line_replace_chars[chr(text[j])]
             except KeyError:
                 pass    
-        write('F' + str(i+1) + ' ' + str(text) + '\r\n')    
+        write_line('F' + str(i+1) + ' ' + str(text))    
 
 def clear_key_row():
     apage.row[24].clear()
