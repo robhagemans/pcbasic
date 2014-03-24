@@ -89,9 +89,10 @@ class ByteStream(object):
 
 
 class BaseFile(object):
-    def __init__(self, fhandle, number, mode, access, lock):
+    def __init__(self, fhandle, name, number, mode, access, lock):
         # width=255 means line wrap
         self.fhandle = fhandle
+        self.name= name
         self.number = number
         self.mode = mode.upper()
         self.access = access
@@ -142,8 +143,8 @@ class BaseFile(object):
         self.fhandle.truncate()
 
 class TextFile(BaseFile):
-    def __init__(self, fhandle, number=0, mode='A', access='RW', lock=''):
-        BaseFile.__init__(self, fhandle, number, mode, access, lock)
+    def __init__(self, fhandle, name, number=0, mode='A', access='RW', lock=''):
+        BaseFile.__init__(self, fhandle, name, number, mode, access, lock)
         # width=255 means line wrap
         self.width = 255
         self.col = 1
@@ -241,8 +242,8 @@ class TextFile(BaseFile):
 
 
 class RandomBase(BaseFile):
-    def __init__(self, fhandle, number, mode, access, lock, reclen=128):
-        BaseFile.__init__(self, fhandle, number, mode, access, lock)
+    def __init__(self, fhandle, name, number, mode, access, lock, reclen=128):
+        BaseFile.__init__(self, fhandle, name, number, mode, access, lock)
         self.reclen = reclen
         # replace with empty field if already exists    
         try:
@@ -309,8 +310,8 @@ class RandomFile(RandomBase):
     # FIELD overflow
     overflow_error = 50
     
-    def __init__(self, fhandle, number, mode, access, lock, reclen=128):
-        RandomBase.__init__(self, fhandle, number, mode, access, lock, reclen=128)
+    def __init__(self, fhandle, name, number, mode, access, lock, reclen=128):
+        RandomBase.__init__(self, fhandle, name, number, mode, access, lock, reclen=128)
         # position at start of file
         self.recpos = 0
         self.fhandle.seek(0)
@@ -361,11 +362,11 @@ class RandomFile(RandomBase):
 
 def check_file_not_open(name):
     for f in files:
-        if name == files[f].fhandle.name:
+        if name == files[f].name:
             raise error.RunError(55)
 
 def find_files_by_name(name):
-    return [files[f] for f in files if files[f].fhandle.name == name]
+    return [files[f] for f in files if files[f].name == name]
     
 def open_file_or_device(number, name, mode='I', access='R', lock='', reclen=128, defext=''):
     if not name or number < 0 or number > max_files:
@@ -398,11 +399,11 @@ def open_file_or_device(number, name, mode='I', access='R', lock='', reclen=128,
         fhandle = oslayer.safe_open(name, mode, access)
         # apply the BASIC file wrapper
         if mode in ('S', 'L'): # save, load
-            inst = BaseFile(fhandle, number, mode, access, lock)
+            inst = BaseFile(fhandle, name, number, mode, access, lock)
         elif mode in ('I', 'O', 'A'):
-            inst = TextFile(fhandle, number, mode, access, lock)
+            inst = TextFile(fhandle, name, number, mode, access, lock)
         else:
-            inst = RandomFile(fhandle, number, mode, access, lock, reclen)
+            inst = RandomFile(fhandle, name, number, mode, access, lock, reclen)
     return inst    
            
 def close_all():

@@ -29,13 +29,13 @@ serial_out_size = 128
 def init_devices(args):
     global input_devices, output_devices, random_devices
     global scrn, kybd, lpt1, lpt2, lpt3, com1, com2
-    scrn = ConsoleFile()
-    kybd = ConsoleFile()
-    lpt1 = create_device(args.lpt1, fileio.TextFile(PrinterStream()))
-    lpt2 = create_device(args.lpt2)
-    lpt3 = create_device(args.lpt3)
-    com1 = create_device(args.com1)
-    com2 = create_device(args.com2)
+    scrn = ConsoleFile('SCRN:')
+    kybd = ConsoleFile('KYBD:')
+    lpt1 = create_device('LPT1:', args.lpt1, 'CUPS:')
+    lpt2 = create_device('LPT2:', args.lpt2)
+    lpt3 = create_device('LPT3:', args.lpt3)
+    com1 = create_device('COM1:', args.com1)
+    com2 = create_device('COM2:', args.com2)
     # these are the *output* devices
     output_devices = { 'SCRN:': scrn, 'LPT1:': lpt1, 'LPT2:': lpt2, 'LPT3:': lpt3, 'COM1:': com1, 'COM2:': com2 }    
     # input devices
@@ -74,19 +74,19 @@ def device_open(number, device_name, mode, access):
         fileio.files[number] = inst
     return inst    
 
-def create_device(arg, default=None):
+def create_device(name, arg, default=None):
     device = None
+    if arg == None and default != None:
+        arg = [default]
     if arg != None:
         for a in arg:
-            [addr, val] = a.split(':', 1)
+            addr, val = a.split(':', 1)
             if addr.upper() == 'CUPS':
-                device = fileio.TextFile(PrinterStream(val))      
+                device = fileio.TextFile(PrinterStream(val), name)      
             elif addr.upper() == 'FILE':
-                device = DeviceFile(val, access='W')
+                device = DeviceFile(name, val, access='W')
             elif addr.upper() == 'PORT':
-                device = SerialFile(val)    
-    else:
-        device = default
+                device = SerialFile(name, val)    
     return device
 
 
@@ -121,9 +121,9 @@ input_replace = {
 
 # wrapper for console for reading from KYBD: and writing to SCRN:
 class ConsoleFile(BaseFile):
-    def __init__(self):
+    def __init__(self, name):
         self.fhandle = console
-        self.fhandle.name = 'SCRN:'
+        self.name = name
         self.number = 0
         self.mode = 'A'
         self.access = 'R'
@@ -176,8 +176,8 @@ class ConsoleFile(BaseFile):
             if self.col > self.width and self.width != 255:
                 console.write_line()
             
-    def write_line(self, inp):
-        write(inp)
+    def write_line(self, inp=''):
+        self.write(inp)
         console.write_line(inp)
             
     def set_width(self, new_width=255):
@@ -224,8 +224,8 @@ class ConsoleFile(BaseFile):
 
 
 class PrinterStream(StringIO.StringIO):
-    def __init__(self, name=''):
-        self.printer_name = name
+    def __init__(self, printer_name=''):
+        self.printer_name = printer_name
         StringIO.StringIO.__init__(self)
     
     # flush buffer to LPR printer    
@@ -241,12 +241,12 @@ class PrinterStream(StringIO.StringIO):
 
 # essentially just a text file that doesn't close if asked to
 class DeviceFile(TextFile):
-    def __init__(self, unixpath, access='R'):
+    def __init__(self, name, unixpath, access='R'):
         if access == 'W':
             mode = 'O'
         else:
             mode = 'I'
-        TextFile.__init__(self, oslayer.safe_open(unixpath, mode, access), 0, mode, access)
+        TextFile.__init__(self, oslayer.safe_open(unixpath, mode, access), name, 0, mode, access)
         
     def close(self):
         # don't close the file handle as we may have copies
@@ -258,9 +258,9 @@ class SerialFile(RandomBase):
     # communications buffer overflow
     overflow_error = 69
 
-    def __init__(self, port, number=0, reclen=128):
+    def __init__(self, name, port, number=0, reclen=128):
         self._in_buffer = bytearray()
-        RandomBase.__init__(self, serial.serial_for_url(port, timeout=0, do_not_open=True), number, 'R', 'RW', '', reclen)
+        RandomBase.__init__(self, serial.serial_for_url(port, timeout=0, do_not_open=True), name, number, 'R', 'RW', '', reclen)
         if port.split(':', 1)[0] == 'socket':
             self.fhandle = SocketSerialWrapper(self.fhandle)
     
