@@ -342,13 +342,13 @@ def renum(new_line, start_line, step):
 def load(g):
     global protected
     bytecode.truncate(0)
-    c = ''.join(g.read_chars(1))
+    c = ''.join(g.read(1))
     if c == '\xFF':
         # bytecode file
         bytecode.write('\x00')
         protected = False
         while c != '':
-            c = ''.join(g.read_chars(1))
+            c = ''.join(g.read(1))
             bytecode.write(c)
     elif c == '\xFE':
         # protected file

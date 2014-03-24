@@ -58,7 +58,11 @@ def init():
 
 def check_keys_dumb():
     # read everything up to \n
-    all_input = sys.stdin.readline()
+    try:
+        all_input = sys.stdin.readline()
+    except ValueError:
+        # stdin closed    
+        all_input = ''
     if not all_input:
         # signal to quit when done
         console.input_closed = True
