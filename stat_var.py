@@ -253,8 +253,9 @@ def exec_input(ins):
         # read the input
         while True:
             console.write(prompt) 
+            line = console.wait_screenline(write_endl=newline)
             varlist = [ v[:] for v in readvar ]
-            varlist = representation.input_vars(varlist, fileio.TextFile(StringIO(console.read_screenline(write_endl=newline)), mode='I'))
+            varlist = representation.input_vars(varlist, fileio.TextFile(StringIO(line), mode='I'))
             if not varlist:
                 console.write('?Redo from start\r\n')  # ... good old Redo!
             else:
@@ -279,11 +280,11 @@ def exec_line_input(ins):
         raise error.RunError(13)    
     # read the input
     if finp:
-        inputs = finp.read_line()
+        line = finp.read_line()
     else:    
         console.write(prompt) 
-        inputs = console.read_screenline(write_endl=newline)
-    var.set_var_or_array(readvar, indices, vartypes.pack_string(inputs))
+        line = console.wait_screenline(write_endl=newline)
+    var.set_var_or_array(readvar, indices, vartypes.pack_string(line))
 
 def exec_restore(ins):
     if not util.skip_white(ins) in util.end_statement:
@@ -328,8 +329,9 @@ def exec_randomize(ins):
     # prompt for random seed if not specified
     if not val:
         console.write("Random number seed (-32768 to 32767)? ")
+        seed = console.wait_screenline()
         # seed entered on prompt is rounded to int
-        val = vartypes.pass_int_keep(representation.str_to_value_keep(vartypes.pack_string(console.read_screenline())))
+        val = vartypes.pass_int_keep(representation.str_to_value_keep(vartypes.pack_string(seed)))
     elif val[0] == '$':
         raise error.RunError(5)
     rnd.randomize(val)
