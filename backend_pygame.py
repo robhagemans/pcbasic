@@ -599,16 +599,10 @@ def handle_key(e):
         # shift+tab -> \x00\x0F (scancode for TAB) but TAB -> \x09
         c = '\x00\x0F'
     else:
-        if (mods & pygame.KMOD_CTRL):
-            try:
-                c = ctrl_keycode_to_scancode[e.key]
-            except KeyError:
-                c = unicodepage.from_unicode(e.unicode)
-        else:    
-            try:
-                c = keycode_to_scancode[e.key]
-            except KeyError:
-                c = unicodepage.from_unicode(e.unicode)
+        try:
+            c = ctrl_keycode_to_scancode[e.key] if (mods & pygame.KMOD_CTRL) else keycode_to_scancode[e.key]
+        except KeyError:
+            c = unicodepage.from_unicode(e.unicode)
     console.insert_key(c) 
     # current key pressed; modifiers ignored 
     try:
