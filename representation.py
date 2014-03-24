@@ -19,7 +19,7 @@ import vartypes
 
 # whitespace for INPUT#, INPUT
 # TAB x09 is not whitespace for input#. NUL \x00 and LF \x0a are. 
-ascii_white = (' ', '\x00', '\x0a')
+ascii_white = (' ', '\x00', '\n')
 
 
 ascii_octits = ['0','1','2','3','4','5','6','7']
@@ -80,8 +80,7 @@ def oct_to_str(s):
 
 # for to_str
 # for numbers, tab and LF are whitespace    
-whitespace = (' ', '\x09', '\x0a')
-#tokenise_whitespace = [' ', '\t', '\x0a']
+whitespace = (' ', '\t', '\n')
 # these seem to lead to a zero outcome all the time
 kill_char = ('\x1c', '\x1d', '\x1f')
 
@@ -480,9 +479,9 @@ def input_vars_file(readvar, text_file):
     for v in readvar:
         typechar = v[0][-1]
         if typechar == '$':
-            valstr = input_entry(text_file, allow_quotes=True, end_all = ('\x0d', '\x1a'), end_not_quoted = (',', '\x0a'))
+            valstr = input_entry(text_file, allow_quotes=True, end_all = ('\r', '\x1a'), end_not_quoted = (',', '\n'))
         else:
-            valstr = input_entry(text_file, allow_quotes=False, end_all = ('\x0d', '\x1a', ',', '\x0a', ' '))
+            valstr = input_entry(text_file, allow_quotes=False, end_all = ('\r', '\x1a', ',', '\n', ' '))
         value = str_to_type(valstr, typechar)    
         if value == None:
             value = vartypes.null[typechar]

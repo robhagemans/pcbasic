@@ -36,12 +36,12 @@ debug = False
 tokens_number = ['\x0b','\x0c','\x0f',
     '\x11','\x12','\x13','\x14','\x15','\x16','\x17','\x18','\x19','\x1a','\x1b',
     '\x1c','\x1d', '\x1f']
-tokens_linenum = ['\x0d','\x0e' ]
+tokens_linenum = ['\x0d', '\x0e']
 tokens_operator = map(chr, range(0xe6, 0xed+1))
 tokens_with_bracket = ['\xd2', '\xce']
 
 tokenise_endfile = ['', '\x1a']
-tokenise_endline_nonnul =  tokenise_endfile + ['\x0d']
+tokenise_endline_nonnul =  tokenise_endfile + ['\r']
 tokenise_endline = tokenise_endline_nonnul + ['\x00'] # after NUL everything is ignored untile EOL 
 tokenise_endstatement = tokenise_endline + [':']
 
@@ -196,9 +196,9 @@ def tokenise_stream(ins, outs, one_line=False, onfile=True):
             ins.read(1)
             return False
         elif d in tokenise_endline_nonnul:
-            # handle \x0d\x0a
-            if ins.read(1)=='\x0d':
-                if util.peek(ins) == '\x0A':
+            # handle CRLF
+            if ins.read(1) == '\r':
+                if util.peek(ins) == '\n':
                     ins.read(1) 
             if one_line:
                 return True
