@@ -49,16 +49,17 @@ class Writer(object):
         
 def init():
     global check_keys
+    # use non-blocking and UTF8 when reading from ttys
     if sys.stdin.isatty():
         check_keys = check_keys_interactive
     else:
         check_keys = check_keys_dumb
-    # on ttys, use unicode and echo suppression
+    # use UTF8 when writing to ttys
     if sys.stdout.isatty():
         console.echo_write = Writer(putc_utf8)
     else:
         console.echo_write = Writer(putc)
-    # if both are ttys, avoid doubling input echo
+    # if both stdin and stdout are ttys, avoid doubling the input echo
     if sys.stdin.isatty() and sys.stdout.isatty():
         console.echo_read = console.NoEcho()
     else:    
