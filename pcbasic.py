@@ -61,25 +61,19 @@ def main():
             run.show_prompt()
         # execute arguments
         if args.run or args.load or args.conv:
-            if args.infile:
-                run.execute('LOAD "'+args.infile+'"')
-            else:   
-                program.load(sys.stdin)        
+            program.load(oslayer.safe_open(args.infile, "L", "R") if args.infile else sys.stdin)
         if args.conv:
             # allow conversion of protected files
             program.protected = False
-            if args.outfile:
-                run.execute('SAVE "'+args.outfile+'",'+args.conv)
-            else:
-                program.save(sys.stdout, args.conv)   
-            run.execute('SYSTEM')
+            program.save(oslayer.safe_open(args.outfile, "S", "W") if args.outfile else sys.stdout, args.conv)
+            run.exit()
         if args.cmd:
             run.execute(args.cmd)
         elif args.run:
             # if a command is given, the program is only loaded.
             run.execute('RUN')    
         if args.quit:
-            run.execute('SYSTEM')
+            run.exit()
         # go into interactive mode    
         run.loop()
     finally:
