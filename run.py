@@ -27,7 +27,8 @@ def loop():
     # main loop 
     while True:
         line = get_line()
-        execute(line)
+        if execute(line):
+            show_prompt()
 
 def show_prompt():
     global prompt
@@ -55,10 +56,11 @@ def execute(line, ignore_empty_number=False):
             return program.store_line(program.direct_line, ignore_empty_number)
         except error.Error as e:
             e.handle()             
+        return False
     elif c != '':    
         # it is a command, go and execute    
         execution_loop()
-        show_prompt()
+        return True
                
 # execute any commands
 def execution_loop():
