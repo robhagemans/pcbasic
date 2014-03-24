@@ -264,7 +264,9 @@ def exec_print(ins, screen=None):
                 word += ' '
             if screen.col + len(word) - 1 > screen.width and screen.col != 1:
                 screen.write('\r\n')
-            screen.write(str(word))
+            for c in word:    
+                # print separately to force replacement of every CR by CRLF; CRLF -> CRLF LF
+                screen.write(chr(c))
     if newline:
          screen.write('\r\n')
             
