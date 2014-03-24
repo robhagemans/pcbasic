@@ -1,33 +1,26 @@
 
-# Codepage 437 to Unicode table
+# Codepage 437 to Unicode table 
+# with Special Graphic Characters
 # http://en.wikipedia.org/wiki/Code_page_437
+# http://msdn.microsoft.com/en-us/library/cc195060.aspx
 
-
-def to_utf8(s):
-    output = ''
-    for c in s:
-        output += cp437_to_unicode[ord(c)].encode('utf-8')
-    return output
 
 def from_unicode(s):
-    output=''
+    output = ''
     for c in s:
         if ord(c) == 0:
             # double NUL characters as single NUL signals scan code
             output += '\x00\x00'
-        elif c in unicode_to_cp437:
-            output += chr(unicode_to_cp437[c])
-        elif ord(c) <= 0xff:
-            output += chr(ord(c))
+        else:
+            try: 
+                output += chr(unicode_to_cp437[c])
+            except KeyError:
+                if ord(c) <= 0xff:
+                    output += chr(ord(c))
     return output
 
-#def from_utf8(s):
-#    return from_unicode(s.decode('utf-8'))
-    
         
 cp437_to_unicode = {
-
-# Special Graphic Characters:
     0x00:   u'\u0000',  # whitespace
     0x01:   u'\u263A',  # smiley face
     0x02:   u'\u263B',  # smiley face inverted
@@ -60,60 +53,6 @@ cp437_to_unicode = {
     0x1d:   u'\u2194',  # double arrow horizontal
     0x1e:   u'\u25B2',  # wedge up
     0x1f:   u'\u25BC',  # wedge down
-
-    0x7f:   u'\u2302',  # HOUSE  
-    
-# http://msdn.microsoft.com/en-us/library/cc195060.aspx
-#
-#    Name:     cp437_DOSLatinUS to Unicode table
-#    Unicode version: 2.0
-#    Table version: 2.00
-#    Table format:  Format A
-#    Date:          04/24/96
-#    Contact: Shawn.Steele@microsoft.com
-#                   
-#    General notes: none
-#
-#    Format: Three tab-separated columns
-#        Column #1 is the cp437_DOSLatinUS code (in hex)
-#        Column #2 is the Unicode (in hex as 0xXXXX)
-#        Column #3 is the Unicode name (follows a comment sign', '#')
-#
-#    The entries are in cp437_DOSLatinUS order
-#
-
-    #0x00: u'\u0000',  #NULL
-    #0x01: u'\u0001',  #START OF HEADING
-    #0x02: u'\u0002',  #START OF TEXT
-    #0x03: u'\u0003',  #END OF TEXT
-    #0x04: u'\u0004',  #END OF TRANSMISSION
-    #0x05: u'\u0005',  #ENQUIRY
-    #0x06: u'\u0006',  #ACKNOWLEDGE
-    #0x07: u'\u0007',  #BELL
-    #0x08: u'\u0008',  #BACKSPACE
-    #0x09: u'\u0009',  #HORIZONTAL TABULATION
-    #0x0a: u'\u000a',  #LINE FEED - gw: CRLF
-    #0x0b: u'\u000b',  #VERTICAL TABULATION ' gw: to pos (1,1,)
-    #0x0c: u'\u000c',  #FORM FEED  - gw: CLS
-    #0x0d: u'\u000d',  #CARRIAGE RETURN - gw: CRLF
-    #0x0e: u'\u000e',  #SHIFT OUT
-    #0x0f: u'\u000f',  #SHIFT IN
-    #0x10: u'\u0010',  #DATA LINK ESCAPE
-    #0x11: u'\u0011',  #DEVICE CONTROL ONE
-    #0x12: u'\u0012',  #DEVICE CONTROL TWO
-    #0x13: u'\u0013',  #DEVICE CONTROL THREE
-    #0x14: u'\u0014',  #DEVICE CONTROL FOUR
-    #0x15: u'\u0015',  #NEGATIVE ACKNOWLEDGE
-    #0x16: u'\u0016',  #SYNCHRONOUS IDLE
-    #0x17: u'\u0017',  #END OF TRANSMISSION BLOCK
-    #0x18: u'\u0018',  #CANCEL
-    #0x19: u'\u0019',  #END OF MEDIUM
-    #0x1a: u'\u001a',  #SUBSTITUTE
-    #0x1b: u'\u001b',  #ESCAPE
-    #0x1c: u'\u001c',  #FILE SEPARATOR - gw: move right (don't print space)
-    #0x1d: u'\u001d',  #GROUP SEPARATOR - gw: move left
-    #0x1e: u'\u001e',  #RECORD SEPARATOR - gw: move up
-    #0x1f: u'\u001f',  #UNIT SEPARATOR - gw: move down 
     0x20: u'\u0020',  #SPACE
     0x21: u'\u0021',  #EXCLAMATION MARK
     0x22: u'\u0022',  #QUOTATION MARK
@@ -209,7 +148,7 @@ cp437_to_unicode = {
     0x7c: u'\u007c',  #VERTICAL LINE
     0x7d: u'\u007d',  #RIGHT CURLY BRACKET
     0x7e: u'\u007e',  #TILDE
-    #0x7f: u'\u007f',  #DELETE
+    0x7f:   u'\u2302',  # house  
     0x80: u'\u00c7',  #LATIN CAPITAL LETTER C WITH CEDILLA
     0x81: u'\u00fc',  #LATIN SMALL LETTER U WITH DIAERESIS
     0x82: u'\u00e9',  #LATIN SMALL LETTER E WITH ACUTE
@@ -341,4 +280,44 @@ cp437_to_unicode = {
 }
 
 unicode_to_cp437 = dict((reversed(item) for item in cp437_to_unicode.items()))
+cp437_to_utf8 = dict([ (chr(s[0]), s[1].encode('utf-8')) for s in cp437_to_unicode.items()])
+utf8_to_cp437 = dict((reversed(item) for item in cp437_to_utf8.items()))
+
+
+# control chars:
+
+    #0x00: u'\u0000',  #NULL
+    #0x01: u'\u0001',  #START OF HEADING
+    #0x02: u'\u0002',  #START OF TEXT
+    #0x03: u'\u0003',  #END OF TEXT
+    #0x04: u'\u0004',  #END OF TRANSMISSION
+    #0x05: u'\u0005',  #ENQUIRY
+    #0x06: u'\u0006',  #ACKNOWLEDGE
+    #0x07: u'\u0007',  #BELL
+    #0x08: u'\u0008',  #BACKSPACE
+    #0x09: u'\u0009',  #HORIZONTAL TABULATION
+    #0x0a: u'\u000a',  #LINE FEED - gw: CRLF
+    #0x0b: u'\u000b',  #VERTICAL TABULATION ' gw: to pos (1,1,)
+    #0x0c: u'\u000c',  #FORM FEED  - gw: CLS
+    #0x0d: u'\u000d',  #CARRIAGE RETURN - gw: CRLF
+    #0x0e: u'\u000e',  #SHIFT OUT
+    #0x0f: u'\u000f',  #SHIFT IN
+    #0x10: u'\u0010',  #DATA LINK ESCAPE
+    #0x11: u'\u0011',  #DEVICE CONTROL ONE
+    #0x12: u'\u0012',  #DEVICE CONTROL TWO
+    #0x13: u'\u0013',  #DEVICE CONTROL THREE
+    #0x14: u'\u0014',  #DEVICE CONTROL FOUR
+    #0x15: u'\u0015',  #NEGATIVE ACKNOWLEDGE
+    #0x16: u'\u0016',  #SYNCHRONOUS IDLE
+    #0x17: u'\u0017',  #END OF TRANSMISSION BLOCK
+    #0x18: u'\u0018',  #CANCEL
+    #0x19: u'\u0019',  #END OF MEDIUM
+    #0x1a: u'\u001a',  #SUBSTITUTE
+    #0x1b: u'\u001b',  #ESCAPE
+    #0x1c: u'\u001c',  #FILE SEPARATOR - gw: move right (don't print space)
+    #0x1d: u'\u001d',  #GROUP SEPARATOR - gw: move left
+    #0x1e: u'\u001e',  #RECORD SEPARATOR - gw: move up
+    #0x1f: u'\u001f',  #UNIT SEPARATOR - gw: move down 
+
+    #0x7f: u'\u007f',  #DELETE
 
