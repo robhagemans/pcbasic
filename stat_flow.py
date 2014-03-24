@@ -19,6 +19,19 @@ import util
 import expressions
 import fileio
 
+def exec_end(ins):
+    util.require(ins, util.end_statement)
+    program.stop = [program.bytecode.tell(), program.linenum]
+    program.set_runmode(False)
+    # avoid NO RESUME
+    error.error_handle_mode = False
+    error.error_resume = None
+    fileio.close_all()
+    
+def exec_stop(ins):
+    util.require(ins, util.end_statement)
+    raise error.Break()
+    
 def exec_cont(ins):
     if program.stop == None:
         raise error.RunError(17)
@@ -33,24 +46,6 @@ def exec_cont(ins):
     # CONT:PRINT "y" results in neither x nor y being printed.
     # if a command is executed before CONT, x is not printed.
     # in this implementation, the CONT command will overwrite the line buffer so x is not printed.
-
-def exec_error(ins):
-    errn = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-    util.range_check(1, 255, errn)
-    raise error.RunError(errn)                
-
-def exec_end(ins):
-    util.require(ins, util.end_statement)
-    program.stop = [program.bytecode.tell(), program.linenum]
-    program.set_runmode(False)
-    # avoid NO RESUME
-    error.error_handle_mode = False
-    error.error_resume = None
-    fileio.close_all()
-              
-def exec_else(ins):
-    # any else statement by itself means the THEN has already been executed, so it's really like a REM.
-    util.skip_to(ins, util.end_line)    
 
 def exec_for(ins): 
     global override_token
@@ -151,14 +146,6 @@ def exec_run(ins):
     program.clear_all(close_files=not comma)
     program.set_runmode()
                 
-def exec_gosub(ins):
-    jumpnum = util.parse_jumpnum(ins)
-    # ignore rest of statement ('GOSUB 100 LAH' works just fine..); we need to be able to RETURN
-    util.skip_to(ins, util.end_statement)
-    # set return position
-    program.gosub_return.append((ins.tell(), program.linenum, ins, None))
-    program.jump(jumpnum)
- 
 def exec_if(ins):
     # ovoid overflow: don't use bools.
     val = vartypes.pass_single_keep(expressions.parse_expression(ins))
@@ -190,7 +177,11 @@ def exec_if(ins):
             else:
                 ins.seek(-len(d), 1)
                 break
-
+              
+def exec_else(ins):
+    # any else statement by itself means the THEN has already been executed, so it's really like a REM.
+    util.skip_to(ins, util.end_line)  
+    
 def exec_while(ins, first=True):
     # just after WHILE opcode
     whilepos = ins.tell()
@@ -273,37 +264,34 @@ def exec_on_error(ins):
         raise error.RunError(error.errn)
     # this will be caught by the trapping routine just set
     util.require(ins, util.end_statement)
-        
+
 def exec_resume(ins):
-    if error.error_resume == None: # resume without error
+    if error.error_resume == None: 
+        # unset error handler
         error.on_error = 0
+        # resume without error
         raise error.RunError(20)
-    start_statement, codestream, runmode = error.error_resume  
     c = util.skip_white(ins)
-    jumpnum = 0
     if c == '\x83': # NEXT
         ins.read(1)
-        # RESUME NEXT
-        util.require(ins, util.end_statement)
-        codestream.seek(start_statement)        
-        util.skip_to(codestream, util.end_statement, break_on_first_char=False)
-        program.set_runmode(runmode)
+        jumpnum = -1
     elif c not in util.end_statement:
         jumpnum = util.parse_jumpnum(ins)
-        util.require(ins, util.end_statement)
-        if jumpnum != 0:
-            # RESUME n
-            program.jump(jumpnum)
-            program.set_runmode()
-    if c != '\x83' and jumpnum == 0: 
-        # RESUME or RESUME 0 
-        util.require(ins, util.end_statement)
-        codestream.seek(start_statement)        
-        program.set_runmode(runmode)
-    error.errn = 0
-    error.error_handle_mode = False
-    error.error_resume = None
-    events.suspend_all_events = False
+    else:
+        jumpnum = 0    
+    util.require(ins, util.end_statement)
+    error.resume(jumpnum)
+
+def exec_error(ins):
+    errn = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    util.range_check(1, 255, errn)
+    raise error.RunError(errn)                
+
+def exec_gosub(ins):
+    jumpnum = util.parse_jumpnum(ins)
+    # ignore rest of statement ('GOSUB 100 LAH' works just fine..); we need to be able to RETURN
+    util.skip_to(ins, util.end_statement)
+    program.jump_gosub(jumpnum)
 
 def exec_return(ins):
     # return *can* have a line number
@@ -313,28 +301,5 @@ def exec_return(ins):
         util.skip_to(ins, util.end_statement)    
     else:
         jumpnum = None
-    try:
-        pos, orig_linenum, buf, handler = program.gosub_return.pop()
-    except IndexError:
-        # RETURN without GOSUB
-        raise error.RunError(3)
-    # returning from ON (event) GOSUB, re-enable event
-    if handler:
-        # if stopped explicitly using STOP, we wouldn't have got here; it STOP is run  inside the trap, no effect. OFF in trap: event off.
-        handler.stopped = False
-    if jumpnum == None:
-        if buf != ins:
-            # move to end of program to avoid executing anything else on the RETURN line if called from direct mode   
-            ins.seek(-1)
-            program.set_runmode(False)
-        # go back to position of GOSUB
-        program.linenum = orig_linenum 
-        buf.seek(pos)
-    else:
-        # jump to specified line number 
-        program.jump(jumpnum)
+    program.jump_return(jumpnum)
         
-def exec_stop(ins):
-    util.require(ins, util.end_statement)
-    raise error.Break()
-

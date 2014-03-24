@@ -132,7 +132,34 @@ def jump(jumpnum, err=8):
     else:
         # Undefined line number
         raise error.RunError(err)
-
+        
+def jump_gosub(jumpnum, handler=None):    
+    # set return position
+    gosub_return.append((current_codestream.tell(), linenum, run_mode, handler))
+    jump(jumpnum)
+ 
+def jump_return(jumpnum):        
+    try:
+        pos, orig_linenum, orig_runmode, handler = gosub_return.pop()
+    except IndexError:
+        # RETURN without GOSUB
+        raise error.RunError(3)
+    # returning from ON (event) GOSUB, re-enable event
+    if handler:
+        # if stopped explicitly using STOP, we wouldn't have got here; it STOP is run  inside the trap, no effect. OFF in trap: event off.
+        handler.stopped = False
+    if jumpnum == None:
+        if not orig_runmode:
+            # move to end of program to avoid executing anything else on the RETURN line if called from direct mode   
+            bytecode.seek(-1)
+        # go back to position of GOSUB
+        linenum = orig_linenum 
+        set_runmode(orig_runmode)   
+        current_codestream.seek(pos)
+    else:
+        # jump to specified line number 
+        jump(jumpnum)
+        
 # READ a unit of DATA
 def read_entry():
     global data_line, data_pos

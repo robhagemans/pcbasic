@@ -65,8 +65,9 @@ def execute(line, ignore_empty_number=False):
                
 # execute any commands
 def execution_loop():
+    # always start on the direct line
+    program.set_runmode(False)
     program.direct_line.seek(0)
-    program.current_codestream = program.direct_line
     console.show_cursor(False)
     while True:
         try:
