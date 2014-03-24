@@ -64,14 +64,14 @@ def main():
             if args.infile:
                 run.execute('LOAD "'+args.infile+'"')
             else:   
-                program.load(fileio.BaseFile(sys.stdin, 0, "L", "R", ""))        
+                program.load(fileio.BaseFile(sys.stdin, "stdin:", 0, "L", "R", ""))        
         if args.conv:
             # allow conversion of protected files
             program.protected = False
             if args.outfile:
                 run.execute('SAVE "'+args.outfile+'",'+args.conv)
             else:
-                program.save(fileio.BaseFile(sys.stdout, 0, "S", "W", ""), args.conv)   
+                program.save(fileio.BaseFile(sys.stdout, "stdout:", 0, "S", "W", ""), args.conv)   
             run.execute('SYSTEM')
         if args.cmd:
             run.execute(args.cmd)
