@@ -589,13 +589,12 @@ def handle_key(e):
     elif e.key == pygame.K_CAPSLOCK:
         # let CAPS LOCK be handled by the window manager
         pass
-    elif e.key == pygame.K_PRINT and  mods & pygame.KMOD_CTRL:
-        if console.echo_read == None:
-            console.echo_read = deviceio.lpt1
-            console.echo_write = deviceio.lpt1
-        else:  
-            console.echo_read = None
-            console.echo_write = None
+    elif e.key == pygame.K_PRINT:
+        # these can't be caught by INKEY$ etc:
+        if mods & pygame.KMOD_CTRL:
+            console.toggle_echo_lpt1()
+        elif mods & pygame.KMOD_SHIFT:
+            console.print_screen()
     elif e.key == pygame.K_TAB and mods & pygame.KMOD_SHIFT:
         # shift+tab -> \x00\x0F (scancode for TAB) but TAB -> \x09
         c = '\x00\x0F'
@@ -616,7 +615,7 @@ def handle_key(e):
         console.inp_key = ord(keycode_to_inpcode[e.key])
     except KeyError:
         pass    
-    
+                    
 def handle_key_up(e):
     # last key released gets remembered
     try:

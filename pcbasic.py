@@ -102,8 +102,8 @@ def prepare_devices(args):
             console.sound = backend_pygame
         # redirected output is split between graphical screen and redirected file    
         if not sys.stdout.isatty():
-            console.echo_write = backend_dumb.Writer(backend_dumb.putc) 
-            console.echo_read = console.echo_write        
+            console.output_echos.append(backend_dumb.echo_stdout) 
+            console.input_echos.append(backend_dumb.echo_stdout)         
     # initialise backends
     console.keys_visible = (not args.run and args.cmd == None)
     console.init()

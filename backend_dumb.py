@@ -36,14 +36,6 @@ control = (
     '\x1f', # DOWN
     ) 
 
-class Writer(object):
-    def __init__(self, put_char):
-        self.putc = put_char
-    
-    def write(self, s):
-        for c in s:
-            self.putc(c)
-        sys.stdout.flush()    
 
 ##############################################        
         
@@ -56,14 +48,12 @@ def init():
         check_keys = check_keys_dumb
     # use UTF8 when writing to ttys
     if sys.stdout.isatty():
-        console.echo_write = Writer(putc_utf8)
+        console.output_echos.append(echo_stdout_utf8)
     else:
-        console.echo_write = Writer(putc)
+        console.output_echos.append(echo_stdout)
     # if both stdin and stdout are ttys, avoid doubling the input echo
-    if sys.stdin.isatty() and sys.stdout.isatty():
-        console.echo_read = console.NoEcho()
-    else:    
-        console.echo_read = Writer(putc)
+    if not(sys.stdin.isatty() and sys.stdout.isatty()):
+        console.input_echos.append(echo_stdout)
     return True    
 
 def check_keys_dumb():
@@ -89,14 +79,18 @@ def check_keys_interactive():
         
 ##############################################        
 
-def putc(c):
-    sys.stdout.write(c)    
-        
-def putc_utf8(c):
-    if c in control:    
-        putc(c)    
-    else:
-        putc(unicodepage.cp437_to_utf8[c])       
+def echo_stdout(s):
+    for c in s:
+        sys.stdout.write(c)
+    sys.stdout.flush()  
+
+def echo_stdout_utf8(s):
+    for c in s:
+        if c in control:    
+            putc(c)    
+        else:
+            putc(unicodepage.cp437_to_utf8[c]) 
+    sys.stdout.flush()        
         
 # non-blocking read of one char        
 def getc():
