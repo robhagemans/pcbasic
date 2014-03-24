@@ -347,7 +347,7 @@ def load(g):
         # bytecode file
         bytecode.write('\x00')
         protected = False
-        while c != '':
+        while c:
             c = g.read(1)
             bytecode.write(c)
     elif c == '\xFE':
@@ -355,15 +355,12 @@ def load(g):
         bytecode.write('\x00')
         protected = True                
         protect.unprotect(g, bytecode)
-    elif c == '':
-        # empty file
-        pass
-    else:
+    elif c != '':
         # TODO: check allowed first chars for ASCII file - > whitespace + nums? letters?
         # ASCII file, maybe
-        g.seek(-1, 1)
         protected = False
-        tokenise.tokenise_stream(g, bytecode)
+        while load_ascii_line(g, c):
+            c = ''
         # terminate bytecode stream properly
         bytecode.write('\x00\x00\x00\x1a')
     preparse()
@@ -374,24 +371,23 @@ def merge(g):
         # bad file mode
         raise error.RunError(54)
     else:
-        more = True
-        while (more):
-            tempbuf = StringIO()
-            more = tokenise.tokenise_stream(g, tempbuf, one_line=True)
-            tempbuf.seek(0)
-            c = util.peek(tempbuf) 
-            if c == '\x00':
-                # line starts with a number, add to program memory
-                store_line(tempbuf)
-            elif util.skip_white(tempbuf) in util.end_line:
-                # empty line
-                pass
-            else:
-                # direct statement in file
-                raise error.RunError(66)                
-            tempbuf.close()    
+        while load_ascii_line(g):
+            pass      
     g.close()
     
+def load_ascii_line(g, first_char=''):
+    line = first_char + tokenise.read_program_line(g)
+    if not line:
+        return False
+    tempbuf = tokenise.tokenise_line(line)
+    if util.peek(tempbuf) == '\x00':
+        # line starts with a number, add to program memory
+        store_line(tempbuf)
+    elif util.skip_white(tempbuf) not in util.end_line:
+        # direct statement in file
+        raise error.RunError(66)   
+    return True
+
 def chain(action, g, jumpnum, common_all, delete_lines):    
     if delete_lines:
         # delete lines from existing code before merge (without MERGE, this is pointless)

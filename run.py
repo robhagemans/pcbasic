@@ -48,15 +48,16 @@ def wait_line():
             return line
                         
 def execute(line, ignore_empty_number=False):
-    tokenise_direct_line(line)    
+    program.direct_line = tokenise.tokenise_line(line)    
     c = util.peek(program.direct_line)
     if c == '\x00':
-        # line starts with a number, add to program memory, no prompt
         try:
-            return program.store_line(program.direct_line, ignore_empty_number)
+            program.store_line(program.direct_line, ignore_empty_number)
+            return False
         except error.Error as e:
-            e.handle()             
-        return False
+            e.handle() 
+            # prompt
+            return True    
     elif c != '':    
         # it is a command, go and execute    
         execution_loop()
@@ -65,6 +66,7 @@ def execute(line, ignore_empty_number=False):
 # execute any commands
 def execution_loop():
     program.direct_line.seek(0)
+    program.current_codestream = program.direct_line
     console.show_cursor(False)
     while True:
         try:
@@ -75,12 +77,6 @@ def execution_loop():
             if not e.handle():
                 break
     console.show_cursor()
-                   
-def tokenise_direct_line(line):
-    program.direct_line.truncate(0)
-    sline = StringIO(line)
-    tokenise.tokenise_stream(sline, program.direct_line, onfile=False)
-    program.direct_line.seek(0)                  
                    
 def exit():
     fileio.close_all()

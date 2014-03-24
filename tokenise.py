@@ -188,139 +188,146 @@ def detokenise_keyword(bytes, output):
 #################################################################
 # Tokenise functions
 
-def tokenise_stream(ins, outs, one_line=False, onfile=True):
+# readln, but break on \r rather than \n. ignore single starting LF to account for CRLF *without seeking*.
+# include the \r at the end of the line
+def read_program_line(ins):
+    out = ''
+    d = ins.read(1)
+    if d != '\n':
+        out += d
+    while d not in tokenise_endline_nonnul:
+        d = ins.read(1)
+        out += d            
+    return out
+    
+def tokenise_line(line):      
+    ins = StringIO(line)
+    outs = StringIO()          
+    # skip whitespace at start of line
+    d = util.skip(ins, tokenise_whitespace)
+    if d in tokenise_endfile:
+        # empty line at EOF
+        ins.read(len(d))
+        return outs
+    # read the line number
+    tokenise_line_number(ins, outs)
+    # non-parsing modes
+    verbatim = False  # REM: pass unchanged until e-o-line
+    data = False      # DATA: pass unchanged until :
+    # expect line number
+    number_is_line = False
+    # expect number
+    expect_number = False
+    # flag for SPC( or TAB( as numbers can follow the closing bracket
+    spc_or_tab = False
+    # line must not start with a number
     while True:
-        # skip whitespace at start of line
-        d = util.skip(ins, tokenise_whitespace)
-        if d in tokenise_endfile:
+        c = util.peek(ins)
+        if c in tokenise_whitespace:
             ins.read(1)
-            return False
-        elif d in tokenise_endline_nonnul:
-            # handle CRLF
-            if ins.read(1) == '\r':
-                if util.peek(ins) == '\n':
-                    ins.read(1) 
-            if one_line:
-                return True
-            else:
-                continue
-        # read the line number
-        tokenise_line_number(ins, outs, onfile)
-        # non-parsing modes
-        verbatim = False  # REM: pass unchanged until e-o-line
-        data = False      # DATA: pass unchanged until :
-        # expect line number
-        number_is_line = False
-        # expect number
-        expect_number = False
-        # flag for SPC( or TAB( as numbers can follow the closing bracket
-        spc_or_tab = False
-        # line must not start with a number
-        while True:
-            c = util.peek(ins)
-            if c in tokenise_whitespace:
-                ins.read(1)
-                outs.write(c)
-            elif c in ascii_digits:
-                raise error.RunError(2)
-            else:
-                break
-        # parse through elements of line
-        while True: 
-            # non-parsing modes        
-            if verbatim :
-                # anything after REM is passed as is till EOL
-                outs.write(ascii_read_to(ins, tokenise_endline))
-                break
-            elif data:
-                # read DATA as is, till end of statement    
-                outs.write(ascii_read_to(ins, tokenise_endstatement))
-                data = False
-            elif util.peek(ins)=='"':
-                # handle string literals    
+            outs.write(c)
+        elif c in ascii_digits:
+            raise error.RunError(2)
+        else:
+            break
+    # parse through elements of line
+    while True: 
+        # non-parsing modes        
+        if verbatim :
+            # anything after REM is passed as is till EOL
+            outs.write(ascii_read_to(ins, tokenise_endline))
+            break
+        elif data:
+            # read DATA as is, till end of statement    
+            outs.write(ascii_read_to(ins, tokenise_endstatement))
+            data = False
+        elif util.peek(ins)=='"':
+            # handle string literals    
+            outs.write(ins.read(1))
+            outs.write(ascii_read_to(ins, tokenise_endline + ['"'] ))
+            if util.peek(ins)=='"':
                 outs.write(ins.read(1))
-                outs.write(ascii_read_to(ins, tokenise_endline + ['"'] ))
-                if util.peek(ins)=='"':
-                    outs.write(ins.read(1))
-            # read next character
-            char = util.peek(ins)
-            # anything after NUL is ignored till EOL
-            if char=='\x00':
-                ins.read(1)
-                ascii_read_to(ins, tokenise_endline_nonnul)
-                break
-            # end of line    
-            if char in tokenise_endline_nonnul:
-                break
-            # convert anything else to upper case
-            c = char.upper()
-            # handle whitespace
-            if c in tokenise_whitespace:
-                ins.read(1)
-                outs.write(char)
-            # handle jump numbers
-            elif expect_number and number_is_line and c in ascii_digits + ['.',]:
-                tokenise_jump_number(ins, outs) 
-            # handle numbers
-            # numbers following var names with no operator or token in between should not be parsed, eg OPTION BASE 1
-            # note we don't include leading signs, they're encoded as unary operators
-            # number starting with . or & are always parsed
-            elif c in ('&', '.') or (expect_number and not number_is_line and c in ascii_digits):
-                representation.tokenise_number(ins, outs)
-            # operator keywords ('+', '-', '=', '/', '\\', '^', '*', '<', '>'):    
-            elif c in ascii_operators: 
-                ins.read(1)
-                # operators don't affect line number mode- can do line number arithmetic and RENUM will do the strangest things
-                # this allows for 'LIST 100-200' etc.
-                outs.write(keyword_to_token[c])    
-                expect_number = True
-            # special case ' -> :REM'
-            elif c == "'":
-                ins.read(1)
+        # read next character
+        char = util.peek(ins)
+        # anything after NUL is ignored till EOL
+        if char=='\x00':
+            ins.read(1)
+            ascii_read_to(ins, tokenise_endline_nonnul)
+            break
+        # end of line    
+        if char in tokenise_endline_nonnul:
+            break
+        # convert anything else to upper case
+        c = char.upper()
+        # handle whitespace
+        if c in tokenise_whitespace:
+            ins.read(1)
+            outs.write(char)
+        # handle jump numbers
+        elif expect_number and number_is_line and c in ascii_digits + ['.',]:
+            tokenise_jump_number(ins, outs) 
+        # handle numbers
+        # numbers following var names with no operator or token in between should not be parsed, eg OPTION BASE 1
+        # note we don't include leading signs, they're encoded as unary operators
+        # number starting with . or & are always parsed
+        elif c in ('&', '.') or (expect_number and not number_is_line and c in ascii_digits):
+            representation.tokenise_number(ins, outs)
+        # operator keywords ('+', '-', '=', '/', '\\', '^', '*', '<', '>'):    
+        elif c in ascii_operators: 
+            ins.read(1)
+            # operators don't affect line number mode- can do line number arithmetic and RENUM will do the strangest things
+            # this allows for 'LIST 100-200' etc.
+            outs.write(keyword_to_token[c])    
+            expect_number = True
+        # special case ' -> :REM'
+        elif c == "'":
+            ins.read(1)
+            verbatim = True
+            outs.write(':\x8F\xD9')
+        # special case ? -> PRINT 
+        elif c == '?':
+            ins.read(1)
+            outs.write(keyword_to_token['PRINT'])
+            expect_number = True
+        # keywords & variable names       
+        elif c in ascii_uppercase:
+            number_is_line = False
+            word = tokenise_word(ins, outs)
+            # handle non-parsing modes
+            if word in ('REM', "'") or debug and word=='DEBUG':  # note: DEBUG - this is not GW-BASIC behaviour
                 verbatim = True
-                outs.write(':\x8F\xD9')
-            # special case ? -> PRINT 
-            elif c == '?':
-                ins.read(1)
-                outs.write(keyword_to_token['PRINT'])
-                expect_number = True
-            # keywords & variable names       
-            elif c in ascii_uppercase:
-                number_is_line = False
-                word = tokenise_word(ins, outs)
-                # handle non-parsing modes
-                if word in ('REM', "'") or debug and word=='DEBUG':  # note: DEBUG - this is not GW-BASIC behaviour
-                    verbatim = True
-                elif word == "DATA":    
-                    data = True
-                elif word in linenum_words: 
-                    number_is_line = True
-                # numbers can follow tokenised keywords (which does not include the word 'AS')
-                expect_number = (word in keyword_to_token) #or word=='AS'
-                if word in ('SPC(', 'TAB('):
-                    spc_or_tab = True
-            elif c in (',', '#', ';'):
-                ins.read(1)
-                expect_number = True
-                outs.write(c)
-            elif c in ('(', '['):
-                ins.read(1)
-                number_is_line = False
-                expect_number = True
-                outs.write(c)
-            elif c == ')' and spc_or_tab:
-                spc_or_tab = False
-                ins.read(1)
-                number_is_line = False
-                expect_number = True
-                outs.write(c)
-            else:
-                ins.read(1)
-                number_is_line = False
-                expect_number = False
-                outs.write(c)
-
-def tokenise_line_number(ins, outs, onfile):
+            elif word == "DATA":    
+                data = True
+            elif word in linenum_words: 
+                number_is_line = True
+            # numbers can follow tokenised keywords (which does not include the word 'AS')
+            expect_number = (word in keyword_to_token) #or word=='AS'
+            if word in ('SPC(', 'TAB('):
+                spc_or_tab = True
+        elif c in (',', '#', ';'):
+            ins.read(1)
+            expect_number = True
+            outs.write(c)
+        elif c in ('(', '['):
+            ins.read(1)
+            number_is_line = False
+            expect_number = True
+            outs.write(c)
+        elif c == ')' and spc_or_tab:
+            spc_or_tab = False
+            ins.read(1)
+            number_is_line = False
+            expect_number = True
+            outs.write(c)
+        else:
+            ins.read(1)
+            number_is_line = False
+            expect_number = False
+            outs.write(c)
+    outs.seek(0)
+    return outs
+    
+def tokenise_line_number(ins, outs): 
     linenum = tokenise_uint(ins)
     if linenum != '':    
         # terminates last line and fills up the first char in the buffer (that would be the magic number when written to file)
@@ -332,9 +339,6 @@ def tokenise_line_number(ins, outs, onfile):
         if util.peek(ins) == ' ' and linenum != '\x00\x00' :
             ins.read(1)
     else:
-        if onfile:
-        # no line number, if we're reading a file this is a Direct Statement In File error
-            raise error.RunError(66, -1)    
         # direct line; internally, we need an anchor for the program pointer, so we encode a ':'
         outs.write(':')
             
