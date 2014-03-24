@@ -147,20 +147,6 @@ def idle():
     backend.idle()
 
 #############################
-    
-def set_palette(new_palette=None):
-    backend.set_palette(new_palette)
-
-def set_palette_entry(index, colour):
-    backend.set_palette_entry(index, colour)
-
-def get_palette_entry(index):
-    return backend.get_palette_entry(index)
-    
-def debug_print(s):
-    return backend.debug_print(s)
-        
-#############################
 # init
 
 def init():
@@ -233,15 +219,75 @@ def copy_page(src, dst):
 def close():
     if backend:
         backend.close()
+
+#############################
     
-def get_screen_char_attr(crow, ccol, want_attr):
-    ca = apage.row[crow-1].buf[ccol-1][want_attr]
-    return ca if want_attr else ord(ca)
+def set_palette(new_palette=None):
+    backend.set_palette(new_palette)
+
+def set_palette_entry(index, colour):
+    backend.set_palette_entry(index, colour)
+
+def get_palette_entry(index):
+    return backend.get_palette_entry(index)
+    
+def debug_print(s):
+    return backend.debug_print(s)
+        
+def show_cursor(do_show = True):
+    global cursor
+    prev = cursor
+    cursor = do_show
+    backend.show_cursor(do_show, prev)
+    return prev
+
+def set_cursor_shape(from_line, to_line):
+    backend.build_shape_cursor(from_line, to_line)
     
 ############################### 
 # interactive mode         
 
-def interactive():
+def wait_screenline(write_endl=True, from_start=False):
+    global row, col
+    prompt_row, prompt_col = row, col
+    savecurs = show_cursor() 
+    wait_interactive()
+    show_cursor(savecurs)
+    # find start of wrapped block
+    crow = row
+    while crow > 1 and apage.row[crow-2].wrap:
+        crow -= 1
+    line = []
+    # add lines 
+    while crow <= height:
+        therow = apage.row[crow-1]
+        add = therow.buf[:therow.end]
+        # exclude prompt, if any
+        if crow == prompt_row and not from_start:
+            add = add[prompt_col-1:]
+        line += add
+        if therow.wrap:
+            if therow.end < width:
+                # wrap before end of line means LF
+                line += ('\n', attr),
+            crow += 1
+        else:
+            break
+    # go to last line
+    row = crow
+    # echo the CR, if requested
+    if write_endl:
+        echo_read.write('\r')
+        set_pos(row+1, 1)
+    # remove trailing whitespace 
+    while len(line) > 0 and line[-1] in util.whitespace:
+        line = line[:-1]
+    outstr = bytearray()
+    for c, _ in line:
+        outstr += c
+    return outstr[:255]    
+
+def wait_interactive():
     global row, col
     set_overwrite_mode(True) 
     while True: 
@@ -521,7 +567,7 @@ def clear():
         unset_view()
     if keys_visible:
         show_keys()
-
+        
 ##### i/o methods
         
 def write(s, scroll_ok=True): 
@@ -552,127 +598,13 @@ def write(s, scroll_ok=True):
             put_char(c)
         last = c
 
-def read_screenline(write_endl=True, from_start=False):
-    global row, col
-    prompt_row, prompt_col = row, col
-    savecurs = show_cursor() 
-    interactive()
-    show_cursor(savecurs)
-    # find start of wrapped block
-    crow = row
-    while crow > 1 and apage.row[crow-2].wrap:
-        crow -= 1
-    line = []
-    # add lines 
-    while crow <= height:
-        therow = apage.row[crow-1]
-        add = therow.buf[:therow.end]
-        # exclude prompt, if any
-        if crow == prompt_row and not from_start:
-            add = add[prompt_col-1:]
-        line += add
-        if therow.wrap:
-            if therow.end < width:
-                # wrap before end of line means LF
-                line += ('\n', attr),
-            crow += 1
-        else:
-            break
-    # go to last line
-    row = crow
-    # echo the CR, if requested
-    if write_endl:
-        echo_read.write('\r')
-        set_pos(row+1, 1)
-    # remove trailing whitespace 
-    while len(line) > 0 and line[-1] in util.whitespace:
-        line = line[:-1]
-    outstr = bytearray()
-    for c, _ in line:
-        outstr += c
-    return outstr[:255]    
-
 def set_width(to_width):
     resize(height, to_width)    
     if keys_visible:
         show_keys()
 
-##############################
-          
-def start_line():
-    if col != 1:
-        echo_read.write('\r')
-        set_pos(row+1, 1)
-                
-##############################
-
-# KEY replacement    # apply KEY autotext to scancodes
-# insert character into keyboard buffer (for use by backends)
-def insert_key(c):
-    global keybuf 
-    if len(c) < 2:
-        keybuf += c
-    else:
-        try:
-            # only check F1-F10
-            keynum = function_key[c]
-            # can't be redefined in events - so must be event keys 1-10.
-            if program.run_mode and events.key_handlers[keynum].enabled:
-                keybuf += c
-            else:
-                keybuf += key_replace[keynum]
-        except KeyError:
-            keybuf += c
-    
-# non-blocking keystroke read
-def get_char():
-    idle()    
-    check_events()
-    return pass_char( peek_char() )
-    
-# peek character from keyboard buffer
-def peek_char():
-    ch = ''
-    if len(keybuf)>0:
-        ch = keybuf[0]
-        if ch == '\x00' and len(keybuf) > 0:
-            ch += keybuf[1]
-    return ch 
-
-# drop character from keyboard buffer
-def pass_char(ch):
-    global keybuf
-    keybuf = keybuf[len(ch):]        
-    return ch
-
-# blocking keystroke read
-def read_chars(num):
-    word = []
-    for _ in range(num):
-        wait_char()
-        word.append(get_char())
-    return word
-
-# blocking keystroke peek
-def wait_char():
-    while len(keybuf)==0 and not input_closed:
-        idle()
-        check_events()
-    return peek_char()
-
 #####################
-
-def show_cursor(do_show = True):
-    global cursor
-    prev = cursor
-    cursor = do_show
-    backend.show_cursor(do_show, prev)
-    return prev
-
-def set_cursor_shape(from_line, to_line):
-    backend.build_shape_cursor(from_line, to_line)
-
-#####################
+# key replacement
 
 def list_keys():
     for i in range(10):
@@ -726,27 +658,68 @@ def write_for_keys(s, col, cattr):
         col += 1
     backend.set_attr(attr)     
     
+##############################
+# keyboard buffer read/write
+
+# insert character into keyboard buffer; apply KEY repacement (for use by backends)
+def insert_key(c):
+    global keybuf 
+    if len(c) < 2:
+        keybuf += c
+    else:
+        try:
+            # only check F1-F10
+            keynum = function_key[c]
+            # can't be redefined in events - so must be event keys 1-10.
+            if program.run_mode and events.key_handlers[keynum].enabled:
+                keybuf += c
+            else:
+                keybuf += key_replace[keynum]
+        except KeyError:
+            keybuf += c
+    
+# non-blocking keystroke read
+def get_char():
+    idle()    
+    check_events()
+    return pass_char( peek_char() )
+    
+# peek character from keyboard buffer
+def peek_char():
+    ch = ''
+    if len(keybuf)>0:
+        ch = keybuf[0]
+        if ch == '\x00' and len(keybuf) > 0:
+            ch += keybuf[1]
+    return ch 
+
+# drop character from keyboard buffer
+def pass_char(ch):
+    global keybuf
+    keybuf = keybuf[len(ch):]        
+    return ch
+
+# blocking keystroke read
+def read_chars(num):
+    word = []
+    for _ in range(num):
+        wait_char()
+        word.append(get_char())
+    return word
+
+# blocking keystroke peek
+def wait_char():
+    while len(keybuf)==0 and not input_closed:
+        idle()
+        check_events()
+    return peek_char()
+    
 #####################
-
-def set_view(start=1, stop=24):
-    global view_start, scroll_height, view_set
-    view_set, view_start, scroll_height = True, start, stop
-    set_pos(start, 1)
- 
-def unset_view():
-    global view_set
-    set_view()
-    view_set = False
-
-def clear_view():
-    global row, col, apage 
-    for r in range(view_start, scroll_height+1):
-        apage.row[r-1].clear()
-        apage.row[r-1].wrap = False
-    row, col = view_start, 1
-    backend.clear_rows((attr>>4) & 0x7, view_start, height if bottom_row_allowed else scroll_height)
-
-#####################
+# screen read/write
+    
+def get_screen_char_attr(crow, ccol, want_attr):
+    ca = apage.row[crow-1].buf[ccol-1][want_attr]
+    return ca if want_attr else ord(ca)
     
 def put_char(c):
     global row, col, attr
@@ -807,7 +780,33 @@ def check_pos(scroll_ok=True):
         row = view_start
     # signal position change
     return row == oldrow and col == oldcol
-    
+
+def start_line():
+    if col != 1:
+        echo_read.write('\r')
+        set_pos(row+1, 1)
+
+#####################
+# viewport / scroll area
+
+def set_view(start=1, stop=24):
+    global view_start, scroll_height, view_set
+    view_set, view_start, scroll_height = True, start, stop
+    set_pos(start, 1)
+ 
+def unset_view():
+    global view_set
+    set_view()
+    view_set = False
+
+def clear_view():
+    global row, col, apage 
+    for r in range(view_start, scroll_height+1):
+        apage.row[r-1].clear()
+        apage.row[r-1].wrap = False
+    row, col = view_start, 1
+    backend.clear_rows((attr>>4) & 0x7, view_start, height if bottom_row_allowed else scroll_height)
+            
 def scroll(from_line=None): 
     global row, col
     if from_line == None:

@@ -26,7 +26,7 @@ prompt = True
 def loop():
     # main loop 
     while True:
-        line = get_line()
+        line = wait_line()
         if execute(line):
             show_prompt()
 
@@ -37,11 +37,11 @@ def show_prompt():
         console.write("Ok\xff\r\n")
     prompt = True
                           
-def get_line():
+def wait_line():
     while True:
         try:
             # input loop, checks events
-            line = console.read_screenline(from_start=True) 
+            line = console.wait_screenline(from_start=True) 
         except error.Break:
             continue
         if line:

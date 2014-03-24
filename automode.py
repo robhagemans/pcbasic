@@ -30,12 +30,12 @@ def auto_loop(linenum=None, increment=None):
             try:
                 if linenum in program.line_numbers:
                     console.write('*')
-                    line = console.read_screenline(from_start=True)
+                    line = console.wait_screenline(from_start=True)
                     if line[:len(numstr)+1] == numstr+'*':
                         line[len(numstr)] = ' '
                 else:
                     console.write(' ')
-                    line = console.read_screenline(from_start=True)
+                    line = console.wait_screenline(from_start=True)
             except error.Break:
                 # exit auto mode
                 break
