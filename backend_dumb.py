@@ -44,7 +44,6 @@ class DumbTermWrite(object):
 
 class DumberTermWrite(object):
     def write(self, s):
-    def write(self, s):
         for c in s:
             putc(c)
         sys.stdout.flush()
@@ -52,10 +51,7 @@ class DumberTermWrite(object):
 class DumberTermRead(object):
     def write(self, s):
         for c in s:
-            if c == '\r':
-                sys.stdout.write('\r\n')
-            else:
-                sys.stdout.write(c)
+            putc(c)
         sys.stdout.flush()
             
 def init():
@@ -99,20 +95,10 @@ def check_keys_interactive():
         
 ##############################################
 
-putc_last = ''
-# CR/LF compensating stdout write.
-# LF -> LF, CR -> CRLF, CRLF -> CRLF
 def putc(s):
     for c in s:
-        if putc_last == '\r':
-            if c == '\n':
-                sys.stdout.write('\r')
-            else:
-                sys.stdout.write('\r\n')
-        if c != '\r':
-            sys.stdout.write(c)    
-        putc_last = c        
-
+        sys.stdout.write(c)    
+        
 def putc_utf8(c):
     if c in control:    
         putc(c)    
