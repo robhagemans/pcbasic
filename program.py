@@ -320,21 +320,24 @@ def renum(new_line, start_line, step):
         # skip the \x00\xC0\xDE & overwrite line number
         bytecode.read(3)
         bytecode.write(str(vartypes.value_to_uint(old_to_new[old_line])))
+    # rebuild the line number dictionary    
+    preparse()    
     # write the indirect line numbers
     bytecode.seek(0)
-    while True:
-        if util.skip_to_read(bytecode, ('\x0e',)) != '\x0e':
-            break
+    while util.skip_to_read(bytecode, ('\x0e',)) == '\x0e':
         # get the old jump number
         jumpnum = vartypes.uint_to_value(bytearray(bytecode.read(2)))
         try:
-            bytecode.seek(-2, 1)
-            bytecode.write(str(vartypes.value_to_uint(old_to_new[jumpnum])))
-        except StopIteration:
-            linum = get_line_number(bytecode.tell())
-            console.write('Undefined line ' + str(jumpnum) + ' in ' + str(linum) + '\r\n')
-    # rebuild the line number dictionary    
-    preparse()    
+            newjump = old_to_new[jumpnum]
+        except KeyError:
+            # not redefined, exists in program?
+            if jumpnum in line_numbers:
+                newjump = jumpnum
+            else:    
+                linum = get_line_number(bytecode.tell())
+                console.write('Undefined line ' + str(jumpnum) + ' in ' + str(linum) + '\r\n')
+        bytecode.seek(-2, 1)
+        bytecode.write(str(vartypes.value_to_uint(newjump)))
 
 def load(g):
     global protected
