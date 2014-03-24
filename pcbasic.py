@@ -31,7 +31,7 @@ import console
 import tokenise
 import program
 
-greeting = 'PC-BASIC 3.23%s\r\n(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "INFO" for more.\r\n%d Bytes free\r\n'
+greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "INFO" for more.\r%d Bytes free'
 
 def main():
     args = get_args()
@@ -57,7 +57,7 @@ def main():
         # print greeting
         if not args.run and not args.cmd and not args.conv:
             if sys.stdin.isatty():
-                console.write(greeting % (debugstr, var.total_mem))
+                console.write_line(greeting % (debugstr, var.total_mem))
             run.show_prompt()
         # execute arguments
         if args.run or args.load or args.conv:

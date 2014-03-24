@@ -42,7 +42,7 @@ def spawn_interactive_shell(cmd):
             if c == '' or c == '\n':
                 break
             elif c == '\r':
-                console.write('\r\n')    
+                console.write_line()    
             elif c == '\b':
                 if console.col != 1:
                     console.col -= 1
