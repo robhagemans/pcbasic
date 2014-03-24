@@ -254,12 +254,12 @@ def parse_expr_list(ins, size, err=5, separators=(',',), allow_last_empty=False)
         output.append(None)
     return output
 
-def parse_file_number(ins):
+def parse_file_number(ins, file_mode='IOAR'):
     screen = None
     if util.skip_white_read_if(ins, ('#',)):
         number = vartypes.pass_int_unpack(parse_expression(ins))
         util.range_check(0, 255, number)
-        screen = fileio.get_file(number)
+        screen = fileio.get_file(number, file_mode)
         util.require_read(ins, (',',))
     return screen        
 

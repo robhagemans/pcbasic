@@ -237,7 +237,7 @@ def parse_prompt(ins, question_mark):
     return prompt
 
 def exec_input(ins):
-    finp = expressions.parse_file_number(ins)
+    finp = expressions.parse_file_number(ins, 'IR')
     if finp != None:
         varlist = representation.input_vars_file(parse_var_list(ins), finp)
         for v in varlist:
@@ -266,7 +266,7 @@ def exec_input(ins):
     util.require(ins, util.end_statement)
     
 def exec_line_input(ins):
-    finp = expressions.parse_file_number(ins)
+    finp = expressions.parse_file_number(ins, 'IR')
     if not finp:
         # ; to avoid echoing newline
         newline = not util.skip_white_read_if(ins, (';',))
