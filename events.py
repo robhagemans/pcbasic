@@ -31,9 +31,7 @@ class EventHandler(object):
             # stop event while handling it
             self.stopped = True 
             # execute 'ON ... GOSUB' subroutine; attach self to allow un-stopping event on RETURN
-            program.gosub_return.append((program.current_codestream.tell(), program.linenum, program.current_codestream, self))
-            # and go there.
-            program.jump(self.gosub)
+            program.jump_gosub(self.gosub, self)
 
     def command(self, command_char):
         if command_char == '\x95': 
