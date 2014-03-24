@@ -76,6 +76,9 @@ def main():
             run.exit()
         # go into interactive mode    
         run.loop()
+    except error.RunError as e:
+        # errors during startup/conversion are handled here, then exit
+        e.handle_break()    
     finally:
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
         console.close()

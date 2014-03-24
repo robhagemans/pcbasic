@@ -86,13 +86,8 @@ errors = {
 
 
 class Error(Exception):
-    def handle(self):
-        if self.handle_continue():
-            return True
-        else:
-            self.handle_break()
-            return False    
-        
+    pass
+            
 class Break(Error):
     def __init__(self):
         self.erl = -1 if not program.run_mode else program.linenum
