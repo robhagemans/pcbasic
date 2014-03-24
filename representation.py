@@ -10,6 +10,7 @@
 
 from cStringIO import StringIO
 
+import error
 import util
 import fp
 from fp import Single, Double
