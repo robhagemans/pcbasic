@@ -146,7 +146,7 @@ class ConsoleFile(BaseFile):
         s = ''
         while True:
             c = self.read(1)
-            if c == '\x0D':
+            if c == '\r':
                 # don't check for CR/LF when reading KYBD:
                 break
             else:        
@@ -173,16 +173,16 @@ class ConsoleFile(BaseFile):
     def write(self, inp):
         last = ''
         for s in inp:
-            if s == '\x0a' and last == '\x0d':
-                console.write('\x0d\x0a')
-            elif s == '\x0d':
+            if s == '\n' and last == '\r':
+                console.write('\r\n')
+            elif s == '\r':
                 pass
             else:        
                 console.write(s)
                 if self.col > self.width and self.width != 255:
-                    console.write('\x0d\x0a')
+                    console.write('\r\n')
             last = s
-        if last == '\x0d':
+        if last == '\r':
             console.write(last)    
             
     def set_width(self, new_width=255):

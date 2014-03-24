@@ -113,7 +113,7 @@ stick_is_on = False
 function_key = { 
         '\x00\x3b':0, '\x00\x3c':1, '\x00\x3d':2, '\x00\x3e':3, '\x00\x3f':4,     
         '\x00\x40':5, '\x00\x41':6, '\x00\x42':7, '\x00\x43':8, '\x00\x44':9 }
-key_replace = [ 'LIST ', 'RUN\x0d', 'LOAD"', 'SAVE"', 'CONT\x0d', ',"LPT1:"\x0d','TRON\x0d', 'TROFF\x0d', 'KEY ', 'SCREEN 0,0,0\x0d' ]
+key_replace = [ 'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r','TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r' ]
 
 # KEY ON?
 keys_visible = False
@@ -296,17 +296,17 @@ def wait_interactive():
         if not d:
             # input stream closed
             run.exit()
-        if d != '\x0d':
+        if d != '\r':
             echo_read.write(d)
         if d in ('\x00\x48', '\x1E', '\x00\x50', '\x1F',  '\x00\x4D', '\x1C', '\x00\x4B', 
                     '\x1D', '\x00\x47', '\x0B', '\x00\x4F', '\x0E' ):
             set_overwrite_mode(True)
         if d == '\x03':                     raise error.Break()                     # <CTRL+C>, probably already caught in wait_char()
-        elif d == '\x0D':                   break                                   # <ENTER>
-        elif d == '\x07':                   sound.beep()                            # <CTRL+G>
-        elif d == '\x08':                   backspace()                             # <BACKSPACE>
-        elif d == '\x09':                   tab()                                   # <TAB> or <CTRL+I>
-        elif d == '\x0A':                   line_feed()                             # <CTRL+ENTER> or <CTRL+J>
+        elif d == '\r':                     break                                   # <ENTER>
+        elif d == '\a':                     sound.beep()                            # <CTRL+G>
+        elif d == '\b':                     backspace()                             # <BACKSPACE>
+        elif d == '\t':                     tab()                                   # <TAB> or <CTRL+I>
+        elif d == '\n':                     line_feed()                             # <CTRL+ENTER> or <CTRL+J>
         elif d == '\x1B':                   clear_line(row)                         # <ESC> or <CTRL+[>
         elif d in ('\x00\x75', '\x05'):     clear_rest_of_line(row, col)            # <CTRL+END> <CTRL+E>
         elif d in ('\x00\x48', '\x1E'):     set_pos(row-1, col, scroll_ok=False)    # <UP> <CTRL+6>
@@ -321,7 +321,7 @@ def wait_interactive():
         elif d in ('\x00\x4F', '\x0E'):     end()                                   # <END> <CTRL+N>
         elif d in ('\x00\x77', '\x0C'):     clear()                                 # <CTRL+HOME> <CTRL+L>   
         elif d == '\x00\x37':               print_screen()                          # <SHIFT+PRT_SC>
-        elif d[0] not in ('\x00', '\x0d'): 
+        elif d[0] not in ('\x00', '\r'): 
             if not overwrite_mode:
                 insert_char(row, col, d, attr)
                 redraw_row(col-1, row)
@@ -574,19 +574,18 @@ def write(s, scroll_ok=True):
     echo_write.write(s)
     last = ''
     for c in s:
-        if c == '\x09':                                     # TAB
+        if c == '\t':                                       # TAB
             num = (8 - (col-1 - 8*int((col-1)/8)))
             for _ in range(num):
                 put_char(' ')
-        elif c == '\x0A':                                   # LF
+        elif c == '\n':                                     # LF
             # exclude CR/LF
-            if last != '\x0D': 
+            if last != '\r': 
                 # LF connects lines like word wrap
                 apage.row[row-1].wrap = True
                 set_pos(row+1, 1, scroll_ok)
-        elif c == '\x0D':   set_pos(row+1, 1, scroll_ok)     # CR
-        elif c == '\x00':   put_char('\x00')                # NUL
-        elif c == '\x07':   sound.beep()                    # BEL
+        elif c == '\r':     set_pos(row+1, 1, scroll_ok)     # CR
+        elif c == '\a':     sound.beep()                     # BEL
         elif c == '\x0B':   set_pos(1, 1, scroll_ok)         # HOME
         elif c == '\x0C':   clear()
         elif c == '\x1C':   set_pos(row, col+1, scroll_ok)
@@ -594,7 +593,7 @@ def write(s, scroll_ok=True):
         elif c == '\x1E':   set_pos(row-1, col, scroll_ok)
         elif c == '\x1F':   set_pos(row+1, col, scroll_ok)
         else:
-            # \x08, \x00, and non-control chars
+            # includes \b, \0, and non-control chars
             put_char(c)
         last = c
 

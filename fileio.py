@@ -156,21 +156,21 @@ class TextFile(BaseFile):
         if self.end_of_file():
             # input past end
             raise error.RunError(62)
-        # readline breaks line on \x0A, we can only break on \x0D or \x0D\x0A
+        # readline breaks line on LF, we can only break on CR or CRLF
         s = ''
         while True:
             c = self.fhandle.read(1)
             if c in ('', '\x1a'):
                 break
-            elif c=='\x0A':
+            elif c == '\n':
                 s += c
-                # special: allow \x0A\x0D to pass
-                if self.peek_char() == '\x0D':
+                # special: allow LFCR (!) to pass
+                if self.peek_char() == '\r':
                     self.fhandle.read(1)
-                    s+= '\x0D'
-            elif c=='\x0D':
+                    s += '\r'
+            elif c == '\r':
                 # check for CR/LF
-                if self.peek_char() == '\x0A':
+                if self.peek_char() == '\n':
                     self.fhandle.read(1)
                 break
             else:        
@@ -192,12 +192,12 @@ class TextFile(BaseFile):
     def write(self, s):
         for c in str(s):
             if self.col >= self.width and self.width != 255:  # width 255 means wrapping enabled
-                self.fhandle.write('\x0d\x0a')
+                self.fhandle.write('\r\n')
                 self.col = 1
-            if c in ('\x0a','\x0d'): # CR, LF
+            if c in ('\n', '\r'): # don't replace with CRLF when writing to files
                 self.fhandle.write(c)
                 self.col = 1
-            elif c == '\x08':
+            elif c == '\b':   # BACKSPACE
                 if self.col > 1:
                     self.col -= 1
                 self.fhandle.seek(-1, 1)

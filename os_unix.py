@@ -30,7 +30,7 @@ def spawn_interactive_shell(cmd):
         return 
     while True:
         c = console.get_char()
-        if c == '\x08': # BACKSPACE
+        if c == '\b': # BACKSPACE
             p.send('\x7f')
         elif c != '':
             p.send(c)
@@ -43,7 +43,7 @@ def spawn_interactive_shell(cmd):
                 break
             elif c == '\r':
                 console.write('\r\n')    
-            elif c == '\x08':
+            elif c == '\b':
                 if console.col != 1:
                     console.col -= 1
             else:

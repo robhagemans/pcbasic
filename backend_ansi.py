@@ -241,7 +241,7 @@ def check_keyboard():
     elif c == '\x00':      # to avoid confusion with scancodes
         console.insert_key('\x00\x00')      
     elif c == '\x7f':      # backspace
-        console.insert_key('\x08')
+        console.insert_key('\b')
     else:
         try:
             console.insert_key(esc_to_scan[c])       
