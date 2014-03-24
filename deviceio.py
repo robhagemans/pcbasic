@@ -171,19 +171,10 @@ class ConsoleFile(BaseFile):
         return word
 
     def write(self, inp):
-        last = ''
         for s in inp:
-            if s == '\n' and last == '\r':
+            console.write(s)
+            if self.col > self.width and self.width != 255:
                 console.write('\r\n')
-            elif s == '\r':
-                pass
-            else:        
-                console.write(s)
-                if self.col > self.width and self.width != 255:
-                    console.write('\r\n')
-            last = s
-        if last == '\r':
-            console.write(last)    
             
     def set_width(self, new_width=255):
         self.width = new_width

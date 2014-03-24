@@ -277,7 +277,7 @@ def wait_screenline(write_endl=True, from_start=False):
     row = crow
     # echo the CR, if requested
     if write_endl:
-        echo_read.write('\r')
+        echo_read.write('\r\n')
         set_pos(row+1, 1)
     # remove trailing whitespace 
     while len(line) > 0 and line[-1] in util.whitespace:
@@ -569,9 +569,24 @@ def clear():
         show_keys()
         
 ##### i/o methods
-        
+
+def replace_cr_with_crlf(s):
+    # CR -> CRLF, CRLF (in ONE STRING) -> CRLF
+    last = ''
+    out = ''
+    for c in s:
+        if c == '\r':
+            out += '\r\n'  
+        elif c == '\n':
+            if last != '\r':
+               out += c
+        else:
+            out += c    
+        last = c
+    return out    
+    
 def write(s, scroll_ok=True): 
-    echo_write.write(s)
+    echo_write.write(replace_cr_with_crlf(s))
     last = ''
     for c in s:
         if c == '\t':                                       # TAB
@@ -782,7 +797,7 @@ def check_pos(scroll_ok=True):
 
 def start_line():
     if col != 1:
-        echo_read.write('\r')
+        echo_read.write('\r\n')
         set_pos(row+1, 1)
 
 #####################
