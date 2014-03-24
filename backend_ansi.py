@@ -191,7 +191,7 @@ def set_attr(attr):
 
 def putc_at(row, col, c):
     term.write(esc_move_cursor % (row, col))
-    term.write(unicodepage.to_utf8(c))
+    term.write(unicodepage.cp437_to_utf8[c])
     term.flush()
    
 def scroll(from_line):
@@ -246,9 +246,12 @@ def check_keyboard():
         try:
             console.insert_key(esc_to_scan[c])       
         except KeyError:
-            # all other codes are chopped off, 
-            # so other escape sequences will register as an escape keypress.
-            console.insert_key(c[0])    
+            try:
+                console.insert_key(unicodepage.utf8_to_cp437[c])
+            except KeyError:    
+                # all other codes are chopped off, 
+                # so other escape sequences will register as an escape keypress.
+                console.insert_key(c[0])    
         
 ########
 

@@ -21,17 +21,30 @@ import unicodepage
 import console
 import run
 
-# non-printing characters
-control = ('\x07', '\x08', '\x09', '\x0a','\x0b','\x0c', '\x0d', '\x1c', '\x1d', '\x1e', '\x1f')
-
+# these values are not shown as special graphic chars but as their normal effect
+control = (
+    '\x07', # BEL
+    #'\x08',# BACKSPACE
+    '\x09', # TAB 
+    '\x0a', # LF
+    '\x0b', # HOME
+    '\x0c', # clear screen
+    '\x0d', # CR
+    '\x1c', # RIGHT
+    '\x1d', # LEFT
+    '\x1e', # UP
+    '\x1f', # DOWN
+    ) 
 
 class DumbTermWrite(object):
     def write(self, s):
         for c in s:
-            if c in control:    
-                sys.stdout.write(c)    
-            else:
-                sys.stdout.write(unicodepage.to_utf8(c))    
+            putc_utf8(c)
+        sys.stdout.flush()
+
+class DumberTermWrite(object):
+    def write(self, s):
+        sys.stdout.write(s)
         sys.stdout.flush()
                     
 class DumberTermRead(object):
@@ -39,15 +52,10 @@ class DumberTermRead(object):
         for c in s:
             if c == '\r':
                 sys.stdout.write('\r\n')
-            elif c in control:    
-                sys.stdout.write(c)    
             else:
-                sys.stdout.write(unicodepage.to_utf8(c))       
+                sys.stdout.write(c)
+        sys.stdout.flush()
             
-class DumberTermWrite(object):
-    def write(self, s):
-        sys.stdout.write(s)
-    
 def init():
     global check_keys
     if sys.stdin.isatty():
@@ -80,18 +88,45 @@ def check_keys_dumb():
 
 # interactive input    
 def check_keys_interactive():
-    global enter_pressed
-    fd = sys.stdin.fileno()
-    c = ''
-    # check if stdin has characters to read
-    d = select.select([sys.stdin], [], [], 0) 
-    if d[0] != []:
-        c = os.read(fd,1)
+    c = getc_utf8() 
     # terminals send \n instead of \r on enter press
     if c == '\n':
         console.insert_key('\r') 
     else:
         console.insert_key(c)
+        
+##############################################        
+        
+def getc():
+    fd = sys.stdin.fileno()
+    # check if stdin has characters to read
+    sel = select.select([sys.stdin], [], [], 0) 
+    c = os.read(fd,1) if sel[0] != [] else ''
+    return c
+
+def getc_utf8():
+    c = getc()
+    utf8 = c
+    # UTF8 read, max 6 chars long
+    if c and ord(c) > 0x80:
+        mask = 0x40
+        for _ in range(5):
+            if ord(c)&mask == 0:
+                break    
+            utf8 += getc()
+            mask >>= 1 
+    try:
+        return unicodepage.utf8_to_cp437[utf8]
+    except KeyError:        
+        return utf8
+
+def putc_utf8(c):
+    if c in control:    
+        sys.stdout.write(c)    
+    else:
+        sys.stdout.write(unicodepage.cp437_to_utf8[c])  
+
+##############################################
         
 def close():
     pass
