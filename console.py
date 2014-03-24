@@ -552,7 +552,7 @@ def skip_word_left():
 def print_screen():
     for crow in range(1, height+1):
         line = ''
-        for c, _ in vpage[crow-1].buf:
+        for c, _ in vpage.row[crow-1].buf:
             line += c
         deviceio.lpt1.write_line(line)
     deviceio.lpt1.flush()    
