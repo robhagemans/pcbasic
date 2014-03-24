@@ -36,24 +36,17 @@ control = (
     '\x1f', # DOWN
     ) 
 
-class DumbTermWrite(object):
+class Writer(object):
+    def __init__(self, put_char):
+        self.putc = put_char
+    
     def write(self, s):
         for c in s:
-            putc_utf8(c)
-        sys.stdout.flush()
+            self.putc(c)
+        sys.stdout.flush()    
 
-class DumberTermWrite(object):
-    def write(self, s):
-        for c in s:
-            putc(c)
-        sys.stdout.flush()
-                    
-class DumberTermRead(object):
-    def write(self, s):
-        for c in s:
-            putc(c)
-        sys.stdout.flush()
-            
+##############################################        
+        
 def init():
     global check_keys
     if sys.stdin.isatty():
@@ -62,14 +55,14 @@ def init():
         check_keys = check_keys_dumb
     # on ttys, use unicode and echo suppression
     if sys.stdout.isatty():
-        console.echo_write = DumbTermWrite()
+        console.echo_write = Writer(putc_utf8)
     else:
-        console.echo_write = DumberTermWrite()
+        console.echo_write = Writer(putc)
     # if both are ttys, avoid doubling input echo
     if sys.stdin.isatty() and sys.stdout.isatty():
-        console.echo_read = console.NoneTerm()
+        console.echo_read = console.NoEcho()
     else:    
-        console.echo_read = DumberTermRead()
+        console.echo_read = Writer(putc)
     return True    
 
 def check_keys_dumb():
@@ -93,20 +86,17 @@ def check_keys_interactive():
     else:
         console.insert_key(c)
         
-##############################################
+##############################################        
 
-def putc(s):
-    for c in s:
-        sys.stdout.write(c)    
+def putc(c):
+    sys.stdout.write(c)    
         
 def putc_utf8(c):
     if c in control:    
         putc(c)    
     else:
-        putc(unicodepage.cp437_to_utf8[c])          
+        putc(unicodepage.cp437_to_utf8[c])       
         
-##############################################        
-
 # non-blocking read of one char        
 def getc():
     fd = sys.stdin.fileno()

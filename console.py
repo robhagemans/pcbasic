@@ -59,13 +59,13 @@ keybuf = ''
 inp_key = 0
 
     
-class NoneTerm(object):
+class NoEcho(object):
     def write(self, s):
         pass    
 
 # echo to printer
-echo_read = NoneTerm()
-echo_write = NoneTerm()
+echo_read = NoEcho()
+echo_write = NoEcho()
 
 # input has closed
 input_closed = False
