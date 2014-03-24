@@ -62,10 +62,8 @@ def parse_statement():
                 # unfinished error handler: no RESUME (don't trap this)
                 error.error_handle_mode = True
                 raise error.RunError(19) 
-            # move back to the line-ending \x00 and break
-            ins.seek(-1, 1)
+            # break
             program.set_runmode(False)
-            program.linenum = linenum 
             return False
         program.linenum = linenum    
         if tron:

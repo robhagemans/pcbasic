@@ -28,6 +28,8 @@ from copy import copy
 bytecode = StringIO()
 # direct line buffer
 direct_line = StringIO()
+# pointer position: False for direct line, True for program
+run_mode = False
 
 def init_program():
     global gosub_return, for_next_stack, while_wend_stack, linenum, stop
@@ -57,8 +59,11 @@ def erase_program():
 
 def set_runmode(new_runmode=True):
     global run_mode, current_codestream
-    run_mode = new_runmode
-    current_codestream = bytecode if run_mode else direct_line
+    current_codestream = bytecode if new_runmode else direct_line
+    if run_mode != new_runmode:
+        run_mode = new_runmode
+        # position at end - don't execute anything unless we jump
+        current_codestream.seek(0, 2)
     
 # RESTORE
 def restore(datanum=-1):
@@ -124,14 +129,18 @@ def get_line_number(pos):
 # jump to line number    
 def jump(jumpnum, err=8):
     global linenum
-    if jumpnum in line_numbers:
-        # jump to target
-        bytecode.seek(line_numbers[jumpnum])
-        linenum = jumpnum
-        set_runmode()
-    else:
-        # Undefined line number
-        raise error.RunError(err)
+    linenum = -1
+    set_runmode() 
+    if jumpnum == None:
+        bytecode.seek(0)
+    else:    
+        try:    
+            # jump to target
+            bytecode.seek(line_numbers[jumpnum])
+            linenum = jumpnum
+        except KeyError:
+            # Undefined line number
+            raise error.RunError(err)
         
 def jump_gosub(jumpnum, handler=None):    
     # set return position
@@ -149,9 +158,6 @@ def jump_return(jumpnum):
         # if stopped explicitly using STOP, we wouldn't have got here; it STOP is run  inside the trap, no effect. OFF in trap: event off.
         handler.stopped = False
     if jumpnum == None:
-        if not orig_runmode:
-            # move to end of program to avoid executing anything else on the RETURN line if called from direct mode   
-            bytecode.seek(-1)
         # go back to position of GOSUB
         linenum = orig_linenum 
         set_runmode(orig_runmode)   
@@ -310,19 +316,16 @@ def delete_lines(fromline, toline):
 def edit_line(from_line, bytepos=None):
     global prompt
     # list line
-    current = bytecode.tell()	        
     bytecode.seek(1)
     output = StringIO()
     textpos = tokenise.detokenise(bytecode, output, from_line, from_line, bytepos)
-    output.seek(0)
-    bytecode.seek(current)
+    bytecode.seek(-1)
     console.clear_line(console.row)
     # cut off CR/LF at end
     console.write(output.getvalue()[:-2])
-    output.close()
+    console.set_pos(console.row, textpos+1 if bytepos else 1)
     # throws back to direct mode
     set_runmode(False)
-    console.set_pos(console.row, textpos+1 if bytepos else 1)
     
 def renum(new_line, start_line, step):
     global last_stored
@@ -352,7 +355,7 @@ def renum(new_line, start_line, step):
     # write the indirect line numbers
     bytecode.seek(0)
     while util.skip_to_read(bytecode, ('\x0e',)) == '\x0e':
-        # get the old jump number
+        # get the old g number
         jumpnum = vartypes.uint_to_value(bytearray(bytecode.read(2)))
         try:
             newjump = old_to_new[jumpnum]
@@ -386,7 +389,12 @@ def load(g):
         # TODO: check allowed first chars for ASCII file - > whitespace + nums? letters?
         # ASCII file, maybe
         protected = False
-        while load_ascii_line(g, c):
+        while True:
+            linebuf = load_ascii_line(g)
+            if linebuf == None:
+                break
+            elif linebuf != '':    
+                bytecode.write(linebuf.read())    
             c = ''
         # terminate bytecode stream properly
         bytecode.write('\x00\x00\x00\x1a')
@@ -398,22 +406,28 @@ def merge(g):
         # bad file mode
         raise error.RunError(54)
     else:
-        while load_ascii_line(g):
-            pass      
+        while True:
+            linebuf = load_ascii_line(g)
+            if linebuf == None:
+                break
+            elif linebuf != '':    
+                store_line(linebuf)    
     g.close()
     
 def load_ascii_line(g, first_char=''):
     line = first_char + tokenise.read_program_line(g)
     if not line:
-        return False
+        return None
     tempbuf = tokenise.tokenise_line(line)
     if util.peek(tempbuf) == '\x00':
         # line starts with a number, add to program memory
-        store_line(tempbuf)
+        return tempbuf
     elif util.skip_white(tempbuf) not in util.end_line:
         # direct statement in file
         raise error.RunError(66)   
-    return True
+    else:
+        #empty buffer    
+        return ''
 
 def chain(action, g, jumpnum, common_all, delete_lines):    
     if delete_lines:
@@ -454,9 +468,7 @@ def chain(action, g, jumpnum, common_all, delete_lines):
         vartypes.deftype = common_deftype
     # don't close files!
     # RUN
-    set_runmode()
-    if jumpnum != None:
-        jump(jumpnum, err=5)
+    jump(jumpnum, err=5)
 
 def save(g, mode='B'):
     current = bytecode.tell()
@@ -487,10 +499,8 @@ def list_to_file(out, from_line, to_line):
         raise error.RunError(5)
     if to_line == None:
         to_line = 65530
-    current = bytecode.tell()	        
     bytecode.seek(1)
     tokenise.detokenise(bytecode, out, from_line, to_line)
-    bytecode.seek(current)
     set_runmode(False)
                   
 def loop_init(ins, forpos, forline, varname, nextpos, nextline, start, stop, step):
