@@ -48,20 +48,20 @@ def wait_line():
             return line
                         
 def execute(line, ignore_empty_number=False):
-    program.direct_line = tokenise.tokenise_line(line)    
-    c = util.peek(program.direct_line)
-    if c == '\x00':
-        try:
+    try:
+        program.direct_line = tokenise.tokenise_line(line)    
+        c = util.peek(program.direct_line)
+        if c == '\x00':
             program.store_line(program.direct_line, ignore_empty_number)
             return False
-        except error.Error as e:
-            e.handle() 
-            # prompt
-            return True    
-    elif c != '':    
-        # it is a command, go and execute    
-        execution_loop()
-        return True
+        elif c != '':    
+            # it is a command, go and execute    
+            execution_loop()
+            return True
+    except error.Error as e:
+        e.handle_break() 
+        # prompt
+        return True    
                
 # execute any commands
 def execution_loop():
@@ -75,8 +75,9 @@ def execution_loop():
             if not statements.parse_statement():
                 break
         except error.Error as e:
-            if not e.handle():
-                break
+            if not e.handle_continue():
+                console.show_cursor()
+                raise e
     console.show_cursor()
                    
 def exit():
