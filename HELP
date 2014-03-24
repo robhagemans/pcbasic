@@ -1369,7 +1369,7 @@ ERRORS:
     
 
 GOSUB statement
-GOSUB line_number [ anything ]
+GO[ ]SUB line_number [ anything ]
 ---------------
 Jumps to a subroutine at 'line_number'. The next RETURN satement jumps back to
 the statement after GOSUB. Anything after 'line_number' until the end of the 
@@ -1379,6 +1379,8 @@ the following RETURN returns execution to the direct line.
 the line are ignored until end of statement.
 NOTES:
 -   If no RETURN is encountered, no problem.
+-   An optional space is allowed between GO and SUB; it will not be retained in
+    the program.
 ERRORS:
 -   If 'line_number' does not exist, raises UNDEFINED LINE NUMBER.
 -   If 'line_number' is greater than 65529, only the first 4 characters are 
@@ -1386,13 +1388,16 @@ ERRORS:
 
 
 GOTO statement
-GOTO line_number [anything]
+GO[ ]TO line_number [anything]
 --------------
 Jumps to 'line_number'.  Anything after 'line_number' until the end of the 
 statement is ignored. If executed in interactive mode, GOTO enters runmode and
 the following RETURN returns execution to the direct line.
 'line_number' must be an existing line number literal. Further characters on 
 the line are ignored until end of statement.
+NOTES:
+-   Any number of optional spaces is allowed between GO and TO, but they will
+    not be retained in the program.
 ERRORS:
 -   If 'line_number' does not exist, raises UNDEFINED LINE NUMBER.
 -   If 'line_number' is greater than 65529, only the first 4 characters are 
