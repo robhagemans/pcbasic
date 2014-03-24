@@ -58,14 +58,9 @@ keybuf = ''
 # INP(&H60) scancode
 inp_key = 0
 
-    
-class NoEcho(object):
-    def write(self, s):
-        pass    
-
-# echo to printer
-echo_read = NoEcho()
-echo_write = NoEcho()
+# echo to printer or dumb terminal
+input_echos = []
+output_echos = []
 
 # input has closed
 input_closed = False
@@ -277,7 +272,8 @@ def wait_screenline(write_endl=True, from_start=False):
     row = crow
     # echo the CR, if requested
     if write_endl:
-        echo_read.write('\r\n')
+        for echo in input_echos:
+            echo('\r\n')
         set_pos(row+1, 1)
     # remove trailing whitespace 
     while len(line) > 0 and line[-1] in util.whitespace:
@@ -297,7 +293,8 @@ def wait_interactive():
             # input stream closed
             run.exit()
         if d != '\r':
-            echo_read.write(d)
+            for echo in input_echos:
+                echo(d)
         if d in ('\x00\x48', '\x1E', '\x00\x50', '\x1F',  '\x00\x4D', '\x1C', '\x00\x4B', 
                     '\x1D', '\x00\x47', '\x0B', '\x00\x4F', '\x0E' ):
             set_overwrite_mode(True)
@@ -320,7 +317,7 @@ def wait_interactive():
         elif d in ('\x00\x47', '\x0B'):     set_pos(1, 1)                           # <HOME> <CTRL+K>
         elif d in ('\x00\x4F', '\x0E'):     end()                                   # <END> <CTRL+N>
         elif d in ('\x00\x77', '\x0C'):     clear()                                 # <CTRL+HOME> <CTRL+L>   
-        elif d == '\x00\x37':               print_screen()                          # <SHIFT+PRT_SC>
+        elif d == '\x00\x37':               print_screen()                          # <SHIFT+PRT_SC>, already caught in wait_char()
         elif d[0] not in ('\x00', '\r'): 
             if not overwrite_mode:
                 insert_char(row, col, d, attr)
@@ -557,6 +554,14 @@ def print_screen():
         deviceio.lpt1.write_line(line)
     deviceio.lpt1.flush()    
 
+def toggle_echo_lpt1():
+    if deviceio.lpt1.write in input_echos:
+        input_echos.remove(deviceio.lpt1.write)
+        output_echos.remove(deviceio.lpt1.write)
+    else:    
+        input_echos.append(deviceio.lpt1.write)
+        output_echos.append(deviceio.lpt1.write)
+
 def clear():
     save_view_set, save_view_start, save_scroll_height = view_set, view_start, scroll_height
     set_view(1,25)
@@ -570,12 +575,10 @@ def clear():
         
 ##### i/o methods
 
-def replace_cr_with_crlf(s):
-    # CR -> CRLF, CRLF -> CRLF LF
-    return ''.join([ ('\r\n' if c == '\r' else c) for c in s ])
-    
 def write(s, scroll_ok=True): 
-    echo_write.write(replace_cr_with_crlf(s))
+    for echo in output_echos:
+        # CR -> CRLF, CRLF -> CRLF LF
+        echo(''.join([ ('\r\n' if c == '\r' else c) for c in s ]))
     last = ''
     for c in s:
         if c == '\t':                                       # TAB
@@ -603,7 +606,8 @@ def write(s, scroll_ok=True):
 
 def write_line(s='', scroll_ok=True): 
     write(s, scroll_ok=True)
-    echo_write.write('\r\n')
+    for echo in output_echos:
+        echo('\r\n')
     set_pos(row+1, 1)
 
 def set_width(to_width):
@@ -791,7 +795,8 @@ def check_pos(scroll_ok=True):
 
 def start_line():
     if col != 1:
-        echo_read.write('\r\n')
+        for echo in input_echos:
+            echo('\r\n')
         set_pos(row+1, 1)
 
 #####################
