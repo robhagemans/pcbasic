@@ -84,7 +84,6 @@ def trace(on=True):
 
 def watch(expr):
     global watch_list    
-    outs = StringIO.StringIO()
-    tokenise.tokenise_stream(StringIO.StringIO('?'+expr), outs, True, False) 
+    outs = tokenise.tokenise_line('?'+expr) 
     watch_list.append((expr, outs))
 
