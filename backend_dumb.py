@@ -87,9 +87,9 @@ def echo_stdout(s):
 def echo_stdout_utf8(s):
     for c in s:
         if c in control:    
-            putc(c)    
+            sys.stdout.write(c)    
         else:
-            putc(unicodepage.cp437_to_utf8[c]) 
+            sys.stdout.write(unicodepage.cp437_to_utf8[c]) 
     sys.stdout.flush()        
         
 # non-blocking read of one char        
