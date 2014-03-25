@@ -44,6 +44,7 @@ def wait_music(wait_length=0, wait_last=True):
 
 def play_now(frequency, duration, fill):
     global now_playing
+    frequency = max(1, min(19999, frequency))
     now_playing = subprocess.Popen(['beep -f %f -l %d -D %d' % (frequency, duration*fill*1000, duration*(1-fill)*1000) ], shell=True)
     
       
