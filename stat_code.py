@@ -110,6 +110,7 @@ def exec_load(ins):
         program.jump(None)
     else:
         fileio.close_all()
+    program.tron = False    
         
 def exec_chain(ins):
     action = program.merge if util.skip_white_read_if(ins, ('\xBD',)) else program.load     # MERGE
@@ -148,6 +149,7 @@ def exec_merge(ins):
     util.require(ins, util.end_statement)
     
 def exec_new(ins):
+    program.tron = False
     # deletes the program currently in memory and clears all variables.
     program.clear_program()
 
