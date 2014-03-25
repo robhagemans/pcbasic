@@ -64,7 +64,6 @@ def exec_edit(ins):
     util.require(ins, util.end_statement, err=5)
     # print the line, position cursor, back to direct mode. suppress prompt.
     program.edit_line(from_line)
-    run.prompt = False
     
 def exec_auto(ins):
     linenum = parse_jumpnum_or_dot(ins, allow_empty=True)
