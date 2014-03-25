@@ -114,7 +114,9 @@ def exec_window(ins):
         x0, y0 = parse_coord(ins, absolute=True)
         util.require_read(ins, ('\xEA',)) #-
         x1, y1 = parse_coord(ins, absolute=True)
-        graphics.set_graph_window(x0,y0, x1,y1, cartesian)
+        if x0.equals(x1) or y0.equals(y1):
+            raise error.RunError(5)
+        graphics.set_graph_window(x0, y0, x1, y1, cartesian)
     else:
         graphics.unset_graph_window()
     util.require(ins, util.end_statement)        
