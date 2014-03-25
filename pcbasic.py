@@ -68,9 +68,9 @@ def main():
             program.protected = False
             program.save(oslayer.safe_open(args.outfile, "S", "W") if args.outfile else sys.stdout, args.conv)
             run.exit()
-        if not args.cmd and args.run:
-            # if a command is given, the program is only loaded.
-            args.cmd = 'RUN'    
+        if not args.cmd:
+            # if a command is given, the program is only loaded; run.loop() doesn't take None.
+            args.cmd = 'RUN' if args.run else ''
         if args.quit:
             run.execute(args.cmd)
             run.exit()
