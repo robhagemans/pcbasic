@@ -197,8 +197,9 @@ def read_program_line(ins):
         out += d
     while d not in tokenise_endline_nonnul:
         d = ins.read(1)
-        out += d            
-    return out
+        out += d       
+    eof = d in tokenise_endfile         
+    return out, eof
     
 def tokenise_line(line):      
     ins = StringIO(line)
