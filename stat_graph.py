@@ -79,12 +79,19 @@ def exec_line_graph(ins):
 def exec_view_graph(ins):
     graphics.require_graphics_mode()
     absolute = util.skip_white_read_if(ins, ('\xC8',)) #SCREEN
-    if util.skip_white(ins) == '(':
-        x0, y0 = parse_coord(ins, absolute=True)
+    if util.skip_white_read_if(ins, '('):
+        x0 = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+        util.require_read(ins, (',',))
+        y0 = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+        util.require_read(ins, (')',))
         util.require_read(ins, ('\xEA',)) #-
-        x1, y1 = parse_coord(ins, absolute=True)
-        # not scaled by WINDOW
-        x0, x1, y0, y1 = x0.round_to_int(), x1.round_to_int(), y0.round_to_int(), y1.round_to_int()
+        util.require_read(ins, ('(',))
+        x1 = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+        util.require_read(ins, (',',))
+        y1 = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+        util.require_read(ins, (')',))
+        util.range_check(0, graphics.size[0]-1, x0, x1)
+        util.range_check(0, graphics.size[1]-1, y0, y1)
         x0, x1 = min(x0, x1), max(x0, x1)
         y0, y1 = min(y0, y1), max(y0, y1)
         fill, border = None, None
