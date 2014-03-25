@@ -221,16 +221,6 @@ def tokenise_line(line):
     expect_number = False
     # flag for SPC( or TAB( as numbers can follow the closing bracket
     spc_or_tab = False
-    # line must not start with a number
-    while True:
-        c = util.peek(ins)
-        if c in tokenise_whitespace:
-            ins.read(1)
-            outs.write(c)
-        elif c in ascii_digits:
-            raise error.RunError(2)
-        else:
-            break
     # parse through elements of line
     while True: 
         # non-parsing modes        

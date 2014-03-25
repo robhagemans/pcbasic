@@ -237,15 +237,15 @@ def store_line(linebuf, ignore_empty_number=False):
     global line_numbers, last_stored
     if protected:
         raise error.RunError(5)
-    linebuf.tell()
-    # check if linebuf is an empty line after the line number
-    linebuf.seek(5)
-    empty = (util.skip_white_read(linebuf) in util.end_line)
+##
     # get the new line number
     linebuf.seek(1)
     scanline = util.parse_line_number(linebuf)
+    # check if linebuf is an empty line after the line number
+    empty = (util.skip_white_read(linebuf) in util.end_line)
     if empty and ignore_empty_number:
         return scanline
+##        
     # find the lowest line after scanline
     after, afterpos = 65536, 0
     for num in line_numbers:
@@ -267,8 +267,7 @@ def store_line(linebuf, ignore_empty_number=False):
         bytecode.seek(afterpos)
     # write the line buffer to the program buffer
     if not empty:
-        linebuf.seek(0)
-        bytecode.write(linebuf.read())
+        bytecode.write(linebuf.getvalue())
     # write back the remainder of the program
     truncate_program(rest)
     preparse()
@@ -383,14 +382,7 @@ def load(g):
     elif c != '':
         # TODO: check allowed first chars for ASCII file - > whitespace + nums? letters?
         # ASCII file, maybe
-        eof = False
-        while not eof:
-            linebuf, eof = load_ascii_line(g, c) 
-            c = ''
-            if linebuf:  
-                bytecode.write(linebuf.read())    
-        # terminate bytecode stream properly
-        bytecode.write('\x00\x00\x00\x1a')
+        load_ascii_file(g, c)        
     preparse()
     g.close()
     
@@ -400,28 +392,21 @@ def merge(g):
         # bad file mode
         raise error.RunError(54)
     else:
-        eof = False
-        while not eof:
-            linebuf, eof = load_ascii_line(g, c) 
-            c = ''
-            if linebuf:    
-                store_line(linebuf)  
+        load_ascii_file(g, c)
     g.close()
     
-def load_ascii_line(g, first_char=''):
-    line, eof = tokenise.read_program_line(g)
-    line = first_char + line
-    tempbuf = tokenise.tokenise_line(line)
-    if util.peek(tempbuf) == '\x00':
-        # line starts with a number, add to program memory
-        return tempbuf, eof
-    elif util.skip_white(tempbuf) not in util.end_line:
-        print repr(line), tempbuf.getvalue().encode('hex')
-        # direct statement in file
-        raise error.RunError(66)   
-    else:
-        #empty buffer    
-        return None, eof
+def load_ascii_file(g, first_char=''):
+    eof = False
+    while not eof:
+        line, eof = tokenise.read_program_line(g)
+        line, first_char = first_char + line, ''
+        linebuf = tokenise.tokenise_line(line)
+        if util.peek(linebuf) == '\x00':
+            # line starts with a number, add to program memory
+            store_line(linebuf)
+        elif util.skip_white(linebuf) not in util.end_line:
+            # direct statement in file
+            raise error.RunError(66)   
 
 def chain(action, g, jumpnum, common_all, delete_lines):    
     if delete_lines:

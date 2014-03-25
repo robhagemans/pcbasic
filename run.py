@@ -62,6 +62,7 @@ def execute(line, ignore_empty_number=False):
         e.handle_break() 
         # prompt
         return True    
+    return False
                
 # execute any commands
 def execution_loop():
