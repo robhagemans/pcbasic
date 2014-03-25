@@ -731,7 +731,7 @@ def value_usr(ins):
     if util.peek(ins) in ('\x11','\x12','\x13','\x14','\x15','\x16','\x17','\x18','\x19','\x1a'): # digits 0--9
         ins.read(1)
     parse_bracket(ins)
-    return vartypes.null['%']
+    raise error.RunError(5)
     
 def value_inp(ins):
     console.idle()
