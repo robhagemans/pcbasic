@@ -82,11 +82,11 @@ def create_device(name, arg, default=None):
         for a in arg:
             addr, val = a.split(':', 1)
             if addr.upper() == 'CUPS':
-                device = fileio.TextFile(PrinterStream(val), name)      
+                device = DeviceFile(name, PrinterStream(val), 'O')      
             elif addr.upper() == 'FILE':
-                device = DeviceFile(name, val, access='W')
+                device = DeviceFile(name, oslayer.safe_open(unixpath, 'O', 'W'), 'O')
             elif addr.upper() == 'PORT':
-                device = SerialFile(name, val)    
+                device = SerialFile(name, oslayer.safe_open(unixpath, 'R', 'RW'), 'R')    
     return device
 
 
@@ -178,10 +178,11 @@ class ConsoleFile(BaseFile):
             
     def write_line(self, inp=''):
         self.write(inp)
-        console.write_line(inp)
+        console.write_line()
             
     def set_width(self, new_width=255):
         self.width = new_width
+#        console.set_width(new_width)
 
     # for internal use    
     def end_of_file(self):
@@ -200,12 +201,6 @@ class ConsoleFile(BaseFile):
     def end_of_file(self):
         return False
         
-#    def eof(self):
-#        # for EOF(i)
-#        if self.mode in ('A', 'O'):
-#            return False
-#        return (util.peek(self.fhandle) in ('', '\x1a'))
-        
     def eof(self):
         # KYBD only EOF if ^Z is read
         if self.mode in ('A', 'O'):
@@ -217,7 +212,11 @@ class ConsoleFile(BaseFile):
         # don't write EOF \x1A to SCRN:
         if self.number != 0:
             del fileio.files[self.number]
-        
+    
+#    @property
+#    def width(self):
+#        return console.width
+            
     @property
     def col(self):
         return console.col
@@ -234,21 +233,18 @@ class PrinterStream(StringIO.StringIO):
         self.truncate(0)
         self.seek(0)
 
-    def close(self):
-        self.flush()
-        # don't actually close the stream, there may be copies
-        
 
 # essentially just a text file that doesn't close if asked to
 class DeviceFile(TextFile):
-    def __init__(self, name, unixpath, access='R'):
-        if access == 'W':
-            mode = 'O'
+    def __init__(self, name, fhandle, mode):
+        if mode == 'I':
+            access = 'W'
         else:
-            mode = 'I'
-        TextFile.__init__(self, oslayer.safe_open(unixpath, mode, access), name, 0, mode, access)
+            access = 'R'
+        TextFile.__init__(self, fhandle, name, 0, mode, access)
         
     def close(self):
+        self.fhandle.flush()
         # don't close the file handle as we may have copies
         if self.number != 0:
             del fileio.files[self.number]
