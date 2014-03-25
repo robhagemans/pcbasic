@@ -23,13 +23,13 @@ import console
 # suppress one prompt by setting to False (used by EDIT)
 prompt = True
 
-def loop():
+def loop(line=''):
     # main loop 
     while True:
-        line = wait_line()
         if execute(line):
             show_prompt()
-
+        line = wait_line()
+        
 def show_prompt():
     global prompt
     if prompt:

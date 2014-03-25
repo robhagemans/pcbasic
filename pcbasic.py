@@ -68,15 +68,14 @@ def main():
             program.protected = False
             program.save(oslayer.safe_open(args.outfile, "S", "W") if args.outfile else sys.stdout, args.conv)
             run.exit()
-        if args.cmd:
-            run.execute(args.cmd)
-        elif args.run:
+        if not args.cmd and args.run:
             # if a command is given, the program is only loaded.
-            run.execute('RUN')    
+            args.cmd = 'RUN'    
         if args.quit:
+            run.execute(args.cmd)
             run.exit()
         # go into interactive mode    
-        run.loop()
+        run.loop(args.cmd)
     except error.RunError as e:
         # errors during startup/conversion are handled here, then exit
         e.handle_break()    
