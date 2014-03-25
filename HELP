@@ -757,7 +757,7 @@ cosine = COS(angle)
 ---------------
 Returns the cosine of 'angle'. 'angle' is a numeric-valued expression that 
 gives the angle in radians. 
-Unless BASIC is run with the --double option, SIN(x) returns a single-precision
+Unless BASIC is run with the --double option, COS(x) returns a single-precision
 value.
 NOTES:
 -   COS usually differs from the value returned by GW-BASIC. For one-digit 
@@ -3415,15 +3415,46 @@ ERRORS:
 
 
 SWAP statement
+SWAP var_0, var_1
+--------------
+Exchanges the values of 'var_0' and 'var_1', which must be of the exact same 
+type.
+ERRORS:
+-   If 'var_0' or 'var_1' is undefined, raises ILLEGAL FUNCTION CALL.
+-   If the types of 'var_0' and 'var_1' are not the same, raises TYPE MISMATCH.
 
 
 SYSTEM statement
+SYSTEM
+----------------
+Exits the interpreter. 
+NOTES:
+-   SYSTEM closes the BASIC interpreter immediately without prompt.
+    Any unsaved program will be lost.
 
 
 TAN function
+tangent = TAN(angle)
+------------
+Returns the sine of 'angle'. 'angle' is a numeric-valued expression that gives 
+the angle in radians. 
+Unless BASIC is run with the --double option, TAN returns a single-precision
+value.
+NOTES:
+-   TAN(x) usually differs from the value returned by GW-BASIC. For one-digit 
+    values, the difference is only in the least significant figure, but it
+    increases with the size of the angle.
+-   For 'angle' close to multiples of PI/2, the tangent is divergent or close
+    to zero. The values returned will have very low precision in these cases.
+ERRORS:
+-   If 'angle' has a string value, SIN raises TYPE MISMATCH.
 
 
 TIME$ function
+time = TIME$
+--------------
+Returns the current BASIC time in the form "HH:mm:ss"
+
 
 
 TIME$ statement
