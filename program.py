@@ -20,6 +20,8 @@ import console
 # for clear()
 import rnd
 import fileio
+# for prompt
+import run
 
 from cStringIO import StringIO 
 from copy import copy 
@@ -275,7 +277,6 @@ def store_line(linebuf, ignore_empty_number=False):
         bytecode.write(linebuf.read())
     # write back the remainder of the program
     truncate_program(rest)
-    bytecode.seek(0)
     preparse()
     last_stored = scanline
     return scanline
@@ -311,22 +312,21 @@ def delete_lines(fromline, toline):
     rest = bytecode.read()
     bytecode.seek(startpos)
     truncate_program(rest)
-    bytecode.seek(0)
     preparse()
 
 def edit_line(from_line, bytepos=None):
-    global prompt
     # list line
     bytecode.seek(1)
     output = StringIO()
     textpos = tokenise.detokenise(bytecode, output, from_line, from_line, bytepos)
-    bytecode.seek(-1)
     console.clear_line(console.row)
     # cut off CR/LF at end
     console.write(output.getvalue()[:-2])
     console.set_pos(console.row, textpos+1 if bytepos else 1)
     # throws back to direct mode
     set_runmode(False)
+    # suppress prompt
+    run.prompt = False
     
 def renum(new_line, start_line, step):
     global last_stored
@@ -391,24 +391,24 @@ def load(g):
         # ASCII file, maybe
         protected = False
         while True:
-            linebuf = load_ascii_line(g)
+            linebuf, c = load_ascii_line(g, c), ''
             if linebuf == None:
                 break
             elif linebuf != '':    
                 bytecode.write(linebuf.read())    
-            c = ''
         # terminate bytecode stream properly
         bytecode.write('\x00\x00\x00\x1a')
     preparse()
     g.close()
     
 def merge(g):
-    if g.peek_char() in ('\xFF', '\xFE', '\xFC', ''):
+    c = g.read(1)
+    if c in ('\xFF', '\xFE', '\xFC', ''):
         # bad file mode
         raise error.RunError(54)
     else:
         while True:
-            linebuf = load_ascii_line(g)
+            linebuf, c = load_ascii_line(g, c), ''
             if linebuf == None:
                 break
             elif linebuf != '':    
