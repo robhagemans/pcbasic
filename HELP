@@ -3711,11 +3711,15 @@ ERRORS:
 
 
 WRITE and WRITE# statements
-WRITE [#file_num,] var_0 [, var_1 [, ...] ]
+WRITE [#file_num,] expr_0 [, expr_1 [, ...] ]
 ---------------------------
-
-
-
+Writes values to a file or the screen in machine-readable form. Values are
+separated by commas and the line is ended with a CR/LF sequence. Strings are 
+delimited by double quotes ". No padding spaces are inserted.
+'expr_0', ... are expressions whose value is to be printed.
+ERRORS:
+-   If 'file_num' is a string, TYPE MISMATCH is raised.
+-   If 'file_num' is open for INPUT, BAD FILE MODE is raised. 
 
 
 
