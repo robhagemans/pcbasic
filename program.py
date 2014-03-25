@@ -243,7 +243,7 @@ def check_number_start(linebuf):
     # check if we start with a number
     if c in tokenise.tokens_number:        
         raise error.RunError(2)
-    return empty    
+    return empty, scanline   
 
 def store_line(linebuf): 
     global line_numbers, last_stored

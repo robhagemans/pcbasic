@@ -59,7 +59,6 @@ def main():
         if not args.run and not args.cmd and not args.conv:
             if sys.stdin.isatty():
                 console.write_line(greeting % (debugstr, var.total_mem))
-            run.show_prompt()
         # execute arguments
         if args.run or args.load or args.conv:
             program.load(oslayer.safe_open(args.infile, "L", "R") if args.infile else sys.stdin)
@@ -71,11 +70,13 @@ def main():
         if not args.cmd:
             # if a command is given, the program is only loaded; run.loop() doesn't take None.
             args.cmd = 'RUN' if args.run else ''
+        # execute & handle exceptions; show Ok prompt
+        run.execute(args.cmd)   
+        # get out, if we ran with -q
         if args.quit:
-            run.execute(args.cmd)
             run.exit()
-        # go into interactive mode    
-        run.loop(args.cmd)
+        # go into interactive mode 
+        run.loop()
     except error.RunError as e:
         # errors during startup/conversion are handled here, then exit
         e.handle_break()    

@@ -23,21 +23,8 @@ import console
 # suppress one prompt by setting to False (used by EDIT)
 prompt = True
 
-def loop(line=''):
-    # main loop 
-    while True:
-        if execute(line):
-            show_prompt()
-        line = wait_line()
-        
-def show_prompt():
-    global prompt
-    if prompt:
-        console.start_line()
-        console.write_line("Ok\xff")
-    prompt = True
-                          
-def wait_line():
+def loop():
+    # main loop
     while True:
         try:
             # input loop, checks events
@@ -45,7 +32,7 @@ def wait_line():
         except error.Break:
             continue
         if line:
-            return line
+            execute(line)
                         
 def execute(line, ignore_empty_number=False):
     try:
@@ -53,20 +40,26 @@ def execute(line, ignore_empty_number=False):
         c = util.peek(program.direct_line)
         if c == '\x00':
             # check for lines starting with numbers (6553 6) and empty lines
-            empty = program.check_number_start(program.direct_line)
+            empty, _ = program.check_number_start(program.direct_line)
             if not (empty and ignore_empty_number):
                 program.store_line(program.direct_line)
-            return False
+            # no prompt
+            return
         elif c != '':    
             # it is a command, go and execute    
             execution_loop()
-            return True
     except error.Error as e:
         e.handle_break() 
-        # prompt
-        return True    
-    return False
-               
+    # prompt
+    show_prompt()
+
+def show_prompt():
+    global prompt
+    if prompt:
+        console.start_line()
+        console.write_line("Ok\xff")
+    prompt = True
+                   
 # execute any commands
 def execution_loop():
     # always start on the direct line
