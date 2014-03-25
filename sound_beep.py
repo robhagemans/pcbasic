@@ -23,7 +23,7 @@ def beep():
     play_sound(800, 0.25)
     
 def init_sound():
-    return True
+    return subprocess.call("command beep >/dev/null 2>&1", shell=True) == 0
     
 def stop_all_sound():
     music_queue = []
