@@ -803,6 +803,8 @@ def fast_put(x0, y0, varname, operation_char):
 ####################################
 # sound interface
 
+from math import ceil
+
 music_foreground = True
 
 def music_queue_length():
@@ -873,13 +875,32 @@ def play_sound(frequency, total_duration, fill=1, loop=False):
     if frequency == 0 or frequency == 32767:
         chunk = numpy.zeros(chunk_length)
     else:
+        num_samples = sample_rate / (2.*frequency)
+        num_half = ceil(sample_rate/ (2.*frequency))
         # build wavelength of a square wave at max amplitude
-        wave0 = numpy.ones(int(sample_rate / (2*frequency)), numpy.int16) * (1<<mixer_bits - 1)
+        wave0 = numpy.ones(num_half, numpy.int16) * (1<<mixer_bits - 1)
         wave1 = -wave0
+        wave0_1 = wave0[:-1]
+        wave1_1 = wave1[:-1]
         # build chunk of waves
         chunk = numpy.array([])
+        half_waves, samples = 0, 0
         while len(chunk) < chunk_length:
-            chunk = numpy.concatenate((chunk, wave0, wave1))
+            if samples > int(num_samples*half_waves):
+                chunk = numpy.concatenate((chunk, wave0_1))
+                samples += num_half-1
+            else:    
+                chunk = numpy.concatenate((chunk, wave0))
+                samples += num_half
+            half_waves += 1
+            if samples > int(num_samples*half_waves):
+                chunk = numpy.concatenate((chunk, wave1_1))
+                samples += num_half-1
+            else:    
+                chunk = numpy.concatenate((chunk, wave1))
+                samples += num_half                
+            chunk = numpy.concatenate((chunk, wave1))
+            half_waves += 1
         chunk_length = len(chunk)    
     if not loop:    
         # make the last chunk longer than a normal chunk rather than shorter, to avoid jumping sound    
@@ -926,6 +947,8 @@ try:
     import numpy
 except Exception:
     numpy = None
+
+
 
 def pre_init_mixer():
     global sample_rate, mixer_bits
