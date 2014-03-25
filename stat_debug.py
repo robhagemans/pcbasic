@@ -9,7 +9,7 @@
 # please see text file COPYING for licence terms.
 #
 
-import StringIO
+import cStringIO
 import sys
 import traceback
 
@@ -36,7 +36,7 @@ def exec_DEBUG(ins):
     while util.peek(ins) not in util.end_line:
         d = ins.read(1)
         debug += d
-    buf = StringIO.StringIO()
+    buf = cStringIO.StringIO()
     sys.stdout = buf
     try:
         exec(debug)
@@ -58,7 +58,10 @@ def debug_step(linum):
         try:
             val = expressions.parse_expression(outs)
             st = vartypes.unpack_string(representation.value_to_str_keep(val, screen=False))
-            debug_print(st+'\n')        
+            if val[0] == '$':
+                debug_print('"'+st+'"\n')        
+            else:
+                debug_print(st+'\n')        
         except Exception as e:
             debug_print(repr(type(e))+'\n')
         
@@ -77,6 +80,13 @@ def dump_screen():
         i += 1
         debug_print('{0:2}'.format(i) + '|' + ''.join(s)+'|\n')    
     debug_print('  +' + '-'*console.width+'+\n')
+
+def show_program():
+    code = program.bytecode.getvalue()
+    last = 0
+    for key in sorted(program.line_numbers.keys())[1:]:
+        debug_print(code[last:last+3].encode('hex') +' '+ code[last+3:last+5].encode('hex') +' '+ code[last+5:program.line_numbers[key]].encode('hex')+'\n')
+        last = program.line_numbers[key]
         
 def trace(on=True):
     global debug_tron
