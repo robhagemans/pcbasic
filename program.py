@@ -133,27 +133,24 @@ def get_line_number(pos):
 
 # jump to line number    
 def jump(jumpnum, err=8):
-    global linenum
-    linenum = -1
     if jumpnum == None:
         set_runmode(True, 0)
     else:    
         try:    
             # jump to target
             set_runmode(True, line_numbers[jumpnum])
-            linenum = jumpnum
         except KeyError:
             # Undefined line number
             raise error.RunError(err)
         
 def jump_gosub(jumpnum, handler=None):    
     # set return position
-    gosub_return.append((current_codestream.tell(), linenum, run_mode, handler))
+    gosub_return.append((current_codestream.tell(), run_mode, handler))
     jump(jumpnum)
  
 def jump_return(jumpnum):        
     try:
-        pos, orig_linenum, orig_runmode, handler = gosub_return.pop()
+        pos, orig_runmode, handler = gosub_return.pop()
     except IndexError:
         # RETURN without GOSUB
         raise error.RunError(3)
@@ -163,7 +160,6 @@ def jump_return(jumpnum):
         handler.stopped = False
     if jumpnum == None:
         # go back to position of GOSUB
-        linenum = orig_linenum 
         set_runmode(orig_runmode, pos)   
     else:
         # jump to specified line number 
@@ -523,7 +519,6 @@ def loop_iterate(ins):
     return loop_jump_if_ends(ins, loopvar, stop, step)
         
 def loop_jump_if_ends(ins, loopvar, stop, step):
-    global linenum
     sgn = vartypes.unpack_int(vartypes.number_sgn(step)) 
     if sgn < 0:
         loop_ends = vartypes.int_to_bool(vartypes.number_gt(stop, loopvar)) 
