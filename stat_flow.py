@@ -65,7 +65,7 @@ def exec_for(ins):
         step = vartypes.pass_type_keep(vartype, vartypes.pack_int(1))
     util.require(ins, util.end_statement)
     # find NEXT
-    nextpos, nextline = find_next(ins, varname)
+    nextpos = find_next(ins, varname)
     # apply initial condition, jump if necessary
     if program.loop_init(ins, forpos, nextpos, varname, start, stop, step):
         if util.skip_white_read_if(ins, (',')):
@@ -83,7 +83,6 @@ def find_next(ins, varname):
     # get position and line number after the NEXT
     util.skip_white(ins)
     nextpos = ins.tell()
-    nextline = program.get_line_number(nextpos) if program.run_mode else -1
     # no-var only allowed in standalone NEXT   
     if varname2 == '':
         util.require(ins, util.end_statement)
@@ -92,7 +91,7 @@ def find_next(ins, varname):
         errline = program.get_line_number(nextpos-1) if program.run_mode else -1
         raise error.RunError(1, errline)    
     ins.seek(current)
-    return nextpos, nextline
+    return nextpos 
 
 def exec_next(ins, comma=False):
     # find the matching for-next record for the current NEXT statement/comma
@@ -177,10 +176,8 @@ def exec_while(ins, first=True):
     whilepos = ins.tell()
     # evaluate the 'boolean' expression 
     # use double to avoid overflows  
-    boolvar = vartypes.pass_double_keep(expressions.parse_expression(ins))
     if first:
         # find matching WEND
-        current = ins.tell()
         util.skip_to_next(ins, '\xB1', '\xB2')  # WHILE, WEND
         if ins.read(1) == '\xB2':
             util.skip_to(ins, util.end_statement)
@@ -189,28 +186,30 @@ def exec_while(ins, first=True):
         else: 
             # WHILE without WEND
             raise error.RunError(29)
-        ins.seek(current)    
+        ins.seek(whilepos)   
+    boolvar = vartypes.pass_double_keep(expressions.parse_expression(ins))   
     # condition is zero?
     if fp.unpack(boolvar).is_zero():
         # jump to WEND
         whilepos, wendpos = program.while_wend_stack.pop()
-        ins.seek(wendpos)
+        ins.seek(wendpos)   
 
 def exec_wend(ins):
     # while will actually syntax error on the first run if anything is in the way.
     util.require(ins, util.end_statement)
+    pos = ins.tell()
     while True:
-        if len(program.while_wend_stack) == 0:
+        if not program.while_wend_stack:
             # WEND without WHILE
             raise error.RunError(30) #1  
-        whilepos,  wendpos = program.while_wend_stack[-1]
-        if ins.tell() != wendpos:
+        whilepos, wendpos = program.while_wend_stack[-1]
+        if pos != wendpos:
             # not the expected WEND, we must have jumped out
             program.while_wend_stack.pop()
         else:
             # found it
             break
-    ins.seek(whilepos)
+    ins.seek(whilepos)    
     return exec_while(ins, False)
 
 def exec_on_jump(ins):    
