@@ -11,19 +11,20 @@
 
 import error
 import program
+import tokenise
 import console
 import run
 import util
 
 auto_mode = False
 
-def auto_loop(linenum=None, increment=None):
-    global auto_mode
-    # don't nest
+def auto_loop(new_linenum, new_increment):
+    global auto_mode, linenum, increment
+    # don't nest, but reset linenum and increment
+    linenum = new_linenum if new_linenum != None else 10
+    increment = new_increment if new_increment != None else 10    
     if not auto_mode:
         auto_mode = True   
-        linenum = linenum if linenum else 10
-        increment = increment if increment != None else 10    
         while True:
             numstr = str(linenum)
             console.write(numstr)
@@ -42,9 +43,22 @@ def auto_loop(linenum=None, increment=None):
             while len(line) > 0 and line[-1] in util.whitespace:
                 line = line[:-1]
             # run or store it; don't clear lines or raise undefined line number
-            stored_line = run.execute(line, ignore_empty_number=True)
-            if stored_line != None:
-                linenum = stored_line + increment
+            try:
+                program.direct_line = tokenise.tokenise_line(line)    
+                c = util.peek(program.direct_line)
+                if c == '\x00':
+                    # check for lines starting with numbers (6553 6) and empty lines
+                    empty, scanline = program.check_number_start(program.direct_line)
+                    if not empty:
+                        program.store_line(program.direct_line)
+                    linenum = scanline + increment
+                elif c != '':    
+                    # it is a command, go and execute    
+                    run.execution_loop()
+            except error.Error as e:
+                e.handle_break()             
+                run.show_prompt()
         auto_mode = False
         program.set_runmode(False)
+
         
