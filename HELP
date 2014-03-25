@@ -3651,9 +3651,45 @@ ERRORS:
 -   If 'expr' is a string, raises TYPE MISMATCH.
 
 
-
 WIDTH statement
-
+WIDTH { # file_num | device_name}, num_columns 
+WIDTH { 40 | 80 | (num_columns) } [, [,]]
+---------------
+Set the line width for the screen, a file or a device.
+'num_columns' is a number-valued expression between 0 and the new column width. 
+When a write operation passes beyond the column width, a CR/LF sequence is 
+inserted. 
+'file_num' is a number-valued expression that is the numer of an open file. 
+If specified, the width for operations through that file  number will be 
+changed.
+'device_name' is a string-valued expression that is one of the devices
+ KYBD:, SCRN:, LPT1:, LPT2:, LPT3:, COM1:, COM2:, CAS1:
+If a device is specified, it does not need to be open; the width setting will
+be the default width next time a file is opened to that device.
+If 'device_name' is "SCRN:", "KYBD:", or omitted, the screen width is changed.
+In this case, 'num_columns' must be one of 40 or 80.
+If 'device_name' is "LPT1:", the device width setting affects LPRINT and LLIST.
+NOTES:
+-   In the second syntax, num_columnns can only de an expression if it is 
+    bracketed. Otherwise it must be a literal 40 or 80.
+-   In the second syntax, up to two commas are optional and have no effect.
+-   When changing screen width in graphics mode, the screen mode is changed.
+    The following changes occur:
+        SCREEN 1 (40)  <-->  SCREEN 2 (80)
+        SCREEN 7 (40)  <-->  SCREEN 8 (80)
+        SCREEN 7 (40)  <---- SCREEN 9 (80)
+ERRORS:
+-   If 'device_name' is not one of the allowed devices, raises BAD FILE NAME.
+-   If 'device_name' is SCRN:, KYBD: or omitted, and num_columns is not 40 or 
+    80, raises ILLEGAL FUNCTION CALL.
+-   If 'file_num' is not an open file, raises BAD FILE MODE.
+-   If 'file_num' or 'num_columns' are strings, raises TYPE MISMATCH.
+-   If 'file_num' or 'num_columns' are not in [0,255], raises 
+    ILLEGAL FUNCTION CALL.
+-   If 'file_num' or 'num_columns' are not in [-32768, 32767], raises OVERFLOW.
+_   In the second syntax, if an unbracketed expression is used, 
+    ILLEGAL FUNCTION CALL is raised.
+    
 
 WINDOW statement
 
