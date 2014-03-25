@@ -3576,8 +3576,7 @@ ERRORS:
 
 
 VIEW statement
-VIEW [SCREEN] (x0,y0)-(x1,y1) [, [fill] [, border]]
-VIEW 
+VIEW [ [SCREEN] (x0,y0)-(x1,y1) [, [fill] [, border]] ]
 --------------
 Defines a graphics clipping area. Graphics drawn outside the clipping area will
 not be shown. 'x0', 'y0', 'x1', y1' are absolute screen coordinates of two 
@@ -3589,6 +3588,8 @@ with this attribute just outside the clipping area.
 Unless SCREEN is specified, after a VIEW statements the 'physical' coordinate 
 system is shifted such that (0,0) becomes the top left coordinate of the 
 clipping area.
+If VIEW is called without arguments, the clipping area is reset to the whole
+screen.
 ERRORS:
 -   If any of the coordinates is not in [-32768, 32767], OVERFLOW is raised.
 -   If any of the coordinate pairs is outside the physical screen, 
@@ -3687,15 +3688,31 @@ ERRORS:
 -   If 'file_num' or 'num_columns' are not in [0,255], raises 
     ILLEGAL FUNCTION CALL.
 -   If 'file_num' or 'num_columns' are not in [-32768, 32767], raises OVERFLOW.
-_   In the second syntax, if an unbracketed expression is used, 
+-   In the second syntax, if an unbracketed expression is used, 
     ILLEGAL FUNCTION CALL is raised.
     
 
 WINDOW statement
+WINDOW [ [SCREEN] (x0,y0)-(x1,y1) ]
+----------------
+Define logical coordinates for the screen.
+'x0', 'y0', 'x1', 'y1' are number-valued expressions.
+If SCREEN is not specified,
+the bottom left of the screen is mapped to the lower coordinates;
+the top right of the screen is mapped to the higher coordinates.
+If SCREEN is specified,
+the top left of the screen is mapped to the lower coordinates;
+the bottom right of the screen is mapped to the higher coordinates.
+If WINDOW is called without arguments, the logical coordinates are 
+reset to the physical ones.
+ERRORS:
+-   If any of the coordinates are strings, TYPE MISMATCH is raised.
+-   If 'x0'='x1' or 'y0'='y1', raises ILLEGAL FUNCTION CALL.
 
 
 WRITE and WRITE# statements
-
+WRITE [#file_num,] var_0 [, var_1 [, ...] ]
+---------------------------
 
 
 
