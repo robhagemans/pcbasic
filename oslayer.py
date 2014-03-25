@@ -116,11 +116,11 @@ def set_date(datestr):
         raise error.RunError(5)
     time_offset += newtime - now    
     
-def get_time(ins):
-    return bytearray(datetime.datetime.today() + time_offset).strftime('%H:%M:%S')
+def get_time():
+    return bytearray((datetime.datetime.today() + time_offset).strftime('%H:%M:%S'))
     
-def get_date(ins):
-    return bytearray(datetime.datetime.today() + time_offset).strftime('%m-%d-%Y')
+def get_date():
+    return bytearray((datetime.datetime.today() + time_offset).strftime('%m-%d-%Y'))
 
 def get_env(parm):
     if not parm:
