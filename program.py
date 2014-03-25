@@ -512,8 +512,7 @@ def loop_init(ins, forpos, forline, varname, nextpos, nextline, start, stop, ste
     
 def loop_iterate(ins):            
     # JUMP to FOR statement
-    forpos, forline, varname, _, _, start, stop, step = for_next_stack[-1]
-    linenum = forline
+    forpos, _, varname, _, _, start, stop, step = for_next_stack[-1]
     ins.seek(forpos)
     # skip to end of FOR statement
     util.skip_to(ins, util.end_statement)
@@ -535,7 +534,20 @@ def loop_jump_if_ends(ins, loopvar, stop, step):
         loop_ends = False
     if loop_ends:
         # jump to just after NEXT
-        _, _, _, nextpos, linenum, _, _, _ = for_next_stack.pop()
+        _, _, _, nextpos, _, _, _, _ = for_next_stack.pop()
         ins.seek(nextpos)
     return loop_ends
     
+def loop_find_next(ins, pos):
+    while True:
+        if len(for_next_stack) == 0:
+            # next without for
+            raise error.RunError(1) #1  
+        forpos, _, varname, nextpos, _, _, _, _ = for_next_stack[-1]
+        if pos != nextpos:
+            # not the expected next, we must have jumped out
+            for_next_stack.pop()
+        else:
+            break
+    return forpos, nextpos, varname
+        

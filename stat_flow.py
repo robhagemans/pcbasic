@@ -21,7 +21,7 @@ import fileio
 
 def exec_end(ins):
     util.require(ins, util.end_statement)
-    program.stop = [program.bytecode.tell(), program.linenum]
+    program.stop = program.bytecode.tell()
     program.set_runmode(False)
     # avoid NO RESUME
     error.error_handle_mode = False
@@ -36,8 +36,7 @@ def exec_cont(ins):
     if program.stop == None:
         raise error.RunError(17)
     else: 
-        program.set_runmode(True, program.stop[0])   
-        program.linenum = program.stop[1]
+        program.set_runmode(True, program.stop)   
     # IN GW-BASIC, weird things happen if you do GOSUB nn :PRINT "x"
     # and there's a STOP in the subroutine. 
     # CONT then continues and the rest of the original line is executed, printing x
@@ -96,29 +95,20 @@ def find_next(ins, varname):
     return nextpos, nextline
 
 def exec_next(ins, comma=False):
+    # find the matching for-next record for the current NEXT statement/comma
     curpos = ins.tell()
     util.skip_to(ins, util.end_statement+(',',))
-    while True:
-        if len(program.for_next_stack) == 0:
-            # next without for
-            raise error.RunError(1) #1  
-        forpos, forline, varname, nextpos, nextline, start, stop, step = program.for_next_stack[-1]
-        if ins.tell() != nextpos:
-            # not the expected next, we must have jumped out
-            program.for_next_stack.pop()
-        else:
-            break
+    pos = ins.tell()
     ins.seek(curpos)
+    forpos, nextpos, varname = program.loop_find_next(ins, pos)
     # check if varname is correct, if provided
-    if util.skip_white(ins) in util.end_statement and not comma:
-        # no varname required if standalone NEXT
-        pass
-    else:
+    # no varname required if standalone NEXT
+    if not(util.skip_white(ins) in util.end_statement and not comma):
         if util.get_var_name(ins) == varname:
             util.skip_to(ins, util.end_statement)
         else:
             # next without for
-            raise error.RunError(1, nextline) #1    
+            raise error.RunError(1, program.get_line_number(nextpos)) #1    
     # JUMP to end of FOR statement, increment counter, check condition
     if program.loop_iterate(ins):
         if util.skip_white_read_if(ins, (',')):
@@ -195,7 +185,7 @@ def exec_while(ins, first=True):
         if ins.read(1) == '\xB2':
             util.skip_to(ins, util.end_statement)
             wendpos = ins.tell()
-            program.while_wend_stack.append([whilepos, program.linenum, wendpos]) 
+            program.while_wend_stack.append((whilepos, wendpos)) 
         else: 
             # WHILE without WEND
             raise error.RunError(29)
@@ -203,7 +193,7 @@ def exec_while(ins, first=True):
     # condition is zero?
     if fp.unpack(boolvar).is_zero():
         # jump to WEND
-        [whilepos, program.linenum, wendpos] = program.while_wend_stack.pop()
+        whilepos, wendpos = program.while_wend_stack.pop()
         ins.seek(wendpos)
 
 def exec_wend(ins):
@@ -213,14 +203,13 @@ def exec_wend(ins):
         if len(program.while_wend_stack) == 0:
             # WEND without WHILE
             raise error.RunError(30) #1  
-        [whilepos, whileline, wendpos] = program.while_wend_stack[-1]
+        whilepos,  wendpos = program.while_wend_stack[-1]
         if ins.tell() != wendpos:
             # not the expected WEND, we must have jumped out
             program.while_wend_stack.pop()
         else:
             # found it
             break
-    program.linenum = whileline
     ins.seek(whilepos)
     return exec_while(ins, False)
 
