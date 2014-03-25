@@ -34,7 +34,7 @@ direct_line = StringIO()
 run_mode = False
 
 def init_program():
-    global gosub_return, for_next_stack, while_wend_stack, linenum, stop
+    global gosub_return, for_next_stack, while_wend_stack, stop
     # stop running if we were
     set_runmode(False)
     # reset loop stacks
@@ -43,8 +43,6 @@ def init_program():
     while_wend_stack = []
     # reset stop/cont
     stop = None
-    # current line number
-    linenum = -1
     # reset program pointer
     bytecode.seek(0)
     # reset data reader
