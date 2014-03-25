@@ -330,36 +330,31 @@ def exec_view_print(ins):
         console.set_view(start, stop)
     
 def exec_width(ins):
-    device = ''
     d = util.skip_white(ins)
     if d == '#':
         dev = expressions.parse_file_number(ins)
+        w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     elif d in ('"', ','):
-        device = vartypes.pass_string_unpack(expressions.parse_expression(ins)).upper()
-        if device not in deviceio.output_devices:
-            # bad file name
-            raise error.RunError(64)
-        # WIDTH "SCRN:, 40 works directy on console 
+        device_name = str(vartypes.pass_string_unpack(expressions.parse_expression(ins))).upper()
+        # WIDTH "SCRN:, 40 works directly on console 
         # whereas OPEN "SCRN:" FOR OUTPUT AS 1: WIDTH #1,23 works on the wrapper text file
-        # WIDTH "LPT1:" works on lpt1 for the next time it's opened
-        # for other devices, the model of LPT1 is followed - not sure what GW-BASIC does there.
-        if device == 'SCRN:':
-            dev = console
-        else:
-            dev = deviceio.output_devices[device]
+        # WIDTH "LPT1:" works on lpt1 for the next time it's opened; also for other devices.
+        try:
+            dev = console if device_name in ('SCRN:', 'KYBD:') else deviceio.output_devices[device_name]
+        except KeyError:
+            # bad file name
+            raise error.RunError(64)           
         util.require_read(ins, (',',))
-    else:
+        w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    else:    
         dev = console
-    # we can do calculations, but they must be bracketed...
-    w = vartypes.pass_int_unpack(expressions.parse_expr_unit(ins))
-    # get the appropriate errors out there for WIDTH [40|80] [,[,]]
-    if dev == console and device == '':
+        # we can do calculations, but they must be bracketed...
+        w = vartypes.pass_int_unpack(expressions.parse_expr_unit(ins))
         # two commas are accepted
         util.skip_white_read_if(ins, (',',))
         if not util.skip_white_read_if(ins, (',',)):
             # one comma, then stuff - illegal function call
             util.require(ins, util.end_statement, err=5)
-    # anything after that is a syntax error      
     util.require(ins, util.end_statement)        
     if dev == console:        
         # TODO: WIDTH should do mode changes if not in text mode
