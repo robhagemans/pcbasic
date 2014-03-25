@@ -52,7 +52,10 @@ def execute(line, ignore_empty_number=False):
         program.direct_line = tokenise.tokenise_line(line)    
         c = util.peek(program.direct_line)
         if c == '\x00':
-            program.store_line(program.direct_line, ignore_empty_number)
+            # check for lines starting with numbers (6553 6) and empty lines
+            empty = program.check_number_start(program.direct_line)
+            if not (empty and ignore_empty_number):
+                program.store_line(program.direct_line)
             return False
         elif c != '':    
             # it is a command, go and execute    

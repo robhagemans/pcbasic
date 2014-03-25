@@ -217,8 +217,8 @@ def tokenise_line(line):
     data = False      # DATA: pass unchanged until :
     # expect line number
     number_is_line = False
-    # expect number
-    expect_number = False
+    # expect number (6553 6 -> the 6 is encoded as \x17)
+    expect_number = True
     # flag for SPC( or TAB( as numbers can follow the closing bracket
     spc_or_tab = False
     # parse through elements of line
