@@ -26,6 +26,7 @@ import oslayer
 import statements
 import backend_dumb
 import nosound
+import sound_beep
 import graphics
 import console
 import tokenise
@@ -87,24 +88,25 @@ def prepare_devices(args):
     if args.dumb or args.conv or (not args.graphical and not args.text and not sys.stdin.isatty()):
         # redirected input leads to dumbterm use
         console.backend = backend_dumb
+        console.sound = sound_beep
     elif args.text and sys.stdout.isatty():
         import backend_ansi
         console.backend = backend_ansi
+        console.sound = sound_beep
     else:   
         import backend_pygame
         console.backend = backend_pygame   
         graphics.backend = backend_pygame
         console.penstick = backend_pygame
-        if not args.nosound:
-            console.sound = backend_pygame
+        console.sound = backend_pygame
         # redirected output is split between graphical screen and redirected file    
         if not sys.stdout.isatty():
             console.output_echos.append(backend_dumb.echo_stdout) 
-            console.input_echos.append(backend_dumb.echo_stdout)         
+            console.input_echos.append(backend_dumb.echo_stdout)   
     # initialise backends
     console.keys_visible = (not args.run and args.cmd == None)
     console.init()
-    if not console.sound.init_sound():
+    if args.nosound or not console.sound.init_sound():
         # fallback warning here?
         console.sound = nosound
     # choose peripherals    
