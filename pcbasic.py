@@ -70,11 +70,13 @@ def main():
         if not args.cmd:
             # if a command is given, the program is only loaded; run.loop() doesn't take None.
             args.cmd = 'RUN' if args.run else ''
-        # execute & handle exceptions; show Ok prompt
-        run.execute(args.cmd)   
         # get out, if we ran with -q
         if args.quit:
+            run.prompt = False
+            run.execute(args.cmd)
             run.exit()
+        # execute & handle exceptions; show Ok prompt
+        run.execute(args.cmd)
         # go into interactive mode 
         run.loop()
     except error.RunError as e:

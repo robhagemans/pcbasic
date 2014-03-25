@@ -34,15 +34,14 @@ def loop():
         if line:
             execute(line)
                         
-def execute(line, ignore_empty_number=False):
+def execute(line):
     try:
         program.direct_line = tokenise.tokenise_line(line)    
         c = util.peek(program.direct_line)
         if c == '\x00':
             # check for lines starting with numbers (6553 6) and empty lines
             empty, _ = program.check_number_start(program.direct_line)
-            if not (empty and ignore_empty_number):
-                program.store_line(program.direct_line)
+            program.store_line(program.direct_line)
             # no prompt
             return
         elif c != '':    
