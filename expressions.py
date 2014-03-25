@@ -426,10 +426,12 @@ def value_string(ins): # STRING$
     n = vartypes.pass_int_unpack(n)
     util.range_check(0, 255, n)
     if j[0] == '$':
-        j = vartypes.unpack_string(j)[0]
+        j = vartypes.unpack_string(j)
+        util.range_check(1, 255, len(j))
+        j = j[0]
     else:
         j = vartypes.pass_int_unpack(j)        
-    util.range_check(0, 255, j)
+        util.range_check(0, 255, j)
     util.require_read(ins, (')',))
     return vartypes.pack_string(bytearray(chr(j)*n))
 
