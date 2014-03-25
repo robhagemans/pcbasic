@@ -14,6 +14,8 @@ import vartypes
 import expressions
 import error
 import var
+import events
+import console
 
 # do-nothing POKE        
 def exec_poke(ins):
@@ -60,7 +62,6 @@ def exec_out(ins):
     util.range_check(0, 255, val)
     util.require(ins, util.end_statement)
 
-# do-nothing wait        
 def exec_wait(ins):
     addr = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=0xffff)
     util.require_read(ins, (',',))
@@ -71,4 +72,12 @@ def exec_wait(ins):
         xorer = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.range_check(0, 255, xorer)
     util.require(ins, util.end_statement)
+    store_suspend = events.suspend_all_events
+    events.suspend_all_events = True
+    while (((console.inp_key if addr == 0x60 else 0) ^ xorer) & ander) == 0:
+        console.idle()
+        console.check_events()
+    events.suspend_all_events = store_suspend     
+        
+    
             
