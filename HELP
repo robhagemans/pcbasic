@@ -3402,6 +3402,16 @@ ERRORS:
 
 
 STRING$ function
+string = STRING$(length, char)
+----------------
+Returns a string of n times character 'char'.
+If 'char' is a number-valued expression, it must be between 0 and 255 and is
+interprested as the ASCII value of the character.
+If 'char' is a string-valued expression, its first character is used.
+ERRORS:
+-   If 'char' is the empty string, raises ILLEGAL FUNCTION CALL.
+-   If 'char' or 'length' is not in [0,255], raises ILLEGAL FUNCTION CALL.
+-   If 'char' or 'length' is not in [-32768, 32767], raises OVERFLOW.
 
 
 SWAP statement
