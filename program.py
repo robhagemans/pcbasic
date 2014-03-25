@@ -233,19 +233,27 @@ def preparse():
     init_program()
     clear_all()
 
-def store_line(linebuf, ignore_empty_number=False): 
+def check_number_start(linebuf):
+    # get the new line number
+    linebuf.seek(1)
+    scanline = util.parse_line_number(linebuf)
+    c = util.skip_white_read(linebuf) 
+    # check if linebuf is an empty line after the line number
+    empty = (c in util.end_line)
+    # check if we start with a number
+    if c in tokenise.tokens_number:        
+        raise error.RunError(2)
+    return empty    
+
+def store_line(linebuf): 
     global line_numbers, last_stored
     if protected:
         raise error.RunError(5)
-##
     # get the new line number
     linebuf.seek(1)
     scanline = util.parse_line_number(linebuf)
     # check if linebuf is an empty line after the line number
     empty = (util.skip_white_read(linebuf) in util.end_line)
-    if empty and ignore_empty_number:
-        return scanline
-##        
     # find the lowest line after scanline
     after, afterpos = 65536, 0
     for num in line_numbers:
@@ -401,12 +409,14 @@ def load_ascii_file(g, first_char=''):
         line, eof = tokenise.read_program_line(g)
         line, first_char = first_char + line, ''
         linebuf = tokenise.tokenise_line(line)
-        if util.peek(linebuf) == '\x00':
-            # line starts with a number, add to program memory
+        if linebuf.read(1) == '\x00':
+            # line starts with a number, add to program memory; store_line seeks to 1 first
             store_line(linebuf)
-        elif util.skip_white(linebuf) not in util.end_line:
-            # direct statement in file
-            raise error.RunError(66)   
+        else:
+            # we have read the :
+            if util.skip_white(linebuf) not in util.end_line:
+                # direct statement in file
+                raise error.RunError(66)   
 
 def chain(action, g, jumpnum, common_all, delete_lines):    
     if delete_lines:
