@@ -35,6 +35,9 @@ run_mode = False
 # memory model; offsets in files
 program_memory_start = 0x126e
 
+# line number tracing
+tron = False
+
 def init_program():
     global gosub_return, for_next_stack, while_wend_stack, stop
     # stop running if we were

@@ -40,12 +40,9 @@ from stat_machine import *
 # debugging
 from stat_debug import *
 
-tron = False
-
 # parses one statement at the current stream pointer in current_codestream
 # return value False: stream ends
 def parse_statement():
-    global tron
     ins = program.current_codestream
     program.current_statement = ins.tell()
     c = util.skip_white(ins).upper()
@@ -65,7 +62,7 @@ def parse_statement():
             # break
             program.set_runmode(False)
             return False
-        if tron:
+        if program.tron:
             console.write('['+('%i' % linenum) +']')
         debug_step(linenum)
     elif c == ':':
@@ -216,14 +213,12 @@ def exec_system(ins):
     run.exit() 
         
 def exec_tron(ins):
-    global tron
-    tron = True
+    program.tron = True
     # TRON LAH gives error, but TRON has been executed
     util.require(ins, util.end_statement)
 
 def exec_troff(ins):
-    global tron
-    tron = False
+    program.tron = False
     util.require(ins, util.end_statement)
 
 def exec_rem(ins):
