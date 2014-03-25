@@ -936,7 +936,7 @@ quiet_quit = 200
 # kill the mixer after encountering the same chunk for may times - it has a tendency to hang.
 last_chunk = None
 same_chunk_ticks = 0
-max_ticks_same = 35
+max_ticks_same = 150
 
 # loop the sound  in the mixer queue
 loop_sound = None
@@ -979,6 +979,7 @@ def check_hangs():
     if current_chunk == last_chunk:
         same_chunk_ticks += 1
         if same_chunk_ticks > max_ticks_same:
+            same_chunk_ticks = 0
             # too long for the sort of chunks we use, it's hung.
             pygame.mixer.quit()
             pygame.mixer.init()
