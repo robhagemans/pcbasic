@@ -611,7 +611,18 @@ def write_line(s='', scroll_ok=True):
     set_pos(row+1, 1)
 
 def set_width(to_width):
-    resize(height, to_width)    
+    if screen_mode == 0:
+        resize(height, to_width)    
+    elif screen_mode == 1 and to_width == 80:
+        set_mode(2, None, None, None)
+    elif screen_mode == 2 and to_width == 40:
+        set_mode(1, None, None, None)
+    elif screen_mode == 7 and to_width == 80:
+        set_mode(8, None, None, None)
+    elif screen_mode == 8 and to_width == 40:
+        set_mode(7, None, None, None)
+    elif screen_mode == 9 and to_width == 40:
+        set_mode(7, None, None, None)
     if keys_visible:
         show_keys()
 
