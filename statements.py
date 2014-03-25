@@ -65,10 +65,9 @@ def parse_statement():
             # break
             program.set_runmode(False)
             return False
-        program.linenum = linenum    
         if tron:
-            console.write('['+('%i' % program.linenum) +']')
-        debug_step(program.linenum)
+            console.write('['+('%i' % linenum) +']')
+        debug_step(linenum)
     elif c == ':':
         ins.read(1)    
     c = util.skip_white(ins).upper()
