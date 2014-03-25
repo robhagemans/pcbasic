@@ -57,13 +57,16 @@ def erase_program():
     current_statement = 0
     last_stored = None
 
-def set_runmode(new_runmode=True):
+def set_runmode(new_runmode=True, pos=None):
     global run_mode, current_codestream
     current_codestream = bytecode if new_runmode else direct_line
     if run_mode != new_runmode:
         run_mode = new_runmode
         # position at end - don't execute anything unless we jump
         current_codestream.seek(0, 2)
+    if pos != None:
+        # jump to position, if given
+        current_codestream.seek(pos)    
     
 # RESTORE
 def restore(datanum=-1):
@@ -130,13 +133,12 @@ def get_line_number(pos):
 def jump(jumpnum, err=8):
     global linenum
     linenum = -1
-    set_runmode() 
     if jumpnum == None:
-        bytecode.seek(0)
+        set_runmode(True, 0)
     else:    
         try:    
             # jump to target
-            bytecode.seek(line_numbers[jumpnum])
+            set_runmode(True, line_numbers[jumpnum])
             linenum = jumpnum
         except KeyError:
             # Undefined line number
@@ -160,8 +162,7 @@ def jump_return(jumpnum):
     if jumpnum == None:
         # go back to position of GOSUB
         linenum = orig_linenum 
-        set_runmode(orig_runmode)   
-        current_codestream.seek(pos)
+        set_runmode(orig_runmode, pos)   
     else:
         # jump to specified line number 
         jump(jumpnum)

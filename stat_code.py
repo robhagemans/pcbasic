@@ -48,9 +48,8 @@ def parse_jumpnum_or_dot(ins, allow_empty=False, err=2):
 def exec_delete(ins):
     from_line, to_line = parse_line_range(ins)
     util.require(ins, util.end_statement)
-    program.delete_lines(from_line, to_line)
     # throws back to direct mode
-    program.set_runmode(False)
+    program.delete_lines(from_line, to_line)
 
 def exec_edit(ins):
     if program.protected:
@@ -63,8 +62,8 @@ def exec_edit(ins):
     if from_line == None or from_line not in program.line_numbers:
         raise error.RunError(8)
     util.require(ins, util.end_statement, err=5)
+    # print the line, position cursor, back to direct mode. suppress prompt.
     program.edit_line(from_line)
-    # suppress prompt, move cursor?
     run.prompt = False
     
 def exec_auto(ins):
@@ -73,8 +72,8 @@ def exec_auto(ins):
     if util.skip_white_read_if(ins, (',',)): 
         increment = util.parse_jumpnum(ins, allow_empty=True)
     util.require(ins, util.end_statement)
+    # do the AUTO mode and go back to direct mode
     automode.auto_loop(linenum, increment)
-    program.set_runmode(False)
     
 def exec_list(ins):
     from_line, to_line = parse_line_range(ins)

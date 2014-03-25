@@ -147,13 +147,11 @@ def resume(jumpnum):
     events.suspend_all_events = False    
     if jumpnum == 0: 
         # RESUME or RESUME 0 
-        program.set_runmode(runmode)
-        program.current_codestream.seek(start_statement)
+        program.set_runmode(runmode, start_statement)
         program.linenum = linenum
     elif jumpnum == -1:
         # RESUME NEXT
-        program.set_runmode(runmode)        
-        program.current_codestream.seek(start_statement)        
+        program.set_runmode(runmode, start_statement)        
         program.linenum = linenum
         util.skip_to(program.current_codestream, util.end_statement, break_on_first_char=False)
     else:
