@@ -637,13 +637,13 @@ stick_fired = [[False, False], [False, False]]
 
 def trigger_pen(pos):
     global pen_down, pen_down_pos
-    events.pen_triggered = True
+    events.pen_handler.triggered = True
     pen_down = -1 # TRUE
     pen_down_pos = pos
                 
 def trigger_stick(joy, button):
     stick_fired[joy][button] = True
-    events.strig_handlers[joy*2 + button] = True
+    events.strig_handlers[joy*2 + button].triggered = True
 
 def get_pen(fn):
     global pen_down
