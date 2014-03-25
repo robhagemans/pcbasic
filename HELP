@@ -3627,9 +3627,29 @@ ERRORS:
 
 
 WEND statement
+WEND
+--------------
+Iterates a WHILE--WEND loop: jumps to the matching WHILE statement, where its 
+condition can be checked.
+NOTES:
+-   WHILE--WEND statements can be nested; WEND jumps to the most recent WHILE 
+    statement that has not been closed by another WEND.
+ERRORS:
+-   If all previous WHILE statements have been closed by WEND, raises 
+    WEND WITHOUT WHILE.
 
 
 WHILE statement
+WHILE expr
+---------------
+Initiates a WHILE--WEND loop. 
+'expr' is a number-valued expression. If 'expr' evaluates to zero, WHILE jumps 
+to the statement immediately after the matching WEND. If not, execution
+continues. 
+ERRORS:
+-   If no matching END is found, raises WHILE WITHOUT WEND.
+-   If 'expr' is a string, raises TYPE MISMATCH.
+
 
 
 WIDTH statement
