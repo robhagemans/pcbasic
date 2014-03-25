@@ -129,13 +129,16 @@ class RunError(Error):
         program.set_runmode(False)
         # special case
         if self.err == 2:
+            # for some reason, err is reset to zero by GW-BASIC in this case.
+            errn = 0
             # for syntax error, line edit gadget appears
             if self.erl != -1:
                 console.start_line()
                 console.write_line("Ok\xff")
-                textpos = program.edit_line(self.erl, program.bytecode.tell())
-            # for some reason, err is reset to zero by GW-BASIC in this case.
-            errn = 0
+                try:    
+                    textpos = program.edit_line(self.erl, program.bytecode.tell())
+                except RunError as e:
+                    handle_break(e)    
     
     
 def resume(jumpnum):  

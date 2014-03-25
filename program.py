@@ -349,6 +349,9 @@ def delete_lines(fromline, toline):
     preparse()
 
 def edit_line(from_line, bytepos=None):
+    if protected:
+        console.write(str(from_line)+'\r')
+        raise error.RunError(5)
     # list line
     bytecode.seek(1)
     output = StringIO()

@@ -52,9 +52,6 @@ def exec_delete(ins):
     program.delete_lines(from_line, to_line)
 
 def exec_edit(ins):
-    if program.protected:
-        # don't list protected files
-        raise error.RunError(5)
     if util.skip_white(ins) in util.end_statement:
         # undefined line number
         raise error.RunError(8)    
