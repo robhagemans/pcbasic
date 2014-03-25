@@ -36,8 +36,7 @@ def exec_cont(ins):
     if program.stop == None:
         raise error.RunError(17)
     else: 
-        program.set_runmode()   
-        program.bytecode.seek(program.stop[0])
+        program.set_runmode(True, program.stop[0])   
         program.linenum = program.stop[1]
     # IN GW-BASIC, weird things happen if you do GOSUB nn :PRINT "x"
     # and there's a STOP in the subroutine. 

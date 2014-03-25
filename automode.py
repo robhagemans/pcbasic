@@ -46,4 +46,5 @@ def auto_loop(linenum=None, increment=None):
             if stored_line != None:
                 linenum = stored_line + increment
         auto_mode = False
-
+        program.set_runmode(False)
+        
