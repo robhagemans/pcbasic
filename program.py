@@ -368,10 +368,10 @@ def load(g):
     global protected
     bytecode.truncate(0)
     c = g.read(1)
+    protected = False
     if c == '\xFF':
         # bytecode file
         bytecode.write('\x00')
-        protected = False
         while c:
             c = g.read(1)
             bytecode.write(c)
@@ -383,12 +383,11 @@ def load(g):
     elif c != '':
         # TODO: check allowed first chars for ASCII file - > whitespace + nums? letters?
         # ASCII file, maybe
-        protected = False
-        while True:
-            linebuf, c = load_ascii_line(g, c), ''
-            if linebuf == None:
-                break
-            elif linebuf != '':    
+        eof = False
+        while not eof:
+            linebuf, eof = load_ascii_line(g, c) 
+            c = ''
+            if linebuf:  
                 bytecode.write(linebuf.read())    
         # terminate bytecode stream properly
         bytecode.write('\x00\x00\x00\x1a')
@@ -401,28 +400,28 @@ def merge(g):
         # bad file mode
         raise error.RunError(54)
     else:
-        while True:
-            linebuf, c = load_ascii_line(g, c), ''
-            if linebuf == None:
-                break
-            elif linebuf != '':    
-                store_line(linebuf)    
+        eof = False
+        while not eof:
+            linebuf, eof = load_ascii_line(g, c) 
+            c = ''
+            if linebuf:    
+                store_line(linebuf)  
     g.close()
     
 def load_ascii_line(g, first_char=''):
-    line = first_char + tokenise.read_program_line(g)
-    if not line:
-        return None
+    line, eof = tokenise.read_program_line(g)
+    line = first_char + line
     tempbuf = tokenise.tokenise_line(line)
     if util.peek(tempbuf) == '\x00':
         # line starts with a number, add to program memory
-        return tempbuf
+        return tempbuf, eof
     elif util.skip_white(tempbuf) not in util.end_line:
+        print repr(line), tempbuf.getvalue().encode('hex')
         # direct statement in file
         raise error.RunError(66)   
     else:
         #empty buffer    
-        return ''
+        return None, eof
 
 def chain(action, g, jumpnum, common_all, delete_lines):    
     if delete_lines:
