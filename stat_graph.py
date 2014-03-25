@@ -85,9 +85,12 @@ def exec_view_graph(ins):
         x1, y1 = parse_coord(ins, absolute=True)
         # not scaled by WINDOW
         x0, x1, y0, y1 = x0.round_to_int(), x1.round_to_int(), y0.round_to_int(), y1.round_to_int()
+        x0, x1 = min(x0, x1), max(x0, x1)
+        y0, y1 = min(y0, y1), max(y0, y1)
         fill, border = None, None
         if util.skip_white_read_if(ins, (',',)):
             fill, border = expressions.parse_int_list(ins, 2, err=2)
+        graphics.set_graph_view(x0-1, y0-1, x1+1, y1+1, True)
         if fill != None:
             graphics.draw_box_filled(x0, y0, x1, y1, fill)
         if border != None:
