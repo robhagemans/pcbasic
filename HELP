@@ -344,6 +344,8 @@ CONS:       OUTPUT          The screen (console). Output to CONS is displayed
                             any access mode, but the effect is always to open 
                             it for OUTPUT. This device is not implemented in 
                             PC-BASIC 3.23.                             
+CAS1:       INPUT, OUTPUT   Cassette tape driver. This device is not 
+                            implemented in PC-BASIC 3.23. 
                                                             
 
 KEYWORD LIST
@@ -3420,8 +3422,8 @@ ERRORS:
 SWAP statement
 SWAP var_0, var_1
 --------------
-Exchanges the values of 'var_0' and 'var_1', which must be of the exact same 
-type.
+Exchanges the values of 'var_0' and 'var_1', which must be variable names of 
+the exact same type.
 ERRORS:
 -   If 'var_0' or 'var_1' is undefined, raises ILLEGAL FUNCTION CALL.
 -   If the types of 'var_0' and 'var_1' are not the same, raises TYPE MISMATCH.
@@ -3530,17 +3532,68 @@ ERRORS:
 VAL function
 value = VAL(string)
 ------------
-Returns the numeric value of the string 'string'.
-
+Returns the numeric value of the string -valued expression 'string'. 
+The interpretation is the same a that used in program lines. For instance, 
+spaces before or even inside a number are ignored: VAL(" 1 0") returns 10. 
+Parsing stops as soon as the first character is encountered that cannot be 
+part of a number. If that is the first character of the string, or the 
+string is empty, VAL returns zero. 
+ERRORS:
+-   If 'string' has a number value, raises TYPE MISMATCH.
 
 
 VARPTR function
+pointer = VARPTR(name)
+pointer = VARPTR(#file_num)
+---------------
+Returns the memory address of variable 'name'. 'name' must be the name of a
+previously defined variable or fully indexed array element. The value of VAPTR 
+can be used with PEEK to read the variable's internal representation.
+NOTES:
+-   In PC-BASIC 3.23, VARPTR is implemented for all variable and array types,
+    except arrays of strings.
+-   VARPTR for file numbers is not implemented in PC-BASIC 3.23.
+ERRORS:
+-   If 'name' is not previously defined, raises ILLEGAL FUNCTION CALL.
 
 
 VARPTR$ function
+pointer = VARPTR$(name)
+----------------
+Returns the memory address of variable 'name' in the form of a 3-byte string.
+The first byte is the length of the record the pointer points to: 
+    2   for integer
+    3   for strings (length + pointer to string space)
+    4   for single-precision floats
+    8   for double-precision floats
+The last two bytes are the pointer address (as returned by VARPTR) in little-
+endian order.
+NOTES:
+-   In PC-BASIC 3.23, VARPTR is implemented for all variable and array types,
+    except arrays of strings.
+ERRORS:
+-   If 'name' is not previously defined, raises ILLEGAL FUNCTION CALL.
 
 
 VIEW statement
+VIEW [SCREEN] (x0,y0)-(x1,y1) [, [fill] [, border]]
+VIEW 
+--------------
+Defines a graphics clipping area. Graphics drawn outside the clipping area will
+not be shown. 'x0', 'y0', 'x1', y1' are absolute screen coordinates of two 
+opposing corners of the area.
+If 'fill' is specified, it must be a valid attribute. The clipping area will be
+filled with this attribute.
+If 'border' is specified, it must be a valid attribute. A border will be drawn 
+with this attribute just outside the clipping area.
+ERRORS:
+-   If any of the coordinates is not in [-32768, 32767], OVERFLOW is raised.
+-   If any of the coordinate pairs is outside the physical screen, 
+    raises ILLEGAL FUNCTION CALL.
+-   If any of the parameters has a string value, raises TYPE MISMATCH.
+
+
+
 
 
 VIEW PRINT statement
