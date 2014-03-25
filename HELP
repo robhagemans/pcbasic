@@ -1483,10 +1483,10 @@ The hex values for keyboard scancodes returned by INKEY$ are:
 
 
 INP function
-code = INP(x)
+code = INP(port)
 ------------
-If 'x'==&H60, returns the keyboard scancode for the last key pressed
-'x' is a numeric expression with a value between 0 and 65535, inclusive.
+If 'port'==&H60, returns the keyboard scancode for the last key pressed
+'port' is a numeric expression with a value between 0 and 65535, inclusive.
 Returns zero otherwise. 
 The scancodes returned by INP(&H60) are listed below. If the key is currently
 down, the scancode is returned; if it has been released, the scancode is 
@@ -1577,11 +1577,11 @@ Scancodes returned by INP(&H60):
     <INS>       52
     <DEL>       53
 NOTES:
--   In GW-BASIC, returns a byte read from machine port 'x'. This is not 
+-   In GW-BASIC, returns a byte read from machine port 'port'. This is not 
     implemented in PC_BASIC 3.23, except for the common use case of INP(&H60).
 ERRORS:
--   If 'address' is not in [-32768, 65535], OVERFLOW is raised.
--   If 'address' has a string value, TYPE MISMATCH is raised.
+-   If 'port' is not in [-32768, 65535], OVERFLOW is raised.
+-   If 'port' has a string value, TYPE MISMATCH is raised.
         
 
 INPUT statement (screen)
@@ -3359,7 +3359,7 @@ ERRORS:
 STRIG statement (overall)
 STRIG { ON | OFF }
 ---------------
-No effect?
+Has no effect.
 
 
 STRIG statement (events)
@@ -3586,6 +3586,9 @@ If 'fill' is specified, it must be a valid attribute. The clipping area will be
 filled with this attribute.
 If 'border' is specified, it must be a valid attribute. A border will be drawn 
 with this attribute just outside the clipping area.
+Unless SCREEN is specified, after a VIEW statements the 'physical' coordinate 
+system is shifted such that (0,0) becomes the top left coordinate of the 
+clipping area.
 ERRORS:
 -   If any of the coordinates is not in [-32768, 32767], OVERFLOW is raised.
 -   If any of the coordinate pairs is outside the physical screen, 
@@ -3593,13 +3596,34 @@ ERRORS:
 -   If any of the parameters has a string value, raises TYPE MISMATCH.
 
 
-
-
-
 VIEW PRINT statement
+VIEW PRINT [top_row] TO [bottom_row]
+--------------------
+Defines the text scrolling area of the screen. 'top_row' and 'bottom_row' are
+number-valued expressions in the range 1 to 24, inclusive. LOCATE statements,
+cursor movement and scrolling ill be limited to the scroll area.
+NOTES:
+-   Regardless of the KEY ON|OFF setting, screen row 25 cannot be part fo the 
+    scrolling area.
+ERRORS:
+-   If 'top_row' or 'bottom_row' is not in [1,24], ILLEGAL FUNCTION CALL is 
+    raised.
 
 
 WAIT statement
+WAIT port, and_mask [, xor_mask]
+--------------
+Waits for the value of (INP(port) XOR xor_mask) AND and_mask to become nonzero.
+Events are STOPped until WAIT returns. If xor_mask is not specified, its 
+default is 0.
+NOTES:
+-   In GW-BASIC, waits for machine port 'port' to turn to a specific value. 
+    This is not implemented in PC_BASIC 3.23, except for use cases discussed
+    at INP.
+ERRORS:
+-   If 'port' is not in [-32768, 65535], OVERFLOW is raised.
+-   If any parameter has a string value, TYPE MISMATCH is raised.
+-   If 'and_mask' or 'xor_mask' are not in [0,255], raises TYPE MISMATCH.
 
 
 WEND statement
