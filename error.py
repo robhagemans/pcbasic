@@ -90,13 +90,13 @@ class Error(Exception):
             
 class Break(Error):
     def __init__(self):
-        self.erl = -1 if not program.run_mode else program.linenum
+        self.erl = -1 if not program.run_mode else program.get_line_number(program.current_statement)
         self.msg = "Break"
         
     def handle_break(self):
         write_error_message(self.msg, self.erl)
         if program.run_mode:
-            program.stop = [program.bytecode.tell(), program.linenum]
+            program.stop = program.bytecode.tell()
             program.set_runmode(False)
         
     def handle_continue(self):
@@ -106,7 +106,7 @@ class Break(Error):
 class RunError(Error):
     def __init__(self, value, linum=-1):
         self.err = value
-        self.erl = linum if not program.run_mode or linum != -1 else program.linenum
+        self.erl = linum if not program.run_mode or linum != -1 else program.get_line_number(program.current_statement)
         self.msg = get_message(value)
 
     def handle_continue(self):
@@ -114,7 +114,7 @@ class RunError(Error):
         set_err(self)
         # don't jump if we're already busy handling an error
         if on_error != None and on_error != 0 and not error_handle_mode:
-            error_resume = program.current_statement, program.linenum, program.run_mode
+            error_resume = program.current_statement, program.run_mode
             program.jump(on_error)
             error_handle_mode = True
             events.suspend_all_events = True
@@ -140,7 +140,7 @@ class RunError(Error):
     
 def resume(jumpnum):  
     global error_handle_mode, error_resume  
-    start_statement, linenum, runmode = error_resume 
+    start_statement, runmode = error_resume 
     errn = 0
     error_handle_mode = False
     error_resume = None
@@ -148,11 +148,9 @@ def resume(jumpnum):
     if jumpnum == 0: 
         # RESUME or RESUME 0 
         program.set_runmode(runmode, start_statement)
-        program.linenum = linenum
     elif jumpnum == -1:
         # RESUME NEXT
         program.set_runmode(runmode, start_statement)        
-        program.linenum = linenum
         util.skip_to(program.current_codestream, util.end_statement, break_on_first_char=False)
     else:
         # RESUME n
