@@ -200,12 +200,14 @@ Variable names must start with a letter; all characters of the variable name
 Only the first 40 characters in the name are significant. Variable names must
 not be identical to keywords -- roughly, statement or function names; more 
 accurately, anything that has a defined keyword token, including such words as
-TO but not, for instace, AS. There is no particular logic to this. For each 
-name, four different variables may exist corresponding to the four types. 
-That is, you can have A$, A%, A! and A# with different values. Which one of 
-those is called A depends on the settings in DEFINT/DEFDBL/DEFSNG/DEFSTR. 
-The default is A==A!. In addition, you can have arrays A$(), A%(), A!(), A#() 
-which are separate from the scalar variables of the same name.
+TO but not, for instace, AS. There is no particular logic to this. Variable
+names may start with a keyword, with the exeption of USR and FN. Thus, FNORD$
+is not a legal variable name while FRECKLE% is. For each name, four different 
+variables may exist corresponding to the four types. That is, you can have A$, 
+A%, A! and A# with different values. Which one of those is called A depends on 
+the settings in DEFINT/DEFDBL/DEFSNG/DEFSTR. The default is A==A!. In addition,
+you can have arrays A$(), A%(), A!(), A#() which are separate from the scalar 
+variables of the same name.
 
 
 TYPES
@@ -921,6 +923,7 @@ NOTES:
     This is not implemented in PC-BASIC.
 -   If 'address' is negative, it is interpreted as its two's complement.
 ERRORS:
+-   If 'n' is not a digit in [0,9], raises SYNTAX ERROR.
 -   If 'address' is not in [-32768, 65535], OVERFLOW is raised.
 -   If 'address' has a string value, TYPE MISMATCH is raised.
 
@@ -3453,31 +3456,82 @@ ERRORS:
 TIME$ function
 time = TIME$
 --------------
-Returns the current BASIC time in the form "HH:mm:ss"
-
+Returns the current BASIC time in the form "HH:mm:ss".
 
 
 TIME$ statement
+TIME$ = time
+---------------
+Sets the current BASIC time to 'time'. Time must be a string-valued expression
+of the form "HH:mm:ss" where 00<=HH<24, 00<=mm<60 and 00<=ss<60.
+NOTES:
+-   PC-BASIC 3.23stores an offset to the system time and uses this for future 
+    calls to TIME and DATE functions in the same interpreter session. The 
+    system time is not changed, unlike GW-BASIC under MS-DOS.
+ERRORS:
+-   If 'time' is not a string, raises TYPE MISMATCH.
+-   If 'time' is not of the correct form, raises ILLEGAL FUNCTION CALL.
 
 
 TIMER function
-
+ticks = TIMER
+--------------
+Returns the number of seconds since midnight, as defined by the internal BASIC 
+time.
+NOTES:
+-   TIMER updates in ticks of 1/20 second.
+-   The least-significant two bytes of TIMER are often used as a seed for the 
+    pseudorandom number generator through RANDOMIZE TIMER. Since these bytes
+    only take values from a limited set, that's not in fact a particularly good
+    random seed. However, the pseudorandom number generator included with BASIC
+    is so weak that is should not be used for anything serious anyway.
+    
 
 TRON and TROFF statements
+TR{ON|OFF}
+-------------------------
+Turns line number tracing on or off. If line number tracing is on, BASIC prints
+a tag [100] to the screen when program line 100 is executed, and so forth.
+NOTES:
+-   Tracing is turned off by the NEW and LOAD statements.
+-   There must be no space between TR and ON or OFF.
 
 
 UNLOCK statement
+UNLOCK [#] file_number [, record_0 ]
+UNLOCK [#] file_number, [record_0] TO record_1
 ----------------
+Unlocks a file or part of it that has previously been locked with LOCK. 
 ERRORS:
 -   If 'file_number' is open for RANDOM, LOCK and UNLOCK statements must match 
     in terms of 'record_0' and 'record_1'. An unmatching UNLOCK will raise      
     PERMISSION DENIED.
+-   If 'record_0' or 'record_1' is not in [1, 2^25-2], raises BAD RECORD NUMBER.
+-   If 'file_num' is not an open file, raises BAD FILE NUMBER.
+-   If 'file_num' is not in [0,255], raises ILLEGAL FUNCTION CALL.
+-   If 'file_num' is not in [-32768,32767], raises OVERFLOW.
+-   If any parameter is a string, raises TYPE MISMATCH.
 
 
 USR function
+value = USR[n](expr)
+------------
+Raises ILLEGAL FUNCTION CALL.
+'n' is a digit between 0 and 9 inclusive. 
+'expr' is an expression.
+NOTES:
+-   In GW-BASIC, calls an assembly-language function and returns a value.
+    This is not implemented in PC-BASIC 3.23.
+ERRORS:
+-   If 'n' is not a digit 0--9, raises SYNTAX ERROR.
+-   Raises ILLEGAL FUNCTION CALL.
 
 
 VAL function
+value = VAL(string)
+------------
+Returns the numeric value of the string 'string'.
+
 
 
 VARPTR function
