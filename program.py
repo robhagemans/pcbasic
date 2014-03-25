@@ -32,6 +32,8 @@ bytecode = StringIO()
 direct_line = StringIO()
 # pointer position: False for direct line, True for program
 run_mode = False
+# memory model; offsets in files
+program_memory_start = 0x126e
 
 def init_program():
     global gosub_return, for_next_stack, while_wend_stack, stop
@@ -254,6 +256,27 @@ def store_line(linebuf):
     scanline = util.parse_line_number(linebuf)
     # check if linebuf is an empty line after the line number
     empty = (util.skip_white_read(linebuf) in util.end_line)
+    if empty and not scanline in line_numbers:
+        raise error.RunError(8)
+#    pos, afterpos, offset = find_pos_dict(scanline)
+    pos, afterpos, offset = find_pos_offsets(scanline)
+    # read the remainder of the program into a buffer to be pasted back after the write
+    bytecode.seek(afterpos)
+    rest = bytecode.read()
+    # insert    
+    bytecode.seek(pos)
+    # write the line buffer to the program buffer
+    if not empty:
+        # set offsets
+        linebuf.seek(3) # pass \x00\xC0\xDE 
+        bytecode.write( '\x00' + str(vartypes.value_to_uint(offset+ len(linebuf.getvalue()))) + linebuf.read())
+    # write back the remainder of the program
+    truncate_program(rest)
+    preparse()
+    last_stored = scanline
+
+# find stream position using line number dictionary
+def find_pos_dict(scanline):
     # find the lowest line after scanline
     after, afterpos = 65536, 0
     for num in line_numbers:
@@ -261,27 +284,37 @@ def store_line(linebuf):
             after = num
             afterpos = line_numbers[after]        
             # if not found, afterpos will be the number stored at 65536, ie the end of program
-    # read the remainder of the program into a buffer to be pasted back after the write
-    bytecode.seek(afterpos)
-    rest = bytecode.read()
     # replace or insert?
-    if scanline in line_numbers: # and not (auto_mode and empty):
+    try:
         # line number exists, replace line
-        bytecode.seek(line_numbers[scanline])
-    else:
-        if empty:
-            raise error.RunError(8)
-        # insert    
-        bytecode.seek(afterpos)
-    # write the line buffer to the program buffer
-    if not empty:
-        bytecode.write(linebuf.getvalue())
-    # write back the remainder of the program
-    truncate_program(rest)
-    preparse()
-    last_stored = scanline
-    return scanline
+        pos = line_numbers[scanline]
+    except KeyError:
+        pos = afterpos
+    return pos, afterpos, 0
 
+# find stream position using stored offset values
+def find_pos_offsets(scanline):
+    bytecode.seek(1)
+    next_addr = program_memory_start
+    pos, afterpos = 0, 0
+    while True:
+        addr = next_addr
+        start = bytecode.tell()-1
+        next_addr = bytearray(bytecode.read(2))
+        linenum = -1
+        if len(next_addr) == 2 and next_addr != '\x00\x00':
+            next_addr = vartypes.uint_to_value(next_addr)
+            linenum = vartypes.uint_to_value(bytearray(bytecode.read(2)))
+        if linenum == -1 or linenum > scanline:
+            # end of program; leaves us at 00 _00_ 00 1A
+            return start, start, addr
+        if linenum < scanline:
+            # jump to next line
+            bytecode.read(next_addr-addr-4)
+        else:
+            # overwrite        
+            return start, start + next_addr - addr, next_addr
+    
 def delete_lines(fromline, toline):
     keys = sorted(line_numbers.keys())
     # find lowest number within range
@@ -388,8 +421,7 @@ def load(g):
         protected = True                
         protect.unprotect(g, bytecode)
     elif c != '':
-        # TODO: check allowed first chars for ASCII file - > whitespace + nums? letters?
-        # ASCII file, maybe
+        # ASCII file, maybe; any thing but numbers or whitespace will lead to Direct Statement in File
         load_ascii_file(g, c)        
     preparse()
     g.close()
