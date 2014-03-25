@@ -3360,6 +3360,21 @@ No effect?
 STRIG statement (events)
 STRIG(button) { ON | OFF | STOP }
 ---------------
+Controls event trapping of the joystick trigger 'button'. If ON is specified
+event trapping is switched on; if OFF, off. STOP suspends event trapping until 
+another STRIG() ON is executed. Up to one event can be triggered during 
+suspension, provided that event handling was switched on prior to suspension. 
+The event triggered during suspension is handled immediately after the next ON
+statement.
+'button' must be a number-valued expression in [0,2,4,6]:
+0   joystick 1, trigger 1
+2   joystick 2, trigger 1
+4   joystick 1, trigger 2
+6   joystick 2, trigger 2
+ERRORS:
+-   If 'button' is not in [-32768, 32767], raises OVERFLOW.
+-   If 'button' is not in [0,2,4,6], raises ILLEGAL FUNCTION CALL.
+-   If 'button' has a string value, raises TYPE MISMATCH.
 
 
 STRIG function
