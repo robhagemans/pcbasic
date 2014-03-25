@@ -67,7 +67,7 @@ def exec_for(ins):
     # find NEXT
     nextpos, nextline = find_next(ins, varname)
     # apply initial condition, jump if necessary
-    if program.loop_init(ins, forpos, program.linenum, varname, nextpos, nextline, start, stop, step):
+    if program.loop_init(ins, forpos, nextpos, varname, start, stop, step):
         if util.skip_white_read_if(ins, (',')):
             # we're jumping into a comma'ed NEXT, call exec_next
             return exec_next(ins, True)
