@@ -425,10 +425,10 @@ def scroll_down(from_line):
     screen_changed = True
 
 last_attr = None
-
+last_mode = None
 def set_attr(cattr):
-    global last_attr
-    if cattr == last_attr:
+    global last_attr, last_mode
+    if cattr == last_attr and console.screen_mode == last_mode:
         return    
     color = (0, 0, cattr & 0xf)
     bg = (0, 0, (cattr>>4) & 0x7)    
@@ -436,6 +436,7 @@ def set_attr(cattr):
         glyph.set_palette_at(255, bg)
         glyph.set_palette_at(254, color)
     last_attr = cattr
+    last_mode = console.screen_mode
         
 def putc_at(row, col, c):
     global screen_changed
