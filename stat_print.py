@@ -212,14 +212,14 @@ def exec_write(ins, screen=None):
     if expr:
         while True:
             if expr[0] == '$':
-                screen.write('"' + vartypes.unpack_string(expr) + '"')
+                screen.write('"' + str(vartypes.unpack_string(expr)) + '"')
             else:                
-                screen.write(vartypes.unpack_string(representation.value_to_str_keep(expr, screen=True, write=True)))
+                screen.write(str(vartypes.unpack_string(representation.value_to_str_keep(expr, screen=True, write=True))))
             if util.skip_white_read_if(ins, (',',)):
                 screen.write(',')
             else:
                 break
-            expr = expressions.parse_expression(ins, empty_err=2)
+            expr = expressions.parse_expression(ins)
     util.require(ins, util.end_statement)        
     screen.write_line()
 
