@@ -504,15 +504,15 @@ def list_to_file(out, from_line, to_line):
     tokenise.detokenise(bytecode, out, from_line, to_line)
     set_runmode(False)
                   
-def loop_init(ins, forpos, forline, varname, nextpos, nextline, start, stop, step):
+def loop_init(ins, forpos, nextpos, varname, start, stop, step):
     loopvar = vartypes.pass_type_keep(varname[-1], start)
     var.set_var(varname, start)
-    for_next_stack.append((forpos, forline, varname, nextpos, nextline, start, stop, step)) 
+    for_next_stack.append((forpos, varname, nextpos, start, stop, step)) 
     return loop_jump_if_ends(ins, loopvar, stop, step)
     
 def loop_iterate(ins):            
     # JUMP to FOR statement
-    forpos, _, varname, _, _, start, stop, step = for_next_stack[-1]
+    forpos, varname, _, start, stop, step = for_next_stack[-1]
     ins.seek(forpos)
     # skip to end of FOR statement
     util.skip_to(ins, util.end_statement)
@@ -534,7 +534,7 @@ def loop_jump_if_ends(ins, loopvar, stop, step):
         loop_ends = False
     if loop_ends:
         # jump to just after NEXT
-        _, _, _, nextpos, _, _, _, _ = for_next_stack.pop()
+        _, _, nextpos, _, _, _ = for_next_stack.pop()
         ins.seek(nextpos)
     return loop_ends
     
@@ -543,7 +543,7 @@ def loop_find_next(ins, pos):
         if len(for_next_stack) == 0:
             # next without for
             raise error.RunError(1) #1  
-        forpos, _, varname, nextpos, _, _, _, _ = for_next_stack[-1]
+        forpos, varname, nextpos, _, _, _ = for_next_stack[-1]
         if pos != nextpos:
             # not the expected next, we must have jumped out
             for_next_stack.pop()
