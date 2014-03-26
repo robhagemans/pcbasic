@@ -117,7 +117,7 @@ def clear_program():
     init_program()
     clear_all()
 
-def truncate_program(rest):
+def truncate_program(rest=''):
     bytecode.write(rest if rest else '\x00\x00\x00\x1a')
     # cut off at current position    
     bytecode.truncate()    
@@ -427,20 +427,24 @@ def renum(new_line, start_line, step):
 
 def load(g):
     global protected
-    bytecode.truncate(0)
+    erase_program()
     c = g.read(1)
-    protected = False
     if c == '\xFF':
         # bytecode file
+        bytecode.truncate(0)
         bytecode.write('\x00')
         while c:
             c = g.read(1)
             bytecode.write(c)
+        if c != '\x1a':
+            truncate_program()    
     elif c == '\xFE':
         # protected file
+        bytecode.truncate(0)
         bytecode.write('\x00')
         protected = True                
-        protect.unprotect(g, bytecode)
+        if protect.unprotect(g, bytecode) != '\x1a':
+            truncate_program() 
     elif c != '':
         # ASCII file, maybe; any thing but numbers or whitespace will lead to Direct Statement in File
         load_ascii_file(g, c)        
