@@ -236,7 +236,7 @@ def tokenise_line(line):
         # read next character
         char = util.peek(ins)
         # anything after NUL is ignored till EOL
-        if char=='\x00':
+        if char == '\x00':
             ins.read(1)
             ascii_read_to(ins, ('', '\r'))
             break
@@ -287,32 +287,23 @@ def tokenise_line(line):
             elif word in linenum_words: 
                 allow_jumpnum = True
             # numbers can follow tokenised keywords (which does not include the word 'AS')
-            allow_number = (word in keyword_to_token) #or word=='AS'
+            allow_number = (word in keyword_to_token)
             if word in ('SPC(', 'TAB('):
                 spc_or_tab = True
-        elif c in (',', '#', ';'):
-            # can separate numbers as well as jumpnums
-            ins.read(1)
-            allow_number = True
-            outs.write(c)
-        elif c in ('(', '['):
-            ins.read(1)
-            allow_jumpnum, allow_number = False, True
-            outs.write(c)
-        elif c == ')' and spc_or_tab:
-            spc_or_tab = False
-            ins.read(1)
-            allow_jumpnum, allow_number = False, True
-            outs.write(c)
-        elif ord(c) < 32:
-            # replace all other nonprinting chars by spaces
-            ins.read(1)
-            allow_jumpnum, allow_number = False, False
-            outs.write(' ')    
         else:
             ins.read(1)
-            allow_jumpnum, allow_number = False, False
-            outs.write(c)
+            if c in (',', '#', ';'):
+                # can separate numbers as well as jumpnums
+                allow_number = True
+            elif c in ('(', '['):
+                allow_jumpnum, allow_number = False, True
+            elif c == ')' and spc_or_tab:
+                spc_or_tab = False
+                allow_jumpnum, allow_number = False, True
+            else:
+                # replace all other nonprinting chars by spaces
+                allow_jumpnum, allow_number = False, False
+            outs.write(c if ord(c)>=32 else ' ')
     outs.seek(0)
     return outs
     
