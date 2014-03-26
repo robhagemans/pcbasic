@@ -40,11 +40,6 @@ tokens_linenum = ['\x0d', '\x0e']
 tokens_operator = map(chr, range(0xe6, 0xed+1))
 tokens_with_bracket = ['\xd2', '\xce']
 
-tokenise_endfile = ['', '\x1a']
-tokenise_endline_nonnul =  tokenise_endfile + ['\r']
-tokenise_endline = tokenise_endline_nonnul + ['\x00'] # after NUL everything is ignored untile EOL 
-tokenise_endstatement = tokenise_endline + [':']
-
 ascii_operators = ['+', '-', '=', '/', '\\', '^', '*', '<', '>']        
 ascii_uppercase = map(chr, range(ord('A'),ord('Z')+1))        
 
@@ -195,10 +190,10 @@ def read_program_line(ins):
     d = ins.read(1)
     if d != '\n':
         out += d
-    while d not in tokenise_endline_nonnul:
+    while d not in ('', '\x1a', '\r'):
         d = ins.read(1)
         out += d       
-    eof = d in tokenise_endfile         
+    eof = d in ('', '\x1a')       
     return out, eof
     
 def tokenise_line(line):      
@@ -206,7 +201,7 @@ def tokenise_line(line):
     outs = StringIO()          
     # skip whitespace at start of line
     d = util.skip(ins, tokenise_whitespace)
-    if d in tokenise_endfile:
+    if d in ('', '\x1a'):
         # empty line at EOF
         ins.read(len(d))
         return outs
@@ -226,16 +221,16 @@ def tokenise_line(line):
         # non-parsing modes        
         if verbatim :
             # anything after REM is passed as is till EOL
-            outs.write(ascii_read_to(ins, tokenise_endline))
+            outs.write(ascii_read_to(ins, ('', '\x1a', '\r', '\0')))
             break
         elif data:
             # read DATA as is, till end of statement    
-            outs.write(ascii_read_to(ins, tokenise_endstatement))
+            outs.write(ascii_read_to(ins, ('', '\x1a', '\r', '\0', ':')))
             data = False
         elif util.peek(ins)=='"':
             # handle string literals    
             outs.write(ins.read(1))
-            outs.write(ascii_read_to(ins, tokenise_endline + ['"'] ))
+            outs.write(ascii_read_to(ins, ('', '\x1a', '\r', '\0', '"') ))
             if util.peek(ins)=='"':
                 outs.write(ins.read(1))
         # read next character
@@ -243,10 +238,10 @@ def tokenise_line(line):
         # anything after NUL is ignored till EOL
         if char=='\x00':
             ins.read(1)
-            ascii_read_to(ins, tokenise_endline_nonnul)
+            ascii_read_to(ins, ('', '\x1a', '\r'))
             break
         # end of line    
-        if char in tokenise_endline_nonnul:
+        if char in ('', '\x1a', '\r'):
             break
         # convert anything else to upper case
         c = char.upper()
