@@ -134,81 +134,6 @@ def get_line_number(pos):
             pre = linum
     return pre
 
-# jump to line number    
-def jump(jumpnum, err=8):
-    if jumpnum == None:
-        set_runmode(True, 0)
-    else:    
-        try:    
-            # jump to target
-            set_runmode(True, line_numbers[jumpnum])
-        except KeyError:
-            # Undefined line number
-            raise error.RunError(err)
-        
-def jump_gosub(jumpnum, handler=None):    
-    # set return position
-    gosub_return.append((current_codestream.tell(), run_mode, handler))
-    jump(jumpnum)
- 
-def jump_return(jumpnum):        
-    try:
-        pos, orig_runmode, handler = gosub_return.pop()
-    except IndexError:
-        # RETURN without GOSUB
-        raise error.RunError(3)
-    # returning from ON (event) GOSUB, re-enable event
-    if handler:
-        # if stopped explicitly using STOP, we wouldn't have got here; it STOP is run  inside the trap, no effect. OFF in trap: event off.
-        handler.stopped = False
-    if jumpnum == None:
-        # go back to position of GOSUB
-        set_runmode(orig_runmode, pos)   
-    else:
-        # jump to specified line number 
-        jump(jumpnum)
-        
-# READ a unit of DATA
-def read_entry():
-    global data_line, data_pos
-    current = bytecode.tell()
-    bytecode.seek(data_pos)
-    if util.peek(bytecode) in util.end_statement:
-        # initialise - find first DATA
-        util.skip_to(bytecode, ('\x84',))  # DATA
-        data_line = get_line_number(bytecode.tell())
-    if bytecode.read(1) not in ('\x84', ','):
-        # out of DATA
-        raise error.RunError(4)
-    vals, word, verbatim = '', '', False
-    while True:
-        # read next char; omit leading whitespace
-        if not verbatim and vals == '':    
-            c = util.skip_white(bytecode)
-        else:
-            c = util.peek(bytecode)
-        # parse char
-        if c == '' or (not verbatim and c == ',') or (c in util.end_line or (not verbatim and c in util.end_statement)):
-            break
-        elif c == '"':
-            bytecode.read(1)
-            verbatim = not verbatim
-            if not verbatim:
-                util.require(bytecode, util.end_statement+(',',))
-        else:        
-            bytecode.read(1)
-            if verbatim:
-                vals += c
-            else:
-                word += c
-            # omit trailing whitespace                        
-            if c not in util.whitespace:    
-                vals += word
-                word = ''
-    data_pos = bytecode.tell()
-    bytecode.seek(current)
-    return vals
-
 # build list of line numbers and positions
 def preparse():
     rebuild_line_dict()
@@ -243,6 +168,43 @@ def rebuild_line_dict():
         line_numbers[scanline] = last  
         util.skip_to_read(bytecode, util.end_line)
 
+# find stream position using line number dictionary
+def find_pos_line_dict(scanline):
+    # find the lowest line after scanline
+    after, afterpos = 65536, 0
+    for num in line_numbers:
+        if num > scanline and num <= after:
+            after = num
+            afterpos = line_numbers[after]        
+            # if not found, afterpos will be the number stored at 65536, ie the end of program
+    try:
+        # line number exists, replace line
+        pos = line_numbers[scanline]
+    except KeyError:
+        pos = afterpos
+    return pos, afterpos
+
+def update_line_dict(pos, afterpos, length, scanline=None):
+    # subtract length of line we replaced
+    length -= afterpos - pos
+    addr = program_memory_start + afterpos
+    bytecode.seek(afterpos + length + 1)  # pass \x00
+    while True:
+        next_addr = bytearray(bytecode.read(2))
+        if len(next_addr) < 2 or next_addr == '\x00\x00':
+            break
+        next_addr = vartypes.uint_to_value(next_addr)
+        bytecode.seek(-2, 1)
+        bytecode.write(str(vartypes.value_to_uint(next_addr + length)))
+        bytecode.read(next_addr - addr - 2)
+        addr = next_addr
+    # update line number dict
+    if length and scanline:
+        line_numbers[scanline] = pos
+    for key in line_numbers:
+        if key > scanline:
+            line_numbers[key] += length
+            
 def check_number_start(linebuf):
     # get the new line number
     linebuf.seek(1)
@@ -288,43 +250,6 @@ def store_line(linebuf):
     # clear variables (storing a line does that)
     clear_all()
     last_stored = scanline
-
-# find stream position using line number dictionary
-def find_pos_line_dict(scanline):
-    # find the lowest line after scanline
-    after, afterpos = 65536, 0
-    for num in line_numbers:
-        if num > scanline and num <= after:
-            after = num
-            afterpos = line_numbers[after]        
-            # if not found, afterpos will be the number stored at 65536, ie the end of program
-    try:
-        # line number exists, replace line
-        pos = line_numbers[scanline]
-    except KeyError:
-        pos = afterpos
-    return pos, afterpos
-
-def update_line_dict(pos, afterpos, length, scanline=None):
-    # subtract length of line we replaced
-    length -= afterpos - pos
-    addr = program_memory_start + afterpos
-    bytecode.seek(afterpos + length + 1)  # pass \x00
-    while True:
-        next_addr = bytearray(bytecode.read(2))
-        if len(next_addr) < 2 or next_addr == '\x00\x00':
-            break
-        next_addr = vartypes.uint_to_value(next_addr)
-        bytecode.seek(-2, 1)
-        bytecode.write(str(vartypes.value_to_uint(next_addr + length)))
-        bytecode.read(next_addr - addr - 2)
-        addr = next_addr
-    # update line number dict
-    if length and scanline:
-        line_numbers[scanline] = pos
-    for key in line_numbers:
-        if key > scanline:
-            line_numbers[key] += length
     
 def delete_lines(fromline, toline):
     keys = sorted(line_numbers.keys())
@@ -548,7 +473,41 @@ def list_to_file(out, from_line, to_line):
     bytecode.seek(1)
     tokenise.detokenise(bytecode, out, from_line, to_line)
     set_runmode(False)
-                  
+             
+# jump to line number    
+def jump(jumpnum, err=8):
+    if jumpnum == None:
+        set_runmode(True, 0)
+    else:    
+        try:    
+            # jump to target
+            set_runmode(True, line_numbers[jumpnum])
+        except KeyError:
+            # Undefined line number
+            raise error.RunError(err)
+        
+def jump_gosub(jumpnum, handler=None):    
+    # set return position
+    gosub_return.append((current_codestream.tell(), run_mode, handler))
+    jump(jumpnum)
+ 
+def jump_return(jumpnum):        
+    try:
+        pos, orig_runmode, handler = gosub_return.pop()
+    except IndexError:
+        # RETURN without GOSUB
+        raise error.RunError(3)
+    # returning from ON (event) GOSUB, re-enable event
+    if handler:
+        # if stopped explicitly using STOP, we wouldn't have got here; it STOP is run  inside the trap, no effect. OFF in trap: event off.
+        handler.stopped = False
+    if jumpnum == None:
+        # go back to position of GOSUB
+        set_runmode(orig_runmode, pos)   
+    else:
+        # jump to specified line number 
+        jump(jumpnum)
+
 def loop_init(ins, forpos, nextpos, varname, start, stop, step):
     loopvar = vartypes.pass_type_keep(varname[-1], start)
     var.set_var(varname, start)
@@ -594,4 +553,45 @@ def loop_find_next(ins, pos):
         else:
             break
     return forpos, nextpos, varname
-        
+                
+# READ a unit of DATA
+def read_entry():
+    global data_line, data_pos
+    current = bytecode.tell()
+    bytecode.seek(data_pos)
+    if util.peek(bytecode) in util.end_statement:
+        # initialise - find first DATA
+        util.skip_to(bytecode, ('\x84',))  # DATA
+        data_line = get_line_number(bytecode.tell())
+    if bytecode.read(1) not in ('\x84', ','):
+        # out of DATA
+        raise error.RunError(4)
+    vals, word, verbatim = '', '', False
+    while True:
+        # read next char; omit leading whitespace
+        if not verbatim and vals == '':    
+            c = util.skip_white(bytecode)
+        else:
+            c = util.peek(bytecode)
+        # parse char
+        if c == '' or (not verbatim and c == ',') or (c in util.end_line or (not verbatim and c in util.end_statement)):
+            break
+        elif c == '"':
+            bytecode.read(1)
+            verbatim = not verbatim
+            if not verbatim:
+                util.require(bytecode, util.end_statement+(',',))
+        else:        
+            bytecode.read(1)
+            if verbatim:
+                vals += c
+            else:
+                word += c
+            # omit trailing whitespace                        
+            if c not in util.whitespace:    
+                vals += word
+                word = ''
+    data_pos = bytecode.tell()
+    bytecode.seek(current)
+    return vals
+     
