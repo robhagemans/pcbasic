@@ -211,9 +211,9 @@ def tokenise_line(line):
     verbatim = False  # REM: pass unchanged until e-o-line
     data = False      # DATA: pass unchanged until :
     # expect line number
-    number_is_line = False
+    allow_jumpnum = False
     # expect number (6553 6 -> the 6 is encoded as \x17)
-    expect_number = True
+    allow_number = True
     # flag for SPC( or TAB( as numbers can follow the closing bracket
     spc_or_tab = False
     # parse through elements of line
@@ -250,13 +250,13 @@ def tokenise_line(line):
             ins.read(1)
             outs.write(char)
         # handle jump numbers
-        elif expect_number and number_is_line and c in ascii_digits + ['.',]:
+        elif allow_number and allow_jumpnum and c in ascii_digits + ['.',]:
             tokenise_jump_number(ins, outs) 
         # handle numbers
         # numbers following var names with no operator or token in between should not be parsed, eg OPTION BASE 1
         # note we don't include leading signs, they're encoded as unary operators
         # number starting with . or & are always parsed
-        elif c in ('&', '.') or (expect_number and not number_is_line and c in ascii_digits):
+        elif c in ('&', '.') or (allow_number and not allow_jumpnum and c in ascii_digits):
             representation.tokenise_number(ins, outs)
         # operator keywords ('+', '-', '=', '/', '\\', '^', '*', '<', '>'):    
         elif c in ascii_operators: 
@@ -264,7 +264,7 @@ def tokenise_line(line):
             # operators don't affect line number mode- can do line number arithmetic and RENUM will do the strangest things
             # this allows for 'LIST 100-200' etc.
             outs.write(keyword_to_token[c])    
-            expect_number = True
+            allow_number = True
         # special case ' -> :REM'
         elif c == "'":
             ins.read(1)
@@ -274,10 +274,10 @@ def tokenise_line(line):
         elif c == '?':
             ins.read(1)
             outs.write(keyword_to_token['PRINT'])
-            expect_number = True
+            allow_number = True
         # keywords & variable names       
         elif c in ascii_uppercase:
-            number_is_line = False
+            allow_jumpnum = False
             word = tokenise_word(ins, outs)
             # handle non-parsing modes
             if word in ('REM', "'") or debug and word=='DEBUG':  # note: DEBUG - this is not GW-BASIC behaviour
@@ -285,36 +285,33 @@ def tokenise_line(line):
             elif word == "DATA":    
                 data = True
             elif word in linenum_words: 
-                number_is_line = True
+                allow_jumpnum = True
             # numbers can follow tokenised keywords (which does not include the word 'AS')
-            expect_number = (word in keyword_to_token) #or word=='AS'
+            allow_number = (word in keyword_to_token) #or word=='AS'
             if word in ('SPC(', 'TAB('):
                 spc_or_tab = True
         elif c in (',', '#', ';'):
+            # can separate numbers as well as jumpnums
             ins.read(1)
-            expect_number = True
+            allow_number = True
             outs.write(c)
         elif c in ('(', '['):
             ins.read(1)
-            number_is_line = False
-            expect_number = True
+            allow_jumpnum, allow_number = False, True
             outs.write(c)
         elif c == ')' and spc_or_tab:
             spc_or_tab = False
             ins.read(1)
-            number_is_line = False
-            expect_number = True
+            allow_jumpnum, allow_number = False, True
             outs.write(c)
         elif ord(c) < 32:
             # replace all other nonprinting chars by spaces
             ins.read(1)
-            number_is_line = False
-            expect_number = False
+            allow_jumpnum, allow_number = False, False
             outs.write(' ')    
         else:
             ins.read(1)
-            number_is_line = False
-            expect_number = False
+            allow_jumpnum, allow_number = False, False
             outs.write(c)
     outs.seek(0)
     return outs
