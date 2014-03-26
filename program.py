@@ -148,47 +148,33 @@ def rebuild_line_dict():
     global line_numbers
     # preparse to build line number dictionary
     line_numbers, offsets = {}, []
-    bytecode.seek(1)
+    bytecode.seek(0)
     scanline, scanpos, last = 0, 0, 0
     while True:
+        bytecode.read(1) # pass \x00
         scanline = util.parse_line_number(bytecode)
         if scanline == -1:
             scanline = 65536
             # if parse_line_number returns -1, it leaves the stream pointer here: 00 _00_ 00 1A
             break 
         line_numbers[scanline] = scanpos  
-        util.skip_to_read(bytecode, util.end_line)
         last = scanpos
-        scanpos = bytecode.tell() - 1
+        util.skip_to(bytecode, util.end_line)
+        scanpos = bytecode.tell()
         offsets.append(scanpos)
     line_numbers[65536] = scanpos     
     # rebuild offsets
-    bytecode.seek(1)
+    bytecode.seek(0)
     last = 0
     for pos in offsets:
+        bytecode.read(1)
         bytecode.write(str(vartypes.value_to_uint(program_memory_start + pos)))
-        bytecode.read(pos - last - 2)
+        bytecode.read(pos - last - 3)
         last = pos
     # ensure program is properly sealed - last offset must be 00 00. keep, but ignore, anything after.
-    bytecode.write('\0\0')
+    bytecode.write('\0\0\0')
 
-# find stream position using line number dictionary
-def find_pos_line_dict(scanline):
-    # find the lowest line after scanline
-    after, afterpos = 65536, 0
-    for num in line_numbers:
-        if num > scanline and num <= after:
-            after = num
-            afterpos = line_numbers[after]        
-            # if not found, afterpos will be the number stored at 65536, ie the end of program
-    try:
-        # line number exists, replace line
-        pos = line_numbers[scanline]
-    except KeyError:
-        pos = afterpos
-    return pos, afterpos
-
-def update_line_dict(pos, afterpos, length, scanline=None):
+def update_line_dict(pos, afterpos, length, deleteable, beyond):
     # subtract length of line we replaced
     length -= afterpos - pos
     addr = program_memory_start + afterpos
@@ -203,11 +189,10 @@ def update_line_dict(pos, afterpos, length, scanline=None):
         bytecode.read(next_addr - addr - 2)
         addr = next_addr
     # update line number dict
-    if length and scanline:
-        line_numbers[scanline] = pos
-    for key in line_numbers:
-        if key > scanline:
-            line_numbers[key] += length
+    for key in deleteable:
+        del line_numbers[key]
+    for key in beyond:
+        line_numbers[key] += length
             
 def check_number_start(linebuf):
     # get the new line number
@@ -230,9 +215,9 @@ def store_line(linebuf):
     scanline = util.parse_line_number(linebuf)
     # check if linebuf is an empty line after the line number
     empty = (util.skip_white_read(linebuf) in util.end_line)
-    if empty and not scanline in line_numbers:
-        raise error.RunError(8)
-    pos, afterpos = find_pos_line_dict(scanline)
+    pos, afterpos, deleteable, beyond = find_pos_line_dict(scanline, scanline)
+    if empty and not deleteable:
+         raise error.RunError(8)   
     # read the remainder of the program into a buffer to be pasted back after the write
     bytecode.seek(afterpos)
     rest = bytecode.read()
@@ -248,46 +233,41 @@ def store_line(linebuf):
     # write back the remainder of the program
     truncate_program(rest)
     # update all next offsets by shifting them by the length of the added line
-    update_line_dict(pos, afterpos, length, scanline)
+    update_line_dict(pos, afterpos, length, deleteable, beyond)
+    if not empty:
+        line_numbers[scanline] = pos
     # clear all program stacks
     init_program()
     # clear variables (storing a line does that)
     clear_all()
     last_stored = scanline
-    
-def delete_lines(fromline, toline):
-    keys = sorted(line_numbers.keys())
-    # find lowest number within range
-    startline = None
-    if fromline != None:
-        for num in keys:
-            if num >= fromline:
-                startline = num
-                break
+
+def find_pos_line_dict(fromline, toline):
+    deleteable = [ num for num in line_numbers if num >= fromline and num <= toline ]
+    beyond = [num for num in line_numbers if num > toline ]
     # find lowest number strictly above range
-    afterline = 65536
-    if toline != None:
-        for num in keys:
-            if num > toline:
-                afterline = num
-                break
-    # if toline not specified, afterpos will be the number stored at 65536, ie the end of program
+    afterpos = line_numbers[min(beyond)]
+    # find lowest number within range
     try:
-        startpos = 0 if startline == None else line_numbers[startline]        
-        afterpos = line_numbers[afterline]
-    except KeyError:
-        # no program stored
-        raise error.RunError(5)
-    if afterpos <= startpos:
+        startpos = line_numbers[min(deleteable)]
+    except ValueError:
+        startpos = afterpos
+    return startpos, afterpos, deleteable, beyond
+
+def delete_lines(fromline, toline):
+    fromline = fromline if fromline != None else min(line_numbers)
+    toline = toline if toline != None else 65535 
+    startpos, afterpos, deleteable, beyond = find_pos_line_dict(fromline, toline)
+    if not deleteable:
         # no lines selected
-        raise error.RunError(5)
+        raise error.RunError(5)        
     # do the delete
     bytecode.seek(afterpos)
     rest = bytecode.read()
     bytecode.seek(startpos)
     truncate_program(rest)
     # update line number dict
-    update_line_dict(startpos, afterpos, 0)
+    update_line_dict(startpos, afterpos, 0, deleteable, beyond)
     # clear all program stacks
     init_program()
     # clear variables (storing a line does that)
