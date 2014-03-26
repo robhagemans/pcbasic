@@ -136,14 +136,6 @@ def get_line_number(pos):
             pre = linum
     return pre
 
-# build list of line numbers and positions
-def preparse():
-    rebuild_line_dict()
-    # reset all stacks    
-    init_program() 
-    # clear all variables
-    clear_all()
-
 def rebuild_line_dict():
     global line_numbers
     # preparse to build line number dictionary
@@ -314,9 +306,10 @@ def renum(new_line, start_line, step):
         bytecode.read(3)
         bytecode.write(str(vartypes.value_to_uint(old_to_new[old_line])))
     # rebuild the line number dictionary    
-    preparse()
-#    for old_line in old_to_new:
-#        line_numbers[old_line] = old_to_new[old_line]   
+    for old_line in old_to_new:
+        line_numbers[old_line] = old_to_new[old_line]   
+    # reset all stacks    
+    init_program() 
     # write the indirect line numbers
     bytecode.seek(0)
     while util.skip_to_read(bytecode, ('\x0e',)) == '\x0e':
@@ -354,8 +347,14 @@ def load(g):
     elif c != '':
         # ASCII file, maybe; any thing but numbers or whitespace will lead to Direct Statement in File
         load_ascii_file(g, c)        
-    preparse()
     g.close()
+    # rebuild line number dict and offsets
+    rebuild_line_dict()
+    # reset all stacks    
+    init_program() 
+    # clear all variables
+    clear_all()
+
     
 def merge(g):
     c = g.read(1)
