@@ -114,7 +114,9 @@ def clear_all(close_files=False):
 # NEW    
 def clear_program():
     erase_program()    
+    # reset all stacks   
     init_program()
+    # clear all variables
     clear_all()
 
 def truncate_program(rest=''):
@@ -359,9 +361,10 @@ def load(g):
         bytecode.truncate(0)
         bytecode.write('\x00')
         while c:
+            last = c
             c = g.read(1)
             bytecode.write(c)
-        if c != '\x1a':
+        if last != '\x1a':
             truncate_program()    
     elif c == '\xFE':
         # protected file
@@ -442,25 +445,22 @@ def chain(action, g, jumpnum, common_all, delete_lines):
     jump(jumpnum, err=5)
 
 def save(g, mode='B'):
+    if protected and mode != 'P':
+        raise error.RunError(5)
     current = bytecode.tell()
     # skip first \x00 in bytecode, replace with appropriate magic number
     bytecode.seek(1)
     if mode == 'B':
-        if protected:
-            raise error.RunError(5)
-        else:
-            g.write('\xff')
-            g.write(bytecode.read())
+        g.write('\xff')
+        g.write(bytecode.read())
+        # TODO: replace last char with \x1a
     elif mode == 'P':
         g.write('\xfe')
-        protect.protect(bytecode, g)    
+        protect.protect(bytecode, g)
+        g.write('\x1a')    
     else:
-        if protected:
-            raise error.RunError(5)
-        else:
-            tokenise.detokenise(bytecode, g) 
-            # fix \x1A eof
-            g.write('\x1a')       
+        tokenise.detokenise(bytecode, g) 
+        g.write('\x1a')       
     bytecode.seek(current)         
     g.close()
     

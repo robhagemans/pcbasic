@@ -42,12 +42,9 @@ def unprotect(ins, outs):
 """ Encrypt a byte stream read from the GWBASIC tokenised format """
 def protect(ins, outs):    
     index = 0
-    s = ins.read(1)
-    while s != '': 
-        nxt = ins.read(1)
-        # drop last char (EOF 0x1a)
-        if nxt == '':
-            break
+    nxt = ins.read(1)
+    while nxt != '': 
+        s = nxt
         c = ord(s)
         # inverse Kocher's algorithm:
         c -= 13 - (index % 13)
@@ -56,7 +53,7 @@ def protect(ins, outs):
         c += 11 - (index % 11)
         outs.write(chr(c%256))
         index = (index+1) % (13*11);
-        s = nxt
+        nxt = ins.read(1)
     # return last char read
     return s
     
