@@ -349,7 +349,7 @@ def insert_char(crow, ccol, c, cattr):
                 scroll()
                 # this is not the global row which is changed by scroll()
                 crow -= 1
-            if not therow.wrap:
+            if not therow.wrap and crow < height:
                 scroll_down(crow+1)
                 therow.wrap = True    
             c, cattr = therow.buf.pop()
@@ -403,7 +403,7 @@ def delete_char(crow, ccol):
 
 def redraw_row(start, crow):
     while True:
-        therow = apage.row[crow-1]    
+        therow = apage.row[crow-1]  
         backend.set_attr(attr)
         for i in range(start, therow.end): 
             # redrawing changes colour attributes to current foreground (cf. GW)
@@ -441,7 +441,7 @@ def clear_rest_of_line(srow, scol):
     if scol > 1:
         redraw_row(scol-1, srow)
     else:
-        backend.clear_rows((attr>>4) & 0x7, srow, srow)
+        backend.clear_rows(attr, srow, srow)
     therow.end = save_end
 
 def backspace():
@@ -485,7 +485,8 @@ def line_feed():
             crow += 1
         if crow >= scroll_height:
             scroll()
-        scroll_down(row+1)
+        if row < height:    
+            scroll_down(row+1)
     # LF connects lines like word wrap
     apage.row[row-1].wrap = True
     set_pos(row+1, 1)
@@ -641,7 +642,7 @@ def list_keys():
 
 def clear_key_row():
     apage.row[24].clear()
-    backend.clear_rows((attr>>4) & 0x7, 25, 25)
+    backend.clear_rows(attr, 25, 25)
 
 def hide_keys():
     global keys_visible
@@ -663,6 +664,7 @@ def show_keys():
                 write_for_keys(text, kcol+1, 0x70)
             else:
                 write_for_keys(text, kcol+1, 0x07)
+    apage.row[24].end = 80            
 
 def write_for_keys(s, col, cattr):
     # write chars for the keys line - yes, it's different :)
@@ -760,7 +762,8 @@ def put_char(c):
         # wrap line
         therow.wrap = True
         # scroll down
-        scroll_down(row+1)
+        if row < height:
+            scroll_down(row+1)
         row += 1
         col = 1
 
@@ -829,7 +832,7 @@ def clear_view():
         apage.row[r-1].clear()
         apage.row[r-1].wrap = False
     row, col = view_start, 1
-    backend.clear_rows((attr>>4) & 0x7, view_start, height if bottom_row_allowed else scroll_height)
+    backend.clear_rows(attr, view_start, height if bottom_row_allowed else scroll_height)
             
 def scroll(from_line=None): 
     global row, col

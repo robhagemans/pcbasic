@@ -32,6 +32,8 @@ term = sys.stdout
 colours = (0, 4, 2, 6, 1, 5, 3, 7)
 colournames = ('Black','Dark Blue','Dark Green','Dark Cyan','Dark Red','Dark Magenta','Brown','Light Gray',
 'Dark Gray','Blue','Green','Cyan','Red','Magenta','Yellow','White')
+palette_changed = True
+palette = None
 
 # ANSI escape sequences
 # for reference, see:
@@ -125,7 +127,8 @@ def idle():
     
 ######
 
-def clear_rows(bg, start, stop):
+def clear_rows(cattr, start, stop):
+    set_attr(cattr)
     for r in range(start, stop+1):
         term.write(esc_move_cursor % (r, 1))    
         term.write(esc_clear_line)
@@ -133,20 +136,36 @@ def clear_rows(bg, start, stop):
     term.flush()
 
 def redraw():
-   for y in range(console.height):
-        console.redraw_row(0, y+1)
+    if console.cursor:
+        show_cursor(False)
+    # this makes it feel faster
+    clear_rows(console.attr, 1, 25)
+    # redraw every character
+    for crow in range(console.height):
+        therow = console.apage.row[crow]  
+        for i in range(console.width): 
+            set_attr(therow.buf[i][1])
+            putc_at(crow+1, i+1, therow.buf[i][0])
+    if console.cursor:
+        show_cursor(True)        
 
 #####
 
 def set_palette(new_palette=None):
-    global palette
-    palette = new_palette if new_palette else list(range(16)) 
-    redraw()
+    global palette, palette_changed
+    if not new_palette:
+        new_palette = list(range(16)) 
+    if palette != new_palette:
+        palette = new_palette
+        palette_changed = True
+        redraw()     
     
 def set_palette_entry(index, colour):
-    global palette
-    palette[index] = colour
-    redraw()
+    global palette, palette_changed
+    if palette[index] != colour:
+        palette[index] = colour
+        palette_changed = True
+        redraw()
     
 def get_palette_entry(index):
     return palette[index]
@@ -157,7 +176,7 @@ def set_cursor_colour(color):
     term.write(esc_set_cursor_colour % colournames[apply_palette(color)%16])
     term.flush()
     
-def show_cursor(do_show, prev):
+def show_cursor(do_show, prev=None):
     term.write(esc_show_cursor if do_show else esc_hide_cursor)
     term.flush()
 
@@ -172,9 +191,10 @@ def apply_palette(colour):
 
 last_attr = None
 def set_attr(attr):
-    global last_attr
-    if attr == last_attr:
+    global last_attr, palette_changed
+    if attr == last_attr and not palette_changed:
         return
+    palette_changed = False    
     term.write(esc_set_colour % 0) 
     if attr & 0x80:
         # blink
@@ -198,7 +218,7 @@ def scroll(from_line):
     term.write(esc_set_scroll_region % (from_line, console.scroll_height))
     term.write(esc_scroll_up % 1)
     term.write(esc_set_scroll_screen)
-    if console.row > 0:
+    if console.row > 1:
         term.write(esc_move_cursor % (console.row-1, console.col))
     term.flush()
     
@@ -209,7 +229,8 @@ def scroll_down(from_line):
     if console.row < console.height:
         term.write(esc_move_cursor % (console.row+1, console.col))
     term.flush()
-
+    pass
+    
 #######
 
 def term_echo(on=True):
