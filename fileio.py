@@ -92,7 +92,7 @@ class BaseFile(object):
     def __init__(self, fhandle, name='', number=0, mode='A', access='RW', lock=''):
         # width=255 means line wrap
         self.fhandle = fhandle
-        self.name= name
+        self.name = name
         self.number = number
         self.mode = mode.upper()
         self.access = access
@@ -102,7 +102,8 @@ class BaseFile(object):
             files[number] = self
 
     def close(self):
-        self.fhandle.close()
+        self.fhandle.flush()
+        # don't close the handle - for devices
         if self.number != 0:
             del files[self.number]
     
@@ -111,6 +112,15 @@ class BaseFile(object):
         
     def read(self, num):
         return ''.join(self.read_chars(num))
+    
+    def read_line(self):
+        out = ''
+        while True:
+            c = self.read(1)
+            if c == '\r':
+                break
+            out += c
+        return out            
             
     def peek_char(self):
         s = self.fhandle.read(1)
@@ -139,7 +149,7 @@ class BaseFile(object):
         self.fhandle.truncate()
 
 class TextFile(BaseFile):
-    def __init__(self, fhandle, name, number=0, mode='A', access='RW', lock=''):
+    def __init__(self, fhandle, name='', number=0, mode='A', access='RW', lock=''):
         BaseFile.__init__(self, fhandle, name, number, mode, access, lock)
         if self.mode in ('I', 'O', 'R', 'S', 'L'):
             self.fhandle.seek(0)
@@ -153,6 +163,7 @@ class TextFile(BaseFile):
         if self.mode in ('O', 'A', 'S'):
             # write EOF char
             self.fhandle.write('\x1a')
+        self.fhandle.close()
         BaseFile.close(self)
         
     # read line    
@@ -264,11 +275,6 @@ class RandomBase(BaseFile):
         # width=255 means line wrap
         self.field_text_file.width = 255
     
-    def close(self):
-        # don't close the handle in case it's a serial device
-        if self.number != 0:
-            del files[self.number]
-     
     # read line (from field buffer)    
     def read_line(self):
         # FIELD overflow happens if last byte in record is actually read
