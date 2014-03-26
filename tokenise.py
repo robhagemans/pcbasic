@@ -305,6 +305,12 @@ def tokenise_line(line):
             number_is_line = False
             expect_number = True
             outs.write(c)
+        elif ord(c) < 32:
+            # replace all other nonprinting chars by spaces
+            ins.read(1)
+            number_is_line = False
+            expect_number = False
+            outs.write(' ')    
         else:
             ins.read(1)
             number_is_line = False
