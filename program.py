@@ -112,7 +112,7 @@ def clear_all(close_files=False):
     events.reset_events()
 
 # NEW    
-def clear_program():
+def new():
     erase_program()    
     # reset all stacks   
     init_program()
@@ -254,7 +254,7 @@ def find_pos_line_dict(fromline, toline):
         startpos = afterpos
     return startpos, afterpos, deleteable, beyond
 
-def delete_lines(fromline, toline):
+def delete(fromline, toline):
     fromline = fromline if fromline != None else min(line_numbers)
     toline = toline if toline != None else 65535 
     startpos, afterpos, deleteable, beyond = find_pos_line_dict(fromline, toline)
@@ -273,7 +273,7 @@ def delete_lines(fromline, toline):
     # clear variables (storing a line does that)
     clear_all()
 
-def edit_line(from_line, bytepos=None):
+def edit(from_line, bytepos=None):
     if protected:
         console.write(str(from_line)+'\r')
         raise error.RunError(5)
@@ -384,7 +384,7 @@ def load_ascii_file(g, first_char=''):
 def chain(action, g, jumpnum, common_all, delete_lines):    
     if delete_lines:
         # delete lines from existing code before merge (without MERGE, this is pointless)
-        delete_lines(*delete_lines)
+        delete(*delete_lines)
     if common_all:
         common, common_arrays, common_functions = copy(var.variables), copy(var.arrays), copy(var.functions)
     else:

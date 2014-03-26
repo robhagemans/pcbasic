@@ -49,7 +49,7 @@ def exec_delete(ins):
     from_line, to_line = parse_line_range(ins)
     util.require(ins, util.end_statement)
     # throws back to direct mode
-    program.delete_lines(from_line, to_line)
+    program.delete(from_line, to_line)
 
 def exec_edit(ins):
     if util.skip_white(ins) in util.end_statement:
@@ -60,7 +60,7 @@ def exec_edit(ins):
         raise error.RunError(8)
     util.require(ins, util.end_statement, err=5)
     # print the line, position cursor, back to direct mode. suppress prompt.
-    program.edit_line(from_line)
+    program.edit(from_line)
     
 def exec_auto(ins):
     linenum = parse_jumpnum_or_dot(ins, allow_empty=True)
@@ -151,7 +151,7 @@ def exec_merge(ins):
 def exec_new(ins):
     program.tron = False
     # deletes the program currently in memory and clears all variables.
-    program.clear_program()
+    program.new()
 
 def exec_renum(ins):
     new, old, step = None, None, None

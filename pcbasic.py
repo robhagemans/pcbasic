@@ -54,7 +54,7 @@ def main():
         # choose the screen backends and other devices 
         prepare_devices(args)
         # initialise program memory
-        program.clear_program()
+        program.new()
         # print greeting
         if not args.run and not args.cmd and not args.conv:
             if sys.stdin.isatty():

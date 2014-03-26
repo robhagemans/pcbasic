@@ -136,7 +136,7 @@ class RunError(Error):
                 console.start_line()
                 console.write_line("Ok\xff")
                 try:    
-                    textpos = program.edit_line(self.erl, program.bytecode.tell())
+                    textpos = program.edit(self.erl, program.bytecode.tell())
                 except RunError as e:
                     handle_break(e)    
     
