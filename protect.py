@@ -36,7 +36,8 @@ def unprotect(ins, outs):
         outs.write(chr(c%256))
         index = (index+1) % (13*11);
         s = nxt
-    return True
+    # return last char written    
+    return chr(c%256)
     
 """ Encrypt a byte stream read from the GWBASIC tokenised format """
 def protect(ins, outs):    
@@ -56,6 +57,7 @@ def protect(ins, outs):
         outs.write(chr(c%256))
         index = (index+1) % (13*11);
         s = nxt
-    return True
+    # return last char read
+    return s
     
 
