@@ -15,6 +15,7 @@ import os
 
 import automode
 import console
+import debug
 import deviceio
 import draw_and_play
 import error
@@ -38,8 +39,6 @@ from stat_print import *
 # graphics
 from stat_graph import *
 
-# debugging
-from debug import *
 
 # parses one statement at the current stream pointer in current_codestream
 # return value False: stream ends
@@ -184,7 +183,7 @@ def parse_statement():
             elif c == '\x9D':    exec_window(ins)
             elif c == '\x9F':    exec_palette(ins)
             elif c == '\xA0':    exec_lcopy(ins)
-            elif c == '\xA4':    exec_DEBUG(ins)
+            elif c == '\xA4':    exec_debug(ins)
             elif c == '\xA5':    exec_pcopy(ins)
             elif c == '\xA7':    exec_lock(ins)
             elif c == '\xA8':    exec_unlock(ins)
@@ -234,6 +233,16 @@ def exec_lcopy(ins):
 
 # MOTOR does nothing
 exec_motor = exec_lcopy
+
+def exec_debug(ins):
+    # this is not a GW-BASIC behaviour, but helps debugging.
+    # this is parsed like a REM by the tokeniser.
+    # rest of the line is considered to be a python statement
+    d = util.skip_white(ins)
+    debug_cmd = ''
+    while util.peek(ins) not in util.end_line:
+        debug_cmd += ins.read(1)
+    debug.debug_exec(debug_cmd)
 
 ##########################################################
 # statements that require further qualification

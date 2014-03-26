@@ -27,19 +27,11 @@ from console import debug_print
 debug_tron = False
 watch_list = []
 
-def exec_DEBUG(ins):
-    # this is not a GW-BASIC behaviour, but helps debugging.
-    # this is parsed like a REM by the tokeniser.
-    # rest of the line is considered to be a python statement
-    d = util.skip_white(ins)
-    debug = ''
-    while util.peek(ins) not in util.end_line:
-        d = ins.read(1)
-        debug += d
+def debug_exec(debug_cmd):
     buf = cStringIO.StringIO()
     sys.stdout = buf
     try:
-        exec(debug)
+        exec(debug_cmd)
     except Exception as e:
         debug_handle_exc(e)
         traceback.print_tb(sys.exc_info()[2])
