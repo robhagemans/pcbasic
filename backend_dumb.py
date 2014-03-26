@@ -134,7 +134,7 @@ def idle():
 def check_events():
     check_keys()
     
-def clear_rows(bg, start, stop):
+def clear_rows(attr, start, stop):
     pass
 
 def init_screen_mode(mode, new_font_height):

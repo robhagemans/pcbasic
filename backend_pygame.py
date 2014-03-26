@@ -311,7 +311,8 @@ def set_palette_entry(index, colour):
     screen.set_palette_at(index,gamecolor)
     under_cursor.set_palette_at(index,gamecolor)
     
-def clear_rows(bg, start, stop):
+def clear_rows(cattr, start, stop):
+    bg = (cattr>>4) & 0x7
     global screen_changed
     scroll_area = pygame.Rect(0, (start-1)*font_height, size[0], (stop-start+1)*font_height) 
     console.apage.surface0.fill(bg, scroll_area)
