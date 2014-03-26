@@ -82,36 +82,12 @@ def create_device(name, arg, default=None):
         for a in arg:
             addr, val = a.split(':', 1)
             if addr.upper() == 'CUPS':
-                device = DeviceFile(name, PrinterStream(val), 'O')      
+                device = BaseFile(PrinterStream(val), name, 'O')      
             elif addr.upper() == 'FILE':
-                device = DeviceFile(name, oslayer.safe_open(val, 'O', 'W'), 'O')
+                device = BaseFile(oslayer.safe_open(val, 'R', 'RW'), name, 'R')
             elif addr.upper() == 'PORT':
-                device = SerialFile(name, oslayer.safe_open(val, 'R', 'RW'), 'R')    
+                device = SerialFile(oslayer.safe_open(val, 'R', 'RW'), name, 'R')    
     return device
-
-
-# device & file interface:
-#   number
-#   access
-#   mode
-#   col
-#   init()
-#   close()
-#   loc()
-#   lof()
-
-# input:
-#   read_line()
-#   read_chars()
-#   read()
-#   peek_char()
-#   eof()
-
-# output:
-#   write()
-#   flush()
-#   set_width()
-
 
 input_replace = { 
     '\x00\x47': '\xFF\x0B', '\x00\x48': '\xFF\x1E', '\x00\x49': '\xFE', 
@@ -208,11 +184,6 @@ class ConsoleFile(BaseFile):
         # blocking read
         return (console.wait_char() == '\x1a')
 
-    def close(self):
-        # don't write EOF \x1A to SCRN:
-        if self.number != 0:
-            del fileio.files[self.number]
-    
 #    @property
 #    def width(self):
 #        return console.width
@@ -230,26 +201,8 @@ class PrinterStream(StringIO.StringIO):
     # flush buffer to LPR printer    
     def flush(self):
         oslayer.line_print(self.getvalue(), self.printer_name)
-#        self.truncate(0)
-#        self.seek(0)
 
 
-# essentially just a text file that doesn't close if asked to
-class DeviceFile(TextFile):
-    def __init__(self, name, fhandle, mode):
-        if mode == 'I':
-            access = 'W'
-        else:
-            access = 'R'
-        TextFile.__init__(self, fhandle, name, 0, mode, access)
-        
-    def close(self):
-        self.fhandle.flush()
-        # don't close the file handle as we may have copies
-        if self.number != 0:
-            del fileio.files[self.number]
-
-    
 class SerialFile(RandomBase):
     # communications buffer overflow
     overflow_error = 69
