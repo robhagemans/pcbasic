@@ -329,7 +329,6 @@ def exec_strig(ins):
         num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
         if num not in (0,2,4,6):
             raise error.RunError(5)
-        # TODO: are they enabled if STRIG ON has not been called?
         if events.strig_handlers[num//2].command(util.skip_white(ins)):
             ins.read(1)
         else:    
