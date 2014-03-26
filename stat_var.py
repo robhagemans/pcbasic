@@ -255,7 +255,7 @@ def exec_input(ins):
             console.write(prompt) 
             line = console.wait_screenline(write_endl=newline)
             varlist = [ v[:] for v in readvar ]
-            varlist = representation.input_vars(varlist, fileio.TextFile(StringIO(line), mode='I'))
+            varlist = representation.input_vars(varlist, fileio.BaseFile(StringIO(line), mode='I'))
             if not varlist:
                 console.write_line('?Redo from start')  # ... good old Redo!
             else:

@@ -89,7 +89,7 @@ class ByteStream(object):
 
 
 class BaseFile(object):
-    def __init__(self, fhandle, name, number, mode, access, lock):
+    def __init__(self, fhandle, name='', number=0, mode='A', access='RW', lock=''):
         # width=255 means line wrap
         self.fhandle = fhandle
         self.name= name
