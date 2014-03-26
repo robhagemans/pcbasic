@@ -46,10 +46,10 @@ def init_program():
     gosub_return = []
     for_next_stack = []
     while_wend_stack = []
-    # reset stop/cont
-    stop = None
     # reset program pointer
     bytecode.seek(0)
+    # reset stop/cont
+    stop = None
     # reset data reader
     restore()
 
@@ -305,10 +305,11 @@ def renum(new_line, start_line, step):
         bytecode.read(3)
         bytecode.write(str(vartypes.value_to_uint(old_to_new[old_line])))
     # rebuild the line number dictionary    
+    new_lines = {}
     for old_line in old_to_new:
-        line_numbers[old_line] = old_to_new[old_line]   
-    # reset all stacks    
-    init_program() 
+        new_lines[old_to_new[old_line]] = line_numbers[old_line]          
+        del line_numbers[old_line]
+    line_numbers.update(new_lines)    
     # write the indirect line numbers
     bytecode.seek(0)
     while util.skip_to_read(bytecode, ('\x0e',)) == '\x0e':
@@ -325,7 +326,21 @@ def renum(new_line, start_line, step):
                 console.write_line('Undefined line ' + str(jumpnum) + ' in ' + str(linum))
         bytecode.seek(-2, 1)
         bytecode.write(str(vartypes.value_to_uint(newjump)))
-
+    # stop running if we were
+    set_runmode(False)
+    # reset loop stacks
+    gosub_return = []
+    for_next_stack = []
+    while_wend_stack = []
+    # renumber error handler
+    if error.on_error:
+        error.on_error = old_to_new[error.on_error]
+    # renumber event traps
+    for handler in events.all_handlers:
+        if handler.gosub:
+            handler.gosub = old_to_new[handler.gosub]    
+        
+    
 def load(g):
     global protected
     erase_program()
