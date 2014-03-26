@@ -37,8 +37,9 @@ from stat_var import *
 from stat_print import *
 # graphics
 from stat_graph import *
+
 # debugging
-from stat_debug import *
+from debug import *
 
 # parses one statement at the current stream pointer in current_codestream
 # return value False: stream ends

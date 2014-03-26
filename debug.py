@@ -1,5 +1,5 @@
 #
-# PC-BASIC 3.23 - stat_debug.py
+# PC-BASIC 3.23 - debug.py
 #
 # DEBUG statement and utilities
 # 
