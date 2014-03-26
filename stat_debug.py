@@ -41,7 +41,7 @@ def exec_DEBUG(ins):
     try:
         exec(debug)
     except Exception as e:
-        sys.stderr.write(repr(type(e))+'\n')    
+        debug_handle_exc(e)
         traceback.print_tb(sys.exc_info()[2])
     sys.stdout = sys.__stdout__
     debug_print(buf.getvalue())
@@ -63,7 +63,10 @@ def debug_step(linum):
             else:
                 debug_print(st+'\n')        
         except Exception as e:
-            debug_print(repr(type(e))+'\n')
+            debug_handle_exc(e)
+
+def debug_handle_exc(e):
+    debug_print(str(type(e))+' '+str(e)+'\n')    
         
 # DEBUG user utilities
 def dump_program():
@@ -72,7 +75,7 @@ def dump_program():
 def dump_vars():
     debug_print(repr(var.variables)+'\n')    
     
-def dump_screen():
+def show_screen():
     debug_print('  +' + '-'*console.width+'+\n')
     i = 0
     for row in console.apage.row:
@@ -83,10 +86,18 @@ def dump_screen():
 
 def show_program():
     code = program.bytecode.getvalue()
-    last = 0
+    offset_val, p = 0, 0
     for key in sorted(program.line_numbers.keys())[1:]:
-        debug_print(code[last:last+3].encode('hex') +' '+ code[last+3:last+5].encode('hex') +' '+ code[last+5:program.line_numbers[key]].encode('hex')+'\n')
-        last = program.line_numbers[key]
+        offset, linum = code[p+1:p+3], code[p+3:p+5]
+        last_offset = offset_val
+        offset_val = vartypes.uint_to_value(bytearray(offset)) - program.program_memory_start
+        linum_val  = vartypes.uint_to_value(bytearray(linum))
+        debug_print(    (code[p:p+1].encode('hex') + ' ' +
+                        offset.encode('hex') + ' (+%03d) ' +  
+                        code[p+3:p+5].encode('hex') + ' [%05d] ' + 
+                        code[p+5:program.line_numbers[key]].encode('hex') + '\n')
+                    % (offset_val - last_offset, linum_val) )
+        p = program.line_numbers[key]
         
 def trace(on=True):
     global debug_tron
