@@ -97,10 +97,6 @@ class BaseFile(object):
         self.mode = mode.upper()
         self.access = access
         self.lock = lock
-        if self.mode in ('I', 'O', 'R', 'S', 'L'):
-            self.fhandle.seek(0)
-        else:
-            self.fhandle.seek(0, 2)
         self.lock_list = set()    
         if number != 0:
             files[number] = self
@@ -145,6 +141,10 @@ class BaseFile(object):
 class TextFile(BaseFile):
     def __init__(self, fhandle, name, number=0, mode='A', access='RW', lock=''):
         BaseFile.__init__(self, fhandle, name, number, mode, access, lock)
+        if self.mode in ('I', 'O', 'R', 'S', 'L'):
+            self.fhandle.seek(0)
+        else:
+            self.fhandle.seek(0, 2)
         # width=255 means line wrap
         self.width = 255
         self.col = 1
@@ -245,6 +245,10 @@ class RandomBase(BaseFile):
     def __init__(self, fhandle, name, number, mode, access, lock, reclen=128):
         BaseFile.__init__(self, fhandle, name, number, mode, access, lock)
         self.reclen = reclen
+        if self.mode in ('I', 'O', 'R', 'S', 'L'):
+            self.fhandle.seek(0)
+        else:
+            self.fhandle.seek(0, 2)
         # replace with empty field if already exists    
         try:
             self.field = fields[self.number]
