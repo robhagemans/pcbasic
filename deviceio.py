@@ -84,9 +84,9 @@ def create_device(name, arg, default=None):
             if addr.upper() == 'CUPS':
                 device = DeviceFile(name, PrinterStream(val), 'O')      
             elif addr.upper() == 'FILE':
-                device = DeviceFile(name, oslayer.safe_open(unixpath, 'O', 'W'), 'O')
+                device = DeviceFile(name, oslayer.safe_open(val, 'O', 'W'), 'O')
             elif addr.upper() == 'PORT':
-                device = SerialFile(name, oslayer.safe_open(unixpath, 'R', 'RW'), 'R')    
+                device = SerialFile(name, oslayer.safe_open(val, 'R', 'RW'), 'R')    
     return device
 
 
@@ -230,8 +230,8 @@ class PrinterStream(StringIO.StringIO):
     # flush buffer to LPR printer    
     def flush(self):
         oslayer.line_print(self.getvalue(), self.printer_name)
-        self.truncate(0)
-        self.seek(0)
+#        self.truncate(0)
+#        self.seek(0)
 
 
 # essentially just a text file that doesn't close if asked to
