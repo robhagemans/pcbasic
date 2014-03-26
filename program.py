@@ -58,7 +58,7 @@ def erase_program():
     bytecode.truncate(0)
     bytecode.write('\x00\x00\x00\x1A')
     protected = False
-    line_numbers = {}
+    line_numbers = { 65536: 0 }
     current_statement = 0
     last_stored = None
 
@@ -211,6 +211,13 @@ def read_entry():
 
 # build list of line numbers and positions
 def preparse():
+    rebuild_line_dict()
+    # reset all stacks    
+    init_program() 
+    # clear all variables
+    clear_all()
+
+def rebuild_line_dict():
     global line_numbers
     # preparse to build line number dictionary
     line_numbers = {}
@@ -235,8 +242,6 @@ def preparse():
         last = bytecode.tell() - 5   
         line_numbers[scanline] = last  
         util.skip_to_read(bytecode, util.end_line)
-    init_program()
-    clear_all()
 
 def check_number_start(linebuf):
     # get the new line number
@@ -261,25 +266,31 @@ def store_line(linebuf):
     empty = (util.skip_white_read(linebuf) in util.end_line)
     if empty and not scanline in line_numbers:
         raise error.RunError(8)
-#    pos, afterpos, offset = find_pos_dict(scanline)
-    pos, afterpos, offset = find_pos_offsets(scanline)
+    pos, afterpos = find_pos_line_dict(scanline)
     # read the remainder of the program into a buffer to be pasted back after the write
     bytecode.seek(afterpos)
     rest = bytecode.read()
     # insert    
     bytecode.seek(pos)
     # write the line buffer to the program buffer
+    length = 0
     if not empty:
         # set offsets
         linebuf.seek(3) # pass \x00\xC0\xDE 
-        bytecode.write( '\x00' + str(vartypes.value_to_uint(offset+ len(linebuf.getvalue()))) + linebuf.read())
+        length = len(linebuf.getvalue())
+        bytecode.write( '\x00' + str(vartypes.value_to_uint(program_memory_start + pos + length)) + linebuf.read())
     # write back the remainder of the program
     truncate_program(rest)
-    preparse()
+    # update all next offsets by shifting them by the length of the added line
+    update_line_dict(pos, afterpos, length, scanline)
+    # clear all program stacks
+    init_program()
+    # clear variables (storing a line does that)
+    clear_all()
     last_stored = scanline
 
 # find stream position using line number dictionary
-def find_pos_dict(scanline):
+def find_pos_line_dict(scanline):
     # find the lowest line after scanline
     after, afterpos = 65536, 0
     for num in line_numbers:
@@ -287,36 +298,33 @@ def find_pos_dict(scanline):
             after = num
             afterpos = line_numbers[after]        
             # if not found, afterpos will be the number stored at 65536, ie the end of program
-    # replace or insert?
     try:
         # line number exists, replace line
         pos = line_numbers[scanline]
     except KeyError:
         pos = afterpos
-    return pos, afterpos, 0
+    return pos, afterpos
 
-# find stream position using stored offset values
-def find_pos_offsets(scanline):
-    bytecode.seek(1)
-    next_addr = program_memory_start
-    pos, afterpos = 0, 0
+def update_line_dict(pos, afterpos, length, scanline=None):
+    # subtract length of line we replaced
+    length -= afterpos - pos
+    addr = program_memory_start + afterpos
+    bytecode.seek(afterpos + length + 1)  # pass \x00
     while True:
-        addr = next_addr
-        start = bytecode.tell()-1
         next_addr = bytearray(bytecode.read(2))
-        linenum = -1
-        if len(next_addr) == 2 and next_addr != '\x00\x00':
-            next_addr = vartypes.uint_to_value(next_addr)
-            linenum = vartypes.uint_to_value(bytearray(bytecode.read(2)))
-        if linenum == -1 or linenum > scanline:
-            # end of program; leaves us at 00 _00_ 00 1A
-            return start, start, addr
-        if linenum < scanline:
-            # jump to next line
-            bytecode.read(next_addr-addr-4)
-        else:
-            # overwrite        
-            return start, start + next_addr - addr, next_addr
+        if len(next_addr) < 2 or next_addr == '\x00\x00':
+            break
+        next_addr = vartypes.uint_to_value(next_addr)
+        bytecode.seek(-2, 1)
+        bytecode.write(str(vartypes.value_to_uint(next_addr + length)))
+        bytecode.read(next_addr - addr - 2)
+        addr = next_addr
+    # update line number dict
+    if length and scanline:
+        line_numbers[scanline] = pos
+    for key in line_numbers:
+        if key > scanline:
+            line_numbers[key] += length
     
 def delete_lines(fromline, toline):
     keys = sorted(line_numbers.keys())
@@ -349,7 +357,12 @@ def delete_lines(fromline, toline):
     rest = bytecode.read()
     bytecode.seek(startpos)
     truncate_program(rest)
-    preparse()
+    # update line number dict
+    update_line_dict(startpos, afterpos, 0)
+    # clear all program stacks
+    init_program()
+    # clear variables (storing a line does that)
+    clear_all()
 
 def edit_line(from_line, bytepos=None):
     if protected:
@@ -392,7 +405,9 @@ def renum(new_line, start_line, step):
         bytecode.read(3)
         bytecode.write(str(vartypes.value_to_uint(old_to_new[old_line])))
     # rebuild the line number dictionary    
-    preparse()    
+    preparse()
+#    for old_line in old_to_new:
+#        line_numbers[old_line] = old_to_new[old_line]   
     # write the indirect line numbers
     bytecode.seek(0)
     while util.skip_to_read(bytecode, ('\x0e',)) == '\x0e':
