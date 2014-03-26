@@ -12,12 +12,16 @@
 from functools import partial
 
 import error
+import fp
 import vartypes
 import util
+import var
 import expressions
 import program
 import run
 import console
+import events
+import draw_and_play
 
 # OS statements
 from stat_os import *
@@ -33,10 +37,6 @@ from stat_print import *
 from stat_file import *
 # graphics
 from stat_graph import *
-# sound
-from stat_sound import *
-# machine access
-from stat_machine import *
 # debugging
 from stat_debug import *
 
@@ -410,3 +410,109 @@ def exec_on_com(ins):
     util.range_check(1, 2, num)
     events.com_handlers[keynum-1].gosub = jumpnum
 
+##########################################################
+# sound
+
+def exec_beep(ins):
+    console.sound.beep() 
+    # if a syntax error happens, we still beeped.
+    util.require(ins, util.end_statement)
+    if console.sound.music_foreground:
+        console.sound.wait_music(wait_last=False)
+    
+def exec_sound(ins):
+    freq = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    util.require_read(ins, (',',))
+    dur = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
+    if fp.Single.from_int(-65535).gt(dur) or dur.gt(fp.Single.from_int(65535)):
+        raise error.RunError(5)
+    util.require(ins, util.end_statement)
+    if dur.is_zero():
+        console.sound.stop_all_sound()
+        return
+    util.range_check(37, 32767, freq) # 32767 is pause
+    one_over_44 = fp.Single.from_bytes(bytearray('\x8c\x2e\x3a\x7b')) # 1/44 = 0.02272727248
+    dur_sec = dur.to_value()/18.2
+    if one_over_44.gt(dur):
+        # play indefinitely in background
+        console.sound.play_sound(freq, dur_sec, loop=True)
+    else:
+        console.sound.play_sound(freq, dur_sec)
+        if console.sound.music_foreground:
+            console.sound.wait_music(wait_last=False)
+    
+def exec_play(ins):
+    if events.play_handler.command(util.skip_white(ins)):
+        ins.read(1)
+        util.require(ins, util.end_statement)
+    else:    
+        # retrieve Music Macro Language string
+        mml = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+        util.require(ins, util.end_expression)
+        draw_and_play.play_parse_mml(mml)
+           
+##########################################################
+# machine emulation
+         
+# do-nothing POKE        
+def exec_poke(ins):
+    addr = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=0xffff) 
+    util.require_read(ins, (',',))
+    val = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    util.range_check(0, 255, val)
+    util.require(ins, util.end_statement)
+    
+# DEF SEG    
+def exec_def_seg(ins):
+    # &hb800: text screen buffer; &h13d: data segment
+    if util.skip_white_read_if(ins, ('\xE7',)): #=
+        var.segment = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=0xffff)
+    else:
+        var.segment = var.data_segment    
+    util.require(ins, util.end_statement)
+
+# do-nothing DEF USR    
+def exec_def_usr(ins):
+    if util.peek(ins) in ('\x11','\x12','\x13','\x14','\x15','\x16','\x17','\x18','\x19','\x1a'): # digits 0--9
+        ins.read(1)
+    util.require_read(ins, ('\xE7',))     
+    vartypes.pass_int_keep(expressions.parse_expression(ins), maxint=0xffff)
+    util.require(ins, util.end_statement)
+        
+# bload: not implemented        
+def exec_bload(ins):
+    raise error.RunError(73)    
+
+# bsave: not implemented        
+def exec_bsave(ins):
+    raise error.RunError(73)    
+        
+# call: not implemented        
+def exec_call(ins):
+    raise error.RunError(73)    
+
+# do-nothing out       
+def exec_out(ins):
+    addr = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=0xffff)
+    util.require_read(ins, (',',))
+    val = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    util.range_check(0, 255, val)
+    util.require(ins, util.end_statement)
+
+def exec_wait(ins):
+    addr = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=0xffff)
+    util.require_read(ins, (',',))
+    ander = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    util.range_check(0, 255, ander)
+    xorer = 0
+    if util.skip_white_read_if(ins, (',',)):
+        xorer = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    util.range_check(0, 255, xorer)
+    util.require(ins, util.end_statement)
+    store_suspend = events.suspend_all_events
+    events.suspend_all_events = True
+    while (((console.inp_key if addr == 0x60 else 0) ^ xorer) & ander) == 0:
+        console.idle()
+        console.check_events()
+    events.suspend_all_events = store_suspend     
+        
