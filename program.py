@@ -145,28 +145,28 @@ def preparse():
 def rebuild_line_dict():
     global line_numbers
     # preparse to build line number dictionary
-    line_numbers = {}
+    line_numbers, offsets = {}, []
     bytecode.seek(1)
-    last = 1
+    scanline, scanpos, last = 0, 0, 0
     while True:
         scanline = util.parse_line_number(bytecode)
         if scanline == -1:
-            # program ends
-            if util.peek(bytecode) == '':
-                # truncated file, no \00\00\00\nn (\nn can be \1a or something else)
-                # fix that
-                bytecode.write('\x00\x00\x00\x1a')
-                # try again from cycle
-                bytecode.seek(last + 5)
-                util.skip_to_read(bytecode, util.end_line)
-                util.parse_line_number(bytecode)
+            scanline = 65536
             # if parse_line_number returns -1, it leaves the stream pointer here: 00 _00_ 00 1A 
-            line_numbers[65536] = bytecode.tell() - 1  
-            break
-        # -5 because we're eg at x in 00 C0 DE 00 0A _XX_ and we need to be on the line-ending 00: _00_ C0 DE 00 0A XX
-        last = bytecode.tell() - 5   
-        line_numbers[scanline] = last  
+            line_numbers[scanline] = scanpos
+            break 
+        line_numbers[scanline] = scanpos  
         util.skip_to_read(bytecode, util.end_line)
+        last = scanpos
+        scanpos = bytecode.tell() - 1
+        offsets.append(scanpos)
+    # rebuild offsets
+    bytecode.seek(1)
+    last = 0
+    for pos in offsets:
+        bytecode.write(str(vartypes.value_to_uint(program_memory_start + pos)))
+        bytecode.read(pos - last - 2)
+        last = pos
 
 # find stream position using line number dictionary
 def find_pos_line_dict(scanline):
