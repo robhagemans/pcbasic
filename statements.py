@@ -13,22 +13,21 @@ from functools import partial
 from cStringIO import StringIO
 import os
 
+import automode
+import console
+import deviceio
+import draw_and_play
 import error
-import fp
-import vartypes
-import util
-import var
+import events
 import expressions
+import fileio
+import fp
+import oslayer
 import program
 import run
-import console
-import events
-import draw_and_play
-import oslayer
-import fileio
-import automode
-import deviceio
-import run
+import util
+import var
+import vartypes
 
 # program flow
 from stat_flow import *
@@ -36,8 +35,6 @@ from stat_flow import *
 from stat_var import *
 # printing and screen and keys
 from stat_print import *
-# file i/o
-from stat_file import *
 # graphics
 from stat_graph import *
 # debugging
@@ -749,4 +746,167 @@ def exec_renum(ins):
     if step != None and step < 1: 
         raise error.RunError(5)
     program.renum(new, old, step)
+    
+
+##########################################################
+# file
+
+# close all files
+def exec_reset(ins):
+    fileio.close_all()
+    util.require(ins, util.end_statement)
+
+def parse_read_write(ins):
+    d = util.skip_white(ins)
+    if d == '\xB7': # WRITE
+        ins.read(1)
+        access = 'W'        
+    elif d == '\x87': # READ
+        ins.read(1)
+        access = 'RW' if util.skip_white_read_if(ins, ('\xB7',)) else 'R' # WRITE
+    return access
+
+long_modes = {'\x85': 'I', 'OUTPUT':'O', 'RANDOM':'R', 'APPEND':'A'}  # \x85 is INPUT
+default_access_modes = { 'I':'R', 'O':'W', 'A':'RW', 'R':'RW' }
+
+def exec_open(ins):
+    first_expr = str(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+    mode, access, lock, reclen = 'R', 'RW', '', 128
+    if util.skip_white_read_if(ins, (',',)):
+        # first syntax
+        try:
+            mode = first_expr[0].upper()
+            access = default_access_modes[mode]    
+        except (IndexError, KeyError):
+            # Bad file mode
+            raise error.RunError(54)
+        util.require_read(ins, (',',))
+        number = expressions.parse_file_number_opthash(ins)
+        util.require_read(ins, (',',))
+        name = str(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+        if util.skip_white_read_if(ins, (',',)):
+            reclen = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    else:
+        # second syntax
+        name = first_expr
+        # FOR clause
+        if util.skip_white_read_if(ins, ('\x82',)): # FOR
+            c = util.skip_white_read(ins)
+            # read word
+            word = ''
+            while c not in util.whitespace:
+                word += c
+                c = ins.read(1).upper()
+            try:
+                mode = long_modes[word]
+            except KeyError:
+                raise error.RunError(2)
+        try:
+            access = default_access_modes[mode]    
+        except (KeyError):
+            # Bad file mode
+            raise error.RunError(54)        
+        # ACCESS clause
+        if util.skip_white_read_if(ins, ('ACCESS',)):
+            d = util.skip_white(ins)
+            access = parse_read_write(ins)
+        # LOCK clause
+        if util.skip_white_read_if(ins, ('\xFE\xA7',)): # LOCK
+            d = util.skip_white(ins)
+            lock = parse_read_write(ins)
+        elif util.skip_white_read_if(ins, ('SHARED',)):
+            lock = 'S'  
+        # AS file number clause       
+        if not util.skip_white_read_if(ins, ('AS',)):
+            raise error.RunError(2)
+        number = expressions.parse_file_number_opthash(ins)
+        # LEN clause
+        if util.skip_white_read_if(ins, ('\xFF\x92',)):  # LEN
+            util.require_read(ins, '\xE7') # =
+            reclen = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    # mode and access must match if not a RANDOM file
+    # If FOR APPEND ACCESS WRITE is specified, raises PATH/FILE ACCESS ERROR
+    # If FOR and ACCESS mismatch in other ways, raises SYNTAX ERROR.
+    if mode == 'A' and access == 'W':
+            raise error.RunError(75)
+    elif mode != 'R' and access and access != default_access_modes[mode]:
+        raise error.RunError(2)        
+    util.range_check(1, 128, reclen)        
+    fileio.open_file_or_device(number, name, mode, access, lock, reclen) 
+    util.require(ins, util.end_statement)
+                
+def exec_close(ins):
+    # allow empty CLOSE
+    if util.skip_white(ins) in util.end_statement:
+        return
+    while True:
+        number = expressions.parse_file_number_opthash(ins)
+        try:    
+            fileio.files[number].close()
+        except KeyError:
+            pass    
+        if not util.skip_white_read_if(ins, (',',)):
+            break
+    util.require(ins, util.end_statement)
+            
+def exec_field(ins):
+    the_file = fileio.get_file(expressions.parse_file_number_opthash(ins), 'R')
+    if util.skip_white_read_if(ins, (',',)):
+        field = the_file.field 
+        offset = 0    
+        while True:
+            width = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+            util.range_check(0, 255, width)
+            util.require_read(ins, ('AS',), err=5)
+            name = util.get_var_name(ins)
+            var.set_field_var(field, name, offset, width)         
+            offset += width
+            if not util.skip_white_read_if(ins, (',',)):
+                break
+    util.require(ins, util.end_statement)
+
+def parse_get_or_put_file(ins):
+    the_file = fileio.get_file(expressions.parse_file_number_opthash(ins), 'R')
+    # for COM files
+    num_bytes = the_file.reclen
+    if util.skip_white_read_if(ins, (',',)):
+        pos = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)).round_to_int())
+        util.range_check_err(1, 2**25, pos, err=63) # not 2^32-1 as the manual boasts! pos-1 needs to fit in a single-prec mantissa
+        if not isinstance(the_file, deviceio.SerialFile):
+            the_file.set_pos(pos)    
+        else:
+            num_bytes = pos    
+    return the_file        
+    
+def exec_put_file(ins):
+    parse_get_or_put_file(ins).write_field(num_bytes)
+    util.require(ins, util.end_statement)
+
+def exec_get_file(ins):
+    parse_get_or_put_file(ins).read_field(num_bytes)
+    util.require(ins, util.end_statement)
+    
+def exec_lock_or_unlock(ins, action):
+    thefile = fileio.get_file(expressions.parse_file_number_opthash(ins))
+    if deviceio.is_device(thefile):
+        # permission denied
+        raise error.RunError(70)
+    lock_start_rec = 1
+    if util.skip_white_read_if(ins, (',',)):
+        lock_start_rec = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
+    lock_stop_rec = lock_start_rec
+    if util.skip_white_read_if(ins, ('\xCC',)): # TO
+        lock_stop_rec = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
+    if lock_start_rec < 1 or lock_start_rec > 2**25-2 or lock_stop_rec < 1 or lock_stop_rec > 2**25-2:   
+        raise error.RunError(63)
+    action(thefile.number, lock_start_rec, lock_stop_rec)
+    util.require(ins, util.end_statement)
+
+exec_lock = partial(exec_lock_or_unlock, action = fileio.lock_records)
+exec_unlock = partial(exec_lock_or_unlock, action = fileio.unlock_records)
+    
+# ioctl: not implemented
+def exec_ioctl(ins):
+    fileio.get_file(expressions.parse_file_number_opthash(ins))
+    raise error.RunError(5)   
     
