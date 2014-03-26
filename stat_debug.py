@@ -98,6 +98,9 @@ def show_program():
                         code[p+5:program.line_numbers[key]].encode('hex') + '\n')
                     % (offset_val - last_offset, linum_val) )
         p = program.line_numbers[key]
+    debug_print(code[p:p+1].encode('hex') + ' ' +
+                code[p+1:p+3].encode('hex') + ' (ENDS) ' +  
+                code[p+3:p+5].encode('hex') + ' ' + code[p+5:].encode('hex') + '\n')   
         
 def trace(on=True):
     global debug_tron
