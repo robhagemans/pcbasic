@@ -184,16 +184,17 @@ def detokenise_keyword(bytes, output):
 # Tokenise functions
 
 # readln, but break on \r rather than \n. ignore single starting LF to account for CRLF *without seeking*.
-# include the \r at the end of the line
+# include the \r at the end of the line. break at \x1a EOF. Do not include \x1a.
 def read_program_line(ins):
-    out = ''
     d = ins.read(1)
-    if d != '\n':
-        out += d
-    while d not in ('', '\x1a', '\r'):
+    eof = d in ('\x1a', '')
+    out = d if (not eof and d != '\n') else ''    
+    while d != '\r' and not eof:
         d = ins.read(1)
+        eof = d in ('\x1a', '')
+        if eof:
+            break
         out += d       
-    eof = d in ('', '\x1a')       
     return out, eof
     
 def tokenise_line(line):      
@@ -201,9 +202,8 @@ def tokenise_line(line):
     outs = StringIO()          
     # skip whitespace at start of line
     d = util.skip(ins, tokenise_whitespace)
-    if d in ('', '\x1a'):
+    if d == '':
         # empty line at EOF
-        ins.read(len(d))
         return outs
     # read the line number
     tokenise_line_number(ins, outs)
@@ -221,16 +221,16 @@ def tokenise_line(line):
         # non-parsing modes        
         if verbatim :
             # anything after REM is passed as is till EOL
-            outs.write(ascii_read_to(ins, ('', '\x1a', '\r', '\0')))
+            outs.write(ascii_read_to(ins, ('', '\r', '\0')))
             break
         elif data:
             # read DATA as is, till end of statement    
-            outs.write(ascii_read_to(ins, ('', '\x1a', '\r', '\0', ':')))
+            outs.write(ascii_read_to(ins, ('', '\r', '\0', ':')))
             data = False
         elif util.peek(ins)=='"':
             # handle string literals    
             outs.write(ins.read(1))
-            outs.write(ascii_read_to(ins, ('', '\x1a', '\r', '\0', '"') ))
+            outs.write(ascii_read_to(ins, ('', '\r', '\0', '"') ))
             if util.peek(ins)=='"':
                 outs.write(ins.read(1))
         # read next character
@@ -238,10 +238,10 @@ def tokenise_line(line):
         # anything after NUL is ignored till EOL
         if char=='\x00':
             ins.read(1)
-            ascii_read_to(ins, ('', '\x1a', '\r'))
+            ascii_read_to(ins, ('', '\r'))
             break
         # end of line    
-        if char in ('', '\x1a', '\r'):
+        if char in ('', '\r'):
             break
         # convert anything else to upper case
         c = char.upper()
