@@ -75,10 +75,9 @@ def set_runmode(new_runmode=True, pos=None):
     
 # RESTORE
 def restore(datanum=-1):
-    global data_line, data_pos
-    data_line = datanum
+    global data_pos
     try:
-        data_pos = 0 if datanum==-1 else line_numbers[datanum]
+        data_pos = 0 if datanum == -1 else line_numbers[datanum]
     except KeyError:
         raise error.RunError(8)
         
@@ -540,13 +539,12 @@ def loop_find_next(ins, pos):
                 
 # READ a unit of DATA
 def read_entry():
-    global data_line, data_pos
+    global data_pos
     current = bytecode.tell()
     bytecode.seek(data_pos)
     if util.peek(bytecode) in util.end_statement:
         # initialise - find first DATA
         util.skip_to(bytecode, ('\x84',))  # DATA
-        data_line = get_line_number(bytecode.tell())
     if bytecode.read(1) not in ('\x84', ','):
         # out of DATA
         raise error.RunError(4)
