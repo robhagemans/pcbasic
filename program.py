@@ -56,7 +56,7 @@ def init_program():
 def erase_program():
     global protected, line_numbers, current_statement, last_stored
     bytecode.truncate(0)
-    bytecode.write('\x00\x00\x00\x1A')
+    bytecode.write('\0\0\0')
     protected = False
     line_numbers = { 65536: 0 }
     current_statement = 0
@@ -120,7 +120,7 @@ def clear_program():
     clear_all()
 
 def truncate_program(rest=''):
-    bytecode.write(rest if rest else '\x00\x00\x00\x1a')
+    bytecode.write(rest if rest else '\0\0\0')
     # cut off at current position    
     bytecode.truncate()    
           
@@ -154,14 +154,14 @@ def rebuild_line_dict():
         scanline = util.parse_line_number(bytecode)
         if scanline == -1:
             scanline = 65536
-            # if parse_line_number returns -1, it leaves the stream pointer here: 00 _00_ 00 1A 
-            line_numbers[scanline] = scanpos
+            # if parse_line_number returns -1, it leaves the stream pointer here: 00 _00_ 00 1A
             break 
         line_numbers[scanline] = scanpos  
         util.skip_to_read(bytecode, util.end_line)
         last = scanpos
         scanpos = bytecode.tell() - 1
         offsets.append(scanpos)
+    line_numbers[65536] = scanpos     
     # rebuild offsets
     bytecode.seek(1)
     last = 0
@@ -169,6 +169,8 @@ def rebuild_line_dict():
         bytecode.write(str(vartypes.value_to_uint(program_memory_start + pos)))
         bytecode.read(pos - last - 2)
         last = pos
+    # ensure program is properly sealed - last offset must be 00 00. keep, but ignore, anything after.
+    bytecode.write('\0\0')
 
 # find stream position using line number dictionary
 def find_pos_line_dict(scanline):
@@ -193,7 +195,7 @@ def update_line_dict(pos, afterpos, length, scanline=None):
     bytecode.seek(afterpos + length + 1)  # pass \x00
     while True:
         next_addr = bytearray(bytecode.read(2))
-        if len(next_addr) < 2 or next_addr == '\x00\x00':
+        if len(next_addr) < 2 or next_addr == '\0\0':
             break
         next_addr = vartypes.uint_to_value(next_addr)
         bytecode.seek(-2, 1)
@@ -242,7 +244,7 @@ def store_line(linebuf):
         # set offsets
         linebuf.seek(3) # pass \x00\xC0\xDE 
         length = len(linebuf.getvalue())
-        bytecode.write( '\x00' + str(vartypes.value_to_uint(program_memory_start + pos + length)) + linebuf.read())
+        bytecode.write( '\0' + str(vartypes.value_to_uint(program_memory_start + pos + length)) + linebuf.read())
     # write back the remainder of the program
     truncate_program(rest)
     # update all next offsets by shifting them by the length of the added line
@@ -359,20 +361,16 @@ def load(g):
     if c == '\xFF':
         # bytecode file
         bytecode.truncate(0)
-        bytecode.write('\x00')
+        bytecode.write('\0')
         while c:
-            last = c
             c = g.read(1)
             bytecode.write(c)
-        if last != '\x1a':
-            truncate_program()    
     elif c == '\xFE':
         # protected file
         bytecode.truncate(0)
-        bytecode.write('\x00')
+        bytecode.write('\0')
         protected = True                
-        if protect.unprotect(g, bytecode) != '\x1a':
-            truncate_program() 
+        protect.unprotect(g, bytecode) 
     elif c != '':
         # ASCII file, maybe; any thing but numbers or whitespace will lead to Direct Statement in File
         load_ascii_file(g, c)        
@@ -394,7 +392,7 @@ def load_ascii_file(g, first_char=''):
         line, eof = tokenise.read_program_line(g)
         line, first_char = first_char + line, ''
         linebuf = tokenise.tokenise_line(line)
-        if linebuf.read(1) == '\x00':
+        if linebuf.read(1) == '\0':
             # line starts with a number, add to program memory; store_line seeks to 1 first
             store_line(linebuf)
         else:
@@ -452,8 +450,15 @@ def save(g, mode='B'):
     bytecode.seek(1)
     if mode == 'B':
         g.write('\xff')
-        g.write(bytecode.read())
-        # TODO: replace last char with \x1a
+        last = ''
+        while True:
+            nxt = bytecode.read(1)
+            if not nxt:
+                break
+            g.write(nxt)
+            last = nxt
+        if last != '\x1a':
+            g.write('\x1a')    
     elif mode == 'P':
         g.write('\xfe')
         protect.protect(bytecode, g)
