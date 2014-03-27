@@ -23,9 +23,9 @@ import vartypes
 ascii_white = (' ', '\x00', '\n')
 
 
-ascii_octits = ['0','1','2','3','4','5','6','7']
-ascii_digits = ascii_octits + ['8','9']
-ascii_hexits = ascii_digits + ['A','B','C','D','E','F']
+ascii_octits = ('0','1','2','3','4','5','6','7')
+ascii_digits = ascii_octits + ('8','9')
+ascii_hexits = ascii_digits + ('A','B','C','D','E','F')
 
     
 # BASIC number to BASIC string

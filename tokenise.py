@@ -30,21 +30,21 @@ import vartypes
 
 from representation import ascii_digits
 # newline is considered whitespace
-tokenise_whitespace = list(representation.whitespace) #[' ', '\t', '\x0a']
+tokenise_whitespace = representation.whitespace #[' ', '\t', '\x0a']
 
 debug = False
-tokens_number = ['\x0b','\x0c','\x0f',
+tokens_number = ('\x0b','\x0c','\x0f',
     '\x11','\x12','\x13','\x14','\x15','\x16','\x17','\x18','\x19','\x1a','\x1b',
-    '\x1c','\x1d', '\x1f']
-tokens_linenum = ['\x0d', '\x0e']
-tokens_operator = map(chr, range(0xe6, 0xed+1))
-tokens_with_bracket = ['\xd2', '\xce']
+    '\x1c','\x1d', '\x1f')
+tokens_linenum = ('\x0d', '\x0e')
+tokens_operator = tuple(map(chr, range(0xe6, 0xed+1)))
+tokens_with_bracket = ('\xd2', '\xce')
 
-ascii_operators = ['+', '-', '=', '/', '\\', '^', '*', '<', '>']        
-ascii_uppercase = map(chr, range(ord('A'),ord('Z')+1))        
+ascii_operators = ('+', '-', '=', '/', '\\', '^', '*', '<', '>')
+ascii_uppercase = tuple(map(chr, range(ord('A'),ord('Z')+1)))        
 
 # allowable as chars 2.. in a variable name (first char must be a letter)
-name_chars = ascii_uppercase + ascii_digits + ['.']
+name_chars = ascii_uppercase + ascii_digits + ('.',)
 
 # keywords than can followed by one or more line numbers
 linenum_words = [
@@ -161,8 +161,8 @@ def detokenise_keyword(bytes, output):
             output[:] = output[:-5] + "ELSE"
     # token followed by token or number is separated by a space, except operator tokens and SPC(, TAB(, FN, USR
     nxt = util.peek(bytes)
-    if (not comment and nxt.upper() not in (tokens_operator + ['\xD9', '"', ',', ' ', ':', '(', ')']) 
-                and s not in (tokens_operator + tokens_with_bracket + ['\xD0', '\xD1'])): 
+    if (not comment and nxt.upper() not in (util.end_line + tokens_operator + ('\xD9', '"', ',', ' ', ':', '(', ')')) 
+                and s not in (tokens_operator + tokens_with_bracket + ('\xD0', '\xD1'))): 
         # excluding TAB( SPC( and FN. \xD9 is ', \xD1 is FN, \xD0 is USR.
         output += ' '
     return comment
@@ -237,7 +237,7 @@ def tokenise_line(line):
             ins.read(1)
             outs.write(char)
         # handle jump numbers
-        elif allow_number and allow_jumpnum and c in ascii_digits + ['.',]:
+        elif allow_number and allow_jumpnum and c in ascii_digits + ('.',):
             tokenise_jump_number(ins, outs) 
         # handle numbers
         # numbers following var names with no operator or token in between should not be parsed, eg OPTION BASE 1
