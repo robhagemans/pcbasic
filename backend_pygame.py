@@ -323,14 +323,10 @@ def clear_rows(cattr, start, stop):
 def set_font(new_font_height):
     global fonts, font, font_height, under_cursor
     font_height = new_font_height
-    if font_height==16:
-        font=fonts[0]
-    elif font_height==14:
-        font=fonts[1]
-    elif font_height==8:
-        font=fonts[2]
-    else:
-        font=None
+    try:
+        font = fonts[font_height]
+    except KeyError:
+        font = None
     under_cursor = pygame.Surface((8,font_height),depth=8)    
 
 def init_screen_mode(mode, new_font_height):
