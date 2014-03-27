@@ -59,10 +59,8 @@ def pass_single_keep(num):
     elif typechar == '%':
         return fp.pack(fp.Single.from_int(unpack_int(num)))
     elif typechar == '#':
-        val = num[1][4:]
-        # TODO: *round* to single
-        #if (num[1][3] & 0x80) == 1: 
-        return ('!', val)        
+        # *round* to single
+        return fp.pack(fp.unpack(num).round_to_single())
     elif typechar == '$':
         raise error.RunError(13)
     
