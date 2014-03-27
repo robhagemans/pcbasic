@@ -907,7 +907,6 @@ def play_sound(frequency, total_duration, fill=1, loop=False):
         # make the last chunk longer than a normal chunk rather than shorter, to avoid jumping sound    
         floor_num_chunks = max(0, -1 + int((duration * sample_rate) / chunk_length))
         chunk.astype(numpy.int16)
-        print repr(chunk)
         sound_list = [] if floor_num_chunks == 0 else [ (pygame.sndarray.make_sound(chunk), False) ]*floor_num_chunks
         rest_length = int(duration * sample_rate) - chunk_length * floor_num_chunks
     else:
@@ -916,7 +915,6 @@ def play_sound(frequency, total_duration, fill=1, loop=False):
         rest_length = chunk_length
     # create the sound queue entry
     chunk.astype(numpy.int16)
-    print repr(chunk)
     sound_list.append((pygame.sndarray.make_sound(chunk[:rest_length]), loop))
     # append quiet gap if requested
     if gap:
