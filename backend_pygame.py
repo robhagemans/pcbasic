@@ -258,7 +258,9 @@ def init():
     pygame.init()
     pygame.display.set_caption('PC-BASIC 3.23')
     pygame.key.set_repeat(500, 24)
-    fonts = cpi_font.load_codepage()
+    fonts = cpi_font.load_codepage(console.codepage)
+    if fonts == None:
+        return False
     init_mixer()
     pygame.joystick.init()
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
