@@ -287,7 +287,7 @@ class LPTFile(BaseFile):
     def eof(self):
         # bad file mode
         raise error.RunError(54)
-
+    
 
 class COMFile(RandomBase):
     allowed_modes = 'IOAR'

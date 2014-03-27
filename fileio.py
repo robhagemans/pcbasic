@@ -226,8 +226,8 @@ class TextFile(BaseFile):
         if self.mode in ('O', 'A', 'S'):
             # write EOF char
             self.fhandle.write('\x1a')
-        self.fhandle.close()
         BaseFile.close(self)
+        self.fhandle.close()
         
     # read line    
     def read_line(self):
