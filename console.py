@@ -211,7 +211,7 @@ def copy_page(src, dst):
     backend.copy_page(src,dst)
     
 # sort out the terminal, close the window, etc
-def close():
+def exit():
     if backend:
         backend.close()
 
@@ -552,16 +552,16 @@ def print_screen():
         line = ''
         for c, _ in vpage.row[crow-1].buf:
             line += c
-        deviceio.lpt1.write_line(line)
-    deviceio.lpt1.flush()    
+        deviceio.devices['LPT1:'].write_line(line)
 
 def toggle_echo_lpt1():
-    if deviceio.lpt1.write in input_echos:
-        input_echos.remove(deviceio.lpt1.write)
-        output_echos.remove(deviceio.lpt1.write)
+    lpt1 = deviceio.devices['LPT1:']
+    if lpt1.write in input_echos:
+        input_echos.remove(lpt1.write)
+        output_echos.remove(lpt1.write)
     else:    
-        input_echos.append(deviceio.lpt1.write)
-        output_echos.append(deviceio.lpt1.write)
+        input_echos.append(lpt1.write)
+        output_echos.append(lpt1.write)
 
 def clear():
     save_view_set, save_view_start, save_scroll_height = view_set, view_start, scroll_height
@@ -612,6 +612,11 @@ def write_line(s='', scroll_ok=True):
     set_pos(row+1, 1)
 
 def set_width(to_width):
+    # raise an error if the width value doesn't make sense
+    if to_width not in (40, 80):
+        raise error.RunError(5)
+    if to_width == width:
+        return    
     if screen_mode == 0:
         resize(height, to_width)    
     elif screen_mode == 1 and to_width == 80:
@@ -626,6 +631,9 @@ def set_width(to_width):
         set_mode(7, None, None, None)
     if keys_visible:
         show_keys()
+
+def close():
+    pass
 
 #####################
 # key replacement

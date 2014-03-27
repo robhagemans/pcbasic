@@ -665,28 +665,16 @@ def exec_auto(ins):
 def exec_list(ins):
     from_line, to_line = parse_line_range(ins)
     if util.skip_white_read_if(ins, (',',)):
-        filename = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-        util.require(ins, util.end_statement)
-        out = fileio.open_file_or_device(0, filename, 'O')
-        program.list_to_file(out, from_line, to_line)    
-        out.close()        
+        out = fileio.open_file_or_device(0, vartypes.pass_string_unpack(expressions.parse_expression(ins)), 'O')
     else:
-        util.require(ins, util.end_statement)
-        out = StringIO()
-        program.list_to_file(out, from_line, to_line)
-        lines = out.getvalue().split('\r\n')
-        if lines[-1] == '':
-            lines = lines[:-1]
-        for line in lines:
-            console.check_events()
-            console.clear_line(console.row)
-            console.write_line(line)
-    
+        out = console
+    util.require(ins, util.end_statement)
+    program.list_lines(out, from_line, to_line)    
+
 def exec_llist(ins):
     from_line, to_line = parse_line_range(ins)
     util.require(ins, util.end_statement)
-    list_to_file(deviceio.lpt1, from_line, to_line)
-    deviceio.lpt1.flush()
+    program.list_lines(deviceio.devices['LPT1:'], from_line, to_line)
         
 def exec_load(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
@@ -898,9 +886,6 @@ def exec_get_file(ins):
     
 def exec_lock_or_unlock(ins, action):
     thefile = fileio.get_file(expressions.parse_file_number_opthash(ins))
-    if deviceio.is_device(thefile):
-        # permission denied
-        raise error.RunError(70)
     lock_start_rec = 1
     if util.skip_white_read_if(ins, (',',)):
         lock_start_rec = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()

@@ -462,16 +462,26 @@ def save(g, mode='B'):
     bytecode.seek(current)         
     g.close()
     
-def list_to_file(out, from_line, to_line):
+def list_lines(dev, from_line, to_line):
     if protected:
         # don't list protected files
         raise error.RunError(5)
     if to_line == None:
         to_line = 65530
     bytecode.seek(1)
+    out = StringIO()
     tokenise.detokenise(bytecode, out, from_line, to_line)
+    lines = out.getvalue().split('\r\n')
+    if lines[-1] == '':
+        lines = lines[:-1]
     set_runmode(False)
-             
+    for line in lines:
+        if dev == console:
+            console.check_events()
+            console.clear_line(console.row)
+        dev.write_line(line)
+    dev.close()
+                 
 # jump to line number    
 def jump(jumpnum, err=8):
     if jumpnum == None:
