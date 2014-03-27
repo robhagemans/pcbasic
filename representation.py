@@ -619,6 +619,9 @@ def tokenise_number(ins, outs):
             elif c in ('!', '#') and not have_exp:
                 word += c
                 break
+            elif c == '%':
+                # swallow a %, but break parsing
+                break    
             else:
                 if c != '':
                     ins.seek(-1,1)
