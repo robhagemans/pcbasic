@@ -261,6 +261,7 @@ def init():
     fonts = cpi_font.load_codepage(console.codepage)
     if fonts == None:
         return False
+    unicodepage.load_codepage(console.codepage)
     init_mixer()
     pygame.joystick.init()
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]

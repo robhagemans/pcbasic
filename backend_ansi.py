@@ -100,6 +100,7 @@ def get_size():
 
 def init():
     term_echo(False)
+    unicodepage.load_codepage(console.codepage)
     term.write(esc_set_title % 'PC-BASIC 3.23')
     term.flush()
     return True
@@ -211,7 +212,7 @@ def set_attr(attr):
 
 def putc_at(row, col, c):
     term.write(esc_move_cursor % (row, col))
-    term.write(unicodepage.cp437_to_utf8[c])
+    term.write(unicodepage.cp_to_utf8[c])
     term.flush()
    
 def scroll(from_line):
@@ -268,7 +269,7 @@ def check_keyboard():
             console.insert_key(esc_to_scan[c])       
         except KeyError:
             try:
-                console.insert_key(unicodepage.utf8_to_cp437[c])
+                console.insert_key(unicodepage.utf8_to_cp[c])
             except KeyError:    
                 # all other codes are chopped off, 
                 # so other escape sequences will register as an escape keypress.
