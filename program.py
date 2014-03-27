@@ -276,8 +276,7 @@ def edit(from_line, bytepos=None):
     bytecode.seek(line_numbers[from_line]+1)
     _, output, textpos = tokenise.detokenise_line(bytecode, bytepos)
     console.clear_line(console.row)
-    # cut off CR/LF at end
-    console.write(str(output[:-2]))
+    console.write(str(output))
     console.set_pos(console.row, textpos+1 if bytepos else 1)
     # throws back to direct mode
     set_runmode(False)
