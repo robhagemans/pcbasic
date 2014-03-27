@@ -65,6 +65,9 @@ output_echos = []
 # input has closed
 input_closed = False
     
+# codepage suggestion for backend
+codepage = 437    
+    
 class ScreenRow(object):
     def __init__(self, bwidth):
         # screen buffer, initialised to spaces, dim white on black
