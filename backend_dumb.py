@@ -13,7 +13,6 @@
 import sys
 import time
 import select
-import termios
 import os
 
 import error
