@@ -34,6 +34,10 @@ direct_line = StringIO()
 run_mode = False
 # memory model; offsets in files
 program_memory_start = 0x126e
+# don't list or save,a beyond this line
+max_list_line = 65530
+# don't protect files
+dont_protect = False
 
 # line number tracing
 tron = False
@@ -269,12 +273,11 @@ def edit(from_line, bytepos=None):
         console.write(str(from_line)+'\r')
         raise error.RunError(5)
     # list line
-    bytecode.seek(1)
-    output = StringIO()
-    textpos = tokenise.detokenise(bytecode, output, from_line, from_line, bytepos)
+    bytecode.seek(line_numbers[from_line]+1)
+    _, output, textpos = tokenise.detokenise_line(bytecode, bytepos)
     console.clear_line(console.row)
     # cut off CR/LF at end
-    console.write(output.getvalue()[:-2])
+    console.write(str(output[:-2]))
     console.set_pos(console.row, textpos+1 if bytepos else 1)
     # throws back to direct mode
     set_runmode(False)
@@ -340,7 +343,6 @@ def renum(new_line, start_line, step):
         if handler.gosub:
             handler.gosub = old_to_new[handler.gosub]    
         
-    
 def load(g):
     global protected
     erase_program()
@@ -356,7 +358,7 @@ def load(g):
         # protected file
         bytecode.truncate(0)
         bytecode.write('\0')
-        protected = True                
+        protected = not dont_protect                
         protect.unprotect(g, bytecode) 
     elif c != '':
         # ASCII file, maybe; any thing but numbers or whitespace will lead to Direct Statement in File
@@ -457,7 +459,11 @@ def save(g, mode='B'):
         protect.protect(bytecode, g)
         g.write('\x1a')    
     else:
-        tokenise.detokenise(bytecode, g) 
+        while True:
+            current_line, output, _ = tokenise.detokenise_line(bytecode)
+            if current_line == -1 or (current_line > max_list_line):
+                break
+            g.write(str(output) + '\r\n')
         g.write('\x1a')       
     bytecode.seek(current)         
     g.close()
@@ -466,21 +472,22 @@ def list_lines(dev, from_line, to_line):
     if protected:
         # don't list protected files
         raise error.RunError(5)
+    # 65529 is max insertable line number for GW-BASIC 3.23. 
+    # however, 65530-65535 are executed if present in tokenised form.
+    # in GW-BASIC, 65530 appears in LIST, 65531 and above are hidden
     if to_line == None:
-        to_line = 65530
-    bytecode.seek(1)
-    out = StringIO()
-    tokenise.detokenise(bytecode, out, from_line, to_line)
-    lines = out.getvalue().split('\r\n')
-    if lines[-1] == '':
-        lines = lines[:-1]
-    set_runmode(False)
-    for line in lines:
+        to_line = max_list_line
+    # sort by positions, not line numbers!
+    listable = sorted([ line_numbers[num] for num in line_numbers if num >= from_line and num <= to_line ])
+    for pos in listable:        
+        bytecode.seek(pos + 1)
+        _, line, _ = tokenise.detokenise_line(bytecode)
         if dev == console:
             console.check_events()
             console.clear_line(console.row)
-        dev.write_line(line)
+        dev.write_line(str(line))
     dev.close()
+    set_runmode(False)
                  
 # jump to line number    
 def jump(jumpnum, err=8):
