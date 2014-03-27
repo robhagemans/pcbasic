@@ -29,5 +29,6 @@ Acknowledgements______________________________________________________________
      Summer 1994 
 * Henrique Peron        for the DOS codepage pack
 * Kosta Kostis          for the DOS codepage pack
+* Chris Liechti	        for the PySerial port extension
 * Noah Spurrier et al.  for the pexpect module 
 
