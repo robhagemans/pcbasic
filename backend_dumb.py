@@ -41,6 +41,7 @@ control = (
         
 def init():
     global check_keys
+    unicodepage.load_codepage(console.codepage)
     # use non-blocking and UTF8 when reading from ttys
     if sys.stdin.isatty():
         check_keys = check_keys_interactive
@@ -93,7 +94,7 @@ def echo_stdout_utf8(s):
         if c in control:    
             sys.stdout.write(c)    
         else:
-            sys.stdout.write(unicodepage.cp437_to_utf8[c]) 
+            sys.stdout.write(unicodepage.cp_to_utf8[c]) 
     sys.stdout.flush()        
         
 # non-blocking read of one char        
@@ -116,7 +117,7 @@ def getc_utf8():
             utf8 += getc()
             mask >>= 1 
     try:
-        return unicodepage.utf8_to_cp437[utf8]
+        return unicodepage.utf8_to_cp[utf8]
     except KeyError:        
         return utf8
 
