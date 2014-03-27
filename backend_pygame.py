@@ -874,7 +874,7 @@ def play_sound(frequency, total_duration, fill=1, loop=False):
     # actual duration and gap length
     duration, gap = fill * total_duration, (1-fill) * total_duration
     if frequency == 0 or frequency == 32767:
-        chunk = numpy.zeros(chunk_length)
+        chunk = numpy.zeros(chunk_length, numpy.int16)
     else:
         num_samples = sample_rate / (2.*frequency)
         num_half = ceil(sample_rate/ (2.*frequency))
@@ -884,7 +884,7 @@ def play_sound(frequency, total_duration, fill=1, loop=False):
         wave0_1 = wave0[:-1]
         wave1_1 = wave1[:-1]
         # build chunk of waves
-        chunk = numpy.array([])
+        chunk = numpy.array([]) # FIXME - float64? and int16 doesn't seem to work
         half_waves, samples = 0, 0
         while len(chunk) < chunk_length:
             if samples > int(num_samples*half_waves):
@@ -906,6 +906,8 @@ def play_sound(frequency, total_duration, fill=1, loop=False):
     if not loop:    
         # make the last chunk longer than a normal chunk rather than shorter, to avoid jumping sound    
         floor_num_chunks = max(0, -1 + int((duration * sample_rate) / chunk_length))
+        chunk.astype(numpy.int16)
+        print repr(chunk)
         sound_list = [] if floor_num_chunks == 0 else [ (pygame.sndarray.make_sound(chunk), False) ]*floor_num_chunks
         rest_length = int(duration * sample_rate) - chunk_length * floor_num_chunks
     else:
@@ -913,11 +915,13 @@ def play_sound(frequency, total_duration, fill=1, loop=False):
         sound_list = []
         rest_length = chunk_length
     # create the sound queue entry
+    chunk.astype(numpy.int16)
+    print repr(chunk)
     sound_list.append((pygame.sndarray.make_sound(chunk[:rest_length]), loop))
     # append quiet gap if requested
     if gap:
         gap_length = gap * sample_rate
-        chunk = numpy.zeros(gap_length)
+        chunk = numpy.zeros(gap_length, numpy.int16)
         sound_list.append((pygame.sndarray.make_sound(chunk), False))
     # at most 16 notes in the sound queue (not 32 as the guide says!)
     wait_music(15)
