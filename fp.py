@@ -380,6 +380,12 @@ class Double(Float):
     byte_size = 8
     bias = true_bias + mantissa_bits
     carry_mask = 0xffffffffffffff00    
+    
+    def round_to_single(self):
+        mybytes = self.to_bytes()
+        single = Single.from_bytes(mybytes[4:])
+        single.man += mybytes[3]
+        return single.normalise()
 
 ####################################
 
