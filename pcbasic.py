@@ -49,6 +49,10 @@ def main():
         args.run = True    
     if args.double:
         expressions.option_double = True    
+    if args.list_all or args.conv:
+        program.max_list_line = 65535    
+    if args.unprotect or args.conv:
+        program.dont_protect = True    
     # announce ourselves; go!
     try:
         # choose the screen backends and other devices 
@@ -63,8 +67,6 @@ def main():
         if args.run or args.load or args.conv:
             program.load(oslayer.safe_open(args.infile, "L", "R") if args.infile else sys.stdin)
         if args.conv:
-            # allow conversion of protected files
-            program.protected = False
             program.save(oslayer.safe_open(args.outfile, "S", "W") if args.outfile else sys.stdout, args.conv)
             run.exit()
         if not args.cmd:
@@ -130,29 +132,30 @@ def get_args():
     parser.add_argument('infile', metavar='in_file', nargs='?', 
         help='Input program file to run (default), load or convert.')
     parser.add_argument('outfile', metavar='out_file', nargs='?', 
-        help='Output program file. If no convert option is specified, this is ignored.')
+        help='Output program file. If no --conv option is specified, this is ignored.')
     parser.add_argument('-b', '--dumb', action='store_true', 
-        help='Use dumb text terminal. Echo input. This is the default if redirecting input or output')
-    parser.add_argument('-u', '--uni', action='store_true', 
-        help='Use unicode text terminal. Do not echo input (the terminal does). Translate graphic characters into unicode.')
+        help='Use dumb text terminal. This is the default if redirecting input.')
     parser.add_argument('-t', '--text', action='store_true', 
         help='Use ANSI textmode terminal')
     parser.add_argument('-g', '--graphical', action='store_true', 
         help='Use graphical terminal. This is the normal default; use to override when redirecting i/o.')
-    parser.add_argument('--conv', metavar='MODE', help='Convert file to (A)SCII, (B)ytecode or (P)rotected mode')
+
     parser.add_argument('-l', '--load', action='store_true', help='Load in_file only, do not execute')
     parser.add_argument('-r', '--run', action='store_true', help='Execute input file (default if in_file given)')
     parser.add_argument('-e', '--cmd', metavar='CMD', help='Execute BASIC command line')
     parser.add_argument('-q', '--quit', action='store_true', help='Quit interpreter when execution stops')
     parser.add_argument('-d', '--double', action='store_true', help='Allow double-precision math functions')
-    parser.add_argument('--debug', action='store_true', help='Enable DEBUG keyword')
-    parser.add_argument('--nosound', action='store_true', help='Disable sound output')
     parser.add_argument('--peek', nargs='*', metavar=('SEG:ADDR:VAL'), help='Define PEEK preset values')
-    parser.add_argument('-p1', '--lpt1', nargs='*', metavar=('TYPE:VAL'), help='Set LPT1: to FILE:file_name or CUPS:printer_name.')
-    parser.add_argument('-p2', '--lpt2', nargs='*', metavar=('TYPE:VAL'), help='Set LPT2: to FILE:file_name or CUPS:printer_name.')
-    parser.add_argument('-p3', '--lpt3', nargs='*', metavar=('TYPE:VAL'), help='Set LPT3: to FILE:file_name or CUPS:printer_name.')
-    parser.add_argument('-s1', '--com1', nargs='*', metavar=('TYPE:VAL'), help='Set COM1: to FILE:file_name or CUPS:printer_name or PORT:device_name or SOCK:host:socket.')
-    parser.add_argument('-s2', '--com2', nargs='*', metavar=('TYPE:VAL'), help='Set COM2: to FILE:file_name or CUPS:printer_name PORT:device_name or SOCK:host:socket.')
+    parser.add_argument('--lpt1', nargs='*', metavar=('TYPE:VAL'), help='Set LPT1: to FILE:file_name or CUPS:printer_name.')
+    parser.add_argument('--lpt2', nargs='*', metavar=('TYPE:VAL'), help='Set LPT2: to FILE:file_name or CUPS:printer_name.')
+    parser.add_argument('--lpt3', nargs='*', metavar=('TYPE:VAL'), help='Set LPT3: to FILE:file_name or CUPS:printer_name.')
+    parser.add_argument('--com1', nargs='*', metavar=('TYPE:VAL'), help='Set COM1: to FILE:file_name or CUPS:printer_name or PORT:device_name or SOCK:host:socket.')
+    parser.add_argument('--com2', nargs='*', metavar=('TYPE:VAL'), help='Set COM2: to FILE:file_name or CUPS:printer_name PORT:device_name or SOCK:host:socket.')
+    parser.add_argument('--conv', metavar='MODE', help='Convert file to (A)SCII, (B)ytecode or (P)rotected mode. Implies --unprotect and --list-all.')
+    parser.add_argument('--nosound', action='store_true', help='Disable sound output')
+    parser.add_argument('--debug', action='store_true', help='Enable DEBUG keyword')
+    parser.add_argument('--list-all', action='store_true', help='Allow listing and ASCII saving of lines beyond 65530')
+    parser.add_argument('--unprotect', action='store_true', help='Allow listing and ASCII saving of protected files')
     return parser.parse_args()
 
 

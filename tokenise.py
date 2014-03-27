@@ -68,33 +68,20 @@ def ascii_read_to(ins, findrange):
     ins.seek(-len(d),1)    
     return out
 
-def detokenise(ins, outs, from_line=None, to_line=None, bytepos=None):
-    if from_line == None:   from_line = -1
-    if to_line == None:     to_line = -1
-    textpos = 0
-    while True:
-        # 65529 is max line number for GW-BASIC 3.23. 
-        # however, 65530-65535 are executed if present in tokenised form.
-        # in GW-BASIC, 65530 appears in LIST, 65531 and above are hidden
-        current_line = util.parse_line_number(ins)
-        if current_line < 0:
-            # parse_line_number has returned -1 and left us here:  .. 00 | _00_ 00 1A
-            # stream ends or end of file sequence \x00\x00\x1A
-            break
-        elif current_line == 0 and util.peek(ins)==' ':
-            # ignore up to one space after line number 0
-            ins.read(1)
-        # detokenise tokens until end of line
-        output, textpos = detokenise_line(ins, bytepos)
-        if (from_line==-1 or current_line>=from_line) and (to_line==-1 or current_line<=to_line):
-            # write one extra whitespace character after line number
-            outs.write(str(representation.int_to_str(current_line) + ' ' + output + '\r\n')) 
-    return textpos + len(representation.int_to_str(current_line) + ' ')
-
 def detokenise_line(bytes, bytepos=None):
-    output = bytearray()
     litstring, comment = False, False
     textpos = 0
+    current_line = util.parse_line_number(bytes)
+    if current_line < 0:
+        # parse_line_number has returned -1 and left us here:  .. 00 | _00_ 00 1A
+        # stream ends or end of file sequence \x00\x00\x1A
+        return -1, '', 0
+    elif current_line == 0 and util.peek(bytes)==' ':
+        # ignore up to one space after line number 0
+        bytes.read(1)
+    # write one extra whitespace character after line number
+    output = representation.int_to_str(current_line) + bytearray(' ')
+    # detokenise tokens until end of line
     while True:
         s = bytes.read(1)
         if not textpos and bytes.tell() >= bytepos:
@@ -120,7 +107,7 @@ def detokenise_line(bytes, bytepos=None):
         else:
             bytes.seek(-1,1)
             comment = detokenise_keyword(bytes, output)
-    return output, textpos
+    return current_line, output, textpos
 
 # de tokenise one- or two-byte tokens
 # output must be mutable
