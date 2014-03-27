@@ -496,7 +496,7 @@ def value_pos(ins):
 def value_lpos(ins):            
     num = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 3, num)
-    printer = (deviceio.lpt1, deviceio.lpt1, deviceio.lpt2, deviceio.lpt3)[num]
+    printer = deviceio.devices['LPT' + max(1, num) + ':']
     return vartypes.pack_int(printer.col)
            
 ######################################################################
@@ -507,10 +507,6 @@ def value_loc(ins): # LOC
     num = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
     util.range_check(0, 255, num)
     the_file = fileio.get_file(num)
-    # refuse for output devices, such as SCRN: (bad file mode). Kybd: and com1: etc should be allowed
-    if the_file in deviceio.output_devices:
-        # bad file mode
-        raise error.RunError(54)
     return vartypes.pack_int(the_file.loc())
 
 def value_eof(ins): # EOF

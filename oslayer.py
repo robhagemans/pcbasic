@@ -15,6 +15,7 @@ import errno
 import fnmatch
 import string
 from functools import partial
+import StringIO
 
 import error
 
@@ -41,7 +42,8 @@ os_error = {
     # path/file access error
     errno.EEXIST: 75, errno.ENOTEMPTY: 75,
     }
-       
+
+nullstream = open(os.devnull, 'w')       
 
 def timer_milliseconds():
     global time_offset
@@ -309,15 +311,22 @@ def files(pathmask, console):
 
 # print to LPR printer (ok for CUPS)
 # TODO: use Windows printing subsystem for Windows, LPR is not standard there.
-def line_print(printbuf, printer_name=''):
-    options = ''
-    if printer_name != '':
-        options += ' -P ' + printer_name
-    if printbuf != '':
-        pr = os.popen("lpr " + options, "w")
-        pr.write(printbuf)
-        pr.close()
-        
+class CUPSStream(StringIO.StringIO):
+    def __init__(self, printer_name=''):
+        self.printer_name = printer_name
+        StringIO.StringIO.__init__(self)
+    
+    # flush buffer to LPR printer    
+    def flush(self):
+        options = ''
+        if self.printer_name != '':
+            options += ' -P ' + self.printer_name
+        printbuf = self.getvalue()    
+        if printbuf != '':
+            pr = os.popen("lpr " + options, "w")
+            pr.write(printbuf)
+            pr.close()
+
 # platform-specific:
 import platform
 if platform.system() == 'Windows':

@@ -315,8 +315,7 @@ def exec_print_using(ins, screen):
     util.require(ins, util.end_statement)
 
 def exec_lprint(ins):
-    exec_print(ins, deviceio.lpt1)
-    deviceio.lpt1.flush()
+    exec_print(ins, deviceio.devices['LPT1:'])
                              
 def exec_view_print(ins):
     if util.skip_white(ins) in util.end_statement:
@@ -335,12 +334,8 @@ def exec_width(ins):
         dev = expressions.parse_file_number(ins)
         w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     elif d in ('"', ','):
-        device_name = str(vartypes.pass_string_unpack(expressions.parse_expression(ins))).upper()
-        # WIDTH "SCRN:, 40 works directly on console 
-        # whereas OPEN "SCRN:" FOR OUTPUT AS 1: WIDTH #1,23 works on the wrapper text file
-        # WIDTH "LPT1:" works on lpt1 for the next time it's opened; also for other devices.
         try:
-            dev = console if device_name in ('SCRN:', 'KYBD:') else deviceio.output_devices[device_name]
+            dev = deviceio.devices[str(vartypes.pass_string_unpack(expressions.parse_expression(ins))).upper()]
         except KeyError:
             # bad file name
             raise error.RunError(64)           
@@ -356,14 +351,7 @@ def exec_width(ins):
             # one comma, then stuff - illegal function call
             util.require(ins, util.end_statement, err=5)
     util.require(ins, util.end_statement)        
-    if dev == console:        
-        # raise an error if the width value doesn't make sense
-        if w not in (40, 80):
-            raise error.RunError(5)
-        if w != console.width:    
-            dev.set_width(w)    
-    else:
-        dev.set_width(w)    
+    dev.set_width(w)    
     
 def exec_screen(ins):
     # in GW, screen 0,0,0,0,0,0 raises error after changing the palette... this raises error before:

@@ -84,7 +84,7 @@ def main():
         e.handle_break()    
     finally:
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
-        console.close()
+        console.exit()
 
 def prepare_devices(args):
     if args.dumb or args.conv or (not args.graphical and not args.text and not sys.stdin.isatty()):
@@ -148,11 +148,11 @@ def get_args():
     parser.add_argument('--debug', action='store_true', help='Enable DEBUG keyword')
     parser.add_argument('--nosound', action='store_true', help='Disable sound output')
     parser.add_argument('--peek', nargs='*', metavar=('SEG:ADDR:VAL'), help='Define PEEK preset values')
-    parser.add_argument('-p1', '--lpt1', nargs='*', metavar=('TYPE:VAL'), help='Set LPT1: to FILE:file_name or CUPS:printer_name. Default is CUPS:default')
+    parser.add_argument('-p1', '--lpt1', nargs='*', metavar=('TYPE:VAL'), help='Set LPT1: to FILE:file_name or CUPS:printer_name.')
     parser.add_argument('-p2', '--lpt2', nargs='*', metavar=('TYPE:VAL'), help='Set LPT2: to FILE:file_name or CUPS:printer_name.')
     parser.add_argument('-p3', '--lpt3', nargs='*', metavar=('TYPE:VAL'), help='Set LPT3: to FILE:file_name or CUPS:printer_name.')
-    parser.add_argument('-s1', '--com1', nargs='*', metavar=('TYPE:VAL'), help='Set COM1: to FILE:file_name or CUPS:printer_name or PORT:device_name.')
-    parser.add_argument('-s2', '--com2', nargs='*', metavar=('TYPE:VAL'), help='Set COM2: to FILE:file_name or CUPS:printer_name PORT:device_name.')
+    parser.add_argument('-s1', '--com1', nargs='*', metavar=('TYPE:VAL'), help='Set COM1: to FILE:file_name or CUPS:printer_name or PORT:device_name or SOCK:host:socket.')
+    parser.add_argument('-s2', '--com2', nargs='*', metavar=('TYPE:VAL'), help='Set COM2: to FILE:file_name or CUPS:printer_name PORT:device_name or SOCK:host:socket.')
     return parser.parse_args()
 
 

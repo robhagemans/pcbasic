@@ -10,114 +10,149 @@
 #
 
 import copy
-import StringIO
-import serial
-import socket
-import select
+from cStringIO import StringIO
 
+import serial_socket
 import oslayer
 import error
 import fileio
 from fileio import RandomBase, TextFile, BaseFile
 import console
 
-
 # buffer sizes (/c switch in GW-BASIC)
 serial_in_size = 256
 serial_out_size = 128
 
+devices = {}
+
 def init_devices(args):
-    global input_devices, output_devices, random_devices
-    global scrn, kybd, lpt1, lpt2, lpt3, com1, com2
-    scrn = ConsoleFile('SCRN:')
-    kybd = ConsoleFile('KYBD:')
-    lpt1 = create_device('LPT1:', args.lpt1, 'CUPS:')
-    lpt2 = create_device('LPT2:', args.lpt2)
-    lpt3 = create_device('LPT3:', args.lpt3)
-    com1 = create_device('COM1:', args.com1)
-    com2 = create_device('COM2:', args.com2)
-    # these are the *output* devices
-    output_devices = { 'SCRN:': scrn, 'LPT1:': lpt1, 'LPT2:': lpt2, 'LPT3:': lpt3, 'COM1:': com1, 'COM2:': com2 }    
-    # input devices
-    input_devices =  { 'KYBD:': kybd, 'COM1:': com1, 'COM2:': com2 }
-    # random access devices
-    random_devices = { 'COM1:': com1, 'COM2:': com2 }
-    
-def is_device(aname):
-    return aname in output_devices or aname in input_devices or aname in random_devices
+    global devices
+    # always defined
+    devices['SCRN:'] = SCRNFile()
+    devices['KYBD:'] = KYBDFile()
+    devices['LPT1:'] = LPTFile(create_device_stream(args.lpt1) if args.lpt1 else oslayer.nullstream, 'LPT1:') 
+    # optional
+    devices['LPT2:'] = LPTFile(create_device_stream(args.lpt2), 'LPT2:') if args.lpt2 else None
+    devices['COM1:'] = LPTFile(create_device_stream(args.lpt3), 'LPT3:') if args.lpt3 else None
+    devices['COM2:'] = COMFile(create_device_stream(args.com1), 'COM1:') if args.com1 else None
+    devices['COM3:'] = COMFile(create_device_stream(args.com2), 'COM2:') if args.com2 else None
+
+def create_device_stream(arg):
+    for a in arg:
+        addr, val = a.split(':', 1)
+        if addr.upper() == 'CUPS':
+            stream = oslayer.CUPSStream(val)
+        elif addr.upper() == 'FILE':
+            stream = oslayer.safe_open(val, 'R', 'RW')
+        elif addr.upper() == 'PORT':
+            # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows. Or anything supported by serial_for_url (RFC 2217 etc)
+            stream = serial.serial_for_url(val, timeout=0, do_not_open=True)
+        elif addr.upper() == 'SOCK':
+            stream = serial.serial_for_url('socket://'+val, timeout=0, do_not_open=True)
+        else:
+            # File not found
+            raise error.RunError(53)
+    return stream
             
-def device_open(number, device_name, mode, access):
-    global output_devices, input_devices, random_devices
-    try:
-        if mode.upper() in ('O', 'A', 'S'):
-            device = output_devices[device_name]
-        elif mode.upper() in ('I', 'L'):
-            device = input_devices[device_name]
-        elif mode.upper() in ('R'):
-            device = random_devices[device_name]
-    except KeyError:
+def device_open(device_name, number, mode, access, lock, reclen):
+    # check if device exists and allows the requested mode    
+    # if not exists, raise KeyError to caller
+    device = devices[str(device_name).upper()]
+    if not device:    
+        # device unavailable
+        raise error.RunError(68)      
+    if mode not in device.allowed_modes:
         # bad file mode
         raise error.RunError(54)
-    if isinstance(device, SerialFile):
-        device.open()
-        inst = device
-    else:    
-        # create a clone of the object, inheriting WIDTH settings etc.
-        inst = copy.copy(device)
-    if inst == None:
-        # device unavailable
-        raise error.RunError(68)
+    # don't lock devices
+    return device.open(number, mode, access, '', reclen)
+
+############################################################################
+
+# for device_open
+def open_device_file(dev, number, mode, access, lock='', reclen=128):
+    inst = copy.copy(dev)
     inst.number = number
     inst.access = access
-    inst.mode = mode.upper()
+    inst.mode = mode
+    inst.lock = lock
+    inst.reclen = reclen
     if number != 0:
         fileio.files[number] = inst
-    return inst    
+    return inst
 
-def create_device(name, arg, default=None):
-    device = None
-    if arg == None and default != None:
-        arg = [default]
-    if arg != None:
-        for a in arg:
-            addr, val = a.split(':', 1)
-            if addr.upper() == 'CUPS':
-                device = BaseFile(PrinterStream(val), name, 'O')      
-            elif addr.upper() == 'FILE':
-                device = BaseFile(oslayer.safe_open(val, 'R', 'RW'), name, 'R')
-            elif addr.upper() == 'PORT':
-                device = SerialFile(oslayer.safe_open(val, 'R', 'RW'), name, 'R')    
-    return device
 
-input_replace = { 
-    '\x00\x47': '\xFF\x0B', '\x00\x48': '\xFF\x1E', '\x00\x49': '\xFE', 
-    '\x00\x4B': '\xFF\x1D', '\x00\x4D': '\xFF\x1C', '\x00\x4F': '\xFF\x0E',
-    '\x00\x50': '\xFF\x1F', '\x00\x51': '\xFE', '\x00\x53': '\xFF\x7F', '\x00\x52': '\xFF\x12'
-    }
+class NullDevice(object):
+    def __init__(self):
+        self.width = 255
 
-# wrapper for console for reading from KYBD: and writing to SCRN:
-class ConsoleFile(BaseFile):
-    def __init__(self, name):
-        self.fhandle = console
-        self.name = name
-        self.number = 0
-        self.mode = 'A'
-        self.access = 'R'
-        # SCRN file uses a separate width setting from the console
-        self.width = console.width
-        
-    def seek(self, a, b=0):
+    # for device_open
+    def open(self, number, mode, access, lock, reclen):
+        if number != 0:
+            fileio.files[number] = self
+        return open_device_file(self, number, mode, access, lock, reclen)
+    
+    def close(self):
+        if self.number != 0:
+            del fileio.files[self.number]
+    
+    # stream interface - do we really need these?
+#    def seek(self, a, b=0):
+#        pass
+#    def tell(self):
+#        return 1
+#    def flush(self):
+#        pass
+#    def truncate(self):
+#        pass
+    
+    def lof(self):
+        # bad file mode
+        raise error.RunError(54)
+    def loc(self):
+        # bad file mode
+        raise error.RunError(54)
+    def eof(self):
+        # bad file mode
+        raise error.RunError(54)
+           
+    # output
+    def write(self, s):
+        pass
+    def write_line(self, s):
+        pass
+    def set_width(self, new_width=255):
         pass
     
-    def tell(self):
-        return 1
+    # input
+    def read_line(self):
+        return ''    
+    def read_chars(self):
+        return []
+    def read(self):
+        return ''        
 
-    def flush(self):
-        pass
+    def end_of_file(self):
+        return False    
 
-    def truncate(self):
-        pass
+        
+        
+class KYBDFile(NullDevice):
+    input_replace = { 
+        '\x00\x47': '\xFF\x0B', '\x00\x48': '\xFF\x1E', '\x00\x49': '\xFE', 
+        '\x00\x4B': '\xFF\x1D', '\x00\x4D': '\xFF\x1C', '\x00\x4F': '\xFF\x0E',
+        '\x00\x50': '\xFF\x1F', '\x00\x51': '\xFE', '\x00\x53': '\xFF\x7F', '\x00\x52': '\xFF\x12'
+        }
 
+    allowed_modes = 'IR'
+    col = 0
+    
+    def __init__(self):
+        self.fhandle = console
+        self.name = 'KYBD:'
+        self.mode = 'I'
+        NullDevice.__init__(self)
+        
     def read_line(self):
         s = ''
         while True:
@@ -139,44 +174,19 @@ class ConsoleFile(BaseFile):
         for c in console.read_chars(n):
             if len(c) > 1 and c[0] == '\x00':
                 try:
-                    word += input_replace[c]
+                    word += self.input_replace[c]
                 except KeyError:
                     pass
             else:
                 word += c        
         return word
-
-    def write(self, inp):
-        for s in inp:
-            console.write(s)
-            if self.col > self.width and self.width != 255:
-                console.write_line()
-            
-    def write_line(self, inp=''):
-        self.write(inp)
-        console.write_line()
-            
-    def set_width(self, new_width=255):
-        self.width = new_width
-#        console.set_width(new_width)
-
-    # for internal use    
-    def end_of_file(self):
-        return (util.peek(self.fhandle) in ('', '\x1a'))
-       
+        
     def lof(self):
         return 1
 
     def loc(self):
         return 0
-        
-    # console read_char is blocking so we need to avoid calling it here.
-    def peek_char(self):
-        return console.peek_char()
-    
-    def end_of_file(self):
-        return False
-        
+     
     def eof(self):
         # KYBD only EOF if ^Z is read
         if self.mode in ('A', 'O'):
@@ -184,34 +194,120 @@ class ConsoleFile(BaseFile):
         # blocking read
         return (console.wait_char() == '\x1a')
 
-#    @property
-#    def width(self):
-#        return console.width
+    # setting KYBD width is allowed, anomalously; but has no effect if on files. changes screen width if on device.
+    def set_width(self, new_width=255):
+        if self.number == 0:
+            console.set_width(new_width)
+
+class SCRNFile(NullDevice):
+    allowed_modes = 'OR'
+    
+    def __init__(self):
+        self.fhandle = console
+        self.name = 'SCRN:'
+        self.mode = 'O'
+        self.width = console.width
+        NullDevice.__init__(self)
+    
+    def write(self, inp):
+        for s in inp:
+            console.write(s)
+            if console.col > self.width and self.width != 255:
+                console.write_line()
+            
+    def write_line(self, inp=''):
+        self.write(inp)
+        console.write_line()
             
     @property
-    def col(self):
+    def col(self):  
         return console.col
+        
+    # WIDTH "SCRN:, 40 works directly on console 
+    # whereas OPEN "SCRN:" FOR OUTPUT AS 1: WIDTH #1,23 works on the wrapper text file
+    # WIDTH "LPT1:" works on lpt1 for the next time it's opened; also for other devices.
+    def set_width(self, new_width=255):
+        if self.number == 0:
+            console.set_width(new_width)
+        else:    
+            self.width = new_width
 
 
-class PrinterStream(StringIO.StringIO):
-    def __init__(self, printer_name=''):
-        self.printer_name = printer_name
-        StringIO.StringIO.__init__(self)
+class LPTFile(BaseFile):
+    allowed_modes = 'OR'
     
-    # flush buffer to LPR printer    
+    def __init__(self, stream, name):
+        # width=255 means line wrap
+        self.width = 255
+        self.col = 1
+        self.output_stream = stream
+        BaseFile.__init__(self, StringIO(), name)
+
+    # for device_open
+    def open(self, number, mode, access, lock, reclen):
+        return open_device_file(self, number, mode, access, lock, reclen)
+
     def flush(self):
-        oslayer.line_print(self.getvalue(), self.printer_name)
+        self.output_stream.write(self.fhandle.getvalue())
+        self.fhandle.truncate(0)
+        
+    def set_width(self, new_width=255):
+        self.width = new_width
+
+    def write(self, s):
+        for c in str(s):
+            if self.col >= self.width and self.width != 255:  # width 255 means wrapping enabled
+                self.fhandle.write('\r\n')
+                self.flush()
+                self.col = 1
+            if c in ('\n', '\r'): # don't replace with CRLF when writing to files
+                self.fhandle.write(c)
+                self.flush()
+                self.col = 1
+            elif c == '\b':   # BACKSPACE
+                if self.col > 1:
+                    self.col -= 1
+                    self.seek(-1, 1)
+                    self.truncate()  
+            else:    
+                self.fhandle.write(c)
+                # nonprinting characters including tabs are not counted for WIDTH
+                # for lpt1 and files , nonprinting chars are not counted in LPOS; but chr$(8) will take a byte out of the buffer
+                if ord(c) >= 32:
+                    self.col += 1
+        
+    def lof(self):
+        # bad file mode
+        raise error.RunError(54)
+
+    def loc(self):
+        # bad file mode
+        raise error.RunError(54)
+
+    def eof(self):
+        # bad file mode
+        raise error.RunError(54)
 
 
-class SerialFile(RandomBase):
+class COMFile(RandomBase):
+    allowed_modes = 'IOAR'
+    
     # communications buffer overflow
     overflow_error = 69
 
-    def __init__(self, name, port, number=0, reclen=128):
+    def __init__(self, stream, name):
         self._in_buffer = bytearray()
-        RandomBase.__init__(self, serial.serial_for_url(port, timeout=0, do_not_open=True), name, number, 'R', 'RW', '', reclen)
-        if port.split(':', 1)[0] == 'socket':
-            self.fhandle = SocketSerialWrapper(self.fhandle)
+        RandomBase.__init__(self, stream, name, 0, 'R', 'RW', '', serial_in_size)
+
+    # for device_open
+    def open(self, number, mode, access, lock, reclen):
+        # open the COM port
+        if self.fhandle._isOpen:
+            # file already open
+            raise error.RunError(55)
+        else:
+            self.fhandle.open()
+        return open_device_file(self, number, mode, access, lock, reclen)   
     
     # fill up buffer - non-blocking    
     def check_read(self):
@@ -282,53 +378,7 @@ class SerialFile(RandomBase):
     def lof(self):
         return serial_in_size - self.loc()
     
-    def open(self):
-        if self.fhandle._isOpen:
-            # file already open
-            raise error.RunError(55)
-        else:
-            self.fhandle.open()
-    
     def close(self):
         self.fhandle.close()
         RandomBase.close(self)
-
-
-class SocketSerialWrapper(object):
-    ''' workaround for some limitations of SocketSerial with timeout==0 '''
-    
-    def __init__(self, socketserial):
-        self._serial = socketserial    
-        self._isOpen = self._serial._isOpen
-    
-    def open(self):
-        self._serial.open()
-        self._isOpen = self._serial._isOpen
-    
-    def close(self):
-        self._serial.close()
-        self._isOpen = self._serial._isOpen
-        
-    # non-blocking read   
-    # SocketSerial.read always returns '' if timeout==0
-    def read(self, num=1):
-        self._serial._socket.setblocking(0)
-        if not self._serial._isOpen: 
-            raise serial.serialutil.portNotOpenError
-        # poll for bytes (timeout = 0)
-        ready, _, _ = select.select([self._serial._socket], [], [], 0)
-        if not ready:
-            # no bytes present after poll
-            return ''
-        try:
-            # fill buffer at most up to buffer size        
-            return self._serial._socket.recv(num)
-        except socket.timeout:
-            pass
-        except socket.error, e:
-            raise serial.SerialException('connection failed (%s)' % e)
-    
-    def write(self, s):
-        self._serial.write(s)                    
-
 
