@@ -111,9 +111,11 @@ def prepare_devices(args):
         graphics.backend = backend_pygame
         try:
             x, y = args.dimensions[0].split(',')
-            graphics.backend.display_size = (int(dim[0]), int(dim[1]))
+            graphics.backend.display_size = (int(x), int(y))
         except Exception:
             pass    
+        if args.fullscreen:
+            graphics.backend.fullscreen = True
         console.penstick = backend_pygame
         console.sound = backend_pygame
         # redirected output is split between graphical screen and redirected file    
@@ -176,6 +178,7 @@ def get_args():
     parser.add_argument('--codepage', nargs=1, metavar=('NUMBER'), help='Load specified font codepage. Default is 437 (US).')
     parser.add_argument('--nosound', action='store_true', help='Disable sound output')
     parser.add_argument('--dimensions', nargs=1, metavar=('X, Y'), help='Set pixel dimensions for graphical display. Default is 640,480. Use 640,400 or multiples for cleaner pixels - but incorrect aspect ratio - on square-pixel LCDs.')
+    parser.add_argument('--fullscreen', action='store_true', help='Fullscreen mode. This is unlikely to have either the correct aspect ratio or clean square pixels, but it does take up the whole screen.')
     parser.add_argument('--debug', action='store_true', help='Enable DEBUG keyword')
     parser.add_argument('--list-all', action='store_true', help='Allow listing and ASCII saving of lines beyond 65530')
     parser.add_argument('--unprotect', action='store_true', help='Allow listing and ASCII saving of protected files')

@@ -72,11 +72,14 @@ gamecolours64 = [ pygame.Color(*rgb) for rgb in colours64 ]
 workaround_palette= [ (0,0,0),(0,0,1),(0,0,2),(0,0,3),(0,0,4),(0,0,5),(0,0,6),(0,0,7),(0,0,8),(0,0,9),(0,0,10),(0,0,11),(0,0,12),(0,0,13),(0,0,14),(0,0,15) ]
 
 # standard palettes
-palette64=[0,1,2,3,4,5,20,7,56,57,58,59,60,61,62,63]
+palette64 = None 
+#[0,1,2,3,4,5,20,7,56,57,58,59,60,61,62,63]
+gamepalette = None
 
 # screen width and height in pixels
 size = (0,0)
 display_size = (640, 480)
+fullscreen = False
 
 # letter shapes
 glyphs = []
@@ -254,13 +257,16 @@ keycode_to_inpcode = {
 }
 
 def init():
-    global fonts, num_sticks, joysticks, display
+    global fonts, num_sticks, joysticks, physical_size
     pre_init_mixer()    
     pygame.init()
+    # get physical screen dimensions (needs to be called before set_mode)
+    display_info = pygame.display.Info()
+    physical_size = display_info.current_w, display_info.current_h
     # first set the screen non-resizeable, to trick things like maximus into not full-screening
     # I hate it when applications do this ;)
     pygame.display.set_mode(display_size, 0, 8)
-    display = pygame.display.set_mode(display_size, pygame.RESIZABLE, 8)
+    resize_display(*display_size)
     pygame.display.set_caption('PC-BASIC 3.23')
     pygame.key.set_repeat(500, 24)
     fonts = cpi_font.load_codepage(console.codepage)
@@ -274,7 +280,17 @@ def init():
     for j in joysticks:
         j.init()
     return True
-        
+
+def resize_display(width, height): 
+    global display, screen_changed
+    flags = pygame.RESIZABLE
+    if fullscreen or (width, height) == physical_size:
+        flags |= pygame.FULLSCREEN | pygame.NOFRAME
+    display = pygame.display.set_mode((width, height), flags, 8)
+    if gamepalette:
+        display.set_palette(gamepalette)
+    screen_changed = True    
+    
 def close():
     pygame.joystick.quit()
     pygame.display.quit()    
@@ -287,26 +303,18 @@ def get_palette_entry(index):
 
 def set_palette(new_palette=None):
     global palette64, gamepalette
-    if console.num_palette==64:
-        if new_palette==None:
-            new_palette=[0,1,2,3,4,5,20,7,56,57,58,59,60,61,62,63]
-        palette64 = new_palette
-        gamepalette = [ gamecolours64[i] for i in new_palette ]
+    if console.num_palette == 64:
+        palette64 = new_palette if new_palette else [0,1,2,3,4,5,20,7,56,57,58,59,60,61,62,63]
+        gamepalette = [ gamecolours64[i] for i in palette64 ]
     elif console.num_colours>=16:
-        if new_palette==None:
-            new_palette=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-        palette64 = new_palette
-        gamepalette = [ gamecolours16[i] for i in new_palette ]
+        palette64 = new_palette if new_palette else [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+        gamepalette = [ gamecolours16[i] for i in palette64 ]
     elif console.num_colours==4:
-        if new_palette==None:
-            new_palette=[0,11,13,15]
-        palette64 = new_palette
-        gamepalette = [ gamecolours16[i] for i in new_palette ]
+        palette64 = new_palette if new_palette else [0, 11, 13, 15]
+        gamepalette = [ gamecolours16[i] for i in palette64 ]
     else:
-        if new_palette==None:
-            new_palette=[0,15]
-        palette64 = new_palette
-        gamepalette = [ gamecolours16[i] for i in new_palette ]
+        palette64 = new_palette if new_palette else [0, 15]
+        gamepalette = [ gamecolours16[i] for i in palette64 ]
     display.set_palette(gamepalette)
 
 def set_palette_entry(index, colour):
@@ -543,8 +551,7 @@ def check_events(pause=False):
         elif event.type == pygame.JOYBUTTONDOWN:
             handle_stick(event)    
         elif event.type == pygame.VIDEORESIZE:
-            display = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE, 8)
-            display.set_palette(gamepalette)
+            resize_display(event.w, event.h)
     check_screen()
     return False
     
