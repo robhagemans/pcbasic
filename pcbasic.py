@@ -39,22 +39,7 @@ def main():
     # DEBUG mode
     tokenise.init_DEBUG(args.debug)
     debugstr = ' [DEBUG mode]' if args.debug else ''
-    # PEEK presets
-    if args.peek != None:
-        for a in args.peek:
-            seg, addr, val = a.split(':')
-            expressions.peek_values[(int(seg), int(addr))] = int(val)
-    # implied RUN invocations
-    if args.infile and not args.load and not args.conv:
-        args.run = True    
-    if args.double:
-        expressions.option_double = True    
-    if args.list_all or args.conv:
-        program.max_list_line = 65535    
-    if args.unprotect or args.conv:
-        program.dont_protect = True    
-    if args.codepage:
-        console.codepage = int(args.codepage[0])
+    prepare_constants(args)
     # announce ourselves; go!
     try:
         # choose the screen backends and other devices 
@@ -90,6 +75,27 @@ def main():
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
         console.exit()
 
+def prepare_constants(args):
+    # PEEK presets
+    if args.peek != None:
+        try:
+            for a in args.peek:
+                seg, addr, val = a.split(':')
+                expressions.peek_values[(int(seg), int(addr))] = int(val)
+        except Exception:
+            pass        
+    # implied RUN invocations
+    if args.infile and not args.load and not args.conv:
+        args.run = True    
+    if args.double:
+        expressions.option_double = True    
+    if args.list_all or args.conv:
+        program.max_list_line = 65535    
+    if args.unprotect or args.conv:
+        program.dont_protect = True    
+    if args.codepage:
+        console.codepage = int(args.codepage[0])
+
 def prepare_devices(args):
     if args.dumb or args.conv or (not args.graphical and not args.text and not sys.stdin.isatty()):
         # redirected input leads to dumbterm use
@@ -103,6 +109,11 @@ def prepare_devices(args):
         import backend_pygame
         console.backend = backend_pygame   
         graphics.backend = backend_pygame
+        try:
+            x, y = args.dimensions[0].split(',')
+            graphics.backend.display_size = (int(dim[0]), int(dim[1]))
+        except Exception:
+            pass    
         console.penstick = backend_pygame
         console.sound = backend_pygame
         # redirected output is split between graphical screen and redirected file    
@@ -126,7 +137,6 @@ def prepare_devices(args):
         console.sound = nosound
     # choose peripherals    
     deviceio.init_devices(args)
-
    
 def get_args():
     # GWBASIC invocation, for reference:
@@ -165,6 +175,7 @@ def get_args():
     parser.add_argument('--conv', metavar='MODE', help='Convert file to (A)SCII, (B)ytecode or (P)rotected mode. Implies --unprotect and --list-all.')
     parser.add_argument('--codepage', nargs=1, metavar=('NUMBER'), help='Load specified font codepage. Default is 437 (US).')
     parser.add_argument('--nosound', action='store_true', help='Disable sound output')
+    parser.add_argument('--dimensions', nargs=1, metavar=('X, Y'), help='Set pixel dimensions for graphical display. Default is 640,480. Use 640,400 or multiples for cleaner pixels - but incorrect aspect ratio - on square-pixel LCDs.')
     parser.add_argument('--debug', action='store_true', help='Enable DEBUG keyword')
     parser.add_argument('--list-all', action='store_true', help='Allow listing and ASCII saving of lines beyond 65530')
     parser.add_argument('--unprotect', action='store_true', help='Allow listing and ASCII saving of protected files')
