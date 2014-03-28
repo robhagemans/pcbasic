@@ -29,7 +29,7 @@ def load_codepage(number=437):
             found = True
             break
     if not found:
-        sys.stderr.write('WARNING: Could not find codepage. Falling back to codepage 437 (US).\n')
+        sys.stderr.write('WARNING: Could not find EGA font for codepage %d. Falling back to codepage 437 (US).\n' % number)
         cpifile = 'ega.cpi'
         number = 437        
     path = os.path.dirname(os.path.realpath(__file__))

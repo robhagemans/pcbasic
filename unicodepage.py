@@ -26,7 +26,7 @@ def load_codepage(number=437):
     try:
         cp_to_unicode = codepage[number]
     except KeyError:
-        sys.stderr.write('WARNING: Could not find unicode/codepage table. Falling back to codepage 437 (US).\n')
+        sys.stderr.write('WARNING: Could not find unicode table for codepage %d. Falling back to codepage 437 (US).\n' % number)
         cp_to_unicode = codepage[437]
     cp_to_unicode.update(special_graphic)    
     unicode_to_cp = dict((reversed(item) for item in cp_to_unicode.items()))
