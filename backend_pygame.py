@@ -24,7 +24,8 @@ import graphics
 import var
 # for debug_print only
 import sys
-
+# for run_mode only
+import program
 
 # CGA palette choices
 colours16 = [
@@ -986,7 +987,9 @@ def check_quit_sound():
         quiet_ticks += 1    
         if quiet_ticks > quiet_quit:
             # this is to avoid high pulseaudio cpu load
-            pygame.mixer.quit()
+            if not program.run_mode:
+                pygame.mixer.quit()
+                quiet_ticks = 0
 
 def check_hangs():
     global last_chunk, same_chunk_ticks
