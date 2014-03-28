@@ -478,7 +478,9 @@ def exec_def_seg(ins):
     if util.skip_white_read_if(ins, ('\xE7',)): #=
         var.segment = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=0xffff)
     else:
-        var.segment = var.data_segment    
+        var.segment = var.data_segment   
+    if var.segment < 0:
+        var.segment += 0x10000     
     util.require(ins, util.end_statement)
 
 # do-nothing DEF USR    

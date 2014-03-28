@@ -130,6 +130,9 @@ keys_line_replace_chars = {
         '\x1F': '\x19',
     }        
 
+# memory model: text mode video memory
+text_segment = 0xb800
+
 #############################
 # core event handler    
 
@@ -864,4 +867,14 @@ def scroll_down(from_line):
     # sync buffers with the new screen reality:
     apage.row.insert(from_line-1, ScreenRow(width))
     del apage.row[scroll_height-1] 
+
+#################################################################################
+
+def get_memory(seg, addr):
+    if screen_mode != 0 or seg != text_segment or addr >= width*height*2:
+        return 0
+    return get_screen_char_attr(1+addr//(width*2), 1+(addr%(width*2))//2, addr%2)
+    
+    
+    
 
