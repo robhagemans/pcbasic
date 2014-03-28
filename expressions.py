@@ -565,7 +565,7 @@ def value_fn(ins):
     for name in varnames:
         # we're just not doing strings
         if name in var.variables:
-            varsave[name] = vartypes.pass_number_keep(var.variables[name])
+            varsave[name] = vartypes.pass_number_keep(var.get_var(name))
     # read variables
     if util.skip_white_read_if(ins, ('(',)):
         exprs = parse_expr_list(ins, len(varnames), err=2)
@@ -798,7 +798,7 @@ def value_sgn(ins):
     else:
         return vartypes.pack_int(fp.unpack(inp).sign() )
 
-def value_fix(inp):
+def value_fix(ins):
     inp = vartypes.pass_number_keep(parse_bracket(ins))
     if inp[0] == '%':
         return inp
@@ -825,9 +825,15 @@ def value_operator(op, left, right):
     elif op == '\xEC':              # /
         return vdiv(left, right)
     elif op == '\xF4':              # \
-        return vartypes.pack_int(vartypes.pass_int_unpack(left) / vartypes.pass_int_unpack(right))    
+        return fp.pack(fp.div(fp.unpack(vartypes.pass_single_keep(left)).ifloor(), 
+                fp.unpack(vartypes.pass_single_keep(right)).ifloor()).ifloor())
     elif op == '\xF3':              # %
-        return vartypes.pack_int(vartypes.pass_int_unpack(left) % vartypes.pass_int_unpack(right))    
+        numerator = vartypes.pass_int_unpack(right)
+        if numerator == 0:
+            # simulate division by zero
+            return fp.pack(fp.div(fp.unpack(vartypes.pass_single_keep(left)).ifloor(), 
+                    fp.unpack(vartypes.pass_single_keep(right)).ifloor()).ifloor())
+        return vartypes.pack_int(vartypes.pass_int_unpack(left) % numerator)    
     elif op == '\xE9':              # +
         return vplus(left, right)
     elif op == '\xEA':              # -
