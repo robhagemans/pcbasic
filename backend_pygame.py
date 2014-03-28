@@ -76,6 +76,7 @@ palette64=[0,1,2,3,4,5,20,7,56,57,58,59,60,61,62,63]
 
 # screen width and height in pixels
 size = (0,0)
+display_size = (640, 480)
 
 # letter shapes
 glyphs = []
@@ -253,10 +254,11 @@ keycode_to_inpcode = {
 }
 
 def init():
-    global fonts, num_sticks, joysticks
+    global fonts, num_sticks, joysticks, display
     pre_init_mixer()    
     pygame.init()
     pygame.display.set_caption('PC-BASIC 3.23')
+    display = pygame.display.set_mode(display_size, 0, 8)
     pygame.key.set_repeat(500, 24)
     fonts = cpi_font.load_codepage(console.codepage)
     if fonts == None:
@@ -303,8 +305,6 @@ def set_palette(new_palette=None):
         palette64 = new_palette
         gamepalette = [ gamecolours16[i] for i in new_palette ]
     display.set_palette(gamepalette)
-#    screen.set_palette(gamepalette)
-#    under_cursor.set_palette(gamepalette) 
 
 def set_palette_entry(index, colour):
     global palette64 
@@ -345,7 +345,6 @@ def setup_screen(to_height, to_width):
     global screen, display, size 
     global screen_changed
     size = to_width*8, to_height*font_height
-    display = pygame.display.set_mode(size, 0, 8)
     screen = pygame.Surface(size, 0, 8)
     # whole screen (blink on & off)
     for i in range(console.num_pages):
@@ -564,12 +563,12 @@ def check_screen():
         if screen_changed:
             refresh_screen()
             refresh_cursor()
-            pygame.transform.scale(screen, display.get_size(),display)
+            pygame.transform.scale(screen, display.get_size(), display)
             pygame.display.flip()             
         elif cursor_changed and console.cursor:
             remove_cursor()
             refresh_cursor()
-            pygame.transform.scale(screen, display.get_size(),display)
+            pygame.transform.scale(screen, display.get_size(), display)
             pygame.display.flip()             
         screen_changed = False
 
