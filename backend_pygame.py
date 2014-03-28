@@ -879,12 +879,12 @@ def play_sound(frequency, total_duration, fill=1, loop=False):
         num_samples = sample_rate / (2.*frequency)
         num_half = ceil(sample_rate/ (2.*frequency))
         # build wavelength of a square wave at max amplitude
-        wave0 = numpy.ones(num_half, numpy.int16) * (1<<mixer_bits - 1)
+        wave0 = numpy.ones(num_half, numpy.int16) * ((1<<(mixer_bits-1)) - 1)
         wave1 = -wave0
         wave0_1 = wave0[:-1]
         wave1_1 = wave1[:-1]
         # build chunk of waves
-        chunk = numpy.array([]) # FIXME - float64? and int16 doesn't seem to work
+        chunk = numpy.array([], numpy.int16) 
         half_waves, samples = 0, 0
         while len(chunk) < chunk_length:
             if samples > int(num_samples*half_waves):
@@ -906,7 +906,6 @@ def play_sound(frequency, total_duration, fill=1, loop=False):
     if not loop:    
         # make the last chunk longer than a normal chunk rather than shorter, to avoid jumping sound    
         floor_num_chunks = max(0, -1 + int((duration * sample_rate) / chunk_length))
-        chunk.astype(numpy.int16)
         sound_list = [] if floor_num_chunks == 0 else [ (pygame.sndarray.make_sound(chunk), False) ]*floor_num_chunks
         rest_length = int(duration * sample_rate) - chunk_length * floor_num_chunks
     else:
@@ -914,7 +913,6 @@ def play_sound(frequency, total_duration, fill=1, loop=False):
         sound_list = []
         rest_length = chunk_length
     # create the sound queue entry
-    chunk.astype(numpy.int16)
     sound_list.append((pygame.sndarray.make_sound(chunk[:rest_length]), loop))
     # append quiet gap if requested
     if gap:
@@ -955,7 +953,7 @@ except Exception:
 
 def pre_init_mixer():
     global sample_rate, mixer_bits
-    pygame.mixer.pre_init(sample_rate*4, -mixer_bits, channels=1, buffer=128) #4096
+    pygame.mixer.pre_init(sample_rate, -mixer_bits, channels=1, buffer=1024) #4096
 
 def init_mixer():    
     pygame.mixer.quit()
