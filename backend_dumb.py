@@ -1,7 +1,7 @@
 #
 # PC-BASIC 3.23 - backend_dumb.py
 #
-# Dumb terminal backend
+# Dumb terminal backend (Unix only)
 # implements text screen I/O functions on a dumb, echoing unicode terminal
 # 
 # (c) 2013, 2014 Rob Hagemans 
@@ -11,6 +11,7 @@
 #
 
 import sys
+import platform
 import time
 import select
 import os
@@ -40,6 +41,9 @@ control = (
         
 def init():
     global check_keys
+    if platform.system() == 'Windows':
+        sys.stderr.write('WARNING: Text terminal not supported on Windows.\n')
+        return False
     unicodepage.load_codepage(console.codepage)
     # use non-blocking and UTF8 when reading from ttys
     if sys.stdin.isatty():

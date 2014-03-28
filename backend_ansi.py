@@ -1,7 +1,7 @@
 #
 # PC-BASIC 3.23 - backend_ansi.py
 #
-# ANSI backend for Console
+# ANSI backend for Console (Unix only)
 #
 # (c) 2013, 2014 Rob Hagemans 
 #
@@ -16,8 +16,12 @@
 # non-blocking input with select, see http://repolinux.wordpress.com/2012/10/09/non-blocking-read-from-stdin-in-python/ 
 # reading escape sequences with os.read, see http://stackoverflow.com/questions/8620878/check-for-extra-characters-in-linux-terminal-buffer
 
+import sys
+import platform
+if platform.system() != 'Windows':
+    import tty, termios, select
+
 import time
-import sys, tty, termios, select
 import os
 
 import unicodepage
@@ -99,6 +103,9 @@ def get_size():
 ######
 
 def init():
+    if platform.system() == 'Windows':
+        sys.stderr.write('WARNING: ANSI terminal not supported on Windows.\n')
+        return False
     term_echo(False)
     unicodepage.load_codepage(console.codepage)
     term.write(esc_set_title % 'PC-BASIC 3.23')
