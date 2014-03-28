@@ -12,7 +12,7 @@
 import os
 import fcntl
 import pexpect
-
+import StringIO
 import console
     
 shell = '/bin/sh'
@@ -50,4 +50,25 @@ def spawn_interactive_shell(cmd):
                 console.write(c)
         if c == '' and not p.isalive(): 
             return
+            
+# print to LPR printer (ok for CUPS)
+class CUPSStream(StringIO.StringIO):
+    def __init__(self, printer_name=''):
+        self.printer_name = printer_name
+        StringIO.StringIO.__init__(self)
+    
+    def close(self):
+        self.flush()
+        
+    # flush buffer to LPR printer    
+    def flush(self):
+        options = ''
+        if self.printer_name != '' and self.printer_name != 'default':
+            options += ' -P ' + self.printer_name
+        printbuf = self.getvalue()    
+        self.truncate(0)
+        if printbuf != '':
+            pr = os.popen("lpr " + options, "w")
+            pr.write(printbuf)
+            pr.close()
             

@@ -18,6 +18,7 @@ import tokenise
 import program
 import statements 
 import fileio
+import deviceio
 import console
 
 # suppress one prompt by setting to False (used by EDIT)
@@ -77,5 +78,6 @@ def execution_loop():
                    
 def exit():
     fileio.close_all()
+    deviceio.close_devices()
     sys.exit(0)
     

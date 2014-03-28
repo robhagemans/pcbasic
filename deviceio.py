@@ -44,16 +44,20 @@ def init_devices(args):
     devices['COM2:'] = create_device('COM2:', args.com2)
 
 def create_device(name, arg, default=None):
-    if not arg or len(arg)==0:
-        return default
-    stream = create_device_stream(arg, allowed_protocols[name[:3]])
-    if not stream:
-        sys.stderr.write('WARNING: Could not attach %s to %s.\n' % (name, arg[0]))
-        return default
-    if name[:3] == 'COM':
-        return COMFile(stream, name)
+    if not arg or len(arg)==0 or not arg[0]:
+        stream = default
+    else:   
+        stream = create_device_stream(arg, allowed_protocols[name[:3]])
+        if not stream:
+            sys.stderr.write('WARNING: Could not attach %s to %s.\n' % (name, arg[0]))
+            stream = default
+    if stream:        
+        if name[:3] == 'COM':
+            return COMFile(stream, name)
+        else:
+            return LPTFile(stream, name)    
     else:
-        return LPTFile(stream, name)    
+        return None        
 
 def create_device_stream(arg, allowed):
     argsplit = arg[0].split(':', 1)
@@ -89,6 +93,12 @@ def device_open(device_name, number, mode, access, lock, reclen):
     # don't lock devices
     return device.open(number, mode, access, '', reclen)
 
+def close_devices():
+    for d in devices:
+        if devices[d]:
+            devices[d].close()
+
+
 ############################################################################
 
 # for device_open
@@ -107,6 +117,7 @@ def open_device_file(dev, number, mode, access, lock='', reclen=128):
 class NullDevice(object):
     def __init__(self):
         self.width = 255
+        self.number = 0
 
     # for device_open
     def open(self, number, mode, access, lock, reclen):
@@ -310,7 +321,12 @@ class LPTFile(BaseFile):
         # bad file mode
         raise error.RunError(54)
     
-
+    def close(self):
+        # actually print
+        self.flush()
+        self.output_stream.flush()
+        
+        
 class COMFile(RandomBase):
     allowed_modes = 'IOAR'
     
