@@ -303,8 +303,8 @@ def set_palette(new_palette=None):
         palette64 = new_palette
         gamepalette = [ gamecolours16[i] for i in new_palette ]
     display.set_palette(gamepalette)
-    screen.set_palette(gamepalette)
-    under_cursor.set_palette(gamepalette) 
+#    screen.set_palette(gamepalette)
+#    under_cursor.set_palette(gamepalette) 
 
 def set_palette_entry(index, colour):
     global palette64 
@@ -314,8 +314,6 @@ def set_palette_entry(index, colour):
     else:
         gamecolor = gamecolours16[colour]
     display.set_palette_at(index,gamecolor)
-    screen.set_palette_at(index,gamecolor)
-    under_cursor.set_palette_at(index,gamecolor)
     
 def clear_rows(cattr, start, stop):
     bg = (cattr>>4) & 0x7
@@ -355,6 +353,8 @@ def setup_screen(to_height, to_width):
         console.pages[i].surface1 = pygame.Surface(size, depth=8)
         console.pages[i].surface0.set_palette(workaround_palette)
         console.pages[i].surface1.set_palette(workaround_palette)
+    screen.set_palette(workaround_palette)
+    under_cursor.set_palette(workaround_palette)
     set_palette()
     screen_changed = True
 
@@ -482,15 +482,10 @@ def build_cursor():
                 cursor0.set_at((xx, yy), color)
 
 def refresh_screen():
-    save_palette = screen.get_palette()
     if console.screen_mode or blink_state == 0:
-        console.vpage.surface0.set_palette(save_palette)
         screen.blit(console.vpage.surface0, (0, 0))
-        console.vpage.surface0.set_palette(workaround_palette)
     elif blink_state == 1: 
-        console.vpage.surface1.set_palette(save_palette)
         screen.blit(console.vpage.surface1, (0, 0))
-        console.vpage.surface1.set_palette(workaround_palette)
             
 def remove_cursor():
     if not console.cursor or console.vpage != console.apage:
