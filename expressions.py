@@ -696,9 +696,11 @@ def value_peek(ins):
         addr += 0x10000
     try:
         return vartypes.pack_int(var.peek_values[(var.segment, addr)])
-    except KeyError:   
+    except KeyError: 
         if var.segment == var.data_segment and addr >= var.var_mem_start:
             return vartypes.pack_int(max(0, var.get_var_memory(addr)))
+        elif var.segment == console.text_segment:
+            return vartypes.pack_int(console.get_memory(var.segment, addr))
         else:    
             return vartypes.null['%']
 
