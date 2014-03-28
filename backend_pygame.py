@@ -257,8 +257,11 @@ def init():
     global fonts, num_sticks, joysticks, display
     pre_init_mixer()    
     pygame.init()
+    # first set the screen non-resizeable, to trick things like maximus into not full-screening
+    # I hate it when applications do this ;)
+    pygame.display.set_mode(display_size, 0, 8)
+    display = pygame.display.set_mode(display_size, pygame.RESIZABLE, 8)
     pygame.display.set_caption('PC-BASIC 3.23')
-    display = pygame.display.set_mode(display_size, 0, 8)
     pygame.key.set_repeat(500, 24)
     fonts = cpi_font.load_codepage(console.codepage)
     if fonts == None:
@@ -283,7 +286,7 @@ def get_palette_entry(index):
     return palette64[index]
 
 def set_palette(new_palette=None):
-    global palette64 
+    global palette64, gamepalette
     if console.num_palette==64:
         if new_palette==None:
             new_palette=[0,1,2,3,4,5,20,7,56,57,58,59,60,61,62,63]
@@ -342,7 +345,7 @@ def init_screen_mode(mode, new_font_height):
     build_default_cursor(mode, True)
     
 def setup_screen(to_height, to_width):
-    global screen, display, size 
+    global screen, size 
     global screen_changed
     size = to_width*8, to_height*font_height
     screen = pygame.Surface(size, 0, 8)
@@ -524,6 +527,7 @@ def idle():
     pygame.time.wait(cycle_time/blink_cycles)  
 
 def check_events(pause=False):
+    global display_size
     # check and handle pygame events    
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
@@ -538,6 +542,9 @@ def check_events(pause=False):
             handle_mouse(event)
         elif event.type == pygame.JOYBUTTONDOWN:
             handle_stick(event)    
+        elif event.type == pygame.VIDEORESIZE:
+            display = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE, 8)
+            display.set_palette(gamepalette)
     check_screen()
     return False
     
