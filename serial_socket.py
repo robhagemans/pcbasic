@@ -2,12 +2,26 @@
 # serial_socket.py
 # workaround for some limitations of SocketSerial with timeout==0
 
-import serial
+import sys
+
+try:
+    import serial
+    from serial import SerialException, serialutil
+except Exception:
+    serial = None
+    
 import socket
 import select
+import oslayer
 
 def serial_for_url(url):
-    stream = serial.serial_for_url(url, timeout=0, do_not_open=True)
+    if not serial:
+        sys.stderr.write('WARNING: PySerial module not found. Serial port and socket communication not available.\n')
+        return None
+    try:    
+        stream = serial.serial_for_url(url, timeout=0, do_not_open=True)
+    except ValueError:
+        return None
     if url.split(':', 1)[0] == 'serial':
         return SocketSerialWrapper(stream)
     else:   
@@ -31,7 +45,7 @@ class SocketSerialWrapper(object):
     def read(self, num=1):
         self._serial._socket.setblocking(0)
         if not self._serial._isOpen: 
-            raise serial.serialutil.portNotOpenError
+            raise serialutil.portNotOpenError
         # poll for bytes (timeout = 0)
         ready, _, _ = select.select([self._serial._socket], [], [], 0)
         if not ready:
@@ -43,7 +57,7 @@ class SocketSerialWrapper(object):
         except socket.timeout:
             pass
         except socket.error, e:
-            raise serial.SerialException('connection failed (%s)' % e)
+            raise SerialException('connection failed (%s)' % e)
     
     def write(self, s):
         self._serial.write(s)                    
