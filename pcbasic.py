@@ -112,11 +112,13 @@ def prepare_devices(args):
     # initialise backends
     console.keys_visible = (not args.run and args.cmd == None)
     if not console.init():
-        sys.stderr.write('WARNING: Failed to initialise console. Falling back to dumb-terminal.\n')
+        sys.stderr.write('WARNING: Falling back to dumb-terminal.\n')
         # redirected input leads to dumbterm use
         console.backend = backend_dumb
         console.sound = sound_beep        
-        console.init()
+        if not  console.init():
+            sys.stderr.write('FATAL: Failed to initialise console.\n')
+            sys.exit(0)
     if args.nosound or not console.sound.init_sound():
         sys.stderr.write('WARNING: Failed to initialise sound. Sound will be disabled.\n')
         # fallback warning here?

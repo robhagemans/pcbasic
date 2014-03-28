@@ -260,6 +260,7 @@ def init():
     pygame.key.set_repeat(500, 24)
     fonts = cpi_font.load_codepage(console.codepage)
     if fonts == None:
+        sys.stderr.write('WARNING: Failed to initialise PyGame console.')
         return False
     unicodepage.load_codepage(console.codepage)
     init_mixer()
