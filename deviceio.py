@@ -176,7 +176,7 @@ class KYBDFile(NullDevice):
         NullDevice.__init__(self)
         
     def read_line(self):
-        s = ''
+        s = bytearray('')
         while True:
             c = self.read(1)
             if c == '\r':
@@ -328,7 +328,11 @@ class COMFile(RandomBase):
             # file already open
             raise error.RunError(55)
         else:
-            self.fhandle.open()
+            try:
+                self.fhandle.open()
+            except serial_socket.SerialException:
+                # device timeout
+                raise error.RunError(24)
         return open_device_file(self, number, mode, access, lock, reclen)   
     
     # fill up buffer - non-blocking    
@@ -340,27 +344,30 @@ class COMFile(RandomBase):
             # device I/O
             raise error.RunError(57)
         
-    # blocking read
-    def read_chars(self, num=1):
-        out = []
+    def read(self, num):
+        out = ''
         while len(out) < num:
             # non blocking read
             self.check_read()
             to_read = min(len(self._in_buffer), num - len(out))
-            out.append(self._in_buffer[:to_read])
+            out += str(self._in_buffer[:to_read])
             del self._in_buffer[:to_read]
             # allow for break & screen updates
             console.idle()        
-            console.check_events()                       
+            console.check_events() 
         return out
+        
+    # blocking read
+    def read_chars(self, num=1):
+        return list(self.read(num))
     
     # blocking read line (from com port directly - NOT from field buffer!)    
     def read_line(self):
-        out = ''
+        out = bytearray('')
         while True:
-            c = self.read_chars()
+            c = self.read(1)
             if c == '\r':
-                c = self.read_chars()
+                c = self.read(1)
                 out += ''.join(c)
                 if c == '\n':    
                     break
@@ -379,7 +386,7 @@ class COMFile(RandomBase):
     # read (GET)    
     def read_field(self, num):
         # blocking read of num bytes
-        self.field[:] = ''.join(self.read_chars(num))
+        self.field[:] = self.read(num)
         
     # write (PUT)
     def write_field(self, num):

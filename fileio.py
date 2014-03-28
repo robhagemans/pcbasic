@@ -177,7 +177,7 @@ class BaseFile(object):
         return ''.join(self.read_chars(num))
     
     def read_line(self):
-        out = ''
+        out = bytearray('')
         while True:
             c = self.read(1)
             if c == '\r':
@@ -320,10 +320,6 @@ class RandomBase(BaseFile):
     def __init__(self, fhandle, name, number, mode, access, lock, reclen=128):
         BaseFile.__init__(self, fhandle, name, number, mode, access, lock)
         self.reclen = reclen
-        if self.mode in ('I', 'O', 'R', 'S', 'L'):
-            self.fhandle.seek(0)
-        else:
-            self.fhandle.seek(0, 2)
         # replace with empty field if already exists    
         try:
             self.field = fields[self.number]
