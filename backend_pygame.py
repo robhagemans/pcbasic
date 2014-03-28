@@ -302,6 +302,7 @@ def set_palette(new_palette=None):
             new_palette=[0,15]
         palette64 = new_palette
         gamepalette = [ gamecolours16[i] for i in new_palette ]
+    display.set_palette(gamepalette)
     screen.set_palette(gamepalette)
     under_cursor.set_palette(gamepalette) 
 
@@ -312,6 +313,7 @@ def set_palette_entry(index, colour):
         gamecolor = gamecolours64[colour]
     else:
         gamecolor = gamecolours16[colour]
+    display.set_palette_at(index,gamecolor)
     screen.set_palette_at(index,gamecolor)
     under_cursor.set_palette_at(index,gamecolor)
     
@@ -342,10 +344,11 @@ def init_screen_mode(mode, new_font_height):
     build_default_cursor(mode, True)
     
 def setup_screen(to_height, to_width):
-    global screen, size 
+    global screen, display, size 
     global screen_changed
     size = to_width*8, to_height*font_height
-    screen = pygame.display.set_mode(size, 0,8)
+    display = pygame.display.set_mode(size, 0, 8)
+    screen = pygame.Surface(size, 0, 8)
     # whole screen (blink on & off)
     for i in range(console.num_pages):
         console.pages[i].surface0 = pygame.Surface(size, depth=8)
@@ -566,10 +569,12 @@ def check_screen():
         if screen_changed:
             refresh_screen()
             refresh_cursor()
+            pygame.transform.scale(screen, display.get_size(),display)
             pygame.display.flip()             
         elif cursor_changed and console.cursor:
             remove_cursor()
             refresh_cursor()
+            pygame.transform.scale(screen, display.get_size(),display)
             pygame.display.flip()             
         screen_changed = False
 
@@ -938,7 +943,7 @@ quiet_quit = 200
 # kill the mixer after encountering the same chunk for may times - it has a tendency to hang.
 last_chunk = None
 same_chunk_ticks = 0
-max_ticks_same = 150
+max_ticks_same = None #150
 
 # loop the sound  in the mixer queue
 loop_sound = None
@@ -977,6 +982,8 @@ def check_quit_sound():
 
 def check_hangs():
     global last_chunk, same_chunk_ticks
+    if not max_ticks_same:
+        return
     current_chunk = pygame.mixer.Channel(0).get_queue() 
     if current_chunk == last_chunk:
         same_chunk_ticks += 1
