@@ -22,7 +22,7 @@ def serial_for_url(url):
         stream = serial.serial_for_url(url, timeout=0, do_not_open=True)
     except ValueError:
         return None
-    if url.split(':', 1)[0] == 'serial':
+    if url.split(':', 1)[0] == 'socket':
         return SocketSerialWrapper(stream)
     else:   
         return stream
@@ -39,7 +39,10 @@ class SocketSerialWrapper(object):
     def close(self):
         self._serial.close()
         self._isOpen = self._serial._isOpen
-        
+    
+    def flush(self):
+        pass
+            
     # non-blocking read   
     # SocketSerial.read always returns '' if timeout==0
     def read(self, num=1):
@@ -52,7 +55,7 @@ class SocketSerialWrapper(object):
             # no bytes present after poll
             return ''
         try:
-            # fill buffer at most up to buffer size        
+            # fill buffer at most up to buffer size  
             return self._serial._socket.recv(num)
         except socket.timeout:
             pass
