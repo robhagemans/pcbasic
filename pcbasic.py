@@ -119,9 +119,10 @@ def prepare_devices(args):
         if not  console.init():
             sys.stderr.write('FATAL: Failed to initialise console.\n')
             sys.exit(0)
-    if args.nosound or not console.sound.init_sound():
+    if args.nosound:
+        console.sound = nosound
+    if not console.sound.init_sound():
         sys.stderr.write('WARNING: Failed to initialise sound. Sound will be disabled.\n')
-        # fallback warning here?
         console.sound = nosound
     # choose peripherals    
     deviceio.init_devices(args)
