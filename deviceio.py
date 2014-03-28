@@ -18,6 +18,7 @@ import error
 import fileio
 from fileio import RandomBase, TextFile, BaseFile
 import console
+import sys
 
 # buffer sizes (/c switch in GW-BASIC)
 serial_in_size = 256
@@ -25,33 +26,54 @@ serial_out_size = 128
 
 devices = {}
 
+allowed_protocols = {
+    'LPT': ('CUPS', 'FILE', 'PORT', 'SOCK'),
+    'COM': ('PORT', 'SOCK')
+    }
+
 def init_devices(args):
     global devices
     # always defined
     devices['SCRN:'] = SCRNFile()
     devices['KYBD:'] = KYBDFile()
-    devices['LPT1:'] = LPTFile(create_device_stream(args.lpt1) if args.lpt1 else oslayer.nullstream, 'LPT1:') 
+    devices['LPT1:'] = create_device('LPT1:', args.lpt1, oslayer.nullstream) 
     # optional
-    devices['LPT2:'] = LPTFile(create_device_stream(args.lpt2), 'LPT2:') if args.lpt2 else None
-    devices['LPT3:'] = LPTFile(create_device_stream(args.lpt3), 'LPT3:') if args.lpt3 else None
-    devices['COM1:'] = COMFile(create_device_stream(args.com1), 'COM1:') if args.com1 else None
-    devices['COM2:'] = COMFile(create_device_stream(args.com2), 'COM2:') if args.com2 else None
+    devices['LPT2:'] = create_device('LPT2:', args.lpt2)
+    devices['LPT3:'] = create_device('LPT3:', args.lpt3)
+    devices['COM1:'] = create_device('COM1:', args.com1)
+    devices['COM2:'] = create_device('COM2:', args.com2)
 
-def create_device_stream(arg):
-    for a in arg:
-        addr, val = a.split(':', 1)
-        if addr.upper() == 'CUPS':
-            stream = oslayer.CUPSStream(val)
-        elif addr.upper() == 'FILE':
-            stream = oslayer.safe_open(val, 'R', 'RW')
-        elif addr.upper() == 'PORT':
-            # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows. Or anything supported by serial_for_url (RFC 2217 etc)
-            stream = serial_socket.serial_for_url(val)
-        elif addr.upper() == 'SOCK':
-            stream = serial_socket.serial_for_url('socket://'+val)
-        else:
-            # File not found
-            raise error.RunError(53)
+def create_device(name, arg, default=None):
+    if not arg or len(arg)==0:
+        return default
+    stream = create_device_stream(arg, allowed_protocols[name[:3]])
+    if not stream:
+        sys.stderr.write('WARNING: Could not attach %s to %s.\n' % (name, arg[0]))
+        return default
+    if name[:3] == 'COM':
+        return COMFile(stream, name)
+    else:
+        return LPTFile(stream, name)    
+
+def create_device_stream(arg, allowed):
+    argsplit = arg[0].split(':', 1)
+    if len(argsplit) < 2:
+        return None
+    addr, val = argsplit[0].upper(), argsplit[1]
+    if addr not in allowed:
+        return None
+    if addr == 'CUPS':
+        stream = oslayer.CUPSStream(val)
+    elif addr == 'FILE':
+        stream = oslayer.safe_open(val, 'R', 'RW')
+    elif addr == 'PORT':
+        # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows. Or anything supported by serial_for_url (RFC 2217 etc)
+        stream = serial_socket.serial_for_url(val)
+    elif addr == 'SOCK':
+        stream = serial_socket.serial_for_url('socket://'+val)
+    else:
+        # File not found
+        raise error.RunError(53)
     return stream
             
 def device_open(device_name, number, mode, access, lock, reclen):
