@@ -33,9 +33,9 @@ def init_devices(args):
     devices['LPT1:'] = LPTFile(create_device_stream(args.lpt1) if args.lpt1 else oslayer.nullstream, 'LPT1:') 
     # optional
     devices['LPT2:'] = LPTFile(create_device_stream(args.lpt2), 'LPT2:') if args.lpt2 else None
-    devices['COM1:'] = LPTFile(create_device_stream(args.lpt3), 'LPT3:') if args.lpt3 else None
-    devices['COM2:'] = COMFile(create_device_stream(args.com1), 'COM1:') if args.com1 else None
-    devices['COM3:'] = COMFile(create_device_stream(args.com2), 'COM2:') if args.com2 else None
+    devices['LPT3:'] = LPTFile(create_device_stream(args.lpt3), 'LPT3:') if args.lpt3 else None
+    devices['COM1:'] = COMFile(create_device_stream(args.com1), 'COM1:') if args.com1 else None
+    devices['COM2:'] = COMFile(create_device_stream(args.com2), 'COM2:') if args.com2 else None
 
 def create_device_stream(arg):
     for a in arg:
@@ -46,9 +46,9 @@ def create_device_stream(arg):
             stream = oslayer.safe_open(val, 'R', 'RW')
         elif addr.upper() == 'PORT':
             # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows. Or anything supported by serial_for_url (RFC 2217 etc)
-            stream = serial.serial_for_url(val, timeout=0, do_not_open=True)
+            stream = serial_socket.serial_for_url(val)
         elif addr.upper() == 'SOCK':
-            stream = serial.serial_for_url('socket://'+val, timeout=0, do_not_open=True)
+            stream = serial_socket.serial_for_url('socket://'+val)
         else:
             # File not found
             raise error.RunError(53)
@@ -314,7 +314,7 @@ class COMFile(RandomBase):
         # fill buffer at most up to buffer size        
         try:
             self._in_buffer += self.fhandle.read(serial_in_size - len(self._in_buffer))
-        except serial.SerialException:
+        except serial_socket.SerialException:
             # device I/O
             raise error.RunError(57)
         
