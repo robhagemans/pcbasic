@@ -15,7 +15,6 @@ import errno
 import fnmatch
 import string
 from functools import partial
-import StringIO
 
 import error
 
@@ -308,24 +307,6 @@ def files(pathmask, console):
         # allow to break during dir listing & show names flowing on screen
         console.check_events()             
     console.write(str(disk_free(path)) + ' Bytes free\n')
-
-# print to LPR printer (ok for CUPS)
-# TODO: use Windows printing subsystem for Windows, LPR is not standard there.
-class CUPSStream(StringIO.StringIO):
-    def __init__(self, printer_name=''):
-        self.printer_name = printer_name
-        StringIO.StringIO.__init__(self)
-    
-    # flush buffer to LPR printer    
-    def flush(self):
-        options = ''
-        if self.printer_name != '':
-            options += ' -P ' + self.printer_name
-        printbuf = self.getvalue()    
-        if printbuf != '':
-            pr = os.popen("lpr " + options, "w")
-            pr.write(printbuf)
-            pr.close()
 
 # platform-specific:
 import platform
