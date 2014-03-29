@@ -12,7 +12,6 @@
 import os
 import fcntl
 import pexpect
-import StringIO
 import console
 import unicodepage    
     

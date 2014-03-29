@@ -18,7 +18,6 @@ import subprocess
 import threading
 import win32print
 import win32ui
-import StringIO
 
 import error
 import console
