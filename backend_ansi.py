@@ -102,6 +102,9 @@ def get_size():
 
 ######
 
+def prepare(args):
+    pass
+
 def init():
     if platform.system() == 'Windows':
         sys.stderr.write('WARNING: ANSI terminal not supported on Windows.\n')
