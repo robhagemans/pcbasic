@@ -757,13 +757,13 @@ def set_memory(addr, val):
         elif console.screen_mode == 7:
             page, addr = addr//8192, addr%8192
             x, y = (addr%40)*8, addr//40
-            set_pixel_byte(0, x, y, colour_plane_write_mask & 0xf, val)
+            set_pixel_byte(page, x, y, colour_plane_write_mask & 0xf, val)
         elif console.screen_mode == 8:
             page, addr = addr//16384, addr%16384
             x, y = (addr%80)*8, addr//80
-            set_pixel_byte(0, x, y, colour_plane_write_mask & 0xf, val)
+            set_pixel_byte(page, x, y, colour_plane_write_mask & 0xf, val)
         elif console.screen_mode == 9:
-            page, addr = addr//32767, addr%32767
+            page, addr = addr//32768, addr%32768
             x, y = (addr%80)*8, addr//80
-            set_pixel_byte(0, x, y, colour_plane_write_mask & 0xf, val)            
+            set_pixel_byte(page, x, y, colour_plane_write_mask & 0xf, val)            
 
