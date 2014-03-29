@@ -870,11 +870,14 @@ def scroll_down(from_line):
 
 #################################################################################
 
-def get_memory(seg, addr):
-    if screen_mode != 0 or seg != text_segment or addr >= width*height*2:
-        return 0
-    return get_screen_char_attr(1+addr//(width*2), 1+(addr%(width*2))//2, addr%2)
-    
+def get_memory(addr):
+    if screen_mode == 0: 
+        if addr < text_segment*0x10 or addr >= text_segment*0x10 + width*height*2:
+            return -1
+        addr -= text_segment*0x10
+        return get_screen_char_attr(1+addr//(width*2), 1+(addr%(width*2))//2, addr%2)
+    else:
+        return graphics.get_memory(addr)
     
     
 
