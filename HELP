@@ -905,7 +905,8 @@ Sets the memory segment to be used by BLOAD, BSAVE, CALL, PEEK, POKE, or USR.
 'address' is a numeric-valued expression in [-32768, 65535].
 the following segments are implemented/known:
     data            &h13ad
-    screen buffer   &Hb800  (not implemented)
+    video           &hb800  (SCREENs 0, 1, 2)
+    video           &ha000  (SCREENs 7, 8, 9)
 NOTES:
 -   If 'address' is negative, it is interpreted as its two's complement.
 -   If 'address' is not specified, the segment is set to the GW-BASIC data
@@ -2627,18 +2628,19 @@ ERRORS:
 PEEK function
 value = PEEK(address)
 -------------
-Returns the value of the memory at the current DEF SEG segment + 'address'.
+Returns the value of the memory at the current DEF SEG segment * 16 + 'address'
 'address' must be in [-32768, 65536]. Negative values are interpreted as their 
 two's complement.
 NOTES:
 -   The memory is only partly emulated in PC-BASIC 3.23. PEEK can be used to
     access variable and string space (using VARPTR), but not arrays of strings,
-    the stored program, or file descriptors.
+    the stored program, or file descriptors. It can also be used to access the
+    emulated video memory.
 -   Values for particular memory address can be preset on the command line 
     using the --peek option. This can be used for compatibility with old 
-    programs.
--   Outside these emulated areas, PEEK returns 0. In particular, if the current
-    segment is not the data segment, PEEK returns 0.   
+    programs. These values will override video or data segment values, if they
+    are in those locations.
+-   Outside these emulated areas, PEEK returns 0. 
 ERRORS:
 -   If 'address' is a string, raises TYPE MISMATCH.
 -   If 'address' is not in [-32768, 65536], raises OVERFLOW.
@@ -2704,7 +2706,7 @@ Duration:
     ML  Legato: full duration is sound.
     MS  Staccato: 3/4 of the duration is sound, with 1/4 silence. 
 Tempo:    
-    Tn  Sets the tempo to 'n' (legato) L4s per minute. Default is 120.
+    Tn  Sets the tempo to 'n' L4s per minute. Default is 120.
 Background mode (affects SOUND, PLAY and BEEP)
     MB  Turns on background mode; sound commands exit without waiting for the 
         music to finish. The music keeps playing while other commands are 
@@ -2804,13 +2806,14 @@ ERRORS:
 POKE statement
 POKE address, value
 --------------
-Does nothing.
+Sets the value of the memory at the current DEF SEG segment * 16 + 'address'.
 'address' is anumber-valued expression in [-32768, 65535]. Negative values are
 interpreted as their two's complement.
 'value' is a number-valued expression in [0, 255].
 NOTES:
 -   In GW-BASIC, POKE sets memory location 'address' to 'value'. This is not 
-    implemented in PC-BASIC 3.23, whose memory emulation is read-only.
+    implemented in PC-BASIC 3.23 outside the emulated areas.
+-   Currently, only writing to video memory is supported.
 ERRORS:
 -   If 'address' or 'value' has a string value, raises TYPE MISMATCH.
 -   If 'value' is not in [0, 255], raises ILLEGAL FUNCTION CALL.
