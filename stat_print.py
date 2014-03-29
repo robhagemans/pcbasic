@@ -356,6 +356,11 @@ def exec_width(ins):
 def exec_screen(ins):
     # in GW, screen 0,0,0,0,0,0 raises error after changing the palette... this raises error before:
     mode, colorswitch, apagenum, vpagenum = expressions.parse_int_list(ins, 4)
+    # set defaults to avoid err 5 on range check
+    mode = mode if mode != None else console.screen_mode
+    colorswitch = colorswitch if colorswitch != None else console.colorswitch    
+    apagenum = apagenum if apagenum != None else console.apagenum
+    vpagenum = vpagenum if vpagenum != None else console.vpagenum
     # if any parameter not in [0,255], error 5 without doing anything 
     util.range_check(0, 255, mode, colorswitch, apagenum, vpagenum)
     # if the parameters are outside narrow ranges (e.g. not implemented screen mode, pagenum beyond max)
