@@ -504,6 +504,7 @@ def exec_def_usr(ins):
 def exec_bload(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
+    offset = None
     if util.skip_white_read_if(ins, (',',)):
         offset = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=0xffff)
         if offset < 0:
@@ -513,7 +514,9 @@ def exec_bload(ins):
     if g.read(1) != '\xfd':
         raise error.RunError(54)
     seg = vartypes.uint_to_value(bytearray(g.read(2)))
-    offset = vartypes.uint_to_value(bytearray(g.read(2)))
+    foffset = vartypes.uint_to_value(bytearray(g.read(2)))
+    if offset == None:
+        offset = foffset
     # this gets ignored; even the \x1a at the end gets dumped onto the screen.
     size = vartypes.uint_to_value(bytearray(g.read(2))) 
     buf = bytearray()
