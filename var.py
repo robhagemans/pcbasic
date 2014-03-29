@@ -57,14 +57,16 @@ def set_var(name, value):
     global variables, var_current, var_memory, string_current
     name = vartypes.complete_name(name)
     type_char = name[-1]
-    if type_char=='$':
+    if type_char == '$':
         unpacked = vartypes.pass_string_unpack(value) 
-        if len(unpacked)>255:
-            # this is a copy if we use bytearray!
-            unpacked = unpacked[:255]
-        variables[name] = unpacked
+        if len(unpacked) > 255:
+            # this is a copy if we use bytearray - we need a copy because we can change the contents of strings
+            variables[name] = unpacked[:255]
+        else:    
+            variables[name] = unpacked[:]
     else:
-        variables[name] = vartypes.pass_type_keep(name[-1], value)[1]
+        # make a copy of the value in case we want to use POKE on it - we would change both values otherwise
+        variables[name] = vartypes.pass_type_keep(name[-1],value)[1][:]
     # update memory model
     # check if grabge needs collecting (before allocating mem)
     free = mem_free() - (max(3, len(name)) + 1 + byte_size[name[-1]]) 
@@ -245,8 +247,9 @@ def get_array(name, index):
 def set_array(name, index, value):
     [dimensions, lst] = check_dim_array(name, index)
     bigindex = index_array(index, dimensions)
-    value = vartypes.pass_type_keep(name[-1], value)[1]
-    if name[-1]=='$':
+    # make a copy of the value, we con't want them to be linked
+    value = (vartypes.pass_type_keep(name[-1], value)[1])[:]
+    if name[-1] == '$':
        lst[bigindex] = value
        return 
     bytesize = var_size_bytes(name)

@@ -204,6 +204,7 @@ def str_gt(left,right):
 
 def str_replace_mid(s, start, num, val):    
     # s is a reference to the actual stored bytearray
+    num = min(num, len(val))
     start -= 1    
     stop = start + num 
     if stop > len(s):
