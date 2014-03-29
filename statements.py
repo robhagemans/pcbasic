@@ -503,14 +503,21 @@ def exec_bsave(ins):
 def exec_call(ins):
     raise error.RunError(73)    
 
-# do-nothing out       
+# OUT, implemented only the ports for colour plane selection
 def exec_out(ins):
     addr = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=0xffff)
     util.require_read(ins, (',',))
     val = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.range_check(0, 255, val)
+    if addr == 0x3c5:
+        # officially, requires OUT &H3C4, 2 first (not implemented)
+        graphics.colour_plane_write_mask = val
+    elif addr == 0x3cf:
+        # officially, requires OUT &H3CE, 4 first (not implemented)
+        graphics.colour_plane = val        
     util.require(ins, util.end_statement)
 
+# only implemented port &h60 (keyboard read)
 def exec_wait(ins):
     addr = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=0xffff)
     util.require_read(ins, (',',))

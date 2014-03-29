@@ -689,19 +689,22 @@ def value_fre(ins):
     return fp.pack(fp.Single.from_int(var.mem_free()))
 
 # read memory location 
-# currently, var memory and preset values only    
+# currently, var memory, text&graphics memory and preset values only    
 def value_peek(ins):
     addr = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
     if addr < 0: 
         addr += 0x10000
     addr += var.segment*0x10
     try:
+        # try if there's a preset value
         return vartypes.pack_int(var.peek_values[addr])
     except KeyError: 
-        if addr >= console.text_segment*0x10:
-            return vartypes.pack_int(max(0, console.get_memory(addr)))
+        if addr >= graphics.video_segment[console.screen_mode]*0x10:
+            # graphics and text memory
+            return vartypes.pack_int(max(0, graphics.get_memory(addr)))
         elif addr >= var.data_segment*0x10 + var.var_mem_start:
-            return vartypes.pack_int(max(0, var.get_var_memory(addr)))
+            # variable memory
+            return vartypes.pack_int(max(0, var.get_memory(addr)))
         else:    
             return vartypes.null['%']
 
