@@ -17,6 +17,11 @@ Acknowledgements______________________________________________________________
      http://www.numpy.org     
 * Norman De Forest      for documenting the file format:
      http://www.chebucto.ns.ca/~af380/GW-BASIC-tokens.html
+* Paul Kocher           for documenting the 'protection' algorithm:
+     The Cryptogram computer supplement #19, American Cryptogram Association, 
+     Summer 1994 
+* Dan Rollins           for documenting PC video memory layout:
+     http://webpages.charter.net/danrollins/techhelp/0089.HTM
 * Dan Vanderkam         for sharing detokeniser source:
      http://www.danvk.org/wp/2008-02-03/reading-old-gw-basic-programs/
 * Julian Bucknall       for describing the Microsoft Binary Format:
@@ -24,11 +29,10 @@ Acknowledgements______________________________________________________________
 * Adam Burgoyne         for describing the Microsoft Binary Format:     
      http://www.experts-exchange.com/Programming/Languages/Pascal/Delphi/
      Q_20245266.html
-* Paul Kocher           for the decryption algorithm:
-     The Cryptogram computer supplement #19, American Cryptogram Association, 
-     Summer 1994 
-* Henrique Peron        for the DOS codepage pack
-* Kosta Kostis          for the DOS codepage pack
+* Henrique Peron        for the FreeDOS codepage pack
+* Kosta Kostis          for the FreeDOS codepage pack
+* Andries Brouwer       for documenting the CPI file format
+    http://www.win.tue.nl/~aeb/linux/kbd/font-formats-3.html
 * Chris Liechti	        for the PySerial port extension
 * Noah Spurrier et al.  for the pexpect module 
 
