@@ -73,7 +73,11 @@ def show_screen():
     for row in console.apage.row:
         s = [ c[0] for c in row.buf ]
         i += 1
-        debug_print('{0:2}'.format(i) + '|' + ''.join(s)+'|\n')    
+        debug_print('{0:2}'.format(i) + '|' + ''.join(s))
+        if row.wrap:
+            debug_print('\\\n')
+        else:
+            debug_print('|\n')        
     debug_print('  +' + '-'*console.width+'+\n')
 
 def show_program():
