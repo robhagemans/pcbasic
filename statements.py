@@ -499,14 +499,57 @@ def exec_def_usr(ins):
     util.require_read(ins, ('\xE7',))     
     vartypes.pass_int_keep(expressions.parse_expression(ins), maxint=0xffff)
     util.require(ins, util.end_statement)
-        
-# bload: not implemented        
-def exec_bload(ins):
-    raise error.RunError(73)    
 
-# bsave: not implemented        
+# bload: video memory only
+def exec_bload(ins):
+    name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    # check if file exists, make some guesses (all uppercase, +.BAS) if not
+    if util.skip_white_read_if(ins, (',',)):
+        offset = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=0xffff)
+        if offset < 0:
+            offset += 0x10000           
+    util.require(ins, util.end_statement)
+    g = fileio.open_file_or_device(0, name, mode='L', defext='')
+    if g.read(1) != '\xfd':
+        raise error.RunError(54)
+    seg = vartypes.uint_to_value(bytearray(g.read(2)))
+    offset = vartypes.uint_to_value(bytearray(g.read(2)))
+    # this gets ignored; even the \x1a at the end gets dumped onto the screen.
+    size = vartypes.uint_to_value(bytearray(g.read(2))) 
+    buf = bytearray()
+    while True:
+        c = g.read(1)
+        if c == '':
+            break
+        buf += c    
+    g.close()
+    addr = seg * 0x10 + offset
+    if addr + len(buf) > graphics.video_segment[console.screen_mode]*0x10:
+        # graphics and text memory
+        graphics.set_memory_block(addr, buf)
+
+# bsave: video memory only
 def exec_bsave(ins):
-    raise error.RunError(73)    
+    name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    # check if file exists, make some guesses (all uppercase, +.BAS) if not
+    util.require_read(ins, (',',))
+    offset = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint = 0xffff) 
+    if offset < 0:
+        offset += 0x10000         
+    util.require_read(ins, (',',))
+    length = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint = 0xffff)        
+    if length < 0:
+        length += 0x10000         
+    util.require(ins, util.end_statement)
+    g = fileio.open_file_or_device(0, name, mode='S', defext='')
+    g.write('\xfd')
+    g.write(str(vartypes.value_to_uint(var.segment)))
+    g.write(str(vartypes.value_to_uint(offset)))
+    g.write(str(vartypes.value_to_uint(length)))
+    addr = var.segment * 0x10 + offset
+    g.write(str(graphics.get_memory_block(addr, length)))
+    g.write('\x1a')
+    g.close()
         
 # call: not implemented        
 def exec_call(ins):
