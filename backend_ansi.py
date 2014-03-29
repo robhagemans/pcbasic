@@ -110,7 +110,6 @@ def init():
         sys.stderr.write('WARNING: ANSI terminal not supported on Windows.\n')
         return False
     term_echo(False)
-    unicodepage.load_codepage(console.codepage)
     term.write(esc_set_title % 'PC-BASIC 3.23')
     term.flush()
     return True

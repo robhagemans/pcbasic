@@ -14,6 +14,7 @@ import fcntl
 import pexpect
 import StringIO
 import console
+import unicodepage    
     
 shell = '/bin/sh'
 shell_cmd = shell + ' -c'
@@ -52,23 +53,12 @@ def spawn_interactive_shell(cmd):
             return
             
 # print to LPR printer (ok for CUPS)
-class CUPSStream(StringIO.StringIO):
-    def __init__(self, printer_name=''):
-        self.printer_name = printer_name
-        StringIO.StringIO.__init__(self)
-    
-    def close(self):
-        self.flush()
-        
-    # flush buffer to LPR printer    
-    def flush(self):
-        options = ''
-        if self.printer_name != '' and self.printer_name != 'default':
-            options += ' -P ' + self.printer_name
-        printbuf = self.getvalue()    
-        self.truncate(0)
-        if printbuf != '':
-            pr = os.popen("lpr " + options, "w")
-            pr.write(printbuf)
-            pr.close()
+def line_print(printbuf, printer_name): 
+    options = ''
+    if printer_name != '' and printer_name != 'default':
+        options += ' -P ' + printer_name
+    if printbuf != '':
+        pr = os.popen("lpr " + options, "w")
+        pr.write(printbuf)
+        pr.close()
             

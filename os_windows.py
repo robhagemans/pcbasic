@@ -73,42 +73,28 @@ def spawn_interactive_shell(cmd):
         
         
 # print to Windows printer
-class CUPSStream(StringIO.StringIO):
-    def __init__(self, printer_name=''):
-        self.printer_name = printer_name
-        StringIO.StringIO.__init__(self)
-
-    def close(self):
-        self.flush()
-
-    # flush buffer to Windows printer    
-    def flush(self):
-        printer_name = self.printer_name
-        printbuf = self.getvalue()
-        if not printbuf:
-            return      
-        self.truncate(0)
-        if printer_name == '' or printer_name=='default':
-            printer_name = win32print.GetDefaultPrinter()
-        handle = win32ui.CreateDC()
-        handle.CreatePrinterDC(printer_name)
-        handle.StartDoc("PC-BASIC 3_23 Document")
-        handle.StartPage()
-        # a4 = 210x297mm = 4950x7001px; Letter = 216x280mm=5091x6600px; 
-        # 65 tall, 100 wide with 50x50 margins works for US letter
-        # 96 wide works for A4 with 75 x-margin
-        y, yinc = 50, 100
-        lines = printbuf.split('\r\n')
-        slines = []
-        for l in lines:
-            slines += [l[i:i+96] for i in range(0, len(l), 96)]
-        for line in slines:
-            handle.TextOut(75, y, line) 
-            y += yinc
-            if y > 6500:  
-                y = 50
-                handle.EndPage()
-                handle.StartPage()
-        handle.EndPage()
-        handle.EndDoc()       
+def line_print(printbuf, printer_name):        
+    if printer_name == '' or printer_name=='default':
+        printer_name = win32print.GetDefaultPrinter()
+    handle = win32ui.CreateDC()
+    handle.CreatePrinterDC(printer_name)
+    handle.StartDoc("PC-BASIC 3_23 Document")
+    handle.StartPage()
+    # a4 = 210x297mm = 4950x7001px; Letter = 216x280mm=5091x6600px; 
+    # 65 tall, 100 wide with 50x50 margins works for US letter
+    # 96 wide works for A4 with 75 x-margin
+    y, yinc = 50, 100
+    lines = printbuf.split('\r\n')
+    slines = []
+    for l in lines:
+        slines += [l[i:i+96] for i in range(0, len(l), 96)]
+    for line in slines:
+        handle.TextOut(75, y, line) 
+        y += yinc
+        if y > 6500:  
+            y = 50
+            handle.EndPage()
+            handle.StartPage()
+    handle.EndPage()
+    handle.EndDoc()       
         
