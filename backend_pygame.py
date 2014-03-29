@@ -283,7 +283,8 @@ def init():
     physical_size = display_info.current_w, display_info.current_h
     # first set the screen non-resizeable, to trick things like maximus into not full-screening
     # I hate it when applications do this ;)
-    pygame.display.set_mode(display_size_text, 0, 8)
+    if not fullscreen:
+        pygame.display.set_mode(display_size_text, 0, 8)
     resize_display(*display_size_text, initial=True)
     pygame.display.set_caption('PC-BASIC 3.23')
     pygame.key.set_repeat(500, 24)
