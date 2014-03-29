@@ -696,8 +696,16 @@ colour_plane = 3
 colour_plane_write_mask = 0xff
 video_segment = { 0: 0xb800, 1: 0xb800, 2: 0xb800, 7: 0xa000, 8: 0xa000, 9: 0xa000 }
 
-def get_pixel_shift(x, y, plane, shift):
-    return ((backend.get_pixel(x+shift, y) >> plane) & 1) << (7-shift)
+def get_pixel_byte(x, y, plane, shift):
+    if y < size[1]:
+        return sum(( ((backend.get_pixel(x+shift, y) >> plane) & 1) << (7-shift) for shift in range(8) ))
+    return -1    
+    
+def set_pixel_byte(x, y, plane_mask, byte):
+    if y < size[1]:
+        for shift in range(8):
+            bit = (byte>>(7-shift)) & 1
+            backend.put_pixel(x + shift, y, bit * plane_mask)  
     
 def get_memory(addr):
     if addr < video_segment[console.screen_mode]*0x10:
@@ -708,33 +716,43 @@ def get_memory(addr):
         addr -= video_segment[console.screen_mode]*0x10
         if console.screen_mode == 1:
             # interlaced scan lines of 80bytes, 4pixels per byte
-            y = (addr>=0x2000) + (addr%0x2000)//80
-            x = ((addr%0x2000)%80)*4
-            if y >= size[1]:
-                return -1
-            return ((backend.get_pixel(x, y)<<6) + (backend.get_pixel(x+1,y)<<4) 
-                    + (backend.get_pixel(x+2, y)<<2) + (backend.get_pixel(x+3, y)))
+            x, y = ((addr%0x2000)%80)*4, (addr>=0x2000) + 2*((addr%0x2000)//80)
+            if y < size[1]:
+                return ( (backend.get_pixel(x  , y)<<6) + (backend.get_pixel(x+1, y)<<4) 
+                        + (backend.get_pixel(x+2, y)<<2) + (backend.get_pixel(x+3, y)))
         elif console.screen_mode == 2:
             # interlaced scan lines of 80bytes, 8 pixes per byte
-            y = (addr>=0x2000) + (addr%0x2000)//80
-            x = ((addr%0x2000)%80)*8
-            if y >= size[1]:
-                return -1
-            return sum(( get_pixel_shift(x, y, 0, shift) for shift in range(8) ))
-        elif console.screen_mode in (7, 8, 9):
+            x, y = ((addr%0x2000)%80)*8, (addr>=0x2000) + 2*((addr%0x2000)//80)
+            return get_pixel_byte(x, y, 0)
+        elif console.screen_mode == 7:
+            x, y = (addr%80)*8, addr//80
+            return get_pixel_byte(x, y, colour_plane % 4)
+        elif console.screen_mode in (8, 9):
             x, y = (addr%40)*8, addr//40
-            if y >= size[1]:
-                return -1
-            return sum(( get_pixel_shift(x, y, colour_plane % 4, shift) for shift in range(8) ))
-        else:
-            return -1   
+            return get_pixel_byte(x, y, colour_plane % 4)
+        return -1   
 
 def set_memory(addr, val):
     if addr >= video_segment[console.screen_mode]*0x10:
         if console.screen_mode == 0:
             return console.set_memory(addr, val)
         addr -= video_segment[console.screen_mode]*0x10
-
-
+        if console.screen_mode == 1:
+            # interlaced scan lines of 80bytes, 4pixels per byte
+            x, y = ((addr%0x2000)%80)*4, (addr>=0x2000) + 2*((addr%0x2000)//80)
+            if y < size[1]:
+                for shift in range(4):
+                    twobit = (val>>(6-shift*2)) & 3
+                    backend.put_pixel(x + shift, y, twobit) 
+        elif console.screen_mode == 2:
+            # interlaced scan lines of 80bytes, 8 pixes per byte
+            x, y = ((addr%0x2000)%80)*8, (addr>=0x2000) + 2*((addr%0x2000)//80)
+            set_pixel_byte(x, y, 1, val)
+        elif console.screen_mode == 7:
+            x, y = (addr%40)*8, addr//40
+            set_pixel_byte(x, y, colour_plane_write_mask & 0xf, val)
+        elif console.screen_mode in (8, 9):
+            x, y = (addr%80)*8, addr//80
+            set_pixel_byte(x, y, colour_plane_write_mask & 0xf, val)
             
 
