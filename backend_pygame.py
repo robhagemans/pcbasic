@@ -311,10 +311,12 @@ def resize_display(width, height, initial=False):
     flags = pygame.RESIZABLE
     if fullscreen or (width, height) == physical_size:
         flags |= pygame.FULLSCREEN | pygame.NOFRAME
-    display = pygame.display.set_mode((width, height), flags, 8)
+    
     if smooth:
-        display24 = pygame.Surface((width, height), depth=24)
-    if not initial:
+        display = pygame.display.set_mode((width, height), flags)
+    else:
+        display = pygame.display.set_mode((width, height), flags, 8)    
+    if not initial and not smooth:
         display.set_palette(gamepalette)
     screen_changed = True    
     
@@ -342,7 +344,8 @@ def set_palette(new_palette=None):
     else:
         palette64 = new_palette if new_palette else [0, 15]
         gamepalette = [ gamecolours16[i] for i in palette64 ]
-    display.set_palette(gamepalette)
+    if not smooth:
+        display.set_palette(gamepalette)
 
 def set_palette_entry(index, colour):
     global palette64 
@@ -351,7 +354,8 @@ def set_palette_entry(index, colour):
         gamecolor = gamecolours64[colour]
     else:
         gamecolor = gamecolours16[colour]
-    display.set_palette_at(index, gamecolor)
+    if not smooth:
+        display.set_palette_at(index, gamecolor)
     
 def clear_rows(cattr, start, stop):
     bg = (cattr>>4) & 0x7
@@ -617,8 +621,7 @@ def do_flip():
     refresh_cursor()
     if smooth:
         screen.set_palette(gamepalette)
-        pygame.transform.smoothscale(screen.convert(24), display.get_size(), display24)
-        display.blit(display24.convert(8), (0,0))
+        pygame.transform.smoothscale(screen.convert(display), display.get_size(), display)
         screen.set_palette(workaround_palette)    
     else:
         pygame.transform.scale(screen, display.get_size(), display)    
