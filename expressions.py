@@ -694,13 +694,14 @@ def value_peek(ins):
     addr = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
     if addr < 0: 
         addr += 0x10000
+    addr += var.segment*0x10
     try:
-        return vartypes.pack_int(var.peek_values[(var.segment, addr)])
+        return vartypes.pack_int(var.peek_values[addr])
     except KeyError: 
-        if var.segment == var.data_segment and addr >= var.var_mem_start:
+        if addr >= console.text_segment*0x10:
+            return vartypes.pack_int(max(0, console.get_memory(addr)))
+        elif addr >= var.data_segment*0x10 + var.var_mem_start:
             return vartypes.pack_int(max(0, var.get_var_memory(addr)))
-        elif var.segment == console.text_segment:
-            return vartypes.pack_int(console.get_memory(var.segment, addr))
         else:    
             return vartypes.null['%']
 

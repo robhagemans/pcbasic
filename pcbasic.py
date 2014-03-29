@@ -81,7 +81,7 @@ def prepare_constants(args):
         try:
             for a in args.peek:
                 seg, addr, val = a.split(':')
-                expressions.peek_values[(int(seg), int(addr))] = int(val)
+                expressions.peek_values[int(seg)*0x10 + int(addr)] = int(val)
         except Exception:
             pass        
     # implied RUN invocations

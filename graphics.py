@@ -32,6 +32,8 @@ last_point = (0, 0)
 pixel_aspect_ratio = fp.Single.one
 bitsperpixel = 4
 
+# memory model
+graphics_segment = { 0: 0xb800, 1: 0xb800, 2: 0xb800, 7: 0xa000, 8: 0xa000, 9: 0xa000 }
 
 def require_graphics_mode(err=5):
     if not is_graphics_mode():
@@ -688,4 +690,28 @@ def view_coords(x,y):
 
 def clear_graphics_view():
     backend.clear_graph_clip((console.attr>>4) & 0x7)
+    
+def get_memory(addr):
+    if addr < graphics_segment[console.screen_mode]*0x10:
+        return -1
+    else:
+        addr -= graphics_segment[console.screen_mode]*0x10
+        if console.screen_mode==1:
+            y = (addr>=0x2000) + (addr%0x2000)//80
+            x = (addr%0x2000)%80*4
+            return ((backend.get_pixel(x, y)<<6) + (backend.get_pixel(x+1,y)<<4) 
+                    + (backend.get_pixel(x+2, y)<<2) + (backend.get_pixel(x+3, y)))
+        elif console.screen_mode==2:
+            y = (addr>=0x2000) + (addr%0x2000)//80
+            x = (addr%0x2000)%80*8
+            return ((backend.get_pixel(x, y)<<7) + (backend.get_pixel(x+1,y)<<6) 
+                    + (backend.get_pixel(x+2, y)<<5) + (backend.get_pixel(x+3, y)<<4)
+                    + (backend.get_pixel(x+4, y)<<3) + (backend.get_pixel(x+5, y)<<1)
+                    + (backend.get_pixel(x+6, y)<<1) + (backend.get_pixel(x+7, y))
+                    )
+        else:
+            return -1   
+            
+            
+            
 
