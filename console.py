@@ -780,7 +780,7 @@ def put_char(c):
         # wrap line
         therow.wrap = True
         # scroll down
-        if row < height:
+        if row < scroll_height:
             scroll_down(row+1)
         row += 1
         col = 1
@@ -862,6 +862,7 @@ def scroll(from_line=None):
         row -= 1
     apage.row.insert(scroll_height, ScreenRow(width))
     del apage.row[from_line-1]
+
    
 def scroll_down(from_line):
     global row, col
