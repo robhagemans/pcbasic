@@ -728,7 +728,13 @@ def get_memory(addr):
             return sum(( get_pixel_shift(x, y, colour_plane % 4, shift) for shift in range(8) ))
         else:
             return -1   
-            
-            
+
+def set_memory(addr, val):
+    if addr >= video_segment[console.screen_mode]*0x10:
+        if console.screen_mode == 0:
+            return console.set_memory(addr, val)
+        addr -= video_segment[console.screen_mode]*0x10
+
+
             
 

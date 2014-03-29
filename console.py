@@ -759,17 +759,20 @@ def wait_char():
 def get_screen_char_attr(crow, ccol, want_attr):
     ca = apage.row[crow-1].buf[ccol-1][want_attr]
     return ca if want_attr else ord(ca)
+
+def put_screen_char_attr(cpage, crow, ccol, c, cattr):
+    cattr = cattr & 0xf if screen_mode else cattr
+    backend.set_attr(cattr) 
+    backend.putc_at(crow, ccol, c)    
+    cpage.row[crow-1].buf[ccol-1] = (c, cattr)
     
 def put_char(c):
     global row, col, attr
     # check if scroll& repositioning needed
     check_pos(scroll_ok=True)
     # no blink, bg=0
-    cattr = attr & 0xf if screen_mode else attr
-    backend.set_attr(cattr) 
-    backend.putc_at(row, col, c)    
+    put_screen_char_attr(apage, row, col, c, attr)
     therow = apage.row[row-1]
-    therow.buf[col-1] = (c, cattr)
     therow.end = max(col, therow.end)
     col += 1
     if col > width:
@@ -871,10 +874,26 @@ def scroll_down(from_line):
 #################################################################################
 
 def get_memory(addr):
-    if addr < text_segment*0x10 or addr >= text_segment*0x10 + width*height*2:
-        return -1
     addr -= text_segment*0x10
-    return get_screen_char_attr(1+addr//(width*2), 1+(addr%(width*2))//2, addr%2)
+    page, offset = addr//((width*height*2 + 96)*4), addr%((width*height*2 + 96)*4)
+    ccol, crow = (offset%(width*2))//2, offset//(width*2)
+    try:
+        c = pages[page].row[crow].buf[ccol][addr%2]  
+        return c if addr%2==1 else ord(c)
+    except IndexError:
+        return -1    
     
-    
+def set_memory(addr, val):
+    addr -= text_segment*0x10
+    page, offset = addr//((width*height*2 + 96)*4), addr%((width*height*2 + 96)*4)
+    ccol, crow = (offset%(width*2))//2, offset//(width*2)
+    try:
+        c, a = pages[page].row[crow].buf[ccol]
+        if addr%2==0:
+            c = chr(val)
+        else:
+            a = val
+        put_screen_char_attr(pages[page], crow+1, ccol+1, c, a)
+    except IndexError:
+        pass
 
