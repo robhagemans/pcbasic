@@ -346,7 +346,7 @@ def set_palette_entry(index, colour):
         gamecolor = gamecolours64[colour]
     else:
         gamecolor = gamecolours16[colour]
-    display.set_palette_at(index,gamecolor)
+    display.set_palette_at(index, gamecolor)
     
 def clear_rows(cattr, start, stop):
     bg = (cattr>>4) & 0x7
@@ -468,7 +468,7 @@ last_attr = None
 last_mode = None
 def set_attr(cattr):
     global last_attr, last_mode
-    if cattr == last_attr and console.screen_mode == last_mode:
+    if cattr == last_attr and (console.screen_mode, console.apage) == last_mode:
         return    
     color = (0, 0, cattr & 0xf)
     bg = (0, 0, (cattr>>4) & 0x7)    
@@ -476,7 +476,7 @@ def set_attr(cattr):
         glyph.set_palette_at(255, bg)
         glyph.set_palette_at(254, color)
     last_attr = cattr
-    last_mode = console.screen_mode
+    last_mode = console.screen_mode, console.apage
         
 def putc_at(row, col, c):
     global screen_changed
