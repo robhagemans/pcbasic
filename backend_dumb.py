@@ -39,6 +39,9 @@ control = (
 
 ##############################################        
         
+def prepare(args):
+    pass        
+        
 def init():
     global check_keys
     if platform.system() == 'Windows':

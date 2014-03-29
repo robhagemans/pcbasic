@@ -39,11 +39,13 @@ def main():
     # DEBUG mode
     tokenise.init_DEBUG(args.debug)
     debugstr = ' [DEBUG mode]' if args.debug else ''
+    # other command-line settings
     prepare_constants(args)
-    # announce ourselves; go!
     try:
-        # choose the screen backends and other devices 
-        prepare_devices(args)
+        # choose the video and sound backends
+        prepare_console(args)
+        # choose peripherals    
+        deviceio.init_devices(args)
         # initialise program memory
         program.new()
         # print greeting
@@ -96,7 +98,7 @@ def prepare_constants(args):
     if args.codepage:
         console.codepage = int(args.codepage[0])
 
-def prepare_devices(args):
+def prepare_console(args):
     if args.dumb or args.conv or (not args.graphical and not args.text and not sys.stdin.isatty()):
         # redirected input leads to dumbterm use
         console.backend = backend_dumb
@@ -109,13 +111,7 @@ def prepare_devices(args):
         import backend_pygame
         console.backend = backend_pygame   
         graphics.backend = backend_pygame
-        try:
-            x, y = args.dimensions[0].split(',')
-            graphics.backend.display_size = (int(x), int(y))
-        except Exception:
-            pass    
-        if args.fullscreen:
-            graphics.backend.fullscreen = True
+        graphics.backend.prepare(args)
         console.penstick = backend_pygame
         console.sound = backend_pygame
         # redirected output is split between graphical screen and redirected file    
@@ -137,8 +133,6 @@ def prepare_devices(args):
     if not console.sound.init_sound():
         sys.stderr.write('WARNING: Failed to initialise sound. Sound will be disabled.\n')
         console.sound = nosound
-    # choose peripherals    
-    deviceio.init_devices(args)
    
 def get_args():
     # GWBASIC invocation, for reference:
@@ -162,7 +156,6 @@ def get_args():
         help='Use ANSI textmode terminal')
     parser.add_argument('-g', '--graphical', action='store_true', 
         help='Use graphical terminal. This is the normal default; use to override when redirecting i/o.')
-
     parser.add_argument('-l', '--load', action='store_true', help='Load in_file only, do not execute')
     parser.add_argument('-r', '--run', action='store_true', help='Execute input file (default if in_file given)')
     parser.add_argument('-e', '--cmd', metavar='CMD', help='Execute BASIC command line')
@@ -177,8 +170,9 @@ def get_args():
     parser.add_argument('--conv', metavar='MODE', help='Convert file to (A)SCII, (B)ytecode or (P)rotected mode. Implies --unprotect and --list-all.')
     parser.add_argument('--codepage', nargs=1, metavar=('NUMBER'), help='Load specified font codepage. Default is 437 (US).')
     parser.add_argument('--nosound', action='store_true', help='Disable sound output')
-    parser.add_argument('--dimensions', nargs=1, metavar=('X, Y'), help='Set pixel dimensions for graphical display. Default is 640,480. Use 640,400 or multiples for cleaner pixels - but incorrect aspect ratio - on square-pixel LCDs.')
-    parser.add_argument('--fullscreen', action='store_true', help='Fullscreen mode. This is unlikely to have either the correct aspect ratio or clean square pixels, but it does take up the whole screen.')
+    parser.add_argument('--dimensions', nargs=1, metavar=('X, Y'), help='Set pixel dimensions for graphics mode. Default is 640,480. Use 640,400 or multiples for cleaner pixels - but incorrect aspect ratio - on square-pixel LCDs. Graphical terminal only.')
+    parser.add_argument('--dimensions-text', nargs=1, metavar=('X, Y'), help='Set pixel dimensions for text mode. Default is 640,400. Graphical terminal only.')
+    parser.add_argument('--fullscreen', action='store_true', help='Fullscreen mode. This is unlikely to have either the correct aspect ratio or clean square pixels, but it does take up the whole screen. Graphical terminal only.')
     parser.add_argument('--debug', action='store_true', help='Enable DEBUG keyword')
     parser.add_argument('--list-all', action='store_true', help='Allow listing and ASCII saving of lines beyond 65530')
     parser.add_argument('--unprotect', action='store_true', help='Allow listing and ASCII saving of protected files')

@@ -80,6 +80,7 @@ gamepalette = None
 # screen width and height in pixels
 size = (0,0)
 display_size = (640, 480)
+display_size_text = (640, 400)
 fullscreen = False
 
 # letter shapes
@@ -257,6 +258,22 @@ keycode_to_inpcode = {
     pygame.K_BACKSLASH: '\x56',
 }
 
+# set constants based on commandline arguments
+def prepare(args):
+    global display_size, display_size_text, fullscreen
+    try:
+        x, y = args.dimensions[0].split(',')
+        display_size = (int(x), int(y))
+    except Exception:
+        pass    
+    try:
+        x, y = args.dimensions_text[0].split(',')
+        display_size_text = (int(x), int(y))
+    except Exception:
+        pass    
+    if args.fullscreen:
+        fullscreen = True
+
 def init():
     global fonts, num_sticks, joysticks, physical_size
     pre_init_mixer()    
@@ -266,8 +283,8 @@ def init():
     physical_size = display_info.current_w, display_info.current_h
     # first set the screen non-resizeable, to trick things like maximus into not full-screening
     # I hate it when applications do this ;)
-    pygame.display.set_mode(display_size, 0, 8)
-    resize_display(*display_size)
+    pygame.display.set_mode(display_size_text, 0, 8)
+    resize_display(*display_size_text, initial=True)
     pygame.display.set_caption('PC-BASIC 3.23')
     pygame.key.set_repeat(500, 24)
     fonts = cpi_font.load_codepage(console.codepage)
@@ -282,13 +299,16 @@ def init():
         j.init()
     return True
 
-def resize_display(width, height): 
+def resize_display(width, height, initial=False): 
     global display, screen_changed
+    display_info = pygame.display.Info()
+    if (width, height) == (display_info.current_w, display_info.current_h) and not initial:
+        return
     flags = pygame.RESIZABLE
     if fullscreen or (width, height) == physical_size:
         flags |= pygame.FULLSCREEN | pygame.NOFRAME
     display = pygame.display.set_mode((width, height), flags, 8)
-    if gamepalette:
+    if not initial:
         display.set_palette(gamepalette)
     screen_changed = True    
     
@@ -352,6 +372,10 @@ def init_screen_mode(mode, new_font_height):
     # set standard cursor
     cursor0 = pygame.Surface((8, font_height), depth=8)
     build_default_cursor(mode, True)
+    if mode == 0:
+        resize_display(*display_size_text)
+    else:
+        resize_display(*display_size)    
     
 def setup_screen(to_height, to_width):
     global screen, size 
