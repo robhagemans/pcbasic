@@ -359,7 +359,7 @@ def get_name_in_memory(name, offset):
         # rest of name is encoded such that c1 == 'A'
         return ord(name[offset-1].upper()) - ord('A') + 0xC1
                             
-def get_var_memory(address):
+def get_memory(address):
     address -= segment*0x10
     if address < var_current:
         # find the variable we're in
