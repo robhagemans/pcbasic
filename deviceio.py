@@ -27,8 +27,8 @@ serial_out_size = 128
 devices = {}
 
 allowed_protocols = {
-    'LPT': ('CUPS', 'FILE', 'PORT', 'SOCK'),
-    'COM': ('PORT', 'SOCK')
+    'LPT': ('PRINTER', 'FILE', 'PORT', 'SOCKET'),
+    'COM': ('PORT', 'SOCKET')
     }
 
 def init_devices(args):
@@ -66,14 +66,14 @@ def create_device_stream(arg, allowed):
     addr, val = argsplit[0].upper(), argsplit[1]
     if addr not in allowed:
         return None
-    if addr == 'CUPS':
+    if addr == 'PRINTER':
         stream = oslayer.CUPSStream(val)
     elif addr == 'FILE':
         stream = oslayer.safe_open(val, 'R', 'RW')
     elif addr == 'PORT':
         # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows. Or anything supported by serial_for_url (RFC 2217 etc)
         stream = serial_socket.serial_for_url(val)
-    elif addr == 'SOCK':
+    elif addr == 'SOCKET':
         stream = serial_socket.serial_for_url('socket://'+val)
     else:
         # File not found

@@ -47,7 +47,6 @@ def init():
     if platform.system() == 'Windows':
         sys.stderr.write('WARNING: Text terminal not supported on Windows.\n')
         return False
-    unicodepage.load_codepage(console.codepage)
     # use non-blocking and UTF8 when reading from ttys
     if sys.stdin.isatty():
         check_keys = check_keys_interactive

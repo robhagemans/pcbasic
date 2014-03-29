@@ -308,6 +308,28 @@ def files(pathmask, console):
         console.check_events()             
     console.write(str(disk_free(path)) + ' Bytes free\n')
 
+    
+# print to CUPS or windows printer    
+class CUPSStream(StringIO.StringIO):
+    def __init__(self, printer_name=''):
+        self.printer_name = printer_name
+        StringIO.StringIO.__init__(self)
+
+    def close(self):
+        self.flush()
+
+    # flush buffer to Windows printer    
+    def flush(self):
+        printbuf = self.getvalue()
+        if not printbuf:
+            return      
+        self.truncate(0)
+        utf8buf = ''
+        for c in printbuf:
+            utf8buf += unicodepage.cp_to_utf8[printbuf]
+        line_print(utf8buf, self.printer_name)
+
+        
 # platform-specific:
 import platform
 if platform.system() == 'Windows':

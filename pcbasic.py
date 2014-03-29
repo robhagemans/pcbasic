@@ -31,6 +31,7 @@ import graphics
 import console
 import tokenise
 import program
+import unicodepage
 
 greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "INFO" for more.\r%d Bytes free'
 
@@ -99,6 +100,7 @@ def prepare_constants(args):
         console.codepage = int(args.codepage[0])
 
 def prepare_console(args):
+    unicodepage.load_codepage(console.codepage)
     if args.dumb or args.conv or (not args.graphical and not args.text and not sys.stdin.isatty()):
         # redirected input leads to dumbterm use
         console.backend = backend_dumb
@@ -162,11 +164,11 @@ def get_args():
     parser.add_argument('-q', '--quit', action='store_true', help='Quit interpreter when execution stops')
     parser.add_argument('-d', '--double', action='store_true', help='Allow double-precision math functions')
     parser.add_argument('--peek', nargs='*', metavar=('SEG:ADDR:VAL'), help='Define PEEK preset values')
-    parser.add_argument('--lpt1', nargs=1, metavar=('TYPE:VAL'), help='Set LPT1: to FILE:file_name or CUPS:printer_name.')
-    parser.add_argument('--lpt2', nargs=1, metavar=('TYPE:VAL'), help='Set LPT2: to FILE:file_name or CUPS:printer_name.')
-    parser.add_argument('--lpt3', nargs=1, metavar=('TYPE:VAL'), help='Set LPT3: to FILE:file_name or CUPS:printer_name.')
-    parser.add_argument('--com1', nargs=1, metavar=('TYPE:VAL'), help='Set COM1: to FILE:file_name or CUPS:printer_name or PORT:device_name or SOCK:host:socket.')
-    parser.add_argument('--com2', nargs=1, metavar=('TYPE:VAL'), help='Set COM2: to FILE:file_name or CUPS:printer_name PORT:device_name or SOCK:host:socket.')
+    parser.add_argument('--lpt1', nargs=1, metavar=('TYPE:VAL'), help='Set LPT1: to FILE:file_name or PRINTER:printer_name.')
+    parser.add_argument('--lpt2', nargs=1, metavar=('TYPE:VAL'), help='Set LPT2: to FILE:file_name or PRINTER:printer_name.')
+    parser.add_argument('--lpt3', nargs=1, metavar=('TYPE:VAL'), help='Set LPT3: to FILE:file_name or PRINTER:printer_name.')
+    parser.add_argument('--com1', nargs=1, metavar=('TYPE:VAL'), help='Set COM1: to PORT:device_name or SOCK:host:socket.')
+    parser.add_argument('--com2', nargs=1, metavar=('TYPE:VAL'), help='Set COM2: to PORT:device_name or SOCK:host:socket.')
     parser.add_argument('--conv', metavar='MODE', help='Convert file to (A)SCII, (B)ytecode or (P)rotected mode. Implies --unprotect and --list-all.')
     parser.add_argument('--codepage', nargs=1, metavar=('NUMBER'), help='Load specified font codepage. Default is 437 (US).')
     parser.add_argument('--nosound', action='store_true', help='Disable sound output')
