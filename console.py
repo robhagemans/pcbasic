@@ -177,7 +177,6 @@ def set_mode(mode, new_colorswitch, new_apagenum, new_vpagenum):
     if mode != screen_mode or new_colorswitch != colorswitch:
         new_font_height = info[0]
         backend.init_screen_mode(mode, new_font_height) # this can fail with err(5)
-        screen_mode, colorswitch = mode, new_colorswitch 
         font_height, attr, num_colours, num_palette, new_width, num_pages = info  
         # width persists on change to screen 0
         resize(25, width if mode == 0 else new_width)
@@ -185,14 +184,16 @@ def set_mode(mode, new_colorswitch, new_apagenum, new_vpagenum):
         graphics.init_graphics_mode(mode, font_height)      
         show_cursor(cursor)
         unset_view()
-        if keys_visible:
-            show_keys()
     # reset palette     
     set_palette()
     # set active page & visible page, counting from 0. if higher than max pages, illegal fn call.            
     # this needs to be done after setup_screen!
     vpagenum, apagenum = new_vpagenum, new_apagenum
     vpage, apage = pages[apagenum], pages[vpagenum]
+    if mode != screen_mode or new_colorswitch != colorswitch:
+        screen_mode, colorswitch = mode, new_colorswitch 
+        if keys_visible:  
+            show_keys()    
     backend.screen_changed = True
 
 def resize(to_height, to_width):
