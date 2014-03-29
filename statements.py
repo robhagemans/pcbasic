@@ -464,12 +464,21 @@ def exec_play(ins):
 ##########################################################
 # machine emulation
          
-# do-nothing POKE        
+# POKE: only video memory implemented
 def exec_poke(ins):
     addr = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=0xffff) 
     util.require_read(ins, (',',))
     val = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.range_check(0, 255, val)
+    if addr < 0: 
+        addr += 0x10000
+    addr += var.segment*0x10
+    if addr >= graphics.video_segment[console.screen_mode]*0x10:
+        # graphics and text memory
+        graphics.set_memory(addr, val)
+#    elif addr >= var.data_segment*0x10 + var.var_mem_start:
+#        # variable memory
+#        vartypes.set_memory(addr)
     util.require(ins, util.end_statement)
     
 # DEF SEG    
