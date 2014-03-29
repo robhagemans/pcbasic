@@ -455,19 +455,37 @@ ERRORS:
 BLOAD statement
 BLOAD filename [, offset]
 ---------------
-Raises ADVANCED FEATURE.
+Loads an image file into memory. 
+'filename' must be a string-valued expression that indicates the BSAVE-format 
+file to read from.
+'offset', if specified, must be a number-valued expression in [-32768, 65536].
+It indicates an offset in the current DEF SEG segment where the file is to be
+stored. If not specified, the offset stored in the BSAVE file will be used. If
+negative, its two's complement will be used.
 NOTES:
--  In GW-BASIC, BLOAD loads an image file into memory. 
-   This is not implemented in PC-BASIC 3.23.   
+-   Currently BLOAD is only implemented for video memory in PC-BASIC 3.23.
+ERRORS:
+-   If 'filename' is not in BSAVE format, raises BAD FILE MODE.
+-   If 'filename' is not a string, raises TYPE MISMATCH.
+-   If 'offset' is not in [-32768, 65536], raises OVERFLOW.
 
 
 BSAVE statement
 BSAVE filename, offset, length
 ---------------
-Raises ADVANCED FEATURE.
+Saves a region of memory to an image file.
+'filename' must be a string-valued expression that indicates the file to store.
+'offset' must be a number-valued expression in [-32768, 65536]. It indicates 
+the offset into the current DEF SEG segment from where to start reading.
+'length' must be a number-valued expression in [-32768, 65536]. It indicates 
+the number of bytes to read. If 'offset' or 'length' are negative, their two's
+complement will be used.
 NOTES:
--  In GW-BASIC, BSAVE saves a region of memory to an image file. 
-   This is not implemented in PC-BASIC 3.23.  
+-   Currently BSAVE is only implemented for video memory in PC-BASIC 3.23.
+ERRORS:
+-   If 'filename' is not a string, raises TYPE MISMATCH.
+-   If 'offset' is not in [-32768, 65536], raises OVERFLOW.
+-   If 'length' is not in [-32768, 65536], raises OVERFLOW.
 
 
 CALL statement
