@@ -2481,12 +2481,22 @@ ERRORS:
 OUT statement
 OUT port, value
 -------------
-Does nothing.
+If 'port' = &h3C5, sets the write mask for SCREEN 7,8,9 colour planes; 
+bitmask = 2 ^ 'value'.
+If 'port' = &h3CF, sets the read colour plane to 'value'.
+Does nothing otherwise.
 'port' is a number-valued expression in [-32768,65535].
 'value' is a number-valued expression in [0, 255].
 NOTES:
 -   In GW-BASIC, OUT sends a byte to an MS-DOS machine output port. This is not
     implemented in PC-BASIC 3.23.
+-   In GW-BASIC, the sequence needed to set the colour plane mask is:
+        OUT &h3C4, 2        
+        OUT &h3C5, 2 ^ plane
+    The sequence needed to set the colour plane is:
+        OUT &h3CE, 4     
+        OUT &h3CF, plane 
+    The initial OUT statements currently have no effect in PC-BASIC 3.23.    
 ERRORS:
 -   If 'port' is not in [-32768, 65535], raises OVERFLOW.
 -   If 'value' is not in [-32768, 32768], raises OVERFLOW.
