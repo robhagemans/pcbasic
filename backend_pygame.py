@@ -82,6 +82,7 @@ size = (0,0)
 display_size = (640, 480)
 display_size_text = (640, 400)
 fullscreen = False
+smooth = False
 
 # letter shapes
 glyphs = []
@@ -260,7 +261,7 @@ keycode_to_inpcode = {
 
 # set constants based on commandline arguments
 def prepare(args):
-    global display_size, display_size_text, fullscreen
+    global display_size, display_size_text, fullscreen, smooth
     try:
         x, y = args.dimensions[0].split(',')
         display_size = (int(x), int(y))
@@ -273,6 +274,8 @@ def prepare(args):
         pass    
     if args.fullscreen:
         fullscreen = True
+    if args.smooth:
+        smooth = True    
 
 def init():
     global fonts, num_sticks, joysticks, physical_size
@@ -301,7 +304,7 @@ def init():
     return True
 
 def resize_display(width, height, initial=False): 
-    global display, screen_changed
+    global display, screen_changed, display24
     display_info = pygame.display.Info()
     if (width, height) == (display_info.current_w, display_info.current_h) and not initial:
         return
@@ -309,6 +312,8 @@ def resize_display(width, height, initial=False):
     if fullscreen or (width, height) == physical_size:
         flags |= pygame.FULLSCREEN | pygame.NOFRAME
     display = pygame.display.set_mode((width, height), flags, 8)
+    if smooth:
+        display24 = pygame.Surface((width, height), depth=24)
     if not initial:
         display.set_palette(gamepalette)
     screen_changed = True    
@@ -602,15 +607,22 @@ def check_screen():
                            or (console.row != last_row) or (console.col != last_col) )
         if screen_changed:
             refresh_screen()
-            refresh_cursor()
-            pygame.transform.scale(screen, display.get_size(), display)
-            pygame.display.flip()             
+            do_flip()
         elif cursor_changed and console.cursor:
             remove_cursor()
-            refresh_cursor()
-            pygame.transform.scale(screen, display.get_size(), display)
-            pygame.display.flip()             
+            do_flip()
         screen_changed = False
+
+def do_flip():
+    refresh_cursor()
+    if smooth:
+        screen.set_palette(gamepalette)
+        pygame.transform.smoothscale(screen.convert(24), display.get_size(), display24)
+        display.blit(display24.convert(8), (0,0))
+        screen.set_palette(workaround_palette)    
+    else:
+        pygame.transform.scale(screen, display.get_size(), display)    
+    pygame.display.flip()
 
 def handle_key(e):
     c = ''
