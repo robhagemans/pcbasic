@@ -737,16 +737,20 @@ def get_strig(fn):
 graph_view = None
 
 
-def put_pixel(x,y, index):
+def put_pixel(x, y, index, page=None):
     global screen_changed
-    console.apage.surface0.set_at((x,y), index)
+    if page == None:
+        page = console.apage
+    page.surface0.set_at((x,y), index)
     # empty the console buffer of affected characters
     cx, cy = min(console.width-1, max(0, x//8)), min(console.height-1, max(0, y//font_height)) 
-    console.apage.row[cy].buf[cx] = (' ', console.attr)
+    page.row[cy].buf[cx] = (' ', console.attr)
     screen_changed = True
 
-def get_pixel(x,y):    
-    return console.apage.surface0.get_at((x,y)).b
+def get_pixel(x, y, page=None):    
+    if page == None:
+        page = console.apage
+    return page.surface0.get_at((x,y)).b
 
 def get_graph_clip():
     view = graph_view if graph_view else console.apage.surface0.get_rect()
