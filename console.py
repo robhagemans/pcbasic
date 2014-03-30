@@ -253,7 +253,7 @@ def wait_screenline(write_endl=True, from_start=False):
     global row, col
     prompt_row, prompt_col = row, col
     savecurs = show_cursor() 
-    wait_interactive()
+    furthest_left, furthest_right = wait_interactive()
     show_cursor(savecurs)
     # find start of wrapped block
     crow = row
@@ -263,11 +263,11 @@ def wait_screenline(write_endl=True, from_start=False):
     # add lines 
     while crow <= height:
         therow = apage.row[crow-1]
-        add = therow.buf[:therow.end]
-        # exclude prompt, if any
+        # exclude prompt, if any; only go from furthest_left to furthest_right
         if crow == prompt_row and not from_start:
-            add = add[prompt_col-1:]
-        line += add
+            line += therow.buf[:therow.end][furthest_left-1:furthest_right-1]
+        else:    
+            line += therow.buf[:therow.end]
         if therow.wrap:
             if therow.end < width:
                 # wrap before end of line means LF
@@ -292,8 +292,15 @@ def wait_screenline(write_endl=True, from_start=False):
 
 def wait_interactive():
     global row, col
+    # this is where we started
+    start_row, furthest_left = row, col
+    # this is where we arrow-keyed on the start line
+    furthest_right = col 
     set_overwrite_mode(True) 
     while True: 
+        if row == start_row:
+            furthest_left = min(col, furthest_left)
+            furthest_right = max(col, furthest_right)
         # wait_char returns one ascii ar MS-DOS/GW-BASIC style keyscan code
         d = pass_char(wait_char())
         if not d:
@@ -308,7 +315,7 @@ def wait_interactive():
         if d == '\x03':                     raise error.Break()                     # <CTRL+C>, probably already caught in wait_char()
         elif d == '\r':                     break                                   # <ENTER>
         elif d == '\a':                     sound.beep()                            # <CTRL+G>
-        elif d == '\b':                     backspace()                             # <BACKSPACE>
+        elif d == '\b':                     backspace(start_row, furthest_left)     # <BACKSPACE>
         elif d == '\t':                     tab()                                   # <TAB> or <CTRL+I>
         elif d == '\n':                     line_feed()                             # <CTRL+ENTER> or <CTRL+J>
         elif d == '\x1B':                   clear_line(row)                         # <ESC> or <CTRL+[>
@@ -333,6 +340,7 @@ def wait_interactive():
             else:    
                 put_char(d)
     set_overwrite_mode(True)
+    return furthest_left, furthest_right
       
 def set_overwrite_mode(new_overwrite=True):
     global overwrite_mode
@@ -451,15 +459,14 @@ def clear_rest_of_line(srow, scol):
         backend.clear_rows(attr, srow, srow)
     therow.end = save_end
 
-def backspace():
+def backspace(start_row, start_col):
     crow, ccol = row, col
+    # don't backspace through prompt
     if ccol == 1:
         if crow > 1 and apage.row[crow-2].wrap:
             ccol = apage.row[crow-2].end
             crow -= 1
-        else:
-            ccol = 1
-    else: 
+    elif ccol != start_col or row != start_row: 
         ccol -= 1
     delete_char(crow, ccol)
     set_pos(crow, max(1, ccol))
