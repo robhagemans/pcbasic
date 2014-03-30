@@ -9,9 +9,13 @@
 # please see text file COPYING for licence terms.
 #
 
+import sys
 import os
 import fcntl
-import pexpect
+try:
+    import pexpect
+except Exception:
+    sys.stderr.write('WARNING: Pexpect module not found. SHELL command will not work.\n')    
 import console
 import unicodepage    
     
