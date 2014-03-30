@@ -242,17 +242,9 @@ def pass_dosnames(files, mask='*.*'):
         trunkmask, extmask = mask[0], ''
     dosfiles = []
     for name in files:
-        if name.find('.') > -1:
-            trunk, ext = name[:name.find('.')][:8], name[name.find('.')+1:][:3]
-        else:
-            trunk, ext = name[:8], ''
-        # non-DOSnames passed as UnixName....    
-        if (ext and name != trunk+'.'+ext) or (ext == '' and name != trunk and name != '.'):
-            ext = '...'
-        if name in ('.', '..'):
-            trunk, ext = '', ''
+        trunk, ext = dossify(name)
         # apply mask separately to trunk and extension, dos-style.
-        if not fnmatch.fnmatch(trunk, trunkmask) or not fnmatch.fnmatch(ext, extmask):
+        if not fnmatch.fnmatch(trunk.upper(), trunkmask.upper()) or not fnmatch.fnmatch(ext.upper(), extmask.upper()):
             continue
         trunk += ' ' * (8-len(trunk))
         if ext:
@@ -285,8 +277,7 @@ def files(pathmask, console):
     for root, dirs, files in safe(os.walk, path):
         break
     # get working dir, replace / with \
-    cwd = '\\'.join(map(str.strip, pass_dosnames(path.split(os.sep)))) # path.replace(os.sep,'\\')
-    console.write('C:' + cwd + '\n')
+    console.write(dossify_path(path) + '\n')
     if (roots, dirs, files) == ([], [], []):
         raise error.RunError(53)
     dosfiles = pass_dosnames(files, mask)
@@ -307,7 +298,7 @@ def files(pathmask, console):
         console.write(line+'\n')       
         # allow to break during dir listing & show names flowing on screen
         console.check_events()             
-    console.write(str(disk_free(path)) + ' Bytes free\n')
+    console.write(' ' + str(disk_free(path)) + ' Bytes free\n')
 
     
 # print to CUPS or windows printer    

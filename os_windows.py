@@ -18,6 +18,7 @@ import subprocess
 import threading
 import win32print
 import win32ui
+import win32api
 
 import error
 import console
@@ -69,7 +70,18 @@ def spawn_interactive_shell(cmd):
                 chars +=1
     outp.join()
     errp.join()
-        
+
+# get windown short name
+def dossify(name):
+    shortname = win32api.GetShortPathName(name).upper()
+    split = shortname.split('.')
+    trunk, ext = split[0], ''
+    if len(split)>1:
+        ext = split[1]
+    return trunk, ext    
+
+def dossify_path(name):
+    return win32api.GetShortPathName(name).upper()
         
 # print to Windows printer
 def line_print(printbuf, printer_name):        

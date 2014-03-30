@@ -51,6 +51,30 @@ def spawn_interactive_shell(cmd):
         if c == '' and not p.isalive(): 
             return
             
+# change names in FILES to some 8.3 variant             
+def dossify(name):
+    if name.find('.') > -1:
+        trunk, ext = name[:name.find('.')][:8], name[name.find('.')+1:][:3]
+    else:
+        trunk, ext = name[:8], ''
+    # non-DOSnames passed as UnixName....    
+    if (ext and name != trunk+'.'+ext) or (ext == '' and name != trunk and name != '.'):
+        ext = '...'
+    if name in ('.', '..'):
+        trunk, ext = '', ''
+    return trunk, ext
+
+def dossify_path(path):
+    dospath = 'Z:'
+    for name in path.split(os.sep):
+        trunk, ext = dossify(name)
+        if trunk == '' and ext == '':
+            continue    
+        dospath += '\\' + trunk
+        if ext:
+            dospath += '.' + ext
+    return dospath        
+            
 # print to LPR printer (ok for CUPS)
 def line_print(printbuf, printer_name): 
     options = ''
