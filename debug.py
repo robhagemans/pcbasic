@@ -70,14 +70,21 @@ def dump_vars():
 def show_screen():
     debug_print('  +' + '-'*console.width+'+\n')
     i = 0
+    lastwrap = False
     for row in console.apage.row:
         s = [ c[0] for c in row.buf ]
         i += 1
-        debug_print('{0:2}'.format(i) + '|' + ''.join(s))
+        debug_print('{0:2}'.format(i))
+        if lastwrap:
+            debug_print('\\')
+        else:
+            debug_print('|')
+        debug_print(''.join(s))
         if row.wrap:
             debug_print('\\\n')
         else:
-            debug_print('|\n')        
+            debug_print('| {0:2}\n'.format(row.end))        
+        lastwrap = row.wrap    
     debug_print('  +' + '-'*console.width+'+\n')
 
 def show_program():
