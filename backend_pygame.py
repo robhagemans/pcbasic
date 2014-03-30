@@ -828,6 +828,8 @@ fast_operations = {
     }
 
 def fast_get(x0, y0, x1, y1, varname):
+    if not numpy:
+        return
     # arrays[varname] must exist at this point (or GET would have raised error 5)
     version = var.arrays[varname][2]
     # copy a numpy array of the target area
