@@ -333,23 +333,26 @@ def exec_width(ins):
     if d == '#':
         dev = expressions.parse_file_number(ins)
         w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-    elif d in ('"', ','):
-        try:
-            dev = deviceio.devices[str(vartypes.pass_string_unpack(expressions.parse_expression(ins))).upper()]
-        except KeyError:
-            # bad file name
-            raise error.RunError(64)           
-        util.require_read(ins, (',',))
-        w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-    else:    
-        dev = console
-        # we can do calculations, but they must be bracketed...
-        w = vartypes.pass_int_unpack(expressions.parse_expr_unit(ins))
-        # two commas are accepted
-        util.skip_white_read_if(ins, (',',))
-        if not util.skip_white_read_if(ins, (',',)):
-            # one comma, then stuff - illegal function call
-            util.require(ins, util.end_statement, err=5)
+    else:
+        expr = expressions.parse_expression(ins)
+        if expr[0] == '$':
+            try:
+                dev = deviceio.devices[str(vartypes.pass_string_unpack(expr)).upper()]
+            except KeyError:
+                # bad file name
+                raise error.RunError(64)           
+            util.require_read(ins, (',',))
+            w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+        else:
+            dev = console
+            # IN GW-BASIC, we can do calculations, but they must be bracketed...
+            #w = vartypes.pass_int_unpack(expressions.parse_expr_unit(ins))
+            w = vartypes.pass_int_unpack(expr)
+            # two commas are accepted
+            util.skip_white_read_if(ins, (',',))
+            if not util.skip_white_read_if(ins, (',',)):
+                # one comma, then stuff - illegal function call
+                util.require(ins, util.end_statement, err=5)
     util.require(ins, util.end_statement)        
     dev.set_width(w)    
     
