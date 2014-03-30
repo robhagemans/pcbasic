@@ -606,7 +606,9 @@ def write(s, scroll_ok=True):
                 # LF connects lines like word wrap
                 apage.row[row-1].wrap = True
                 set_pos(row+1, 1, scroll_ok)
-        elif c == '\r':     set_pos(row+1, 1, scroll_ok)     # CR
+        elif c == '\r':     
+            apage.row[row-1].wrap = False
+            set_pos(row+1, 1, scroll_ok)     # CR
         elif c == '\a':     sound.beep()                     # BEL
         elif c == '\x0B':   set_pos(1, 1, scroll_ok)         # HOME
         elif c == '\x0C':   clear()
@@ -623,7 +625,8 @@ def write_line(s='', scroll_ok=True):
     write(s, scroll_ok=True)
     for echo in output_echos:
         echo('\r\n')
-    set_pos(row+1, 1)
+    apage.row[row-1].wrap = False
+    set_pos(row + 1, 1)
 
 def set_width(to_width):
     # raise an error if the width value doesn't make sense
@@ -836,7 +839,8 @@ def start_line():
     if col != 1:
         for echo in input_echos:
             echo('\r\n')
-        set_pos(row+1, 1)
+        apage.row[row-1].wrap = False    
+        set_pos(row + 1, 1)
 
 #####################
 # viewport / scroll area
