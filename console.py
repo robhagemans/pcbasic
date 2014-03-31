@@ -253,7 +253,7 @@ def wait_screenline(write_endl=True, from_start=False):
     global row, col
     prompt_row, prompt_col = row, col
     savecurs = show_cursor() 
-    furthest_left, furthest_right = wait_interactive()
+    furthest_left, furthest_right = wait_interactive(from_start)
     show_cursor(savecurs)
     # find start of wrapped block
     crow = row
@@ -290,10 +290,10 @@ def wait_screenline(write_endl=True, from_start=False):
         outstr += c
     return outstr[:255]    
 
-def wait_interactive():
+def wait_interactive(from_start=False):
     global row, col
     # this is where we started
-    start_row, furthest_left = row, col
+    start_row, furthest_left = row, (col if not from_start else 1)
     # this is where we arrow-keyed on the start line
     furthest_right = col 
     set_overwrite_mode(True) 
