@@ -311,7 +311,6 @@ def resize_display(width, height, initial=False):
     flags = pygame.RESIZABLE
     if fullscreen or (width, height) == physical_size:
         flags |= pygame.FULLSCREEN | pygame.NOFRAME
-    
     if smooth:
         display = pygame.display.set_mode((width, height), flags)
     else:
@@ -348,14 +347,14 @@ def set_palette(new_palette=None):
         display.set_palette(gamepalette)
 
 def set_palette_entry(index, colour):
-    global palette64 
+    global palette64, gamepalette
     palette64[index] = colour
     if console.num_palette==64:
-        gamecolor = gamecolours64[colour]
+        gamepalette[index] = gamecolours64[colour]
     else:
-        gamecolor = gamecolours16[colour]
+        gamepalette[index] = gamecolours16[colour]
     if not smooth:
-        display.set_palette_at(index, gamecolor)
+        display.set_palette_at(index, gamepalette[index])
     
 def clear_rows(cattr, start, stop):
     bg = (cattr>>4) & 0x7
