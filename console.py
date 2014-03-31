@@ -161,6 +161,7 @@ def set_mode(mode, new_colorswitch, new_apagenum, new_vpagenum):
     new_colorswitch = colorswitch if new_colorswitch == None else (new_colorswitch != 0)
     new_vpagenum = vpagenum if new_vpagenum == None else new_vpagenum
     new_apagenum = apagenum if new_apagenum == None else new_apagenum
+    old_mode = screen_mode
     try:
         info = mode_data[mode]
     except KeyError:
@@ -173,8 +174,11 @@ def set_mode(mode, new_colorswitch, new_apagenum, new_vpagenum):
     if new_apagenum >= info[4] or new_vpagenum >= info[4]:
         set_palette()
         raise error.RunError(5)    
+    # reset palette     
+    set_palette()
     # switch modes if needed
     if mode != screen_mode or new_colorswitch != colorswitch:
+        screen_mode = mode
         new_font_height = info[0]
         backend.init_screen_mode(mode, new_font_height) # this can fail with err(5)
         font_height, attr, num_colours, num_palette, new_width, num_pages = info  
@@ -184,13 +188,11 @@ def set_mode(mode, new_colorswitch, new_apagenum, new_vpagenum):
         graphics.init_graphics_mode(mode, font_height)      
         show_cursor(cursor)
         unset_view()
-    # reset palette     
-    set_palette()
     # set active page & visible page, counting from 0. if higher than max pages, illegal fn call.            
     # this needs to be done after setup_screen!
     vpagenum, apagenum = new_vpagenum, new_apagenum
     vpage, apage = pages[vpagenum], pages[apagenum]
-    if mode != screen_mode or new_colorswitch != colorswitch:
+    if mode != old_mode or new_colorswitch != colorswitch:
         screen_mode, colorswitch = mode, new_colorswitch 
         if keys_visible:  
             show_keys()    

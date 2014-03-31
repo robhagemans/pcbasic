@@ -304,13 +304,15 @@ def init():
     return True
 
 def resize_display(width, height, initial=False): 
-    global display, screen_changed, display24
+    global display, screen_changed, display24, fullscreen
     display_info = pygame.display.Info()
     if (width, height) == (display_info.current_w, display_info.current_h) and not initial:
         return
     flags = pygame.RESIZABLE
     if fullscreen or (width, height) == physical_size:
+        fullscreen = True
         flags |= pygame.FULLSCREEN | pygame.NOFRAME
+        width, height = display_size if console.screen_mode != 0 else display_size_text
     if smooth:
         display = pygame.display.set_mode((width, height), flags)
     else:
@@ -569,7 +571,7 @@ def idle():
     pygame.time.wait(cycle_time/blink_cycles)  
 
 def check_events(pause=False):
-    global display_size
+    global display_size, fullscreen
     # check and handle pygame events    
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
@@ -585,6 +587,7 @@ def check_events(pause=False):
         elif event.type == pygame.JOYBUTTONDOWN:
             handle_stick(event)    
         elif event.type == pygame.VIDEORESIZE:
+            fullscreen = False
             resize_display(event.w, event.h)
     check_screen()
     return False
