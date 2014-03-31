@@ -189,7 +189,7 @@ def set_mode(mode, new_colorswitch, new_apagenum, new_vpagenum):
     # set active page & visible page, counting from 0. if higher than max pages, illegal fn call.            
     # this needs to be done after setup_screen!
     vpagenum, apagenum = new_vpagenum, new_apagenum
-    vpage, apage = pages[apagenum], pages[vpagenum]
+    vpage, apage = pages[vpagenum], pages[apagenum]
     if mode != screen_mode or new_colorswitch != colorswitch:
         screen_mode, colorswitch = mode, new_colorswitch 
         if keys_visible:  
