@@ -147,7 +147,7 @@ def exec_erase(ins):
         var.erase_array(util.get_var_name(ins))
         if not util.skip_white_read_if(ins, (',',)):
             break
-    util.require(ins, end_statement)
+    util.require(ins, util.end_statement)
 
 def exec_let(ins):
     name, indices = expressions.get_var_or_array_name(ins)
