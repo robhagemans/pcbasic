@@ -406,7 +406,6 @@ def get_string_tokens(fors):
     word = ''
     c = util.peek(fors)
     if c in ('!', '&'):
-        format_chars = True
         word += fors.read(1)
     elif c == '\\':
         word += fors.read(1)
@@ -415,9 +414,6 @@ def get_string_tokens(fors):
             c = fors.read(1)
             word += c
             if c == '\\':
-                format_chars = True
-                s = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-                semicolon = util.skip_white_read_if(ins, (';',))    
                 break
             elif c != ' ': # can be empty as well
                 fors.seek(-len(word), 1)
