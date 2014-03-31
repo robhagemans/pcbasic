@@ -61,9 +61,12 @@ def create_device(name, arg, default=None):
 
 def create_device_stream(arg, allowed):
     argsplit = arg[0].split(':', 1)
-    if len(argsplit) < 2:
+    if len(argsplit) == 1:
+        addr, val = 'FILE', argsplit[0]
+    elif len(argsplit) == 2:
+        addr, val = argsplit[0].upper(), argsplit[1]
+    else:
         return None
-    addr, val = argsplit[0].upper(), argsplit[1]
     if addr not in allowed:
         return None
     if addr == 'PRINTER':
