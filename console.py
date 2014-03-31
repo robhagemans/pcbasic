@@ -338,7 +338,7 @@ def wait_interactive():
                 redraw_row(col-1, row)
                 set_pos(row, col+1)
             else:    
-                put_char(d)
+                put_char(d, do_scroll_down=True)
     set_overwrite_mode(True)
     return furthest_left, furthest_right
       
@@ -777,11 +777,10 @@ def put_screen_char_attr(cpage, crow, ccol, c, cattr):
     backend.putc_at(crow, ccol, c)    
     cpage.row[crow-1].buf[ccol-1] = (c, cattr)
     
-def put_char(c):
+def put_char(c, do_scroll_down=False):
     global row, col, attr
     # check if scroll& repositioning needed
     check_pos(scroll_ok=True)
-    # no blink, bg=0
     put_screen_char_attr(apage, row, col, c, attr)
     therow = apage.row[row-1]
     therow.end = max(col, therow.end)
@@ -789,9 +788,10 @@ def put_char(c):
     if col > width:
         # wrap line
         therow.wrap = True
-        # scroll down
-        if row < scroll_height:
-            scroll_down(row+1)
+        if do_scroll_down:
+            # scroll down
+            if row < scroll_height:
+                scroll_down(row+1)
         row += 1
         col = 1
 
@@ -873,7 +873,6 @@ def scroll(from_line=None):
         row -= 1
     apage.row.insert(scroll_height, ScreenRow(width))
     del apage.row[from_line-1]
-
    
 def scroll_down(from_line):
     global row, col
