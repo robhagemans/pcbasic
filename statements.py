@@ -842,7 +842,6 @@ def exec_open(ins):
         except (IndexError, KeyError):
             # Bad file mode
             raise error.RunError(54)
-        util.require_read(ins, (',',))
         number = expressions.parse_file_number_opthash(ins)
         util.require_read(ins, (',',))
         name = str(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
