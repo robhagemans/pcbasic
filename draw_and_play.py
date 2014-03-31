@@ -213,7 +213,7 @@ def draw_parse_gml(gml):
             # paint - flood fill
             x0, y0 = graphics.last_point
             colour = ml_parse_number(gmls)
-            if util.skip(gmls, ml_whitepace) != ',':
+            if util.skip_read(gmls, ml_whitepace) != ',':
                 raise error.RunError(5)
             bound = ml_parse_number(gmls)
             graphics.flood_fill(x0,y0,solid_pattern(colour), colour, bound)    
