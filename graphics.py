@@ -595,36 +595,35 @@ def set_area(x0,y0, array, operation_char):
             byte += 1
             shift = 6   
     else:                
-        bytesperword = 2
         mask = 0x80
         hilo = 0
         for y in range(y0,y1+1):
             for x in range(x0,x1+1):
-                if x<0 or x>=size[0] or y<0 or y>=size[1]:
+                if x < 0 or x >= size[0] or y < 0 or y >= size[1]:
                     pixel = 0
                 else:
                     pixel = backend.get_pixel(x,y)
                 index = 0
                 for b in range(bitsperpixel):
                     try:
-                        if byte_array[byte+hilo+b*bytesperword] & mask != 0:
+                        if byte_array[byte+hilo+b*2] & mask != 0:
                             index |= 1<<b  
                     except IndexError:
                         pass
                 mask >>= 1
                 if mask == 0: 
                     mask = 0x80
-                    if hilo == bytesperword-1:
-                        byte += bitsperpixel*bytesperword
+                    if hilo == 1:
+                        byte += bitsperpixel*2
                         hilo = 0
                     else:
                         hilo += 1
                 if x >= 0 and x < size[0] and y >= 0 and y < size[1]:
-                    backend.put_pixel(x,y, operation(pixel, index)) 
+                    backend.put_pixel(x, y, operation(pixel, index)) 
             # left align next row
             if mask != 0x80:
                 mask = 0x80
-                byte += bitsperpixel*bytesperword
+                byte += bitsperpixel*2
                 hilo = 0
     backend.remove_graph_clip()        
         
@@ -652,13 +651,15 @@ def get_area(x0,y0,x1,y1, array):
                     byte += 1
                     shift = 6
                 pixel = backend.get_pixel(x,y) # 2-bit value
-                byte_array[byte] |= pixel << shift
+                try:
+                    byte_array[byte] |= pixel << shift
+                except IndexError:
+                    raise error.RunError(5)      
                 shift -= 2
             # byte align next row
             byte += 1
             shift = 6   
     else:    
-        bytesperword = 2
         mask = 0x80
         hilo = 0
         for y in range(y0, y1+1):
@@ -667,21 +668,21 @@ def get_area(x0,y0,x1,y1, array):
                 for b in range(bitsperpixel):
                     if pixel&(1<<b) != 0:
                         try:
-                            byte_array[byte+hilo+b*bytesperword] |= mask 
+                            byte_array[byte+hilo+b*2] |= mask 
                         except IndexError:
                             raise error.RunError(5)   
                 mask >>= 1
                 if mask == 0: 
                     mask = 0x80
-                    if hilo == bytesperword-1:
-                        byte += bitsperpixel*bytesperword
+                    if hilo == 1:
+                        byte += bitsperpixel*2
                         hilo = 0
                     else:
                         hilo += 1
             # left align next row
             if mask != 0x80:
                 mask = 0x80
-                byte += bitsperpixel*bytesperword
+                byte += bitsperpixel*2
                 hilo = 0
     # store a copy in the fast-put store
     backend.fast_get(x0, y0, x1, y1, array)
