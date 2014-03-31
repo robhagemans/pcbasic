@@ -140,9 +140,9 @@ def draw_step(x0,y0, sx,sy, plot, goback):
 
 def draw_parse_gml(gml):
     global draw_scale, draw_angle
+    save_attr = console.attr
     gmls = StringIO(gml)
-    plot = True
-    goback = False
+    plot, goback = True, False
     while True:
         c = util.skip_read(gmls, ml_whitepace).upper()
         if c == '':
@@ -216,8 +216,8 @@ def draw_parse_gml(gml):
             if util.skip_read(gmls, ml_whitepace) != ',':
                 raise error.RunError(5)
             bound = ml_parse_number(gmls)
-            graphics.flood_fill(x0,y0,solid_pattern(colour), colour, bound)    
-        
+            graphics.flood_fill(x0, y0, solid_pattern(colour), colour, bound)    
+    console.attr = save_attr        
 
 def solid_pattern(c):
     pattern = [0]*graphics.bitsperpixel
