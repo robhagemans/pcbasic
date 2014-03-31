@@ -39,7 +39,7 @@ def open_file_or_device(number, name, mode='I', access='R', lock='', reclen=128,
     if len(split_colon) > 1: # : found
         dev_name = split_colon[0] + ':' 
         try:
-            inst = deviceio.device_open(name, number, mode, access, lock, reclen)
+            inst = deviceio.device_open(dev_name, number, mode, access, lock, reclen)
         except KeyError:    
             if len(dev_name) > 2:
                 # devname could be A:, B:, C:, etc.. but anything longer is an error (bad file number, for some reason).
