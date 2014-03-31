@@ -375,12 +375,15 @@ def exec_timer(ins):
 # event definitions
 
 def parse_on_event(ins, bracket=True):
+    num = None
     if bracket:
         num = expressions.parse_bracket(ins)
     util.require_read(ins, ('\x8D',)) # GOSUB
     jumpnum = util.parse_jumpnum(ins)
     if jumpnum == 0:
         jumpnum = None
+    if jumpnum not in program.line_numbers:
+        raise error.RunError(8)    
     util.require(ins, util.end_statement)    
     return num, jumpnum   
 
