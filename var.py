@@ -126,12 +126,12 @@ def swap_var(name1, index1, name2, index2):
             p1, off1 = variables[name1], 0
         else:
             dimensions, p1, _ = arrays[name1]
-            off1 = index_array(index1, dimensions)
+            off1 = index_array(index1, dimensions)*size
         if name2 in variables:
             p2, off2 = variables[name2], 0
         else:
             dimensions, p2, _ = arrays[name2]
-            off2 = index_array(index2, dimensions)
+            off2 = index_array(index2, dimensions)*size
         # swap the contents    
         p1[off1:off1+size], p2[off2:off2+size] =  p2[off2:off2+size], p1[off1:off1+size]  
     else:
@@ -149,9 +149,10 @@ def swap_var(name1, index1, name2, index2):
             dimensions, list2, _ = arrays[name2]
             key2 = index_array(index2, dimensions)
         list1[key1], list2[key2] = list2[key2], list1[key1]
-        # emulate pointer swap
-        var_memory[name1], var_memory[name2] = ( (var_memory[name1][0], var_memory[name1][1], var_memory[name2][2]), 
-                                                 (var_memory[name2][0], var_memory[name2][1], var_memory[name1][2]) )
+        # emulate pointer swap; not for strings...
+        if name1 in variables and name2 in variables:
+            var_memory[name1], var_memory[name2] = ( (var_memory[name1][0], var_memory[name1][1], var_memory[name2][2]), 
+                                                     (var_memory[name2][0], var_memory[name2][1], var_memory[name1][2]) )
     # inc version
     if name1 in arrays:
         arrays[name1][2] += 1
