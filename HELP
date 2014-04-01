@@ -1085,7 +1085,7 @@ ERRORS:
 
 
 ENVIRON$ function    
-value = ENVIRON$(x)
+value = ENVIRON[ ]$(x)
 --------------------
 Returns an environment parameter. 'x' is an expression.
 If 'x' has a string value, returns the value for the parameter 'x' or the empty
@@ -1138,7 +1138,7 @@ NOTES:
 
 
 ERDEV$ function
-empty = ERDEV$
+empty = ERDEV[ ]$
 ---------------
 Returns the empty string. No brackets.
 NOTES:
@@ -1667,7 +1667,7 @@ ERRORS:
     
 
 INPUT$ function
-chars = INPUT$(num_chars [, [#] file_num])
+chars = INPUT[ ]$(num_chars [, [#] file_num])
 ---------------
 Returns a string of 'num_chars' characters from the keyboard or a file. 
 'num_chars' must be a number-valued expression between 1 and 255, inclusive.
@@ -1739,7 +1739,7 @@ ERRORS:
 
 
 IOCTL$ function
-result = IOCTL$([#] file_num)
+result = IOCTL[ ]$([#] file_num)
 ---------------
 Raises ILLEGAL FUNCTION CALL.
 NOTES:
