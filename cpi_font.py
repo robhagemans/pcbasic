@@ -33,7 +33,7 @@ def load_codepage(number=437):
         cpifile = 'ega.cpi'
         number = 437        
     path = os.path.dirname(os.path.realpath(__file__))
-    cpi = open(os.path.join(path, cpifile), 'rb')
+    cpi = open(os.path.join(path, 'cpi', cpifile), 'rb')
     # 23-byte header
     cpi.read(23)
     # get number codepages in this file
