@@ -111,21 +111,55 @@ def get_var(name):
     except KeyError:
         return vartypes.null[name[-1]]
 
-
-def swap_var(name1, name2):
-    global variables
-    name1 = vartypes.complete_name(name1)
-    name2 = vartypes.complete_name(name2)
+def swap_var(name1, index1, name2, index2):
     if name1[-1] != name2[-1]:
         # type mismatch
         raise error.RunError(13)
-    elif name1 not in variables or name2 not in variables:
+    elif (name1 not in variables and name1 not in arrays) or (name2 not in variables and name2 not in arrays):
         # illegal function call
         raise error.RunError(5)
+    typechar = name1[-1]
+    if typechar != '$':
+        size = byte_size[typechar]
+        # get pointers
+        if name1 in variables:
+            p1, off1 = variables[name1], 0
+        else:
+            dimensions, p1, _ = arrays[name1]
+            off1 = index_array(index1, dimensions)
+        if name2 in variables:
+            p2, off2 = variables[name2], 0
+        else:
+            dimensions, p2, _ = arrays[name2]
+            off2 = index_array(index2, dimensions)
+        # swap the contents    
+        p1[off1:off1+size], p2[off2:off2+size] =  p2[off2:off2+size], p1[off1:off1+size]  
     else:
-        val1 = variables[name1] # we need a pointer swap #get_var(name1)
-        variables[name1] = variables[name2]
-        variables[name2] = val1
+        # strings are pointer-swapped
+        if name1 in variables:
+            p1 = variables[name1] # must be mutable type
+        else:
+            dimensions, lst, _ = arrays[name1]
+            p1 = lst[index_array(index1, dimensions)]
+        s1 = slice(0, len(p1))
+        if isinstance(p1, StringPtr):
+            p1, s1 = p1.stream, p1.slice
+        if name2 in variables:
+            p2 = variables[name2]
+        else:
+            dimensions, lst, version2 = arrays[name2]
+            p2 = lst[index_array(index2, dimensions)]
+        s2 = slice(0, len(p2))
+        if isinstance(p2, StringPtr):
+            p2, s2 = p2.stream, p2.slice
+        p1[s1], p2[s2] = p2[s2], p1[s1]    
+        var_memory[name1], var_memory[name2] = ( (var_memory[name1][0], var_memory[name1][1], var_memory[name2][2]), 
+                                                 (var_memory[name2][0], var_memory[name2][1], var_memory[name1][2]) )
+    # inc version
+    if name1 in arrays:
+        arrays[name1][2] += 1
+    if name2 in arrays:
+        arrays[name2][2] += 1
 
 def erase_array(name):
     global arrays
@@ -279,7 +313,9 @@ def set_field_var(field, varname, offset, length):
     str_ptr = StringPtr(field, offset, length)
     # assign the string ptr to the variable name
     # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
-    set_var(varname, vartypes.pack_string(str_ptr))
+    variables[varname] = str_ptr
+    # var memory not yet supported for field vars
+    var_memory[varname] = (0, 0, 0)
     
 def assign_field_var(varname, value, justify_right=False):
     if varname[-1] != '$' or value[0] != '$':
