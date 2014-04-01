@@ -719,13 +719,13 @@ def get_pen(fn):
     elif fn == 5:
         return min(size[1]-1, max(0, pygame.mouse.get_pos()[1]))
     elif fn == 6:
-        return min(console.width, max(1, 1+pen_down_pos[0]//8))
-    elif fn == 7:
         return min(console.height, max(1, 1+pen_down_pos[1]//font_height)) 
+    elif fn == 7:
+        return min(console.width, max(1, 1+pen_down_pos[0]//8))
     elif fn == 8:
-        return min(console.width, max(1, 1+pygame.mouse.get_pos()[0]//8))
-    elif fn == 9:
         return min(console.height, max(1, 1+pygame.mouse.get_pos()[1]//font_height))     
+    elif fn == 9:
+        return min(console.width, max(1, 1+pygame.mouse.get_pos()[0]//8))
 
 def get_stick(fn):
     stick_num, axis = fn//2, fn%2
