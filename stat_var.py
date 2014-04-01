@@ -296,10 +296,10 @@ def exec_restore(ins):
     program.restore(datanum)
 
 def exec_swap(ins):
-    name1 = util.get_var_name(ins)
+    name1, index1 = expressions.get_var_or_array_name(ins)
     util.require_read(ins, (',',))
-    name2 = util.get_var_name(ins)
-    var.swap_var(name1, name2)
+    name2, index2 = expressions.get_var_or_array_name(ins)
+    var.swap_var(name1, index1, name2, index2)
     # if syntax error. the swap has happened
     util.require(ins, util.end_statement)
                              
