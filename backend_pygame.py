@@ -26,6 +26,8 @@ import var
 import sys
 # for run_mode only
 import program
+# for exit()
+import run
 
 # CGA palette choices
 colours16 = [
