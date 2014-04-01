@@ -161,7 +161,8 @@ def detokenise_keyword(bytes, output):
             output[:] = output[:-5] + "ELSE"
     # token followed by token or number is separated by a space, except operator tokens and SPC(, TAB(, FN, USR
     nxt = util.peek(bytes)
-    if (not comment and nxt.upper() not in (util.end_line + tokens_operator + ('\xD9', '"', ',', ' ', ':', '(', ')')) 
+    if (not comment and nxt.upper() not in (util.end_line + tokens_operator + 
+                                    ('\xD9', '"', ',', ' ', ':', '(', ')', '$', '%', '!', '#', '_', '@', '~', '|', '`')) 
                 and s not in (tokens_operator + tokens_with_bracket + ('\xD0', '\xD1'))): 
         # excluding TAB( SPC( and FN. \xD9 is ', \xD1 is FN, \xD0 is USR.
         output += ' '
