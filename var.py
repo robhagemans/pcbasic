@@ -78,7 +78,11 @@ def set_var(name, value):
         if mem_free() <= 0:
             # out of memory
             del variables[name]
-            del var_memory[name]
+            try:
+                del var_memory[name]
+            except KeyError:
+                # hadn't been created yet - no probs
+                pass    
             raise error.RunError(7)
     # first two bytes: chars of name or 0 if name is one byte long
     if name not in var_memory:
