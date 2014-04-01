@@ -98,6 +98,8 @@ def prepare_constants(args):
         program.dont_protect = True    
     if args.codepage:
         console.codepage = int(args.codepage[0])
+    if args.caps:
+        console.caps = True    
 
 def prepare_console(args):
     unicodepage.load_codepage(console.codepage)
@@ -180,6 +182,7 @@ def get_args():
     parser.add_argument('--debug', action='store_true', help='Enable DEBUG keyword')
     parser.add_argument('--list-all', action='store_true', help='Allow listing and ASCII saving of lines beyond 65530')
     parser.add_argument('--unprotect', action='store_true', help='Allow listing and ASCII saving of protected files')
+    parser.add_argument('--caps', action='store_true', help='Start in CAPS LOCK mode.')
     return parser.parse_args()
 
 
