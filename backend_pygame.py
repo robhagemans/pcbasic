@@ -568,7 +568,7 @@ def pause_key():
         idle()
         
 def idle():
-    pygame.time.wait(cycle_time/blink_cycles)  
+    pygame.time.wait(cycle_time/blink_cycles/8)  
 
 def check_events(pause=False):
     global display_size, fullscreen
