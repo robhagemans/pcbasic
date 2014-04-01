@@ -85,6 +85,8 @@ display_size = (640, 480)
 display_size_text = (640, 400)
 fullscreen = False
 smooth = False
+# ignore ALT+F4 (and consequently window X button)
+noquit = False
 
 # letter shapes
 glyphs = []
@@ -263,7 +265,7 @@ keycode_to_inpcode = {
 
 # set constants based on commandline arguments
 def prepare(args):
-    global display_size, display_size_text, fullscreen, smooth
+    global display_size, display_size_text, fullscreen, smooth, noquit
     try:
         x, y = args.dimensions[0].split(',')
         display_size = (int(x), int(y))
@@ -278,6 +280,8 @@ def prepare(args):
         fullscreen = True
     if args.smooth:
         smooth = True    
+    if args.noquit:
+        noquit = True
 
 def init():
     global fonts, num_sticks, joysticks, physical_size
@@ -591,6 +595,11 @@ def check_events(pause=False):
         elif event.type == pygame.VIDEORESIZE:
             fullscreen = False
             resize_display(event.w, event.h)
+        elif event.type == pygame.QUIT:
+            if noquit:
+                pygame.display.set_caption('PC-BASIC 3.23 - to exit type <CTRL+BREAK> <ESC> SYSTEM')
+            else:
+                run.exit()        
     check_screen()
     return False
     
