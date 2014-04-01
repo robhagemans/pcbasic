@@ -2152,11 +2152,6 @@ LPRINT statement
 See PRINT.
 
 
-LPRINT USING statement
-----------------------
-See PRINT USING.
-
-
 LSET and RSET statements
 {L|R}SET string_name = expression
 --------------
@@ -2867,6 +2862,7 @@ ERRORS:
 
 PRINT, PRINT# and LPRINT statements
 {LPRINT| {PRINT|?} [# file_num,]} [expr_0] [;|,|SPC(n)|TAB(n)] [expr_1] [...]
+    [ USING format; [ uexpr_0 [ {;|,} uexpr_1 [ {;|,} ...] ] ] [;|,] ]
 -----------------------------------
 Writes expressions to the screen, printer, file or device. If LPRINT is used, 
 output goes to LPT1. If 'file_num' is specified, output goes to the file or 
@@ -2898,18 +2894,16 @@ effect as separating by semicolons
 NOTES:
 -   If an error is raised, the output before the error was encountered is 
     printed as normal.
+-   See below for the syntax of the optional USING declaration
 ERRORS:
 -   If 'n' is not in [-32768,65535], raises OVERFLOW.
 -   If 'n' is a string, raises TYPE MISMATCH.
 
-
-PRINT USING, PRINT# USING and LPRINT USING statements
-{LPRINT| {PRINT|?} [# file,]} USING format; [ expr_0 [ {;|,} expr_1 [ {;|,} ...] ] ] [;|,]
------------------------------------------------------
-Writes a formatted string to the screen, printer, file or device.  If LPRINT is
-used, output goes to LPT1. If 'file_num' is specified, output goes to the file 
-or device open under that number. ? is a shorthand for PRINT and has the same 
-effect. 'expr_0' ... are expressions. 
+USING declaration:
+------------------
+This declaration occurs at the end of an [L]PRINT[#] statement and writes a 
+formatted string to the screen, printer, file or device.  
+'uexpr_0' ... are expressions. 
 'format' is a string-valued expression that specifies the output format of the 
 matching expression. The format tokens recognised are -
 _   Escape character; causes the next character in the format string to be 
@@ -2952,6 +2946,8 @@ NOTES:
     same.
 -   If the statement ends in a comma or semicolon, no newline is printed at 
     the end. 
+-   After USING, other parts of the PRINT syntax such as SPC( and TAB( can not
+    be used.
 ERRORS:
 -   If the expression doesn't match the format token type, TYPE MISMATCH is 
     raised.
