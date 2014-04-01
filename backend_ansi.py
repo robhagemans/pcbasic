@@ -168,7 +168,11 @@ def set_palette(new_palette=None):
     if palette != new_palette:
         palette = new_palette
         palette_changed = True
-        redraw()     
+        try:
+            redraw()     
+        except AttributeError:
+            # skip this on init when apage doesn't exist yet
+            pass
     
 def set_palette_entry(index, colour):
     global palette, palette_changed
