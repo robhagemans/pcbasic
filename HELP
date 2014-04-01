@@ -2904,7 +2904,7 @@ ERRORS:
 
 
 PRINT USING, PRINT# USING and LPRINT USING statements
-{LPRINT| {PRINT|?} [# file,]} USING format; [ expr_0 [; expr_1 [; ...] ] ] [;]
+{LPRINT| {PRINT|?} [# file,]} USING format; [ expr_0 [ {;|,} expr_1 [ {;|,} ...] ] ] [;|,]
 -----------------------------------------------------
 Writes a formatted string to the screen, printer, file or device.  If LPRINT is
 used, output goes to LPT1. If 'file_num' is specified, output goes to the file 
@@ -2948,6 +2948,10 @@ printed preceding it.
 NOTES:
 -   If there are more expressions than format fields, the format string is 
     wrapped around.
+-   Expressions may be separated withsemicolons or commas; the effect is the 
+    same.
+-   If the statement ends in a comma or semicolon, no newline is printed at 
+    the end. 
 ERRORS:
 -   If the expression doesn't match the format token type, TYPE MISMATCH is 
     raised.
