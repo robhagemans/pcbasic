@@ -13,6 +13,11 @@ except Exception:
 import socket
 import select
 import oslayer
+# import explicitly, or pyinstaller won't bring them along
+import serial.urlhandler.protocol_socket
+import serial.urlhandler.protocol_rfc2217
+import serial.urlhandler.protocol_loop
+import serial.urlhandler.protocol_hwgrep
 
 def serial_for_url(url):
     if not serial:
@@ -20,7 +25,7 @@ def serial_for_url(url):
         return None
     try:    
         stream = serial.serial_for_url(url, timeout=0, do_not_open=True)
-    except ValueError:
+    except ValueError as e:
         return None
     if url.split(':', 1)[0] == 'socket':
         return SocketSerialWrapper(stream)
