@@ -596,9 +596,11 @@ def set_area(x0,y0, array, operation_char):
             shift = 6   
     else:                
         mask = 0x80
-        hilo = 0
-        for y in range(y0,y1+1):
-            for x in range(x0,x1+1):
+        row_bytes = (dx+7) // 8
+        for y in range(y0, y1+1):
+            for x in range(x0, x1+1):
+                if mask == 0: 
+                    mask = 0x80
                 if x < 0 or x >= size[0] or y < 0 or y >= size[1]:
                     pixel = 0
                 else:
@@ -606,25 +608,15 @@ def set_area(x0,y0, array, operation_char):
                 index = 0
                 for b in range(bitsperpixel):
                     try:
-                        if byte_array[byte+hilo+b*2] & mask != 0:
-                            index |= 1<<b  
+                        if byte_array[4 + ((y-y0)*bitsperpixel + b)*row_bytes + (x-x0)//8] & mask != 0:
+                            index |= 1 << b  
                     except IndexError:
                         pass
                 mask >>= 1
-                if mask == 0: 
-                    mask = 0x80
-                    if hilo == 1:
-                        byte += bitsperpixel*2
-                        hilo = 0
-                    else:
-                        hilo += 1
                 if x >= 0 and x < size[0] and y >= 0 and y < size[1]:
                     backend.put_pixel(x, y, operation(pixel, index)) 
-            # left align next row
-            if mask != 0x80:
-                mask = 0x80
-                byte += bitsperpixel*2
-                hilo = 0
+            # byte align next row
+            mask = 0x80
     backend.remove_graph_clip()        
         
 def get_area(x0,y0,x1,y1, array):
@@ -661,29 +653,21 @@ def get_area(x0,y0,x1,y1, array):
             shift = 6   
     else:    
         mask = 0x80
-        hilo = 0
+        row_bytes = (dx+7) // 8
         for y in range(y0, y1+1):
             for x in range(x0, x1+1):
-                pixel = backend.get_pixel(x,y)
+                if mask == 0: 
+                    mask = 0x80
+                pixel = backend.get_pixel(x, y)
                 for b in range(bitsperpixel):
-                    if pixel&(1<<b) != 0:
+                    if pixel & (1<<b) != 0:
                         try:
-                            byte_array[byte+hilo+b*2] |= mask 
+                            byte_array[4 + ((y-y0)*bitsperpixel + b)*row_bytes + (x-x0)//8] |= mask 
                         except IndexError:
                             raise error.RunError(5)   
                 mask >>= 1
-                if mask == 0: 
-                    mask = 0x80
-                    if hilo == 1:
-                        byte += bitsperpixel*2
-                        hilo = 0
-                    else:
-                        hilo += 1
-            # left align next row
-            if mask != 0x80:
-                mask = 0x80
-                byte += bitsperpixel*2
-                hilo = 0
+            # byte align next row
+            mask = 0x80
     # store a copy in the fast-put store
     backend.fast_get(x0, y0, x1, y1, array)
     
