@@ -137,22 +137,19 @@ def swap_var(name1, index1, name2, index2):
     else:
         # strings are pointer-swapped
         if name1 in variables:
-            p1 = variables[name1] # must be mutable type
+            list1 = variables
+            key1 = name1
         else:
-            dimensions, lst, _ = arrays[name1]
-            p1 = lst[index_array(index1, dimensions)]
-        s1 = slice(0, len(p1))
-        if isinstance(p1, StringPtr):
-            p1, s1 = p1.stream, p1.slice
+            dimensions, list1, _ = arrays[name1]
+            key1 = index_array(index1, dimensions)
         if name2 in variables:
-            p2 = variables[name2]
+            list2 = variables
+            key2 = name2
         else:
-            dimensions, lst, version2 = arrays[name2]
-            p2 = lst[index_array(index2, dimensions)]
-        s2 = slice(0, len(p2))
-        if isinstance(p2, StringPtr):
-            p2, s2 = p2.stream, p2.slice
-        p1[s1], p2[s2] = p2[s2], p1[s1]    
+            dimensions, list2, _ = arrays[name2]
+            key2 = index_array(index2, dimensions)
+        list1[key1], list2[key2] = list2[key2], list1[key1]
+        # emulate pointer swap
         var_memory[name1], var_memory[name2] = ( (var_memory[name1][0], var_memory[name1][1], var_memory[name2][2]), 
                                                  (var_memory[name2][0], var_memory[name2][1], var_memory[name1][2]) )
     # inc version
@@ -304,6 +301,7 @@ def set_var_or_array(name, indices, value):
         set_array(name, indices, value)
         
 def set_field_var(field, varname, offset, length):
+    global var_current
     if varname[-1] != '$':
         # type mismatch
         raise error.RunError(13)
@@ -311,11 +309,16 @@ def set_field_var(field, varname, offset, length):
         # FIELD overflow
         raise error.RunError(50)    
     str_ptr = StringPtr(field, offset, length)
+    # update memory model (see set_var)
+    if varname not in variables:
+        name_ptr = var_current
+        var_ptr = name_ptr + max(3, len(varname)) + 1 # byte_size first_letter second_letter_or_nul remaining_length_or_nul 
+        var_current += max(3, len(varname)) + 1 + byte_size['$']
+    # var memory string ptr not yet supported for field vars
+    var_memory[varname] = (name_ptr, var_ptr, 0)
     # assign the string ptr to the variable name
     # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
     variables[varname] = str_ptr
-    # var memory not yet supported for field vars
-    var_memory[varname] = (0, 0, 0)
     
 def assign_field_var(varname, value, justify_right=False):
     if varname[-1] != '$' or value[0] != '$':
