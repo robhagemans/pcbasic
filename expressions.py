@@ -462,8 +462,7 @@ def value_screen(ins):
         return vartypes.pack_int(console.get_screen_char_attr(row, col, z!=0))
     
 def value_input(ins):    # INPUT$
-    if ins.read(1) != '$':
-        raise error.RunError(2)
+    util.require_read(ins, ('$',))
     util.require_read(ins, ('(',))
     num = vartypes.pass_int_unpack(parse_expression(ins))
     util.range_check(1, 255, num)
@@ -530,8 +529,7 @@ def value_lof(ins): # LOF
 # os functions
        
 def value_environ(ins):
-    if ins.read(1) != '$':
-        raise error.RunError(2)
+    require_read(ins, '$')
     expr = parse_bracket(ins)
     if expr[0] == '$':
         return vartypes.pack_string(oslayer.get_env(vartypes.unpack_string(expr)))
@@ -710,8 +708,7 @@ def value_peek(ins):
 
 # VARPTR, VARPTR$    
 def value_varptr(ins):    
-    if util.peek(ins) == '$':
-        ins.read(1) 
+    if util.skip_white_read_if(ins, ('$',)):
         util.require_read(ins, ('(',))
         name, indices = get_var_or_array_name(ins)
         util.require_read(ins, (')',))
@@ -745,8 +742,7 @@ def value_inp(ins):
 
 #  erdev, erdev$        
 def value_erdev(ins):
-    if util.peek(ins, 1)=='$':
-        ins.read(1) 
+    if util.skip_white_read_if(ins, ('$',)):
         return vartypes.null['$']
     else:    
         return vartypes.null['%']
@@ -759,8 +755,7 @@ def value_exterr(ins):
     
 # ioctl$    
 def value_ioctl(ins):
-    if ins.read(1) != '$':
-        raise error.RunError(2)
+    util.require_read(ins, ('$',))
     util.require_read(ins, ('(',))
     num = parse_file_number_opthash(ins)
     util.require_read(ins, (')',))
