@@ -67,6 +67,9 @@ input_closed = False
     
 # codepage suggestion for backend
 codepage = 437    
+
+# capslock mode 
+caps = False
     
 class ScreenRow(object):
     def __init__(self, bwidth):
@@ -716,6 +719,11 @@ def write_for_keys(s, col, cattr):
 # insert character into keyboard buffer; apply KEY repacement (for use by backends)
 def insert_key(c):
     global keybuf 
+    if caps:
+        if c >= 'a' and c <= 'z':
+            c = chr(ord(c)-32)
+        elif c >= 'A' and c <= 'z':
+            c = chr(ord(c)+32)
     if len(c) < 2:
         keybuf += c
     else:
