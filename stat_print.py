@@ -309,7 +309,7 @@ def exec_print_using(ins, screen):
                     screen.write(fors.read(1))       
             if string_field or number_field:
                 format_chars = True
-                semicolon = util.skip_white_read_if(ins, (';',))    
+                semicolon = util.skip_white_read_if(ins, (';', ','))    
     if not semicolon:
         screen.write_line()
     util.require(ins, util.end_statement)
