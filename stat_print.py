@@ -227,13 +227,11 @@ def exec_print(ins, screen=None):
     if screen == None:
         screen = expressions.parse_file_number(ins, 'OAR')
         screen = console if screen == None else screen
-    if util.skip_white_read_if(ins, ('\xD7',)): # USING
-       return exec_print_using(ins, screen)
     number_zones = max(1, int(screen.width/14))
     newline = True
     while True:
         d = util.skip_white(ins)
-        if d in util.end_statement:
+        if d in util.end_statement + ('\xD7',): # USING
             break 
         elif d in (',', ';', '\xD2', '\xCE'):    
             ins.read(1)
@@ -266,8 +264,11 @@ def exec_print(ins, screen=None):
             if screen.col + len(word) - 1 > screen.width and screen.col != 1:
                 screen.write_line()
             screen.write(str(word))
+    if util.skip_white_read_if(ins, ('\xD7',)): # USING
+       return exec_print_using(ins, screen)     
     if newline:
          screen.write_line()
+    util.require(ins, util.end_statement)      
             
 def exec_print_using(ins, screen):
     format_expr = vartypes.pass_string_unpack(expressions.parse_expression(ins))
