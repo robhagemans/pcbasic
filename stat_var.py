@@ -317,8 +317,11 @@ def exec_def_fn(ins):
     # read code
     fncode = ''
     util.require_read(ins, ('\xE7',)) #=
-    while util.skip_white(ins) not in util.end_statement:
-        fncode += ins.read(1)        
+    startloc = ins.tell()
+    util.skip_to(ins, util.end_statement)
+    endloc = ins.tell()
+    ins.seek(startloc)
+    fncode = ins.read(endloc - startloc)
     if not program.run_mode:
         # GW doesn't allow DEF FN in direct mode, neither do we (for no good reason, works fine)
         raise error.RunError(12)

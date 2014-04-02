@@ -569,9 +569,8 @@ def value_fn(ins):
     # save existing vars
     varsave = {}
     for name in varnames:
-        # we're just not doing strings
         if name in var.variables:
-            varsave[name] = vartypes.pass_number_keep(var.get_var(name))[1]
+            varsave[name] = var.get_var(name)[1]
     # read variables
     if util.skip_white_read_if(ins, ('(',)):
         exprs = parse_expr_list(ins, len(varnames), err=2)
