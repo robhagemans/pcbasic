@@ -134,6 +134,7 @@ def exec_run(ins):
     program.init_program()
     program.clear_all(close_files=not comma)
     program.jump(jumpnum)
+    error.error_handle_mode = False
                 
 def exec_if(ins):
     # ovoid overflow: don't use bools.
