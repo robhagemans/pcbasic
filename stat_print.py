@@ -170,7 +170,8 @@ def exec_key_define(ins):
     # (in which case it's a key scancode definition, which is not implemented)
     if keynum <= 10:
         console.key_replace[keynum-1] = str(text)
-        console.show_keys()
+        if console.keys_visible:
+            console.show_keys()
     else:
         if len(text) != 2:
            raise error.RunError(5)
