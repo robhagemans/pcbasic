@@ -271,9 +271,9 @@ def tokenise_line(line):
                 spc_or_tab = False
                 allow_jumpnum, allow_number = False, True
             else:
-                # replace all other nonprinting chars by spaces
                 allow_jumpnum, allow_number = False, False
-            outs.write(c if ord(c)>=32 else ' ')
+            # replace all other nonprinting chars by spaces; HOUSE 0x7f is allowed.
+            outs.write(c if ord(c) >= 32 and ord(c) <= 127 else ' ')
     outs.seek(0)
     return outs
 
