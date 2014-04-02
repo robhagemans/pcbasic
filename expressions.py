@@ -55,7 +55,8 @@ option_double = False
 def parse_expression(ins, allow_empty=False, empty_err=22):
     units, operators = [], []
     while True: 
-        if util.skip_white(ins) in util.end_expression:
+        d = util.skip_white(ins)
+        if d in util.end_expression:
             break    
         units.append(parse_expr_unit(ins))
         d = util.skip_white(ins)
@@ -79,14 +80,17 @@ def parse_expression(ins, allow_empty=False, empty_err=22):
                         d = '\xe8\xe6'    
         operators.append(d)
     # empty expression is a syntax error (inside brackets) or Missing Operand (in an assignment) or ok (in print)
+    # PRINT 1+      :err 22
+    # Print (1+)    :err 2
+    # print 1+)     :err 2
     if len(units) == 0:
         if allow_empty:
             return None
         else:    
-            raise error.RunError(empty_err)
+            # always 22 here now that the bracket is taken out?
+            raise error.RunError(2 if d in (')', ']') else empty_err)
     if len(units) <= len(operators):
-        # missing operand
-        raise error.RunError(22)
+        raise error.RunError(2 if d in (')', ']') else 22)
     return parse_operators(operators, units)
 
 def parse_operators(operators, units):
