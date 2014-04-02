@@ -184,7 +184,15 @@ def read_program_line(ins):
             break
         out += d       
     return out, eof
-    
+
+
+def tokenise_literal(ins, outs):
+        # string literal in DATA
+        outs.write(ins.read(1))
+        outs.write(ascii_read_to(ins, ('', '\r', '\0', '"') ))
+        if util.peek(ins)=='"':
+            outs.write(ins.read(1))    
+            
 def tokenise_line(line):      
     ins = StringIO(line)
     outs = StringIO()          
@@ -212,15 +220,18 @@ def tokenise_line(line):
             outs.write(ascii_read_to(ins, ('', '\r', '\0')))
             break
         elif data:
-            # read DATA as is, till end of statement    
-            outs.write(ascii_read_to(ins, ('', '\r', '\0', ':')))
+            # read DATA as is, till end of statement, except for literals    
+            while True:
+                outs.write(ascii_read_to(ins, ('', '\r', '\0', ':', '"')))
+                if util.peek(ins) == '"':
+                    # string literal in DATA
+                    tokenise_literal(ins, outs)
+                else:
+                    break            
             data = False
         elif util.peek(ins)=='"':
             # handle string literals    
-            outs.write(ins.read(1))
-            outs.write(ascii_read_to(ins, ('', '\r', '\0', '"') ))
-            if util.peek(ins)=='"':
-                outs.write(ins.read(1))
+            tokenise_literal(ins, outs)
         # read next character
         char = util.peek(ins)
         # anything after NUL is ignored till EOL
