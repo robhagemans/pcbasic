@@ -48,7 +48,7 @@ def exec_clear(ins):
         # expression1 is a memory location that, if specified, sets the maximum number of bytes available for use by GW-BASIC        
         exp1 = expressions.parse_expression(ins, allow_empty=True)
         if exp1:
-            exp1 = vartypes.pass_int_unpack(exp1)
+            exp1 = vartypes.pass_int_unpack(exp1, maxint=0xffff)
         if exp1 == 0:
             #  0 leads to illegal fn call
             raise error.RunError(5)
@@ -58,7 +58,7 @@ def exec_clear(ins):
             # When GW-BASIC is first executed, the stack space is set to 512 bytes, or one-eighth of the available memory, 
             # whichever is smaller.
             exp2 = expressions.parse_expression(ins, empty_err=2)
-            if vartypes.pass_int_unpack(exp2) == 0:
+            if vartypes.pass_int_unpack(exp2, maxint=0xffff) == 0:
                 #  0 leads to illegal fn call
                 raise error.RunError(5)
     util.require(ins, util.end_statement)
