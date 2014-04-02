@@ -14,6 +14,7 @@ import error
 import fp
 import vartypes
 import representation
+import expressions
 import util
 import var
 import graphics
@@ -64,7 +65,7 @@ def ml_parse_value(gmls):
         if len(c) == 0:
             raise error.RunError(5)
         elif ord(c) > 8:
-            step = var.get_var(util.get_var_name(gmls))
+            step = var.get_var_or_array(*expressions.get_var_or_array_name(gmls))
             util.require_read(gmls, (';',), err=5)
         else:
             # varptr$
@@ -100,7 +101,7 @@ def ml_parse_string(gmls):
     if len(c) == 0:
         raise error.RunError(5)
     elif ord(c) > 8:
-        sub = var.get_var(util.get_var_name(gmls))
+        sub = var.get_var_or_array(*expressions.get_var_or_array_name(gmls))
         util.require_read(gmls, (';',), err=5)
         return vartypes.pass_string_unpack(sub, err=5)
     else:
@@ -141,7 +142,7 @@ def draw_step(x0,y0, sx,sy, plot, goback):
 def draw_parse_gml(gml):
     global draw_scale, draw_angle
     save_attr = console.attr
-    gmls = StringIO(gml)
+    gmls = StringIO(gml.upper())
     plot, goback = True, False
     while True:
         c = util.skip_read(gmls, ml_whitepace).upper()
@@ -231,7 +232,7 @@ def solid_pattern(c):
 gap = 0.07
 def play_parse_mml(mml):
     global play_octave, play_speed, play_length, play_tempo
-    gmls = StringIO(mml)
+    gmls = StringIO(mml.upper())
     next_oct = 0
     while True:
         c = util.skip_read(gmls, ml_whitepace).upper()
