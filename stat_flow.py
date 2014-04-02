@@ -249,7 +249,7 @@ def exec_on_error(ins):
     # ON ERROR GOTO 0 in error handler
     if error.on_error == 0 and error.error_handle_mode:
         # re-raise the error so that execution stops
-        raise error.RunError(error.errn)
+        raise error.RunError(error.errn, error.erl)
     # this will be caught by the trapping routine just set
     util.require(ins, util.end_statement)
 
