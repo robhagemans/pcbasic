@@ -246,10 +246,15 @@ def play_parse_mml(mml):
             play_parse_mml(sub)
         elif c == 'N':
             note = ml_parse_number(gmls)
+            dur = play_length
+            c = util.skip(gmls, ml_whitepace).upper()
+            if c == '.':
+                gmls.read(1)
+                dur *= 1.5
             if note > 0 and note <= 84:
-                console.sound.play_sound(note_freq[note-1], play_length*play_tempo, play_speed)
+                console.sound.play_sound(note_freq[note-1], dur*play_tempo, play_speed)
             elif note == 0:
-                console.sound.play_sound(0, play_length*play_tempo, play_speed)
+                console.sound.play_sound(0, dur*play_tempo, play_speed)
         elif c == 'L':
             play_length = 1./ml_parse_number(gmls)    
         elif c == 'T':
