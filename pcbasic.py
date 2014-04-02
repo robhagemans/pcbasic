@@ -87,8 +87,9 @@ def main():
         console.exit()
         # autosave any file in memory
         if program.bytecode:
+            program.protected = False
             autosave = os.path.join(tempfile.gettempdir(), "AUTOSAVE.BAS")
-            program.save(oslayer.safe_open(autosave, "S", "W"), 'A')
+            program.save(oslayer.safe_open(autosave, "S", "W"), 'B')
             
 
 def prepare_constants(args):
