@@ -221,25 +221,23 @@ def tokenise_line(line):
                 else:
                     break            
             data = False
-        elif util.peek(ins)=='"':
-            # handle string literals    
-            tokenise_literal(ins, outs)
-        # read next character
-        char = util.peek(ins)
+        # read next character, convert to uppercase
+        c = util.peek(ins).upper()
         # anything after NUL is ignored till EOL
-        if char == '\x00':
+        if c == '\0':
             ins.read(1)
             ascii_read_to(ins, ('', '\r'))
             break
         # end of line    
-        if char in ('', '\r'):
+        elif c in ('', '\r'):
             break
-        # convert anything else to upper case
-        c = char.upper()
         # handle whitespace
-        if c in tokenise_whitespace:
+        elif c in tokenise_whitespace:
             ins.read(1)
-            outs.write(char)
+            outs.write(c)
+        # handle string literals    
+        elif util.peek(ins) == '"':
+            tokenise_literal(ins, outs)
         # handle jump numbers
         elif allow_number and allow_jumpnum and c in ascii_digits + ('.',):
             tokenise_jump_number(ins, outs) 
