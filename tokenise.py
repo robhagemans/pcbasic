@@ -137,12 +137,12 @@ def detokenise_keyword(bytes, output):
         nxt = bytes.read(1)
         if nxt == '':
             pass
-        elif token_to_keyword.has_key(nxt) and token_to_keyword[nxt] == "'":
+        elif nxt == '\xd9': # ' 
             # if next char is token('), we have the special value REM' -- replaced by ' below.
             output += "'"
         else:
             # otherwise, it's part of the comment or an EOL or whatever, pass back to stream so it can be processed
-            bytes.seek(-1,1)
+            bytes.seek(-1, 1)
         comment = True
     # check for special cases
     #   [:REM']   ->  [']
@@ -244,7 +244,7 @@ def tokenise_line(line):
         # special case ? -> PRINT 
         elif c == '?':
             ins.read(1)
-            outs.write(keyword_to_token['PRINT'])
+            outs.write('\x91')
             allow_number = True
         # keywords & variable names       
         elif c in ascii_uppercase:
