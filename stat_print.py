@@ -91,6 +91,8 @@ def exec_color_mode_1(back, pal, override):
         else:
             # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
             console.set_palette([back & 0xf, 2, 4, 6])
+    else:
+        console.set_palette_entry(0, back & 0xf)        
     
 def exec_palette(ins):
     d = util.skip_white(ins)
