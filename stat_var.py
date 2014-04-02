@@ -284,7 +284,7 @@ def exec_line_input(ins):
     else:    
         console.write(prompt) 
         line = console.wait_screenline(write_endl=newline)
-    var.set_var_or_array(readvar, indices, vartypes.pack_string(line))
+    var.set_var_or_array(readvar, indices, vartypes.pack_string(bytearray(line)))
 
 def exec_restore(ins):
     if not util.skip_white(ins) in util.end_statement:
