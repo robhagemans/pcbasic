@@ -208,18 +208,10 @@ def tokenise_line(line):
     while True: 
         # non-parsing modes        
         if rem:
-            # anything after REM is passed as is till EOL
-            outs.write(ascii_read_to(ins, ('', '\r', '\0')))
+            tokenise_rem(ins, outs)
             break
         elif data:
-            # read DATA as is, till end of statement, except for literals    
-            while True:
-                outs.write(ascii_read_to(ins, ('', '\r', '\0', ':', '"')))
-                if util.peek(ins) == '"':
-                    # string literal in DATA
-                    tokenise_literal(ins, outs)
-                else:
-                    break            
+            tokenise_data(ins, outs):
             data = False
         # read next character, convert to uppercase
         c = util.peek(ins).upper()
@@ -295,6 +287,20 @@ def tokenise_line(line):
             outs.write(c if ord(c)>=32 else ' ')
     outs.seek(0)
     return outs
+
+def tokenise_rem(ins, outs):
+    # anything after REM is passed as is till EOL
+    outs.write(ascii_read_to(ins, ('', '\r', '\0')))
+
+def tokenise_data(ins, outs):
+    # read DATA as is, till end of statement, except for literals    
+    while True:
+        outs.write(ascii_read_to(ins, ('', '\r', '\0', ':', '"')))
+        if util.peek(ins) == '"':
+            # string literal in DATA
+            tokenise_literal(ins, outs)
+        else:
+            break            
     
 def tokenise_literal(ins, outs):
     # string literal
