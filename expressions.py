@@ -87,9 +87,13 @@ def parse_expression(ins, allow_empty=False, empty_err=22):
         if allow_empty:
             return None
         else:    
+            if d in (')', ']'):
+                ins.read(1) # for positioning of cursor in edit gadget
             # always 22 here now that the bracket is taken out?
             raise error.RunError(2 if d in (')', ']') else empty_err)
     if len(units) <= len(operators):
+        if d in (')', ']'):
+            ins.read(1)
         raise error.RunError(2 if d in (')', ']') else 22)
     return parse_operators(operators, units)
 
