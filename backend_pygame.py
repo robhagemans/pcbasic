@@ -740,6 +740,8 @@ def get_pen(fn):
 
 def get_stick(fn):
     stick_num, axis = fn//2, fn%2
+    if len(joysticks) == 0:
+        return 0
     if len(joysticks) < stick_num + 1:
         return 128
     else:
