@@ -32,6 +32,9 @@ import console
 import tokenise
 import program
 import unicodepage
+# for autosave
+import os
+import tempfile
 
 greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "INFO" for more.\r%d Bytes free'
 
@@ -82,6 +85,11 @@ def main():
     finally:
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
         console.exit()
+        # autosave any file in memory
+        if program.bytecode:
+            autosave = os.path.join(tempfile.gettempdir(), "AUTOSAVE.BAS")
+            program.save(oslayer.safe_open(autosave, "S", "W"), 'A')
+            
 
 def prepare_constants(args):
     # PEEK presets
