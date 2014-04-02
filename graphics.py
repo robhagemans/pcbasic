@@ -87,7 +87,11 @@ def put_point(x, y, c):
     backend.remove_graph_clip()
     
 def get_point(x, y):
-    x, y = view_coords(x,y)
+    x, y = view_coords(x, y)
+    if x < 0 or x >= size[0]:
+        return -1
+    if y < 0 or y >= size[1]:
+        return -1
     return backend.get_pixel(x,y)
 
 ### WINDOW coords
