@@ -74,6 +74,11 @@ def main():
     except error.RunError as e:
         # errors during startup/conversion are handled here, then exit
         e.handle_break()    
+    except KeyboardInterrupt:
+        if args.debug:
+            raise
+        else:    
+            run.exit()    
     finally:
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
         console.exit()
