@@ -195,9 +195,6 @@ def tokenise_line(line):
         return outs
     # read the line number
     tokenise_line_number(ins, outs)
-    # non-parsing modes
-    rem = False     # REM: pass unchanged until e-o-line
-    data = False    # DATA: pass unchanged until :
     # expect line number
     allow_jumpnum = False
     # expect number (6553 6 -> the 6 is encoded as \x17)
@@ -206,14 +203,7 @@ def tokenise_line(line):
     spc_or_tab = False
     # parse through elements of line
     while True: 
-        # non-parsing modes        
-        if rem:
-            tokenise_rem(ins, outs)
-            break
-        elif data:
-            tokenise_data(ins, outs):
-            data = False
-        # read next character, convert to uppercase
+        # peek next character, convert to uppercase
         c = util.peek(ins).upper()
         # anything after NUL is ignored till EOL
         if c == '\0':
@@ -249,8 +239,8 @@ def tokenise_line(line):
         # special case ' -> :REM'
         elif c == "'":
             ins.read(1)
-            rem = True
             outs.write(':\x8F\xD9')
+            tokenise_rem(ins, outs)
         # special case ? -> PRINT 
         elif c == '?':
             ins.read(1)
@@ -258,19 +248,18 @@ def tokenise_line(line):
             allow_number = True
         # keywords & variable names       
         elif c in ascii_uppercase:
-            allow_jumpnum = False
             word = tokenise_word(ins, outs)
             # handle non-parsing modes
-            if word in ('REM', "'") or debug and word=='DEBUG':  # note: DEBUG - this is not GW-BASIC behaviour
-                rem = True
+            if word in ('REM', "'") or (debug and word == 'DEBUG'):  # note: DEBUG - this is not GW-BASIC behaviour
+                tokenise_rem(ins, outs)
             elif word == "DATA":    
-                data = True
-            elif word in linenum_words: 
-                allow_jumpnum = True
-            # numbers can follow tokenised keywords (which does not include the word 'AS')
-            allow_number = (word in keyword_to_token)
-            if word in ('SPC(', 'TAB('):
-                spc_or_tab = True
+                tokenise_data(ins, outs)
+            else:    
+                allow_jumpnum = (word in linenum_words)
+                # numbers can follow tokenised keywords (which does not include the word 'AS')
+                allow_number = (word in keyword_to_token)
+                if word in ('SPC(', 'TAB('):
+                    spc_or_tab = True
         else:
             ins.read(1)
             if c in (',', '#', ';'):
