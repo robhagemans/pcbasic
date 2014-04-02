@@ -185,14 +185,6 @@ def read_program_line(ins):
         out += d       
     return out, eof
 
-
-def tokenise_literal(ins, outs):
-        # string literal in DATA
-        outs.write(ins.read(1))
-        outs.write(ascii_read_to(ins, ('', '\r', '\0', '"') ))
-        if util.peek(ins)=='"':
-            outs.write(ins.read(1))    
-            
 def tokenise_line(line):      
     ins = StringIO(line)
     outs = StringIO()          
@@ -306,6 +298,13 @@ def tokenise_line(line):
     outs.seek(0)
     return outs
     
+def tokenise_literal(ins, outs):
+    # string literal
+    outs.write(ins.read(1))
+    outs.write(ascii_read_to(ins, ('', '\r', '\0', '"') ))
+    if util.peek(ins)=='"':
+        outs.write(ins.read(1))    
+            
 def tokenise_line_number(ins, outs): 
     linenum = tokenise_uint(ins)
     if linenum != '':    
