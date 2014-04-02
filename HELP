@@ -620,7 +620,8 @@ NOTES:
 ERRORS:
 -  If 'mem_limit' or 'stack_size' equal 0, ILLEGAL FUNCTION CALL is raised.
 -  If 'expr' is negative, ILLEGAL FUNCTION CALL is raised.
--  If 'expr','mem_limit','stack_size' are not in [-32768, 32767], OVERFLOW.
+-  If 'expr' is not in [-32768, 32767], OVERFLOW.
+-  If 'mem_limit','stack_size' are not in [-32768, 65535], OVERFLOW.
 
 
 CLOSE statement
