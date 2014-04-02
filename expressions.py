@@ -835,7 +835,7 @@ def value_operator(op, left, right):
         return vdiv(left, right)
     elif op == '\xF4':              # \
         return fp.pack(fp.div(fp.unpack(vartypes.pass_single_keep(left)).ifloor(), 
-                fp.unpack(vartypes.pass_single_keep(right)).ifloor()).ifloor())
+                fp.unpack(vartypes.pass_single_keep(right)).ifloor()).apply_carry().ifloor())
     elif op == '\xF3':              # %
         numerator = vartypes.pass_int_unpack(right)
         if numerator == 0:
