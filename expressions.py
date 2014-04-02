@@ -787,9 +787,9 @@ value_log = partial(value_unary, fn=fp.log)
 
 def value_rnd(ins):
     if util.skip_white(ins) == '(':
-        return rnd.get_random(vartypes.pass_int_unpack(parse_bracket(ins)))
+        return rnd.get_random(fp.unpack(vartypes.pass_single_keep(parse_bracket(ins))))
     else:
-        return rnd.get_random(1)
+        return rnd.get_random_int(1)
 
 def value_abs(ins):
     return vartypes.number_abs(vartypes.pass_number_keep(parse_bracket(ins)))

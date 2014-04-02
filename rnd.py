@@ -46,11 +46,11 @@ def randomize(val):
     final_two = bytearray(chr(final_two[0]^mask[0]) + chr(final_two[1]^mask[1]))
     n = vartypes.sint_to_value(final_two)
     rnd_seed &= 0xff
-    get_random(1) # RND(1)
+    get_random_int(1) # RND(1)
     rnd_seed += n * rnd_step
     rnd_seed %= rnd_period
     
-def get_random(n):
+def get_random_int(n):
     global rnd_seed
     if n < 0:
         n = -n
@@ -62,4 +62,9 @@ def get_random(n):
     # rnd_seed/rnd_period
     return fp.pack(fp.div(fp.Single.from_int(rnd_seed), fp.Single.from_int(rnd_period)))
 
+# takes mbf Single arg
+def get_random(mbf):
+    return get_random_int(-(mbf.man>>8) if mbf.neg else mbf.man>>8)    
+    
+    
     
