@@ -204,8 +204,8 @@ def tokenise_line(line):
     # read the line number
     tokenise_line_number(ins, outs)
     # non-parsing modes
-    verbatim = False  # REM: pass unchanged until e-o-line
-    data = False      # DATA: pass unchanged until :
+    rem = False     # REM: pass unchanged until e-o-line
+    data = False    # DATA: pass unchanged until :
     # expect line number
     allow_jumpnum = False
     # expect number (6553 6 -> the 6 is encoded as \x17)
@@ -215,7 +215,7 @@ def tokenise_line(line):
     # parse through elements of line
     while True: 
         # non-parsing modes        
-        if verbatim :
+        if rem:
             # anything after REM is passed as is till EOL
             outs.write(ascii_read_to(ins, ('', '\r', '\0')))
             break
@@ -267,7 +267,7 @@ def tokenise_line(line):
         # special case ' -> :REM'
         elif c == "'":
             ins.read(1)
-            verbatim = True
+            rem = True
             outs.write(':\x8F\xD9')
         # special case ? -> PRINT 
         elif c == '?':
@@ -280,7 +280,7 @@ def tokenise_line(line):
             word = tokenise_word(ins, outs)
             # handle non-parsing modes
             if word in ('REM', "'") or debug and word=='DEBUG':  # note: DEBUG - this is not GW-BASIC behaviour
-                verbatim = True
+                rem = True
             elif word == "DATA":    
                 data = True
             elif word in linenum_words: 

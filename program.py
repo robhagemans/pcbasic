@@ -579,24 +579,24 @@ def read_entry():
     if bytecode.read(1) not in ('\x84', ','):
         # out of DATA
         raise error.RunError(4)
-    vals, word, verbatim = '', '', False
+    vals, word, literal = '', '', False
     while True:
         # read next char; omit leading whitespace
-        if not verbatim and vals == '':    
+        if not literal and vals == '':    
             c = util.skip_white(bytecode)
         else:
             c = util.peek(bytecode)
         # parse char
-        if c == '' or (not verbatim and c == ',') or (c in util.end_line or (not verbatim and c in util.end_statement)):
+        if c == '' or (not literal and c == ',') or (c in util.end_line or (not literal and c in util.end_statement)):
             break
         elif c == '"':
             bytecode.read(1)
-            verbatim = not verbatim
-            if not verbatim:
+            literal = not literal
+            if not literal:
                 util.require(bytecode, util.end_statement+(',',))
         else:        
             bytecode.read(1)
-            if verbatim:
+            if literal:
                 vals += c
             else:
                 word += c
