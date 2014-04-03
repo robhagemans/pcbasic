@@ -216,6 +216,7 @@ def dosname_read(s, defext='BAS', path='', err=53, isdir=False):
 
 # find a unix path to match the given dos-style path
 def dospath(s, defext, err, action, isdir):
+    s = str(s)
     drivepath = s.split(':')
     if len(drivepath) > 1:
         test = drivepath[0] + ":"
@@ -256,7 +257,7 @@ def replace_drive(pre):
 # for FILES command
 # apply filename filter and DOSify names
 def pass_dosnames(path, files, mask='*.*'):
-    mask = mask.rsplit('.', 1)
+    mask = str(mask).rsplit('.', 1)
     if len(mask) == 2:
         trunkmask, extmask = mask
     else:
