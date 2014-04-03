@@ -196,15 +196,6 @@ def dosname_write(s, defext='BAS', path='', dummy=0, isdir_dummy=False):
     else:
         return pre + name
 
-def replace_drive(pre):
-    # get drive letter, if any
-    drivepath = string.split(pre, ':')
-    if len(drivepath) > 1:
-        pre = os.path.join(get_drive(drivepath[0]), drivepath[-1])
-    else:
-        pre = os.path.join(get_drive(''), drivepath[-1])
-    return pre
-
 # if name does not exist, put name in 8x3, all upper-case format with standard extension            
 def dosname_read(s, defext='BAS', path='', err=53, isdir=False):
     if not s:
@@ -253,6 +244,15 @@ dospath_write = partial(dospath, action=dosname_write, isdir=False)
 dospath_read_dir = partial(dospath, action=dosname_read, isdir=True)
 dospath_write_dir = partial(dospath, action=dosname_write, isdir=True)
 
+def replace_drive(pre):
+    # get drive letter, if any
+    drivepath = string.split(pre, ':')
+    if len(drivepath) > 1:
+        pre = os.path.join(get_drive(drivepath[0]), drivepath[-1])
+    else:
+        pre = os.path.join(get_drive(''), drivepath[-1])
+    return pre
+    
 # for FILES command
 # apply filename filter and DOSify names
 def pass_dosnames(path, files, mask='*.*'):
@@ -305,15 +305,14 @@ def files(pathmask, console):
     mask = mask.upper()
     if mask == '':
         mask = '*.*'
-#    # get top level directory for '.'
     path = dospath_read_dir(path, '', 53)
     path = os.path.abspath(path)
     roots, dirs, files = [], [], []
     for root, dirs, files in safe(os.walk, path):
         break
-    # get working dir, replace / with \
+    # get working dir in DOS format
     # NOTE: this is always the current dir, not the one being listed
-    # FIXME: shld be current dir *on the drive we look at*
+    # TODO: shld be current dir *on the drive we look at*
     console.write(dossify_path(os.getcwd()) + '\n')
     if (roots, dirs, files) == ([], [], []):
         raise error.RunError(53)
@@ -322,7 +321,6 @@ def files(pathmask, console):
     dirs += ['.', '..']
     dosdirs = pass_dosnames(path, dirs, mask)
     dosdirs = [ name+'<DIR>' for name in dosdirs ]
-    #dosdirs += [ '        .   <DIR>', '        ..  <DIR>' ]
     dosfiles.sort()
     dosdirs.sort()    
     output = dosdirs + dosfiles
