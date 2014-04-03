@@ -214,6 +214,15 @@ def str_replace_mid(s, start, num, val):
     if len(val) > stop-start:
         val = val[:stop-start]
     s[start:stop] = val
+
+def str_instr(big, small, n):
+    if big == '' or n > len(big):
+        return null['%']
+    # BASIC counts string positions from 1
+    find = big[n-1:].find(small)
+    if find == -1:
+        return null['%']
+    return pack_int(n + find)  
     
 def number_gt(left, right):
     left, right = pass_most_precise_keep(left, right)
