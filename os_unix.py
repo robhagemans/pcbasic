@@ -57,10 +57,11 @@ def spawn_interactive_shell(cmd):
                 console.write(c)
         if c == '' and not p.isalive(): 
             return
+            
 
 def get_drive(s):
     if not s:
-        s = current_drive
+        return ''
     try:
         return drives[s.upper()]
     except KeyError:
@@ -68,7 +69,7 @@ def get_drive(s):
         raise error.RunError(76)  
         
 # change names in FILES to some 8.3 variant             
-def dossify(name):
+def dossify(path, name):
     if name.find('.') > -1:
         trunk, ext = name[:name.find('.')][:8], name[name.find('.')+1:][:3]
     else:
@@ -82,8 +83,10 @@ def dossify(name):
 
 def dossify_path(path):
     dospath = current_drive + ':' # FIXME: this should depend on path
+    pre = ''
     for name in path.split(os.sep):
-        trunk, ext = dossify(name)
+        trunk, ext = dossify(pre, name)
+        pre += name
         if trunk == '' and ext == '':
             continue    
         dospath += '\\' + trunk

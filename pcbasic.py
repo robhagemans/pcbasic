@@ -105,7 +105,7 @@ def prepare_constants(args):
     if args.mount != None:
         try:
             for a in args.mount:
-                letter, path = a.split(':')
+                letter, path = a.split(':',1)
                 oslayer.drives[letter] = path
         except Exception:
             pass                

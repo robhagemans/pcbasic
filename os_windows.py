@@ -27,7 +27,7 @@ shell = 'CMD'
 shell_cmd = shell + ' /c'
 
 drives = { }
-current_drive = os.path.abspath(os.sep).split(:)[0]
+current_drive = os.path.abspath(os.sep).split(':')[0]
     
 def disk_free(path):
     free_bytes = ctypes.c_ulonglong(0)
@@ -37,7 +37,7 @@ def disk_free(path):
 def process_stdout(p, stream):
     while True:
         c = stream.read(1)
-        if c != '': # and c != '\r':
+        if c != '': 
             if c!= '\r':
                 console.write(c)
             else:
@@ -73,13 +73,23 @@ def spawn_interactive_shell(cmd):
     outp.join()
     errp.join()
 
-# get windown short name
-def dossify(name):
-    shortname = win32api.GetShortPathName(name).upper()
-    split = shortname.split('.')
+# get windows short name
+def dossify(path, name):
+    if not path:
+        path = current_drive
+    try:
+        shortname = win32api.GetShortPathName(os.path.join(path, name)).upper()
+    except Exception as e:
+        # something went wrong, show as dots in FILES
+        return "........", "..."
+    split = shortname.split('\\')[-1].split('.')
     trunk, ext = split[0], ''
     if len(split)>1:
         ext = split[1]
+    if len(trunk)>8 or len(ext)>3:
+        # on some file systems, ShortPathName returns the long name
+        trunk = trunk[:8]
+        ext = '...'    
     return trunk, ext    
 
 def dossify_path(name):
@@ -87,12 +97,12 @@ def dossify_path(name):
 
 def get_drive(s):
     if not s:
-        s = current_drive
+        return current_drive + ':'
     try:
         # any replacement path?
         return drives[s.upper()]
     except KeyError:
-        return s
+        return s + ":"
         
 # print to Windows printer
 def line_print(printbuf, printer_name):        

@@ -200,7 +200,9 @@ def replace_drive(pre):
     # get drive letter, if any
     drivepath = string.split(pre, ':')
     if len(drivepath) > 1:
-        pre = get_drive(drivepath[0]) + drivepath[-1]
+        pre = os.path.join(get_drive(drivepath[0]), drivepath[-1])
+    else:
+        pre = os.path.join(get_drive(''), drivepath[-1])
     return pre
 
 # if name does not exist, put name in 8x3, all upper-case format with standard extension            
@@ -253,7 +255,7 @@ dospath_write_dir = partial(dospath, action=dosname_write, isdir=True)
 
 # for FILES command
 # apply filename filter and DOSify names
-def pass_dosnames(files, mask='*.*'):
+def pass_dosnames(path, files, mask='*.*'):
     mask = mask.rsplit('.', 1)
     if len(mask) == 2:
         trunkmask, extmask = mask
@@ -261,11 +263,11 @@ def pass_dosnames(files, mask='*.*'):
         trunkmask, extmask = mask[0], ''
     dosfiles = []
     for name in files:
-        trunk, ext = dossify(name)
+        trunk, ext = dossify(path, name)
         # apply mask separately to trunk and extension, dos-style.
         if not fnmatch.fnmatch(trunk.upper(), trunkmask.upper()) or not fnmatch.fnmatch(ext.upper(), extmask.upper()):
             continue
-        if not trunk:
+        if not trunk and ext and ext != '.':
             # hide dotfiles
             continue    
         trunk += ' ' * (8-len(trunk))
@@ -315,11 +317,12 @@ def files(pathmask, console):
     console.write(dossify_path(os.getcwd()) + '\n')
     if (roots, dirs, files) == ([], [], []):
         raise error.RunError(53)
-    dosfiles = pass_dosnames(files, mask)
+    dosfiles = pass_dosnames(path, files, mask)
     dosfiles = [ name+'     ' for name in dosfiles ]
     dirs += ['.', '..']
-    dosdirs = pass_dosnames(dirs, mask)
+    dosdirs = pass_dosnames(path, dirs, mask)
     dosdirs = [ name+'<DIR>' for name in dosdirs ]
+    #dosdirs += [ '        .   <DIR>', '        ..  <DIR>' ]
     dosfiles.sort()
     dosdirs.sort()    
     output = dosdirs + dosfiles
