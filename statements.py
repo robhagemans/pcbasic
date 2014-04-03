@@ -940,14 +940,16 @@ def parse_get_or_put_file(ins):
             the_file.set_pos(pos)    
         else:
             num_bytes = pos    
-    return the_file        
+    return the_file, num_bytes        
     
 def exec_put_file(ins):
-    parse_get_or_put_file(ins).write_field(num_bytes)
+    thefile, num_bytes = parse_get_or_put_file(ins) 
+    thefile.write_field(num_bytes)
     util.require(ins, util.end_statement)
 
 def exec_get_file(ins):
-    parse_get_or_put_file(ins).read_field(num_bytes)
+    thefile, num_bytes = parse_get_or_put_file(ins) 
+    thefile.read_field(num_bytes)
     util.require(ins, util.end_statement)
     
 def exec_lock_or_unlock(ins, action):
