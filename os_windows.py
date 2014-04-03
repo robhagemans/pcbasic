@@ -26,6 +26,8 @@ import console
 shell = 'CMD'    
 shell_cmd = shell + ' /c'
 
+drives = { }
+current_drive = os.path.abspath(os.sep).split(:)[0]
     
 def disk_free(path):
     free_bytes = ctypes.c_ulonglong(0)
@@ -82,6 +84,15 @@ def dossify(name):
 
 def dossify_path(name):
     return win32api.GetShortPathName(name).upper()
+
+def get_drive(s):
+    if not s:
+        s = current_drive
+    try:
+        # any replacement path?
+        return drives[s.upper()]
+    except KeyError:
+        return s
         
 # print to Windows printer
 def line_print(printbuf, printer_name):        

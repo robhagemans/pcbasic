@@ -18,11 +18,14 @@ except Exception:
     sys.stderr.write('WARNING: Pexpect module not found. SHELL command will not work.\n')    
 import console
 import unicodepage    
+import error
     
 shell = '/bin/sh'
 shell_cmd = shell + ' -c'
 
-
+drives = { 'C': os.path.abspath(os.sep), }
+current_drive = 'C'
+            
 def disk_free(path):
     st = os.statvfs(path)
     return st.f_bavail * st.f_frsize
@@ -54,7 +57,16 @@ def spawn_interactive_shell(cmd):
                 console.write(c)
         if c == '' and not p.isalive(): 
             return
-            
+
+def get_drive(s):
+    if not s:
+        s = current_drive
+    try:
+        return drives[s.upper()]
+    except KeyError:
+        # path not found
+        raise error.RunError(76)  
+        
 # change names in FILES to some 8.3 variant             
 def dossify(name):
     if name.find('.') > -1:
@@ -69,7 +81,7 @@ def dossify(name):
     return trunk, ext
 
 def dossify_path(path):
-    dospath = 'Z:'
+    dospath = current_drive + ':' # FIXME: this should depend on path
     for name in path.split(os.sep):
         trunk, ext = dossify(name)
         if trunk == '' and ext == '':
@@ -78,7 +90,7 @@ def dossify_path(path):
         if ext:
             dospath += '.' + ext
     return dospath        
-            
+
 # print to LPR printer (ok for CUPS)
 def line_print(printbuf, printer_name): 
     options = ''
