@@ -100,7 +100,15 @@ def prepare_constants(args):
                 seg, addr, val = a.split(':')
                 var.peek_values[int(seg)*0x10 + int(addr)] = int(val)
         except Exception:
-            pass        
+            pass     
+    # drive mounts           
+    if args.mount != None:
+        try:
+            for a in args.mount:
+                letter, path = a.split(':')
+                oslayer.drives[letter] = path
+        except Exception:
+            pass                
     # implied RUN invocations
     if args.infile and not args.load and not args.conv:
         args.run = True    
@@ -197,6 +205,7 @@ def get_args():
     parser.add_argument('--list-all', action='store_true', help='Allow listing and ASCII saving of lines beyond 65530')
     parser.add_argument('--unprotect', action='store_true', help='Allow listing and ASCII saving of protected files')
     parser.add_argument('--caps', action='store_true', help='Start in CAPS LOCK mode.')
+    parser.add_argument('--mount', nargs='*', metavar=('D:PATH'), help='Set a drive letter to PATH.')
     return parser.parse_args()
 
 
