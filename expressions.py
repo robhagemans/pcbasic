@@ -371,19 +371,14 @@ def value_instr(ins):
     if s[0] != '$':
         n = vartypes.pass_int_unpack(s)
         util.range_check(1, 255, n)
+        util.require_read(ins, (',',))
+        big = vartypes.pass_string_unpack(parse_expression(ins, allow_empty=True))
     else:
         big = vartypes.pass_string_unpack(s)
-        have_big = True
     util.require_read(ins, (',',))
-    if not have_big:
-        big = vartypes.pass_string_unpack(parse_expression(ins, allow_empty=True))
-        util.require_read(ins, (',',))
     small = vartypes.pass_string_unpack(parse_expression(ins, allow_empty=True))
     util.require_read(ins, (')',))
-    if big == '' or n > len(big):
-        return vartypes.null['%']
-    # BASIC counts string positions from 1
-    return vartypes.pack_int(n + big[n-1:].find(small))   
+    return vartypes.str_instr(big, small, n)
 
 def value_mid(ins):
     util.require_read(ins, ('(',))
