@@ -18,7 +18,7 @@ import error
 import fileio
 from fileio import RandomBase, TextFile, BaseFile
 import console
-import sys
+import logging
 
 # buffer sizes (/c switch in GW-BASIC)
 serial_in_size = 256
@@ -49,7 +49,7 @@ def create_device(name, arg, default=None):
     else:   
         stream = create_device_stream(arg, allowed_protocols[name[:3]])
         if not stream:
-            sys.stderr.write('WARNING: Could not attach %s to %s.\n' % (name, arg[0]))
+            logging.warning('Could not attach %s to %s.\n' % (name, arg[0]))
             stream = default
     if stream:        
         if name[:3] == 'COM':
