@@ -382,7 +382,7 @@ class RandomFile(RandomBase):
     overflow_error = 50
     
     def __init__(self, fhandle, name, number, mode, access, lock, reclen=128):
-        RandomBase.__init__(self, fhandle, name, number, mode, access, lock, reclen=128)
+        RandomBase.__init__(self, fhandle, name, number, mode, access, lock, reclen)
         # position at start of file
         self.recpos = 0
         self.fhandle.seek(0)
