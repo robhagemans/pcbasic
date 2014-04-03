@@ -237,9 +237,6 @@ def set_palette_entry(index, colour):
 
 def get_palette_entry(index):
     return backend.get_palette_entry(index)
-    
-def debug_print(s):
-    return backend.debug_print(s)
         
 def show_cursor(do_show = True):
     global cursor

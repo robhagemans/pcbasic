@@ -13,6 +13,7 @@
 # GW-BASIC is a trademark of Microsoft Corporation.
 
 import sys
+import logging
 import argparse
                 
 import run
@@ -37,12 +38,12 @@ import os
 import tempfile
 
 greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "INFO" for more.\r%d Bytes free'
+debugstr = ''
 
 def main():
     args = get_args()
     # DEBUG mode
-    tokenise.init_DEBUG(args.debug)
-    debugstr = ' [DEBUG mode]' if args.debug else ''
+    prepare_debug(args)
     # other command-line settings
     prepare_constants(args)
     try:
@@ -91,6 +92,16 @@ def main():
             autosave = os.path.join(tempfile.gettempdir(), "AUTOSAVE.BAS")
             program.save(oslayer.safe_open(autosave, "S", "W"), 'B')
             
+def prepare_debug(args):
+    global debugstr
+    tokenise.init_DEBUG(args.debug)
+    if args.debug:
+        # set logging format
+        logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
+        debugstr = ' [DEBUG mode]'
+    else:
+        # set logging format
+        logging.basicConfig(format='%(levelname)s: %(message)s')
 
 def prepare_constants(args):
     # PEEK presets
@@ -147,17 +158,17 @@ def prepare_console(args):
     # initialise backends
     console.keys_visible = (not args.run and args.cmd == None)
     if not console.init():
-        sys.stderr.write('WARNING: Falling back to dumb-terminal.\n')
+        logging.warning('Falling back to dumb-terminal.\n')
         # redirected input leads to dumbterm use
         console.backend = backend_dumb
         console.sound = sound_beep        
         if not  console.init():
-            sys.stderr.write('FATAL: Failed to initialise console.\n')
+            logging.critial('Failed to initialise console.\n')
             sys.exit(0)
     if args.nosound:
         console.sound = nosound
     if not console.sound.init_sound():
-        sys.stderr.write('WARNING: Failed to initialise sound. Sound will be disabled.\n')
+        logging.warning('Failed to initialise sound. Sound will be disabled.\n')
         console.sound = nosound
    
 def get_args():

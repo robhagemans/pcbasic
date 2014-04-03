@@ -2,7 +2,7 @@
 # serial_socket.py
 # workaround for some limitations of SocketSerial with timeout==0
 
-import sys
+import logging
 
 try:
     import serial
@@ -21,7 +21,7 @@ import serial.urlhandler.protocol_hwgrep
 
 def serial_for_url(url):
     if not serial:
-        sys.stderr.write('WARNING: PySerial module not found. Serial port and socket communication not available.\n')
+        logging.warning('PySerial module not found. Serial port and socket communication not available.\n')
         return None
     try:    
         stream = serial.serial_for_url(url, timeout=0, do_not_open=True)

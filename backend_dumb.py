@@ -131,9 +131,6 @@ def getc_utf8():
 def close():
     pass
     
-def debug_print(s):
-    sys.stderr.write(s)    
-    
 def idle():
     time.sleep(0.004)
     

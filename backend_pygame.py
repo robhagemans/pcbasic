@@ -12,6 +12,7 @@
 # Kosta Kostis/FreeDOS project for .CPI font files
 
 import pygame
+import logging
 
 import error
 import cpi_font
@@ -22,8 +23,6 @@ import deviceio
 import graphics
 # for fast get & put only
 import var
-# for debug_print only
-import sys
 # for run_mode only
 import program
 # for exit()
@@ -299,7 +298,7 @@ def init():
     pygame.key.set_repeat(500, 24)
     fonts = cpi_font.load_codepage(console.codepage)
     if fonts == None:
-        sys.stderr.write('WARNING: Failed to initialise PyGame console.')
+        logging.warning('Failed to initialise PyGame console.')
         return False
     unicodepage.load_codepage(console.codepage)
     init_mixer()
@@ -330,9 +329,6 @@ def resize_display(width, height, initial=False):
 def close():
     pygame.joystick.quit()
     pygame.display.quit()    
-
-def debug_print(s):
-    sys.stderr.write(s)    
 
 def get_palette_entry(index):
     return palette64[index]

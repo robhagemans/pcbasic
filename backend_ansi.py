@@ -107,7 +107,7 @@ def prepare(args):
 
 def init():
     if platform.system() == 'Windows':
-        sys.stderr.write('WARNING: ANSI terminal not supported on Windows.\n')
+        logging.warning('ANSI terminal not supported on Windows.\n')
         return False
     term_echo(False)
     term.write(esc_set_title % 'PC-BASIC 3.23')
@@ -289,10 +289,6 @@ def check_keyboard():
                 console.insert_key(c[0])    
         
 ########
-
-def debug_print(s):
-    # rpint to screen as normal, to avoid corrupting the screen by using stderr
-    console.write(s)
 
 def copy_page(src, dst):
     pass
