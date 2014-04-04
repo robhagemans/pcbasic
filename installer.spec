@@ -15,7 +15,7 @@ if platform.system() == 'Windows':
               strip=None,
               upx=True,
               console=False , 
-		  icon='C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pcbasic.ico')
+		  icon='C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\resources\\pcbasic.ico')
     coll = COLLECT(exe,
                    a.binaries,
                    a.zipfiles,
