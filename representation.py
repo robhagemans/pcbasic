@@ -553,11 +553,12 @@ def input_entry(text_file, allow_quotes, end_all=(), end_not_quoted=(',',)):
     return word
 
 def str_to_type(word, type_char):
+    packed = vartypes.pack_string(bytearray(word))
     if type_char == '$':
-        return vartypes.pack_string(bytearray(word))
+        return packed
     else:
         try:
-            return fp.pack(from_str(word, False))
+            return str_to_value_keep(packed, allow_nonnum=False)
         except AttributeError:
             return None
 #####      
@@ -659,7 +660,7 @@ def tokenise_number(ins, outs):
       
 ##########################################
 
-def str_to_value_keep(strval):
+def str_to_value_keep(strval, allow_nonnum=True):
     if strval==('$',''):
         return vartypes.null['%']
     strval = vartypes.pass_string_unpack(strval)
@@ -668,8 +669,10 @@ def str_to_value_keep(strval):
     tokenise_number(ins, outs)    
     outs.seek(0)
     value = util.parse_value(outs)
-    ins.close()
-    outs.close()
+    if not allow_nonnum:
+        if util.skip_white(ins) != '':
+            # not everything has been parsed - error
+            return None    
     return value
 
 
