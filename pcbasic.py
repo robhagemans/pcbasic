@@ -15,6 +15,7 @@
 import sys
 import logging
 import argparse
+import ConfigParser
 import platform
 # for autosave
 import os
@@ -103,6 +104,7 @@ def main():
             program.protected = False
             autosave = os.path.join(tempfile.gettempdir(), "AUTOSAVE.BAS")
             program.save(oslayer.safe_open(autosave, "S", "W"), 'B')
+            logging.info('Program autosaved as %s.' % autosave)
             
 def prepare_debug(args):
     global debugstr
@@ -142,7 +144,7 @@ def prepare_constants(args):
     if args.unprotect or args.conv:
         program.dont_protect = True    
     if args.codepage:
-        console.codepage = int(args.codepage[0])
+        console.codepage = int(args.codepage)
     if args.caps:
         console.caps = True    
 
@@ -194,6 +196,9 @@ def get_args():
     #   /m:n,m  sets the highest memory location to n and maximum block size to m
     parser = argparse.ArgumentParser(
         description='PC-BASIC 3.23 interpreter. If no options are present, the interpreter will run in interactive mode.')
+    # read config file, if any
+    parser.set_defaults(**read_config())
+    # set arguments    
     parser.add_argument('infile', metavar='in_file', nargs='?', 
         help='Input program file to run (default), load or convert.')
     parser.add_argument('outfile', metavar='out_file', nargs='?', 
@@ -210,13 +215,13 @@ def get_args():
     parser.add_argument('-q', '--quit', action='store_true', help='Quit interpreter when execution stops')
     parser.add_argument('-d', '--double', action='store_true', help='Allow double-precision math functions')
     parser.add_argument('--peek', nargs='*', metavar=('SEG:ADDR:VAL'), help='Define PEEK preset values')
-    parser.add_argument('--lpt1', nargs=1, metavar=('TYPE:VAL'), help='Set LPT1: to FILE:file_name or PRINTER:printer_name.')
-    parser.add_argument('--lpt2', nargs=1, metavar=('TYPE:VAL'), help='Set LPT2: to FILE:file_name or PRINTER:printer_name.')
-    parser.add_argument('--lpt3', nargs=1, metavar=('TYPE:VAL'), help='Set LPT3: to FILE:file_name or PRINTER:printer_name.')
-    parser.add_argument('--com1', nargs=1, metavar=('TYPE:VAL'), help='Set COM1: to PORT:device_name or SOCK:host:socket.')
-    parser.add_argument('--com2', nargs=1, metavar=('TYPE:VAL'), help='Set COM2: to PORT:device_name or SOCK:host:socket.')
+    parser.add_argument('--lpt1', action='store', metavar=('TYPE:VAL'), help='Set LPT1: to FILE:file_name or PRINTER:printer_name.')
+    parser.add_argument('--lpt2', action='store', metavar=('TYPE:VAL'), help='Set LPT2: to FILE:file_name or PRINTER:printer_name.')
+    parser.add_argument('--lpt3', action='store', metavar=('TYPE:VAL'), help='Set LPT3: to FILE:file_name or PRINTER:printer_name.')
+    parser.add_argument('--com1', action='store', metavar=('TYPE:VAL'), help='Set COM1: to PORT:device_name or SOCK:host:socket.')
+    parser.add_argument('--com2', action='store', metavar=('TYPE:VAL'), help='Set COM2: to PORT:device_name or SOCK:host:socket.')
     parser.add_argument('--conv', metavar='MODE', help='Convert file to (A)SCII, (B)ytecode or (P)rotected mode. Implies --unprotect and --list-all.')
-    parser.add_argument('--codepage', nargs=1, metavar=('NUMBER'), help='Load specified font codepage. Default is 437 (US).')
+    parser.add_argument('--codepage', action='store', metavar=('NUMBER'), help='Load specified font codepage. Default is 437 (US).')
     parser.add_argument('--nosound', action='store_true', help='Disable sound output')
     parser.add_argument('--dimensions', nargs=1, metavar=('X, Y'), help='Set pixel dimensions for graphics mode. Default is 640,480. Use 640,400 or multiples for cleaner pixels - but incorrect aspect ratio - on square-pixel LCDs. Graphical terminal only.')
     parser.add_argument('--dimensions-text', nargs=1, metavar=('X, Y'), help='Set pixel dimensions for text mode. Default is 640,400. Graphical terminal only.')
@@ -229,6 +234,24 @@ def get_args():
     parser.add_argument('--caps', action='store_true', help='Start in CAPS LOCK mode.')
     parser.add_argument('--mount', nargs='*', metavar=('D:PATH'), help='Set a drive letter to PATH.')
     return parser.parse_args()
+
+def read_config():
+    try:
+        config = ConfigParser.RawConfigParser(allow_no_value=True)
+        path = os.path.dirname(os.path.realpath(__file__))
+        config.read(os.path.join(path, 'pcbasic.ini'))
+        defaults = dict(config.items('pcbasic'))
+        # convert booleans
+        for d in defaults:
+            if defaults[d].upper() in ('YES', 'TRUE', 'ON'):
+                defaults[d] = True
+            if defaults[d].upper() in ('NO', 'FALSE', 'OFF'):
+                defaults[d] = False
+            if defaults[d] == '':
+                defaults[d] = None    
+        return defaults
+    except Exception:
+        return {}    
 
 
 main()
