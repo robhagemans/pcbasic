@@ -212,7 +212,7 @@ def exec_read(ins):
         # syntax error in DATA line (not type mismatch!) if can't convert to var type
         num = representation.str_to_type(program.read_entry(), v[0][-1])
         if num == None: 
-            raise error.RunError(2, program.get_line_number(program.data_pos))
+            raise error.RunError(2, program.get_line_number(program.data_pos-1))
         var.set_var_or_array(*v, value=num)
     util.require(ins, util.end_statement)
 
