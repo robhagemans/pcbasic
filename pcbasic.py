@@ -15,7 +15,11 @@
 import sys
 import logging
 import argparse
-                
+import platform
+# for autosave
+import os
+import tempfile
+             
 import run
 import error
 import var
@@ -25,7 +29,6 @@ import util
 import expressions
 import oslayer
 import statements
-import backend_dumb
 import nosound
 import sound_beep
 import graphics
@@ -33,9 +36,18 @@ import console
 import tokenise
 import program
 import unicodepage
-# for autosave
-import os
-import tempfile
+
+if platform.system() == 'Linux':
+    import backend_dumb
+    stdin_is_tty = sys.stdin.isatty()
+    stdout_is_tty = sys.stdout.isatty()
+    stdin, stdout = sys.stdin, sys.stdout
+else:
+    backend_dumb = None
+    # no stdin/stdout access allowed on Win & OSX packaged apps
+    stdin_is_tty, stdout_is_tty = True, True
+    stdin, stdout = None, None
+    
 
 greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "INFO" for more.\r%d Bytes free'
 debugstr = ''
@@ -55,13 +67,13 @@ def main():
         program.new()
         # print greeting
         if not args.run and not args.cmd and not args.conv:
-            if sys.stdin.isatty():
+            if stdin_is_tty:
                 console.write_line(greeting % (debugstr, var.total_mem))
         # execute arguments
-        if args.run or args.load or args.conv:
-            program.load(oslayer.safe_open(args.infile, "L", "R") if args.infile else sys.stdin)
-        if args.conv:
-            program.save(oslayer.safe_open(args.outfile, "S", "W") if args.outfile else sys.stdout, args.conv)
+        if args.run or args.load or args.conv and (args.infile or stdin):
+            program.load(oslayer.safe_open(args.infile, "L", "R") if args.infile else stdin)
+        if args.conv and (args.outfile or stdout):
+            program.save(oslayer.safe_open(args.outfile, "S", "W") if args.outfile else stdout, args.conv)
             run.exit()
         if not args.cmd:
             # if a command is given, the program is only loaded; run.loop() doesn't take None.
@@ -136,11 +148,11 @@ def prepare_constants(args):
 
 def prepare_console(args):
     unicodepage.load_codepage(console.codepage)
-    if args.dumb or args.conv or (not args.graphical and not args.text and not sys.stdin.isatty()):
+    if args.dumb or args.conv or (not args.graphical and not args.text and not stdin_is_tty):
         # redirected input leads to dumbterm use
         console.backend = backend_dumb
         console.sound = sound_beep
-    elif args.text and sys.stdout.isatty():
+    elif args.text and stdout_is_tty:
         import backend_ansi
         console.backend = backend_ansi
         console.sound = sound_beep
@@ -152,19 +164,18 @@ def prepare_console(args):
         console.penstick = backend_pygame
         console.sound = backend_pygame
         # redirected output is split between graphical screen and redirected file    
-        if not sys.stdout.isatty():
+        if not stdout_is_tty:
             console.output_echos.append(backend_dumb.echo_stdout) 
             console.input_echos.append(backend_dumb.echo_stdout)   
     # initialise backends
     console.keys_visible = (not args.run and args.cmd == None)
-    if not console.init():
+    if not console.init() and backend_dumb:
         logging.warning('Falling back to dumb-terminal.\n')
-        # redirected input leads to dumbterm use
         console.backend = backend_dumb
         console.sound = sound_beep        
-        if not  console.init():
-            logging.critial('Failed to initialise console.\n')
-            sys.exit(0)
+    if not console.init():
+        logging.critial('Failed to initialise console.\n')
+        sys.exit(0)
     if args.nosound:
         console.sound = nosound
     if not console.sound.init_sound():
