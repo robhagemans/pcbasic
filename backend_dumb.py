@@ -15,6 +15,7 @@ import platform
 import time
 import select
 import os
+import logging
 
 import error
 import unicodepage
@@ -45,7 +46,7 @@ def prepare(args):
 def init():
     global check_keys
     if platform.system() == 'Windows':
-        sys.stderr.write('WARNING: Text terminal not supported on Windows.\n')
+        logging.warning('Text terminal not supported on Windows.\n')
         return False
     # use non-blocking and UTF8 when reading from ttys
     if sys.stdin.isatty():
