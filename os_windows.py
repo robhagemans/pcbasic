@@ -46,7 +46,7 @@ def process_stdout(p, stream):
             break        
 
 def spawn_interactive_shell(cmd):
-    p = subprocess.Popen( cmd.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
+    p = subprocess.Popen( str(cmd).split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
     outp = threading.Thread(target=process_stdout, args=(p, p.stdout))
     outp.daemon = True
     outp.start()
