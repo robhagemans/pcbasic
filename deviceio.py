@@ -44,12 +44,12 @@ def init_devices(args):
     devices['COM2:'] = create_device('COM2:', args.com2)
 
 def create_device(name, arg, default=None):
-    if not arg or len(arg)==0 or not arg[0]:
+    if not arg:
         stream = default
     else:   
         stream = create_device_stream(arg, allowed_protocols[name[:3]])
         if not stream:
-            logging.warning('Could not attach %s to %s.\n' % (name, arg[0]))
+            logging.warning('Could not attach %s to %s.\n' % (name, arg))
             stream = default
     if stream:        
         if name[:3] == 'COM':
@@ -60,7 +60,7 @@ def create_device(name, arg, default=None):
         return None        
 
 def create_device_stream(arg, allowed):
-    argsplit = arg[0].split(':', 1)
+    argsplit = arg.split(':', 1)
     if len(argsplit) == 1:
         addr, val = 'FILE', argsplit[0]
     elif len(argsplit) == 2:
