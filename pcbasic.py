@@ -173,9 +173,9 @@ def prepare_console(args):
         logging.warning('Falling back to dumb-terminal.\n')
         console.backend = backend_dumb
         console.sound = sound_beep        
-    if not console.init():
-        logging.critial('Failed to initialise console.\n')
-        sys.exit(0)
+        if not console.backend or not console.init():
+            logging.critial('Failed to initialise console.\n')
+            sys.exit(0)
     if args.nosound:
         console.sound = nosound
     if not console.sound.init_sound():
