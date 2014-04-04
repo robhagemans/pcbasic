@@ -17,16 +17,7 @@ if platform.system() == 'Windows':
               console=False , 
 		  icon='C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\resources\\pcbasic.ico')
     coll = COLLECT(exe,
-                   a.binaries - [
-                   ('jpeg.dll', None, None),
-                   ('libfreetype-6.dll', None, None),
-                   ('libogg-0.dll', None, None),
-                   ('libpng12-0.dll', None, None),
-                   ('libtiff.dll', None, None),
-                   ('libvorbis-0.dll', None, None),
-                   ('libvorbisfile-3.dll', None, None),
-                   ('smpeg.dll', None, None),
-                   ],
+                   a.binaries,
                    a.zipfiles,
                    a.datas,
                    Tree('cpi', prefix='cpi'),
