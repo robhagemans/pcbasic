@@ -17,21 +17,31 @@ if platform.system() == 'Windows':
               console=False , 
 		  icon='C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\resources\\pcbasic.ico')
     coll = COLLECT(exe,
-                   a.binaries,
+                   a.binaries - [
+                   ('jpeg.dll', None, None),
+                   ('libfreetype-6.dll', None, None),
+                   ('libogg-0.dll', None, None),
+                   ('libpng12-0.dll', None, None),
+                   ('libtiff.dll', None, None),
+                   ('libvorbis-0.dll', None, None),
+                   ('libvorbisfile-3.dll', None, None),
+                   ('smpeg.dll', None, None),
+                   ],
                    a.zipfiles,
                    a.datas,
                    Tree('cpi', prefix='cpi'),
                    [
-                        ('INFO.BAS', 'C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\INFO.BAS', 'DATA'),
-                        ('ABOUT', 'C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\ABOUT', 'DATA'),
-                        ('GPL3', 'C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\/GPL3', 'DATA'),
-                        ('HELP', 'C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\HELP', 'DATA'),
-                        ('CC-BY-SA', 'C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\CC-BY-SA', 'DATA'),
-                        ('COPYING', 'C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\COPYING', 'DATA'),
+            ('INFO.BAS', 'C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\INFO.BAS', 'DATA'),
+            ('ABOUT', 'C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\ABOUT', 'DATA'),
+            ('GPL3', 'C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\/GPL3', 'DATA'),
+            ('HELP', 'C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\HELP', 'DATA'),
+            ('CC-BY-SA', 'C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\CC-BY-SA', 'DATA'),
+            ('COPYING', 'C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\COPYING', 'DATA'),
                    ],
                    strip=None,
                    upx=True,
                    name='pcbasic')
+
 
 elif platform.system() == 'Linux':
     # -*- mode: python -*-
