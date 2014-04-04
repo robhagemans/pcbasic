@@ -98,3 +98,41 @@ elif platform.system() == 'Linux':
                    strip=None,
                    upx=True,
                    name='pcbasic')
+                   
+                   
+elif platform.system() == 'Darwin':
+	# -*- mode: python -*-
+	a = Analysis(['pcbasic.py'],
+             pathex=['/Users/rob/pc-basic'],
+             hiddenimports=[],
+             hookspath=None,
+             runtime_hooks=None)
+	pyz = PYZ(a.pure)
+	exe = EXE(pyz,
+          a.scripts,
+          exclude_binaries=True,
+          name='pcbasic',
+          debug=False,
+          strip=None,
+          upx=True,
+          console=False )
+	coll = COLLECT(exe,
+               a.binaries,
+               a.zipfiles,
+               a.datas,
+               Tree('cpi', prefix='cpi'),
+               [
+                        ('INFO.BAS', '/Users/rob/pc-basic/INFO.BAS', 'DATA'),
+                        ('ABOUT', '/Users/rob/pc-basic/ABOUT', 'DATA'),
+                        ('GPL3', '/Users/rob/pc-basic/GPL3', 'DATA'),
+                        ('HELP', '/Users/rob/pc-basic/HELP', 'DATA'),
+                        ('CC-BY-SA', '/Users/rob/pc-basic/CC-BY-SA', 'DATA'),
+                        ('COPYING', '/Users/rob/pc-basic/COPYING', 'DATA'),
+               ],
+               strip=None,
+               upx=True,
+               name='pcbasic')
+	app = BUNDLE(coll,
+             name='pcbasic.app',
+             icon='/Users/rob/pc-basic/resources/pcbasic.icns')
+
