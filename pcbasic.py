@@ -11,7 +11,7 @@
 # please see text file COPYING for licence terms.
 #
 # GW-BASIC is a trademark of Microsoft Corporation.
-
+ 
 import sys
 import logging
 import argparse
@@ -172,16 +172,16 @@ def prepare_console(args):
     # initialise backends
     console.keys_visible = (not args.run and args.cmd == None)
     if not console.init() and backend_dumb:
-        logging.warning('Falling back to dumb-terminal.\n')
+        logging.warning('Falling back to dumb-terminal.')
         console.backend = backend_dumb
         console.sound = sound_beep        
         if not console.backend or not console.init():
-            logging.critial('Failed to initialise console.\n')
+            logging.critial('Failed to initialise console. Quitting.')
             sys.exit(0)
     if args.nosound:
         console.sound = nosound
     if not console.sound.init_sound():
-        logging.warning('Failed to initialise sound. Sound will be disabled.\n')
+        logging.warning('Failed to initialise sound. Sound will be disabled.')
         console.sound = nosound
    
 def get_args():
