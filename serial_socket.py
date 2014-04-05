@@ -13,11 +13,7 @@ except Exception:
 import socket
 import select
 import oslayer
-# import explicitly, or pyinstaller won't bring them along
-import serial.urlhandler.protocol_socket
-import serial.urlhandler.protocol_rfc2217
-import serial.urlhandler.protocol_loop
-import serial.urlhandler.protocol_hwgrep
+
 
 def serial_for_url(url):
     if not serial:
