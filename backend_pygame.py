@@ -11,7 +11,19 @@
 # Acknowledgements:
 # Kosta Kostis/FreeDOS project for .CPI font files
 
-import pygame
+
+# prevent some pygame modules from loading
+import sys
+import warnings
+for module in ('cursors', 'draw', 'image', 'sprite', 'mask', 'overlay', 'mixer_music', 'movie', 'movieext', 'scrap'):
+    sys.modules['pygame.'+module] = None
+warnings.simplefilter("ignore", RuntimeWarning) 
+
+try:
+    import pygame
+except Exception:
+    pygame = None
+
 import logging
 
 import error
@@ -284,7 +296,10 @@ def prepare(args):
 
 def init():
     global fonts, num_sticks, joysticks, physical_size
-    pre_init_mixer()    
+    pre_init_mixer()   
+    if not pygame:
+        logging.warning('Could not find PyGame module. Failed to initialise PyGame console.')
+        return False     
     pygame.init()
     # get physical screen dimensions (needs to be called before set_mode)
     display_info = pygame.display.Info()
@@ -298,7 +313,7 @@ def init():
     pygame.key.set_repeat(500, 24)
     fonts = cpi_font.load_codepage(console.codepage)
     if fonts == None:
-        logging.warning('Failed to initialise PyGame console.')
+        logging.warning('Could not load codepage font. Failed to initialise PyGame console.')
         return False
     unicodepage.load_codepage(console.codepage)
     init_mixer()
