@@ -26,7 +26,7 @@ import console
 shell = 'CMD'    
 shell_cmd = shell + ' /c'
 
-drives = { }
+drives = { 'I': os.path.join(os.path.dirname(os.path.realpath(__file__)), 'info') }
 current_drive = os.path.abspath(os.sep).split(':')[0]
     
 def disk_free(path):

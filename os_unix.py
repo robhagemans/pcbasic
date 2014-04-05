@@ -23,7 +23,7 @@ import error
 shell = '/bin/sh'
 shell_cmd = shell + ' -c'
 
-drives = { 'C': os.path.abspath(os.sep), }
+drives = { 'C': os.path.abspath(os.sep), 'I': os.path.join(os.path.dirname(os.path.realpath(__file__)), 'info') }
 current_drive = 'C'
             
 def disk_free(path):
