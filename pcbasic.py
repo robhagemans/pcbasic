@@ -245,11 +245,11 @@ def read_config():
         for d in defaults:
             if defaults[d].upper() in ('YES', 'TRUE', 'ON'):
                 defaults[d] = True
-            if defaults[d].upper() in ('NO', 'FALSE', 'OFF'):
+            elif defaults[d].upper() in ('NO', 'FALSE', 'OFF'):
                 defaults[d] = False
-            if defaults[d] == '':
-                defaults[d] = None    
-        return defaults
+            elif defaults[d] == '':
+                defaults[d] = None  
+        return defaults          
     except Exception:
         return {}    
 
