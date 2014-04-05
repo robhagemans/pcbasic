@@ -402,7 +402,11 @@ class COMFile(RandomBase):
             return ''    
         
     def write(self, s):
-        self.fhandle.write(s)
+        try:
+            self.fhandle.write(s)
+        except serial_socket.SerialException:
+            # device I/O
+            raise error.RunError(57)
     
     # read (GET)    
     def read_field(self, num):
@@ -411,7 +415,7 @@ class COMFile(RandomBase):
         
     # write (PUT)
     def write_field(self, num):
-        self.fhandle.write(self.field[:num])
+        self.write(self.field[:num])
         
     def loc(self):
         # for LOC(i) (comms files)
