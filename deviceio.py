@@ -27,7 +27,8 @@ serial_out_size = 128
 devices = {}
 
 allowed_protocols = {
-    'LPT': ('PRINTER', 'FILE', 'PORT', 'SOCKET'),
+    # first protocol is default
+    'LPT': ('FILE', 'PRINTER', 'PORT', 'SOCKET'),
     'COM': ('PORT', 'SOCKET')
     }
 
@@ -62,7 +63,8 @@ def create_device(name, arg, default=None):
 def create_device_stream(arg, allowed):
     argsplit = arg.split(':', 1)
     if len(argsplit) == 1:
-        addr, val = 'FILE', argsplit[0]
+        # use first allowed protocol as default
+        addr, val = allowed[0], argsplit[0]
     elif len(argsplit) == 2:
         addr, val = argsplit[0].upper(), argsplit[1]
     else:
