@@ -376,12 +376,13 @@ def insert_char(crow, ccol, c, cattr):
         
 def delete_char(crow, ccol):
     save_col = ccol
-    therow, nextrow = apage.row[crow-1], apage.row[crow]
+    therow = apage.row[crow-1]
     if crow > 1 and ccol == therow.end+1 and therow.wrap:
+        nextrow = apage.row[crow]
         # row was a LF-ending row
         therow.buf[ccol-1:] = nextrow.buf[:width-ccol+1] 
         therow.end = min(therow.end + nextrow.end, width)
-        while nexrow.wrap and crow < scroll_height:
+        while crow < scroll_height and nextrow.wrap:
             nextrow2 = apage.row[crow+1]
             nextrow.buf = nextrow.buf[width-ccol+1:] + nextrow2.buf[:width-ccol+1]  
             nextrow.end = min(nextrow.end + nextrow2.end, width)
@@ -402,6 +403,7 @@ def delete_char(crow, ccol):
                 therow.buf.insert(therow.end-1, (' ', attr))
                 break
             else:
+                nextrow = apage.row[crow]
                 # wrap and end[row-1]==width
                 del therow.buf[ccol-1]
                 therow.buf.insert(therow.end-1, nextrow.buf[0])
