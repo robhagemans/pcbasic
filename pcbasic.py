@@ -239,7 +239,7 @@ def read_config():
     try:
         config = ConfigParser.RawConfigParser(allow_no_value=True)
         path = os.path.dirname(os.path.realpath(__file__))
-        config.read(os.path.join(path, 'pcbasic.ini'))
+        config.read(os.path.join(path, 'PCBASIC.INI'))
         defaults = dict(config.items('pcbasic'))
         # convert booleans
         for d in defaults:
