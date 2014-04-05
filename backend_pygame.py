@@ -40,239 +40,240 @@ import program
 # for exit()
 import run
 
-# CGA palette choices
-colours16 = [
- (0x00,0x00,0x00),(0x00,0x00,0xaa),(0x00,0xaa,0x00),(0x00,0xaa,0xaa),
- (0xaa,0x00,0x00),(0xaa,0x00,0xaa),(0xaa,0x55,0x00),(0xaa,0xaa,0xaa), 
- (0x55,0x55,0x55),(0x55,0x55,0xff),(0x55,0xff,0x55),(0x55,0xff,0xff),
- (0xff,0x55,0x55),(0xff,0x55,0xff),(0xff,0xff,0x55),(0xff,0xff,0xff)
-] 
+if pygame:
+    # CGA palette choices
+    colours16 = [
+     (0x00,0x00,0x00),(0x00,0x00,0xaa),(0x00,0xaa,0x00),(0x00,0xaa,0xaa),
+     (0xaa,0x00,0x00),(0xaa,0x00,0xaa),(0xaa,0x55,0x00),(0xaa,0xaa,0xaa), 
+     (0x55,0x55,0x55),(0x55,0x55,0xff),(0x55,0xff,0x55),(0x55,0xff,0xff),
+     (0xff,0x55,0x55),(0xff,0x55,0xff),(0xff,0xff,0x55),(0xff,0xff,0xff)
+    ] 
 
-# EGA palette choices
-colours64= [
- (0x00,0x00,0x00), (0x00,0x00,0xaa), (0x00,0xaa,0x00), (0x00,0xaa,0xaa),
- (0xaa,0x00,0x00), (0xaa,0x00,0xaa), (0xaa,0xaa,0x00), (0xaa,0xaa,0xaa), 
- 
- (0x00,0x00,0x55), (0x00,0x00,0xff), (0x00,0xaa,0x55), (0x00,0xaa,0xff),
- (0xaa,0x00,0xff), (0xaa,0x00,0xff), (0xaa,0xaa,0x55), (0xaa,0xaa,0xff),
- 
- (0x00,0x55,0x00), (0x00,0x55,0xaa), (0x00,0xff,0x00), (0x00,0xff,0xaa),
- (0xaa,0x55,0x00), (0xaa,0x55,0xaa), (0xaa,0xff,0x00), (0xaa,0xff,0xaa),
-  
- (0x00,0x55,0x55), (0x00,0x55,0xff), (0x00,0xff,0x55), (0x00,0xff,0xff),
- (0xaa,0x55,0x55), (0xaa,0x55,0xff), (0xaa,0xff,0x55), (0xaa,0xff,0xff),
-  
-  
- (0x55,0x00,0x00), (0x55,0x00,0xaa), (0x55,0xaa,0x00), (0x55,0xaa,0xaa),
- (0xff,0x00,0x00), (0xff,0x00,0xaa), (0xff,0xaa,0x00), (0xff,0xaa,0xaa),
- 
- (0x55,0x00,0x55), (0x55,0x00,0xff), (0x55,0xaa,0x55), (0x55,0xaa,0xff),
- (0xff,0x00,0x55), (0xff,0x00,0xff), (0xff,0xaa,0x55), (0xff,0xaa,0xff),
- 
- (0x55,0x55,0x00), (0x55,0x55,0xaa), (0x55,0xff,0x00), (0x55,0xff,0xaa),
- (0xff,0x55,0x00), (0xff,0x55,0xaa), (0xff,0xff,0x00), (0xff,0xff,0xaa),
- 
- (0x55,0x55,0x55), (0x55,0x55,0xff), (0x55,0xff,0x55), (0x55,0xff,0xff),
- (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff)
-]
+    # EGA palette choices
+    colours64= [
+     (0x00,0x00,0x00), (0x00,0x00,0xaa), (0x00,0xaa,0x00), (0x00,0xaa,0xaa),
+     (0xaa,0x00,0x00), (0xaa,0x00,0xaa), (0xaa,0xaa,0x00), (0xaa,0xaa,0xaa), 
+     
+     (0x00,0x00,0x55), (0x00,0x00,0xff), (0x00,0xaa,0x55), (0x00,0xaa,0xff),
+     (0xaa,0x00,0xff), (0xaa,0x00,0xff), (0xaa,0xaa,0x55), (0xaa,0xaa,0xff),
+     
+     (0x00,0x55,0x00), (0x00,0x55,0xaa), (0x00,0xff,0x00), (0x00,0xff,0xaa),
+     (0xaa,0x55,0x00), (0xaa,0x55,0xaa), (0xaa,0xff,0x00), (0xaa,0xff,0xaa),
+      
+     (0x00,0x55,0x55), (0x00,0x55,0xff), (0x00,0xff,0x55), (0x00,0xff,0xff),
+     (0xaa,0x55,0x55), (0xaa,0x55,0xff), (0xaa,0xff,0x55), (0xaa,0xff,0xff),
+      
+      
+     (0x55,0x00,0x00), (0x55,0x00,0xaa), (0x55,0xaa,0x00), (0x55,0xaa,0xaa),
+     (0xff,0x00,0x00), (0xff,0x00,0xaa), (0xff,0xaa,0x00), (0xff,0xaa,0xaa),
+     
+     (0x55,0x00,0x55), (0x55,0x00,0xff), (0x55,0xaa,0x55), (0x55,0xaa,0xff),
+     (0xff,0x00,0x55), (0xff,0x00,0xff), (0xff,0xaa,0x55), (0xff,0xaa,0xff),
+     
+     (0x55,0x55,0x00), (0x55,0x55,0xaa), (0x55,0xff,0x00), (0x55,0xff,0xaa),
+     (0xff,0x55,0x00), (0xff,0x55,0xaa), (0xff,0xff,0x00), (0xff,0xff,0xaa),
+     
+     (0x55,0x55,0x55), (0x55,0x55,0xff), (0x55,0xff,0x55), (0x55,0xff,0xff),
+     (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff)
+    ]
 
-# cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
-# cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
-#
-gamecolours16 = [ pygame.Color(*rgb) for rgb in colours16 ]
-gamecolours64 = [ pygame.Color(*rgb) for rgb in colours64 ]
+    # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
+    # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
+    #
+    gamecolours16 = [ pygame.Color(*rgb) for rgb in colours16 ]
+    gamecolours64 = [ pygame.Color(*rgb) for rgb in colours64 ]
 
-# for use with get_at
-workaround_palette= [ (0,0,0),(0,0,1),(0,0,2),(0,0,3),(0,0,4),(0,0,5),(0,0,6),(0,0,7),(0,0,8),(0,0,9),(0,0,10),(0,0,11),(0,0,12),(0,0,13),(0,0,14),(0,0,15) ]
+    # for use with get_at
+    workaround_palette= [ (0,0,0),(0,0,1),(0,0,2),(0,0,3),(0,0,4),(0,0,5),(0,0,6),(0,0,7),(0,0,8),(0,0,9),(0,0,10),(0,0,11),(0,0,12),(0,0,13),(0,0,14),(0,0,15) ]
 
-# standard palettes
-palette64 = None 
-#[0,1,2,3,4,5,20,7,56,57,58,59,60,61,62,63]
-gamepalette = None
+    # standard palettes
+    palette64 = None 
+    #[0,1,2,3,4,5,20,7,56,57,58,59,60,61,62,63]
+    gamepalette = None
 
-# screen width and height in pixels
-size = (0,0)
-display_size = (640, 480)
-display_size_text = (640, 400)
-fullscreen = False
-smooth = False
-# ignore ALT+F4 (and consequently window X button)
-noquit = False
+    # screen width and height in pixels
+    size = (0,0)
+    display_size = (640, 480)
+    display_size_text = (640, 400)
+    fullscreen = False
+    smooth = False
+    # ignore ALT+F4 (and consequently window X button)
+    noquit = False
 
-# letter shapes
-glyphs = []
-fonts = None
-font = None
-font_height = 16
-# cursor shape
-cursor_from = 0
-cursor_to = 0    
-cursor0 = None
-# screen & updating 
-screen = None
-screen_changed = True
-cycle = 0
-blink_state = 0
-last_cycle = 0
-cycle_time = 120 #120
-blink_cycles = 5
-# current cursor location
-last_row = 1
-last_col = 1    
-cursor_visible = True
-under_cursor = None
-under_top_left = None
+    # letter shapes
+    glyphs = []
+    fonts = None
+    font = None
+    font_height = 16
+    # cursor shape
+    cursor_from = 0
+    cursor_to = 0    
+    cursor0 = None
+    # screen & updating 
+    screen = None
+    screen_changed = True
+    cycle = 0
+    blink_state = 0
+    last_cycle = 0
+    cycle_time = 120 #120
+    blink_cycles = 5
+    # current cursor location
+    last_row = 1
+    last_col = 1    
+    cursor_visible = True
+    under_cursor = None
+    under_top_left = None
 
-# available joy sticks
-joysticks = []    
+    # available joy sticks
+    joysticks = []    
 
-# store for fast get & put arrays
-get_put_store = {}
+    # store for fast get & put arrays
+    get_put_store = {}
 
-keycode_to_scancode = {
-    pygame.K_UP:    '\x00\x48',
-    pygame.K_DOWN:  '\x00\x50',
-    pygame.K_RIGHT: '\x00\x4D',
-    pygame.K_LEFT:  '\x00\x4B',
-    pygame.K_INSERT:'\x00\x52',
-    pygame.K_DELETE:'\x00\x53',
-    pygame.K_HOME:  '\x00\x47',
-    pygame.K_END:   '\x00\x4F',
-    pygame.K_PAGEUP:'\x00\x49',
-    pygame.K_PAGEDOWN:'\x00\x51',
-    pygame.K_F1:    '\x00\x3B',
-    pygame.K_F2:    '\x00\x3C',
-    pygame.K_F3:    '\x00\x3D',
-    pygame.K_F4:    '\x00\x3E',
-    pygame.K_F5:    '\x00\x3F',
-    pygame.K_F6:    '\x00\x40',
-    pygame.K_F7:    '\x00\x41',
-    pygame.K_F8:    '\x00\x42',
-    pygame.K_F9:    '\x00\x43',
-    pygame.K_F10:   '\x00\x44',
-    pygame.K_PRINT: '\x00\x37',
-}
-#K_SYSREQ              sysrq
+    keycode_to_scancode = {
+        pygame.K_UP:    '\x00\x48',
+        pygame.K_DOWN:  '\x00\x50',
+        pygame.K_RIGHT: '\x00\x4D',
+        pygame.K_LEFT:  '\x00\x4B',
+        pygame.K_INSERT:'\x00\x52',
+        pygame.K_DELETE:'\x00\x53',
+        pygame.K_HOME:  '\x00\x47',
+        pygame.K_END:   '\x00\x4F',
+        pygame.K_PAGEUP:'\x00\x49',
+        pygame.K_PAGEDOWN:'\x00\x51',
+        pygame.K_F1:    '\x00\x3B',
+        pygame.K_F2:    '\x00\x3C',
+        pygame.K_F3:    '\x00\x3D',
+        pygame.K_F4:    '\x00\x3E',
+        pygame.K_F5:    '\x00\x3F',
+        pygame.K_F6:    '\x00\x40',
+        pygame.K_F7:    '\x00\x41',
+        pygame.K_F8:    '\x00\x42',
+        pygame.K_F9:    '\x00\x43',
+        pygame.K_F10:   '\x00\x44',
+        pygame.K_PRINT: '\x00\x37',
+    }
+    #K_SYSREQ              sysrq
 
-ctrl_keycode_to_scancode = {
-    pygame.K_RIGHT:     '\x00\x74',
-    pygame.K_LEFT:      '\x00\x73',
-    pygame.K_HOME:      '\x00\x77',
-    pygame.K_END:       '\x00\x75',
-    pygame.K_PAGEUP:    '\x00\x84',
-    pygame.K_PAGEDOWN:  '\x00\x76',
-    pygame.K_BACKSPACE: '\x7F',
-    pygame.K_RETURN:    '\x0A',
-    pygame.K_TAB:       '',
-    pygame.K_1:         '',
-    pygame.K_2:         '\x00\x03',
-    pygame.K_3:         '',
-    pygame.K_4:         '',
-    pygame.K_5:         '',
-    # <CTRL+6> is passed normally
-    pygame.K_7:         '',
-    pygame.K_8:         '',
-    pygame.K_9:         '\x00\x84',
-    pygame.K_0:         '',
-    pygame.K_F2:        '\x00\x5F',
-    pygame.K_F3:        '\x00\x60',
-    pygame.K_MINUS:     '\x1F',
-}
-   
-keycode_to_inpcode = {
-    # top row
-    pygame.K_ESCAPE:    '\x01',
-    pygame.K_1:         '\x02',
-    pygame.K_2:         '\x03',
-    pygame.K_3:         '\x04',
-    pygame.K_4:         '\x05',
-    pygame.K_5:         '\x06',
-    pygame.K_6:         '\x07',
-    pygame.K_7:         '\x08',
-    pygame.K_8:         '\x09',
-    pygame.K_9:         '\x0A',
-    pygame.K_0:         '\x0B',
-    pygame.K_MINUS:     '\x0C',
-    pygame.K_EQUALS:    '\x0D',
-    pygame.K_BACKSPACE: '\x0E',
-    # row 1
-    pygame.K_TAB:       '\x0F',
-    pygame.K_q:         '\x10',
-    pygame.K_w:         '\x11',
-    pygame.K_e:         '\x12',
-    pygame.K_r:         '\x13',
-    pygame.K_t:         '\x14',
-    pygame.K_y:         '\x15',
-    pygame.K_u:         '\x16',
-    pygame.K_i:         '\x17',
-    pygame.K_o:         '\x18',
-    pygame.K_p:         '\x19',
-    pygame.K_LEFTBRACKET:'\x1A',
-    pygame.K_RIGHTBRACKET:'\x1B',
-    pygame.K_RETURN:    '\x1C',
-    # row 2
-    pygame.K_RCTRL:     '\x1D',
-    pygame.K_LCTRL:     '\x1D',
-    pygame.K_a:         '\x1E',
-    pygame.K_s:         '\x1F',
-    pygame.K_d:         '\x20',
-    pygame.K_f:         '\x21',
-    pygame.K_g:         '\x22',
-    pygame.K_h:         '\x23',
-    pygame.K_j:         '\x24',
-    pygame.K_k:         '\x25',
-    pygame.K_l:         '\x26',
-    pygame.K_SEMICOLON: '\x27',
-    pygame.K_QUOTE:     '\x28',
-    pygame.K_BACKQUOTE :     '\x29',
-    # row 3        
-    pygame.K_LSHIFT:    '\x2A',
-    pygame.K_HASH:      '\x2B',     # assumes UK keyboard?
-    pygame.K_z:         '\x2C',
-    pygame.K_x:         '\x2D',
-    pygame.K_c:         '\x2E',
-    pygame.K_v:         '\x2F',
-    pygame.K_b:         '\x30',
-    pygame.K_n:         '\x31',
-    pygame.K_m:         '\x32',
-    pygame.K_COMMA:     '\x33',
-    pygame.K_PERIOD:    '\x34',
-    pygame.K_SLASH:     '\x35',
-    pygame.K_RSHIFT:    '\x36',
-    pygame.K_PRINT:     '\x37',
-    pygame.K_SYSREQ:    '\x37',
-    pygame.K_RALT:      '\x38',
-    pygame.K_LALT:      '\x38',
-    pygame.K_SPACE:     '\x39',
-    pygame.K_CAPSLOCK:  '\x3A',
-    # others    
-    pygame.K_F1:        '\x3B',
-    pygame.K_F2:        '\x3C',
-    pygame.K_F3:        '\x3D',
-    pygame.K_F4:        '\x3E',
-    pygame.K_F5:        '\x3F',
-    pygame.K_F6:        '\x40',
-    pygame.K_F7:        '\x41',
-    pygame.K_F8:        '\x42',
-    pygame.K_F9:        '\x43',
-    pygame.K_F10:       '\x44',
-    pygame.K_NUMLOCK:   '\x45',
-    pygame.K_SCROLLOCK: '\x46',
-    pygame.K_HOME:      '\x47',
-    pygame.K_UP:        '\x48',
-    pygame.K_PAGEUP:    '\x49',
-    pygame.K_KP_MINUS:  '\x4A',
-    pygame.K_LEFT:      '\x4B',
-    pygame.K_KP5:       '\x4C',
-    pygame.K_RIGHT:     '\x4D',
-    pygame.K_KP_PLUS:   '\x4E',
-    pygame.K_END:       '\x4F',
-    pygame.K_DOWN:      '\x50',
-    pygame.K_PAGEDOWN:  '\x51',
-    pygame.K_INSERT:    '\x52',
-    pygame.K_DELETE:    '\x53',
-    pygame.K_BACKSLASH: '\x56',
-}
+    ctrl_keycode_to_scancode = {
+        pygame.K_RIGHT:     '\x00\x74',
+        pygame.K_LEFT:      '\x00\x73',
+        pygame.K_HOME:      '\x00\x77',
+        pygame.K_END:       '\x00\x75',
+        pygame.K_PAGEUP:    '\x00\x84',
+        pygame.K_PAGEDOWN:  '\x00\x76',
+        pygame.K_BACKSPACE: '\x7F',
+        pygame.K_RETURN:    '\x0A',
+        pygame.K_TAB:       '',
+        pygame.K_1:         '',
+        pygame.K_2:         '\x00\x03',
+        pygame.K_3:         '',
+        pygame.K_4:         '',
+        pygame.K_5:         '',
+        # <CTRL+6> is passed normally
+        pygame.K_7:         '',
+        pygame.K_8:         '',
+        pygame.K_9:         '\x00\x84',
+        pygame.K_0:         '',
+        pygame.K_F2:        '\x00\x5F',
+        pygame.K_F3:        '\x00\x60',
+        pygame.K_MINUS:     '\x1F',
+    }
+       
+    keycode_to_inpcode = {
+        # top row
+        pygame.K_ESCAPE:    '\x01',
+        pygame.K_1:         '\x02',
+        pygame.K_2:         '\x03',
+        pygame.K_3:         '\x04',
+        pygame.K_4:         '\x05',
+        pygame.K_5:         '\x06',
+        pygame.K_6:         '\x07',
+        pygame.K_7:         '\x08',
+        pygame.K_8:         '\x09',
+        pygame.K_9:         '\x0A',
+        pygame.K_0:         '\x0B',
+        pygame.K_MINUS:     '\x0C',
+        pygame.K_EQUALS:    '\x0D',
+        pygame.K_BACKSPACE: '\x0E',
+        # row 1
+        pygame.K_TAB:       '\x0F',
+        pygame.K_q:         '\x10',
+        pygame.K_w:         '\x11',
+        pygame.K_e:         '\x12',
+        pygame.K_r:         '\x13',
+        pygame.K_t:         '\x14',
+        pygame.K_y:         '\x15',
+        pygame.K_u:         '\x16',
+        pygame.K_i:         '\x17',
+        pygame.K_o:         '\x18',
+        pygame.K_p:         '\x19',
+        pygame.K_LEFTBRACKET:'\x1A',
+        pygame.K_RIGHTBRACKET:'\x1B',
+        pygame.K_RETURN:    '\x1C',
+        # row 2
+        pygame.K_RCTRL:     '\x1D',
+        pygame.K_LCTRL:     '\x1D',
+        pygame.K_a:         '\x1E',
+        pygame.K_s:         '\x1F',
+        pygame.K_d:         '\x20',
+        pygame.K_f:         '\x21',
+        pygame.K_g:         '\x22',
+        pygame.K_h:         '\x23',
+        pygame.K_j:         '\x24',
+        pygame.K_k:         '\x25',
+        pygame.K_l:         '\x26',
+        pygame.K_SEMICOLON: '\x27',
+        pygame.K_QUOTE:     '\x28',
+        pygame.K_BACKQUOTE :     '\x29',
+        # row 3        
+        pygame.K_LSHIFT:    '\x2A',
+        pygame.K_HASH:      '\x2B',     # assumes UK keyboard?
+        pygame.K_z:         '\x2C',
+        pygame.K_x:         '\x2D',
+        pygame.K_c:         '\x2E',
+        pygame.K_v:         '\x2F',
+        pygame.K_b:         '\x30',
+        pygame.K_n:         '\x31',
+        pygame.K_m:         '\x32',
+        pygame.K_COMMA:     '\x33',
+        pygame.K_PERIOD:    '\x34',
+        pygame.K_SLASH:     '\x35',
+        pygame.K_RSHIFT:    '\x36',
+        pygame.K_PRINT:     '\x37',
+        pygame.K_SYSREQ:    '\x37',
+        pygame.K_RALT:      '\x38',
+        pygame.K_LALT:      '\x38',
+        pygame.K_SPACE:     '\x39',
+        pygame.K_CAPSLOCK:  '\x3A',
+        # others    
+        pygame.K_F1:        '\x3B',
+        pygame.K_F2:        '\x3C',
+        pygame.K_F3:        '\x3D',
+        pygame.K_F4:        '\x3E',
+        pygame.K_F5:        '\x3F',
+        pygame.K_F6:        '\x40',
+        pygame.K_F7:        '\x41',
+        pygame.K_F8:        '\x42',
+        pygame.K_F9:        '\x43',
+        pygame.K_F10:       '\x44',
+        pygame.K_NUMLOCK:   '\x45',
+        pygame.K_SCROLLOCK: '\x46',
+        pygame.K_HOME:      '\x47',
+        pygame.K_UP:        '\x48',
+        pygame.K_PAGEUP:    '\x49',
+        pygame.K_KP_MINUS:  '\x4A',
+        pygame.K_LEFT:      '\x4B',
+        pygame.K_KP5:       '\x4C',
+        pygame.K_RIGHT:     '\x4D',
+        pygame.K_KP_PLUS:   '\x4E',
+        pygame.K_END:       '\x4F',
+        pygame.K_DOWN:      '\x50',
+        pygame.K_PAGEDOWN:  '\x51',
+        pygame.K_INSERT:    '\x52',
+        pygame.K_DELETE:    '\x53',
+        pygame.K_BACKSLASH: '\x56',
+    }
 
 # set constants based on commandline arguments
 def prepare(args):
@@ -296,10 +297,10 @@ def prepare(args):
 
 def init():
     global fonts, num_sticks, joysticks, physical_size
-    pre_init_mixer()   
     if not pygame:
         logging.warning('Could not find PyGame module. Failed to initialise PyGame console.')
         return False     
+    pre_init_mixer()   
     pygame.init()
     # get physical screen dimensions (needs to be called before set_mode)
     display_info = pygame.display.Info()
