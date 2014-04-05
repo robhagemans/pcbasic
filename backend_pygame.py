@@ -332,13 +332,16 @@ def init():
 def resize_display(width, height, initial=False): 
     global display, screen_changed, display24, fullscreen
     display_info = pygame.display.Info()
-    if (width, height) == (display_info.current_w, display_info.current_h) and not initial:
-        return
     flags = pygame.RESIZABLE
     if fullscreen or (width, height) == physical_size:
         fullscreen = True
         flags |= pygame.FULLSCREEN | pygame.NOFRAME
-        width, height = display_size if console.screen_mode != 0 else display_size_text
+        width, height = display_size if (not initial and console.screen_mode != 0) else display_size_text
+        # scale suggested dimensions to largest integer times pixel size that fits
+        scale = min( physical_size[0]//width, physical_size[1]//height )
+        width, height = width * scale, height * scale
+    if (width, height) == (display_info.current_w, display_info.current_h) and not initial:
+        return
     if smooth:
         display = pygame.display.set_mode((width, height), flags)
     else:
