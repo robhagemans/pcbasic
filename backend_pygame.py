@@ -302,6 +302,11 @@ def init():
         return False     
     pre_init_mixer()   
     pygame.init()
+    # exclude some backend drivers as they give unusable results
+    if pygame.display.get_driver() == 'caca':
+        pygame.display.quit()
+        logging.warning('Refusing to open libcaca console. Failed to initialise PyGame console.')
+        return False
     # get physical screen dimensions (needs to be called before set_mode)
     display_info = pygame.display.Info()
     physical_size = display_info.current_w, display_info.current_h
