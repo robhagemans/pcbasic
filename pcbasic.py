@@ -63,7 +63,7 @@ def main():
         # choose the video and sound backends
         prepare_console(args)
         # choose peripherals    
-        deviceio.init_devices(args)
+        deviceio.prepare_devices(args)
         # initialise program memory
         program.new()
         # print greeting
