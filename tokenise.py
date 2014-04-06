@@ -32,7 +32,6 @@ from representation import ascii_digits
 # newline is considered whitespace
 tokenise_whitespace = representation.whitespace #[' ', '\t', '\x0a']
 
-debug = False
 tokens_number = ('\x0b','\x0c','\x0f',
     '\x11','\x12','\x13','\x14','\x15','\x16','\x17','\x18','\x19','\x1a','\x1b',
     '\x1c','\x1d', '\x1f')
@@ -250,7 +249,7 @@ def tokenise_line(line):
         elif c in ascii_uppercase:
             word = tokenise_word(ins, outs)
             # handle non-parsing modes
-            if word in ('REM', "'") or (debug and word == 'DEBUG'):  # note: DEBUG - this is not GW-BASIC behaviour
+            if word in ('REM', "'") or (word == 'DEBUG' and word in keyword_to_token):  # note: DEBUG - this is not GW-BASIC behaviour
                 tokenise_rem(ins, outs)
             elif word == "DATA":    
                 tokenise_data(ins, outs)
@@ -444,13 +443,10 @@ token_to_keyword = {
     
 keyword_to_token = dict((reversed(item) for item in token_to_keyword.items()))
 
-def init_DEBUG(on=False):
-    global debug
+def insert_debug_keyword():
     # Note - I have implemented this as my own debugging command, executes python string.
-    debug = on
-    if on:
-        token_to_keyword['\xFE\xA4'] = 'DEBUG'
-        keyword_to_token['DEBUG'] = '\xFE\xA4'
+    token_to_keyword['\xFE\xA4'] = 'DEBUG'
+    keyword_to_token['DEBUG'] = '\xFE\xA4'
         
 
 

@@ -23,7 +23,7 @@ import representation
 import expressions
 import tokenise
 
-
+debug_mode = False
 debug_tron = False
 watch_list = []
 
@@ -39,7 +39,7 @@ def debug_exec(debug_cmd):
     logging.debug(buf.getvalue()[:-1]) # exclude \n
         
 def debug_step(linum):
-    if not tokenise.debug:
+    if not debug_mode:
         return
     global debug_tron
     outstr = ''
