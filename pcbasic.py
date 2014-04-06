@@ -128,8 +128,8 @@ def prepare_constants(args):
             pass     
     # drive mounts           
     if args.mount != None:
-        if type(args.mount) == str:
-            args.mount = [args.mount]
+#        if type(args.mount) == str:
+#            args.mount = [args.mount]
         try:
             for a in args.mount:
                 letter, path = a.split(':',1)
@@ -207,7 +207,7 @@ def get_args():
         help='Output program file. If no --conv option is specified, this is ignored.')
     parser.add_argument('-b', '--dumb', action='store_true', 
         help='Use dumb text terminal. This is the default if redirecting input.')
-    parser.add_argument('-t', '--text', action='store_true', 
+    parser.add_argument('-t', '--ansi', action='store_true', 
         help='Use ANSI textmode terminal')
     parser.add_argument('-g', '--graphical', action='store_true', 
         help='Use graphical terminal. This is the normal default; use to override when redirecting i/o.')
@@ -251,6 +251,8 @@ def read_config():
                 defaults[d] = False
             elif defaults[d] == '':
                 defaults[d] = None  
+            else:
+                defaults[d] = defaults[d].split(',')    
         return defaults          
     except Exception:
         return {}    
