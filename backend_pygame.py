@@ -736,27 +736,29 @@ def trigger_stick(joy, button):
 
 def get_pen(fn):
     global pen_down
+    display_info = pygame.display.Info()
+    xscale, yscale = display_info.current_w / size[0], display_info.current_h / size[1]
     if fn == 0:
         pen_down_old, pen_down = pen_down, 0
         return pen_down_old
     elif fn == 1:
-        return min(size[0]-1, max(0, pen_down_pos[0]))
+        return min(size[0]-1, max(0, pen_down_pos[0]//xscale))
     elif fn == 2:
-        return min(size[1]-1, max(0, pen_down_pos[1]))  
+        return min(size[1]-1, max(0, pen_down_pos[1]//yscale))  
     elif fn == 3:
         return -pygame.mouse.get_pressed()[0]
     elif fn == 4:
-        return min(size[0]-1, max(0, pygame.mouse.get_pos()[0]))
+        return min(size[0]-1, max(0, pygame.mouse.get_pos()[0]//xscale))
     elif fn == 5:
-        return min(size[1]-1, max(0, pygame.mouse.get_pos()[1]))
+        return min(size[1]-1, max(0, pygame.mouse.get_pos()[1]//yscale))
     elif fn == 6:
-        return min(console.height, max(1, 1+pen_down_pos[1]//font_height)) 
+        return min(console.height, max(1, 1+pen_down_pos[1]//(yscale*font_height))) 
     elif fn == 7:
-        return min(console.width, max(1, 1+pen_down_pos[0]//8))
+        return min(console.width, max(1, 1+pen_down_pos[0]//(xscale*8)))
     elif fn == 8:
-        return min(console.height, max(1, 1+pygame.mouse.get_pos()[1]//font_height))     
+        return min(console.height, max(1, 1+pygame.mouse.get_pos()[1]//(yscale*font_height)))     
     elif fn == 9:
-        return min(console.width, max(1, 1+pygame.mouse.get_pos()[0]//8))
+        return min(console.width, max(1, 1+pygame.mouse.get_pos()[0]//(xscale*8)))
 
 def get_stick(fn):
     stick_num, axis = fn//2, fn%2
