@@ -37,6 +37,7 @@ import console
 import tokenise
 import program
 import unicodepage
+import debug
 
 if platform.system() == 'Linux':
     import backend_dumb
@@ -110,8 +111,9 @@ def main():
 
 def prepare_debug(args):
     global debugstr
-    tokenise.init_DEBUG(args.debug)
     if args.debug:
+        debug.debug_mode = True
+        tokenise.insert_debug_keyword()
         # set logging format
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
         debugstr = ' [DEBUG mode]'
