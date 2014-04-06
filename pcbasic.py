@@ -152,11 +152,11 @@ def prepare_constants(args):
 
 def prepare_console(args):
     unicodepage.load_codepage(console.codepage)
-    if args.dumb or args.conv or (not args.graphical and not args.text and not stdin_is_tty):
+    if args.dumb or args.conv or (not args.graphical and not args.ansi and not stdin_is_tty):
         # redirected input leads to dumbterm use
         console.backend = backend_dumb
         console.sound = sound_beep
-    elif args.text and stdout_is_tty:
+    elif args.ansi and stdout_is_tty:
         import backend_ansi
         console.backend = backend_ansi
         console.sound = sound_beep
