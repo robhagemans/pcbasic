@@ -32,7 +32,7 @@ allowed_protocols = {
     'COM': ('PORT', 'SOCKET')
     }
 
-def init_devices(args):
+def prepare_devices(args):
     global devices
     # always defined
     devices['SCRN:'] = SCRNFile()
