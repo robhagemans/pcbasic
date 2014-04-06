@@ -1,4 +1,8 @@
 import platform
+
+
+
+
 if platform.system() == 'Windows':
     # -*- mode: python -*-
     a = Analysis(['pcbasic.py'],
@@ -21,15 +25,7 @@ if platform.system() == 'Windows':
                    a.zipfiles,
                    a.datas,
                    Tree('cpi', prefix='cpi'),
-                   [
-            ('INFO.BAS', 'C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\INFO.BAS', 'DATA'),
-            ('ABOUT', 'C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\ABOUT', 'DATA'),
-            ('GPL3', 'C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\/GPL3', 'DATA'),
-            ('HELP', 'C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\HELP', 'DATA'),
-            ('CC-BY-SA', 'C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\CC-BY-SA', 'DATA'),
-            ('COPYING', 'C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\COPYING', 'DATA'),
-            ('PCBASIC.INI', 'C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\PCBASIC.INI', 'DATA'),
-                   ],
+                   Tree('info', prefix='info'),
                    strip=None,
                    upx=True,
                    name='pcbasic')
@@ -88,15 +84,7 @@ elif platform.system() == 'Linux':
                    a.zipfiles,
                    a.datas,
                    Tree('cpi', prefix='cpi'),
-                   [
-                        ('INFO.BAS', '/home/rob/Projects/basic-project/pc-basic/INFO.BAS', 'DATA'),
-                        ('ABOUT', '/home/rob/Projects/basic-project/pc-basic/ABOUT', 'DATA'),
-                        ('GPL3', '/home/rob/Projects/basic-project/pc-basic/GPL3', 'DATA'),
-                        ('HELP', '/home/rob/Projects/basic-project/pc-basic/HELP', 'DATA'),
-                        ('CC-BY-SA', '/home/rob/Projects/basic-project/pc-basic/CC-BY-SA', 'DATA'),
-                        ('COPYING', '/home/rob/Projects/basic-project/pc-basic/COPYING', 'DATA'),
-                        ('PCBASIC.INI', '/home/rob/Projects/basic-project/pc-basic/PCBASIC.INI', 'DATA'),
-                   ],
+                   Tree('info', prefix='info'),
                    strip=None,
                    upx=True,
                    name='pcbasic')
@@ -123,15 +111,7 @@ elif platform.system() == 'Darwin':
                a.zipfiles,
                a.datas,
                Tree('cpi', prefix='cpi'),
-               [
-                        ('INFO.BAS', '/Users/rob/pc-basic/INFO.BAS', 'DATA'),
-                        ('ABOUT', '/Users/rob/pc-basic/ABOUT', 'DATA'),
-                        ('GPL3', '/Users/rob/pc-basic/GPL3', 'DATA'),
-                        ('HELP', '/Users/rob/pc-basic/HELP', 'DATA'),
-                        ('CC-BY-SA', '/Users/rob/pc-basic/CC-BY-SA', 'DATA'),
-                        ('COPYING', '/Users/rob/pc-basic/COPYING', 'DATA'),
-                        ('PCBASIC.INI', '/Users/rob/pc-basic/PCBASIC.INI', 'DATA'),
-               ],
+               Tree('info', prefix='info'),
                strip=None,
                upx=True,
                name='pcbasic')
