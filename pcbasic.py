@@ -90,11 +90,13 @@ def main():
         run.loop()
     except error.RunError as e:
         # errors during startup/conversion are handled here, then exit
-        e.handle_break()    
+        e.handle_break()  
+        logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)  
     except KeyboardInterrupt:
         if args.debug:
             raise
         else:    
+            logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
             run.exit()    
     finally:
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
@@ -105,7 +107,7 @@ def main():
             autosave = os.path.join(tempfile.gettempdir(), "AUTOSAVE.BAS")
             program.save(oslayer.safe_open(autosave, "S", "W"), 'B')
             logging.info('Program autosaved as %s.' % autosave)
-            
+
 def prepare_debug(args):
     global debugstr
     tokenise.init_DEBUG(args.debug)
