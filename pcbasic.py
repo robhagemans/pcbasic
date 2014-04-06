@@ -128,8 +128,6 @@ def prepare_constants(args):
             pass     
     # drive mounts           
     if args.mount != None:
-#        if type(args.mount) == str:
-#            args.mount = [args.mount]
         try:
             for a in args.mount:
                 # last one specified sticks
@@ -235,8 +233,23 @@ def get_args():
     parser.add_argument('--list-all', action='store_true', help='Allow listing and ASCII saving of lines beyond 65530')
     parser.add_argument('--unprotect', action='store_true', help='Allow listing and ASCII saving of protected files')
     parser.add_argument('--caps', action='store_true', help='Start in CAPS LOCK mode.')
-    parser.add_argument('--mount', nargs='*', metavar=('D:PATH'), help='Set a drive letter to PATH.')
-    return parser.parse_args()
+    parser.add_argument('--mount', action='append', nargs='*', metavar=('D:PATH'), help='Set a drive letter to PATH.')
+    args = parser.parse_args()
+    # flatten list arguments
+    args.mount = flatten_arg_list(args.mount)
+    args.peek = flatten_arg_list(args.peek)
+    return args
+
+def flatten_arg_list(arglist):
+    if arglist:
+        newlist = []
+        for sublist in arglist:
+            if type(sublist)==list:
+                newlist += sublist
+            else:
+                newlist += [sublist]    
+        return newlist    
+    return None    
 
 def read_config():
     try:
