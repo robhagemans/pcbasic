@@ -180,8 +180,6 @@ def dosname_write(s, defext='BAS', path='', dummy=0, isdir_dummy=False):
     if not s:
         raise error.RunError(64)
     pre = replace_drive(str(path))
-    if path and pre[-1] != os.sep:
-        pre += os.sep
     s = s.upper()
     if '.' in s:
         name = s[:s.find('.')]
@@ -192,19 +190,17 @@ def dosname_write(s, defext='BAS', path='', dummy=0, isdir_dummy=False):
     name = name[:8].strip()
     ext = ext[:3].strip()
     if ext:    
-        return pre + name+'.'+ext            
+        return os.path.join(pre, name+'.' + ext)
     else:
-        return pre + name
+        return os.path.join(pre, name)
 
 # if name does not exist, put name in 8x3, all upper-case format with standard extension            
 def dosname_read(s, defext='BAS', path='', err=53, isdir=False):
     if not s:
         raise error.RunError(64)
     pre = replace_drive(str(path))
-    if path and pre[-1] != os.sep:
-        pre += os.sep
-    if istype(pre+s, isdir):
-        return pre+s
+    if istype(os.path.join(pre, s), isdir):
+        return os.path.join(pre, s)
     full = dosname_write(s, '', pre)
     if istype(full, isdir):    
         return full
