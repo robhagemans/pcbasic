@@ -37,7 +37,7 @@ tokens_number = ('\x0b','\x0c','\x0f',
     '\x11','\x12','\x13','\x14','\x15','\x16','\x17','\x18','\x19','\x1a','\x1b',
     '\x1c','\x1d', '\x1f')
 tokens_linenum = ('\x0d', '\x0e')
-tokens_operator = tuple(map(chr, range(0xe6, 0xed+1)))
+tokens_operator = ('\xe6', '\xe7', '\xe8', '\xe9', '\xea', '\xeb', '\xec', '\xed',  '\xf4')
 tokens_with_bracket = ('\xd2', '\xce')
 
 ascii_operators = ('+', '-', '=', '/', '\\', '^', '*', '<', '>')
