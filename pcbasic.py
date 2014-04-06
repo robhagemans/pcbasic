@@ -132,8 +132,9 @@ def prepare_constants(args):
 #            args.mount = [args.mount]
         try:
             for a in args.mount:
+                # last one specified sticks
                 letter, path = a.split(':',1)
-                oslayer.drives[letter] = path
+                oslayer.drives[letter.upper()] = path
         except Exception:
             pass                
     # implied RUN invocations
