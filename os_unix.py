@@ -15,7 +15,7 @@ import fcntl
 try:
     import pexpect
 except Exception:
-    logging.warning('Pexpect module not found. SHELL command will not work.\n')    
+    logging.warning('Pexpect module not found. SHELL command will not work.')    
 import console
 import unicodepage    
 import error
