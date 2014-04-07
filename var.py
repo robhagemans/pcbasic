@@ -66,7 +66,11 @@ def set_var(name, value):
             variables[name] = unpacked[:]
     else:
         # make a copy of the value in case we want to use POKE on it - we would change both values otherwise
-        variables[name] = vartypes.pass_type_keep(name[-1],value)[1][:]
+        # NOTE: this is an in-place copy - crucial for FOR!
+        try:
+            variables[name][:] = vartypes.pass_type_keep(name[-1], value)[1][:]
+        except KeyError:
+            variables[name] = vartypes.pass_type_keep(name[-1], value)[1][:]
     # update memory model
     # check if grabge needs collecting (before allocating mem)
     free = mem_free() - (max(3, len(name)) + 1 + byte_size[name[-1]]) 
