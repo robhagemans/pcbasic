@@ -27,7 +27,7 @@ shell = 'CMD'
 shell_cmd = shell + ' /c'
 
 drives = { '@': os.path.join(os.path.dirname(os.path.realpath(__file__)), 'info') }
-current_drive = os.path.abspath(os.sep).split(':')[0]
+current_drive = os.path.abspath(os.getcwd()).split(':')[0]
 drive_cwd = { '@': '' }
 
 # get all drives in use by windows
@@ -36,9 +36,10 @@ drive_cwd = { '@': '' }
 save_current = os.getcwd()
 for letter in win32api.GetLogicalDriveStrings().split(':\\\x00')[:-1]:
     os.chdir(letter + ':')
+    cwd = win32api.GetShortPathName(os.getcwd())
     # must not start with \\
-    drive_cwd[letter] = os.getcwd()[3:]  
-    drives[letter] = os.getcwd()[:3]
+    drive_cwd[letter] = cwd[3:]  
+    drives[letter] = cwd[:3]
 os.chdir(save_current)    
     
 def disk_free(path):
