@@ -69,7 +69,7 @@ def exec_for(ins):
     if program.loop_init(ins, endforpos, nextpos, varname, start, stop, step):
         if util.skip_white_read_if(ins, (',')):
             # we're jumping into a comma'ed NEXT, call exec_next
-            return exec_next(ins, True)
+            return exec_next(ins)
         
 def find_next(ins, varname):
     current = ins.tell()
@@ -85,33 +85,21 @@ def find_next(ins, varname):
     # no-var only allowed in standalone NEXT   
     if varname2 == '':
         util.require(ins, util.end_statement)
-    if varname2 and varname2 != varname:
-        # NEXT without FOR
+    if (comma or varname2) and varname2 != varname:
+        # NEXT without FOR 
         errline = program.get_line_number(nextpos-1) if program.run_mode else -1
         raise error.RunError(1, errline)    
     ins.seek(current)
     return nextpos 
 
-def exec_next(ins, comma=False):
-    # find the matching for-next record for the current NEXT statement/comma
-    curpos = ins.tell()
+def exec_next(ins):
+    # read the varname, if provided
     util.skip_to(ins, util.end_statement+(',',))
-    pos = ins.tell()
-    ins.seek(curpos)
-    forpos, nextpos, varname = program.loop_find_next(ins, pos)
-    # check if varname is correct, if provided
-    # no varname required if standalone NEXT
-    if not(util.skip_white(ins) in util.end_statement and not comma):
-        if util.get_var_name(ins) == varname:
-            util.skip_to(ins, util.end_statement)
-        else:
-            # next without for
-            raise error.RunError(1, program.get_line_number(nextpos)) #1    
     # JUMP to end of FOR statement, increment counter, check condition
     if program.loop_iterate(ins):
         if util.skip_white_read_if(ins, (',')):
             # we're jumping into a comma'ed NEXT, call exec_next
-            return exec_next(ins, True)
+            return exec_next(ins)
     
 def exec_goto(ins):    
     # parse line number, ignore rest of line and jump
