@@ -529,12 +529,21 @@ def loop_init(ins, forpos, nextpos, varname, start, stop, step):
     sgn = vartypes.unpack_int(vartypes.number_sgn(step))
     for_next_stack.append((forpos, nextpos, var.variables[varname], stop, step, sgn)) 
     ins.seek(nextpos)
-    loop_ends = loop_iterate(ins)
-    return loop_ends    
     
 def loop_iterate(ins):            
     # we MUST be at nextpos to run this
-    forpos, _, loopvar, stop, step, sgn = loop_find_next(ins, ins.tell())
+    # find the matching NEXT record
+    pos = ins.tell()
+    while True:
+        if len(for_next_stack) == 0:
+            # next without for
+            raise error.RunError(1) #1  
+        forpos, nextpos, loopvar, stop, step, sgn = for_next_stack[-1]
+        if pos != nextpos:
+            # not the expected next, we must have jumped out
+            for_next_stack.pop()
+        else:
+            break
     # increment counter
     loopvar[:] = vartypes.number_add((step[0], loopvar), step)[1]
     if sgn < 0:
@@ -550,19 +559,6 @@ def loop_iterate(ins):
         ins.seek(forpos)    
     return loop_ends
     
-def loop_find_next(ins, pos):
-    while True:
-        if len(for_next_stack) == 0:
-            # next without for
-            raise error.RunError(1) #1  
-        forpos, nextpos, loopvar, stop, step, sgn = for_next_stack[-1]
-        if pos != nextpos:
-            # not the expected next, we must have jumped out
-            for_next_stack.pop()
-        else:
-            break
-    return forpos, nextpos, loopvar, stop, step, sgn 
-                
 # READ a unit of DATA
 def read_entry():
     global data_pos
