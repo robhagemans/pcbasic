@@ -528,7 +528,7 @@ def loop_init(ins, forpos, nextpos, varname, start, stop, step):
     var.set_var(varname, vartypes.number_add(start, vartypes.number_neg(step)))
     # NOTE: all access to varname must be in-place into the bytearray - no assignments!
     sgn = vartypes.unpack_int(vartypes.number_sgn(step))
-    for_next_stack.append((forpos, nextpos, var.variables[varname], stop, step, sgn)) 
+    for_next_stack.append((forpos, nextpos, varname[-1], var.variables[varname], stop[1], step[1], sgn)) 
     ins.seek(nextpos)
 
 def number_inc_gt(typechar, left, right, step, sgn):
@@ -557,14 +557,14 @@ def loop_iterate(ins):
         if len(for_next_stack) == 0:
             # next without for
             raise error.RunError(1) #1  
-        forpos, nextpos, loopvar, stop, step, sgn = for_next_stack[-1]
-        if pos != nextpos:
+        forpos, nextpos, typechar, loopvar, stop, step, sgn = for_next_stack[-1]
+        if pos == nextpos:
+            break
+        else:    
             # not the expected next, we must have jumped out
             for_next_stack.pop()
-        else:
-            break
     # increment counter
-    loop_ends = number_inc_gt(stop[0], loopvar, stop[1], step[1], sgn)
+    loop_ends = number_inc_gt(typechar, loopvar, stop, step, sgn)
     if loop_ends:
         for_next_stack.pop()
     else: 
