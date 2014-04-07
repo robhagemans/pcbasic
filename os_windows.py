@@ -26,17 +26,20 @@ import console
 shell = 'CMD'    
 shell_cmd = shell + ' /c'
 
-drives = { 'I': os.path.join(os.path.dirname(os.path.realpath(__file__)), 'info') }
+drives = { '@': os.path.join(os.path.dirname(os.path.realpath(__file__)), 'info') }
 current_drive = os.path.abspath(os.sep).split(':')[0]
+drive_cwd = { '@': '' }
 
 # get all drives in use by windows
-win_drives = win32api.GetLogicalDriveStrings().split(':\\\x00')[:-1]
 # if started from CMD.EXE, get the 'current wworking dir' for each drive
 # if not in CMD.EXE, there's only one cwd
-win_cwd = {}
-for letter in win_drives:
-    os.chdir(letter+':')
-    win_cwd[letter] = os.getcwd() 
+save_current = os.getcwd()
+for letter in win32api.GetLogicalDriveStrings().split(':\\\x00')[:-1]:
+    os.chdir(letter + ':')
+    # must not start with \\
+    drive_cwd[letter] = os.getcwd()[3:]  
+    drives[letter] = os.getcwd()[:3]
+os.chdir(save_current)    
 
     
 def disk_free(path):
@@ -105,15 +108,7 @@ def dossify(path, name):
 def dossify_path(name):
     return win32api.GetShortPathName(name).upper()
 
-def get_drive(s):
-    if not s:
-        return current_drive + ':'
-    try:
-        # any replacement path?
-        return drives[s.upper()]
-    except KeyError:
-        return s + ":"
-        
+
 # print to Windows printer
 def line_print(printbuf, printer_name):        
     if printer_name == '' or printer_name=='default':

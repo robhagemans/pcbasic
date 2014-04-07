@@ -23,8 +23,10 @@ import error
 shell = '/bin/sh'
 shell_cmd = shell + ' -c'
 
-drives = { 'C': os.path.abspath(os.sep), 'I': os.path.join(os.path.dirname(os.path.realpath(__file__)), 'info') }
+drives = { 'C': '/', '@': os.path.join(os.path.dirname(os.path.realpath(__file__)), 'info') }
 current_drive = 'C'
+# must not start with a /
+drive_cwd = { 'C': os.getcwd()[1:], '@': '' }
             
 def disk_free(path):
     st = os.statvfs(path)
@@ -57,17 +59,7 @@ def spawn_interactive_shell(cmd):
                 console.write(c)
         if c == '' and not p.isalive(): 
             return
-            
 
-def get_drive(s):
-    if not s:
-        return ''
-    try:
-        return drives[s.upper()]
-    except KeyError:
-        # path not found
-        raise error.RunError(76)  
-        
 # change names in FILES to some 8.3 variant             
 def dossify(path, name):
     if name.find('.') > -1:
@@ -82,16 +74,16 @@ def dossify(path, name):
     return trunk, ext
 
 def dossify_path(path):
-    dospath = current_drive + ':' # FIXME: this should depend on path
-    pre = ''
+    dospath, pre = '', ''
     for name in path.split(os.sep):
         trunk, ext = dossify(pre, name)
         pre += name
         if trunk == '' and ext == '':
             continue    
-        dospath += '\\' + trunk
+        dospath += trunk
         if ext:
             dospath += '.' + ext
+        dospath += '\\'    
     return dospath        
 
 # print to LPR printer (ok for CUPS)
