@@ -51,7 +51,7 @@ else:
     stdin, stdout = None, None
     
 
-greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "I:INFO" for more.\r%d Bytes free'
+greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "@:INFO" for more.\r%d Bytes free'
 debugstr = ''
 
 def main():
@@ -137,6 +137,7 @@ def prepare_constants(args):
                 # last one specified sticks
                 letter, path = a.split(':',1)
                 oslayer.drives[letter.upper()] = path
+                oslayer.drive_cwd[letter.upper()] = ''
         except Exception:
             pass                
     # implied RUN invocations

@@ -174,8 +174,8 @@ def handle_oserror(e):
 #########################################
 # drives & paths
 
-def istype(name, isdir):
-    name = str(name)
+def istype(path, name, isdir):
+    name = os.path.join(str(path), str(name))
     return os.path.exists(name) and ((isdir and os.path.isdir(name)) or (not isdir and os.path.isfile(name)))
         
 # put name in 8x3, all upper-case format the was GW-BASIC does it (differs from Windows short name)         
@@ -183,11 +183,7 @@ def istype(name, isdir):
 #    if ext.find('.') > -1:
 #        # 53: file not found
 #        raise error.RunError(errdots)
-def dosname_write(s, defext='BAS', path='', dummy=0, isdir_dummy=False):
-    if not s:
-        raise error.RunError(64)
-    # construct path    
-    path = replace_drive(str(path))
+def dossify_write(s, defext='BAS', dummy_path='', dummy_err=0, dummy_isdir=False):
     # convert to all uppercase
     s = s.upper()
     # one trunk, one extension
@@ -198,64 +194,72 @@ def dosname_write(s, defext='BAS', path='', dummy=0, isdir_dummy=False):
     # 8.3, no spaces
     name, ext = name[:8].strip(), ext[:3].strip()
     # no dot if no ext
-    return os.path.join(path, name + ('.' + ext if ext else ''))
+    return name + ('.' + ext if ext else '')
 
-
+# find a matching file/dir to read
 # if name does not exist, put name in 8x3, all upper-case format with standard extension            
-def dosname_read(s, defext='BAS', path='', err=53, isdir=False):
-    if not s:
-        raise error.RunError(64)
-    pre = replace_drive(str(path))
-    if istype(os.path.join(pre, s), isdir):
-        return os.path.join(pre, s)
-    full = dosname_write(s, '', pre)
-    if istype(full, isdir):    
+def find_name_read(s, defext='BAS', path='', err=53, isdir=False):
+    # check if the name exists as-is
+    if istype(path, s, isdir):
+        return s
+    # check if the dossified name exists with no extension if none given   
+    full = dossify_write(s, '', path)
+    if istype(path, full, isdir):    
         return full
+    # check if the dossified name exists with a default extension
     if defext:
-        full = dosname_write(s, defext, pre)
-        if istype(full, isdir):    
+        full = dossify_write(s, defext, path)
+        if istype(path, full, isdir):    
             return full
+    # not found        
     raise error.RunError(err)
-
-# find a unix path to match the given dos-style path
-def dospath(s, defext, err, action, isdir):
-    s = str(s)
+        
+# substitute drives and cwds    
+def get_drive_path(s, err):    
     drivepath = s.split(':')
     if len(drivepath) > 1:
-        test = drivepath[0] + ":"
-        s = drivepath[1]    
+        letter, s = drivepath[0].upper(), drivepath[1]
     else:
-        test = ''    
-    # split over backslashes
+        # no drive specified, use current drive & dir
+        letter = current_drive
+    try:    
+        if not s or s[0] != '\\':
+            # relative path
+            path = os.path.join(drives[letter], drive_cwd[letter])
+        else:
+            # absolute path
+            path = drives[letter] 
+            s = s[1:]
+    except KeyError:        
+        # path not found
+        raise error.RunError(76)   
+    # split relative path over backslashes
     elements = s.split('\\')
+    # whatever's after the last \\ is the name of the subject file or dir
     name = elements.pop()
-    if elements:
-        if elements[0] == '':
-            elements[0] = os.sep
-    # find a matching 
+    # find a matching directory for every step in the path; append found name to path
     for e in elements:
         # skip double slashes
         if e:
-            test = dosname_read(e, '', test, err, True) + os.sep
+            path = os.path.join(path, find_name_read(e, '', path, err, True))
+    return letter, path, name
+    
+# find a unix path to match the given dos-style path
+def dospath(s, defext, err, action, isdir):
+    # substitute drives and cwds
+    _, path, name = get_drive_path(str(s), err)
+    # return absolute path to file        
     if name:
-        return action(name, defext, test, err, isdir)
+        return os.path.join(path, action(name, defext, path, err, isdir))
     else:
         # no file name, just dirs
-        return replace_drive(test)     
+        return path
 
-dospath_read = partial(dospath, action=dosname_read, isdir=False)
-dospath_write = partial(dospath, action=dosname_write, isdir=False)
-dospath_read_dir = partial(dospath, action=dosname_read, isdir=True)
-dospath_write_dir = partial(dospath, action=dosname_write, isdir=True)
+dospath_read = partial(dospath, action=find_name_read, isdir=False)
+dospath_write = partial(dospath, action=dossify_write, isdir=False)
+dospath_read_dir = partial(dospath, action=find_name_read, isdir=True)
+dospath_write_dir = partial(dospath, action=dossify_write, isdir=True)
 
-def replace_drive(pre):
-    # get drive letter, if any
-    drivepath = string.split(pre, ':')
-    if len(drivepath) > 1:
-        pre = os.path.join(get_drive(drivepath[0]), drivepath[-1])
-    else:
-        pre = os.path.join(get_drive(''), drivepath[-1])
-    return pre
     
 # for FILES command
 # apply filename filter and DOSify names
@@ -287,37 +291,16 @@ def pass_dosnames(path, files, mask='*.*'):
     return dosfiles
 
 def files(pathmask, console):
-    path, mask = '.', '*.*'
-    pathmask = str(pathmask)
-    # get drive letter
-    drivepath = pathmask.split(':')
-    if len(drivepath) > 1:
-        drive = drivepath[0] + ":"
-        pathmask = drivepath[1]    
-    else:
-        drive = ''  
-    # split path and mask    
-    pathmask = pathmask.rsplit('\\', 1)
-    if len(pathmask) > 1:
-        path = str(pathmask[0])
-        path = path if path else '\\'
-        mask = str(pathmask[1])
-    else:
-        if pathmask[0]:
-            mask = str(pathmask[0]) 
-    path = drive + path                  
+    drive, path, mask = get_drive_path(str(pathmask), 53)
     mask = mask.upper()
     if mask == '':
         mask = '*.*'
-    path = dospath_read_dir(path, '', 53)
-    path = os.path.abspath(path)
     roots, dirs, files = [], [], []
     for root, dirs, files in safe(os.walk, path):
         break
     # get working dir in DOS format
     # NOTE: this is always the current dir, not the one being listed
-    # TODO: shld be current dir *on the drive we look at*
-    console.write(dossify_path(os.getcwd()) + '\n')
+    console.write_line(dossify_path(drive + ':' + drive_cwd[drive]))
     if (roots, dirs, files) == ([], [], []):
         raise error.RunError(53)
     dosfiles = pass_dosnames(path, files, mask)
@@ -335,10 +318,10 @@ def files(pathmask, console):
     while len(output) > 0:
         line = ' '.join(output[:num])
         output = output[num:]
-        console.write(line+'\n')       
+        console.write_line(line)       
         # allow to break during dir listing & show names flowing on screen
         console.check_events()             
-    console.write(' ' + str(disk_free(path)) + ' Bytes free\n')
+    console.write_line(' ' + str(disk_free(path)) + ' Bytes free')
 
     
 # print to CUPS or windows printer    
