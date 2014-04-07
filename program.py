@@ -553,16 +553,15 @@ def loop_iterate(ins):
     # we MUST be at nextpos to run this
     # find the matching NEXT record
     pos = ins.tell()
-    while True:
-        if len(for_next_stack) == 0:
-            # next without for
-            raise error.RunError(1) #1  
+    num = len(for_next_stack)
+    for _ in range(num):
         forpos, nextpos, typechar, loopvar, stop, step, sgn = for_next_stack[-1]
         if pos == nextpos:
             break
-        else:    
-            # not the expected next, we must have jumped out
-            for_next_stack.pop()
+        for_next_stack.pop()
+    else:
+        # next without for
+        raise error.RunError(1) 
     # increment counter
     loop_ends = number_inc_gt(typechar, loopvar, stop, step, sgn)
     if loop_ends:
