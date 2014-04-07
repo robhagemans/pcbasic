@@ -528,26 +528,32 @@ def loop_init(ins, forpos, nextpos, varname, start, stop, step):
     var.set_var(varname, vartypes.number_add(start, vartypes.number_neg(step)))
     # NOTE: all access to varname must be in-place into the bytearray - no assignments!
     sgn = vartypes.unpack_int(vartypes.number_sgn(step))
-    for_next_stack.append((forpos, nextpos, varname[-1], var.variables[varname], stop[1], step[1], sgn)) 
+    for_next_stack.append((forpos, nextpos, varname[-1], var.variables[varname], number_unpack(stop), number_unpack(step), sgn)) 
     ins.seek(nextpos)
 
-def number_inc_gt(typechar, left, right, step, sgn):
+def number_unpack(value):
+    if value[0] in ('#', '!'):
+        return fp.unpack(value)
+    else:
+        return vartypes.unpack_int(value)
+
+def number_inc_gt(typechar, loopvar, stop, step, sgn):
     if sgn == 0:
         return False
     if typechar in ('#', '!'):
-        fp_left = fp.from_bytes(left).iadd(fp.from_bytes(step))
-        left[:] = fp_left.to_bytes()
+        fp_left = fp.from_bytes(loopvar).iadd(step)
+        loopvar[:] = fp_left.to_bytes()
         if sgn > 0:
-            return fp_left.gt(fp.from_bytes(right)) 
+            return fp_left.gt(stop) 
         else:
-            return fp.from_bytes(right).gt(fp_left)   
+            return stop.gt(fp_left)   
     else:
-        int_left = vartypes.sint_to_value(left)
-        left[:] = vartypes.value_to_sint(int_left + vartypes.sint_to_value(step))
+        int_left = vartypes.sint_to_value(loopvar)
+        loopvar[:] = vartypes.value_to_sint(int_left + step)
         if sgn > 0:
-            return int_left > vartypes.sint_to_value(right)           
+            return int_left > stop
         else:
-            return vartypes.sint_to_value(right) > int_left
+            return stop > int_left
         
 def loop_iterate(ins):            
     # we MUST be at nextpos to run this
