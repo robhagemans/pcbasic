@@ -45,6 +45,9 @@ os_error = {
 
 nullstream = open(os.devnull, 'w')       
 
+#########################################
+# date & time & env
+
 def timer_milliseconds():
     global time_offset
     now = datetime.datetime.today() + time_offset
@@ -140,6 +143,9 @@ def get_env_entry(expr):
         val = os.getenv(envlist[expr-1])
         return bytearray(envlist[expr-1] + '=' + val)   
     
+#########################################
+# error handling
+
 def safe_open(name, mode, access):
     name = str(name)
     posix_access = access_access[access] if (access and mode == 'R') else access_modes[mode]  
@@ -165,34 +171,35 @@ def handle_oserror(e):
         basic_err = 51
     raise error.RunError(basic_err) 
 
-#############################
+#########################################
+# drives & paths
 
 def istype(name, isdir):
     name = str(name)
     return os.path.exists(name) and ((isdir and os.path.isdir(name)) or (not isdir and os.path.isfile(name)))
         
-# put name in 8x3, all upper-case format          
-    #    # cryptic errors given by GW-BASIC:    
-    #    if ext.find('.') > -1:
-    #        # 53: file not found
-    #        raise error.RunError(errdots)
+# put name in 8x3, all upper-case format the was GW-BASIC does it (differs from Windows short name)         
+#    # cryptic errors given by GW-BASIC:    
+#    if ext.find('.') > -1:
+#        # 53: file not found
+#        raise error.RunError(errdots)
 def dosname_write(s, defext='BAS', path='', dummy=0, isdir_dummy=False):
     if not s:
         raise error.RunError(64)
-    pre = replace_drive(str(path))
+    # construct path    
+    path = replace_drive(str(path))
+    # convert to all uppercase
     s = s.upper()
+    # one trunk, one extension
     if '.' in s:
-        name = s[:s.find('.')]
-        ext = s[s.find('.')+1:]
+        name, ext = s.split('.', 1)
     else:
-        name = s[:8]
-        ext = defext
-    name = name[:8].strip()
-    ext = ext[:3].strip()
-    if ext:    
-        return os.path.join(pre, name+'.' + ext)
-    else:
-        return os.path.join(pre, name)
+        name, ext = s, defext
+    # 8.3, no spaces
+    name, ext = name[:8].strip(), ext[:3].strip()
+    # no dot if no ext
+    return os.path.join(path, name + ('.' + ext if ext else ''))
+
 
 # if name does not exist, put name in 8x3, all upper-case format with standard extension            
 def dosname_read(s, defext='BAS', path='', err=53, isdir=False):
