@@ -28,6 +28,16 @@ shell_cmd = shell + ' /c'
 
 drives = { 'I': os.path.join(os.path.dirname(os.path.realpath(__file__)), 'info') }
 current_drive = os.path.abspath(os.sep).split(':')[0]
+
+# get all drives in use by windows
+win_drives = win32api.GetLogicalDriveStrings().split(':\\\x00')[:-1]
+# if started from CMD.EXE, get the 'current wworking dir' for each drive
+# if not in CMD.EXE, there's only one cwd
+win_cwd = {}
+for letter in win_drives:
+    os.chdir(letter+':')
+    win_cwd[letter] = os.getcwd() 
+
     
 def disk_free(path):
     free_bytes = ctypes.c_ulonglong(0)
