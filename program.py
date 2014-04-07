@@ -22,6 +22,7 @@ import rnd
 import fileio
 # for prompt
 import run
+import fp 
 
 from cStringIO import StringIO 
 from copy import copy 
@@ -529,7 +530,25 @@ def loop_init(ins, forpos, nextpos, varname, start, stop, step):
     sgn = vartypes.unpack_int(vartypes.number_sgn(step))
     for_next_stack.append((forpos, nextpos, var.variables[varname], stop, step, sgn)) 
     ins.seek(nextpos)
-    
+
+def number_inc_gt(typechar, left, right, step, sgn):
+    if sgn == 0:
+        return False
+    if typechar in ('#', '!'):
+        fp_left = fp.from_bytes(left).iadd(fp.from_bytes(step))
+        left[:] = fp_left.to_bytes()
+        if sgn > 0:
+            return fp_left.gt(fp.from_bytes(right)) 
+        else:
+            return fp.from_bytes(right).gt(fp_left)   
+    else:
+        int_left = vartypes.sint_to_value(left)
+        left[:] = vartypes.value_to_sint(int_left + vartypes.sint_to_value(step))
+        if sgn > 0:
+            return int_left > vartypes.sint_to_value(right)           
+        else:
+            return vartypes.sint_to_value(right) > int_left
+        
 def loop_iterate(ins):            
     # we MUST be at nextpos to run this
     # find the matching NEXT record
@@ -545,14 +564,7 @@ def loop_iterate(ins):
         else:
             break
     # increment counter
-    loopvar[:] = vartypes.number_add((step[0], loopvar), step)[1]
-    if sgn < 0:
-        loop_ends = vartypes.int_to_bool(vartypes.number_gt(stop, (stop[0], loopvar))) 
-    elif sgn > 0:
-        loop_ends = vartypes.int_to_bool(vartypes.number_gt((stop[0], loopvar), stop)) 
-    else:
-        # step 0 is infinite loop
-        loop_ends = False
+    loop_ends = number_inc_gt(stop[0], loopvar, stop[1], step[1], sgn)
     if loop_ends:
         for_next_stack.pop()
     else: 
