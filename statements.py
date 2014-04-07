@@ -597,41 +597,34 @@ def exec_wait(ins):
 # OS
     
 def exec_chdir(ins):
-    name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    oslayer.safe(os.chdir, str(oslayer.dospath_read_dir(name, '', 76)))
+    oslayer.chdir(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
     util.require(ins, util.end_statement)
 
 def exec_mkdir(ins):
-    name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    oslayer.safe(os.mkdir, str(oslayer.dospath_write_dir(name,'', 76)))
+    oslayer.mkdir(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
     util.require(ins, util.end_statement)
 
 def exec_rmdir(ins):
-    name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    oslayer.safe(os.rmdir, str(oslayer.dospath_read_dir(name, '', 76)))
+    oslayer.rmdir(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
     util.require(ins, util.end_statement)
 
 def exec_name(ins):
-    oldname = oslayer.dospath_read(vartypes.pass_string_unpack(expressions.parse_expression(ins)), '', 53)
+    oldname = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # don't rename open files
     fileio.check_file_not_open(oldname)
     # AS is not a tokenised word
     word = util.skip_white_read(ins) + ins.read(1)
     if word.upper() != 'AS':
         raise error.RunError(2)
-    newname = oslayer.dospath_write(vartypes.pass_string_unpack(expressions.parse_expression(ins)), '', 76)
-    if os.path.exists(str(newname)):
-        # file already exists
-        raise error.RunError(58)
-    oslayer.safe(os.rename, str(oldname), str(newname))
+    newname = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    oslayer.rename(oldname, newname)
     util.require(ins, util.end_statement)
 
 def exec_kill(ins):
-    name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    name = oslayer.dospath_read(name, '', 53)
+    name = oslayer.dospath_read(str(vartypes.pass_string_unpack(expressions.parse_expression(ins))), '', 53)
     # don't delete open files
     fileio.check_file_not_open(name)
-    oslayer.safe(os.remove, str(name))
+    oslayer.safe(os.remove, name)
     util.require(ins, util.end_statement)
 
 def exec_files(ins):
@@ -646,11 +639,11 @@ def exec_files(ins):
     
 def exec_shell(ins):
     if util.skip_white(ins) in util.end_statement:
-        cmd = oslayer.shell
+        cmd = ''
     else:
-        cmd = oslayer.shell_cmd + ' ' + vartypes.pass_string_unpack(expressions.parse_expression(ins))
+        cmd = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     savecurs = console.show_cursor()
-    oslayer.spawn_interactive_shell(cmd) 
+    oslayer.shell(cmd) 
     console.show_cursor(savecurs)
     util.require(ins, util.end_statement)
         
