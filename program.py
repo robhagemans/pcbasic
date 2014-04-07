@@ -523,28 +523,27 @@ def jump_return(jumpnum):
         jump(jumpnum)
 
 def loop_init(ins, forpos, nextpos, varname, start, stop, step):
-    loopvar = vartypes.pass_type_keep(varname[-1], start)
+#    loopvar = vartypes.pass_type_keep(varname[-1], start)
     var.set_var(varname, start)
+    # NOTE: all access to varname must be in-place into the bytearray - no assignments!
     sgn = vartypes.unpack_int(vartypes.number_sgn(step))
-    for_next_stack.append((forpos, nextpos, varname, start, stop, step, sgn)) 
-    return loop_jump_if_ends(ins, loopvar, stop, step, sgn)
+    for_next_stack.append((forpos, nextpos, var.variables[varname], start, stop, step, sgn)) 
+    return loop_jump_if_ends(ins, var.variables[varname], stop, step, sgn)
     
 def loop_iterate(ins):            
     # JUMP to FOR statement
-    forpos, _, varname, start, stop, step, sgn = for_next_stack[-1]
-    ins.seek(forpos)
+    forpos, _, loopvar, start, stop, step, sgn = for_next_stack[-1]
     # skip to end of FOR statement
+    ins.seek(forpos)
     # increment counter
-    loopvar = var.get_var(varname)
-    loopvar = vartypes.number_add(loopvar, step)
-    var.set_var(varname, loopvar)
+    loopvar[:] = vartypes.number_add((step[0], loopvar), step)[1]
     return loop_jump_if_ends(ins, loopvar, stop, step, sgn)
         
 def loop_jump_if_ends(ins, loopvar, stop, step, sgn):
     if sgn < 0:
-        loop_ends = vartypes.int_to_bool(vartypes.number_gt(stop, loopvar)) 
+        loop_ends = vartypes.int_to_bool(vartypes.number_gt(stop, (stop[0], loopvar))) 
     elif sgn > 0:
-        loop_ends = vartypes.int_to_bool(vartypes.number_gt(loopvar, stop)) 
+        loop_ends = vartypes.int_to_bool(vartypes.number_gt((stop[0], loopvar), stop)) 
     else:
         # step 0 is infinite loop
         loop_ends = False
