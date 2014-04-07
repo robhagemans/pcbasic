@@ -47,8 +47,6 @@ def exec_cont(ins):
 
 def exec_for(ins): 
     global override_token
-    # just after FOR opcode
-    forpos = ins.tell()
     # read variable  
     varname = util.get_var_name(ins)
     vartype = varname[-1]
@@ -64,10 +62,11 @@ def exec_for(ins):
         # convert 1 to vartype
         step = vartypes.pass_type_keep(vartype, vartypes.pack_int(1))
     util.require(ins, util.end_statement)
+    endforpos = ins.tell()
     # find NEXT
     nextpos = find_next(ins, varname)
     # apply initial condition, jump if necessary
-    if program.loop_init(ins, forpos, nextpos, varname, start, stop, step):
+    if program.loop_init(ins, endforpos, nextpos, varname, start, stop, step):
         if util.skip_white_read_if(ins, (',')):
             # we're jumping into a comma'ed NEXT, call exec_next
             return exec_next(ins, True)
