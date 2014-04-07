@@ -300,7 +300,7 @@ def files(pathmask, console):
         break
     # get working dir in DOS format
     # NOTE: this is always the current dir, not the one being listed
-    console.write_line(dossify_path(drive + ':' + drive_cwd[drive]))
+    console.write_line(drive + ':\\' + drive_cwd[drive].replace(os.sep, '\\'))
     if (roots, dirs, files) == ([], [], []):
         raise error.RunError(53)
     dosfiles = pass_dosnames(path, files, mask)
