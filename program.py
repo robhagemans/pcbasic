@@ -533,7 +533,6 @@ def loop_iterate(ins):
     forpos, _, varname, start, stop, step = for_next_stack[-1]
     ins.seek(forpos)
     # skip to end of FOR statement
-    util.skip_to(ins, util.end_statement)
     # increment counter
     loopvar = var.get_var(varname)
     loopvar = vartypes.number_add(loopvar, step)
