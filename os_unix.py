@@ -73,19 +73,6 @@ def dossify(path, name):
         trunk, ext = '', ''
     return trunk, ext
 
-def dossify_path(path):
-    dospath, pre = '', ''
-    for name in path.split(os.sep):
-        trunk, ext = dossify(pre, name)
-        pre += name
-        if trunk == '' and ext == '':
-            continue    
-        dospath += trunk
-        if ext:
-            dospath += '.' + ext
-        dospath += '\\'    
-    return dospath        
-
 # print to LPR printer (ok for CUPS)
 def line_print(printbuf, printer_name): 
     options = ''

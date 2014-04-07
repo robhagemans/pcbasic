@@ -40,7 +40,6 @@ for letter in win32api.GetLogicalDriveStrings().split(':\\\x00')[:-1]:
     drive_cwd[letter] = os.getcwd()[3:]  
     drives[letter] = os.getcwd()[:3]
 os.chdir(save_current)    
-
     
 def disk_free(path):
     free_bytes = ctypes.c_ulonglong(0)
@@ -104,9 +103,6 @@ def dossify(path, name):
         trunk = trunk[:8]
         ext = '...'    
     return trunk, ext    
-
-def dossify_path(name):
-    return win32api.GetShortPathName(name).upper()
 
 
 # print to Windows printer
