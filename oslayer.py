@@ -172,6 +172,13 @@ def handle_oserror(e):
     raise error.RunError(basic_err) 
 
 #########################################
+# shell
+
+def shell(cmd):
+    cmd = shell if not cmd else shell_cmd + cmd
+    spawn_interactive_shell(cmd)    
+        
+#########################################
 # drives & paths
 
 def istype(path, name, isdir):
@@ -323,6 +330,35 @@ def files(pathmask, console):
         console.check_events()             
     console.write_line(' ' + str(disk_free(path)) + ' Bytes free')
 
+def chdir(name):
+    # substitute drives and cwds
+    letter, path, name = get_drive_path(str(name), 76)
+    if name:
+        newdir = os.path.join(path, find_name_read(name, '', path, 76, True))
+    else:
+        newdir = path    
+    base = len(drives[letter])
+    if drives[letter][base-1] == os.sep:
+        # root /
+        base -= 1
+    drive_cwd[letter] = newdir[base+1:]
+    if letter == current_drive:
+        safe(os.chdir, newdir)
+
+def mkdir(name):
+    safe(os.mkdir, dospath_write_dir(str(name), '', 76))
+    
+def rmdir(name):    
+    safe(os.rmdir, dospath_read_dir(str(name), '', 76))
+    
+def rename(oldname, newname):    
+    oldname = dospath_read(str(oldname), '', 53)
+    newname = dospath_write(str(newname), '', 76)
+    if os.path.exists(newname):
+        # file already exists
+        raise error.RunError(58)
+    safe(os.rename, oldname, newname)
+        
     
 # print to CUPS or windows printer    
 class CUPSStream(StringIO.StringIO):
