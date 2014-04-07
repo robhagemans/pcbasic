@@ -2,10 +2,10 @@
 15  REM Copyright (c) 2013, 2014 Rob Hagemans
 20  REM Released under the GNU GPL version 3
 25  '
-50  KEYS.NAME$(1)="1"     : KEYS.WHAT$(1)="About" : N$(1)="I:ABOUT"
-55  KEYS.NAME$(2)="2"     : KEYS.WHAT$(2)="Legal" : N$(2)="I:COPYING"
-60  KEYS.NAME$(3)="3"     : KEYS.WHAT$(3)="GPLv3" : N$(3)="I:GPL3"
-65  KEYS.NAME$(4)="4"     : KEYS.WHAT$(4)="Doc"   : N$(4)="I:HELP"
+50  KEYS.NAME$(1)="1"     : KEYS.WHAT$(1)="About" : N$(1)="@:ABOUT"
+55  KEYS.NAME$(2)="2"     : KEYS.WHAT$(2)="Legal" : N$(2)="@:COPYING"
+60  KEYS.NAME$(3)="3"     : KEYS.WHAT$(3)="GPLv3" : N$(3)="@:GPL3"
+65  KEYS.NAME$(4)="4"     : KEYS.WHAT$(4)="Doc"   : N$(4)="@:HELP"
 70  KEYS.NAME$(5)="Q"     : KEYS.WHAT$(5)="Quit"
 75  KEYS.NAME$(6)="S"     : KEYS.WHAT$(6)="Search"
 80  KEYS.NAME$(7)="SPACE" : KEYS.WHAT$(7)="Line"
@@ -13,7 +13,7 @@
 90  KEYS.LEN = 8 : KEYS.NUM = 4
 99  '
 100 REM main loop
-105   NM$="I:ABOUT" : GOSUB 13000
+105   NM$="@:ABOUT" : GOSUB 13000
 110   WHILE -1
 115     SCREEN 0,0,0 : CLS : KEY OFF : COUNT = 0
 120     GOSUB 10000
