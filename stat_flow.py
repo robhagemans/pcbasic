@@ -65,11 +65,9 @@ def exec_for(ins):
     endforpos = ins.tell()
     # find NEXT
     nextpos = find_next(ins, varname)
-    # apply initial condition, jump if necessary
-    if program.loop_init(ins, endforpos, nextpos, varname, start, stop, step):
-        if util.skip_white_read_if(ins, (',')):
-            # we're jumping into a comma'ed NEXT, call exec_next
-            return exec_next(ins)
+    # apply initial condition and jump to nextpos
+    program.loop_init(ins, endforpos, nextpos, varname, start, stop, step)
+    exec_next(ins)
         
 def find_next(ins, varname):
     current = ins.tell()
@@ -77,11 +75,10 @@ def find_next(ins, varname):
     # FOR without NEXT
     util.require(ins, ('\x83', ','), err=26)
     comma = (ins.read(1)==',')
+    # get position and line number just after the NEXT
+    nextpos = ins.tell()
     # check var name for NEXT
     varname2 = util.get_var_name(ins, allow_empty=True)
-    # get position and line number after the NEXT
-    util.skip_white(ins)
-    nextpos = ins.tell()
     # no-var only allowed in standalone NEXT   
     if varname2 == '':
         util.require(ins, util.end_statement)
@@ -93,10 +90,9 @@ def find_next(ins, varname):
     return nextpos 
 
 def exec_next(ins):
-    # read the varname, if provided
-    util.skip_to(ins, util.end_statement+(',',))
     # JUMP to end of FOR statement, increment counter, check condition
     if program.loop_iterate(ins):
+        util.skip_to(ins, util.end_statement+(',',))
         if util.skip_white_read_if(ins, (',')):
             # we're jumping into a comma'ed NEXT, call exec_next
             return exec_next(ins)
