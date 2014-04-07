@@ -543,17 +543,11 @@ def number_inc_gt(typechar, loopvar, stop, step, sgn):
     if typechar in ('#', '!'):
         fp_left = fp.from_bytes(loopvar).iadd(step)
         loopvar[:] = fp_left.to_bytes()
-        if sgn > 0:
-            return fp_left.gt(stop) 
-        else:
-            return stop.gt(fp_left)   
+        return fp_left.gt(stop) if sgn > 0 else stop.gt(fp_left)   
     else:
-        int_left = vartypes.sint_to_value(loopvar)
-        loopvar[:] = vartypes.value_to_sint(int_left + step)
-        if sgn > 0:
-            return int_left > stop
-        else:
-            return stop > int_left
+        int_left = vartypes.sint_to_value(loopvar) + step
+        loopvar[:] = vartypes.value_to_sint(int_left)
+        return int_left > stop if sgn > 0 else stop > int_left
         
 def loop_iterate(ins):            
     # we MUST be at nextpos to run this
