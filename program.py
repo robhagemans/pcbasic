@@ -525,22 +525,22 @@ def jump_return(jumpnum):
 def loop_init(ins, forpos, nextpos, varname, start, stop, step):
     loopvar = vartypes.pass_type_keep(varname[-1], start)
     var.set_var(varname, start)
-    for_next_stack.append((forpos, nextpos, varname, start, stop, step)) 
-    return loop_jump_if_ends(ins, loopvar, stop, step)
+    sgn = vartypes.unpack_int(vartypes.number_sgn(step))
+    for_next_stack.append((forpos, nextpos, varname, start, stop, step, sgn)) 
+    return loop_jump_if_ends(ins, loopvar, stop, step, sgn)
     
 def loop_iterate(ins):            
     # JUMP to FOR statement
-    forpos, _, varname, start, stop, step = for_next_stack[-1]
+    forpos, _, varname, start, stop, step, sgn = for_next_stack[-1]
     ins.seek(forpos)
     # skip to end of FOR statement
     # increment counter
     loopvar = var.get_var(varname)
     loopvar = vartypes.number_add(loopvar, step)
     var.set_var(varname, loopvar)
-    return loop_jump_if_ends(ins, loopvar, stop, step)
+    return loop_jump_if_ends(ins, loopvar, stop, step, sgn)
         
-def loop_jump_if_ends(ins, loopvar, stop, step):
-    sgn = vartypes.unpack_int(vartypes.number_sgn(step)) 
+def loop_jump_if_ends(ins, loopvar, stop, step, sgn):
     if sgn < 0:
         loop_ends = vartypes.int_to_bool(vartypes.number_gt(stop, loopvar)) 
     elif sgn > 0:
@@ -550,7 +550,7 @@ def loop_jump_if_ends(ins, loopvar, stop, step):
         loop_ends = False
     if loop_ends:
         # jump to just after NEXT
-        _, nextpos, _, _, _, _ = for_next_stack.pop()
+        _, nextpos, _, _, _, _, _ = for_next_stack.pop()
         ins.seek(nextpos)
     return loop_ends
     
@@ -559,7 +559,7 @@ def loop_find_next(ins, pos):
         if len(for_next_stack) == 0:
             # next without for
             raise error.RunError(1) #1  
-        forpos, nextpos, varname, _, _, _ = for_next_stack[-1]
+        forpos, nextpos, varname, _, _, _, _ = for_next_stack[-1]
         if pos != nextpos:
             # not the expected next, we must have jumped out
             for_next_stack.pop()
