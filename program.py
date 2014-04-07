@@ -523,23 +523,20 @@ def jump_return(jumpnum):
         jump(jumpnum)
 
 def loop_init(ins, forpos, nextpos, varname, start, stop, step):
-#    loopvar = vartypes.pass_type_keep(varname[-1], start)
-    var.set_var(varname, start)
+    # set start to start-step, then iterate - slower on init but allows for faster iterate
+    var.set_var(varname, vartypes.number_add(start, vartypes.number_neg(step)))
     # NOTE: all access to varname must be in-place into the bytearray - no assignments!
     sgn = vartypes.unpack_int(vartypes.number_sgn(step))
-    for_next_stack.append((forpos, nextpos, var.variables[varname], start, stop, step, sgn)) 
-    return loop_jump_if_ends(ins, var.variables[varname], stop, step, sgn)
+    for_next_stack.append((forpos, nextpos, var.variables[varname], stop, step, sgn)) 
+    ins.seek(nextpos)
+    loop_ends = loop_iterate(ins)
+    return loop_ends    
     
 def loop_iterate(ins):            
-    # JUMP to FOR statement
-    forpos, _, loopvar, start, stop, step, sgn = for_next_stack[-1]
-    # skip to end of FOR statement
-    ins.seek(forpos)
+    # we MUST be at nextpos to run this
+    forpos, _, loopvar, stop, step, sgn = loop_find_next(ins, ins.tell())
     # increment counter
     loopvar[:] = vartypes.number_add((step[0], loopvar), step)[1]
-    return loop_jump_if_ends(ins, loopvar, stop, step, sgn)
-        
-def loop_jump_if_ends(ins, loopvar, stop, step, sgn):
     if sgn < 0:
         loop_ends = vartypes.int_to_bool(vartypes.number_gt(stop, (stop[0], loopvar))) 
     elif sgn > 0:
@@ -548,9 +545,9 @@ def loop_jump_if_ends(ins, loopvar, stop, step, sgn):
         # step 0 is infinite loop
         loop_ends = False
     if loop_ends:
-        # jump to just after NEXT
-        _, nextpos, _, _, _, _, _ = for_next_stack.pop()
-        ins.seek(nextpos)
+        for_next_stack.pop()
+    else: 
+        ins.seek(forpos)    
     return loop_ends
     
 def loop_find_next(ins, pos):
@@ -558,13 +555,13 @@ def loop_find_next(ins, pos):
         if len(for_next_stack) == 0:
             # next without for
             raise error.RunError(1) #1  
-        forpos, nextpos, varname, _, _, _, _ = for_next_stack[-1]
+        forpos, nextpos, loopvar, stop, step, sgn = for_next_stack[-1]
         if pos != nextpos:
             # not the expected next, we must have jumped out
             for_next_stack.pop()
         else:
             break
-    return forpos, nextpos, varname
+    return forpos, nextpos, loopvar, stop, step, sgn 
                 
 # READ a unit of DATA
 def read_entry():
