@@ -348,7 +348,7 @@ def exec_width(ins):
             util.require_read(ins, (',',))
             w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         else:
-            dev = console
+            dev = deviceio.devices['SCRN:']
             # IN GW-BASIC, we can do calculations, but they must be bracketed...
             #w = vartypes.pass_int_unpack(expressions.parse_expr_unit(ins))
             w = vartypes.pass_int_unpack(expr)
@@ -358,7 +358,7 @@ def exec_width(ins):
                 # one comma, then stuff - illegal function call
                 util.require(ins, util.end_statement, err=5)
     util.require(ins, util.end_statement)        
-    dev.set_width(w)    
+    dev.set_width(w)
     
 def exec_screen(ins):
     # in GW, screen 0,0,0,0,0,0 raises error after changing the palette... this raises error before:
@@ -373,7 +373,8 @@ def exec_screen(ins):
     # if the parameters are outside narrow ranges (e.g. not implemented screen mode, pagenum beyond max)
     # then the error is only raised after changing the palette.
     util.require(ins, util.end_statement)        
-    console.set_mode(mode, colorswitch, apagenum, vpagenum)
+    if not console.screen(mode, colorswitch, apagenum, vpagenum):
+        raise error.RunError(5)
     
 def exec_pcopy(ins):
     src = vartypes.pass_int_unpack(expressions.parse_expression(ins))

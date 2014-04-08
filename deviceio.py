@@ -235,7 +235,8 @@ class KYBDFile(NullDevice):
     # setting KYBD width is allowed, anomalously; but has no effect if on files. changes screen width if on device.
     def set_width(self, new_width=255):
         if self.number == 0:
-            console.set_width(new_width)
+            if not console.set_width(new_width):
+                raise error.RunError(5)
 
 class SCRNFile(NullDevice):
     allowed_modes = 'OR'
@@ -266,7 +267,8 @@ class SCRNFile(NullDevice):
     # WIDTH "LPT1:" works on lpt1 for the next time it's opened; also for other devices.
     def set_width(self, new_width=255):
         if self.number == 0:
-            console.set_width(new_width)
+            if not console.set_width(new_width):
+                raise error.RunError(5)
         else:    
             self.width = new_width
 
