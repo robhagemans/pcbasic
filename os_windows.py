@@ -18,7 +18,9 @@ import subprocess
 import threading
 import win32print
 import win32ui
+import win32gui
 import win32api
+import win32con
 
 import error
 import console
@@ -26,21 +28,47 @@ import console
 shell = 'CMD'    
 shell_cmd = shell + ' /c'
 
-drives = { '@': os.path.join(os.path.dirname(os.path.realpath(__file__)), 'info') }
+file_path = os.path.dirname(os.path.realpath(__file__))
+
+drives = { '@': os.path.join(file_path, 'info') }
 current_drive = os.path.abspath(os.getcwd()).split(':')[0]
 drive_cwd = { '@': '' }
 
 # get all drives in use by windows
 # if started from CMD.EXE, get the 'current wworking dir' for each drive
 # if not in CMD.EXE, there's only one cwd
-save_current = os.getcwd()
-for letter in win32api.GetLogicalDriveStrings().split(':\\\x00')[:-1]:
-    os.chdir(letter + ':')
-    cwd = win32api.GetShortPathName(os.getcwd())
-    # must not start with \\
-    drive_cwd[letter] = cwd[3:]  
-    drives[letter] = cwd[:3]
-os.chdir(save_current)    
+def store_drives():
+    global drives, drive_cwd
+    save_current = os.getcwd()
+    for letter in win32api.GetLogicalDriveStrings().split(':\\\x00')[:-1]:
+        try:
+            os.chdir(letter + ':')
+            cwd = win32api.GetShortPathName(os.getcwd())
+            # must not start with \\
+            drive_cwd[letter] = cwd[3:]  
+            drives[letter] = cwd[:3]
+        except WindowsError:
+            pass    
+    os.chdir(save_current)    
+
+store_drives()
+    
+def set_icon():    
+    icon = win32gui.LoadImage(0, os.path.join(file_path, 'resources\\pcbasic.ico'), 
+        win32gui.IMAGE_ICON, 0, 0, win32gui.LR_DEFAULTSIZE | win32gui.LR_LOADFROMFILE);
+    if icon:
+        hwnd = win32api.GetFocus()
+        #Change both icons to the same icon handle.
+        win32api.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_SMALL, icon);
+        win32api.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_BIG, icon);
+
+        #This will ensure that the application icon gets changed too.
+        win32api.SendMessage(win32gui.GetWindow(hwnd, win32con.GW_OWNER), win32con.WM_SETICON, win32con.ICON_SMALL, icon);
+        win32api.SendMessage(win32gui.GetWindow(hwnd, win32con.GW_OWNER), win32con.WM_SETICON, win32con.ICON_BIG, icon);
+
+#set_icon()    
+def gui_init():
+    set_icon()    
     
 def disk_free(path):
     free_bytes = ctypes.c_ulonglong(0)
