@@ -192,7 +192,7 @@ def exec_while(ins, first=True):
     # use double to avoid overflows  
     if first:
         # find matching WEND
-        util.skip_to_next(ins, '\xB1', '\xB2')  # WHILE, WEND
+        skip_to_next(ins, '\xB1', '\xB2')  # WHILE, WEND
         if ins.read(1) == '\xB2':
             util.skip_to(ins, util.end_statement)
             wendpos = ins.tell()
