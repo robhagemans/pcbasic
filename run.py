@@ -45,7 +45,9 @@ def execute(line):
             program.store_line(program.direct_line)
             # no prompt
             return
-        elif c != '':    
+        elif c == '':
+            return    
+        else:    
             # it is a command, go and execute    
             execution_loop()
     except error.Error as e:
