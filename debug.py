@@ -14,7 +14,6 @@ import sys
 import logging
 import traceback
 
-import util
 import program
 import console
 import var
