@@ -99,7 +99,6 @@ def spawn_interactive_shell(cmd):
     while p.poll() == None:
         console.idle()
         c = console.get_char()
-        print repr(c)
         if p.poll () != None:
             break
         else:    
