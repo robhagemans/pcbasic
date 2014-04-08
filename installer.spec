@@ -26,6 +26,7 @@ if platform.system() == 'Windows':
                    a.datas,
                    Tree('cpi', prefix='cpi'),
                    Tree('info', prefix='info'),
+                   Tree('resources', prefix='resources'),
                    strip=None,
                    upx=True,
                    name='pcbasic')
