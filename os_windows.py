@@ -95,9 +95,11 @@ def spawn_interactive_shell(cmd):
     errp.daemon = True
     errp.start()
     chars = 0
+    word = ''
     while p.poll() == None:
         console.idle()
         c = console.get_char()
+        print repr(c)
         if p.poll () != None:
             break
         else:    
@@ -105,12 +107,15 @@ def spawn_interactive_shell(cmd):
                 # fix double echo after enter press
                 console.write('\x1D'*chars)
                 chars = 0
-                p.stdin.write('\r\n')
+                p.stdin.write(word + '\r\n')
+                word = ''
             elif c != '':
-                p.stdin.write(c)
-                # windows only seems to echo this to the pipe after enter pressed
+                # workaround for WINE that seems to attach a CR to each letter: only send to pipe when enter pressed
+                # rather than p.stdin.write(c)
+                word += c
+                # windows only seems to echo this to the pipe after enter pressed (even if directly written to pipe)
                 console.write(c)
-                chars +=1
+                chars += 1
     outp.join()
     errp.join()
 
