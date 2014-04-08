@@ -53,23 +53,6 @@ def store_drives():
 
 store_drives()
     
-def set_icon():    
-    icon = win32gui.LoadImage(0, os.path.join(file_path, 'resources\\pcbasic.ico'), 
-        win32gui.IMAGE_ICON, 0, 0, win32gui.LR_DEFAULTSIZE | win32gui.LR_LOADFROMFILE);
-    if icon:
-        hwnd = win32api.GetFocus()
-        #Change both icons to the same icon handle.
-        win32api.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_SMALL, icon);
-        win32api.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_BIG, icon);
-
-        #This will ensure that the application icon gets changed too.
-        win32api.SendMessage(win32gui.GetWindow(hwnd, win32con.GW_OWNER), win32con.WM_SETICON, win32con.ICON_SMALL, icon);
-        win32api.SendMessage(win32gui.GetWindow(hwnd, win32con.GW_OWNER), win32con.WM_SETICON, win32con.ICON_BIG, icon);
-
-#set_icon()    
-def gui_init():
-    set_icon()    
-    
 def disk_free(path):
     free_bytes = ctypes.c_ulonglong(0)
     ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(path), None, None, ctypes.pointer(free_bytes))

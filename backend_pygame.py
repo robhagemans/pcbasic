@@ -307,21 +307,22 @@ def init():
         pygame.display.quit()
         logging.warning('Refusing to open libcaca console. Failed to initialise PyGame console.')
         return False
-    # get physical screen dimensions (needs to be called before set_mode)
-    display_info = pygame.display.Info()
-    physical_size = display_info.current_w, display_info.current_h
-    # first set the screen non-resizeable, to trick things like maximus into not full-screening
-    # I hate it when applications do this ;)
-    if not fullscreen:
-        pygame.display.set_mode(display_size_text, 0, 8)
-    resize_display(*display_size_text, initial=True)
-    pygame.display.set_caption('PC-BASIC 3.23')
-    pygame.key.set_repeat(500, 24)
     fonts = cpi_font.load_codepage(console.codepage)
     if fonts == None:
         logging.warning('Could not load codepage font. Failed to initialise PyGame console.')
         return False
     unicodepage.load_codepage(console.codepage)
+    # get physical screen dimensions (needs to be called before set_mode)
+    display_info = pygame.display.Info()
+    physical_size = display_info.current_w, display_info.current_h
+    # first set the screen non-resizeable, to trick things like maximus into not full-screening
+    # I hate it when applications do this ;)
+    pygame.display.set_icon(build_icon())
+    if not fullscreen:
+        pygame.display.set_mode(display_size_text, 0, 8)
+    resize_display(*display_size_text, initial=True)
+    pygame.display.set_caption('PC-BASIC 3.23')
+    pygame.key.set_repeat(500, 24)
     init_mixer()
     pygame.joystick.init()
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
@@ -429,7 +430,7 @@ def setup_screen(to_height, to_width):
     under_cursor.set_palette(workaround_palette)
     set_palette()
     screen_changed = True
-
+    
 def copy_page(src,dst):
     global screen_changed
     console.pages[dst].surface0.blit(console.pages[src].surface0, (0,0))
@@ -553,12 +554,28 @@ def build_cursor():
             else:
                 cursor0.set_at((xx, yy), color)
 
+# build the Ok icon
+def build_icon():
+    icon = pygame.Surface((17, 17), depth=8)
+    icon.fill(255)
+    icon.fill(254, (1, 8, 8, 8))
+    O = build_glyph(ord('O'), fonts[8], 8)
+    k = build_glyph(ord('k'), fonts[8], 8)
+    icon.blit(O, (1, 0, 8, 8))
+    icon.blit(k, (9, 0, 8, 8))
+    icon.set_palette_at(255, (0, 0, 0))
+    icon.set_palette_at(254, (0xff, 0xff, 0xff))
+    pygame.transform.scale2x(icon)
+    pygame.transform.scale2x(icon)
+    return icon
+
+
 def refresh_screen():
     if console.screen_mode or blink_state == 0:
         screen.blit(console.vpage.surface0, (0, 0))
     elif blink_state == 1: 
         screen.blit(console.vpage.surface1, (0, 0))
-            
+    
 def remove_cursor():
     if not console.cursor or console.vpage != console.apage:
         return
@@ -657,7 +674,7 @@ def do_flip():
         pygame.transform.smoothscale(screen.convert(display), display.get_size(), display)
         screen.set_palette(workaround_palette)    
     else:
-        pygame.transform.scale(screen, display.get_size(), display)    
+        pygame.transform.scale(screen, display.get_size(), display)  
     pygame.display.flip()
 
 def handle_key(e):
