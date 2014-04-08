@@ -26,7 +26,6 @@ import error
 import var
 import deviceio
 import fileio
-import util
 import expressions
 import oslayer
 import statements
