@@ -46,7 +46,6 @@ def exec_cont(ins):
     # in this implementation, the CONT command will overwrite the line buffer so x is not printed.
 
 def exec_for(ins): 
-    global override_token
     # read variable  
     varname = util.get_var_name(ins)
     vartype = varname[-1]
@@ -69,9 +68,40 @@ def exec_for(ins):
     program.loop_init(ins, endforpos, nextpos, varname, start, stop, step)
     exec_next(ins)
         
+def skip_to_next(ins, for_char, next_char, allow_comma=False):
+    stack = 0
+    while True:
+        c = util.skip_to_read(ins, util.end_statement + ('\xCD', '\xA1')) # THEN, ELSE
+        # skip line number, if there
+        if c == '\0' and util.parse_line_number(ins) == -1:
+            break
+        # get first keyword in statement    
+        d = util.skip_white(ins)  
+        if d == '':
+            break
+        elif d == for_char:
+            ins.read(1)
+            stack += 1
+        elif d == next_char:
+            if stack <= 0:
+                break
+            else:    
+                ins.read(1)
+                stack -= 1
+                # NEXT I, J
+                if allow_comma: 
+                    while (util.skip_white(ins) not in util.end_statement):
+                        util.skip_to(ins, util.end_statement + (',',))
+                        if util.peek(ins) == ',':
+                            if stack > 0:
+                                ins.read(1)
+                                stack -= 1
+                            else:
+                                return
+                                
 def find_next(ins, varname):
     current = ins.tell()
-    util.skip_to_next(ins, '\x82', '\x83', allow_comma=True)  # FOR, NEXT
+    skip_to_next(ins, '\x82', '\x83', allow_comma=True)  # FOR, NEXT
     # FOR without NEXT
     util.require(ins, ('\x83', ','), err=26)
     comma = (ins.read(1)==',')

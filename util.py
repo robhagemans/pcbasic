@@ -118,35 +118,6 @@ def require(ins, rnge, err=2):
     a = skip_white(ins, n=len(rnge[0]))
     if a not in rnge:
         raise error.RunError(err)
-
-def skip_to_next(ins, for_char, next_char, allow_comma=False):
-    stack = 0
-    d = ''
-    while True:
-        skip_to(ins, (for_char, next_char)) 
-        d = peek(ins)
-        if d == for_char:
-            ins.read(1)
-            stack += 1
-        elif d == next_char:
-            if stack <= 0:
-                break
-            else:    
-                ins.read(1)
-                stack -= 1
-                # NEXT I, J
-                if allow_comma: 
-                    while (skip_white(ins) not in end_statement):
-                        skip_to(ins, end_statement + (',',))
-                        if peek(ins) == ',':
-                            if stack > 0:
-                                ins.read(1)
-                                stack -= 1
-                            else:
-                                return
-        elif d in ('', '\x1a'):
-            ins.seek(-1)
-            break
     
 # parse line number and leve pointer at first char of line
 # if end of program or truncated, leave pointer at start of line number C0 DE or 00 00    
