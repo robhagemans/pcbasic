@@ -189,8 +189,6 @@ def prepare_console(args):
     if not console.sound.init_sound():
         logging.warning('Failed to initialise sound. Sound will be disabled.')
         console.sound = nosound
-    # os-specific GUI mods (ie Windows title bar icon)        
-    oslayer.gui_init()
    
 def get_args():
     # GWBASIC invocation, for reference:

@@ -27,8 +27,6 @@ current_drive = 'C'
 # must not start with a /
 drive_cwd = { 'C': os.getcwd()[1:], '@': '' }
             
-def gui_init():
-    pass
             
 def disk_free(path):
     st = os.statvfs(path)
