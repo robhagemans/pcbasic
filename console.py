@@ -310,13 +310,17 @@ def wait_interactive(from_start=False):
         if not d:
             # input stream closed
             run.exit()
-        if d != '\r':
+        if d not in ('\r', '\x03'):
             for echo in input_echos:
                 echo(d)
         if d in ('\x00\x48', '\x1E', '\x00\x50', '\x1F',  '\x00\x4D', '\x1C', '\x00\x4B', 
                     '\x1D', '\x00\x47', '\x0B', '\x00\x4F', '\x0E' ):
             set_overwrite_mode(True)
-        if d == '\x03':                     raise error.Break()                     # <CTRL+C>, probably already caught in wait_char()
+        if d == '\x03':         
+            for echo in input_echos:  
+                echo ('\x0e')
+            write_line()    
+            raise error.Break()    # not caught in wait_char like <CTRL+BREAK>
         elif d == '\r':                     break                                   # <ENTER>
         elif d == '\a':                     sound.beep()                            # <CTRL+G>
         elif d == '\b':                     backspace(start_row, furthest_left)     # <BACKSPACE>
