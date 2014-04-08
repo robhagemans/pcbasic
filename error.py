@@ -91,10 +91,9 @@ class Error(Exception):
 class Break(Error):
     def __init__(self):
         self.erl = -1 if not program.run_mode else program.get_line_number(program.current_statement)
-        self.msg = "Break"
         
     def handle_break(self):
-        write_error_message(self.msg, self.erl)
+        write_error_message("Break", self.erl)
         if program.run_mode:
             program.stop = program.bytecode.tell()
             program.set_runmode(False)
@@ -107,7 +106,6 @@ class RunError(Error):
     def __init__(self, value, linum=-1):
         self.err = value
         self.erl = linum if not program.run_mode or linum != -1 else program.get_line_number(program.current_statement)
-        self.msg = get_message(value)
 
     def handle_continue(self):
         global error_resume, error_handle_mode
@@ -124,7 +122,7 @@ class RunError(Error):
         global errn
         set_err(self)
         # not handled by ON ERROR, stop execution
-        write_error_message(self.msg, self.erl)   
+        write_error_message(get_message(self.err), self.erl)   
         error_handle_mode = False
         program.set_runmode(False)
         # special case
@@ -167,10 +165,9 @@ def set_err(e):
     
 def get_message(errnum):
     try:
-        msg = errors[errnum]
+        return errors[errnum]
     except KeyError:
-        msg = default_msg
-    return msg    
+        return default_msg
 
 def write_error_message(msg, linenum):
     console.start_line()
