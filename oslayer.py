@@ -18,6 +18,7 @@ from functools import partial
 import StringIO
 
 import error
+import unicodepage
 
 # datetime offset for duration of the run (so that we don't need permission to touch the system clock)
 # given in seconds        
