@@ -121,11 +121,16 @@ def require(ins, rnge, err=2):
 
 def skip_to_next(ins, for_char, next_char, allow_comma=False):
     stack = 0
-    d = ''
     while True:
-        skip_to(ins, (for_char, next_char)) 
-        d = peek(ins)
-        if d == for_char:
+        c = skip_to_read(ins, end_statement + ('\xCD', '\xA1')) # THEN, ELSE
+        # skip line number, if there
+        if c == '\0' and parse_line_number(ins) == -1:
+            break
+        # get first keyword in statement    
+        d = skip_white(ins)  
+        if d == '':
+            break
+        elif d == for_char:
             ins.read(1)
             stack += 1
         elif d == next_char:
@@ -144,9 +149,6 @@ def skip_to_next(ins, for_char, next_char, allow_comma=False):
                                 stack -= 1
                             else:
                                 return
-        elif d in ('', '\x1a'):
-            ins.seek(-1)
-            break
     
 # parse line number and leve pointer at first char of line
 # if end of program or truncated, leave pointer at start of line number C0 DE or 00 00    
