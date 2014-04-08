@@ -25,8 +25,8 @@ import win32con
 import error
 import console
  
-shell = 'CMD'    
-shell_cmd = shell + ' /c'
+shell_interactive = 'CMD'    
+shell_cmd = 'CMD /c'
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 
