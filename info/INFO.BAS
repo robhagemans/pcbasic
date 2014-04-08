@@ -2,29 +2,27 @@
 15  REM Copyright (c) 2013, 2014 Rob Hagemans
 20  REM Released under the GNU GPL version 3
 25  '
-50  KEYS.NAME$(1)="1"     : KEYS.WHAT$(1)="About" : N$(1)="@:ABOUT"
-55  KEYS.NAME$(2)="2"     : KEYS.WHAT$(2)="Legal" : N$(2)="@:COPYING"
-60  KEYS.NAME$(3)="3"     : KEYS.WHAT$(3)="GPLv3" : N$(3)="@:GPL3"
-65  KEYS.NAME$(4)="4"     : KEYS.WHAT$(4)="Doc"   : N$(4)="@:HELP"
+50  KEYS.NAME$(1)="1"     : KEYS.WHAT$(1)="About" : FILE$(1)="@:ABOUT"
+55  KEYS.NAME$(2)="2"     : KEYS.WHAT$(2)="Legal" : FILE$(2)="@:COPYING"
+60  KEYS.NAME$(3)="3"     : KEYS.WHAT$(3)="GPLv3" : FILE$(3)="@:GPL3"
+65  KEYS.NAME$(4)="4"     : KEYS.WHAT$(4)="Doc"   : FILE$(4)="@:HELP"
 70  KEYS.NAME$(5)="Q"     : KEYS.WHAT$(5)="Quit"
 75  KEYS.NAME$(6)="S"     : KEYS.WHAT$(6)="Search"
 80  KEYS.NAME$(7)="SPACE" : KEYS.WHAT$(7)="Line"
 85  KEYS.NAME$(8)="ENTER" : KEYS.WHAT$(8)="Page"
-90  KEYS.LEN = 8 : KEYS.NUM = 4
+90  KEYS.LEN = 8 : FILES.NUM = 4 : K = 1
 99  '
 100 REM main loop
-105   NM$="@:ABOUT" : GOSUB 13000
+105   SCREEN 0,0,0,0 : WIDTH 80 : KEY OFF
 110   WHILE -1
-115     SCREEN 0,0,0 : CLS : KEY OFF : COUNT = 0
-120     GOSUB 10000
-125     GOSUB 1000
-130     GOSUB 1200
-135     IF K$ = "S" THEN GOSUB 15000 : GOTO 120
-140     IF K$ = "Q" THEN GOSUB 1400
-145     IF K$ = CHR$(13) THEN GOTO 170
-150     IF K$ = " " THEN GOSUB 14000 : GOTO 120
-155     K=0 : IF K$>"0" AND K$<="9" THEN IF VAL(K$) <= KEYS.NUM THEN K=VAL(K$)
-160     IF K = 0 THEN GOTO 120 ELSE NM$ = N$(K) : GOSUB 13000
+115     IF K > 0 AND K <= FILES.NUM THEN NM$ = FILE$(K) : GOSUB 13000 ' swap file
+120     GOSUB 10000 ' display text file
+125     GOSUB 1000  ' display bottom line
+130     GOSUB 1200  ' wait for key, fill K$ and K
+135     IF K$ = "S" THEN GOSUB 15000     ' search
+140     IF K$ = "Q" THEN GOSUB 1400      ' quit
+150     IF K$ = " " THEN GOSUB 14000     ' scroll line
+160     IF K$ = CHR$(13) THEN CLS : COUNT = 0 ' force loading next page
 170   WEND 
 990 END 
 999 '
@@ -42,11 +40,12 @@
 1099 '
 1200 REM Press a key
 1220   K$ = "" : WHILE K$ = "" : K$ = INKEY$ : WEND 
-1230   IF K$>="a" AND K$<="z" THEN K$=CHR$(ASC(K$)-32)
-1240 RETURN 
+1230   IF K$ >= "a" AND K$ <= "z" THEN K$ = CHR$(ASC(K$)-32)
+1240   K = VAL(K$)
+1250 RETURN 
 1299 '
 1400 REM exit
-1405   SCREEN 0,0,0 : CLS : KEY ON 
+1405   CLS : KEY ON 
 1410   END 
 9999 '
 10000 REM display text file
@@ -60,7 +59,9 @@
 13000 REM swap files
 13010   CLOSE #1
 13020   OPEN NM$ FOR INPUT AS 1
-13030 RETURN 
+13030   CLS
+13040   COUNT = 0
+13050 RETURN 
 13999 '
 14000 REM display one line from text file
 14010   COUNT = COUNT+1
