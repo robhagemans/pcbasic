@@ -19,8 +19,8 @@ except Exception:
 import console
 import error
     
-shell = '/bin/sh'
-shell_cmd = shell + ' -c'
+shell_interactive = '/bin/sh'
+shell_cmd = '/bin/sh -c'
 
 drives = { 'C': '/', '@': os.path.join(os.path.dirname(os.path.realpath(__file__)), 'info') }
 current_drive = 'C'

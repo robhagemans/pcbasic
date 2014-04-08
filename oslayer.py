@@ -176,7 +176,7 @@ def handle_oserror(e):
 # shell
 
 def shell(cmd):
-    cmd = shell if not cmd else shell_cmd + cmd
+    cmd = shell_interactive if not cmd else shell_cmd + cmd
     spawn_interactive_shell(cmd)    
         
 #########################################
