@@ -140,7 +140,7 @@ class RunError(Error):
     
     
 def resume(jumpnum):  
-    global error_handle_mode, error_resume  
+    global error_handle_mode, error_resume, errn
     start_statement, runmode = error_resume 
     errn = 0
     error_handle_mode = False
