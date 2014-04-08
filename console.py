@@ -18,7 +18,6 @@
 # - terminal (textmode only, using escape sequences)
 
 import util
-import error
 import graphics
 import nosound
 import nopenstick
@@ -29,6 +28,8 @@ import deviceio
 import program
 # for exit
 import run
+# for Break
+import error
 
 # back end implementations
 backend = None
@@ -156,10 +157,10 @@ def idle():
 def init():
     if not backend.init():
         return False
-    set_mode(0, 1, 0, 0)
+    screen(0, 1, 0, 0)
     return True
 
-def set_mode(mode, new_colorswitch, new_apagenum, new_vpagenum):
+def screen(mode, new_colorswitch, new_apagenum, new_vpagenum):
     global screen_mode, num_pages, colorswitch, apagenum, vpagenum, apage, vpage, attr, num_colours, num_palette
     new_colorswitch = colorswitch if new_colorswitch == None else (new_colorswitch != 0)
     new_vpagenum = vpagenum if new_vpagenum == None else new_vpagenum
@@ -171,12 +172,12 @@ def set_mode(mode, new_colorswitch, new_apagenum, new_vpagenum):
         # palette is reset if this happens
         set_palette()
         # backend does not support mode
-        raise error.RunError(5)
+        return False
     # vpage and apage nums are persistent on mode switch
     # if the new mode has fewer pages than current vpage/apage, illegal fn call before anything happens.
     if new_apagenum >= info[4] or new_vpagenum >= info[4]:
         set_palette()
-        raise error.RunError(5)    
+        return False
     # reset palette     
     set_palette()
     # switch modes if needed
@@ -200,6 +201,7 @@ def set_mode(mode, new_colorswitch, new_apagenum, new_vpagenum):
         if keys_visible:  
             show_keys()    
     backend.screen_changed = True
+    return True
 
 def resize(to_height, to_width):
     global height, width
@@ -635,23 +637,25 @@ def write_line(s='', scroll_ok=True):
 def set_width(to_width):
     # raise an error if the width value doesn't make sense
     if to_width not in (40, 80):
-        raise error.RunError(5)
+        return False
     if to_width == width:
-        return    
+        return True
+    success = True    
     if screen_mode == 0:
         resize(height, to_width)    
     elif screen_mode == 1 and to_width == 80:
-        set_mode(2, None, None, None)
+        success = screen(2, None, None, None)
     elif screen_mode == 2 and to_width == 40:
-        set_mode(1, None, None, None)
+        success = screen(1, None, None, None)
     elif screen_mode == 7 and to_width == 80:
-        set_mode(8, None, None, None)
+        success = screen(8, None, None, None)
     elif screen_mode == 8 and to_width == 40:
-        set_mode(7, None, None, None)
+        success = screen(7, None, None, None)
     elif screen_mode == 9 and to_width == 40:
-        set_mode(7, None, None, None)
+        success = screen(7, None, None, None)
     if keys_visible:
         show_keys()
+    return success
 
 def close():
     pass
