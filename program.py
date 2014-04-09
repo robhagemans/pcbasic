@@ -549,16 +549,18 @@ def number_inc_gt(typechar, loopvar, stop, step, sgn):
         loopvar[:] = vartypes.value_to_sint(int_left)
         return int_left > stop if sgn > 0 else stop > int_left
         
-def loop_iterate(ins):            
+def loop_iterate(ins):   
+    global for_next_stack         
     # we MUST be at nextpos to run this
     # find the matching NEXT record
     pos = ins.tell()
     num = len(for_next_stack)
-    for _ in range(num):
-        forpos, nextpos, typechar, loopvar, stop, step, sgn = for_next_stack[-1]
+    for depth in range(num):
+        forpos, nextpos, typechar, loopvar, stop, step, sgn = for_next_stack[-depth-1]
         if pos == nextpos:
+            # only drop NEXT record if we've found a matching one
+            for_next_stack = for_next_stack[:len(for_next_stack)-depth]            
             break
-        for_next_stack.pop()
     else:
         # next without for
         raise error.RunError(1) 
