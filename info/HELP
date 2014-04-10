@@ -1296,6 +1296,7 @@ ERRORS:
     is raised at the FOR statement.
 -   If 'loop_var' is a string name or 'start','stop','end' are string-valued,
     TYPE MISMATCH is raised.
+-   If 'loop_var' is an array element, SYNTAX ERROR is raised.
         
 
 FRE function
