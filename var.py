@@ -347,24 +347,6 @@ def assign_field_var(varname, value, justify_right=False):
 
 # memory model
 
-# for reporting by FRE()        
-def variables_memory_size():
-#   TODO: memory model, does this work: ?
-#    return var_current + array_current + (var_current + total_mem - string_current)
-    mem_used = 0
-    for name in variables:
-        mem_used += 1 + max(3, len(name))
-        # string length incorporated through use of string_current
-        mem_used += var_size_bytes(name)
-    for name in arrays:
-        mem_used += 4 + array_size_bytes(name) + max(3, len(name))
-        dimensions, lst, _ = arrays[name]
-        mem_used += 2*len(dimensions)    
-        if name[-1] == '$':
-            for mem in lst:
-                mem_used += len(mem)
-    return mem_used
-
 def get_var_ptr(name, indices):
     name = vartypes.complete_name(name)
     if indices == []:
@@ -479,10 +461,27 @@ def get_memory(address):
         # unallocated var space
         return 0 
         
-        
+# for reporting by FRE()        
 def mem_free():
     return string_current - var_mem_start - program.memory_size() - variables_memory_size()
     
+def variables_memory_size():
+#   TODO: memory model, does this work: ?
+#    return var_current + array_current + (var_current + total_mem - string_current)
+    mem_used = 0
+    for name in variables:
+        mem_used += 1 + max(3, len(name))
+        # string length incorporated through use of string_current
+        mem_used += var_size_bytes(name)
+    for name in arrays:
+        mem_used += 4 + array_size_bytes(name) + max(3, len(name))
+        dimensions, lst, _ = arrays[name]
+        mem_used += 2*len(dimensions)    
+        if name[-1] == '$':
+            for mem in lst:
+                mem_used += len(mem)
+    return mem_used
+
 def collect_garbage():
     global string_current
     string_list = []
