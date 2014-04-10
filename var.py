@@ -32,6 +32,7 @@ peek_values = {}
 def clear_variables():
     global variables, arrays, array_base, functions, common_names, common_array_names, memory
     global var_current, string_current, var_memory, array_current, array_memory
+    # this is a re-assignment which is not FOR-safe; but clear_variables is only called in CLEAR which also clears the FOR stack
     variables = {}
     arrays = {}
     array_base = None
