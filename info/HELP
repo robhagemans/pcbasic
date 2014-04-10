@@ -610,7 +610,9 @@ CLEAR [expr] [, [mem_limit] [, stack_size] ]
 Sets all variables to null. Closes all files. Clears all DEF FN functions. 
 Clears all COMMON declarations. Turns off all sound. Resets music foreground.
 Turns PEN and STRIG off. Clears all ON ERROR traps. Resets ERR and ERL to zero.
-Disables all events. Resets the random number generator.
+Disables all events. Resets the random number generator. Clears the loop stack;
+if called inside a FOR--NEXT or WHILE--WEND loop, an error will be raised at 
+the iteration keyword.
 NOTES:
 -  In GW-BASIC, 'mem_limit' specifies the upper limit of usable memory, and 
    'stack_size' specifies the amount of memory available to the stack and to
