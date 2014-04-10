@@ -349,13 +349,11 @@ def assign_field_var(varname, value, justify_right=False):
 
 # for reporting by FRE()        
 def variables_memory_size():
+#   TODO: memory model, does this work: ?
 #    return var_current + array_current + (var_current + total_mem - string_current)
     mem_used = 0
     for name in variables:
         mem_used += 1 + max(3, len(name))
-        #if name[-1] == '$':
-        #    mem_used += 3+len(variables[name])
-        #else:
         # string length incorporated through use of string_current
         mem_used += var_size_bytes(name)
     for name in arrays:
