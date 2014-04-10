@@ -565,7 +565,8 @@ def value_fn(ins):
     varsave = {}
     for name in varnames:
         if name in var.variables:
-            varsave[name] = var.get_var(name)[1]
+            # copy the reference so it's safe for FOR loops
+            varsave[name] = var.variables[name]
     # read variables
     if util.skip_white_read_if(ins, ('(',)):
         exprs = parse_expr_list(ins, len(varnames), err=2)
@@ -582,6 +583,7 @@ def value_fn(ins):
     for name in varnames:
         del var.variables[name]
     for name in varsave:    
+        # re-assign the reference
         var.variables[name] = varsave[name]
     return value    
 
