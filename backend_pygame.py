@@ -15,7 +15,7 @@
 # prevent some pygame modules from loading
 import sys
 import warnings
-for module in ('cursors', 'draw', 'image', 'sprite', 'mask', 'overlay', 'mixer_music', 'movie', 'movieext', 'scrap'):
+for module in ('cursors', 'draw', 'image', 'sprite', 'mask', 'overlay', 'mixer_music', 'movie', 'movieext'):
     sys.modules['pygame.'+module] = None
 warnings.simplefilter("ignore", RuntimeWarning) 
 
@@ -328,6 +328,8 @@ def init():
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
     for j in joysticks:
         j.init()
+    pygame.scrap.init() 
+    pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD) #_SELECTION) # _CLIPBOARD)# 
     return True
 
 def resize_display(width, height, initial=False): 
@@ -627,6 +629,8 @@ def check_events(pause=False):
                 handle_key_up(event)
         elif event.type == pygame.MOUSEBUTTONDOWN:
             handle_mouse(event)
+        elif event.type == pygame.MOUSEBUTTONUP:
+            handle_mouse_up(event)
         elif event.type == pygame.JOYBUTTONDOWN:
             handle_stick(event)    
         elif event.type == pygame.VIDEORESIZE:
@@ -722,11 +726,39 @@ def handle_key_up(e):
         console.inp_key = 0x80 + ord(keycode_to_inpcode[e.key])
     except KeyError:
         pass    
+         
+select_start = None
            
 def handle_mouse(e):
-    if e.button == 1: # LEFT BUTTON
+    global select_start
+    if e.button == 1: # LEFT BUTTON: pen
         console.penstick.trigger_pen(e.pos)
-                
+    elif e.button == 2: # MIDDLE BUTTON: paste
+        text = pygame.scrap.get("TEXT") #TEXT
+        if text:
+            for c in text:
+                # convert LF to CR on paste
+                if c == '\n':
+                    console.insert_key('\r')
+                else:    
+                    console.insert_key(c)  
+    elif e.button == 3: # RIGHT BUTTON: select for copy 
+        display_info = pygame.display.Info()
+        xscale, yscale = display_info.current_w / (1.*size[0]), display_info.current_h / (1.*size[1])
+        select_start = int(e.pos[0]//xscale)//8, int(e.pos[1]//yscale)//font_height                  
+        
+def handle_mouse_up(e):
+    if e.button == 3: # RIGHT BUTTON: copy selection 
+        display_info = pygame.display.Info()
+        xscale, yscale = display_info.current_w / (1.*size[0]), display_info.current_h / (1.*size[1])
+        select_stop = int(e.pos[0]//xscale)//8, int(e.pos[1]//yscale)//font_height
+        text = ''
+        for y in range(select_start[1], select_stop[1]+1):     
+            for x in range(select_start[0], select_stop[0]+1):
+                text += chr(console.get_screen_char_attr(y+1, x+1, 0))
+            text += '\r'   
+        pygame.scrap.put("text/plain", text)   
+
 def handle_stick(e):
     if e.joy < 2 and e.button < 2:
         console.penstick.trigger_stick(e.joy, e.button)
