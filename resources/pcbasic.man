@@ -1,0 +1,70 @@
+.\" Manpage for pcbasic
+.TH man 1 "10 April 2014" "1.0" "pcbasic man page"
+.SH NAME
+PC-BASIC 3.23: a BASIC intepreter compatible with GW-BASIC 3.23
+.SH SYNOPSIS
+pcbasic [-h] [-b] [-t] [-g] [-l] [-r] [-e CMD] [-q] [-d]
+                  [--peek [SEG:ADDR:VAL [SEG:ADDR:VAL ...]]] [--lpt1 TYPE:VAL]
+                  [--lpt2 TYPE:VAL] [--lpt3 TYPE:VAL] [--com1 TYPE:VAL]
+                  [--com2 TYPE:VAL] [--conv MODE] [--codepage NUMBER]
+                  [--nosound] [--dimensions X, Y] [--dimensions-text X, Y]
+                  [--fullscreen] [--smooth] [--noquit] [--debug] [--list-all]
+                  [--unprotect] [--caps] [--mount [D:PATH [D:PATH ...]]]
+                  [in_file] [out_file]
+.SH DESCRIPTION
+PC-BASIC 3.23 interpreter. 
+
+.SH EXAMPLES
+                        
+
+.SH OPTIONS
+  -h, --help            show this help message and exit
+  -b, --dumb            Use dumb text terminal. This is the default if
+                        redirecting input.
+  -t, --ansi            Use ANSI textmode terminal
+  -g, --graphical       Use graphical terminal. This is the normal default;
+                        use to override when redirecting i/o.
+  -l, --load            Load in_file only, do not execute
+  -r, --run             Execute input file (default if in_file given)
+  -e CMD, --cmd CMD     Execute BASIC command line
+  -q, --quit            Quit interpreter when execution stops
+  -d, --double          Allow double-precision math functions
+  --peek [SEG:ADDR:VAL [SEG:ADDR:VAL ...]]
+                        Define PEEK preset values
+  --lpt1 TYPE:VAL       Set LPT1: to FILE:file_name or PRINTER:printer_name.
+  --lpt2 TYPE:VAL       Set LPT2: to FILE:file_name or PRINTER:printer_name.
+  --lpt3 TYPE:VAL       Set LPT3: to FILE:file_name or PRINTER:printer_name.
+  --com1 TYPE:VAL       Set COM1: to PORT:device_name or SOCK:host:socket.
+  --com2 TYPE:VAL       Set COM2: to PORT:device_name or SOCK:host:socket.
+  --conv MODE           Convert file to (A)SCII, (B)ytecode or (P)rotected
+                        mode. Implies --unprotect and --list-all.
+  --codepage NUMBER     Load specified font codepage. Default is 437 (US).
+  --nosound             Disable sound output
+  --dimensions X, Y     Set pixel dimensions for graphics mode. Default is
+                        640,480. Use 640,400 or multiples for cleaner pixels -
+                        but incorrect aspect ratio - on square-pixel LCDs.
+                        Graphical terminal only.
+  --dimensions-text X, Y
+                        Set pixel dimensions for text mode. Default is
+                        640,400. Graphical terminal only.
+  --fullscreen          Fullscreen mode. This is unlikely to have either the
+                        correct aspect ratio or clean square pixels, but it
+                        does take up the whole screen. Graphical terminal
+                        only.
+  --smooth              Use smooth display scaling. Graphical terminal only.
+  --noquit              Allow BASIC to capture <ALT+F4>. Graphical terminal
+                        only.
+  --debug               Enable DEBUG keyword
+  --list-all            Allow listing and ASCII saving of lines beyond 65530
+  --unprotect           Allow listing and ASCII saving of protected files
+  --caps                Start in CAPS LOCK mode.
+  --mount [D:PATH [D:PATH ...]]
+                        Set a drive letter to PATH.
+.SH FILES
+.I ./info/PCBASIC.INI
+Configuration file. The configuration options correspond to the command-line option: In a command-line option is given as --option VALUE,
+the corresponding entry in PCBASIC.INI is option=VALUE
+.SH BUGS
+This is beta software; many bugs are still expected to pop up. Please inform the author through the sourceforge project page at http://sourceforge.net/projects/pcbasic/
+.SH AUTHOR
+Rob Hagemans
