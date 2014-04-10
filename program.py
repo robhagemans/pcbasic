@@ -91,6 +91,7 @@ erase_program()
 
 # CLEAR
 def clear_all(close_files=False):
+    global for_next_stack, while_wend_stack
     #   Resets the stack and string space
     #   Clears all COMMON and user variables
     var.clear_variables()
@@ -114,6 +115,9 @@ def clear_all(close_files=False):
     console.stick_is_on = False
     # disable all event trapping (resets PEN to OFF too)
     events.reset_events()
+    # CLEAR also dumps for_next and while_wend stacks
+    for_next_stack = []
+    while_wend_stack = []
 
 # NEW    
 def new():
