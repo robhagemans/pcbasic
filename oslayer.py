@@ -335,13 +335,14 @@ def chdir(name):
     # substitute drives and cwds
     letter, path, name = get_drive_path(str(name), 76)
     if name:
-        newdir = os.path.join(path, find_name_read(name, '', path, 76, True))
+        newdir = os.path.abspath(os.path.join(path, find_name_read(name, '', path, 76, True)))
     else:
         newdir = path    
     base = len(drives[letter])
     if drives[letter][base-1] == os.sep:
         # root /
         base -= 1
+    # if cwd is shorter than drive prefix (like when we go .. on a drive letter root), this is just an empty path, ie the root.    
     drive_cwd[letter] = newdir[base+1:]
     if letter == current_drive:
         safe(os.chdir, newdir)
