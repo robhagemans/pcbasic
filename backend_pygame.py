@@ -9,12 +9,6 @@
 # please see text file COPYING for licence terms.
 #
 
-# prevent some pygame modules from loading
-import sys
-import warnings
-for module in ('cursors', 'draw', 'image', 'sprite', 'mask', 'overlay', 'mixer_music', 'movie', 'movieext', 'scrap'):
-    sys.modules['pygame.'+module] = None
-warnings.simplefilter("ignore", RuntimeWarning) 
 
 try:
     import pygame
