@@ -22,6 +22,7 @@ import rnd
 import fileio
 # for prompt
 import run
+import fp 
 
 from cStringIO import StringIO 
 from copy import copy 
@@ -527,50 +528,54 @@ def jump_return(jumpnum):
         jump(jumpnum)
 
 def loop_init(ins, forpos, nextpos, varname, start, stop, step):
-    loopvar = vartypes.pass_type_keep(varname[-1], start)
-    var.set_var(varname, start)
+    # set start to start-step, then iterate - slower on init but allows for faster iterate
+    var.set_var(varname, vartypes.number_add(start, vartypes.number_neg(step)))
+    # NOTE: all access to varname must be in-place into the bytearray - no assignments!
     sgn = vartypes.unpack_int(vartypes.number_sgn(step))
-    for_next_stack.append((forpos, nextpos, varname, start, stop, step, sgn)) 
-    return loop_jump_if_ends(ins, loopvar, stop, step, sgn)
-    
-def loop_iterate(ins):            
-    # JUMP to FOR statement
-    forpos, _, varname, start, stop, step, sgn = for_next_stack[-1]
-    ins.seek(forpos)
-    # skip to end of FOR statement
-    # increment counter
-    loopvar = var.get_var(varname)
-    loopvar = vartypes.number_add(loopvar, step)
-    var.set_var(varname, loopvar)
-    return loop_jump_if_ends(ins, loopvar, stop, step, sgn)
-        
-def loop_jump_if_ends(ins, loopvar, stop, step, sgn):
-    if sgn < 0:
-        loop_ends = vartypes.int_to_bool(vartypes.number_gt(stop, loopvar)) 
-    elif sgn > 0:
-        loop_ends = vartypes.int_to_bool(vartypes.number_gt(loopvar, stop)) 
+    for_next_stack.append((forpos, nextpos, varname[-1], var.variables[varname], number_unpack(stop), number_unpack(step), sgn)) 
+    ins.seek(nextpos)
+
+def number_unpack(value):
+    if value[0] in ('#', '!'):
+        return fp.unpack(value)
     else:
-        # step 0 is infinite loop
-        loop_ends = False
+        return vartypes.unpack_int(value)
+
+def number_inc_gt(typechar, loopvar, stop, step, sgn):
+    if sgn == 0:
+        return False
+    if typechar in ('#', '!'):
+        fp_left = fp.from_bytes(loopvar).iadd(step)
+        loopvar[:] = fp_left.to_bytes()
+        return fp_left.gt(stop) if sgn > 0 else stop.gt(fp_left)   
+    else:
+        int_left = vartypes.sint_to_value(loopvar) + step
+        loopvar[:] = vartypes.value_to_sint(int_left)
+        return int_left > stop if sgn > 0 else stop > int_left
+        
+def loop_iterate(ins):   
+    global for_next_stack         
+    # we MUST be at nextpos to run this
+    # find the matching NEXT record
+    pos = ins.tell()
+    num = len(for_next_stack)
+    for depth in range(num):
+        forpos, nextpos, typechar, loopvar, stop, step, sgn = for_next_stack[-depth-1]
+        if pos == nextpos:
+            # only drop NEXT record if we've found a matching one
+            for_next_stack = for_next_stack[:len(for_next_stack)-depth]            
+            break
+    else:
+        # next without for
+        raise error.RunError(1) 
+    # increment counter
+    loop_ends = number_inc_gt(typechar, loopvar, stop, step, sgn)
     if loop_ends:
-        # jump to just after NEXT
-        _, nextpos, _, _, _, _, _ = for_next_stack.pop()
-        ins.seek(nextpos)
+        for_next_stack.pop()
+    else: 
+        ins.seek(forpos)    
     return loop_ends
     
-def loop_find_next(ins, pos):
-    while True:
-        if len(for_next_stack) == 0:
-            # next without for
-            raise error.RunError(1) #1  
-        forpos, nextpos, varname, _, _, _, _ = for_next_stack[-1]
-        if pos != nextpos:
-            # not the expected next, we must have jumped out
-            for_next_stack.pop()
-        else:
-            break
-    return forpos, nextpos, varname
-                
 # READ a unit of DATA
 def read_entry():
     global data_pos
