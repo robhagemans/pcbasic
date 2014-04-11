@@ -224,15 +224,6 @@ def str_instr(big, small, n):
         return null['%']
     return pack_int(n + find)  
     
-def number_gt(left, right):
-    left, right = pass_most_precise_keep(left, right)
-    if left[0] in ('#', '!'):
-        gt = fp.unpack(left).gt(fp.unpack(right)) 
-    else:
-        gt = unpack_int(left) > unpack_int(right)           
-    return bool_to_int_keep(gt) 
-    
-    
 def number_add(left, right):
     left, right = pass_most_precise_keep(left, right)
     if left[0] in ('#', '!'):
