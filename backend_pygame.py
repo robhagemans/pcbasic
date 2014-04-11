@@ -8,16 +8,7 @@
 # This file is released under the GNU GPL version 3. 
 # please see text file COPYING for licence terms.
 #
-# Acknowledgements:
-# Kosta Kostis/FreeDOS project for .CPI font files
 
-
-# prevent some pygame modules from loading
-import sys
-import warnings
-for module in ('cursors', 'draw', 'image', 'sprite', 'mask', 'overlay', 'mixer_music', 'movie', 'movieext', 'scrap'):
-    sys.modules['pygame.'+module] = None
-warnings.simplefilter("ignore", RuntimeWarning) 
 
 try:
     import pygame
