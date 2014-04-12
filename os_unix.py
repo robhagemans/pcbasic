@@ -20,19 +20,21 @@ import console
 import error
     
 shell_interactive = '/bin/sh'
-shell_cmd = '/bin/sh -c'
 
 drives = { 'C': '/', '@': os.path.join(os.path.dirname(os.path.realpath(__file__)), 'info') }
 current_drive = 'C'
 # must not start with a /
 drive_cwd = { 'C': os.getcwd()[1:], '@': '' }
-            
+       
             
 def disk_free(path):
     st = os.statvfs(path)
     return st.f_bavail * st.f_frsize
     
-def spawn_interactive_shell(cmd):
+def shell(command):
+    cmd = shell_interactive
+    if command:
+        cmd += ' -c "' + command + '"'            
     try:
         p = pexpect.spawn(str(cmd))
     except Exception:
