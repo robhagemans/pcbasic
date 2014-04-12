@@ -26,7 +26,6 @@ import error
 import console
  
 shell_interactive = 'CMD'    
-shell_cmd = 'CMD /c'
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -69,7 +68,10 @@ def process_stdout(p, stream):
         elif p.poll() != None:
             break        
 
-def spawn_interactive_shell(cmd):
+def shell(command):
+    cmd = shell_interactive
+    if command:
+        cmd += ' /c ' + command  
     p = subprocess.Popen( str(cmd).split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
     outp = threading.Thread(target=process_stdout, args=(p, p.stdout))
     outp.daemon = True
@@ -84,20 +86,23 @@ def spawn_interactive_shell(cmd):
         c = console.get_char()
         if p.poll () != None:
             break
-        else:    
-            if c in ('\r', '\n'): 
-                # fix double echo after enter press
-                console.write('\x1D'*chars)
-                chars = 0
-                p.stdin.write(word + '\r\n')
-                word = ''
-            elif c != '':
-                # workaround for WINE that seems to attach a CR to each letter: only send to pipe when enter pressed
-                # rather than p.stdin.write(c)
-                word += c
-                # windows only seems to echo this to the pipe after enter pressed (even if directly written to pipe)
-                console.write(c)
-                chars += 1
+        if c in ('\r', '\n'): 
+            # fix double echo after enter press by backspacing over our own echo
+            console.write('\x1D'*chars)
+            chars = 0
+            p.stdin.write(word + '\r\n')
+            word = ''
+        elif c == '\b':
+            if word:
+                word = word[:-1]
+                console.write('\x1D \x1D')
+        elif c != '':    
+            # only send to pipe when enter pressed rather than p.stdin.write(c)
+            # workaround for WINE - it seems to attach a CR to each letter sent to the pipe. not needed in proper Windows.
+            word += c
+            # we need to echo even if directly written to pipe as CMD.EXE only echoes once enter is pressed
+            console.write(c)
+            chars += 1
     outp.join()
     errp.join()
 

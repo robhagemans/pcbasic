@@ -172,12 +172,6 @@ def handle_oserror(e):
         basic_err = 51
     raise error.RunError(basic_err) 
 
-#########################################
-# shell
-
-def shell(cmd):
-    cmd = shell_interactive if not cmd else shell_cmd + cmd
-    spawn_interactive_shell(cmd)    
         
 #########################################
 # drives & paths
