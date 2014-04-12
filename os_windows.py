@@ -57,18 +57,23 @@ def disk_free(path):
     ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(path), None, None, ctypes.pointer(free_bytes))
     return free_bytes.value
    
+   
+shell_output = ''   
 def process_stdout(p, stream):
+    global shell_output
     while True:
         c = stream.read(1)
         if c != '': 
-            if c!= '\r':
-                console.write(c)
-            else:
-                console.check_events()
+            # don't access screen in this thread, the other thread already does
+            shell_output += c
         elif p.poll() != None:
             break        
+        else:
+            # don't hog cpu
+            console.idle()
 
 def shell(command):
+    global shell_output
     cmd = shell_interactive
     if command:
         cmd += ' /c ' + command  
@@ -81,26 +86,33 @@ def shell(command):
     errp.start()
     chars = 0
     word = ''
-    while p.poll() == None:
-        console.idle()
+    while p.poll() == None or shell_output:
+        if shell_output:
+            lines = shell_output.split('\r\n')
+            shell_output = '' 
+            last = lines.pop()
+            for line in lines:
+                console.check_events()
+                console.write_line(line)
+            console.write(last)    
+        if p.poll() != None:
+            # drain output then break
+            continue    
         c = console.get_char()
-        if p.poll () != None:
-            break
         if c in ('\r', '\n'): 
-            # fix double echo after enter press by backspacing over our own echo
-            console.write('\x1D'*chars)
-            chars = 0
+            console.write_line()
             p.stdin.write(word + '\r\n')
             word = ''
         elif c == '\b':
+            # handle backspace
             if word:
                 word = word[:-1]
                 console.write('\x1D \x1D')
         elif c != '':    
             # only send to pipe when enter pressed rather than p.stdin.write(c)
             # workaround for WINE - it seems to attach a CR to each letter sent to the pipe. not needed in proper Windows.
+            # also needed to handle backsapce properly
             word += c
-            # we need to echo even if directly written to pipe as CMD.EXE only echoes once enter is pressed
             console.write(c)
             chars += 1
     outp.join()
