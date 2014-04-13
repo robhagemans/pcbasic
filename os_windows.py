@@ -74,17 +74,15 @@ def process_stdout(p, stream):
 
 def shell(command):
     global shell_output
-    cmd = shell_interactive
-    if command:
-        cmd += ' /c ' + command  
-    p = subprocess.Popen( str(cmd).split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
+    if not command:
+        command = shell_interactive
+    p = subprocess.Popen( str(command).split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
     outp = threading.Thread(target=process_stdout, args=(p, p.stdout))
     outp.daemon = True
     outp.start()
     errp = threading.Thread(target=process_stdout, args=(p, p.stderr))
     errp.daemon = True
     errp.start()
-    chars = 0
     word = ''
     while p.poll() == None or shell_output:
         if shell_output:
@@ -100,7 +98,9 @@ def shell(command):
             continue    
         c = console.get_char()
         if c in ('\r', '\n'): 
-            console.write_line()
+            # Windows CMD.EXE echo to overwrite the command that's already there
+            # NOTE: WINE cmd.exe doesn't echo the command, so it's overwritten by the output...
+            console.write('\x1D' * len(word))
             p.stdin.write(word + '\r\n')
             word = ''
         elif c == '\b':
@@ -114,7 +114,6 @@ def shell(command):
             # also needed to handle backsapce properly
             word += c
             console.write(c)
-            chars += 1
     outp.join()
     errp.join()
 
