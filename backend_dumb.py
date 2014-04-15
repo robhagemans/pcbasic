@@ -48,38 +48,17 @@ def init():
     if platform.system() == 'Windows':
         logging.warning('Text terminal not supported on Windows.\n')
         return False
-    # use non-blocking and UTF8 when reading from ttys
+    # close input after redirected input ends
     if sys.stdin.isatty():
         check_keys = check_keys_interactive
     else:
         check_keys = check_keys_dumb
-    # use UTF8 when writing to ttys
-    if sys.stdout.isatty():
-        console.output_echos.append(echo_stdout_utf8)
-    else:
-        console.output_echos.append(echo_stdout)
+    console.output_echos.append(echo_stdout_utf8)
     # if both stdin and stdout are ttys, avoid doubling the input echo
     if not(sys.stdin.isatty() and sys.stdout.isatty()):
-        console.input_echos.append(echo_stdout)
+        console.input_echos.append(echo_stdout_utf8)
     return True    
 
-def check_keys_dumb():
-    # read everything up to \n
-    try:
-        all_input = sys.stdin.readline()
-    except ValueError:
-        # stdin closed    
-        all_input = ''
-    if not all_input:
-        # signal to quit when done
-        console.input_closed = True
-    # ends in \r\n? strip off newline
-    if len(all_input) > 1 and all_input[-2] == '\r':
-        all_input = all_input[:-1]
-    for c in all_input:
-        console.insert_key(c)
-
-# interactive input    
 def check_keys_interactive():
     c = getc_utf8() 
     # terminals send \n instead of \r on enter press
@@ -87,29 +66,12 @@ def check_keys_interactive():
         console.insert_key('\r') 
     else:
         console.insert_key(c)
-        
-##############################################        
+    return c    
 
-def echo_stdout(s):
-    for c in s:
-        sys.stdout.write(c)
-    sys.stdout.flush()  
-
-def echo_stdout_utf8(s):
-    for c in s:
-        if c in control:    
-            sys.stdout.write(c)    
-        else:
-            sys.stdout.write(unicodepage.cp_to_utf8[c]) 
-    sys.stdout.flush()        
-        
-# non-blocking read of one char        
-def getc():
-    fd = sys.stdin.fileno()
-    # check if stdin has characters to read
-    sel = select.select([sys.stdin], [], [], 0) 
-    c = os.read(fd,1) if sel[0] != [] else ''
-    return c
+def check_keys_dumb():
+    if check_keys_interactive() == '':
+        console.input_closed = True
+    
 
 def getc_utf8():
     c = getc()
@@ -127,6 +89,26 @@ def getc_utf8():
     except KeyError:        
         return utf8
 
+# non-blocking read of one char        
+def getc():
+    fd = sys.stdin.fileno()
+    # check if stdin has characters to read
+    sel = select.select([sys.stdin], [], [], 0) 
+    c = os.read(fd,1) if sel[0] != [] else ''
+    return c
+    
+##############################################        
+
+
+def echo_stdout_utf8(s):
+    for c in s:
+        if c in control:    
+            sys.stdout.write(c)    
+        else:
+            sys.stdout.write(unicodepage.cp_to_utf8[c]) 
+    sys.stdout.flush()        
+
+        
 ##############################################
         
 def close():
