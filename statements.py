@@ -183,6 +183,7 @@ def parse_statement():
             elif c == '\x9D':    exec_window(ins)
             elif c == '\x9F':    exec_palette(ins)
             elif c == '\xA0':    exec_lcopy(ins)
+            elif c == '\xA1':    exec_calls(ins)
             elif c == '\xA4':    exec_debug(ins)
             elif c == '\xA5':    exec_pcopy(ins)
             elif c == '\xA7':    exec_lock(ins)
@@ -557,9 +558,23 @@ def exec_bsave(ins):
     g.write('\x1a')
     g.close()
         
-# call: not implemented        
+# call, calls: not implemented        
 def exec_call(ins):
+    addr_var = util.get_var_name(ins)
+    if addr_var[-1] == '$':
+        # type mismatch
+        raise error.RunError(13)
+    if util.skip_white_read_if(ins, ('(',)):
+        while True:
+            util.get_var_name(ins)
+            if not util.skip_white_read_if(ins, (',',)):
+                break
+        util.require_read(ins, (')',))        
+    util.require(ins, util.end_statement)
+    # advanced feature
     raise error.RunError(73)    
+
+exec_calls = exec_call
 
 # OUT, implemented only the ports for colour plane selection
 def exec_out(ins):
