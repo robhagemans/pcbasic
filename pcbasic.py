@@ -159,6 +159,7 @@ def prepare_constants(args):
         args.cmd = ''   
     # set conversion output; first arg, if given, is mode; second arg, if given, is outfile
     args.conv_mode = 'A'
+    args.outfile = None
     if args.conv:
         args.conv = args.conv.split(':')
         try:
