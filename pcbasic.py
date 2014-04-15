@@ -20,6 +20,8 @@ import platform
 # for autosave
 import os
 import tempfile
+
+from functools import partial             
              
 import run
 import error
@@ -71,14 +73,13 @@ def main():
             if stdin_is_tty:
                 console.write_line(greeting % (debugstr, var.total_mem))
         # execute arguments
-        if args.run or args.load or args.conv and (args.infile or stdin):
-            program.load(oslayer.safe_open(args.infile, "L", "R") if args.infile else stdin)
+        if args.run or args.load or args.conv and (args.program or stdin):
+            program.load(oslayer.safe_open(args.program, "L", "R") if args.program else stdin)
         if args.conv and (args.outfile or stdout):
-            program.save(oslayer.safe_open(args.outfile, "S", "W") if args.outfile else stdout, args.conv)
+            program.save(oslayer.safe_open(args.outfile, "S", "W") if args.outfile else stdout, args.conv_mode)
             run.exit()
-        if not args.cmd:
-            # if a command is given, the program is only loaded; run.loop() doesn't take None.
-            args.cmd = 'RUN' if args.run else ''
+        if args.run:
+            args.cmd += ':RUN'
         # get out, if we ran with -q
         if args.quit:
             run.prompt = False
@@ -140,8 +141,8 @@ def prepare_constants(args):
         except Exception:
             pass                
     # implied RUN invocations
-    if args.infile and not args.load and not args.conv:
-        args.run = True    
+    if args.program and not args.load and not args.conv:
+        args.run = True   
     if args.double:
         expressions.option_double = True    
     if args.list_all or args.conv:
@@ -152,11 +153,27 @@ def prepare_constants(args):
         console.codepage = int(args.codepage)
     if args.caps:
         console.caps = True    
+    # rename exec argument for convenience
+    args.cmd = getattr(args, 'exec') 
+    if not args.cmd:
+        args.cmd = ''   
+    # set conversion output; first arg, if given, is mode; second arg, if given, is outfile
+    args.conv_mode = 'A'
+    if args.conv:
+        args.conv = args.conv.split(':')
+        try:
+            args.conv_mode = args.conv.pop(0)
+            args.outfile = args.conv.pop(0)
+        except IndexError:
+            pass    
+        args.conv = True    
+    if args.conv_mode:
+        args.conv_mode = args.conv_mode[0].upper()        
 
 def prepare_console(args):
     unicodepage.load_codepage(console.codepage)
-    if args.dumb or args.conv or (not args.graphical and not args.ansi and not stdin_is_tty):
-        # redirected input leads to dumbterm use
+    if args.dumb or args.conv or (not args.graphical and not args.ansi and (not stdin_is_tty or not stdout_is_tty)):
+        # redirected input or output leads to dumbterm use
         console.backend = backend_dumb
         console.sound = sound_beep
     elif args.ansi and stdout_is_tty:
@@ -170,12 +187,8 @@ def prepare_console(args):
         graphics.backend.prepare(args)
         console.penstick = backend_pygame
         console.sound = backend_pygame
-        # redirected output is split between graphical screen and redirected file    
-        if not stdout_is_tty:
-            console.output_echos.append(backend_dumb.echo_stdout) 
-            console.input_echos.append(backend_dumb.echo_stdout)   
     # initialise backends
-    console.keys_visible = (not args.run and args.cmd == None)
+    console.keys_visible = not args.run
     if not console.init() and backend_dumb:
         logging.warning('Falling back to dumb-terminal.')
         console.backend = backend_dumb
@@ -189,6 +202,32 @@ def prepare_console(args):
     if not console.sound.init_sound():
         logging.warning('Failed to initialise sound. Sound will be disabled.')
         console.sound = nosound
+    # gwbasic-style redirected output is split between graphical screen and redirected file    
+    if args.output:
+        echo = partial(echo_ascii, f=oslayer.safe_open(args.output[0], "S", "W"))
+        console.output_echos.append(echo) 
+        console.input_echos.append(echo)
+    if args.input:
+        load_redirected_input(oslayer.safe_open(args.input[0], "L", "R"))       
+
+# basic-style redirected input
+def load_redirected_input(f):
+    # read everything
+    all_input = f.read()
+    last = ''
+    for c in all_input:
+        # replace CRLF with CR
+        if not (c == '\n' and last == '\r'):
+            console.insert_key(c)
+        last = c
+    console.input_closed = True
+   
+# basic_style redirected output   
+def echo_ascii(s, f):
+    for c in s:
+        f.write(c)
+    f.flush()  
+
    
 def get_args():
     # GWBASIC invocation, for reference:
@@ -205,10 +244,14 @@ def get_args():
     # read config file, if any
     parser.set_defaults(**read_config())
     # set arguments    
-    parser.add_argument('infile', metavar='in_file', nargs='?', 
+    parser.add_argument('program', metavar='basic_program', nargs='?', 
         help='Input program file to run (default), load or convert.')
-    parser.add_argument('outfile', metavar='out_file', nargs='?', 
-        help='Output program file. If no --conv option is specified, this is ignored.')
+        
+    parser.add_argument('--input', metavar='input_file', nargs=1, 
+        help='Retrieve keyboard input from input_file, except if KYBD: is read explicitly.')
+    parser.add_argument('--output', metavar='output_file', nargs=1, 
+        help='Send screen output to output_file, except if SCRN: is written to explicitly.')
+        
     parser.add_argument('-b', '--dumb', action='store_true', 
         help='Use dumb text terminal. This is the default if redirecting input.')
     parser.add_argument('-t', '--ansi', action='store_true', 
@@ -217,7 +260,7 @@ def get_args():
         help='Use graphical terminal. This is the normal default; use to override when redirecting i/o.')
     parser.add_argument('-l', '--load', action='store_true', help='Load in_file only, do not execute')
     parser.add_argument('-r', '--run', action='store_true', help='Execute input file (default if in_file given)')
-    parser.add_argument('-e', '--cmd', metavar='CMD', help='Execute BASIC command line')
+    parser.add_argument('-e', '--exec', metavar='command_line', help='Execute BASIC command line')
     parser.add_argument('-q', '--quit', action='store_true', help='Quit interpreter when execution stops')
     parser.add_argument('-d', '--double', action='store_true', help='Allow double-precision math functions')
     parser.add_argument('--peek', nargs='*', metavar=('SEG:ADDR:VAL'), help='Define PEEK preset values')
@@ -226,7 +269,7 @@ def get_args():
     parser.add_argument('--lpt3', action='store', metavar=('TYPE:VAL'), help='Set LPT3: to FILE:file_name or PRINTER:printer_name.')
     parser.add_argument('--com1', action='store', metavar=('TYPE:VAL'), help='Set COM1: to PORT:device_name or SOCK:host:socket.')
     parser.add_argument('--com2', action='store', metavar=('TYPE:VAL'), help='Set COM2: to PORT:device_name or SOCK:host:socket.')
-    parser.add_argument('--conv', metavar='MODE', help='Convert file to (A)SCII, (B)ytecode or (P)rotected mode. Implies --unprotect and --list-all.')
+    parser.add_argument('--conv', action='store', nargs='?', metavar='mode:outfile', help='Convert basic_program to (A)SCII, (B)ytecode or (P)rotected mode. Implies --unprotect and --list-all.')
     parser.add_argument('--codepage', action='store', metavar=('NUMBER'), help='Load specified font codepage. Default is 437 (US).')
     parser.add_argument('--nosound', action='store_true', help='Disable sound output')
     parser.add_argument('--dimensions', nargs=1, metavar=('X, Y'), help='Set pixel dimensions for graphics mode. Default is 640,480. Use 640,400 or multiples for cleaner pixels - but incorrect aspect ratio - on square-pixel LCDs. Graphical terminal only.')
