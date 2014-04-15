@@ -390,10 +390,10 @@ NOTES:
         FEA4 DEBUG
     When the --debug flag is specified, variable names like DEBUG$ are not 
     allowed.
--   On the IBM PCjr's version of GW-BASIC, some additional these keywords were 
+-   On the IBM PCjr's version of GW-BASIC, some additional keywords were 
     present that are not implemented in PC-BASIC 3.23. They are:
         FEA4 NOISE   FEA6 TERM
-
+    The Tandy 1000 also has NOISE, but not TERM.
 
 ABS(x) function
 ---------------
@@ -489,23 +489,31 @@ ERRORS:
 
 
 CALL statement
-CALL address, variables
+CALL address_var [(parm_0 [, parm_1 [, ...] )]
 --------------
 Raises ADVANCED FEATURE.
 NOTES:
--  In GW-BASIC, CALL executes a machine language subroutine.
-   This is not implemented in PC-BASIC 3.23.  
+-   In GW-BASIC, CALL executes a machine language subroutine. 'address_var' is
+    a numeric variable. 'parm_0' etc are variable names; these variables are 
+    passed as parameters to the subroutine.
+-   This is not implemented in PC-BASIC 3.23.  
+ERRORS:
+-   If 'address_var' is a string variable, raises TYPE MISMATCH.
+-   If 'address_var' is a literal, raises SYNTAX ERROR.
 
 
 CALLS statement
-CALLS name
+CALLS address_var [(parm_0 [, parm_1 [, ...] )]
 ------------
-Raises SYNTAX ERROR.
+Raises ADVANCED FEATURE.
 NOTES:
--   This keyword is undocumented in GW-BASIC. When called with a numeric 
-    variable name, it hangs the interpreter. When called with a string
-    variable name, it raises TYPE MISMATCH. When called with a literal, it
-    raises SYNTAX ERROR. This is not implemented in PC-BASIC 3.23.
+-   In GW-BASIC, CALLS executes a MS-FORTRAN subroutine. 'address_var' is
+    a numeric variable. 'parm_0' etc are variable names; these variables are 
+    passed as parameters to the subroutine. 
+-   This is not implemented in PC-BASIC 3.23.  
+ERRORS:
+-   If 'address_var' is a string variable, raises TYPE MISMATCH.
+-   If 'address_var' is a literal, raises SYNTAX ERROR.
 
 
 CDBL(x) function
