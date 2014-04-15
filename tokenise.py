@@ -444,10 +444,18 @@ keyword_to_token = dict((reversed(item) for item in token_to_keyword.items()))
 
 def insert_debug_keyword():
     # Note - I have implemented this as my own debugging command, executes python string.
-    token_to_keyword['\xFE\xA4'] = 'DEBUG'
-    keyword_to_token['DEBUG'] = '\xFE\xA4'
+    token_to_keyword['\xFF\xFF'] = 'DEBUG'
+    keyword_to_token['DEBUG'] = '\xFF\xFF'
         
+def insert_noise_keyword():
+    # pcjr, tandy; incompatible with sperry mode.
+    token_to_keyword['\xFE\xA4'] = 'NOISE'
+    keyword_to_token['NOISE'] = '\xFE\xA4'
 
+def insert_term_keyword():
+    # pcjr
+    token_to_keyword['\xFE\xA6'] = 'TERM'
+    keyword_to_token['TERM'] = '\xFE\xA6'
 
 # other keywords documented on http://www.chebucto.ns.ca/~af380/GW-BASIC-tokens.html :
 
@@ -456,6 +464,7 @@ def insert_debug_keyword():
 #   0xFEA6: 'TERM'
 # The site also remarks - 0xFEA5: PCOPY (PCjr or EGA system only) 
 # Apparently I have an 'EGA system', as this keyword is in the GW-BASIC 3.23 documentation.
+# Tandy 1000 systems had NOISE, but not TERM.
 
 # Sperry PC only:
 #   0xFEA4: 'DEBUG'

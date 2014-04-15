@@ -57,8 +57,8 @@ debugstr = ''
 
 def main():
     args = get_args()
-    # DEBUG mode
-    prepare_debug(args)
+    # DEBUG, PCjr and Tandy modes
+    prepare_keywords(args)
     # other command-line settings
     prepare_constants(args)
     try:
@@ -109,7 +109,7 @@ def main():
             program.save(oslayer.safe_open(autosave, "S", "W"), 'B')
             logging.info('Program autosaved as %s.' % autosave)
 
-def prepare_debug(args):
+def prepare_keywords(args):
     global debugstr
     if args.debug:
         debug.debug_mode = True
@@ -120,6 +120,10 @@ def prepare_debug(args):
     else:
         # set logging format
         logging.basicConfig(format='%(levelname)s: %(message)s')
+    if args.pcjr or args.tandy:
+        tokenise.insert_noise_keyword()
+    if args.pcjr:
+        tokenise.insert_term_keyword()        
 
 def prepare_constants(args):
     # PEEK presets
@@ -246,12 +250,10 @@ def get_args():
     # set arguments    
     parser.add_argument('program', metavar='basic_program', nargs='?', 
         help='Input program file to run (default), load or convert.')
-        
     parser.add_argument('--input', metavar='input_file', nargs=1, 
         help='Retrieve keyboard input from input_file, except if KYBD: is read explicitly.')
     parser.add_argument('--output', metavar='output_file', nargs=1, 
         help='Send screen output to output_file, except if SCRN: is written to explicitly.')
-        
     parser.add_argument('-b', '--dumb', action='store_true', 
         help='Use dumb text terminal. This is the default if redirecting input.')
     parser.add_argument('-t', '--ansi', action='store_true', 
@@ -278,6 +280,8 @@ def get_args():
     parser.add_argument('--smooth', action='store_true', help='Use smooth display scaling. Graphical terminal only.')
     parser.add_argument('--noquit', action='store_true', help='Allow BASIC to capture <ALT+F4>. Graphical terminal only.')
     parser.add_argument('--debug', action='store_true', help='Enable DEBUG keyword')
+    parser.add_argument('--pcjr', action='store_true', help='Enable NOISE and TERM keywords')
+    parser.add_argument('--tandy', action='store_true', help='Enable NOISE keyword')
     parser.add_argument('--list-all', action='store_true', help='Allow listing and ASCII saving of lines beyond 65530')
     parser.add_argument('--unprotect', action='store_true', help='Allow listing and ASCII saving of protected files')
     parser.add_argument('--caps', action='store_true', help='Start in CAPS LOCK mode.')

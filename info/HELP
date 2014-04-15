@@ -387,13 +387,18 @@ represent them in a BASIC file.
 NOTES:
 -   If PC-BASIC 3.23 is run with the --debug flag, the following additional 
     keyword is reserved, which is not present in standard versions of GW-BASIC:
-        FEA4 DEBUG
+        FFFF DEBUG
     When the --debug flag is specified, variable names like DEBUG$ are not 
     allowed.
--   On the IBM PCjr's version of GW-BASIC, some additional keywords were 
-    present that are not implemented in PC-BASIC 3.23. They are:
+-   On the IBM PCjr's Cartridge BASIC, some additional keywords were 
+    present. They can be activated using the --pcjr command-line option:
         FEA4 NOISE   FEA6 TERM
-    The Tandy 1000 also has NOISE, but not TERM.
+-   Note that they are not currently implemented as statements. 
+    When ---pcjr is specified, these words are not valid variable names and 
+    will be correctly transcribed in a listing.
+-   The Tandy 1000 also has NOISE, but not TERM. When --tandy is speccified,
+    only the NOISE keyword is activated.
+
 
 ABS(x) function
 ---------------
@@ -877,6 +882,17 @@ ERRORS:
 -   If the value of 'date' is not in the format specified above, DATE$ raises
     ILLEGAL FUNCTION CALL.
 -   If 'date' yields a numeric value, TYPE MISMATCH is raised.
+
+
+DEBUG statement [--debug only]
+DEBUG python_statements
+----------------
+This statement is not present by default, but can be activated with the --debug
+command-line flag. Executes the specified Python statements. 
+NOTES:
+-   This statement is not present in GW-BASIC. 
+-   This statement is intended for debugging purposes only. It may be removed,
+    changed or moved to a different token across PC-BASIC 3.23 versions. 
 
 
 DEF FN statement
@@ -2333,6 +2349,17 @@ ERRORS:
 -   If 'var_0', ... are string names, NEXT WITHOUT FOR is raised.
 
 
+NOISE statement [--pcjr only]
+NOISE type, volume, duration
+-------------
+This statement is not present in default mode but can be activated by using
+the --pcjr command-line option.
+Raises ADVANCED FEATURE.
+NOTES:
+-   On the IBM PCjr's Cartridge BASIC and Tandy 1000 GW-BASIC, this statement
+    produces various kinds of noise. This is not implemented in PC-BASIC 3.23.
+
+
 OCT$ function
 octal = OCT$(x)
 -------------
@@ -3496,6 +3523,17 @@ NOTES:
     to zero. The values returned will have very low precision in these cases.
 ERRORS:
 -   If 'angle' has a string value, SIN raises TYPE MISMATCH.
+
+
+TERM statement [--pcjr only]
+TERM 
+-------------
+This statement is not present in default mode but can be activated by using
+the --pcjr command-line option.
+Raises ADVANCED FEATURE.
+NOTES:
+-   On the IBM PCjr's Cartridge BASIC, this statement starts a built-in serial
+    terminal emulator application. This is not implemented in PC-BASIC 3.23.
 
 
 TIME$ function

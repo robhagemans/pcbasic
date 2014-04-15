@@ -184,8 +184,9 @@ def parse_statement():
             elif c == '\x9F':    exec_palette(ins)
             elif c == '\xA0':    exec_lcopy(ins)
             elif c == '\xA1':    exec_calls(ins)
-            elif c == '\xA4':    exec_debug(ins)
+            elif c == '\xA4':    exec_noise(ins)
             elif c == '\xA5':    exec_pcopy(ins)
+            elif c == '\xA6':    exec_term(ins)
             elif c == '\xA7':    exec_lock(ins)
             elif c == '\xA8':    exec_unlock(ins)
             else: raise error.RunError(2)
@@ -195,6 +196,7 @@ def parse_statement():
             if   c == '\x83':   exec_mid(ins)
             elif c == '\xA0':   exec_pen(ins)
             elif c == '\xA2':   exec_strig(ins)
+            elif c == '\xFF':   exec_debug(ins)
             else: raise error.RunError(2)
         else:
             raise error.RunError(2)
@@ -244,6 +246,15 @@ def exec_debug(ins):
     while util.peek(ins) not in util.end_line:
         debug_cmd += ins.read(1)
     debug.debug_exec(debug_cmd)
+
+# PCjr/Tandy 1000 noise generator; not implemented. requires 'SOUND ON'.
+def exec_noise(ins):
+    raise error.RunError(73)
+    
+# PCjr builtin serial terminal emulator; not implemented
+def exec_term(ins):
+    raise error.RunError(73)
+
 
 ##########################################################
 # statements that require further qualification
