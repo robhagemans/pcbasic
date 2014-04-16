@@ -269,8 +269,8 @@ exponent:
     2 ^ (exp - 128).
 zero:
     Any float with the exponent byte set to 0 is interpreted as a zero.
-A single-precision MBF float therefore has 15 bits of precision, while a double
-precision MBF float has 31 bits of precision.
+A single-precision MBF float therefore has 23 bits of precision, while a double
+precision MBF float has 55 bits of precision.
     
     
 ARRAYS
