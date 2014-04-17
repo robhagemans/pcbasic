@@ -135,7 +135,7 @@ def prepare_constants(args):
             for a in args.mount:
                 # last one specified sticks
                 letter, path = a.split(':',1)
-                oslayer.drives[letter.upper()] = path
+                oslayer.drives[letter.upper()] = os.path.realpath(path)
                 oslayer.drive_cwd[letter.upper()] = ''
         except Exception:
             pass                
