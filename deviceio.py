@@ -10,15 +10,19 @@
 #
 
 import copy
-from cStringIO import StringIO
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
+import logger
 import serial_socket
 import oslayer
 import error
 import fileio
 from fileio import RandomBase, TextFile, BaseFile
 import console
-import logging
+
 
 # buffer sizes (/c switch in GW-BASIC)
 serial_in_size = 256

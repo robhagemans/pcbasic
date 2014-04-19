@@ -9,11 +9,11 @@
 # please see text file COPYING for licence terms.
 #
 
-import cStringIO
+from StringIO import StringIO
 import sys
-import logging
 import traceback
 
+from logger import logging
 import program
 import console
 import var
@@ -27,7 +27,7 @@ debug_tron = False
 watch_list = []
 
 def debug_exec(debug_cmd):
-    buf = cStringIO.StringIO()
+    buf = StringIO()
     sys.stdout = buf
     try:
         exec(debug_cmd)

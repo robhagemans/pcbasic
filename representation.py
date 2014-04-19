@@ -8,8 +8,11 @@
 # This file is released under the GNU GPL version 3. 
 # please see text file COPYING for licence terms.
 
-from cStringIO import StringIO
-
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+    
 import error
 import util
 import fp

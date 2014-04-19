@@ -9,9 +9,11 @@
 #
 
 import sys
-from cStringIO import StringIO
-#import cProfile
-
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+    
 import error
 import util
 import tokenise 

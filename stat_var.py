@@ -9,8 +9,11 @@
 # please see text file COPYING for licence terms.
 #
 
-from cStringIO import StringIO
-
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+    
 import error
 import representation
 import vartypes

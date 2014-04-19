@@ -12,10 +12,8 @@
 #
 # GW-BASIC is a trademark of Microsoft Corporation.
  
+ 
 import sys
-import logging
-import argparse
-import ConfigParser
 import platform
 # for autosave
 import os
@@ -39,18 +37,35 @@ import tokenise
 import program
 import unicodepage
 import debug
+from logger import logging
 
-if platform.system() == 'Linux':
-    import backend_dumb
-    stdin_is_tty = sys.stdin.isatty()
-    stdout_is_tty = sys.stdout.isatty()
-    stdin, stdout = sys.stdin, sys.stdout
-else:
+# OS-specific stdin/stdout selection
+# no stdin/stdout access allowed on packaged apps
+if platform.system() in ('Darwin', 'Windows'):
     backend_dumb = None
-    # no stdin/stdout access allowed on Win & OSX packaged apps
     stdin_is_tty, stdout_is_tty = True, True
     stdin, stdout = None, None
-    
+else:
+    # Linux including Android
+    import backend_dumb
+    try:
+        stdin_is_tty = sys.stdin.isatty()
+        stdout_is_tty = sys.stdout.isatty()
+    except AttributeError:
+        stdin_is_tty, stdout_is_tty = True, True
+        stdin, stdout = None, None
+    stdin, stdout = sys.stdin, sys.stdout
+
+# Android-specific workarounds 
+try:
+    import android
+    argparse = None
+    ConfigParser = None
+except ImportError:
+    android = None
+    import argparse
+    import ConfigParser
+
 
 greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "@:INFO" for more.\r%d Bytes free'
 debugstr = ''
@@ -158,7 +173,10 @@ def prepare_constants(args):
     if args.caps:
         console.caps = True    
     # rename exec argument for convenience
-    args.cmd = getattr(args, 'exec') 
+    try:
+        args.cmd = getattr(args, 'exec') 
+    except AttributeError:
+        args.cmd = ''    
     if not args.cmd:
         args.cmd = ''   
     # set conversion output; first arg, if given, is mode; second arg, if given, is outfile
@@ -199,7 +217,7 @@ def prepare_console(args):
         console.backend = backend_dumb
         console.sound = sound_beep        
         if not console.backend or not console.init():
-            logging.critial('Failed to initialise console. Quitting.')
+            logging.critical('Failed to initialise console. Quitting.')
             sys.exit(0)
     # sound fallback        
     if args.nosound:
@@ -244,6 +262,9 @@ def get_args():
     #   /c:n    sets the COM receive buffer to n bytes. If n==0, disable the COM ports.   
     #   /i      statically allocate file control blocks and data buffer.
     #   /m:n,m  sets the highest memory location to n and maximum block size to m
+    if not argparse:
+        import config_default
+        return config_default
     parser = argparse.ArgumentParser(
         description='PC-BASIC 3.23 interpreter. If no options are present, the interpreter will run in interactive mode.')
     # read config file, if any
@@ -324,6 +345,5 @@ def read_config():
     except Exception:
         return {}    
 
-
-main()
-
+if __name__ == "__main__":
+    main()

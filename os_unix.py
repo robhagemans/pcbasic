@@ -9,13 +9,15 @@
 # please see text file COPYING for licence terms.
 #
 
-import logging
 import os
 import fcntl
+
 try:
     import pexpect
 except Exception:
-    logging.warning('Pexpect module not found. SHELL command will not work.')    
+    import logger
+    logger.logging.warning('Pexpect module not found. SHELL command will not work.')    
+        
 import console
 import error
     
@@ -28,8 +30,12 @@ drive_cwd = { 'C': os.getcwd()[1:], '@': '' }
        
             
 def disk_free(path):
-    st = os.statvfs(path)
-    return st.f_bavail * st.f_frsize
+    try:
+        st = os.statvfs(path)
+        return st.f_bavail * st.f_frsize
+    except AttributeError:
+        # no statvfs on Android
+        return 0    
     
 def shell(command):
     cmd = shell_interactive

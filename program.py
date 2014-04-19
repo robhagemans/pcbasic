@@ -24,7 +24,10 @@ import fileio
 import run
 import fp 
 
-from cStringIO import StringIO 
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 from copy import copy 
 
 # program bytecode buffer

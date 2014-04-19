@@ -11,7 +11,10 @@
 
 import datetime
 import os
-from cStringIO import StringIO
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 from functools import partial
 
 import fp

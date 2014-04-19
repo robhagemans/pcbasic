@@ -8,15 +8,29 @@
 # This file is released under the GNU GPL version 3. 
 # please see text file COPYING for licence terms.
 #
-
-
+print "version"
+	
 try:
     import pygame
 except Exception:
     pygame = None
 
-import logging
+try:
+    import numpy
+except Exception:
+    numpy = None
 
+try:
+    import android
+    # don't do sound for now on Android
+    mixer = None   
+    numpy = None
+#    import android.mixer as mixer
+except ImportError:
+    android = None
+    import pygame.mixer as mixer
+
+import logger
 import error
 import cpi_font
 import unicodepage 
@@ -266,6 +280,149 @@ if pygame:
         pygame.K_BACKSLASH: '\x56',
     }
 
+if android:
+    keycode_to_unicode = {
+        pygame.K_BACKSPACE: u'\b',
+        pygame.K_TAB      : u'\t',
+        pygame.K_RETURN   : u'\r',
+        pygame.K_ESCAPE   : u'\x1b',
+        pygame.K_SPACE    : u' ',
+        pygame.K_EXCLAIM     : u'!',
+        pygame.K_QUOTEDBL    : u'"',
+        pygame.K_HASH        : u'#',
+        pygame.K_DOLLAR      : u'$',
+        pygame.K_AMPERSAND   : u'&',       
+        pygame.K_QUOTE       : u"'",
+        pygame.K_LEFTPAREN   : u'(',  
+        pygame.K_RIGHTPAREN  : u')',  
+        pygame.K_ASTERISK    : u'*',  
+        pygame.K_PLUS        : u'+',  
+        pygame.K_COMMA       : u',',  
+        pygame.K_MINUS       : u'-',  
+        pygame.K_PERIOD      : u'.',  
+        pygame.K_SLASH       : u'/',  
+        pygame.K_0           : u'0',  
+        pygame.K_1           : u'1',  
+        pygame.K_2           : u'2',  
+        pygame.K_3           : u'3',  
+        pygame.K_4           : u'4',  
+        pygame.K_5           : u'5',  
+        pygame.K_6           : u'6',  
+        pygame.K_7           : u'7',  
+        pygame.K_8           : u'8',  
+        pygame.K_9           : u'9',  
+        pygame.K_COLON       : u':',  
+        pygame.K_SEMICOLON   : u';',  
+        pygame.K_LESS        : u'<',  
+        pygame.K_EQUALS      : u'=',  
+        pygame.K_GREATER     : u'>',  
+        pygame.K_QUESTION    : u'?',  
+        pygame.K_AT          : u'@',  
+        pygame.K_LEFTBRACKET : u'[',  
+        pygame.K_BACKSLASH   : u'\\',  
+        pygame.K_RIGHTBRACKET : u']', 
+        pygame.K_CARET       : u'^',  
+        pygame.K_UNDERSCORE  : u'_',  
+        pygame.K_BACKQUOTE   : u'`',  
+        pygame.K_a           : u'a',  
+        pygame.K_b           : u'b',  
+        pygame.K_c           : u'c',  
+        pygame.K_d           : u'd',
+        pygame.K_e           : u'e',
+        pygame.K_f           : u'f',
+        pygame.K_g           : u'g',
+        pygame.K_h           : u'h',
+        pygame.K_i           : u'i',
+        pygame.K_j           : u'j',
+        pygame.K_k           : u'k',
+        pygame.K_l           : u'l',
+        pygame.K_m           : u'm',
+        pygame.K_n           : u'n',
+        pygame.K_o           : u'o',
+        pygame.K_p           : u'p',
+        pygame.K_q           : u'q',
+        pygame.K_r           : u'r',
+        pygame.K_s           : u's',
+        pygame.K_t           : u't',
+        pygame.K_u           : u'u',
+        pygame.K_v           : u'v',
+        pygame.K_w           : u'w',
+        pygame.K_x           : u'x',
+        pygame.K_y           : u'y',
+        pygame.K_z           : u'z',
+    }
+    # android sends LSHIFT + key according to US keyboard
+    shift_keycode_to_unicode = {
+        pygame.K_BACKSPACE   : u'\b',
+        pygame.K_TAB         : u'\t',
+        pygame.K_RETURN      : u'\r',
+        pygame.K_ESCAPE      : u'\x1b',
+        pygame.K_SPACE       : u' ',
+        pygame.K_1           : u'!',
+        pygame.K_2           : u'@',
+        pygame.K_3           : u'#',
+        pygame.K_4           : u'$',
+        pygame.K_5           : u'%',
+        pygame.K_6           : u'^',
+        pygame.K_7           : u'&',       
+        pygame.K_8           : u'*',       
+        pygame.K_9           : u'(',  
+        pygame.K_0           : u')',
+        pygame.K_QUOTE       : u'"',  
+        pygame.K_COMMA       : u'<',  
+        pygame.K_MINUS       : u'_',  
+        pygame.K_PERIOD      : u'>',  
+        pygame.K_SLASH       : u'?',  
+        pygame.K_SEMICOLON   : u':',  
+        pygame.K_EQUALS      : u'+',  
+        pygame.K_LEFTBRACKET : u'{',  
+        pygame.K_BACKSLASH   : u'|',  
+        pygame.K_RIGHTBRACKET: u'}', 
+        pygame.K_a           : u'A',  
+        pygame.K_b           : u'B',  
+        pygame.K_c           : u'C',  
+        pygame.K_d           : u'D',
+        pygame.K_e           : u'E',
+        pygame.K_f           : u'F',
+        pygame.K_g           : u'G',
+        pygame.K_h           : u'H',
+        pygame.K_i           : u'I',
+        pygame.K_j           : u'J',
+        pygame.K_k           : u'K',
+        pygame.K_l           : u'L',
+        pygame.K_m           : u'M',
+        pygame.K_n           : u'N',
+        pygame.K_o           : u'O',
+        pygame.K_p           : u'P',
+        pygame.K_q           : u'Q',
+        pygame.K_r           : u'R',
+        pygame.K_s           : u'S',
+        pygame.K_t           : u'T',
+        pygame.K_u           : u'U',
+        pygame.K_v           : u'V',
+        pygame.K_w           : u'W',
+        pygame.K_x           : u'X',
+        pygame.K_y           : u'Y',
+        pygame.K_z           : u'Z',
+    }
+
+    android_shift = False    
+    
+    def android_fix_unicode(e, mods):
+        global android_shift
+        # android keybard sends a sequence LSHIFT, KEY rather than mods
+        if e.key == pygame.K_LSHIFT:
+            android_shift = True
+            return ''
+        try:
+            if android_shift or mods & pygame.KMOD_SHIFT:
+                android_shift = False
+                return shift_keycode_to_unicode[e.key]
+            else:
+                return keycode_to_unicode[e.key]
+        except KeyError:
+            return e.unicode
+
 # set constants based on commandline arguments
 def prepare(args):
     global display_size, display_size_text, fullscreen, smooth, noquit
@@ -289,18 +446,18 @@ def prepare(args):
 def init():
     global fonts, num_sticks, joysticks, physical_size
     if not pygame:
-        logging.warning('Could not find PyGame module. Failed to initialise PyGame console.')
+        logger.logging.warning('Could not find PyGame module. Failed to initialise PyGame console.')
         return False     
     pre_init_mixer()   
     pygame.init()
     # exclude some backend drivers as they give unusable results
     if pygame.display.get_driver() == 'caca':
         pygame.display.quit()
-        logging.warning('Refusing to open libcaca console. Failed to initialise PyGame console.')
+        logger.logging.warning('Refusing to open libcaca console. Failed to initialise PyGame console.')
         return False
     fonts = cpi_font.load_codepage(console.codepage)
     if fonts == None:
-        logging.warning('Could not load codepage font. Failed to initialise PyGame console.')
+        logger.logging.warning('Could not load codepage font. Failed to initialise PyGame console.')
         return False
     unicodepage.load_codepage(console.codepage)
     # get physical screen dimensions (needs to be called before set_mode)
@@ -314,6 +471,10 @@ def init():
     resize_display(*display_size_text, initial=True)
     pygame.display.set_caption('PC-BASIC 3.23')
     pygame.key.set_repeat(500, 24)
+    if android:
+        android.init()
+        # map the back button to the escape key.
+        android.map_key(android.KEYCODE_BACK, pygame.K_ESCAPE)
     init_mixer()
     pygame.joystick.init()
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
@@ -343,6 +504,8 @@ def resize_display(width, height, initial=False):
     screen_changed = True    
     
 def close():
+    if android:
+        android.hide_keyboard()
     pygame.joystick.quit()
     pygame.display.quit()    
 
@@ -606,6 +769,10 @@ def idle():
 
 def check_events(pause=False):
     global display_size, fullscreen
+    # handle Android pause/resume
+    if android:
+        if android.check_pause():
+            android.wait_for_resume()
     # check and handle pygame events    
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
@@ -617,6 +784,9 @@ def check_events(pause=False):
             if not pause:
                 handle_key_up(event)
         elif event.type == pygame.MOUSEBUTTONDOWN:
+            if android:
+                # show keyboard on touch
+                android.show_keyboard()
             handle_mouse(event)
         elif event.type == pygame.JOYBUTTONDOWN:
             handle_stick(event)    
@@ -699,7 +869,11 @@ def handle_key(e):
         try:
             c = ctrl_keycode_to_scancode[e.key] if (mods & pygame.KMOD_CTRL) else keycode_to_scancode[e.key]
         except KeyError:
-            c = unicodepage.from_unicode(e.unicode)
+            if android:
+                u = android_fix_unicode(e, mods)
+            else:
+                u = e.unicode    
+            c = unicodepage.from_unicode(u)
     console.insert_key(c) 
     # current key pressed; modifiers ignored 
     try:
@@ -930,7 +1104,7 @@ def beep():
 
 def stop_all_sound():
     global sound_queue
-    pygame.mixer.quit()
+    mixer.quit()
     sound_queue = []
     
 # process sound queue in event loop
@@ -946,10 +1120,10 @@ def check_sound():
         if loop_sound_playing:
             loop_sound_playing.stop()
             loop_sound_playing = None
-        if pygame.mixer.Channel(0).get_queue() == None:
+        if mixer.Channel(0).get_queue() == None:
             if loop_sound:
                 # loop the current playing sound; ok to interrupt it with play cos it's the same sound as is playing
-                pygame.mixer.Channel(0).play(loop_sound, loops=-1)
+                mixer.Channel(0).play(loop_sound, loops=-1)
                 sound_queue.pop(0)
                 loop_sound_playing = loop_sound                
                 loop_sound = None
@@ -963,7 +1137,7 @@ def check_sound():
                         check_quit_sound()
                         return
                 pair_to_play = current_list.pop(0)         
-                pygame.mixer.Channel(0).queue(pair_to_play[0])
+                mixer.Channel(0).queue(pair_to_play[0])
                 if pair_to_play[1]:
                     loop_sound = pair_to_play[0] 
                     # any next sound in the sound queue will stop this looping sound
@@ -973,7 +1147,7 @@ def check_sound():
 def wait_music(wait_length=0, wait_last=True):
     while not loop_sound_playing and (
             len(sound_queue) + wait_last - 1 > wait_length 
-            or (wait_last and music_queue_length() == 0 and pygame.mixer.get_busy())):
+            or (wait_last and music_queue_length() == 0 and mixer.get_busy())):
         idle()
         console.check_events()
 
@@ -1054,50 +1228,46 @@ loop_sound = None
 # currrent sound that is looping
 loop_sound_playing = None
 
-try:
-    import numpy
-except Exception:
-    numpy = None
-
-
 
 def pre_init_mixer():
     global sample_rate, mixer_bits
-    pygame.mixer.pre_init(sample_rate, -mixer_bits, channels=1, buffer=1024) #4096
+    if mixer:
+        mixer.pre_init(sample_rate, -mixer_bits, channels=1, buffer=1024) #4096
 
 def init_mixer():    
-    pygame.mixer.quit()
+    if mixer:
+        mixer.quit()
     
 def check_init_mixer():
-    if pygame.mixer.get_init() == None:
-        pygame.mixer.init()
+    if mixer.get_init() == None:
+        mixer.init()
         
 def check_quit_sound():
     global quiet_ticks
-    if pygame.mixer.get_init() == None:
+    if mixer.get_init() == None:
         return
-    if music_queue_length() > 0 or pygame.mixer.get_busy():
+    if music_queue_length() > 0 or mixer.get_busy():
         quiet_ticks = 0
     else:
         quiet_ticks += 1    
         if quiet_ticks > quiet_quit:
             # this is to avoid high pulseaudio cpu load
             if not program.run_mode:
-                pygame.mixer.quit()
+                mixer.quit()
                 quiet_ticks = 0
 
 def check_hangs():
     global last_chunk, same_chunk_ticks
     if not max_ticks_same:
         return
-    current_chunk = pygame.mixer.Channel(0).get_queue() 
+    current_chunk = mixer.Channel(0).get_queue() 
     if current_chunk == last_chunk:
         same_chunk_ticks += 1
         if same_chunk_ticks > max_ticks_same:
             same_chunk_ticks = 0
             # too long for the sort of chunks we use, it's hung.
-            pygame.mixer.quit()
-            pygame.mixer.init()
+            mixer.quit()
+            mixer.init()
     else:
         same_chunk_ticks = 0    
     last_chunk = current_chunk
