@@ -168,7 +168,11 @@ class BaseFile(object):
     # eof
 
     def close(self):
-        self.fhandle.flush()
+        try:
+            self.fhandle.flush()
+        except IOError:
+            # ignore errors on flushing
+            pass    
         # don't close the handle - for devices
         if self.number != 0:
             del files[self.number]
