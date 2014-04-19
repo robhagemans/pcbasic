@@ -585,12 +585,19 @@ def refresh_cursor():
         # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
         if (cycle/blink_cycles==1 or cycle/blink_cycles==3): 
             screen.blit(cursor0, ( (console.col-1)*8, (console.row-1)*font_height) )
-    else:
+    elif numpy:
         index = console.attr & 0xf
         # reference the destination area
         dest_array = pygame.surfarray.pixels2d(screen.subsurface(pygame.Rect(
                             (console.col-1)*8, (console.row-1)*font_height + cursor_from, 8, cursor_to - cursor_from + 1))) 
-        dest_array ^= index       
+        dest_array ^= index
+    else:
+        index = console.attr & 0xf
+        # no surfarray if no numpy    
+        for x in range((console.col-1) * 8, console.col * 8):
+           for y in range((console.row-1)*font_height + cursor_from, (console.row-1)*font_height + cursor_to + 1):
+               pixel = get_pixel(x,y)
+               screen.set_at((x,y), pixel^index)
     last_row = console.row
     last_col = console.col
         
