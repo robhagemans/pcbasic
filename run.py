@@ -29,7 +29,7 @@ def loop():
     while True:
         try:
             # input loop, checks events
-            line = console.wait_screenline(from_start=True) 
+            line = console.wait_screenline(from_start=True, alt_replace=True) 
         except error.Break:
             continue
         if line:

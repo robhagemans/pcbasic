@@ -115,23 +115,23 @@ stick_is_on = False
 function_key = { 
         '\x00\x3b':0, '\x00\x3c':1, '\x00\x3d':2, '\x00\x3e':3, '\x00\x3f':4,     
         '\x00\x40':5, '\x00\x41':6, '\x00\x42':7, '\x00\x43':8, '\x00\x44':9 }
+
 key_replace = [ 'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r','TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r' ]
+
+alt_key_replace = {
+    '\x00\x1E': 'AUTO',  '\x00\x30': 'BSAVE',  '\x00\x2E': 'COLOR',  '\x00\x20': 'DELETE', '\x00\x12': 'ELSE', 
+    '\x00\x21': 'FOR',   '\x00\x22': 'GOT0',   '\x00\x23': 'HEX$',   '\x00\x17': 'INPUT',
+    '\x00\x25': 'KEY',   '\x00\x26': 'LOCATE', '\x00\x32': 'MOTOR',  '\x00\x31': 'NEXT',   '\x00\x18': 'OPEN', 
+    '\x00\x19': 'PRINT', '\x00\x13': 'RUN',    '\x00\x1F': 'SCREEN', '\x00\x14': 'THEN',   '\x00\x16': 'USING', 
+    '\x00\x2F': 'VAL',   '\x00\x11': 'WIDTH',  '\x00\x2D': 'XOR' }
 
 # KEY ON?
 keys_visible = False
 # on the keys line 25, what characters to replace & with which
 keys_line_replace_chars = { 
-        '\x07': '\x0e',
-        '\x08': '\xfe',
-        '\x09': '\x1a',
-        '\x0A': '\x1b',
-        '\x0B': '\x7f',
-        '\x0C': '\x16',
-        '\x0D': '\x1b',
-        '\x1C': '\x10',
-        '\x1D': '\x11',
-        '\x1E': '\x18',
-        '\x1F': '\x19',
+        '\x07': '\x0e',    '\x08': '\xfe',    '\x09': '\x1a',    '\x0A': '\x1b',
+        '\x0B': '\x7f',    '\x0C': '\x16',    '\x0D': '\x1b',    '\x1C': '\x10',
+        '\x1D': '\x11',    '\x1E': '\x18',    '\x1F': '\x19',
     }        
 
 # memory model: text mode video memory
@@ -253,11 +253,11 @@ def set_cursor_shape(from_line, to_line):
 ############################### 
 # interactive mode         
 
-def wait_screenline(write_endl=True, from_start=False):
+def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
     global row, col
     prompt_row, prompt_col = row, col
     savecurs = show_cursor() 
-    furthest_left, furthest_right = wait_interactive(from_start)
+    furthest_left, furthest_right = wait_interactive(from_start, alt_replace)
     show_cursor(savecurs)
     # find start of wrapped block
     crow = row
@@ -294,7 +294,7 @@ def wait_screenline(write_endl=True, from_start=False):
         outstr += c
     return outstr[:255]    
 
-def wait_interactive(from_start=False):
+def wait_interactive(from_start=False, alt_replace = True):
     global row, col
     # this is where we started
     start_row, furthest_left = row, (col if not from_start else 1)
@@ -340,13 +340,22 @@ def wait_interactive(from_start=False):
         elif d in ('\x00\x4F', '\x0E'):     end()                                   # <END> <CTRL+N>
         elif d in ('\x00\x77', '\x0C'):     clear()                                 # <CTRL+HOME> <CTRL+L>   
         elif d == '\x00\x37':               print_screen()                          # <SHIFT+PRT_SC>, already caught in wait_char()
-        elif d[0] not in ('\x00', '\r'): 
-            if not overwrite_mode:
-                insert_char(row, col, d, attr)
-                redraw_row(col-1, row)
-                set_pos(row, col+1)
-            else:    
-                put_char(d, do_scroll_down=True)
+        else:
+            try:
+                # these are done on a less deep level than the fn key replacement
+                letters = list(alt_key_replace[d]) + [' ']
+            except KeyError:
+                letters = [d]
+            if not alt_replace:
+                letters = [d]
+            for d in letters:        
+                if d[0] not in ('\x00', '\r'): 
+                    if not overwrite_mode:
+                        insert_char(row, col, d, attr)
+                        redraw_row(col-1, row)
+                        set_pos(row, col+1)
+                    else:    
+                        put_char(d, do_scroll_down=True)
     set_overwrite_mode(True)
     return furthest_left, furthest_right
       
