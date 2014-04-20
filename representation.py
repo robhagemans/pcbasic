@@ -550,6 +550,7 @@ def input_entry(text_file, allow_quotes, end_all=(), end_not_quoted=(',',)):
             blanks += c    
         else:
             word += blanks + c
+            blanks = ''
         if len(word)+len(blanks) >= 255:
             text_file.seek(-len(c), 1)
             break

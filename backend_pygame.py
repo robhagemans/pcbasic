@@ -182,6 +182,62 @@ if pygame:
         pygame.K_F3:        '\x00\x60',
         pygame.K_MINUS:     '\x1F',
     }
+
+    alt_keycode_to_scancode = {
+        # unknown: ESC, BACKSPACE, TAB, RETURN
+        pygame.K_1:         '\x00\x78',
+        pygame.K_2:         '\x00\x79',
+        pygame.K_3:         '\x00\x7A',
+        pygame.K_4:         '\x00\x7B',
+        pygame.K_5:         '\x00\x7C',
+        pygame.K_6:         '\x00\x7D',
+        pygame.K_7:         '\x00\x7E',
+        pygame.K_8:         '\x00\x7F',
+        pygame.K_9:         '\x00\x80',
+        pygame.K_0:         '\x00\x81',
+        pygame.K_MINUS:     '\x00\x82',
+        pygame.K_EQUALS:    '\x00\x83',
+        # row 1
+        pygame.K_q:         '\x00\x10',
+        pygame.K_w:         '\x00\x11',
+        pygame.K_e:         '\x00\x12',
+        pygame.K_r:         '\x00\x13',
+        pygame.K_t:         '\x00\x14',
+        pygame.K_y:         '\x00\x15',
+        pygame.K_u:         '\x00\x16',
+        pygame.K_i:         '\x00\x17',
+        pygame.K_o:         '\x00\x18',
+        pygame.K_p:         '\x00\x19',
+        # row 2
+        pygame.K_a:         '\x00\x1E',
+        pygame.K_s:         '\x00\x1F',
+        pygame.K_d:         '\x00\x20',
+        pygame.K_f:         '\x00\x21',
+        pygame.K_g:         '\x00\x22',
+        pygame.K_h:         '\x00\x23',
+        pygame.K_j:         '\x00\x24',
+        pygame.K_k:         '\x00\x25',
+        pygame.K_l:         '\x00\x26',
+        # row 3        
+        pygame.K_z:         '\x00\x2C',
+        pygame.K_x:         '\x00\x2D',
+        pygame.K_c:         '\x00\x2E',
+        pygame.K_v:         '\x00\x2F',
+        pygame.K_b:         '\x00\x30',
+        pygame.K_n:         '\x00\x31',
+        pygame.K_m:         '\x00\x32',
+        # others    
+        pygame.K_F1:        '\x00\x68',
+        pygame.K_F2:        '\x00\x69',
+        pygame.K_F3:        '\x00\x6A',
+        pygame.K_F4:        '\x00\x6B',
+        pygame.K_F5:        '\x00\x6C',
+        pygame.K_F6:        '\x00\x6D',
+        pygame.K_F7:        '\x00\x6E',
+        pygame.K_F8:        '\x00\x6F',
+        pygame.K_F9:        '\x00\x70',
+        pygame.K_F10:       '\x00\x71',
+    }
        
     keycode_to_inpcode = {
         # top row
@@ -907,7 +963,12 @@ def handle_key(e):
         c = '\x00\x0F'
     else:
         try:
-            c = ctrl_keycode_to_scancode[e.key] if (mods & pygame.KMOD_CTRL) else keycode_to_scancode[e.key]
+            if (mods & pygame.KMOD_CTRL):
+                c = ctrl_keycode_to_scancode[e.key]
+            elif (mods & pygame.KMOD_ALT):
+                c = alt_keycode_to_scancode[e.key]
+            else:
+                c = keycode_to_scancode[e.key]
         except KeyError:
             if android:
                 u = android_fix_unicode(e, mods)
