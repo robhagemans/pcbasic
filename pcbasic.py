@@ -60,7 +60,7 @@ else:
 try:
     import android
     argparse = None
-    ConfigParser = None
+    import ConfigParser
 except ImportError:
     android = None
     import argparse
@@ -262,9 +262,14 @@ def get_args():
     #   /c:n    sets the COM receive buffer to n bytes. If n==0, disable the COM ports.   
     #   /i      statically allocate file control blocks and data buffer.
     #   /m:n,m  sets the highest memory location to n and maximum block size to m
-    if not argparse:
-        import config_default
-        return config_default
+    if True: #not argparse:
+        config = read_config()
+        class Namespace(object):
+            pass
+        args = Namespace()            
+        for name in config:
+            setattr(args, name, config[name])
+        return args    
     parser = argparse.ArgumentParser(
         description='PC-BASIC 3.23 interpreter. If no options are present, the interpreter will run in interactive mode.')
     # read config file, if any
