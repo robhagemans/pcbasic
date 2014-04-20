@@ -15,7 +15,7 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-import logger
+import logging
 import serial_socket
 import oslayer
 import error

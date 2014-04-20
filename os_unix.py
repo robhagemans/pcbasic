@@ -15,8 +15,8 @@ import fcntl
 try:
     import pexpect
 except Exception:
-    import logger
-    logger.logging.warning('Pexpect module not found. SHELL command will not work.')    
+    import logging
+    logging.warning('Pexpect module not found. SHELL command will not work.')    
         
 import console
 import error
