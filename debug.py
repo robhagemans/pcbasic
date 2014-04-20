@@ -13,7 +13,7 @@ from StringIO import StringIO
 import sys
 import traceback
 
-from logger import logging
+import logging
 import program
 import console
 import var

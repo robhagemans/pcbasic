@@ -15,7 +15,7 @@ import platform
 import time
 import select
 import os
-import logger
+import logging
 
 import error
 import unicodepage
@@ -46,7 +46,7 @@ def prepare(args):
 def init():
     global check_keys
     if platform.system() == 'Windows':
-        logger.logging.warning('Text terminal not supported on Windows.\n')
+        logging.warning('Text terminal not supported on Windows.\n')
         return False
     # close input after redirected input ends
     if sys.stdin.isatty():

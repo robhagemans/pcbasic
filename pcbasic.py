@@ -37,7 +37,7 @@ import tokenise
 import program
 import unicodepage
 import debug
-from logger import logging
+import logging
 
 # OS-specific stdin/stdout selection
 # no stdin/stdout access allowed on packaged apps

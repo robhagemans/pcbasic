@@ -28,7 +28,7 @@ except ImportError:
     android = None
     import pygame.mixer as mixer
 
-import logger
+import logging
 import error
 import cpi_font
 import unicodepage 
@@ -538,18 +538,18 @@ def prepare(args):
 def init():
     global fonts, num_sticks, joysticks, physical_size
     if not pygame:
-        logger.logging.warning('Could not find PyGame module. Failed to initialise PyGame console.')
+        logging.warning('Could not find PyGame module. Failed to initialise PyGame console.')
         return False     
     pre_init_mixer()   
     pygame.init()
     # exclude some backend drivers as they give unusable results
     if pygame.display.get_driver() == 'caca':
         pygame.display.quit()
-        logger.logging.warning('Refusing to open libcaca console. Failed to initialise PyGame console.')
+        logging.warning('Refusing to open libcaca console. Failed to initialise PyGame console.')
         return False
     fonts = cpi_font.load_codepage(console.codepage)
     if fonts == None:
-        logger.logging.warning('Could not load codepage font. Failed to initialise PyGame console.')
+        logging.warning('Could not load codepage font. Failed to initialise PyGame console.')
         return False
     unicodepage.load_codepage(console.codepage)
     # get physical screen dimensions (needs to be called before set_mode)
