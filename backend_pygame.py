@@ -440,12 +440,16 @@ if android:
         android_keyboard_visible = not android_keyboard_visible
 
     def android_check_handle_pause():
+        global screen_changed
         if android.check_pause():
             android.hide_keyboard()
             android.wait_for_resume()
             # force immediate redraw of screen
             refresh_screen()
             do_flip()
+            # force redraw on next tick  
+            # we seem to have to redraw twice to see anything
+            screen_changed = True
     
     def android_init():
         android.init()
@@ -535,7 +539,7 @@ def resize_display(width, height, initial=False):
     
 def close():
     if android:
-        android.close()
+        android_close()
     pygame.joystick.quit()
     pygame.display.quit()    
 
