@@ -24,7 +24,6 @@ try:
     # don't do sound for now on Android
     mixer = None   
     numpy = None
-#    import android.mixer as mixer
 except ImportError:
     android = None
     import pygame.mixer as mixer
@@ -279,7 +278,9 @@ if pygame:
         pygame.K_BACKSLASH: '\x56',
     }
 
+# Android keyboard handling
 if android:
+    # unicode returned by pygame for android is incorrect, work around this.
     keycode_to_unicode = {
         # these are likely unused
         pygame.K_EXCLAIM     : u'!',
@@ -305,7 +306,7 @@ if android:
         pygame.K_RETURN      : u'\r',
         pygame.K_SPACE       : u' ',
         # these are used
-        pygame.K_DOLLAR      : u'~',
+        pygame.K_DOLLAR      : u'`',
         pygame.K_0           : u'0',  
         pygame.K_1           : u'1',  
         pygame.K_2           : u'2',  
@@ -362,7 +363,7 @@ if android:
         pygame.K_RETURN      : u'\r',
         pygame.K_SPACE       : u' ',
         #
-        pygame.K_DOLLAR      : u'`',
+        pygame.K_DOLLAR      : u'~',
         pygame.K_1           : u'!',
         pygame.K_2           : u'@',
         pygame.K_3           : u'#',
@@ -413,6 +414,7 @@ if android:
     }
 
     android_shift = False    
+    android_keyboard_visible = False
     
     def android_fix_unicode(e, mods):
         global android_shift
@@ -429,6 +431,30 @@ if android:
         except KeyError:
             return e.unicode
 
+    def android_toggle_keyboard():
+        global android_keyboard_visible
+        if android_keyboard_visible:
+            android.hide_keyboard()
+        else:    
+            android.show_keyboard()
+        android_keyboard_visible = not android_keyboard_visible
+
+    def android_check_handle_pause():
+        if android.check_pause():
+            android.hide_keyboard()
+            android.wait_for_resume()
+            # force immediate redraw of screen
+            refresh_screen()
+            do_flip()
+    
+    def android_init():
+        android.init()
+        # map the back button to the escape key.
+        android.map_key(android.KEYCODE_BACK, pygame.K_ESCAPE)
+
+    def android_close():
+        android.hide_keyboard()
+        
 # set constants based on commandline arguments
 def prepare(args):
     global display_size, display_size_text, fullscreen, smooth, noquit
@@ -478,9 +504,7 @@ def init():
     pygame.display.set_caption('PC-BASIC 3.23')
     pygame.key.set_repeat(500, 24)
     if android:
-        android.init()
-        # map the back button to the escape key.
-        android.map_key(android.KEYCODE_BACK, pygame.K_ESCAPE)
+        android_init()
     init_mixer()
     pygame.joystick.init()
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
@@ -511,7 +535,7 @@ def resize_display(width, height, initial=False):
     
 def close():
     if android:
-        android.hide_keyboard()
+        android.close()
     pygame.joystick.quit()
     pygame.display.quit()    
 
@@ -784,8 +808,7 @@ def check_events(pause=False):
     global display_size, fullscreen
     # handle Android pause/resume
     if android:
-        if android.check_pause():
-            android.wait_for_resume()
+        android_check_handle_pause()
     # check and handle pygame events    
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
@@ -797,9 +820,9 @@ def check_events(pause=False):
             if not pause:
                 handle_key_up(event)
         elif event.type == pygame.MOUSEBUTTONDOWN:
+            # Android: toggle keyboard on touch
             if android:
-                # show keyboard on touch
-                android.show_keyboard()
+                android_toggle_keyboard()
             handle_mouse(event)
         elif event.type == pygame.JOYBUTTONDOWN:
             handle_stick(event)    
@@ -813,7 +836,7 @@ def check_events(pause=False):
                 run.exit()        
     check_screen()
     return False
-    
+
 def check_screen():
     global cycle, last_cycle
     global screen_changed
