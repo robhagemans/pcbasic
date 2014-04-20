@@ -23,10 +23,18 @@ import error
     
 shell_interactive = '/bin/sh'
 
-drives = { 'C': '/', '@': os.path.join(os.path.dirname(os.path.realpath(__file__)), 'info') }
-current_drive = 'C'
-# must not start with a /
-drive_cwd = { 'C': os.getcwd()[1:], '@': '' }
+pcbasic_dir = os.path.dirname(os.path.realpath(__file__))
+try:
+    import android
+    drives = { 'C': os.path.join(pcbasic_dir, 'files'), '@': os.path.join(pcbasic_dir, 'info') }
+    current_drive = 'C'
+    # must not start with a /
+    drive_cwd = { 'C': '', '@': '' }
+except ImportError:
+    drives = { 'C': '/', '@': os.path.join(pcbasic_dir, 'info') }
+    current_drive = 'C'
+    # must not start with a /
+    drive_cwd = { 'C': os.getcwd()[1:], '@': '' }
        
             
 def disk_free(path):
