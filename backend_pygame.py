@@ -469,6 +469,35 @@ if android:
         pygame.K_z           : u'Z',
     }
 
+    ctrl_keycode_to_unicode = {
+        pygame.K_a           : u'\x01',  
+        pygame.K_b           : u'\x02',  
+        pygame.K_c           : u'\x03',  
+        pygame.K_d           : u'\x04',
+        pygame.K_e           : u'\x05',
+        pygame.K_f           : u'\x06',
+        pygame.K_g           : u'\x07',
+        pygame.K_h           : u'\x08',
+        pygame.K_i           : u'\x09',
+        pygame.K_j           : u'\x0A',
+        pygame.K_k           : u'\x0B',
+        pygame.K_l           : u'\x0C',
+        pygame.K_m           : u'\x0D',
+        pygame.K_n           : u'\x0E',
+        pygame.K_o           : u'\x0F',
+        pygame.K_p           : u'\x10',
+        pygame.K_q           : u'\x11',
+        pygame.K_r           : u'\x12',
+        pygame.K_s           : u'\x13',
+        pygame.K_t           : u'\x14',
+        pygame.K_u           : u'\x15',
+        pygame.K_v           : u'\x16',
+        pygame.K_w           : u'\x17',
+        pygame.K_x           : u'\x18',
+        pygame.K_y           : u'\x19',
+        pygame.K_z           : u'\x20',
+    }
+    
     android_to_pygame = {
         android.KEYCODE_BACK: pygame.K_ESCAPE,
         android.KEYCODE_ESCAPE: pygame.K_ESCAPE,
@@ -490,26 +519,54 @@ if android:
         android.KEYCODE_MOVE_HOME:    pygame.K_HOME,
         android.KEYCODE_MOVE_END:     pygame.K_END,
         android.KEYCODE_INSERT:       pygame.K_INSERT,
+        android.KEYCODE_CTRL_LEFT:    pygame.K_LCTRL,
+        android.KEYCODE_CTRL_RIGHT:   pygame.K_RCTRL,
+        android.KEYCODE_ALT_LEFT:     pygame.K_LALT,
+        android.KEYCODE_ALT_RIGHT:    pygame.K_RALT,
     }
 
     android_shift = False    
+    android_ctrl = False
+    android_alt = False
     android_keyboard_visible = False
-    
-    def android_fix_unicode(e, mods):
-        global android_shift
-        # android keybard sends a sequence LSHIFT, KEY rather than mods
-        if e.key == pygame.K_LSHIFT:
+
+    # fix unicode and set mods    
+    def android_get_unicode(e, mods):
+        global android_shift, android_ctrl, android_alt
+        if e.key in (pygame.K_LSHIFT, pygame.K_RSHIFT):
             android_shift = True
             return ''
+        elif e.key in (pygame.K_LCTRL, pygame.K_RCTRL):
+            android_ctrl = True
+            return ''
+        elif e.key in (pygame.K_LALT, pygame.K_RALT):
+            android_alt = True
+            return ''
         try:
-            if android_shift or mods & pygame.KMOD_SHIFT:
-                android_shift = False
+            if mods & pygame.KMOD_SHIFT:
                 return shift_keycode_to_unicode[e.key]
+            elif mods & pygame.KMOD_CTRL:
+                return ctrl_keycode_to_unicode[e.key]
             else:
                 return keycode_to_unicode[e.key]
         except KeyError:
             return e.unicode
 
+    # android keybard sends a sequence LSHIFT, KEY rather than mods
+    def android_apply_mods():
+        global android_shift, android_ctrl, android_alt
+        mod_mask = 0
+        if android_shift:
+            mod_mask |= pygame.KMOD_SHIFT
+            android_shift = False
+        if android_ctrl:
+            mod_mask |= pygame.KMOD_CTRL
+            android_ctrl = False
+        if android_alt:
+            mod_mask |= pygame.KMOD_ALT
+            android_alt = False
+        return mod_mask            
+    
     def android_toggle_keyboard():
         global android_keyboard_visible
         if android_keyboard_visible:
@@ -961,6 +1018,8 @@ def do_flip():
 def handle_key(e):
     c = ''
     mods = pygame.key.get_mods()
+    if android:
+        mods |= android_apply_mods() 
     if e.key in (pygame.K_PAUSE, pygame.K_BREAK):
         if mods & pygame.KMOD_CTRL:
             # ctrl-break
@@ -995,7 +1054,7 @@ def handle_key(e):
                 c = keycode_to_scancode[e.key]
         except KeyError:
             if android:
-                u = android_fix_unicode(e, mods)
+                u = android_get_unicode(e, mods)
             else:
                 u = e.unicode    
             c = unicodepage.from_unicode(u)
