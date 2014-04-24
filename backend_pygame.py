@@ -8,7 +8,7 @@
 # This file is released under the GNU GPL version 3. 
 # please see text file COPYING for licence terms.
 #
-	
+
 try:
     import pygame
 except Exception:
@@ -469,6 +469,29 @@ if android:
         pygame.K_z           : u'Z',
     }
 
+    android_to_pygame = {
+        android.KEYCODE_BACK: pygame.K_ESCAPE,
+        android.KEYCODE_ESCAPE: pygame.K_ESCAPE,
+        android.KEYCODE_F1: pygame.K_F1,
+        android.KEYCODE_F2: pygame.K_F2,
+        android.KEYCODE_F3: pygame.K_F3,
+        android.KEYCODE_F4: pygame.K_F4,
+        android.KEYCODE_F5: pygame.K_F5,
+        android.KEYCODE_F6: pygame.K_F6,
+        android.KEYCODE_F7: pygame.K_F7,
+        android.KEYCODE_F8: pygame.K_F8,
+        android.KEYCODE_F9: pygame.K_F9,
+        android.KEYCODE_F10: pygame.K_F10,
+        android.KEYCODE_FORWARD_DEL:  pygame.K_DELETE,
+        android.KEYCODE_CAPS_LOCK:    pygame.K_CAPSLOCK,
+        android.KEYCODE_SCROLL_LOCK:  pygame.K_SCROLLOCK,
+        android.KEYCODE_SYSRQ:        pygame.K_PRINT,
+        android.KEYCODE_BREAK:        pygame.K_BREAK,
+        android.KEYCODE_MOVE_HOME:    pygame.K_HOME,
+        android.KEYCODE_MOVE_END:     pygame.K_END,
+        android.KEYCODE_INSERT:       pygame.K_INSERT,
+    }
+
     android_shift = False    
     android_keyboard_visible = False
     
@@ -509,8 +532,9 @@ if android:
     
     def android_init():
         android.init()
-        # map the back button to the escape key.
-        android.map_key(android.KEYCODE_BACK, pygame.K_ESCAPE)
+        # map android keycodes that aren't yet mapped in PGS4A
+        for key in android_to_pygame:
+            android.map_key(key, android_to_pygame[key])
 
     def android_close():
         android.hide_keyboard()
@@ -936,7 +960,7 @@ def do_flip():
 
 def handle_key(e):
     c = ''
-    mods = pygame.key.get_mods() 
+    mods = pygame.key.get_mods()
     if e.key in (pygame.K_PAUSE, pygame.K_BREAK):
         if mods & pygame.KMOD_CTRL:
             # ctrl-break
