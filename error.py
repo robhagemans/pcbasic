@@ -119,7 +119,7 @@ class RunError(Error):
             return True
             
     def handle_break(self):
-        global errn
+        global errn, error_handle_mode
         set_err(self)
         # not handled by ON ERROR, stop execution
         write_error_message(get_message(self.err), self.erl)   
@@ -136,7 +136,7 @@ class RunError(Error):
                 try:    
                     textpos = program.edit(self.erl, program.bytecode.tell())
                 except RunError as e:
-                    handle_break(e)    
+                    e.handle_break()    
     
     
 def resume(jumpnum):  

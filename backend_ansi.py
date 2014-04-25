@@ -107,6 +107,7 @@ def prepare(args):
 
 def init():
     if platform.system() == 'Windows':
+        import logging
         logging.warning('ANSI terminal not supported on Windows.\n')
         return False
     term_echo(False)

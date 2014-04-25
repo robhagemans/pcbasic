@@ -20,7 +20,6 @@ import logging
 import error
 import unicodepage
 import console
-import run
 
 # these values are not shown as special graphic chars but as their normal effect
 control = (

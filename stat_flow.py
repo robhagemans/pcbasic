@@ -10,7 +10,6 @@
 #
 
 import error
-import events
 import program
 
 import fp

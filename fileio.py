@@ -317,6 +317,8 @@ class TextFile(BaseFile):
 
 
 class RandomBase(BaseFile):
+    # FIELD overflow
+    overflow_error = 50
     def __init__(self, fhandle, name, number, mode, access, lock, reclen=128):
         BaseFile.__init__(self, fhandle, name, number, mode, access, lock)
         self.reclen = reclen
@@ -374,13 +376,10 @@ class RandomBase(BaseFile):
         return self.field_text_file.width
     
     def set_width(self, new_width=255):
-        self.field_test_file.width = new_width
+        self.field_text_file.width = new_width
 
         
 class RandomFile(RandomBase):
-    # FIELD overflow
-    overflow_error = 50
-    
     def __init__(self, fhandle, name, number, mode, access, lock, reclen=128):
         RandomBase.__init__(self, fhandle, name, number, mode, access, lock, reclen)
         # position at start of file
