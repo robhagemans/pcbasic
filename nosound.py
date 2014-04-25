@@ -26,6 +26,7 @@ def init_sound():
     return True
     
 def stop_all_sound():
+    global music_queue
     music_queue = []
     
 def play_sound(frequency, duration, fill=1, loop=False):

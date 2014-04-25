@@ -28,7 +28,6 @@ if plat.system == 'Windows':
     import win32gui
     import win32api
     import win32con
-    import win32ui
     import win32print
     import subprocess
     import threading

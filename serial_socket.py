@@ -12,7 +12,6 @@ except Exception:
     
 import socket
 import select
-import oslayer
 
 
 def serial_for_url(url):
