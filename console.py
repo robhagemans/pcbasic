@@ -606,7 +606,7 @@ def clear():
         set_view(save_view_start, save_scroll_height)
     else:
         unset_view()
-    if keys_visible:
+    if state.keys_visible:
         show_keys()
         
 ##### i/o methods
