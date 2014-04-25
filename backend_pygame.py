@@ -1035,13 +1035,11 @@ def stop_all_sound():
     
 # process sound queue in event loop
 def check_sound():
-    global last_chunk, same_chunk_ticks, loop_sound, loop_sound_playing
+    global loop_sound, loop_sound_playing
     if not sound_queue:
         check_quit_sound()
     else:    
         check_init_mixer()
-        # check for hangups
-        check_hangs()
         # stop looping sound, allow queue to pass
         if loop_sound_playing:
             loop_sound_playing.stop()
@@ -1144,11 +1142,6 @@ sample_rate = 44100
 quiet_ticks = 0        
 quiet_quit = 200
 
-# kill the mixer after encountering the same chunk for may times - it has a tendency to hang.
-last_chunk = None
-same_chunk_ticks = 0
-max_ticks_same = None #150
-
 # loop the sound  in the mixer queue
 loop_sound = None
 # currrent sound that is looping
@@ -1182,19 +1175,4 @@ def check_quit_sound():
                 mixer.quit()
                 quiet_ticks = 0
 
-def check_hangs():
-    global last_chunk, same_chunk_ticks
-    if not max_ticks_same:
-        return
-    current_chunk = mixer.Channel(0).get_queue() 
-    if current_chunk == last_chunk:
-        same_chunk_ticks += 1
-        if same_chunk_ticks > max_ticks_same:
-            same_chunk_ticks = 0
-            # too long for the sort of chunks we use, it's hung.
-            mixer.quit()
-            mixer.init()
-    else:
-        same_chunk_ticks = 0    
-    last_chunk = current_chunk
-        
+
