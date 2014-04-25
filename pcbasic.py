@@ -24,10 +24,8 @@ import run
 import error
 import var
 import deviceio
-import fileio
 import expressions
 import oslayer
-import statements
 import nosound
 import sound_beep
 import graphics
