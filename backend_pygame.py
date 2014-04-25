@@ -688,10 +688,15 @@ def idle():
     pygame.time.wait(cycle_time/blink_cycles/8)  
 
 def check_events(pause=False):
-    global display_size, fullscreen
+    global display_size, fullscreen, screen_changed
     # handle Android pause/resume
-    if android:
-        android_check_handle_pause()
+    if android and android_check_events():
+        # force immediate redraw of screen
+        refresh_screen()
+        do_flip()
+        # force redraw on next tick  
+        # we seem to have to redraw twice to see anything
+        screen_changed = True
     # check and handle pygame events    
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
