@@ -56,9 +56,8 @@ else:
         stdin, stdout = None, None
     stdin, stdout = sys.stdin, sys.stdout
 
-# Android-specific workarounds 
 if plat.system == 'Android':
-    # TODO: is this still necessary?
+    # crashes on Android
     argparse = None
 else:
     import argparse
