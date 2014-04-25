@@ -13,7 +13,6 @@ try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
-
 from functools import partial
     
 import error

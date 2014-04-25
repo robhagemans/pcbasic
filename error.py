@@ -138,7 +138,6 @@ class RunError(Error):
                 except RunError as e:
                     e.handle_break()
     
-    
 def resume(jumpnum):  
     global error_handle_mode, error_resume, errn
     start_statement, runmode = error_resume 
