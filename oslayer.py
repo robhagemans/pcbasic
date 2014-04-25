@@ -13,7 +13,6 @@ import os
 import datetime
 import errno
 import fnmatch
-import string
 from functools import partial
 import StringIO
 
