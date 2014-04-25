@@ -591,12 +591,12 @@ def print_screen():
 
 def toggle_echo_lpt1():
     lpt1 = deviceio.devices['LPT1:']
-    if lpt1.write in input_echos:
-        input_echos.remove(lpt1.write)
-        output_echos.remove(lpt1.write)
+    if lpt1.write in state.input_echos:
+        state.input_echos.remove(lpt1.write)
+        state.output_echos.remove(lpt1.write)
     else:    
-        input_echos.append(lpt1.write)
-        output_echos.append(lpt1.write)
+        state.input_echos.append(lpt1.write)
+        state.output_echos.append(lpt1.write)
 
 def clear():
     save_view_set, save_view_start, save_scroll_height = state.view_set, state.view_start, state.scroll_height
