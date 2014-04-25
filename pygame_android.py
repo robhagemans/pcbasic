@@ -11,6 +11,7 @@
 
 import pygame
 import android
+import backend_pygame
 
 # unicode returned by pygame for android is incorrect, work around this.
 keycode_to_unicode = {
@@ -252,16 +253,15 @@ def android_toggle_keyboard():
     android_keyboard_visible = not android_keyboard_visible
 
 def android_check_handle_pause():
-    global screen_changed
     if android.check_pause():
         android.hide_keyboard()
         android.wait_for_resume()
         # force immediate redraw of screen
-        refresh_screen()
-        do_flip()
+        backend_pygame.refresh_screen()
+        backend_pygame.do_flip()
         # force redraw on next tick  
         # we seem to have to redraw twice to see anything
-        screen_changed = True
+        backend_pygame.screen_changed = True
 
 def android_init():
     android.init()
