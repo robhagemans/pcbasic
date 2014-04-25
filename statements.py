@@ -420,7 +420,7 @@ def exec_on_strig(ins):
 def exec_on_com(ins):
     keynum, jumpnum = parse_on_event(ins)
     keynum = vartypes.pass_int_unpack(keynum)
-    util.range_check(1, 2, num)
+    util.range_check(1, 2, keynum)
     events.com_handlers[keynum-1].gosub = jumpnum
 
 ##########################################################
@@ -929,7 +929,7 @@ def parse_get_or_put_file(ins):
     if util.skip_white_read_if(ins, (',',)):
         pos = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)).round_to_int())
         util.range_check_err(1, 2**25, pos, err=63) # not 2^32-1 as the manual boasts! pos-1 needs to fit in a single-prec mantissa
-        if not isinstance(the_file, deviceio.SerialFile):
+        if not isinstance(the_file, deviceio.COMFile):
             the_file.set_pos(pos)    
         else:
             num_bytes = pos    
