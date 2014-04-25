@@ -11,7 +11,6 @@
 
 import pygame
 import android
-import backend_pygame
 
 # unicode returned by pygame for android is incorrect, work around this.
 keycode_to_unicode = {
@@ -252,17 +251,13 @@ def android_toggle_keyboard():
         android.show_keyboard()
     android_keyboard_visible = not android_keyboard_visible
 
-def android_check_handle_pause():
+def android_check_events():
     if android.check_pause():
         android.hide_keyboard()
         android.wait_for_resume()
-        # force immediate redraw of screen
-        backend_pygame.refresh_screen()
-        backend_pygame.do_flip()
-        # force redraw on next tick  
-        # we seem to have to redraw twice to see anything
-        backend_pygame.screen_changed = True
-
+        return True
+    return False
+        
 def android_init():
     android.init()
     # map android keycodes that aren't yet mapped in PGS4A
