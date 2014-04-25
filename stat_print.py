@@ -256,7 +256,7 @@ def exec_print(ins, screen=None):
                 pos = max(0, vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=2), 0xffff)) % screen.width
                 util.require_read(ins, (')',))
                 if pos < screen.col:
-                    screen_write_line()
+                    screen.write_line()
                     screen.write(' '*(pos-1))
                 else:
                     screen.write(' '*(pos-screen.col))
