@@ -110,6 +110,7 @@ def prepare(args):
 
 def init():
     if tty == None:
+        import logging
         logging.warning('ANSI terminal not supported.\n')
         return False
     term_echo(False)

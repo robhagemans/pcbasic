@@ -13,6 +13,8 @@ try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
+
+from functools import partial
     
 import error
 import representation
@@ -144,6 +146,11 @@ def exec_deftype(ins, typechar):
         if not util.skip_white_read_if(ins, (',',)):
             break
     util.require(ins, util.end_statement)
+
+exec_defstr = partial(exec_deftype, typechar='$')
+exec_defint = partial(exec_deftype, typechar='%')
+exec_defsng = partial(exec_deftype, typechar='!')
+exec_defdbl = partial(exec_deftype, typechar='#')
 
 def exec_erase(ins):
     while True:

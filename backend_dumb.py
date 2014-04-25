@@ -19,7 +19,6 @@ import logging
 import error
 import unicodepage
 import console
-import run
 import plat
 from state import console_state
 

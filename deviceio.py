@@ -169,9 +169,9 @@ class NullDevice(object):
     # input
     def read_line(self):
         return ''    
-    def read_chars(self):
+    def read_chars(self, n):
         return []
-    def read(self):
+    def read(self, n):
         return ''        
 
     def end_of_file(self):
