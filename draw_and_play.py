@@ -144,7 +144,7 @@ def draw_step(x0,y0, sx,sy, plot, goback):
 
 def draw_parse_gml(gml):
     global draw_scale, draw_angle
-    save_attr = console.attr
+    save_attr = console.state.attr
     gmls = StringIO(gml.upper())
     plot, goback = True, False
     while True:
@@ -165,7 +165,7 @@ def draw_parse_gml(gml):
             draw_parse_gml(sub)            
         elif c == 'C':
             # set foreground colour
-            console.attr = ml_parse_number(gmls) 
+            console.state.attr = ml_parse_number(gmls) 
         elif c == 'S':
             # set scale
             draw_scale = ml_parse_number(gmls)
@@ -221,7 +221,7 @@ def draw_parse_gml(gml):
                 raise error.RunError(5)
             bound = ml_parse_number(gmls)
             graphics.flood_fill(x0, y0, solid_pattern(colour), colour, bound)    
-    console.attr = save_attr        
+    console.state.attr = save_attr        
 
 def solid_pattern(c):
     pattern = [0]*graphics.bitsperpixel

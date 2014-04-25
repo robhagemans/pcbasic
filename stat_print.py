@@ -29,7 +29,7 @@ import graphics
 
 def exec_cls(ins):
     if util.skip_white(ins) in util.end_statement:
-        val = 1 if graphics.graph_view_set else (2 if console.view_set else 0)
+        val = 1 if graphics.graph_view_set else (2 if console.state.view_set else 0)
     else:
         val = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.range_check(0, 2, val)
@@ -51,33 +51,33 @@ def exec_cls(ins):
 
 def exec_color(ins):
     fore, back, bord = expressions.parse_int_list(ins, 3, 5)          
-    mode = console.screen_mode
+    mode = console.state.screen_mode
     if mode == 1:
         return exec_color_mode_1(fore, back, bord)
     elif mode == 2: 
         # screen 2: illegal fn call
         raise error.RunError(5)
-    fore_old, back_old = (console.attr>>7)*0x10 + (console.attr&0xf), (console.attr>>4) & 0x7
+    fore_old, back_old = (console.state.attr>>7)*0x10 + (console.state.attr&0xf), (console.state.attr>>4) & 0x7
     bord = 0 if bord == None else bord
     util.range_check(0, 255, bord)
     fore = fore_old if fore == None else fore
     # graphics mode bg is always 0; sets palette instead
     back = back_old if mode == 0 and back == None else (console.get_palette_entry(0) if back == None else back)
     if mode == 0:
-        util.range_check(0, console.num_colours-1, fore)
+        util.range_check(0, console.state.num_colours-1, fore)
         util.range_check(0, 15, back, bord)
-        console.attr = ((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10 + (fore & 0xf) 
+        console.state.attr = ((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10 + (fore & 0xf) 
         # border not implemented
     elif mode in (7, 8):
-        util.range_check(1, console.num_colours-1, fore)
-        util.range_check(0, console.num_colours-1, back)
-        console.attr = fore
+        util.range_check(1, console.state.num_colours-1, fore)
+        util.range_check(0, console.state.num_colours-1, back)
+        console.state.attr = fore
         # in screen 7 and 8, only low intensity palette is used.
         console.set_palette_entry(0, back % 8)    
     elif mode == 9:
-        util.range_check(0, console.num_colours-1, fore)
-        util.range_check(0, console.num_palette-1, back)
-        console.attr = fore
+        util.range_check(0, console.state.num_colours-1, fore)
+        util.range_check(0, console.state.num_palette-1, back)
+        console.state.attr = fore
         console.set_palette_entry(0, back)
     
 def exec_color_mode_1(back, pal, override):
@@ -107,16 +107,16 @@ def exec_palette(ins):
         exec_palette_using(ins)
     else:
         # can't set blinking colours separately
-        num_palette_entries = console.num_colours if console.num_colours != 32 else 16
+        num_palette_entries = console.state.num_colours if console.state.num_colours != 32 else 16
         pair = expressions.parse_int_list(ins, 2, err=5)
         util.range_check(0, num_palette_entries-1, pair[0])
-        util.range_check(-1, console.num_palette-1, pair[1])
+        util.range_check(-1, console.state.num_palette-1, pair[1])
         if pair[1] > -1:
             console.set_palette_entry(pair[0], pair[1])
         util.require(ins, util.end_statement)    
 
 def exec_palette_using(ins):
-    num_palette_entries = console.num_colours if console.num_colours != 32 else 16
+    num_palette_entries = console.state.num_colours if console.state.num_colours != 32 else 16
     array_name, start_indices = expressions.get_var_or_array_name(ins)
     try:     
         dimensions, lst, _ = var.arrays[array_name]    
@@ -130,7 +130,7 @@ def exec_palette_using(ins):
     new_palette = []
     for i in range(num_palette_entries):
         val = vartypes.pass_int_unpack(('%', lst[(start+i)*2:(start+i+1)*2]))
-        util.range_check(-1, console.num_palette-1, val)
+        util.range_check(-1, console.state.num_palette-1, val)
         new_palette.append(val if val > -1 else console.get_palette_entry(i))
     console.set_palette(new_palette)
     util.require(ins, util.end_statement) 
@@ -138,10 +138,10 @@ def exec_palette_using(ins):
 def exec_key(ins):
     d = util.skip_white_read(ins)
     if d == '\x95': # ON
-        if not console.keys_visible:
+        if not console.state.keys_visible:
            console.show_keys()
     elif d == '\xdd': # OFF
-        if console.keys_visible:
+        if console.state.keys_visible:
            console.hide_keys()   
     elif d == '\x93': # LIST
         console.list_keys()
@@ -174,8 +174,8 @@ def exec_key_define(ins):
     # only length-2 expressions can be assigned to KEYs over 10
     # (in which case it's a key scancode definition, which is not implemented)
     if keynum <= 10:
-        console.key_replace[keynum-1] = str(text)
-        if console.keys_visible:
+        console.state.key_replace[keynum-1] = str(text)
+        if console.state.keys_visible:
             console.show_keys()
     else:
         if len(text) != 2:
@@ -189,18 +189,18 @@ def exec_locate(ins):
     if dummy != None:
         # can end on a 5th comma but no stuff allowed after it
         raise error.RunError(2)
-    row = console.row if row == None else row
-    col = console.col if col == None else col
-    if row == console.height and console.keys_visible:
+    row = console.state.row if row == None else row
+    col = console.state.col if col == None else col
+    if row == console.state.height and console.state.keys_visible:
         raise error.RunError(5)
-    elif console.view_set:
-        util.range_check(console.view_start, console.scroll_height, row)
+    elif console.state.view_set:
+        util.range_check(console.state.view_start, console.state.scroll_height, row)
     else:
-        util.range_check(1, console.height, row)
-    util.range_check(1, console.width, col)
-    if row == console.height:
+        util.range_check(1, console.state.height, row)
+    util.range_check(1, console.state.width, col)
+    if row == console.state.height:
         # temporarily allow writing on last row
-        console.bottom_row_allowed = True       
+        console.state.bottom_row_allowed = True       
     console.set_pos(row, col, scroll_ok=False) 
     if cursor != None:
         util.range_check(0, 1, cursor)   
@@ -367,10 +367,10 @@ def exec_screen(ins):
     # in GW, screen 0,0,0,0,0,0 raises error after changing the palette... this raises error before:
     mode, colorswitch, apagenum, vpagenum = expressions.parse_int_list(ins, 4)
     # set defaults to avoid err 5 on range check
-    mode = mode if mode != None else console.screen_mode
-    colorswitch = colorswitch if colorswitch != None else console.colorswitch    
-    apagenum = apagenum if apagenum != None else console.apagenum
-    vpagenum = vpagenum if vpagenum != None else console.vpagenum
+    mode = mode if mode != None else console.state.screen_mode
+    colorswitch = colorswitch if colorswitch != None else console.state.colorswitch    
+    apagenum = apagenum if apagenum != None else console.state.apagenum
+    vpagenum = vpagenum if vpagenum != None else console.state.vpagenum
     # if any parameter not in [0,255], error 5 without doing anything 
     util.range_check(0, 255, mode, colorswitch, apagenum, vpagenum)
     # if the parameters are outside narrow ranges (e.g. not implemented screen mode, pagenum beyond max)
@@ -381,10 +381,10 @@ def exec_screen(ins):
     
 def exec_pcopy(ins):
     src = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-    util.range_check(0, console.num_pages-1, src)
+    util.range_check(0, console.state.num_pages-1, src)
     util.require_read(ins, (',',))
     dst = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
-    util.range_check(0, console.num_pages-1, dst)
+    util.range_check(0, console.state.num_pages-1, dst)
     console.copy_page(src, dst)
         

@@ -29,6 +29,7 @@ import fileio
 import deviceio
 import graphics
 import console
+from state import console_state
 # for FRE() only
 import program
 
@@ -456,13 +457,13 @@ def value_screen(ins):
         raise error.RunError(5)
     if z == None:
         z = 0    
-    util.range_check(1, console.height, row)
-    if console.view_set:
-        util.range_check(console.view_start, console.scroll_height, row)
-    util.range_check(1, console.width, col)
+    util.range_check(1, console_state.height, row)
+    if console_state.view_set:
+        util.range_check(console_state.view_start, console_state.scroll_height, row)
+    util.range_check(1, console_state.width, col)
     util.range_check(0, 255, z)
     util.require_read(ins, (')',))
-    if z and console.screen_mode:
+    if z and console_state.screen_mode:
         return vartypes.null['%']    
     else:
         return vartypes.pack_int(console.get_screen_char_attr(row, col, z!=0))
@@ -491,12 +492,12 @@ def value_inkey(ins):
     return vartypes.pack_string(bytearray(console.get_char()))
 
 def value_csrlin(ins):
-    return vartypes.pack_int(console.row)
+    return vartypes.pack_int(console_state.row)
 
 def value_pos(ins):            
     # parse the dummy argument, doesnt matter what it is as long as it's a legal expression
     parse_bracket(ins)
-    return vartypes.pack_int(console.col)
+    return vartypes.pack_int(console_state.col)
 
 def value_lpos(ins):            
     num = vartypes.pass_int_unpack(parse_bracket(ins))
@@ -627,7 +628,7 @@ def value_pmap(ins):
     mode = vartypes.pass_int_unpack(parse_expression(ins))
     util.require_read(ins, (')',))
     util.range_check(0, 3, mode)
-    if not console.screen_mode:
+    if not console_state.screen_mode:
         return vartypes.null['%']
     if mode == 0:
         value, _ = graphics.window_coords(fp.unpack(vartypes.pass_single_keep(coord)), fp.Single.zero)       
@@ -704,7 +705,7 @@ def value_peek(ins):
         # try if there's a preset value
         return vartypes.pack_int(var.peek_values[addr])
     except KeyError: 
-        if addr >= graphics.video_segment[console.screen_mode]*0x10:
+        if addr >= graphics.video_segment[console_state.screen_mode]*0x10:
             # graphics and text memory
             return vartypes.pack_int(max(0, graphics.get_memory(addr)))
         elif addr >= var.data_segment*0x10 + var.var_mem_start:
@@ -744,7 +745,7 @@ def value_inp(ins):
     console.check_events()
     port = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
     if port == 0x60:
-        return vartypes.pack_int(console.inp_key) 
+        return vartypes.pack_int(console_state.inp_key) 
     return vartypes.null['%']
 
 #  erdev, erdev$        

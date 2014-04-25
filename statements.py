@@ -360,10 +360,10 @@ def exec_strig(ins):
             raise error.RunError(2)
     elif d == '\x95': # ON
         ins.read(1)
-        console.stick_is_on = True
+        console.state.stick_is_on = True
     elif d == '\xDD': # OFF
         ins.read(1)
-        console.stick_is_on = False
+        console.state.stick_is_on = False
     else:
         raise error.RunError(2)
     util.require(ins, util.end_statement)
@@ -491,7 +491,7 @@ def exec_poke(ins):
     if addr < 0: 
         addr += 0x10000
     addr += var.segment*0x10
-    if addr >= graphics.video_segment[console.screen_mode]*0x10:
+    if addr >= graphics.video_segment[console.state.screen_mode]*0x10:
         # graphics and text memory
         graphics.set_memory(addr, val)
 #    elif addr >= var.data_segment*0x10 + var.var_mem_start:
@@ -545,7 +545,7 @@ def exec_bload(ins):
         buf += c    
     g.close()
     addr = seg * 0x10 + offset
-    if addr + len(buf) > graphics.video_segment[console.screen_mode]*0x10:
+    if addr + len(buf) > graphics.video_segment[console.state.screen_mode]*0x10:
         # graphics and text memory
         graphics.set_memory_block(addr, buf)
 
@@ -617,7 +617,7 @@ def exec_wait(ins):
     util.require(ins, util.end_statement)
     store_suspend = events.suspend_all_events
     events.suspend_all_events = True
-    while (((console.inp_key if addr == 0x60 else 0) ^ xorer) & ander) == 0:
+    while (((console.state.inp_key if addr == 0x60 else 0) ^ xorer) & ander) == 0:
         console.idle()
         console.check_events()
     events.suspend_all_events = store_suspend     
