@@ -14,12 +14,11 @@
  
  
 import sys
-import platform
-# for autosave
 import os
-import tempfile
-
 from functools import partial             
+import ConfigParser
+# for autosave
+import tempfile
              
 import run
 import error
@@ -38,15 +37,16 @@ import program
 import unicodepage
 import debug
 import logging
+import plat
 
 # OS-specific stdin/stdout selection
 # no stdin/stdout access allowed on packaged apps
-if platform.system() in ('Darwin', 'Windows'):
+if plat.system in ('OSX', 'Windows'):
     backend_dumb = None
     stdin_is_tty, stdout_is_tty = True, True
     stdin, stdout = None, None
 else:
-    # Linux including Android
+    # Unix, Linux including Android
     import backend_dumb
     try:
         stdin_is_tty = sys.stdin.isatty()
@@ -57,14 +57,11 @@ else:
     stdin, stdout = sys.stdin, sys.stdout
 
 # Android-specific workarounds 
-try:
-    import android
+if plat.system == 'Android':
+    # TODO: is this still necessary?
     argparse = None
-    import ConfigParser
-except ImportError:
-    android = None
+else:
     import argparse
-    import ConfigParser
 
 
 greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "@:INFO" for more.\r%d Bytes free'
@@ -262,7 +259,7 @@ def get_args():
     #   /c:n    sets the COM receive buffer to n bytes. If n==0, disable the COM ports.   
     #   /i      statically allocate file control blocks and data buffer.
     #   /m:n,m  sets the highest memory location to n and maximum block size to m
-    if True: #not argparse:
+    if not argparse:
         config = read_config()
         class Namespace(object):
             pass
