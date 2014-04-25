@@ -118,6 +118,8 @@ if pygame:
     cursor0 = None
     # screen & updating 
     screen = None
+    surface0 = []
+    surface1 = []
     
     screen_changed = True
     cycle = 0
@@ -408,7 +410,7 @@ def resize_display(width, height, initial=False):
     if state.fullscreen or (width, height) == physical_size:
         state.fullscreen = True
         flags |= pygame.FULLSCREEN | pygame.NOFRAME
-        width, height = display_size if (not initial and console_state.screen_mode != 0) else display_size_text
+        width, height = state.display_size if (not initial and console_state.screen_mode != 0) else state.display_size_text
         # scale suggested dimensions to largest integer times pixel size that fits
         scale = min( physical_size[0]//width, physical_size[1]//height )
         width, height = width * scale, height * scale
@@ -457,11 +459,11 @@ def set_palette_entry(index, colour):
         display.set_palette_at(index, state.gamepalette[index])
     
 def clear_rows(cattr, start, stop):
-    bg = (cattr>>4) & 0x7
     global screen_changed
+    bg = (cattr>>4) & 0x7
     scroll_area = pygame.Rect(0, (start-1)*state.font_height, state.size[0], (stop-start+1)*state.font_height) 
-    console_state.apage.surface0.fill(bg, scroll_area)
-    console_state.apage.surface1.fill(bg, scroll_area)
+    surface0[console_state.apagenum].fill(bg, scroll_area)
+    surface1[console_state.apagenum].fill(bg, scroll_area)
     screen_changed = True
     
 # not in interface
@@ -487,15 +489,15 @@ def init_screen_mode(mode, new_font_height):
         resize_display(*state.display_size)    
     
 def setup_screen(to_height, to_width):
-    global screen, screen_changed
+    global screen, screen_changed, surface0, surface1
     state.size = to_width*8, to_height*state.font_height
     screen = pygame.Surface(state.size, 0, 8)
     # whole screen (blink on & off)
+    surface0 = [ pygame.Surface(state.size, depth=8) for _ in range(console_state.num_pages)]
+    surface1 = [ pygame.Surface(state.size, depth=8) for _ in range(console_state.num_pages)]
     for i in range(console_state.num_pages):
-        console_state.pages[i].surface0 = pygame.Surface(state.size, depth=8)
-        console_state.pages[i].surface1 = pygame.Surface(state.size, depth=8)
-        console_state.pages[i].surface0.set_palette(workaround_palette)
-        console_state.pages[i].surface1.set_palette(workaround_palette)
+        surface0[i].set_palette(workaround_palette)
+        surface1[i].set_palette(workaround_palette)
     screen.set_palette(workaround_palette)
     under_cursor.set_palette(workaround_palette)
     set_palette()
@@ -503,8 +505,8 @@ def setup_screen(to_height, to_width):
     
 def copy_page(src,dst):
     global screen_changed
-    console_state.pages[dst].surface0.blit(console_state.pages[src].surface0, (0,0))
-    console_state.pages[dst].surface1.blit(console_state.pages[src].surface1, (0,0))
+    surface0[dst].blit(surface0[src], (0,0))
+    surface1[dst].blit(surface1[src], (0,0))
     screen_changed = True
     
 def show_cursor(do_show, prev):
@@ -540,38 +542,38 @@ def scroll(from_line):
                     0, (from_line-1)*state.font_height,
                     console_state.width*8, (console_state.scroll_height-from_line+1)*state.font_height)
     # scroll
-    console_state.apage.surface0.set_clip(temp_scroll_area)
-    console_state.apage.surface1.set_clip(temp_scroll_area)
-    console_state.apage.surface0.scroll(0, -state.font_height)
-    console_state.apage.surface1.scroll(0, -state.font_height)
+    surface0[console_state.apagenum].set_clip(temp_scroll_area)
+    surface1[console_state.apagenum].set_clip(temp_scroll_area)
+    surface0[console_state.apagenum].scroll(0, -state.font_height)
+    surface1[console_state.apagenum].scroll(0, -state.font_height)
     # empty new line
     blank = pygame.Surface( (console_state.width*8, state.font_height) , depth=8)
     bg = (console_state.attr>>4) & 0x7
     blank.set_palette(workaround_palette)
     blank.fill(bg)
-    console_state.apage.surface0.blit(blank, (0, (console_state.scroll_height-1)*state.font_height))
-    console_state.apage.surface1.blit(blank, (0, (console_state.scroll_height-1)*state.font_height))
-    console_state.apage.surface0.set_clip(None)
-    console_state.apage.surface1.set_clip(None)
+    surface0[console_state.apagenum].blit(blank, (0, (console_state.scroll_height-1)*state.font_height))
+    surface1[console_state.apagenum].blit(blank, (0, (console_state.scroll_height-1)*state.font_height))
+    surface0[console_state.apagenum].set_clip(None)
+    surface1[console_state.apagenum].set_clip(None)
     screen_changed = True
    
 def scroll_down(from_line):
     global screen_changed
     temp_scroll_area = pygame.Rect(0, (from_line-1)*state.font_height, console_state.width*8, 
                                             (console_state.scroll_height-from_line+1)*state.font_height)
-    console_state.apage.surface0.set_clip(temp_scroll_area)
-    console_state.apage.surface1.set_clip(temp_scroll_area)
-    console_state.apage.surface0.scroll(0, state.font_height)
-    console_state.apage.surface1.scroll(0, state.font_height)
+    surface0[console_state.apagenum].set_clip(temp_scroll_area)
+    surface1[console_state.apagenum].set_clip(temp_scroll_area)
+    surface0[console_state.apagenum].scroll(0, state.font_height)
+    surface1[console_state.apagenum].scroll(0, state.font_height)
     # empty new line
     blank = pygame.Surface( (console_state.width*8, state.font_height), depth=8 )
     bg = (console_state.attr>>4) & 0x7
     blank.set_palette(workaround_palette)
     blank.fill(bg)
-    console_state.apage.surface0.blit(blank, (0, (from_line-1)*state.font_height))
-    console_state.apage.surface1.blit(blank, (0, (from_line-1)*state.font_height))
-    console_state.apage.surface0.set_clip(None)
-    console_state.apage.surface1.set_clip(None)
+    surface0[console_state.apagenum].blit(blank, (0, (from_line-1)*state.font_height))
+    surface1[console_state.apagenum].blit(blank, (0, (from_line-1)*state.font_height))
+    surface0[console_state.apagenum].set_clip(None)
+    surface1[console_state.apagenum].set_clip(None)
     screen_changed = True
 
 state.last_attr = None
@@ -593,11 +595,11 @@ def putc_at(row, col, c):
     blank = glyphs[32] # using SPACE for blank 
     top_left = ((col-1)*8, (row-1)*state.font_height)
     if not console_state.screen_mode:
-        console_state.apage.surface1.blit(glyph, top_left )
+        surface1[console_state.apagenum].blit(glyph, top_left )
     if state.last_attr >> 7: #blink:
-        console_state.apage.surface0.blit(blank, top_left )
+        surface0[console_state.apagenum].blit(blank, top_left )
     else:
-        console_state.apage.surface0.blit(glyph, top_left )
+        surface0[console_state.apagenum].blit(glyph, top_left )
     screen_changed = True
 
 def build_glyph(c, font_face, glyph_height):
@@ -644,9 +646,9 @@ def build_icon():
 
 def refresh_screen():
     if console_state.screen_mode or blink_state == 0:
-        screen.blit(console_state.vpage.surface0, (0, 0))
+        screen.blit(surface0[console_state.vpagenum], (0, 0))
     elif blink_state == 1: 
-        screen.blit(console_state.vpage.surface1, (0, 0))
+        screen.blit(surface1[console_state.vpagenum], (0, 0))
     
 def remove_cursor():
     if not console_state.cursor or console_state.vpage != console_state.apage:
@@ -917,23 +919,23 @@ def get_strig(fn):
 graph_view = None
 
 
-def put_pixel(x, y, index, page=None):
+def put_pixel(x, y, index, pagenum=None):
     global screen_changed
-    if page == None:
-        page = console_state.apage
-    page.surface0.set_at((x,y), index)
+    if pagenum == None:
+        pagenum = console_state.apagenum
+    surface0[pagenum].set_at((x,y), index)
     # empty the console buffer of affected characters
     cx, cy = min(console_state.width-1, max(0, x//8)), min(console_state.height-1, max(0, y//font_height)) 
-    page.row[cy].buf[cx] = (' ', console_state.attr)
+    console_state.pages[pagenum].row[cy].buf[cx] = (' ', console_state.attr)
     screen_changed = True
 
-def get_pixel(x, y, page=None):    
-    if page == None:
-        page = console_state.apage
-    return page.surface0.get_at((x,y)).b
+def get_pixel(x, y, pagenum=None):    
+    if pagenum == None:
+        pagenum = console_state.apage
+    return surface0[pagenum].get_at((x,y)).b
 
 def get_graph_clip():
-    view = graph_view if graph_view else console_state.apage.surface0.get_rect()
+    view = graph_view if graph_view else surface0[console_state.apagenum].get_rect()
     return view.left, view.top, view.right-1, view.bottom-1
 
 def set_graph_clip(x0, y0, x1, y1):
@@ -943,25 +945,25 @@ def set_graph_clip(x0, y0, x1, y1):
 def unset_graph_clip():
     global graph_view
     graph_view = None    
-    return console_state.apage.surface0.get_rect().center
+    return surface0[console_state.apagenum].get_rect().center
 
 def clear_graph_clip(bg):
     global screen_changed
-    console_state.apage.surface0.set_clip(graph_view)
-    console_state.apage.surface0.fill(bg)
-    console_state.apage.surface0.set_clip(None)
+    surface0[console_state.apagenum].set_clip(graph_view)
+    surface0[console_state.apagenum].fill(bg)
+    surface0[console_state.apagenum].set_clip(None)
     screen_changed = True
 
 def remove_graph_clip():
-    console_state.apage.surface0.set_clip(None)
+    surface0[console_state.apagenum].set_clip(None)
 
 def apply_graph_clip():
-    console_state.apage.surface0.set_clip(graph_view)
+    surface0[console_state.apagenum].set_clip(graph_view)
 
 def fill_rect(x0, y0, x1, y1, index):
     global screen_changed
     rect = pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)
-    console_state.apage.surface0.fill(index, rect)
+    surface0[console_state.apagenum].fill(index, rect)
     cx0, cy0 = min(console_state.width-1, max(0, x0//8)), min(console_state.height-1, max(0, y0//font_height)) 
     cx1, cy1 = min(console_state.width-1, max(0, x1//8)), min(console_state.height-1, max(0, y1//font_height))
     for r in range(cy0, cy1+1):
@@ -998,7 +1000,7 @@ def fast_get(x0, y0, x1, y1, varname):
     # arrays[varname] must exist at this point (or GET would have raised error 5)
     version = var.arrays[varname][2]
     # copy a numpy array of the target area
-    clip = pygame.surfarray.array2d(console_state.apage.surface0.subsurface(pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)))
+    clip = pygame.surfarray.array2d(surface0[console_state.apagenum].subsurface(pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)))
     get_put_store[varname] = ( x1-x0+1, y1-y0+1, clip, version )
 
 def fast_put(x0, y0, varname, operation_char):
@@ -1016,7 +1018,7 @@ def fast_put(x0, y0, varname, operation_char):
     if version != var.arrays[varname][2]:
         return False
     # reference the destination area
-    dest_array = pygame.surfarray.pixels2d(console_state.apage.surface0.subsurface(pygame.Rect(x0, y0, width, height))) 
+    dest_array = pygame.surfarray.pixels2d(surface0[console_state.apagenum].subsurface(pygame.Rect(x0, y0, width, height))) 
     # apply the operation
     operation = fast_operations[operation_char]
     operation(dest_array, clip)

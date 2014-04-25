@@ -9,10 +9,25 @@
 # please see text file COPYING for licence terms.
 #
 
-#import pickle
+import pickle
+import os
+import copy
+
+import oslayer
 
 class State(object):
     pass
-    
+        
 console_state = State()
-    
+display_state = State()
+
+state_file = os.path.join(oslayer.drives['@'], 'STATE.PKL')
+
+def save():
+    f = oslayer.safe_open(state_file, "S", "W")
+    state_to_keep = (console_state, display_state)
+    pickle.dump(state_to_keep, f)
+    f.close()
+
+def load():
+    pass        

@@ -723,14 +723,14 @@ video_segment = { 0: 0xb800, 1: 0xb800, 2: 0xb800, 7: 0xa000, 8: 0xa000, 9: 0xa0
 
 def get_pixel_byte(page, x, y, plane):
     if y < size[1] and page < console_state.num_pages:
-        return sum(( ((backend.get_pixel(x+shift, y, console_state.pages[page]) >> plane) & 1) << (7-shift) for shift in range(8) ))
+        return sum(( ((backend.get_pixel(x+shift, y, page) >> plane) & 1) << (7-shift) for shift in range(8) ))
     return -1    
     
 def set_pixel_byte(page, x, y, plane_mask, byte):
     if y < size[1] and page < console_state.num_pages:
         for shift in range(8):
             bit = (byte>>(7-shift)) & 1
-            backend.put_pixel(x + shift, y, bit * plane_mask, console_state.pages[page])  
+            backend.put_pixel(x + shift, y, bit * plane_mask, page)  
     
 def get_memory(addr):
     if addr < video_segment[console_state.screen_mode]*0x10:
