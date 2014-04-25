@@ -202,11 +202,6 @@ def parse_statement():
 #################################################################    
 #################################################################
 
-exec_defstr = partial(exec_deftype, typechar='$')
-exec_defint = partial(exec_deftype, typechar='%')
-exec_defsng = partial(exec_deftype, typechar='!')
-exec_defdbl = partial(exec_deftype, typechar='#')
-
 def exec_system(ins): 
     # SYSTEM LAH does not execute 
     util.require(ins, util.end_statement)

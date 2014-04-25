@@ -23,7 +23,6 @@
 #################################################################
 from cStringIO import StringIO
 
-import error
 import representation
 import util
 import vartypes
