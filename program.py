@@ -115,7 +115,7 @@ def clear_all(close_files=False):
     #   Resets sound to music foreground
     console.sound.music_foreground = True
     #   Resets STRIG to off
-    console.stick_is_on = False
+    console.state.stick_is_on = False
     # disable all event trapping (resets PEN to OFF too)
     events.reset_events()
     # CLEAR also dumps for_next and while_wend stacks
@@ -283,9 +283,9 @@ def edit(from_line, bytepos=None):
     # list line
     bytecode.seek(line_numbers[from_line]+1)
     _, output, textpos = tokenise.detokenise_line(bytecode, bytepos)
-    console.clear_line(console.row)
+    console.clear_line(console.state.row)
     console.write(str(output))
-    console.set_pos(console.row, textpos+1 if bytepos else 1)
+    console.set_pos(console.state.row, textpos+1 if bytepos else 1)
     # throws back to direct mode
     set_runmode(False)
     # suppress prompt
@@ -491,7 +491,7 @@ def list_lines(dev, from_line, to_line):
         _, line, _ = tokenise.detokenise_line(bytecode)
         if dev == console:
             console.check_events()
-            console.clear_line(console.row)
+            console.clear_line(console.state.row)
         dev.write_line(str(line))
     dev.close()
     set_runmode(False)
