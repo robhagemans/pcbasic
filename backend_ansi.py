@@ -17,12 +17,14 @@
 # reading escape sequences with os.read, see http://stackoverflow.com/questions/8620878/check-for-extra-characters-in-linux-terminal-buffer
 
 import sys
-import platform
-if platform.system() != 'Windows':
-    import tty, termios, select
-
 import time
 import os
+
+try:
+    # this fails on Windows
+    import tty, termios, select
+except ImportError:
+    tty = None
 
 import unicodepage
 import error
@@ -106,8 +108,8 @@ def prepare(args):
     pass
 
 def init():
-    if platform.system() == 'Windows':
-        logging.warning('ANSI terminal not supported on Windows.\n')
+    if tty == None:
+        logging.warning('ANSI terminal not supported.\n')
         return False
     term_echo(False)
     term.write(esc_set_title % 'PC-BASIC 3.23')

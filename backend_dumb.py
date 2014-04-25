@@ -11,7 +11,6 @@
 #
 
 import sys
-import platform
 import time
 import select
 import os
@@ -21,6 +20,7 @@ import error
 import unicodepage
 import console
 import run
+import plat
 
 # these values are not shown as special graphic chars but as their normal effect
 control = (
@@ -45,7 +45,7 @@ def prepare(args):
         
 def init():
     global check_keys
-    if platform.system() == 'Windows':
+    if plat.system == 'Windows':
         logging.warning('Text terminal not supported on Windows.\n')
         return False
     # close input after redirected input ends
