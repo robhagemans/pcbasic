@@ -28,7 +28,6 @@ import fileio
 import fp
 import oslayer
 import program
-import run
 import util
 import var
 import vartypes
@@ -211,7 +210,7 @@ def parse_statement():
 def exec_system(ins): 
     # SYSTEM LAH does not execute 
     util.require(ins, util.end_statement)
-    run.exit() 
+    raise error.Exit()
         
 def exec_tron(ins):
     program.tron = True

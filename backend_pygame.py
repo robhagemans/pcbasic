@@ -44,8 +44,6 @@ import graphics
 import var
 # for run_mode only
 import program
-# for exit()
-import run
 
 import state as state_module
 from state import display_state as state
@@ -731,7 +729,7 @@ def check_events(pause=False):
             if noquit:
                 pygame.display.set_caption('PC-BASIC 3.23 - to exit type <CTRL+BREAK> <ESC> SYSTEM')
             else:
-                run.exit()        
+                raise error.Exit()      
     check_screen()
     return False
 
