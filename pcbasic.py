@@ -118,6 +118,8 @@ def main():
             raise
         else:    
             logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
+    except Exception as e:
+        raise
     finally:
         if reset:
             del_state()
@@ -147,7 +149,6 @@ def del_state():
     os.remove(state_file)
     
 def load_state():
-    global noresume
     try:
         program.load(oslayer.safe_open(programsave, 'L', 'R'))
         state.load(oslayer.safe_open(state_file, 'L', 'R'))
