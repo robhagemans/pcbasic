@@ -572,18 +572,19 @@ def scroll_down(from_line):
     surface1[console_state.apagenum].set_clip(None)
     screen_changed = True
 
-state.last_attr = None
-state.last_mode = None
+last_attr = None
+last_attr_context = None
 def set_attr(cattr):
-    if cattr == state.last_attr and (console_state.screen_mode, console_state.apagenum) == state.last_mode:
+    global last_attr, last_attr_context
+    if cattr == last_attr and (console_state.screen_mode, console_state.apagenum) == last_attr_context:
         return    
     color = (0, 0, cattr & 0xf)
     bg = (0, 0, (cattr>>4) & 0x7)    
     for glyph in glyphs:
         glyph.set_palette_at(255, bg)
         glyph.set_palette_at(254, color)
-    state.last_attr = cattr
-    state.last_mode = console_state.screen_mode, console_state.apagenum
+    last_attr = cattr    
+    last_attr_context = console_state.screen_mode, console_state.apagenum
         
 def putc_at(row, col, c):
     global screen_changed
@@ -592,7 +593,7 @@ def putc_at(row, col, c):
     top_left = ((col-1)*8, (row-1)*state.font_height)
     if not console_state.screen_mode:
         surface1[console_state.apagenum].blit(glyph, top_left )
-    if state.last_attr >> 7: #blink:
+    if last_attr >> 7: #blink:
         surface0[console_state.apagenum].blit(blank, top_left )
     else:
         surface0[console_state.apagenum].blit(glyph, top_left )
