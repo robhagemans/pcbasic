@@ -17,8 +17,6 @@ import sys
 import os
 from functools import partial             
 import ConfigParser
-# for autosave
-import tempfile
              
 import run
 import error
@@ -36,6 +34,7 @@ import unicodepage
 import debug
 import logging
 import plat
+import state
 
 # OS-specific stdin/stdout selection
 # no stdin/stdout access allowed on packaged apps
@@ -77,25 +76,29 @@ def main():
         deviceio.prepare_devices(args)
         # initialise program memory
         program.new()
-        # print greeting
-        if not args.run and not args.cmd and not args.conv:
-            if stdin_is_tty:
-                console.write_line(greeting % (debugstr, var.total_mem))
-        # execute arguments
-        if args.run or args.load or args.conv and (args.program or stdin):
-            program.load(oslayer.safe_open(args.program, "L", "R") if args.program else stdin)
-        if args.conv and (args.outfile or stdout):
-            program.save(oslayer.safe_open(args.outfile, "S", "W") if args.outfile else stdout, args.conv_mode)
-            run.exit()
-        if args.run:
-            args.cmd += ':RUN'
-        # get out, if we ran with -q
-        if args.quit:
-            run.prompt = False
+        if args.resume:
+            # resume form saved emulator state
+            load_state()
+        else:    
+            # print greeting
+            if not args.run and not args.cmd and not args.conv:
+                if stdin_is_tty:
+                    console.write_line(greeting % (debugstr, var.total_mem))
+            # execute arguments
+            if args.run or args.load or args.conv and (args.program or stdin):
+                program.load(oslayer.safe_open(args.program, "L", "R") if args.program else stdin)
+            if args.conv and (args.outfile or stdout):
+                program.save(oslayer.safe_open(args.outfile, "S", "W") if args.outfile else stdout, args.conv_mode)
+                run.exit()
+            if args.run:
+                args.cmd += ':RUN'
+            # get out, if we ran with -q
+            if args.quit:
+                run.prompt = False
+                run.execute(args.cmd)
+                run.exit()
+            # execute & handle exceptions; show Ok prompt
             run.execute(args.cmd)
-            run.exit()
-        # execute & handle exceptions; show Ok prompt
-        run.execute(args.cmd)
         # go into interactive mode 
         run.loop()
     except error.RunError as e:
@@ -109,14 +112,21 @@ def main():
             logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
             run.exit()    
     finally:
+        save_state()
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
         console.exit()
-        # autosave any file in memory
-        if program.bytecode:
-            program.protected = False
-            autosave = os.path.join(tempfile.gettempdir(), "AUTOSAVE.BAS")
-            program.save(oslayer.safe_open(autosave, "S", "W"), 'B')
-            logging.info('Program autosaved as %s.' % autosave)
+
+autosave = os.path.join(oslayer.drives['@'], "PROGRAM.BAS")
+def save_state():   
+    # save all other state
+    state.save()
+    # autosave any file in memory
+    program.protected = False
+    program.save(oslayer.safe_open(autosave, "S", "W"), 'B')
+
+def load_state():
+    program.load(oslayer.safe_open(autosave, "L", "R"))
+    state.load()
 
 def prepare_keywords(args):
     global debugstr
@@ -307,6 +317,7 @@ def get_args():
     parser.add_argument('--unprotect', action='store_true', help='Allow listing and ASCII saving of protected files')
     parser.add_argument('--caps', action='store_true', help='Start in CAPS LOCK mode.')
     parser.add_argument('--mount', action='append', nargs='*', metavar=('D:PATH'), help='Set a drive letter to PATH.')
+    parser.add_argument('--resume', action='store_true', help='Resume from saved state. Most other arguments are ignored.')
     args = parser.parse_args()
     # flatten list arguments
     args.mount = flatten_arg_list(args.mount)
