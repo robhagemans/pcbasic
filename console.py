@@ -185,7 +185,7 @@ def screen(mode, new_colorswitch, new_apagenum, new_vpagenum):
         return False
     # vpage and apage nums are persistent on mode switch
     # if the new mode has fewer pages than current vpage/apage, illegal fn call before anything happens.
-    if new_apagenum >= info[4] or new_vpagenum >= info[4]:
+    if new_apagenum >= info[5] or new_vpagenum >= info[5]:
         set_palette()
         return False
     # reset palette     
