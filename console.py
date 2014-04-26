@@ -897,7 +897,7 @@ def scroll_down(from_line):
         state.row += 1
     # sync buffers with the new screen reality:
     state.apage.row.insert(from_line-1, ScreenRow(state.width))
-    del state.apage.row[scroll_height-1] 
+    del state.apage.row[state.scroll_height-1] 
 
 #################################################################################
 
