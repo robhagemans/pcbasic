@@ -63,12 +63,11 @@ if plat.system == 'Android':
 else:
     import argparse
 
-noresume = False
-
 greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "@:INFO" for more.\r%d Bytes free'
 debugstr = ''
 
 def main():
+    reset = False
     args = get_args()
     # DEBUG, PCjr and Tandy modes
     prepare_keywords(args)
@@ -77,14 +76,14 @@ def main():
     try:
         # initialise program memory
         program.new()
-        if args.resume and not noresume:
+        if args.resume:
             # resume form saved emulator state
-            load_state()
+            args.resume = load_state()
         # choose the video and sound backends
         prepare_console(args)
         # choose peripherals    
         deviceio.prepare_devices(args)
-        if noresume or not args.resume:    
+        if not args.resume:    
             # print greeting
             if not args.run and not args.cmd and not args.conv:
                 if stdin_is_tty:
@@ -112,13 +111,18 @@ def main():
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)  
     except error.Exit:
         pass
+    except error.Reset:
+        reset = True
     except KeyboardInterrupt:
         if args.debug:
             raise
         else:    
             logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
     finally:
-        save_state()
+        if reset:
+            del_state()
+        else:    
+            save_state()
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
         console.exit()
         fileio.close_all()
@@ -138,14 +142,19 @@ def save_state():
     program.protected = False
     program.save(oslayer.safe_open(programsave, 'S', 'W'), 'B')
 
+def del_state():
+    os.remove(programsave)
+    os.remove(state_file)
+    
 def load_state():
     global noresume
     try:
         program.load(oslayer.safe_open(programsave, 'L', 'R'))
         state.load(oslayer.safe_open(state_file, 'L', 'R'))
+        return True
         # display will load later as flag is set
     except error.RunError as e:
-        noresume = True
+        return False
     
 def prepare_keywords(args):
     global debugstr
