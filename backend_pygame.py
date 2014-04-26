@@ -426,6 +426,7 @@ def resize_display(width, height, initial=False):
         display = pygame.display.set_mode((width, height), flags, 8)    
     if not initial and not state.smooth:
         display.set_palette(state.gamepalette)
+        # load display if requested    
     screen_changed = True    
     
 def close():
@@ -930,7 +931,7 @@ def put_pixel(x, y, index, pagenum=None):
         pagenum = console_state.apagenum
     surface0[pagenum].set_at((x,y), index)
     # empty the console buffer of affected characters
-    cx, cy = min(console_state.width-1, max(0, x//8)), min(console_state.height-1, max(0, y//font_height)) 
+    cx, cy = min(console_state.width-1, max(0, x//8)), min(console_state.height-1, max(0, y//state.font_height)) 
     console_state.pages[pagenum].row[cy].buf[cx] = (' ', console_state.attr)
     screen_changed = True
 
@@ -1027,8 +1028,8 @@ def fast_put(x0, y0, varname, operation_char):
     # apply the operation
     operation = fast_operations[operation_char]
     operation(dest_array, clip)
-    cx0, cy0 = min(console_state.width-1, max(0, x0//8)), min(console_state.height-1, max(0, y0//font_height)) 
-    cx1, cy1 = min(console_state.width-1, max(0, (x0+width)//8)), min(console_state.height-1, max(0, (y0+height)//font_height))
+    cx0, cy0 = min(console_state.width-1, max(0, x0//8)), min(console_state.height-1, max(0, y0//state.font_height)) 
+    cx1, cy1 = min(console_state.width-1, max(0, (x0+width)//8)), min(console_state.height-1, max(0, (y0+height)//state.font_height))
     for r in range(cy0, cy1+1):
         console_state.apage.row[r].buf[cx0:cx1+1] = [(' ', console_state.attr)] * (cx1 - cx0 + 1)
     screen_changed = True
@@ -1170,7 +1171,7 @@ loop_sound = None
 # currrent sound that is looping
 loop_sound_playing = None
 
-
+    
 def pre_init_mixer():
     global sample_rate, mixer_bits
     if mixer:
@@ -1198,4 +1199,33 @@ def check_quit_sound():
                 mixer.quit()
                 quiet_ticks = 0
 
-
+def save_state(filename):
+    import oslayer
+    for i in range(len(surface0)):    
+        f = oslayer.safe_open(filename + '0%1d.IMS' %i, "S", "W")
+        f.write(pygame.image.tostring(surface0[i], 'P'))
+        f.close()
+    for i in range(len(surface1)):    
+        f = oslayer.safe_open(filename + '1%1d.IMS' %i, "S", "W")
+        f.write(pygame.image.tostring(surface1[i], 'P'))
+        f.close()
+    
+def load_state(filename):
+    global surface0, surface1, screen_changed
+    if filename:
+        import oslayer
+        state.do_load = False
+        for i in range(len(surface0)):    
+            f = oslayer.safe_open(filename + '0%1d.IMS' %i, "L", "R")
+            s = f.read()
+            f.close()
+            surface0[i] = pygame.image.fromstring(s, state.size, 'P')
+            surface0[i].set_palette(workaround_palette)
+        for i in range(len(surface1)):    
+            f = oslayer.safe_open(filename + '1%1d.IMS' %i, "L", "R")
+            s = f.read()
+            f.close()
+            surface1[i] = pygame.image.fromstring(s, state.size, 'P')
+            surface1[i].set_palette(workaround_palette)
+        screen_changed = True    
+        

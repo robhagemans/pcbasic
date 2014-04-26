@@ -23,16 +23,19 @@ display_state = State()
 
 state_file = os.path.join(oslayer.drives['@'], 'STATE.PKL')
 
+display_state.do_load = ''
+
 def save():
     f = oslayer.safe_open(state_file, 'S', 'W')
     state_to_keep = (console_state, display_state)
     pickle.dump(state_to_keep, f)
     f.close()
 
-def load():
+def load(displaysave):
     global console_state, display_state
     f = oslayer.safe_open(state_file, 'L', 'R')
     console_state, display_state = pickle.load(f)
     f.close()
-
+    #ensure the display gets loaded
+    display_state.do_load = displaysave
 
