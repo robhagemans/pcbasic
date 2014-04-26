@@ -36,15 +36,15 @@ bytecode = StringIO()
 direct_line = StringIO()
 # pointer position: False for direct line, True for program
 run_mode = False
+# line number tracing
+tron = False
+
 # memory model; offsets in files
 program_memory_start = 0x126e
 # don't list or save,a beyond this line
 max_list_line = 65530
 # don't protect files
 dont_protect = False
-
-# line number tracing
-tron = False
 
 def init_program():
     global gosub_return, for_next_stack, while_wend_stack, stop

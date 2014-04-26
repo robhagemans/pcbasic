@@ -13,11 +13,10 @@ import pickle
 import os
 import zlib
 
-import oslayer
-
 class State(object):
     pass
-        
+
+basic_state = State()        
 console_state = State()
 display_state = State()
 
