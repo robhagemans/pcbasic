@@ -52,63 +52,49 @@ from state import display_state as state
 
 if pygame:
     # CGA palette choices
-    colours16 = [
-     (0x00,0x00,0x00),(0x00,0x00,0xaa),(0x00,0xaa,0x00),(0x00,0xaa,0xaa),
-     (0xaa,0x00,0x00),(0xaa,0x00,0xaa),(0xaa,0x55,0x00),(0xaa,0xaa,0xaa), 
-     (0x55,0x55,0x55),(0x55,0x55,0xff),(0x55,0xff,0x55),(0x55,0xff,0xff),
-     (0xff,0x55,0x55),(0xff,0x55,0xff),(0xff,0xff,0x55),(0xff,0xff,0xff)
-    ] 
+    gamecolours16 = [ pygame.Color(*rgb) for rgb in [   
+        (0x00,0x00,0x00), (0x00,0x00,0xaa), (0x00,0xaa,0x00), (0x00,0xaa,0xaa),
+        (0xaa,0x00,0x00), (0xaa,0x00,0xaa), (0xaa,0x55,0x00), (0xaa,0xaa,0xaa), 
+        (0x55,0x55,0x55), (0x55,0x55,0xff), (0x55,0xff,0x55), (0x55,0xff,0xff),
+        (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff) ] ]
 
     # EGA palette choices
-    colours64= [
-     (0x00,0x00,0x00), (0x00,0x00,0xaa), (0x00,0xaa,0x00), (0x00,0xaa,0xaa),
-     (0xaa,0x00,0x00), (0xaa,0x00,0xaa), (0xaa,0xaa,0x00), (0xaa,0xaa,0xaa), 
-     
-     (0x00,0x00,0x55), (0x00,0x00,0xff), (0x00,0xaa,0x55), (0x00,0xaa,0xff),
-     (0xaa,0x00,0xff), (0xaa,0x00,0xff), (0xaa,0xaa,0x55), (0xaa,0xaa,0xff),
-     
-     (0x00,0x55,0x00), (0x00,0x55,0xaa), (0x00,0xff,0x00), (0x00,0xff,0xaa),
-     (0xaa,0x55,0x00), (0xaa,0x55,0xaa), (0xaa,0xff,0x00), (0xaa,0xff,0xaa),
-      
-     (0x00,0x55,0x55), (0x00,0x55,0xff), (0x00,0xff,0x55), (0x00,0xff,0xff),
-     (0xaa,0x55,0x55), (0xaa,0x55,0xff), (0xaa,0xff,0x55), (0xaa,0xff,0xff),
-      
-      
-     (0x55,0x00,0x00), (0x55,0x00,0xaa), (0x55,0xaa,0x00), (0x55,0xaa,0xaa),
-     (0xff,0x00,0x00), (0xff,0x00,0xaa), (0xff,0xaa,0x00), (0xff,0xaa,0xaa),
-     
-     (0x55,0x00,0x55), (0x55,0x00,0xff), (0x55,0xaa,0x55), (0x55,0xaa,0xff),
-     (0xff,0x00,0x55), (0xff,0x00,0xff), (0xff,0xaa,0x55), (0xff,0xaa,0xff),
-     
-     (0x55,0x55,0x00), (0x55,0x55,0xaa), (0x55,0xff,0x00), (0x55,0xff,0xaa),
-     (0xff,0x55,0x00), (0xff,0x55,0xaa), (0xff,0xff,0x00), (0xff,0xff,0xaa),
-     
-     (0x55,0x55,0x55), (0x55,0x55,0xff), (0x55,0xff,0x55), (0x55,0xff,0xff),
-     (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff)
-    ]
-
-    # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
-    # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
-    #
-    gamecolours16 = [ pygame.Color(*rgb) for rgb in colours16 ]
-    gamecolours64 = [ pygame.Color(*rgb) for rgb in colours64 ]
+    gamecolours64 = [ pygame.Color(*rgb) for rgb in [
+        (0x00,0x00,0x00), (0x00,0x00,0xaa), (0x00,0xaa,0x00), (0x00,0xaa,0xaa),
+        (0xaa,0x00,0x00), (0xaa,0x00,0xaa), (0xaa,0xaa,0x00), (0xaa,0xaa,0xaa), 
+        (0x00,0x00,0x55), (0x00,0x00,0xff), (0x00,0xaa,0x55), (0x00,0xaa,0xff),
+        (0xaa,0x00,0xff), (0xaa,0x00,0xff), (0xaa,0xaa,0x55), (0xaa,0xaa,0xff),
+        (0x00,0x55,0x00), (0x00,0x55,0xaa), (0x00,0xff,0x00), (0x00,0xff,0xaa),
+        (0xaa,0x55,0x00), (0xaa,0x55,0xaa), (0xaa,0xff,0x00), (0xaa,0xff,0xaa),
+        (0x00,0x55,0x55), (0x00,0x55,0xff), (0x00,0xff,0x55), (0x00,0xff,0xff),
+        (0xaa,0x55,0x55), (0xaa,0x55,0xff), (0xaa,0xff,0x55), (0xaa,0xff,0xff),
+        (0x55,0x00,0x00), (0x55,0x00,0xaa), (0x55,0xaa,0x00), (0x55,0xaa,0xaa),
+        (0xff,0x00,0x00), (0xff,0x00,0xaa), (0xff,0xaa,0x00), (0xff,0xaa,0xaa),
+        (0x55,0x00,0x55), (0x55,0x00,0xff), (0x55,0xaa,0x55), (0x55,0xaa,0xff),
+        (0xff,0x00,0x55), (0xff,0x00,0xff), (0xff,0xaa,0x55), (0xff,0xaa,0xff),
+        (0x55,0x55,0x00), (0x55,0x55,0xaa), (0x55,0xff,0x00), (0x55,0xff,0xaa),
+        (0xff,0x55,0x00), (0xff,0x55,0xaa), (0xff,0xff,0x00), (0xff,0xff,0xaa),
+        (0x55,0x55,0x55), (0x55,0x55,0xff), (0x55,0xff,0x55), (0x55,0xff,0xff),
+        (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff) ] ]
 
     # for use with get_at
-    workaround_palette= [ (0,0,0),(0,0,1),(0,0,2),(0,0,3),(0,0,4),(0,0,5),(0,0,6),(0,0,7),(0,0,8),(0,0,9),(0,0,10),(0,0,11),(0,0,12),(0,0,13),(0,0,14),(0,0,15) ]
+    workaround_palette = [ 
+            (0,0,0), (0,0,1), (0,0,2), (0,0,3), (0,0,4), (0,0,5), (0,0,6), (0,0,7),
+            (0,0,8), (0,0,9), (0,0,10), (0,0,11), (0,0,12), (0,0,13), (0,0,14), (0,0,15) ]
 
     # standard palettes
-    state.palette64 = None 
-    #[0,1,2,3,4,5,20,7,56,57,58,59,60,61,62,63]
+    state.palette64 = [0,1,2,3,4,5,20,7,56,57,58,59,60,61,62,63]
     state.gamepalette = None
 
     # screen width and height in pixels
     state.size = (0,0)
     state.display_size = (640, 480)
     state.display_size_text = (640, 400)
-    state.fullscreen = False
-    state.smooth = False
+    
+    fullscreen = False
+    smooth = False
     # ignore ALT+F4 (and consequently window X button)
-    state.noquit = False
+    noquit = False
 
     # letter shapes
     glyphs = []
@@ -350,6 +336,7 @@ if pygame:
             
 # set constants based on commandline arguments
 def prepare(args):
+    global fullscreen, smooth, noquit
     try:
         x, y = args.dimensions[0].split(',')
         state.display_size = (int(x), int(y))
@@ -361,11 +348,11 @@ def prepare(args):
     except Exception:
         pass    
     if args.fullscreen:
-        state.fullscreen = True
+        fullscreen = True
     if args.smooth:
-        state.smooth = True    
+        smooth = True    
     if args.noquit:
-        state.noquit = True
+        noquit = True
 
 def init():
     global fonts, num_sticks, joysticks, physical_size, console_state, state
@@ -384,6 +371,7 @@ def init():
         return False
     fonts = cpi_font.load_codepage(console.codepage)
     if fonts == None:
+        pygame.display.quit()
         logging.warning('Could not load codepage font. Failed to initialise PyGame console.')
         return False
     unicodepage.load_codepage(console.codepage)
@@ -393,7 +381,7 @@ def init():
     # first set the screen non-resizeable, to trick things like maximus into not full-screening
     # I hate it when applications do this ;)
     pygame.display.set_icon(build_icon())
-    if not state.fullscreen:
+    if not fullscreen:
         pygame.display.set_mode(state.display_size_text, 0, 8)
     resize_display(*state.display_size_text, initial=True)
     pygame.display.set_caption('PC-BASIC 3.23')
@@ -409,10 +397,11 @@ def init():
 
 def resize_display(width, height, initial=False): 
     global display, screen_changed
+    global fullscreen
     display_info = pygame.display.Info()
     flags = pygame.RESIZABLE
-    if state.fullscreen or (width, height) == physical_size:
-        state.fullscreen = True
+    if fullscreen or (width, height) == physical_size:
+        fullscreen = True
         flags |= pygame.FULLSCREEN | pygame.NOFRAME
         width, height = state.display_size if (not initial and console_state.screen_mode != 0) else state.display_size_text
         # scale suggested dimensions to largest integer times pixel size that fits
@@ -420,11 +409,11 @@ def resize_display(width, height, initial=False):
         width, height = width * scale, height * scale
     if (width, height) == (display_info.current_w, display_info.current_h) and not initial:
         return
-    if state.smooth:
+    if smooth:
         display = pygame.display.set_mode((width, height), flags)
     else:
         display = pygame.display.set_mode((width, height), flags, 8)    
-    if not initial and not state.smooth:
+    if not initial and not smooth:
         display.set_palette(state.gamepalette)
         # load display if requested    
     screen_changed = True    
@@ -451,7 +440,7 @@ def set_palette(new_palette=None):
     else:
         state.palette64 = new_palette if new_palette else [0, 15]
         state.gamepalette = [ gamecolours16[i] for i in state.palette64 ]
-    if not state.smooth:
+    if not smooth:
         display.set_palette(state.gamepalette)
 
 def set_palette_entry(index, colour):
@@ -460,7 +449,7 @@ def set_palette_entry(index, colour):
         state.gamepalette[index] = gamecolours64[colour]
     else:
         state.gamepalette[index] = gamecolours16[colour]
-    if not state.smooth:
+    if not smooth:
         display.set_palette_at(index, state.gamepalette[index])
     
 def clear_rows(cattr, start, stop):
@@ -485,6 +474,8 @@ def init_screen_mode(mode, new_font_height):
     global glyphs, cursor0
     set_font(new_font_height)    
     glyphs = [ build_glyph(c, font, state.font_height) for c in range(256) ]
+    # initialise glyph colour
+    set_attr(console_state.attr)
     # set standard cursor
     cursor0 = pygame.Surface((8, state.font_height), depth=8)
     build_default_cursor(mode, True)
@@ -506,7 +497,6 @@ def setup_screen(to_height, to_width):
         surface1[i].set_palette(workaround_palette)
     screen.set_palette(workaround_palette)
     under_cursor.set_palette(workaround_palette)
-    set_palette()
     screen_changed = True
     
 def copy_page(src,dst):
@@ -585,7 +575,7 @@ def scroll_down(from_line):
 state.last_attr = None
 state.last_mode = None
 def set_attr(cattr):
-    if cattr == state.last_attr and (console_state.screen_mode, console_state.apage) == state.last_mode:
+    if cattr == state.last_attr and (console_state.screen_mode, console_state.apagenum) == state.last_mode:
         return    
     color = (0, 0, cattr & 0xf)
     bg = (0, 0, (cattr>>4) & 0x7)    
@@ -593,7 +583,7 @@ def set_attr(cattr):
         glyph.set_palette_at(255, bg)
         glyph.set_palette_at(254, color)
     state.last_attr = cattr
-    state.last_mode = console_state.screen_mode, console_state.apage
+    state.last_mode = console_state.screen_mode, console_state.apagenum
         
 def putc_at(row, col, c):
     global screen_changed
@@ -773,7 +763,7 @@ def check_screen():
 
 def do_flip():
     refresh_cursor()
-    if state.smooth:
+    if smooth:
         screen.set_palette(state.gamepalette)
         pygame.transform.smoothscale(screen.convert(display), display.get_size(), display)
         screen.set_palette(workaround_palette)    

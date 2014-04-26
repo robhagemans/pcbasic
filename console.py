@@ -192,17 +192,18 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
     new_vpagenum = state.vpagenum if new_vpagenum == None else new_vpagenum
     new_apagenum = state.apagenum if new_apagenum == None else new_apagenum
     do_redraw = (new_mode != state.screen_mode) or (new_colorswitch != state.colorswitch) or first_run
-    # reset palette (this happens even if the function fails with Illegal Function Call)    
-    set_palette()
+    # reset palette happens even if the function fails with Illegal Function Call
     try:
         info = mode_data[new_mode]
     except KeyError:
         # backend does not support mode
+        set_palette()
         return False
     new_font_height, new_attr, new_num_colours, new_num_palette, new_width, new_num_pages = info  
     # vpage and apage nums are persistent on mode switch
     # if the new mode has fewer pages than current vpage/apage, illegal fn call before anything happens.
     if new_apagenum >= new_num_pages or new_vpagenum >= new_num_pages:
+        set_palette()
         return False
     # switch modes if needed
     if do_redraw:
@@ -213,6 +214,10 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
         state.font_height, state.attr, state.num_colours, state.num_palette, _, state.num_pages = info  
         # width persists on change to screen 0
         resize(25, state.width if new_mode == 0 else new_width)
+        if not first_run:
+            set_palette()
+        else:
+            set_palette(state_module.display_state.palette64)    
         set_overwrite_mode(True)
         graphics.init_graphics_mode(new_mode, new_font_height)      
         show_cursor(state.cursor)
