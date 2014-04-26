@@ -33,6 +33,6 @@ def load(f):
     length = int(f.readline())
     console_state, display_state = pickle.loads(zlib.decompress(f.read(length)))
     f.read(1)
-    #ensure the display gets loaded
+    # ensure the display gets loaded
     display_state.do_load = f
 

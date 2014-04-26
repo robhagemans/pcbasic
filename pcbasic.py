@@ -35,6 +35,7 @@ import debug
 import logging
 import plat
 import state
+import backend_pygame
 
 # OS-specific stdin/stdout selection
 # no stdin/stdout access allowed on packaged apps
@@ -45,6 +46,7 @@ if plat.system in ('OSX', 'Windows'):
 else:
     # Unix, Linux including Android
     import backend_dumb
+    import backend_ansi
     try:
         stdin_is_tty = sys.stdin.isatty()
         stdout_is_tty = sys.stdout.isatty()
@@ -211,11 +213,9 @@ def prepare_console(args):
         console.backend = backend_dumb
         console.sound = sound_beep
     elif args.ansi and stdout_is_tty:
-        import backend_ansi
         console.backend = backend_ansi
         console.sound = sound_beep
     else:   
-        import backend_pygame
         console.backend = backend_pygame   
         graphics.backend = backend_pygame
         graphics.backend.prepare(args)
