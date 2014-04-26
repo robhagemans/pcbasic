@@ -175,39 +175,39 @@ def screen(mode, new_colorswitch, new_apagenum, new_vpagenum):
     new_colorswitch = colorswitch if new_colorswitch == None else (new_colorswitch != 0)
     new_vpagenum = state.vpagenum if new_vpagenum == None else new_vpagenum
     new_apagenum = state.apagenum if new_apagenum == None else new_apagenum
-    old_mode = state.screen_mode
+    old = (state.screen_mode, state.colorswitch)
+    # reset palette (this happens even if the function fails with Illegal Function Call)    
+    set_palette()
     try:
         info = mode_data[mode]
     except KeyError:
-        # palette is reset if this happens
-        set_palette()
         # backend does not support mode
         return False
+    new_font_height, new_attr, new_num_colours, new_num_palette, new_width, new_num_pages = info  
     # vpage and apage nums are persistent on mode switch
     # if the new mode has fewer pages than current vpage/apage, illegal fn call before anything happens.
-    if new_apagenum >= info[5] or new_vpagenum >= info[5]:
-        set_palette()
+    if new_apagenum >= new_num_pages or new_vpagenum >= new_num_pages:
         return False
-    # reset palette     
-    set_palette()
     # switch modes if needed
-    if mode != state.screen_mode or new_colorswitch != state.colorswitch:
+    if (mode, new_colorswitch) != old:
+        if not backend.init_screen_mode(mode, new_font_height):
+            return False
         state.screen_mode = mode
-        new_font_height = info[0]
-        backend.init_screen_mode(mode, new_font_height) # this can fail with err(5)
-        state.font_height, state.attr, state.num_colours, state.num_palette, new_width, state.num_pages = info  
+        # set all state vars except wdith
+        state.font_height, state.attr, state.num_colours, state.num_palette, _, state.num_pages = info  
         # width persists on change to screen 0
         resize(25, state.width if mode == 0 else new_width)
         set_overwrite_mode(True)
         graphics.init_graphics_mode(mode, state.font_height)      
         show_cursor(state.cursor)
         unset_view()
-    # set active page & visible page, counting from 0. if higher than max pages, illegal fn call.            
+    # set active page & visible page, counting from 0.
     # this needs to be done after setup_screen!
     state.vpagenum, state.apagenum = new_vpagenum, new_apagenum
     state.vpage, state.apage = state.pages[state.vpagenum], state.pages[state.apagenum]
-    if mode != old_mode or new_colorswitch != state.colorswitch:
-        state.screen_mode, state.colorswitch = mode, new_colorswitch 
+    state.screen_mode, state.colorswitch = mode, new_colorswitch 
+    if (mode, new_colorswitch) != old:
+        # don't redraw keys if screen hasn't been cleared (any colours stay the same). state.screen_mode must be set for this
         if state.keys_visible:  
             show_keys()    
     backend.screen_changed = True
