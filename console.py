@@ -26,9 +26,7 @@ import events
 import deviceio
 # for replace key
 import program
-# for exit
-import run
-# for Break
+# for Break, Exit, Reset
 import error
 
 # back end implementations
@@ -331,7 +329,7 @@ def wait_interactive(from_start=False, alt_replace = True):
         d = pass_char(wait_char())
         if not d:
             # input stream closed
-            run.exit()
+            raise error.Exit()
         if d not in ('\r', '\x03'):
             for echo in state.input_echos:
                 echo(d)

@@ -94,14 +94,14 @@ def main():
                 program.load(oslayer.safe_open(args.program, "L", "R") if args.program else stdin)
             if args.conv and (args.outfile or stdout):
                 program.save(oslayer.safe_open(args.outfile, "S", "W") if args.outfile else stdout, args.conv_mode)
-                run.exit()
+                raise error.Exit()
             if args.run:
                 args.cmd += ':RUN'
             # get out, if we ran with -q
             if args.quit:
                 run.prompt = False
                 run.execute(args.cmd)
-                run.exit()
+                raise error.Exit()
             # execute & handle exceptions; show Ok prompt
             run.execute(args.cmd)
         # go into interactive mode 
