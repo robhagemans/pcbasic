@@ -18,7 +18,6 @@ def main():
             break
         except Exception:
             reload(pcbasic)       
-            pcbasic.noresume = True
 
 if __name__ == "__main__":
     main()
