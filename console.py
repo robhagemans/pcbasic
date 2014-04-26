@@ -935,3 +935,19 @@ def set_memory(addr, val):
     except IndexError:
         pass
 
+################################################
+
+def redraw_text_screen():
+    if state.cursor:
+        show_cursor(False)
+    # this makes it feel faster
+    backend.clear_rows(state.attr, 1, 25)
+    # redraw every character
+    for crow in range(state.height):
+        therow = state.apage.row[crow]  
+        for i in range(state.width): 
+            backend.set_attr(therow.buf[i][1])
+            backend.putc_at(crow+1, i+1, therow.buf[i][0])
+    if state.cursor:
+        show_cursor(True)       
+        
