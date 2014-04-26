@@ -853,7 +853,7 @@ def trigger_pen(pos):
     events.pen_handler.triggered = True
     pen_down = -1 # TRUE
     display_info = pygame.display.Info()
-    xscale, yscale = display_info.current_w / (1.*size[0]), display_info.current_h / (1.*size[1])
+    xscale, yscale = display_info.current_w / (1.*state.size[0]), display_info.current_h / (1.*state.size[1])
     pen_down_pos = int(pos[0]//xscale), int(pos[1]//yscale)
                 
 def trigger_stick(joy, button):
@@ -863,7 +863,7 @@ def trigger_stick(joy, button):
 def get_pen(fn):
     global pen_down
     display_info = pygame.display.Info()
-    xscale, yscale = display_info.current_w / (1.*size[0]), display_info.current_h / (1.*size[1])
+    xscale, yscale = display_info.current_w / (1.*state.size[0]), display_info.current_h / (1.*state.size[1])
     pos = pygame.mouse.get_pos()
     posx, posy = int(pos[0]//xscale), int(pos[1]//yscale)
     if fn == 0:
@@ -929,7 +929,7 @@ def put_pixel(x, y, index, pagenum=None):
 
 def get_pixel(x, y, pagenum=None):    
     if pagenum == None:
-        pagenum = console_state.apage
+        pagenum = console_state.apagenum
     return surface0[pagenum].get_at((x,y)).b
 
 def get_graph_clip():
@@ -1220,6 +1220,6 @@ def load_state(f):
                 surface1[i].set_palette(workaround_palette)
             screen_changed = True    
         except Exception:
-            # couldn't load the state correctly; most kikely a text screen saved from -t. just redraw what's unpickled.
+            # couldn't load the state correctly; most likely a text screen saved from -t. just redraw what's unpickled.
             console.redraw_text_screen()
             
