@@ -309,5 +309,7 @@ def save_state(f):
     pass
     
 def load_state(f):
-    pass
-
+    # console has already been loaded; just redraw
+    if f:
+        redraw()
+        
