@@ -11,7 +11,7 @@
 
 import pickle
 import os
-import copy
+import zlib
 
 import oslayer
 
@@ -21,21 +21,18 @@ class State(object):
 console_state = State()
 display_state = State()
 
-state_file = os.path.join(oslayer.drives['@'], 'STATE.PKL')
+display_state.do_load = None
 
-display_state.do_load = ''
-
-def save():
-    f = oslayer.safe_open(state_file, 'S', 'W')
+def save(f):
     state_to_keep = (console_state, display_state)
-    pickle.dump(state_to_keep, f)
-    f.close()
+    s = zlib.compress(pickle.dumps(state_to_keep, 2))
+    f.write(str(len(s)) + '\n' + s + '\n')
 
-def load(displaysave):
+def load(f):
     global console_state, display_state
-    f = oslayer.safe_open(state_file, 'L', 'R')
-    console_state, display_state = pickle.load(f)
-    f.close()
+    length = int(f.readline())
+    console_state, display_state = pickle.loads(zlib.decompress(f.read(length)))
+    f.read(1)
     #ensure the display gets loaded
-    display_state.do_load = displaysave
+    display_state.do_load = f
 

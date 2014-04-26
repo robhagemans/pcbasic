@@ -1199,32 +1199,30 @@ def check_quit_sound():
                 mixer.quit()
                 quiet_ticks = 0
 
-def save_state(filename):
-    import oslayer
+def save_state(f):
+    import zlib
     for i in range(len(surface0)):    
-        f = oslayer.safe_open(filename + '0%1d.IMS' %i, "S", "W")
-        f.write(pygame.image.tostring(surface0[i], 'P'))
-        f.close()
+        s = zlib.compress(pygame.image.tostring(surface0[i], 'P'))
+        f.write(str(len(s)) + '\n' + s + '\n')
     for i in range(len(surface1)):    
-        f = oslayer.safe_open(filename + '1%1d.IMS' %i, "S", "W")
-        f.write(pygame.image.tostring(surface1[i], 'P'))
-        f.close()
+        s = zlib.compress(pygame.image.tostring(surface1[i], 'P'))
+        f.write(str(len(s)) + '\n' + s + '\n')
     
-def load_state(filename):
+def load_state(f):
     global surface0, surface1, screen_changed
-    if filename:
-        import oslayer
+    import zlib
+    if f:
         state.do_load = False
         for i in range(len(surface0)):    
-            f = oslayer.safe_open(filename + '0%1d.IMS' %i, "L", "R")
-            s = f.read()
-            f.close()
+            length = int(f.readline())
+            s = zlib.decompress(f.read(length))
+            f.read(1)
             surface0[i] = pygame.image.fromstring(s, state.size, 'P')
             surface0[i].set_palette(workaround_palette)
         for i in range(len(surface1)):    
-            f = oslayer.safe_open(filename + '1%1d.IMS' %i, "L", "R")
-            s = f.read()
-            f.close()
+            length = int(f.readline())
+            s = zlib.decompress(f.read(length))
+            f.read(1)
             surface1[i] = pygame.image.fromstring(s, state.size, 'P')
             surface1[i].set_palette(workaround_palette)
         screen_changed = True    
