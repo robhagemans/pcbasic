@@ -119,8 +119,7 @@ def init():
     return True
     
 def init_screen_mode(mode, new_font_height):
-    if mode != 0:
-        raise error.RunError(5)
+    return (mode == 0)
     
 def setup_screen(height, width):
     set_palette()

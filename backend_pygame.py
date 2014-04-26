@@ -486,7 +486,8 @@ def init_screen_mode(mode, new_font_height):
     if mode == 0:
         resize_display(*state.display_size_text)
     else:
-        resize_display(*state.display_size)    
+        resize_display(*state.display_size)
+    return True        
     
 def setup_screen(to_height, to_width):
     global screen, screen_changed, surface0, surface1

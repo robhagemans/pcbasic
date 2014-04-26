@@ -124,8 +124,7 @@ def clear_rows(attr, start, stop):
     pass
 
 def init_screen_mode(mode, new_font_height):
-    if mode != 0:
-        raise error.RunError(5)    
+    return (mode == 0)
 
 def setup_screen(to_height, to_width):
     pass
