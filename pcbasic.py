@@ -70,16 +70,16 @@ def main():
     # other command-line settings
     prepare_constants(args)
     try:
-        # choose the video and sound backends
-        prepare_console(args)
-        # choose peripherals    
-        deviceio.prepare_devices(args)
         # initialise program memory
         program.new()
         if args.resume:
             # resume form saved emulator state
             load_state()
-        else:    
+        # choose the video and sound backends
+        prepare_console(args)
+        # choose peripherals    
+        deviceio.prepare_devices(args)
+        if not args.resume:    
             # print greeting
             if not args.run and not args.cmd and not args.conv:
                 if stdin_is_tty:
@@ -214,7 +214,8 @@ def prepare_console(args):
         graphics.backend.prepare(args)
         console.penstick = backend_pygame
         console.sound = backend_pygame
-    # initialise backends
+    # initialise backends 
+    # on --resume, changes to state here get overwritten
     console.state.keys_visible = not args.run
     if not console.init() and backend_dumb:
         logging.warning('Falling back to dumb-terminal.')

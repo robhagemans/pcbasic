@@ -39,7 +39,7 @@ penstick = nopenstick
 # codepage suggestion for backend
 codepage = 437    
 
-
+import state as state_module
 from state import console_state as state
 
 # number of columns, counting 1..width
@@ -81,9 +81,13 @@ state.input_closed = False
 state.caps = False
 
 # officially, whether colours are displayed. in reality, SCREEN just clears the screen if this value is changed
-state.colorswitch = None
-# force building screen on start
-state.screen_mode = None
+state.colorswitch = 1
+# SCREEN mode (0 is textmode)
+state.screen_mode = 0
+# number of active page
+state.apagenum = 0
+# number of visible page
+state.vpagenum = 0
 
 # palette
 state.num_colours = 32    
@@ -165,21 +169,28 @@ def idle():
 #############################
 # init
 
+
 def init():
+    global state
     if not backend.init():
         return False
-    screen(0, 1, 0, 0)
+    # we need the correct mode here to ensure backend sets up correctly    
+    if not screen(state_module.console_state.screen_mode, None, None, None, first_run=True):
+        return False
+    # update state to what's set in state (if it was pickled, this overwrites earlier settings)
+    state = state_module.console_state
     return True
 
-def screen(mode, new_colorswitch, new_apagenum, new_vpagenum):
-    new_colorswitch = colorswitch if new_colorswitch == None else (new_colorswitch != 0)
+def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=False):
+    new_mode = state.screen_mode if new_mode == None else new_mode
+    new_colorswitch = state.colorswitch if new_colorswitch == None else (new_colorswitch != 0)
     new_vpagenum = state.vpagenum if new_vpagenum == None else new_vpagenum
     new_apagenum = state.apagenum if new_apagenum == None else new_apagenum
-    old = (state.screen_mode, state.colorswitch)
+    do_redraw = (new_mode != state.screen_mode) or (new_colorswitch != state.colorswitch) or first_run
     # reset palette (this happens even if the function fails with Illegal Function Call)    
     set_palette()
     try:
-        info = mode_data[mode]
+        info = mode_data[new_mode]
     except KeyError:
         # backend does not support mode
         return False
@@ -189,27 +200,25 @@ def screen(mode, new_colorswitch, new_apagenum, new_vpagenum):
     if new_apagenum >= new_num_pages or new_vpagenum >= new_num_pages:
         return False
     # switch modes if needed
-    if (mode, new_colorswitch) != old:
-        if not backend.init_screen_mode(mode, new_font_height):
+    if do_redraw:
+        if not backend.init_screen_mode(new_mode, new_font_height):
             return False
-        state.screen_mode = mode
-        # set all state vars except wdith
+        state.screen_mode, state.colorswitch = new_mode, new_colorswitch 
+        # set all state vars except with
         state.font_height, state.attr, state.num_colours, state.num_palette, _, state.num_pages = info  
         # width persists on change to screen 0
-        resize(25, state.width if mode == 0 else new_width)
+        resize(25, state.width if new_mode == 0 else new_width)
         set_overwrite_mode(True)
-        graphics.init_graphics_mode(mode, state.font_height)      
+        graphics.init_graphics_mode(new_mode, new_font_height)      
         show_cursor(state.cursor)
         unset_view()
     # set active page & visible page, counting from 0.
     # this needs to be done after setup_screen!
     state.vpagenum, state.apagenum = new_vpagenum, new_apagenum
     state.vpage, state.apage = state.pages[state.vpagenum], state.pages[state.apagenum]
-    state.screen_mode, state.colorswitch = mode, new_colorswitch 
-    if (mode, new_colorswitch) != old:
-        # don't redraw keys if screen hasn't been cleared (any colours stay the same). state.screen_mode must be set for this
-        if state.keys_visible:  
-            show_keys()    
+    # only redraw keys if screen has been cleared (any colours stay the same). state.screen_mode must be set for this
+    if do_redraw and state.keys_visible:  
+        show_keys()    
     backend.screen_changed = True
     return True
 

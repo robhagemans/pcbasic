@@ -29,7 +29,7 @@ except ImportError:
 import unicodepage
 import error
 import console
-from state import console_state
+import state
 
 term_echo_on = True
 term_attr = None
@@ -145,21 +145,21 @@ def clear_rows(cattr, start, stop):
     for r in range(start, stop+1):
         term.write(esc_move_cursor % (r, 1))    
         term.write(esc_clear_line)
-    term.write(esc_move_cursor % (console_state.row, console_state.col))
+    term.write(esc_move_cursor % (state.console_state.row, state.console_state.col))
     term.flush()
 
 def redraw():
-    if console_state.cursor:
+    if state.console_state.cursor:
         show_cursor(False)
     # this makes it feel faster
-    clear_rows(console_state.attr, 1, 25)
+    clear_rows(state.console_state.attr, 1, 25)
     # redraw every character
-    for crow in range(console_state.height):
-        therow = console_state.apage.row[crow]  
-        for i in range(console_state.width): 
+    for crow in range(state.console_state.height):
+        therow = state.console_state.apage.row[crow]  
+        for i in range(state.console_state.width): 
             set_attr(therow.buf[i][1])
             putc_at(crow+1, i+1, therow.buf[i][0])
-    if console_state.cursor:
+    if state.console_state.cursor:
         show_cursor(True)        
 
 #####
@@ -199,8 +199,8 @@ def show_cursor(do_show, prev=None):
 
 def check_events():
     check_keyboard()
-    if console_state.cursor:
-        term.write(esc_move_cursor % (console_state.row,console_state.col))
+    if state.console_state.cursor:
+        term.write(esc_move_cursor % (state.console_state.row,state.console_state.col))
         term.flush()
         
 def apply_palette(colour):
@@ -232,19 +232,19 @@ def putc_at(row, col, c):
     term.flush()
    
 def scroll(from_line):
-    term.write(esc_set_scroll_region % (from_line, console_state.scroll_height))
+    term.write(esc_set_scroll_region % (from_line, state.console_state.scroll_height))
     term.write(esc_scroll_up % 1)
     term.write(esc_set_scroll_screen)
-    if console_state.row > 1:
-        term.write(esc_move_cursor % (console_state.row-1, console_state.col))
+    if state.console_state.row > 1:
+        term.write(esc_move_cursor % (state.console_state.row-1, state.console_state.col))
     term.flush()
     
 def scroll_down(from_line):
-    term.write(esc_set_scroll_region % (from_line, console_state.scroll_height))
+    term.write(esc_set_scroll_region % (from_line, state.console_state.scroll_height))
     term.write(esc_scroll_down % 1)
     term.write(esc_set_scroll_screen)
-    if console_state.row < console_state.height:
-        term.write(esc_move_cursor % (console_state.row+1, console_state.col))
+    if state.console_state.row < state.console_state.height:
+        term.write(esc_move_cursor % (state.console_state.row+1, state.console_state.col))
     term.flush()
     pass
     

@@ -15,7 +15,7 @@ import traceback
 
 import logging
 import program
-from state import console_state
+import state
 import var
 import vartypes
 import representation
@@ -69,10 +69,10 @@ def dump_vars():
     logging.debug(repr(var.variables))    
     
 def show_screen():
-    logging.debug('  +' + '-'*console_state.width+'+')
+    logging.debug('  +' + '-'*state.console_state.width+'+')
     i = 0
     lastwrap = False
-    for row in console_state.apage.row:
+    for row in state.console_state.apage.row:
         s = [ c[0] for c in row.buf ]
         i += 1
         outstr = '{0:2}'.format(i)
@@ -86,7 +86,7 @@ def show_screen():
         else:
             logging.debug(outstr + '| {0:2}'.format(row.end))        
         lastwrap = row.wrap    
-    logging.debug('  +' + '-'*console_state.width+'+')
+    logging.debug('  +' + '-'*state.console_state.width+'+')
 
 def show_program():
     code = program.bytecode.getvalue()

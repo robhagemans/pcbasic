@@ -20,7 +20,7 @@ import error
 import unicodepage
 import console
 import plat
-from state import console_state
+import state
 
 # these values are not shown as special graphic chars but as their normal effect
 control = (
@@ -53,10 +53,10 @@ def init():
         check_keys = check_keys_interactive
     else:
         check_keys = check_keys_dumb
-    console_state.output_echos.append(echo_stdout_utf8)
+    state.console_state.output_echos.append(echo_stdout_utf8)
     # if both stdin and stdout are ttys, avoid doubling the input echo
     if not(sys.stdin.isatty() and sys.stdout.isatty()):
-        console_state.input_echos.append(echo_stdout_utf8)
+        state.console_state.input_echos.append(echo_stdout_utf8)
     return True    
 
 def check_keys_interactive():
@@ -70,7 +70,7 @@ def check_keys_interactive():
 
 def check_keys_dumb():
     if check_keys_interactive() == '':
-        console_state.input_closed = True
+        state.console_state.input_closed = True
     
 
 def getc_utf8():

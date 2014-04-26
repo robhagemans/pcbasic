@@ -14,7 +14,7 @@ import fp
 import vartypes
 import var
 import console
-from state import console_state
+import state
 import draw_and_play
 import util
 
@@ -38,19 +38,19 @@ def require_graphics_mode(err=5):
         raise error.RunError(err)
 
 def is_graphics_mode():
-    return backend and console_state.screen_mode
+    return backend and state.console_state.screen_mode
 
 def init_graphics_mode(mode, new_font_height):
     global last_point, pixel_aspect_ratio, bitsperpixel, size
     if mode==0:
         return
-    size = (console_state.width*8, console_state.height*new_font_height)
+    size = (state.console_state.width*8, state.console_state.height*new_font_height)
     # centre of new graphics screen
-    last_point = (console_state.width*4, console_state.height*new_font_height/2)
+    last_point = (state.console_state.width*4, state.console_state.height*new_font_height/2)
     # pixels e.g. 80*8 x 25*14, screen ratio 4x3 makes for pixel width/height (4/3)*(25*14/8*80)
     pixel_aspect_ratio = fp.div(
-        fp.Single.from_int(console_state.height*new_font_height), 
-        fp.Single.from_int(6*console_state.width)) 
+        fp.Single.from_int(state.console_state.height*new_font_height), 
+        fp.Single.from_int(6*state.console_state.width)) 
     if mode in (1, 10):
         bitsperpixel = 2
     elif mode == 2:
@@ -71,9 +71,9 @@ def reset_graphics():
 
 def get_colour_index(c):
     if c == -1: # foreground; graphics 'background' attrib is always 0
-        c = console_state.attr & 0xf
+        c = state.console_state.attr & 0xf
     else:
-        c = min(console_state.num_colours - 1, max(0, c))
+        c = min(state.console_state.num_colours - 1, max(0, c))
     return c
 
 def check_coords(x, y):
@@ -568,7 +568,7 @@ def set_area(x0,y0, array, operation_char):
     dx = vartypes.uint_to_value(byte_array[0:2])
     dy = vartypes.uint_to_value(byte_array[2:4])
     # in mode 1, number of x bits is given rather than pixels
-    if console_state.screen_mode == 1:
+    if state.console_state.screen_mode == 1:
         dx /= 2
     x1, y1 = x0+dx-1, y0+dy-1
     x0, y0 = view_coords(x0, y0)
@@ -579,7 +579,7 @@ def set_area(x0,y0, array, operation_char):
     operation = operations[operation_char]
     backend.apply_graph_clip()
     byte = 4
-    if console_state.screen_mode == 1:
+    if state.console_state.screen_mode == 1:
         shift = 6
         for y in range(y0, y1+1):
             for x in range(x0, x1+1):
@@ -635,12 +635,12 @@ def get_area(x0,y0,x1,y1, array):
     byte_array, version = var.get_bytearray(array)
     # clear existing array
     byte_array[:] = '\x00'*len(byte_array)
-    if console_state.screen_mode==1:
+    if state.console_state.screen_mode==1:
         byte_array[0:4] = vartypes.value_to_uint(dx*2) + vartypes.value_to_uint(dy)
     else:
         byte_array[0:4] = vartypes.value_to_uint(dx) + vartypes.value_to_uint(dy) 
     byte = 4
-    if console_state.screen_mode == 1:
+    if state.console_state.screen_mode == 1:
         shift = 6
         for y in range(y0, y1+1):
             for x in range(x0, x1+1):
@@ -711,7 +711,7 @@ def view_coords(x,y):
         return x + lefttop[0], y + lefttop[1]
 
 def clear_graphics_view():
-    backend.clear_graph_clip((console_state.attr>>4) & 0x7)
+    backend.clear_graph_clip((state.console_state.attr>>4) & 0x7)
 
 ###############################################################
 
@@ -722,72 +722,72 @@ colour_plane_write_mask = 0xff
 video_segment = { 0: 0xb800, 1: 0xb800, 2: 0xb800, 7: 0xa000, 8: 0xa000, 9: 0xa000 }
 
 def get_pixel_byte(page, x, y, plane):
-    if y < size[1] and page < console_state.num_pages:
+    if y < size[1] and page < state.console_state.num_pages:
         return sum(( ((backend.get_pixel(x+shift, y, page) >> plane) & 1) << (7-shift) for shift in range(8) ))
     return -1    
     
 def set_pixel_byte(page, x, y, plane_mask, byte):
-    if y < size[1] and page < console_state.num_pages:
+    if y < size[1] and page < state.console_state.num_pages:
         for shift in range(8):
             bit = (byte>>(7-shift)) & 1
             backend.put_pixel(x + shift, y, bit * plane_mask, page)  
     
 def get_memory(addr):
-    if addr < video_segment[console_state.screen_mode]*0x10:
+    if addr < video_segment[state.console_state.screen_mode]*0x10:
         return -1
     else:
-        if console_state.screen_mode == 0:
+        if state.console_state.screen_mode == 0:
             return console.get_memory(addr)
-        addr -= video_segment[console_state.screen_mode]*0x10
-        if console_state.screen_mode == 1:
+        addr -= video_segment[state.console_state.screen_mode]*0x10
+        if state.console_state.screen_mode == 1:
             # interlaced scan lines of 80bytes, 4pixels per byte
             x, y = ((addr%0x2000)%80)*4, (addr>=0x2000) + 2*((addr%0x2000)//80)
             if y < size[1]:
                 return ( (backend.get_pixel(x  , y)<<6) + (backend.get_pixel(x+1, y)<<4) 
                         + (backend.get_pixel(x+2, y)<<2) + (backend.get_pixel(x+3, y)))
-        elif console_state.screen_mode == 2:
+        elif state.console_state.screen_mode == 2:
             # interlaced scan lines of 80bytes, 8 pixes per byte
             x, y = ((addr%0x2000)%80)*8, (addr>=0x2000) + 2*((addr%0x2000)//80)
             return get_pixel_byte(0, x, y, 0)
-        elif console_state.screen_mode == 7:
+        elif state.console_state.screen_mode == 7:
             page, addr = addr//8192, addr%8192
             x, y = (addr%40)*8, addr//40
             return get_pixel_byte(page, x, y, colour_plane % 4)
-        elif console_state.screen_mode == 8:
+        elif state.console_state.screen_mode == 8:
             page, addr = addr//16384, addr%16384
             x, y = (addr%80)*8, addr//80
             return get_pixel_byte(page, x, y, colour_plane % 4)
-        elif console_state.screen_mode == 9:
+        elif state.console_state.screen_mode == 9:
             page, addr = addr//32768, addr%32768
             x, y = (addr%80)*8, addr//80
             return get_pixel_byte(page, x, y, colour_plane % 4)
         return -1   
 
 def set_memory(addr, val):
-    if addr >= video_segment[console_state.screen_mode]*0x10:
-        if console_state.screen_mode == 0:
+    if addr >= video_segment[state.console_state.screen_mode]*0x10:
+        if state.console_state.screen_mode == 0:
             return console.set_memory(addr, val)
-        addr -= video_segment[console_state.screen_mode]*0x10
-        if console_state.screen_mode == 1:
+        addr -= video_segment[state.console_state.screen_mode]*0x10
+        if state.console_state.screen_mode == 1:
             # interlaced scan lines of 80bytes, 4pixels per byte
             x, y = ((addr%0x2000)%80)*4, (addr>=0x2000) + 2*((addr%0x2000)//80)
             if y < size[1]:
                 for shift in range(4):
                     twobit = (val>>(6-shift*2)) & 3
                     backend.put_pixel(x + shift, y, twobit) 
-        elif console_state.screen_mode == 2:
+        elif state.console_state.screen_mode == 2:
             # interlaced scan lines of 80bytes, 8 pixes per byte
             x, y = ((addr%0x2000)%80)*8, (addr>=0x2000) + 2*((addr%0x2000)//80)
             set_pixel_byte(0, x, y, 1, val)
-        elif console_state.screen_mode == 7:
+        elif state.console_state.screen_mode == 7:
             page, addr = addr//8192, addr%8192
             x, y = (addr%40)*8, addr//40
             set_pixel_byte(page, x, y, colour_plane_write_mask & 0xf, val)
-        elif console_state.screen_mode == 8:
+        elif state.console_state.screen_mode == 8:
             page, addr = addr//16384, addr%16384
             x, y = (addr%80)*8, addr//80
             set_pixel_byte(page, x, y, colour_plane_write_mask & 0xf, val)
-        elif console_state.screen_mode == 9:
+        elif state.console_state.screen_mode == 9:
             page, addr = addr//32768, addr%32768
             x, y = (addr%80)*8, addr//80
             set_pixel_byte(page, x, y, colour_plane_write_mask & 0xf, val)            

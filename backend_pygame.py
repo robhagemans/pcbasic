@@ -19,13 +19,17 @@ try:
 except Exception:
     numpy = None
 
-try:
-    import android
+import plat
+if plat.system == 'Android':
+    android = True
     # don't do sound for now on Android
     mixer = None   
     numpy = None
-except ImportError:
-    android = None
+    # Pygame for Android-specific definitions
+    if pygame:
+        from pygame_android import *
+else:
+    android = False
     import pygame.mixer as mixer
 
 import logging
@@ -43,7 +47,7 @@ import program
 # for exit()
 import run
 
-from state import console_state 
+import state as state_module
 from state import display_state as state
 
 if pygame:
@@ -343,9 +347,6 @@ if pygame:
         pygame.K_BACKSLASH: '\x56',
     }
 
-    # Android-specific definitions
-    if android:
-        from pygame_android import *
             
 # set constants based on commandline arguments
 def prepare(args):
@@ -367,7 +368,10 @@ def prepare(args):
         state.noquit = True
 
 def init():
-    global fonts, num_sticks, joysticks, physical_size
+    global fonts, num_sticks, joysticks, physical_size, console_state, state
+    # set state objects to whatever is now in state (may have been unpickled)
+    console_state = state_module.console_state
+    state = state_module.display_state
     if not pygame:
         logging.warning('Could not find PyGame module. Failed to initialise PyGame console.')
         return False     
