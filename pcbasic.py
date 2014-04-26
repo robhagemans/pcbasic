@@ -117,20 +117,22 @@ def main():
         console.exit()
 
 programsave = os.path.join(oslayer.drives['@'], "PROGRAM.BAS")
-displaysave = os.path.join(oslayer.drives['@'], "SCREEN")
+state_file = os.path.join(oslayer.drives['@'], 'STATE.SAV')
 
 def save_state():   
-    # save display
-    console.backend.save_state(displaysave)
+    f = oslayer.safe_open(state_file, 'S', 'W')
     # save all other state
-    state.save()
+    state.save(f)
+    # save display
+    console.backend.save_state(f)
+    f.close()
     # save any program in memory
     program.protected = False
-    program.save(oslayer.safe_open(programsave, "S", "W"), 'B')
+    program.save(oslayer.safe_open(programsave, 'S', 'W'), 'B')
 
 def load_state():
-    program.load(oslayer.safe_open(programsave, "L", "R"))
-    state.load(displaysave)
+    program.load(oslayer.safe_open(programsave, 'L', 'R'))
+    state.load(oslayer.safe_open(state_file, 'L', 'R'))
     # display will load later as flag is set
 
 def prepare_keywords(args):
