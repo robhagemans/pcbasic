@@ -38,7 +38,6 @@ import state
 import backend_pygame
 import fileio
 
-noresume = False
 
 # OS-specific stdin/stdout selection
 # no stdin/stdout access allowed on packaged apps
@@ -64,6 +63,7 @@ if plat.system == 'Android':
 else:
     import argparse
 
+noresume = False
 
 greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "@:INFO" for more.\r%d Bytes free'
 debugstr = ''
@@ -139,10 +139,14 @@ def save_state():
     program.save(oslayer.safe_open(programsave, 'S', 'W'), 'B')
 
 def load_state():
-    program.load(oslayer.safe_open(programsave, 'L', 'R'))
-    state.load(oslayer.safe_open(state_file, 'L', 'R'))
-    # display will load later as flag is set
-
+    global noresume
+    try:
+        program.load(oslayer.safe_open(programsave, 'L', 'R'))
+        state.load(oslayer.safe_open(state_file, 'L', 'R'))
+        # display will load later as flag is set
+    except error.RunError as e:
+        noresume = True
+    
 def prepare_keywords(args):
     global debugstr
     if args.debug:
