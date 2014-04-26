@@ -109,6 +109,8 @@ def exec_palette(ins):
         # can't set blinking colours separately
         num_palette_entries = console.state.num_colours if console.state.num_colours != 32 else 16
         pair = expressions.parse_int_list(ins, 2, err=5)
+        if pair[0] == None or pair[1] == None:
+            raise error.RunError(2)
         util.range_check(0, num_palette_entries-1, pair[0])
         util.range_check(-1, console.state.num_palette-1, pair[1])
         if pair[1] > -1:
