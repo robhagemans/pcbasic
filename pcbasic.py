@@ -116,17 +116,22 @@ def main():
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
         console.exit()
 
-autosave = os.path.join(oslayer.drives['@'], "PROGRAM.BAS")
+programsave = os.path.join(oslayer.drives['@'], "PROGRAM.BAS")
+displaysave = os.path.join(oslayer.drives['@'], "SCREEN")
+
 def save_state():   
+    # save display
+    console.backend.save_state(displaysave)
     # save all other state
     state.save()
-    # autosave any file in memory
+    # save any program in memory
     program.protected = False
-    program.save(oslayer.safe_open(autosave, "S", "W"), 'B')
+    program.save(oslayer.safe_open(programsave, "S", "W"), 'B')
 
 def load_state():
-    program.load(oslayer.safe_open(autosave, "L", "R"))
-    state.load()
+    program.load(oslayer.safe_open(programsave, "L", "R"))
+    state.load(displaysave)
+    # display will load later as flag is set
 
 def prepare_keywords(args):
     global debugstr

@@ -58,7 +58,7 @@ elif platform.system() == 'Linux':
                         ('libvorbis.so.0', None, None),
                         ('libvorbisfile.so.3', None, None),
                         ('libogg.so.0', None, None),
-                        ('libpng12.so.0', None, None),
+#                        ('libpng12.so.0', None, None),
                         ('libmikmod.so.2', None, None),
                         ('libcaca.so.0', None, None),
                         ('libjpeg.so.8', None, None),
