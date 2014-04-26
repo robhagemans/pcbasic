@@ -36,6 +36,9 @@ import logging
 import plat
 import state
 import backend_pygame
+import fileio
+
+noresume = False
 
 # OS-specific stdin/stdout selection
 # no stdin/stdout access allowed on packaged apps
@@ -74,14 +77,14 @@ def main():
     try:
         # initialise program memory
         program.new()
-        if args.resume:
+        if args.resume and not noresume:
             # resume form saved emulator state
             load_state()
         # choose the video and sound backends
         prepare_console(args)
         # choose peripherals    
         deviceio.prepare_devices(args)
-        if not args.resume:    
+        if noresume or not args.resume:    
             # print greeting
             if not args.run and not args.cmd and not args.conv:
                 if stdin_is_tty:
@@ -107,17 +110,20 @@ def main():
         # errors during startup/conversion are handled here, then exit
         e.handle_break()  
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)  
+    except error.Exit:
+        pass
     except KeyboardInterrupt:
         if args.debug:
             raise
         else:    
             logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
-            run.exit()    
     finally:
         save_state()
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
         console.exit()
-
+        fileio.close_all()
+        deviceio.close_devices()
+            
 programsave = os.path.join(oslayer.drives['@'], "PROGRAM.BAS")
 state_file = os.path.join(oslayer.drives['@'], 'STATE.SAV')
 
@@ -365,3 +371,4 @@ def read_config():
 
 if __name__ == "__main__":
     main()
+        

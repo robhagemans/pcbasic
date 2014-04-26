@@ -55,7 +55,10 @@ def auto_loop(new_linenum, new_increment):
                 elif c != '':    
                     # it is a command, go and execute    
                     run.execution_loop()
-            except error.Error as e:
+            except error.Break as e:
+                e.handle_break() 
+                run.show_prompt()
+            except error.RunError as e:
                 e.handle_break()             
                 run.show_prompt()
         auto_mode = False
