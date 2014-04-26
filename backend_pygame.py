@@ -1228,5 +1228,6 @@ def load_state(f):
                 surface1[i].set_palette(workaround_palette)
             screen_changed = True    
         except Exception:
-            return False
+            # couldn't load the state correctly; most kikely a text screen saved from -t. just redraw what's unpickled.
+            console.redraw_text_screen()
             

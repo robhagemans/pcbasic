@@ -149,18 +149,8 @@ def clear_rows(cattr, start, stop):
     term.flush()
 
 def redraw():
-    if state.console_state.cursor:
-        show_cursor(False)
-    # this makes it feel faster
-    clear_rows(state.console_state.attr, 1, 25)
-    # redraw every character
-    for crow in range(state.console_state.height):
-        therow = state.console_state.apage.row[crow]  
-        for i in range(state.console_state.width): 
-            set_attr(therow.buf[i][1])
-            putc_at(crow+1, i+1, therow.buf[i][0])
-    if state.console_state.cursor:
-        show_cursor(True)        
+    console.redraw_text_screen()
+     
 
 #####
 
