@@ -783,6 +783,9 @@ def handle_key(e):
         else:
             # pause until keypress
             pause_key()    
+    elif e.key == pygame.K_DELETE and mods & pygame.KMOD_CTRL and mods & pygame.KMOD_ALT:
+        # if not caught by OS, reset the emulator
+        raise error.Reset()
     elif e.key == pygame.K_NUMLOCK and mods & pygame.KMOD_CTRL:
         pause_key()    
     elif e.key == pygame.K_SCROLLOCK and mods & pygame.KMOD_CTRL:

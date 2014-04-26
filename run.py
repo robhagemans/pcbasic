@@ -52,7 +52,9 @@ def execute(line):
         else:    
             # it is a command, go and execute    
             execution_loop()
-    except error.Error as e:
+    except error.Break as e:
+        e.handle_break() 
+    except error.RunError as e:
         e.handle_break() 
     # prompt
     show_prompt()
@@ -81,7 +83,5 @@ def execution_loop():
     console.show_cursor()
                    
 def exit():
-    fileio.close_all()
-    deviceio.close_devices()
-    sys.exit(0)
+    raise error.Exit
     

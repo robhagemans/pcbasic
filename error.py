@@ -101,6 +101,27 @@ class Break(Error):
     def handle_continue(self):
         # can't trap
         return False
+
+class Reset(Error):
+    def __init__(self):
+        pass
+        
+    def handle_break(self):
+        return False
+        
+    def handle_continue(self):
+        return False
+
+class Exit(Error):
+    def __init__(self):
+        pass
+        
+    def handle_break(self):
+        return False
+        
+    def handle_continue(self):
+        return False
+    
             
 class RunError(Error):
     def __init__(self, value, linum=-1):
