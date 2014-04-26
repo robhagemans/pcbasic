@@ -172,7 +172,8 @@ def init():
     global state
     if not backend.init():
         return False
-    # we need the correct mode here to ensure backend sets up correctly    
+    # we need the correct mode and width here to ensure backend sets up correctly    
+    state.width = state_module.console_state.width
     if not screen(state_module.console_state.screen_mode, None, None, None, first_run=True):
         import logging
         logging.warning("Screen mode not supported by display backend.")
