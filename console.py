@@ -176,6 +176,10 @@ def init():
         return False
     # we need the correct mode here to ensure backend sets up correctly    
     if not screen(state_module.console_state.screen_mode, None, None, None, first_run=True):
+        import logging
+        logging.warning("Screen mode not supported by display backend.")
+        # fix the terminal
+        backend.close()
         return False
     # update state to what's set in state (if it was pickled, this overwrites earlier settings)
     state = state_module.console_state
