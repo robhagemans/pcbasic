@@ -22,6 +22,7 @@ import statements
 import fileio
 import deviceio
 import console
+import state
 
 # suppress one prompt by setting to False (used by EDIT)
 prompt = True
@@ -39,12 +40,12 @@ def loop():
                         
 def execute(line):
     try:
-        program.direct_line = tokenise.tokenise_line(line)    
-        c = util.peek(program.direct_line)
+        state.basic_state.direct_line = tokenise.tokenise_line(line)    
+        c = util.peek(state.basic_state.direct_line)
         if c == '\x00':
             # check for lines starting with numbers (6553 6) and empty lines
-            empty, _ = program.check_number_start(program.direct_line)
-            program.store_line(program.direct_line)
+            empty, _ = program.check_number_start(state.basic_state.direct_line)
+            program.store_line(state.basic_state.direct_line)
             # no prompt
             return
         elif c == '':

@@ -14,6 +14,7 @@ import deviceio
 import console
 import program
 import vartypes
+import state
 
 class EventHandler(object):
     def __init__(self):
@@ -26,7 +27,7 @@ class EventHandler(object):
         self.triggered = False
 
     def handle(self):
-        if program.run_mode and self.enabled and self.triggered and not self.stopped and self.gosub != None and not suspend_all_events:
+        if state.basic_state.run_mode and self.enabled and self.triggered and not self.stopped and self.gosub != None and not suspend_all_events:
             self.triggered = False
             # stop event while handling it
             self.stopped = True 
@@ -83,7 +84,7 @@ def reset_events():
 reset_events()    
     
 def check_events():
-    if program.run_mode:
+    if state.basic_state.run_mode:
         check_timer_event()
         check_key_events()
         check_play_event()
