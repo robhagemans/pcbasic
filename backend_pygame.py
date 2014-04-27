@@ -773,10 +773,8 @@ def do_flip():
 def handle_key(e):
     c = ''
     mods = pygame.key.get_mods()
-    print mods
     if android:
         mods |= android_apply_mods(e) 
-    print mods    
     if e.key in (pygame.K_PAUSE, pygame.K_BREAK):
         if mods & pygame.KMOD_CTRL:
             # ctrl-break
