@@ -24,8 +24,6 @@ import nopenstick
 import events
 # for print_screen
 import deviceio
-# for replace key
-import program
 # for Break, Exit, Reset
 import error
 
