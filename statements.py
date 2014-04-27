@@ -9,14 +9,16 @@
 # please see text file COPYING for licence terms.
 #
 
+import os
 from functools import partial
 try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
-import os
 
+# for automode
 import run
+
 import console
 import debug
 import deviceio
