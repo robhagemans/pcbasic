@@ -119,13 +119,13 @@ def auto_loop(new_linenum, new_increment):
                     state.basic_state.auto_linenum = scanline + state.basic_state.auto_increment
                 elif c != '':    
                     # it is a command, go and execute    
-                    run.execution_loop()
+                    execution_loop()
             except error.Break as e:
                 e.handle_break() 
-                run.show_prompt()
+                show_prompt()
             except error.RunError as e:
                 e.handle_break()             
-                run.show_prompt()
+                show_prompt()
         state.basic_state.auto_mode = False
         program.set_runmode(False)
 
