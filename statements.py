@@ -28,6 +28,7 @@ import fileio
 import fp
 import oslayer
 import program
+import state
 import util
 import var
 import vartypes
@@ -391,7 +392,7 @@ def parse_on_event(ins, bracket=True):
     jumpnum = util.parse_jumpnum(ins)
     if jumpnum == 0:
         jumpnum = None
-    if jumpnum not in program.line_numbers:
+    if jumpnum not in state.basic_state.line_numbers:
         raise error.RunError(8)    
     util.require(ins, util.end_statement)    
     return num, jumpnum   
@@ -730,7 +731,7 @@ def exec_edit(ins):
         # undefined line number
         raise error.RunError(8)    
     from_line = parse_jumpnum_or_dot(ins, err=5)
-    if from_line == None or from_line not in program.line_numbers:
+    if from_line == None or from_line not in state.basic_state.line_numbers:
         raise error.RunError(8)
     util.require(ins, util.end_statement, err=5)
     # print the line, position cursor, back to direct mode. suppress prompt.

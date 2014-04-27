@@ -108,7 +108,9 @@ if pygame:
     screen = None
     surface0 = []
     surface1 = []
-    
+    # picklable store for surfaces
+    state.display_strings = []
+        
     screen_changed = True
     cycle = 0
     blink_state = 0

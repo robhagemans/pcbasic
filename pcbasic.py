@@ -110,7 +110,6 @@ def main():
     except error.RunError as e:
         # errors during startup/conversion are handled here, then exit
         e.handle_break()  
-        logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)  
     except error.Exit:
         pass
     except error.Reset:
@@ -118,8 +117,6 @@ def main():
     except KeyboardInterrupt:
         if args.debug:
             raise
-        else:    
-            logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
     except Exception as e:
         raise
     finally:
@@ -132,29 +129,20 @@ def main():
         fileio.close_all()
         deviceio.close_devices()
             
-programsave = os.path.join(oslayer.drives['@'], "PROGRAM.BAS")
 
 def save_state():   
     # save display
-    console.backend.save_state()
+    if console.backend:
+        console.backend.save_state()
     # save all other state
     state.save()
-    # save any program in memory
-    program.protected = False
-    program.save(oslayer.safe_open(programsave, 'S', 'W'), 'B')
 
 def del_state():
-    os.remove(programsave)
     state.delete()
     
 def load_state():
-    try:
-        program.load(oslayer.safe_open(programsave, 'L', 'R'))
-        state.load()
-        return True
-        # display will load later as flag is set
-    except error.RunError as e:
-        return False
+    return state.load()
+    
     
 def prepare_keywords(args):
     global debugstr

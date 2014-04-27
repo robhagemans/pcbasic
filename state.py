@@ -12,32 +12,77 @@
 import pickle
 import os
 import zlib
-import oslayer
-
+import copy
+import logging
+        
 class State(object):
     pass
 
 basic_state = State()        
 console_state = State()
 display_state = State()
-display_state.display_strings = []
 
 pcbasic_dir = os.path.dirname(os.path.realpath(__file__))
 state_file = os.path.join(pcbasic_dir, 'info', 'STATE.SAV')
 
+###############################################
+
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+
+class cStringIO_Pickler(object):
+    def __init__(self, csio):
+        self.value = csio.getvalue()
+        self.pos = csio.tell()
+        print self.value.encode('hex'), self.pos
+
+    def unpickle(self):
+        csio = StringIO()
+        csio.write(self.value)
+        csio.seek(self.pos)
+        print self.value.encode('hex'), self.pos
+        return csio             
+
+###############################################
+
 def save():
-    state_to_keep = (console_state, display_state)
-    s = zlib.compress(pickle.dumps(state_to_keep, 2))
-    f = oslayer.safe_open(state_file, 'S', 'W')
-    f.write(str(len(s)) + '\n' + s)
-    f.close()
+    # prepare pickling object
+    to_pickle = State()
+    # BASIC state
+    to_pickle.basic = copy.copy(basic_state)
+    to_pickle.basic.bytecode = cStringIO_Pickler(basic_state.bytecode)
+    # Console
+    to_pickle.console = copy.copy(console_state)
+    # Display
+    to_pickle.display = copy.copy(display_state)
+    # pickle and compress
+    s = zlib.compress(pickle.dumps(to_pickle, 2))
+    try:
+        f = open(state_file, 'wb')
+        f.write(str(len(s)) + '\n' + s)
+        f.close()
+    except IOError:
+        logging.warning("Could not write to state file. Emulator state not saved.")
+        pass
     
 def load():
-    global console_state, display_state
-    f = oslayer.safe_open(state_file, 'L', 'R')
-    length = int(f.readline())
-    console_state, display_state = pickle.loads(zlib.decompress(f.read(length)))
-
+    global console_state, display_state, basic_state
+    # decompress and unpickle
+    try:
+        f = open(state_file, 'rb')
+        length = int(f.readline())
+        from_pickle = pickle.loads(zlib.decompress(f.read(length)))
+        f.close()
+    except IOError:
+        logging.warning("Could not load from state file.")
+        return False
+    # unpack pickling object
+    basic_state, console_state, display_state = from_pickle.basic, from_pickle.console, from_pickle.display
+    basic_state.bytecode = basic_state.bytecode.unpickle()
+    return True
+    
 def delete():
     os.remove(state_file)
 
