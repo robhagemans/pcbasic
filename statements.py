@@ -58,9 +58,9 @@ def parse_statement():
         # line number marker, new statement
         linenum = util.parse_line_number(ins)
         if linenum == -1:
-            if error.error_resume:
+            if state.basic_state.error_resume:
                 # unfinished error handler: no RESUME (don't trap this)
-                error.error_handle_mode = True
+                state.basic_state.error_handle_mode = True
                 raise error.RunError(19) 
             # break
             program.set_runmode(False)

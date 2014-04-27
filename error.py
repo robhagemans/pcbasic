@@ -15,13 +15,13 @@ import events
 import state
 
 # number and line number of last error
-errn = -1
-erl = 65535
+state.basic_state.errn = -1
+state.basic_state.erl = 65535
 
 # jump line number 
-on_error = None
-error_handle_mode = False
-error_resume = None
+state.basic_state.on_error = None
+state.basic_state.error_handle_mode = False
+state.basic_state.error_resume = None
             
 default_msg = 'Unprintable error'
 errors = {
@@ -96,7 +96,7 @@ class Break(Error):
     def handle_break(self):
         write_error_message("Break", self.erl)
         if state.basic_state.run_mode:
-            program.stop = state.basic_state.bytecode.tell()
+            state.basic_state.stop = state.basic_state.bytecode.tell()
             program.set_runmode(False)
         
     def handle_continue(self):
@@ -130,27 +130,25 @@ class RunError(Error):
         self.erl = linum if not state.basic_state.run_mode or linum != -1 else program.get_line_number(state.basic_state.current_statement)
 
     def handle_continue(self):
-        global error_resume, error_handle_mode
         set_err(self)
         # don't jump if we're already busy handling an error
-        if on_error != None and on_error != 0 and not error_handle_mode:
-            error_resume = state.basic_state.current_statement, state.basic_state.run_mode
-            program.jump(on_error)
-            error_handle_mode = True
+        if state.basic_state.on_error != None and state.basic_state.on_error != 0 and not state.basic_state.error_handle_mode:
+            state.basic_state.error_resume = state.basic_state.current_statement, state.basic_state.run_mode
+            program.jump(state.basic_state.on_error)
+            state.basic_state.error_handle_mode = True
             events.suspend_all_events = True
             return True
             
     def handle_break(self):
-        global errn, error_handle_mode
         set_err(self)
         # not handled by ON ERROR, stop execution
         write_error_message(get_message(self.err), self.erl)   
-        error_handle_mode = False
+        state.basic_state.error_handle_mode = False
         program.set_runmode(False)
         # special case
         if self.err == 2:
             # for some reason, err is reset to zero by GW-BASIC in this case.
-            errn = 0
+            state.basic_state.errn = 0
             # for syntax error, line edit gadget appears
             if self.erl != -1:
                 console.start_line()
@@ -161,11 +159,10 @@ class RunError(Error):
                     e.handle_break()
     
 def resume(jumpnum):  
-    global error_handle_mode, error_resume, errn
-    start_statement, runmode = error_resume 
-    errn = 0
-    error_handle_mode = False
-    error_resume = None
+    start_statement, runmode = state.basic_state.error_resume 
+    state.basic_state.errn = 0
+    state.basic_state.error_handle_mode = False
+    state.basic_state.error_resume = None
     events.suspend_all_events = False    
     if jumpnum == 0: 
         # RESUME or RESUME 0 
@@ -179,10 +176,9 @@ def resume(jumpnum):
         program.jump(jumpnum)
 
 def set_err(e):
-    global errn, erl
     # set ERR and ERL
-    errn = e.err
-    erl = e.erl if e.erl and e.erl > -1 and e.erl < 65535 else 65535
+    state.basic_state.errn = e.err
+    state.basic_state.erl = e.erl if e.erl and e.erl > -1 and e.erl < 65535 else 65535
     
 def get_message(errnum):
     try:
@@ -199,7 +195,7 @@ def write_error_message(msg, linenum):
 
 # math errors only break execution if handler is set
 def math_error(errnum):
-    if on_error: 
+    if state.basic_state.on_error: 
         # also raises exception in error_handle_mode! in that case, prints a normal error message
         raise(RunError(errnum))
     else:

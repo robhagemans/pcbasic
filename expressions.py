@@ -31,6 +31,7 @@ import graphics
 import console
 # for FRE() only
 import program
+import state
 
 # binary operator priority, lowest index is tightest bound 
 # operators of the same priority are evaluated left to right      
@@ -654,10 +655,10 @@ def value_play(ins):
 # error functions
 
 def value_erl(ins):
-    return fp.pack(fp.Single.from_int(error.erl))
+    return fp.pack(fp.Single.from_int(state.basic_state.erl))
 
 def value_err(ins):
-    return vartypes.pack_int(error.errn)
+    return vartypes.pack_int(state.basic_state.errn)
     
 #####################################################################
 # pen, stick and strig
