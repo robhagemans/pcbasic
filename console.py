@@ -32,11 +32,11 @@ backend = None
 sound = nosound
 penstick = nopenstick
 
-# codepage suggestion for backend
-state.codepage = 437    
-
 import state as state_module
 from state import console_state as state
+
+# codepage suggestion for backend
+state.codepage = 437    
 
 # number of columns, counting 1..width
 state.width = 80

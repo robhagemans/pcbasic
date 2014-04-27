@@ -367,12 +367,12 @@ def init():
         pygame.display.quit()
         logging.warning('Refusing to open libcaca console. Failed to initialise PyGame console.')
         return False
-    fonts = cpi_font.load_codepage(state.console_state.codepage)
+    fonts = cpi_font.load_codepage(console_state.codepage)
     if fonts == None:
         pygame.display.quit()
         logging.warning('Could not load codepage font. Failed to initialise PyGame console.')
         return False
-    unicodepage.load_codepage(state.console_state.codepage)
+    unicodepage.load_codepage(console_state.codepage)
     # get physical screen dimensions (needs to be called before set_mode)
     display_info = pygame.display.Info()
     physical_size = display_info.current_w, display_info.current_h
