@@ -15,6 +15,7 @@ import tokenise
 import console
 import run
 import util
+import state
 
 auto_mode = False
 
@@ -29,7 +30,7 @@ def auto_loop(new_linenum, new_increment):
             numstr = str(linenum)
             console.write(numstr)
             try:
-                if linenum in program.line_numbers:
+                if linenum in state.basic_state.line_numbers:
                     console.write('*')
                     line = console.wait_screenline(from_start=True)
                     if line[:len(numstr)+1] == numstr+'*':

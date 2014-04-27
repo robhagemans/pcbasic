@@ -25,6 +25,7 @@ import util
 import expressions
 import program
 import fileio
+import state
 
 # for randomize
 import console
@@ -222,7 +223,7 @@ def exec_read(ins):
         num = representation.str_to_type(program.read_entry(), v[0][-1])
         if num == None: 
             # set pointer for EDIT gadget
-            program.bytecode.seek(program.data_pos)
+            state.basic_state.bytecode.seek(program.data_pos)
             raise error.RunError(2, program.get_line_number(program.data_pos-1))
         var.set_var_or_array(*v, value=num)
     util.require(ins, util.end_statement)

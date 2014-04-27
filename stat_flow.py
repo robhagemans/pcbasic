@@ -17,10 +17,11 @@ import vartypes
 import util
 import expressions
 import fileio
+import state
 
 def exec_end(ins):
     util.require(ins, util.end_statement)
-    program.stop = program.bytecode.tell()
+    program.stop = state.basic_state.bytecode.tell()
     program.set_runmode(False)
     # avoid NO RESUME
     error.error_handle_mode = False
@@ -255,7 +256,7 @@ def exec_on_jump(ins):
 def exec_on_error(ins):
     util.require_read(ins, ('\x89',))  # GOTO
     linenum = util.parse_jumpnum(ins)
-    if linenum != 0 and linenum not in program.line_numbers:
+    if linenum != 0 and linenum not in state.basic_state.line_numbers:
         # undefined line number
         raise error.RunError(8)
     error.on_error = linenum

@@ -12,6 +12,7 @@ import util
 import console
 import program
 import events
+import state
 
 # number and line number of last error
 errn = -1
@@ -95,7 +96,7 @@ class Break(Error):
     def handle_break(self):
         write_error_message("Break", self.erl)
         if program.run_mode:
-            program.stop = program.bytecode.tell()
+            program.stop = state.basic_state.bytecode.tell()
             program.set_runmode(False)
         
     def handle_continue(self):
@@ -155,7 +156,7 @@ class RunError(Error):
                 console.start_line()
                 console.write_line("Ok\xff")
                 try:    
-                    textpos = program.edit(self.erl, program.bytecode.tell())
+                    textpos = program.edit(self.erl, state.basic_state.bytecode.tell())
                 except RunError as e:
                     e.handle_break()
     
