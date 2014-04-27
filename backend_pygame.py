@@ -108,8 +108,6 @@ if pygame:
     screen = None
     surface0 = []
     surface1 = []
-    # picklable store for surfaces
-    state.display_strings = []
         
     screen_changed = True
     cycle = 0
@@ -1193,26 +1191,42 @@ def check_quit_sound():
                 mixer.quit()
                 quiet_ticks = 0
 
-def save_state():
-    del state.display_strings[:]
-    for i in range(len(surface0)):    
-        state.display_strings.append(pygame.image.tostring(surface0[i], 'P'))
-    for i in range(len(surface1)):    
-        state.display_strings.append(pygame.image.tostring(surface1[i], 'P'))
 
-def load_state():
+####################################
+# state saving and loading
+
+class PygameDisplayState(state_module.DisplayState):
+    def pickle(self):
+        self.display_strings = []
+        for s in surface0:    
+            self.display_strings.append(pygame.image.tostring(s, 'P'))
+        for s in surface1:    
+            self.display_strings.append(pygame.image.tostring(s, 'P'))
+        
+    def unpickle(self):
+        global display_strings, load_flag
+        load_flag = True
+        display_strings = self.display_strings
+        del self.display_strings
+
+
+# picklable store for surfaces
+display_strings = []
+state_module.display = PygameDisplayState()
+load_flag = False
+
+def load_state():        
     global surface0, surface1, screen_changed
-    if state.display_strings:
+    if load_flag:
         try:
             for i in range(len(surface0)):    
-                surface0[i] = pygame.image.fromstring(state.display_strings[i])
+                surface0[i] = pygame.image.fromstring(display_strings[i])
                 surface0[i].set_palette(workaround_palette)
             for j in range(len(surface1)):    
-                surface0[i] = pygame.image.fromstring(state.display_strings[i+j])
+                surface1[i] = pygame.image.fromstring(display_strings[i+j])
                 surface1[i].set_palette(workaround_palette)
             screen_changed = True    
-        except Exception:
+        except IndexError:
             # couldn't load the state correctly; most likely a text screen saved from -t. just redraw what's unpickled.
             console.redraw_text_screen()
-        del state.display_strings[:]
-            
+        
