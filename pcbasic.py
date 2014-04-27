@@ -42,8 +42,6 @@ if plat.system == 'Android':
     argparse = None
 else:
     import argparse
-    sys.path.insert(0, 'android/logging.zip')
-    sys.path.insert(0, 'android/ConfigParser.py')
 
 import ConfigParser
 import logging
