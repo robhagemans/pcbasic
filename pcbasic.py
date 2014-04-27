@@ -182,7 +182,7 @@ def prepare_constants(args):
     if args.unprotect or args.conv:
         program.dont_protect = True    
     if args.codepage:
-        console.codepage = int(args.codepage)
+        state.console_state.codepage = int(args.codepage)
     if args.caps:
         console.state.caps = True    
     # rename exec argument for convenience
@@ -207,7 +207,7 @@ def prepare_constants(args):
         args.conv_mode = args.conv_mode[0].upper()        
 
 def prepare_console(args):
-    unicodepage.load_codepage(console.codepage)
+    unicodepage.load_codepage(state.console_state.codepage)
     if args.dumb or args.conv or (not args.graphical and not args.ansi and (not stdin_is_tty or not stdout_is_tty)):
         # redirected input or output leads to dumbterm use
         console.backend = backend_dumb
