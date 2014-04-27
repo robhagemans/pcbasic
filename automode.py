@@ -17,20 +17,19 @@ import run
 import util
 import state
 
-auto_mode = False
+state.basic_state.auto_mode = False
 
 def auto_loop(new_linenum, new_increment):
-    global auto_mode, linenum, increment
     # don't nest, but reset linenum and increment
-    linenum = new_linenum if new_linenum != None else 10
-    increment = new_increment if new_increment != None else 10    
-    if not auto_mode:
-        auto_mode = True   
+    state.basic_state.auto_linenum = new_linenum if new_linenum != None else 10
+    state.basic_state.auto_increment = new_increment if new_increment != None else 10    
+    if not state.basic_state.auto_mode:
+        state.basic_state.auto_mode = True   
         while True:
-            numstr = str(linenum)
+            numstr = str(state.basic_state.auto_linenum)
             console.write(numstr)
             try:
-                if linenum in state.basic_state.line_numbers:
+                if state.basic_state.auto_linenum in state.basic_state.line_numbers:
                     console.write('*')
                     line = console.wait_screenline(from_start=True)
                     if line[:len(numstr)+1] == numstr+'*':
@@ -52,7 +51,7 @@ def auto_loop(new_linenum, new_increment):
                     empty, scanline = program.check_number_start(state.basic_state.direct_line)
                     if not empty:
                         program.store_line(state.basic_state.direct_line)
-                    linenum = scanline + increment
+                    state.basic_state.auto_linenum = scanline + state.basic_state.auto_increment
                 elif c != '':    
                     # it is a command, go and execute    
                     run.execution_loop()
@@ -62,7 +61,7 @@ def auto_loop(new_linenum, new_increment):
             except error.RunError as e:
                 e.handle_break()             
                 run.show_prompt()
-        auto_mode = False
+        state.basic_state.auto_mode = False
         program.set_runmode(False)
 
         
