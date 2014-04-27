@@ -165,9 +165,6 @@ def build_default_cursor(mode, is_line):
 def build_shape_cursor(from_line, to_line):
     pass
 
-def save_state():
-    pass
-    
 def load_state():
     pass
 

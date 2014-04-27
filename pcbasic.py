@@ -80,7 +80,7 @@ def main():
         program.new()
         if args.resume or plat.system == 'Android':
             # resume form saved emulator state
-            args.resume = load_state()
+            args.resume = state.load()
         # choose the video and sound backends
         prepare_console(args)
         # choose peripherals    
@@ -121,29 +121,14 @@ def main():
         raise
     finally:
         if reset:
-            del_state()
+            state.delete()
         else:    
-            save_state()
+            state.save()
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
         console.exit()
         fileio.close_all()
         deviceio.close_devices()
             
-
-def save_state():   
-    # save display
-    if console.backend:
-        console.backend.save_state()
-    # save all other state
-    state.save()
-
-def del_state():
-    state.delete()
-    
-def load_state():
-    return state.load()
-    
-    
 def prepare_keywords(args):
     global debugstr
     if args.debug:

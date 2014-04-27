@@ -18,9 +18,20 @@ import logging
 class State(object):
     pass
 
+# display backends can extend this for their pickling needs
+class DisplayState(State):
+    def pickle(self):
+        pass
+    
+    def unpickle(self):
+        pass
+        
 basic_state = State()        
 console_state = State()
+display = DisplayState()
+#D
 display_state = State()
+
 
 pcbasic_dir = os.path.dirname(os.path.realpath(__file__))
 state_file = os.path.join(pcbasic_dir, 'info', 'STATE.SAV')
@@ -54,8 +65,11 @@ def save():
     to_pickle.basic.bytecode = cStringIO_Pickler(basic_state.bytecode)
     # Console
     to_pickle.console = copy.copy(console_state)
-    # Display
-    to_pickle.display = copy.copy(display_state)
+    # Display 
+    to_pickle.display = display
+    to_pickle.display.pickle()
+    #D
+    to_pickle.display_state = copy.copy(display_state)
     # pickle and compress
     s = zlib.compress(pickle.dumps(to_pickle, 2))
     try:
@@ -67,7 +81,7 @@ def save():
         pass
     
 def load():
-    global console_state, display_state, basic_state
+    global console_state, display_state, basic_state, display
     # decompress and unpickle
     try:
         f = open(state_file, 'rb')
@@ -78,8 +92,9 @@ def load():
         logging.warning("Could not load from state file.")
         return False
     # unpack pickling object
-    basic_state, console_state, display_state = from_pickle.basic, from_pickle.console, from_pickle.display
+    basic_state, console_state, display_state = from_pickle.basic, from_pickle.console, from_pickle.display_state
     basic_state.bytecode = basic_state.bytecode.unpickle()
+    from_pickle.display.unpickle()
     return True
     
 def delete():
