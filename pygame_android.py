@@ -36,6 +36,7 @@ keycode_to_unicode = {
     pygame.K_s           : u's',    pygame.K_t           : u't',    pygame.K_u           : u'u',    pygame.K_v           : u'v',
     pygame.K_w           : u'w',    pygame.K_x           : u'x',    pygame.K_y           : u'y',    pygame.K_z           : u'z',
 }
+
 # android sends LSHIFT + key according to US keyboard
 shift_keycode_to_unicode = {
     pygame.K_ESCAPE      : u'\x1b', pygame.K_BACKSPACE   : u'\b',    pygame.K_TAB         : u'\t',    pygame.K_RETURN      : u'\r',
@@ -105,20 +106,23 @@ def android_get_unicode(e, mods):
         else:
             return keycode_to_unicode[e.key]
     except KeyError:
-        return e.unicode
+        # ignore; the pgs4a unicode values are actually android scancodes and not useful to us
+        return '' #e.unicode
 
 # android keybard sends a sequence LSHIFT, KEY rather than mods
-def android_apply_mods():
+def android_apply_mods(e):
     global android_shift, android_ctrl, android_alt
     mod_mask = 0
     if android_shift:
         mod_mask |= pygame.KMOD_SHIFT
-        android_shift = False
     if android_ctrl:
         mod_mask |= pygame.KMOD_CTRL
-        android_ctrl = False
     if android_alt:
         mod_mask |= pygame.KMOD_ALT
+    # clear mods on non-mod keypress only   
+    if e.key not in (pygame.K_LSHIFT, pygame.K_RSHIFT, pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT):
+        android_shift = False
+        android_ctrl = False
         android_alt = False
     return mod_mask            
 
