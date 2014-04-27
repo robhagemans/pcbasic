@@ -11,6 +11,7 @@
 
 import pygame
 import android
+import backend_pygame
 
 # unicode returned by pygame for android is incorrect, work around this.
 keycode_to_unicode = {
@@ -254,6 +255,10 @@ def android_toggle_keyboard():
 def android_check_events():
     if android.check_pause():
         android.hide_keyboard()
+        # save emulator state
+        backend_pygame.save_state()
+        state.save()
+        # hibernate; we may not wake up
         android.wait_for_resume()
         return True
     return False

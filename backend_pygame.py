@@ -1191,32 +1191,21 @@ def check_quit_sound():
                 mixer.quit()
                 quiet_ticks = 0
 
-import zlib
-
-def save_state(f):
+def save_state():
     for i in range(len(surface0)):    
-        s = zlib.compress(pygame.image.tostring(surface0[i], 'P'))
-        f.write(str(len(s)) + '\n' + s + '\n')
+        state.display_strings.append(pygame.image.tostring(surface0[i], 'P'))
     for i in range(len(surface1)):    
-        s = zlib.compress(pygame.image.tostring(surface1[i], 'P'))
-        f.write(str(len(s)) + '\n' + s + '\n')
-    
-def load_state(f):
+        state.display_strings.append(pygame.image.tostring(surface1[i], 'P'))
+
+def load_state():
     global surface0, surface1, screen_changed
-    if f:
-        state.do_load = False
+    if state.display_strings:
         try:
             for i in range(len(surface0)):    
-                length = int(f.readline())
-                s = zlib.decompress(f.read(length))
-                f.read(1)
-                surface0[i] = pygame.image.fromstring(s, state.size, 'P')
+                surface0[i] = pygame.image.fromstring(state.display_strings[i])
                 surface0[i].set_palette(workaround_palette)
-            for i in range(len(surface1)):    
-                length = int(f.readline())
-                s = zlib.decompress(f.read(length))
-                f.read(1)
-                surface1[i] = pygame.image.fromstring(s, state.size, 'P')
+            for j in range(len(surface1)):    
+                surface0[i] = pygame.image.fromstring(state.display_strings[i+j])
                 surface1[i].set_palette(workaround_palette)
             screen_changed = True    
         except Exception:

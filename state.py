@@ -12,6 +12,7 @@
 import pickle
 import os
 import zlib
+import oslayer
 
 class State(object):
     pass
@@ -19,19 +20,25 @@ class State(object):
 basic_state = State()        
 console_state = State()
 display_state = State()
+display_state.display_strings = []
 
-display_state.do_load = None
+pcbasic_dir = os.path.dirname(os.path.realpath(__file__))
+state_file = os.path.join(pcbasic_dir, 'info', 'STATE.SAV')
 
-def save(f):
+def save():
     state_to_keep = (console_state, display_state)
     s = zlib.compress(pickle.dumps(state_to_keep, 2))
-    f.write(str(len(s)) + '\n' + s + '\n')
-
-def load(f):
+    f = oslayer.safe_open(state_file, 'S', 'W')
+    f.write(str(len(s)) + '\n' + s)
+    f.close()
+    
+def load():
     global console_state, display_state
+    f = oslayer.safe_open(state_file, 'L', 'R')
     length = int(f.readline())
     console_state, display_state = pickle.loads(zlib.decompress(f.read(length)))
-    f.read(1)
-    # ensure the display gets loaded
-    display_state.do_load = f
+
+def delete():
+    os.remove(state_file)
+
 

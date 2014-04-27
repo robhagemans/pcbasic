@@ -16,28 +16,8 @@
 import sys
 import os
 from functools import partial             
-import ConfigParser
              
-import run
-import error
-import var
-import deviceio
-import expressions
-import oslayer
-import nosound
-import sound_beep
-import graphics
-import console
-import tokenise
-import program
-import unicodepage
-import debug
-import logging
 import plat
-import state
-import backend_pygame
-import fileio
-
 
 # OS-specific stdin/stdout selection
 # no stdin/stdout access allowed on packaged apps
@@ -62,6 +42,30 @@ if plat.system == 'Android':
     argparse = None
 else:
     import argparse
+    sys.path.insert(0, 'android/logging.zip')
+    sys.path.insert(0, 'android/ConfigParser.py')
+
+import ConfigParser
+import logging
+
+import run
+import error
+import var
+import deviceio
+import expressions
+import oslayer
+import nosound
+import sound_beep
+import graphics
+import console
+import tokenise
+import program
+import unicodepage
+import debug
+import state
+import backend_pygame
+import fileio
+
 
 greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "@:INFO" for more.\r%d Bytes free'
 debugstr = ''
@@ -76,7 +80,7 @@ def main():
     try:
         # initialise program memory
         program.new()
-        if args.resume:
+        if args.resume or plat.system == 'Android':
             # resume form saved emulator state
             args.resume = load_state()
         # choose the video and sound backends
@@ -131,27 +135,24 @@ def main():
         deviceio.close_devices()
             
 programsave = os.path.join(oslayer.drives['@'], "PROGRAM.BAS")
-state_file = os.path.join(oslayer.drives['@'], 'STATE.SAV')
 
 def save_state():   
-    f = oslayer.safe_open(state_file, 'S', 'W')
-    # save all other state
-    state.save(f)
     # save display
-    console.backend.save_state(f)
-    f.close()
+    console.backend.save_state()
+    # save all other state
+    state.save()
     # save any program in memory
     program.protected = False
     program.save(oslayer.safe_open(programsave, 'S', 'W'), 'B')
 
 def del_state():
     os.remove(programsave)
-    os.remove(state_file)
+    state.delete()
     
 def load_state():
     try:
         program.load(oslayer.safe_open(programsave, 'L', 'R'))
-        state.load(oslayer.safe_open(state_file, 'L', 'R'))
+        state.load()
         return True
         # display will load later as flag is set
     except error.RunError as e:

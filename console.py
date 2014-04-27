@@ -182,7 +182,7 @@ def init():
         return False
     # update state to what's set in state (if it was pickled, this overwrites earlier settings)
     state = state_module.console_state
-    backend.load_state(state_module.display_state.do_load)
+    backend.load_state()
     return True
 
 def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=False):
