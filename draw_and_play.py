@@ -22,16 +22,15 @@ import util
 import var
 import graphics
 import console
+import state
 
 # generic for both macro languages
-
 ml_whitepace = (' ')
 
 # GRAPHICS MACRO LANGUAGE
 deg_to_rad = fp.div( fp.Single.twopi, fp.Single.from_int(360))
 draw_scale = 4
 draw_angle = 0
-    
 
 # MUSIC MACRO LANGUAGE
 # 12-tone equal temperament
@@ -50,8 +49,8 @@ def get_value_for_varptrstr(varptrstr):
     varptrstr = bytearray(varptrstr)
     varptr = vartypes.uint_to_value(bytearray(varptrstr[1:3]))
     found_name = ''
-    for name in var.var_memory:
-        _, var_ptr, _ = var.var_memory[name]
+    for name in state.basic_state.var_memory:
+        _, var_ptr, _ = state.basic_state.var_memory[name]
         if var_ptr == varptr:
             found_name = name
             break
@@ -59,7 +58,6 @@ def get_value_for_varptrstr(varptrstr):
         raise error.RunError(5)
     return var.get_var(found_name)
         
-
 def ml_parse_value(gmls):
     c = util.skip(gmls, ml_whitepace)
     if c == '=':
@@ -95,7 +93,6 @@ def ml_parse_value(gmls):
             raise error.RunError(5)
     return step
 
-
 def ml_parse_number(gmls):
     return vartypes.pass_int_unpack(ml_parse_value(gmls), err=5)
     
@@ -110,7 +107,6 @@ def ml_parse_string(gmls):
     else:
         # varptr$
         return vartypes.pass_string_unpack(get_value_for_varptrstr(gmls.read(3)))
-                    
         
 # GRAPHICS MACRO LANGUAGE
 
@@ -141,7 +137,6 @@ def draw_step(x0,y0, sx,sy, plot, goback):
     if goback:
         graphics.last_point=(x0,y0)
             
-
 def draw_parse_gml(gml):
     global draw_scale, draw_angle
     save_attr = console.state.attr
@@ -230,9 +225,8 @@ def solid_pattern(c):
             pattern[b] = 0xff
     return pattern
     
-    
 # MUSIC MACRO LANGUAGE
-gap = 0.07
+
 def play_parse_mml(mml):
     global play_octave, play_speed, play_length, play_tempo
     gmls = StringIO(mml.upper())

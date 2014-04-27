@@ -91,7 +91,7 @@ class Error(Exception):
             
 class Break(Error):
     def __init__(self):
-        self.erl = -1 if not state.basic_state.run_mode else program.get_line_number(pstate.basic_state.current_statement)
+        self.erl = -1 if not state.basic_state.run_mode else program.get_line_number(state.basic_state.current_statement)
         
     def handle_break(self):
         write_error_message("Break", self.erl)
