@@ -65,8 +65,8 @@ def parse_statement():
             # break
             program.set_runmode(False)
             return False
-        if program.tron:
-            console.write('['+('%i' % linenum) +']')
+        if state.basic_state.tron:
+            console.write('[' + ('%i' % linenum) + ']')
         debug.debug_step(linenum)
     elif c == ':':
         ins.read(1)    
@@ -214,12 +214,12 @@ def exec_system(ins):
     raise error.Exit()
         
 def exec_tron(ins):
-    program.tron = True
+    state.basic_state.tron = True
     # TRON LAH gives error, but TRON has been executed
     util.require(ins, util.end_statement)
 
 def exec_troff(ins):
-    program.tron = False
+    state.basic_state.tron = False
     util.require(ins, util.end_statement)
 
 def exec_rem(ins):
@@ -773,7 +773,7 @@ def exec_load(ins):
         program.jump(None)
     else:
         fileio.close_all()
-    program.tron = False    
+    state.basic_state.tron = False    
         
 def exec_chain(ins):
     action = program.merge if util.skip_white_read_if(ins, ('\xBD',)) else program.load     # MERGE
@@ -812,7 +812,7 @@ def exec_merge(ins):
     util.require(ins, util.end_statement)
     
 def exec_new(ins):
-    program.tron = False
+    state.basic_state.tron = False
     # deletes the program currently in memory and clears all variables.
     program.new()
 

@@ -34,11 +34,11 @@ from copy import copy
 # program bytecode buffer
 state.basic_state.bytecode = StringIO()
 # direct line buffer
-direct_line = StringIO()
+state.basic_state.direct_line = StringIO()
 # pointer position: False for direct line, True for program
-run_mode = False
+state.basic_state.run_mode = False
 # line number tracing
-tron = False
+state.basic_state.tron = False
 
 # memory model; offsets in files
 program_memory_start = 0x126e
@@ -72,10 +72,10 @@ def erase_program():
     last_stored = None
 
 def set_runmode(new_runmode=True, pos=None):
-    global run_mode, current_codestream
-    current_codestream = state.basic_state.bytecode if new_runmode else direct_line
-    if run_mode != new_runmode:
-        run_mode = new_runmode
+    global current_codestream
+    current_codestream = state.basic_state.bytecode if new_runmode else state.basic_state.direct_line
+    if state.basic_state.run_mode != new_runmode:
+        state.basic_state.run_mode = new_runmode
         # position at end - don't execute anything unless we jump
         current_codestream.seek(0, 2)
     if pos != None:
@@ -510,7 +510,7 @@ def jump(jumpnum, err=8):
         
 def jump_gosub(jumpnum, handler=None):    
     # set return position
-    gosub_return.append((current_codestream.tell(), run_mode, handler))
+    gosub_return.append((current_codestream.tell(), state.basic_state.run_mode, handler))
     jump(jumpnum)
  
 def jump_return(jumpnum):        

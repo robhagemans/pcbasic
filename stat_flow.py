@@ -114,7 +114,7 @@ def find_next(ins, varname):
         util.require(ins, util.end_statement)
     if (comma or varname2) and varname2 != varname:
         # NEXT without FOR 
-        errline = program.get_line_number(nextpos-1) if program.run_mode else -1
+        errline = program.get_line_number(nextpos-1) if state.basic_state.run_mode else -1
         raise error.RunError(1, errline)    
     ins.seek(current)
     return nextpos 

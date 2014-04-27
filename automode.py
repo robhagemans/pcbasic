@@ -45,13 +45,13 @@ def auto_loop(new_linenum, new_increment):
                 line = line[:-1]
             # run or store it; don't clear lines or raise undefined line number
             try:
-                program.direct_line = tokenise.tokenise_line(line)    
-                c = util.peek(program.direct_line)
+                state.basic_state.direct_line = tokenise.tokenise_line(line)    
+                c = util.peek(state.basic_state.direct_line)
                 if c == '\x00':
                     # check for lines starting with numbers (6553 6) and empty lines
-                    empty, scanline = program.check_number_start(program.direct_line)
+                    empty, scanline = program.check_number_start(state.basic_state.direct_line)
                     if not empty:
-                        program.store_line(program.direct_line)
+                        program.store_line(state.basic_state.direct_line)
                     linenum = scanline + increment
                 elif c != '':    
                     # it is a command, go and execute    

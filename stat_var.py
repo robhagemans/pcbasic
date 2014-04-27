@@ -334,7 +334,7 @@ def exec_def_fn(ins):
     endloc = ins.tell()
     ins.seek(startloc)
     fncode = ins.read(endloc - startloc)
-    if not program.run_mode:
+    if not state.basic_state.run_mode:
         # GW doesn't allow DEF FN in direct mode, neither do we (for no good reason, works fine)
         raise error.RunError(12)
     var.functions[fnname] = [fnvars, fncode]
