@@ -36,13 +36,12 @@ class cStringIO_Pickler(object):
     def __init__(self, csio):
         self.value = csio.getvalue()
         self.pos = csio.tell()
-        print self.value.encode('hex'), self.pos
 
     def unpickle(self):
+        # needs to be called without arguments or it's a StringI object without write()
         csio = StringIO()
         csio.write(self.value)
         csio.seek(self.pos)
-        print self.value.encode('hex'), self.pos
         return csio             
 
 ###############################################
