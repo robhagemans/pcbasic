@@ -48,28 +48,26 @@ max_list_line = 65530
 dont_protect = False
 
 def init_program():
-    global gosub_return, for_next_stack, while_wend_stack, stop
     # stop running if we were
     set_runmode(False)
     # reset loop stacks
-    gosub_return = []
-    for_next_stack = []
-    while_wend_stack = []
+    state.basic_state.gosub_return = []
+    state.basic_state.for_next_stack = []
+    state.basic_state.while_wend_stack = []
     # reset program pointer
     state.basic_state.bytecode.seek(0)
     # reset stop/cont
-    stop = None
+    state.basic_state.stop = None
     # reset data reader
     restore()
 
 def erase_program():
-    global protected, current_statement, last_stored
     state.basic_state.bytecode.truncate(0)
     state.basic_state.bytecode.write('\0\0\0')
-    protected = False
+    state.basic_state.protected = False
     state.basic_state.line_numbers = { 65536: 0 }
-    current_statement = 0
-    last_stored = None
+    state.basic_state.current_statement = 0
+    state.basic_state.last_stored = None
 
 def set_runmode(new_runmode=True, pos=None):
     global current_codestream
@@ -95,7 +93,6 @@ erase_program()
 
 # CLEAR
 def clear_all(close_files=False):
-    global for_next_stack, while_wend_stack
     #   Resets the stack and string space
     #   Clears all COMMON and user variables
     var.clear_variables()
@@ -120,8 +117,8 @@ def clear_all(close_files=False):
     # disable all event trapping (resets PEN to OFF too)
     events.reset_events()
     # CLEAR also dumps for_next and while_wend stacks
-    for_next_stack = []
-    while_wend_stack = []
+    state.basic_state.for_next_stack = []
+    state.basic_state.while_wend_stack = []
 
 # NEW    
 def new():
@@ -210,8 +207,7 @@ def check_number_start(linebuf):
     return empty, scanline   
 
 def store_line(linebuf): 
-    global last_stored
-    if protected:
+    if state.basic_state.protected:
         raise error.RunError(5)
     # get the new line number
     linebuf.seek(1)
@@ -243,7 +239,7 @@ def store_line(linebuf):
     init_program()
     # clear variables (storing a line does that)
     clear_all()
-    last_stored = scanline
+    state.basic_state.last_stored = scanline
 
 def find_pos_line_dict(fromline, toline):
     deleteable = [ num for num in state.basic_state.line_numbers if num >= fromline and num <= toline ]
@@ -277,7 +273,7 @@ def delete(fromline, toline):
     clear_all()
 
 def edit(from_line, bytepos=None):
-    if protected:
+    if state.basic_state.protected:
         console.write(str(from_line)+'\r')
         raise error.RunError(5)
     # list line
@@ -292,7 +288,6 @@ def edit(from_line, bytepos=None):
     run.prompt = False
     
 def renum(new_line, start_line, step):
-    global last_stored
     new_line = 10 if new_line == None else new_line
     start_line = 0 if start_line == None else start_line
     step = 10 if step == None else step 
@@ -306,7 +301,7 @@ def renum(new_line, start_line, step):
         if old_line == 65536:
             break
         old_to_new[old_line] = new_line
-        last_stored = new_line
+        state.basic_state.last_stored = new_line
         new_line += step    
     # write the new numbers
     for old_line in old_to_new:
@@ -339,9 +334,9 @@ def renum(new_line, start_line, step):
     # stop running if we were
     set_runmode(False)
     # reset loop stacks
-    gosub_return = []
-    for_next_stack = []
-    while_wend_stack = []
+    state.basic_state.gosub_return = []
+    state.basic_state.for_next_stack = []
+    state.basic_state.while_wend_stack = []
     # renumber error handler
     if error.on_error:
         error.on_error = old_to_new[error.on_error]
@@ -351,7 +346,6 @@ def renum(new_line, start_line, step):
             handler.gosub = old_to_new[handler.gosub]    
         
 def load(g):
-    global protected
     erase_program()
     c = g.read(1)
     if c == '\xFF':
@@ -365,7 +359,7 @@ def load(g):
         # protected file
         state.basic_state.bytecode.truncate(0)
         state.basic_state.bytecode.write('\0')
-        protected = not dont_protect                
+        state.basic_state.protected = not dont_protect                
         protect.unprotect(g, state.basic_state.bytecode) 
     elif c != '':
         # ASCII file, maybe; any thing but numbers or whitespace will lead to Direct Statement in File
@@ -445,7 +439,7 @@ def chain(action, g, jumpnum, common_all, delete_lines):
     jump(jumpnum, err=5)
 
 def save(g, mode='B'):
-    if protected and mode != 'P':
+    if state.basic_state.protected and mode != 'P':
         raise error.RunError(5)
     current = state.basic_state.bytecode.tell()
     # skip first \x00 in bytecode, replace with appropriate magic number
@@ -476,7 +470,7 @@ def save(g, mode='B'):
     g.close()
     
 def list_lines(dev, from_line, to_line):
-    if protected:
+    if state.basic_state.protected:
         # don't list protected files
         raise error.RunError(5)
     # 65529 is max insertable line number for GW-BASIC 3.23. 
@@ -510,12 +504,12 @@ def jump(jumpnum, err=8):
         
 def jump_gosub(jumpnum, handler=None):    
     # set return position
-    gosub_return.append((current_codestream.tell(), state.basic_state.run_mode, handler))
+    state.basic_state.gosub_return.append((current_codestream.tell(), state.basic_state.run_mode, handler))
     jump(jumpnum)
  
 def jump_return(jumpnum):        
     try:
-        pos, orig_runmode, handler = gosub_return.pop()
+        pos, orig_runmode, handler = state.basic_state.gosub_return.pop()
     except IndexError:
         # RETURN without GOSUB
         raise error.RunError(3)
@@ -535,7 +529,7 @@ def loop_init(ins, forpos, nextpos, varname, start, stop, step):
     var.set_var(varname, vartypes.number_add(start, vartypes.number_neg(step)))
     # NOTE: all access to varname must be in-place into the bytearray - no assignments!
     sgn = vartypes.unpack_int(vartypes.number_sgn(step))
-    for_next_stack.append((forpos, nextpos, varname[-1], var.variables[varname], number_unpack(stop), number_unpack(step), sgn)) 
+    state.basic_state.for_next_stack.append((forpos, nextpos, varname[-1], var.variables[varname], number_unpack(stop), number_unpack(step), sgn)) 
     ins.seek(nextpos)
 
 def number_unpack(value):
@@ -557,16 +551,15 @@ def number_inc_gt(typechar, loopvar, stop, step, sgn):
         return int_left > stop if sgn > 0 else stop > int_left
         
 def loop_iterate(ins):   
-    global for_next_stack         
     # we MUST be at nextpos to run this
     # find the matching NEXT record
     pos = ins.tell()
-    num = len(for_next_stack)
+    num = len(state.basic_state.for_next_stack)
     for depth in range(num):
-        forpos, nextpos, typechar, loopvar, stop, step, sgn = for_next_stack[-depth-1]
+        forpos, nextpos, typechar, loopvar, stop, step, sgn = state.basic_state.for_next_stack[-depth-1]
         if pos == nextpos:
             # only drop NEXT record if we've found a matching one
-            for_next_stack = for_next_stack[:len(for_next_stack)-depth]            
+            state.basic_state.for_next_stack = state.basic_state.for_next_stack[:len(state.basic_state.for_next_stack)-depth]            
             break
     else:
         # next without for
@@ -574,7 +567,7 @@ def loop_iterate(ins):
     # increment counter
     loop_ends = number_inc_gt(typechar, loopvar, stop, step, sgn)
     if loop_ends:
-        for_next_stack.pop()
+        state.basic_state.for_next_stack.pop()
     else: 
         ins.seek(forpos)    
     return loop_ends

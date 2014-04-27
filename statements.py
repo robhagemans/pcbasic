@@ -47,7 +47,7 @@ from stat_graph import *
 # return value False: stream ends
 def parse_statement():
     ins = program.current_codestream
-    program.current_statement = ins.tell()
+    state.basic_state.current_statement = ins.tell()
     c = util.skip_white(ins).upper()
     if c == '':
         # stream has ended.
@@ -713,7 +713,7 @@ def parse_jumpnum_or_dot(ins, allow_empty=False, err=2):
     if c == '\x0E':
         return vartypes.uint_to_value(bytearray(ins.read(2)))
     elif c == '.':
-        return program.last_stored
+        return state.basic_state.last_stored
     else:        
         if allow_empty:
             ins.seek(-len(c), 1)

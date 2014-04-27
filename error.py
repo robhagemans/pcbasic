@@ -91,7 +91,7 @@ class Error(Exception):
             
 class Break(Error):
     def __init__(self):
-        self.erl = -1 if not state.basic_state.run_mode else program.get_line_number(program.current_statement)
+        self.erl = -1 if not state.basic_state.run_mode else program.get_line_number(pstate.basic_state.current_statement)
         
     def handle_break(self):
         write_error_message("Break", self.erl)
@@ -127,14 +127,14 @@ class Exit(Error):
 class RunError(Error):
     def __init__(self, value, linum=-1):
         self.err = value
-        self.erl = linum if not state.basic_state.run_mode or linum != -1 else program.get_line_number(program.current_statement)
+        self.erl = linum if not state.basic_state.run_mode or linum != -1 else program.get_line_number(state.basic_state.current_statement)
 
     def handle_continue(self):
         global error_resume, error_handle_mode
         set_err(self)
         # don't jump if we're already busy handling an error
         if on_error != None and on_error != 0 and not error_handle_mode:
-            error_resume = program.current_statement, state.basic_state.run_mode
+            error_resume = state.basic_state.current_statement, state.basic_state.run_mode
             program.jump(on_error)
             error_handle_mode = True
             events.suspend_all_events = True
