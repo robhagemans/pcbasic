@@ -16,7 +16,7 @@ except ImportError:
     from StringIO import StringIO
 import os
 
-import automode
+import run
 import console
 import debug
 import deviceio
@@ -744,7 +744,7 @@ def exec_auto(ins):
         increment = util.parse_jumpnum(ins, allow_empty=True)
     util.require(ins, util.end_statement)
     # do the AUTO mode and go back to direct mode
-    automode.auto_loop(linenum, increment)
+    run.auto_loop(linenum, increment)
     
 def exec_list(ins):
     from_line, to_line = parse_line_range(ins)
