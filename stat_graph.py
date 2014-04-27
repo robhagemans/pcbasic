@@ -195,7 +195,7 @@ def exec_get_graph(ins):
     util.require_read(ins, (',',)) 
     array = util.get_var_name(ins)    
     util.require(ins, util.end_statement)
-    if array not in var.arrays:
+    if array not in state.basic_state.arrays:
         raise error.RunError(5)
     elif array[-1] == '$':
         raise error.RunError(13) # type mismatch    
@@ -212,7 +212,7 @@ def exec_put_graph(ins):
         util.require(ins, ('\xC6', '\xC7', '\xEE', '\xEF', '\xF0')) #PSET, PRESET, AND, OR, XOR
         action = ins.read(1)
     util.require(ins, util.end_statement)
-    if array not in var.arrays:
+    if array not in state.basic_state.arrays:
         raise error.RunError(5)
     elif array[-1] == '$':
         raise error.RunError(13) # type mismatch    

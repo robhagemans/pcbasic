@@ -25,7 +25,7 @@ import console
 import state
 
 # suppress one prompt by setting to False (used by EDIT)
-prompt = True
+state.basic_state.prompt = True
 
 def loop():
     # main loop
@@ -61,11 +61,10 @@ def execute(line):
     show_prompt()
 
 def show_prompt():
-    global prompt
-    if prompt:
+    if state.basic_state.prompt:
         console.start_line()
         console.write_line("Ok\xff")
-    prompt = True
+    state.basic_state.prompt = True
                    
 # execute any commands
 def execution_loop():

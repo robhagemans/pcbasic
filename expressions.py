@@ -561,16 +561,16 @@ def value_date(ins):
 def value_fn(ins):
     fnname = util.get_var_name(ins)
     try:
-        varnames, fncode = var.functions[fnname]
+        varnames, fncode = state.basic_state.functions[fnname]
     except KeyError:
         # undefined user function
         raise error.RunError(18)
     # save existing vars
     varsave = {}
     for name in varnames:
-        if name in var.variables:
+        if name in state.basic_state.variables:
             # copy the reference so it's safe for FOR loops
-            varsave[name] = var.variables[name]
+            varsave[name] = state.basic_state.variables[name]
     # read variables
     if util.skip_white_read_if(ins, ('(',)):
         exprs = parse_expr_list(ins, len(varnames), err=2)
@@ -585,10 +585,10 @@ def value_fn(ins):
     value = parse_expression(fns)    
     # restore existing vars
     for name in varnames:
-        del var.variables[name]
+        del state.basic_state.variables[name]
     for name in varsave:    
         # re-assign the reference
-        var.variables[name] = varsave[name]
+        state.basic_state.variables[name] = varsave[name]
     return value    
 
 ###############################################################
