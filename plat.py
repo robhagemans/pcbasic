@@ -18,7 +18,7 @@ except ImportError:
         system = 'Windows'
     elif platform.system() == 'Linux':
         system = 'Linux'
-    elif plaform.system() == 'Darwin':
+    elif platform.system() == 'Darwin':
         system = 'OSX'
     else:
         # Everything else. Assume it's a Unix.            
