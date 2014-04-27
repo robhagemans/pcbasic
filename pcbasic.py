@@ -83,6 +83,8 @@ def main():
             args.resume = state.load()
             # can't currently jump into a running program
             program.set_runmode(False)
+            # or into auto mode
+            state.basic_state.auto_mode = False
         # choose the video and sound backends
         prepare_console(args)
         # choose peripherals    
