@@ -49,7 +49,6 @@ import logging
 import run
 import error
 import var
-import deviceio
 import expressions
 import oslayer
 import nosound
@@ -62,7 +61,7 @@ import unicodepage
 import debug
 import state
 import backend_pygame
-import fileio
+import io
 
 
 greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "@:INFO" for more.\r%d Bytes free'
@@ -88,7 +87,7 @@ def main():
         # choose the video and sound backends
         prepare_console(args)
         # choose peripherals    
-        deviceio.prepare_devices(args)
+        io.prepare_devices(args)
         if not args.resume:    
             # print greeting
             if not args.run and not args.cmd and not args.conv:
@@ -136,8 +135,8 @@ def main():
             state.save()
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
         console.exit()
-        fileio.close_all()
-        deviceio.close_devices()
+        io.close_all()
+        io.close_devices()
             
 def prepare_keywords(args):
     global debugstr

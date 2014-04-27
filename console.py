@@ -23,7 +23,7 @@ import nosound
 import nopenstick
 import events
 # for print_screen
-import deviceio
+import io
 # for Break, Exit, Reset
 import error
 
@@ -603,10 +603,10 @@ def print_screen():
         line = ''
         for c, _ in state.vpage.row[crow-1].buf:
             line += c
-        deviceio.devices['LPT1:'].write_line(line)
+        io.devices['LPT1:'].write_line(line)
 
 def toggle_echo_lpt1():
-    lpt1 = deviceio.devices['LPT1:']
+    lpt1 = io.devices['LPT1:']
     if lpt1.write in state.input_echos:
         state.input_echos.remove(lpt1.write)
         state.output_echos.remove(lpt1.write)

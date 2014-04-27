@@ -19,8 +19,7 @@ import util
 import tokenise 
 import program
 import statements 
-import fileio
-import deviceio
+import io
 import console
 import state
 
