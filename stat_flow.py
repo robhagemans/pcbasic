@@ -21,7 +21,7 @@ import state
 
 def exec_end(ins):
     util.require(ins, util.end_statement)
-    program.stop = state.basic_state.bytecode.tell()
+    state.basic_state.stop = state.basic_state.bytecode.tell()
     program.set_runmode(False)
     # avoid NO RESUME
     error.error_handle_mode = False
@@ -33,10 +33,10 @@ def exec_stop(ins):
     raise error.Break()
     
 def exec_cont(ins):
-    if program.stop == None:
+    if state.basic_state.stop == None:
         raise error.RunError(17)
     else: 
-        program.set_runmode(True, program.stop)   
+        program.set_runmode(True, state.basic_state.stop)   
     # IN GW-BASIC, weird things happen if you do GOSUB nn :PRINT "x"
     # and there's a STOP in the subroutine. 
     # CONT then continues and the rest of the original line is executed, printing x
@@ -196,7 +196,7 @@ def exec_while(ins, first=True):
         if ins.read(1) == '\xB2':
             util.skip_to(ins, util.end_statement)
             wendpos = ins.tell()
-            program.while_wend_stack.append((whilepos, wendpos)) 
+            state.basic_state.while_wend_stack.append((whilepos, wendpos)) 
         else: 
             # WHILE without WEND
             raise error.RunError(29)
@@ -205,7 +205,7 @@ def exec_while(ins, first=True):
     # condition is zero?
     if fp.unpack(boolvar).is_zero():
         # jump to WEND
-        whilepos, wendpos = program.while_wend_stack.pop()
+        whilepos, wendpos = state.basic_state.while_wend_stack.pop()
         ins.seek(wendpos)   
 
 def exec_wend(ins):
@@ -213,13 +213,13 @@ def exec_wend(ins):
     util.require(ins, util.end_statement)
     pos = ins.tell()
     while True:
-        if not program.while_wend_stack:
+        if not state.basic_state.while_wend_stack:
             # WEND without WHILE
             raise error.RunError(30) #1  
-        whilepos, wendpos = program.while_wend_stack[-1]
+        whilepos, wendpos = state.basic_state.while_wend_stack[-1]
         if pos != wendpos:
             # not the expected WEND, we must have jumped out
-            program.while_wend_stack.pop()
+            state.basic_state.while_wend_stack.pop()
         else:
             # found it
             break

@@ -261,7 +261,7 @@ def exec_input(ins):
         readvar = parse_var_list(ins)
         # move the program pointer to the start of the statement to ensure correct behaviour for CONT
         pos = ins.tell()
-        ins.seek(program.current_statement)
+        ins.seek(state.basic_state.current_statement)
         # read the input
         while True:
             console.write(prompt) 
