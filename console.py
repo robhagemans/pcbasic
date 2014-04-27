@@ -35,7 +35,7 @@ sound = nosound
 penstick = nopenstick
 
 # codepage suggestion for backend
-codepage = 437    
+state.codepage = 437    
 
 import state as state_module
 from state import console_state as state
