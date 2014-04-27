@@ -79,8 +79,10 @@ def main():
         # initialise program memory
         program.new()
         if args.resume or plat.system == 'Android':
-            # resume form saved emulator state
+            # resume from saved emulator state
             args.resume = state.load()
+            # can't currently jump into a running program
+            program.set_runmode(False)
         # choose the video and sound backends
         prepare_console(args)
         # choose peripherals    
@@ -122,7 +124,13 @@ def main():
     finally:
         if reset:
             state.delete()
-        else:    
+        else:   
+            # STOP execution as we can't handle jumping into a running program (yet)
+            if state.basic_state.run_mode:
+                state.basic_state.stop = state.basic_state.bytecode.tell()
+                program.set_runmode(False) 
+                error.write_error_message("Break", program.get_line_number(state.basic_state.stop))
+                run.show_prompt()
             state.save()
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
         console.exit()

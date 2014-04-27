@@ -24,8 +24,8 @@ def exec_end(ins):
     state.basic_state.stop = state.basic_state.bytecode.tell()
     program.set_runmode(False)
     # avoid NO RESUME
-    error.error_handle_mode = False
-    error.error_resume = None
+    state.basic_state.error_handle_mode = False
+    state.basic_state.error_resume = None
     fileio.close_all()
     
 def exec_stop(ins):
@@ -147,7 +147,7 @@ def exec_run(ins):
     program.init_program()
     program.clear_all(close_files=not comma)
     program.jump(jumpnum)
-    error.error_handle_mode = False
+    state.basic_state.error_handle_mode = False
                 
 def exec_if(ins):
     # ovoid overflow: don't use bools.
@@ -261,14 +261,14 @@ def exec_on_error(ins):
         raise error.RunError(8)
     error.on_error = linenum
     # ON ERROR GOTO 0 in error handler
-    if error.on_error == 0 and error.error_handle_mode:
+    if error.on_error == 0 and state.basic_state.error_handle_mode:
         # re-raise the error so that execution stops
-        raise error.RunError(error.errn, error.erl)
+        raise error.RunError(state.basic_state.errn, state.basic_state.erl)
     # this will be caught by the trapping routine just set
     util.require(ins, util.end_statement)
 
 def exec_resume(ins):
-    if error.error_resume == None: 
+    if state.basic_state.error_resume == None: 
         # unset error handler
         error.on_error = 0
         # resume without error

@@ -82,12 +82,11 @@ def set_runmode(new_runmode=True, pos=None):
     
 # RESTORE
 def restore(datanum=-1):
-    global data_pos
     try:
-        data_pos = 0 if datanum == -1 else state.basic_state.line_numbers[datanum]
+        state.basic_state.data_pos = 0 if datanum == -1 else state.basic_state.line_numbers[datanum]
     except KeyError:
         raise error.RunError(8)
-        
+
 init_program()
 erase_program()
 
@@ -104,10 +103,10 @@ def clear_all(close_files=False):
     # release all disk buffers (FIELD)?
     fileio.fields = {}
     # clear ERR and ERL
-    error.errn, error.erl = 0, 0
+    state.basic_state.errn, state.basic_state.erl = 0, 0
     # disable error trapping
-    error.on_error = None
-    error.error_resume = None
+    state.basic_state.on_error = None
+    state.basic_state.error_resume = None
     # stop all sound
     console.sound.stop_all_sound()
     #   Resets sound to music foreground
@@ -574,9 +573,8 @@ def loop_iterate(ins):
     
 # READ a unit of DATA
 def read_entry():
-    global data_pos
     current = state.basic_state.bytecode.tell()
-    state.basic_state.bytecode.seek(data_pos)
+    state.basic_state.bytecode.seek(state.basic_state.data_pos)
     if util.peek(state.basic_state.bytecode) in util.end_statement:
         # initialise - find first DATA
         util.skip_to(state.basic_state.bytecode, ('\x84',))  # DATA
@@ -608,7 +606,7 @@ def read_entry():
             if c not in util.whitespace:    
                 vals += word
                 word = ''
-    data_pos = state.basic_state.bytecode.tell()
+    state.basic_state.data_pos = state.basic_state.bytecode.tell()
     state.basic_state.bytecode.seek(current)
     return vals
      

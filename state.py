@@ -32,6 +32,8 @@ display = DisplayState()
 #D - move contents into console state
 display_state = State()
 
+# a state has been loaded
+loaded = False
 
 pcbasic_dir = os.path.dirname(os.path.realpath(__file__))
 state_file = os.path.join(pcbasic_dir, 'info', 'STATE.SAV')
@@ -82,7 +84,7 @@ def save():
         pass
     
 def load():
-    global console_state, display_state, basic_state, display
+    global console_state, display_state, basic_state, display, loaded
     # decompress and unpickle
     try:
         f = open(state_file, 'rb')
@@ -97,6 +99,7 @@ def load():
     basic_state.bytecode = basic_state.bytecode.unpickle()
     basic_state.direct_line = basic_state.direct_line.unpickle()
     from_pickle.display.unpickle()
+    loaded = True
     return True
     
 def delete():
