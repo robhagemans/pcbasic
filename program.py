@@ -20,8 +20,6 @@ import console
 # for clear()
 import rnd
 import fileio
-# for prompt
-import run
 import fp 
 import state
 
@@ -284,7 +282,7 @@ def edit(from_line, bytepos=None):
     # throws back to direct mode
     set_runmode(False)
     # suppress prompt
-    run.prompt = False
+    state.basic_state.prompt = False
     
 def renum(new_line, start_line, step):
     new_line = 10 if new_line == None else new_line
@@ -401,38 +399,38 @@ def chain(action, g, jumpnum, common_all, delete_lines):
         # delete lines from existing code before merge (without MERGE, this is pointless)
         delete(*delete_lines)
     if common_all:
-        common, common_arrays, common_functions = copy(var.variables), copy(var.arrays), copy(var.functions)
+        common, common_arrays, common_functions = copy(state.basic_state.variables), copy(state.basic_state.arrays), copy(state.basic_state.functions)
     else:
         # preserve COMMON variables
         common, common_arrays, common_functions = {}, {}, {}
-        for varname in var.common_names:
+        for varname in state.basic_state.common_names:
             try:
-                common[varname] = var.variables[varname]
+                common[varname] = state.basic_state.variables[varname]
             except KeyError: 
                 pass    
-        for varname in var.common_array_names:
+        for varname in state.basic_state.common_array_names:
             try:
-                common_arrays[varname] = var.arrays[varname]
+                common_arrays[varname] = state.basic_state.arrays[varname]
             except KeyError:
                 pass    
     # preserve deftypes (only for MERGE)
-    common_deftype = copy(vartypes.deftype) 
+    common_deftype = copy(state.basic_state.deftype) 
     # preserve option base
-    base = var.array_base    
+    base = state.basic_state.array_base    
     # load & merge call preparse call reset_program:  # data restore  # erase def fn   # erase defint etc
     action(g)
     # reset random number generator
     rnd.clear()
     # restore only common variables
-    var.variables = common
-    var.arrays = common_arrays
+    state.basic_state.variables = common
+    state.basic_state.arrays = common_arrays
     # restore user functions (if ALL specified)
-    var.functions = common_functions
+    state.basic_state.functions = common_functions
     # restore option base
-    var.array_base = base
+    state.basic_state.array_base = base
     # restore deftypes (if MERGE specified)
     if action == merge:
-        vartypes.deftype = common_deftype
+        state.basic_state.deftype = common_deftype
     # don't close files!
     # RUN
     jump(jumpnum, err=5)
@@ -528,7 +526,7 @@ def loop_init(ins, forpos, nextpos, varname, start, stop, step):
     var.set_var(varname, vartypes.number_add(start, vartypes.number_neg(step)))
     # NOTE: all access to varname must be in-place into the bytearray - no assignments!
     sgn = vartypes.unpack_int(vartypes.number_sgn(step))
-    state.basic_state.for_next_stack.append((forpos, nextpos, varname[-1], var.variables[varname], number_unpack(stop), number_unpack(step), sgn)) 
+    state.basic_state.for_next_stack.append((forpos, nextpos, varname[-1], state.basic_state.variables[varname], number_unpack(stop), number_unpack(step), sgn)) 
     ins.seek(nextpos)
 
 def number_unpack(value):

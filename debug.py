@@ -16,7 +16,6 @@ import traceback
 import logging
 import program
 import state
-import var
 import vartypes
 import representation
 import expressions
@@ -66,7 +65,7 @@ def dump_program():
     logging.debug(state.basic_state.bytecode.getvalue().encode('hex'))    
 
 def dump_vars():
-    logging.debug(repr(var.variables))    
+    logging.debug(repr(state.basic_state.variables))    
     
 def show_screen():
     logging.debug('  +' + '-'*state.console_state.width+'+')

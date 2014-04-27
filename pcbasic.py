@@ -102,7 +102,7 @@ def main():
                 args.cmd += ':RUN'
             # get out, if we ran with -q
             if args.quit:
-                run.prompt = False
+                state.basic_state.prompt = False
                 run.execute(args.cmd)
                 raise error.Exit()
             # execute & handle exceptions; show Ok prompt

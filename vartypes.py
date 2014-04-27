@@ -12,15 +12,14 @@
 import fp
 import representation
 import error
+import state
 
-# default type for variable name starting with a-z
-deftype = ['!']*26
 # zeroed out
 null = { '$': ('$', ''), '%': ('%', bytearray('\x00')*2), '!': ('!', bytearray('\x00')*4), '#': ('#', bytearray('\x00')*8) }
 
 def complete_name(name):
     if name and name[-1] not in ('$', '%', '!', '#'):
-        name += deftype[ord(name[0].upper()) - 65] # ord('A') 
+        name += state.basic_state.deftype[ord(name[0].upper()) - 65] # ord('A') 
     return name
 
 def pass_int_keep(inp, maxint=0x7fff, err=13):

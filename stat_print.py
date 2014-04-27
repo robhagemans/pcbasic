@@ -121,7 +121,7 @@ def exec_palette_using(ins):
     num_palette_entries = console.state.num_colours if console.state.num_colours != 32 else 16
     array_name, start_indices = expressions.get_var_or_array_name(ins)
     try:     
-        dimensions, lst, _ = var.arrays[array_name]    
+        dimensions, lst, _ = state.basic_state.arrays[array_name]    
     except KeyError:
         raise error.RunError(5)    
     if array_name[-1] != '%':

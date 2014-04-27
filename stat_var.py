@@ -80,8 +80,8 @@ def exec_common(ins):
             varlist.append(name)
         if not util.skip_white_read_if(ins, (',',)):
             break
-    var.common_names += varlist
-    var.common_array_names += arraylist
+    state.basic_state.common_names += varlist
+    state.basic_state.common_array_names += arraylist
 
 def exec_data(ins):
     # ignore rest of statement after DATA
@@ -142,7 +142,7 @@ def exec_deftype(ins, typechar):
                 raise error.RunError(2)
             else:
                 stop = ord(d) - ord('A')
-        vartypes.deftype[start:stop+1] = [typechar] * (stop-start+1)    
+        state.basic_state.deftype[start:stop+1] = [typechar] * (stop-start+1)    
         if not util.skip_white_read_if(ins, (',',)):
             break
     util.require(ins, util.end_statement)
@@ -337,7 +337,7 @@ def exec_def_fn(ins):
     if not state.basic_state.run_mode:
         # GW doesn't allow DEF FN in direct mode, neither do we (for no good reason, works fine)
         raise error.RunError(12)
-    var.functions[fnname] = [fnvars, fncode]
+    state.basic_state.functions[fnname] = [fnvars, fncode]
                              
 def exec_randomize(ins):
     val = expressions.parse_expression(ins, allow_empty=True)
