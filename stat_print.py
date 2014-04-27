@@ -215,7 +215,7 @@ def exec_locate(ins):
 
 def exec_write(ins, screen=None):
     screen = expressions.parse_file_number(ins, 'OAR')
-    screen = console if screen == None else screen
+    screen = deviceio.devices['SCRN:'] if screen == None else screen
     expr = expressions.parse_expression(ins, allow_empty=True)
     if expr:
         while True:
@@ -234,7 +234,7 @@ def exec_write(ins, screen=None):
 def exec_print(ins, screen=None):
     if screen == None:
         screen = expressions.parse_file_number(ins, 'OAR')
-        screen = console if screen == None else screen
+        screen = deviceio.devices['SCRN:'] if screen == None else screen
     number_zones = max(1, int(screen.width/14))
     newline = True
     while True:
