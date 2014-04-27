@@ -1194,6 +1194,7 @@ def check_quit_sound():
                 quiet_ticks = 0
 
 def save_state():
+    del state.display_strings[:]
     for i in range(len(surface0)):    
         state.display_strings.append(pygame.image.tostring(surface0[i], 'P'))
     for i in range(len(surface1)):    
@@ -1213,4 +1214,5 @@ def load_state():
         except Exception:
             # couldn't load the state correctly; most likely a text screen saved from -t. just redraw what's unpickled.
             console.redraw_text_screen()
+        del state.display_strings[:]
             
