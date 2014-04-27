@@ -38,7 +38,6 @@ import cpi_font
 import unicodepage 
 import console
 import events
-import deviceio
 import graphics
 # for fast get & put only
 import var

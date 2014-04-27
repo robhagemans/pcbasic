@@ -19,7 +19,7 @@ import util
 import console
 # for clear()
 import rnd
-import fileio
+import io
 import fp 
 import state
 
@@ -97,9 +97,9 @@ def clear_all(close_files=False):
     rnd.clear()
     if close_files:
         # close all files
-        fileio.close_all()
+        io.close_all()
     # release all disk buffers (FIELD)?
-    fileio.fields = {}
+    io.fields = {}
     # clear ERR and ERL
     state.basic_state.errn, state.basic_state.erl = 0, 0
     # disable error trapping

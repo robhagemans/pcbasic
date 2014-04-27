@@ -21,14 +21,13 @@ import run
 
 import console
 import debug
-import deviceio
 import draw_and_play
 import error
 import events
 import expressions
-import fileio
 import fp
 import graphics
+import io
 import oslayer
 import program
 import representation
@@ -518,7 +517,7 @@ def exec_bload(ins):
         if offset < 0:
             offset += 0x10000           
     util.require(ins, util.end_statement)
-    g = fileio.open_file_or_device(0, name, mode='L', defext='')
+    g = io.open_file_or_device(0, name, mode='L', defext='')
     if g.read(1) != '\xfd':
         raise error.RunError(54)
     seg = vartypes.uint_to_value(bytearray(g.read(2)))
@@ -552,7 +551,7 @@ def exec_bsave(ins):
     if length < 0:
         length += 0x10000         
     util.require(ins, util.end_statement)
-    g = fileio.open_file_or_device(0, name, mode='S', defext='')
+    g = io.open_file_or_device(0, name, mode='S', defext='')
     g.write('\xfd')
     g.write(str(vartypes.value_to_uint(var.segment)))
     g.write(str(vartypes.value_to_uint(offset)))
@@ -630,7 +629,7 @@ def exec_rmdir(ins):
 def exec_name(ins):
     oldname = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # don't rename open files
-    fileio.check_file_not_open(oldname)
+    io.check_file_not_open(oldname)
     # AS is not a tokenised word
     word = util.skip_white_read(ins) + ins.read(1)
     if word.upper() != 'AS':
@@ -642,7 +641,7 @@ def exec_name(ins):
 def exec_kill(ins):
     name = oslayer.dospath_read(str(vartypes.pass_string_unpack(expressions.parse_expression(ins))), '', 53)
     # don't delete open files
-    fileio.check_file_not_open(name)
+    io.check_file_not_open(name)
     oslayer.safe(os.remove, name)
     util.require(ins, util.end_statement)
 
@@ -744,7 +743,7 @@ def exec_auto(ins):
 def exec_list(ins):
     from_line, to_line = parse_line_range(ins)
     if util.skip_white_read_if(ins, (',',)):
-        out = fileio.open_file_or_device(0, vartypes.pass_string_unpack(expressions.parse_expression(ins)), 'O')
+        out = io.open_file_or_device(0, vartypes.pass_string_unpack(expressions.parse_expression(ins)), 'O')
     else:
         out = console
     util.require(ins, util.end_statement)
@@ -753,7 +752,7 @@ def exec_list(ins):
 def exec_llist(ins):
     from_line, to_line = parse_line_range(ins)
     util.require(ins, util.end_statement)
-    program.list_lines(deviceio.devices['LPT1:'], from_line, to_line)
+    program.list_lines(io.devices['LPT1:'], from_line, to_line)
         
 def exec_load(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
@@ -762,12 +761,12 @@ def exec_load(ins):
     if comma:
         util.require_read(ins, 'R')
     util.require(ins, util.end_statement)
-    program.load(fileio.open_file_or_device(0, name, mode='L', defext='BAS'))
+    program.load(io.open_file_or_device(0, name, mode='L', defext='BAS'))
     if comma:
         # in ,R mode, don't close files; run the program
         program.jump(None)
     else:
-        fileio.close_all()
+        io.close_all()
     state.basic_state.tron = False    
         
 def exec_chain(ins):
@@ -788,7 +787,7 @@ def exec_chain(ins):
             if util.skip_white_read_if(ins, (',',)) and util.skip_white_read_if(ins, ('\xa9',)):
                 delete_lines = parse_line_range(ins) # , DELETE
     util.require(ins, util.end_statement)
-    program.chain(action, fileio.open_file_or_device(0, name, mode='L', defext='BAS'), jumpnum, common_all, delete_lines)
+    program.chain(action, io.open_file_or_device(0, name, mode='L', defext='BAS'), jumpnum, common_all, delete_lines)
 
 def exec_save(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
@@ -797,13 +796,13 @@ def exec_save(ins):
         mode = util.skip_white_read(ins).upper()
         if mode not in ('A', 'P'):
             raise error.RunError(2)
-    program.save(fileio.open_file_or_device(0, name, mode='S', defext='BAS'), mode)
+    program.save(io.open_file_or_device(0, name, mode='S', defext='BAS'), mode)
     util.require(ins, util.end_statement)
     
 def exec_merge(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
-    program.merge(fileio.open_file_or_device(0, name, mode='L', defext='BAS') )
+    program.merge(io.open_file_or_device(0, name, mode='L', defext='BAS') )
     util.require(ins, util.end_statement)
     
 def exec_new(ins):
@@ -830,7 +829,7 @@ def exec_renum(ins):
 
 # close all files
 def exec_reset(ins):
-    fileio.close_all()
+    io.close_all()
     util.require(ins, util.end_statement)
 
 def parse_read_write(ins):
@@ -908,7 +907,7 @@ def exec_open(ins):
     elif mode != 'R' and access and access != default_access_modes[mode]:
         raise error.RunError(2)        
     util.range_check(1, 128, reclen)        
-    fileio.open_file_or_device(number, name, mode, access, lock, reclen) 
+    io.open_file_or_device(number, name, mode, access, lock, reclen) 
     util.require(ins, util.end_statement)
                 
 def exec_close(ins):
@@ -918,7 +917,7 @@ def exec_close(ins):
     while True:
         number = expressions.parse_file_number_opthash(ins)
         try:    
-            fileio.files[number].close()
+            io.files[number].close()
         except KeyError:
             pass    
         if not util.skip_white_read_if(ins, (',',)):
@@ -926,7 +925,7 @@ def exec_close(ins):
     util.require(ins, util.end_statement)
             
 def exec_field(ins):
-    the_file = fileio.get_file(expressions.parse_file_number_opthash(ins), 'R')
+    the_file = io.get_file(expressions.parse_file_number_opthash(ins), 'R')
     if util.skip_white_read_if(ins, (',',)):
         field = the_file.field 
         offset = 0    
@@ -942,13 +941,13 @@ def exec_field(ins):
     util.require(ins, util.end_statement)
 
 def parse_get_or_put_file(ins):
-    the_file = fileio.get_file(expressions.parse_file_number_opthash(ins), 'R')
+    the_file = io.get_file(expressions.parse_file_number_opthash(ins), 'R')
     # for COM files
     num_bytes = the_file.reclen
     if util.skip_white_read_if(ins, (',',)):
         pos = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)).round_to_int())
         util.range_check_err(1, 2**25, pos, err=63) # not 2^32-1 as the manual boasts! pos-1 needs to fit in a single-prec mantissa
-        if not isinstance(the_file, deviceio.COMFile):
+        if not isinstance(the_file, io.COMFile):
             the_file.set_pos(pos)    
         else:
             num_bytes = pos    
@@ -965,7 +964,7 @@ def exec_get_file(ins):
     util.require(ins, util.end_statement)
     
 def exec_lock_or_unlock(ins, action):
-    thefile = fileio.get_file(expressions.parse_file_number_opthash(ins))
+    thefile = io.get_file(expressions.parse_file_number_opthash(ins))
     lock_start_rec = 1
     if util.skip_white_read_if(ins, (',',)):
         lock_start_rec = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
@@ -977,12 +976,12 @@ def exec_lock_or_unlock(ins, action):
     action(thefile.number, lock_start_rec, lock_stop_rec)
     util.require(ins, util.end_statement)
 
-exec_lock = partial(exec_lock_or_unlock, action = fileio.lock_records)
-exec_unlock = partial(exec_lock_or_unlock, action = fileio.unlock_records)
+exec_lock = partial(exec_lock_or_unlock, action = io.lock_records)
+exec_unlock = partial(exec_lock_or_unlock, action = io.unlock_records)
     
 # ioctl: not implemented
 def exec_ioctl(ins):
-    fileio.get_file(expressions.parse_file_number_opthash(ins))
+    io.get_file(expressions.parse_file_number_opthash(ins))
     raise error.RunError(5)   
     
 ##########################################################
@@ -1203,7 +1202,7 @@ def exec_end(ins):
     # avoid NO RESUME
     state.basic_state.error_handle_mode = False
     state.basic_state.error_resume = None
-    fileio.close_all()
+    io.close_all()
     
 def exec_stop(ins):
     util.require(ins, util.end_statement)
@@ -1320,7 +1319,7 @@ def exec_run(ins):
     elif c not in util.end_statement:
         name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_statement)
-        program.load(fileio.open_file_or_device(0, name, mode='L', defext='BAS'))
+        program.load(io.open_file_or_device(0, name, mode='L', defext='BAS'))
     program.init_program()
     program.clear_all(close_files=not comma)
     program.jump(jumpnum)
@@ -1728,7 +1727,7 @@ def exec_input(ins):
             console.write(prompt) 
             line = console.wait_screenline(write_endl=newline)
             varlist = [ v[:] for v in readvar ]
-            varlist = representation.input_vars(varlist, fileio.BaseFile(StringIO(line), mode='I'))
+            varlist = representation.input_vars(varlist, io.BaseFile(StringIO(line), mode='I'))
             if not varlist:
                 console.write_line('?Redo from start')  # ... good old Redo!
             else:
@@ -2004,7 +2003,7 @@ def exec_locate(ins):
 
 def exec_write(ins, screen=None):
     screen = expressions.parse_file_number(ins, 'OAR')
-    screen = deviceio.devices['SCRN:'] if screen == None else screen
+    screen = io.devices['SCRN:'] if screen == None else screen
     expr = expressions.parse_expression(ins, allow_empty=True)
     if expr:
         while True:
@@ -2023,7 +2022,7 @@ def exec_write(ins, screen=None):
 def exec_print(ins, screen=None):
     if screen == None:
         screen = expressions.parse_file_number(ins, 'OAR')
-        screen = deviceio.devices['SCRN:'] if screen == None else screen
+        screen = io.devices['SCRN:'] if screen == None else screen
     number_zones = max(1, int(screen.width/14))
     newline = True
     while True:
@@ -2113,7 +2112,7 @@ def exec_print_using(ins, screen):
     util.require(ins, util.end_statement)
 
 def exec_lprint(ins):
-    exec_print(ins, deviceio.devices['LPT1:'])
+    exec_print(ins, io.devices['LPT1:'])
                              
 def exec_view_print(ins):
     if util.skip_white(ins) in util.end_statement:
@@ -2135,14 +2134,14 @@ def exec_width(ins):
         expr = expressions.parse_expression(ins)
         if expr[0] == '$':
             try:
-                dev = deviceio.devices[str(vartypes.pass_string_unpack(expr)).upper()]
+                dev = io.devices[str(vartypes.pass_string_unpack(expr)).upper()]
             except KeyError:
                 # bad file name
                 raise error.RunError(64)           
             util.require_read(ins, (',',))
             w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         else:
-            dev = deviceio.devices['SCRN:']
+            dev = io.devices['SCRN:']
             # IN GW-BASIC, we can do calculations, but they must be bracketed...
             #w = vartypes.pass_int_unpack(expressions.parse_expr_unit(ins))
             w = vartypes.pass_int_unpack(expr)
