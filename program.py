@@ -335,8 +335,8 @@ def renum(new_line, start_line, step):
     state.basic_state.for_next_stack = []
     state.basic_state.while_wend_stack = []
     # renumber error handler
-    if error.on_error:
-        error.on_error = old_to_new[error.on_error]
+    if state.basic_state.on_error:
+        state.basic_state.on_error = old_to_new[state.basic_state.on_error]
     # renumber event traps
     for handler in events.all_handlers:
         if handler.gosub:
