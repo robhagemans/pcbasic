@@ -1197,11 +1197,11 @@ def check_quit_sound():
 
 class PygameDisplayState(state_module.DisplayState):
     def pickle(self):
-        self.display_strings = []
+        self.display_strings = ([], [])
         for s in surface0:    
-            self.display_strings.append(pygame.image.tostring(s, 'P'))
+            self.display_strings[0].append(pygame.image.tostring(s, 'P'))
         for s in surface1:    
-            self.display_strings.append(pygame.image.tostring(s, 'P'))
+            self.display_strings[1].append(pygame.image.tostring(s, 'P'))
         
     def unpickle(self):
         global display_strings, load_flag
@@ -1211,7 +1211,7 @@ class PygameDisplayState(state_module.DisplayState):
 
 
 # picklable store for surfaces
-display_strings = []
+display_strings = ([], [])
 state_module.display = PygameDisplayState()
 load_flag = False
 
@@ -1220,10 +1220,10 @@ def load_state():
     if load_flag:
         try:
             for i in range(len(surface0)):    
-                surface0[i] = pygame.image.fromstring(display_strings[i])
+                surface0[i] = pygame.image.fromstring(display_strings[0][i], state.size, 'P')
                 surface0[i].set_palette(workaround_palette)
-            for j in range(len(surface1)):    
-                surface1[i] = pygame.image.fromstring(display_strings[i+j])
+            for i in range(len(surface1)):    
+                surface1[i] = pygame.image.fromstring(display_strings[1][i], state.size, 'P')
                 surface1[i].set_palette(workaround_palette)
             screen_changed = True    
         except IndexError:
