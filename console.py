@@ -22,8 +22,6 @@ import graphics
 import nosound
 import nopenstick
 import events
-# for print_screen
-import io
 # for Break, Exit, Reset
 import error
 
@@ -196,7 +194,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
         # backend does not support mode
         set_palette()
         return False
-    new_font_height, new_attr, new_num_colours, new_num_palette, new_width, new_num_pages = info  
+    new_font_height, _, _, _, new_width, new_num_pages = info  
     # vpage and apage nums are persistent on mode switch
     # if the new mode has fewer pages than current vpage/apage, illegal fn call before anything happens.
     if new_apagenum >= new_num_pages or new_vpagenum >= new_num_pages:
@@ -275,7 +273,7 @@ def set_cursor_shape(from_line, to_line):
 # interactive mode         
 
 def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
-    prompt_row, prompt_col = state.row, state.col
+    prompt_row = state.row
     savecurs = show_cursor() 
     furthest_left, furthest_right = wait_interactive(from_start, alt_replace)
     show_cursor(savecurs)
@@ -509,7 +507,7 @@ def backspace(start_row, start_col):
     set_pos(crow, max(1, ccol))
 
 def tab():
-    if overwrite_mode:
+    if state.overwrite_mode:
         set_pos(state.row, state.col+8, scroll_ok=False)
     else:
         for _ in range(8):
@@ -525,8 +523,8 @@ def end():
 
 def line_feed():
     # moves rest of line to next line
-    if state.col < state.apage.row[row-1].end:
-        for _ in range(state.width-col+1):
+    if state.col < state.apage.row[state.row-1].end:
+        for _ in range(state.width-state.col+1):
             insert_char(state.row, state.col, ' ', state.attr)
         redraw_row(state.col-1, state.row)
         state.apage.row[state.row-1].end = state.col-1 
@@ -649,10 +647,10 @@ def write(s, scroll_ok=True):
         elif c == '\a':     sound.beep()                     # BEL
         elif c == '\x0B':   set_pos(1, 1, scroll_ok)         # HOME
         elif c == '\x0C':   clear()
-        elif c == '\x1C':   set_pos(row, col+1, scroll_ok)
-        elif c == '\x1D':   set_pos(row, col-1, scroll_ok)
-        elif c == '\x1E':   set_pos(row-1, col, scroll_ok)
-        elif c == '\x1F':   set_pos(row+1, col, scroll_ok)
+        elif c == '\x1C':   set_pos(state.row, state.col+1, scroll_ok)
+        elif c == '\x1D':   set_pos(state.row, state.col-1, scroll_ok)
+        elif c == '\x1E':   set_pos(state.row-1, state.col, scroll_ok)
+        elif c == '\x1F':   set_pos(state.row+1, state.col, scroll_ok)
         else:
             # includes \b, \0, and non-control chars
             put_char(c)
@@ -696,7 +694,7 @@ def close():
 
 def list_keys():
     for i in range(10):
-        text = bytearray(key_replace[i])
+        text = bytearray(state.key_replace[i])
         for j in range(len(text)):
             try:
                 text[j] = keys_line_replace_chars[chr(text[j])]
