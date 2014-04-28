@@ -120,8 +120,6 @@ def main():
     except KeyboardInterrupt:
         if args.debug:
             raise
-    except Exception as e:
-        raise
     finally:
         if reset:
             state.delete()
@@ -161,7 +159,7 @@ def prepare_constants(args):
             for a in args.peek:
                 seg, addr, val = a.split(':')
                 var.peek_values[int(seg)*0x10 + int(addr)] = int(val)
-        except Exception:
+        except (TypeError, ValueError):
             pass     
     # drive mounts           
     if args.mount != None:
@@ -171,7 +169,7 @@ def prepare_constants(args):
                 letter, path = a.split(':',1)
                 oslayer.drives[letter.upper()] = os.path.realpath(path)
                 oslayer.drive_cwd[letter.upper()] = ''
-        except Exception:
+        except (TypeError, ValueError):
             pass                
     # implied RUN invocations
     if args.program and not args.load and not args.conv:
@@ -345,11 +343,15 @@ def flatten_arg_list(arglist):
     return None    
 
 def read_config():
+    path = os.path.dirname(os.path.realpath(__file__))
     try:
         config = ConfigParser.RawConfigParser(allow_no_value=True)
-        path = os.path.dirname(os.path.realpath(__file__))
         config.read(os.path.join(path, 'info', 'PCBASIC.INI'))
-        defaults = dict(config.items('pcbasic'))
+    except (ConfigParser.Error, IOError):
+        logging.warning('Error in config file PCBASIC.INI. Configuration not loaded.')
+        return {}
+    defaults = dict(config.items('pcbasic'))
+    try:
         # convert booleans
         for d in defaults:
             if defaults[d].upper() in ('YES', 'TRUE', 'ON'):
@@ -361,7 +363,8 @@ def read_config():
             else:
                 defaults[d] = defaults[d].split(',')    
         return defaults          
-    except Exception:
+    except (TypeError, ValueError):
+        logging.warning('Error in config file PCBASIC.INI. Configuration not loaded.')
         return {}    
 
 if __name__ == "__main__":

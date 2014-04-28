@@ -8,18 +8,11 @@
 # please see text file COPYING for licence terms.
 #
 
-import sys
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-    
 import error
 import util
 import tokenise 
 import program
 import statements 
-import io
 import console
 import state
 
@@ -45,7 +38,7 @@ def execute(line):
         c = util.peek(state.basic_state.direct_line)
         if c == '\x00':
             # check for lines starting with numbers (6553 6) and empty lines
-            empty, _ = program.check_number_start(state.basic_state.direct_line)
+            program.check_number_start(state.basic_state.direct_line)
             program.store_line(state.basic_state.direct_line)
             # no prompt
             return
