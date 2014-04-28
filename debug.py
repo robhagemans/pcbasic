@@ -110,7 +110,6 @@ def trace(on=True):
     debug_tron = on        
 
 def watch(expr):
-    global watch_list    
     outs = tokenise.tokenise_line('?'+expr) 
     watch_list.append((expr, outs))
 
