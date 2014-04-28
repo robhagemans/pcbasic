@@ -20,6 +20,7 @@ import error
 import console
 import unicodepage
 import plat
+import state
 
 if plat.system == 'Windows':
     import msvcrt
