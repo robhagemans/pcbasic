@@ -15,9 +15,7 @@ import vartypes
 import var
 import console
 import state
-import draw_and_play
 import util
-import state
 
 backend = None
 
@@ -66,8 +64,8 @@ def reset_graphics():
         state.console_state.last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
     else:
         state.console_state.last_point = (x1-x0)/2, (y1-y0)/2
-    draw_and_play.draw_scale = 4
-    draw_and_play.draw_angle = 0
+    state.basic_state.draw_scale = 4
+    state.basic_state.draw_angle = 0
 
 def get_colour_index(c):
     if c == -1: # foreground; graphics 'background' attrib is always 0
@@ -120,7 +118,7 @@ def unset_graph_window():
 def window_coords(fx, fy, step=False):
     if state.console_state.graph_window:
         scalex, scaley, offsetx, offsety = state.console_state.graph_window
-        fx0, fy0 = get_window_coords(state.console_state.last_point) if step else (fp.Single.zero.copy(), fp.Single.zero.copy())    
+        fx0, fy0 = get_window_coords(*state.console_state.last_point) if step else (fp.Single.zero.copy(), fp.Single.zero.copy())    
         x = fp.add(offsetx, fp.mul(fx0.iadd(fx), scalex)).round_to_int()
         y = fp.add(offsety, fp.mul(fy0.iadd(fy), scaley)).round_to_int()
     else:
@@ -144,7 +142,7 @@ def get_window_coords(x, y):
 
 def window_scale(fx, fy):
     if state.console_state.graph_window:
-        scalex, scaley, offsetx, offsety = state.console_state.graph_window
+        scalex, scaley, _, _ = state.console_state.graph_window
         return fp.mul(fx, scalex).round_to_int(), fp.mul(fy, scaley).round_to_int()
     else:
         return fx.round_to_int(), fy.round_to_int()
@@ -179,7 +177,7 @@ def draw_line(x0, y0, x1, y1, c, pattern=0xffff):
     sx = 1 if x1 > x0 else -1
     sy = 1 if y1 > y0 else -1
     mask = 0x8000
-    error = dx / 2
+    line_error = dx / 2
     x, y = x0, y0
     backend.apply_graph_clip()
     for x in xrange(x0, x1+sx, sx):
@@ -191,10 +189,10 @@ def draw_line(x0, y0, x1, y1, c, pattern=0xffff):
         mask >>= 1
         if mask == 0:
             mask = 0x8000
-        error -= dy
-        if error<0:
+        line_error -= dy
+        if line_error < 0:
             y += sy
-            error += dx    
+            line_error += dx    
     backend.remove_graph_clip()
     
 def draw_straight(x0, y0, x1, y1, c, pattern, mask):
@@ -297,7 +295,7 @@ def draw_circle(x0, y0, r, c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, l
     # ....|-----|... ; coo1 gte coo0: print if y in [coo0,coo1]
     backend.apply_graph_clip()
     x, y = r, 0
-    error = 1-r 
+    bres_error = 1-r 
     while x >= y:
         for octant in range(0,8):
             if octant in hide_oct:
@@ -321,11 +319,11 @@ def draw_circle(x0, y0, r, c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, l
             coo1x = x    
         # bresenham error step
         y += 1
-        if error < 0:
-            error += 2*y+1
+        if bres_error < 0:
+            bres_error += 2*y+1
         else:
             x -= 1
-            error += 2*(y-x+1)
+            bres_error += 2*(y-x+1)
     if line0:
         draw_line(x0,y0, *octant_coord(oct0, x0, y0, coo0x, coo0), c=c)
     if line1:
@@ -562,7 +560,7 @@ operations = {
 def set_area(x0,y0, array, operation_char):
     if backend.fast_put(x0, y0, array, operation_char):
         return
-    byte_array, version = var.get_bytearray(array)
+    byte_array, _ = var.get_bytearray(array)
     dx = vartypes.uint_to_value(byte_array[0:2])
     dy = vartypes.uint_to_value(byte_array[2:4])
     # in mode 1, number of x bits is given rather than pixels
@@ -791,9 +789,9 @@ def set_memory(addr, val):
 def get_memory_block(addr, length):
     return bytearray( [ max(0, get_memory(a)) for a in range(addr, addr+length) ] )
     
-def set_memory_block(addr, bytes):
-    for a in range(len(bytes)):
-        set_memory(addr + a, bytes[a])
+def set_memory_block(addr, some_bytes):
+    for a in range(len(some_bytes)):
+        set_memory(addr + a, some_bytes[a])
     
     
 
