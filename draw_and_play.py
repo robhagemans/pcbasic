@@ -250,7 +250,7 @@ def play_parse_mml(mml):
                 gmls.read(1)
                 dur *= 1.5
             if note > 0 and note <= 84:
-                console.sound.state.basic_state.play_sound(note_freq[note-1], dur*state.basic_state.play_tempo, state.basic_state.play_speed)
+                console.sound.play_sound(note_freq[note-1], dur*state.basic_state.play_tempo, state.basic_state.play_speed)
             elif note == 0:
                 console.sound.play_sound(0, dur*state.basic_state.play_tempo, state.basic_state.play_speed)
         elif c == 'L':
