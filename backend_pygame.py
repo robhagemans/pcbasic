@@ -11,12 +11,12 @@
 
 try:
     import pygame
-except Exception:
+except ImportError:
     pygame = None
 
 try:
     import numpy
-except Exception:
+except ImportError:
     numpy = None
 
 import plat
@@ -337,12 +337,12 @@ def prepare(args):
     try:
         x, y = args.dimensions[0].split(',')
         state.display_size = (int(x), int(y))
-    except Exception:
+    except (ValueError, TypeError):
         pass    
     try:
         x, y = args.dimensions_text[0].split(',')
         state.display_size_text = (int(x), int(y))
-    except Exception:
+    except (ValueError, TypeError):
         pass    
     if args.fullscreen:
         fullscreen = True
@@ -352,7 +352,7 @@ def prepare(args):
         noquit = True
 
 def init():
-    global fonts, num_sticks, joysticks, physical_size, console_state, state
+    global fonts, joysticks, physical_size, console_state, state
     # set state objects to whatever is now in state (may have been unpickled)
     console_state = state_module.console_state
     state = state_module.display_state
@@ -459,7 +459,7 @@ def clear_rows(cattr, start, stop):
     
 # not in interface
 def set_font(new_font_height):
-    global fonts, font, under_cursor
+    global font, under_cursor
     state.font_height = new_font_height
     try:
         font = fonts[state.font_height]
@@ -677,10 +677,10 @@ def refresh_cursor():
         index = console_state.attr & 0xf
         # no surfarray if no numpy    
         for x in range((console_state.col-1) * 8, console_state.col * 8):
-           for y in range((console_state.row-1)*state.font_height + state.cursor_from, 
+            for y in range((console_state.row-1)*state.font_height + state.cursor_from, 
                             (console_state.row-1)*state.font_height + state.cursor_to + 1):
-               pixel = get_pixel(x,y)
-               screen.set_at((x,y), pixel^index)
+                pixel = get_pixel(x,y)
+                screen.set_at((x,y), pixel^index)
     state.last_row = console_state.row
     state.last_col = console_state.col
         
@@ -695,7 +695,7 @@ def idle():
     pygame.time.wait(cycle_time/blink_cycles/8)  
 
 def check_events(pause=False):
-    global screen_changed
+    global screen_changed, fullscreen
     # handle Android pause/resume
     if android and android_check_events():
         # force immediate redraw of screen
@@ -869,21 +869,21 @@ def get_pen(fn):
         pen_down_old, pen_down = pen_down, 0
         return pen_down_old
     elif fn == 1:
-        return min(size[0]-1, max(0, pen_down_pos[0]))
+        return min(state.size[0]-1, max(0, pen_down_pos[0]))
     elif fn == 2:
-        return min(size[1]-1, max(0, pen_down_pos[1]))
+        return min(state.size[1]-1, max(0, pen_down_pos[1]))
     elif fn == 3:
         return -pygame.mouse.get_pressed()[0]
     elif fn == 4:
-        return min(size[0]-1, max(0, posx))
+        return min(state.size[0]-1, max(0, posx))
     elif fn == 5:
-        return min(size[1]-1, max(0, posy))
+        return min(state.size[1]-1, max(0, posy))
     elif fn == 6:
-        return min(console_state.height, max(1, 1 + pen_down_pos[1]//font_height))
+        return min(console_state.height, max(1, 1 + pen_down_pos[1]//state.font_height))
     elif fn == 7:
         return min(console_state.width, max(1, 1 + pen_down_pos[0]//8))
     elif fn == 8:
-        return min(console_state.height, max(1, 1 + posy//font_height))
+        return min(console_state.height, max(1, 1 + posy//state.font_height))
     elif fn == 9:
         return min(console_state.width, max(1, 1 + posx//xscale))
 
@@ -961,8 +961,8 @@ def fill_rect(x0, y0, x1, y1, index):
     global screen_changed
     rect = pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)
     surface0[console_state.apagenum].fill(index, rect)
-    cx0, cy0 = min(console_state.width-1, max(0, x0//8)), min(console_state.height-1, max(0, y0//font_height)) 
-    cx1, cy1 = min(console_state.width-1, max(0, x1//8)), min(console_state.height-1, max(0, y1//font_height))
+    cx0, cy0 = min(console_state.width-1, max(0, x0//8)), min(console_state.height-1, max(0, y0//state.font_height)) 
+    cx1, cy1 = min(console_state.width-1, max(0, x1//8)), min(console_state.height-1, max(0, y1//state.font_height))
     for r in range(cy0, cy1+1):
         console_state.apage.row[r].buf[cx0:cx1+1] = [(' ', console_state.attr)] * (cx1 - cx0 + 1)
     screen_changed = True
@@ -1007,7 +1007,7 @@ def fast_put(x0, y0, varname, operation_char):
     except KeyError:
         # not yet stored, do it the slow way
         return False
-    if x0 < 0 or x0+width > size[0] or y0 < 0 or y0+ height > size[1]:
+    if x0 < 0 or x0 + width > state.size[0] or y0 < 0 or y0 + height > state.size[1]:
         # let the normal version handle errors
         return False    
     # varname must exist at this point (or PUT would have raised error 5)       
@@ -1164,7 +1164,6 @@ loop_sound_playing = None
 
     
 def pre_init_mixer():
-    global sample_rate, mixer_bits
     if mixer:
         mixer.pre_init(sample_rate, -mixer_bits, channels=1, buffer=1024) #4096
 
@@ -1215,7 +1214,7 @@ state_module.display = PygameDisplayState()
 load_flag = False
 
 def load_state():        
-    global surface0, surface1, screen_changed
+    global screen_changed
     if load_flag:
         try:
             for i in range(len(surface0)):    
