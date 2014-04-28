@@ -34,21 +34,20 @@ true_bias = 128
 
 ######################################    
 
-overflow = False
-zero_div = False
+# calculation exception states
+state_basic_state.overflow = False
+state_basic_state.zero_div = False
 
 def msg_overflow():
-    global overflow
-    if overflow:
+    if state_basic_state.overflow:
         return
-    overflow = True    
+    state_basic_state.overflow = True    
     error.math_error(6)
 
 def msg_zero_div():
-    global zero_div
-    if zero_div:
+    if state_basic_state.zero_div:
         return
-    zero_div = True
+    state_basic_state.zero_div = True
     error.math_error(11)
 
 
@@ -396,9 +395,8 @@ def from_bytes(s):
         return Double.from_bytes(s)
     
 def unpack(value):
-    global overflow, zero_div
-    overflow = False
-    zero_div = False
+    state_basic_state.overflow = False
+    state_basic_state.zero_div = False
     return from_bytes(value[1])
 
 def pack(n):
