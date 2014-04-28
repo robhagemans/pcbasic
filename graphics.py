@@ -43,7 +43,6 @@ def is_graphics_mode():
     return backend and state.console_state.screen_mode
 
 def init_graphics_mode(mode, new_font_height):
-    global state.console_state.last_point, state.console_state.pixel_aspect_ratio, state.console_state.bitsperpixel, state.console_state.size
     if mode==0:
         return
     state.console_state.size = (state.console_state.width*8, state.console_state.height*new_font_height)
@@ -62,7 +61,6 @@ def init_graphics_mode(mode, new_font_height):
 
 # reset graphics state    
 def reset_graphics():
-    global state.console_state.last_point
     x0, y0, x1, y1 = backend.get_graph_clip()
     if state.console_state.view_graph_absolute:
         state.console_state.last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
@@ -100,7 +98,6 @@ def get_point(x, y):
 ### WINDOW coords
 
 def set_graph_window(fx0, fy0, fx1, fy1, cartesian=True):
-    global state.console_state.graph_window, state.console_state.graph_window_bounds
     if fy0.gt(fy1):
         fy0, fy1 = fy1, fy0
     if fx0.gt(fx1):
@@ -116,7 +113,6 @@ def set_graph_window(fx0, fy0, fx1, fy1, cartesian=True):
     state.console_state.graph_window_bounds = fx0, fy0, fx1, fy1, cartesian
 
 def unset_graph_window():
-    global state.console_state.graph_window, state.console_state.graph_window_bounds
     state.console_state.graph_window = None
     state.console_state.graph_window_bounds = None
 
@@ -681,7 +677,6 @@ def get_area(x0,y0,x1,y1, array):
 ## VIEW    
     
 def set_graph_view(x0,y0,x1,y1, absolute=True):
-    global state.console_state.graph_view_set, state.console_state.view_graph_absolute, state.console_state.last_point
     # VIEW orders the coordinates
     if x0 > x1:
         x0, x1 = x1, x0
@@ -698,7 +693,6 @@ def set_graph_view(x0,y0,x1,y1, absolute=True):
         set_graph_window(*state.console_state.graph_window_bounds)
 
 def unset_graph_view():
-    global state.console_state.graph_view_set, state.console_state.view_graph_absolute, state.console_state.last_point
     state.console_state.view_graph_absolute = False
     state.console_state.graph_view_set = False
     state.console_state.last_point = backend.unset_graph_clip()
