@@ -28,6 +28,7 @@ import math
 from functools import partial
 
 import error
+import state
 
 # the exponent is biased by 128
 true_bias = 128
@@ -35,19 +36,19 @@ true_bias = 128
 ######################################    
 
 # calculation exception states
-state_basic_state.overflow = False
-state_basic_state.zero_div = False
+state.basic_state.overflow = False
+state.basic_state.zero_div = False
 
 def msg_overflow():
-    if state_basic_state.overflow:
+    if state.basic_state.overflow:
         return
-    state_basic_state.overflow = True    
+    state.basic_state.overflow = True    
     error.math_error(6)
 
 def msg_zero_div():
-    if state_basic_state.zero_div:
+    if state.basic_state.zero_div:
         return
-    state_basic_state.zero_div = True
+    state.basic_state.zero_div = True
     error.math_error(11)
 
 
@@ -395,8 +396,8 @@ def from_bytes(s):
         return Double.from_bytes(s)
     
 def unpack(value):
-    state_basic_state.overflow = False
-    state_basic_state.zero_div = False
+    state.basic_state.overflow = False
+    state.basic_state.zero_div = False
     return from_bytes(value[1])
 
 def pack(n):
