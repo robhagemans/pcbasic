@@ -27,7 +27,7 @@ if plat.system == 'Android':
     numpy = None
     # Pygame for Android-specific definitions
     if pygame:
-        from pygame_android import *
+        import pygame_android
 else:
     android = False
     import pygame.mixer as mixer
@@ -37,12 +37,6 @@ import error
 import cpi_font
 import unicodepage 
 import console
-import events
-import graphics
-# for fast get & put only
-import var
-# for run_mode only
-import program
 
 import state as state_module
 from state import display_state as state
@@ -384,7 +378,7 @@ def init():
     pygame.display.set_caption('PC-BASIC 3.23')
     pygame.key.set_repeat(500, 24)
     if android:
-        android_init()
+        pygame_android.init()
     init_mixer()
     pygame.joystick.init()
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
@@ -417,7 +411,7 @@ def resize_display(width, height, initial=False):
     
 def close():
     if android:
-        android_close()
+        pygame_android.close()
     pygame.joystick.quit()
     pygame.display.quit()    
 
@@ -697,7 +691,7 @@ def idle():
 def check_events(pause=False):
     global screen_changed, fullscreen
     # handle Android pause/resume
-    if android and android_check_events():
+    if android and pygame_android.check_events():
         # force immediate redraw of screen
         refresh_screen()
         do_flip()
@@ -717,7 +711,7 @@ def check_events(pause=False):
         elif event.type == pygame.MOUSEBUTTONDOWN:
             # Android: toggle keyboard on touch
             if android:
-                android_toggle_keyboard()
+                pygame_android.toggle_keyboard()
             handle_mouse(event)
         elif event.type == pygame.JOYBUTTONDOWN:
             handle_stick(event)    
@@ -773,7 +767,7 @@ def handle_key(e):
     c = ''
     mods = pygame.key.get_mods()
     if android:
-        mods |= android_apply_mods(e) 
+        mods |= pygame_android.apply_mods(e) 
     if e.key in (pygame.K_PAUSE, pygame.K_BREAK):
         if mods & pygame.KMOD_CTRL:
             # ctrl-break
@@ -811,7 +805,7 @@ def handle_key(e):
                 c = keycode_to_scancode[e.key]
         except KeyError:
             if android:
-                u = android_get_unicode(e, mods)
+                u = pygame_android.get_unicode(e, mods)
             else:
                 u = e.unicode    
             c = unicodepage.from_unicode(u)

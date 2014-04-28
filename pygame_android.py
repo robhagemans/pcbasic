@@ -81,22 +81,22 @@ android_to_pygame = {
     android.KEYCODE_ALT_LEFT:     pygame.K_LALT,                android.KEYCODE_ALT_RIGHT:    pygame.K_RALT,
 }
 
-android_shift = False    
-android_ctrl = False
-android_alt = False
-android_keyboard_visible = False
+shift = False    
+ctrl = False
+alt = False
+keyboard_visible = False
 
 # fix unicode and set mods    
-def android_get_unicode(e, mods):
-    global android_shift, android_ctrl, android_alt
+def get_unicode(e, mods):
+    global shift, ctrl, alt
     if e.key in (pygame.K_LSHIFT, pygame.K_RSHIFT):
-        android_shift = True
+        shift = True
         return ''
     elif e.key in (pygame.K_LCTRL, pygame.K_RCTRL):
-        android_ctrl = True
+        ctrl = True
         return ''
     elif e.key in (pygame.K_LALT, pygame.K_RALT):
-        android_alt = True
+        alt = True
         return ''
     try:
         if mods & pygame.KMOD_SHIFT:
@@ -110,31 +110,31 @@ def android_get_unicode(e, mods):
         return '' #e.unicode
 
 # android keybard sends a sequence LSHIFT, KEY rather than mods
-def android_apply_mods(e):
-    global android_shift, android_ctrl, android_alt
+def apply_mods(e):
+    global shift, ctrl, alt
     mod_mask = 0
-    if android_shift:
+    if shift:
         mod_mask |= pygame.KMOD_SHIFT
-    if android_ctrl:
+    if ctrl:
         mod_mask |= pygame.KMOD_CTRL
-    if android_alt:
+    if alt:
         mod_mask |= pygame.KMOD_ALT
     # clear mods on non-mod keypress only   
     if e.key not in (pygame.K_LSHIFT, pygame.K_RSHIFT, pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT):
-        android_shift = False
-        android_ctrl = False
-        android_alt = False
+        shift = False
+        ctrl = False
+        alt = False
     return mod_mask            
 
-def android_toggle_keyboard():
-    global android_keyboard_visible
-    if android_keyboard_visible:
+def toggle_keyboard():
+    global keyboard_visible
+    if keyboard_visible:
         android.hide_keyboard()
     else:    
         android.show_keyboard()
-    android_keyboard_visible = not android_keyboard_visible
+    keyboard_visible = not keyboard_visible
 
-def android_check_events():
+def check_events():
     if android.check_pause():
         android.hide_keyboard()
         # save emulator state
@@ -145,12 +145,12 @@ def android_check_events():
         return True
     return False
         
-def android_init():
+def init():
     android.init()
     # map android keycodes that aren't yet mapped in PGS4A
     for key in android_to_pygame:
         android.map_key(key, android_to_pygame[key])
 
-def android_close():
+def close():
     android.hide_keyboard()
 
