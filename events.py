@@ -121,7 +121,7 @@ def check_play_event():
     state.basic_state.play_last = state.basic_state.play_now
 
 def check_com_events():
-    ports = (io.devices['COM1:'], io.devices['COM2:'])
+    ports = (state.io_state.devices['COM1:'], state.io_state.devices['COM2:'])
     for comport in (0, 1):
         if ports[comport] and ports.comport.peek_char():
             com_handlers[comport].triggered = True

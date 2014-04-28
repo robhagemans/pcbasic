@@ -752,7 +752,7 @@ def exec_list(ins):
 def exec_llist(ins):
     from_line, to_line = parse_line_range(ins)
     util.require(ins, util.end_statement)
-    program.list_lines(io.devices['LPT1:'], from_line, to_line)
+    program.list_lines(state.io_state.devices['LPT1:'], from_line, to_line)
         
 def exec_load(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
@@ -917,7 +917,7 @@ def exec_close(ins):
     while True:
         number = expressions.parse_file_number_opthash(ins)
         try:    
-            io.files[number].close()
+            state.io_state.files[number].close()
         except KeyError:
             pass    
         if not util.skip_white_read_if(ins, (',',)):
@@ -2003,7 +2003,7 @@ def exec_locate(ins):
 
 def exec_write(ins, screen=None):
     screen = expressions.parse_file_number(ins, 'OAR')
-    screen = io.devices['SCRN:'] if screen == None else screen
+    screen = state.io_state.devices['SCRN:'] if screen == None else screen
     expr = expressions.parse_expression(ins, allow_empty=True)
     if expr:
         while True:
@@ -2022,7 +2022,7 @@ def exec_write(ins, screen=None):
 def exec_print(ins, screen=None):
     if screen == None:
         screen = expressions.parse_file_number(ins, 'OAR')
-        screen = io.devices['SCRN:'] if screen == None else screen
+        screen = state.io_state.devices['SCRN:'] if screen == None else screen
     number_zones = max(1, int(screen.width/14))
     newline = True
     while True:
@@ -2112,7 +2112,7 @@ def exec_print_using(ins, screen):
     util.require(ins, util.end_statement)
 
 def exec_lprint(ins):
-    exec_print(ins, io.devices['LPT1:'])
+    exec_print(ins, state.io_state.devices['LPT1:'])
                              
 def exec_view_print(ins):
     if util.skip_white(ins) in util.end_statement:
@@ -2134,14 +2134,14 @@ def exec_width(ins):
         expr = expressions.parse_expression(ins)
         if expr[0] == '$':
             try:
-                dev = io.devices[str(vartypes.pass_string_unpack(expr)).upper()]
+                dev = state.io_state.devices[str(vartypes.pass_string_unpack(expr)).upper()]
             except KeyError:
                 # bad file name
                 raise error.RunError(64)           
             util.require_read(ins, (',',))
             w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         else:
-            dev = io.devices['SCRN:']
+            dev = state.io_state.devices['SCRN:']
             # IN GW-BASIC, we can do calculations, but they must be bracketed...
             #w = vartypes.pass_int_unpack(expressions.parse_expr_unit(ins))
             w = vartypes.pass_int_unpack(expr)

@@ -27,6 +27,7 @@ class DisplayState(State):
         pass
         
 basic_state = State()        
+io_state = State()
 console_state = State()
 display = DisplayState()
 #D - move contents into console state
@@ -66,6 +67,11 @@ def save():
     to_pickle.basic = copy.copy(basic_state)
     to_pickle.basic.bytecode = cStringIO_Pickler(basic_state.bytecode)
     to_pickle.basic.direct_line = cStringIO_Pickler(basic_state.direct_line)
+    # I/O
+    to_pickle.io = copy.copy(io_state)
+    to_pickle.io.files = {}
+    to_pickle.io.devices = {}
+    
     # Console
     to_pickle.console = copy.copy(console_state)
     # Display 
@@ -84,7 +90,7 @@ def save():
         pass
     
 def load():
-    global console_state, display_state, basic_state, display, loaded
+    global console_state, io_state, display_state, basic_state, display, loaded
     # decompress and unpickle
     try:
         f = open(state_file, 'rb')
@@ -95,7 +101,7 @@ def load():
         logging.warning("Could not load from state file.")
         return False
     # unpack pickling object
-    basic_state, console_state, display_state = from_pickle.basic, from_pickle.console, from_pickle.display_state
+    io_state, basic_state, console_state, display_state = from_pickle.io, from_pickle.basic, from_pickle.console, from_pickle.display_state
     basic_state.bytecode = basic_state.bytecode.unpickle()
     basic_state.direct_line = basic_state.direct_line.unpickle()
     from_pickle.display.unpickle()
