@@ -485,3 +485,13 @@ Double.pi2      = mul(Double.pi, Double.half)
 Double.pi4      = mul(Double.pi2, Double.half)
     
 
+# math errors only break execution if handler is set
+def math_error(errnum):
+    if state.basic_state.on_error: 
+        # also raises exception in error_handle_mode! in that case, prints a normal error message
+        raise(error.RunError(errnum))
+    else:
+        # write a message & continue as normal
+        # start_line() ?
+        state.io_state.devices['SCRN:'].write_line(get_message(errnum)) # no space, no line number
+

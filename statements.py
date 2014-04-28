@@ -1439,7 +1439,7 @@ def exec_on_error(ins):
     # ON ERROR GOTO 0 in error handler
     if error.on_error == 0 and state.basic_state.error_handle_mode:
         # re-raise the error so that execution stops
-        raise error.RunError(state.basic_state.errn, state.basic_state.erl)
+        raise error.RunError(state.basic_state.errn, state.basic_state.errp)
     # this will be caught by the trapping routine just set
     util.require(ins, util.end_statement)
 
@@ -1684,7 +1684,7 @@ def exec_read(ins):
         if num == None: 
             # set pointer for EDIT gadget
             state.basic_state.bytecode.seek(state.basic_state.data_pos)
-            raise error.RunError(2, program.get_line_number(state.basic_state.data_pos-1))
+            raise error.RunError(2, state.basic_state.data_pos-1)
         var.set_var_or_array(*v, value=num)
     util.require(ins, util.end_statement)
 

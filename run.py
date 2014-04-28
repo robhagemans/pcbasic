@@ -48,9 +48,9 @@ def execute(line):
             # it is a command, go and execute    
             execution_loop()
     except error.Break as e:
-        e.handle_break() 
+        handle_break(e) 
     except error.RunError as e:
-        e.handle_break() 
+        handle_error_break(e) 
     # prompt
     show_prompt()
 
@@ -70,8 +70,8 @@ def execution_loop():
             console.check_events()
             if not statements.parse_statement():
                 break
-        except error.Error as e:
-            if not e.handle_continue():
+        except error.RunError as e:
+            if not handle_error_continue(e):
                 console.show_cursor()
                 raise e
     console.show_cursor()
@@ -113,12 +113,50 @@ def auto_loop(new_linenum, new_increment):
                     # it is a command, go and execute    
                     execution_loop()
             except error.Break as e:
-                e.handle_break() 
+                handle_break(e) 
                 show_prompt()
             except error.RunError as e:
-                e.handle_break()             
+                handle_error_break(e)             
                 show_prompt()
         state.basic_state.auto_mode = False
         program.set_runmode(False)
 
         
+#########################
+        
+        
+def handle_error_continue(s):
+    error.set_err(s)
+    # don't jump if we're already busy handling an error
+    if state.basic_state.on_error != None and state.basic_state.on_error != 0 and not state.basic_state.error_handle_mode:
+        state.basic_state.error_resume = state.basic_state.current_statement, state.basic_state.run_mode
+        program.jump(state.basic_state.on_error)
+        state.basic_state.error_handle_mode = True
+        state.basic_state.suspend_all_events = True
+        return True
+        
+def handle_error_break(s):
+    error.set_err(s)
+    # not handled by ON ERROR, stop execution
+    console.write_error_message(error.get_message(s.err), program.get_line_number(s.pos))   
+    state.basic_state.error_handle_mode = False
+    program.set_runmode(False)
+    # special case
+    if s.err == 2:
+        # for some reason, err is reset to zero by GW-BASIC in this case.
+        state.basic_state.errn = 0
+        # for syntax error, line edit gadget appears
+        if s.pos != -1:
+            console.start_line()
+            console.write_line("Ok\xff")
+            try:    
+                program.edit(program.get_line_number(s.pos), state.basic_state.bytecode.tell())
+            except RunError as e:
+                handle_error_break(e)
+
+def handle_break(s):
+    console.write_error_message("Break", program.get_line_number(s.pos))
+    if state.basic_state.run_mode:
+        state.basic_state.stop = state.basic_state.bytecode.tell()
+        program.set_runmode(False)
+
