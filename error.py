@@ -11,7 +11,6 @@
 import util
 import console
 import program
-import events
 import state
 
 # number and line number of last error
@@ -154,7 +153,7 @@ class RunError(Error):
                 console.start_line()
                 console.write_line("Ok\xff")
                 try:    
-                    textpos = program.edit(self.erl, state.basic_state.bytecode.tell())
+                    program.edit(self.erl, state.basic_state.bytecode.tell())
                 except RunError as e:
                     e.handle_break()
     
