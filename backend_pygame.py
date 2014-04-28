@@ -479,7 +479,7 @@ def init_screen_mode(mode, new_font_height):
 def setup_screen(to_height, to_width):
     global screen, screen_changed, surface0, surface1
     state.size = to_width*8, to_height*state.font_height
-    screen = pygame.Surface(state.size, 0, 8)
+    screen = pygame.Surface(state.size, depth=8)
     # whole screen (blink on & off)
     surface0 = [ pygame.Surface(state.size, depth=8) for _ in range(console_state.num_pages)]
     surface1 = [ pygame.Surface(state.size, depth=8) for _ in range(console_state.num_pages)]
