@@ -10,7 +10,6 @@
 #
 
 import fp
-import representation
 import error
 import state
 

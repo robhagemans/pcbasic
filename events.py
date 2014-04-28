@@ -10,10 +10,8 @@
 #
 
 import oslayer
-import io
 import console
 import program
-import vartypes
 import state
 
 class EventHandler(object):
@@ -123,6 +121,6 @@ def check_play_event():
 def check_com_events():
     ports = (state.io_state.devices['COM1:'], state.io_state.devices['COM2:'])
     for comport in (0, 1):
-        if ports[comport] and ports.comport.peek_char():
-            com_handlers[comport].triggered = True
+        if ports[comport] and ports[comport].peek_char():
+            state.basic_state.com_handlers[comport].triggered = True
             
