@@ -9,7 +9,10 @@
 # please see text file COPYING for licence terms.
 #
 
-import pickle
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 import os
 import zlib
 import copy
