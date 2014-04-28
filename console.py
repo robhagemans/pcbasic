@@ -954,4 +954,13 @@ def redraw_text_screen():
             backend.putc_at(crow+1, i+1, therow.buf[i][0])
     if state.cursor:
         show_cursor(True)       
+
+################################################
         
+def write_error_message(msg, linenum):
+    start_line()
+    write(msg) 
+    if linenum != None and linenum > -1 and linenum < 65535:
+        write(' in %i' % linenum)
+    write_line(' ')                  
+

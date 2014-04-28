@@ -101,7 +101,7 @@ def clear_all(close_files=False):
     # release all disk buffers (FIELD)?
     state.io_state.fields = {}
     # clear ERR and ERL
-    state.basic_state.errn, state.basic_state.erl = 0, 0
+    state.basic_state.errn, state.basic_state.errp = 0, 0
     # disable error trapping
     state.basic_state.on_error = None
     state.basic_state.error_resume = None
@@ -569,6 +569,24 @@ def loop_iterate(ins):
         ins.seek(forpos)    
     return loop_ends
     
+def resume(jumpnum):  
+    start_statement, runmode = state.basic_state.error_resume 
+    state.basic_state.errn = 0
+    state.basic_state.error_handle_mode = False
+    state.basic_state.error_resume = None
+    state.basic_state.suspend_all_events = False    
+    if jumpnum == 0: 
+        # RESUME or RESUME 0 
+        set_runmode(runmode, start_statement)
+    elif jumpnum == -1:
+        # RESUME NEXT
+        set_runmode(runmode, start_statement)        
+        util.skip_to(program.current_codestream, util.end_statement, break_on_first_char=False)
+    else:
+        # RESUME n
+        jump(jumpnum)
+
+    
 # READ a unit of DATA
 def read_entry():
     current = state.basic_state.bytecode.tell()
@@ -608,3 +626,4 @@ def read_entry():
     state.basic_state.bytecode.seek(current)
     return vals
      
+

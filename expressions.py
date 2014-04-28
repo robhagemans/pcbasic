@@ -654,7 +654,7 @@ def value_play(ins):
 # error functions
 
 def value_erl(ins):
-    return fp.pack(fp.Single.from_int(state.basic_state.erl))
+    return fp.pack(fp.Single.from_int(program.get_line_number(state.basic_state.errp)))
 
 def value_err(ins):
     return vartypes.pack_int(state.basic_state.errn)
