@@ -587,10 +587,10 @@ def exec_out(ins):
     util.range_check(0, 255, val)
     if addr == 0x3c5:
         # officially, requires OUT &H3C4, 2 first (not implemented)
-        graphics.colour_plane_write_mask = val
+        state.console_state.colour_plane_write_mask = val
     elif addr == 0x3cf:
         # officially, requires OUT &H3CE, 4 first (not implemented)
-        graphics.colour_plane = val        
+        state.console_state.colour_plane = val        
     util.require(ins, util.end_statement)
 
 # only implemented port &h60 (keyboard read)

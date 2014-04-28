@@ -713,8 +713,8 @@ def clear_graphics_view():
 
 # memory model
 
-colour_plane = 3
-colour_plane_write_mask = 0xff
+state.console_state.colour_plane = 3
+state.console_state.colour_plane_write_mask = 0xff
 video_segment = { 0: 0xb800, 1: 0xb800, 2: 0xb800, 7: 0xa000, 8: 0xa000, 9: 0xa000 }
 
 def get_pixel_byte(page, x, y, plane):
@@ -748,15 +748,15 @@ def get_memory(addr):
         elif state.console_state.screen_mode == 7:
             page, addr = addr//8192, addr%8192
             x, y = (addr%40)*8, addr//40
-            return get_pixel_byte(page, x, y, colour_plane % 4)
+            return get_pixel_byte(page, x, y, state.console_state.colour_plane % 4)
         elif state.console_state.screen_mode == 8:
             page, addr = addr//16384, addr%16384
             x, y = (addr%80)*8, addr//80
-            return get_pixel_byte(page, x, y, colour_plane % 4)
+            return get_pixel_byte(page, x, y, state.console_state.colour_plane % 4)
         elif state.console_state.screen_mode == 9:
             page, addr = addr//32768, addr%32768
             x, y = (addr%80)*8, addr//80
-            return get_pixel_byte(page, x, y, colour_plane % 4)
+            return get_pixel_byte(page, x, y, state.console_state.colour_plane % 4)
         return -1   
 
 def set_memory(addr, val):
@@ -778,15 +778,15 @@ def set_memory(addr, val):
         elif state.console_state.screen_mode == 7:
             page, addr = addr//8192, addr%8192
             x, y = (addr%40)*8, addr//40
-            set_pixel_byte(page, x, y, colour_plane_write_mask & 0xf, val)
+            set_pixel_byte(page, x, y, state.console_state.colour_plane_write_mask & 0xf, val)
         elif state.console_state.screen_mode == 8:
             page, addr = addr//16384, addr%16384
             x, y = (addr%80)*8, addr//80
-            set_pixel_byte(page, x, y, colour_plane_write_mask & 0xf, val)
+            set_pixel_byte(page, x, y, state.console_state.colour_plane_write_mask & 0xf, val)
         elif state.console_state.screen_mode == 9:
             page, addr = addr//32768, addr%32768
             x, y = (addr%80)*8, addr//80
-            set_pixel_byte(page, x, y, colour_plane_write_mask & 0xf, val)            
+            set_pixel_byte(page, x, y, state.console_state.colour_plane_write_mask & 0xf, val)            
 
 def get_memory_block(addr, length):
     return bytearray( [ max(0, get_memory(a)) for a in range(addr, addr+length) ] )
