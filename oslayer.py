@@ -40,7 +40,7 @@ else:
 
 # datetime offset for duration of the run (so that we don't need permission to touch the system clock)
 # given in seconds        
-time_offset = datetime.timedelta()
+state.basic_state.time_offset = datetime.timedelta()
 
 # posix access modes for BASIC modes INPUT ,OUTPUT, RANDOM, APPEND and internal LOAD and SAVE modes
 access_modes = { 'I':'rb', 'O':'wb', 'R':'r+b', 'A':'ab', 'L': 'rb', 'S': 'wb' }
@@ -68,8 +68,7 @@ nullstream = open(os.devnull, 'w')
 # date & time & env
 
 def timer_milliseconds():
-    global time_offset
-    now = datetime.datetime.today() + time_offset
+    now = datetime.datetime.today() + state.basic_state.time_offset
     midnight = datetime.datetime(now.year, now.month, now.day)
     diff = now-midnight
     seconds = diff.seconds
@@ -77,8 +76,7 @@ def timer_milliseconds():
     return long(seconds)*1000 + long(micro)/1000 
 
 def set_time(timestr):    
-    global time_offset
-    now = datetime.datetime.today() + time_offset
+    now = datetime.datetime.today() + state.basic_state.time_offset
     timelist = [0, 0, 0]
     pos, listpos, word = 0, 0, ''
     while pos < len(timestr):
@@ -99,11 +97,10 @@ def set_time(timestr):
     if timelist[0] > 23 or timelist[1] > 59 or timelist[2] > 59:
         raise error.RunError(5)
     newtime = datetime.datetime(now.year, now.month, now.day, timelist[0], timelist[1], timelist[2], now.microsecond)
-    time_offset += newtime - now    
+    state.basic_state.time_offset += newtime - now    
         
 def set_date(datestr):    
-    global time_offset
-    now = datetime.datetime.today() + time_offset
+    now = datetime.datetime.today() + state.basic_state.time_offset
     datelist = [1, 1, 1]
     pos, listpos, word = 0, 0, ''
     if len(datestr) < 8:
@@ -138,13 +135,13 @@ def set_date(datestr):
         newtime = datetime.datetime(datelist[2], datelist[0], datelist[1], now.hour, now.minute, now.second, now.microsecond)
     except ValueError:
         raise error.RunError(5)
-    time_offset += newtime - now    
+    state.basic_state.time_offset += newtime - now    
     
 def get_time():
-    return bytearray((datetime.datetime.today() + time_offset).strftime('%H:%M:%S'))
+    return bytearray((datetime.datetime.today() + state.basic_state.time_offset).strftime('%H:%M:%S'))
     
 def get_date():
-    return bytearray((datetime.datetime.today() + time_offset).strftime('%m-%d-%Y'))
+    return bytearray((datetime.datetime.today() + state.basic_state.time_offset).strftime('%m-%d-%Y'))
 
 def get_env(parm):
     if not parm:
