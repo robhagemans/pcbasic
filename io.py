@@ -21,11 +21,12 @@ import oslayer
 import error
 import console
 import util
+import state
 
 # file numbers
-files = {}
+state.io_state.files = {}
 # fields are preserved on file close, so have a separate store
-fields = {}
+state.io_state.fields = {}
 
 # maximum file number = maximum number of open files
 # in GW, this is a command line option
@@ -36,7 +37,7 @@ max_files = 3
 serial_in_size = 256
 serial_out_size = 128
 
-devices = {}
+state.io_state.devices = {}
 
 allowed_protocols = {
     # first protocol is default
@@ -49,7 +50,7 @@ def open_file_or_device(number, name, mode='I', access='R', lock='', reclen=128,
     if not name or number < 0 or number > max_files:
         # bad file number; also for name='', for some reason
         raise error.RunError(52)
-    if number in files:
+    if number in state.io_state.files:
         # file already open
         raise error.RunError(55)
     name, mode = str(name), mode.upper()
@@ -87,7 +88,7 @@ def open_file_or_device(number, name, mode='I', access='R', lock='', reclen=128,
     
 def get_file(num, mode='IOAR'):
     try:
-        the_file = files[num]
+        the_file = state.io_state.files[num]
     except KeyError:
         # bad file number
         raise error.RunError(52)
@@ -96,21 +97,21 @@ def get_file(num, mode='IOAR'):
     return the_file    
      
 def check_file_not_open(name):
-    for f in files:
-        if name == files[f].name:
+    for f in state.io_state.files:
+        if name == state.io_state.files[f].name:
             raise error.RunError(55)
 
 def find_files_by_name(name):
-    return [files[f] for f in files if files[f].name == name]
+    return [state.io_state.files[f] for f in state.io_state.files if state.io_state.files[f].name == name]
       
 def close_all():
-    for f in list(files):
+    for f in list(state.io_state.files):
         if f > 0:
-            files[f].close()
+            state.io_state.files[f].close()
 
 def lock_records(nr, start, stop):
     thefile = get_file(nr)
-    if thefile.name in devices:
+    if thefile.name in state.io_state.devices:
         # permission denied
         raise error.RunError(70)
     lock_list = set()
@@ -129,7 +130,7 @@ def lock_records(nr, start, stop):
 
 def unlock_records(nr, start, stop):    
     thefile = get_file(nr)
-    if thefile.name in devices:
+    if thefile.name in state.io_state.devices:
         # permission denied
         raise error.RunError(70)
     if isinstance(thefile, TextFile):
@@ -174,7 +175,7 @@ class BaseFile(object):
         self.lock = lock
         self.lock_list = set()    
         if number != 0:
-            files[number] = self
+            state.io_state.files[number] = self
     
     # set_width
     # width
@@ -191,7 +192,7 @@ class BaseFile(object):
             pass    
         # don't close the handle - for devices
         if self.number != 0:
-            del files[self.number]
+            del state.io_state.files[self.number]
     
     def read_chars(self, num):
         return list(self.fhandle.read(num)) 
@@ -345,10 +346,10 @@ class RandomBase(BaseFile):
         self.reclen = reclen
         # replace with empty field if already exists    
         try:
-            self.field = fields[self.number]
+            self.field = state.io_state.fields[self.number]
         except KeyError:
             self.field = bytearray()
-            fields[self.number] = self.field
+            state.io_state.fields[self.number] = self.field
         self.field[:] = bytearray('\x00')*reclen
         # open a pseudo text file over the buffer stream
         # to make WRITE# etc possible
@@ -523,16 +524,15 @@ class ByteStream(object):
 
 
 def prepare_devices(args):
-    global devices
     # always defined
-    devices['SCRN:'] = SCRNFile()
-    devices['KYBD:'] = KYBDFile()
-    devices['LPT1:'] = create_device('LPT1:', args.lpt1, oslayer.nullstream) 
+    state.io_state.devices['SCRN:'] = SCRNFile()
+    state.io_state.devices['KYBD:'] = KYBDFile()
+    state.io_state.devices['LPT1:'] = create_device('LPT1:', args.lpt1, oslayer.nullstream) 
     # optional
-    devices['LPT2:'] = create_device('LPT2:', args.lpt2)
-    devices['LPT3:'] = create_device('LPT3:', args.lpt3)
-    devices['COM1:'] = create_device('COM1:', args.com1)
-    devices['COM2:'] = create_device('COM2:', args.com2)
+    state.io_state.devices['LPT2:'] = create_device('LPT2:', args.lpt2)
+    state.io_state.devices['LPT3:'] = create_device('LPT3:', args.lpt3)
+    state.io_state.devices['COM1:'] = create_device('COM1:', args.com1)
+    state.io_state.devices['COM2:'] = create_device('COM2:', args.com2)
 
 def create_device(name, arg, default=None):
     if not arg:
@@ -578,7 +578,7 @@ def create_device_stream(arg, allowed):
 def device_open(device_name, number, mode, access, lock, reclen):
     # check if device exists and allows the requested mode    
     # if not exists, raise KeyError to caller
-    device = devices[str(device_name).upper()]
+    device = state.io_state.devices[str(device_name).upper()]
     if not device:    
         # device unavailable
         raise error.RunError(68)      
@@ -589,9 +589,9 @@ def device_open(device_name, number, mode, access, lock, reclen):
     return device.open(number, mode, access, '', reclen)
 
 def close_devices():
-    for d in devices:
-        if devices[d]:
-            devices[d].close()
+    for d in state.io_state.devices:
+        if state.io_state.devices[d]:
+            state.io_state.devices[d].close()
 
 
 ############################################################################
@@ -605,7 +605,7 @@ def open_device_file(dev, number, mode, access, lock='', reclen=128):
     inst.lock = lock
     inst.reclen = reclen
     if number != 0:
-        files[number] = inst
+        state.io_state.files[number] = inst
     return inst
 
 
@@ -617,12 +617,12 @@ class NullDevice(object):
     # for device_open
     def open(self, number, mode, access, lock, reclen):
         if number != 0:
-            files[number] = self
+            state.io_state.files[number] = self
         return open_device_file(self, number, mode, access, lock, reclen)
     
     def close(self):
         if self.number != 0:
-            del files[self.number]
+            del state.io_state.files[self.number]
     
     # stream interface - do we really need these?
 #    def seek(self, a, b=0):

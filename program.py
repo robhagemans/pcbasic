@@ -99,7 +99,7 @@ def clear_all(close_files=False):
         # close all files
         io.close_all()
     # release all disk buffers (FIELD)?
-    io.fields = {}
+    state.io_state.fields = {}
     # clear ERR and ERL
     state.basic_state.errn, state.basic_state.erl = 0, 0
     # disable error trapping

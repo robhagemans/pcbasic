@@ -501,7 +501,7 @@ def value_pos(ins):
 def value_lpos(ins):            
     num = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 3, num)
-    printer = io.devices['LPT' + max(1, num) + ':']
+    printer = state.io_state.devices['LPT' + max(1, num) + ':']
     return vartypes.pack_int(printer.col)
            
 ######################################################################

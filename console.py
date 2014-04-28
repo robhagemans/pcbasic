@@ -603,10 +603,10 @@ def print_screen():
         line = ''
         for c, _ in state.vpage.row[crow-1].buf:
             line += c
-        io.devices['LPT1:'].write_line(line)
+        state.io_state.devices['LPT1:'].write_line(line)
 
 def toggle_echo_lpt1():
-    lpt1 = io.devices['LPT1:']
+    lpt1 = state.io_state.devices['LPT1:']
     if lpt1.write in state.input_echos:
         state.input_echos.remove(lpt1.write)
         state.output_echos.remove(lpt1.write)
