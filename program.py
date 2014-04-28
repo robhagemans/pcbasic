@@ -338,7 +338,7 @@ def renum(new_line, start_line, step):
     if state.basic_state.on_error:
         state.basic_state.on_error = old_to_new[state.basic_state.on_error]
     # renumber event traps
-    for handler in events.all_handlers:
+    for handler in state.basic_state.all_handlers:
         if handler.gosub:
             handler.gosub = old_to_new[handler.gosub]    
         

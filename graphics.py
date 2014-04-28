@@ -17,21 +17,23 @@ import console
 import state
 import draw_and_play
 import util
+import state
 
 backend = None
 
+# screen-mode dependent
 # screen width and height in pixels
-size = (0, 0)
+state.console_state.size = (0, 0)
+state.console_state.pixel_aspect_ratio = fp.Single.one
+state.console_state.bitsperpixel = 4
 
-graph_view_set = False
-view_graph_absolute = True
+# real state variables
+state.console_state.graph_view_set = False
+state.console_state.view_graph_absolute = True
+state.console_state.graph_window = None
+state.console_state.graph_window_bounds = None
+state.console_state.last_point = (0, 0)    
 
-graph_window = None
-graph_window_bounds = None
-
-last_point = (0, 0)    
-pixel_aspect_ratio = fp.Single.one
-bitsperpixel = 4
 
 def require_graphics_mode(err=5):
     if not is_graphics_mode():
@@ -41,31 +43,31 @@ def is_graphics_mode():
     return backend and state.console_state.screen_mode
 
 def init_graphics_mode(mode, new_font_height):
-    global last_point, pixel_aspect_ratio, bitsperpixel, size
+    global state.console_state.last_point, state.console_state.pixel_aspect_ratio, state.console_state.bitsperpixel, state.console_state.size
     if mode==0:
         return
-    size = (state.console_state.width*8, state.console_state.height*new_font_height)
+    state.console_state.size = (state.console_state.width*8, state.console_state.height*new_font_height)
     # centre of new graphics screen
-    last_point = (state.console_state.width*4, state.console_state.height*new_font_height/2)
+    state.console_state.last_point = (state.console_state.width*4, state.console_state.height*new_font_height/2)
     # pixels e.g. 80*8 x 25*14, screen ratio 4x3 makes for pixel width/height (4/3)*(25*14/8*80)
-    pixel_aspect_ratio = fp.div(
+    state.console_state.pixel_aspect_ratio = fp.div(
         fp.Single.from_int(state.console_state.height*new_font_height), 
         fp.Single.from_int(6*state.console_state.width)) 
     if mode in (1, 10):
-        bitsperpixel = 2
+        state.console_state.bitsperpixel = 2
     elif mode == 2:
-        bitsperpixel = 1
+        state.console_state.bitsperpixel = 1
     else:
-        bitsperpixel = 4
+        state.console_state.bitsperpixel = 4
 
 # reset graphics state    
 def reset_graphics():
-    global last_point
+    global state.console_state.last_point
     x0, y0, x1, y1 = backend.get_graph_clip()
-    if view_graph_absolute:
-        last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
+    if state.console_state.view_graph_absolute:
+        state.console_state.last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
     else:
-        last_point = (x1-x0)/2, (y1-y0)/2
+        state.console_state.last_point = (x1-x0)/2, (y1-y0)/2
     draw_and_play.draw_scale = 4
     draw_and_play.draw_angle = 0
 
@@ -77,7 +79,7 @@ def get_colour_index(c):
     return c
 
 def check_coords(x, y):
-    return min(size[0], max(-1, x)), min(size[1], max(-1, y))
+    return min(state.console_state.size[0], max(-1, x)), min(state.console_state.size[1], max(-1, y))
     
 ### PSET, POINT
 
@@ -89,16 +91,16 @@ def put_point(x, y, c):
     
 def get_point(x, y):
     x, y = view_coords(x, y)
-    if x < 0 or x >= size[0]:
+    if x < 0 or x >= state.console_state.size[0]:
         return -1
-    if y < 0 or y >= size[1]:
+    if y < 0 or y >= state.console_state.size[1]:
         return -1
     return backend.get_pixel(x,y)
 
 ### WINDOW coords
 
 def set_graph_window(fx0, fy0, fx1, fy1, cartesian=True):
-    global graph_window, graph_window_bounds
+    global state.console_state.graph_window, state.console_state.graph_window_bounds
     if fy0.gt(fy1):
         fy0, fy1 = fy1, fy0
     if fx0.gt(fx1):
@@ -110,23 +112,23 @@ def set_graph_window(fx0, fy0, fx1, fy1, cartesian=True):
     x1, y1 = fp.Single.from_int(right-left), fp.Single.from_int(bottom-top)        
     scalex, scaley = fp.div(fp.sub(x1, x0), fp.sub(fx1,fx0)), fp.div(fp.sub(y1, y0), fp.sub(fy1,fy0)) 
     offsetx, offsety = fp.sub(x0, fp.mul(fx0,scalex)), fp.sub(y0, fp.mul(fy0,scaley))
-    graph_window = scalex, scaley, offsetx, offsety
-    graph_window_bounds = fx0, fy0, fx1, fy1, cartesian
+    state.console_state.graph_window = scalex, scaley, offsetx, offsety
+    state.console_state.graph_window_bounds = fx0, fy0, fx1, fy1, cartesian
 
 def unset_graph_window():
-    global graph_window, graph_window_bounds
-    graph_window = None
-    graph_window_bounds = None
+    global state.console_state.graph_window, state.console_state.graph_window_bounds
+    state.console_state.graph_window = None
+    state.console_state.graph_window_bounds = None
 
 # input logical coords, output physical coords
 def window_coords(fx, fy, step=False):
-    if graph_window:
-        scalex, scaley, offsetx, offsety = graph_window
-        fx0, fy0 = get_window_coords(last_point) if step else (fp.Single.zero.copy(), fp.Single.zero.copy())    
+    if state.console_state.graph_window:
+        scalex, scaley, offsetx, offsety = state.console_state.graph_window
+        fx0, fy0 = get_window_coords(state.console_state.last_point) if step else (fp.Single.zero.copy(), fp.Single.zero.copy())    
         x = fp.add(offsetx, fp.mul(fx0.iadd(fx), scalex)).round_to_int()
         y = fp.add(offsety, fp.mul(fy0.iadd(fy), scaley)).round_to_int()
     else:
-        x, y = last_point if step else (0, 0)
+        x, y = state.console_state.last_point if step else (0, 0)
         x += fx.round_to_int()
         y += fy.round_to_int()
     # overflow check
@@ -138,15 +140,15 @@ def window_coords(fx, fy, step=False):
 # input physical coords, output logical coords
 def get_window_coords(x, y):
     x, y = fp.Single.from_int(x), fp.Single.from_int(y)
-    if graph_window:
-        scalex, scaley, offsetx, offsety = graph_window
+    if state.console_state.graph_window:
+        scalex, scaley, offsetx, offsety = state.console_state.graph_window
         return fp.div(fp.sub(x, offsetx), scalex), fp.div(fp.sub(y, offsety), scaley)
     else:
         return x, y
 
 def window_scale(fx, fy):
-    if graph_window:
-        scalex, scaley, offsetx, offsety = graph_window
+    if state.console_state.graph_window:
+        scalex, scaley, offsetx, offsety = state.console_state.graph_window
         return fp.mul(fx, scalex).round_to_int(), fp.mul(fy, scaley).round_to_int()
     else:
         return fx.round_to_int(), fy.round_to_int()
@@ -490,7 +492,7 @@ def fill_scanline(x_start, x_stop, y, pattern):
     mask = 7 - x_start%8
     for x in range(x_start, x_stop+1):
         c = 0
-        for b in range(bitsperpixel-1,-1,-1):
+        for b in range(state.console_state.bitsperpixel-1,-1,-1):
             c <<= 1
             c += (pattern[b] & (1<<mask)) >> mask
         mask -= 1
@@ -541,7 +543,7 @@ def operation_set(pix0, pix1):
 
 def operation_not(pix0, pix1):
 #    return ~pix1
-    return pix1 ^ ((1<<bitsperpixel)-1)
+    return pix1 ^ ((1<<state.console_state.bitsperpixel)-1)
 
 def operation_and(pix0, pix1):
     return pix0 & pix1
@@ -574,8 +576,8 @@ def set_area(x0,y0, array, operation_char):
     x0, y0 = view_coords(x0, y0)
     x1, y1 = view_coords(x1, y1)
     # illegal fn call if outside screen boundary
-    util.range_check(0, size[0]-1, x0, x1)
-    util.range_check(0, size[1]-1, y0, y1)
+    util.range_check(0, state.console_state.size[0]-1, x0, x1)
+    util.range_check(0, state.console_state.size[1]-1, y0, y1)
     operation = operations[operation_char]
     backend.apply_graph_clip()
     byte = 4
@@ -586,7 +588,7 @@ def set_area(x0,y0, array, operation_char):
                 if shift < 0:
                     byte += 1
                     shift = 6
-                if x < 0 or x >= size[0] or y < 0 or y >= size[1]:
+                if x < 0 or x >= state.console_state.size[0] or y < 0 or y >= state.console_state.size[1]:
                     pixel = 0
                 else:
                     pixel = backend.get_pixel(x,y)
@@ -606,19 +608,19 @@ def set_area(x0,y0, array, operation_char):
             for x in range(x0, x1+1):
                 if mask == 0: 
                     mask = 0x80
-                if x < 0 or x >= size[0] or y < 0 or y >= size[1]:
+                if x < 0 or x >= state.console_state.size[0] or y < 0 or y >= state.console_state.size[1]:
                     pixel = 0
                 else:
                     pixel = backend.get_pixel(x,y)
                 index = 0
-                for b in range(bitsperpixel):
+                for b in range(state.console_state.bitsperpixel):
                     try:
-                        if byte_array[4 + ((y-y0)*bitsperpixel + b)*row_bytes + (x-x0)//8] & mask != 0:
+                        if byte_array[4 + ((y-y0)*state.console_state.bitsperpixel + b)*row_bytes + (x-x0)//8] & mask != 0:
                             index |= 1 << b  
                     except IndexError:
                         pass
                 mask >>= 1
-                if x >= 0 and x < size[0] and y >= 0 and y < size[1]:
+                if x >= 0 and x < state.console_state.size[0] and y >= 0 and y < state.console_state.size[1]:
                     backend.put_pixel(x, y, operation(pixel, index)) 
             # byte align next row
             mask = 0x80
@@ -630,8 +632,8 @@ def get_area(x0,y0,x1,y1, array):
     x0, y0 = view_coords(x0,y0)
     x1, y1 = view_coords(x1,y1)
     # illegal fn call if outside screen boundary
-    util.range_check(0, size[0]-1, x0, x1)
-    util.range_check(0, size[1]-1, y0, y1)
+    util.range_check(0, state.console_state.size[0]-1, x0, x1)
+    util.range_check(0, state.console_state.size[1]-1, y0, y1)
     byte_array, version = var.get_bytearray(array)
     # clear existing array
     byte_array[:] = '\x00'*len(byte_array)
@@ -664,10 +666,10 @@ def get_area(x0,y0,x1,y1, array):
                 if mask == 0: 
                     mask = 0x80
                 pixel = backend.get_pixel(x, y)
-                for b in range(bitsperpixel):
+                for b in range(state.console_state.bitsperpixel):
                     if pixel & (1<<b) != 0:
                         try:
-                            byte_array[4 + ((y-y0)*bitsperpixel + b)*row_bytes + (x-x0)//8] |= mask 
+                            byte_array[4 + ((y-y0)*state.console_state.bitsperpixel + b)*row_bytes + (x-x0)//8] |= mask 
                         except IndexError:
                             raise error.RunError(5)   
                 mask >>= 1
@@ -679,32 +681,32 @@ def get_area(x0,y0,x1,y1, array):
 ## VIEW    
     
 def set_graph_view(x0,y0,x1,y1, absolute=True):
-    global graph_view_set, view_graph_absolute, last_point
+    global state.console_state.graph_view_set, state.console_state.view_graph_absolute, state.console_state.last_point
     # VIEW orders the coordinates
     if x0 > x1:
         x0, x1 = x1, x0
     if y0 > y1:
         y0, y1 = y1, y0
-    view_graph_absolute = absolute
-    graph_view_set = True
+    state.console_state.view_graph_absolute = absolute
+    state.console_state.graph_view_set = True
     backend.set_graph_clip(x0, y0, x1, y1)
-    if view_graph_absolute:
-        last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
+    if state.console_state.view_graph_absolute:
+        state.console_state.last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
     else:
-        last_point = (x1-x0)/2, (y1-y0)/2
-    if graph_window_bounds != None:
-        set_graph_window(*graph_window_bounds)
+        state.console_state.last_point = (x1-x0)/2, (y1-y0)/2
+    if state.console_state.graph_window_bounds != None:
+        set_graph_window(*state.console_state.graph_window_bounds)
 
 def unset_graph_view():
-    global graph_view_set, view_graph_absolute, last_point
-    view_graph_absolute = False
-    graph_view_set = False
-    last_point = backend.unset_graph_clip()
-    if graph_window_bounds != None:
-        set_graph_window(*graph_window_bounds)
+    global state.console_state.graph_view_set, state.console_state.view_graph_absolute, state.console_state.last_point
+    state.console_state.view_graph_absolute = False
+    state.console_state.graph_view_set = False
+    state.console_state.last_point = backend.unset_graph_clip()
+    if state.console_state.graph_window_bounds != None:
+        set_graph_window(*state.console_state.graph_window_bounds)
 
 def view_coords(x,y):
-    if (not graph_view_set) or view_graph_absolute:
+    if (not state.console_state.graph_view_set) or state.console_state.view_graph_absolute:
         return x, y
     else:
         lefttop = backend.get_graph_clip()
@@ -722,12 +724,12 @@ colour_plane_write_mask = 0xff
 video_segment = { 0: 0xb800, 1: 0xb800, 2: 0xb800, 7: 0xa000, 8: 0xa000, 9: 0xa000 }
 
 def get_pixel_byte(page, x, y, plane):
-    if y < size[1] and page < state.console_state.num_pages:
+    if y < state.console_state.size[1] and page < state.console_state.num_pages:
         return sum(( ((backend.get_pixel(x+shift, y, page) >> plane) & 1) << (7-shift) for shift in range(8) ))
     return -1    
     
 def set_pixel_byte(page, x, y, plane_mask, byte):
-    if y < size[1] and page < state.console_state.num_pages:
+    if y < state.console_state.size[1] and page < state.console_state.num_pages:
         for shift in range(8):
             bit = (byte>>(7-shift)) & 1
             backend.put_pixel(x + shift, y, bit * plane_mask, page)  
@@ -742,7 +744,7 @@ def get_memory(addr):
         if state.console_state.screen_mode == 1:
             # interlaced scan lines of 80bytes, 4pixels per byte
             x, y = ((addr%0x2000)%80)*4, (addr>=0x2000) + 2*((addr%0x2000)//80)
-            if y < size[1]:
+            if y < state.console_state.size[1]:
                 return ( (backend.get_pixel(x  , y)<<6) + (backend.get_pixel(x+1, y)<<4) 
                         + (backend.get_pixel(x+2, y)<<2) + (backend.get_pixel(x+3, y)))
         elif state.console_state.screen_mode == 2:
@@ -771,7 +773,7 @@ def set_memory(addr, val):
         if state.console_state.screen_mode == 1:
             # interlaced scan lines of 80bytes, 4pixels per byte
             x, y = ((addr%0x2000)%80)*4, (addr>=0x2000) + 2*((addr%0x2000)//80)
-            if y < size[1]:
+            if y < state.console_state.size[1]:
                 for shift in range(4):
                     twobit = (val>>(6-shift*2)) & 3
                     backend.put_pixel(x + shift, y, twobit) 
