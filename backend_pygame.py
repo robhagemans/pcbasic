@@ -849,7 +849,7 @@ stick_fired = [[False, False], [False, False]]
 
 def trigger_pen(pos):
     global pen_down, pen_down_pos
-    events.pen_handler.triggered = True
+    state.basic_state.pen_handler.triggered = True
     pen_down = -1 # TRUE
     display_info = pygame.display.Info()
     xscale, yscale = display_info.current_w / (1.*state.size[0]), display_info.current_h / (1.*state.size[1])
@@ -857,7 +857,7 @@ def trigger_pen(pos):
                 
 def trigger_stick(joy, button):
     stick_fired[joy][button] = True
-    events.strig_handlers[joy*2 + button].triggered = True
+    state.basic_state.strig_handlers[joy*2 + button].triggered = True
 
 def get_pen(fn):
     global pen_down
@@ -972,7 +972,7 @@ def numpy_set(left, right):
 
 def numpy_not(left, right):
     left[:] = right
-    left ^= (1<<graphics.bitsperpixel)-1
+    left ^= (1<<state.console_state.bitsperpixel)-1
 
 def numpy_iand(left, right):
     left &= right

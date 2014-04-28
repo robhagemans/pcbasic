@@ -601,7 +601,7 @@ def value_point(ins):
         raise error.RunError(2)
     if not lst[1]:
         # single-argument version
-        x, y = graphics.last_point
+        x, y = state.console_state.last_point
         fn = vartypes.pass_int_unpack(lst[0])
         if fn == 0:
             return vartypes.pack_int(x)
@@ -667,7 +667,7 @@ def value_pen(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 9, fn)
     pen = console.penstick.get_pen(fn)
-    if pen == None or not events.pen_handler.enabled:
+    if pen == None or not state.basic_state.pen_handler.enabled:
         # should return 0 or char pos 1 if PEN not ON    
         pen = 1 if fn >= 6 else 0 
     return vartypes.pack_int(pen)

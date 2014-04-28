@@ -329,7 +329,7 @@ def exec_on(ins):
 
 # pen        
 def exec_pen(ins):
-    if events.pen_handler.command(util.skip_white(ins)):
+    if state.basic_state.pen_handler.command(util.skip_white(ins)):
         ins.read(1)
     else:    
         raise error.RunError(2)
@@ -343,7 +343,7 @@ def exec_strig(ins):
         num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
         if num not in (0,2,4,6):
             raise error.RunError(5)
-        if events.strig_handlers[num//2].command(util.skip_white(ins)):
+        if state.basic_state.strig_handlers[num//2].command(util.skip_white(ins)):
             ins.read(1)
         else:    
             raise error.RunError(2)
@@ -362,7 +362,7 @@ def exec_com(ins):
     util.require(ins, ('(',))
     num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
     util.range_check(1, 2, num)
-    if events.com_handlers[num].command(util.skip_white(ins)):
+    if state.basic_state.com_handlers[num].command(util.skip_white(ins)):
         ins.read(1)
     else:    
         raise error.RunError(2)
@@ -370,7 +370,7 @@ def exec_com(ins):
 
 # TIMER ON, OFF, STOP
 def exec_timer(ins):
-    if events.timer_handler.command(util.skip_white(ins)):
+    if state.basic_state.timer_handler.command(util.skip_white(ins)):
         ins.read(1)
     else:    
         raise error.RunError(2)
@@ -395,23 +395,23 @@ def exec_on_key(ins):
     keynum, jumpnum = parse_on_event(ins)
     keynum = vartypes.pass_int_unpack(keynum)
     util.range_check(1, 20, keynum)
-    events.key_handlers[keynum-1].gosub = jumpnum
+    state.basic_state.key_handlers[keynum-1].gosub = jumpnum
 
 def exec_on_timer(ins):
     timeval, jumpnum = parse_on_event(ins)
     timeval = vartypes.pass_single_keep(timeval)
-    events.timer_period = fp.mul(fp.unpack(timeval), fp.Single.from_int(1000)).round_to_int()
-    events.timer_handler.gosub = jumpnum
+    state.basic_state.timer_period = fp.mul(fp.unpack(timeval), fp.Single.from_int(1000)).round_to_int()
+    state.basic_state.timer_handler.gosub = jumpnum
 
 def exec_on_play(ins):
     playval, jumpnum = parse_on_event(ins)
     playval = vartypes.pass_int_unpack(playval)
-    events.play_trig = playval
-    events.play_handler.gosub = jumpnum
+    state.basic_state.play_trig = playval
+    state.basic_state.play_handler.gosub = jumpnum
     
 def exec_on_pen(ins):
     _, jumpnum = parse_on_event(ins, bracket=False)
-    events.pen_handler.gosub = jumpnum
+    state.basic_state.pen_handler.gosub = jumpnum
     
 def exec_on_strig(ins):
     strigval, jumpnum = parse_on_event(ins)
@@ -419,13 +419,13 @@ def exec_on_strig(ins):
     ## 0 -> [0][0] 2 -> [0][1]  4-> [1][0]  6 -> [1][1]
     if strigval not in (0,2,4,6):
         raise error.RunError(5)
-    events.strig_handlers[strigval//2].gosub = jumpnum
+    state.basic_state.strig_handlers[strigval//2].gosub = jumpnum
     
 def exec_on_com(ins):
     keynum, jumpnum = parse_on_event(ins)
     keynum = vartypes.pass_int_unpack(keynum)
     util.range_check(1, 2, keynum)
-    events.com_handlers[keynum-1].gosub = jumpnum
+    state.basic_state.com_handlers[keynum-1].gosub = jumpnum
 
 ##########################################################
 # sound
@@ -459,7 +459,7 @@ def exec_sound(ins):
             console.sound.wait_music(wait_last=False)
     
 def exec_play(ins):
-    if events.play_handler.command(util.skip_white(ins)):
+    if state.basic_state.play_handler.command(util.skip_white(ins)):
         ins.read(1)
         util.require(ins, util.end_statement)
     else:    
@@ -604,12 +604,12 @@ def exec_wait(ins):
         xorer = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.range_check(0, 255, xorer)
     util.require(ins, util.end_statement)
-    store_suspend = events.suspend_all_events
-    events.suspend_all_events = True
+    store_suspend = state.basic_state.suspend_all_events
+    state.basic_state.suspend_all_events = True
     while (((console.state.inp_key if addr == 0x60 else 0) ^ xorer) & ander) == 0:
         console.idle()
         console.check_events()
-    events.suspend_all_events = store_suspend     
+    state.basic_state.suspend_all_events = store_suspend     
 
 ##########################################################
 # OS
@@ -996,13 +996,13 @@ def parse_coord(ins, absolute=False):
     util.require_read(ins, (')',))
     if absolute:
         return x, y
-    graphics.last_point = graphics.window_coords(x, y, step)
-    return graphics.last_point
+    state.console_state.last_point = graphics.window_coords(x, y, step)
+    return state.console_state.last_point
 
 def exec_pset(ins, c=-1):
     graphics.require_graphics_mode()
     x, y = parse_coord(ins)
-    graphics.last_point = x, y
+    state.console_state.last_point = x, y
     if util.skip_white_read_if(ins, (',',)):
         c = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.range_check(-1, 255, c)
@@ -1016,12 +1016,12 @@ def exec_line_graph(ins):
     graphics.require_graphics_mode()
     if util.skip_white(ins) in ('(', '\xCF'):
         x0, y0 = parse_coord(ins)
-        graphics.last_point = x0, y0
+        state.console_state.last_point = x0, y0
     else:
-        x0, y0 = graphics.last_point
+        x0, y0 = state.console_state.last_point
     util.require_read(ins, ('\xEA',)) # -
     x1, y1 = parse_coord(ins)
-    graphics.last_point = x1, y1
+    state.console_state.last_point = x1, y1
     c, mode, mask = -1, '', 0xffff
     if util.skip_white_read_if(ins, (',',)):
         expr = expressions.parse_expression(ins, allow_empty=True)
@@ -1058,8 +1058,8 @@ def exec_view_graph(ins):
         util.require_read(ins, (',',))
         y1 = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         util.require_read(ins, (')',))
-        util.range_check(0, graphics.size[0]-1, x0, x1)
-        util.range_check(0, graphics.size[1]-1, y0, y1)
+        util.range_check(0, state.console_state.size[0]-1, x0, x1)
+        util.range_check(0, state.console_state.size[1]-1, y0, y1)
         x0, x1 = min(x0, x1), max(x0, x1)
         y0, y1 = min(y0, y1), max(y0, y1)
         fill, border = None, None
@@ -1092,11 +1092,11 @@ def exec_window(ins):
 def exec_circle(ins):
     graphics.require_graphics_mode()
     x0, y0 = parse_coord(ins)
-    graphics.last_point = x0, y0
+    state.console_state.last_point = x0, y0
     util.require_read(ins, (',',))
     r = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
     start, stop, c = None, None, -1
-    aspect = graphics.pixel_aspect_ratio
+    aspect = state.console_state.pixel_aspect_ratio
     if util.skip_white_read_if(ins, (',',)):
         cval = expressions.parse_expression(ins, allow_empty=True)
         if cval:
@@ -1132,7 +1132,7 @@ def exec_paint(ins):
             if not pattern:
                 # empty pattern "" is illegal function call
                 raise error.RunError(5)
-            while len(pattern) % graphics.bitsperpixel != 0:
+            while len(pattern) % state.console_state.bitsperpixel != 0:
                  # finish off the pattern with zeros
                  pattern.append(0)
             # default for border, if pattern is specified as string: foreground attr
@@ -1817,7 +1817,7 @@ def exec_randomize(ins):
 
 def exec_cls(ins):
     if util.skip_white(ins) in util.end_statement:
-        val = 1 if graphics.graph_view_set else (2 if console.state.view_set else 0)
+        val = 1 if state.console_state.graph_view_set else (2 if console.state.view_set else 0)
     else:
         val = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.range_check(0, 2, val)
@@ -1951,7 +1951,7 @@ def exec_key_events(ins):
     d = util.skip_white(ins)
     # others are ignored
     if num >= 1 and num <= 20:
-        if events.key_handlers[num-1].command(d):
+        if state.basic_state.key_handlers[num-1].command(d):
             ins.read(1)
         else:    
             raise error.RunError(2)
@@ -1972,7 +1972,7 @@ def exec_key_define(ins):
            raise error.RunError(5)
         # can't redefine scancodes for keys 1-14
         if keynum >= 15 and keynum <= 20:    
-            events.event_keys[keynum-1] = str(text)
+            state.basic_state.event_keys[keynum-1] = str(text)
     
 def exec_locate(ins):
     row, col, cursor, start, stop, dummy = expressions.parse_int_list(ins, 6, 2, allow_last_empty=True)          

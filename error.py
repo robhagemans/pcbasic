@@ -136,7 +136,7 @@ class RunError(Error):
             state.basic_state.error_resume = state.basic_state.current_statement, state.basic_state.run_mode
             program.jump(state.basic_state.on_error)
             state.basic_state.error_handle_mode = True
-            events.suspend_all_events = True
+            state.basic_state.suspend_all_events = True
             return True
             
     def handle_break(self):
@@ -163,7 +163,7 @@ def resume(jumpnum):
     state.basic_state.errn = 0
     state.basic_state.error_handle_mode = False
     state.basic_state.error_resume = None
-    events.suspend_all_events = False    
+    state.basic_state.suspend_all_events = False    
     if jumpnum == 0: 
         # RESUME or RESUME 0 
         program.set_runmode(runmode, start_statement)

@@ -762,7 +762,7 @@ def insert_key(c):
             # only check F1-F10
             keynum = function_key[c]
             # can't be redefined in events - so must be event keys 1-10.
-            if state_module.basic_state.run_mode and events.key_handlers[keynum].enabled:
+            if state_module.basic_state.run_mode and state.basic_state.key_handlers[keynum].enabled:
                 state.keybuf += c
             else:
                 state.keybuf += state.key_replace[keynum]
