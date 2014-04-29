@@ -700,7 +700,7 @@ def exec_list(ins):
     if util.skip_white_read_if(ins, (',',)):
         out = iolayer.open_file_or_device(0, vartypes.pass_string_unpack(expressions.parse_expression(ins)), 'O')
     else:
-        out = console
+        out = state.io_state.devices['SCRN:']
     util.require(ins, util.end_statement)
     program.list_lines(out, from_line, to_line)    
 

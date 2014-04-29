@@ -636,7 +636,7 @@ def clear():
     if state.keys_visible:
         show_keys()
         
-##### i/o methods
+##### output methods
 
 def write(s, scroll_ok=True): 
     for echo in state.output_echos:
@@ -698,9 +698,6 @@ def set_width(to_width):
     if state.keys_visible:
         show_keys()
     return success
-
-def close():
-    pass
 
 #####################
 # key replacement
