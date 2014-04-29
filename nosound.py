@@ -9,8 +9,8 @@
 # please see text file COPYING for licence terms.
 #
 
-import oslayer
 import console
+import datetime
 
 music_foreground = True
 music_queue = []
@@ -33,12 +33,12 @@ def play_sound(frequency, duration, fill=1, loop=False):
     if music_queue:
         latest = max(music_queue)
     else:    
-        latest = oslayer.timer_milliseconds()
+        latest = datetime.datetime.now()
     wait_music(15)    
-    music_queue.append(latest + duration*1000)
+    music_queue.append(latest + datetime.timedelta(seconds=duration))
         
 def check_sound():
-    now = oslayer.timer_milliseconds()
+    now = datetime.datetime.now()
     while music_queue and now >= music_queue[0]:
         music_queue.pop(0)
     

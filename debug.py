@@ -14,7 +14,7 @@ import sys
 import traceback
 
 import logging
-import program
+import machine
 import state
 import vartypes
 import representation
@@ -93,7 +93,7 @@ def show_program():
     for key in sorted(state.basic_state.line_numbers.keys())[1:]:
         offset, linum = code[p+1:p+3], code[p+3:p+5]
         last_offset = offset_val
-        offset_val = vartypes.uint_to_value(bytearray(offset)) - program.program_memory_start
+        offset_val = vartypes.uint_to_value(bytearray(offset)) - machine.program_memory_start
         linum_val  = vartypes.uint_to_value(bytearray(linum))
         logging.debug(    (code[p:p+1].encode('hex') + ' ' +
                         offset.encode('hex') + ' (+%03d) ' +  

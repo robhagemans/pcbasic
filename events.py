@@ -64,7 +64,7 @@ def reset_events():
     state.basic_state.play_last, state.basic_state.play_trig = 0, 1 
     state.basic_state.play_handler = EventHandler()        
     # COM
-    com_handlers = [ EventHandler(), EventHandler() ]        
+    state.basic_state.com_handlers = [ EventHandler(), EventHandler() ]        
     # PEN
     state.basic_state.pen_handler = EventHandler()        
     # STRIG
@@ -74,7 +74,7 @@ def reset_events():
     # key events are not handled FIFO but first 11-20 in that order, then 1-10.
     state.basic_state.all_handlers += [state.basic_state.key_handlers[num] for num in (range(10, 20) + range(10))]
     state.basic_state.all_handlers += (
-                [state.basic_state.play_handler] + com_handlers + 
+                [state.basic_state.play_handler] + state.basic_state.com_handlers + 
                 [state.basic_state.pen_handler] + state.basic_state.strig_handlers )
     state.basic_state.suspend_all_events = False
     

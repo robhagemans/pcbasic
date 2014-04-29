@@ -9,8 +9,6 @@
 # please see text file COPYING for licence terms.
 #
 
-import datetime
-import os
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -31,6 +29,7 @@ import console
 # for FRE() only
 import program
 import state
+import machine
 
 # binary operator priority, lowest index is tightest bound 
 # operators of the same priority are evaluated left to right      
@@ -369,7 +368,7 @@ def value_asc(ins):
     
 def value_instr(ins):
     util.require_read(ins, ('(',))
-    big, small, have_big, n = '', '', False, 1
+    big, small, n = '', '', 1
     s = parse_expression(ins, empty_err=2)
     if s[0] != '$':
         n = vartypes.pass_int_unpack(s)
@@ -535,7 +534,7 @@ def value_lof(ins): # LOF
 # os functions
        
 def value_environ(ins):
-    require_read(ins, '$')
+    util.require_read(ins, ('$',))
     expr = parse_bracket(ins)
     if expr[0] == '$':
         return vartypes.pack_string(oslayer.get_env(vartypes.unpack_string(expr)))
@@ -661,7 +660,6 @@ def value_err(ins):
     
 #####################################################################
 # pen, stick and strig
-import events
 
 def value_pen(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
@@ -690,47 +688,28 @@ def value_fre(ins):
     val = parse_bracket(ins)
     if val[0] == '$':
         # grabge collection if a string-valued argument is specified.
-        var.collect_garbage()
-    return fp.pack(fp.Single.from_int(var.mem_free()))
+        machine.collect_garbage()
+    return fp.pack(fp.Single.from_int(machine.fre()))
 
 # read memory location 
 # currently, var memory, text&graphics memory and preset values only    
 def value_peek(ins):
     addr = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
-    if addr < 0: 
-        addr += 0x10000
-    addr += var.segment*0x10
-    try:
-        # try if there's a preset value
-        return vartypes.pack_int(var.peek_values[addr])
-    except KeyError: 
-        if addr >= graphics.video_segment[console.state.screen_mode]*0x10:
-            # graphics and text memory
-            return vartypes.pack_int(max(0, graphics.get_memory(addr)))
-        elif addr >= var.data_segment*0x10 + var.var_mem_start:
-            # variable memory
-            return vartypes.pack_int(max(0, var.get_memory(addr)))
-        else:    
-            return vartypes.null['%']
-
+    return vartypes.pack_int(machine.peek(addr))
+    
 # VARPTR, VARPTR$    
-def value_varptr(ins):    
-    if util.skip_white_read_if(ins, ('$',)):
-        util.require_read(ins, ('(',))
-        name, indices = get_var_or_array_name(ins)
-        util.require_read(ins, (')',))
-        var_ptr = var.get_var_ptr(name, indices)
-        if var_ptr < 0:
-            raise error.RunError(5) # ill fn cll
+def value_varptr(ins):   
+    dollar = util.skip_white_read_if(ins, ('$',)) 
+    util.require_read(ins, ('(',))
+    name, indices = get_var_or_array_name(ins)
+    util.require_read(ins, (')',))
+    var_ptr = machine.varptr(name, indices)
+    if var_ptr < 0:
+        raise error.RunError(5) # ill fn cll
+    if dollar:
         return vartypes.pack_string(bytearray(chr(var.byte_size[name[-1]])) + vartypes.value_to_uint(var_ptr))
     else:
         # TODO: strings, fields, file control blocks not yet implemented 
-        util.require_read(ins, ('(',))
-        name, indices = get_var_or_array_name(ins)
-        util.require_read(ins, (')',))
-        var_ptr = var.get_var_ptr(name, indices)
-        if var_ptr < 0:
-            raise error.RunError(5) # ill fn cll
         return vartypes.pack_int(var_ptr)
         
 def value_usr(ins):
@@ -740,12 +719,8 @@ def value_usr(ins):
     raise error.RunError(5)
     
 def value_inp(ins):
-    console.idle()
-    console.check_events()
     port = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
-    if port == 0x60:
-        return vartypes.pack_int(console.state.inp_key) 
-    return vartypes.null['%']
+    return vartypes.pack_int(machine.inp(port))
 
 #  erdev, erdev$        
 def value_erdev(ins):

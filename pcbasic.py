@@ -56,6 +56,7 @@ import sound_beep
 import graphics
 import console
 import tokenise
+import machine
 import program
 import unicodepage
 import debug
@@ -92,7 +93,7 @@ def main():
             # print greeting
             if not args.run and not args.cmd and not args.conv:
                 if stdin_is_tty:
-                    console.write_line(greeting % (debugstr, var.total_mem))
+                    console.write_line(greeting % (debugstr, machine.total_mem))
             # execute arguments
             if args.run or args.load or args.conv and (args.program or stdin):
                 program.load(oslayer.safe_open(args.program, "L", "R") if args.program else stdin)
