@@ -471,7 +471,7 @@ def value_input(ins):    # INPUT$
     util.require_read(ins, ('(',))
     num = vartypes.pass_int_unpack(parse_expression(ins))
     util.range_check(1, 255, num)
-    screen = console    
+    screen = state.io_state.devices['KYBD:']   
     if util.skip_white_read_if(ins, (',',)):
         screen = iolayer.get_file(parse_file_number_opthash(ins))
     util.require_read(ins, (')',))
