@@ -210,33 +210,33 @@ def prepare_console(args):
     unicodepage.load_codepage(state.console_state.codepage)
     if args.dumb or args.conv or (not args.graphical and not args.ansi and (not stdin_is_tty or not stdout_is_tty)):
         # redirected input or output leads to dumbterm use
-        console.backend = backend_dumb
-        console.sound = sound_beep
+        state.display = backend_dumb
+        state.sound = sound_beep
     elif args.ansi and stdout_is_tty:
-        console.backend = backend_ansi
-        console.sound = sound_beep
+        state.display = backend_ansi
+        state.sound = sound_beep
     else:   
-        console.backend = backend_pygame   
+        state.display = backend_pygame   
         graphics.backend = backend_pygame
         graphics.backend.prepare(args)
-        console.penstick = backend_pygame
-        console.sound = backend_pygame
+        state.penstick = backend_pygame
+        state.sound = backend_pygame
     # initialise backends 
     # on --resume, changes to state here get overwritten
     console.state.keys_visible = not args.run
     if not console.init() and backend_dumb:
         logging.warning('Falling back to dumb-terminal.')
-        console.backend = backend_dumb
-        console.sound = sound_beep        
-        if not console.backend or not console.init():
+        state.display = backend_dumb
+        state.sound = sound_beep        
+        if not state.display or not console.init():
             logging.critical('Failed to initialise console. Quitting.')
             sys.exit(0)
     # sound fallback        
     if args.nosound:
-        console.sound = nosound
-    if not console.sound.init_sound():
+        state.sound = nosound
+    if not state.sound.init_sound():
         logging.warning('Failed to initialise sound. Sound will be disabled.')
-        console.sound = nosound
+        state.sound = nosound
     # gwbasic-style redirected output is split between graphical screen and redirected file    
     if args.output:
         echo = partial(echo_ascii, f=oslayer.safe_open(args.output[0], "S", "W"))

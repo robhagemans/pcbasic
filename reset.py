@@ -15,7 +15,6 @@ import var
 import rnd
 import iolayer
 import state
-import console
 import on_event
 
 # CLEAR
@@ -36,11 +35,11 @@ def clear(close_files=False):
     state.basic_state.on_error = None
     state.basic_state.error_resume = None
     # stop all sound
-    console.sound.stop_all_sound()
+    state.sound.stop_all_sound()
     #   Resets sound to music foreground
-    console.sound.music_foreground = True
+    state.sound.music_foreground = True
     #   Resets STRIG to off
-    console.state.stick_is_on = False
+    state.console_state.stick_is_on = False
     # disable all event trapping (resets PEN to OFF too)
     on_event.reset_events()
     # CLEAR also dumps for_next and while_wend stacks

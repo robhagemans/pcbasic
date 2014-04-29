@@ -647,7 +647,7 @@ def value_pmap(ins):
 def value_play(ins):
     dummy = vartypes.pass_int_unpack(parse_bracket(ins))    
     util.range_check(0, 255, dummy)
-    return vartypes.pack_int(console.sound.music_queue_length())
+    return vartypes.pack_int(state.sound.music_queue_length())
     
 #####################################################################
 # error functions
@@ -664,7 +664,7 @@ def value_err(ins):
 def value_pen(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 9, fn)
-    pen = console.penstick.get_pen(fn)
+    pen = state.penstick.get_pen(fn)
     if pen == None or not state.basic_state.pen_handler.enabled:
         # should return 0 or char pos 1 if PEN not ON    
         pen = 1 if fn >= 6 else 0 
@@ -673,13 +673,13 @@ def value_pen(ins):
 def value_stick(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 3, fn)
-    return vartypes.pack_int(console.penstick.get_stick(fn))
+    return vartypes.pack_int(state.penstick.get_stick(fn))
     
 def value_strig(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     # 0,1 -> [0][0] 2,3 -> [0][1]  4,5-> [1][0]  6,7 -> [1][1]
     util.range_check(0, 7, fn)
-    return vartypes.bool_to_int_keep(console.penstick.get_strig(fn))
+    return vartypes.bool_to_int_keep(state.penstick.get_strig(fn))
     
 #########################################################
 # memory and machine

@@ -10,19 +10,18 @@
 #
 
 import on_event
-#import state # display, sound
-import console
+import state 
 
 #############################
 # core event handler    
 
 def check_events():
     # check console events
-    console.backend.check_events()   
+    state.display.check_events()   
     # check&handle user events
     on_event.check_events()
     # manage sound queue
-    console.sound.check_sound()
+    state.sound.check_sound()
 
 def idle():
-    console.backend.idle()
+    state.display.idle()
