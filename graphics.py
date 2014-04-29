@@ -19,12 +19,6 @@ import util
 
 backend = None
 
-# screen-mode dependent
-# screen width and height in pixels
-state.console_state.size = (0, 0)
-state.console_state.pixel_aspect_ratio = fp.Single.one
-state.console_state.bitsperpixel = 4
-
 # real state variables
 state.console_state.graph_view_set = False
 state.console_state.view_graph_absolute = True
@@ -39,23 +33,6 @@ def require_graphics_mode(err=5):
 
 def is_graphics_mode():
     return backend and state.console_state.screen_mode
-
-def init_graphics_mode(mode, new_font_height):
-    if mode==0:
-        return
-    state.console_state.size = (state.console_state.width*8, state.console_state.height*new_font_height)
-    # centre of new graphics screen
-    state.console_state.last_point = (state.console_state.width*4, state.console_state.height*new_font_height/2)
-    # pixels e.g. 80*8 x 25*14, screen ratio 4x3 makes for pixel width/height (4/3)*(25*14/8*80)
-    state.console_state.pixel_aspect_ratio = fp.div(
-        fp.Single.from_int(state.console_state.height*new_font_height), 
-        fp.Single.from_int(6*state.console_state.width)) 
-    if mode in (1, 10):
-        state.console_state.bitsperpixel = 2
-    elif mode == 2:
-        state.console_state.bitsperpixel = 1
-    else:
-        state.console_state.bitsperpixel = 4
 
 # reset graphics state    
 def reset_graphics():
