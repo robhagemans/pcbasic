@@ -23,7 +23,7 @@ import oslayer
 import util
 import error
 import var
-import io
+import iolayer
 import graphics
 import console
 # for FRE() only
@@ -269,7 +269,7 @@ def parse_file_number(ins, file_mode='IOAR'):
     if util.skip_white_read_if(ins, ('#',)):
         number = vartypes.pass_int_unpack(parse_expression(ins))
         util.range_check(0, 255, number)
-        screen = io.get_file(number, file_mode)
+        screen = iolayer.get_file(number, file_mode)
         util.require_read(ins, (',',))
     return screen        
 
@@ -473,7 +473,7 @@ def value_input(ins):    # INPUT$
     util.range_check(1, 255, num)
     screen = console    
     if util.skip_white_read_if(ins, (',',)):
-        screen = io.get_file(parse_file_number_opthash(ins))
+        screen = iolayer.get_file(parse_file_number_opthash(ins))
     util.require_read(ins, (')',))
     word = bytearray()
     for char in screen.read_chars(num):
@@ -510,7 +510,7 @@ def value_loc(ins): # LOC
     util.skip_white(ins)
     num = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
     util.range_check(0, 255, num)
-    the_file = io.get_file(num)
+    the_file = iolayer.get_file(num)
     return vartypes.pack_int(the_file.loc())
 
 def value_eof(ins): # EOF
@@ -519,14 +519,14 @@ def value_eof(ins): # EOF
     if num == 0:
         return vartypes.null['%']
     util.range_check(0, 255, num)
-    the_file = io.get_file(num, 'IR')
+    the_file = iolayer.get_file(num, 'IR')
     return vartypes.bool_to_int_keep(the_file.eof())
   
 def value_lof(ins): # LOF
     util.skip_white(ins)
     num = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
     util.range_check(0, 255, num)
-    the_file = io.get_file(num)
+    the_file = iolayer.get_file(num)
     return vartypes.pack_int(the_file.lof() )
     
 
@@ -741,7 +741,7 @@ def value_ioctl(ins):
     util.require_read(ins, ('(',))
     num = parse_file_number_opthash(ins)
     util.require_read(ins, (')',))
-    io.get_file(num)
+    iolayer.get_file(num)
     raise error.RunError(5)   
     
 ###########################################################

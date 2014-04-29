@@ -20,7 +20,7 @@ import util
 import console
 # for clear()
 import rnd
-import io
+import iolayer
 import fp 
 import state
 
@@ -96,7 +96,7 @@ def clear_all(close_files=False):
     rnd.clear()
     if close_files:
         # close all files
-        io.close_all()
+        iolayer.close_all()
     # release all disk buffers (FIELD)?
     state.io_state.fields = {}
     # clear ERR and ERL

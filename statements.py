@@ -26,7 +26,7 @@ import error
 import expressions
 import fp
 import graphics
-import io
+import iolayer
 import machine
 import oslayer
 import program
@@ -509,7 +509,7 @@ def exec_bload(ins):
         if offset < 0:
             offset += 0x10000           
     util.require(ins, util.end_statement)
-    machine.bload(io.open_file_or_device(0, name, mode='L', defext=''), offset)
+    machine.bload(iolayer.open_file_or_device(0, name, mode='L', defext=''), offset)
     
 # bsave: video memory only
 def exec_bsave(ins):
@@ -524,7 +524,7 @@ def exec_bsave(ins):
     if length < 0:
         length += 0x10000         
     util.require(ins, util.end_statement)
-    machine.bsave(io.open_file_or_device(0, name, mode='S', defext=''), offset, length)
+    machine.bsave(iolayer.open_file_or_device(0, name, mode='S', defext=''), offset, length)
 
 # call, calls: not implemented        
 def exec_call(ins):
@@ -584,7 +584,7 @@ def exec_rmdir(ins):
 def exec_name(ins):
     oldname = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # don't rename open files
-    io.check_file_not_open(oldname)
+    iolayer.check_file_not_open(oldname)
     # AS is not a tokenised word
     word = util.skip_white_read(ins) + ins.read(1)
     if word.upper() != 'AS':
@@ -596,7 +596,7 @@ def exec_name(ins):
 def exec_kill(ins):
     name = oslayer.dospath_read(str(vartypes.pass_string_unpack(expressions.parse_expression(ins))), '', 53)
     # don't delete open files
-    io.check_file_not_open(name)
+    iolayer.check_file_not_open(name)
     oslayer.safe(os.remove, name)
     util.require(ins, util.end_statement)
 
@@ -698,7 +698,7 @@ def exec_auto(ins):
 def exec_list(ins):
     from_line, to_line = parse_line_range(ins)
     if util.skip_white_read_if(ins, (',',)):
-        out = io.open_file_or_device(0, vartypes.pass_string_unpack(expressions.parse_expression(ins)), 'O')
+        out = iolayer.open_file_or_device(0, vartypes.pass_string_unpack(expressions.parse_expression(ins)), 'O')
     else:
         out = console
     util.require(ins, util.end_statement)
@@ -716,12 +716,12 @@ def exec_load(ins):
     if comma:
         util.require_read(ins, 'R')
     util.require(ins, util.end_statement)
-    program.load(io.open_file_or_device(0, name, mode='L', defext='BAS'))
+    program.load(iolayer.open_file_or_device(0, name, mode='L', defext='BAS'))
     if comma:
         # in ,R mode, don't close files; run the program
         program.jump(None)
     else:
-        io.close_all()
+        iolayer.close_all()
     state.basic_state.tron = False    
         
 def exec_chain(ins):
@@ -742,7 +742,7 @@ def exec_chain(ins):
             if util.skip_white_read_if(ins, (',',)) and util.skip_white_read_if(ins, ('\xa9',)):
                 delete_lines = parse_line_range(ins) # , DELETE
     util.require(ins, util.end_statement)
-    program.chain(action, io.open_file_or_device(0, name, mode='L', defext='BAS'), jumpnum, common_all, delete_lines)
+    program.chain(action, iolayer.open_file_or_device(0, name, mode='L', defext='BAS'), jumpnum, common_all, delete_lines)
 
 def exec_save(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
@@ -751,13 +751,13 @@ def exec_save(ins):
         mode = util.skip_white_read(ins).upper()
         if mode not in ('A', 'P'):
             raise error.RunError(2)
-    program.save(io.open_file_or_device(0, name, mode='S', defext='BAS'), mode)
+    program.save(iolayer.open_file_or_device(0, name, mode='S', defext='BAS'), mode)
     util.require(ins, util.end_statement)
     
 def exec_merge(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
-    program.merge(io.open_file_or_device(0, name, mode='L', defext='BAS') )
+    program.merge(iolayer.open_file_or_device(0, name, mode='L', defext='BAS') )
     util.require(ins, util.end_statement)
     
 def exec_new(ins):
@@ -784,7 +784,7 @@ def exec_renum(ins):
 
 # close all files
 def exec_reset(ins):
-    io.close_all()
+    iolayer.close_all()
     util.require(ins, util.end_statement)
 
 def parse_read_write(ins):
@@ -862,7 +862,7 @@ def exec_open(ins):
     elif mode != 'R' and access and access != default_access_modes[mode]:
         raise error.RunError(2)        
     util.range_check(1, 128, reclen)        
-    io.open_file_or_device(number, name, mode, access, lock, reclen) 
+    iolayer.open_file_or_device(number, name, mode, access, lock, reclen) 
     util.require(ins, util.end_statement)
                 
 def exec_close(ins):
@@ -880,7 +880,7 @@ def exec_close(ins):
     util.require(ins, util.end_statement)
             
 def exec_field(ins):
-    the_file = io.get_file(expressions.parse_file_number_opthash(ins), 'R')
+    the_file = iolayer.get_file(expressions.parse_file_number_opthash(ins), 'R')
     if util.skip_white_read_if(ins, (',',)):
         field = the_file.field 
         offset = 0    
@@ -896,13 +896,13 @@ def exec_field(ins):
     util.require(ins, util.end_statement)
 
 def parse_get_or_put_file(ins):
-    the_file = io.get_file(expressions.parse_file_number_opthash(ins), 'R')
+    the_file = iolayer.get_file(expressions.parse_file_number_opthash(ins), 'R')
     # for COM files
     num_bytes = the_file.reclen
     if util.skip_white_read_if(ins, (',',)):
         pos = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
         util.range_check_err(1, 2**25, pos, err=63) # not 2^32-1 as the manual boasts! pos-1 needs to fit in a single-prec mantissa
-        if not isinstance(the_file, io.COMFile):
+        if not isinstance(the_file, iolayer.COMFile):
             the_file.set_pos(pos)    
         else:
             num_bytes = pos    
@@ -919,7 +919,7 @@ def exec_get_file(ins):
     util.require(ins, util.end_statement)
     
 def exec_lock_or_unlock(ins, action):
-    thefile = io.get_file(expressions.parse_file_number_opthash(ins))
+    thefile = iolayer.get_file(expressions.parse_file_number_opthash(ins))
     lock_start_rec = 1
     if util.skip_white_read_if(ins, (',',)):
         lock_start_rec = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
@@ -931,12 +931,12 @@ def exec_lock_or_unlock(ins, action):
     action(thefile.number, lock_start_rec, lock_stop_rec)
     util.require(ins, util.end_statement)
 
-exec_lock = partial(exec_lock_or_unlock, action = io.lock_records)
-exec_unlock = partial(exec_lock_or_unlock, action = io.unlock_records)
+exec_lock = partial(exec_lock_or_unlock, action = iolayer.lock_records)
+exec_unlock = partial(exec_lock_or_unlock, action = iolayer.unlock_records)
     
 # ioctl: not implemented
 def exec_ioctl(ins):
-    io.get_file(expressions.parse_file_number_opthash(ins))
+    iolayer.get_file(expressions.parse_file_number_opthash(ins))
     raise error.RunError(5)   
     
 ##########################################################
@@ -1157,7 +1157,7 @@ def exec_end(ins):
     # avoid NO RESUME
     state.basic_state.error_handle_mode = False
     state.basic_state.error_resume = None
-    io.close_all()
+    iolayer.close_all()
     
 def exec_stop(ins):
     util.require(ins, util.end_statement)
@@ -1274,7 +1274,7 @@ def exec_run(ins):
     elif c not in util.end_statement:
         name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_statement)
-        program.load(io.open_file_or_device(0, name, mode='L', defext='BAS'))
+        program.load(iolayer.open_file_or_device(0, name, mode='L', defext='BAS'))
     program.init_program()
     program.clear_all(close_files=not comma)
     program.jump(jumpnum)
@@ -1682,7 +1682,7 @@ def exec_input(ins):
             console.write(prompt) 
             line = console.wait_screenline(write_endl=newline)
             varlist = [ v[:] for v in readvar ]
-            varlist = representation.input_vars(varlist, io.BaseFile(StringIO(line), mode='I'))
+            varlist = representation.input_vars(varlist, iolayer.BaseFile(StringIO(line), mode='I'))
             if not varlist:
                 console.write_line('?Redo from start')  # ... good old Redo!
             else:
