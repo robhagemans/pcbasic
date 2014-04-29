@@ -78,12 +78,6 @@ def set_runmode(new_runmode=True, pos=None):
         # jump to position, if given
         current_codestream.seek(pos)    
 
-# NEW    
-def new():
-    erase_program()    
-    # reset all stacks   
-    reset.clear()
-    
 # RESTORE
 def restore(datanum=-1):
     try:
@@ -92,6 +86,11 @@ def restore(datanum=-1):
         raise error.RunError(8)
 
 erase_program()
+
+# NEW    
+def new():
+    erase_program()    
+    reset.clear()
 
 def truncate_program(rest=''):
     state.basic_state.bytecode.write(rest if rest else '\0\0\0')
@@ -200,7 +199,7 @@ def store_line(linebuf):
     # clear all program stacks
     init_program()
     # clear variables (storing a line does that)
-    reset.clear_all()
+    reset.clear()
     state.basic_state.last_stored = scanline
 
 def find_pos_line_dict(fromline, toline):
@@ -232,7 +231,7 @@ def delete(fromline, toline):
     # clear all program stacks
     init_program()
     # clear variables (storing a line does that)
-    reset.clear_all()
+    reset.clear()
 
 def edit(from_line, bytepos=None):
     if state.basic_state.protected:
@@ -330,7 +329,7 @@ def load(g):
     # rebuild line number dict and offsets
     rebuild_line_dict()
     # clear all variables
-    reset.clear_all()
+    reset.clear()
 
     
 def merge(g):

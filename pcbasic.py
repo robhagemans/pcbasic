@@ -52,6 +52,7 @@ import var
 import expressions
 import oslayer
 import nosound
+import nopenstick
 import sound_beep
 import graphics
 import console
@@ -77,7 +78,7 @@ def main():
     prepare_constants(args)
     try:
         # initialise program memory
-        program.new()
+#        program.new()
         if args.resume or plat.system == 'Android':
             # resume from saved emulator state
             args.resume = state.load()
@@ -208,27 +209,28 @@ def prepare_constants(args):
 
 def prepare_console(args):
     unicodepage.load_codepage(state.console_state.codepage)
+    state.penstick = nopenstick
+    state.sound = nosound
     if args.dumb or args.conv or (not args.graphical and not args.ansi and (not stdin_is_tty or not stdout_is_tty)):
         # redirected input or output leads to dumbterm use
-        state.display = backend_dumb
+        state.video = backend_dumb
         state.sound = sound_beep
     elif args.ansi and stdout_is_tty:
-        state.display = backend_ansi
+        state.video = backend_ansi
         state.sound = sound_beep
     else:   
-        state.display = backend_pygame   
-        graphics.backend = backend_pygame
-        graphics.backend.prepare(args)
+        state.video = backend_pygame   
         state.penstick = backend_pygame
         state.sound = backend_pygame
+        backend_pygame.prepare(args)
     # initialise backends 
     # on --resume, changes to state here get overwritten
     console.state.keys_visible = not args.run
     if not console.init() and backend_dumb:
         logging.warning('Falling back to dumb-terminal.')
-        state.display = backend_dumb
+        state.video = backend_dumb
         state.sound = sound_beep        
-        if not state.display or not console.init():
+        if not state.video or not console.init():
             logging.critical('Failed to initialise console. Quitting.')
             sys.exit(0)
     # sound fallback        
