@@ -374,7 +374,7 @@ def pass_dosnames(path, files, mask='*.*'):
         dosfiles.append(trunk + ext)
     return dosfiles
 
-def files(pathmask, console):
+def files(pathmask):
     drive, path, mask = get_drive_path(str(pathmask), 53)
     mask = mask.upper()
     if mask == '':
