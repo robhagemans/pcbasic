@@ -9,26 +9,13 @@
 # please see text file COPYING for licence terms.
 #
 
-from operator import itemgetter
-
 import error
 import vartypes
-import program
 from string_ptr import StringPtr
 import state
+import machine
 
-# 'free memory' as reported by FRE
-total_mem = 60300    
-byte_size = {'$':3, '%':2, '!':4, '#':8}
-# memory model: data segment
-data_segment = 0x13ad
-# memory model: current segment
-segment = data_segment
-# memory model: start of variables section
-var_mem_start = 4720
-# memory model: pre-defined PEEK outputs
-peek_values = {}
-
+byte_size = {'$': 3, '%': 2, '!': 4, '#': 8}
 
 def clear_variables():
     # this is a re-assignment which is not FOR-safe; but clear_variables is only called in CLEAR which also clears the FOR stack
@@ -41,8 +28,8 @@ def clear_variables():
     state.basic_state.common_names = []
     state.basic_state.common_array_names = []
     # memory model
-    state.basic_state.var_current = var_mem_start
-    state.basic_state.string_current = state.basic_state.var_current + total_mem # 65020
+    state.basic_state.var_current = machine.var_mem_start
+    state.basic_state.string_current = state.basic_state.var_current + machine.total_mem # 65020
     state.basic_state.var_memory = {}
     # arrays are always kept after all vars
     state.basic_state.array_current = 0
@@ -70,13 +57,13 @@ def set_var(name, value):
             state.basic_state.variables[name] = vartypes.pass_type_keep(name[-1], value)[1][:]
     # update memory model
     # check if grabge needs collecting (before allocating mem)
-    free = mem_free() - (max(3, len(name)) + 1 + byte_size[name[-1]]) 
+    free = machine.fre() - (max(3, len(name)) + 1 + byte_size[name[-1]]) 
     if name[-1] == '$':
         free -= len(unpacked)
     if free <= 0:
         # TODO: GARBTEST difference is because string literal is currently stored in string space, whereas GW stores it in code space.
-        collect_garbage()
-        if mem_free() <= 0:
+        machine.collect_garbage()
+        if machine.fre() <= 0:
             # out of memory
             del state.basic_state.variables[name]
             try:
@@ -191,7 +178,7 @@ def var_size_bytes(name):
 
 def array_size_bytes(name):
     try:
-        [dimensions, lst, _] = state.basic_state.arrays[name]
+        dimensions, _, _ = state.basic_state.arrays[name]
     except KeyError:
         return 0
     size = array_len(dimensions)
@@ -284,8 +271,8 @@ def set_array(name, index, value):
     # make a copy of the value, we con't want them to be linked
     value = (vartypes.pass_type_keep(name[-1], value)[1])[:]
     if name[-1] == '$':
-       lst[bigindex] = value
-       return 
+        lst[bigindex] = value
+        return 
     bytesize = var_size_bytes(name)
     lst[bigindex*bytesize:(bigindex+1)*bytesize] = value
     # inc version
@@ -340,157 +327,3 @@ def assign_field_var(varname, value, justify_right=False):
             s += ' '*(el-len(s))
     state.basic_state.variables[varname][:] = s    
 
-###########################################################
-
-# memory model
-
-def get_var_ptr(name, indices):
-    name = vartypes.complete_name(name)
-    if indices == []:
-        try:
-            name_ptr, var_ptr, str_ptr = state.basic_state.var_memory[name]
-            return var_ptr
-        except KeyError:
-            return -1
-    else:
-        try:
-            [dimensions, lst, _] = state.basic_state.arrays[name]
-            name_ptr, array_ptr = state.basic_state.array_memory[name]
-            # arrays are kept at the end of the var list
-            return state.basic_state.var_current + array_ptr + var_size_bytes(name) * index_array(indices, dimensions) 
-        except KeyError:
-            return -1
-
-def get_name_in_memory(name, offset):
-    if offset == 0:
-        return byte_size[name[-1]]
-    elif offset == 1:
-        return ord(name[0].upper())
-    elif offset == 2:
-        if len(name) > 2:
-            return ord(name[1].upper())
-        else:
-            return 0                    
-    elif offset == 3:
-        if len(name) > 3:
-            return len(name)-3        
-        else:
-            return 0
-    else:
-        # rest of name is encoded such that c1 == 'A'
-        return ord(name[offset-1].upper()) - ord('A') + 0xC1
-                            
-def get_memory(address):
-    address -= segment*0x10
-    if address < state.basic_state.var_current:
-        # find the variable we're in
-        name_addr = -1
-        var_addr = -1
-        str_addr = -1
-        the_var = None 
-        for name in state.basic_state.var_memory:
-            name_ptr, var_ptr, str_ptr = state.basic_state.var_memory[name]
-            if name_ptr <= address and name_ptr > name_addr:
-                name_addr, var_addr, str_addr = name_ptr, var_ptr, str_ptr
-                the_var = name
-        if the_var == None:
-            return -1        
-        if address >= var_addr:
-            offset = address - var_addr
-            if offset >= byte_size[name[-1]]:
-                return -1
-            if name[-1] == '$':
-                # string is represented as 3 bytes: length + uint pointer
-                var_rep = bytearray(chr(len(state.basic_state.variables[name]))) + vartypes.value_to_uint(str_addr)
-            else:
-                var_rep = state.basic_state.variables[name]
-            return var_rep[offset]
-        else:
-            offset = address - name_ptr
-            return get_name_in_memory(name, offset)
-    elif address < state.basic_state.var_current + state.basic_state.array_current:
-        name_addr = -1
-        arr_addr = -1
-        the_arr = None 
-        for name in state.basic_state.array_memory:
-            name_ptr, arr_ptr = state.basic_state.array_memory[name]
-            if name_ptr <= address and name_ptr > name_addr:
-                name_addr, arr_addr = name_ptr, arr_ptr
-                the_arr = name
-        if the_arr == None:
-            return -1        
-        if address >= state.basic_state.var_current + arr_addr:
-            offset = address - arr_addr - state.basic_state.var_current
-            if offset >= array_size_bytes(name):
-                return -1
-            if name[-1] == '$':
-                # TODO: not implemented for arrays of strings
-                return 0
-            return get_bytearray(name)[offset]
-        else:
-            offset = address - name_ptr - state.basic_state.var_current
-            if offset < max(3, len(name))+1:
-                return get_name_in_memory(name, offset)
-            else:
-                offset -= max(3, len(name))+1
-                [dimensions, lst, _] = state.basic_state.arrays[name]
-                data_rep = vartypes.value_to_uint(array_size_bytes(name) + 1 + 2*len(dimensions)) + chr(len(dimensions)) 
-                for d in dimensions:
-                    data_rep += vartypes.value_to_uint(d + 1 - state.basic_state.array_base)
-                return data_rep[offset]               
-    elif address > state.basic_state.string_current:
-        # string space
-        # find the variable we're in
-        name_addr = -1
-        var_addr = -1
-        str_addr = -1
-        the_var = None 
-        for name in state.basic_state.var_memory:
-            name_ptr, var_ptr, str_ptr = state.basic_state.var_memory[name]
-            if str_ptr <= address and str_ptr > str_addr:
-                name_addr, var_addr, str_addr = name_ptr, var_ptr, str_ptr
-                the_var = name
-        if the_var == None:
-            return -1
-        offset = address - str_addr
-        return state.basic_state.variables[name][offset]
-    else:
-        # unallocated var space
-        return 0 
-        
-# for reporting by FRE()        
-def mem_free():
-    return state.basic_state.string_current - var_mem_start - program.memory_size() - variables_memory_size()
-    
-def variables_memory_size():
-#   TODO: memory model, does this work: ?
-#    return state.basic_state.var_current + state.basic_state.array_current + (state.basic_state.var_current + total_mem - state.basic_state.string_current)
-    mem_used = 0
-    for name in state.basic_state.variables:
-        mem_used += 1 + max(3, len(name))
-        # string length incorporated through use of state.basic_state.string_current
-        mem_used += var_size_bytes(name)
-    for name in state.basic_state.arrays:
-        mem_used += 4 + array_size_bytes(name) + max(3, len(name))
-        dimensions, lst, _ = state.basic_state.arrays[name]
-        mem_used += 2*len(dimensions)    
-        if name[-1] == '$':
-            for mem in lst:
-                mem_used += len(mem)
-    return mem_used
-
-def collect_garbage():
-    string_list = []
-    for name in state.basic_state.var_memory:
-        if name[-1] == '$':
-            mem = state.basic_state.var_memory[name]
-            string_list.append( (name, mem[0], mem[1], mem[2], len(state.basic_state.variables[name])) )
-    # sort by str_ptr, largest first        
-    string_list.sort(key=itemgetter(3), reverse=True)        
-    new_state.basic_state.string_current = var_mem_start + total_mem              
-    for item in string_list:
-        new_state.basic_state.string_current -= item[4]
-        state.basic_state.var_memory[item[0]] = (item[1], item[2], new_state.basic_state.string_current + 1)     
-    state.basic_state.string_current = new_state.basic_state.string_current
-     
-     

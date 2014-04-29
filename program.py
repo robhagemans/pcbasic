@@ -14,6 +14,7 @@ import vartypes
 import var
 import events
 import tokenise
+import machine
 import protect
 import util
 import console
@@ -38,8 +39,6 @@ state.basic_state.run_mode = False
 # line number tracing
 state.basic_state.tron = False
 
-# memory model; offsets in files
-program_memory_start = 0x126e
 # don't list or save,a beyond this line
 max_list_line = 65530
 # don't protect files
@@ -129,10 +128,7 @@ def truncate_program(rest=''):
     state.basic_state.bytecode.write(rest if rest else '\0\0\0')
     # cut off at current position    
     state.basic_state.bytecode.truncate()    
-          
-def memory_size():
-    return len(state.basic_state.bytecode.getvalue()) - 4
-    
+      
 # get line number for stream position
 def get_line_number(pos):
     pre = -1
@@ -165,7 +161,7 @@ def rebuild_line_dict():
     last = 0
     for pos in offsets:
         state.basic_state.bytecode.read(1)
-        state.basic_state.bytecode.write(str(vartypes.value_to_uint(program_memory_start + pos)))
+        state.basic_state.bytecode.write(str(vartypes.value_to_uint(machine.program_memory_start + pos)))
         state.basic_state.bytecode.read(pos - last - 3)
         last = pos
     # ensure program is properly sealed - last offset must be 00 00. keep, but ignore, anything after.
@@ -174,7 +170,7 @@ def rebuild_line_dict():
 def update_line_dict(pos, afterpos, length, deleteable, beyond):
     # subtract length of line we replaced
     length -= afterpos - pos
-    addr = program_memory_start + afterpos
+    addr = machine.program_memory_start + afterpos
     state.basic_state.bytecode.seek(afterpos + length + 1)  # pass \x00
     while True:
         next_addr = bytearray(state.basic_state.bytecode.read(2))
@@ -225,7 +221,7 @@ def store_line(linebuf):
         # set offsets
         linebuf.seek(3) # pass \x00\xC0\xDE 
         length = len(linebuf.getvalue())
-        state.basic_state.bytecode.write( '\0' + str(vartypes.value_to_uint(program_memory_start + pos + length)) + linebuf.read())
+        state.basic_state.bytecode.write( '\0' + str(vartypes.value_to_uint(machine.program_memory_start + pos + length)) + linebuf.read())
     # write back the remainder of the program
     truncate_program(rest)
     # update all next offsets by shifting them by the length of the added line

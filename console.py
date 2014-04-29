@@ -143,9 +143,6 @@ keys_line_replace_chars = {
         '\x1D': '\x11',    '\x1E': '\x18',    '\x1F': '\x19',
     }        
 
-# memory model: text mode video memory
-text_segment = 0xb800
-
 #############################
 # core event handler    
 
@@ -912,32 +909,6 @@ def scroll_down(from_line):
     # sync buffers with the new screen reality:
     state.apage.row.insert(from_line-1, ScreenRow(state.width))
     del state.apage.row[state.scroll_height-1] 
-
-#################################################################################
-
-def get_memory(addr):
-    addr -= text_segment*0x10
-    page, offset = addr//((state.width*state.height*2 + 96)*4), addr%((state.width*state.height*2 + 96)*4)
-    ccol, crow = (offset%(state.width*2))//2, offset//(state.width*2)
-    try:
-        c = state.pages[page].row[crow].buf[ccol][addr%2]  
-        return c if addr%2==1 else ord(c)
-    except IndexError:
-        return -1    
-    
-def set_memory(addr, val):
-    addr -= text_segment*0x10
-    page, offset = addr//((state.width*state.height*2 + 96)*4), addr%((state.width*state.height*2 + 96)*4)
-    ccol, crow = (offset%(state.width*2))//2, offset//(state.width*2)
-    try:
-        c, a = state.pages[page].row[crow].buf[ccol]
-        if addr%2==0:
-            c = chr(val)
-        else:
-            a = val
-        put_screen_char_attr(state.pages[page], crow+1, ccol+1, c, a)
-    except IndexError:
-        pass
 
 ################################################
 

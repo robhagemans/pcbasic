@@ -23,11 +23,11 @@ import console
 import debug
 import draw_and_play
 import error
-import events
 import expressions
 import fp
 import graphics
 import io
+import machine
 import oslayer
 import program
 import representation
@@ -233,7 +233,7 @@ def exec_debug(ins):
     # this is not a GW-BASIC behaviour, but helps debugging.
     # this is parsed like a REM by the tokeniser.
     # rest of the line is considered to be a python statement
-    d = util.skip_white(ins)
+    util.skip_white(ins)
     debug_cmd = ''
     while util.peek(ins) not in util.end_line:
         debug_cmd += ins.read(1)
@@ -477,26 +477,18 @@ def exec_poke(ins):
     util.require_read(ins, (',',))
     val = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.range_check(0, 255, val)
-    if addr < 0: 
-        addr += 0x10000
-    addr += var.segment*0x10
-    if addr >= graphics.video_segment[console.state.screen_mode]*0x10:
-        # graphics and text memory
-        graphics.set_memory(addr, val)
-#    elif addr >= var.data_segment*0x10 + var.var_mem_start:
-#        # variable memory
-#        vartypes.set_memory(addr)
+    machine.poke(addr, val)
     util.require(ins, util.end_statement)
     
 # DEF SEG    
 def exec_def_seg(ins):
     # &hb800: text screen buffer; &h13d: data segment
     if util.skip_white_read_if(ins, ('\xE7',)): #=
-        var.segment = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=0xffff)
+        machine.segment = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=0xffff)
     else:
-        var.segment = var.data_segment   
-    if var.segment < 0:
-        var.segment += 0x10000     
+        machine.segment = machine.data_segment   
+    if machine.segment < 0:
+        machine.segment += 0x10000     
     util.require(ins, util.end_statement)
 
 # do-nothing DEF USR    
@@ -517,27 +509,8 @@ def exec_bload(ins):
         if offset < 0:
             offset += 0x10000           
     util.require(ins, util.end_statement)
-    g = io.open_file_or_device(0, name, mode='L', defext='')
-    if g.read(1) != '\xfd':
-        raise error.RunError(54)
-    seg = vartypes.uint_to_value(bytearray(g.read(2)))
-    foffset = vartypes.uint_to_value(bytearray(g.read(2)))
-    if offset == None:
-        offset = foffset
-    # this gets ignored; even the \x1a at the end gets dumped onto the screen.
-    size = vartypes.uint_to_value(bytearray(g.read(2))) 
-    buf = bytearray()
-    while True:
-        c = g.read(1)
-        if c == '':
-            break
-        buf += c    
-    g.close()
-    addr = seg * 0x10 + offset
-    if addr + len(buf) > graphics.video_segment[console.state.screen_mode]*0x10:
-        # graphics and text memory
-        graphics.set_memory_block(addr, buf)
-
+    machine.bload(io.open_file_or_device(0, name, mode='L', defext=''), offset)
+    
 # bsave: video memory only
 def exec_bsave(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
@@ -551,16 +524,8 @@ def exec_bsave(ins):
     if length < 0:
         length += 0x10000         
     util.require(ins, util.end_statement)
-    g = io.open_file_or_device(0, name, mode='S', defext='')
-    g.write('\xfd')
-    g.write(str(vartypes.value_to_uint(var.segment)))
-    g.write(str(vartypes.value_to_uint(offset)))
-    g.write(str(vartypes.value_to_uint(length)))
-    addr = var.segment * 0x10 + offset
-    g.write(str(graphics.get_memory_block(addr, length)))
-    g.write('\x1a')
-    g.close()
-        
+    machine.bsave(io.open_file_or_device(0, name, mode='S', defext=''), offset, length)
+
 # call, calls: not implemented        
 def exec_call(ins):
     addr_var = util.get_var_name(ins)
@@ -585,12 +550,7 @@ def exec_out(ins):
     util.require_read(ins, (',',))
     val = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.range_check(0, 255, val)
-    if addr == 0x3c5:
-        # officially, requires OUT &H3C4, 2 first (not implemented)
-        state.console_state.colour_plane_write_mask = val
-    elif addr == 0x3cf:
-        # officially, requires OUT &H3CE, 4 first (not implemented)
-        state.console_state.colour_plane = val        
+    machine.out(addr, val)
     util.require(ins, util.end_statement)
 
 # only implemented port &h60 (keyboard read)
@@ -604,12 +564,7 @@ def exec_wait(ins):
         xorer = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.range_check(0, 255, xorer)
     util.require(ins, util.end_statement)
-    store_suspend = state.basic_state.suspend_all_events
-    state.basic_state.suspend_all_events = True
-    while (((console.state.inp_key if addr == 0x60 else 0) ^ xorer) & ander) == 0:
-        console.idle()
-        console.check_events()
-    state.basic_state.suspend_all_events = store_suspend     
+    machine.wait(addr, ander, xorer)
 
 ##########################################################
 # OS
@@ -670,9 +625,9 @@ def exec_environ(ins):
     eqs = envstr.find('=')
     if eqs <= 0:
         raise error.RunError(5)
-    var = str(envstr[:eqs])
+    envvar = str(envstr[:eqs])
     val = str(envstr[eqs+1:])
-    os.environ[var] = val
+    os.environ[envvar] = val
     util.require(ins, util.end_statement)
        
 def exec_time(ins):
@@ -883,11 +838,11 @@ def exec_open(ins):
             raise error.RunError(54)        
         # ACCESS clause
         if util.skip_white_read_if(ins, ('ACCESS',)):
-            d = util.skip_white(ins)
+            util.skip_white(ins)
             access = parse_read_write(ins)
         # LOCK clause
         if util.skip_white_read_if(ins, ('\xFE\xA7',)): # LOCK
-            d = util.skip_white(ins)
+            util.skip_white(ins)
             lock = parse_read_write(ins)
         elif util.skip_white_read_if(ins, ('SHARED',)):
             lock = 'S'  
@@ -903,7 +858,7 @@ def exec_open(ins):
     # If FOR APPEND ACCESS WRITE is specified, raises PATH/FILE ACCESS ERROR
     # If FOR and ACCESS mismatch in other ways, raises SYNTAX ERROR.
     if mode == 'A' and access == 'W':
-            raise error.RunError(75)
+        raise error.RunError(75)
     elif mode != 'R' and access and access != default_access_modes[mode]:
         raise error.RunError(2)        
     util.range_check(1, 128, reclen)        
@@ -945,7 +900,7 @@ def parse_get_or_put_file(ins):
     # for COM files
     num_bytes = the_file.reclen
     if util.skip_white_read_if(ins, (',',)):
-        pos = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)).round_to_int())
+        pos = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
         util.range_check_err(1, 2**25, pos, err=63) # not 2^32-1 as the manual boasts! pos-1 needs to fit in a single-prec mantissa
         if not isinstance(the_file, io.COMFile):
             the_file.set_pos(pos)    
@@ -1133,8 +1088,8 @@ def exec_paint(ins):
                 # empty pattern "" is illegal function call
                 raise error.RunError(5)
             while len(pattern) % state.console_state.bitsperpixel != 0:
-                 # finish off the pattern with zeros
-                 pattern.append(0)
+                # finish off the pattern with zeros
+                pattern.append(0)
             # default for border, if pattern is specified as string: foreground attr
         else:
             c = vartypes.pass_int_unpack(cval)
@@ -1458,7 +1413,7 @@ def exec_resume(ins):
     else:
         jumpnum = 0    
     util.require(ins, util.end_statement)
-    error.resume(jumpnum)
+    program.resume(jumpnum)
 
 def exec_error(ins):
     errn = vartypes.pass_int_unpack(expressions.parse_expression(ins))
@@ -1929,10 +1884,10 @@ def exec_key(ins):
     d = util.skip_white_read(ins)
     if d == '\x95': # ON
         if not console.state.keys_visible:
-           console.show_keys()
+            console.show_keys()
     elif d == '\xdd': # OFF
         if console.state.keys_visible:
-           console.hide_keys()   
+            console.hide_keys()   
     elif d == '\x93': # LIST
         console.list_keys()
     elif d == '(':
@@ -1969,7 +1924,7 @@ def exec_key_define(ins):
             console.show_keys()
     else:
         if len(text) != 2:
-           raise error.RunError(5)
+            raise error.RunError(5)
         # can't redefine scancodes for keys 1-14
         if keynum >= 15 and keynum <= 20:    
             state.basic_state.event_keys[keynum-1] = str(text)
@@ -2061,9 +2016,9 @@ def exec_print(ins, screen=None):
                 screen.write_line()
             screen.write(str(word))
     if util.skip_white_read_if(ins, ('\xD7',)): # USING
-       return exec_print_using(ins, screen)     
+        return exec_print_using(ins, screen)     
     if newline:
-         screen.write_line()
+        screen.write_line()
     util.require(ins, util.end_statement)      
             
 def exec_print_using(ins, screen):
