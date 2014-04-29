@@ -607,7 +607,7 @@ def exec_files(ins):
         if not pathmask:
             # bad file name
             raise error.RunError(64)
-    oslayer.files(pathmask, console)
+    oslayer.files(pathmask)
     util.require(ins, util.end_statement)
     
 def exec_shell(ins):
