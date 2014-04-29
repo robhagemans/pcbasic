@@ -682,7 +682,7 @@ def pause_key():
     # pause key press waits for any key down. continues to process screen events (blink) but not user events.
     while not check_events(pause=True):
         # continue playing background music
-        console.sound.check_sound()
+        state.sound.check_sound()
         idle()
         
 def idle():
@@ -825,11 +825,11 @@ def handle_key_up(e):
            
 def handle_mouse(e):
     if e.button == 1: # LEFT BUTTON
-        console.penstick.trigger_pen(e.pos)
+        state.penstick.trigger_pen(e.pos)
                 
 def handle_stick(e):
     if e.joy < 2 and e.button < 2:
-        console.penstick.trigger_stick(e.joy, e.button)
+        state.penstick.trigger_stick(e.joy, e.button)
             
 ##############################################
 # penstick interface

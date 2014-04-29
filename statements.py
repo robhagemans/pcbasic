@@ -431,11 +431,11 @@ def exec_on_com(ins):
 # sound
 
 def exec_beep(ins):
-    console.sound.beep() 
+    state.sound.beep() 
     # if a syntax error happens, we still beeped.
     util.require(ins, util.end_statement)
-    if console.sound.music_foreground:
-        console.sound.wait_music(wait_last=False)
+    if state.sound.music_foreground:
+        state.sound.wait_music(wait_last=False)
     
 def exec_sound(ins):
     freq = vartypes.pass_int_unpack(expressions.parse_expression(ins))
@@ -445,18 +445,18 @@ def exec_sound(ins):
         raise error.RunError(5)
     util.require(ins, util.end_statement)
     if dur.is_zero():
-        console.sound.stop_all_sound()
+        state.sound.stop_all_sound()
         return
     util.range_check(37, 32767, freq) # 32767 is pause
     one_over_44 = fp.Single.from_bytes(bytearray('\x8c\x2e\x3a\x7b')) # 1/44 = 0.02272727248
     dur_sec = dur.to_value()/18.2
     if one_over_44.gt(dur):
         # play indefinitely in background
-        console.sound.play_sound(freq, dur_sec, loop=True)
+        state.sound.play_sound(freq, dur_sec, loop=True)
     else:
-        console.sound.play_sound(freq, dur_sec)
-        if console.sound.music_foreground:
-            console.sound.wait_music(wait_last=False)
+        state.sound.play_sound(freq, dur_sec)
+        if state.sound.music_foreground:
+            state.sound.wait_music(wait_last=False)
     
 def exec_play(ins):
     if state.basic_state.play_handler.command(util.skip_white(ins)):

@@ -17,6 +17,14 @@ import os
 import zlib
 import copy
 import logging
+
+# backend implementations
+import nosound
+import nopenstick
+display = None
+sound = nosound
+penstick = nopenstick
+
         
 class State(object):
     pass

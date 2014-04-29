@@ -21,7 +21,6 @@ import expressions
 import util
 import var
 import graphics
-import console
 import state
 
 # generic for both macro languages
@@ -141,7 +140,7 @@ def draw_step(x0,y0, sx,sy, plot, goback):
         state.console_state.last_point = (x0, y0)
             
 def draw_parse_gml(gml):
-    save_attr = console.state.attr
+    save_attr = state.console_state.attr
     gmls = StringIO(gml.upper())
     plot, goback = True, False
     while True:
@@ -162,7 +161,7 @@ def draw_parse_gml(gml):
             draw_parse_gml(sub)            
         elif c == 'C':
             # set foreground colour
-            console.state.attr = ml_parse_number(gmls) 
+            state.console_state.attr = ml_parse_number(gmls) 
         elif c == 'S':
             # set scale
             state.basic_state.draw_scale = ml_parse_number(gmls)
@@ -218,7 +217,7 @@ def draw_parse_gml(gml):
                 raise error.RunError(5)
             bound = ml_parse_number(gmls)
             graphics.flood_fill(x0, y0, solid_pattern(colour), colour, bound)    
-    console.state.attr = save_attr        
+    state.console_state.attr = save_attr        
 
 def solid_pattern(c):
     pattern = [0]*state.console_state.bitsperpixel
@@ -250,9 +249,9 @@ def play_parse_mml(mml):
                 gmls.read(1)
                 dur *= 1.5
             if note > 0 and note <= 84:
-                console.sound.play_sound(note_freq[note-1], dur*state.basic_state.play_tempo, state.basic_state.play_speed)
+                state.sound.play_sound(note_freq[note-1], dur*state.basic_state.play_tempo, state.basic_state.play_speed)
             elif note == 0:
-                console.sound.play_sound(0, dur*state.basic_state.play_tempo, state.basic_state.play_speed)
+                state.sound.play_sound(0, dur*state.basic_state.play_tempo, state.basic_state.play_speed)
         elif c == 'L':
             state.basic_state.play_length = 1./ml_parse_number(gmls)    
         elif c == 'T':
@@ -292,21 +291,21 @@ def play_parse_mml(mml):
                 else:
                     break                    
             if note == 'P':
-                console.sound.play_sound(0, dur*state.basic_state.play_tempo, state.basic_state.play_speed)
+                state.sound.play_sound(0, dur*state.basic_state.play_tempo, state.basic_state.play_speed)
             else:        
-                console.sound.play_sound(note_freq[(state.basic_state.play_octave+next_oct)*12+notes[note]], dur*state.basic_state.play_tempo, state.basic_state.play_speed)
+                state.sound.play_sound(note_freq[(state.basic_state.play_octave+next_oct)*12+notes[note]], dur*state.basic_state.play_tempo, state.basic_state.play_speed)
             next_oct = 0
         elif c == 'M':
             c = util.skip_read(gmls, ml_whitepace).upper()
             if c == 'N':        state.basic_state.play_speed = 7./8.
             elif c == 'L':      state.basic_state.play_speed = 1.
             elif c == 'S':      state.basic_state.play_speed = 3./4.        
-            elif c == 'F':      console.sound.music_foreground = True
-            elif c == 'B':      console.sound.music_foreground = False
+            elif c == 'F':      state.sound.music_foreground = True
+            elif c == 'B':      state.sound.music_foreground = False
             else:
                 raise error.RunError(5)    
         else:
             raise error.RunError(5)    
-    if console.sound.music_foreground:
-        console.sound.wait_music()
+    if state.sound.music_foreground:
+        state.sound.wait_music()
                                  
