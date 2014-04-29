@@ -18,6 +18,7 @@ import machine
 import protect
 import util
 import console
+import event_loop
 # for clear()
 import rnd
 import iolayer
@@ -477,7 +478,7 @@ def list_lines(dev, from_line, to_line):
         state.basic_state.bytecode.seek(pos + 1)
         _, line, _ = tokenise.detokenise_line(state.basic_state.bytecode)
         if dev == state.io_state.devices['SCRN:']:
-            console.check_events()
+            event_loop.check_events()
             console.clear_line(console.state.row)
         dev.write_line(str(line))
     dev.close()
