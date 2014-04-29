@@ -238,16 +238,6 @@ def check_dim_array(name, index):
             raise error.RunError(9)
     return [dimensions, lst]
 
-def get_bytearray(name):
-    if name[-1]=='$':
-        # can't use string arrays for get/put
-        raise error.RunError(13) # type mismatch
-    try:
-        [_, lst, version] = state.basic_state.arrays[name]
-        return (lst, version)
-    except KeyError:
-        return (bytearray(), 0)
-
 def base_array(base):
     if base not in (1, 0):
         # syntax error

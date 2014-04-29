@@ -230,7 +230,8 @@ def get_data_memory(address):
             if the_arr[-1] == '$':
                 # TODO: not implemented for arrays of strings
                 return 0
-            return var.get_bytearray(the_arr)[offset]
+            _, byte_array, _ = state.basic_state.arrays[the_arr]    
+            return byte_array[offset]
         else:
             offset = address - name_ptr - state.basic_state.var_current
             if offset < max(3, len(the_arr))+1:

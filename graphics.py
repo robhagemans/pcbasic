@@ -12,7 +12,6 @@
 import error
 import fp
 import vartypes
-import var
 import event_loop
 import state
 import util
@@ -533,11 +532,13 @@ operations = {
     '\xF0': operation_xor,
     }
      
-   
 def set_area(x0,y0, array, operation_char):
     if backend.fast_put(x0, y0, array, operation_char):
         return
-    byte_array, _ = var.get_bytearray(array)
+    try:
+        _, byte_array, _ = state.basic_state.arrays[name]
+    except KeyError:
+        byte_array = bytearray()
     dx = vartypes.uint_to_value(byte_array[0:2])
     dy = vartypes.uint_to_value(byte_array[2:4])
     # in mode 1, number of x bits is given rather than pixels
@@ -605,7 +606,10 @@ def get_area(x0,y0,x1,y1, array):
     # illegal fn call if outside screen boundary
     util.range_check(0, state.console_state.size[0]-1, x0, x1)
     util.range_check(0, state.console_state.size[1]-1, y0, y1)
-    byte_array, version = var.get_bytearray(array)
+    try:
+        _, byte_array, version = state.basic_state.arrays[name]
+    except KeyError:
+        raise error.RunError(5)    
     # clear existing array
     byte_array[:] = '\x00'*len(byte_array)
     if state.console_state.screen_mode==1:
