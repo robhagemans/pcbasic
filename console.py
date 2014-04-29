@@ -9,21 +9,14 @@
 # please see text file COPYING for licence terms.
 #
 
-# this module contains all the screen and keyboard routines
-# including file access to devices SCRN: and KEYB:
-#
-# this module is the front-end; it needs a back-end implementation
-# known back-ends: 
-# - gameterm (text, graphics and sound, using pygame)
-# - terminal (textmode only, using escape sequences)
-
 import util
-import graphics
 import nosound
 import nopenstick
 import events
 # for Break, Exit, Reset
 import error
+# for aspect ratio
+import fp
 
 # back end implementations
 backend = None
@@ -118,6 +111,12 @@ mode_data = {
     9: ( 14, 15, 16, 64, 80, 2 ),
     }
 
+# screen-mode dependent
+# screen width and height in pixels
+state.size = (0, 0)
+state.pixel_aspect_ratio = fp.Single.one
+state.bitsperpixel = 4
+
 # default codes for KEY autotext
 # F1-F10 
 function_key = { 
@@ -211,7 +210,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
         else:
             set_palette(state_module.display_state.palette64)    
         set_overwrite_mode(True)
-        graphics.init_graphics_mode(new_mode, new_font_height)      
+        init_graphics_mode(new_mode, new_font_height)      
         show_cursor(state.cursor)
         unset_view()
     # set active page & visible page, counting from 0.
@@ -232,6 +231,23 @@ def resize(to_height, to_width):
     state.vpage, state.apage = state.pages[0], state.pages[0]
     backend.setup_screen(state.height, state.width)
     state.row, state.col = 1, 1
+
+def init_graphics_mode(mode, new_font_height):
+    if mode == 0:
+        return
+    state.size = (state.width*8, state.height*new_font_height)
+    # centre of new graphics screen
+    state.last_point = (state.width*4, state.height*new_font_height/2)
+    # pixels e.g. 80*8 x 25*14, screen ratio 4x3 makes for pixel width/height (4/3)*(25*14/8*80)
+    state.pixel_aspect_ratio = fp.div(
+        fp.Single.from_int(state.height*new_font_height), 
+        fp.Single.from_int(6*state.width)) 
+    if mode in (1, 10):
+        state.bitsperpixel = 2
+    elif mode == 2:
+        state.bitsperpixel = 1
+    else:
+        state.bitsperpixel = 4
 
 def copy_page(src, dst):
     for x in range(state.height):
