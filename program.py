@@ -12,18 +12,16 @@
 import error
 import vartypes
 import var
-import on_event
 import tokenise
 import machine
 import protect
 import util
 import console
 import event_loop
-# for clear()
-import rnd
-import iolayer
 import fp 
 import state
+# for clear()
+import reset
 
 try:
     from cStringIO import StringIO
@@ -66,6 +64,8 @@ def erase_program():
     state.basic_state.line_numbers = { 65536: 0 }
     state.basic_state.current_statement = 0
     state.basic_state.last_stored = None
+    # reset stacks
+    init_program()
 
 def set_runmode(new_runmode=True, pos=None):
     global current_codestream
@@ -77,6 +77,12 @@ def set_runmode(new_runmode=True, pos=None):
     if pos != None:
         # jump to position, if given
         current_codestream.seek(pos)    
+
+# NEW    
+def new():
+    erase_program()    
+    # reset all stacks   
+    reset.clear()
     
 # RESTORE
 def restore(datanum=-1):
@@ -85,45 +91,7 @@ def restore(datanum=-1):
     except KeyError:
         raise error.RunError(8)
 
-init_program()
 erase_program()
-
-# CLEAR
-def clear_all(close_files=False):
-    #   Resets the stack and string space
-    #   Clears all COMMON and user variables
-    var.clear_variables()
-    # reset random number generator
-    rnd.clear()
-    if close_files:
-        # close all files
-        iolayer.close_all()
-    # release all disk buffers (FIELD)?
-    state.io_state.fields = {}
-    # clear ERR and ERL
-    state.basic_state.errn, state.basic_state.errp = 0, 0
-    # disable error trapping
-    state.basic_state.on_error = None
-    state.basic_state.error_resume = None
-    # stop all sound
-    console.sound.stop_all_sound()
-    #   Resets sound to music foreground
-    console.sound.music_foreground = True
-    #   Resets STRIG to off
-    console.state.stick_is_on = False
-    # disable all event trapping (resets PEN to OFF too)
-    on_event.reset_events()
-    # CLEAR also dumps for_next and while_wend stacks
-    state.basic_state.for_next_stack = []
-    state.basic_state.while_wend_stack = []
-
-# NEW    
-def new():
-    erase_program()    
-    # reset all stacks   
-    init_program()
-    # clear all variables
-    clear_all()
 
 def truncate_program(rest=''):
     state.basic_state.bytecode.write(rest if rest else '\0\0\0')
@@ -232,7 +200,7 @@ def store_line(linebuf):
     # clear all program stacks
     init_program()
     # clear variables (storing a line does that)
-    clear_all()
+    reset.clear_all()
     state.basic_state.last_stored = scanline
 
 def find_pos_line_dict(fromline, toline):
@@ -264,7 +232,7 @@ def delete(fromline, toline):
     # clear all program stacks
     init_program()
     # clear variables (storing a line does that)
-    clear_all()
+    reset.clear_all()
 
 def edit(from_line, bytepos=None):
     if state.basic_state.protected:
@@ -361,10 +329,8 @@ def load(g):
     g.close()
     # rebuild line number dict and offsets
     rebuild_line_dict()
-    # reset all stacks    
-    init_program() 
     # clear all variables
-    clear_all()
+    reset.clear_all()
 
     
 def merge(g):
