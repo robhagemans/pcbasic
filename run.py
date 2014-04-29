@@ -15,6 +15,7 @@ import program
 import statements 
 import console
 import state
+import event_loop
 
 # suppress one prompt by setting to False (used by EDIT)
 state.basic_state.prompt = True
@@ -67,7 +68,7 @@ def execution_loop():
     console.show_cursor(False)
     while True:
         try:
-            console.check_events()
+            event_loop.check_events()
             if not statements.parse_statement():
                 break
         except error.RunError as e:

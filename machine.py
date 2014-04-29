@@ -18,6 +18,7 @@ import var
 import graphics
 import console
 import error
+import event_loop
 
 # 'free memory' as reported by FRE
 total_mem = 60300    
@@ -72,8 +73,8 @@ def poke(addr, val):
 
 def inp(port):    
     if port == 0x60:
-        console.idle()
-        console.check_events()
+        event_loop.idle()
+        event_loop.check_events()
         return state.console_state.inp_key 
     else:
         return 0
@@ -90,8 +91,8 @@ def wait(addr, ander, xorer):
     store_suspend = state.basic_state.suspend_all_events
     state.basic_state.suspend_all_events = True
     while (((state.console_state.inp_key if addr == 0x60 else 0) ^ xorer) & ander) == 0:
-        console.idle()
-        console.check_events()
+        event_loop.idle()
+        event_loop.check_events()
     state.basic_state.suspend_all_events = store_suspend     
 
 def bload(g, offset):    

@@ -9,7 +9,7 @@
 # please see text file COPYING for licence terms.
 #
 
-import console
+import event_loop
 import datetime
 
 music_foreground = True
@@ -44,7 +44,7 @@ def check_sound():
     
 def wait_music(wait_length=0, wait_last=True):
     while len(music_queue) + wait_last - 1 > wait_length:
-        console.idle()
-        console.check_events()
+        event_loop.idle()
+        event_loop.check_events()
         check_sound()
       

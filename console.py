@@ -9,6 +9,7 @@
 # please see text file COPYING for licence terms.
 #
 
+import event_loop
 import util
 import nosound
 import nopenstick
@@ -141,20 +142,6 @@ keys_line_replace_chars = {
         '\x1D': '\x11',    '\x1E': '\x18',    '\x1F': '\x19',
     }        
 
-#############################
-# core event handler    
-import on_event
-
-def check_events():
-    # check console events
-    backend.check_events()   
-    # check&handle user events
-    on_event.check_events()
-    # manage sound queue
-    sound.check_sound()
-
-def idle():
-    backend.idle()
 
 #############################
 # init
@@ -779,8 +766,8 @@ def insert_key(c):
     
 # non-blocking keystroke read
 def get_char():
-    idle()    
-    check_events()
+    event_loop.idle()    
+    event_loop.check_events()
     return pass_char( peek_char() )
     
 # peek character from keyboard buffer
@@ -808,8 +795,8 @@ def read_chars(num):
 # blocking keystroke peek
 def wait_char():
     while len(state.keybuf)==0 and not state.input_closed:
-        idle()
-        check_events()
+        event_loop.idle()
+        event_loop.check_events()
     return peek_char()
     
 #####################

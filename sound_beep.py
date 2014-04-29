@@ -52,8 +52,8 @@ def check_sound():
     
 def wait_music(wait_length=0, wait_last=True):
     while (len(music_queue) > wait_length) or (wait_last and (not now_loop) and now_playing and now_playing.poll() == None):
-        console.idle()
-        console.check_events()
+        event_loop.idle()
+        event_loop.check_events()
         check_sound()
 
 def play_now(frequency, duration, fill, loop):

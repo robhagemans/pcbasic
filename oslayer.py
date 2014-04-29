@@ -404,7 +404,7 @@ def files(pathmask):
         output = output[num:]
         console.write_line(line)       
         # allow to break during dir listing & show names flowing on screen
-        console.check_events()             
+        event_loop.check_events()             
     console.write_line(' ' + str(disk_free(path)) + ' Bytes free')
 
 def chdir(name):
@@ -494,8 +494,8 @@ if plat.system == 'Windows':
                 shell_output = '' 
                 last = lines.pop()
                 for line in lines:
-                    console.check_events()
-                    console.write_line(line)
+                    event_loop.check_events()
+                    event_loop.write_line(line)
                 console.write(last)    
             if p.poll() != None:
                 # drain output then break

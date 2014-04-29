@@ -1024,6 +1024,7 @@ def fast_put(x0, y0, varname, operation_char):
 # sound interface
 
 from math import ceil
+import event_loop
 
 music_foreground = True
 
@@ -1081,8 +1082,8 @@ def wait_music(wait_length=0, wait_last=True):
     while not loop_sound_playing and (
             len(sound_queue) + wait_last - 1 > wait_length 
             or (wait_last and music_queue_length() == 0 and mixer.get_busy())):
-        idle()
-        console.check_events()
+        event_loop.idle()
+        event_loop.check_events()
 
 def play_sound(frequency, total_duration, fill=1, loop=False):
     check_init_mixer()
