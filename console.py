@@ -12,7 +12,6 @@
 import util
 import nosound
 import nopenstick
-import events
 # for Break, Exit, Reset
 import error
 # for aspect ratio
@@ -144,12 +143,13 @@ keys_line_replace_chars = {
 
 #############################
 # core event handler    
+import on_event
 
 def check_events():
     # check console events
     backend.check_events()   
     # check&handle user events
-    events.check_events()
+    on_event.check_events()
     # manage sound queue
     sound.check_sound()
 

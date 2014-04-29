@@ -12,7 +12,7 @@
 import error
 import vartypes
 import var
-import events
+import on_event
 import tokenise
 import machine
 import protect
@@ -111,7 +111,7 @@ def clear_all(close_files=False):
     #   Resets STRIG to off
     console.state.stick_is_on = False
     # disable all event trapping (resets PEN to OFF too)
-    events.reset_events()
+    on_event.reset_events()
     # CLEAR also dumps for_next and while_wend stacks
     state.basic_state.for_next_stack = []
     state.basic_state.while_wend_stack = []
