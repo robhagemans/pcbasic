@@ -142,7 +142,7 @@ keys_line_replace_chars = {
 
 def init():
     global state
-    if not state_module.display.init():
+    if not state_module.video.init():
         return False
     # we need the correct mode and width here to ensure backend sets up correctly    
     state.width = state_module.console_state.width
@@ -150,11 +150,11 @@ def init():
         import logging
         logging.warning("Screen mode not supported by display backend.")
         # fix the terminal
-        state_module.display.close()
+        state_module.video.close()
         return False
     # update state to what's set in state (if it was pickled, this overwrites earlier settings)
     state = state_module.console_state
-    state_module.display.load_state()
+    state_module.video.load_state()
     return True
 
 def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=False):
@@ -178,7 +178,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
         return False
     # switch modes if needed
     if do_redraw:
-        if not state_module.display.init_screen_mode(new_mode, new_font_height):
+        if not state_module.video.init_screen_mode(new_mode, new_font_height):
             return False
         state.screen_mode, state.colorswitch = new_mode, new_colorswitch 
         # set all state vars except with
@@ -200,7 +200,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
     # only redraw keys if screen has been cleared (any colours stay the same). state.screen_mode must be set for this
     if do_redraw and state.keys_visible:  
         show_keys()    
-    state_module.display.screen_changed = True
+    state_module.video.screen_changed = True
     return True
 
 def resize(to_height, to_width):
@@ -209,7 +209,7 @@ def resize(to_height, to_width):
     for _ in range(state.num_pages):
         state.pages.append(ScreenBuffer(state.width, state.height))
     state.vpage, state.apage = state.pages[0], state.pages[0]
-    state_module.display.setup_screen(state.height, state.width)
+    state_module.video.setup_screen(state.height, state.width)
     state.row, state.col = 1, 1
 
 def init_graphics_mode(mode, new_font_height):
@@ -235,32 +235,32 @@ def copy_page(src, dst):
         dstrow.buf[:] = srcrow.buf[:]
         dstrow.end = srcrow.end
         dstrow.wrap = srcrow.wrap            
-    state_module.display.copy_page(src, dst)
+    state_module.video.copy_page(src, dst)
     
 # sort out the terminal, close the window, etc
 def exit():
-    if state_module.display:
-        state_module.display.close()
+    if state_module.video:
+        state_module.video.close()
 
 #############################
     
 def set_palette(new_palette=None):
-    state_module.display.set_palette(new_palette)
+    state_module.video.set_palette(new_palette)
 
 def set_palette_entry(index, colour):
-    state_module.display.set_palette_entry(index, colour)
+    state_module.video.set_palette_entry(index, colour)
 
 def get_palette_entry(index):
-    return state_module.display.get_palette_entry(index)
+    return state_module.video.get_palette_entry(index)
         
 def show_cursor(do_show = True):
     prev = state.cursor
     state.cursor = do_show
-    state_module.display.show_cursor(do_show, prev)
+    state_module.video.show_cursor(do_show, prev)
     return prev
 
 def set_cursor_shape(from_line, to_line):
-    state_module.display.build_shape_cursor(from_line, to_line)
+    state_module.video.build_shape_cursor(from_line, to_line)
     
 ############################### 
 # interactive mode         
@@ -372,7 +372,7 @@ def wait_interactive(from_start=False, alt_replace = True):
 def set_overwrite_mode(new_overwrite=True):
     if new_overwrite != state.overwrite_mode:
         state.overwrite_mode = new_overwrite
-        state_module.display.build_default_cursor(state.screen_mode, new_overwrite)
+        state_module.video.build_default_cursor(state.screen_mode, new_overwrite)
       
 def insert_char(crow, ccol, c, cattr):
     while True:
@@ -447,11 +447,11 @@ def delete_char(crow, ccol):
 def redraw_row(start, crow):
     while True:
         therow = state.apage.row[crow-1]  
-        state_module.display.set_attr(state.attr)
+        state_module.video.set_attr(state.attr)
         for i in range(start, therow.end): 
             # redrawing changes colour attributes to current foreground (cf. GW)
             therow.buf[i] = (therow.buf[i][0], state.attr)
-            state_module.display.putc_at(crow, i+1, therow.buf[i][0])
+            state_module.video.putc_at(crow, i+1, therow.buf[i][0])
         if therow.wrap and crow >= 0 and crow < state.height-1:
             crow += 1
             start = 0
@@ -484,7 +484,7 @@ def clear_rest_of_line(srow, scol):
     if scol > 1:
         redraw_row(scol-1, srow)
     else:
-        state_module.display.clear_rows(state.attr, srow, srow)
+        state_module.video.clear_rows(state.attr, srow, srow)
     therow.end = save_end
 
 def backspace(start_row, start_col):
@@ -694,7 +694,7 @@ def list_keys():
 
 def clear_key_row():
     state.apage.row[24].clear()
-    state_module.display.clear_rows(state.attr, 25, 25)
+    state_module.video.clear_rows(state.attr, 25, 25)
 
 def hide_keys():
     state.keys_visible = False
@@ -727,11 +727,11 @@ def write_for_keys(s, col, cattr):
                 c = keys_line_replace_chars[c]
             except KeyError:
                 pass    
-            state_module.display.set_attr(cattr)    
-            state_module.display.putc_at(25, col, c)    
+            state_module.video.set_attr(cattr)    
+            state_module.video.putc_at(25, col, c)    
             state.apage.row[24].buf[col-1] = c, cattr
         col += 1
-    state_module.display.set_attr(state.attr)     
+    state_module.video.set_attr(state.attr)     
     
 ##############################
 # keyboard buffer read/write
@@ -801,8 +801,8 @@ def get_screen_char_attr(crow, ccol, want_attr):
 
 def put_screen_char_attr(cpage, crow, ccol, c, cattr):
     cattr = cattr & 0xf if state.screen_mode else cattr
-    state_module.display.set_attr(cattr) 
-    state_module.display.putc_at(crow, ccol, c)    
+    state_module.video.set_attr(cattr) 
+    state_module.video.putc_at(crow, ccol, c)    
     cpage.row[crow-1].buf[ccol-1] = (c, cattr)
     
 def put_char(c, do_scroll_down=False):
@@ -825,7 +825,7 @@ def put_char(c, do_scroll_down=False):
 def set_pos(to_row, to_col, scroll_ok=True):
     state.row, state.col = to_row, to_col
     check_pos(scroll_ok)
-    state_module.display.set_cursor_colour(state.apage.row[state.row-1].buf[state.col-1][1] & 0xf)
+    state_module.video.set_cursor_colour(state.apage.row[state.row-1].buf[state.col-1][1] & 0xf)
 
 def check_pos(scroll_ok=True):
     oldrow, oldcol = state.row, state.col
@@ -883,12 +883,12 @@ def clear_view():
         state.apage.row[r-1].clear()
         state.apage.row[r-1].wrap = False
     state.row, state.col = state.view_start, 1
-    state_module.display.clear_rows(state.attr, state.view_start, state.height if state.bottom_row_allowed else state.scroll_height)
+    state_module.video.clear_rows(state.attr, state.view_start, state.height if state.bottom_row_allowed else state.scroll_height)
             
 def scroll(from_line=None): 
     if from_line == None:
         from_line = state.view_start
-    state_module.display.scroll(from_line)
+    state_module.video.scroll(from_line)
     # sync buffers with the new screen reality:
     if state.row > from_line:
         state.row -= 1
@@ -896,7 +896,7 @@ def scroll(from_line=None):
     del state.apage.row[from_line-1]
    
 def scroll_down(from_line):
-    state_module.display.scroll_down(from_line)
+    state_module.video.scroll_down(from_line)
     if state.row >= from_line:
         state.row += 1
     # sync buffers with the new screen reality:
@@ -909,13 +909,13 @@ def redraw_text_screen():
     if state.cursor:
         show_cursor(False)
     # this makes it feel faster
-    state_module.display.clear_rows(state.attr, 1, 25)
+    state_module.video.clear_rows(state.attr, 1, 25)
     # redraw every character
     for crow in range(state.height):
         therow = state.apage.row[crow]  
         for i in range(state.width): 
-            state_module.display.set_attr(therow.buf[i][1])
-            state_module.display.putc_at(crow+1, i+1, therow.buf[i][0])
+            state_module.video.set_attr(therow.buf[i][1])
+            state_module.video.putc_at(crow+1, i+1, therow.buf[i][0])
     if state.cursor:
         show_cursor(True)       
 

@@ -18,13 +18,6 @@ import zlib
 import copy
 import logging
 
-# backend implementations
-import nosound
-import nopenstick
-display = None
-sound = nosound
-penstick = nopenstick
-
         
 class State(object):
     pass
@@ -49,6 +42,11 @@ loaded = False
 
 pcbasic_dir = os.path.dirname(os.path.realpath(__file__))
 state_file = os.path.join(pcbasic_dir, 'info', 'STATE.SAV')
+
+# backend implementations
+video = None
+sound = None 
+penstick = None 
 
 ###############################################
 

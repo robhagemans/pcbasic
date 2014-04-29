@@ -31,6 +31,7 @@ import machine
 import oslayer
 import program
 import representation
+import reset
 import rnd
 import state
 import util
@@ -1276,7 +1277,7 @@ def exec_run(ins):
         util.require(ins, util.end_statement)
         program.load(iolayer.open_file_or_device(0, name, mode='L', defext='BAS'))
     program.init_program()
-    program.clear_all(close_files=not comma)
+    reset.clear(close_files=not comma)
     program.jump(jumpnum)
     state.basic_state.error_handle_mode = False
                 
@@ -1451,7 +1452,7 @@ def parse_var_list(ins):
 ################################################
 
 def exec_clear(ins):
-    program.clear_all()
+    reset.clear()
     # integer expression allowed but ignored
     intexp = expressions.parse_expression(ins, allow_empty=True)
     if intexp:

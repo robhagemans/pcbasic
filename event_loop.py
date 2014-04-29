@@ -17,11 +17,11 @@ import state
 
 def check_events():
     # check console events
-    state.display.check_events()   
+    state.video.check_events()   
     # check&handle user events
     on_event.check_events()
     # manage sound queue
     state.sound.check_sound()
 
 def idle():
-    state.display.idle()
+    state.video.idle()
