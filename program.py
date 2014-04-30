@@ -177,7 +177,7 @@ def store_line(linebuf):
     empty = (util.skip_white_read(linebuf) in util.end_line)
     pos, afterpos, deleteable, beyond = find_pos_line_dict(scanline, scanline)
     if empty and not deleteable:
-         raise error.RunError(8)   
+        raise error.RunError(8)   
     # read the remainder of the program into a buffer to be pasted back after the write
     state.basic_state.bytecode.seek(afterpos)
     rest = state.basic_state.bytecode.read()
@@ -379,10 +379,8 @@ def chain(action, g, jumpnum, common_all, delete_lines):
     common_deftype = copy(state.basic_state.deftype) 
     # preserve option base
     base = state.basic_state.array_base    
-    # load & merge call preparse call reset_program:  # data restore  # erase def fn   # erase defint etc
+    # load & merge call reset.clear()
     action(g)
-    # reset random number generator
-    rnd.clear()
     # restore only common variables
     state.basic_state.variables = common
     state.basic_state.arrays = common_arrays
@@ -543,7 +541,7 @@ def resume(jumpnum):
     elif jumpnum == -1:
         # RESUME NEXT
         set_runmode(runmode, start_statement)        
-        util.skip_to(program.current_codestream, util.end_statement, break_on_first_char=False)
+        util.skip_to(current_codestream, util.end_statement, break_on_first_char=False)
     else:
         # RESUME n
         jump(jumpnum)

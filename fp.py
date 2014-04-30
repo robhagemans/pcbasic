@@ -493,5 +493,5 @@ def math_error(errnum):
     else:
         # write a message & continue as normal
         # start_line() ?
-        state.io_state.devices['SCRN:'].write_line(get_message(errnum)) # no space, no line number
+        state.io_state.devices['SCRN:'].write_line(error.get_message(errnum)) # no space, no line number
 

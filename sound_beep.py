@@ -10,7 +10,7 @@
 #
 
 import subprocess
-import console
+import event_loop
 
 music_foreground = True
 music_queue = []

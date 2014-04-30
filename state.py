@@ -96,7 +96,6 @@ def save():
         f.close()
     except IOError:
         logging.warning("Could not write to state file. Emulator state not saved.")
-        pass
     
 def load():
     global console_state, io_state, display_state, basic_state, display, loaded

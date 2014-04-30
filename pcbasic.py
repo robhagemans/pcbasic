@@ -54,7 +54,6 @@ import oslayer
 import nosound
 import nopenstick
 import sound_beep
-import graphics
 import console
 import tokenise
 import machine
@@ -130,7 +129,7 @@ def main():
             if state.basic_state.run_mode:
                 state.basic_state.stop = state.basic_state.bytecode.tell()
                 program.set_runmode(False) 
-                error.write_error_message("Break", program.get_line_number(state.basic_state.stop))
+                console.write_error_message("Break", program.get_line_number(state.basic_state.stop))
                 run.show_prompt()
             state.save()
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
@@ -160,7 +159,7 @@ def prepare_constants(args):
         try:
             for a in args.peek:
                 seg, addr, val = a.split(':')
-                var.peek_values[int(seg)*0x10 + int(addr)] = int(val)
+                machine.peek_values[int(seg)*0x10 + int(addr)] = int(val)
         except (TypeError, ValueError):
             pass     
     # drive mounts           

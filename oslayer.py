@@ -21,6 +21,7 @@ import console
 import unicodepage
 import plat
 import state
+import event_loop
 
 if plat.system == 'Windows':
     import msvcrt
@@ -204,13 +205,13 @@ if plat.system == 'Windows':
     # if started from CMD.EXE, get the 'current wworking dir' for each drive
     # if not in CMD.EXE, there's only one cwd
     save_current = os.getcwd()
-    for letter in win32api.GetLogicalDriveStrings().split(':\\\x00')[:-1]:
+    for drive_letter in win32api.GetLogicalDriveStrings().split(':\\\x00')[:-1]:
         try:
-            os.chdir(letter + ':')
+            os.chdir(drive_letter + ':')
             cwd = win32api.GetShortPathName(os.getcwd())
             # must not start with \\
-            drive_cwd[letter] = cwd[3:]  
-            drives[letter] = cwd[:3]
+            drive_cwd[drive_letter] = cwd[3:]  
+            drives[drive_letter] = cwd[:3]
         except WindowsError:
             pass    
     os.chdir(save_current)    
@@ -474,7 +475,7 @@ if plat.system == 'Windows':
                 break        
             else:
                 # don't hog cpu
-                console.idle()
+                event_loop.idle()
 
     def shell(command):
         global shell_output

@@ -530,8 +530,8 @@ def line_feed():
         if state.row < state.height:    
             scroll_down(state.row+1)
     # LF connects lines like word wrap
-    state.apage.row[row-1].wrap = True
-    set_pos(row+1, 1)
+    state.apage.row[state.row-1].wrap = True
+    set_pos(state.row+1, 1)
     
 def skip_word_right():
     crow, ccol = state.row, state.col

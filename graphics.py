@@ -535,7 +535,7 @@ def set_area(x0,y0, array, operation_char):
     if state.video.fast_put(x0, y0, array, operation_char):
         return
     try:
-        _, byte_array, _ = state.basic_state.arrays[name]
+        _, byte_array, _ = state.basic_state.arrays[array]
     except KeyError:
         byte_array = bytearray()
     dx = vartypes.uint_to_value(byte_array[0:2])
@@ -606,7 +606,7 @@ def get_area(x0,y0,x1,y1, array):
     util.range_check(0, state.console_state.size[0]-1, x0, x1)
     util.range_check(0, state.console_state.size[1]-1, y0, y1)
     try:
-        _, byte_array, version = state.basic_state.arrays[name]
+        _, byte_array, _ = state.basic_state.arrays[array]
     except KeyError:
         raise error.RunError(5)    
     # clear existing array
