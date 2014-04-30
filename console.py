@@ -190,7 +190,19 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
         else:
             set_palette(state_module.display_state.palette64)    
         set_overwrite_mode(True)
-        init_graphics_mode(new_mode, new_font_height)      
+        state.size = (state.width*8, state.height*new_font_height)
+        # centre of new graphics screen
+        state.last_point = (state.width*4, state.height*new_font_height/2)
+        # pixels e.g. 80*8 x 25*14, screen ratio 4x3 makes for pixel width/height (4/3)*(25*14/8*80)
+        state.pixel_aspect_ratio = fp.div(
+            fp.Single.from_int(state.height*new_font_height), 
+            fp.Single.from_int(6*state.width)) 
+        if mode in (1, 10):
+            state.bitsperpixel = 2
+        elif mode == 2:
+            state.bitsperpixel = 1
+        else:
+            state.bitsperpixel = 4
         show_cursor(state.cursor)
         unset_view()
     # set active page & visible page, counting from 0.
@@ -215,19 +227,6 @@ def resize(to_height, to_width):
 def init_graphics_mode(mode, new_font_height):
     if mode == 0:
         return
-    state.size = (state.width*8, state.height*new_font_height)
-    # centre of new graphics screen
-    state.last_point = (state.width*4, state.height*new_font_height/2)
-    # pixels e.g. 80*8 x 25*14, screen ratio 4x3 makes for pixel width/height (4/3)*(25*14/8*80)
-    state.pixel_aspect_ratio = fp.div(
-        fp.Single.from_int(state.height*new_font_height), 
-        fp.Single.from_int(6*state.width)) 
-    if mode in (1, 10):
-        state.bitsperpixel = 2
-    elif mode == 2:
-        state.bitsperpixel = 1
-    else:
-        state.bitsperpixel = 4
 
 def copy_page(src, dst):
     for x in range(state.height):
