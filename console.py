@@ -197,9 +197,9 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
         state.pixel_aspect_ratio = fp.div(
             fp.Single.from_int(state.height*new_font_height), 
             fp.Single.from_int(6*state.width)) 
-        if mode in (1, 10):
+        if state.screen_mode in (1, 10):
             state.bitsperpixel = 2
-        elif mode == 2:
+        elif state.screen_mode == 2:
             state.bitsperpixel = 1
         else:
             state.bitsperpixel = 4
@@ -223,10 +223,6 @@ def resize(to_height, to_width):
     state.vpage, state.apage = state.pages[0], state.pages[0]
     state_module.video.setup_screen(state.height, state.width)
     state.row, state.col = 1, 1
-
-def init_graphics_mode(mode, new_font_height):
-    if mode == 0:
-        return
 
 def copy_page(src, dst):
     for x in range(state.height):
