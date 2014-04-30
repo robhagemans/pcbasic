@@ -195,7 +195,7 @@ def float_to_str(n_in, screen=False, write=False):
 def format_number(value, tokens, digits_before, decimals):
     # illegal function call if too many digits
     if digits_before + decimals > 24:
-         raise error.RunError(5)
+        raise error.RunError(5)
     # extract sign, mantissa, exponent     
     value = unpack(value)
     # dollar sign, decimal point
@@ -659,7 +659,7 @@ def tokenise_number(ins, outs):
                 # double
                 outs.write('\x1f'+mbf)
     elif c!='':
-            ins.seek(-1,1)
+        ins.seek(-1,1)
             
       
 ##########################################
@@ -681,25 +681,25 @@ def str_to_value_keep(strval, allow_nonnum=True):
 
 
 # token to string
-def detokenise_number(bytes, output):
-    s = bytes.read(1)
+def detokenise_number(ins, output):
+    s = ins.read(1)
     if s == '\x0b':                           # 0B: octal constant (unsigned int)
-        output += oct_to_str(bytearray(bytes.read(2)))
+        output += oct_to_str(bytearray(ins.read(2)))
     elif s == '\x0c':                           # 0C: hex constant (unsigned int)
-        output += hex_to_str(bytearray(bytes.read(2)))
+        output += hex_to_str(bytearray(ins.read(2)))
     elif s == '\x0f':                           # 0F: one byte constant
-        output += ubyte_to_str(bytearray(bytes.read(1)))
+        output += ubyte_to_str(bytearray(ins.read(1)))
     elif s >= '\x11' and s < '\x1b':            # 11-1B: constants 0 to 10
         output += chr(ord('0') + ord(s) - 0x11)
     elif s == '\x1b':               
         output += '10'
     elif s == '\x1c':                           # 1C: two byte signed int
-        output += sint_to_str(bytearray(bytes.read(2)))
+        output += sint_to_str(bytearray(ins.read(2)))
     elif s == '\x1d':                           # 1D: four-byte single-precision floating point constant
-        output += float_to_str(fp.Single.from_bytes(bytearray(bytes.read(4))), screen=False, write=False)
+        output += float_to_str(fp.Single.from_ins(bytearray(ins.read(4))), screen=False, write=False)
     elif s == '\x1f':                           # 1F: eight byte double-precision floating point constant
-        output += float_to_str(fp.Double.from_bytes(bytearray(bytes.read(8))), screen=False, write=False)
+        output += float_to_str(fp.Double.from_ins(bytearray(ins.read(8))), screen=False, write=False)
     else:
-        bytes.seek(-len(s),1)  
+        ins.seek(-len(s),1)  
     
 

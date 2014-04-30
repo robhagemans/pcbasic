@@ -283,14 +283,14 @@ def collect_garbage():
 
 def get_pixel_byte(page, x, y, plane):
     if y < state.console_state.size[1] and page < state.console_state.num_pages:
-        return sum(( ((graphics.backend.get_pixel(x+shift, y, page) >> plane) & 1) << (7-shift) for shift in range(8) ))
+        return sum(( ((state.video.get_pixel(x+shift, y, page) >> plane) & 1) << (7-shift) for shift in range(8) ))
     return -1    
     
 def set_pixel_byte(page, x, y, plane_mask, byte):
     if y < state.console_state.size[1] and page < state.console_state.num_pages:
         for shift in range(8):
             bit = (byte>>(7-shift)) & 1
-            graphics.backend.put_pixel(x + shift, y, bit * plane_mask, page)  
+            state.video.put_pixel(x + shift, y, bit * plane_mask, page)  
     
 def get_video_memory(addr):
     if addr < video_segment[state.console_state.screen_mode]*0x10:
@@ -303,8 +303,8 @@ def get_video_memory(addr):
             # interlaced scan lines of 80bytes, 4pixels per byte
             x, y = ((addr%0x2000)%80)*4, (addr>=0x2000) + 2*((addr%0x2000)//80)
             if y < state.console_state.size[1]:
-                return ( (graphics.backend.get_pixel(x  , y)<<6) + (graphics.backend.get_pixel(x+1, y)<<4) 
-                        + (graphics.backend.get_pixel(x+2, y)<<2) + (graphics.backend.get_pixel(x+3, y)))
+                return ( (state.video.get_pixel(x  , y)<<6) + (state.video.get_pixel(x+1, y)<<4) 
+                        + (state.video.get_pixel(x+2, y)<<2) + (state.video.get_pixel(x+3, y)))
         elif state.console_state.screen_mode == 2:
             # interlaced scan lines of 80bytes, 8 pixes per byte
             x, y = ((addr%0x2000)%80)*8, (addr>=0x2000) + 2*((addr%0x2000)//80)
@@ -334,7 +334,7 @@ def set_video_memory(addr, val):
             if y < state.console_state.size[1]:
                 for shift in range(4):
                     twobit = (val>>(6-shift*2)) & 3
-                    graphics.backend.put_pixel(x + shift, y, twobit) 
+                    state.video.put_pixel(x + shift, y, twobit) 
         elif state.console_state.screen_mode == 2:
             # interlaced scan lines of 80bytes, 8 pixes per byte
             x, y = ((addr%0x2000)%80)*8, (addr>=0x2000) + 2*((addr%0x2000)//80)

@@ -152,7 +152,7 @@ def handle_error_break(s):
             console.write_line("Ok\xff")
             try:    
                 program.edit(program.get_line_number(s.pos), state.basic_state.bytecode.tell())
-            except RunError as e:
+            except error.RunError as e:
                 handle_error_break(e)
 
 def handle_break(s):

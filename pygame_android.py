@@ -12,6 +12,7 @@
 import pygame
 import android
 import backend_pygame
+import state
 
 # unicode returned by pygame for android is incorrect, work around this.
 keycode_to_unicode = {
