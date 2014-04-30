@@ -461,8 +461,9 @@ def set_font(new_font_height):
         font = None
     under_cursor = pygame.Surface((8, state.font_height), depth=8)    
 
-def init_screen_mode(mode, new_font_height):
+def init_screen_mode(mode, to_height, to_width, new_font_height, new_num_pages):
     global glyphs, cursor0
+    global screen, screen_changed, surface0, surface1
     set_font(new_font_height)    
     glyphs = [ build_glyph(c, font, state.font_height) for c in range(256) ]
     # initialise glyph colour
@@ -474,21 +475,18 @@ def init_screen_mode(mode, new_font_height):
         resize_display(*state.display_size_text)
     else:
         resize_display(*state.display_size)
-    return True        
-    
-def setup_screen(to_height, to_width):
-    global screen, screen_changed, surface0, surface1
     state.size = to_width*8, to_height*state.font_height
     screen = pygame.Surface(state.size, depth=8)
     # whole screen (blink on & off)
-    surface0 = [ pygame.Surface(state.size, depth=8) for _ in range(console_state.num_pages)]
-    surface1 = [ pygame.Surface(state.size, depth=8) for _ in range(console_state.num_pages)]
-    for i in range(console_state.num_pages):
+    surface0 = [ pygame.Surface(state.size, depth=8) for _ in range(new_num_pages)]
+    surface1 = [ pygame.Surface(state.size, depth=8) for _ in range(new_num_pages)]
+    for i in range(new_num_pages):
         surface0[i].set_palette(workaround_palette)
         surface1[i].set_palette(workaround_palette)
     screen.set_palette(workaround_palette)
     under_cursor.set_palette(workaround_palette)
     screen_changed = True
+    return True        
     
 def copy_page(src,dst):
     global screen_changed
