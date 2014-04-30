@@ -94,14 +94,14 @@ class ScreenBuffer(object):
     def __init__(self, bwidth, bheight):
         self.row = [ScreenRow(bwidth) for _ in xrange(bheight)]
         
-#  font_height, attr, num_colours, num_palette, width, num_pages
+#  font_height, attr, num_colours, num_palette, width, num_pages, bitsperpixel
 mode_data = {
-    0: ( 16,  7, 32, 64, 80, 4 ),
-    1: (  8,  3,  4, 16, 40, 1 ),
-    2: (  8,  1,  2, 16, 80, 1 ), 
-    7: (  8, 15, 16, 16, 40, 8 ),
-    8: (  8, 15, 16, 16, 80, 4 ),
-    9: ( 14, 15, 16, 64, 80, 2 ),
+    0: ( 16,  7, 32, 64, 80, 4, 4 ),
+    1: (  8,  3,  4, 16, 40, 1, 2 ),
+    2: (  8,  1,  2, 16, 80, 1, 1 ), 
+    7: (  8, 15, 16, 16, 40, 8, 4 ),
+    8: (  8, 15, 16, 16, 80, 4, 4 ),
+    9: ( 14, 15, 16, 64, 80, 2, 4 ),
     }
 
 # screen-mode dependent
@@ -157,72 +157,74 @@ def init():
     state_module.video.load_state()
     return True
 
-def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=False):
+def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=False, new_width=None):
     new_mode = state.screen_mode if new_mode == None else new_mode
     new_colorswitch = state.colorswitch if new_colorswitch == None else (new_colorswitch != 0)
     new_vpagenum = state.vpagenum if new_vpagenum == None else new_vpagenum
     new_apagenum = state.apagenum if new_apagenum == None else new_apagenum
-    do_redraw = (new_mode != state.screen_mode) or (new_colorswitch != state.colorswitch) or first_run
+    do_redraw = (   (new_mode != state.screen_mode) or (new_colorswitch != state.colorswitch) 
+                    or first_run or (new_width and new_width != state.width) )
     # reset palette happens even if the function fails with Illegal Function Call
     try:
         info = mode_data[new_mode]
     except KeyError:
-        # backend does not support mode
+        # no such mode
         set_palette()
         return False
-    new_font_height, _, _, _, new_width, new_num_pages = info  
     # vpage and apage nums are persistent on mode switch
     # if the new mode has fewer pages than current vpage/apage, illegal fn call before anything happens.
+    new_num_pages = info[5]
     if new_apagenum >= new_num_pages or new_vpagenum >= new_num_pages:
         set_palette()
         return False
     # switch modes if needed
     if do_redraw:
-        if not state_module.video.init_screen_mode(new_mode, new_font_height):
+        if new_width == None:
+            if new_mode == 0:
+                new_width = state.width
+            else:
+                new_width = info[4]        
+        new_font_height = info[0]
+        if not state_module.video.init_screen_mode(new_mode, 25, new_width, new_font_height, new_num_pages):
+            # backend does not support mode
             return False
+        # set all state vars
         state.screen_mode, state.colorswitch = new_mode, new_colorswitch 
-        # set all state vars except with
-        state.font_height, state.attr, state.num_colours, state.num_palette, _, state.num_pages = info  
+        state.width, state.height = new_width, 25
+        state.font_height, state.attr, state.num_colours, state.num_palette, _, state.num_pages, state.bitsperpixel = info  
         # width persists on change to screen 0
-        resize(25, state.width if new_mode == 0 else new_width)
+        state.pages = []
+        for _ in range(state.num_pages):
+            state.pages.append(ScreenBuffer(state.width, state.height))
+        # set active page & visible page, counting from 0. 
+        state.vpagenum, state.apagenum = new_vpagenum, new_apagenum
+        state.vpage, state.apage = state.pages[state.vpagenum], state.pages[state.apagenum]
+        # only redraw keys if screen has been cleared (any colours stay the same). state.screen_mode must be set for this
+        if state.keys_visible:  
+            show_keys()    
+        state.row, state.col = 1, 1
         if not first_run:
             set_palette()
         else:
             set_palette(state_module.display_state.palette64)    
         set_overwrite_mode(True)
-        state.size = (state.width*8, state.height*new_font_height)
+        state.size = (state.width*8, state.height*state.font_height)
         # centre of new graphics screen
-        state.last_point = (state.width*4, state.height*new_font_height/2)
+        state.last_point = (state.width*4, state.height*state.font_height/2)
         # pixels e.g. 80*8 x 25*14, screen ratio 4x3 makes for pixel width/height (4/3)*(25*14/8*80)
         state.pixel_aspect_ratio = fp.div(
-            fp.Single.from_int(state.height*new_font_height), 
+            fp.Single.from_int(state.height*state.font_height), 
             fp.Single.from_int(6*state.width)) 
-        if state.screen_mode in (1, 10):
-            state.bitsperpixel = 2
-        elif state.screen_mode == 2:
-            state.bitsperpixel = 1
-        else:
-            state.bitsperpixel = 4
         show_cursor(state.cursor)
+        # FIXME: are there different views for different pages?
         unset_view()
-    # set active page & visible page, counting from 0.
-    # this needs to be done after setup_screen!
-    state.vpagenum, state.apagenum = new_vpagenum, new_apagenum
-    state.vpage, state.apage = state.pages[state.vpagenum], state.pages[state.apagenum]
-    # only redraw keys if screen has been cleared (any colours stay the same). state.screen_mode must be set for this
-    if do_redraw and state.keys_visible:  
-        show_keys()    
-    state_module.video.screen_changed = True
+    else:
+        # set active page & visible page, counting from 0. 
+        state.vpagenum, state.apagenum = new_vpagenum, new_apagenum
+        state.vpage, state.apage = state.pages[state.vpagenum], state.pages[state.apagenum]
+        state_module.video.screen_changed = True
     return True
 
-def resize(to_height, to_width):
-    state.width, state.height = to_width, to_height
-    state.pages = []
-    for _ in range(state.num_pages):
-        state.pages.append(ScreenBuffer(state.width, state.height))
-    state.vpage, state.apage = state.pages[0], state.pages[0]
-    state_module.video.setup_screen(state.height, state.width)
-    state.row, state.col = 1, 1
 
 def copy_page(src, dst):
     for x in range(state.height):
@@ -659,7 +661,7 @@ def set_width(to_width):
         return True
     success = True    
     if state.screen_mode == 0:
-        resize(state.height, to_width)    
+        success = screen(0, None, None, None, new_width=to_width) 
     elif state.screen_mode == 1 and to_width == 80:
         success = screen(2, None, None, None)
     elif state.screen_mode == 2 and to_width == 40:
