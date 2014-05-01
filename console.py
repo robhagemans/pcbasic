@@ -104,12 +104,6 @@ mode_data = {
     9: ( 14, 15, 16, 64, 80, 2, 4 ),
     }
 
-# screen-mode dependent
-# screen width and height in pixels
-state.size = (0, 0)
-state.pixel_aspect_ratio = fp.Single.one
-state.bitsperpixel = 4
-
 # default codes for KEY autotext
 # F1-F10 
 function_key = { 
@@ -215,7 +209,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
         state.pixel_aspect_ratio = fp.div(
             fp.Single.from_int(state.height*state.font_height), 
             fp.Single.from_int(6*state.width)) 
-        show_cursor(state.cursor)
+        state_module.video.show_cursor(state.cursor, False)
         # FIXME: are there different views for different pages?
         unset_view()
     else:
@@ -223,6 +217,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
         state.vpagenum, state.apagenum = new_vpagenum, new_apagenum
         state.vpage, state.apage = state.pages[state.vpagenum], state.pages[state.apagenum]
         state_module.video.screen_changed = True
+        # FIXME: keys visible?
     return True
 
 
@@ -659,22 +654,18 @@ def set_width(to_width):
         return False
     if to_width == state.width:
         return True
-    success = True    
     if state.screen_mode == 0:
-        success = screen(0, None, None, None, new_width=to_width) 
+        return screen(0, None, None, None, new_width=to_width) 
     elif state.screen_mode == 1 and to_width == 80:
-        success = screen(2, None, None, None)
+        return screen(2, None, None, None)
     elif state.screen_mode == 2 and to_width == 40:
-        success = screen(1, None, None, None)
+        return screen(1, None, None, None)
     elif state.screen_mode == 7 and to_width == 80:
-        success = screen(8, None, None, None)
+        return screen(8, None, None, None)
     elif state.screen_mode == 8 and to_width == 40:
-        success = screen(7, None, None, None)
+        return screen(7, None, None, None)
     elif state.screen_mode == 9 and to_width == 40:
-        success = screen(7, None, None, None)
-    if state.keys_visible:
-        show_keys()
-    return success
+        return screen(7, None, None, None)
 
 #####################
 # key replacement

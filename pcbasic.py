@@ -76,8 +76,6 @@ def main():
     # other command-line settings
     prepare_constants(args)
     try:
-        # initialise program memory
-#        program.new()
         if args.resume or plat.system == 'Android':
             # resume from saved emulator state
             args.resume = state.load()
