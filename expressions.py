@@ -455,13 +455,13 @@ def value_screen(ins):
         raise error.RunError(5)
     if z == None:
         z = 0    
-    util.range_check(1, console.state.height, row)
-    if console.state.view_set:
-        util.range_check(console.state.view_start, console.state.scroll_height, row)
-    util.range_check(1, console.state.width, col)
+    util.range_check(1, state.console_state.height, row)
+    if state.console_state.view_set:
+        util.range_check(state.console_state.view_start, state.console_state.scroll_height, row)
+    util.range_check(1, state.console_state.width, col)
     util.range_check(0, 255, z)
     util.require_read(ins, (')',))
-    if z and console.state.screen_mode:
+    if z and state.console_state.screen_mode:
         return vartypes.null['%']    
     else:
         return vartypes.pack_int(console.get_screen_char_attr(row, col, z!=0))
@@ -490,12 +490,12 @@ def value_inkey(ins):
     return vartypes.pack_string(bytearray(console.get_char()))
 
 def value_csrlin(ins):
-    return vartypes.pack_int(console.state.row)
+    return vartypes.pack_int(state.console_state.row)
 
 def value_pos(ins):            
     # parse the dummy argument, doesnt matter what it is as long as it's a legal expression
     parse_bracket(ins)
-    return vartypes.pack_int(console.state.col)
+    return vartypes.pack_int(state.console_state.col)
 
 def value_lpos(ins):            
     num = vartypes.pass_int_unpack(parse_bracket(ins))
@@ -626,7 +626,7 @@ def value_pmap(ins):
     mode = vartypes.pass_int_unpack(parse_expression(ins))
     util.require_read(ins, (')',))
     util.range_check(0, 3, mode)
-    if not console.state.screen_mode:
+    if not state.console_state.screen_mode:
         return vartypes.null['%']
     if mode == 0:
         value, _ = graphics.window_coords(fp.unpack(vartypes.pass_single_keep(coord)), fp.Single.zero)       
