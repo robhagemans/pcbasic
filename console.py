@@ -167,7 +167,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
     # vpage and apage nums are persistent on mode switch
     # if the new mode has fewer pages than current vpage/apage, illegal fn call before anything happens.
     new_num_pages = info[5]
-    if new_apagenum >= new_num_pages or new_vpagenum >= new_num_pages:
+    if new_apagenum >= new_num_pages or new_vpagenum >= new_num_pages or (new_mode != 0 and not state.video.supports_graphics):
         set_palette()
         return False
     # switch modes if needed
@@ -178,9 +178,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
             else:
                 new_width = info[4]        
         new_font_height = info[0]
-        if not state.video.init_screen_mode(new_mode, 25, new_width, new_font_height, new_num_pages):
-            # backend does not support mode
-            return False
+        state.video.init_screen_mode(new_mode, 25, new_width, new_font_height, new_num_pages)
         # set all state vars
         state.console_state.screen_mode, state.console_state.colorswitch = new_mode, new_colorswitch 
         state.console_state.width, state.console_state.height = new_width, 25

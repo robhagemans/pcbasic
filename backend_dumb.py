@@ -22,6 +22,8 @@ import console
 import plat
 import state
 
+supports_graphics = False
+
 # these values are not shown as special graphic chars but as their normal effect
 control = (
     '\x07', # BEL
