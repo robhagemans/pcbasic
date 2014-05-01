@@ -31,6 +31,8 @@ import error
 import console
 import state
 
+supports_graphics = False
+
 term_echo_on = True
 term_attr = None
 term = sys.stdout

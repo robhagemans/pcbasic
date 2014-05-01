@@ -40,6 +40,8 @@ import console
 
 import state
 
+supports_graphics = True
+
 if pygame:
     # CGA palette choices
     gamecolours16 = [ pygame.Color(*rgb) for rgb in [   
