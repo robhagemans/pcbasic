@@ -737,7 +737,7 @@ def insert_key(c):
             # only check F1-F10
             keynum = function_key[c]
             # can't be redefined in events - so must be event keys 1-10.
-            if state.basic_state.console_state.run_mode and state.console_state.basic_state.console_state.key_handlers[keynum].enabled:
+            if state.basic_state.run_mode and state.basic_state.key_handlers[keynum].enabled:
                 state.console_state.keybuf += c
             else:
                 state.console_state.keybuf += state.console_state.key_replace[keynum]
