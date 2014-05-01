@@ -121,13 +121,10 @@ def init():
     return True
     
 def init_screen_mode(mode, to_height, to_width, new_font_height, new_num_pages):
-    if mode != 0:
-        return False
     set_palette()
     term.write(esc_clear_screen)
     term.write(esc_resize_term % (to_height, to_width))
     term.flush()
-    return True
     
 def close():
     term_echo()
