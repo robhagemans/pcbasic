@@ -133,22 +133,23 @@ keys_line_replace_chars = {
 #############################
 # init
 
+import logging
 
 def init():
     global state
+    state = state_module.console_state
     if not state_module.video.init():
         return False
-    # we need the correct mode and width here to ensure backend sets up correctly    
-    state.width = state_module.console_state.width
-    if not screen(state_module.console_state.screen_mode, None, None, None, first_run=True):
-        import logging
-        logging.warning("Screen mode not supported by display backend.")
-        # fix the terminal
-        state_module.video.close()
-        return False
-    # update state to what's set in state (if it was pickled, this overwrites earlier settings)
-    state = state_module.console_state
-    state_module.video.load_state()
+    if state_module.loaded:
+        if not state_module.video.init_screen_mode(state.screen_mode, state.height, state.width, state.font_height, state.num_pages):
+            logging.warning("Screen mode not supported by display backend.")
+            # fix the terminal
+            state_module.video.close()
+            return False
+        # update state to what's set in state (if it was pickled, this overwrites earlier settings)
+        state_module.video.load_state()
+    else:        
+        screen(None, None, None, None, first_run=True)
     return True
 
 def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=False, new_width=None):
