@@ -371,7 +371,6 @@ def init_screen_mode(mode, to_height, to_width, new_font_height, new_num_pages):
     screen.set_palette(workaround_palette)
     under_cursor.set_palette(workaround_palette)
     screen_changed = True
-    return True        
     
 def copy_page(src,dst):
     global screen_changed
