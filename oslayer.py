@@ -396,7 +396,7 @@ def files(pathmask):
     dosfiles.sort()
     dosdirs.sort()    
     output = dosdirs + dosfiles
-    num = console.state.width/20
+    num = state.console_state.width/20
     if len(output) == 0:
         # file not found
         raise error.RunError(53)
@@ -547,8 +547,8 @@ else:
                 elif c == '\r':
                     console.write_line()    
                 elif c == '\b':
-                    if console.state.col != 1:
-                        console.state.col -= 1
+                    if state.console_state.col != 1:
+                        state.console_state.col -= 1
                 else:
                     console.write(c)
             if c == '' and not p.isalive(): 

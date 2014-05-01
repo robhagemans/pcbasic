@@ -240,9 +240,9 @@ def edit(from_line, bytepos=None):
     # list line
     state.basic_state.bytecode.seek(state.basic_state.line_numbers[from_line]+1)
     _, output, textpos = tokenise.detokenise_line(state.basic_state.bytecode, bytepos)
-    console.clear_line(console.state.row)
+    console.clear_line(state.console_state.row)
     console.write(str(output))
-    console.set_pos(console.state.row, textpos+1 if bytepos else 1)
+    console.set_pos(state.console_state.row, textpos+1 if bytepos else 1)
     # throws back to direct mode
     set_runmode(False)
     # suppress prompt
@@ -442,7 +442,7 @@ def list_lines(dev, from_line, to_line):
         _, line, _ = tokenise.detokenise_line(state.basic_state.bytecode)
         if dev == state.io_state.devices['SCRN:']:
             event_loop.check_events()
-            console.clear_line(console.state.row)
+            console.clear_line(state.console_state.row)
         dev.write_line(str(line))
     dev.close()
     set_runmode(False)

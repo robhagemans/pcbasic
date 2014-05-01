@@ -182,7 +182,7 @@ def prepare_constants(args):
     if args.codepage:
         state.console_state.codepage = int(args.codepage)
     if args.caps:
-        console.state.caps = True    
+        state.console_state.caps = True    
     # rename exec argument for convenience
     try:
         args.cmd = getattr(args, 'exec') 
@@ -222,7 +222,7 @@ def prepare_console(args):
         backend_pygame.prepare(args)
     # initialise backends 
     # on --resume, changes to state here get overwritten
-    console.state.keys_visible = not args.run
+    state.console_state.keys_visible = not args.run
     if not console.init() and backend_dumb:
         logging.warning('Falling back to dumb-terminal.')
         state.video = backend_dumb
@@ -239,8 +239,8 @@ def prepare_console(args):
     # gwbasic-style redirected output is split between graphical screen and redirected file    
     if args.output:
         echo = partial(echo_ascii, f=oslayer.safe_open(args.output[0], "S", "W"))
-        console.state.output_echos.append(echo) 
-        console.state.input_echos.append(echo)
+        state.console_state.output_echos.append(echo) 
+        state.console_state.input_echos.append(echo)
     if args.input:
         load_redirected_input(oslayer.safe_open(args.input[0], "L", "R"))       
 

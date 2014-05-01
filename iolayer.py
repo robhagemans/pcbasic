@@ -724,13 +724,13 @@ class SCRNFile(NullDevice):
     def __init__(self):
         self.name = 'SCRN:'
         self.mode = 'O'
-        self.width = console.state.width
+        self.width = state.console_state.width
         NullDevice.__init__(self)
     
     def write(self, inp):
         for s in inp:
             console.write(s)
-            if console.state.col > self.width and self.width != 255:
+            if state.console_state.col > self.width and self.width != 255:
                 console.write_line()
             
     def write_line(self, inp=''):
@@ -739,7 +739,7 @@ class SCRNFile(NullDevice):
             
     @property
     def col(self):  
-        return console.state.col
+        return state.console_state.col
         
     # WIDTH "SCRN:, 40 works directly on console 
     # whereas OPEN "SCRN:" FOR OUTPUT AS 1: WIDTH #1,23 works on the wrapper text file

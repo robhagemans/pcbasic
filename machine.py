@@ -51,7 +51,7 @@ def peek(addr):
         # try if there's a preset value
         return peek_values[addr]
     except KeyError: 
-        if addr >= video_segment[console.state.screen_mode]*0x10:
+        if addr >= video_segment[state.console_state.screen_mode]*0x10:
             # graphics and text memory
             return max(0, get_video_memory(addr))
         elif addr >= data_segment*0x10 + var_mem_start:
@@ -64,7 +64,7 @@ def poke(addr, val):
     if addr < 0: 
         addr += 0x10000
     addr += segment * 0x10
-    if addr >= video_segment[console.state.screen_mode]*0x10:
+    if addr >= video_segment[state.console_state.screen_mode]*0x10:
         # graphics and text memory
         set_video_memory(addr, val)
 #    elif addr >= data_segment*0x10 + var_mem_start:
@@ -112,7 +112,7 @@ def bload(g, offset):
         buf += c    
     g.close()
     addr = seg * 0x10 + offset
-    if addr + len(buf) > video_segment[console.state.screen_mode]*0x10:
+    if addr + len(buf) > video_segment[state.console_state.screen_mode]*0x10:
         # graphics and text memory
         set_video_memory_block(addr, buf)
 
