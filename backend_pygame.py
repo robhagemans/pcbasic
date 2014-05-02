@@ -79,9 +79,8 @@ if pygame:
     state.display_state.gamepalette = None
 
     # screen width and height in pixels
-    state.console_state.size = (0,0)
-    state.display_state.display_size = (640, 480)
-    state.display_state.display_size_text = (640, 400)
+    display_size = (640, 480)
+    display_size_text = (640, 400)
     
     fullscreen = False
     smooth = False
@@ -92,7 +91,6 @@ if pygame:
     glyphs = []
     fonts = None
     font = None
-    state.console_state.font_height = 16
     
     # cursor shape
     state.display_state.cursor_from = 0
@@ -213,15 +211,15 @@ if pygame:
             
 # set constants based on commandline arguments
 def prepare(args):
-    global fullscreen, smooth, noquit
+    global fullscreen, smooth, noquit, display_size, display_size_text
     try:
         x, y = args.dimensions[0].split(',')
-        state.display_state.display_size = (int(x), int(y))
+        display_size = (int(x), int(y))
     except (ValueError, TypeError):
         pass    
     try:
         x, y = args.dimensions_text[0].split(',')
-        state.display_state.display_size_text = (int(x), int(y))
+        display_size_text = (int(x), int(y))
     except (ValueError, TypeError):
         pass    
     if args.fullscreen:
@@ -257,8 +255,8 @@ def init():
     # I hate it when applications do this ;)
     pygame.display.set_icon(build_icon())
     if not fullscreen:
-        pygame.display.set_mode(state.display_state.display_size_text, 0, 8)
-    resize_display(*state.display_state.display_size_text, initial=True)
+        pygame.display.set_mode(display_size_text, 0, 8)
+    resize_display(*display_size_text, initial=True)
     pygame.display.set_caption('PC-BASIC 3.23')
     pygame.key.set_repeat(500, 24)
     if android:
@@ -279,7 +277,7 @@ def resize_display(width, height, initial=False):
     if fullscreen or (width, height) == physical_size:
         fullscreen = True
         flags |= pygame.FULLSCREEN | pygame.NOFRAME
-        width, height = state.display_state.display_size if (not initial and state.console_state.screen_mode != 0) else state.display_state.display_size_text
+        width, height = display_size if (not initial and state.console_state.screen_mode != 0) else display_size_text
         # scale suggested dimensions to largest integer times pixel size that fits
         scale = min( physical_size[0]//width, physical_size[1]//height )
         width, height = width * scale, height * scale
@@ -355,9 +353,9 @@ def init_screen_mode():
     cursor0 = pygame.Surface((8, state.console_state.font_height), depth=8)
     build_default_cursor(mode, True)
     if mode == 0:
-        resize_display(*state.display_state.display_size_text)
+        resize_display(*display_size_text)
     else:
-        resize_display(*state.display_state.display_size)
+        resize_display(*display_size)
     screen = pygame.Surface(state.console_state.size, depth=8)
     # whole screen (blink on & off)
     surface0 = [ pygame.Surface(state.console_state.size, depth=8) for _ in range(new_num_pages)]
