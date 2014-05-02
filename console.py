@@ -159,17 +159,15 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
     new_apagenum = state.console_state.apagenum if new_apagenum == None else new_apagenum
     do_redraw = (   (new_mode != state.console_state.screen_mode) or (new_colorswitch != state.console_state.colorswitch) 
                     or first_run or (new_width and new_width != state.console_state.width) )
-    # reset palette happens even if the function fails with Illegal Function Call
     try:
         info = mode_data[new_mode]
     except KeyError:
         # no such mode
-        set_palette()
-        return False
+        info = None
     # vpage and apage nums are persistent on mode switch
     # if the new mode has fewer pages than current vpage/apage, illegal fn call before anything happens.
-    new_num_pages = info[5]
-    if new_apagenum >= new_num_pages or new_vpagenum >= new_num_pages or (new_mode != 0 and not state.video.supports_graphics):
+    if not info or new_apagenum >= info[5] or new_vpagenum >= info[5] or (new_mode != 0 and not state.video.supports_graphics):
+        # reset palette happens even if the function fails with Illegal Function Call
         set_palette()
         return False
     # switch modes if needed
