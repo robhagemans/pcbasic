@@ -139,12 +139,14 @@ def init():
     if not state.video.init():
         return False
     if state.loaded:
-        if not state.video.init_screen_mode(state.console_state.screen_mode, state.console_state.height, state.console_state.width, state.console_state.font_height, state.console_state.num_pages):
+        if state.console_state.screen_mode != 0 and not state.video.supports_graphics:
             logging.warning("Screen mode not supported by display backend.")
             # fix the terminal
             state.video.close()
             return False
-        # update state to what's set in state (if it was pickled, this overwrites earlier settings)
+        # set up the appropriate screen resolution
+        state.video.init_screen_mode()
+        # load the screen contents from storage
         state.video.load_state()
     else:        
         screen(None, None, None, None, first_run=True)
@@ -177,8 +179,6 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
                 new_width = state.console_state.width
             else:
                 new_width = info[4]        
-        new_font_height = info[0]
-        state.video.init_screen_mode(new_mode, 25, new_width, new_font_height, new_num_pages)
         # set all state vars
         state.console_state.screen_mode, state.console_state.colorswitch = new_mode, new_colorswitch 
         state.console_state.width, state.console_state.height = new_width, 25
@@ -190,6 +190,8 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
         # set active page & visible page, counting from 0. 
         state.console_state.vpagenum, state.console_state.apagenum = new_vpagenum, new_apagenum
         state.console_state.vpage, state.console_state.apage = state.console_state.pages[state.console_state.vpagenum], state.console_state.pages[state.console_state.apagenum]
+        # signal the backend to change the screen resolution
+        state.video.init_screen_mode()
         # only redraw keys if screen has been cleared (any colours stay the same). state.console_state.screen_mode must be set for this
         if state.console_state.keys_visible:  
             show_keys()    
