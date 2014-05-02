@@ -202,10 +202,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
         if state.console_state.keys_visible:  
             show_keys()    
         state.console_state.row, state.console_state.col = 1, 1
-        if not first_run:
-            set_palette()
-        else:
-            set_palette(state.display_state.palette64)    
+        set_palette()
         set_overwrite_mode(True)
         state.video.show_cursor(state.console_state.cursor, False)
         # FIXME: are there different views for different pages?
