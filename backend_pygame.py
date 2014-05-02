@@ -105,13 +105,12 @@ if pygame:
     cycle = 0
     blink_state = 0
     last_cycle = 0
-    cycle_time = 120 #120
+    cycle_time = 120 
     blink_cycles = 5
 
     # current cursor location
-    state.display_state.last_row = 1
-    state.display_state.last_col = 1    
-    state.display_state.cursor_visible = True
+    last_row = 1
+    last_col = 1    
     
     under_cursor = None
     under_top_left = None
@@ -552,8 +551,8 @@ def refresh_cursor():
                             (state.console_state.row-1)*state.console_state.font_height + state.display_state.cursor_to + 1):
                 pixel = get_pixel(x,y)
                 screen.set_at((x,y), pixel^index)
-    state.display_state.last_row = state.console_state.row
-    state.display_state.last_col = state.console_state.col
+    last_row = state.console_state.row
+    last_col = state.console_state.col
         
 def pause_key():
     # pause key press waits for any key down. continues to process screen events (blink) but not user events.
@@ -621,7 +620,7 @@ def check_screen():
         if cycle == blink_cycles*4: 
             cycle = 0
         cursor_changed = ( (not state.console_state.screen_mode and cycle%blink_cycles == 0) 
-                           or (state.console_state.row != state.display_state.last_row) or (state.console_state.col != state.display_state.last_col) )
+                           or (state.console_state.row != last_row) or (state.console_state.col != last_col) )
         if screen_changed:
             refresh_screen()
             do_flip()
