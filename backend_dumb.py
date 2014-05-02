@@ -125,7 +125,7 @@ def check_events():
 def clear_rows(attr, start, stop):
     pass
 
-def init_screen_mode(mode, to_height, to_width, new_font_height, new_num_pages):
+def init_screen_mode():
     pass
 
 def copy_page(src, dst):

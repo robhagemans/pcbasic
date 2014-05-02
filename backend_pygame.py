@@ -346,9 +346,12 @@ def set_font(new_font_height):
         font = None
     under_cursor = pygame.Surface((8, state.display_state.font_height), depth=8)    
 
-def init_screen_mode(mode, to_height, to_width, new_font_height, new_num_pages):
+def init_screen_mode():
     global glyphs, cursor0
     global screen, screen_changed, surface0, surface1
+    (mode, to_height, to_width, new_font_height, new_num_pages) = (
+                state.console_state.screen_mode, state.console_state.height, state.console_state.width, 
+                state.console_state.font_height, state.console_state.num_pages )
     set_font(new_font_height)    
     glyphs = [ build_glyph(c, font, state.display_state.font_height) for c in range(256) ]
     # initialise glyph colour

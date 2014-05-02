@@ -120,10 +120,10 @@ def init():
     term.flush()
     return True
     
-def init_screen_mode(mode, to_height, to_width, new_font_height, new_num_pages):
+def init_screen_mode():
     set_palette()
     term.write(esc_clear_screen)
-    term.write(esc_resize_term % (to_height, to_width))
+    term.write(esc_resize_term % (state.console_state.height, state.console_state.width))
     term.flush()
     
 def close():
