@@ -76,7 +76,7 @@ if pygame:
 
     # standard palettes
     state.display_state.palette64 = [0,1,2,3,4,5,20,7,56,57,58,59,60,61,62,63]
-    state.display_state.gamepalette = None
+    gamepalette = None
 
     # screen width and height in pixels
     display_size = (640, 480)
@@ -287,7 +287,7 @@ def resize_display(width, height, initial=False):
     else:
         display = pygame.display.set_mode((width, height), flags, 8)    
     if not initial and not smooth:
-        display.set_palette(state.display_state.gamepalette)
+        display.set_palette(gamepalette)
         # load display if requested    
     screen_changed = True    
     
@@ -301,29 +301,30 @@ def get_palette_entry(index):
     return state.display_state.palette64[index]
 
 def set_palette(new_palette=None):
+    global gamepalette
     if state.console_state.num_palette == 64:
         state.display_state.palette64 = new_palette if new_palette else [0,1,2,3,4,5,20,7,56,57,58,59,60,61,62,63]
-        state.display_state.gamepalette = [ gamecolours64[i] for i in state.display_state.palette64 ]
+        gamepalette = [ gamecolours64[i] for i in state.display_state.palette64 ]
     elif state.console_state.num_colours>=16:
         state.display_state.palette64 = new_palette if new_palette else [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-        state.display_state.gamepalette = [ gamecolours16[i] for i in state.display_state.palette64 ]
+        gamepalette = [ gamecolours16[i] for i in state.display_state.palette64 ]
     elif state.console_state.num_colours==4:
         state.display_state.palette64 = new_palette if new_palette else [0, 11, 13, 15]
-        state.display_state.gamepalette = [ gamecolours16[i] for i in state.display_state.palette64 ]
+        gamepalette = [ gamecolours16[i] for i in state.display_state.palette64 ]
     else:
         state.display_state.palette64 = new_palette if new_palette else [0, 15]
-        state.display_state.gamepalette = [ gamecolours16[i] for i in state.display_state.palette64 ]
+        gamepalette = [ gamecolours16[i] for i in state.display_state.palette64 ]
     if not smooth:
-        display.set_palette(state.display_state.gamepalette)
+        display.set_palette(gamepalette)
 
 def set_palette_entry(index, colour):
     state.display_state.palette64[index] = colour
     if state.console_state.num_palette==64:
-        state.display_state.gamepalette[index] = gamecolours64[colour]
+        gamepalette[index] = gamecolours64[colour]
     else:
-        state.display_state.gamepalette[index] = gamecolours16[colour]
+        gamepalette[index] = gamecolours16[colour]
     if not smooth:
-        display.set_palette_at(index, state.display_state.gamepalette[index])
+        display.set_palette_at(index, gamepalette[index])
     
 def clear_rows(cattr, start, stop):
     global screen_changed
@@ -632,7 +633,7 @@ def check_screen():
 def do_flip():
     refresh_cursor()
     if smooth:
-        screen.set_palette(state.display_state.gamepalette)
+        screen.set_palette(gamepalette)
         pygame.transform.smoothscale(screen.convert(display), display.get_size(), display)
         screen.set_palette(workaround_palette)    
     else:
