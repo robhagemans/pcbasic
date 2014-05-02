@@ -188,6 +188,14 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
         # set active page & visible page, counting from 0. 
         state.console_state.vpagenum, state.console_state.apagenum = new_vpagenum, new_apagenum
         state.console_state.vpage, state.console_state.apage = state.console_state.pages[state.console_state.vpagenum], state.console_state.pages[state.console_state.apagenum]
+        # resolution
+        state.console_state.size = (state.console_state.width*8, state.console_state.height*state.console_state.font_height)
+        # centre of new graphics screen
+        state.console_state.last_point = (state.console_state.width*4, state.console_state.height*state.console_state.font_height/2)
+        # pixels e.g. 80*8 x 25*14, screen ratio 4x3 makes for pixel width/height (4/3)*(25*14/8*80)
+        state.console_state.pixel_aspect_ratio = fp.div(
+            fp.Single.from_int(state.console_state.height*state.console_state.font_height), 
+            fp.Single.from_int(6*state.console_state.width)) 
         # signal the backend to change the screen resolution
         state.video.init_screen_mode()
         # only redraw keys if screen has been cleared (any colours stay the same). state.console_state.screen_mode must be set for this
@@ -199,13 +207,6 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
         else:
             set_palette(state.display_state.palette64)    
         set_overwrite_mode(True)
-        state.console_state.size = (state.console_state.width*8, state.console_state.height*state.console_state.font_height)
-        # centre of new graphics screen
-        state.console_state.last_point = (state.console_state.width*4, state.console_state.height*state.console_state.font_height/2)
-        # pixels e.g. 80*8 x 25*14, screen ratio 4x3 makes for pixel width/height (4/3)*(25*14/8*80)
-        state.console_state.pixel_aspect_ratio = fp.div(
-            fp.Single.from_int(state.console_state.height*state.console_state.font_height), 
-            fp.Single.from_int(6*state.console_state.width)) 
         state.video.show_cursor(state.console_state.cursor, False)
         # FIXME: are there different views for different pages?
         unset_view()
