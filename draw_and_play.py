@@ -22,6 +22,7 @@ import util
 import var
 import graphics
 import state
+import sound
 
 # generic for both macro languages
 ml_whitepace = (' ')
@@ -249,9 +250,9 @@ def play_parse_mml(mml):
                 gmls.read(1)
                 dur *= 1.5
             if note > 0 and note <= 84:
-                state.sound.play_sound(note_freq[note-1], dur*state.basic_state.play_tempo, state.basic_state.play_speed)
+                sound.play_sound(note_freq[note-1], dur*state.basic_state.play_tempo, state.basic_state.play_speed)
             elif note == 0:
-                state.sound.play_sound(0, dur*state.basic_state.play_tempo, state.basic_state.play_speed)
+                sound.play_sound(0, dur*state.basic_state.play_tempo, state.basic_state.play_speed)
         elif c == 'L':
             state.basic_state.play_length = 1./ml_parse_number(gmls)    
         elif c == 'T':
@@ -291,21 +292,21 @@ def play_parse_mml(mml):
                 else:
                     break                    
             if note == 'P':
-                state.sound.play_sound(0, dur*state.basic_state.play_tempo, state.basic_state.play_speed)
+                sound.play_sound(0, dur*state.basic_state.play_tempo, state.basic_state.play_speed)
             else:        
-                state.sound.play_sound(note_freq[(state.basic_state.play_octave+next_oct)*12+notes[note]], dur*state.basic_state.play_tempo, state.basic_state.play_speed)
+                sound.play_sound(note_freq[(state.basic_state.play_octave+next_oct)*12+notes[note]], dur*state.basic_state.play_tempo, state.basic_state.play_speed)
             next_oct = 0
         elif c == 'M':
             c = util.skip_read(gmls, ml_whitepace).upper()
             if c == 'N':        state.basic_state.play_speed = 7./8.
             elif c == 'L':      state.basic_state.play_speed = 1.
             elif c == 'S':      state.basic_state.play_speed = 3./4.        
-            elif c == 'F':      state.sound.music_foreground = True
-            elif c == 'B':      state.sound.music_foreground = False
+            elif c == 'F':      state.console_state.music_foreground = True
+            elif c == 'B':      state.console_state.music_foreground = False
             else:
                 raise error.RunError(5)    
         else:
             raise error.RunError(5)    
-    if state.sound.music_foreground:
-        state.sound.wait_music()
+    if state.console_state.music_foreground:
+        sound.wait_music()
                                  

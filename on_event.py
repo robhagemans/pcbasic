@@ -13,6 +13,7 @@ import oslayer
 import console
 import program
 import state
+import sound
 
 class EventHandler(object):
     def __init__(self):
@@ -113,7 +114,7 @@ def check_key_events():
                 state.basic_state.key_handlers[keynum].triggered = True
 
 def check_play_event():
-    state.basic_state.play_now = state.sound.music_queue_length()
+    state.basic_state.play_now = sound.music_queue_length()
     if state.basic_state.play_last >= state.basic_state.play_trig and state.basic_state.play_now < state.basic_state.play_trig:    
         state.basic_state.play_handler.triggered = True     
     state.basic_state.play_last = state.basic_state.play_now

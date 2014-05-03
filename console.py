@@ -13,6 +13,7 @@ import logging
 
 import state
 import event_loop
+import sound
 # for Break, Exit, Reset
 import error
 # for aspect ratio
@@ -336,7 +337,7 @@ def wait_interactive(from_start=False, alt_replace = True):
             write_line()    
             raise error.Break()    # not caught in wait_char like <CTRL+BREAK>
         elif d == '\r':                     break                                   # <ENTER>
-        elif d == '\a':                     state.sound.beep()                            # <CTRL+G>
+        elif d == '\a':                     sound.beep()                            # <CTRL+G>
         elif d == '\b':                     backspace(start_row, furthest_left)     # <BACKSPACE>
         elif d == '\t':                     tab()                                   # <TAB> or <CTRL+I>
         elif d == '\n':                     line_feed()                             # <CTRL+ENTER> or <CTRL+J>
@@ -650,7 +651,7 @@ def write(s, scroll_ok=True):
         elif c == '\r':     
             state.console_state.apage.row[state.console_state.row-1].wrap = False
             set_pos(state.console_state.row+1, 1, scroll_ok)     # CR
-        elif c == '\a':     state.sound.beep()                     # BEL
+        elif c == '\a':     sound.beep()                     # BEL
         elif c == '\x0B':   set_pos(1, 1, scroll_ok)         # HOME
         elif c == '\x0C':   clear()
         elif c == '\x1C':   set_pos(state.console_state.row, state.console_state.col+1, scroll_ok)

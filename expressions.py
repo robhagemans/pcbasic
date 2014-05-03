@@ -30,6 +30,7 @@ import console
 import program
 import state
 import machine
+import sound
 
 # binary operator priority, lowest index is tightest bound 
 # operators of the same priority are evaluated left to right      
@@ -647,7 +648,7 @@ def value_pmap(ins):
 def value_play(ins):
     dummy = vartypes.pass_int_unpack(parse_bracket(ins))    
     util.range_check(0, 255, dummy)
-    return vartypes.pack_int(state.sound.music_queue_length())
+    return vartypes.pack_int(sound.music_queue_length())
     
 #####################################################################
 # error functions
