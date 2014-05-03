@@ -205,8 +205,9 @@ if pygame:
         pygame.K_DELETE:    '\x53',        pygame.K_BACKSLASH: '\x56',
     }
 
-            
+####################################            
 # set constants based on commandline arguments
+
 def prepare(args):
     global fullscreen, smooth, noquit, display_size, display_size_text
     try:
@@ -225,6 +226,47 @@ def prepare(args):
         smooth = True    
     if args.noquit:
         noquit = True
+
+####################################
+# state saving and loading
+
+class PygameDisplayState(state.DisplayState):
+    def pickle(self):
+        self.display_strings = ([], [])
+        for s in surface0:    
+            self.display_strings[0].append(pygame.image.tostring(s, 'P'))
+        for s in surface1:    
+            self.display_strings[1].append(pygame.image.tostring(s, 'P'))
+        
+    def unpickle(self):
+        global display_strings, load_flag
+        load_flag = True
+        display_strings = self.display_strings
+        del self.display_strings
+
+
+# picklable store for surfaces
+display_strings = ([], [])
+state.display = PygameDisplayState()
+load_flag = False
+
+def load_state():        
+    global screen_changed
+    if load_flag:
+        try:
+            for i in range(len(surface0)):    
+                surface0[i] = pygame.image.fromstring(display_strings[0][i], state.console_state.size, 'P')
+                surface0[i].set_palette(workaround_palette)
+            for i in range(len(surface1)):    
+                surface1[i] = pygame.image.fromstring(display_strings[1][i], state.console_state.size, 'P')
+                surface1[i].set_palette(workaround_palette)
+            screen_changed = True    
+        except IndexError:
+            # couldn't load the state correctly; most likely a text screen saved from -t. just redraw what's unpickled.
+            console.redraw_text_screen()
+
+####################################
+# initialisation
 
 def init():
     global fonts, joysticks, physical_size
@@ -264,53 +306,7 @@ def init():
     for j in joysticks:
         j.init()
     return True
-
-def resize_display(width, height, initial=False): 
-    global display, screen_changed
-    global fullscreen
-    display_info = pygame.display.Info()
-    flags = pygame.RESIZABLE
-    if fullscreen or (width, height) == physical_size:
-        fullscreen = True
-        flags |= pygame.FULLSCREEN | pygame.NOFRAME
-        width, height = display_size if (not initial and state.console_state.screen_mode != 0) else display_size_text
-        # scale suggested dimensions to largest integer times pixel size that fits
-        scale = min( physical_size[0]//width, physical_size[1]//height )
-        width, height = width * scale, height * scale
-    if (width, height) == (display_info.current_w, display_info.current_h) and not initial:
-        return
-    if smooth:
-        display = pygame.display.set_mode((width, height), flags)
-    else:
-        display = pygame.display.set_mode((width, height), flags, 8)    
-    if not initial and not smooth:
-        display.set_palette(gamepalette)
-        # load display if requested    
-    screen_changed = True    
-    
-def close():
-    if android:
-        pygame_android.close()
-    pygame.joystick.quit()
-    pygame.display.quit()    
-
-def update_palette():
-    global gamepalette
-    if state.console_state.num_palette == 64:
-        gamepalette = [ gamecolours64[i] for i in state.console_state.palette ]
-    else:
-        gamepalette = [ gamecolours16[i] for i in state.console_state.palette ]
-    if not smooth:
-        display.set_palette(gamepalette)
-
-def clear_rows(cattr, start, stop):
-    global screen_changed
-    bg = (cattr>>4) & 0x7
-    scroll_area = pygame.Rect(0, (start-1)*state.console_state.font_height, state.console_state.size[0], (stop-start+1)*state.console_state.font_height) 
-    surface0[state.console_state.apagenum].fill(bg, scroll_area)
-    surface1[state.console_state.apagenum].fill(bg, scroll_area)
-    screen_changed = True
-    
+  
 def init_screen_mode():
     global glyphs, cursor0
     global screen, screen_changed, surface0, surface1
@@ -342,6 +338,70 @@ def init_screen_mode():
     under_cursor.set_palette(workaround_palette)
     # set cursor colour
     update_pos()
+    screen_changed = True
+  
+def resize_display(width, height, initial=False): 
+    global display, screen_changed
+    global fullscreen
+    display_info = pygame.display.Info()
+    flags = pygame.RESIZABLE
+    if fullscreen or (width, height) == physical_size:
+        fullscreen = True
+        flags |= pygame.FULLSCREEN | pygame.NOFRAME
+        width, height = display_size if (not initial and state.console_state.screen_mode != 0) else display_size_text
+        # scale suggested dimensions to largest integer times pixel size that fits
+        scale = min( physical_size[0]//width, physical_size[1]//height )
+        width, height = width * scale, height * scale
+    if (width, height) == (display_info.current_w, display_info.current_h) and not initial:
+        return
+    if smooth:
+        display = pygame.display.set_mode((width, height), flags)
+    else:
+        display = pygame.display.set_mode((width, height), flags, 8)    
+    if not initial and not smooth:
+        display.set_palette(gamepalette)
+        # load display if requested    
+    screen_changed = True    
+    
+# build the Ok icon
+def build_icon():
+    icon = pygame.Surface((17, 17), depth=8)
+    icon.fill(255)
+    icon.fill(254, (1, 8, 8, 8))
+    O = build_glyph(ord('O'), fonts[8], 8)
+    k = build_glyph(ord('k'), fonts[8], 8)
+    icon.blit(O, (1, 0, 8, 8))
+    icon.blit(k, (9, 0, 8, 8))
+    icon.set_palette_at(255, (0, 0, 0))
+    icon.set_palette_at(254, (0xff, 0xff, 0xff))
+    pygame.transform.scale2x(icon)
+    pygame.transform.scale2x(icon)
+    return icon
+
+def close():
+    if android:
+        pygame_android.close()
+    pygame.joystick.quit()
+    pygame.display.quit()    
+
+####################################
+# console commands
+
+def update_palette():
+    global gamepalette
+    if state.console_state.num_palette == 64:
+        gamepalette = [ gamecolours64[i] for i in state.console_state.palette ]
+    else:
+        gamepalette = [ gamecolours16[i] for i in state.console_state.palette ]
+    if not smooth:
+        display.set_palette(gamepalette)
+
+def clear_rows(cattr, start, stop):
+    global screen_changed
+    bg = (cattr>>4) & 0x7
+    scroll_area = pygame.Rect(0, (start-1)*state.console_state.font_height, state.console_state.size[0], (stop-start+1)*state.console_state.font_height) 
+    surface0[state.console_state.apagenum].fill(bg, scroll_area)
+    surface1[state.console_state.apagenum].fill(bg, scroll_area)
     screen_changed = True
     
 def copy_page(src,dst):
@@ -453,21 +513,8 @@ def build_cursor():
                 cursor0.set_at((xx, yy), color)
     screen_changed = True            
 
-# build the Ok icon
-def build_icon():
-    icon = pygame.Surface((17, 17), depth=8)
-    icon.fill(255)
-    icon.fill(254, (1, 8, 8, 8))
-    O = build_glyph(ord('O'), fonts[8], 8)
-    k = build_glyph(ord('k'), fonts[8], 8)
-    icon.blit(O, (1, 0, 8, 8))
-    icon.blit(k, (9, 0, 8, 8))
-    icon.set_palette_at(255, (0, 0, 0))
-    icon.set_palette_at(254, (0xff, 0xff, 0xff))
-    pygame.transform.scale2x(icon)
-    pygame.transform.scale2x(icon)
-    return icon
-
+######################################
+# event loop
 
 def refresh_screen():
     if state.console_state.screen_mode or blink_state == 0:
@@ -668,78 +715,6 @@ def handle_stick(e):
     if e.joy < 2 and e.button < 2:
         state.penstick.trigger_stick(e.joy, e.button)
             
-##############################################
-# penstick interface
-# light pen (emulated by mouse) & joystick
-
-# should be True on mouse click events
-pen_down = 0
-pen_down_pos = (0,0)
-
-stick_fired = [[False, False], [False, False]]
-
-def trigger_pen(pos):
-    global pen_down, pen_down_pos
-    state.basic_state.pen_handler.triggered = True
-    pen_down = -1 # TRUE
-    display_info = pygame.display.Info()
-    xscale, yscale = display_info.current_w / (1.*state.console_state.size[0]), display_info.current_h / (1.*state.console_state.size[1])
-    pen_down_pos = int(pos[0]//xscale), int(pos[1]//yscale)
-                
-def trigger_stick(joy, button):
-    stick_fired[joy][button] = True
-    state.basic_state.strig_handlers[joy*2 + button].triggered = True
-
-def get_pen(fn):
-    global pen_down
-    display_info = pygame.display.Info()
-    xscale, yscale = display_info.current_w / (1.*state.console_state.size[0]), display_info.current_h / (1.*state.console_state.size[1])
-    pos = pygame.mouse.get_pos()
-    posx, posy = int(pos[0]//xscale), int(pos[1]//yscale)
-    if fn == 0:
-        pen_down_old, pen_down = pen_down, 0
-        return pen_down_old
-    elif fn == 1:
-        return min(state.console_state.size[0]-1, max(0, pen_down_pos[0]))
-    elif fn == 2:
-        return min(state.console_state.size[1]-1, max(0, pen_down_pos[1]))
-    elif fn == 3:
-        return -pygame.mouse.get_pressed()[0]
-    elif fn == 4:
-        return min(state.console_state.size[0]-1, max(0, posx))
-    elif fn == 5:
-        return min(state.console_state.size[1]-1, max(0, posy))
-    elif fn == 6:
-        return min(state.console_state.height, max(1, 1 + pen_down_pos[1]//state.console_state.font_height))
-    elif fn == 7:
-        return min(state.console_state.width, max(1, 1 + pen_down_pos[0]//8))
-    elif fn == 8:
-        return min(state.console_state.height, max(1, 1 + posy//state.console_state.font_height))
-    elif fn == 9:
-        return min(state.console_state.width, max(1, 1 + posx//xscale))
-
-def get_stick(fn):
-    stick_num, axis = fn//2, fn%2
-    if len(joysticks) == 0:
-        return 0
-    if len(joysticks) < stick_num + 1:
-        return 128
-    else:
-        return int(joysticks[stick_num].get_axis(axis)*127)+128
-
-def get_strig(fn):       
-    joy, trig = fn//4, (fn//2)%2
-    if joy >= len(joysticks) or trig >= joysticks[joy].get_numbuttons():
-        return False
-    if fn%2 == 0:
-        # has been trig
-        stick_was_trig = stick_fired[joy][trig]
-        stick_fired[joy][trig] = False
-        return stick_was_trig
-    else:
-        # trig
-        return joysticks[joy].get_button(trig)
-      
 ###############################################
 # graphics backend interface
 # low-level methods (pygame implementation)
@@ -857,6 +832,78 @@ def fast_put(x0, y0, varname, operation_char):
     screen_changed = True
     return True
 
+##############################################
+# penstick interface
+# light pen (emulated by mouse) & joystick
+
+# should be True on mouse click events
+pen_down = 0
+pen_down_pos = (0,0)
+
+stick_fired = [[False, False], [False, False]]
+
+def trigger_pen(pos):
+    global pen_down, pen_down_pos
+    state.basic_state.pen_handler.triggered = True
+    pen_down = -1 # TRUE
+    display_info = pygame.display.Info()
+    xscale, yscale = display_info.current_w / (1.*state.console_state.size[0]), display_info.current_h / (1.*state.console_state.size[1])
+    pen_down_pos = int(pos[0]//xscale), int(pos[1]//yscale)
+                
+def trigger_stick(joy, button):
+    stick_fired[joy][button] = True
+    state.basic_state.strig_handlers[joy*2 + button].triggered = True
+
+def get_pen(fn):
+    global pen_down
+    display_info = pygame.display.Info()
+    xscale, yscale = display_info.current_w / (1.*state.console_state.size[0]), display_info.current_h / (1.*state.console_state.size[1])
+    pos = pygame.mouse.get_pos()
+    posx, posy = int(pos[0]//xscale), int(pos[1]//yscale)
+    if fn == 0:
+        pen_down_old, pen_down = pen_down, 0
+        return pen_down_old
+    elif fn == 1:
+        return min(state.console_state.size[0]-1, max(0, pen_down_pos[0]))
+    elif fn == 2:
+        return min(state.console_state.size[1]-1, max(0, pen_down_pos[1]))
+    elif fn == 3:
+        return -pygame.mouse.get_pressed()[0]
+    elif fn == 4:
+        return min(state.console_state.size[0]-1, max(0, posx))
+    elif fn == 5:
+        return min(state.console_state.size[1]-1, max(0, posy))
+    elif fn == 6:
+        return min(state.console_state.height, max(1, 1 + pen_down_pos[1]//state.console_state.font_height))
+    elif fn == 7:
+        return min(state.console_state.width, max(1, 1 + pen_down_pos[0]//8))
+    elif fn == 8:
+        return min(state.console_state.height, max(1, 1 + posy//state.console_state.font_height))
+    elif fn == 9:
+        return min(state.console_state.width, max(1, 1 + posx//xscale))
+
+def get_stick(fn):
+    stick_num, axis = fn//2, fn%2
+    if len(joysticks) == 0:
+        return 0
+    if len(joysticks) < stick_num + 1:
+        return 128
+    else:
+        return int(joysticks[stick_num].get_axis(axis)*127)+128
+
+def get_strig(fn):       
+    joy, trig = fn//4, (fn//2)%2
+    if joy >= len(joysticks) or trig >= joysticks[joy].get_numbuttons():
+        return False
+    if fn%2 == 0:
+        # has been trig
+        stick_was_trig = stick_fired[joy][trig]
+        stick_fired[joy][trig] = False
+        return stick_was_trig
+    else:
+        # trig
+        return joysticks[joy].get_button(trig)
+      
 ####################################
 # sound interface
 
@@ -1021,42 +1068,3 @@ def check_quit_sound():
                 mixer.quit()
                 quiet_ticks = 0
 
-
-####################################
-# state saving and loading
-
-class PygameDisplayState(state.DisplayState):
-    def pickle(self):
-        self.display_strings = ([], [])
-        for s in surface0:    
-            self.display_strings[0].append(pygame.image.tostring(s, 'P'))
-        for s in surface1:    
-            self.display_strings[1].append(pygame.image.tostring(s, 'P'))
-        
-    def unpickle(self):
-        global display_strings, load_flag
-        load_flag = True
-        display_strings = self.display_strings
-        del self.display_strings
-
-
-# picklable store for surfaces
-display_strings = ([], [])
-state.display = PygameDisplayState()
-load_flag = False
-
-def load_state():        
-    global screen_changed
-    if load_flag:
-        try:
-            for i in range(len(surface0)):    
-                surface0[i] = pygame.image.fromstring(display_strings[0][i], state.console_state.size, 'P')
-                surface0[i].set_palette(workaround_palette)
-            for i in range(len(surface1)):    
-                surface1[i] = pygame.image.fromstring(display_strings[1][i], state.console_state.size, 'P')
-                surface1[i].set_palette(workaround_palette)
-            screen_changed = True    
-        except IndexError:
-            # couldn't load the state correctly; most likely a text screen saved from -t. just redraw what's unpickled.
-            console.redraw_text_screen()
-        
