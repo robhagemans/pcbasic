@@ -206,8 +206,8 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
         if state.console_state.keys_visible:  
             show_keys()    
         set_default_cursor()
+        set_pos(1, 1)
         state.video.show_cursor(state.console_state.cursor, False)
-        state.console_state.row, state.console_state.col = 1, 1
         # FIXME: are there different views for different pages?
         unset_view()
     else:
@@ -834,7 +834,7 @@ def put_char(c, do_scroll_down=False):
 def set_pos(to_row, to_col, scroll_ok=True):
     state.console_state.row, state.console_state.col = to_row, to_col
     check_pos(scroll_ok)
-    state.video.set_cursor_colour(state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
+    state.video.update_pos()
 
 def check_pos(scroll_ok=True):
     oldrow, oldcol = state.console_state.row, state.console_state.col
