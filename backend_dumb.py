@@ -154,10 +154,7 @@ def set_attr(cattr):
 def putc_at(row, col, c):
     pass    
 
-def build_default_cursor(mode, is_line):
-    pass
-
-def build_shape_cursor(from_line, to_line):
+def build_cursor():
     pass
 
 def load_state():

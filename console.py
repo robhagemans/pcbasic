@@ -43,7 +43,10 @@ state.console_state.col = 1
 # cursor visible?
 state.console_state.cursor = True
 # overwrite mode (instead of insert)
-state.console_state.overwrite_mode = False
+state.console_state.overwrite_mode = True
+# cursor shape
+state.console_state.cursor_from = 0
+state.console_state.cursor_to = 0    
 
 # key buffer
 # incoming keys, either ascii or \00 followed by INKEY$ scancode 
@@ -202,9 +205,9 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
         # only redraw keys if screen has been cleared (any colours stay the same). state.console_state.screen_mode must be set for this
         if state.console_state.keys_visible:  
             show_keys()    
-        state.console_state.row, state.console_state.col = 1, 1
-        set_overwrite_mode(True)
+        set_default_cursor()
         state.video.show_cursor(state.console_state.cursor, False)
+        state.console_state.row, state.console_state.col = 1, 1
         # FIXME: are there different views for different pages?
         unset_view()
     else:
@@ -260,7 +263,9 @@ def show_cursor(do_show = True):
     return prev
 
 def set_cursor_shape(from_line, to_line):
-    state.video.build_shape_cursor(from_line, to_line)
+    state.console_state.cursor_from = max(0, min(from_line, state.console_state.font_height-1))
+    state.console_state.cursor_to = max(0, min(to_line, state.console_state.font_height-1))
+    state.video.build_cursor()
     
 ############################### 
 # interactive mode         
@@ -372,7 +377,16 @@ def wait_interactive(from_start=False, alt_replace = True):
 def set_overwrite_mode(new_overwrite=True):
     if new_overwrite != state.console_state.overwrite_mode:
         state.console_state.overwrite_mode = new_overwrite
-        state.video.build_default_cursor(state.console_state.screen_mode, new_overwrite)
+        set_default_cursor()
+
+def set_default_cursor():
+    if state.console_state.overwrite_mode:
+        if state.console_state.screen_mode != 0:
+            set_cursor_shape(0, state.console_state.font_height-1)
+        else:
+            set_cursor_shape(state.console_state.font_height-2, state.console_state.font_height-2)
+    else:
+        set_cursor_shape(state.console_state.font_height/2, state.console_state.font_height-1)
       
 def insert_char(crow, ccol, c, cattr):
     while True:

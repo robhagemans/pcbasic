@@ -127,7 +127,7 @@ def init_screen_mode():
     
 def close():
     term_echo()
-    build_default_cursor(0, True)
+    build_cursor()
     term.write(esc_show_cursor)
     term.write(esc_clear_screen)
     term.write(esc_reset)
@@ -274,13 +274,11 @@ def check_keyboard():
 def copy_page(src, dst):
     pass
         
-def build_default_cursor(mode, is_line):
+def build_cursor():
     # works on xterm, not on xfce
     # on xfce, gibberish is printed
+    #is_line = state.console_state.cursor_to - state.console_state.cursor_from < 4
     #term.write(esc_set_cursor_shape % 2*(is_line+1) - 1)
-    pass
-    
-def build_shape_cursor(from_line, to_line):
     pass
 
 def load_state():

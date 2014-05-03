@@ -34,8 +34,6 @@ basic_state = State()
 io_state = State()
 console_state = State()
 display = DisplayState()
-#D - move contents into console state
-display_state = State()
 
 # a state has been loaded
 loaded = False
@@ -86,8 +84,6 @@ def save():
     # Display 
     to_pickle.display = display
     to_pickle.display.pickle()
-    #D
-    to_pickle.display_state = copy.copy(display_state)
     # pickle and compress
     s = zlib.compress(pickle.dumps(to_pickle, 2))
     try:
@@ -98,7 +94,7 @@ def save():
         logging.warning("Could not write to state file. Emulator state not saved.")
     
 def load():
-    global console_state, io_state, display_state, basic_state, display, loaded
+    global console_state, io_state, basic_state, display, loaded
     # decompress and unpickle
     try:
         f = open(state_file, 'rb')
@@ -109,7 +105,7 @@ def load():
         logging.warning("Could not load from state file.")
         return False
     # unpack pickling object
-    io_state, basic_state, console_state, display_state = from_pickle.io, from_pickle.basic, from_pickle.console, from_pickle.display_state
+    io_state, basic_state, console_state = from_pickle.io, from_pickle.basic, from_pickle.console
     basic_state.bytecode = basic_state.bytecode.unpickle()
     basic_state.direct_line = basic_state.direct_line.unpickle()
     from_pickle.display.unpickle()
