@@ -316,9 +316,6 @@ def clear_rows(cattr, start, stop):
 def init_screen_mode():
     global glyphs, cursor0
     global screen, screen_changed, surface0, surface1
-    (mode, to_height, to_width, new_num_pages) = (
-                state.console_state.screen_mode, state.console_state.height, state.console_state.width, 
-                state.console_state.num_pages )
     global font, under_cursor
     try:
         font = fonts[state.console_state.font_height]
@@ -331,16 +328,16 @@ def init_screen_mode():
     set_attr(state.console_state.attr)
     # set standard cursor
     cursor0 = pygame.Surface((8, state.console_state.font_height), depth=8)
-    build_default_cursor(mode, True)
-    if mode == 0:
+    build_default_cursor(state.console_state.screen_mode, True)
+    if state.console_state.screen_mode == 0:
         resize_display(*display_size_text)
     else:
         resize_display(*display_size)
     screen = pygame.Surface(state.console_state.size, depth=8)
     # whole screen (blink on & off)
-    surface0 = [ pygame.Surface(state.console_state.size, depth=8) for _ in range(new_num_pages)]
-    surface1 = [ pygame.Surface(state.console_state.size, depth=8) for _ in range(new_num_pages)]
-    for i in range(new_num_pages):
+    surface0 = [ pygame.Surface(state.console_state.size, depth=8) for _ in range(state.console_state.num_pages)]
+    surface1 = [ pygame.Surface(state.console_state.size, depth=8) for _ in range(state.console_state.num_pages)]
+    for i in range(state.console_state.num_pages):
         surface0[i].set_palette(workaround_palette)
         surface1[i].set_palette(workaround_palette)
     screen.set_palette(workaround_palette)
