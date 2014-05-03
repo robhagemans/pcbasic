@@ -11,6 +11,7 @@
 
 import on_event
 import state 
+import sound
 
 #############################
 # core event handler    
@@ -21,7 +22,7 @@ def check_events():
     # check&handle user events
     on_event.check_events()
     # manage sound queue
-    state.sound.check_sound()
+    sound.check_sound()
 
 def idle():
     state.video.idle()

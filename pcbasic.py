@@ -51,6 +51,7 @@ import error
 import var
 import expressions
 import oslayer
+import sound
 import nosound
 import nopenstick
 import sound_beep
@@ -233,7 +234,7 @@ def prepare_console(args):
     # sound fallback        
     if args.nosound:
         state.sound = nosound
-    if not state.sound.init_sound():
+    if not sound.init_sound():
         logging.warning('Failed to initialise sound. Sound will be disabled.')
         state.sound = nosound
     # gwbasic-style redirected output is split between graphical screen and redirected file    

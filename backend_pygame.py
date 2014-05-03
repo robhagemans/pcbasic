@@ -37,8 +37,8 @@ import error
 import cpi_font
 import unicodepage 
 import console
-
 import state
+import sound
 
 supports_graphics = True
 max_palette = 64
@@ -566,7 +566,7 @@ def pause_key():
     # pause key press waits for any key down. continues to process screen events (blink) but not user events.
     while not check_events(pause=True):
         # continue playing background music
-        state.sound.check_sound()
+        sound.check_sound()
         idle()
         
 def idle():
@@ -910,18 +910,9 @@ def get_strig(fn):
 from math import ceil
 import event_loop
 
-music_foreground = True
-
-def music_queue_length():
-    # top of sound_queue is currently playing
-    return max(0, len(sound_queue)-1)
-        
 def init_sound():
-    return numpy != None
+    return (numpy != None)
     
-def beep():
-    play_sound(800, 0.25)
-
 def stop_all_sound():
     global sound_queue
     mixer.quit()
@@ -953,7 +944,7 @@ def check_sound():
                         current_list = sound_queue[0]
                     except IndexError:
                         check_quit_sound()
-                        return
+                        return 0
                 pair_to_play = current_list.pop(0)         
                 mixer.Channel(0).queue(pair_to_play[0])
                 if pair_to_play[1]:
@@ -961,15 +952,12 @@ def check_sound():
                     # any next sound in the sound queue will stop this looping sound
                 else:   
                     loop_sound = None
+    return len(sound_queue)
         
-def wait_music(wait_length=0, wait_last=True):
-    while not loop_sound_playing and (
-            len(sound_queue) + wait_last - 1 > wait_length 
-            or (wait_last and music_queue_length() == 0 and mixer.get_busy())):
-        event_loop.idle()
-        event_loop.check_events()
-
-def play_sound(frequency, total_duration, fill=1, loop=False):
+def busy():
+    return not loop_sound_playing and mixer.get_busy()
+        
+def play_sound(frequency, total_duration, fill, loop):
     check_init_mixer()
     # one wavelength at 37 Hz is 1192 samples at 44100 Hz
     chunk_length = 1192 * 2
@@ -1021,8 +1009,6 @@ def play_sound(frequency, total_duration, fill=1, loop=False):
         gap_length = gap * sample_rate
         chunk = numpy.zeros(gap_length, numpy.int16)
         sound_list.append((pygame.sndarray.make_sound(chunk), False))
-    # at most 16 notes in the sound queue (not 32 as the guide says!)
-    wait_music(15)
     sound_queue.append(sound_list)
 
 # implementation
@@ -1058,7 +1044,7 @@ def check_quit_sound():
     global quiet_ticks
     if mixer.get_init() == None:
         return
-    if music_queue_length() > 0 or mixer.get_busy():
+    if sound_queue or mixer.get_busy():
         quiet_ticks = 0
     else:
         quiet_ticks += 1    
