@@ -324,14 +324,14 @@ def init_screen_mode():
     glyphs = [ build_glyph(c, font, state.console_state.font_height) for c in range(256) ]
     # initialise glyph colour
     set_attr(state.console_state.attr)
-    # set standard cursor
-    cursor0 = pygame.Surface((8, state.console_state.font_height), depth=8)
-    build_cursor()
     if state.console_state.screen_mode == 0:
         resize_display(*display_size_text)
     else:
         resize_display(*display_size)
     screen = pygame.Surface(state.console_state.size, depth=8)
+    # set standard cursor
+    cursor0 = pygame.Surface((8, state.console_state.font_height), depth=8)
+    build_cursor()
     # whole screen (blink on & off)
     surface0 = [ pygame.Surface(state.console_state.size, depth=8) for _ in range(state.console_state.num_pages)]
     surface1 = [ pygame.Surface(state.console_state.size, depth=8) for _ in range(state.console_state.num_pages)]
@@ -340,6 +340,8 @@ def init_screen_mode():
         surface1[i].set_palette(workaround_palette)
     screen.set_palette(workaround_palette)
     under_cursor.set_palette(workaround_palette)
+    # set cursor colour
+    update_pos()
     screen_changed = True
     
 def copy_page(src,dst):
@@ -353,8 +355,9 @@ def show_cursor(do_show, prev):
     if do_show != prev:
         screen_changed = True
 
-def set_cursor_colour(color):
-    cursor0.set_palette_at(254, screen.get_palette_at(color))
+def update_pos():
+    attr = state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf
+    cursor0.set_palette_at(254, screen.get_palette_at(attr))
 
 def scroll(from_line):
     global screen_changed
