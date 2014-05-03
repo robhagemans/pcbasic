@@ -41,6 +41,7 @@ import console
 import state
 
 supports_graphics = True
+max_palette = 64
 
 if pygame:
     # CGA palette choices
@@ -75,7 +76,6 @@ if pygame:
             (0,0,8), (0,0,9), (0,0,10), (0,0,11), (0,0,12), (0,0,13), (0,0,14), (0,0,15) ]
 
     # standard palettes
-    state.display_state.palette64 = [0,1,2,3,4,5,20,7,56,57,58,59,60,61,62,63]
     gamepalette = None
 
     # screen width and height in pixels
@@ -265,7 +265,6 @@ def init():
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
     for j in joysticks:
         j.init()
-    set_palette(state.display_state.palette64)
     return True
 
 def resize_display(width, height, initial=False): 
@@ -297,35 +296,15 @@ def close():
     pygame.joystick.quit()
     pygame.display.quit()    
 
-def get_palette_entry(index):
-    return state.display_state.palette64[index]
-
-def set_palette(new_palette=None):
+def update_palette():
     global gamepalette
     if state.console_state.num_palette == 64:
-        state.display_state.palette64 = new_palette if new_palette else [0,1,2,3,4,5,20,7,56,57,58,59,60,61,62,63]
-        gamepalette = [ gamecolours64[i] for i in state.display_state.palette64 ]
-    elif state.console_state.num_colours>=16:
-        state.display_state.palette64 = new_palette if new_palette else [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-        gamepalette = [ gamecolours16[i] for i in state.display_state.palette64 ]
-    elif state.console_state.num_colours==4:
-        state.display_state.palette64 = new_palette if new_palette else [0, 11, 13, 15]
-        gamepalette = [ gamecolours16[i] for i in state.display_state.palette64 ]
+        gamepalette = [ gamecolours64[i] for i in state.console_state.palette ]
     else:
-        state.display_state.palette64 = new_palette if new_palette else [0, 15]
-        gamepalette = [ gamecolours16[i] for i in state.display_state.palette64 ]
+        gamepalette = [ gamecolours16[i] for i in state.console_state.palette ]
     if not smooth:
         display.set_palette(gamepalette)
 
-def set_palette_entry(index, colour):
-    state.display_state.palette64[index] = colour
-    if state.console_state.num_palette==64:
-        gamepalette[index] = gamecolours64[colour]
-    else:
-        gamepalette[index] = gamecolours16[colour]
-    if not smooth:
-        display.set_palette_at(index, gamepalette[index])
-    
 def clear_rows(cattr, start, stop):
     global screen_changed
     bg = (cattr>>4) & 0x7
@@ -345,6 +324,7 @@ def init_screen_mode():
         font = fonts[state.console_state.font_height]
     except KeyError:
         font = None
+    update_palette()
     under_cursor = pygame.Surface((8, state.console_state.font_height), depth=8)
     glyphs = [ build_glyph(c, font, state.console_state.font_height) for c in range(256) ]
     # initialise glyph colour

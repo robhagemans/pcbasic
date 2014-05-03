@@ -32,6 +32,7 @@ import console
 import state
 
 supports_graphics = False
+max_palette = 16
 
 term_echo_on = True
 term_attr = None
@@ -42,7 +43,6 @@ colours = (0, 4, 2, 6, 1, 5, 3, 7)
 colournames = ('Black','Dark Blue','Dark Green','Dark Cyan','Dark Red','Dark Magenta','Brown','Light Gray',
 'Dark Gray','Blue','Green','Cyan','Red','Magenta','Yellow','White')
 palette_changed = True
-palette = None
 
 # ANSI escape sequences
 # for reference, see:
@@ -121,7 +121,6 @@ def init():
     return True
     
 def init_screen_mode():
-    set_palette()
     term.write(esc_clear_screen)
     term.write(esc_resize_term % (state.console_state.height, state.console_state.width))
     term.flush()
@@ -153,33 +152,29 @@ def redraw():
 
 #####
 
-def set_palette(new_palette=None):
-    global palette, palette_changed
-    if not new_palette:
-        new_palette = list(range(16)) 
-    if palette != new_palette:
-        palette = new_palette
-        palette_changed = True
-        try:
-            redraw()     
-        except AttributeError:
-            # skip this on init when apage doesn't exist yet
-            pass
-    
-def set_palette_entry(index, colour):
-    global palette, palette_changed
-    if palette[index] != colour:
-        palette[index] = colour
-        palette_changed = True
-        redraw()
-    
-def get_palette_entry(index):
-    return palette[index]
+def update_palette():
+    global palette_changed
+    palette_changed = True
+    redraw()     
 
 ####
 
-def set_cursor_colour(color):
-    term.write(esc_set_cursor_colour % colournames[apply_palette(color)%16])
+def get_fg_colourname(attr):
+    colour = state.console_state.palette[attr & 15] & 15
+    return colournames[colour]
+
+def get_colours(attr):
+    fore = state.console_state.palette[attr & 15] & 15  
+    back = state.console_state.palette[(attr>>4) & 7] & 7 
+    if (fore & 8) == 0:
+        fore = 30 + colours[fore%8]
+    else:
+        fore = 90 + colours[fore%8]
+    back = 40 + colours[back%8]
+    return fore, back
+
+def set_cursor_colour(attr):
+    term.write(esc_set_cursor_colour % get_fg_colourname(attr))
     term.flush()
     
 def show_cursor(do_show, prev=None):
@@ -191,9 +186,6 @@ def check_events():
     if state.console_state.cursor:
         term.write(esc_move_cursor % (state.console_state.row,state.console_state.col))
         term.flush()
-        
-def apply_palette(colour):
-    return colour&0x8 | palette[colour&0x7]
 
 last_attr = None
 def set_attr(attr):
@@ -205,13 +197,10 @@ def set_attr(attr):
     if attr & 0x80:
         # blink
         term.write(esc_set_colour % 5)   
-    fore, back = apply_palette(attr & 0xf), apply_palette((attr>>4) & 0x7)
-    if (fore%16)<8:
-        term.write(esc_set_colour % (30+colours[fore%8]))
-    else:
-        term.write(esc_set_colour % (90+colours[fore%8]))       
-    term.write(esc_set_colour % (40+colours[back%8]))
-    term.write(esc_set_cursor_colour % colournames[fore%16])
+    fore, back = get_colours(attr)    
+    term.write(esc_set_colour % fore)       
+    term.write(esc_set_colour % back)
+    set_cursor_colour(attr)
     term.flush()  
     last_attr = attr
 

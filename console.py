@@ -9,14 +9,15 @@
 # please see text file COPYING for licence terms.
 #
 
+import logging
+
+import state
 import event_loop
-import util
 # for Break, Exit, Reset
 import error
 # for aspect ratio
 import fp
 
-import state
 
 # codepage suggestion for backend
 state.console_state.codepage = 437    
@@ -67,10 +68,6 @@ state.console_state.screen_mode = 0
 state.console_state.apagenum = 0
 # number of visible page
 state.console_state.vpagenum = 0
-
-# palette
-state.console_state.num_colours = 32    
-state.console_state.num_palette = 64
 
 # pen and stick
 state.console_state.pen_is_on = False
@@ -132,8 +129,6 @@ keys_line_replace_chars = {
 #############################
 # init
 
-import logging
-
 def init():
     global state
     if not state.video.init():
@@ -180,14 +175,19 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
         # set all state vars
         state.console_state.screen_mode, state.console_state.colorswitch = new_mode, new_colorswitch 
         state.console_state.width, state.console_state.height = new_width, 25
-        state.console_state.font_height, state.console_state.attr, state.console_state.num_colours, state.console_state.num_palette, _, state.console_state.num_pages, state.console_state.bitsperpixel = info  
+        (   state.console_state.font_height, state.console_state.attr, 
+            state.console_state.num_colours, state.console_state.num_palette, _, 
+            state.console_state.num_pages, state.console_state.bitsperpixel     ) = info  
+        # enforce backend palette maximum
+        state.console_state.num_palette = min(state.console_state.num_palette, state.video.max_palette)
         # width persists on change to screen 0
         state.console_state.pages = []
         for _ in range(state.console_state.num_pages):
             state.console_state.pages.append(ScreenBuffer(state.console_state.width, state.console_state.height))
         # set active page & visible page, counting from 0. 
         state.console_state.vpagenum, state.console_state.apagenum = new_vpagenum, new_apagenum
-        state.console_state.vpage, state.console_state.apage = state.console_state.pages[state.console_state.vpagenum], state.console_state.pages[state.console_state.apagenum]
+        state.console_state.vpage = state.console_state.pages[state.console_state.vpagenum]
+        state.console_state.apage = state.console_state.pages[state.console_state.apagenum]
         # resolution
         state.console_state.size = (state.console_state.width*8, state.console_state.height*state.console_state.font_height)
         # centre of new graphics screen
@@ -196,13 +196,13 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
         state.console_state.pixel_aspect_ratio = fp.div(
             fp.Single.from_int(state.console_state.height*state.console_state.font_height), 
             fp.Single.from_int(6*state.console_state.width)) 
+        set_palette()
         # signal the backend to change the screen resolution
         state.video.init_screen_mode()
         # only redraw keys if screen has been cleared (any colours stay the same). state.console_state.screen_mode must be set for this
         if state.console_state.keys_visible:  
             show_keys()    
         state.console_state.row, state.console_state.col = 1, 1
-        set_palette()
         set_overwrite_mode(True)
         state.video.show_cursor(state.console_state.cursor, False)
         # FIXME: are there different views for different pages?
@@ -210,7 +210,8 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
     else:
         # set active page & visible page, counting from 0. 
         state.console_state.vpagenum, state.console_state.apagenum = new_vpagenum, new_apagenum
-        state.console_state.vpage, state.console_state.apage = state.console_state.pages[state.console_state.vpagenum], state.console_state.pages[state.console_state.apagenum]
+        state.console_state.vpage = state.console_state.pages[state.console_state.vpagenum]
+        state.console_state.apage = state.console_state.pages[state.console_state.apagenum]
         state.video.screen_changed = True
         # FIXME: keys visible?
     return True
@@ -230,16 +231,28 @@ def exit():
         state.video.close()
 
 #############################
-    
-def set_palette(new_palette=None):
-    state.video.set_palette(new_palette)
 
 def set_palette_entry(index, colour):
-    state.video.set_palette_entry(index, colour)
-
+    state.console_state.palette[index] = colour
+    state.video.update_palette()
+    
 def get_palette_entry(index):
-    return state.video.get_palette_entry(index)
-        
+    return state.console_state.palette[index]
+
+def set_palette(new_palette=None):
+    if new_palette:
+        state.console_state.palette = new_palette
+    else:    
+        if state.console_state.num_palette == 64:
+            state.console_state.palette = [0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63]
+        elif state.console_state.num_colours >= 16:
+            state.console_state.palette = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+        elif state.console_state.num_colours == 4:
+            state.console_state.palette = [0, 11, 13, 15]
+        else:
+            state.console_state.palette = [0, 15]
+    state.video.update_palette()
+
 def show_cursor(do_show = True):
     prev = state.console_state.cursor
     state.console_state.cursor = do_show
@@ -285,7 +298,7 @@ def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
             echo('\r\n')
         set_pos(state.console_state.row+1, 1)
     # remove trailing whitespace 
-    while len(line) > 0 and line[-1] in util.whitespace:
+    while len(line) > 0 and line[-1] in (' ', '\t', '\x0a'):
         line = line[:-1]
     outstr = bytearray()
     for c, _ in line:

@@ -23,6 +23,8 @@ import plat
 import state
 
 supports_graphics = False
+# palette is ignored
+max_palette = 64
 
 # these values are not shown as special graphic chars but as their normal effect
 control = (
@@ -140,14 +142,8 @@ def scroll_down(from_line):
 def set_cursor_colour(c):
     pass
         
-def set_palette(new_palette=[]):
+def update_palette():
     pass
-    
-def set_palette_entry(index, colour):
-    pass
-
-def get_palette_entry(index):
-    return index
 
 def show_cursor(do_show, prev):
     pass    
