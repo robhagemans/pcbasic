@@ -350,10 +350,9 @@ def copy_page(src,dst):
     surface1[dst].blit(surface1[src], (0,0))
     screen_changed = True
     
-def show_cursor(do_show, prev):
+def update_cursor_visibility():
     global screen_changed
-    if do_show != prev:
-        screen_changed = True
+    screen_changed = True
 
 def update_pos():
     attr = state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf

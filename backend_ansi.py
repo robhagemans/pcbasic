@@ -178,8 +178,8 @@ def update_pos():
     term.write(esc_set_cursor_colour % get_fg_colourname(attr))
     term.flush()
     
-def show_cursor(do_show, prev=None):
-    term.write(esc_show_cursor if do_show else esc_hide_cursor)
+def update_cursor_visibility():
+    term.write(esc_show_cursor if state.console_state.cursor else esc_hide_cursor)
     term.flush()
 
 def check_events():
