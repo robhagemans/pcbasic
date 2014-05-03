@@ -93,8 +93,6 @@ if pygame:
     font = None
     
     # cursor shape
-    state.display_state.cursor_from = 0
-    state.display_state.cursor_to = 0    
     cursor0 = None
     # screen & updating 
     screen = None
@@ -328,7 +326,7 @@ def init_screen_mode():
     set_attr(state.console_state.attr)
     # set standard cursor
     cursor0 = pygame.Surface((8, state.console_state.font_height), depth=8)
-    build_default_cursor(state.console_state.screen_mode, True)
+    build_cursor()
     if state.console_state.screen_mode == 0:
         resize_display(*display_size_text)
     else:
@@ -357,25 +355,6 @@ def show_cursor(do_show, prev):
 
 def set_cursor_colour(color):
     cursor0.set_palette_at(254, screen.get_palette_at(color))
-
-def build_default_cursor(mode, overwrite):
-    global screen_changed
-    if overwrite and not mode:
-        state.display_state.cursor_from, state.display_state.cursor_to = state.console_state.font_height-2, state.console_state.font_height-2
-    elif overwrite and mode:
-        state.display_state.cursor_from, state.display_state.cursor_to = 0, state.console_state.font_height-1
-    else:
-        state.display_state.cursor_from, state.display_state.cursor_to = state.console_state.font_height/2, state.console_state.font_height-1
-    build_cursor()
-    screen_changed = True
-
-def build_shape_cursor(from_line, to_line):
-    global screen_changed
-    if not state.console_state.screen_mode:
-        state.display_state.cursor_from = max(0, min(from_line, state.console_state.font_height-1))
-        state.display_state.cursor_to = max(0, min(to_line, state.console_state.font_height-1))
-        build_cursor()
-        screen_changed = True
 
 def scroll(from_line):
     global screen_changed
@@ -460,15 +439,17 @@ def build_glyph(c, font_face, glyph_height):
     return glyph            
     
 def build_cursor():
+    global screen_changed
     color, bg = 254, 255
     cursor0.set_colorkey(bg)
     cursor0.fill(bg)
     for yy in range(state.console_state.font_height):
         for xx in range(8):
-            if yy < state.display_state.cursor_from or yy > state.display_state.cursor_to:
+            if yy < state.console_state.cursor_from or yy > state.console_state.cursor_to:
                 pass
             else:
                 cursor0.set_at((xx, yy), color)
+    screen_changed = True            
 
 # build the Ok icon
 def build_icon():
@@ -499,7 +480,7 @@ def remove_cursor():
         screen.blit(under_cursor, under_top_left)
 
 def refresh_cursor():
-    global under_top_left
+    global under_top_left, last_row, last_col
     if not state.console_state.cursor or state.console_state.vpage != state.console_state.apage:
         return
     # copy screen under cursor
@@ -518,15 +499,15 @@ def refresh_cursor():
         index = state.console_state.attr & 0xf
         # reference the destination area
         dest_array = pygame.surfarray.pixels2d(screen.subsurface(pygame.Rect(
-                            (state.console_state.col-1)*8, (state.console_state.row-1)*state.console_state.font_height + state.display_state.cursor_from, 8, 
-                            state.display_state.cursor_to - state.display_state.cursor_from + 1))) 
+                            (state.console_state.col-1)*8, (state.console_state.row-1)*state.console_state.font_height + state.console_state.cursor_from, 8, 
+                            state.console_state.cursor_to - state.console_state.cursor_from + 1))) 
         dest_array ^= index
     else:
         index = state.console_state.attr & 0xf
         # no surfarray if no numpy    
         for x in range((state.console_state.col-1) * 8, state.console_state.col * 8):
-            for y in range((state.console_state.row-1)*state.console_state.font_height + state.display_state.cursor_from, 
-                            (state.console_state.row-1)*state.console_state.font_height + state.display_state.cursor_to + 1):
+            for y in range((state.console_state.row-1)*state.console_state.font_height + state.console_state.cursor_from, 
+                            (state.console_state.row-1)*state.console_state.font_height + state.console_state.cursor_to + 1):
                 pixel = get_pixel(x,y)
                 screen.set_at((x,y), pixel^index)
     last_row = state.console_state.row
@@ -536,7 +517,7 @@ def pause_key():
     # pause key press waits for any key down. continues to process screen events (blink) but not user events.
     while not check_events(pause=True):
         # continue playing background music
-        state.display_state.sound.check_sound()
+        state.sound.check_sound()
         idle()
         
 def idle():
