@@ -207,7 +207,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
             show_keys()    
         set_default_cursor()
         set_pos(1, 1)
-        state.video.show_cursor(state.console_state.cursor, False)
+        state.video.update_cursor_visibility()
         # FIXME: are there different views for different pages?
         unset_view()
     else:
@@ -259,7 +259,7 @@ def set_palette(new_palette=None):
 def show_cursor(do_show = True):
     prev = state.console_state.cursor
     state.console_state.cursor = do_show
-    state.video.show_cursor(do_show, prev)
+    state.video.update_cursor_visibility()
     return prev
 
 def set_cursor_shape(from_line, to_line):
