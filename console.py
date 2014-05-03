@@ -315,7 +315,6 @@ def wait_interactive(from_start=False, alt_replace = True):
     start_row, furthest_left = state.console_state.row, (state.console_state.col if not from_start else 1)
     # this is where we arrow-keyed on the start line
     furthest_right = state.console_state.col 
-    set_overwrite_mode(True) 
     while True: 
         if state.console_state.row == start_row:
             furthest_left = min(state.console_state.col, furthest_left)
