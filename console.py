@@ -19,6 +19,51 @@ import error
 # for aspect ratio
 import fp
 
+class ScreenRow(object):
+    def __init__(self, bwidth):
+        # screen buffer, initialised to spaces, dim white on black
+        self.clear()
+        # line continues on next row (either LF or word wrap happened)
+        self.wrap = False
+    
+    def clear(self):
+        self.buf = [(' ', state.console_state.attr)] * state.console_state.width
+        # last non-white character
+        self.end = 0    
+
+class ScreenBuffer(object):
+    def __init__(self, bwidth, bheight):
+        self.row = [ScreenRow(bwidth) for _ in xrange(bheight)]
+        
+#  font_height, attr, num_colours, num_palette, width, num_pages, bitsperpixel
+mode_data = {
+    0: ( 16,  7, 32, 64, 80, 4, 4 ),
+    1: (  8,  3,  4, 16, 40, 1, 2 ),
+    2: (  8,  1,  2, 16, 80, 1, 1 ), 
+    7: (  8, 15, 16, 16, 40, 8, 4 ),
+    8: (  8, 15, 16, 16, 80, 4, 4 ),
+    9: ( 14, 15, 16, 64, 80, 2, 4 ),
+    }
+
+# default codes for KEY autotext
+# F1-F10 
+function_key = { 
+        '\x00\x3b':0, '\x00\x3c':1, '\x00\x3d':2, '\x00\x3e':3, '\x00\x3f':4,     
+        '\x00\x40':5, '\x00\x41':6, '\x00\x42':7, '\x00\x43':8, '\x00\x44':9 }
+
+alt_key_replace = {
+    '\x00\x1E': 'AUTO',  '\x00\x30': 'BSAVE',  '\x00\x2E': 'COLOR',  '\x00\x20': 'DELETE', '\x00\x12': 'ELSE', 
+    '\x00\x21': 'FOR',   '\x00\x22': 'GOT0',   '\x00\x23': 'HEX$',   '\x00\x17': 'INPUT',
+    '\x00\x25': 'KEY',   '\x00\x26': 'LOCATE', '\x00\x32': 'MOTOR',  '\x00\x31': 'NEXT',   '\x00\x18': 'OPEN', 
+    '\x00\x19': 'PRINT', '\x00\x13': 'RUN',    '\x00\x1F': 'SCREEN', '\x00\x14': 'THEN',   '\x00\x16': 'USING', 
+    '\x00\x2F': 'VAL',   '\x00\x11': 'WIDTH',  '\x00\x2D': 'XOR' }
+
+# on the keys line 25, what characters to replace & with which
+keys_line_replace_chars = { 
+        '\x07': '\x0e',    '\x08': '\xfe',    '\x09': '\x1a',    '\x0A': '\x1b',
+        '\x0B': '\x7f',    '\x0C': '\x16',    '\x0D': '\x1b',    '\x1C': '\x10',
+        '\x1D': '\x11',    '\x1E': '\x18',    '\x1F': '\x19',
+    }        
 
 # codepage suggestion for backend
 state.console_state.codepage = 437    
@@ -82,53 +127,6 @@ state.console_state.keys_visible = True
 # user definable key list
 state.console_state.key_replace = [ 
     'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r','TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r' ]
-
-class ScreenRow(object):
-    def __init__(self, bwidth):
-        # screen buffer, initialised to spaces, dim white on black
-        self.clear()
-        # line continues on next row (either LF or word wrap happened)
-        self.wrap = False
-    
-    def clear(self):
-        self.buf = [(' ', state.console_state.attr)] * state.console_state.width
-        # last non-white character
-        self.end = 0    
-
-class ScreenBuffer(object):
-    def __init__(self, bwidth, bheight):
-        self.row = [ScreenRow(bwidth) for _ in xrange(bheight)]
-        
-#  font_height, attr, num_colours, num_palette, width, num_pages, bitsperpixel
-mode_data = {
-    0: ( 16,  7, 32, 64, 80, 4, 4 ),
-    1: (  8,  3,  4, 16, 40, 1, 2 ),
-    2: (  8,  1,  2, 16, 80, 1, 1 ), 
-    7: (  8, 15, 16, 16, 40, 8, 4 ),
-    8: (  8, 15, 16, 16, 80, 4, 4 ),
-    9: ( 14, 15, 16, 64, 80, 2, 4 ),
-    }
-
-# default codes for KEY autotext
-# F1-F10 
-function_key = { 
-        '\x00\x3b':0, '\x00\x3c':1, '\x00\x3d':2, '\x00\x3e':3, '\x00\x3f':4,     
-        '\x00\x40':5, '\x00\x41':6, '\x00\x42':7, '\x00\x43':8, '\x00\x44':9 }
-
-alt_key_replace = {
-    '\x00\x1E': 'AUTO',  '\x00\x30': 'BSAVE',  '\x00\x2E': 'COLOR',  '\x00\x20': 'DELETE', '\x00\x12': 'ELSE', 
-    '\x00\x21': 'FOR',   '\x00\x22': 'GOT0',   '\x00\x23': 'HEX$',   '\x00\x17': 'INPUT',
-    '\x00\x25': 'KEY',   '\x00\x26': 'LOCATE', '\x00\x32': 'MOTOR',  '\x00\x31': 'NEXT',   '\x00\x18': 'OPEN', 
-    '\x00\x19': 'PRINT', '\x00\x13': 'RUN',    '\x00\x1F': 'SCREEN', '\x00\x14': 'THEN',   '\x00\x16': 'USING', 
-    '\x00\x2F': 'VAL',   '\x00\x11': 'WIDTH',  '\x00\x2D': 'XOR' }
-
-# on the keys line 25, what characters to replace & with which
-keys_line_replace_chars = { 
-        '\x07': '\x0e',    '\x08': '\xfe',    '\x09': '\x1a',    '\x0A': '\x1b',
-        '\x0B': '\x7f',    '\x0C': '\x16',    '\x0D': '\x1b',    '\x1C': '\x10',
-        '\x1D': '\x11',    '\x1E': '\x18',    '\x1F': '\x19',
-    }        
-
 
 #############################
 # init
