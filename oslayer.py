@@ -35,7 +35,7 @@ if plat.system == 'Windows':
 else:
     try:
         import pexpect
-    except Exception:
+    except ImportError:
         import logging
         logging.warning('Pexpect module not found. SHELL command will not work.')    
     
@@ -222,7 +222,7 @@ if plat.system == 'Windows':
             path = current_drive
         try:
             shortname = win32api.GetShortPathName(os.path.join(path, name)).upper()
-        except Exception as e:
+        except WindowsError:
             # something went wrong, show as dots in FILES
             return "........", "..."
         split = shortname.split('\\')[-1].split('.')
@@ -348,14 +348,14 @@ dospath_write_dir = partial(dospath, action=dossify_write, isdir=True)
     
 # for FILES command
 # apply filename filter and DOSify names
-def pass_dosnames(path, files, mask='*.*'):
+def pass_dosnames(path, files_list, mask='*.*'):
     mask = str(mask).rsplit('.', 1)
     if len(mask) == 2:
         trunkmask, extmask = mask
     else:
         trunkmask, extmask = mask[0], ''
     dosfiles = []
-    for name in files:
+    for name in files_list:
         trunk, ext = dossify(path, name)
         # apply mask separately to trunk and extension, dos-style.
         if not fnmatch.fnmatch(trunk.upper(), trunkmask.upper()) or not fnmatch.fnmatch(ext.upper(), extmask.upper()):
@@ -380,15 +380,15 @@ def files(pathmask):
     mask = mask.upper()
     if mask == '':
         mask = '*.*'
-    roots, dirs, files = [], [], []
-    for root, dirs, files in safe(os.walk, path):
+    roots, dirs, files_list = [], [], []
+    for roots, dirs, files_list in safe(os.walk, path):
         break
     # get working dir in DOS format
     # NOTE: this is always the current dir, not the one being listed
     console.write_line(drive + ':\\' + drive_cwd[drive].replace(os.sep, '\\'))
-    if (roots, dirs, files) == ([], [], []):
+    if (roots, dirs, files_list) == ([], [], []):
         raise error.RunError(53)
-    dosfiles = pass_dosnames(path, files, mask)
+    dosfiles = pass_dosnames(path, files_list, mask)
     dosfiles = [ name+'     ' for name in dosfiles ]
     dirs += ['.', '..']
     dosdirs = pass_dosnames(path, dirs, mask)
@@ -496,7 +496,7 @@ if plat.system == 'Windows':
                 last = lines.pop()
                 for line in lines:
                     event_loop.check_events()
-                    event_loop.write_line(line)
+                    console.write_line(line)
                 console.write(last)    
             if p.poll() != None:
                 # drain output then break
@@ -575,7 +575,7 @@ class CUPSStream(StringIO.StringIO):
         self.truncate(0)
         utf8buf = ''
         for c in printbuf:
-            utf8buf += unicodepage.cp_to_utf8[printbuf]
+            utf8buf += unicodepage.cp_to_utf8[c]
         line_print(utf8buf, self.printer_name)
 
 if plat.system == 'Windows':

@@ -48,7 +48,6 @@ import logging
 
 import run
 import error
-import var
 import expressions
 import oslayer
 import sound
@@ -132,7 +131,7 @@ def main():
                 run.show_prompt()
             state.save()
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
-        console.exit()
+        console.close()
         iolayer.close_all()
         iolayer.close_devices()
             

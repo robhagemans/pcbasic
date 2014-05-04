@@ -134,7 +134,6 @@ keys_line_replace_chars = {
 # init
 
 def init():
-    global state
     if not state.video.init():
         return False
     if state.loaded:
@@ -176,10 +175,17 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
                 new_width = state.console_state.width
             else:
                 new_width = info[4]        
+        if (state.console_state.screen_mode == 0 and new_mode == 0 
+                and state.console_state.apagenum == new_apagenum and state.console_state.vpagenum == new_vpagenum):
+            # preserve attribute (but not palette) on screen 0 width switch
+            new_attr = state.console_state.attr
+        else:
+            new_attr = info[1]            
         # set all state vars
         state.console_state.screen_mode, state.console_state.colorswitch = new_mode, new_colorswitch 
         state.console_state.width, state.console_state.height = new_width, 25
-        (   state.console_state.font_height, state.console_state.attr, 
+        state.console_state.attr = new_attr
+        (   state.console_state.font_height, _, 
             state.console_state.num_colours, state.console_state.num_palette, _, 
             state.console_state.num_pages, state.console_state.bitsperpixel     ) = info  
         # enforce backend palette maximum
@@ -230,7 +236,7 @@ def copy_page(src, dst):
     state.video.copy_page(src, dst)
     
 # sort out the terminal, close the window, etc
-def exit():
+def close():
     if state.video:
         state.video.close()
 
@@ -664,7 +670,7 @@ def write(s, scroll_ok=True):
         last = c
 
 def write_line(s='', scroll_ok=True): 
-    write(s, scroll_ok=True)
+    write(s, scroll_ok=scroll_ok)
     for echo in state.console_state.output_echos:
         echo('\r\n')
     state.console_state.apage.row[state.console_state.row-1].wrap = False

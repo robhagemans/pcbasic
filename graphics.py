@@ -30,7 +30,7 @@ def require_graphics_mode(err=5):
         raise error.RunError(err)
 
 def is_graphics_mode():
-    return backend and state.console_state.screen_mode
+    return state.video and state.console_state.screen_mode
 
 # reset graphics state    
 def reset_graphics():

@@ -87,6 +87,7 @@ class Error(Exception):
             
 class Break(Error):
     def __init__(self):
+        Error.__init__(self)
         if not state.basic_state.run_mode:
             self.pos = -1
         else:
@@ -94,14 +95,15 @@ class Break(Error):
         
 class Reset(Error):
     def __init__(self):
-        pass
+        Error.__init__(self)
         
 class Exit(Error):
     def __init__(self):
-        pass
+        Error.__init__(self)
             
 class RunError(Error):
     def __init__(self, value, pos=-1):
+        Error.__init__(self)
         self.err = value
         if not state.basic_state.run_mode or pos != -1:
             self.pos = pos  

@@ -16,7 +16,6 @@ import select
 import os
 import logging
 
-import error
 import unicodepage
 import console
 import plat
@@ -75,7 +74,8 @@ def check_keys_interactive():
 def check_keys_dumb():
     if check_keys_interactive() == '':
         state.console_state.input_closed = True
-    
+
+check_keys = check_keys_dumb
 
 def getc_utf8():
     c = getc()
@@ -101,9 +101,6 @@ def getc():
     c = os.read(fd,1) if sel[0] != [] else ''
     return c
     
-##############################################        
-
-
 def echo_stdout_utf8(s):
     for c in s:
         if c in control:    
@@ -111,7 +108,6 @@ def echo_stdout_utf8(s):
         else:
             sys.stdout.write(unicodepage.cp_to_utf8[c]) 
     sys.stdout.flush()        
-
         
 ##############################################
         

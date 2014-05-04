@@ -15,7 +15,6 @@ from operator import itemgetter
 import state
 import vartypes
 import var
-import graphics
 import console
 import error
 import event_loop

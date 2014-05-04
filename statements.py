@@ -37,6 +37,7 @@ import state
 import util
 import var
 import vartypes
+import sound
 
 # parses one statement at the current stream pointer in current_codestream
 # return value False: stream ends

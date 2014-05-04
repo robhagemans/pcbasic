@@ -10,7 +10,6 @@
 #
 
 import subprocess
-import event_loop
 import state
 
 now_playing = None

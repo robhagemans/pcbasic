@@ -11,7 +11,6 @@
 
 import state
 import event_loop
-import datetime
 
 state.console_state.music_foreground = True
 state.console_state.music_queue = []
