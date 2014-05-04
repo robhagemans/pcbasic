@@ -221,8 +221,8 @@ def prepare_console(args):
         state.sound = backend_pygame
         backend_pygame.prepare(args)
     # initialise backends 
-    # on --resume, changes to state here get overwritten
-    state.console_state.keys_visible = not args.run
+    if args.run:
+        state.console_state.keys_visible = False
     if not console.init() and backend_dumb:
         logging.warning('Falling back to dumb-terminal.')
         state.video = backend_dumb
