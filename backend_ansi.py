@@ -224,7 +224,6 @@ def scroll_down(from_line):
     if state.console_state.row < state.console_state.height:
         term.write(esc_move_cursor % (state.console_state.row+1, state.console_state.col))
     term.flush()
-    pass
     
 #######
 

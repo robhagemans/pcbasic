@@ -94,7 +94,7 @@ def save():
         logging.warning("Could not write to state file. Emulator state not saved.")
     
 def load():
-    global console_state, io_state, basic_state, display, loaded
+    global console_state, io_state, basic_state, loaded
     # decompress and unpickle
     try:
         f = open(state_file, 'rb')

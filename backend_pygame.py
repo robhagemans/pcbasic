@@ -319,7 +319,7 @@ def init_screen_mode():
     under_cursor = pygame.Surface((8, state.console_state.font_height), depth=8)
     glyphs = [ build_glyph(c, font, state.console_state.font_height) for c in range(256) ]
     # initialise glyph colour
-    set_attr(state.console_state.attr)
+    set_attr(state.console_state.attr, force_rebuild=True)
     if state.console_state.screen_mode == 0:
         resize_display(*display_size_text)
     else:
@@ -460,9 +460,9 @@ def scroll_down(from_line):
 
 last_attr = None
 last_attr_context = None
-def set_attr(cattr):
+def set_attr(cattr, force_rebuild=False):
     global last_attr, last_attr_context
-    if cattr == last_attr and (state.console_state.screen_mode, state.console_state.apagenum) == last_attr_context:
+    if (not force_rebuild and cattr == last_attr and state.console_state.apagenum == last_attr_context):
         return    
     color = (0, 0, cattr & 0xf)
     bg = (0, 0, (cattr>>4) & 0x7)    
@@ -470,7 +470,7 @@ def set_attr(cattr):
         glyph.set_palette_at(255, bg)
         glyph.set_palette_at(254, color)
     last_attr = cattr    
-    last_attr_context = state.console_state.screen_mode, state.console_state.apagenum
+    last_attr_context = state.console_state.apagenum
         
 def putc_at(row, col, c):
     global screen_changed
@@ -778,7 +778,7 @@ def numpy_set(left, right):
 
 def numpy_not(left, right):
     left[:] = right
-    left ^= (1<<state.state.console_state.bitsperpixel)-1
+    left ^= (1<<state.console_state.bitsperpixel)-1
 
 def numpy_iand(left, right):
     left &= right
@@ -908,7 +908,6 @@ def get_strig(fn):
 # sound interface
 
 from math import ceil
-import event_loop
 
 def init_sound():
     return (numpy != None)

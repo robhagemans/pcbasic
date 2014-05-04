@@ -9,7 +9,6 @@
 # please see text file COPYING for licence terms.
 #
 
-import event_loop
 import datetime
 
 music_queue = []

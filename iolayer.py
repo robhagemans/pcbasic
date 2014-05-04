@@ -383,7 +383,7 @@ class RandomBase(BaseFile):
     def peek_char(self):
         return self.field_text_file.peek_char()
     
-    def seek(self, n, from_where):
+    def seek(self, n, from_where=0):
         return self.field_text_file.seek(n, from_where)
         
     def truncate(self):
@@ -458,26 +458,27 @@ class RandomFile(RandomBase):
 
 #################################################################################
 
-'''ByteStream is a StringIO-like wrapper for bytearray '''        
 class ByteStream(object):
+    '''ByteStream is a StringIO-like wrapper for bytearray '''        
+
     def __init__(self, contents=''):       
         self.setvalue(contents)
 
-    '''assign a bytearray s, move location to 0. this does not create a copy, changes affect the original bytearray'''
     def setvalue(self, contents=''):
+        '''assign a bytearray s, move location to 0. this does not create a copy, changes affect the original bytearray'''
         self._contents = contents
         self._loc = 0
     
-    '''retrieve the bytearray. changes will affect the bytestream.'''
     def getvalue(self):
+        '''retrieve the bytearray. changes will affect the bytestream.'''
         return self._contents
         
-    '''get the current location'''    
     def tell(self):
+        '''get the current location'''    
         return self._loc
         
-    '''moves loc by n bytes from start(w=0), current(w=1) or end(w=2)'''    
     def seek(self, n_bytes, from_where=0):
+        '''moves loc by n bytes from start(w=0), current(w=1) or end(w=2)'''    
         if from_where == 0:
             self._loc = n_bytes
         elif from_where == 1:
@@ -489,8 +490,8 @@ class ByteStream(object):
         elif self._loc > len(self._contents):
             self._loc = len(self._contents)    
     
-    '''get an n-length string and move the location n forward. if loc>len, returns empty'''
     def read(self, n_bytes=None):
+        '''get an n-length string and move the location n forward. if loc>len, returns empty'''
         if n_bytes==None:
             n_bytes = len(self._contents) - self._loc
         if self._loc >= len(self._contents):
@@ -500,8 +501,8 @@ class ByteStream(object):
         self._loc += len(peeked)   
         return peeked
             
-    '''writes a str or bytearray or char s to the current location. overwrite, not insert'''    
     def write(self, substr):
+        '''writes a str or bytearray or char s to the current location. overwrite, not insert'''    
         if self._loc >= len(self._contents):
             self._contents += substr
             self._loc = len(self._contents)    
@@ -509,8 +510,8 @@ class ByteStream(object):
             self._contents[self._loc:self._loc+len(substr)] = substr
             self._loc += len(substr)
 
-    '''clips off the bytearray after position n'''
     def truncate(self, n=None):
+        '''clips off the bytearray after position n'''
         if n==None:
             n=self._loc
         self._contents = self._contents[:n]

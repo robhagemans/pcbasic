@@ -39,7 +39,6 @@ def debug_exec(debug_cmd):
 def debug_step(linum):
     if not debug_mode:
         return
-    global debug_tron
     outstr = ''
     if debug_tron:
         outstr += ('['+('%i' % linum) +']')
@@ -98,8 +97,8 @@ def show_program():
         logging.debug(    (code[p:p+1].encode('hex') + ' ' +
                         offset.encode('hex') + ' (+%03d) ' +  
                         code[p+3:p+5].encode('hex') + ' [%05d] ' + 
-                        code[p+5:state.basic_state.line_numbers[key]].encode('hex'))
-                    % (offset_val - last_offset, linum_val) )
+                        code[p+5:state.basic_state.line_numbers[key]].encode('hex')),
+                     offset_val - last_offset, linum_val )
         p = state.basic_state.line_numbers[key]
     logging.debug(code[p:p+1].encode('hex') + ' ' +
                 code[p+1:p+3].encode('hex') + ' (ENDS) ' +  
