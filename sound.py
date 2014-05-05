@@ -42,10 +42,9 @@ def stop_all_sound():
         
 def wait_music(wait_length=0, wait_last=True):
     while (wait_last and state.sound.busy()) or len(state.console_state.music_queue) + wait_last - 1 > wait_length:
-        event_loop.idle()
-        event_loop.check_events()
+        event_loop.wait()
 
-def check_sound():
+def check_events():
     queue_length = state.sound.check_sound()
     # remove the notes that have been played
     while len(state.console_state.music_queue) > queue_length:

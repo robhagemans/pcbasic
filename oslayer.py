@@ -22,6 +22,10 @@ import unicodepage
 import plat
 import state
 import event_loop
+import time
+
+# 1 ms sleep time for output process
+sleep_time = 0.001
 
 if plat.system == 'Windows':
     import msvcrt
@@ -475,7 +479,7 @@ if plat.system == 'Windows':
                 break        
             else:
                 # don't hog cpu
-                event_loop.idle()
+                time.sleep(sleep_time)
 
     def shell(command):
         global shell_output
@@ -495,6 +499,7 @@ if plat.system == 'Windows':
                 shell_output = '' 
                 last = lines.pop()
                 for line in lines:
+                    # progress visible - keep updating the backend
                     event_loop.check_events()
                     console.write_line(line)
                 console.write(last)    

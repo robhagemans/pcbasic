@@ -72,8 +72,7 @@ def poke(addr, val):
 
 def inp(port):    
     if port == 0x60:
-        event_loop.idle()
-        event_loop.check_events()
+        event_loop.wait()
         return state.console_state.inp_key 
     else:
         return 0
@@ -90,8 +89,7 @@ def wait(addr, ander, xorer):
     store_suspend = state.basic_state.suspend_all_events
     state.basic_state.suspend_all_events = True
     while (((state.console_state.inp_key if addr == 0x60 else 0) ^ xorer) & ander) == 0:
-        event_loop.idle()
-        event_loop.check_events()
+        event_loop.wait()
     state.basic_state.suspend_all_events = store_suspend     
 
 def bload(g, offset):    

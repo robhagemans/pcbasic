@@ -22,7 +22,12 @@ def check_events():
     # check&handle user events
     on_event.check_events()
     # manage sound queue
-    sound.check_sound()
+    sound.check_events()
 
 def idle():
     state.video.idle()
+    
+def wait():
+    idle()
+    check_events()
+        
