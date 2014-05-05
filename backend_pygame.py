@@ -1048,7 +1048,7 @@ def check_quit_sound():
     else:
         quiet_ticks += 1    
         if quiet_ticks > quiet_quit:
-            # this is to avoid high pulseaudio cpu load
+            # mixer is quiet and we're not running a program. quit to reduce pulseaudio cpu load
             if not state.basic_state.run_mode:
                 mixer.quit()
                 quiet_ticks = 0

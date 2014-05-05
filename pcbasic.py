@@ -65,7 +65,7 @@ import backend_pygame
 import iolayer
 
 
-greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "@:INFO" for more.\r%d Bytes free'
+greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "@:INFO" for more.\r%d Bytes free\rOk\xff'
 debugstr = ''
 
 def main():
@@ -79,10 +79,6 @@ def main():
         if args.resume or plat.system == 'Android':
             # resume from saved emulator state
             args.resume = state.load()
-            # can't currently jump into a running program
-            program.set_runmode(False)
-            # or into auto mode
-            state.basic_state.auto_mode = False
         # choose the video and sound backends
         prepare_console(args)
         # choose peripherals    
@@ -99,19 +95,18 @@ def main():
                 program.save(oslayer.safe_open(args.outfile, "S", "W") if args.outfile else stdout, args.conv_mode)
                 raise error.Exit()
             if args.run:
-                args.cmd += ':RUN'
+                args.cmd = 'RUN'
             # get out, if we ran with -q
-            if args.quit:
-                state.basic_state.prompt = False
+            if args.cmd:    
+                # start loop in execute mode
                 run.execute(args.cmd)
+            if args.quit:
                 raise error.Exit()
-            # execute & handle exceptions; show Ok prompt
-            run.execute(args.cmd)
-        # go into interactive mode 
+        # start the interpreter loop
         run.loop()
     except error.RunError as e:
         # errors during startup/conversion are handled here, then exit
-        e.handle_break()  
+        run.handle_error(e)  
     except error.Exit:
         pass
     except error.Reset:
@@ -123,12 +118,6 @@ def main():
         if reset:
             state.delete()
         else:   
-            # STOP execution as we can't handle jumping into a running program (yet)
-            if state.basic_state.run_mode:
-                state.basic_state.stop = state.basic_state.bytecode.tell()
-                program.set_runmode(False) 
-                console.write_error_message("Break", program.get_line_number(state.basic_state.stop))
-                run.show_prompt()
             state.save()
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
         console.close()
