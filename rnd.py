@@ -11,23 +11,19 @@
 
 import fp
 import vartypes
+import state
+
+rnd_step = 4455680 # 0x43fd00
+rnd_period = 2**24
+rnd_a = 214013
+rnd_c = 2531011
 
 def clear():
-    global rnd_seed
-    global rnd_step
-    global rnd_a
-    global rnd_c
-    global rnd_period
-    rnd_seed = 5228370 # 0x4fc752
-    rnd_step = 4455680 # 0x43fd00
-    rnd_period = 2**24
-    rnd_a = 214013
-    rnd_c = 2531011
+    state.basic_state.rnd_seed = 5228370 # 0x4fc752
 
 clear()
 
 def randomize(val):        
-    global rnd_seed
     # RANDOMIZE converts to int in a non-standard way - looking at the first two bytes in the internal representation
     # on a program line, if a number outside the signed int range (or -32768) is entered,
     # the number is stored as a MBF double or float. Randomize then:
@@ -45,22 +41,21 @@ def randomize(val):
         mask = s[-4:-2]
     final_two = bytearray(chr(final_two[0]^mask[0]) + chr(final_two[1]^mask[1]))
     n = vartypes.sint_to_value(final_two)
-    rnd_seed &= 0xff
+    state.basic_state.rnd_seed &= 0xff
     get_random_int(1) # RND(1)
-    rnd_seed += n * rnd_step
-    rnd_seed %= rnd_period
+    state.basic_state.rnd_seed += n * rnd_step
+    state.basic_state.rnd_seed %= rnd_period
     
 def get_random_int(n):
-    global rnd_seed
     if n < 0:
         n = -n
         while n < 2**23:
             n *= 2
-        rnd_seed = n
+        state.basic_state.rnd_seed = n
     if n != 0:
-        rnd_seed = (rnd_seed*rnd_a + rnd_c) % rnd_period       
+        state.basic_state.rnd_seed = (state.basic_state.rnd_seed*rnd_a + rnd_c) % rnd_period       
     # rnd_seed/rnd_period
-    return fp.pack(fp.div(fp.Single.from_int(rnd_seed), fp.Single.from_int(rnd_period)))
+    return fp.pack(fp.div(fp.Single.from_int(state.basic_state.rnd_seed), fp.Single.from_int(rnd_period)))
 
 # takes mbf Single arg
 def get_random(mbf):

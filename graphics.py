@@ -12,120 +12,92 @@
 import error
 import fp
 import vartypes
-import var
-import console
-import draw_and_play
+import event_loop
+import state
 import util
 
-backend = None
 
-# screen width and height in pixels
-size = (0, 0)
+# real state variables
+state.console_state.graph_view_set = False
+state.console_state.view_graph_absolute = True
+state.console_state.graph_window = None
+state.console_state.graph_window_bounds = None
+state.console_state.last_point = (0, 0)    
 
-graph_view_set = False
-view_graph_absolute = True
-
-graph_window = None
-graph_window_bounds = None
-
-last_point = (0, 0)    
-pixel_aspect_ratio = fp.Single.one
-bitsperpixel = 4
 
 def require_graphics_mode(err=5):
     if not is_graphics_mode():
         raise error.RunError(err)
 
 def is_graphics_mode():
-    return backend and console.screen_mode
-
-def init_graphics_mode(mode, new_font_height):
-    global last_point, pixel_aspect_ratio, bitsperpixel, size
-    if mode==0:
-        return
-    size = (console.width*8, console.height*new_font_height)
-    # centre of new graphics screen
-    last_point = (console.width*4, console.height*new_font_height/2)
-    # pixels e.g. 80*8 x 25*14, screen ratio 4x3 makes for pixel width/height (4/3)*(25*14/8*80)
-    pixel_aspect_ratio = fp.div(
-        fp.Single.from_int(console.height*new_font_height), 
-        fp.Single.from_int(6*console.width)) 
-    if mode in (1, 10):
-        bitsperpixel = 2
-    elif mode == 2:
-        bitsperpixel = 1
-    else:
-        bitsperpixel = 4
+    return state.video and state.console_state.screen_mode
 
 # reset graphics state    
 def reset_graphics():
-    global last_point
-    x0, y0, x1, y1 = backend.get_graph_clip()
-    if view_graph_absolute:
-        last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
+    x0, y0, x1, y1 = state.video.get_graph_clip()
+    if state.console_state.view_graph_absolute:
+        state.console_state.last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
     else:
-        last_point = (x1-x0)/2, (y1-y0)/2
-    draw_and_play.draw_scale = 4
-    draw_and_play.draw_angle = 0
+        state.console_state.last_point = (x1-x0)/2, (y1-y0)/2
+    state.basic_state.draw_scale = 4
+    state.basic_state.draw_angle = 0
 
 def get_colour_index(c):
     if c == -1: # foreground; graphics 'background' attrib is always 0
-        c = console.attr & 0xf
+        c = state.console_state.attr & 0xf
     else:
-        c = min(console.num_colours - 1, max(0, c))
+        c = min(state.console_state.num_colours - 1, max(0, c))
     return c
 
 def check_coords(x, y):
-    return min(size[0], max(-1, x)), min(size[1], max(-1, y))
+    return min(state.console_state.size[0], max(-1, x)), min(state.console_state.size[1], max(-1, y))
     
 ### PSET, POINT
 
 def put_point(x, y, c):
     x, y = view_coords(x,y)
-    backend.apply_graph_clip()
-    backend.put_pixel(x, y, get_colour_index(c))
-    backend.remove_graph_clip()
+    state.video.apply_graph_clip()
+    state.video.put_pixel(x, y, get_colour_index(c))
+    state.video.remove_graph_clip()
     
 def get_point(x, y):
     x, y = view_coords(x, y)
-    if x < 0 or x >= size[0]:
+    if x < 0 or x >= state.console_state.size[0]:
         return -1
-    if y < 0 or y >= size[1]:
+    if y < 0 or y >= state.console_state.size[1]:
         return -1
-    return backend.get_pixel(x,y)
+    return state.video.get_pixel(x,y)
 
 ### WINDOW coords
 
 def set_graph_window(fx0, fy0, fx1, fy1, cartesian=True):
-    global graph_window, graph_window_bounds
     if fy0.gt(fy1):
         fy0, fy1 = fy1, fy0
     if fx0.gt(fx1):
         fx0, fx1 = fx1, fx0
     if cartesian:
         fy0, fy1 = fy1, fy0
-    left,top, right,bottom = backend.get_graph_clip()
+    left,top, right,bottom = state.video.get_graph_clip()
     x0, y0 = fp.Single.zero, fp.Single.zero 
     x1, y1 = fp.Single.from_int(right-left), fp.Single.from_int(bottom-top)        
     scalex, scaley = fp.div(fp.sub(x1, x0), fp.sub(fx1,fx0)), fp.div(fp.sub(y1, y0), fp.sub(fy1,fy0)) 
     offsetx, offsety = fp.sub(x0, fp.mul(fx0,scalex)), fp.sub(y0, fp.mul(fy0,scaley))
-    graph_window = scalex, scaley, offsetx, offsety
-    graph_window_bounds = fx0, fy0, fx1, fy1, cartesian
+    state.console_state.graph_window = scalex, scaley, offsetx, offsety
+    state.console_state.graph_window_bounds = fx0, fy0, fx1, fy1, cartesian
 
 def unset_graph_window():
-    global graph_window, graph_window_bounds
-    graph_window = None
-    graph_window_bounds = None
+    state.console_state.graph_window = None
+    state.console_state.graph_window_bounds = None
 
 # input logical coords, output physical coords
 def window_coords(fx, fy, step=False):
-    if graph_window:
-        scalex, scaley, offsetx, offsety = graph_window
-        fx0, fy0 = get_window_coords(last_point) if step else (fp.Single.zero.copy(), fp.Single.zero.copy())    
+    if state.console_state.graph_window:
+        scalex, scaley, offsetx, offsety = state.console_state.graph_window
+        fx0, fy0 = get_window_coords(*state.console_state.last_point) if step else (fp.Single.zero.copy(), fp.Single.zero.copy())    
         x = fp.add(offsetx, fp.mul(fx0.iadd(fx), scalex)).round_to_int()
         y = fp.add(offsety, fp.mul(fy0.iadd(fy), scaley)).round_to_int()
     else:
-        x, y = last_point if step else (0, 0)
+        x, y = state.console_state.last_point if step else (0, 0)
         x += fx.round_to_int()
         y += fy.round_to_int()
     # overflow check
@@ -137,15 +109,15 @@ def window_coords(fx, fy, step=False):
 # input physical coords, output logical coords
 def get_window_coords(x, y):
     x, y = fp.Single.from_int(x), fp.Single.from_int(y)
-    if graph_window:
-        scalex, scaley, offsetx, offsety = graph_window
+    if state.console_state.graph_window:
+        scalex, scaley, offsetx, offsety = state.console_state.graph_window
         return fp.div(fp.sub(x, offsetx), scalex), fp.div(fp.sub(y, offsety), scaley)
     else:
         return x, y
 
 def window_scale(fx, fy):
-    if graph_window:
-        scalex, scaley, offsetx, offsety = graph_window
+    if state.console_state.graph_window:
+        scalex, scaley, _, _ = state.console_state.graph_window
         return fp.mul(fx, scalex).round_to_int(), fp.mul(fy, scaley).round_to_int()
     else:
         return fx.round_to_int(), fy.round_to_int()
@@ -160,9 +132,9 @@ def draw_box_filled(x0, y0, x1, y1, c):
         y0, y1 = y1, y0
     if x1 < x0:
         x0, x1 = x1, x0    
-    backend.apply_graph_clip()
-    backend.fill_rect(x0, y0, x1, y1, c)
-    backend.remove_graph_clip()
+    state.video.apply_graph_clip()
+    state.video.fill_rect(x0, y0, x1, y1, c)
+    state.video.remove_graph_clip()
     
 def draw_line(x0, y0, x1, y1, c, pattern=0xffff):
     c = get_colour_index(c)
@@ -180,23 +152,23 @@ def draw_line(x0, y0, x1, y1, c, pattern=0xffff):
     sx = 1 if x1 > x0 else -1
     sy = 1 if y1 > y0 else -1
     mask = 0x8000
-    error = dx / 2
+    line_error = dx / 2
     x, y = x0, y0
-    backend.apply_graph_clip()
+    state.video.apply_graph_clip()
     for x in xrange(x0, x1+sx, sx):
         if pattern&mask != 0:
             if steep:
-                backend.put_pixel(y, x, c)
+                state.video.put_pixel(y, x, c)
             else:
-                backend.put_pixel(x, y, c)
+                state.video.put_pixel(x, y, c)
         mask >>= 1
         if mask == 0:
             mask = 0x8000
-        error -= dy
-        if error<0:
+        line_error -= dy
+        if line_error < 0:
             y += sy
-            error += dx    
-    backend.remove_graph_clip()
+            line_error += dx    
+    state.video.remove_graph_clip()
     
 def draw_straight(x0, y0, x1, y1, c, pattern, mask):
     if x0 == x1:
@@ -207,9 +179,9 @@ def draw_straight(x0, y0, x1, y1, c, pattern, mask):
     for p in range (p0, p1+sp, sp):
         if pattern & mask != 0:
             if direction == 'x':
-                backend.put_pixel(p, q, c)
+                state.video.put_pixel(p, q, c)
             else:
-                backend.put_pixel(q, p, c)
+                state.video.put_pixel(q, p, c)
         mask >>= 1
         if mask == 0:
             mask = 0x8000
@@ -220,7 +192,7 @@ def draw_box(x0, y0, x1, y1, c, pattern=0xffff):
     x1, y1 = check_coords(*view_coords(x1, y1))
     c = get_colour_index(c)
     mask = 0x8000
-    backend.apply_graph_clip()
+    state.video.apply_graph_clip()
     mask = draw_straight(x1, y1, x0, y1, c, pattern, mask)
     mask = draw_straight(x1, y0, x0, y0, c, pattern, mask)
     # verticals always drawn top to bottom
@@ -228,7 +200,7 @@ def draw_box(x0, y0, x1, y1, c, pattern=0xffff):
         y0, y1 = y1, y0
     mask = draw_straight(x1, y1, x1, y0, c, pattern, mask)
     mask = draw_straight(x0, y1, x0, y0, c, pattern, mask)
-    backend.remove_graph_clip()
+    state.video.remove_graph_clip()
 
 ### circle, ellipse, sectors
 
@@ -296,9 +268,9 @@ def draw_circle(x0, y0, r, c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, l
     # if oct1==oct0: 
     # ----|.....|--- : coo1 lt coo0 : print if y in [0,coo1] or in [coo0, r]  
     # ....|-----|... ; coo1 gte coo0: print if y in [coo0,coo1]
-    backend.apply_graph_clip()
+    state.video.apply_graph_clip()
     x, y = r, 0
-    error = 1-r 
+    bres_error = 1-r 
     while x >= y:
         for octant in range(0,8):
             if octant in hide_oct:
@@ -314,7 +286,7 @@ def draw_circle(x0, y0, r, c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, l
                 else:
                     if octant_gte(oct0, y, coo1) and octant_gte(oct0, coo0, y):
                         continue
-            backend.put_pixel(*octant_coord(octant, x0, y0, x, y), index=c) 
+            state.video.put_pixel(*octant_coord(octant, x0, y0, x, y), index=c) 
         # remember endpoints for pie sectors
         if y == coo0:
             coo0x = x
@@ -322,16 +294,16 @@ def draw_circle(x0, y0, r, c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, l
             coo1x = x    
         # bresenham error step
         y += 1
-        if error < 0:
-            error += 2*y+1
+        if bres_error < 0:
+            bres_error += 2*y+1
         else:
             x -= 1
-            error += 2*(y-x+1)
+            bres_error += 2*(y-x+1)
     if line0:
         draw_line(x0,y0, *octant_coord(oct0, x0, y0, coo0x, coo0), c=c)
     if line1:
         draw_line(x0,y0, *octant_coord(oct1, x0, y0, coo1x, coo1), c=c)
-    backend.remove_graph_clip()
+    state.video.remove_graph_clip()
     
 def octant_coord(octant, x0,y0, x,y):    
     if   octant == 7:     return x0+x, y0+y
@@ -404,7 +376,7 @@ def draw_ellipse(cx, cy, rx, ry, c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1,
     ddx = 32 * ry * ry
     # error for first step
     err = dx + dy   
-    backend.apply_graph_clip()        
+    state.video.apply_graph_clip()        
     x, y = rx, 0
     while True: 
         for quadrant in range(0,4):
@@ -422,7 +394,7 @@ def draw_ellipse(cx, cy, rx, ry, c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1,
                 else:
                     if quadrant_gte(qua0, x, y, x1, y1) and quadrant_gte(qua0, x0, y0, x, y):
                         continue
-            backend.put_pixel(*quadrant_coord(quadrant, cx,cy,x,y), index=c) 
+            state.video.put_pixel(*quadrant_coord(quadrant, cx,cy,x,y), index=c) 
         # bresenham error step
         e2 = 2 * err
         if (e2 <= dy):
@@ -439,14 +411,14 @@ def draw_ellipse(cx, cy, rx, ry, c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1,
     # too early stop of flat vertical ellipses
     # finish tip of ellipse
     while (y < ry): 
-        backend.put_pixel(cx, cy+y, c) 
-        backend.put_pixel(cx, cy-y, c) 
+        state.video.put_pixel(cx, cy+y, c) 
+        state.video.put_pixel(cx, cy-y, c) 
         y += 1 
     if line0:
         draw_line(cx,cy, *quadrant_coord(qua0, cx, cy, x0, y0), c=c)
     if line1:
         draw_line(cx,cy, *quadrant_coord(qua1, cx, cy, x1, y1), c=c)
-    backend.remove_graph_clip()     
+    state.video.remove_graph_clip()     
     
 def quadrant_coord(quadrant, x0,y0, x,y):    
     if   quadrant == 3:     return x0+x, y0+y
@@ -475,7 +447,7 @@ def check_scanline (line_seed, x_start, x_stop, y, c, border, ydir):
     x_stop_next = x_start_next-1
     for x in range(x_start, x_stop+1):
         # here we check for border *as well as* fill colour, to avoid infinite loops over bits already painted (eg. 00 shape)
-        if backend.get_pixel(x,y) not in (border,c):
+        if state.video.get_pixel(x,y) not in (border,c):
             x_stop_next = x
         else:
             if x_stop_next >= x_start_next:
@@ -489,31 +461,31 @@ def fill_scanline(x_start, x_stop, y, pattern):
     mask = 7 - x_start%8
     for x in range(x_start, x_stop+1):
         c = 0
-        for b in range(bitsperpixel-1,-1,-1):
+        for b in range(state.console_state.bitsperpixel-1,-1,-1):
             c <<= 1
             c += (pattern[b] & (1<<mask)) >> mask
         mask -= 1
         if mask < 0:
             mask = 7
-        backend.put_pixel(x,y,c)
+        state.video.put_pixel(x,y,c)
       
 # flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
 def flood_fill (x, y, pattern, c, border): 
     c, border = get_colour_index(c), get_colour_index(border)
     if get_point(x, y) == border:
         return
-    bound_x0, bound_y0, bound_x1, bound_y1 = backend.get_graph_clip()  
+    bound_x0, bound_y0, bound_x1, bound_y1 = state.video.get_graph_clip()  
     x, y = view_coords(x, y)
     line_seed = [(x, x, y, 0)]
     while len(line_seed) > 0:
         x_start, x_stop, y, ydir = line_seed.pop()
         # check left extension
         x_left = x_start
-        while x_left-1 >= bound_x0 and backend.get_pixel(x_left-1,y) != border:
+        while x_left-1 >= bound_x0 and state.video.get_pixel(x_left-1,y) != border:
             x_left -= 1
         # check right extension
         x_right = x_stop
-        while x_right+1 <= bound_x1 and backend.get_pixel(x_right+1,y) != border:
+        while x_right+1 <= bound_x1 and state.video.get_pixel(x_right+1,y) != border:
             x_right += 1
         if ydir == 0:
             if y + 1 <= bound_y1:
@@ -531,7 +503,7 @@ def flood_fill (x, y, pattern, c, border):
         # draw the pixels    
         fill_scanline(x_left, x_right, y, pattern)
         # show progress
-        console.check_events()
+        event_loop.check_events()
 
 ### PUT and GET
 
@@ -540,7 +512,7 @@ def operation_set(pix0, pix1):
 
 def operation_not(pix0, pix1):
 #    return ~pix1
-    return pix1 ^ ((1<<bitsperpixel)-1)
+    return pix1 ^ ((1<<state.console_state.bitsperpixel)-1)
 
 def operation_and(pix0, pix1):
     return pix0 & pix1
@@ -559,41 +531,43 @@ operations = {
     '\xF0': operation_xor,
     }
      
-   
 def set_area(x0,y0, array, operation_char):
-    if backend.fast_put(x0, y0, array, operation_char):
+    if state.video.fast_put(x0, y0, array, operation_char):
         return
-    byte_array, version = var.get_bytearray(array)
+    try:
+        _, byte_array, _ = state.basic_state.arrays[array]
+    except KeyError:
+        byte_array = bytearray()
     dx = vartypes.uint_to_value(byte_array[0:2])
     dy = vartypes.uint_to_value(byte_array[2:4])
     # in mode 1, number of x bits is given rather than pixels
-    if console.screen_mode == 1:
+    if state.console_state.screen_mode == 1:
         dx /= 2
     x1, y1 = x0+dx-1, y0+dy-1
     x0, y0 = view_coords(x0, y0)
     x1, y1 = view_coords(x1, y1)
     # illegal fn call if outside screen boundary
-    util.range_check(0, size[0]-1, x0, x1)
-    util.range_check(0, size[1]-1, y0, y1)
+    util.range_check(0, state.console_state.size[0]-1, x0, x1)
+    util.range_check(0, state.console_state.size[1]-1, y0, y1)
     operation = operations[operation_char]
-    backend.apply_graph_clip()
+    state.video.apply_graph_clip()
     byte = 4
-    if console.screen_mode == 1:
+    if state.console_state.screen_mode == 1:
         shift = 6
         for y in range(y0, y1+1):
             for x in range(x0, x1+1):
                 if shift < 0:
                     byte += 1
                     shift = 6
-                if x < 0 or x >= size[0] or y < 0 or y >= size[1]:
+                if x < 0 or x >= state.console_state.size[0] or y < 0 or y >= state.console_state.size[1]:
                     pixel = 0
                 else:
-                    pixel = backend.get_pixel(x,y)
+                    pixel = state.video.get_pixel(x,y)
                     try:    
                         index = (byte_array[byte] >> shift) & 3   
                     except IndexError:
                         pass                
-                    backend.put_pixel(x, y, operation(pixel, index))    
+                    state.video.put_pixel(x, y, operation(pixel, index))    
                 shift -= 2
             # byte align next row
             byte += 1
@@ -605,23 +579,23 @@ def set_area(x0,y0, array, operation_char):
             for x in range(x0, x1+1):
                 if mask == 0: 
                     mask = 0x80
-                if x < 0 or x >= size[0] or y < 0 or y >= size[1]:
+                if x < 0 or x >= state.console_state.size[0] or y < 0 or y >= state.console_state.size[1]:
                     pixel = 0
                 else:
-                    pixel = backend.get_pixel(x,y)
+                    pixel = state.video.get_pixel(x,y)
                 index = 0
-                for b in range(bitsperpixel):
+                for b in range(state.console_state.bitsperpixel):
                     try:
-                        if byte_array[4 + ((y-y0)*bitsperpixel + b)*row_bytes + (x-x0)//8] & mask != 0:
+                        if byte_array[4 + ((y-y0)*state.console_state.bitsperpixel + b)*row_bytes + (x-x0)//8] & mask != 0:
                             index |= 1 << b  
                     except IndexError:
                         pass
                 mask >>= 1
-                if x >= 0 and x < size[0] and y >= 0 and y < size[1]:
-                    backend.put_pixel(x, y, operation(pixel, index)) 
+                if x >= 0 and x < state.console_state.size[0] and y >= 0 and y < state.console_state.size[1]:
+                    state.video.put_pixel(x, y, operation(pixel, index)) 
             # byte align next row
             mask = 0x80
-    backend.remove_graph_clip()        
+    state.video.remove_graph_clip()        
         
 def get_area(x0,y0,x1,y1, array):
     dx = (x1-x0+1)
@@ -629,24 +603,27 @@ def get_area(x0,y0,x1,y1, array):
     x0, y0 = view_coords(x0,y0)
     x1, y1 = view_coords(x1,y1)
     # illegal fn call if outside screen boundary
-    util.range_check(0, size[0]-1, x0, x1)
-    util.range_check(0, size[1]-1, y0, y1)
-    byte_array, version = var.get_bytearray(array)
+    util.range_check(0, state.console_state.size[0]-1, x0, x1)
+    util.range_check(0, state.console_state.size[1]-1, y0, y1)
+    try:
+        _, byte_array, _ = state.basic_state.arrays[array]
+    except KeyError:
+        raise error.RunError(5)    
     # clear existing array
     byte_array[:] = '\x00'*len(byte_array)
-    if console.screen_mode==1:
+    if state.console_state.screen_mode==1:
         byte_array[0:4] = vartypes.value_to_uint(dx*2) + vartypes.value_to_uint(dy)
     else:
         byte_array[0:4] = vartypes.value_to_uint(dx) + vartypes.value_to_uint(dy) 
     byte = 4
-    if console.screen_mode == 1:
+    if state.console_state.screen_mode == 1:
         shift = 6
         for y in range(y0, y1+1):
             for x in range(x0, x1+1):
                 if shift < 0:
                     byte += 1
                     shift = 6
-                pixel = backend.get_pixel(x,y) # 2-bit value
+                pixel = state.video.get_pixel(x,y) # 2-bit value
                 try:
                     byte_array[byte] |= pixel << shift
                 except IndexError:
@@ -662,141 +639,51 @@ def get_area(x0,y0,x1,y1, array):
             for x in range(x0, x1+1):
                 if mask == 0: 
                     mask = 0x80
-                pixel = backend.get_pixel(x, y)
-                for b in range(bitsperpixel):
+                pixel = state.video.get_pixel(x, y)
+                for b in range(state.console_state.bitsperpixel):
                     if pixel & (1<<b) != 0:
                         try:
-                            byte_array[4 + ((y-y0)*bitsperpixel + b)*row_bytes + (x-x0)//8] |= mask 
+                            byte_array[4 + ((y-y0)*state.console_state.bitsperpixel + b)*row_bytes + (x-x0)//8] |= mask 
                         except IndexError:
                             raise error.RunError(5)   
                 mask >>= 1
             # byte align next row
             mask = 0x80
     # store a copy in the fast-put store
-    backend.fast_get(x0, y0, x1, y1, array)
+    state.video.fast_get(x0, y0, x1, y1, array)
     
 ## VIEW    
     
 def set_graph_view(x0,y0,x1,y1, absolute=True):
-    global graph_view_set, view_graph_absolute, last_point
     # VIEW orders the coordinates
     if x0 > x1:
         x0, x1 = x1, x0
     if y0 > y1:
         y0, y1 = y1, y0
-    view_graph_absolute = absolute
-    graph_view_set = True
-    backend.set_graph_clip(x0, y0, x1, y1)
-    if view_graph_absolute:
-        last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
+    state.console_state.view_graph_absolute = absolute
+    state.console_state.graph_view_set = True
+    state.video.set_graph_clip(x0, y0, x1, y1)
+    if state.console_state.view_graph_absolute:
+        state.console_state.last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
     else:
-        last_point = (x1-x0)/2, (y1-y0)/2
-    if graph_window_bounds != None:
-        set_graph_window(*graph_window_bounds)
+        state.console_state.last_point = (x1-x0)/2, (y1-y0)/2
+    if state.console_state.graph_window_bounds != None:
+        set_graph_window(*state.console_state.graph_window_bounds)
 
 def unset_graph_view():
-    global graph_view_set, view_graph_absolute, last_point
-    view_graph_absolute = False
-    graph_view_set = False
-    last_point = backend.unset_graph_clip()
-    if graph_window_bounds != None:
-        set_graph_window(*graph_window_bounds)
+    state.console_state.view_graph_absolute = False
+    state.console_state.graph_view_set = False
+    state.console_state.last_point = state.video.unset_graph_clip()
+    if state.console_state.graph_window_bounds != None:
+        set_graph_window(*state.console_state.graph_window_bounds)
 
 def view_coords(x,y):
-    if (not graph_view_set) or view_graph_absolute:
+    if (not state.console_state.graph_view_set) or state.console_state.view_graph_absolute:
         return x, y
     else:
-        lefttop = backend.get_graph_clip()
+        lefttop = state.video.get_graph_clip()
         return x + lefttop[0], y + lefttop[1]
 
 def clear_graphics_view():
-    backend.clear_graph_clip((console.attr>>4) & 0x7)
-
-###############################################################
-
-# memory model
-
-colour_plane = 3
-colour_plane_write_mask = 0xff
-video_segment = { 0: 0xb800, 1: 0xb800, 2: 0xb800, 7: 0xa000, 8: 0xa000, 9: 0xa000 }
-
-def get_pixel_byte(page, x, y, plane):
-    if y < size[1] and page < console.num_pages:
-        return sum(( ((backend.get_pixel(x+shift, y, console.pages[page]) >> plane) & 1) << (7-shift) for shift in range(8) ))
-    return -1    
-    
-def set_pixel_byte(page, x, y, plane_mask, byte):
-    if y < size[1] and page < console.num_pages:
-        for shift in range(8):
-            bit = (byte>>(7-shift)) & 1
-            backend.put_pixel(x + shift, y, bit * plane_mask, console.pages[page])  
-    
-def get_memory(addr):
-    if addr < video_segment[console.screen_mode]*0x10:
-        return -1
-    else:
-        if console.screen_mode == 0:
-            return console.get_memory(addr)
-        addr -= video_segment[console.screen_mode]*0x10
-        if console.screen_mode == 1:
-            # interlaced scan lines of 80bytes, 4pixels per byte
-            x, y = ((addr%0x2000)%80)*4, (addr>=0x2000) + 2*((addr%0x2000)//80)
-            if y < size[1]:
-                return ( (backend.get_pixel(x  , y)<<6) + (backend.get_pixel(x+1, y)<<4) 
-                        + (backend.get_pixel(x+2, y)<<2) + (backend.get_pixel(x+3, y)))
-        elif console.screen_mode == 2:
-            # interlaced scan lines of 80bytes, 8 pixes per byte
-            x, y = ((addr%0x2000)%80)*8, (addr>=0x2000) + 2*((addr%0x2000)//80)
-            return get_pixel_byte(0, x, y, 0)
-        elif console.screen_mode == 7:
-            page, addr = addr//8192, addr%8192
-            x, y = (addr%40)*8, addr//40
-            return get_pixel_byte(page, x, y, colour_plane % 4)
-        elif console.screen_mode == 8:
-            page, addr = addr//16384, addr%16384
-            x, y = (addr%80)*8, addr//80
-            return get_pixel_byte(page, x, y, colour_plane % 4)
-        elif console.screen_mode == 9:
-            page, addr = addr//32768, addr%32768
-            x, y = (addr%80)*8, addr//80
-            return get_pixel_byte(page, x, y, colour_plane % 4)
-        return -1   
-
-def set_memory(addr, val):
-    if addr >= video_segment[console.screen_mode]*0x10:
-        if console.screen_mode == 0:
-            return console.set_memory(addr, val)
-        addr -= video_segment[console.screen_mode]*0x10
-        if console.screen_mode == 1:
-            # interlaced scan lines of 80bytes, 4pixels per byte
-            x, y = ((addr%0x2000)%80)*4, (addr>=0x2000) + 2*((addr%0x2000)//80)
-            if y < size[1]:
-                for shift in range(4):
-                    twobit = (val>>(6-shift*2)) & 3
-                    backend.put_pixel(x + shift, y, twobit) 
-        elif console.screen_mode == 2:
-            # interlaced scan lines of 80bytes, 8 pixes per byte
-            x, y = ((addr%0x2000)%80)*8, (addr>=0x2000) + 2*((addr%0x2000)//80)
-            set_pixel_byte(0, x, y, 1, val)
-        elif console.screen_mode == 7:
-            page, addr = addr//8192, addr%8192
-            x, y = (addr%40)*8, addr//40
-            set_pixel_byte(page, x, y, colour_plane_write_mask & 0xf, val)
-        elif console.screen_mode == 8:
-            page, addr = addr//16384, addr%16384
-            x, y = (addr%80)*8, addr//80
-            set_pixel_byte(page, x, y, colour_plane_write_mask & 0xf, val)
-        elif console.screen_mode == 9:
-            page, addr = addr//32768, addr%32768
-            x, y = (addr%80)*8, addr//80
-            set_pixel_byte(page, x, y, colour_plane_write_mask & 0xf, val)            
-
-def get_memory_block(addr, length):
-    return bytearray( [ max(0, get_memory(a)) for a in range(addr, addr+length) ] )
-    
-def set_memory_block(addr, bytes):
-    for a in range(len(bytes)):
-        set_memory(addr + a, bytes[a])
-    
-    
+    state.video.clear_graph_clip((state.console_state.attr>>4) & 0x7)
 

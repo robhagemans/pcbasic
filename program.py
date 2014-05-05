@@ -12,17 +12,16 @@
 import error
 import vartypes
 import var
-import events
 import tokenise
+import machine
 import protect
 import util
 import console
-# for clear()
-import rnd
-import fileio
-# for prompt
-import run
+import event_loop
 import fp 
+import state
+# for clear()
+import reset
 
 try:
     from cStringIO import StringIO
@@ -31,171 +30,132 @@ except ImportError:
 from copy import copy 
 
 # program bytecode buffer
-bytecode = StringIO()
+state.basic_state.bytecode = StringIO()
 # direct line buffer
-direct_line = StringIO()
+state.basic_state.direct_line = StringIO()
 # pointer position: False for direct line, True for program
-run_mode = False
-# memory model; offsets in files
-program_memory_start = 0x126e
+state.basic_state.run_mode = False
+# line number tracing
+state.basic_state.tron = False
+
 # don't list or save,a beyond this line
 max_list_line = 65530
 # don't protect files
 dont_protect = False
 
-# line number tracing
-tron = False
-
 def init_program():
-    global gosub_return, for_next_stack, while_wend_stack, stop
     # stop running if we were
-    set_runmode(False)
+    set_pointer(False)
     # reset loop stacks
-    gosub_return = []
-    for_next_stack = []
-    while_wend_stack = []
+    state.basic_state.gosub_return = []
+    state.basic_state.for_next_stack = []
+    state.basic_state.while_wend_stack = []
     # reset program pointer
-    bytecode.seek(0)
+    state.basic_state.bytecode.seek(0)
     # reset stop/cont
-    stop = None
+    state.basic_state.stop = None
     # reset data reader
     restore()
 
 def erase_program():
-    global protected, line_numbers, current_statement, last_stored
-    bytecode.truncate(0)
-    bytecode.write('\0\0\0')
-    protected = False
-    line_numbers = { 65536: 0 }
-    current_statement = 0
-    last_stored = None
+    state.basic_state.bytecode.truncate(0)
+    state.basic_state.bytecode.write('\0\0\0')
+    state.basic_state.protected = False
+    state.basic_state.line_numbers = { 65536: 0 }
+    state.basic_state.current_statement = 0
+    state.basic_state.last_stored = None
+    # reset stacks
+    init_program()
 
-def set_runmode(new_runmode=True, pos=None):
-    global run_mode, current_codestream
-    current_codestream = bytecode if new_runmode else direct_line
-    if run_mode != new_runmode:
-        run_mode = new_runmode
-        # position at end - don't execute anything unless we jump
-        current_codestream.seek(0, 2)
+def set_pointer(new_runmode, pos=None):
+    state.basic_state.run_mode = new_runmode
+    codestream = get_codestream()
     if pos != None:
         # jump to position, if given
-        current_codestream.seek(pos)    
-    
+        codestream.seek(pos) 
+    else:
+        # position at end - don't execute anything unless we jump
+        codestream.seek(0, 2)
+
+def get_codestream():
+    return state.basic_state.bytecode if state.basic_state.run_mode else state.basic_state.direct_line   
+
 # RESTORE
 def restore(datanum=-1):
-    global data_pos
     try:
-        data_pos = 0 if datanum == -1 else line_numbers[datanum]
+        state.basic_state.data_pos = 0 if datanum == -1 else state.basic_state.line_numbers[datanum]
     except KeyError:
         raise error.RunError(8)
-        
-init_program()
-erase_program()
 
-# CLEAR
-def clear_all(close_files=False):
-    global for_next_stack, while_wend_stack
-    #   Resets the stack and string space
-    #   Clears all COMMON and user variables
-    var.clear_variables()
-    # reset random number generator
-    rnd.clear()
-    if close_files:
-        # close all files
-        fileio.close_all()
-    # release all disk buffers (FIELD)?
-    fileio.fields = {}
-    # clear ERR and ERL
-    error.errn, error.erl = 0, 0
-    # disable error trapping
-    error.on_error = None
-    error.error_resume = None
-    # stop all sound
-    console.sound.stop_all_sound()
-    #   Resets sound to music foreground
-    console.sound.music_foreground = True
-    #   Resets STRIG to off
-    console.stick_is_on = False
-    # disable all event trapping (resets PEN to OFF too)
-    events.reset_events()
-    # CLEAR also dumps for_next and while_wend stacks
-    for_next_stack = []
-    while_wend_stack = []
+erase_program()
 
 # NEW    
 def new():
     erase_program()    
-    # reset all stacks   
-    init_program()
-    # clear all variables
-    clear_all()
+    reset.clear()
 
 def truncate_program(rest=''):
-    bytecode.write(rest if rest else '\0\0\0')
+    state.basic_state.bytecode.write(rest if rest else '\0\0\0')
     # cut off at current position    
-    bytecode.truncate()    
-          
-def memory_size():
-    return len(bytecode.getvalue()) - 4
-    
+    state.basic_state.bytecode.truncate()    
+      
 # get line number for stream position
 def get_line_number(pos):
     pre = -1
-    for linum in line_numbers:
-        linum_pos = line_numbers[linum] 
+    for linum in state.basic_state.line_numbers:
+        linum_pos = state.basic_state.line_numbers[linum] 
         if linum_pos <= pos and linum > pre:
             pre = linum
     return pre
 
 def rebuild_line_dict():
-    global line_numbers
     # preparse to build line number dictionary
-    line_numbers, offsets = {}, []
-    bytecode.seek(0)
+    state.basic_state.line_numbers, offsets = {}, []
+    state.basic_state.bytecode.seek(0)
     scanline, scanpos, last = 0, 0, 0
     while True:
-        bytecode.read(1) # pass \x00
-        scanline = util.parse_line_number(bytecode)
+        state.basic_state.bytecode.read(1) # pass \x00
+        scanline = util.parse_line_number(state.basic_state.bytecode)
         if scanline == -1:
             scanline = 65536
             # if parse_line_number returns -1, it leaves the stream pointer here: 00 _00_ 00 1A
             break 
-        line_numbers[scanline] = scanpos  
+        state.basic_state.line_numbers[scanline] = scanpos  
         last = scanpos
-        util.skip_to(bytecode, util.end_line)
-        scanpos = bytecode.tell()
+        util.skip_to(state.basic_state.bytecode, util.end_line)
+        scanpos = state.basic_state.bytecode.tell()
         offsets.append(scanpos)
-    line_numbers[65536] = scanpos     
+    state.basic_state.line_numbers[65536] = scanpos     
     # rebuild offsets
-    bytecode.seek(0)
+    state.basic_state.bytecode.seek(0)
     last = 0
     for pos in offsets:
-        bytecode.read(1)
-        bytecode.write(str(vartypes.value_to_uint(program_memory_start + pos)))
-        bytecode.read(pos - last - 3)
+        state.basic_state.bytecode.read(1)
+        state.basic_state.bytecode.write(str(vartypes.value_to_uint(machine.program_memory_start + pos)))
+        state.basic_state.bytecode.read(pos - last - 3)
         last = pos
     # ensure program is properly sealed - last offset must be 00 00. keep, but ignore, anything after.
-    bytecode.write('\0\0\0')
+    state.basic_state.bytecode.write('\0\0\0')
 
 def update_line_dict(pos, afterpos, length, deleteable, beyond):
     # subtract length of line we replaced
     length -= afterpos - pos
-    addr = program_memory_start + afterpos
-    bytecode.seek(afterpos + length + 1)  # pass \x00
+    addr = machine.program_memory_start + afterpos
+    state.basic_state.bytecode.seek(afterpos + length + 1)  # pass \x00
     while True:
-        next_addr = bytearray(bytecode.read(2))
+        next_addr = bytearray(state.basic_state.bytecode.read(2))
         if len(next_addr) < 2 or next_addr == '\0\0':
             break
         next_addr = vartypes.uint_to_value(next_addr)
-        bytecode.seek(-2, 1)
-        bytecode.write(str(vartypes.value_to_uint(next_addr + length)))
-        bytecode.read(next_addr - addr - 2)
+        state.basic_state.bytecode.seek(-2, 1)
+        state.basic_state.bytecode.write(str(vartypes.value_to_uint(next_addr + length)))
+        state.basic_state.bytecode.read(next_addr - addr - 2)
         addr = next_addr
     # update line number dict
     for key in deleteable:
-        del line_numbers[key]
+        del state.basic_state.line_numbers[key]
     for key in beyond:
-        line_numbers[key] += length
+        state.basic_state.line_numbers[key] += length
             
 def check_number_start(linebuf):
     # get the new line number
@@ -210,8 +170,7 @@ def check_number_start(linebuf):
     return empty, scanline   
 
 def store_line(linebuf): 
-    global line_numbers, last_stored
-    if protected:
+    if state.basic_state.protected:
         raise error.RunError(5)
     # get the new line number
     linebuf.seek(1)
@@ -220,84 +179,83 @@ def store_line(linebuf):
     empty = (util.skip_white_read(linebuf) in util.end_line)
     pos, afterpos, deleteable, beyond = find_pos_line_dict(scanline, scanline)
     if empty and not deleteable:
-         raise error.RunError(8)   
+        raise error.RunError(8)   
     # read the remainder of the program into a buffer to be pasted back after the write
-    bytecode.seek(afterpos)
-    rest = bytecode.read()
+    state.basic_state.bytecode.seek(afterpos)
+    rest = state.basic_state.bytecode.read()
     # insert    
-    bytecode.seek(pos)
+    state.basic_state.bytecode.seek(pos)
     # write the line buffer to the program buffer
     length = 0
     if not empty:
         # set offsets
         linebuf.seek(3) # pass \x00\xC0\xDE 
         length = len(linebuf.getvalue())
-        bytecode.write( '\0' + str(vartypes.value_to_uint(program_memory_start + pos + length)) + linebuf.read())
+        state.basic_state.bytecode.write( '\0' + str(vartypes.value_to_uint(machine.program_memory_start + pos + length)) + linebuf.read())
     # write back the remainder of the program
     truncate_program(rest)
     # update all next offsets by shifting them by the length of the added line
     update_line_dict(pos, afterpos, length, deleteable, beyond)
     if not empty:
-        line_numbers[scanline] = pos
+        state.basic_state.line_numbers[scanline] = pos
     # clear all program stacks
     init_program()
     # clear variables (storing a line does that)
-    clear_all()
-    last_stored = scanline
+    reset.clear()
+    state.basic_state.last_stored = scanline
 
 def find_pos_line_dict(fromline, toline):
-    deleteable = [ num for num in line_numbers if num >= fromline and num <= toline ]
-    beyond = [num for num in line_numbers if num > toline ]
+    deleteable = [ num for num in state.basic_state.line_numbers if num >= fromline and num <= toline ]
+    beyond = [num for num in state.basic_state.line_numbers if num > toline ]
     # find lowest number strictly above range
-    afterpos = line_numbers[min(beyond)]
+    afterpos = state.basic_state.line_numbers[min(beyond)]
     # find lowest number within range
     try:
-        startpos = line_numbers[min(deleteable)]
+        startpos = state.basic_state.line_numbers[min(deleteable)]
     except ValueError:
         startpos = afterpos
     return startpos, afterpos, deleteable, beyond
 
 def delete(fromline, toline):
-    fromline = fromline if fromline != None else min(line_numbers)
+    fromline = fromline if fromline != None else min(state.basic_state.line_numbers)
     toline = toline if toline != None else 65535 
     startpos, afterpos, deleteable, beyond = find_pos_line_dict(fromline, toline)
     if not deleteable:
         # no lines selected
         raise error.RunError(5)        
     # do the delete
-    bytecode.seek(afterpos)
-    rest = bytecode.read()
-    bytecode.seek(startpos)
+    state.basic_state.bytecode.seek(afterpos)
+    rest = state.basic_state.bytecode.read()
+    state.basic_state.bytecode.seek(startpos)
     truncate_program(rest)
     # update line number dict
     update_line_dict(startpos, afterpos, 0, deleteable, beyond)
     # clear all program stacks
     init_program()
     # clear variables (storing a line does that)
-    clear_all()
+    reset.clear()
 
 def edit(from_line, bytepos=None):
-    if protected:
+    if state.basic_state.protected:
         console.write(str(from_line)+'\r')
         raise error.RunError(5)
     # list line
-    bytecode.seek(line_numbers[from_line]+1)
-    _, output, textpos = tokenise.detokenise_line(bytecode, bytepos)
-    console.clear_line(console.row)
+    state.basic_state.bytecode.seek(state.basic_state.line_numbers[from_line]+1)
+    _, output, textpos = tokenise.detokenise_line(state.basic_state.bytecode, bytepos)
+    console.clear_line(state.console_state.row)
     console.write(str(output))
-    console.set_pos(console.row, textpos+1 if bytepos else 1)
+    console.set_pos(state.console_state.row, textpos+1 if bytepos else 1)
     # throws back to direct mode
-    set_runmode(False)
+    set_pointer(False)
     # suppress prompt
-    run.prompt = False
+    state.basic_state.prompt = False
     
 def renum(new_line, start_line, step):
-    global last_stored
     new_line = 10 if new_line == None else new_line
     start_line = 0 if start_line == None else start_line
     step = 10 if step == None else step 
     # get a sorted list of line numbers 
-    keys = sorted([ k for k in line_numbers.keys() if k >= start_line])
+    keys = sorted([ k for k in state.basic_state.line_numbers.keys() if k >= start_line])
     # assign the new numbers
     old_to_new = {}
     for old_line in keys:
@@ -306,77 +264,74 @@ def renum(new_line, start_line, step):
         if old_line == 65536:
             break
         old_to_new[old_line] = new_line
-        last_stored = new_line
+        state.basic_state.last_stored = new_line
         new_line += step    
     # write the new numbers
     for old_line in old_to_new:
-        bytecode.seek(line_numbers[old_line])
+        state.basic_state.bytecode.seek(state.basic_state.line_numbers[old_line])
         # skip the \x00\xC0\xDE & overwrite line number
-        bytecode.read(3)
-        bytecode.write(str(vartypes.value_to_uint(old_to_new[old_line])))
+        state.basic_state.bytecode.read(3)
+        state.basic_state.bytecode.write(str(vartypes.value_to_uint(old_to_new[old_line])))
     # rebuild the line number dictionary    
     new_lines = {}
     for old_line in old_to_new:
-        new_lines[old_to_new[old_line]] = line_numbers[old_line]          
-        del line_numbers[old_line]
-    line_numbers.update(new_lines)    
+        new_lines[old_to_new[old_line]] = state.basic_state.line_numbers[old_line]          
+        del state.basic_state.line_numbers[old_line]
+    state.basic_state.line_numbers.update(new_lines)    
     # write the indirect line numbers
-    bytecode.seek(0)
-    while util.skip_to_read(bytecode, ('\x0e',)) == '\x0e':
+    state.basic_state.bytecode.seek(0)
+    while util.skip_to_read(state.basic_state.bytecode, ('\x0e',)) == '\x0e':
         # get the old g number
-        jumpnum = vartypes.uint_to_value(bytearray(bytecode.read(2)))
+        jumpnum = vartypes.uint_to_value(bytearray(state.basic_state.bytecode.read(2)))
         try:
             newjump = old_to_new[jumpnum]
         except KeyError:
             # not redefined, exists in program?
-            if jumpnum in line_numbers:
+            if jumpnum in state.basic_state.line_numbers:
                 newjump = jumpnum
             else:    
-                linum = get_line_number(bytecode.tell())
+                linum = get_line_number(state.basic_state.bytecode.tell())
                 console.write_line('Undefined line ' + str(jumpnum) + ' in ' + str(linum))
-        bytecode.seek(-2, 1)
-        bytecode.write(str(vartypes.value_to_uint(newjump)))
+        state.basic_state.bytecode.seek(-2, 1)
+        state.basic_state.bytecode.write(str(vartypes.value_to_uint(newjump)))
     # stop running if we were
-    set_runmode(False)
+    set_pointer(False)
     # reset loop stacks
-    gosub_return = []
-    for_next_stack = []
-    while_wend_stack = []
+    state.basic_state.gosub_return = []
+    state.basic_state.for_next_stack = []
+    state.basic_state.while_wend_stack = []
     # renumber error handler
-    if error.on_error:
-        error.on_error = old_to_new[error.on_error]
+    if state.basic_state.on_error:
+        state.basic_state.on_error = old_to_new[state.basic_state.on_error]
     # renumber event traps
-    for handler in events.all_handlers:
+    for handler in state.basic_state.all_handlers:
         if handler.gosub:
             handler.gosub = old_to_new[handler.gosub]    
         
 def load(g):
-    global protected
     erase_program()
     c = g.read(1)
     if c == '\xFF':
         # bytecode file
-        bytecode.truncate(0)
-        bytecode.write('\0')
+        state.basic_state.bytecode.truncate(0)
+        state.basic_state.bytecode.write('\0')
         while c:
             c = g.read(1)
-            bytecode.write(c)
+            state.basic_state.bytecode.write(c)
     elif c == '\xFE':
         # protected file
-        bytecode.truncate(0)
-        bytecode.write('\0')
-        protected = not dont_protect                
-        protect.unprotect(g, bytecode) 
+        state.basic_state.bytecode.truncate(0)
+        state.basic_state.bytecode.write('\0')
+        state.basic_state.protected = not dont_protect                
+        protect.unprotect(g, state.basic_state.bytecode) 
     elif c != '':
         # ASCII file, maybe; any thing but numbers or whitespace will lead to Direct Statement in File
         load_ascii_file(g, c)        
     g.close()
     # rebuild line number dict and offsets
     rebuild_line_dict()
-    # reset all stacks    
-    init_program() 
     # clear all variables
-    clear_all()
+    reset.clear()
 
     
 def merge(g):
@@ -408,53 +363,51 @@ def chain(action, g, jumpnum, common_all, delete_lines):
         # delete lines from existing code before merge (without MERGE, this is pointless)
         delete(*delete_lines)
     if common_all:
-        common, common_arrays, common_functions = copy(var.variables), copy(var.arrays), copy(var.functions)
+        common, common_arrays, common_functions = copy(state.basic_state.variables), copy(state.basic_state.arrays), copy(state.basic_state.functions)
     else:
         # preserve COMMON variables
         common, common_arrays, common_functions = {}, {}, {}
-        for varname in var.common_names:
+        for varname in state.basic_state.common_names:
             try:
-                common[varname] = var.variables[varname]
+                common[varname] = state.basic_state.variables[varname]
             except KeyError: 
                 pass    
-        for varname in var.common_array_names:
+        for varname in state.basic_state.common_array_names:
             try:
-                common_arrays[varname] = var.arrays[varname]
+                common_arrays[varname] = state.basic_state.arrays[varname]
             except KeyError:
                 pass    
     # preserve deftypes (only for MERGE)
-    common_deftype = copy(vartypes.deftype) 
+    common_deftype = copy(state.basic_state.deftype) 
     # preserve option base
-    base = var.array_base    
-    # load & merge call preparse call reset_program:  # data restore  # erase def fn   # erase defint etc
+    base = state.basic_state.array_base    
+    # load & merge call reset.clear()
     action(g)
-    # reset random number generator
-    rnd.clear()
     # restore only common variables
-    var.variables = common
-    var.arrays = common_arrays
+    state.basic_state.variables = common
+    state.basic_state.arrays = common_arrays
     # restore user functions (if ALL specified)
-    var.functions = common_functions
+    state.basic_state.functions = common_functions
     # restore option base
-    var.array_base = base
+    state.basic_state.array_base = base
     # restore deftypes (if MERGE specified)
     if action == merge:
-        vartypes.deftype = common_deftype
+        state.basic_state.deftype = common_deftype
     # don't close files!
     # RUN
     jump(jumpnum, err=5)
 
 def save(g, mode='B'):
-    if protected and mode != 'P':
+    if state.basic_state.protected and mode != 'P':
         raise error.RunError(5)
-    current = bytecode.tell()
+    current = state.basic_state.bytecode.tell()
     # skip first \x00 in bytecode, replace with appropriate magic number
-    bytecode.seek(1)
+    state.basic_state.bytecode.seek(1)
     if mode == 'B':
         g.write('\xff')
         last = ''
         while True:
-            nxt = bytecode.read(1)
+            nxt = state.basic_state.bytecode.read(1)
             if not nxt:
                 break
             g.write(nxt)
@@ -463,20 +416,20 @@ def save(g, mode='B'):
             g.write('\x1a')    
     elif mode == 'P':
         g.write('\xfe')
-        protect.protect(bytecode, g)
+        protect.protect(state.basic_state.bytecode, g)
         g.write('\x1a')    
     else:
         while True:
-            current_line, output, _ = tokenise.detokenise_line(bytecode)
+            current_line, output, _ = tokenise.detokenise_line(state.basic_state.bytecode)
             if current_line == -1 or (current_line > max_list_line):
                 break
             g.write(str(output) + '\r\n')
         g.write('\x1a')       
-    bytecode.seek(current)         
+    state.basic_state.bytecode.seek(current)         
     g.close()
     
 def list_lines(dev, from_line, to_line):
-    if protected:
+    if state.basic_state.protected:
         # don't list protected files
         raise error.RunError(5)
     # 65529 is max insertable line number for GW-BASIC 3.23. 
@@ -485,37 +438,37 @@ def list_lines(dev, from_line, to_line):
     if to_line == None:
         to_line = max_list_line
     # sort by positions, not line numbers!
-    listable = sorted([ line_numbers[num] for num in line_numbers if num >= from_line and num <= to_line ])
+    listable = sorted([ state.basic_state.line_numbers[num] for num in state.basic_state.line_numbers if num >= from_line and num <= to_line ])
     for pos in listable:        
-        bytecode.seek(pos + 1)
-        _, line, _ = tokenise.detokenise_line(bytecode)
-        if dev == console:
-            console.check_events()
-            console.clear_line(console.row)
+        state.basic_state.bytecode.seek(pos + 1)
+        _, line, _ = tokenise.detokenise_line(state.basic_state.bytecode)
+        if dev == state.io_state.devices['SCRN:']:
+            event_loop.check_events()
+            console.clear_line(state.console_state.row)
         dev.write_line(str(line))
     dev.close()
-    set_runmode(False)
+    set_pointer(False)
                  
 # jump to line number    
 def jump(jumpnum, err=8):
     if jumpnum == None:
-        set_runmode(True, 0)
+        set_pointer(True, 0)
     else:    
         try:    
             # jump to target
-            set_runmode(True, line_numbers[jumpnum])
+            set_pointer(True, state.basic_state.line_numbers[jumpnum])
         except KeyError:
             # Undefined line number
             raise error.RunError(err)
         
 def jump_gosub(jumpnum, handler=None):    
     # set return position
-    gosub_return.append((current_codestream.tell(), run_mode, handler))
+    state.basic_state.gosub_return.append((get_codestream().tell(), state.basic_state.run_mode, handler))
     jump(jumpnum)
  
 def jump_return(jumpnum):        
     try:
-        pos, orig_runmode, handler = gosub_return.pop()
+        pos, orig_runmode, handler = state.basic_state.gosub_return.pop()
     except IndexError:
         # RETURN without GOSUB
         raise error.RunError(3)
@@ -525,7 +478,7 @@ def jump_return(jumpnum):
         handler.stopped = False
     if jumpnum == None:
         # go back to position of GOSUB
-        set_runmode(orig_runmode, pos)   
+        set_pointer(orig_runmode, pos)   
     else:
         # jump to specified line number 
         jump(jumpnum)
@@ -535,7 +488,7 @@ def loop_init(ins, forpos, nextpos, varname, start, stop, step):
     var.set_var(varname, vartypes.number_add(start, vartypes.number_neg(step)))
     # NOTE: all access to varname must be in-place into the bytearray - no assignments!
     sgn = vartypes.unpack_int(vartypes.number_sgn(step))
-    for_next_stack.append((forpos, nextpos, varname[-1], var.variables[varname], number_unpack(stop), number_unpack(step), sgn)) 
+    state.basic_state.for_next_stack.append((forpos, nextpos, varname[-1], state.basic_state.variables[varname], number_unpack(stop), number_unpack(step), sgn)) 
     ins.seek(nextpos)
 
 def number_unpack(value):
@@ -557,16 +510,15 @@ def number_inc_gt(typechar, loopvar, stop, step, sgn):
         return int_left > stop if sgn > 0 else stop > int_left
         
 def loop_iterate(ins):   
-    global for_next_stack         
     # we MUST be at nextpos to run this
     # find the matching NEXT record
     pos = ins.tell()
-    num = len(for_next_stack)
+    num = len(state.basic_state.for_next_stack)
     for depth in range(num):
-        forpos, nextpos, typechar, loopvar, stop, step, sgn = for_next_stack[-depth-1]
+        forpos, nextpos, typechar, loopvar, stop, step, sgn = state.basic_state.for_next_stack[-depth-1]
         if pos == nextpos:
             # only drop NEXT record if we've found a matching one
-            for_next_stack = for_next_stack[:len(for_next_stack)-depth]            
+            state.basic_state.for_next_stack = state.basic_state.for_next_stack[:len(state.basic_state.for_next_stack)-depth]            
             break
     else:
         # next without for
@@ -574,39 +526,56 @@ def loop_iterate(ins):
     # increment counter
     loop_ends = number_inc_gt(typechar, loopvar, stop, step, sgn)
     if loop_ends:
-        for_next_stack.pop()
+        state.basic_state.for_next_stack.pop()
     else: 
         ins.seek(forpos)    
     return loop_ends
     
+def resume(jumpnum):  
+    start_statement, runmode = state.basic_state.error_resume 
+    state.basic_state.errn = 0
+    state.basic_state.error_handle_mode = False
+    state.basic_state.error_resume = None
+    state.basic_state.suspend_all_events = False    
+    if jumpnum == 0: 
+        # RESUME or RESUME 0 
+        set_pointer(runmode, start_statement)
+    elif jumpnum == -1:
+        # RESUME NEXT
+        set_pointer(runmode, start_statement)        
+        util.skip_to(get_codestream(), util.end_statement, break_on_first_char=False)
+    else:
+        # RESUME n
+        jump(jumpnum)
+
+    
 # READ a unit of DATA
 def read_entry():
-    global data_pos
-    current = bytecode.tell()
-    bytecode.seek(data_pos)
-    if util.peek(bytecode) in util.end_statement:
+    current = state.basic_state.bytecode.tell()
+    state.basic_state.bytecode.seek(state.basic_state.data_pos)
+    if util.peek(state.basic_state.bytecode) in util.end_statement:
         # initialise - find first DATA
-        util.skip_to(bytecode, ('\x84',))  # DATA
-    if bytecode.read(1) not in ('\x84', ','):
+        util.skip_to(state.basic_state.bytecode, ('\x84',))  # DATA
+    if state.basic_state.bytecode.read(1) not in ('\x84', ','):
         # out of DATA
         raise error.RunError(4)
     vals, word, literal = '', '', False
     while True:
         # read next char; omit leading whitespace
         if not literal and vals == '':    
-            c = util.skip_white(bytecode)
+            c = util.skip_white(state.basic_state.bytecode)
         else:
-            c = util.peek(bytecode)
+            c = util.peek(state.basic_state.bytecode)
         # parse char
         if c == '' or (not literal and c == ',') or (c in util.end_line or (not literal and c in util.end_statement)):
             break
         elif c == '"':
-            bytecode.read(1)
+            state.basic_state.bytecode.read(1)
             literal = not literal
             if not literal:
-                util.require(bytecode, util.end_statement+(',',))
+                util.require(state.basic_state.bytecode, util.end_statement+(',',))
         else:        
-            bytecode.read(1)
+            state.basic_state.bytecode.read(1)
             if literal:
                 vals += c
             else:
@@ -615,7 +584,8 @@ def read_entry():
             if c not in util.whitespace:    
                 vals += word
                 word = ''
-    data_pos = bytecode.tell()
-    bytecode.seek(current)
+    state.basic_state.data_pos = state.basic_state.bytecode.tell()
+    state.basic_state.bytecode.seek(current)
     return vals
      
+

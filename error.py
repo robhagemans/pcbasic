@@ -8,19 +8,16 @@
 # This file is released under the GNU GPL version 3. 
 # please see text file COPYING for licence terms.
 #
-import util
-import console
-import program
-import events
+import state
 
 # number and line number of last error
-errn = -1
-erl = 65535
+state.basic_state.errn = -1
+state.basic_state.errp = -1
 
 # jump line number 
-on_error = None
-error_handle_mode = False
-error_resume = None
+state.basic_state.on_error = None
+state.basic_state.error_handle_mode = False
+state.basic_state.error_resume = None
             
 default_msg = 'Unprintable error'
 errors = {
@@ -90,77 +87,34 @@ class Error(Exception):
             
 class Break(Error):
     def __init__(self):
-        self.erl = -1 if not program.run_mode else program.get_line_number(program.current_statement)
+        Error.__init__(self)
+        if not state.basic_state.run_mode:
+            self.pos = -1
+        else:
+            self.pos = state.basic_state.current_statement
         
-    def handle_break(self):
-        write_error_message("Break", self.erl)
-        if program.run_mode:
-            program.stop = program.bytecode.tell()
-            program.set_runmode(False)
+class Reset(Error):
+    def __init__(self):
+        Error.__init__(self)
         
-    def handle_continue(self):
-        # can't trap
-        return False
+class Exit(Error):
+    def __init__(self):
+        Error.__init__(self)
             
 class RunError(Error):
-    def __init__(self, value, linum=-1):
+    def __init__(self, value, pos=-1):
+        Error.__init__(self)
         self.err = value
-        self.erl = linum if not program.run_mode or linum != -1 else program.get_line_number(program.current_statement)
+        if not state.basic_state.run_mode or pos != -1:
+            self.pos = pos  
+        else: 
+            self.pos = state.basic_state.current_statement
 
-    def handle_continue(self):
-        global error_resume, error_handle_mode
-        set_err(self)
-        # don't jump if we're already busy handling an error
-        if on_error != None and on_error != 0 and not error_handle_mode:
-            error_resume = program.current_statement, program.run_mode
-            program.jump(on_error)
-            error_handle_mode = True
-            events.suspend_all_events = True
-            return True
-            
-    def handle_break(self):
-        global errn, error_handle_mode
-        set_err(self)
-        # not handled by ON ERROR, stop execution
-        write_error_message(get_message(self.err), self.erl)   
-        error_handle_mode = False
-        program.set_runmode(False)
-        # special case
-        if self.err == 2:
-            # for some reason, err is reset to zero by GW-BASIC in this case.
-            errn = 0
-            # for syntax error, line edit gadget appears
-            if self.erl != -1:
-                console.start_line()
-                console.write_line("Ok\xff")
-                try:    
-                    textpos = program.edit(self.erl, program.bytecode.tell())
-                except RunError as e:
-                    e.handle_break()
-    
-def resume(jumpnum):  
-    global error_handle_mode, error_resume, errn
-    start_statement, runmode = error_resume 
-    errn = 0
-    error_handle_mode = False
-    error_resume = None
-    events.suspend_all_events = False    
-    if jumpnum == 0: 
-        # RESUME or RESUME 0 
-        program.set_runmode(runmode, start_statement)
-    elif jumpnum == -1:
-        # RESUME NEXT
-        program.set_runmode(runmode, start_statement)        
-        util.skip_to(program.current_codestream, util.end_statement, break_on_first_char=False)
-    else:
-        # RESUME n
-        program.jump(jumpnum)
 
 def set_err(e):
-    global errn, erl
     # set ERR and ERL
-    errn = e.err
-    erl = e.erl if e.erl and e.erl > -1 and e.erl < 65535 else 65535
+    state.basic_state.errn = e.err
+    state.basic_state.errp = e.pos 
     
 def get_message(errnum):
     try:
@@ -168,20 +122,4 @@ def get_message(errnum):
     except KeyError:
         return default_msg
 
-def write_error_message(msg, linenum):
-    console.start_line()
-    console.write(msg) 
-    if linenum != None and linenum > -1 and linenum < 65535:
-        console.write(' in %i' % linenum)
-    console.write_line(' ')                  
-
-# math errors only break execution if handler is set
-def math_error(errnum):
-    if on_error: 
-        # also raises exception in error_handle_mode! in that case, prints a normal error message
-        raise(RunError(errnum))
-    else:
-        # write a message & continue as normal
-        # start_line() ?
-        console.write_line(get_message(errnum)) # no space, no line number
 

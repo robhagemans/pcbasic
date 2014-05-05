@@ -16,10 +16,14 @@ import select
 import os
 import logging
 
-import error
 import unicodepage
 import console
 import plat
+import state
+
+supports_graphics = False
+# palette is ignored
+max_palette = 64
 
 # these values are not shown as special graphic chars but as their normal effect
 control = (
@@ -52,10 +56,10 @@ def init():
         check_keys = check_keys_interactive
     else:
         check_keys = check_keys_dumb
-    console.output_echos.append(echo_stdout_utf8)
+    state.console_state.output_echos.append(echo_stdout_utf8)
     # if both stdin and stdout are ttys, avoid doubling the input echo
     if not(sys.stdin.isatty() and sys.stdout.isatty()):
-        console.input_echos.append(echo_stdout_utf8)
+        state.console_state.input_echos.append(echo_stdout_utf8)
     return True    
 
 def check_keys_interactive():
@@ -69,8 +73,9 @@ def check_keys_interactive():
 
 def check_keys_dumb():
     if check_keys_interactive() == '':
-        console.input_closed = True
-    
+        state.console_state.input_closed = True
+
+check_keys = check_keys_dumb
 
 def getc_utf8():
     c = getc()
@@ -96,9 +101,6 @@ def getc():
     c = os.read(fd,1) if sel[0] != [] else ''
     return c
     
-##############################################        
-
-
 def echo_stdout_utf8(s):
     for c in s:
         if c in control:    
@@ -106,7 +108,6 @@ def echo_stdout_utf8(s):
         else:
             sys.stdout.write(unicodepage.cp_to_utf8[c]) 
     sys.stdout.flush()        
-
         
 ##############################################
         
@@ -122,11 +123,7 @@ def check_events():
 def clear_rows(attr, start, stop):
     pass
 
-def init_screen_mode(mode, new_font_height):
-    if mode != 0:
-        raise error.RunError(5)    
-
-def setup_screen(to_height, to_width):
+def init_screen_mode():
     pass
 
 def copy_page(src, dst):
@@ -138,20 +135,14 @@ def scroll(from_line):
 def scroll_down(from_line):
     pass
 
-def set_cursor_colour(c):
+def update_pos():
     pass
         
-def set_palette(new_palette=[]):
-    pass
-    
-def set_palette_entry(index, colour):
+def update_palette():
     pass
 
-def get_palette_entry(index):
-    return index
-
-def show_cursor(do_show, prev):
-    pass    
+def update_cursor_visibility():
+    pass
 
 def set_attr(cattr):
     pass
@@ -159,9 +150,9 @@ def set_attr(cattr):
 def putc_at(row, col, c):
     pass    
 
-def build_default_cursor(mode, is_line):
+def build_cursor():
     pass
 
-def build_shape_cursor(from_line, to_line):
+def load_state():
     pass
 
