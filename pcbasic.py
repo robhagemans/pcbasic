@@ -16,25 +16,7 @@
 import sys
 import os
 from functools import partial             
-import ConfigParser
-# for autosave
-import tempfile
              
-import run
-import error
-import var
-import deviceio
-import expressions
-import oslayer
-import nosound
-import sound_beep
-import graphics
-import console
-import tokenise
-import program
-import unicodepage
-import debug
-import logging
 import plat
 
 # OS-specific stdin/stdout selection
@@ -46,6 +28,7 @@ if plat.system in ('OSX', 'Windows'):
 else:
     # Unix, Linux including Android
     import backend_dumb
+    import backend_ansi
     try:
         stdin_is_tty = sys.stdin.isatty()
         stdout_is_tty = sys.stdout.isatty()
@@ -60,64 +43,87 @@ if plat.system == 'Android':
 else:
     import argparse
 
+import ConfigParser
+import logging
 
-greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "@:INFO" for more.\r%d Bytes free'
+import run
+import error
+import expressions
+import oslayer
+import sound
+import nosound
+import nopenstick
+import sound_beep
+import console
+import tokenise
+import machine
+import program
+import unicodepage
+import debug
+import state
+import backend_pygame
+import iolayer
+
+
+greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "@:INFO" for more.\r%d Bytes free\rOk\xff'
 debugstr = ''
 
 def main():
+    reset = False
     args = get_args()
     # DEBUG, PCjr and Tandy modes
     prepare_keywords(args)
     # other command-line settings
     prepare_constants(args)
     try:
+        if args.resume or plat.system == 'Android':
+            # resume from saved emulator state
+            args.resume = state.load()
         # choose the video and sound backends
         prepare_console(args)
         # choose peripherals    
-        deviceio.prepare_devices(args)
-        # initialise program memory
-        program.new()
-        # print greeting
-        if not args.run and not args.cmd and not args.conv:
-            if stdin_is_tty:
-                console.write_line(greeting % (debugstr, var.total_mem))
-        # execute arguments
-        if args.run or args.load or args.conv and (args.program or stdin):
-            program.load(oslayer.safe_open(args.program, "L", "R") if args.program else stdin)
-        if args.conv and (args.outfile or stdout):
-            program.save(oslayer.safe_open(args.outfile, "S", "W") if args.outfile else stdout, args.conv_mode)
-            run.exit()
-        if args.run:
-            args.cmd += ':RUN'
-        # get out, if we ran with -q
-        if args.quit:
-            run.prompt = False
-            run.execute(args.cmd)
-            run.exit()
-        # execute & handle exceptions; show Ok prompt
-        run.execute(args.cmd)
-        # go into interactive mode 
+        iolayer.prepare_devices(args)
+        if not args.resume:    
+            # print greeting
+            if not args.run and not args.cmd and not args.conv:
+                if stdin_is_tty:
+                    console.write_line(greeting % (debugstr, machine.total_mem))
+            # execute arguments
+            if args.run or args.load or args.conv and (args.program or stdin):
+                program.load(oslayer.safe_open(args.program, "L", "R") if args.program else stdin)
+            if args.conv and (args.outfile or stdout):
+                program.save(oslayer.safe_open(args.outfile, "S", "W") if args.outfile else stdout, args.conv_mode)
+                raise error.Exit()
+            if args.run:
+                args.cmd = 'RUN'
+            # get out, if we ran with -q
+            if args.cmd:    
+                # start loop in execute mode
+                run.execute(args.cmd)
+            if args.quit:
+                raise error.Exit()
+        # start the interpreter loop
         run.loop()
     except error.RunError as e:
         # errors during startup/conversion are handled here, then exit
-        e.handle_break()  
-        logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)  
+        run.handle_error(e)  
+    except error.Exit:
+        pass
+    except error.Reset:
+        reset = True
     except KeyboardInterrupt:
         if args.debug:
             raise
-        else:    
-            logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
-            run.exit()    
     finally:
+        if reset:
+            state.delete()
+        else:   
+            state.save()
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
-        console.exit()
-        # autosave any file in memory
-        if program.bytecode:
-            program.protected = False
-            autosave = os.path.join(tempfile.gettempdir(), "AUTOSAVE.BAS")
-            program.save(oslayer.safe_open(autosave, "S", "W"), 'B')
-            logging.info('Program autosaved as %s.' % autosave)
-
+        console.close()
+        iolayer.close_all()
+        iolayer.close_devices()
+            
 def prepare_keywords(args):
     global debugstr
     if args.debug:
@@ -140,8 +146,8 @@ def prepare_constants(args):
         try:
             for a in args.peek:
                 seg, addr, val = a.split(':')
-                var.peek_values[int(seg)*0x10 + int(addr)] = int(val)
-        except Exception:
+                machine.peek_values[int(seg)*0x10 + int(addr)] = int(val)
+        except (TypeError, ValueError):
             pass     
     # drive mounts           
     if args.mount != None:
@@ -151,7 +157,7 @@ def prepare_constants(args):
                 letter, path = a.split(':',1)
                 oslayer.drives[letter.upper()] = os.path.realpath(path)
                 oslayer.drive_cwd[letter.upper()] = ''
-        except Exception:
+        except (TypeError, ValueError):
             pass                
     # implied RUN invocations
     if args.program and not args.load and not args.conv:
@@ -163,9 +169,9 @@ def prepare_constants(args):
     if args.unprotect or args.conv:
         program.dont_protect = True    
     if args.codepage:
-        console.codepage = int(args.codepage)
+        state.console_state.codepage = int(args.codepage)
     if args.caps:
-        console.caps = True    
+        state.console_state.caps = True    
     # rename exec argument for convenience
     try:
         args.cmd = getattr(args, 'exec') 
@@ -188,42 +194,42 @@ def prepare_constants(args):
         args.conv_mode = args.conv_mode[0].upper()        
 
 def prepare_console(args):
-    unicodepage.load_codepage(console.codepage)
+    unicodepage.load_codepage(state.console_state.codepage)
+    state.penstick = nopenstick
+    state.sound = nosound
     if args.dumb or args.conv or (not args.graphical and not args.ansi and (not stdin_is_tty or not stdout_is_tty)):
         # redirected input or output leads to dumbterm use
-        console.backend = backend_dumb
-        console.sound = sound_beep
+        state.video = backend_dumb
+        state.sound = sound_beep
     elif args.ansi and stdout_is_tty:
-        import backend_ansi
-        console.backend = backend_ansi
-        console.sound = sound_beep
+        state.video = backend_ansi
+        state.sound = sound_beep
     else:   
-        import backend_pygame
-        console.backend = backend_pygame   
-        graphics.backend = backend_pygame
-        graphics.backend.prepare(args)
-        console.penstick = backend_pygame
-        console.sound = backend_pygame
-    # initialise backends
-    console.keys_visible = not args.run
+        state.video = backend_pygame   
+        state.penstick = backend_pygame
+        state.sound = backend_pygame
+        backend_pygame.prepare(args)
+    # initialise backends 
+    if args.run:
+        state.console_state.keys_visible = False
     if not console.init() and backend_dumb:
         logging.warning('Falling back to dumb-terminal.')
-        console.backend = backend_dumb
-        console.sound = sound_beep        
-        if not console.backend or not console.init():
+        state.video = backend_dumb
+        state.sound = sound_beep        
+        if not state.video or not console.init():
             logging.critical('Failed to initialise console. Quitting.')
             sys.exit(0)
     # sound fallback        
     if args.nosound:
-        console.sound = nosound
-    if not console.sound.init_sound():
+        state.sound = nosound
+    if not sound.init_sound():
         logging.warning('Failed to initialise sound. Sound will be disabled.')
-        console.sound = nosound
+        state.sound = nosound
     # gwbasic-style redirected output is split between graphical screen and redirected file    
     if args.output:
         echo = partial(echo_ascii, f=oslayer.safe_open(args.output[0], "S", "W"))
-        console.output_echos.append(echo) 
-        console.input_echos.append(echo)
+        state.console_state.output_echos.append(echo) 
+        state.console_state.input_echos.append(echo)
     if args.input:
         load_redirected_input(oslayer.safe_open(args.input[0], "L", "R"))       
 
@@ -307,6 +313,7 @@ def get_args():
     parser.add_argument('--unprotect', action='store_true', help='Allow listing and ASCII saving of protected files')
     parser.add_argument('--caps', action='store_true', help='Start in CAPS LOCK mode.')
     parser.add_argument('--mount', action='append', nargs='*', metavar=('D:PATH'), help='Set a drive letter to PATH.')
+    parser.add_argument('--resume', action='store_true', help='Resume from saved state. Most other arguments are ignored.')
     args = parser.parse_args()
     # flatten list arguments
     args.mount = flatten_arg_list(args.mount)
@@ -325,11 +332,15 @@ def flatten_arg_list(arglist):
     return None    
 
 def read_config():
+    path = os.path.dirname(os.path.realpath(__file__))
     try:
         config = ConfigParser.RawConfigParser(allow_no_value=True)
-        path = os.path.dirname(os.path.realpath(__file__))
         config.read(os.path.join(path, 'info', 'PCBASIC.INI'))
-        defaults = dict(config.items('pcbasic'))
+    except (ConfigParser.Error, IOError):
+        logging.warning('Error in config file PCBASIC.INI. Configuration not loaded.')
+        return {}
+    defaults = dict(config.items('pcbasic'))
+    try:
         # convert booleans
         for d in defaults:
             if defaults[d].upper() in ('YES', 'TRUE', 'ON'):
@@ -341,8 +352,10 @@ def read_config():
             else:
                 defaults[d] = defaults[d].split(',')    
         return defaults          
-    except Exception:
+    except (TypeError, ValueError):
+        logging.warning('Error in config file PCBASIC.INI. Configuration not loaded.')
         return {}    
 
 if __name__ == "__main__":
     main()
+        

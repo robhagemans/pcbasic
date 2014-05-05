@@ -26,7 +26,7 @@ def load_codepage(number=437):
     try:
         cp_to_unicode = codepage[number]
     except KeyError:
-        logging.warning('Could not find unicode table for codepage %d. Falling back to codepage 437 (US).\n' % number)
+        logging.warning('Could not find unicode table for codepage %d. Falling back to codepage 437 (US).\n', number)
         cp_to_unicode = codepage[437]
     cp_to_unicode.update(ascii)    
     cp_to_unicode.update(special_graphic)    

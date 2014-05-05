@@ -29,7 +29,7 @@ def load_codepage(number=437):
             break
     if not found:
         import logging
-        logging.warning('Could not find EGA font for codepage %d. Falling back to codepage 437 (US).\n' % number)
+        logging.warning('Could not find EGA font for codepage %d. Falling back to codepage 437 (US).\n', number)
         cpifile = 'ega.cpi'
         number = 437        
     path = os.path.dirname(os.path.realpath(__file__))
@@ -57,7 +57,7 @@ def chars_to_ulong(c):
 
 def read_codepage_header(cpi):
     size = chars_to_uint(cpi.read(2))
-    nxt = chars_to_ulong(cpi.read(4)) # offset to next header, ignore this and assume header - page - header - page etc.
+    chars_to_ulong(cpi.read(4)) # offset to next header, ignore this and assume header - page - header - page etc.
     cpi.read(2) # device_type
     cpi.read(8) # device name
     codepage = chars_to_uint(cpi.read(2))

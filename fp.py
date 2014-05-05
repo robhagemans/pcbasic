@@ -28,29 +28,38 @@ import math
 from functools import partial
 
 import error
+import state
 
 # the exponent is biased by 128
 true_bias = 128
 
 ######################################    
 
-overflow = False
-zero_div = False
+# calculation exception states
+state.basic_state.overflow = False
+state.basic_state.zero_div = False
 
 def msg_overflow():
-    global overflow
-    if overflow:
+    if state.basic_state.overflow:
         return
-    overflow = True    
-    error.math_error(6)
+    state.basic_state.overflow = True    
+    math_error(6)
 
 def msg_zero_div():
-    global zero_div
-    if zero_div:
+    if state.basic_state.zero_div:
         return
-    zero_div = True
-    error.math_error(11)
+    state.basic_state.zero_div = True
+    math_error(11)
 
+# math errors only break execution if handler is set
+def math_error(errnum):
+    if state.basic_state.on_error: 
+        # also raises exception in error_handle_mode! in that case, prints a normal error message
+        raise(error.RunError(errnum))
+    else:
+        # write a message & continue as normal
+        # start_line() ?
+        state.io_state.devices['SCRN:'].write_line(error.get_message(errnum)) # no space, no line number
 
 ####################################
 
@@ -293,20 +302,20 @@ class Float(object):
         
     # Float raised to integer exponent
     # exponentiation by squares
-    def ipow_int(self, exp):
-        if exp < 0:
-            self.ipow_int(-exp)
+    def ipow_int(self, expt):
+        if expt < 0:
+            self.ipow_int(-expt)
             self = div(self.one, self)
-        elif exp > 1:
-            if (exp%2) == 0:
-                self.ipow_int(exp/2)
+        elif expt > 1:
+            if (expt%2) == 0:
+                self.ipow_int(expt/2)
                 self.isq()
             else:
                 base = self.copy()
-                self.ipow_int((exp-1)/2)
+                self.ipow_int((expt-1)/2)
                 self.isq()
                 self.imul(base)
-        elif exp == 0:
+        elif expt == 0:
             self = self.one.copy()
         return self
               
@@ -396,9 +405,8 @@ def from_bytes(s):
         return Double.from_bytes(s)
     
 def unpack(value):
-    global overflow, zero_div
-    overflow = False
-    zero_div = False
+    state.basic_state.overflow = False
+    state.basic_state.zero_div = False
     return from_bytes(value[1])
 
 def pack(n):
@@ -439,7 +447,7 @@ def power(base_in, exp_in):
         return base_in.__class__().from_value(base_in.to_value() ** exp_in.to_value())    
     except OverflowError:
         msg_overflow()
-        return base_in.__class__(mbf_in.neg, mbf_in.carry_mask, 0xff)
+        return base_in.__class__(base_in.neg, base_in.carry_mask, 0xff)
 
 def unary(mbf_in, fn):
     try:
@@ -484,5 +492,4 @@ Double.log2     = from_bytes(bytearray('\x7a\xcf\xd1\xf7\x17\x72\x31\x80'))
 Double.twopi    = mul(Double.pi, Double.two) 
 Double.pi2      = mul(Double.pi, Double.half)
 Double.pi4      = mul(Double.pi2, Double.half)
-    
 

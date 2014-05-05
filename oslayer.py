@@ -20,6 +20,8 @@ import error
 import console
 import unicodepage
 import plat
+import state
+import event_loop
 
 if plat.system == 'Windows':
     import msvcrt
@@ -33,14 +35,14 @@ if plat.system == 'Windows':
 else:
     try:
         import pexpect
-    except Exception:
+    except ImportError:
         import logging
         logging.warning('Pexpect module not found. SHELL command will not work.')    
     
 
 # datetime offset for duration of the run (so that we don't need permission to touch the system clock)
 # given in seconds        
-time_offset = datetime.timedelta()
+state.basic_state.time_offset = datetime.timedelta()
 
 # posix access modes for BASIC modes INPUT ,OUTPUT, RANDOM, APPEND and internal LOAD and SAVE modes
 access_modes = { 'I':'rb', 'O':'wb', 'R':'r+b', 'A':'ab', 'L': 'rb', 'S': 'wb' }
@@ -68,8 +70,7 @@ nullstream = open(os.devnull, 'w')
 # date & time & env
 
 def timer_milliseconds():
-    global time_offset
-    now = datetime.datetime.today() + time_offset
+    now = datetime.datetime.today() + state.basic_state.time_offset
     midnight = datetime.datetime(now.year, now.month, now.day)
     diff = now-midnight
     seconds = diff.seconds
@@ -77,8 +78,7 @@ def timer_milliseconds():
     return long(seconds)*1000 + long(micro)/1000 
 
 def set_time(timestr):    
-    global time_offset
-    now = datetime.datetime.today() + time_offset
+    now = datetime.datetime.today() + state.basic_state.time_offset
     timelist = [0, 0, 0]
     pos, listpos, word = 0, 0, ''
     while pos < len(timestr):
@@ -99,11 +99,10 @@ def set_time(timestr):
     if timelist[0] > 23 or timelist[1] > 59 or timelist[2] > 59:
         raise error.RunError(5)
     newtime = datetime.datetime(now.year, now.month, now.day, timelist[0], timelist[1], timelist[2], now.microsecond)
-    time_offset += newtime - now    
+    state.basic_state.time_offset += newtime - now    
         
 def set_date(datestr):    
-    global time_offset
-    now = datetime.datetime.today() + time_offset
+    now = datetime.datetime.today() + state.basic_state.time_offset
     datelist = [1, 1, 1]
     pos, listpos, word = 0, 0, ''
     if len(datestr) < 8:
@@ -138,13 +137,13 @@ def set_date(datestr):
         newtime = datetime.datetime(datelist[2], datelist[0], datelist[1], now.hour, now.minute, now.second, now.microsecond)
     except ValueError:
         raise error.RunError(5)
-    time_offset += newtime - now    
+    state.basic_state.time_offset += newtime - now    
     
 def get_time():
-    return bytearray((datetime.datetime.today() + time_offset).strftime('%H:%M:%S'))
+    return bytearray((datetime.datetime.today() + state.basic_state.time_offset).strftime('%H:%M:%S'))
     
 def get_date():
-    return bytearray((datetime.datetime.today() + time_offset).strftime('%m-%d-%Y'))
+    return bytearray((datetime.datetime.today() + state.basic_state.time_offset).strftime('%m-%d-%Y'))
 
 def get_env(parm):
     if not parm:
@@ -206,13 +205,13 @@ if plat.system == 'Windows':
     # if started from CMD.EXE, get the 'current wworking dir' for each drive
     # if not in CMD.EXE, there's only one cwd
     save_current = os.getcwd()
-    for letter in win32api.GetLogicalDriveStrings().split(':\\\x00')[:-1]:
+    for drive_letter in win32api.GetLogicalDriveStrings().split(':\\\x00')[:-1]:
         try:
-            os.chdir(letter + ':')
+            os.chdir(drive_letter + ':')
             cwd = win32api.GetShortPathName(os.getcwd())
             # must not start with \\
-            drive_cwd[letter] = cwd[3:]  
-            drives[letter] = cwd[:3]
+            drive_cwd[drive_letter] = cwd[3:]  
+            drives[drive_letter] = cwd[:3]
         except WindowsError:
             pass    
     os.chdir(save_current)    
@@ -223,7 +222,7 @@ if plat.system == 'Windows':
             path = current_drive
         try:
             shortname = win32api.GetShortPathName(os.path.join(path, name)).upper()
-        except Exception as e:
+        except WindowsError:
             # something went wrong, show as dots in FILES
             return "........", "..."
         split = shortname.split('\\')[-1].split('.')
@@ -349,14 +348,14 @@ dospath_write_dir = partial(dospath, action=dossify_write, isdir=True)
     
 # for FILES command
 # apply filename filter and DOSify names
-def pass_dosnames(path, files, mask='*.*'):
+def pass_dosnames(path, files_list, mask='*.*'):
     mask = str(mask).rsplit('.', 1)
     if len(mask) == 2:
         trunkmask, extmask = mask
     else:
         trunkmask, extmask = mask[0], ''
     dosfiles = []
-    for name in files:
+    for name in files_list:
         trunk, ext = dossify(path, name)
         # apply mask separately to trunk and extension, dos-style.
         if not fnmatch.fnmatch(trunk.upper(), trunkmask.upper()) or not fnmatch.fnmatch(ext.upper(), extmask.upper()):
@@ -376,20 +375,20 @@ def pass_dosnames(path, files, mask='*.*'):
         dosfiles.append(trunk + ext)
     return dosfiles
 
-def files(pathmask, console):
+def files(pathmask):
     drive, path, mask = get_drive_path(str(pathmask), 53)
     mask = mask.upper()
     if mask == '':
         mask = '*.*'
-    roots, dirs, files = [], [], []
-    for root, dirs, files in safe(os.walk, path):
+    roots, dirs, files_list = [], [], []
+    for roots, dirs, files_list in safe(os.walk, path):
         break
     # get working dir in DOS format
     # NOTE: this is always the current dir, not the one being listed
     console.write_line(drive + ':\\' + drive_cwd[drive].replace(os.sep, '\\'))
-    if (roots, dirs, files) == ([], [], []):
+    if (roots, dirs, files_list) == ([], [], []):
         raise error.RunError(53)
-    dosfiles = pass_dosnames(path, files, mask)
+    dosfiles = pass_dosnames(path, files_list, mask)
     dosfiles = [ name+'     ' for name in dosfiles ]
     dirs += ['.', '..']
     dosdirs = pass_dosnames(path, dirs, mask)
@@ -397,7 +396,7 @@ def files(pathmask, console):
     dosfiles.sort()
     dosdirs.sort()    
     output = dosdirs + dosfiles
-    num = console.width/20
+    num = state.console_state.width/20
     if len(output) == 0:
         # file not found
         raise error.RunError(53)
@@ -406,7 +405,7 @@ def files(pathmask, console):
         output = output[num:]
         console.write_line(line)       
         # allow to break during dir listing & show names flowing on screen
-        console.check_events()             
+        event_loop.check_events()             
     console.write_line(' ' + str(disk_free(path)) + ' Bytes free')
 
 def chdir(name):
@@ -476,7 +475,7 @@ if plat.system == 'Windows':
                 break        
             else:
                 # don't hog cpu
-                console.idle()
+                event_loop.idle()
 
     def shell(command):
         global shell_output
@@ -496,7 +495,7 @@ if plat.system == 'Windows':
                 shell_output = '' 
                 last = lines.pop()
                 for line in lines:
-                    console.check_events()
+                    event_loop.check_events()
                     console.write_line(line)
                 console.write(last)    
             if p.poll() != None:
@@ -548,8 +547,8 @@ else:
                 elif c == '\r':
                     console.write_line()    
                 elif c == '\b':
-                    if console.col != 1:
-                        console.col -= 1
+                    if state.console_state.col != 1:
+                        state.console_state.col -= 1
                 else:
                     console.write(c)
             if c == '' and not p.isalive(): 
@@ -576,7 +575,7 @@ class CUPSStream(StringIO.StringIO):
         self.truncate(0)
         utf8buf = ''
         for c in printbuf:
-            utf8buf += unicodepage.cp_to_utf8[printbuf]
+            utf8buf += unicodepage.cp_to_utf8[c]
         line_print(utf8buf, self.printer_name)
 
 if plat.system == 'Windows':
