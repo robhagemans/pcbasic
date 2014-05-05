@@ -443,6 +443,7 @@ def list_lines(dev, from_line, to_line):
         state.basic_state.bytecode.seek(pos + 1)
         _, line, _ = tokenise.detokenise_line(state.basic_state.bytecode)
         if dev == state.io_state.devices['SCRN:']:
+            # flow of listing is visible on screen
             event_loop.check_events()
             console.clear_line(state.console_state.row)
         dev.write_line(str(line))

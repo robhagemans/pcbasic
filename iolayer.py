@@ -856,8 +856,7 @@ class COMFile(RandomBase):
             out += str(self._in_buffer[:to_read])
             del self._in_buffer[:to_read]
             # allow for break & screen updates
-            event_loop.idle()        
-            event_loop.check_events() 
+            event_loop.wait()        
         return out
         
     # blocking read

@@ -774,8 +774,7 @@ def insert_key(c):
     
 # non-blocking keystroke read
 def get_char():
-    event_loop.idle()    
-    event_loop.check_events()
+    event_loop.wait()    
     return pass_char( peek_char() )
     
 # peek character from keyboard buffer
@@ -802,9 +801,8 @@ def read_chars(num):
 
 # blocking keystroke peek
 def wait_char():
-    while len(state.console_state.keybuf)==0 and not state.console_state.input_closed:
-        event_loop.idle()
-        event_loop.check_events()
+    while len(state.console_state.keybuf) == 0 and not state.console_state.input_closed:
+        event_loop.wait()
     return peek_char()
     
 #####################
