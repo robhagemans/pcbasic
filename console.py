@@ -275,7 +275,13 @@ def set_cursor_shape(from_line, to_line):
 def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
     prompt_row = state.console_state.row
     savecurs = show_cursor() 
-    furthest_left, furthest_right = wait_interactive(from_start, alt_replace)
+    try:
+        furthest_left, furthest_right = wait_interactive(from_start, alt_replace)
+    except error.Break:
+        for echo in state.console_state.input_echos:  
+            echo ('\x0e')
+        write_line()    
+        raise        
     show_cursor(savecurs)
     # find start of wrapped block
     crow = state.console_state.row
@@ -333,9 +339,6 @@ def wait_interactive(from_start=False, alt_replace = True):
                     '\x1D', '\x00\x47', '\x0B', '\x00\x4F', '\x0E' ):
             set_overwrite_mode(True)
         if d == '\x03':         
-            for echo in state.console_state.input_echos:  
-                echo ('\x0e')
-            write_line()    
             raise error.Break()    # not caught in wait_char like <CTRL+BREAK>
         elif d == '\r':                     break                                   # <ENTER>
         elif d == '\a':                     sound.beep()                            # <CTRL+G>
@@ -762,6 +765,7 @@ def insert_key(c):
             keynum = function_key[c]
             # can't be redefined in events - so must be event keys 1-10.
             if state.basic_state.run_mode and state.basic_state.key_handlers[keynum].enabled:
+                # this key is being trapped, don't replace
                 state.console_state.keybuf += c
             else:
                 state.console_state.keybuf += state.console_state.key_replace[keynum]

@@ -45,7 +45,7 @@ dont_protect = False
 
 def init_program():
     # stop running if we were
-    set_runmode(False)
+    set_pointer(False)
     # reset loop stacks
     state.basic_state.gosub_return = []
     state.basic_state.for_next_stack = []
@@ -67,16 +67,18 @@ def erase_program():
     # reset stacks
     init_program()
 
-def set_runmode(new_runmode=True, pos=None):
-    global current_codestream
-    current_codestream = state.basic_state.bytecode if new_runmode else state.basic_state.direct_line
-    if state.basic_state.run_mode != new_runmode:
-        state.basic_state.run_mode = new_runmode
-        # position at end - don't execute anything unless we jump
-        current_codestream.seek(0, 2)
+def set_pointer(new_runmode, pos=None):
+    state.basic_state.run_mode = new_runmode
+    codestream = get_codestream()
     if pos != None:
         # jump to position, if given
-        current_codestream.seek(pos)    
+        codestream.seek(pos) 
+    else:
+        # position at end - don't execute anything unless we jump
+        codestream.seek(0, 2)
+
+def get_codestream():
+    return state.basic_state.bytecode if state.basic_state.run_mode else state.basic_state.direct_line   
 
 # RESTORE
 def restore(datanum=-1):
@@ -244,7 +246,7 @@ def edit(from_line, bytepos=None):
     console.write(str(output))
     console.set_pos(state.console_state.row, textpos+1 if bytepos else 1)
     # throws back to direct mode
-    set_runmode(False)
+    set_pointer(False)
     # suppress prompt
     state.basic_state.prompt = False
     
@@ -293,7 +295,7 @@ def renum(new_line, start_line, step):
         state.basic_state.bytecode.seek(-2, 1)
         state.basic_state.bytecode.write(str(vartypes.value_to_uint(newjump)))
     # stop running if we were
-    set_runmode(False)
+    set_pointer(False)
     # reset loop stacks
     state.basic_state.gosub_return = []
     state.basic_state.for_next_stack = []
@@ -445,23 +447,23 @@ def list_lines(dev, from_line, to_line):
             console.clear_line(state.console_state.row)
         dev.write_line(str(line))
     dev.close()
-    set_runmode(False)
+    set_pointer(False)
                  
 # jump to line number    
 def jump(jumpnum, err=8):
     if jumpnum == None:
-        set_runmode(True, 0)
+        set_pointer(True, 0)
     else:    
         try:    
             # jump to target
-            set_runmode(True, state.basic_state.line_numbers[jumpnum])
+            set_pointer(True, state.basic_state.line_numbers[jumpnum])
         except KeyError:
             # Undefined line number
             raise error.RunError(err)
         
 def jump_gosub(jumpnum, handler=None):    
     # set return position
-    state.basic_state.gosub_return.append((current_codestream.tell(), state.basic_state.run_mode, handler))
+    state.basic_state.gosub_return.append((get_codestream().tell(), state.basic_state.run_mode, handler))
     jump(jumpnum)
  
 def jump_return(jumpnum):        
@@ -476,7 +478,7 @@ def jump_return(jumpnum):
         handler.stopped = False
     if jumpnum == None:
         # go back to position of GOSUB
-        set_runmode(orig_runmode, pos)   
+        set_pointer(orig_runmode, pos)   
     else:
         # jump to specified line number 
         jump(jumpnum)
@@ -537,11 +539,11 @@ def resume(jumpnum):
     state.basic_state.suspend_all_events = False    
     if jumpnum == 0: 
         # RESUME or RESUME 0 
-        set_runmode(runmode, start_statement)
+        set_pointer(runmode, start_statement)
     elif jumpnum == -1:
         # RESUME NEXT
-        set_runmode(runmode, start_statement)        
-        util.skip_to(current_codestream, util.end_statement, break_on_first_char=False)
+        set_pointer(runmode, start_statement)        
+        util.skip_to(get_codestream(), util.end_statement, break_on_first_char=False)
     else:
         # RESUME n
         jump(jumpnum)

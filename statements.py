@@ -39,168 +39,179 @@ import var
 import vartypes
 import sound
 
-# parses one statement at the current stream pointer in current_codestream
+# parses one statement at the current stream pointer in current codestream
 # return value False: stream ends
 def parse_statement():
-    ins = program.current_codestream
-    state.basic_state.current_statement = ins.tell()
-    c = util.skip_white(ins).upper()
-    if c == '':
-        # stream has ended.
-        return False
-    # parse line number or : at start of statement    
-    elif c == '\x00':
-        ins.read(1)
-        # line number marker, new statement
-        linenum = util.parse_line_number(ins)
-        if linenum == -1:
-            if state.basic_state.error_resume:
-                # unfinished error handler: no RESUME (don't trap this)
-                state.basic_state.error_handle_mode = True
-                raise error.RunError(19) 
-            # break
-            program.set_runmode(False)
+    try:
+        ins = program.get_codestream()
+        state.basic_state.current_statement = ins.tell()
+        c = util.skip_white(ins).upper()
+        if c == '':
+            # stream has ended.
             return False
-        if state.basic_state.tron:
-            console.write('[' + ('%i' % linenum) + ']')
-        debug.debug_step(linenum)
-    elif c == ':':
-        ins.read(1)    
-    c = util.skip_white(ins).upper()
-    # empty statement, return to parse next
-    if c in util.end_statement:
-        return True
-    # implicit LET
-    elif c >= 'A' and c <= 'Z' :
-        exec_let(ins)
-    # token
-    else:
-        ins.read(1)        
-        if   c == '\x81':     exec_end(ins)
-        elif c == '\x82':     exec_for(ins)
-        elif c == '\x83':     exec_next(ins)
-        elif c == '\x84':     exec_data(ins)
-        elif c == '\x85':     exec_input(ins)
-        elif c == '\x86':     exec_dim(ins)
-        elif c == '\x87':     exec_read(ins)
-        elif c == '\x88':     exec_let(ins)
-        elif c == '\x89':     exec_goto(ins)
-        elif c == '\x8A':     exec_run(ins)
-        elif c == '\x8B':     exec_if(ins)
-        elif c == '\x8C':     exec_restore(ins)
-        elif c == '\x8D':     exec_gosub(ins)
-        elif c == '\x8E':     exec_return(ins)
-        elif c == '\x8F':     exec_rem(ins)
-        elif c == '\x90':     exec_stop(ins)
-        elif c == '\x91':     exec_print(ins)
-        elif c == '\x92':     exec_clear(ins)  
-        elif c == '\x93':     exec_list(ins)      
-        elif c == '\x94':     exec_new(ins)
-        elif c == '\x95':     exec_on(ins)
-        elif c == '\x96':     exec_wait(ins)
-        elif c == '\x97':     exec_def(ins)
-        elif c == '\x98':     exec_poke(ins)
-        elif c == '\x99':     exec_cont(ins)
-        elif c == '\x9C':     exec_out(ins)
-        elif c == '\x9D':     exec_lprint(ins)
-        elif c == '\x9E':     exec_llist(ins)    
-        elif c == '\xA0':     exec_width(ins)    
-        elif c == '\xA1':     exec_else(ins)    
-        elif c == '\xA2':     exec_tron(ins)
-        elif c == '\xA3':     exec_troff(ins)
-        elif c == '\xA4':     exec_swap(ins)
-        elif c == '\xA5':     exec_erase(ins)
-        elif c == '\xA6':     exec_edit(ins)
-        elif c == '\xA7':     exec_error(ins)
-        elif c == '\xA8':     exec_resume(ins)
-        elif c == '\xA9':     exec_delete(ins)
-        elif c == '\xAA':     exec_auto(ins)
-        elif c == '\xAB':     exec_renum(ins)
-        elif c == '\xAC':     exec_defstr(ins)
-        elif c == '\xAD':     exec_defint(ins)
-        elif c == '\xAE':     exec_defsng(ins)
-        elif c == '\xAF':     exec_defdbl(ins)    
-        elif c == '\xB0':     exec_line(ins)
-        elif c == '\xB1':     exec_while(ins)
-        elif c == '\xB2':     exec_wend(ins)
-        elif c == '\xB3':     exec_call(ins)
-        elif c == '\xB7':     exec_write(ins)
-        elif c == '\xB8':     exec_option(ins)
-        elif c == '\xB9':     exec_randomize(ins)
-        elif c == '\xBA':     exec_open(ins)
-        elif c == '\xBB':     exec_close(ins)
-        elif c == '\xBC':     exec_load(ins)
-        elif c == '\xBD':     exec_merge(ins)
-        elif c == '\xBE':     exec_save(ins)
-        elif c == '\xBF':     exec_color(ins)
-        elif c == '\xC0':     exec_cls(ins)
-        elif c == '\xC1':     exec_motor(ins)        
-        elif c == '\xC2':     exec_bsave(ins)        
-        elif c == '\xC3':     exec_bload(ins)        
-        elif c == '\xC4':     exec_sound(ins)        
-        elif c == '\xC5':     exec_beep(ins)        
-        elif c == '\xC6':     exec_pset(ins)        
-        elif c == '\xC7':     exec_preset(ins)        
-        elif c == '\xC8':     exec_screen(ins)
-        elif c == '\xC9':     exec_key(ins)
-        elif c == '\xCA':     exec_locate(ins)
-        # two-byte tokens
-        elif c == '\xFD':
+        # parse line number or : at start of statement    
+        elif c == '\x00':
             ins.read(1)
-            # syntax error; these are all expression tokens, not statement tokens.
-            raise error.RunError(2)
-        # two-byte tokens
-        elif c == '\xFE':
-            c = ins.read(1)
-            if   c == '\x81':    exec_files(ins)
-            elif c == '\x82':    exec_field(ins)
-            elif c == '\x83':    exec_system(ins)
-            elif c == '\x84':    exec_name(ins)
-            elif c == '\x85':    exec_lset(ins)
-            elif c == '\x86':    exec_rset(ins)
-            elif c == '\x87':    exec_kill(ins)
-            elif c == '\x88':    exec_put(ins)
-            elif c == '\x89':    exec_get(ins)
-            elif c == '\x8A':    exec_reset(ins)
-            elif c == '\x8B':    exec_common(ins)
-            elif c == '\x8C':    exec_chain(ins)
-            elif c == '\x8D':    exec_date(ins)
-            elif c == '\x8E':    exec_time(ins)
-            elif c == '\x8F':    exec_paint(ins)
-            elif c == '\x90':    exec_com(ins)
-            elif c == '\x91':    exec_circle(ins)
-            elif c == '\x92':    exec_draw(ins)
-            elif c == '\x93':    exec_play(ins)
-            elif c == '\x94':    exec_timer(ins)
-            elif c == '\x96':    exec_ioctl(ins)
-            elif c == '\x97':    exec_chdir(ins)
-            elif c == '\x98':    exec_mkdir(ins)
-            elif c == '\x99':    exec_rmdir(ins)
-            elif c == '\x9A':    exec_shell(ins)
-            elif c == '\x9B':    exec_environ(ins)
-            elif c == '\x9C':    exec_view(ins)
-            elif c == '\x9D':    exec_window(ins)
-            elif c == '\x9F':    exec_palette(ins)
-            elif c == '\xA0':    exec_lcopy(ins)
-            elif c == '\xA1':    exec_calls(ins)
-            elif c == '\xA4':    exec_noise(ins)
-            elif c == '\xA5':    exec_pcopy(ins)
-            elif c == '\xA6':    exec_term(ins)
-            elif c == '\xA7':    exec_lock(ins)
-            elif c == '\xA8':    exec_unlock(ins)
-            else: raise error.RunError(2)
-        # two-byte tokens    
-        elif c == '\xFF':
-            c = ins.read(1)
-            if   c == '\x83':   exec_mid(ins)
-            elif c == '\xA0':   exec_pen(ins)
-            elif c == '\xA2':   exec_strig(ins)
-            elif c == '\xFF':   exec_debug(ins)
-            else: raise error.RunError(2)
+            # line number marker, new statement
+            linenum = util.parse_line_number(ins)
+            if linenum == -1:
+                if state.basic_state.error_resume:
+                    # unfinished error handler: no RESUME (don't trap this)
+                    state.basic_state.error_handle_mode = True
+                    raise error.RunError(19) 
+                # stream has ended
+                return False
+            if state.basic_state.tron:
+                console.write('[' + ('%i' % linenum) + ']')
+            debug.debug_step(linenum)
+        elif c == ':':
+            ins.read(1)    
+        c = util.skip_white(ins).upper()
+        # empty statement, return to parse next
+        if c in util.end_statement:
+            return True
+        # implicit LET
+        elif c >= 'A' and c <= 'Z' :
+            exec_let(ins)
+        # token
         else:
-            raise error.RunError(2)
-    return True
-
+            ins.read(1)        
+            if   c == '\x81':     exec_end(ins)
+            elif c == '\x82':     exec_for(ins)
+            elif c == '\x83':     exec_next(ins)
+            elif c == '\x84':     exec_data(ins)
+            elif c == '\x85':     exec_input(ins)
+            elif c == '\x86':     exec_dim(ins)
+            elif c == '\x87':     exec_read(ins)
+            elif c == '\x88':     exec_let(ins)
+            elif c == '\x89':     exec_goto(ins)
+            elif c == '\x8A':     exec_run(ins)
+            elif c == '\x8B':     exec_if(ins)
+            elif c == '\x8C':     exec_restore(ins)
+            elif c == '\x8D':     exec_gosub(ins)
+            elif c == '\x8E':     exec_return(ins)
+            elif c == '\x8F':     exec_rem(ins)
+            elif c == '\x90':     exec_stop(ins)
+            elif c == '\x91':     exec_print(ins)
+            elif c == '\x92':     exec_clear(ins)  
+            elif c == '\x93':     exec_list(ins)      
+            elif c == '\x94':     exec_new(ins)
+            elif c == '\x95':     exec_on(ins)
+            elif c == '\x96':     exec_wait(ins)
+            elif c == '\x97':     exec_def(ins)
+            elif c == '\x98':     exec_poke(ins)
+            elif c == '\x99':     exec_cont(ins)
+            elif c == '\x9C':     exec_out(ins)
+            elif c == '\x9D':     exec_lprint(ins)
+            elif c == '\x9E':     exec_llist(ins)    
+            elif c == '\xA0':     exec_width(ins)    
+            elif c == '\xA1':     exec_else(ins)    
+            elif c == '\xA2':     exec_tron(ins)
+            elif c == '\xA3':     exec_troff(ins)
+            elif c == '\xA4':     exec_swap(ins)
+            elif c == '\xA5':     exec_erase(ins)
+            elif c == '\xA6':     exec_edit(ins)
+            elif c == '\xA7':     exec_error(ins)
+            elif c == '\xA8':     exec_resume(ins)
+            elif c == '\xA9':     exec_delete(ins)
+            elif c == '\xAA':     exec_auto(ins)
+            elif c == '\xAB':     exec_renum(ins)
+            elif c == '\xAC':     exec_defstr(ins)
+            elif c == '\xAD':     exec_defint(ins)
+            elif c == '\xAE':     exec_defsng(ins)
+            elif c == '\xAF':     exec_defdbl(ins)    
+            elif c == '\xB0':     exec_line(ins)
+            elif c == '\xB1':     exec_while(ins)
+            elif c == '\xB2':     exec_wend(ins)
+            elif c == '\xB3':     exec_call(ins)
+            elif c == '\xB7':     exec_write(ins)
+            elif c == '\xB8':     exec_option(ins)
+            elif c == '\xB9':     exec_randomize(ins)
+            elif c == '\xBA':     exec_open(ins)
+            elif c == '\xBB':     exec_close(ins)
+            elif c == '\xBC':     exec_load(ins)
+            elif c == '\xBD':     exec_merge(ins)
+            elif c == '\xBE':     exec_save(ins)
+            elif c == '\xBF':     exec_color(ins)
+            elif c == '\xC0':     exec_cls(ins)
+            elif c == '\xC1':     exec_motor(ins)        
+            elif c == '\xC2':     exec_bsave(ins)        
+            elif c == '\xC3':     exec_bload(ins)        
+            elif c == '\xC4':     exec_sound(ins)        
+            elif c == '\xC5':     exec_beep(ins)        
+            elif c == '\xC6':     exec_pset(ins)        
+            elif c == '\xC7':     exec_preset(ins)        
+            elif c == '\xC8':     exec_screen(ins)
+            elif c == '\xC9':     exec_key(ins)
+            elif c == '\xCA':     exec_locate(ins)
+            # two-byte tokens
+            elif c == '\xFD':
+                ins.read(1)
+                # syntax error; these are all expression tokens, not statement tokens.
+                raise error.RunError(2)
+            # two-byte tokens
+            elif c == '\xFE':
+                c = ins.read(1)
+                if   c == '\x81':    exec_files(ins)
+                elif c == '\x82':    exec_field(ins)
+                elif c == '\x83':    exec_system(ins)
+                elif c == '\x84':    exec_name(ins)
+                elif c == '\x85':    exec_lset(ins)
+                elif c == '\x86':    exec_rset(ins)
+                elif c == '\x87':    exec_kill(ins)
+                elif c == '\x88':    exec_put(ins)
+                elif c == '\x89':    exec_get(ins)
+                elif c == '\x8A':    exec_reset(ins)
+                elif c == '\x8B':    exec_common(ins)
+                elif c == '\x8C':    exec_chain(ins)
+                elif c == '\x8D':    exec_date(ins)
+                elif c == '\x8E':    exec_time(ins)
+                elif c == '\x8F':    exec_paint(ins)
+                elif c == '\x90':    exec_com(ins)
+                elif c == '\x91':    exec_circle(ins)
+                elif c == '\x92':    exec_draw(ins)
+                elif c == '\x93':    exec_play(ins)
+                elif c == '\x94':    exec_timer(ins)
+                elif c == '\x96':    exec_ioctl(ins)
+                elif c == '\x97':    exec_chdir(ins)
+                elif c == '\x98':    exec_mkdir(ins)
+                elif c == '\x99':    exec_rmdir(ins)
+                elif c == '\x9A':    exec_shell(ins)
+                elif c == '\x9B':    exec_environ(ins)
+                elif c == '\x9C':    exec_view(ins)
+                elif c == '\x9D':    exec_window(ins)
+                elif c == '\x9F':    exec_palette(ins)
+                elif c == '\xA0':    exec_lcopy(ins)
+                elif c == '\xA1':    exec_calls(ins)
+                elif c == '\xA4':    exec_noise(ins)
+                elif c == '\xA5':    exec_pcopy(ins)
+                elif c == '\xA6':    exec_term(ins)
+                elif c == '\xA7':    exec_lock(ins)
+                elif c == '\xA8':    exec_unlock(ins)
+                else: raise error.RunError(2)
+            # two-byte tokens    
+            elif c == '\xFF':
+                c = ins.read(1)
+                if   c == '\x83':   exec_mid(ins)
+                elif c == '\xA0':   exec_pen(ins)
+                elif c == '\xA2':   exec_strig(ins)
+                elif c == '\xFF':   exec_debug(ins)
+                else: raise error.RunError(2)
+            else:
+                raise error.RunError(2)
+        return True
+    except error.RunError as e:
+        error.set_err(e)
+        # don't jump if we're already busy handling an error
+        if state.basic_state.on_error != None and state.basic_state.on_error != 0 and not state.basic_state.error_handle_mode:
+            state.basic_state.error_resume = state.basic_state.current_statement, state.basic_state.run_mode
+            program.jump(state.basic_state.on_error)
+            state.basic_state.error_handle_mode = True
+            state.basic_state.suspend_all_events = True
+            return True
+        else:    
+            raise e
+        
 #################################################################    
 #################################################################
 
@@ -694,8 +705,15 @@ def exec_auto(ins):
     if util.skip_white_read_if(ins, (',',)): 
         increment = util.parse_jumpnum(ins, allow_empty=True)
     util.require(ins, util.end_statement)
-    # do the AUTO mode and go back to direct mode
-    run.auto_loop(linenum, increment)
+    # reset linenum and increment on each call of AUTO (even in AUTO mode)
+    state.basic_state.auto_linenum = linenum if linenum != None else 10
+    state.basic_state.auto_increment = increment if increment != None else 10    
+    # move program pointer to end
+    program.set_pointer(False)
+    # continue input in AUTO mode
+    state.basic_state.auto_mode = True
+    # suppress prompt
+    state.basic_state.prompt = False
     
 def exec_list(ins):
     from_line, to_line = parse_line_range(ins)
@@ -1155,7 +1173,8 @@ def exec_draw(ins):
 def exec_end(ins):
     util.require(ins, util.end_statement)
     state.basic_state.stop = state.basic_state.bytecode.tell()
-    program.set_runmode(False)
+    # jump to end of direct line so execution stops
+    program.set_pointer(False)
     # avoid NO RESUME
     state.basic_state.error_handle_mode = False
     state.basic_state.error_resume = None
@@ -1169,7 +1188,7 @@ def exec_cont(ins):
     if state.basic_state.stop == None:
         raise error.RunError(17)
     else: 
-        program.set_runmode(True, state.basic_state.stop)   
+        program.set_pointer(True, state.basic_state.stop)   
     # IN GW-BASIC, weird things happen if you do GOSUB nn :PRINT "x"
     # and there's a STOP in the subroutine. 
     # CONT then continues and the rest of the original line is executed, printing x
