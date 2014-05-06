@@ -11,7 +11,6 @@
 
 import state
 import backend
-import on_event
 
 state.console_state.music_foreground = True
 state.console_state.music_queue = []
@@ -43,5 +42,5 @@ def stop_all_sound():
         
 def wait_music(wait_length=0, wait_last=True):
     while (wait_last and backend.sound.busy()) or len(state.console_state.music_queue) + wait_last - 1 > wait_length:
-        on_event.wait()
+        backend.wait()
 
