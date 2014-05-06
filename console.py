@@ -12,6 +12,7 @@
 import logging
 
 import state
+import backend
 import event_loop
 import sound
 # for Break, Exit, Reset
@@ -132,18 +133,18 @@ state.console_state.key_replace = [
 # init
 
 def init():
-    if not state.video.init():
+    if not backend.video.init():
         return False
     if state.loaded:
-        if state.console_state.screen_mode != 0 and not state.video.supports_graphics:
+        if state.console_state.screen_mode != 0 and not backend.video.supports_graphics:
             logging.warning("Screen mode not supported by display backend.")
             # fix the terminal
-            state.video.close()
+            backend.video.close()
             return False
         # set up the appropriate screen resolution
-        state.video.init_screen_mode()
+        backend.video.init_screen_mode()
         # load the screen contents from storage
-        state.video.load_state()
+        backend.video.load_state()
     else:        
         screen(None, None, None, None, first_run=True)
     return True
@@ -162,7 +163,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
         info = None
     # vpage and apage nums are persistent on mode switch
     # if the new mode has fewer pages than current vpage/apage, illegal fn call before anything happens.
-    if not info or new_apagenum >= info[5] or new_vpagenum >= info[5] or (new_mode != 0 and not state.video.supports_graphics):
+    if not info or new_apagenum >= info[5] or new_vpagenum >= info[5] or (new_mode != 0 and not backend.video.supports_graphics):
         # reset palette happens even if the function fails with Illegal Function Call
         set_palette()
         return False
@@ -184,7 +185,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
             state.console_state.num_colours, state.console_state.num_palette, _, 
             state.console_state.num_pages, state.console_state.bitsperpixel     ) = info  
         # enforce backend palette maximum
-        state.console_state.num_palette = min(state.console_state.num_palette, state.video.max_palette)
+        state.console_state.num_palette = min(state.console_state.num_palette, backend.video.max_palette)
         # width persists on change to screen 0
         state.console_state.pages = []
         for _ in range(state.console_state.num_pages):
@@ -203,13 +204,13 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
             fp.Single.from_int(6*state.console_state.width)) 
         set_palette()
         # signal the backend to change the screen resolution
-        state.video.init_screen_mode()
+        backend.video.init_screen_mode()
         # only redraw keys if screen has been cleared (any colours stay the same). state.console_state.screen_mode must be set for this
         if state.console_state.keys_visible:  
             show_keys()    
         set_default_cursor()
         set_pos(1, 1)
-        state.video.update_cursor_visibility()
+        backend.video.update_cursor_visibility()
         # FIXME: are there different views for different pages?
         unset_view()
     else:
@@ -217,7 +218,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
         state.console_state.vpagenum, state.console_state.apagenum = new_vpagenum, new_apagenum
         state.console_state.vpage = state.console_state.pages[state.console_state.vpagenum]
         state.console_state.apage = state.console_state.pages[state.console_state.apagenum]
-        state.video.screen_changed = True
+        backend.video.screen_changed = True
         # FIXME: keys visible?
     return True
 
@@ -228,18 +229,18 @@ def copy_page(src, dst):
         dstrow.buf[:] = srcrow.buf[:]
         dstrow.end = srcrow.end
         dstrow.wrap = srcrow.wrap            
-    state.video.copy_page(src, dst)
+    backend.video.copy_page(src, dst)
     
 # sort out the terminal, close the window, etc
 def close():
-    if state.video:
-        state.video.close()
+    if backend.video:
+        backend.video.close()
 
 #############################
 
 def set_palette_entry(index, colour):
     state.console_state.palette[index] = colour
-    state.video.update_palette()
+    backend.video.update_palette()
     
 def get_palette_entry(index):
     return state.console_state.palette[index]
@@ -256,18 +257,18 @@ def set_palette(new_palette=None):
             state.console_state.palette = [0, 11, 13, 15]
         else:
             state.console_state.palette = [0, 15]
-    state.video.update_palette()
+    backend.video.update_palette()
 
 def show_cursor(do_show = True):
     prev = state.console_state.cursor
     state.console_state.cursor = do_show
-    state.video.update_cursor_visibility()
+    backend.video.update_cursor_visibility()
     return prev
 
 def set_cursor_shape(from_line, to_line):
     state.console_state.cursor_from = max(0, min(from_line, state.console_state.font_height-1))
     state.console_state.cursor_to = max(0, min(to_line, state.console_state.font_height-1))
-    state.video.build_cursor()
+    backend.video.build_cursor()
     
 ############################### 
 # interactive mode         
@@ -465,11 +466,11 @@ def delete_char(crow, ccol):
 def redraw_row(start, crow):
     while True:
         therow = state.console_state.apage.row[crow-1]  
-        state.video.set_attr(state.console_state.attr)
+        backend.video.set_attr(state.console_state.attr)
         for i in range(start, therow.end): 
             # redrawing changes colour attributes to current foreground (cf. GW)
             therow.buf[i] = (therow.buf[i][0], state.console_state.attr)
-            state.video.putc_at(crow, i+1, therow.buf[i][0])
+            backend.video.putc_at(crow, i+1, therow.buf[i][0])
         if therow.wrap and crow >= 0 and crow < state.console_state.height-1:
             crow += 1
             start = 0
@@ -502,7 +503,7 @@ def clear_rest_of_line(srow, scol):
     if scol > 1:
         redraw_row(scol-1, srow)
     else:
-        state.video.clear_rows(state.console_state.attr, srow, srow)
+        backend.video.clear_rows(state.console_state.attr, srow, srow)
     therow.end = save_end
 
 def backspace(start_row, start_col):
@@ -708,7 +709,7 @@ def list_keys():
 
 def clear_key_row():
     state.console_state.apage.row[24].clear()
-    state.video.clear_rows(state.console_state.attr, 25, 25)
+    backend.video.clear_rows(state.console_state.attr, 25, 25)
 
 def hide_keys():
     state.console_state.keys_visible = False
@@ -741,11 +742,11 @@ def write_for_keys(s, col, cattr):
                 c = keys_line_replace_chars[c]
             except KeyError:
                 pass    
-            state.video.set_attr(cattr)    
-            state.video.putc_at(25, col, c)    
+            backend.video.set_attr(cattr)    
+            backend.video.putc_at(25, col, c)    
             state.console_state.apage.row[24].buf[col-1] = c, cattr
         col += 1
-    state.video.set_attr(state.console_state.attr)     
+    backend.video.set_attr(state.console_state.attr)     
     
 ##############################
 # keyboard buffer read/write
@@ -814,8 +815,8 @@ def get_screen_char_attr(crow, ccol, want_attr):
 
 def put_screen_char_attr(cpage, crow, ccol, c, cattr):
     cattr = cattr & 0xf if state.console_state.screen_mode else cattr
-    state.video.set_attr(cattr) 
-    state.video.putc_at(crow, ccol, c)    
+    backend.video.set_attr(cattr) 
+    backend.video.putc_at(crow, ccol, c)    
     cpage.row[crow-1].buf[ccol-1] = (c, cattr)
     
 def put_char(c, do_scroll_down=False):
@@ -838,7 +839,7 @@ def put_char(c, do_scroll_down=False):
 def set_pos(to_row, to_col, scroll_ok=True):
     state.console_state.row, state.console_state.col = to_row, to_col
     check_pos(scroll_ok)
-    state.video.update_pos()
+    backend.video.update_pos()
 
 def check_pos(scroll_ok=True):
     oldrow, oldcol = state.console_state.row, state.console_state.col
@@ -896,12 +897,12 @@ def clear_view():
         state.console_state.apage.row[r-1].clear()
         state.console_state.apage.row[r-1].wrap = False
     state.console_state.row, state.console_state.col = state.console_state.view_start, 1
-    state.video.clear_rows(state.console_state.attr, state.console_state.view_start, state.console_state.height if state.console_state.bottom_row_allowed else state.console_state.scroll_height)
+    backend.video.clear_rows(state.console_state.attr, state.console_state.view_start, state.console_state.height if state.console_state.bottom_row_allowed else state.console_state.scroll_height)
             
 def scroll(from_line=None): 
     if from_line == None:
         from_line = state.console_state.view_start
-    state.video.scroll(from_line)
+    backend.video.scroll(from_line)
     # sync buffers with the new screen reality:
     if state.console_state.row > from_line:
         state.console_state.row -= 1
@@ -909,7 +910,7 @@ def scroll(from_line=None):
     del state.console_state.apage.row[from_line-1]
    
 def scroll_down(from_line):
-    state.video.scroll_down(from_line)
+    backend.video.scroll_down(from_line)
     if state.console_state.row >= from_line:
         state.console_state.row += 1
     # sync buffers with the new screen reality:
@@ -922,13 +923,13 @@ def redraw_text_screen():
     if state.console_state.cursor:
         show_cursor(False)
     # this makes it feel faster
-    state.video.clear_rows(state.console_state.attr, 1, 25)
+    backend.video.clear_rows(state.console_state.attr, 1, 25)
     # redraw every character
     for crow in range(state.console_state.height):
         therow = state.console_state.apage.row[crow]  
         for i in range(state.console_state.width): 
-            state.video.set_attr(therow.buf[i][1])
-            state.video.putc_at(crow+1, i+1, therow.buf[i][0])
+            backend.video.set_attr(therow.buf[i][1])
+            backend.video.putc_at(crow+1, i+1, therow.buf[i][0])
     if state.console_state.cursor:
         show_cursor(True)       
 

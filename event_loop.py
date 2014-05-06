@@ -10,22 +10,23 @@
 #
 
 import on_event
-import state 
 import sound
+import state
+import backend
 
 #############################
 # core event handler    
 
 def check_events():
     # check console events
-    state.video.check_events()   
+    backend.video.check_events()   
+    # manage sound queue
+    backend.sound.check_sound()
     # check&handle user events
     on_event.check_events()
-    # manage sound queue
-    sound.check_events()
 
 def idle():
-    state.video.idle()
+    backend.video.idle()
     
 def wait():
     idle()

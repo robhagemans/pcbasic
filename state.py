@@ -41,11 +41,6 @@ loaded = False
 pcbasic_dir = os.path.dirname(os.path.realpath(__file__))
 state_file = os.path.join(pcbasic_dir, 'info', 'STATE.SAV')
 
-# backend implementations
-video = None
-sound = None 
-penstick = None 
-
 ###############################################
 
 try:

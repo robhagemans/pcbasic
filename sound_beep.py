@@ -41,7 +41,9 @@ def check_sound():
     if length and (not now_playing or now_playing.poll() != None):
         play_now(*state.console_state.music_queue[0])
         length -= 1
-    return length
+    # remove the notes that have been played
+    while len(state.console_state.music_queue) > length:
+        state.console_state.music_queue.pop(0)
     
 def busy():
     return (not now_loop) and now_playing and now_playing.poll() == None

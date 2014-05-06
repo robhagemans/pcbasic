@@ -39,6 +39,7 @@ import unicodepage
 import console
 import state
 import sound
+import backend
 
 supports_graphics = True
 max_palette = 64
@@ -566,7 +567,7 @@ def pause_key():
     # pause key press waits for any key down. continues to process screen events (blink) but not user events.
     while not check_events(pause=True):
         # continue playing background music
-        sound.check_sound()
+        backend.sound.check_sound()
         idle()
         
 def idle():
@@ -709,11 +710,11 @@ def handle_key_up(e):
            
 def handle_mouse(e):
     if e.button == 1: # LEFT BUTTON
-        state.penstick.trigger_pen(e.pos)
+        backend.penstick.trigger_pen(e.pos)
                 
 def handle_stick(e):
     if e.joy < 2 and e.button < 2:
-        state.penstick.trigger_stick(e.joy, e.button)
+        backend.penstick.trigger_stick(e.joy, e.button)
             
 ###############################################
 # graphics backend interface
@@ -951,7 +952,9 @@ def check_sound():
                     # any next sound in the sound queue will stop this looping sound
                 else:   
                     loop_sound = None
-    return len(sound_queue)
+    # remove the notes that have been played
+    while len(state.console_state.music_queue) > len(sound_queue):
+        state.console_state.music_queue.pop(0)
         
 def busy():
     return not loop_sound_playing and mixer.get_busy()
