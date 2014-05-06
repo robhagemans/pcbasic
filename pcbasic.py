@@ -61,6 +61,7 @@ import program
 import unicodepage
 import debug
 import state
+import backend
 import backend_pygame
 import iolayer
 
@@ -195,36 +196,36 @@ def prepare_constants(args):
 
 def prepare_console(args):
     unicodepage.load_codepage(state.console_state.codepage)
-    state.penstick = nopenstick
-    state.sound = nosound
+    backend.penstick = nopenstick
+    backend.sound = nosound
     if args.dumb or args.conv or (not args.graphical and not args.ansi and (not stdin_is_tty or not stdout_is_tty)):
         # redirected input or output leads to dumbterm use
-        state.video = backend_dumb
-        state.sound = sound_beep
+        backend.video = backend_dumb
+        backend.sound = sound_beep
     elif args.ansi and stdout_is_tty:
-        state.video = backend_ansi
-        state.sound = sound_beep
+        backend.video = backend_ansi
+        backend.sound = sound_beep
     else:   
-        state.video = backend_pygame   
-        state.penstick = backend_pygame
-        state.sound = backend_pygame
+        backend.video = backend_pygame   
+        backend.penstick = backend_pygame
+        backend.sound = backend_pygame
         backend_pygame.prepare(args)
     # initialise backends 
     if args.run:
         state.console_state.keys_visible = False
     if not console.init() and backend_dumb:
         logging.warning('Falling back to dumb-terminal.')
-        state.video = backend_dumb
-        state.sound = sound_beep        
-        if not state.video or not console.init():
+        backend.video = backend_dumb
+        backend.sound = sound_beep        
+        if not backend.video or not console.init():
             logging.critical('Failed to initialise console. Quitting.')
             sys.exit(0)
     # sound fallback        
     if args.nosound:
-        state.sound = nosound
+        backend.sound = nosound
     if not sound.init_sound():
         logging.warning('Failed to initialise sound. Sound will be disabled.')
-        state.sound = nosound
+        backend.sound = nosound
     # gwbasic-style redirected output is split between graphical screen and redirected file    
     if args.output:
         echo = partial(echo_ascii, f=oslayer.safe_open(args.output[0], "S", "W"))

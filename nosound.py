@@ -31,7 +31,9 @@ def check_sound():
     now = datetime.datetime.now()
     while music_queue and now >= music_queue[0]:
         music_queue.pop(0)
-    return len(music_queue)
+    # remove the notes that have been played
+    while len(state.console_state.music_queue) > len(music_queue):
+        state.console_state.music_queue.pop(0)
     
 def busy():
     return False        
