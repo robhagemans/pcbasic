@@ -12,7 +12,6 @@
 import error
 import fp
 import vartypes
-import event_loop
 import state
 import util
 import backend
@@ -503,7 +502,7 @@ def flood_fill (x, y, pattern, c, border):
         # draw the pixels    
         fill_scanline(x_left, x_right, y, pattern)
         # show progress
-        event_loop.check_events()
+        backend.check_events()
 
 ### PUT and GET
 

@@ -21,7 +21,7 @@ import console
 import unicodepage
 import plat
 import state
-import event_loop
+import backend
 import time
 
 # 1 ms sleep time for output process
@@ -409,7 +409,7 @@ def files(pathmask):
         output = output[num:]
         console.write_line(line)       
         # allow to break during dir listing & show names flowing on screen
-        event_loop.check_events()             
+        backend.check_events()             
     console.write_line(' ' + str(disk_free(path)) + ' Bytes free')
 
 def chdir(name):
@@ -500,7 +500,7 @@ if plat.system == 'Windows':
                 last = lines.pop()
                 for line in lines:
                     # progress visible - keep updating the backend
-                    event_loop.check_events()
+                    backend.check_events()
                     console.write_line(line)
                 console.write(last)    
             if p.poll() != None:

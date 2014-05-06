@@ -15,7 +15,7 @@ import program
 import statements 
 import console
 import state
-import event_loop
+import on_event
 
 
 # suppress one prompt by setting to False (used by EDIT)
@@ -31,7 +31,7 @@ def loop():
         if state.basic_state.execute_mode:
             try:
                 # may raise Break
-                event_loop.check_events()
+                on_event.check_events()
                 # may raise Break or Error
                 set_execute_mode(statements.parse_statement())
             except error.RunError as e:
