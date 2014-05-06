@@ -16,9 +16,6 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-# for automode
-import run
-
 import console
 import debug
 import draw_and_play
