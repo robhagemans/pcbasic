@@ -22,7 +22,7 @@ import error
 import console
 import util
 import state
-import event_loop
+import backend
 
 # file numbers
 state.io_state.files = {}
@@ -856,7 +856,7 @@ class COMFile(RandomBase):
             out += str(self._in_buffer[:to_read])
             del self._in_buffer[:to_read]
             # allow for break & screen updates
-            event_loop.wait()        
+            backend.wait()        
         return out
         
     # blocking read

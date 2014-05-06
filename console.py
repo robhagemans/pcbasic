@@ -13,7 +13,7 @@ import logging
 
 import state
 import backend
-import event_loop
+import on_event
 import sound
 # for Break, Exit, Reset
 import error
@@ -775,7 +775,7 @@ def insert_key(c):
     
 # non-blocking keystroke read
 def get_char():
-    event_loop.wait()    
+    on_event.wait()    
     return pass_char( peek_char() )
     
 # peek character from keyboard buffer
@@ -803,7 +803,7 @@ def read_chars(num):
 # blocking keystroke peek
 def wait_char():
     while len(state.console_state.keybuf) == 0 and not state.console_state.input_closed:
-        event_loop.wait()
+        on_event.wait()
     return peek_char()
     
 #####################

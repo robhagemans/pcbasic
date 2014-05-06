@@ -17,7 +17,8 @@ import machine
 import protect
 import util
 import console
-import event_loop
+# for check_events in LIST
+import backend
 import fp 
 import state
 # for clear()
@@ -444,7 +445,7 @@ def list_lines(dev, from_line, to_line):
         _, line, _ = tokenise.detokenise_line(state.basic_state.bytecode)
         if dev == state.io_state.devices['SCRN:']:
             # flow of listing is visible on screen
-            event_loop.check_events()
+            backend.check_events()
             console.clear_line(state.console_state.row)
         dev.write_line(str(line))
     dev.close()

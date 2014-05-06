@@ -14,6 +14,7 @@ import console
 import program
 import state
 import sound
+import backend
 
 class EventHandler(object):
     def __init__(self):
@@ -81,8 +82,13 @@ def reset_events():
     
 reset_events()    
     
-    
+def wait():
+    backend.wait()
+    check_events()
+        
 def check_events():
+    # check backend events
+    backend.check_events()
     if state.basic_state.run_mode:
         check_timer_event()
         check_key_events()
