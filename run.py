@@ -17,7 +17,7 @@ import console
 import state
 import on_event
 import reset
-
+import flow
 
 # suppress one prompt by setting to False (used by EDIT)
 state.basic_state.prompt = True
@@ -64,7 +64,7 @@ def set_execute_mode(on):
     if on == state.basic_state.execute_mode:
         return
     # move pointer to the start of direct line (for both on and off!)
-    program.set_pointer(False, 0)
+    flow.set_pointer(False, 0)
     console.show_cursor(not on)
     state.basic_state.execute_mode = on        
 
