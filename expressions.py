@@ -691,8 +691,8 @@ def value_fre(ins):
     val = parse_bracket(ins)
     if val[0] == '$':
         # grabge collection if a string-valued argument is specified.
-        machine.collect_garbage()
-    return fp.pack(fp.Single.from_int(machine.fre()))
+        var.collect_garbage()
+    return fp.pack(fp.Single.from_int(var.fre()))
 
 # read memory location 
 # currently, var memory, text&graphics memory and preset values only    
