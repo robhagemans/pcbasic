@@ -31,6 +31,7 @@ import representation
 import reset
 import rnd
 import state
+import timedate
 import util
 import var
 import vartypes
@@ -645,7 +646,7 @@ def exec_time(ins):
     # allowed formats:  hh   hh:mm   hh:mm:ss  where hh 0-23, mm 0-59, ss 0-59
     timestr = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
-    oslayer.set_time(timestr)
+    timedate.set_time(timestr)
 
 def exec_date(ins):
     util.require_read(ins, ('\xE7',)) # date$=
@@ -654,7 +655,7 @@ def exec_date(ins):
     # mm/dd/yyyy  or mm-dd-yyyy  yyyy 1980--2099
     datestr = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
-    oslayer.set_date(datestr)
+    timedate.set_date(datestr)
 
 ##########################################################
 # code

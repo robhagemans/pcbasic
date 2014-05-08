@@ -9,8 +9,7 @@
 # please see text file COPYING for licence terms.
 #
 
-import oslayer
-import console
+import timedate
 import program
 import state
 import sound
@@ -83,7 +82,7 @@ def reset_events():
 reset_events()    
     
 def wait():
-    backend.wait()
+    backend.idle()
     check_events()
         
 def check_events():
@@ -91,33 +90,18 @@ def check_events():
     backend.check_events()
     if state.basic_state.run_mode:
         check_timer_event()
-        check_key_events()
         check_play_event()
         check_com_events()
-        # PEN and STRIG are triggered elsewhere
+        # KEY, PEN and STRIG are triggered elsewhere
         # handle all events
         for handler in state.basic_state.all_handlers:
             handler.handle()
 
 def check_timer_event():
-    mutimer = oslayer.timer_milliseconds() 
+    mutimer = timedate.timer_milliseconds() 
     if mutimer >= state.basic_state.timer_start + state.basic_state.timer_period:
         state.basic_state.timer_start = mutimer
         state.basic_state.timer_handler.triggered = True
-
-def check_key_events():
-    c = console.peek_char()
-    if len(c) > 0:
-        try:
-            keynum = state.basic_state.event_keys.index(c)
-        except ValueError:
-            return
-        if keynum > -1 and keynum < 20:
-            if state.basic_state.key_handlers[keynum].enabled:
-                # remove the char from buffer
-                console.pass_char(c)
-                # trigger only once at most
-                state.basic_state.key_handlers[keynum].triggered = True
 
 def check_play_event():
     state.basic_state.play_now = sound.music_queue_length()
