@@ -31,7 +31,7 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
     if not preserve_all:     
         if preserve_common:
             # preserve COMMON variables
-            common, common_arrays, common_functions = {}, {}, {}
+            common, common_arrays = {}, {}
             for varname in state.basic_state.common_names:
                 try:
                     common[varname] = state.basic_state.variables[varname]
@@ -365,21 +365,21 @@ def collect_garbage():
     state.basic_state.string_current = new_string_current
 
 def fre():
-    return state.basic_state.string_current - var.var_mem_start - program_memory_size() - variables_memory_size()
+    return state.basic_state.string_current - var_mem_start - program_memory_size() - variables_memory_size()
       
 def program_memory_size():
     return len(state.basic_state.bytecode.getvalue()) - 4
     
 def variables_memory_size():
 #   TODO: memory model, does this work: ?
-#    return state.basic_state.var_current + state.basic_state.array_current + (state.basic_state.var_current + var.total_mem - state.basic_state.string_current)
+#    return state.basic_state.var_current + state.basic_state.array_current + (state.basic_state.var_current + total_mem - state.basic_state.string_current)
     mem_used = 0
     for name in state.basic_state.variables:
         mem_used += 1 + max(3, len(name))
         # string length incorporated through use of state.basic_state.string_current
-        mem_used += var.var_size_bytes(name)
+        mem_used += var_size_bytes(name)
     for name in state.basic_state.arrays:
-        mem_used += 4 + var.array_size_bytes(name) + max(3, len(name))
+        mem_used += 4 + array_size_bytes(name) + max(3, len(name))
         dimensions, lst, _ = state.basic_state.arrays[name]
         mem_used += 2*len(dimensions)    
         if name[-1] == '$':

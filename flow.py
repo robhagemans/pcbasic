@@ -14,6 +14,7 @@ import fp
 import var
 import vartypes
 import util
+import error
 
 # pointer position: False for direct line, True for program
 state.basic_state.run_mode = False

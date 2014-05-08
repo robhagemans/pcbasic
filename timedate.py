@@ -11,6 +11,7 @@
 
 import datetime
 
+import error
 import state
 
 # datetime offset for duration of the run (so that we don't need permission to touch the system clock)
