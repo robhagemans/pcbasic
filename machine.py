@@ -15,8 +15,6 @@ import vartypes
 import var
 import console
 import error
-import backend
-
 
 # pre-defined PEEK outputs
 peek_values = {}
