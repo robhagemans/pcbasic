@@ -32,6 +32,7 @@ import state
 import machine
 import sound
 import backend
+import timedate
 
 # binary operator priority, lowest index is tightest bound 
 # operators of the same priority are evaluated left to right      
@@ -533,7 +534,7 @@ def value_lof(ins): # LOF
     
 
 ######################################################################
-# os functions
+# env, time and date functions
        
 def value_environ(ins):
     util.require_read(ins, ('$',))
@@ -547,13 +548,13 @@ def value_environ(ins):
 
 def value_timer(ins):
     # precision of GWBASIC TIMER is about 1/20 of a second
-    return fp.pack(fp.div( fp.Single.from_int(oslayer.timer_milliseconds()/50), fp.Single.from_int(20)))
+    return fp.pack(fp.div( fp.Single.from_int(timedate.timer_milliseconds()/50), fp.Single.from_int(20)))
     
 def value_time(ins):
-    return vartypes.pack_string(oslayer.get_time())
+    return vartypes.pack_string(timedate.get_time())
     
 def value_date(ins):
-    return vartypes.pack_string(oslayer.get_date())
+    return vartypes.pack_string(timedate.get_date())
 
 #######################################################
 # user-defined functions

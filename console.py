@@ -753,6 +753,17 @@ def write_for_keys(s, col, cattr):
 
 # insert character into keyboard buffer; apply KEY repacement (for use by backends)
 def insert_key(c):
+    if len(c) > 0:
+        try:
+            keynum = state.basic_state.event_keys.index(c)
+            if keynum > -1 and keynum < 20:
+                if state.basic_state.key_handlers[keynum].enabled:
+                    # trigger only once at most
+                    state.basic_state.key_handlers[keynum].triggered = True
+                    # don't enter into key buffer
+                    return
+        except ValueError:
+            pass
     if state.console_state.caps:
         if c >= 'a' and c <= 'z':
             c = chr(ord(c)-32)

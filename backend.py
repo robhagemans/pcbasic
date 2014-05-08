@@ -20,6 +20,9 @@ def check_events():
     # manage sound queue
     sound.check_sound()
 
+def idle():
+    video.idle()
+
 def wait():
     video.idle()
     check_events()    
