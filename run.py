@@ -16,6 +16,7 @@ import statements
 import console
 import state
 import on_event
+import reset
 
 
 # suppress one prompt by setting to False (used by EDIT)
@@ -74,6 +75,7 @@ def execute(line):
         # check for lines starting with numbers (6553 6) and empty lines
         program.check_number_start(state.basic_state.direct_line)
         program.store_line(state.basic_state.direct_line)
+        reset.clear()
         # no prompt
     elif c != '':
         # it is a command, go and execute    
@@ -106,6 +108,7 @@ def auto_step():
         empty, scanline = program.check_number_start(state.basic_state.direct_line)
         if not empty:
             program.store_line(state.basic_state.direct_line)
+            reset.clear()
         state.basic_state.auto_linenum = scanline + state.basic_state.auto_increment
     elif c != '':    
         # it is a command, go and execute    

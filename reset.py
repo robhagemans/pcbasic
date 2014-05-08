@@ -19,10 +19,10 @@ import on_event
 import sound
 
 # CLEAR
-def clear(close_files=False):
+def clear(close_files=False, preserve_common=False, preserve_all=False, preserve_deftype=False):
     #   Resets the stack and string space
     #   Clears all COMMON and user variables
-    var.clear_variables()
+    var.clear_variables(preserve_common, preserve_all, preserve_deftype)
     # reset random number generator
     rnd.clear()
     if close_files:

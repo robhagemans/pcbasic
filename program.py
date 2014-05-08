@@ -21,8 +21,6 @@ import console
 import backend
 import fp 
 import state
-# for clear()
-import reset
 
 try:
     from cStringIO import StringIO
@@ -89,11 +87,6 @@ def restore(datanum=-1):
         raise error.RunError(8)
 
 erase_program()
-
-# NEW    
-def new():
-    erase_program()    
-    reset.clear()
 
 def truncate_program(rest=''):
     state.basic_state.bytecode.write(rest if rest else '\0\0\0')
@@ -201,8 +194,6 @@ def store_line(linebuf):
         state.basic_state.line_numbers[scanline] = pos
     # clear all program stacks
     init_program()
-    # clear variables (storing a line does that)
-    reset.clear()
     state.basic_state.last_stored = scanline
 
 def find_pos_line_dict(fromline, toline):
@@ -233,8 +224,6 @@ def delete(fromline, toline):
     update_line_dict(startpos, afterpos, 0, deleteable, beyond)
     # clear all program stacks
     init_program()
-    # clear variables (storing a line does that)
-    reset.clear()
 
 def edit(from_line, bytepos=None):
     if state.basic_state.protected:
@@ -331,9 +320,6 @@ def load(g):
     g.close()
     # rebuild line number dict and offsets
     rebuild_line_dict()
-    # clear all variables
-    reset.clear()
-
     
 def merge(g):
     c = g.read(1)
@@ -359,41 +345,12 @@ def load_ascii_file(g, first_char=''):
                 # direct statement in file
                 raise error.RunError(66)   
 
-def chain(action, g, jumpnum, common_all, delete_lines):    
+def chain(action, g, jumpnum, delete_lines): 
+    # FIXME: does CHAIN ... DELETE ignore COMMON? this code doesn't clear variables on DELETE.   
     if delete_lines:
         # delete lines from existing code before merge (without MERGE, this is pointless)
         delete(*delete_lines)
-    if common_all:
-        common, common_arrays, common_functions = copy(state.basic_state.variables), copy(state.basic_state.arrays), copy(state.basic_state.functions)
-    else:
-        # preserve COMMON variables
-        common, common_arrays, common_functions = {}, {}, {}
-        for varname in state.basic_state.common_names:
-            try:
-                common[varname] = state.basic_state.variables[varname]
-            except KeyError: 
-                pass    
-        for varname in state.basic_state.common_array_names:
-            try:
-                common_arrays[varname] = state.basic_state.arrays[varname]
-            except KeyError:
-                pass    
-    # preserve deftypes (only for MERGE)
-    common_deftype = copy(state.basic_state.deftype) 
-    # preserve option base
-    base = state.basic_state.array_base    
-    # load & merge call reset.clear()
     action(g)
-    # restore only common variables
-    state.basic_state.variables = common
-    state.basic_state.arrays = common_arrays
-    # restore user functions (if ALL specified)
-    state.basic_state.functions = common_functions
-    # restore option base
-    state.basic_state.array_base = base
-    # restore deftypes (if MERGE specified)
-    if action == merge:
-        state.basic_state.deftype = common_deftype
     # don't close files!
     # RUN
     jump(jumpnum, err=5)
