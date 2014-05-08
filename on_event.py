@@ -10,7 +10,7 @@
 #
 
 import timedate
-import program
+import flow
 import state
 import sound
 import backend
@@ -32,7 +32,7 @@ class EventHandler(object):
             # stop event while handling it
             self.stopped = True 
             # execute 'ON ... GOSUB' subroutine; attach self to allow un-stopping event on RETURN
-            program.jump_gosub(self.gosub, self)
+            flow.jump_gosub(self.gosub, self)
 
     def command(self, command_char):
         if command_char == '\x95': 

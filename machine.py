@@ -31,8 +31,6 @@ data_segment = 0x13ad
 segment = data_segment
 # data memory model: start of variables section
 var_mem_start = 4720
-# program memory model; offsets in files
-program_memory_start = 0x126e
 # video memory
 state.console_state.colour_plane = 3
 state.console_state.colour_plane_write_mask = 0xff

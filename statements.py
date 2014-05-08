@@ -21,6 +21,7 @@ import debug
 import draw_and_play
 import error
 import expressions
+import flow
 import fp
 import graphics
 import iolayer
@@ -41,7 +42,7 @@ import sound
 # return value False: stream ends
 def parse_statement():
     try:
-        ins = program.get_codestream()
+        ins = flow.get_codestream()
         state.basic_state.current_statement = ins.tell()
         c = util.skip_white(ins).upper()
         if c == '':
@@ -203,7 +204,7 @@ def parse_statement():
         # don't jump if we're already busy handling an error
         if state.basic_state.on_error != None and state.basic_state.on_error != 0 and not state.basic_state.error_handle_mode:
             state.basic_state.error_resume = state.basic_state.current_statement, state.basic_state.run_mode
-            program.jump(state.basic_state.on_error)
+            flow.jump(state.basic_state.on_error)
             state.basic_state.error_handle_mode = True
             state.basic_state.suspend_all_events = True
             return True
@@ -709,7 +710,7 @@ def exec_auto(ins):
     state.basic_state.auto_linenum = linenum if linenum != None else 10
     state.basic_state.auto_increment = increment if increment != None else 10    
     # move program pointer to end
-    program.set_pointer(False)
+    flow.set_pointer(False)
     # continue input in AUTO mode
     state.basic_state.auto_mode = True
     # suppress prompt
@@ -740,7 +741,7 @@ def exec_load(ins):
     reset.clear()
     if comma:
         # in ,R mode, don't close files; run the program
-        program.jump(None)
+        flow.jump(None)
     else:
         iolayer.close_all()
     state.basic_state.tron = False    
@@ -1179,7 +1180,7 @@ def exec_end(ins):
     util.require(ins, util.end_statement)
     state.basic_state.stop = state.basic_state.bytecode.tell()
     # jump to end of direct line so execution stops
-    program.set_pointer(False)
+    flow.set_pointer(False)
     # avoid NO RESUME
     state.basic_state.error_handle_mode = False
     state.basic_state.error_resume = None
@@ -1193,7 +1194,7 @@ def exec_cont(ins):
     if state.basic_state.stop == None:
         raise error.RunError(17)
     else: 
-        program.set_pointer(True, state.basic_state.stop)   
+        flow.set_pointer(True, state.basic_state.stop)   
     # IN GW-BASIC, weird things happen if you do GOSUB nn :PRINT "x"
     # and there's a STOP in the subroutine. 
     # CONT then continues and the rest of the original line is executed, printing x
@@ -1222,7 +1223,7 @@ def exec_for(ins):
     # find NEXT
     nextpos = find_next(ins, varname)
     # apply initial condition and jump to nextpos
-    program.loop_init(ins, endforpos, nextpos, varname, start, stop, step)
+    flow.loop_init(ins, endforpos, nextpos, varname, start, stop, step)
     exec_next(ins)
         
 def skip_to_next(ins, for_char, next_char, allow_comma=False):
@@ -1278,7 +1279,7 @@ def find_next(ins, varname):
 
 def exec_next(ins):
     # JUMP to end of FOR statement, increment counter, check condition
-    if program.loop_iterate(ins):
+    if flow.loop_iterate(ins):
         util.skip_to(ins, util.end_statement+(',',))
         if util.skip_white_read_if(ins, (',')):
             # we're jumping into a comma'ed NEXT, call exec_next
@@ -1286,7 +1287,7 @@ def exec_next(ins):
     
 def exec_goto(ins):    
     # parse line number, ignore rest of line and jump
-    program.jump(util.parse_jumpnum(ins))
+    flow.jump(util.parse_jumpnum(ins))
     
 def exec_run(ins):
     comma = util.skip_white_read_if(ins, (',',))
@@ -1301,9 +1302,9 @@ def exec_run(ins):
         name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_statement)
         program.load(iolayer.open_file_or_device(0, name, mode='L', defext='BAS'))
-    program.init_program()
+    flow.init_program()
     reset.clear(close_files=not comma)
-    program.jump(jumpnum)
+    flow.jump(jumpnum)
     state.basic_state.error_handle_mode = False
                 
 def exec_if(ins):
@@ -1314,7 +1315,7 @@ def exec_if(ins):
     if not fp.unpack(val).is_zero(): 
         # TRUE: continue after THEN. line number or statement is implied GOTO
         if util.skip_white(ins) in ('\x0e',):  
-            program.jump(util.parse_jumpnum(ins))    
+            flow.jump(util.parse_jumpnum(ins))    
         # continue parsing as normal, :ELSE will be ignored anyway
     else:
         # FALSE: find ELSE block or end of line; ELSEs are nesting on the line
@@ -1331,7 +1332,7 @@ def exec_if(ins):
                     else:    
                         # line number: jump
                         if util.skip_white(ins) in ('\x0e',):
-                            program.jump(util.parse_jumpnum(ins))
+                            flow.jump(util.parse_jumpnum(ins))
                         # continue execution from here    
                         break
             else:
@@ -1405,7 +1406,7 @@ def exec_on_jump(ins):
     elif onvar > 0 and onvar <= len(jumps):
         ins.seek(jumps[onvar-1])        
         if command == '\x89': # GOTO
-            program.jump(util.parse_jumpnum(ins))
+            flow.jump(util.parse_jumpnum(ins))
         elif command == '\x8d': # GOSUB
             exec_gosub(ins)
     util.skip_to(ins, util.end_statement)    
@@ -1439,7 +1440,7 @@ def exec_resume(ins):
     else:
         jumpnum = 0    
     util.require(ins, util.end_statement)
-    program.resume(jumpnum)
+    flow.resume(jumpnum)
 
 def exec_error(ins):
     errn = vartypes.pass_int_unpack(expressions.parse_expression(ins))
@@ -1450,7 +1451,7 @@ def exec_gosub(ins):
     jumpnum = util.parse_jumpnum(ins)
     # ignore rest of statement ('GOSUB 100 LAH' works just fine..); we need to be able to RETURN
     util.skip_to(ins, util.end_statement)
-    program.jump_gosub(jumpnum)
+    flow.jump_gosub(jumpnum)
 
 def exec_return(ins):
     # return *can* have a line number
@@ -1460,7 +1461,7 @@ def exec_return(ins):
         util.skip_to(ins, util.end_statement)    
     else:
         jumpnum = None
-    program.jump_return(jumpnum)
+    flow.jump_return(jumpnum)
         
 ################################################
 # Variable & array statements
@@ -1661,7 +1662,7 @@ def exec_read(ins):
     # reading loop
     for v in parse_var_list(ins):
         # syntax error in DATA line (not type mismatch!) if can't convert to var type
-        num = representation.str_to_type(program.read_entry(), v[0][-1])
+        num = representation.str_to_type(flow.read_entry(), v[0][-1])
         if num == None: 
             # set pointer for EDIT gadget
             state.basic_state.bytecode.seek(state.basic_state.data_pos)
@@ -1746,7 +1747,7 @@ def exec_restore(ins):
         datanum = -1
     # undefined line number for all syntax errors
     util.require(ins, util.end_statement, err=8)
-    program.restore(datanum)
+    flow.restore(datanum)
 
 def exec_swap(ins):
     name1, index1 = expressions.get_var_or_array_name(ins)
