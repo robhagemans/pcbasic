@@ -9,13 +9,20 @@
 # please see text file COPYING for licence terms.
 #
 
+from operator import itemgetter
+
 import error
 import vartypes
 from string_ptr import StringPtr
 import state
-import machine
 
 byte_size = {'$': 3, '%': 2, '!': 4, '#': 8}
+
+# data memory model: start of variables section
+var_mem_start = 4720
+# 'free memory' as reported by FRE
+total_mem = 60300    
+
 
 def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=False):
     if not preserve_deftype:
@@ -50,8 +57,8 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
         state.basic_state.arrays = common_arrays
         # FIXME: rebuild or preserve memory model
         # memory model
-        state.basic_state.var_current = machine.var_mem_start
-        state.basic_state.string_current = state.basic_state.var_current + machine.total_mem # 65020
+        state.basic_state.var_current = var_mem_start
+        state.basic_state.string_current = state.basic_state.var_current + total_mem # 65020
         state.basic_state.var_memory = {}
         # arrays are always kept after all vars
         state.basic_state.array_current = 0
@@ -81,13 +88,13 @@ def set_var(name, value):
             state.basic_state.variables[name] = vartypes.pass_type_keep(name[-1], value)[1][:]
     # update memory model
     # check if grabge needs collecting (before allocating mem)
-    free = machine.fre() - (max(3, len(name)) + 1 + byte_size[name[-1]]) 
+    free = fre() - (max(3, len(name)) + 1 + byte_size[name[-1]]) 
     if name[-1] == '$':
         free -= len(unpacked)
     if free <= 0:
         # TODO: GARBTEST difference is because string literal is currently stored in string space, whereas GW stores it in code space.
-        machine.collect_garbage()
-        if machine.fre() <= 0:
+        collect_garbage()
+        if fre() <= 0:
             # out of memory
             del state.basic_state.variables[name]
             try:
@@ -341,3 +348,42 @@ def assign_field_var(varname, value, justify_right=False):
             s += ' '*(el-len(s))
     state.basic_state.variables[varname][:] = s    
 
+##########################################
+
+def collect_garbage():
+    string_list = []
+    for name in state.basic_state.var_memory:
+        if name[-1] == '$':
+            mem = state.basic_state.var_memory[name]
+            string_list.append( (name, mem[0], mem[1], mem[2], len(state.basic_state.variables[name])) )
+    # sort by str_ptr, largest first        
+    string_list.sort(key=itemgetter(3), reverse=True)        
+    new_string_current = var_mem_start + total_mem              
+    for item in string_list:
+        new_string_current -= item[4]
+        state.basic_state.var_memory[item[0]] = (item[1], item[2], new_string_current + 1)     
+    state.basic_state.string_current = new_string_current
+
+def fre():
+    return state.basic_state.string_current - var.var_mem_start - program_memory_size() - variables_memory_size()
+      
+def program_memory_size():
+    return len(state.basic_state.bytecode.getvalue()) - 4
+    
+def variables_memory_size():
+#   TODO: memory model, does this work: ?
+#    return state.basic_state.var_current + state.basic_state.array_current + (state.basic_state.var_current + var.total_mem - state.basic_state.string_current)
+    mem_used = 0
+    for name in state.basic_state.variables:
+        mem_used += 1 + max(3, len(name))
+        # string length incorporated through use of state.basic_state.string_current
+        mem_used += var.var_size_bytes(name)
+    for name in state.basic_state.arrays:
+        mem_used += 4 + var.array_size_bytes(name) + max(3, len(name))
+        dimensions, lst, _ = state.basic_state.arrays[name]
+        mem_used += 2*len(dimensions)    
+        if name[-1] == '$':
+            for mem in lst:
+                mem_used += len(mem)
+    return mem_used
+     

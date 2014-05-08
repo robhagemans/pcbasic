@@ -9,9 +9,6 @@
 # please see text file COPYING for licence terms.
 #
 
-
-from operator import itemgetter
-
 import state
 import backend
 import vartypes
@@ -20,8 +17,7 @@ import console
 import error
 import backend
 
-# 'free memory' as reported by FRE
-total_mem = 60300    
+
 # pre-defined PEEK outputs
 peek_values = {}
 
@@ -29,17 +25,13 @@ peek_values = {}
 data_segment = 0x13ad
 # data memory model: current segment
 segment = data_segment
-# data memory model: start of variables section
-var_mem_start = 4720
+
 # video memory
 state.console_state.colour_plane = 3
 state.console_state.colour_plane_write_mask = 0xff
 video_segment = { 0: 0xb800, 1: 0xb800, 2: 0xb800, 7: 0xa000, 8: 0xa000, 9: 0xa000 }
 # memory model: text mode video memory
 text_segment = 0xb800
-
-def fre():
-    return state.basic_state.string_current - var_mem_start - program_memory_size() - variables_memory_size()
 
 def peek(addr):
     if addr < 0: 
@@ -52,7 +44,7 @@ def peek(addr):
         if addr >= video_segment[state.console_state.screen_mode]*0x10:
             # graphics and text memory
             return max(0, get_video_memory(addr))
-        elif addr >= data_segment*0x10 + var_mem_start:
+        elif addr >= data_segment*0x10 + var.var_mem_start:
             # variable memory
             return max(0, get_data_memory(addr))
         else:    
@@ -65,7 +57,7 @@ def poke(addr, val):
     if addr >= video_segment[state.console_state.screen_mode]*0x10:
         # graphics and text memory
         set_video_memory(addr, val)
-#    elif addr >= data_segment*0x10 + var_mem_start:
+#    elif addr >= data_segment*0x10 + var.var_mem_start:
 #        # variable memory
 #        set_data_memory(addr)
 
@@ -139,27 +131,6 @@ def varptr(name, indices):
         except KeyError:
             return -1
 
-##########################################
-      
-def program_memory_size():
-    return len(state.basic_state.bytecode.getvalue()) - 4
-    
-def variables_memory_size():
-#   TODO: memory model, does this work: ?
-#    return state.basic_state.var_current + state.basic_state.array_current + (state.basic_state.var_current + total_mem - state.basic_state.string_current)
-    mem_used = 0
-    for name in state.basic_state.variables:
-        mem_used += 1 + max(3, len(name))
-        # string length incorporated through use of state.basic_state.string_current
-        mem_used += var.var_size_bytes(name)
-    for name in state.basic_state.arrays:
-        mem_used += 4 + var.array_size_bytes(name) + max(3, len(name))
-        dimensions, lst, _ = state.basic_state.arrays[name]
-        mem_used += 2*len(dimensions)    
-        if name[-1] == '$':
-            for mem in lst:
-                mem_used += len(mem)
-    return mem_used
 
 def get_name_in_memory(name, offset):
     if offset == 0:
@@ -259,20 +230,6 @@ def get_data_memory(address):
         # unallocated var space
         return 0 
         
-def collect_garbage():
-    string_list = []
-    for name in state.basic_state.var_memory:
-        if name[-1] == '$':
-            mem = state.basic_state.var_memory[name]
-            string_list.append( (name, mem[0], mem[1], mem[2], len(state.basic_state.variables[name])) )
-    # sort by str_ptr, largest first        
-    string_list.sort(key=itemgetter(3), reverse=True)        
-    new_string_current = var_mem_start + total_mem              
-    for item in string_list:
-        new_string_current -= item[4]
-        state.basic_state.var_memory[item[0]] = (item[1], item[2], new_string_current + 1)     
-    state.basic_state.string_current = new_string_current
-     
     
 ###############################################################
 # video memory model

@@ -64,6 +64,7 @@ import state
 import backend
 import backend_pygame
 import iolayer
+import var
 
 
 greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "@:INFO" for more.\r%d Bytes free\rOk\xff'
@@ -88,7 +89,7 @@ def main():
             # print greeting
             if not args.run and not args.cmd and not args.conv:
                 if stdin_is_tty:
-                    console.write_line(greeting % (debugstr, machine.total_mem))
+                    console.write_line(greeting % (debugstr, var.total_mem))
             # execute arguments
             if args.run or args.load or args.conv and (args.program or stdin):
                 program.load(oslayer.safe_open(args.program, "L", "R") if args.program else stdin)
