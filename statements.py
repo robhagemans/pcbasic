@@ -684,6 +684,8 @@ def exec_delete(ins):
     util.require(ins, util.end_statement)
     # throws back to direct mode
     program.delete(from_line, to_line)
+    # clear all variables
+    reset.clear()
 
 def exec_edit(ins):
     if util.skip_white(ins) in util.end_statement:
@@ -734,6 +736,7 @@ def exec_load(ins):
         util.require_read(ins, 'R')
     util.require(ins, util.end_statement)
     program.load(iolayer.open_file_or_device(0, name, mode='L', defext='BAS'))
+    reset.clear()
     if comma:
         # in ,R mode, don't close files; run the program
         program.jump(None)
@@ -759,7 +762,9 @@ def exec_chain(ins):
             if util.skip_white_read_if(ins, (',',)) and util.skip_white_read_if(ins, ('\xa9',)):
                 delete_lines = parse_line_range(ins) # , DELETE
     util.require(ins, util.end_statement)
-    program.chain(action, iolayer.open_file_or_device(0, name, mode='L', defext='BAS'), jumpnum, common_all, delete_lines)
+    program.chain(action, iolayer.open_file_or_device(0, name, mode='L', defext='BAS'), jumpnum, delete_lines)
+    # preserve DEFtype on MERGE
+    reset.clear(preserve_common=True, preserve_all=common_all, preserve_deftype=(action==merge))
 
 def exec_save(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
@@ -779,8 +784,10 @@ def exec_merge(ins):
     
 def exec_new(ins):
     state.basic_state.tron = False
-    # deletes the program currently in memory and clears all variables.
-    program.new()
+    # deletes the program currently in memory
+    program.erase_program()
+    # and clears all variables
+    reset.clear()
 
 def exec_renum(ins):
     new, old, step = None, None, None
