@@ -135,6 +135,7 @@ state.console_state.key_replace = [
 def init():
     if not backend.video.init():
         return False
+    state.console_state.backend_name = backend.video.__name__
     if state.loaded:
         if state.console_state.screen_mode != 0 and not backend.video.supports_graphics:
             logging.warning("Screen mode not supported by display backend.")
