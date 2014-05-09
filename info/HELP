@@ -62,6 +62,33 @@ or <CTRL+SCROLL_LOCK>       without executing or storing the line under the
                             INSERT mode.
 
 
+KEYBOARD SHORTCUTS
+---------------
+The function keys and the alt key can be used as keyboard shortcuts for some
+keywords. 
+The default values for the function keys are:
+  F1  LIST
+  F2  RUN<ENTER>
+  F3  LOAD"
+  F4  SAVE"
+  F5  CONT<ENTER>
+  F6  ,"LPT1:"<ENTER>
+  F7  TRON<ENTER>
+  F8  TROFF<ENTER>
+  F9  KEY<SPACE>
+  F10 SCREEN 0,0,0<ENTER>
+The function key shortcuts can be redefined (see the KEY statement). The key
+values are displayed at the bottom of the screen.
+The <ALT> shortcuts cannot be redefined. The following keywords can be entered 
+with <ALT>+the first letter:
+  AUTO     BSAVE    COLOR    DELETE   ELSE    FOR     GOTO     HEX$
+  INPUT    KEY      LOCATE   MOTOR    NEXT    OPEN    PRINT    RUN
+  SCREEN   THEN     USING    VAL      WIDTH   XOR
+Furthermore, the <ALT> key can be used to enter characters by their ASCII code.
+This is done by pressing the <ALT> key and typing the decimal value of the 
+ ASCII code on the numeric keypad, then releasing the <ALT> key.
+
+
 PROGRAMS
 --------
 A program line is entered by starting a line with a line number. All program 
