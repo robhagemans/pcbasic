@@ -49,7 +49,6 @@ nullstream = open(os.devnull, 'w')
 # date & time & env
 
 def timer_milliseconds():
-    global time_offset
     now = datetime.datetime.today() + time_offset
     midnight = datetime.datetime(now.year, now.month, now.day)
     diff = now-midnight
@@ -372,7 +371,7 @@ class CUPSStream(StringIO.StringIO):
         self.truncate(0)
         utf8buf = ''
         for c in printbuf:
-            utf8buf += unicodepage.cp_to_utf8[printbuf]
+            utf8buf += unicodepage.cp_to_utf8[c]
         line_print(utf8buf, self.printer_name)
 
         

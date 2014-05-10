@@ -13,7 +13,6 @@ from cStringIO import StringIO
 
 import error
 import events
-import fp
 import representation
 import vartypes
 import var
@@ -138,10 +137,10 @@ def exec_key(ins):
     d = util.skip_white_read(ins)
     if d == '\x95': # ON
         if not console.keys_visible:
-           console.show_keys()
+            console.show_keys()
     elif d == '\xdd': # OFF
         if console.keys_visible:
-           console.hide_keys()   
+            console.hide_keys()   
     elif d == '\x93': # LIST
         console.list_keys()
     elif d == '(':
@@ -178,7 +177,7 @@ def exec_key_define(ins):
             console.show_keys()
     else:
         if len(text) != 2:
-           raise error.RunError(5)
+            raise error.RunError(5)
         # can't redefine scancodes for keys 1-14
         if keynum >= 15 and keynum <= 20:    
             events.event_keys[keynum-1] = str(text)
@@ -270,9 +269,9 @@ def exec_print(ins, screen=None):
                 screen.write_line()
             screen.write(str(word))
     if util.skip_white_read_if(ins, ('\xD7',)): # USING
-       return exec_print_using(ins, screen)     
+        return exec_print_using(ins, screen)     
     if newline:
-         screen.write_line()
+        screen.write_line()
     util.require(ins, util.end_statement)      
             
 def exec_print_using(ins, screen):

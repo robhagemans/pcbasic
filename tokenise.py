@@ -126,7 +126,7 @@ def detokenise_keyword(bytes, output):
     # when we're here, s is an actual keyword token.
     # number followed by token is separated by a space 
     if (len(output)>0) and (chr(output[-1]) in ascii_digits) and (s not in tokens_operator):
-            output += ' '
+        output += ' '
     output += keyword
     comment = False
     if keyword == "'":
@@ -368,9 +368,9 @@ def tokenise_word(ins, outs):
                 while nxt in tokenise_whitespace:
                     nxt = ins.read(1)
                 if ins.read(2)=='TO':
-                   word='GOTO'
+                    word = 'GOTO'
                 else:
-                   ins.seek(pos)
+                    ins.seek(pos)
             if word in ('GOTO', 'GOSUB'):
                 nxt = util.peek(ins).upper()
                 if nxt in name_chars:

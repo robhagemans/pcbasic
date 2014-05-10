@@ -39,7 +39,7 @@ def play_sound(frequency, duration, fill=1, loop=False):
     music_queue.append((frequency, duration, fill, loop))
         
 def check_sound():
-    global now_loop, music_queue
+    global now_loop
     if now_loop:
         if music_queue and now_playing and now_playing.poll() == None:
             now_playing.terminate()

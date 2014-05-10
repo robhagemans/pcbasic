@@ -176,7 +176,7 @@ def set_palette(new_palette=None):
             pass
     
 def set_palette_entry(index, colour):
-    global palette, palette_changed
+    global palette_changed
     if palette[index] != colour:
         palette[index] = colour
         palette_changed = True
@@ -244,7 +244,6 @@ def scroll_down(from_line):
     if console.row < console.height:
         term.write(esc_move_cursor % (console.row+1, console.col))
     term.flush()
-    pass
     
 #######
 

@@ -54,7 +54,7 @@ clear_variables()
 
 
 def set_var(name, value):
-    global variables, var_current, var_memory, string_current
+    global var_current, string_current
     name = vartypes.complete_name(name)
     type_char = name[-1]
     if type_char == '$':
@@ -164,7 +164,6 @@ def swap_var(name1, index1, name2, index2):
         arrays[name2][2] += 1
 
 def erase_array(name):
-    global arrays
     try: 
         del arrays[name]
     except KeyError:
@@ -191,14 +190,14 @@ def var_size_bytes(name):
 
 def array_size_bytes(name):
     try:
-        [dimensions, lst, _] = arrays[name]
+        dimensions, _, _ = arrays[name]
     except KeyError:
         return 0
     size = array_len(dimensions)
     return size*var_size_bytes(name)     
 
 def dim_array(name, dimensions):
-    global arrays, array_memory, var_current, array_current, array_base
+    global array_current, array_base
     if array_base == None:
         array_base = 0
     name = vartypes.complete_name(name)
@@ -286,8 +285,8 @@ def set_array(name, index, value):
     # make a copy of the value, we con't want them to be linked
     value = (vartypes.pass_type_keep(name[-1], value)[1])[:]
     if name[-1] == '$':
-       lst[bigindex] = value
-       return 
+        lst[bigindex] = value
+        return 
     bytesize = var_size_bytes(name)
     lst[bigindex*bytesize:(bigindex+1)*bytesize] = value
     # inc version
@@ -351,13 +350,13 @@ def get_var_ptr(name, indices):
     name = vartypes.complete_name(name)
     if indices == []:
         try:
-            name_ptr, var_ptr, str_ptr = var_memory[name]
+            _, var_ptr, _ = var_memory[name]
             return var_ptr
         except KeyError:
             return -1
     else:
         try:
-            [dimensions, lst, _] = arrays[name]
+            dimensions, _, _ = arrays[name]
             name_ptr, array_ptr = array_memory[name]
             # arrays are kept at the end of the var list
             return var_current + array_ptr + var_size_bytes(name) * index_array(indices, dimensions) 
@@ -400,17 +399,17 @@ def get_memory(address):
             return -1        
         if address >= var_addr:
             offset = address - var_addr
-            if offset >= byte_size[name[-1]]:
+            if offset >= byte_size[the_var[-1]]:
                 return -1
-            if name[-1] == '$':
+            if the_var[-1] == '$':
                 # string is represented as 3 bytes: length + uint pointer
-                var_rep = bytearray(chr(len(variables[name]))) + vartypes.value_to_uint(str_addr)
+                var_rep = bytearray(chr(len(variables[the_var]))) + vartypes.value_to_uint(str_addr)
             else:
-                var_rep = variables[name]
+                var_rep = variables[the_var]
             return var_rep[offset]
         else:
             offset = address - name_ptr
-            return get_name_in_memory(name, offset)
+            return get_name_in_memory(the_var, offset)
     elif address < var_current + array_current:
         name_addr = -1
         arr_addr = -1
@@ -424,20 +423,20 @@ def get_memory(address):
             return -1        
         if address >= var_current + arr_addr:
             offset = address - arr_addr - var_current
-            if offset >= array_size_bytes(name):
+            if offset >= array_size_bytes(the_arr):
                 return -1
-            if name[-1] == '$':
+            if the_arr[-1] == '$':
                 # TODO: not implemented for arrays of strings
                 return 0
-            return get_bytearray(name)[offset]
+            return get_bytearray(the_arr)[offset]
         else:
             offset = address - name_ptr - var_current
-            if offset < max(3, len(name))+1:
-                return get_name_in_memory(name, offset)
+            if offset < max(3, len(the_arr))+1:
+                return get_name_in_memory(the_arr, offset)
             else:
-                offset -= max(3, len(name))+1
-                [dimensions, lst, _] = arrays[name]
-                data_rep = vartypes.value_to_uint(array_size_bytes(name) + 1 + 2*len(dimensions)) + chr(len(dimensions)) 
+                offset -= max(3, len(the_arr))+1
+                dimensions, _, _ = arrays[the_arr]
+                data_rep = vartypes.value_to_uint(array_size_bytes(the_arr) + 1 + 2*len(dimensions)) + chr(len(dimensions)) 
                 for d in dimensions:
                     data_rep += vartypes.value_to_uint(d + 1 - array_base)
                 return data_rep[offset]               
@@ -456,7 +455,7 @@ def get_memory(address):
         if the_var == None:
             return -1
         offset = address - str_addr
-        return variables[name][offset]
+        return variables[the_var][offset]
     else:
         # unallocated var space
         return 0 

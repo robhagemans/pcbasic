@@ -216,7 +216,6 @@ def resize(to_height, to_width):
     row, col = 1, 1
 
 def copy_page(src, dst):
-    global pages
     for x in range(height):
         dstrow, srcrow = pages[dst].row[x], pages[src].row[x]
         dstrow.buf[:] = srcrow.buf[:]
@@ -254,7 +253,7 @@ def set_cursor_shape(from_line, to_line):
 # interactive mode         
 
 def wait_screenline(write_endl=True, from_start=False):
-    global row, col
+    global row
     prompt_row, prompt_col = row, col
     savecurs = show_cursor() 
     furthest_left, furthest_right = wait_interactive(from_start)
@@ -295,7 +294,6 @@ def wait_screenline(write_endl=True, from_start=False):
     return outstr[:255]    
 
 def wait_interactive(from_start=False):
-    global row, col
     # this is where we started
     start_row, furthest_left = row, (col if not from_start else 1)
     # this is where we arrow-keyed on the start line
@@ -703,7 +701,7 @@ def show_keys():
                 write_for_keys(text, kcol+1, 0x07)
     apage.row[24].end = 80            
 
-def write_for_keys(s, col, cattr):
+def write_for_keys(s, ccol, cattr):
     # write chars for the keys line - yes, it's different :)
     # with no echo
     for c in s:
@@ -715,9 +713,9 @@ def write_for_keys(s, col, cattr):
             except KeyError:
                 pass    
             backend.set_attr(cattr)    
-            backend.putc_at(25, col, c)    
-            apage.row[24].buf[col-1] = c, cattr
-        col += 1
+            backend.putc_at(25, ccol, c)    
+            apage.row[24].buf[ccol-1] = c, cattr
+        ccol += 1
     backend.set_attr(attr)     
     
 ##############################
@@ -795,7 +793,7 @@ def put_screen_char_attr(cpage, crow, ccol, c, cattr):
     cpage.row[crow-1].buf[ccol-1] = (c, cattr)
     
 def put_char(c, do_scroll_down=False):
-    global row, col, attr
+    global row, col
     # check if scroll& repositioning needed
     check_pos(scroll_ok=True)
     put_screen_char_attr(apage, row, col, c, attr)
@@ -873,7 +871,7 @@ def unset_view():
     view_set = False
 
 def clear_view():
-    global row, col, apage 
+    global row, col 
     for r in range(view_start, scroll_height+1):
         apage.row[r-1].clear()
         apage.row[r-1].wrap = False
@@ -881,7 +879,7 @@ def clear_view():
     backend.clear_rows(attr, view_start, height if bottom_row_allowed else scroll_height)
             
 def scroll(from_line=None): 
-    global row, col
+    global row
     if from_line == None:
         from_line = view_start
     backend.scroll(from_line)
@@ -892,7 +890,7 @@ def scroll(from_line=None):
     del apage.row[from_line-1]
    
 def scroll_down(from_line):
-    global row, col
+    global row
     backend.scroll_down(from_line)
     if row >= from_line:
         row += 1

@@ -10,7 +10,6 @@
 #
 
 from functools import partial
-from cStringIO import StringIO
 import os
 
 import automode
@@ -233,7 +232,7 @@ def exec_debug(ins):
     # this is not a GW-BASIC behaviour, but helps debugging.
     # this is parsed like a REM by the tokeniser.
     # rest of the line is considered to be a python statement
-    d = util.skip_white(ins)
+    util.skip_white(ins)
     debug_cmd = ''
     while util.peek(ins) not in util.end_line:
         debug_cmd += ins.read(1)
@@ -860,7 +859,7 @@ def exec_open(ins):
             raise error.RunError(54)        
         # ACCESS clause
         if util.skip_white_read_if(ins, ('ACCESS',)):
-            d = util.skip_white(ins)
+            util.skip_white(ins)
             access = parse_read_write(ins)
         # LOCK clause
         if util.skip_white_read_if(ins, ('\xFE\xA7',)): # LOCK
@@ -880,7 +879,7 @@ def exec_open(ins):
     # If FOR APPEND ACCESS WRITE is specified, raises PATH/FILE ACCESS ERROR
     # If FOR and ACCESS mismatch in other ways, raises SYNTAX ERROR.
     if mode == 'A' and access == 'W':
-            raise error.RunError(75)
+        raise error.RunError(75)
     elif mode != 'R' and access and access != default_access_modes[mode]:
         raise error.RunError(2)        
     util.range_check(1, 128, reclen)        
@@ -922,7 +921,7 @@ def parse_get_or_put_file(ins):
     # for COM files
     num_bytes = the_file.reclen
     if util.skip_white_read_if(ins, (',',)):
-        pos = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)).round_to_int())
+        pos = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
         util.range_check_err(1, 2**25, pos, err=63) # not 2^32-1 as the manual boasts! pos-1 needs to fit in a single-prec mantissa
         if not isinstance(the_file, deviceio.COMFile):
             the_file.set_pos(pos)    
