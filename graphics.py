@@ -121,7 +121,7 @@ def unset_graph_window():
 def window_coords(fx, fy, step=False):
     if graph_window:
         scalex, scaley, offsetx, offsety = graph_window
-        fx0, fy0 = get_window_coords(last_point) if step else (fp.Single.zero.copy(), fp.Single.zero.copy())    
+        fx0, fy0 = get_window_coords(*last_point) if step else (fp.Single.zero.copy(), fp.Single.zero.copy())    
         x = fp.add(offsetx, fp.mul(fx0.iadd(fx), scalex)).round_to_int()
         y = fp.add(offsety, fp.mul(fy0.iadd(fy), scaley)).round_to_int()
     else:

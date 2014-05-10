@@ -192,7 +192,7 @@ def float_to_str(n_in, screen=False, write=False):
 def format_number(value, tokens, digits_before, decimals):
     # illegal function call if too many digits
     if digits_before + decimals > 24:
-         raise error.RunError(5)
+        raise error.RunError(5)
     # extract sign, mantissa, exponent     
     value = unpack(value)
     # dollar sign, decimal point
@@ -655,8 +655,8 @@ def tokenise_number(ins, outs):
             else:    
                 # double
                 outs.write('\x1f'+mbf)
-    elif c!='':
-            ins.seek(-1,1)
+    elif c != '':
+        ins.seek(-1, 1)
             
       
 ##########################################

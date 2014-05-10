@@ -13,7 +13,6 @@ import oslayer
 import deviceio
 import console
 import program
-import vartypes
 
 class EventHandler(object):
     def __init__(self):
@@ -115,7 +114,7 @@ def check_key_events():
                 key_handlers[keynum].triggered = True
 
 def check_play_event():
-    global play_stopped, play_last
+    global play_last
     play_now = console.sound.music_queue_length()
     if play_last >= play_trig and play_now < play_trig:    
         play_handler.triggered = True     
@@ -124,6 +123,6 @@ def check_play_event():
 def check_com_events():
     ports = (deviceio.devices['COM1:'], deviceio.devices['COM2:'])
     for comport in (0, 1):
-        if ports[comport] and ports.comport.peek_char():
+        if ports[comport] and ports[comport].peek_char():
             com_handlers[comport].triggered = True
             

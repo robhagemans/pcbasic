@@ -10,7 +10,6 @@
 #
 
 import fp
-import representation
 import error
 
 # default type for variable name starting with a-z

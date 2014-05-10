@@ -34,7 +34,7 @@ def unprotect(ins, outs):
         c ^= key2 [index % 11]
         c += 13 - (index % 13)
         outs.write(chr(c%256))
-        index = (index+1) % (13*11);
+        index = (index+1) % (13*11)
         s = nxt
     # return last char written    
     return chr(c%256)
@@ -52,7 +52,7 @@ def protect(ins, outs):
         c ^= key2 [index % 11]
         c += 11 - (index % 11)
         outs.write(chr(c%256))
-        index = (index+1) % (13*11);
+        index = (index+1) % (13*11)
         nxt = ins.read(1)
     # return last char read
     return s

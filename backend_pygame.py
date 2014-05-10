@@ -22,7 +22,6 @@ import cpi_font
 import unicodepage 
 import console
 import events
-import deviceio
 import graphics
 # for fast get & put only
 import var
@@ -287,7 +286,7 @@ def prepare(args):
         noquit = True
 
 def init():
-    global fonts, num_sticks, joysticks, physical_size
+    global fonts, joysticks, physical_size
     if not pygame:
         logging.warning('Could not find PyGame module. Failed to initialise PyGame console.')
         return False     
@@ -386,7 +385,7 @@ def clear_rows(cattr, start, stop):
     
 # not in interface
 def set_font(new_font_height):
-    global fonts, font, font_height, under_cursor
+    global font, font_height, under_cursor
     font_height = new_font_height
     try:
         font = fonts[font_height]
@@ -595,9 +594,9 @@ def refresh_cursor():
         index = console.attr & 0xf
         # no surfarray if no numpy    
         for x in range((console.col-1) * 8, console.col * 8):
-           for y in range((console.row-1)*font_height + cursor_from, (console.row-1)*font_height + cursor_to + 1):
-               pixel = get_pixel(x,y)
-               screen.set_at((x,y), pixel^index)
+            for y in range((console.row-1)*font_height + cursor_from, (console.row-1)*font_height + cursor_to + 1):
+                pixel = get_pixel(x,y)
+                screen.set_at((x,y), pixel^index)
     last_row = console.row
     last_col = console.col
         
@@ -612,7 +611,7 @@ def idle():
     pygame.time.wait(cycle_time/blink_cycles/8)  
 
 def check_events(pause=False):
-    global display_size, fullscreen
+    global fullscreen
     # check and handle pygame events    
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
@@ -942,7 +941,7 @@ def stop_all_sound():
     
 # process sound queue in event loop
 def check_sound():
-    global last_chunk, same_chunk_ticks, loop_sound, loop_sound_playing
+    global loop_sound, loop_sound_playing
     if not sound_queue:
         check_quit_sound()
     else:    
@@ -1069,7 +1068,6 @@ except Exception:
 
 
 def pre_init_mixer():
-    global sample_rate, mixer_bits
     pygame.mixer.pre_init(sample_rate, -mixer_bits, channels=1, buffer=1024) #4096
 
 def init_mixer():    

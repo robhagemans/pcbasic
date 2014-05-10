@@ -165,8 +165,8 @@ def exec_paint(ins):
                 # empty pattern "" is illegal function call
                 raise error.RunError(5)
             while len(pattern) % graphics.bitsperpixel != 0:
-                 # finish off the pattern with zeros
-                 pattern.append(0)
+                # finish off the pattern with zeros
+                pattern.append(0)
             # default for border, if pattern is specified as string: foreground attr
         else:
             c = vartypes.pass_int_unpack(cval)

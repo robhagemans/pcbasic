@@ -9,8 +9,6 @@
 #
 
 import sys
-from cStringIO import StringIO
-#import cProfile
 
 import error
 import util
@@ -41,7 +39,7 @@ def execute(line):
         c = util.peek(program.direct_line)
         if c == '\x00':
             # check for lines starting with numbers (6553 6) and empty lines
-            empty, _ = program.check_number_start(program.direct_line)
+            program.check_number_start(program.direct_line)
             program.store_line(program.direct_line)
             # no prompt
             return

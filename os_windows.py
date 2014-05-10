@@ -10,19 +10,13 @@
 #
 
 import os
-import msvcrt
 import ctypes
-import string
-import fnmatch
 import subprocess
 import threading
 import win32print
 import win32ui
-import win32gui
 import win32api
-import win32con
 
-import error
 import console
  
 shell_interactive = 'CMD'    
@@ -37,7 +31,6 @@ drive_cwd = { '@': '' }
 # if started from CMD.EXE, get the 'current wworking dir' for each drive
 # if not in CMD.EXE, there's only one cwd
 def store_drives():
-    global drives, drive_cwd
     save_current = os.getcwd()
     for letter in win32api.GetLogicalDriveStrings().split(':\\\x00')[:-1]:
         try:
@@ -123,7 +116,7 @@ def dossify(path, name):
         path = current_drive
     try:
         shortname = win32api.GetShortPathName(os.path.join(path, name)).upper()
-    except Exception as e:
+    except Exception:
         # something went wrong, show as dots in FILES
         return "........", "..."
     split = shortname.split('\\')[-1].split('.')

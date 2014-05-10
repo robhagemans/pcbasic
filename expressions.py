@@ -9,8 +9,6 @@
 # please see text file COPYING for licence terms.
 #
 
-import datetime
-import os
 from cStringIO import StringIO
 from functools import partial
 
@@ -26,8 +24,6 @@ import fileio
 import deviceio
 import graphics
 import console
-# for FRE() only
-import program
 
 # binary operator priority, lowest index is tightest bound 
 # operators of the same priority are evaluated left to right      
@@ -366,7 +362,7 @@ def value_asc(ins):
     
 def value_instr(ins):
     util.require_read(ins, ('(',))
-    big, small, have_big, n = '', '', False, 1
+    big, small, n = '', '', 1
     s = parse_expression(ins, empty_err=2)
     if s[0] != '$':
         n = vartypes.pass_int_unpack(s)
@@ -532,7 +528,7 @@ def value_lof(ins): # LOF
 # os functions
        
 def value_environ(ins):
-    require_read(ins, '$')
+    util.require_read(ins, '$')
     expr = parse_bracket(ins)
     if expr[0] == '$':
         return vartypes.pack_string(oslayer.get_env(vartypes.unpack_string(expr)))

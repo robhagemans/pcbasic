@@ -216,7 +216,7 @@ def store_line(linebuf):
     empty = (util.skip_white_read(linebuf) in util.end_line)
     pos, afterpos, deleteable, beyond = find_pos_line_dict(scanline, scanline)
     if empty and not deleteable:
-         raise error.RunError(8)   
+        raise error.RunError(8)   
     # read the remainder of the program into a buffer to be pasted back after the write
     bytecode.seek(afterpos)
     rest = bytecode.read()

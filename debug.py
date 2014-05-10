@@ -99,8 +99,8 @@ def show_program():
         logging.debug(    (code[p:p+1].encode('hex') + ' ' +
                         offset.encode('hex') + ' (+%03d) ' +  
                         code[p+3:p+5].encode('hex') + ' [%05d] ' + 
-                        code[p+5:program.line_numbers[key]].encode('hex'))
-                    % (offset_val - last_offset, linum_val) )
+                        code[p+5:program.line_numbers[key]].encode('hex')),
+                    offset_val - last_offset, linum_val )
         p = program.line_numbers[key]
     logging.debug(code[p:p+1].encode('hex') + ' ' +
                 code[p+1:p+3].encode('hex') + ' (ENDS) ' +  
@@ -111,7 +111,6 @@ def trace(on=True):
     debug_tron = on        
 
 def watch(expr):
-    global watch_list    
     outs = tokenise.tokenise_line('?'+expr) 
     watch_list.append((expr, outs))
 

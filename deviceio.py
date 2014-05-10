@@ -16,7 +16,7 @@ import serial_socket
 import oslayer
 import error
 import fileio
-from fileio import RandomBase, TextFile, BaseFile
+from fileio import RandomBase, BaseFile
 import console
 import logging
 
@@ -33,7 +33,6 @@ allowed_protocols = {
     }
 
 def prepare_devices(args):
-    global devices
     # always defined
     devices['SCRN:'] = SCRNFile()
     devices['KYBD:'] = KYBDFile()
@@ -50,7 +49,7 @@ def create_device(name, arg, default=None):
     else:   
         stream = create_device_stream(arg, allowed_protocols[name[:3]])
         if not stream:
-            logging.warning('Could not attach %s to %s.\n' % (name, arg))
+            logging.warning('Could not attach %s to %s.', name, arg)
             stream = default
     if stream:        
         if name[:3] == 'COM':

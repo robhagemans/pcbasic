@@ -104,7 +104,7 @@ def main():
             program.protected = False
             autosave = os.path.join(tempfile.gettempdir(), "AUTOSAVE.BAS")
             program.save(oslayer.safe_open(autosave, "S", "W"), 'B')
-            logging.info('Program autosaved as %s.' % autosave)
+            logging.info('Program autosaved as %s.', autosave)
 
 def prepare_debug(args):
     global debugstr
@@ -179,7 +179,7 @@ def prepare_console(args):
         console.backend = backend_dumb
         console.sound = sound_beep        
         if not console.backend or not console.init():
-            logging.critial('Failed to initialise console. Quitting.')
+            logging.critical('Failed to initialise console. Quitting.')
             sys.exit(0)
     # sound fallback        
     if args.nosound:

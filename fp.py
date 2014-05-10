@@ -439,7 +439,7 @@ def power(base_in, exp_in):
         return base_in.__class__().from_value(base_in.to_value() ** exp_in.to_value())    
     except OverflowError:
         msg_overflow()
-        return base_in.__class__(mbf_in.neg, mbf_in.carry_mask, 0xff)
+        return base_in.__class__(base_in.neg, base_in.carry_mask, 0xff)
 
 def unary(mbf_in, fn):
     try:
