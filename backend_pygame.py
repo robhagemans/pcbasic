@@ -1016,7 +1016,6 @@ def play_sound(frequency, total_duration, fill=1, loop=False):
             else:    
                 chunk = numpy.concatenate((chunk, wave1))
                 samples += num_half                
-            chunk = numpy.concatenate((chunk, wave1))
             half_waves += 1
         chunk_length = len(chunk)    
     if not loop:    
