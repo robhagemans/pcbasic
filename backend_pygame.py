@@ -957,18 +957,17 @@ def check_sound():
                 loop_sound_playing = loop_sound                
                 loop_sound = None
             else:
-                current_list = sound_queue[0]
-                if not current_list:
+                current_chunk = sound_queue[0].build_chunk()
+                if not current_chunk:
                     sound_queue.pop(0)
                     try:
-                        current_list = sound_queue[0]
+                        current_chunk = sound_queue[0].build_chunk()
                     except IndexError:
                         check_quit_sound()
                         return 0
-                pair_to_play = current_list.pop(0)         
-                mixer.Channel(0).queue(pair_to_play[0])
-                if pair_to_play[1]:
-                    loop_sound = pair_to_play[0] 
+                mixer.Channel(0).queue(current_chunk)
+                if sound_queue[0].loop:
+                    loop_sound = current_chunk 
                     # any next sound in the sound queue will stop this looping sound
                 else:   
                     loop_sound = None
@@ -980,61 +979,7 @@ def busy():
     return not loop_sound_playing and mixer.get_busy()
         
 def play_sound(frequency, total_duration, fill, loop):
-    check_init_mixer()
-    # one wavelength at 37 Hz is 1192 samples at 44100 Hz
-    chunk_length = 1192 * 2
-    # actual duration and gap length
-    duration, gap = fill * total_duration, (1-fill) * total_duration
-    amplitude = ((1<<(mixer_bits-1)) - 1)
-    if frequency == 0 or frequency == 32767:
-        chunk = numpy.zeros(chunk_length, numpy.int16)
-    else:
-        half_wavelength = sample_rate / (2.*frequency)
-        num_half = int(half_wavelength) - 1
-        # build wavelength of a square wave at max amplitude
-        wave = []
-        wave.append(numpy.ones(num_half, numpy.int16) * amplitude)
-        wave.append(-wave[0])
-        # build chunk of waves
-        chunk = numpy.array([], numpy.int16) 
-        half_waves = 0
-        bit, sign = 0, 1
-        while len(chunk) < chunk_length:
-            # ensure a chunk is an integer number of full wave lengths
-            for _ in range(2):
-                chunk = numpy.concatenate((chunk, wave[bit]))
-                half_waves += 1
-                frac = half_waves * half_wavelength - len(chunk)
-                while frac > 1:
-                    chunk = numpy.append(chunk, numpy.int16(int(sign * amplitude)))
-                    frac -= 1
-                connect = sign * frac
-                # get new sample bit
-                bit = 1 - bit
-                # 
-                sign = 1 - 2*bit
-                connect += sign * (1-frac)
-                # connecting sample
-                chunk = numpy.append(chunk, numpy.int16(int(connect * amplitude)))            
-        # reset to the actual length of the chunk 
-        chunk_length = len(chunk)    
-    if not loop:    
-        # make the last chunk longer than a normal chunk rather than shorter, to avoid jumping sound    
-        floor_num_chunks = max(0, -1 + int((duration * sample_rate) / chunk_length))
-        sound_list = [] if floor_num_chunks == 0 else [ (pygame.sndarray.make_sound(chunk), False) ]*floor_num_chunks
-        rest_length = int(duration * sample_rate) - chunk_length * floor_num_chunks
-    else:
-        # attach one chunk to loop
-        sound_list = []
-        rest_length = chunk_length
-    # create the sound queue entry
-    sound_list.append((pygame.sndarray.make_sound(chunk[:rest_length]), loop))
-    # append quiet gap if requested
-    if gap:
-        gap_length = gap * sample_rate
-        chunk = numpy.zeros(gap_length, numpy.int16)
-        sound_list.append((pygame.sndarray.make_sound(chunk), False))
-    sound_queue.append(sound_list)
+    sound_queue.append(SoundGenerator(frequency, total_duration, fill, loop))
     
 # implementation
 
@@ -1052,6 +997,85 @@ loop_sound = None
 # currrent sound that is looping
 loop_sound_playing = None
 
+# white noise feedback 
+feedback_whitenoise = 0x4400 
+# 'periodic' feedback mask (15-bit rotation)
+feedback_periodic = 0x4000
+feedback_tone = 0x2 
+# initial state
+init_noise = 0x0001
+
+class SoundGenerator(object):
+    def __init__(self, frequency, total_duration, fill, loop):
+        # noise generator
+        self.lfsr = init_noise
+        self.feedback = feedback_tone # feedback_whitenoise
+        # one wavelength at 37 Hz is 1192 samples at 44100 Hz
+        self.chunk_length = 1192 * 4
+        # actual duration and gap length
+        self.duration = fill * total_duration
+        self.gap = (1-fill) * total_duration
+        self.amplitude = numpy.int16(int(((1<<(mixer_bits-1)) - 1)))
+        self.frequency = frequency
+        self.loop = loop
+        self.bit = 0
+        self.count_samples = 0
+        self.num_samples = int(self.duration * sample_rate)
+        
+    def build_chunk(self):
+        if self.count_samples >= self.num_samples:
+            # done already
+            return None
+        # work on last element of sound queue
+        check_init_mixer()
+        if self.frequency == 0 or self.frequency == 32767:
+            chunk = numpy.zeros(self.chunk_length, numpy.int16)
+        else:
+            half_wavelength = sample_rate / (2.*self.frequency)
+            num_half = int(half_wavelength) - 1
+            # build wavelength of a square wave at max amplitude
+            wave = []
+            wave.append(numpy.ones(num_half, numpy.int16) * self.amplitude)
+            wave.append(-wave[0])
+            # build chunk of waves
+            chunk = numpy.array([], numpy.int16) 
+            half_waves = 0
+            while len(chunk) < self.chunk_length:
+                chunk = numpy.concatenate((chunk, wave[self.bit]))
+                half_waves += 1
+                frac = half_waves * half_wavelength - len(chunk)
+                while frac > 1:
+                    if self.bit == 0:
+                        chunk = numpy.append(chunk, self.amplitude)
+                    else:
+                        chunk = numpy.append(chunk, -self.amplitude)
+                    frac -= 1
+                connect = frac if self.bit == 0 else -frac
+                # get new sample bit
+                self.bit = self.lfsr & 1
+                self.lfsr >>= 1
+                if self.bit:
+                    self.lfsr ^= self.feedback
+                # 
+                connect += (1-frac) if self.bit == 0 else -(1-frac)
+                # connecting sample
+                chunk = numpy.append(chunk, numpy.int16(int(connect * self.amplitude)))            
+        if not self.loop:    
+            # make the last chunk longer than a normal chunk rather than shorter, to avoid jumping sound    
+            if self.count_samples + 2*len(chunk) < self.num_samples:
+                self.count_samples += len(chunk)
+            else:
+                # append final chunk
+                rest_length = self.num_samples - self.count_samples
+                chunk = chunk[:rest_length]
+                # append quiet gap if requested
+                if self.gap:
+                    gap_chunk = numpy.zeros(int(self.gap * sample_rate), numpy.int16)
+                    chunk = numpy.concatenate((chunk, gap_chunk))
+                # done                
+                self.count_samples = self.num_samples
+        # if loop, attach one chunk to loop, do not increment count
+        return pygame.sndarray.make_sound(chunk)   
     
 def pre_init_mixer():
     if mixer:
@@ -1080,3 +1104,4 @@ def check_quit_sound():
                 mixer.quit()
                 quiet_ticks = 0
                 
+
