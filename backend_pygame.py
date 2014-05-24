@@ -1001,6 +1001,7 @@ loop_sound_playing = None
 feedback_whitenoise = 0x4400 
 # 'periodic' feedback mask (15-bit rotation)
 feedback_periodic = 0x4000
+# squre wave feedback mask
 feedback_tone = 0x2 
 # initial state
 init_noise = 0x0001
@@ -1009,7 +1010,7 @@ class SoundGenerator(object):
     def __init__(self, frequency, total_duration, fill, loop):
         # noise generator
         self.lfsr = init_noise
-        self.feedback = feedback_tone # feedback_whitenoise
+        self.feedback = feedback_tone
         # one wavelength at 37 Hz is 1192 samples at 44100 Hz
         self.chunk_length = 1192 * 4
         # actual duration and gap length
@@ -1032,34 +1033,26 @@ class SoundGenerator(object):
             chunk = numpy.zeros(self.chunk_length, numpy.int16)
         else:
             half_wavelength = sample_rate / (2.*self.frequency)
-            num_half = int(half_wavelength) - 1
-            # build wavelength of a square wave at max amplitude
-            wave = []
-            wave.append(numpy.ones(num_half, numpy.int16) * self.amplitude)
-            wave.append(-wave[0])
-            # build chunk of waves
-            chunk = numpy.array([], numpy.int16) 
-            half_waves = 0
-            while len(chunk) < self.chunk_length:
-                chunk = numpy.concatenate((chunk, wave[self.bit]))
-                half_waves += 1
-                frac = half_waves * half_wavelength - len(chunk)
-                while frac > 1:
-                    if self.bit == 0:
-                        chunk = numpy.append(chunk, self.amplitude)
-                    else:
-                        chunk = numpy.append(chunk, -self.amplitude)
-                    frac -= 1
-                connect = frac if self.bit == 0 else -frac
+            num_half_waves = int(ceil(self.chunk_length / half_wavelength))
+            # generate bits
+            bits = []
+            for _ in range(num_half_waves):
                 # get new sample bit
                 self.bit = self.lfsr & 1
                 self.lfsr >>= 1
                 if self.bit:
                     self.lfsr ^= self.feedback
-                # 
-                connect += (1-frac) if self.bit == 0 else -(1-frac)
-                # connecting sample
-                chunk = numpy.append(chunk, numpy.int16(int(connect * self.amplitude)))            
+                bits.append(-self.amplitude if self.bit else self.amplitude)
+            # do sampling by averaging the signal over bins of given resolution
+            # this allows to use numpy all the way which is *much* faster than looping over an array
+            # stretch array by half_wavelength * resolution    
+            resolution = 20
+            matrix = numpy.repeat(numpy.array(bits, numpy.int16), int(half_wavelength*resolution))
+            # cut off on round number of resolution blocks
+            matrix = matrix[:len(matrix)-(len(matrix)%resolution)]
+            # average over blocks                        
+            matrix = matrix.reshape((len(matrix)/resolution, resolution))
+            chunk = numpy.int16(numpy.average(matrix, axis=1))
         if not self.loop:    
             # make the last chunk longer than a normal chunk rather than shorter, to avoid jumping sound    
             if self.count_samples + 2*len(chunk) < self.num_samples:
