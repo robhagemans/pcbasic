@@ -15,10 +15,10 @@ sound = None
 penstick = None 
 
 def check_events():
-    # check console events
-    video.check_events()   
     # manage sound queue
     sound.check_sound()
+    # check console events
+    video.check_events()   
 
 def idle():
     video.idle()

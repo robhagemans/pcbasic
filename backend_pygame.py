@@ -1031,7 +1031,7 @@ def play_sound(frequency, total_duration, fill, loop):
         chunk = numpy.zeros(gap_length, numpy.int16)
         sound_list.append((pygame.sndarray.make_sound(chunk), False))
     sound_queue.append(sound_list)
-
+    
 # implementation
 
 sound_queue = []
@@ -1074,4 +1074,4 @@ def check_quit_sound():
             if not state.basic_state.run_mode:
                 mixer.quit()
                 quiet_ticks = 0
-
+                
