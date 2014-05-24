@@ -985,34 +985,39 @@ def play_sound(frequency, total_duration, fill, loop):
     chunk_length = 1192 * 2
     # actual duration and gap length
     duration, gap = fill * total_duration, (1-fill) * total_duration
+    amplitude = ((1<<(mixer_bits-1)) - 1)
     if frequency == 0 or frequency == 32767:
         chunk = numpy.zeros(chunk_length, numpy.int16)
     else:
-        num_samples = sample_rate / (2.*frequency)
-        num_half = ceil(sample_rate/ (2.*frequency))
+        half_wavelength = sample_rate / (2.*frequency)
+        num_half = int(half_wavelength) - 1
         # build wavelength of a square wave at max amplitude
-        wave0 = numpy.ones(num_half, numpy.int16) * ((1<<(mixer_bits-1)) - 1)
+        wave0 = numpy.ones(num_half, numpy.int16) * amplitude 
         wave1 = -wave0
-        wave0_1 = wave0[:-1]
-        wave1_1 = wave1[:-1]
         # build chunk of waves
         chunk = numpy.array([], numpy.int16) 
-        half_waves, samples = 0, 0
+        half_waves = 0
+        sign = 1
         while len(chunk) < chunk_length:
-            if samples > int(num_samples*half_waves):
-                chunk = numpy.concatenate((chunk, wave0_1))
-                samples += num_half-1
-            else:    
-                chunk = numpy.concatenate((chunk, wave0))
-                samples += num_half
-            half_waves += 1
-            if samples > int(num_samples*half_waves):
-                chunk = numpy.concatenate((chunk, wave1_1))
-                samples += num_half-1
-            else:    
-                chunk = numpy.concatenate((chunk, wave1))
-                samples += num_half                
-            half_waves += 1
+            # ensure a chunk is an integer number of full wave lengths
+            for _ in range(2):
+                if sign == 1:
+                    chunk = numpy.concatenate((chunk, wave0))
+                else:
+                    chunk = numpy.concatenate((chunk, wave1))
+                half_waves += 1
+                frac = half_waves * half_wavelength - len(chunk)
+                while frac > 1:
+                    chunk = numpy.append(chunk, numpy.int16(int(sign * amplitude)))
+                    frac -= 1
+                connect = sign * frac
+                # get new sample sign
+                sign = -sign
+                # 
+                connect += sign * (1-frac)
+                # connecting sample
+                chunk = numpy.append(chunk, numpy.int16(int(connect * amplitude)))            
+        # reset to the actual length of the chunk 
         chunk_length = len(chunk)    
     if not loop:    
         # make the last chunk longer than a normal chunk rather than shorter, to avoid jumping sound    
