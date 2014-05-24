@@ -979,7 +979,7 @@ def busy():
     return not loop_sound_playing and mixer.get_busy()
         
 def play_sound(frequency, total_duration, fill, loop):
-    sound_queue.append(SoundGenerator(frequency, total_duration, fill, loop))
+    sound_queue.append(SoundGenerator(signal_sources[0], frequency, total_duration, fill, loop))
     
 # implementation
 
@@ -998,13 +998,13 @@ loop_sound = None
 loop_sound_playing = None
 
 # white noise feedback 
-feedback_whitenoise = 0x4400 
+feedback_noise = 0x4400 
 # 'periodic' feedback mask (15-bit rotation)
 feedback_periodic = 0x4000
 # squre wave feedback mask
 feedback_tone = 0x2 
 
-class SoundChannel(object):
+class SignalSource(object):
     def __init__(self, feedback):
         self.lfsr = 0x1
         self.feedback = feedback
@@ -1017,13 +1017,13 @@ class SoundChannel(object):
             self.lfsr ^= self.feedback
         return bit
 
-# tone generator
-channel_0 = SoundChannel(feedback_tone)
+# three tone voices plus a noise source
+signal_sources = [ SignalSource(feedback_tone), SignalSource(feedback_tone), SignalSource(feedback_tone), SignalSource(feedback_noise) ]
 
 class SoundGenerator(object):
-    def __init__(self, frequency, total_duration, fill, loop):
+    def __init__(self, voice, frequency, total_duration, fill, loop):
         # noise generator
-        self.channel = channel_0
+        self.voice = voice
         # one wavelength at 37 Hz is 1192 samples at 44100 Hz
         self.chunk_length = 1192 * 4
         # actual duration and gap length
@@ -1050,7 +1050,7 @@ class SoundGenerator(object):
             # generate bits
             bits = []
             for _ in range(num_half_waves):
-                bits.append(-self.amplitude if self.channel.next() else self.amplitude)
+                bits.append(-self.amplitude if self.voice.next() else self.amplitude)
             # do sampling by averaging the signal over bins of given resolution
             # this allows to use numpy all the way which is *much* faster than looping over an array
             # stretch array by half_wavelength * resolution    
