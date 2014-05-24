@@ -34,7 +34,7 @@ def play_sound(frequency, duration, fill=1, loop=False):
     state.console_state.music_queue.append((frequency, duration, fill, loop))
     backend.sound.play_sound(frequency, duration, fill, loop) 
     # at most 16 notes in the sound queue (not 32 as the guide says!)
-    wait_music(15)    
+    wait_music(15, wait_last=False)    
 
 def stop_all_sound():
     state.console_state.music_queue = []
@@ -43,4 +43,5 @@ def stop_all_sound():
 def wait_music(wait_length=0, wait_last=True):
     while (wait_last and backend.sound.busy()) or len(state.console_state.music_queue) + wait_last - 1 > wait_length:
         backend.wait()
-
+        
+        
