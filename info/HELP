@@ -451,14 +451,13 @@ NOTES:
         FFFF DEBUG
     When the --debug flag is specified, variable names like DEBUG$ are not 
     allowed.
--   On the IBM PCjr's Cartridge BASIC, some additional keywords were 
-    present. They can be activated using the --pcjr command-line option:
+-   On the IBM PCjr's Cartridge BASIC and Tandy 1000 GW-BASIC, some additional 
+    keywords were present. They can be activated using the --pcjr or --tandy 
+    command-line option:
         FEA4 NOISE   FEA6 TERM
 -   Note that they are not currently implemented as statements. 
-    When ---pcjr is specified, these words are not valid variable names and 
-    will be correctly transcribed in a listing.
--   The Tandy 1000 also has NOISE, but not TERM. When --tandy is speccified,
-    only the NOISE keyword is activated.
+    When ---pcjr or --tandy is specified, these words are not valid variable 
+    names and will be correctly transcribed in a listing.
 
 
 ABS(x) function
@@ -3586,15 +3585,17 @@ ERRORS:
 -   If 'angle' has a string value, SIN raises TYPE MISMATCH.
 
 
-TERM statement [--pcjr only]
+TERM statement [--pcjr and --tandy only]
 TERM 
 -------------
-This statement is not present in default mode but can be activated by using
-the --pcjr command-line option.
-Raises ADVANCED FEATURE.
-NOTES:
--   On the IBM PCjr's Cartridge BASIC, this statement starts a built-in serial
-    terminal emulator application. This is not implemented in PC-BASIC 3.23.
+PCJR:
+    Starts a built-in serial terminal emulator application. 
+    This is a BASIC program that is loaded and run instead of the current 
+    program.
+TANDY:
+    Raises INTERNAL ERROR.
+DEFAULT:
+    In default mode, this keyword is not present.
 
 
 TIME$ function
