@@ -1003,14 +1003,27 @@ feedback_whitenoise = 0x4400
 feedback_periodic = 0x4000
 # squre wave feedback mask
 feedback_tone = 0x2 
-# initial state
-init_noise = 0x0001
+
+class SoundChannel(object):
+    def __init__(self, feedback):
+        self.lfsr = 0x1
+        self.feedback = feedback
+    
+    def next(self):
+        # get new sample bit
+        bit = self.lfsr & 1
+        self.lfsr >>= 1
+        if bit:
+            self.lfsr ^= self.feedback
+        return bit
+
+# tone generator
+channel_0 = SoundChannel(feedback_tone)
 
 class SoundGenerator(object):
     def __init__(self, frequency, total_duration, fill, loop):
         # noise generator
-        self.lfsr = init_noise
-        self.feedback = feedback_tone
+        self.channel = channel_0
         # one wavelength at 37 Hz is 1192 samples at 44100 Hz
         self.chunk_length = 1192 * 4
         # actual duration and gap length
@@ -1037,12 +1050,7 @@ class SoundGenerator(object):
             # generate bits
             bits = []
             for _ in range(num_half_waves):
-                # get new sample bit
-                self.bit = self.lfsr & 1
-                self.lfsr >>= 1
-                if self.bit:
-                    self.lfsr ^= self.feedback
-                bits.append(-self.amplitude if self.bit else self.amplitude)
+                bits.append(-self.amplitude if self.channel.next() else self.amplitude)
             # do sampling by averaging the signal over bins of given resolution
             # this allows to use numpy all the way which is *much* faster than looping over an array
             # stretch array by half_wavelength * resolution    
