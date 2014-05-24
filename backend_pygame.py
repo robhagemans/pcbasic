@@ -992,28 +992,27 @@ def play_sound(frequency, total_duration, fill, loop):
         half_wavelength = sample_rate / (2.*frequency)
         num_half = int(half_wavelength) - 1
         # build wavelength of a square wave at max amplitude
-        wave0 = numpy.ones(num_half, numpy.int16) * amplitude 
-        wave1 = -wave0
+        wave = []
+        wave.append(numpy.ones(num_half, numpy.int16) * amplitude)
+        wave.append(-wave[0])
         # build chunk of waves
         chunk = numpy.array([], numpy.int16) 
         half_waves = 0
-        sign = 1
+        bit, sign = 0, 1
         while len(chunk) < chunk_length:
             # ensure a chunk is an integer number of full wave lengths
             for _ in range(2):
-                if sign == 1:
-                    chunk = numpy.concatenate((chunk, wave0))
-                else:
-                    chunk = numpy.concatenate((chunk, wave1))
+                chunk = numpy.concatenate((chunk, wave[bit]))
                 half_waves += 1
                 frac = half_waves * half_wavelength - len(chunk)
                 while frac > 1:
                     chunk = numpy.append(chunk, numpy.int16(int(sign * amplitude)))
                     frac -= 1
                 connect = sign * frac
-                # get new sample sign
-                sign = -sign
+                # get new sample bit
+                bit = 1 - bit
                 # 
+                sign = 1 - 2*bit
                 connect += sign * (1-frac)
                 # connecting sample
                 chunk = numpy.append(chunk, numpy.int16(int(connect * amplitude)))            
