@@ -257,7 +257,16 @@ def exec_noise(ins):
     
 # PCjr builtin serial terminal emulator; not implemented
 def exec_term(ins):
-    raise error.RunError(73)
+    if state.basic_state.machine != 'pcjr':
+        # on Tandy, raises Internal Error
+        raise error.RunError(51)
+    util.require(ins, util.end_statement)
+    program.load(iolayer.open_file_or_device(0, '@:\TERM.BAS', mode='L'))
+    flow.init_program()
+    reset.clear()
+    flow.jump(None)
+    state.basic_state.error_handle_mode = False
+    state.basic_state.tron = False    
 
 
 ##########################################################
