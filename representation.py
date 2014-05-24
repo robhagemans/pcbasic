@@ -696,9 +696,9 @@ def detokenise_number(ins, output):
     elif s == '\x1c':                           # 1C: two byte signed int
         output += sint_to_str(bytearray(ins.read(2)))
     elif s == '\x1d':                           # 1D: four-byte single-precision floating point constant
-        output += float_to_str(fp.Single.from_ins(bytearray(ins.read(4))), screen=False, write=False)
+        output += float_to_str(fp.Single.from_bytes(bytearray(ins.read(4))), screen=False, write=False)
     elif s == '\x1f':                           # 1F: eight byte double-precision floating point constant
-        output += float_to_str(fp.Double.from_ins(bytearray(ins.read(8))), screen=False, write=False)
+        output += float_to_str(fp.Double.from_bytes(bytearray(ins.read(8))), screen=False, write=False)
     else:
         ins.seek(-len(s),1)  
     
