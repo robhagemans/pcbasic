@@ -1041,7 +1041,7 @@ sample_rate = 44100
 
 # quit sound server after quiet period of quiet_quit ticks, to avoid high-ish cpu load from the sound server.
 quiet_ticks = 0        
-quiet_quit = 200
+quiet_quit = 10000
 
 # loop the sound  in the mixer queue
 loop_sound = None
@@ -1072,6 +1072,7 @@ def check_quit_sound():
         if quiet_ticks > quiet_quit:
             # mixer is quiet and we're not running a program. quit to reduce pulseaudio cpu load
             if not state.basic_state.run_mode:
+                # this takes quite a while and leads to missed frames...
                 mixer.quit()
                 quiet_ticks = 0
                 
