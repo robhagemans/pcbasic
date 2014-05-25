@@ -41,6 +41,10 @@ mode_data = {
     0: ( 16,  7, 32, 64, 80, 4, 4 ),
     1: (  8,  3,  4, 16, 40, 1, 2 ),
     2: (  8,  1,  2, 16, 80, 1, 1 ), 
+    3: (  8, 15, 16, 16, 20, 2, 4 ),
+    4: (  8, 15,  4, 16, 40, 2, 2 ),      
+    5: (  8, 15, 16, 16, 40, 1, 4 ),      
+    6: (  8, 15,  4, 16, 80, 1, 2 ),      
     7: (  8, 15, 16, 16, 40, 8, 4 ),
     8: (  8, 15, 16, 16, 80, 4, 4 ),
     9: ( 14, 15, 16, 64, 80, 2, 4 ),
@@ -136,6 +140,18 @@ def init():
     if not backend.video.init():
         return False
     state.console_state.backend_name = backend.video.__name__
+    # only allow the screen modes that the given machine supports
+    if state.basic_state.machine in ('pcjr', 'tandy'):
+        # no EGA modes (though apparently there were Tandy machines with EGA cards too)
+        unavailable_modes = (7, 8, 9)
+        # 8-pixel characters in screen 0
+        mode_data[0] = ( 8,  7, 32, 64, 80, 4, 4 ) 
+        # TODO: determine the number of pages based on video memory size, not hard coded. 
+    else:
+        # no PCjr modes
+        unavailable_modes = (3, 4, 5, 6)
+    for mode in unavailable_modes:
+        del mode_data[mode]
     if state.loaded:
         if state.console_state.screen_mode != 0 and not backend.video.supports_graphics:
             logging.warning("Screen mode not supported by display backend.")
