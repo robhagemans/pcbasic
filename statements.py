@@ -251,13 +251,18 @@ def exec_debug(ins):
         debug_cmd += ins.read(1)
     debug.debug_exec(debug_cmd)
 
-# PCjr/Tandy 1000 noise generator; not implemented. requires 'SOUND ON'.
-def exec_noise(ins):
-    raise error.RunError(73)
-    
 # PCjr builtin serial terminal emulator; not implemented
 def exec_term(ins):
-    raise error.RunError(73)
+    if state.basic_state.machine != 'pcjr':
+        # on Tandy, raises Internal Error
+        raise error.RunError(51)
+    util.require(ins, util.end_statement)
+    program.load(iolayer.open_file_or_device(0, '@:\TERM.BAS', mode='L'))
+    flow.init_program()
+    reset.clear()
+    flow.jump(None)
+    state.basic_state.error_handle_mode = False
+    state.basic_state.tron = False    
 
 
 ##########################################################
@@ -450,23 +455,43 @@ def exec_beep(ins):
         sound.wait_music(wait_last=False)
     
 def exec_sound(ins):
+    # Tandy/PCjr SOUND ON, OFF
+    if state.basic_state.machine in ('pcjr', 'tandy') and util.skip_white(ins) in ('\x95', '\xDD'):
+        state.console_state.sound_on = (ins.read(1) == '\x95')
+        util.require(ins, util.end_statement)
+        return
     freq = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.require_read(ins, (',',))
     dur = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
     if fp.Single.from_int(-65535).gt(dur) or dur.gt(fp.Single.from_int(65535)):
         raise error.RunError(5)
+    if (state.basic_state.machine == 'tandy' or (state.basic_state.machine == 'pcjr' and state.console_state.sound_on) 
+            and util.skip_white_read_if(ins, (',',))):
+        volume = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+        util.range_check(0, 15, volume)        
+        if util.skip_white_read_if(ins, (',',)):
+            voice = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+            util.range_check(0, 2, voice) # can't address noise channel here
+        else:
+            voice = 0    
+    else:
+        volume, voice = 15, 0                
     util.require(ins, util.end_statement)
     if dur.is_zero():
         sound.stop_all_sound()
         return
-    util.range_check(37, 32767, freq) # 32767 is pause
+    if state.basic_state.machine == 'tandy': 
+        util.range_check(0, 32767, freq) 
+    else:    
+        if freq != 0:
+            util.range_check(37, 32767, freq) # 32767 is pause
     one_over_44 = fp.Single.from_bytes(bytearray('\x8c\x2e\x3a\x7b')) # 1/44 = 0.02272727248
     dur_sec = dur.to_value()/18.2
     if one_over_44.gt(dur):
         # play indefinitely in background
-        sound.play_sound(freq, dur_sec, loop=True)
+        sound.play_sound(freq, dur_sec, loop=True, voice=voice, volume=volume)
     else:
-        sound.play_sound(freq, dur_sec)
+        sound.play_sound(freq, dur_sec, voice=voice, volume=volume)
         if state.console_state.music_foreground:
             sound.wait_music(wait_last=False)
     
@@ -476,10 +501,38 @@ def exec_play(ins):
         util.require(ins, util.end_statement)
     else:    
         # retrieve Music Macro Language string
-        mml = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+        mml0 = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+        mml1, mml2 = '', ''
+        if ((state.basic_state.machine == 'tandy' or (state.basic_state.machine == 'pcjr' and state.console_state.sound_on))
+                and util.skip_white_read_if(ins, (',',))):
+            mml1 = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+            if util.skip_white_read_if(ins, (',',)):
+                mml2 = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_expression)
-        draw_and_play.play_parse_mml(mml)
-           
+        draw_and_play.play_parse_mml((mml0, mml1, mml2))
+          
+# PCjr/Tandy 1000 noise generator; not implemented. requires 'SOUND ON'.
+def exec_noise(ins):
+    if not state.console_state.sound_on:
+        raise error.RunError(5)
+    source = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    util.require_read(ins, (',',))
+    volume = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    util.require_read(ins, (',',))
+    util.range_check(0, 7, source)
+    util.range_check(0, 15, volume)
+    dur = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
+    if fp.Single.from_int(-65535).gt(dur) or dur.gt(fp.Single.from_int(65535)):
+        raise error.RunError(5)
+    util.require(ins, util.end_statement)        
+    one_over_44 = fp.Single.from_bytes(bytearray('\x8c\x2e\x3a\x7b')) # 1/44 = 0.02272727248
+    dur_sec = dur.to_value()/18.2
+    if one_over_44.gt(dur):
+        sound.play_noise(source, volume, dur_sec, loop=True)
+    else:
+        sound.play_noise(source, volume, dur_sec)
+    
+ 
 ##########################################################
 # machine emulation
          

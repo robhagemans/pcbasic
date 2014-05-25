@@ -139,8 +139,7 @@ def prepare_keywords(args):
         logging.basicConfig(format='%(levelname)s: %(message)s')
     if args.pcjr or args.tandy:
         tokenise.insert_noise_keyword()
-    if args.pcjr:
-        tokenise.insert_term_keyword()        
+        tokenise.insert_term_keyword() 
 
 def prepare_constants(args):
     # PEEK presets
@@ -194,6 +193,13 @@ def prepare_constants(args):
         args.conv = True    
     if args.conv_mode:
         args.conv_mode = args.conv_mode[0].upper()        
+    if args.pcjr:
+        state.basic_state.machine = 'pcjr'
+    elif args.tandy:
+        state.basic_state.machine = 'tandy'
+    else:
+        state.basic_state.machine = 'ega'        
+
 
 def prepare_console(args):
     unicodepage.load_codepage(state.console_state.codepage)
@@ -298,8 +304,8 @@ def get_args():
     parser.add_argument('--lpt1', action='store', metavar=('TYPE:VAL'), help='Set LPT1: to FILE:file_name or PRINTER:printer_name.')
     parser.add_argument('--lpt2', action='store', metavar=('TYPE:VAL'), help='Set LPT2: to FILE:file_name or PRINTER:printer_name.')
     parser.add_argument('--lpt3', action='store', metavar=('TYPE:VAL'), help='Set LPT3: to FILE:file_name or PRINTER:printer_name.')
-    parser.add_argument('--com1', action='store', metavar=('TYPE:VAL'), help='Set COM1: to PORT:device_name or SOCK:host:socket.')
-    parser.add_argument('--com2', action='store', metavar=('TYPE:VAL'), help='Set COM2: to PORT:device_name or SOCK:host:socket.')
+    parser.add_argument('--com1', action='store', metavar=('TYPE:VAL'), help='Set COM1: to PORT:device_name or SOCKET:host:socket.')
+    parser.add_argument('--com2', action='store', metavar=('TYPE:VAL'), help='Set COM2: to PORT:device_name or SOCKET:host:socket.')
     parser.add_argument('--conv', action='store', nargs='?', metavar='mode:outfile', help='Convert basic_program to (A)SCII, (B)ytecode or (P)rotected mode. Implies --unprotect and --list-all.')
     parser.add_argument('--codepage', action='store', metavar=('NUMBER'), help='Load specified font codepage. Default is 437 (US).')
     parser.add_argument('--nosound', action='store_true', help='Disable sound output')
@@ -309,8 +315,8 @@ def get_args():
     parser.add_argument('--smooth', action='store_true', help='Use smooth display scaling. Graphical terminal only.')
     parser.add_argument('--noquit', action='store_true', help='Allow BASIC to capture <ALT+F4>. Graphical terminal only.')
     parser.add_argument('--debug', action='store_true', help='Enable DEBUG keyword')
-    parser.add_argument('--pcjr', action='store_true', help='Enable NOISE and TERM keywords')
-    parser.add_argument('--tandy', action='store_true', help='Enable NOISE keyword')
+    parser.add_argument('--pcjr', action='store_true', help='IBM PCjr mode')
+    parser.add_argument('--tandy', action='store_true', help='Tandy-1000 mode')
     parser.add_argument('--list-all', action='store_true', help='Allow listing and ASCII saving of lines beyond 65530')
     parser.add_argument('--unprotect', action='store_true', help='Allow listing and ASCII saving of protected files')
     parser.add_argument('--caps', action='store_true', help='Start in CAPS LOCK mode.')

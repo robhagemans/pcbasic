@@ -648,9 +648,11 @@ def value_pmap(ins):
 # sound functions
     
 def value_play(ins):
-    dummy = vartypes.pass_int_unpack(parse_bracket(ins))    
-    util.range_check(0, 255, dummy)
-    return vartypes.pack_int(sound.music_queue_length())
+    voice = vartypes.pass_int_unpack(parse_bracket(ins))    
+    util.range_check(0, 255, voice)
+    if not(state.basic_state.machine == 'tandy' or state.basic_state.machine == 'pcjr' and voice in (1, 2)):
+        voice = 0    
+    return vartypes.pack_int(sound.music_queue_length(voice))
     
 #####################################################################
 # error functions
