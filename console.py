@@ -36,18 +36,18 @@ class ScreenBuffer(object):
     def __init__(self, bwidth, bheight):
         self.row = [ScreenRow(bwidth) for _ in xrange(bheight)]
         
-#  font_height, attr, num_colours, num_palette, width, num_pages, bitsperpixel
+#  font_height, attr, num_colours, num_palette, width, num_pages, bitsperpixel, font_width
 mode_data = {
-    0: ( 16,  7, 32, 64, 80, 4, 4 ),
-    1: (  8,  3,  4, 16, 40, 1, 2 ),
-    2: (  8,  1,  2, 16, 80, 1, 1 ), 
-    3: (  8, 15, 16, 16, 20, 2, 4 ),
-    4: (  8, 15,  4, 16, 40, 2, 2 ),      
-    5: (  8, 15, 16, 16, 40, 1, 4 ),      
-    6: (  8, 15,  4, 16, 80, 1, 2 ),      
-    7: (  8, 15, 16, 16, 40, 8, 4 ),
-    8: (  8, 15, 16, 16, 80, 4, 4 ),
-    9: ( 14, 15, 16, 64, 80, 2, 4 ),
+    0: ( 16,  7, 32, 64, 80, 4, 4, 8 ), # width 8 or 9  
+    1: (  8,  3,  4, 16, 40, 1, 2, 8 ),
+    2: (  8,  1,  2, 16, 80, 1, 1, 8 ), 
+    3: (  8, 15, 16, 16, 20, 2, 4, 8 ),
+    4: (  8, 15,  4, 16, 40, 2, 2, 8 ),      
+    5: (  8, 15, 16, 16, 40, 1, 4, 8 ),      
+    6: (  8, 15,  4, 16, 80, 1, 2, 8 ),      
+    7: (  8, 15, 16, 16, 40, 8, 4, 8 ),
+    8: (  8, 15, 16, 16, 80, 4, 4, 8 ),
+    9: ( 14, 15, 16, 64, 80, 2, 4, 8 ),
     }
 
 # default codes for KEY autotext
@@ -145,7 +145,7 @@ def init():
         # no EGA modes (though apparently there were Tandy machines with EGA cards too)
         unavailable_modes = (7, 8, 9)
         # 8-pixel characters in screen 0
-        mode_data[0] = ( 8,  7, 32, 64, 80, 4, 4 ) 
+        mode_data[0] = ( 8, 7, 32, 64, 80, 4, 4, 8 ) 
         # TODO: determine the number of pages based on video memory size, not hard coded. 
     else:
         # no PCjr modes
@@ -200,7 +200,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
         state.console_state.width, state.console_state.height = new_width, 25
         (   state.console_state.font_height, _, 
             state.console_state.num_colours, state.console_state.num_palette, _, 
-            state.console_state.num_pages, state.console_state.bitsperpixel     ) = info  
+            state.console_state.num_pages, state.console_state.bitsperpixel, state.console_state.font_width ) = info  
         # enforce backend palette maximum
         state.console_state.num_palette = min(state.console_state.num_palette, backend.video.max_palette)
         # width persists on change to screen 0
@@ -212,10 +212,12 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
         state.console_state.vpage = state.console_state.pages[state.console_state.vpagenum]
         state.console_state.apage = state.console_state.pages[state.console_state.apagenum]
         # resolution
-        state.console_state.size = (state.console_state.width*8, state.console_state.height*state.console_state.font_height)
+        state.console_state.size = (state.console_state.width*state.console_state.font_width,          
+                                         state.console_state.height*state.console_state.font_height)
         # centre of new graphics screen
-        state.console_state.last_point = (state.console_state.width*4, state.console_state.height*state.console_state.font_height/2)
+        state.console_state.last_point = (state.console_state.size[0]/2, state.console_state.size[1]/2)
         # pixels e.g. 80*8 x 25*14, screen ratio 4x3 makes for pixel width/height (4/3)*(25*14/8*80)
+        # FIXME - hard coded 8-pixel width for graphics screens here.
         state.console_state.pixel_aspect_ratio = fp.div(
             fp.Single.from_int(state.console_state.height*state.console_state.font_height), 
             fp.Single.from_int(6*state.console_state.width)) 
@@ -746,7 +748,7 @@ def show_keys():
                 write_for_keys(text, kcol+1, 0x70)
             else:
                 write_for_keys(text, kcol+1, 0x07)
-    state.console_state.apage.row[24].end = 80            
+    state.console_state.apage.row[24].end = state.console_state.width           
 
 def write_for_keys(s, col, cattr):
     # write chars for the keys line - yes, it's different :)
