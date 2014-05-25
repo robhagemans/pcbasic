@@ -978,8 +978,8 @@ def check_sound():
 def busy():
     return not loop_sound_playing and mixer.get_busy()
         
-def play_sound(frequency, total_duration, fill, loop):
-    sound_queue.append(SoundGenerator(signal_sources[0], frequency, total_duration, fill, loop))
+def play_sound(frequency, total_duration, fill, loop, volume=15, voice=0):
+    sound_queue.append(SoundGenerator(signal_sources[0], frequency, total_duration, fill, loop, volume))
     
 # implementation
 
@@ -1018,10 +1018,21 @@ class SignalSource(object):
         return bit
 
 # three tone voices plus a noise source
-signal_sources = [ SignalSource(feedback_tone), SignalSource(feedback_tone), SignalSource(feedback_tone), SignalSource(feedback_noise) ]
+signal_sources = [ SignalSource(feedback_noise), SignalSource(feedback_tone), SignalSource(feedback_tone), SignalSource(feedback_noise) ]
+
+# The SN76489 attenuates the volume by 2dB for each step in the volume register.
+# see http://www.smspower.org/Development/SN76489
+max_amplitude = (1<<(mixer_bits-1)) - 1
+# 2 dB steps correspond to a voltage factor of 10**(-2./20.) as power ~ voltage**2 
+step_factor = 10**(-2./20.)
+# geometric list of amplitudes for volume values 
+amplitude = numpy.int16(max_amplitude*(step_factor**numpy.arange(15,-1,-1)))
+# zero volume means silent
+amplitude[0] = 0
+
 
 class SoundGenerator(object):
-    def __init__(self, voice, frequency, total_duration, fill, loop):
+    def __init__(self, voice, frequency, total_duration, fill, loop, volume):
         # noise generator
         self.voice = voice
         # one wavelength at 37 Hz is 1192 samples at 44100 Hz
@@ -1029,7 +1040,7 @@ class SoundGenerator(object):
         # actual duration and gap length
         self.duration = fill * total_duration
         self.gap = (1-fill) * total_duration
-        self.amplitude = numpy.int16(int(((1<<(mixer_bits-1)) - 1)))
+        self.amplitude = amplitude[volume]
         self.frequency = frequency
         self.loop = loop
         self.bit = 0
