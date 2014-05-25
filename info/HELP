@@ -2409,17 +2409,31 @@ ERRORS:
 -   If 'var_0', ... are string names, NEXT WITHOUT FOR is raised.
 
 
-NOISE statement [--pcjr and --tandy only]
-NOISE type, volume, duration
+NOISE statement                                       [--pcjr and --tandy only]
+NOISE source, volume, duration
 -------------
-This statement is not present in default mode but can be activated by using
-the --pcjr or --tandy command-line options.
-Raises ADVANCED FEATURE.
-NOTES:
--   On the IBM PCjr's Cartridge BASIC and Tandy 1000 GW-BASIC, this statement
-    produces various kinds of noise. This is not implemented in PC-BASIC 3.23.
+PCJR and TANDY:
+    Generates various kinds of noise.
+    'source' is a number-valued expression in [0, 7]. 
+    It indicates the type of noise:
+    source  type            max frequency (Hz)
+    0       periodic        6991
+    1       periodic        3495
+    2       periodic        1747
+    3       periodic        last tone played on tone voice channel 2
+    0       white noise     6991
+    1       white noise     3495
+    2       white noise     1747
+    3       white noise     last tone played on tone voice channel 2
+    'volume' is a number-valued expression in [0,15].
+    'duration' is a number-valued expression.
+    Volume and duration are determined in the same way as for the SOUND 
+    statement; see there.
 ERRORS:
 -   IF SOUND ON has not been executed, raises ILLEGAL FUNCTION CALL.
+-   If 'duration' is not in [-65535, 65535], raises ILLEGAL FUNCTION CALL.
+-   If 'volume' is not in [0, 15], raises ILLEGAL FUNCTION CALL.
+-   If 'voice' is not in [0, 2], raises ILLEGAL FUNCTION CALL.
 
 
 OCT$ function
