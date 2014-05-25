@@ -62,7 +62,7 @@ def reset_events():
         '', '', '', '', '', '' ]                                        # user definable
     state.basic_state.key_handlers = [ EventHandler() for _ in xrange(20) ]    
     # PLAY
-    state.basic_state.play_last, state.basic_state.play_trig = 0, 1 
+    state.basic_state.play_last, state.basic_state.play_trig = [0, 0, 0], 1 
     state.basic_state.play_handler = EventHandler()        
     # COM
     state.basic_state.com_handlers = [ EventHandler(), EventHandler() ]        
