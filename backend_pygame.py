@@ -935,7 +935,7 @@ def init_sound():
     
 def stop_all_sound():
     global sound_queue
-    mixer.quit()
+    mixer.stop()
     sound_queue = []
     
 # process sound queue in event loop
