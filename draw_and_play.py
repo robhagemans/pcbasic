@@ -39,12 +39,15 @@ note_freq = [ 440.*2**((i-33.)/12.) for i in range(84) ]
 notes = {   'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6, 
             'G-':6, 'G':7, 'G#':8, 'A-':8, 'A':9, 'A#':10, 'B-':10, 'B':11 }
 
-state.basic_state.play_octave = 4
-state.basic_state.play_speed = 7./8.
-state.basic_state.play_tempo = 2. # 2*0.25 =0 .5 seconds per quarter note
-state.basic_state.play_length = 0.25
+class PlayState(object):
+    def __init__(self):
+        self.octave = 4
+        self.speed = 7./8.
+        self.tempo = 2. # 2*0.25 =0 .5 seconds per quarter note
+        self.length = 0.25
+        self.volume = 15
 
-
+state.basic_state.play_state = [ PlayState(), PlayState(), PlayState() ]
 
 def get_value_for_varptrstr(varptrstr):
     if len(varptrstr) < 3:    
@@ -229,84 +232,100 @@ def solid_pattern(c):
     
 # MUSIC MACRO LANGUAGE
 
-def play_parse_mml(mml):
-    gmls = StringIO(mml.upper())
+def play_parse_mml(mml_list):
+    gmls_list = []
+    for mml in mml_list:
+        gmls_list.append(StringIO(mml.upper()))
     next_oct = 0
+    voices = range(3)
     while True:
-        c = util.skip_read(gmls, ml_whitepace).upper()
-        if c == '':
+        if not voices:
             break
-        elif c == ';':
-            continue
-        elif c == 'X':
-            # execute substring
-            sub = ml_parse_string(gmls)
-            play_parse_mml(sub)
-        elif c == 'N':
-            note = ml_parse_number(gmls)
-            dur = state.basic_state.play_length
-            c = util.skip(gmls, ml_whitepace).upper()
-            if c == '.':
-                gmls.read(1)
-                dur *= 1.5
-            if note > 0 and note <= 84:
-                sound.play_sound(note_freq[note-1], dur*state.basic_state.play_tempo, state.basic_state.play_speed)
-            elif note == 0:
-                sound.play_sound(0, dur*state.basic_state.play_tempo, state.basic_state.play_speed)
-        elif c == 'L':
-            state.basic_state.play_length = 1./ml_parse_number(gmls)    
-        elif c == 'T':
-            state.basic_state.play_tempo = 240./ml_parse_number(gmls)    
-        elif c == 'O':
-            state.basic_state.play_octave = min(6, max(0, ml_parse_number(gmls)))
-        elif c == '>':
-            state.basic_state.play_octave += 1
-            if state.basic_state.play_octave > 6:
-                state.basic_state.play_octave = 6
-        elif c == '<':
-            state.basic_state.play_octave -= 1
-            if state.basic_state.play_octave < 0:
-                state.basic_state.play_octave = 0
-        elif c in ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'P'):
-            note = c
-            dur = state.basic_state.play_length
-            while True:    
+        for voice in voices:
+            gmls = gmls_list[voice]
+            c = util.skip_read(gmls, ml_whitepace).upper()
+            if c == '':
+                voices.remove(voice)
+                continue
+            elif c == ';':
+                continue
+            elif c == 'X':
+                # execute substring
+                sub = ml_parse_string(gmls)
+                play_parse_mml(sub)
+            elif c == 'N':
+                note = ml_parse_number(gmls)
+                dur = state.basic_state.play_state[voice].length
                 c = util.skip(gmls, ml_whitepace).upper()
                 if c == '.':
                     gmls.read(1)
                     dur *= 1.5
-                elif c in representation.ascii_digits:
-                    numstr = ''
-                    while c in representation.ascii_digits:
+                if note > 0 and note <= 84:
+                    sound.play_sound(note_freq[note-1], dur*state.basic_state.play_state[voice].tempo, 
+                                     state.basic_state.play_state[voice].speed, volume=state.basic_state.play_state[voice].volume,
+                                     voice=voice)
+                elif note == 0:
+                    sound.play_sound(0, dur*state.basic_state.play_state[voice].tempo, state.basic_state.play_state[voice].speed,
+                                     volume=0, voice=voice)
+            elif c == 'L':
+                state.basic_state.play_state[voice].length = 1./ml_parse_number(gmls)    
+            elif c == 'T':
+                state.basic_state.play_state[voice].tempo = 240./ml_parse_number(gmls)    
+            elif c == 'O':
+                state.basic_state.play_state[voice].octave = min(6, max(0, ml_parse_number(gmls)))
+            elif c == '>':
+                state.basic_state.play_state[voice].octave += 1
+                if state.basic_state.play_state[voice].octave > 6:
+                    state.basic_state.play_state[voice].octave = 6
+            elif c == '<':
+                state.basic_state.play_state[voice].octave -= 1
+                if state.basic_state.play_state[voice].octave < 0:
+                    state.basic_state.play_state[voice].octave = 0
+            elif c in ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'P'):
+                note = c
+                dur = state.basic_state.play_state[voice].length
+                while True:    
+                    c = util.skip(gmls, ml_whitepace).upper()
+                    if c == '.':
                         gmls.read(1)
-                        numstr+=c 
-                        c = util.skip(gmls, ml_whitepace) 
-                    length = vartypes.pass_int_unpack(representation.str_to_value_keep(('$', numstr)))
-                    dur = 2./float(length)
-                elif c in ('#', '+'):
-                    gmls.read(1)
-                    note += '#'
-                elif c == '-':
-                    gmls.read(1)
-                    note += '-'
+                        dur *= 1.5
+                    elif c in representation.ascii_digits:
+                        numstr = ''
+                        while c in representation.ascii_digits:
+                            gmls.read(1)
+                            numstr+=c 
+                            c = util.skip(gmls, ml_whitepace) 
+                        length = vartypes.pass_int_unpack(representation.str_to_value_keep(('$', numstr)))
+                        dur = 2./float(length)
+                    elif c in ('#', '+'):
+                        gmls.read(1)
+                        note += '#'
+                    elif c == '-':
+                        gmls.read(1)
+                        note += '-'
+                    else:
+                        break                    
+                if note == 'P':
+                    sound.play_sound(0, dur*state.basic_state.play_state[voice].tempo, state.basic_state.play_state[voice].speed,
+                             volume=state.basic_state.play_state[voice].volume, voice=voice)
                 else:
-                    break                    
-            if note == 'P':
-                sound.play_sound(0, dur*state.basic_state.play_tempo, state.basic_state.play_speed)
-            else:        
-                sound.play_sound(note_freq[(state.basic_state.play_octave+next_oct)*12+notes[note]], dur*state.basic_state.play_tempo, state.basic_state.play_speed)
-            next_oct = 0
-        elif c == 'M':
-            c = util.skip_read(gmls, ml_whitepace).upper()
-            if c == 'N':        state.basic_state.play_speed = 7./8.
-            elif c == 'L':      state.basic_state.play_speed = 1.
-            elif c == 'S':      state.basic_state.play_speed = 3./4.        
-            elif c == 'F':      state.console_state.music_foreground = True
-            elif c == 'B':      state.console_state.music_foreground = False
+                    sound.play_sound(note_freq[(state.basic_state.play_state[voice].octave+next_oct)*12+notes[note]], 
+                            dur*state.basic_state.play_state[voice].tempo, state.basic_state.play_state[voice].speed, 
+                            volume=state.basic_state.play_state[voice].volume, voice=voice)
+                next_oct = 0
+            elif c == 'M':
+                c = util.skip_read(gmls, ml_whitepace).upper()
+                if c == 'N':        state.basic_state.play_state[voice].speed = 7./8.
+                elif c == 'L':      state.basic_state.play_state[voice].speed = 1.
+                elif c == 'S':      state.basic_state.play_state[voice].speed = 3./4.        
+                elif c == 'F':      state.console_state.music_foreground = True
+                elif c == 'B':      state.console_state.music_foreground = False
+                else:
+                    raise error.RunError(5)    
+            elif state.console_state.sound_on and c == 'V':
+                state.basic_state.play_state[voice].volume = min(15, max(0, ml_parse_number(gmls)))
             else:
                 raise error.RunError(5)    
-        else:
-            raise error.RunError(5)    
-    if state.console_state.music_foreground:
-        sound.wait_music()
+        if state.console_state.music_foreground:
+            sound.wait_music()
                                  

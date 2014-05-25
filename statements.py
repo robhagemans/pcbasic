@@ -499,9 +499,14 @@ def exec_play(ins):
         util.require(ins, util.end_statement)
     else:    
         # retrieve Music Macro Language string
-        mml = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+        mml0 = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+        mml1, mml2 = '', ''
+        if state.basic_state.machine in ('pcjr', 'tandy') and util.skip_white_read_if(ins, (',',)):
+            mml1 = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+            if util.skip_white_read_if(ins, (',',)):
+                mml2 = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_expression)
-        draw_and_play.play_parse_mml(mml)
+        draw_and_play.play_parse_mml((mml0, mml1, mml2))
           
 # PCjr/Tandy 1000 noise generator; not implemented. requires 'SOUND ON'.
 def exec_noise(ins):
@@ -514,6 +519,8 @@ def exec_noise(ins):
     util.range_check(0, 7, source)
     util.range_check(0, 15, volume)
     dur = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
+    if fp.Single.from_int(-65535).gt(dur) or dur.gt(fp.Single.from_int(65535)):
+        raise error.RunError(5)
     util.require(ins, util.end_statement)        
     one_over_44 = fp.Single.from_bytes(bytearray('\x8c\x2e\x3a\x7b')) # 1/44 = 0.02272727248
     dur_sec = dur.to_value()/18.2
