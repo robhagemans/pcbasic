@@ -104,10 +104,16 @@ def check_timer_event():
         state.basic_state.timer_handler.triggered = True
 
 def check_play_event():
-    state.basic_state.play_now = sound.music_queue_length()
-    if state.basic_state.play_last >= state.basic_state.play_trig and state.basic_state.play_now < state.basic_state.play_trig:    
-        state.basic_state.play_handler.triggered = True     
-    state.basic_state.play_last = state.basic_state.play_now
+    play_now = [sound.music_queue_length(voice) for voice in range(3)]
+    if state.basic_state.machine in ('tandy', 'pcjr'):
+        for voice in range(3):
+            if ( play_now[voice] <= state.basic_state.play_trig and play_now[voice] > 0 and 
+                    play_now[voice] != state.basic_state.play_last[voice] ):
+                state.basic_state.play_handler.triggered = True 
+    else:    
+        if state.basic_state.play_last[0] >= state.basic_state.play_trig and play_now[0] < state.basic_state.play_trig:    
+            state.basic_state.play_handler.triggered = True     
+    state.basic_state.play_last = play_now
 
 def check_com_events():
     ports = (state.io_state.devices['COM1:'], state.io_state.devices['COM2:'])
