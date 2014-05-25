@@ -66,4 +66,6 @@ def play_now(frequency, duration, fill, loop, volume, voice):
     else:    
         now_playing[voice] = subprocess.Popen(('beep -f %f -l %d -D %d' % (frequency, duration*fill*1000, duration*(1-fill)*1000)).split())
     
+def set_noise(is_white):
+    pass      
       

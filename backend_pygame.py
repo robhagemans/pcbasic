@@ -981,6 +981,9 @@ def busy():
         
 def play_sound(frequency, total_duration, fill, loop, voice=0, volume=15):
     sound_queue[voice].append(SoundGenerator(signal_sources[voice], frequency, total_duration, fill, loop, volume))
+
+def set_noise(is_white):
+    signal_sources[3].feedback = feedback_noise if is_white else feedback_periodic
     
 # implementation
 
@@ -997,6 +1000,8 @@ quiet_quit = 10000
 mixer_bits = 16
 sample_rate = 44100
 
+# initial condition - see dosbox source
+init_noise = 0x0f35
 # white noise feedback 
 feedback_noise = 0x4400 
 # 'periodic' feedback mask (15-bit rotation)
@@ -1005,8 +1010,8 @@ feedback_periodic = 0x4000
 feedback_tone = 0x2 
 
 class SignalSource(object):
-    def __init__(self, feedback):
-        self.lfsr = 0x1
+    def __init__(self, feedback, init=0x01):
+        self.lfsr = init 
         self.feedback = feedback
     
     def next(self):
@@ -1018,7 +1023,8 @@ class SignalSource(object):
         return bit
 
 # three tone voices plus a noise source
-signal_sources = [ SignalSource(feedback_tone), SignalSource(feedback_tone), SignalSource(feedback_tone), SignalSource(feedback_noise) ]
+signal_sources = [ SignalSource(feedback_tone), SignalSource(feedback_tone), SignalSource(feedback_tone), 
+                        SignalSource(feedback_noise, init_noise) ]
 
 # The SN76489 attenuates the volume by 2dB for each step in the volume register.
 # see http://www.smspower.org/Development/SN76489

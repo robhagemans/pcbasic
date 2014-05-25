@@ -507,7 +507,20 @@ def exec_play(ins):
 def exec_noise(ins):
     if not state.console_state.sound_on:
         raise error.RunError(5)
-    raise error.RunError(73)
+    source = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    util.require_read(ins, (',',))
+    volume = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    util.require_read(ins, (',',))
+    util.range_check(0, 7, source)
+    util.range_check(0, 15, volume)
+    dur = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
+    util.require(ins, util.end_statement)        
+    one_over_44 = fp.Single.from_bytes(bytearray('\x8c\x2e\x3a\x7b')) # 1/44 = 0.02272727248
+    dur_sec = dur.to_value()/18.2
+    if one_over_44.gt(dur):
+        sound.play_noise(source, volume, dur_sec, loop=True)
+    else:
+        sound.play_noise(source, volume, dur_sec)
     
  
 ##########################################################
