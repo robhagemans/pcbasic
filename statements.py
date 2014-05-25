@@ -503,7 +503,7 @@ def exec_play(ins):
         # retrieve Music Macro Language string
         mml0 = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         mml1, mml2 = '', ''
-        if (state.basic_state.machine == 'tandy' or (state.basic_state.machine == 'pcjr' and state.console_state.sound_on)
+        if ((state.basic_state.machine == 'tandy' or (state.basic_state.machine == 'pcjr' and state.console_state.sound_on))
                 and util.skip_white_read_if(ins, (',',))):
             mml1 = vartypes.pass_string_unpack(expressions.parse_expression(ins))
             if util.skip_white_read_if(ins, (',',)):

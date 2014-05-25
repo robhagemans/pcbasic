@@ -38,7 +38,7 @@ def beep():
     play_sound(800, 0.25)
 
 def play_sound(frequency, duration, fill=1, loop=False, voice=0, volume=15):
-    if (state.basic_state.machine == 'tandy' or (state.basic_state.machine == 'pcjr' and state.basic_state.sound_on)
+    if ((state.basic_state.machine == 'tandy' or (state.basic_state.machine == 'pcjr' and state.basic_state.sound_on))
         and frequency < 110. and frequency != 0):
         # pcjr, tandy play low frequencies as 110Hz
         frequency = 110.
