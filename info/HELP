@@ -3409,6 +3409,7 @@ ERRORS:
 
 SOUND statement
 SOUND frequency, duration
+SOUND frequency, duration [, volume [, voice] ]       [--pcjr and --tandy only]
 ---------------
 Produces a sound at 'frequency' Hz for 'duration'/18.2 seconds.
 'frequency' is a number-valued expression in [37, 32767].
@@ -3419,6 +3420,13 @@ until the sound is finished. Foreground mode is default. Unlike PLAY, the
 sound played by the most recent SOUND statement always plays in the background,
 even if PLAY "MF" has been entered. In background mode, each SOUND statement 
 counts as 1 toward the length of the queue reported by the PLAY function.
+PCJR and TANDY:
+    'frequency' is a number-valued expression in [1, 32767]. Frequencies less
+    than 110 Hz are played as 110 Hz.
+    'volume' is a number-valued expression in [0, 15]. 0 is silent, 15 is full
+    volume; every step less reduces the volume by 2 dB.
+    'voice' is a number-valued expression in [0, 2], indicating which of the 
+    three tone voice channels is used for this sound.
 NOTES:
 -   If 'duration' is zero, any active background sound is stopped and 
     the sound queue is emptied.
@@ -3427,12 +3435,14 @@ NOTES:
     executed. This is also the behaviour for negative 'duration'.
 -   If 'frequency' equals 32767, a silence of length 'duration' is queued.
 ERRORS:
--   If 'frequency' is not in [37, 32767], and 'duration' is not zero, raises 
-    ILLEGAL FUNCTION CALL.
+-   If 'frequency' is not in its allowed range, and 'duration' is not zero, 
+    raises ILLEGAL FUNCTION CALL.
 -   If 'duration' is not in [-65535, 65535], raises ILLEGAL FUNCTION CALL.
+-   If 'volume' is not in [0, 15], raises ILLEGAL FUNCTION CALL.
+-   If 'voice' is not in [0, 2], raises ILLEGAL FUNCTION CALL.
 
 
-SOUND statement (advanced-sound switch; --pcjr and --tandy only)
+SOUND statement (advanced-sound switch)               [--pcjr and --tandy only]
 SOUND {ON | OFF}
 ---------------
 PCJR and TANDY:
