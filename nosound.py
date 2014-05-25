@@ -12,29 +12,30 @@
 import datetime
 import state
 
-music_queue = []
+music_queue = [ [], [], [], [] ]
 
 def init_sound():
     return True
     
 def stop_all_sound():
     global music_queue
-    music_queue = []
+    music_queue = [ [], [], [], [] ]
     
-def play_sound(frequency, duration, fill=1, loop=False):
-    if music_queue:
-        latest = max(music_queue)
+def play_sound(frequency, duration, fill=1, loop=False, voice=0, volume=15):
+    if music_queue[voice]:
+        latest = max(music_queue[voice])
     else:    
         latest = datetime.datetime.now()
-    music_queue.append(latest + datetime.timedelta(seconds=duration))
+    music_queue[voice].append(latest + datetime.timedelta(seconds=duration))
         
 def check_sound():
     now = datetime.datetime.now()
-    while music_queue and now >= music_queue[0]:
-        music_queue.pop(0)
-    # remove the notes that have been played
-    while len(state.console_state.music_queue) > len(music_queue):
-        state.console_state.music_queue.pop(0)
+    for voice in range(4):
+        while music_queue[voice] and now >= music_queue[voice][0]:
+            music_queue[voice].pop(0)
+        # remove the notes that have been played
+        while len(state.console_state.music_queue[voice]) > len(music_queue[voice]):
+            state.console_state.music_queue[voice].pop(0)
     
 def busy():
     return False        
