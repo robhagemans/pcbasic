@@ -50,7 +50,10 @@ def play_sound(frequency, duration, fill=1, loop=False, voice=0, volume=15):
 
 def play_noise(source, volume, duration, loop=False):
     backend.sound.set_noise(source > 3)
-    play_sound(state.console_state.noise_freq[source], duration, 1, loop, 3, volume)
+    frequency = state.console_state.noise_freq[source]
+    state.console_state.music_queue[3].append((frequency, duration, 1, loop, volume))
+    backend.sound.play_sound(frequency, duration, 1, loop, 3, volume) 
+    # don't wait for noise
 
 def stop_all_sound():
     state.console_state.music_queue = [ [], [], [], [] ]
