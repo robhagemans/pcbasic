@@ -83,7 +83,19 @@ def load_font(cpi):
         font += [lines]
     return height, font
 
-
+# load a 256-character 8x8 font dump with no headers
+def load_rom_font(name, width):
+    try:
+        fontfile = open(name, 'rb')
+        font = []
+        num_chars, height = 256, 8
+        for _ in range(num_chars):
+            lines = ''.join(fontfile.read(height*(width//8)))
+            font += [lines]
+        return font
+    except IOError:
+        return None
+        
 cpi_files = {
         'ega.cpi': (    
             437, # United States

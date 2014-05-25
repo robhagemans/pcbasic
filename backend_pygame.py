@@ -215,7 +215,7 @@ if pygame:
 # set constants based on commandline arguments
 
 def prepare(args):
-    global fullscreen, smooth, noquit, display_size, display_size_text
+    global fullscreen, smooth, noquit, display_size, display_size_text, romfont
     try:
         x, y = args.dimensions[0].split(',')
         display_size = (int(x), int(y))
@@ -232,6 +232,7 @@ def prepare(args):
         smooth = True    
     if args.noquit:
         noquit = True
+    romfont = args.rom_font
 
 ####################################
 # state saving and loading
@@ -293,6 +294,10 @@ def init():
         logging.warning('Could not load codepage font. Failed to initialise PyGame console.')
         return False
     unicodepage.load_codepage(state.console_state.codepage)
+    if romfont:
+        font8 = cpi_font.load_rom_font(romfont, 8)
+        if font8:
+            fonts[8] = font8
     # get physical screen dimensions (needs to be called before set_mode)
     display_info = pygame.display.Info()
     physical_size = display_info.current_w, display_info.current_h
