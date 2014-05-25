@@ -935,7 +935,8 @@ def init_sound():
     
 def stop_all_sound():
     global sound_queue, loop_sound
-    stop_channel(0)
+    for voice in range(4):
+        stop_channel(voice)
     loop_sound = [ None, None, None, None ]
     sound_queue = [ [], [], [], [] ]
     
@@ -1098,10 +1099,11 @@ class SoundGenerator(object):
         return pygame.sndarray.make_sound(chunk)   
 
 def stop_channel(channel):
-    mixer.Channel(channel).stop()
-    # play short silence to avoid blocking the channel - it won't play on queue()
-    silence = pygame.sndarray.make_sound(numpy.zeros(1, numpy.int16))
-    mixer.Channel(channel).play(silence)
+    if mixer.get_init():
+        mixer.Channel(channel).stop()
+        # play short silence to avoid blocking the channel - it won't play on queue()
+        silence = pygame.sndarray.make_sound(numpy.zeros(1, numpy.int16))
+        mixer.Channel(channel).play(silence)
     
 def pre_init_mixer():
     if mixer:
