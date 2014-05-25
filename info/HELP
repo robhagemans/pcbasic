@@ -2854,12 +2854,15 @@ TANDY and PCJR:
     The three separate mml strings correspond to the three tone voice channels.
     The notes in these strings are played synchronously.
     Volume control:
-        Vn  Set the volume to 'n', in the range [0, 15].               
+        Vn  Set the volume to 'n', in the range [0, 15]. On PCjr, if SOUND ON
+            has not been executed, this has no effect. On Tandy it does.              
 ERRORS:
 -   If 'mml_string' has a numeric value, TYPE MISMATCH is raised.
 -   If 'mml_string' has errors in the MML, ILLEGAL FUNCTION CALL is raised.
 -   If a variable in the mml_string is of incorrect type, TYPE MISMATCH.
 -   If no mml string is specified, raises MISSING OPERAND.
+-   On PCjr, if SOUND ON has not been executed, using the three-voice syntax
+    will raise SYNTAX ERROR. This is not the case on Tandy.
 
 
 PLAY function

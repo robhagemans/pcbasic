@@ -465,7 +465,8 @@ def exec_sound(ins):
     dur = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
     if fp.Single.from_int(-65535).gt(dur) or dur.gt(fp.Single.from_int(65535)):
         raise error.RunError(5)
-    if state.basic_state.machine in ('pcjr', 'tandy') and util.skip_white_read_if(ins, (',',)):
+    if (state.basic_state.machine == 'tandy' or (state.basic_state.machine == 'pcjr' and state.console_state.sound_on) 
+            and util.skip_white_read_if(ins, (',',))):
         volume = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         util.range_check(0, 15, volume)        
         if util.skip_white_read_if(ins, (',',)):
@@ -479,7 +480,7 @@ def exec_sound(ins):
     if dur.is_zero():
         sound.stop_all_sound()
         return
-    if state.basic_state.machine in ('pcjr', 'tandy'):
+    if state.basic_state.machine == 'tandy': 
         util.range_check(0, 32767, freq) 
     else:    
         if freq != 0:
@@ -502,7 +503,8 @@ def exec_play(ins):
         # retrieve Music Macro Language string
         mml0 = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         mml1, mml2 = '', ''
-        if state.basic_state.machine in ('pcjr', 'tandy') and util.skip_white_read_if(ins, (',',)):
+        if (state.basic_state.machine == 'tandy' or (state.basic_state.machine == 'pcjr' and state.console_state.sound_on)
+                and util.skip_white_read_if(ins, (',',))):
             mml1 = vartypes.pass_string_unpack(expressions.parse_expression(ins))
             if util.skip_white_read_if(ins, (',',)):
                 mml2 = vartypes.pass_string_unpack(expressions.parse_expression(ins))

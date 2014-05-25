@@ -322,7 +322,8 @@ def play_parse_mml(mml_list):
                 elif c == 'B':      state.console_state.music_foreground = False
                 else:
                     raise error.RunError(5)    
-            elif state.basic_state.machine in ('pcjr', 'tandy') and c == 'V':
+            elif c == 'V' and ( state.basic_state.machine=='tandy' or 
+                                (state.basic_state.machine=='pcjr' and state.console_state.sound_on)): 
                 state.basic_state.play_state[voice].volume = min(15, max(0, ml_parse_number(gmls)))
             else:
                 raise error.RunError(5)    
