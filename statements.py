@@ -251,10 +251,6 @@ def exec_debug(ins):
         debug_cmd += ins.read(1)
     debug.debug_exec(debug_cmd)
 
-# PCjr/Tandy 1000 noise generator; not implemented. requires 'SOUND ON'.
-def exec_noise(ins):
-    raise error.RunError(73)
-    
 # PCjr builtin serial terminal emulator; not implemented
 def exec_term(ins):
     if state.basic_state.machine != 'pcjr':
@@ -459,6 +455,11 @@ def exec_beep(ins):
         sound.wait_music(wait_last=False)
     
 def exec_sound(ins):
+    # Tandy/PCjr SOUND ON, OFF
+    if state.basic_state.machine in ('pcjr', 'tandy') and util.skip_white(ins) in ('\x95', '\xDD'):
+        state.console_state.sound_on = (ins.read(1) == '\x95')
+        util.require(ins, util.end_statement)
+        return
     freq = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.require_read(ins, (',',))
     dur = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
@@ -488,7 +489,14 @@ def exec_play(ins):
         mml = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_expression)
         draw_and_play.play_parse_mml(mml)
-           
+          
+# PCjr/Tandy 1000 noise generator; not implemented. requires 'SOUND ON'.
+def exec_noise(ins):
+    if not state.console_state.sound_on:
+        raise error.RunError(5)
+    raise error.RunError(73)
+    
+ 
 ##########################################################
 # machine emulation
          
