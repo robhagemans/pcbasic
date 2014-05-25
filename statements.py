@@ -480,9 +480,10 @@ def exec_sound(ins):
         sound.stop_all_sound()
         return
     if state.basic_state.machine in ('pcjr', 'tandy'):
-        util.range_check(1, 32767, freq) 
+        util.range_check(0, 32767, freq) 
     else:    
-        util.range_check(37, 32767, freq) # 32767 is pause
+        if freq != 0:
+            util.range_check(37, 32767, freq) # 32767 is pause
     one_over_44 = fp.Single.from_bytes(bytearray('\x8c\x2e\x3a\x7b')) # 1/44 = 0.02272727248
     dur_sec = dur.to_value()/18.2
     if one_over_44.gt(dur):
