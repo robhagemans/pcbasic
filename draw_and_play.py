@@ -296,7 +296,7 @@ def play_parse_mml(mml_list):
                             numstr+=c 
                             c = util.skip(gmls, ml_whitepace) 
                         length = vartypes.pass_int_unpack(representation.str_to_value_keep(('$', numstr)))
-                        dur = 2./float(length)
+                        dur = 1./float(length)
                     elif c in ('#', '+'):
                         gmls.read(1)
                         note += '#'
@@ -326,6 +326,6 @@ def play_parse_mml(mml_list):
                 state.basic_state.play_state[voice].volume = min(15, max(0, ml_parse_number(gmls)))
             else:
                 raise error.RunError(5)    
-        if state.console_state.music_foreground:
-            sound.wait_music()
-                                 
+    if state.console_state.music_foreground:
+        sound.wait_music()
+ 
