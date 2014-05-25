@@ -2866,10 +2866,16 @@ ERRORS:
 
 
 PLAY function
-length = PLAY(dummy)
+length = PLAY(voice)
 -------------
 Returns the number of notes in the background music queue.
-'dummy' is a number-valued expression in [0,255]. Is value has no effect.
+'voice' is a number-valued expression in [0,255]. 
+PCJR and TANDY:
+    On PCjr and Tandy, the 'voice' value indicates for which tone voice channel
+    the number of notes is to be returned. If 'voice' is not in [0,2], the 
+    queue for voice 0 is returned.
+OTHERS:
+    The 'voice' value has no effect.    
 The return value is in [0,16].
 NOTES:
 -   There are at most 16 notes in the music queue. Some GW-BASIC manuals
