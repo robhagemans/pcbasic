@@ -942,6 +942,7 @@ def stop_all_sound():
 # process sound queue in event loop
 def check_sound():
     global loop_sound
+    current_chunk = [ None, None, None, None ]
     if sound_queue == [ [], [], [], [] ] and loop_sound == [ None, None, None, None ]:
         check_quit_sound()
     else:    
@@ -954,14 +955,13 @@ def check_sound():
             if mixer.Channel(voice).get_queue() == None:
                 if loop_sound[voice]:
                     # loop the current playing sound; ok to interrupt it with play cos it's the same sound as is playing
-                    current_chunk = loop_sound[voice].build_chunk()
-                    mixer.Channel(voice).queue(current_chunk)
+                    current_chunk[voice] = loop_sound[voice].build_chunk()
                 elif sound_queue[voice]:
-                    current_chunk = sound_queue[voice][0].build_chunk()
-                    if not current_chunk:
+                    current_chunk[voice] = sound_queue[voice][0].build_chunk()
+                    if not current_chunk[voice]:
                         sound_queue[voice].pop(0)
                         try:
-                            current_chunk = sound_queue[voice][0].build_chunk()
+                            current_chunk[voice] = sound_queue[voice][0].build_chunk()
                         except IndexError:
                             check_quit_sound()
                             return 0
@@ -970,7 +970,9 @@ def check_sound():
                         # any next sound in the sound queue will stop this looping sound
                     else:   
                         loop_sound[voice] = None
-                    mixer.Channel(voice).queue(current_chunk)
+    for voice in range(4):
+        if current_chunk[voice]:
+            mixer.Channel(voice).queue(current_chunk[voice])
     for voice in range(4):
         # remove the notes that have been played
         while len(state.console_state.music_queue[voice]) > len(sound_queue[voice]):
