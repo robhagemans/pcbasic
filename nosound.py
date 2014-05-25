@@ -39,4 +39,7 @@ def check_sound():
     
 def busy():
     return False        
-      
+
+def set_noise(is_white):
+    pass      
+    

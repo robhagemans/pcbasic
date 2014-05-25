@@ -16,6 +16,11 @@ state.console_state.music_foreground = True
 state.console_state.music_queue = [[], [], [], []]
 state.console_state.sound_on = False
 
+base_freq = 3579545./1024.
+state.console_state.noise_freq = [ base_freq / v for v in [1., 2., 4., 1., 1., 2., 4., 1.] ]
+state.console_state.noise_freq[3] = 0.
+state.console_state.noise_freq[7] = 0.
+
 def init_sound():
     if not backend.sound.init_sound():
         return False
@@ -35,8 +40,17 @@ def beep():
 def play_sound(frequency, duration, fill=1, loop=False, voice=0, volume=15):
     state.console_state.music_queue[voice].append((frequency, duration, fill, loop, volume))
     backend.sound.play_sound(frequency, duration, fill, loop, voice, volume) 
+    if voice == 2:
+        # reset linked noise frequencies
+        # /2 because we're using a 0x4000 rotation rather than 0x8000
+        state.console_state.noise_freq[3] = frequency/2.
+        state.console_state.noise_freq[7] = frequency/2.
     # at most 16 notes in the sound queue (not 32 as the guide says!)
     wait_music(15, wait_last=False)    
+
+def play_noise(source, volume, duration, loop=False):
+    backend.sound.set_noise(source > 3)
+    play_sound(state.console_state.noise_freq[source], duration, 1, loop, 3, volume)
 
 def stop_all_sound():
     state.console_state.music_queue = [ [], [], [], [] ]
