@@ -934,28 +934,26 @@ def init_sound():
     return (numpy != None)
     
 def stop_all_sound():
-    global sound_queue
-    mixer.stop()
+    global sound_queue, loop_sound
+    stop_channel(0)
+    loop_sound = None
     sound_queue = []
     
 # process sound queue in event loop
 def check_sound():
-    global loop_sound, loop_sound_playing
-    if not sound_queue:
+    global loop_sound
+    if not sound_queue and not loop_sound:
         check_quit_sound()
     else:    
         check_init_mixer()
-        # stop looping sound, allow queue to pass
-        if loop_sound_playing:
-            loop_sound_playing.stop()
-            loop_sound_playing = None
+        # if there is a sound queue, stop looping sound
+        if sound_queue and loop_sound:
+            stop_channel(0)
+            loop_sound = None
         if mixer.Channel(0).get_queue() == None:
             if loop_sound:
                 # loop the current playing sound; ok to interrupt it with play cos it's the same sound as is playing
-                mixer.Channel(0).play(loop_sound, loops=-1)
-                sound_queue.pop(0)
-                loop_sound_playing = loop_sound                
-                loop_sound = None
+                current_chunk = loop_sound.build_chunk()
             else:
                 current_chunk = sound_queue[0].build_chunk()
                 if not current_chunk:
@@ -965,18 +963,18 @@ def check_sound():
                     except IndexError:
                         check_quit_sound()
                         return 0
-                mixer.Channel(0).queue(current_chunk)
                 if sound_queue[0].loop:
-                    loop_sound = current_chunk 
+                    loop_sound = sound_queue.pop(0)
                     # any next sound in the sound queue will stop this looping sound
                 else:   
                     loop_sound = None
+            mixer.Channel(0).queue(current_chunk)
     # remove the notes that have been played
     while len(state.console_state.music_queue) > len(sound_queue):
         state.console_state.music_queue.pop(0)
         
 def busy():
-    return not loop_sound_playing and mixer.get_busy()
+    return not loop_sound and mixer.get_busy()
         
 def play_sound(frequency, total_duration, fill, loop, volume=15, voice=0):
     sound_queue.append(SoundGenerator(signal_sources[0], frequency, total_duration, fill, loop, volume))
@@ -992,16 +990,14 @@ sample_rate = 44100
 quiet_ticks = 0        
 quiet_quit = 10000
 
-# loop the sound  in the mixer queue
+# currently looping sound
 loop_sound = None
-# currrent sound that is looping
-loop_sound_playing = None
 
 # white noise feedback 
 feedback_noise = 0x4400 
 # 'periodic' feedback mask (15-bit rotation)
 feedback_periodic = 0x4000
-# squre wave feedback mask
+# square wave feedback mask
 feedback_tone = 0x2 
 
 class SignalSource(object):
@@ -1018,7 +1014,7 @@ class SignalSource(object):
         return bit
 
 # three tone voices plus a noise source
-signal_sources = [ SignalSource(feedback_noise), SignalSource(feedback_tone), SignalSource(feedback_tone), SignalSource(feedback_noise) ]
+signal_sources = [ SignalSource(feedback_tone), SignalSource(feedback_tone), SignalSource(feedback_tone), SignalSource(feedback_noise) ]
 
 # The SN76489 attenuates the volume by 2dB for each step in the volume register.
 # see http://www.smspower.org/Development/SN76489
@@ -1088,6 +1084,13 @@ class SoundGenerator(object):
                 self.count_samples = self.num_samples
         # if loop, attach one chunk to loop, do not increment count
         return pygame.sndarray.make_sound(chunk)   
+
+def stop_channel(channel):
+    mixer.Channel(channel).stop()
+    # play short silence to avoid blocking the channel - it won't play on queue()
+    silence = pygame.sndarray.make_sound(numpy.zeros(1, numpy.int16))
+    mixer.Channel(channel).play(silence)
+
     
 def pre_init_mixer():
     if mixer:
