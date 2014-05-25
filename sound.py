@@ -38,6 +38,9 @@ def beep():
     play_sound(800, 0.25)
 
 def play_sound(frequency, duration, fill=1, loop=False, voice=0, volume=15):
+    if state.basic_state.machine in ('pcjr', 'tandy') and frequency < 110. and frequency != 0:
+        # pcjr, tandy play low frequencies as 110Hz
+        frequency = 110.
     state.console_state.music_queue[voice].append((frequency, duration, fill, loop, volume))
     backend.sound.play_sound(frequency, duration, fill, loop, voice, volume) 
     if voice == 2:
