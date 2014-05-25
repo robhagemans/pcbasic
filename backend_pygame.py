@@ -970,13 +970,13 @@ def check_sound():
                     loop_sound = None
             mixer.Channel(0).queue(current_chunk)
     # remove the notes that have been played
-    while len(state.console_state.music_queue) > len(sound_queue):
-        state.console_state.music_queue.pop(0)
+    while len(state.console_state.music_queue[0]) > len(sound_queue):
+        state.console_state.music_queue[0].pop(0)
         
 def busy():
     return not loop_sound and mixer.get_busy()
         
-def play_sound(frequency, total_duration, fill, loop, volume=15, voice=0):
+def play_sound(frequency, total_duration, fill, loop, voice=0, volume=15):
     sound_queue.append(SoundGenerator(signal_sources[0], frequency, total_duration, fill, loop, volume))
     
 # implementation
