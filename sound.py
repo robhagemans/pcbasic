@@ -39,11 +39,14 @@ def play_sound(frequency, duration, fill=1, loop=False, voice=0, volume=15):
     wait_music(15, wait_last=False)    
 
 def stop_all_sound():
-    state.console_state.music_queue = []
+    state.console_state.music_queue = [ [], [], [], [] ]
     backend.sound.stop_all_sound()
         
 def wait_music(wait_length=0, wait_last=True):
-    while (wait_last and backend.sound.busy()) or len(state.console_state.music_queue) + wait_last - 1 > wait_length:
+    while ((wait_last and backend.sound.busy()) 
+                or len(state.console_state.music_queue[0]) + wait_last - 1 > wait_length
+                or len(state.console_state.music_queue[1]) + wait_last - 1 > wait_length
+                or len(state.console_state.music_queue[2]) + wait_last - 1 > wait_length ):
         backend.wait()
         
         
