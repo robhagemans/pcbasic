@@ -2409,15 +2409,17 @@ ERRORS:
 -   If 'var_0', ... are string names, NEXT WITHOUT FOR is raised.
 
 
-NOISE statement [--pcjr only]
+NOISE statement [--pcjr and --tandy only]
 NOISE type, volume, duration
 -------------
 This statement is not present in default mode but can be activated by using
-the --pcjr command-line option.
+the --pcjr or --tandy command-line options.
 Raises ADVANCED FEATURE.
 NOTES:
 -   On the IBM PCjr's Cartridge BASIC and Tandy 1000 GW-BASIC, this statement
     produces various kinds of noise. This is not implemented in PC-BASIC 3.23.
+ERRORS:
+-   IF SOUND ON has not been executed, raises ILLEGAL FUNCTION CALL.
 
 
 OCT$ function
@@ -3428,6 +3430,14 @@ ERRORS:
 -   If 'frequency' is not in [37, 32767], and 'duration' is not zero, raises 
     ILLEGAL FUNCTION CALL.
 -   If 'duration' is not in [-65535, 65535], raises ILLEGAL FUNCTION CALL.
+
+
+SOUND statement (advanced-sound switch; --pcjr and --tandy only)
+SOUND {ON | OFF}
+---------------
+PCJR and TANDY:
+    Toggles the availability of advanced sound capabilities, including 3-voice 
+    sound, noise generation and volume control.
 
 
 SPACE$ function
