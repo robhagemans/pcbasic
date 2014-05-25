@@ -2812,6 +2812,7 @@ ERRORS:
 
 PLAY statement
 PLAY mml_string
+PLAY [mml_string_0] [, [mml_string_1] ] [, [mml_string_2] ]]   [--tandy --pcjr]
 --------------
 Plays the tune defined by string-valued expression 'mml_string'. 'mml_string' 
 must be a string-valued expression in Music Macro Language (MML). 
@@ -2848,11 +2849,17 @@ Subroutine command:
 Numeric variables 'n' in the commands above can be:
     -   an integer literal e.g. "100"
     -   a numeric variable name preceded by = and followed by ; e.g. "=name;"
-    -   the result of VARPTR$() on a numeric variable, preceded by =.               
+    -   the result of VARPTR$() on a numeric variable, preceded by =.  
+TANDY and PCJR:
+    The three separate mml strings correspond to the three tone voice channels.
+    The notes in these strings are played synchronously.
+    Volume control:
+        Vn  Set the volume to 'n', in the range [0, 15].               
 ERRORS:
 -   If 'mml_string' has a numeric value, TYPE MISMATCH is raised.
 -   If 'mml_string' has errors in the MML, ILLEGAL FUNCTION CALL is raised.
 -   If a variable in the mml_string is of incorrect type, TYPE MISMATCH.
+-   If no mml string is specified, raises MISSING OPERAND.
 
 
 PLAY function
