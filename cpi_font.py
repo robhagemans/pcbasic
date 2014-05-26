@@ -84,11 +84,11 @@ def load_font(cpi):
     return height, font
 
 # load a 256-character 8x8 font dump with no headers
-def load_rom_font(name, width):
+def load_rom_font(name, height):
     try:
         fontfile = open(name, 'rb')
         font = []
-        num_chars, height = 256, 8
+        num_chars, width = 256, 8
         for _ in range(num_chars):
             lines = ''.join(fontfile.read(height*(width//8)))
             font += [lines]
@@ -239,4 +239,4 @@ cpi_files = {
              3848, #Brazilian ABICOMP
             ),
     }
-    
+

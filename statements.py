@@ -251,7 +251,7 @@ def exec_debug(ins):
         debug_cmd += ins.read(1)
     debug.debug_exec(debug_cmd)
 
-# PCjr builtin serial terminal emulator; not implemented
+# PCjr builtin serial terminal emulator
 def exec_term(ins):
     if state.basic_state.machine != 'pcjr':
         # on Tandy, raises Internal Error
