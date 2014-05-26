@@ -36,20 +36,6 @@ class ScreenBuffer(object):
     def __init__(self, bwidth, bheight):
         self.row = [ScreenRow(bwidth) for _ in xrange(bheight)]
         
-#  font_height, attr, num_colours, num_palette, width, num_pages, bitsperpixel, font_width
-mode_data = {
-    0: ( 16,  7, 32, 64, 80, 4, 4, 8 ), # width 8 or 9  
-    1: (  8,  3,  4, 16, 40, 1, 2, 8 ),
-    2: (  8,  1,  2, 16, 80, 1, 1, 8 ), 
-    3: (  8, 15, 16, 16, 20, 2, 4, 8 ),
-    4: (  8, 15,  4, 16, 40, 2, 2, 8 ),      
-    5: (  8, 15, 16, 16, 40, 1, 4, 8 ),      
-    6: (  8, 15,  4, 16, 80, 1, 2, 8 ),      
-    7: (  8, 15, 16, 16, 40, 8, 4, 8 ),
-    8: (  8, 15, 16, 16, 80, 4, 4, 8 ),
-    9: ( 14, 15, 16, 64, 80, 2, 4, 8 ),
-    }
-
 # default codes for KEY autotext
 # F1-F10 
 function_key = { 
@@ -69,9 +55,12 @@ keys_line_replace_chars = {
         '\x0B': '\x7f',    '\x0C': '\x16',    '\x0D': '\x1b',    '\x1C': '\x10',
         '\x1D': '\x11',    '\x1E': '\x18',    '\x1F': '\x19',
     }        
-
-# codepage suggestion for backend
-state.console_state.codepage = 437    
+    
+# KEY ON?
+state.console_state.keys_visible = True
+# user definable key list
+state.console_state.key_replace = [ 
+    'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r','TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r' ]
 
 # number of columns, counting 1..width
 state.console_state.width = 80
@@ -114,6 +103,27 @@ state.console_state.input_closed = False
 # capslock mode 
 state.console_state.caps = False
 
+
+# pen and stick
+state.console_state.pen_is_on = False
+state.console_state.stick_is_on = False
+
+# for SCREEN
+
+#  font_height, attr, num_colours, num_palette, width, num_pages, bitsperpixel, font_width
+mode_data = {
+    0: ( 16,  7, 32, 64, 80, 4, 4, 8 ), # height 8, 14, or 16; font width 8 or 9; height 40 or 80 
+    1: (  8,  3,  4, 16, 40, 1, 2, 8 ),
+    2: (  8,  1,  2, 16, 80, 1, 1, 8 ), 
+    3: (  8, 15, 16, 16, 20, 2, 4, 8 ),
+    4: (  8, 15,  4, 16, 40, 2, 2, 8 ),      
+    5: (  8, 15, 16, 16, 40, 1, 4, 8 ),      
+    6: (  8, 15,  4, 16, 80, 1, 2, 8 ),      
+    7: (  8, 15, 16, 16, 40, 8, 4, 8 ),
+    8: (  8, 15, 16, 16, 80, 4, 4, 8 ),
+    9: ( 14, 15, 16, 64, 80, 2, 4, 8 ),
+    }
+
 # officially, whether colours are displayed. in reality, SCREEN just clears the screen if this value is changed
 state.console_state.colorswitch = 1
 # SCREEN mode (0 is textmode)
@@ -123,15 +133,9 @@ state.console_state.apagenum = 0
 # number of visible page
 state.console_state.vpagenum = 0
 
-# pen and stick
-state.console_state.pen_is_on = False
-state.console_state.stick_is_on = False
-    
-# KEY ON?
-state.console_state.keys_visible = True
-# user definable key list
-state.console_state.key_replace = [ 
-    'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r','TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r' ]
+# codepage suggestion for backend
+state.console_state.codepage = 437    
+
 
 #############################
 # init
