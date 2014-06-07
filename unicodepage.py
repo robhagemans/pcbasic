@@ -24,57 +24,40 @@ def from_unicode(s):
 
 def load_codepage(codepage_name):
     global cp_to_unicode, unicode_to_cp, cp_to_utf8, utf8_to_cp
+    cp_to_unicode = dict(enumerate(cp437))
     path = os.path.dirname(os.path.realpath(__file__))
     name = os.path.join(path, 'encoding', codepage_name + '.utf8')
     try:
         f = open(name, 'rb')
         # convert utf8 string to dict
         dict_string = f.read().decode('utf-8')[:128]
-        cp_to_unicode = {}
         for i in range(128, 256):
             cp_to_unicode[i] = dict_string[i-128]
     except IOError:
         logging.warning('Could not find unicode mapping table for codepage %s. Falling back to codepage 437.', codepage_name)
-        cp_to_unicode = cp437
         codepage_name = '437'
     # update dict with basic ASCII and special graphic characters
-    cp_to_unicode.update(ascii)    
-    cp_to_unicode.update(special_graphic)    
     unicode_to_cp = dict((reversed(item) for item in cp_to_unicode.items()))
     cp_to_utf8 = dict([ (chr(s[0]), s[1].encode('utf-8')) for s in cp_to_unicode.items()])
     utf8_to_cp = dict((reversed(item) for item in cp_to_utf8.items()))
     return codepage_name  
       
-ascii = dict(( (c, unichr(c)) for c in range(127) ))
+cp437 = (
+    u'\u0000\u263A\u263B\u2665\u2666\u2663\u2660\u2022\u25D8\u25CB\u25D9\u2642\u2640\u266A\u266B\u263C' +
+    u'\u25BA\u25C4\u2195\u203C\u00B6\u00A7\u25AC\u21A8\u2191\u2193\u2192\u2190\u221F\u2194\u25B2\u25BC' +
+    u'\u0020\u0021\u0022\u0023\u0024\u0025\u0026\u0027\u0028\u0029\u002A\u002B\u002C\u002D\u002E\u002F' +
+    u'\u0030\u0031\u0032\u0033\u0034\u0035\u0036\u0037\u0038\u0039\u003A\u003B\u003C\u003D\u003E\u003F' +
+    u'\u0040\u0041\u0042\u0043\u0044\u0045\u0046\u0047\u0048\u0049\u004A\u004B\u004C\u004D\u004E\u004F' +
+    u'\u0050\u0051\u0052\u0053\u0054\u0055\u0056\u0057\u0058\u0059\u005A\u005B\u005C\u005D\u005E\u005F' +
+    u'\u0060\u0061\u0062\u0063\u0064\u0065\u0066\u0067\u0068\u0069\u006A\u006B\u006C\u006D\u006E\u006F' +
+    u'\u0070\u0071\u0072\u0073\u0074\u0075\u0076\u0077\u0078\u0079\u007A\u007B\u007C\u007D\u007E\u2302' +
+    u'\u00c7\u00fc\u00e9\u00e2\u00e4\u00e0\u00e5\u00e7\u00ea\u00eb\u00e8\u00ef\u00ee\u00ec\u00c4\u00c5' +
+    u'\u00c9\u00e6\u00c6\u00f4\u00f6\u00f2\u00fb\u00f9\u00ff\u00d6\u00dc\u00a2\u00a3\u00a5\u20a7\u0192' +
+    u'\u00e1\u00ed\u00f3\u00fa\u00f1\u00d1\u00aa\u00ba\u00bf\u2310\u00ac\u00bd\u00bc\u00a1\u00ab\u00bb' +
+    u'\u2591\u2592\u2593\u2502\u2524\u2561\u2562\u2556\u2555\u2563\u2551\u2557\u255d\u255c\u255b\u2510' +
+    u'\u2514\u2534\u252c\u251c\u2500\u253c\u255e\u255f\u255a\u2554\u2569\u2566\u2560\u2550\u256c\u2567' +
+    u'\u2568\u2564\u2565\u2559\u2558\u2552\u2553\u256b\u256a\u2518\u250c\u2588\u2584\u258c\u2590\u2580' +
+    u'\u03b1\u00df\u0393\u03c0\u03a3\u03c3\u00b5\u03c4\u03a6\u0398\u03a9\u03b4\u221e\u03c6\u03b5\u2229' +
+    u'\u2261\u00b1\u2265\u2264\u2320\u2321\u00f7\u2248\u00b0\u2219\u00b7\u221a\u207f\u00b2\u25a0\u00a0'
+    )
 
-special_graphic = {
-    0x00:   u'\u0000',     0x01:   u'\u263A',      0x02:   u'\u263B',     0x03:   u'\u2665',      0x04:   u'\u2666',    
-    0x05:   u'\u2663',     0x06:   u'\u2660',      0x07:   u'\u2022',     0x08:   u'\u25D8',      0x09:   u'\u25CB',      
-    0x0a:   u'\u25D9',     0x0b:   u'\u2642',      0x0c:   u'\u2640',     0x0d:   u'\u266A',      0x0e:   u'\u266B',      
-    0x0f:   u'\u263C',     0x10:   u'\u25BA',      0x11:   u'\u25C4',     0x12:   u'\u2195',      0x13:   u'\u203C',      
-    0x14:   u'\u00B6',     0x15:   u'\u00A7',      0x16:   u'\u25AC',     0x17:   u'\u21A8',      0x18:   u'\u2191',      
-    0x19:   u'\u2193',     0x1a:   u'\u2192',      0x1b:   u'\u2190',     0x1c:   u'\u221F',      0x1d:   u'\u2194',     
-    0x1e:   u'\u25B2',     0x1f:   u'\u25BC',      0x7f:   u'\u2302',
-    }
-
-cp437 = {
-    128: u'\xc7', 129: u'\xfc', 130: u'\xe9', 131: u'\xe2', 132: u'\xe4', 133: u'\xe0', 134: u'\xe5', 135: u'\xe7', 
-    136: u'\xea', 137: u'\xeb', 138: u'\xe8', 139: u'\xef', 140: u'\xee', 141: u'\xec', 142: u'\xc4', 143: u'\xc5', 
-    144: u'\xc9', 145: u'\xe6', 146: u'\xc6', 147: u'\xf4', 148: u'\xf6', 149: u'\xf2', 150: u'\xfb', 151: u'\xf9', 
-    152: u'\xff', 153: u'\xd6', 154: u'\xdc', 155: u'\xa2', 156: u'\xa3', 157: u'\xa5', 158: u'\u20a7', 159: u'\u0192', 
-    160: u'\xe1', 161: u'\xed', 162: u'\xf3', 163: u'\xfa', 164: u'\xf1', 165: u'\xd1', 166: u'\xaa', 167: u'\xba',
-    168: u'\xbf', 169: u'\u2310', 170: u'\xac', 171: u'\xbd', 172: u'\xbc', 173: u'\xa1', 174: u'\xab', 175: u'\xbb',
-    176: u'\u2591', 177: u'\u2592', 178: u'\u2593', 179: u'\u2502', 180: u'\u2524', 181: u'\u2561', 182: u'\u2562', 
-    183: u'\u2556', 184: u'\u2555', 185: u'\u2563', 186: u'\u2551', 187: u'\u2557', 188: u'\u255d', 189: u'\u255c', 
-    190: u'\u255b', 191: u'\u2510', 192: u'\u2514', 193: u'\u2534', 194: u'\u252c', 195: u'\u251c', 196: u'\u2500', 
-    197: u'\u253c', 198: u'\u255e', 199: u'\u255f', 200: u'\u255a', 201: u'\u2554', 202: u'\u2569', 203: u'\u2566', 
-    204: u'\u2560', 205: u'\u2550', 206: u'\u256c', 207: u'\u2567', 208: u'\u2568', 209: u'\u2564', 210: u'\u2565', 
-    211: u'\u2559', 212: u'\u2558', 213: u'\u2552', 214: u'\u2553', 215: u'\u256b', 216: u'\u256a', 217: u'\u2518', 
-    218: u'\u250c', 219: u'\u2588', 220: u'\u2584', 221: u'\u258c', 222: u'\u2590', 223: u'\u2580', 224: u'\u03b1', 
-    225: u'\xdf', 226: u'\u0393', 227: u'\u03c0', 228: u'\u03a3', 229: u'\u03c3', 230: u'\xb5', 231: u'\u03c4', 
-    232: u'\u03a6', 233: u'\u0398', 234: u'\u03a9', 235: u'\u03b4', 236: u'\u221e', 237: u'\u03c6', 238: u'\u03b5', 
-    239: u'\u2229', 240: u'\u2261', 241: u'\xb1', 242: u'\u2265', 243: u'\u2264', 244: u'\u2320', 245: u'\u2321', 
-    246: u'\xf7', 247: u'\u2248', 248: u'\xb0', 249: u'\u2219', 250: u'\xb7', 251: u'\u221a', 252: u'\u207f', 
-    253: u'\xb2', 254: u'\u25a0', 255: u'\xa0'
-    }
-     
