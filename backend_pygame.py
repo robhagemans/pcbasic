@@ -33,16 +33,21 @@ else:
     import pygame.mixer as mixer
 
 import logging
+import os
+
 import error
-import cpi_font
 import unicodepage 
 import console
 import state
 import sound
 import backend
 
+# this backend provides graphics commands
 supports_graphics = True
+# max number of colours in the palette
 max_palette = 64
+# default font family
+font_family = 'freedos'
 
 if pygame:
     # CGA palette choices
@@ -215,7 +220,7 @@ if pygame:
 # set constants based on commandline arguments
 
 def prepare(args):
-    global fullscreen, smooth, noquit, display_size, display_size_text, romfont, romfont_height
+    global fullscreen, smooth, noquit, display_size, display_size_text
     try:
         x, y = args.dimensions[0].split(',')
         display_size = (int(x), int(y))
@@ -232,11 +237,6 @@ def prepare(args):
         smooth = True    
     if args.noquit:
         noquit = True
-    if args.rom_font:    
-        romfont, romfont_height = args.rom_font.split(':')
-        romfont_height = int(romfont_height)
-    else:
-        romfont = None
         
 ####################################
 # state saving and loading
@@ -292,16 +292,13 @@ def init():
         pygame.display.quit()
         logging.warning('Refusing to open libcaca console. Failed to initialise PyGame console.')
         return False
-    fonts = cpi_font.load_codepage(state.console_state.codepage)
-    if fonts == None:
-        pygame.display.quit()
-        logging.warning('Could not load codepage font. Failed to initialise PyGame console.')
-        return False
-    unicodepage.load_codepage(state.console_state.codepage)
-    if romfont:
-        font8 = cpi_font.load_rom_font(romfont, romfont_height)
-        if font8:
-            fonts[romfont_height] = font8
+    fonts = {}
+    for height in (8, 14, 16):
+        fonts[height] = load_font(font_family, state.console_state.codepage, height)
+        if fonts[height] == None:
+            pygame.display.quit()
+            logging.warning('Could not load font %s_%s_%02d. Failed to initialise PyGame console.', font_family, state.console_state.codepage, height)
+            return False
     # get physical screen dimensions (needs to be called before set_mode)
     display_info = pygame.display.Info()
     physical_size = display_info.current_w, display_info.current_h
@@ -398,6 +395,26 @@ def close():
         pygame_android.close()
     pygame.joystick.quit()
     pygame.display.quit()    
+
+
+####################################
+# font
+
+# load a 256-character 8xN font dump with no headers
+def load_font(family, codepage, height):
+    path = os.path.dirname(os.path.realpath(__file__))
+    name = os.path.join(path, 'font', '%s_%s_%02d' % (family, codepage, height))
+    try:
+        fontfile = open(name, 'rb')
+        font = []
+        num_chars, width = 256, 8
+        for _ in range(num_chars):
+            lines = fontfile.read(height*(width//8))
+            font += [lines]
+        return font
+    except IOError:
+        return None
+        
 
 ####################################
 # console commands

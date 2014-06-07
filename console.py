@@ -134,7 +134,7 @@ state.console_state.apagenum = 0
 state.console_state.vpagenum = 0
 
 # codepage suggestion for backend
-state.console_state.codepage = 437    
+state.console_state.codepage = '437'    
 
 
 #############################
