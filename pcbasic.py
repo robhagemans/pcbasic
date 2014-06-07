@@ -170,7 +170,7 @@ def prepare_constants(args):
     if args.unprotect or args.conv:
         program.dont_protect = True    
     if args.codepage:
-        state.console_state.codepage = int(args.codepage)
+        state.console_state.codepage = args.codepage
     if args.caps:
         state.console_state.caps = True    
     # rename exec argument for convenience
@@ -202,7 +202,7 @@ def prepare_constants(args):
 
 
 def prepare_console(args):
-    unicodepage.load_codepage(state.console_state.codepage)
+    state.console_state.codepage = unicodepage.load_codepage(state.console_state.codepage)
     backend.penstick = nopenstick
     backend.sound = nosound
     if args.dumb or args.conv or (not args.graphical and not args.ansi and (not stdin_is_tty or not stdout_is_tty)):
