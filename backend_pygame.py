@@ -220,7 +220,7 @@ if pygame:
 # set constants based on commandline arguments
 
 def prepare(args):
-    global fullscreen, smooth, noquit, display_size, display_size_text
+    global fullscreen, smooth, noquit, display_size, display_size_text, font_family
     try:
         x, y = args.dimensions[0].split(',')
         display_size = (int(x), int(y))
@@ -231,6 +231,8 @@ def prepare(args):
         display_size_text = (int(x), int(y))
     except (ValueError, TypeError):
         pass    
+    if args.font_family:
+        font_family = args.font_family
     if args.fullscreen:
         fullscreen = True
     if args.smooth:
