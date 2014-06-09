@@ -124,6 +124,8 @@ mode_data = {
     9: ( 14, 15, 16, 64, 80, 2, 4, 8 ),
     }
 
+# default is EGA 64K
+state.console_state.video_mem_size = 65536
 # officially, whether colours are displayed. in reality, SCREEN just clears the screen if this value is changed
 state.console_state.colorswitch = 1
 # SCREEN mode (0 is textmode)
@@ -170,13 +172,18 @@ def init():
         screen(None, None, None, None, first_run=True)
     return True
 
-def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=False, new_width=None):
+def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first_run=False, new_width=None):
     new_mode = state.console_state.screen_mode if new_mode == None else new_mode
     new_colorswitch = state.console_state.colorswitch if new_colorswitch == None else (new_colorswitch != 0)
     new_vpagenum = state.console_state.vpagenum if new_vpagenum == None else new_vpagenum
     new_apagenum = state.console_state.apagenum if new_apagenum == None else new_apagenum
     do_redraw = (   (new_mode != state.console_state.screen_mode) or (new_colorswitch != state.console_state.colorswitch) 
                     or first_run or (new_width and new_width != state.console_state.width) )
+    # TODO: implement erase level (Tandy/pcjr)
+    # Erase tells basic how much video memory to erase
+    # 0: do not erase video memory
+    # 1: (default) erase old and new page if screen or bust changes
+    # 2: erase all video memory if screen or bust changes 
     try:
         info = mode_data[new_mode]
     except KeyError:
