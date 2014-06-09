@@ -220,7 +220,7 @@ if pygame:
 # set constants based on commandline arguments
 
 def prepare(args):
-    global fullscreen, smooth, noquit, display_size, display_size_text, font_family
+    global fullscreen, smooth, noquit, display_size, display_size_text, font_family, fonts
     try:
         x, y = args.dimensions[0].split(',')
         display_size = (int(x), int(y))
@@ -231,6 +231,12 @@ def prepare(args):
         display_size_text = (int(x), int(y))
     except (ValueError, TypeError):
         pass    
+    fonts = {}
+    if args.loadfont != None:
+        for fontname in args.loadfont:
+            font = load_font_file(fontname)
+            height = len(font[0])
+            fonts[height] = font
     if args.font_family:
         font_family = args.font_family
     if args.fullscreen:
@@ -294,8 +300,10 @@ def init():
         pygame.display.quit()
         logging.warning('Refusing to open libcaca console. Failed to initialise PyGame console.')
         return False
-    fonts = {}
     for height in (8, 14, 16):
+        if height in fonts:
+            # already force loaded
+            continue
         fonts[height] = load_font(font_family, state.console_state.codepage, height)
         if fonts[height] == None:
             pygame.display.quit()
@@ -406,6 +414,11 @@ def close():
 def load_font(family, codepage, height):
     path = os.path.dirname(os.path.realpath(__file__))
     name = os.path.join(path, 'font', '%s_%s_%02d' % (family, codepage, height))
+    return load_font_file(name)
+        
+def load_font_file(name):
+    size = os.path.getsize(name)
+    height = size/256        
     try:
         fontfile = open(name, 'rb')
         font = []
@@ -416,7 +429,6 @@ def load_font(family, codepage, height):
         return font
     except IOError:
         return None
-        
 
 ####################################
 # console commands
