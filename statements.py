@@ -1552,10 +1552,17 @@ def exec_clear(ins):
             # expression2 sets aside stack space for GW-BASIC. The default is the previous stack space size. 
             # When GW-BASIC is first executed, the stack space is set to 512 bytes, or one-eighth of the available memory, 
             # whichever is smaller.
-            exp2 = expressions.parse_expression(ins, empty_err=2)
-            if vartypes.pass_int_unpack(exp2, maxint=0xffff) == 0:
+            exp2 = expressions.parse_expression(ins, allow_empty = True)
+            if exp2 and vartypes.pass_int_unpack(exp2, maxint=0xffff) == 0:
                 #  0 leads to illegal fn call
                 raise error.RunError(5)
+            if state.basic_state.machine in ('pcjr', 'tandy') and util.skip_white_read_if(ins, (',',)):
+                # Tandy/PCjr: select video memory size
+                state.console_state.video_mem_size = fp.unpack(vartypes.pass_single_keep(
+                                                        expressions.parse_expression(ins, empty_err=2))).round_to_int()
+                # TODO: what errors are raised?
+            elif not exp2:
+                raise error.RunError(2)    
     util.require(ins, util.end_statement)
 
 def exec_common(ins):    
@@ -2189,19 +2196,24 @@ def exec_width(ins):
     dev.set_width(w)
     
 def exec_screen(ins):
-    # in GW, screen 0,0,0,0,0,0 raises error after changing the palette... this raises error before:
-    mode, colorswitch, apagenum, vpagenum = expressions.parse_int_list(ins, 4)
+    erase = 1
+    if state.basic_state.machine in ('pcjr', 'tandy'):
+        # TODO: what errors on erase values?
+        mode, colorswitch, apagenum, vpagenum, erase = expressions.parse_int_list(ins, 5)
+    else:    
+        # in GW, screen 0,0,0,0,0,0 raises error after changing the palette... this raises error before:
+        mode, colorswitch, apagenum, vpagenum = expressions.parse_int_list(ins, 4)
     # set defaults to avoid err 5 on range check
     mode = mode if mode != None else state.console_state.screen_mode
     colorswitch = colorswitch if colorswitch != None else state.console_state.colorswitch    
     apagenum = apagenum if apagenum != None else state.console_state.apagenum
     vpagenum = vpagenum if vpagenum != None else state.console_state.vpagenum
     # if any parameter not in [0,255], error 5 without doing anything 
-    util.range_check(0, 255, mode, colorswitch, apagenum, vpagenum)
+    util.range_check(0, 255, mode, colorswitch, apagenum, vpagenum, erase)
     # if the parameters are outside narrow ranges (e.g. not implemented screen mode, pagenum beyond max)
     # then the error is only raised after changing the palette.
     util.require(ins, util.end_statement)        
-    if not console.screen(mode, colorswitch, apagenum, vpagenum):
+    if not console.screen(mode, colorswitch, apagenum, vpagenum, erase):
         raise error.RunError(5)
     
 def exec_pcopy(ins):
