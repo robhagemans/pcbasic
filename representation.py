@@ -483,8 +483,17 @@ def input_vars_file(readvar, text_file):
         if value == None:
             value = vartypes.null[typechar]
         # process the ending char (this may raise FIELD OVERFLOW but should avoid INPUT PAST END)
-        if not text_file.end_of_file() and text_file.peek_char() not in ('', '\x1a'):
-            text_file.read_chars(1)
+        if not text_file.end_of_file():
+            c = text_file.peek_char() 
+            if c == ',':
+                text_file.read_chars(1)
+            elif c not in ('', '\x1a'):
+                # WJB - Skip trailing space and an end of line 
+                text_skip(text_file, ascii_white)
+                if not text_file.end_of_file() and text_file.peek_char() == '\r':
+                    text_file.read_chars(1)
+                    if not text_file.end_of_file() and text_file.peek_char() == '\n':
+                        text_file.read_chars(1)
         # and then set the value
         v.append(value)
     return readvar    
