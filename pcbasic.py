@@ -76,7 +76,7 @@ def main():
             run.exit()
         if not args.cmd:
             # if a command is given, the program is only loaded; run.loop() doesn't take None.
-            args.cmd = 'RUN' if args.run else ''
+            args.cmd = 'RUN' if args.run else ':'
         # get out, if we ran with -q
         if args.quit:
             run.prompt = False
