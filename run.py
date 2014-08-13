@@ -26,7 +26,7 @@ state.basic_state.auto_mode = False
 # interpreter is executing a command
 state.basic_state.execute_mode = False
 
-def loop():
+def loop(quit=False):
     # interpreter loop
     while True:
         if state.basic_state.execute_mode:
@@ -34,7 +34,7 @@ def loop():
                 # may raise Break
                 on_event.check_events()
                 # may raise Break or Error
-                set_execute_mode(statements.parse_statement())
+                set_execute_mode(statements.parse_statement(), quit)
             except error.RunError as e:
                 handle_error(e) 
             except error.Break as e:
@@ -57,8 +57,11 @@ def loop():
             except error.RunError as e:
                 handle_error(e) 
 
-def set_execute_mode(on):
+def set_execute_mode(on, quit=False):
     if not on:
+        if quit:
+            # if --quit argument given, exit after first command
+            raise error.Exit()
         # always show prompt at the end of execution
         show_prompt()
     if on == state.basic_state.execute_mode:

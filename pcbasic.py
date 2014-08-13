@@ -102,10 +102,8 @@ def main():
             if args.cmd:    
                 # start loop in execute mode
                 run.execute(args.cmd)
-            if args.quit:
-                raise error.Exit()
         # start the interpreter loop
-        run.loop()
+        run.loop(args.quit)
     except error.RunError as e:
         # errors during startup/conversion are handled here, then exit
         run.handle_error(e)  
