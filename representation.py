@@ -588,7 +588,8 @@ def tokenise_number(ins, outs):
                     break
                 else:
                     word += ins.read(1).upper()
-            outs.write('\x0C' + str(vartypes.value_to_uint(int(word,16))))
+            val = int(word, 16) if word else 0
+            outs.write('\x0C' + str(vartypes.value_to_uint(val)))
         else: # nxt == 'O': # octal constant
             if nxt == 'O':
                 ins.read(1)
@@ -598,7 +599,8 @@ def tokenise_number(ins, outs):
                     break
                 else:
                     word += ins.read(1).upper()
-            outs.write('\x0B' + str(vartypes.value_to_uint(int(word,8))))
+            val = int(word, 8) if word else 0
+            outs.write('\x0B' + str(vartypes.value_to_uint(val)))
     # handle other numbers
     # note GW passes signs separately as a token and only stores positive numbers in the program        
     elif (c in ascii_digits or c=='.' or c in ('+','-')):
