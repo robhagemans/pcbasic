@@ -2167,6 +2167,8 @@ def exec_width(ins):
         w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     else:
         expr = expressions.parse_expression(ins)
+        if expr == None:
+            raise error.RunError(2)
         if expr[0] == '$':
             try:
                 dev = state.io_state.devices[str(vartypes.pass_string_unpack(expr)).upper()]
