@@ -940,7 +940,7 @@ def exec_open(ins):
         raise error.RunError(75)
     elif mode != 'R' and access and access != default_access_modes[mode]:
         raise error.RunError(2)        
-    util.range_check(1, 128, reclen)        
+    util.range_check(1, iolayer.max_reclen, reclen)        
     iolayer.open_file_or_device(number, name, mode, access, lock, reclen) 
     util.require(ins, util.end_statement)
                 

@@ -32,7 +32,8 @@ state.io_state.fields = {}
 # maximum file number = maximum number of open files
 # this is a command line option -f
 max_files = 3
-
+# maximum record length (-s)
+max_reclen = 128
 
 # buffer sizes (/c switch in GW-BASIC)
 serial_in_size = 256
