@@ -13,8 +13,6 @@ See info/ABOUT for authors, info/COPYING for licensing details and info/HELP for
 
 If you find bugs, please report them on the [discussion page](https://sourceforge.net/p/pcbasic/discussion/bugs/). It would be most helpful if you could include a short bit of BASIC code that triggers the bug.
 
-[[download_button]]
-
 ----------
 
 
@@ -105,8 +103,6 @@ On Linux, in addition to the default graphical terminal, you can get a text term
 
 If you're starting a new project in BASIC, please consider one of the more sensible free versions of the language, such as [FreeBasic](www.freebasic.net), [QB64](http://www.qb64.net/) or [SmallBASIC](https://sourceforge.net/projects/smallbasic/). Under FreeDOS, you can use the [Bywater BASIC](https://sourceforge.net/projects/bwbasic/) interpreter. 
 
-----------
-[[members limit=20]]
 
 
 
