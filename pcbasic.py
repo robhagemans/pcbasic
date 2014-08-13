@@ -247,6 +247,15 @@ def prepare_console(args):
             iolayer.max_files = int(args.max_files[0])
         except ValueError:
             pass        
+    if args.max_reclen:
+        try:
+            iolayer.max_reclen = int(args.max_files[0])
+        except ValueError:
+            pass        
+        if iolayer.max_reclen < 1:
+            iolayer.max_reclen = 1
+        if iolayer.max_reclen > 32767:
+            iolayer.max_reclen = 32767
 
 # basic-style redirected input
 def load_redirected_input(f):
@@ -308,6 +317,7 @@ def get_args():
     parser.add_argument('-q', '--quit', action='store_true', help='Quit interpreter when execution stops')
     parser.add_argument('-d', '--double', action='store_true', help='Allow double-precision math functions')
     parser.add_argument('-f', '--max-files', nargs=1, metavar=('NUMBER'), help='Set maximum number of open files (default is 3).')
+    parser.add_argument('-s', '--max-reclen', nargs=1, metavar=('NUMBER'), help='Set maximum record length for RANDOM files (default is 128, max is 32767).')
     parser.add_argument('--peek', nargs='*', metavar=('SEG:ADDR:VAL'), help='Define PEEK preset values')
     parser.add_argument('--lpt1', action='store', metavar=('TYPE:VAL'), help='Set LPT1: to FILE:file_name or PRINTER:printer_name.')
     parser.add_argument('--lpt2', action='store', metavar=('TYPE:VAL'), help='Set LPT2: to FILE:file_name or PRINTER:printer_name.')
