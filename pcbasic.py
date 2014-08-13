@@ -242,6 +242,11 @@ def prepare_console(args):
         state.console_state.input_echos.append(echo)
     if args.input:
         load_redirected_input(oslayer.safe_open(args.input[0], "L", "R"))       
+    if args.max_files:
+        try:
+            iolayer.max_files = int(args.max_files[0])
+        except ValueError:
+            pass        
 
 # basic-style redirected input
 def load_redirected_input(f):
@@ -302,6 +307,7 @@ def get_args():
     parser.add_argument('-e', '--exec', metavar='command_line', help='Execute BASIC command line')
     parser.add_argument('-q', '--quit', action='store_true', help='Quit interpreter when execution stops')
     parser.add_argument('-d', '--double', action='store_true', help='Allow double-precision math functions')
+    parser.add_argument('-f', '--max-files', nargs=1, metavar=('NUMBER'), help='Set maximum number of open files (default is 3).')
     parser.add_argument('--peek', nargs='*', metavar=('SEG:ADDR:VAL'), help='Define PEEK preset values')
     parser.add_argument('--lpt1', action='store', metavar=('TYPE:VAL'), help='Set LPT1: to FILE:file_name or PRINTER:printer_name.')
     parser.add_argument('--lpt2', action='store', metavar=('TYPE:VAL'), help='Set LPT2: to FILE:file_name or PRINTER:printer_name.')
