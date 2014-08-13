@@ -199,7 +199,11 @@ def prepare_constants(args):
         state.basic_state.machine = 'tandy'
     else:
         state.basic_state.machine = 'ega'        
-
+    if args.strict_newline:
+        program.universal_newline = False
+    else:
+        program.universal_newline = True
+        
 
 def prepare_console(args):
     unicodepage.load_codepage(state.console_state.codepage)
@@ -322,6 +326,8 @@ def get_args():
     parser.add_argument('--caps', action='store_true', help='Start in CAPS LOCK mode.')
     parser.add_argument('--mount', action='append', nargs='*', metavar=('D:PATH'), help='Set a drive letter to PATH.')
     parser.add_argument('--resume', action='store_true', help='Resume from saved state. Most other arguments are ignored.')
+    parser.add_argument('--strict-newline', action='store_true', help='Parse CR and LF strictly like GW-BASIC. May create problems with UNIX line endings.')
+    
     args = parser.parse_args()
     # flatten list arguments
     args.mount = flatten_arg_list(args.mount)

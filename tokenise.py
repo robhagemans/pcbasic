@@ -172,20 +172,6 @@ def detokenise_keyword(ins, output):
 #################################################################
 # Tokenise functions
 
-# readln, but break on \r rather than \n. ignore single starting LF to account for CRLF *without seeking*.
-# include the \r at the end of the line. break at \x1a EOF. Do not include \x1a.
-def read_program_line(ins):
-    d = ins.read(1)
-    eof = d in ('\x1a', '')
-    out = d if (not eof and d != '\n') else ''    
-    while d != '\r' and not eof:
-        d = ins.read(1)
-        eof = d in ('\x1a', '')
-        if eof:
-            break
-        out += d       
-    return out, eof
-
 def tokenise_line(line):      
     ins = StringIO(line)
     outs = StringIO()          
