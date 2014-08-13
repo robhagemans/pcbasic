@@ -163,9 +163,9 @@ def prepare_constants(args):
         args.run = True   
     if args.double:
         expressions.option_double = True    
-    if args.list_all or args.conv:
+    if (not args.strict_hidden_lines) or args.conv:
         program.max_list_line = 65535    
-    if args.unprotect or args.conv:
+    if (not args.strict_protect) or args.conv:
         program.dont_protect = True    
     if args.codepage:
         state.console_state.codepage = int(args.codepage)
@@ -334,7 +334,7 @@ def get_args():
     parser.add_argument('--lpt3', action='store', metavar=('TYPE:VAL'), help='Set LPT3: to FILE:file_name or PRINTER:printer_name.')
     parser.add_argument('--com1', action='store', metavar=('TYPE:VAL'), help='Set COM1: to PORT:device_name or SOCKET:host:socket.')
     parser.add_argument('--com2', action='store', metavar=('TYPE:VAL'), help='Set COM2: to PORT:device_name or SOCKET:host:socket.')
-    parser.add_argument('--conv', action='store', nargs='?', metavar='mode:outfile', help='Convert basic_program to (A)SCII, (B)ytecode or (P)rotected mode. Implies --unprotect and --list-all.')
+    parser.add_argument('--conv', action='store', nargs='?', metavar='mode:outfile', help='Convert basic_program to (A)SCII, (B)ytecode or (P)rotected mode.')
     parser.add_argument('--codepage', action='store', metavar=('NUMBER'), help='Load specified font codepage. Default is 437 (US).')
     parser.add_argument('--nosound', action='store_true', help='Disable sound output')
     parser.add_argument('--dimensions', nargs=1, metavar=('X, Y'), help='Set pixel dimensions for graphics mode. Default is 640,480. Use 640,400 or multiples for cleaner pixels - but incorrect aspect ratio - on square-pixel LCDs. Graphical terminal only.')
@@ -345,8 +345,8 @@ def get_args():
     parser.add_argument('--debug', action='store_true', help='Enable DEBUG keyword')
     parser.add_argument('--pcjr', action='store_true', help='IBM PCjr mode')
     parser.add_argument('--tandy', action='store_true', help='Tandy-1000 mode')
-    parser.add_argument('--list-all', action='store_true', help='Allow listing and ASCII saving of lines beyond 65530')
-    parser.add_argument('--unprotect', action='store_true', help='Allow listing and ASCII saving of protected files')
+    parser.add_argument('--strict-hidden-lines', action='store_true', help='Disable listing and ASCII saving of lines beyond 65530 (as in GW-BASIC). Use with care as this allows execution of unseen statements.')
+    parser.add_argument('--strict-protect', action='store_true', help='Disable listing and ASCII saving of protected files (as in GW-BASIC). Use with care as this allows execution of unseen statements.')
     parser.add_argument('--caps', action='store_true', help='Start in CAPS LOCK mode.')
     parser.add_argument('--mount', action='append', nargs='*', metavar=('D:PATH'), help='Set a drive letter to PATH.')
     parser.add_argument('--resume', action='store_true', help='Resume from saved state. Most other arguments are ignored.')
