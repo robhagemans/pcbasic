@@ -634,6 +634,7 @@ def write_line(s='', scroll_ok=True):
     for echo in output_echos:
         echo('\r\n')
     apage.row[row-1].wrap = False
+    check_pos(scroll_ok=True)
     set_pos(row + 1, 1)
 
 def set_width(to_width):
@@ -854,6 +855,7 @@ def start_line():
     if col != 1:
         for echo in input_echos:
             echo('\r\n')
+        check_pos(scroll_ok=True)
         set_pos(row + 1, 1)
     # ensure line above doesn't wrap    
     apage.row[row-2].wrap = False    
