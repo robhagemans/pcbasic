@@ -854,8 +854,10 @@ def start_line():
     if col != 1:
         for echo in input_echos:
             echo('\r\n')
-        apage.row[row-1].wrap = False    
         set_pos(row + 1, 1)
+    # ensure line above doesn't wrap    
+    apage.row[row-2].wrap = False    
+  
 
 #####################
 # viewport / scroll area
