@@ -201,7 +201,16 @@ def prepare_constants(args):
         program.universal_newline = False
     else:
         program.universal_newline = True
-        
+
+
+def parse_int_option_silent(inargs):
+    if inargs:
+        try:
+            return int(inargs[0])
+        except ValueError:
+            pass        
+    return None
+            
 
 def prepare_console(args):
     unicodepage.load_codepage(state.console_state.codepage)
@@ -243,19 +252,18 @@ def prepare_console(args):
     if args.input:
         load_redirected_input(oslayer.safe_open(args.input[0], "L", "R"))       
     if args.max_files:
-        try:
-            iolayer.max_files = int(args.max_files[0])
-        except ValueError:
-            pass        
+        iolayer.max_files = parse_int_option_silent(args.max_files)
     if args.max_reclen:
-        try:
-            iolayer.max_reclen = int(args.max_files[0])
-        except ValueError:
-            pass        
+        iolayer.max_reclen = parse_int_option_silent(args.max_reclen)
         if iolayer.max_reclen < 1:
             iolayer.max_reclen = 1
         if iolayer.max_reclen > 32767:
             iolayer.max_reclen = 32767
+    if args.serial_in_size:
+        iolayer.serial_in_size = parse_int_option_silent(args.serial_in_size)
+        
+
+
 
 # basic-style redirected input
 def load_redirected_input(f):
@@ -318,6 +326,8 @@ def get_args():
     parser.add_argument('-d', '--double', action='store_true', help='Allow double-precision math functions')
     parser.add_argument('-f', '--max-files', nargs=1, metavar=('NUMBER'), help='Set maximum number of open files (default is 3).')
     parser.add_argument('-s', '--max-reclen', nargs=1, metavar=('NUMBER'), help='Set maximum record length for RANDOM files (default is 128, max is 32767).')
+    parser.add_argument('-c', '--serial-in-size', nargs=1, metavar=('NUMBER'), help='Set serial input buffer size (default is 256). If 0, serial communications are disabled.')
+
     parser.add_argument('--peek', nargs='*', metavar=('SEG:ADDR:VAL'), help='Define PEEK preset values')
     parser.add_argument('--lpt1', action='store', metavar=('TYPE:VAL'), help='Set LPT1: to FILE:file_name or PRINTER:printer_name.')
     parser.add_argument('--lpt2', action='store', metavar=('TYPE:VAL'), help='Set LPT2: to FILE:file_name or PRINTER:printer_name.')
