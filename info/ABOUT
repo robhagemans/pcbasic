@@ -3,8 +3,9 @@ with Microsoft(R) GW-BASIC 3.23.
 
 Press 'Q' to exit INFO; then type SYSTEM to close PC-BASIC.
  
-Authors_______________________________________________________________________
-* Rob Hagemans
+Contributors__________________________________________________________________
+* Rob Hagemans          main author
+* WJB                   bugfixes
 
 Acknowledgements______________________________________________________________
 * The Python project
