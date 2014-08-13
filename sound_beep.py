@@ -19,7 +19,7 @@ def init_sound():
     return subprocess.call("command -v beep >/dev/null 2>&1", shell=True) == 0
     
 def stop_all_sound():
-    global now_loop
+    global now_loop, now_playing
     for voice in now_playing:
         if voice and voice.poll() == None:
             voice.terminate()   
