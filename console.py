@@ -890,8 +890,10 @@ def start_line():
     if state.console_state.col != 1:
         for echo in state.console_state.input_echos:
             echo('\r\n')
-        state.console_state.apage.row[state.console_state.row-1].wrap = False    
         set_pos(state.console_state.row + 1, 1)
+    # ensure line above doesn't wrap    
+    state.console_state.apage.row[state.console_state.row-2].wrap = False    
+
 
 #####################
 # viewport / scroll area
