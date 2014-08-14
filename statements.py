@@ -1159,7 +1159,7 @@ def exec_circle(ins):
 def exec_paint(ins):
     graphics.require_graphics_mode()
     x0, y0 = parse_coord(ins)
-    pattern, c, border = '', -1, -1
+    pattern, c, border = None, -1, -1
     if util.skip_white_read_if(ins, (',',)):
         cval = expressions.parse_expression(ins, allow_empty=True)
         if not cval:
@@ -1184,7 +1184,6 @@ def exec_paint(ins):
                 background_pattern = vartypes.pass_string_unpack(expressions.parse_expression(ins), err=5)
                 if background_pattern == pattern:
                     raise error.RunError(5)
-    pattern = pattern if pattern else draw_and_play.solid_pattern(c)
     util.require(ins, util.end_statement)         
     graphics.flood_fill(x0, y0, pattern, c, border)        
                 
