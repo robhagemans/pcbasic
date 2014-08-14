@@ -119,25 +119,29 @@ def handle_oserror(e):
 pcbasic_dir = os.path.dirname(os.path.realpath(__file__))
 
 
-if plat.system == 'Windows':
-    drives = { '@': os.path.join(pcbasic_dir, 'info') }
-    current_drive = os.path.abspath(os.getcwd()).split(':')[0]
-    drive_cwd = { '@': '' }
+drives = { 'C': os.getcwd(), '@': os.path.join(pcbasic_dir, 'info') }
+current_drive = 'C'
+# must not start with a /
+drive_cwd = { 'C': '', '@': '' }
 
-    # get all drives in use by windows
-    # if started from CMD.EXE, get the 'current wworking dir' for each drive
-    # if not in CMD.EXE, there's only one cwd
-    save_current = os.getcwd()
-    for drive_letter in win32api.GetLogicalDriveStrings().split(':\\\x00')[:-1]:
-        try:
-            os.chdir(drive_letter + ':')
-            cwd = win32api.GetShortPathName(os.getcwd())
-            # must not start with \\
-            drive_cwd[drive_letter] = cwd[3:]  
-            drives[drive_letter] = cwd[:3]
-        except WindowsError:
-            pass    
-    os.chdir(save_current)    
+if plat.system == 'Windows':
+    def windows_map_drives():
+        global current_drive
+        # get all drives in use by windows
+        # if started from CMD.EXE, get the 'current working dir' for each drive
+        # if not in CMD.EXE, there's only one cwd
+        current_drive = os.path.abspath(os.getcwd()).split(':')[0]
+        save_current = os.getcwd()
+        for drive_letter in win32api.GetLogicalDriveStrings().split(':\\\x00')[:-1]:
+            try:
+                os.chdir(drive_letter + ':')
+                cwd = win32api.GetShortPathName(os.getcwd())
+                # must not start with \\
+                drive_cwd[drive_letter] = cwd[3:]  
+                drives[drive_letter] = cwd[:3]
+            except WindowsError:
+                pass    
+        os.chdir(save_current)    
 
     # get windows short name
     def dossify(path, name):
@@ -159,12 +163,12 @@ if plat.system == 'Windows':
         return trunk, ext    
 
 else:
-    drives = { 'C': os.getcwd(), '@': os.path.join(pcbasic_dir, 'info') }
-    current_drive = 'C'
-    # must not start with a /
-    drive_cwd = { 'C': '', '@': '' }
+# to map root to C and set current to CWD:
 #    drives = { 'C': '/', '@': os.path.join(pcbasic_dir, 'info') }
 #    drive_cwd = { 'C': os.getcwd()[1:], '@': '' }
+    
+    def windows_map_drives():
+        pass
     
     if plat.system == 'Android':
         drives['C'] = os.path.join(pcbasic_dir, 'files')
