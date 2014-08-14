@@ -39,6 +39,8 @@ dont_protect = False
 # program memory model; offsets in files
 program_memory_start = 0x126e
 
+# accept CR, LF and CRLF line endings; interpret as CR only if the next line starts with a number
+universal_newline = False
 
 def erase_program():
     state.basic_state.bytecode.truncate(0)
@@ -294,10 +296,65 @@ def merge(g):
         load_ascii_file(g, c)
     g.close()
     
+    
+# readln, but break on \r rather than \n. ignore single starting LF to account for CRLF *without seeking*.
+# include the \r at the end of the line. break at \x1a EOF. Do not include \x1a.
+def read_program_line(ins, last, cr=('\r')):
+    d = ins.read(1)
+    eof = d in ('\x1a', '')
+    out = d if (not eof and (last != '\r' or d != '\n')) else ''    
+    while d not in cr and not eof:
+        d = ins.read(1)
+        eof = d in ('\x1a', '')
+        if eof:
+            break
+        out += d       
+    return out, eof, d
+
+# buffered line reader
+class LineGetter(object): 
+    def __init__(self, g, universal):
+        self.universal = universal
+        if universal:
+            self.cr = ('\r', '\n')
+        else:
+            self.cr = ('\r')   
+        self.source = g    
+        self.last = ''
+        self.cache = None
+        
+    def get_line(self):
+        if self.cache != None:
+            line, eof = self.cache
+            self.cache = None
+        else:    
+            line, eof, self.last = read_program_line(self.source, self.last, self.cr)
+        if not self.universal:
+            return line, eof
+        # keep adding lines until one starts with a number
+        while not eof:
+            line2, eof2, self.last = read_program_line(self.source, self.last, self.cr)
+            i = 0
+            while i < len(line2) and line2[i] in (' ', '\0'):
+                i += 1
+            # if not starting with a number after whitespace, concatenate    
+            if i == len(line2) or line2[i] < '0' or line2[i] > '9':
+                line = line[:-1] + '\n' + line2
+                eof = eof2
+            else:
+                break 
+        if not eof:        
+            self.cache = line2, eof2   
+        if line[-1] == '\n':
+            line = line[:-1] + '\r'
+        return line, eof
+        
+# load an ascii encoded program
 def load_ascii_file(g, first_char=''):
     eof = False
+    lg = LineGetter(g, universal_newline)
     while not eof:
-        line, eof = tokenise.read_program_line(g)
+        line, eof = lg.get_line()
         line, first_char = first_char + line, ''
         linebuf = tokenise.tokenise_line(line)
         if linebuf.read(1) == '\0':

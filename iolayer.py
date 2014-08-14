@@ -30,9 +30,10 @@ state.io_state.files = {}
 state.io_state.fields = {}
 
 # maximum file number = maximum number of open files
-# in GW, this is a command line option
+# this is a command line option -f
 max_files = 3
-
+# maximum record length (-s)
+max_reclen = 128
 
 # buffer sizes (/c switch in GW-BASIC)
 serial_in_size = 256
@@ -48,7 +49,7 @@ allowed_protocols = {
 
 
 def open_file_or_device(number, name, mode='I', access='R', lock='', reclen=128, defext=''):
-    if not name or number < 0 or number > max_files:
+    if (not name) or (number < 0) or (number > max_files):
         # bad file number; also for name='', for some reason
         raise error.RunError(52)
     if number in state.io_state.files:
