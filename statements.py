@@ -1560,7 +1560,7 @@ def exec_clear(ins):
             if exp2 and vartypes.pass_int_unpack(exp2, maxint=0xffff) == 0:
                 #  0 leads to illegal fn call
                 raise error.RunError(5)
-            if state.basic_state.machine in ('pcjr', 'tandy') and util.skip_white_read_if(ins, (',',)):
+            if pcjr_syntax and util.skip_white_read_if(ins, (',',)):
                 # Tandy/PCjr: select video memory size
                 state.console_state.video_mem_size = fp.unpack(vartypes.pass_single_keep(
                                                         expressions.parse_expression(ins, empty_err=2))).round_to_int()
@@ -2203,7 +2203,7 @@ def exec_width(ins):
     
 def exec_screen(ins):
     erase = 1
-    if state.basic_state.machine in ('pcjr', 'tandy'):
+    if pcjr_syntax:
         # TODO: what errors on erase values?
         mode, colorswitch, apagenum, vpagenum, erase = expressions.parse_int_list(ins, 5)
     else:    
