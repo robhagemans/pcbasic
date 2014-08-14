@@ -1902,7 +1902,7 @@ def exec_color(ins):
         util.range_check(0, 15, back, bord)
         state.console_state.attr = ((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10 + (fore & 0xf) 
         # border not implemented
-    elif mode in (7, 8):
+    elif mode in (3, 4, 5, 6, 7, 8):
         util.range_check(1, state.console_state.num_colours-1, fore)
         util.range_check(0, state.console_state.num_colours-1, back)
         state.console_state.attr = fore
