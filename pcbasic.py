@@ -203,6 +203,9 @@ def prepare_constants(args):
         program.universal_newline = False
     else:
         program.universal_newline = True
+    if args.windows_map_drives:
+        oslayer.windows_map_drives()
+
 
 def prepare_console(args):
     state.console_state.codepage = unicodepage.load_codepage(state.console_state.codepage)
@@ -420,6 +423,7 @@ def get_args():
     parser.add_argument('--pcjr-syntax', action='store', choices=('pcjr', 'tandy'), help='Enable PCjr/Tandy 1000 syntax extensions')
     parser.add_argument('--pcjr-term', action='store', help='Set the program run by the PCjr TERM command')
     parser.add_argument('--video', action='store', choices=('ega', 'pcjr', 'tandy'), help='Set video capabilities')
+    parser.add_argument('--windows-map-drives', action='store_true', help='Map all Windows drive letters to PC-BASIC drive letters (Windows only)')
     # manually re-enable -h
     parser.add_argument('-h', '--help', action='store_true', help='Show this message and exit')
     # parse command line arguments to override defaults
