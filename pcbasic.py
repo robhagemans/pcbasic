@@ -65,7 +65,7 @@ import backend
 import backend_pygame
 import iolayer
 import var
-
+import statements
 
 greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "@:INFO" for more.\r%d Bytes free\rOk\xff'
 debugstr = ''
@@ -135,9 +135,15 @@ def prepare_keywords(args):
     else:
         # set logging format
         logging.basicConfig(format='%(levelname)s: %(message)s')
-    if args.pcjr or args.tandy:
+    if args.pcjr_syntax:
+        statements.pcjr_syntax = args.pcjr_syntax
+        expressions.pcjr_syntax = args.pcjr_syntax
+        sound.pcjr_sound = args.pcjr_syntax
         tokenise.insert_noise_keyword()
         tokenise.insert_term_keyword() 
+    # set pcjr TERM program    
+    if args.pcjr_term:
+        statements.pcjr_term = args.pcjr_term[0]
 
 def prepare_constants(args):
     # PEEK presets
@@ -191,12 +197,6 @@ def prepare_constants(args):
         args.conv = True    
     if args.conv_mode:
         args.conv_mode = args.conv_mode[0].upper()        
-    if args.pcjr:
-        state.basic_state.machine = 'pcjr'
-    elif args.tandy:
-        state.basic_state.machine = 'tandy'
-    else:
-        state.basic_state.machine = 'ega'        
     if args.strict_newline:
         program.universal_newline = False
     else:
@@ -354,7 +354,7 @@ def get_args():
         description='PC-BASIC 3.23 interpreter. If no options are present, the interpreter will run in interactive mode.')
     #
     # parse presets
-    parser.add_argument('--preset', nargs='*', metavar=('MACHINE'), help='Load machine preset options')
+    parser.add_argument('--preset', nargs='*', metavar=('MACHINE'), choices=conf_dict.keys(), help='Load machine preset options')
     arg_presets, remaining = parser.parse_known_args()
     presets = flatten_arg_list(arg_presets.preset)
     # get dictionary of default config    
@@ -405,14 +405,16 @@ def get_args():
     parser.add_argument('--smooth', action='store_true', help='Use smooth display scaling. Graphical terminal only.')
     parser.add_argument('--noquit', action='store_true', help='Allow BASIC to capture <ALT+F4>. Graphical terminal only.')
     parser.add_argument('--debug', action='store_true', help='Enable DEBUG keyword')
-    parser.add_argument('--pcjr', action='store_true', help='IBM PCjr mode')
-    parser.add_argument('--tandy', action='store_true', help='Tandy-1000 mode')
     parser.add_argument('--strict-hidden-lines', action='store_true', help='Disable listing and ASCII saving of lines beyond 65530 (as in GW-BASIC). Use with care as this allows execution of unseen statements.')
     parser.add_argument('--strict-protect', action='store_true', help='Disable listing and ASCII saving of protected files (as in GW-BASIC). Use with care as this allows execution of unseen statements.')
     parser.add_argument('--caps', action='store_true', help='Start in CAPS LOCK mode.')
     parser.add_argument('--mount', action='append', nargs='*', metavar=('D:PATH'), help='Set a drive letter to PATH.')
     parser.add_argument('--resume', action='store_true', help='Resume from saved state. Most other arguments are ignored.')
     parser.add_argument('--strict-newline', action='store_true', help='Parse CR and LF strictly like GW-BASIC. May create problems with UNIX line endings.')
+    # PCjr and Tandy options
+    parser.add_argument('--pcjr-syntax', action='store', choices=('pcjr', 'tandy'), help='Enable PCjr/Tandy 1000 syntax extensions')
+    parser.add_argument('--pcjr-term', action='store', help='Set the program run by the PCjr TERM command')
+    parser.add_argument('--video', action='store', choices=('ega', 'pcjr', 'tandy'), help='Set video capabilities')
     # manually re-enable -h
     parser.add_argument('-h', '--help', action='store_true', help='Show this message and exit')
     # parse command line arguments to override defaults
