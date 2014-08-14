@@ -844,7 +844,7 @@ def fill_rect(x0, y0, x1, y1, index):
     surface0[state.console_state.apagenum].fill(index, rect)
     cx0 = min(state.console_state.width-1, max(0, x0//state.console_state.font_width)) 
     cy0 = min(state.console_state.height-1, max(0, y0//state.console_state.font_height))
-    cx1 = min(state.console_state.width-1, max(0, x1//state.console_state.font_width)), 
+    cx1 = min(state.console_state.width-1, max(0, x1//state.console_state.font_width)) 
     cy1 = min(state.console_state.height-1, max(0, y1//state.console_state.font_height))
     for r in range(cy0, cy1+1):
         state.console_state.apage.row[r].buf[cx0:cx1+1] = [(' ', state.console_state.attr)] * (cx1 - cx0 + 1)
