@@ -345,28 +345,48 @@ SCREEN 0    Text mode
             80x25 or 40x25 characters of 8x16 pixels
             16 attributes picked from 64 colours
             Attributes 16-31 are blinking versions of 0-15
-            4 pages
+            4 pages [ega]
 SCREEN 1    CGA colour
             320x200 pixels
             40x25 characters of 8x8 pixels
             4 attributes picked from 16 colours; 2 bits per pixel    
-            1 page
+            1 page [ega] 2 pages [pcjr/tandy]
 SCREEN 2    CGA monochrome
             640x200 pixels
             80x25 characters of 8x8 pixels
             2 attributes picked from 16 colours; 1 bit per pixel    
+            1 page [ega] 2 pages [pcjr/tandy]
+SCREEN 3    [pcjr/tandy only] low-res 16-colour
+            160x200 pixels
+            20x25 characters of 8x8 pixels
+            16 attributes picked from 16 colours; 4 bits per pixel
+            2 pages
+SCREEN 4    [pcjr/tandy only] med-res 4-colour
+            320x200 pixels
+            40x25 characters of 8x8 pixels
+            4 attributes picked from 16 colours; 2 bits per pixel
+            2 pages
+SCREEN 5    [pcjr/tandy only] med-res 16-colour
+            320x200 pixels
+            40x25 characters of 8x8 pixels
+            16 attributes picked from 16 colours; 4 bits per pixel
             1 page
-SCREEN 7    EGA colour
+SCREEN 6    [pcjr/tandy only] high-res 4-colour
+            640x200 pixels
+            80x25 characters of 8x8 pixels
+            4 attributes picked from 16 colours; 2 bits per pixel
+            1 page
+SCREEN 7    [ega only] EGA colour
             320x200 pixels
             40x25 characters of 8x8 pixels
             16 attributes picked from 16 colours; 4 bits per pixel    
             8 pages
-SCREEN 8    EGA colour
+SCREEN 8    [ega only] EGA colour
             640x200 pixels
             80x25 characters of 8x8 pixels
             16 attributes picked from 16 colours; 4 bits per pixel    
             4 pages
-SCREEN 9    EGA colour
+SCREEN 9    [ega only] EGA colour
             640x350 pixels
             80x25 characters of 8x14 pixels
             16 attributes picked from 64 colours; 4 bits per pixel    
@@ -753,7 +773,7 @@ NOTES:
 -   In GW-BASIC, the 'border' value in SCREEN 0 sets the attribute of the 
     screen border. This is not implemented in PC-BASIC 3.23.     
 -   The syntax and effect of this command is different in different SCREEN
-    modes. see below for SCREENs 1, 7, 8, and 9.
+    modes. see below for SCREENs 1, 4, 5, 6, 7, 8, and 9.
 ERRORS:
 -   If any of the parameters has a string value, TYPE MISMATCH is raised.
 -   If any of the parameters is not in [-32768,32667], OVERFLOW is raised.
@@ -784,7 +804,7 @@ ERRORS:
 -   If any of the parameters is not in [0,255], raises ILLEGAL FUNCTION CALL.
 
 
-COLOR statement  (in SCREEN 7, 8, or 9)
+COLOR statement  (in SCREEN 4, 5, 6, 7, 8, or 9)
 COLOR [foreground] [, palette_0 [, dummy] ]
 ---------------
 Changes the current foreground attribute and the colour for attribute 0. 
