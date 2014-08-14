@@ -460,8 +460,6 @@ def fill_scanline(x_start, x_stop, y, pattern):
     mask = 7 - x_start%8
     pattern_height = len(pattern)//state.console_state.bitsperpixel
     start_byte = (y%pattern_height)*state.console_state.bitsperpixel
-    print pattern_height, y, start_byte
-    
     for x in range(x_start, x_stop+1):
         c = 0
         for b in range(state.console_state.bitsperpixel-1,-1,-1):
