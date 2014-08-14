@@ -238,10 +238,12 @@ def get_pixel_byte(page, x, y, plane):
     return -1    
     
 def set_pixel_byte(page, x, y, plane_mask, byte):
+    inv_mask = 0xff ^ plane_mask
     if y < state.console_state.size[1] and page < state.console_state.num_pages:
         for shift in range(8):
             bit = (byte>>(7-shift)) & 1
-            backend.video.put_pixel(x + shift, y, bit * plane_mask, page)  
+            current = backend.video.get_pixel(x + shift, y, page) & inv_mask
+            backend.video.put_pixel(x + shift, y, current | (bit * plane_mask), page)  
     
 def get_video_memory(addr):
     if addr < video_segment[state.console_state.screen_mode]*0x10:
@@ -250,10 +252,12 @@ def get_video_memory(addr):
         if state.console_state.screen_mode == 0:
             return get_text_memory(addr)
         addr -= video_segment[state.console_state.screen_mode]*0x10
+        #
+        # modes 1-5: interlaced scan lines, pixels sequentially packed into bytes
         if state.console_state.screen_mode in (1, 4):
             # tandy screen 1 allows 2 pages
             page, addr = addr//16384, addr%16384
-            # interlaced scan lines of 80bytes, 4pixels per byte
+            # 2 x interlaced scan lines of 80bytes, 4pixels per byte
             x, y = ((addr%0x2000)%80)*4, (addr//0x2000) + 2*((addr%0x2000)//80)
             if y < state.console_state.size[1] and page < state.console_state.num_pages:
                 return ( (backend.video.get_pixel(x  , y, page)<<6) + (backend.video.get_pixel(x+1, y, page)<<4) 
@@ -263,6 +267,7 @@ def get_video_memory(addr):
             page, addr = addr//16384, addr%16384
             # interlaced scan lines of 80bytes, 8 pixes per byte
             x, y = ((addr%0x2000)%80)*8, (addr//0x2000) + 2*((addr%0x2000)//80)
+            # mode 2 is simply 1 bit per pixel
             return get_pixel_byte(page, x, y, 0)
         elif state.console_state.screen_mode == 3:
             page, addr = addr//16384, addr%16384
@@ -276,13 +281,16 @@ def get_video_memory(addr):
             x, y = ((addr%0x2000)%80)*2, (addr//0x2000) + 4*((addr%0x2000)//80)
             if y < state.console_state.size[1] and page < state.console_state.num_pages:
                 return ( (backend.video.get_pixel(x, y, page)<<4) + (backend.video.get_pixel(x+1, y, page)))
+        #
+        # mode 6: interlaced scan lines, 8 pixels per two bytes, even bytes correspond to low attrib bit, odd bytes to high bit        
         elif state.console_state.screen_mode == 6:
             page, addr = addr//32768, addr%32768
-            # 4 x interlaced scan lines of 80bytes, 4pixels per byte
-            x, y = ((addr%0x2000)%80)*2, (addr//0x2000) + 4*((addr%0x2000)//80)
+            # 4 x interlaced scan lines of 80bytes, 8pixels per 2bytes
+            x, y = (((addr%0x2000)%80)//2)*8, (addr//0x2000) + 4*((addr%0x2000)//80)
             if y < state.console_state.size[1] and page < state.console_state.num_pages:
-                return ( (backend.video.get_pixel(x  , y, page)<<6) + (backend.video.get_pixel(x+1, y, page)<<4) 
-                        + (backend.video.get_pixel(x+2, y, page)<<2) + (backend.video.get_pixel(x+3, y, page)))
+                return get_pixel_byte(page, x, y, addr%2) 
+        #
+        # modes 7-9: 1 bit per pixel per colour plane                
         elif state.console_state.screen_mode == 7:
             page, addr = addr//8192, addr%8192
             x, y = (addr%40)*8, addr//40
@@ -333,12 +341,10 @@ def set_video_memory(addr, val):
                     backend.video.put_pixel(x + shift, y, fourbit, page) 
         elif state.console_state.screen_mode == 6:
             page, addr = addr//32768, addr%32768
-            # 4 x interlaced scan lines of 80bytes, 4pixels per byte
-            x, y = ((addr%0x2000)%80)*2, (addr//0x2000) + 4*((addr%0x2000)//80)
+            # 4 x interlaced scan lines of 80bytes, 8pixels per 2bytes
+            x, y = (((addr%0x2000)%80)//2)*8, (addr//0x2000) + 4*((addr%0x2000)//80)
             if y < state.console_state.size[1] and page < state.console_state.num_pages:
-                for shift in range(4):
-                    twobit = (val>>(6-shift*2)) & 3
-                    backend.video.put_pixel(x + shift, y, twobit, page) 
+                return set_pixel_byte(page, x, y, 1<<(addr%2), val) 
         elif state.console_state.screen_mode == 7:
             page, addr = addr//8192, addr%8192
             x, y = (addr%40)*8, addr//40
