@@ -159,10 +159,12 @@ if plat.system == 'Windows':
         return trunk, ext    
 
 else:
-    drives = { 'C': '/', '@': os.path.join(pcbasic_dir, 'info') }
+    drives = { 'C': os.getcwd(), '@': os.path.join(pcbasic_dir, 'info') }
     current_drive = 'C'
     # must not start with a /
-    drive_cwd = { 'C': os.getcwd()[1:], '@': '' }
+    drive_cwd = { 'C': '', '@': '' }
+#    drives = { 'C': '/', '@': os.path.join(pcbasic_dir, 'info') }
+#    drive_cwd = { 'C': os.getcwd()[1:], '@': '' }
     
     if plat.system == 'Android':
         drives['C'] = os.path.join(pcbasic_dir, 'files')
