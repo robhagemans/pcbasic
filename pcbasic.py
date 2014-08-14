@@ -102,10 +102,8 @@ def main():
             if args.cmd:    
                 # start loop in execute mode
                 run.execute(args.cmd)
-            if args.quit:
-                raise error.Exit()
         # start the interpreter loop
-        run.loop()
+        run.loop(args.quit)
     except error.RunError as e:
         # errors during startup/conversion are handled here, then exit
         run.handle_error(e)  
@@ -165,9 +163,9 @@ def prepare_constants(args):
         args.run = True   
     if args.double:
         expressions.option_double = True    
-    if args.list_all or args.conv:
+    if (not args.strict_hidden_lines) or args.conv:
         program.max_list_line = 65535    
-    if args.unprotect or args.conv:
+    if (not args.strict_protect) or args.conv:
         program.dont_protect = True    
     if args.codepage:
         state.console_state.codepage = args.codepage
@@ -199,7 +197,10 @@ def prepare_constants(args):
         state.basic_state.machine = 'tandy'
     else:
         state.basic_state.machine = 'ega'        
-
+    if args.strict_newline:
+        program.universal_newline = False
+    else:
+        program.universal_newline = True
 
 def prepare_console(args):
     state.console_state.codepage = unicodepage.load_codepage(state.console_state.codepage)
@@ -240,6 +241,19 @@ def prepare_console(args):
         state.console_state.input_echos.append(echo)
     if args.input:
         load_redirected_input(oslayer.safe_open(args.input[0], "L", "R"))       
+    if args.max_files:
+        iolayer.max_files = parse_int_option_silent(args.max_files)
+    if args.max_reclen:
+        iolayer.max_reclen = parse_int_option_silent(args.max_reclen)
+        if iolayer.max_reclen < 1:
+            iolayer.max_reclen = 1
+        if iolayer.max_reclen > 32767:
+            iolayer.max_reclen = 32767
+    if args.serial_in_size:
+        iolayer.serial_in_size = parse_int_option_silent(args.serial_in_size)
+
+#############################################
+# io redirection
 
 # basic-style redirected input
 def load_redirected_input(f):
@@ -259,29 +273,102 @@ def echo_ascii(s, f):
         f.write(c)
     f.flush()  
 
-   
+#############################################
+# parse args and opts
+
+def convert_arglist(arglist):
+    try:
+        for d in arglist:
+            # convert various boolean notations
+            if arglist[d].upper() in ('YES', 'TRUE', 'ON'):
+                arglist[d] = True
+            elif arglist[d].upper() in ('NO', 'FALSE', 'OFF'):
+                arglist[d] = False
+            elif arglist[d] == '':
+                arglist[d] = None  
+            else:
+                # convert lists
+                arglist[d] = arglist[d].split(',')    
+        return arglist        
+    except (TypeError, ValueError):
+        logging.warning('Error in config file PCBASIC.INI. Configuration not loaded.')
+        return {}    
+
+def read_config():
+    path = os.path.dirname(os.path.realpath(__file__))
+    try:
+        config = ConfigParser.RawConfigParser(allow_no_value=True)
+        config.read(os.path.join(path, 'info', 'PCBASIC.INI'))
+    except (ConfigParser.Error, IOError):
+        logging.warning('Error in config file PCBASIC.INI. Configuration not loaded.')
+        return {}
+    presets = { header: convert_arglist(dict(config.items(header))) for header in config.sections() }    
+    return presets
+    
+def flatten_arg_list(arglist):
+    if arglist:
+        newlist = []
+        for sublist in arglist:
+            if type(sublist)==list:
+                newlist += sublist
+            else:
+                newlist += [sublist]    
+        return newlist    
+    return None    
+
+# parse int option provided as a one-element list of string 
+def parse_int_option_silent(inargs):
+    if inargs:
+        try:
+            return int(inargs[0])
+        except ValueError:
+            pass        
+    return None
+
 def get_args():
     # GWBASIC invocation, for reference:
     # GWBASIC [filename] [<stdin] [[>]>stdout] [/f:n] [/i] [/s:n] [/c:n] [/m:[n][,n]] [/d]
     #   /d      Allow double-precision ATN, COS, EXP, LOG, SIN, SQR, and TAN. Implemented as -d or --double. 
-    # NOT IMPLEMENTED:
     #   /f:n    set maximum number of open files to n. Default is 3. Each additional file reduces free memory by 322 bytes.
     #   /s:n    sets the maximum record length for RANDOM files. Default is 128, maximum is 32768.
     #   /c:n    sets the COM receive buffer to n bytes. If n==0, disable the COM ports.   
+    # NOT IMPLEMENTED:
     #   /i      statically allocate file control blocks and data buffer.
     #   /m:n,m  sets the highest memory location to n and maximum block size to m
+    #
+    # read config file, if any
+    conf_dict = read_config()
+    # if argparse module not available, use the preset defaults (this happens on Android)
     if not argparse:
-        config = read_config()
+        config = conf_dict['pcbasic']
         class Namespace(object):
             pass
         args = Namespace()            
         for name in config:
             setattr(args, name, config[name])
         return args    
-    parser = argparse.ArgumentParser(
+    #
+    # define argument parser   
+    # we need to disable -h and re-enable it manually to avoid the wrong usage message from parse_known_args
+    parser = argparse.ArgumentParser(add_help=False,
         description='PC-BASIC 3.23 interpreter. If no options are present, the interpreter will run in interactive mode.')
-    # read config file, if any
-    parser.set_defaults(**read_config())
+    #
+    # parse presets
+    parser.add_argument('--preset', nargs='*', metavar=('MACHINE'), help='Load machine preset options')
+    arg_presets, remaining = parser.parse_known_args()
+    presets = flatten_arg_list(arg_presets.preset)
+    # get dictionary of default config    
+    defaults = conf_dict['pcbasic']
+    # set machine preset options; command-line args will override these
+    if presets:
+        for preset in presets:
+            try:
+                defaults.update(**conf_dict[preset])
+            except KeyError:
+                logging.warning('Preset %s not found in PCBASIC.INI', preset)
+    # set defaults
+    parser.set_defaults(**defaults)
+    #
     # set arguments    
     parser.add_argument('program', metavar='basic_program', nargs='?', 
         help='Input program file to run (default), load or convert.')
@@ -300,6 +387,9 @@ def get_args():
     parser.add_argument('-e', '--exec', metavar='command_line', help='Execute BASIC command line')
     parser.add_argument('-q', '--quit', action='store_true', help='Quit interpreter when execution stops')
     parser.add_argument('-d', '--double', action='store_true', help='Allow double-precision math functions')
+    parser.add_argument('-f', '--max-files', nargs=1, metavar=('NUMBER'), help='Set maximum number of open files (default is 3).')
+    parser.add_argument('-s', '--max-reclen', nargs=1, metavar=('NUMBER'), help='Set maximum record length for RANDOM files (default is 128, max is 32767).')
+    parser.add_argument('-c', '--serial-in-size', nargs=1, metavar=('NUMBER'), help='Set serial input buffer size (default is 256). If 0, serial communications are disabled.')
     parser.add_argument('--peek', nargs='*', metavar=('SEG:ADDR:VAL'), help='Define PEEK preset values')
     parser.add_argument('--lpt1', action='store', metavar=('TYPE:VAL'), help='Set LPT1: to FILE:file_name or PRINTER:printer_name.')
     parser.add_argument('--lpt2', action='store', metavar=('TYPE:VAL'), help='Set LPT2: to FILE:file_name or PRINTER:printer_name.')
@@ -319,54 +409,28 @@ def get_args():
     parser.add_argument('--debug', action='store_true', help='Enable DEBUG keyword')
     parser.add_argument('--pcjr', action='store_true', help='IBM PCjr mode')
     parser.add_argument('--tandy', action='store_true', help='Tandy-1000 mode')
-    parser.add_argument('--list-all', action='store_true', help='Allow listing and ASCII saving of lines beyond 65530')
-    parser.add_argument('--unprotect', action='store_true', help='Allow listing and ASCII saving of protected files')
+    parser.add_argument('--strict-hidden-lines', action='store_true', help='Disable listing and ASCII saving of lines beyond 65530 (as in GW-BASIC). Use with care as this allows execution of unseen statements.')
+    parser.add_argument('--strict-protect', action='store_true', help='Disable listing and ASCII saving of protected files (as in GW-BASIC). Use with care as this allows execution of unseen statements.')
     parser.add_argument('--caps', action='store_true', help='Start in CAPS LOCK mode.')
     parser.add_argument('--mount', action='append', nargs='*', metavar=('D:PATH'), help='Set a drive letter to PATH.')
     parser.add_argument('--resume', action='store_true', help='Resume from saved state. Most other arguments are ignored.')
 #    parser.add_argument('--save-options', action='store', metavar=('FILENAME'), help='Save current options to specified .INI file')
-    args = parser.parse_args()
+    parser.add_argument('--strict-newline', action='store_true', help='Parse CR and LF strictly like GW-BASIC. May create problems with UNIX line endings.')
+    # manually re-enable -h
+    parser.add_argument('-h', '--help', action='store_true', help='Show this message and exit')
+    # parse command line arguments to override defaults
+    args = parser.parse_args(remaining)
+    # display help message if requested, and exit
+    # this needs to be done here as we need the parser object to exist
+    if args.help:
+        parser.print_help()
+        sys.exit(0)
     # flatten list arguments
     args.mount = flatten_arg_list(args.mount)
-    args.peek = flatten_arg_list(args.peek)
+    args.peek = flatten_arg_list(args.peek)    
     args.loadfont = flatten_arg_list(args.loadfont)
     return args
 
-def flatten_arg_list(arglist):
-    if arglist:
-        newlist = []
-        for sublist in arglist:
-            if type(sublist)==list:
-                newlist += sublist
-            else:
-                newlist += [sublist]    
-        return newlist    
-    return None    
-
-def read_config():
-    path = os.path.dirname(os.path.realpath(__file__))
-    try:
-        config = ConfigParser.RawConfigParser(allow_no_value=True)
-        config.read(os.path.join(path, 'info', 'PCBASIC.INI'))
-    except (ConfigParser.Error, IOError):
-        logging.warning('Error in config file PCBASIC.INI. Configuration not loaded.')
-        return {}
-    defaults = dict(config.items('pcbasic'))
-    try:
-        # convert booleans
-        for d in defaults:
-            if defaults[d].upper() in ('YES', 'TRUE', 'ON'):
-                defaults[d] = True
-            elif defaults[d].upper() in ('NO', 'FALSE', 'OFF'):
-                defaults[d] = False
-            elif defaults[d] == '':
-                defaults[d] = None  
-            else:
-                defaults[d] = defaults[d].split(',')    
-        return defaults          
-    except (TypeError, ValueError):
-        logging.warning('Error in config file PCBASIC.INI. Configuration not loaded.')
-        return {}    
 
 if __name__ == "__main__":
     main()

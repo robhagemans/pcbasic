@@ -940,7 +940,7 @@ def exec_open(ins):
         raise error.RunError(75)
     elif mode != 'R' and access and access != default_access_modes[mode]:
         raise error.RunError(2)        
-    util.range_check(1, 128, reclen)        
+    util.range_check(1, iolayer.max_reclen, reclen)        
     iolayer.open_file_or_device(number, name, mode, access, lock, reclen) 
     util.require(ins, util.end_statement)
                 
@@ -2174,6 +2174,8 @@ def exec_width(ins):
         w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     else:
         expr = expressions.parse_expression(ins)
+        if expr == None:
+            raise error.RunError(2)
         if expr[0] == '$':
             try:
                 dev = state.io_state.devices[str(vartypes.pass_string_unpack(expr)).upper()]
