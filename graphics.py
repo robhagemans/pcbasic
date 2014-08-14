@@ -457,21 +457,40 @@ def check_scanline (line_seed, x_start, x_stop, y, c, border, ydir):
     return line_seed    
 
 def fill_scanline(x_start, x_stop, y, pattern):
-    mask = 7 - x_start%8
-    pattern_height = len(pattern)//state.console_state.bitsperpixel
-    start_byte = (y%pattern_height)*state.console_state.bitsperpixel
-    for x in range(x_start, x_stop+1):
-        c = 0
-        for b in range(state.console_state.bitsperpixel-1,-1,-1):
-            c <<= 1
-            c += (pattern[(start_byte+b)%len(pattern)] & (1<<mask)) >> mask
-        mask -= 1
-        if mask < 0:
-            mask = 7
-        backend.video.put_pixel(x,y,c)
+    if state.console_state.screen_mode in (2, 7, 8, 9):
+        mask = 7 - x_start%8
+        pattern_height = len(pattern)//state.console_state.bitsperpixel
+        start_byte = (y%pattern_height)*state.console_state.bitsperpixel
+        for x in range(x_start, x_stop+1):
+            c = 0
+            for b in range(state.console_state.bitsperpixel-1,-1,-1):
+                c <<= 1
+                c += (pattern[(start_byte+b)%len(pattern)] >> mask) & 1
+            mask -= 1
+            if mask < 0:
+                mask = 7
+            backend.video.put_pixel(x,y,c)
+    else:
+        pattern_width = 8 // state.console_state.bitsperpixel
+        mask = 8 - state.console_state.bitsperpixel - (x_start%pattern_width)*state.console_state.bitsperpixel
+        pattern_height = len(pattern)
+        start_byte = y%pattern_height
+        for x in range(x_start, x_stop+1):
+            c = 0
+            for b in range(state.console_state.bitsperpixel-1,-1,-1):
+                c <<= 1
+                c += (pattern[start_byte] >> (mask+b)) & 1 
+            mask -= state.console_state.bitsperpixel
+            if mask < 0:
+                mask = 8 - state.console_state.bitsperpixel
+            backend.video.put_pixel(x,y,c)
       
 # flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
 def flood_fill (x, y, pattern, c, border): 
+    if state.console_state.screen_mode in (7, 8, 9):
+        while len(pattern) % state.console_state.bitsperpixel != 0:
+            # finish off the pattern with zeros
+            pattern.append(0)
     c, border = get_colour_index(c), get_colour_index(border)
     if get_point(x, y) == border:
         return
