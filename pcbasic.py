@@ -144,7 +144,9 @@ def prepare_keywords(args):
     # set pcjr TERM program    
     if args.pcjr_term:
         statements.pcjr_term = args.pcjr_term[0]
-
+    if args.video:
+        console.video_capabilities = args.video[0]
+        
 def prepare_constants(args):
     # PEEK presets
     if args.peek != None:

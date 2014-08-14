@@ -138,6 +138,8 @@ state.console_state.vpagenum = 0
 # codepage suggestion for backend
 state.console_state.codepage = '437'    
 
+# ega, tandy, pcjr
+video_capabilities='ega'
 
 #############################
 # init
@@ -147,7 +149,7 @@ def init():
         return False
     state.console_state.backend_name = backend.video.__name__
     # only allow the screen modes that the given machine supports
-    if state.basic_state.machine in ('pcjr', 'tandy'):
+    if video_capabilities in ('pcjr', 'tandy'):
         # no EGA modes (though apparently there were Tandy machines with EGA cards too)
         unavailable_modes = (7, 8, 9)
         # 8-pixel characters in screen 0
