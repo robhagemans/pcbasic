@@ -144,7 +144,9 @@ def prepare_keywords(args):
     # set pcjr TERM program    
     if args.pcjr_term:
         statements.pcjr_term = args.pcjr_term[0]
-
+    if args.video:
+        console.video_capabilities = args.video[0]
+        
 def prepare_constants(args):
     # PEEK presets
     if args.peek != None:
@@ -174,7 +176,7 @@ def prepare_constants(args):
     if (not args.strict_protect) or args.conv:
         program.dont_protect = True    
     if args.codepage:
-        state.console_state.codepage = int(args.codepage)
+        state.console_state.codepage = args.codepage
     if args.caps:
         state.console_state.caps = True    
     # rename exec argument for convenience
@@ -201,9 +203,12 @@ def prepare_constants(args):
         program.universal_newline = False
     else:
         program.universal_newline = True
+    if args.windows_map_drives:
+        oslayer.windows_map_drives()
+
 
 def prepare_console(args):
-    unicodepage.load_codepage(state.console_state.codepage)
+    state.console_state.codepage = unicodepage.load_codepage(state.console_state.codepage)
     backend.penstick = nopenstick
     backend.sound = nosound
     if args.dumb or args.conv or (not args.graphical and not args.ansi and (not stdin_is_tty or not stdout_is_tty)):
@@ -396,8 +401,10 @@ def get_args():
     parser.add_argument('--lpt3', action='store', metavar=('TYPE:VAL'), help='Set LPT3: to FILE:file_name or PRINTER:printer_name.')
     parser.add_argument('--com1', action='store', metavar=('TYPE:VAL'), help='Set COM1: to PORT:device_name or SOCKET:host:socket.')
     parser.add_argument('--com2', action='store', metavar=('TYPE:VAL'), help='Set COM2: to PORT:device_name or SOCKET:host:socket.')
-    parser.add_argument('--conv', action='store', nargs='?', metavar='mode:outfile', help='Convert basic_program to (A)SCII, (B)ytecode or (P)rotected mode.')
-    parser.add_argument('--codepage', action='store', metavar=('NUMBER'), help='Load specified font codepage. Default is 437 (US).')
+    parser.add_argument('--conv', action='store', nargs='?', metavar='mode:outfile', help='Convert basic_program to (A)SCII, (B)ytecode or (P)rotected mode. Implies --unprotect and --list-all.')
+    parser.add_argument('--codepage', action='store', metavar=('NUMBER'), help='Load specified font codepage; default is 437')
+    parser.add_argument('--font-family', action='store', metavar=('TYPEFACE'), help='Load current codepage from specified font family.')
+    parser.add_argument('--loadfont', action='append', nargs='*', metavar=('TYPEFACE'), help='Load specified fonts. Do not change codepage.')
     parser.add_argument('--nosound', action='store_true', help='Disable sound output')
     parser.add_argument('--dimensions', nargs=1, metavar=('X, Y'), help='Set pixel dimensions for graphics mode. Default is 640,480. Use 640,400 or multiples for cleaner pixels - but incorrect aspect ratio - on square-pixel LCDs. Graphical terminal only.')
     parser.add_argument('--dimensions-text', nargs=1, metavar=('X, Y'), help='Set pixel dimensions for text mode. Default is 640,400. Graphical terminal only.')
@@ -410,11 +417,13 @@ def get_args():
     parser.add_argument('--caps', action='store_true', help='Start in CAPS LOCK mode.')
     parser.add_argument('--mount', action='append', nargs='*', metavar=('D:PATH'), help='Set a drive letter to PATH.')
     parser.add_argument('--resume', action='store_true', help='Resume from saved state. Most other arguments are ignored.')
+#    parser.add_argument('--save-options', action='store', metavar=('FILENAME'), help='Save current options to specified .INI file')
     parser.add_argument('--strict-newline', action='store_true', help='Parse CR and LF strictly like GW-BASIC. May create problems with UNIX line endings.')
     # PCjr and Tandy options
     parser.add_argument('--pcjr-syntax', action='store', choices=('pcjr', 'tandy'), help='Enable PCjr/Tandy 1000 syntax extensions')
     parser.add_argument('--pcjr-term', action='store', help='Set the program run by the PCjr TERM command')
     parser.add_argument('--video', action='store', choices=('ega', 'pcjr', 'tandy'), help='Set video capabilities')
+    parser.add_argument('--windows-map-drives', action='store_true', help='Map all Windows drive letters to PC-BASIC drive letters (Windows only)')
     # manually re-enable -h
     parser.add_argument('-h', '--help', action='store_true', help='Show this message and exit')
     # parse command line arguments to override defaults
@@ -427,6 +436,7 @@ def get_args():
     # flatten list arguments
     args.mount = flatten_arg_list(args.mount)
     args.peek = flatten_arg_list(args.peek)    
+    args.loadfont = flatten_arg_list(args.loadfont)
     return args
 
 

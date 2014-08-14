@@ -36,16 +36,6 @@ class ScreenBuffer(object):
     def __init__(self, bwidth, bheight):
         self.row = [ScreenRow(bwidth) for _ in xrange(bheight)]
         
-#  font_height, attr, num_colours, num_palette, width, num_pages, bitsperpixel
-mode_data = {
-    0: ( 16,  7, 32, 64, 80, 4, 4 ),
-    1: (  8,  3,  4, 16, 40, 1, 2 ),
-    2: (  8,  1,  2, 16, 80, 1, 1 ), 
-    7: (  8, 15, 16, 16, 40, 8, 4 ),
-    8: (  8, 15, 16, 16, 80, 4, 4 ),
-    9: ( 14, 15, 16, 64, 80, 2, 4 ),
-    }
-
 # default codes for KEY autotext
 # F1-F10 
 function_key = { 
@@ -65,9 +55,12 @@ keys_line_replace_chars = {
         '\x0B': '\x7f',    '\x0C': '\x16',    '\x0D': '\x1b',    '\x1C': '\x10',
         '\x1D': '\x11',    '\x1E': '\x18',    '\x1F': '\x19',
     }        
-
-# codepage suggestion for backend
-state.console_state.codepage = 437    
+    
+# KEY ON?
+state.console_state.keys_visible = True
+# user definable key list
+state.console_state.key_replace = [ 
+    'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r','TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r' ]
 
 # number of columns, counting 1..width
 state.console_state.width = 80
@@ -110,6 +103,29 @@ state.console_state.input_closed = False
 # capslock mode 
 state.console_state.caps = False
 
+
+# pen and stick
+state.console_state.pen_is_on = False
+state.console_state.stick_is_on = False
+
+# for SCREEN
+
+#  font_height, attr, num_colours, num_palette, width, num_pages, bitsperpixel, font_width
+mode_data = {
+    0: ( 16,  7, 32, 64, 80, 4, 4, 8 ), # height 8, 14, or 16; font width 8 or 9; height 40 or 80 
+    1: (  8,  3,  4, 16, 40, 1, 2, 8 ), # 04h 320x200x4  16384B 2bpp 0xb8000 tandy:2 pages if 32k memory; ega: 1 page only 
+    2: (  8,  1,  2, 16, 80, 1, 1, 8 ), # 06h 640x200x2  16384B 1bpp 0xb8000
+    3: (  8, 15, 16, 16, 20, 2, 4, 8 ), # 08h 160x200x16 16384B 4bpp 0xb8000
+    4: (  8,  3,  4, 16, 40, 2, 2, 8 ), #     320x200x4  16384B 2bpp 0xb8000   
+    5: (  8, 15, 16, 16, 40, 1, 4, 8 ), # 09h 320x200x16 32768B 4bpp 0xb8000    
+    6: (  8,  3,  4, 16, 80, 1, 2, 8 ), # 0Ah 640x200x4  32768B 2bpp 0xb8000   
+    7: (  8, 15, 16, 16, 40, 8, 4, 8 ), # 0Dh 320x200x16 32768B 4bpp 0xa0000
+    8: (  8, 15, 16, 16, 80, 4, 4, 8 ), # 0Eh 640x200x16 
+    9: ( 14, 15, 16, 64, 80, 2, 4, 8 ), # 10h 640x350x16 
+    }
+
+# default is EGA 64K
+state.console_state.video_mem_size = 65536
 # officially, whether colours are displayed. in reality, SCREEN just clears the screen if this value is changed
 state.console_state.colorswitch = 1
 # SCREEN mode (0 is textmode)
@@ -119,15 +135,11 @@ state.console_state.apagenum = 0
 # number of visible page
 state.console_state.vpagenum = 0
 
-# pen and stick
-state.console_state.pen_is_on = False
-state.console_state.stick_is_on = False
-    
-# KEY ON?
-state.console_state.keys_visible = True
-# user definable key list
-state.console_state.key_replace = [ 
-    'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r','TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r' ]
+# codepage suggestion for backend
+state.console_state.codepage = '437'    
+
+# ega, tandy, pcjr
+video_capabilities='ega'
 
 #############################
 # init
@@ -136,6 +148,18 @@ def init():
     if not backend.video.init():
         return False
     state.console_state.backend_name = backend.video.__name__
+    # only allow the screen modes that the given machine supports
+    if video_capabilities in ('pcjr', 'tandy'):
+        # no EGA modes (though apparently there were Tandy machines with EGA cards too)
+        unavailable_modes = (7, 8, 9)
+        # 8-pixel characters in screen 0
+        mode_data[0] = ( 8, 7, 32, 64, 80, 4, 4, 8 ) 
+        # TODO: determine the number of pages based on video memory size, not hard coded. 
+    else:
+        # no PCjr modes
+        unavailable_modes = (3, 4, 5, 6)
+    for mode in unavailable_modes:
+        del mode_data[mode]
     if state.loaded:
         if state.console_state.screen_mode != 0 and not backend.video.supports_graphics:
             logging.warning("Screen mode not supported by display backend.")
@@ -150,13 +174,18 @@ def init():
         screen(None, None, None, None, first_run=True)
     return True
 
-def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=False, new_width=None):
+def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first_run=False, new_width=None):
     new_mode = state.console_state.screen_mode if new_mode == None else new_mode
     new_colorswitch = state.console_state.colorswitch if new_colorswitch == None else (new_colorswitch != 0)
     new_vpagenum = state.console_state.vpagenum if new_vpagenum == None else new_vpagenum
     new_apagenum = state.console_state.apagenum if new_apagenum == None else new_apagenum
     do_redraw = (   (new_mode != state.console_state.screen_mode) or (new_colorswitch != state.console_state.colorswitch) 
                     or first_run or (new_width and new_width != state.console_state.width) )
+    # TODO: implement erase level (Tandy/pcjr)
+    # Erase tells basic how much video memory to erase
+    # 0: do not erase video memory
+    # 1: (default) erase old and new page if screen or bust changes
+    # 2: erase all video memory if screen or bust changes 
     try:
         info = mode_data[new_mode]
     except KeyError:
@@ -184,7 +213,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
         state.console_state.width, state.console_state.height = new_width, 25
         (   state.console_state.font_height, _, 
             state.console_state.num_colours, state.console_state.num_palette, _, 
-            state.console_state.num_pages, state.console_state.bitsperpixel     ) = info  
+            state.console_state.num_pages, state.console_state.bitsperpixel, state.console_state.font_width ) = info  
         # enforce backend palette maximum
         state.console_state.num_palette = min(state.console_state.num_palette, backend.video.max_palette)
         # width persists on change to screen 0
@@ -196,10 +225,12 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, first_run=Fals
         state.console_state.vpage = state.console_state.pages[state.console_state.vpagenum]
         state.console_state.apage = state.console_state.pages[state.console_state.apagenum]
         # resolution
-        state.console_state.size = (state.console_state.width*8, state.console_state.height*state.console_state.font_height)
+        state.console_state.size = (state.console_state.width*state.console_state.font_width,          
+                                         state.console_state.height*state.console_state.font_height)
         # centre of new graphics screen
-        state.console_state.last_point = (state.console_state.width*4, state.console_state.height*state.console_state.font_height/2)
+        state.console_state.last_point = (state.console_state.size[0]/2, state.console_state.size[1]/2)
         # pixels e.g. 80*8 x 25*14, screen ratio 4x3 makes for pixel width/height (4/3)*(25*14/8*80)
+        # FIXME - hard coded 8-pixel width for graphics screens here.
         state.console_state.pixel_aspect_ratio = fp.div(
             fp.Single.from_int(state.console_state.height*state.console_state.font_height), 
             fp.Single.from_int(6*state.console_state.width)) 
@@ -731,7 +762,7 @@ def show_keys():
                 write_for_keys(text, kcol+1, 0x70)
             else:
                 write_for_keys(text, kcol+1, 0x07)
-    state.console_state.apage.row[24].end = 80            
+    state.console_state.apage.row[24].end = state.console_state.width           
 
 def write_for_keys(s, col, cattr):
     # write chars for the keys line - yes, it's different :)

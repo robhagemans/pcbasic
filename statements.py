@@ -254,7 +254,7 @@ def exec_debug(ins):
         debug_cmd += ins.read(1)
     debug.debug_exec(debug_cmd)
 
-# PCjr builtin serial terminal emulator; not implemented
+# PCjr builtin serial terminal emulator
 def exec_term(ins):
     if not pcjr_term:
         # on Tandy, raises Internal Error
@@ -1556,10 +1556,17 @@ def exec_clear(ins):
             # expression2 sets aside stack space for GW-BASIC. The default is the previous stack space size. 
             # When GW-BASIC is first executed, the stack space is set to 512 bytes, or one-eighth of the available memory, 
             # whichever is smaller.
-            exp2 = expressions.parse_expression(ins, empty_err=2)
-            if vartypes.pass_int_unpack(exp2, maxint=0xffff) == 0:
+            exp2 = expressions.parse_expression(ins, allow_empty = True)
+            if exp2 and vartypes.pass_int_unpack(exp2, maxint=0xffff) == 0:
                 #  0 leads to illegal fn call
                 raise error.RunError(5)
+            if pcjr_syntax and util.skip_white_read_if(ins, (',',)):
+                # Tandy/PCjr: select video memory size
+                state.console_state.video_mem_size = fp.unpack(vartypes.pass_single_keep(
+                                                        expressions.parse_expression(ins, empty_err=2))).round_to_int()
+                # TODO: what errors are raised?
+            elif not exp2:
+                raise error.RunError(2)    
     util.require(ins, util.end_statement)
 
 def exec_common(ins):    
@@ -1895,7 +1902,7 @@ def exec_color(ins):
         util.range_check(0, 15, back, bord)
         state.console_state.attr = ((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10 + (fore & 0xf) 
         # border not implemented
-    elif mode in (7, 8):
+    elif mode in (3, 4, 5, 6, 7, 8):
         util.range_check(1, state.console_state.num_colours-1, fore)
         util.range_check(0, state.console_state.num_colours-1, back)
         state.console_state.attr = fore
@@ -2195,19 +2202,24 @@ def exec_width(ins):
     dev.set_width(w)
     
 def exec_screen(ins):
-    # in GW, screen 0,0,0,0,0,0 raises error after changing the palette... this raises error before:
-    mode, colorswitch, apagenum, vpagenum = expressions.parse_int_list(ins, 4)
+    erase = 1
+    if pcjr_syntax:
+        # TODO: what errors on erase values?
+        mode, colorswitch, apagenum, vpagenum, erase = expressions.parse_int_list(ins, 5)
+    else:    
+        # in GW, screen 0,0,0,0,0,0 raises error after changing the palette... this raises error before:
+        mode, colorswitch, apagenum, vpagenum = expressions.parse_int_list(ins, 4)
     # set defaults to avoid err 5 on range check
     mode = mode if mode != None else state.console_state.screen_mode
     colorswitch = colorswitch if colorswitch != None else state.console_state.colorswitch    
     apagenum = apagenum if apagenum != None else state.console_state.apagenum
     vpagenum = vpagenum if vpagenum != None else state.console_state.vpagenum
     # if any parameter not in [0,255], error 5 without doing anything 
-    util.range_check(0, 255, mode, colorswitch, apagenum, vpagenum)
+    util.range_check(0, 255, mode, colorswitch, apagenum, vpagenum, erase)
     # if the parameters are outside narrow ranges (e.g. not implemented screen mode, pagenum beyond max)
     # then the error is only raised after changing the palette.
     util.require(ins, util.end_statement)        
-    if not console.screen(mode, colorswitch, apagenum, vpagenum):
+    if not console.screen(mode, colorswitch, apagenum, vpagenum, erase):
         raise error.RunError(5)
     
 def exec_pcopy(ins):
