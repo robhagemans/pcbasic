@@ -551,7 +551,7 @@ def set_area(x0,y0, array, operation_char):
     operation = operations[operation_char]
     backend.video.apply_graph_clip()
     byte = 4
-    if state.console_state.screen_mode in (1, 3, 4, 5, 6):
+    if state.console_state.screen_mode in (1, 3, 4, 5):
         shift = 8 - state.console_state.bitsperpixel
         for y in range(y0, y1+1):
             for x in range(x0, x1+1):
@@ -610,7 +610,7 @@ def get_area(x0,y0,x1,y1, array):
         raise error.RunError(5)    
     # clear existing array
     byte_array[:] = '\x00'*len(byte_array)
-    if state.console_state.screen_mode in (1, 3, 4, 5):
+    if state.console_state.screen_mode in (1, 3, 4, 5, 6):
         byte_array[0:4] = vartypes.value_to_uint(dx*state.console_state.bitsperpixel) + vartypes.value_to_uint(dy)
     else:
         byte_array[0:4] = vartypes.value_to_uint(dx) + vartypes.value_to_uint(dy) 
