@@ -55,7 +55,8 @@ operator_tokens = [item for sublist in priority for item in sublist]
 # command line option /d
 # allow double precision math for ^, ATN, COS, EXP, LOG, SIN, SQR, and TAN
 option_double = False
-
+# enable pcjr/tandy syntax extensions
+pcjr_syntax = False
 
 def parse_expression(ins, allow_empty=False, empty_err=22):
     units, operators = [], []
@@ -650,7 +651,7 @@ def value_pmap(ins):
 def value_play(ins):
     voice = vartypes.pass_int_unpack(parse_bracket(ins))    
     util.range_check(0, 255, voice)
-    if not(state.basic_state.machine == 'tandy' or state.basic_state.machine == 'pcjr' and voice in (1, 2)):
+    if not(pcjr_syntax and voice in (1, 2)):
         voice = 0    
     return vartypes.pack_int(sound.music_queue_length(voice))
     

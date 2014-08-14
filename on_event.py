@@ -105,7 +105,7 @@ def check_timer_event():
 
 def check_play_event():
     play_now = [sound.music_queue_length(voice) for voice in range(3)]
-    if state.basic_state.machine in ('tandy', 'pcjr'):
+    if sound.pcjr_sound: 
         for voice in range(3):
             if ( play_now[voice] <= state.basic_state.play_trig and play_now[voice] > 0 and 
                     play_now[voice] != state.basic_state.play_last[voice] ):
