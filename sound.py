@@ -12,6 +12,9 @@
 import state
 import backend
 
+# pcjr/tandy sound
+pcjr_sound = None
+
 state.console_state.music_foreground = True
 state.console_state.music_queue = [[], [], [], []]
 state.console_state.sound_on = False
@@ -38,7 +41,7 @@ def beep():
     play_sound(800, 0.25)
 
 def play_sound(frequency, duration, fill=1, loop=False, voice=0, volume=15):
-    if ((state.basic_state.machine == 'tandy' or (state.basic_state.machine == 'pcjr' and state.basic_state.sound_on))
+    if ((pcjr_sound == 'tandy' or (pcjr_sound == 'pcjr' and state.basic_state.sound_on))
         and frequency < 110. and frequency != 0):
         # pcjr, tandy play low frequencies as 110Hz
         frequency = 110.
