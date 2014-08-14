@@ -540,8 +540,8 @@ def set_area(x0,y0, array, operation_char):
     dx = vartypes.uint_to_value(byte_array[0:2])
     dy = vartypes.uint_to_value(byte_array[2:4])
     # in mode 1, number of x bits is given rather than pixels
-    if state.console_state.screen_mode == 1:
-        dx /= 2
+    if state.console_state.screen_mode in (1, 3, 4, 5, 6):
+        dx /= state.console_state.bitsperpixel
     x1, y1 = x0+dx-1, y0+dy-1
     x0, y0 = view_coords(x0, y0)
     x1, y1 = view_coords(x1, y1)
@@ -551,13 +551,13 @@ def set_area(x0,y0, array, operation_char):
     operation = operations[operation_char]
     backend.video.apply_graph_clip()
     byte = 4
-    if state.console_state.screen_mode == 1:
-        shift = 6
+    if state.console_state.screen_mode in (1, 3, 4, 5, 6):
+        shift = 8 - state.console_state.bitsperpixel
         for y in range(y0, y1+1):
             for x in range(x0, x1+1):
                 if shift < 0:
                     byte += 1
-                    shift = 6
+                    shift = 8 - state.console_state.bitsperpixel
                 if x < 0 or x >= state.console_state.size[0] or y < 0 or y >= state.console_state.size[1]:
                     pixel = 0
                 else:
@@ -567,10 +567,10 @@ def set_area(x0,y0, array, operation_char):
                     except IndexError:
                         pass                
                     backend.video.put_pixel(x, y, operation(pixel, index))    
-                shift -= 2
+                shift -= state.console_state.bitsperpixel
             # byte align next row
             byte += 1
-            shift = 6   
+            shift = 8 - state.console_state.bitsperpixel
     else:                
         mask = 0x80
         row_bytes = (dx+7) // 8
@@ -610,27 +610,27 @@ def get_area(x0,y0,x1,y1, array):
         raise error.RunError(5)    
     # clear existing array
     byte_array[:] = '\x00'*len(byte_array)
-    if state.console_state.screen_mode==1:
-        byte_array[0:4] = vartypes.value_to_uint(dx*2) + vartypes.value_to_uint(dy)
+    if state.console_state.screen_mode in (1, 3, 4, 5):
+        byte_array[0:4] = vartypes.value_to_uint(dx*state.console_state.bitsperpixel) + vartypes.value_to_uint(dy)
     else:
         byte_array[0:4] = vartypes.value_to_uint(dx) + vartypes.value_to_uint(dy) 
     byte = 4
-    if state.console_state.screen_mode == 1:
-        shift = 6
+    if state.console_state.screen_mode in (1, 3, 4, 5):
+        shift = 8-state.console_state.bitsperpixel
         for y in range(y0, y1+1):
             for x in range(x0, x1+1):
                 if shift < 0:
                     byte += 1
-                    shift = 6
+                    shift = 8-state.console_state.bitsperpixel
                 pixel = backend.video.get_pixel(x,y) # 2-bit value
                 try:
                     byte_array[byte] |= pixel << shift
                 except IndexError:
                     raise error.RunError(5)      
-                shift -= 2
+                shift -= state.console_state.bitsperpixel
             # byte align next row
             byte += 1
-            shift = 6   
+            shift = 8-state.console_state.bitsperpixel
     else:    
         mask = 0x80
         row_bytes = (dx+7) // 8
