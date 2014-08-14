@@ -2676,39 +2676,55 @@ TILE PATTERNS
     A tile pattern can be specified by a string of up to 255 characters. The 
     interpretation of the string depends on the number of bits per pixel in 
     the current screen mode.
-    The tile pattern is always 8 pixels wide. The first character in the 
-    pattern string contains the first bit of each of these 8 pixels, the second
-    character contains the second bits, etc. 
-    For a one-bit-per-pixel mode (as in SCREEN 2), here is an example:
-              76543210    value
-              *.......    chr$(&h80)        
-              .*......    chr$(&h40)        
-              ..*.....    chr$(&h20)        
-              ...*....    chr$(&h10)        
-              ....*...    chr$(&h08)
-              .....*..    chr$(&h04)
-              ......*.    chr$(&h02)
-    For a 2-bits-per-pixel mode (as in SCREEN 1), the pattern can have many
-    colours. However, the same size pattern as above in attribute &h03 is:
-        bit   76543210    value
-        0     *.......    chr$(&h80)        
-        1     *.......    chr$(&h80)        
-        0     .*......    chr$(&h40)        
-        1     .*......    chr$(&h40)        
-        0     ..*.....    chr$(&h20)        
-        1     ..*.....    chr$(&h20)        
-        0     ...*....    chr$(&h10)        
-        1     ...*....    chr$(&h10)        
-        0     ....*...    chr$(&h08)
-        1     ....*...    chr$(&h08)
-        0     .....*..    chr$(&h04)
-        1     .....*..    chr$(&h04)
-        0     ......*.    chr$(&h02)    
-        1     ......*.    chr$(&h02)    
-    If the pattern string is truncated before all bits of the last line have 
-    been defined, the remining bits will be zero.
-    The tile pattern is locked to the screen; imagine an 8 x height grid
-    starting at (0,0) and covering the screen. Whenever an area is tile-filled,
+    SCREEN 2:
+        For a one-bit-per-pixel mode (as in SCREEN 2), here is an example:
+                  76543210    value
+                  *.......    chr$(&h80)        
+                  .*......    chr$(&h40)        
+                  ..*.....    chr$(&h20)        
+                  ...*....    chr$(&h10)        
+                  ....*...    chr$(&h08)
+                  .....*..    chr$(&h04)
+                  ......*.    chr$(&h02)
+    SCREEN 7, 8, 9:
+        The tile pattern is always 8 pixels wide. The first character in the 
+        pattern string contains the first bit of each of these 8 pixels, the 
+        second character contains the second bits, etc. 
+        For example, in a 2-bits-per-pixel mode, the pattern can have many
+        colours. However, the same size pattern as above in attribute &h03 is:
+            bit   76543210    value
+            0     *.......    chr$(&h80)        
+            1     *.......    chr$(&h80)        
+            0     .*......    chr$(&h40)        
+            1     .*......    chr$(&h40)        
+            0     ..*.....    chr$(&h20)        
+            1     ..*.....    chr$(&h20)        
+            0     ...*....    chr$(&h10)        
+            1     ...*....    chr$(&h10)        
+            0     ....*...    chr$(&h08)
+            1     ....*...    chr$(&h08)
+            0     .....*..    chr$(&h04)
+            1     .....*..    chr$(&h04)
+            0     ......*.    chr$(&h02)    
+            1     ......*.    chr$(&h02)    
+        If the pattern string is truncated before all bits of the last line 
+        have been defined, the remining bits will be zero.
+    SCREEN 1, 3, 4, 5, 6:
+        Each row of the tile pattern represents a screen row. Colours are 
+        encoded in consecutive bits - the more bits per pixel, the narrow the
+        pattern is. For 2 bits per pixel, the pattern is 4 pixels wide; for 4 
+        bits per pixel it is 2 pixels wide. The pattern form above now encodes
+        a multicoloured tile:
+            3210  76543210    value
+            2000  *.......    chr$(&h80)        
+            1000  .*......    chr$(&h40)        
+            0200  ..*.....    chr$(&h20)        
+            0100  ...*....    chr$(&h10)        
+            0020  ....*...    chr$(&h08)
+            0010  .....*..    chr$(&h04)
+            0002  ......*.    chr$(&h02)
+    The tile pattern is locked to the screen; imagine a grid starting at 
+    (0,0) and covering the screen. Whenever an area is tile-filled,
     the tiles are put into this grid. In this way, adjacent areas will have
     continuous tiling even if they were filled from different seed points.
 NOTES:
