@@ -220,15 +220,8 @@ def draw_parse_gml(gml):
             if util.skip_read(gmls, ml_whitepace) != ',':
                 raise error.RunError(5)
             bound = ml_parse_number(gmls)
-            graphics.flood_fill(x0, y0, solid_pattern(colour), colour, bound)    
+            graphics.flood_fill(x0, y0, None, colour, bound)    
     state.console_state.attr = save_attr        
-
-def solid_pattern(c):
-    pattern = [0]*state.console_state.bitsperpixel
-    for b in range(state.console_state.bitsperpixel):
-        if c&(1<<b) != 0:
-            pattern[b] = 0xff
-    return pattern
     
 # MUSIC MACRO LANGUAGE
 

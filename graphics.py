@@ -485,8 +485,26 @@ def fill_scanline(x_start, x_stop, y, pattern):
                 mask = 8 - state.console_state.bitsperpixel
             backend.video.put_pixel(x,y,c)
       
+def solid_pattern(c):
+    if state.console_state.screen_mode in (2, 7, 8, 9):
+        pattern = [0]*state.console_state.bitsperpixel
+        for b in range(state.console_state.bitsperpixel):
+            if c&(1<<b) != 0:
+                pattern[b] = 0xff
+        return pattern
+    else:
+        pixelsperbyte = 8//state.console_state.bitsperpixel
+        c &= (1<<state.console_state.bitsperpixel)-1
+        pattern = 0
+        for b in range(pixelsperbyte):
+            pattern <<= state.console_state.bitsperpixel
+            pattern |= c
+        return [pattern]
+               
 # flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
 def flood_fill (x, y, pattern, c, border): 
+    if not pattern:
+        pattern = solid_pattern(c)
     if state.console_state.screen_mode in (7, 8, 9):
         while len(pattern) % state.console_state.bitsperpixel != 0:
             # finish off the pattern with zeros
