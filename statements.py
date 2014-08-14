@@ -38,6 +38,9 @@ import var
 import vartypes
 import sound
 
+pcjr_syntax = None
+pcjr_term = ''
+
 # parses one statement at the current stream pointer in current codestream
 # return value False: stream ends
 def parse_statement():
@@ -253,11 +256,11 @@ def exec_debug(ins):
 
 # PCjr builtin serial terminal emulator; not implemented
 def exec_term(ins):
-    if state.basic_state.machine != 'pcjr':
+    if not pcjr_term:
         # on Tandy, raises Internal Error
         raise error.RunError(51)
     util.require(ins, util.end_statement)
-    program.load(iolayer.open_file_or_device(0, '@:\TERM.BAS', mode='L'))
+    program.load(iolayer.open_file_or_device(0, pcjr_term, mode='L'))
     flow.init_program()
     reset.clear()
     flow.jump(None)
@@ -456,7 +459,7 @@ def exec_beep(ins):
     
 def exec_sound(ins):
     # Tandy/PCjr SOUND ON, OFF
-    if state.basic_state.machine in ('pcjr', 'tandy') and util.skip_white(ins) in ('\x95', '\xDD'):
+    if pcjr_syntax and util.skip_white(ins) in ('\x95', '\xDD'):
         state.console_state.sound_on = (ins.read(1) == '\x95')
         util.require(ins, util.end_statement)
         return
@@ -465,7 +468,7 @@ def exec_sound(ins):
     dur = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
     if fp.Single.from_int(-65535).gt(dur) or dur.gt(fp.Single.from_int(65535)):
         raise error.RunError(5)
-    if (state.basic_state.machine == 'tandy' or (state.basic_state.machine == 'pcjr' and state.console_state.sound_on) 
+    if (pcjr_syntax == 'tandy' or (pcjr_syntax == 'pcjr' and state.console_state.sound_on)
             and util.skip_white_read_if(ins, (',',))):
         volume = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         util.range_check(0, 15, volume)        
@@ -480,7 +483,8 @@ def exec_sound(ins):
     if dur.is_zero():
         sound.stop_all_sound()
         return
-    if state.basic_state.machine == 'tandy': 
+    # Tandy only allows frequencies below 37 (but palys them as 110 Hz)    
+    if sound.pcjr_sound == 'tandy': 
         util.range_check(0, 32767, freq) 
     else:    
         if freq != 0:
@@ -503,7 +507,7 @@ def exec_play(ins):
         # retrieve Music Macro Language string
         mml0 = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         mml1, mml2 = '', ''
-        if ((state.basic_state.machine == 'tandy' or (state.basic_state.machine == 'pcjr' and state.console_state.sound_on))
+        if ((pcjr_syntax == 'tandy' or (pcjr_syntax == 'pcjr' and state.console_state.sound_on))
                 and util.skip_white_read_if(ins, (',',))):
             mml1 = vartypes.pass_string_unpack(expressions.parse_expression(ins))
             if util.skip_white_read_if(ins, (',',)):
