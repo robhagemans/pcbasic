@@ -80,7 +80,7 @@ def show_screen():
             outstr += ('|')
         outstr += (''.join(s))
         if row.wrap:
-            logging.debug(outstr + '\\')
+            logging.debug(outstr + '\\ {0:2}'.format(row.end))
         else:
             logging.debug(outstr + '| {0:2}'.format(row.end))        
         lastwrap = row.wrap    
