@@ -23,7 +23,6 @@ state.console_state.graph_window = None
 state.console_state.graph_window_bounds = None
 state.console_state.last_point = (0, 0)    
 
-
 def require_graphics_mode(err=5):
     if not is_graphics_mode():
         raise error.RunError(err)
