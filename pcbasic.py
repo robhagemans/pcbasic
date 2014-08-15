@@ -359,7 +359,7 @@ def get_args():
         description='PC-BASIC 3.23 interpreter. If no options are present, the interpreter will run in interactive mode.')
     #
     # parse presets
-    parser.add_argument('--preset', nargs='*', metavar=('MACHINE'), choices=conf_dict.keys(), help='Load machine preset options')
+    parser.add_argument('--preset', nargs='*', choices=conf_dict.keys(), help='Load machine preset options')
     arg_presets, remaining = parser.parse_known_args()
     presets = flatten_arg_list(arg_presets.preset)
     # get dictionary of default config    
