@@ -201,7 +201,9 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
     if do_redraw:
         if new_width == None:
             if new_mode == 0:
-                new_width = state.console_state.width
+                new_width = state.console_state.width 
+                if new_width == 20:
+                    new_width = 40
             else:
                 new_width = info[4]        
         if not (state.console_state.screen_mode == 0 and new_mode == 0 
@@ -710,16 +712,28 @@ def write_line(s='', scroll_ok=True):
 
 def set_width(to_width):
     # raise an error if the width value doesn't make sense
-    if to_width not in (40, 80):
+    if to_width not in (20, 40, 80):
         return False
     if to_width == state.console_state.width:
         return True
-    if state.console_state.screen_mode == 0:
+    if to_width == 20:
+        return screen(3, None, None, None)
+    elif state.console_state.screen_mode == 0:
         return screen(0, None, None, None, new_width=to_width) 
     elif state.console_state.screen_mode == 1 and to_width == 80:
         return screen(2, None, None, None)
     elif state.console_state.screen_mode == 2 and to_width == 40:
         return screen(1, None, None, None)
+    elif state.console_state.screen_mode == 3 and to_width == 40:
+        return screen(1, None, None, None)
+    elif state.console_state.screen_mode == 3 and to_width == 80:
+        return screen(2, None, None, None)
+    elif state.console_state.screen_mode == 4 and to_width == 80:
+        return screen(2, None, None, None)
+    elif state.console_state.screen_mode == 5 and to_width == 80:
+        return screen(6, None, None, None)
+    elif state.console_state.screen_mode == 6 and to_width == 40:
+        return screen(5, None, None, None)
     elif state.console_state.screen_mode == 7 and to_width == 80:
         return screen(8, None, None, None)
     elif state.console_state.screen_mode == 8 and to_width == 40:
