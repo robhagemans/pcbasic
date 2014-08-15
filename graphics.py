@@ -439,19 +439,21 @@ def quadrant_gte(quadrant, x,y, x0,y0):
 # http://en.wikipedia.org/wiki/Flood_fill
 
 # look at a scanline for a given interval; add all subintervals between border colours to the pile
-def check_scanline(line_seed, x_start, x_stop, y, c, pattern, border, ydir):
+def check_scanline(line_seed, x_start, x_stop, y, c, pattern, background, border, ydir):
     if x_stop < x_start:
         return line_seed
     x_start_next = x_start
     x_stop_next = x_start_next-1
     has_same_pattern = True
     pattern_line = get_pattern_line(x_start, x_stop, y, c, pattern)
+    if background:
+        background_line = get_pattern_line(x_start, x_stop, y, c, background)
     for x in range(x_start, x_stop+1):
         # here we check for border *as well as* fill colour, to avoid infinite loops over bits already painted (eg. 00 shape)
         xy_colour = backend.video.get_pixel(x, y)
         if xy_colour not in (border, c):
             x_stop_next = x
-            has_same_pattern &= (xy_colour == pattern_line[x-x_start])
+            has_same_pattern &= (xy_colour == pattern_line[x-x_start] and (not background or xy_colour != background_line[x-x_start]))
         else:
             if x_stop_next >= x_start_next and not has_same_pattern:
                 line_seed.append([x_start_next, x_stop_next, y, ydir])
@@ -504,7 +506,7 @@ def get_pattern_line(x_start, x_stop, y, solid_c, pattern):
     return line
                
 # flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
-def flood_fill (x, y, pattern, c, border, background_pattern): 
+def flood_fill (x, y, pattern, c, border, background): 
     if state.console_state.screen_mode in (7, 8, 9):
         while len(pattern) % state.console_state.bitsperpixel != 0:
             # finish off the pattern with zeros
@@ -530,18 +532,18 @@ def flood_fill (x, y, pattern, c, border, background_pattern):
         # check next scanlines and add intervals to the list
         if ydir == 0:
             if y + 1 <= bound_y1:
-                line_seed = check_scanline(line_seed, x_left, x_right, y+1, c, pattern, border, 1)
+                line_seed = check_scanline(line_seed, x_left, x_right, y+1, c, pattern, background, border, 1)
             if y - 1 >= bound_y0:
-                line_seed = check_scanline(line_seed, x_left, x_right, y-1, c, pattern, border, -1)
+                line_seed = check_scanline(line_seed, x_left, x_right, y-1, c, pattern, background, border, -1)
         else:
             # check the same interval one scanline onward in the same direction
             if y+ydir <= bound_y1 and y+ydir >= bound_y0:
-                line_seed = check_scanline(line_seed, x_left, x_right, y+ydir, c, pattern, border, ydir)
+                line_seed = check_scanline(line_seed, x_left, x_right, y+ydir, c, pattern, background, border, ydir)
             # check any bit of the interval that was extended one scanline backward 
             # this is where the flood fill goes around corners.
             if y-ydir <= bound_y1 and y-ydir >= bound_y0:
-                line_seed = check_scanline(line_seed, x_left, x_start-1, y-ydir, c, pattern, border, -ydir)
-                line_seed = check_scanline(line_seed, x_stop+1, x_right, y-ydir, c, pattern, border, -ydir)
+                line_seed = check_scanline(line_seed, x_left, x_start-1, y-ydir, c, pattern, background, border, -ydir)
+                line_seed = check_scanline(line_seed, x_stop+1, x_right, y-ydir, c, pattern, background, border, -ydir)
         # draw the pixels for the current interval   
         fill_scanline(x_left, x_right, y, c, pattern)
         # show progress
