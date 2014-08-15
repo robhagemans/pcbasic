@@ -135,7 +135,7 @@ def prepare_keywords(args):
     else:
         # set logging format
         logging.basicConfig(format='%(levelname)s: %(message)s')
-    if len(args.pcjr_syntax)>0 and args.pcjr_syntax[0]:
+    if args.pcjr_syntax and len(args.pcjr_syntax)>0:
         statements.pcjr_syntax = args.pcjr_syntax[0]
         expressions.pcjr_syntax = args.pcjr_syntax[0]
         sound.pcjr_sound = args.pcjr_syntax[0]
