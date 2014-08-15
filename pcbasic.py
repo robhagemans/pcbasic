@@ -135,10 +135,10 @@ def prepare_keywords(args):
     else:
         # set logging format
         logging.basicConfig(format='%(levelname)s: %(message)s')
-    if args.pcjr_syntax:
-        statements.pcjr_syntax = args.pcjr_syntax
-        expressions.pcjr_syntax = args.pcjr_syntax
-        sound.pcjr_sound = args.pcjr_syntax
+    if len(args.pcjr_syntax)>0 and args.pcjr_syntax[0]:
+        statements.pcjr_syntax = args.pcjr_syntax[0]
+        expressions.pcjr_syntax = args.pcjr_syntax[0]
+        sound.pcjr_sound = args.pcjr_syntax[0]
         tokenise.insert_noise_keyword()
         tokenise.insert_term_keyword() 
     # set pcjr TERM program    
