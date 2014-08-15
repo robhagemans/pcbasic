@@ -232,8 +232,8 @@ def prepare(args):
     except (ValueError, TypeError):
         pass    
     fonts = {}
-    if args.loadfont != None:
-        for fontname in args.loadfont:
+    if args.font != None:
+        for fontname in args.font:
             font = load_font_file(fontname)
             height = len(font[0])
             fonts[height] = font
