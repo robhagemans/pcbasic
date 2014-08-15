@@ -614,7 +614,6 @@ def open_device_file(dev, number, mode, access, lock='', reclen=128):
 
 class NullDevice(object):
     def __init__(self):
-        self.width = 255
         self.number = 0
 
     # for device_open
@@ -671,6 +670,7 @@ class KYBDFile(NullDevice):
     def __init__(self):
         self.name = 'KYBD:'
         self.mode = 'I'
+        self.width = 255
         NullDevice.__init__(self)
         
     def read_line(self):
@@ -726,9 +726,8 @@ class SCRNFile(NullDevice):
     def __init__(self):
         self.name = 'SCRN:'
         self.mode = 'O'
+        self._width = state.console_state.width
         NullDevice.__init__(self)
-        # FIXME: this does not update if screen width does, use a @property
-        self.width = state.console_state.width
     
     def write(self, inp):
         for s in inp:
@@ -744,6 +743,13 @@ class SCRNFile(NullDevice):
     def col(self):  
         return state.console_state.col
         
+    @property
+    def width(self):
+        if self.number == 0:    
+            return state.console_state.width
+        else:
+            return self._width
+    
     # WIDTH "SCRN:, 40 works directly on console 
     # whereas OPEN "SCRN:" FOR OUTPUT AS 1: WIDTH #1,23 works on the wrapper text file
     # WIDTH "LPT1:" works on lpt1 for the next time it's opened; also for other devices.
@@ -752,7 +758,7 @@ class SCRNFile(NullDevice):
             if not console.set_width(new_width):
                 raise error.RunError(5)
         else:    
-            self.width = new_width
+            self._width = new_width
 
 
 class LPTFile(BaseFile):
