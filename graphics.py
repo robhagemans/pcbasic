@@ -442,15 +442,11 @@ def quadrant_gte(quadrant, x,y, x0,y0):
 # pattern tiling stops at intervals that equal the pattern to be drawn, unless this pattern is
 # also equal to the background pattern.
 def flood_fill (x, y, pattern, c, border, background): 
-    if state.console_state.screen_mode in (7, 8, 9):
-        while len(pattern) % state.console_state.bitsperpixel != 0:
-            # finish off the pattern with zeros
-            pattern.append(0)
     c, border = get_colour_index(c), get_colour_index(border)
     if get_point(x, y) == border:
         return
-    tile = build_tile(c, pattern)
-    back = build_tile(c, background) if background else None
+    tile = build_tile(pattern) if pattern else [[c]*8]
+    back = build_tile(background) 
     bound_x0, bound_y0, bound_x1, bound_y1 = backend.video.get_graph_clip()  
     x, y = view_coords(x, y)
     line_seed = [(x, x, y, 0)]
@@ -495,12 +491,13 @@ def check_scanline(line_seed, x_start, x_stop, y, c, tile, back, border, ydir):
     x_stop_next = x_start_next-1
     has_same_pattern = True
     for x in range(x_start, x_stop+1):
+        # scan horizontally until border colour found, then append interval & continue scanning
         xy_colour = backend.video.get_pixel(x, y)
-        # here we check for border *as well as* fill colour, to avoid infinite loops over bits already painted (eg. 00 shape)
-        if xy_colour not in (border, c):
+        if xy_colour != border:
             x_stop_next = x
             has_same_pattern &= (xy_colour == tile[y%len(tile)][x%8] and (not back or xy_colour != back[y%len(tile)][x%8]))
         else:
+            # don't append if same fill colour/pattern, to avoid infinite loops over bits already painted (eg. 00 shape)
             if x_stop_next >= x_start_next and not has_same_pattern:
                 line_seed.append([x_start_next, x_stop_next, y, ydir])
             x_start_next = x + 1
@@ -510,13 +507,16 @@ def check_scanline(line_seed, x_start, x_stop, y, c, tile, back, border, ydir):
     return line_seed    
 
 # build a tile of width 8 pixels and the necessary height
-def build_tile(solid_c, pattern):
+def build_tile(pattern):
     if not pattern:
-        return [[solid_c]*8]
+        return None
     tile = []    
     bpp = state.console_state.bitsperpixel
     strlen = len(pattern)
     if state.console_state.screen_mode in (2, 7, 8, 9):
+        while len(pattern) % bpp != 0:
+            # finish off the pattern with zeros
+            pattern.append(0)
         # in modes 2, 7,8,9 each byte represents 8 bits
         # colour planes encoded in consecutive bytes
         mask = 7
