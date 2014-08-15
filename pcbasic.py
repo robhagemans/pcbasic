@@ -404,7 +404,7 @@ def get_args():
     parser.add_argument('--conv', action='store', nargs='?', metavar='mode:outfile', help='Convert basic_program to (A)SCII, (B)ytecode or (P)rotected mode. Implies --unprotect and --list-all.')
     parser.add_argument('--codepage', action='store', metavar=('NUMBER'), help='Load specified font codepage; default is 437')
     parser.add_argument('--font-family', action='store', metavar=('TYPEFACE'), help='Load current codepage from specified font family.')
-    parser.add_argument('--loadfont', action='append', nargs='*', metavar=('TYPEFACE'), help='Load specified fonts. Do not change codepage.')
+    parser.add_argument('--font', action='append', nargs='*', metavar=('TYPEFACE'), help='Load specified fonts. These are used for the appropriate resolutions, regardless of font-family and codepage seetings.')
     parser.add_argument('--nosound', action='store_true', help='Disable sound output')
     parser.add_argument('--dimensions', nargs=1, metavar=('X, Y'), help='Set pixel dimensions for graphics mode. Default is 640,480. Use 640,400 or multiples for cleaner pixels - but incorrect aspect ratio - on square-pixel LCDs. Graphical terminal only.')
     parser.add_argument('--dimensions-text', nargs=1, metavar=('X, Y'), help='Set pixel dimensions for text mode. Default is 640,400. Graphical terminal only.')
@@ -436,7 +436,7 @@ def get_args():
     # flatten list arguments
     args.mount = flatten_arg_list(args.mount)
     args.peek = flatten_arg_list(args.peek)    
-    args.loadfont = flatten_arg_list(args.loadfont)
+    args.font = flatten_arg_list(args.font)
     return args
 
 
