@@ -2654,7 +2654,7 @@ ERRORS:
 
 
 PAINT statement
-PAINT [STEP] (x, y) [, attrib [, border [, dummy ] ] ]
+PAINT [STEP] (x, y) [, attrib [, border [, background ] ] ]
 ---------------
 Flood-fills the screen with a colour or pattern.
 'x', 'y' are number-valued expressions in the range [-32768, 32767] which give
@@ -2667,11 +2667,9 @@ If 'attrib' has a number value, it must be in [0, 255]; it specifies the colour
 attribute used to fill. 
 If 'attrib' has a string value, it specifies a tile pattern (see below).
 'border' is a number-valued expression in [0,255]. It specifies the attribute
-of the fill boundary - the flood fill stops when it encounters pixels of this 
-attribute. If 'attrib' is not specified, the boundary attribute is the same as
-the fill attribute, if that was speified as a number; if a tile pattern was 
-specified, the default border attribute is the current foreground attribute.
-'dummy' is a string-valued expression that is optional and has no effect.
+of the fill boundary (see below).
+'background' is a string-valued expression that represents a background tile 
+pattern to ignore when determining boundaries (see below).
 TILE PATTERNS
     A tile pattern can be specified by a string of up to 255 characters. The 
     interpretation of the string depends on the number of bits per pixel in 
@@ -2727,13 +2725,18 @@ TILE PATTERNS
     (0,0) and covering the screen. Whenever an area is tile-filled,
     the tiles are put into this grid. In this way, adjacent areas will have
     continuous tiling even if they were filled from different seed points.
-NOTES:
--   The GW-BASIC manual suggests the value of 'dummy' is used to determine the
-    boundary of a tile pattern. However, in practice this appears to have no
-    discernable effect. It is not implemented in PC-BASIC 3.23.
+BOUNDARIES
+    A solid flood fill stops at pixels that have the same attribute as the fill
+    or that have the specified border attribute, if specified.
+    A tiling flood fill stops at the specified border attribute; if no border
+    attribute is specified, it stops at the current foreground attribute.
+    A tiling flood fill also stops at scan line intervals that are the same as 
+    the tiling pattern for that line, unless a background pattern is specified
+    and the interval also equals the background pattern for that line.
 ERRORS:
--   If 'dummy' equals 'attrib', raises ILLEGAL FUNCTION CALL.
--   If 'dummy' has a number value, raises ILLEGAL FUNCTION CALL.
+-   In SCREENs 7,8,9, if 'background' equals 'attrib' up to the length of
+    'attrib', raises ILLEGAL FUNCTION CALL.
+-   If 'background' has a number value, raises ILLEGAL FUNCTION CALL.
 -   If 'border','x', or 'y' have a string value, raises TYPE MISMATCH.
 -   If 'border' is not in [0,255], raises ILLEGAL FUNCTION CALL.
 -   If 'attrib' is numeric and not in [0,255], raises ILLEGAL FUNCTION CALL.

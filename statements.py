@@ -1155,7 +1155,7 @@ def exec_circle(ins):
     graphics.draw_circle_or_ellipse(x0, y0, r, start, stop, c, aspect)
       
 # PAINT -if paint *colour* specified, border default= paint colour
-# if paint *attribute* specified, border default=15      
+# if paint *attribute* specified, border default = current foreground      
 def exec_paint(ins):
     graphics.require_graphics_mode()
     x0, y0 = parse_coord(ins)

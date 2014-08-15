@@ -506,6 +506,8 @@ def get_pattern_line(x_start, x_stop, y, solid_c, pattern):
     return line
                
 # flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
+# pattern tiling stops at intervals that equal the pattern to be drawn, unless this pattern is
+# also equal to the background pattern.
 def flood_fill (x, y, pattern, c, border, background): 
     if state.console_state.screen_mode in (7, 8, 9):
         while len(pattern) % state.console_state.bitsperpixel != 0:
