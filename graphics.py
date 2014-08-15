@@ -444,16 +444,20 @@ def check_scanline(line_seed, x_start, x_stop, y, c, pattern, border, ydir):
         return line_seed
     x_start_next = x_start
     x_stop_next = x_start_next-1
-#    pattern_line = get_pattern_line(x_start, x_stop, y, c, pattern)
+    has_same_pattern = True
+    pattern_line = get_pattern_line(x_start, x_stop, y, c, pattern)
     for x in range(x_start, x_stop+1):
         # here we check for border *as well as* fill colour, to avoid infinite loops over bits already painted (eg. 00 shape)
-        if backend.video.get_pixel(x,y) not in (border, c):
+        xy_colour = backend.video.get_pixel(x, y)
+        if xy_colour not in (border, c):
             x_stop_next = x
+            has_same_pattern &= (xy_colour == pattern_line[x-x_start])
         else:
-            if x_stop_next >= x_start_next:
+            if x_stop_next >= x_start_next and not has_same_pattern:
                 line_seed.append([x_start_next, x_stop_next, y, ydir])
             x_start_next = x + 1
-    if x_stop_next >= x_start_next:
+            has_same_pattern = True
+    if x_stop_next >= x_start_next and not has_same_pattern:
         line_seed.append([x_start_next, x_stop_next, y, ydir])
     return line_seed    
 
@@ -467,6 +471,8 @@ def get_pattern_line(x_start, x_stop, y, solid_c, pattern):
         return [solid_c]*(x_stop-x_start+1)
     line = []
     if state.console_state.screen_mode in (2, 7, 8, 9):
+        # in modes 2, 7,8,9 each byte represents 8 bits
+        # colour planes encoded in consecutive bytes
         mask = 7 - x_start%8
         pattern_height = len(pattern)//state.console_state.bitsperpixel
         start_byte = (y%pattern_height)*state.console_state.bitsperpixel
@@ -480,6 +486,8 @@ def get_pattern_line(x_start, x_stop, y, solid_c, pattern):
                 mask = 7
             line.append(c)
     else:
+        # in modes 1, 3, 4, 5, 6 colours are encoded in consecutive bits
+        # each byte represents one scan line
         pattern_width = 8 // state.console_state.bitsperpixel
         mask = 8 - state.console_state.bitsperpixel - (x_start%pattern_width)*state.console_state.bitsperpixel
         pattern_height = len(pattern)
