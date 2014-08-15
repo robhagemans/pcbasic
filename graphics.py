@@ -438,15 +438,16 @@ def quadrant_gte(quadrant, x,y, x0,y0):
 # 4-way scanline flood fill
 # http://en.wikipedia.org/wiki/Flood_fill
 
-
-def check_scanline (line_seed, x_start, x_stop, y, c, border, ydir):
+# look at a scanline for a given interval; add all subintervals between border colours to the pile
+def check_scanline(line_seed, x_start, x_stop, y, c, pattern, border, ydir):
     if x_stop < x_start:
         return line_seed
     x_start_next = x_start
     x_stop_next = x_start_next-1
+#    pattern_line = get_pattern_line(x_start, x_stop, y, c, pattern)
     for x in range(x_start, x_stop+1):
         # here we check for border *as well as* fill colour, to avoid infinite loops over bits already painted (eg. 00 shape)
-        if backend.video.get_pixel(x,y) not in (border,c):
+        if backend.video.get_pixel(x,y) not in (border, c):
             x_stop_next = x
         else:
             if x_stop_next >= x_start_next:
@@ -456,7 +457,15 @@ def check_scanline (line_seed, x_start, x_stop, y, c, border, ydir):
         line_seed.append([x_start_next, x_stop_next, y, ydir])
     return line_seed    
 
-def fill_scanline(x_start, x_stop, y, pattern):
+def fill_scanline(x_start, x_stop, y, c, pattern):
+    line = get_pattern_line(x_start, x_stop, y, c, pattern)
+    for x in range(x_start, x_stop+1):
+        backend.video.put_pixel(x, y, line[x-x_start])
+
+def get_pattern_line(x_start, x_stop, y, solid_c, pattern):
+    if not pattern:
+        return [solid_c]*(x_stop-x_start+1)
+    line = []
     if state.console_state.screen_mode in (2, 7, 8, 9):
         mask = 7 - x_start%8
         pattern_height = len(pattern)//state.console_state.bitsperpixel
@@ -469,7 +478,7 @@ def fill_scanline(x_start, x_stop, y, pattern):
             mask -= 1
             if mask < 0:
                 mask = 7
-            backend.video.put_pixel(x,y,c)
+            line.append(c)
     else:
         pattern_width = 8 // state.console_state.bitsperpixel
         mask = 8 - state.console_state.bitsperpixel - (x_start%pattern_width)*state.console_state.bitsperpixel
@@ -483,28 +492,11 @@ def fill_scanline(x_start, x_stop, y, pattern):
             mask -= state.console_state.bitsperpixel
             if mask < 0:
                 mask = 8 - state.console_state.bitsperpixel
-            backend.video.put_pixel(x,y,c)
-      
-def solid_pattern(c):
-    if state.console_state.screen_mode in (2, 7, 8, 9):
-        pattern = [0]*state.console_state.bitsperpixel
-        for b in range(state.console_state.bitsperpixel):
-            if c&(1<<b) != 0:
-                pattern[b] = 0xff
-        return pattern
-    else:
-        pixelsperbyte = 8//state.console_state.bitsperpixel
-        c &= (1<<state.console_state.bitsperpixel)-1
-        pattern = 0
-        for b in range(pixelsperbyte):
-            pattern <<= state.console_state.bitsperpixel
-            pattern |= c
-        return [pattern]
+            line.append(c)    
+    return line
                
 # flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
-def flood_fill (x, y, pattern, c, border): 
-    if not pattern:
-        pattern = solid_pattern(c)
+def flood_fill (x, y, pattern, c, border, background_pattern): 
     if state.console_state.screen_mode in (7, 8, 9):
         while len(pattern) % state.console_state.bitsperpixel != 0:
             # finish off the pattern with zeros
@@ -516,7 +508,9 @@ def flood_fill (x, y, pattern, c, border):
     x, y = view_coords(x, y)
     line_seed = [(x, x, y, 0)]
     while len(line_seed) > 0:
+        # consider next interval
         x_start, x_stop, y, ydir = line_seed.pop()
+        # extend interval as far as it goes to left and right
         # check left extension
         x_left = x_start
         while x_left-1 >= bound_x0 and backend.video.get_pixel(x_left-1,y) != border:
@@ -525,21 +519,23 @@ def flood_fill (x, y, pattern, c, border):
         x_right = x_stop
         while x_right+1 <= bound_x1 and backend.video.get_pixel(x_right+1,y) != border:
             x_right += 1
+        # check next scanlines and add intervals to the list
         if ydir == 0:
             if y + 1 <= bound_y1:
-                line_seed = check_scanline(line_seed, x_left, x_right, y+1, c, border, 1)
+                line_seed = check_scanline(line_seed, x_left, x_right, y+1, c, pattern, border, 1)
             if y - 1 >= bound_y0:
-                line_seed = check_scanline(line_seed, x_left, x_right, y-1, c, border, -1)
+                line_seed = check_scanline(line_seed, x_left, x_right, y-1, c, pattern, border, -1)
         else:
-            # check in proper direction
+            # check the same interval one scanline onward in the same direction
             if y+ydir <= bound_y1 and y+ydir >= bound_y0:
-                line_seed = check_scanline(line_seed, x_left, x_right, y+ydir, c, border, ydir)
-            # check extensions in counter direction
+                line_seed = check_scanline(line_seed, x_left, x_right, y+ydir, c, pattern, border, ydir)
+            # check any bit of the interval that was extended one scanline backward 
+            # this is where the flood fill goes around corners.
             if y-ydir <= bound_y1 and y-ydir >= bound_y0:
-                line_seed = check_scanline(line_seed, x_left, x_start-1, y-ydir, c, border, -ydir)
-                line_seed = check_scanline(line_seed, x_stop+1, x_right, y-ydir, c, border, -ydir)
-        # draw the pixels    
-        fill_scanline(x_left, x_right, y, pattern)
+                line_seed = check_scanline(line_seed, x_left, x_start-1, y-ydir, c, pattern, border, -ydir)
+                line_seed = check_scanline(line_seed, x_stop+1, x_right, y-ydir, c, pattern, border, -ydir)
+        # draw the pixels for the current interval   
+        fill_scanline(x_left, x_right, y, c, pattern)
         # show progress
         backend.check_events()
 

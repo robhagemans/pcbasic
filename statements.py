@@ -1159,7 +1159,7 @@ def exec_circle(ins):
 def exec_paint(ins):
     graphics.require_graphics_mode()
     x0, y0 = parse_coord(ins)
-    pattern, c, border = None, -1, -1
+    pattern, c, border, background_pattern = None, -1, -1, None
     if util.skip_white_read_if(ins, (',',)):
         cval = expressions.parse_expression(ins, allow_empty=True)
         if not cval:
@@ -1179,13 +1179,12 @@ def exec_paint(ins):
             if bval:
                 border = vartypes.pass_int_unpack(bval)
             if util.skip_white_read_if(ins, (',',)):
-                # background attribute - I can't find anything this does at all.
-                # as far as I can see, this is ignored in GW-Basic as long as it's a string not equal to pattern, otherwise error 5
                 background_pattern = vartypes.pass_string_unpack(expressions.parse_expression(ins), err=5)
-                if background_pattern == pattern:
+                # only in screen 7,8,9 is this an error
+                if background_pattern[:len(pattern)] == pattern and state.console_state.screen_mode in (7,8,9):
                     raise error.RunError(5)
     util.require(ins, util.end_statement)         
-    graphics.flood_fill(x0, y0, pattern, c, border)        
+    graphics.flood_fill(x0, y0, pattern, c, border, background_pattern)        
                 
 def exec_get_graph(ins):
     graphics.require_graphics_mode()
