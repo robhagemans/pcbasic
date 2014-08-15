@@ -277,8 +277,8 @@ def get_video_memory(addr):
                 return ( (backend.video.get_pixel(x, y, page)<<4) + (backend.video.get_pixel(x+1, y, page)))
         elif state.console_state.screen_mode == 5:
             page, addr = addr//32768, addr%32768
-            # 4 x interlaced scan lines of 80bytes, 2pixels per byte
-            x, y = ((addr%0x2000)%80)*2, (addr//0x2000) + 4*((addr%0x2000)//80)
+            # 4 x interlaced scan lines of 160bytes, 4pixels per byte
+            x, y = ((addr%0x2000)%160)*2, (addr//0x2000) + 4*((addr%0x2000)//160)
             if y < state.console_state.size[1] and page < state.console_state.num_pages:
                 return ( (backend.video.get_pixel(x, y, page)<<4) + (backend.video.get_pixel(x+1, y, page)))
         #
@@ -333,8 +333,8 @@ def set_video_memory(addr, val):
                     backend.video.put_pixel(x + shift, y, fourbit, page) 
         elif state.console_state.screen_mode == 5:
             page, addr = addr//32768, addr%32768
-            # 4 x interlaced scan lines of 80bytes, 2pixels per byte
-            x, y = ((addr%0x2000)%80)*2, (addr//0x2000) + 4*((addr%0x2000)//80)
+            # 4 x interlaced scan lines of 160bytes, 2pixels per byte
+            x, y = ((addr%0x2000)%160)*2, (addr//0x2000) + 4*((addr%0x2000)//160)
             if y < state.console_state.size[1] and page < state.console_state.num_pages:
                 for shift in range(2):
                     fourbit = (val>>(4-shift*4)) & 15
