@@ -438,73 +438,6 @@ def quadrant_gte(quadrant, x,y, x0,y0):
 # 4-way scanline flood fill
 # http://en.wikipedia.org/wiki/Flood_fill
 
-# look at a scanline for a given interval; add all subintervals between border colours to the pile
-def check_scanline(line_seed, x_start, x_stop, y, c, pattern, background, border, ydir):
-    if x_stop < x_start:
-        return line_seed
-    x_start_next = x_start
-    x_stop_next = x_start_next-1
-    has_same_pattern = True
-    pattern_line = get_pattern_line(x_start, x_stop, y, c, pattern)
-    if background:
-        background_line = get_pattern_line(x_start, x_stop, y, c, background)
-    for x in range(x_start, x_stop+1):
-        # here we check for border *as well as* fill colour, to avoid infinite loops over bits already painted (eg. 00 shape)
-        xy_colour = backend.video.get_pixel(x, y)
-        if xy_colour not in (border, c):
-            x_stop_next = x
-            has_same_pattern &= (xy_colour == pattern_line[x-x_start] and (not background or xy_colour != background_line[x-x_start]))
-        else:
-            if x_stop_next >= x_start_next and not has_same_pattern:
-                line_seed.append([x_start_next, x_stop_next, y, ydir])
-            x_start_next = x + 1
-            has_same_pattern = True
-    if x_stop_next >= x_start_next and not has_same_pattern:
-        line_seed.append([x_start_next, x_stop_next, y, ydir])
-    return line_seed    
-
-def fill_scanline(x_start, x_stop, y, c, pattern):
-    line = get_pattern_line(x_start, x_stop, y, c, pattern)
-    for x in range(x_start, x_stop+1):
-        backend.video.put_pixel(x, y, line[x-x_start])
-
-def get_pattern_line(x_start, x_stop, y, solid_c, pattern):
-    if not pattern:
-        return [solid_c]*(x_stop-x_start+1)
-    line = []
-    if state.console_state.screen_mode in (2, 7, 8, 9):
-        # in modes 2, 7,8,9 each byte represents 8 bits
-        # colour planes encoded in consecutive bytes
-        mask = 7 - x_start%8
-        pattern_height = len(pattern)//state.console_state.bitsperpixel
-        start_byte = (y%pattern_height)*state.console_state.bitsperpixel
-        for x in range(x_start, x_stop+1):
-            c = 0
-            for b in range(state.console_state.bitsperpixel-1,-1,-1):
-                c <<= 1
-                c += (pattern[(start_byte+b)%len(pattern)] >> mask) & 1
-            mask -= 1
-            if mask < 0:
-                mask = 7
-            line.append(c)
-    else:
-        # in modes 1, 3, 4, 5, 6 colours are encoded in consecutive bits
-        # each byte represents one scan line
-        pattern_width = 8 // state.console_state.bitsperpixel
-        mask = 8 - state.console_state.bitsperpixel - (x_start%pattern_width)*state.console_state.bitsperpixel
-        pattern_height = len(pattern)
-        start_byte = y%pattern_height
-        for x in range(x_start, x_stop+1):
-            c = 0
-            for b in range(state.console_state.bitsperpixel-1,-1,-1):
-                c <<= 1
-                c += (pattern[start_byte] >> (mask+b)) & 1 
-            mask -= state.console_state.bitsperpixel
-            if mask < 0:
-                mask = 8 - state.console_state.bitsperpixel
-            line.append(c)    
-    return line
-               
 # flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
 # pattern tiling stops at intervals that equal the pattern to be drawn, unless this pattern is
 # also equal to the background pattern.
@@ -516,6 +449,8 @@ def flood_fill (x, y, pattern, c, border, background):
     c, border = get_colour_index(c), get_colour_index(border)
     if get_point(x, y) == border:
         return
+    tile = build_tile(c, pattern)
+    back = build_tile(c, background) if background else None
     bound_x0, bound_y0, bound_x1, bound_y1 = backend.video.get_graph_clip()  
     x, y = view_coords(x, y)
     line_seed = [(x, x, y, 0)]
@@ -534,22 +469,85 @@ def flood_fill (x, y, pattern, c, border, background):
         # check next scanlines and add intervals to the list
         if ydir == 0:
             if y + 1 <= bound_y1:
-                line_seed = check_scanline(line_seed, x_left, x_right, y+1, c, pattern, background, border, 1)
+                line_seed = check_scanline(line_seed, x_left, x_right, y+1, c, tile, back, border, 1)
             if y - 1 >= bound_y0:
-                line_seed = check_scanline(line_seed, x_left, x_right, y-1, c, pattern, background, border, -1)
+                line_seed = check_scanline(line_seed, x_left, x_right, y-1, c, tile, back, border, -1)
         else:
             # check the same interval one scanline onward in the same direction
             if y+ydir <= bound_y1 and y+ydir >= bound_y0:
-                line_seed = check_scanline(line_seed, x_left, x_right, y+ydir, c, pattern, background, border, ydir)
+                line_seed = check_scanline(line_seed, x_left, x_right, y+ydir, c, tile, back, border, ydir)
             # check any bit of the interval that was extended one scanline backward 
             # this is where the flood fill goes around corners.
             if y-ydir <= bound_y1 and y-ydir >= bound_y0:
-                line_seed = check_scanline(line_seed, x_left, x_start-1, y-ydir, c, pattern, background, border, -ydir)
-                line_seed = check_scanline(line_seed, x_stop+1, x_right, y-ydir, c, pattern, background, border, -ydir)
+                line_seed = check_scanline(line_seed, x_left, x_start-1, y-ydir, c, tile, back, border, -ydir)
+                line_seed = check_scanline(line_seed, x_stop+1, x_right, y-ydir, c, tile, back, border, -ydir)
         # draw the pixels for the current interval   
-        fill_scanline(x_left, x_right, y, c, pattern)
+        for x in range(x_left, x_right+1):
+            backend.video.put_pixel(x, y, tile[y%len(tile)][x%8])
         # show progress
         backend.check_events()
+
+# look at a scanline for a given interval; add all subintervals between border colours to the pile
+def check_scanline(line_seed, x_start, x_stop, y, c, tile, back, border, ydir):
+    if x_stop < x_start:
+        return line_seed
+    x_start_next = x_start
+    x_stop_next = x_start_next-1
+    has_same_pattern = True
+    for x in range(x_start, x_stop+1):
+        xy_colour = backend.video.get_pixel(x, y)
+        # here we check for border *as well as* fill colour, to avoid infinite loops over bits already painted (eg. 00 shape)
+        if xy_colour not in (border, c):
+            x_stop_next = x
+            has_same_pattern &= (xy_colour == tile[y%len(tile)][x%8] and (not back or xy_colour != back[y%len(tile)][x%8]))
+        else:
+            if x_stop_next >= x_start_next and not has_same_pattern:
+                line_seed.append([x_start_next, x_stop_next, y, ydir])
+            x_start_next = x + 1
+            has_same_pattern = True
+    if x_stop_next >= x_start_next and not has_same_pattern:
+        line_seed.append([x_start_next, x_stop_next, y, ydir])
+    return line_seed    
+
+# build a tile of width 8 pixels and the necessary height
+def build_tile(solid_c, pattern):
+    if not pattern:
+        return [[solid_c]*8]
+    tile = []    
+    bpp = state.console_state.bitsperpixel
+    strlen = len(pattern)
+    if state.console_state.screen_mode in (2, 7, 8, 9):
+        # in modes 2, 7,8,9 each byte represents 8 bits
+        # colour planes encoded in consecutive bytes
+        mask = 7
+        for y in range(strlen//bpp):
+            line = []
+            for x in range(8):
+                c = 0
+                for b in range(bpp-1, -1, -1):
+                    c = (c<<1) + ((pattern[(y*bpp+b)%strlen] >> mask) & 1)
+                mask -= 1
+                if mask < 0:
+                    mask = 7
+                line.append(c)
+            tile.append(line)    
+    else:
+        # in modes 1, 3, 4, 5, 6 colours are encoded in consecutive bits
+        # each byte represents one scan line
+        mask = 8 - bpp
+        for y in range(strlen):
+            line = []
+            for x in range(8): # width is 8//bpp
+                c = 0
+                for b in range(bpp-1, -1, -1):
+                    c = (c<<1) + ((pattern[y] >> (mask+b)) & 1) 
+                mask -= bpp
+                if mask < 0:
+                    mask = 8 - bpp
+                line.append(c)    
+            tile.append(line)
+    return tile
+
 
 ### PUT and GET
 
