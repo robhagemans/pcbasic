@@ -726,8 +726,9 @@ class SCRNFile(NullDevice):
     def __init__(self):
         self.name = 'SCRN:'
         self.mode = 'O'
-        self.width = state.console_state.width
         NullDevice.__init__(self)
+        # FIXME: this does not update if screen width does, use a @property
+        self.width = state.console_state.width
     
     def write(self, inp):
         for s in inp:
