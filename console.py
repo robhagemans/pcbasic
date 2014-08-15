@@ -463,11 +463,11 @@ def insert_char(crow, ccol, c, cattr):
 def delete_char(crow, ccol):
     save_col = ccol
     therow = state.console_state.apage.row[crow-1]
-    if crow > 1 and ccol == therow.end+1 and therow.wrap:
+    if crow > 1 and ccol >= therow.end and therow.wrap:
         nextrow = state.console_state.apage.row[crow]
         # row was a LF-ending row
         therow.buf[ccol-1:] = nextrow.buf[:state.console_state.width-ccol+1] 
-        therow.end = min(therow.end + nextrow.end, state.console_state.width)
+        therow.end = min(max(therow.end, ccol) + nextrow.end, state.console_state.width)
         while crow < state.console_state.scroll_height and nextrow.wrap:
             nextrow2 = state.console_state.apage.row[crow+1]
             nextrow.buf = nextrow.buf[state.console_state.width-ccol+1:] + nextrow2.buf[:state.console_state.width-ccol+1]  
@@ -554,7 +554,7 @@ def backspace(start_row, start_col):
     # don't backspace through prompt
     if ccol == 1:
         if crow > 1 and state.console_state.apage.row[crow-2].wrap:
-            ccol = state.console_state.apage.row[crow-2].end
+            ccol = state.console_state.width 
             crow -= 1
     elif ccol != start_col or state.console_state.row != start_row: 
         ccol -= 1
