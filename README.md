@@ -51,7 +51,11 @@ PySerial and Pexpect can be left out; PC-BASIC should still work except for, res
 
 
 #### Usage essentials ####
-To run in interactive mode, run `pcbasic.py` by double-clicking or on the command line. To run a BASIC program (e.g. `PROGRAM.BAS`) directly, run `pcbasic.py PROGRAM.BAS`. To see all command-line options, run `pcbasic.py -h`. A PC-BASIC program called `INFO.BAS` is included on the virtual `@:` drive with more information on usage. Type `RUN "@:INFO"` in PC-BASIC to access it.
+To run in interactive mode, run `pcbasic.py` by double-clicking or on the command line. To run a BASIC program (e.g. `PROGRAM.BAS`) directly, run `pcbasic.py PROGRAM.BAS`. 
+
+By default, PC-BASIC runs in GW-BASIC mode. To run in Tandy-1000 mode, run `pcbasic.py --preset=tandy`. To run in PCjr mode, run `pcbasic.py --preset=pcjr`. To see all command-line options, run `pcbasic.py -h`. 
+
+A PC-BASIC program called `INFO.BAS` is included on the virtual `@:` drive with more information on usage. Type `RUN "@:INFO"` in PC-BASIC to access it.
 
 PC-BASIC 3.23 starts in interactive mode, where you can execute BASIC statements directly. 
 A few essential statements:  
@@ -65,17 +69,22 @@ If the name contains no dot (e.g. `FileName`), it will first try `FileName`, the
 
 
 #### BASIC language reference ###
-A full CC-licensed [GW-BASIC language reference](https://sourceforge.net/p/pcbasic/code/ci/master/tree/info/HELP) is included with PC-BASIC 3.23. You can find it in the `info/` directory as a text file called `HELP`; access it through your favourite text reader or through `RUN "INFO"`, option `Docs`. This documentation aims to document the actual behaviour of GW-BASIC 3.23, on which PC-BASIC 3.23 is modelled. Please note that the original Microsoft help file, which can be found on the internet, is rather hit-and-miss; GW-BASIC often behaves differently than documented by Microsoft. 
+A full CC-licensed [GW-BASIC language reference](https://sourceforge.net/p/pcbasic/code/ci/master/tree/info/HELP) is included with PC-BASIC 3.23. You can find it in the `info/` directory as a text file called `HELP`; access it through your favourite text reader or through `RUN "@:INFO"`, option `Docs`. This documentation aims to document the actual behaviour of GW-BASIC 3.23, on which PC-BASIC 3.23 is modelled. Please note that the original Microsoft help file, which can be found on the internet, is rather hit-and-miss; GW-BASIC often behaves differently than documented by Microsoft. 
 
 
 #### .BAS files ####
 Many BASIC dialects use the same extension `.BAS`, but their files are not compatible. 
 PC-BASIC runs GW-BASIC files only. Some tips to recognise GW-BASIC files:  
-- ASCII files have line numbers and must be in DOS format (CR/LF line endings, ctrl-Z at end-of-file).  
+- ASCII files are plain text with line numbers.  
 - Bytecode files start with magic byte `FF`.  
 - Protected files start with magic byte `FE`.  
 
-In particular, QBASIC files (no line numbers) and QuickBASIC files (magic byte `FC`) will not run. ASCII files in standard UNIX format (LF line endings, no EOF character) will fail too: on Linux or Mac, use a utility such as [`unix2dos`](http://waterlan.home.xs4all.nl/dos2unix.html) to convert programs saved as text files before loading them. 
+In particular, QBASIC files (which have no line numbers) and QuickBASIC files (magic byte `FC`) will not run. 
+
+
+#### Newline conventions ####
+In default mode, PC-BASIC will accept both DOS and Unix newline conventions. This behaviour is different from GW-BASIC, which only accepts text files in DOS format (CR/LF line endings, ctrl-Z at end-of-file). In exceptional cases, correct GW-BASIC ASCII files will not be loaded correctly, in particular if they contain LF characters followed by a number. If you encounter such a case, use the `--strict-newline` option. In `--strict-newline` mode, ASCII files in standard UNIX format (LF line endings, no EOF character) will fail to load: on Linux or Mac, use a utility such as [`unix2dos`](http://waterlan.home.xs4all.nl/dos2unix.html) to convert programs saved as text files before loading them. When saving as ASCII, PC-BASIC always uses the DOS conventions.
+
 
 #### GW-BASIC links and downloads ####
 [Norman De Forest's description of the tokenised file format](http://www.chebucto.ns.ca/~af380/GW-BASIC-tokens.html) is where this project started.  
@@ -94,13 +103,10 @@ BASIC program downloads and further links can be found on the following pages.
 
 
 #### Text terminals ####
-
 On Linux, in addition to the default graphical terminal, you can get a text terminal by running with the `-b` command-line option, and a curses-style terminal with the `-t` option. You can even get sound on the text terminal if you install the `beep` utility, but please be aware that Ubuntu blocks the pc-speaker by default using the line `blacklist pcspkr` in `/etc/modprobe.d/blacklist.conf`. Comment out that line, `apt-get install beep` and be sure to wear appropriate ear protection as the default volume level is LOUD.
 
 
-
-#### Free BASIC compilers and sane dialects ####
-
+#### Free BASIC compilers and saner dialects ####
 If you're starting a new project in BASIC, please consider one of the more sensible free versions of the language, such as [FreeBasic](www.freebasic.net), [QB64](http://www.qb64.net/) or [SmallBASIC](https://sourceforge.net/projects/smallbasic/). Under FreeDOS, you can use the [Bywater BASIC](https://sourceforge.net/projects/bwbasic/) interpreter. 
 
 
