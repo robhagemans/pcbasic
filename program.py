@@ -425,7 +425,12 @@ def list_lines(dev, from_line, to_line):
             # flow of listing is visible on screen
             backend.check_events()
             console.clear_line(state.console_state.row)
-        dev.write_line(str(line))
+            console.write_line(str(line))
+            # remove empty line after 80-column program line
+            if len(line) == state.console_state.width:
+                console.cut_line()
+        else:
+            dev.write_line(str(line))
     dev.close()
     flow.set_pointer(False)
         

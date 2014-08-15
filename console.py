@@ -719,6 +719,14 @@ def write_line(s='', scroll_ok=True):
     check_pos(scroll_ok=True)
     set_pos(state.console_state.row + 1, 1)
 
+# hijack the line above and remove the word wrap
+# used by LIST to avoid empty lines that would otherwise show up after an 80-column line
+def cut_line():
+    if state.console_state.row == 1:    
+        return
+    set_pos(state.console_state.row - 1, 1)
+    state.console_state.apage.row[state.console_state.row-1].wrap = False
+
 def set_width(to_width):
     # raise an error if the width value doesn't make sense
     if to_width not in (20, 40, 80):
@@ -902,7 +910,7 @@ def put_char(c, do_scroll_down=False):
                 scroll_down(state.console_state.row+1)
         state.console_state.row += 1
         state.console_state.col = 1
-
+            
 def set_pos(to_row, to_col, scroll_ok=True):
     state.console_state.row, state.console_state.col = to_row, to_col
     check_pos(scroll_ok)
