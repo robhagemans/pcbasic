@@ -558,9 +558,9 @@ def backspace(start_row, start_col):
             crow -= 1
     elif ccol != start_col or state.console_state.row != start_row: 
         ccol -= 1
-    delete_char(crow, ccol)
     set_pos(crow, max(1, ccol))
-
+    delete_char(crow, ccol)
+    
 def tab():
     if state.console_state.overwrite_mode:
         set_pos(state.console_state.row, state.console_state.col+8, scroll_ok=False)
