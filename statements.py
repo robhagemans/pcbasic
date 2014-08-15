@@ -1557,8 +1557,10 @@ def exec_clear(ins):
                 raise error.RunError(5)
             if pcjr_syntax and util.skip_white_read_if(ins, (',',)):
                 # Tandy/PCjr: select video memory size
-                state.console_state.video_mem_size = fp.unpack(vartypes.pass_single_keep(
-                                                        expressions.parse_expression(ins, empty_err=2))).round_to_int()
+                state.console_state.pcjr_video_mem_size = fp.unpack(vartypes.pass_single_keep(
+                                                           expressions.parse_expression(ins, empty_err=2))).round_to_int()
+                # check if we need to drop out of our current mode 
+                console.check_video_memory()                                                           
                 # TODO: what errors are raised?
             elif not exp2:
                 raise error.RunError(2)    

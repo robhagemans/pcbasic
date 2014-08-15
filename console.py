@@ -140,6 +140,8 @@ state.console_state.codepage = '437'
 
 # ega, tandy, pcjr
 video_capabilities='ega'
+# video memory size - currently only used by tandy/pcjr (would be bigger for EGA systems anyway)
+state.console_state.pcjr_video_mem_size = 16384
 
 #############################
 # init
@@ -186,6 +188,10 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
     # 0: do not erase video memory
     # 1: (default) erase old and new page if screen or bust changes
     # 2: erase all video memory if screen or bust changes 
+    # video memory size check for SCREENs 5 and 6: (pcjr/tandy only; this is a bit of a hack as is) 
+    # (32753 determined experimentally on DOSBox)
+    if new_mode in (5, 6) and state.console_state.pcjr_video_mem_size < 32753:
+        raise error.RunError(5)
     try:
         info = mode_data[new_mode]
     except KeyError:
@@ -256,6 +262,9 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
         # FIXME: keys visible?
     return True
 
+def check_video_memory():
+    if state.console_state.screen_mode in (5, 6) and state.console_state.pcjr_video_mem_size < 32753:
+        screen (0, None, None, None)
 
 def copy_page(src, dst):
     for x in range(state.console_state.height):
