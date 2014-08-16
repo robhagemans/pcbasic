@@ -143,6 +143,15 @@ video_capabilities='ega'
 # video memory size - currently only used by tandy/pcjr (would be bigger for EGA systems anyway)
 state.console_state.pcjr_video_mem_size = 16384
 
+# cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
+cga_palette_1_hi = [0, 11, 13, 15]
+cga_palette_1_lo = [0, 3, 5, 7]
+# cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
+cga_palette_0_hi = [0, 10, 12, 14]
+cga_palette_0_lo = [0, 2, 4, 6]
+cga_palettes = [cga_palette_0_hi, cga_palette_1_hi]
+
+
 #############################
 # init
 
@@ -297,7 +306,7 @@ def set_palette(new_palette=None):
         elif state.console_state.num_colours >= 16:
             state.console_state.palette = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
         elif state.console_state.num_colours == 4:
-            state.console_state.palette = [0, 11, 13, 15]
+            state.console_state.palette = cga_palettes[1]
         else:
             state.console_state.palette = [0, 15]
     backend.video.update_palette()
