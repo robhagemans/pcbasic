@@ -54,7 +54,7 @@ def debug_step(linum):
                 outstr += (st)        
         except Exception as e:
             debug_handle_exc(e)
-        logging.debug(outstr)
+    logging.debug(outstr)
         
 def debug_handle_exc(e):
     logging.debug(str(type(e))+' '+str(e))    
