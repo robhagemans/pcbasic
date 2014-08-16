@@ -2160,7 +2160,7 @@ LOCATE statement
 LOCATE [row] [, [col] [, [cursor_visible] [, [start_line] [, [stop_line] [,] ] ] 
 ----------------
 Positions the cursor at 'row', 'col' on the screen and changes the cursor.
-If 'cursor_visible' is 0, makes the cursor invisible; if it si 1, makes the 
+If 'cursor_visible' is 0, makes the cursor invisible; if it is 1, makes the 
 cursor visible. The cursor shape is adjusted within a character cell to start
 from 'start_line' and end on 'end_line' where 'start_line' and 'end_line' are 
 in [0,31]. If 'start_line' or 'end_line' is greater than the character cell 
