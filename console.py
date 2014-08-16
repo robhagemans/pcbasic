@@ -149,6 +149,10 @@ cga_palette_1_lo = [0, 3, 5, 7]
 # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
 cga_palette_0_hi = [0, 10, 12, 14]
 cga_palette_0_lo = [0, 2, 4, 6]
+# tandy/pcjr cga palette
+cga_palette_1_pcjr = [0, 3, 5, 15]
+cga_palette_0_pcjr = [0, 2, 4, 6]
+# default: high intensity 
 cga_palettes = [cga_palette_0_hi, cga_palette_1_hi]
 
 
@@ -156,6 +160,7 @@ cga_palettes = [cga_palette_0_hi, cga_palette_1_hi]
 # init
 
 def init():
+    global cga_palettes
     if not backend.video.init():
         return False
     state.console_state.backend_name = backend.video.__name__
@@ -165,6 +170,8 @@ def init():
         unavailable_modes = (7, 8, 9)
         # 8-pixel characters in screen 0
         mode_data[0] = ( 8, 7, 32, 64, 80, 4, 4, 8 ) 
+        # select pcjr cga palettes
+        cga_palettes = [cga_palette_0_pcjr, cga_palette_1_pcjr]       
         # TODO: determine the number of pages based on video memory size, not hard coded. 
     else:
         # no PCjr modes
