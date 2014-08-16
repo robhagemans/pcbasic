@@ -204,7 +204,7 @@ def prepare_constants(args):
     if args.windows_map_drives:
         oslayer.windows_map_drives()
     if args.video:
-        console.video_capabilities = args.video[0]
+        console.video_capabilities = args.video
     if args.cga_low:
         console.cga_palettes = [console.cga_palette_0_lo, console.cga_palette_1_lo]
 
@@ -426,7 +426,7 @@ def get_args():
     # PCjr and Tandy options
     parser.add_argument('--pcjr-syntax', action='store', choices=('pcjr', 'tandy'), help='Enable PCjr/Tandy 1000 syntax extensions')
     parser.add_argument('--pcjr-term', action='store', help='Set the program run by the PCjr TERM command')
-    parser.add_argument('--video', action='store', choices=('ega', 'pcjr', 'tandy'), help='Set video capabilities')
+    parser.add_argument('--video', action='store', choices=('ega', 'cga', 'cga_old', 'pcjr', 'tandy'), help='Set video capabilities')
     parser.add_argument('--windows-map-drives', action='store_true', help='Map all Windows drive letters to PC-BASIC drive letters (Windows only)')
     parser.add_argument('--cga-low', action='store_true', help='Use low-intensity palettes in CGA (for --video={cga,ega} only).')
     parser.add_argument('--composite', action='store_true', help='Start in composite colorburst mode. Disables smooth scaling.')
