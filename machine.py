@@ -30,6 +30,8 @@ state.console_state.colour_plane_write_mask = 0xff
 video_segment = { 0: 0xb800, 1: 0xb800, 2: 0xb800, 3: 0xb800, 4: 0xb800, 5: 0xb800, 6: 0xb800, 7: 0xa000, 8: 0xa000, 9: 0xa000 }
 # memory model: text mode video memory
 text_segment = 0xb800
+font_segment = 0xf000
+font_addr = 0xfa6e
 
 def peek(addr):
     if addr < 0: 
@@ -39,7 +41,9 @@ def peek(addr):
         # try if there's a preset value
         return peek_values[addr]
     except KeyError: 
-        if addr >= video_segment[state.console_state.screen_mode]*0x10:
+        if addr >= font_segment*0x10+ font_addr:
+            return max(0, get_font_memory(addr))
+        elif addr >= video_segment[state.console_state.screen_mode]*0x10:
             # graphics and text memory
             return max(0, get_video_memory(addr))
         elif addr >= data_segment*0x10 + var.var_mem_start:
@@ -53,11 +57,13 @@ def poke(addr, val):
         addr += 0x10000
     addr += segment * 0x10
     if addr >= video_segment[state.console_state.screen_mode]*0x10:
+        # can't poke into font memory, ignored even in GW-BASIC. ROM?
         # graphics and text memory
         set_video_memory(addr, val)
 #    elif addr >= data_segment*0x10 + var.var_mem_start:
 #        # variable memory
 #        set_data_memory(addr)
+
 
 def inp(port):    
     if port == 0x60:
@@ -394,4 +400,14 @@ def set_text_memory(addr, val):
     except IndexError:
         pass
     
+#################################################################################
+
+def get_font_memory(addr):
+    addr -= font_segment*0x10 + font_addr
+    char = addr // 8
+    if char > 127 or char<0:
+        return -1
+    return ord(backend.video.fonts[8][char][addr%8])
+
+
  
