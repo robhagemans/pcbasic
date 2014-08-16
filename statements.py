@@ -468,8 +468,7 @@ def exec_sound(ins):
     dur = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
     if fp.Single.from_int(-65535).gt(dur) or dur.gt(fp.Single.from_int(65535)):
         raise error.RunError(5)
-    if (pcjr_syntax == 'tandy' or (pcjr_syntax == 'pcjr' and state.console_state.sound_on)
-            and util.skip_white_read_if(ins, (',',))):
+    if (util.skip_white_read_if(ins, (',',)) and pcjr_syntax == 'tandy' or (pcjr_syntax == 'pcjr' and state.console_state.sound_on)):
         volume = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         util.range_check(0, 15, volume)        
         if util.skip_white_read_if(ins, (',',)):
