@@ -235,8 +235,9 @@ def prepare(args):
     if args.font != None:
         for fontname in args.font:
             font = load_font_file(fontname)
-            height = len(font[0])
-            fonts[height] = font
+            if font:
+                height = len(font[0])
+                fonts[height] = font
     if args.font_family:
         font_family = args.font_family
     if args.fullscreen:
@@ -417,9 +418,13 @@ def load_font(family, codepage, height):
     return load_font_file(name)
         
 def load_font_file(name):
-    size = os.path.getsize(name)
-    height = size/256        
+    # if not found, try in font directory
+    if not os.path.exists(name):
+        path = os.path.dirname(os.path.realpath(__file__))
+        name = os.path.join(path, 'font', name)
     try:
+        size = os.path.getsize(name)
+        height = size/256        
         fontfile = open(name, 'rb')
         font = []
         num_chars, width = 256, 8
@@ -427,8 +432,10 @@ def load_font_file(name):
             lines = fontfile.read(height*(width//8))
             font += [lines]
         return font
-    except IOError:
+    except (IOError, OSError):
+        logging.warning('Could not read font file %s', name)
         return None
+    
 
 ####################################
 # console commands
