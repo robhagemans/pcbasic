@@ -2039,8 +2039,10 @@ def exec_locate(ins):
         state.console_state.bottom_row_allowed = True       
     console.set_pos(row, col, scroll_ok=False) 
     if cursor != None:
-        util.range_check(0, 1, cursor)   
-        console.show_cursor(cursor != 0)
+        util.range_check(0, (255 if pcjr_syntax else 1), cursor)   
+        # it seems cursor visibility is ignored in all modes
+        # certainly in graphics mode it should be off when running even if we've turned it on in screen 0
+        #console.show_cursor(cursor != 0)
     if stop == None:
         stop = start
     if start != None:    
