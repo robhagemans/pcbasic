@@ -286,7 +286,7 @@ def get_video_memory(addr):
         elif state.console_state.screen_mode == 6:
             page, addr = addr//32768, addr%32768
             # 4 x interlaced scan lines of 80bytes, 8pixels per 2bytes
-            x, y = (((addr%0x2000)%80)//2)*8, (addr//0x2000) + 4*((addr%0x2000)//80)
+            x, y = (((addr%0x2000)%160)//2)*8, (addr//0x2000) + 4*((addr%0x2000)//160)
             if y < state.console_state.size[1] and page < state.console_state.num_pages:
                 return get_pixel_byte(page, x, y, addr%2) 
         #
@@ -342,7 +342,7 @@ def set_video_memory(addr, val):
         elif state.console_state.screen_mode == 6:
             page, addr = addr//32768, addr%32768
             # 4 x interlaced scan lines of 80bytes, 8pixels per 2bytes
-            x, y = (((addr%0x2000)%80)//2)*8, (addr//0x2000) + 4*((addr%0x2000)//80)
+            x, y = (((addr%0x2000)%160)//2)*8, (addr//0x2000) + 4*((addr%0x2000)//160)
             if y < state.console_state.size[1] and page < state.console_state.num_pages:
                 return set_pixel_byte(page, x, y, 1<<(addr%2), val) 
         elif state.console_state.screen_mode == 7:
