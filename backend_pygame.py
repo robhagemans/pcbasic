@@ -76,6 +76,29 @@ if pygame:
         (0x55,0x55,0x55), (0x55,0x55,0xff), (0x55,0xff,0x55), (0x55,0xff,0xff),
         (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff) ] ]
 
+    composite_cga_old = [
+        
+        (0x00, 0x00, 0x00),
+        (0x00, 0x71, 0x00),
+        (0x00, 0x3f, 0xff),
+        (0x00, 0xab, 0xff),
+        (0xc3, 0x00, 0x67),
+        (0x73, 0x73, 0x73),
+        (0xe6, 0x39, 0xff),
+        (0x8c, 0xa8, 0xff),
+        (0x53, 0x44, 0x00),
+        (0x00, 0xcd, 0x00),
+        (0x73, 0x73, 0x73),
+        (0x00, 0xfc, 0x7e),
+        (0xff, 0x39, 0x00),
+        (0xe2, 0xca, 0x00),
+        (0xff, 0x7c, 0xf4),
+        (0xff, 0xff, 0xff),
+    ]
+
+    composite = False
+            
+
     # for use with get_at
     workaround_palette = [ 
             (0,0,0), (0,0,1), (0,0,2), (0,0,3), (0,0,4), (0,0,5), (0,0,6), (0,0,7),
@@ -220,7 +243,7 @@ if pygame:
 # set constants based on commandline arguments
 
 def prepare(args):
-    global fullscreen, smooth, noquit, display_size, display_size_text, font_family, fonts
+    global fullscreen, smooth, noquit, display_size, display_size_text, font_family, fonts, composite
     try:
         x, y = args.dimensions[0].split(',')
         display_size = (int(x), int(y))
@@ -246,6 +269,8 @@ def prepare(args):
         smooth = True    
     if args.noquit:
         noquit = True
+    if args.composite:
+        composite = True
         
 ####################################
 # state saving and loading
@@ -338,7 +363,6 @@ def init_screen_mode():
         font = fonts[state.console_state.font_height]
     except KeyError:
         font = None
-    update_palette()
     under_cursor = pygame.Surface((state.console_state.font_width, state.console_state.font_height), depth=8)
     glyphs = [ build_glyph(c, font, state.console_state.font_width, state.console_state.font_height) for c in range(256) ]
     # initialise glyph colour
@@ -381,8 +405,11 @@ def resize_display(width, height, initial=False):
         display = pygame.display.set_mode((width, height), flags)
     else:
         display = pygame.display.set_mode((width, height), flags, 8)    
-    if not initial and not smooth:
-        display.set_palette(gamepalette)
+    if not initial:
+        if composite:
+            display.set_palette(composite_cga_old)
+        elif not smooth:
+            display.set_palette(gamepalette)
         # load display if requested    
     screen_changed = True    
     
@@ -446,8 +473,11 @@ def update_palette():
         gamepalette = [ gamecolours64[i] for i in state.console_state.palette ]
     else:
         gamepalette = [ gamecolours16[i] for i in state.console_state.palette ]
-    if not smooth:
+    if composite:
+        display.set_palette(composite_cga_old)
+    elif not smooth:
         display.set_palette(gamepalette)
+    
 
 def clear_rows(cattr, start, stop):
     global screen_changed
@@ -706,12 +736,25 @@ def check_screen():
             do_flip()
         screen_changed = False
 
+def apply_composite(screen):
+    src_array = pygame.surfarray.array2d(screen)
+    width, height = src_array.shape
+    s0 = src_array[0:width:4]
+    s1 = src_array[1:width:4]
+    s2 = src_array[2:width:4]
+    s3 = src_array[3:width:4]
+    new = pygame.surfarray.make_surface(numpy.repeat(8*s0+4*s1+2*s2+s3, 4, axis=0))
+    return new
+
+    
 def do_flip():
     refresh_cursor()
-    if smooth:
+    if smooth and not composite:
         screen.set_palette(gamepalette)
         pygame.transform.smoothscale(screen.convert(display), display.get_size(), display)
         screen.set_palette(workaround_palette)    
+    elif composite and numpy:
+        pygame.transform.scale(apply_composite(screen), display.get_size(), display)  
     else:
         pygame.transform.scale(screen, display.get_size(), display)  
     pygame.display.flip()

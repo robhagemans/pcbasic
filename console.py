@@ -287,6 +287,10 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
         # FIXME: keys visible?
     return True
 
+def set_composite(on=True):
+    backend.video.composite = True
+    backend.video.update_palette()
+
 def check_video_memory():
     if state.console_state.screen_mode in (5, 6) and state.console_state.pcjr_video_mem_size < 32753:
         screen (0, None, None, None)
