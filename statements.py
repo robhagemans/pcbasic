@@ -1971,6 +1971,9 @@ def exec_palette_using(ins):
 def exec_key(ins):
     d = util.skip_white_read(ins)
     if d == '\x95': # ON
+        # tandy can have VIEW PRINT 1 to 25, should raise ILLEGAN FUNCTION CALL then
+        if state.console_state.scroll_height == 25:
+            raise error.RunError(5)
         if not state.console_state.keys_visible:
             console.show_keys()
     elif d == '\xdd': # OFF
@@ -2165,7 +2168,8 @@ def exec_view_print(ins):
         util.require_read(ins, ('\xCC',)) # TO
         stop = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_statement)
-        util.range_check(1, 24, start, stop)
+        max_line = 25 if (pcjr_syntax and not state.console_state.keys_visible) else 24
+        util.range_check(1, max_line, start, stop)
         console.set_view(start, stop)
     
 def exec_width(ins):
