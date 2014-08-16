@@ -288,7 +288,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
     return True
 
 def set_composite(on=True):
-    backend.video.composite = True
+    backend.video.composite = on
     backend.video.update_palette()
 
 def check_video_memory():

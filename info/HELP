@@ -2636,9 +2636,12 @@ ERRORS:
 OUT statement
 OUT port, value
 -------------
-If 'port' = &h3C5, sets the write mask for SCREEN 7,8,9 colour planes; 
-bitmask = 2 ^ 'value'.
-If 'port' = &h3CF, sets the read colour plane to 'value'.
+port value  effect
+    &h3C5   sets the write mask for SCREEN 7,8,9 colour planes; 
+            bitmask = 2 ^ 'value'.
+    &h3CF   sets the read colour plane to 'value'.
+    &h3D8   if 'value' = &h1A, enable composite colorburst (cga, tandy, pcjr)
+            if 'value' = &h1E, disable composite colorburst (cga, tandy, pcjr)
 Does nothing otherwise.
 'port' is a number-valued expression in [-32768,65535].
 'value' is a number-valued expression in [0, 255].
@@ -2652,6 +2655,8 @@ NOTES:
         OUT &h3CE, 4     
         OUT &h3CF, plane 
     The initial OUT statements currently have no effect in PC-BASIC 3.23.    
+-   In GW-BASIC, in SCREEN 1, a second statement OUT &H3D9,&H3F is needed. This
+    has no effect in PC-BASIC.
 ERRORS:
 -   If 'port' is not in [-32768, 65535], raises OVERFLOW.
 -   If 'value' is not in [-32768, 32768], raises OVERFLOW.

@@ -79,6 +79,13 @@ def out(addr, val):
     elif addr == 0x3cf:
         # officially, requires OUT &H3CE, 4 first (not implemented)
         state.console_state.colour_plane = val        
+    elif addr == 0x3d8:
+        #OUT &H3D8,&H1A: REM enable color burst
+        #OUT &H3D8,&H1E: REM disable color burst
+        if val == 0x1a:
+            console.set_composite(True)
+        elif val == 0x1e:
+            console.set_composite(False)
 
 def wait(addr, ander, xorer):
     store_suspend = state.basic_state.suspend_all_events
