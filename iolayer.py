@@ -776,8 +776,12 @@ class LPTFile(BaseFile):
         return open_device_file(self, number, mode, access, lock, reclen)
 
     def flush(self):
-        self.output_stream.write(self.fhandle.getvalue())
-        self.fhandle.truncate(0)
+        try:
+            self.output_stream.write(self.fhandle.getvalue())
+            self.fhandle.truncate(0)
+        except ValueError:
+            # already closed, ignore
+            pass
         
     def set_width(self, new_width=255):
         self.width = new_width
@@ -819,8 +823,11 @@ class LPTFile(BaseFile):
     def close(self):
         # actually print
         self.flush()
-        self.output_stream.flush()
-        
+        try:
+            self.output_stream.flush()
+        except ValueError:
+            # already closed, ignore
+            pass    
         
 class COMFile(RandomBase):
     allowed_modes = 'IOAR'

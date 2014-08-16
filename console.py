@@ -173,7 +173,7 @@ def init():
         # select pcjr cga palettes
         cga_palettes = [cga_palette_0_pcjr, cga_palette_1_pcjr]       
         # TODO: determine the number of pages based on video memory size, not hard coded. 
-    elif video_capabilities == 'cga':
+    elif video_capabilities in ('cga', 'cga_old'):
         unavailable_modes = (3, 4, 5, 6, 7, 8, 9)
         # 8-pixel characters in screen 0
         mode_data[0] = ( 8, 7, 32, 64, 80, 4, 4, 8 ) 
@@ -283,6 +283,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
         backend.video.update_cursor_visibility()
         # FIXME: are there different views for different pages?
         unset_view()
+        check_composite()
     else:
         # set active page & visible page, counting from 0. 
         state.console_state.vpagenum, state.console_state.apagenum = new_vpagenum, new_apagenum
@@ -292,10 +293,20 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
         # FIXME: keys visible?
     return True
 
+composite = False
+
 def set_composite(on=True):
-    if video_capabilities in ('cga', 'tandy', 'pcjr'):
-        backend.video.composite = on
+    global composite
+    composite = on
+    check_composite()
+    
+def check_composite():
+    old_composite = backend.video.composite
+    backend.video.composite = ( composite and video_capabilities in ('cga', 'cga_old', 'tandy', 'pcjr') 
+                                    and state.console_state.screen_mode in (1,2,3,4))
+    if backend.video.composite != old_composite:
         backend.video.update_palette()
+        backend.video.screen_changed = True
 
 def check_video_memory():
     if state.console_state.screen_mode in (5, 6) and state.console_state.pcjr_video_mem_size < 32753:
