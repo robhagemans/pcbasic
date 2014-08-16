@@ -269,8 +269,6 @@ def prepare(args):
         smooth = True    
     if args.noquit:
         noquit = True
-    if args.composite:
-        composite = True
         
 ####################################
 # state saving and loading
