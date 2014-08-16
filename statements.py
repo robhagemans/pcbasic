@@ -1919,12 +1919,11 @@ def exec_color_mode_1(back, pal, override):
     util.range_check(0, 255, back)
     if pal != None:
         util.range_check(0, 255, pal)
-        if pal % 2 == 1:
-            # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
-            console.set_palette([back & 0xf, 3, 5, 7])
-        else:
-            # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
-            console.set_palette([back & 0xf, 2, 4, 6])
+        palette = console.cga_palettes[pal % 2]
+        palette[0] = back&0xf
+        # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
+        # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
+        console.set_palette(palette)
     else:
         console.set_palette_entry(0, back & 0xf)        
     
