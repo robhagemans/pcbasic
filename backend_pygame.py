@@ -76,25 +76,38 @@ if pygame:
         (0x55,0x55,0x55), (0x55,0x55,0xff), (0x55,0xff,0x55), (0x55,0xff,0xff),
         (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff) ] ]
 
-    composite_cga_old = [
-        
-        (0x00, 0x00, 0x00),
-        (0x00, 0x71, 0x00),
-        (0x00, 0x3f, 0xff),
-        (0x00, 0xab, 0xff),
-        (0xc3, 0x00, 0x67),
-        (0x73, 0x73, 0x73),
-        (0xe6, 0x39, 0xff),
-        (0x8c, 0xa8, 0xff),
-        (0x53, 0x44, 0x00),
-        (0x00, 0xcd, 0x00),
-        (0x73, 0x73, 0x73),
-        (0x00, 0xfc, 0x7e),
-        (0xff, 0x39, 0x00),
-        (0xe2, 0xca, 0x00),
-        (0xff, 0x7c, 0xf4),
-        (0xff, 0xff, 0xff),
-    ]
+    # composite palettes, see http://nerdlypleasures.blogspot.co.uk/2013_11_01_archive.html
+    composite_640 = {
+        'cga_old': [
+            (0x00, 0x00, 0x00),        (0x00, 0x71, 0x00),        (0x00, 0x3f, 0xff),        (0x00, 0xab, 0xff),
+            (0xc3, 0x00, 0x67),        (0x73, 0x73, 0x73),        (0xe6, 0x39, 0xff),        (0x8c, 0xa8, 0xff),
+            (0x53, 0x44, 0x00),        (0x00, 0xcd, 0x00),        (0x73, 0x73, 0x73),        (0x00, 0xfc, 0x7e),
+            (0xff, 0x39, 0x00),        (0xe2, 0xca, 0x00),        (0xff, 0x7c, 0xf4),        (0xff, 0xff, 0xff)    ],
+        'cga': [
+            (0x00, 0x00, 0x00),        (0x00, 0x6a, 0x2c),        (0x00, 0x39, 0xff),        (0x00, 0x94, 0xff),        
+            (0xca, 0x00, 0x2c),        (0x77, 0x77, 0x77),        (0xff, 0x31, 0xff),        (0xc0, 0x98, 0xff),
+            (0x1a, 0x57, 0x00),        (0x00, 0xd6, 0x00),        (0x77, 0x77, 0x77),        (0x00, 0xf4, 0xb8),
+            (0xff, 0x57, 0x00),        (0xb0, 0xdd, 0x00),        (0xff, 0x7c, 0xb8),        (0xff, 0xff, 0xff)    ],
+        'tandy': [
+            (0x00, 0x00, 0x00),        (0x7c, 0x30, 0x00),        (0x00, 0x75, 0x00),        (0x00, 0xbe, 0x00),        
+            (0x00, 0x47, 0xee),        (0x77, 0x77, 0x77),        (0x00, 0xbb, 0xc4),        (0x00, 0xfb, 0x3f),        
+            (0xb2, 0x0f, 0x9d),        (0xff, 0x1e, 0x0f),        (0x77, 0x77, 0x77),        (0xff, 0xb8, 0x00),        
+            (0xb2, 0x44, 0xff),        (0xff, 0x78, 0xff),        (0x4b, 0xba, 0xff),        (0xff, 0xff, 0xff)    ],      
+        'pcjr': [
+            (0x00, 0x00, 0x00),
+            (0x98, 0x20, 0xcb),        (0x9f, 0x1c, 0x00),        (0xff, 0x11, 0x71),        (0x00, 0x76, 0x00),
+            (0x77, 0x77, 0x77),        (0x5b, 0xaa, 0x00),        (0xff, 0xa5, 0x00),        (0x00, 0x4e, 0xcb),
+            (0x74, 0x53, 0xff),        (0x77, 0x77, 0x77),        (0xff, 0x79, 0xff),        (0x00, 0xc8, 0x71),
+            (0x00, 0xcc, 0xff),        (0x00, 0xfa, 0x00),        (0xff, 0xff, 0xff) ]        }
+                        
+    composite_1 =   {
+        'cga_old': [
+            (0x00, 0x00, 0x00),        (0x00, 0x8b, 0xac),        (0x00, 0x48, 0xad),        (0x00, 0x9e, 0xe8),
+            (0x59, 0x1c, 0x00),        (0x00, 0xbc, 0x9b),        (0x63, 0x74, 0x9e),        (0x00, 0xce, 0xd9),
+            (0xc9, 0x1c, 0x27),        (0xb2, 0xc2, 0xec),        (0xdd, 0x7d, 0xef),        (0xbc, 0xd2, 0xff),
+            (0xff, 0x49, 0x00),        (0xf6, 0xed, 0xc0),        (0xff, 0xa5, 0xc4),        (0xff, 0xff, 0xff)    ],
+       } 
+
 
     composite = False
             
@@ -307,7 +320,7 @@ def load_state():
         except IndexError:
             # couldn't load the state correctly; most likely a text screen saved from -t. just redraw what's unpickled.
             console.redraw_text_screen()
-
+        
 ####################################
 # initialisation
 
@@ -361,6 +374,8 @@ def init_screen_mode():
         font = fonts[state.console_state.font_height]
     except KeyError:
         font = None
+    # without this the palette is not prepared when resuming
+    update_palette()
     under_cursor = pygame.Surface((state.console_state.font_width, state.console_state.font_height), depth=8)
     glyphs = [ build_glyph(c, font, state.console_state.font_width, state.console_state.font_height) for c in range(256) ]
     # initialise glyph colour
@@ -404,11 +419,8 @@ def resize_display(width, height, initial=False):
     else:
         display = pygame.display.set_mode((width, height), flags, 8)    
     if not initial:
-        if composite:
-            display.set_palette(composite_cga_old)
-        elif not smooth:
-            display.set_palette(gamepalette)
-        # load display if requested    
+        set_display_palette()
+    # load display if requested    
     screen_changed = True    
     
 # build the Ok icon
@@ -471,12 +483,20 @@ def update_palette():
         gamepalette = [ gamecolours64[i] for i in state.console_state.palette ]
     else:
         gamepalette = [ gamecolours16[i] for i in state.console_state.palette ]
-    if composite:
-        display.set_palette(composite_cga_old)
+    set_display_palette()
+
+def set_display_palette():
+    if composite and state.console_state.screen_mode in (1, 2, 3, 4):
+        if state.console_state.screen_mode == 2:
+            compopal = composite_640
+        elif state.console_state.palette == console.cga_palettes[0]:
+            compopal = composite_0
+        else:
+            compopal = composite_1
+        display.set_palette(compopal[console.video_capabilities]) 
     elif not smooth:
         display.set_palette(gamepalette)
-    
-
+        
 def clear_rows(cattr, start, stop):
     global screen_changed
     bg = (cattr>>4) & 0x7
@@ -734,16 +754,15 @@ def check_screen():
             do_flip()
         screen_changed = False
 
-def apply_composite(screen):
+def apply_composite(screen, pixels=4):
     src_array = pygame.surfarray.array2d(screen)
     width, height = src_array.shape
-    s0 = src_array[0:width:4]
-    s1 = src_array[1:width:4]
-    s2 = src_array[2:width:4]
-    s3 = src_array[3:width:4]
-    new = pygame.surfarray.make_surface(numpy.repeat(8*s0+4*s1+2*s2+s3, 4, axis=0))
-    return new
-
+    s = [None]*pixels
+    for p in range(pixels):
+        s[p] = src_array[p:width:pixels]&(4//pixels)
+    for p in range(1,pixels):
+        s[0] = s[0]*2 + s[p]
+    return pygame.surfarray.make_surface(numpy.repeat(s[0], pixels, axis=0))
     
 def do_flip():
     refresh_cursor()
@@ -752,7 +771,7 @@ def do_flip():
         pygame.transform.smoothscale(screen.convert(display), display.get_size(), display)
         screen.set_palette(workaround_palette)    
     elif composite and numpy:
-        pygame.transform.scale(apply_composite(screen), display.get_size(), display)  
+        pygame.transform.scale(apply_composite(screen, 4//state.console_state.bitsperpixel), display.get_size(), display)  
     else:
         pygame.transform.scale(screen, display.get_size(), display)  
     pygame.display.flip()
