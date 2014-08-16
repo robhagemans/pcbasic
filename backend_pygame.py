@@ -602,29 +602,32 @@ def refresh_cursor():
             state.console_state.col*state.console_state.font_width, 
             state.console_state.row*state.console_state.font_height)
     under_cursor.blit(screen, (0,0), area=under_char_area)
-    if not state.console_state.screen_mode:
+    if state.console_state.screen_mode == 0:
         # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
         if (cycle/blink_cycles==1 or cycle/blink_cycles==3): 
             screen.blit(cursor0, (  (state.console_state.col-1)*state.console_state.font_width,
                                     (state.console_state.row-1)*state.console_state.font_height) )
-    elif numpy:
-        index = state.console_state.attr & 0xf
-        # reference the destination area
-        dest_array = pygame.surfarray.pixels2d(screen.subsurface(pygame.Rect(
-                            (state.console_state.col-1)*state.console_state.font_width, 
-                            (state.console_state.row-1)*state.console_state.font_height + state.console_state.cursor_from, 
-                            state.console_state.font_width, 
-                            state.console_state.cursor_to - state.console_state.cursor_from + 1))) 
-        dest_array ^= index
     else:
-        index = state.console_state.attr & 0xf
-        # no surfarray if no numpy    
-        for x in range(     (state.console_state.col-1) * state.console_state.font_width, 
-                              state.console_state.col * state.console_state.font_width):
-            for y in range((state.console_state.row-1)*state.console_state.font_height + state.console_state.cursor_from, 
-                            (state.console_state.row-1)*state.console_state.font_height + state.console_state.cursor_to + 1):
-                pixel = get_pixel(x,y)
-                screen.set_at((x,y), pixel^index)
+        if state.console_state.screen_mode in (3,4,5,6):
+            index = 3
+        else:
+            index = state.console_state.attr & 0xf
+        if numpy:
+            # reference the destination area
+            dest_array = pygame.surfarray.pixels2d(screen.subsurface(pygame.Rect(
+                                (state.console_state.col-1)*state.console_state.font_width, 
+                                (state.console_state.row-1)*state.console_state.font_height + state.console_state.cursor_from, 
+                                state.console_state.font_width, 
+                                state.console_state.cursor_to - state.console_state.cursor_from + 1))) 
+            dest_array ^= index
+        else:
+            # no surfarray if no numpy    
+            for x in range(     (state.console_state.col-1) * state.console_state.font_width, 
+                                  state.console_state.col * state.console_state.font_width):
+                for y in range((state.console_state.row-1)*state.console_state.font_height + state.console_state.cursor_from, 
+                                (state.console_state.row-1)*state.console_state.font_height + state.console_state.cursor_to + 1):
+                    pixel = get_pixel(x,y)
+                    screen.set_at((x,y), pixel^index)
     last_row = state.console_state.row
     last_col = state.console_state.col
         
