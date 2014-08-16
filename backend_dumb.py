@@ -40,6 +40,8 @@ control = (
     '\x1f', # DOWN
     ) 
 
+# unused, but needs to be defined
+composite = False
 
 ##############################################        
         
