@@ -584,7 +584,7 @@ def set_area(x0,y0, array, operation_char):
     dx = vartypes.uint_to_value(byte_array[0:2])
     dy = vartypes.uint_to_value(byte_array[2:4])
     # in mode 1, number of x bits is given rather than pixels
-    if state.console_state.screen_mode in (1, 3, 4, 5, 6):
+    if state.console_state.screen_mode in (1, 3, 4, 5):
         dx /= state.console_state.bitsperpixel
     x1, y1 = x0+dx-1, y0+dy-1
     x0, y0 = view_coords(x0, y0)
@@ -654,7 +654,11 @@ def get_area(x0,y0,x1,y1, array):
         raise error.RunError(5)    
     # clear existing array
     byte_array[:] = '\x00'*len(byte_array)
-    if state.console_state.screen_mode in (1, 3, 4, 5, 6):
+    if state.console_state.screen_mode == 6:
+        # screen 6 simply GETs twice the width, it seems
+        dx *= 2
+        x1 = x0 + dx -1 
+    if state.console_state.screen_mode in (1, 3, 4, 5):
         byte_array[0:4] = vartypes.value_to_uint(dx*state.console_state.bitsperpixel) + vartypes.value_to_uint(dy)
     else:
         byte_array[0:4] = vartypes.value_to_uint(dx) + vartypes.value_to_uint(dy) 
