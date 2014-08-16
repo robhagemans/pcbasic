@@ -234,6 +234,8 @@ def prepare_console(args):
         if not backend.video or not console.init():
             logging.critical('Failed to initialise console. Quitting.')
             sys.exit(0)
+    if args.composite:
+        console.set_composite(True)
     # sound fallback        
     if args.nosound:
         backend.sound = nosound
@@ -427,7 +429,7 @@ def get_args():
     parser.add_argument('--video', action='store', choices=('ega', 'pcjr', 'tandy'), help='Set video capabilities')
     parser.add_argument('--windows-map-drives', action='store_true', help='Map all Windows drive letters to PC-BASIC drive letters (Windows only)')
     parser.add_argument('--cga-low', action='store_true', help='Use low-intensity palettes in CGA (for --video={cga,ega} only).')
-    parser.add_argument('--composite', action='store_true', help='Start in composite colorburst mode.')
+    parser.add_argument('--composite', action='store_true', help='Start in composite colorburst mode. Disables smooth scaling.')
     # manually re-enable -h
     parser.add_argument('-h', '--help', action='store_true', help='Show this message and exit')
     # parse command line arguments to override defaults
