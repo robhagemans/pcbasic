@@ -44,6 +44,11 @@ colournames = ('Black','Dark Blue','Dark Green','Dark Cyan','Dark Red','Dark Mag
 'Dark Gray','Blue','Green','Cyan','Red','Magenta','Yellow','White')
 palette_changed = True
 
+
+# unused, but needs to be defined
+composite = False
+
+
 # ANSI escape sequences
 # for reference, see:
 # http://en.wikipedia.org/wiki/ANSI_escape_code
