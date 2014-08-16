@@ -144,8 +144,6 @@ def prepare_keywords(args):
     # set pcjr TERM program    
     if args.pcjr_term:
         statements.pcjr_term = args.pcjr_term[0]
-    if args.video:
-        console.video_capabilities = args.video[0]
         
 def prepare_constants(args):
     # PEEK presets
@@ -205,7 +203,10 @@ def prepare_constants(args):
         program.universal_newline = True
     if args.windows_map_drives:
         oslayer.windows_map_drives()
-
+    if args.video:
+        console.video_capabilities = args.video[0]
+    if args.cga_low:
+        console.cga_palettes = [console.cga_palette_0_lo, console.cga_palette_1_lo]
 
 def prepare_console(args):
     state.console_state.codepage = unicodepage.load_codepage(state.console_state.codepage)
@@ -239,6 +240,7 @@ def prepare_console(args):
     if not sound.init_sound():
         logging.warning('Failed to initialise sound. Sound will be disabled.')
         backend.sound = nosound
+    # FIXME: move these to args_constants() ?
     # gwbasic-style redirected output is split between graphical screen and redirected file    
     if args.output:
         echo = partial(echo_ascii, f=oslayer.safe_open(args.output[0], "S", "W"))
@@ -424,6 +426,7 @@ def get_args():
     parser.add_argument('--pcjr-term', action='store', help='Set the program run by the PCjr TERM command')
     parser.add_argument('--video', action='store', choices=('ega', 'pcjr', 'tandy'), help='Set video capabilities')
     parser.add_argument('--windows-map-drives', action='store_true', help='Map all Windows drive letters to PC-BASIC drive letters (Windows only)')
+    parser.add_argument('--cga-low', action='store_true', help='Use low-intensity palettes in CGA.')
     # manually re-enable -h
     parser.add_argument('-h', '--help', action='store_true', help='Show this message and exit')
     # parse command line arguments to override defaults
