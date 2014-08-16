@@ -426,7 +426,7 @@ def get_args():
     parser.add_argument('--pcjr-term', action='store', help='Set the program run by the PCjr TERM command')
     parser.add_argument('--video', action='store', choices=('ega', 'pcjr', 'tandy'), help='Set video capabilities')
     parser.add_argument('--windows-map-drives', action='store_true', help='Map all Windows drive letters to PC-BASIC drive letters (Windows only)')
-    parser.add_argument('--cga-low', action='store_true', help='Use low-intensity palettes in CGA.')
+    parser.add_argument('--cga-low', action='store_true', help='Use low-intensity palettes in CGA (for --video={cga,ega} only).')
     # manually re-enable -h
     parser.add_argument('-h', '--help', action='store_true', help='Show this message and exit')
     # parse command line arguments to override defaults
