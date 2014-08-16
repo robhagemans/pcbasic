@@ -253,11 +253,20 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
                                          state.console_state.height*state.console_state.font_height)
         # centre of new graphics screen
         state.console_state.last_point = (state.console_state.size[0]/2, state.console_state.size[1]/2)
-        # pixels e.g. 80*8 x 25*14, screen ratio 4x3 makes for pixel width/height (4/3)*(25*14/8*80)
-        # FIXME - hard coded 8-pixel width for graphics screens here.
-        state.console_state.pixel_aspect_ratio = fp.div(
-            fp.Single.from_int(state.console_state.height*state.console_state.font_height), 
-            fp.Single.from_int(6*state.console_state.width)) 
+        if video_capabilities in ('pcjr', 'tandy'):
+            if new_mode in (2,6):
+                 state.console_state.pixel_aspect_ratio = fp.div(fp.Single.from_int(48), fp.Single.from_int(100))       
+            elif new_mode in (1,4,5):
+                 state.console_state.pixel_aspect_ratio = fp.div(fp.Single.from_int(96), fp.Single.from_int(100))       
+            elif new_mode == 3:
+                 state.console_state.pixel_aspect_ratio = fp.div(fp.Single.from_int(1968), fp.Single.from_int(1000))       
+        else:    
+            # pixels e.g. 80*8 x 25*14, screen ratio 4x3 makes for pixel width/height (4/3)*(25*14/8*80)
+            # FIXME - hard coded 8-pixel width for graphics screens here.
+            state.console_state.pixel_aspect_ratio = fp.div(
+                fp.Single.from_int(state.console_state.height*state.console_state.font_height), 
+                fp.Single.from_int(6*state.console_state.width)) 
+        # set the palette (essential on first run, or not all globals are defined)
         set_palette()
         # signal the backend to change the screen resolution
         backend.video.init_screen_mode()
