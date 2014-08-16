@@ -1490,6 +1490,9 @@ Pixel data format:
     with 4 bits per pixel, the first row takes at least 8 bytes (4 words), even
     if it consists of only one pixel. The number of bits per pixel depends on 
     the SCREEN mode.
+NOTES:
+-   In PCjr/Tandy mode, in SCREEN 6, GET stores an area of *twice the width* 
+    of the specified rectangle.    
 ERRORS:
 -   If the array does not exist, raises ILLEGAL FUNCTION CALL.
 -   If 'array_name' refers to a string array, raises TYPE MISMATCH.
