@@ -1,1 +1,1 @@
-pcbasic.py
+pcbasic
