@@ -468,26 +468,26 @@ def exec_sound(ins):
     dur = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
     if fp.Single.from_int(-65535).gt(dur) or dur.gt(fp.Single.from_int(65535)):
         raise error.RunError(5)
-    if (util.skip_white_read_if(ins, (',',)) and pcjr_syntax == 'tandy' or (pcjr_syntax == 'pcjr' and state.console_state.sound_on)):
-        volume = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-        util.range_check(0, 15, volume)        
-        if util.skip_white_read_if(ins, (',',)):
-            voice = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-            util.range_check(0, 2, voice) # can't address noise channel here
+    # only look for args 3 and 4 if duration is > 0; otherwise those args are a syntax error (on tandy)    
+    if dur.gt(fp.Single.zero):    
+        if (util.skip_white_read_if(ins, (',',)) and pcjr_syntax == 'tandy' or (pcjr_syntax == 'pcjr' and state.console_state.sound_on)):
+            volume = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+            util.range_check(0, 15, volume)        
+            if util.skip_white_read_if(ins, (',',)):
+                voice = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+                util.range_check(0, 2, voice) # can't address noise channel here
+            else:
+                voice = 0    
         else:
-            voice = 0    
-    else:
-        volume, voice = 15, 0                
+            volume, voice = 15, 0                
     util.require(ins, util.end_statement)
     if dur.is_zero():
         sound.stop_all_sound()
         return
-    # Tandy only allows frequencies below 37 (but palys them as 110 Hz)    
-    if sound.pcjr_sound == 'tandy': 
-        util.range_check(0, 32767, freq) 
-    else:    
-        if freq != 0:
-            util.range_check(37, 32767, freq) # 32767 is pause
+    # Tandy only allows frequencies below 37 (but plays them as 110 Hz)    
+    if freq != 0:
+        util.range_check(-32768 if sound.pcjr_sound == 'tandy' else 37, 32767, freq) # 32767 is pause
+    # calculate duration in seconds   
     one_over_44 = fp.Single.from_bytes(bytearray('\x8c\x2e\x3a\x7b')) # 1/44 = 0.02272727248
     dur_sec = dur.to_value()/18.2
     if one_over_44.gt(dur):
