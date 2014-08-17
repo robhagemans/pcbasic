@@ -93,14 +93,15 @@ In default mode, PC-BASIC will accept both DOS and Unix newline conventions. Thi
 BASIC program downloads and further links can be found on the following pages.   
 [KindlyRat's geocities page](http://www.oocities.org/KindlyRat/GWBASIC.html)  
 [PeatSoft GW-BASIC documentation](http://archive.is/AUm6G)  
+[Neil C. Obremski's gw-basic.com](http://www.gw-basic.com/)  
 [Leon Peyre](http://peyre.x10.mx/GWBASIC/) has a nice collection of GW-BASIC programs including the original IBM PC-DOS 1.1 samples - with the (in)famous DONKEY.BAS!  
 [Phillip Bigelow](http://www.scn.org/~bh162/basic_programs.html)  
 [Gary Peek](http://www.garypeek.com/basic/gwprograms.htm)  
 [S.A. Moore's Classic BASIC Games](http://www.moorecad.com/classicbasic/index.html)  
 [Joseph Sixpack's Last Book of GW-BASIC](http://www.geocities.ws/joseph_sixpack/btoc.html) has lots of GW-BASIC office and utility programs, including the PC-CALC spreadsheet.  
 [cd.textfiles.com](http://cd.textfiles.com) has tons of old shareware, among which some good GW-BASIC games. Click on the image to enter, like in the olden days. Have fun digging.  
-[Neil C. Obremski's gw-basic.com](http://www.gw-basic.com/)  
-
+[Brooks deForest](http://www.brooksdeforest.com/tandy1000/)'s collection of amazing Tandy BASIC games.
+[TVDog's Archive](http://www.oldskool.org/guides/tvdog/) has lots of Tandy 1000 information and BASIC programs.
 
 #### Text terminals ####
 On Linux, in addition to the default graphical terminal, you can get a text terminal by running with the `-b` command-line option, and a curses-style terminal with the `-t` option. You can even get sound on the text terminal if you install the `beep` utility, but please be aware that Ubuntu blocks the pc-speaker by default using the line `blacklist pcspkr` in `/etc/modprobe.d/blacklist.conf`. Comment out that line, `apt-get install beep` and be sure to wear appropriate ear protection as the default volume level is LOUD.

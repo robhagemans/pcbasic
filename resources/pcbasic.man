@@ -1,24 +1,64 @@
 .\" Manpage for pcbasic
-.TH man 1 "10 April 2014" "1.0" "pcbasic man page"
+.TH man 1 "17 August 2014" "1.1" "pcbasic man page"
 .SH NAME
 PC-BASIC 3.23: a BASIC intepreter compatible with GW-BASIC 3.23
 .SH SYNOPSIS
-pcbasic [-h] [-b] [-t] [-g] [-l] [-r] [-e CMD] [-q] [-d]
+pcbasic           [--preset [{cga,strict,pcbasic,tandy,pcjr} [{cga,strict,pcbasic,tandy,pcjr} ...]]]
+                  [--input input_file] [--output output_file] [-b] [-t] [-g]
+                  [-l] [-r] [-e command_line] [-q] [-d] [-f NUMBER]
+                  [-s NUMBER] [-c NUMBER]
                   [--peek [SEG:ADDR:VAL [SEG:ADDR:VAL ...]]] [--lpt1 TYPE:VAL]
                   [--lpt2 TYPE:VAL] [--lpt3 TYPE:VAL] [--com1 TYPE:VAL]
-                  [--com2 TYPE:VAL] [--conv MODE] [--codepage NUMBER]
-                  [--nosound] [--dimensions X, Y] [--dimensions-text X, Y]
-                  [--fullscreen] [--smooth] [--noquit] [--debug] [--list-all]
-                  [--unprotect] [--caps] [--mount [D:PATH [D:PATH ...]]]
-                  [in_file] [out_file]
+                  [--com2 TYPE:VAL] [--conv [mode:outfile]]
+                  [--codepage NUMBER] [--font-family TYPEFACE]
+                  [--font [TYPEFACE [TYPEFACE ...]]] [--nosound]
+                  [--dimensions X, Y] [--dimensions-text X, Y] [--fullscreen]
+                  [--smooth] [--noquit] [--debug] [--strict-hidden-lines]
+                  [--strict-protect] [--caps] [--mount [D:PATH [D:PATH ...]]]
+                  [--resume] [--strict-newline] [--pcjr-syntax {pcjr,tandy}]
+                  [--pcjr-term PCJR_TERM]
+                  [--video {ega,cga,cga_old,pcjr,tandy}]
+                  [--windows-map-drives] [--cga-low] [--composite] [-h]
+                  [basic_program]
 .SH DESCRIPTION
-PC-BASIC 3.23 interpreter. 
-
+PC-BASIC 3.23 is a BASIC interpreter compatible with Microsoft GW-BASIC, Tandy 1000 BASIC
+and IBM PCjr Cartridge BASIC. 
 .SH EXAMPLES
-                        
-
+pcbasic                             
+    Runs a graphical interactive session.
+.PP
+pcbasic PROGRAM.BAS                 
+    Runs PROGAM.BAS in a graphical session.
+.PP
+pcbasic --mount C:/home/me
+    Runs a graphical session with the "C:" drive ampped to /home/me  
+.PP
+pcbasic --preset=tandy              
+    Runs an interactive session in Tandy 1000 mode.                    
+.PP
+pcbasic PCJRPROG.BAS --preset=pcjr -q 
+    Runs PCJRPROG.BAS in PCjr mode and quit PC-BASIC when the program ends.                    
+.PP
+pcbasic -b                          
+    Runs a command-line interactive session.
+.PP
+pcbasic -bqe "print 1+1"            
+    Executes the command directly on the command line - returns 2 and exits.
+.PP
+pcbasic PROGRAM.BAS --conv a        
+    Writes listing of PROGRAM.BAS to standard output in MS-DOS ASCII format.
+.PP
+pcbasic -l PROGRAM.BAS -bqe "LIST"  
+    Writes listing of PROGRAM.BAS to standard output as UTF-8 text.
+.PP
 .SH OPTIONS
-  -h, --help            show this help message and exit
+  basic_program         Input program file to run (default), load or convert.
+  --preset [{cga,strict,pcbasic,tandy,pcjr} [{cga,strict,pcbasic,tandy,pcjr} ...]]
+                        Load machine preset options
+  --input input_file    Retrieve keyboard input from input_file, except if
+                        KYBD: is read explicitly.
+  --output output_file  Send screen output to output_file, except if SCRN: is
+                        written to explicitly.
   -b, --dumb            Use dumb text terminal. This is the default if
                         redirecting input.
   -t, --ansi            Use ANSI textmode terminal
@@ -26,19 +66,35 @@ PC-BASIC 3.23 interpreter.
                         use to override when redirecting i/o.
   -l, --load            Load in_file only, do not execute
   -r, --run             Execute input file (default if in_file given)
-  -e CMD, --cmd CMD     Execute BASIC command line
+  -e command_line, --exec command_line
+                        Execute BASIC command line
   -q, --quit            Quit interpreter when execution stops
   -d, --double          Allow double-precision math functions
+  -f NUMBER, --max-files NUMBER
+                        Set maximum number of open files (default is 3).
+  -s NUMBER, --max-reclen NUMBER
+                        Set maximum record length for RANDOM files (default is
+                        128, max is 32767).
+  -c NUMBER, --serial-in-size NUMBER
+                        Set serial input buffer size (default is 256). If 0,
+                        serial communications are disabled.
   --peek [SEG:ADDR:VAL [SEG:ADDR:VAL ...]]
                         Define PEEK preset values
   --lpt1 TYPE:VAL       Set LPT1: to FILE:file_name or PRINTER:printer_name.
   --lpt2 TYPE:VAL       Set LPT2: to FILE:file_name or PRINTER:printer_name.
   --lpt3 TYPE:VAL       Set LPT3: to FILE:file_name or PRINTER:printer_name.
-  --com1 TYPE:VAL       Set COM1: to PORT:device_name or SOCK:host:socket.
-  --com2 TYPE:VAL       Set COM2: to PORT:device_name or SOCK:host:socket.
-  --conv MODE           Convert file to (A)SCII, (B)ytecode or (P)rotected
-                        mode. Implies --unprotect and --list-all.
-  --codepage NUMBER     Load specified font codepage. Default is 437 (US).
+  --com1 TYPE:VAL       Set COM1: to PORT:device_name or SOCKET:host:socket.
+  --com2 TYPE:VAL       Set COM2: to PORT:device_name or SOCKET:host:socket.
+  --conv [mode:outfile]
+                        Convert basic_program to (A)SCII, (B)ytecode or
+                        (P)rotected mode. Implies --unprotect and --list-all.
+  --codepage NUMBER     Load specified font codepage; default is 437
+  --font-family TYPEFACE
+                        Load current codepage from specified font family.
+  --font [TYPEFACE [TYPEFACE ...]]
+                        Load specified fonts. These are used for the
+                        appropriate resolutions, regardless of font-family and
+                        codepage seetings.
   --nosound             Disable sound output
   --dimensions X, Y     Set pixel dimensions for graphics mode. Default is
                         640,480. Use 640,400 or multiples for cleaner pixels -
@@ -55,15 +111,37 @@ PC-BASIC 3.23 interpreter.
   --noquit              Allow BASIC to capture <ALT+F4>. Graphical terminal
                         only.
   --debug               Enable DEBUG keyword
-  --list-all            Allow listing and ASCII saving of lines beyond 65530
-  --unprotect           Allow listing and ASCII saving of protected files
+  --strict-hidden-lines
+                        Disable listing and ASCII saving of lines beyond 65530
+                        (as in GW-BASIC). Use with care as this allows
+                        execution of unseen statements.
+  --strict-protect      Disable listing and ASCII saving of protected files
+                        (as in GW-BASIC). Use with care as this allows
+                        execution of unseen statements.
   --caps                Start in CAPS LOCK mode.
   --mount [D:PATH [D:PATH ...]]
                         Set a drive letter to PATH.
+  --resume              Resume from saved state. Most other arguments are
+                        ignored.
+  --strict-newline      Parse CR and LF strictly like GW-BASIC. May create
+                        problems with UNIX line endings.
+  --pcjr-syntax {pcjr,tandy}
+                        Enable PCjr/Tandy 1000 syntax extensions
+  --pcjr-term PCJR_TERM
+                        Set the program run by the PCjr TERM command
+  --video {ega,cga,cga_old,pcjr,tandy}
+                        Set video capabilities
+  --windows-map-drives  Map all Windows drive letters to PC-BASIC drive
+                        letters (Windows only)
+  --cga-low             Use low-intensity palettes in CGA (for
+                        --video={cga,ega} only).
+  --composite           Start in composite colorburst mode. Disables smooth
+                        scaling.
+  -h, --help            Show this message and exit
 .SH FILES
 .I ./info/PCBASIC.INI
-Configuration file. The configuration options correspond to the command-line option: In a command-line option is given as --option VALUE,
-the corresponding entry in PCBASIC.INI is option=VALUE
+Configuration file. The configuration options correspond to the command-line option: if a command-line option is given as --option VALUE,
+the corresponding entry in PCBASIC.INI is option=VALUE. Presets (such as cga and tandy) are defined in this file as groups of options under a header in square brackets. 
 .SH BUGS
 This is beta software; many bugs are still expected to pop up. Please inform the author through the sourceforge project page at http://sourceforge.net/projects/pcbasic/
 .SH AUTHOR
