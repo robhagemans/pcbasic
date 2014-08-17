@@ -2094,7 +2094,9 @@ or a . to indicate the last line edited. The line numbers do not need to exist;
 they specify a range. If the range is empty, nothing is printed.
 'file_name' is a valid file name. This file will be created; if it already 
 exists, it will be overwritten.
-Also stops program execution and returns to interactive mode.
+Also stops program execution and returns to interactive mode. Any further 
+statements on a line after LIST will be ignored both in a program and in direct
+mode. 
 ERRORS:
 -   If a line number is greater than 65529, SYNTAX ERROR is raised.
 -   If 'file_name' has a numeric value, TYPE MISMATCH is raised.
