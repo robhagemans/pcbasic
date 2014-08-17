@@ -17,7 +17,7 @@ If you find bugs, please report them on the [discussion page](https://sourceforg
 
 
 #### Installation ####
-Binary distributions are currently available for Windows XP and above, Mac OSX 10.6 and above, and Linux i386. They can be downloaded from [SourceForge](https://sourceforge.net/projects/pcbasic/files/).  
+Binary distributions are currently available for Windows XP and above, Mac OSX 10.6 and above, and Linux i386. They can be [downloaded from SourceForge](https://sourceforge.net/projects/pcbasic/files/).  
 On **Windows**:  
 - unzip the ZIP file  
 - run `pcbasic.exe`  
@@ -53,11 +53,11 @@ PySerial and Pexpect can be left out; PC-BASIC should still work except for, res
 #### Usage essentials ####
 Double-click on `pcbasic` or run `pcbasic` on the command line to start in interactive mode with no programs.  
 A few selected command-line options:  
-`pcbasic.py PROGRAM.BAS` runs PROGRAM.BAS directly.  
-`pcbasic.py --preset=tandy` runs PC-BASIC in Tandy-1000 mode. See below for more preset options.  
+`pcbasic PROGRAM.BAS` runs PROGRAM.BAS directly.  
+`pcbasic --preset=tandy` runs PC-BASIC in Tandy-1000 mode. See below for more preset options.  
 `pcbasic -h` shows all available command line options.  
 
-In the packaged versions for Windows and OSX, no command-line options can be specified. You can set the required options in `info\PCBASIC.INI` instead.
+In the packaged versions for Windows and OSX, no command-line options can be specified. You can set the required options in `info/PCBASIC.INI` instead.
 
 
 #### Basic BASIC commands ####
@@ -72,10 +72,10 @@ A PC-BASIC program called `INFO.BAS` is included on the virtual `@:` drive with 
 
 
 #### GW-BASIC, Tandy-1000 and PCjr modes ####
-By default, PC_BASIC emulates GW-BASIC on a system with EGA video capabilities. The emulation target can be changed by selecting one of the following presets with the `preset` option:
-- `cga` GW-BASIC with CGA graphics, including composite colourburst mode.  
-- `pcjr` IBM PCjr Cartridge BASIC, including PCjr video and 3-voice sound capabilities and extended BASIC syntax.  
-- `tandy` Tandy-1000 GW-BASIC, including Tandy video and 3-voice sound capabilities and extended BASIC syntax.  
+By default, PC-BASIC emulates GW-BASIC on a system with EGA video capabilities. The emulation target can be changed by selecting one of the following presets with the `preset` option:
+`cga` GW-BASIC with CGA graphics, including composite colourburst mode.  
+`pcjr` IBM PCjr Cartridge BASIC, including PCjr video and 3-voice sound capabilities and extended BASIC syntax.  
+`tandy` Tandy-1000 GW-BASIC, including Tandy video and 3-voice sound capabilities and extended BASIC syntax.  
 
 
 #### BASIC language reference ###
@@ -99,12 +99,13 @@ Note that on case-sensitive file systems (mostly found on Linux and OSX), it wil
 
 
 #### Newline conventions ####
-In default mode, PC-BASIC will accept both DOS and Unix newline conventions. This behaviour is different from GW-BASIC, which only accepts text files in DOS format (CR/LF line endings, ctrl-Z at end-of-file). In exceptional cases, correct GW-BASIC ASCII files will not be loaded correctly, in particular if they contain LF characters followed by a number. If you encounter such a case, use the `--strict-newline` option. In `--strict-newline` mode, ASCII files in standard UNIX format (LF line endings, no EOF character) will fail to load: on Linux or Mac, use a utility such as [`unix2dos`](http://waterlan.home.xs4all.nl/dos2unix.html) to convert programs saved as text files before loading them. When saving as ASCII, PC-BASIC always uses the DOS conventions.
+In default mode, PC-BASIC will accept both DOS and Unix newline conventions. This behaviour is different from GW-BASIC, which only accepts text files in DOS format (CR/LF line endings, ctrl-Z at end-of-file). In exceptional cases, correct GW-BASIC ASCII files will not be loaded correctly, in particular if they contain LF characters followed by a number. If you encounter such a case, use the `--strict-newline` option. 
+In `--strict-newline` mode, ASCII files in standard UNIX format (LF line endings, no EOF character) will fail to load: on Linux or Mac, use a utility such as [`unix2dos`](http://waterlan.home.xs4all.nl/dos2unix.html) to convert programs saved as text files before loading them. When saving as ASCII, PC-BASIC always uses the DOS conventions.
 
 
 #### Text terminals ####
 On Linux, in addition to the default graphical terminal, you can get a text terminal by running with the `-b` command-line option, and a curses-style terminal with the `-t` option. You can even get sound on the text terminal if you install the `beep` utility, but please be aware that Ubuntu blocks the pc-speaker by default using the line `blacklist pcspkr` in `/etc/modprobe.d/blacklist.conf`. Comment out that line, `apt-get install beep` and be sure to wear appropriate ear protection as the default volume level is LOUD.
-
+The text terminal is also available on OSX and other UNIXes when using the source distribution. On Windows and when using the packaged OSX app, the text terminal is not available.
 
 #### Free BASIC compilers and saner dialects ####
 If you're starting a new project in BASIC, please consider one of the more sensible free versions of the language, such as [FreeBasic](www.freebasic.net), [QB64](http://www.qb64.net/) or [SmallBASIC](https://sourceforge.net/projects/smallbasic/). Under FreeDOS, you can use the [Bywater BASIC](https://sourceforge.net/projects/bwbasic/) interpreter. 
