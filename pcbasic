@@ -384,6 +384,12 @@ def get_args():
                 logging.warning('Preset %s not found in PCBASIC.INI', preset)
     # set defaults
     parser.set_defaults(**defaults)
+    # get supported codepages
+    cpdir = os.listdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'encoding'))
+    encodings = sorted([ x[0] for x in [ c.split('.utf8') for c in cpdir ] if len(x)>1])
+    # get supported font families
+    fontdir = os.listdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'font'))
+    families = sorted(list(set([ x[0] for x in [ c.split('_') for c in fontdir ] if len(x)>1])))
     #
     # set arguments    
     parser.add_argument('program', metavar='basic_program', nargs='?', 
@@ -412,9 +418,9 @@ def get_args():
     parser.add_argument('--lpt3', action='store', metavar=('TYPE:VAL'), help='Set LPT3: to FILE:file_name or PRINTER:printer_name.')
     parser.add_argument('--com1', action='store', metavar=('TYPE:VAL'), help='Set COM1: to PORT:device_name or SOCKET:host:socket.')
     parser.add_argument('--com2', action='store', metavar=('TYPE:VAL'), help='Set COM2: to PORT:device_name or SOCKET:host:socket.')
-    parser.add_argument('--conv', action='store', nargs='?', metavar='mode:outfile', help='Convert basic_program to (A)SCII, (B)ytecode or (P)rotected mode. Implies --unprotect and --list-all.')
-    parser.add_argument('--codepage', action='store', metavar=('NUMBER'), help='Load specified font codepage; default is 437')
-    parser.add_argument('--font-family', action='store', metavar=('TYPEFACE'), help='Load current codepage from specified font family.')
+    parser.add_argument('--conv', action='store', nargs='?', metavar='mode:outfile', help='Convert basic_program to (A)SCII, (B)ytecode or (P)rotected mode.')
+    parser.add_argument('--codepage', action='store', choices=encodings, help='Load specified font codepage; default is 437')
+    parser.add_argument('--font-family', action='store', choices=families, help='Load current codepage from specified font family.')
     parser.add_argument('--font', action='append', nargs='*', metavar=('TYPEFACE'), help='Load specified fonts. These are used for the appropriate resolutions, regardless of font-family and codepage seetings.')
     parser.add_argument('--nosound', action='store_true', help='Disable sound output')
     parser.add_argument('--dimensions', nargs=1, metavar=('X, Y'), help='Set pixel dimensions for graphics mode. Default is 640,480. Use 640,400 or multiples for cleaner pixels - but incorrect aspect ratio - on square-pixel LCDs. Graphical terminal only.')
@@ -432,11 +438,11 @@ def get_args():
     parser.add_argument('--strict-newline', action='store_true', help='Parse CR and LF strictly like GW-BASIC. May create problems with UNIX line endings.')
     # PCjr and Tandy options
     parser.add_argument('--pcjr-syntax', action='store', choices=('pcjr', 'tandy'), help='Enable PCjr/Tandy 1000 syntax extensions')
-    parser.add_argument('--pcjr-term', action='store', help='Set the program run by the PCjr TERM command')
+    parser.add_argument('--pcjr-term', action='store', metavar=('TERM.BAS'), help='Set the program run by the PCjr TERM command')
     parser.add_argument('--video', action='store', nargs=1, choices=('ega', 'cga', 'cga_old', 'pcjr', 'tandy'), help='Set video capabilities')
     parser.add_argument('--windows-map-drives', action='store_true', help='Map all Windows drive letters to PC-BASIC drive letters (Windows only)')
     parser.add_argument('--cga-low', action='store_true', help='Use low-intensity palettes in CGA (for --video={cga,ega} only).')
-    parser.add_argument('--composite', action='store_true', help='Start in composite colorburst mode. Disables smooth scaling.')
+    parser.add_argument('--composite', action='store_true', help='Start in composite colorburst mode. Disables smooth scaling. For --video={cga,cga_old,pcjr,tandy} only.')
     # manually re-enable -h
     parser.add_argument('-h', '--help', action='store_true', help='Show this message and exit')
     # parse command line arguments to override defaults
