@@ -407,7 +407,7 @@ def parse_on_event(ins, bracket=True):
     jumpnum = util.parse_jumpnum(ins)
     if jumpnum == 0:
         jumpnum = None
-    if jumpnum not in state.basic_state.line_numbers:
+    elif jumpnum not in state.basic_state.line_numbers:
         raise error.RunError(8)    
     util.require(ins, util.end_statement)    
     return num, jumpnum   
