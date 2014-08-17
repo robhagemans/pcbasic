@@ -1032,6 +1032,7 @@ the following segments are implemented/known:
     data            &h13ad
     video           &hb800  (SCREENs 0, 1, 2)
     video           &ha000  (SCREENs 7, 8, 9)
+    font            &hf000  (font starts at &hfa6e)
 NOTES:
 -   If 'address' is negative, it is interpreted as its two's complement.
 -   If 'address' is not specified, the segment is set to the GW-BASIC data
