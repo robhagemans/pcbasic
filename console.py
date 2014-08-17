@@ -39,8 +39,9 @@ class ScreenBuffer(object):
 # default codes for KEY autotext
 # F1-F10 
 function_key = { 
-        '\x00\x3b':0, '\x00\x3c':1, '\x00\x3d':2, '\x00\x3e':3, '\x00\x3f':4,     
-        '\x00\x40':5, '\x00\x41':6, '\x00\x42':7, '\x00\x43':8, '\x00\x44':9 }
+        '\x00\x3b':0, '\x00\x3c':1, '\x00\x3d':2, '\x00\x3e':3, '\x00\x3f':4,     # F1-F5
+        '\x00\x40':5, '\x00\x41':6, '\x00\x42':7, '\x00\x43':8, '\x00\x44':9,     # F6-F10    
+        '\x00\x98':10, '\x00\x99':11 } # Tandy F11 and F12, these scancodes should *only* be sent on Tandy
 
 alt_key_replace = {
     '\x00\x1E': 'AUTO',  '\x00\x30': 'BSAVE',  '\x00\x2E': 'COLOR',  '\x00\x20': 'DELETE', '\x00\x12': 'ELSE', 
@@ -60,7 +61,7 @@ keys_line_replace_chars = {
 state.console_state.keys_visible = True
 # user definable key list
 state.console_state.key_replace = [ 
-    'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r','TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r' ]
+    'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r','TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
 
 # number of columns, counting 1..width
 state.console_state.width = 80
@@ -816,7 +817,7 @@ def set_width(to_width):
 # key replacement
 
 def list_keys():
-    for i in range(10):
+    for i in range(on_event.num_fn_keys):
         text = bytearray(state.console_state.key_replace[i])
         for j in range(len(text)):
             try:
