@@ -676,11 +676,13 @@ def tokenise_number(ins, outs):
 ##########################################
 
 def str_to_value_keep(strval, allow_nonnum=True):
-    if strval==('$',''):
+    if strval == ('$', ''):
         return vartypes.null['%']
     strval = vartypes.pass_string_unpack(strval)
     ins = StringIO(strval)
     outs = StringIO()
+    # skip spaces and line feeds (but not NUL).
+    util.skip(ins, (' ', '\n'))
     tokenise_number(ins, outs)    
     outs.seek(0)
     value = util.parse_value(outs)
