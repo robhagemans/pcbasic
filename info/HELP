@@ -3905,7 +3905,7 @@ ERRORS:
 
 
 WIDTH statement
-WIDTH { # file_num | device_name}, num_columns 
+WIDTH { # file_num | device_name | LPRINT }, num_columns 
 WIDTH { 40 | 80 | (num_columns) } [, [,]]
 ---------------
 Set the line width for the screen, a file or a device.
@@ -3921,7 +3921,8 @@ If a device is specified, it does not need to be open; the width setting will
 be the default width next time a file is opened to that device.
 If 'device_name' is "SCRN:", "KYBD:", or omitted, the screen width is changed.
 In this case, 'num_columns' must be one of 40 or 80.
-If 'device_name' is "LPT1:", the device width setting affects LPRINT and LLIST.
+If 'device_name' is "LPT1:" or LPRINT is specified, the device width setting 
+affects LPRINT and LLIST.
 NOTES:
 -   In the second syntax, num_columnns can only de an expression if it is 
     bracketed. Otherwise it must be a literal 40 or 80.

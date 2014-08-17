@@ -2178,6 +2178,10 @@ def exec_width(ins):
     if d == '#':
         dev = expressions.parse_file_number(ins)
         w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+    elif d == '\x9D': # LPRINT
+        ins.read(1)
+        dev = state.io_state.devices['LPT1:']
+        w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     else:
         expr = expressions.parse_expression(ins)
         if expr == None:
