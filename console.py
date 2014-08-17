@@ -956,6 +956,7 @@ def put_char(c, do_scroll_down=False):
     therow = state.console_state.apage.row[state.console_state.row-1]
     therow.end = max(state.console_state.col, therow.end)
     state.console_state.col += 1
+    check_pos(scroll_ok=True)
     if state.console_state.col > state.console_state.width:
         # wrap line
         therow.wrap = True
@@ -980,21 +981,26 @@ def check_pos(scroll_ok=True):
                 state.console_state.col += 1    
             return state.console_state.col == oldcol    
         else:
-             # adjust viewport if necessary
+            # if row > height, we also end up here (eg if we do INPUT on the bottom row)
+            # adjust viewport if necessary
             state.console_state.bottom_row_allowed = False
-    # if row > height, we also end up here
+    # see if we need to move to the next row        
     if state.console_state.col > state.console_state.width:
         if state.console_state.row < state.console_state.scroll_height or scroll_ok:
+            # either we don't nee to scroll, or we're allowed to
             state.console_state.col -= state.console_state.width
             state.console_state.row += 1
         else:
+            # we can't scroll, so we just stop at the right border 
             state.console_state.col = state.console_state.width        
+    # see if we eed to move a row up
     elif state.console_state.col < 1:
         if state.console_state.row > state.console_state.view_start:
             state.console_state.col += state.console_state.width
             state.console_state.row -= 1
         else:
             state.console_state.col = 1   
+    # see if we need to scroll 
     if state.console_state.row > state.console_state.scroll_height:
         if scroll_ok:
             scroll()                # Scroll Here
