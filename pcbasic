@@ -145,6 +145,9 @@ def prepare_keywords(args):
         if statements.pcjr_syntax == 'tandy':
             # tandy recognises 12 function keys
             on_event.num_fn_keys=12
+            if not args.resume:
+                # tandy has SOUND ON by default
+                state.console_state.sound_on = True
     # set pcjr TERM program    
     if args.pcjr_term:
         statements.pcjr_term = args.pcjr_term[0]
