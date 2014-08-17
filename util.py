@@ -117,6 +117,9 @@ def require_read(ins, in_range, err=2):
 def require(ins, rnge, err=2):
     a = skip_white(ins, n=len(rnge[0]))
     if a not in rnge:
+        # position correctly for EDIT gadget and throw the (syntax) error
+        if a != '':
+            ins.read(1)
         raise error.RunError(err)
     
 # parse line number and leve pointer at first char of line
