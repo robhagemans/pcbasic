@@ -5,7 +5,7 @@ import platform
 
 if platform.system() == 'Windows':
     # -*- mode: python -*-
-    a = Analysis(['pcbasic.py'],
+    a = Analysis(['pcbasic'],
                  pathex=['C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic'],
                  hiddenimports=[],
                  hookspath=None,
@@ -33,7 +33,7 @@ if platform.system() == 'Windows':
 
 elif platform.system() == 'Linux':
     # -*- mode: python -*-
-    a = Analysis(['pcbasic.py'],
+    a = Analysis(['pcbasic'],
                  pathex=['/home/rob/Projects/basic-project/pc-basic'],
                  hiddenimports=[],
                  hookspath=None,
@@ -92,7 +92,7 @@ elif platform.system() == 'Linux':
                    
 elif platform.system() == 'Darwin':
 	# -*- mode: python -*-
-	a = Analysis(['pcbasic.py'],
+	a = Analysis(['pcbasic'],
              pathex=['/Users/rob/pc-basic'],
              hiddenimports=[],
              hookspath=None,
