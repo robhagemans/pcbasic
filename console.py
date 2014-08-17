@@ -762,8 +762,8 @@ def write_line(s='', scroll_ok=True):
     write(s, scroll_ok=scroll_ok)
     for echo in state.console_state.output_echos:
         echo('\r\n')
-    state.console_state.apage.row[state.console_state.row-1].wrap = False
     check_pos(scroll_ok=True)
+    state.console_state.apage.row[state.console_state.row-1].wrap = False
     set_pos(state.console_state.row + 1, 1)
 
 # print a line from a program listing - no wrap if 80-column line, clear row before printing.
