@@ -494,12 +494,20 @@ def value_inkey(ins):
     return vartypes.pack_string(bytearray(console.get_char()))
 
 def value_csrlin(ins):
-    return vartypes.pack_int(state.console_state.row)
+    row, col = state.console_state.row, state.console_state.col 
+    if col == state.console_state.width and state.console_state.overflow and row < state.console_state.scroll_height:
+        # in overflow position, return row+1 except on the last row
+        row += 1
+    return vartypes.pack_int(row)
 
 def value_pos(ins):            
     # parse the dummy argument, doesnt matter what it is as long as it's a legal expression
     parse_bracket(ins)
-    return vartypes.pack_int(state.console_state.col)
+    col = state.console_state.col
+    if col == state.console_state.width and state.console_state.overflow:
+        # in overflow position, return column 1.
+        col = 1
+    return vartypes.pack_int(col)
 
 def value_lpos(ins):            
     num = vartypes.pass_int_unpack(parse_bracket(ins))
