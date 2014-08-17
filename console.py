@@ -80,6 +80,8 @@ state.console_state.attr = 7
 # current row and column
 state.console_state.row = 1
 state.console_state.col = 1
+# true if we're on 80 but should be on 81
+state.console_state.overflow = False
 
 # cursor visible?
 state.console_state.cursor = True
@@ -951,23 +953,39 @@ def put_screen_char_attr(cpage, crow, ccol, c, cattr):
     
 def put_char(c, do_scroll_down=False):
     # check if scroll& repositioning needed
-    check_pos(scroll_ok=True)
+    if state.console_state.overflow:
+        state.console_state.col += 1
+        state.console_state.overflow = False
+    # see if we need to wrap and scroll down
+    check_wrap(do_scroll_down)
+    # move cursor and see if we need to scroll up
+    check_pos(scroll_ok=True) 
+    # put the character
     put_screen_char_attr(state.console_state.apage, state.console_state.row, state.console_state.col, c, state.console_state.attr)
-    therow = state.console_state.apage.row[state.console_state.row-1]
-    therow.end = max(state.console_state.col, therow.end)
-    state.console_state.col += 1
+    # adjust end of line marker
+    if state.console_state.col > state.console_state.apage.row[state.console_state.row-1].end:
+         state.console_state.apage.row[state.console_state.row-1].end = state.console_state.col
+    # move cursor. if on col 80, only move cursor to the next row when the char is printed
+    if state.console_state.col < state.console_state.width:
+        state.console_state.col += 1
+    else:
+        state.console_state.overflow = True
+    # move cursor and see if we need to scroll up
     check_pos(scroll_ok=True)
+    
+def check_wrap(do_scroll_down):    
     if state.console_state.col > state.console_state.width:
         # wrap line
-        therow.wrap = True
+        state.console_state.apage.row[state.console_state.row-1].wrap = True
         if do_scroll_down:
-            # scroll down
+            # scroll down (make space by shifting the next rows down)
             if state.console_state.row < state.console_state.scroll_height:
                 scroll_down(state.console_state.row+1)
         state.console_state.row += 1
         state.console_state.col = 1
             
 def set_pos(to_row, to_col, scroll_ok=True):
+    state.console_state.overflow = False
     state.console_state.row, state.console_state.col = to_row, to_col
     check_pos(scroll_ok)
     backend.video.update_pos()
