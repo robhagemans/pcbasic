@@ -106,7 +106,7 @@ def main():
         run.loop(args.quit)
     except error.RunError as e:
         # errors during startup/conversion are handled here, then exit
-        run.handle_error(e)  
+        logging.error(error.get_message(e.err))
     except error.Exit:
         pass
     except error.Reset:
@@ -232,7 +232,7 @@ def prepare_console(args):
         backend.video = backend_dumb
         backend.sound = sound_beep        
         if not backend.video or not console.init():
-            logging.critical('Failed to initialise console. Quitting.')
+            logging.error('Failed to initialise console. Quitting.')
             sys.exit(0)
     if args.composite:
         console.set_composite(True)
