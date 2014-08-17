@@ -623,7 +623,11 @@ def end():
     crow = state.console_state.row
     while state.console_state.apage.row[crow-1].wrap and crow < state.console_state.height:
         crow += 1
-    set_pos(crow, state.console_state.apage.row[crow-1].end+1)
+    if state.console_state.apage.row[crow-1].end == state.console_state.width:
+        set_pos(crow, state.console_state.apage.row[crow-1].end)
+        state.console_state.overflow = True
+    else:        
+        set_pos(crow, state.console_state.apage.row[crow-1].end+1)
 
 def line_feed():
     # moves rest of line to next line
