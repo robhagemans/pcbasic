@@ -765,13 +765,21 @@ def write_line(s='', scroll_ok=True):
     check_pos(scroll_ok=True)
     set_pos(state.console_state.row + 1, 1)
 
-# hijack the line above and remove the word wrap
-# used by LIST to avoid empty lines that would otherwise show up after an 80-column line
-def cut_line():
-    if state.console_state.row < 3:    
-        return
-    state.console_state.apage.row[state.console_state.row-3].wrap = False
-    set_pos(state.console_state.row-1, 1)
+# print a line from a program listing - no wrap if 80-column line, clear row before printing.
+def list_line(line):
+    # flow of listing is visible on screen
+    backend.check_events()
+    for i in range( 1 + (len(line)-1)// 80):
+        # does not take into account LFs
+        if state.console_state.row+i <= state.console_state.scroll_height:
+            clear_line(state.console_state.row+i)
+    # clear_line moves the position, undo        
+    set_pos(state.console_state.row - (len(line)-1)// 80, 1)
+    write_line(str(line))
+    # remove empty line after 80-column program line
+    if len(line) == state.console_state.width and state.console_state.row > 2:
+        state.console_state.apage.row[state.console_state.row-3].wrap = False
+        set_pos(state.console_state.row-1, 1)
 
 def set_width(to_width):
     # raise an error if the width value doesn't make sense
