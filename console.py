@@ -1026,11 +1026,17 @@ def unset_view():
     state.console_state.view_set = False
 
 def clear_view():
+    if video_capabilities in ('ega', 'cga', 'cga_old'):
+        # keep background, set foreground to 7
+        attr_save, state.console_state.attr = state.console_state.attr, state.console_state.attr & 0x70 | 0x7
     for r in range(state.console_state.view_start, state.console_state.scroll_height+1):
         state.console_state.apage.row[r-1].clear()
         state.console_state.apage.row[r-1].wrap = False
     state.console_state.row, state.console_state.col = state.console_state.view_start, 1
     backend.video.clear_rows(state.console_state.attr, state.console_state.view_start, state.console_state.height if state.console_state.bottom_row_allowed else state.console_state.scroll_height)
+    if video_capabilities in ('ega', 'cga', 'cga_old'):
+        # restore attr
+        state.console_state.attr = attr_save
             
 def scroll(from_line=None): 
     if from_line == None:
