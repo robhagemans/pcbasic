@@ -3489,10 +3489,10 @@ ERRORS:
 
 SOUND statement
 SOUND frequency, duration
-SOUND frequency, duration [, volume [, voice] ]       [--pcjr and --tandy only]
+SOUND frequency, duration [, volume [, voice] ]       [pcjr and tandy only]
 ---------------
 Produces a sound at 'frequency' Hz for 'duration'/18.2 seconds.
-'frequency' is a number-valued expression in [37, 32767].
+'frequency' is a number-valued expression in [37, 32767] or 0.
 'duration' is a number-valued expression in [0, 65535]. 
 If PLAY "MB" has been executed, SOUND playes in the background. If PLAY "MF" 
 has been executed, sound plays in the foreground and the interpreter blocks
@@ -3501,8 +3501,10 @@ sound played by the most recent SOUND statement always plays in the background,
 even if PLAY "MF" has been entered. In background mode, each SOUND statement 
 counts as 1 toward the length of the queue reported by the PLAY function.
 PCJR and TANDY:
-    'frequency' is a number-valued expression in [1, 32767]. Frequencies less
-    than 110 Hz are played as 110 Hz.
+    'frequency' is a number-valued expression in [-32768, 32767] (on Tandy)
+    or [37, 32767] if nonzero (on PCjr). 
+    Frequencies below 110 Hz are played as 110 Hz.
+    If 'duration' is zero, 'volume' and 'voice' must not be specified.
     'volume' is a number-valued expression in [0, 15]. 0 is silent, 15 is full
     volume; every step less reduces the volume by 2 dB.
     'voice' is a number-valued expression in [0, 2], indicating which of the 
@@ -3513,10 +3515,13 @@ NOTES:
 -   If 'duration' is less than .022 but nonzero, the sound will be played in 
     background and continue indefinitely until another sound statement is 
     executed. This is also the behaviour for negative 'duration'.
--   If 'frequency' equals 32767, a silence of length 'duration' is queued.
+-   If 'frequency' equals 32767 or 0, a silence of length 'duration' is queued.
 ERRORS:
 -   If 'frequency' is not in its allowed range, and 'duration' is not zero, 
     raises ILLEGAL FUNCTION CALL.
+-   If 'duration' is zero, specifying more than two aruments raises
+    SYNTAX ERROR.    
+-   If 'frequency' is not in [-32768, 32767], raises OVERFLOW.
 -   If 'duration' is not in [-65535, 65535], raises ILLEGAL FUNCTION CALL.
 -   If 'volume' is not in [0, 15], raises ILLEGAL FUNCTION CALL.
 -   If 'voice' is not in [0, 2], raises ILLEGAL FUNCTION CALL.
