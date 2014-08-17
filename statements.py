@@ -823,7 +823,7 @@ def exec_chain(ins):
     util.require(ins, util.end_statement)
     program.chain(action, iolayer.open_file_or_device(0, name, mode='L', defext='BAS'), jumpnum, delete_lines)
     # preserve DEFtype on MERGE
-    reset.clear(preserve_common=True, preserve_all=common_all, preserve_deftype=(action==merge))
+    reset.clear(preserve_common=True, preserve_all=common_all, preserve_deftype=(action==program.merge))
 
 def exec_save(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
