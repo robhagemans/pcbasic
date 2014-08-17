@@ -15,6 +15,9 @@ import state
 import sound
 import backend
 
+# function keys: F1-F12 for tandy, F1-F10 for gwbasic and pcjr
+num_fn_keys = 10
+
 class EventHandler(object):
     def __init__(self):
         self.reset()
@@ -55,11 +58,15 @@ def reset_events():
     state.basic_state.timer_period, state.basic_state.timer_start = 0, 0
     state.basic_state.timer_handler = EventHandler()
     # KEY
-    state.basic_state.event_keys = [ 
+    state.basic_state.event_keys = [''] * 20
+    state.basic_state.event_keys[0:10] = [ 
         '\x00\x3b', '\x00\x3c', '\x00\x3d', '\x00\x3e', '\x00\x3f',     # F1-F5 
-        '\x00\x40', '\x00\x41', '\x00\x42', '\x00\x43', '\x00\x44',     # F6-F10
-        '\x00\x48', '\x00\x4b', '\x00\x4d', '\x00\x50',                 # up, left, right, down
-        '', '', '', '', '', '' ]                                        # user definable
+        '\x00\x40', '\x00\x41', '\x00\x42', '\x00\x43', '\x00\x44']     # F6-F10
+    state.basic_state.event_keys[num_fn_keys:num_fn_keys+4] = [   
+        '\x00\x48', '\x00\x4b', '\x00\x4d', '\x00\x50']                 # up, left, right, down
+    if num_fn_keys == 12:
+        state.basic_state.event_keys[10:12] = [ '\x00\x98', '\x00\x99' ]    # Tandy F11, F12
+    # the remaining keys are user definable        
     state.basic_state.key_handlers = [ EventHandler() for _ in xrange(20) ]    
     # PLAY
     state.basic_state.play_last, state.basic_state.play_trig = [0, 0, 0], 1 

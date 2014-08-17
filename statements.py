@@ -37,6 +37,7 @@ import util
 import var
 import vartypes
 import sound
+import on_event
 
 pcjr_syntax = None
 pcjr_term = ''
@@ -2007,15 +2008,15 @@ def exec_key_define(ins):
     text = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # only length-2 expressions can be assigned to KEYs over 10
     # (in which case it's a key scancode definition, which is not implemented)
-    if keynum <= 10:
+    if keynum <= on_event.num_fn_keys:
         state.console_state.key_replace[keynum-1] = str(text)
         if state.console_state.keys_visible:
             console.show_keys()
     else:
         if len(text) != 2:
             raise error.RunError(5)
-        # can't redefine scancodes for keys 1-14
-        if keynum >= 15 and keynum <= 20:    
+        # can't redefine scancodes for keys 1-14 (pc) 1-16 (tandy)
+        if keynum > on_event.num_fn_keys + 4 and keynum <= 20:    
             state.basic_state.event_keys[keynum-1] = str(text)
     
 def exec_locate(ins):
