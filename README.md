@@ -92,6 +92,10 @@ PC-BASIC runs GW-BASIC files only. Some tips to recognise GW-BASIC files:
 In particular, QBASIC files (which have no line numbers) and QuickBASIC files (magic byte `FC`) will not run. 
 
 
+#### Security ####
+PC-BASIC does not attempt to sandbox its programs in any way. BASIC programs have full access to your operating system - indeed, through the SHELL command, they have exactly the same capabilities as scripts or binaries run on the command line. You should treat them with the same caution as you would shell scripts or binaries. Therefore, do not run a program from the internet that you have not inspected first using LIST or one of the command line conversion options. You wouldn't just download an executable fom the internet and run it either, right?
+
+
 #### MS-DOS style 8.3 file names ####
 On Windows, PC-BASIC will work with the short file names provided by the operating system.
 On other operating systems, more than one file may match the specified 8.3 file name. PC-BASIC will first look for a file with the exact name as specified (e.g. `FileNameCreating.ExtraDifficulties`). If this does not exist, it will look for the file name truncated to all-caps 8.3 format (`FILENAME.EXT`); if that does not exist, it will look for variants that have the same 8.3 format - e.g. `filename.EXT`, `fIlEnAmEtHaTsQuItE.eXtRaOrDiNaRy` etcetera - in lexicographic order.
