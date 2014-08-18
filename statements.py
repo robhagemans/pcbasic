@@ -1944,7 +1944,13 @@ def exec_palette(ins):
         util.range_check(0, num_palette_entries-1, pair[0])
         util.range_check(-1, state.console_state.num_palette-1, pair[1])
         if pair[1] > -1:
-            console.set_palette_entry(pair[0], pair[1])
+            # effective palette change is an error in CGA; ignore in Tandy/PCjr SCREEN 0
+            if console.video_capabilities in ('cga', 'cga_old'):
+                raise error.RunError(5)
+            elif console.video_capabilities in ('tandy', 'pcjr') and state.console_state.screen_mode == 0:
+                pass
+            else:       
+                console.set_palette_entry(pair[0], pair[1])
         util.require(ins, util.end_statement)    
 
 def exec_palette_using(ins):
