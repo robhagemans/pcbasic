@@ -159,7 +159,10 @@ cga_palette_0_pcjr = [0, 2, 4, 6]
 cga_palette_5_hi = [0, 11, 12, 15]
 cga_palette_5_lo = [0, 3, 4, 7]
 # default: high intensity 
-cga_palettes = [cga_palette_0_hi, cga_palette_1_hi]
+cga_palette_0 = cga_palette_0_hi
+cga_palette_1 = cga_palette_1_hi
+cga_palette_5 = cga_palette_5_hi
+cga_palettes = [cga_palette_0, cga_palette_1]
 
 
 #############################
@@ -177,8 +180,7 @@ def init():
         # 8-pixel characters, 16 colours in screen 0
         mode_data[0] = ( 8, 7, 32, 16, 80, 4, 4, 8 ) 
         # select pcjr cga palettes
-        cga_palettes = [cga_palette_0_pcjr, cga_palette_1_pcjr]       
-        
+        cga_palettes[:] = [cga_palette_0_pcjr, cga_palette_1_pcjr]       
         # TODO: determine the number of pages based on video memory size, not hard coded. 
     elif video_capabilities in ('cga', 'cga_old'):
         unavailable_modes = (3, 4, 5, 6, 7, 8, 9)
@@ -292,7 +294,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
         unset_view()
         # in screen 0, 1, set colorburst (not in SCREEN 2!)
         if new_mode in (0, 1):
-            set_colorburst(new_colorswitch if new_mode==0 else not new_colorswitch)
+            set_colorburst(new_colorswitch)
         elif new_mode ==2:
             set_colorburst(False)    
     else:
@@ -310,11 +312,20 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
 # on SCREEN 1 this switches between colour and greyscale (composite) or mode 4/5 palettes (RGB)
 # on SCREEN 0 this switches between colour and greyscale (composite) or is ignored (RGB)
 def set_colorburst(on=True):
+    global cga_palettes
     old_colorburst = backend.video.colorburst
     backend.video.colorburst = ( on and video_capabilities in ('cga', 'cga_old', 'tandy', 'pcjr') )
-    if backend.video.colorburst != old_colorburst:
+    if state.console_state.screen_mode == 1:
+        if backend.video.colorburst:
+            cga_palettes = [cga_palette_0, cga_palette_1]
+        else:
+            cga_palettes = [cga_palette_5, cga_palette_5]
+        set_palette()    
+        backend.video.screen_changed = True
+    elif backend.video.colorburst != old_colorburst:
         backend.video.update_palette()
         backend.video.screen_changed = True
+        
 
 def check_video_memory():
     if state.console_state.screen_mode in (5, 6) and state.console_state.pcjr_video_mem_size < 32753:
