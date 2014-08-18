@@ -41,7 +41,7 @@ control = (
     ) 
 
 # unused, but needs to be defined
-composite = False
+colorburst = False
 
 ##############################################        
         
