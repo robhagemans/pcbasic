@@ -288,8 +288,8 @@ def prepare(args):
         ctrl_keycode_to_scancode[pygame.K_F12] = '\x00\xAD'
         alt_keycode_to_scancode[pygame.K_F11] = '\x00\xB6'
         alt_keycode_to_scancode[pygame.K_F12] = '\x00\xB7'
-        #keycode_to_inpcode[pygame.K_F11] = 
-        #keycode_to_inpcode[pygame.K_F12] = 
+        keycode_to_inpcode[pygame.K_F11] = '\xF9'
+        keycode_to_inpcode[pygame.K_F12] = '\xFA'
         
         
 ####################################
