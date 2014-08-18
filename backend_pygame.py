@@ -57,6 +57,9 @@ if pygame:
         (0x55,0x55,0x55), (0x55,0x55,0xff), (0x55,0xff,0x55), (0x55,0xff,0xff),
         (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff) ] ]
 
+    gamecolours16_mono = [ pygame.Color(*rgb) for rgb in [   
+        (c, c, c) for c in range(0x00, 0x100, 0x11) ] ]
+
     # EGA palette choices
     gamecolours64 = [ pygame.Color(*rgb) for rgb in [
         (0x00,0x00,0x00), (0x00,0x00,0xaa), (0x00,0xaa,0x00), (0x00,0xaa,0xaa),
@@ -476,7 +479,8 @@ def update_palette():
     if state.console_state.num_palette == 64:
         gamepalette = [ gamecolours64[i] for i in state.console_state.palette ]
     else:
-        gamepalette = [ gamecolours16[i] for i in state.console_state.palette ]
+        cgapalette = gamecolours16 if (colorburst or not composite_monitor) else gamecolours16_mono
+        gamepalette = [ cgapalette[i] for i in state.console_state.palette ]
     set_display_palette()
 
 def set_display_palette():

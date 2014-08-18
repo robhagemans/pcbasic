@@ -212,6 +212,8 @@ def prepare_constants(args):
         oslayer.windows_map_drives()
     if args.video:
         console.video_capabilities = args.video[0]
+        if args.video[0] == 'ega':
+            args.composite = False
     if args.cga_low:
         console.cga_palettes = [console.cga_palette_0_lo, console.cga_palette_1_lo]
 

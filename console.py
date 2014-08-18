@@ -174,15 +174,16 @@ def init():
     if video_capabilities in ('pcjr', 'tandy'):
         # no EGA modes (though apparently there were Tandy machines with EGA cards too)
         unavailable_modes = (7, 8, 9)
-        # 8-pixel characters in screen 0
-        mode_data[0] = ( 8, 7, 32, 64, 80, 4, 4, 8 ) 
+        # 8-pixel characters, 16 colours in screen 0
+        mode_data[0] = ( 8, 7, 32, 16, 80, 4, 4, 8 ) 
         # select pcjr cga palettes
         cga_palettes = [cga_palette_0_pcjr, cga_palette_1_pcjr]       
+        
         # TODO: determine the number of pages based on video memory size, not hard coded. 
     elif video_capabilities in ('cga', 'cga_old'):
         unavailable_modes = (3, 4, 5, 6, 7, 8, 9)
-        # 8-pixel characters in screen 0
-        mode_data[0] = ( 8, 7, 32, 64, 80, 4, 4, 8 ) 
+        # 8-pixel characters, 16 colours in screen 0
+        mode_data[0] = ( 8, 7, 32, 16, 80, 4, 4, 8 ) 
     else:
         # EGA
         # no PCjr modes
