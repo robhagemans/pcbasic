@@ -162,6 +162,11 @@ if plat.system == 'Windows':
             ext = '...'    
         return trunk, ext    
 
+    # assume Windows filesystems all case insensitive
+    # if you're using this with an EXT2 partition on Windows, you're just weird ;)
+    def find_name_case(s, path, isdir):
+        return None
+        
 else:
 # to map root to C and set current to CWD:
 #    drives = { 'C': '/', '@': os.path.join(pcbasic_dir, 'info') }
@@ -186,6 +191,22 @@ else:
         if name in ('.', '..'):
             trunk, ext = '', ''
         return trunk, ext
+   
+    def find_name_case(s, path, isdir):
+        listdir = sorted(os.listdir(path))
+        capsdict = {}
+        for f in listdir:
+            caps = dossify_write(f, '', path)
+            if caps in capsdict:
+                capsdict[caps] += [f]
+            else:
+                capsdict[caps] = [f]
+        try:
+            for scaps in capsdict[dossify_write(s, '', path)]:
+                if istype(path, scaps, isdir):
+                    return scaps
+        except KeyError:
+            return None
 
 
 def istype(path, name, isdir):
@@ -220,10 +241,17 @@ def find_name_read(s, defext='BAS', path='', err=53, isdir=False):
     full = dossify_write(s, '', path)
     if istype(path, full, isdir):    
         return full
+    # for case-sensitive filenames: find other case combinations, if present
+    full = find_name_case(s, path, isdir)
+    if full:    
+        return full
     # check if the dossified name exists with a default extension
     if defext:
         full = dossify_write(s, defext, path)
         if istype(path, full, isdir):    
+            return full
+        full = find_name_case(s + '.' + defext, path, isdir)
+        if full:    
             return full
     # not found        
     raise error.RunError(err)
