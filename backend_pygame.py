@@ -279,6 +279,18 @@ def prepare(args):
         noquit = True
     if args.composite:
         composite_monitor = True
+    if args.video[0] == 'tandy':
+        # enable tandy F11, F12
+        # TODO: tandy scancodes are defined for many more keys than PC, e.g. ctrl+F5 and friends; check pcjr too
+        keycode_to_scancode[pygame.K_F11] = '\x00\x98'
+        keycode_to_scancode[pygame.K_F12] = '\x00\x99'
+        ctrl_keycode_to_scancode[pygame.K_F11] = '\x00\xAC'
+        ctrl_keycode_to_scancode[pygame.K_F12] = '\x00\xAD'
+        alt_keycode_to_scancode[pygame.K_F11] = '\x00\xB6'
+        alt_keycode_to_scancode[pygame.K_F12] = '\x00\xB7'
+        #keycode_to_inpcode[pygame.K_F11] = 
+        #keycode_to_inpcode[pygame.K_F12] = 
+        
         
 ####################################
 # state saving and loading
