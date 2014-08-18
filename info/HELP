@@ -647,7 +647,9 @@ Change the working directory to 'pathname'. 'pathname' is a string-valued
 expression which can be absolute or relative to the current path. 'pathname'
 must be specified with MS-DOS path separators (\). CHDIR first looks for the
 exact, case-sensitive (on Unix) path 'pathname'; if this does not exist then
-an uppercase version truncated to 8.3 is attempted.
+an uppercase version truncated to 8.3 is attempted. The search will match the
+first file (in lexicographic order) whose 8.3 name equals that of the requested
+file. 
 ERRORS:
 -  If no matching path is found, PATH NOT FOUND is raised.
 -  If 'pathname' is not string-valued, TYPE MISMATCH is raised.
@@ -1950,7 +1952,12 @@ valid path to an existing file with MS-DOS path separators (\). The extension
 must be specified: no default extensions are assumed. KILL will first attempt 
 to delete a file with the name exactly as provided; this is case-sensitive if
 the file system is. If such a file does not exist, KILL attempts to delete the
-UPPERCASE 8.3 variant of the file name.  
+UPPERCASE 8.3 variant of the file name. 
+NOTES:
+-   On case-sensitive file systems, unlike all other file commands, KILL will 
+    NOT search for other case combinations that resolve to the same 8.3 name.
+    It will only delete a file whose name either (1) matches exactly, or (2) 
+    exactly matches the 8.3 all-caps version of the filename requested.
 ERRORS:
 -   If the file 'file_path' is open, raises FILE ALREADY OPEN
 -   If the file or path 'file_path' does not exist, raises FILE NOT FOUND
@@ -2129,7 +2136,8 @@ cleared and any program in memory will be erased. LOAD implies a CLEAR.
 NOTES:
 -   If 'file_name' does not include an extension, LOAD will try the name 
     specified, then an all-caps version, then an all-caps version with a .BAS 
-    extension.
+    extension. The search will match the first file (in lexicographic order) 
+    whose 8.3 name equals that of the requested file. 
 ERRORS:
 -   If 'file_name' cannot be found, raises FILE NOT FOUND.
 -   If a loaded ASCII file contains lines without line numbers, raises
@@ -3342,7 +3350,8 @@ RMDIR path
 Removes an empty directory. 'path' is a string-valued expression that specifies 
 the path of the directory.  RMDIR first looks for the exact, case-sensitive (on
 Unix) path 'pathname'; if this does not exist then an uppercase version 
-truncated to 8.3 is attempted.
+truncated to 8.3 is attempted. The search will match the first file (in lexico-
+graphic order) whose 8.3 name equals that of the requested file. 
 ERRORS:
 -  If no matching path is found, PATH NOT FOUND is raised.
 -  If 'pathname' is not string-valued, TYPE MISMATCH is raised.
