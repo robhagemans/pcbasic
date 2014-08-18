@@ -2658,8 +2658,6 @@ NOTES:
         OUT &h3CE, 4     
         OUT &h3CF, plane 
     The initial OUT statements currently have no effect in PC-BASIC 3.23.    
--   In GW-BASIC, in SCREEN 1, a second statement OUT &H3D9,&H3F is needed. This
-    has no effect in PC-BASIC.
 ERRORS:
 -   If 'port' is not in [-32768, 65535], raises OVERFLOW.
 -   If 'value' is not in [-32768, 32768], raises OVERFLOW.
