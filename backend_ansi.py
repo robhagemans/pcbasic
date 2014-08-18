@@ -46,7 +46,7 @@ palette_changed = True
 
 
 # unused, but needs to be defined
-composite = False
+colorburst = False
 
 
 # ANSI escape sequences
