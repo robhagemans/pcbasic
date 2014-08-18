@@ -93,9 +93,10 @@ In particular, QBASIC files (which have no line numbers) and QuickBASIC files (m
 
 
 #### MS-DOS style 8.3 file names ####
-PC-BASIC will first look for a file with the exact name as specified (e.g. `FileNameCreating.ExtraDifficulties`). If this does not exist, it will look for the file name truncated to all-caps 8.3 format (`FILENAME.EXT`). 
-If the name contains no dot (e.g. `FileName`), it will first try `FileName`, then `FILENAME` and then `FILENAME.BAS`. 
-Note that on case-sensitive file systems (mostly found on Linux and OSX), it will not find `filename` if `FILENAME` is requested, but it will find `FILENAME` if `filename` is requested. For convenience, ensure all your BASIC files have all-caps 8.3 file names. 
+On Windows, PC-BASIC will work with the short file names provided by the operating system.
+On other operating systems, more than one file may match the specified 8.3 file name. PC-BASIC will first look for a file with the exact name as specified (e.g. `FileNameCreating.ExtraDifficulties`). If this does not exist, it will look for the file name truncated to all-caps 8.3 format (`FILENAME.EXT`); if that does not exist, it will look for variants that have the same 8.3 format - e.g. `filename.EXT`, `fIlEnAmEtHaTsQuItE.eXtRaOrDiNaRy` etcetera - in lexicographic order.
+If the name contains no dot (e.g. `FileName`), it will first try `FileName`, then `FILENAME`, then all case variants, and finally `FILENAME.BAS` and its case variants.
+
 
 
 #### Newline conventions ####
