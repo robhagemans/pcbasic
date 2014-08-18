@@ -215,7 +215,10 @@ def prepare_constants(args):
         if args.video[0] == 'ega':
             args.composite = False
     if args.cga_low:
-        console.cga_palettes = [console.cga_palette_0_lo, console.cga_palette_1_lo]
+        console.cga_palette_0 = console.cga_palette_0_lo
+        console.cga_palette_1 = console.cga_palette_1_lo
+        console.cga_palette_5 = console.cga_palette_5_lo
+        console.cga_palettes = [console.cga_palette_0, console.cga_palette_1]
 
 def prepare_console(args):
     state.console_state.codepage = unicodepage.load_codepage(state.console_state.codepage)
