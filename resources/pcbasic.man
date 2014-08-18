@@ -135,8 +135,7 @@ pcbasic -l PROGRAM.BAS -bqe "LIST"
                         letters (Windows only)
   --cga-low             Use low-intensity palettes in CGA (for
                         --video={cga,ega} only).
-  --composite           Start in composite colorburst mode. Disables smooth
-                        scaling.
+  --composite           Emulates the output on an NTSC composite monitor. Disables smooth scaling. Enables colour artifacts on SCREEN 2 only (and crudely). For --video={cga,cga_old,pcjr,tandy} only.
   -h, --help            Show this message and exit
 .SH FILES
 .I ./info/PCBASIC.INI

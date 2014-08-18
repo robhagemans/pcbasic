@@ -3426,17 +3426,28 @@ ERRORS:
 
 
 SCREEN statement
-SCREEN [mode] [, [switch] [, [apage] [, vpage] ] ]
+SCREEN [mode] [, [colorburst] [, [apage] [, vpage] ] ]
 ----------------
 Change the screen resolution mode. The modes are described at the start of this
 document.
 'mode' is a number-valued expression that sets the screen mode.
 'apage' is a number-valued expression that sets the active page.
 'vpage' is a number-valued expression that sets the visible page.
-'switch' is a number-valued expression; if the switch setting changes between 
-zero and non-zero, the screen is cleared.
+'colorburst' is a number-valued expression; if the switch setting changes between 
+zero and non-zero, the screen is cleared. 
+On CGA, Tandy and PCjr, 'colorburst' has the following effects, depending on the 
+type of monitor - RGB (default) or composite:
+SCREEN  value   CGA mode    effect on composite     effect on RGB
+    0       0   0, 2        greyscale               colour
+    0       1   1, 3        colour                  colour
+    1       0   4           colour                  colour 
+    1       1   5           greyscale               colour (alternate palette)
+On SCREEN 2, 'colorburst' has no effect; on a composite monitor, colour artifacts 
+can be enabled on this screen through OUT (see there).    
 NOTE:
 -   At least one parameter must be specified.
+-   Composite colour artifacts are emulated only crudely in PC-BASIC, and not at
+    all in SCREEN 1.
 ERRORS:
 -   If no parameters are specified, raises MISSING OPERAND.
 -   If any parameter has a string value, raises TYPE MISMATCH.
@@ -3444,7 +3455,7 @@ ERRORS:
 -   If 'mode' is not in 0,1,2,7,8,9, raises ILLEGAL FUNCTION CALL.
 -   If 'vpage', 'apage' are not between 0 and the number of pages for the 
     screen chosen, less one, raises ILLEGAL FUNCION CALL.
--   If 'switch' is not in [0,255], raises ILLEGAL FUNCTION CALL.
+-   If 'colorburst' is not in [0,255], raises ILLEGAL FUNCTION CALL.
 
 
 SGN function

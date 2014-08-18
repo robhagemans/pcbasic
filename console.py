@@ -142,7 +142,7 @@ state.console_state.vpagenum = 0
 state.console_state.codepage = '437'    
 
 # ega, tandy, pcjr
-video_capabilities='ega'
+video_capabilities = 'ega'
 # video memory size - currently only used by tandy/pcjr (would be bigger for EGA systems anyway)
 state.console_state.pcjr_video_mem_size = 16384
 
@@ -155,6 +155,9 @@ cga_palette_0_lo = [0, 2, 4, 6]
 # tandy/pcjr cga palette
 cga_palette_1_pcjr = [0, 3, 5, 15]
 cga_palette_0_pcjr = [0, 2, 4, 6]
+# mode 5 (SCREEN 1 + colorburst) palette on RGB monitor
+cga_palette_5_hi = [0, 11, 12, 15]
+cga_palette_5_lo = [0, 3, 4, 7]
 # default: high intensity 
 cga_palettes = [cga_palette_0_hi, cga_palette_1_hi]
 
@@ -286,7 +289,11 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
         backend.video.update_cursor_visibility()
         # FIXME: are there different views for different pages?
         unset_view()
-        check_composite()
+        # in screen 0, 1, set colorburst (not in SCREEN 2!)
+        if new_mode in (0, 1):
+            set_colorburst(new_colorswitch if new_mode==0 else not new_colorswitch)
+        elif new_mode ==2:
+            set_colorburst(False)    
     else:
         # set active page & visible page, counting from 0. 
         state.console_state.vpagenum, state.console_state.apagenum = new_vpagenum, new_apagenum
@@ -296,18 +303,15 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
         # FIXME: keys visible?
     return True
 
-composite = False
 
-def set_composite(on=True):
-    global composite
-    composite = on
-    check_composite()
-    
-def check_composite():
-    old_composite = backend.video.composite
-    backend.video.composite = ( composite and video_capabilities in ('cga', 'cga_old', 'tandy', 'pcjr') 
-                                    and state.console_state.screen_mode in (1,2,3,4))
-    if backend.video.composite != old_composite:
+# set the composite colorburst bit 
+# on SCREEN 2 on composite monitor this enables artifacting
+# on SCREEN 1 this switches between colour and greyscale (composite) or mode 4/5 palettes (RGB)
+# on SCREEN 0 this switches between colour and greyscale (composite) or is ignored (RGB)
+def set_colorburst(on=True):
+    old_colorburst = backend.video.colorburst
+    backend.video.colorburst = ( on and video_capabilities in ('cga', 'cga_old', 'tandy', 'pcjr') )
+    if backend.video.colorburst != old_colorburst:
         backend.video.update_palette()
         backend.video.screen_changed = True
 

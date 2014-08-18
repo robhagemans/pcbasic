@@ -82,10 +82,8 @@ def out(addr, val):
     elif addr == 0x3d8:
         #OUT &H3D8,&H1A: REM enable color burst
         #OUT &H3D8,&H1E: REM disable color burst
-        if val == 0x1a:
-            console.set_composite(True)
-        elif val == 0x1e:
-            console.set_composite(False)
+        # 0x1a == 0001 1010     0x1e == 0001 1110
+        console.set_colorburst(val & 4 == 0)
 
 def wait(addr, ander, xorer):
     store_suspend = state.basic_state.suspend_all_events
