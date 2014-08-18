@@ -449,6 +449,9 @@ def flood_fill (x, y, pattern, c, border, background):
     bound_x0, bound_y0, bound_x1, bound_y1 = backend.video.get_graph_clip()  
     x, y = view_coords(x, y)
     line_seed = [(x, x, y, 0)]
+    # paint nothing if seed is out of bounds
+    if x < bound_x0 or x > bound_x1 or y < bound_y0 or y > bound_y1:
+        return
     while len(line_seed) > 0:
         # consider next interval
         x_start, x_stop, y, ydir = line_seed.pop()
