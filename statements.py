@@ -1962,15 +1962,20 @@ def exec_palette_using(ins):
         raise error.RunError(5)    
     if array_name[-1] != '%':
         raise error.RunError(13)
-    start = var.index_array(start_indices, dimensions)
-    if var.array_len(dimensions) - start  < num_palette_entries:
+    if console.video_capabilities in ('cga', 'cga_old'):
         raise error.RunError(5)
-    new_palette = []
-    for i in range(num_palette_entries):
-        val = vartypes.pass_int_unpack(('%', lst[(start+i)*2:(start+i+1)*2]))
-        util.range_check(-1, state.console_state.num_palette-1, val)
-        new_palette.append(val if val > -1 else console.get_palette_entry(i))
-    console.set_palette(new_palette)
+    elif console.video_capabilities in ('tandy', 'pcjr') and state.console_state.screen_mode == 0:
+        pass
+    else:            
+        start = var.index_array(start_indices, dimensions)
+        if var.array_len(dimensions) - start  < num_palette_entries:
+            raise error.RunError(5)
+        new_palette = []
+        for i in range(num_palette_entries):
+            val = vartypes.pass_int_unpack(('%', lst[(start+i)*2:(start+i+1)*2]))
+            util.range_check(-1, state.console_state.num_palette-1, val)
+            new_palette.append(val if val > -1 else console.get_palette_entry(i))
+        console.set_palette(new_palette)
     util.require(ins, util.end_statement) 
 
 def exec_key(ins):
