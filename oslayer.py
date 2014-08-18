@@ -218,7 +218,7 @@ def istype(path, name, isdir):
 #    if ext.find('.') > -1:
 #        # 53: file not found
 #        raise error.RunError(errdots)
-def dossify_write(s, defext='BAS', dummy_path='', dummy_err=0, dummy_isdir=False):
+def dossify_write(s, defext='BAS', dummy_path='', dummy_err=0, dummy_isdir=False, dummy_findcase=True):
     # convert to all uppercase
     s = s.upper()
     # one trunk, one extension
@@ -233,7 +233,7 @@ def dossify_write(s, defext='BAS', dummy_path='', dummy_err=0, dummy_isdir=False
 
 # find a matching file/dir to read
 # if name does not exist, put name in 8x3, all upper-case format with standard extension            
-def find_name_read(s, defext='BAS', path='', err=53, isdir=False):
+def find_name_read(s, defext='BAS', path='', err=53, isdir=False, find_case=True):
     # check if the name exists as-is
     if istype(path, s, isdir):
         return s
@@ -242,17 +242,19 @@ def find_name_read(s, defext='BAS', path='', err=53, isdir=False):
     if istype(path, full, isdir):    
         return full
     # for case-sensitive filenames: find other case combinations, if present
-    full = find_name_case(s, path, isdir)
-    if full:    
-        return full
+    if find_case:
+        full = find_name_case(s, path, isdir)
+        if full:    
+            return full
     # check if the dossified name exists with a default extension
     if defext:
         full = dossify_write(s, defext, path)
         if istype(path, full, isdir):    
             return full
-        full = find_name_case(s + '.' + defext, path, isdir)
-        if full:    
-            return full
+        if find_case:
+            full = find_name_case(s + '.' + defext, path, isdir)
+            if full:    
+                return full
     # not found        
     raise error.RunError(err)
         
@@ -287,12 +289,12 @@ def get_drive_path(s, err):
     return letter, path, name
     
 # find a unix path to match the given dos-style path
-def dospath(s, defext, err, action, isdir):
+def dospath(s, defext, err, action, isdir, find_case=True):
     # substitute drives and cwds
     _, path, name = get_drive_path(str(s), err)
     # return absolute path to file        
     if name:
-        return os.path.join(path, action(name, defext, path, err, isdir))
+        return os.path.join(path, action(name, defext, path, err, isdir, find_case))
     else:
         # no file name, just dirs
         return path
