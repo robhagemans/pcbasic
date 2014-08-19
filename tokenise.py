@@ -21,8 +21,11 @@
 
 
 #################################################################
-from cStringIO import StringIO
-
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+    
 import representation
 import util
 import vartypes
@@ -66,23 +69,23 @@ def ascii_read_to(ins, findrange):
     ins.seek(-len(d),1)    
     return out
 
-def detokenise_line(bytes, bytepos=None):
+def detokenise_line(ins, bytepos=None):
     litstring, comment = False, False
     textpos = 0
-    current_line = util.parse_line_number(bytes)
+    current_line = util.parse_line_number(ins)
     if current_line < 0:
         # parse_line_number has returned -1 and left us here:  .. 00 | _00_ 00 1A
         # stream ends or end of file sequence \x00\x00\x1A
         return -1, '', 0
-    elif current_line == 0 and util.peek(bytes)==' ':
+    elif current_line == 0 and util.peek(ins)==' ':
         # ignore up to one space after line number 0
-        bytes.read(1)
+        ins.read(1)
     # write one extra whitespace character after line number
     output = representation.int_to_str(current_line) + bytearray(' ')
     # detokenise tokens until end of line
     while True:
-        s = bytes.read(1)
-        if not textpos and bytes.tell() >= bytepos:
+        s = ins.read(1)
+        if not textpos and ins.tell() >= bytepos:
             textpos = len(output)
         if s in util.end_line:
             # \x00 ends lines and comments when listed, if not inside a number constant
@@ -94,32 +97,32 @@ def detokenise_line(bytes, bytepos=None):
             output += s
             litstring = not litstring  
         elif s in tokens_number:
-            bytes.seek(-1,1)
-            representation.detokenise_number(bytes, output)
+            ins.seek(-1,1)
+            representation.detokenise_number(ins, output)
         elif s in tokens_linenum: 
             # 0D: line pointer (unsigned int) - this token should not be here; interpret as line number and carry on
             # 0E: line number (unsigned int)
-            output += representation.uint_to_str(bytearray(bytes.read(2)))
+            output += representation.uint_to_str(bytearray(ins.read(2)))
         elif comment or litstring or (s >= '\x20' and s <= '\x7e'):   # honest ASCII
             output += s
         else:
-            bytes.seek(-1,1)
-            comment = detokenise_keyword(bytes, output)
+            ins.seek(-1,1)
+            comment = detokenise_keyword(ins, output)
     return current_line, output, textpos
 
 # de tokenise one- or two-byte tokens
 # output must be mutable
-def detokenise_keyword(bytes, output):
+def detokenise_keyword(ins, output):
     # try for single-byte token or two-byte token
     # if no match, first char is passed unchanged
-    s = bytes.read(1)
+    s = ins.read(1)
     try:
         keyword = token_to_keyword[s]
     except KeyError:
-        s += util.peek(bytes)
+        s += util.peek(ins)
         try:
             keyword = token_to_keyword[s]
-            bytes.read(1)
+            ins.read(1)
         except KeyError:
             output += s[0]
             return False
@@ -132,7 +135,7 @@ def detokenise_keyword(bytes, output):
     if keyword == "'":
         comment = True
     elif keyword == "REM":
-        nxt = bytes.read(1)
+        nxt = ins.read(1)
         if nxt == '':
             pass
         elif nxt == '\xd9': # ' 
@@ -140,7 +143,7 @@ def detokenise_keyword(bytes, output):
             output += "'"
         else:
             # otherwise, it's part of the comment or an EOL or whatever, pass back to stream so it can be processed
-            bytes.seek(-1, 1)
+            ins.seek(-1, 1)
         comment = True
     # check for special cases
     #   [:REM']   ->  [']
@@ -158,7 +161,7 @@ def detokenise_keyword(bytes, output):
         else:
             output[:] = output[:-5] + "ELSE"
     # token followed by token or number is separated by a space, except operator tokens and SPC(, TAB(, FN, USR
-    nxt = util.peek(bytes)
+    nxt = util.peek(ins)
     if (not comment and nxt.upper() not in (util.end_line + tokens_operator + 
                                     ('\xD9', '"', ',', ' ', ':', '(', ')', '$', '%', '!', '#', '_', '@', '~', '|', '`')) 
                 and s not in (tokens_operator + tokens_with_bracket + ('\xD0', '\xD1'))): 
@@ -168,20 +171,6 @@ def detokenise_keyword(bytes, output):
     
 #################################################################
 # Tokenise functions
-
-# readln, but break on \r rather than \n. ignore single starting LF to account for CRLF *without seeking*.
-# include the \r at the end of the line. break at \x1a EOF. Do not include \x1a.
-def read_program_line(ins):
-    d = ins.read(1)
-    eof = d in ('\x1a', '')
-    out = d if (not eof and d != '\n') else ''    
-    while d != '\r' and not eof:
-        d = ins.read(1)
-        eof = d in ('\x1a', '')
-        if eof:
-            break
-        out += d       
-    return out, eof
 
 def tokenise_line(line):      
     ins = StringIO(line)
@@ -367,7 +356,7 @@ def tokenise_word(ins, outs):
                 nxt = ins.read(1) 
                 while nxt in tokenise_whitespace:
                     nxt = ins.read(1)
-                if ins.read(2)=='TO':
+                if ins.read(2) == 'TO':
                     word = 'GOTO'
                 else:
                     ins.seek(pos)
@@ -375,7 +364,7 @@ def tokenise_word(ins, outs):
                 nxt = util.peek(ins).upper()
                 if nxt in name_chars:
                     ins.seek(pos)
-                    word='GO'
+                    word = 'GO'
                 else:
                     pass
         if word in keyword_to_token:
@@ -444,10 +433,18 @@ keyword_to_token = dict((reversed(item) for item in token_to_keyword.items()))
 
 def insert_debug_keyword():
     # Note - I have implemented this as my own debugging command, executes python string.
-    token_to_keyword['\xFE\xA4'] = 'DEBUG'
-    keyword_to_token['DEBUG'] = '\xFE\xA4'
+    token_to_keyword['\xFF\xFF'] = 'DEBUG'
+    keyword_to_token['DEBUG'] = '\xFF\xFF'
         
+def insert_noise_keyword():
+    # pcjr, tandy; incompatible with sperry mode.
+    token_to_keyword['\xFE\xA4'] = 'NOISE'
+    keyword_to_token['NOISE'] = '\xFE\xA4'
 
+def insert_term_keyword():
+    # pcjr
+    token_to_keyword['\xFE\xA6'] = 'TERM'
+    keyword_to_token['TERM'] = '\xFE\xA6'
 
 # other keywords documented on http://www.chebucto.ns.ca/~af380/GW-BASIC-tokens.html :
 
@@ -456,6 +453,7 @@ def insert_debug_keyword():
 #   0xFEA6: 'TERM'
 # The site also remarks - 0xFEA5: PCOPY (PCjr or EGA system only) 
 # Apparently I have an 'EGA system', as this keyword is in the GW-BASIC 3.23 documentation.
+# Tandy 1000 systems had NOISE, but not TERM.
 
 # Sperry PC only:
 #   0xFEA4: 'DEBUG'

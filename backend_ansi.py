@@ -17,16 +17,22 @@
 # reading escape sequences with os.read, see http://stackoverflow.com/questions/8620878/check-for-extra-characters-in-linux-terminal-buffer
 
 import sys
-import platform
-if platform.system() != 'Windows':
-    import tty, termios, select
-
 import time
 import os
+
+try:
+    # this fails on Windows
+    import tty, termios, select
+except ImportError:
+    tty = None
 
 import unicodepage
 import error
 import console
+import state
+
+supports_graphics = False
+max_palette = 16
 
 term_echo_on = True
 term_attr = None
@@ -37,7 +43,11 @@ colours = (0, 4, 2, 6, 1, 5, 3, 7)
 colournames = ('Black','Dark Blue','Dark Green','Dark Cyan','Dark Red','Dark Magenta','Brown','Light Gray',
 'Dark Gray','Blue','Green','Cyan','Red','Magenta','Yellow','White')
 palette_changed = True
-palette = None
+
+
+# unused, but needs to be defined
+colorburst = False
+
 
 # ANSI escape sequences
 # for reference, see:
@@ -106,28 +116,23 @@ def prepare(args):
     pass
 
 def init():
-    if platform.system() == 'Windows':
+    if tty == None:
         import logging
-        logging.warning('ANSI terminal not supported on Windows.\n')
+        logging.warning('ANSI terminal not supported.\n')
         return False
     term_echo(False)
     term.write(esc_set_title % 'PC-BASIC 3.23')
     term.flush()
     return True
     
-def init_screen_mode(mode, new_font_height):
-    if mode != 0:
-        raise error.RunError(5)
-    
-def setup_screen(height, width):
-    set_palette()
+def init_screen_mode():
     term.write(esc_clear_screen)
-    term.write(esc_resize_term % (height, width))
+    term.write(esc_resize_term % (state.console_state.height, state.console_state.width))
     term.flush()
     
 def close():
     term_echo()
-    build_default_cursor(0, True)
+    build_cursor()
     term.write(esc_show_cursor)
     term.write(esc_clear_screen)
     term.write(esc_reset)
@@ -143,66 +148,50 @@ def clear_rows(cattr, start, stop):
     for r in range(start, stop+1):
         term.write(esc_move_cursor % (r, 1))    
         term.write(esc_clear_line)
-    term.write(esc_move_cursor % (console.row, console.col))
+    term.write(esc_move_cursor % (state.console_state.row, state.console_state.col))
     term.flush()
 
 def redraw():
-    if console.cursor:
-        show_cursor(False)
-    # this makes it feel faster
-    clear_rows(console.attr, 1, 25)
-    # redraw every character
-    for crow in range(console.height):
-        therow = console.apage.row[crow]  
-        for i in range(console.width): 
-            set_attr(therow.buf[i][1])
-            putc_at(crow+1, i+1, therow.buf[i][0])
-    if console.cursor:
-        show_cursor(True)        
+    console.redraw_text_screen()
+     
 
 #####
 
-def set_palette(new_palette=None):
-    global palette, palette_changed
-    if not new_palette:
-        new_palette = list(range(16)) 
-    if palette != new_palette:
-        palette = new_palette
-        palette_changed = True
-        try:
-            redraw()     
-        except AttributeError:
-            # skip this on init when apage doesn't exist yet
-            pass
-    
-def set_palette_entry(index, colour):
+def update_palette():
     global palette_changed
-    if palette[index] != colour:
-        palette[index] = colour
-        palette_changed = True
-        redraw()
-    
-def get_palette_entry(index):
-    return palette[index]
+    palette_changed = True
+    redraw()     
 
 ####
 
-def set_cursor_colour(color):
-    term.write(esc_set_cursor_colour % colournames[apply_palette(color)%16])
+def get_fg_colourname(attr):
+    colour = state.console_state.palette[attr & 15] & 15
+    return colournames[colour]
+
+def get_colours(attr):
+    fore = state.console_state.palette[attr & 15] & 15  
+    back = state.console_state.palette[(attr>>4) & 7] & 7 
+    if (fore & 8) == 0:
+        fore = 30 + colours[fore%8]
+    else:
+        fore = 90 + colours[fore%8]
+    back = 40 + colours[back%8]
+    return fore, back
+
+def update_pos():
+    attr = state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf
+    term.write(esc_set_cursor_colour % get_fg_colourname(attr))
     term.flush()
     
-def show_cursor(do_show, prev=None):
-    term.write(esc_show_cursor if do_show else esc_hide_cursor)
+def update_cursor_visibility():
+    term.write(esc_show_cursor if state.console_state.cursor else esc_hide_cursor)
     term.flush()
 
 def check_events():
     check_keyboard()
-    if console.cursor:
-        term.write(esc_move_cursor % (console.row,console.col))
+    if state.console_state.cursor:
+        term.write(esc_move_cursor % (state.console_state.row,state.console_state.col))
         term.flush()
-        
-def apply_palette(colour):
-    return colour&0x8 | palette[colour&0x7]
 
 last_attr = None
 def set_attr(attr):
@@ -214,13 +203,9 @@ def set_attr(attr):
     if attr & 0x80:
         # blink
         term.write(esc_set_colour % 5)   
-    fore, back = apply_palette(attr & 0xf), apply_palette((attr>>4) & 0x7)
-    if (fore%16)<8:
-        term.write(esc_set_colour % (30+colours[fore%8]))
-    else:
-        term.write(esc_set_colour % (90+colours[fore%8]))       
-    term.write(esc_set_colour % (40+colours[back%8]))
-    term.write(esc_set_cursor_colour % colournames[fore%16])
+    fore, back = get_colours(attr)    
+    term.write(esc_set_colour % fore)       
+    term.write(esc_set_colour % back)
     term.flush()  
     last_attr = attr
 
@@ -230,19 +215,19 @@ def putc_at(row, col, c):
     term.flush()
    
 def scroll(from_line):
-    term.write(esc_set_scroll_region % (from_line, console.scroll_height))
+    term.write(esc_set_scroll_region % (from_line, state.console_state.scroll_height))
     term.write(esc_scroll_up % 1)
     term.write(esc_set_scroll_screen)
-    if console.row > 1:
-        term.write(esc_move_cursor % (console.row-1, console.col))
+    if state.console_state.row > 1:
+        term.write(esc_move_cursor % (state.console_state.row-1, state.console_state.col))
     term.flush()
     
 def scroll_down(from_line):
-    term.write(esc_set_scroll_region % (from_line, console.scroll_height))
+    term.write(esc_set_scroll_region % (from_line, state.console_state.scroll_height))
     term.write(esc_scroll_down % 1)
     term.write(esc_set_scroll_screen)
-    if console.row < console.height:
-        term.write(esc_move_cursor % (console.row+1, console.col))
+    if state.console_state.row < state.console_state.height:
+        term.write(esc_move_cursor % (state.console_state.row+1, state.console_state.col))
     term.flush()
     
 #######
@@ -293,12 +278,14 @@ def check_keyboard():
 def copy_page(src, dst):
     pass
         
-def build_default_cursor(mode, is_line):
+def build_cursor():
     # works on xterm, not on xfce
     # on xfce, gibberish is printed
+    #is_line = state.console_state.cursor_to - state.console_state.cursor_from < 4
     #term.write(esc_set_cursor_shape % 2*(is_line+1) - 1)
     pass
-    
-def build_shape_cursor(from_line, to_line):
-    pass
 
+def load_state():
+    # console has already been loaded; just redraw
+    redraw()
+        

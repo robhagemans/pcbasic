@@ -62,6 +62,33 @@ or <CTRL+SCROLL_LOCK>       without executing or storing the line under the
                             INSERT mode.
 
 
+KEYBOARD SHORTCUTS
+---------------
+The function keys and the alt key can be used as keyboard shortcuts for some
+keywords. 
+The default values for the function keys are:
+  F1  LIST
+  F2  RUN<ENTER>
+  F3  LOAD"
+  F4  SAVE"
+  F5  CONT<ENTER>
+  F6  ,"LPT1:"<ENTER>
+  F7  TRON<ENTER>
+  F8  TROFF<ENTER>
+  F9  KEY<SPACE>
+  F10 SCREEN 0,0,0<ENTER>
+The function key shortcuts can be redefined (see the KEY statement). The key
+values are displayed at the bottom of the screen.
+The <ALT> shortcuts cannot be redefined. The following keywords can be entered 
+with <ALT>+the first letter:
+  AUTO     BSAVE    COLOR    DELETE   ELSE    FOR     GOTO     HEX$
+  INPUT    KEY      LOCATE   MOTOR    NEXT    OPEN    PRINT    RUN
+  SCREEN   THEN     USING    VAL      WIDTH   XOR
+Furthermore, the <ALT> key can be used to enter characters by their ASCII code.
+This is done by pressing the <ALT> key and typing the decimal value of the 
+ ASCII code on the numeric keypad, then releasing the <ALT> key.
+
+
 PROGRAMS
 --------
 A program line is entered by starting a line with a line number. All program 
@@ -318,28 +345,48 @@ SCREEN 0    Text mode
             80x25 or 40x25 characters of 8x16 pixels
             16 attributes picked from 64 colours
             Attributes 16-31 are blinking versions of 0-15
-            4 pages
+            4 pages [ega]
 SCREEN 1    CGA colour
             320x200 pixels
             40x25 characters of 8x8 pixels
             4 attributes picked from 16 colours; 2 bits per pixel    
-            1 page
+            1 page [ega] 2 pages [pcjr/tandy]
 SCREEN 2    CGA monochrome
             640x200 pixels
             80x25 characters of 8x8 pixels
             2 attributes picked from 16 colours; 1 bit per pixel    
+            1 page [ega] 2 pages [pcjr/tandy]
+SCREEN 3    [pcjr/tandy only] low-res 16-colour
+            160x200 pixels
+            20x25 characters of 8x8 pixels
+            16 attributes picked from 16 colours; 4 bits per pixel
+            2 pages
+SCREEN 4    [pcjr/tandy only] med-res 4-colour
+            320x200 pixels
+            40x25 characters of 8x8 pixels
+            4 attributes picked from 16 colours; 2 bits per pixel
+            2 pages
+SCREEN 5    [pcjr/tandy only] med-res 16-colour
+            320x200 pixels
+            40x25 characters of 8x8 pixels
+            16 attributes picked from 16 colours; 4 bits per pixel
             1 page
-SCREEN 7    EGA colour
+SCREEN 6    [pcjr/tandy only] high-res 4-colour
+            640x200 pixels
+            80x25 characters of 8x8 pixels
+            4 attributes picked from 16 colours; 2 bits per pixel
+            1 page
+SCREEN 7    [ega only] EGA colour
             320x200 pixels
             40x25 characters of 8x8 pixels
             16 attributes picked from 16 colours; 4 bits per pixel    
             8 pages
-SCREEN 8    EGA colour
+SCREEN 8    [ega only] EGA colour
             640x200 pixels
             80x25 characters of 8x8 pixels
             16 attributes picked from 16 colours; 4 bits per pixel    
             4 pages
-SCREEN 9    EGA colour
+SCREEN 9    [ega only] EGA colour
             640x350 pixels
             80x25 characters of 8x14 pixels
             16 attributes picked from 64 colours; 4 bits per pixel    
@@ -421,12 +468,16 @@ represent them in a BASIC file.
 NOTES:
 -   If PC-BASIC 3.23 is run with the --debug flag, the following additional 
     keyword is reserved, which is not present in standard versions of GW-BASIC:
-        FEA4 DEBUG
+        FFFF DEBUG
     When the --debug flag is specified, variable names like DEBUG$ are not 
     allowed.
--   On the IBM PCjr's version of GW-BASIC, some additional these keywords were 
-    present that are not implemented in PC-BASIC 3.23. They are:
+-   On the IBM PCjr's Cartridge BASIC and Tandy 1000 GW-BASIC, some additional 
+    keywords were present. They can be activated using the --pcjr or --tandy 
+    command-line option:
         FEA4 NOISE   FEA6 TERM
+-   Note that they are not currently implemented as statements. 
+    When ---pcjr or --tandy is specified, these words are not valid variable 
+    names and will be correctly transcribed in a listing.
 
 
 ABS(x) function
@@ -523,23 +574,31 @@ ERRORS:
 
 
 CALL statement
-CALL address, variables
+CALL address_var [(parm_0 [, parm_1 [, ...] )]
 --------------
 Raises ADVANCED FEATURE.
 NOTES:
--  In GW-BASIC, CALL executes a machine language subroutine.
-   This is not implemented in PC-BASIC 3.23.  
+-   In GW-BASIC, CALL executes a machine language subroutine. 'address_var' is
+    a numeric variable. 'parm_0' etc are variable names; these variables are 
+    passed as parameters to the subroutine.
+-   This is not implemented in PC-BASIC 3.23.  
+ERRORS:
+-   If 'address_var' is a string variable, raises TYPE MISMATCH.
+-   If 'address_var' is a literal, raises SYNTAX ERROR.
 
 
 CALLS statement
-CALLS name
+CALLS address_var [(parm_0 [, parm_1 [, ...] )]
 ------------
-Raises SYNTAX ERROR.
+Raises ADVANCED FEATURE.
 NOTES:
--   This keyword is undocumented in GW-BASIC. When called with a numeric 
-    variable name, it hangs the interpreter. When called with a string
-    variable name, it raises TYPE MISMATCH. When called with a literal, it
-    raises SYNTAX ERROR. This is not implemented in PC-BASIC 3.23.
+-   In GW-BASIC, CALLS executes a MS-FORTRAN subroutine. 'address_var' is
+    a numeric variable. 'parm_0' etc are variable names; these variables are 
+    passed as parameters to the subroutine. 
+-   This is not implemented in PC-BASIC 3.23.  
+ERRORS:
+-   If 'address_var' is a string variable, raises TYPE MISMATCH.
+-   If 'address_var' is a literal, raises SYNTAX ERROR.
 
 
 CDBL(x) function
@@ -588,7 +647,9 @@ Change the working directory to 'pathname'. 'pathname' is a string-valued
 expression which can be absolute or relative to the current path. 'pathname'
 must be specified with MS-DOS path separators (\). CHDIR first looks for the
 exact, case-sensitive (on Unix) path 'pathname'; if this does not exist then
-an uppercase version truncated to 8.3 is attempted.
+an uppercase version truncated to 8.3 is attempted. The search will match the
+first file (in lexicographic order) whose 8.3 name equals that of the requested
+file. 
 ERRORS:
 -  If no matching path is found, PATH NOT FOUND is raised.
 -  If 'pathname' is not string-valued, TYPE MISMATCH is raised.
@@ -714,7 +775,7 @@ NOTES:
 -   In GW-BASIC, the 'border' value in SCREEN 0 sets the attribute of the 
     screen border. This is not implemented in PC-BASIC 3.23.     
 -   The syntax and effect of this command is different in different SCREEN
-    modes. see below for SCREENs 1, 7, 8, and 9.
+    modes. see below for SCREENs 1, 4, 5, 6, 7, 8, and 9.
 ERRORS:
 -   If any of the parameters has a string value, TYPE MISMATCH is raised.
 -   If any of the parameters is not in [-32768,32667], OVERFLOW is raised.
@@ -745,7 +806,7 @@ ERRORS:
 -   If any of the parameters is not in [0,255], raises ILLEGAL FUNCTION CALL.
 
 
-COLOR statement  (in SCREEN 7, 8, or 9)
+COLOR statement  (in SCREEN 4, 5, 6, 7, 8, or 9)
 COLOR [foreground] [, palette_0 [, dummy] ]
 ---------------
 Changes the current foreground attribute and the colour for attribute 0. 
@@ -905,6 +966,17 @@ ERRORS:
 -   If 'date' yields a numeric value, TYPE MISMATCH is raised.
 
 
+DEBUG statement [--debug only]
+DEBUG python_statements
+----------------
+This statement is not present by default, but can be activated with the --debug
+command-line flag. Executes the specified Python statements. 
+NOTES:
+-   This statement is not present in GW-BASIC. 
+-   This statement is intended for debugging purposes only. It may be removed,
+    changed or moved to a different token across PC-BASIC 3.23 versions. 
+
+
 DEF FN statement
 DEF FN name[( arg_0 [, arg_1 [, ...] )] = expression
 ----------------
@@ -962,6 +1034,7 @@ the following segments are implemented/known:
     data            &h13ad
     video           &hb800  (SCREENs 0, 1, 2)
     video           &ha000  (SCREENs 7, 8, 9)
+    font            &hf000  (font starts at &hfa6e)
 NOTES:
 -   If 'address' is negative, it is interpreted as its two's complement.
 -   If 'address' is not specified, the segment is set to the GW-BASIC data
@@ -1420,6 +1493,9 @@ Pixel data format:
     with 4 bits per pixel, the first row takes at least 8 bytes (4 words), even
     if it consists of only one pixel. The number of bits per pixel depends on 
     the SCREEN mode.
+NOTES:
+-   In PCjr/Tandy mode, in SCREEN 6, GET stores an area of *twice the width* 
+    of the specified rectangle.    
 ERRORS:
 -   If the array does not exist, raises ILLEGAL FUNCTION CALL.
 -   If 'array_name' refers to a string array, raises TYPE MISMATCH.
@@ -1876,7 +1952,12 @@ valid path to an existing file with MS-DOS path separators (\). The extension
 must be specified: no default extensions are assumed. KILL will first attempt 
 to delete a file with the name exactly as provided; this is case-sensitive if
 the file system is. If such a file does not exist, KILL attempts to delete the
-UPPERCASE 8.3 variant of the file name.  
+UPPERCASE 8.3 variant of the file name. 
+NOTES:
+-   On case-sensitive file systems, unlike all other file commands, KILL will 
+    NOT search for other case combinations that resolve to the same 8.3 name.
+    It will only delete a file whose name either (1) matches exactly, or (2) 
+    exactly matches the 8.3 all-caps version of the filename requested.
 ERRORS:
 -   If the file 'file_path' is open, raises FILE ALREADY OPEN
 -   If the file or path 'file_path' does not exist, raises FILE NOT FOUND
@@ -2021,7 +2102,9 @@ or a . to indicate the last line edited. The line numbers do not need to exist;
 they specify a range. If the range is empty, nothing is printed.
 'file_name' is a valid file name. This file will be created; if it already 
 exists, it will be overwritten.
-Also stops program execution and returns to interactive mode.
+Also stops program execution and returns to interactive mode. Any further 
+statements on a line after LIST will be ignored both in a program and in direct
+mode. 
 ERRORS:
 -   If a line number is greater than 65529, SYNTAX ERROR is raised.
 -   If 'file_name' has a numeric value, TYPE MISMATCH is raised.
@@ -2053,7 +2136,8 @@ cleared and any program in memory will be erased. LOAD implies a CLEAR.
 NOTES:
 -   If 'file_name' does not include an extension, LOAD will try the name 
     specified, then an all-caps version, then an all-caps version with a .BAS 
-    extension.
+    extension. The search will match the first file (in lexicographic order) 
+    whose 8.3 name equals that of the requested file. 
 ERRORS:
 -   If 'file_name' cannot be found, raises FILE NOT FOUND.
 -   If a loaded ASCII file contains lines without line numbers, raises
@@ -2090,12 +2174,11 @@ LOCATE statement
 LOCATE [row] [, [col] [, [cursor_visible] [, [start_line] [, [stop_line] [,] ] ] 
 ----------------
 Positions the cursor at 'row', 'col' on the screen and changes the cursor.
-If 'cursor_visible' is 0, makes the cursor invisible; if it si 1, makes the 
-cursor visible. The cursor shape is adjusted within a character cell to start
-from 'start_line' and end on 'end_line' where 'start_line' and 'end_line' are 
-in [0,31]. If 'start_line' or 'end_line' is greater than the character cell 
-height (15), substitute 15. Cursor shape and visibility options have no effect 
-in graphics mode. 
+'cursor_visible' may be 0 or 1 and is ignored. The cursor shape is adjusted 
+within a character cell to start from 'start_line' and end on 'end_line' where 
+'start_line' and 'end_line' are in [0,31]. If 'start_line' or 'end_line' is 
+greater than the character cell height (15), substitute 15. 
+Cursor shape and visibility options have no effect in graphics mode. 
 NOTES:
 -   In GW-BASIC, the cursor shape option calls DOS INT 10h;01. What happens
     to the cursor is then determined by the video card; the result is
@@ -2103,11 +2186,15 @@ NOTES:
 -   In GW-BASIC, cursor shape is preserved after changing to INSERT mode and 
     back; the INSERT cursor is different from the usual half-block. 
     In PC-BASIC, INSERT mode resets the cursor shape to default.
+-   According to GW-BASIC documentation, if 'cursor_visible' is 0, it makes 
+    the cursor invisible; if it is 1, makes the cursor visible. This appears
+    in fact not to happen. 
 -   Locate accepts a 5th comma at the end, which is ignored.    
 ERRORS:
 -   If 'row' is outside the current view area, raises ILLEGAL FUNCTION CALL.
 -   If 'col' is greater than the current width, raises ILLEGAL FUNCTION CALL.
--   If 'cursor_visible' is not in [0, 1], raises ILLEGAL FUNCTION CALL.
+-   If 'cursor_visible' is not in [0, 1] ([0, 255] on Tandy/PCjr),
+    raises ILLEGAL FUNCTION CALL.
 -   If any parameter is not in [-32768,32767], raises OVERFLOW.
 -   If any parameter is a string, raises TYPE MISMATCH.
 
@@ -2359,6 +2446,33 @@ ERRORS:
 -   If 'var_0', ... are string names, NEXT WITHOUT FOR is raised.
 
 
+NOISE statement                                       [--pcjr and --tandy only]
+NOISE source, volume, duration
+-------------
+PCJR and TANDY:
+    Generates various kinds of noise.
+    'source' is a number-valued expression in [0, 7]. 
+    It indicates the type of noise:
+    source  type            max frequency (Hz)
+    0       periodic        6991
+    1       periodic        3495
+    2       periodic        1747
+    3       periodic        last tone played on tone voice channel 2
+    0       white noise     6991
+    1       white noise     3495
+    2       white noise     1747
+    3       white noise     last tone played on tone voice channel 2
+    'volume' is a number-valued expression in [0,15].
+    'duration' is a number-valued expression.
+    Volume and duration are determined in the same way as for the SOUND 
+    statement; see there.
+ERRORS:
+-   IF SOUND ON has not been executed, raises ILLEGAL FUNCTION CALL.
+-   If 'duration' is not in [-65535, 65535], raises ILLEGAL FUNCTION CALL.
+-   If 'volume' is not in [0, 15], raises ILLEGAL FUNCTION CALL.
+-   If 'voice' is not in [0, 2], raises ILLEGAL FUNCTION CALL.
+
+
 OCT$ function
 octal = OCT$(x)
 -------------
@@ -2533,9 +2647,12 @@ ERRORS:
 OUT statement
 OUT port, value
 -------------
-If 'port' = &h3C5, sets the write mask for SCREEN 7,8,9 colour planes; 
-bitmask = 2 ^ 'value'.
-If 'port' = &h3CF, sets the read colour plane to 'value'.
+port value  effect
+    &h3C5   sets the write mask for SCREEN 7,8,9 colour planes; 
+            bitmask = 2 ^ 'value'.
+    &h3CF   sets the read colour plane to 'value'.
+    &h3D8   if 'value' = &h1A, enable composite colorburst (cga, tandy, pcjr)
+            if 'value' = &h1E, disable composite colorburst (cga, tandy, pcjr)
 Does nothing otherwise.
 'port' is a number-valued expression in [-32768,65535].
 'value' is a number-valued expression in [0, 255].
@@ -2557,7 +2674,7 @@ ERRORS:
 
 
 PAINT statement
-PAINT [STEP] (x, y) [, attrib [, border [, dummy ] ] ]
+PAINT [STEP] (x, y) [, attrib [, border [, background ] ] ]
 ---------------
 Flood-fills the screen with a colour or pattern.
 'x', 'y' are number-valued expressions in the range [-32768, 32767] which give
@@ -2570,57 +2687,76 @@ If 'attrib' has a number value, it must be in [0, 255]; it specifies the colour
 attribute used to fill. 
 If 'attrib' has a string value, it specifies a tile pattern (see below).
 'border' is a number-valued expression in [0,255]. It specifies the attribute
-of the fill boundary - the flood fill stops when it encounters pixels of this 
-attribute. If 'attrib' is not specified, the boundary attribute is the same as
-the fill attribute, if that was speified as a number; if a tile pattern was 
-specified, the default border attribute is the current foreground attribute.
-'dummy' is a string-valued expression that is optional and has no effect.
+of the fill boundary (see below).
+'background' is a string-valued expression that represents a background tile 
+pattern to ignore when determining boundaries (see below).
 TILE PATTERNS
     A tile pattern can be specified by a string of up to 255 characters. The 
     interpretation of the string depends on the number of bits per pixel in 
     the current screen mode.
-    The tile pattern is always 8 pixels wide. The first character in the 
-    pattern string contains the first bit of each of these 8 pixels, the second
-    character contains the second bits, etc. 
-    For a one-bit-per-pixel mode (as in SCREEN 2), here is an example:
-              76543210    value
-              *.......    chr$(&h80)        
-              .*......    chr$(&h40)        
-              ..*.....    chr$(&h20)        
-              ...*....    chr$(&h10)        
-              ....*...    chr$(&h08)
-              .....*..    chr$(&h04)
-              ......*.    chr$(&h02)
-    For a 2-bits-per-pixel mode (as in SCREEN 1), the pattern can have many
-    colours. However, the same size pattern as above in attribute &h03 is:
-        bit   76543210    value
-        0     *.......    chr$(&h80)        
-        1     *.......    chr$(&h80)        
-        0     .*......    chr$(&h40)        
-        1     .*......    chr$(&h40)        
-        0     ..*.....    chr$(&h20)        
-        1     ..*.....    chr$(&h20)        
-        0     ...*....    chr$(&h10)        
-        1     ...*....    chr$(&h10)        
-        0     ....*...    chr$(&h08)
-        1     ....*...    chr$(&h08)
-        0     .....*..    chr$(&h04)
-        1     .....*..    chr$(&h04)
-        0     ......*.    chr$(&h02)    
-        1     ......*.    chr$(&h02)    
-    If the pattern string is truncated before all bits of the last line have 
-    been defined, the remining bits will be zero.
-    The tile pattern is locked to the screen; imagine an 8 x height grid
-    starting at (0,0) and covering the screen. Whenever an area is tile-filled,
+    SCREEN 2:
+        For a one-bit-per-pixel mode (as in SCREEN 2), here is an example:
+                  76543210    value
+                  *.......    chr$(&h80)        
+                  .*......    chr$(&h40)        
+                  ..*.....    chr$(&h20)        
+                  ...*....    chr$(&h10)        
+                  ....*...    chr$(&h08)
+                  .....*..    chr$(&h04)
+                  ......*.    chr$(&h02)
+    SCREEN 7, 8, 9:
+        The tile pattern is always 8 pixels wide. The first character in the 
+        pattern string contains the first bit of each of these 8 pixels, the 
+        second character contains the second bits, etc. 
+        For example, in a 2-bits-per-pixel mode, the pattern can have many
+        colours. However, the same size pattern as above in attribute &h03 is:
+            bit   76543210    value
+            0     *.......    chr$(&h80)        
+            1     *.......    chr$(&h80)        
+            0     .*......    chr$(&h40)        
+            1     .*......    chr$(&h40)        
+            0     ..*.....    chr$(&h20)        
+            1     ..*.....    chr$(&h20)        
+            0     ...*....    chr$(&h10)        
+            1     ...*....    chr$(&h10)        
+            0     ....*...    chr$(&h08)
+            1     ....*...    chr$(&h08)
+            0     .....*..    chr$(&h04)
+            1     .....*..    chr$(&h04)
+            0     ......*.    chr$(&h02)    
+            1     ......*.    chr$(&h02)    
+        If the pattern string is truncated before all bits of the last line 
+        have been defined, the remining bits will be zero.
+    SCREEN 1, 3, 4, 5, 6:
+        Each row of the tile pattern represents a screen row. Colours are 
+        encoded in consecutive bits - the more bits per pixel, the narrow the
+        pattern is. For 2 bits per pixel, the pattern is 4 pixels wide; for 4 
+        bits per pixel it is 2 pixels wide. The pattern form above now encodes
+        a multicoloured tile:
+            3210  76543210    value
+            2000  *.......    chr$(&h80)        
+            1000  .*......    chr$(&h40)        
+            0200  ..*.....    chr$(&h20)        
+            0100  ...*....    chr$(&h10)        
+            0020  ....*...    chr$(&h08)
+            0010  .....*..    chr$(&h04)
+            0002  ......*.    chr$(&h02)
+    The tile pattern is locked to the screen; imagine a grid starting at 
+    (0,0) and covering the screen. Whenever an area is tile-filled,
     the tiles are put into this grid. In this way, adjacent areas will have
     continuous tiling even if they were filled from different seed points.
-NOTES:
--   The GW-BASIC manual suggests the value of 'dummy' is used to determine the
-    boundary of a tile pattern. However, in practice this appears to have no
-    discernable effect. It is not implemented in PC-BASIC 3.23.
+BOUNDARIES
+    A solid flood fill stops at pixels that have the same attribute as the fill
+    or that have the specified border attribute, if specified.
+    A tiling flood fill stops at the specified border attribute; if no border
+    attribute is specified, it stops at the current foreground attribute.
+    A tiling flood fill also stops at scan line intervals that are the same as 
+    the tiling pattern for that line, unless a background pattern is specified
+    and the interval also equals the background pattern for that line.
 ERRORS:
--   If 'dummy' equals 'attrib', raises ILLEGAL FUNCTION CALL.
--   If 'dummy' has a number value, raises ILLEGAL FUNCTION CALL.
+-   In SCREENs 7,8,9, if 'background' equals 'attrib' up to the length of
+    'attrib', raises ILLEGAL FUNCTION CALL.
+-   If 'background' has a number value, raises ILLEGAL FUNCTION CALL.
 -   If 'border','x', or 'y' have a string value, raises TYPE MISMATCH.
 -   If 'border' is not in [0,255], raises ILLEGAL FUNCTION CALL.
 -   If 'attrib' is numeric and not in [0,255], raises ILLEGAL FUNCTION CALL.
@@ -2735,6 +2871,7 @@ ERRORS:
 
 PLAY statement
 PLAY mml_string
+PLAY [mml_string_0] [, [mml_string_1] ] [, [mml_string_2] ]]   [--tandy --pcjr]
 --------------
 Plays the tune defined by string-valued expression 'mml_string'. 'mml_string' 
 must be a string-valued expression in Music Macro Language (MML). 
@@ -2771,18 +2908,33 @@ Subroutine command:
 Numeric variables 'n' in the commands above can be:
     -   an integer literal e.g. "100"
     -   a numeric variable name preceded by = and followed by ; e.g. "=name;"
-    -   the result of VARPTR$() on a numeric variable, preceded by =.               
+    -   the result of VARPTR$() on a numeric variable, preceded by =.  
+TANDY and PCJR:
+    The three separate mml strings correspond to the three tone voice channels.
+    The notes in these strings are played synchronously.
+    Volume control:
+        Vn  Set the volume to 'n', in the range [0, 15]. On PCjr, if SOUND ON
+            has not been executed, this has no effect. On Tandy it does.              
 ERRORS:
 -   If 'mml_string' has a numeric value, TYPE MISMATCH is raised.
 -   If 'mml_string' has errors in the MML, ILLEGAL FUNCTION CALL is raised.
 -   If a variable in the mml_string is of incorrect type, TYPE MISMATCH.
+-   If no mml string is specified, raises MISSING OPERAND.
+-   On PCjr, if SOUND ON has not been executed, using the three-voice syntax
+    will raise SYNTAX ERROR. This is not the case on Tandy.
 
 
 PLAY function
-length = PLAY(dummy)
+length = PLAY(voice)
 -------------
 Returns the number of notes in the background music queue.
-'dummy' is a number-valued expression in [0,255]. Is value has no effect.
+'voice' is a number-valued expression in [0,255]. 
+PCJR and TANDY:
+    On PCjr and Tandy, the 'voice' value indicates for which tone voice channel
+    the number of notes is to be returned. If 'voice' is not in [0,2], the 
+    queue for voice 0 is returned.
+OTHERS:
+    The 'voice' value has no effect.    
 The return value is in [0,16].
 NOTES:
 -   There are at most 16 notes in the music queue. Some GW-BASIC manuals
@@ -3198,7 +3350,8 @@ RMDIR path
 Removes an empty directory. 'path' is a string-valued expression that specifies 
 the path of the directory.  RMDIR first looks for the exact, case-sensitive (on
 Unix) path 'pathname'; if this does not exist then an uppercase version 
-truncated to 8.3 is attempted.
+truncated to 8.3 is attempted. The search will match the first file (in lexico-
+graphic order) whose 8.3 name equals that of the requested file. 
 ERRORS:
 -  If no matching path is found, PATH NOT FOUND is raised.
 -  If 'pathname' is not string-valued, TYPE MISMATCH is raised.
@@ -3282,17 +3435,28 @@ ERRORS:
 
 
 SCREEN statement
-SCREEN [mode] [, [switch] [, [apage] [, vpage] ] ]
+SCREEN [mode] [, [colorburst] [, [apage] [, vpage] ] ]
 ----------------
 Change the screen resolution mode. The modes are described at the start of this
 document.
 'mode' is a number-valued expression that sets the screen mode.
 'apage' is a number-valued expression that sets the active page.
 'vpage' is a number-valued expression that sets the visible page.
-'switch' is a number-valued expression; if the switch setting changes between 
-zero and non-zero, the screen is cleared.
+'colorburst' is a number-valued expression; if the switch setting changes between 
+zero and non-zero, the screen is cleared. 
+On CGA, Tandy and PCjr, 'colorburst' has the following effects, depending on the 
+type of monitor - RGB (default) or composite:
+SCREEN  value   CGA mode    effect on composite     effect on RGB
+    0       0   0, 2        greyscale               colour
+    0       1   1, 3        colour                  colour
+    1       0   4           colour                  colour 
+    1       1   5           greyscale               colour (alternate palette)
+On SCREEN 2, 'colorburst' has no effect; on a composite monitor, colour artifacts 
+can be enabled on this screen through OUT (see there).    
 NOTE:
 -   At least one parameter must be specified.
+-   Composite colour artifacts are emulated only crudely in PC-BASIC, and not at
+    all in SCREEN 1.
 ERRORS:
 -   If no parameters are specified, raises MISSING OPERAND.
 -   If any parameter has a string value, raises TYPE MISMATCH.
@@ -3300,7 +3464,7 @@ ERRORS:
 -   If 'mode' is not in 0,1,2,7,8,9, raises ILLEGAL FUNCTION CALL.
 -   If 'vpage', 'apage' are not between 0 and the number of pages for the 
     screen chosen, less one, raises ILLEGAL FUNCION CALL.
--   If 'switch' is not in [0,255], raises ILLEGAL FUNCTION CALL.
+-   If 'colorburst' is not in [0,255], raises ILLEGAL FUNCTION CALL.
 
 
 SGN function
@@ -3346,9 +3510,10 @@ ERRORS:
 
 SOUND statement
 SOUND frequency, duration
+SOUND frequency, duration [, volume [, voice] ]       [pcjr and tandy only]
 ---------------
 Produces a sound at 'frequency' Hz for 'duration'/18.2 seconds.
-'frequency' is a number-valued expression in [37, 32767].
+'frequency' is a number-valued expression in [37, 32767] or 0.
 'duration' is a number-valued expression in [0, 65535]. 
 If PLAY "MB" has been executed, SOUND playes in the background. If PLAY "MF" 
 has been executed, sound plays in the foreground and the interpreter blocks
@@ -3356,17 +3521,39 @@ until the sound is finished. Foreground mode is default. Unlike PLAY, the
 sound played by the most recent SOUND statement always plays in the background,
 even if PLAY "MF" has been entered. In background mode, each SOUND statement 
 counts as 1 toward the length of the queue reported by the PLAY function.
+PCJR and TANDY:
+    'frequency' is a number-valued expression in [-32768, 32767] (on Tandy)
+    or [37, 32767] if nonzero (on PCjr). 
+    Frequencies below 110 Hz are played as 110 Hz.
+    If 'duration' is zero, 'volume' and 'voice' must not be specified.
+    'volume' is a number-valued expression in [0, 15]. 0 is silent, 15 is full
+    volume; every step less reduces the volume by 2 dB.
+    'voice' is a number-valued expression in [0, 2], indicating which of the 
+    three tone voice channels is used for this sound.
 NOTES:
 -   If 'duration' is zero, any active background sound is stopped and 
     the sound queue is emptied.
 -   If 'duration' is less than .022 but nonzero, the sound will be played in 
     background and continue indefinitely until another sound statement is 
     executed. This is also the behaviour for negative 'duration'.
--   If 'frequency' equals 32767, a silence of length 'duration' is queued.
+-   If 'frequency' equals 32767 or 0, a silence of length 'duration' is queued.
 ERRORS:
--   If 'frequency' is not in [37, 32767], and 'duration' is not zero, raises 
-    ILLEGAL FUNCTION CALL.
+-   If 'frequency' is not in its allowed range, and 'duration' is not zero, 
+    raises ILLEGAL FUNCTION CALL.
+-   If 'duration' is zero, specifying more than two aruments raises
+    SYNTAX ERROR.    
+-   If 'frequency' is not in [-32768, 32767], raises OVERFLOW.
 -   If 'duration' is not in [-65535, 65535], raises ILLEGAL FUNCTION CALL.
+-   If 'volume' is not in [0, 15], raises ILLEGAL FUNCTION CALL.
+-   If 'voice' is not in [0, 2], raises ILLEGAL FUNCTION CALL.
+
+
+SOUND statement (advanced-sound switch)               [--pcjr and --tandy only]
+SOUND {ON | OFF}
+---------------
+PCJR and TANDY:
+    Toggles the availability of advanced sound capabilities, including 3-voice 
+    sound, noise generation and volume control.
 
 
 SPACE$ function
@@ -3524,6 +3711,19 @@ ERRORS:
 -   If 'angle' has a string value, SIN raises TYPE MISMATCH.
 
 
+TERM statement [--pcjr and --tandy only]
+TERM 
+-------------
+PCJR:
+    Starts a built-in serial terminal emulator application. 
+    This is a BASIC program that is loaded and run instead of the current 
+    program.
+TANDY:
+    Raises INTERNAL ERROR.
+DEFAULT:
+    In default mode, this keyword is not present.
+
+
 TIME$ function
 time = TIME$
 --------------
@@ -3677,7 +3877,8 @@ NOTES:
     scrolling area.
 ERRORS:
 -   If 'top_row' or 'bottom_row' is not in [1,24], ILLEGAL FUNCTION CALL is 
-    raised.
+    raised. On Tandy/PCjr, 'bottom_row' may be 25 if KEY OFF.
+
 
 
 WAIT statement
@@ -3722,7 +3923,7 @@ ERRORS:
 
 
 WIDTH statement
-WIDTH { # file_num | device_name}, num_columns 
+WIDTH { # file_num | device_name | LPRINT }, num_columns 
 WIDTH { 40 | 80 | (num_columns) } [, [,]]
 ---------------
 Set the line width for the screen, a file or a device.
@@ -3738,7 +3939,8 @@ If a device is specified, it does not need to be open; the width setting will
 be the default width next time a file is opened to that device.
 If 'device_name' is "SCRN:", "KYBD:", or omitted, the screen width is changed.
 In this case, 'num_columns' must be one of 40 or 80.
-If 'device_name' is "LPT1:", the device width setting affects LPRINT and LLIST.
+If 'device_name' is "LPT1:" or LPRINT is specified, the device width setting 
+affects LPRINT and LLIST.
 NOTES:
 -   In the second syntax, num_columnns can only de an expression if it is 
     bracketed. Otherwise it must be a literal 40 or 80.
