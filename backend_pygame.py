@@ -273,7 +273,7 @@ def prepare(args):
                 height = len(font[0])
                 fonts[height] = font
     if args.font_family:
-        font_family = args.font_family
+        font_family = args.font_family[0]
     if args.fullscreen:
         fullscreen = True
     if args.smooth:
@@ -719,9 +719,6 @@ def check_events(pause=False):
             if not pause:
                 handle_key_up(event)
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            # Android: toggle keyboard on touch
-            if android:
-                pygame_android.toggle_keyboard()
             handle_mouse(event)
         elif event.type == pygame.JOYBUTTONDOWN:
             handle_stick(event)    
@@ -820,6 +817,9 @@ def handle_key(e):
     elif e.key == pygame.K_TAB and mods & pygame.KMOD_SHIFT:
         # shift+tab -> \x00\x0F (scancode for TAB) but TAB -> \x09
         c = '\x00\x0F'
+    elif e.key == pygame.K_MENU and android:
+        # Android: toggle keyboard on menu key
+        pygame_android.toggle_keyboard()
     else:
         try:
             if (mods & pygame.KMOD_CTRL):
@@ -1172,7 +1172,7 @@ max_amplitude = (1<<(mixer_bits-1)) - 1
 # 2 dB steps correspond to a voltage factor of 10**(-2./20.) as power ~ voltage**2 
 step_factor = 10**(-2./20.)
 # geometric list of amplitudes for volume values 
-amplitude = numpy.int16(max_amplitude*(step_factor**numpy.arange(15,-1,-1)))
+amplitude = [0]*16 if not numpy else numpy.int16(max_amplitude*(step_factor**numpy.arange(15,-1,-1)))
 # zero volume means silent
 amplitude[0] = 0
 
