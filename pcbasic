@@ -25,7 +25,6 @@ if plat.system in ('OSX', 'Windows'):
     backend_dumb = None
     stdin_is_tty, stdout_is_tty = True, True
     stdin, stdout = None, None
-    logfile = True
 else:
     # Unix, Linux including Android
     import backend_dumb
@@ -37,15 +36,15 @@ else:
         stdin_is_tty, stdout_is_tty = True, True
         stdin, stdout = None, None
     stdin, stdout = sys.stdin, sys.stdout
-    logfile = False
     
 if plat.system == 'Android':
     # crashes on Android
     argparse = None
-    # we want a log file on Android, but not on linux
-    logfile = True
 else:
     import argparse
+
+# do we log to a file? 
+logfile = False
 
 import ConfigParser
 import logging
@@ -366,12 +365,16 @@ def get_args():
     conf_dict = read_config()
     # if argparse module not available, use the preset defaults (this happens on Android)
     if not argparse:
-        config = conf_dict['pcbasic']
+        presets = ['pcbasic']
+        if plat.system == 'Android':
+            presets += ['android']
         class Namespace(object):
             pass
         args = Namespace()  
-        for name in config:
-            setattr(args, name, config[name])
+        for p in presets:    
+            config = conf_dict[p]
+            for name in config:
+                setattr(args, name, config[name])
         return args    
     #
     # define argument parser   

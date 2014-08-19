@@ -172,10 +172,6 @@ else:
     def windows_map_drives():
         pass
     
-    if plat.system == 'Android':
-        drives['C'] = os.path.join(plat.basepath, 'files')
-        drive_cwd['C'] =''
-
     # change names in FILES to some 8.3 variant             
     def dossify(path, name):
         if name.find('.') > -1:
