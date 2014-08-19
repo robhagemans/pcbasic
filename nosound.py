@@ -9,42 +9,37 @@
 # please see text file COPYING for licence terms.
 #
 
-import oslayer
-import console
+import datetime
+import state
 
-music_foreground = True
-music_queue = []
+music_queue = [ [], [], [], [] ]
 
-def music_queue_length():
-    # top of sound_queue is currently playing
-    return max(0, len(music_queue)-1)
-    
-def beep():
-    play_sound(800, 0.25)
-    
 def init_sound():
     return True
     
 def stop_all_sound():
     global music_queue
-    music_queue = []
+    music_queue = [ [], [], [], [] ]
     
-def play_sound(frequency, duration, fill=1, loop=False):
-    if music_queue:
-        latest = max(music_queue)
+def play_sound(frequency, duration, fill=1, loop=False, voice=0, volume=15):
+    if music_queue[voice]:
+        latest = max(music_queue[voice])
     else:    
-        latest = oslayer.timer_milliseconds()
-    wait_music(15)    
-    music_queue.append(latest + duration*1000)
+        latest = datetime.datetime.now()
+    music_queue[voice].append(latest + datetime.timedelta(seconds=duration))
         
 def check_sound():
-    now = oslayer.timer_milliseconds()
-    while music_queue and now >= music_queue[0]:
-        music_queue.pop(0)
+    now = datetime.datetime.now()
+    for voice in range(4):
+        while music_queue[voice] and now >= music_queue[voice][0]:
+            music_queue[voice].pop(0)
+        # remove the notes that have been played
+        while len(state.console_state.music_queue[voice]) > len(music_queue[voice]):
+            state.console_state.music_queue[voice].pop(0)
     
-def wait_music(wait_length=0, wait_last=True):
-    while len(music_queue) + wait_last - 1 > wait_length:
-        console.idle()
-        console.check_events()
-        check_sound()
-      
+def busy():
+    return False        
+
+def set_noise(is_white):
+    pass      
+    

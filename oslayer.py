@@ -10,18 +10,38 @@
 #
 
 import os 
-import datetime
 import errno
 import fnmatch
 from functools import partial
 import StringIO
 
 import error
+import console
 import unicodepage
+import plat
+import state
+import backend
+import time
 
-# datetime offset for duration of the run (so that we don't need permission to touch the system clock)
-# given in seconds        
-time_offset = datetime.timedelta()
+# 1 ms sleep time for output process
+sleep_time = 0.001
+
+if plat.system == 'Windows':
+    import msvcrt
+    import win32ui
+    import win32gui
+    import win32api
+    import win32con
+    import win32print
+    import subprocess
+    import threading
+else:
+    try:
+        import pexpect
+    except ImportError:
+        import logging
+        logging.warning('Pexpect module not found. SHELL command will not work.')    
+    
 
 # posix access modes for BASIC modes INPUT ,OUTPUT, RANDOM, APPEND and internal LOAD and SAVE modes
 access_modes = { 'I':'rb', 'O':'wb', 'R':'r+b', 'A':'ab', 'L': 'rb', 'S': 'wb' }
@@ -46,85 +66,7 @@ os_error = {
 nullstream = open(os.devnull, 'w')       
 
 #########################################
-# date & time & env
-
-def timer_milliseconds():
-    now = datetime.datetime.today() + time_offset
-    midnight = datetime.datetime(now.year, now.month, now.day)
-    diff = now-midnight
-    seconds = diff.seconds
-    micro = diff.microseconds
-    return long(seconds)*1000 + long(micro)/1000 
-
-def set_time(timestr):    
-    global time_offset
-    now = datetime.datetime.today() + time_offset
-    timelist = [0, 0, 0]
-    pos, listpos, word = 0, 0, ''
-    while pos < len(timestr):
-        if listpos > 2:
-            break
-        c = chr(timestr[pos])
-        if c in (':', '.'):
-            timelist[listpos] = int(word)
-            listpos += 1
-            word = ''
-        elif (c < '0' or c > '9'): 
-            raise error.RunError(5)
-        else:
-            word += c
-        pos += 1
-    if word:
-        timelist[listpos] = int(word)     
-    if timelist[0] > 23 or timelist[1] > 59 or timelist[2] > 59:
-        raise error.RunError(5)
-    newtime = datetime.datetime(now.year, now.month, now.day, timelist[0], timelist[1], timelist[2], now.microsecond)
-    time_offset += newtime - now    
-        
-def set_date(datestr):    
-    global time_offset
-    now = datetime.datetime.today() + time_offset
-    datelist = [1, 1, 1]
-    pos, listpos, word = 0, 0, ''
-    if len(datestr) < 8:
-        raise error.RunError(5)
-    while pos < len(datestr):
-        if listpos > 2:
-            break
-        c = chr(datestr[pos])
-        if c in ('-', '/'):
-            datelist[listpos] = int(word)
-            listpos += 1
-            word = ''
-        elif (c < '0' or c > '9'): 
-            if listpos == 2:
-                break
-            else:
-                raise error.RunError(5)
-        else:
-            word += c
-        pos += 1
-    if word:
-        datelist[listpos] = int(word)     
-    if (datelist[0] > 12 or datelist[1] > 31 or
-            (datelist[2] > 77 and datelist[2] < 80) or 
-            (datelist[2] > 99 and datelist[2] < 1980 or datelist[2] > 2099)):
-        raise error.RunError(5)
-    if datelist[2] <= 77:
-        datelist[2] = 2000 + datelist[2]
-    elif datelist[2] < 100 and datelist[2] > 79:
-        datelist[2] = 1900 + datelist[2]
-    try:
-        newtime = datetime.datetime(datelist[2], datelist[0], datelist[1], now.hour, now.minute, now.second, now.microsecond)
-    except ValueError:
-        raise error.RunError(5)
-    time_offset += newtime - now    
-    
-def get_time():
-    return bytearray((datetime.datetime.today() + time_offset).strftime('%H:%M:%S'))
-    
-def get_date():
-    return bytearray((datetime.datetime.today() + time_offset).strftime('%m-%d-%Y'))
+# environment
 
 def get_env(parm):
     if not parm:
@@ -174,6 +116,96 @@ def handle_oserror(e):
 #########################################
 # drives & paths
 
+drives = { 'C': os.getcwd(), '@': os.path.join(plat.basepath, 'info') }
+current_drive = 'C'
+# must not start with a /
+drive_cwd = { 'C': '', '@': '' }
+
+if plat.system == 'Windows':
+    def windows_map_drives():
+        global current_drive
+        # get all drives in use by windows
+        # if started from CMD.EXE, get the 'current working dir' for each drive
+        # if not in CMD.EXE, there's only one cwd
+        current_drive = os.path.abspath(os.getcwd()).split(':')[0]
+        save_current = os.getcwd()
+        for drive_letter in win32api.GetLogicalDriveStrings().split(':\\\x00')[:-1]:
+            try:
+                os.chdir(drive_letter + ':')
+                cwd = win32api.GetShortPathName(os.getcwd())
+                # must not start with \\
+                drive_cwd[drive_letter] = cwd[3:]  
+                drives[drive_letter] = cwd[:3]
+            except WindowsError:
+                pass    
+        os.chdir(save_current)    
+
+    # get windows short name
+    def dossify(path, name):
+        if not path:
+            path = current_drive
+        try:
+            shortname = win32api.GetShortPathName(os.path.join(path, name)).upper()
+        except WindowsError:
+            # something went wrong, show as dots in FILES
+            return "........", "..."
+        split = shortname.split('\\')[-1].split('.')
+        trunk, ext = split[0], ''
+        if len(split)>1:
+            ext = split[1]
+        if len(trunk)>8 or len(ext)>3:
+            # on some file systems, ShortPathName returns the long name
+            trunk = trunk[:8]
+            ext = '...'    
+        return trunk, ext    
+
+    # assume Windows filesystems all case insensitive
+    # if you're using this with an EXT2 partition on Windows, you're just weird ;)
+    def find_name_case(s, path, isdir):
+        return None
+        
+else:
+# to map root to C and set current to CWD:
+#    drives = { 'C': '/', '@': os.path.join(plat.basepath, 'info') }
+#    drive_cwd = { 'C': os.getcwd()[1:], '@': '' }
+    
+    def windows_map_drives():
+        pass
+    
+    if plat.system == 'Android':
+        drives['C'] = os.path.join(plat.basepath, 'files')
+        drive_cwd['C'] =''
+
+    # change names in FILES to some 8.3 variant             
+    def dossify(path, name):
+        if name.find('.') > -1:
+            trunk, ext = name[:name.find('.')][:8], name[name.find('.')+1:][:3]
+        else:
+            trunk, ext = name[:8], ''
+        # non-DOSnames passed as UnixName....    
+        if (ext and name != trunk+'.'+ext) or (ext == '' and name != trunk and name != '.'):
+            ext = '...'
+        if name in ('.', '..'):
+            trunk, ext = '', ''
+        return trunk, ext
+   
+    def find_name_case(s, path, isdir):
+        listdir = sorted(os.listdir(path))
+        capsdict = {}
+        for f in listdir:
+            caps = dossify_write(f, '', path)
+            if caps in capsdict:
+                capsdict[caps] += [f]
+            else:
+                capsdict[caps] = [f]
+        try:
+            for scaps in capsdict[dossify_write(s, '', path)]:
+                if istype(path, scaps, isdir):
+                    return scaps
+        except KeyError:
+            return None
+
+
 def istype(path, name, isdir):
     name = os.path.join(str(path), str(name))
     return os.path.exists(name) and ((isdir and os.path.isdir(name)) or (not isdir and os.path.isfile(name)))
@@ -183,7 +215,7 @@ def istype(path, name, isdir):
 #    if ext.find('.') > -1:
 #        # 53: file not found
 #        raise error.RunError(errdots)
-def dossify_write(s, defext='BAS', dummy_path='', dummy_err=0, dummy_isdir=False):
+def dossify_write(s, defext='BAS', dummy_path='', dummy_err=0, dummy_isdir=False, dummy_findcase=True):
     # convert to all uppercase
     s = s.upper()
     # one trunk, one extension
@@ -198,7 +230,7 @@ def dossify_write(s, defext='BAS', dummy_path='', dummy_err=0, dummy_isdir=False
 
 # find a matching file/dir to read
 # if name does not exist, put name in 8x3, all upper-case format with standard extension            
-def find_name_read(s, defext='BAS', path='', err=53, isdir=False):
+def find_name_read(s, defext='BAS', path='', err=53, isdir=False, find_case=True):
     # check if the name exists as-is
     if istype(path, s, isdir):
         return s
@@ -206,11 +238,20 @@ def find_name_read(s, defext='BAS', path='', err=53, isdir=False):
     full = dossify_write(s, '', path)
     if istype(path, full, isdir):    
         return full
+    # for case-sensitive filenames: find other case combinations, if present
+    if find_case:
+        full = find_name_case(s, path, isdir)
+        if full:    
+            return full
     # check if the dossified name exists with a default extension
     if defext:
         full = dossify_write(s, defext, path)
         if istype(path, full, isdir):    
             return full
+        if find_case:
+            full = find_name_case(s + '.' + defext, path, isdir)
+            if full:    
+                return full
     # not found        
     raise error.RunError(err)
         
@@ -245,12 +286,12 @@ def get_drive_path(s, err):
     return letter, path, name
     
 # find a unix path to match the given dos-style path
-def dospath(s, defext, err, action, isdir):
+def dospath(s, defext, err, action, isdir, find_case=True):
     # substitute drives and cwds
     _, path, name = get_drive_path(str(s), err)
     # return absolute path to file        
     if name:
-        return os.path.join(path, action(name, defext, path, err, isdir))
+        return os.path.join(path, action(name, defext, path, err, isdir, find_case))
     else:
         # no file name, just dirs
         return path
@@ -263,14 +304,14 @@ dospath_write_dir = partial(dospath, action=dossify_write, isdir=True)
     
 # for FILES command
 # apply filename filter and DOSify names
-def pass_dosnames(path, files, mask='*.*'):
+def pass_dosnames(path, files_list, mask='*.*'):
     mask = str(mask).rsplit('.', 1)
     if len(mask) == 2:
         trunkmask, extmask = mask
     else:
         trunkmask, extmask = mask[0], ''
     dosfiles = []
-    for name in files:
+    for name in files_list:
         trunk, ext = dossify(path, name)
         # apply mask separately to trunk and extension, dos-style.
         if not fnmatch.fnmatch(trunk.upper(), trunkmask.upper()) or not fnmatch.fnmatch(ext.upper(), extmask.upper()):
@@ -290,20 +331,20 @@ def pass_dosnames(path, files, mask='*.*'):
         dosfiles.append(trunk + ext)
     return dosfiles
 
-def files(pathmask, console):
+def files(pathmask):
     drive, path, mask = get_drive_path(str(pathmask), 53)
     mask = mask.upper()
     if mask == '':
         mask = '*.*'
-    roots, dirs, files = [], [], []
-    for root, dirs, files in safe(os.walk, path):
+    roots, dirs, files_list = [], [], []
+    for roots, dirs, files_list in safe(os.walk, path):
         break
     # get working dir in DOS format
     # NOTE: this is always the current dir, not the one being listed
     console.write_line(drive + ':\\' + drive_cwd[drive].replace(os.sep, '\\'))
-    if (roots, dirs, files) == ([], [], []):
+    if (roots, dirs, files_list) == ([], [], []):
         raise error.RunError(53)
-    dosfiles = pass_dosnames(path, files, mask)
+    dosfiles = pass_dosnames(path, files_list, mask)
     dosfiles = [ name+'     ' for name in dosfiles ]
     dirs += ['.', '..']
     dosdirs = pass_dosnames(path, dirs, mask)
@@ -311,7 +352,7 @@ def files(pathmask, console):
     dosfiles.sort()
     dosdirs.sort()    
     output = dosdirs + dosfiles
-    num = console.width/20
+    num = state.console_state.width/20
     if len(output) == 0:
         # file not found
         raise error.RunError(53)
@@ -320,7 +361,7 @@ def files(pathmask, console):
         output = output[num:]
         console.write_line(line)       
         # allow to break during dir listing & show names flowing on screen
-        console.check_events()             
+        backend.check_events()             
     console.write_line(' ' + str(disk_free(path)) + ' Bytes free')
 
 def chdir(name):
@@ -353,7 +394,127 @@ def rename(oldname, newname):
         raise error.RunError(58)
     safe(os.rename, oldname, newname)
         
-    
+###################################################
+# FILES: disk_free
+
+if plat.system == 'Windows':
+    import ctypes
+    def disk_free(path):
+        free_bytes = ctypes.c_ulonglong(0)
+        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(path), None, None, ctypes.pointer(free_bytes))
+        return free_bytes.value
+
+elif plat.system == 'Android':
+    def disk_free(path):
+        # TODO: implement with jnius
+        return 0        
+
+else:
+    def disk_free(path):
+        st = os.statvfs(path)
+        return st.f_bavail * st.f_frsize
+        
+###################################################
+# SHELL
+
+if plat.system == 'Windows':
+    shell_output = ''   
+
+    def process_stdout(p, stream):
+        global shell_output
+        while True:
+            c = stream.read(1)
+            if c != '': 
+                # don't access screen in this thread, the other thread already does
+                shell_output += c
+            elif p.poll() != None:
+                break        
+            else:
+                # don't hog cpu
+                time.sleep(sleep_time)
+
+    def shell(command):
+        global shell_output
+        if not command:
+            command = 'CMD'
+        p = subprocess.Popen( str(command).split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
+        outp = threading.Thread(target=process_stdout, args=(p, p.stdout))
+        outp.daemon = True
+        outp.start()
+        errp = threading.Thread(target=process_stdout, args=(p, p.stderr))
+        errp.daemon = True
+        errp.start()
+        word = ''
+        while p.poll() == None or shell_output:
+            if shell_output:
+                lines = shell_output.split('\r\n')
+                shell_output = '' 
+                last = lines.pop()
+                for line in lines:
+                    # progress visible - keep updating the backend
+                    backend.check_events()
+                    console.write_line(line)
+                console.write(last)    
+            if p.poll() != None:
+                # drain output then break
+                continue    
+            c = console.get_char()
+            if c in ('\r', '\n'): 
+                # Windows CMD.EXE echo to overwrite the command that's already there
+                # NOTE: WINE cmd.exe doesn't echo the command, so it's overwritten by the output...
+                console.write('\x1D' * len(word))
+                p.stdin.write(word + '\r\n')
+                word = ''
+            elif c == '\b':
+                # handle backspace
+                if word:
+                    word = word[:-1]
+                    console.write('\x1D \x1D')
+            elif c != '':    
+                # only send to pipe when enter pressed rather than p.stdin.write(c)
+                # workaround for WINE - it seems to attach a CR to each letter sent to the pipe. not needed in proper Windows.
+                # also needed to handle backsapce properly
+                word += c
+                console.write(c)
+        outp.join()
+        errp.join()
+
+else:
+    def shell(command):
+        cmd = '/bin/sh'
+        if command:
+            cmd += ' -c "' + command + '"'            
+        try:
+            p = pexpect.spawn(str(cmd))
+        except Exception:
+            return 
+        while True:
+            c = console.get_char()
+            if c == '\b': # BACKSPACE
+                p.send('\x7f')
+            elif c != '':
+                p.send(c)
+            while True:
+                try:
+                    c = p.read_nonblocking(1, timeout=0)
+                except: 
+                    c = ''
+                if c == '' or c == '\n':
+                    break
+                elif c == '\r':
+                    console.write_line()    
+                elif c == '\b':
+                    if state.console_state.col != 1:
+                        state.console_state.col -= 1
+                else:
+                    console.write(c)
+            if c == '' and not p.isalive(): 
+                return
+
+
+###################################################
+# printing
+
 # print to CUPS or windows printer    
 class CUPSStream(StringIO.StringIO):
     def __init__(self, printer_name=''):
@@ -374,11 +535,46 @@ class CUPSStream(StringIO.StringIO):
             utf8buf += unicodepage.cp_to_utf8[c]
         line_print(utf8buf, self.printer_name)
 
-        
-# platform-specific:
-import platform
-if platform.system() == 'Windows':
-    from os_windows import *
-else:    
-    from os_unix import *
+if plat.system == 'Windows':
+    # print to Windows printer
+    def line_print(printbuf, printer_name):        
+        if printer_name == '' or printer_name=='default':
+            printer_name = win32print.GetDefaultPrinter()
+        handle = win32ui.CreateDC()
+        handle.CreatePrinterDC(printer_name)
+        handle.StartDoc("PC-BASIC 3_23 Document")
+        handle.StartPage()
+        # a4 = 210x297mm = 4950x7001px; Letter = 216x280mm=5091x6600px; 
+        # 65 tall, 100 wide with 50x50 margins works for US letter
+        # 96 wide works for A4 with 75 x-margin
+        y, yinc = 50, 100
+        lines = printbuf.split('\r\n')
+        slines = []
+        for l in lines:
+            slines += [l[i:i+96] for i in range(0, len(l), 96)]
+        for line in slines:
+            handle.TextOut(75, y, line) 
+            y += yinc
+            if y > 6500:  
+                y = 50
+                handle.EndPage()
+                handle.StartPage()
+        handle.EndPage()
+        handle.EndDoc()       
+
+elif plat.system == 'Android':
+    def line_print(printbuf, printer_name):
+        # printing not supported on Android
+        pass          
+
+else:
+    # print to LPR printer (ok for CUPS)
+    def line_print(printbuf, printer_name): 
+        options = ''
+        if printer_name != '' and printer_name != 'default':
+            options += ' -P ' + printer_name
+        if printbuf != '':
+            pr = os.popen("lpr " + options, "w")
+            pr.write(printbuf)
+            pr.close()
 

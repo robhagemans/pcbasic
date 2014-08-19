@@ -1,0 +1,40 @@
+This directory contains screen dumps of 8-bit typefaces that were used by various versions of GW-BASIC. 
+They are stored in a format that PC-BASIC can use.
+
+
+typeface family: freedos 
+author: Henrique Peron (Brazil) 	
+-------------------------------
+These typefaces derive from the FreeDOS CPIDOS pack, which is distributed under the GNU-GPL
+licence version 2.0 or later.
+
+typeface family: msdos
+author: Microsoft Corporation (USA)
+-----------------------------------
+These typefaces were used in MS-DOS version 4.0 (1988). 
+
+typeface family: pcdos
+author: IBM Corporation (USA)
+-----------------------------
+These typefaces were used in IBM PC-DOS version 4.0 (1988). 
+
+typefaces: cgathin, cga, mdawide, ega, vga, vgawide
+author: IBM Corporation (USA)
+-----------------------------
+These typefaces were used in the IBM PC and its successors (1981,1984,1987)
+
+typefaces: tandy1, tandy2
+author: Tandy Corporation (USA)
+-------------------------------
+These typefaces were used in various Tandy 1000 models (1985 and 1987).
+
+typeface family: vegaf
+author: unknown (Iran)
+----------------------
+This typeface derives from VEGAF.EXE, which is distributed with the notice:
+"The Program is freeware in Iran, and there are no limitations on its usage".
+
+
+It is my understanding that in the USA, where most of these typefaces orginate, typefaces are not copyrightable; while in the UK, the 25-year 
+term of copyright for these typefaces has expired. Please ensure you have the right to copy and use these typefaces in your jurisdiction.
+

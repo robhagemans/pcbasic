@@ -9,25 +9,25 @@
 # please see text file COPYING for licence terms.
 #
 
-import cStringIO
+from StringIO import StringIO
 import sys
-import logging
 import traceback
 
-import program
-import console
-import var
+import logging
+import machine
+import state
 import vartypes
 import representation
 import expressions
 import tokenise
+import program
 
 debug_mode = False
 debug_tron = False
 watch_list = []
 
 def debug_exec(debug_cmd):
-    buf = cStringIO.StringIO()
+    buf = StringIO()
     sys.stdout = buf
     try:
         exec(debug_cmd)
@@ -40,7 +40,6 @@ def debug_exec(debug_cmd):
 def debug_step(linum):
     if not debug_mode:
         return
-    global debug_tron
     outstr = ''
     if debug_tron:
         outstr += ('['+('%i' % linum) +']')
@@ -56,6 +55,7 @@ def debug_step(linum):
                 outstr += (st)        
         except Exception as e:
             debug_handle_exc(e)
+    if outstr:
         logging.debug(outstr)
         
 def debug_handle_exc(e):
@@ -63,16 +63,16 @@ def debug_handle_exc(e):
         
 # DEBUG user utilities
 def dump_program():
-    logging.debug(program.bytecode.getvalue().encode('hex'))    
+    logging.debug(state.basic_state.bytecode.getvalue().encode('hex'))    
 
 def dump_vars():
-    logging.debug(repr(var.variables))    
+    logging.debug(repr(state.basic_state.variables))    
     
 def show_screen():
-    logging.debug('  +' + '-'*console.width+'+')
+    logging.debug('  +' + '-'*state.console_state.width+'+')
     i = 0
     lastwrap = False
-    for row in console.apage.row:
+    for row in state.console_state.apage.row:
         s = [ c[0] for c in row.buf ]
         i += 1
         outstr = '{0:2}'.format(i)
@@ -82,16 +82,16 @@ def show_screen():
             outstr += ('|')
         outstr += (''.join(s))
         if row.wrap:
-            logging.debug(outstr + '\\')
+            logging.debug(outstr + '\\ {0:2}'.format(row.end))
         else:
             logging.debug(outstr + '| {0:2}'.format(row.end))        
         lastwrap = row.wrap    
-    logging.debug('  +' + '-'*console.width+'+')
+    logging.debug('  +' + '-'*state.console_state.width+'+')
 
 def show_program():
-    code = program.bytecode.getvalue()
+    code = state.basic_state.bytecode.getvalue()
     offset_val, p = 0, 0
-    for key in sorted(program.line_numbers.keys())[1:]:
+    for key in sorted(state.basic_state.line_numbers.keys())[1:]:
         offset, linum = code[p+1:p+3], code[p+3:p+5]
         last_offset = offset_val
         offset_val = vartypes.uint_to_value(bytearray(offset)) - program.program_memory_start
@@ -99,9 +99,9 @@ def show_program():
         logging.debug(    (code[p:p+1].encode('hex') + ' ' +
                         offset.encode('hex') + ' (+%03d) ' +  
                         code[p+3:p+5].encode('hex') + ' [%05d] ' + 
-                        code[p+5:program.line_numbers[key]].encode('hex')),
-                    offset_val - last_offset, linum_val )
-        p = program.line_numbers[key]
+                        code[p+5:state.basic_state.line_numbers[key]].encode('hex')),
+                     offset_val - last_offset, linum_val )
+        p = state.basic_state.line_numbers[key]
     logging.debug(code[p:p+1].encode('hex') + ' ' +
                 code[p+1:p+3].encode('hex') + ' (ENDS) ' +  
                 code[p+3:p+5].encode('hex') + ' ' + code[p+5:].encode('hex'))   
