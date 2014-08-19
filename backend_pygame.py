@@ -273,7 +273,7 @@ def prepare(args):
                 height = len(font[0])
                 fonts[height] = font
     if args.font_family:
-        font_family = args.font_family
+        font_family = args.font_family[0]
     if args.fullscreen:
         fullscreen = True
     if args.smooth:
@@ -1172,7 +1172,7 @@ max_amplitude = (1<<(mixer_bits-1)) - 1
 # 2 dB steps correspond to a voltage factor of 10**(-2./20.) as power ~ voltage**2 
 step_factor = 10**(-2./20.)
 # geometric list of amplitudes for volume values 
-amplitude = numpy.int16(max_amplitude*(step_factor**numpy.arange(15,-1,-1)))
+amplitude = [0]*16 if not numpy else numpy.int16(max_amplitude*(step_factor**numpy.arange(15,-1,-1)))
 # zero volume means silent
 amplitude[0] = 0
 
