@@ -116,10 +116,7 @@ def handle_oserror(e):
 #########################################
 # drives & paths
 
-pcbasic_dir = os.path.dirname(os.path.realpath(__file__))
-
-
-drives = { 'C': os.getcwd(), '@': os.path.join(pcbasic_dir, 'info') }
+drives = { 'C': os.getcwd(), '@': os.path.join(plat.basepath, 'info') }
 current_drive = 'C'
 # must not start with a /
 drive_cwd = { 'C': '', '@': '' }
@@ -169,14 +166,14 @@ if plat.system == 'Windows':
         
 else:
 # to map root to C and set current to CWD:
-#    drives = { 'C': '/', '@': os.path.join(pcbasic_dir, 'info') }
+#    drives = { 'C': '/', '@': os.path.join(plat.basepath, 'info') }
 #    drive_cwd = { 'C': os.getcwd()[1:], '@': '' }
     
     def windows_map_drives():
         pass
     
     if plat.system == 'Android':
-        drives['C'] = os.path.join(pcbasic_dir, 'files')
+        drives['C'] = os.path.join(plat.basepath, 'files')
         drive_cwd['C'] =''
 
     # change names in FILES to some 8.3 variant             

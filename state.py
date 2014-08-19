@@ -17,7 +17,7 @@ import os
 import zlib
 import copy
 import logging
-
+import plat
         
 class State(object):
     pass
@@ -38,8 +38,7 @@ display = DisplayState()
 # a state has been loaded
 loaded = False
 
-pcbasic_dir = os.path.dirname(os.path.realpath(__file__))
-state_file = os.path.join(pcbasic_dir, 'info', 'STATE.SAV')
+state_file = os.path.join(plat.basepath, 'info', 'STATE.SAV')
 
 ###############################################
 
