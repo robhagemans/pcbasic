@@ -719,9 +719,6 @@ def check_events(pause=False):
             if not pause:
                 handle_key_up(event)
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            # Android: toggle keyboard on touch
-            if android:
-                pygame_android.toggle_keyboard()
             handle_mouse(event)
         elif event.type == pygame.JOYBUTTONDOWN:
             handle_stick(event)    
@@ -820,6 +817,9 @@ def handle_key(e):
     elif e.key == pygame.K_TAB and mods & pygame.KMOD_SHIFT:
         # shift+tab -> \x00\x0F (scancode for TAB) but TAB -> \x09
         c = '\x00\x0F'
+    elif e.key == pygame.K_MENU and android:
+        # Android: toggle keyboard on menu key
+        pygame_android.toggle_keyboard()
     else:
         try:
             if (mods & pygame.KMOD_CTRL):
