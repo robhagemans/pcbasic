@@ -80,6 +80,7 @@ android_to_pygame = {
     android.KEYCODE_MOVE_END:     pygame.K_END,                 android.KEYCODE_INSERT:       pygame.K_INSERT,
     android.KEYCODE_CTRL_LEFT:    pygame.K_LCTRL,               android.KEYCODE_CTRL_RIGHT:   pygame.K_RCTRL,
     android.KEYCODE_ALT_LEFT:     pygame.K_LALT,                android.KEYCODE_ALT_RIGHT:    pygame.K_RALT,
+    android.KEYCODE_MENU:         pygame.K_MENU,
 }
 
 shift = False    
