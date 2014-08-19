@@ -7,6 +7,7 @@
 
 import logging
 import os
+import plat
 
 def from_unicode(s):
     output = ''
@@ -25,8 +26,7 @@ def from_unicode(s):
 def load_codepage(codepage_name):
     global cp_to_unicode, unicode_to_cp, cp_to_utf8, utf8_to_cp
     cp_to_unicode = dict(enumerate(cp437))
-    path = os.path.dirname(os.path.realpath(__file__))
-    name = os.path.join(path, 'encoding', codepage_name + '.utf8')
+    name = os.path.join(plat.basepath, 'encoding', codepage_name + '.utf8')
     try:
         f = open(name, 'rb')
         # convert utf8 string to dict

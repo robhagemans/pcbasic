@@ -462,14 +462,14 @@ def close():
 
 # load a 256-character 8xN font dump with no headers
 def load_font(family, codepage, height):
-    path = os.path.dirname(os.path.realpath(__file__))
+    path = plat.basepath
     name = os.path.join(path, 'font', '%s_%s_%02d' % (family, codepage, height))
     return load_font_file(name)
         
 def load_font_file(name):
     # if not found, try in font directory
     if not os.path.exists(name):
-        path = os.path.dirname(os.path.realpath(__file__))
+        path = plat.basepath
         name = os.path.join(path, 'font', name)
     try:
         size = os.path.getsize(name)

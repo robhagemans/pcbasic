@@ -314,7 +314,7 @@ def convert_arglist(arglist):
         return {}    
 
 def read_config():
-    path = os.path.dirname(os.path.realpath(__file__))
+    path = plat.basepath
     try:
         config = ConfigParser.RawConfigParser(allow_no_value=True)
         config.read(os.path.join(path, 'info', 'PCBASIC.INI'))
@@ -388,10 +388,10 @@ def get_args():
     # set defaults
     parser.set_defaults(**defaults)
     # get supported codepages
-    cpdir = os.listdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'encoding'))
+    cpdir = os.listdir(os.path.join(plat.basepath, 'encoding'))
     encodings = sorted([ x[0] for x in [ c.split('.utf8') for c in cpdir ] if len(x)>1])
     # get supported font families
-    fontdir = os.listdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'font'))
+    fontdir = os.listdir(os.path.join(plat.basepath, 'font'))
     families = sorted(list(set([ x[0] for x in [ c.split('_') for c in fontdir ] if len(x)>1])))
     #
     # set arguments    
