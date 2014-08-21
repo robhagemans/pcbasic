@@ -374,6 +374,29 @@ def show_cursor(do_show = True):
     return prev
 
 def set_cursor_shape(from_line, to_line):
+    if video_capabilities == 'ega':
+        # odd treatment of cursors on EGA machines, presumably for backward compatibility
+        # the following algorithm is based on DOSBox source int10_char.cpp INT10_SetCursorShape(Bit8u first,Bit8u last)    
+        max_line = state.console_state.font_height-1
+        if from_line & 0xe0 == 0 and to_line & 0xe0 == 0:
+            if (to_line < from_line):
+                # invisible only if to_line is zero and to_line < from_line           
+                if to_line != 0: 
+                    # block shape from *to_line* to end
+                    from_line = to_line
+                    to_line = max_line
+            elif (from_line | to_line) >= max_line or to_line != max_line-1 or from_line != max_line:
+                if to_line > 3:
+                    if from_line+2 < to_line:
+                        if from_line > 2:
+                            from_line = (max_line+1) // 2
+                        to_line = max_line
+                    else:
+                        from_line = from_line - to_line + max_line                        
+                        to_line = max_line
+                        if max_line > 0xc:
+                            from_line -= 1
+                            to_line -= 1
     state.console_state.cursor_from = max(0, min(from_line, state.console_state.font_height-1))
     state.console_state.cursor_to = max(0, min(to_line, state.console_state.font_height-1))
     backend.video.build_cursor()
