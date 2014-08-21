@@ -872,7 +872,7 @@ def show_keys():
                 write_for_keys(text, kcol+1, 0x07)
     state.console_state.apage.row[24].end = state.console_state.width           
 
-def write_for_keys(s, ccol, cattr):
+def write_for_keys(s, col, cattr):
     # write chars for the keys line - yes, it's different :)
     # with no echo
     for c in s:
