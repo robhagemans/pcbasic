@@ -25,21 +25,6 @@ supports_graphics = False
 # palette is ignored
 max_palette = 64
 
-# these values are not shown as special graphic chars but as their normal effect
-control = (
-    '\x07', # BEL
-    #'\x08',# BACKSPACE
-    '\x09', # TAB 
-    '\x0a', # LF
-    '\x0b', # HOME
-    '\x0c', # clear screen
-    '\x0d', # CR
-    '\x1c', # RIGHT
-    '\x1d', # LEFT
-    '\x1e', # UP
-    '\x1f', # DOWN
-    ) 
-
 # unused, but needs to be defined
 colorburst = False
 
@@ -93,7 +78,7 @@ def getc_utf8():
             utf8 += getc()
             mask >>= 1 
     try:
-        return unicodepage.utf8_to_cp[utf8]
+        return unicodepage.from_utf8(utf8)
     except KeyError:        
         return utf8
 
@@ -104,13 +89,12 @@ def getc():
     sel = select.select([sys.stdin], [], [], 0) 
     c = os.read(fd,1) if sel[0] != [] else ''
     return c
+
+# coverter with DBCS lead-byte buffer
+utf8conv = unicodepage.UTF8Converter()
     
 def echo_stdout_utf8(s):
-    for c in s:
-        if c in control:    
-            sys.stdout.write(c)    
-        else:
-            sys.stdout.write(unicodepage.cp_to_utf8[c]) 
+    sys.stdout.write(utf8conv.to_utf8(s, preserve_control=True)) 
     sys.stdout.flush()        
         
 ##############################################
