@@ -346,14 +346,14 @@ def init():
     global fonts, joysticks, physical_size
     # set state objects to whatever is now in state (may have been unpickled)
     if not pygame:
-        logging.warning('Could not find PyGame module. Failed to initialise PyGame console.')
+        logging.warning('Could not find PyGame module. Failed to initialise graphical interface.')
         return False     
     pre_init_mixer()   
     pygame.init()
     # exclude some backend drivers as they give unusable results
     if pygame.display.get_driver() == 'caca':
         pygame.display.quit()
-        logging.warning('Refusing to open libcaca console. Failed to initialise PyGame console.')
+        logging.warning('Refusing to open libcaca console. Failed to initialise graphical interface.')
         return False
     for height in (8, 14, 16):
         if height in fonts:
@@ -363,7 +363,7 @@ def init():
         fonts[height] = load_font_file(os.path.join(font_dir, '%s_%s_%02d' % (font_family, state.console_state.codepage, height)))
         if fonts[height] == None:
             pygame.display.quit()
-            logging.warning('Could not load font %s_%s_%02d. Failed to initialise PyGame console.', font_family, state.console_state.codepage, height)
+            logging.warning('Could not load font %s_%s_%02d. Failed to initialise graphical interface.', font_family, state.console_state.codepage, height)
             return False
     # dbcs: only load height 16
     if unicodepage.dbcs and 16 not in dbcsfonts:
