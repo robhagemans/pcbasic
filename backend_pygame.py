@@ -606,7 +606,7 @@ def putc_at(row, col, c):
 
 def putwc_at(row, col, c, d):
     global screen_changed
-    glyph = build_glyph(((ord(c)-ord(unicodepage.lead[0]))*len(unicodepage.trail))+(ord(d)-ord(unicodepage.trail[0])), dbcsfonts[16], 16, state.console_state.font_height) 
+    glyph = build_glyph(unicodepage.dbcs_index(c, d), dbcsfonts[16], 16, state.console_state.font_height)
     color = (0, 0, last_attr & 0xf)
     bg = (0, 0, (last_attr>>4) & 0x7)    
     glyph.set_palette_at(255, bg)
