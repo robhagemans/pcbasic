@@ -51,7 +51,7 @@ def prepare(args):
 def init():
     global check_keys
     if plat.system == 'Windows':
-        logging.warning('Text terminal not supported on Windows.\n')
+        logging.warning('Command-line interface not supported on Windows.')
         return False
     # close input after redirected input ends
     if sys.stdin.isatty():
