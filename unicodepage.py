@@ -126,9 +126,9 @@ def load_dbcs_codepage(codepage_name):
 # convert utf8 wchar to codepage char        
 def from_utf8(c):
     try:
-        return dbcs_utf8_to_cp[c]
-    except KeyError:    
         return utf8_to_cp[c]
+    except KeyError:    
+        return dbcs_utf8_to_cp[c]
 
 # line buffer for conversion to UTF8 - supports DBCS                                    
 class UTF8Converter (object):
