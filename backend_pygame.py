@@ -274,7 +274,7 @@ def prepare(args):
                 fonts[height] = font
     if args.dbcsfont != None:
         for fontname in args.dbcsfont:
-            font = load_generic_font_file(fontname, len(unicodepage.dbcs_unicode_table), 16)
+            font = load_generic_font_file(fontname, unicodepage.dbcs_num_chars, 16)
             if font:
                 height = len(font[0])
                 dbcsfonts[height] = font
@@ -368,7 +368,7 @@ def init():
     # dbcs: only load height 16
     if unicodepage.dbcs and 16 not in dbcsfonts:
         dbcsfonts[16] = load_generic_font_file(os.path.join(font_dir, '%s_%s_%02d_dbcs' % 
-                            (font_family, state.console_state.codepage, height)), len(unicodepage.dbcs_unicode_table), 16)
+                            (font_family, state.console_state.codepage, height)), unicodepage.dbcs_num_chars, 16)
     # get physical screen dimensions (needs to be called before set_mode)
     display_info = pygame.display.Info()
     physical_size = display_info.current_w, display_info.current_h
