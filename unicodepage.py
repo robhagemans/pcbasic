@@ -9,39 +9,10 @@ import logging
 import os
 import plat
 
-def from_unicode(s):
-    output = ''
-    for c in s:
-        if ord(c) == 0:
-            # double NUL characters as single NUL signals scan code
-            output += '\x00\x00'
-        else:
-            try: 
-                output += chr(unicode_to_cp[c])
-            except KeyError:
-                if ord(c) <= 0xff:
-                    output += chr(ord(c))
-    return output
+# where to find unicode tables
+encoding_dir = os.path.join(plat.basepath, 'encoding')
 
-def load_codepage(codepage_name):
-    global cp_to_unicode, unicode_to_cp, cp_to_utf8, utf8_to_cp
-    cp_to_unicode = dict(enumerate(cp437))
-    name = os.path.join(plat.basepath, 'encoding', codepage_name + '.utf8')
-    try:
-        f = open(name, 'rb')
-        # convert utf8 string to dict
-        dict_string = f.read().decode('utf-8')[:128]
-        for i in range(128, 256):
-            cp_to_unicode[i] = dict_string[i-128]
-    except IOError:
-        logging.warning('Could not find unicode mapping table for codepage %s. Falling back to codepage 437.', codepage_name)
-        codepage_name = '437'
-    # update dict with basic ASCII and special graphic characters
-    unicode_to_cp = dict((reversed(item) for item in cp_to_unicode.items()))
-    cp_to_utf8 = dict([ (chr(s[0]), s[1].encode('utf-8')) for s in cp_to_unicode.items()])
-    utf8_to_cp = dict((reversed(item) for item in cp_to_utf8.items()))
-    return codepage_name  
-      
+# default CP437 unicode table
 cp437 = (
     u'\u0000\u263A\u263B\u2665\u2666\u2663\u2660\u2022\u25D8\u25CB\u25D9\u2642\u2640\u266A\u266B\u263C' +
     u'\u25BA\u25C4\u2195\u203C\u00B6\u00A7\u25AC\u21A8\u2191\u2193\u2192\u2190\u221F\u2194\u25B2\u25BC' +
@@ -61,3 +32,142 @@ cp437 = (
     u'\u2261\u00b1\u2265\u2264\u2320\u2321\u00f7\u2248\u00b0\u2219\u00b7\u221a\u207f\u00b2\u25a0\u00a0'
     )
 
+# on the terminal, these values are not shown as special graphic chars but as their normal effect
+control = (
+    '\x07', # BEL
+    #'\x08',# BACKSPACE
+    '\x09', # TAB 
+    '\x0a', # LF
+    '\x0b', # HOME
+    '\x0c', # clear screen
+    '\x0d', # CR
+    '\x1c', # RIGHT
+    '\x1d', # LEFT
+    '\x1e', # UP
+    '\x1f', # DOWN
+    ) 
+
+# is the current codepage a double-byte codepage?
+dbcs = False
+
+def from_unicode(s):
+    output = ''
+    for c in s:
+        if ord(c) == 0:
+            # double NUL characters as single NUL signals scan code
+            output += '\x00\x00'
+        else:
+            try: 
+                output += chr(unicode_to_cp[c])
+            except KeyError:
+                if ord(c) <= 0xff:
+                    output += chr(ord(c))
+    return output
+
+def load_codepage(codepage_name):
+    # always load a single-byte page
+    codepage_name = load_sbcs_codepage(codepage_name)
+    # if .lead file exists, this is a DBCS codepage. Load the big table    
+    if os.path.exists(os.path.join(encoding_dir, codepage_name + '.lead')):
+        codepage_name = load_dbcs_codepage(codepage_name)
+    return codepage_name
+    
+def load_sbcs_codepage(codepage_name):
+    global cp_to_unicode, unicode_to_cp, cp_to_utf8, utf8_to_cp, lead, trail, dbcs
+    cp_to_unicode = dict(enumerate(cp437))
+    name = os.path.join(encoding_dir, codepage_name + '.utf8')
+    try:
+        f = open(name, 'rb')
+        # convert utf8 string to dict
+        dict_string = f.read().decode('utf-8')[:128]
+        for i in range(128, 256):
+            cp_to_unicode[i] = dict_string[i-128]
+    except IOError:
+        logging.warning('Could not load unicode mapping table for codepage %s. Falling back to codepage 437.', codepage_name)
+        codepage_name = '437'
+    # update dict with basic ASCII and special graphic characters
+    unicode_to_cp = dict((reversed(item) for item in cp_to_unicode.items()))
+    cp_to_utf8 = dict([ (chr(s[0]), s[1].encode('utf-8')) for s in cp_to_unicode.items()])
+    utf8_to_cp = dict((reversed(item) for item in cp_to_utf8.items()))
+    # this is not a DBCS codepage so no lead and trail bytes
+    lead = []
+    trail = []
+    dbcs = False
+    return codepage_name  
+
+def load_dbcs_codepage(codepage_name):
+    global dbcs_utf8_to_cp, dbcs_cp_to_utf8, lead, trail, dbcs, dbcs_num_chars
+    # load double-byte unicode table
+    name = os.path.join(encoding_dir, codepage_name + '.dbcs')
+    try:
+        f = open(name, 'rb')
+        dbcs_unicode_table = f.read().decode('utf-8')
+    except IOError:
+        logging.warning('Could not load double-byte unicode mapping table for codepage %s. Falling back to codepage 437.', codepage_name)
+        return '437'
+    # load lead and trail byte tables 
+    name = os.path.join(encoding_dir, codepage_name + '.lead')
+    try:
+        f = open(name, 'rb')
+        leadtrail = list(f)
+        lead = [ chr(x[0]) for x in enumerate(leadtrail[0][:256]) if x[1] != '0']
+        trail = [ chr(x[0]) for x in enumerate(leadtrail[1][:256]) if x[1] != '0']
+    except IOError:
+        logging.warning('Could not load lead-byte table for double-byte codepage %s. Falling back to codepage 437.', codepage_name)
+        return '437'
+    dbcs_cp_to_unicode = dict([ 
+        ( l+t, dbcs_unicode_table[lead.index(l)*len(trail)+trail.index(t)]) for l in lead for t in trail])
+    dbcs_cp_to_utf8 = dict([ (s[0], s[1].encode('utf-8')) for s in dbcs_cp_to_unicode.items()])
+    dbcs_utf8_to_cp = dict((reversed(item) for item in dbcs_cp_to_utf8.items()))
+    dbcs = True    
+    dbcs_num_chars = len(dbcs_unicode_table)
+    return codepage_name  
+
+# convert utf8 wchar to codepage char        
+def from_utf8(c):
+    try:
+        return dbcs_utf8_to_cp[c]
+    except KeyError:    
+        return utf8_to_cp[c]
+
+# line buffer for conversion to UTF8 - supports DBCS                                    
+class UTF8Converter (object):
+    def __init__(self):
+        self.buf = ''
+
+    # add chars to buffer
+    def to_utf8(self, s, preserve_control=False):        
+        if not dbcs:
+            # stateless if not dbcs
+            return ''.join([ (c if (preserve_control and c in control) else cp_to_utf8[c]) for c in s ])
+        else:
+            out = ''
+            if self.buf:
+                # remove the naked lead-byte first
+                out += '\b'                
+            for c in s:
+                if preserve_control and c in control:
+                    if self.buf:
+                        out += cp_to_unicode[self.buf]
+                        self.buf = ''
+                    out += c
+                    continue
+                elif self.buf:
+                    if c in trail:
+                        out += dbcs_cp_to_utf8[self.buf+c] 
+                        self.buf = ''
+                        continue
+                    else:
+                        out += cp_to_utf8[self.buf] 
+                        self.buf = ''
+                if c in lead:
+                    self.buf = c
+                else:
+                    out += cp_to_utf8[c]
+            # any naked lead-byte left will be printed        
+            if self.buf:
+                out += cp_to_utf8[self.buf]
+            return out
+        
+    
+    

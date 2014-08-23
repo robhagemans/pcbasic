@@ -126,7 +126,6 @@ if pygame:
 
     # letter shapes
     glyphs = []
-    fonts = None
     font = None
     
     # cursor shape
@@ -254,7 +253,7 @@ if pygame:
 # set constants based on commandline arguments
 
 def prepare(args):
-    global fullscreen, smooth, noquit, display_size, display_size_text, font_family, fonts, composite_monitor
+    global fullscreen, smooth, noquit, display_size, display_size_text, font_family, fonts, dbcsfonts, composite_monitor
     try:
         x, y = args.dimensions[0].split(',')
         display_size = (int(x), int(y))
@@ -266,12 +265,19 @@ def prepare(args):
     except (ValueError, TypeError):
         pass    
     fonts = {}
+    dbcsfonts = {}
     if args.font != None:
         for fontname in args.font:
             font = load_font_file(fontname)
             if font:
                 height = len(font[0])
                 fonts[height] = font
+    if args.dbcsfont != None:
+        for fontname in args.dbcsfont:
+            font = load_generic_font_file(fontname, unicodepage.dbcs_num_chars, 16)
+            if font:
+                height = len(font[0])
+                dbcsfonts[height] = font
     if args.font_family:
         font_family = args.font_family[0]
     if args.fullscreen:
@@ -353,11 +359,16 @@ def init():
         if height in fonts:
             # already force loaded
             continue
-        fonts[height] = load_font(font_family, state.console_state.codepage, height)
+        # load a 256-character 8xN font dump with no headers
+        fonts[height] = load_font_file(os.path.join(font_dir, '%s_%s_%02d' % (font_family, state.console_state.codepage, height)))
         if fonts[height] == None:
             pygame.display.quit()
             logging.warning('Could not load font %s_%s_%02d. Failed to initialise PyGame console.', font_family, state.console_state.codepage, height)
             return False
+    # dbcs: only load height 16
+    if unicodepage.dbcs and 16 not in dbcsfonts:
+        dbcsfonts[16] = load_generic_font_file(os.path.join(font_dir, '%s_%s_%02d_dbcs' % 
+                            (font_family, state.console_state.codepage, height)), unicodepage.dbcs_num_chars, 16)
     # get physical screen dimensions (needs to be called before set_mode)
     display_info = pygame.display.Info()
     physical_size = display_info.current_w, display_info.current_h
@@ -459,24 +470,21 @@ def close():
 
 ####################################
 # font
+font_dir = os.path.join(plat.basepath, 'font') 
 
-# load a 256-character 8xN font dump with no headers
-def load_font(family, codepage, height):
-    path = plat.basepath
-    name = os.path.join(path, 'font', '%s_%s_%02d' % (family, codepage, height))
-    return load_font_file(name)
-        
 def load_font_file(name):
+    return load_generic_font_file(name, 256, 8)
+
+def load_generic_font_file(name, num_chars, width):
     # if not found, try in font directory
     if not os.path.exists(name):
         path = plat.basepath
-        name = os.path.join(path, 'font', name)
+        name = os.path.join(font_dir, name)
     try:
         size = os.path.getsize(name)
-        height = size/256        
+        height = size/num_chars/(width//8)        
         fontfile = open(name, 'rb')
         font = []
-        num_chars, width = 256, 8
         for _ in range(num_chars):
             lines = fontfile.read(height*(width//8))
             font += [lines]
@@ -589,12 +597,32 @@ def putc_at(row, col, c):
     blank = glyphs[32] # using SPACE for blank 
     top_left = ((col-1)*state.console_state.font_width, (row-1)*state.console_state.font_height)
     if not state.console_state.screen_mode:
-        surface1[state.console_state.apagenum].blit(glyph, top_left )
+        surface1[state.console_state.apagenum].blit(glyph, top_left)
     if last_attr >> 7: #blink:
-        surface0[state.console_state.apagenum].blit(blank, top_left )
+        surface0[state.console_state.apagenum].blit(blank, top_left)
     else:
-        surface0[state.console_state.apagenum].blit(glyph, top_left )
+        surface0[state.console_state.apagenum].blit(glyph, top_left)
     screen_changed = True
+
+def putwc_at(row, col, c, d):
+    global screen_changed
+    glyph = build_glyph(((ord(c)-ord(unicodepage.lead[0]))*len(unicodepage.trail))+(ord(d)-ord(unicodepage.trail[0])), dbcsfonts[16], 16, state.console_state.font_height) 
+    color = (0, 0, last_attr & 0xf)
+    bg = (0, 0, (last_attr>>4) & 0x7)    
+    glyph.set_palette_at(255, bg)
+    glyph.set_palette_at(254, color)
+    blank = pygame.Surface((16, state.console_state.font_height), depth=8)
+    blank.fill(255)
+    glyph.set_palette_at(255, bg)
+    top_left = ((col-1)*state.console_state.font_width, (row-1)*state.console_state.font_height)
+    if not state.console_state.screen_mode:
+        surface1[state.console_state.apagenum].blit(glyph, top_left)
+    if last_attr >> 7: #blink:
+        surface0[state.console_state.apagenum].blit(blank, top_left)
+    else:
+        surface0[state.console_state.apagenum].blit(glyph, top_left)
+    screen_changed = True
+    
 
 carry_col_9 = range(0xc0, 0xdf+1)
 
@@ -605,12 +633,13 @@ def build_glyph(c, font_face, glyph_width, glyph_height):
     glyph.fill(bg)
     face = font_face[c]
     for yy in range(glyph_height):
-        line = ord(face[yy])
-        for xx in range(8):
-            pos = (xx, yy)
-            bit = (line >> (7-xx)) & 1
-            if bit == 1:
-                glyph.set_at(pos, color)
+        for half in range(glyph_width//8):    
+            line = ord(face[yy*(glyph_width//8)+half])
+            for xx in range(8):
+                bit = (line >> (7-xx)) & 1
+                if bit == 1:
+                    pos = (half*8 + xx, yy)
+                    glyph.set_at(pos, color)
         # VGA 9-bit characters        
         if c in carry_col_9 and glyph_width == 9:
             bit = line & 1

@@ -526,9 +526,8 @@ class CUPSStream(StringIO.StringIO):
         if not printbuf:
             return      
         self.truncate(0)
-        utf8buf = ''
-        for c in printbuf:
-            utf8buf += unicodepage.cp_to_utf8[c]
+        # any naked lead bytes in DBCS will remain just that - avoid in-line flushes.
+        utf8buf = unicodepage.UTF8Converter().to_utf8(printbuf)
         line_print(utf8buf, self.printer_name)
 
 if plat.system == 'Windows':
