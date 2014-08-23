@@ -214,6 +214,12 @@ def putc_at(row, col, c):
     # this doesn't recognise DBCS
     term.write(unicodepage.UTF8Converter().to_utf8(c))
     term.flush()
+
+def putwc_at(row, col, c, d):
+    term.write(esc_move_cursor % (row, col))
+    # this does recognise DBCS
+    term.write(unicodepage.UTF8Converter().to_utf8(c+d))
+    term.flush()
    
 def scroll(from_line):
     term.write(esc_set_scroll_region % (from_line, state.console_state.scroll_height))

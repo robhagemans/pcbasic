@@ -138,6 +138,9 @@ def set_attr(cattr):
 def putc_at(row, col, c):
     pass    
 
+def putwc_at(row, col, c, d):
+    pass    
+
 def build_cursor():
     pass
 

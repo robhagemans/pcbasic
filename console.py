@@ -19,6 +19,8 @@ import sound
 import error
 # for aspect ratio
 import fp
+# for dbcs
+import unicodepage
 
 class ScreenRow(object):
     def __init__(self, bwidth):
@@ -29,6 +31,8 @@ class ScreenRow(object):
     
     def clear(self):
         self.buf = [(' ', state.console_state.attr)] * state.console_state.width
+        # character is part of double width char; 0 = no; 1 = lead, 2 = trail
+        self.double = [ 0 ] * state.console_state.width
         # last non-white character
         self.end = 0    
 
@@ -602,6 +606,7 @@ def redraw_row(start, crow):
             # redrawing changes colour attributes to current foreground (cf. GW)
             therow.buf[i] = (therow.buf[i][0], state.console_state.attr)
             backend.video.putc_at(crow, i+1, therow.buf[i][0])
+            dbcs_knockon(state.console_state.apage, crow, i+1)
         if therow.wrap and crow >= 0 and crow < state.console_state.height-1:
             crow += 1
             start = 0
@@ -907,8 +912,9 @@ def write_for_keys(s, col, cattr):
             except KeyError:
                 pass    
             backend.video.set_attr(cattr)    
-            backend.video.putc_at(25, col, c)    
+            backend.video.putc_at(25, col, c) 
             state.console_state.apage.row[24].buf[col-1] = c, cattr
+            dbcs_knockon(state.console_state.apage, 25, col)
         col += 1
     backend.video.set_attr(state.console_state.attr)     
     
@@ -992,8 +998,37 @@ def put_screen_char_attr(cpage, crow, ccol, c, cattr):
     cattr = cattr & 0xf if state.console_state.screen_mode else cattr
     backend.video.set_attr(cattr) 
     backend.video.putc_at(crow, ccol, c)    
+    # update the screen buffer
     cpage.row[crow-1].buf[ccol-1] = (c, cattr)
-    
+    dbcs_knockon(cpage, crow, ccol)
+
+# replace chars from here until necessary to update double-width chars
+def dbcs_knockon(cpage, crow, ccol):
+    if not unicodepage.dbcs:
+        return
+    therow = cpage.row[crow-1]    
+    # replacing a trail byte? take one step back
+    # previous char could be a lead byte? take a step back
+    if therow.double[ccol-1] == 2 or (ccol>0 and therow.double[ccol-2] == 0 and therow.buf[ccol-2][0] in unicodepage.lead):
+        ccol -= 1
+    while ccol < state.console_state.width:
+        c = therow.buf[ccol-1][0]
+        d = therow.buf[ccol][0]  
+        if c in unicodepage.lead and d in unicodepage.trail:
+            therow.double[ccol-1] = 1
+            therow.double[ccol] = 2
+            backend.video.putwc_at(crow, ccol, c, d)
+            ccol += 2
+        else:    
+            therow.double[ccol-1] = 0
+            backend.video.putc_at(crow, ccol, c)    
+            if therow.double[ccol] == 0:
+                break
+            ccol += 1
+    if therow.double[state.console_state.width-1] == 0:
+        backend.video.set_attr(therow.buf[state.console_state.width-1][1]) 
+        backend.video.putc_at(crow, state.console_state.width, therow.buf[state.console_state.width-1][0])    
+        
 def put_char(c, do_scroll_down=False):
     # check if scroll& repositioning needed
     if state.console_state.overflow:
@@ -1136,6 +1171,7 @@ def redraw_text_screen():
         for i in range(state.console_state.width): 
             backend.video.set_attr(therow.buf[i][1])
             backend.video.putc_at(crow+1, i+1, therow.buf[i][0])
+            dbcs_knockon(state.console_state.apage, crow+1, i+1)
     if state.console_state.cursor:
         show_cursor(True)       
 
