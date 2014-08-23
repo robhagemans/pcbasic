@@ -96,7 +96,7 @@ def load_sbcs_codepage(codepage_name):
     return codepage_name  
 
 def load_dbcs_codepage(codepage_name):
-    global cp_to_unicode, unicode_to_cp, cp_to_utf8, utf8_to_cp, lead, trail, dbcs, dbcs_unicode_table
+    global dbcs_utf8_to_cp, dbcs_cp_to_utf8, lead, trail, dbcs, dbcs_unicode_table
     # load double-byte unicode table
     name = os.path.join(encoding_dir, codepage_name + '.dbcs')
     try:
@@ -115,12 +115,19 @@ def load_dbcs_codepage(codepage_name):
     except IOError:
         logging.warning('Could not load lead-byte table for double-byte codepage %s. Falling back to codepage 437.', codepage_name)
         return '437'
+    dbcs_cp_to_unicode = dict([ 
+        ( l+t, dbcs_unicode_table[lead.index(l)*len(trail)+trail.index(t)]) for l in lead for t in trail])
+    dbcs_cp_to_utf8 = dict([ (s[0], s[1].encode('utf-8')) for s in dbcs_cp_to_unicode.items()])
+    dbcs_utf8_to_cp = dict((reversed(item) for item in dbcs_cp_to_utf8.items()))
     dbcs = True    
     return codepage_name  
 
 # convert utf8 wchar to codepage char        
 def from_utf8(c):
-    return utf8_to_cp[c]
+    try:
+        return dbcs_utf8_to_cp[c]
+    except KeyError:    
+        return utf8_to_cp[c]
 
 # line buffer for conversion to UTF8 - supports DBCS                                    
 class UTF8Converter (object):
