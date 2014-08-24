@@ -59,7 +59,9 @@ Font and Codepage Sources_____________________________________________________
 * The Unicode Consortium and contributors
     http://www.unicode.org/Public/MAPPINGS/VENDORS
 * Perl 5 Project        for Unicode mapping tables
-http://cpansearch.perl.org/src/JHI/perl-5.8.0/ext/Encode/ucm/
+    http://cpansearch.perl.org/src/JHI/perl-5.8.0/ext/Encode/ucm/
+* Seed7 Project         for Unicode mapping tables
+    http://seed7.sourceforge.net/libraries/charsets.htm
 * Yii-Chinese Project   for Unicode mapping tables
     https://code.google.com/p/yii-chinese/source/browse/trunk/chinese/config/
 * The GNU UniFont Project
