@@ -1032,7 +1032,8 @@ def dbcs_knockon(cpage, crow, ccol):
     # previous char could be a lead byte? take a step back
     if therow.double[ccol-1] == 2 or (ccol>0 and therow.double[ccol-2] == 0 and therow.buf[ccol-2][0] in unicodepage.lead):
         ccol -= 1
-    while ccol < state.console_state.width:
+    # check all dbcs characters between here until it doesn't matter anymore    
+    while ccol <= therow.end:
         c = therow.buf[ccol-1][0]
         d = therow.buf[ccol][0]  
         if c in unicodepage.lead and d in unicodepage.trail:
