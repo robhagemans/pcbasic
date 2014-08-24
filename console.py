@@ -553,6 +553,17 @@ def insert_char(crow, ccol, c, cattr):
     return crow            
         
 def delete_char(crow, ccol):
+    double = state.console_state.apage.row[crow-1].double[ccol-1]
+    if double == 0:
+        delete_sbcs_char(crow, ccol)
+    elif double == 1:    
+        delete_sbcs_char(crow, ccol)
+        delete_sbcs_char(crow, ccol)
+    elif double == 2:    
+        delete_sbcs_char(crow, ccol-1)
+        delete_sbcs_char(crow, ccol-1)
+        
+def delete_sbcs_char(crow, ccol):
     save_col = ccol
     therow = state.console_state.apage.row[crow-1]
     if crow > 1 and ccol >= therow.end and therow.wrap:
