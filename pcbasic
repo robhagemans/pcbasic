@@ -18,16 +18,15 @@ import os
 from functools import partial             
              
 import plat
+import backend_dumb
 
 # OS-specific stdin/stdout selection
 # no stdin/stdout access allowed on packaged apps
 if plat.system in ('OSX', 'Windows'):
-    backend_dumb = None
     stdin_is_tty, stdout_is_tty = True, True
     stdin, stdout = None, None
 else:
     # Unix, Linux including Android
-    import backend_dumb
     import backend_ansi
     try:
         stdin_is_tty = sys.stdin.isatty()
@@ -245,12 +244,12 @@ def prepare_console(args):
     # initialise backends 
     if args.run:
         state.console_state.keys_visible = False
-    if not console.init() and backend_dumb:
-        logging.warning('Falling back to dumb-terminal.')
+    if not console.init():
+        logging.warning('Falling back to command-line interface.')
         backend.video = backend_dumb
         backend.sound = sound_beep        
         if not backend.video or not console.init():
-            logging.error('Failed to initialise console. Quitting.')
+            logging.error('Failed to initialise interface. Quitting.')
             sys.exit(0)
     # sound fallback        
     if args.nosound:
@@ -412,11 +411,11 @@ def get_args():
     parser.add_argument('--output', metavar='output_file', nargs=1, 
         help='Send screen output to output_file, except if SCRN: is written to explicitly.')
     parser.add_argument('-b', '--dumb', action='store_true', 
-        help='Use dumb text terminal. This is the default if redirecting input.')
+        help='Use command-line interface. This is the default if redirecting input.')
     parser.add_argument('-t', '--ansi', action='store_true', 
-        help='Use ANSI textmode terminal')
+        help='Use ANSI text interface')
     parser.add_argument('-g', '--graphical', action='store_true', 
-        help='Use graphical terminal. This is the normal default; use to override when redirecting i/o.')
+        help='Use graphical interface. This is the normal default; use to override when redirecting i/o.')
     parser.add_argument('-l', '--load', action='store_true', help='Load in_file only, do not execute')
     parser.add_argument('-r', '--run', action='store_true', help='Execute input file (default if in_file given)')
     parser.add_argument('-e', '--exec', metavar='command_line', help='Execute BASIC command line')
@@ -437,11 +436,11 @@ def get_args():
     parser.add_argument('--font', action='append', nargs='*', metavar=('TYPEFACE'), help='Load specified fonts. These are used for the appropriate resolutions, regardless of font-family and codepage seetings.')
     parser.add_argument('--dbcsfont', action='append', nargs='*', metavar=('TYPEFACE'), help='Load specified DBCS fonts. These are used for the appropriate resolutions, regardless of font-family and codepage seetings.')
     parser.add_argument('--nosound', action='store_true', help='Disable sound output')
-    parser.add_argument('--dimensions', nargs=1, metavar=('X, Y'), help='Set pixel dimensions for graphics mode. Default is 640,480. Use 640,400 or multiples for cleaner pixels - but incorrect aspect ratio - on square-pixel LCDs. Graphical terminal only.')
-    parser.add_argument('--dimensions-text', nargs=1, metavar=('X, Y'), help='Set pixel dimensions for text mode. Default is 640,400. Graphical terminal only.')
-    parser.add_argument('--fullscreen', action='store_true', help='Fullscreen mode. This is unlikely to have either the correct aspect ratio or clean square pixels, but it does take up the whole screen. Graphical terminal only.')
-    parser.add_argument('--smooth', action='store_true', help='Use smooth display scaling. Graphical terminal only.')
-    parser.add_argument('--noquit', action='store_true', help='Allow BASIC to capture <ALT+F4>. Graphical terminal only.')
+    parser.add_argument('--dimensions', nargs=1, metavar=('X, Y'), help='Set pixel dimensions for graphics mode. Default is 640,480. Use 640,400 or multiples for cleaner pixels - but incorrect aspect ratio - on square-pixel LCDs. Graphical interface only.')
+    parser.add_argument('--dimensions-text', nargs=1, metavar=('X, Y'), help='Set pixel dimensions for text mode. Default is 640,400. Graphical interface only.')
+    parser.add_argument('--fullscreen', action='store_true', help='Fullscreen mode. This is unlikely to have either the correct aspect ratio or clean square pixels, but it does take up the whole screen. Graphical interface only.')
+    parser.add_argument('--smooth', action='store_true', help='Use smooth display scaling. Graphical interface only.')
+    parser.add_argument('--noquit', action='store_true', help='Allow BASIC to capture <ALT+F4>. Graphical interface only.')
     parser.add_argument('--debug', action='store_true', help='Enable DEBUG keyword')
     parser.add_argument('--strict-hidden-lines', action='store_true', help='Disable listing and ASCII saving of lines beyond 65530 (as in GW-BASIC). Use with care as this allows execution of unseen statements.')
     parser.add_argument('--strict-protect', action='store_true', help='Disable listing and ASCII saving of protected files (as in GW-BASIC). Use with care as this allows execution of unseen statements.')

@@ -7,7 +7,7 @@ Contributors__________________________________________________________________
 * Rob Hagemans          main author
 * WJB                   bugfixes
 
-Acknowledgements______________________________________________________________
+Shoulders of Giants___________________________________________________________
 * The Python project
      http://www.python.org
 * The PyGame project
@@ -15,7 +15,17 @@ Acknowledgements______________________________________________________________
 * The SDL library     
      http://www.libsdl.org
 * The NumPy project
-     http://www.numpy.org     
+     http://www.numpy.org
+* PySerial (Chris Liechti)
+     http://pyserial.sourceforge.net/pyserial.html
+* PExpect (Nah Spurrier et al.)
+     http://pexpect.readthedocs.org/en/latest/
+* The DOSBox Project    
+    http://www.dosbox.com
+* The MESS Project
+    http://www.mess.org
+
+Indispensable Technical Documentation_________________________________________
 * Norman De Forest      for documenting the file format:
      http://www.chebucto.ns.ca/~af380/GW-BASIC-tokens.html
 * Paul Kocher           for documenting the 'protection' algorithm:
@@ -30,15 +40,30 @@ Acknowledgements______________________________________________________________
 * Adam Burgoyne         for describing the Microsoft Binary Format:     
      http://www.experts-exchange.com/Programming/Languages/Pascal/Delphi/
      Q_20245266.html
-* Henrique Peron        for the FreeDOS codepage pack
-* Kosta Kostis          for the FreeDOS codepage pack
+
+Font and Codepage Sources_____________________________________________________
+* Henrique Peron        for the CPIDOS codepage pack
+    http://www.freedos.org/software/?prog=cpidos
 * Andries Brouwer       for documenting the CPI file format
     http://www.win.tue.nl/~aeb/linux/kbd/font-formats-3.html
-* Chris Liechti	        for the PySerial port extension
-* Noah Spurrier et al.  for the pexpect module 
-* The DOSBox Project    
-    http://www.dosbox.com
-* The MAME Project
-    http://mamedev.org
-* The MESS Project
-    http://www.mess.org
+* Masaki Nagasaki       for Unicode mapping tables
+    https://github.com/skooler/camellia
+* Roman Czyborra        for Unicode mapping tables
+    http://aspell.net/charsets/ 
+* Kosta Kostis          for Unicode mapping tables
+    http://www.kostis.net/charsets/
+* M. Leisher            for Unicode mapping tables
+    http://www.math.nmsu.edu/~mleisher/Software/csets/
+* Bruno Haible          for Unicode mapping tables
+    http://www.haible.de/bruno/charsets/conversion-tables/index.html
+* The Unicode Consortium and contributors
+    http://www.unicode.org/Public/MAPPINGS/VENDORS
+* Perl 5 Project        for Unicode mapping tables
+    http://cpansearch.perl.org/src/JHI/perl-5.8.0/ext/Encode/ucm/
+* Seed7 Project         for Unicode mapping tables
+    http://seed7.sourceforge.net/libraries/charsets.htm
+* Yii-Chinese Project   for Unicode mapping tables
+    https://code.google.com/p/yii-chinese/source/browse/trunk/chinese/config/
+* The GNU UniFont Project
+    https://savannah.gnu.org/projects/unifont
+
