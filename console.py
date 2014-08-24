@@ -1025,7 +1025,9 @@ def put_screen_char_attr(cpage, crow, ccol, c, cattr, one_only=False):
         therow = cpage.row[crow-1]    
         # replacing a trail byte? take one step back
         # previous char could be a lead byte? take a step back
-        if therow.double[ccol-1] == 2 or (ccol>0 and therow.double[ccol-2] == 0 and therow.buf[ccol-2][0] in unicodepage.lead):
+        orig_col = ccol
+        if (ccol > 1 and therow.double[ccol-2] != 2 and 
+                (therow.buf[ccol-1] in unicodepage.trail or therow.buf[ccol-2][0] in unicodepage.lead)):
             ccol -= 1
         # check all dbcs characters between here until it doesn't matter anymore    
         while ccol < state.console_state.width:
@@ -1041,8 +1043,8 @@ def put_screen_char_attr(cpage, crow, ccol, c, cattr, one_only=False):
                 if therow.double[ccol] == 0:
                     break
                 ccol += 1
-#            if one_only:
-#                break  
+            if one_only and ccol > orig_col:
+                break  
         if ccol == state.console_state.width and therow.double[state.console_state.width-1] == 0:
             backend.video.set_attr(therow.buf[state.console_state.width-1][1]) 
             backend.video.putc_at(crow, state.console_state.width, therow.buf[state.console_state.width-1][0])    
