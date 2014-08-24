@@ -284,6 +284,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
             state.console_state.pixel_aspect_ratio = fp.div(
                 fp.Single.from_int(state.console_state.height*state.console_state.font_height), 
                 fp.Single.from_int(6*state.console_state.width)) 
+        state.console_state.cursor_width = state.console_state.font_width        
         # set the palette (essential on first run, or not all globals are defined)
         set_palette()
         # signal the backend to change the screen resolution
@@ -520,6 +521,14 @@ def wait_interactive(from_start=False, alt_replace = True):
         # move left if we end up on dbcs trail byte
         if state.console_state.apage.row[state.console_state.row-1].double[state.console_state.col-1] == 2:
             set_pos(state.console_state.row, state.console_state.col-1, scroll_ok=False) 
+        # adjust cursor width
+        if state.console_state.apage.row[state.console_state.row-1].double[state.console_state.col-1] == 1:
+            cursor_width = 2*state.console_state.font_width
+        else:
+            cursor_width = state.console_state.font_width
+        if cursor_width != state.console_state.cursor_width:
+            state.console_state.cursor_width = cursor_width
+            backend.video.build_cursor()
     set_overwrite_mode(True)
     return furthest_left, furthest_right
       

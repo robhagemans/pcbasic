@@ -399,7 +399,6 @@ def init_screen_mode():
         font = None
     # without this the palette is not prepared when resuming
     update_palette()
-    under_cursor = pygame.Surface((state.console_state.font_width, state.console_state.font_height), depth=8)
     glyphs = [ build_glyph(c, font, state.console_state.font_width, state.console_state.font_height) for c in range(256) ]
     # initialise glyph colour
     set_attr(state.console_state.attr, force_rebuild=True)
@@ -409,7 +408,6 @@ def init_screen_mode():
         resize_display(*display_size)
     screen = pygame.Surface(state.console_state.size, depth=8)
     # set standard cursor
-    cursor0 = pygame.Surface((state.console_state.font_width, state.console_state.font_height), depth=8)
     build_cursor()
     # whole screen (blink on & off)
     surface0 = [ pygame.Surface(state.console_state.size, depth=8) for _ in range(state.console_state.num_pages)]
@@ -418,9 +416,6 @@ def init_screen_mode():
         surface0[i].set_palette(workaround_palette)
         surface1[i].set_palette(workaround_palette)
     screen.set_palette(workaround_palette)
-    under_cursor.set_palette(workaround_palette)
-    # set cursor colour
-    update_pos()
     screen_changed = True
   
 def resize_display(width, height, initial=False): 
@@ -648,16 +643,21 @@ def build_glyph(c, font_face, glyph_width, glyph_height):
     return glyph            
     
 def build_cursor():
-    global screen_changed
+    global screen_changed, cursor0, under_cursor
+    under_cursor = pygame.Surface((state.console_state.cursor_width, state.console_state.font_height), depth=8)
+    under_cursor.set_palette(workaround_palette)
+    cursor0 = pygame.Surface((state.console_state.cursor_width, state.console_state.font_height), depth=8)
     color, bg = 254, 255
     cursor0.set_colorkey(bg)
     cursor0.fill(bg)
     for yy in range(state.console_state.font_height):
-        for xx in range(state.console_state.font_width):
+        for xx in range(state.console_state.cursor_width):
             if yy < state.console_state.cursor_from or yy > state.console_state.cursor_to:
                 pass
             else:
                 cursor0.set_at((xx, yy), color)
+    # set cursor colour
+    update_pos()
     screen_changed = True            
 
 ######################################
@@ -685,7 +685,7 @@ def refresh_cursor():
     under_char_area = pygame.Rect(
             (state.console_state.col-1)*state.console_state.font_width, 
             (state.console_state.row-1)*state.console_state.font_height, 
-            state.console_state.col*state.console_state.font_width, 
+            (state.console_state.col-1)*state.console_state.font_width + state.console_state.cursor_width,
             state.console_state.row*state.console_state.font_height)
     under_cursor.blit(screen, (0,0), area=under_char_area)
     if state.console_state.screen_mode == 0:
@@ -703,13 +703,13 @@ def refresh_cursor():
             dest_array = pygame.surfarray.pixels2d(screen.subsurface(pygame.Rect(
                                 (state.console_state.col-1)*state.console_state.font_width, 
                                 (state.console_state.row-1)*state.console_state.font_height + state.console_state.cursor_from, 
-                                state.console_state.font_width, 
+                                state.console_state.cursor_width, 
                                 state.console_state.cursor_to - state.console_state.cursor_from + 1))) 
             dest_array ^= index
         else:
             # no surfarray if no numpy    
             for x in range(     (state.console_state.col-1) * state.console_state.font_width, 
-                                  state.console_state.col * state.console_state.font_width):
+                                  (state.console_state.col-1) * state.console_state.font_width + cursor_width):
                 for y in range((state.console_state.row-1)*state.console_state.font_height + state.console_state.cursor_from, 
                                 (state.console_state.row-1)*state.console_state.font_height + state.console_state.cursor_to + 1):
                     pixel = get_pixel(x,y)
