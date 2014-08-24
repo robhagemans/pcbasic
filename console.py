@@ -492,10 +492,7 @@ def wait_interactive(from_start=False, alt_replace = True):
             skip = 2 if state.console_state.apage.row[state.console_state.row-1].double[state.console_state.col-1] == 1 else 1   
             set_pos(state.console_state.row, state.console_state.col + skip, scroll_ok=False)
         elif d in ('\x00\x4B', '\x1D'):                                             # <LEFT> <CTRL+]>
-            # skip dbcs trail byte to left
-            skip = 2 if (state.console_state.col>1 and 
-                         state.console_state.apage.row[state.console_state.row-1].double[state.console_state.col-2] == 2) else 1   
-            set_pos(state.console_state.row, state.console_state.col - skip, scroll_ok=False)                
+            set_pos(state.console_state.row, state.console_state.col - 1, scroll_ok=False)                
         elif d in ('\x00\x74', '\x06'):     skip_word_right()                       # <CTRL+RIGHT> or <CTRL+F>
         elif d in ('\x00\x73', '\x02'):     skip_word_left()                        # <CTRL+LEFT> or <CTRL+B>
         elif d in ('\x00\x52', '\x12'):     set_overwrite_mode(not state.console_state.overwrite_mode)  # <INS> <CTRL+R>
@@ -520,6 +517,9 @@ def wait_interactive(from_start=False, alt_replace = True):
                         set_pos(state.console_state.row, state.console_state.col+1)
                     else:    
                         put_char(d, do_scroll_down=True)
+        # move left if we end up on dbcs trail byte
+        if state.console_state.apage.row[state.console_state.row-1].double[state.console_state.col-1] == 2:
+            set_pos(state.console_state.row, state.console_state.col-1, scroll_ok=False) 
     set_overwrite_mode(True)
     return furthest_left, furthest_right
       
