@@ -483,10 +483,16 @@ def wait_interactive(from_start=False, alt_replace = True):
         elif d == '\n':                     line_feed()                             # <CTRL+ENTER> or <CTRL+J>
         elif d == '\x1B':                   clear_line(state.console_state.row)                     # <ESC> or <CTRL+[>
         elif d in ('\x00\x75', '\x05'):     clear_rest_of_line(state.console_state.row, state.console_state.col)  # <CTRL+END> <CTRL+E>
-        elif d in ('\x00\x48', '\x1E'):     set_pos(state.console_state.row-1, state.console_state.col, scroll_ok=False)    # <UP> <CTRL+6>
-        elif d in ('\x00\x50', '\x1F'):     set_pos(state.console_state.row+1, state.console_state.col, scroll_ok=False)    # <DOWN> <CTRL+->
-        elif d in ('\x00\x4D', '\x1C'):     set_pos(state.console_state.row, state.console_state.col+1, scroll_ok=False)    # <RIGHT> <CTRL+\>
-        elif d in ('\x00\x4B', '\x1D'):     set_pos(state.console_state.row, state.console_state.col-1, scroll_ok=False)    # <LEFT> <CTRL+]>
+        elif d in ('\x00\x48', '\x1E'):                                             # <UP> <CTRL+6>
+            set_pos(state.console_state.row - 1, state.console_state.col, scroll_ok=False)    
+        elif d in ('\x00\x50', '\x1F'):                                             # <DOWN> <CTRL+->
+            set_pos(state.console_state.row + 1, state.console_state.col, scroll_ok=False)    
+        elif d in ('\x00\x4D', '\x1C'):                                             # <RIGHT> <CTRL+\>
+            # skip dbcs trail byte
+            skip = 2 if state.console_state.apage.row[state.console_state.row-1].double[state.console_state.col-1] == 1 else 1   
+            set_pos(state.console_state.row, state.console_state.col + skip, scroll_ok=False)
+        elif d in ('\x00\x4B', '\x1D'):                                             # <LEFT> <CTRL+]>
+            set_pos(state.console_state.row, state.console_state.col - 1, scroll_ok=False)                
         elif d in ('\x00\x74', '\x06'):     skip_word_right()                       # <CTRL+RIGHT> or <CTRL+F>
         elif d in ('\x00\x73', '\x02'):     skip_word_left()                        # <CTRL+LEFT> or <CTRL+B>
         elif d in ('\x00\x52', '\x12'):     set_overwrite_mode(not state.console_state.overwrite_mode)  # <INS> <CTRL+R>
@@ -511,6 +517,9 @@ def wait_interactive(from_start=False, alt_replace = True):
                         set_pos(state.console_state.row, state.console_state.col+1)
                     else:    
                         put_char(d, do_scroll_down=True)
+        # move left if we end up on dbcs trail byte
+        if state.console_state.apage.row[state.console_state.row-1].double[state.console_state.col-1] == 2:
+            set_pos(state.console_state.row, state.console_state.col-1, scroll_ok=False) 
     set_overwrite_mode(True)
     return furthest_left, furthest_right
       
@@ -553,6 +562,17 @@ def insert_char(crow, ccol, c, cattr):
     return crow            
         
 def delete_char(crow, ccol):
+    double = state.console_state.apage.row[crow-1].double[ccol-1]
+    if double == 0:
+        delete_sbcs_char(crow, ccol)
+    elif double == 1:    
+        delete_sbcs_char(crow, ccol)
+        delete_sbcs_char(crow, ccol)
+    elif double == 2:    
+        delete_sbcs_char(crow, ccol-1)
+        delete_sbcs_char(crow, ccol-1)
+        
+def delete_sbcs_char(crow, ccol):
     save_col = ccol
     therow = state.console_state.apage.row[crow-1]
     if crow > 1 and ccol >= therow.end and therow.wrap:
@@ -604,9 +624,8 @@ def redraw_row(start, crow):
         backend.video.set_attr(state.console_state.attr)
         for i in range(start, therow.end): 
             # redrawing changes colour attributes to current foreground (cf. GW)
-            therow.buf[i] = (therow.buf[i][0], state.console_state.attr)
-            backend.video.putc_at(crow, i+1, therow.buf[i][0])
-            dbcs_knockon(state.console_state.apage, crow, i+1)
+            # don't update all dbcs chars behind at each put
+            put_screen_char_attr(state.console_state.apage, crow, i+1, therow.buf[i][0], state.console_state.attr, one_only=True)
         if therow.wrap and crow >= 0 and crow < state.console_state.height-1:
             crow += 1
             start = 0
@@ -652,6 +671,9 @@ def backspace(start_row, start_col):
     elif ccol != start_col or state.console_state.row != start_row: 
         ccol -= 1
     set_pos(crow, max(1, ccol))
+    if state.console_state.apage.row[state.console_state.row-1].double[state.console_state.col-1] == 2:
+        # we're on a trail byte, move to the lead
+        set_pos(state.console_state.row, state.console_state.col-1)
     delete_char(crow, ccol)
     
 def tab():
@@ -911,10 +933,7 @@ def write_for_keys(s, col, cattr):
                 c = keys_line_replace_chars[c]
             except KeyError:
                 pass    
-            backend.video.set_attr(cattr)    
-            backend.video.putc_at(25, col, c) 
-            state.console_state.apage.row[24].buf[col-1] = c, cattr
-            dbcs_knockon(state.console_state.apage, 25, col)
+            put_screen_char_attr(state.console_state.apage, 25, col, c, cattr)    
         col += 1
     backend.video.set_attr(state.console_state.attr)     
     
@@ -994,40 +1013,41 @@ def get_screen_char_attr(crow, ccol, want_attr):
     ca = state.console_state.apage.row[crow-1].buf[ccol-1][want_attr]
     return ca if want_attr else ord(ca)
 
-def put_screen_char_attr(cpage, crow, ccol, c, cattr):
+def put_screen_char_attr(cpage, crow, ccol, c, cattr, one_only=False):
     cattr = cattr & 0xf if state.console_state.screen_mode else cattr
-    backend.video.set_attr(cattr) 
-    backend.video.putc_at(crow, ccol, c)    
     # update the screen buffer
     cpage.row[crow-1].buf[ccol-1] = (c, cattr)
-    dbcs_knockon(cpage, crow, ccol)
-
-# replace chars from here until necessary to update double-width chars
-def dbcs_knockon(cpage, crow, ccol):
+    backend.video.set_attr(cattr) 
     if not unicodepage.dbcs:
-        return
-    therow = cpage.row[crow-1]    
-    # replacing a trail byte? take one step back
-    # previous char could be a lead byte? take a step back
-    if therow.double[ccol-1] == 2 or (ccol>0 and therow.double[ccol-2] == 0 and therow.buf[ccol-2][0] in unicodepage.lead):
-        ccol -= 1
-    while ccol < state.console_state.width:
-        c = therow.buf[ccol-1][0]
-        d = therow.buf[ccol][0]  
-        if c in unicodepage.lead and d in unicodepage.trail:
-            therow.double[ccol-1] = 1
-            therow.double[ccol] = 2
-            backend.video.putwc_at(crow, ccol, c, d)
-            ccol += 2
-        else:    
-            therow.double[ccol-1] = 0
-            backend.video.putc_at(crow, ccol, c)    
-            if therow.double[ccol] == 0:
-                break
-            ccol += 1
-    if therow.double[state.console_state.width-1] == 0:
-        backend.video.set_attr(therow.buf[state.console_state.width-1][1]) 
-        backend.video.putc_at(crow, state.console_state.width, therow.buf[state.console_state.width-1][0])    
+        backend.video.putc_at(crow, ccol, c)    
+    else:
+        # replace chars from here until necessary to update double-width chars
+        therow = cpage.row[crow-1]    
+        # replacing a trail byte? take one step back
+        # previous char could be a lead byte? take a step back
+        orig_col = ccol
+        if (ccol > 1 and therow.double[ccol-2] != 2 and 
+                (therow.buf[ccol-1] in unicodepage.trail or therow.buf[ccol-2][0] in unicodepage.lead)):
+            ccol -= 1
+        # check all dbcs characters between here until it doesn't matter anymore    
+        while ccol < state.console_state.width:
+            c = therow.buf[ccol-1][0]
+            d = therow.buf[ccol][0]  
+            if c in unicodepage.lead and d in unicodepage.trail:
+                therow.double[ccol-1:ccol] = [1, 2]
+                backend.video.putwc_at(crow, ccol, c, d)
+                ccol += 2
+            else:    
+                therow.double[ccol-1] = 0
+                backend.video.putc_at(crow, ccol, c)    
+                if therow.double[ccol] == 0:
+                    break
+                ccol += 1
+            if one_only and ccol > orig_col:
+                break  
+        if ccol == state.console_state.width and therow.double[state.console_state.width-1] == 0:
+            backend.video.set_attr(therow.buf[state.console_state.width-1][1]) 
+            backend.video.putc_at(crow, state.console_state.width, therow.buf[state.console_state.width-1][0])    
         
 def put_char(c, do_scroll_down=False):
     # check if scroll& repositioning needed
@@ -1169,9 +1189,7 @@ def redraw_text_screen():
     for crow in range(state.console_state.height):
         therow = state.console_state.apage.row[crow]  
         for i in range(state.console_state.width): 
-            backend.video.set_attr(therow.buf[i][1])
-            backend.video.putc_at(crow+1, i+1, therow.buf[i][0])
-            dbcs_knockon(state.console_state.apage, crow+1, i+1)
+            put_screen_char_attr(state.console_state.apage, crow+1, i+1, therow.buf[i][0], therow.buf[i][1])
     if state.console_state.cursor:
         show_cursor(True)       
 
