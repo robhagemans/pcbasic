@@ -624,9 +624,7 @@ def redraw_row(start, crow):
         backend.video.set_attr(state.console_state.attr)
         for i in range(start, therow.end): 
             # redrawing changes colour attributes to current foreground (cf. GW)
-            therow.buf[i] = (therow.buf[i][0], state.console_state.attr)
-            backend.video.putc_at(crow, i+1, therow.buf[i][0])
-            dbcs_knockon(state.console_state.apage, crow, i+1)
+            put_screen_char_attr(state.console_state.apage, crow, i+1, therow.buf[i][0], state.console_state.attr)
         if therow.wrap and crow >= 0 and crow < state.console_state.height-1:
             crow += 1
             start = 0
