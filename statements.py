@@ -54,6 +54,8 @@ def parse_statement():
             return False
         # parse line number or : at start of statement    
         elif c == '\x00':
+            # save position for error message
+            prepos = ins.tell()
             ins.read(1)
             # line number marker, new statement
             linenum = util.parse_line_number(ins)
@@ -61,7 +63,8 @@ def parse_statement():
                 if state.basic_state.error_resume:
                     # unfinished error handler: no RESUME (don't trap this)
                     state.basic_state.error_handle_mode = True
-                    raise error.RunError(19) 
+                    # get line number right
+                    raise error.RunError(19, prepos-1) 
                 # stream has ended
                 return False
             if state.basic_state.tron:
@@ -1469,9 +1472,9 @@ def exec_on_error(ins):
     if linenum != 0 and linenum not in state.basic_state.line_numbers:
         # undefined line number
         raise error.RunError(8)
-    error.on_error = linenum
+    state.basic_state.on_error = linenum
     # ON ERROR GOTO 0 in error handler
-    if error.on_error == 0 and state.basic_state.error_handle_mode:
+    if state.basic_state.on_error == 0 and state.basic_state.error_handle_mode:
         # re-raise the error so that execution stops
         raise error.RunError(state.basic_state.errn, state.basic_state.errp)
     # this will be caught by the trapping routine just set
@@ -1480,7 +1483,7 @@ def exec_on_error(ins):
 def exec_resume(ins):
     if state.basic_state.error_resume == None: 
         # unset error handler
-        error.on_error = 0
+        state.basic_state.on_error = 0
         # resume without error
         raise error.RunError(20)
     c = util.skip_white(ins)
