@@ -483,10 +483,19 @@ def wait_interactive(from_start=False, alt_replace = True):
         elif d == '\n':                     line_feed()                             # <CTRL+ENTER> or <CTRL+J>
         elif d == '\x1B':                   clear_line(state.console_state.row)                     # <ESC> or <CTRL+[>
         elif d in ('\x00\x75', '\x05'):     clear_rest_of_line(state.console_state.row, state.console_state.col)  # <CTRL+END> <CTRL+E>
-        elif d in ('\x00\x48', '\x1E'):     set_pos(state.console_state.row-1, state.console_state.col, scroll_ok=False)    # <UP> <CTRL+6>
-        elif d in ('\x00\x50', '\x1F'):     set_pos(state.console_state.row+1, state.console_state.col, scroll_ok=False)    # <DOWN> <CTRL+->
-        elif d in ('\x00\x4D', '\x1C'):     set_pos(state.console_state.row, state.console_state.col+1, scroll_ok=False)    # <RIGHT> <CTRL+\>
-        elif d in ('\x00\x4B', '\x1D'):     set_pos(state.console_state.row, state.console_state.col-1, scroll_ok=False)    # <LEFT> <CTRL+]>
+        elif d in ('\x00\x48', '\x1E'):                                             # <UP> <CTRL+6>
+            set_pos(state.console_state.row - 1, state.console_state.col, scroll_ok=False)    
+        elif d in ('\x00\x50', '\x1F'):                                             # <DOWN> <CTRL+->
+            set_pos(state.console_state.row + 1, state.console_state.col, scroll_ok=False)    
+        elif d in ('\x00\x4D', '\x1C'):                                             # <RIGHT> <CTRL+\>
+            # skip dbcs trail byte
+            skip = 2 if state.console_state.apage.row[state.console_state.row-1].double[state.console_state.col-1] == 1 else 1   
+            set_pos(state.console_state.row, state.console_state.col + skip, scroll_ok=False)
+        elif d in ('\x00\x4B', '\x1D'):                                             # <LEFT> <CTRL+]>
+            # skip dbcs trail byte to left
+            skip = 2 if (state.console_state.col>1 and 
+                         state.console_state.apage.row[state.console_state.row-1].double[state.console_state.col-2] == 2) else 1   
+            set_pos(state.console_state.row, state.console_state.col - skip, scroll_ok=False)                
         elif d in ('\x00\x74', '\x06'):     skip_word_right()                       # <CTRL+RIGHT> or <CTRL+F>
         elif d in ('\x00\x73', '\x02'):     skip_word_left()                        # <CTRL+LEFT> or <CTRL+B>
         elif d in ('\x00\x52', '\x12'):     set_overwrite_mode(not state.console_state.overwrite_mode)  # <INS> <CTRL+R>
@@ -663,6 +672,9 @@ def backspace(start_row, start_col):
     elif ccol != start_col or state.console_state.row != start_row: 
         ccol -= 1
     set_pos(crow, max(1, ccol))
+    if state.console_state.apage.row[state.console_state.row-1].double[state.console_state.col-1] == 2:
+        # we're on a trail byte, move to the lead
+        set_pos(state.console_state.row, state.console_state.col-1)
     delete_char(crow, ccol)
     
 def tab():
