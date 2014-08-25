@@ -155,7 +155,7 @@ class UTF8Converter (object):
             for c in s:
                 if preserve_control and c in control:
                     if self.buf:
-                        out += cp_to_unicode[self.buf]
+                        out += cp_to_utf8[self.buf]
                         self.buf = ''
                     out += c
                     continue
