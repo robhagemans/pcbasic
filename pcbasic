@@ -403,7 +403,7 @@ def get_args():
     parser.set_defaults(**defaults)
     # get supported codepages
     cpdir = os.listdir(os.path.join(plat.basepath, 'encoding'))
-    encodings = sorted([ x[0] for x in [ c.split('.utf8') for c in cpdir ] if len(x)>1])
+    encodings = sorted([ x[0] for x in [ c.split('.ucp') for c in cpdir ] if len(x)>1])
     # get supported font families
     fontdir = os.listdir(os.path.join(plat.basepath, 'font'))
     families = sorted(list(set([ x[0] for x in [ c.split('_') for c in fontdir ] if len(x)>1])))
