@@ -170,7 +170,7 @@ cga_palette_5 = cga_palette_5_hi
 cga_palettes = [cga_palette_0, cga_palette_1]
 
 # default font family
-font_families = ['univga', 'unifont'] # 'freedos'
+font_families = ['unifont', 'univga'] # 'freedos'
 fonts = {}
 
 #############################
@@ -199,7 +199,7 @@ def init():
         # no PCjr modes
         unavailable_modes = [3, 4, 5, 6]
     if not backend.video.supports_graphics:    
-        mode_data = { 0: mode_data[0] }
+        mode_data = { 0: ( 16,  7, 32, 64, 80, 4, 4, 8 ) }
     else:
         # load fonts
         for height in (8, 14, 16):
@@ -231,6 +231,11 @@ def init():
         # load the screen contents from storage
         backend.video.load_state()
     else:        
+        if 0 not in mode_data:
+            logging.error("Text mode not supported by display backend.")
+            # fix the terminal
+            backend.video.close()
+            return False        
         screen(None, None, None, None, first_run=True)
     return True
 

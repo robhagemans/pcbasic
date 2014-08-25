@@ -46,7 +46,7 @@ def load(families, height, codepage_dict):
             try:
                 codepoint = unichr(int('0x' + splitline[0].strip(), 16)).encode('utf-8')
                 # skip chars we won't need 
-                if codepoint not in cp_reverse:
+                if (codepoint in fontdict) or (codepoint not in cp_reverse):
                     continue
                 string = splitline[1].strip().split()[0].decode('hex')
                 # string must be 32-byte or 16-byte
