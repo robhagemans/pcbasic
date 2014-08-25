@@ -170,7 +170,7 @@ cga_palette_5 = cga_palette_5_hi
 cga_palettes = [cga_palette_0, cga_palette_1]
 
 # default font family
-font_families = ['unifont', 'univga'] # 'freedos'
+font_families = ['unifont', 'univga', 'freedos']
 fonts = {}
 
 #############################
@@ -202,12 +202,14 @@ def init():
         mode_data = { 0: ( 16,  7, 32, 64, 80, 4, 4, 8 ) }
     else:
         # load fonts
-        for height in (8, 14, 16):
+        for height in (16, 14, 8):
             if height in fonts:
                 # already force loaded
                 continue
             # load a Unifont .hex font and take the codepage subset
             fonts[height] = typeface.load(font_families, height, unicodepage.cp_to_utf8)
+            # fix missing code points font based on 16-line font
+            typeface.fixfont(height, fonts[height], unicodepage.cp_to_utf8, fonts[16])
         # remove modes for which we don't have fonts
         for i in mode_data:
             if i in unavailable_modes:

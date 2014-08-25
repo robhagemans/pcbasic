@@ -71,13 +71,47 @@ def load(families, height, codepage_dict):
         try:
             font[c] = fontdict[u]
         except KeyError:
-            font[c] = '\0'*16
             warnings += 1
             if warnings <= 3:
                 logging.warning('Codepoint %x [%s] not represented in font for height %d.', ord(u.decode('utf-8')), u, height)
             if warnings == 3:
-                logging.warning('Forther codepoint warnings suppressed.')
+                logging.warning('Further codepoint warnings suppressed.')
     return font
 
+def fixfont(height, font, codepage_dict, font16):
+    '''Fill in missing codepoints in font using 16-line font or blanks.'''
+    if height == 8:
+        for c in codepage_dict:
+            if c not in font:
+                font[c] = glyph_16_to_8(font16[c])
+    elif height == 14:
+        for c in codepage_dict:
+            if c not in font:
+                font[c] = glyph_16_to_14(font16[c])
+    elif height == 16:            
+        for c in codepage_dict:
+            if c not in font:
+                font[c] = ('\0'*16 if len(c) == 1 else '\0'*32)
+    return font
+            
+def glyph_16_to_8(glyph16):
+    ''' Crudely convert 16-line character to 8-line character by taking out every other line. '''
+    s16 = list(glyph16)
+    if len(s16) == 16:
+        cut = range(0, 16, 2)
+    else:
+        rng0 = range(0, 32, 4)
+        rng1 = range(1, 32, 4)
+        cut = [0]*16
+        cut[::2] = rng0
+        cut[1:2] = rng1
+    return ''.join([ s16[i] for i in cut ])
 
-
+def glyph_16_to_14(glyph16):
+    ''' Crudely convert 16-line character to 14-line character by taking out top and bottom. '''
+    s16 = list(glyph16)
+    if len(s16) == 16:
+        return ''.join([ s16[i] for i in range(1, 15) ])
+    else:
+        return ''.join([ s16[i] for i in range(2, 30) ])
+        
