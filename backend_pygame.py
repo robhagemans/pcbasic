@@ -41,6 +41,7 @@ import console
 import state
 import sound
 import backend
+import typeface
 
 # this backend provides graphics commands
 supports_graphics = True
@@ -268,13 +269,13 @@ def prepare(args):
     dbcsfonts = {}
     if args.font != None:
         for fontname in args.font:
-            font = load_font_file(fontname)
+            font = typeface.load(fontname)
             if font:
                 height = len(font[0])
                 fonts[height] = font
     if args.dbcsfont != None:
         for fontname in args.dbcsfont:
-            font = load_generic_font_file(fontname, unicodepage.dbcs_num_chars, 16)
+            font = typeface.load_generic(fontname, unicodepage.dbcs_num_chars, 16)
             if font:
                 height = len(font[0])
                 dbcsfonts[height] = font
@@ -360,15 +361,16 @@ def init():
             # already force loaded
             continue
         # load a 256-character 8xN font dump with no headers
-        fonts[height] = load_font_file(os.path.join(font_dir, '%s_%s_%02d' % (font_family, state.console_state.codepage, height)))
+        fonts[height] = typeface.load('%s_%s_%02d' % (font_family, state.console_state.codepage, height))
         if fonts[height] == None:
             pygame.display.quit()
-            logging.warning('Could not load font %s_%s_%02d. Failed to initialise graphical interface.', font_family, state.console_state.codepage, height)
+            logging.warning('Could not load font %s_%s_%02d. Failed to initialise graphical interface.', 
+                                font_family, state.console_state.codepage, height)
             return False
     # dbcs: only load height 16
     if unicodepage.dbcs and 16 not in dbcsfonts:
-        dbcsfonts[16] = load_generic_font_file(os.path.join(font_dir, '%s_%s_%02d_dbcs' % 
-                            (font_family, state.console_state.codepage, height)), unicodepage.dbcs_num_chars, 16)
+        dbcsfonts[16] = typeface.load_generic('%s_%s_%02d_dbcs' % (font_family, state.console_state.codepage, height),
+                                                 unicodepage.dbcs_num_chars, 16)
     # get physical screen dimensions (needs to be called before set_mode)
     display_info = pygame.display.Info()
     physical_size = display_info.current_w, display_info.current_h
@@ -461,33 +463,6 @@ def close():
         pygame_android.close()
     pygame.joystick.quit()
     pygame.display.quit()    
-
-
-####################################
-# font
-font_dir = os.path.join(plat.basepath, 'font') 
-
-def load_font_file(name):
-    return load_generic_font_file(name, 256, 8)
-
-def load_generic_font_file(name, num_chars, width):
-    # if not found, try in font directory
-    if not os.path.exists(name):
-        path = plat.basepath
-        name = os.path.join(font_dir, name)
-    try:
-        size = os.path.getsize(name)
-        height = size/num_chars/(width//8)        
-        fontfile = open(name, 'rb')
-        font = []
-        for _ in range(num_chars):
-            lines = fontfile.read(height*(width//8))
-            font += [lines]
-        return font
-    except (IOError, OSError):
-        logging.warning('Could not read font file %s', name)
-        return None
-    
 
 ####################################
 # console commands
@@ -881,8 +856,7 @@ def handle_key(e):
         state.console_state.inp_key = ord(keycode_to_inpcode[e.key])
     except KeyError:
         pass    
-                    
-                    
+
 def handle_key_up(e):
     global keypad_ascii
     # last key released gets remembered
