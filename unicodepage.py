@@ -59,8 +59,7 @@ def load_codepage(codepage_name):
     return codepage_name
     
 def load_sbcs_codepage(codepage_name):
-    global cp_to_utf8, utf8_to_cp
-    global dbcs_utf8_to_cp, dbcs_cp_to_utf8, lead, trail, dbcs, dbcs_num_chars
+    global cp_to_utf8, utf8_to_cp, lead, trail, dbcs, dbcs_num_chars
     cp_to_unicode = dict(enumerate(cp437))
     name = os.path.join(encoding_dir, codepage_name + '.utf8')
     try:
@@ -79,14 +78,12 @@ def load_sbcs_codepage(codepage_name):
     # this is not a DBCS codepage so no lead and trail bytes
     lead = []
     trail = []
-    dbcs_utf8_to_cp = {}
-    dbcs_cp_to_utf8 = {}
     dbcs_num_chars = 0
     dbcs = False
     return codepage_name  
 
 def load_dbcs_codepage(codepage_name):
-    global dbcs_utf8_to_cp, dbcs_cp_to_utf8, lead, trail, dbcs, dbcs_num_chars
+    global cp_to_utf8, utf8_to_cp, lead, trail, dbcs, dbcs_num_chars
     # load double-byte unicode table
     name = os.path.join(encoding_dir, codepage_name + '.dbcs')
     try:
@@ -111,6 +108,8 @@ def load_dbcs_codepage(codepage_name):
     dbcs_utf8_to_cp = dict((reversed(item) for item in dbcs_cp_to_utf8.items()))
     dbcs = True    
     dbcs_num_chars = len(dbcs_unicode_table)
+    cp_to_utf8.update(dbcs_cp_to_utf8)
+    utf8_to_cp.update(dbcs_utf8_to_cp)
     return codepage_name  
 
 def dbcs_index(l, t):
@@ -118,10 +117,7 @@ def dbcs_index(l, t):
 
 # convert utf8 wchar to codepage char        
 def from_utf8(c):
-    try:
-        return utf8_to_cp[c]
-    except KeyError:    
-        return dbcs_utf8_to_cp[c]
+    return utf8_to_cp[c]
 
 # line buffer for conversion to UTF8 - supports DBCS                                    
 class UTF8Converter (object):
@@ -140,6 +136,7 @@ class UTF8Converter (object):
                 out += '\b'                
             for c in s:
                 if preserve_control and c in control:
+                    # control char; flush buffer as SBCS and add control char unchanged
                     if self.buf:
                         out += cp_to_utf8[self.buf]
                         self.buf = ''
@@ -147,10 +144,12 @@ class UTF8Converter (object):
                     continue
                 elif self.buf:
                     if c in trail:
-                        out += dbcs_cp_to_utf8[self.buf+c] 
+                        # add a DBCS character
+                        out += cp_to_utf8[self.buf + c] 
                         self.buf = ''
                         continue
                     else:
+                        # flush buffer
                         out += cp_to_utf8[self.buf] 
                         self.buf = ''
                 if c in lead:
@@ -162,5 +161,3 @@ class UTF8Converter (object):
                 out += cp_to_utf8[self.buf]
             return out
         
-    
-    
