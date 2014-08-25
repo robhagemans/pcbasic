@@ -564,27 +564,30 @@ def putwc_at(row, col, c, d):
 
 carry_col_9 = range(0xc0, 0xdf+1)
 
-def build_glyph(c, font_face, glyph_width, glyph_height):
-    color = 254 
-    bg = 255 
+def build_glyph(c, font_face, req_width, req_height):
+    color, bg = 254, 255
+    face = font_face[c]
+    if len(face) < req_height*req_width//8:
+        u = unicodepage.cp_to_utf8[c]
+        logging.debug('Incorrect glyph width for %s [%s, code point %x].', repr(c), u, ord(u.decode('utf-8')))
+    glyph_width, glyph_height = 8*len(face)//req_height, req_height    
     glyph = pygame.Surface((glyph_width, glyph_height), depth=8)
     glyph.fill(bg)
-    face = font_face[c]
     for yy in range(glyph_height):
         for half in range(glyph_width//8):    
             line = ord(face[yy*(glyph_width//8)+half])
             for xx in range(8):
-                bit = (line >> (7-xx)) & 1
-                if bit == 1:
-                    pos = (half*8 + xx, yy)
-                    glyph.set_at(pos, color)
+                if (line >> (7-xx)) & 1 == 1:
+                    glyph.set_at((half*8 + xx, yy), color)
         # VGA 9-bit characters        
         if c in carry_col_9 and glyph_width == 9:
-            bit = line & 1
-            if bit == 1:
+            if line & 1 == 1:
                 glyph.set_at((8, yy), color)
-    return glyph            
-    
+    glyph.set_at((8, 8), color)
+    if req_width > glyph_width:
+        glyph = pygame.transform.scale(glyph, (req_width, req_height))    
+    return glyph        
+        
 def build_cursor():
     global screen_changed, cursor0, under_cursor
     under_cursor = pygame.Surface((state.console_state.cursor_width, state.console_state.font_height), depth=8)

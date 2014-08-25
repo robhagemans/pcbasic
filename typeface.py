@@ -58,7 +58,6 @@ def load(families, height, codepage_dict):
                     fontdict[codepoint] = string[:height]
                 else:        
                     raise ValueError
-                fontdict[codepoint] = string            
             except ValueError:
                 logging.warning('Could not parse line in font file: %s', repr(line))    
     # char 0 should always be empty
