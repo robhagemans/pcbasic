@@ -49,14 +49,35 @@ def load(families, height, codepage_dict):
                 if (codepoint in fontdict) or (codepoint not in cp_reverse):
                     continue
                 string = splitline[1].strip().split()[0].decode('hex')
-                # string must be 32-byte or 16-byte
-                if len(string) not in (16, 32):
+                # string must be 32-byte or 16-byte; cut to required font size
+                if len(string) == 32:
+                    # dbcs glyph
+                    fontdict[codepoint] = string[:2*height]
+                elif len(string)==16:
+                    # sbcs glyph
+                    fontdict[codepoint] = string[:height]
+                else:        
                     raise ValueError
                 fontdict[codepoint] = string            
             except ValueError:
                 logging.warning('Could not parse line in font file: %s', repr(line))    
     # char 0 should always be empty
-    return dict([ ('\0', '\0'*16) if c == '\0' else (c, fontdict[codepage_dict[c]]) for c in codepage_dict ])
+    font = { '\0': '\0'*16 }
+    warnings = 0
+    for c in codepage_dict:
+        if c == '\0':
+            continue
+        u = codepage_dict[c]
+        try:
+            font[c] = fontdict[u]
+        except KeyError:
+            font[c] = '\0'*16
+            warnings += 1
+            if warnings <= 3:
+                logging.warning('Codepoint %x [%s] not represented in font for height %d.', ord(u.decode('utf-8')), u, height)
+            if warnings == 3:
+                logging.warning('Forther codepoint warnings suppressed.')
+    return font
 
 
 
