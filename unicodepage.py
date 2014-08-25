@@ -70,11 +70,14 @@ def load_codepage(codepage_name):
         else:
             logging.warning('Could not load unicode mapping table for codepage %s. Falling back to codepage 437.', codepage_name)
             return load_codepage('437')
+    # fill up any undefined 1-byte codepoints
+    for c in range(256):
+        if chr(c) not in cp_to_utf8:
+            cp_to_utf8[chr(c)] = '\0'
     utf8_to_cp = dict((reversed(item) for item in cp_to_utf8.items()))
     if dbcs_num_chars > 0:
         dbcs = True    
     return codepage_name  
-    return lead.index(l)*len(trail)+trail.index(t)
 
 # convert utf8 wchar to codepage char        
 def from_utf8(c):

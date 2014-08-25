@@ -61,11 +61,10 @@ def load(families, height, codepage_dict):
             except ValueError:
                 logging.warning('Could not parse line in font file: %s', repr(line))    
     # char 0 should always be empty
-    font = { '\0': '\0'*16 }
+    fontdict['\0'] = '\0'*16
+    font = {}    
     warnings = 0
     for c in codepage_dict:
-        if c == '\0':
-            continue
         u = codepage_dict[c]
         try:
             font[c] = fontdict[u]
