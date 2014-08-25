@@ -46,8 +46,6 @@ import backend
 supports_graphics = True
 # max number of colours in the palette
 max_palette = 64
-# default font family
-font_family = 'freedos'
 
 if pygame:
     # CGA palette choices
@@ -253,7 +251,7 @@ if pygame:
 # set constants based on commandline arguments
 
 def prepare(args):
-    global fullscreen, smooth, noquit, display_size, display_size_text, font_family, fonts, dbcsfonts, composite_monitor
+    global fullscreen, smooth, noquit, display_size, display_size_text, composite_monitor
     try:
         x, y = args.dimensions[0].split(',')
         display_size = (int(x), int(y))
@@ -264,22 +262,6 @@ def prepare(args):
         display_size_text = (int(x), int(y))
     except (ValueError, TypeError):
         pass    
-    fonts = {}
-    dbcsfonts = {}
-    if args.font != None:
-        for fontname in args.font:
-            font = load_font_file(fontname)
-            if font:
-                height = len(font[0])
-                fonts[height] = font
-    if args.dbcsfont != None:
-        for fontname in args.dbcsfont:
-            font = load_generic_font_file(fontname, unicodepage.dbcs_num_chars, 16)
-            if font:
-                height = len(font[0])
-                dbcsfonts[height] = font
-    if args.font_family:
-        font_family = args.font_family[0]
     if args.fullscreen:
         fullscreen = True
     if args.smooth:
@@ -343,7 +325,7 @@ def load_state():
 # initialisation
 
 def init():
-    global fonts, joysticks, physical_size
+    global joysticks, physical_size
     # set state objects to whatever is now in state (may have been unpickled)
     if not pygame:
         logging.warning('Could not find PyGame module. Failed to initialise graphical interface.')
@@ -355,20 +337,6 @@ def init():
         pygame.display.quit()
         logging.warning('Refusing to open libcaca console. Failed to initialise graphical interface.')
         return False
-    for height in (8, 14, 16):
-        if height in fonts:
-            # already force loaded
-            continue
-        # load a 256-character 8xN font dump with no headers
-        fonts[height] = load_font_file(os.path.join(font_dir, '%s_%s_%02d' % (font_family, state.console_state.codepage, height)))
-        if fonts[height] == None:
-            pygame.display.quit()
-            logging.warning('Could not load font %s_%s_%02d. Failed to initialise graphical interface.', font_family, state.console_state.codepage, height)
-            return False
-    # dbcs: only load height 16
-    if unicodepage.dbcs and 16 not in dbcsfonts:
-        dbcsfonts[16] = load_generic_font_file(os.path.join(font_dir, '%s_%s_%02d_dbcs' % 
-                            (font_family, state.console_state.codepage, height)), unicodepage.dbcs_num_chars, 16)
     # get physical screen dimensions (needs to be called before set_mode)
     display_info = pygame.display.Info()
     physical_size = display_info.current_w, display_info.current_h
@@ -394,12 +362,12 @@ def init_screen_mode():
     global screen, screen_changed, surface0, surface1
     global font, under_cursor
     try:
-        font = fonts[state.console_state.font_height]
+        font = console.fonts[state.console_state.font_height]
     except KeyError:
         font = None
     # without this the palette is not prepared when resuming
     update_palette()
-    glyphs = [ build_glyph(c, font, state.console_state.font_width, state.console_state.font_height) for c in range(256) ]
+    glyphs = [ build_glyph(chr(c), font, state.console_state.font_width, state.console_state.font_height) for c in range(256) ]
     # initialise glyph colour
     set_attr(state.console_state.attr, force_rebuild=True)
     if state.console_state.screen_mode == 0:
@@ -446,8 +414,10 @@ def build_icon():
     icon = pygame.Surface((17, 17), depth=8)
     icon.fill(255)
     icon.fill(254, (1, 8, 8, 8))
-    O = build_glyph(ord('O'), fonts[8], 8, 8)
-    k = build_glyph(ord('k'), fonts[8], 8, 8)
+    # hardcoded O and k from freedos cga font
+    okfont = { ord('O'): '\x00\x7C\xC6\xC6\xC6\xC6\xC6\x7C', ord('k'): '\x00\xE0\x60\x66\x6C\x78\x6C\xE6' }
+    O = build_glyph(ord('O'), okfont, 8, 8)
+    k = build_glyph(ord('k'), okfont, 8, 8)
     icon.blit(O, (1, 0, 8, 8))
     icon.blit(k, (9, 0, 8, 8))
     icon.set_palette_at(255, (0, 0, 0))
@@ -461,33 +431,6 @@ def close():
         pygame_android.close()
     pygame.joystick.quit()
     pygame.display.quit()    
-
-
-####################################
-# font
-font_dir = os.path.join(plat.basepath, 'font') 
-
-def load_font_file(name):
-    return load_generic_font_file(name, 256, 8)
-
-def load_generic_font_file(name, num_chars, width):
-    # if not found, try in font directory
-    if not os.path.exists(name):
-        path = plat.basepath
-        name = os.path.join(font_dir, name)
-    try:
-        size = os.path.getsize(name)
-        height = size/num_chars/(width//8)        
-        fontfile = open(name, 'rb')
-        font = []
-        for _ in range(num_chars):
-            lines = fontfile.read(height*(width//8))
-            font += [lines]
-        return font
-    except (IOError, OSError):
-        logging.warning('Could not read font file %s', name)
-        return None
-    
 
 ####################################
 # console commands
@@ -589,7 +532,7 @@ def set_attr(cattr, force_rebuild=False):
 def putc_at(row, col, c):
     global screen_changed
     glyph = glyphs[ord(c)]
-    blank = glyphs[32] # using SPACE for blank 
+    blank = glyphs[0] # using \0 for blank (tyoeface.py guarantees it's empty)
     top_left = ((col-1)*state.console_state.font_width, (row-1)*state.console_state.font_height)
     if not state.console_state.screen_mode:
         surface1[state.console_state.apagenum].blit(glyph, top_left)
@@ -601,7 +544,7 @@ def putc_at(row, col, c):
 
 def putwc_at(row, col, c, d):
     global screen_changed
-    glyph = build_glyph(unicodepage.dbcs_index(c, d), dbcsfonts[16], 16, state.console_state.font_height)
+    glyph = build_glyph(c+d, font, 16, state.console_state.font_height)
     color = (0, 0, last_attr & 0xf)
     bg = (0, 0, (last_attr>>4) & 0x7)    
     glyph.set_palette_at(255, bg)
@@ -621,27 +564,30 @@ def putwc_at(row, col, c, d):
 
 carry_col_9 = range(0xc0, 0xdf+1)
 
-def build_glyph(c, font_face, glyph_width, glyph_height):
-    color = 254 
-    bg = 255 
+def build_glyph(c, font_face, req_width, req_height):
+    color, bg = 254, 255
+    face = font_face[c]
+    if len(face) < req_height*req_width//8:
+        u = unicodepage.cp_to_utf8[c]
+        logging.debug('Incorrect glyph width for %s [%s, code point %x].', repr(c), u, ord(u.decode('utf-8')))
+    glyph_width, glyph_height = 8*len(face)//req_height, req_height    
     glyph = pygame.Surface((glyph_width, glyph_height), depth=8)
     glyph.fill(bg)
-    face = font_face[c]
     for yy in range(glyph_height):
         for half in range(glyph_width//8):    
             line = ord(face[yy*(glyph_width//8)+half])
             for xx in range(8):
-                bit = (line >> (7-xx)) & 1
-                if bit == 1:
-                    pos = (half*8 + xx, yy)
-                    glyph.set_at(pos, color)
+                if (line >> (7-xx)) & 1 == 1:
+                    glyph.set_at((half*8 + xx, yy), color)
         # VGA 9-bit characters        
         if c in carry_col_9 and glyph_width == 9:
-            bit = line & 1
-            if bit == 1:
+            if line & 1 == 1:
                 glyph.set_at((8, yy), color)
-    return glyph            
-    
+    glyph.set_at((8, 8), color)
+    if req_width > glyph_width:
+        glyph = pygame.transform.scale(glyph, (req_width, req_height))    
+    return glyph        
+        
 def build_cursor():
     global screen_changed, cursor0, under_cursor
     under_cursor = pygame.Surface((state.console_state.cursor_width, state.console_state.font_height), depth=8)
@@ -866,14 +812,22 @@ def handle_key(e):
                 u = pygame_android.get_unicode(e, mods)
             else:
                 u = e.unicode    
-            c = unicodepage.from_unicode(u)
+            try:
+                c = unicodepage.from_utf8(u.encode('utf-8'))
+            except KeyError:
+                # fallback to ascii if no encoding found (shouldn't happen); if not ascii, ignore
+                if u and ord(u) <= 0x7f:
+                    c = chr(ord(u))    
+    # double NUL characters as single NUL signals scan code
+    if len(c) == 1 and ord(c) == 0:
+        c = '\0\0'
     console.insert_key(c) 
     # current key pressed; modifiers ignored 
     try:
         state.console_state.inp_key = ord(keycode_to_inpcode[e.key])
     except KeyError:
         pass    
-                    
+
 def handle_key_up(e):
     global keypad_ascii
     # last key released gets remembered
