@@ -21,6 +21,7 @@ import error
 import fp
 # for dbcs
 import unicodepage
+import typeface
 
 class ScreenRow(object):
     def __init__(self, bwidth):
@@ -168,37 +169,60 @@ cga_palette_1 = cga_palette_1_hi
 cga_palette_5 = cga_palette_5_hi
 cga_palettes = [cga_palette_0, cga_palette_1]
 
+# default font family
+font_families = ['univga', 'unifont'] # 'freedos'
+fonts = {}
 
 #############################
 # init
 
 def init():
-    global cga_palettes
+    global cga_palettes, fonts, mode_data
     if not backend.video.init():
         return False
     state.console_state.backend_name = backend.video.__name__
     # only allow the screen modes that the given machine supports
     if video_capabilities in ('pcjr', 'tandy'):
         # no EGA modes (though apparently there were Tandy machines with EGA cards too)
-        unavailable_modes = (7, 8, 9)
+        unavailable_modes = [7, 8, 9]
         # 8-pixel characters, 16 colours in screen 0
         mode_data[0] = ( 8, 7, 32, 16, 80, 4, 4, 8 ) 
         # select pcjr cga palettes
         cga_palettes[:] = [cga_palette_0_pcjr, cga_palette_1_pcjr]       
         # TODO: determine the number of pages based on video memory size, not hard coded. 
     elif video_capabilities in ('cga', 'cga_old'):
-        unavailable_modes = (3, 4, 5, 6, 7, 8, 9)
+        unavailable_modes = [3, 4, 5, 6, 7, 8, 9]
         # 8-pixel characters, 16 colours in screen 0
         mode_data[0] = ( 8, 7, 32, 16, 80, 4, 4, 8 ) 
     else:
         # EGA
         # no PCjr modes
-        unavailable_modes = (3, 4, 5, 6)
-    for mode in unavailable_modes:
-        del mode_data[mode]
+        unavailable_modes = [3, 4, 5, 6]
+    if not backend.video.supports_graphics:    
+        mode_data = { 0: mode_data[0] }
+    else:
+        # load fonts
+        for height in (8, 14, 16):
+            if height in fonts:
+                # already force loaded
+                continue
+            # load a Unifont .hex font and take the codepage subset
+            fonts[height] = typeface.load(font_families, height, unicodepage.cp_to_utf8)
+        # remove modes for which we don't have fonts
+        for i in mode_data:
+            if i in unavailable_modes:
+                continue
+            mode = mode_data[i]
+            if mode[0] not in fonts or not fonts[mode[0]]:
+                logging.warning("No font of height %d found. Screen mode %d not supported.", mode[0], i )
+                unavailable_modes.append(i)
+        for mode in unavailable_modes:
+            del mode_data[mode]
+    # text mode backends: delete all graphics modes    
+    # reload the screen in resumed state
     if state.loaded:
-        if state.console_state.screen_mode != 0 and not backend.video.supports_graphics:
-            logging.warning("Screen mode not supported by display backend.")
+        if state.console_state.screen_mode not in mode_data:
+            logging.error("Resumed screen mode %d not supported by display backend.",  state.console_state.screen_mode)
             # fix the terminal
             backend.video.close()
             return False

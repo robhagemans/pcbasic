@@ -15,47 +15,25 @@ import plat
 
 font_dir = os.path.join(plat.basepath, 'font') 
 
-def font_filename(name):
-    """ Return _name_ if filename exists in current path, else font_dir/name. """
+def font_filename(name, height):
+    """ Return name_height.hex if filename exists in current path, else font_dir/name_height.hex. """
+    name = '%s_%02d.hex' % (name, height)
     if not os.path.exists(name):
         # if not found in current dir, try in font directory
-        path = plat.basepath
         name = os.path.join(font_dir, name)
     return name    
 
-def load(name):
-    """ Load and return a half-width single-byte rom font. Return None if not loaded. """
-    return load_generic(name, 256, 8)
-
-def load_generic(name, num_chars, width):
-    """ Load and return a rom font of _num_chars_ characters of _width_ bytes. Return None if not loaded. """
-    name = font_filename(name)
-    try:
-        size = os.path.getsize(name)
-        height = size/num_chars/(width//8)        
-        fontfile = open(name, 'rb')
-        font = []
-        for _ in range(num_chars):
-            lines = fontfile.read(height*(width//8))
-            font += [lines]
-        return font
-    except (IOError, OSError):
-        logging.warning('Could not read font file %s', name)
+def load(families, height, codepage_dict):
+    """ Load the specified codepage from a unifont .hex file. Codepage should be a CP-to-UTF8 dict. """
+    names = reversed([ font_filename(name, height) for name in families ])
+    cp_reverse = dict((reversed(item) for item in codepage_dict.items()))
+    fontfiles = [ open(name, 'rb') for name in names if os.path.exists(name) ]
+    if len(fontfiles) == 0:
+        logging.warning('Could not read font file for height %d', height)
         return None
-
-def load_unicode(name, codepage):
-    """ Load the specified unicodepage from a unifont .hex file """
-    fontdict = load_hex(name)
-    return [ fontdict[codepage[c]] for c in codepage ]
-    
-def load_hex(name):
-    """ Load a unifont .hex font. """
-    name = font_filename(name)
-    try:
-        fontfile = open(name, 'rb')
-        unifont = fontfile.lines()
-        fontdict = {}
-        for line in unifont:
+    fontdict = {}
+    for fontfile in fontfiles:
+        for line in fontfile:
             # ignore empty lines and comment lines (first char is #)
             if (not line) or (line[0] == '#'): 
                 continue
@@ -66,19 +44,19 @@ def load_hex(name):
                 continue    
             # extract codepoint and hex string; discard anything following whitespace; ignore malformed lines
             try:
-                codepoint = int('0x' + splitline[0].strip(), 16)
-                string = splitline[1].strip().split(' ')
-                # string must be 16-byte or 32-byte
+                codepoint = unichr(int('0x' + splitline[0].strip(), 16)).encode('utf-8')
+                # skip chars we won't need 
+                if codepoint not in cp_reverse:
+                    continue
+                string = splitline[1].strip().split()[0].decode('hex')
+                # string must be 32-byte or 16-byte
                 if len(string) not in (16, 32):
                     raise ValueError
                 fontdict[codepoint] = string            
             except ValueError:
-                logging.warning('Could not parse line in font file %s: %s', name, repr(line))    
-        return fontdict        
-    except (IOError, OSError):
-        logging.warning('Could not read font file %s', name)
-        return None
-
+                logging.warning('Could not parse line in font file: %s', repr(line))    
+    # char 0 should always be empty
+    return dict([ ('\0', '\0'*16) if c == '\0' else (c, fontdict[codepage_dict[c]]) for c in codepage_dict ])
 
 
 
