@@ -73,7 +73,8 @@ def load_codepage(codepage_name):
     return codepage_name
     
 def load_sbcs_codepage(codepage_name):
-    global cp_to_unicode, unicode_to_cp, cp_to_utf8, utf8_to_cp, lead, trail, dbcs
+    global cp_to_unicode, unicode_to_cp, cp_to_utf8, utf8_to_cp
+    global dbcs_utf8_to_cp, dbcs_cp_to_utf8, lead, trail, dbcs, dbcs_num_chars
     cp_to_unicode = dict(enumerate(cp437))
     name = os.path.join(encoding_dir, codepage_name + '.utf8')
     try:
@@ -92,6 +93,9 @@ def load_sbcs_codepage(codepage_name):
     # this is not a DBCS codepage so no lead and trail bytes
     lead = []
     trail = []
+    dbcs_utf8_to_cp = {}
+    dbcs_cp_to_utf8 = {}
+    dbcs_num_chars = 0
     dbcs = False
     return codepage_name  
 
