@@ -866,13 +866,22 @@ def handle_key(e):
                 u = pygame_android.get_unicode(e, mods)
             else:
                 u = e.unicode    
-            c = unicodepage.from_unicode(u)
+            try:
+                c = unicodepage.from_utf8(unicode(u).encode('utf-8'))
+            except KeyError:
+                # fallback to ascii if no encoding found (shouldn't happen); if not ascii, ignore
+                if u and ord(u) <= 0x7f:
+                    c = chr(ord(u))    
+    # double NUL characters as single NUL signals scan code
+    if len(c) == 1 and ord(c) == 0:
+        c = '\0\0'
     console.insert_key(c) 
     # current key pressed; modifiers ignored 
     try:
         state.console_state.inp_key = ord(keycode_to_inpcode[e.key])
     except KeyError:
         pass    
+                    
                     
 def handle_key_up(e):
     global keypad_ascii

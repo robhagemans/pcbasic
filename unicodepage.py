@@ -50,20 +50,6 @@ control = (
 # is the current codepage a double-byte codepage?
 dbcs = False
 
-def from_unicode(s):
-    output = ''
-    for c in s:
-        if ord(c) == 0:
-            # double NUL characters as single NUL signals scan code
-            output += '\x00\x00'
-        else:
-            try: 
-                output += chr(unicode_to_cp[c])
-            except KeyError:
-                if ord(c) <= 0xff:
-                    output += chr(ord(c))
-    return output
-
 def load_codepage(codepage_name):
     # always load a single-byte page
     codepage_name = load_sbcs_codepage(codepage_name)
@@ -73,7 +59,7 @@ def load_codepage(codepage_name):
     return codepage_name
     
 def load_sbcs_codepage(codepage_name):
-    global cp_to_unicode, unicode_to_cp, cp_to_utf8, utf8_to_cp
+    global cp_to_utf8, utf8_to_cp
     global dbcs_utf8_to_cp, dbcs_cp_to_utf8, lead, trail, dbcs, dbcs_num_chars
     cp_to_unicode = dict(enumerate(cp437))
     name = os.path.join(encoding_dir, codepage_name + '.utf8')
