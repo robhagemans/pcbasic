@@ -246,6 +246,9 @@ if pygame:
         pygame.K_KP0:   '0',    pygame.K_KP1:   '1',    pygame.K_KP2:   '2',    pygame.K_KP3:   '3',    pygame.K_KP4:   '4',
         pygame.K_KP5:   '5',    pygame.K_KP6:   '6',    pygame.K_KP7:   '7',    pygame.K_KP8:   '8',    pygame.K_KP9:   '9',
     }
+
+    # cursor is visible
+    cursor_visible = True
     
 ####################################            
 # set constants based on commandline arguments
@@ -466,8 +469,9 @@ def copy_page(src,dst):
     surface1[dst].blit(surface1[src], (0,0))
     screen_changed = True
     
-def update_cursor_visibility():
-    global screen_changed
+def update_cursor_visibility(cursor_on):
+    global screen_changed, cursor_visible
+    cursor_visible = cursor_on
     screen_changed = True
 
 def update_pos():
@@ -616,14 +620,14 @@ def refresh_screen():
         screen.blit(surface1[state.console_state.vpagenum], (0, 0))
     
 def remove_cursor():
-    if not state.console_state.cursor or state.console_state.vpage != state.console_state.apage:
+    if not cursor_visible or state.console_state.vpage != state.console_state.apage:
         return
     if under_top_left != None:
         screen.blit(under_cursor, under_top_left)
 
 def refresh_cursor():
     global under_top_left, last_row, last_col
-    if not state.console_state.cursor or state.console_state.vpage != state.console_state.apage:
+    if not  cursor_visible or state.console_state.vpage != state.console_state.apage:
         return
     # copy screen under cursor
     under_top_left = (  (state.console_state.col-1)*state.console_state.font_width,
@@ -730,7 +734,7 @@ def check_screen():
         if screen_changed:
             refresh_screen()
             do_flip()
-        elif cursor_changed and state.console_state.cursor:
+        elif cursor_changed and cursor_visible:
             remove_cursor()
             do_flip()
         screen_changed = False

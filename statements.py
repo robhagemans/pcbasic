@@ -683,13 +683,18 @@ def exec_files(ins):
     util.require(ins, util.end_statement)
     
 def exec_shell(ins):
+    ''' Execute SHELL command: open DOS shell. '''
+    # parse optional shell command
     if util.skip_white(ins) in util.end_statement:
         cmd = ''
     else:
         cmd = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    savecurs = console.show_cursor()
+    # force cursor visible in all cases
+    console.show_cursor(True)
+    # execute cms or open interactive shell
     oslayer.shell(cmd) 
-    console.show_cursor(savecurs)
+    # resset cursor visibility to its previous state
+    console.update_cursor_visibility()
     util.require(ins, util.end_statement)
         
 def exec_environ(ins):
@@ -2053,9 +2058,8 @@ def exec_locate(ins):
     console.set_pos(row, col, scroll_ok=False) 
     if cursor != None:
         util.range_check(0, (255 if pcjr_syntax else 1), cursor)   
-        # it seems cursor visibility is ignored in all modes
-        # certainly in graphics mode it should be off when running even if we've turned it on in screen 0
-        #console.show_cursor(cursor != 0)
+        # set cursor visibility - this should set the flag but have no effect in graphics modes
+        state.console_state.cursor = (cursor != 0)
     if stop == None:
         stop = start
     if start != None:    

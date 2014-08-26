@@ -328,7 +328,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
             show_keys()    
         set_default_cursor()
         set_pos(1, 1)
-        backend.video.update_cursor_visibility()
+        update_cursor_visibility()
         # FIXME: are there different views for different pages?
         unset_view()
         # in screen 0, 1, set colorburst (not in SCREEN 2!)
@@ -406,13 +406,19 @@ def set_palette(new_palette=None):
             state.console_state.palette = [0, 15]
     backend.video.update_palette()
 
-def show_cursor(do_show = True):
-    prev = state.console_state.cursor
-    state.console_state.cursor = do_show
-    backend.video.update_cursor_visibility()
-    return prev
+def show_cursor(do_show):
+    ''' Force cursor to be visible/invisible. '''
+    backend.video.update_cursor_visibility(do_show)
+
+def update_cursor_visibility():
+    ''' Set cursor visibility: visible if in interactive mode, unless forced visible in text mode. '''
+    visible = (not state.basic_state.execute_mode)
+    if state.console_state.screen_mode == 0:
+        visible = visible or state.console_state.cursor
+    backend.video.update_cursor_visibility(visible)
 
 def set_cursor_shape(from_line, to_line):
+    ''' Set the cursor shape as a block from from_line to to_line (in 8-line modes). Use compatibility algo in higher resolutions. '''
     if video_capabilities == 'ega':
         # odd treatment of cursors on EGA machines, presumably for backward compatibility
         # the following algorithm is based on DOSBox source int10_char.cpp INT10_SetCursorShape(Bit8u first,Bit8u last)    
@@ -445,7 +451,8 @@ def set_cursor_shape(from_line, to_line):
 
 def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
     prompt_row = state.console_state.row
-    savecurs = show_cursor() 
+    # force cursor visibility in all cases
+    show_cursor(True) 
     try:
         furthest_left, furthest_right = wait_interactive(from_start, alt_replace)
     except error.Break:
@@ -453,7 +460,7 @@ def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
             echo ('\x0e')
         write_line()    
         raise        
-    show_cursor(savecurs)
+    update_cursor_visibility()
     # find start of wrapped block
     crow = state.console_state.row
     while crow > 1 and state.console_state.apage.row[crow-2].wrap:
@@ -1224,8 +1231,8 @@ def scroll_down(from_line):
 ################################################
 
 def redraw_text_screen():
-    if state.console_state.cursor:
-        show_cursor(False)
+    # force cursor invisible during redraw
+    show_cursor(False)
     # this makes it feel faster
     backend.video.clear_rows(state.console_state.attr, 1, 25)
     # redraw every character
@@ -1233,8 +1240,7 @@ def redraw_text_screen():
         therow = state.console_state.apage.row[crow]  
         for i in range(state.console_state.width): 
             put_screen_char_attr(state.console_state.apage, crow+1, i+1, therow.buf[i][0], therow.buf[i][1])
-    if state.console_state.cursor:
-        show_cursor(True)       
+    update_cursor_visibility()
 
 ################################################
         

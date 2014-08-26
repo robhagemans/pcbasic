@@ -68,8 +68,8 @@ def set_execute_mode(on, quit=False):
         return
     # move pointer to the start of direct line (for both on and off!)
     flow.set_pointer(False, 0)
-    console.show_cursor(not on)
     state.basic_state.execute_mode = on        
+    console.update_cursor_visibility()
 
 def execute(line):
     state.basic_state.direct_line = tokenise.tokenise_line(line)    
