@@ -48,6 +48,8 @@ palette_changed = True
 # unused, but needs to be defined
 colorburst = False
 
+# cursor is visible
+cursor_visible = True
 
 # ANSI escape sequences
 # for reference, see:
@@ -183,13 +185,15 @@ def update_pos():
     term.write(esc_set_cursor_colour % get_fg_colourname(attr))
     term.flush()
     
-def update_cursor_visibility():
-    term.write(esc_show_cursor if state.console_state.cursor else esc_hide_cursor)
+def update_cursor_visibility(cursor_on):
+    global cursor_visible
+    cursor_visible = cursor_on
+    term.write(esc_show_cursor if cursor_on else esc_hide_cursor)
     term.flush()
 
 def check_events():
     check_keyboard()
-    if state.console_state.cursor:
+    if cursor_visible:
         term.write(esc_move_cursor % (state.console_state.row,state.console_state.col))
         term.flush()
 
