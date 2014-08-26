@@ -145,7 +145,7 @@ def update_pos():
 def update_palette():
     pass
 
-def update_cursor_visibility():
+def update_cursor_visibility(cursor_on):
     pass
 
 def set_attr(cattr):
