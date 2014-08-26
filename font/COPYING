@@ -16,7 +16,12 @@ source: FreeDOS CPIDOS pack - Henrique Peron (Brazil)
 url: http://www.freedos.org/software/?prog=cpidos
 licence: GNU GPL v2.0+
 
-typefaces: cgathin, cga, ega, vga
+typeface family: vga
+source: DOSBox
+url: http://www.dosbox.com
+licence: GNU GPL v2.0+
+
+typefaces: cgathin, cga, mda
 source: These typefaces were used in the IBM PC and its successors (USA; 1981,1984,1987).
 
 typefaces: tandy1, tandy2

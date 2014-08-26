@@ -198,27 +198,30 @@ def init():
         # EGA
         # no PCjr modes
         unavailable_modes = [3, 4, 5, 6]
+    for mode in unavailable_modes:
+        del mode_data[mode]
     if not backend.video.supports_graphics:    
         mode_data = { 0: ( 16,  7, 32, 64, 80, 4, 4, 8 ) }
     else:
         # load fonts
-        for height in (16, 14, 8):
+        heights_needed = reversed(sorted(set([mode_data[mode][0] for mode in mode_data])))
+        for height in heights_needed:
             if height in fonts:
                 # already force loaded
                 continue
             # load a Unifont .hex font and take the codepage subset
             fonts[height] = typeface.load(font_families, height, unicodepage.cp_to_utf8)
             # fix missing code points font based on 16-line font
-            typeface.fixfont(height, fonts[height], unicodepage.cp_to_utf8, fonts[16])
+            if 16 in fonts:
+                typeface.fixfont(height, fonts[height], unicodepage.cp_to_utf8, fonts[16])
         # remove modes for which we don't have fonts
+        disabled_modes = []
         for i in mode_data:
-            if i in unavailable_modes:
-                continue
             mode = mode_data[i]
             if mode[0] not in fonts or not fonts[mode[0]]:
                 logging.warning("No font of height %d found. Screen mode %d not supported.", mode[0], i )
-                unavailable_modes.append(i)
-        for mode in unavailable_modes:
+                disabled_modes.append(i)
+        for mode in disabled_modes:
             del mode_data[mode]
     # text mode backends: delete all graphics modes    
     # reload the screen in resumed state
