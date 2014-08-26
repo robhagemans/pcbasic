@@ -379,7 +379,8 @@ def init_screen_mode():
         resize_display(*display_size)
     screen = pygame.Surface(state.console_state.size, depth=8)
     # set standard cursor
-    build_cursor()
+    build_cursor(state.console_state.cursor_width, state.console_state.font_height, 
+                        state.console_state.cursor_from, state.console_state.cursor_to)
     # whole screen (blink on & off)
     surface0 = [ pygame.Surface(state.console_state.size, depth=8) for _ in range(state.console_state.num_pages)]
     surface1 = [ pygame.Surface(state.console_state.size, depth=8) for _ in range(state.console_state.num_pages)]
@@ -592,17 +593,17 @@ def build_glyph(c, font_face, req_width, req_height):
         glyph = pygame.transform.scale(glyph, (req_width, req_height))    
     return glyph        
         
-def build_cursor():
+def build_cursor(width, height, from_line, to_line):
     global screen_changed, cursor0, under_cursor
-    under_cursor = pygame.Surface((state.console_state.cursor_width, state.console_state.font_height), depth=8)
+    under_cursor = pygame.Surface((width, height), depth=8)
     under_cursor.set_palette(workaround_palette)
-    cursor0 = pygame.Surface((state.console_state.cursor_width, state.console_state.font_height), depth=8)
+    cursor0 = pygame.Surface((width, height), depth=8)
     color, bg = 254, 255
     cursor0.set_colorkey(bg)
     cursor0.fill(bg)
-    for yy in range(state.console_state.font_height):
-        for xx in range(state.console_state.cursor_width):
-            if yy < state.console_state.cursor_from or yy > state.console_state.cursor_to:
+    for yy in range(height):
+        for xx in range(width):
+            if yy < from_line or yy > to_line:
                 pass
             else:
                 cursor0.set_at((xx, yy), color)

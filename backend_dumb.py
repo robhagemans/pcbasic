@@ -141,7 +141,7 @@ def putc_at(row, col, c):
 def putwc_at(row, col, c, d):
     pass    
 
-def build_cursor():
+def build_cursor(width, height, from_line, to_line):
     pass
 
 def load_state():

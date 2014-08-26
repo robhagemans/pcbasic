@@ -444,7 +444,8 @@ def set_cursor_shape(from_line, to_line):
                             to_line -= 1
     state.console_state.cursor_from = max(0, min(from_line, state.console_state.font_height-1))
     state.console_state.cursor_to = max(0, min(to_line, state.console_state.font_height-1))
-    backend.video.build_cursor()
+    backend.video.build_cursor(state.console_state.cursor_width, state.console_state.font_height, 
+                state.console_state.cursor_from, state.console_state.cursor_to)
     
 ############################### 
 # interactive mode         
@@ -569,7 +570,8 @@ def wait_interactive(from_start=False, alt_replace = True):
             cursor_width = state.console_state.font_width
         if cursor_width != state.console_state.cursor_width:
             state.console_state.cursor_width = cursor_width
-            backend.video.build_cursor()
+            backend.video.build_cursor(state.console_state.cursor_width, state.console_state.font_height, 
+                    state.console_state.cursor_from, state.console_state.cursor_to)
     set_overwrite_mode(True)
     return furthest_left, furthest_right
       
