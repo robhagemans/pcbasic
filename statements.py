@@ -2061,6 +2061,7 @@ def exec_locate(ins):
         util.range_check(0, (255 if pcjr_syntax else 1), cursor)   
         # set cursor visibility - this should set the flag but have no effect in graphics modes
         state.console_state.cursor = (cursor != 0)
+        console.update_cursor_visibility()
     if stop == None:
         stop = start
     if start != None:    
