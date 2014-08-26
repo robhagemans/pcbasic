@@ -78,6 +78,8 @@ def load(families, height, codepage_dict):
 
 def fixfont(height, font, codepage_dict, font16):
     '''Fill in missing codepoints in font using 16-line font or blanks.'''
+    if height not in font or font[height] == None:
+        font[height] = []
     if height == 16:            
         for c in codepage_dict:
             if c not in font:

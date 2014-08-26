@@ -48,7 +48,7 @@ Fonts_________________________________________________________________________
     http://www.freedos.org/software/?prog=cpidos
 * Dmitry Bolkhovityanov's Uni-VGA font   
     http://www.inp.nsk.su/~bolkhov/files/fonts/univga/
-* The GNU UniFont Project
+* GNU UniFont Project
     https://savannah.gnu.org/projects/unifont
 
 Unicode codepage mapping tables_______________________________________________
@@ -70,5 +70,7 @@ Unicode codepage mapping tables_______________________________________________
     http://seed7.sourceforge.net/libraries/charsets.htm
 * Yii-Chinese Project 
     https://code.google.com/p/yii-chinese/source/browse/trunk/chinese/config/
+* GNU libiconv Project
+    https://www.gnu.org/software/libiconv/
     
     
