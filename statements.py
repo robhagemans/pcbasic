@@ -2066,9 +2066,9 @@ def exec_locate(ins):
         stop = start
     if start != None:    
         util.range_check(0, 31, start, stop)
-    # cursor shape only has an effect in text mode    
-    if state.console_state.screen_mode == 0:    
-        console.set_cursor_shape(start, stop)
+        # cursor shape only has an effect in text mode    
+        if state.console_state.screen_mode == 0:    
+            console.set_cursor_shape(start, stop)
 
 def exec_write(ins, screen=None):
     screen = expressions.parse_file_number(ins, 'OAR')
