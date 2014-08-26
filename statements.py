@@ -683,7 +683,7 @@ def exec_files(ins):
     util.require(ins, util.end_statement)
     
 def exec_shell(ins):
-    ''' Execute SHELL command: open DOS shell. '''
+    ''' SHELL: open OS shell and optionally execute command. '''
     # parse optional shell command
     if util.skip_white(ins) in util.end_statement:
         cmd = ''
@@ -2039,6 +2039,7 @@ def exec_key_define(ins):
             state.basic_state.event_keys[keynum-1] = str(text)
     
 def exec_locate(ins):
+    ''' LOCATE: Set cursor position, shape and visibility.'''
     row, col, cursor, start, stop, dummy = expressions.parse_int_list(ins, 6, 2, allow_last_empty=True)          
     if dummy != None:
         # can end on a 5th comma but no stuff allowed after it
@@ -2064,6 +2065,8 @@ def exec_locate(ins):
         stop = start
     if start != None:    
         util.range_check(0, 31, start, stop)
+    # cursor shape only has an effect in text mode    
+    if state.console_state.screen_mode == 0:    
         console.set_cursor_shape(start, stop)
 
 def exec_write(ins, screen=None):
