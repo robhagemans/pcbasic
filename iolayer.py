@@ -303,10 +303,7 @@ class TextFile(BaseFile):
             if c in ('\r', '\n'):
                 newline = True
                 break
-            if c == '\b':
-                # for lpt1 and files, nonprinting chars are not counted in LPOS; but chr$(8) will take a byte out of the buffer
-                s_width -= 1
-            elif ord(c) >= 32:
+            if ord(c) >= 32:
                 # nonprinting characters including tabs are not counted for WIDTH
                 s_width += 1
         if self.width != 255 and self.col != 1 and self.col-1 + s_width > self.width and not newline:
@@ -319,12 +316,6 @@ class TextFile(BaseFile):
                 self.fhandle.write(c)
                 self.flush()
                 self.col = 1
-            # handle backspace    
-            elif c == '\b':
-                if self.col > 1:
-                    self.col -= 1
-                    self.seek(-1, 1)
-                    self.truncate()  
             else:    
                 self.fhandle.write(c)
                 # nonprinting characters including tabs are not counted for WIDTH
@@ -759,6 +750,8 @@ class SCRNFile(NullDevice):
         NullDevice.__init__(self)
     
     def write(self, s):
+        """ Write string s to SCRN: """
+        # TODO: writes to SCRN files should *not* be echoed - however, we currently use echo for dumbterm so that would break.
         self._col = state.console_state.col
         # take column 80+overflow int account
         if state.console_state.overflow:
