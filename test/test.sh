@@ -1,8 +1,18 @@
 #!/bin/bash
+if [ -z $1 ]
+then
+     echo "Usage: test.sh TESTNAME"
+     exit
+fi 
 name=$1
-cd output/$name
 echo "Running test $name..."
-#rm *
+if [ ! -e $name.BAS ]
+then
+     echo "no such test"
+     exit
+fi
+mkdir output/$name
+pushd output/$name > /dev/null
 ../../../pcbasic -bq "../../$name.BAS" > /dev/null
 pass=1
 for file in *
@@ -19,5 +29,7 @@ then
      echo "Test FAILED";
 else
      echo "Test passed";
+     popd > /dev/null
+     rm -r output/$name
 fi
 
