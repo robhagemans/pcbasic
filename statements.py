@@ -2088,11 +2088,12 @@ def exec_write(ins, screen=None):
     util.require(ins, util.end_statement)        
     screen.write_line()
 
-def exec_print(ins, screen=None):
-    if screen == None:
-        screen = expressions.parse_file_number(ins, 'OAR')
-        screen = state.io_state.devices['SCRN:'] if screen == None else screen
-    number_zones = max(1, int(screen.width/14))
+def exec_print(ins, output=None):
+    ''' PRINT: Write expressions to the screen or a file. '''
+    if output == None:
+        output = expressions.parse_file_number(ins, 'OAR')
+        output = state.io_state.devices['SCRN:'] if output == None else output
+    number_zones = max(1, int(output.width/14))
     newline = True
     while True:
         d = util.skip_white(ins)
@@ -2102,23 +2103,23 @@ def exec_print(ins, screen=None):
             ins.read(1)
             newline = False
             if d == ',':
-                next_zone = int((screen.col-1)/14)+1
-                if next_zone >= number_zones and screen.width >= 14:
-                    screen.write_line()
+                next_zone = int((output.col-1)/14)+1
+                if next_zone >= number_zones and output.width >= 14:
+                    output.write_line()
                 else:            
-                    screen.write(' '*(1+14*next_zone-screen.col))
+                    output.write(' '*(1+14*next_zone-output.col))
             elif d == '\xD2': #SPC(
-                numspaces = max(0, vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=2), 0xffff)) % screen.width
+                numspaces = max(0, vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=2), 0xffff)) % output.width
                 util.require_read(ins, (')',))
-                screen.write(' ' * numspaces)
+                output.write(' ' * numspaces)
             elif d == '\xCE': #TAB(
-                pos = max(0, vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=2), 0xffff)) % screen.width
+                pos = max(0, vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=2), 0xffff)) % output.width
                 util.require_read(ins, (')',))
-                if pos < screen.col:
-                    screen.write_line()
-                    screen.write(' '*(pos-1))
+                if pos < output.col:
+                    output.write_line()
+                    output.write(' '*(pos-1))
                 else:
-                    screen.write(' '*(pos-screen.col))
+                    output.write(' '*(pos-output.col))
         else:
             newline = True
             expr = expressions.parse_expression(ins)
@@ -2127,14 +2128,15 @@ def exec_print(ins, screen=None):
             if expr[0] in ('%', '!', '#'):
                 word += ' '
             # output file (iolayer) takes care of width management; we must send a whole string at a time for this to be correct.
-            screen.write(str(word))
+            output.write(str(word))
     if util.skip_white_read_if(ins, ('\xD7',)): # USING
-        return exec_print_using(ins, screen)     
+        return exec_print_using(ins, output)     
     if newline:
-        screen.write_line()
+        output.write_line()
     util.require(ins, util.end_statement)      
             
-def exec_print_using(ins, screen):
+def exec_print_using(ins, output):
+    ''' PRINT USING: Write expressions to screen or file using a formatting string. '''
     format_expr = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     if format_expr == '':
         raise error.RunError(5)
@@ -2154,29 +2156,29 @@ def exec_print_using(ins, screen):
             fors.seek(0)
         elif c == '_':
             # escape char; write next char in fors or _ if this is the last char
-            screen.write(fors.read(2)[-1])
+            output.write(fors.read(2)[-1])
         else:
             string_field = representation.get_string_tokens(fors)
             if string_field:
                 if not data_ends:
                     s = str(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
                     if string_field == '&':
-                        screen.write(s)    
+                        output.write(s)    
                     else:
-                        screen.write(s[:len(string_field)] + ' '*(len(string_field)-len(s)))
+                        output.write(s[:len(string_field)] + ' '*(len(string_field)-len(s)))
             else:
                 number_field, digits_before, decimals = representation.get_number_tokens(fors)
                 if number_field:
                     if not data_ends:
                         num = vartypes.pass_float_keep(expressions.parse_expression(ins))
-                        screen.write(representation.format_number(num, number_field, digits_before, decimals))
+                        output.write(representation.format_number(num, number_field, digits_before, decimals))
                 else:
-                    screen.write(fors.read(1))       
+                    output.write(fors.read(1))       
             if string_field or number_field:
                 format_chars = True
                 semicolon = util.skip_white_read_if(ins, (';', ','))    
     if not semicolon:
-        screen.write_line()
+        output.write_line()
     util.require(ins, util.end_statement)
 
 def exec_lprint(ins):
