@@ -296,7 +296,8 @@ class TextFile(BaseFile):
     def write(self, s):
         """ Write the string s to the file, taking care of width settings. """
         # only break lines at the start of a new string. width 255 means unlimited width
-        if self.width != 255 and self.col >= self.width and s and s[0] not in ('\r', '\n'):
+        if self.width != 255 and self.col-1 + len(s) > self.width and s and s[0] not in ('\r', '\n'):
+            print self.col, len(s), self.width
             self.fhandle.write('\r\n')
             self.flush()
             self.col = 1
