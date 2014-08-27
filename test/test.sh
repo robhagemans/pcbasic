@@ -1,9 +1,9 @@
 #!/bin/bash
-name=FILEWIDT
+name=$1
 cd output/$name
-echo "Running file width tests..."
-rm FILEW*
-../../../pcbasic -bq "../../$name.BAS"
+echo "Running test $name..."
+#rm *
+../../../pcbasic -bq "../../$name.BAS" > /dev/null
 pass=1
 for file in *
 do

@@ -758,17 +758,41 @@ class SCRNFile(NullDevice):
         self._col = state.console_state.col
         NullDevice.__init__(self)
     
-    def write(self, inp):
-        """ Write a string to the screen. """
-        for s in inp:
-            console.write(s)
-            if s in ('\r', '\n'):
-                self._col = 1
-            else:
-                self._col += 1    
-            if state.console_state.col > self.width and self.width != 255:
+    def write(self, s):
+        self._col = state.console_state.col
+        # take column 80+overflow int account
+        if state.console_state.overflow:
+            self._col += 1
+        # only break lines at the start of a new string. width 255 means unlimited width
+        s_width = 0
+        newline = False
+        # find width of first line in s
+        for c in str(s):
+            if c in ('\r', '\n'):
+                newline = True
+                break
+            if c == '\b':
+                # for lpt1 and files, nonprinting chars are not counted in LPOS; but chr$(8) will take a byte out of the buffer
+                s_width -= 1
+            elif ord(c) >= 32:
+                # nonprinting characters including tabs are not counted for WIDTH
+                s_width += 1
+        if (self.width != 255 
+                and self.col != 1 and self.col-1 + s_width > self.width and not newline):
+            console.write_line()
+            self._col = 1
+        for c in str(s):
+            if self.width <= state.console_state.width and self.col > self.width:
                 console.write_line()
                 self._col = 1
+            if self.col <= state.console_state.width or self.width <= state.console_state.width:
+                console.write(c)
+            if c in ('\n', '\r'):
+                self._col = 1
+            else:
+                self._col += 1
+                
+                
             
     def write_line(self, inp=''):
         """ Write a string to the screen and follow by CR. """
