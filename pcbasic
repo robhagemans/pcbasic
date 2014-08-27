@@ -224,6 +224,16 @@ def prepare_constants(args):
         console.cga_palette_1 = console.cga_palette_1_lo
         console.cga_palette_5 = console.cga_palette_5_lo
         console.cga_palettes = [console.cga_palette_0, console.cga_palette_1]
+    if args.max_files:
+        iolayer.max_files = parse_int_option_silent(args.max_files)
+    if args.max_reclen:
+        iolayer.max_reclen = parse_int_option_silent(args.max_reclen)
+        if iolayer.max_reclen < 1:
+            iolayer.max_reclen = 1
+        if iolayer.max_reclen > 32767:
+            iolayer.max_reclen = 32767
+    if args.serial_in_size:
+        iolayer.serial_in_size = parse_int_option_silent(args.serial_in_size)
 
 def prepare_console(args):
     # set codepage and font family
@@ -262,7 +272,6 @@ def prepare_console(args):
     if not sound.init_sound():
         logging.warning('Failed to initialise sound. Sound will be disabled.')
         backend.sound = nosound
-    # FIXME: move these to args_constants() ?
     # gwbasic-style redirected output is split between graphical screen and redirected file    
     if args.output:
         echo = partial(echo_ascii, f=oslayer.safe_open(args.output[0], "S", "W"))
@@ -270,16 +279,6 @@ def prepare_console(args):
         state.console_state.input_echos.append(echo)
     if args.input:
         load_redirected_input(oslayer.safe_open(args.input[0], "L", "R"))       
-    if args.max_files:
-        iolayer.max_files = parse_int_option_silent(args.max_files)
-    if args.max_reclen:
-        iolayer.max_reclen = parse_int_option_silent(args.max_reclen)
-        if iolayer.max_reclen < 1:
-            iolayer.max_reclen = 1
-        if iolayer.max_reclen > 32767:
-            iolayer.max_reclen = 32767
-    if args.serial_in_size:
-        iolayer.serial_in_size = parse_int_option_silent(args.serial_in_size)
 
 #############################################
 # io redirection
