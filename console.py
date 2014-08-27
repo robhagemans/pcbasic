@@ -325,11 +325,11 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
         backend.video.init_screen_mode()
         # only redraw keys if screen has been cleared (any colours stay the same). state.console_state.screen_mode must be set for this
         if state.console_state.keys_visible:  
-            show_keys()    
+            show_keys(True)
         set_default_cursor()
         set_pos(1, 1)
         update_cursor_visibility()
-        # FIXME: are there different views for different pages?
+        # there is only one VIEW PRINT setting across all pages.
         unset_view()
         # in screen 0, 1, set colorburst (not in SCREEN 2!)
         if new_mode in (0, 1):
@@ -342,7 +342,6 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
         state.console_state.vpage = state.console_state.pages[state.console_state.vpagenum]
         state.console_state.apage = state.console_state.pages[state.console_state.apagenum]
         backend.video.screen_changed = True
-        # FIXME: keys visible?
     return True
 
 
@@ -847,7 +846,7 @@ def clear():
     else:
         unset_view()
     if state.console_state.keys_visible:
-        show_keys()
+        show_keys(True)
         
 ##### output methods
 
@@ -941,6 +940,7 @@ def set_width(to_width):
 # key replacement
 
 def list_keys():
+    """ Print a list of the function key macros. """
     for i in range(on_event.num_fn_keys):
         text = bytearray(state.console_state.key_replace[i])
         for j in range(len(text)):
@@ -951,34 +951,38 @@ def list_keys():
         write_line('F' + str(i+1) + ' ' + str(text))    
 
 def clear_key_row():
+    """ Clear row 25 on the active page. """
     state.console_state.apage.row[24].clear()
     backend.video.clear_rows(state.console_state.attr, 25, 25)
 
-def hide_keys():
-    state.console_state.keys_visible = False
-    clear_key_row()
-                            
-def show_keys():
-    state.console_state.keys_visible = True
-    clear_key_row()
-    for i in range(state.console_state.width/8):
-        text = str(state.console_state.key_replace[i][:6])
-        kcol = 1+8*i
-        write_for_keys(str(i+1)[-1], kcol, state.console_state.attr)
-        if state.console_state.screen_mode:
-            write_for_keys(text, kcol+1, state.console_state.attr)
-        else:
-            if (state.console_state.attr>>4) & 0x7 == 0:    
-                write_for_keys(text, kcol+1, 0x70)
+def show_keys(do_show):
+    """ Show/hide the function keys line on the active page. """
+    # Keys will only be visible on the active page at which KEY ON was given, 
+    # and only deleted on page at which KEY OFF given.
+    if not do_show:
+        state.console_state.keys_visible = False
+        clear_key_row()
+    else:
+        state.console_state.keys_visible = True
+        clear_key_row()
+        for i in range(state.console_state.width/8):
+            text = str(state.console_state.key_replace[i][:6])
+            kcol = 1+8*i
+            write_for_keys(str(i+1)[-1], kcol, state.console_state.attr)
+            if state.console_state.screen_mode:
+                write_for_keys(text, kcol+1, state.console_state.attr)
             else:
-                write_for_keys(text, kcol+1, 0x07)
-    state.console_state.apage.row[24].end = state.console_state.width           
+                if (state.console_state.attr>>4) & 0x7 == 0:    
+                    write_for_keys(text, kcol+1, 0x70)
+                else:
+                    write_for_keys(text, kcol+1, 0x07)
+        state.console_state.apage.row[24].end = state.console_state.width           
 
 def write_for_keys(s, col, cattr):
-    # write chars for the keys line - yes, it's different :)
-    # with no echo
+    """ Write chars on the keys line, with no echo and some character replacements. """
     for c in s:
         if c == '\x00':
+            # NUL character terminates display of a word
             break
         else:
             try:
@@ -987,8 +991,8 @@ def write_for_keys(s, col, cattr):
                 pass    
             put_screen_char_attr(state.console_state.apage, 25, col, c, cattr)    
         col += 1
-    backend.video.set_attr(state.console_state.attr)     
-    
+    backend.video.set_attr(state.console_state.attr)
+
 ##############################
 # keyboard buffer read/write
 

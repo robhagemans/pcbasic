@@ -1993,10 +1993,10 @@ def exec_key(ins):
         if state.console_state.scroll_height == 25:
             raise error.RunError(5)
         if not state.console_state.keys_visible:
-            console.show_keys()
+            console.show_keys(True)
     elif d == '\xdd': # OFF
         if state.console_state.keys_visible:
-            console.hide_keys()   
+            console.show_keys(False)   
     elif d == '\x93': # LIST
         console.list_keys()
     elif d == '(':
@@ -2030,7 +2030,7 @@ def exec_key_define(ins):
     if keynum <= on_event.num_fn_keys:
         state.console_state.key_replace[keynum-1] = str(text)
         if state.console_state.keys_visible:
-            console.show_keys()
+            console.show_keys(True)
     else:
         if len(text) != 2:
             raise error.RunError(5)
