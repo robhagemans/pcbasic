@@ -56,15 +56,21 @@ def poke(addr, val):
     if addr < 0: 
         addr += 0x10000
     addr += segment * 0x10
-    if addr >= video_segment[state.console_state.screen_mode]*0x10:
+    if addr >= font_segment*0x10+ font_addr:
+        # that's ROM it seems
+        pass
+    elif addr >= video_segment[state.console_state.screen_mode]*0x10:
         # can't poke into font memory, ignored even in GW-BASIC. ROM?
         # graphics and text memory
         set_video_memory(addr, val)
-#    elif addr >= data_segment*0x10 + var.var_mem_start:
-#        # variable memory
-#        set_data_memory(addr)
-
-
+    elif addr >= data_segment*0x10 + var.var_mem_start:
+        # POKING in variables not implemented
+        #set_data_memory(addr, val)
+        # just use it as storage...
+        peek_values[addr] = val
+    else:
+        pass
+        
 def inp(port):    
     if port == 0x60:
         backend.wait()
