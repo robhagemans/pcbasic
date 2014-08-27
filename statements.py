@@ -2082,7 +2082,7 @@ def exec_write(ins, output=None):
                 outstr += '"' + str(vartypes.unpack_string(expr)) + '"'
             else:                
                 outstr += str(vartypes.unpack_string(representation.value_to_str_keep(expr, screen=True, write=True)))
-            if util.skip_white_read_if(ins, (',',)):
+            if util.skip_white_read_if(ins, (',', ';')):
                 outstr += ','
             else:
                 break
