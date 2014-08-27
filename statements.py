@@ -683,7 +683,7 @@ def exec_files(ins):
     util.require(ins, util.end_statement)
     
 def exec_shell(ins):
-    ''' SHELL: open OS shell and optionally execute command. '''
+    """ SHELL: open OS shell and optionally execute command. """
     # parse optional shell command
     if util.skip_white(ins) in util.end_statement:
         cmd = ''
@@ -2039,7 +2039,7 @@ def exec_key_define(ins):
             state.basic_state.event_keys[keynum-1] = str(text)
     
 def exec_locate(ins):
-    ''' LOCATE: Set cursor position, shape and visibility.'''
+    """ LOCATE: Set cursor position, shape and visibility."""
     row, col, cursor, start, stop, dummy = expressions.parse_int_list(ins, 6, 2, allow_last_empty=True)          
     if dummy != None:
         # can end on a 5th comma but no stuff allowed after it
@@ -2071,7 +2071,7 @@ def exec_locate(ins):
             console.set_cursor_shape(start, stop)
 
 def exec_write(ins, output=None):
-    ''' WRITE: Output machine-readable expressions to the screen or a file. '''
+    """ WRITE: Output machine-readable expressions to the screen or a file. """
     output = expressions.parse_file_number(ins, 'OAR')
     output = state.io_state.devices['SCRN:'] if output == None else output
     expr = expressions.parse_expression(ins, allow_empty=True)
@@ -2090,7 +2090,7 @@ def exec_write(ins, output=None):
     output.write_line()
 
 def exec_print(ins, output=None):
-    ''' PRINT: Write expressions to the screen or a file. '''
+    """ PRINT: Write expressions to the screen or a file. """
     if output == None:
         output = expressions.parse_file_number(ins, 'OAR')
         output = state.io_state.devices['SCRN:'] if output == None else output
@@ -2137,7 +2137,7 @@ def exec_print(ins, output=None):
     util.require(ins, util.end_statement)      
             
 def exec_print_using(ins, output):
-    ''' PRINT USING: Write expressions to screen or file using a formatting string. '''
+    """ PRINT USING: Write expressions to screen or file using a formatting string. """
     format_expr = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     if format_expr == '':
         raise error.RunError(5)
@@ -2183,7 +2183,7 @@ def exec_print_using(ins, output):
     util.require(ins, util.end_statement)
 
 def exec_lprint(ins):
-    ''' LPRINT: Write expressions to printer LPT1. '''
+    """ LPRINT: Write expressions to printer LPT1. """
     exec_print(ins, state.io_state.devices['LPT1:'])
                              
 def exec_view_print(ins):

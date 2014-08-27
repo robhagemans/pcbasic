@@ -407,18 +407,18 @@ def set_palette(new_palette=None):
     backend.video.update_palette()
 
 def show_cursor(do_show):
-    ''' Force cursor to be visible/invisible. '''
+    """ Force cursor to be visible/invisible. """
     backend.video.update_cursor_visibility(do_show)
 
 def update_cursor_visibility():
-    ''' Set cursor visibility: visible if in interactive mode, unless forced visible in text mode. '''
+    """ Set cursor visibility: visible if in interactive mode, unless forced visible in text mode. """
     visible = (not state.basic_state.execute_mode)
     if state.console_state.screen_mode == 0:
         visible = visible or state.console_state.cursor
     backend.video.update_cursor_visibility(visible)
 
 def set_cursor_shape(from_line, to_line):
-    ''' Set the cursor shape as a block from from_line to to_line (in 8-line modes). Use compatibility algo in higher resolutions. '''
+    """ Set the cursor shape as a block from from_line to to_line (in 8-line modes). Use compatibility algo in higher resolutions. """
     if video_capabilities == 'ega':
         # odd treatment of cursors on EGA machines, presumably for backward compatibility
         # the following algorithm is based on DOSBox source int10_char.cpp INT10_SetCursorShape(Bit8u first,Bit8u last)    

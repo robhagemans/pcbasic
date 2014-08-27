@@ -77,7 +77,7 @@ def load(families, height, codepage_dict):
     return font
 
 def fixfont(height, font, codepage_dict, font16):
-    '''Fill in missing codepoints in font using 16-line font or blanks.'''
+    """ Fill in missing codepoints in font using 16-line font or blanks. """
     if height not in font or font[height] == None:
         font[height] = []
     if height == 16:            
@@ -91,7 +91,7 @@ def fixfont(height, font, codepage_dict, font16):
     return font
             
 def glyph_16_to(height, glyph16):
-    ''' Crudely convert 16-line character to n-line character by taking out top and bottom. '''
+    """ Crudely convert 16-line character to n-line character by taking out top and bottom. """
     s16 = list(glyph16)
     start = (16 - height) // 2
     if len(s16) == 16:
