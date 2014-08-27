@@ -724,40 +724,60 @@ class KYBDFile(NullDevice):
             if not console.set_width(new_width):
                 raise error.RunError(5)
 
+
 class SCRNFile(NullDevice):
+
+    """ SCRN: device, allows writing to the screen as a text file. 
+        If number==0, this accesses console directly; otherwise, through a wrapper text file.
+        For example, WIDTH "SCRN:, 40 works directly on console,
+        whereas OPEN "SCRN:" FOR OUTPUT AS 1: WIDTH #1,23 works on the wrapper text file.
+        Likewise, WIDTH "LPT1:" works on lpt1 for the next time it's opened; also for other devices.
+    """
+
     allowed_modes = 'OR'
     
     def __init__(self):
         self.name = 'SCRN:'
         self.mode = 'O'
         self._width = state.console_state.width
+        self._col = state.console_state.col
         NullDevice.__init__(self)
     
     def write(self, inp):
+        """ Write a string to the screen. """
         for s in inp:
             console.write(s)
+            if s in ('\r', '\n'):
+                self._col = 1
+            else:
+                self._col += 1    
             if state.console_state.col > self.width and self.width != 255:
                 console.write_line()
+                self._col = 1
             
     def write_line(self, inp=''):
+        """ Write a string to the screen and follow by CR. """
         self.write(inp)
         console.write_line()
             
     @property
     def col(self):  
-        return state.console_state.col
+        """ Return current (virtual) column position. """
+        if self.number == 0:    
+            return state.console_state.col
+        else:
+            return self._col
         
     @property
     def width(self):
+        """ Return (virtual) screen width. """
         if self.number == 0:    
             return state.console_state.width
         else:
             return self._width
     
-    # WIDTH "SCRN:, 40 works directly on console 
-    # whereas OPEN "SCRN:" FOR OUTPUT AS 1: WIDTH #1,23 works on the wrapper text file
-    # WIDTH "LPT1:" works on lpt1 for the next time it's opened; also for other devices.
     def set_width(self, new_width=255):
+        """ Set (virtual) screen width. """
         if self.number == 0:
             if not console.set_width(new_width):
                 raise error.RunError(5)
