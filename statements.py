@@ -2126,8 +2126,7 @@ def exec_print(ins, screen=None):
             # numbers always followed by a space
             if expr[0] in ('%', '!', '#'):
                 word += ' '
-            if screen.col + len(word) - 1 > screen.width and screen.col != 1:
-                screen.write_line()
+            # output file (iolayer) takes care of width management; we must send a whole string at a time for this to be correct.
             screen.write(str(word))
     if util.skip_white_read_if(ins, ('\xD7',)): # USING
         return exec_print_using(ins, screen)     

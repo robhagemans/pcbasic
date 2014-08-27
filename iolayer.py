@@ -244,7 +244,7 @@ class TextFile(BaseFile):
             self.fhandle.seek(0)
         else:
             self.fhandle.seek(0, 2)
-        # width=255 means line wrap
+        # width=255 means unlimited
         self.width = 255
         self.col = 1
     
@@ -294,16 +294,20 @@ class TextFile(BaseFile):
         
     # write one or more chars
     def write(self, s):
+        ''' Write the string s to the file, taking care of width settings. '''
+        # only break lines at the start of a new string. width 255 means unlimited width
+        if self.width != 255 and self.col >= self.width and s and s[0] not in ('\r', '\n'):
+            self.fhandle.write('\r\n')
+            self.flush()
+            self.col = 1
         for c in str(s):
-            if self.col >= self.width and self.width != 255:  # width 255 means wrapping enabled
-                self.fhandle.write('\r\n')
-                self.flush()
-                self.col = 1
-            if c in ('\n', '\r'): # don't replace with CRLF when writing to files
+            # don't replace CR or LF with CRLF when writing to files
+            if c in ('\n', '\r'): 
                 self.fhandle.write(c)
                 self.flush()
                 self.col = 1
-            elif c == '\b':   # BACKSPACE
+            # handle backspace    
+            elif c == '\b':
                 if self.col > 1:
                     self.col -= 1
                     self.seek(-1, 1)
