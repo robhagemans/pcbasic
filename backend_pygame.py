@@ -588,7 +588,6 @@ def build_glyph(c, font_face, req_width, req_height):
         if c in carry_col_9 and glyph_width == 9:
             if line & 1 == 1:
                 glyph.set_at((8, yy), color)
-    glyph.set_at((8, 8), color)
     if req_width > glyph_width:
         glyph = pygame.transform.scale(glyph, (req_width, req_height))    
     return glyph        
