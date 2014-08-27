@@ -2075,19 +2075,21 @@ def exec_write(ins, output=None):
     output = expressions.parse_file_number(ins, 'OAR')
     output = state.io_state.devices['SCRN:'] if output == None else output
     expr = expressions.parse_expression(ins, allow_empty=True)
+    outstr = ''
     if expr:
         while True:
             if expr[0] == '$':
-                output.write('"' + str(vartypes.unpack_string(expr)) + '"')
+                outstr += '"' + str(vartypes.unpack_string(expr)) + '"'
             else:                
-                output.write(str(vartypes.unpack_string(representation.value_to_str_keep(expr, screen=True, write=True))))
+                outstr += str(vartypes.unpack_string(representation.value_to_str_keep(expr, screen=True, write=True)))
             if util.skip_white_read_if(ins, (',',)):
-                output.write(',')
+                outstr += ','
             else:
                 break
             expr = expressions.parse_expression(ins)
     util.require(ins, util.end_statement)        
-    output.write_line()
+    # write the whole thing as one thing (this affects line breaks)
+    output.write_line(outstr)
 
 def exec_print(ins, output=None):
     """ PRINT: Write expressions to the screen or a file. """
