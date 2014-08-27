@@ -296,7 +296,20 @@ class TextFile(BaseFile):
     def write(self, s):
         """ Write the string s to the file, taking care of width settings. """
         # only break lines at the start of a new string. width 255 means unlimited width
-        if self.width != 255 and self.col-1 + len(s) > self.width and s and s[0] not in ('\r', '\n'):
+        s_width = 0
+        newline = False
+        # find width of first line in s
+        for c in str(s):
+            if c in ('\r', '\n'):
+                newline = True
+                break
+            if c == '\b':
+                # for lpt1 and files, nonprinting chars are not counted in LPOS; but chr$(8) will take a byte out of the buffer
+                s_width -= 1
+            elif ord(c) >= 32:
+                # nonprinting characters including tabs are not counted for WIDTH
+                s_width += 1
+        if self.width != 255 and self.col != 1 and self.col-1 + s_width > self.width and not newline:
             self.fhandle.write('\r\n')
             self.flush()
             self.col = 1
@@ -315,7 +328,6 @@ class TextFile(BaseFile):
             else:    
                 self.fhandle.write(c)
                 # nonprinting characters including tabs are not counted for WIDTH
-                # for lpt1 and files , nonprinting chars are not counted in LPOS; but chr$(8) will take a byte out of the buffer
                 if ord(c) >= 32:
                     self.col += 1
 
