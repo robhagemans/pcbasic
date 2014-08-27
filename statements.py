@@ -2070,23 +2070,24 @@ def exec_locate(ins):
         if state.console_state.screen_mode == 0:    
             console.set_cursor_shape(start, stop)
 
-def exec_write(ins, screen=None):
-    screen = expressions.parse_file_number(ins, 'OAR')
-    screen = state.io_state.devices['SCRN:'] if screen == None else screen
+def exec_write(ins, output=None):
+    ''' WRITE: Output machine-readable expressions to the screen or a file. '''
+    output = expressions.parse_file_number(ins, 'OAR')
+    output = state.io_state.devices['SCRN:'] if output == None else output
     expr = expressions.parse_expression(ins, allow_empty=True)
     if expr:
         while True:
             if expr[0] == '$':
-                screen.write('"' + str(vartypes.unpack_string(expr)) + '"')
+                output.write('"' + str(vartypes.unpack_string(expr)) + '"')
             else:                
-                screen.write(str(vartypes.unpack_string(representation.value_to_str_keep(expr, screen=True, write=True))))
+                output.write(str(vartypes.unpack_string(representation.value_to_str_keep(expr, screen=True, write=True))))
             if util.skip_white_read_if(ins, (',',)):
-                screen.write(',')
+                output.write(',')
             else:
                 break
             expr = expressions.parse_expression(ins)
     util.require(ins, util.end_statement)        
-    screen.write_line()
+    output.write_line()
 
 def exec_print(ins, output=None):
     ''' PRINT: Write expressions to the screen or a file. '''
@@ -2182,6 +2183,7 @@ def exec_print_using(ins, output):
     util.require(ins, util.end_statement)
 
 def exec_lprint(ins):
+    ''' LPRINT: Write expressions to printer LPT1. '''
     exec_print(ins, state.io_state.devices['LPT1:'])
                              
 def exec_view_print(ins):
