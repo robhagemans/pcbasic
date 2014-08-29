@@ -1069,14 +1069,26 @@ def get_screen_char_attr(crow, ccol, want_attr):
     ca = state.console_state.apage.row[crow-1].buf[ccol-1][want_attr]
     return ca if want_attr else ord(ca)
 
-def put_screen_char_attr(cpage, crow, ccol, c, cattr, one_only=False):
-    cattr = cattr & 0xf if state.console_state.screen_mode else cattr
+def put_screen_char_attr_single(cpage, crow, ccol, c, cattr):
     # update the screen buffer
     cpage.row[crow-1].buf[ccol-1] = (c, cattr)
+    cpage.row[crow-1].double[ccol-1] = 0
     backend.video.set_attr(cattr) 
-    if not unicodepage.dbcs:
-        backend.video.putc_at(crow, ccol, c)    
-    else:
+    backend.video.putc_at(crow, ccol, c)    
+
+def put_screen_char_attr_double(cpage, crow, ccol, c, d, cattr):
+    # update the screen buffer
+    therow = cpage.row[crow-1]
+    therow.buf[ccol-1] = (c, cattr)
+    therow.buf[ccol] = (d, cattr)
+    therow.double[ccol-1:ccol] = [1, 2]
+    backend.video.set_attr(cattr) 
+    backend.video.putwc_at(crow, ccol, c, d)
+
+def put_screen_char_attr(cpage, crow, ccol, c, cattr, one_only=False):
+    cattr = cattr & 0xf if state.console_state.screen_mode else cattr
+    put_screen_char_attr_single(cpage, crow, ccol, c, cattr)
+    if unicodepage.dbcs:
         # replace chars from here until necessary to update double-width chars
         therow = cpage.row[crow-1]    
         # replacing a trail byte? take one step back
@@ -1085,26 +1097,34 @@ def put_screen_char_attr(cpage, crow, ccol, c, cattr, one_only=False):
         if (ccol > 1 and therow.double[ccol-2] != 2 and 
                 (therow.buf[ccol-1] in unicodepage.trail or therow.buf[ccol-2][0] in unicodepage.lead)):
             ccol -= 1
+        # last char continues box drawing to right
+        box_continues = unicodepage.box_protect and (ccol > 1 and therow.buf[ccol-2][0] in unicodepage.box0_right)
         # check all dbcs characters between here until it doesn't matter anymore    
         while ccol < state.console_state.width:
             c = therow.buf[ccol-1][0]
             d = therow.buf[ccol][0]  
-            if c in unicodepage.lead and d in unicodepage.trail:
-                therow.double[ccol-1:ccol] = [1, 2]
-                backend.video.putwc_at(crow, ccol, c, d)
+            if (c in unicodepage.lead and d in unicodepage.trail and 
+                    (not box_continues or c not in unicodepage.box0_left
+                    or (c in unicodepage.box0_right and d not in unicodepage.box0_left))):
+                put_screen_char_attr_double(cpage, crow, ccol, c, d, cattr)
                 ccol += 2
-            else:    
-                therow.double[ccol-1] = 0
-                backend.video.putc_at(crow, ccol, c)    
+                box_continues = unicodepage.box_protect and d in unicodepage.box0_right
+            else:
+                if box_continues and c in unicodepage.box0_left and ccol > 2 and therow.double[ccol-2] != 0:
+                    # continuing box drawing, replace previous wchar with two chars
+                    put_screen_char_attr_single(cpage, crow, ccol-2, therow.buf[ccol-3][0], therow.buf[ccol-3][1])
+                    put_screen_char_attr_single(cpage, crow, ccol-1, therow.buf[ccol-2][0], therow.buf[ccol-2][1])
+                # print single char
+                put_screen_char_attr_single(cpage, crow, ccol, c, cattr)
                 if therow.double[ccol] == 0:
                     break
                 ccol += 1
+                box_continues = unicodepage.box_protect and c in unicodepage.box0_right
             if one_only and ccol > orig_col:
                 break  
-        if ccol == state.console_state.width and therow.double[state.console_state.width-1] == 0:
-            backend.video.set_attr(therow.buf[state.console_state.width-1][1]) 
-            backend.video.putc_at(crow, state.console_state.width, therow.buf[state.console_state.width-1][0])    
-        
+        if ccol <= state.console_state.width and therow.double[ccol-1] == 0:
+            put_screen_char_attr_single(cpage, crow, ccol, therow.buf[ccol-1][0], therow.buf[ccol-1][1])
+
 def put_char(c, do_scroll_down=False):
     # check if scroll& repositioning needed
     if state.console_state.overflow:

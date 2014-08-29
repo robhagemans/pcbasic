@@ -17,20 +17,20 @@ encoding_dir = os.path.join(plat.basepath, 'encoding')
 control = ('\x07', '\x09', '\x0a', '\x0b', '\x0c', '\x0d', '\x1c', '\x1d', '\x1e', '\x1f')
 
 # left-connecting single-line box drawing chars
-box0_left = (  
-    u'\u2500', u'\u2504', u'\u2508',
-    u'\u2510', u'\u2518', 
-    u'\u2524', u'\u2526', u'\u2527', u'\u2528', u'\u252c', u'\u252e', 
-    u'\u2530', u'\u2532', u'\u2534', u'\u2536', u'\u2538', u'\u253a', u'\u253c', u'\u253e',
-    u'\u2540', u'\u2541', u'\u2542', u'\u2544', u'\u2546', u'\u254a', u'\u254c')
+box0_left_unicode = (
+    0x2500, 0x2504, 0x2508,
+    0x2510, 0x2518, 
+    0x2524, 0x2526, 0x2527, 0x2528, 0x252c, 0x252e, 
+    0x2530, 0x2532, 0x2534, 0x2536, 0x2538, 0x253a, 0x253c, 0x253e,
+    0x2540, 0x2541, 0x2542, 0x2544, 0x2546, 0x254a, 0x254c)
 
 # right-connecting single-line box drawing chars
-box0_right = ( 
-    u'\u2500', u'\u2504', u'\u2508',
-    u'\u2514', u'\u2516', u'\u251c', u'\u251e', u'\u251f',
-    u'\u2520', u'\u252c', u'\u252d',
-    u'\u2530', u'\u2531', u'\u2534', u'\u2535', u'\u2538', u'\u2539', u'\u253c', u'\u253d',
-    u'\u2540', u'\u2541', u'\u2542', u'\u2543', u'\u2545', u'\u2549', u'\u254c')
+box0_right_unicode = (
+    0x2500, 0x2504, 0x2508,
+    0x2514, 0x2516, 0x251c, 0x251e, 0x251f,
+    0x2520, 0x252c, 0x252d,
+    0x2530, 0x2531, 0x2534, 0x2535, 0x2538, 0x2539, 0x253c, 0x253d,
+    0x2540, 0x2541, 0x2542, 0x2543, 0x2545, 0x2549, 0x254c)
 
 # protect box drawing sequences under dbcs?
 box_protect = True
@@ -39,12 +39,14 @@ box_protect = True
 dbcs = False
 
 def load_codepage(codepage_name):
-    global cp_to_utf8, utf8_to_cp, lead, trail, dbcs, dbcs_num_chars
+    global cp_to_utf8, utf8_to_cp, lead, trail, dbcs, dbcs_num_chars, box0_left, box0_right
     # load double-byte unicode table
     name = os.path.join(encoding_dir, codepage_name + '.ucp')
     # lead and trail bytes
     lead = set()
     trail = set()
+    box0_left = set()
+    box0_right = set()
     cp_to_utf8 = {}
     dbcs_num_chars = 0
     try:
@@ -69,6 +71,12 @@ def load_codepage(codepage_name):
                     lead.add(cp_point[0])
                     trail.add(cp_point[1])
                     dbcs_num_chars += 1
+                # track box drawing chars
+                else:
+                    if ucs_point in box0_left_unicode:
+                        box0_left.add(cp_point[0])
+                    if ucs_point in box0_right_unicode:
+                        box0_right.add(cp_point[0])
             except ValueError:
                 logging.warning('Could not parse line in unicode mapping table: %s', repr(line))
     except IOError:
