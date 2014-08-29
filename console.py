@@ -88,8 +88,8 @@ state.console_state.col = 1
 # true if we're on 80 but should be on 81
 state.console_state.overflow = False
 
-# cursor visible?
-state.console_state.cursor = True
+# cursor visible in execute mode?
+state.console_state.cursor = False
 # overwrite mode (instead of insert)
 state.console_state.overwrite_mode = True
 # cursor shape
