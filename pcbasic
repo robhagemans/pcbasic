@@ -14,8 +14,8 @@
 
 import sys
 import os
-from functools import partial             
-             
+from functools import partial
+
 import plat
 import backend_dumb
 
@@ -180,8 +180,6 @@ def prepare_constants(args):
         program.dont_protect = True    
     if args.codepage:
         state.console_state.codepage = args.codepage[0]
-    if args.caps:
-        state.console_state.caps = True    
     # rename exec argument for convenience
     try:
         args.cmd = getattr(args, 'exec') 
@@ -271,7 +269,9 @@ def prepare_console(args):
         state.console_state.output_echos.append(echo) 
         state.console_state.input_echos.append(echo)
     if args.input:
-        load_redirected_input(oslayer.safe_open(args.input[0], "L", "R"))       
+        load_redirected_input(oslayer.safe_open(args.input[0], "L", "R"))
+    if args.capture_caps:
+        console.ignore_caps = False
 
 #############################################
 # io redirection
