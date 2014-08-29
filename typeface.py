@@ -13,14 +13,12 @@ import os
 import logging
 import plat
 
-font_dir = os.path.join(plat.basepath, 'font') 
-
 def font_filename(name, height):
     """ Return name_height.hex if filename exists in current path, else font_dir/name_height.hex. """
     name = '%s_%02d.hex' % (name, height)
     if not os.path.exists(name):
         # if not found in current dir, try in font directory
-        name = os.path.join(font_dir, name)
+        name = os.path.join(plat.font_dir, name)
     return name    
 
 def load(families, height, codepage_dict):

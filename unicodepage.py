@@ -9,9 +9,6 @@ import logging
 import os
 import plat
 
-# where to find unicode tables
-encoding_dir = os.path.join(plat.basepath, 'encoding')
-
 # on the terminal, these values are not shown as special graphic chars but as their normal effect
 # BEL, TAB, LF, HOME, CLS, CR, RIGHT, LEFT, UP, DOWN  (and not BACKSPACE)
 control = ('\x07', '\x09', '\x0a', '\x0b', '\x0c', '\x0d', '\x1c', '\x1d', '\x1e', '\x1f')
@@ -41,7 +38,7 @@ dbcs = False
 def load_codepage(codepage_name):
     global cp_to_utf8, utf8_to_cp, lead, trail, dbcs, dbcs_num_chars, box0_left, box0_right
     # load double-byte unicode table
-    name = os.path.join(encoding_dir, codepage_name + '.ucp')
+    name = os.path.join(plat.encoding_dir, codepage_name + '.ucp')
     # lead and trail bytes
     lead = set()
     trail = set()

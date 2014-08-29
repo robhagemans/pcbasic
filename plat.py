@@ -33,5 +33,7 @@ if hasattr(sys, "frozen"):
 else:
     # get the directory of this file
     basepath = os.path.dirname(os.path.realpath(__file__))
-    
-    
+
+# directories
+encoding_dir = os.path.join(basepath, 'encoding')
+font_dir = os.path.join(basepath, 'font')
