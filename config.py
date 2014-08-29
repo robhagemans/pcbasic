@@ -134,7 +134,6 @@ def get_args():
             parms.append('-' + short_args[argname])
         except KeyError:
             pass
-        print parms
         parser.add_argument(*parms, **kwparms)
     # manually re-enable -h
     parser.add_argument('-h', '--help', action='store_true', help='Show this message and exit')
