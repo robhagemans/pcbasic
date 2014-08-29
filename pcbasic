@@ -180,6 +180,8 @@ def prepare_constants(args):
         program.dont_protect = True    
     if args.codepage:
         state.console_state.codepage = args.codepage[0]
+    if args.nobox:
+        unicodepage.box_protect = False
     # rename exec argument for convenience
     try:
         args.cmd = getattr(args, 'exec') 

@@ -82,6 +82,7 @@ arguments = {
     'windows_map_drives':{ 'action':'store_true', 'help':'Map all Windows drive letters to PC-BASIC drive letters (Windows only)' },
     'cga_low':          { 'action':'store_true', 'help':'Use low-intensity palettes in CGA (for --video={cga,ega} only).' },
     'composite':        { 'action':'store_true', 'help':'Emulates the output on an NTSC composite monitor. Disables smooth scaling. Enables colour artifacts on SCREEN 2 only (and crudely). For --video={cga,cga_old,pcjr,tandy} only.' },
+    'nobox':            { 'action':'store_true', 'help':'Disable box-drawing recognition for DBCS code pages' },
 }
 
 def get_args():
