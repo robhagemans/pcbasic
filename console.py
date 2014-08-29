@@ -1076,11 +1076,11 @@ def put_screen_char_attr_single(cpage, crow, ccol, c, cattr):
     backend.video.set_attr(cattr) 
     backend.video.putc_at(crow, ccol, c)    
 
-def put_screen_char_attr_double(cpage, crow, ccol, c, d, cattr):
+def put_screen_char_attr_double(cpage, crow, ccol, c, d, cattr, dattr):
     # update the screen buffer
     therow = cpage.row[crow-1]
     therow.buf[ccol-1] = (c, cattr)
-    therow.buf[ccol] = (d, cattr)
+    therow.buf[ccol] = (d, dattr)
     therow.double[ccol-1:ccol] = [1, 2]
     backend.video.set_attr(cattr) 
     backend.video.putwc_at(crow, ccol, c, d)
@@ -1099,14 +1099,14 @@ def put_screen_char_attr(cpage, crow, ccol, c, cattr, one_only=False):
             ccol -= 1
         # last char continues box drawing to right
         box_continues = unicodepage.box_protect and (ccol > 1 and therow.buf[ccol-2][0] in unicodepage.box0_right)
-        # check all dbcs characters between here until it doesn't matter anymore    
+        # check all dbcs characters between here until it doesn't matter anymore
         while ccol < state.console_state.width:
             c = therow.buf[ccol-1][0]
             d = therow.buf[ccol][0]  
             if (c in unicodepage.lead and d in unicodepage.trail and 
                     (not box_continues or c not in unicodepage.box0_left
                     or (c in unicodepage.box0_right and d not in unicodepage.box0_left))):
-                put_screen_char_attr_double(cpage, crow, ccol, c, d, cattr)
+                put_screen_char_attr_double(cpage, crow, ccol, c, d, therow.buf[ccol-1][1], therow.buf[ccol][1])
                 ccol += 2
                 box_continues = unicodepage.box_protect and d in unicodepage.box0_right
             else:
@@ -1115,7 +1115,7 @@ def put_screen_char_attr(cpage, crow, ccol, c, cattr, one_only=False):
                     put_screen_char_attr_single(cpage, crow, ccol-2, therow.buf[ccol-3][0], therow.buf[ccol-3][1])
                     put_screen_char_attr_single(cpage, crow, ccol-1, therow.buf[ccol-2][0], therow.buf[ccol-2][1])
                 # print single char
-                put_screen_char_attr_single(cpage, crow, ccol, c, cattr)
+                put_screen_char_attr_single(cpage, crow, ccol, c, therow.buf[ccol-1][1])
                 if therow.double[ccol] == 0:
                     break
                 ccol += 1
