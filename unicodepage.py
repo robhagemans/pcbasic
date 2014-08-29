@@ -13,19 +13,8 @@ import plat
 encoding_dir = os.path.join(plat.basepath, 'encoding')
 
 # on the terminal, these values are not shown as special graphic chars but as their normal effect
-control = (
-    '\x07', # BEL
-    #'\x08',# BACKSPACE
-    '\x09', # TAB 
-    '\x0a', # LF
-    '\x0b', # HOME
-    '\x0c', # clear screen
-    '\x0d', # CR
-    '\x1c', # RIGHT
-    '\x1d', # LEFT
-    '\x1e', # UP
-    '\x1f', # DOWN
-    ) 
+# BEL, TAB, LF, HOME, CLS, CR, RIGHT, LEFT, UP, DOWN  (and not BACKSPACE)
+control = ('\x07', '\x09', '\x0a', '\x0b', '\x0c', '\x0d', '\x1c', '\x1d', '\x1e', '\x1f')
 
 # is the current codepage a double-byte codepage?
 dbcs = False
