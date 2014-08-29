@@ -2109,7 +2109,7 @@ def exec_print(ins, screen=None):
                 util.require_read(ins, (')',))
                 screen.write(' ' * numspaces)
             elif d == '\xCE': #TAB(
-                pos = max(0, vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=2), 0xffff)) % screen.width
+                pos = max(0, vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=2), 0xffff) - 1) % screen.width + 1
                 util.require_read(ins, (')',))
                 if pos < screen.col:
                     screen.write_line()
