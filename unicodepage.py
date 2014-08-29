@@ -13,21 +13,27 @@ import plat
 # BEL, TAB, LF, HOME, CLS, CR, RIGHT, LEFT, UP, DOWN  (and not BACKSPACE)
 control = ('\x07', '\x09', '\x0a', '\x0b', '\x0c', '\x0d', '\x1c', '\x1d', '\x1e', '\x1f')
 
-# left-connecting single-line box drawing chars
-box0_left_unicode = (
-    0x2500, 0x2504, 0x2508,
-    0x2510, 0x2518, 
-    0x2524, 0x2526, 0x2527, 0x2528, 0x252c, 0x252e, 
-    0x2530, 0x2532, 0x2534, 0x2536, 0x2538, 0x253a, 0x253c, 0x253e,
-    0x2540, 0x2541, 0x2542, 0x2544, 0x2546, 0x254a, 0x254c)
+# left-connecting box drawing chars
+box_left_unicode = [
+    # single line
+    (   0x2500, 0x2504, 0x2508,
+        0x2510, 0x2518, 0x2524, 0x2526, 0x2527, 0x2528, 0x252c, 0x252e, 
+        0x2530, 0x2532, 0x2534, 0x2536, 0x2538, 0x253a, 0x253c, 0x253e,
+        0x2540, 0x2541, 0x2542, 0x2544, 0x2546, 0x254a, 0x254c,
+        0x2556, 0x255c, 0x2562, 0x2565, 0x2568, 0x256b, 0x256e, 0x256f, 0x2574, 0x257c),
+    # double line
+    (   0x2550, 0x2555, 0x2557, 0x255b, 0x255d, 0x2561, 0x2563, 0x2564, 0x2566, 0x2567, 0x2569, 0x256a, 0x256c ) ]
 
-# right-connecting single-line box drawing chars
-box0_right_unicode = (
-    0x2500, 0x2504, 0x2508,
-    0x2514, 0x2516, 0x251c, 0x251e, 0x251f,
-    0x2520, 0x252c, 0x252d,
-    0x2530, 0x2531, 0x2534, 0x2535, 0x2538, 0x2539, 0x253c, 0x253d,
-    0x2540, 0x2541, 0x2542, 0x2543, 0x2545, 0x2549, 0x254c)
+# right-connecting box drawing chars
+box_right_unicode = [
+    # single line
+    (   0x2500, 0x2504, 0x2508,
+        0x2514, 0x2516, 0x251c, 0x251e, 0x251f, 0x2520, 0x252c, 0x252d,
+        0x2530, 0x2531, 0x2534, 0x2535, 0x2538, 0x2539, 0x253c, 0x253d,
+        0x2540, 0x2541, 0x2542, 0x2543, 0x2545, 0x2549, 0x254c,
+        0x2553, 0x2559, 0x255f, 0x2565, 0x2568, 0x256b, 0x256d, 0x2570, 0x2576, 0x257e),
+    # double line
+    (   0x2550, 0x2552, 0x2554, 0x2558, 0x255a, 0x255e, 0x2560, 0x2564, 0x2566, 0x2567, 0x2569, 0x256a, 0x256c) ]
 
 # protect box drawing sequences under dbcs?
 box_protect = True
@@ -36,14 +42,14 @@ box_protect = True
 dbcs = False
 
 def load_codepage(codepage_name):
-    global cp_to_utf8, utf8_to_cp, lead, trail, dbcs, dbcs_num_chars, box0_left, box0_right
+    global cp_to_utf8, utf8_to_cp, lead, trail, dbcs, dbcs_num_chars, box_left, box_right
     # load double-byte unicode table
     name = os.path.join(plat.encoding_dir, codepage_name + '.ucp')
     # lead and trail bytes
     lead = set()
     trail = set()
-    box0_left = set()
-    box0_right = set()
+    box_left = [set(), set()]
+    box_right = [set(), set()]
     cp_to_utf8 = {}
     dbcs_num_chars = 0
     try:
@@ -70,10 +76,11 @@ def load_codepage(codepage_name):
                     dbcs_num_chars += 1
                 # track box drawing chars
                 else:
-                    if ucs_point in box0_left_unicode:
-                        box0_left.add(cp_point[0])
-                    if ucs_point in box0_right_unicode:
-                        box0_right.add(cp_point[0])
+                    for i in (0, 1):
+                        if ucs_point in box_left_unicode[i]:
+                            box_left[i].add(cp_point[0])
+                        if ucs_point in box_right_unicode[i]:
+                            box_right[i].add(cp_point[0])
             except ValueError:
                 logging.warning('Could not parse line in unicode mapping table: %s', repr(line))
     except IOError:
