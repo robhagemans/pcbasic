@@ -16,6 +16,25 @@ encoding_dir = os.path.join(plat.basepath, 'encoding')
 # BEL, TAB, LF, HOME, CLS, CR, RIGHT, LEFT, UP, DOWN  (and not BACKSPACE)
 control = ('\x07', '\x09', '\x0a', '\x0b', '\x0c', '\x0d', '\x1c', '\x1d', '\x1e', '\x1f')
 
+# left-connecting single-line box drawing chars
+box0_left = (  
+    u'\u2500', u'\u2504', u'\u2508',
+    u'\u2510', u'\u2518', 
+    u'\u2524', u'\u2526', u'\u2527', u'\u2528', u'\u252c', u'\u252e', 
+    u'\u2530', u'\u2532', u'\u2534', u'\u2536', u'\u2538', u'\u253a', u'\u253c', u'\u253e',
+    u'\u2540', u'\u2541', u'\u2542', u'\u2544', u'\u2546', u'\u254a', u'\u254c')
+
+# right-connecting single-line box drawing chars
+box0_right = ( 
+    u'\u2500', u'\u2504', u'\u2508',
+    u'\u2514', u'\u2516', u'\u251c', u'\u251e', u'\u251f',
+    u'\u2520', u'\u252c', u'\u252d',
+    u'\u2530', u'\u2531', u'\u2534', u'\u2535', u'\u2538', u'\u2539', u'\u253c', u'\u253d',
+    u'\u2540', u'\u2541', u'\u2542', u'\u2543', u'\u2545', u'\u2549', u'\u254c')
+
+# protect box drawing sequences under dbcs?
+box_protect = True
+
 # is the current codepage a double-byte codepage?
 dbcs = False
 
