@@ -8,7 +8,7 @@
 # This file is released under the GNU GPL version 3. 
 # please see text file COPYING for licence terms.
 #
-
+ 
 import logging
 
 import state
@@ -1069,26 +1069,27 @@ def get_screen_char_attr(crow, ccol, want_attr):
     ca = state.console_state.apage.row[crow-1].buf[ccol-1][want_attr]
     return ca if want_attr else ord(ca)
 
-def put_screen_char_attr_single(cpage, crow, ccol, c, cattr):
-    # update the screen buffer
-    cpage.row[crow-1].buf[ccol-1] = (c, cattr)
+def refresh_screen_pos(cpage, crow, ccol):
+    ca = cpage.row[crow-1].buf[ccol-1]
+    backend.video.set_attr(ca[1]) 
+    backend.video.putc_at(crow, ccol, ca[0])
     cpage.row[crow-1].double[ccol-1] = 0
-    backend.video.set_attr(cattr) 
-    backend.video.putc_at(crow, ccol, c)    
-
-def put_screen_char_attr_double(cpage, crow, ccol, c, d, cattr, dattr):
-    # update the screen buffer
+    
+def refresh_screen_pos_double(cpage, crow, ccol):
     therow = cpage.row[crow-1]
-    therow.buf[ccol-1] = (c, cattr)
-    therow.buf[ccol] = (d, dattr)
+    ca = therow.buf[ccol-1]
+    da = therow.buf[ccol]
+    backend.video.set_attr(da[1]) 
+    backend.video.putwc_at(crow, ccol, ca[0], da[0])
     therow.double[ccol-1:ccol] = [1, 2]
-    backend.video.set_attr(cattr) 
-    backend.video.putwc_at(crow, ccol, c, d)
-
+    
 def put_screen_char_attr(cpage, crow, ccol, c, cattr, one_only=False):
     cattr = cattr & 0xf if state.console_state.screen_mode else cattr
-    put_screen_char_attr_single(cpage, crow, ccol, c, cattr)
-    if unicodepage.dbcs:
+    # update the screen buffer
+    cpage.row[crow-1].buf[ccol-1] = (c, cattr)
+    if not unicodepage.dbcs:
+        refresh_screen_pos(cpage, crow, ccol)
+    else:
         # replace chars from here until necessary to update double-width chars
         therow = cpage.row[crow-1]    
         # replacing a trail byte? take one step back
@@ -1106,24 +1107,24 @@ def put_screen_char_attr(cpage, crow, ccol, c, cattr, one_only=False):
             if (c in unicodepage.lead and d in unicodepage.trail and 
                     (not box_continues or c not in unicodepage.box0_left
                     or (c in unicodepage.box0_right and d not in unicodepage.box0_left))):
-                put_screen_char_attr_double(cpage, crow, ccol, c, d, therow.buf[ccol-1][1], therow.buf[ccol][1])
-                ccol += 2
+                refresh_screen_pos_double(cpage, crow, ccol)
                 box_continues = unicodepage.box_protect and d in unicodepage.box0_right
+                ccol += 2
             else:
                 if box_continues and c in unicodepage.box0_left and ccol > 2 and therow.double[ccol-2] != 0:
                     # continuing box drawing, replace previous wchar with two chars
-                    put_screen_char_attr_single(cpage, crow, ccol-2, therow.buf[ccol-3][0], therow.buf[ccol-3][1])
-                    put_screen_char_attr_single(cpage, crow, ccol-1, therow.buf[ccol-2][0], therow.buf[ccol-2][1])
+                    refresh_screen_pos(cpage, crow, ccol-2)
+                    refresh_screen_pos(cpage, crow, ccol-1)
                 # print single char
-                put_screen_char_attr_single(cpage, crow, ccol, c, therow.buf[ccol-1][1])
-                if therow.double[ccol] == 0:
-                    break
-                ccol += 1
+                refresh_screen_pos(cpage, crow, ccol)
                 box_continues = unicodepage.box_protect and c in unicodepage.box0_right
+                ccol += 1
+                if (ccol >= state.console_state.width) or therow.double[ccol-1] == 0:
+                    break
             if one_only and ccol > orig_col:
                 break  
         if ccol <= state.console_state.width and therow.double[ccol-1] == 0:
-            put_screen_char_attr_single(cpage, crow, ccol, therow.buf[ccol-1][0], therow.buf[ccol-1][1])
+            refresh_screen_pos(cpage, crow, ccol)
 
 def put_char(c, do_scroll_down=False):
     # check if scroll& repositioning needed
