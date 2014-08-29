@@ -32,6 +32,7 @@ video_segment = { 0: 0xb800, 1: 0xb800, 2: 0xb800, 3: 0xb800, 4: 0xb800, 5: 0xb8
 text_segment = 0xb800
 font_segment = 0xf000
 font_addr = 0xfa6e
+low_segment = 0x40
 
 def peek(addr):
     if addr < 0: 
@@ -49,6 +50,8 @@ def peek(addr):
         elif addr >= data_segment*0x10 + var.var_mem_start:
             # variable memory
             return max(0, get_data_memory(addr))
+        elif addr >= low_segment*0x10:
+            return max(0, get_low_memory(addr))
         else:    
             return 0
 
@@ -420,5 +423,33 @@ def get_font_memory(addr):
         return -1
     return ord(backend.video.fonts[8][char][addr%8])
 
+#################################################################################
 
- 
+def get_low_memory(addr):
+    addr -= low_segment*0x10
+    # &h40:&h17 keyboard flag
+    # Byte 1:
+    # &H80 - Insert state active
+    # &H40 - CapsLock state has been toggled
+    # &H20 - NumLock state has been toggled
+    # &H10 - ScrollLock state has been toggled
+    # &H08 - Alternate shift key depressed
+    # &H04 - Control shift key depressed
+    # &H02 - Left shift key depressed
+    # &H01 - Right shift key depressed
+    # Byte 2:
+    # &H80 - Insert key is depressed
+    # &H40 - CapsLock key is depressed
+    # &H20 - NumLock key is depressed
+    # &H10 - ScrollLock key is depressed
+    # &H08 - Suspend key has been toggled
+    backend.wait()
+    if addr == 0x17:
+        val = state.console_state.keystatus 
+        val = val & (0xffff ^ 0x0080) if state.console_state.overwrite_mode else val | 0x0080
+        val = val | 0x0040 if state.console_state.caps else val & (0xffff ^ 0x0040)
+        val = val | 0x0020 if state.console_state.num else val & (0xffff ^ 0x0020)
+        val = val | 0x0010 if state.console_state.scroll else val & (0xffff ^ 0x0010)
+        # suspend key not implemented
+        return val
+    return -1    

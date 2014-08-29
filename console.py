@@ -101,6 +101,8 @@ state.console_state.cursor_to = 0
 state.console_state.keybuf = ''
 # INP(&H60) scancode
 state.console_state.inp_key = 0
+# keypressed status of caps, num, scroll, alt, ctrl, shift
+state.console_state.keystatus = 0
 
 # echo to printer or dumb terminal
 state.console_state.input_echos = []
@@ -108,9 +110,12 @@ state.console_state.output_echos = []
 
 # input has closed
 state.console_state.input_closed = False
-# capslock mode 
+# capslock, numlock, scrollock mode 
 state.console_state.caps = False
-
+state.console_state.num = False
+state.console_state.scroll = False
+# let OS handle capslock effects
+ignore_caps = True
 
 # pen and stick
 state.console_state.pen_is_on = False
@@ -1009,7 +1014,7 @@ def insert_key(c):
                     return
         except ValueError:
             pass
-    if state.console_state.caps:
+    if state.console_state.caps and not ignore_caps:
         if c >= 'a' and c <= 'z':
             c = chr(ord(c)-32)
         elif c >= 'A' and c <= 'z':

@@ -228,7 +228,7 @@ if pygame:
         pygame.K_v:         '\x2F',        pygame.K_b:         '\x30',        pygame.K_n:         '\x31',
         pygame.K_m:         '\x32',        pygame.K_COMMA:     '\x33',        pygame.K_PERIOD:    '\x34',
         pygame.K_SLASH:     '\x35',        pygame.K_RSHIFT:    '\x36',        pygame.K_PRINT:     '\x37',
-        pygame.K_SYSREQ:    '\x37',        pygame.K_RALT:      '\x38',        pygame.K_LALT:      '\x38',
+        pygame.K_SYSREQ:    '\x37',        pygame.K_RALT:      '\x38',        pygame.K_LALT:      '\x38',      pygame.K_MODE:      '\x38',
         pygame.K_SPACE:     '\x39',        pygame.K_CAPSLOCK:  '\x3A',
         # others    
         pygame.K_F1:        '\x3B',        pygame.K_F2:        '\x3C',        pygame.K_F3:        '\x3D',
@@ -247,6 +247,12 @@ if pygame:
         pygame.K_KP5:   '5',    pygame.K_KP6:   '6',    pygame.K_KP7:   '7',    pygame.K_KP8:   '8',    pygame.K_KP9:   '9',
     }
 
+    keycode_to_keystatus = {
+        pygame.K_INSERT: 0x0080, pygame.K_CAPSLOCK: 0x0040, pygame.K_NUMLOCK: 0x0020, pygame.K_SCROLLOCK: 0x0010,
+        pygame.K_LALT: 0x0008, pygame.K_RALT: 0x0008, pygame.K_MODE: 0x0008, # altgr activates K_MODE
+        pygame.K_LCTRL: 0x0004, pygame.K_RCTRL: 0x0004, pygame.K_LSHIFT: 0x0002, pygame.K_RSHIFT: 0x0001 }
+
+    
     # cursor is visible
     cursor_visible = True
     
@@ -785,8 +791,11 @@ def handle_key(e):
         # ctrl+SCROLLLOCK breaks too
         raise error.Break()
     elif e.key == pygame.K_CAPSLOCK:
-        # let CAPS LOCK be handled by the window manager
-        pass
+        state.console_state.caps = not state.console_state.caps
+    elif e.key == pygame.K_NUMLOCK:
+        state.console_state.num = not state.console_state.num
+    elif e.key == pygame.K_SCROLLOCK:
+        state.console_state.scroll = not state.console_state.scroll
     elif e.key == pygame.K_PRINT:
         # these can't be caught by INKEY$ etc:
         if mods & pygame.KMOD_CTRL:
@@ -831,6 +840,12 @@ def handle_key(e):
         state.console_state.inp_key = ord(keycode_to_inpcode[e.key])
     except KeyError:
         pass    
+    # set key-pressed status
+    try:
+        state.console_state.keystatus |= keycode_to_keystatus[e.key]
+    except KeyError:
+        pass    
+    
 
 def handle_key_up(e):
     global keypad_ascii
@@ -846,7 +861,12 @@ def handle_key_up(e):
             char = '\0\0'
         console.insert_key(char)
         keypad_ascii = ''
-           
+    # unset key-pressed status
+    try:
+        state.console_state.keystatus &= (0xffff ^ keycode_to_keystatus[e.key])
+    except KeyError:
+        pass    
+
 def handle_mouse(e):
     if e.button == 1: # LEFT BUTTON
         backend.penstick.trigger_pen(e.pos)
