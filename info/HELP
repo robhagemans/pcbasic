@@ -609,13 +609,16 @@ ERRORS:
 
 
 CHAIN statement
-CHAIN [MERGE] program [, [line_number_expr] [, [ALL] [, DELETE range]]]
+CHAIN [MERGE] program [, [line_number_expr] [, ALL] [, DELETE range [, ign]]]
 ---------------
 Loads 'program' into memory and runs it, optionally transferring variables.
 If 'line_number_expr' is specified, it must be a numeric-valued expression. It 
 will be interpreted as a line number in the new program and execution will 
 start from this line number. If 'line_number_expr' is negative, it will be 
-interpreted as its two's-complement. 
+interpreted as its two's-complement.
+'range' must be a line number range of which the closing line number is
+specified and exists before the merge.
+'ign' is optional and ignored. 
 If ALL is specified, all variables are transferred. If not, the variables 
 specified in a COMMON statement are transferred. 
 IF MERGE is specified, 'program' is merged into the existing program. To be 
@@ -628,13 +631,15 @@ NOTES:
 -   Only if ALL is specified, DEF FN definitions are preserved.
 -   Only if MERGE is specified, DEFINT, DEFSTR, DEFSNG, DEFDBL definitions 
     are preserved.
+-   if specified, ALL must precede DELETE; if unspecified, no comma must
+    be put in its place and only two commas should precede DELETE.
 ERRORS:
 -   If MERGE is specified and 'program' was not saved in ASCII mode, 
     BAD FILE MODE is raised.
 -   If a SYNTAX ERROR is raised by CHAIN, no lines are deleted and the new
     program is not loaded.
 -   If a line number in 'range' is greater than 65529, SYNTAX ERROR is raised.
--   If the 'range' does not include any program lines stored, CHAIN
+-   If the closing line number in 'range' does not exist, CHAIN
     raises ILLEGAL FUNCTION CALL.
 -   If 'line_number_expr' does not evaluate to an existing line number in the
     new program, ILLEGAL FUNCTION CALL is raised but the load or merge is 

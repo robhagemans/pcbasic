@@ -826,12 +826,33 @@ def exec_chain(ins):
         if util.skip_white_read_if(ins, (',',)):
             if util.skip_white_read_if(ins, ('ALL',)):
                 common_all = True
-            if util.skip_white_read_if(ins, (',',)) and util.skip_white_read_if(ins, ('\xa9',)):
-                delete_lines = parse_line_range(ins) # , DELETE
+                # CHAIN "file", , ALL, DELETE
+                if util.skip_white_read_if(ins, (',',)):
+                    delete_lines = parse_delete_clause(ins)
+            else:
+                # CHAIN "file", , DELETE
+                delete_lines = parse_delete_clause(ins)
     util.require(ins, util.end_statement)
     program.chain(action, iolayer.open_file_or_device(0, name, mode='L', defext='BAS'), jumpnum, delete_lines)
     # preserve DEFtype on MERGE
     reset.clear(preserve_common=True, preserve_all=common_all, preserve_deftype=(action==program.merge))
+
+def parse_delete_clause(ins):
+    delete_lines = None
+    if util.skip_white_read_if(ins, ('\xa9',)): # DELETE
+        from_line = util.parse_jumpnum(ins, allow_empty=True)    
+        if util.skip_white_read_if(ins, ('\xEA',)):   # -
+            to_line = util.parse_jumpnum(ins, allow_empty=True)
+        else:
+            to_line = from_line
+        # to_line must be specified and must be an existing line number
+        if not to_line or to_line not in state.basic_state.line_numbers:
+            raise error.RunError(5)    
+        delete_lines = (from_line, to_line)
+        # ignore rest if preceded by cmma
+        if util.skip_white_read_if(ins, (',',)):
+            util.skip_to(ins, util.end_statement)
+    return delete_lines
 
 def exec_save(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
