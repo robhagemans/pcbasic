@@ -319,7 +319,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
                  state.console_state.pixel_aspect_ratio = fp.div(fp.Single.from_int(1968), fp.Single.from_int(1000))       
         else:    
             # pixels e.g. 80*8 x 25*14, screen ratio 4x3 makes for pixel width/height (4/3)*(25*14/8*80)
-            # FIXME - hard coded 8-pixel width for graphics screens here.
+            # graphic screens always have 8-pixel widths (can be 9 on text)
             state.console_state.pixel_aspect_ratio = fp.div(
                 fp.Single.from_int(state.console_state.height*state.console_state.font_height), 
                 fp.Single.from_int(6*state.console_state.width)) 
