@@ -315,9 +315,10 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
 def set_colorburst(on=True):
     global cga_palettes
     old_colorburst = backend.video.colorburst
-    backend.video.colorburst = ( on and video_capabilities in ('cga', 'cga_old', 'tandy', 'pcjr') )
+    colorburst_capable = video_capabilities in ('cga', 'cga_old', 'tandy', 'pcjr')
+    backend.video.colorburst = on and colorburst_capable
     if state.console_state.screen_mode == 1:
-        if backend.video.colorburst:
+        if backend.video.colorburst or not colorburst_capable:
             cga_palettes = [cga_palette_0, cga_palette_1]
         else:
             cga_palettes = [cga_palette_5, cga_palette_5]
