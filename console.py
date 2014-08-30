@@ -901,18 +901,18 @@ def write_line(s='', scroll_ok=True):
 def list_line(line):
     # flow of listing is visible on screen
     backend.check_events()
-    for i in range( 1 + (len(line)-1)// 80):
-        # does not take into account LFs
-        if state.console_state.row+i <= state.console_state.scroll_height:
-            clear_line(state.console_state.row+i)
-    # clear_line moves the position, undo        
-    if state.console_state.row <  state.console_state.scroll_height:
-        set_pos(state.console_state.row - (len(line)-1)// 80, 1)
-    write_line(str(line))
+    cuts = line.split('\a')
+    for i, l in enumerate(cuts):
+        write(str(l))
+        if not state.console_state.overflow:
+            clear_rest_of_line(state.console_state.row, state.console_state.col)
+        if i != len(cuts)-1:
+            write('\a')
+    write_line()
     # remove wrap after 80-column program line
     if len(line) == state.console_state.width and state.console_state.row > 2:
         state.console_state.apage.row[state.console_state.row-3].wrap = False
-
+    
 def set_width(to_width):
     # raise an error if the width value doesn't make sense
     if to_width not in (20, 40, 80):
