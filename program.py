@@ -367,7 +367,6 @@ def load_ascii_file(g, first_char=''):
                 raise error.RunError(66)   
 
 def chain(action, g, jumpnum, delete_lines): 
-    # FIXME: does CHAIN ... DELETE ignore COMMON? this code doesn't clear variables on DELETE.   
     if delete_lines:
         # delete lines from existing code before merge (without MERGE, this is pointless)
         delete(*delete_lines)
