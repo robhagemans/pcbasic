@@ -224,7 +224,6 @@ def draw_circle_or_ellipse(x0, y0, r, start, stop, c, aspect):
     if aspect.equals(aspect.one):
         draw_circle(x0, y0, rx, c, start_octant, start_coord, start_line, stop_octant, stop_coord, stop_line)
     else:
-        # TODO - make this all more sensible, calculate only once
         startx, starty, stopx, stopy = -1, -1, -1, -1
         if start != None:
             startx = abs(fp.mul(fp.Single.from_int(rx), fp.cos(start)).round_to_int())
