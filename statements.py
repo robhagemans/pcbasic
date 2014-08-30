@@ -2153,6 +2153,8 @@ def exec_print(ins, output=None):
     if util.skip_white_read_if(ins, ('\xD7',)): # USING
         return exec_print_using(ins, output)     
     if newline:
+        if state.console_state.overflow:
+            output.write_line()
         output.write_line()
     util.require(ins, util.end_statement)      
             
