@@ -806,7 +806,8 @@ def list_line(line):
         if state.console_state.row+i <= state.console_state.scroll_height:
             clear_line(state.console_state.row+i)
     # clear_line moves the position, undo        
-    set_pos(state.console_state.row - (len(line)-1)// 80, 1)
+    if state.console_state.row <  state.console_state.scroll_height:
+        set_pos(state.console_state.row - (len(line)-1)// 80, 1)
     write_line(str(line))
     # remove wrap after 80-column program line
     if len(line) == state.console_state.width and state.console_state.row > 2:
