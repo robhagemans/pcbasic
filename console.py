@@ -803,11 +803,11 @@ def list_line(line):
     backend.check_events()
     cuts = line.split('\a')
     for i, l in enumerate(cuts):
+        clear_line(state.console_state.row)
         write(str(l))
-        if not state.console_state.overflow:
-            clear_rest_of_line(state.console_state.row, state.console_state.col)
         if i != len(cuts)-1:
             write('\a')
+    clear_rest_of_line(state.console_state.row, state.console_state.col)
     write_line()
     # remove wrap after 80-column program line
     if len(line) == state.console_state.width and state.console_state.row > 2:
