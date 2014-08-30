@@ -288,6 +288,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
         if state.console_state.keys_visible:  
             show_keys()    
         set_default_cursor()
+        # set the position to home 
         set_pos(1, 1)
         update_cursor_visibility()
         # FIXME: are there different views for different pages?
@@ -1015,7 +1016,7 @@ def set_pos(to_row, to_col, scroll_ok=True):
     state.console_state.overflow = False
     state.console_state.row, state.console_state.col = to_row, to_col
     check_pos(scroll_ok)
-    backend.video.update_pos()
+    backend.video.update_cursor_attr(to_row, to_col)
 
 def check_pos(scroll_ok=True):
     oldrow, oldcol = state.console_state.row, state.console_state.col

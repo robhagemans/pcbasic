@@ -412,7 +412,7 @@ def init_screen_mode():
     screen.set_palette(workaround_palette)
     under_cursor.set_palette(workaround_palette)
     # set cursor colour
-    update_pos()
+    update_cursor_attr(1, 1)
     screen_changed = True
   
 def resize_display(width, height, initial=False): 
@@ -528,8 +528,8 @@ def update_cursor_visibility(cursor_on):
     cursor_visible = cursor_on
     screen_changed = True
 
-def update_pos():
-    attr = state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf
+def update_cursor_attr(to_row, to_col):
+    attr = state.console_state.apage.row[to_row-1].buf[to_col-1][1] & 0xf
     cursor0.set_palette_at(254, screen.get_palette_at(attr))
 
 def scroll(from_line):

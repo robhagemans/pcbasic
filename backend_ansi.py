@@ -180,8 +180,8 @@ def get_colours(attr):
     back = 40 + colours[back%8]
     return fore, back
 
-def update_pos():
-    attr = state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf
+def update_cursor_attr(to_row, to_col):
+    attr = state.console_state.apage.row[to_row-1].buf[to_col-1][1] & 0xf
     term.write(esc_set_cursor_colour % get_fg_colourname(attr))
     term.flush()
     

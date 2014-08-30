@@ -139,7 +139,7 @@ def scroll(from_line):
 def scroll_down(from_line):
     pass
 
-def update_pos():
+def update_cursor_attr(to_row, to_col):
     pass
         
 def update_palette():
