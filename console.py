@@ -1089,7 +1089,8 @@ def refresh_screen_pos_double(cpage, crow, ccol):
     da = therow.buf[ccol]
     backend.video.set_attr(da[1]) 
     backend.video.putwc_at(crow, ccol, ca[0], da[0])
-    therow.double[ccol-1:ccol] = [1, 2]
+    therow.double[ccol-1] = 1
+    therow.double[ccol] = 2
     
 def put_screen_char_attr(cpage, crow, ccol, c, cattr, one_only=False):
     cattr = cattr & 0xf if state.console_state.screen_mode else cattr
