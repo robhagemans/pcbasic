@@ -52,18 +52,23 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
             state.basic_state.common_array_names = []
         # restore only common variables
         # this is a re-assignment which is not FOR-safe; but clear_variables is only called in CLEAR which also clears the FOR stack
-        state.basic_state.variables = common
-        state.basic_state.arrays = common_arrays
-        # FIXME: rebuild or preserve memory model
-        # memory model
+        state.basic_state.variables = {}
+        state.basic_state.arrays = {}
+        state.basic_state.var_memory = {}
+        state.basic_state.array_memory = {}
         state.basic_state.var_current = var_mem_start
         state.basic_state.string_current = state.basic_state.var_current + total_mem # 65020
-        state.basic_state.var_memory = {}
         # arrays are always kept after all vars
         state.basic_state.array_current = 0
-        state.basic_state.array_memory = {}
         # functions are cleared except when CHAIN ... ALL is specified
         state.basic_state.functions = {}
+        # preserve common variables
+        # use set_var and dim_array to rebuild memory model
+        for v in common:    
+            set_var(v, (v[-1], common[v]))
+        for a in common_arrays:
+            dim_array(a, common_arrays[a][0])
+            state.basic_state.arrays[a] = common_arrays[a]
 
 clear_variables()
 
