@@ -1567,8 +1567,7 @@ def exec_clear(ins):
         if expr < 0:
             raise error.RunError(5)
     if util.skip_white_read_if(ins, (',',)):
-        # TODO: NOT IMPLEMENTED
-        # expression1 is a memory location that, if specified, sets the maximum number of bytes available for use by GW-BASIC        
+        # TODO: CLEAR - NOT IMPLEMENTED: sets the maximum number of bytes available for use by GW-BASIC        
         exp1 = expressions.parse_expression(ins, allow_empty=True)
         if exp1:
             exp1 = vartypes.pass_int_unpack(exp1, maxint=0xffff)
@@ -1576,8 +1575,7 @@ def exec_clear(ins):
             #  0 leads to illegal fn call
             raise error.RunError(5)
         if util.skip_white_read_if(ins, (',',)):
-            # TODO: NOT IMPLEMENTED
-            # expression2 sets aside stack space for GW-BASIC. The default is the previous stack space size. 
+            # TODO: CLEAR - NOT IMPLEMENTED: sets aside stack space for GW-BASIC. The default is the previous stack space size. 
             # When GW-BASIC is first executed, the stack space is set to 512 bytes, or one-eighth of the available memory, 
             # whichever is smaller.
             exp2 = expressions.parse_expression(ins, allow_empty = True)
@@ -1590,7 +1588,6 @@ def exec_clear(ins):
                                                            expressions.parse_expression(ins, empty_err=2))).round_to_int()
                 # check if we need to drop out of our current mode 
                 console.check_video_memory()                                                           
-                # TODO: what errors are raised?
             elif not exp2:
                 raise error.RunError(2)    
     util.require(ins, util.end_statement)
@@ -2258,7 +2255,6 @@ def exec_width(ins):
 def exec_screen(ins):
     erase = 1
     if pcjr_syntax:
-        # TODO: what errors on erase values?
         mode, colorswitch, apagenum, vpagenum, erase = expressions.parse_int_list(ins, 5)
     else:    
         # in GW, screen 0,0,0,0,0,0 raises error after changing the palette... this raises error before:
@@ -2269,7 +2265,8 @@ def exec_screen(ins):
     apagenum = apagenum if apagenum != None else state.console_state.apagenum
     vpagenum = vpagenum if vpagenum != None else state.console_state.vpagenum
     # if any parameter not in [0,255], error 5 without doing anything 
-    util.range_check(0, 255, mode, colorswitch, apagenum, vpagenum, erase)
+    util.range_check(0, 255, mode, colorswitch, apagenum, vpagenum)
+    util.range_check(0, 2, erase)
     # if the parameters are outside narrow ranges (e.g. not implemented screen mode, pagenum beyond max)
     # then the error is only raised after changing the palette.
     util.require(ins, util.end_statement)        
