@@ -1095,9 +1095,8 @@ def put_screen_char_attr(cpage, crow, ccol, c, cattr, one_only=False):
     cattr = cattr & 0xf if state.console_state.screen_mode else cattr
     # update the screen buffer
     cpage.row[crow-1].buf[ccol-1] = (c, cattr)
-    if not unicodepage.dbcs:
-        refresh_screen_pos(cpage, crow, ccol)
-    else:
+    refresh_screen_pos(cpage, crow, ccol)
+    if unicodepage.dbcs:
         # replace chars from here until necessary to update double-width chars
         therow = cpage.row[crow-1]    
         # replacing a trail byte? take one step back
@@ -1138,8 +1137,6 @@ def put_screen_char_attr(cpage, crow, ccol, c, cattr, one_only=False):
                     break
             if one_only and ccol > orig_col:
                 break  
-        if ccol <= state.console_state.width and therow.double[ccol-1] == 0:
-            refresh_screen_pos(cpage, crow, ccol)
 
 def put_char(c, do_scroll_down=False):
     # check if scroll& repositioning needed
