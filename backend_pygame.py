@@ -481,8 +481,7 @@ def update_cursor_visibility(cursor_on):
     cursor_visible = cursor_on
     screen_changed = True
 
-def update_pos():
-    attr = state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf
+def update_cursor_attr(attr):
     cursor0.set_palette_at(254, screen.get_palette_at(attr))
 
 def scroll(from_line):
@@ -612,8 +611,6 @@ def build_cursor(width, height, from_line, to_line):
                 pass
             else:
                 cursor0.set_at((xx, yy), color)
-    # set cursor colour
-    update_pos()
     screen_changed = True            
 
 ######################################

@@ -331,8 +331,9 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
         # only redraw keys if screen has been cleared (any colours stay the same). state.console_state.screen_mode must be set for this
         if state.console_state.keys_visible:  
             show_keys(True)
-        set_default_cursor()
+        # rebuild build the cursor; first move to home in case the screen has shrunk
         set_pos(1, 1)
+        set_default_cursor()
         update_cursor_visibility()
         # there is only one VIEW PRINT setting across all pages.
         unset_view()
@@ -450,7 +451,8 @@ def set_cursor_shape(from_line, to_line):
     state.console_state.cursor_to = max(0, min(to_line, state.console_state.font_height-1))
     backend.video.build_cursor(state.console_state.cursor_width, state.console_state.font_height, 
                 state.console_state.cursor_from, state.console_state.cursor_to)
-    
+    backend.video.update_cursor_attr(state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
+
 ############################### 
 # interactive mode         
 
@@ -576,6 +578,7 @@ def wait_interactive(from_start=False, alt_replace = True):
             state.console_state.cursor_width = cursor_width
             backend.video.build_cursor(state.console_state.cursor_width, state.console_state.font_height, 
                     state.console_state.cursor_from, state.console_state.cursor_to)
+            backend.video.update_cursor_attr(state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
     set_overwrite_mode(True)
     return furthest_left, furthest_right
       
@@ -1175,7 +1178,7 @@ def set_pos(to_row, to_col, scroll_ok=True):
     state.console_state.overflow = False
     state.console_state.row, state.console_state.col = to_row, to_col
     check_pos(scroll_ok)
-    backend.video.update_pos()
+    backend.video.update_cursor_attr(state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
 
 def check_pos(scroll_ok=True):
     oldrow, oldcol = state.console_state.row, state.console_state.col

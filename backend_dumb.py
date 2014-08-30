@@ -123,7 +123,7 @@ def scroll(from_line):
 def scroll_down(from_line):
     pass
 
-def update_pos():
+def update_cursor_attr(attr):
     pass
         
 def update_palette():
