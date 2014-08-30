@@ -371,11 +371,11 @@ def fre():
     return state.basic_state.string_current - var_mem_start - program_memory_size() - variables_memory_size()
       
 def program_memory_size():
-    return len(state.basic_state.bytecode.getvalue()) - 4
+    return len(state.basic_state.bytecode.getvalue()) - 3
     
 def variables_memory_size():
-#   TODO: memory model, does this work: ?
-#    return state.basic_state.var_current + state.basic_state.array_current + (state.basic_state.var_current + total_mem - state.basic_state.string_current)
+    # TODO: once string arrays are implemented correctly with strings in string space, this would work: 
+    #return  (state.basic_state.var_current - var_mem_start) + state.basic_state.array_current
     mem_used = 0
     for name in state.basic_state.variables:
         mem_used += 1 + max(3, len(name))
