@@ -1107,37 +1107,31 @@ def put_screen_char_attr(cpage, crow, ccol, c, cattr, one_only=False):
                 (therow.buf[ccol-1] in unicodepage.trail or therow.buf[ccol-2][0] in unicodepage.lead)):
             ccol -= 1
         # last char continues box drawing to right
-        box_continues_0 = unicodepage.box_protect and (ccol > 1 and therow.buf[ccol-2][0] in unicodepage.box_right[0])
-        box_continues_1 = unicodepage.box_protect and (ccol > 1 and therow.buf[ccol-2][0] in unicodepage.box_right[1])
+        b = therow.buf[ccol-2][0] if unicodepage.box_protect and ccol > 1 else ''
         # check all dbcs characters between here until it doesn't matter anymore
         while ccol < state.console_state.width:
             c = therow.buf[ccol-1][0]
             d = therow.buf[ccol][0]  
             if (c in unicodepage.lead and d in unicodepage.trail and 
-                    (  (not box_continues_0 and not box_continues_1)  
-                        or (c not in unicodepage.box_left[0] and c not in unicodepage.box_left[1]) 
-                        or (c in unicodepage.box_right[0] and d not in unicodepage.box_left[0])
-                        or (c in unicodepage.box_right[1] and d not in unicodepage.box_left[1])) ):
+                    (not unicodepage.box_protect or (not (connects(b, c, 0) and connects (c, d, 0)) and not (connects(b, c, 1) and connects (c, d, 1)))) ): 
                 refresh_screen_pos_double(cpage, crow, ccol)
-                box_continues_0 = unicodepage.box_protect and d in unicodepage.box_right[0]
-                box_continues_1 = unicodepage.box_protect and d in unicodepage.box_right[1]
                 ccol += 2
             else:
-                if (   (box_continues_0 and c in unicodepage.box_left[0]) 
-                        or (box_continues_1 and c in unicodepage.box_left[1]) 
-                        and ccol > 2 and therow.double[ccol-2] != 0 ):
-                    # continuing box drawing, replace previous wchar with two chars
-                    refresh_screen_pos(cpage, crow, ccol-2)
-                    refresh_screen_pos(cpage, crow, ccol-1)
+                if ccol > 2:
+                    a = therow.buf[ccol-3][0]
+                    if (connects(a, b, 0) and connects (b, c, 0)) or (connects(a, b, 1) and connects (b, c, 1)):
+                        refresh_screen_pos(cpage, crow, ccol-2)
+                        refresh_screen_pos(cpage, crow, ccol-1)
                 # print single char
                 refresh_screen_pos(cpage, crow, ccol)
-                box_continues_0 = unicodepage.box_protect and c in unicodepage.box_right[0]
-                box_continues_1 = unicodepage.box_protect and c in unicodepage.box_right[1]
                 ccol += 1
                 if (ccol >= state.console_state.width) or therow.double[ccol-1] == 0:
                     break
             if one_only and ccol > orig_col:
                 break  
+
+def connects(c, d, bset):
+    return c in unicodepage.box_right[bset] and d in unicodepage.box_left[bset]
 
 def put_char(c, do_scroll_down=False):
     # check if scroll& repositioning needed
