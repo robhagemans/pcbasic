@@ -324,8 +324,7 @@ def set_field_var(field, varname, offset, length):
         name_ptr = state.basic_state.var_current
         var_ptr = name_ptr + max(3, len(varname)) + 1 # byte_size first_letter second_letter_or_nul remaining_length_or_nul 
         state.basic_state.var_current += max(3, len(varname)) + 1 + byte_size['$']
-    # var memory string ptr not yet supported for field vars
-    state.basic_state.var_memory[varname] = (name_ptr, var_ptr, 0)
+        state.basic_state.var_memory[varname] = (name_ptr, var_ptr, str_ptr)
     # assign the string ptr to the variable name
     # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
     state.basic_state.variables[varname] = str_ptr
