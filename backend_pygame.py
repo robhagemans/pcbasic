@@ -576,7 +576,13 @@ carry_col_9 = range(0xc0, 0xdf+1)
 
 def build_glyph(c, font_face, req_width, req_height):
     color, bg = 254, 255
-    face = font_face[c]
+    try:
+        face = font_face[c]
+    except KeyError:
+        logging.debug('Byte sequence %s not represented in codepage, replace with blank glyph.', repr(c))
+        # codepoint 0 must be blank by our definitions
+        face = font_face['\0']
+        c = '\0'
     if len(face) < req_height*req_width//8:
         u = unicodepage.cp_to_utf8[c]
         logging.debug('Incorrect glyph width for %s [%s, code point %x].', repr(c), u, ord(u.decode('utf-8')))
