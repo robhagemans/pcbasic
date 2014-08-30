@@ -2150,6 +2150,8 @@ def exec_print(ins, screen=None):
     if util.skip_white_read_if(ins, ('\xD7',)): # USING
         return exec_print_using(ins, screen)     
     if newline:
+        if state.console_state.overflow:
+            screen.write_line()
         screen.write_line()
     util.require(ins, util.end_statement)      
             
