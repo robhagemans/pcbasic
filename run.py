@@ -33,10 +33,11 @@ def loop(quit=False):
             try:
                 # may raise Break
                 on_event.check_events()
+                keep_running = statements.parse_statement()
                 # may raise Break or Error
-                set_execute_mode(statements.parse_statement(), quit)
+                set_execute_mode(keep_running, quit)
             except error.RunError as e:
-                handle_error(e) 
+                handle_error(e, quit) 
             except error.Break as e:
                 handle_break(e)
         elif state.basic_state.auto_mode:
@@ -55,12 +56,11 @@ def loop(quit=False):
             except error.Break:
                 continue
             except error.RunError as e:
-                handle_error(e) 
+                handle_error(e, quit) 
 
 def set_execute_mode(on, quit=False):
     if not on:
         if quit:
-            # if --quit argument given, exit after first command
             raise error.Exit()
         # always show prompt at the end of execution
         show_prompt()
@@ -119,11 +119,13 @@ def auto_step():
     
 #########################
         
-def handle_error(s):
+def handle_error(s, quit):
     error.set_err(s)
     # not handled by ON ERROR, stop execution
     console.write_error_message(error.get_message(s.err), program.get_line_number(s.pos))   
     state.basic_state.error_handle_mode = False
+    if quit:
+        raise error.Exit()
     set_execute_mode(False)
     # special case
     if s.err == 2:
