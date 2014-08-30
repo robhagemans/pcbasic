@@ -5,7 +5,7 @@ then
      exit
 fi 
 name=$1
-echo "Running test $name..."
+echo -n "Running test $name... "
 if [ ! -e $name.BAS ]
 then
      echo "no such test"
@@ -26,9 +26,9 @@ do
 done
 if [ $pass -ne 1 ]
 then
-     echo "Test FAILED";
+     echo "FAILED.";
 else
-     echo "Test passed";
+     echo "passed.";
      popd > /dev/null
      rm -r output/$name
 fi

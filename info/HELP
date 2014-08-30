@@ -624,6 +624,7 @@ If DELETE is specified, the 'range' of line numbers is deleted from the
 existing code before the merge. This is pointless without MERGE.
 NOTES:
 -   CHAIN preserves the OPTION BASE setting.
+-   COMMON variables remain COMMON for the next CHAIN.
 -   Only if ALL is specified, DEF FN definitions are preserved.
 -   Only if MERGE is specified, DEFINT, DEFSTR, DEFSNG, DEFDBL definitions 
     are preserved.

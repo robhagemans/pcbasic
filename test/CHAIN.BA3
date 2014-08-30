@@ -1,0 +1,11 @@
+10 REM CHAIN test part 3
+15 OPEN "chain2.dat" FOR OUTPUT AS 2
+20 ON ERROR GOTO 100
+25 PRINT #1, "should fail"
+27 PRINT#2, K ' still COMMON after CHAIN?
+30 S="1"
+40 T="1"
+99 END
+100 PRINT#2, "error! "; ERR ; ERL
+110 RESUME NEXT
+

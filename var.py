@@ -26,11 +26,11 @@ total_mem = 60300
 
 def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=False):
     if not preserve_deftype:
-        # FIXME: is deftype not preserved on CHAIN with ALL?
+        # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
         state.basic_state.deftype = ['!']*26
     if not preserve_all:     
         if preserve_common:
-            # preserve COMMON variables
+            # preserve COMMON variables (CHAIN does this)
             common, common_arrays = {}, {}
             for varname in state.basic_state.common_names:
                 try:
@@ -48,7 +48,6 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
             common = {}
             common_arrays = {}        
             # at least I think these should be cleared by CLEAR?
-            # FIXME: are COMMON vars still COMMON after CHAIN?
             state.basic_state.common_names = []
             state.basic_state.common_array_names = []
         # restore only common variables
