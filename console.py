@@ -808,10 +808,9 @@ def list_line(line):
     # clear_line moves the position, undo        
     set_pos(state.console_state.row - (len(line)-1)// 80, 1)
     write_line(str(line))
-    # remove empty line after 80-column program line
+    # remove wrap after 80-column program line
     if len(line) == state.console_state.width and state.console_state.row > 2:
         state.console_state.apage.row[state.console_state.row-3].wrap = False
-        set_pos(state.console_state.row-1, 1)
 
 def set_width(to_width):
     # raise an error if the width value doesn't make sense
