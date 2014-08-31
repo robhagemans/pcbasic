@@ -330,23 +330,22 @@ def set_var_or_array(name, indices, value):
     else:
         set_array(name, indices, value)
         
-        
-def set_field_var(field, varname, offset, length):
+def set_field_var(random_file, varname, offset, length):
     """ Attach a variable to a FIELD buffer. """
     if varname[-1] != '$':
         # type mismatch
         raise error.RunError(13)
+    field = random_file.field
     if offset+length > len(field):
         # FIELD overflow
         raise error.RunError(50)    
     str_ptr = StringPtr(field, offset, length)
-    # FIXME: address for FIELDs not implemented. This is a hack to provide a key that works only if there's only one field and one var.
-    str_addr = offset
+    str_addr = random_file.field_address + offset
     # assign the string ptr to the variable name
     # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
     state.basic_state.variables[varname] = state.basic_state.strings.store(str_ptr, str_addr)
     # update memory model (see set_var)
-    if varname not in state.basic_state.variables:
+    if varname not in state.basic_state.var_memory:
         name_ptr = state.basic_state.var_current
         var_ptr = name_ptr + max(3, len(varname)) + 1 # byte_size first_letter second_letter_or_nul remaining_length_or_nul 
         state.basic_state.var_current += max(3, len(varname)) + 1 + byte_size['$']
@@ -359,9 +358,12 @@ def assign_field_var(varname, value, justify_right=False):
         raise error.RunError(13)
     s = vartypes.unpack_string(value)
     try:
-        el = len(state.basic_state.variables[varname].buffer)    
+        v = state.basic_state.variables[varname]
     except KeyError:
+        # LSET has no effect if variable does not exist
         return
+    buf = state.basic_state.strings.retrieve(v)
+    el = len(buf)    
     if len(s) > el:
         s = s[:el]
     if len(s) < el:
@@ -369,7 +371,8 @@ def assign_field_var(varname, value, justify_right=False):
             s = ' '*(el-len(s)) + s
         else:
             s += ' '*(el-len(s))
-    state.basic_state.variables[varname].set_value(s)    
+    # copy new value into existing buffer 
+    buf[:] = s    
 
 ##########################################
 

@@ -1014,14 +1014,13 @@ def exec_close(ins):
 def exec_field(ins):
     the_file = iolayer.get_file(expressions.parse_file_number_opthash(ins), 'R')
     if util.skip_white_read_if(ins, (',',)):
-        field = the_file.field 
         offset = 0    
         while True:
             width = vartypes.pass_int_unpack(expressions.parse_expression(ins))
             util.range_check(0, 255, width)
             util.require_read(ins, ('AS',), err=5)
             name = util.get_var_name(ins)
-            var.set_field_var(field, name, offset, width)         
+            var.set_field_var(the_file, name, offset, width)         
             offset += width
             if not util.skip_white_read_if(ins, (',',)):
                 break

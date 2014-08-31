@@ -16,6 +16,7 @@ import vartypes
 import var
 import console
 import error
+import iolayer
 
 # pre-defined PEEK outputs
 peek_values = {}
@@ -55,6 +56,9 @@ def peek(addr):
         elif addr >= data_segment*0x10 + var.var_mem_start:
             # variable memory
             return max(0, get_data_memory(addr))
+        elif addr >= data_segment*0x10 + iolayer.field_mem_start:
+            # file & FIELD memory
+            return max(0, get_field_memory(addr))
         elif addr >= low_segment*0x10:
             return max(0, get_low_memory(addr))
         else:    
@@ -176,9 +180,22 @@ def get_name_in_memory(name, offset):
     else:
         # rest of name is encoded such that c1 == 'A'
         return ord(name[offset-1].upper()) - ord('A') + 0xC1
+
+def get_field_memory(address):
+    address -= data_segment * 0x10
+    if address < iolayer.field_mem_start:
+        return -1
+    # find the file we're in
+    start = address - iolayer.field_mem_start
+    number = 1 + start // iolayer.field_mem_offset
+    offset = start % iolayer.field_mem_offset
+    try:
+        return state.io_state.fields[number][offset]
+    except KeyError, IndexError:
+        return -1    
                             
 def get_data_memory(address):
-    address -= state.basic_state.segment * 0x10
+    address -= data_segment * 0x10
     if address < state.basic_state.var_current:
         # find the variable we're in
         name_addr = -1

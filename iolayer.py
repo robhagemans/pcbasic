@@ -47,6 +47,11 @@ allowed_protocols = {
     'COM': ('PORT', 'SOCKET')
     }
 
+# first field buffer address
+field_mem_start = 3945
+# bytes distance between field buffers
+field_mem_offset = 322
+
 def prepare():
     """ Initialise iolayer module. """
     global max_files, max_reclen, serial_in_size
@@ -383,6 +388,10 @@ class RandomBase(BaseFile):
         except KeyError:
             self.field = bytearray()
             state.io_state.fields[self.number] = self.field
+        if self.number > 0:    
+            self.field_address = field_mem_start + (self.number-1)*field_mem_offset
+        else:
+            self.field_address = -1    
         self.field[:] = bytearray('\x00')*reclen
         # open a pseudo text file over the buffer stream
         # to make WRITE# etc possible
