@@ -13,8 +13,9 @@ from operator import itemgetter
 
 import error
 import vartypes
-from string_ptr import StringPtr
 import state
+# for field_mem_start, field_mem_offset
+import iolayer
 
 byte_size = {'$': 3, '%': 2, '!': 4, '#': 8}
 
@@ -44,7 +45,7 @@ class StringSpace(object):
             raise KeyError('String key %s has wrong length.' % repr(key))    
 
     def copy_packed(self, key):
-        """ Return a packedcopy of the string by its 2-byte key or 3-byte sequence. """
+        """ Return a packed copy of the string by its 2-byte key or 3-byte sequence. """
         return vartypes.pack_string(self.retrieve(key)[:])
 
     def store(self, string_buffer, address=None):
@@ -63,6 +64,27 @@ class StringSpace(object):
         """ Return the address of a given key. """
         return vartypes.uint_to_value(bytearray(key[-2:]))
         
+def get_string_copy_packed(sequence):
+    """ Return a packed copy of a string from its 3-byte sequence. """
+    length = ord(sequence[0:1])
+    address = vartypes.uint_to_value(sequence[-2:])
+    if address >= var_mem_start:
+        # string is stored in string space
+        return state.basic_state.strings.copy_packed(sequence)
+    else: 
+        # string is stored in code space or field buffers
+        if address < iolayer.field_mem_start:
+            return vartypes.pack_string('\0' * length)
+        # find the file we're in
+        start = address - iolayer.field_mem_start
+        number = 1 + start // iolayer.field_mem_offset
+        offset = start % iolayer.field_mem_offset
+        try:
+            return vartypes.pack_string(state.io_state.fields[number][offset:offset+length])
+        except KeyError, IndexError:
+            return vartypes.pack_string('\0' * length)
+
+
 
 def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=False):
     """ Reset and clear variables, arrays, common definitions and functions. """
@@ -134,7 +156,6 @@ def set_var(name, value):
     if type_char == '$':
         # every assignment to string leads to new pointer being allocated
         # TODO: string literals in programs have the var ptr point to program space.
-        # TODO: field strings point to field buffer
         state.basic_state.variables[name] = state.basic_state.strings.store(bytearray(unpacked[:]))
     else:
         # make a copy of the value in case we want to use POKE on it - we would change both values otherwise
@@ -156,7 +177,7 @@ def get_var(name):
     name = vartypes.complete_name(name)
     try:
         if name[-1] == '$':
-            return state.basic_state.strings.copy_packed(state.basic_state.variables[name])
+            return get_string_copy_packed(state.basic_state.variables[name])
         else:
             return (name[-1], state.basic_state.variables[name])
     except KeyError:
@@ -299,7 +320,7 @@ def get_array(name, index):
     bigindex = index_array(index, dimensions)
     value = lst[bigindex*var_size_bytes(name):(bigindex+1)*var_size_bytes(name)]
     if name[-1] == '$':
-        return state.basic_state.strings.copy_packed(value)
+        return get_string_copy_packed(value)
     return (name[-1], value)
     
 def set_array(name, index, value):
@@ -331,7 +352,7 @@ def set_var_or_array(name, indices, value):
         set_array(name, indices, value)
         
 def set_field_var(random_file, varname, offset, length):
-    """ Attach a variable to a FIELD buffer. """
+    """ Attach a string variable to a FIELD buffer. """
     if varname[-1] != '$':
         # type mismatch
         raise error.RunError(13)
@@ -339,11 +360,12 @@ def set_field_var(random_file, varname, offset, length):
     if offset+length > len(field):
         # FIELD overflow
         raise error.RunError(50)    
-    str_ptr = StringPtr(field, offset, length)
+    #str_ptr = StringPtr(field, offset, length)
     str_addr = random_file.field_address + offset
+    str_sequence = bytearray(chr(length)) + vartypes.value_to_uint(str_addr)
     # assign the string ptr to the variable name
     # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
-    state.basic_state.variables[varname] = state.basic_state.strings.store(str_ptr, str_addr)
+    state.basic_state.variables[varname] = str_sequence
     # update memory model (see set_var)
     if varname not in state.basic_state.var_memory:
         name_ptr = state.basic_state.var_current
@@ -352,7 +374,7 @@ def set_field_var(random_file, varname, offset, length):
         state.basic_state.var_memory[varname] = (name_ptr, var_ptr)
     
 def assign_field_var(varname, value, justify_right=False):
-    """ Write a value into a field-assigned variable. """
+    """ Write a packed value into a field-assigned variable. """
     if varname[-1] != '$' or value[0] != '$':
         # type mismatch
         raise error.RunError(13)
@@ -362,17 +384,24 @@ def assign_field_var(varname, value, justify_right=False):
     except KeyError:
         # LSET has no effect if variable does not exist
         return
-    buf = state.basic_state.strings.retrieve(v)
-    el = len(buf)    
-    if len(s) > el:
-        s = s[:el]
-    if len(s) < el:
-        if justify_right:
-            s = ' '*(el-len(s)) + s
-        else:
-            s += ' '*(el-len(s))
+    # trim and pad to size
+    length = ord(v[0:1])    
+    s = s[:length]
+    if justify_right:
+        s = ' '*(length-len(s)) + s
+    else:
+        s += ' '*(length-len(s))
     # copy new value into existing buffer 
-    buf[:] = s    
+    address = vartypes.uint_to_value(v[-2:])
+    # string should be stored in field buffers
+    # find the file we're in
+    start = address - iolayer.field_mem_start
+    number = 1 + start // iolayer.field_mem_offset
+    offset = start % iolayer.field_mem_offset
+    try:
+        state.io_state.fields[number][offset:offset+length] = s
+    except KeyError, IndexError:
+        raise KeyError('Not a field string')
 
 ##########################################
 
