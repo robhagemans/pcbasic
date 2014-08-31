@@ -48,10 +48,12 @@ class StringVar(object):
         self.buffer[:length] = new_value[:length] 
     
     def get_memory(self):
+        """ Return the 3-byte memory representation of the string pointer. """
         return bytearray(chr(len(self.buffer)) + vartypes.value_to_uint(self.address))
 
 
 def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=False):
+    """ Reset and clear variables, arrays, common definitions and functions. """
     if not preserve_deftype:
         # deftype is not preserved on CHAIN with ALL, but is preserved with MERGE
         state.basic_state.deftype = ['!']*26
@@ -97,10 +99,12 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
             dim_array(a, common_arrays[a][0])
             state.basic_state.arrays[a] = common_arrays[a]
 
+# initialise the var module
 clear_variables()
 
 
 def set_var(name, value):
+    """ Assign a value to a variable. """
     name = vartypes.complete_name(name)
     type_char = name[-1]
     if type_char == '$':
@@ -142,6 +146,7 @@ def set_var(name, value):
         state.basic_state.var_memory[name] = (name_ptr, var_ptr)
         
 def get_var(name):
+    """ Retrieve the value from a variable. """
     name = vartypes.complete_name(name)
     try:
         if name[-1] == '$':
@@ -152,6 +157,7 @@ def get_var(name):
         return vartypes.null[name[-1]]
 
 def swap_var(name1, index1, name2, index2):
+    """ Swap two variables by reference (Strings) or value (evertything else). """
     if name1[-1] != name2[-1]:
         # type mismatch
         raise error.RunError(13)
@@ -200,6 +206,7 @@ def swap_var(name1, index1, name2, index2):
         state.basic_state.arrays[name2][2] += 1
 
 def erase_array(name):
+    """ Remove an array from memory. """
     try: 
         del state.basic_state.arrays[name]
     except KeyError:
@@ -207,6 +214,7 @@ def erase_array(name):
         raise error.RunError(5)    
 
 def index_array(index, dimensions):
+    """ Return the flat index for a given dimensioned index. """
     bigindex = 0
     area = 1
     for i in range(len(index)):
@@ -216,23 +224,26 @@ def index_array(index, dimensions):
     return bigindex 
     
 def array_len(dimensions):
-    return index_array(dimensions, dimensions)+1    
+    """ Return the flat length for given dimensioned size. """
+    return index_array(dimensions, dimensions) + 1    
 
 def var_size_bytes(name):
+    """ Return the size of a variable, if it exists. Raise ILLEGAL FUNCTION CALL otherwise. """
     try:
         return byte_size[name[-1]]  
     except KeyError:
         raise error.RunError(5)
 
 def array_size_bytes(name):
+    """ Return the byte size of an array, if it exists. Return 0 otherwise. """ 
     try:
         dimensions, _, _ = state.basic_state.arrays[name]
     except KeyError:
         return 0
-    size = array_len(dimensions)
-    return size*var_size_bytes(name)     
+    return array_len(dimensions) * var_size_bytes(name)     
 
 def dim_array(name, dimensions):
+    """ Allocate array space for an array of given dimensioned size. Raise errors if duplicate name or illegal index value. """
     if state.basic_state.array_base == None:
         state.basic_state.array_base = 0
     name = vartypes.complete_name(name)
@@ -266,8 +277,8 @@ def dim_array(name, dimensions):
     state.basic_state.array_current += record_len + array_size_bytes(name)
     state.basic_state.array_memory[name] = (name_ptr, array_ptr)
 
-
 def check_dim_array(name, index):
+    """ Check if an array has been allocated. If not, auto-allocate if indices are <= 10; raise error otherwise. """
     try:
         [dimensions, lst, _] = state.basic_state.arrays[name]
     except KeyError:
@@ -287,6 +298,7 @@ def check_dim_array(name, index):
     return [dimensions, lst]
 
 def base_array(base):
+    """ Set the array base to 0 or 1 (OPTION BASE). Raise error if already set. """
     if base not in (1, 0):
         # syntax error
         raise error.RunError(2)    
@@ -296,6 +308,7 @@ def base_array(base):
     state.basic_state.array_base = base
 
 def get_array(name, index):
+    """ Retrieve the value of an array element. """
     [dimensions, lst] = check_dim_array(name, index)
     bigindex = index_array(index, dimensions)
     if name[-1] == '$':
@@ -304,6 +317,7 @@ def get_array(name, index):
     return (name[-1], value)
     
 def set_array(name, index, value):
+    """ Assign a value to an array element. """
     [dimensions, lst] = check_dim_array(name, index)
     bigindex = index_array(index, dimensions)
     # make a copy of the value, we don't want them to be linked
@@ -317,18 +331,21 @@ def set_array(name, index, value):
         state.basic_state.arrays[name][2] += 1
     
 def get_var_or_array(name, indices):
+    """ Retrieve the value of a variable or an array element. """
     if indices == []:
         return get_var(name)            
     else:
         return get_array(name, indices)
 
 def set_var_or_array(name, indices, value):
+    """ Assign a value to a variable or an array element. """
     if indices == []:    
         set_var(name, value)
     else:
         set_array(name, indices, value)
         
 def set_field_var(field, varname, offset, length):
+    """ Attach a variable to a FIELD buffer. """
     if varname[-1] != '$':
         # type mismatch
         raise error.RunError(13)
@@ -349,6 +366,7 @@ def set_field_var(field, varname, offset, length):
         state.basic_state.var_memory[varname] = (name_ptr, var_ptr)
     
 def assign_field_var(varname, value, justify_right=False):
+    """ Write a value into a field-assigned variable. """
     if varname[-1] != '$' or value[0] != '$':
         # type mismatch
         raise error.RunError(13)
@@ -369,6 +387,7 @@ def assign_field_var(varname, value, justify_right=False):
 ##########################################
 
 def collect_garbage():
+    """ Collect garbage from string space. Compactify string storage. """
     string_list = []
     for name in state.basic_state.var_memory:
         if name[-1] == '$':
@@ -386,12 +405,15 @@ def collect_garbage():
     state.basic_state.string_current = new_string_current
 
 def fre():
+    """ Return the amount of memory available to variables, arrays, strings and code. """
     return state.basic_state.string_current - var_mem_start - program_memory_size() - variables_memory_size()
       
 def program_memory_size():
+    """ Return the size of the code buffer. """
     return len(state.basic_state.bytecode.getvalue()) - 3
     
 def variables_memory_size():
+    """ Return the amount of memory used by variables, arrays and strings. """
     # TODO: once string arrays are implemented correctly with strings in string space, this would work: 
     #return mem_used, (state.basic_state.var_current - var_mem_start) + state.basic_state.array_current
     mem_used = 0
