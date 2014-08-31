@@ -195,11 +195,7 @@ def get_data_memory(address):
             offset = address - var_addr
             if offset >= var.byte_size[the_var[-1]]:
                 return -1
-            if the_var[-1] == '$':
-                # string is represented as 3 bytes: length + uint pointer
-                var_rep = state.basic_state.variables[the_var].get_memory()
-            else:
-                var_rep = state.basic_state.variables[the_var]
+            var_rep = state.basic_state.variables[the_var]
             return var_rep[offset]
         else:
             offset = address - name_ptr
@@ -219,11 +215,8 @@ def get_data_memory(address):
             offset = address - arr_addr - state.basic_state.var_current
             if offset >= var.array_size_bytes(the_arr):
                 return -1
-            if the_arr[-1] == '$':
-                return state.basic_state.arrays[the_arr][1][offset//3].get_memory()[offset%3] # 3 == bytesize['$']
-            else:
-                _, byte_array, _ = state.basic_state.arrays[the_arr]    
-                return byte_array[offset]
+            _, byte_array, _ = state.basic_state.arrays[the_arr]    
+            return byte_array[offset]
         else:
             offset = address - name_ptr - state.basic_state.var_current
             if offset < max(3, len(the_arr))+1:
@@ -244,7 +237,7 @@ def get_data_memory(address):
             if name[-1] != '$':
                 continue
             v = state.basic_state.variables[name]
-            str_ptr = v.address
+            str_ptr = state.basic_state.strings.address(v)
             if str_ptr <= address and str_ptr > str_nearest:
                 str_nearest = str_ptr
                 the_var = v
@@ -253,13 +246,13 @@ def get_data_memory(address):
                 if name[-1] != '$':
                     continue
                 _, lst, _ = state.basic_state.arrays[name]
-                for i, v in enumerate(lst):   
-                    str_ptr = v.address
+                for i in range(0, len(lst), 3):
+                    str_ptr = state.basic_state.strings.address(lst[i:i+3])
                     if str_ptr <= address and str_ptr > str_nearest:
                         str_nearest = str_ptr
-                        the_var = v        
+                        the_var = lst[i:i+3]
         try:
-            return the_var.buffer[address - str_nearest]
+            return state.basic_state.strings.retrieve(v)[address - str_nearest]
         except IndexError, AttributeError:
             return -1
     else:

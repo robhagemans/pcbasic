@@ -23,34 +23,41 @@ var_mem_start = 4720
 # 'free memory' as reported by FRE
 total_mem = 60300    
 
-
-class StringVar(object):
-    """ Represents a BASIC string ($) variable. Contains both address and buffer. """
+class StringSpace(object):
+    """ String space is a table of strings accessible by their 2-byte pointers. """
     
-    def __init__(self, buffer=None, address=None):
-        """ Store the string value and calculate a free address. """
-        if buffer == None:
-            buffer = bytearray('')
-        self.buffer = buffer
+    def __init__(self):
+        """ Initialise empty string space. """
+        self.strings = {}
+    
+    def retrieve(self, key):
+        """ Retrieve a string by its 2-byte key. 3-byte memory sequences allowed, we take the pointer from it. """
+        key = str(key)
+        if len(key) in (2, 3):
+            return self.strings[key[-2:]]
+        else:
+            raise KeyError('String key %s has wrong length.' % repr(key))    
+
+    def copy_packed(self, key):
+        """ Return a packedcopy of the string by its 2-byte key or 3-byte sequence. """
+        return vartypes.pack_string(self.retrieve(key)[:])
+
+    def store(self, string_buffer, address=None):
+        """ Store a new string and return the 3-byte memory sequence. """
         if address == None:
             # find new string address
-            state.basic_state.string_current -= len(buffer)
+            state.basic_state.string_current -= len(string_buffer)
             address = state.basic_state.string_current + 1 
-        self.address = address
+        key = str(vartypes.value_to_uint(address))
+        if key in self.strings:
+            raise KeyError('String key %s already defined.' % repr(key))
+        self.strings[key] = string_buffer    
+        return bytearray(chr(len(string_buffer)) + key)
 
-    def copy_value(self):
-        """ Return a copy of the string buffer. """
-        return self.buffer[:]
-
-    def set_value(self, new_value):
-        """ Change value in-place (for FIELD strings). """
-        length = min(len(self.buffer), len(new_value))
-        self.buffer[:length] = new_value[:length] 
-    
-    def get_memory(self):
-        """ Return the 3-byte memory representation of the string pointer. """
-        return bytearray(chr(len(self.buffer)) + vartypes.value_to_uint(self.address))
-
+    def address(self, key):
+        """ Return the address of a given key. """
+        return vartypes.uint_to_value(bytearray(key[-2:]))
+        
 
 def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=False):
     """ Reset and clear variables, arrays, common definitions and functions. """
@@ -91,6 +98,8 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
         state.basic_state.array_current = 0
         # functions are cleared except when CHAIN ... ALL is specified
         state.basic_state.functions = {}
+        # reset string space
+        state.basic_state.strings = StringSpace()
         # preserve common variables
         # use set_var and dim_array to rebuild memory model
         for v in common:    
@@ -113,7 +122,7 @@ def set_var(name, value):
         # TODO: string literals in programs have the var ptr point to program space.
         # TODO: field strings point to field buffer
         # TODO: if string space expanded to var space, collect garbage
-        state.basic_state.variables[name] = StringVar(bytearray(unpacked[:]))
+        state.basic_state.variables[name] = state.basic_state.strings.store(bytearray(unpacked[:]))
     else:
         # make a copy of the value in case we want to use POKE on it - we would change both values otherwise
         # NOTE: this is an in-place copy - crucial for FOR!
@@ -146,18 +155,18 @@ def set_var(name, value):
         state.basic_state.var_memory[name] = (name_ptr, var_ptr)
         
 def get_var(name):
-    """ Retrieve the value from a variable. """
+    """ Retrieve the value of a variable. """
     name = vartypes.complete_name(name)
     try:
         if name[-1] == '$':
-            return vartypes.pack_string(state.basic_state.variables[name].copy_value()) 
+            return state.basic_state.strings.copy_packed(state.basic_state.variables[name])
         else:
             return (name[-1], state.basic_state.variables[name])
     except KeyError:
         return vartypes.null[name[-1]]
 
 def swap_var(name1, index1, name2, index2):
-    """ Swap two variables by reference (Strings) or value (evertything else). """
+    """ Swap two variables by reference (Strings) or value (everything else). """
     if name1[-1] != name2[-1]:
         # type mismatch
         raise error.RunError(13)
@@ -168,37 +177,20 @@ def swap_var(name1, index1, name2, index2):
         # illegal function call
         raise error.RunError(5)
     typechar = name1[-1]
-    if typechar != '$':
-        size = byte_size[typechar]
-        # get pointers
-        if index1 == []:
-            p1, off1 = state.basic_state.variables[name1], 0
-        else:
-            dimensions, p1, _ = state.basic_state.arrays[name1]
-            off1 = index_array(index1, dimensions)*size
-        if index2 == []:
-            p2, off2 = state.basic_state.variables[name2], 0
-        else:
-            dimensions, p2, _ = state.basic_state.arrays[name2]
-            off2 = index_array(index2, dimensions)*size
-        # swap the contents    
-        p1[off1:off1+size], p2[off2:off2+size] =  p2[off2:off2+size], p1[off1:off1+size]  
+    size = byte_size[typechar]
+    # swap non-strings by value, strings by address
+    if index1 == []:
+        p1, off1 = state.basic_state.variables[name1], 0
     else:
-        # strings are pointer-swapped
-        if index1 == []:
-            list1 = state.basic_state.variables
-            key1 = name1
-        else:
-            dimensions, list1, _ = state.basic_state.arrays[name1]
-            key1 = index_array(index1, dimensions)
-        if index2 == []:
-            list2 = state.basic_state.variables
-            key2 = name2
-        else:
-            dimensions, list2, _ = state.basic_state.arrays[name2]
-            key2 = index_array(index2, dimensions)
-        # swapping both value and address (pointer swap emulation)    
-        list1[key1], list2[key2] = list2[key2], list1[key1]
+        dimensions, p1, _ = state.basic_state.arrays[name1]
+        off1 = index_array(index1, dimensions)*size
+    if index2 == []:
+        p2, off2 = state.basic_state.variables[name2], 0
+    else:
+        dimensions, p2, _ = state.basic_state.arrays[name2]
+        off2 = index_array(index2, dimensions)*size
+    # swap the contents    
+    p1[off1:off1+size], p2[off2:off2+size] =  p2[off2:off2+size], p1[off1:off1+size]  
     # inc version
     if name1 in state.basic_state.arrays:
         state.basic_state.arrays[name1][2] += 1
@@ -259,10 +251,7 @@ def dim_array(name, dimensions):
             raise error.RunError(9)
     size = array_len(dimensions)
     try:
-        if name[-1] == '$':
-            state.basic_state.arrays[name] = [ dimensions, [StringVar()]*size, 0 ]  
-        else:
-            state.basic_state.arrays[name] = [ dimensions, bytearray(size*var_size_bytes(name)), 0 ]  
+        state.basic_state.arrays[name] = [ dimensions, bytearray(size*var_size_bytes(name)), 0 ]  
     except OverflowError:
         # out of memory
         raise error.RunError(7) 
@@ -311,9 +300,9 @@ def get_array(name, index):
     """ Retrieve the value of an array element. """
     [dimensions, lst] = check_dim_array(name, index)
     bigindex = index_array(index, dimensions)
-    if name[-1] == '$':
-        return (name[-1], lst[bigindex].copy_value())
     value = lst[bigindex*var_size_bytes(name):(bigindex+1)*var_size_bytes(name)]
+    if name[-1] == '$':
+        return state.basic_state.strings.copy_packed(value)
     return (name[-1], value)
     
 def set_array(name, index, value):
@@ -322,13 +311,13 @@ def set_array(name, index, value):
     bigindex = index_array(index, dimensions)
     # make a copy of the value, we don't want them to be linked
     value = (vartypes.pass_type_keep(name[-1], value)[1])[:]
+    # for strings, store the string in string space and store the key in the array
     if name[-1] == '$':
-        lst[bigindex] = StringVar(bytearray(value))
-    else: 
-        bytesize = var_size_bytes(name)
-        lst[bigindex*bytesize:(bigindex+1)*bytesize] = value
-        # inc version
-        state.basic_state.arrays[name][2] += 1
+        value = state.basic_state.strings.store(bytearray(value))
+    bytesize = var_size_bytes(name)
+    lst[bigindex*bytesize:(bigindex+1)*bytesize] = value
+    # inc version
+    state.basic_state.arrays[name][2] += 1
     
 def get_var_or_array(name, indices):
     """ Retrieve the value of a variable or an array element. """
@@ -344,6 +333,7 @@ def set_var_or_array(name, indices, value):
     else:
         set_array(name, indices, value)
         
+        
 def set_field_var(field, varname, offset, length):
     """ Attach a variable to a FIELD buffer. """
     if varname[-1] != '$':
@@ -353,11 +343,11 @@ def set_field_var(field, varname, offset, length):
         # FIELD overflow
         raise error.RunError(50)    
     str_ptr = StringPtr(field, offset, length)
-    # TODO: address for FIELDs not implemented
-    str_addr = 0    
+    # FIXME: address for FIELDs not implemented. This is a hack to provide a key that works only if there's only one field and one var.
+    str_addr = offset
     # assign the string ptr to the variable name
     # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
-    state.basic_state.variables[varname] = StringVar(str_ptr, str_addr)
+    state.basic_state.variables[varname] = state.basic_state.strings.store(str_ptr, str_addr)
     # update memory model (see set_var)
     if varname not in state.basic_state.variables:
         name_ptr = state.basic_state.var_current
@@ -400,7 +390,7 @@ def collect_garbage():
     for item in string_list:
         new_string_current -= item[4]
         # re-allocate string space; no need to copy buffer
-        state.basic_state.variables[name] = StringVar(v.buffer) 
+        state.basic_state.variables[name] = state.basic_state.strings.store(v.buffer) 
         state.basic_state.var_memory[item[0]] = (item[1], item[2])     
     state.basic_state.string_current = new_string_current
 
@@ -416,9 +406,7 @@ def program_memory_size():
     return len(state.basic_state.bytecode.getvalue()) - 3
     
 def variables_memory_size():
-    """ Return the amount of memory used by variables, arrays and strings. """
-    # TODO: once string arrays are implemented correctly with strings in string space, this would work: 
-    #return mem_used, (state.basic_state.var_current - var_mem_start) + state.basic_state.array_current
+    """ Return the amount of memory used by variables and arrays but not string buffers. """
     mem_used = 0
     for name in state.basic_state.variables:
         mem_used += 1 + max(3, len(name))
@@ -428,8 +416,7 @@ def variables_memory_size():
         mem_used += 4 + array_size_bytes(name) + max(3, len(name))
         dimensions, lst, _ = state.basic_state.arrays[name]
         mem_used += 2*len(dimensions)    
-        if name[-1] == '$':
-            for mem in lst:
-                mem_used += len(mem.buffer)
+    # TODO: once string arrays are implemented correctly with strings in string space, this would work: 
+    #print mem_used, (state.basic_state.var_current - var_mem_start) + state.basic_state.array_current
     return mem_used
      
