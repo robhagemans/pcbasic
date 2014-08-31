@@ -406,10 +406,13 @@ def collect_garbage():
 
 def fre():
     """ Return the amount of memory available to variables, arrays, strings and code. """
+    # NOTE this is in var.py because it's used by set_var. 
+    # This can be avoided when we set var_mem_start correctly at the top of code space - e.g. use a parameter in clear_variables
     return state.basic_state.string_current - var_mem_start - program_memory_size() - variables_memory_size()
       
 def program_memory_size():
     """ Return the size of the code buffer. """
+    # NOTE this is in var.py because it's used by set_var through fre() 
     return len(state.basic_state.bytecode.getvalue()) - 3
     
 def variables_memory_size():
