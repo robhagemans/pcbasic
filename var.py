@@ -116,12 +116,21 @@ def set_var(name, value):
     """ Assign a value to a variable. """
     name = vartypes.complete_name(name)
     type_char = name[-1]
+    # check if garbage needs collecting before allocating mem
+    size = (max(3, len(name)) + 1 + byte_size[type_char])
     if type_char == '$':
         unpacked = vartypes.pass_string_unpack(value) 
+        size += len(unpacked)
+    if fre() <= size:
+        # TODO: GARBTEST difference is because string literal is currently stored in string space, whereas GW stores it in code space.
+        collect_garbage()
+        if fre() <= size:
+            raise error.RunError(7)
+    # assign variables
+    if type_char == '$':
         # every assignment to string leads to new pointer being allocated
         # TODO: string literals in programs have the var ptr point to program space.
         # TODO: field strings point to field buffer
-        # TODO: if string space expanded to var space, collect garbage
         state.basic_state.variables[name] = state.basic_state.strings.store(bytearray(unpacked[:]))
     else:
         # make a copy of the value in case we want to use POKE on it - we would change both values otherwise
@@ -131,22 +140,6 @@ def set_var(name, value):
         except KeyError:
             state.basic_state.variables[name] = vartypes.pass_type_keep(name[-1], value)[1][:]
     # update memory model
-    # check if grabge needs collecting (before allocating mem)
-    free = fre() - (max(3, len(name)) + 1 + byte_size[name[-1]]) 
-    if name[-1] == '$':
-        free -= len(unpacked)
-    if free <= 0:
-        # TODO: GARBTEST difference is because string literal is currently stored in string space, whereas GW stores it in code space.
-        collect_garbage()
-        if fre() <= 0:
-            # out of memory
-            del state.basic_state.variables[name]
-            try:
-                del state.basic_state.var_memory[name]
-            except KeyError:
-                # hadn't been created yet - no probs
-                pass    
-            raise error.RunError(7)
     # first two bytes: chars of name or 0 if name is one byte long
     if name not in state.basic_state.var_memory:
         name_ptr = state.basic_state.var_current
@@ -398,15 +391,15 @@ def fre():
     """ Return the amount of memory available to variables, arrays, strings and code. """
     # NOTE this is in var.py because it's used by set_var. 
     # This can be avoided when we set var_mem_start correctly at the top of code space - e.g. use a parameter in clear_variables
-    return state.basic_state.string_current - var_mem_start - program_memory_size() - variables_memory_size()
+    return state.basic_state.string_current - state.basic_state.var_current - state.basic_state.array_current - program_memory_size()
       
 def program_memory_size():
     """ Return the size of the code buffer. """
     # NOTE this is in var.py because it's used by set_var through fre() 
     return len(state.basic_state.bytecode.getvalue()) - 3
     
-def variables_memory_size():
-    """ Return the amount of memory used by variables and arrays but not string buffers. """
+def assert_variables_memory_size():
+    """ Return the amount of memory used by variables and arrays but not string buffers. For debugging. """
     mem_used = 0
     for name in state.basic_state.variables:
         mem_used += 1 + max(3, len(name))
@@ -416,7 +409,5 @@ def variables_memory_size():
         mem_used += 4 + array_size_bytes(name) + max(3, len(name))
         dimensions, lst, _ = state.basic_state.arrays[name]
         mem_used += 2*len(dimensions)    
-    # TODO: once string arrays are implemented correctly with strings in string space, this would work: 
-    #print mem_used, (state.basic_state.var_current - var_mem_start) + state.basic_state.array_current
-    return mem_used
+    assert (mem_used == state.basic_state.var_current - var_mem_start + state.basic_state.array_current)
      
