@@ -28,7 +28,12 @@ class StringSpace(object):
     
     def __init__(self):
         """ Initialise empty string space. """
+        self.clear()
+                
+    def clear(self):
+        """ Empty string space. """
         self.strings = {}
+        self.current = state.basic_state.var_current + total_mem # 65020
     
     def retrieve(self, key):
         """ Retrieve a string by its 2-byte key. 3-byte memory sequences allowed, we take the pointer from it. """
@@ -46,8 +51,8 @@ class StringSpace(object):
         """ Store a new string and return the 3-byte memory sequence. """
         if address == None:
             # find new string address
-            state.basic_state.string_current -= len(string_buffer)
-            address = state.basic_state.string_current + 1 
+            self.current -= len(string_buffer)
+            address = self.current + 1 
         key = str(vartypes.value_to_uint(address))
         if key in self.strings:
             raise KeyError('String key %s already defined.' % repr(key))
@@ -93,7 +98,6 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
         state.basic_state.var_memory = {}
         state.basic_state.array_memory = {}
         state.basic_state.var_current = var_mem_start
-        state.basic_state.string_current = state.basic_state.var_current + total_mem # 65020
         # arrays are always kept after all vars
         state.basic_state.array_current = 0
         # functions are cleared except when CHAIN ... ALL is specified
@@ -372,26 +376,33 @@ def assign_field_var(varname, value, justify_right=False):
 def collect_garbage():
     """ Collect garbage from string space. Compactify string storage. """
     string_list = []
-    for name in state.basic_state.var_memory:
+    # copy all strings that are actually referenced
+    for name in state.basic_state.variables:
         if name[-1] == '$':
             mem = state.basic_state.var_memory[name]
             v = state.basic_state.variables[name]
-            string_list.append( (name, mem[0], mem[1], v.address, len(v.buffer)) )
-    # sort by str_ptr, largest first        
-    string_list.sort(key=itemgetter(3), reverse=True)        
-    new_string_current = var_mem_start + total_mem              
+            string_list.append( (name, mem[0], mem[1], state.basic_state.strings.address(v), state.basic_state.strings.retrieve(v)) )
+    for name in state.basic_state.arrays:
+        if name[-1] == '$':
+            mem = state.basic_state.array_memory[name]
+            _, lst, _ = state.basic_state.arrays[name]
+            for i in range(0, len(lst), 3):
+                v = lst[i:i+3]
+                string_list.append( (name, mem[0], mem[1], state.basic_state.strings.address(v), state.basic_state.strings.retrieve(v)) )
+    # sort by str_ptr, largest first (maintain order of storage)       
+    string_list.sort(key=itemgetter(3), reverse=True) 
+    # clear the string buffer and re-store all referenced strings
+    state.basic_state.strings.clear()       
     for item in string_list:
-        new_string_current -= item[4]
         # re-allocate string space; no need to copy buffer
-        state.basic_state.variables[name] = state.basic_state.strings.store(v.buffer) 
+        state.basic_state.variables[name] = state.basic_state.strings.store(item[4]) 
         state.basic_state.var_memory[item[0]] = (item[1], item[2])     
-    state.basic_state.string_current = new_string_current
 
 def fre():
     """ Return the amount of memory available to variables, arrays, strings and code. """
     # NOTE this is in var.py because it's used by set_var. 
     # This can be avoided when we set var_mem_start correctly at the top of code space - e.g. use a parameter in clear_variables
-    return state.basic_state.string_current - state.basic_state.var_current - state.basic_state.array_current - program_memory_size()
+    return state.basic_state.strings.current - state.basic_state.var_current - state.basic_state.array_current - program_memory_size()
       
 def program_memory_size():
     """ Return the size of the code buffer. """
@@ -403,7 +414,6 @@ def assert_variables_memory_size():
     mem_used = 0
     for name in state.basic_state.variables:
         mem_used += 1 + max(3, len(name))
-        # string length incorporated through use of state.basic_state.string_current
         mem_used += var_size_bytes(name)
     for name in state.basic_state.arrays:
         mem_used += 4 + array_size_bytes(name) + max(3, len(name))

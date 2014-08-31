@@ -228,7 +228,7 @@ def get_data_memory(address):
                 for d in dimensions:
                     data_rep += vartypes.value_to_uint(d + 1 - state.basic_state.array_base)
                 return data_rep[offset]               
-    elif address > state.basic_state.string_current:
+    elif address > state.basic_state.strings.current:
         # string space
         # find the variable we're in
         str_nearest = -1
