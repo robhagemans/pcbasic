@@ -351,7 +351,7 @@ def set_var_or_array(name, indices, value):
     else:
         set_array(name, indices, value)
         
-def set_field_var(random_file, varname, offset, length):
+def set_field_var_or_array(random_file, varname, indices, offset, length):
     """ Attach a string variable to a FIELD buffer. """
     if varname[-1] != '$':
         # type mismatch
@@ -360,28 +360,47 @@ def set_field_var(random_file, varname, offset, length):
     if offset+length > len(field):
         # FIELD overflow
         raise error.RunError(50)    
-    #str_ptr = StringPtr(field, offset, length)
     str_addr = random_file.field_address + offset
     str_sequence = bytearray(chr(length)) + vartypes.value_to_uint(str_addr)
     # assign the string ptr to the variable name
     # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
-    state.basic_state.variables[varname] = str_sequence
-    # update memory model (see set_var)
-    if varname not in state.basic_state.var_memory:
-        name_ptr = state.basic_state.var_current
-        var_ptr = name_ptr + max(3, len(varname)) + 1 # byte_size first_letter second_letter_or_nul remaining_length_or_nul 
-        state.basic_state.var_current += max(3, len(varname)) + 1 + byte_size['$']
-        state.basic_state.var_memory[varname] = (name_ptr, var_ptr)
+    if indices == []:
+        state.basic_state.variables[varname] = str_sequence
+        # update memory model (see set_var)
+        if varname not in state.basic_state.var_memory:
+            name_ptr = state.basic_state.var_current
+            var_ptr = name_ptr + max(3, len(varname)) + 1 # byte_size first_letter second_letter_or_nul remaining_length_or_nul 
+            state.basic_state.var_current += max(3, len(varname)) + 1 + byte_size['$']
+            state.basic_state.var_memory[varname] = (name_ptr, var_ptr)
+    else:
+        check_dim_array(varname, indices)
+        dimensions, lst, _ = state.basic_state.arrays[varname]
+        bigindex = index_array(indices, dimensions)
+        lst[bigindex*3:(bigindex+1)*3] = str_sequence
+
+def get_var_or_array_string_pointer(name, indices):
+    if name[-1] != '$':
+        # type mismatch
+        raise error.RunError(13)
+    try:
+        if indices == []:
+            return state.basic_state.variables[name]
+        else:
+            check_dim_array(name, indices)
+            dimensions, lst, _ = state.basic_state.arrays[name]
+            bigindex = index_array(indices, dimensions)
+            return lst[bigindex*3:(bigindex+1)*3]
+    except KeyError:
+        return None
     
-def assign_field_var(varname, value, justify_right=False):
-    """ Write a packed value into a field-assigned variable. """
-    if varname[-1] != '$' or value[0] != '$':
+def assign_field_var_or_array(name, indices, value, justify_right=False):
+    """ Write a packed value into a field-assigned string. """
+    if value[0] != '$':
         # type mismatch
         raise error.RunError(13)
     s = vartypes.unpack_string(value)
-    try:
-        v = state.basic_state.variables[varname]
-    except KeyError:
+    v = get_var_or_array_string_pointer(name, indices)
+    if v == None:
         # LSET has no effect if variable does not exist
         return
     # trim and pad to size
@@ -392,16 +411,46 @@ def assign_field_var(varname, value, justify_right=False):
     else:
         s += ' '*(length-len(s))
     # copy new value into existing buffer 
-    address = vartypes.uint_to_value(v[-2:])
-    # string should be stored in field buffers
-    # find the file we're in
-    start = address - iolayer.field_mem_start
-    number = 1 + start // iolayer.field_mem_offset
-    offset = start % iolayer.field_mem_offset
-    try:
-        state.io_state.fields[number][offset:offset+length] = s
-    except KeyError, IndexError:
-        raise KeyError('Not a field string')
+    string_assign_unpacked_into(v, 0, length, s)
+
+def string_assign_into(name, indices, offset, num, value):
+    """ Write a packed value into a string variable or array. """
+    # WARNING - need to decrement basic offset by 1 to get python offset
+    if value[0] != '$':
+        # type mismatch
+        raise error.RunError(13)
+    s = vartypes.unpack_string(value)
+    v = get_var_or_array_string_pointer(name, indices)
+    if v == None:
+        # illegal function call
+        raise error.Runerror(5)    
+    string_assign_unpacked_into(v, offset, num, s)
+    
+def string_assign_unpacked_into(sequence, offset, num, val):    
+    """ Write an unpacked value into a string buffer for given 3-byte sequence. """
+    # don't overwrite more of the old string than the length of the new string
+    num = min(num, len(val))
+    # ensure the length of val is num, cut off any extra characters 
+    val = val[:num]
+    length = ord(sequence[0:1])
+    address = vartypes.uint_to_value(sequence[-2:])
+    if offset + num > length:
+        num = length - offset
+    if num <= 0:
+        return     
+    if address >= var_mem_start:
+        # string stored in string space
+        state.basic_state.strings.retrieve(sequence)[offset:offset+num] = val
+    else:
+        # string stored in field buffers
+        # find the file we're in
+        start = address - iolayer.field_mem_start
+        number = 1 + start // iolayer.field_mem_offset
+        field_offset = start % iolayer.field_mem_offset
+        try:
+            state.io_state.fields[number][field_offset+offset:field_offset+offset+num] = val
+        except KeyError, IndexError:
+            raise KeyError('Not a field string')
 
 ##########################################
 
@@ -441,15 +490,3 @@ def program_memory_size():
     # NOTE this is in var.py because it's used by set_var through fre() 
     return len(state.basic_state.bytecode.getvalue()) - 3
     
-def assert_variables_memory_size():
-    """ Return the amount of memory used by variables and arrays but not string buffers. For debugging. """
-    mem_used = 0
-    for name in state.basic_state.variables:
-        mem_used += 1 + max(3, len(name))
-        mem_used += var_size_bytes(name)
-    for name in state.basic_state.arrays:
-        mem_used += 4 + array_size_bytes(name) + max(3, len(name))
-        dimensions, lst, _ = state.basic_state.arrays[name]
-        mem_used += 2*len(dimensions)    
-    assert (mem_used == state.basic_state.var_current - var_mem_start + state.basic_state.array_current)
-     

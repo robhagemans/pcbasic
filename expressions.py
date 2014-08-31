@@ -728,7 +728,7 @@ def value_varptr(ins):
     if dollar:
         return vartypes.pack_string(bytearray(chr(var.byte_size[name[-1]])) + vartypes.value_to_uint(var_ptr))
     else:
-        # TODO: strings, fields, file control blocks not yet implemented 
+        # TODO: file control blocks not yet implemented 
         return vartypes.pack_int(var_ptr)
         
 def value_usr(ins):

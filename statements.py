@@ -1019,8 +1019,8 @@ def exec_field(ins):
             width = vartypes.pass_int_unpack(expressions.parse_expression(ins))
             util.range_check(0, 255, width)
             util.require_read(ins, ('AS',), err=5)
-            name = util.get_var_name(ins)
-            var.set_field_var(the_file, name, offset, width)         
+            name, index = expressions.get_var_or_array_name(ins)
+            var.set_field_var_or_array(the_file, name, index, offset, width)         
             offset += width
             if not util.skip_white_read_if(ins, (',',)):
                 break
@@ -1727,7 +1727,6 @@ def exec_mid(ins):
     name, indices = expressions.get_var_or_array_name(ins)
     if indices != []:    
         # pre-dim even if this is not a legal statement!
-        # e.g. 'a[1,1]' gives a syntax error, but even so 'a[1]' is out of range afterwards
         var.check_dim_array(name, indices)
     util.require_read(ins, (',',))
     arglist = expressions.parse_int_list(ins, size=2, err=2)
@@ -1741,15 +1740,15 @@ def exec_mid(ins):
     if num > 0:
         util.range_check(1, len(s), start)
     util.require_read(ins, ('\xE7',)) # =
-    val = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    val = vartypes.pass_string_keep(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
-    vartypes.str_replace_mid(s, start, num, val)     
+    var.string_assign_into(name, indices, start - 1, num, val)     
     
 def exec_lset(ins, justify_right=False):
-    name = util.get_var_name(ins)
+    name, index = expressions.get_var_or_array_name(ins)
     util.require_read(ins, ('\xE7',))
     val = expressions.parse_expression(ins)
-    var.assign_field_var(name, val, justify_right)
+    var.assign_field_var_or_array(name, index, val, justify_right)
 
 def exec_rset(ins):
     exec_lset(ins, justify_right=True)

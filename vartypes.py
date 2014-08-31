@@ -200,19 +200,6 @@ def str_gt(left,right):
     # left is shorter, or equal strings
     return False                    
 
-def str_replace_mid(s, start, num, val):    
-    # s is a reference to the actual stored bytearray
-    num = min(num, len(val))
-    start -= 1    
-    stop = start + num 
-    if stop > len(s):
-        stop = len(s)
-    if start == stop or start > len(s):
-        return 
-    if len(val) > stop-start:
-        val = val[:stop-start]
-    s[start:stop] = val
-
 def str_instr(big, small, n):
     if big == '' or n > len(big):
         return null['%']
