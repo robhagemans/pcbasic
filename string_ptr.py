@@ -53,7 +53,9 @@ class StringPtr:
     def __setitem__(self, key, value):
         """ Change a range of characters in the string. """
         self.stream[apply_slice(self.slice, key)] = value    
-            def __str__(self):
+
+    def __str__(self):
+        """ Return a str-typed copy of the full string value. """
         return str(self.stream[self.slice])
         
     def assign(self, in_str):
