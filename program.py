@@ -19,6 +19,7 @@ import console
 import backend
 import state
 import flow
+import unicodepage
 
 try:
     from cStringIO import StringIO
@@ -41,6 +42,8 @@ program_memory_start = 0x126e
 
 # accept CR, LF and CRLF line endings; interpret as CR only if the next line starts with a number
 universal_newline = False
+# interpret "ascii" program files as UTF-8
+utf8_files = False
 
 def erase_program():
     state.basic_state.bytecode.truncate(0)
@@ -295,11 +298,12 @@ def merge(g):
     else:
         load_ascii_file(g, c)
     g.close()
+
     
-    
-# readln, but break on \r rather than \n. ignore single starting LF to account for CRLF *without seeking*.
-# include the \r at the end of the line. break at \x1a EOF. Do not include \x1a.
 def read_program_line(ins, last, cr=('\r')):
+    """ readln, but break on \r rather than \n. ignore single starting LF to account for CRLF *without seeking*.
+        include the \r at the end of the line. break at \x1a EOF. Do not include \x1a. 
+        """
     d = ins.read(1)
     eof = d in ('\x1a', '')
     out = d if (not eof and (last != '\r' or d != '\n')) else ''    
@@ -311,10 +315,13 @@ def read_program_line(ins, last, cr=('\r')):
         out += d       
     return out, eof, d
 
-# buffered line reader
 class LineGetter(object): 
-    def __init__(self, g, universal):
+    """ Buffered line reader. Enables us to take into account both universal newlines and strict GW-BASIC newlines without seek(). """
+
+    def __init__(self, g, universal, utf8):
+        """ Set up the line reader. Specify whether we want universal newlines (True is yes) and UTF8 or Codepage (True is UTF-8). """
         self.universal = universal
+        self.utf8 = utf8
         if universal:
             self.cr = ('\r', '\n')
         else:
@@ -324,6 +331,7 @@ class LineGetter(object):
         self.cache = None
         
     def get_line(self):
+        """ Read a line from the file. """
         if self.cache != None:
             line, eof = self.cache
             self.cache = None
@@ -347,12 +355,22 @@ class LineGetter(object):
             self.cache = line2, eof2   
         if line[-1] == '\n':
             line = line[:-1] + '\r'
+        if self.utf8:
+            # decode and encode back as an easy way to split up in single-character multibyte sequences
+            utf8line = line.decode('utf-8')
+            line = '' 
+            for c in utf8line:
+                try:
+                    line += unicodepage.from_utf8(c.encode('utf-8'))
+                except KeyError:
+                    # pass unknown sequences untranslated. this includes \r.
+                    line += c.encode('utf-8')    
         return line, eof
         
-# load an ascii encoded program
 def load_ascii_file(g, first_char=''):
+    """ Load an ascii-codepage or utf8 (if utf8_files is True) encoded program from g. """
     eof = False
-    lg = LineGetter(g, universal_newline)
+    lg = LineGetter(g, universal_newline, utf8=utf8_files)
     while not eof:
         line, eof = lg.get_line()
         line, first_char = first_char + line, ''
@@ -367,6 +385,7 @@ def load_ascii_file(g, first_char=''):
                 raise error.RunError(66)   
 
 def chain(action, g, jumpnum, delete_lines): 
+    """ Chain load the program from g and hand over execution. """
     if delete_lines:
         # delete lines from existing code before merge (without MERGE, this is pointless)
         delete(*delete_lines)
@@ -376,12 +395,14 @@ def chain(action, g, jumpnum, delete_lines):
     flow.jump(jumpnum, err=5)
 
 def save(g, mode='B'):
+    """ Save the program to stream g in (A)scii, (B)ytecode or (P)rotected mode. """
     if state.basic_state.protected and mode != 'P':
         raise error.RunError(5)
     current = state.basic_state.bytecode.tell()
     # skip first \x00 in bytecode, replace with appropriate magic number
     state.basic_state.bytecode.seek(1)
     if mode == 'B':
+        # binary bytecode mode
         g.write('\xff')
         last = ''
         while True:
@@ -393,16 +414,24 @@ def save(g, mode='B'):
         if last != '\x1a':
             g.write('\x1a')    
     elif mode == 'P':
+        # protected mode
         g.write('\xfe')
         protect.protect(state.basic_state.bytecode, g)
         g.write('\x1a')    
     else:
+        # ascii mode
         while True:
             current_line, output, _ = tokenise.detokenise_line(state.basic_state.bytecode)
             if current_line == -1 or (current_line > max_list_line):
                 break
-            g.write(str(output) + '\r\n')
-        g.write('\x1a')       
+            output = str(output)    
+            if utf8_files:
+                output = unicodepage.UTF8Converter().to_utf8(output)
+            g.write(output + '\r\n')
+        # close with ^Z if we're in GW-BASIC text file mode to match GW-BASIC files exactly
+        # don't do this in UTF8-mode as it's a bit odd to have a legacy end-of-file marker in a UTF8 text.
+        if not utf8_files:    
+            g.write('\x1a')       
     state.basic_state.bytecode.seek(current)         
     g.close()
     

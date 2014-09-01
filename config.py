@@ -83,6 +83,7 @@ arguments = {
     'cga_low':          { 'action':'store_true', 'help':'Use low-intensity palettes in CGA (for --video={cga,ega} only).' },
     'composite':        { 'action':'store_true', 'help':'Emulates the output on an NTSC composite monitor. Disables smooth scaling. Enables colour artifacts on SCREEN 2 only (and crudely). For --video={cga,cga_old,pcjr,tandy} only.' },
     'nobox':            { 'action':'store_true', 'help':'Disable box-drawing recognition for DBCS code pages' },
+    'utf8':             { 'action':'store_true', 'help':'Load and save "ascii" files as UTF-8.' },
 }
 
 def get_args():
