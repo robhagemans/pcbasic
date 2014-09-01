@@ -37,10 +37,13 @@ class StringSpace(object):
         self.current = state.basic_state.var_current + total_mem # 65020
     
     def retrieve(self, key):
-        """ Retrieve a string by its 2-byte key. 3-byte memory sequences allowed, we take the pointer from it. """
+        """ Retrieve a string by its 3-byte sequence. 2-byte keys allowed, but will return longer string for empty string. """
         key = str(key)
-        if len(key) in (2, 3):
-            return self.strings[key[-2:]]
+        if len(key) == 2:
+            return self.strings[key]
+        elif len(key) == 3:    
+            # if string length == 0, return empty string
+            return bytearray('') if ord(key[0]) == 0 else self.strings[key[-2:]]
         else:
             raise KeyError('String key %s has wrong length.' % repr(key))    
 
@@ -55,9 +58,11 @@ class StringSpace(object):
             self.current -= len(string_buffer)
             address = self.current + 1 
         key = str(vartypes.value_to_uint(address))
-        if key in self.strings:
-            raise KeyError('String key %s already defined.' % repr(key))
-        self.strings[key] = string_buffer    
+        # don't store empty strings
+        if len(string_buffer) > 0:
+            if key in self.strings:
+                raise KeyError('String key %s at %d already defined.' % (repr(key), address))
+            self.strings[key] = string_buffer    
         return bytearray(chr(len(string_buffer)) + key)
 
     def address(self, key):
