@@ -2246,11 +2246,14 @@ def exec_width(ins):
             # IN GW-BASIC, we can do calculations, but they must be bracketed...
             #w = vartypes.pass_int_unpack(expressions.parse_expr_unit(ins))
             w = vartypes.pass_int_unpack(expr)
-            # two commas are accepted
-            util.skip_white_read_if(ins, (',',))
-            if not util.skip_white_read_if(ins, (',',)):
-                # one comma, then stuff - illegal function call
-                util.require(ins, util.end_statement, err=5)
+            if util.skip_white_read_if(ins, (',',)):
+                # pare dummy number rows setting
+                num_rows_dummy = expressions.parse_expression(ins, allow_empty=True)
+                if num_rows_dummy != None:
+                    min_num_rows = 0 if pcjr_syntax else 25
+                    util.range_check(min_num_rows, 25, vartypes.pass_int_unpack(num_rows_dummy))
+                # trailing comma is accepted
+                util.skip_white_read_if(ins, (',',))
     util.require(ins, util.end_statement)        
     dev.set_width(w)
     

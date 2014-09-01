@@ -3930,7 +3930,7 @@ ERRORS:
 
 WIDTH statement
 WIDTH { # file_num | device_name | LPRINT }, num_columns 
-WIDTH { 40 | 80 | (num_columns) } [, [,]]
+WIDTH { 20 | 40 | 80 | (num_columns) } [, [num_rows] [,]]
 ---------------
 Set the line width for the screen, a file or a device.
 'num_columns' is a number-valued expression between 0 and the new column width. 
@@ -3944,18 +3944,27 @@ changed.
 If a device is specified, it does not need to be open; the width setting will
 be the default width next time a file is opened to that device.
 If 'device_name' is "SCRN:", "KYBD:", or omitted, the screen width is changed.
-In this case, 'num_columns' must be one of 40 or 80.
+In this case, 'num_columns' must be one of 20, 40 or 80.
 If 'device_name' is "LPT1:" or LPRINT is specified, the device width setting 
 affects LPRINT and LLIST.
+'num_rows' is optional and must equal 25. 
 NOTES:
--   In the second syntax, num_columnns can only de an expression if it is 
-    bracketed. Otherwise it must be a literal 40 or 80.
--   In the second syntax, up to two commas are optional and have no effect.
+-   In GW-BASIC, in the second syntax, num_columnns can only be an expression 
+    if it is bracketed. Otherwise it must be a literal 40 or 80. PC-BASIC
+    accepts unbracketed expressions, as long as they evaluate to 40 or 80.
+-   In the second syntax, the trailing comma is optional and have no effect.
 -   When changing screen width in graphics mode, the screen mode is changed.
     The following changes occur:
         SCREEN 1 (40)  <-->  SCREEN 2 (80)
         SCREEN 7 (40)  <-->  SCREEN 8 (80)
         SCREEN 7 (40)  <---- SCREEN 9 (80)
+-   Width value 20 is only allowed on Tandy and PCjr. Changing to this width
+    changes to graphical SCREEN 3. Additionally, the following changes occur:
+        SCREEN 3 (20) ---->  SCREEN 1 (40)
+        SCREEN 3 (20) ---->  SCREEN 2 (80)
+        SCREEN 4 (40) ---->  SCREEN 2 (80)
+        SCREEN 5 (40)  <-->  SCREEN 6 (80)
+-   On Tandy and PCjr, 'num_rows' may be in [0,25] but its value is ignored.
 ERRORS:
 -   If 'device_name' is not one of the allowed devices, raises BAD FILE NAME.
 -   If 'device_name' is SCRN:, KYBD: or omitted, and num_columns is not 40 or 
@@ -3967,6 +3976,7 @@ ERRORS:
 -   If 'file_num' or 'num_columns' are not in [-32768, 32767], raises OVERFLOW.
 -   In the second syntax, if an unbracketed expression is used, 
     ILLEGAL FUNCTION CALL is raised.
+-   If 'num_rows' is not in its accepted range, raises ILLEGAL FUNCTION CALL.
     
 
 WINDOW statement
