@@ -579,8 +579,8 @@ def value_fn(ins):
     varsave = {}
     for name in varnames:
         if name in state.basic_state.variables:
-            # copy the reference so it's safe for FOR loops
-            varsave[name] = state.basic_state.variables[name]
+            # copy the *value* - set_var is in-place it's safe for FOR loops
+            varsave[name] = state.basic_state.variables[name][:]
     # read variables
     if util.skip_white_read_if(ins, ('(',)):
         exprs = parse_expr_list(ins, len(varnames), err=2)
@@ -594,11 +594,9 @@ def value_fn(ins):
     fns.seek(0)
     value = parse_expression(fns)    
     # restore existing vars
-    for name in varnames:
-        del state.basic_state.variables[name]
     for name in varsave:    
-        # re-assign the reference
-        state.basic_state.variables[name] = varsave[name]
+        # re-assign the stored value
+        state.basic_state.variables[name][:] = varsave[name]
     return value    
 
 ###############################################################
