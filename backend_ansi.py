@@ -98,8 +98,6 @@ esc_to_scan = {
     '\x1b\x5b\x33\x7e': '\x00\x53', # DEL
     '\x1b\x5b\x35\x7e': '\x00\x49', # PG UP
     '\x1b\x5b\x36\x7e': '\x00\x51', # PG DN
-    # this is not an esc sequence, but UTF-8 for GBP symbol
-    '\xc2\xa3': '\x9c'  # pound sterling symbol
 }
  
 def get_size():
@@ -256,32 +254,41 @@ def term_echo(on=True):
     return previous
 
 def check_keyboard():
+    global pre_buffer
     fd = sys.stdin.fileno()
+    s = ''
+    # drain input buffer of all charaters available
+    while True:
+        # break if stdin has no more characters to read
+        if select.select([sys.stdin], [], [], 0)[0] == []:
+            break
+        s += os.read(fd, 1)
+    # avoid confusion of NUL with scancodes    
+    s.replace('\0', '\0\0')
+    # first replace escape sequences in s with scancodes
+    # this plays nice with utf8 as long as the scan codes are all in 7 bit ascii, ie no \00\f0 or above    
+    for esc in esc_to_scan:
+        s = s.replace(esc, esc_to_scan[esc])
+    # replace utf-8 with codepage
+    # convert into unicode codepoints
+    u = s.decode('utf-8')
+    # then handle these one by one as UTF-8 sequences
     c = ''
-    # check if stdin has characters to read
-    d = select.select([sys.stdin], [], [], 0) 
-    # longest escape sequence I use is 5 bytes
-    if d[0] != []:
-        c = os.read(fd,5)
-    # handle key
-    if c == '':
-        pass
-    elif c == '\x03': # ctrl-C
-        raise error.Break() 
-    elif c == '\x00':      # to avoid confusion with scancodes
-        console.insert_key('\x00\x00')      
-    elif c == '\x7f':      # backspace
-        console.insert_key('\b')
-    else:
-        try:
-            console.insert_key(esc_to_scan[c])       
-        except KeyError:
+    for uc in u:                    
+        c += uc.encode('utf-8')
+        if c == '\x03':         # ctrl-C
+            raise error.Break() 
+        elif c == '\x7f':       # backspace
+            console.insert_key('\b')
+        elif c == '\0':    
+            # scancode; go add next char
+            continue
+        else:
             try:
                 console.insert_key(unicodepage.from_utf8(c))
             except KeyError:    
-                # all other codes are chopped off, 
-                # so other escape sequences will register as an escape keypress.
-                console.insert_key(c[0])    
+                console.insert_key(c)    
+        c = ''
         
 ########
 
