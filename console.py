@@ -1112,8 +1112,8 @@ def put_screen_char_attr(cpage, crow, ccol, c, cattr, one_only=False):
         while ccol < state.console_state.width:
             c = therow.buf[ccol-1][0]
             d = therow.buf[ccol][0]  
-            if (c in unicodepage.lead and d in unicodepage.trail and 
-                    (not unicodepage.box_protect or (not (connects(b, c, 0) and connects (c, d, 0)) and not (connects(b, c, 1) and connects (c, d, 1)))) ): 
+            if (c in unicodepage.lead and d in unicodepage.trail and (not unicodepage.box_protect or 
+                        (not (connects(b, c, 0) and connects (c, d, 0)) and not (connects(b, c, 1) and connects (c, d, 1)))) ): 
                 refresh_screen_pos_double(cpage, crow, ccol)
                 ccol += 2
             else:
