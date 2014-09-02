@@ -1077,58 +1077,96 @@ def get_screen_char_attr(crow, ccol, want_attr):
     ca = state.console_state.apage.row[crow-1].buf[ccol-1][want_attr]
     return ca if want_attr else ord(ca)
 
-def refresh_screen_pos(cpage, crow, ccol):
-    ca = cpage.row[crow-1].buf[ccol-1]
-    backend.video.set_attr(ca[1]) 
-    backend.video.putc_at(crow, ccol, ca[0])
-    cpage.row[crow-1].double[ccol-1] = 0
-    
-def refresh_screen_pos_double(cpage, crow, ccol):
+def refresh_screen_range(cpage, crow, start, stop):
     therow = cpage.row[crow-1]
-    ca = therow.buf[ccol-1]
-    da = therow.buf[ccol]
-    backend.video.set_attr(da[1]) 
-    backend.video.putwc_at(crow, ccol, ca[0], da[0])
-    therow.double[ccol-1] = 1
-    therow.double[ccol] = 2
-    
+    ccol = start
+    while ccol < stop:
+        double = therow.double[ccol-1]
+        if double == 1:
+            ca = therow.buf[ccol-1]
+            da = therow.buf[ccol]
+            backend.video.set_attr(da[1]) 
+            backend.video.putwc_at(crow, ccol, ca[0], da[0])
+            therow.double[ccol-1] = 1
+            therow.double[ccol] = 2
+            ccol += 2
+        else:
+            if double != 0:
+                logging.debug('DBCS buffer corrupted at %d, %d', crow, ccol)            
+            ca = therow.buf[ccol-1]        
+            backend.video.set_attr(ca[1]) 
+            backend.video.putc_at(crow, ccol, ca[0])
+            ccol += 1
+        
 def put_screen_char_attr(cpage, crow, ccol, c, cattr, one_only=False):
     cattr = cattr & 0xf if state.console_state.screen_mode else cattr
     # update the screen buffer
     cpage.row[crow-1].buf[ccol-1] = (c, cattr)
-    refresh_screen_pos(cpage, crow, ccol)
+    # mark the replaced char for refreshing
+    start, stop = ccol, ccol+1
+    cpage.row[crow-1].double[ccol-1] = 0
+    # mark out sbcs and dbcs characters
     if unicodepage.dbcs:
+        orig_col = ccol
         # replace chars from here until necessary to update double-width chars
         therow = cpage.row[crow-1]    
         # replacing a trail byte? take one step back
         # previous char could be a lead byte? take a step back
-        orig_col = ccol
         if (ccol > 1 and therow.double[ccol-2] != 2 and 
-                (therow.buf[ccol-1] in unicodepage.trail or therow.buf[ccol-2][0] in unicodepage.lead)):
+                (therow.buf[ccol-1][0] in unicodepage.trail or therow.buf[ccol-2][0] in unicodepage.lead)):
             ccol -= 1
-        # last char continues box drawing to right
-        b = therow.buf[ccol-2][0] if unicodepage.box_protect and ccol > 1 else ''
+            start -= 1
         # check all dbcs characters between here until it doesn't matter anymore
         while ccol < state.console_state.width:
             c = therow.buf[ccol-1][0]
             d = therow.buf[ccol][0]  
-            if (c in unicodepage.lead and d in unicodepage.trail and (not unicodepage.box_protect or 
-                        (not (connects(b, c, 0) and connects (c, d, 0)) and not (connects(b, c, 1) and connects (c, d, 1)))) ): 
-                refresh_screen_pos_double(cpage, crow, ccol)
+            if (c in unicodepage.lead and d in unicodepage.trail):
+                if therow.double[ccol-1] == 1 and therow.double[ccol] == 2 and ccol > orig_col:
+                    break
+                therow.double[ccol-1] = 1
+                therow.double[ccol] = 2
+                start, stop = min(start, ccol), max(stop, ccol+2)
                 ccol += 2
             else:
-                if ccol > 2:
-                    a = therow.buf[ccol-3][0]
-                    if (connects(a, b, 0) and connects (b, c, 0)) or (connects(a, b, 1) and connects (b, c, 1)):
-                        refresh_screen_pos(cpage, crow, ccol-2)
-                        refresh_screen_pos(cpage, crow, ccol-1)
-                # print single char
-                refresh_screen_pos(cpage, crow, ccol)
-                ccol += 1
-                if (ccol >= state.console_state.width) or therow.double[ccol-1] == 0:
+                if therow.double[ccol-1] == 0 and ccol > orig_col:
                     break
-            if one_only and ccol > orig_col:
+                therow.double[ccol-1] = 0
+                start, stop = min(start, ccol), max(stop, ccol+1)
+                ccol += 1
+            if ccol >= state.console_state.width or (one_only and ccol > orig_col):
                 break  
+        # check for box drawing
+        if unicodepage.box_protect:
+            ccol = start-2
+            connecting = 0
+            bset = -1
+            while ccol < stop+2 and ccol < state.console_state.width:
+                c = therow.buf[ccol-1][0]
+                d = therow.buf[ccol][0]  
+                if bset > -1 and connects(c, d, bset): 
+                    connecting += 1
+                else:
+                    connecting = 0
+                    bset = -1
+                if bset == -1:
+                    for b in (0, 1):
+                        if connects(c, d, b):
+                            bset = b
+                            connecting = 1
+                if connecting >= 2:
+                    therow.double[ccol] = 0
+                    therow.double[ccol-1] = 0
+                    therow.double[ccol-2] = 0
+                    start = min(start, ccol-1)
+                    if ccol > 2 and therow.double[ccol-3] == 1:
+                        therow.double[ccol-3] = 0
+                        start = min(start, ccol-2)
+                    if ccol < state.console_state.width-1 and therow.double[ccol+1] == 2:
+                        therow.double[ccol+1] = 0
+                        stop = max(stop, ccol+2)
+                ccol += 1        
+    # update the screen            
+    refresh_screen_range(cpage, crow, start, stop)
 
 def connects(c, d, bset):
     return c in unicodepage.box_right[bset] and d in unicodepage.box_left[bset]
