@@ -317,16 +317,14 @@ def load_redirected_input(f):
    
 # basic_style redirected output   
 def echo_ascii(s, f):
-    for c in s:
-        f.write(c)
+    f.write(s)
     f.flush()  
     
 # converter with DBCS lead-byte buffer
 utf8conv = unicodepage.UTF8Converter()
     
 def echo_utf8(s, f):
-    f.write(utf8conv.to_utf8(s, preserve_control=True)) 
-    f.flush()     
+    echo_ascii(utf8conv.to_utf8(s, preserve_control=True), f) 
 
 
 if __name__ == "__main__":
