@@ -37,13 +37,14 @@ families = sorted(list(set([ x[0] for x in [ c.split('_') for c in os.listdir(pl
 #   /m:n,m  sets the highest memory location to n and maximum block size to m
 gw_args = { 'double':'d', 'max_files':'f', 'max_reclen':'s', 'serial_in_size':'c' }
 
-short_args = { 'dumb':'b', 'ansi':'t', 'graphical':'g', 'load':'l', 'run':'r', 'exec':'e', 'quit':'q' }
+short_args = { 'cli':'b', 'ansi':'t', 'graphical':'g', 'load':'l', 'run':'r', 'exec':'e', 'quit':'q' }
 
 arguments = {
 #    'program':  { 'metavar':'basic_program', 'nargs':'?', 'help':'Input program file to run (default), load or convert.' },
     'input':            { 'metavar':'input_file', 'nargs':1, 'help':'Retrieve keyboard input from input_file, except if KYBD: is read explicitly.' },
     'output':           { 'metavar':'output_file', 'nargs':1, 'help':'Send screen output to output_file, except if SCRN: is written to explicitly.' },
-    'dumb':             { 'action':'store_true', 'help':'Use command-line interface. This is the default if redirecting input.' },
+    'filter':           { 'action':'store_true', 'help':'Use text filter interface. This is the default if redirecting input.' },
+    'cli':              { 'action':'store_true', 'help':'Use command-line text interface' },
     'ansi':             { 'action':'store_true', 'help':'Use ANSI text interface' },
     'graphical':        { 'action':'store_true', 'help':'Use graphical interface. This is the normal default; use to override when redirecting i/o.' },
     'load':             { 'action':'store_true', 'help':'Load in_file only, do not execute' },

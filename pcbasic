@@ -27,6 +27,7 @@ if plat.system in ('OSX', 'Windows'):
 else:
     # Unix, Linux including Android
     import backend_ansi
+    import backend_cli
     try:
         stdin_is_tty = sys.stdin.isatty()
         stdout_is_tty = sys.stdout.isatty()
@@ -239,9 +240,12 @@ def prepare_console(args):
     # set backends
     backend.penstick = nopenstick
     backend.sound = nosound
-    if args.dumb or args.conv or (not args.graphical and not args.ansi and (not stdin_is_tty or not stdout_is_tty)):
+    if args.filter or args.conv or (not args.graphical and not args.ansi and (not stdin_is_tty or not stdout_is_tty)):
         # redirected input or output leads to dumbterm use
         backend.video = backend_dumb
+        backend.sound = nosound
+    elif args.cli and stdout_is_tty:
+        backend.video = backend_cli
         backend.sound = sound_beep
     elif args.ansi and stdout_is_tty:
         backend.video = backend_ansi
@@ -255,12 +259,16 @@ def prepare_console(args):
     if args.run:
         state.console_state.keys_visible = False
     if not console.init():
-        logging.warning('Falling back to command-line interface.')
-        backend.video = backend_dumb
+        logging.warning('Failed to initialise interface. Falling back to command-line interface.')
+        backend.video = backend_cli
         backend.sound = sound_beep        
         if not backend.video or not console.init():
-            logging.error('Failed to initialise interface. Quitting.')
-            sys.exit(0)
+            logging.warning('Failed to initialise interface. Falling back to filter interface.')
+            backend.video = backend_dumb
+            backend.sound = nosound
+            if not backend.video or not console.init():
+                logging.error('Failed to initialise interface. Quitting.')
+                sys.exit(0)
     # sound fallback        
     if args.nosound:
         backend.sound = nosound

@@ -36,7 +36,7 @@ def prepare(args):
 def init():
     global check_keys
     if plat.system == 'Windows':
-        logging.warning('Command-line interface not supported on Windows.')
+        logging.warning('Filter interface not supported on Windows.')
         return False
     # close input after redirected input ends
     if sys.stdin.isatty():

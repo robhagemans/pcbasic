@@ -19,12 +19,11 @@
 import sys
 import time
 import os
+import plat
 
-try:
+if plat.system != 'Windows':
     # this fails on Windows
     import tty, termios, select
-except ImportError:
-    tty = None
 
 import unicodepage
 import error
@@ -32,18 +31,12 @@ import console
 import state
 
 supports_graphics = False
-max_palette = 16
+# palette is ignored
+max_palette = 64
 
 term_echo_on = True
 term_attr = None
 term = sys.stdout
-
-# black, blue, green, cyan, red, magenta, yellow, white
-colours = (0, 4, 2, 6, 1, 5, 3, 7)
-colournames = ('Black','Dark Blue','Dark Green','Dark Cyan','Dark Red','Dark Magenta','Brown','Light Gray',
-'Dark Gray','Blue','Green','Cyan','Red','Magenta','Yellow','White')
-palette_changed = True
-
 
 # unused, but needs to be defined
 colorburst = False
@@ -56,24 +49,9 @@ cursor_visible = True
 # http://en.wikipedia.org/wiki/ANSI_escape_code
 # http://misc.flogisoft.com/bash/tip_colors_and_formatting
 
-esc_reset = '\x1b[0m\x1bc'
-esc_set_scroll_screen = '\x1b[r'
-esc_set_scroll_region = '\x1b[%i;%ir'
-esc_clear_screen = '\x1b[2J'
 esc_clear_line = '\x1b[2K'
-esc_scroll_up = '\x1b[%iS'
-esc_scroll_down = '\x1b[%iT'
-esc_show_cursor = '\x1b[?25h'
-esc_hide_cursor = '\x1b[?25l'
-esc_resize_term = '\x1b[8;%i;%i;t'
-esc_move_cursor = '\x1b[%i;%if' 
-esc_save_cursor_pos = '\x1b[s'
-esc_restore_cursor_pos = '\x1b[u'
-esc_request_size = '\x1b[18;t'
-esc_set_cursor_colour = '\x1b]12;%s\x07'
-esc_set_cursor_shape = '\x1b[%i q'  #% (2*(is_line+1) - blinks)    # 1 blinking block 2 block 3 blinking line 4 line
-esc_set_colour = '\x1b[%im'      
-esc_set_title = '\x1b]2;%s\x07'
+esc_move_right = '\x1b\x5b\x43'
+esc_move_left = '\x1b\x5b\x44'
 
 # escape sequence to scancode dictionary
 # for scan codes, see e.g. http://www.antonis.de/qbebooks/gwbasman/appendix%20h.html
@@ -89,158 +67,112 @@ esc_to_scan = {
     '\x1b\x5b\x32\x30\x7e':  '\x00\x43', # F9
     '\x1b\x5b\x32\x31\x7e':  '\x00\x44', # F10
     '\x1b\x4f\x46': '\x00\x4F', # END
-    '\x1b\x4f\x48': '\x00\x47', # HOME
-    '\x1b\x5b\x41': '\x00\x48', # arrow up
-    '\x1b\x5b\x42': '\x00\x50', # arrow down
-    '\x1b\x5b\x43': '\x00\x4d', # arrow right
-    '\x1b\x5b\x44': '\x00\x4b', # arrow left
+    '\x1b\x4f\x48': '', #'\x00\x47', # HOME, ignore
+    '\x1b\x5b\x41': '', #'\x00\x48', # arrow up, ignore
+    '\x1b\x5b\x42': '', #'\x00\x50', # arrow down, ignore
+    esc_move_right: '\x00\x4d', # arrow right
+    esc_move_left: '\x00\x4b', # arrow left
     '\x1b\x5b\x32\x7e': '\x00\x52', # INS
     '\x1b\x5b\x33\x7e': '\x00\x53', # DEL
     '\x1b\x5b\x35\x7e': '\x00\x49', # PG UP
     '\x1b\x5b\x36\x7e': '\x00\x51', # PG DN
 }
  
-def get_size():
-    sys.stdout.write(esc_request_size)
-    sys.stdout.flush()
-    # Read response one char at a time until 't'
-    resp = char = ""
-    while char != 't':
-        char = sys.stdin.read(1)
-        resp += char
-    return resp[4:-1].split(';')
-
-######
-
 def prepare(args):
     pass
 
 def init():
-    if tty == None:
+    if plat.system == 'Windows':
         import logging
-        logging.warning('ANSI text interface not supported on Windows.\n')
+        logging.warning('Command-line interface not supported on Windows.\n')
         return False
     term_echo(False)
-    term.write(esc_set_title % 'PC-BASIC 3.23')
     term.flush()
     return True
     
 def init_screen_mode():
-    term.write(esc_clear_screen)
-    term.write(esc_resize_term % (state.console_state.height, state.console_state.width))
-    term.flush()
+    pass
     
 def close():
     term_echo()
-    #term.write(esc_set_cursor_shape % 3)
-    term.write(esc_show_cursor)
-    term.write(esc_clear_screen)
-    term.write(esc_reset)
     term.flush()
 
 def idle():
     time.sleep(0.024)
     
-######
-
 def clear_rows(cattr, start, stop):
-    set_attr(cattr)
-    for r in range(start, stop+1):
-        term.write(esc_move_cursor % (r, 1))    
+    if start == state.console_state.row and stop == state.console_state.row:
+        update_position(None, 1)
         term.write(esc_clear_line)
-    term.write(esc_move_cursor % (state.console_state.row, state.console_state.col))
-    term.flush()
-
-def redraw():
-    console.redraw_text_screen()
-     
-
-#####
-
+        term.flush()
+        update_position()
+        
 def update_palette():
-    global palette_changed
-    palette_changed = True
-    redraw()     
-
-####
-
-def get_fg_colourname(attr):
-    colour = state.console_state.palette[attr & 15] & 15
-    return colournames[colour]
-
-def get_colours(attr):
-    fore = state.console_state.palette[attr & 15] & 15  
-    back = state.console_state.palette[(attr>>4) & 7] & 7 
-    if (fore & 8) == 0:
-        fore = 30 + colours[fore%8]
-    else:
-        fore = 90 + colours[fore%8]
-    back = 40 + colours[back%8]
-    return fore, back
+    pass
 
 def update_cursor_attr(attr):
-    term.write(esc_set_cursor_colour % get_fg_colourname(attr))
-    term.flush()
+    pass
     
 def update_cursor_visibility(cursor_on):
-    global cursor_visible
-    cursor_visible = cursor_on
-    term.write(esc_show_cursor if cursor_on else esc_hide_cursor)
-    term.flush()
+    pass
 
 def check_events():
     check_keyboard()
-    if cursor_visible:
-        term.write(esc_move_cursor % (state.console_state.row,state.console_state.col))
+    update_position()
+
+def update_position(row=None, col=None):
+    global last_row, last_col
+    if row == None:
+        row = state.console_state.row
+    if col == None:
+        col = state.console_state.col
+    # move cursor if necessary
+    if row != last_row:
+        term.write('\r\n')
         term.flush()
+    elif col != last_col:
+        term.write('\x1b\x5b\x44'*(last_col-col))
+        term.write('\x1b\x5b\x43'*(col-last_col))
+        term.flush()
+    last_row = row
+    last_col = col    
 
-last_attr = None
 def set_attr(attr):
-    global last_attr, palette_changed
-    if attr == last_attr and not palette_changed:
-        return
-    palette_changed = False    
-    term.write(esc_set_colour % 0) 
-    if attr & 0x80:
-        # blink
-        term.write(esc_set_colour % 5)   
-    fore, back = get_colours(attr)    
-    term.write(esc_set_colour % fore)       
-    term.write(esc_set_colour % back)
-    term.flush()  
-    last_attr = attr
+    pass
 
+last_row = 1
+last_col = 1
+    
 def putc_at(row, col, c):
-    term.write(esc_move_cursor % (row, col))
+    global last_col
+    if row == 25:
+        return
+    update_position(row, col)
     # this doesn't recognise DBCS
     term.write(unicodepage.UTF8Converter().to_utf8(c))
     term.flush()
+    last_col += 1
 
 def putwc_at(row, col, c, d):
-    term.write(esc_move_cursor % (row, col))
+    global last_col
+    if row == 25:
+        return
+    update_position(row, col)
     # this does recognise DBCS
     try:
         term.write(unicodepage.UTF8Converter().to_utf8(c+d))
     except KeyError:
         term.write('  ')
     term.flush()
+    last_col += 2
    
 def scroll(from_line):
-    term.write(esc_set_scroll_region % (from_line, state.console_state.scroll_height))
-    term.write(esc_scroll_up % 1)
-    term.write(esc_set_scroll_screen)
-    if state.console_state.row > 1:
-        term.write(esc_move_cursor % (state.console_state.row-1, state.console_state.col))
+    term.write('\r\n')
     term.flush()
     
 def scroll_down(from_line):
-    term.write(esc_set_scroll_region % (from_line, state.console_state.scroll_height))
-    term.write(esc_scroll_down % 1)
-    term.write(esc_set_scroll_screen)
-    if state.console_state.row < state.console_state.height:
-        term.write(esc_move_cursor % (state.console_state.row+1, state.console_state.col))
-    term.flush()
-    
+    pass
+        
 #######
 
 def term_echo(on=True):
@@ -281,6 +213,8 @@ def check_keyboard():
         c += uc.encode('utf-8')
         if c == '\x03':         # ctrl-C
             raise error.Break() 
+        if c == '\x04':         # ctrl-D
+            raise error.Exit() 
         elif c == '\x7f':       # backspace
             console.insert_key('\b')
         elif c == '\0':    
@@ -299,13 +233,8 @@ def copy_page(src, dst):
     pass
         
 def build_cursor(width, height, from_line, to_line):
-    # works on xterm, not on xfce
-    # on xfce, gibberish is printed
-    #is_line = to_line - from_line < 4
-    #term.write(esc_set_cursor_shape % 2*(is_line+1) - 1)
     pass
 
 def load_state():
-    # console has already been loaded; just redraw
-    redraw()
-        
+    pass
+            
