@@ -131,8 +131,8 @@ def update_position(row=None, col=None):
         term.write('\r\n')
         term.flush()
     elif col != last_col:
-        term.write('\x1b\x5b\x44'*(last_col-col))
-        term.write('\x1b\x5b\x43'*(col-last_col))
+        term.write(esc_move_left*(last_col-col))
+        term.write(esc_move_right*(col-last_col))
         term.flush()
     last_row = row
     last_col = col    
