@@ -17,7 +17,7 @@ import os
 from functools import partial
 
 import plat
-import backend_dumb
+import novideo
 
 # OS-specific stdin/stdout selection
 # no stdin/stdout access allowed on packaged apps
@@ -242,7 +242,7 @@ def prepare_console(args):
     backend.sound = nosound
     if args.filter or args.conv or (not args.graphical and not args.ansi and (not stdin_is_tty or not stdout_is_tty)):
         # redirected input or output leads to dumbterm use
-        backend.video = backend_dumb
+        backend.video = novideo
         backend.sound = nosound
     elif args.cli and stdout_is_tty:
         backend.video = backend_cli
@@ -264,7 +264,7 @@ def prepare_console(args):
         backend.sound = sound_beep        
         if not backend.video or not console.init():
             logging.warning('Failed to initialise interface. Falling back to filter interface.')
-            backend.video = backend_dumb
+            backend.video = novideo
             backend.sound = nosound
             if not backend.video or not console.init():
                 logging.error('Failed to initialise interface. Quitting.')

@@ -36,7 +36,6 @@ def init():
     if not state.loaded or state.console_state.backend_name != __name__:
         # don't append if the saving backend was us: the echos are already there.
         state.console_state.output_echos.append(echo_stdout_utf8)
-        # if both stdin and stdout are ttys, avoid doubling the input echo
         state.console_state.input_echos.append(echo_stdout_utf8)
     return True    
 
