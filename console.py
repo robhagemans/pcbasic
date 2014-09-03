@@ -858,10 +858,11 @@ def clear():
         
 ##### output methods
 
-def write(s, scroll_ok=True): 
-    for echo in state.console_state.output_echos:
-        # CR -> CRLF, CRLF -> CRLF LF
-        echo(''.join([ ('\r\n' if c == '\r' else c) for c in s ]))
+def write(s, scroll_ok=True, do_echo=True):
+    if do_echo: 
+        for echo in state.console_state.output_echos:
+            # CR -> CRLF, CRLF -> CRLF LF
+            echo(''.join([ ('\r\n' if c == '\r' else c) for c in s ]))
     last = ''
     for c in s:
         if c == '\t':                                       # TAB
@@ -889,10 +890,11 @@ def write(s, scroll_ok=True):
             put_char(c)
         last = c
 
-def write_line(s='', scroll_ok=True): 
-    write(s, scroll_ok=scroll_ok)
-    for echo in state.console_state.output_echos:
-        echo('\r\n')
+def write_line(s='', scroll_ok=True, do_echo=True): 
+    write(s, scroll_ok, do_echo)
+    if do_echo:
+        for echo in state.console_state.output_echos:
+            echo('\r\n')
     check_pos(scroll_ok=True)
     state.console_state.apage.row[state.console_state.row-1].wrap = False
     set_pos(state.console_state.row + 1, 1)

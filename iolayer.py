@@ -751,7 +751,8 @@ class SCRNFile(NullDevice):
     
     def write(self, s):
         """ Write string s to SCRN: """
-        # TODO: writes to SCRN files should *not* be echoed - however, we currently use echo for dumbterm so that would break.
+        # writes to SCRN files should *not* be echoed 
+        do_echo = (self.number == 0)
         self._col = state.console_state.col
         # take column 80+overflow int account
         if state.console_state.overflow:
@@ -772,14 +773,14 @@ class SCRNFile(NullDevice):
                 s_width += 1
         if (self.width != 255 
                 and self.col != 1 and self.col-1 + s_width > self.width and not newline):
-            console.write_line()
+            console.write_line(do_echo=do_echo)
             self._col = 1
         for c in str(s):
             if self.width <= state.console_state.width and self.col > self.width:
-                console.write_line()
+                console.write_line(do_echo=do_echo)
                 self._col = 1
             if self.col <= state.console_state.width or self.width <= state.console_state.width:
-                console.write(c)
+                console.write(c, do_echo=do_echo)
             if c in ('\n', '\r'):
                 self._col = 1
             else:
@@ -790,7 +791,7 @@ class SCRNFile(NullDevice):
     def write_line(self, inp=''):
         """ Write a string to the screen and follow by CR. """
         self.write(inp)
-        console.write_line()
+        console.write_line(do_echo=(self.number==0))
             
     @property
     def col(self):  
