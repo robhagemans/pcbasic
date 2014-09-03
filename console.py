@@ -1106,7 +1106,8 @@ def put_screen_char_attr(cpage, crow, ccol, c, cattr, one_only=False):
     start, stop = ccol, ccol+1
     cpage.row[crow-1].double[ccol-1] = 0
     # mark out sbcs and dbcs characters
-    if unicodepage.dbcs:
+    # only do dbcs in 80-character modes
+    if unicodepage.dbcs and state.console_state.width == 80:
         orig_col = ccol
         # replace chars from here until necessary to update double-width chars
         therow = cpage.row[crow-1]    
