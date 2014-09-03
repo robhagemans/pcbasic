@@ -130,7 +130,8 @@ def update_position(row=None, col=None):
     if row != last_row:
         term.write('\r\n')
         term.flush()
-    elif col != last_col:
+        last_col = 1
+    if col != last_col:
         term.write(esc_move_left*(last_col-col))
         term.write(esc_move_right*(col-last_col))
         term.flush()
