@@ -561,7 +561,7 @@ def putwc_at(row, col, c, d):
     glyph.set_palette_at(254, color)
     blank = pygame.Surface((16, state.console_state.font_height), depth=8)
     blank.fill(255)
-    glyph.set_palette_at(255, bg)
+    blank.set_palette_at(255, bg)
     top_left = ((col-1)*state.console_state.font_width, (row-1)*state.console_state.font_height)
     if not state.console_state.screen_mode:
         surface1[state.console_state.apagenum].blit(glyph, top_left)
