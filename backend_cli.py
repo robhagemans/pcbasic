@@ -37,15 +37,16 @@ colorburst = False
 # cursor is visible
 cursor_visible = True
 
-# ANSI escape codes for output
+# ANSI escape codes for output, need arrow movements and clear line and esc_to_scan under Unix.
 # WINE handles these, does Windows?
-esc_clear_line = '\x1b[2K'
-esc_move_right = '\x1b\x5b\x43'
-esc_move_left = '\x1b\x5b\x44'
+from ansi import *
 
 if plat.system == 'Windows':
     import msvcrt
 
+    # Ctrl+Z to exit
+    eof = '\x1A'
+    
     def term_echo(on=True):
         pass
             
@@ -61,6 +62,9 @@ if plat.system == 'Windows':
         
 else:
     import tty, termios, select
+    
+    # Ctrl+D to exit
+    eof = '\x04'
 
     term_echo_on = True
     term_attr = None
@@ -78,30 +82,6 @@ else:
         term_echo_on = on    
         return previous
 
-    # escape sequence to scancode dictionary
-    esc_to_scan = {
-        '\x1b\x4f\x50': '\x00\x3b', # F1
-        '\x1b\x4f\x51': '\x00\x3c', # F2
-        '\x1b\x4f\x52': '\x00\x3d', # F3
-        '\x1b\x4f\x53': '\x00\x3e', # F4
-        '\x1b\x5b\x31\x35\x7e':  '\x00\x3f', # F5
-        '\x1b\x5b\x31\x37\x7e':  '\x00\x40', # F6
-        '\x1b\x5b\x31\x38\x7e':  '\x00\x41', # F7
-        '\x1b\x5b\x31\x39\x7e':  '\x00\x42', # F8
-        '\x1b\x5b\x32\x30\x7e':  '\x00\x43', # F9
-        '\x1b\x5b\x32\x31\x7e':  '\x00\x44', # F10
-        '\x1b\x4f\x46': '\x00\x4F', # END
-        '\x1b\x4f\x48': '', #'\x00\x47', # HOME, ignore
-        '\x1b\x5b\x41': '', #'\x00\x48', # arrow up, ignore
-        '\x1b\x5b\x42': '', #'\x00\x50', # arrow down, ignore
-        esc_move_right: '\x00\x4d', # arrow right
-        esc_move_left: '\x00\x4b', # arrow left
-        '\x1b\x5b\x32\x7e': '\x00\x52', # INS
-        '\x1b\x5b\x33\x7e': '\x00\x53', # DEL
-        '\x1b\x5b\x35\x7e': '\x00\x49', # PG UP
-        '\x1b\x5b\x36\x7e': '\x00\x51', # PG DN
-    }
-     
     def getc():
         if select.select([sys.stdin], [], [], 0)[0] == []:
             return ''
@@ -208,9 +188,6 @@ def scroll(from_line):
 def scroll_down(from_line):
     pass
         
-#######
-
-
 def check_keyboard():
     global pre_buffer
     s = ''
@@ -233,7 +210,7 @@ def check_keyboard():
         c += uc.encode('utf-8')
         if c == '\x03':         # ctrl-C
             raise error.Break() 
-        if c == '\x04':         # ctrl-D
+        if c == eof:            # ctrl-D (unix) / ctrl-Z (windows)
             raise error.Exit() 
         elif c == '\x7f':       # backspace
             console.insert_key('\b')
@@ -246,8 +223,6 @@ def check_keyboard():
             except KeyError:    
                 console.insert_key(c)    
         c = ''
-        
-########
 
 def copy_page(src, dst):
     pass
