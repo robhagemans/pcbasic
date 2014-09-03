@@ -314,17 +314,34 @@ def load_redirected_input(f):
                 console.insert_key(c)
             last = c
     console.input_closed = True
-   
+
+
+
 # basic_style redirected output   
+# backspace actually takes characters out 
+# we need to buffer to be able to redirect to stdout which is not seekable
+linebuffer = ''   
+
+def echobuffer(s):
+    global linebuffer
+    out = ''
+    for c in s:
+        linebuffer += c
+        if c in ('\r', '\n'):
+            out += linebuffer
+            linebuffer = ''
+        elif c == '\b' and len(linebuffer) > 1:
+            linebuffer = linebuffer[:-2]
+    return out
+
 def echo_ascii(s, f):
-    f.write(s)
-    f.flush()  
-    
+    f.write(echobuffer(s))
+                        
 # converter with DBCS lead-byte buffer
 utf8conv = unicodepage.UTF8Converter()
     
 def echo_utf8(s, f):
-    echo_ascii(utf8conv.to_utf8(s, preserve_control=True), f) 
+    f.write(utf8conv.to_utf8(echobuffer(s), preserve_control=True)) 
 
 
 if __name__ == "__main__":
