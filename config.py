@@ -35,9 +35,9 @@ families = sorted(list(set([ x[0] for x in [ c.split('_') for c in os.listdir(pl
 # NOT IMPLEMENTED:
 #   /i      statically allocate file control blocks and data buffer.
 #   /m:n,m  sets the highest memory location to n and maximum block size to m
-gw_args = { 'double':'d', 'max_files':'f', 'max_reclen':'s', 'serial_in_size':'c' }
+gw_args = { 'double':'d', 'max_files':'f', 'max_reclen':'s', 'serial_in_size':'c' } # 'max_memory':'m', 'static_fcbs':'i'
 
-short_args = { 'cli':'b', 'ansi':'t', 'graphical':'g', 'load':'l', 'run':'r', 'exec':'e', 'quit':'q' }
+short_args = { 'cli':'b', 'ansi':'t', 'graphical':'g', 'load':'l', 'run':'r', 'exec':'e', 'quit':'q', 'keys':'k' }
 
 arguments = {
 #    'program':  { 'metavar':'basic_program', 'nargs':'?', 'help':'Input program file to run (default), load or convert.' },
@@ -49,6 +49,7 @@ arguments = {
     'graphical':        { 'action':'store_true', 'help':'Use graphical interface. This is the normal default; use to override when redirecting i/o.' },
     'load':             { 'action':'store_true', 'help':'Load in_file only, do not execute' },
     'run':              { 'action':'store_true', 'help':'Execute input file (default if in_file given)' },
+    'keys':             { 'metavar':'keystring', 'help':'Insert keys into the key buffer' },
     'exec':             { 'metavar':'command_line', 'help':'Execute BASIC command line' },
     'quit':             { 'action':'store_true', 'help':'Quit interpreter when execution stops' },
     'double':           { 'action':'store_true', 'help':'Allow double-precision math functions' },

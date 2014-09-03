@@ -95,11 +95,11 @@ def main():
                 raise error.Exit()
             if args.run:
                 args.cmd = 'RUN'
-            # get out, if we ran with -q
             if args.cmd:    
                 # start loop in execute mode
                 run.execute(args.cmd)
         # start the interpreter loop
+        # and get out, if we ran with -q
         run.loop(args.quit)
     except error.RunError as e:
         # errors during startup/conversion are handled here, then exit
@@ -284,6 +284,8 @@ def prepare_console(args):
         load_redirected_input(oslayer.safe_open(args.input[0], "L", "R"))
     if args.capture_caps:
         console.ignore_caps = False
+    if args.keys:
+        state.console_state.keybuf = args.keys.decode('string_escape')
 
 #############################################
 # io redirection
