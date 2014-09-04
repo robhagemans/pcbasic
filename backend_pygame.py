@@ -935,17 +935,22 @@ class Clipboard(object):
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
             start, stop = stop, start
         r, c = start
+        full = ''
         clip = ''
         while r < stop[0] or (r == stop[0] and c <= stop[1]):
             clip += state.console_state.vpage.row[r-1].buf[c-1][0]    
             c += 1
             if c > state.console_state.width:
+                if not state.console_state.vpage.row[r-1].wrap:
+                    full += unicodepage.UTF8Converter().to_utf8(clip) + '\r\n'
+                    clip = ''
                 r += 1
                 c = 1
+        full += unicodepage.UTF8Converter().to_utf8(clip)        
         try:        
-            pygame.scrap.put(pygame.SCRAP_TEXT, unicodepage.UTF8Converter().to_utf8(clip))
+            pygame.scrap.put(pygame.SCRAP_TEXT, full)
         except KeyError:
-            logging.debug('Clipboard copy failed for clip %s', repr(clip))    
+            logging.debug('Clipboard copy failed for clip %s', repr(full))    
         
     def paste(self):
         """ Paste from clipboard into keyboard buffer. """
