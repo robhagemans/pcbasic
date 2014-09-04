@@ -33,8 +33,8 @@ def set_output(f, utf8=False):
         echo = partial(echo_ascii, f=f)
     else:
         echo = partial(echo_utf8, f=f)
-    state.console_state.output_echos.append(echo) 
-    state.console_state.input_echos.append(echo)
+    console.output_echos.append(echo) 
+    console.input_echos.append(echo)
         
 def echo_ascii(s, f):
     """ Output redirection echo as raw bytes. """

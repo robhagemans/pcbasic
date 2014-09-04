@@ -54,7 +54,7 @@ def init():
 def check_keys():
     s = sys.stdin.readline().decode('utf-8')
     if s == '':
-        state.console_state.input_closed = True
+        console.input_closed = True
     for u in s:
         c = u.encode('utf-8')
         # replace LF -> CR if needed

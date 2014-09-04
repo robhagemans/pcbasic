@@ -104,12 +104,12 @@ state.console_state.inp_key = 0
 # keypressed status of caps, num, scroll, alt, ctrl, shift
 state.console_state.keystatus = 0
 
-# echo to printer or dumb terminal
-state.console_state.input_echos = []
-state.console_state.output_echos = []
+# redirect i/o to file or printer
+input_echos = []
+output_echos = []
 
 # input has closed
-state.console_state.input_closed = False
+input_closed = False
 # capslock, numlock, scrollock mode 
 state.console_state.caps = False
 state.console_state.num = False
@@ -463,7 +463,7 @@ def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
     try:
         furthest_left, furthest_right = wait_interactive(from_start, alt_replace)
     except error.Break:
-        for echo in state.console_state.input_echos:  
+        for echo in input_echos:  
             echo ('\x0e')
         write_line()    
         raise        
@@ -499,11 +499,11 @@ def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
     # only the first 255 chars are registered    
     outstr = outstr[:255]    
     # redirections receive exactly what's going to the parser
-    for echo in state.console_state.input_echos:
+    for echo in input_echos:
         echo(outstr)
     # echo the CR, if requested
     if write_endl:
-        for echo in state.console_state.input_echos:
+        for echo in input_echos:
             echo('\r\n')
         set_pos(state.console_state.row+1, 1)
     return outstr    
@@ -840,12 +840,12 @@ def print_screen():
 
 def toggle_echo_lpt1():
     lpt1 = state.io_state.devices['LPT1:']
-    if lpt1.write in state.console_state.input_echos:
-        state.console_state.input_echos.remove(lpt1.write)
-        state.console_state.output_echos.remove(lpt1.write)
+    if lpt1.write in input_echos:
+        input_echos.remove(lpt1.write)
+        output_echos.remove(lpt1.write)
     else:    
-        state.console_state.input_echos.append(lpt1.write)
-        state.console_state.output_echos.append(lpt1.write)
+        input_echos.append(lpt1.write)
+        output_echos.append(lpt1.write)
 
 def clear():
     save_view_set, save_view_start, save_scroll_height = state.console_state.view_set, state.console_state.view_start, state.console_state.scroll_height
@@ -862,7 +862,7 @@ def clear():
 
 def write(s, scroll_ok=True, do_echo=True):
     if do_echo: 
-        for echo in state.console_state.output_echos:
+        for echo in output_echos:
             # CR -> CRLF, CRLF -> CRLF LF
             echo(''.join([ ('\r\n' if c == '\r' else c) for c in s ]))
     last = ''
@@ -895,7 +895,7 @@ def write(s, scroll_ok=True, do_echo=True):
 def write_line(s='', scroll_ok=True, do_echo=True): 
     write(s, scroll_ok, do_echo)
     if do_echo:
-        for echo in state.console_state.output_echos:
+        for echo in output_echos:
             echo('\r\n')
     check_pos(scroll_ok=True)
     state.console_state.apage.row[state.console_state.row-1].wrap = False
@@ -1070,7 +1070,7 @@ def read_chars(num):
 
 # blocking keystroke peek
 def wait_char():
-    while len(state.console_state.keybuf) == 0 and not state.console_state.input_closed:
+    while len(state.console_state.keybuf) == 0 and not input_closed:
         on_event.wait()
     return peek_char()
     
@@ -1255,7 +1255,7 @@ def check_pos(scroll_ok=True):
 
 def start_line():
     if state.console_state.col != 1:
-        for echo in state.console_state.input_echos:
+        for echo in input_echos:
             echo('\r\n')
         check_pos(scroll_ok=True)
         set_pos(state.console_state.row + 1, 1)
