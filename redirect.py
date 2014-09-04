@@ -10,32 +10,18 @@
 #
 
 import unicodepage
-import program
 import console
 
 # basic-style redirected input
 def load_redirected_input(f):
     # read everything
     all_input = f.read()
-    if program.utf8_files:
-        all_input = all_input.decode('utf-8')
-        last = ''
-        for u in all_input:
-            c = u.encode('utf-8')
-            # replace CRLF with CR
-            if not (c == '\n' and last == '\r'):
-                try:
-                    console.insert_key(unicodepage.from_utf8(c))
-                except KeyError:
-                    console.insert_key(c)    
-            last = c
-    else:
-        last = ''
-        for c in all_input:
-            # replace CRLF with CR
-            if not (c == '\n' and last == '\r'):
-                console.insert_key(c)
-            last = c
+    last = ''
+    for c in all_input:
+        # replace CRLF with CR
+        if not (c == '\n' and last == '\r'):
+            console.insert_key(c)
+        last = c
     console.input_closed = True
 
 # basic_style redirected output   
@@ -59,9 +45,3 @@ def echobuffer(s):
 def echo_ascii(s, f):
     f.write(echobuffer(s))
                         
-# converter with DBCS lead-byte buffer
-utf8conv = unicodepage.UTF8Converter()
-    
-def echo_utf8(s, f):
-    f.write(utf8conv.to_utf8(echobuffer(s), preserve_control=True)) 
-
