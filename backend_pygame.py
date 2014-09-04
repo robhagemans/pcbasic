@@ -334,7 +334,7 @@ def load_state():
 # initialisation
 
 def init():
-    global joysticks, physical_size
+    global joysticks, physical_size, scrap
     # set state objects to whatever is now in state (may have been unpickled)
     if not pygame:
         logging.warning('Could not find PyGame module. Failed to initialise graphical interface.')
@@ -364,6 +364,7 @@ def init():
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
     for j in joysticks:
         j.init()
+    scrap = Clipboard()  
     return True
   
 def init_screen_mode():
@@ -811,6 +812,10 @@ def handle_key(e):
     elif e.key == pygame.K_MENU and android:
         # Android: toggle keyboard on menu key
         pygame_android.toggle_keyboard()
+    elif e.key == pygame.K_LSUPER: # logo key, doesn't set a modifier
+        scrap.start()
+    elif scrap.active():
+        scrap.handle(e)
     else:
         try:
             if (mods & pygame.KMOD_CTRL):
@@ -864,6 +869,8 @@ def handle_key_up(e):
             char = '\0\0'
         console.insert_key(char)
         keypad_ascii = ''
+    elif e.key == pygame.K_LSUPER: # logo key, doesn't set a modifier
+        scrap.stop()
     # unset key-pressed status
     try:
         state.console_state.keystatus &= (0xffff ^ keycode_to_keystatus[e.key])
@@ -877,7 +884,92 @@ def handle_mouse(e):
 def handle_stick(e):
     if e.joy < 2 and e.button < 2:
         backend.penstick.trigger_stick(e.joy, e.button)
-            
+
+###############################################
+# clipboard handling
+
+class Clipboard(object):
+    """ Clipboard handling """    
+    
+    # text type we look for in the clipboard
+    text = 'text/plain;charset=utf-8'
+        
+    def __init__(self):
+        """ Initialise pygame scrapboard. """
+        self.logo_pressed = False
+        self.select_start = None
+        self.select_end = None
+        pygame.scrap.init()
+        pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
+
+    def available(self):
+        """ True if pasteable text is available on clipboard. """
+        types = pygame.scrap.get_types()
+        return self.text in types
+
+    def active(self):
+        """ True if clipboard mode is active. """
+        return self.logo_pressed
+        
+    def start(self):
+        """ Enter clipboard mode (Logo key pressed). """
+        self.logo_pressed = True
+        self.select_start = [state.console_state.row, state.console_state.col]
+        self.select_stop = [state.console_state.row, state.console_state.col]
+
+    def stop(self):
+        """ Leave clipboard mode (Logo key released). """
+        self.logo_pressed = False
+        self.select_start = None
+        self.select_stop = None
+
+    def copy(self):
+        """ Copy screen characters from selection into clipboard. """
+        start, stop = self.select_start, self.select_stop
+        if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
+            start, stop = stop, start
+        r, c = start
+        clip = ''
+        while r <= stop[0] and c <= stop[1]:
+            clip += state.console_state.vpage.row[r-1].buf[c-1][0]    
+            c += 1
+            if c > state.console_state.width:
+                r += 1
+                c = 1
+        try:        
+            pygame.scrap.put(pygame.SCRAP_TEXT, unicodepage.UTF8Converter().to_utf8(clip))
+        except KeyError:
+            logging.debug('Clipboard copy failed for clip %s', repr(clip))    
+        
+    def paste(self):
+        """ Paste from clipboard into keyboard buffer. """
+        us = pygame.scrap.get(self.text).decode('utf-8')
+        for u in us:
+            c = u.encode('utf-8')
+            try:
+                console.insert_key(unicodepage.from_utf8(c))
+            except KeyError:
+                console.insert_key(c)
+
+    def handle(self, e):
+        """ Handle logo+key clipboard commands. """
+        if not self.logo_pressed:
+            return
+        if e.unicode in (u'c', u'C'):
+            self.copy()
+        elif e.unicode in (u'v', u'V') and self.available():
+            self.paste()
+        elif e.key == pygame.K_LEFT:
+            self.select_stop[1] -= 1
+        elif e.key == pygame.K_RIGHT:
+            self.select_stop[1] += 1
+        if self.select_stop[1] < 1:        
+            self.select_stop[0] -= 1
+            self.select_stop[1] = state.console_state.width
+        if self.select_stop[1] > state.console_state.width:        
+            self.select_stop[0] += 1
+            self.select_stop[1] = 1
+        
 ###############################################
 # graphics backend interface
 # low-level methods (pygame implementation)
