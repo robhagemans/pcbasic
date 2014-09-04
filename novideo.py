@@ -12,15 +12,12 @@
 
 import sys
 import time
-#import os
-#import logging
 from functools import partial
 
 import unicodepage
 import console
 import plat
 import state
-#import oslayer
 import redirect
 
 # don't allow switch to graphics mode
@@ -37,6 +34,14 @@ lf_to_cr = False
 
 ##############################################        
         
+if plat.system == 'Windows':
+    import msvcrt
+    kbhit = msvcrt.kbhit
+else:
+    import select
+    def kbhit():
+        return select.select([sys.stdin], [], [], 0)[0] != []
+        
 def prepare(args):
     pass        
         
@@ -52,6 +57,9 @@ def init():
     return True    
 
 def check_keys():
+    # avoid blocking on ttys if there's no input 
+    if sys.stdin.isatty() and not kbhit():
+        return
     s = sys.stdin.readline().decode('utf-8')
     if s == '':
         console.input_closed = True
