@@ -924,10 +924,12 @@ class Clipboard(object):
         
     def stop(self):
         """ Leave clipboard mode (Logo key released). """
+        global screen_changed
         self.logo_pressed = False
         self.select_start = None
         self.select_stop = None
         self.selection_rect = None
+        screen_changed = True
 
     def copy(self):
         """ Copy screen characters from selection into clipboard. """
@@ -964,6 +966,7 @@ class Clipboard(object):
 
     def handle(self, e):
         """ Handle logo+key clipboard commands. """
+        global screen_changed
         if not self.logo_pressed:
             return
         if e.unicode in (u'c', u'C'):
@@ -1000,6 +1003,7 @@ class Clipboard(object):
               pygame.Rect(rect_left, rect_top, state.console_state.size[0]-rect_left, rect_bot-rect_top-state.console_state.font_height),
               pygame.Rect(0, rect_top+state.console_state.font_height, rect_right, rect_bot-rect_top-state.console_state.font_height)
                 ]
+        screen_changed = True
         
     def create_feedback(self, surface):
         for r in self.selection_rect:
@@ -1008,7 +1012,7 @@ class Clipboard(object):
             work.set_colorkey(pygame.Color(0,0,0)) # use bg color 
             work_area.fill(pygame.Color(0x55, 0, 0x55)) 
             work_area.blit(work, (0,0))
-    
+        
 ###############################################
 # graphics backend interface
 # low-level methods (pygame implementation)
