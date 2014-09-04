@@ -24,24 +24,9 @@ def load_redirected_input(f):
         last = c
     console.input_closed = True
 
-# basic_style redirected output   
-# backspace actually takes characters out 
-# we need to buffer to be able to redirect to stdout which is not seekable
-linebuffer = ''   
-
-def echobuffer(s):
-    global linebuffer
-    out = ''
-    scancode = False
-    for c in s:
-        linebuffer += c
-        if c in ('\r', '\n'):
-            out += linebuffer
-            linebuffer = ''
-        elif c == '\b' and len(linebuffer) > 1:
-            linebuffer = linebuffer[:-2]
-    return out
 
 def echo_ascii(s, f):
-    f.write(echobuffer(s))
+    """ Output redirection echo. """
+    f.write(s)
+                            
                         

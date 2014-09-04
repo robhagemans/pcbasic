@@ -275,10 +275,7 @@ def prepare_console(args):
         backend.sound = nosound
     # gwbasic-style redirected output is split between graphical screen and redirected file    
     if args.output:
-        if args.utf8:
-            echo = partial(redirect.echo_utf8, f=oslayer.safe_open(args.output[0], "S", "W"))
-        else:
-            echo = partial(redirect.echo_ascii, f=oslayer.safe_open(args.output[0], "S", "W"))
+        echo = partial(redirect.echo_ascii, f=oslayer.safe_open(args.output[0], "S", "W"))
         state.console_state.output_echos.append(echo) 
         state.console_state.input_echos.append(echo)
     if args.input:

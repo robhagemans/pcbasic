@@ -490,18 +490,23 @@ def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
             break
     # go to last line
     state.console_state.row = crow
-    # echo the CR, if requested
-    if write_endl:
-        for echo in state.console_state.input_echos:
-            echo('\r\n')
-        set_pos(state.console_state.row+1, 1)
     # remove trailing whitespace 
     while len(line) > 0 and line[-1] in (' ', '\t', '\x0a'):
         line = line[:-1]
     outstr = bytearray()
     for c, _ in line:
         outstr += c
-    return outstr[:255]    
+    # only the first 255 chars are registered    
+    outstr = outstr[:255]    
+    # redirections receive exactly what's going to the parser
+    for echo in state.console_state.input_echos:
+        echo(outstr)
+    # echo the CR, if requested
+    if write_endl:
+        for echo in state.console_state.input_echos:
+            echo('\r\n')
+        set_pos(state.console_state.row+1, 1)
+    return outstr    
 
 def wait_interactive(from_start=False, alt_replace = True):
     # this is where we started
@@ -517,9 +522,6 @@ def wait_interactive(from_start=False, alt_replace = True):
         if not d:
             # input stream closed
             raise error.Exit()
-        if d not in ('\r', '\x03'):
-            for echo in state.console_state.input_echos:
-                echo(d)
         if d in ('\x00\x48', '\x1E', '\x00\x50', '\x1F',  '\x00\x4D', '\x1C', '\x00\x4B', 
                     '\x1D', '\x00\x47', '\x0B', '\x00\x4F', '\x0E' ):
             set_overwrite_mode(True)
