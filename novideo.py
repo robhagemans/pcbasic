@@ -42,12 +42,9 @@ def prepare(args):
         
 def init():
     global lf_to_cr
-    # use redirection echos
+    # use redirection echos; avoid double echos on resuming 
     if not state.loaded or state.console_state.backend_name != __name__:
-        echo = partial(redirect.echo_utf8, f=sys.stdout)
-        # don't append if the saving backend was us: the echos are already there.
-        state.console_state.output_echos.append(echo)
-        state.console_state.input_echos.append(echo)
+        redirect.set_output(sys.stdout, utf8=True)
     # on unix ttys, replace input \n with \r 
     # setting termios won't do the trick as it will not trigger read_line, gets too complicated    
     if plat.system != 'Windows' and sys.stdin.isatty():

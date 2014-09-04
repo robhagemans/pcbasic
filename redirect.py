@@ -11,9 +11,12 @@
 
 import unicodepage
 import console
+import oslayer
+import state
+from functools import partial
 
-# basic-style redirected input
-def load_redirected_input(f):
+def set_input(f):
+    """ BASIC-style redirected input. """
     # read everything
     all_input = f.read()
     last = ''
@@ -24,7 +27,15 @@ def load_redirected_input(f):
         last = c
     console.input_closed = True
 
-
+def set_output(f, utf8=False):
+    """ Redirected output in ASCII or UTF-8 """
+    if not utf8:
+        echo = partial(echo_ascii, f=f)
+    else:
+        echo = partial(echo_utf8, f=f)
+    state.console_state.output_echos.append(echo) 
+    state.console_state.input_echos.append(echo)
+        
 def echo_ascii(s, f):
     """ Output redirection echo as raw bytes. """
     f.write(str(s))
