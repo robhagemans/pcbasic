@@ -936,7 +936,7 @@ class Clipboard(object):
             start, stop = stop, start
         r, c = start
         clip = ''
-        while r <= stop[0] and c <= stop[1]:
+        while r < stop[0] or (r == stop[0] and c <= stop[1]):
             clip += state.console_state.vpage.row[r-1].buf[c-1][0]    
             c += 1
             if c > state.console_state.width:
