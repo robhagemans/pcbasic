@@ -160,13 +160,13 @@ def set_attr(attr):
     term.flush()  
     last_attr = attr
 
-def putc_at(row, col, c):
+def putc_at(row, col, c, for_keys=False):
     term.write(esc_move_cursor % (row, col))
     # this doesn't recognise DBCS
     term.write(unicodepage.UTF8Converter().to_utf8(c))
     term.flush()
 
-def putwc_at(row, col, c, d):
+def putwc_at(row, col, c, d, for_keys=False):
     term.write(esc_move_cursor % (row, col))
     # this does recognise DBCS
     try:

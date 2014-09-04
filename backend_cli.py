@@ -158,9 +158,9 @@ def set_attr(attr):
 last_row = 1
 last_col = 1
     
-def putc_at(row, col, c):
+def putc_at(row, col, c, for_keys=False):
     global last_col
-    if row == 25:
+    if for_keys:
         return
     update_position(row, col)
     # this doesn't recognise DBCS
@@ -168,9 +168,9 @@ def putc_at(row, col, c):
     term.flush()
     last_col += 1
 
-def putwc_at(row, col, c, d):
+def putwc_at(row, col, c, d, for_keys=False):
     global last_col
-    if row == 25:
+    if for_keys:
         return
     update_position(row, col)
     # this does recognise DBCS

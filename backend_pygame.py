@@ -539,7 +539,7 @@ def set_attr(cattr, force_rebuild=False):
     last_attr = cattr    
     last_attr_context = state.console_state.apagenum
         
-def putc_at(row, col, c):
+def putc_at(row, col, c, for_keys=False):
     global screen_changed
     glyph = glyphs[ord(c)]
     blank = glyphs[0] # using \0 for blank (tyoeface.py guarantees it's empty)
@@ -552,7 +552,7 @@ def putc_at(row, col, c):
         surface0[state.console_state.apagenum].blit(glyph, top_left)
     screen_changed = True
 
-def putwc_at(row, col, c, d):
+def putwc_at(row, col, c, d, for_keys=False):
     global screen_changed
     glyph = build_glyph(c+d, font, 16, state.console_state.font_height)
     color = (0, 0, last_attr & 0xf)

@@ -81,10 +81,10 @@ def check_events():
 
 ##############################################
 
-def putc_at(row, col, c):
+def putc_at(row, col, c, for_keys=False):
     pass
         
-def putwc_at(row, col, c, d):
+def putwc_at(row, col, c, d, for_keys=False):
     pass
             
 def close():
