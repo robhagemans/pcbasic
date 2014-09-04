@@ -761,6 +761,8 @@ def apply_composite_artifacts(screen, pixels=4):
     
 def do_flip():
     refresh_cursor()
+    if scrap.active():
+        scrap.create_feedback(screen)
     if smooth and not colorburst:
         screen.set_palette(gamepalette)
         pygame.transform.smoothscale(screen.convert(display), display.get_size(), display)
@@ -899,6 +901,7 @@ class Clipboard(object):
         self.logo_pressed = False
         self.select_start = None
         self.select_end = None
+        self.selection_rect = None
         pygame.scrap.init()
         pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
 
@@ -916,12 +919,15 @@ class Clipboard(object):
         self.logo_pressed = True
         self.select_start = [state.console_state.row, state.console_state.col]
         self.select_stop = [state.console_state.row, state.console_state.col]
-
+        self.selection_rect = [pygame.Rect((self.select_start[1]-1)*state.console_state.font_width,
+            (self.select_start[0]-1)*state.console_state.font_height, state.console_state.font_width, state.console_state.font_height)]
+        
     def stop(self):
         """ Leave clipboard mode (Logo key released). """
         self.logo_pressed = False
         self.select_start = None
         self.select_stop = None
+        self.selection_rect = None
 
     def copy(self):
         """ Copy screen characters from selection into clipboard. """
@@ -963,13 +969,41 @@ class Clipboard(object):
             self.select_stop[1] -= 1
         elif e.key == pygame.K_RIGHT:
             self.select_stop[1] += 1
-        if self.select_stop[1] < 1:        
-            self.select_stop[0] -= 1
-            self.select_stop[1] = state.console_state.width
+        if self.select_stop[1] < 1: 
+            if self.select_stop[0] > 1:       
+                self.select_stop[0] -= 1
+                self.select_stop[1] = state.console_state.width
+            else:
+                self.select_stop[1] = 1       
         if self.select_stop[1] > state.console_state.width:        
-            self.select_stop[0] += 1
-            self.select_stop[1] = 1
+            if self.select_stop[0] < state.console_state.height:       
+                self.select_stop[0] += 1
+                self.select_stop[1] = 1
+            else:
+                self.select_stop[1] = state.console_state.width    
+        start, stop = self.select_start, self.select_stop
+        if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
+            start, stop = stop, start
+        rect_left = (start[1] - 1)*state.console_state.font_width
+        rect_top = (start[0] - 1)*state.console_state.font_height
+        rect_right = stop[1]*state.console_state.font_width
+        rect_bot = stop[0]*state.console_state.font_height
+        if start[0] == stop[0]:
+            self.selection_rect = [pygame.Rect(rect_left, rect_top, rect_right-rect_left, rect_bot-rect_top)]
+        else:
+            self.selection_rect = [
+              pygame.Rect(rect_left, rect_top, state.console_state.size[0]-rect_left, rect_bot-rect_top-state.console_state.font_height),
+              pygame.Rect(0, rect_top+state.console_state.font_height, rect_right, rect_bot-rect_top-state.console_state.font_height)
+                ]
         
+    def create_feedback(self, surface):
+        for r in self.selection_rect:
+            work_area = surface.subsurface(r)
+            work = work_area.copy()
+            work.set_colorkey(pygame.Color(0,0,0)) # use bg color 
+            work_area.fill(pygame.Color(0x55, 0, 0x55)) 
+            work_area.blit(work, (0,0))
+    
 ###############################################
 # graphics backend interface
 # low-level methods (pygame implementation)
