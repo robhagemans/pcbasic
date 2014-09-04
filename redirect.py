@@ -26,7 +26,14 @@ def load_redirected_input(f):
 
 
 def echo_ascii(s, f):
-    """ Output redirection echo. """
-    f.write(s)
+    """ Output redirection echo as raw bytes. """
+    f.write(str(s))
                             
-                        
+# coverter with DBCS lead-byte buffer
+utf8conv = unicodepage.UTF8Converter()
+    
+def echo_utf8(s, f):
+    """ Output redirection echo as UTF-8. """
+    f.write(utf8conv.to_utf8(str(s), preserve_control=True)) 
+    
+    

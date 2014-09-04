@@ -12,25 +12,28 @@
 
 import sys
 import time
-import os
-import logging
+#import os
+#import logging
+from functools import partial
 
 import unicodepage
 import console
 import plat
 import state
+#import oslayer
+import redirect
 
+# don't allow switch to graphics mode
 supports_graphics = False
+
 # palette is ignored
 max_palette = 64
 
 # unused, but needs to be defined
 colorburst = False
 
-# output buffer
-output_buffer = [unichr(0)] * state.console_state.width
-
-last_row = 1
+# replace lf with cr
+lf_to_cr = False
 
 ##############################################        
         
@@ -38,6 +41,17 @@ def prepare(args):
     pass        
         
 def init():
+    global lf_to_cr
+    # use redirection echos
+    if not state.loaded or state.console_state.backend_name != __name__:
+        echo = partial(redirect.echo_utf8, f=sys.stdout)
+        # don't append if the saving backend was us: the echos are already there.
+        state.console_state.output_echos.append(echo)
+        state.console_state.input_echos.append(echo)
+    # on unix ttys, replace input \n with \r 
+    # setting termios won't do the trick as it will not trigger read_line, gets too complicated    
+    if plat.system != 'Windows' and sys.stdin.isatty():
+        lf_to_cr = True
     return True    
 
 def check_keys():
@@ -46,42 +60,14 @@ def check_keys():
         state.console_state.input_closed = True
     for u in s:
         c = u.encode('utf-8')
+        # replace LF -> CR if needed
+        if c == '\n' and lf_to_cr:
+            c = '\r'
         try:
             console.insert_key(unicodepage.from_utf8(c))
         except KeyError:        
             console.insert_key(c)
         
-def flush_output_buffer():
-    global output_buffer
-    trimmed = u''.join(output_buffer).encode('utf-8').rstrip('\0').replace('\0', ' ')
-    if trimmed:
-        sys.stdout.write(trimmed + '\n')
-    output_buffer = [unichr(0)] * state.console_state.width
-
-def putc_at(row, col, c):
-    global last_row
-    if row != last_row:
-        flush_output_buffer()
-    last_row = row
-    if row == 25:
-        return
-    output_buffer[col-1:col] = unicodepage.UTF8Converter().to_utf8(c).decode('utf-8')
-    
-def putwc_at(row, col, c, d):
-    global last_row
-    if row != last_row:
-        flush_output_buffer()
-    last_row = row
-    if row == 25:
-        return
-    try:
-        output_buffer[col-1:col+1] = [unicodepage.UTF8Converter().to_utf8(c+d).decode('utf-8'), u'']
-    except KeyError:
-        output_buffer[col-1:col+1] = [u' ', u' ']
-        
-def close():
-    flush_output_buffer()
-    
 def idle():
     time.sleep(0.024)
     
@@ -89,6 +75,15 @@ def check_events():
     check_keys()
 
 ##############################################
+
+def putc_at(row, col, c):
+    pass
+        
+def putwc_at(row, col, c, d):
+    pass
+            
+def close():
+    pass
     
 def clear_rows(attr, start, stop):
     pass
