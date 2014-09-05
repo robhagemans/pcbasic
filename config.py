@@ -9,11 +9,11 @@
 # please see text file COPYING for licence terms.
 #
 
-import plat
-import ConfigParser
-
 import os
 import sys
+
+import plat
+import ConfigParser
 
 if plat.system == 'Android':
     # crashes on Android
@@ -21,10 +21,17 @@ if plat.system == 'Android':
 else:
     import argparse
 
+# config file
+config_file = 'PCBASIC.INI'
+
 # get supported codepages
 encodings = sorted([ x[0] for x in [ c.split('.ucp') for c in os.listdir(plat.encoding_dir) ] if len(x)>1])
 # get supported font families
 families = sorted(list(set([ x[0] for x in [ c.split('_') for c in os.listdir(plat.font_dir) ] if len(x)>1])))
+
+# dictionary to hold all options chosen
+options = {}
+
 
 # GWBASIC invocation, for reference:
 # GWBASIC [filename] [<stdin] [[>]>stdout] [/f:n] [/i] [/s:n] [/c:n] [/m:[n][,n]] [/d]
@@ -37,8 +44,10 @@ families = sorted(list(set([ x[0] for x in [ c.split('_') for c in os.listdir(pl
 #   /m:n,m  sets the highest memory location to n and maximum block size to m
 gw_args = { 'double':'d', 'max_files':'f', 'max_reclen':'s', 'serial_in_size':'c' } # 'max_memory':'m', 'static_fcbs':'i'
 
+# short-form arguments with single dash
 short_args = { 'cli':'b', 'ansi':'t', 'graphical':'g', 'load':'l', 'run':'r', 'exec':'e', 'quit':'q', 'keys':'k' }
 
+# all long-form arguments
 arguments = {
 #    'program':  { 'metavar':'basic_program', 'nargs':'?', 'help':'Input program file to run (default), load or convert.' },
     'input':            { 'metavar':'input_file', 'nargs':1, 'help':'Retrieve keyboard input from input_file, except if KYBD: is read explicitly.' },
@@ -88,7 +97,14 @@ arguments = {
     'utf8':             { 'action':'store_true', 'help':'Load and save "ascii" files as UTF-8.' },
 }
 
+def prepare():
+    """ Initialise config.py """
+    global options
+    # store options in options dictionary
+    options = vars(get_args)
+
 def get_args():
+    """ Retrieve command line and option file options. """
     # read config file, if any
     conf_dict = read_config()
     # if argparse module not available, use the preset defaults (this happens on Android)
@@ -120,7 +136,7 @@ def get_args():
             try:
                 defaults.update(**conf_dict[preset])
             except KeyError:
-                logging.warning('Preset %s not found in PCBASIC.INI', preset)
+                logging.warning('Preset %s not found in configuration file %s', preset, config_file)
     # set defaults
     parser.set_defaults(**defaults)
     # positional args
@@ -155,6 +171,7 @@ def get_args():
     return args
 
 def convert_arglist(arglist):
+    """ Convert list strings from option file to lists. """
     try:
         for d in arglist:
             # convert various boolean notations
@@ -169,21 +186,23 @@ def convert_arglist(arglist):
                 arglist[d] = arglist[d].split(',')    
         return arglist        
     except (TypeError, ValueError):
-        logging.warning('Error in config file PCBASIC.INI. Configuration not loaded.')
+        logging.warning('Error in configuration file %s. Configuration not loaded.', config_file)
         return {}    
 
 def read_config():
+    """ Read config file. """
     path = plat.basepath
     try:
         config = ConfigParser.RawConfigParser(allow_no_value=True)
         config.read(os.path.join(path, 'info', 'PCBASIC.INI'))
     except (ConfigParser.Error, IOError):
-        logging.warning('Error in config file PCBASIC.INI. Configuration not loaded.')
+        logging.warning('Error in configuration file %s. Configuration not loaded.', config_file)
         return {}
     presets = { header: convert_arglist(dict(config.items(header))) for header in config.sections() }    
     return presets
     
 def flatten_arg_list(arglist):
+    """ Convert lists of lists to one dimension. """
     if arglist:
         newlist = []
         for sublist in arglist:
@@ -194,8 +213,8 @@ def flatten_arg_list(arglist):
         return newlist    
     return None    
 
-# parse int option provided as a one-element list of string 
 def parse_int_option_silent(inargs):
+    """ Parse int option provided as a one-element list of string. """
     if inargs:
         try:
             return int(inargs[0])
@@ -203,3 +222,6 @@ def parse_int_option_silent(inargs):
             pass        
     return None
 
+# initialise this module    
+prepare()
+    
