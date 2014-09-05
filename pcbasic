@@ -60,13 +60,12 @@ import iolayer
 import var
 
 greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "@:INFO" for more.\r%d Bytes free\rOk\xff'
-debugstr = ''
 
 def main():
     reset = False
     args = config.get_args()
-    # DEBUG, PCjr and Tandy modes
-    prepare_keywords(args)
+    # logging setup
+    prepare_logging()
     # other command-line settings
     prepare_constants(args)
     try:
@@ -80,6 +79,7 @@ def main():
         if not args.resume:    
             # print greeting
             if not args.run and not args.cmd and not args.conv:
+                debugstr = ' [DEBUG mode]' if config.options['debug'] else ''
                 if stdin_is_tty:
                     console.write_line(greeting % (debugstr, var.total_mem))
             # execute arguments
@@ -116,12 +116,10 @@ def main():
         iolayer.close_all()
         iolayer.close_devices()
             
-def prepare_keywords(args):
-    global debugstr
-    if args.debug:
+def prepare_logging():
+    if config.options['debug']:
         # set logging format
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
-        debugstr = ' [DEBUG mode]'
     else:
         # set logging format
         if logfile:
