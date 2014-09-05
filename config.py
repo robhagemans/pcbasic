@@ -72,7 +72,7 @@ arguments = {
     'com1':             { 'action':'store', 'metavar':'TYPE:VAL', 'help':'Set COM1: to PORT:device_name or SOCKET:host:socket.' },
     'com2':             { 'action':'store', 'metavar':'TYPE:VAL', 'help':'Set COM2: to PORT:device_name or SOCKET:host:socket.' },
     'conv':             { 'action':'store', 'nargs':'?', 'metavar':'mode:outfile', 'help':'Convert basic_program to (A)SCII, (B)ytecode or (P)rotected mode.' },
-    'codepage':         { 'action':'store', 'nargs':1, 'choices':encodings, 'help':'Load specified font codepage; default is 437' },
+    'codepage':         { 'type':'string', 'action':'store', 'choices':encodings, 'help':'Load specified font codepage; default is 437' },
     'font':             { 'action':'append', 'nargs':'*', 'choices':families, 'help':'Load current codepage from specified .hex fonts. Last fonts specified take precedent, previous ones are fallback. Default is unifont,univga,freedos.' },
     'nosound':          { 'action':'store_true', 'help':'Disable sound output' },
     'dimensions':       { 'nargs':2, 'metavar':('X', 'Y'), 'help':'Set pixel dimensions for graphics mode. Default is 640,480. Use 640,400 or multiples for cleaner pixels - but incorrect aspect ratio - on square-pixel LCDs. Graphical interface only.' },

@@ -43,13 +43,13 @@ import config
 import run
 import error
 import oslayer
+import unicodepage
 import sound
 import nosound
-import nopenstick
 import sound_beep
+import nopenstick
 import console
 import program
-import unicodepage
 import state
 import backend
 import backend_pygame
@@ -127,10 +127,6 @@ def prepare_constants(args):
     # implied RUN invocations
     if args.program and not args.load and not args.conv:
         args.run = True   
-    if args.codepage:
-        state.console_state.codepage = args.codepage[0]
-    if args.nobox:
-        unicodepage.box_protect = False
     # rename exec argument for convenience
     try:
         args.cmd = getattr(args, 'exec') 
@@ -173,8 +169,6 @@ def prepare_constants(args):
     
         
 def prepare_console(args):
-    # set codepage and font family
-    state.console_state.codepage = unicodepage.load_codepage(state.console_state.codepage)
     # codepage needs to be loaded for dbcs to work correctly
     import backend_cli
     import novideo

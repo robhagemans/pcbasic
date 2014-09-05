@@ -9,6 +9,8 @@
 # please see text file COPYING for licence terms.
 #
 
+import config
+import state
 import logging
 import os
 import plat
@@ -18,6 +20,16 @@ import plat
 
 # is the current codepage a double-byte codepage?
 dbcs = False
+
+def prepare():
+    """ Initialise unicodepage module. """
+    global box_protext
+    codepage = config.options['codepage']
+    if not codepage:
+        codepage = '437'        
+    box_protect = not config.options['nobox']
+    state.console_state.codepage = codepage
+    load_codepage(codepage)
 
 def load_codepage(codepage_name):
     """ Load codepage to Unicode table. """
@@ -325,4 +337,5 @@ class UTF8Converter(object):
             # goes to case 1
         return out
 
-            
+prepare()
+
