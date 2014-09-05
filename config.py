@@ -11,9 +11,9 @@
 
 import os
 import sys
+import ConfigParser
 
 import plat
-import ConfigParser
 
 if plat.system == 'Android':
     # crashes on Android
@@ -101,7 +101,7 @@ def prepare():
     """ Initialise config.py """
     global options
     # store options in options dictionary
-    options = vars(get_args)
+    options = vars(get_args())
 
 def get_args():
     """ Retrieve command line and option file options. """
