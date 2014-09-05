@@ -122,7 +122,6 @@ def main():
 def prepare_keywords(args):
     global debugstr
     if args.debug:
-        debug.debug_mode = True
         # set logging format
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
         debugstr = ' [DEBUG mode]'

@@ -13,6 +13,7 @@ from StringIO import StringIO
 import sys
 import traceback
 
+import config
 import logging
 import machine
 import state
@@ -25,6 +26,12 @@ import program
 debug_mode = False
 debug_tron = False
 watch_list = []
+
+def prepare():
+    """ Initialise the debug module. """
+    global debug_mode
+    if config.options['debug']:
+        debug_mode = True  
 
 def debug_exec(debug_cmd):
     buf = StringIO()
