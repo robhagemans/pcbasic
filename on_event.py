@@ -9,14 +9,22 @@
 # please see text file COPYING for licence terms.
 #
 
+import config
 import timedate
 import flow
 import state
 import sound
 import backend
 
-# function keys: F1-F12 for tandy, F1-F10 for gwbasic and pcjr
-num_fn_keys = 10
+def prepare():
+    """ Initialise on_event module. """
+    global num_fn_keys
+    # function keys: F1-F12 for tandy, F1-F10 for gwbasic and pcjr
+    if config.options['pcjr_syntax'] == 'tandy':
+        num_fn_keys = 12
+    else:
+        num_fn_keys = 10
+    reset_events()    
 
 class EventHandler(object):
     def __init__(self):
@@ -86,8 +94,6 @@ def reset_events():
                 [state.basic_state.pen_handler] + state.basic_state.strig_handlers )
     state.basic_state.suspend_all_events = False
     
-reset_events()    
-    
 def wait():
     backend.idle()
     check_events()
@@ -128,3 +134,5 @@ def check_com_events():
         if ports[comport] and ports[comport].peek_char():
             state.basic_state.com_handlers[comport].triggered = True
             
+prepare()
+
