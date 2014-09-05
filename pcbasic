@@ -42,7 +42,6 @@ import logging
 import config
 import run
 import error
-import expressions
 import oslayer
 import sound
 import nosound
@@ -59,7 +58,6 @@ import backend
 import backend_pygame
 import iolayer
 import var
-import statements
 import on_event
 
 greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "@:INFO" for more.\r%d Bytes free\rOk\xff'
@@ -132,7 +130,6 @@ def prepare_keywords(args):
         else:
             logging.basicConfig(format='%(levelname)s: %(message)s')
     if args.pcjr_syntax and len(args.pcjr_syntax)>0:
-        expressions.pcjr_syntax = args.pcjr_syntax[0]
         sound.pcjr_sound = args.pcjr_syntax[0]
         if args.pcjr_syntax == 'tandy':
             # tandy recognises 12 function keys
@@ -163,8 +160,6 @@ def prepare_constants(args):
     # implied RUN invocations
     if args.program and not args.load and not args.conv:
         args.run = True   
-    if args.double:
-        expressions.option_double = True    
     if (not args.strict_hidden_lines) or args.conv:
         program.max_list_line = 65535    
     if (not args.strict_protect) or args.conv:

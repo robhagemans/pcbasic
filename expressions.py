@@ -15,6 +15,7 @@ except ImportError:
     from StringIO import StringIO
 from functools import partial
 
+import config
 import fp
 import vartypes
 import representation
@@ -57,6 +58,13 @@ operator_tokens = [item for sublist in priority for item in sublist]
 option_double = False
 # enable pcjr/tandy syntax extensions
 pcjr_syntax = False
+
+
+def prepare():
+    """ initialsie expressions module. """
+    global option_double, pcjr_syntax
+    pcjr_syntax = config.options['pcjr_syntax']
+    option_double = config.options['double']
 
 def parse_expression(ins, allow_empty=False, empty_err=22):
     units, operators = [], []
@@ -884,4 +892,6 @@ def vplus(left, right):
         return vartypes.pack_string(vartypes.pass_string_unpack(left) + vartypes.pass_string_unpack(right))
     else:
         return vartypes.number_add(left, right)
+
+prepare()
 
