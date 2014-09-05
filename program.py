@@ -9,6 +9,7 @@
 # please see text file COPYING for licence terms.
 #
 
+import config
 import error
 import vartypes
 import tokenise
@@ -45,6 +46,19 @@ universal_newline = False
 # interpret "ascii" program files as UTF-8
 utf8_files = False
 
+
+def prepare():
+    """ Initialise program module. """
+    global utf8_files, universal_newline, max_list_line, dont_protect
+    utf8_files = config.options['utf8']
+    universal_newline = config.options['strict_newline']
+    if (not config.options['strict_hidden_lines']) or config.options['conv']:
+        max_list_line = 65535    
+    else:
+        max_list_line = 65530
+    dont_protect = (not config.options['strict_protect']) or config.options['conv']
+    erase_program()
+
 def erase_program():
     state.basic_state.bytecode.truncate(0)
     state.basic_state.bytecode.write('\0\0\0')
@@ -54,8 +68,6 @@ def erase_program():
     state.basic_state.last_stored = None
     # reset stacks
     flow.init_program()
-
-erase_program()
 
 def truncate_program(rest=''):
     state.basic_state.bytecode.write(rest if rest else '\0\0\0')
@@ -456,5 +468,5 @@ def list_lines(dev, from_line, to_line):
     dev.close()
     flow.set_pointer(False)
         
-     
+prepare()     
 

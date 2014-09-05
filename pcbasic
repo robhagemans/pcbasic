@@ -127,10 +127,6 @@ def prepare_constants(args):
     # implied RUN invocations
     if args.program and not args.load and not args.conv:
         args.run = True   
-    if (not args.strict_hidden_lines) or args.conv:
-        program.max_list_line = 65535    
-    if (not args.strict_protect) or args.conv:
-        program.dont_protect = True    
     if args.codepage:
         state.console_state.codepage = args.codepage[0]
     if args.nobox:
@@ -154,11 +150,7 @@ def prepare_constants(args):
             pass    
         args.conv = True    
     if args.conv_mode:
-        args.conv_mode = args.conv_mode[0].upper()        
-    if args.strict_newline:
-        program.universal_newline = False
-    else:
-        program.universal_newline = True
+        args.conv_mode = args.conv_mode[0].upper() 
     if args.video:
         console.video_capabilities = args.video[0]
         if args.video[0] == 'ega':
@@ -178,8 +170,7 @@ def prepare_constants(args):
             iolayer.max_reclen = 32767
     if args.serial_in_size:
         iolayer.serial_in_size = config.parse_int_option_silent(args.serial_in_size)
-    if args.utf8:
-        program.utf8_files = True
+    
         
 def prepare_console(args):
     # set codepage and font family
