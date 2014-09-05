@@ -902,19 +902,30 @@ class Clipboard(object):
         self.select_start = None
         self.select_end = None
         self.selection_rect = None
-        pygame.scrap.init()
-        pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
+        try:
+            pygame.scrap.init()
+            pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
+            self.ok = True
+        except NotImplementedError:
+            logging.warning('PyGame.Scrap module not found. Clipboard functions not available.')    
+            self.ok = False
 
     def available(self):
+        if not self.ok:
+            return False
         """ True if pasteable text is available on clipboard. """
         types = pygame.scrap.get_types()
         return self.text in types
 
     def active(self):
+        if not self.ok:
+            return False
         """ True if clipboard mode is active. """
         return self.logo_pressed
         
     def start(self):
+        if not self.ok:
+            return 
         """ Enter clipboard mode (Logo key pressed). """
         self.logo_pressed = True
         self.select_start = [state.console_state.row, state.console_state.col]
@@ -925,6 +936,8 @@ class Clipboard(object):
     def stop(self):
         """ Leave clipboard mode (Logo key released). """
         global screen_changed
+        if not self.ok:
+            return 
         self.logo_pressed = False
         self.select_start = None
         self.select_stop = None
@@ -933,6 +946,8 @@ class Clipboard(object):
 
     def copy(self):
         """ Copy screen characters from selection into clipboard. """
+        if not self.ok:
+            return 
         start, stop = self.select_start, self.select_stop
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
             start, stop = stop, start
@@ -956,6 +971,8 @@ class Clipboard(object):
         
     def paste(self):
         """ Paste from clipboard into keyboard buffer. """
+        if not self.ok:
+            return 
         us = pygame.scrap.get(self.text).decode('utf-8')
         for u in us:
             c = u.encode('utf-8')
@@ -967,7 +984,7 @@ class Clipboard(object):
     def handle(self, e):
         """ Handle logo+key clipboard commands. """
         global screen_changed
-        if not self.logo_pressed:
+        if not self.ok or not self.logo_pressed:
             return
         if e.unicode in (u'c', u'C'):
             self.copy()
