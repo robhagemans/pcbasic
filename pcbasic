@@ -123,7 +123,6 @@ def prepare_keywords(args):
     global debugstr
     if args.debug:
         debug.debug_mode = True
-        tokenise.insert_debug_keyword()
         # set logging format
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
         debugstr = ' [DEBUG mode]'
@@ -137,8 +136,6 @@ def prepare_keywords(args):
         statements.pcjr_syntax = args.pcjr_syntax[0]
         expressions.pcjr_syntax = args.pcjr_syntax[0]
         sound.pcjr_sound = args.pcjr_syntax[0]
-        tokenise.insert_noise_keyword()
-        tokenise.insert_term_keyword() 
         if statements.pcjr_syntax == 'tandy':
             # tandy recognises 12 function keys
             on_event.num_fn_keys=12
