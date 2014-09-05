@@ -13,47 +13,8 @@ import logging
 import os
 import plat
 
-# on the terminal, these values are not shown as special graphic chars but as their normal effect
-# BEL, TAB, LF, HOME, CLS, CR, RIGHT, LEFT, UP, DOWN  (and not BACKSPACE)
-control = ('\x07', '\x09', '\x0a', '\x0b', '\x0c', '\x0d', '\x1c', '\x1d', '\x1e', '\x1f')
-
-# left-connecting box drawing chars [ single line, double line ]
-box_left_unicode = [ (0x2500,), (0x2550,) ]
-## single line:
-# 0x2500, 0x252c, 0x2534, 0x253c, 0x2510, 0x2518, 0x2524, 
-# mixed single / double 
-# 0x2556, 0x255c, 0x2562, 0x2565, 0x2568, 0x256b, 0x256e, 
-# dotted lines
-# 0x2504, 0x2508, 0x254c, 
-# mixed thick / thin line
-# 0x251a, 0x2526, 0x2527, 0x2528, 0x252e, 0x2530, 0x2532, 0x2536, 0x2538, 0x253a, 0x253e,   
-# 0x2540, 0x2541, 0x2542, 0x2544, 0x2546, 0x254a, 0x257c
-# rounded corners and half-lines  
-# 0x256f, 0x2574, 
-## double line:
-# 0x2550, 0x2566, 0x2569, 0x256c,0x2557, 0x255d, 0x2563, 
-# mixed single / double line
-# 0x2555, 0x255b, 0x2561, 0x2564, 0x2567, 0x256a,  
-
-# right-connecting box drawing chars [ single line, double line ]
-box_right_unicode = [ (0x2500,), (0x2550,) ]
-# single line
-## 0x2500, 0x252c, 0x2534, 0x253c,
-## 0x250c, 0x2514, 0x251c, 
-# dotted
-# 0x2504, 0x2508, 
-# mixed
-# 0x2516, 0x251e, 0x251f, 0x2520, 0x252d,
-# 0x2530, 0x2531, 0x2535, 0x2538, 0x2539, 0x253d,
-# 0x2540, 0x2541, 0x2542, 0x2543, 0x2545, 0x2549, 0x254c,
-# 0x2553, 0x2559, 0x255f, 0x2565, 0x2568, 0x256b, 0x256d, 0x2570, 0x2576, 0x257e
-# double line
-## 0x2550, 0x2566, 0x2569, 0x256c,
-## 0x2554, 0x255a, 0x2560, 
-# 0x2552, 0x2558, 0x255e, 0x2564, 0x2567, 0x256a, 
-
-# protect box drawing sequences under dbcs?
-box_protect = True
+########################################
+# codepage loader
 
 # is the current codepage a double-byte codepage?
 dbcs = False
@@ -116,13 +77,71 @@ def load_codepage(codepage_name):
         dbcs = True
     return codepage_name
 
+########################################
+# control character protection
+
+# on the terminal, these values are not shown as special graphic chars but as their normal effect
+# BEL, TAB, LF, HOME, CLS, CR, RIGHT, LEFT, UP, DOWN  (and not BACKSPACE)
+control = ('\x07', '\x09', '\x0a', '\x0b', '\x0c', '\x0d', '\x1c', '\x1d', '\x1e', '\x1f')
+
+
+########################################
+# box drawing protection
+
+# protect box drawing sequences under dbcs?
+box_protect = True
+
+# left-connecting box drawing chars [ single line, double line ]
+box_left_unicode = [ (0x2500,), (0x2550,) ]
+
+# right-connecting box drawing chars [ single line, double line ]
+box_right_unicode = [ (0x2500,), (0x2550,) ]
+
 def connects(c, d, bset):
     """ Return True if c and d connect according to box-drawing set bset. """
     return c in box_right[bset] and d in box_left[bset]
 
+# left-connecting
+## single line:
+# 0x2500, 0x252c, 0x2534, 0x253c, 0x2510, 0x2518, 0x2524, 
+# mixed single / double 
+# 0x2556, 0x255c, 0x2562, 0x2565, 0x2568, 0x256b, 0x256e, 
+# dotted lines
+# 0x2504, 0x2508, 0x254c, 
+# mixed thick / thin line
+# 0x251a, 0x2526, 0x2527, 0x2528, 0x252e, 0x2530, 0x2532, 0x2536, 0x2538, 0x253a, 0x253e,   
+# 0x2540, 0x2541, 0x2542, 0x2544, 0x2546, 0x254a, 0x257c
+# rounded corners and half-lines  
+# 0x256f, 0x2574, 
+## double line:
+# 0x2550, 0x2566, 0x2569, 0x256c,0x2557, 0x255d, 0x2563, 
+# mixed single / double line
+# 0x2555, 0x255b, 0x2561, 0x2564, 0x2567, 0x256a,  
+
+# right-connecting
+# single line
+## 0x2500, 0x252c, 0x2534, 0x253c,
+## 0x250c, 0x2514, 0x251c, 
+# dotted
+# 0x2504, 0x2508, 
+# mixed
+# 0x2516, 0x251e, 0x251f, 0x2520, 0x252d,
+# 0x2530, 0x2531, 0x2535, 0x2538, 0x2539, 0x253d,
+# 0x2540, 0x2541, 0x2542, 0x2543, 0x2545, 0x2549, 0x254c,
+# 0x2553, 0x2559, 0x255f, 0x2565, 0x2568, 0x256b, 0x256d, 0x2570, 0x2576, 0x257e
+# double line
+## 0x2550, 0x2566, 0x2569, 0x256c,
+## 0x2554, 0x255a, 0x2560, 
+# 0x2552, 0x2558, 0x255e, 0x2564, 0x2567, 0x256a, 
+
+
+##################################################
+# conversion
+
 def from_utf8(c):
     """ Convert utf8 char sequence to codepage char sequence. """
     return utf8_to_cp[c]
+
 
 class UTF8Converter(object):
     """ Buffered converter to UTF8 - supports DBCS """
@@ -139,18 +158,41 @@ class UTF8Converter(object):
         if do_dbcs == None:
             self.dbcs = dbcs
         self.bset = -1
+        self.last = ''
+
+    def to_utf8(self, s):
+        """ Process codepage string, returning utf8 string when ready. """
+        if not self.dbcs:
+            # stateless if not dbcs
+            return ''.join([ (c if (self.preserve_control and c in control) else cp_to_utf8[c]) for c in s ])
+        else:
+            out = ''
+            # remove any naked lead-byte first
+            if self.buf:
+                out += '\b'*len(self.buf)
+            # process the string
+            for c in s:
+                out += self.process(c)
+            # any naked lead-byte or boxable dbcs left will be printed (but don't flush buffers!)
+            if self.buf:
+                out += cp_to_utf8[self.buf]
+            return out
             
-    def flush(self):
+    def flush(self, num=None):
         """ Empty buffer and return contents. """
         out = ''
+        if num == None:
+            num = len(self.buf)
         if self.buf:        
             # can be one or two-byte sequence in self.buf
-            out = cp_to_utf8[self.buf]
-        self.buf = ''
+            out = cp_to_utf8[self.buf[:num]]
+        self.buf = self.buf[num:]
         return out
 
     def process(self, c):
         """ Process a single char, returning UTF8 char sequences when ready """
+        if self.protect_box and self.dbcs:
+            return self.process_box(c)
         out = ''
         if self.preserve_control and c in control:
             # control char; flush buffer as SBCS and add control char unchanged
@@ -171,24 +213,93 @@ class UTF8Converter(object):
             out += cp_to_utf8[c]
         return out
 
-        
-    def to_utf8(self, s):
-        """ Process codepage string, returning utf8 string when ready. """
-        if not self.dbcs:
-            # stateless if not dbcs
-            return ''.join([ (c if (self.preserve_control and c in control) else cp_to_utf8[c]) for c in s ])
+    def process_box(self, c):
+        """ Process a single char, returning UTF8 char sequences when ready """
+        out = ''
+        if self.preserve_control and c in control:
+            # control char; flush buffer as SBCS and add control char unchanged
+            out += self.flush() + c
+            self.bset = -1
+            self.last = ''
+        elif self.bset == -1:
+            if not self.buf:
+                # case 0, starting point
+                if c not in lead:
+                    out += cp_to_utf8[c]
+                    # goes to case 0
+                else:
+                    self.buf += c 
+                    # goes to case 1     
+            elif len(self.buf) == 1:
+                # case 1
+                if c not in trail:
+                    out += self.flush() + cp_to_utf8[c]
+                    # goes to case 0
+                else:
+                    for bset in (0, 1):
+                        if connects(self.buf, c, bset):
+                            self.bset = bset
+                            self.buf += c
+                            break
+                            # goes to case 3
+                    else:
+                        # no connection
+                        self.buf += c
+                        # goes to case 2    
+            elif len(self.buf) == 2:
+                # case 2
+                if c not in lead:
+                    out += self.flush() + cp_to_utf8[c]
+                    # goes to case 0
+                else:    
+                    for bset in (0, 1):
+                        if connects(self.buf[-1], c, bset):
+                            self.bset = bset
+                            # take out only first byte
+                            out += self.flush(1)
+                            self.buf += c
+                            break
+                            # goes to case 3
+                    else:
+                        # no connection found
+                        out += self.flush()
+                        self.buf += c
+                        # goes to case 1    
+            else:
+                # not allowed
+                logging.debug('DBCS buffer corrupted: %d %s', self.bset, repr(self.buf))
+        elif len(self.buf) == 2:
+            # case 3
+            if c not in lead:
+                out += self.flush() + cp_to_utf8[c]
+            elif connects(self.buf[-1], c, self.bset):    
+                self.last = self.buf[-1]
+                # output box drawing
+                out += self.flush(1) + self.flush(1) + cp_to_utf8[c]
+                # goes to case 4
+            else:
+                out += self.flush()
+                self.buf = c
+                self.bset = -1
+                # goes to case 1
+        elif not self.buf:
+            # case 4, continuing box drawing
+            if c not in lead:
+                out += cp_to_utf8[c]
+                # goes to case 0
+            elif connects(self.last, c, self.bset):
+                self.last = c
+                out += cp_to_utf8[c]
+                # goes to case 4
+            else:
+                self.buf += c
+                self.bset = -1
+                # goes to case 1                    
         else:
-            out = ''
-            # remove any naked lead-byte first
-            if self.buf:
-                out += '\b'
-            # process the string
-            for c in s:
-                out += self.process(c)
-            # any naked lead-byte or boxable dbcs left will be printed (but don't flush buffers!)
-            if self.buf:
-                out += cp_to_utf8[self.buf]
-            return out
+            # not allowed
+            logging.debug('DBCS buffer corrupted: %d %s', self.bset, repr(self.buf))
+        return out            
+        
             
             
             
