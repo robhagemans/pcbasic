@@ -116,6 +116,10 @@ def load_codepage(codepage_name):
         dbcs = True
     return codepage_name
 
+def connects(c, d, bset):
+    """ Return True if c and d connect according to box-drawing set bset. """
+    return c in box_right[bset] and d in box_left[bset]
+
 def from_utf8(c):
     """ Convert utf8 char sequence to codepage char sequence. """
     return utf8_to_cp[c]
@@ -123,11 +127,31 @@ def from_utf8(c):
 class UTF8Converter(object):
     """ Buffered converter to UTF8 - supports DBCS """
     
-    def __init__(self, preserve_control=False):
+    def __init__(self, preserve_control=False, protect_box=None):
         """ Initialise with empty buffer. """
         self.buf = ''
+        self.boxbuf = ''
         self.preserve_control = preserve_control
+        self.protect_box = protect_box
+        if protect_box==None:
+            self.protect_box = box_protect
 
+    def dbcsflush(self):
+        """ Empty box buffer and return contents as dbcs. """
+        if self.boxbuf:
+            out = cp_to_utf8[self.boxbuf]
+            self.boxbuf = ''
+            return out
+        return ''
+
+    def boxflush(self):
+        """ Empty box buffer and return contents as box drawing. """
+        out = ''
+        for c in self.boxbuf:
+            out += cp_to_utf8[c]
+        self.boxbuf = ''
+        return out
+            
     def flush(self):
         """ Empty buffer and return contents. """
         if self.buf:
@@ -168,10 +192,15 @@ class UTF8Converter(object):
             # remove any naked lead-byte first
             if self.buf:
                 out += '\b'
+            # remove any naked boxable dbcs    
+            if self.boxbuf:
+                out += '\b'
             # process the string
             for c in s:
                 out += self.process(c)
-            # any naked lead-byte left will be printed (but don't flush buffer!)
+            # any naked lead-byte or boxable dbcs left will be printed (but don't flush buffers!)
+            if self.boxbuf:
+                out += cp_to_utf8[self.boxbuf]
             if self.buf:
                 out += cp_to_utf8[self.buf]
             return out

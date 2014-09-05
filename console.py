@@ -1148,14 +1148,14 @@ def put_screen_char_attr(cpage, crow, ccol, c, cattr, one_only=False, for_keys=F
             while ccol < stop+2 and ccol < state.console_state.width:
                 c = therow.buf[ccol-1][0]
                 d = therow.buf[ccol][0]  
-                if bset > -1 and connects(c, d, bset): 
+                if bset > -1 and unicodepage.connects(c, d, bset): 
                     connecting += 1
                 else:
                     connecting = 0
                     bset = -1
                 if bset == -1:
                     for b in (0, 1):
-                        if connects(c, d, b):
+                        if unicodepage.connects(c, d, b):
                             bset = b
                             connecting = 1
                 if connecting >= 2:
@@ -1172,9 +1172,6 @@ def put_screen_char_attr(cpage, crow, ccol, c, cattr, one_only=False, for_keys=F
                 ccol += 1        
     # update the screen            
     refresh_screen_range(cpage, crow, start, stop, for_keys)
-
-def connects(c, d, bset):
-    return c in unicodepage.box_right[bset] and d in unicodepage.box_left[bset]
 
 def put_char(c, do_scroll_down=False):
     # check if scroll& repositioning needed
