@@ -48,7 +48,6 @@ import nosound
 import nopenstick
 import sound_beep
 import console
-import machine
 import program
 import unicodepage
 import state
@@ -126,14 +125,6 @@ def prepare_logging():
             logging.basicConfig(format='%(levelname)s: %(message)s')
         
 def prepare_constants(args):
-    # PEEK presets
-    if args.peek != None:
-        try:
-            for a in args.peek:
-                seg, addr, val = a.split(':')
-                machine.peek_values[int(seg)*0x10 + int(addr)] = int(val)
-        except (TypeError, ValueError):
-            pass     
     # drive mounts           
     if args.mount != None:
         try:

@@ -9,6 +9,7 @@
 # please see text file COPYING for licence terms.
 #
 
+import config
 import state
 import backend
 import vartypes
@@ -33,6 +34,15 @@ text_segment = 0xb800
 font_segment = 0xf000
 font_addr = 0xfa6e
 low_segment = 0x40
+
+def prepare():
+    """ Initialise machine module. """ 
+    try:
+        for a in config.options['peek']:
+            seg, addr, val = a.split(':')
+            peek_values[int(seg)*0x10 + int(addr)] = int(val)
+    except (TypeError, ValueError):
+        pass     
 
 def peek(addr):
     if addr < 0: 
@@ -453,3 +463,6 @@ def get_low_memory(addr):
         # suspend key not implemented
         return val
     return -1    
+    
+prepare()
+    

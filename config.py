@@ -65,7 +65,7 @@ arguments = {
     'max_files':        { 'action':'store', 'nargs':1, 'metavar':'NUMBER', 'help':'Set maximum number of open files (default is 3).' },
     'max_reclen':       { 'action':'store', 'nargs':1, 'metavar':'NUMBER', 'help':'Set maximum record length for RANDOM files (default is 128, max is 32767).' },
     'serial_in_size':   { 'action':'store', 'nargs':1, 'metavar':'NUMBER', 'help':'Set serial input buffer size (default is 256). If 0, serial communications are disabled.' },
-    'peek':             { 'action':'store', 'nargs':'*', 'metavar':'SEG:ADDR:VAL', 'help':'Define PEEK preset values' },
+    'peek':             { 'type':'list', 'action':'store', 'nargs':'*', 'metavar':'SEG:ADDR:VAL', 'help':'Define PEEK preset values' },
     'lpt1':             { 'action':'store', 'metavar':'TYPE:VAL', 'help':'Set LPT1: to FILE:file_name or PRINTER:printer_name.' },
     'lpt2':             { 'action':'store', 'metavar':'TYPE:VAL', 'help':'Set LPT2: to FILE:file_name or PRINTER:printer_name.' },
     'lpt3':             { 'action':'store', 'metavar':'TYPE:VAL', 'help':'Set LPT3: to FILE:file_name or PRINTER:printer_name.' },
@@ -170,8 +170,10 @@ def get_args():
         sys.exit(0)
     # flatten list arguments
     args.mount = flatten_arg_list(args.mount)
-    args.peek = flatten_arg_list(args.peek)    
     args.font = flatten_arg_list(args.font)
+    for d in arguments:
+        if hasattr(args, d) and arguments[d].has_key('type') and arguments[d]['type'] == 'list':
+            setattr(args, d, flatten_arg_list(getattr(args, d)))
     return args
 
 def convert_arglist(arglist):
