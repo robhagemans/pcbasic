@@ -124,16 +124,6 @@ def prepare_logging():
         logging.basicConfig(format=formatstr)
         
 def prepare_constants(args):
-    # drive mounts           
-    if args.mount != None:
-        try:
-            for a in args.mount:
-                # last one specified sticks
-                letter, path = a.split(':',1)
-                oslayer.drives[letter.upper()] = os.path.realpath(path)
-                oslayer.drive_cwd[letter.upper()] = ''
-        except (TypeError, ValueError):
-            pass                
     # implied RUN invocations
     if args.program and not args.load and not args.conv:
         args.run = True   
@@ -169,8 +159,6 @@ def prepare_constants(args):
         program.universal_newline = False
     else:
         program.universal_newline = True
-    if args.windows_map_drives:
-        oslayer.windows_map_drives()
     if args.video:
         console.video_capabilities = args.video[0]
         if args.video[0] == 'ega':

@@ -15,6 +15,7 @@ import fnmatch
 from functools import partial
 import StringIO
 
+import config
 import error
 import console
 import unicodepage
@@ -64,6 +65,20 @@ os_error = {
     }
 
 nullstream = open(os.devnull, 'w')       
+
+def prepare():
+    """ Initialise oslayer module. """
+    try:
+        for a in config.options['mount']:
+            # the last one that's specified will stick
+            letter, path = a.split(':', 1)
+            drives[letter.upper()] = os.path.realpath(path)
+            drive_cwd[letter.upper()] = ''
+    except (TypeError, ValueError):
+        pass                
+    if config.options['windows_map_drives']:
+        windows_map_drives()
+
 
 #########################################
 # environment
@@ -572,4 +587,6 @@ else:
             pr = os.popen("lpr " + options, "w")
             pr.write(printbuf)
             pr.close()
+
+prepare()
 
