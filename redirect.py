@@ -41,10 +41,10 @@ def echo_ascii(s, f):
     f.write(str(s))
                             
 # coverter with DBCS lead-byte buffer
-utf8conv = unicodepage.UTF8Converter()
+utf8conv = unicodepage.UTF8Converter(preserve_control=True)
     
 def echo_utf8(s, f):
     """ Output redirection echo as UTF-8. """
-    f.write(utf8conv.to_utf8(str(s), preserve_control=True)) 
+    f.write(utf8conv.to_utf8(str(s))) 
     
     

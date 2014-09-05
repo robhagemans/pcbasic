@@ -120,47 +120,58 @@ def from_utf8(c):
     """ Convert utf8 char sequence to codepage char sequence. """
     return utf8_to_cp[c]
 
-class UTF8Converter (object):
+class UTF8Converter(object):
     """ Buffered converter to UTF8 - supports DBCS """
     
-    def __init__(self):
-        """ initialise with empty buffer. """
+    def __init__(self, preserve_control=False):
+        """ Initialise with empty buffer. """
         self.buf = ''
+        self.preserve_control = preserve_control
 
-    # add chars to buffer
-    def to_utf8(self, s, preserve_control=False):
+    def flush(self):
+        """ Empty buffer and return contents. """
+        if self.buf:
+            out = cp_to_utf8[self.buf]
+            self.buf = ''
+            return out
+        return ''
+
+    def process(self, c):
+        """ Process a single char, returning UTF8 char sequences when ready """
+        out = ''
+        if self.preserve_control and c in control:
+            # control char; flush buffer as SBCS and add control char unchanged
+            out += self.flush() + c
+            return out
+        elif self.buf:
+            if c in trail:
+                # add a DBCS character
+                self.buf += c
+                out += self.flush()    
+                return out
+            else:
+                # flush buffer
+                out += self.flush()
+        if c in lead:
+            self.buf = c
+        else:
+            out += cp_to_utf8[c]
+        return out
+        
+    def to_utf8(self, s):
         """ Process codepage string, returning utf8 string when ready. """
         if not dbcs:
             # stateless if not dbcs
-            return ''.join([ (c if (preserve_control and c in control) else cp_to_utf8[c]) for c in s ])
+            return ''.join([ (c if (self.preserve_control and c in control) else cp_to_utf8[c]) for c in s ])
         else:
             out = ''
+            # remove any naked lead-byte first
             if self.buf:
-                # remove the naked lead-byte first
                 out += '\b'
+            # process the string
             for c in s:
-                if preserve_control and c in control:
-                    # control char; flush buffer as SBCS and add control char unchanged
-                    if self.buf:
-                        out += cp_to_utf8[self.buf]
-                        self.buf = ''
-                    out += c
-                    continue
-                elif self.buf:
-                    if c in trail:
-                        # add a DBCS character
-                        out += cp_to_utf8[self.buf + c]
-                        self.buf = ''
-                        continue
-                    else:
-                        # flush buffer
-                        out += cp_to_utf8[self.buf]
-                        self.buf = ''
-                if c in lead:
-                    self.buf = c
-                else:
-                    out += cp_to_utf8[c]
-            # any naked lead-byte left will be printed
+                out += self.process(c)
+            # any naked lead-byte left will be printed (but don't flush buffer!)
             if self.buf:
                 out += cp_to_utf8[self.buf]
             return out
