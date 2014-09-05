@@ -17,9 +17,6 @@ import os
 from functools import partial
 
 import plat
-import novideo
-import backend_cli
-import redirect
 
 # OS-specific stdin/stdout selection
 # no stdin/stdout access allowed on packaged apps
@@ -235,6 +232,10 @@ def prepare_constants(args):
 def prepare_console(args):
     # set codepage and font family
     state.console_state.codepage = unicodepage.load_codepage(state.console_state.codepage)
+    # codepage needs to be loaded for dbcs to work correctly
+    import backend_cli
+    import novideo
+    import redirect
     # set font family
     if args.font:
         console.font_families = args.font
