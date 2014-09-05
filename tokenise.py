@@ -26,6 +26,7 @@ try:
 except ImportError:
     from StringIO import StringIO
     
+import config    
 import representation
 import util
 import vartypes
@@ -53,6 +54,70 @@ linenum_words = [
     'LIST', 'RENUM', 'EDIT', 'LLIST', 
     'DELETE', 'RUN', 'RESUME', 'AUTO', 
     'ERL', 'RESTORE', 'RETURN']
+
+# keyword tokens recognised by PC-BASIC
+token_to_keyword = {  
+    '\x81': 'END',    '\x82': 'FOR',       '\x83': 'NEXT',   '\x84': 'DATA',  '\x85': 'INPUT',   '\x86': 'DIM',    '\x87': 'READ',  
+    '\x88': 'LET',    '\x89': 'GOTO',      '\x8A': 'RUN',    '\x8B': 'IF',    '\x8C': 'RESTORE', '\x8D': 'GOSUB',  '\x8E': 'RETURN',  
+    '\x8F': 'REM',    '\x90': 'STOP',      '\x91': 'PRINT',  '\x92': 'CLEAR', '\x93': 'LIST',    '\x94': 'NEW',    '\x95': 'ON',  
+    '\x96': 'WAIT',   '\x97': 'DEF',       '\x98': 'POKE',   '\x99': 'CONT',  '\x9C': 'OUT',     '\x9D': 'LPRINT', '\x9E': 'LLIST',  
+    '\xA0': 'WIDTH',  '\xA1': 'ELSE',      '\xA2': 'TRON',   '\xA3': 'TROFF', '\xA4': 'SWAP',    '\xA5': 'ERASE',  '\xA6': 'EDIT',  
+    '\xA7': 'ERROR',  '\xA8': 'RESUME',    '\xA9': 'DELETE', '\xAA': 'AUTO',  '\xAB': 'RENUM',   '\xAC': 'DEFSTR', '\xAD': 'DEFINT',  
+    '\xAE': 'DEFSNG', '\xAF': 'DEFDBL',    '\xB0': 'LINE',   '\xB1': 'WHILE', '\xB2': 'WEND',    '\xB3': 'CALL',   '\xB7': 'WRITE',  
+    '\xB8': 'OPTION', '\xB9': 'RANDOMIZE', '\xBA': 'OPEN',   '\xBB': 'CLOSE', '\xBC': 'LOAD',    '\xBD': 'MERGE',  '\xBE': 'SAVE',      
+    '\xBF': 'COLOR',  '\xC0': 'CLS',       '\xC1': 'MOTOR',  '\xC2': 'BSAVE', '\xC3': 'BLOAD',   '\xC4': 'SOUND',  '\xC5': 'BEEP',
+    '\xC6': 'PSET',   '\xC7': 'PRESET',    '\xC8': 'SCREEN', '\xC9': 'KEY',   '\xCA': 'LOCATE',  '\xCC': 'TO',     '\xCD': 'THEN',  
+    '\xCE': 'TAB(',   '\xCF': 'STEP',      '\xD0': 'USR',    '\xD1': 'FN',    '\xD2': 'SPC(',    '\xD3': 'NOT',    '\xD4': 'ERL',
+    '\xD5': 'ERR',    '\xD6': 'STRING$',   '\xD7': 'USING',  '\xD8': 'INSTR', '\xD9': "'",       '\xDA': 'VARPTR', '\xDB': 'CSRLIN',  
+    '\xDC': 'POINT',  '\xDD': 'OFF',       '\xDE': 'INKEY$', '\xE6': '>',     '\xE7': '=',       '\xE8': '<',      '\xE9': '+', 
+    '\xEA': '-',      '\xEB': '*',         '\xEC': '/',      '\xED': '^',     '\xEE': 'AND',     '\xEF': 'OR',     '\xF0': 'XOR',  
+    '\xF1': 'EQV',    '\xF2': 'IMP',       '\xF3': 'MOD',    '\xF4': '\\',
+    '\xFD\x81': 'CVI',    '\xFD\x82': 'CVS',     '\xFD\x83': 'CVD',   '\xFD\x84': 'MKI$',    '\xFD\x85': 'MKS$',  '\xFD\x86': 'MKD$',
+    '\xFD\x8B': 'EXTERR', '\xFE\x81': 'FILES',   '\xFE\x82': 'FIELD', '\xFE\x83': 'SYSTEM',  '\xFE\x84': 'NAME',  '\xFE\x85': 'LSET',  
+    '\xFE\x86': 'RSET',   '\xFE\x87': 'KILL',    '\xFE\x88': 'PUT',   '\xFE\x89': 'GET',     '\xFE\x8A': 'RESET', '\xFE\x8B': 'COMMON',
+    '\xFE\x8C': 'CHAIN',  '\xFE\x8D': 'DATE$',   '\xFE\x8E': 'TIME$', '\xFE\x8F': 'PAINT',   '\xFE\x90': 'COM',   '\xFE\x91': 'CIRCLE', 
+    '\xFE\x92': 'DRAW',   '\xFE\x93': 'PLAY',    '\xFE\x94': 'TIMER', '\xFE\x95': 'ERDEV',   '\xFE\x96': 'IOCTL', '\xFE\x97': 'CHDIR', 
+    '\xFE\x98': 'MKDIR',  '\xFE\x99': 'RMDIR',   '\xFE\x9A': 'SHELL', '\xFE\x9B': 'ENVIRON', '\xFE\x9C': 'VIEW',  '\xFE\x9D': 'WINDOW',
+    '\xFE\x9E': 'PMAP',   '\xFE\x9F': 'PALETTE', '\xFE\xA0': 'LCOPY', '\xFE\xA1': 'CALLS',   '\xFE\xA5': 'PCOPY', 
+    '\xFE\xA7': 'LOCK',   '\xFE\xA8': 'UNLOCK',  '\xFF\x81': 'LEFT$', '\xFF\x82': 'RIGHT$',  '\xFF\x83': 'MID$',  '\xFF\x84': 'SGN',    
+    '\xFF\x85': 'INT',    '\xFF\x86': 'ABS',     '\xFF\x87': 'SQR',   '\xFF\x88': 'RND',     '\xFF\x89': 'SIN',   '\xFF\x8A': 'LOG',   
+    '\xFF\x8B': 'EXP',    '\xFF\x8C': 'COS',     '\xFF\x8D': 'TAN',   '\xFF\x8E': 'ATN',     '\xFF\x8F': 'FRE',   '\xFF\x90': 'INP',   
+    '\xFF\x91': 'POS',    '\xFF\x92': 'LEN',     '\xFF\x93': 'STR$',  '\xFF\x94': 'VAL',     '\xFF\x95': 'ASC',   '\xFF\x96': 'CHR$',   
+    '\xFF\x97': 'PEEK',   '\xFF\x98': 'SPACE$',  '\xFF\x99': 'OCT$',  '\xFF\x9A': 'HEX$',    '\xFF\x9B': 'LPOS',  '\xFF\x9C': 'CINT',  
+    '\xFF\x9D': 'CSNG',   '\xFF\x9E': 'CDBL',    '\xFF\x9F': 'FIX',   '\xFF\xA0': 'PEN',     '\xFF\xA1': 'STICK', '\xFF\xA2': 'STRIG',  
+    '\xFF\xA3': 'EOF',    '\xFF\xA4': 'LOC',     '\xFF\xA5': 'LOF'          
+}
+
+
+# other keywords documented on http://www.chebucto.ns.ca/~af380/GW-BASIC-tokens.html :
+
+# PCjr only:
+#   0xFEA4: 'NOISE' 
+#   0xFEA6: 'TERM'
+# The site also remarks - 0xFEA5: PCOPY (PCjr or EGA system only) 
+# Apparently I have an 'EGA system', as this keyword is in the GW-BASIC 3.23 documentation.
+# Tandy 1000 systems had NOISE, but not TERM.
+
+# Sperry PC only:
+#   0xFEA4: 'DEBUG'
+
+# Undefined tokens:
+#   0x9A,  0x9B,  0x9F,  0xB4,  0xB5,  0xB6,  0xCB,  0xDF,  0xE0,  0xE1,  0xE2
+#   0xE3,  0xE4,  0xE5,  0xF5,  0xF6,  0xF7,  0xF8,  0xF9,  0xFA,  0xFB,  0xFC
+
+#################################################################
+
+def prepare():
+    """ Initialise tokenise module. """
+    global keyword_to_token
+    if config.options['debug']:
+        # Note - I have implemented this as my own debugging command, executes python string.
+        token_to_keyword['\xFF\xFF'] = 'DEBUG'
+    if config.options['pcjr_syntax']:        
+        # pcjr, tandy; incompatible with Sperry PC.
+        token_to_keyword['\xFE\xA4'] = 'NOISE'
+        token_to_keyword['\xFE\xA6'] = 'TERM'
+    keyword_to_token = dict((reversed(item) for item in token_to_keyword.items()))
 
 #################################################################
 # Detokenise functions
@@ -392,73 +457,8 @@ def tokenise_word(ins, outs):
             break
     return word
 
-
 #################################################################
-#################################################################
-#################################################################
+# initialise module
 
-token_to_keyword = {  
-    '\x81': 'END',    '\x82': 'FOR',       '\x83': 'NEXT',   '\x84': 'DATA',  '\x85': 'INPUT',   '\x86': 'DIM',    '\x87': 'READ',  
-    '\x88': 'LET',    '\x89': 'GOTO',      '\x8A': 'RUN',    '\x8B': 'IF',    '\x8C': 'RESTORE', '\x8D': 'GOSUB',  '\x8E': 'RETURN',  
-    '\x8F': 'REM',    '\x90': 'STOP',      '\x91': 'PRINT',  '\x92': 'CLEAR', '\x93': 'LIST',    '\x94': 'NEW',    '\x95': 'ON',  
-    '\x96': 'WAIT',   '\x97': 'DEF',       '\x98': 'POKE',   '\x99': 'CONT',  '\x9C': 'OUT',     '\x9D': 'LPRINT', '\x9E': 'LLIST',  
-    '\xA0': 'WIDTH',  '\xA1': 'ELSE',      '\xA2': 'TRON',   '\xA3': 'TROFF', '\xA4': 'SWAP',    '\xA5': 'ERASE',  '\xA6': 'EDIT',  
-    '\xA7': 'ERROR',  '\xA8': 'RESUME',    '\xA9': 'DELETE', '\xAA': 'AUTO',  '\xAB': 'RENUM',   '\xAC': 'DEFSTR', '\xAD': 'DEFINT',  
-    '\xAE': 'DEFSNG', '\xAF': 'DEFDBL',    '\xB0': 'LINE',   '\xB1': 'WHILE', '\xB2': 'WEND',    '\xB3': 'CALL',   '\xB7': 'WRITE',  
-    '\xB8': 'OPTION', '\xB9': 'RANDOMIZE', '\xBA': 'OPEN',   '\xBB': 'CLOSE', '\xBC': 'LOAD',    '\xBD': 'MERGE',  '\xBE': 'SAVE',      
-    '\xBF': 'COLOR',  '\xC0': 'CLS',       '\xC1': 'MOTOR',  '\xC2': 'BSAVE', '\xC3': 'BLOAD',   '\xC4': 'SOUND',  '\xC5': 'BEEP',
-    '\xC6': 'PSET',   '\xC7': 'PRESET',    '\xC8': 'SCREEN', '\xC9': 'KEY',   '\xCA': 'LOCATE',  '\xCC': 'TO',     '\xCD': 'THEN',  
-    '\xCE': 'TAB(',   '\xCF': 'STEP',      '\xD0': 'USR',    '\xD1': 'FN',    '\xD2': 'SPC(',    '\xD3': 'NOT',    '\xD4': 'ERL',
-    '\xD5': 'ERR',    '\xD6': 'STRING$',   '\xD7': 'USING',  '\xD8': 'INSTR', '\xD9': "'",       '\xDA': 'VARPTR', '\xDB': 'CSRLIN',  
-    '\xDC': 'POINT',  '\xDD': 'OFF',       '\xDE': 'INKEY$', '\xE6': '>',     '\xE7': '=',       '\xE8': '<',      '\xE9': '+', 
-    '\xEA': '-',      '\xEB': '*',         '\xEC': '/',      '\xED': '^',     '\xEE': 'AND',     '\xEF': 'OR',     '\xF0': 'XOR',  
-    '\xF1': 'EQV',    '\xF2': 'IMP',       '\xF3': 'MOD',    '\xF4': '\\',
-    '\xFD\x81': 'CVI',    '\xFD\x82': 'CVS',     '\xFD\x83': 'CVD',   '\xFD\x84': 'MKI$',    '\xFD\x85': 'MKS$',  '\xFD\x86': 'MKD$',
-    '\xFD\x8B': 'EXTERR', '\xFE\x81': 'FILES',   '\xFE\x82': 'FIELD', '\xFE\x83': 'SYSTEM',  '\xFE\x84': 'NAME',  '\xFE\x85': 'LSET',  
-    '\xFE\x86': 'RSET',   '\xFE\x87': 'KILL',    '\xFE\x88': 'PUT',   '\xFE\x89': 'GET',     '\xFE\x8A': 'RESET', '\xFE\x8B': 'COMMON',
-    '\xFE\x8C': 'CHAIN',  '\xFE\x8D': 'DATE$',   '\xFE\x8E': 'TIME$', '\xFE\x8F': 'PAINT',   '\xFE\x90': 'COM',   '\xFE\x91': 'CIRCLE', 
-    '\xFE\x92': 'DRAW',   '\xFE\x93': 'PLAY',    '\xFE\x94': 'TIMER', '\xFE\x95': 'ERDEV',   '\xFE\x96': 'IOCTL', '\xFE\x97': 'CHDIR', 
-    '\xFE\x98': 'MKDIR',  '\xFE\x99': 'RMDIR',   '\xFE\x9A': 'SHELL', '\xFE\x9B': 'ENVIRON', '\xFE\x9C': 'VIEW',  '\xFE\x9D': 'WINDOW',
-    '\xFE\x9E': 'PMAP',   '\xFE\x9F': 'PALETTE', '\xFE\xA0': 'LCOPY', '\xFE\xA1': 'CALLS',   '\xFE\xA5': 'PCOPY', 
-    '\xFE\xA7': 'LOCK',   '\xFE\xA8': 'UNLOCK',  '\xFF\x81': 'LEFT$', '\xFF\x82': 'RIGHT$',  '\xFF\x83': 'MID$',  '\xFF\x84': 'SGN',    
-    '\xFF\x85': 'INT',    '\xFF\x86': 'ABS',     '\xFF\x87': 'SQR',   '\xFF\x88': 'RND',     '\xFF\x89': 'SIN',   '\xFF\x8A': 'LOG',   
-    '\xFF\x8B': 'EXP',    '\xFF\x8C': 'COS',     '\xFF\x8D': 'TAN',   '\xFF\x8E': 'ATN',     '\xFF\x8F': 'FRE',   '\xFF\x90': 'INP',   
-    '\xFF\x91': 'POS',    '\xFF\x92': 'LEN',     '\xFF\x93': 'STR$',  '\xFF\x94': 'VAL',     '\xFF\x95': 'ASC',   '\xFF\x96': 'CHR$',   
-    '\xFF\x97': 'PEEK',   '\xFF\x98': 'SPACE$',  '\xFF\x99': 'OCT$',  '\xFF\x9A': 'HEX$',    '\xFF\x9B': 'LPOS',  '\xFF\x9C': 'CINT',  
-    '\xFF\x9D': 'CSNG',   '\xFF\x9E': 'CDBL',    '\xFF\x9F': 'FIX',   '\xFF\xA0': 'PEN',     '\xFF\xA1': 'STICK', '\xFF\xA2': 'STRIG',  
-    '\xFF\xA3': 'EOF',    '\xFF\xA4': 'LOC',     '\xFF\xA5': 'LOF'          
-}
-    
-keyword_to_token = dict((reversed(item) for item in token_to_keyword.items()))
-
-def insert_debug_keyword():
-    # Note - I have implemented this as my own debugging command, executes python string.
-    token_to_keyword['\xFF\xFF'] = 'DEBUG'
-    keyword_to_token['DEBUG'] = '\xFF\xFF'
-        
-def insert_noise_keyword():
-    # pcjr, tandy; incompatible with sperry mode.
-    token_to_keyword['\xFE\xA4'] = 'NOISE'
-    keyword_to_token['NOISE'] = '\xFE\xA4'
-
-def insert_term_keyword():
-    # pcjr
-    token_to_keyword['\xFE\xA6'] = 'TERM'
-    keyword_to_token['TERM'] = '\xFE\xA6'
-
-# other keywords documented on http://www.chebucto.ns.ca/~af380/GW-BASIC-tokens.html :
-
-# PCjr only:
-#   0xFEA4: 'NOISE' 
-#   0xFEA6: 'TERM'
-# The site also remarks - 0xFEA5: PCOPY (PCjr or EGA system only) 
-# Apparently I have an 'EGA system', as this keyword is in the GW-BASIC 3.23 documentation.
-# Tandy 1000 systems had NOISE, but not TERM.
-
-# Sperry PC only:
-#   0xFEA4: 'DEBUG'
-
-# Undefined tokens:
-#   0x9A,  0x9B,  0x9F,  0xB4,  0xB5,  0xB6,  0xCB,  0xDF,  0xE0,  0xE1,  0xE2
-#   0xE3,  0xE4,  0xE5,  0xF5,  0xF6,  0xF7,  0xF8,  0xF9,  0xFA,  0xFB,  0xFC
+prepare()
 
