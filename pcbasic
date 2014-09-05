@@ -35,7 +35,7 @@ else:
     stdin, stdout = sys.stdin, sys.stdout
 
 # do we log to a file? 
-logfile = False
+logfile = ''
 
 import logging
 
@@ -114,15 +114,14 @@ def main():
         iolayer.close_devices()
             
 def prepare_logging():
+    """ Set logging format. """
+    formatstr = '%(levelname)s: %(message)s'
     if config.options['debug']:
-        # set logging format
-        logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
+        logging.basicConfig(format=formatstr, level=logging.DEBUG)
+    elif logfile:
+        logging.basicConfig(format=formatstr, filename=os.path.join(plat.info_dir, logfile))
     else:
-        # set logging format
-        if logfile:
-            logging.basicConfig(format='%(levelname)s: %(message)s', filename = os.path.join(plat.basepath, 'info', 'PCBASIC.LOG'))
-        else:
-            logging.basicConfig(format='%(levelname)s: %(message)s')
+        logging.basicConfig(format=formatstr)
         
 def prepare_constants(args):
     # drive mounts           
