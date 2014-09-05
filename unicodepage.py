@@ -144,7 +144,7 @@ def from_utf8(c):
 
 
 class UTF8Converter(object):
-    """ Buffered converter to UTF8 - supports DBCS """
+    """ Buffered converter to UTF8 - supports DBCS and box-drawing protection. """
     
     def __init__(self, preserve_control=False, do_dbcs=None, protect_box=None):
         """ Initialise with empty buffer. """
@@ -191,8 +191,35 @@ class UTF8Converter(object):
 
     def process(self, c):
         """ Process a single char, returning UTF8 char sequences when ready """
-        if self.protect_box and self.dbcs:
-            return self.process_box(c)
+        if not self.protect_box:
+            return self.process_nobox(c)    
+        out = ''
+        if self.preserve_control and c in control:
+            # control char; flush buffer as SBCS and add control char unchanged
+            out += self.flush() + c
+            self.bset = -1
+            self.last = ''
+        elif self.bset == -1:
+            if not self.buf:
+                out += self.process_case0(c)
+            elif len(self.buf) == 1:
+                out += self.process_case1(c)
+            elif len(self.buf) == 2:
+                out += self.process_case2(c)
+            else:
+                # not allowed
+                logging.debug('DBCS buffer corrupted: %d %s', self.bset, repr(self.buf))
+        elif len(self.buf) == 2:
+            out += self.process_case3(c)
+        elif not self.buf:
+            out += self.process_case4(c)
+        else:
+            # not allowed
+            logging.debug('DBCS buffer corrupted: %d %s', self.bset, repr(self.buf))
+        return out            
+            
+    def process_nobox(self, c):
+        """ Process a single char, no box drawing protection """
         out = ''
         if self.preserve_control and c in control:
             # control char; flush buffer as SBCS and add control char unchanged
@@ -213,94 +240,89 @@ class UTF8Converter(object):
             out += cp_to_utf8[c]
         return out
 
-    def process_box(self, c):
-        """ Process a single char, returning UTF8 char sequences when ready """
+    def process_case0(self, c):
+        """ Process a single char with box drawing protection; case 0, starting point """
         out = ''
-        if self.preserve_control and c in control:
-            # control char; flush buffer as SBCS and add control char unchanged
-            out += self.flush() + c
-            self.bset = -1
-            self.last = ''
-        elif self.bset == -1:
-            if not self.buf:
-                # case 0, starting point
-                if c not in lead:
-                    out += cp_to_utf8[c]
-                    # goes to case 0
-                else:
-                    self.buf += c 
-                    # goes to case 1     
-            elif len(self.buf) == 1:
-                # case 1
-                if c not in trail:
-                    out += self.flush() + cp_to_utf8[c]
-                    # goes to case 0
-                else:
-                    for bset in (0, 1):
-                        if connects(self.buf, c, bset):
-                            self.bset = bset
-                            self.buf += c
-                            break
-                            # goes to case 3
-                    else:
-                        # no connection
-                        self.buf += c
-                        # goes to case 2    
-            elif len(self.buf) == 2:
-                # case 2
-                if c not in lead:
-                    out += self.flush() + cp_to_utf8[c]
-                    # goes to case 0
-                else:    
-                    for bset in (0, 1):
-                        if connects(self.buf[-1], c, bset):
-                            self.bset = bset
-                            # take out only first byte
-                            out += self.flush(1)
-                            self.buf += c
-                            break
-                            # goes to case 3
-                    else:
-                        # no connection found
-                        out += self.flush()
-                        self.buf += c
-                        # goes to case 1    
-            else:
-                # not allowed
-                logging.debug('DBCS buffer corrupted: %d %s', self.bset, repr(self.buf))
-        elif len(self.buf) == 2:
-            # case 3
-            if c not in lead:
-                out += self.flush() + cp_to_utf8[c]
-            elif connects(self.buf[-1], c, self.bset):    
-                self.last = self.buf[-1]
-                # output box drawing
-                out += self.flush(1) + self.flush(1) + cp_to_utf8[c]
-                # goes to case 4
-            else:
-                out += self.flush()
-                self.buf = c
-                self.bset = -1
-                # goes to case 1
-        elif not self.buf:
-            # case 4, continuing box drawing
-            if c not in lead:
-                out += cp_to_utf8[c]
-                # goes to case 0
-            elif connects(self.last, c, self.bset):
-                self.last = c
-                out += cp_to_utf8[c]
-                # goes to case 4
-            else:
-                self.buf += c
-                self.bset = -1
-                # goes to case 1                    
+        if c not in lead:
+            out += cp_to_utf8[c]
+            # goes to case 0
         else:
-            # not allowed
-            logging.debug('DBCS buffer corrupted: %d %s', self.bset, repr(self.buf))
-        return out            
+            self.buf += c 
+            # goes to case 1     
+        return out
         
-            
-            
-            
+    def process_case1(self, c):
+        """ Process a single char with box drawing protection; case 1 """
+        out = ''
+        if c not in trail:
+            out += self.flush() + cp_to_utf8[c]
+            # goes to case 0
+        else:
+            for bset in (0, 1):
+                if connects(self.buf, c, bset):
+                    self.bset = bset
+                    self.buf += c
+                    break
+                    # goes to case 3
+            else:
+                # no connection
+                self.buf += c
+                # goes to case 2    
+        return out
+        
+    def process_case2(self, c):
+        """ Process a single char with box drawing protection; case 2 """
+        out = ''
+        if c not in lead:
+            out += self.flush() + cp_to_utf8[c]
+            # goes to case 0
+        else:    
+            for bset in (0, 1):
+                if connects(self.buf[-1], c, bset):
+                    self.bset = bset
+                    # take out only first byte
+                    out += self.flush(1)
+                    self.buf += c
+                    break
+                    # goes to case 3
+            else:
+                # no connection found
+                out += self.flush()
+                self.buf += c
+                # goes to case 1    
+        return out
+        
+    def process_case3(self, c):
+        """ Process a single char with box drawing protection; case 3 """
+        out = ''
+        if c not in lead:
+            out += self.flush() + cp_to_utf8[c]
+        elif connects(self.buf[-1], c, self.bset):    
+            self.last = self.buf[-1]
+            # output box drawing
+            out += self.flush(1) + self.flush(1) + cp_to_utf8[c]
+            # goes to case 4
+        else:
+            out += self.flush()
+            self.buf = c
+            self.bset = -1
+            # goes to case 1
+        return out
+        
+    def process_case4(self, c):
+        """ Process a single char with box drawing protection; case 4, continuing box drawing """
+        out = ''
+        if c not in lead:
+            out += cp_to_utf8[c]
+            # goes to case 0
+        elif connects(self.last, c, self.bset):
+            self.last = c
+            out += cp_to_utf8[c]
+            # goes to case 4
+        else:
+            self.buf += c
+            self.bset = -1
+            # goes to case 1
+        return out
 
+            
