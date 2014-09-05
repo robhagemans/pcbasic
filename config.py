@@ -62,9 +62,9 @@ arguments = {
     'exec':             { 'metavar':'command_line', 'help':'Execute BASIC command line' },
     'quit':             { 'action':'store_true', 'help':'Quit interpreter when execution stops' },
     'double':           { 'action':'store_true', 'help':'Allow double-precision math functions' },
-    'max_files':        { 'action':'store', 'nargs':1, 'metavar':'NUMBER', 'help':'Set maximum number of open files (default is 3).' },
-    'max_reclen':       { 'action':'store', 'nargs':1, 'metavar':'NUMBER', 'help':'Set maximum record length for RANDOM files (default is 128, max is 32767).' },
-    'serial_in_size':   { 'action':'store', 'nargs':1, 'metavar':'NUMBER', 'help':'Set serial input buffer size (default is 256). If 0, serial communications are disabled.' },
+    'max_files':        { 'type':'int', 'action':'store', 'metavar':'NUMBER', 'help':'Set maximum number of open files (default is 3).' },
+    'max_reclen':       { 'type':'int', 'action':'store', 'metavar':'NUMBER', 'help':'Set maximum record length for RANDOM files (default is 128, max is 32767).' },
+    'serial_in_size':   { 'type':'int', 'action':'store', 'metavar':'NUMBER', 'help':'Set serial input buffer size (default is 256). If 0, serial communications are disabled.' },
     'peek':             { 'type':'list', 'action':'store', 'nargs':'*', 'metavar':'SEG:ADDR:VAL', 'help':'Define PEEK preset values' },
     'lpt1':             { 'action':'store', 'metavar':'TYPE:VAL', 'help':'Set LPT1: to FILE:file_name or PRINTER:printer_name.' },
     'lpt2':             { 'action':'store', 'metavar':'TYPE:VAL', 'help':'Set LPT2: to FILE:file_name or PRINTER:printer_name.' },
@@ -143,11 +143,12 @@ def get_args():
     parser.add_argument('program', metavar='basic_program', nargs='?', help='Input program file to run (default), load or convert.')
     # set arguments
     for argname in arguments:
-        kwparms = arguments[argname]
-        try:
-            del kwparms['type']
-        except KeyError:
-            pass    
+        kwparms = {} 
+        for n in ['acrion', 'help', 'choices', 'metavar', 'nargs']:
+            try:
+                kwparms[n] = arguments[n]            
+            except KeyError:
+                pass    
         parms = ['--' + argname ]
         # add short options
         try:
@@ -169,11 +170,12 @@ def get_args():
         parser.print_help()
         sys.exit(0)
     # flatten list arguments
-    args.mount = flatten_arg_list(args.mount)
     args.font = flatten_arg_list(args.font)
     for d in arguments:
         if hasattr(args, d) and arguments[d].has_key('type') and arguments[d]['type'] == 'list':
             setattr(args, d, flatten_arg_list(getattr(args, d)))
+        if hasattr(args, d) and arguments[d].has_key('type') and arguments[d]['type'] == 'int':
+            setattr(args, d, parse_int_option_silent(getattr(args, d)))
     return args
 
 def convert_arglist(arglist):

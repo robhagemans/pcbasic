@@ -15,6 +15,7 @@ try:
 except ImportError:
     from StringIO import StringIO
 
+import config
 import logging
 import serial_socket
 import oslayer
@@ -47,7 +48,17 @@ allowed_protocols = {
     'COM': ('PORT', 'SOCKET')
     }
 
-
+def prepare():
+    """ Initialise iolayer module. """
+    global max_files, max_reclen, serial_in_size
+    if config.options['max_files'] != None:
+        max_files = config.options['max_files'] #config.parse_int_option_silent(args.max_files)
+    if config.options['max_reclen'] != None:
+        max_reclen = config.options['max_reclen'] #config.parse_int_option_silent(args.max_reclen)
+        max_reclen = max(1, min(32767, max_reclen))
+    if config.options['serial_in_size'] != None:
+        serial_in_size = config.options['serial_in_size'] #config.parse_int_option_silent(args.serial_in_size)
+    
 def open_file_or_device(number, name, mode='I', access='R', lock='', reclen=128, defext=''):
     if (not name) or (number < 0) or (number > max_files):
         # bad file number; also for name='', for some reason
@@ -988,4 +999,6 @@ class COMFile(RandomBase):
     def close(self):
         self.fhandle.close()
         RandomBase.close(self)
+
+prepare()
 

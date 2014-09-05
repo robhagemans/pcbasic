@@ -147,6 +147,7 @@ def prepare_constants(args):
         args.conv = True    
     if args.conv_mode:
         args.conv_mode = args.conv_mode[0].upper() 
+    
     if args.video:
         console.video_capabilities = args.video[0]
         if args.video[0] == 'ega':
@@ -156,18 +157,7 @@ def prepare_constants(args):
         console.cga_palette_1 = console.cga_palette_1_lo
         console.cga_palette_5 = console.cga_palette_5_lo
         console.cga_palettes = [console.cga_palette_0, console.cga_palette_1]
-    if args.max_files:
-        iolayer.max_files = config.parse_int_option_silent(args.max_files)
-    if args.max_reclen:
-        iolayer.max_reclen = config.parse_int_option_silent(args.max_reclen)
-        if iolayer.max_reclen < 1:
-            iolayer.max_reclen = 1
-        if iolayer.max_reclen > 32767:
-            iolayer.max_reclen = 32767
-    if args.serial_in_size:
-        iolayer.serial_in_size = config.parse_int_option_silent(args.serial_in_size)
     
-        
 def prepare_console(args):
     # codepage needs to be loaded for dbcs to work correctly
     import backend_cli
