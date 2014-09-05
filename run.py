@@ -25,6 +25,8 @@ state.basic_state.prompt = True
 state.basic_state.auto_mode = False
 # interpreter is executing a command
 state.basic_state.execute_mode = False
+# interpreter is waiting for INPUT or LINE INPUT
+state.basic_state.input_mode = False
 
 def loop(quit=False):
     # interpreter loop
@@ -127,6 +129,7 @@ def handle_error(s, quit):
     if quit:
         raise error.Exit()
     set_execute_mode(False)
+    state.basic_state.input_mode = False    
     # special case
     if s.err == 2:
         # for some reason, err is reset to zero by GW-BASIC in this case.
@@ -139,6 +142,9 @@ def handle_error(s, quit):
                 handle_error(e)
 
 def handle_break(e):
+    # print ^C at current position
+    if not state.basic_state.input_mode and not e.stop:
+        console.write('^C')
     # if we're in a program, save pointer
     if state.basic_state.run_mode:
         console.write_error_message("Break", program.get_line_number(e.pos))
@@ -146,4 +152,5 @@ def handle_break(e):
     else:
         console.write_error_message("Break", -1)
     set_execute_mode(False)
+    state.basic_state.input_mode = False    
     

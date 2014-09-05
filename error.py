@@ -86,12 +86,13 @@ class Error(Exception):
     pass
             
 class Break(Error):
-    def __init__(self):
+    def __init__(self, stop=False):
         Error.__init__(self)
         if not state.basic_state.run_mode:
             self.pos = -1
         else:
             self.pos = state.basic_state.current_statement
+        self.stop = stop
         
 class Reset(Error):
     def __init__(self):

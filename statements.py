@@ -1269,7 +1269,7 @@ def exec_end(ins):
     
 def exec_stop(ins):
     util.require(ins, util.end_statement)
-    raise error.Break()
+    raise error.Break(stop=True)
     
 def exec_cont(ins):
     if state.basic_state.stop == None:
@@ -1792,6 +1792,7 @@ def exec_input(ins):
         pos = ins.tell()
         ins.seek(state.basic_state.current_statement)
         # read the input
+        state.basic_state.input_mode = True
         while True:
             console.write(prompt) 
             line = console.wait_screenline(write_endl=newline)
@@ -1801,6 +1802,7 @@ def exec_input(ins):
                 console.write_line('?Redo from start')  # ... good old Redo!
             else:
                 break
+        state.basic_state.input_mode = False
         for v in varlist:
             var.set_var_or_array(*v)
         ins.seek(pos)        
@@ -1823,8 +1825,10 @@ def exec_line_input(ins):
     if finp:
         line = finp.read_line()
     else:    
+        state.basic_state.input_mode = True
         console.write(prompt) 
         line = console.wait_screenline(write_endl=newline)
+        state.basic_state.input_mode = False
     var.set_var_or_array(readvar, indices, vartypes.pack_string(bytearray(line)))
 
 def exec_restore(ins):
