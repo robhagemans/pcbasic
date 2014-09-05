@@ -145,13 +145,16 @@ def update_position(row=None, col=None):
         term.write('\r\n')
         term.flush()
         last_col = 1
+        last_row = row
+        # show what's on the line where we are. 
+        # note: recursive by one level, last_row now equals row
+        console.redraw_row(1, state.console_state.row)
     if col != last_col:
         term.write(esc_move_left*(last_col-col))
         term.write(esc_move_right*(col-last_col))
         term.flush()
-    last_row = row
-    last_col = col    
-
+        last_col = col
+            
 def set_attr(attr):
     pass
 
