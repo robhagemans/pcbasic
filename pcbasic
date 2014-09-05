@@ -48,11 +48,9 @@ import nosound
 import nopenstick
 import sound_beep
 import console
-import tokenise
 import machine
 import program
 import unicodepage
-import debug
 import state
 import backend
 import backend_pygame
