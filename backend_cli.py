@@ -1,20 +1,13 @@
 #
-# PC-BASIC 3.23 - backend_ansi.py
+# PC-BASIC 3.23 - backend_cli.py
 #
-# ANSI backend for Console (Unix only)
+# CLI interface 
 #
 # (c) 2013, 2014 Rob Hagemans 
 #
 # This file is released under the GNU GPL version 3. 
 # please see text file COPYING for licence terms.
 #
-
-# implements text screen I/O functions on an ANSI/AIX terminal using escape sequences 
-
-# silent get character with no enter,  using raw terminal
-# raw terminal, see http://stackoverflow.com/questions/1052107/reading-a-single-character-wait_char-style-in-python-is-not-working-in-unix
-# non-blocking input with select, see http://repolinux.wordpress.com/2012/10/09/non-blocking-read-from-stdin-in-python/ 
-# reading escape sequences with os.read, see http://stackoverflow.com/questions/8620878/check-for-extra-characters-in-linux-terminal-buffer
 
 import sys
 import time
@@ -25,10 +18,13 @@ import error
 import console
 import state
 
+# don't allow graphical SCREENs
 supports_graphics = False
+
 # palette is ignored
 max_palette = 64
 
+# output to stdout
 term = sys.stdout
 
 # unused, but needs to be defined

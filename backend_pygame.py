@@ -1,7 +1,7 @@
 #
 # PC-BASIC 3.23 - backend_pygame.py
 #
-# Graphical console backend based on PyGame
+# Graphical interface based on PyGame
 # 
 # (c) 2013, 2014 Rob Hagemans 
 #

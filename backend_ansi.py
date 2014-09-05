@@ -1,7 +1,7 @@
 #
 # PC-BASIC 3.23 - backend_ansi.py
 #
-# ANSI backend for Console (Unix only)
+# ANSI interface (Unix only)
 #
 # (c) 2013, 2014 Rob Hagemans 
 #
