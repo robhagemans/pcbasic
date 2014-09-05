@@ -127,38 +127,27 @@ def from_utf8(c):
 class UTF8Converter(object):
     """ Buffered converter to UTF8 - supports DBCS """
     
-    def __init__(self, preserve_control=False, protect_box=None):
+    def __init__(self, preserve_control=False, do_dbcs=None, protect_box=None):
         """ Initialise with empty buffer. """
         self.buf = ''
-        self.boxbuf = ''
         self.preserve_control = preserve_control
         self.protect_box = protect_box
-        if protect_box==None:
+        self.dbcs = do_dbcs
+        # set dbcs and box protection defaults according to global settings
+        if protect_box == None:
             self.protect_box = box_protect
-
-    def dbcsflush(self):
-        """ Empty box buffer and return contents as dbcs. """
-        if self.boxbuf:
-            out = cp_to_utf8[self.boxbuf]
-            self.boxbuf = ''
-            return out
-        return ''
-
-    def boxflush(self):
-        """ Empty box buffer and return contents as box drawing. """
-        out = ''
-        for c in self.boxbuf:
-            out += cp_to_utf8[c]
-        self.boxbuf = ''
-        return out
+        if do_dbcs == None:
+            self.dbcs = dbcs
+        self.bset = -1
             
     def flush(self):
         """ Empty buffer and return contents. """
-        if self.buf:
+        out = ''
+        if self.buf:        
+            # can be one or two-byte sequence in self.buf
             out = cp_to_utf8[self.buf]
-            self.buf = ''
-            return out
-        return ''
+        self.buf = ''
+        return out
 
     def process(self, c):
         """ Process a single char, returning UTF8 char sequences when ready """
@@ -181,10 +170,11 @@ class UTF8Converter(object):
         else:
             out += cp_to_utf8[c]
         return out
+
         
     def to_utf8(self, s):
         """ Process codepage string, returning utf8 string when ready. """
-        if not dbcs:
+        if not self.dbcs:
             # stateless if not dbcs
             return ''.join([ (c if (self.preserve_control and c in control) else cp_to_utf8[c]) for c in s ])
         else:
@@ -192,17 +182,14 @@ class UTF8Converter(object):
             # remove any naked lead-byte first
             if self.buf:
                 out += '\b'
-            # remove any naked boxable dbcs    
-            if self.boxbuf:
-                out += '\b'
             # process the string
             for c in s:
                 out += self.process(c)
             # any naked lead-byte or boxable dbcs left will be printed (but don't flush buffers!)
-            if self.boxbuf:
-                out += cp_to_utf8[self.boxbuf]
             if self.buf:
                 out += cp_to_utf8[self.buf]
             return out
-
+            
+            
+            
 
