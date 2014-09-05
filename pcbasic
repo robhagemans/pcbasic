@@ -132,18 +132,14 @@ def prepare_keywords(args):
         else:
             logging.basicConfig(format='%(levelname)s: %(message)s')
     if args.pcjr_syntax and len(args.pcjr_syntax)>0:
-        statements.pcjr_syntax = args.pcjr_syntax[0]
         expressions.pcjr_syntax = args.pcjr_syntax[0]
         sound.pcjr_sound = args.pcjr_syntax[0]
-        if statements.pcjr_syntax == 'tandy':
+        if args.pcjr_syntax == 'tandy':
             # tandy recognises 12 function keys
             on_event.num_fn_keys=12
             if not args.resume:
                 # tandy has SOUND ON by default
                 state.console_state.sound_on = True
-    # set pcjr TERM program    
-    if args.pcjr_term:
-        statements.pcjr_term = args.pcjr_term[0]
         
 def prepare_constants(args):
     # PEEK presets

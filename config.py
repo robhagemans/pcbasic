@@ -50,8 +50,8 @@ short_args = { 'cli':'b', 'ansi':'t', 'graphical':'g', 'load':'l', 'run':'r', 'e
 # all long-form arguments
 arguments = {
 #    'program':  { 'metavar':'basic_program', 'nargs':'?', 'help':'Input program file to run (default), load or convert.' },
-    'input':            { 'metavar':'input_file', 'nargs':1, 'help':'Retrieve keyboard input from input_file, except if KYBD: is read explicitly.' },
-    'output':           { 'metavar':'output_file', 'nargs':1, 'help':'Send screen output to output_file, except if SCRN: is written to explicitly.' },
+    'input':            { 'action':'store', 'metavar':'input_file', 'nargs':1, 'help':'Retrieve keyboard input from input_file, except if KYBD: is read explicitly.' },
+    'output':           { 'action':'store', 'metavar':'output_file', 'nargs':1, 'help':'Send screen output to output_file, except if SCRN: is written to explicitly.' },
     'filter':           { 'action':'store_true', 'help':'Use text filter interface. This is the default if redirecting input.' },
     'cli':              { 'action':'store_true', 'help':'Use command-line text interface' },
     'ansi':             { 'action':'store_true', 'help':'Use ANSI text interface' },
@@ -62,10 +62,10 @@ arguments = {
     'exec':             { 'metavar':'command_line', 'help':'Execute BASIC command line' },
     'quit':             { 'action':'store_true', 'help':'Quit interpreter when execution stops' },
     'double':           { 'action':'store_true', 'help':'Allow double-precision math functions' },
-    'max_files':        { 'nargs':1, 'metavar':'NUMBER', 'help':'Set maximum number of open files (default is 3).' },
-    'max_reclen':       { 'nargs':1, 'metavar':'NUMBER', 'help':'Set maximum record length for RANDOM files (default is 128, max is 32767).' },
-    'serial_in_size':   { 'nargs':1, 'metavar':'NUMBER', 'help':'Set serial input buffer size (default is 256). If 0, serial communications are disabled.' },
-    'peek':             { 'nargs':'*', 'metavar':'SEG:ADDR:VAL', 'help':'Define PEEK preset values' },
+    'max_files':        { 'action':'store', 'nargs':1, 'metavar':'NUMBER', 'help':'Set maximum number of open files (default is 3).' },
+    'max_reclen':       { 'action':'store', 'nargs':1, 'metavar':'NUMBER', 'help':'Set maximum record length for RANDOM files (default is 128, max is 32767).' },
+    'serial_in_size':   { 'action':'store', 'nargs':1, 'metavar':'NUMBER', 'help':'Set serial input buffer size (default is 256). If 0, serial communications are disabled.' },
+    'peek':             { 'action':'store', 'nargs':'*', 'metavar':'SEG:ADDR:VAL', 'help':'Define PEEK preset values' },
     'lpt1':             { 'action':'store', 'metavar':'TYPE:VAL', 'help':'Set LPT1: to FILE:file_name or PRINTER:printer_name.' },
     'lpt2':             { 'action':'store', 'metavar':'TYPE:VAL', 'help':'Set LPT2: to FILE:file_name or PRINTER:printer_name.' },
     'lpt3':             { 'action':'store', 'metavar':'TYPE:VAL', 'help':'Set LPT3: to FILE:file_name or PRINTER:printer_name.' },
@@ -87,8 +87,8 @@ arguments = {
     'mount':            { 'action':'append', 'nargs':'*', 'metavar':'D:PATH', 'help':'Set a drive letter to PATH.' },
     'resume':           { 'action':'store_true', 'help':'Resume from saved state. Most other arguments are ignored.' },
     'strict_newline':   { 'action':'store_true', 'help':'Parse CR and LF strictly like GW-BASIC. May create problems with UNIX line endings.' },
-    'pcjr_syntax':      { 'action':'store', 'nargs':1, 'choices':('pcjr', 'tandy'), 'help':'Enable PCjr/Tandy 1000 syntax extensions' },
-    'pcjr_term':        { 'action':'store', 'metavar':'TERM.BAS', 'help':'Set the program run by the PCjr TERM command' },
+    'pcjr_syntax':      { 'type':'string', 'action':'store', 'choices':('pcjr', 'tandy'), 'help':'Enable PCjr/Tandy 1000 syntax extensions' },
+    'pcjr_term':        { 'type':'string', 'action':'store', 'metavar':'TERM.BAS', 'help':'Set the program run by the PCjr TERM command' },
     'video':            { 'action':'store', 'nargs':1, 'choices':('ega', 'cga', 'cga_old', 'pcjr', 'tandy'), 'help':'Set video capabilities' },
     'windows_map_drives':{ 'action':'store_true', 'help':'Map all Windows drive letters to PC-BASIC drive letters (Windows only)' },
     'cga_low':          { 'action':'store_true', 'help':'Use low-intensity palettes in CGA (for --video={cga,ega} only).' },
@@ -102,7 +102,7 @@ def prepare():
     global options
     # store options in options dictionary
     options = vars(get_args())
-
+    
 def get_args():
     """ Retrieve command line and option file options. """
     # read config file, if any
@@ -144,6 +144,10 @@ def get_args():
     # set arguments
     for argname in arguments:
         kwparms = arguments[argname]
+        try:
+            del kwparms['type']
+        except KeyError:
+            pass    
         parms = ['--' + argname ]
         # add short options
         try:
@@ -184,10 +188,13 @@ def convert_arglist(arglist):
             else:
                 # convert lists
                 arglist[d] = arglist[d].split(',')    
-        return arglist        
     except (TypeError, ValueError):
         logging.warning('Error in configuration file %s. Configuration not loaded.', config_file)
         return {}    
+    for d in arguments:
+        if d in arglist and arguments[d].has_key('type') and arguments[d]['type'] == 'string':
+            arglist[d] = '' if not arglist[d] else arglist[d][0]
+    return arglist        
 
 def read_config():
     """ Read config file. """

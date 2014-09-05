@@ -16,6 +16,7 @@ try:
 except ImportError:
     from StringIO import StringIO
 
+import config
 import console
 import debug
 import draw_and_play
@@ -39,8 +40,11 @@ import vartypes
 import sound
 import on_event
 
-pcjr_syntax = None
-pcjr_term = ''
+def prepare():
+    """ Initialise statements module. """
+    global pcjr_syntax, pcjr_term
+    pcjr_syntax = config.options['pcjr_syntax']
+    pcjr_term = config.options['pcjr_term']
 
 # parses one statement at the current stream pointer in current codestream
 # return value False: stream ends
@@ -2290,4 +2294,7 @@ def exec_pcopy(ins):
     util.require(ins, util.end_statement)
     util.range_check(0, state.console_state.num_pages-1, dst)
     console.copy_page(src, dst)
+        
+        
+prepare()
         
