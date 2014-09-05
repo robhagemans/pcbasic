@@ -9,20 +9,25 @@
 # please see text file COPYING for licence terms.
 #
 
+import config
 import state
 import backend
 
-# pcjr/tandy sound
-pcjr_sound = None
-
 state.console_state.music_foreground = True
 state.console_state.music_queue = [[], [], [], []]
-state.console_state.sound_on = False
 
 base_freq = 3579545./1024.
 state.console_state.noise_freq = [ base_freq / v for v in [1., 2., 4., 1., 1., 2., 4., 1.] ]
 state.console_state.noise_freq[3] = 0.
 state.console_state.noise_freq[7] = 0.
+
+def prepare():
+    """ Initialise sound module. """
+    global pcjr_sound
+    # pcjr/tandy sound
+    pcjr_sound = config.options['pcjr_syntax']
+    # tandy has SOUND ON by default, pcjr has it OFF
+    state.console_state.sound_on = (pcjr_sound == 'tandy')
 
 def init_sound():
     if not backend.sound.init_sound():
@@ -75,4 +80,5 @@ def wait_music(wait_length=0, wait_last=True):
                 or len(state.console_state.music_queue[2]) + wait_last - 1 > wait_length ):
         backend.wait()
         
-        
+prepare()
+
