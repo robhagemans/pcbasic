@@ -9,14 +9,29 @@
 # please see text file COPYING for licence terms.
 #
 
-import subprocess
+import plat
+if plat.system == 'Windows':
+    def init_sound():
+        return False
+else:    
+    import subprocess
+    
+    def init_sound():
+        return subprocess.call("command -v beep >/dev/null 2>&1", 
+                                shell=True) == 0
+    
+    def beep(frequency, duration, fill):
+        return subprocess.Popen(('beep -f %f -l %d -D %d' % 
+            (frequency, duration*fill*1000, duration*(1-fill)*1000)).split())
+    
+    def hush():
+        subprocess.call('beep -f 1 -l 0'.split())
+        
 import state
 
 now_playing = [None, None, None, None]
 now_loop = [None, None, None, None]
 
-def init_sound():
-    return subprocess.call("command -v beep >/dev/null 2>&1", shell=True) == 0
     
 def stop_all_sound():
     global now_loop, now_playing
@@ -25,7 +40,7 @@ def stop_all_sound():
             voice.terminate()   
     now_playing = [None, None, None, None]
     now_loop = [None, None, None, None]
-    subprocess.call('beep -f 1 -l 0'.split()) 
+    hush()
     
 def play_sound(frequency, duration, fill, loop, voice=0, volume=15):
     pass
@@ -35,13 +50,15 @@ def check_sound():
     for voice in range(4):
         length = len(state.console_state.music_queue[voice])
         if now_loop[voice]:
-            if state.console_state.music_queue[voice] and now_playing[voice] and now_playing[voice].poll() == None:
+            if (state.console_state.music_queue[voice] and now_playing[voice] 
+                    and now_playing[voice].poll() == None):
                 now_playing[voice].terminate()
                 now_loop[voice] = None
-                subprocess.call('beep -f 1 -l 0'.split())
+                hush()
             elif not now_playing[voice] or now_playing[voice].poll() != None:
                 play_now(*now_loop[voice], voice=voice)
-        if length and (not now_playing[voice] or now_playing[voice].poll() != None):
+        if length and (not now_playing[voice] or 
+                        now_playing[voice].poll() != None):
             play_now(*state.console_state.music_queue[voice][0], voice=voice)
             length -= 1
         # remove the notes that have been played
@@ -51,7 +68,8 @@ def check_sound():
 def busy():
     is_busy = False
     for voice in range(4):
-        is_busy = is_busy or ((not now_loop[voice]) and now_playing[voice] and now_playing[voice].poll() == None)
+        is_busy = is_busy or ((not now_loop[voice]) and 
+                    now_playing[voice] and now_playing[voice].poll() == None)
     return is_busy
 
 def play_now(frequency, duration, fill, loop, volume, voice):
@@ -64,7 +82,7 @@ def play_now(frequency, duration, fill, loop, volume, voice):
         # ignore noise channel
         pass
     else:    
-        now_playing[voice] = subprocess.Popen(('beep -f %f -l %d -D %d' % (frequency, duration*fill*1000, duration*(1-fill)*1000)).split())
+        now_playing[voice] = beep(frequency, duration, fill)
     
 def set_noise(is_white):
     pass      
