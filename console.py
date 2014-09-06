@@ -11,6 +11,7 @@
  
 import logging
 
+import config
 import state
 import backend
 import on_event
@@ -177,6 +178,19 @@ cga_palettes = [cga_palette_0, cga_palette_1]
 # default font family
 font_families = ['unifont', 'univga', 'freedos']
 fonts = {}
+
+def prepare():
+    """ Initialise console module. """
+    global video_capabilities, cga_palette_0, cga_palette_1, cga_palette_5, cga_palettes
+    if config.options['video']:
+        video_capabilities = config.options['video']
+    if video_capabilities == 'ega':
+        config.options['composite'] = False
+    if config.options['cga_low']:
+        cga_palette_0 = cga_palette_0_lo
+        cga_palette_1 = cga_palette_1_lo
+        cga_palette_5 = cga_palette_5_lo
+        cga_palettes = [cga_palette_0, cga_palette_1]
 
 #############################
 # init
@@ -1324,4 +1338,6 @@ def write_error_message(msg, linenum):
     if linenum != None and linenum > -1 and linenum < 65535:
         write(' in %i' % linenum)
     write_line(' ')                  
+
+prepare()
 

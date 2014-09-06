@@ -44,11 +44,11 @@ import run
 import error
 import oslayer
 import unicodepage
+import console
 import sound
 import nosound
 import sound_beep
 import nopenstick
-import console
 import program
 import state
 import backend
@@ -65,8 +65,6 @@ def main():
     prepare_logging()
     # setup affecting mode of operation
     prepare_operation()
-    # set console capabilities before loading state
-    pre_prepare_console(args)
     try:
         if args.resume or plat.system == 'Android':
             # resume from saved emulator state
@@ -145,16 +143,6 @@ def prepare_operation():
     if config.options['conv_mode']:
         config.options['conv_mode'] = config.options['conv_mode'][0].upper() 
 
-def pre_prepare_console(args):    
-    if args.video:
-        console.video_capabilities = args.video[0]
-        if args.video[0] == 'ega':
-            args.composite = False
-    if args.cga_low:
-        console.cga_palette_0 = console.cga_palette_0_lo
-        console.cga_palette_1 = console.cga_palette_1_lo
-        console.cga_palette_5 = console.cga_palette_5_lo
-        console.cga_palettes = [console.cga_palette_0, console.cga_palette_1]
     
 def prepare_console(args):
     # codepage needs to be loaded for dbcs to work correctly
