@@ -10,6 +10,7 @@
 #
 
 import sys
+import logging
 
 import plat
 import config
@@ -47,6 +48,21 @@ def prepare():
         video = backend_pygame   
         penstick = backend_pygame
         sound = backend_pygame
+
+def init_video():
+    global video
+    name = ''
+    if video:
+        if video.init():
+            return True
+        name = video.__name__
+    logging.warning('Failed to initialise interface %s. Falling back to command-line interface.', name)
+    video = backend_cli
+    if video and video.init():
+        return True
+    logging.warning('Failed to initialise command-line interface. Falling back to filter interface.')
+    video = novideo
+    return video.init()
     
 def check_events():
     # manage sound queue

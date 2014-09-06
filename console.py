@@ -196,16 +196,17 @@ def prepare():
         font_families = config.options['font']
     if config.options['run']:
         state.console_state.keys_visible = False
-
+    for mode in mode_data_default:
+        mode_data[mode] = mode_data_default[mode]
+        
 #############################
 # init
 
 def init():
     global cga_palettes, fonts, mode_data
+    # reset modes in case init is called a second time for error fallback
     for mode in mode_data_default:
         mode_data[mode] = mode_data_default[mode]
-    if not backend.video.init():
-        return False
     state.console_state.backend_name = backend.video.__name__
     # only allow the screen modes that the given machine supports
     if video_capabilities in ('pcjr', 'tandy'):
@@ -263,9 +264,9 @@ def init():
         backend.video.load_state()
     else:        
         if 0 not in mode_data:
-            logging.error("Text mode not supported by display backend.")
             # fix the terminal
             backend.video.close()
+            logging.error("Text mode not supported by display backend.")
             return False        
         screen(None, None, None, None, first_run=True)
     return True

@@ -129,13 +129,11 @@ def prepare_operation():
 def prepare_console(args):
     # codepage needs to be loaded for dbcs to work correctly
     import redirect
-    # video fallback
-    if not console.init():
-        logging.warning('Failed to initialise interface. Falling back to command-line interface.')
-        backend.video = backend_cli
-        if not backend.video or not console.init():
-            logging.warning('Failed to initialise interface. Falling back to filter interface.')
-            backend.video = novideo
+    # initialise video backend before console
+    if not backend.init_video() or not console.init():
+        backend.video.close()
+        logging.error('Failed to initialise interface. Exiting.')
+        raise error.Exit()
     # sound fallback        
     if args.nosound:
         backend.sound = nosound

@@ -30,8 +30,6 @@ def prepare():
     state.console_state.sound_on = (pcjr_sound == 'tandy')
 
 def init_sound():
-    if not backend.sound.init_sound():
-        return False
     # rebuild sound queue
     for voice in range(4):    
         for note in state.console_state.music_queue[voice]:
