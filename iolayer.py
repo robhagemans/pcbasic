@@ -58,6 +58,7 @@ def prepare():
         max_reclen = max(1, min(32767, max_reclen))
     if config.options['serial_in_size'] != None:
         serial_in_size = config.options['serial_in_size'] #config.parse_int_option_silent(args.serial_in_size)
+    prepare_devices()
     
 def open_file_or_device(number, name, mode='I', access='R', lock='', reclen=128, defext=''):
     if (not name) or (number < 0) or (number > max_files):
@@ -547,16 +548,16 @@ class ByteStream(object):
 # Device files
 
 
-def prepare_devices(args):
+def prepare_devices():
     # always defined
     state.io_state.devices['SCRN:'] = SCRNFile()
     state.io_state.devices['KYBD:'] = KYBDFile()
-    state.io_state.devices['LPT1:'] = create_device('LPT1:', args.lpt1, oslayer.nullstream) 
+    state.io_state.devices['LPT1:'] = create_device('LPT1:', config.options['lpt1'], oslayer.nullstream) 
     # optional
-    state.io_state.devices['LPT2:'] = create_device('LPT2:', args.lpt2)
-    state.io_state.devices['LPT3:'] = create_device('LPT3:', args.lpt3)
-    state.io_state.devices['COM1:'] = create_device('COM1:', args.com1)
-    state.io_state.devices['COM2:'] = create_device('COM2:', args.com2)
+    state.io_state.devices['LPT2:'] = create_device('LPT2:', config.options['lpt2'])
+    state.io_state.devices['LPT3:'] = create_device('LPT3:', config.options['lpt3'])
+    state.io_state.devices['COM1:'] = create_device('COM1:', config.options['com1'])
+    state.io_state.devices['COM2:'] = create_device('COM2:', config.options['com2'])
 
 def create_device(name, arg, default=None):
     if not arg:

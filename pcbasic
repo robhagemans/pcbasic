@@ -71,8 +71,6 @@ def main():
             args.resume = state.load()
         # choose the video and sound backends
         prepare_console(args)
-        # choose peripherals    
-        iolayer.prepare_devices(args)
         if not args.resume:    
             # print greeting
             if not args.run and not config.options['exec'] and not args.conv:
