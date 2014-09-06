@@ -12,36 +12,24 @@
 #
 # GW-BASIC is a trademark of Microsoft Corporation.
 
-import sys
 import os
-from functools import partial
-
-import plat
-
-# do we log to a file? 
-logfile = ''
-
 import logging
 
+import plat
 import config
 import run
 import error
 import oslayer
-import unicodepage
-import console
 import backend
-import novideo
-import backend_cli
+import console
 import sound
-import nosound
-import nopenstick
 import program
 import state
 import iolayer
 import var
 
-greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "@:INFO" for more.\r%d Bytes free\rOk\xff'
-
+# do we log to a file? 
+logfile = ''
 
 def main():
     """ Initialise and do operations or hand over to run module. """
@@ -50,16 +38,16 @@ def main():
     # logging setup
     prepare_logging()
     try:
+        # in convertor mode, convert and exit
+        if config.options['conv']:
+            convert()
+            raise error.Exit()
         # ignore resume option in converter mode
         if config.options['resume'] and not config.options['conv']:
             # resume from saved emulator state
             resume = state.load()
         # choose the video and sound backends
         prepare_console()
-        # in convertor mode, convert and exit
-        if config.options['conv']:
-            convert()
-            raise error.Exit()
         # ignore load and run options in resume mode    
         if not resume:    
             # print greeting
@@ -99,7 +87,8 @@ def prepare_logging():
     if config.options['debug']:
         logging.basicConfig(format=formatstr, level=logging.DEBUG)
     elif logfile:
-        logging.basicConfig(format=formatstr, filename=os.path.join(plat.info_dir, logfile))
+        logging.basicConfig(format=formatstr, 
+                            filename=os.path.join(plat.info_dir, logfile))
     else:
         logging.basicConfig(format=formatstr)
         
@@ -141,6 +130,13 @@ def convert():
         program.save(plat.stdout, mode)
 
 def print_greeting():
+    """ Print the greeting if we're not running a program. """
+    greeting = (
+        'PC-BASIC 3.23%s\r'
+        '(C) Copyright 2013, 2014 PC-BASIC authors. '
+        'Type RUN "@:INFO" for more.\r'
+        '%d Bytes free\r'
+        'Ok\xff')
     if (not config.options['run'] and
         not (config.options['program'] and not config.options['load']) and
         not config.options['exec']):
@@ -150,12 +146,8 @@ def print_greeting():
     
 def load_program():
     """ Load program from command line. """
-    # --load or --run without argument loads from stdin (e.g. pipe)
-    program_to_load = config.options['program']
-    if program_to_load:
+    if config.options['program']:
         program.load(oslayer.safe_open(program_to_load, "L", "R"))
-    elif config.options['load'] or config.options['run'] and plat.stdin:
-        program.load(plat.stdin)      
     
 def run_commands():
     """ Run commands or program from command line. """
