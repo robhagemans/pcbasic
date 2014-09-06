@@ -42,39 +42,35 @@ import var
 
 greeting = 'PC-BASIC 3.23%s\r(C) Copyright 2013, 2014 PC-BASIC authors. Type RUN "@:INFO" for more.\r%d Bytes free\rOk\xff'
 
+
 def main():
+    """ Initialise and do operations or hand over to run module. """
     reset = False
-    args = config.get_args()
+    resume = None
     # logging setup
     prepare_logging()
-    # setup affecting mode of operation
-    prepare_operation()
     try:
-        if args.resume:
+        # ignore resume option in converter mode
+        if config.options['resume'] and not config.options['conv']:
             # resume from saved emulator state
-            args.resume = state.load()
+            resume = state.load()
         # choose the video and sound backends
-        prepare_console(args)
-        if not args.resume:    
+        prepare_console()
+        # in convertor mode, convert and exit
+        if config.options['conv']:
+            convert()
+            raise error.Exit()
+        # ignore load and run options in resume mode    
+        if not resume:    
             # print greeting
-            if not args.run and not config.options['exec'] and not args.conv:
-                debugstr = ' [DEBUG mode]' if config.options['debug'] else ''
-                if plat.stdin_is_tty:
-                    console.write_line(greeting % (debugstr, var.total_mem))
-            # execute arguments
-            if args.run or args.load or args.conv and (args.program or stdin):
-                program.load(oslayer.safe_open(args.program, "L", "R") if args.program else stdin)
-            if args.conv and (args.outfile or stdout):
-                program.save(oslayer.safe_open(args.outfile, "S", "W") if args.outfile else stdout, args.conv_mode)
-                raise error.Exit()
-            if args.run:
-                config.options['exec'] = 'RUN'
-            if config.options['exec']:    
-                # start loop in execute mode
-                run.execute(config.options['exec'])
+            print_greeting()
+            # load any program    
+            load_program()
+            # run commands and programs
+            run_commands()
         # start the interpreter loop
         # and get out, if we ran with -q
-        run.loop(args.quit)
+        run.loop(config.options['quit'])
     except error.RunError as e:
         # errors during startup/conversion are handled here, then exit
         logging.error(error.get_message(e.err))
@@ -83,15 +79,17 @@ def main():
     except error.Reset:
         reset = True
     except KeyboardInterrupt:
-        if args.debug:
+        if config.options['debug']:
             raise
     finally:
+        # do not save state if converting, delete state if resetting 
         if reset:
             state.delete()
-        else:   
+        elif not config.options['conv']:   
             state.save()
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
-        console.close()
+        if backend.video:
+            backend.video.close()
         iolayer.close_all()
         iolayer.close_devices()
             
@@ -105,28 +103,8 @@ def prepare_logging():
     else:
         logging.basicConfig(format=formatstr)
         
-def prepare_operation():
-    # implied RUN invocations
-    if config.options['program'] and not config.options['load'] and not config.options['conv']:
-        config.options['run'] = True   
-    # set conversion output; first arg, if given, is mode; second arg, if given, is outfile
-    config.options['conv_mode'] = 'A'
-    config.options['outfile'] = ''
-    conv = config.options['conv']
-    if conv:
-        conv = conv.split(':')
-        try:
-            config.options['conv_mode'] = conv.pop(0)
-            config.options['outfile'] = conv.pop(0)
-        except IndexError:
-            pass    
-        config.options['conv'] = True    
-    # keep uppercase first letter    
-    if config.options['conv_mode']:
-        config.options['conv_mode'] = config.options['conv_mode'][0].upper() 
-
-    
-def prepare_console(args):
+def prepare_console():
+    """ Initialise backend and console. """
     # initialise video backend before console
     if not backend.init_video() or not console.init():
         backend.video.close()
@@ -134,10 +112,61 @@ def prepare_console(args):
         raise error.Exit()
     if not backend.init_sound() or not sound.init_sound():
         logging.warning('Failed to initialise sound. Sound will be disabled.')
-    # need to call explicitly to run after console.prepare(), because of circular imports
+    # need to call explicitly to run after console.prepare(), 
+    # because of circular imports
     import redirect
     redirect.prepare()    
 
+def convert():
+    """ Perform file format conversion. """
+    # set conversion output 
+    # first arg, if given, is mode; second arg, if given, is outfile
+    outfile = ''
+    conv = config.options['conv'].split(':')
+    try:
+        mode = conv.pop(0)
+        outfile = conv.pop(0)
+    except IndexError:
+        pass    
+    # keep uppercase first letter    
+    mode = mode[0].upper() if mode else 'A'
+    # load & save in different format
+    if config.options['program']:
+        program.load(oslayer.safe_open(config.options['program'], "L", "R"))
+    elif plat.stdin:
+        program.load(plat.stdin)      
+    if outfile:
+        program.save(oslayer.safe_open(outfile, "S", "W"), mode)
+    elif plat.stdout:
+        program.save(plat.stdout, mode)
+
+def print_greeting():
+    if (not config.options['run'] and
+        not (config.options['program'] and not config.options['load']) and
+        not config.options['exec']):
+        debugstr = ' [DEBUG mode]' if config.options['debug'] else ''
+        if plat.stdin_is_tty:
+            console.write_line(greeting % (debugstr, var.total_mem))
+    
+def load_program():
+    """ Load program from command line. """
+    # --load or --run without argument loads from stdin (e.g. pipe)
+    program_to_load = config.options['program']
+    if program_to_load:
+        program.load(oslayer.safe_open(program_to_load, "L", "R"))
+    elif config.options['load'] or config.options['run'] and plat.stdin:
+        program.load(plat.stdin)      
+    
+def run_commands():
+    """ Run commands or program from command line. """
+    command = config.options['exec']
+    if (config.options['run'] or 
+            (config.options['program'] and not config.options['load'])): 
+        command = 'RUN'
+    if command:    
+        run.execute(command)
+            
+            
 if __name__ == "__main__":
     main()
         

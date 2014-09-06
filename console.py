@@ -415,11 +415,6 @@ def copy_page(src, dst):
         dstrow.wrap = srcrow.wrap            
     backend.video.copy_page(src, dst)
     
-# sort out the terminal, close the window, etc
-def close():
-    if backend.video:
-        backend.video.close()
-
 #############################
 
 def set_palette_entry(index, colour):
