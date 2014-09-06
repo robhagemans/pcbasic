@@ -25,6 +25,7 @@ import util
 import state
 import backend
 import serial_socket
+import var
 
 # file numbers
 state.io_state.files = {}
@@ -46,11 +47,6 @@ allowed_protocols = {
     'LPT': ('FILE', 'PRINTER', 'PARPORT'),
     'COM': ('PORT', 'SOCKET')
     }
-
-# first field buffer address 
-field_mem_start = 3757 + 188 # 3945
-# bytes distance between field buffers
-field_mem_offset = 188 + max_reclen # FIXME: this won't be updated with max_reclen
 
 # GW-BASIC FILE CONTROL BLOCK structure:
 # source: IBM Basic reference 1982 (for BASIC-C, BASIC-D, BASIC-A) appendix I-5
@@ -424,7 +420,7 @@ class RandomBase(BaseFile):
             self.field = bytearray()
             state.io_state.fields[self.number] = self.field
         if self.number > 0:    
-            self.field_address = field_mem_start + (self.number-1)*field_mem_offset
+            self.field_address = var.field_mem_start + (self.number-1)*var.field_mem_offset
         else:
             self.field_address = -1    
         self.field[:] = bytearray('\x00')*reclen

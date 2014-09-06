@@ -14,8 +14,6 @@ from operator import itemgetter
 import error
 import vartypes
 import state
-# for field_mem_start, field_mem_offset
-import iolayer
 
 byte_size = {'$': 3, '%': 2, '!': 4, '#': 8}
 
@@ -23,6 +21,13 @@ byte_size = {'$': 3, '%': 2, '!': 4, '#': 8}
 var_mem_start = 4720
 # 'free memory' as reported by FRE
 total_mem = 60300    
+
+
+# first field buffer address 
+field_mem_start = 3757 + 188 # 3945
+# bytes distance between field buffers
+field_mem_offset = 188 + 128 # FIXME - needs to update to 188+max_reclen from options
+
 
 class StringSpace(object):
     """ String space is a table of strings accessible by their 2-byte pointers. """
@@ -78,12 +83,12 @@ def get_string_copy_packed(sequence):
         return state.basic_state.strings.copy_packed(sequence)
     else: 
         # string is stored in code space or field buffers
-        if address < iolayer.field_mem_start:
+        if address < field_mem_start:
             return vartypes.pack_string('\0' * length)
         # find the file we're in
-        start = address - iolayer.field_mem_start
-        number = 1 + start // iolayer.field_mem_offset
-        offset = start % iolayer.field_mem_offset
+        start = address - field_mem_start
+        number = 1 + start // field_mem_offset
+        offset = start % field_mem_offset
         try:
             return vartypes.pack_string(state.io_state.fields[number][offset:offset+length])
         except KeyError, IndexError:
