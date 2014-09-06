@@ -63,8 +63,10 @@ def main():
     args = config.get_args()
     # logging setup
     prepare_logging()
-    # other command-line settings
-    prepare_constants(args)
+    # setup affecting mode of operation
+    prepare_operation()
+    # set console capabilities before loading state
+    pre_prepare_console(args)
     try:
         if args.resume or plat.system == 'Android':
             # resume from saved emulator state
@@ -75,7 +77,7 @@ def main():
         iolayer.prepare_devices(args)
         if not args.resume:    
             # print greeting
-            if not args.run and not args.cmd and not args.conv:
+            if not args.run and not config.options['exec'] and not args.conv:
                 debugstr = ' [DEBUG mode]' if config.options['debug'] else ''
                 if stdin_is_tty:
                     console.write_line(greeting % (debugstr, var.total_mem))
@@ -86,10 +88,10 @@ def main():
                 program.save(oslayer.safe_open(args.outfile, "S", "W") if args.outfile else stdout, args.conv_mode)
                 raise error.Exit()
             if args.run:
-                args.cmd = 'RUN'
-            if args.cmd:    
+                config.options['exec'] = 'RUN'
+            if config.options['exec']:    
                 # start loop in execute mode
-                run.execute(args.cmd)
+                run.execute(config.options['exec'])
         # start the interpreter loop
         # and get out, if we ran with -q
         run.loop(args.quit)
@@ -123,31 +125,27 @@ def prepare_logging():
     else:
         logging.basicConfig(format=formatstr)
         
-def prepare_constants(args):
+def prepare_operation():
     # implied RUN invocations
-    if args.program and not args.load and not args.conv:
-        args.run = True   
-    # rename exec argument for convenience
-    try:
-        args.cmd = getattr(args, 'exec') 
-    except AttributeError:
-        args.cmd = ''    
-    if not args.cmd:
-        args.cmd = ''   
+    if config.options['program'] and not config.options['load'] and not config.options['conv']:
+        config.options['run'] = True   
     # set conversion output; first arg, if given, is mode; second arg, if given, is outfile
-    args.conv_mode = 'A'
-    args.outfile = None
-    if args.conv:
-        args.conv = args.conv.split(':')
+    config.options['conv_mode'] = 'A'
+    config.options['outfile'] = ''
+    conv = config.options['conv']
+    if conv:
+        conv = conv.split(':')
         try:
-            args.conv_mode = args.conv.pop(0)
-            args.outfile = args.conv.pop(0)
+            config.options['conv_mode'] = conv.pop(0)
+            config.options['outfile'] = conv.pop(0)
         except IndexError:
             pass    
-        args.conv = True    
-    if args.conv_mode:
-        args.conv_mode = args.conv_mode[0].upper() 
-    
+        config.options['conv'] = True    
+    # keep uppercase first letter    
+    if config.options['conv_mode']:
+        config.options['conv_mode'] = config.options['conv_mode'][0].upper() 
+
+def pre_prepare_console(args):    
     if args.video:
         console.video_capabilities = args.video[0]
         if args.video[0] == 'ega':
