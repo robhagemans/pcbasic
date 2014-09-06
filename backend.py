@@ -18,7 +18,7 @@ import novideo
 import nosound
 import nopenstick
 import backend_cli
-import backend_ansi
+import backend_curses
 import backend_pygame
 import sound_beep
     
@@ -42,7 +42,7 @@ def prepare():
         video = backend_cli
         sound = sound_beep
     elif config.options['ansi'] and plat.stdout_is_tty:
-        video = backend_ansi
+        video = backend_curses
         sound = sound_beep
     else:   
         video = backend_pygame   
