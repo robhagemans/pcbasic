@@ -121,3 +121,5 @@ def watch(expr):
     outs = tokenise.tokenise_line('?'+expr) 
     watch_list.append((expr, outs))
 
+prepare()
+
