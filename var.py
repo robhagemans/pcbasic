@@ -142,19 +142,22 @@ def swap_var(name1, index1, name2, index2):
     if name1[-1] != name2[-1]:
         # type mismatch
         raise error.RunError(13)
-    elif (name1 not in state.basic_state.variables and name1 not in state.basic_state.arrays) or (name2 not in state.basic_state.variables and name2 not in state.basic_state.arrays):
+    elif ((index1 == [] and name1 not in state.basic_state.variables) or 
+            (index1 != [] and name1 not in state.basic_state.arrays) or 
+            (index2 == [] and name2 not in state.basic_state.variables) or
+            (index2 != [] and name2 not in state.basic_state.arrays)):
         # illegal function call
         raise error.RunError(5)
     typechar = name1[-1]
     if typechar != '$':
         size = byte_size[typechar]
         # get pointers
-        if name1 in state.basic_state.variables:
+        if index1 == []:
             p1, off1 = state.basic_state.variables[name1], 0
         else:
             dimensions, p1, _ = state.basic_state.arrays[name1]
             off1 = index_array(index1, dimensions)*size
-        if name2 in state.basic_state.variables:
+        if index2 == []:
             p2, off2 = state.basic_state.variables[name2], 0
         else:
             dimensions, p2, _ = state.basic_state.arrays[name2]
@@ -163,13 +166,13 @@ def swap_var(name1, index1, name2, index2):
         p1[off1:off1+size], p2[off2:off2+size] =  p2[off2:off2+size], p1[off1:off1+size]  
     else:
         # strings are pointer-swapped
-        if name1 in state.basic_state.variables:
+        if index1 == []:
             list1 = state.basic_state.variables
             key1 = name1
         else:
             dimensions, list1, _ = state.basic_state.arrays[name1]
             key1 = index_array(index1, dimensions)
-        if name2 in state.basic_state.variables:
+        if index2 == []:
             list2 = state.basic_state.variables
             key2 = name2
         else:
