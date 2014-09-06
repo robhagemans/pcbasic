@@ -144,11 +144,11 @@ def get_args():
     # set arguments
     for argname in arguments:
         kwparms = {} 
-        for n in ['acrion', 'help', 'choices', 'metavar', 'nargs']:
+        for n in ['action', 'help', 'choices', 'metavar', 'nargs']:
             try:
-                kwparms[n] = arguments[n]            
+                kwparms[n] = arguments[argname][n]            
             except KeyError:
-                pass    
+                pass  
         parms = ['--' + argname ]
         # add short options
         try:
