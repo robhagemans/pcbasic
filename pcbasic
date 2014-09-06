@@ -147,7 +147,7 @@ def print_greeting():
 def load_program():
     """ Load program from command line. """
     if config.options['program']:
-        program.load(oslayer.safe_open(program_to_load, "L", "R"))
+        program.load(oslayer.safe_open(config.options['program'], "L", "R"))
     
 def run_commands():
     """ Run commands or program from command line. """

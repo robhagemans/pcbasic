@@ -19,7 +19,7 @@ try:
 except ImportError:
     try:
         import unicurses as curses
-    excpet ImportError:
+    except ImportError:
         curses = None
         
 import unicodepage
