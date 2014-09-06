@@ -48,7 +48,9 @@ def prepare():
         video = backend_pygame   
         penstick = backend_pygame
         sound = backend_pygame
-
+    if config.options['nosound']:
+        sound = nosound
+            
 def init_video():
     global video
     name = ''
@@ -63,6 +65,14 @@ def init_video():
     logging.warning('Failed to initialise command-line interface. Falling back to filter interface.')
     video = novideo
     return video.init()
+    
+def init_sound():
+    global sound
+    if sound.init_sound():
+        return True
+    logging.warning('Failed to initialise sound. Sound will be disabled.')
+    sound = nosound
+    return sound.init_sound()
     
 def check_events():
     # manage sound queue

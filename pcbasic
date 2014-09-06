@@ -134,12 +134,9 @@ def prepare_console(args):
         backend.video.close()
         logging.error('Failed to initialise interface. Exiting.')
         raise error.Exit()
-    # sound fallback        
-    if args.nosound:
-        backend.sound = nosound
-    if not sound.init_sound():
+    if not backend.init_sound() or not sound.init_sound():
         logging.warning('Failed to initialise sound. Sound will be disabled.')
-        backend.sound = nosound
+        
     # gwbasic-style redirected output is split between graphical screen and redirected file    
     if args.output:
         redirect.set_output(oslayer.safe_open(args.output[0], "S", "W"))
