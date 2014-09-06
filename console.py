@@ -179,10 +179,15 @@ cga_palettes = [cga_palette_0, cga_palette_1]
 # default font family
 font_families = ['unifont', 'univga', 'freedos']
 fonts = {}
+        
+#############################
+# init
 
 def prepare():
     """ Initialise console module. """
-    global video_capabilities, cga_palette_0, cga_palette_1, cga_palette_5, cga_palettes, font_families
+    global video_capabilities, font_families
+    global cga_palette_0, cga_palette_1, cga_palette_5, cga_palettes
+    global ignore_caps
     if config.options['video']:
         video_capabilities = config.options['video']
     if video_capabilities == 'ega':
@@ -198,9 +203,14 @@ def prepare():
         state.console_state.keys_visible = False
     for mode in mode_data_default:
         mode_data[mode] = mode_data_default[mode]
-        
-#############################
-# init
+    if config.options['capture_caps']:
+        ignore_caps = False
+    for u in config.options['keys'].decode('string_escape').decode('utf-8'):
+        c = u.encode('utf-8')
+        try:
+            state.console_state.keybuf += unicodepage.from_utf8(c)
+        except KeyError:
+            state.console_state.keybuf += c
 
 def init():
     global cga_palettes, fonts, mode_data

@@ -58,7 +58,7 @@ arguments = {
     'graphical':        { 'type':'bool','action':'store_true', 'help':'Use graphical interface. This is the normal default; use to override when redirecting i/o.' },
     'load':             { 'type':'bool','action':'store_true', 'help':'Load in_file only, do not execute' },
     'run':              { 'type':'bool','action':'store_true', 'help':'Execute input file (default if in_file given)' },
-    'keys':             { 'metavar':'keystring', 'help':'Insert keys into the key buffer' },
+    'keys':             { 'type': 'string', 'metavar':'keystring', 'help':'Insert keys into the key buffer' },
     'exec':             { 'metavar':'command_line', 'help':'Execute BASIC command line' },
     'quit':             { 'type':'bool','action':'store_true', 'help':'Quit interpreter when execution stops' },
     'double':           { 'type':'bool','action':'store_true', 'help':'Allow double-precision math functions' },

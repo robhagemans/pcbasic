@@ -138,17 +138,6 @@ def prepare_console(args):
     import redirect
     redirect.prepare()    
 
-    if args.capture_caps:
-        console.ignore_caps = False
-    if args.keys:
-        for u in args.keys.decode('string_escape').decode('utf-8'):
-            c = u.encode('utf-8')
-            try:
-                state.console_state.keybuf += unicodepage.from_utf8(c)
-            except KeyError:
-                state.console_state.keybuf += c
-                
-
 if __name__ == "__main__":
     main()
         
