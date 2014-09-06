@@ -29,9 +29,11 @@ config_file = 'PCBASIC.INI'
 default_presets = ['pcbasic', plat.system.lower()]
 
 # get supported codepages
-encodings = sorted([ x[0] for x in [ c.split('.ucp') for c in os.listdir(plat.encoding_dir) ] if len(x)>1])
+encodings = sorted([ x[0] for x in [ c.split('.ucp') 
+                     for c in os.listdir(plat.encoding_dir) ] if len(x)>1])
 # get supported font families
-families = sorted(list(set([ x[0] for x in [ c.split('_') for c in os.listdir(plat.font_dir) ] if len(x)>1])))
+families = sorted(list(set([ x[0] for x in [ c.split('_') 
+                  for c in os.listdir(plat.font_dir) ] if len(x)>1])))
 
 # dictionary to hold all options chosen
 options = {}
@@ -41,69 +43,192 @@ description = (
     'PC-BASIC 3.23 interpreter. '
     'If no options are present, the interpreter will run in interactive mode.')
 
-
 # GWBASIC invocation, for reference:
-# GWBASIC [filename] [<stdin] [[>]>stdout] [/f:n] [/i] [/s:n] [/c:n] [/m:[n][,n]] [/d]
-#   /d      Allow double-precision ATN, COS, EXP, LOG, SIN, SQR, and TAN. Implemented as -d or --double. 
-#   /f:n    set maximum number of open files to n. Default is 3. Each additional file reduces free memory by 322 bytes.
-#   /s:n    sets the maximum record length for RANDOM files. Default is 128, maximum is 32768.
-#   /c:n    sets the COM receive buffer to n bytes. If n==0, disable the COM ports.   
+# GWBASIC [prog] [<inp] [[>]>outp] [/f:n] [/i] [/s:n] [/c:n] [/m:[n][,n]] [/d]
+#   /d      Allow double-precision ATN, COS, EXP, LOG, SIN, SQR, and TAN. 
+#   /f:n    Set maximum number of open files to n. Default is 3. 
+#           Each additional file reduces free memory by 322 bytes.
+#   /s:n    Set the maximum record length for RANDOM files. 
+#           Default is 128, maximum is 32768.
+#   /c:n    Set the COM receive buffer to n bytes. 
+#           If n==0, disable the COM ports.   
 # NOT IMPLEMENTED:
-#   /i      statically allocate file control blocks and data buffer.
-#   /m:n,m  sets the highest memory location to n and maximum block size to m
-gw_args = { 'double':'d', 'max_files':'f', 'max_reclen':'s', 'serial_in_size':'c' } # 'max_memory':'m', 'static_fcbs':'i'
-
+#   /i      Statically allocate file control blocks and data buffer.
+#   /m:n,m  Set the highest memory location to n and maximum block size to m
+gw_args = { 
+    'double': 'd', 'max_files': 'f', 'max_reclen': 's', 'serial_in_size': 'c' 
+    # 'max_memory': 'm', 'static_fcbs': 'i'
+    }
+    
 # short-form arguments with single dash
-short_args = { 'cli':'b', 'ansi':'t', 'graphical':'g', 'load':'l', 'run':'r', 'exec':'e', 'quit':'q', 'keys':'k' }
+short_args = { 
+    'cli': 'b', 'ansi': 't', 'graphical': 'g', 'load': 'l', 
+    'run': 'r', 'exec': 'e', 'quit': 'q', 'keys': 'k' 
+    }
 
 # all long-form arguments
 arguments = {
-#    'program':  { 'metavar':'basic_program', 'nargs':'?', 'help':'Input program file to run (default), load or convert.' },
-    'input':            { 'type':'string', 'action':'store', 'metavar':'input_file', 'help':'Retrieve keyboard input from input_file, except if KYBD: is read explicitly.' },
-    'output':           { 'type':'string', 'action':'store', 'metavar':'output_file', 'help':'Send screen output to output_file, except if SCRN: is written to explicitly.' },
-    'filter':           { 'type':'bool','action':'store_true', 'help':'Use text filter interface. This is the default if redirecting input.' },
-    'cli':              { 'type':'bool','action':'store_true', 'help':'Use command-line text interface' },
-    'ansi':             { 'type':'bool','action':'store_true', 'help':'Use ANSI text interface' },
-    'graphical':        { 'type':'bool','action':'store_true', 'help':'Use graphical interface. This is the normal default; use to override when redirecting i/o.' },
-    'load':             { 'type':'bool','action':'store_true', 'help':'Load in_file only, do not execute' },
-    'run':              { 'type':'bool','action':'store_true', 'help':'Execute input file (default if in_file given)' },
-    'keys':             { 'type': 'string', 'metavar':'keystring', 'help':'Insert keys into the key buffer' },
-    'exec':             { 'type': 'string', 'metavar':'command_line', 'help':'Execute BASIC command line' },
-    'quit':             { 'type':'bool','action':'store_true', 'help':'Quit interpreter when execution stops' },
-    'double':           { 'type':'bool','action':'store_true', 'help':'Allow double-precision math functions' },
-    'max_files':        { 'type':'int', 'action':'store', 'metavar':'NUMBER', 'help':'Set maximum number of open files (default is 3).' },
-    'max_reclen':       { 'type':'int', 'action':'store', 'metavar':'NUMBER', 'help':'Set maximum record length for RANDOM files (default is 128, max is 32767).' },
-    'serial_in_size':   { 'type':'int', 'action':'store', 'metavar':'NUMBER', 'help':'Set serial input buffer size (default is 256). If 0, serial communications are disabled.' },
-    'peek':             { 'type':'list', 'action':'store', 'nargs':'*', 'metavar':'SEG:ADDR:VAL', 'help':'Define PEEK preset values' },
-    'lpt1':             { 'type': 'string','action':'store', 'metavar':'TYPE:VAL', 'help':'Set LPT1: to FILE:file_name or PRINTER:printer_name.' },
-    'lpt2':             { 'type': 'string','action':'store', 'metavar':'TYPE:VAL', 'help':'Set LPT2: to FILE:file_name or PRINTER:printer_name.' },
-    'lpt3':             { 'type': 'string','action':'store', 'metavar':'TYPE:VAL', 'help':'Set LPT3: to FILE:file_name or PRINTER:printer_name.' },
-    'com1':             { 'type': 'string','action':'store', 'metavar':'TYPE:VAL', 'help':'Set COM1: to PORT:device_name or SOCKET:host:socket.' },
-    'com2':             { 'type': 'string', 'action':'store', 'metavar':'TYPE:VAL', 'help':'Set COM2: to PORT:device_name or SOCKET:host:socket.' },
-    'conv':             { 'type': 'string', 'action':'store', 'metavar':'mode:outfile', 'help':'Convert basic_program to (A)SCII, (B)ytecode or (P)rotected mode.' },
-    'codepage':         { 'type':'string', 'action':'store', 'choices':encodings, 'help':'Load specified font codepage; default is 437' },
-    'font':             { 'type':'list', 'action':'append', 'nargs':'*', 'choices':families, 'help':'Load current codepage from specified .hex fonts. Last fonts specified take precedent, previous ones are fallback. Default is unifont,univga,freedos.' },
-    'nosound':          { 'type':'bool', 'action':'store_true', 'help':'Disable sound output' },
-    'dimensions':       { 'type':'string', 'metavar':'X,Y', 'help':'Set pixel dimensions for graphics mode. Default is 640,480. Use 640,400 or multiples for cleaner pixels - but incorrect aspect ratio - on square-pixel LCDs. Graphical interface only.' },
-    'dimensions_text':  { 'type':'string', 'metavar':'X,Y', 'help':'Set pixel dimensions for text mode. Default is 640,400. Graphical interface only.' },
-    'fullscreen':       { 'type':'bool','action':'store_true', 'help':'Fullscreen mode. This is unlikely to have either the correct aspect ratio or clean square pixels, but it does take up the whole screen. Graphical interface only.' },
-    'smooth':           { 'type':'bool','action':'store_true', 'help':'Use smooth display scaling. Graphical interface only.' },
-    'noquit':           { 'type':'bool','action':'store_true', 'help':'Allow BASIC to capture <ALT+F4>. Graphical interface only.' },
-    'debug':            { 'type':'bool','action':'store_true', 'help':'Enable DEBUG keyword' },
-    'strict_hidden_lines':{ 'type':'bool', 'action':'store_true', 'help':'Disable listing and ASCII saving of lines beyond 65530 (as in GW-BASIC). Use with care as this allows execution of unseen statements.' },
-    'strict_protect':   { 'type':'bool', 'action':'store_true', 'help':'Disable listing and ASCII saving of protected files (as in GW-BASIC). Use with care as this allows execution of unseen statements.' },
-    'capture_caps':     { 'type':'bool','action':'store_true', 'help':"Handle CAPS LOCK; may collide with the operating system's own handling." },
-    'mount':            { 'type':'list', 'action':'append', 'nargs':'*', 'metavar':'D:PATH', 'help':'Set a drive letter to PATH.' },
-    'resume':           { 'type':'bool','action':'store_true', 'help':'Resume from saved state. Most other arguments are ignored.' },
-    'strict_newline':   { 'type':'bool', 'action':'store_true', 'help':'Parse CR and LF strictly like GW-BASIC. May create problems with UNIX line endings.' },
-    'pcjr_syntax':      { 'type':'string', 'action':'store', 'choices':('pcjr', 'tandy'), 'help':'Enable PCjr/Tandy 1000 syntax extensions' },
-    'pcjr_term':        { 'type':'string', 'action':'store', 'metavar':'TERM.BAS', 'help':'Set the program run by the PCjr TERM command' },
-    'video':            { 'type':'string','action':'store', 'choices':('ega', 'cga', 'cga_old', 'pcjr', 'tandy'), 'help':'Set video capabilities' },
-    'windows_map_drives':{ 'type':'bool', 'action':'store_true', 'help':'Map all Windows drive letters to PC-BASIC drive letters (Windows only)' },
-    'cga_low':          { 'type':'bool','action':'store_true', 'help':'Use low-intensity palettes in CGA (for --video={cga,ega} only).' },
-    'composite':        { 'type':'bool','action':'store_true', 'help':'Emulates the output on an NTSC composite monitor. Disables smooth scaling. Enables colour artifacts on SCREEN 2 only (and crudely). For --video={cga,cga_old,pcjr,tandy} only.' },
-    'nobox':            { 'type':'bool','action':'store_true', 'help':'Disable box-drawing recognition for DBCS code pages' },
-    'utf8':             { 'type':'bool', 'action':'store_true', 'help':'Load and save "ascii" files as UTF-8.' },
+    'input':   {
+        'type': 'string', 'metavar': 'input_file', 
+        'help': 'Retrieve keyboard input from input_file, '
+                'except if KYBD: is read explicitly.' },
+    'output':  {
+        'type': 'string', 'metavar': 'output_file', 
+        'help': 'Send screen output to output_file, '
+                'except if SCRN: is written to explicitly.' },
+    'filter':  {
+        'type': 'bool',  
+        'help': 'Use text filter interface. '
+                'This is the default if redirecting input.' },
+    'cli': {
+        'type': 'bool', 
+        'help': 'Use command-line text interface' },
+    'ansi': {
+        'type': 'bool',
+        'help': 'Use ANSI text interface' },
+    'graphical': { 
+        'type': 'bool',
+        'help': 'Use graphical interface. This is the normal default; '
+                'use to override when redirecting i/o.' },
+    'load': {
+        'type': 'bool',
+        'help': 'Load in_file only, do not execute' },
+    'run': {
+        'type': 'bool',
+        'help': 'Execute input file (default if in_file given)' },
+    'keys': {
+        'type': 'string', 'metavar':'keystring', 
+        'help': 'Insert keys into the key buffer' },
+    'exec': {
+        'type': 'string', 'metavar': 'command_line', 
+        'help': 'Execute BASIC command line' },
+    'quit': {
+        'type': 'bool', 
+        'help': 'Quit interpreter when execution stops' },
+    'double': {
+        'type': 'bool',
+        'help': 'Allow double-precision transcendental math functions' },
+    'max_files': {
+        'type': 'int', 'metavar':'NUMBER', 
+        'help': 'Set maximum number of open files (default is 3).' },
+    'max_reclen': { 
+        'type': 'int', 'metavar':'NUMBER', 
+        'help': 'Set maximum record length for RANDOM files ' 
+                '(default is 128, max is 32767).' },
+    'serial_in_size': { 
+        'type': 'int', 'metavar':'NUMBER', 
+        'help': 'Set serial input buffer size (default is 256). '
+                'If 0, serial communications are disabled.' },
+    'peek': { 
+        'type': 'list', 'metavar':'SEG:ADDR:VAL', 
+        'help': 'Define PEEK preset values' },
+    'lpt1': { 
+        'type': 'string', 'metavar':'TYPE:VAL', 
+        'help': 'Set LPT1: to FILE:file_name or PRINTER:printer_name.' },
+    'lpt2': { 
+        'type': 'string', 'metavar':'TYPE:VAL', 
+        'help': 'Set LPT2: to FILE:file_name or PRINTER:printer_name.' },
+    'lpt3': { 
+        'type': 'string', 'metavar':'TYPE:VAL', 
+        'help': 'Set LPT3: to FILE:file_name or PRINTER:printer_name.' },
+    'com1': { 
+        'type': 'string', 'metavar':'TYPE:VAL', 
+        'help': 'Set COM1: to PORT:device_name or SOCKET:host:socket.' },
+    'com2': { 
+        'type': 'string', 'metavar':'TYPE:VAL', 
+        'help': 'Set COM2: to PORT:device_name or SOCKET:host:socket.' },
+    'conv': { 
+        'type': 'string', 'metavar':'mode:outfile', 
+        'help': 'Convert basic_program to (A)SCII, (B)ytecode or '
+                '(P)rotected mode.' },
+    'codepage': { 
+        'type': 'string', 'choices': encodings, 
+        'help': 'Load specified font codepage; default is 437' },
+    'font': { 
+        'type': 'list', 'choices': families, 
+        'help': 'Load current codepage from specified .hex fonts. '
+                'Last fonts specified take precedence, previous ones are '
+                'fallback. Default is unifont,univga,freedos.' },
+    'nosound': { 
+        'type': 'bool', 
+        'help': 'Disable sound output' },
+    'dimensions': { 
+        'type': 'string', 'metavar':'X,Y', 
+        'help': 'Set pixel dimensions for graphics mode. Default is 640,480. '
+                'Use 640,400 or multiples for cleaner pixels - but incorrect '
+                'aspect ratio - on square-pixel LCDs. '
+                'Graphical interface only.' },
+    'dimensions_text':  { 
+        'type': 'string', 'metavar':'X,Y', 
+        'help': 'Set pixel dimensions for text mode. Default is 640,400. '
+                'Graphical interface only.' },
+    'fullscreen': { 
+        'type': 'bool',
+        'help': 'Fullscreen mode. This is unlikely to have either the correct '
+                'aspect ratio or clean square pixels, but it does take up the '
+                'whole screen. Graphical interface only.' },
+    'smooth': { 
+        'type': 'bool',
+        'help': 'Use smooth display scaling. Graphical interface only.' },
+    'noquit': { 
+        'type': 'bool',
+        'help': 'Allow BASIC to capture <ALT+F4>. Graphical interface only.' },
+    'debug': { 
+        'type': 'bool',
+        'help': 'Debugging mode.' },
+    'strict_hidden_lines': { 
+        'type': 'bool', 
+        'help': 'Disable listing and ASCII saving of lines beyond 65530 '
+                '(as in GW-BASIC). Use with care as this allows execution '
+                'of invisible statements.' },
+    'strict_protect': { 
+        'type': 'bool', 
+        'help': 'Disable listing and ASCII saving of protected files '
+                '(as in GW-BASIC). Use with care as this allows execution '
+                'of invisible statements.' },
+    'capture_caps': {
+        'type': 'bool',
+        'help': "Handle CAPS LOCK; may collide with the operating system's "
+                "own handling." },
+    'mount': { 
+        'type': 'list', 'metavar':'D:PATH', 
+        'help': 'Assign a drive letter to a path.' },
+    'resume': { 
+        'type': 'bool', 
+        'help': 'Resume from saved state. Most other arguments are ignored.' },
+    'strict_newline': { 
+        'type': 'bool', 
+        'help': 'Parse CR and LF in files strictly like GW-BASIC. '
+                'On Unix, you will need to convert your files to DOS text '
+                'if using this.' },
+    'pcjr_syntax': { 
+        'type': 'string', 'choices': ('pcjr', 'tandy'), 
+        'help': 'Enable PCjr/Tandy 1000 syntax extensions' },
+    'pcjr_term': { 
+        'type': 'string', 'metavar': 'TERM.BAS', 
+        'help': 'Set the terminal program run by the PCjr TERM command' },
+    'video': { 
+        'type': 'string', 'choices': ('ega', 'cga', 'cga_old', 'pcjr', 'tandy'), 
+        'help': 'Set video capabilities' },
+    'windows_map_drives': { 
+        'type': 'bool', 
+        'help': 'Map all Windows drive letters to PC-BASIC drive letters '
+                '(Windows only)' },
+    'cga_low': { 
+        'type': 'bool', 
+        'help': 'Use low-intensity palettes in CGA '
+                '(for --video={cga,ega} only).' },
+    'composite': { 
+        'type': 'bool', 
+        'help': 'Emulates the output on an NTSC composite monitor. Disables '
+                'smooth scaling. Enables colour artifacts on SCREEN 2 only '
+                '(and crudely). Ignored for --video=ega' },
+    'nobox': { 
+        'type': 'bool', 
+        'help': 'Disable box-drawing recognition for DBCS code pages' },
+    'utf8': { 
+        'type': 'bool', 
+        'help': 'Use UTF-8 for ascii-mode programs and redirected i/o' },
 }
 
 def prepare():
@@ -162,11 +287,18 @@ def read_args(conf_dict):
     # set arguments
     for argname in arguments:
         kwparms = {} 
-        for n in ['action', 'help', 'choices', 'metavar', 'nargs']:
+        for n in ['help', 'choices', 'metavar']:
             try:
                 kwparms[n] = arguments[argname][n]            
             except KeyError:
                 pass  
+        if arguments[argname]['type'] in ('int', 'string'):
+            kwparms['action'] = 'store'
+        elif arguments[argname]['type'] == 'bool':
+            kwparms['action'] = 'store_true'
+        elif arguments[argname]['type'] == 'list':
+            kwparms['action'] = 'append'
+            kwparms['nargs'] = '*'
         parms = ['--' + argname ]
         # add short options
         try:
@@ -195,7 +327,6 @@ def read_args(conf_dict):
         # parse int parameters
         if (arguments[d]['type'] == 'int' and d in args):
             args[d] = parse_int_arg(args[d])
-    print args
     return args
 
 ################################################
