@@ -22,7 +22,7 @@ except ImportError:
         system = 'OSX'
     else:
         # Everything else. Assume it's a Unix.            
-        system = 'Unix'
+        system = 'Unknown_OS'
 
 # get basepath (__file__ is undefined in pyinstaller packages)
 import sys
