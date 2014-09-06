@@ -181,7 +181,7 @@ fonts = {}
 
 def prepare():
     """ Initialise console module. """
-    global video_capabilities, cga_palette_0, cga_palette_1, cga_palette_5, cga_palettes
+    global video_capabilities, cga_palette_0, cga_palette_1, cga_palette_5, cga_palettes, font_families
     if config.options['video']:
         video_capabilities = config.options['video']
     if video_capabilities == 'ega':
@@ -191,6 +191,10 @@ def prepare():
         cga_palette_1 = cga_palette_1_lo
         cga_palette_5 = cga_palette_5_lo
         cga_palettes = [cga_palette_0, cga_palette_1]
+    if config.options['font']:
+        font_families = config.options['font']
+    if config.options['run']:
+        state.console_state.keys_visible = False
 
 #############################
 # init

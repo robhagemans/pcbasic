@@ -35,6 +35,7 @@ else:
 import logging
 import os
 
+import config
 import error
 import unicodepage 
 import console
@@ -115,7 +116,7 @@ if pygame:
 
     # screen width and height in pixels
     display_size = (640, 480)
-    display_size_text = (console.mode_data[0][7]*console.mode_data[0][4], console.mode_data[0][0]*25)
+    display_size_text = (640, 480)
     
     fullscreen = False
     smooth = False
@@ -259,27 +260,23 @@ if pygame:
 ####################################            
 # set constants based on commandline arguments
 
-def prepare(args):
+def prepare():
     global fullscreen, smooth, noquit, display_size, display_size_text, composite_monitor
     try:
-        x, y = args.dimensions[0].split(',')
+        x, y = config.options['dimensions'].split(',')
         display_size = (int(x), int(y))
     except (ValueError, TypeError):
         pass    
     try:
-        x, y = args.dimensions_text[0].split(',')
+        x, y = config.options['dimensions_text'].split(',')
         display_size_text = (int(x), int(y))
     except (ValueError, TypeError):
         pass    
-    if args.fullscreen:
-        fullscreen = True
-    if args.smooth:
-        smooth = True    
-    if args.noquit:
-        noquit = True
-    if args.composite:
-        composite_monitor = True
-    if args.video[0] == 'tandy':
+    fullscreen = config.options['fullscreen']
+    smooth = config.options['smooth']    
+    noquit = config.options['noquit']
+    composite_monitor = config.options['composite']
+    if config.options['video'] == 'tandy':
         # enable tandy F11, F12
         # TODO: tandy scancodes are defined for many more keys than PC, e.g. ctrl+F5 and friends; check pcjr too
         keycode_to_scancode[pygame.K_F11] = '\x00\x98'
@@ -334,7 +331,7 @@ def load_state():
 # initialisation
 
 def init():
-    global joysticks, physical_size, scrap
+    global joysticks, physical_size, scrap, display_size, display_size_text
     # set state objects to whatever is now in state (may have been unpickled)
     if not pygame:
         logging.warning('Could not find PyGame module. Failed to initialise graphical interface.')
@@ -346,6 +343,9 @@ def init():
         pygame.display.quit()
         logging.warning('Refusing to open libcaca console. Failed to initialise graphical interface.')
         return False
+    # screen width and height in pixels
+    display_size = (640, 480)
+    display_size_text = (console.mode_data[0][7]*console.mode_data[0][4], console.mode_data[0][0]*25)
     # get physical screen dimensions (needs to be called before set_mode)
     display_info = pygame.display.Info()
     physical_size = display_info.current_w, display_info.current_h
@@ -1431,4 +1431,5 @@ def check_quit_sound():
                 mixer.quit()
                 quiet_ticks = 0
                 
+prepare()
 

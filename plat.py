@@ -39,3 +39,18 @@ encoding_dir = os.path.join(basepath, 'encoding')
 font_dir = os.path.join(basepath, 'font')
 info_dir = os.path.join(basepath, 'info')
 
+# OS-specific stdin/stdout selection
+# no stdin/stdout access allowed on packaged apps
+if system in ('OSX', 'Windows'):
+    stdin_is_tty, stdout_is_tty = True, True
+    stdin, stdout = None, None
+else:
+    # Unix, Linux including Android
+    try:
+        stdin_is_tty = sys.stdin.isatty()
+        stdout_is_tty = sys.stdout.isatty()
+    except AttributeError:
+        stdin_is_tty, stdout_is_tty = True, True
+        stdin, stdout = None, None
+    stdin, stdout = sys.stdin, sys.stdout
+
