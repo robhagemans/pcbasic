@@ -50,8 +50,8 @@ short_args = { 'cli':'b', 'ansi':'t', 'graphical':'g', 'load':'l', 'run':'r', 'e
 # all long-form arguments
 arguments = {
 #    'program':  { 'metavar':'basic_program', 'nargs':'?', 'help':'Input program file to run (default), load or convert.' },
-    'input':            { 'action':'store', 'metavar':'input_file', 'nargs':1, 'help':'Retrieve keyboard input from input_file, except if KYBD: is read explicitly.' },
-    'output':           { 'action':'store', 'metavar':'output_file', 'nargs':1, 'help':'Send screen output to output_file, except if SCRN: is written to explicitly.' },
+    'input':            { 'type':'string', 'action':'store', 'metavar':'input_file', 'help':'Retrieve keyboard input from input_file, except if KYBD: is read explicitly.' },
+    'output':           { 'type':'string', 'action':'store', 'metavar':'output_file', 'help':'Send screen output to output_file, except if SCRN: is written to explicitly.' },
     'filter':           { 'type':'bool','action':'store_true', 'help':'Use text filter interface. This is the default if redirecting input.' },
     'cli':              { 'type':'bool','action':'store_true', 'help':'Use command-line text interface' },
     'ansi':             { 'type':'bool','action':'store_true', 'help':'Use ANSI text interface' },

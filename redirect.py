@@ -9,11 +9,19 @@
 # please see text file COPYING for licence terms.
 #
 
+import config
 import unicodepage
 import console
 import oslayer
 import state
 from functools import partial
+
+def prepare():
+        # gwbasic-style redirected output is split between graphical screen and redirected file    
+    if config.options['output']:
+        set_output(oslayer.safe_open(config.options['output'], "S", "W"))
+    if config.options['input']:
+        set_input(oslayer.safe_open(config.options['input'], "L", "R"))
 
 def set_input(f):
     """ BASIC-style redirected input. """
@@ -46,5 +54,7 @@ utf8conv = unicodepage.UTF8Converter(preserve_control=True)
 def echo_utf8(s, f):
     """ Output redirection echo as UTF-8. """
     f.write(utf8conv.to_utf8(str(s))) 
-    
+
+# FIXME: we'll need to call this explicitly because of circular import console > backend > novideo > redirect > console    
+#prepare()
     
