@@ -125,7 +125,7 @@ state.console_state.stick_is_on = False
 # for SCREEN
 
 #  font_height, attr, num_colours, num_palette, width, num_pages, bitsperpixel, font_width
-mode_data = {
+mode_data_default = {
     0: ( 16,  7, 32, 64, 80, 4, 4, 8 ), # height 8, 14, or 16; font width 8 or 9; height 40 or 80 
     1: (  8,  3,  4, 16, 40, 1, 2, 8 ), # 04h 320x200x4  16384B 2bpp 0xb8000 tandy:2 pages if 32k memory; ega: 1 page only 
     2: (  8,  1,  2, 16, 80, 1, 1, 8 ), # 06h 640x200x2  16384B 1bpp 0xb8000
@@ -137,6 +137,7 @@ mode_data = {
     8: (  8, 15, 16, 16, 80, 4, 4, 8 ), # 0Eh 640x200x16 
     9: ( 14, 15, 16, 64, 80, 2, 4, 8 ), # 10h 640x350x16 
     }
+mode_data = {}
 
 # default is EGA 64K
 state.console_state.video_mem_size = 65536
@@ -201,6 +202,8 @@ def prepare():
 
 def init():
     global cga_palettes, fonts, mode_data
+    for mode in mode_data_default:
+        mode_data[mode] = mode_data_default[mode]
     if not backend.video.init():
         return False
     state.console_state.backend_name = backend.video.__name__
@@ -250,9 +253,9 @@ def init():
     # reload the screen in resumed state
     if state.loaded:
         if state.console_state.screen_mode not in mode_data:
-            logging.error("Resumed screen mode %d not supported by display backend.",  state.console_state.screen_mode)
             # fix the terminal
             backend.video.close()
+            logging.error("Resumed screen mode %d not supported by display backend.",  state.console_state.screen_mode)
             return False
         # set up the appropriate screen resolution
         backend.video.init_screen_mode()

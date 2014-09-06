@@ -30,6 +30,7 @@ import oslayer
 import unicodepage
 import console
 import backend
+import novideo
 import backend_cli
 import sound
 import nosound
