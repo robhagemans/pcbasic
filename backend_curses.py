@@ -50,40 +50,43 @@ window = None
 # 1 is line ('visible'), 2 is block ('highly visible'), 3 is invisible
 cursor_shape = 1
 
-# curses keycodes
-curses_to_scan = {
-    curses.KEY_F1: '\x00\x3b', # F1
-    curses.KEY_F2: '\x00\x3c', # F2
-    curses.KEY_F3: '\x00\x3d', # F3
-    curses.KEY_F4: '\x00\x3e', # F4
-    curses.KEY_F5:  '\x00\x3f', # F5
-    curses.KEY_F6:  '\x00\x40', # F6
-    curses.KEY_F7:  '\x00\x41', # F7
-    curses.KEY_F8:  '\x00\x42', # F8
-    curses.KEY_F9:  '\x00\x43', # F9
-    curses.KEY_F10:  '\x00\x44', # F10
-    curses.KEY_END: '\x00\x4F', # END
-    curses.KEY_HOME: '\x00\x47', # HOME
-    curses.KEY_UP: '\x00\x48', # arrow up
-    curses.KEY_DOWN: '\x00\x50', # arrow down
-    curses.KEY_RIGHT: '\x00\x4d', # arrow right
-    curses.KEY_LEFT: '\x00\x4b', # arrow left
-    curses.KEY_IC: '\x00\x52', # INS
-    curses.KEY_DC: '\x00\x53', # DEL
-    curses.KEY_PPAGE: '\x00\x49', # PG UP
-    curses.KEY_NPAGE: '\x00\x51', # PG DN
-    curses.KEY_BACKSPACE: '\b'
-}
+if curses:
+    # curses keycodes
+    curses_to_scan = {
+        curses.KEY_F1: '\x00\x3b', # F1
+        curses.KEY_F2: '\x00\x3c', # F2
+        curses.KEY_F3: '\x00\x3d', # F3
+        curses.KEY_F4: '\x00\x3e', # F4
+        curses.KEY_F5:  '\x00\x3f', # F5
+        curses.KEY_F6:  '\x00\x40', # F6
+        curses.KEY_F7:  '\x00\x41', # F7
+        curses.KEY_F8:  '\x00\x42', # F8
+        curses.KEY_F9:  '\x00\x43', # F9
+        curses.KEY_F10:  '\x00\x44', # F10
+        curses.KEY_END: '\x00\x4F', # END
+        curses.KEY_HOME: '\x00\x47', # HOME
+        curses.KEY_UP: '\x00\x48', # arrow up
+        curses.KEY_DOWN: '\x00\x50', # arrow down
+        curses.KEY_RIGHT: '\x00\x4d', # arrow right
+        curses.KEY_LEFT: '\x00\x4b', # arrow left
+        curses.KEY_IC: '\x00\x52', # INS
+        curses.KEY_DC: '\x00\x53', # DEL
+        curses.KEY_PPAGE: '\x00\x49', # PG UP
+        curses.KEY_NPAGE: '\x00\x51', # PG DN
+        curses.KEY_BACKSPACE: '\b'
+    }
 
-# curses colours mapped onto EGA
-default_colors = [
-    curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN, 
-    curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA, 
-    curses.COLOR_YELLOW, curses.COLOR_WHITE, 
-    curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN, 
-    curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA, 
-    curses.COLOR_YELLOW, curses.COLOR_WHITE]
+    # curses colours mapped onto EGA
+    default_colors = [
+        curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN, 
+        curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA, 
+        curses.COLOR_YELLOW, curses.COLOR_WHITE, 
+        curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN, 
+        curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA, 
+        curses.COLOR_YELLOW, curses.COLOR_WHITE]
 
+    last_attr = None
+    attr = curses.A_NORMAL
  
 def prepare(args):
     pass
@@ -101,7 +104,7 @@ def init():
     curses.start_color()
     screen.clear()
     init_screen_mode()
-    sys.stdout.write(esc_set_title % 'PC-BASIC 3.23')
+    sys.stdout.write(ansi.esc_set_title % 'PC-BASIC 3.23')
     return True
     
 def init_screen_mode():
@@ -204,8 +207,6 @@ def check_events():
     window.refresh()
     check_keyboard()
     
-last_attr = None
-attr = curses.A_NORMAL
 def set_attr(cattr):
     global attr, last_attr, palette_changed
     attr = cattr
