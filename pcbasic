@@ -46,6 +46,9 @@ def main():
         if config.options['resume'] and not config.options['conv']:
             # resume from saved emulator state
             resume = state.load()
+        # implied RUN
+        if config.options['program'] and not config.options['load']:
+            config.options['run'] = True 
         # choose the video and sound backends
         prepare_console()
         # ignore load and run options in resume mode    
@@ -137,9 +140,7 @@ def print_greeting():
         'Type RUN "@:INFO" for more.\r'
         '%d Bytes free\r'
         'Ok\xff')
-    if (not config.options['run'] and
-        not (config.options['program'] and not config.options['load']) and
-        not config.options['exec']):
+    if (not config.options['run'] and not config.options['exec']):
         debugstr = ' [DEBUG mode]' if config.options['debug'] else ''
         if plat.stdin_is_tty:
             console.write_line(greeting % (debugstr, var.total_mem))
@@ -152,8 +153,7 @@ def load_program():
 def run_commands():
     """ Run commands or program from command line. """
     command = config.options['exec']
-    if (config.options['run'] or 
-            (config.options['program'] and not config.options['load'])): 
+    if config.options['run']: 
         command = 'RUN'
     if command:    
         run.execute(command)
