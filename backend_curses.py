@@ -23,6 +23,7 @@ except ImportError:
         
 import unicodepage
 import error
+import backend
 import console
 import state
 
@@ -300,9 +301,9 @@ def check_keyboard():
             continue
         else:
             try:
-                console.insert_key(unicodepage.from_utf8(c))
+                backend.insert_key(unicodepage.from_utf8(c))
             except KeyError:    
-                console.insert_key(c)    
+                backend.insert_key(c)    
         c = ''
         
 ########

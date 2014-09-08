@@ -22,6 +22,15 @@ penstick = None
 
 # sound queue
 state.console_state.music_queue = [[], [], [], []]
+# keyboard queue
+state.console_state.keybuf = ''
+# key buffer
+# INP(&H60) scancode
+state.console_state.inp_key = 0
+# keypressed status of caps, num, scroll, alt, ctrl, shift
+state.console_state.keystatus = 0
+# input has closed
+input_closed = False
 
 
 #############################################
@@ -89,6 +98,62 @@ def idle():
 def wait():
     video.idle()
     check_events()    
+
+##############################
+# keyboard buffer read/write
+
+# insert character into keyboard buffer; apply KEY repacement (for use by backends)
+def insert_key(c):
+    if len(c) > 0:
+        try:
+            keynum = state.basic_state.event_keys.index(c)
+            if keynum > -1 and keynum < 20:
+                if state.basic_state.key_handlers[keynum].enabled:
+                    # trigger only once at most
+                    state.basic_state.key_handlers[keynum].triggered = True
+                    # don't enter into key buffer
+                    return
+        except ValueError:
+            pass
+    if state.console_state.caps and not ignore_caps:
+        if c >= 'a' and c <= 'z':
+            c = chr(ord(c)-32)
+        elif c >= 'A' and c <= 'z':
+            c = chr(ord(c)+32)
+    if len(c) < 2:
+        state.console_state.keybuf += c
+    else:
+        try:
+            # only check F1-F10
+            keynum = function_key[c]
+            # can't be redefined in events - so must be event keys 1-10.
+            if state.basic_state.run_mode and state.basic_state.key_handlers[keynum].enabled or keynum > 9:
+                # this key is being trapped, don't replace
+                state.console_state.keybuf += c
+            else:
+                state.console_state.keybuf += state.console_state.key_replace[keynum]
+        except KeyError:
+            state.console_state.keybuf += c
+
+# peek character from keyboard buffer
+def peek_char():
+    ch = ''
+    if len(state.console_state.keybuf)>0:
+        ch = state.console_state.keybuf[0]
+        if ch == '\x00' and len(state.console_state.keybuf) > 0:
+            ch += state.console_state.keybuf[1]
+    return ch 
+
+# drop character from keyboard buffer
+def pass_char(ch):
+    state.console_state.keybuf = state.console_state.keybuf[len(ch):]        
+    return ch
+
+# blocking keystroke peek
+def wait_char():
+    while len(state.console_state.keybuf) == 0 and not input_closed:
+        wait()
+    return peek_char()
 
 #############################################
 # BASIC event triggers        

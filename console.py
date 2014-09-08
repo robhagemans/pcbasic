@@ -96,20 +96,10 @@ state.console_state.overwrite_mode = True
 state.console_state.cursor_from = 0
 state.console_state.cursor_to = 0    
 
-# key buffer
-# incoming keys, either ascii or \00 followed by INKEY$ scancode 
-state.console_state.keybuf = ''
-# INP(&H60) scancode
-state.console_state.inp_key = 0
-# keypressed status of caps, num, scroll, alt, ctrl, shift
-state.console_state.keystatus = 0
-
 # redirect i/o to file or printer
 input_echos = []
 output_echos = []
 
-# input has closed
-input_closed = False
 # capslock, numlock, scrollock mode 
 state.console_state.caps = False
 state.console_state.num = False
@@ -534,7 +524,7 @@ def wait_interactive(from_start=False, alt_replace = True):
             furthest_left = min(state.console_state.col, furthest_left)
             furthest_right = max(state.console_state.col, furthest_right)
         # wait_char returns one ascii ar MS-DOS/GW-BASIC style keyscan code
-        d = pass_char(wait_char())
+        d = backend.pass_char(backend.wait_char())
         if not d:
             # input stream closed
             raise error.Exit()
@@ -1021,74 +1011,6 @@ def write_for_keys(s, col, cattr):
         col += 1
     backend.video.set_attr(state.console_state.attr)
 
-##############################
-# keyboard buffer read/write
-
-# insert character into keyboard buffer; apply KEY repacement (for use by backends)
-def insert_key(c):
-    if len(c) > 0:
-        try:
-            keynum = state.basic_state.event_keys.index(c)
-            if keynum > -1 and keynum < 20:
-                if state.basic_state.key_handlers[keynum].enabled:
-                    # trigger only once at most
-                    state.basic_state.key_handlers[keynum].triggered = True
-                    # don't enter into key buffer
-                    return
-        except ValueError:
-            pass
-    if state.console_state.caps and not ignore_caps:
-        if c >= 'a' and c <= 'z':
-            c = chr(ord(c)-32)
-        elif c >= 'A' and c <= 'z':
-            c = chr(ord(c)+32)
-    if len(c) < 2:
-        state.console_state.keybuf += c
-    else:
-        try:
-            # only check F1-F10
-            keynum = function_key[c]
-            # can't be redefined in events - so must be event keys 1-10.
-            if state.basic_state.run_mode and state.basic_state.key_handlers[keynum].enabled or keynum > 9:
-                # this key is being trapped, don't replace
-                state.console_state.keybuf += c
-            else:
-                state.console_state.keybuf += state.console_state.key_replace[keynum]
-        except KeyError:
-            state.console_state.keybuf += c
-    
-# non-blocking keystroke read
-def get_char():
-    backend.wait()    
-    return pass_char( peek_char() )
-    
-# peek character from keyboard buffer
-def peek_char():
-    ch = ''
-    if len(state.console_state.keybuf)>0:
-        ch = state.console_state.keybuf[0]
-        if ch == '\x00' and len(state.console_state.keybuf) > 0:
-            ch += state.console_state.keybuf[1]
-    return ch 
-
-# drop character from keyboard buffer
-def pass_char(ch):
-    state.console_state.keybuf = state.console_state.keybuf[len(ch):]        
-    return ch
-
-# blocking keystroke read
-def read_chars(num):
-    word = []
-    for _ in range(num):
-        wait_char()
-        word.append(get_char())
-    return word
-
-# blocking keystroke peek
-def wait_char():
-    while len(state.console_state.keybuf) == 0 and not input_closed:
-        backend.wait()
-    return peek_char()
     
 #####################
 # screen read/write
@@ -1279,6 +1201,22 @@ def start_line():
     # ensure line above doesn't wrap    
     state.console_state.apage.row[state.console_state.row-2].wrap = False    
 
+
+####################
+# keyboard read
+    
+# non-blocking keystroke read
+def get_char():
+    wait()    
+    return backend.pass_char(backend.peek_char())
+
+# blocking keystroke read
+def read_chars(num):
+    word = []
+    for _ in range(num):
+        backend.wait_char()
+        word.append(get_char())
+    return word
 
 #####################
 # viewport / scroll area

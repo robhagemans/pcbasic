@@ -14,7 +14,7 @@ import sys
 import time
 
 import unicodepage
-import console
+import backend
 import plat
 import state
 import redirect
@@ -58,16 +58,16 @@ def check_keys():
         return
     s = sys.stdin.readline().decode('utf-8')
     if s == '':
-        console.input_closed = True
+        backend.input_closed = True
     for u in s:
         c = u.encode('utf-8')
         # replace LF -> CR if needed
         if c == '\n' and lf_to_cr:
             c = '\r'
         try:
-            console.insert_key(unicodepage.from_utf8(c))
+            backend.insert_key(unicodepage.from_utf8(c))
         except KeyError:        
-            console.insert_key(c)
+            backend.insert_key(c)
         
 def idle():
     time.sleep(0.024)

@@ -37,7 +37,6 @@ import logging
 import config
 import error
 import unicodepage 
-import console
 import state
 import backend
 import typeface
@@ -905,7 +904,7 @@ def handle_key(e):
     # double NUL characters as single NUL signals scan code
     if len(c) == 1 and ord(c) == 0:
         c = '\0\0'
-    console.insert_key(c) 
+    backend.insert_key(c) 
     # current key pressed; modifiers ignored 
     try:
         state.console_state.inp_key = ord(keycode_to_inpcode[e.key])
@@ -930,7 +929,7 @@ def handle_key_up(e):
         char = chr(int(keypad_ascii)%256)
         if char == '\0':
             char = '\0\0'
-        console.insert_key(char)
+        backend.insert_key(char)
         keypad_ascii = ''
     elif e.key == pygame.K_LSUPER: # logo key, doesn't set a modifier
         scrap.stop()
@@ -1038,9 +1037,9 @@ class Clipboard(object):
         for u in us:
             c = u.encode('utf-8')
             try:
-                console.insert_key(unicodepage.from_utf8(c))
+                backend.insert_key(unicodepage.from_utf8(c))
             except KeyError:
-                console.insert_key(c)
+                backend.insert_key(c)
 
     def handle(self, e):
         """ Handle logo+key clipboard commands. """

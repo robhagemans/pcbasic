@@ -15,6 +15,7 @@ import os
 import plat
 import unicodepage
 import error
+import backend
 import console
 import state
 
@@ -215,15 +216,15 @@ def check_keyboard():
         if c == eof:            # ctrl-D (unix) / ctrl-Z (windows)
             raise error.Exit() 
         elif c == '\x7f':       # backspace
-            console.insert_key('\b')
+            backend.insert_key('\b')
         elif c == '\0':    
             # scancode; go add next char
             continue
         else:
             try:
-                console.insert_key(unicodepage.from_utf8(c))
+                backend.insert_key(unicodepage.from_utf8(c))
             except KeyError:    
-                console.insert_key(c)    
+                backend.insert_key(c)    
         c = ''
 
 def set_page(vpage, apage):

@@ -11,6 +11,7 @@
 
 import config
 import unicodepage
+import backend
 import console
 import oslayer
 from functools import partial
@@ -30,9 +31,9 @@ def set_input(f):
     for c in all_input:
         # replace CRLF with CR
         if not (c == '\n' and last == '\r'):
-            console.insert_key(c)
+            backend.insert_key(c)
         last = c
-    console.input_closed = True
+    backend.input_closed = True
 
 def set_output(f, utf8=False):
     """ Redirected output in ASCII or UTF-8 """
