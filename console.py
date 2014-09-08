@@ -152,7 +152,8 @@ def prepare():
     composite_monitor = config.options['composite']
     
 def init():
-    global cga_palettes, mode_data
+    global cga_palettes, cga_palette_0, cga_palette_1, cga_palette_5 
+    global mode_data
     # reset modes in case init is called a second time for error fallback
     for mode in mode_data_default:
         mode_data[mode] = mode_data_default[mode]
@@ -163,6 +164,8 @@ def init():
         # 8-pixel characters, 16 colours in screen 0
         mode_data[0] = (8, 7, 32, 16, 80, 4, 4, 8, False, None) 
         # select pcjr cga palettes
+        cga_palette_0, cga_palette_1 = cga_palette_0_pcjr, cga_palette_1_pcjr
+        # pcjr does ot have mode 5
         cga_palettes[:] = [cga_palette_0_pcjr, cga_palette_1_pcjr]       
         # TODO: determine the number of pages based on video memory size, not hard coded. 
     elif video_capabilities in ('cga', 'cga_old'):
@@ -376,14 +379,20 @@ def set_palette(new_palette=None):
 # on SCREEN 0 this switches between colour and greyscale (composite) or is ignored (RGB)
 def set_colorburst(on=True):
     global cga_palettes
+    old_colorburst = backend.video.colorburst
     colorburst_capable = video_capabilities in ('cga', 'cga_old', 'tandy', 'pcjr')
-    if state.console_state.screen_mode == 1 and not composite_monitor:
-        if on or not colorburst_capable:
+    backend.video.colorburst = on and colorburst_capable
+    if state.console_state.screen_mode == 1:
+        if backend.video.colorburst or video_capabilities not in ('cga', 'cga_old'):
+            # ega ignores colorburst; tandy and pcjr have no mode 5
             cga_palettes = [cga_palette_0, cga_palette_1]
         else:
             cga_palettes = [cga_palette_5, cga_palette_5]
         set_palette()    
-    backend.video.set_colorburst(on and colorburst_capable, state.console_state.palette)    
+        backend.video.screen_changed = True
+    elif backend.video.colorburst != old_colorburst:
+        backend.video.update_palette()
+        backend.video.screen_changed = True
 
 ############################### 
 # interactive mode         
