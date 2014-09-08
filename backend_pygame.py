@@ -584,7 +584,7 @@ def putc_at(row, col, c, for_keys=False):
     glyph = glyphs[ord(c)]
     blank = glyphs[0] # using \0 for blank (tyoeface.py guarantees it's empty)
     top_left = ((col-1) * font_width, (row-1) * font_height)
-    if not state.console_state.screen_mode:
+    if text_mode:
         surface1[state.console_state.apagenum].blit(glyph, top_left)
     if last_attr >> 7: #blink:
         surface0[state.console_state.apagenum].blit(blank, top_left)
@@ -603,7 +603,7 @@ def putwc_at(row, col, c, d, for_keys=False):
     blank.fill(255)
     blank.set_palette_at(255, bg)
     top_left = ((col-1) * font_width, (row-1) * font_height)
-    if not state.console_state.screen_mode:
+    if text_mode:
         surface1[state.console_state.apagenum].blit(glyph, top_left)
     if last_attr >> 7: #blink:
         surface0[state.console_state.apagenum].blit(blank, top_left)
@@ -645,6 +645,8 @@ def build_glyph(c, font_face, req_width, req_height):
         
 def build_cursor(width, height, from_line, to_line):
     global screen_changed, cursor0, under_cursor
+    global cursor_width, cursor_from, cursor_to
+    cursor_width, cursor_from, cursor_to = width, from_line, to_line
     under_cursor = pygame.Surface((width, height), depth=8)
     under_cursor.set_palette(workaround_palette)
     cursor0 = pygame.Surface((width, height), depth=8)
@@ -663,7 +665,7 @@ def build_cursor(width, height, from_line, to_line):
 # event loop
 
 def refresh_screen():
-    if state.console_state.screen_mode or blink_state == 0:
+    if (not text_mode) or blink_state == 0:
         screen.blit(surface0[state.console_state.vpagenum], (0, 0))
     elif blink_state == 1: 
         screen.blit(surface1[state.console_state.vpagenum], (0, 0))
@@ -684,10 +686,10 @@ def refresh_cursor():
     under_char_area = pygame.Rect(
             (state.console_state.col-1) * font_width, 
             (state.console_state.row-1) * font_height, 
-            (state.console_state.col-1) * font_width + state.console_state.cursor_width,
+            (state.console_state.col-1) * font_width + cursor_width,
             state.console_state.row * font_height)
     under_cursor.blit(screen, (0,0), area=under_char_area)
-    if state.console_state.screen_mode == 0:
+    if text_mode:
         # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
         if (cycle/blink_cycles==1 or cycle/blink_cycles==3): 
             screen.blit(cursor0, (  (state.console_state.col-1) * font_width,
@@ -701,16 +703,16 @@ def refresh_cursor():
             # reference the destination area
             dest_array = pygame.surfarray.pixels2d(screen.subsurface(pygame.Rect(
                                 (state.console_state.col-1) * font_width, 
-                                (state.console_state.row-1) * font_height + state.console_state.cursor_from, 
-                                state.console_state.cursor_width, 
-                                state.console_state.cursor_to - state.console_state.cursor_from + 1))) 
+                                (state.console_state.row-1) * font_height + cursor_from, 
+                                cursor_width, 
+                                cursor_to - cursor_from + 1))) 
             dest_array ^= index
         else:
             # no surfarray if no numpy    
             for x in range(     (state.console_state.col-1) * font_width, 
                                   (state.console_state.col-1) * font_width + cursor_width):
-                for y in range((state.console_state.row-1) * font_height + state.console_state.cursor_from, 
-                                (state.console_state.row-1) * font_height + state.console_state.cursor_to + 1):
+                for y in range((state.console_state.row-1) * font_height + cursor_from, 
+                                (state.console_state.row-1) * font_height + cursor_to + 1):
                     pixel = get_pixel(x,y)
                     screen.set_at((x,y), pixel^index)
     last_row = state.console_state.row
