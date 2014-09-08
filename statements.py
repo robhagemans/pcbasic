@@ -17,6 +17,7 @@ except ImportError:
     from StringIO import StringIO
 
 import config
+import backend
 import console
 import debug
 import draw_and_play
@@ -694,11 +695,11 @@ def exec_shell(ins):
     else:
         cmd = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # force cursor visible in all cases
-    console.show_cursor(True)
+    backend.show_cursor(True)
     # execute cms or open interactive shell
     oslayer.shell(cmd) 
-    # resset cursor visibility to its previous state
-    console.update_cursor_visibility()
+    # reset cursor visibility to its previous state
+    backend.update_cursor_visibility()
     util.require(ins, util.end_statement)
         
 def exec_environ(ins):
@@ -2087,14 +2088,14 @@ def exec_locate(ins):
         util.range_check(0, (255 if pcjr_syntax else 1), cursor)   
         # set cursor visibility - this should set the flag but have no effect in graphics modes
         state.console_state.cursor = (cursor != 0)
-        console.update_cursor_visibility()
+        backend.update_cursor_visibility()
     if stop == None:
         stop = start
     if start != None:    
         util.range_check(0, 31, start, stop)
         # cursor shape only has an effect in text mode    
         if state.console_state.screen_mode == 0:    
-            console.set_cursor_shape(start, stop)
+            backend.set_cursor_shape(start, stop)
 
 def exec_write(ins, output=None):
     """ WRITE: Output machine-readable expressions to the screen or a file. """

@@ -339,7 +339,7 @@ def load_state():
             screen_changed = True    
         except IndexError:
             # couldn't load the state correctly; most likely a text screen saved from -t. just redraw what's unpickled.
-            console.redraw_text_screen()
+            backend.redraw_text_screen()
         
 ####################################
 # initialisation
@@ -867,7 +867,7 @@ def handle_key(e):
         if mods & pygame.KMOD_CTRL:
             backend.toggle_echo_lpt1()
         elif mods & pygame.KMOD_SHIFT:
-            console.print_screen()
+            backend.print_screen()
     elif e.key == pygame.K_TAB and mods & pygame.KMOD_SHIFT:
         # shift+tab -> \x00\x0F (scancode for TAB) but TAB -> \x09
         c = '\x00\x0F'

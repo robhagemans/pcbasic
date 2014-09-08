@@ -14,6 +14,7 @@ import logging
 import config
 import state 
 import timedate
+import unicodepage
     
 # backend implementations
 video = None
@@ -56,6 +57,158 @@ input_closed = False
 #############################################
 # screen buffer
 
+class ScreenRow(object):
+    def __init__(self, bwidth):
+        # screen buffer, initialised to spaces, dim white on black
+        self.clear()
+        # line continues on next row (either LF or word wrap happened)
+        self.wrap = False
+    
+    def clear(self):
+        self.buf = [(' ', state.console_state.attr)] * state.console_state.width
+        # character is part of double width char; 0 = no; 1 = lead, 2 = trail
+        self.double = [ 0 ] * state.console_state.width
+        # last non-white character
+        self.end = 0    
+
+
+
+def redraw_row(start, crow):
+    while True:
+        therow = state.console_state.apage.row[crow-1]  
+        video.set_attr(state.console_state.attr)
+        for i in range(start, therow.end): 
+            # redrawing changes colour attributes to current foreground (cf. GW)
+            # don't update all dbcs chars behind at each put
+            put_screen_char_attr(state.console_state.apage, crow, i+1, therow.buf[i][0], state.console_state.attr, one_only=True)
+        if therow.wrap and crow >= 0 and crow < state.console_state.height-1:
+            crow += 1
+            start = 0
+        else:
+            break    
+
+
+def put_screen_char_attr(cpage, crow, ccol, c, cattr, one_only=False, for_keys=False):
+    cattr = cattr & 0xf if state.console_state.screen_mode else cattr
+    # update the screen buffer
+    cpage.row[crow-1].buf[ccol-1] = (c, cattr)
+    # mark the replaced char for refreshing
+    start, stop = ccol, ccol+1
+    cpage.row[crow-1].double[ccol-1] = 0
+    # mark out sbcs and dbcs characters
+    # only do dbcs in 80-character modes
+    if unicodepage.dbcs and state.console_state.width == 80:
+        orig_col = ccol
+        # replace chars from here until necessary to update double-width chars
+        therow = cpage.row[crow-1]    
+        # replacing a trail byte? take one step back
+        # previous char could be a lead byte? take a step back
+        if (ccol > 1 and therow.double[ccol-2] != 2 and 
+                (therow.buf[ccol-1][0] in unicodepage.trail or therow.buf[ccol-2][0] in unicodepage.lead)):
+            ccol -= 1
+            start -= 1
+        # check all dbcs characters between here until it doesn't matter anymore
+        while ccol < state.console_state.width:
+            c = therow.buf[ccol-1][0]
+            d = therow.buf[ccol][0]  
+            if (c in unicodepage.lead and d in unicodepage.trail):
+                if therow.double[ccol-1] == 1 and therow.double[ccol] == 2 and ccol > orig_col:
+                    break
+                therow.double[ccol-1] = 1
+                therow.double[ccol] = 2
+                start, stop = min(start, ccol), max(stop, ccol+2)
+                ccol += 2
+            else:
+                if therow.double[ccol-1] == 0 and ccol > orig_col:
+                    break
+                therow.double[ccol-1] = 0
+                start, stop = min(start, ccol), max(stop, ccol+1)
+                ccol += 1
+            if ccol >= state.console_state.width or (one_only and ccol > orig_col):
+                break  
+        # check for box drawing
+        if unicodepage.box_protect:
+            ccol = start-2
+            connecting = 0
+            bset = -1
+            while ccol < stop+2 and ccol < state.console_state.width:
+                c = therow.buf[ccol-1][0]
+                d = therow.buf[ccol][0]  
+                if bset > -1 and unicodepage.connects(c, d, bset): 
+                    connecting += 1
+                else:
+                    connecting = 0
+                    bset = -1
+                if bset == -1:
+                    for b in (0, 1):
+                        if unicodepage.connects(c, d, b):
+                            bset = b
+                            connecting = 1
+                if connecting >= 2:
+                    therow.double[ccol] = 0
+                    therow.double[ccol-1] = 0
+                    therow.double[ccol-2] = 0
+                    start = min(start, ccol-1)
+                    if ccol > 2 and therow.double[ccol-3] == 1:
+                        therow.double[ccol-3] = 0
+                        start = min(start, ccol-2)
+                    if ccol < state.console_state.width-1 and therow.double[ccol+1] == 2:
+                        therow.double[ccol+1] = 0
+                        stop = max(stop, ccol+2)
+                ccol += 1        
+    # update the screen            
+    refresh_screen_range(cpage, crow, start, stop, for_keys)
+
+
+def get_screen_char_attr(crow, ccol, want_attr):
+    ca = state.console_state.apage.row[crow-1].buf[ccol-1][want_attr]
+    return ca if want_attr else ord(ca)
+
+def refresh_screen_range(cpage, crow, start, stop, for_keys=False):
+    therow = cpage.row[crow-1]
+    ccol = start
+    while ccol < stop:
+        double = therow.double[ccol-1]
+        if double == 1:
+            ca = therow.buf[ccol-1]
+            da = therow.buf[ccol]
+            video.set_attr(da[1]) 
+            video.putwc_at(crow, ccol, ca[0], da[0], for_keys)
+            therow.double[ccol-1] = 1
+            therow.double[ccol] = 2
+            ccol += 2
+        else:
+            if double != 0:
+                logging.debug('DBCS buffer corrupted at %d, %d', crow, ccol)            
+            ca = therow.buf[ccol-1]        
+            video.set_attr(ca[1]) 
+            video.putc_at(crow, ccol, ca[0], for_keys)
+            ccol += 1
+
+
+class ScreenBuffer(object):
+    def __init__(self, bwidth, bheight):
+        self.row = [ScreenRow(bwidth) for _ in xrange(bheight)]
+
+def redraw_text_screen():
+    # force cursor invisible during redraw
+    show_cursor(False)
+    # this makes it feel faster
+    video.clear_rows(state.console_state.attr, 1, 25)
+    # redraw every character
+    for crow in range(state.console_state.height):
+        therow = state.console_state.apage.row[crow]  
+        for i in range(state.console_state.width): 
+            put_screen_char_attr(state.console_state.apage, crow+1, i+1, therow.buf[i][0], therow.buf[i][1])
+    update_cursor_visibility()
+
+def print_screen():
+    for crow in range(1, state.console_state.height+1):
+        line = ''
+        for c, _ in state.console_state.vpage.row[crow-1].buf:
+            line += c
+        state.io_state.devices['LPT1:'].write_line(line)
+
 # redirect i/o to file or printer
 input_echos = []
 output_echos = []
@@ -65,7 +218,7 @@ output_echos = []
 
 def prepare():
     """ Initialise backend module. """
-    global pcjr_sound, ignore_caps
+    global pcjr_sound, ignore_caps, egacursor
     if config.options['capture_caps']:
         ignore_caps = False
     # pcjr/tandy sound
@@ -77,7 +230,8 @@ def prepare():
             state.console_state.keybuf += unicodepage.from_utf8(c)
         except KeyError:
             state.console_state.keybuf += c
-            
+    egacursor = config.options['video'] == 'ega'
+           
 def init_video():
     global video
     name = ''
@@ -192,6 +346,52 @@ def wait_char():
     return peek_char()
 
 #############################################
+# cursor
+
+def show_cursor(do_show):
+    """ Force cursor to be visible/invisible. """
+    video.update_cursor_visibility(do_show)
+
+def update_cursor_visibility():
+    """ Set cursor visibility: visible if in interactive mode, unless forced visible in text mode. """
+    visible = (not state.basic_state.execute_mode)
+    if state.console_state.screen_mode == 0:
+        visible = visible or state.console_state.cursor
+    video.update_cursor_visibility(visible)
+
+def set_cursor_shape(from_line, to_line):
+    """ Set the cursor shape as a block from from_line to to_line (in 8-line modes). Use compatibility algo in higher resolutions. """
+    if egacursor:
+        # odd treatment of cursors on EGA machines, presumably for backward compatibility
+        # the following algorithm is based on DOSBox source int10_char.cpp INT10_SetCursorShape(Bit8u first,Bit8u last)    
+        max_line = state.console_state.font_height-1
+        if from_line & 0xe0 == 0 and to_line & 0xe0 == 0:
+            if (to_line < from_line):
+                # invisible only if to_line is zero and to_line < from_line           
+                if to_line != 0: 
+                    # block shape from *to_line* to end
+                    from_line = to_line
+                    to_line = max_line
+            elif (from_line | to_line) >= max_line or to_line != max_line-1 or from_line != max_line:
+                if to_line > 3:
+                    if from_line+2 < to_line:
+                        if from_line > 2:
+                            from_line = (max_line+1) // 2
+                        to_line = max_line
+                    else:
+                        from_line = from_line - to_line + max_line                        
+                        to_line = max_line
+                        if max_line > 0xc:
+                            from_line -= 1
+                            to_line -= 1
+    state.console_state.cursor_from = max(0, min(from_line, state.console_state.font_height-1))
+    state.console_state.cursor_to = max(0, min(to_line, state.console_state.font_height-1))
+    video.build_cursor(state.console_state.cursor_width, state.console_state.font_height, 
+                state.console_state.cursor_from, state.console_state.cursor_to)
+    video.update_cursor_attr(state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
+
+
+#############################################
 # I/O redirection
 
 def toggle_echo_lpt1():
@@ -203,6 +403,7 @@ def toggle_echo_lpt1():
         input_echos.append(lpt1.write)
         output_echos.append(lpt1.write)
 
+            
 #############################################
 # BASIC event triggers        
         
