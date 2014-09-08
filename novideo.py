@@ -16,7 +16,6 @@ import time
 import unicodepage
 import backend
 import plat
-import state
 import redirect
 
 # palette is ignored
@@ -38,18 +37,16 @@ else:
     def kbhit():
         return select.select([sys.stdin], [], [], 0)[0] != []
         
-def prepare(args):
-    pass        
-        
-def init():
+def prepare():
     global lf_to_cr
-    # use redirection echos; avoid double echos on resuming 
-    if not state.loaded or state.console_state.backend_name != __name__:
-        redirect.set_output(sys.stdout, utf8=True)
     # on unix ttys, replace input \n with \r 
     # setting termios won't do the trick as it will not trigger read_line, gets too complicated    
     if plat.system != 'Windows' and sys.stdin.isatty():
         lf_to_cr = True
+        
+def init():
+    # use redirection echos; these are not kept in state 
+    redirect.set_output(sys.stdout, utf8=True)
     return True    
 
 def check_keys():
@@ -127,4 +124,7 @@ def build_cursor(width, height, from_line, to_line):
 
 def load_state():
     pass
+
+
+prepare()
 
