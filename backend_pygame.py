@@ -411,12 +411,12 @@ def init_screen_mode(mode_info, is_text_mode=False):
     global font, under_cursor, size, text_mode
     global font_height, attr, num_colours, num_palette
     global width, num_pages, bitsperpixel, font_width
-    global mode_has_artifacts
+    global mode_has_artifacts, cursor_fixed_attr
     text_mode = is_text_mode
     # unpack mode info struct
     (font_height, attr, num_colours, num_palette, 
            width, num_pages, bitsperpixel, font_width,
-           mode_has_artifacts) = mode_info
+           mode_has_artifacts, cursor_fixed_attr) = mode_info
     num_palette = min(num_palette, max_palette)
     font = fonts[font_height]
     glyphs = [ build_glyph(chr(c), font, font_width, font_height) 
@@ -714,8 +714,8 @@ def refresh_cursor():
             screen.blit(cursor0, (  (cursor_col-1) * font_width,
                                     (cursor_row-1) * font_height) )
     else:
-        if state.console_state.screen_mode in (3,4,5,6):
-            index = 3
+        if cursor_fixed_attr != None:
+            index = cursor_fixed_attr
         else:
             index = current_attr & 0xf
         if numpy:
