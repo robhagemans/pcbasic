@@ -236,13 +236,25 @@ def init():
     # text mode backends: delete all graphics modes    
     # reload the screen in resumed state
     if state.loaded:
-        # without this the palette is not prepared when resuming
-        backend.video.update_palette(state.console_state.palette, 
-                                     state.console_state.num_palette)
+        mode_info = list(mode_data[state.console_state.screen_mode])
+        mode_info[4] = state.console_state.width    
+        mode_info[1] = state.console_state.attr
         # set up the appropriate screen resolution
-        if not backend.video.init_screen_mode(mode_data[state.console_state.screen_mode]):
+        if (state.console_state.screen_mode == 0 or 
+                backend.video.supports_graphics_mode(mode_info)):
+            # without this the palette is not prepared when resuming
+            backend.video.update_palette(state.console_state.palette, 
+                                         state.console_state.num_palette)
+            backend.video.init_screen_mode(mode_info, state.console_state.screen_mode==0)
+            # fix the cursor
+            backend.video.build_cursor(state.console_state.cursor_width, state.console_state.font_height, 
+                state.console_state.cursor_from, state.console_state.cursor_to)    
+            backend.video.update_cursor_attr(
+                    state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
+            update_cursor_visibility()
+        else:
             # mode not supported by backend
-            logging.error("Resumed screen mode %d not supported by display backend.",  state.console_state.screen_mode)
+            logging.error("Resumed screen mode %d not supported by this interface.",  state.console_state.screen_mode)
             # fix the terminal
             backend.video.close()
             return False

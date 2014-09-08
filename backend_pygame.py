@@ -397,7 +397,7 @@ def supports_graphics_mode(mode_info):
     return True
 
 def init_screen_mode(mode_info, is_text_mode=False):
-    """ Initialise a given graphics mode. """
+    """ Initialise a given text or graphics mode. """
     global glyphs, cursor0
     global screen, screen_changed, surface0, surface1
     global font, under_cursor, size, text_mode
