@@ -1,20 +1,19 @@
 #!/usr/bin/env python
 
-#
-# PC-BASIC 3.23 
-#
-# GW-BASIC (R) compatible interpreter 
-# 
-# (c) 2013, 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
-# GW-BASIC is a trademark of Microsoft Corporation.
+"""
+PC-BASIC 3.23 - GW-BASIC (R) compatible interpreter 
+
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+please see text file COPYING for licence terms.
+
+GW-BASIC is a trademark of Microsoft Corporation.
+"""
 
 import os
 import logging
 
+import plat
 import config
 
 # logging setup before we import modules and may need to log errors
@@ -29,7 +28,6 @@ elif logfile:
 else:
     logging.basicConfig(format=formatstr)
 
-import plat
 import backend
 
 # load backend modules
