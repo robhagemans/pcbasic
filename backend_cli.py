@@ -22,9 +22,6 @@ import state
 # output to stdout
 term = sys.stdout
 
-# unused, but needs to be defined
-colorburst = False
-
 # cursor is visible
 cursor_visible = True
 
@@ -118,6 +115,9 @@ def clear_rows(cattr, start, stop):
 def update_palette(palette):
     pass
 
+def set_colorburst(on):
+    pass
+    
 def move_cursor(crow, ccol):
     pass
 

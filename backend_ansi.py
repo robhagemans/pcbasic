@@ -40,9 +40,6 @@ term = sys.stdout
 
 palette_changed = True
 
-# unused, but needs to be defined
-colorburst = False
-
 # cursor is visible
 cursor_visible = True
 
@@ -113,6 +110,9 @@ def update_palette(palette):
     palette_changed = True
     redraw()     
 
+def set_colorburst(on):
+    pass
+    
 ####
 
 def get_fg_colourname(attr):

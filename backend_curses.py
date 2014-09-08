@@ -31,9 +31,6 @@ import state
 # so you don't see gibberish if the terminal doesn't support the sequence.
 import ansi
 
-# unused, but needs to be defined
-colorburst = False
-
 # cursor is visible
 cursor_visible = True
 
@@ -171,6 +168,9 @@ def colours(at):
     return cursattr
 
 def update_palette(new_palette):
+    pass
+    
+def set_colorburst(on):
     pass
     
 ####

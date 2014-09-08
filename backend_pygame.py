@@ -506,6 +506,12 @@ def set_display_palette():
         display.set_palette(composite_640_palette) 
     elif not smooth:
         display.set_palette(gamepalette)
+
+def set_colorburst(on, palette):
+    global colorburst
+    if composite_monitor:
+        colorburst = on
+    update_palette(palette)
         
 def clear_rows(cattr, start, stop):
     global screen_changed

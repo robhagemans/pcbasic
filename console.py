@@ -134,7 +134,7 @@ cga_palettes = [cga_palette_0, cga_palette_1]
 
 def prepare():
     """ Initialise console module. """
-    global video_capabilities, font_families
+    global video_capabilities, font_families, composite_monitor
     global cga_palette_0, cga_palette_1, cga_palette_5, cga_palettes
     if config.options['video']:
         video_capabilities = config.options['video']
@@ -149,7 +149,8 @@ def prepare():
         state.console_state.keys_visible = False
     for mode in mode_data_default:
         mode_data[mode] = mode_data_default[mode]
-
+    composite_monitor = config.options['composite']
+    
 def init():
     global cga_palettes, mode_data
     # reset modes in case init is called a second time for error fallback
@@ -309,25 +310,6 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
         backend.video.set_page(new_vpagenum, new_apagenum)
     return True
 
-
-# set the composite colorburst bit 
-# on SCREEN 2 on composite monitor this enables artifacting
-# on SCREEN 1 this switches between colour and greyscale (composite) or mode 4/5 palettes (RGB)
-# on SCREEN 0 this switches between colour and greyscale (composite) or is ignored (RGB)
-def set_colorburst(on=True):
-    global cga_palettes
-    old_colorburst = backend.video.colorburst
-    colorburst_capable = video_capabilities in ('cga', 'cga_old', 'tandy', 'pcjr')
-    backend.video.colorburst = on and colorburst_capable
-    if state.console_state.screen_mode == 1:
-        if backend.video.colorburst or not colorburst_capable:
-            cga_palettes = [cga_palette_0, cga_palette_1]
-        else:
-            cga_palettes = [cga_palette_5, cga_palette_5]
-        set_palette()    
-    elif backend.video.colorburst != old_colorburst:
-        backend.video.update_palette(state.console_state.palette)
-
 def set_width(to_width):
     # raise an error if the width value doesn't make sense
     if to_width not in (20, 40, 80):
@@ -387,6 +369,21 @@ def set_palette(new_palette=None):
         else:
             state.console_state.palette = [0, 15]
     backend.video.update_palette(state.console_state.palette)
+
+# set the composite colorburst bit 
+# on SCREEN 2 on composite monitor this enables artifacting
+# on SCREEN 1 this switches between colour and greyscale (composite) or mode 4/5 palettes (RGB)
+# on SCREEN 0 this switches between colour and greyscale (composite) or is ignored (RGB)
+def set_colorburst(on=True):
+    global cga_palettes
+    colorburst_capable = video_capabilities in ('cga', 'cga_old', 'tandy', 'pcjr')
+    if state.console_state.screen_mode == 1 and not composite_monitor:
+        if on or not colorburst_capable:
+            cga_palettes = [cga_palette_0, cga_palette_1]
+        else:
+            cga_palettes = [cga_palette_5, cga_palette_5]
+        set_palette()    
+    backend.video.set_colorburst(on and colorburst_capable, state.console_state.palette)    
 
 ############################### 
 # interactive mode         

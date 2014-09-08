@@ -18,9 +18,6 @@ import backend
 import plat
 import redirect
 
-# unused, but needs to be defined
-colorburst = False
-
 # replace lf with cr
 lf_to_cr = False
 
@@ -110,6 +107,9 @@ def update_cursor_attr(attr):
 def update_palette(palette):
     pass
 
+def set_colorburst(on):
+    pass
+    
 def update_cursor_visibility(cursor_on):
     pass
 
