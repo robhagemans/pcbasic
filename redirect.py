@@ -55,6 +55,5 @@ def echo_utf8(s, f):
     """ Output redirection echo as UTF-8. """
     f.write(utf8conv.to_utf8(str(s))) 
 
-# FIXME: we'll need to call this explicitly because of circular import console > backend > novideo > redirect > console    
-#prepare()
+prepare()
     

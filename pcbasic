@@ -135,10 +135,6 @@ def prepare_console():
         raise error.Exit()
     if not backend.init_sound() or not sound.init_sound():
         logging.warning('Failed to initialise sound. Sound will be disabled.')
-    # need to call explicitly to run after console.prepare(), 
-    # because of circular imports
-    import redirect
-    redirect.prepare()    
 
 def convert():
     """ Perform file format conversion. """
