@@ -40,14 +40,8 @@ class ScreenRow(object):
 class ScreenBuffer(object):
     def __init__(self, bwidth, bheight):
         self.row = [ScreenRow(bwidth) for _ in xrange(bheight)]
-        
-# default codes for KEY autotext
-# F1-F10 
-function_key = { 
-        '\x00\x3b':0, '\x00\x3c':1, '\x00\x3d':2, '\x00\x3e':3, '\x00\x3f':4,     # F1-F5
-        '\x00\x40':5, '\x00\x41':6, '\x00\x42':7, '\x00\x43':8, '\x00\x44':9,     # F6-F10    
-        '\x00\x98':10, '\x00\x99':11 } # Tandy F11 and F12, these scancodes should *only* be sent on Tandy
 
+# alt+key macros for interactive mode (these happen at a higher level than F-key macros)
 alt_key_replace = {
     '\x00\x1E': 'AUTO',  '\x00\x30': 'BSAVE',  '\x00\x2E': 'COLOR',  '\x00\x20': 'DELETE', '\x00\x12': 'ELSE', 
     '\x00\x21': 'FOR',   '\x00\x22': 'GOT0',   '\x00\x23': 'HEX$',   '\x00\x17': 'INPUT',
@@ -64,9 +58,6 @@ keys_line_replace_chars = {
     
 # KEY ON?
 state.console_state.keys_visible = True
-# user definable key list
-state.console_state.key_replace = [ 
-    'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r','TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
 
 # number of columns, counting 1..width
 state.console_state.width = 80
@@ -95,13 +86,6 @@ state.console_state.overwrite_mode = True
 # cursor shape
 state.console_state.cursor_from = 0
 state.console_state.cursor_to = 0    
-
-# capslock, numlock, scrollock mode 
-state.console_state.caps = False
-state.console_state.num = False
-state.console_state.scroll = False
-# let OS handle capslock effects
-ignore_caps = True
 
 # pen and stick
 state.console_state.pen_is_on = False
@@ -170,7 +154,6 @@ def prepare():
     """ Initialise console module. """
     global video_capabilities, font_families
     global cga_palette_0, cga_palette_1, cga_palette_5, cga_palettes
-    global ignore_caps
     if config.options['video']:
         video_capabilities = config.options['video']
     if config.options['cga_low']:
@@ -184,14 +167,6 @@ def prepare():
         state.console_state.keys_visible = False
     for mode in mode_data_default:
         mode_data[mode] = mode_data_default[mode]
-    if config.options['capture_caps']:
-        ignore_caps = False
-    for u in config.options['keys'].decode('string_escape').decode('utf-8'):
-        c = u.encode('utf-8')
-        try:
-            state.console_state.keybuf += unicodepage.from_utf8(c)
-        except KeyError:
-            state.console_state.keybuf += c
 
 def init():
     global cga_palettes, mode_data

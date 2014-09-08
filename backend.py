@@ -20,12 +20,29 @@ video = None
 audio = None 
 penstick = None 
 
-# redirect i/o to file or printer
-input_echos = []
-output_echos = []
-
+#############################################
 # sound queue
+
 state.console_state.music_queue = [[], [], [], []]
+
+#############################################
+# keyboard queue
+
+# capslock, numlock, scrollock mode 
+state.console_state.caps = False
+state.console_state.num = False
+state.console_state.scroll = False
+# let OS handle capslock effects
+ignore_caps = True
+
+# default function keys for KEY autotext
+function_key = { 
+        '\x00\x3b':0, '\x00\x3c':1, '\x00\x3d':2, '\x00\x3e':3, '\x00\x3f':4,     # F1-F5
+        '\x00\x40':5, '\x00\x41':6, '\x00\x42':7, '\x00\x43':8, '\x00\x44':9,     # F6-F10    
+        '\x00\x98':10, '\x00\x99':11 } # Tandy F11 and F12, these scancodes should *only* be sent on Tandy
+# user definable key list
+state.console_state.key_replace = [ 
+    'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r','TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
 # keyboard queue
 state.console_state.keybuf = ''
 # key buffer
@@ -36,15 +53,30 @@ state.console_state.keystatus = 0
 # input has closed
 input_closed = False
 
+#############################################
+# screen buffer
+
+# redirect i/o to file or printer
+input_echos = []
+output_echos = []
 
 #############################################
 # initialisation
 
 def prepare():
     """ Initialise backend module. """
-    global pcjr_sound
+    global pcjr_sound, ignore_caps
+    if config.options['capture_caps']:
+        ignore_caps = False
     # pcjr/tandy sound
     pcjr_sound = config.options['pcjr_syntax']
+    # inserted keystrokes
+    for u in config.options['keys'].decode('string_escape').decode('utf-8'):
+        c = u.encode('utf-8')
+        try:
+            state.console_state.keybuf += unicodepage.from_utf8(c)
+        except KeyError:
+            state.console_state.keybuf += c
             
 def init_video():
     global video
