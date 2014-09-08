@@ -1070,7 +1070,7 @@ def insert_key(c):
     
 # non-blocking keystroke read
 def get_char():
-    on_event.wait()    
+    backend.wait()    
     return pass_char( peek_char() )
     
 # peek character from keyboard buffer
@@ -1098,7 +1098,7 @@ def read_chars(num):
 # blocking keystroke peek
 def wait_char():
     while len(state.console_state.keybuf) == 0 and not input_closed:
-        on_event.wait()
+        backend.wait()
     return peek_char()
     
 #####################

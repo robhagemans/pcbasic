@@ -14,7 +14,6 @@ import state
 import backend
 
 state.console_state.music_foreground = True
-state.console_state.music_queue = [[], [], [], []]
 
 base_freq = 3579545./1024.
 state.console_state.noise_freq = [ base_freq / v for v in [1., 2., 4., 1., 1., 2., 4., 1.] ]
@@ -30,16 +29,8 @@ def prepare():
     state.console_state.sound_on = (pcjr_sound == 'tandy')
 
 def init_sound():
-    # rebuild sound queue
-    for voice in range(4):    
-        for note in state.console_state.music_queue[voice]:
-            backend.sound.play_sound(*note)
-    return True
-    
-def music_queue_length(voice=0):
-    # top of sound_queue is currently playing
-    return max(0, len(state.console_state.music_queue[voice])-1)
-    
+    return backend.init_sound()
+
 def beep():
     play_sound(800, 0.25)
 
@@ -51,7 +42,7 @@ def play_sound(frequency, duration, fill=1, loop=False, voice=0, volume=15):
         # pcjr, tandy play low frequencies as 110Hz
         frequency = 110.
     state.console_state.music_queue[voice].append((frequency, duration, fill, loop, volume))
-    backend.sound.play_sound(frequency, duration, fill, loop, voice, volume) 
+    backend.audio.play_sound(frequency, duration, fill, loop, voice, volume) 
     if voice == 2:
         # reset linked noise frequencies
         # /2 because we're using a 0x4000 rotation rather than 0x8000
@@ -61,18 +52,18 @@ def play_sound(frequency, duration, fill=1, loop=False, voice=0, volume=15):
     wait_music(15, wait_last=False)    
 
 def play_noise(source, volume, duration, loop=False):
-    backend.sound.set_noise(source > 3)
+    backend.audio.set_noise(source > 3)
     frequency = state.console_state.noise_freq[source]
     state.console_state.music_queue[3].append((frequency, duration, 1, loop, volume))
-    backend.sound.play_sound(frequency, duration, 1, loop, 3, volume) 
+    backend.audio.play_sound(frequency, duration, 1, loop, 3, volume) 
     # don't wait for noise
 
 def stop_all_sound():
     state.console_state.music_queue = [ [], [], [], [] ]
-    backend.sound.stop_all_sound()
+    backend.audio.stop_all_sound()
         
 def wait_music(wait_length=0, wait_last=True):
-    while ((wait_last and backend.sound.busy()) 
+    while ((wait_last and backend.audio.busy()) 
                 or len(state.console_state.music_queue[0]) + wait_last - 1 > wait_length
                 or len(state.console_state.music_queue[1]) + wait_last - 1 > wait_length
                 or len(state.console_state.music_queue[2]) + wait_last - 1 > wait_length ):

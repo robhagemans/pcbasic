@@ -10,11 +10,8 @@
 #
 
 import config
-import timedate
 import flow
 import state
-import sound
-import backend
 
 def prepare():
     """ Initialise on_event module. """
@@ -94,45 +91,6 @@ def reset_events():
                 [state.basic_state.pen_handler] + state.basic_state.strig_handlers )
     state.basic_state.suspend_all_events = False
     
-def wait():
-    backend.idle()
-    check_events()
-        
-def check_events():
-    # check backend events
-    backend.check_events()
-    if state.basic_state.run_mode:
-        check_timer_event()
-        check_play_event()
-        check_com_events()
-        # KEY, PEN and STRIG are triggered elsewhere
-        # handle all events
-        for handler in state.basic_state.all_handlers:
-            handler.handle()
-
-def check_timer_event():
-    mutimer = timedate.timer_milliseconds() 
-    if mutimer >= state.basic_state.timer_start + state.basic_state.timer_period:
-        state.basic_state.timer_start = mutimer
-        state.basic_state.timer_handler.triggered = True
-
-def check_play_event():
-    play_now = [sound.music_queue_length(voice) for voice in range(3)]
-    if sound.pcjr_sound: 
-        for voice in range(3):
-            if ( play_now[voice] <= state.basic_state.play_trig and play_now[voice] > 0 and 
-                    play_now[voice] != state.basic_state.play_last[voice] ):
-                state.basic_state.play_handler.triggered = True 
-    else:    
-        if state.basic_state.play_last[0] >= state.basic_state.play_trig and play_now[0] < state.basic_state.play_trig:    
-            state.basic_state.play_handler.triggered = True     
-    state.basic_state.play_last = play_now
-
-def check_com_events():
-    ports = (state.io_state.devices['COM1:'], state.io_state.devices['COM2:'])
-    for comport in (0, 1):
-        if ports[comport] and ports[comport].peek_char():
-            state.basic_state.com_handlers[comport].triggered = True
             
 prepare()
 

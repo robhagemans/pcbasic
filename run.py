@@ -15,7 +15,7 @@ import program
 import statements 
 import console
 import state
-import on_event
+import backend
 import reset
 import flow
 
@@ -34,7 +34,7 @@ def loop(quit=False):
         if state.basic_state.execute_mode:
             try:
                 # may raise Break
-                on_event.check_events()
+                backend.check_events()
                 keep_running = statements.parse_statement()
                 # may raise Break or Error
                 set_execute_mode(keep_running, quit)
