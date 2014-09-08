@@ -574,19 +574,19 @@ def scroll_down(from_line, scroll_height, attr):
     surface1[apagenum].set_clip(None)
     screen_changed = True
 
-last_attr = None
-last_attr_context = None
+current_attr = None
+current_attr_context = None
 def set_attr(cattr, force_rebuild=False):
-    global last_attr, last_attr_context
-    if (not force_rebuild and cattr == last_attr and apagenum == last_attr_context):
+    global current_attr, current_attr_context
+    if (not force_rebuild and cattr == current_attr and apagenum == current_attr_context):
         return    
     color = (0, 0, cattr & 0xf)
     bg = (0, 0, (cattr>>4) & 0x7)    
     for glyph in glyphs:
         glyph.set_palette_at(255, bg)
         glyph.set_palette_at(254, color)
-    last_attr = cattr    
-    last_attr_context = apagenum
+    current_attr = cattr    
+    current_attr_context = apagenum
         
 def putc_at(row, col, c, for_keys=False):
     global screen_changed
@@ -595,7 +595,7 @@ def putc_at(row, col, c, for_keys=False):
     top_left = ((col-1) * font_width, (row-1) * font_height)
     if text_mode:
         surface1[apagenum].blit(glyph, top_left)
-    if last_attr >> 7: #blink:
+    if current_attr >> 7: #blink:
         surface0[apagenum].blit(blank, top_left)
     else:
         surface0[apagenum].blit(glyph, top_left)
@@ -604,8 +604,8 @@ def putc_at(row, col, c, for_keys=False):
 def putwc_at(row, col, c, d, for_keys=False):
     global screen_changed
     glyph = build_glyph(c+d, font, 16, font_height)
-    color = (0, 0, last_attr & 0xf)
-    bg = (0, 0, (last_attr>>4) & 0x7)    
+    color = (0, 0, current_attr & 0xf)
+    bg = (0, 0, (current_attr>>4) & 0x7)    
     glyph.set_palette_at(255, bg)
     glyph.set_palette_at(254, color)
     blank = pygame.Surface((16, font_height), depth=8)
@@ -614,7 +614,7 @@ def putwc_at(row, col, c, d, for_keys=False):
     top_left = ((col-1) * font_width, (row-1) * font_height)
     if text_mode:
         surface1[apagenum].blit(glyph, top_left)
-    if last_attr >> 7: #blink:
+    if current_attr >> 7: #blink:
         surface0[apagenum].blit(blank, top_left)
     else:
         surface0[apagenum].blit(glyph, top_left)
@@ -707,7 +707,7 @@ def refresh_cursor():
         if state.console_state.screen_mode in (3,4,5,6):
             index = 3
         else:
-            index = state.console_state.attr & 0xf
+            index = current_attr & 0xf
         if numpy:
             # reference the destination area
             dest_array = pygame.surfarray.pixels2d(screen.subsurface(pygame.Rect(
