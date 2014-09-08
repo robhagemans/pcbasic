@@ -77,6 +77,9 @@ def check_events():
 
 ##############################################
 
+def set_page(vpage, apage):
+    pass
+
 def putc_at(row, col, c, for_keys=False):
     pass
         

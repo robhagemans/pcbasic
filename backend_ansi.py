@@ -252,6 +252,9 @@ def check_keyboard():
         
 ########
 
+def set_page(vpage, apage):
+    pass
+
 def copy_page(src, dst):
     pass
         

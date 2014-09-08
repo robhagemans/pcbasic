@@ -495,13 +495,14 @@ def close():
 # console commands
 
 def update_palette(palette, num_palette):
-    global gamepalette
+    global gamepalette, screen_changed
     if num_palette == 64:
         gamepalette = [ gamecolours64[i] for i in palette ]
     else:
         cgapalette = gamecolours16 if (colorburst or not composite_monitor) else gamecolours16_mono
         gamepalette = [ cgapalette[i] for i in palette ]
     set_display_palette()
+    screen_changed = True
 
 def set_display_palette():
     global composite_artifacts

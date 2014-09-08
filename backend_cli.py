@@ -226,6 +226,9 @@ def check_keyboard():
                 console.insert_key(c)    
         c = ''
 
+def set_page(vpage, apage):
+    pass
+
 def copy_page(src, dst):
     pass
         

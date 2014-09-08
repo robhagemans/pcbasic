@@ -386,11 +386,9 @@ def set_colorburst(on=True):
         else:
             cga_palettes = [cga_palette_5, cga_palette_5]
         set_palette()    
-        backend.video.screen_changed = True
     elif backend.video.colorburst != old_colorburst:
         backend.video.update_palette(state.console_state.palette, 
                                      state.console_state.num_palette)
-        backend.video.screen_changed = True
 
 def check_video_memory():
     if state.console_state.screen_mode in (5, 6) and state.console_state.pcjr_video_mem_size < 32753:
