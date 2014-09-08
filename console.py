@@ -213,7 +213,8 @@ def prepare():
             state.console_state.keybuf += c
 
 def init():
-    global cga_palettes, fonts, mode_data
+    global cga_palettes, cga_palette_0, cga_palette_1, cga_palette_5 
+    global fonts, mode_data
     # reset modes in case init is called a second time for error fallback
     for mode in mode_data_default:
         mode_data[mode] = mode_data_default[mode]
@@ -225,6 +226,8 @@ def init():
         # 8-pixel characters, 16 colours in screen 0
         mode_data[0] = ( 8, 7, 32, 16, 80, 4, 4, 8 ) 
         # select pcjr cga palettes
+        cga_palette_0, cga_palette_1 = cga_palette_0_pcjr, cga_palette_1_pcjr
+        # pcjr does ot have mode 5
         cga_palettes[:] = [cga_palette_0_pcjr, cga_palette_1_pcjr]       
         # TODO: determine the number of pages based on video memory size, not hard coded. 
     elif video_capabilities in ('cga', 'cga_old'):
@@ -393,7 +396,8 @@ def set_colorburst(on=True):
     colorburst_capable = video_capabilities in ('cga', 'cga_old', 'tandy', 'pcjr')
     backend.video.colorburst = on and colorburst_capable
     if state.console_state.screen_mode == 1:
-        if backend.video.colorburst or not colorburst_capable:
+        if backend.video.colorburst or video_capabilities not in ('cga', 'cga_old'):
+            # ega ignores colorburst; tandy and pcjr have no mode 5
             cga_palettes = [cga_palette_0, cga_palette_1]
         else:
             cga_palettes = [cga_palette_5, cga_palette_5]
