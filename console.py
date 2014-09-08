@@ -155,7 +155,6 @@ def init():
     # reset modes in case init is called a second time for error fallback
     for mode in mode_data_default:
         mode_data[mode] = mode_data_default[mode]
-    state.console_state.backend_name = backend.video.__name__
     # only allow the screen modes that the given machine supports
     if video_capabilities in ('pcjr', 'tandy'):
         # no EGA modes (though apparently there were Tandy machines with EGA cards too)
@@ -333,6 +332,38 @@ def set_colorburst(on=True):
         backend.video.update_palette(state.console_state.palette, 
                                      state.console_state.num_palette)
 
+
+def set_width(to_width):
+    # raise an error if the width value doesn't make sense
+    if to_width not in (20, 40, 80):
+        return False
+    if to_width == state.console_state.width:
+        return True
+    if to_width == 20:
+        return screen(3, None, None, None)
+    elif state.console_state.screen_mode == 0:
+        return screen(0, None, None, None, new_width=to_width) 
+    elif state.console_state.screen_mode == 1 and to_width == 80:
+        return screen(2, None, None, None)
+    elif state.console_state.screen_mode == 2 and to_width == 40:
+        return screen(1, None, None, None)
+    elif state.console_state.screen_mode == 3 and to_width == 40:
+        return screen(1, None, None, None)
+    elif state.console_state.screen_mode == 3 and to_width == 80:
+        return screen(2, None, None, None)
+    elif state.console_state.screen_mode == 4 and to_width == 80:
+        return screen(2, None, None, None)
+    elif state.console_state.screen_mode == 5 and to_width == 80:
+        return screen(6, None, None, None)
+    elif state.console_state.screen_mode == 6 and to_width == 40:
+        return screen(5, None, None, None)
+    elif state.console_state.screen_mode == 7 and to_width == 80:
+        return screen(8, None, None, None)
+    elif state.console_state.screen_mode == 8 and to_width == 40:
+        return screen(7, None, None, None)
+    elif state.console_state.screen_mode == 9 and to_width == 40:
+        return screen(7, None, None, None)
+
 def check_video_memory():
     if state.console_state.screen_mode in (5, 6) and state.console_state.pcjr_video_mem_size < 32753:
         screen (0, None, None, None)
@@ -462,7 +493,7 @@ def wait_interactive(from_start=False, alt_replace = True):
         elif d in ('\x00\x47', '\x0B'):     set_pos(1, 1)                           # <HOME> <CTRL+K>
         elif d in ('\x00\x4F', '\x0E'):     end()                                   # <END> <CTRL+N>
         elif d in ('\x00\x77', '\x0C'):     clear()                                 # <CTRL+HOME> <CTRL+L>   
-        elif d == '\x00\x37':               print_screen()                          # <SHIFT+PRT_SC>, already caught in wait_char()
+        elif d == '\x00\x37':               backend.print_screen()                  # <SHIFT+PRT_SC>, already caught in wait_char()
         else:
             try:
                 # these are done on a less deep level than the fn key replacement
@@ -799,37 +830,6 @@ def list_line(line):
     if len(line) == state.console_state.width and state.console_state.row > 2:
         state.console_state.apage.row[state.console_state.row-3].wrap = False
     
-def set_width(to_width):
-    # raise an error if the width value doesn't make sense
-    if to_width not in (20, 40, 80):
-        return False
-    if to_width == state.console_state.width:
-        return True
-    if to_width == 20:
-        return screen(3, None, None, None)
-    elif state.console_state.screen_mode == 0:
-        return screen(0, None, None, None, new_width=to_width) 
-    elif state.console_state.screen_mode == 1 and to_width == 80:
-        return screen(2, None, None, None)
-    elif state.console_state.screen_mode == 2 and to_width == 40:
-        return screen(1, None, None, None)
-    elif state.console_state.screen_mode == 3 and to_width == 40:
-        return screen(1, None, None, None)
-    elif state.console_state.screen_mode == 3 and to_width == 80:
-        return screen(2, None, None, None)
-    elif state.console_state.screen_mode == 4 and to_width == 80:
-        return screen(2, None, None, None)
-    elif state.console_state.screen_mode == 5 and to_width == 80:
-        return screen(6, None, None, None)
-    elif state.console_state.screen_mode == 6 and to_width == 40:
-        return screen(5, None, None, None)
-    elif state.console_state.screen_mode == 7 and to_width == 80:
-        return screen(8, None, None, None)
-    elif state.console_state.screen_mode == 8 and to_width == 40:
-        return screen(7, None, None, None)
-    elif state.console_state.screen_mode == 9 and to_width == 40:
-        return screen(7, None, None, None)
-
 #####################
 # key replacement
 
@@ -973,6 +973,7 @@ def check_pos(scroll_ok=True):
     return state.console_state.row == oldrow and state.console_state.col == oldcol
 
 def start_line():
+    """ Move the cursor to the start of the next line, this line if empty. """
     if state.console_state.col != 1:
         for echo in backend.input_echos:
             echo('\r\n')
@@ -980,18 +981,25 @@ def start_line():
         set_pos(state.console_state.row + 1, 1)
     # ensure line above doesn't wrap    
     state.console_state.apage.row[state.console_state.row-2].wrap = False    
-
+        
+def write_error_message(msg, linenum):
+    """ Write an error message to the console. """
+    start_line()
+    write(msg) 
+    if linenum != None and linenum > -1 and linenum < 65535:
+        write(' in %i' % linenum)
+    write_line(' ')                  
 
 ####################
 # keyboard read
     
-# non-blocking keystroke read
 def get_char():
-    wait()    
+    """ Read any keystroke, nonblocking. """
+    backend.wait()    
     return backend.pass_char(backend.peek_char())
 
-# blocking keystroke read
 def read_chars(num):
+    """ Read num keystrokes, blocking. """
     word = []
     for _ in range(num):
         backend.wait_char()
@@ -1002,28 +1010,42 @@ def read_chars(num):
 # viewport / scroll area
 
 def set_view(start=1, stop=24):
-    state.console_state.view_set, state.console_state.view_start, state.console_state.scroll_height = True, start, stop
+    """ Set the scroll area. """
+    state.console_state.view_set = True 
+    state.console_state.view_start = start 
+    state.console_state.scroll_height = stop
     set_pos(start, 1)
  
 def unset_view():
+    """ Unset scroll area. """
     set_view()
     state.console_state.view_set = False
 
 def clear_view():
+    """ Clear the scroll area. """
     if video_capabilities in ('ega', 'cga', 'cga_old'):
         # keep background, set foreground to 7
-        attr_save, state.console_state.attr = state.console_state.attr, state.console_state.attr & 0x70 | 0x7
-    for r in range(state.console_state.view_start, state.console_state.scroll_height+1):
+        attr_save = state.console_state.attr
+        state.console_state.attr = state.console_state.attr & 0x70 | 0x7
+    for r in range(state.console_state.view_start, 
+                    state.console_state.scroll_height+1):
         state.console_state.apage.row[r-1].clear()
         state.console_state.apage.row[r-1].wrap = False
-    state.console_state.row, state.console_state.col = state.console_state.view_start, 1
-    backend.video.clear_rows(state.console_state.attr, state.console_state.view_start, state.console_state.height if state.console_state.bottom_row_allowed else state.console_state.scroll_height)
-    backend.video.move_cursor(state.console_state.row,state. console_state.col)
+    state.console_state.row = state.console_state.view_start 
+    state.console_state.col = 1
+    if state.console_state.bottom_row_allowed:
+        last_row = state.console_state.height 
+    else:
+        last_row = state.console_state.scroll_height 
+    backend.video.clear_rows(state.console_state.attr, 
+                             state.console_state.view_start, last_row)
+    backend.video.move_cursor(state.console_state.row, state.console_state.col)
     if video_capabilities in ('ega', 'cga', 'cga_old'):
         # restore attr
         state.console_state.attr = attr_save
     
 def scroll(from_line=None): 
+    """ Scroll the scroll region up by one line, starting at from_line. """
     if from_line == None:
         from_line = state.console_state.view_start
     backend.video.scroll(from_line, state.console_state.scroll_height, 
@@ -1031,27 +1053,24 @@ def scroll(from_line=None):
     # sync buffers with the new screen reality:
     if state.console_state.row > from_line:
         state.console_state.row -= 1
-    state.console_state.apage.row.insert(state.console_state.scroll_height, ScreenRow(state.console_state.width))
+    state.console_state.apage.row.insert(
+            state.console_state.scroll_height, 
+            backend.ScreenRow(state.console_state.width))
     del state.console_state.apage.row[from_line-1]
    
 def scroll_down(from_line):
+    """ Scroll the scroll region down by one line, starting at from_line. """
     backend.video.scroll_down(from_line, state.console_state.scroll_height, 
-                         state.console_state.attr)
+                              state.console_state.attr)
     if state.console_state.row >= from_line:
         state.console_state.row += 1
     # sync buffers with the new screen reality:
-    state.console_state.apage.row.insert(from_line-1, ScreenRow(state.console_state.width))
+    state.console_state.apage.row.insert(
+            from_line - 1, 
+            backend.ScreenRow(state.console_state.width))
     del state.console_state.apage.row[state.console_state.scroll_height-1] 
 
-
 ################################################
-        
-def write_error_message(msg, linenum):
-    start_line()
-    write(msg) 
-    if linenum != None and linenum > -1 and linenum < 65535:
-        write(' in %i' % linenum)
-    write_line(' ')                  
 
 prepare()
 
