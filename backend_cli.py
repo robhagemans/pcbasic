@@ -16,7 +16,6 @@ import plat
 import unicodepage
 import error
 import backend
-import console
 import state
 
 # output to stdout
