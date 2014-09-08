@@ -104,6 +104,9 @@ def scroll(from_line):
 def scroll_down(from_line):
     pass
 
+def move_cursor(crow, ccol):
+    pass
+
 def update_cursor_attr(attr):
     pass
         

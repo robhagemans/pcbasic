@@ -186,6 +186,10 @@ def update_palette(palette, num_palette):
 
 ####
 
+def move_cursor(crow, ccol):
+    global row, col
+    row, col = crow, ccol
+
 def update_cursor_attr(attr):
 #    term.write(esc_set_cursor_colour % get_fg_colourname(attr))
     pass

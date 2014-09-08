@@ -120,6 +120,9 @@ def clear_rows(cattr, start, stop):
 def update_palette(palette, num_palette):
     pass
 
+def move_cursor(crow, ccol):
+    pass
+
 def update_cursor_attr(attr):
     pass
     

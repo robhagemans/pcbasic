@@ -249,6 +249,7 @@ def init():
             # fix the cursor
             backend.video.build_cursor(state.console_state.cursor_width, state.console_state.font_height, 
                 state.console_state.cursor_from, state.console_state.cursor_to)    
+            backend.video.move_cursor(state.console_state.row,state. console_state.col)
             backend.video.update_cursor_attr(
                     state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
             update_cursor_visibility()
@@ -355,7 +356,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
         # in screen 0, 1, set colorburst (not in SCREEN 2!)
         if new_mode in (0, 1):
             set_colorburst(new_colorswitch)
-        elif new_mode ==2:
+        elif new_mode == 2:
             set_colorburst(False)    
     else:
         # set active page & visible page, counting from 0. 
@@ -1218,12 +1219,14 @@ def check_wrap(do_scroll_down):
                 scroll_down(state.console_state.row+1)
         state.console_state.row += 1
         state.console_state.col = 1
+        backend.video.move_cursor(state.console_state.row,state. console_state.col)
             
 def set_pos(to_row, to_col, scroll_ok=True):
     state.console_state.overflow = False
     state.console_state.row, state.console_state.col = to_row, to_col
     check_pos(scroll_ok)
     backend.video.update_cursor_attr(state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
+    backend.video.move_cursor(state.console_state.row,state. console_state.col)
 
 def check_pos(scroll_ok=True):
     oldrow, oldcol = state.console_state.row, state.console_state.col
@@ -1232,6 +1235,7 @@ def check_pos(scroll_ok=True):
             state.console_state.col = min(state.console_state.width, state.console_state.col)
             if state.console_state.col < 1:
                 state.console_state.col += 1    
+            backend.video.move_cursor(state.console_state.row,state. console_state.col)
             return state.console_state.col == oldcol    
         else:
             # if row > height, we also end up here (eg if we do INPUT on the bottom row)
@@ -1260,6 +1264,7 @@ def check_pos(scroll_ok=True):
         state.console_state.row = state.console_state.scroll_height
     elif state.console_state.row < state.console_state.view_start:
         state.console_state.row = state.console_state.view_start
+    backend.video.move_cursor(state.console_state.row,state. console_state.col)
     # signal position change
     return state.console_state.row == oldrow and state.console_state.col == oldcol
 
@@ -1293,10 +1298,11 @@ def clear_view():
         state.console_state.apage.row[r-1].wrap = False
     state.console_state.row, state.console_state.col = state.console_state.view_start, 1
     backend.video.clear_rows(state.console_state.attr, state.console_state.view_start, state.console_state.height if state.console_state.bottom_row_allowed else state.console_state.scroll_height)
+    backend.video.move_cursor(state.console_state.row,state. console_state.col)
     if video_capabilities in ('ega', 'cga', 'cga_old'):
         # restore attr
         state.console_state.attr = attr_save
-            
+    
 def scroll(from_line=None): 
     if from_line == None:
         from_line = state.console_state.view_start

@@ -131,6 +131,10 @@ def get_colours(attr):
     back = 40 + colours[back%8]
     return fore, back
 
+def move_cursor(crow, ccol):
+    global row, col
+    row, col = crow, ccol
+
 def update_cursor_attr(attr):
     term.write(esc_set_cursor_colour % get_fg_colourname(attr))
     term.flush()

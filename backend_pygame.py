@@ -521,6 +521,10 @@ def update_cursor_visibility(cursor_on):
     cursor_visible = cursor_on
     screen_changed = True
 
+def move_cursor(crow, ccol):
+    global cursor_row, cursor_col
+    cursor_row, cursor_col = crow, ccol
+
 def update_cursor_attr(attr):
     cursor0.set_palette_at(254, screen.get_palette_at(attr))
 
@@ -681,19 +685,19 @@ def refresh_cursor():
     if not  cursor_visible or state.console_state.vpage != state.console_state.apage:
         return
     # copy screen under cursor
-    under_top_left = (  (state.console_state.col-1) * font_width,
-                        (state.console_state.row-1) * font_height)
+    under_top_left = (  (cursor_col-1) * font_width,
+                        (cursor_row-1) * font_height)
     under_char_area = pygame.Rect(
-            (state.console_state.col-1) * font_width, 
-            (state.console_state.row-1) * font_height, 
-            (state.console_state.col-1) * font_width + cursor_width,
-            state.console_state.row * font_height)
+            (cursor_col-1) * font_width, 
+            (cursor_row-1) * font_height, 
+            (cursor_col-1) * font_width + cursor_width,
+            cursor_row * font_height)
     under_cursor.blit(screen, (0,0), area=under_char_area)
     if text_mode:
         # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
         if (cycle/blink_cycles==1 or cycle/blink_cycles==3): 
-            screen.blit(cursor0, (  (state.console_state.col-1) * font_width,
-                                    (state.console_state.row-1) * font_height) )
+            screen.blit(cursor0, (  (cursor_col-1) * font_width,
+                                    (cursor_row-1) * font_height) )
     else:
         if state.console_state.screen_mode in (3,4,5,6):
             index = 3
@@ -702,21 +706,21 @@ def refresh_cursor():
         if numpy:
             # reference the destination area
             dest_array = pygame.surfarray.pixels2d(screen.subsurface(pygame.Rect(
-                                (state.console_state.col-1) * font_width, 
-                                (state.console_state.row-1) * font_height + cursor_from, 
+                                (cursor_col-1) * font_width, 
+                                (cursor_row-1) * font_height + cursor_from, 
                                 cursor_width, 
                                 cursor_to - cursor_from + 1))) 
             dest_array ^= index
         else:
             # no surfarray if no numpy    
-            for x in range(     (state.console_state.col-1) * font_width, 
-                                  (state.console_state.col-1) * font_width + cursor_width):
-                for y in range((state.console_state.row-1) * font_height + cursor_from, 
-                                (state.console_state.row-1) * font_height + cursor_to + 1):
+            for x in range(     (cursor_col-1) * font_width, 
+                                  (cursor_col-1) * font_width + cursor_width):
+                for y in range((cursor_row-1) * font_height + cursor_from, 
+                                (cursor_row-1) * font_height + cursor_to + 1):
                     pixel = get_pixel(x,y)
                     screen.set_at((x,y), pixel^index)
-    last_row = state.console_state.row
-    last_col = state.console_state.col
+    last_row = cursor_row
+    last_col = cursor_col
         
 def pause_key():
     # pause key press waits for any key down. continues to process screen events (blink) but not user events.
@@ -781,7 +785,7 @@ def check_screen():
         if cycle == blink_cycles*4: 
             cycle = 0
         cursor_changed = ( (text_mode and cycle%blink_cycles == 0) 
-                           or (state.console_state.row != last_row) or (state.console_state.col != last_col) )
+                           or (cursor_row != last_row) or (cursor_col != last_col) )
         if screen_changed:
             refresh_screen()
             do_flip()
@@ -969,8 +973,8 @@ class Clipboard(object):
             return 
         """ Enter clipboard mode (Logo key pressed). """
         self.logo_pressed = True
-        self.select_start = [state.console_state.row, state.console_state.col]
-        self.select_stop = [state.console_state.row, state.console_state.col]
+        self.select_start = [cursor_row, cursor_col]
+        self.select_stop = [cursor_row, cursor_col]
         self.selection_rect = [pygame.Rect((self.select_start[1]-1) * font_width,
             (self.select_start[0]-1) * font_height, font_width, font_height)]
         
