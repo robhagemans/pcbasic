@@ -139,7 +139,7 @@ def handle_error(s, quit):
             try:    
                 program.edit(program.get_line_number(s.pos), state.basic_state.bytecode.tell())
             except error.RunError as e:
-                handle_error(e)
+                handle_error(e, quit)
 
 def handle_break(e):
     # print ^C at current position
