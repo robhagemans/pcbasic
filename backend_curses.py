@@ -22,9 +22,11 @@ except ImportError:
         curses = None
         
 import unicodepage
-import error
 import backend
+#
 import state
+#
+import error
 
 # for a few ansi sequences not supported by curses
 # onlu yse these if you clear the screen afterwards, 

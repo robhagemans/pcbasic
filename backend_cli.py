@@ -12,10 +12,13 @@
 import sys
 import time
 import os
+
 import plat
 import unicodepage
-import error
 import backend
+#
+import error
+#
 import state
 
 # output to stdout

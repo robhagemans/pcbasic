@@ -27,8 +27,10 @@ except ImportError:
     tty = None
 
 import unicodepage
-import error
 import backend
+#
+import error
+#
 import state
 
 # escape sequences

@@ -35,11 +35,14 @@ else:
 import logging
 
 import config
-import error
 import unicodepage 
-import state
 import backend
 import typeface
+#
+import state
+#
+import error
+
 
 # default font family
 font_families = ['unifont', 'univga', 'freedos']
