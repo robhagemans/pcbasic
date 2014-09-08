@@ -22,7 +22,6 @@ import error
 import fp
 # for dbcs
 import unicodepage
-import typeface
 
 class ScreenRow(object):
     def __init__(self, bwidth):
@@ -176,9 +175,6 @@ cga_palette_1 = cga_palette_1_hi
 cga_palette_5 = cga_palette_5_hi
 cga_palettes = [cga_palette_0, cga_palette_1]
 
-# default font family
-font_families = ['unifont', 'univga', 'freedos']
-fonts = {}
         
 #############################
 # init
@@ -213,7 +209,7 @@ def prepare():
             state.console_state.keybuf += c
 
 def init():
-    global cga_palettes, fonts, mode_data
+    global cga_palettes, mode_data
     # reset modes in case init is called a second time for error fallback
     for mode in mode_data_default:
         mode_data[mode] = mode_data_default[mode]
@@ -237,47 +233,19 @@ def init():
         unavailable_modes = [3, 4, 5, 6]
     for mode in unavailable_modes:
         del mode_data[mode]
-    if not backend.video.supports_graphics:    
-        mode_data = { 0: ( 16,  7, 32, 64, 80, 4, 4, 8 ) }
-    else:
-        # load fonts
-        heights_needed = reversed(sorted(set([mode_data[mode][0] for mode in mode_data])))
-        for height in heights_needed:
-            if height in fonts:
-                # already force loaded
-                continue
-            # load a Unifont .hex font and take the codepage subset
-            fonts[height] = typeface.load(font_families, height, unicodepage.cp_to_utf8)
-            # fix missing code points font based on 16-line font
-            if 16 in fonts:
-                typeface.fixfont(height, fonts[height], unicodepage.cp_to_utf8, fonts[16])
-        # remove modes for which we don't have fonts
-        disabled_modes = []
-        for i in mode_data:
-            mode = mode_data[i]
-            if mode[0] not in fonts or not fonts[mode[0]]:
-                logging.warning("No font of height %d found. Screen mode %d not supported.", mode[0], i )
-                disabled_modes.append(i)
-        for mode in disabled_modes:
-            del mode_data[mode]
     # text mode backends: delete all graphics modes    
     # reload the screen in resumed state
     if state.loaded:
-        if state.console_state.screen_mode not in mode_data:
+        # set up the appropriate screen resolution
+        if not backend.video.init_screen_mode(mode_data[state.console_state.screen_mode]):
+            # mode not supported by backend
+            logging.error("Resumed screen mode %d not supported by display backend.",  state.console_state.screen_mode)
             # fix the terminal
             backend.video.close()
-            logging.error("Resumed screen mode %d not supported by display backend.",  state.console_state.screen_mode)
             return False
-        # set up the appropriate screen resolution
-        backend.video.init_screen_mode()
         # load the screen contents from storage
         backend.video.load_state()
     else:        
-        if 0 not in mode_data:
-            # fix the terminal
-            backend.video.close()
-            logging.error("Text mode not supported by display backend.")
-            return False        
         screen(None, None, None, None, first_run=True)
     return True
 
@@ -298,13 +266,15 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
     if new_mode in (5, 6) and state.console_state.pcjr_video_mem_size < 32753:
         raise error.RunError(5)
     try:
-        info = mode_data[new_mode]
+        info = list(mode_data[new_mode])
     except KeyError:
         # no such mode
         info = None
+    # and not backend.video.supports_mode(info)
     # vpage and apage nums are persistent on mode switch
     # if the new mode has fewer pages than current vpage/apage, illegal fn call before anything happens.
-    if not info or new_apagenum >= info[5] or new_vpagenum >= info[5] or (new_mode != 0 and not backend.video.supports_graphics):
+    if (not info or new_apagenum >= info[5] or new_vpagenum >= info[5] or 
+            (new_mode != 0 and not backend.video.supports_graphics_mode(info))):
         # reset palette happens even if the function fails with Illegal Function Call
         set_palette()
         return False
@@ -315,17 +285,15 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
                 new_width = state.console_state.width 
                 if new_width == 20:
                     new_width = 40
-            else:
-                new_width = info[4]        
-        if not (state.console_state.screen_mode == 0 and new_mode == 0 
+                info[4] = new_width    
+        if (state.console_state.screen_mode == 0 and new_mode == 0 
                 and state.console_state.apagenum == new_apagenum and state.console_state.vpagenum == new_vpagenum):
-            # preserve attribute (but not palette) on screen 0 width switch
-            state.console_state.attr = info[1]            
+            info[1] = state.console_state.attr              
         # set all state vars
         state.console_state.screen_mode, state.console_state.colorswitch = new_mode, new_colorswitch 
-        state.console_state.width, state.console_state.height = new_width, 25
-        (   state.console_state.font_height, _, 
-            state.console_state.num_colours, state.console_state.num_palette, _, 
+        state.console_state.height = 25
+        (   state.console_state.font_height, state.console_state.attr, 
+            state.console_state.num_colours, state.console_state.num_palette, state.console_state.width, 
             state.console_state.num_pages, state.console_state.bitsperpixel, state.console_state.font_width ) = info  
         # enforce backend palette maximum
         state.console_state.num_palette = min(state.console_state.num_palette, backend.video.max_palette)
@@ -359,7 +327,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
         # set the palette (essential on first run, or not all globals are defined)
         set_palette()
         # signal the backend to change the screen resolution
-        backend.video.init_screen_mode()
+        backend.video.init_screen_mode(info, state.console_state.screen_mode==0)
         # only redraw keys if screen has been cleared (any colours stay the same). state.console_state.screen_mode must be set for this
         if state.console_state.keys_visible:  
             show_keys(True)

@@ -18,9 +18,6 @@ import error
 import console
 import state
 
-# don't allow graphical SCREENs
-supports_graphics = False
-
 # palette is ignored
 max_palette = 64
 
@@ -99,8 +96,11 @@ def init():
     term_echo(False)
     term.flush()
     return True
+        
+def supports_graphics_mode(mode_info):
+    return False
     
-def init_screen_mode():
+def init_screen_mode(mode_info, is_text_mode=False):
     pass
     
 def close():

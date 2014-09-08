@@ -19,9 +19,6 @@ import plat
 import state
 import redirect
 
-# don't allow switch to graphics mode
-supports_graphics = False
-
 # palette is ignored
 max_palette = 64
 
@@ -92,7 +89,10 @@ def close():
 def clear_rows(attr, start, stop):
     pass
 
-def init_screen_mode():
+def supports_graphics_mode(mode_info):
+    return False
+
+def init_screen_mode(mode_info, is_text_mode=False):
     pass
 
 def copy_page(src, dst):

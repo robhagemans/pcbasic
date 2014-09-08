@@ -32,7 +32,6 @@ import state
 import ansi
 
 # not supported, but need to be defined
-supports_graphics = False
 max_palette = 16
 palette_changed = True
 
@@ -106,7 +105,10 @@ def init():
     sys.stdout.write(ansi.esc_set_title % 'PC-BASIC 3.23')
     return True
     
-def init_screen_mode():
+def supports_graphics_mode(mode_info):
+    return False
+    
+def init_screen_mode(mode_info=None, is_text_mode=False):
     global window
     if window:
         window.clear()

@@ -40,11 +40,14 @@ import unicodepage
 import console
 import state
 import backend
+import typeface
 
-# this backend provides graphics commands
-supports_graphics = True
 # max number of colours in the palette
 max_palette = 64
+
+# default font family
+font_families = ['unifont', 'univga', 'freedos']
+fonts = {}
 
 if pygame:
     # CGA palette choices
@@ -315,10 +318,10 @@ def load_state():
     if load_flag:
         try:
             for i in range(len(surface0)):    
-                surface0[i] = pygame.image.fromstring(display_strings[0][i], state.console_state.size, 'P')
+                surface0[i] = pygame.image.fromstring(display_strings[0][i], size, 'P')
                 surface0[i].set_palette(workaround_palette)
             for i in range(len(surface1)):    
-                surface1[i] = pygame.image.fromstring(display_strings[1][i], state.console_state.size, 'P')
+                surface1[i] = pygame.image.fromstring(display_strings[1][i], size, 'P')
                 surface1[i].set_palette(workaround_palette)
             screen_changed = True    
         except IndexError:
@@ -330,6 +333,7 @@ def load_state():
 
 def init():
     global joysticks, physical_size, scrap, display_size, display_size_text
+    global text_mode
     # set state objects to whatever is now in state (may have been unpickled)
     if not pygame:
         logging.warning('Could not find PyGame module. Failed to initialise graphical interface.')
@@ -362,39 +366,70 @@ def init():
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
     for j in joysticks:
         j.init()
-    scrap = Clipboard()  
+    scrap = Clipboard() 
+    heights_needed = reversed(sorted(set([console.mode_data[mode][0] 
+                                for mode in console.mode_data]))) 
+    load_fonts(heights_needed)
+    text_mode = True    
     return True
-  
-def init_screen_mode():
+
+def load_fonts(heights_needed):
+    """ Load font typefaces. """
+    for height in heights_needed:
+        if height in fonts:
+            # already force loaded
+            continue
+        # load a Unifont .hex font and take the codepage subset
+        fonts[height] = typeface.load(font_families, height, 
+                                      unicodepage.cp_to_utf8)
+        # fix missing code points font based on 16-line font
+        if 16 in fonts:
+            typeface.fixfont(height, fonts[height], 
+                             unicodepage.cp_to_utf8, fonts[16])
+
+def supports_graphics_mode(mode_info):
+    """ Return whether we support a given graphics mode. """
+    font_height, attr, num_colours, num_palette, width, num_pages, bitsperpixel, font_width = mode_info
+    if not font_height in fonts:
+        return False
+    return True
+
+def init_screen_mode(mode_info, is_text_mode=False):
+    """ Initialise a given graphics mode. """
     global glyphs, cursor0
     global screen, screen_changed, surface0, surface1
-    global font, under_cursor
-    try:
-        font = console.fonts[state.console_state.font_height]
-    except KeyError:
-        font = None
+    global font, under_cursor, size, text_mode
+    text_mode = is_text_mode
+    # unpack mode info struct
+    (font_height, attr, num_colours, num_palette, 
+           width, num_pages, bitsperpixel, font_width) = mode_info
+    num_palette = min(num_palette, max_palette)
+    font = fonts[font_height]
     # without this the palette is not prepared when resuming
     update_palette()
-    glyphs = [ build_glyph(chr(c), font, state.console_state.font_width, state.console_state.font_height) for c in range(256) ]
+    glyphs = [ build_glyph(chr(c), font, font_width, font_height) 
+                    for c in range(256) ]
     # initialise glyph colour
-    set_attr(state.console_state.attr, force_rebuild=True)
-    if state.console_state.screen_mode == 0:
+    set_attr(attr, force_rebuild=True)
+    if is_text_mode:
         resize_display(*display_size_text)
     else:
         resize_display(*display_size)
-    screen = pygame.Surface(state.console_state.size, depth=8)
+    # logical size    
+    height = 25
+    size = (width * font_width, height * font_height)    
+    screen = pygame.Surface(size, depth=8)
     # set standard cursor
-    build_cursor(state.console_state.cursor_width, state.console_state.font_height, 
-                        state.console_state.cursor_from, state.console_state.cursor_to)
+    build_cursor(font_width, font_height, 0, font_height)
     # whole screen (blink on & off)
-    surface0 = [ pygame.Surface(state.console_state.size, depth=8) for _ in range(state.console_state.num_pages)]
-    surface1 = [ pygame.Surface(state.console_state.size, depth=8) for _ in range(state.console_state.num_pages)]
-    for i in range(state.console_state.num_pages):
+    surface0 = [ pygame.Surface(size, depth=8) for _ in range(num_pages)]
+    surface1 = [ pygame.Surface(size, depth=8) for _ in range(num_pages)]
+    for i in range(num_pages):
         surface0[i].set_palette(workaround_palette)
         surface1[i].set_palette(workaround_palette)
     screen.set_palette(workaround_palette)
     screen_changed = True
-  
+    
 def resize_display(width, height, initial=False): 
     global display, screen_changed
     global fullscreen
@@ -403,7 +438,10 @@ def resize_display(width, height, initial=False):
     if fullscreen or (width, height) == physical_size:
         fullscreen = True
         flags |= pygame.FULLSCREEN | pygame.NOFRAME
-        width, height = display_size if (not initial and state.console_state.screen_mode != 0) else display_size_text
+        if (not initial and not text_mode):
+            width, height = display_size 
+        else:    
+            width, height = display_size_text
         # scale suggested dimensions to largest integer times pixel size that fits
         scale = min( physical_size[0]//width, physical_size[1]//height )
         width, height = width * scale, height * scale
@@ -464,7 +502,7 @@ def set_display_palette():
 def clear_rows(cattr, start, stop):
     global screen_changed
     bg = (cattr>>4) & 0x7
-    scroll_area = pygame.Rect(0, (start-1)*state.console_state.font_height, state.console_state.size[0], (stop-start+1)*state.console_state.font_height) 
+    scroll_area = pygame.Rect(0, (start-1)*state.console_state.font_height, size[0], (stop-start+1)*state.console_state.font_height) 
     surface0[state.console_state.apagenum].fill(bg, scroll_area)
     surface1[state.console_state.apagenum].fill(bg, scroll_area)
     screen_changed = True
@@ -724,7 +762,7 @@ def check_screen():
     global cycle, last_cycle
     global screen_changed
     global blink_state
-    if not state.console_state.screen_mode:
+    if text_mode:
         if cycle == 0:
             blink_state = 0
             screen_changed = True
@@ -737,7 +775,7 @@ def check_screen():
         cycle += 1
         if cycle == blink_cycles*4: 
             cycle = 0
-        cursor_changed = ( (not state.console_state.screen_mode and cycle%blink_cycles == 0) 
+        cursor_changed = ( (text_mode and cycle%blink_cycles == 0) 
                            or (state.console_state.row != last_row) or (state.console_state.col != last_col) )
         if screen_changed:
             refresh_screen()
@@ -1015,7 +1053,7 @@ class Clipboard(object):
             self.selection_rect = [pygame.Rect(rect_left, rect_top, rect_right-rect_left, rect_bot-rect_top)]
         else:
             self.selection_rect = [
-              pygame.Rect(rect_left, rect_top, state.console_state.size[0]-rect_left, rect_bot-rect_top-state.console_state.font_height),
+              pygame.Rect(rect_left, rect_top, size[0]-rect_left, rect_bot-rect_top-state.console_state.font_height),
               pygame.Rect(0, rect_top+state.console_state.font_height, rect_right, rect_bot-rect_top-state.console_state.font_height)
                 ]
         screen_changed = True
@@ -1129,7 +1167,7 @@ def fast_put(x0, y0, varname, operation_char):
     except KeyError:
         # not yet stored, do it the slow way
         return False
-    if x0 < 0 or x0 + width > state.console_state.size[0] or y0 < 0 or y0 + height > state.console_state.size[1]:
+    if x0 < 0 or x0 + width > size[0] or y0 < 0 or y0 + height > size[1]:
         # let the normal version handle errors
         return False    
     # varname must exist at this point (or PUT would have raised error 5)       
@@ -1165,7 +1203,7 @@ def trigger_pen(pos):
     state.basic_state.pen_handler.triggered = True
     pen_down = -1 # TRUE
     display_info = pygame.display.Info()
-    xscale, yscale = display_info.current_w / (1.*state.console_state.size[0]), display_info.current_h / (1.*state.console_state.size[1])
+    xscale, yscale = display_info.current_w / (1.*size[0]), display_info.current_h / (1.*size[1])
     pen_down_pos = int(pos[0]//xscale), int(pos[1]//yscale)
                 
 def trigger_stick(joy, button):
@@ -1175,22 +1213,22 @@ def trigger_stick(joy, button):
 def get_pen(fn):
     global pen_down
     display_info = pygame.display.Info()
-    xscale, yscale = display_info.current_w / (1.*state.console_state.size[0]), display_info.current_h / (1.*state.console_state.size[1])
+    xscale, yscale = display_info.current_w / (1.*size[0]), display_info.current_h / (1.*size[1])
     pos = pygame.mouse.get_pos()
     posx, posy = int(pos[0]//xscale), int(pos[1]//yscale)
     if fn == 0:
         pen_down_old, pen_down = pen_down, 0
         return pen_down_old
     elif fn == 1:
-        return min(state.console_state.size[0]-1, max(0, pen_down_pos[0]))
+        return min(size[0]-1, max(0, pen_down_pos[0]))
     elif fn == 2:
-        return min(state.console_state.size[1]-1, max(0, pen_down_pos[1]))
+        return min(size[1]-1, max(0, pen_down_pos[1]))
     elif fn == 3:
         return -pygame.mouse.get_pressed()[0]
     elif fn == 4:
-        return min(state.console_state.size[0]-1, max(0, posx))
+        return min(size[0]-1, max(0, posx))
     elif fn == 5:
-        return min(state.console_state.size[1]-1, max(0, posy))
+        return min(size[1]-1, max(0, posy))
     elif fn == 6:
         return min(state.console_state.height, max(1, 1 + pen_down_pos[1]//state.console_state.font_height))
     elif fn == 7:

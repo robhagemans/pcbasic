@@ -34,7 +34,6 @@ import state
 # escape sequences
 from ansi import *
 
-supports_graphics = False
 max_palette = 16
 
 term_echo_on = True
@@ -74,8 +73,12 @@ def init():
     term.write(esc_set_title % 'PC-BASIC 3.23')
     term.flush()
     return True
+
     
-def init_screen_mode():
+def supports_graphics_mode(mode_info):
+    return False
+    
+def init_screen_mode(mode_info, is_text_mode=False):
     term.write(esc_clear_screen)
     term.write(esc_resize_term % (state.console_state.height, state.console_state.width))
     term.flush()
