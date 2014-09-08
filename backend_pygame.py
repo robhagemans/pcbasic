@@ -257,6 +257,9 @@ if pygame:
     
     # cursor is visible
     cursor_visible = True
+
+    # this doesn't currently change
+    height = 25
     
 ####################################            
 # set constants based on commandline arguments
@@ -264,6 +267,7 @@ if pygame:
 def prepare():
     global fullscreen, smooth, noquit, display_size
     global display_size_text, composite_monitor, heights_needed
+    global composite_640_palette
     # screen width and height in pixels
     display_size = (640, 480)
     display_size_text = (8*80, 16*25)
@@ -284,7 +288,9 @@ def prepare():
     fullscreen = config.options['fullscreen']
     smooth = config.options['smooth']    
     noquit = config.options['noquit']
-    composite_monitor = config.options['composite']
+    composite_monitor = config.options['composite'] and config.options['video'] != 'ega'
+    if composite_monitor:
+        composite_640_palette = composite_640[config.options['video']]
     if config.options['video'] == 'tandy':
         # enable tandy F11, F12
         # TODO: tandy scancodes are defined for many more keys than PC, e.g. ctrl+F5 and friends; check pcjr too
@@ -393,8 +399,7 @@ def load_fonts(heights_needed):
 def supports_graphics_mode(mode_info):
     """ Return whether we support a given graphics mode. """
     # unpack mode info struct
-    (font_height, attr, num_colours, num_palette, 
-           width, num_pages, bitsperpixel, font_width) = mode_info
+    font_height = mode_info[0]
     if not font_height in fonts:
         return False
     return True
@@ -406,10 +411,12 @@ def init_screen_mode(mode_info, is_text_mode=False):
     global font, under_cursor, size, text_mode
     global font_height, attr, num_colours, num_palette
     global width, num_pages, bitsperpixel, font_width
+    global mode_has_artifacts
     text_mode = is_text_mode
     # unpack mode info struct
     (font_height, attr, num_colours, num_palette, 
-           width, num_pages, bitsperpixel, font_width) = mode_info
+           width, num_pages, bitsperpixel, font_width,
+           mode_has_artifacts) = mode_info
     num_palette = min(num_palette, max_palette)
     font = fonts[font_height]
     glyphs = [ build_glyph(chr(c), font, font_width, font_height) 
@@ -498,9 +505,9 @@ def update_palette(palette, num_palette):
 
 def set_display_palette():
     global composite_artifacts
-    composite_artifacts = colorburst and state.console_state.screen_mode == 2 and composite_monitor
+    composite_artifacts = colorburst and mode_has_artifacts and composite_monitor
     if composite_artifacts:
-        display.set_palette(composite_640[console.video_capabilities]) 
+        display.set_palette(composite_640_palette) 
     elif not smooth:
         display.set_palette(gamepalette)
         

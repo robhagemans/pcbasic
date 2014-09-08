@@ -123,18 +123,18 @@ state.console_state.stick_is_on = False
 
 # for SCREEN
 
-#  font_height, attr, num_colours, num_palette, width, num_pages, bitsperpixel, font_width
+#  font_height, attr, num_colours, num_palette, width, num_pages, bitsperpixel, font_width, supports_artifacts
 mode_data_default = {
-    0: ( 16,  7, 32, 64, 80, 4, 4, 8 ), # height 8, 14, or 16; font width 8 or 9; height 40 or 80 
-    1: (  8,  3,  4, 16, 40, 1, 2, 8 ), # 04h 320x200x4  16384B 2bpp 0xb8000 tandy:2 pages if 32k memory; ega: 1 page only 
-    2: (  8,  1,  2, 16, 80, 1, 1, 8 ), # 06h 640x200x2  16384B 1bpp 0xb8000
-    3: (  8, 15, 16, 16, 20, 2, 4, 8 ), # 08h 160x200x16 16384B 4bpp 0xb8000
-    4: (  8,  3,  4, 16, 40, 2, 2, 8 ), #     320x200x4  16384B 2bpp 0xb8000   
-    5: (  8, 15, 16, 16, 40, 1, 4, 8 ), # 09h 320x200x16 32768B 4bpp 0xb8000    
-    6: (  8,  3,  4, 16, 80, 1, 2, 8 ), # 0Ah 640x200x4  32768B 2bpp 0xb8000   
-    7: (  8, 15, 16, 16, 40, 8, 4, 8 ), # 0Dh 320x200x16 32768B 4bpp 0xa0000
-    8: (  8, 15, 16, 16, 80, 4, 4, 8 ), # 0Eh 640x200x16 
-    9: ( 14, 15, 16, 64, 80, 2, 4, 8 ), # 10h 640x350x16 
+    0: ( 16,  7, 32, 64, 80, 4, 4, 8, False ), # height 8, 14, or 16; font width 8 or 9; height 40 or 80 
+    1: (  8,  3,  4, 16, 40, 1, 2, 8, False ), # 04h 320x200x4  16384B 2bpp 0xb8000 tandy:2 pages if 32k memory; ega: 1 page only 
+    2: (  8,  1,  2, 16, 80, 1, 1, 8, True ), # 06h 640x200x2  16384B 1bpp 0xb8000
+    3: (  8, 15, 16, 16, 20, 2, 4, 8, False ), # 08h 160x200x16 16384B 4bpp 0xb8000
+    4: (  8,  3,  4, 16, 40, 2, 2, 8, False ), #     320x200x4  16384B 2bpp 0xb8000   
+    5: (  8, 15, 16, 16, 40, 1, 4, 8, False ), # 09h 320x200x16 32768B 4bpp 0xb8000    
+    6: (  8,  3,  4, 16, 80, 1, 2, 8, False ), # 0Ah 640x200x4  32768B 2bpp 0xb8000   
+    7: (  8, 15, 16, 16, 40, 8, 4, 8, False ), # 0Dh 320x200x16 32768B 4bpp 0xa0000
+    8: (  8, 15, 16, 16, 80, 4, 4, 8, False ), # 0Eh 640x200x16 
+    9: ( 14, 15, 16, 64, 80, 2, 4, 8, False ), # 10h 640x350x16 
     }
 mode_data = {}
 
@@ -186,8 +186,6 @@ def prepare():
     global ignore_caps
     if config.options['video']:
         video_capabilities = config.options['video']
-    if video_capabilities == 'ega':
-        config.options['composite'] = False
     if config.options['cga_low']:
         cga_palette_0 = cga_palette_0_lo
         cga_palette_1 = cga_palette_1_lo
@@ -219,14 +217,14 @@ def init():
         # no EGA modes (though apparently there were Tandy machines with EGA cards too)
         unavailable_modes = [7, 8, 9]
         # 8-pixel characters, 16 colours in screen 0
-        mode_data[0] = ( 8, 7, 32, 16, 80, 4, 4, 8 ) 
+        mode_data[0] = (8, 7, 32, 16, 80, 4, 4, 8, False) 
         # select pcjr cga palettes
         cga_palettes[:] = [cga_palette_0_pcjr, cga_palette_1_pcjr]       
         # TODO: determine the number of pages based on video memory size, not hard coded. 
     elif video_capabilities in ('cga', 'cga_old'):
         unavailable_modes = [3, 4, 5, 6, 7, 8, 9]
         # 8-pixel characters, 16 colours in screen 0
-        mode_data[0] = ( 8, 7, 32, 16, 80, 4, 4, 8 ) 
+        mode_data[0] = (8, 7, 32, 16, 80, 4, 4, 8, False) 
     else:
         # EGA
         # no PCjr modes
@@ -315,7 +313,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
         state.console_state.height = 25
         (   state.console_state.font_height, state.console_state.attr, 
             state.console_state.num_colours, state.console_state.num_palette, state.console_state.width, 
-            state.console_state.num_pages, state.console_state.bitsperpixel, state.console_state.font_width ) = info  
+            state.console_state.num_pages, state.console_state.bitsperpixel, state.console_state.font_width, _ ) = info  
         # enforce backend palette maximum
         state.console_state.num_palette = min(state.console_state.num_palette, backend.video.max_palette)
         state.console_state.pages = []
