@@ -262,7 +262,15 @@ if pygame:
 # set constants based on commandline arguments
 
 def prepare():
-    global fullscreen, smooth, noquit, display_size, display_size_text, composite_monitor
+    global fullscreen, smooth, noquit, display_size
+    global display_size_text, composite_monitor, heights_needed
+    # screen width and height in pixels
+    display_size = (640, 480)
+    display_size_text = (8*80, 16*25)
+    if config.options['video'] in ('cga', 'cga_old', 'tandy', 'pcjr'):
+        heights_needed = (8, )
+    else:
+        heights_needed = (16, 14, 8)
     try:
         x, y = config.options['dimensions'].split(',')
         display_size = (int(x), int(y))
@@ -345,9 +353,6 @@ def init():
         pygame.display.quit()
         logging.warning('Refusing to open libcaca console. Failed to initialise graphical interface.')
         return False
-    # screen width and height in pixels
-    display_size = (640, 480)
-    display_size_text = (console.mode_data[0][7]*console.mode_data[0][4], console.mode_data[0][0]*25)
     # get physical screen dimensions (needs to be called before set_mode)
     display_info = pygame.display.Info()
     physical_size = display_info.current_w, display_info.current_h
@@ -367,8 +372,6 @@ def init():
     for j in joysticks:
         j.init()
     scrap = Clipboard() 
-    heights_needed = reversed(sorted(set([console.mode_data[mode][0] 
-                                for mode in console.mode_data]))) 
     load_fonts(heights_needed)
     text_mode = True    
     return True
