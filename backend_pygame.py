@@ -533,12 +533,12 @@ def move_cursor(crow, ccol):
 def update_cursor_attr(attr):
     cursor0.set_palette_at(254, screen.get_palette_at(attr))
 
-def scroll(from_line):
+def scroll(from_line, scroll_height, attr):
     global screen_changed
     temp_scroll_area = pygame.Rect(
                     0, (from_line-1)*font_height,
                     width * font_width, 
-                    (state.console_state.scroll_height-from_line+1) * font_height)
+                    (scroll_height-from_line+1) * font_height)
     # scroll
     surface0[apagenum].set_clip(temp_scroll_area)
     surface1[apagenum].set_clip(temp_scroll_area)
@@ -546,26 +546,26 @@ def scroll(from_line):
     surface1[apagenum].scroll(0, -font_height)
     # empty new line
     blank = pygame.Surface( (width * font_width, font_height) , depth=8)
-    bg = (state.console_state.attr >> 4) & 0x7
+    bg = (attr >> 4) & 0x7
     blank.set_palette(workaround_palette)
     blank.fill(bg)
-    surface0[apagenum].blit(blank, (0, (state.console_state.scroll_height-1)*font_height))
-    surface1[apagenum].blit(blank, (0, (state.console_state.scroll_height-1)*font_height))
+    surface0[apagenum].blit(blank, (0, (scroll_height-1) * font_height))
+    surface1[apagenum].blit(blank, (0, (scroll_height-1) * font_height))
     surface0[apagenum].set_clip(None)
     surface1[apagenum].set_clip(None)
     screen_changed = True
    
-def scroll_down(from_line):
+def scroll_down(from_line, scroll_height, attr):
     global screen_changed
     temp_scroll_area = pygame.Rect(0, (from_line-1) * font_height, width * 8, 
-                                            (state.console_state.scroll_height-from_line+1) * font_height)
+                                   (scroll_height-from_line+1) * font_height)
     surface0[apagenum].set_clip(temp_scroll_area)
     surface1[apagenum].set_clip(temp_scroll_area)
     surface0[apagenum].scroll(0, font_height)
     surface1[apagenum].scroll(0, font_height)
     # empty new line
     blank = pygame.Surface( (width * font_width, font_height), depth=8 )
-    bg = (state.console_state.attr>>4) & 0x7
+    bg = (attr>>4) & 0x7
     blank.set_palette(workaround_palette)
     blank.fill(bg)
     surface0[apagenum].blit(blank, (0, (from_line-1) * font_height))

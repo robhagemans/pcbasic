@@ -1311,7 +1311,8 @@ def clear_view():
 def scroll(from_line=None): 
     if from_line == None:
         from_line = state.console_state.view_start
-    backend.video.scroll(from_line)
+    backend.video.scroll(from_line, state.console_state.scroll_height, 
+                         state.console_state.attr)
     # sync buffers with the new screen reality:
     if state.console_state.row > from_line:
         state.console_state.row -= 1
@@ -1319,7 +1320,8 @@ def scroll(from_line=None):
     del state.console_state.apage.row[from_line-1]
    
 def scroll_down(from_line):
-    backend.video.scroll_down(from_line)
+    backend.video.scroll_down(from_line, state.console_state.scroll_height, 
+                         state.console_state.attr)
     if state.console_state.row >= from_line:
         state.console_state.row += 1
     # sync buffers with the new screen reality:
