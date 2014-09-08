@@ -184,8 +184,7 @@ def init():
         if (state.console_state.screen_mode == 0 or 
                 backend.video.supports_graphics_mode(mode_info)):
             # without this the palette is not prepared when resuming
-            backend.video.update_palette(state.console_state.palette, 
-                                         state.console_state.num_palette)
+            backend.video.update_palette(state.console_state.palette)
             # set the visible and active pages
             backend.video.set_page(state.console_state.vpagenum, 
                                    state.console_state.apagenum)
@@ -284,10 +283,10 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
                 fp.Single.from_int(state.console_state.height*state.console_state.font_height), 
                 fp.Single.from_int(6*state.console_state.width)) 
         state.console_state.cursor_width = state.console_state.font_width        
-        # set the palette (essential on first run, or not all globals are defined)
-        set_palette()
         # signal the backend to change the screen resolution
         backend.video.init_screen_mode(info, state.console_state.screen_mode==0)
+        # set the palette (essential on first run, or not all globals are defined)
+        set_palette()
         # only redraw keys if screen has been cleared (any colours stay the same). state.console_state.screen_mode must be set for this
         if state.console_state.keys_visible:  
             show_keys(True)
@@ -327,9 +326,7 @@ def set_colorburst(on=True):
             cga_palettes = [cga_palette_5, cga_palette_5]
         set_palette()    
     elif backend.video.colorburst != old_colorburst:
-        backend.video.update_palette(state.console_state.palette, 
-                                     state.console_state.num_palette)
-
+        backend.video.update_palette(state.console_state.palette)
 
 def set_width(to_width):
     # raise an error if the width value doesn't make sense
@@ -372,8 +369,7 @@ def check_video_memory():
 
 def set_palette_entry(index, colour):
     state.console_state.palette[index] = colour
-    backend.video.update_palette(state.console_state.palette, 
-                                 state.console_state.num_palette)
+    backend.video.update_palette(state.console_state.palette)
 
 def get_palette_entry(index):
     return state.console_state.palette[index]
@@ -390,8 +386,7 @@ def set_palette(new_palette=None):
             state.console_state.palette = cga_palettes[1]
         else:
             state.console_state.palette = [0, 15]
-    backend.video.update_palette(state.console_state.palette, 
-                                 state.console_state.num_palette)
+    backend.video.update_palette(state.console_state.palette)
 
 ############################### 
 # interactive mode         

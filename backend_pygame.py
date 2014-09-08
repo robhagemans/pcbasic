@@ -489,7 +489,7 @@ def close():
 ####################################
 # console commands
 
-def update_palette(palette, num_palette):
+def update_palette(palette):
     global gamepalette, screen_changed
     if num_palette == 64:
         gamepalette = [ gamecolours64[i] for i in palette ]

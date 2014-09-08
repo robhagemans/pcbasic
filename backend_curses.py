@@ -170,7 +170,7 @@ def colours(at):
         cursattr |= curses.A_BOLD
     return cursattr
 
-def update_palette(new_palette, num_palette):
+def update_palette(new_palette):
     pass
     
 ####

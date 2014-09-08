@@ -115,7 +115,7 @@ def clear_rows(cattr, start, stop):
         term.flush()
         update_position()
         
-def update_palette(palette, num_palette):
+def update_palette(palette):
     pass
 
 def move_cursor(crow, ccol):
