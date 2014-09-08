@@ -13,7 +13,6 @@ import config
 import unicodepage
 import console
 import oslayer
-import state
 from functools import partial
 
 def prepare():

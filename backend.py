@@ -9,10 +9,8 @@
 # please see text file COPYING for licence terms.
 #
 
-import sys
 import logging
 
-import plat
 import config
 import state 
 import timedate

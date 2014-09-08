@@ -33,14 +33,12 @@ else:
     import pygame.mixer as mixer
 
 import logging
-import os
 
 import config
 import error
 import unicodepage 
 import console
 import state
-import sound
 import backend
 
 # this backend provides graphics commands

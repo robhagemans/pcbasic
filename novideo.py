@@ -12,7 +12,6 @@
 
 import sys
 import time
-from functools import partial
 
 import unicodepage
 import console

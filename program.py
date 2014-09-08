@@ -16,8 +16,6 @@ import tokenise
 import protect
 import util
 import console
-# for check_events in LIST
-import backend
 import state
 import flow
 import unicodepage
@@ -26,7 +24,6 @@ try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
-from copy import copy 
 
 # program bytecode buffer
 state.basic_state.bytecode = StringIO()
