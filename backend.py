@@ -16,15 +16,6 @@ import plat
 import config
 import state 
 import timedate
-
-import novideo
-import nosound
-import nopenstick
-import backend_cli
-import backend_curses
-import backend_pygame
-import sound_beep
-
     
 # backend implementations
 video = None
@@ -40,28 +31,7 @@ state.console_state.music_queue = [[], [], [], []]
 
 def prepare():
     """ Initialise backend module. """
-    global penstick, audio, video
     global pcjr_sound
-    # set backends
-    penstick = nopenstick
-    audio = nosound
-    if config.options['filter'] or config.options['conv'] or (
-            not config.options['graphical'] and not config.options['ansi'] and (not plat.stdin_is_tty or not plat.stdout_is_tty)):
-        # redirected input or output leads to dumbterm use
-        video = novideo
-        audio = nosound
-    elif config.options['cli'] and plat.stdout_is_tty:
-        video = backend_cli
-        audio = sound_beep
-    elif config.options['ansi'] and plat.stdout_is_tty:
-        video = backend_curses
-        audio = sound_beep
-    else:   
-        video = backend_pygame   
-        penstick = backend_pygame
-        audio = backend_pygame
-    if config.options['nosound']:
-        audio = nosound
     # pcjr/tandy sound
     pcjr_sound = config.options['pcjr_syntax']
             
