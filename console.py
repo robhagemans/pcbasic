@@ -379,20 +379,15 @@ def set_palette(new_palette=None):
 # on SCREEN 0 this switches between colour and greyscale (composite) or is ignored (RGB)
 def set_colorburst(on=True):
     global cga_palettes
-    old_colorburst = backend.video.colorburst
     colorburst_capable = video_capabilities in ('cga', 'cga_old', 'tandy', 'pcjr')
-    backend.video.colorburst = on and colorburst_capable
-    if state.console_state.screen_mode == 1:
-        if backend.video.colorburst or video_capabilities not in ('cga', 'cga_old'):
+    if state.console_state.screen_mode == 1 and not composite_monitor:
+        if on or video_capabilities not in ('cga', 'cga_old'):
             # ega ignores colorburst; tandy and pcjr have no mode 5
             cga_palettes = [cga_palette_0, cga_palette_1]
         else:
             cga_palettes = [cga_palette_5, cga_palette_5]
         set_palette()    
-        backend.video.screen_changed = True
-    elif backend.video.colorburst != old_colorburst:
-        backend.video.update_palette()
-        backend.video.screen_changed = True
+    backend.video.set_colorburst(on and colorburst_capable, state.console_state.palette)
 
 ############################### 
 # interactive mode         
