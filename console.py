@@ -245,6 +245,10 @@ def init():
             # without this the palette is not prepared when resuming
             backend.video.update_palette(state.console_state.palette, 
                                          state.console_state.num_palette)
+            # set the visible and active pages
+            backend.video.set_page(state.console_state.vpagenum, 
+                                   state.console_state.apagenum)
+            # set the screen mde
             backend.video.init_screen_mode(mode_info, state.console_state.screen_mode==0)
             # fix the cursor
             backend.video.build_cursor(state.console_state.cursor_width, state.console_state.font_height, 
@@ -321,6 +325,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
         state.console_state.vpagenum, state.console_state.apagenum = new_vpagenum, new_apagenum
         state.console_state.vpage = state.console_state.pages[state.console_state.vpagenum]
         state.console_state.apage = state.console_state.pages[state.console_state.apagenum]
+        backend.video.set_page(new_vpagenum, new_apagenum)
         # resolution
         state.console_state.size = (state.console_state.width*state.console_state.font_width,          
                                          state.console_state.height*state.console_state.font_height)
@@ -363,7 +368,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
         state.console_state.vpagenum, state.console_state.apagenum = new_vpagenum, new_apagenum
         state.console_state.vpage = state.console_state.pages[state.console_state.vpagenum]
         state.console_state.apage = state.console_state.pages[state.console_state.apagenum]
-        backend.video.screen_changed = True
+        backend.video.set_page(new_vpagenum, new_apagenum)
     return True
 
 
