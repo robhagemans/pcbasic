@@ -9,19 +9,28 @@
 # please see text file COPYING for licence terms.
 #
 
+import logging
+from functools import partial
+
 import config
 import unicodepage
 import backend
-import console
-import oslayer
-from functools import partial
+                            
+# converter with DBCS lead-byte buffer for utf8 output redirection
+utf8conv = unicodepage.UTF8Converter(preserve_control=True)
 
 def prepare():
-        # gwbasic-style redirected output is split between graphical screen and redirected file    
+    """ Initialise redirect module. """
     if config.options['output']:
-        set_output(oslayer.safe_open(config.options['output'], "S", "W"))
+        try:
+            set_output(open(config.options['output'], 'wb'))
+        except EnvironmentError as e:
+            logging.warning('Could not open output file %s: %s', config.options['output'], e.strerror)
     if config.options['input']:
-        set_input(oslayer.safe_open(config.options['input'], "L", "R"))
+        try:
+            set_input(open(config.options['input'], 'rb'))
+        except EnvironmentError as e:
+            logging.warning('Could not open input file %s: %s', config.options['input'], e.strerror)
 
 def set_input(f):
     """ BASIC-style redirected input. """
@@ -41,15 +50,12 @@ def set_output(f, utf8=False):
         echo = partial(echo_ascii, f=f)
     else:
         echo = partial(echo_utf8, f=f)
-    console.output_echos.append(echo) 
-    console.input_echos.append(echo)
+    backend.output_echos.append(echo) 
+    backend.input_echos.append(echo)
         
 def echo_ascii(s, f):
     """ Output redirection echo as raw bytes. """
     f.write(str(s))
-                            
-# coverter with DBCS lead-byte buffer
-utf8conv = unicodepage.UTF8Converter(preserve_control=True)
     
 def echo_utf8(s, f):
     """ Output redirection echo as UTF-8. """

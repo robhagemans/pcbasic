@@ -15,8 +15,21 @@
 import os
 import logging
 
-import plat
 import config
+
+# logging setup before we import modules and may need to log errors
+# do we log to a file? 
+logfile = ''
+formatstr = '%(levelname)s: %(message)s'
+if config.options['debug']:
+    logging.basicConfig(format=formatstr, level=logging.DEBUG)
+elif logfile:
+    logging.basicConfig(format=formatstr, 
+                        filename=os.path.join(plat.info_dir, logfile))
+else:
+    logging.basicConfig(format=formatstr)
+
+import plat
 import backend
 
 # load backend modules
@@ -59,15 +72,11 @@ import state
 import iolayer
 import var
 
-# do we log to a file? 
-logfile = ''
 
 def main():
     """ Initialise and do operations or hand over to run module. """
     reset = False
     resume = None
-    # logging setup
-    prepare_logging()
     try:
         # in convertor mode, convert and exit
         if config.options['conv']:
@@ -115,17 +124,6 @@ def main():
         iolayer.close_all()
         iolayer.close_devices()
             
-def prepare_logging():
-    """ Set logging format. """
-    formatstr = '%(levelname)s: %(message)s'
-    if config.options['debug']:
-        logging.basicConfig(format=formatstr, level=logging.DEBUG)
-    elif logfile:
-        logging.basicConfig(format=formatstr, 
-                            filename=os.path.join(plat.info_dir, logfile))
-    else:
-        logging.basicConfig(format=formatstr)
-        
 def prepare_console():
     """ Initialise backend and console. """
     # initialise video backend before console

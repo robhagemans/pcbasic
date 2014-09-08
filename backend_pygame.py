@@ -865,7 +865,7 @@ def handle_key(e):
     elif e.key == pygame.K_PRINT:
         # these can't be caught by INKEY$ etc:
         if mods & pygame.KMOD_CTRL:
-            console.toggle_echo_lpt1()
+            backend.toggle_echo_lpt1()
         elif mods & pygame.KMOD_SHIFT:
             console.print_screen()
     elif e.key == pygame.K_TAB and mods & pygame.KMOD_SHIFT:

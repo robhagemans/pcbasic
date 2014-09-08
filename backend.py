@@ -20,6 +20,10 @@ video = None
 audio = None 
 penstick = None 
 
+# redirect i/o to file or printer
+input_echos = []
+output_echos = []
+
 # sound queue
 state.console_state.music_queue = [[], [], [], []]
 # keyboard queue
@@ -154,6 +158,18 @@ def wait_char():
     while len(state.console_state.keybuf) == 0 and not input_closed:
         wait()
     return peek_char()
+
+#############################################
+# I/O redirection
+
+def toggle_echo_lpt1():
+    lpt1 = state.io_state.devices['LPT1:']
+    if lpt1.write in input_echos:
+        input_echos.remove(lpt1.write)
+        output_echos.remove(lpt1.write)
+    else:    
+        input_echos.append(lpt1.write)
+        output_echos.append(lpt1.write)
 
 #############################################
 # BASIC event triggers        
