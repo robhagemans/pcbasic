@@ -18,9 +18,6 @@ import backend
 import plat
 import redirect
 
-# palette is ignored
-max_palette = 64
-
 # unused, but needs to be defined
 colorburst = False
 

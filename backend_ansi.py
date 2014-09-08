@@ -34,8 +34,6 @@ import state
 # escape sequences
 from ansi import *
 
-max_palette = 16
-
 term_echo_on = True
 term_attr = None
 term = sys.stdout

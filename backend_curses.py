@@ -31,10 +31,6 @@ import state
 # so you don't see gibberish if the terminal doesn't support the sequence.
 import ansi
 
-# not supported, but need to be defined
-max_palette = 16
-palette_changed = True
-
 # unused, but needs to be defined
 colorburst = False
 
@@ -78,10 +74,7 @@ if curses:
     default_colors = [
         curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN, 
         curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA, 
-        curses.COLOR_YELLOW, curses.COLOR_WHITE, 
-        curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN, 
-        curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA, 
-        curses.COLOR_YELLOW, curses.COLOR_WHITE]
+        curses.COLOR_YELLOW, curses.COLOR_WHITE] 
 
     last_attr = None
     attr = curses.A_NORMAL
@@ -160,7 +153,6 @@ def set_curses_palette():
                 curses.init_pair(back*8+fore+1, default_colors[fore], default_colors[back])
             else:
                 curses.init_pair(back*8+fore, default_colors[fore], default_colors[back])
-          
 
 def colours(at):
     back = (at>>4)&0x7
@@ -178,12 +170,9 @@ def colours(at):
         cursattr |= curses.A_BOLD
     return cursattr
 
-
-def update_palette(palette, num_palette):
-    global palette_changed
-    palette_changed = True
-    redraw()     
-
+def update_palette(new_palette, num_palette):
+    pass
+    
 ####
 
 def move_cursor(crow, ccol):
@@ -213,11 +202,10 @@ def check_events():
     check_keyboard()
     
 def set_attr(cattr):
-    global attr, last_attr, palette_changed
+    global attr, last_attr
     attr = cattr
-    if attr == last_attr and not palette_changed:
+    if attr == last_attr:
         return
-    palette_changed = False    
     last_attr = attr
     window.bkgdset(' ', colours(attr))
 

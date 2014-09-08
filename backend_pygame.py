@@ -41,9 +41,6 @@ import state
 import backend
 import typeface
 
-# max number of colours in the palette
-max_palette = 64
-
 # default font family
 font_families = ['unifont', 'univga', 'freedos']
 fonts = {}
@@ -416,7 +413,6 @@ def init_screen_mode(mode_info, is_text_mode=False):
     (font_height, attr, num_colours, num_palette, 
            width, num_pages, bitsperpixel, font_width,
            mode_has_artifacts, cursor_fixed_attr) = mode_info
-    num_palette = min(num_palette, max_palette)
     font = fonts[font_height]
     glyphs = [ build_glyph(chr(c), font, font_width, font_height) 
                     for c in range(256) ]

@@ -19,9 +19,6 @@ import backend
 import console
 import state
 
-# palette is ignored
-max_palette = 64
-
 # output to stdout
 term = sys.stdout
 

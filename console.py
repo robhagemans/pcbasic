@@ -257,8 +257,6 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
         (   state.console_state.font_height, state.console_state.attr, 
             state.console_state.num_colours, state.console_state.num_palette, state.console_state.width, 
             state.console_state.num_pages, state.console_state.bitsperpixel, state.console_state.font_width, _, _ ) = info  
-        # enforce backend palette maximum
-        state.console_state.num_palette = min(state.console_state.num_palette, backend.video.max_palette)
         state.console_state.pages = []
         for _ in range(state.console_state.num_pages):
             state.console_state.pages.append(backend.ScreenBuffer(state.console_state.width, state.console_state.height))
