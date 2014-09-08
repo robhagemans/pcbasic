@@ -337,14 +337,6 @@ def check_video_memory():
     if state.console_state.screen_mode in (5, 6) and state.console_state.pcjr_video_mem_size < 32753:
         screen (0, None, None, None)
 
-def copy_page(src, dst):
-    for x in range(state.console_state.height):
-        dstrow, srcrow = state.console_state.pages[dst].row[x], state.console_state.pages[src].row[x]
-        dstrow.buf[:] = srcrow.buf[:]
-        dstrow.end = srcrow.end
-        dstrow.wrap = srcrow.wrap            
-    backend.video.copy_page(src, dst)
-    
 
 #############################################
 # palette

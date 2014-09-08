@@ -209,6 +209,14 @@ def print_screen():
             line += c
         state.io_state.devices['LPT1:'].write_line(line)
 
+def copy_page(src, dst):
+    for x in range(state.console_state.height):
+        dstrow, srcrow = state.console_state.pages[dst].row[x], state.console_state.pages[src].row[x]
+        dstrow.buf[:] = srcrow.buf[:]
+        dstrow.end = srcrow.end
+        dstrow.wrap = srcrow.wrap            
+    video.copy_page(src, dst)
+    
 # redirect i/o to file or printer
 input_echos = []
 output_echos = []
