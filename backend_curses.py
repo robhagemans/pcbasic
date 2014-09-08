@@ -24,7 +24,6 @@ except ImportError:
 import unicodepage
 import error
 import backend
-import console
 import state
 
 # for a few ansi sequences not supported by curses
@@ -149,7 +148,7 @@ def clear_rows(cattr, start, stop):
             pass
                     
 def redraw():
-    console.redraw_text_screen()
+    backend.redraw_text_screen()
 
 def set_curses_palette():
     global default_colors

@@ -29,7 +29,6 @@ except ImportError:
 import unicodepage
 import error
 import backend
-import console
 import state
 
 # escape sequences
@@ -106,7 +105,7 @@ def clear_rows(cattr, start, stop):
     term.flush()
 
 def redraw():
-    console.redraw_text_screen()
+    backend.redraw_text_screen()
      
 
 #####
