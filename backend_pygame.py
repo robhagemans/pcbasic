@@ -389,7 +389,9 @@ def load_fonts(heights_needed):
 
 def supports_graphics_mode(mode_info):
     """ Return whether we support a given graphics mode. """
-    font_height, attr, num_colours, num_palette, width, num_pages, bitsperpixel, font_width = mode_info
+    # unpack mode info struct
+    (font_height, attr, num_colours, num_palette, 
+           width, num_pages, bitsperpixel, font_width) = mode_info
     if not font_height in fonts:
         return False
     return True
@@ -399,14 +401,14 @@ def init_screen_mode(mode_info, is_text_mode=False):
     global glyphs, cursor0
     global screen, screen_changed, surface0, surface1
     global font, under_cursor, size, text_mode
+    global font_height, attr, num_colours, num_palette
+    global width, num_pages, bitsperpixel, font_width
     text_mode = is_text_mode
     # unpack mode info struct
     (font_height, attr, num_colours, num_palette, 
            width, num_pages, bitsperpixel, font_width) = mode_info
     num_palette = min(num_palette, max_palette)
     font = fonts[font_height]
-    # without this the palette is not prepared when resuming
-    update_palette()
     glyphs = [ build_glyph(chr(c), font, font_width, font_height) 
                     for c in range(256) ]
     # initialise glyph colour
@@ -482,13 +484,13 @@ def close():
 ####################################
 # console commands
 
-def update_palette():
+def update_palette(palette, num_palette):
     global gamepalette
-    if state.console_state.num_palette == 64:
-        gamepalette = [ gamecolours64[i] for i in state.console_state.palette ]
+    if num_palette == 64:
+        gamepalette = [ gamecolours64[i] for i in palette ]
     else:
         cgapalette = gamecolours16 if (colorburst or not composite_monitor) else gamecolours16_mono
-        gamepalette = [ cgapalette[i] for i in state.console_state.palette ]
+        gamepalette = [ cgapalette[i] for i in palette ]
     set_display_palette()
 
 def set_display_palette():
@@ -502,7 +504,8 @@ def set_display_palette():
 def clear_rows(cattr, start, stop):
     global screen_changed
     bg = (cattr>>4) & 0x7
-    scroll_area = pygame.Rect(0, (start-1)*state.console_state.font_height, size[0], (stop-start+1)*state.console_state.font_height) 
+    scroll_area = pygame.Rect(0, (start-1)*font_height, 
+                              size[0], (stop-start+1)*font_height) 
     surface0[state.console_state.apagenum].fill(bg, scroll_area)
     surface1[state.console_state.apagenum].fill(bg, scroll_area)
     screen_changed = True
@@ -524,40 +527,40 @@ def update_cursor_attr(attr):
 def scroll(from_line):
     global screen_changed
     temp_scroll_area = pygame.Rect(
-                    0, (from_line-1)*state.console_state.font_height,
-                    state.console_state.width*state.console_state.font_width, 
-                    (state.console_state.scroll_height-from_line+1)*state.console_state.font_height)
+                    0, (from_line-1)*font_height,
+                    width * font_width, 
+                    (state.console_state.scroll_height-from_line+1) * font_height)
     # scroll
     surface0[state.console_state.apagenum].set_clip(temp_scroll_area)
     surface1[state.console_state.apagenum].set_clip(temp_scroll_area)
-    surface0[state.console_state.apagenum].scroll(0, -state.console_state.font_height)
-    surface1[state.console_state.apagenum].scroll(0, -state.console_state.font_height)
+    surface0[state.console_state.apagenum].scroll(0, -font_height)
+    surface1[state.console_state.apagenum].scroll(0, -font_height)
     # empty new line
-    blank = pygame.Surface( (state.console_state.width*state.console_state.font_width, state.console_state.font_height) , depth=8)
-    bg = (state.console_state.attr>>4) & 0x7
+    blank = pygame.Surface( (width * font_width, font_height) , depth=8)
+    bg = (state.console_state.attr >> 4) & 0x7
     blank.set_palette(workaround_palette)
     blank.fill(bg)
-    surface0[state.console_state.apagenum].blit(blank, (0, (state.console_state.scroll_height-1)*state.console_state.font_height))
-    surface1[state.console_state.apagenum].blit(blank, (0, (state.console_state.scroll_height-1)*state.console_state.font_height))
+    surface0[state.console_state.apagenum].blit(blank, (0, (state.console_state.scroll_height-1)*font_height))
+    surface1[state.console_state.apagenum].blit(blank, (0, (state.console_state.scroll_height-1)*font_height))
     surface0[state.console_state.apagenum].set_clip(None)
     surface1[state.console_state.apagenum].set_clip(None)
     screen_changed = True
    
 def scroll_down(from_line):
     global screen_changed
-    temp_scroll_area = pygame.Rect(0, (from_line-1)*state.console_state.font_height, state.console_state.width*8, 
-                                            (state.console_state.scroll_height-from_line+1)*state.console_state.font_height)
+    temp_scroll_area = pygame.Rect(0, (from_line-1) * font_height, width * 8, 
+                                            (state.console_state.scroll_height-from_line+1) * font_height)
     surface0[state.console_state.apagenum].set_clip(temp_scroll_area)
     surface1[state.console_state.apagenum].set_clip(temp_scroll_area)
-    surface0[state.console_state.apagenum].scroll(0, state.console_state.font_height)
-    surface1[state.console_state.apagenum].scroll(0, state.console_state.font_height)
+    surface0[state.console_state.apagenum].scroll(0, font_height)
+    surface1[state.console_state.apagenum].scroll(0, font_height)
     # empty new line
-    blank = pygame.Surface( (state.console_state.width*state.console_state.font_width, state.console_state.font_height), depth=8 )
+    blank = pygame.Surface( (width * font_width, font_height), depth=8 )
     bg = (state.console_state.attr>>4) & 0x7
     blank.set_palette(workaround_palette)
     blank.fill(bg)
-    surface0[state.console_state.apagenum].blit(blank, (0, (from_line-1)*state.console_state.font_height))
-    surface1[state.console_state.apagenum].blit(blank, (0, (from_line-1)*state.console_state.font_height))
+    surface0[state.console_state.apagenum].blit(blank, (0, (from_line-1) * font_height))
+    surface1[state.console_state.apagenum].blit(blank, (0, (from_line-1) * font_height))
     surface0[state.console_state.apagenum].set_clip(None)
     surface1[state.console_state.apagenum].set_clip(None)
     screen_changed = True
@@ -580,7 +583,7 @@ def putc_at(row, col, c, for_keys=False):
     global screen_changed
     glyph = glyphs[ord(c)]
     blank = glyphs[0] # using \0 for blank (tyoeface.py guarantees it's empty)
-    top_left = ((col-1)*state.console_state.font_width, (row-1)*state.console_state.font_height)
+    top_left = ((col-1) * font_width, (row-1) * font_height)
     if not state.console_state.screen_mode:
         surface1[state.console_state.apagenum].blit(glyph, top_left)
     if last_attr >> 7: #blink:
@@ -591,15 +594,15 @@ def putc_at(row, col, c, for_keys=False):
 
 def putwc_at(row, col, c, d, for_keys=False):
     global screen_changed
-    glyph = build_glyph(c+d, font, 16, state.console_state.font_height)
+    glyph = build_glyph(c+d, font, 16, font_height)
     color = (0, 0, last_attr & 0xf)
     bg = (0, 0, (last_attr>>4) & 0x7)    
     glyph.set_palette_at(255, bg)
     glyph.set_palette_at(254, color)
-    blank = pygame.Surface((16, state.console_state.font_height), depth=8)
+    blank = pygame.Surface((16, font_height), depth=8)
     blank.fill(255)
     blank.set_palette_at(255, bg)
-    top_left = ((col-1)*state.console_state.font_width, (row-1)*state.console_state.font_height)
+    top_left = ((col-1) * font_width, (row-1) * font_height)
     if not state.console_state.screen_mode:
         surface1[state.console_state.apagenum].blit(glyph, top_left)
     if last_attr >> 7: #blink:
@@ -676,19 +679,19 @@ def refresh_cursor():
     if not  cursor_visible or state.console_state.vpage != state.console_state.apage:
         return
     # copy screen under cursor
-    under_top_left = (  (state.console_state.col-1)*state.console_state.font_width,
-                        (state.console_state.row-1)*state.console_state.font_height)
+    under_top_left = (  (state.console_state.col-1) * font_width,
+                        (state.console_state.row-1) * font_height)
     under_char_area = pygame.Rect(
-            (state.console_state.col-1)*state.console_state.font_width, 
-            (state.console_state.row-1)*state.console_state.font_height, 
-            (state.console_state.col-1)*state.console_state.font_width + state.console_state.cursor_width,
-            state.console_state.row*state.console_state.font_height)
+            (state.console_state.col-1) * font_width, 
+            (state.console_state.row-1) * font_height, 
+            (state.console_state.col-1) * font_width + state.console_state.cursor_width,
+            state.console_state.row * font_height)
     under_cursor.blit(screen, (0,0), area=under_char_area)
     if state.console_state.screen_mode == 0:
         # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
         if (cycle/blink_cycles==1 or cycle/blink_cycles==3): 
-            screen.blit(cursor0, (  (state.console_state.col-1)*state.console_state.font_width,
-                                    (state.console_state.row-1)*state.console_state.font_height) )
+            screen.blit(cursor0, (  (state.console_state.col-1) * font_width,
+                                    (state.console_state.row-1) * font_height) )
     else:
         if state.console_state.screen_mode in (3,4,5,6):
             index = 3
@@ -697,17 +700,17 @@ def refresh_cursor():
         if numpy:
             # reference the destination area
             dest_array = pygame.surfarray.pixels2d(screen.subsurface(pygame.Rect(
-                                (state.console_state.col-1)*state.console_state.font_width, 
-                                (state.console_state.row-1)*state.console_state.font_height + state.console_state.cursor_from, 
+                                (state.console_state.col-1) * font_width, 
+                                (state.console_state.row-1) * font_height + state.console_state.cursor_from, 
                                 state.console_state.cursor_width, 
                                 state.console_state.cursor_to - state.console_state.cursor_from + 1))) 
             dest_array ^= index
         else:
             # no surfarray if no numpy    
-            for x in range(     (state.console_state.col-1) * state.console_state.font_width, 
-                                  (state.console_state.col-1) * state.console_state.font_width + cursor_width):
-                for y in range((state.console_state.row-1)*state.console_state.font_height + state.console_state.cursor_from, 
-                                (state.console_state.row-1)*state.console_state.font_height + state.console_state.cursor_to + 1):
+            for x in range(     (state.console_state.col-1) * font_width, 
+                                  (state.console_state.col-1) * font_width + cursor_width):
+                for y in range((state.console_state.row-1) * font_height + state.console_state.cursor_from, 
+                                (state.console_state.row-1) * font_height + state.console_state.cursor_to + 1):
                     pixel = get_pixel(x,y)
                     screen.set_at((x,y), pixel^index)
     last_row = state.console_state.row
@@ -804,7 +807,7 @@ def do_flip():
         pygame.transform.smoothscale(screen.convert(display), display.get_size(), display)
         screen.set_palette(workaround_palette)    
     elif composite_artifacts and numpy:
-        pygame.transform.scale(apply_composite_artifacts(screen, 4//state.console_state.bitsperpixel), display.get_size(), display)  
+        pygame.transform.scale(apply_composite_artifacts(screen, 4//bitsperpixel), display.get_size(), display)  
     else:
         pygame.transform.scale(screen, display.get_size(), display)  
     pygame.display.flip()
@@ -966,8 +969,8 @@ class Clipboard(object):
         self.logo_pressed = True
         self.select_start = [state.console_state.row, state.console_state.col]
         self.select_stop = [state.console_state.row, state.console_state.col]
-        self.selection_rect = [pygame.Rect((self.select_start[1]-1)*state.console_state.font_width,
-            (self.select_start[0]-1)*state.console_state.font_height, state.console_state.font_width, state.console_state.font_height)]
+        self.selection_rect = [pygame.Rect((self.select_start[1]-1) * font_width,
+            (self.select_start[0]-1) * font_height, font_width, font_height)]
         
     def stop(self):
         """ Leave clipboard mode (Logo key released). """
@@ -993,7 +996,7 @@ class Clipboard(object):
         while r < stop[0] or (r == stop[0] and c <= stop[1]):
             clip += state.console_state.vpage.row[r-1].buf[c-1][0]    
             c += 1
-            if c > state.console_state.width:
+            if c > width:
                 if not state.console_state.vpage.row[r-1].wrap:
                     full += unicodepage.UTF8Converter().to_utf8(clip) + '\r\n'
                     clip = ''
@@ -1033,28 +1036,28 @@ class Clipboard(object):
         if self.select_stop[1] < 1: 
             if self.select_stop[0] > 1:       
                 self.select_stop[0] -= 1
-                self.select_stop[1] = state.console_state.width
+                self.select_stop[1] = width
             else:
                 self.select_stop[1] = 1       
-        if self.select_stop[1] > state.console_state.width:        
-            if self.select_stop[0] < state.console_state.height:       
+        if self.select_stop[1] > width:        
+            if self.select_stop[0] < height:       
                 self.select_stop[0] += 1
                 self.select_stop[1] = 1
             else:
-                self.select_stop[1] = state.console_state.width    
+                self.select_stop[1] = width    
         start, stop = self.select_start, self.select_stop
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
             start, stop = stop, start
-        rect_left = (start[1] - 1)*state.console_state.font_width
-        rect_top = (start[0] - 1)*state.console_state.font_height
-        rect_right = stop[1]*state.console_state.font_width
-        rect_bot = stop[0]*state.console_state.font_height
+        rect_left = (start[1] - 1) * font_width
+        rect_top = (start[0] - 1) * font_height
+        rect_right = stop[1] * font_width
+        rect_bot = stop[0] * font_height
         if start[0] == stop[0]:
             self.selection_rect = [pygame.Rect(rect_left, rect_top, rect_right-rect_left, rect_bot-rect_top)]
         else:
             self.selection_rect = [
-              pygame.Rect(rect_left, rect_top, size[0]-rect_left, rect_bot-rect_top-state.console_state.font_height),
-              pygame.Rect(0, rect_top+state.console_state.font_height, rect_right, rect_bot-rect_top-state.console_state.font_height)
+              pygame.Rect(rect_left, rect_top, size[0]-rect_left, rect_bot-rect_top-font_height),
+              pygame.Rect(0, rect_top+font_height, rect_right, rect_bot-rect_top-font_height)
                 ]
         screen_changed = True
         
@@ -1079,8 +1082,8 @@ def put_pixel(x, y, index, pagenum=None):
         pagenum = state.console_state.apagenum
     surface0[pagenum].set_at((x,y), index)
     # empty the console buffer of affected characters
-    cx = min(state.console_state.width-1, max(0, x//state.console_state.font_width))
-    cy = min(state.console_state.height-1, max(0, y//state.console_state.font_height)) 
+    cx = min(width-1, max(0, x//font_width))
+    cy = min(height-1, max(0, y//font_height)) 
     state.console_state.pages[pagenum].row[cy].buf[cx] = (' ', state.console_state.attr)
     screen_changed = True
 
@@ -1119,10 +1122,10 @@ def fill_rect(x0, y0, x1, y1, index):
     global screen_changed
     rect = pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)
     surface0[state.console_state.apagenum].fill(index, rect)
-    cx0 = min(state.console_state.width-1, max(0, x0//state.console_state.font_width)) 
-    cy0 = min(state.console_state.height-1, max(0, y0//state.console_state.font_height))
-    cx1 = min(state.console_state.width-1, max(0, x1//state.console_state.font_width)) 
-    cy1 = min(state.console_state.height-1, max(0, y1//state.console_state.font_height))
+    cx0 = min(width-1, max(0, x0//font_width)) 
+    cy0 = min(height-1, max(0, y0//font_height))
+    cx1 = min(width-1, max(0, x1//font_width)) 
+    cy1 = min(height-1, max(0, y1//font_height))
     for r in range(cy0, cy1+1):
         state.console_state.apage.row[r].buf[cx0:cx1+1] = [(' ', state.console_state.attr)] * (cx1 - cx0 + 1)
     screen_changed = True
@@ -1132,7 +1135,7 @@ def numpy_set(left, right):
 
 def numpy_not(left, right):
     left[:] = right
-    left ^= (1<<state.console_state.bitsperpixel)-1
+    left ^= (1<<bitsperpixel) - 1
 
 def numpy_iand(left, right):
     left &= right
@@ -1179,10 +1182,10 @@ def fast_put(x0, y0, varname, operation_char):
     # apply the operation
     operation = fast_operations[operation_char]
     operation(dest_array, clip)
-    cx0 = min(state.console_state.width-1, max(0, x0//state.console_state.font_width)) 
-    cy0 = min(state.console_state.height-1, max(0, y0//state.console_state.font_height)) 
-    cx1 = min(state.console_state.width-1, max(0, (x0+width)//state.console_state.font_width))
-    cy1 = min(state.console_state.height-1, max(0, (y0+height)//state.console_state.font_height))
+    cx0 = min(width-1, max(0, x0//font_width)) 
+    cy0 = min(height-1, max(0, y0//font_height)) 
+    cx1 = min(width-1, max(0, (x0+width)//font_width))
+    cy1 = min(height-1, max(0, (y0+height)//font_height))
     for r in range(cy0, cy1+1):
         state.console_state.apage.row[r].buf[cx0:cx1+1] = [(' ', state.console_state.attr)] * (cx1 - cx0 + 1)
     screen_changed = True
@@ -1230,13 +1233,13 @@ def get_pen(fn):
     elif fn == 5:
         return min(size[1]-1, max(0, posy))
     elif fn == 6:
-        return min(state.console_state.height, max(1, 1 + pen_down_pos[1]//state.console_state.font_height))
+        return min(height, max(1, 1 + pen_down_pos[1]//font_height))
     elif fn == 7:
-        return min(state.console_state.width, max(1, 1 + pen_down_pos[0]//state.console_state.font_width))
+        return min(width, max(1, 1 + pen_down_pos[0]//font_width))
     elif fn == 8:
-        return min(state.console_state.height, max(1, 1 + posy//state.console_state.font_height))
+        return min(height, max(1, 1 + posy//font_height))
     elif fn == 9:
-        return min(state.console_state.width, max(1, 1 + posx//xscale))
+        return min(width, max(1, 1 + posx//xscale))
 
 def get_stick(fn):
     stick_num, axis = fn//2, fn%2

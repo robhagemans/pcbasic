@@ -107,7 +107,7 @@ def scroll_down(from_line):
 def update_cursor_attr(attr):
     pass
         
-def update_palette():
+def update_palette(palette, num_palette):
     pass
 
 def update_cursor_visibility(cursor_on):

@@ -236,6 +236,9 @@ def init():
     # text mode backends: delete all graphics modes    
     # reload the screen in resumed state
     if state.loaded:
+        # without this the palette is not prepared when resuming
+        backend.video.update_palette(state.console_state.palette, 
+                                     state.console_state.num_palette)
         # set up the appropriate screen resolution
         if not backend.video.init_screen_mode(mode_data[state.console_state.screen_mode]):
             # mode not supported by backend
@@ -368,7 +371,8 @@ def set_colorburst(on=True):
         set_palette()    
         backend.video.screen_changed = True
     elif backend.video.colorburst != old_colorburst:
-        backend.video.update_palette()
+        backend.video.update_palette(state.console_state.palette, 
+                                     state.console_state.num_palette)
         backend.video.screen_changed = True
 
 def check_video_memory():
@@ -387,8 +391,9 @@ def copy_page(src, dst):
 
 def set_palette_entry(index, colour):
     state.console_state.palette[index] = colour
-    backend.video.update_palette()
-    
+    backend.video.update_palette(state.console_state.palette, 
+                                 state.console_state.num_palette)
+
 def get_palette_entry(index):
     return state.console_state.palette[index]
 
@@ -404,7 +409,8 @@ def set_palette(new_palette=None):
             state.console_state.palette = cga_palettes[1]
         else:
             state.console_state.palette = [0, 15]
-    backend.video.update_palette()
+    backend.video.update_palette(state.console_state.palette, 
+                                 state.console_state.num_palette)
 
 def show_cursor(do_show):
     """ Force cursor to be visible/invisible. """

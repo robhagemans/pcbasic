@@ -110,7 +110,7 @@ def redraw():
 
 #####
 
-def update_palette():
+def update_palette(palette, num_palette):
     global palette_changed
     palette_changed = True
     redraw()     
