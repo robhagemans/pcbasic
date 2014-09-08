@@ -295,12 +295,13 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
         return False
     # switch modes if needed
     if do_redraw:
-        if new_width == None:
-            if new_mode == 0:
-                new_width = state.console_state.width 
-                if new_width == 20:
-                    new_width = 40
-                info[4] = new_width    
+        # width persists on change to screen 0
+        if new_mode == 0 and new_width == None:
+            new_width = state.console_state.width 
+            if new_width == 20:
+                new_width = 40
+        if new_width != None:
+            info[4] = new_width    
         if (state.console_state.screen_mode == 0 and new_mode == 0 
                 and state.console_state.apagenum == new_apagenum and state.console_state.vpagenum == new_vpagenum):
             info[1] = state.console_state.attr              
@@ -312,7 +313,6 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
             state.console_state.num_pages, state.console_state.bitsperpixel, state.console_state.font_width ) = info  
         # enforce backend palette maximum
         state.console_state.num_palette = min(state.console_state.num_palette, backend.video.max_palette)
-        # width persists on change to screen 0
         state.console_state.pages = []
         for _ in range(state.console_state.num_pages):
             state.console_state.pages.append(ScreenBuffer(state.console_state.width, state.console_state.height))
