@@ -148,7 +148,7 @@ def update_position(row=None, col=None):
         last_row = row
         # show what's on the line where we are. 
         # note: recursive by one level, last_row now equals row
-        console.redraw_row(0, state.console_state.row)
+        backend.redraw_row(0, state.console_state.row)
     if col != last_col:
         term.write(esc_move_left*(last_col-col))
         term.write(esc_move_right*(col-last_col))
