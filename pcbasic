@@ -125,11 +125,18 @@ def main():
 def prepare_console():
     """ Initialise backend and console. """
     # initialise video backend before console
-    if not backend.init_video() or not console.init():
+    if not backend.video or not backend.video.init():
+        backend.video.close()
+        logging.warning('Failed to initialise interface. '
+                        'Falling back to filter interface.')
+        backend.video = novideo
+        backend.video.init()
+    if not console.init():
         backend.video.close()
         logging.error('Failed to initialise interface. Exiting.')
         raise error.Exit()
-    if not backend.init_sound() or not sound.init_sound():
+    if not backend.init_sound():
+        backend.audio = noaudio
         logging.warning('Failed to initialise sound. Sound will be disabled.')
 
 def convert():

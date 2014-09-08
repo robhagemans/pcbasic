@@ -242,30 +242,19 @@ def prepare():
            
 def init_video():
     global video
-    name = ''
-    if video:
-        if video.init():
-            return True
-        name = video.__name__
-    logging.warning('Failed to initialise interface %s. Falling back to command-line interface.', name)
-    video = backend_cli
-    if video and video.init():
-        return True
-    logging.warning('Failed to initialise command-line interface. Falling back to filter interface.')
-    video = novideo
+    if not video:
+        return False
     return video.init()
     
 def init_sound():
     global audio
-    if audio.init_sound():
-        return True
-    logging.warning('Failed to initialise sound. Sound will be disabled.')
-    audio = nosound
+    if not audio or not audio.init_sound():
+        return False
     # rebuild sound queue
     for voice in range(4):    
         for note in state.console_state.music_queue[voice]:
             audio.play_sound(*note)
-    return audio.init_sound()
+    return True
     
 def music_queue_length(voice=0):
     # top of sound_queue is currently playing
