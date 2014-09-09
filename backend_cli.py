@@ -16,10 +16,6 @@ import os
 import plat
 import unicodepage
 import backend
-#
-import error
-#
-import state
 
 # output to stdout
 term = sys.stdout
@@ -27,6 +23,14 @@ term = sys.stdout
 # cursor is visible
 cursor_visible = True
 
+# current row and column for cursor
+cursor_row = 1 
+cursor_col = 1
+
+# last row and column printed on
+last_row = 1
+last_col = 1
+    
 # ANSI escape codes for output, need arrow movements and clear line and esc_to_scan under Unix.
 # WINE handles these, does Windows?
 from ansi import *
@@ -108,7 +112,7 @@ def idle():
     time.sleep(0.024)
     
 def clear_rows(cattr, start, stop):
-    if start == state.console_state.row and stop == state.console_state.row:
+    if start == cursor_row and stop == cursor_row:
         update_position(None, 1)
         term.write(esc_clear_line)
         term.flush()
@@ -121,6 +125,8 @@ def set_colorburst(on, palette):
     pass
         
 def move_cursor(crow, ccol):
+    global cursor_row, cursor_col
+    cursor_row, cursor_col = crow, ccol
     pass
 
 def update_cursor_attr(attr):
@@ -136,9 +142,9 @@ def check_events():
 def update_position(row=None, col=None):
     global last_row, last_col
     if row == None:
-        row = state.console_state.row
+        row = cursor_row
     if col == None:
-        col = state.console_state.col
+        col = cursor_col
     # move cursor if necessary
     if row != last_row:
         term.write('\r\n')
@@ -147,7 +153,7 @@ def update_position(row=None, col=None):
         last_row = row
         # show what's on the line where we are. 
         # note: recursive by one level, last_row now equals row
-        backend.redraw_row(0, state.console_state.row)
+        backend.redraw_row(0, cursor_row)
     if col != last_col:
         term.write(esc_move_left*(last_col-col))
         term.write(esc_move_right*(col-last_col))
@@ -157,9 +163,6 @@ def update_position(row=None, col=None):
 def set_attr(attr):
     pass
 
-last_row = 1
-last_col = 1
-    
 def putc_at(row, col, c, for_keys=False):
     global last_col
     if for_keys:
@@ -211,9 +214,9 @@ def check_keyboard():
     for uc in u:                    
         c += uc.encode('utf-8')
         if c == '\x03':         # ctrl-C
-            raise error.Break() 
+            backend.insert_special_key('break')
         if c == eof:            # ctrl-D (unix) / ctrl-Z (windows)
-            raise error.Exit() 
+            backend.insert_special_key('quit')
         elif c == '\x7f':       # backspace
             backend.insert_key('\b')
         elif c == '\0':    
