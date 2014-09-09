@@ -1,13 +1,13 @@
-#
-# PC-BASIC 3.23 - backend.py
-#
-# Backend modules and interface events
-# 
-# (c) 2013, 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
+"""
+PC-BASIC 3.23 - backend.py
+
+Backend modules and interface events
+
+(c) 2013, 2014 Rob Hagemans 
+
+This file is released under the GNU GPL version 3. 
+please see text file COPYING for licence terms.
+"""
 
 import logging
 
@@ -36,14 +36,16 @@ state.console_state.scroll = False
 # let OS handle capslock effects
 ignore_caps = True
 
-# default function keys for KEY autotext
+# default function keys for KEY autotext. F1-F10
+# F11 and F12 here are TANDY screencodes only!
 function_key = { 
-        '\x00\x3b':0, '\x00\x3c':1, '\x00\x3d':2, '\x00\x3e':3, '\x00\x3f':4,     # F1-F5
-        '\x00\x40':5, '\x00\x41':6, '\x00\x42':7, '\x00\x43':8, '\x00\x44':9,     # F6-F10    
-        '\x00\x98':10, '\x00\x99':11 } # Tandy F11 and F12, these scancodes should *only* be sent on Tandy
+        '\x00\x3b':0, '\x00\x3c':1, '\x00\x3d':2, '\x00\x3e':3, '\x00\x3f':4,
+        '\x00\x40':5, '\x00\x41':6, '\x00\x42':7, '\x00\x43':8, '\x00\x44':9,
+        '\x00\x98':10, '\x00\x99':11 }
 # user definable key list
 state.console_state.key_replace = [ 
-    'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r','TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
+    'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r',
+    'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
 # keyboard queue
 state.console_state.keybuf = ''
 # key buffer
@@ -58,165 +60,37 @@ input_closed = False
 # screen buffer
 
 class ScreenRow(object):
-    def __init__(self, bwidth):
+    """ Buffer for a single row of the screen. """
+    
+    def __init__(self, battr, bwidth):
+        """ Set up screen row empty and unwrapped. """
         # screen buffer, initialised to spaces, dim white on black
-        self.clear()
+        self.buf = [(' ', battr)] * bwidth
+        # character is part of double width char; 0 = no; 1 = lead, 2 = trail
+        self.double = [ 0 ] * bwidth
+        # last non-whitespace character
+        self.end = 0    
         # line continues on next row (either LF or word wrap happened)
         self.wrap = False
     
-    def clear(self):
-        self.buf = [(' ', state.console_state.attr)] * state.console_state.width
+    def clear(self, battr):
+        """ Clear the screen row buffer. Leave wrap untouched. """
+        bwidth = len(self.buf)
+        self.buf = [(' ', battr)] * bwidth
         # character is part of double width char; 0 = no; 1 = lead, 2 = trail
-        self.double = [ 0 ] * state.console_state.width
-        # last non-white character
+        self.double = [ 0 ] * bwidth
+        # last non-whitespace character
         self.end = 0    
 
 
-
-def redraw_row(start, crow):
-    while True:
-        therow = state.console_state.apage.row[crow-1]  
-        video.set_attr(state.console_state.attr)
-        for i in range(start, therow.end): 
-            # redrawing changes colour attributes to current foreground (cf. GW)
-            # don't update all dbcs chars behind at each put
-            put_screen_char_attr(state.console_state.apage, crow, i+1, therow.buf[i][0], state.console_state.attr, one_only=True)
-        if therow.wrap and crow >= 0 and crow < state.console_state.height-1:
-            crow += 1
-            start = 0
-        else:
-            break    
-
-
-def put_screen_char_attr(cpage, crow, ccol, c, cattr, one_only=False, for_keys=False):
-    cattr = cattr & 0xf if state.console_state.screen_mode else cattr
-    # update the screen buffer
-    cpage.row[crow-1].buf[ccol-1] = (c, cattr)
-    # mark the replaced char for refreshing
-    start, stop = ccol, ccol+1
-    cpage.row[crow-1].double[ccol-1] = 0
-    # mark out sbcs and dbcs characters
-    # only do dbcs in 80-character modes
-    if unicodepage.dbcs and state.console_state.width == 80:
-        orig_col = ccol
-        # replace chars from here until necessary to update double-width chars
-        therow = cpage.row[crow-1]    
-        # replacing a trail byte? take one step back
-        # previous char could be a lead byte? take a step back
-        if (ccol > 1 and therow.double[ccol-2] != 2 and 
-                (therow.buf[ccol-1][0] in unicodepage.trail or therow.buf[ccol-2][0] in unicodepage.lead)):
-            ccol -= 1
-            start -= 1
-        # check all dbcs characters between here until it doesn't matter anymore
-        while ccol < state.console_state.width:
-            c = therow.buf[ccol-1][0]
-            d = therow.buf[ccol][0]  
-            if (c in unicodepage.lead and d in unicodepage.trail):
-                if therow.double[ccol-1] == 1 and therow.double[ccol] == 2 and ccol > orig_col:
-                    break
-                therow.double[ccol-1] = 1
-                therow.double[ccol] = 2
-                start, stop = min(start, ccol), max(stop, ccol+2)
-                ccol += 2
-            else:
-                if therow.double[ccol-1] == 0 and ccol > orig_col:
-                    break
-                therow.double[ccol-1] = 0
-                start, stop = min(start, ccol), max(stop, ccol+1)
-                ccol += 1
-            if ccol >= state.console_state.width or (one_only and ccol > orig_col):
-                break  
-        # check for box drawing
-        if unicodepage.box_protect:
-            ccol = start-2
-            connecting = 0
-            bset = -1
-            while ccol < stop+2 and ccol < state.console_state.width:
-                c = therow.buf[ccol-1][0]
-                d = therow.buf[ccol][0]  
-                if bset > -1 and unicodepage.connects(c, d, bset): 
-                    connecting += 1
-                else:
-                    connecting = 0
-                    bset = -1
-                if bset == -1:
-                    for b in (0, 1):
-                        if unicodepage.connects(c, d, b):
-                            bset = b
-                            connecting = 1
-                if connecting >= 2:
-                    therow.double[ccol] = 0
-                    therow.double[ccol-1] = 0
-                    therow.double[ccol-2] = 0
-                    start = min(start, ccol-1)
-                    if ccol > 2 and therow.double[ccol-3] == 1:
-                        therow.double[ccol-3] = 0
-                        start = min(start, ccol-2)
-                    if ccol < state.console_state.width-1 and therow.double[ccol+1] == 2:
-                        therow.double[ccol+1] = 0
-                        stop = max(stop, ccol+2)
-                ccol += 1        
-    # update the screen            
-    refresh_screen_range(cpage, crow, start, stop, for_keys)
-
-
-def get_screen_char_attr(crow, ccol, want_attr):
-    ca = state.console_state.apage.row[crow-1].buf[ccol-1][want_attr]
-    return ca if want_attr else ord(ca)
-
-def refresh_screen_range(cpage, crow, start, stop, for_keys=False):
-    therow = cpage.row[crow-1]
-    ccol = start
-    while ccol < stop:
-        double = therow.double[ccol-1]
-        if double == 1:
-            ca = therow.buf[ccol-1]
-            da = therow.buf[ccol]
-            video.set_attr(da[1]) 
-            video.putwc_at(crow, ccol, ca[0], da[0], for_keys)
-            therow.double[ccol-1] = 1
-            therow.double[ccol] = 2
-            ccol += 2
-        else:
-            if double != 0:
-                logging.debug('DBCS buffer corrupted at %d, %d', crow, ccol)            
-            ca = therow.buf[ccol-1]        
-            video.set_attr(ca[1]) 
-            video.putc_at(crow, ccol, ca[0], for_keys)
-            ccol += 1
-
-
 class ScreenBuffer(object):
-    def __init__(self, bwidth, bheight):
-        self.row = [ScreenRow(bwidth) for _ in xrange(bheight)]
-
-def redraw_text_screen():
-    # force cursor invisible during redraw
-    show_cursor(False)
-    # this makes it feel faster
-    video.clear_rows(state.console_state.attr, 1, 25)
-    # redraw every character
-    for crow in range(state.console_state.height):
-        therow = state.console_state.apage.row[crow]  
-        for i in range(state.console_state.width): 
-            put_screen_char_attr(state.console_state.apage, crow+1, i+1, therow.buf[i][0], therow.buf[i][1])
-    update_cursor_visibility()
-
-def print_screen():
-    for crow in range(1, state.console_state.height+1):
-        line = ''
-        for c, _ in state.console_state.vpage.row[crow-1].buf:
-            line += c
-        state.io_state.devices['LPT1:'].write_line(line)
-
-def copy_page(src, dst):
-    for x in range(state.console_state.height):
-        dstrow, srcrow = state.console_state.pages[dst].row[x], state.console_state.pages[src].row[x]
-        dstrow.buf[:] = srcrow.buf[:]
-        dstrow.end = srcrow.end
-        dstrow.wrap = srcrow.wrap            
-    video.copy_page(src, dst)
+    """ Buffer for a screen page. """
     
+    def __init__(self, battr, bwidth, bheight):
+        """ Initialise the screen buffer to given dimensions. """
+        self.row = [ScreenRow(battr, bwidth) for _ in xrange(bheight)]
+
+
 # redirect i/o to file or printer
 input_echos = []
 output_echos = []
@@ -286,11 +160,169 @@ def wait():
     video.idle()
     check_events()    
 
+
+##############################
+# screen buffer read/write
+
+def put_screen_char_attr(cpage, crow, ccol, c, cattr, 
+                         one_only=False, for_keys=False):
+    """ Put a byte to the screen, redrawing SBCS and DBCS as necessary. """
+    cattr = cattr & 0xf if state.console_state.screen_mode else cattr
+    # update the screen buffer
+    cpage.row[crow-1].buf[ccol-1] = (c, cattr)
+    # mark the replaced char for refreshing
+    start, stop = ccol, ccol+1
+    cpage.row[crow-1].double[ccol-1] = 0
+    # mark out sbcs and dbcs characters
+    # only do dbcs in 80-character modes
+    if unicodepage.dbcs and state.console_state.width == 80:
+        orig_col = ccol
+        # replace chars from here until necessary to update double-width chars
+        therow = cpage.row[crow-1]    
+        # replacing a trail byte? take one step back
+        # previous char could be a lead byte? take a step back
+        if (ccol > 1 and therow.double[ccol-2] != 2 and 
+                (therow.buf[ccol-1][0] in unicodepage.trail or 
+                 therow.buf[ccol-2][0] in unicodepage.lead)):
+            ccol -= 1
+            start -= 1
+        # check all dbcs characters between here until it doesn't matter anymore
+        while ccol < state.console_state.width:
+            c = therow.buf[ccol-1][0]
+            d = therow.buf[ccol][0]  
+            if (c in unicodepage.lead and d in unicodepage.trail):
+                if (therow.double[ccol-1] == 1 and 
+                        therow.double[ccol] == 2 and ccol > orig_col):
+                    break
+                therow.double[ccol-1] = 1
+                therow.double[ccol] = 2
+                start, stop = min(start, ccol), max(stop, ccol+2)
+                ccol += 2
+            else:
+                if therow.double[ccol-1] == 0 and ccol > orig_col:
+                    break
+                therow.double[ccol-1] = 0
+                start, stop = min(start, ccol), max(stop, ccol+1)
+                ccol += 1
+            if (ccol >= state.console_state.width or 
+                    (one_only and ccol > orig_col)):
+                break  
+        # check for box drawing
+        if unicodepage.box_protect:
+            ccol = start-2
+            connecting = 0
+            bset = -1
+            while ccol < stop+2 and ccol < state.console_state.width:
+                c = therow.buf[ccol-1][0]
+                d = therow.buf[ccol][0]  
+                if bset > -1 and unicodepage.connects(c, d, bset): 
+                    connecting += 1
+                else:
+                    connecting = 0
+                    bset = -1
+                if bset == -1:
+                    for b in (0, 1):
+                        if unicodepage.connects(c, d, b):
+                            bset = b
+                            connecting = 1
+                if connecting >= 2:
+                    therow.double[ccol] = 0
+                    therow.double[ccol-1] = 0
+                    therow.double[ccol-2] = 0
+                    start = min(start, ccol-1)
+                    if ccol > 2 and therow.double[ccol-3] == 1:
+                        therow.double[ccol-3] = 0
+                        start = min(start, ccol-2)
+                    if (ccol < state.console_state.width-1 and 
+                            therow.double[ccol+1] == 2):
+                        therow.double[ccol+1] = 0
+                        stop = max(stop, ccol+2)
+                ccol += 1        
+    # update the screen            
+    refresh_screen_range(cpage, crow, start, stop, for_keys)
+
+def get_screen_char_attr(crow, ccol, want_attr):
+    """ Retrieve a byte from the screen (SBCS or DBCS half-char). """
+    ca = state.console_state.apage.row[crow-1].buf[ccol-1][want_attr]
+    return ca if want_attr else ord(ca)
+
+def redraw_row(start, crow):
+    """ Draw the screen row, wrapping around and reconstructing DBCS buffer. """
+    while True:
+        therow = state.console_state.apage.row[crow-1]  
+        for i in range(start, therow.end): 
+            # redrawing changes colour attributes to current foreground (cf. GW)
+            # don't update all dbcs chars behind at each put
+            put_screen_char_attr(state.console_state.apage, crow, i+1, 
+                    therow.buf[i][0], state.console_state.attr, one_only=True)
+        if therow.wrap and crow >= 0 and crow < state.console_state.height-1:
+            crow += 1
+            start = 0
+        else:
+            break    
+
+def refresh_screen_range(cpage, crow, start, stop, for_keys=False):
+    """ Redraw a section of a screen row, assuming DBCS buffer has been set. """
+    therow = cpage.row[crow-1]
+    ccol = start
+    while ccol < stop:
+        double = therow.double[ccol-1]
+        if double == 1:
+            ca = therow.buf[ccol-1]
+            da = therow.buf[ccol]
+            video.set_attr(da[1]) 
+            video.putwc_at(crow, ccol, ca[0], da[0], for_keys)
+            therow.double[ccol-1] = 1
+            therow.double[ccol] = 2
+            ccol += 2
+        else:
+            if double != 0:
+                logging.debug('DBCS buffer corrupted at %d, %d', crow, ccol)            
+            ca = therow.buf[ccol-1]        
+            video.set_attr(ca[1]) 
+            video.putc_at(crow, ccol, ca[0], for_keys)
+            ccol += 1
+
+
+def redraw_text_screen():
+    """ Redraw the active screen page, reconstructing DBCS buffers. """
+    # force cursor invisible during redraw
+    show_cursor(False)
+    # this makes it feel faster
+    video.clear_rows(state.console_state.attr, 1, 25)
+    # redraw every character
+    for crow in range(state.console_state.height):
+        thepage = state.console_state.apage
+        therow = thepage.row[crow]  
+        for i in range(state.console_state.width): 
+            put_screen_char_attr(thepage, crow+1, i+1, 
+                                 therow.buf[i][0], therow.buf[i][1])
+    # set cursor back to previous state                             
+    update_cursor_visibility()
+
+def print_screen():
+    """ Output the visible page to LPT1. """
+    for crow in range(1, state.console_state.height+1):
+        line = ''
+        for c, _ in state.console_state.vpage.row[crow-1].buf:
+            line += c
+        state.io_state.devices['LPT1:'].write_line(line)
+
+def copy_page(src, dst):
+    """ Copy source to destination page. """
+    for x in range(state.console_state.height):
+        dstrow = state.console_state.pages[dst].row[x]
+        srcrow = state.console_state.pages[src].row[x]
+        dstrow.buf[:] = srcrow.buf[:]
+        dstrow.end = srcrow.end
+        dstrow.wrap = srcrow.wrap            
+    video.copy_page(src, dst)
+
 ##############################
 # keyboard buffer read/write
 
-# insert character into keyboard buffer; apply KEY repacement (for use by backends)
 def insert_key(c):
+    """ Insert character into keyboard buffer, apply macros, trigger events. """
     if len(c) > 0:
         try:
             keynum = state.basic_state.event_keys.index(c)

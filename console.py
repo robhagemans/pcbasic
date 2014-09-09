@@ -262,7 +262,9 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
             state.console_state.num_pages, state.console_state.bitsperpixel, state.console_state.font_width, _, _ ) = info  
         state.console_state.pages = []
         for _ in range(state.console_state.num_pages):
-            state.console_state.pages.append(backend.ScreenBuffer(state.console_state.width, state.console_state.height))
+            state.console_state.pages.append(
+                    backend.ScreenBuffer(state.console_state.attr, 
+                        state.console_state.width, state.console_state.height))
         # set active page & visible page, counting from 0. 
         state.console_state.vpagenum, state.console_state.apagenum = new_vpagenum, new_apagenum
         state.console_state.vpage = state.console_state.pages[state.console_state.vpagenum]
@@ -630,7 +632,7 @@ def clear_rest_of_line(srow, scol):
     crow = srow
     while state.console_state.apage.row[crow-1].wrap:
         crow += 1
-        state.console_state.apage.row[crow-1].clear() 
+        state.console_state.apage.row[crow-1].clear(state.console_state.attr) 
     for r in range(crow, srow, -1):
         state.console_state.apage.row[r-1].wrap = False
         scroll(r)
@@ -840,7 +842,7 @@ def list_keys():
 
 def clear_key_row():
     """ Clear row 25 on the active page. """
-    state.console_state.apage.row[24].clear()
+    state.console_state.apage.row[24].clear(state.console_state.attr)
     backend.video.clear_rows(state.console_state.attr, 25, 25)
 
 def show_keys(do_show):
@@ -1023,7 +1025,7 @@ def clear_view():
         state.console_state.attr = state.console_state.attr & 0x70 | 0x7
     for r in range(state.console_state.view_start, 
                     state.console_state.scroll_height+1):
-        state.console_state.apage.row[r-1].clear()
+        state.console_state.apage.row[r-1].clear(state.console_state.attr)
         state.console_state.apage.row[r-1].wrap = False
     state.console_state.row = state.console_state.view_start 
     state.console_state.col = 1
@@ -1047,9 +1049,9 @@ def scroll(from_line=None):
     # sync buffers with the new screen reality:
     if state.console_state.row > from_line:
         state.console_state.row -= 1
-    state.console_state.apage.row.insert(
-            state.console_state.scroll_height, 
-            backend.ScreenRow(state.console_state.width))
+    state.console_state.apage.row.insert(state.console_state.scroll_height, 
+            backend.ScreenRow(state.console_state.attr, 
+                              state.console_state.width))
     del state.console_state.apage.row[from_line-1]
    
 def scroll_down(from_line):
@@ -1059,9 +1061,9 @@ def scroll_down(from_line):
     if state.console_state.row >= from_line:
         state.console_state.row += 1
     # sync buffers with the new screen reality:
-    state.console_state.apage.row.insert(
-            from_line - 1, 
-            backend.ScreenRow(state.console_state.width))
+    state.console_state.apage.row.insert(from_line - 1, 
+            backend.ScreenRow(state.console_state.attr, 
+                              state.console_state.width))
     del state.console_state.apage.row[state.console_state.scroll_height-1] 
 
 ################################################
