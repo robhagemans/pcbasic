@@ -512,6 +512,59 @@ def toggle_echo_lpt1():
         input_echos.append(lpt1.write)
         output_echos.append(lpt1.write)
 
+##############################################
+# penstick interface
+# light pen (emulated by mouse) & joystick
+
+# should be True on mouse click events
+pen_was_down = False
+pen_is_down = False
+pen_down_pos = (0,0)
+pen_pos = (0,0)
+
+def pen_down(x, y):
+    """ Report a pen-down event at graphical x,y """
+    global pen_was_down, pen_is_down, pen_down_pos
+    state.basic_state.pen_handler.triggered = True
+    pen_was_down = True # TRUE until polled
+    pen_is_down = True # TRUE until pen up
+    pen_down_pos = x, y
+
+def pen_up():
+    """ Report a pen-up event at graphical x,y """
+    global pen_is_down
+    pen_is_down = False
+    
+def pen_moved(x, y):
+    """ Report a pen-move event at graphical x,y """
+    global pen_pos
+    pen_pos = x, y
+    
+def get_pen(fn):
+    """ Poll the pen. """
+    global pen_down
+    posx, posy = pen_pos
+    if fn == 0:
+        pen_down_old, pen_was_down = pen_was_down, False
+        return -1 if pen_down_old else 0
+    elif fn == 1:
+        return pen_down_pos[0]
+    elif fn == 2:
+        return pen_down_pos[1]
+    elif fn == 3:
+        return -pygame.mouse.get_pressed()[0]
+    elif fn == 4:
+        return posx
+    elif fn == 5:
+        return posy
+    elif fn == 6:
+        return 1 + pen_down_pos[1]//state.console_state.font_height
+    elif fn == 7:
+        return 1 + pen_down_pos[0]//state.console_state.font_width
+    elif fn == 8:
+        return 1 + posy//state.console_state.font_height
+    elif fn == 9:
+        return 1 + posx//state.console_state.font_width
             
 #############################################
 # BASIC event triggers        

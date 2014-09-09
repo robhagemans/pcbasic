@@ -774,10 +774,15 @@ def check_events(pause=False):
         if event.type == pygame.KEYUP:
             if not pause:
                 handle_key_up(event)
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            handle_mouse(event)
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1: #LEFT
+            backend.pen_down(*normalise_pos(*event.pos))
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1: 
+            backend.pen_up()
+        elif event.type == pygame.MOUSEMOTION: 
+            backend.pen_moved(*normalise_pos(*event.pos))
         elif event.type == pygame.JOYBUTTONDOWN:
-            handle_stick(event)    
+            if event.joy < 2 and event.button < 2:
+                backend.penstick.trigger_stick(event.joy, event.button)
         elif event.type == pygame.VIDEORESIZE:
             fullscreen = False
             resize_display(event.w, event.h)
@@ -788,6 +793,7 @@ def check_events(pause=False):
                 backend.insert_special_key('quit')
     check_screen()
     return False
+
 
 def check_screen():
     global cycle, last_cycle
@@ -947,14 +953,14 @@ def handle_key_up(e):
     except KeyError:
         keystatuscode = None    
 
-def handle_mouse(e):
-    if e.button == 1: # LEFT BUTTON
-        backend.penstick.trigger_pen(e.pos)
-                
-def handle_stick(e):
-    if e.joy < 2 and e.button < 2:
-        backend.penstick.trigger_stick(e.joy, e.button)
-
+def normalise_pos(x, y):
+    """ Convert physical to logical coordinates within screen bounds. """
+    display_info = pygame.display.Info()
+    xscale, yscale = display_info.current_w / (1.*size[0]), display_info.current_h / (1.*size[1])
+    xpos = min(size[0]-1, max(0, int(x//xscale)))
+    ypos = min(size[1]-1, max(0, int(y//yscale))) 
+    return xpos, ypos
+    
 ###############################################
 # clipboard handling
 
@@ -1197,51 +1203,12 @@ def fast_put(x0, y0, varname, new_version, operation_char):
 # penstick interface
 # light pen (emulated by mouse) & joystick
 
-# should be True on mouse click events
-pen_down = 0
-pen_down_pos = (0,0)
-
+ 
 stick_fired = [[False, False], [False, False]]
 
-def trigger_pen(pos):
-    global pen_down, pen_down_pos
-    state.basic_state.pen_handler.triggered = True
-    pen_down = -1 # TRUE
-    display_info = pygame.display.Info()
-    xscale, yscale = display_info.current_w / (1.*size[0]), display_info.current_h / (1.*size[1])
-    pen_down_pos = int(pos[0]//xscale), int(pos[1]//yscale)
-                
 def trigger_stick(joy, button):
     stick_fired[joy][button] = True
     state.basic_state.strig_handlers[joy*2 + button].triggered = True
-
-def get_pen(fn):
-    global pen_down
-    display_info = pygame.display.Info()
-    xscale, yscale = display_info.current_w / (1.*size[0]), display_info.current_h / (1.*size[1])
-    pos = pygame.mouse.get_pos()
-    posx, posy = int(pos[0]//xscale), int(pos[1]//yscale)
-    if fn == 0:
-        pen_down_old, pen_down = pen_down, 0
-        return pen_down_old
-    elif fn == 1:
-        return min(size[0]-1, max(0, pen_down_pos[0]))
-    elif fn == 2:
-        return min(size[1]-1, max(0, pen_down_pos[1]))
-    elif fn == 3:
-        return -pygame.mouse.get_pressed()[0]
-    elif fn == 4:
-        return min(size[0]-1, max(0, posx))
-    elif fn == 5:
-        return min(size[1]-1, max(0, posy))
-    elif fn == 6:
-        return min(height, max(1, 1 + pen_down_pos[1]//font_height))
-    elif fn == 7:
-        return min(width, max(1, 1 + pen_down_pos[0]//font_width))
-    elif fn == 8:
-        return min(height, max(1, 1 + posy//font_height))
-    elif fn == 9:
-        return min(width, max(1, 1 + posx//xscale))
 
 def get_stick(fn):
     stick_num, axis = fn//2, fn%2
