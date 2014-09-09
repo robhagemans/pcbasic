@@ -338,6 +338,27 @@ def copy_page(src, dst):
         dstrow.wrap = srcrow.wrap            
     video.copy_page(src, dst)
 
+def clear_screen_buffer_at(x0, y0):
+    """ Remove the character covering a single pixel. """
+    fx, fy = state.console_state.font_width, state.console_state.font_height
+    cymax, cxmax = state.console_state.height-1, state.console_state.width-1 
+    cx = min(cxmax, max(0, x // fx))
+    cy = min(cymax, max(0, y // fy)) 
+    state.console_state.pages[pagenum].row[cy].buf[cx] = (
+        ' ', state.console_state.attr)
+
+def clear_screen_buffer_area(x0, y0, x1, y1):
+    """ Remove all characters from a rectangle of the graphics screen. """
+    fx, fy = state.console_state.font_width, state.console_state.font_height
+    cymax, cxmax = state.console_state.height-1, state.console_state.width-1 
+    cx0 = min(cxmax, max(0, x0 // fx)) 
+    cy0 = min(cymax, max(0, y0 // fy))
+    cx1 = min(cxmax, max(0, x1 // fx)) 
+    cy1 = min(cymax, max(0, y1 // fy))
+    for r in range(cy0, cy1+1):
+        state.console_state.apage.row[r].buf[cx0:cx1+1] = [
+            (' ', state.console_state.attr)] * (cx1 - cx0 + 1)
+    
 ##############################
 # keyboard buffer read/write
 

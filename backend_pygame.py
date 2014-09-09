@@ -1088,16 +1088,12 @@ class Clipboard(object):
 
 graph_view = None
 
-
 def put_pixel(x, y, index, pagenum=None):
     global screen_changed
     if pagenum == None:
         pagenum = apagenum
     surface0[pagenum].set_at((x,y), index)
-    # empty the console buffer of affected characters
-    cx = min(width-1, max(0, x//font_width))
-    cy = min(height-1, max(0, y//font_height)) 
-    state.console_state.pages[pagenum].row[cy].buf[cx] = (' ', state.console_state.attr)
+    backend.clear_screen_buffer_at(x, y)
     screen_changed = True
 
 def get_pixel(x, y, pagenum=None):    
@@ -1135,12 +1131,7 @@ def fill_rect(x0, y0, x1, y1, index):
     global screen_changed
     rect = pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)
     surface0[apagenum].fill(index, rect)
-    cx0 = min(width-1, max(0, x0//font_width)) 
-    cy0 = min(height-1, max(0, y0//font_height))
-    cx1 = min(width-1, max(0, x1//font_width)) 
-    cy1 = min(height-1, max(0, y1//font_height))
-    for r in range(cy0, cy1+1):
-        state.console_state.apage.row[r].buf[cx0:cx1+1] = [(' ', state.console_state.attr)] * (cx1 - cx0 + 1)
+    backend.clear_screen_buffer_area(x0, y0, x1, y1)
     screen_changed = True
 
 def numpy_set(left, right):
@@ -1181,23 +1172,20 @@ def fast_put(x0, y0, varname, new_version, operation_char):
     except KeyError:
         # not yet stored, do it the slow way
         return False
-    if x0 < 0 or x0 + width > size[0] or y0 < 0 or y0 + height > size[1]:
+    if x0 < 0 or x0+width-1 > size[0] or y0 < 0 or y0+height-1 > size[1]:
         # let the normal version handle errors
         return False    
-    # if the versions are not the same, use the slow method (array has changed since clip was stored)
+    # if the versions are not the same, use the slow method 
+    # (array has changed since clip was stored)
     if version != new_version:
         return False
     # reference the destination area
-    dest_array = pygame.surfarray.pixels2d(surface0[apagenum].subsurface(pygame.Rect(x0, y0, width, height))) 
+    dest_array = pygame.surfarray.pixels2d(
+            surface0[apagenum].subsurface(pygame.Rect(x0, y0, width, height))) 
     # apply the operation
     operation = fast_operations[operation_char]
     operation(dest_array, clip)
-    cx0 = min(width-1, max(0, x0//font_width)) 
-    cy0 = min(height-1, max(0, y0//font_height)) 
-    cx1 = min(width-1, max(0, (x0+width)//font_width))
-    cy1 = min(height-1, max(0, (y0+height)//font_height))
-    for r in range(cy0, cy1+1):
-        state.console_state.apage.row[r].buf[cx0:cx1+1] = [(' ', state.console_state.attr)] * (cx1 - cx0 + 1)
+    backend.clear_screen_buffer_area(x0, y0, x0+width-1, y0+height-1)
     screen_changed = True
     return True
 
