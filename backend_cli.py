@@ -117,9 +117,9 @@ def clear_rows(cattr, start, stop):
 def update_palette(palette):
     pass
 
-def set_colorburst(on):
+def set_colorburst(on, palette):
     pass
-    
+        
 def move_cursor(crow, ccol):
     pass
 

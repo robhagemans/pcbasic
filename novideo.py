@@ -107,7 +107,7 @@ def update_cursor_attr(attr):
 def update_palette(palette):
     pass
 
-def set_colorburst(on):
+def set_colorburst(on, palette):
     pass
     
 def update_cursor_visibility(cursor_on):

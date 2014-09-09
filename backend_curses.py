@@ -172,7 +172,7 @@ def colours(at):
 def update_palette(new_palette):
     pass
     
-def set_colorburst(on):
+def set_colorburst(on, palette):
     pass
     
 ####

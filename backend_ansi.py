@@ -112,7 +112,7 @@ def update_palette(palette):
     palette_changed = True
     redraw()     
 
-def set_colorburst(on):
+def set_colorburst(on, palette):
     pass
     
 ####
