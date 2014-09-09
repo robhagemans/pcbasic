@@ -1179,16 +1179,14 @@ fast_operations = {
     '\xF0': numpy_ixor,
     }
 
-def fast_get(x0, y0, x1, y1, varname):
+def fast_get(x0, y0, x1, y1, varname, version):
     if not numpy:
         return
-    # arrays[varname] must exist at this point (or GET would have raised error 5)
-    version = state.basic_state.arrays[varname][2]
     # copy a numpy array of the target area
     clip = pygame.surfarray.array2d(surface0[apagenum].subsurface(pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)))
     get_put_store[varname] = ( x1-x0+1, y1-y0+1, clip, version )
 
-def fast_put(x0, y0, varname, operation_char):
+def fast_put(x0, y0, varname, new_version, operation_char):
     global screen_changed
     try:
         width, height, clip, version = get_put_store[varname]
@@ -1198,9 +1196,8 @@ def fast_put(x0, y0, varname, operation_char):
     if x0 < 0 or x0 + width > size[0] or y0 < 0 or y0 + height > size[1]:
         # let the normal version handle errors
         return False    
-    # varname must exist at this point (or PUT would have raised error 5)       
     # if the versions are not the same, use the slow method (array has changed since clip was stored)
-    if version != state.basic_state.arrays[varname][2]:
+    if version != new_version:
         return False
     # reference the destination area
     dest_array = pygame.surfarray.pixels2d(surface0[apagenum].subsurface(pygame.Rect(x0, y0, width, height))) 
