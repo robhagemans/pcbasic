@@ -378,6 +378,11 @@ def init():
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
     for j in joysticks:
         j.init()
+    # if one joystick is present, all are active and report 128 for mid, not 0
+    if len(joysticks) > 0:
+        for joy in range(0, 1):
+            for axis in range(0, 1):
+                backend.stick_moved(joy, axis, 128)
     scrap = Clipboard() 
     load_fonts(heights_needed)
     text_mode = True    
@@ -743,56 +748,7 @@ def refresh_cursor():
                     screen.set_at((x,y), pixel^index)
     last_row = cursor_row
     last_col = cursor_col
-        
-def pause_key():
-    # pause key press waits for any key down. continues to process screen events (blink) but not user events.
-    while not check_events(pause=True):
-        # continue playing background music
-        backend.audio.check_sound()
-        idle()
-        
-def idle():
-    pygame.time.wait(cycle_time/blink_cycles/8)  
 
-def check_events(pause=False):
-    global screen_changed, fullscreen
-    # handle Android pause/resume
-    if android and pygame_android.check_events():
-        # force immediate redraw of screen
-        refresh_screen()
-        do_flip()
-        # force redraw on next tick  
-        # we seem to have to redraw twice to see anything
-        screen_changed = True
-    # check and handle pygame events    
-    for event in pygame.event.get():
-        if event.type == pygame.KEYDOWN:
-            if not pause:
-                handle_key(event)
-            else:
-                return True    
-        if event.type == pygame.KEYUP:
-            if not pause:
-                handle_key_up(event)
-        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1: #LEFT
-            backend.pen_down(*normalise_pos(*event.pos))
-        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1: 
-            backend.pen_up()
-        elif event.type == pygame.MOUSEMOTION: 
-            backend.pen_moved(*normalise_pos(*event.pos))
-        elif event.type == pygame.JOYBUTTONDOWN:
-            if event.joy < 2 and event.button < 2:
-                backend.penstick.trigger_stick(event.joy, event.button)
-        elif event.type == pygame.VIDEORESIZE:
-            fullscreen = False
-            resize_display(event.w, event.h)
-        elif event.type == pygame.QUIT:
-            if noquit:
-                pygame.display.set_caption('PC-BASIC 3.23 - to exit type <CTRL+BREAK> <ESC> SYSTEM')
-            else:
-                backend.insert_special_key('quit')
-    check_screen()
-    return False
 
 
 def check_screen():
@@ -846,9 +802,70 @@ def do_flip():
         pygame.transform.scale(screen, display.get_size(), display)  
     pygame.display.flip()
 
+#######################################################
+# event queue
+
+# buffer for alt+numpad ascii character construction
 keypad_ascii = ''
 
-def handle_key(e):
+def pause_key():
+    # pause key press waits for any key down. continues to process screen events (blink) but not user events.
+    while not check_events(pause=True):
+        # continue playing background music
+        backend.audio.check_sound()
+        idle()
+        
+def idle():
+    pygame.time.wait(cycle_time/blink_cycles/8)  
+
+def check_events(pause=False):
+    global screen_changed, fullscreen
+    # handle Android pause/resume
+    if android and pygame_android.check_events():
+        # force immediate redraw of screen
+        refresh_screen()
+        do_flip()
+        # force redraw on next tick  
+        # we seem to have to redraw twice to see anything
+        screen_changed = True
+    # check and handle pygame events    
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN:
+            if not pause:
+                handle_key_down(event)
+            else:
+                return True    
+        if event.type == pygame.KEYUP:
+            if not pause:
+                handle_key_up(event)
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1: #LEFT
+            backend.pen_down(*normalise_pos(*event.pos))
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1: 
+            backend.pen_up()
+        elif event.type == pygame.MOUSEMOTION: 
+            backend.pen_moved(*normalise_pos(*event.pos))
+        elif event.type == pygame.JOYBUTTONDOWN:
+            if event.joy < 2 and event.button < 2:
+                backend.stick_down(event.joy, event.button)
+        elif event.type == pygame.JOYBUTTONUP:
+            if event.joy < 2 and event.button < 2:
+                backend.stick_up(event.joy, event.button)
+        elif event.type == pygame.JOYAXISMOTION:
+            if event.joy < 2 and event.axis < 2:
+                backend.stick_moved(event.joy, event.axis, 
+                                    int(event.value*127 + 128))
+        elif event.type == pygame.VIDEORESIZE:
+            fullscreen = False
+            resize_display(event.w, event.h)
+        elif event.type == pygame.QUIT:
+            if noquit:
+                pygame.display.set_caption('PC-BASIC 3.23 - to exit type <CTRL+BREAK> <ESC> SYSTEM')
+            else:
+                backend.insert_special_key('quit')
+    check_screen()
+    return False
+
+def handle_key_down(e):
     global keypad_ascii
     c = ''
     mods = pygame.key.get_mods()
@@ -1199,39 +1216,6 @@ def fast_put(x0, y0, varname, new_version, operation_char):
     screen_changed = True
     return True
 
-##############################################
-# penstick interface
-# light pen (emulated by mouse) & joystick
-
- 
-stick_fired = [[False, False], [False, False]]
-
-def trigger_stick(joy, button):
-    stick_fired[joy][button] = True
-    state.basic_state.strig_handlers[joy*2 + button].triggered = True
-
-def get_stick(fn):
-    stick_num, axis = fn//2, fn%2
-    if len(joysticks) == 0:
-        return 0
-    if len(joysticks) < stick_num + 1:
-        return 128
-    else:
-        return int(joysticks[stick_num].get_axis(axis)*127)+128
-
-def get_strig(fn):       
-    joy, trig = fn//4, (fn//2)%2
-    if joy >= len(joysticks) or trig >= joysticks[joy].get_numbuttons():
-        return False
-    if fn%2 == 0:
-        # has been trig
-        stick_was_trig = stick_fired[joy][trig]
-        stick_fired[joy][trig] = False
-        return stick_was_trig
-    else:
-        # trig
-        return joysticks[joy].get_button(trig)
-      
 ####################################
 # sound interface
 

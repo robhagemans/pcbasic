@@ -34,12 +34,10 @@ import backend
 # this can't be done in backend.py as it would create circular dependency
 import novideo
 import nosound
-import nopenstick
 import backend_cli
 import backend_curses
 import backend_pygame
 import sound_beep
-backend.penstick = nopenstick
 backend.audio = nosound
 if config.options['filter'] or config.options['conv'] or (
         not config.options['graphical'] and not config.options['ansi'] and
@@ -55,7 +53,6 @@ elif config.options['ansi'] and plat.stdout_is_tty:
     backend.audio = sound_beep
 else:   
     backend.video = backend_pygame   
-    backend.penstick = backend_pygame
     backend.audio = backend_pygame
 if config.options['nosound']:
     backend.audio = nosound

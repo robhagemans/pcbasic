@@ -20,7 +20,6 @@ import error
 # backend implementations
 video = None
 audio = None 
-penstick = None 
 
 #############################################
 # sound queue
@@ -513,10 +512,8 @@ def toggle_echo_lpt1():
         output_echos.append(lpt1.write)
 
 ##############################################
-# penstick interface
-# light pen (emulated by mouse) & joystick
+# light pen
 
-# should be True on mouse click events
 pen_was_down = False
 pen_is_down = False
 pen_down_pos = (0,0)
@@ -542,7 +539,7 @@ def pen_moved(x, y):
     
 def get_pen(fn):
     """ Poll the pen. """
-    global pen_down
+    global pen_was_down
     posx, posy = pen_pos
     if fn == 0:
         pen_down_old, pen_was_down = pen_was_down, False
@@ -565,6 +562,45 @@ def get_pen(fn):
         return 1 + posy//state.console_state.font_height
     elif fn == 9:
         return 1 + posx//state.console_state.font_width
+ 
+##############################################
+# joysticks
+
+stick_was_fired = [[False, False], [False, False]]
+stick_is_firing = [[False, False], [False, False]]
+# axis 0--255; 128 is mid but reports 0, not 128 if no joysticks present
+stick_axis = [[0, 0], [0, 0]]
+
+def stick_down(joy, button):
+    """ Report a joystick button down event. """
+    stick_was_fired[joy][button] = True
+    stick_is_firing[joy][button] = True
+    state.basic_state.strig_handlers[joy*2 + button].triggered = True
+
+def stick_up(joy, button):
+    """ Report a joystick button up event. """
+    stick_is_firing[joy][button] = False
+
+def stick_moved(joy, axis, value):
+    """ Report a joystick axis move. """
+    stick_axis[joy][axis] = value
+
+def get_stick(fn):
+    """ Poll the joystick axes. """    
+    joy, axis = fn//2, fn%2
+    return stick_axis[joy][axis]
+    
+def get_strig(fn):       
+    """ Poll the joystick buttons. """    
+    joy, trig = fn//4, (fn//2)%2
+    if fn % 2 == 0:
+        # has been fired
+        stick_was_trig = stick_was_fired[joy][trig]
+        stick_was_fired[joy][trig] = False
+        return stick_was_trig
+    else:
+        # is currently firing
+        return stick_is_firing[joy][trig]
             
 #############################################
 # BASIC event triggers        
