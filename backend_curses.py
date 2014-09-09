@@ -23,8 +23,6 @@ except ImportError:
         
 import unicodepage
 import backend
-#
-import state
 
 # for a few ansi sequences not supported by curses
 # onlu yse these if you clear the screen afterwards, 
@@ -40,6 +38,10 @@ window = None
 
 # 1 is line ('visible'), 2 is block ('highly visible'), 3 is invisible
 cursor_shape = 1
+
+# current cursor position
+cursor_row = 1
+cursor_col = 1
 
 if curses:
     # curses keycodes
@@ -91,7 +93,7 @@ def init():
     curses.raw()
     curses.start_color()
     screen.clear()
-    init_screen_mode()
+#    init_screen_mode()
     sys.stdout.write(ansi.esc_set_title % 'PC-BASIC 3.23')
     return True
     
@@ -99,17 +101,18 @@ def supports_graphics_mode(mode_info):
     return False
     
 def init_screen_mode(mode_info=None, is_text_mode=False):
-    global window
+    global window, height, width
+    height = 25
+    width = mode_info[4]
     if window:
         window.clear()
         window.refresh()
     else:
-        window = curses.newwin(state.console_state.height, 
-                           state.console_state.width, 0, 0)
+        window = curses.newwin(height, width, 0, 0)
     window.move(0, 0)
-    sys.stdout.write(ansi.esc_resize_term % (state.console_state.height, state.console_state.width))
-    #curses.resizeterm(state.console_state.height, state.console_state.width)
-    window.resize(state.console_state.height, state.console_state.width)
+    sys.stdout.write(ansi.esc_resize_term % (height, width))
+    #curses.resizeterm(height, width)
+    window.resize(height, width)
     window.nodelay(True)
     window.keypad(True)
     window.scrollok(False)
@@ -176,8 +179,8 @@ def set_colorburst(on, palette):
 ####
 
 def move_cursor(crow, ccol):
-    global row, col
-    row, col = crow, ccol
+    global cursor_row, cursor_col
+    cursor_row, cursor_col = crow, ccol
 
 def update_cursor_attr(attr):
 #    term.write(esc_set_cursor_colour % get_fg_colourname(attr))
@@ -197,7 +200,7 @@ def build_cursor(width, height, from_line, to_line):
 
 def check_events():
     if cursor_visible:
-        window.move(state.console_state.row-1, state.console_state.col-1)
+        window.move(cursor_row-1, cursor_col-1)
     window.refresh()
     check_keyboard()
     
@@ -234,21 +237,21 @@ def scroll(from_line, scroll_height, attr):
     except curses.error:
         pass
     window.scrollok(False)
-    window.setscrreg(1, state.console_state.height-1)
-    if state.console_state.row > 1:
-        window.move(state.console_state.row-2, state.console_state.col-1)
+    window.setscrreg(1, height-1)
+    if cursor_row > 1:
+        window.move(cursor_row-2, cursor_col-1)
     
 def scroll_down(from_line, scroll_height, attr):
     window.scrollok(True)
-    window.setscrreg(from_line-1, state.console_state.scroll_height-1)
+    window.setscrreg(from_line-1, scroll_height-1)
     try:
         window.scroll(-1)
     except curses.error:
         pass
     window.scrollok(False)
-    window.setscrreg(1, state.console_state.height-1)
-    if state.console_state.row < state.console_state.height:
-        window.move(state.console_state.row, state.console_state.col-1)
+    window.setscrreg(1, height-1)
+    if cursor_row < height:
+        window.move(cursor_row, cursor_col-1)
     
 #######
 
@@ -267,8 +270,8 @@ def check_keyboard():
                 # this is fickle, on many terminals doesn't work
                 backend.insert_special_key('break')
             elif i == curses.KEY_RESIZE:
-                sys.stdout.write(ansi.esc_resize_term % (state.console_state.height, state.console_state.width))
-                window.resize(state.console_state.height, state.console_state.width)
+                sys.stdout.write(ansi.esc_resize_term % (height, width))
+                window.resize(height, width)
                 window.clear()
                 redraw()
             try:
