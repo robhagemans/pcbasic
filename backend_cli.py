@@ -153,7 +153,8 @@ def update_position(row=None, col=None):
         last_row = row
         # show what's on the line where we are. 
         # note: recursive by one level, last_row now equals row
-        backend.redraw_row(0, cursor_row)
+        # this reconstructs DBCS buffer, no need to do that
+        backend.redraw_row(0, cursor_row, wrap=False)
     if col != last_col:
         term.write(esc_move_left*(last_col-col))
         term.write(esc_move_right*(col-last_col))

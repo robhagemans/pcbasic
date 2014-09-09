@@ -249,7 +249,7 @@ def get_screen_char_attr(crow, ccol, want_attr):
     ca = state.console_state.apage.row[crow-1].buf[ccol-1][want_attr]
     return ca if want_attr else ord(ca)
 
-def redraw_row(start, crow):
+def redraw_row(start, crow, wrap=True):
     """ Draw the screen row, wrapping around and reconstructing DBCS buffer. """
     while True:
         therow = state.console_state.apage.row[crow-1]  
@@ -258,7 +258,7 @@ def redraw_row(start, crow):
             # don't update all dbcs chars behind at each put
             put_screen_char_attr(state.console_state.apage, crow, i+1, 
                     therow.buf[i][0], state.console_state.attr, one_only=True)
-        if therow.wrap and crow >= 0 and crow < state.console_state.height-1:
+        if wrap and therow.wrap and crow >= 0 and crow < state.console_state.height-1:
             crow += 1
             start = 0
         else:
