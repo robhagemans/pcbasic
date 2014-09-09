@@ -249,6 +249,23 @@ def get_screen_char_attr(crow, ccol, want_attr):
     ca = state.console_state.apage.row[crow-1].buf[ccol-1][want_attr]
     return ca if want_attr else ord(ca)
 
+def get_text(start_row, start_col, stop_row, stop_col):   
+    """ Retrieve a clip of the text between start and stop. """     
+    r, c = start_row, start_col
+    full = ''
+    clip = ''
+    while r < stop_row or (r == stop_row and c <= stop_col):
+        clip += state.console_state.vpage.row[r-1].buf[c-1][0]    
+        c += 1
+        if c > state.console_state.width:
+            if not state.console_state.vpage.row[r-1].wrap:
+                full += unicodepage.UTF8Converter().to_utf8(clip) + '\r\n'
+                clip = ''
+            r += 1
+            c = 1
+    full += unicodepage.UTF8Converter().to_utf8(clip)        
+    return full
+
 def redraw_row(start, crow, wrap=True):
     """ Draw the screen row, wrapping around and reconstructing DBCS buffer. """
     while True:

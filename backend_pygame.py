@@ -1015,19 +1015,7 @@ class Clipboard(object):
         start, stop = self.select_start, self.select_stop
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
             start, stop = stop, start
-        r, c = start
-        full = ''
-        clip = ''
-        while r < stop[0] or (r == stop[0] and c <= stop[1]):
-            clip += state.console_state.vpage.row[r-1].buf[c-1][0]    
-            c += 1
-            if c > width:
-                if not state.console_state.vpage.row[r-1].wrap:
-                    full += unicodepage.UTF8Converter().to_utf8(clip) + '\r\n'
-                    clip = ''
-                r += 1
-                c = 1
-        full += unicodepage.UTF8Converter().to_utf8(clip)        
+        full = backend.get_text(start[0], start[1], stop[0], stop[1])
         try:        
             pygame.scrap.put(pygame.SCRAP_TEXT, full)
         except KeyError:
