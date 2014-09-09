@@ -28,10 +28,6 @@ except ImportError:
 
 import unicodepage
 import backend
-#
-import error
-#
-import state
 
 # escape sequences
 from ansi import *
@@ -45,6 +41,8 @@ palette_changed = True
 # cursor is visible
 cursor_visible = True
 
+cursor_row = 1
+cursor_col = 1
  
 def get_size():
     sys.stdout.write(esc_request_size)
@@ -76,8 +74,11 @@ def supports_graphics_mode(mode_info):
     return False
     
 def init_screen_mode(mode_info, is_text_mode=False):
+    global width, height
+    height = 25
+    width = mode_info[4]
     term.write(esc_clear_screen)
-    term.write(esc_resize_term % (state.console_state.height, state.console_state.width))
+    term.write(esc_resize_term % (height, width))
     term.flush()
     
 def close():
@@ -98,7 +99,7 @@ def clear_rows(cattr, start, stop):
     for r in range(start, stop+1):
         term.write(esc_move_cursor % (r, 1))    
         term.write(esc_clear_line)
-    term.write(esc_move_cursor % (state.console_state.row, state.console_state.col))
+    term.write(esc_move_cursor % (cursor_row, cursor_col))
     term.flush()
 
 def redraw():
@@ -107,9 +108,10 @@ def redraw():
 
 #####
 
-def update_palette(palette):
-    global palette_changed
+def update_palette(new_palette):
+    global palette_changed, palette
     palette_changed = True
+    palette = new_palette
     redraw()     
 
 def set_colorburst(on, palette):
@@ -118,12 +120,12 @@ def set_colorburst(on, palette):
 ####
 
 def get_fg_colourname(attr):
-    colour = state.console_state.palette[attr & 15] & 15
+    colour = palette[attr & 15] & 15
     return colournames[colour]
 
 def get_colours(attr):
-    fore = state.console_state.palette[attr & 15] & 15  
-    back = state.console_state.palette[(attr>>4) & 7] & 7 
+    fore = palette[attr & 15] & 15  
+    back = palette[(attr>>4) & 7] & 7 
     if (fore & 8) == 0:
         fore = 30 + colours[fore%8]
     else:
@@ -132,8 +134,8 @@ def get_colours(attr):
     return fore, back
 
 def move_cursor(crow, ccol):
-    global row, col
-    row, col = crow, ccol
+    global cursor_row, cursor_col
+    cursor_row, cursor_col = crow, ccol
 
 def update_cursor_attr(attr):
     term.write(esc_set_cursor_colour % get_fg_colourname(attr))
@@ -148,7 +150,7 @@ def update_cursor_visibility(cursor_on):
 def check_events():
     check_keyboard()
     if cursor_visible:
-        term.write(esc_move_cursor % (state.console_state.row,state.console_state.col))
+        term.write(esc_move_cursor % (cursor_row,cursor_col))
         term.flush()
 
 last_attr = None
@@ -186,16 +188,16 @@ def scroll(from_line, scroll_height, attr):
     term.write(esc_set_scroll_region % (from_line, scroll_height))
     term.write(esc_scroll_up % 1)
     term.write(esc_set_scroll_screen)
-    if state.console_state.row > 1:
-        term.write(esc_move_cursor % (state.console_state.row-1, state.console_state.col))
+    if cursor_row > 1:
+        term.write(esc_move_cursor % (cursor_row-1, cursor_col))
     term.flush()
     
 def scroll_down(from_line, scroll_height, attr):
     term.write(esc_set_scroll_region % (from_line, scroll_height))
     term.write(esc_scroll_down % 1)
     term.write(esc_set_scroll_screen)
-    if state.console_state.row < state.console_state.height:
-        term.write(esc_move_cursor % (state.console_state.row+1, state.console_state.col))
+    if cursor_row < height:
+        term.write(esc_move_cursor % (cursor_row+1, cursor_col))
     term.flush()
     
 #######
@@ -237,7 +239,7 @@ def check_keyboard():
     for uc in u:                    
         c += uc.encode('utf-8')
         if c == '\x03':         # ctrl-C
-            raise error.Break() 
+            backend.insert_special_key('break')
         elif c == '\x7f':       # backspace
             backend.insert_key('\b')
         elif c == '\0':    
