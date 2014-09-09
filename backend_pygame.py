@@ -344,7 +344,7 @@ def load_state():
 
 def init():
     global joysticks, physical_size, scrap, display_size, display_size_text
-    global text_mode
+    global text_mode, num_palette
     # set state objects to whatever is now in state (may have been unpickled)
     if not pygame:
         logging.warning('Could not find PyGame module. Failed to initialise graphical interface.')
@@ -359,14 +359,18 @@ def init():
     # get physical screen dimensions (needs to be called before set_mode)
     display_info = pygame.display.Info()
     physical_size = display_info.current_w, display_info.current_h
+    # draw the icon
+    pygame.display.set_icon(build_icon())
     # first set the screen non-resizeable, to trick things like maximus into not full-screening
     # I hate it when applications do this ;)
-    pygame.display.set_icon(build_icon())
     if not fullscreen:
         pygame.display.set_mode(display_size_text, 0, 8)
     resize_display(*display_size_text, initial=True)
     pygame.display.set_caption('PC-BASIC 3.23')
     pygame.key.set_repeat(500, 24)
+    # load a game palette
+    num_palette = 64
+    update_palette([0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63])
     if android:
         pygame_android.init()
     init_mixer()
