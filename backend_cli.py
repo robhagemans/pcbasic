@@ -187,11 +187,11 @@ def putwc_at(row, col, c, d, for_keys=False):
     term.flush()
     last_col += 2
    
-def scroll(from_line):
+def scroll(from_line, scroll_height, attr):
     term.write('\r\n')
     term.flush()
     
-def scroll_down(from_line):
+def scroll_down(from_line, scroll_height, attr):
     pass
         
 def check_keyboard():

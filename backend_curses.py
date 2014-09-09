@@ -228,9 +228,9 @@ def putwc_at(row, col, c, d, for_keys=False):
     except curses.error:
         pass
         
-def scroll(from_line):
+def scroll(from_line, scroll_height, attr):
     window.scrollok(True)
-    window.setscrreg(from_line-1, state.console_state.scroll_height-1)
+    window.setscrreg(from_line-1, scroll_height-1)
     try:
         window.scroll(1)
     except curses.error:
@@ -240,7 +240,7 @@ def scroll(from_line):
     if state.console_state.row > 1:
         window.move(state.console_state.row-2, state.console_state.col-1)
     
-def scroll_down(from_line):
+def scroll_down(from_line, scroll_height, attr):
     window.scrollok(True)
     window.setscrreg(from_line-1, state.console_state.scroll_height-1)
     try:

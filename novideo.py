@@ -92,10 +92,10 @@ def init_screen_mode(mode_info, is_text_mode=False):
 def copy_page(src, dst):
     pass
 
-def scroll(from_line):
+def scroll(from_line, scroll_height, attr):
     pass
     
-def scroll_down(from_line):
+def scroll_down(from_line, scroll_height, attr):
     pass
 
 def move_cursor(crow, ccol):

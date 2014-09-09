@@ -182,16 +182,16 @@ def putwc_at(row, col, c, d, for_keys=False):
         term.write('  ')
     term.flush()
    
-def scroll(from_line):
-    term.write(esc_set_scroll_region % (from_line, state.console_state.scroll_height))
+def scroll(from_line, scroll_height, attr):
+    term.write(esc_set_scroll_region % (from_line, scroll_height))
     term.write(esc_scroll_up % 1)
     term.write(esc_set_scroll_screen)
     if state.console_state.row > 1:
         term.write(esc_move_cursor % (state.console_state.row-1, state.console_state.col))
     term.flush()
     
-def scroll_down(from_line):
-    term.write(esc_set_scroll_region % (from_line, state.console_state.scroll_height))
+def scroll_down(from_line, scroll_height, attr):
+    term.write(esc_set_scroll_region % (from_line, scroll_height))
     term.write(esc_scroll_down % 1)
     term.write(esc_set_scroll_screen)
     if state.console_state.row < state.console_state.height:
