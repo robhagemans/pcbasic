@@ -25,8 +25,6 @@ import unicodepage
 import backend
 #
 import state
-#
-import error
 
 # for a few ansi sequences not supported by curses
 # onlu yse these if you clear the screen afterwards, 
@@ -266,7 +264,8 @@ def check_keyboard():
             s += chr(i)
         else:
             if i == curses.KEY_BREAK:
-                raise error.Break()
+                # this is fickle, on many terminals doesn't work
+                backend.insert_special_key('break')
             elif i == curses.KEY_RESIZE:
                 sys.stdout.write(ansi.esc_resize_term % (state.console_state.height, state.console_state.width))
                 window.resize(state.console_state.height, state.console_state.width)
@@ -283,8 +282,9 @@ def check_keyboard():
     c = ''
     for uc in u:                    
         c += uc.encode('utf-8')
-        if c == '\x03':         # ctrl-C
-            raise error.Break() 
+        if c == '\x03':         
+            # send BREAK for ctrl-C
+            backend.insert_special_key('break')
         elif c == '\0':    
             # scancode; go add next char
             continue
