@@ -187,13 +187,13 @@ def init():
         # set up the appropriate screen resolution
         if (state.console_state.screen_mode == 0 or 
                 backend.video.supports_graphics_mode(mode_info)):
-            # without this the palette is not prepared when resuming
-            backend.video.update_palette(state.console_state.palette)
             # set the visible and active pages
             backend.video.set_page(state.console_state.vpagenum, 
                                    state.console_state.apagenum)
             # set the screen mde
             backend.video.init_screen_mode(mode_info, state.console_state.screen_mode==0)
+            # without this the palette is not prepared when resuming
+            backend.video.update_palette(state.console_state.palette)
             # fix the cursor
             backend.video.build_cursor(state.console_state.cursor_width, state.console_state.font_height, 
                 state.console_state.cursor_from, state.console_state.cursor_to)    
