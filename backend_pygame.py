@@ -40,8 +40,6 @@ import backend
 import typeface
 #
 import state
-#
-import error
 
 
 # default font family
@@ -783,7 +781,7 @@ def check_events(pause=False):
             if noquit:
                 pygame.display.set_caption('PC-BASIC 3.23 - to exit type <CTRL+BREAK> <ESC> SYSTEM')
             else:
-                raise error.Exit()      
+                backend.insert_special_key('quit')
     check_screen()
     return False
 
@@ -849,30 +847,31 @@ def handle_key(e):
     if e.key in (pygame.K_PAUSE, pygame.K_BREAK):
         if mods & pygame.KMOD_CTRL:
             # ctrl-break
-            raise error.Break()
+            backend.insert_special_key('break')
         else:
             # pause until keypress
             pause_key()    
     elif e.key == pygame.K_DELETE and mods & pygame.KMOD_CTRL and mods & pygame.KMOD_ALT:
         # if not caught by OS, reset the emulator
-        raise error.Reset()
+        backend.insert_special_key('reset')
     elif e.key == pygame.K_NUMLOCK and mods & pygame.KMOD_CTRL:
+        # ctrl+numlock is pause
         pause_key()    
     elif e.key == pygame.K_SCROLLOCK and mods & pygame.KMOD_CTRL:
         # ctrl+SCROLLLOCK breaks too
-        raise error.Break()
+        backend.insert_special_key('break')
     elif e.key == pygame.K_CAPSLOCK:
-        state.console_state.caps = not state.console_state.caps
+        backend.insert_special_key('caps')
     elif e.key == pygame.K_NUMLOCK:
-        state.console_state.num = not state.console_state.num
+        backend.insert_special_key('num')
     elif e.key == pygame.K_SCROLLOCK:
-        state.console_state.scroll = not state.console_state.scroll
+        backend.insert_special_key('scroll')
     elif e.key == pygame.K_PRINT:
         # these can't be caught by INKEY$ etc:
         if mods & pygame.KMOD_CTRL:
-            backend.toggle_echo_lpt1()
+            backend.insert_special_key('c+print')
         elif mods & pygame.KMOD_SHIFT:
-            backend.print_screen()
+            backend.insert_special_key('s+print')
     elif e.key == pygame.K_TAB and mods & pygame.KMOD_SHIFT:
         # shift+tab -> \x00\x0F (scancode for TAB) but TAB -> \x09
         c = '\x00\x0F'
@@ -909,26 +908,21 @@ def handle_key(e):
     # double NUL characters as single NUL signals scan code
     if len(c) == 1 and ord(c) == 0:
         c = '\0\0'
-    backend.insert_key(c) 
     # current key pressed; modifiers ignored 
     try:
-        state.console_state.inp_key = ord(keycode_to_inpcode[e.key])
+        inpcode = ord(keycode_to_inpcode[e.key])
     except KeyError:
-        pass    
+        inpcode = None    
     # set key-pressed status
     try:
-        state.console_state.keystatus |= keycode_to_keystatus[e.key]
+        keystatuscode = keycode_to_keystatus[e.key]
     except KeyError:
-        pass    
-    
+        keystatuscode = None
+    ## insert into keyboard queue
+    backend.key_down(c, inpcode, keystatuscode) 
 
 def handle_key_up(e):
     global keypad_ascii
-    # last key released gets remembered
-    try:
-        state.console_state.inp_key = 0x80 + ord(keycode_to_inpcode[e.key])
-    except KeyError:
-        pass 
     # ALT+keycode    
     if e.key in (pygame.K_RALT, pygame.K_LALT) and keypad_ascii:
         char = chr(int(keypad_ascii)%256)
@@ -938,11 +932,16 @@ def handle_key_up(e):
         keypad_ascii = ''
     elif e.key == pygame.K_LSUPER: # logo key, doesn't set a modifier
         scrap.stop()
+    # last key released gets remembered
+    try:
+        inpcode = ord(keycode_to_inpcode[e.key])
+    except KeyError:
+        inpcode = None
     # unset key-pressed status
     try:
-        state.console_state.keystatus &= (0xffff ^ keycode_to_keystatus[e.key])
+        keystatuscode = keycode_to_keystatus[e.key]
     except KeyError:
-        pass    
+        keystatuscode = None    
 
 def handle_mouse(e):
     if e.button == 1: # LEFT BUTTON

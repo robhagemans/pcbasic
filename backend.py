@@ -15,6 +15,7 @@ import config
 import state 
 import timedate
 import unicodepage
+import error
     
 # backend implementations
 video = None
@@ -323,6 +324,43 @@ def copy_page(src, dst):
 ##############################
 # keyboard buffer read/write
 
+def key_down(keycode, inpcode=None, keystatuscode=None):
+    """ Insert a key-down event. Keycode is ascii, DBCS or NUL+scancode. """
+    if keycode != '':
+        insert_key(keycode)
+    if inpcode != None:
+        state.console_state.inp_key = inpcode
+    if keystatuscode != None:
+        state.console_state.keystatus |= keystatuscode
+    
+def key_up(inpcode=None, keystatuscode=None):
+    """ Insert a key-up event. """
+    if inpcode != None:
+        state.console_state.inp_key = 0x80 + inpcode
+    if keystatuscode != None:
+        state.console_state.keystatus &= (0xffff ^ keystatuscode)
+    
+def insert_special_key(name):
+    """ Insert a low-level handled: caps, num, scroll, print, break. """
+    if name == 'break':
+        raise error.Break()
+    elif name == 'reset':
+        raise error.Reset()
+    elif name == 'quit':
+        raise error.Exit()
+    elif name == 's+print':
+        print_screen()
+    elif name == 'c+print':
+        toggle_echo_lpt1()
+    elif name == 'caps':
+        state.console_state.caps = not state.console_state.caps
+    elif name == 'num':
+        state.console_state.num = not state.console_state.num
+    elif name == 'scroll':
+        state.console_state.scroll = not state.console_state.scroll
+    else:
+        logging.debug('Unknown special key: %s', name)
+        
 def insert_key(c):
     """ Insert character into keyboard buffer, apply macros, trigger events. """
     if len(c) > 0:
@@ -348,7 +386,9 @@ def insert_key(c):
             # only check F1-F10
             keynum = function_key[c]
             # can't be redefined in events - so must be event keys 1-10.
-            if state.basic_state.run_mode and state.basic_state.key_handlers[keynum].enabled or keynum > 9:
+            if (state.basic_state.run_mode and 
+                    state.basic_state.key_handlers[keynum].enabled or 
+                    keynum > 9):
                 # this key is being trapped, don't replace
                 state.console_state.keybuf += c
             else:
@@ -356,8 +396,8 @@ def insert_key(c):
         except KeyError:
             state.console_state.keybuf += c
 
-# peek character from keyboard buffer
 def peek_char():
+    """ Peek character or scancode from keyboard buffer. """
     ch = ''
     if len(state.console_state.keybuf)>0:
         ch = state.console_state.keybuf[0]
@@ -365,16 +405,16 @@ def peek_char():
             ch += state.console_state.keybuf[1]
     return ch 
 
-# drop character from keyboard buffer
-def pass_char(ch):
-    state.console_state.keybuf = state.console_state.keybuf[len(ch):]        
-    return ch
-
-# blocking keystroke peek
 def wait_char():
+    """ Wait for character, then return it but don't drop from queue. """
     while len(state.console_state.keybuf) == 0 and not input_closed:
         wait()
     return peek_char()
+
+def pass_char(ch):
+    """ Drop characters from keyboard buffer. """
+    state.console_state.keybuf = state.console_state.keybuf[len(ch):]        
+    return ch
 
 #############################################
 # cursor
