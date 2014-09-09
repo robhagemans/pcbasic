@@ -137,7 +137,17 @@ def music_queue_length(voice=0):
 #############################################
 # main event checker
     
+def wait():
+    """ Wait and check events. """
+    video.idle()
+    check_events()    
+
+def idle():
+    """ Wait a tick. """
+    video.idle()
+
 def check_events():
+    """ Main event cycle. """
     # manage sound queue
     audio.check_sound()
     # check console events
@@ -152,14 +162,6 @@ def check_events():
         # handle all events
         for handler in state.basic_state.all_handlers:
             handler.handle()
-
-def idle():
-    video.idle()
-
-def wait():
-    video.idle()
-    check_events()    
-
 
 ##############################
 # screen buffer read/write
