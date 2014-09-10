@@ -132,7 +132,7 @@ def prepare_console():
         logging.error('Failed to initialise interface. Exiting.')
         raise error.Exit()
     if not backend.init_sound():
-        backend.audio = noaudio
+        backend.audio = nosound
         logging.warning('Failed to initialise sound. Sound will be disabled.')
 
 def convert():

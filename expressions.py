@@ -475,7 +475,7 @@ def value_screen(ins):
     if z and state.console_state.screen_mode:
         return vartypes.null['%']    
     else:
-        return vartypes.pack_int(console.get_screen_char_attr(row, col, z!=0))
+        return vartypes.pack_int(backend.get_screen_char_attr(row, col, z!=0))
     
 def value_input(ins):    # INPUT$
     util.require_read(ins, ('$',))

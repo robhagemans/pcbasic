@@ -420,7 +420,7 @@ def set_text_memory(addr, val):
             c = chr(val)
         else:
             a = val
-        console.put_screen_char_attr(state.console_state.pages[page], crow+1, ccol+1, c, a)
+        backend.put_screen_char_attr(state.console_state.pages[page], crow+1, ccol+1, c, a)
     except IndexError:
         pass
     

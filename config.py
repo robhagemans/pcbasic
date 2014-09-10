@@ -12,6 +12,7 @@
 import os
 import sys
 import ConfigParser
+import logging
 
 import plat
 
