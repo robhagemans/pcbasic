@@ -25,6 +25,7 @@ audio = None
 # sound queue
 
 state.console_state.music_queue = [[], [], [], []]
+pcjr_sound = ''
 
 #############################################
 # keyboard queue
@@ -103,8 +104,6 @@ def prepare():
     global pcjr_sound, ignore_caps, egacursor
     if config.options['capture_caps']:
         ignore_caps = False
-    # pcjr/tandy sound
-    pcjr_sound = config.options['pcjr_syntax']
     # inserted keystrokes
     for u in config.options['keys'].decode('string_escape').decode('utf-8'):
         c = u.encode('utf-8')
@@ -113,6 +112,11 @@ def prepare():
         except KeyError:
             state.console_state.keybuf += c
     egacursor = config.options['video'] == 'ega'
+    # pcjr/tandy sound
+    pcjr_sound = config.options['pcjr_syntax']
+    # tandy has SOUND ON by default, pcjr has it OFF
+    state.console_state.sound_on = (pcjr_sound == 'tandy')
+
            
 def init_video():
     global video
@@ -162,6 +166,7 @@ def check_events():
         # handle all events
         for handler in state.basic_state.all_handlers:
             handler.handle()
+
 
 ##############################
 # screen buffer read/write
@@ -601,6 +606,66 @@ def get_strig(fn):
     else:
         # is currently firing
         return stick_is_firing[joy][trig]
+
+##############################
+# sound queue read/write
+
+state.console_state.music_foreground = True
+
+base_freq = 3579545./1024.
+state.console_state.noise_freq = [ base_freq / v for v in [1., 2., 4., 1., 1., 2., 4., 1.] ]
+state.console_state.noise_freq[3] = 0.
+state.console_state.noise_freq[7] = 0.
+
+def beep():
+    """ Play the BEEP sound. """
+    play_sound(800, 0.25)
+
+def play_sound(frequency, duration, fill=1, loop=False, voice=0, volume=15):
+    """ Play a sound on the tone generator. """
+    if frequency < 0:
+        frequency = 0
+    if ((pcjr_sound == 'tandy' or (pcjr_sound == 'pcjr' and state.console_state.sound_on))
+        and frequency < 110. and frequency != 0):
+        # pcjr, tandy play low frequencies as 110Hz
+        frequency = 110.
+    state.console_state.music_queue[voice].append((frequency, duration, fill, loop, volume))
+    audio.play_sound(frequency, duration, fill, loop, voice, volume) 
+    if voice == 2:
+        # reset linked noise frequencies
+        # /2 because we're using a 0x4000 rotation rather than 0x8000
+        state.console_state.noise_freq[3] = frequency/2.
+        state.console_state.noise_freq[7] = frequency/2.
+    # at most 16 notes in the sound queue (not 32 as the guide says!)
+    wait_music(15, wait_last=False)    
+
+def play_noise(source, volume, duration, loop=False):
+    """ Play a sound on the noise generator. """
+    audio.set_noise(source > 3)
+    frequency = state.console_state.noise_freq[source]
+    state.console_state.music_queue[3].append((frequency, duration, 1, loop, volume))
+    audio.play_sound(frequency, duration, 1, loop, 3, volume) 
+    # don't wait for noise
+
+def stop_all_sound():
+    """ Terminate all sounds immediately. """
+    state.console_state.music_queue = [ [], [], [], [] ]
+    audio.stop_all_sound()
+        
+def wait_music(wait_length=0, wait_last=True):
+    """ Wait until the music has finished playing. """
+    while ((wait_last and audio.busy()) or
+            len(state.console_state.music_queue[0])+wait_last-1 > wait_length or
+            len(state.console_state.music_queue[1])+wait_last-1 > wait_length or
+            len(state.console_state.music_queue[2])+wait_last-1 > wait_length ):
+        wait()
+        
+def sound_done(voice, number_left):
+    """ Report a sound has finished playing, remove from queue. """ 
+    # remove the notes that have been played
+    while len(state.console_state.music_queue[voice]) > number_left:
+        state.console_state.music_queue[voice].pop(0)
+
             
 #############################################
 # BASIC event triggers        

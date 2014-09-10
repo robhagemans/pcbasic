@@ -1267,8 +1267,7 @@ def check_sound():
             mixer.Channel(voice).queue(current_chunk[voice])
     for voice in range(4):
         # remove the notes that have been played
-        while len(state.console_state.music_queue[voice]) > len(sound_queue[voice]):
-            state.console_state.music_queue[voice].pop(0)
+        backend.sound_done(voice, len(sound_queue[voice]))
             
 def busy():
     return (not loop_sound[0] and not loop_sound[1] and not loop_sound[2] and not loop_sound[3]) and mixer.get_busy()
