@@ -1236,37 +1236,36 @@ def check_sound():
     global loop_sound
     current_chunk = [ None, None, None, None ]
     if sound_queue == [ [], [], [], [] ] and loop_sound == [ None, None, None, None ]:
-        check_quit_sound()
-    else:    
-        check_init_mixer()
-        for voice in range(4):
-            # if there is a sound queue, stop looping sound
-            if sound_queue[voice] and loop_sound[voice]:
-                stop_channel(voice)
-                loop_sound[voice] = None
-            if mixer.Channel(voice).get_queue() == None:
-                if loop_sound[voice]:
-                    # loop the current playing sound; ok to interrupt it with play cos it's the same sound as is playing
-                    current_chunk[voice] = loop_sound[voice].build_chunk()
-                elif sound_queue[voice]:
-                    current_chunk[voice] = sound_queue[voice][0].build_chunk()
-                    if not current_chunk[voice]:
-                        sound_queue[voice].pop(0)
-                        try:
-                            current_chunk[voice] = sound_queue[voice][0].build_chunk()
-                        except IndexError:
-                            check_quit_sound()
-                            return 0
-                    if sound_queue[voice][0].loop:
-                        loop_sound[voice] = sound_queue[voice].pop(0)
-                        # any next sound in the sound queue will stop this looping sound
-                    else:   
-                        loop_sound[voice] = None
+        return
+    check_init_mixer()
+    for voice in range(4):
+        # if there is a sound queue, stop looping sound
+        if sound_queue[voice] and loop_sound[voice]:
+            stop_channel(voice)
+            loop_sound[voice] = None
+        if mixer.Channel(voice).get_queue() == None:
+            if loop_sound[voice]:
+                # loop the current playing sound; ok to interrupt it with play cos it's the same sound as is playing
+                current_chunk[voice] = loop_sound[voice].build_chunk()
+            elif sound_queue[voice]:
+                current_chunk[voice] = sound_queue[voice][0].build_chunk()
+                if not current_chunk[voice]:
+                    sound_queue[voice].pop(0)
+                    try:
+                        current_chunk[voice] = sound_queue[voice][0].build_chunk()
+                    except IndexError:
+                        # sound_queue is empty
+                        break
+                if sound_queue[voice][0].loop:
+                    loop_sound[voice] = sound_queue[voice].pop(0)
+                    # any next sound in the sound queue will stop this looping sound
+                else:   
+                    loop_sound[voice] = None
     for voice in range(4):
         if current_chunk[voice]:
             mixer.Channel(voice).queue(current_chunk[voice])
     for voice in range(4):
-        # remove the notes that have been played
+        # remove the notes that have been sent to mixer
         backend.sound_done(voice, len(sound_queue[voice]))
             
 def busy():
@@ -1284,10 +1283,6 @@ def set_noise(is_white):
 sound_queue = [ [], [], [], [] ]
 # currently looping sound
 loop_sound = [ None, None, None, None ]
-
-# quit sound server after quiet period of quiet_quit ticks, to avoid high-ish cpu load from the sound server.
-quiet_ticks = 0        
-quiet_quit = 10000
 
 # mixer settings
 mixer_bits = 16
@@ -1406,21 +1401,11 @@ def init_mixer():
 def check_init_mixer():
     if mixer.get_init() == None:
         mixer.init()
-        
-def check_quit_sound():
-    global quiet_ticks
-    if mixer.get_init() == None:
-        return
-    if sound_queue != [ [], [], [], [] ] or mixer.get_busy():
-        quiet_ticks = 0
-    else:
-        quiet_ticks += 1    
-        if quiet_ticks > quiet_quit:
-            # mixer is quiet and we're not running a program. quit to reduce pulseaudio cpu load
-            if not state.basic_state.run_mode:
-                # this takes quite a while and leads to missed frames...
-                mixer.quit()
-                quiet_ticks = 0
+
+def quit_sound():
+    if mixer.get_init() != None:
+        mixer.quit()
+    
                 
 prepare()
 

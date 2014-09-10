@@ -116,7 +116,6 @@ def prepare():
     pcjr_sound = config.options['pcjr_syntax']
     # tandy has SOUND ON by default, pcjr has it OFF
     state.console_state.sound_on = (pcjr_sound == 'tandy')
-
            
 def init_video():
     global video
@@ -133,10 +132,6 @@ def init_sound():
         for note in state.console_state.music_queue[voice]:
             audio.play_sound(*note)
     return True
-    
-def music_queue_length(voice=0):
-    # top of sound_queue is currently playing
-    return max(0, len(state.console_state.music_queue[voice])-1)
 
 #############################################
 # main event checker
@@ -154,6 +149,7 @@ def check_events():
     """ Main event cycle. """
     # manage sound queue
     audio.check_sound()
+    check_quit_sound()
     # check console events
     video.check_events()   
     # trigger & handle BASIC events
@@ -617,6 +613,11 @@ state.console_state.noise_freq = [ base_freq / v for v in [1., 2., 4., 1., 1., 2
 state.console_state.noise_freq[3] = 0.
 state.console_state.noise_freq[7] = 0.
 
+# quit sound server after quiet period of quiet_quit ticks
+# to avoid high-ish cpu load from the sound server.
+quiet_quit = 10000
+quiet_ticks = 0
+
 def beep():
     """ Play the BEEP sound. """
     play_sound(800, 0.25)
@@ -659,6 +660,11 @@ def wait_music(wait_length=0, wait_last=True):
             len(state.console_state.music_queue[1])+wait_last-1 > wait_length or
             len(state.console_state.music_queue[2])+wait_last-1 > wait_length ):
         wait()
+    
+def music_queue_length(voice=0):
+    """ Return the number of notes in the queue. """
+    # top of sound_queue is currently playing
+    return max(0, len(state.console_state.music_queue[voice])-1)
         
 def sound_done(voice, number_left):
     """ Report a sound has finished playing, remove from queue. """ 
@@ -666,6 +672,21 @@ def sound_done(voice, number_left):
     while len(state.console_state.music_queue[voice]) > number_left:
         state.console_state.music_queue[voice].pop(0)
 
+def check_quit_sound():
+    """ Quit the mixer if not running a program and sound quiet for a while. """
+    global quiet_ticks
+    if state.console_state.music_queue == [[], [], [], []] and not audio.busy():
+        # could leave out the is_quiet call but for looping sounds 
+        quiet_ticks = 0
+    else:
+        quiet_ticks += 1    
+        if quiet_ticks > quiet_quit:
+            # mixer is quiet and we're not running a program. 
+            # quit to reduce pulseaudio cpu load
+            if not state.basic_state.run_mode:
+                # this takes quite a while and leads to missed frames...
+                audio.quit_sound()
+                quiet_ticks = 0
             
 #############################################
 # BASIC event triggers        

@@ -38,7 +38,7 @@ import timedate
 import util
 import var
 import vartypes
-import sound
+import backend
 import on_event
 
 def prepare():
@@ -460,11 +460,11 @@ def exec_on_com(ins):
 # sound
 
 def exec_beep(ins):
-    sound.beep() 
+    backend.beep() 
     # if a syntax error happens, we still beeped.
     util.require(ins, util.end_statement)
     if state.console_state.music_foreground:
-        sound.wait_music(wait_last=False)
+        backend.wait_music(wait_last=False)
     
 def exec_sound(ins):
     # Tandy/PCjr SOUND ON, OFF
@@ -491,21 +491,21 @@ def exec_sound(ins):
             volume, voice = 15, 0                
     util.require(ins, util.end_statement)
     if dur.is_zero():
-        sound.stop_all_sound()
+        backend.stop_all_sound()
         return
     # Tandy only allows frequencies below 37 (but plays them as 110 Hz)    
     if freq != 0:
-        util.range_check(-32768 if sound.pcjr_sound == 'tandy' else 37, 32767, freq) # 32767 is pause
+        util.range_check(-32768 if backend.pcjr_sound == 'tandy' else 37, 32767, freq) # 32767 is pause
     # calculate duration in seconds   
     one_over_44 = fp.Single.from_bytes(bytearray('\x8c\x2e\x3a\x7b')) # 1/44 = 0.02272727248
     dur_sec = dur.to_value()/18.2
     if one_over_44.gt(dur):
         # play indefinitely in background
-        sound.play_sound(freq, dur_sec, loop=True, voice=voice, volume=volume)
+        backend.play_sound(freq, dur_sec, loop=True, voice=voice, volume=volume)
     else:
-        sound.play_sound(freq, dur_sec, voice=voice, volume=volume)
+        backend.play_sound(freq, dur_sec, voice=voice, volume=volume)
         if state.console_state.music_foreground:
-            sound.wait_music(wait_last=False)
+            backend.wait_music(wait_last=False)
     
 def exec_play(ins):
     if state.basic_state.play_handler.command(util.skip_white(ins)):
@@ -540,9 +540,9 @@ def exec_noise(ins):
     one_over_44 = fp.Single.from_bytes(bytearray('\x8c\x2e\x3a\x7b')) # 1/44 = 0.02272727248
     dur_sec = dur.to_value()/18.2
     if one_over_44.gt(dur):
-        sound.play_noise(source, volume, dur_sec, loop=True)
+        backend.play_noise(source, volume, dur_sec, loop=True)
     else:
-        sound.play_noise(source, volume, dur_sec)
+        backend.play_noise(source, volume, dur_sec)
     
  
 ##########################################################

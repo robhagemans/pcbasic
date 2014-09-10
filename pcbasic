@@ -61,7 +61,6 @@ import run
 import error
 import oslayer
 import console
-import sound
 import program
 import state
 import iolayer

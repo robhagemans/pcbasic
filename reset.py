@@ -16,7 +16,7 @@ import rnd
 import iolayer
 import state
 import on_event
-import sound
+import backend
 
 # CLEAR
 def clear(close_files=False, preserve_common=False, preserve_all=False, preserve_deftype=False):
@@ -36,9 +36,9 @@ def clear(close_files=False, preserve_common=False, preserve_all=False, preserve
     state.basic_state.on_error = None
     state.basic_state.error_resume = None
     # stop all sound
-    sound.stop_all_sound()
+    backend.stop_all_sound()
     #   Resets sound to music foreground
-    sound.music_foreground = True
+    backend.music_foreground = True
     #   Resets STRIG to off
     state.console_state.stick_is_on = False
     # disable all event trapping (resets PEN to OFF too)

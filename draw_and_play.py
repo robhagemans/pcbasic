@@ -22,7 +22,7 @@ import util
 import var
 import graphics
 import state
-import sound
+import backend
 
 # generic for both macro languages
 ml_whitepace = (' ')
@@ -254,11 +254,11 @@ def play_parse_mml(mml_list):
                     gmls.read(1)
                     dur *= 1.5
                 if note > 0 and note <= 84:
-                    sound.play_sound(note_freq[note-1], dur*state.basic_state.play_state[voice].tempo, 
+                    backend.play_sound(note_freq[note-1], dur*state.basic_state.play_state[voice].tempo, 
                                      state.basic_state.play_state[voice].speed, volume=state.basic_state.play_state[voice].volume,
                                      voice=voice)
                 elif note == 0:
-                    sound.play_sound(0, dur*state.basic_state.play_state[voice].tempo, state.basic_state.play_state[voice].speed,
+                    backend.play_sound(0, dur*state.basic_state.play_state[voice].tempo, state.basic_state.play_state[voice].speed,
                                      volume=0, voice=voice)
             elif c == 'L':
                 state.basic_state.play_state[voice].length = 1./ml_parse_number(gmls)    
@@ -299,10 +299,10 @@ def play_parse_mml(mml_list):
                     else:
                         break                    
                 if note == 'P':
-                    sound.play_sound(0, dur*state.basic_state.play_state[voice].tempo, state.basic_state.play_state[voice].speed,
+                    backend.play_sound(0, dur*state.basic_state.play_state[voice].tempo, state.basic_state.play_state[voice].speed,
                              volume=state.basic_state.play_state[voice].volume, voice=voice)
                 else:
-                    sound.play_sound(note_freq[(state.basic_state.play_state[voice].octave+next_oct)*12+notes[note]], 
+                    backend.play_sound(note_freq[(state.basic_state.play_state[voice].octave+next_oct)*12+notes[note]], 
                             dur*state.basic_state.play_state[voice].tempo, state.basic_state.play_state[voice].speed, 
                             volume=state.basic_state.play_state[voice].volume, voice=voice)
                 next_oct = 0
@@ -315,11 +315,11 @@ def play_parse_mml(mml_list):
                 elif c == 'B':      state.console_state.music_foreground = False
                 else:
                     raise error.RunError(5)    
-            elif c == 'V' and ( sound.pcjr_sound == 'tandy' or 
-                                (sound.pcjr_sound == 'pcjr' and state.console_state.sound_on)): 
+            elif c == 'V' and ( backend.pcjr_sound == 'tandy' or 
+                                (backend.pcjr_sound == 'pcjr' and state.console_state.sound_on)): 
                 state.basic_state.play_state[voice].volume = min(15, max(0, ml_parse_number(gmls)))
             else:
                 raise error.RunError(5)    
     if state.console_state.music_foreground:
-        sound.wait_music()
+        backend.wait_music()
  
