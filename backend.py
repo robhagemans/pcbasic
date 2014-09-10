@@ -1,7 +1,7 @@
 """
 PC-BASIC 3.23 - backend.py
 
-Backend modules and interface events
+Event loop; video, audio, keyboard, pen and joystick handling
 
 (c) 2013, 2014 Rob Hagemans 
 
@@ -24,7 +24,9 @@ audio = None
 #############################################
 # sound queue
 
+# sound queue
 state.console_state.music_queue = [[], [], [], []]
+# sound capabilities - '', 'pcjr' or 'tandy'
 pcjr_sound = ''
 
 #############################################
@@ -118,12 +120,14 @@ def prepare():
     state.console_state.sound_on = (pcjr_sound == 'tandy')
            
 def init_video():
+    """ Initialise the video backend. """
     global video
     if not video:
         return False
     return video.init()
     
 def init_sound():
+    """ Initialise the audio backend. """
     global audio
     if not audio or not audio.init_sound():
         return False
@@ -275,7 +279,8 @@ def redraw_row(start, crow, wrap=True):
             # don't update all dbcs chars behind at each put
             put_screen_char_attr(state.console_state.apage, crow, i+1, 
                     therow.buf[i][0], state.console_state.attr, one_only=True)
-        if wrap and therow.wrap and crow >= 0 and crow < state.console_state.height-1:
+        if (wrap and therow.wrap and 
+                crow >= 0 and crow < state.console_state.height-1):
             crow += 1
             start = 0
         else:
@@ -297,7 +302,7 @@ def refresh_screen_range(cpage, crow, start, stop, for_keys=False):
             ccol += 2
         else:
             if double != 0:
-                logging.debug('DBCS buffer corrupted at %d, %d', crow, ccol)            
+                logging.debug('DBCS buffer corrupted at %d, %d', crow, ccol)
             ca = therow.buf[ccol-1]        
             video.set_attr(ca[1]) 
             video.putc_at(crow, ccol, ca[0], for_keys)
@@ -338,14 +343,13 @@ def copy_page(src, dst):
         dstrow.wrap = srcrow.wrap            
     video.copy_page(src, dst)
 
-def clear_screen_buffer_at(x0, y0):
+def clear_screen_buffer_at(x, y):
     """ Remove the character covering a single pixel. """
     fx, fy = state.console_state.font_width, state.console_state.font_height
     cymax, cxmax = state.console_state.height-1, state.console_state.width-1 
     cx = min(cxmax, max(0, x // fx))
     cy = min(cymax, max(0, y // fy)) 
-    state.console_state.pages[pagenum].row[cy].buf[cx] = (
-        ' ', state.console_state.attr)
+    state.console_state.apage.row[cy].buf[cx] = (' ', state.console_state.attr)
 
 def clear_screen_buffer_area(x0, y0, x1, y1):
     """ Remove all characters from a rectangle of the graphics screen. """
@@ -430,7 +434,8 @@ def insert_key(c):
                 # this key is being trapped, don't replace
                 state.console_state.keybuf += c
             else:
-                state.console_state.keybuf += state.console_state.key_replace[keynum]
+                macro = state.console_state.key_replace[keynum]
+                state.console_state.keybuf += macro
         except KeyError:
             state.console_state.keybuf += c
 
@@ -462,41 +467,51 @@ def show_cursor(do_show):
     video.update_cursor_visibility(do_show)
 
 def update_cursor_visibility():
-    """ Set cursor visibility: visible if in interactive mode, unless forced visible in text mode. """
+    """ Set cursor visibility to its default state. """
+    # visible if in interactive mode, unless forced visible in text mode.
     visible = (not state.basic_state.execute_mode)
     if state.console_state.screen_mode == 0:
         visible = visible or state.console_state.cursor
     video.update_cursor_visibility(visible)
 
 def set_cursor_shape(from_line, to_line):
-    """ Set the cursor shape as a block from from_line to to_line (in 8-line modes). Use compatibility algo in higher resolutions. """
+    """ Set the cursor shape. """
+    # A block from from_line to to_line in 8-line modes.
+    # Use compatibility algo in higher resolutions
     if egacursor:
-        # odd treatment of cursors on EGA machines, presumably for backward compatibility
-        # the following algorithm is based on DOSBox source int10_char.cpp INT10_SetCursorShape(Bit8u first,Bit8u last)    
+        # odd treatment of cursors on EGA machines, 
+        # presumably for backward compatibility
+        # the following algorithm is based on DOSBox source int10_char.cpp 
+        #     INT10_SetCursorShape(Bit8u first,Bit8u last)    
         max_line = state.console_state.font_height-1
         if from_line & 0xe0 == 0 and to_line & 0xe0 == 0:
             if (to_line < from_line):
-                # invisible only if to_line is zero and to_line < from_line           
+                # invisible only if to_line is zero and to_line < from_line
                 if to_line != 0: 
                     # block shape from *to_line* to end
                     from_line = to_line
                     to_line = max_line
-            elif (from_line | to_line) >= max_line or to_line != max_line-1 or from_line != max_line:
+            elif ((from_line | to_line) >= max_line or 
+                        to_line != max_line-1 or from_line != max_line):
                 if to_line > 3:
                     if from_line+2 < to_line:
                         if from_line > 2:
                             from_line = (max_line+1) // 2
                         to_line = max_line
                     else:
-                        from_line = from_line - to_line + max_line                        
+                        from_line = from_line - to_line + max_line
                         to_line = max_line
                         if max_line > 0xc:
                             from_line -= 1
                             to_line -= 1
-    state.console_state.cursor_from = max(0, min(from_line, state.console_state.font_height-1))
-    state.console_state.cursor_to = max(0, min(to_line, state.console_state.font_height-1))
-    video.build_cursor(state.console_state.cursor_width, state.console_state.font_height, 
-                state.console_state.cursor_from, state.console_state.cursor_to)
+    state.console_state.cursor_from = max(0, min(from_line, 
+                                      state.console_state.font_height-1))
+    state.console_state.cursor_to = max(0, min(to_line, 
+                                    state.console_state.font_height-1))
+    video.build_cursor(state.console_state.cursor_width, 
+                       state.console_state.font_height, 
+                       state.console_state.cursor_from, 
+                       state.console_state.cursor_to)
     video.update_cursor_attr(state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
 
 
@@ -504,6 +519,7 @@ def set_cursor_shape(from_line, to_line):
 # I/O redirection
 
 def toggle_echo_lpt1():
+    """ Toggle copying of all screen I/O to LPT1. """
     lpt1 = state.io_state.devices['LPT1:']
     if lpt1.write in input_echos:
         input_echos.remove(lpt1.write)
@@ -517,8 +533,8 @@ def toggle_echo_lpt1():
 
 pen_was_down = False
 pen_is_down = False
-pen_down_pos = (0,0)
-pen_pos = (0,0)
+pen_down_pos = (0, 0)
+pen_pos = (0, 0)
 
 def pen_down(x, y):
     """ Report a pen-down event at graphical x,y """
@@ -550,7 +566,7 @@ def get_pen(fn):
     elif fn == 2:
         return pen_down_pos[1]
     elif fn == 3:
-        return -pygame.mouse.get_pressed()[0]
+        return -1 if pen_is_down else 0 
     elif fn == 4:
         return posx
     elif fn == 5:
@@ -588,12 +604,12 @@ def stick_moved(joy, axis, value):
 
 def get_stick(fn):
     """ Poll the joystick axes. """    
-    joy, axis = fn//2, fn%2
+    joy, axis = fn // 2, fn % 2
     return stick_axis[joy][axis]
     
 def get_strig(fn):       
     """ Poll the joystick buttons. """    
-    joy, trig = fn//4, (fn//2)%2
+    joy, trig = fn // 4, (fn//2) % 2
     if fn % 2 == 0:
         # has been fired
         stick_was_trig = stick_was_fired[joy][trig]
@@ -609,7 +625,8 @@ def get_strig(fn):
 state.console_state.music_foreground = True
 
 base_freq = 3579545./1024.
-state.console_state.noise_freq = [ base_freq / v for v in [1., 2., 4., 1., 1., 2., 4., 1.] ]
+state.console_state.noise_freq = [base_freq / v 
+                                  for v in [1., 2., 4., 1., 1., 2., 4., 1.]]
 state.console_state.noise_freq[3] = 0.
 state.console_state.noise_freq[7] = 0.
 
@@ -626,11 +643,13 @@ def play_sound(frequency, duration, fill=1, loop=False, voice=0, volume=15):
     """ Play a sound on the tone generator. """
     if frequency < 0:
         frequency = 0
-    if ((pcjr_sound == 'tandy' or (pcjr_sound == 'pcjr' and state.console_state.sound_on))
-        and frequency < 110. and frequency != 0):
+    if ((pcjr_sound == 'tandy' or 
+            (pcjr_sound == 'pcjr' and state.console_state.sound_on)) and
+            frequency < 110. and frequency != 0):
         # pcjr, tandy play low frequencies as 110Hz
         frequency = 110.
-    state.console_state.music_queue[voice].append((frequency, duration, fill, loop, volume))
+    state.console_state.music_queue[voice].append(
+            (frequency, duration, fill, loop, volume))
     audio.play_sound(frequency, duration, fill, loop, voice, volume) 
     if voice == 2:
         # reset linked noise frequencies
@@ -644,7 +663,8 @@ def play_noise(source, volume, duration, loop=False):
     """ Play a sound on the noise generator. """
     audio.set_noise(source > 3)
     frequency = state.console_state.noise_freq[source]
-    state.console_state.music_queue[3].append((frequency, duration, 1, loop, volume))
+    state.console_state.music_queue[3].append(
+            (frequency, duration, 1, loop, volume))
     audio.play_sound(frequency, duration, 1, loop, 3, volume) 
     # don't wait for noise
 
@@ -692,28 +712,32 @@ def check_quit_sound():
 # BASIC event triggers        
         
 def check_timer_event():
+    """ Trigger timer events. """
     mutimer = timedate.timer_milliseconds() 
-    if mutimer >= state.basic_state.timer_start + state.basic_state.timer_period:
+    if mutimer >= state.basic_state.timer_start+state.basic_state.timer_period:
         state.basic_state.timer_start = mutimer
         state.basic_state.timer_handler.triggered = True
 
 def check_play_event():
+    """ Trigger music queue events. """
     play_now = [music_queue_length(voice) for voice in range(3)]
     if pcjr_sound: 
         for voice in range(3):
-            if ( play_now[voice] <= state.basic_state.play_trig and play_now[voice] > 0 and 
+            if (play_now[voice] <= state.basic_state.play_trig and 
+                    play_now[voice] > 0 and 
                     play_now[voice] != state.basic_state.play_last[voice] ):
                 state.basic_state.play_handler.triggered = True 
     else:    
-        if state.basic_state.play_last[0] >= state.basic_state.play_trig and play_now[0] < state.basic_state.play_trig:    
+        if (state.basic_state.play_last[0] >= state.basic_state.play_trig and 
+                play_now[0] < state.basic_state.play_trig):    
             state.basic_state.play_handler.triggered = True     
     state.basic_state.play_last = play_now
 
 def check_com_events():
+    """ Trigger COM-port events. """
     ports = (state.io_state.devices['COM1:'], state.io_state.devices['COM2:'])
     for comport in (0, 1):
         if ports[comport] and ports[comport].peek_char():
             state.basic_state.com_handlers[comport].triggered = True
-
 
 prepare()
