@@ -73,7 +73,7 @@ def prepare():
             # the last one that's specified will stick
             letter, path = a.split(':', 1)
             drives[letter.upper()] = os.path.realpath(path)
-            drive_cwd[letter.upper()] = ''
+            state.io_state.drive_cwd[letter.upper()] = ''
     except (TypeError, ValueError):
         pass                
     if config.options['windows_map_drives']:
@@ -134,7 +134,7 @@ def handle_oserror(e):
 drives = { 'C': os.getcwd(), '@': os.path.join(plat.basepath, 'info') }
 current_drive = 'C'
 # must not start with a /
-drive_cwd = { 'C': '', '@': '' }
+state.io_state.drive_cwd = { 'C': '', '@': '' }
 
 if plat.system == 'Windows':
     def windows_map_drives():
@@ -149,7 +149,7 @@ if plat.system == 'Windows':
                 os.chdir(drive_letter + ':')
                 cwd = win32api.GetShortPathName(os.getcwd())
                 # must not start with \\
-                drive_cwd[drive_letter] = cwd[3:]  
+                state.io_state.drive_cwd[drive_letter] = cwd[3:]  
                 drives[drive_letter] = cwd[:3]
             except WindowsError:
                 pass    
@@ -182,7 +182,7 @@ if plat.system == 'Windows':
 else:
 # to map root to C and set current to CWD:
 #    drives = { 'C': '/', '@': os.path.join(plat.basepath, 'info') }
-#    drive_cwd = { 'C': os.getcwd()[1:], '@': '' }
+#    state.io_state.drive_cwd = { 'C': os.getcwd()[1:], '@': '' }
     
     def windows_map_drives():
         pass
@@ -277,7 +277,7 @@ def get_drive_path(s, err):
     try:    
         if not s or s[0] != '\\':
             # relative path
-            path = os.path.join(drives[letter], drive_cwd[letter])
+            path = os.path.join(drives[letter], state.io_state.drive_cwd[letter])
         else:
             # absolute path
             path = drives[letter] 
@@ -352,7 +352,7 @@ def files(pathmask):
         break
     # get working dir in DOS format
     # NOTE: this is always the current dir, not the one being listed
-    console.write_line(drive + ':\\' + drive_cwd[drive].replace(os.sep, '\\'))
+    console.write_line(drive + ':\\' + state.io_state.drive_cwd[drive].replace(os.sep, '\\'))
     if (roots, dirs, files_list) == ([], [], []):
         raise error.RunError(53)
     dosfiles = pass_dosnames(path, files_list, mask)
@@ -387,7 +387,7 @@ def chdir(name):
         # root /
         base -= 1
     # if cwd is shorter than drive prefix (like when we go .. on a drive letter root), this is just an empty path, ie the root.    
-    drive_cwd[letter] = newdir[base+1:]
+    state.io_state.drive_cwd[letter] = newdir[base+1:]
     if letter == current_drive:
         safe(os.chdir, newdir)
 
