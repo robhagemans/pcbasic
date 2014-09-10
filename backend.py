@@ -531,18 +531,18 @@ def toggle_echo_lpt1():
 ##############################################
 # light pen
 
-pen_was_down = False
+state.console_state.pen_was_down = False
 pen_is_down = False
-pen_down_pos = (0, 0)
+state.console_state.pen_down_pos = (0, 0)
 pen_pos = (0, 0)
 
 def pen_down(x, y):
     """ Report a pen-down event at graphical x,y """
-    global pen_was_down, pen_is_down, pen_down_pos
+    global pen_is_down
     state.basic_state.pen_handler.triggered = True
-    pen_was_down = True # TRUE until polled
+    state.console_state.pen_was_down = True # TRUE until polled
     pen_is_down = True # TRUE until pen up
-    pen_down_pos = x, y
+    state.console_state.pen_down_pos = x, y
 
 def pen_up():
     """ Report a pen-up event at graphical x,y """
@@ -551,20 +551,21 @@ def pen_up():
     
 def pen_moved(x, y):
     """ Report a pen-move event at graphical x,y """
-    global pen_pos
-    pen_pos = x, y
+    state.console_state.pen_pos = x, y
     
 def get_pen(fn):
     """ Poll the pen. """
-    global pen_was_down
     posx, posy = pen_pos
+    fw = state.console_state.font_width
+    fh = state.console_state.font_height
     if fn == 0:
-        pen_down_old, pen_was_down = pen_was_down, False
+        pen_down_old, state.console_state.pen_was_down = (
+                state.console_state.pen_was_down, False)
         return -1 if pen_down_old else 0
     elif fn == 1:
-        return pen_down_pos[0]
+        return state.console_state.pen_down_pos[0]
     elif fn == 2:
-        return pen_down_pos[1]
+        return state.console_state.pen_down_pos[1]
     elif fn == 3:
         return -1 if pen_is_down else 0 
     elif fn == 4:
@@ -572,25 +573,25 @@ def get_pen(fn):
     elif fn == 5:
         return posy
     elif fn == 6:
-        return 1 + pen_down_pos[1]//state.console_state.font_height
+        return 1 + state.console_state.pen_down_pos[1]//fh
     elif fn == 7:
-        return 1 + pen_down_pos[0]//state.console_state.font_width
+        return 1 + state.console_state.pen_down_pos[0]//fw
     elif fn == 8:
-        return 1 + posy//state.console_state.font_height
+        return 1 + posy//fh
     elif fn == 9:
-        return 1 + posx//state.console_state.font_width
+        return 1 + posx//fw
  
 ##############################################
 # joysticks
 
-stick_was_fired = [[False, False], [False, False]]
+state.console_state.stick_was_fired = [[False, False], [False, False]]
 stick_is_firing = [[False, False], [False, False]]
 # axis 0--255; 128 is mid but reports 0, not 128 if no joysticks present
 stick_axis = [[0, 0], [0, 0]]
 
 def stick_down(joy, button):
     """ Report a joystick button down event. """
-    stick_was_fired[joy][button] = True
+    state.console_state.stick_was_fired[joy][button] = True
     stick_is_firing[joy][button] = True
     state.basic_state.strig_handlers[joy*2 + button].triggered = True
 
@@ -612,8 +613,8 @@ def get_strig(fn):
     joy, trig = fn // 4, (fn//2) % 2
     if fn % 2 == 0:
         # has been fired
-        stick_was_trig = stick_was_fired[joy][trig]
-        stick_was_fired[joy][trig] = False
+        stick_was_trig = state.console_state.stick_was_fired[joy][trig]
+        state.console_state.stick_was_fired[joy][trig] = False
         return stick_was_trig
     else:
         # is currently firing
