@@ -299,7 +299,9 @@ def prepare():
         alt_keycode_to_scancode[pygame.K_F12] = '\x00\xB7'
         keycode_to_inpcode[pygame.K_F11] = '\xF9'
         keycode_to_inpcode[pygame.K_F12] = '\xFA'
-        
+    if config.options['font']:
+        font_families = config.options['font']
+
         
 ####################################
 # state saving and loading
