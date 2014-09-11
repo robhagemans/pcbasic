@@ -308,7 +308,7 @@ def load_state():
                 surface1[i] = pygame.image.fromstring(display_strings[1][i], size, 'P')
                 surface1[i].set_palette(workaround_palette)
             screen_changed = True    
-        except IndexError:
+        except (IndexError, ValueError):
             # couldn't load the state correctly; most likely a text screen saved from -t. just redraw what's unpickled.
             backend.redraw_text_screen()
         
@@ -478,9 +478,10 @@ def update_palette(palette):
         gamepalette = [pygame.Color(*backend.colours64[i]) for i in palette]
     else:
         if (colorburst or not composite_monitor):
-            gamepalette = [pygame.Color(*backend.colours16[i]) for i in palette]
+            # take modulo in case we're e.g. resuming ega text into a cga machine
+            gamepalette = [pygame.Color(*backend.colours16[i % num_palette]) for i in palette]
         else:
-            gamepalette = [pygame.Color(*backend.colours16_mono[i]) for i in palette]
+            gamepalette = [pygame.Color(*backend.colours16_mono[i % num_palette]) for i in palette]
     set_display_palette()
     screen_changed = True
 
