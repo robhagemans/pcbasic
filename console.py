@@ -79,6 +79,11 @@ def init_mode():
 
 def set_width(to_width):
     """ Change the width of the screen. """
+    # raise an error if the width value doesn't make sense
+    if to_width not in (20, 40, 80):
+        return False
+    if to_width == state.console_state.width:
+        return True
     if not backend.set_width(to_width):
         return False
     init_mode()

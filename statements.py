@@ -2285,9 +2285,15 @@ def exec_screen(ins):
     # if the parameters are outside narrow ranges (e.g. not implemented screen mode, pagenum beyond max)
     # then the error is only raised after changing the palette.
     util.require(ins, util.end_statement)        
-    if not backend.screen(mode, colorswitch, apagenum, vpagenum, erase):
-        raise error.RunError(5)
-    console.init_mode()    
+    # decide whether to redraw the screen    
+    do_redraw = ((mode != state.console_state.screen_mode) or 
+                 (colorswitch != state.console_state.colorswitch))
+    if do_redraw:             
+        if not backend.screen(mode, colorswitch, apagenum, vpagenum, erase):
+            raise error.RunError(5)
+        console.init_mode()    
+    else:
+        backend.set_page(vpagenum, apagenum)
     
 def exec_pcopy(ins):
     src = vartypes.pass_int_unpack(expressions.parse_expression(ins))

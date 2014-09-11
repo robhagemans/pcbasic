@@ -327,7 +327,7 @@ def init_video():
         # load the screen contents from storage
         video.load_state()
     else:        
-        screen(None, None, None, None, first_run=True)
+        screen(None, None, None, None)
     return True
     
 def init_audio():
@@ -372,7 +372,7 @@ def check_events():
 # video mode
 
 def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, 
-           erase=1, first_run=False, new_width=None):
+           erase=1, new_width=None):
     """ Change the video mode, colourburst, visible or active page. """
     # set default arguments
     if new_mode == None:
@@ -385,11 +385,6 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
         new_vpagenum = state.console_state.vpagenum 
     if new_apagenum == None:
         new_apagenum = state.console_state.apagenum
-    # decide whether to redraw the screen    
-    do_redraw = ((new_mode != state.console_state.screen_mode) or 
-                 (new_colorswitch != state.console_state.colorswitch) or
-                 first_run or 
-                 (new_width and new_width != state.console_state.width))
     # TODO: implement erase level (Tandy/pcjr)
     # Erase tells basic how much video memory to erase
     # 0: do not erase video memory
@@ -410,11 +405,6 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
         # even if the function fails with Illegal Function Call
         set_palette()
         return False
-    # switch modes if needed
-    if not do_redraw:
-        # set active page & visible page, counting from 0. 
-        set_page(new_vpagenum, new_apagenum)
-        return True    
     # width persists on change to screen 0
     if new_mode == 0 and new_width == None:
         new_width = state.console_state.width 
@@ -493,11 +483,6 @@ def set_page(new_vpagenum, new_apagenum):
 
 def set_width(to_width):
     """ Set the character width of the screen. """
-    # raise an error if the width value doesn't make sense
-    if to_width not in (20, 40, 80):
-        return False
-    if to_width == state.console_state.width:
-        return True
     if to_width == 20:
         return screen(3, None, None, None)
     elif state.console_state.screen_mode == 0:
