@@ -1,42 +1,76 @@
 #!/usr/bin/env python
 
-#
-# PC-BASIC 3.23 
-#
-# GW-BASIC (R) compatible interpreter 
-# 
-# (c) 2013, 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
-# GW-BASIC is a trademark of Microsoft Corporation.
+"""
+PC-BASIC 3.23 - GW-BASIC (R) compatible interpreter 
+
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+please see text file COPYING for licence terms.
+
+GW-BASIC is a trademark of Microsoft Corporation.
+"""
 
 import os
 import logging
 
 import plat
 import config
+
+# logging setup before we import modules and may need to log errors
+# do we log to a file? 
+logfile = ''
+formatstr = '%(levelname)s: %(message)s'
+if config.options['debug']:
+    logging.basicConfig(format=formatstr, level=logging.DEBUG)
+elif logfile:
+    logging.basicConfig(format=formatstr, 
+                        filename=os.path.join(plat.info_dir, logfile))
+else:
+    logging.basicConfig(format=formatstr)
+
+import backend
+
+# load backend modules
+# this can't be done in backend.py as it would create circular dependency
+import novideo
+import nosound
+import backend_cli
+import backend_curses
+import backend_pygame
+import sound_beep
+backend.audio = nosound
+if config.options['filter'] or config.options['conv'] or (
+        not config.options['graphical'] and not config.options['ansi'] and
+        (not plat.stdin_is_tty or not plat.stdout_is_tty)):
+    # redirected input or output leads to dumbterm use
+    backend.video = novideo
+    backend.audio = nosound
+elif config.options['cli'] and plat.stdout_is_tty:
+    backend.video = backend_cli
+    backend.audio = sound_beep
+elif config.options['ansi'] and plat.stdout_is_tty:
+    backend.video = backend_curses
+    backend.audio = sound_beep
+else:   
+    backend.video = backend_pygame   
+    backend.audio = backend_pygame
+if config.options['nosound']:
+    backend.audio = nosound
+
 import run
 import error
 import oslayer
-import backend
 import console
-import sound
 import program
 import state
 import iolayer
 import var
 
-# do we log to a file? 
-logfile = ''
 
 def main():
     """ Initialise and do operations or hand over to run module. """
     reset = False
     resume = None
-    # logging setup
-    prepare_logging()
     try:
         # in convertor mode, convert and exit
         if config.options['conv']:
@@ -84,30 +118,20 @@ def main():
         iolayer.close_all()
         iolayer.close_devices()
             
-def prepare_logging():
-    """ Set logging format. """
-    formatstr = '%(levelname)s: %(message)s'
-    if config.options['debug']:
-        logging.basicConfig(format=formatstr, level=logging.DEBUG)
-    elif logfile:
-        logging.basicConfig(format=formatstr, 
-                            filename=os.path.join(plat.info_dir, logfile))
-    else:
-        logging.basicConfig(format=formatstr)
-        
 def prepare_console():
     """ Initialise backend and console. """
     # initialise video backend before console
-    if not backend.init_video() or not console.init():
+    if not backend.video or not backend.init_video():
         backend.video.close()
-        logging.error('Failed to initialise interface. Exiting.')
-        raise error.Exit()
-    if not backend.init_sound() or not sound.init_sound():
+        logging.warning('Failed to initialise interface. '
+                        'Falling back to filter interface.')
+        backend.video = novideo
+        backend.init_video()
+    if not backend.init_audio():
+        backend.audio = nosound
         logging.warning('Failed to initialise sound. Sound will be disabled.')
-    # need to call explicitly to run after console.prepare(), 
-    # because of circular imports
-    import redirect
-    redirect.prepare()    
+    if not state.loaded:    
+        console.init_mode()    
 
 def convert():
     """ Perform file format conversion. """

@@ -14,41 +14,12 @@ import logging
 import config
 import state
 import backend
-import on_event
-import sound
 # for Break, Exit, Reset
 import error
-# for aspect ratio
-import fp
 # for dbcs
 import unicodepage
-import typeface
 
-class ScreenRow(object):
-    def __init__(self, bwidth):
-        # screen buffer, initialised to spaces, dim white on black
-        self.clear()
-        # line continues on next row (either LF or word wrap happened)
-        self.wrap = False
-    
-    def clear(self):
-        self.buf = [(' ', state.console_state.attr)] * state.console_state.width
-        # character is part of double width char; 0 = no; 1 = lead, 2 = trail
-        self.double = [ 0 ] * state.console_state.width
-        # last non-white character
-        self.end = 0    
-
-class ScreenBuffer(object):
-    def __init__(self, bwidth, bheight):
-        self.row = [ScreenRow(bwidth) for _ in xrange(bheight)]
-        
-# default codes for KEY autotext
-# F1-F10 
-function_key = { 
-        '\x00\x3b':0, '\x00\x3c':1, '\x00\x3d':2, '\x00\x3e':3, '\x00\x3f':4,     # F1-F5
-        '\x00\x40':5, '\x00\x41':6, '\x00\x42':7, '\x00\x43':8, '\x00\x44':9,     # F6-F10    
-        '\x00\x98':10, '\x00\x99':11 } # Tandy F11 and F12, these scancodes should *only* be sent on Tandy
-
+# alt+key macros for interactive mode (these happen at a higher level than F-key macros)
 alt_key_replace = {
     '\x00\x1E': 'AUTO',  '\x00\x30': 'BSAVE',  '\x00\x2E': 'COLOR',  '\x00\x20': 'DELETE', '\x00\x12': 'ELSE', 
     '\x00\x21': 'FOR',   '\x00\x22': 'GOT0',   '\x00\x23': 'HEX$',   '\x00\x17': 'INPUT',
@@ -65,14 +36,6 @@ keys_line_replace_chars = {
     
 # KEY ON?
 state.console_state.keys_visible = True
-# user definable key list
-state.console_state.key_replace = [ 
-    'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r','TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
-
-# number of columns, counting 1..width
-state.console_state.width = 80
-# number of rows, counting 1..height
-state.console_state.height = 25
 
 # viewport parameters
 state.console_state.view_start = 1
@@ -89,400 +52,42 @@ state.console_state.col = 1
 # true if we're on 80 but should be on 81
 state.console_state.overflow = False
 
-# cursor visible in execute mode?
-state.console_state.cursor = False
 # overwrite mode (instead of insert)
 state.console_state.overwrite_mode = True
-# cursor shape
-state.console_state.cursor_from = 0
-state.console_state.cursor_to = 0    
 
-# key buffer
-# incoming keys, either ascii or \00 followed by INKEY$ scancode 
-state.console_state.keybuf = ''
-# INP(&H60) scancode
-state.console_state.inp_key = 0
-# keypressed status of caps, num, scroll, alt, ctrl, shift
-state.console_state.keystatus = 0
-
-# redirect i/o to file or printer
-input_echos = []
-output_echos = []
-
-# input has closed
-input_closed = False
-# capslock, numlock, scrollock mode 
-state.console_state.caps = False
-state.console_state.num = False
-state.console_state.scroll = False
-# let OS handle capslock effects
-ignore_caps = True
-
-# pen and stick
-state.console_state.pen_is_on = False
-state.console_state.stick_is_on = False
-
-# for SCREEN
-
-#  font_height, attr, num_colours, num_palette, width, num_pages, bitsperpixel, font_width
-mode_data_default = {
-    0: ( 16,  7, 32, 64, 80, 4, 4, 8 ), # height 8, 14, or 16; font width 8 or 9; height 40 or 80 
-    1: (  8,  3,  4, 16, 40, 1, 2, 8 ), # 04h 320x200x4  16384B 2bpp 0xb8000 tandy:2 pages if 32k memory; ega: 1 page only 
-    2: (  8,  1,  2, 16, 80, 1, 1, 8 ), # 06h 640x200x2  16384B 1bpp 0xb8000
-    3: (  8, 15, 16, 16, 20, 2, 4, 8 ), # 08h 160x200x16 16384B 4bpp 0xb8000
-    4: (  8,  3,  4, 16, 40, 2, 2, 8 ), #     320x200x4  16384B 2bpp 0xb8000   
-    5: (  8, 15, 16, 16, 40, 1, 4, 8 ), # 09h 320x200x16 32768B 4bpp 0xb8000    
-    6: (  8,  3,  4, 16, 80, 1, 2, 8 ), # 0Ah 640x200x4  32768B 2bpp 0xb8000   
-    7: (  8, 15, 16, 16, 40, 8, 4, 8 ), # 0Dh 320x200x16 32768B 4bpp 0xa0000
-    8: (  8, 15, 16, 16, 80, 4, 4, 8 ), # 0Eh 640x200x16 
-    9: ( 14, 15, 16, 64, 80, 2, 4, 8 ), # 10h 640x350x16 
-    }
-mode_data = {}
-
-# default is EGA 64K
-state.console_state.video_mem_size = 65536
-# officially, whether colours are displayed. in reality, SCREEN just clears the screen if this value is changed
-state.console_state.colorswitch = 1
-# SCREEN mode (0 is textmode)
-state.console_state.screen_mode = 0
-# number of active page
-state.console_state.apagenum = 0
-# number of visible page
-state.console_state.vpagenum = 0
-
-# codepage suggestion for backend
-state.console_state.codepage = '437'    
-
-# ega, tandy, pcjr
-video_capabilities = 'ega'
-# video memory size - currently only used by tandy/pcjr (would be bigger for EGA systems anyway)
-state.console_state.pcjr_video_mem_size = 16384
-
-# cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
-cga_palette_1_hi = [0, 11, 13, 15]
-cga_palette_1_lo = [0, 3, 5, 7]
-# cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
-cga_palette_0_hi = [0, 10, 12, 14]
-cga_palette_0_lo = [0, 2, 4, 6]
-# tandy/pcjr cga palette
-cga_palette_1_pcjr = [0, 3, 5, 15]
-cga_palette_0_pcjr = [0, 2, 4, 6]
-# mode 5 (SCREEN 1 + colorburst) palette on RGB monitor
-cga_palette_5_hi = [0, 11, 12, 15]
-cga_palette_5_lo = [0, 3, 4, 7]
-# default: high intensity 
-cga_palette_0 = cga_palette_0_hi
-cga_palette_1 = cga_palette_1_hi
-cga_palette_5 = cga_palette_5_hi
-cga_palettes = [cga_palette_0, cga_palette_1]
-
-# default font family
-font_families = ['unifont', 'univga', 'freedos']
-fonts = {}
-        
 #############################
 # init
 
 def prepare():
     """ Initialise console module. """
-    global video_capabilities, font_families
-    global cga_palette_0, cga_palette_1, cga_palette_5, cga_palettes
-    global ignore_caps
-    if config.options['video']:
-        video_capabilities = config.options['video']
-    if video_capabilities == 'ega':
-        config.options['composite'] = False
-    if config.options['cga_low']:
-        cga_palette_0 = cga_palette_0_lo
-        cga_palette_1 = cga_palette_1_lo
-        cga_palette_5 = cga_palette_5_lo
-        cga_palettes = [cga_palette_0, cga_palette_1]
-    if config.options['font']:
-        font_families = config.options['font']
     if config.options['run']:
         state.console_state.keys_visible = False
-    for mode in mode_data_default:
-        mode_data[mode] = mode_data_default[mode]
-    if config.options['capture_caps']:
-        ignore_caps = False
-    for u in config.options['keys'].decode('string_escape').decode('utf-8'):
-        c = u.encode('utf-8')
-        try:
-            state.console_state.keybuf += unicodepage.from_utf8(c)
-        except KeyError:
-            state.console_state.keybuf += c
+    
+def init_mode():
+    """ Initialisation when we switched to new screen mode. """
+    # only redraw keys if screen has been cleared 
+    # (any colours stay the same). s.c_s.screen_mode must be set for this
+    if state.console_state.keys_visible:  
+        show_keys(True)
+    # rebuild build the cursor; 
+    # first move to home in case the screen has shrunk
+    set_pos(1, 1)
+    set_default_cursor()
+    backend.update_cursor_visibility()
+    # there is only one VIEW PRINT setting across all pages.
+    unset_view()
 
-def init():
-    global cga_palettes, cga_palette_0, cga_palette_1, cga_palette_5 
-    global fonts, mode_data
-    # reset modes in case init is called a second time for error fallback
-    for mode in mode_data_default:
-        mode_data[mode] = mode_data_default[mode]
-    state.console_state.backend_name = backend.video.__name__
-    # only allow the screen modes that the given machine supports
-    if video_capabilities in ('pcjr', 'tandy'):
-        # no EGA modes (though apparently there were Tandy machines with EGA cards too)
-        unavailable_modes = [7, 8, 9]
-        # 8-pixel characters, 16 colours in screen 0
-        mode_data[0] = ( 8, 7, 32, 16, 80, 4, 4, 8 ) 
-        # select pcjr cga palettes
-        cga_palette_0, cga_palette_1 = cga_palette_0_pcjr, cga_palette_1_pcjr
-        # pcjr does ot have mode 5
-        cga_palettes[:] = [cga_palette_0_pcjr, cga_palette_1_pcjr]       
-        # TODO: determine the number of pages based on video memory size, not hard coded. 
-    elif video_capabilities in ('cga', 'cga_old'):
-        unavailable_modes = [3, 4, 5, 6, 7, 8, 9]
-        # 8-pixel characters, 16 colours in screen 0
-        mode_data[0] = ( 8, 7, 32, 16, 80, 4, 4, 8 ) 
-    else:
-        # EGA
-        # no PCjr modes
-        unavailable_modes = [3, 4, 5, 6]
-    for mode in unavailable_modes:
-        del mode_data[mode]
-    if not backend.video.supports_graphics:    
-        mode_data = { 0: ( 16,  7, 32, 64, 80, 4, 4, 8 ) }
-    else:
-        # load fonts
-        heights_needed = reversed(sorted(set([mode_data[mode][0] for mode in mode_data])))
-        for height in heights_needed:
-            if height in fonts:
-                # already force loaded
-                continue
-            # load a Unifont .hex font and take the codepage subset
-            fonts[height] = typeface.load(font_families, height, unicodepage.cp_to_utf8)
-            # fix missing code points font based on 16-line font
-            if 16 in fonts:
-                typeface.fixfont(height, fonts[height], unicodepage.cp_to_utf8, fonts[16])
-        # remove modes for which we don't have fonts
-        disabled_modes = []
-        for i in mode_data:
-            mode = mode_data[i]
-            if mode[0] not in fonts or not fonts[mode[0]]:
-                logging.warning("No font of height %d found. Screen mode %d not supported.", mode[0], i )
-                disabled_modes.append(i)
-        for mode in disabled_modes:
-            del mode_data[mode]
-    # text mode backends: delete all graphics modes    
-    # reload the screen in resumed state
-    if state.loaded:
-        if state.console_state.screen_mode not in mode_data:
-            # fix the terminal
-            backend.video.close()
-            logging.error("Resumed screen mode %d not supported by display backend.",  state.console_state.screen_mode)
-            return False
-        # set up the appropriate screen resolution
-        backend.video.init_screen_mode()
-        # load the screen contents from storage
-        backend.video.load_state()
-    else:        
-        if 0 not in mode_data:
-            # fix the terminal
-            backend.video.close()
-            logging.error("Text mode not supported by display backend.")
-            return False        
-        screen(None, None, None, None, first_run=True)
-    return True
-
-def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first_run=False, new_width=None):
-    new_mode = state.console_state.screen_mode if new_mode == None else new_mode
-    new_colorswitch = state.console_state.colorswitch if new_colorswitch == None else (new_colorswitch != 0)
-    new_vpagenum = state.console_state.vpagenum if new_vpagenum == None else new_vpagenum
-    new_apagenum = state.console_state.apagenum if new_apagenum == None else new_apagenum
-    do_redraw = (   (new_mode != state.console_state.screen_mode) or (new_colorswitch != state.console_state.colorswitch) 
-                    or first_run or (new_width and new_width != state.console_state.width) )
-    # TODO: implement erase level (Tandy/pcjr)
-    # Erase tells basic how much video memory to erase
-    # 0: do not erase video memory
-    # 1: (default) erase old and new page if screen or bust changes
-    # 2: erase all video memory if screen or bust changes 
-    # video memory size check for SCREENs 5 and 6: (pcjr/tandy only; this is a bit of a hack as is) 
-    # (32753 determined experimentally on DOSBox)
-    if new_mode in (5, 6) and state.console_state.pcjr_video_mem_size < 32753:
-        raise error.RunError(5)
-    try:
-        info = mode_data[new_mode]
-    except KeyError:
-        # no such mode
-        info = None
-    # vpage and apage nums are persistent on mode switch
-    # if the new mode has fewer pages than current vpage/apage, illegal fn call before anything happens.
-    if not info or new_apagenum >= info[5] or new_vpagenum >= info[5] or (new_mode != 0 and not backend.video.supports_graphics):
-        # reset palette happens even if the function fails with Illegal Function Call
-        set_palette()
+def set_width(to_width):
+    """ Change the width of the screen. """
+    # raise an error if the width value doesn't make sense
+    if to_width not in (20, 40, 80):
         return False
-    # switch modes if needed
-    if do_redraw:
-        if new_width == None:
-            if new_mode == 0:
-                new_width = state.console_state.width 
-                if new_width == 20:
-                    new_width = 40
-            else:
-                new_width = info[4]        
-        if not (state.console_state.screen_mode == 0 and new_mode == 0 
-                and state.console_state.apagenum == new_apagenum and state.console_state.vpagenum == new_vpagenum):
-            # preserve attribute (but not palette) on screen 0 width switch
-            state.console_state.attr = info[1]            
-        # set all state vars
-        state.console_state.screen_mode, state.console_state.colorswitch = new_mode, new_colorswitch 
-        state.console_state.width, state.console_state.height = new_width, 25
-        (   state.console_state.font_height, _, 
-            state.console_state.num_colours, state.console_state.num_palette, _, 
-            state.console_state.num_pages, state.console_state.bitsperpixel, state.console_state.font_width ) = info  
-        # enforce backend palette maximum
-        state.console_state.num_palette = min(state.console_state.num_palette, backend.video.max_palette)
-        # width persists on change to screen 0
-        state.console_state.pages = []
-        for _ in range(state.console_state.num_pages):
-            state.console_state.pages.append(ScreenBuffer(state.console_state.width, state.console_state.height))
-        # set active page & visible page, counting from 0. 
-        state.console_state.vpagenum, state.console_state.apagenum = new_vpagenum, new_apagenum
-        state.console_state.vpage = state.console_state.pages[state.console_state.vpagenum]
-        state.console_state.apage = state.console_state.pages[state.console_state.apagenum]
-        # resolution
-        state.console_state.size = (state.console_state.width*state.console_state.font_width,          
-                                         state.console_state.height*state.console_state.font_height)
-        # centre of new graphics screen
-        state.console_state.last_point = (state.console_state.size[0]/2, state.console_state.size[1]/2)
-        if video_capabilities in ('pcjr', 'tandy'):
-            if new_mode in (2,6):
-                 state.console_state.pixel_aspect_ratio = fp.div(fp.Single.from_int(48), fp.Single.from_int(100))       
-            elif new_mode in (1,4,5):
-                 state.console_state.pixel_aspect_ratio = fp.div(fp.Single.from_int(96), fp.Single.from_int(100))       
-            elif new_mode == 3:
-                 state.console_state.pixel_aspect_ratio = fp.div(fp.Single.from_int(1968), fp.Single.from_int(1000))       
-        else:    
-            # pixels e.g. 80*8 x 25*14, screen ratio 4x3 makes for pixel width/height (4/3)*(25*14/8*80)
-            # graphic screens always have 8-pixel widths (can be 9 on text)
-            state.console_state.pixel_aspect_ratio = fp.div(
-                fp.Single.from_int(state.console_state.height*state.console_state.font_height), 
-                fp.Single.from_int(6*state.console_state.width)) 
-        state.console_state.cursor_width = state.console_state.font_width        
-        # set the palette (essential on first run, or not all globals are defined)
-        set_palette()
-        # signal the backend to change the screen resolution
-        backend.video.init_screen_mode()
-        # only redraw keys if screen has been cleared (any colours stay the same). state.console_state.screen_mode must be set for this
-        if state.console_state.keys_visible:  
-            show_keys(True)
-        # rebuild build the cursor; first move to home in case the screen has shrunk
-        set_pos(1, 1)
-        set_default_cursor()
-        update_cursor_visibility()
-        # there is only one VIEW PRINT setting across all pages.
-        unset_view()
-        # in screen 0, 1, set colorburst (not in SCREEN 2!)
-        if new_mode in (0, 1):
-            set_colorburst(new_colorswitch)
-        elif new_mode ==2:
-            set_colorburst(False)    
-    else:
-        # set active page & visible page, counting from 0. 
-        state.console_state.vpagenum, state.console_state.apagenum = new_vpagenum, new_apagenum
-        state.console_state.vpage = state.console_state.pages[state.console_state.vpagenum]
-        state.console_state.apage = state.console_state.pages[state.console_state.apagenum]
-        backend.video.screen_changed = True
+    if to_width == state.console_state.width:
+        return True
+    if not backend.set_width(to_width):
+        return False
+    init_mode()
     return True
-
-
-# set the composite colorburst bit 
-# on SCREEN 2 on composite monitor this enables artifacting
-# on SCREEN 1 this switches between colour and greyscale (composite) or mode 4/5 palettes (RGB)
-# on SCREEN 0 this switches between colour and greyscale (composite) or is ignored (RGB)
-def set_colorburst(on=True):
-    global cga_palettes
-    old_colorburst = backend.video.colorburst
-    colorburst_capable = video_capabilities in ('cga', 'cga_old', 'tandy', 'pcjr')
-    backend.video.colorburst = on and colorburst_capable
-    if state.console_state.screen_mode == 1:
-        if backend.video.colorburst or video_capabilities not in ('cga', 'cga_old'):
-            # ega ignores colorburst; tandy and pcjr have no mode 5
-            cga_palettes = [cga_palette_0, cga_palette_1]
-        else:
-            cga_palettes = [cga_palette_5, cga_palette_5]
-        set_palette()    
-        backend.video.screen_changed = True
-    elif backend.video.colorburst != old_colorburst:
-        backend.video.update_palette()
-        backend.video.screen_changed = True
-
-def check_video_memory():
-    if state.console_state.screen_mode in (5, 6) and state.console_state.pcjr_video_mem_size < 32753:
-        screen (0, None, None, None)
-
-def copy_page(src, dst):
-    for x in range(state.console_state.height):
-        dstrow, srcrow = state.console_state.pages[dst].row[x], state.console_state.pages[src].row[x]
-        dstrow.buf[:] = srcrow.buf[:]
-        dstrow.end = srcrow.end
-        dstrow.wrap = srcrow.wrap            
-    backend.video.copy_page(src, dst)
-    
-#############################
-
-def set_palette_entry(index, colour):
-    state.console_state.palette[index] = colour
-    backend.video.update_palette()
-    
-def get_palette_entry(index):
-    return state.console_state.palette[index]
-
-def set_palette(new_palette=None):
-    if new_palette:
-        state.console_state.palette = new_palette
-    else:    
-        if state.console_state.num_palette == 64:
-            state.console_state.palette = [0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63]
-        elif state.console_state.num_colours >= 16:
-            state.console_state.palette = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-        elif state.console_state.num_colours == 4:
-            state.console_state.palette = cga_palettes[1]
-        else:
-            state.console_state.palette = [0, 15]
-    backend.video.update_palette()
-
-def show_cursor(do_show):
-    """ Force cursor to be visible/invisible. """
-    backend.video.update_cursor_visibility(do_show)
-
-def update_cursor_visibility():
-    """ Set cursor visibility: visible if in interactive mode, unless forced visible in text mode. """
-    visible = (not state.basic_state.execute_mode)
-    if state.console_state.screen_mode == 0:
-        visible = visible or state.console_state.cursor
-    backend.video.update_cursor_visibility(visible)
-
-def set_cursor_shape(from_line, to_line):
-    """ Set the cursor shape as a block from from_line to to_line (in 8-line modes). Use compatibility algo in higher resolutions. """
-    if video_capabilities == 'ega':
-        # odd treatment of cursors on EGA machines, presumably for backward compatibility
-        # the following algorithm is based on DOSBox source int10_char.cpp INT10_SetCursorShape(Bit8u first,Bit8u last)    
-        max_line = state.console_state.font_height-1
-        if from_line & 0xe0 == 0 and to_line & 0xe0 == 0:
-            if (to_line < from_line):
-                # invisible only if to_line is zero and to_line < from_line           
-                if to_line != 0: 
-                    # block shape from *to_line* to end
-                    from_line = to_line
-                    to_line = max_line
-            elif (from_line | to_line) >= max_line or to_line != max_line-1 or from_line != max_line:
-                if to_line > 3:
-                    if from_line+2 < to_line:
-                        if from_line > 2:
-                            from_line = (max_line+1) // 2
-                        to_line = max_line
-                    else:
-                        from_line = from_line - to_line + max_line                        
-                        to_line = max_line
-                        if max_line > 0xc:
-                            from_line -= 1
-                            to_line -= 1
-    state.console_state.cursor_from = max(0, min(from_line, state.console_state.font_height-1))
-    state.console_state.cursor_to = max(0, min(to_line, state.console_state.font_height-1))
-    backend.video.build_cursor(state.console_state.cursor_width, state.console_state.font_height, 
-                state.console_state.cursor_from, state.console_state.cursor_to)
-    backend.video.update_cursor_attr(state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
 
 ############################### 
 # interactive mode         
@@ -490,15 +95,15 @@ def set_cursor_shape(from_line, to_line):
 def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
     prompt_row = state.console_state.row
     # force cursor visibility in all cases
-    show_cursor(True) 
+    backend.show_cursor(True) 
     try:
         furthest_left, furthest_right = wait_interactive(from_start, alt_replace)
     except error.Break:
-        for echo in input_echos:  
+        for echo in backend.input_echos:  
             echo ('\x0e')
         write_line()    
         raise        
-    update_cursor_visibility()
+    backend.update_cursor_visibility()
     # find start of wrapped block
     crow = state.console_state.row
     while crow > 1 and state.console_state.apage.row[crow-2].wrap:
@@ -530,11 +135,11 @@ def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
     # only the first 255 chars are registered    
     outstr = outstr[:255]    
     # redirections receive exactly what's going to the parser
-    for echo in input_echos:
+    for echo in backend.input_echos:
         echo(outstr)
     # echo the CR, if requested
     if write_endl:
-        for echo in input_echos:
+        for echo in backend.input_echos:
             echo('\r\n')
         set_pos(state.console_state.row+1, 1)
     return outstr    
@@ -549,7 +154,7 @@ def wait_interactive(from_start=False, alt_replace = True):
             furthest_left = min(state.console_state.col, furthest_left)
             furthest_right = max(state.console_state.col, furthest_right)
         # wait_char returns one ascii ar MS-DOS/GW-BASIC style keyscan code
-        d = pass_char(wait_char())
+        d = backend.pass_char(backend.wait_char())
         if not d:
             # input stream closed
             raise error.Exit()
@@ -559,7 +164,7 @@ def wait_interactive(from_start=False, alt_replace = True):
         if d == '\x03':         
             raise error.Break()    # not caught in wait_char like <CTRL+BREAK>
         elif d == '\r':                     break                                   # <ENTER>
-        elif d == '\a':                     sound.beep()                            # <CTRL+G>
+        elif d == '\a':                     backend.beep()                            # <CTRL+G>
         elif d == '\b':                     backspace(start_row, furthest_left)     # <BACKSPACE>
         elif d == '\t':                     tab()                                   # <TAB> or <CTRL+I>
         elif d == '\n':                     line_feed()                             # <CTRL+ENTER> or <CTRL+J>
@@ -582,7 +187,7 @@ def wait_interactive(from_start=False, alt_replace = True):
         elif d in ('\x00\x47', '\x0B'):     set_pos(1, 1)                           # <HOME> <CTRL+K>
         elif d in ('\x00\x4F', '\x0E'):     end()                                   # <END> <CTRL+N>
         elif d in ('\x00\x77', '\x0C'):     clear()                                 # <CTRL+HOME> <CTRL+L>   
-        elif d == '\x00\x37':               print_screen()                          # <SHIFT+PRT_SC>, already caught in wait_char()
+        elif d == '\x00\x37':               backend.print_screen()                  # <SHIFT+PRT_SC>, already caught in wait_char()
         else:
             try:
                 # these are done on a less deep level than the fn key replacement
@@ -595,7 +200,7 @@ def wait_interactive(from_start=False, alt_replace = True):
                 if d[0] not in ('\x00', '\r'): 
                     if not state.console_state.overwrite_mode:
                         insert_char(state.console_state.row, state.console_state.col, d, state.console_state.attr)
-                        redraw_row(state.console_state.col-1, state.console_state.row)
+                        backend.redraw_row(state.console_state.col-1, state.console_state.row)
                         set_pos(state.console_state.row, state.console_state.col+1)
                     else:    
                         put_char(d, do_scroll_down=True)
@@ -622,12 +227,14 @@ def set_overwrite_mode(new_overwrite=True):
 
 def set_default_cursor():
     if state.console_state.overwrite_mode:
-        if state.console_state.screen_mode != 0:
-            set_cursor_shape(0, state.console_state.font_height-1)
+        if state.console_state.screen_mode != 0: 
+            backend.set_cursor_shape(0, state.console_state.font_height-1)
+        elif backend.video_capabilities == 'ega':
+            backend.set_cursor_shape(state.console_state.font_height-2, state.console_state.font_height-2)
         else:
-            set_cursor_shape(state.console_state.font_height-2, state.console_state.font_height-2)
+            backend.set_cursor_shape(state.console_state.font_height-1, state.console_state.font_height-1)
     else:
-        set_cursor_shape(state.console_state.font_height/2, state.console_state.font_height-1)
+        backend.set_cursor_shape(state.console_state.font_height/2, state.console_state.font_height-1)
       
 def insert_char(crow, ccol, c, cattr):
     while True:
@@ -680,7 +287,7 @@ def delete_sbcs_char(crow, ccol):
             therow, nextrow = state.console_state.apage.row[crow-1], state.console_state.apage.row[crow]
         nextrow.buf = nextrow.buf[state.console_state.width-ccol+1:] + [(' ', state.console_state.attr)]*(state.console_state.width-ccol+1) 
         nextrow.end -= state.console_state.width - ccol    
-        redraw_row(save_col-1, state.console_state.row)
+        backend.redraw_row(save_col-1, state.console_state.row)
         if nextrow.end <= 0:
             nextrow.end = 0
             ccol += 1
@@ -701,7 +308,7 @@ def delete_sbcs_char(crow, ccol):
                 therow, nextrow = state.console_state.apage.row[crow-1], state.console_state.apage.row[crow]
                 ccol = 1
         # this works from *global* row onwrds
-        redraw_row(save_col-1, state.console_state.row)
+        backend.redraw_row(save_col-1, state.console_state.row)
         # this works on *local* row (last row edited)
         if therow.end > 0:
             therow.end -= 1
@@ -710,19 +317,6 @@ def delete_sbcs_char(crow, ccol):
             if crow > 1:
                 state.console_state.apage.row[crow-2].wrap = False            
 
-def redraw_row(start, crow):
-    while True:
-        therow = state.console_state.apage.row[crow-1]  
-        backend.video.set_attr(state.console_state.attr)
-        for i in range(start, therow.end): 
-            # redrawing changes colour attributes to current foreground (cf. GW)
-            # don't update all dbcs chars behind at each put
-            put_screen_char_attr(state.console_state.apage, crow, i+1, therow.buf[i][0], state.console_state.attr, one_only=True)
-        if therow.wrap and crow >= 0 and crow < state.console_state.height-1:
-            crow += 1
-            start = 0
-        else:
-            break    
     
 def clear_line(the_row):
     # find start of line
@@ -738,7 +332,7 @@ def clear_rest_of_line(srow, scol):
     crow = srow
     while state.console_state.apage.row[crow-1].wrap:
         crow += 1
-        state.console_state.apage.row[crow-1].clear() 
+        state.console_state.apage.row[crow-1].clear(state.console_state.attr) 
     for r in range(crow, srow, -1):
         state.console_state.apage.row[r-1].wrap = False
         scroll(r)
@@ -748,7 +342,7 @@ def clear_rest_of_line(srow, scol):
     save_end = therow.end
     therow.end = state.console_state.width
     if scol > 1:
-        redraw_row(scol-1, srow)
+        backend.redraw_row(scol-1, srow)
     else:
         backend.video.clear_rows(state.console_state.attr, srow, srow)
     therow.end = save_end
@@ -774,7 +368,7 @@ def tab():
     else:
         for _ in range(8):
             insert_char(state.console_state.row, state.console_state.col, ' ', state.console_state.attr)
-        redraw_row(state.console_state.col-1, state.console_state.row)
+        backend.redraw_row(state.console_state.col-1, state.console_state.row)
         set_pos(state.console_state.row, state.console_state.col+8)
         
 def end():
@@ -792,7 +386,7 @@ def line_feed():
     if state.console_state.col < state.console_state.apage.row[state.console_state.row-1].end:
         for _ in range(state.console_state.width-state.console_state.col+1):
             insert_char(state.console_state.row, state.console_state.col, ' ', state.console_state.attr)
-        redraw_row(state.console_state.col-1, state.console_state.row)
+        backend.redraw_row(state.console_state.col-1, state.console_state.row)
         state.console_state.apage.row[state.console_state.row-1].end = state.console_state.col-1 
     else:
         crow = state.console_state.row
@@ -862,22 +456,6 @@ def skip_word_left():
             break
     set_pos(last_row, last_col)                            
 
-def print_screen():
-    for crow in range(1, state.console_state.height+1):
-        line = ''
-        for c, _ in state.console_state.vpage.row[crow-1].buf:
-            line += c
-        state.io_state.devices['LPT1:'].write_line(line)
-
-def toggle_echo_lpt1():
-    lpt1 = state.io_state.devices['LPT1:']
-    if lpt1.write in input_echos:
-        input_echos.remove(lpt1.write)
-        output_echos.remove(lpt1.write)
-    else:    
-        input_echos.append(lpt1.write)
-        output_echos.append(lpt1.write)
-
 def clear():
     save_view_set, save_view_start, save_scroll_height = state.console_state.view_set, state.console_state.view_start, state.console_state.scroll_height
     set_view(1,25)
@@ -893,7 +471,7 @@ def clear():
 
 def write(s, scroll_ok=True, do_echo=True):
     if do_echo: 
-        for echo in output_echos:
+        for echo in backend.output_echos:
             # CR -> CRLF, CRLF -> CRLF LF
             echo(''.join([ ('\r\n' if c == '\r' else c) for c in s ]))
     last = ''
@@ -911,7 +489,7 @@ def write(s, scroll_ok=True, do_echo=True):
         elif c == '\r':     
             state.console_state.apage.row[state.console_state.row-1].wrap = False
             set_pos(state.console_state.row+1, 1, scroll_ok)     # CR
-        elif c == '\a':     sound.beep()                     # BEL
+        elif c == '\a':     backend.beep()                     # BEL
         elif c == '\x0B':   set_pos(1, 1, scroll_ok)         # HOME
         elif c == '\x0C':   clear()
         elif c == '\x1C':   set_pos(state.console_state.row, state.console_state.col+1, scroll_ok)
@@ -926,7 +504,7 @@ def write(s, scroll_ok=True, do_echo=True):
 def write_line(s='', scroll_ok=True, do_echo=True): 
     write(s, scroll_ok, do_echo)
     if do_echo:
-        for echo in output_echos:
+        for echo in backend.output_echos:
             echo('\r\n')
     check_pos(scroll_ok=True)
     state.console_state.apage.row[state.console_state.row-1].wrap = False
@@ -948,43 +526,12 @@ def list_line(line):
     if len(line) == state.console_state.width and state.console_state.row > 2:
         state.console_state.apage.row[state.console_state.row-3].wrap = False
     
-def set_width(to_width):
-    # raise an error if the width value doesn't make sense
-    if to_width not in (20, 40, 80):
-        return False
-    if to_width == state.console_state.width:
-        return True
-    if to_width == 20:
-        return screen(3, None, None, None)
-    elif state.console_state.screen_mode == 0:
-        return screen(0, None, None, None, new_width=to_width) 
-    elif state.console_state.screen_mode == 1 and to_width == 80:
-        return screen(2, None, None, None)
-    elif state.console_state.screen_mode == 2 and to_width == 40:
-        return screen(1, None, None, None)
-    elif state.console_state.screen_mode == 3 and to_width == 40:
-        return screen(1, None, None, None)
-    elif state.console_state.screen_mode == 3 and to_width == 80:
-        return screen(2, None, None, None)
-    elif state.console_state.screen_mode == 4 and to_width == 80:
-        return screen(2, None, None, None)
-    elif state.console_state.screen_mode == 5 and to_width == 80:
-        return screen(6, None, None, None)
-    elif state.console_state.screen_mode == 6 and to_width == 40:
-        return screen(5, None, None, None)
-    elif state.console_state.screen_mode == 7 and to_width == 80:
-        return screen(8, None, None, None)
-    elif state.console_state.screen_mode == 8 and to_width == 40:
-        return screen(7, None, None, None)
-    elif state.console_state.screen_mode == 9 and to_width == 40:
-        return screen(7, None, None, None)
-
 #####################
 # key replacement
 
 def list_keys():
     """ Print a list of the function key macros. """
-    for i in range(on_event.num_fn_keys):
+    for i in range(backend.num_fn_keys):
         text = bytearray(state.console_state.key_replace[i])
         for j in range(len(text)):
             try:
@@ -995,7 +542,7 @@ def list_keys():
 
 def clear_key_row():
     """ Clear row 25 on the active page. """
-    state.console_state.apage.row[24].clear()
+    state.console_state.apage.row[24].clear(state.console_state.attr)
     backend.video.clear_rows(state.console_state.attr, 25, 25)
 
 def show_keys(do_show):
@@ -1032,178 +579,13 @@ def write_for_keys(s, col, cattr):
                 c = keys_line_replace_chars[c]
             except KeyError:
                 pass    
-            put_screen_char_attr(state.console_state.apage, 25, col, c, cattr, for_keys=True)    
+            backend.put_screen_char_attr(state.console_state.apage, 25, col, c, cattr, for_keys=True)    
         col += 1
     backend.video.set_attr(state.console_state.attr)
-
-##############################
-# keyboard buffer read/write
-
-# insert character into keyboard buffer; apply KEY repacement (for use by backends)
-def insert_key(c):
-    if len(c) > 0:
-        try:
-            keynum = state.basic_state.event_keys.index(c)
-            if keynum > -1 and keynum < 20:
-                if state.basic_state.key_handlers[keynum].enabled:
-                    # trigger only once at most
-                    state.basic_state.key_handlers[keynum].triggered = True
-                    # don't enter into key buffer
-                    return
-        except ValueError:
-            pass
-    if state.console_state.caps and not ignore_caps:
-        if c >= 'a' and c <= 'z':
-            c = chr(ord(c)-32)
-        elif c >= 'A' and c <= 'z':
-            c = chr(ord(c)+32)
-    if len(c) < 2:
-        state.console_state.keybuf += c
-    else:
-        try:
-            # only check F1-F10
-            keynum = function_key[c]
-            # can't be redefined in events - so must be event keys 1-10.
-            if state.basic_state.run_mode and state.basic_state.key_handlers[keynum].enabled or keynum > 9:
-                # this key is being trapped, don't replace
-                state.console_state.keybuf += c
-            else:
-                state.console_state.keybuf += state.console_state.key_replace[keynum]
-        except KeyError:
-            state.console_state.keybuf += c
-    
-# non-blocking keystroke read
-def get_char():
-    on_event.wait()    
-    return pass_char( peek_char() )
-    
-# peek character from keyboard buffer
-def peek_char():
-    ch = ''
-    if len(state.console_state.keybuf)>0:
-        ch = state.console_state.keybuf[0]
-        if ch == '\x00' and len(state.console_state.keybuf) > 0:
-            ch += state.console_state.keybuf[1]
-    return ch 
-
-# drop character from keyboard buffer
-def pass_char(ch):
-    state.console_state.keybuf = state.console_state.keybuf[len(ch):]        
-    return ch
-
-# blocking keystroke read
-def read_chars(num):
-    word = []
-    for _ in range(num):
-        wait_char()
-        word.append(get_char())
-    return word
-
-# blocking keystroke peek
-def wait_char():
-    while len(state.console_state.keybuf) == 0 and not input_closed:
-        on_event.wait()
-    return peek_char()
     
 #####################
 # screen read/write
-    
-def get_screen_char_attr(crow, ccol, want_attr):
-    ca = state.console_state.apage.row[crow-1].buf[ccol-1][want_attr]
-    return ca if want_attr else ord(ca)
-
-def refresh_screen_range(cpage, crow, start, stop, for_keys=False):
-    therow = cpage.row[crow-1]
-    ccol = start
-    while ccol < stop:
-        double = therow.double[ccol-1]
-        if double == 1:
-            ca = therow.buf[ccol-1]
-            da = therow.buf[ccol]
-            backend.video.set_attr(da[1]) 
-            backend.video.putwc_at(crow, ccol, ca[0], da[0], for_keys)
-            therow.double[ccol-1] = 1
-            therow.double[ccol] = 2
-            ccol += 2
-        else:
-            if double != 0:
-                logging.debug('DBCS buffer corrupted at %d, %d', crow, ccol)            
-            ca = therow.buf[ccol-1]        
-            backend.video.set_attr(ca[1]) 
-            backend.video.putc_at(crow, ccol, ca[0], for_keys)
-            ccol += 1
         
-def put_screen_char_attr(cpage, crow, ccol, c, cattr, one_only=False, for_keys=False):
-    cattr = cattr & 0xf if state.console_state.screen_mode else cattr
-    # update the screen buffer
-    cpage.row[crow-1].buf[ccol-1] = (c, cattr)
-    # mark the replaced char for refreshing
-    start, stop = ccol, ccol+1
-    cpage.row[crow-1].double[ccol-1] = 0
-    # mark out sbcs and dbcs characters
-    # only do dbcs in 80-character modes
-    if unicodepage.dbcs and state.console_state.width == 80:
-        orig_col = ccol
-        # replace chars from here until necessary to update double-width chars
-        therow = cpage.row[crow-1]    
-        # replacing a trail byte? take one step back
-        # previous char could be a lead byte? take a step back
-        if (ccol > 1 and therow.double[ccol-2] != 2 and 
-                (therow.buf[ccol-1][0] in unicodepage.trail or therow.buf[ccol-2][0] in unicodepage.lead)):
-            ccol -= 1
-            start -= 1
-        # check all dbcs characters between here until it doesn't matter anymore
-        while ccol < state.console_state.width:
-            c = therow.buf[ccol-1][0]
-            d = therow.buf[ccol][0]  
-            if (c in unicodepage.lead and d in unicodepage.trail):
-                if therow.double[ccol-1] == 1 and therow.double[ccol] == 2 and ccol > orig_col:
-                    break
-                therow.double[ccol-1] = 1
-                therow.double[ccol] = 2
-                start, stop = min(start, ccol), max(stop, ccol+2)
-                ccol += 2
-            else:
-                if therow.double[ccol-1] == 0 and ccol > orig_col:
-                    break
-                therow.double[ccol-1] = 0
-                start, stop = min(start, ccol), max(stop, ccol+1)
-                ccol += 1
-            if ccol >= state.console_state.width or (one_only and ccol > orig_col):
-                break  
-        # check for box drawing
-        if unicodepage.box_protect:
-            ccol = start-2
-            connecting = 0
-            bset = -1
-            while ccol < stop+2 and ccol < state.console_state.width:
-                c = therow.buf[ccol-1][0]
-                d = therow.buf[ccol][0]  
-                if bset > -1 and unicodepage.connects(c, d, bset): 
-                    connecting += 1
-                else:
-                    connecting = 0
-                    bset = -1
-                if bset == -1:
-                    for b in (0, 1):
-                        if unicodepage.connects(c, d, b):
-                            bset = b
-                            connecting = 1
-                if connecting >= 2:
-                    therow.double[ccol] = 0
-                    therow.double[ccol-1] = 0
-                    therow.double[ccol-2] = 0
-                    start = min(start, ccol-1)
-                    if ccol > 2 and therow.double[ccol-3] == 1:
-                        therow.double[ccol-3] = 0
-                        start = min(start, ccol-2)
-                    if ccol < state.console_state.width-1 and therow.double[ccol+1] == 2:
-                        therow.double[ccol+1] = 0
-                        stop = max(stop, ccol+2)
-                ccol += 1        
-    # update the screen            
-    refresh_screen_range(cpage, crow, start, stop, for_keys)
-
 def put_char(c, do_scroll_down=False):
     # check if scroll& repositioning needed
     if state.console_state.overflow:
@@ -1214,7 +596,8 @@ def put_char(c, do_scroll_down=False):
     # move cursor and see if we need to scroll up
     check_pos(scroll_ok=True) 
     # put the character
-    put_screen_char_attr(state.console_state.apage, state.console_state.row, state.console_state.col, c, state.console_state.attr)
+    backend.put_screen_char_attr(state.console_state.apage, 
+            state.console_state.row, state.console_state.col, c, state.console_state.attr)
     # adjust end of line marker
     if state.console_state.col > state.console_state.apage.row[state.console_state.row-1].end:
          state.console_state.apage.row[state.console_state.row-1].end = state.console_state.col
@@ -1236,12 +619,14 @@ def check_wrap(do_scroll_down):
                 scroll_down(state.console_state.row+1)
         state.console_state.row += 1
         state.console_state.col = 1
+        backend.video.move_cursor(state.console_state.row, state.console_state.col)
             
 def set_pos(to_row, to_col, scroll_ok=True):
     state.console_state.overflow = False
     state.console_state.row, state.console_state.col = to_row, to_col
     check_pos(scroll_ok)
     backend.video.update_cursor_attr(state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
+    backend.video.move_cursor(state.console_state.row,state. console_state.col)
 
 def check_pos(scroll_ok=True):
     oldrow, oldcol = state.console_state.row, state.console_state.col
@@ -1250,6 +635,7 @@ def check_pos(scroll_ok=True):
             state.console_state.col = min(state.console_state.width, state.console_state.col)
             if state.console_state.col < 1:
                 state.console_state.col += 1    
+            backend.video.move_cursor(state.console_state.row,state. console_state.col)
             return state.console_state.col == oldcol    
         else:
             # if row > height, we also end up here (eg if we do INPUT on the bottom row)
@@ -1278,83 +664,94 @@ def check_pos(scroll_ok=True):
         state.console_state.row = state.console_state.scroll_height
     elif state.console_state.row < state.console_state.view_start:
         state.console_state.row = state.console_state.view_start
+    backend.video.move_cursor(state.console_state.row,state. console_state.col)
     # signal position change
     return state.console_state.row == oldrow and state.console_state.col == oldcol
 
 def start_line():
+    """ Move the cursor to the start of the next line, this line if empty. """
     if state.console_state.col != 1:
-        for echo in input_echos:
+        for echo in backend.input_echos:
             echo('\r\n')
         check_pos(scroll_ok=True)
         set_pos(state.console_state.row + 1, 1)
     # ensure line above doesn't wrap    
     state.console_state.apage.row[state.console_state.row-2].wrap = False    
+        
+def write_error_message(msg, linenum):
+    """ Write an error message to the console. """
+    start_line()
+    write(msg) 
+    if linenum != None and linenum > -1 and linenum < 65535:
+        write(' in %i' % linenum)
+    write_line(' ')                  
 
 
 #####################
 # viewport / scroll area
 
 def set_view(start=1, stop=24):
-    state.console_state.view_set, state.console_state.view_start, state.console_state.scroll_height = True, start, stop
+    """ Set the scroll area. """
+    state.console_state.view_set = True 
+    state.console_state.view_start = start 
+    state.console_state.scroll_height = stop
     set_pos(start, 1)
  
 def unset_view():
+    """ Unset scroll area. """
     set_view()
     state.console_state.view_set = False
 
 def clear_view():
-    if video_capabilities in ('ega', 'cga', 'cga_old'):
+    """ Clear the scroll area. """
+    if backend.video_capabilities in ('ega', 'cga', 'cga_old'):
         # keep background, set foreground to 7
-        attr_save, state.console_state.attr = state.console_state.attr, state.console_state.attr & 0x70 | 0x7
-    for r in range(state.console_state.view_start, state.console_state.scroll_height+1):
-        state.console_state.apage.row[r-1].clear()
+        attr_save = state.console_state.attr
+        state.console_state.attr = state.console_state.attr & 0x70 | 0x7
+    for r in range(state.console_state.view_start, 
+                    state.console_state.scroll_height+1):
+        state.console_state.apage.row[r-1].clear(state.console_state.attr)
         state.console_state.apage.row[r-1].wrap = False
-    state.console_state.row, state.console_state.col = state.console_state.view_start, 1
-    backend.video.clear_rows(state.console_state.attr, state.console_state.view_start, state.console_state.height if state.console_state.bottom_row_allowed else state.console_state.scroll_height)
-    if video_capabilities in ('ega', 'cga', 'cga_old'):
+    state.console_state.row = state.console_state.view_start 
+    state.console_state.col = 1
+    if state.console_state.bottom_row_allowed:
+        last_row = state.console_state.height 
+    else:
+        last_row = state.console_state.scroll_height 
+    backend.video.clear_rows(state.console_state.attr, 
+                             state.console_state.view_start, last_row)
+    backend.video.move_cursor(state.console_state.row, state.console_state.col)
+    if backend.video_capabilities in ('ega', 'cga', 'cga_old'):
         # restore attr
         state.console_state.attr = attr_save
-            
+    
 def scroll(from_line=None): 
+    """ Scroll the scroll region up by one line, starting at from_line. """
     if from_line == None:
         from_line = state.console_state.view_start
-    backend.video.scroll(from_line)
+    backend.video.scroll(from_line, state.console_state.scroll_height, 
+                         state.console_state.attr)
     # sync buffers with the new screen reality:
     if state.console_state.row > from_line:
         state.console_state.row -= 1
-    state.console_state.apage.row.insert(state.console_state.scroll_height, ScreenRow(state.console_state.width))
+    state.console_state.apage.row.insert(state.console_state.scroll_height, 
+            backend.ScreenRow(state.console_state.attr, 
+                              state.console_state.width))
     del state.console_state.apage.row[from_line-1]
    
 def scroll_down(from_line):
-    backend.video.scroll_down(from_line)
+    """ Scroll the scroll region down by one line, starting at from_line. """
+    backend.video.scroll_down(from_line, state.console_state.scroll_height, 
+                              state.console_state.attr)
     if state.console_state.row >= from_line:
         state.console_state.row += 1
     # sync buffers with the new screen reality:
-    state.console_state.apage.row.insert(from_line-1, ScreenRow(state.console_state.width))
+    state.console_state.apage.row.insert(from_line - 1, 
+            backend.ScreenRow(state.console_state.attr, 
+                              state.console_state.width))
     del state.console_state.apage.row[state.console_state.scroll_height-1] 
 
 ################################################
-
-def redraw_text_screen():
-    # force cursor invisible during redraw
-    show_cursor(False)
-    # this makes it feel faster
-    backend.video.clear_rows(state.console_state.attr, 1, 25)
-    # redraw every character
-    for crow in range(state.console_state.height):
-        therow = state.console_state.apage.row[crow]  
-        for i in range(state.console_state.width): 
-            put_screen_char_attr(state.console_state.apage, crow+1, i+1, therow.buf[i][0], therow.buf[i][1])
-    update_cursor_visibility()
-
-################################################
-        
-def write_error_message(msg, linenum):
-    start_line()
-    write(msg) 
-    if linenum != None and linenum > -1 and linenum < 65535:
-        write(' in %i' % linenum)
-    write_line(' ')                  
 
 prepare()
 

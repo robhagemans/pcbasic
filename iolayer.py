@@ -708,12 +708,12 @@ class KYBDFile(NullDevice):
 
     # for INPUT$
     def read_chars(self, num):
-        return console.read_chars(num)
+        return backend.read_chars(num)
 
     # for INPUT and LINE INPUT
     def read(self, n):
         word = ''
-        for c in console.read_chars(n):
+        for c in backend.read_chars(n):
             if len(c) > 1 and c[0] == '\x00':
                 try:
                     word += self.input_replace[c]
@@ -734,7 +734,7 @@ class KYBDFile(NullDevice):
         if self.mode in ('A', 'O'):
             return False
         # blocking read
-        return (console.wait_char() == '\x1a')
+        return (backend.wait_char() == '\x1a')
 
     # setting KYBD width is allowed, anomalously; but has no effect if on files. changes screen width if on device.
     def set_width(self, new_width=255):

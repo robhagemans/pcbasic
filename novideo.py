@@ -12,22 +12,11 @@
 
 import sys
 import time
-from functools import partial
 
 import unicodepage
-import console
+import backend
 import plat
-import state
 import redirect
-
-# don't allow switch to graphics mode
-supports_graphics = False
-
-# palette is ignored
-max_palette = 64
-
-# unused, but needs to be defined
-colorburst = False
 
 # replace lf with cr
 lf_to_cr = False
@@ -42,18 +31,16 @@ else:
     def kbhit():
         return select.select([sys.stdin], [], [], 0)[0] != []
         
-def prepare(args):
-    pass        
-        
-def init():
+def prepare():
     global lf_to_cr
-    # use redirection echos; avoid double echos on resuming 
-    if not state.loaded or state.console_state.backend_name != __name__:
-        redirect.set_output(sys.stdout, utf8=True)
     # on unix ttys, replace input \n with \r 
     # setting termios won't do the trick as it will not trigger read_line, gets too complicated    
     if plat.system != 'Windows' and sys.stdin.isatty():
         lf_to_cr = True
+        
+def init():
+    # use redirection echos; these are not kept in state 
+    redirect.set_output(sys.stdout, utf8=True)
     return True    
 
 def check_keys():
@@ -62,16 +49,16 @@ def check_keys():
         return
     s = sys.stdin.readline().decode('utf-8')
     if s == '':
-        console.input_closed = True
+        backend.input_closed = True
     for u in s:
         c = u.encode('utf-8')
         # replace LF -> CR if needed
         if c == '\n' and lf_to_cr:
             c = '\r'
         try:
-            console.insert_key(unicodepage.from_utf8(c))
+            backend.insert_key(unicodepage.from_utf8(c))
         except KeyError:        
-            console.insert_key(c)
+            backend.insert_key(c)
         
 def idle():
     time.sleep(0.024)
@@ -80,6 +67,9 @@ def check_events():
     check_keys()
 
 ##############################################
+
+def set_page(vpage, apage):
+    pass
 
 def putc_at(row, col, c, for_keys=False):
     pass
@@ -93,24 +83,33 @@ def close():
 def clear_rows(attr, start, stop):
     pass
 
-def init_screen_mode():
+def supports_graphics_mode(mode_info):
+    return False
+
+def init_screen_mode(mode_info, is_text_mode=False):
     pass
 
 def copy_page(src, dst):
     pass
 
-def scroll(from_line):
+def scroll(from_line, scroll_height, attr):
     pass
     
-def scroll_down(from_line):
+def scroll_down(from_line, scroll_height, attr):
+    pass
+
+def move_cursor(crow, ccol):
     pass
 
 def update_cursor_attr(attr):
     pass
         
-def update_palette():
+def update_palette(palette):
     pass
 
+def set_colorburst(on, palette):
+    pass
+    
 def update_cursor_visibility(cursor_on):
     pass
 
@@ -122,4 +121,7 @@ def build_cursor(width, height, from_line, to_line):
 
 def load_state():
     pass
+
+
+prepare()
 

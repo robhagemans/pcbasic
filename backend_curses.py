@@ -11,7 +11,6 @@
 
 import sys
 import time
-import os
 import locale
 import logging
 try:
@@ -23,22 +22,12 @@ except ImportError:
         curses = None
         
 import unicodepage
-import error
-import console
-import state
+import backend
 
 # for a few ansi sequences not supported by curses
 # onlu yse these if you clear the screen afterwards, 
 # so you don't see gibberish if the terminal doesn't support the sequence.
 import ansi
-
-# not supported, but need to be defined
-supports_graphics = False
-max_palette = 16
-palette_changed = True
-
-# unused, but needs to be defined
-colorburst = False
 
 # cursor is visible
 cursor_visible = True
@@ -49,6 +38,10 @@ window = None
 
 # 1 is line ('visible'), 2 is block ('highly visible'), 3 is invisible
 cursor_shape = 1
+
+# current cursor position
+cursor_row = 1
+cursor_col = 1
 
 if curses:
     # curses keycodes
@@ -76,15 +69,7 @@ if curses:
         curses.KEY_BACKSPACE: '\b'
     }
 
-    # curses colours mapped onto EGA
-    default_colors = [
-        curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN, 
-        curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA, 
-        curses.COLOR_YELLOW, curses.COLOR_WHITE, 
-        curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN, 
-        curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA, 
-        curses.COLOR_YELLOW, curses.COLOR_WHITE]
-
+        
     last_attr = None
     attr = curses.A_NORMAL
  
@@ -92,7 +77,7 @@ def prepare(args):
     pass
 
 def init():
-    global screen
+    global screen, default_colors, can_change_palette
     if not curses:
         logging.warning('ANSI interface not supported.')
     locale.setlocale(locale.LC_ALL,('C', 'utf-8'))
@@ -103,22 +88,39 @@ def init():
     curses.raw()
     curses.start_color()
     screen.clear()
-    init_screen_mode()
-    sys.stdout.write(ansi.esc_set_title % 'PC-BASIC 3.23')
+#    init_screen_mode()
+    can_change_palette = (curses.can_change_color() and curses.COLORS >= 16 
+                          and curses.COLOR_PAIRS > 128)
+    sys.stdout.write(ansi.esc_set_title % 'PC-BASIC 3.23 %d' % can_change_palette)
+    if can_change_palette:
+        default_colors = range(16, 32)
+    else:    
+        # curses colours mapped onto EGA
+        default_colors = (
+            curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN, 
+            curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA, 
+            curses.COLOR_YELLOW, curses.COLOR_WHITE,
+            curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN, 
+            curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA, 
+            curses.COLOR_YELLOW, curses.COLOR_WHITE)
     return True
     
-def init_screen_mode():
-    global window
+def supports_graphics_mode(mode_info):
+    return False
+    
+def init_screen_mode(mode_info=None, is_text_mode=False):
+    global window, height, width
+    height = 25
+    width = mode_info[4]
     if window:
         window.clear()
         window.refresh()
     else:
-        window = curses.newwin(state.console_state.height, 
-                           state.console_state.width, 0, 0)
+        window = curses.newwin(height, width, 0, 0)
     window.move(0, 0)
-    sys.stdout.write(ansi.esc_resize_term % (state.console_state.height, state.console_state.width))
-    #curses.resizeterm(state.console_state.height, state.console_state.width)
-    window.resize(state.console_state.height, state.console_state.width)
+    sys.stdout.write(ansi.esc_resize_term % (height, width))
+    #curses.resizeterm(height, width)
+    window.resize(height, width)
     window.nodelay(True)
     window.keypad(True)
     window.scrollok(False)
@@ -147,43 +149,58 @@ def clear_rows(cattr, start, stop):
             pass
                     
 def redraw():
-    console.redraw_text_screen()
+    backend.redraw_text_screen()
 
 def set_curses_palette():
     global default_colors
-    for back in range(8):
-        for fore in range(8):
-            if back == 0 and fore == 7:
-                pass
-            elif back == 0 and fore < 7:
-                curses.init_pair(back*8+fore+1, default_colors[fore], default_colors[back])
-            else:
-                curses.init_pair(back*8+fore, default_colors[fore], default_colors[back])
-          
-
+    if can_change_palette:
+        for back in range(8):
+            for fore in range(16):
+                curses.init_pair(back*16+fore+1, default_colors[fore], default_colors[back])
+    else:
+        for back in range(8):
+            for fore in range(8):
+                if back == 0 and fore == 7:
+                    # black on white mandatorily mapped on color 0
+                    pass
+                elif back == 0:
+                    curses.init_pair(back*8+fore+1, default_colors[fore], default_colors[back])
+                else:
+                    curses.init_pair(back*8+fore, default_colors[fore], default_colors[back])
+            
 def colours(at):
     back = (at>>4)&0x7
     blink = (at>>7)
     fore = (blink*0x10) + (at&0xf)
-    if back == 0 and fore == 7:
-        cursattr = 0
-    elif back == 0 and fore < 7:
-        cursattr = curses.color_pair(1+(back & 7) *8 + (fore&7))
-    else:    
-        cursattr = curses.color_pair((back & 7) *8 + (fore&7))
+    if can_change_palette:
+        cursattr = curses.color_pair(1 + (back&7)*16 + (fore&15))
+    else:        
+        if back == 0 and fore&7 == 7:
+            cursattr = 0
+        elif back == 0:
+            cursattr = curses.color_pair(1 + (back&7)*8 + (fore&7))
+        else:    
+            cursattr = curses.color_pair((back&7)*8 + (fore&7))
+        if fore&15 > 7:
+            cursattr |= curses.A_BOLD
     if blink:
         cursattr |= curses.A_BLINK
-    if fore > 7:
-        cursattr |= curses.A_BOLD
     return cursattr
 
-
-def update_palette():
-    global palette_changed
-    palette_changed = True
-    redraw()     
-
+def update_palette(new_palette):
+    if can_change_palette:
+        for i in range(len(new_palette)):
+            r, g, b = backend.colours64[new_palette[i]]
+            curses.init_color(default_colors[i], (r*1000)//255, (g*1000)//255, (b*1000)//255)             
+    
+def set_colorburst(on, palette):
+    pass
+    
 ####
+
+def move_cursor(crow, ccol):
+    global cursor_row, cursor_col
+    cursor_row, cursor_col = crow, ccol
 
 def update_cursor_attr(attr):
 #    term.write(esc_set_cursor_colour % get_fg_colourname(attr))
@@ -203,16 +220,15 @@ def build_cursor(width, height, from_line, to_line):
 
 def check_events():
     if cursor_visible:
-        window.move(state.console_state.row-1, state.console_state.col-1)
+        window.move(cursor_row-1, cursor_col-1)
     window.refresh()
     check_keyboard()
     
 def set_attr(cattr):
-    global attr, last_attr, palette_changed
+    global attr, last_attr
     attr = cattr
-    if attr == last_attr and not palette_changed:
+    if attr == last_attr:
         return
-    palette_changed = False    
     last_attr = attr
     window.bkgdset(' ', colours(attr))
 
@@ -233,29 +249,29 @@ def putwc_at(row, col, c, d, for_keys=False):
     except curses.error:
         pass
         
-def scroll(from_line):
+def scroll(from_line, scroll_height, attr):
     window.scrollok(True)
-    window.setscrreg(from_line-1, state.console_state.scroll_height-1)
+    window.setscrreg(from_line-1, scroll_height-1)
     try:
         window.scroll(1)
     except curses.error:
         pass
     window.scrollok(False)
-    window.setscrreg(1, state.console_state.height-1)
-    if state.console_state.row > 1:
-        window.move(state.console_state.row-2, state.console_state.col-1)
+    window.setscrreg(1, height-1)
+    if cursor_row > 1:
+        window.move(cursor_row-2, cursor_col-1)
     
-def scroll_down(from_line):
+def scroll_down(from_line, scroll_height, attr):
     window.scrollok(True)
-    window.setscrreg(from_line-1, state.console_state.scroll_height-1)
+    window.setscrreg(from_line-1, scroll_height-1)
     try:
         window.scroll(-1)
     except curses.error:
         pass
     window.scrollok(False)
-    window.setscrreg(1, state.console_state.height-1)
-    if state.console_state.row < state.console_state.height:
-        window.move(state.console_state.row, state.console_state.col-1)
+    window.setscrreg(1, height-1)
+    if cursor_row < height:
+        window.move(cursor_row, cursor_col-1)
     
 #######
 
@@ -271,10 +287,11 @@ def check_keyboard():
             s += chr(i)
         else:
             if i == curses.KEY_BREAK:
-                raise error.Break()
+                # this is fickle, on many terminals doesn't work
+                backend.insert_special_key('break')
             elif i == curses.KEY_RESIZE:
-                sys.stdout.write(ansi.esc_resize_term % (state.console_state.height, state.console_state.width))
-                window.resize(state.console_state.height, state.console_state.width)
+                sys.stdout.write(ansi.esc_resize_term % (height, width))
+                window.resize(height, width)
                 window.clear()
                 redraw()
             try:
@@ -288,19 +305,23 @@ def check_keyboard():
     c = ''
     for uc in u:                    
         c += uc.encode('utf-8')
-        if c == '\x03':         # ctrl-C
-            raise error.Break() 
+        if c == '\x03':         
+            # send BREAK for ctrl-C
+            backend.insert_special_key('break')
         elif c == '\0':    
             # scancode; go add next char
             continue
         else:
             try:
-                console.insert_key(unicodepage.from_utf8(c))
+                backend.insert_key(unicodepage.from_utf8(c))
             except KeyError:    
-                console.insert_key(c)    
+                backend.insert_key(c)    
         c = ''
         
 ########
+
+def set_page(vpage, apage):
+    pass
 
 def copy_page(src, dst):
     pass

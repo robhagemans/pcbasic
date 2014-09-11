@@ -15,7 +15,7 @@ import program
 import statements 
 import console
 import state
-import on_event
+import backend
 import reset
 import flow
 
@@ -34,7 +34,8 @@ def loop(quit=False):
         if state.basic_state.execute_mode:
             try:
                 # may raise Break
-                on_event.check_events()
+                backend.check_events()
+                handle_basic_events()
                 keep_running = statements.parse_statement()
                 # may raise Break or Error
                 set_execute_mode(keep_running, quit)
@@ -71,7 +72,7 @@ def set_execute_mode(on, quit=False):
     # move pointer to the start of direct line (for both on and off!)
     flow.set_pointer(False, 0)
     state.basic_state.execute_mode = on        
-    console.update_cursor_visibility()
+    backend.update_cursor_visibility()
 
 def execute(line):
     state.basic_state.direct_line = tokenise.tokenise_line(line)    
@@ -118,8 +119,24 @@ def auto_step():
     elif c != '':    
         # it is a command, go and execute    
         set_execute_mode(True)
-    
-#########################
+
+############################
+# event and error handling
+
+def handle_basic_events():
+    """ Jump to user-defined event subs if events triggered. """
+    if state.basic_state.suspend_all_events or not state.basic_state.run_mode:
+        return
+    for event in state.basic_state.all_handlers:
+        if (event.enabled and event.triggered 
+                and not event.stopped and event.gosub != None):
+            # release trigger
+            event.triggered = False
+            # stop this event while handling it 
+            event.stopped = True 
+            # execute 'ON ... GOSUB' subroutine; 
+            # attach handler to allow un-stopping event on RETURN
+            flow.jump_gosub(event.gosub, event)
         
 def handle_error(s, quit):
     error.set_err(s)
@@ -139,7 +156,7 @@ def handle_error(s, quit):
             try:    
                 program.edit(program.get_line_number(s.pos), state.basic_state.bytecode.tell())
             except error.RunError as e:
-                handle_error(e)
+                handle_error(e, quit)
 
 def handle_break(e):
     # print ^C at current position

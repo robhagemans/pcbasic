@@ -31,7 +31,6 @@ import console
 import program
 import state
 import machine
-import sound
 import backend
 import timedate
 
@@ -476,7 +475,7 @@ def value_screen(ins):
     if z and state.console_state.screen_mode:
         return vartypes.null['%']    
     else:
-        return vartypes.pack_int(console.get_screen_char_attr(row, col, z!=0))
+        return vartypes.pack_int(backend.get_screen_char_attr(row, col, z!=0))
     
 def value_input(ins):    # INPUT$
     util.require_read(ins, ('$',))
@@ -499,7 +498,7 @@ def value_input(ins):    # INPUT$
     return vartypes.pack_string(bytearray(word))
     
 def value_inkey(ins):
-    return vartypes.pack_string(bytearray(console.get_char()))
+    return vartypes.pack_string(bytearray(backend.get_char()))
 
 def value_csrlin(ins):
     row, col = state.console_state.row, state.console_state.col 
@@ -667,7 +666,7 @@ def value_play(ins):
     util.range_check(0, 255, voice)
     if not(pcjr_syntax and voice in (1, 2)):
         voice = 0    
-    return vartypes.pack_int(sound.music_queue_length(voice))
+    return vartypes.pack_int(backend.music_queue_length(voice))
     
 #####################################################################
 # error functions
@@ -684,7 +683,7 @@ def value_err(ins):
 def value_pen(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 9, fn)
-    pen = backend.penstick.get_pen(fn)
+    pen = backend.get_pen(fn)
     if pen == None or not state.basic_state.pen_handler.enabled:
         # should return 0 or char pos 1 if PEN not ON    
         pen = 1 if fn >= 6 else 0 
@@ -693,13 +692,13 @@ def value_pen(ins):
 def value_stick(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 3, fn)
-    return vartypes.pack_int(backend.penstick.get_stick(fn))
+    return vartypes.pack_int(backend.get_stick(fn))
     
 def value_strig(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     # 0,1 -> [0][0] 2,3 -> [0][1]  4,5-> [1][0]  6,7 -> [1][1]
     util.range_check(0, 7, fn)
-    return vartypes.bool_to_int_keep(backend.penstick.get_strig(fn))
+    return vartypes.bool_to_int_keep(backend.get_strig(fn))
     
 #########################################################
 # memory and machine

@@ -17,6 +17,7 @@ except ImportError:
     from StringIO import StringIO
 
 import config
+import backend
 import console
 import debug
 import draw_and_play
@@ -37,8 +38,7 @@ import timedate
 import util
 import var
 import vartypes
-import sound
-import on_event
+import backend
 
 def prepare():
     """ Initialise statements module. """
@@ -459,11 +459,11 @@ def exec_on_com(ins):
 # sound
 
 def exec_beep(ins):
-    sound.beep() 
+    backend.beep() 
     # if a syntax error happens, we still beeped.
     util.require(ins, util.end_statement)
     if state.console_state.music_foreground:
-        sound.wait_music(wait_last=False)
+        backend.wait_music(wait_last=False)
     
 def exec_sound(ins):
     # Tandy/PCjr SOUND ON, OFF
@@ -490,21 +490,21 @@ def exec_sound(ins):
             volume, voice = 15, 0                
     util.require(ins, util.end_statement)
     if dur.is_zero():
-        sound.stop_all_sound()
+        backend.stop_all_sound()
         return
     # Tandy only allows frequencies below 37 (but plays them as 110 Hz)    
     if freq != 0:
-        util.range_check(-32768 if sound.pcjr_sound == 'tandy' else 37, 32767, freq) # 32767 is pause
+        util.range_check(-32768 if backend.pcjr_sound == 'tandy' else 37, 32767, freq) # 32767 is pause
     # calculate duration in seconds   
     one_over_44 = fp.Single.from_bytes(bytearray('\x8c\x2e\x3a\x7b')) # 1/44 = 0.02272727248
     dur_sec = dur.to_value()/18.2
     if one_over_44.gt(dur):
         # play indefinitely in background
-        sound.play_sound(freq, dur_sec, loop=True, voice=voice, volume=volume)
+        backend.play_sound(freq, dur_sec, loop=True, voice=voice, volume=volume)
     else:
-        sound.play_sound(freq, dur_sec, voice=voice, volume=volume)
+        backend.play_sound(freq, dur_sec, voice=voice, volume=volume)
         if state.console_state.music_foreground:
-            sound.wait_music(wait_last=False)
+            backend.wait_music(wait_last=False)
     
 def exec_play(ins):
     if state.basic_state.play_handler.command(util.skip_white(ins)):
@@ -539,9 +539,9 @@ def exec_noise(ins):
     one_over_44 = fp.Single.from_bytes(bytearray('\x8c\x2e\x3a\x7b')) # 1/44 = 0.02272727248
     dur_sec = dur.to_value()/18.2
     if one_over_44.gt(dur):
-        sound.play_noise(source, volume, dur_sec, loop=True)
+        backend.play_noise(source, volume, dur_sec, loop=True)
     else:
-        sound.play_noise(source, volume, dur_sec)
+        backend.play_noise(source, volume, dur_sec)
     
  
 ##########################################################
@@ -694,11 +694,11 @@ def exec_shell(ins):
     else:
         cmd = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # force cursor visible in all cases
-    console.show_cursor(True)
+    backend.show_cursor(True)
     # execute cms or open interactive shell
     oslayer.shell(cmd) 
-    # resset cursor visibility to its previous state
-    console.update_cursor_visibility()
+    # reset cursor visibility to its previous state
+    backend.update_cursor_visibility()
     util.require(ins, util.end_statement)
         
 def exec_environ(ins):
@@ -1167,7 +1167,9 @@ def exec_circle(ins):
     util.require_read(ins, (',',))
     r = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
     start, stop, c = None, None, -1
-    aspect = state.console_state.pixel_aspect_ratio
+    aspect = fp.div(
+        fp.Single.from_int(state.console_state.pixel_aspect_ratio[0]), 
+        fp.Single.from_int(state.console_state.pixel_aspect_ratio[1]))
     if util.skip_white_read_if(ins, (',',)):
         cval = expressions.parse_expression(ins, allow_empty=True)
         if cval:
@@ -1591,7 +1593,7 @@ def exec_clear(ins):
                 state.console_state.pcjr_video_mem_size = fp.unpack(vartypes.pass_single_keep(
                                                            expressions.parse_expression(ins, empty_err=2))).round_to_int()
                 # check if we need to drop out of our current mode 
-                console.check_video_memory()                                                           
+                backend.check_video_memory()                                                           
             elif not exp2:
                 raise error.RunError(2)    
     util.require(ins, util.end_statement)
@@ -1927,7 +1929,7 @@ def exec_color(ins):
     util.range_check(0, 255, bord)
     fore = fore_old if fore == None else fore
     # graphics mode bg is always 0; sets palette instead
-    back = back_old if mode == 0 and back == None else (console.get_palette_entry(0) if back == None else back)
+    back = back_old if mode == 0 and back == None else (backend.get_palette_entry(0) if back == None else back)
     if mode == 0:
         util.range_check(0, state.console_state.num_colours-1, fore)
         util.range_check(0, 15, back, bord)
@@ -1938,34 +1940,34 @@ def exec_color(ins):
         util.range_check(0, state.console_state.num_colours-1, back)
         state.console_state.attr = fore
         # in screen 7 and 8, only low intensity palette is used.
-        console.set_palette_entry(0, back % 8)    
+        backend.set_palette_entry(0, back % 8)    
     elif mode == 9:
         util.range_check(0, state.console_state.num_colours-1, fore)
         util.range_check(0, state.console_state.num_palette-1, back)
         state.console_state.attr = fore
-        console.set_palette_entry(0, back)
+        backend.set_palette_entry(0, back)
     
 def exec_color_mode_1(back, pal, override):
-    back = console.get_palette_entry(0) if back == None else back
+    back = backend.get_palette_entry(0) if back == None else back
     if override != None:
         # uses last entry as palette if given
         pal = override
     util.range_check(0, 255, back)
     if pal != None:
         util.range_check(0, 255, pal)
-        palette = console.cga_palettes[pal % 2]
+        palette = backend.cga_palettes[pal % 2]
         palette[0] = back&0xf
         # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
         # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
-        console.set_palette(palette)
+        backend.set_palette(palette)
     else:
-        console.set_palette_entry(0, back & 0xf)        
+        backend.set_palette_entry(0, back & 0xf)        
     
 def exec_palette(ins):
     d = util.skip_white(ins)
     if d in util.end_statement:
         # reset palette
-        console.set_palette()
+        backend.set_palette()
     elif d == '\xD7': # USING
         ins.read(1)
         exec_palette_using(ins)
@@ -1979,12 +1981,12 @@ def exec_palette(ins):
         util.range_check(-1, state.console_state.num_palette-1, pair[1])
         if pair[1] > -1:
             # effective palette change is an error in CGA; ignore in Tandy/PCjr SCREEN 0
-            if console.video_capabilities in ('cga', 'cga_old'):
+            if backend.video_capabilities in ('cga', 'cga_old'):
                 raise error.RunError(5)
-            elif console.video_capabilities in ('tandy', 'pcjr') and state.console_state.screen_mode == 0:
+            elif backend.video_capabilities in ('tandy', 'pcjr') and state.console_state.screen_mode == 0:
                 pass
             else:       
-                console.set_palette_entry(pair[0], pair[1])
+                backend.set_palette_entry(pair[0], pair[1])
         util.require(ins, util.end_statement)    
 
 def exec_palette_using(ins):
@@ -1996,9 +1998,9 @@ def exec_palette_using(ins):
         raise error.RunError(5)    
     if array_name[-1] != '%':
         raise error.RunError(13)
-    if console.video_capabilities in ('cga', 'cga_old'):
+    if backend.video_capabilities in ('cga', 'cga_old'):
         raise error.RunError(5)
-    elif console.video_capabilities in ('tandy', 'pcjr') and state.console_state.screen_mode == 0:
+    elif backend.video_capabilities in ('tandy', 'pcjr') and state.console_state.screen_mode == 0:
         pass
     else:            
         start = var.index_array(start_indices, dimensions)
@@ -2008,8 +2010,8 @@ def exec_palette_using(ins):
         for i in range(num_palette_entries):
             val = vartypes.pass_int_unpack(('%', lst[(start+i)*2:(start+i+1)*2]))
             util.range_check(-1, state.console_state.num_palette-1, val)
-            new_palette.append(val if val > -1 else console.get_palette_entry(i))
-        console.set_palette(new_palette)
+            new_palette.append(val if val > -1 else backend.get_palette_entry(i))
+        backend.set_palette(new_palette)
     util.require(ins, util.end_statement) 
 
 def exec_key(ins):
@@ -2053,7 +2055,7 @@ def exec_key_define(ins):
     text = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # only length-2 expressions can be assigned to KEYs over 10
     # (in which case it's a key scancode definition, which is not implemented)
-    if keynum <= on_event.num_fn_keys:
+    if keynum <= backend.num_fn_keys:
         state.console_state.key_replace[keynum-1] = str(text)
         if state.console_state.keys_visible:
             console.show_keys(True)
@@ -2061,7 +2063,7 @@ def exec_key_define(ins):
         if len(text) != 2:
             raise error.RunError(5)
         # can't redefine scancodes for keys 1-14 (pc) 1-16 (tandy)
-        if keynum > on_event.num_fn_keys + 4 and keynum <= 20:    
+        if keynum > backend.num_fn_keys + 4 and keynum <= 20:    
             state.basic_state.event_keys[keynum-1] = str(text)
     
 def exec_locate(ins):
@@ -2087,14 +2089,14 @@ def exec_locate(ins):
         util.range_check(0, (255 if pcjr_syntax else 1), cursor)   
         # set cursor visibility - this should set the flag but have no effect in graphics modes
         state.console_state.cursor = (cursor != 0)
-        console.update_cursor_visibility()
+        backend.update_cursor_visibility()
     if stop == None:
         stop = start
     if start != None:    
         util.range_check(0, 31, start, stop)
         # cursor shape only has an effect in text mode    
         if state.console_state.screen_mode == 0:    
-            console.set_cursor_shape(start, stop)
+            backend.set_cursor_shape(start, stop)
 
 def exec_write(ins, output=None):
     """ WRITE: Output machine-readable expressions to the screen or a file. """
@@ -2283,8 +2285,15 @@ def exec_screen(ins):
     # if the parameters are outside narrow ranges (e.g. not implemented screen mode, pagenum beyond max)
     # then the error is only raised after changing the palette.
     util.require(ins, util.end_statement)        
-    if not console.screen(mode, colorswitch, apagenum, vpagenum, erase):
-        raise error.RunError(5)
+    # decide whether to redraw the screen    
+    do_redraw = ((mode != state.console_state.screen_mode) or 
+                 (colorswitch != state.console_state.colorswitch))
+    if do_redraw:             
+        if not backend.screen(mode, colorswitch, apagenum, vpagenum, erase):
+            raise error.RunError(5)
+        console.init_mode()    
+    else:
+        backend.set_page(vpagenum, apagenum)
     
 def exec_pcopy(ins):
     src = vartypes.pass_int_unpack(expressions.parse_expression(ins))
@@ -2293,7 +2302,7 @@ def exec_pcopy(ins):
     dst = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
     util.range_check(0, state.console_state.num_pages-1, dst)
-    console.copy_page(src, dst)
+    backend.copy_page(src, dst)
         
         
 prepare()

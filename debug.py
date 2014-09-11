@@ -15,7 +15,6 @@ import traceback
 
 import config
 import logging
-import machine
 import state
 import vartypes
 import representation
