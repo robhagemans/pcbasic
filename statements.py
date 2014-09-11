@@ -1167,7 +1167,9 @@ def exec_circle(ins):
     util.require_read(ins, (',',))
     r = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
     start, stop, c = None, None, -1
-    aspect = state.console_state.pixel_aspect_ratio
+    aspect = fp.div(
+        fp.Single.from_int(state.console_state.pixel_aspect_ratio[0]), 
+        fp.Single.from_int(state.console_state.pixel_aspect_ratio[1]))
     if util.skip_white_read_if(ins, (',',)):
         cval = expressions.parse_expression(ins, allow_empty=True)
         if cval:
@@ -1591,7 +1593,7 @@ def exec_clear(ins):
                 state.console_state.pcjr_video_mem_size = fp.unpack(vartypes.pass_single_keep(
                                                            expressions.parse_expression(ins, empty_err=2))).round_to_int()
                 # check if we need to drop out of our current mode 
-                console.check_video_memory()                                                           
+                backend.check_video_memory()                                                           
             elif not exp2:
                 raise error.RunError(2)    
     util.require(ins, util.end_statement)
@@ -1979,9 +1981,9 @@ def exec_palette(ins):
         util.range_check(-1, state.console_state.num_palette-1, pair[1])
         if pair[1] > -1:
             # effective palette change is an error in CGA; ignore in Tandy/PCjr SCREEN 0
-            if console.video_capabilities in ('cga', 'cga_old'):
+            if backend.video_capabilities in ('cga', 'cga_old'):
                 raise error.RunError(5)
-            elif console.video_capabilities in ('tandy', 'pcjr') and state.console_state.screen_mode == 0:
+            elif backend.video_capabilities in ('tandy', 'pcjr') and state.console_state.screen_mode == 0:
                 pass
             else:       
                 backend.set_palette_entry(pair[0], pair[1])
@@ -1996,9 +1998,9 @@ def exec_palette_using(ins):
         raise error.RunError(5)    
     if array_name[-1] != '%':
         raise error.RunError(13)
-    if console.video_capabilities in ('cga', 'cga_old'):
+    if backend.video_capabilities in ('cga', 'cga_old'):
         raise error.RunError(5)
-    elif console.video_capabilities in ('tandy', 'pcjr') and state.console_state.screen_mode == 0:
+    elif backend.video_capabilities in ('tandy', 'pcjr') and state.console_state.screen_mode == 0:
         pass
     else:            
         start = var.index_array(start_indices, dimensions)
@@ -2283,8 +2285,9 @@ def exec_screen(ins):
     # if the parameters are outside narrow ranges (e.g. not implemented screen mode, pagenum beyond max)
     # then the error is only raised after changing the palette.
     util.require(ins, util.end_statement)        
-    if not console.screen(mode, colorswitch, apagenum, vpagenum, erase):
+    if not backend.screen(mode, colorswitch, apagenum, vpagenum, erase):
         raise error.RunError(5)
+    console.init_mode()    
     
 def exec_pcopy(ins):
     src = vartypes.pass_int_unpack(expressions.parse_expression(ins))

@@ -114,6 +114,53 @@ state.console_state.pen_is_on = False
 state.console_state.stick_is_on = False
 
 #############################################
+# video modes
+
+# ega, tandy, pcjr
+video_capabilities = 'ega'
+# video memory size - currently only used by tandy/pcjr
+state.console_state.pcjr_video_mem_size = 16384
+# default is EGA 64K
+#state.console_state.video_mem_size = 65536
+# SCREEN mode (0 is textmode)
+state.console_state.screen_mode = 0
+# number of active page
+state.console_state.apagenum = 0
+# number of visible page
+state.console_state.vpagenum = 0
+# number of columns, counting 1..width
+state.console_state.width = 80
+# number of rows, counting 1..height
+state.console_state.height = 25
+
+#  font_height, attr, num_colours, num_palette, width, num_pages, bitsperpixel, 
+#   font_width, supports_artifacts, cursor_index
+mode_data_default = {
+    # height 8, 14, or 16; font width 8 or 9; height 40 or 80 
+    0: (16,  7, 32, 64, 80, 4, 4, 8, False, None), 
+    # 04h 320x200x4  16384B 2bpp 0xb8000 tandy:2 pages if 32k memory; ega: 1 page only 
+    1: ( 8,  3,  4, 16, 40, 1, 2, 8, False, None),
+    # 06h 640x200x2  16384B 1bpp 0xb8000 
+    2: ( 8,  1,  2, 16, 80, 1, 1, 8, True, None), 
+    # 08h 160x200x16 16384B 4bpp 0xb8000
+    3: ( 8, 15, 16, 16, 20, 2, 4, 8, False, 3), 
+    #     320x200x4  16384B 2bpp 0xb8000   
+    4: ( 8,  3,  4, 16, 40, 2, 2, 8, False, 3), 
+    # 09h 320x200x16 32768B 4bpp 0xb8000    
+    5: ( 8, 15, 16, 16, 40, 1, 4, 8, False, 3), 
+    # 0Ah 640x200x4  32768B 2bpp 0xb8000   
+    6: ( 8,  3,  4, 16, 80, 1, 2, 8, False, 3), 
+    # 0Dh 320x200x16 32768B 4bpp 0xa0000
+    7: ( 8, 15, 16, 16, 40, 8, 4, 8, False, None), 
+    # 0Eh 640x200x16 
+    8: ( 8, 15, 16, 16, 80, 4, 4, 8, False, None), 
+    # 10h 640x350x16 
+    9: (14, 15, 16, 64, 80, 2, 4, 8, False, None), 
+    }
+mode_0_8bit = (8, 7, 32, 16, 80, 4, 4, 8, False, None)
+mode_data = {}
+
+#############################################
 # palette
 
 # CGA colours
@@ -203,6 +250,9 @@ def prepare():
         cga_palette_5 = cga_palette_5_lo
         cga_palettes = [cga_palette_0, cga_palette_1]
     composite_monitor = config.options['composite']
+    # copy the mode data list
+    for mode in mode_data_default:
+        mode_data[mode] = mode_data_default[mode]
     # pcjr/tandy sound
     pcjr_sound = config.options['pcjr_syntax']
     # tandy has SOUND ON by default, pcjr has it OFF
@@ -217,13 +267,68 @@ def prepare():
            
 def init_video():
     """ Initialise the video backend. """
-    global video
+    global video, mode_data
     if not video or not video.init():
         return False
     # only allow the screen modes that the given machine supports
+    # reset modes in case init is called a second time for error fallback
+    for mode in mode_data_default:
+        mode_data[mode] = mode_data_default[mode]
+    # only allow the screen modes that the given machine supports
+    if video_capabilities in ('pcjr', 'tandy'):
+        # no EGA modes (though apparently there were Tandy machines with EGA)
+        unavailable_modes = [7, 8, 9]
+        # 8-pixel characters, 16 colours in screen 0
+        mode_data[0] = mode0_8bit
+        # TODO: determine the number of pages based on video memory size 
+    elif video_capabilities in ('cga', 'cga_old'):
+        unavailable_modes = [3, 4, 5, 6, 7, 8, 9]
+        # 8-pixel characters, 16 colours in screen 0
+        mode_data[0] = mode0_8bit
+    else:
+        # EGA
+        # no PCjr modes
+        unavailable_modes = [3, 4, 5, 6]
+    for mode in unavailable_modes:
+        del mode_data[mode]
+    # text mode backends: delete all graphics modes    
+    # reload the screen in resumed state
     if state.loaded:
+        mode_info = list(mode_data[state.console_state.screen_mode])
+        mode_info[4] = state.console_state.width    
+        mode_info[1] = state.console_state.attr
         # without this the palette is not prepared when resuming
         video.update_palette(state.console_state.palette)
+        # set up the appropriate screen resolution
+        if (state.console_state.screen_mode == 0 or 
+                video.supports_graphics_mode(mode_info)):
+            # set the visible and active pages
+            video.set_page(state.console_state.vpagenum, 
+                           state.console_state.apagenum)
+            # set the screen mde
+            video.init_screen_mode(mode_info, 
+                                   state.console_state.screen_mode==0)
+            # fix the cursor
+            video.build_cursor(
+                state.console_state.cursor_width, 
+                state.console_state.font_height, 
+                state.console_state.cursor_from, state.console_state.cursor_to)    
+            video.move_cursor(state.console_state.row, state.console_state.col)
+            video.update_cursor_attr(
+                    state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
+            update_cursor_visibility()
+        else:
+            # mode not supported by backend
+            logging.error(
+                "Resumed screen mode %d not supported by this interface.", 
+                state.console_state.screen_mode)
+            # fix the terminal
+            video.close()
+            return False
+        # load the screen contents from storage
+        video.load_state()
+    else:        
+        screen(None, None, None, None, first_run=True)
     return True
     
 def init_audio():
@@ -263,6 +368,164 @@ def check_events():
         check_play_event()
         check_com_events()
         # KEY, PEN and STRIG are triggered on handling the queue
+
+##############################
+# video mode
+
+def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, 
+           erase=1, first_run=False, new_width=None):
+    """ Change the video mode, colourburst, visible or active page. """
+    # set default arguments
+    if new_mode == None:
+        new_mode = state.console_state.screen_mode
+    if new_colorswitch == None:    
+        new_colorswitch = state.console_state.colorswitch 
+    else:
+        new_colorswitch = (new_colorswitch != 0)
+    if new_vpagenum == None:    
+        new_vpagenum = state.console_state.vpagenum 
+    if new_apagenum == None:
+        new_apagenum = state.console_state.apagenum
+    # decide whether to redraw the screen    
+    do_redraw = ((new_mode != state.console_state.screen_mode) or 
+                 (new_colorswitch != state.console_state.colorswitch) or
+                 first_run or 
+                 (new_width and new_width != state.console_state.width))
+    # TODO: implement erase level (Tandy/pcjr)
+    # Erase tells basic how much video memory to erase
+    # 0: do not erase video memory
+    # 1: (default) erase old and new page if screen or bust changes
+    # 2: erase all video memory if screen or bust changes 
+    try:
+        info = list(mode_data[new_mode])
+    except KeyError:
+        # no such mode
+        info = None
+    # vpage and apage nums are persistent on mode switch
+    # if the new mode has fewer pages than current vpage/apage, 
+    # illegal fn call before anything happens.
+    if (not info or new_apagenum >= info[5] or new_vpagenum >= info[5] or 
+            (new_mode != 0 and 
+            not video.supports_graphics_mode(info))):
+        # reset palette happens 
+        # even if the function fails with Illegal Function Call
+        set_palette()
+        return False
+    # switch modes if needed
+    if do_redraw:
+        # width persists on change to screen 0
+        if new_mode == 0 and new_width == None:
+            new_width = state.console_state.width 
+            if new_width == 20:
+                new_width = 40
+        if new_width != None:
+            info[4] = new_width    
+        if (state.console_state.screen_mode == 0 and new_mode == 0 
+                and state.console_state.apagenum == new_apagenum 
+                and state.console_state.vpagenum == new_vpagenum):
+            info[1] = state.console_state.attr              
+        # set all state vars
+        state.console_state.screen_mode = new_mode
+        state.console_state.colorswitch = new_colorswitch 
+        state.console_state.height = 25
+        (   state.console_state.font_height, state.console_state.attr, 
+            state.console_state.num_colours, state.console_state.num_palette, 
+            state.console_state.width, state.console_state.num_pages, 
+            state.console_state.bitsperpixel, state.console_state.font_width, 
+            _, _ ) = info  
+        # build the screen buffer    
+        state.console_state.pages = []
+        for _ in range(state.console_state.num_pages):
+            state.console_state.pages.append(
+                    ScreenBuffer(state.console_state.attr, 
+                        state.console_state.width, state.console_state.height))
+        # set active page & visible page, counting from 0. 
+        state.console_state.vpagenum = new_vpagenum
+        state.console_state.apagenum = new_apagenum
+        state.console_state.vpage = state.console_state.pages[new_vpagenum]
+        state.console_state.apage = state.console_state.pages[new_apagenum]
+        video.set_page(new_vpagenum, new_apagenum)
+        # resolution
+        state.console_state.size = (
+            state.console_state.width * state.console_state.font_width,          
+            state.console_state.height * state.console_state.font_height)
+        # centre of new graphics screen
+        state.console_state.last_point = (
+            state.console_state.size[0]/2, state.console_state.size[1]/2)
+        # assumed aspect ratio for CIRCLE    
+        if video_capabilities in ('pcjr', 'tandy'):
+            if new_mode in (2,6):
+                 state.console_state.pixel_aspect_ratio = 48, 100
+            elif new_mode in (1,4,5):
+                 state.console_state.pixel_aspect_ratio = 96, 100
+            elif new_mode == 3:
+                 state.console_state.pixel_aspect_ratio = 1968, 1000
+        else:    
+            # pixels e.g. 80*8 x 25*14, screen ratio 4x3 
+            # makes for pixel width/height (4/3)*(25*14/8*80)
+            # graphic screens always have 8-pixel widths (can be 9 on text)
+            state.console_state.pixel_aspect_ratio = (
+                state.console_state.height * state.console_state.font_height,
+                6 * state.console_state.width)
+        state.console_state.cursor_width = state.console_state.font_width        
+        # signal the backend to change the screen resolution
+        video.init_screen_mode(info, state.console_state.screen_mode == 0)
+        # set the palette (essential on first run, or not all globals defined)
+        set_palette()
+        # in screen 0, 1, set colorburst (not in SCREEN 2!)
+        if new_mode in (0, 1):
+            set_colorburst(new_colorswitch)
+        elif new_mode == 2:
+            set_colorburst(False)    
+    else:
+        # set active page & visible page, counting from 0. 
+        state.console_state.vpagenum = new_vpagenum
+        state.console_state.apagenum = new_apagenum
+        state.console_state.vpage = state.console_state.pages[new_vpagenum]
+        state.console_state.apage = state.console_state.pages[new_apagenum]
+        video.set_page(new_vpagenum, new_apagenum)
+    return True
+
+def set_width(to_width):
+    """ Set the character width of the screen. """
+    # raise an error if the width value doesn't make sense
+    if to_width not in (20, 40, 80):
+        return False
+    if to_width == state.console_state.width:
+        return True
+    if to_width == 20:
+        return screen(3, None, None, None)
+    elif state.console_state.screen_mode == 0:
+        return screen(0, None, None, None, new_width=to_width) 
+    elif state.console_state.screen_mode == 1 and to_width == 80:
+        return screen(2, None, None, None)
+    elif state.console_state.screen_mode == 2 and to_width == 40:
+        return screen(1, None, None, None)
+    elif state.console_state.screen_mode == 3 and to_width == 40:
+        return screen(1, None, None, None)
+    elif state.console_state.screen_mode == 3 and to_width == 80:
+        return screen(2, None, None, None)
+    elif state.console_state.screen_mode == 4 and to_width == 80:
+        return screen(2, None, None, None)
+    elif state.console_state.screen_mode == 5 and to_width == 80:
+        return screen(6, None, None, None)
+    elif state.console_state.screen_mode == 6 and to_width == 40:
+        return screen(5, None, None, None)
+    elif state.console_state.screen_mode == 7 and to_width == 80:
+        return screen(8, None, None, None)
+    elif state.console_state.screen_mode == 8 and to_width == 40:
+        return screen(7, None, None, None)
+    elif state.console_state.screen_mode == 9 and to_width == 40:
+        return screen(7, None, None, None)
+
+def check_video_memory():
+    """ Raise an error if not enough video memory for this state. """
+    # video memory size check for SCREENs 5 and 6: 
+    # (pcjr/tandy only; this is a bit of a hack as is) 
+    # (32753 determined experimentally on DOSBox)
+    if (state.console_state.screen_mode in (5, 6) and 
+            state.console_state.pcjr_video_mem_size < 32753):
+        screen (0, None, None, None)
 
 ##############################
 # screen buffer read/write

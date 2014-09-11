@@ -16,8 +16,6 @@ import state
 import backend
 # for Break, Exit, Reset
 import error
-# for aspect ratio
-import fp
 # for dbcs
 import unicodepage
 
@@ -39,11 +37,6 @@ keys_line_replace_chars = {
 # KEY ON?
 state.console_state.keys_visible = True
 
-# number of columns, counting 1..width
-state.console_state.width = 80
-# number of rows, counting 1..height
-state.console_state.height = 25
-
 # viewport parameters
 state.console_state.view_start = 1
 state.console_state.scroll_height = 24
@@ -62,248 +55,34 @@ state.console_state.overflow = False
 # overwrite mode (instead of insert)
 state.console_state.overwrite_mode = True
 
-
-# for SCREEN
-
-#  font_height, attr, num_colours, num_palette, width, num_pages, bitsperpixel, 
-#   font_width, supports_artifacts, cursor_index
-mode_data_default = {
-    0: (16,  7, 32, 64, 80, 4, 4, 8, False, None), # height 8, 14, or 16; font width 8 or 9; height 40 or 80 
-    1: ( 8,  3,  4, 16, 40, 1, 2, 8, False, None), # 04h 320x200x4  16384B 2bpp 0xb8000 tandy:2 pages if 32k memory; ega: 1 page only 
-    2: ( 8,  1,  2, 16, 80, 1, 1, 8, True, None), # 06h 640x200x2  16384B 1bpp 0xb8000
-    3: ( 8, 15, 16, 16, 20, 2, 4, 8, False, 3), # 08h 160x200x16 16384B 4bpp 0xb8000
-    4: ( 8,  3,  4, 16, 40, 2, 2, 8, False, 3), #     320x200x4  16384B 2bpp 0xb8000   
-    5: ( 8, 15, 16, 16, 40, 1, 4, 8, False, 3), # 09h 320x200x16 32768B 4bpp 0xb8000    
-    6: ( 8,  3,  4, 16, 80, 1, 2, 8, False, 3), # 0Ah 640x200x4  32768B 2bpp 0xb8000   
-    7: ( 8, 15, 16, 16, 40, 8, 4, 8, False, None), # 0Dh 320x200x16 32768B 4bpp 0xa0000
-    8: ( 8, 15, 16, 16, 80, 4, 4, 8, False, None), # 0Eh 640x200x16 
-    9: (14, 15, 16, 64, 80, 2, 4, 8, False, None), # 10h 640x350x16 
-    }
-mode_data = {}
-
-# ega, tandy, pcjr
-video_capabilities = 'ega'
-# video memory size - currently only used by tandy/pcjr (would be bigger for EGA systems anyway)
-state.console_state.pcjr_video_mem_size = 16384
-# default is EGA 64K
-state.console_state.video_mem_size = 65536
-# SCREEN mode (0 is textmode)
-state.console_state.screen_mode = 0
-# number of active page
-state.console_state.apagenum = 0
-# number of visible page
-state.console_state.vpagenum = 0
-
-
-
-        
 #############################
 # init
 
 def prepare():
     """ Initialise console module. """
-    global video_capabilities, composite_monitor
-    if config.options['video']:
-        video_capabilities = config.options['video']
-    composite_monitor = config.options['composite']
     if config.options['run']:
         state.console_state.keys_visible = False
-    for mode in mode_data_default:
-        mode_data[mode] = mode_data_default[mode]
     
-def init():
-    global mode_data
-    # reset modes in case init is called a second time for error fallback
-    for mode in mode_data_default:
-        mode_data[mode] = mode_data_default[mode]
-    # only allow the screen modes that the given machine supports
-    if video_capabilities in ('pcjr', 'tandy'):
-        # no EGA modes (though apparently there were Tandy machines with EGA cards too)
-        unavailable_modes = [7, 8, 9]
-        # 8-pixel characters, 16 colours in screen 0
-        mode_data[0] = (8, 7, 32, 16, 80, 4, 4, 8, False, None) 
-        # TODO: determine the number of pages based on video memory size, not hard coded. 
-    elif video_capabilities in ('cga', 'cga_old'):
-        unavailable_modes = [3, 4, 5, 6, 7, 8, 9]
-        # 8-pixel characters, 16 colours in screen 0
-        mode_data[0] = (8, 7, 32, 16, 80, 4, 4, 8, False, None) 
-    else:
-        # EGA
-        # no PCjr modes
-        unavailable_modes = [3, 4, 5, 6]
-    for mode in unavailable_modes:
-        del mode_data[mode]
-    # text mode backends: delete all graphics modes    
-    # reload the screen in resumed state
-    if state.loaded:
-        mode_info = list(mode_data[state.console_state.screen_mode])
-        mode_info[4] = state.console_state.width    
-        mode_info[1] = state.console_state.attr
-        # set up the appropriate screen resolution
-        if (state.console_state.screen_mode == 0 or 
-                backend.video.supports_graphics_mode(mode_info)):
-            # set the visible and active pages
-            backend.video.set_page(state.console_state.vpagenum, 
-                                   state.console_state.apagenum)
-            # set the screen mde
-            backend.video.init_screen_mode(mode_info, state.console_state.screen_mode==0)
-            # fix the cursor
-            backend.video.build_cursor(state.console_state.cursor_width, state.console_state.font_height, 
-                state.console_state.cursor_from, state.console_state.cursor_to)    
-            backend.video.move_cursor(state.console_state.row,state. console_state.col)
-            backend.video.update_cursor_attr(
-                    state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
-            backend.update_cursor_visibility()
-        else:
-            # mode not supported by backend
-            logging.error("Resumed screen mode %d not supported by this interface.",  state.console_state.screen_mode)
-            # fix the terminal
-            backend.video.close()
-            return False
-        # load the screen contents from storage
-        backend.video.load_state()
-    else:        
-        screen(None, None, None, None, first_run=True)
-    return True
-
-def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first_run=False, new_width=None):
-    new_mode = state.console_state.screen_mode if new_mode == None else new_mode
-    new_colorswitch = state.console_state.colorswitch if new_colorswitch == None else (new_colorswitch != 0)
-    new_vpagenum = state.console_state.vpagenum if new_vpagenum == None else new_vpagenum
-    new_apagenum = state.console_state.apagenum if new_apagenum == None else new_apagenum
-    do_redraw = (   (new_mode != state.console_state.screen_mode) or (new_colorswitch != state.console_state.colorswitch) 
-                    or first_run or (new_width and new_width != state.console_state.width) )
-    # TODO: implement erase level (Tandy/pcjr)
-    # Erase tells basic how much video memory to erase
-    # 0: do not erase video memory
-    # 1: (default) erase old and new page if screen or bust changes
-    # 2: erase all video memory if screen or bust changes 
-    # video memory size check for SCREENs 5 and 6: (pcjr/tandy only; this is a bit of a hack as is) 
-    # (32753 determined experimentally on DOSBox)
-    if new_mode in (5, 6) and state.console_state.pcjr_video_mem_size < 32753:
-        raise error.RunError(5)
-    try:
-        info = list(mode_data[new_mode])
-    except KeyError:
-        # no such mode
-        info = None
-    # and not backend.video.supports_mode(info)
-    # vpage and apage nums are persistent on mode switch
-    # if the new mode has fewer pages than current vpage/apage, illegal fn call before anything happens.
-    if (not info or new_apagenum >= info[5] or new_vpagenum >= info[5] or 
-            (new_mode != 0 and not backend.video.supports_graphics_mode(info))):
-        # reset palette happens even if the function fails with Illegal Function Call
-        backend.set_palette()
-        return False
-    # switch modes if needed
-    if do_redraw:
-        # width persists on change to screen 0
-        if new_mode == 0 and new_width == None:
-            new_width = state.console_state.width 
-            if new_width == 20:
-                new_width = 40
-        if new_width != None:
-            info[4] = new_width    
-        if (state.console_state.screen_mode == 0 and new_mode == 0 
-                and state.console_state.apagenum == new_apagenum and state.console_state.vpagenum == new_vpagenum):
-            info[1] = state.console_state.attr              
-        # set all state vars
-        state.console_state.screen_mode, state.console_state.colorswitch = new_mode, new_colorswitch 
-        state.console_state.height = 25
-        (   state.console_state.font_height, state.console_state.attr, 
-            state.console_state.num_colours, state.console_state.num_palette, state.console_state.width, 
-            state.console_state.num_pages, state.console_state.bitsperpixel, state.console_state.font_width, _, _ ) = info  
-        state.console_state.pages = []
-        for _ in range(state.console_state.num_pages):
-            state.console_state.pages.append(
-                    backend.ScreenBuffer(state.console_state.attr, 
-                        state.console_state.width, state.console_state.height))
-        # set active page & visible page, counting from 0. 
-        state.console_state.vpagenum, state.console_state.apagenum = new_vpagenum, new_apagenum
-        state.console_state.vpage = state.console_state.pages[state.console_state.vpagenum]
-        state.console_state.apage = state.console_state.pages[state.console_state.apagenum]
-        backend.video.set_page(new_vpagenum, new_apagenum)
-        # resolution
-        state.console_state.size = (state.console_state.width*state.console_state.font_width,          
-                                         state.console_state.height*state.console_state.font_height)
-        # centre of new graphics screen
-        state.console_state.last_point = (state.console_state.size[0]/2, state.console_state.size[1]/2)
-        if video_capabilities in ('pcjr', 'tandy'):
-            if new_mode in (2,6):
-                 state.console_state.pixel_aspect_ratio = fp.div(fp.Single.from_int(48), fp.Single.from_int(100))       
-            elif new_mode in (1,4,5):
-                 state.console_state.pixel_aspect_ratio = fp.div(fp.Single.from_int(96), fp.Single.from_int(100))       
-            elif new_mode == 3:
-                 state.console_state.pixel_aspect_ratio = fp.div(fp.Single.from_int(1968), fp.Single.from_int(1000))       
-        else:    
-            # pixels e.g. 80*8 x 25*14, screen ratio 4x3 makes for pixel width/height (4/3)*(25*14/8*80)
-            # graphic screens always have 8-pixel widths (can be 9 on text)
-            state.console_state.pixel_aspect_ratio = fp.div(
-                fp.Single.from_int(state.console_state.height*state.console_state.font_height), 
-                fp.Single.from_int(6*state.console_state.width)) 
-        state.console_state.cursor_width = state.console_state.font_width        
-        # signal the backend to change the screen resolution
-        backend.video.init_screen_mode(info, state.console_state.screen_mode==0)
-        # set the palette (essential on first run, or not all globals are defined)
-        backend.set_palette()
-        # only redraw keys if screen has been cleared (any colours stay the same). state.console_state.screen_mode must be set for this
-        if state.console_state.keys_visible:  
-            show_keys(True)
-        # rebuild build the cursor; first move to home in case the screen has shrunk
-        set_pos(1, 1)
-        set_default_cursor()
-        backend.update_cursor_visibility()
-        # there is only one VIEW PRINT setting across all pages.
-        unset_view()
-        # in screen 0, 1, set colorburst (not in SCREEN 2!)
-        if new_mode in (0, 1):
-            backend.set_colorburst(new_colorswitch)
-        elif new_mode == 2:
-            backend.set_colorburst(False)    
-    else:
-        # set active page & visible page, counting from 0. 
-        state.console_state.vpagenum, state.console_state.apagenum = new_vpagenum, new_apagenum
-        state.console_state.vpage = state.console_state.pages[state.console_state.vpagenum]
-        state.console_state.apage = state.console_state.pages[state.console_state.apagenum]
-        backend.video.set_page(new_vpagenum, new_apagenum)
-    return True
+def init_mode():
+    """ Initialisation when we switched to new screen mode. """
+    # only redraw keys if screen has been cleared 
+    # (any colours stay the same). s.c_s.screen_mode must be set for this
+    if state.console_state.keys_visible:  
+        show_keys(True)
+    # rebuild build the cursor; 
+    # first move to home in case the screen has shrunk
+    set_pos(1, 1)
+    set_default_cursor()
+    backend.update_cursor_visibility()
+    # there is only one VIEW PRINT setting across all pages.
+    unset_view()
 
 def set_width(to_width):
-    # raise an error if the width value doesn't make sense
-    if to_width not in (20, 40, 80):
+    """ Change the width of the screen. """
+    if not backend.set_width(to_width):
         return False
-    if to_width == state.console_state.width:
-        return True
-    if to_width == 20:
-        return screen(3, None, None, None)
-    elif state.console_state.screen_mode == 0:
-        return screen(0, None, None, None, new_width=to_width) 
-    elif state.console_state.screen_mode == 1 and to_width == 80:
-        return screen(2, None, None, None)
-    elif state.console_state.screen_mode == 2 and to_width == 40:
-        return screen(1, None, None, None)
-    elif state.console_state.screen_mode == 3 and to_width == 40:
-        return screen(1, None, None, None)
-    elif state.console_state.screen_mode == 3 and to_width == 80:
-        return screen(2, None, None, None)
-    elif state.console_state.screen_mode == 4 and to_width == 80:
-        return screen(2, None, None, None)
-    elif state.console_state.screen_mode == 5 and to_width == 80:
-        return screen(6, None, None, None)
-    elif state.console_state.screen_mode == 6 and to_width == 40:
-        return screen(5, None, None, None)
-    elif state.console_state.screen_mode == 7 and to_width == 80:
-        return screen(8, None, None, None)
-    elif state.console_state.screen_mode == 8 and to_width == 40:
-        return screen(7, None, None, None)
-    elif state.console_state.screen_mode == 9 and to_width == 40:
-        return screen(7, None, None, None)
-
-def check_video_memory():
-    if state.console_state.screen_mode in (5, 6) and state.console_state.pcjr_video_mem_size < 32753:
-        screen (0, None, None, None)
-
-
+    init_mode()
+    return True
 
 ############################### 
 # interactive mode         
@@ -918,7 +697,7 @@ def unset_view():
 
 def clear_view():
     """ Clear the scroll area. """
-    if video_capabilities in ('ega', 'cga', 'cga_old'):
+    if backend.video_capabilities in ('ega', 'cga', 'cga_old'):
         # keep background, set foreground to 7
         attr_save = state.console_state.attr
         state.console_state.attr = state.console_state.attr & 0x70 | 0x7
@@ -935,7 +714,7 @@ def clear_view():
     backend.video.clear_rows(state.console_state.attr, 
                              state.console_state.view_start, last_row)
     backend.video.move_cursor(state.console_state.row, state.console_state.col)
-    if video_capabilities in ('ega', 'cga', 'cga_old'):
+    if backend.video_capabilities in ('ega', 'cga', 'cga_old'):
         # restore attr
         state.console_state.attr = attr_save
     
