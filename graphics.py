@@ -15,7 +15,6 @@ import vartypes
 import state
 import util
 import backend
-import var
 
 # real state variables
 state.console_state.graph_view_set = False
@@ -579,7 +578,7 @@ operations = {
      
 def set_area(x0,y0, array, operation_char):
     # array must exist at this point (or PUT would have raised error 5)       
-    if backend.video.fast_put(x0, y0, array, var.arrays[array][2], operation_char):
+    if backend.video.fast_put(x0, y0, array, state.basic_state.arrays[array][2], operation_char):
         return
     try:
         _, byte_array, _ = state.basic_state.arrays[array]
@@ -702,7 +701,7 @@ def get_area(x0,y0,x1,y1, array):
             mask = 0x80
     # store a copy in the fast-put store
     # arrays[array] must exist at this point (or GET would have raised error 5)
-    backend.video.fast_get(x0, y0, x1, y1, array, var.arrays[array][2])
+    backend.video.fast_get(x0, y0, x1, y1, array, state.basic_state.arrays[array][2])
     
 ## VIEW    
     
