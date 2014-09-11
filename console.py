@@ -227,10 +227,12 @@ def set_overwrite_mode(new_overwrite=True):
 
 def set_default_cursor():
     if state.console_state.overwrite_mode:
-        if state.console_state.screen_mode != 0:
+        if state.console_state.screen_mode != 0: 
             backend.set_cursor_shape(0, state.console_state.font_height-1)
-        else:
+        elif backend.video_capabilities == 'ega':
             backend.set_cursor_shape(state.console_state.font_height-2, state.console_state.font_height-2)
+        else:
+            backend.set_cursor_shape(state.console_state.font_height-1, state.console_state.font_height-1)
     else:
         backend.set_cursor_shape(state.console_state.font_height/2, state.console_state.font_height-1)
       
