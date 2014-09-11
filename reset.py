@@ -15,7 +15,6 @@ import var
 import rnd
 import iolayer
 import state
-import on_event
 import backend
 
 # CLEAR
@@ -42,7 +41,7 @@ def clear(close_files=False, preserve_common=False, preserve_all=False, preserve
     #   Resets STRIG to off
     state.console_state.stick_is_on = False
     # disable all event trapping (resets PEN to OFF too)
-    on_event.reset_events()
+    backend.reset_events()
     # CLEAR also dumps for_next and while_wend stacks
     state.basic_state.for_next_stack = []
     state.basic_state.while_wend_stack = []

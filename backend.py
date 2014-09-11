@@ -104,6 +104,7 @@ output_echos = []
 def prepare():
     """ Initialise backend module. """
     global pcjr_sound, ignore_caps, egacursor
+    global num_fn_keys
     if config.options['capture_caps']:
         ignore_caps = False
     # inserted keystrokes
@@ -118,6 +119,13 @@ def prepare():
     pcjr_sound = config.options['pcjr_syntax']
     # tandy has SOUND ON by default, pcjr has it OFF
     state.console_state.sound_on = (pcjr_sound == 'tandy')
+    # function keys: F1-F12 for tandy, F1-F10 for gwbasic and pcjr
+    if config.options['pcjr_syntax'] == 'tandy':
+        num_fn_keys = 12
+    else:
+        num_fn_keys = 10
+    # initialise event triggers
+    reset_events()    
            
 def init_video():
     """ Initialise the video backend. """
@@ -708,6 +716,77 @@ def check_quit_sound():
 #############################################
 # BASIC event triggers        
         
+class EventHandler(object):
+    """ Keeps track of event triggers. """
+    
+    def __init__(self):
+        """ Initialise untriggered and disabled. """
+        self.reset()
+        
+    def reset(self):
+        """ Reet to untriggered and disabled initial state. """
+        self.gosub = None
+        self.enabled = False
+        self.stopped = False
+        self.triggered = False
+
+    def command(self, command_char):
+        """ Turn the event ON, OFF and STOP. """
+        if command_char == '\x95': 
+            # ON
+            self.enabled = True
+            self.stopped = False
+        elif command_char == '\xDD': 
+            # OFF
+            self.enabled = False
+        elif command_char == '\x90': 
+            # STOP
+            self.stopped = True
+        else:
+            return False
+        return True
+
+def reset_events():
+    """ Initialise or reset event triggers. """
+    # TIMER
+    state.basic_state.timer_period, state.basic_state.timer_start = 0, 0
+    state.basic_state.timer_handler = EventHandler()
+    # KEY
+    state.basic_state.event_keys = [''] * 20
+    # F1-F10
+    state.basic_state.event_keys[0:10] = [
+        '\x00\x3b', '\x00\x3c', '\x00\x3d', '\x00\x3e', '\x00\x3f',
+        '\x00\x40', '\x00\x41', '\x00\x42', '\x00\x43', '\x00\x44']
+    # Tandy F11, F12
+    if num_fn_keys == 12:
+        state.basic_state.event_keys[10:12] = ['\x00\x98', '\x00\x99']
+    # up, left, right, down
+    state.basic_state.event_keys[num_fn_keys:num_fn_keys+4] = [   
+        '\x00\x48', '\x00\x4b', '\x00\x4d', '\x00\x50']
+    # the remaining keys are user definable        
+    state.basic_state.key_handlers = [EventHandler() for _ in xrange(20)]
+    # PLAY
+    state.basic_state.play_last = [0, 0, 0]
+    state.basic_state.play_trig = 1
+    state.basic_state.play_handler = EventHandler()
+    # COM
+    state.basic_state.com_handlers = [EventHandler(), EventHandler()]  
+    # PEN
+    state.basic_state.pen_handler = EventHandler()
+    # STRIG
+    state.basic_state.strig_handlers = [EventHandler() for _ in xrange(4)]
+    # all handlers in order of handling; TIMER first
+    state.basic_state.all_handlers = [state.basic_state.timer_handler]  
+    # key events are not handled FIFO but first 11-20 in that order, then 1-10
+    state.basic_state.all_handlers += [state.basic_state.key_handlers[num] 
+                                       for num in (range(10, 20) + range(10))]
+    # this determined handling order
+    state.basic_state.all_handlers += (
+            [state.basic_state.play_handler] + state.basic_state.com_handlers + 
+            [state.basic_state.pen_handler] + state.basic_state.strig_handlers)
+    # set suspension off
+    state.basic_state.suspend_all_events = False
+
 def check_timer_event():
     """ Trigger timer events. """
     mutimer = timedate.timer_milliseconds() 

@@ -14,7 +14,6 @@ import logging
 import config
 import state
 import backend
-import on_event
 # for Break, Exit, Reset
 import error
 # for aspect ratio
@@ -830,7 +829,7 @@ def list_line(line):
 
 def list_keys():
     """ Print a list of the function key macros. """
-    for i in range(on_event.num_fn_keys):
+    for i in range(backend.num_fn_keys):
         text = bytearray(state.console_state.key_replace[i])
         for j in range(len(text)):
             try:
