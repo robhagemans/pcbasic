@@ -22,8 +22,9 @@ utf8conv = unicodepage.UTF8Converter(preserve_control=True)
 def prepare():
     """ Initialise redirect module. """
     if config.options['output']:
+        mode = 'ab' if config.options['append'] else 'wb'
         try:
-            set_output(open(config.options['output'], 'wb'))
+            set_output(open(config.options['output'], mode))
         except EnvironmentError as e:
             logging.warning('Could not open output file %s: %s', config.options['output'], e.strerror)
     if config.options['input']:
