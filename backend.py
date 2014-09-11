@@ -49,6 +49,8 @@ function_key = {
 state.console_state.key_replace = [ 
     'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r',
     'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
+# switch off macro repacements
+state.basic_state.key_macros_off = False    
 # keyboard queue
 state.console_state.keybuf = ''
 # key buffer
@@ -432,8 +434,8 @@ def insert_key(c):
             # only check F1-F10
             keynum = function_key[c]
             # can't be redefined in events - so must be event keys 1-10.
-            if (state.basic_state.run_mode and 
-                    state.basic_state.key_handlers[keynum].enabled or 
+            if (state.basic_state.key_macros_off or state.basic_state.run_mode 
+                    and state.basic_state.key_handlers[keynum].enabled or 
                     keynum > 9):
                 # this key is being trapped, don't replace
                 state.console_state.keybuf += c

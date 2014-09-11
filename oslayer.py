@@ -444,7 +444,7 @@ if plat.system == 'Windows':
                 # don't hog cpu
                 time.sleep(sleep_time)
 
-    def shell(command):
+    def spawn_shell(command):
         global shell_output
         if not command:
             command = 'CMD'
@@ -463,13 +463,17 @@ if plat.system == 'Windows':
                 last = lines.pop()
                 for line in lines:
                     # progress visible - keep updating the backend
-                    backend.check_events()
+                    # don't process anything but video events here
+                    backend.video.check_events()
                     console.write_line(line)
                 console.write(last)    
             if p.poll() != None:
                 # drain output then break
                 continue    
-            c = console.get_char()
+            try:    
+                c = console.get_char()
+            except error.Break:
+                pass    
             if c in ('\r', '\n'): 
                 # Windows CMD.EXE echo to overwrite the command that's already there
                 # NOTE: WINE cmd.exe doesn't echo the command, so it's overwritten by the output...
@@ -491,7 +495,7 @@ if plat.system == 'Windows':
         errp.join()
 
 else:
-    def shell(command):
+    def spawn_shell(command):
         cmd = '/bin/sh'
         if command:
             cmd += ' -c "' + command + '"'            
@@ -500,7 +504,11 @@ else:
         except Exception:
             return 
         while True:
-            c = console.get_char()
+            try:
+                c = console.get_char()
+            except error.Break:
+                # ignore ctrl+break in SHELL
+                pass
             if c == '\b': # BACKSPACE
                 p.send('\x7f')
             elif c != '':
@@ -516,12 +524,27 @@ else:
                     console.write_line()    
                 elif c == '\b':
                     if state.console_state.col != 1:
-                        state.console_state.col -= 1
+                        console.set_pos(state.console_state.row, 
+                                        state.console_state.col-1)
                 else:
                     console.write(c)
             if c == '' and not p.isalive(): 
                 return
 
+def shell(command):
+    # sound stops playing and is forgotten
+    backend.stop_all_sound()
+    # no key macros
+    key_macros_save = state.basic_state.key_macros_off
+    state.basic_state.key_macros_off = True
+    # no user events
+    suspend_event_save = state.basic_state.suspend_all_events
+    state.basic_state.suspend_all_events = True
+    # run the os-specific shell
+    spawn_shell(command)
+    # re-enable key macros and event handling
+    state.basic_state.key_macros_off = key_macros_save
+    state.basic_state.suspend_all_events = suspend_event_save
 
 ###################################################
 # printing
