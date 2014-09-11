@@ -35,6 +35,7 @@ def loop(quit=False):
             try:
                 # may raise Break
                 backend.check_events()
+                handle_basic_events()
                 keep_running = statements.parse_statement()
                 # may raise Break or Error
                 set_execute_mode(keep_running, quit)
@@ -118,8 +119,24 @@ def auto_step():
     elif c != '':    
         # it is a command, go and execute    
         set_execute_mode(True)
-    
-#########################
+
+############################
+# event and error handling
+
+def handle_basic_events():
+    """ Jump to user-defined event subs if events triggered. """
+    if state.basic_state.suspend_all_events or not state.basic_state.run_mode:
+        return
+    for event in state.basic_state.all_handlers:
+        if (event.enabled and event.triggered 
+                and not event.stopped and event.gosub != None):
+            # release trigger
+            event.triggered = False
+            # stop this event while handling it 
+            event.stopped = True 
+            # execute 'ON ... GOSUB' subroutine; 
+            # attach handler to allow un-stopping event on RETURN
+            flow.jump_gosub(event.gosub, event)
         
 def handle_error(s, quit):
     error.set_err(s)

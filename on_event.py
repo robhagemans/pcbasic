@@ -10,7 +10,6 @@
 #
 
 import config
-import flow
 import state
 
 def prepare():
@@ -32,15 +31,6 @@ class EventHandler(object):
         self.enabled = False
         self.stopped = False
         self.triggered = False
-
-    def handle(self):
-        if (state.basic_state.run_mode and self.enabled and self.triggered 
-                and not self.stopped and self.gosub != None and not state.basic_state.suspend_all_events):
-            self.triggered = False
-            # stop event while handling it
-            self.stopped = True 
-            # execute 'ON ... GOSUB' subroutine; attach self to allow un-stopping event on RETURN
-            flow.jump_gosub(self.gosub, self)
 
     def command(self, command_char):
         if command_char == '\x95': 

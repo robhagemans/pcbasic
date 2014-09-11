@@ -154,7 +154,7 @@ def check_events():
     # manage sound queue
     audio.check_sound()
     check_quit_sound()
-    # check console events
+    # check video, keyboard, pen and joystick events
     video.check_events()   
     # trigger & handle BASIC events
     if state.basic_state.run_mode:
@@ -162,11 +162,7 @@ def check_events():
         check_timer_event()
         check_play_event()
         check_com_events()
-        # KEY, PEN and STRIG are triggered elsewhere
-        # handle all events
-        for handler in state.basic_state.all_handlers:
-            handler.handle()
-
+        # KEY, PEN and STRIG are triggered on handling the queue
 
 ##############################
 # screen buffer read/write
