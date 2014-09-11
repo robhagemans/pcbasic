@@ -89,9 +89,9 @@ def init():
     curses.start_color()
     screen.clear()
 #    init_screen_mode()
-    sys.stdout.write(ansi.esc_set_title % 'PC-BASIC 3.23')
     can_change_palette = (curses.can_change_color() and curses.COLORS >= 16 
                           and curses.COLOR_PAIRS > 128)
+    sys.stdout.write(ansi.esc_set_title % 'PC-BASIC 3.23 %d' % can_change_palette)
     if can_change_palette:
         default_colors = range(16, 32)
     else:    
@@ -155,7 +155,7 @@ def set_curses_palette():
     global default_colors
     if can_change_palette:
         for back in range(8):
-            for fore in range(15):
+            for fore in range(16):
                 curses.init_pair(back*16+fore+1, default_colors[fore], default_colors[back])
     else:
         for back in range(8):
@@ -163,7 +163,7 @@ def set_curses_palette():
                 if back == 0 and fore == 7:
                     # black on white mandatorily mapped on color 0
                     pass
-                elif back == 0 and fore != 7:
+                elif back == 0:
                     curses.init_pair(back*8+fore+1, default_colors[fore], default_colors[back])
                 else:
                     curses.init_pair(back*8+fore, default_colors[fore], default_colors[back])
@@ -175,13 +175,13 @@ def colours(at):
     if can_change_palette:
         cursattr = curses.color_pair(1 + (back&7)*16 + (fore&15))
     else:        
-        if back == 0 and fore == 7:
+        if back == 0 and fore&7 == 7:
             cursattr = 0
-        elif back == 0 and fore < 7:
+        elif back == 0:
             cursattr = curses.color_pair(1 + (back&7)*8 + (fore&7))
         else:    
             cursattr = curses.color_pair((back&7)*8 + (fore&7))
-        if fore > 7:
+        if fore&15 > 7:
             cursattr |= curses.A_BOLD
     if blink:
         cursattr |= curses.A_BLINK
@@ -191,7 +191,7 @@ def update_palette(new_palette):
     if can_change_palette:
         for i in range(len(new_palette)):
             r, g, b = backend.colours64[new_palette[i]]
-            curses.init_color(default_colors[i], (r*1000)//256, (g*1000)//256, (b*1000)//256)             
+            curses.init_color(default_colors[i], (r*1000)//255, (g*1000)//255, (b*1000)//255)             
     
 def set_colorburst(on, palette):
     pass
