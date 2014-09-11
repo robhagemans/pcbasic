@@ -297,8 +297,6 @@ def init_video():
         mode_info = list(mode_data[state.console_state.screen_mode])
         mode_info[4] = state.console_state.width    
         mode_info[1] = state.console_state.attr
-        # without this the palette is not prepared when resuming
-        video.update_palette(state.console_state.palette)
         # set up the appropriate screen resolution
         if (state.console_state.screen_mode == 0 or 
                 video.supports_graphics_mode(mode_info)):
@@ -308,6 +306,7 @@ def init_video():
             # set the screen mde
             video.init_screen_mode(mode_info, 
                                    state.console_state.screen_mode==0)
+            video.update_palette(state.console_state.palette)
             # fix the cursor
             video.build_cursor(
                 state.console_state.cursor_width, 

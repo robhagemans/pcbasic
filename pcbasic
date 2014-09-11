@@ -130,7 +130,8 @@ def prepare_console():
     if not backend.init_audio():
         backend.audio = nosound
         logging.warning('Failed to initialise sound. Sound will be disabled.')
-    console.init_mode()    
+    if not state.loaded:    
+        console.init_mode()    
 
 def convert():
     """ Perform file format conversion. """
