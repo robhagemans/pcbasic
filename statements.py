@@ -1927,7 +1927,7 @@ def exec_color(ins):
     util.range_check(0, 255, bord)
     fore = fore_old if fore == None else fore
     # graphics mode bg is always 0; sets palette instead
-    back = back_old if mode == 0 and back == None else (console.get_palette_entry(0) if back == None else back)
+    back = back_old if mode == 0 and back == None else (backend.get_palette_entry(0) if back == None else back)
     if mode == 0:
         util.range_check(0, state.console_state.num_colours-1, fore)
         util.range_check(0, 15, back, bord)
@@ -1938,34 +1938,34 @@ def exec_color(ins):
         util.range_check(0, state.console_state.num_colours-1, back)
         state.console_state.attr = fore
         # in screen 7 and 8, only low intensity palette is used.
-        console.set_palette_entry(0, back % 8)    
+        backend.set_palette_entry(0, back % 8)    
     elif mode == 9:
         util.range_check(0, state.console_state.num_colours-1, fore)
         util.range_check(0, state.console_state.num_palette-1, back)
         state.console_state.attr = fore
-        console.set_palette_entry(0, back)
+        backend.set_palette_entry(0, back)
     
 def exec_color_mode_1(back, pal, override):
-    back = console.get_palette_entry(0) if back == None else back
+    back = backend.get_palette_entry(0) if back == None else back
     if override != None:
         # uses last entry as palette if given
         pal = override
     util.range_check(0, 255, back)
     if pal != None:
         util.range_check(0, 255, pal)
-        palette = console.cga_palettes[pal % 2]
+        palette = backend.cga_palettes[pal % 2]
         palette[0] = back&0xf
         # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
         # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
-        console.set_palette(palette)
+        backend.set_palette(palette)
     else:
-        console.set_palette_entry(0, back & 0xf)        
+        backend.set_palette_entry(0, back & 0xf)        
     
 def exec_palette(ins):
     d = util.skip_white(ins)
     if d in util.end_statement:
         # reset palette
-        console.set_palette()
+        backend.set_palette()
     elif d == '\xD7': # USING
         ins.read(1)
         exec_palette_using(ins)
@@ -1984,7 +1984,7 @@ def exec_palette(ins):
             elif console.video_capabilities in ('tandy', 'pcjr') and state.console_state.screen_mode == 0:
                 pass
             else:       
-                console.set_palette_entry(pair[0], pair[1])
+                backend.set_palette_entry(pair[0], pair[1])
         util.require(ins, util.end_statement)    
 
 def exec_palette_using(ins):
@@ -2008,8 +2008,8 @@ def exec_palette_using(ins):
         for i in range(num_palette_entries):
             val = vartypes.pass_int_unpack(('%', lst[(start+i)*2:(start+i+1)*2]))
             util.range_check(-1, state.console_state.num_palette-1, val)
-            new_palette.append(val if val > -1 else console.get_palette_entry(i))
-        console.set_palette(new_palette)
+            new_palette.append(val if val > -1 else backend.get_palette_entry(i))
+        backend.set_palette(new_palette)
     util.require(ins, util.end_statement) 
 
 def exec_key(ins):

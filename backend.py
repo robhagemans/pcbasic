@@ -101,12 +101,82 @@ input_echos = []
 output_echos = []
 
 #############################################
+# cursor
+
+# cursor visible in execute mode?
+state.console_state.cursor = False
+# cursor shape
+state.console_state.cursor_from = 0
+state.console_state.cursor_to = 0    
+
+# pen and stick
+state.console_state.pen_is_on = False
+state.console_state.stick_is_on = False
+
+#############################################
+# palette
+
+# CGA colours
+colours16 = [    
+    (0x00,0x00,0x00), (0x00,0x00,0xaa), (0x00,0xaa,0x00), (0x00,0xaa,0xaa),
+    (0xaa,0x00,0x00), (0xaa,0x00,0xaa), (0xaa,0x55,0x00), (0xaa,0xaa,0xaa), 
+    (0x55,0x55,0x55), (0x55,0x55,0xff), (0x55,0xff,0x55), (0x55,0xff,0xff),
+    (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff) ]
+colours16_mono = range(0x00, 0x100, 0x11)
+# EGA colours
+colours64 = [ 
+    (0x00,0x00,0x00), (0x00,0x00,0xaa), (0x00,0xaa,0x00), (0x00,0xaa,0xaa),
+    (0xaa,0x00,0x00), (0xaa,0x00,0xaa), (0xaa,0xaa,0x00), (0xaa,0xaa,0xaa), 
+    (0x00,0x00,0x55), (0x00,0x00,0xff), (0x00,0xaa,0x55), (0x00,0xaa,0xff),
+    (0xaa,0x00,0x55), (0xaa,0x00,0xff), (0xaa,0xaa,0x55), (0xaa,0xaa,0xff),
+    (0x00,0x55,0x00), (0x00,0x55,0xaa), (0x00,0xff,0x00), (0x00,0xff,0xaa),
+    (0xaa,0x55,0x00), (0xaa,0x55,0xaa), (0xaa,0xff,0x00), (0xaa,0xff,0xaa),
+    (0x00,0x55,0x55), (0x00,0x55,0xff), (0x00,0xff,0x55), (0x00,0xff,0xff),
+    (0xaa,0x55,0x55), (0xaa,0x55,0xff), (0xaa,0xff,0x55), (0xaa,0xff,0xff),
+    (0x55,0x00,0x00), (0x55,0x00,0xaa), (0x55,0xaa,0x00), (0x55,0xaa,0xaa),
+    (0xff,0x00,0x00), (0xff,0x00,0xaa), (0xff,0xaa,0x00), (0xff,0xaa,0xaa),
+    (0x55,0x00,0x55), (0x55,0x00,0xff), (0x55,0xaa,0x55), (0x55,0xaa,0xff),
+    (0xff,0x00,0x55), (0xff,0x00,0xff), (0xff,0xaa,0x55), (0xff,0xaa,0xff),
+    (0x55,0x55,0x00), (0x55,0x55,0xaa), (0x55,0xff,0x00), (0x55,0xff,0xaa),
+    (0xff,0x55,0x00), (0xff,0x55,0xaa), (0xff,0xff,0x00), (0xff,0xff,0xaa),
+    (0x55,0x55,0x55), (0x55,0x55,0xff), (0x55,0xff,0x55), (0x55,0xff,0xff),
+    (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff) ]
+
+# cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
+cga_palette_1_hi = [0, 11, 13, 15]
+cga_palette_1_lo = [0, 3, 5, 7]
+# cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
+cga_palette_0_hi = [0, 10, 12, 14]
+cga_palette_0_lo = [0, 2, 4, 6]
+# tandy/pcjr cga palette
+cga_palette_1_pcjr = [0, 3, 5, 15]
+cga_palette_0_pcjr = [0, 2, 4, 6]
+# mode 5 (SCREEN 1 + colorburst) palette on RGB monitor
+cga_palette_5_hi = [0, 11, 12, 15]
+cga_palette_5_lo = [0, 3, 4, 7]
+# default: high intensity 
+cga_palette_0 = cga_palette_0_hi
+cga_palette_1 = cga_palette_1_hi
+cga_palette_5 = cga_palette_5_hi
+cga_palettes = [cga_palette_0, cga_palette_1]
+# default 16-color and ega palettes
+cga16_palette = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+ega_palette = [0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63]
+# colorburst value
+state.console_state.colorswitch = 1
+# use ega palette by default
+state.console_state.num_palette = 64
+state.console_state.palette = ega_palette
+
+#############################################
 # initialisation
 
 def prepare():
     """ Initialise backend module. """
     global pcjr_sound, ignore_caps, egacursor
     global num_fn_keys
+    global cga_palette_0, cga_palette_1, cga_palette_5, cga_palettes
+    global video_capabilities, composite_monitor
     if config.options['capture_caps']:
         ignore_caps = False
     # inserted keystrokes
@@ -117,6 +187,22 @@ def prepare():
         except KeyError:
             state.console_state.keybuf += c
     egacursor = config.options['video'] == 'ega'
+    if config.options['video']:
+        video_capabilities = config.options['video']
+    if video_capabilities != 'ega':
+        state.console_state.num_palette = 16
+        state.console_state.palette = cga16_palette
+    if video_capabilities in ('pcjr', 'tandy'):
+        # select pcjr cga palettes
+        cga_palette_0, cga_palette_1 = cga_palette_0_pcjr, cga_palette_1_pcjr
+        # pcjr does ot have mode 5
+        cga_palettes[:] = [cga_palette_0_pcjr, cga_palette_1_pcjr]       
+    elif config.options['cga_low']:
+        cga_palette_0 = cga_palette_0_lo
+        cga_palette_1 = cga_palette_1_lo
+        cga_palette_5 = cga_palette_5_lo
+        cga_palettes = [cga_palette_0, cga_palette_1]
+    composite_monitor = config.options['composite']
     # pcjr/tandy sound
     pcjr_sound = config.options['pcjr_syntax']
     # tandy has SOUND ON by default, pcjr has it OFF
@@ -132,11 +218,15 @@ def prepare():
 def init_video():
     """ Initialise the video backend. """
     global video
-    if not video:
+    if not video or not video.init():
         return False
-    return video.init()
+    # only allow the screen modes that the given machine supports
+    if state.loaded:
+        # without this the palette is not prepared when resuming
+        video.update_palette(state.console_state.palette)
+    return True
     
-def init_sound():
+def init_audio():
     """ Initialise the audio backend. """
     global audio
     if not audio or not audio.init_sound():
@@ -532,6 +622,47 @@ def set_cursor_shape(from_line, to_line):
                        state.console_state.cursor_from, 
                        state.console_state.cursor_to)
     video.update_cursor_attr(state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
+
+
+#############################################
+# palette
+
+def set_palette_entry(index, colour):
+    state.console_state.palette[index] = colour
+    video.update_palette(state.console_state.palette)
+
+def get_palette_entry(index):
+    return state.console_state.palette[index]
+
+def set_palette(new_palette=None):
+    if new_palette:
+        state.console_state.palette = new_palette
+    else:    
+        if state.console_state.num_palette == 64:
+            state.console_state.palette = ega_palette
+        elif state.console_state.num_colours >= 16:
+            state.console_state.palette = cga16_palette
+        elif state.console_state.num_colours == 4:
+            state.console_state.palette = cga_palettes[1]
+        else:
+            state.console_state.palette = [0, 15]
+    video.update_palette(state.console_state.palette)
+
+# set the composite colorburst bit 
+# on SCREEN 2 on composite monitor this enables artifacting
+# on SCREEN 1 this switches between colour and greyscale (composite) or mode 4/5 palettes (RGB)
+# on SCREEN 0 this switches between colour and greyscale (composite) or is ignored (RGB)
+def set_colorburst(on=True):
+    global cga_palettes
+    colorburst_capable = video_capabilities in ('cga', 'cga_old', 'tandy', 'pcjr')
+    if state.console_state.screen_mode == 1 and not composite_monitor:
+        if on or video_capabilities not in ('cga', 'cga_old'):
+            # ega ignores colorburst; tandy and pcjr have no mode 5
+            cga_palettes = [cga_palette_0, cga_palette_1]
+        else:
+            cga_palettes = [cga_palette_5, cga_palette_5]
+        set_palette()    
+    video.set_colorburst(on and colorburst_capable, state.console_state.palette)
 
 
 #############################################

@@ -59,17 +59,9 @@ state.console_state.col = 1
 # true if we're on 80 but should be on 81
 state.console_state.overflow = False
 
-# cursor visible in execute mode?
-state.console_state.cursor = False
 # overwrite mode (instead of insert)
 state.console_state.overwrite_mode = True
-# cursor shape
-state.console_state.cursor_from = 0
-state.console_state.cursor_to = 0    
 
-# pen and stick
-state.console_state.pen_is_on = False
-state.console_state.stick_is_on = False
 
 # for SCREEN
 
@@ -89,10 +81,12 @@ mode_data_default = {
     }
 mode_data = {}
 
+# ega, tandy, pcjr
+video_capabilities = 'ega'
+# video memory size - currently only used by tandy/pcjr (would be bigger for EGA systems anyway)
+state.console_state.pcjr_video_mem_size = 16384
 # default is EGA 64K
 state.console_state.video_mem_size = 65536
-# officially, whether colours are displayed. in reality, SCREEN just clears the screen if this value is changed
-state.console_state.colorswitch = 1
 # SCREEN mode (0 is textmode)
 state.console_state.screen_mode = 0
 # number of active page
@@ -100,31 +94,7 @@ state.console_state.apagenum = 0
 # number of visible page
 state.console_state.vpagenum = 0
 
-# codepage suggestion for backend
-state.console_state.codepage = '437'    
 
-# ega, tandy, pcjr
-video_capabilities = 'ega'
-# video memory size - currently only used by tandy/pcjr (would be bigger for EGA systems anyway)
-state.console_state.pcjr_video_mem_size = 16384
-
-# cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
-cga_palette_1_hi = [0, 11, 13, 15]
-cga_palette_1_lo = [0, 3, 5, 7]
-# cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
-cga_palette_0_hi = [0, 10, 12, 14]
-cga_palette_0_lo = [0, 2, 4, 6]
-# tandy/pcjr cga palette
-cga_palette_1_pcjr = [0, 3, 5, 15]
-cga_palette_0_pcjr = [0, 2, 4, 6]
-# mode 5 (SCREEN 1 + colorburst) palette on RGB monitor
-cga_palette_5_hi = [0, 11, 12, 15]
-cga_palette_5_lo = [0, 3, 4, 7]
-# default: high intensity 
-cga_palette_0 = cga_palette_0_hi
-cga_palette_1 = cga_palette_1_hi
-cga_palette_5 = cga_palette_5_hi
-cga_palettes = [cga_palette_0, cga_palette_1]
 
         
 #############################
@@ -132,25 +102,16 @@ cga_palettes = [cga_palette_0, cga_palette_1]
 
 def prepare():
     """ Initialise console module. """
-    global video_capabilities, font_families, composite_monitor
-    global cga_palette_0, cga_palette_1, cga_palette_5, cga_palettes
+    global video_capabilities, composite_monitor
     if config.options['video']:
         video_capabilities = config.options['video']
-    if config.options['cga_low']:
-        cga_palette_0 = cga_palette_0_lo
-        cga_palette_1 = cga_palette_1_lo
-        cga_palette_5 = cga_palette_5_lo
-        cga_palettes = [cga_palette_0, cga_palette_1]
-    if config.options['font']:
-        font_families = config.options['font']
+    composite_monitor = config.options['composite']
     if config.options['run']:
         state.console_state.keys_visible = False
     for mode in mode_data_default:
         mode_data[mode] = mode_data_default[mode]
-    composite_monitor = config.options['composite']
     
 def init():
-    global cga_palettes, cga_palette_0, cga_palette_1, cga_palette_5 
     global mode_data
     # reset modes in case init is called a second time for error fallback
     for mode in mode_data_default:
@@ -161,10 +122,6 @@ def init():
         unavailable_modes = [7, 8, 9]
         # 8-pixel characters, 16 colours in screen 0
         mode_data[0] = (8, 7, 32, 16, 80, 4, 4, 8, False, None) 
-        # select pcjr cga palettes
-        cga_palette_0, cga_palette_1 = cga_palette_0_pcjr, cga_palette_1_pcjr
-        # pcjr does ot have mode 5
-        cga_palettes[:] = [cga_palette_0_pcjr, cga_palette_1_pcjr]       
         # TODO: determine the number of pages based on video memory size, not hard coded. 
     elif video_capabilities in ('cga', 'cga_old'):
         unavailable_modes = [3, 4, 5, 6, 7, 8, 9]
@@ -190,8 +147,6 @@ def init():
                                    state.console_state.apagenum)
             # set the screen mde
             backend.video.init_screen_mode(mode_info, state.console_state.screen_mode==0)
-            # without this the palette is not prepared when resuming
-            backend.video.update_palette(state.console_state.palette)
             # fix the cursor
             backend.video.build_cursor(state.console_state.cursor_width, state.console_state.font_height, 
                 state.console_state.cursor_from, state.console_state.cursor_to)    
@@ -238,7 +193,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
     if (not info or new_apagenum >= info[5] or new_vpagenum >= info[5] or 
             (new_mode != 0 and not backend.video.supports_graphics_mode(info))):
         # reset palette happens even if the function fails with Illegal Function Call
-        set_palette()
+        backend.set_palette()
         return False
     # switch modes if needed
     if do_redraw:
@@ -290,7 +245,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
         # signal the backend to change the screen resolution
         backend.video.init_screen_mode(info, state.console_state.screen_mode==0)
         # set the palette (essential on first run, or not all globals are defined)
-        set_palette()
+        backend.set_palette()
         # only redraw keys if screen has been cleared (any colours stay the same). state.console_state.screen_mode must be set for this
         if state.console_state.keys_visible:  
             show_keys(True)
@@ -302,9 +257,9 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase=1, first
         unset_view()
         # in screen 0, 1, set colorburst (not in SCREEN 2!)
         if new_mode in (0, 1):
-            set_colorburst(new_colorswitch)
+            backend.set_colorburst(new_colorswitch)
         elif new_mode == 2:
-            set_colorburst(False)    
+            backend.set_colorburst(False)    
     else:
         # set active page & visible page, counting from 0. 
         state.console_state.vpagenum, state.console_state.apagenum = new_vpagenum, new_apagenum
@@ -349,45 +304,6 @@ def check_video_memory():
         screen (0, None, None, None)
 
 
-#############################################
-# palette
-
-def set_palette_entry(index, colour):
-    state.console_state.palette[index] = colour
-    backend.video.update_palette(state.console_state.palette)
-
-def get_palette_entry(index):
-    return state.console_state.palette[index]
-
-def set_palette(new_palette=None):
-    if new_palette:
-        state.console_state.palette = new_palette
-    else:    
-        if state.console_state.num_palette == 64:
-            state.console_state.palette = [0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63]
-        elif state.console_state.num_colours >= 16:
-            state.console_state.palette = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-        elif state.console_state.num_colours == 4:
-            state.console_state.palette = cga_palettes[1]
-        else:
-            state.console_state.palette = [0, 15]
-    backend.video.update_palette(state.console_state.palette)
-
-# set the composite colorburst bit 
-# on SCREEN 2 on composite monitor this enables artifacting
-# on SCREEN 1 this switches between colour and greyscale (composite) or mode 4/5 palettes (RGB)
-# on SCREEN 0 this switches between colour and greyscale (composite) or is ignored (RGB)
-def set_colorburst(on=True):
-    global cga_palettes
-    colorburst_capable = video_capabilities in ('cga', 'cga_old', 'tandy', 'pcjr')
-    if state.console_state.screen_mode == 1 and not composite_monitor:
-        if on or video_capabilities not in ('cga', 'cga_old'):
-            # ega ignores colorburst; tandy and pcjr have no mode 5
-            cga_palettes = [cga_palette_0, cga_palette_1]
-        else:
-            cga_palettes = [cga_palette_5, cga_palette_5]
-        set_palette()    
-    backend.video.set_colorburst(on and colorburst_capable, state.console_state.palette)
 
 ############################### 
 # interactive mode         
