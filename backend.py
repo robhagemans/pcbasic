@@ -279,12 +279,12 @@ def init_video():
         # no EGA modes (though apparently there were Tandy machines with EGA)
         unavailable_modes = [7, 8, 9]
         # 8-pixel characters, 16 colours in screen 0
-        mode_data[0] = mode0_8bit
+        mode_data[0] = mode_0_8bit
         # TODO: determine the number of pages based on video memory size 
     elif video_capabilities in ('cga', 'cga_old'):
         unavailable_modes = [3, 4, 5, 6, 7, 8, 9]
         # 8-pixel characters, 16 colours in screen 0
-        mode_data[0] = mode0_8bit
+        mode_data[0] = mode_0_8bit
     else:
         # EGA
         # no PCjr modes
@@ -412,79 +412,85 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
         set_palette()
         return False
     # switch modes if needed
-    if do_redraw:
-        # width persists on change to screen 0
-        if new_mode == 0 and new_width == None:
-            new_width = state.console_state.width 
-            if new_width == 20:
-                new_width = 40
-        if new_width != None:
-            info[4] = new_width    
-        if (state.console_state.screen_mode == 0 and new_mode == 0 
-                and state.console_state.apagenum == new_apagenum 
-                and state.console_state.vpagenum == new_vpagenum):
-            info[1] = state.console_state.attr              
-        # set all state vars
-        state.console_state.screen_mode = new_mode
-        state.console_state.colorswitch = new_colorswitch 
-        state.console_state.height = 25
-        (   state.console_state.font_height, state.console_state.attr, 
-            state.console_state.num_colours, state.console_state.num_palette, 
-            state.console_state.width, state.console_state.num_pages, 
-            state.console_state.bitsperpixel, state.console_state.font_width, 
-            _, _ ) = info  
-        # build the screen buffer    
-        state.console_state.pages = []
-        for _ in range(state.console_state.num_pages):
-            state.console_state.pages.append(
-                    ScreenBuffer(state.console_state.attr, 
-                        state.console_state.width, state.console_state.height))
+    if not do_redraw:
         # set active page & visible page, counting from 0. 
-        state.console_state.vpagenum = new_vpagenum
-        state.console_state.apagenum = new_apagenum
-        state.console_state.vpage = state.console_state.pages[new_vpagenum]
-        state.console_state.apage = state.console_state.pages[new_apagenum]
-        video.set_page(new_vpagenum, new_apagenum)
-        # resolution
-        state.console_state.size = (
-            state.console_state.width * state.console_state.font_width,          
-            state.console_state.height * state.console_state.font_height)
-        # centre of new graphics screen
-        state.console_state.last_point = (
-            state.console_state.size[0]/2, state.console_state.size[1]/2)
-        # assumed aspect ratio for CIRCLE    
-        if video_capabilities in ('pcjr', 'tandy'):
-            if new_mode in (2,6):
-                 state.console_state.pixel_aspect_ratio = 48, 100
-            elif new_mode in (1,4,5):
-                 state.console_state.pixel_aspect_ratio = 96, 100
-            elif new_mode == 3:
-                 state.console_state.pixel_aspect_ratio = 1968, 1000
-        else:    
-            # pixels e.g. 80*8 x 25*14, screen ratio 4x3 
-            # makes for pixel width/height (4/3)*(25*14/8*80)
-            # graphic screens always have 8-pixel widths (can be 9 on text)
-            state.console_state.pixel_aspect_ratio = (
-                state.console_state.height * state.console_state.font_height,
-                6 * state.console_state.width)
-        state.console_state.cursor_width = state.console_state.font_width        
-        # signal the backend to change the screen resolution
-        video.init_screen_mode(info, state.console_state.screen_mode == 0)
-        # set the palette (essential on first run, or not all globals defined)
-        set_palette()
-        # in screen 0, 1, set colorburst (not in SCREEN 2!)
-        if new_mode in (0, 1):
-            set_colorburst(new_colorswitch)
-        elif new_mode == 2:
-            set_colorburst(False)    
-    else:
-        # set active page & visible page, counting from 0. 
-        state.console_state.vpagenum = new_vpagenum
-        state.console_state.apagenum = new_apagenum
-        state.console_state.vpage = state.console_state.pages[new_vpagenum]
-        state.console_state.apage = state.console_state.pages[new_apagenum]
-        video.set_page(new_vpagenum, new_apagenum)
+        set_page(new_vpagenum, new_apagenum)
+        return True    
+    # width persists on change to screen 0
+    if new_mode == 0 and new_width == None:
+        new_width = state.console_state.width 
+        if new_width == 20:
+            new_width = 40
+    if new_width != None:
+        info[4] = new_width    
+    if (state.console_state.screen_mode == 0 and new_mode == 0 
+            and state.console_state.apagenum == new_apagenum 
+            and state.console_state.vpagenum == new_vpagenum):
+        info[1] = state.console_state.attr              
+    # set all state vars
+    state.console_state.screen_mode = new_mode
+    state.console_state.colorswitch = new_colorswitch 
+    state.console_state.height = 25
+    (   state.console_state.font_height, state.console_state.attr, 
+        state.console_state.num_colours, state.console_state.num_palette, 
+        state.console_state.width, state.console_state.num_pages, 
+        state.console_state.bitsperpixel, state.console_state.font_width, 
+        _, _ ) = info  
+    # build the screen buffer    
+    state.console_state.pages = []
+    for _ in range(state.console_state.num_pages):
+        state.console_state.pages.append(
+                ScreenBuffer(state.console_state.attr, 
+                    state.console_state.width, state.console_state.height))
+    # set active page & visible page, counting from 0. 
+    set_page(new_vpagenum, new_apagenum)
+    # set graphics characteristics
+    init_graphics(new_mode)
+    # cursor width starts out as single char
+    state.console_state.cursor_width = state.console_state.font_width        
+    # signal the backend to change the screen resolution
+    video.init_screen_mode(info, state.console_state.screen_mode == 0)
+    # set the palette (essential on first run, or not all globals defined)
+    set_palette()
+    # in screen 0, 1, set colorburst (not in SCREEN 2!)
+    if new_mode in (0, 1):
+        set_colorburst(new_colorswitch)
+    elif new_mode == 2:
+        set_colorburst(False)    
     return True
+
+def init_graphics(new_mode):
+    """ Set the graphical characteristics of a new mode. """
+    # resolution
+    state.console_state.size = (
+        state.console_state.width * state.console_state.font_width,          
+        state.console_state.height * state.console_state.font_height)
+    # centre of new graphics screen
+    state.console_state.last_point = (
+        state.console_state.size[0]/2, state.console_state.size[1]/2)
+    # assumed aspect ratio for CIRCLE    
+    if video_capabilities in ('pcjr', 'tandy'):
+        if new_mode in (2,6):
+             state.console_state.pixel_aspect_ratio = 48, 100
+        elif new_mode in (1,4,5):
+             state.console_state.pixel_aspect_ratio = 96, 100
+        elif new_mode == 3:
+             state.console_state.pixel_aspect_ratio = 1968, 1000
+    else:    
+        # pixels e.g. 80*8 x 25*14, screen ratio 4x3 
+        # makes for pixel width/height (4/3)*(25*14/8*80)
+        # graphic screens always have 8-pixel widths (can be 9 on text)
+        state.console_state.pixel_aspect_ratio = (
+            state.console_state.height * state.console_state.font_height,
+            6 * state.console_state.width)
+
+def set_page(new_vpagenum, new_apagenum):
+    """ Set active page & visible page, counting from 0. """
+    state.console_state.vpagenum = new_vpagenum
+    state.console_state.apagenum = new_apagenum
+    state.console_state.vpage = state.console_state.pages[new_vpagenum]
+    state.console_state.apage = state.console_state.pages[new_apagenum]
+    video.set_page(new_vpagenum, new_apagenum)
 
 def set_width(to_width):
     """ Set the character width of the screen. """
