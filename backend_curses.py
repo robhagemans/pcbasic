@@ -69,12 +69,7 @@ if curses:
         curses.KEY_BACKSPACE: '\b'
     }
 
-    # curses colours mapped onto EGA
-    default_colors = [
-        curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN, 
-        curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA, 
-        curses.COLOR_YELLOW, curses.COLOR_WHITE] 
-
+        
     last_attr = None
     attr = curses.A_NORMAL
  
@@ -82,7 +77,7 @@ def prepare(args):
     pass
 
 def init():
-    global screen
+    global screen, default_colors, can_change_palette
     if not curses:
         logging.warning('ANSI interface not supported.')
     locale.setlocale(locale.LC_ALL,('C', 'utf-8'))
@@ -95,6 +90,19 @@ def init():
     screen.clear()
 #    init_screen_mode()
     sys.stdout.write(ansi.esc_set_title % 'PC-BASIC 3.23')
+    can_change_palette = (curses.can_change_color() and curses.COLORS >= 16 
+                          and curses.COLOR_PAIRS > 128)
+    if can_change_palette:
+        default_colors = range(16, 32)
+    else:    
+        # curses colours mapped onto EGA
+        default_colors = (
+            curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN, 
+            curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA, 
+            curses.COLOR_YELLOW, curses.COLOR_WHITE,
+            curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN, 
+            curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA, 
+            curses.COLOR_YELLOW, curses.COLOR_WHITE)
     return True
     
 def supports_graphics_mode(mode_info):
@@ -145,33 +153,45 @@ def redraw():
 
 def set_curses_palette():
     global default_colors
-    for back in range(8):
-        for fore in range(8):
-            if back == 0 and fore == 7:
-                pass
-            elif back == 0 and fore < 7:
-                curses.init_pair(back*8+fore+1, default_colors[fore], default_colors[back])
-            else:
-                curses.init_pair(back*8+fore, default_colors[fore], default_colors[back])
-
+    if can_change_palette:
+        for back in range(8):
+            for fore in range(15):
+                curses.init_pair(back*16+fore+1, default_colors[fore], default_colors[back])
+    else:
+        for back in range(8):
+            for fore in range(8):
+                if back == 0 and fore == 7:
+                    # black on white mandatorily mapped on color 0
+                    pass
+                elif back == 0 and fore != 7:
+                    curses.init_pair(back*8+fore+1, default_colors[fore], default_colors[back])
+                else:
+                    curses.init_pair(back*8+fore, default_colors[fore], default_colors[back])
+            
 def colours(at):
     back = (at>>4)&0x7
     blink = (at>>7)
     fore = (blink*0x10) + (at&0xf)
-    if back == 0 and fore == 7:
-        cursattr = 0
-    elif back == 0 and fore < 7:
-        cursattr = curses.color_pair(1+(back & 7) *8 + (fore&7))
-    else:    
-        cursattr = curses.color_pair((back & 7) *8 + (fore&7))
+    if can_change_palette:
+        cursattr = curses.color_pair(1 + (back&7)*16 + (fore&15))
+    else:        
+        if back == 0 and fore == 7:
+            cursattr = 0
+        elif back == 0 and fore < 7:
+            cursattr = curses.color_pair(1 + (back&7)*8 + (fore&7))
+        else:    
+            cursattr = curses.color_pair((back&7)*8 + (fore&7))
+        if fore > 7:
+            cursattr |= curses.A_BOLD
     if blink:
         cursattr |= curses.A_BLINK
-    if fore > 7:
-        cursattr |= curses.A_BOLD
     return cursattr
 
 def update_palette(new_palette):
-    pass
+    if can_change_palette:
+        for i in range(len(new_palette)):
+            r, g, b = backend.colours64[new_palette[i]]
+            curses.init_color(default_colors[i], (r*1000)//256, (g*1000)//256, (b*1000)//256)             
     
 def set_colorburst(on, palette):
     pass
