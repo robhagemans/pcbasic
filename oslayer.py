@@ -471,7 +471,7 @@ if plat.system == 'Windows':
                 # drain output then break
                 continue    
             try:    
-                c = console.get_char()
+                c = backend.get_char()
             except error.Break:
                 pass    
             if c in ('\r', '\n'): 
@@ -505,7 +505,7 @@ else:
             return 
         while True:
             try:
-                c = console.get_char()
+                c = backend.get_char()
             except error.Break:
                 # ignore ctrl+break in SHELL
                 pass

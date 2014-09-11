@@ -708,12 +708,12 @@ class KYBDFile(NullDevice):
 
     # for INPUT$
     def read_chars(self, num):
-        return console.read_chars(num)
+        return backend.read_chars(num)
 
     # for INPUT and LINE INPUT
     def read(self, n):
         word = ''
-        for c in console.read_chars(n):
+        for c in backend.read_chars(n):
             if len(c) > 1 and c[0] == '\x00':
                 try:
                     word += self.input_replace[c]

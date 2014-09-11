@@ -372,6 +372,39 @@ def clear_screen_buffer_area(x0, y0, x1, y1):
 ##############################
 # keyboard buffer read/write
 
+def read_chars(num):
+    """ Read num keystrokes, blocking. """
+    word = []
+    for _ in range(num):
+        wait_char()
+        word.append(get_char())
+    return word
+
+def get_char():
+    """ Read any keystroke, nonblocking. """
+    wait()    
+    return pass_char(peek_char())
+
+def wait_char():
+    """ Wait for character, then return it but don't drop from queue. """
+    while len(state.console_state.keybuf) == 0 and not input_closed:
+        wait()
+    return peek_char()
+
+def pass_char(ch):
+    """ Drop characters from keyboard buffer. """
+    state.console_state.keybuf = state.console_state.keybuf[len(ch):]        
+    return ch
+
+def peek_char():
+    """ Peek character or scancode from keyboard buffer. """
+    ch = ''
+    if len(state.console_state.keybuf)>0:
+        ch = state.console_state.keybuf[0]
+        if ch == '\x00' and len(state.console_state.keybuf) > 0:
+            ch += state.console_state.keybuf[1]
+    return ch 
+    
 def key_down(keycode, inpcode=None, keystatuscode=None):
     """ Insert a key-down event. Keycode is ascii, DBCS or NUL+scancode. """
     if keycode != '':
@@ -444,26 +477,6 @@ def insert_key(c):
                 state.console_state.keybuf += macro
         except KeyError:
             state.console_state.keybuf += c
-
-def peek_char():
-    """ Peek character or scancode from keyboard buffer. """
-    ch = ''
-    if len(state.console_state.keybuf)>0:
-        ch = state.console_state.keybuf[0]
-        if ch == '\x00' and len(state.console_state.keybuf) > 0:
-            ch += state.console_state.keybuf[1]
-    return ch 
-
-def wait_char():
-    """ Wait for character, then return it but don't drop from queue. """
-    while len(state.console_state.keybuf) == 0 and not input_closed:
-        wait()
-    return peek_char()
-
-def pass_char(ch):
-    """ Drop characters from keyboard buffer. """
-    state.console_state.keybuf = state.console_state.keybuf[len(ch):]        
-    return ch
 
 #############################################
 # cursor

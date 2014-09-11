@@ -498,7 +498,7 @@ def value_input(ins):    # INPUT$
     return vartypes.pack_string(bytearray(word))
     
 def value_inkey(ins):
-    return vartypes.pack_string(bytearray(console.get_char()))
+    return vartypes.pack_string(bytearray(backend.get_char()))
 
 def value_csrlin(ins):
     row, col = state.console_state.row, state.console_state.col 

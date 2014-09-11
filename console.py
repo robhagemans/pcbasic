@@ -984,21 +984,6 @@ def write_error_message(msg, linenum):
         write(' in %i' % linenum)
     write_line(' ')                  
 
-####################
-# keyboard read
-    
-def get_char():
-    """ Read any keystroke, nonblocking. """
-    backend.wait()    
-    return backend.pass_char(backend.peek_char())
-
-def read_chars(num):
-    """ Read num keystrokes, blocking. """
-    word = []
-    for _ in range(num):
-        backend.wait_char()
-        word.append(get_char())
-    return word
 
 #####################
 # viewport / scroll area
