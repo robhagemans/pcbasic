@@ -39,7 +39,7 @@ class StringSpace(object):
     def clear(self):
         """ Empty string space. """
         self.strings = {}
-        self.current = state.basic_state.var_current + total_mem # 65020
+        self.current = var_mem_start + total_mem # 65020
     
     def retrieve(self, key):
         """ Retrieve a string by its 3-byte sequence. 2-byte keys allowed, but will return longer string for empty string. """
@@ -470,25 +470,27 @@ def collect_garbage():
     # copy all strings that are actually referenced
     for name in state.basic_state.variables:
         if name[-1] == '$':
-            mem = state.basic_state.var_memory[name]
             v = state.basic_state.variables[name]
-            string_list.append( (name, mem[0], mem[1], state.basic_state.strings.address(v), state.basic_state.strings.retrieve(v)) )
+            string_list.append((v, 0, 
+                    state.basic_state.strings.address(v), 
+                    state.basic_state.strings.retrieve(v)))
     for name in state.basic_state.arrays:
         if name[-1] == '$':
-            mem = state.basic_state.array_memory[name]
-            _, lst, _ = state.basic_state.arrays[name]
+            # ignore version - we can't put and get into string arrays
+            dimensions, lst, _ = state.basic_state.arrays[name]
             for i in range(0, len(lst), 3):
                 v = lst[i:i+3]
-                string_list.append( (name, mem[0], mem[1], state.basic_state.strings.address(v), state.basic_state.strings.retrieve(v)) )
+                string_list.append((lst, i,
+                        state.basic_state.strings.address(v), 
+                        state.basic_state.strings.retrieve(v)))
     # sort by str_ptr, largest first (maintain order of storage)       
-    string_list.sort(key=itemgetter(3), reverse=True) 
+    string_list.sort(key=itemgetter(2), reverse=True) 
     # clear the string buffer and re-store all referenced strings
     state.basic_state.strings.clear()       
     for item in string_list:
         # re-allocate string space; no need to copy buffer
-        state.basic_state.variables[name] = state.basic_state.strings.store(item[4]) 
-        state.basic_state.var_memory[item[0]] = (item[1], item[2])     
-
+        item[0][item[1]:item[1]+3] = state.basic_state.strings.store(item[3]) 
+    
 def fre():
     """ Return the amount of memory available to variables, arrays, strings and code. """
     # NOTE this is in var.py because it's used by set_var. 
