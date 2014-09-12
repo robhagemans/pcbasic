@@ -77,6 +77,9 @@ arguments = {
         'type': 'string', 'metavar': 'output_file', 
         'help': 'Send screen output to output_file, '
                 'except if SCRN: is written to explicitly.' },
+    'append':  {
+        'type': 'bool',  
+        'help': 'Append to output_file, do not overwrite. Use with --output.' },
     'filter':  {
         'type': 'bool',  
         'help': 'Use text filter interface. '
