@@ -884,7 +884,7 @@ def handle_key_down(e):
     elif e.key == pygame.K_LSUPER: # logo key, doesn't set a modifier
         scrap.start()
     elif scrap.active():
-        scrap.handle(e)
+        scrap.handle_key(e)
     else:
         try:
             if (mods & pygame.KMOD_CTRL):
@@ -972,7 +972,6 @@ class Clipboard(object):
         self.selection_rect = None
         try:
             pygame.scrap.init()
-            pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
             self.ok = True
         except NotImplementedError:
             logging.warning('PyGame.Scrap module not found. Clipboard functions not available.')    
@@ -1046,9 +1045,10 @@ class Clipboard(object):
             except KeyError:
                 backend.insert_key(c)
 
-    def handle(self, e):
+    def handle_key(self, e):
         """ Handle logo+key clipboard commands. """
         global screen_changed
+        pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
         if not self.ok or not self.logo_pressed:
             return
         if e.unicode in (u'c', u'C'):
@@ -1086,7 +1086,7 @@ class Clipboard(object):
               pygame.Rect(0, rect_top+font_height, rect_right, rect_bot-rect_top-font_height)
                 ]
         screen_changed = True
-        
+
     def create_feedback(self, surface):
         for r in self.selection_rect:
             work_area = surface.subsurface(r)

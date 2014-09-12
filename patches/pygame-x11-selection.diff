@@ -1,0 +1,18 @@
+--- src/scrap_x11.c	2014-09-12 10:18:01.231530141 +0100
++++ src/scrap_x11.c	2014-09-12 10:24:16.285389923 +0100
+@@ -765,13 +765,13 @@
+     {
+         timestamp = ev.xproperty.time;
+ 
+-        if (cliptype == XA_PRIMARY)
++        if (clip == XA_PRIMARY)
+             _selectiontime = timestamp;
+         else
+             _cliptime = timestamp;
+     }
+     else
+-        timestamp = (cliptype == XA_PRIMARY) ? _selectiontime : _cliptime;
++        timestamp = (clip == XA_PRIMARY) ? _selectiontime : _cliptime;
+ 
+ SETSELECTIONOWNER:
+     /* Set the selection owner to the own window. */
