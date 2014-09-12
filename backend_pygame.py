@@ -961,7 +961,8 @@ class Clipboard(object):
     """ Clipboard handling """    
     
     # text type we look for in the clipboard
-    text = 'text/plain;charset=utf-8'
+    text = ('text/plain', 'text/plain;charset=utf-8', 'TEXT', 'STRING',
+            'UTF8_STRING')
         
     def __init__(self):
         """ Initialise pygame scrapboard. """
@@ -982,7 +983,10 @@ class Clipboard(object):
             return False
         """ True if pasteable text is available on clipboard. """
         types = pygame.scrap.get_types()
-        return self.text in types
+        for t in types:
+            if t in self.text:
+                return True
+        return False        
 
     def active(self):
         if not self.ok:
@@ -1028,8 +1032,14 @@ class Clipboard(object):
         """ Paste from clipboard into keyboard buffer. """
         if not self.ok:
             return 
-        us = pygame.scrap.get(self.text).decode('utf-8')
-        for u in us:
+        us = None
+        for text_type in self.text:
+            us = pygame.scrap.get(text_type)
+            if us:
+                break            
+        if not us:
+            return            
+        for u in us.decode('utf-8'):
             c = u.encode('utf-8')
             try:
                 backend.insert_key(unicodepage.from_utf8(c))
