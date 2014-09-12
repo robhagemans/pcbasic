@@ -814,12 +814,26 @@ def check_events(pause=False):
         if event.type == pygame.KEYUP:
             if not pause:
                 handle_key_up(event)
-        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1: #LEFT
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            # any mouse button is a pen press
             backend.pen_down(*normalise_pos(*event.pos))
-        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1: 
+            if event.button == 1:
+                # LEFT button: copy
+                pos = normalise_pos(*event.pos)
+                scrap.start(1+pos[1]//font_height, 1+pos[0]//font_width)
+            elif event.button == 2:
+                # MIDDLE button: paste
+                scrap.paste(mouse=True)    
+        elif event.type == pygame.MOUSEBUTTONUP: 
             backend.pen_up()
+            if event.button == 1:
+                scrap.copy(mouse=True)
+                scrap.stop()
         elif event.type == pygame.MOUSEMOTION: 
-            backend.pen_moved(*normalise_pos(*event.pos))
+            pos = normalise_pos(*event.pos) 
+            backend.pen_moved(*pos)
+            if scrap.active():
+                scrap.move(1+pos[1]//font_height, 1+pos[0]//font_width)
         elif event.type == pygame.JOYBUTTONDOWN:
             if event.joy < 2 and event.button < 2:
                 backend.stick_down(event.joy, event.button)
@@ -993,13 +1007,17 @@ class Clipboard(object):
         """ True if clipboard mode is active. """
         return self.logo_pressed
         
-    def start(self):
+    def start(self, r=None, c=None):
         if not self.ok:
             return 
         """ Enter clipboard mode (Logo key pressed). """
         self.logo_pressed = True
-        self.select_start = [cursor_row, cursor_col]
-        self.select_stop = [cursor_row, cursor_col]
+        if r == None or c == None:
+            self.select_start = [cursor_row, cursor_col]
+            self.select_stop = [cursor_row, cursor_col]
+        else:
+            self.select_start = [r, c]
+            self.select_stop = [r, c]
         self.selection_rect = [pygame.Rect((self.select_start[1]-1) * font_width,
             (self.select_start[0]-1) * font_height, font_width, font_height)]
         
@@ -1014,10 +1032,14 @@ class Clipboard(object):
         self.selection_rect = None
         screen_changed = True
 
-    def copy(self):
+    def copy(self, mouse=False):
         """ Copy screen characters from selection into clipboard. """
         if not self.ok:
             return 
+        if mouse:
+            pygame.scrap.set_mode(pygame.SCRAP_SELECTION)
+        else:
+            pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
         start, stop = self.select_start, self.select_stop
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
             start, stop = stop, start
@@ -1027,10 +1049,14 @@ class Clipboard(object):
         except KeyError:
             logging.debug('Clipboard copy failed for clip %s', repr(full))    
         
-    def paste(self):
+    def paste(self, mouse=False):
         """ Paste from clipboard into keyboard buffer. """
         if not self.ok:
             return 
+        if mouse:
+            pygame.scrap.set_mode(pygame.SCRAP_SELECTION)
+        else:
+            pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
         us = None
         for text_type in self.text:
             us = pygame.scrap.get(text_type)
@@ -1044,21 +1070,10 @@ class Clipboard(object):
                 backend.insert_key(unicodepage.from_utf8(c))
             except KeyError:
                 backend.insert_key(c)
-
-    def handle_key(self, e):
-        """ Handle logo+key clipboard commands. """
-        global screen_changed
-        pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
-        if not self.ok or not self.logo_pressed:
-            return
-        if e.unicode in (u'c', u'C'):
-            self.copy()
-        elif e.unicode in (u'v', u'V') and self.available():
-            self.paste()
-        elif e.key == pygame.K_LEFT:
-            self.select_stop[1] -= 1
-        elif e.key == pygame.K_RIGHT:
-            self.select_stop[1] += 1
+                
+    def move(self, r, c):
+        """ Move the head of the selection and update feedback. """
+        self.select_stop = [r, c]
         if self.select_stop[1] < 1: 
             if self.select_stop[0] > 1:       
                 self.select_stop[0] -= 1
@@ -1086,8 +1101,24 @@ class Clipboard(object):
               pygame.Rect(0, rect_top+font_height, rect_right, rect_bot-rect_top-font_height)
                 ]
         screen_changed = True
+    
+    
+    def handle_key(self, e):
+        """ Handle logo+key clipboard commands. """
+        global screen_changed
+        if not self.ok or not self.logo_pressed:
+            return
+        if e.unicode in (u'c', u'C'):
+            self.copy()
+        elif e.unicode in (u'v', u'V') and self.available():
+            self.paste()
+        elif e.key == pygame.K_LEFT:
+            self.move(self.select_stop[0], self.select_stop[1]-1)
+        elif e.key == pygame.K_RIGHT:
+            self.move(self.select_stop[0], self.select_stop[1]+1)
 
     def create_feedback(self, surface):
+        """ Create visual feedback for selection onto a surface. """
         for r in self.selection_rect:
             work_area = surface.subsurface(r)
             work = work_area.copy()
