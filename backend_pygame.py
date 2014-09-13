@@ -497,7 +497,7 @@ def set_colorburst(on, palette):
     
 def clear_rows(cattr, start, stop):
     global screen_changed
-    bg = (cattr>>4) & 0x7
+    _, bg = get_palette_index(cattr)
     scroll_area = pygame.Rect(0, (start-1)*font_height, 
                               size[0], (stop-start+1)*font_height) 
     canvas[apagenum].fill(bg, scroll_area)
@@ -537,7 +537,7 @@ def scroll(from_line, scroll_height, attr):
     canvas[apagenum].scroll(0, -font_height)
     # empty new line
     blank = pygame.Surface( (width * font_width, font_height) , depth=8)
-    bg = (attr >> 4) & 0x7
+    _, bg = get_palette_index(attr)
     blank.set_palette(workpalette)
     blank.fill(bg)
     canvas[apagenum].blit(blank, (0, (scroll_height-1) * font_height))
@@ -552,7 +552,7 @@ def scroll_down(from_line, scroll_height, attr):
     canvas[apagenum].scroll(0, font_height)
     # empty new line
     blank = pygame.Surface( (width * font_width, font_height), depth=8 )
-    bg = (attr>>4) & 0x7
+    _, bg = get_palette_index(attr)
     blank.set_palette(workpalette)
     blank.fill(bg)
     canvas[apagenum].blit(blank, (0, (from_line-1) * font_height))
