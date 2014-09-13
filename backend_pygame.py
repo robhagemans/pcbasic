@@ -99,7 +99,7 @@ if pygame:
     cursor0 = None
     # screen & updating 
     screen = None
-    surface0 = []
+    surface0 = None
         
     screen_changed = True
     cycle = 0
@@ -649,7 +649,7 @@ def remove_cursor():
 
 def refresh_cursor():
     global under_top_left, last_row, last_col
-    if not  cursor_visible or vpagenum != apagenum:
+    if not cursor_visible or vpagenum != apagenum:
         return
     # copy screen under cursor
     under_top_left = (  (cursor_col-1) * font_width,
@@ -689,8 +689,6 @@ def refresh_cursor():
     last_row = cursor_row
     last_col = cursor_col
 
-
-
 def check_screen():
     global cycle, last_cycle
     global screen_changed
@@ -702,6 +700,8 @@ def check_screen():
         elif cycle == blink_cycles*2: 
             blink_state = 1
             screen_changed = True
+    else:
+        blink_state = 0        
     tock = pygame.time.get_ticks() 
     if (tock - last_cycle) >= (cycle_time/blink_cycles):
         last_cycle = tock
@@ -744,7 +744,8 @@ def do_flip():
         workscreen.set_palette(gamepalette1)
     if smooth and not composite_artifacts:
         pygame.transform.smoothscale(workscreen.convert(display), display.get_size(), display)
-    pygame.transform.scale(workscreen.convert(display), display.get_size(), display)  
+    else:
+        pygame.transform.scale(workscreen.convert(display), display.get_size(), display)  
     workscreen.set_palette(workpalette)    
     pygame.display.flip()
 
