@@ -10,20 +10,20 @@
 #
 
 import copy
+import logging
 try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
 
 import config
-import logging
-import serial_socket
 import oslayer
 import error
 import console
 import util
 import state
 import backend
+import serial_socket
 
 # file numbers
 state.io_state.files = {}
@@ -44,7 +44,7 @@ state.io_state.devices = {}
 
 allowed_protocols = {
     # first protocol is default
-    'LPT': ('FILE', 'PRINTER', 'PORT', 'SOCKET'),
+    'LPT': ('FILE', 'PRINTER', 'PARPORT'),
     'COM': ('PORT', 'SOCKET')
     }
 
@@ -590,6 +590,9 @@ def create_device_stream(arg, allowed):
         stream = oslayer.CUPSStream(val)
     elif addr == 'FILE':
         stream = oslayer.safe_open(val, 'R', 'RW')
+    elif addr == 'PARPORT':
+        # port can be e.g. /dev/parport0 on Linux or LPT1 on Windows. Just a number counting from 0 would also work.
+        stream = serial_socket.parallel_port(val)
     elif addr == 'PORT':
         # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows. Or anything supported by serial_for_url (RFC 2217 etc)
         stream = serial_socket.serial_for_url(val)

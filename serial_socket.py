@@ -10,13 +10,23 @@ try:
 except Exception:
     serial = None
     
+try:
+    import parallel    
+except Exception:
+    parallel = None
+        
 import socket
 import select
 
+def parallel_port(port):
+    if not parallel:
+        logging.warning('Parallel module not found. Parallel port communication not available.\n')
+        return None
+    return ParallelStream(port)    
 
 def serial_for_url(url):
     if not serial:
-        logging.warning('PySerial module not found. Serial port and socket communication not available.\n')
+        logging.warning('Serial module not found. Serial port and socket communication not available.\n')
         return None
     try:    
         stream = serial.serial_for_url(url, timeout=0, do_not_open=True)
@@ -66,3 +76,20 @@ class SocketSerialWrapper(object):
         self._serial.write(s)                    
 
 
+class ParallelStream(object):
+
+    def __init__(self, port):
+        self.parallel = parallel.Parallel(port)
+    
+    def flush(self):
+        pass
+        
+    def write(self, s):
+        for c in s:
+            self.parallel.setData(ord(c))
+    
+    def close(self):
+        pass
+                    
+
+        
