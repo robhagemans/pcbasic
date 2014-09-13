@@ -101,7 +101,6 @@ if pygame:
     # cursor shape
     cursor0 = None
     # screen & updating 
-    screen = None
     surface0 = None
         
     screen_changed = True
@@ -382,7 +381,7 @@ def supports_graphics_mode(mode_info):
 def init_screen_mode(mode_info, is_text_mode=False):
     """ Initialise a given text or graphics mode. """
     global glyphs, cursor0
-    global screen, screen_changed, surface0
+    global screen_changed, surface0
     global font, under_cursor, size, text_mode
     global font_height, attr, num_colours, num_palette
     global width, num_pages, bitsperpixel, font_width
@@ -404,14 +403,12 @@ def init_screen_mode(mode_info, is_text_mode=False):
     # logical size    
     height = 25
     size = (width * font_width, height * font_height)    
-    screen = pygame.Surface(size, depth=8)
     # set standard cursor
     build_cursor(font_width, font_height, 0, font_height)
     # whole screen (blink on & off)
     surface0 = [ pygame.Surface(size, depth=8) for _ in range(num_pages)]
     for i in range(num_pages):
         surface0[i].set_palette(workpalette)
-    screen.set_palette(workpalette)
     screen_changed = True
     
 def resize_display(width, height, initial=False): 
@@ -512,7 +509,7 @@ def move_cursor(crow, ccol):
     cursor_row, cursor_col = crow, ccol
 
 def update_cursor_attr(attr):
-    color = screen.get_palette_at(attr).b
+    color = surface0[vpagenum].get_palette_at(attr).b
     cursor0.set_palette_at(254, pygame.Color(0, color, color))
 
 def scroll(from_line, scroll_height, attr):
@@ -640,17 +637,8 @@ def build_cursor(width, height, from_line, to_line):
 
 ######################################
 # event loop
-
-def refresh_screen():
-    screen.blit(surface0[vpagenum], (0, 0))
     
-def remove_cursor():
-    if not cursor_visible or vpagenum != apagenum:
-        return
-    if under_top_left != None:
-        screen.blit(under_cursor, under_top_left)
-
-def refresh_cursor():
+def draw_cursor(screen):
     global under_top_left, last_row, last_col
     if not cursor_visible or vpagenum != apagenum:
         return
@@ -714,10 +702,8 @@ def check_screen():
         cursor_changed = ( (text_mode and cycle%blink_cycles == 0) 
                            or (cursor_row != last_row) or (cursor_col != last_col) )
         if screen_changed:
-            refresh_screen()
             do_flip()
         elif cursor_changed and cursor_visible:
-            remove_cursor()
             do_flip()
         screen_changed = False
 
@@ -732,7 +718,9 @@ def apply_composite_artifacts(screen, pixels=4):
     return pygame.surfarray.make_surface(numpy.repeat(s[0], pixels, axis=0))
     
 def do_flip():
-    refresh_cursor()
+    global screen 
+    screen = surface0[vpagenum].copy()
+    draw_cursor(screen)
     if composite_artifacts and numpy:
         workscreen = apply_composite_artifacts(screen, 4//bitsperpixel)
     else:
@@ -773,7 +761,6 @@ def check_events(pause=False):
     # handle Android pause/resume
     if android and pygame_android.check_events():
         # force immediate redraw of screen
-        refresh_screen()
         do_flip()
         # force redraw on next tick  
         # we seem to have to redraw twice to see anything
