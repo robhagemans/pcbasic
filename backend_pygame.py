@@ -99,9 +99,9 @@ if pygame:
     font = None
     
     # cursor shape
-    cursor0 = None
+    cursor = None
     # screen & updating 
-    surface0 = None
+    canvas = None
         
     screen_changed = True
     cycle = 0
@@ -280,7 +280,7 @@ def prepare():
 class PygameDisplayState(state.DisplayState):
     def pickle(self):
         self.display_strings = ([], [])
-        for s in surface0:    
+        for s in canvas:    
             self.display_strings[0].append(pygame.image.tostring(s, 'P'))
         
     def unpickle(self):
@@ -299,9 +299,9 @@ def load_state():
     global screen_changed
     if load_flag:
         try:
-            for i in range(len(surface0)):    
-                surface0[i] = pygame.image.fromstring(display_strings[0][i], size, 'P')
-                surface0[i].set_palette(workpalette)
+            for i in range(len(canvas)):    
+                canvas[i] = pygame.image.fromstring(display_strings[0][i], size, 'P')
+                canvas[i].set_palette(workpalette)
             screen_changed = True    
         except (IndexError, ValueError):
             # couldn't load the state correctly; most likely a text screen saved from -t. just redraw what's unpickled.
@@ -380,8 +380,8 @@ def supports_graphics_mode(mode_info):
 
 def init_screen_mode(mode_info, is_text_mode=False):
     """ Initialise a given text or graphics mode. """
-    global glyphs, cursor0
-    global screen_changed, surface0
+    global glyphs, cursor
+    global screen_changed, canvas
     global font, under_cursor, size, text_mode
     global font_height, attr, num_colours, num_palette
     global width, num_pages, bitsperpixel, font_width
@@ -406,9 +406,9 @@ def init_screen_mode(mode_info, is_text_mode=False):
     # set standard cursor
     build_cursor(font_width, font_height, 0, font_height)
     # whole screen (blink on & off)
-    surface0 = [ pygame.Surface(size, depth=8) for _ in range(num_pages)]
+    canvas = [ pygame.Surface(size, depth=8) for _ in range(num_pages)]
     for i in range(num_pages):
-        surface0[i].set_palette(workpalette)
+        canvas[i].set_palette(workpalette)
     screen_changed = True
     
 def resize_display(width, height, initial=False): 
@@ -486,7 +486,7 @@ def clear_rows(cattr, start, stop):
     bg = (cattr>>4) & 0x7
     scroll_area = pygame.Rect(0, (start-1)*font_height, 
                               size[0], (stop-start+1)*font_height) 
-    surface0[apagenum].fill(bg, scroll_area)
+    canvas[apagenum].fill(bg, scroll_area)
     screen_changed = True
     
 def set_page(vpage, apage):
@@ -496,7 +496,7 @@ def set_page(vpage, apage):
 
 def copy_page(src,dst):
     global screen_changed
-    surface0[dst].blit(surface0[src], (0,0))
+    canvas[dst].blit(canvas[src], (0,0))
     screen_changed = True
     
 def update_cursor_visibility(cursor_on):
@@ -509,8 +509,8 @@ def move_cursor(crow, ccol):
     cursor_row, cursor_col = crow, ccol
 
 def update_cursor_attr(attr):
-    color = surface0[vpagenum].get_palette_at(attr).b
-    cursor0.set_palette_at(254, pygame.Color(0, color, color))
+    color = canvas[vpagenum].get_palette_at(attr).b
+    cursor.set_palette_at(254, pygame.Color(0, color, color))
 
 def scroll(from_line, scroll_height, attr):
     global screen_changed
@@ -519,30 +519,30 @@ def scroll(from_line, scroll_height, attr):
                     width * font_width, 
                     (scroll_height-from_line+1) * font_height)
     # scroll
-    surface0[apagenum].set_clip(temp_scroll_area)
-    surface0[apagenum].scroll(0, -font_height)
+    canvas[apagenum].set_clip(temp_scroll_area)
+    canvas[apagenum].scroll(0, -font_height)
     # empty new line
     blank = pygame.Surface( (width * font_width, font_height) , depth=8)
     bg = (attr >> 4) & 0x7
     blank.set_palette(workpalette)
     blank.fill(bg)
-    surface0[apagenum].blit(blank, (0, (scroll_height-1) * font_height))
-    surface0[apagenum].set_clip(None)
+    canvas[apagenum].blit(blank, (0, (scroll_height-1) * font_height))
+    canvas[apagenum].set_clip(None)
     screen_changed = True
    
 def scroll_down(from_line, scroll_height, attr):
     global screen_changed
     temp_scroll_area = pygame.Rect(0, (from_line-1) * font_height, width * 8, 
                                    (scroll_height-from_line+1) * font_height)
-    surface0[apagenum].set_clip(temp_scroll_area)
-    surface0[apagenum].scroll(0, font_height)
+    canvas[apagenum].set_clip(temp_scroll_area)
+    canvas[apagenum].scroll(0, font_height)
     # empty new line
     blank = pygame.Surface( (width * font_width, font_height), depth=8 )
     bg = (attr>>4) & 0x7
     blank.set_palette(workpalette)
     blank.fill(bg)
-    surface0[apagenum].blit(blank, (0, (from_line-1) * font_height))
-    surface0[apagenum].set_clip(None)
+    canvas[apagenum].blit(blank, (0, (from_line-1) * font_height))
+    canvas[apagenum].set_clip(None)
     screen_changed = True
 
 current_attr = None
@@ -568,7 +568,7 @@ def putc_at(row, col, c, for_keys=False):
     glyph = glyphs[ord(c)]
     blank = glyphs[0] # using \0 for blank (tyoeface.py guarantees it's empty)
     top_left = ((col-1) * font_width, (row-1) * font_height)
-    surface0[apagenum].blit(glyph, top_left)
+    canvas[apagenum].blit(glyph, top_left)
     screen_changed = True
 
 def putwc_at(row, col, c, d, for_keys=False):
@@ -582,7 +582,7 @@ def putwc_at(row, col, c, d, for_keys=False):
     blank.fill(255)
     blank.set_palette_at(255, bg)
     top_left = ((col-1) * font_width, (row-1) * font_height)
-    surface0[apagenum].blit(glyph, top_left)
+    canvas[apagenum].blit(glyph, top_left)
     screen_changed = True
     
 
@@ -618,21 +618,21 @@ def build_glyph(c, font_face, req_width, req_height):
     return glyph        
         
 def build_cursor(width, height, from_line, to_line):
-    global screen_changed, cursor0, under_cursor
+    global screen_changed, cursor, under_cursor
     global cursor_width, cursor_from, cursor_to
     cursor_width, cursor_from, cursor_to = width, from_line, to_line
     under_cursor = pygame.Surface((width, height), depth=8)
     under_cursor.set_palette(workpalette)
-    cursor0 = pygame.Surface((width, height), depth=8)
+    cursor = pygame.Surface((width, height), depth=8)
     color, bg = 254, 255
-    cursor0.set_colorkey(bg)
-    cursor0.fill(bg)
+    cursor.set_colorkey(bg)
+    cursor.fill(bg)
     for yy in range(height):
         for xx in range(width):
             if yy < from_line or yy > to_line:
                 pass
             else:
-                cursor0.set_at((xx, yy), color)
+                cursor.set_at((xx, yy), color)
     screen_changed = True            
 
 ######################################
@@ -654,7 +654,7 @@ def draw_cursor(screen):
     if text_mode:
         # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
         if (cycle/blink_cycles==1 or cycle/blink_cycles==3): 
-            screen.blit(cursor0, (  (cursor_col-1) * font_width,
+            screen.blit(cursor, (  (cursor_col-1) * font_width,
                                     (cursor_row-1) * font_height) )
     else:
         if cursor_fixed_attr != None:
@@ -719,7 +719,7 @@ def apply_composite_artifacts(screen, pixels=4):
     
 def do_flip():
     global screen 
-    screen = surface0[vpagenum].copy()
+    screen = canvas[vpagenum].copy()
     draw_cursor(screen)
     if composite_artifacts and numpy:
         workscreen = apply_composite_artifacts(screen, 4//bitsperpixel)
@@ -1112,17 +1112,17 @@ def put_pixel(x, y, index, pagenum=None):
     global screen_changed
     if pagenum == None:
         pagenum = apagenum
-    surface0[pagenum].set_at((x,y), index)
+    canvas[pagenum].set_at((x,y), index)
     backend.clear_screen_buffer_at(x, y)
     screen_changed = True
 
 def get_pixel(x, y, pagenum=None):    
     if pagenum == None:
         pagenum = apagenum
-    return surface0[pagenum].get_at((x,y)).b
+    return canvas[pagenum].get_at((x,y)).b
 
 def get_graph_clip():
-    view = graph_view if graph_view else surface0[apagenum].get_rect()
+    view = graph_view if graph_view else canvas[apagenum].get_rect()
     return view.left, view.top, view.right-1, view.bottom-1
 
 def set_graph_clip(x0, y0, x1, y1):
@@ -1132,25 +1132,25 @@ def set_graph_clip(x0, y0, x1, y1):
 def unset_graph_clip():
     global graph_view
     graph_view = None    
-    return surface0[apagenum].get_rect().center
+    return canvas[apagenum].get_rect().center
 
 def clear_graph_clip(bg):
     global screen_changed
-    surface0[apagenum].set_clip(graph_view)
-    surface0[apagenum].fill(bg)
-    surface0[apagenum].set_clip(None)
+    canvas[apagenum].set_clip(graph_view)
+    canvas[apagenum].fill(bg)
+    canvas[apagenum].set_clip(None)
     screen_changed = True
 
 def remove_graph_clip():
-    surface0[apagenum].set_clip(None)
+    canvas[apagenum].set_clip(None)
 
 def apply_graph_clip():
-    surface0[apagenum].set_clip(graph_view)
+    canvas[apagenum].set_clip(graph_view)
 
 def fill_rect(x0, y0, x1, y1, index):
     global screen_changed
     rect = pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)
-    surface0[apagenum].fill(index, rect)
+    canvas[apagenum].fill(index, rect)
     backend.clear_screen_buffer_area(x0, y0, x1, y1)
     screen_changed = True
 
@@ -1182,7 +1182,7 @@ def fast_get(x0, y0, x1, y1, varname, version):
     if not numpy:
         return
     # copy a numpy array of the target area
-    clip = pygame.surfarray.array2d(surface0[apagenum].subsurface(pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)))
+    clip = pygame.surfarray.array2d(canvas[apagenum].subsurface(pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)))
     get_put_store[varname] = ( x1-x0+1, y1-y0+1, clip, version )
 
 def fast_put(x0, y0, varname, new_version, operation_char):
@@ -1201,7 +1201,7 @@ def fast_put(x0, y0, varname, new_version, operation_char):
         return False
     # reference the destination area
     dest_array = pygame.surfarray.pixels2d(
-            surface0[apagenum].subsurface(pygame.Rect(x0, y0, width, height))) 
+            canvas[apagenum].subsurface(pygame.Rect(x0, y0, width, height))) 
     # apply the operation
     operation = fast_operations[operation_char]
     operation(dest_array, clip)
