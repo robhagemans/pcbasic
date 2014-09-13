@@ -16,10 +16,7 @@ import logging
 try:
     import curses
 except ImportError:
-    try:
-        import unicurses as curses
-    except ImportError:
-        curses = None
+    curses = None
         
 import unicodepage
 import backend
