@@ -30,10 +30,10 @@ On **Linux**:
 
 
 #### Installation from source ####
-Installing PC-BASIC from source requires Python 2.7, PyGame 1.9.1, NumPy, PySerial,  Pexpect  (on Unix), and PyWin32 (on Windows). All of these need to be installed separately.
+Installing PC-BASIC from source requires Python 2.7, PyGame 1.9.1, NumPy, PySerial, Pexpect (on Unix), PyWin32 (on Windows) and WConio (on Windows, if you want to run the command-line interface). All of these need to be installed separately.
 
 On Linux systems, Python 2.7 usually comes pre-installed; the other packages can often be installed through your package manager. For instance, on Ubuntu:  
-`apt-get install python2.7 python-pygame python-numpy python-pexpect python-serial`  
+`apt-get install python2.7 python-pygame python-numpy python-pexpect python-serial python-parallel`  
 
 After that, just unpack the TGZ file in your preferred location and run `./pcbasic` from the unpacked directory.
 
@@ -44,10 +44,11 @@ On other operating systems, use the following links:
 - [PySerial](https://pypi.python.org/pypi/pyserial)  
 - [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html) (needed on Unix only)  
 - [PyWin32](https://sourceforge.net/projects/pywin32/) (needed on Windows only)  
+- [WConio](http://newcenturycomputers.net/projects/wconio.html) (needed for Windows command-line interface only)
 
-Note that there are several versions of Python 2.7 for OSX and all downloads need to match your version and CPU architecture. It's a bit tricky, I'm afraid. The easiest option seems to be installing both Python and PyGame through MacPorts.
+Note that there are several versions of Python 2.7 for OSX and all downloads need to match your version and CPU architecture. It's a bit tricky, I'm afraid. The easiest option seems to be installing both Python and PyGame through MacPorts or Homebrew.
 
-PySerial and Pexpect can be left out; PC-BASIC should still work except for, respectively, COMn: access and the SHELL command. Numpy can probably be left out; you will have no sound in the graphical terminal. If you're not bothered about having graphics and sound and you're on a Unix system, you could leave out PyGame and NumPy altogether to use PC-BASIC in text mode only.
+PySerial and Pexpect can be left out; PC-BASIC should still work except for, respectively, serial and parallel port access and the SHELL command. Numpy can probably be left out; you will have no sound in the graphical terminal. If you're not bothered about having graphics and sound and you're on a Unix system, you could leave out PyGame and NumPy altogether to use PC-BASIC in text mode only.
 
 
 #### Usage essentials ####
