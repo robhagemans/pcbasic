@@ -105,7 +105,6 @@ if pygame:
         
     screen_changed = True
     cycle = 0
-    blink_state = 0
     last_cycle = 0
     cycle_time = 120 
     blink_cycles = 5
@@ -637,6 +636,26 @@ def build_cursor(width, height, from_line, to_line):
 
 ######################################
 # event loop
+
+def check_screen():
+    global cycle, last_cycle
+    global screen_changed
+    blink_state = 0
+    if text_mode:
+        blink_state = 0 if cycle < blink_cycles * 2 else 1
+        if cycle%blink_cycles == 0:    
+            screen_changed = True
+    if cursor_visible and ((cursor_row != last_row) or (cursor_col != last_col)):
+        screen_changed = True
+    tock = pygame.time.get_ticks() 
+    if (tock - last_cycle) >= (cycle_time/blink_cycles):
+        last_cycle = tock
+        cycle += 1
+        if cycle == blink_cycles*4: 
+            cycle = 0
+        if screen_changed:
+            do_flip(blink_state)
+            screen_changed = False
     
 def draw_cursor(screen):
     global under_top_left, last_row, last_col
@@ -680,33 +699,6 @@ def draw_cursor(screen):
     last_row = cursor_row
     last_col = cursor_col
 
-def check_screen():
-    global cycle, last_cycle
-    global screen_changed
-    global blink_state
-    if text_mode:
-        if cycle == 0:
-            blink_state = 0
-            screen_changed = True
-        elif cycle == blink_cycles*2: 
-            blink_state = 1
-            screen_changed = True
-    else:
-        blink_state = 0        
-    tock = pygame.time.get_ticks() 
-    if (tock - last_cycle) >= (cycle_time/blink_cycles):
-        last_cycle = tock
-        cycle += 1
-        if cycle == blink_cycles*4: 
-            cycle = 0
-        cursor_changed = ( (text_mode and cycle%blink_cycles == 0) 
-                           or (cursor_row != last_row) or (cursor_col != last_col) )
-        if screen_changed:
-            do_flip()
-        elif cursor_changed and cursor_visible:
-            do_flip()
-        screen_changed = False
-
 def apply_composite_artifacts(screen, pixels=4):
     src_array = pygame.surfarray.array2d(screen)
     width, height = src_array.shape
@@ -717,8 +709,7 @@ def apply_composite_artifacts(screen, pixels=4):
         s[0] = s[0]*2 + s[p]
     return pygame.surfarray.make_surface(numpy.repeat(s[0], pixels, axis=0))
     
-def do_flip():
-    global screen 
+def do_flip(blink_state):
     screen = canvas[vpagenum].copy()
     draw_cursor(screen)
     if composite_artifacts and numpy:
@@ -761,7 +752,7 @@ def check_events(pause=False):
     # handle Android pause/resume
     if android and pygame_android.check_events():
         # force immediate redraw of screen
-        do_flip()
+        do_flip(0)
         # force redraw on next tick  
         # we seem to have to redraw twice to see anything
         screen_changed = True
