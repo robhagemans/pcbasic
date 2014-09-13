@@ -975,8 +975,8 @@ class Clipboard(object):
     """ Clipboard handling """    
     
     # text type we look for in the clipboard
-    text = ('text/plain', 'text/plain;charset=utf-8', 'TEXT', 'STRING',
-            'UTF8_STRING')
+    text = ('UTF8_STRING', 'text/plain;charset=utf-8', 'text/plain',
+            'TEXT', 'STRING')
         
     def __init__(self):
         """ Initialise pygame scrapboard. """
@@ -986,6 +986,7 @@ class Clipboard(object):
         self.selection_rect = None
         try:
             pygame.scrap.init()
+            pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
             self.ok = True
         except NotImplementedError:
             logging.warning('PyGame.Scrap module not found. Clipboard functions not available.')    
@@ -1044,8 +1045,11 @@ class Clipboard(object):
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
             start, stop = stop, start
         full = backend.get_text(start[0], start[1], stop[0], stop[1])
-        try:        
-            pygame.scrap.put(pygame.SCRAP_TEXT, full)
+        try: 
+            if plat.system == 'Windows':
+                pygame.scrap.put('text/plain;charset=utf-8', full.decode('utf-8').encode('utf-16'))
+            else:    
+                pygame.scrap.put(pygame.SCRAP_TEXT, full)
         except KeyError:
             logging.debug('Clipboard copy failed for clip %s', repr(full))    
         
@@ -1058,12 +1062,23 @@ class Clipboard(object):
         else:
             pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
         us = None
+        available = pygame.scrap.get_types()
         for text_type in self.text:
+            if text_type not in available:
+                continue
             us = pygame.scrap.get(text_type)
             if us:
                 break            
+        if plat.system == 'Windows':
+            if text_type == 'text/plain;charset=utf-8':
+                # it's lying, it's giving us UTF16
+                us = us.decode('utf-16')
+            # null-terminated strings
+            us = us[:us.find('\0')] #.decode('ascii', 'ignore')
+            print repr(us)    
+            us = us.encode('utf-8')
         if not us:
-            return            
+            return
         for u in us.decode('utf-8'):
             c = u.encode('utf-8')
             try:
