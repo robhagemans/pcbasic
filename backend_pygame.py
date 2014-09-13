@@ -309,6 +309,7 @@ def load_state():
 # initialisation
 
 def init():
+    """ Initialise pygame interface. """
     global joysticks, physical_size, scrap, display_size, display_size_text
     global text_mode, num_palette
     # set state objects to whatever is now in state (may have been unpickled)
@@ -410,6 +411,7 @@ def init_screen_mode(mode_info, is_text_mode=False):
     screen_changed = True
     
 def resize_display(width, height, initial=False): 
+    """ Change the display size. """
     global display, screen_changed
     global fullscreen
     display_info = pygame.display.Info()
@@ -430,8 +432,8 @@ def resize_display(width, height, initial=False):
     # load display if requested    
     screen_changed = True    
     
-# build the Ok icon
 def build_icon():
+    """ Build the ok icon. """
     icon = pygame.Surface((17, 17), depth=8)
     icon.fill(255)
     icon.fill(254, (1, 8, 8, 8))
@@ -448,15 +450,24 @@ def build_icon():
     return icon
 
 def close():
+    """ Close the pygame interface. """
     if android:
         pygame_android.close()
     pygame.joystick.quit()
     pygame.display.quit()    
 
-####################################
-# console commands
+def get_palette_index(cattr):
+    """ Find the index in the game palette for this attribute. """
+    if cattr >> 7: # blink      
+        color = (0, (cattr>>4) & 0x7, cattr & 0xf)
+        bg = (0, (cattr>>4) & 0x7, (cattr>>4) & 0x7)    
+    else:
+        color = (0, cattr & 0xf, cattr & 0xf)
+        bg = (0, (cattr>>4) & 0x7, (cattr>>4) & 0x7)    
+    return color, bg    
 
 def update_palette(palette):
+    """ Build the game palette. """
     global screen_changed, gamepalette
     if num_palette == 64:
         basepalette = [pygame.Color(*backend.colours64[i]) for i in palette]
@@ -554,12 +565,7 @@ def set_attr(cattr, force_rebuild=False):
     global current_attr, current_attr_context
     if (not force_rebuild and cattr == current_attr and apagenum == current_attr_context):
         return  
-    if cattr >> 7: # blink      
-        color = (0, (cattr>>4) & 0x7, cattr & 0xf)
-        bg = (0, (cattr>>4) & 0x7, (cattr>>4) & 0x7)    
-    else:
-        color = (0, cattr & 0xf, cattr & 0xf)
-        bg = (0, (cattr>>4) & 0x7, (cattr>>4) & 0x7)    
+    color, bg = get_palette_index(attr)    
     for glyph in glyphs:
         glyph.set_palette_at(255, bg)
         glyph.set_palette_at(254, color)
@@ -577,8 +583,7 @@ def putc_at(row, col, c, for_keys=False):
 def putwc_at(row, col, c, d, for_keys=False):
     global screen_changed
     glyph = build_glyph(c+d, font, 16, font_height)
-    color = (0, 0, current_attr & 0xf)
-    bg = (0, 0, (current_attr>>4) & 0x7)    
+    color, bg = get_palette_index(attr)    
     glyph.set_palette_at(255, bg)
     glyph.set_palette_at(254, color)
     blank = pygame.Surface((16, font_height), depth=8)
