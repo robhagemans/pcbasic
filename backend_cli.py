@@ -17,9 +17,6 @@ import plat
 import unicodepage
 import backend
 
-# output to stdout
-term = sys.stdout
-
 # cursor is visible
 cursor_visible = True
 
@@ -31,11 +28,9 @@ cursor_col = 1
 last_row = 1
 last_col = 1
     
-# ANSI escape codes for output, need arrow movements and clear line and esc_to_scan under Unix.
-# WINE handles these, does Windows?
-from ansi import *
 
 if plat.system == 'Windows':
+    import WConio as wconio
     import msvcrt
 
     # Ctrl+Z to exit
@@ -48,15 +43,66 @@ if plat.system == 'Windows':
         # won't work under WINE
         if not msvcrt.kbhit():
             return ''
-        return msvcrt.getch()    
+        return msvcrt.getch()
     
     def replace_scancodes(s):
         # windows scancodes should be the same as gw-basic ones
         return s.replace('\xe0', '\0')
         
+    def clear_line():
+        wconio.gotoxy(0, wconio.wherey())
+        wconio.clreol()
+    
+    def move_left(num):
+        if num < 0:
+            return
+        x = wconio.wherex() - num
+        if x < 0:
+            x = 0
+        wconio.gotoxy(x, wconio.wherey())
+        
+    def move_right(num):
+        if num < 0:
+            return
+        x = wconio.wherex() + num
+        wconio.gotoxy(x, wconio.wherey())
+
+    class WinTerm(object):
+        def write(self, s):
+            for c in s:
+                wconio.putch(c)
+        def flush(self):
+            pass
+
+    def putc_at(row, col, c, for_keys=False):
+        global last_col
+        if for_keys:
+            return
+        update_position(row, col)
+        # Windows CMD doesn't do UTF8, output raw & set codepage with CHCP
+        wconio.putch(c)
+        last_col += 1
+
+    def putwc_at(row, col, c, d, for_keys=False):
+        global last_col
+        if for_keys:
+            return
+        update_position(row, col)
+        # Windows CMD doesn't do UTF8, output raw & set codepage with CHCP
+        wconio.putch(c)
+        wconio.putch(d)
+        last_col += 2
+
+    term = WinTerm()
+
 else:
     import tty, termios, select
-    
+    # ANSI escape codes for output, need arrow movements and clear line and esc_to_scan under Unix.
+    import ansi
+
+    # output to stdout
+    term = sys.stdout
+
     # Ctrl+D to exit
     eof = '\x04'
 
@@ -86,9 +132,44 @@ else:
         s = s.replace('\0', '\0\0')
         # first replace escape sequences in s with scancodes
         # this plays nice with utf8 as long as the scan codes are all in 7 bit ascii, ie no \00\f0 or above    
-        for esc in esc_to_scan:
-            s = s.replace(esc, esc_to_scan[esc])
+        for esc in ansi.esc_to_scan:
+            s = s.replace(esc, ansi.esc_to_scan[esc])
         return s
+
+
+    def clear_line():
+        term.write(ansi.esc_clear_line)
+    
+    def move_left(num):
+        term.write(ansi.esc_move_left*num)
+
+    def move_right(num):
+        term.write(ansi.esc_move_right*num)
+
+
+    def putc_at(row, col, c, for_keys=False):
+        global last_col
+        if for_keys:
+            return
+        update_position(row, col)
+        # this doesn't recognise DBCS
+        term.write(unicodepage.UTF8Converter().to_utf8(c))
+        term.flush()
+        last_col += 1
+
+    def putwc_at(row, col, c, d, for_keys=False):
+        global last_col
+        if for_keys:
+            return
+        update_position(row, col)
+        # this does recognise DBCS
+        try:
+            term.write(unicodepage.UTF8Converter().to_utf8(c+d))
+        except KeyError:
+            term.write('  ')
+        term.flush()
+        last_col += 2
+       
 
 def prepare(args):
     pass
@@ -111,12 +192,6 @@ def close():
 def idle():
     time.sleep(0.024)
     
-def clear_rows(cattr, start, stop):
-    if start == cursor_row and stop == cursor_row:
-        update_position(None, 1)
-        term.write(esc_clear_line)
-        term.flush()
-        update_position()
         
 def update_palette(palette):
     pass
@@ -156,37 +231,21 @@ def update_position(row=None, col=None):
         # this reconstructs DBCS buffer, no need to do that
         backend.redraw_row(0, cursor_row, wrap=False)
     if col != last_col:
-        term.write(esc_move_left*(last_col-col))
-        term.write(esc_move_right*(col-last_col))
+        move_left(last_col-col)
+        move_right(col-last_col)
         term.flush()
         last_col = col
+
+def clear_rows(cattr, start, stop):
+    if start == cursor_row and stop == cursor_row:
+        update_position(None, 1)
+        clear_line()
+        term.flush()
+        update_position()
             
 def set_attr(attr):
     pass
 
-def putc_at(row, col, c, for_keys=False):
-    global last_col
-    if for_keys:
-        return
-    update_position(row, col)
-    # this doesn't recognise DBCS
-    term.write(unicodepage.UTF8Converter().to_utf8(c))
-    term.flush()
-    last_col += 1
-
-def putwc_at(row, col, c, d, for_keys=False):
-    global last_col
-    if for_keys:
-        return
-    update_position(row, col)
-    # this does recognise DBCS
-    try:
-        term.write(unicodepage.UTF8Converter().to_utf8(c+d))
-    except KeyError:
-        term.write('  ')
-    term.flush()
-    last_col += 2
-   
 def scroll(from_line, scroll_height, attr):
     term.write('\r\n')
     term.flush()
