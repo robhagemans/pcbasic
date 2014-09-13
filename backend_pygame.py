@@ -74,14 +74,13 @@ if pygame:
     colorburst = False
     composite_artifacts = False
     composite_monitor = False
+    mode_has_artifacts = False
     
-    # for use with get_at
-    workaround_palette = [ 
-            (0,0,0), (0,0,1), (0,0,2), (0,0,3), (0,0,4), (0,0,5), (0,0,6), (0,0,7),
-            (0,0,8), (0,0,9), (0,0,10), (0,0,11), (0,0,12), (0,0,13), (0,0,14), (0,0,15) ]
+    workpalette = [(0, b, f) for b in range(16) for f in range(16)]
 
     # standard palettes
-    gamepalette = None
+    gamepalette0 = None
+    gamepalette1 = None
 
     # screen width and height in pixels
     display_size = (640, 480)
@@ -101,7 +100,6 @@ if pygame:
     # screen & updating 
     screen = None
     surface0 = []
-    surface1 = []
         
     screen_changed = True
     cycle = 0
@@ -282,8 +280,6 @@ class PygameDisplayState(state.DisplayState):
         self.display_strings = ([], [])
         for s in surface0:    
             self.display_strings[0].append(pygame.image.tostring(s, 'P'))
-        for s in surface1:    
-            self.display_strings[1].append(pygame.image.tostring(s, 'P'))
         
     def unpickle(self):
         global display_strings, load_flag
@@ -303,10 +299,7 @@ def load_state():
         try:
             for i in range(len(surface0)):    
                 surface0[i] = pygame.image.fromstring(display_strings[0][i], size, 'P')
-                surface0[i].set_palette(workaround_palette)
-            for i in range(len(surface1)):    
-                surface1[i] = pygame.image.fromstring(display_strings[1][i], size, 'P')
-                surface1[i].set_palette(workaround_palette)
+                surface0[i].set_palette(workpalette)
             screen_changed = True    
         except (IndexError, ValueError):
             # couldn't load the state correctly; most likely a text screen saved from -t. just redraw what's unpickled.
@@ -386,7 +379,7 @@ def supports_graphics_mode(mode_info):
 def init_screen_mode(mode_info, is_text_mode=False):
     """ Initialise a given text or graphics mode. """
     global glyphs, cursor0
-    global screen, screen_changed, surface0, surface1
+    global screen, screen_changed, surface0
     global font, under_cursor, size, text_mode
     global font_height, attr, num_colours, num_palette
     global width, num_pages, bitsperpixel, font_width
@@ -413,11 +406,9 @@ def init_screen_mode(mode_info, is_text_mode=False):
     build_cursor(font_width, font_height, 0, font_height)
     # whole screen (blink on & off)
     surface0 = [ pygame.Surface(size, depth=8) for _ in range(num_pages)]
-    surface1 = [ pygame.Surface(size, depth=8) for _ in range(num_pages)]
     for i in range(num_pages):
-        surface0[i].set_palette(workaround_palette)
-        surface1[i].set_palette(workaround_palette)
-    screen.set_palette(workaround_palette)
+        surface0[i].set_palette(workpalette)
+    screen.set_palette(workpalette)
     screen_changed = True
     
 def resize_display(width, height, initial=False): 
@@ -437,12 +428,7 @@ def resize_display(width, height, initial=False):
         width, height = width * scale, height * scale
     if (width, height) == (display_info.current_w, display_info.current_h) and not initial:
         return
-    if smooth:
-        display = pygame.display.set_mode((width, height), flags)
-    else:
-        display = pygame.display.set_mode((width, height), flags, 8)    
-    if not initial:
-        set_display_palette()
+    display = pygame.display.set_mode((width, height), flags)
     # load display if requested    
     screen_changed = True    
     
@@ -473,7 +459,7 @@ def close():
 # console commands
 
 def update_palette(palette):
-    global gamepalette, screen_changed
+    global gamepalette, screen_changed, gamepalette0, gamepalette1
     if num_palette == 64:
         gamepalette = [pygame.Color(*backend.colours64[i]) for i in palette]
     else:
@@ -482,30 +468,25 @@ def update_palette(palette):
             gamepalette = [pygame.Color(*backend.colours16[i % num_palette]) for i in palette]
         else:
             gamepalette = [pygame.Color(*backend.colours16_mono[i % num_palette]) for i in palette]
-    set_display_palette()
+    while len(gamepalette) < 16:
+        gamepalette.append(pygame.Color(0, 0, 0))
+    gamepalette0 = [gamepalette[f] for b in range(16) for f in range(16)]
+    gamepalette1 = [gamepalette[b] for b in range(16) for f in range(16)]
     screen_changed = True
 
-def set_display_palette():
-    global composite_artifacts
-    composite_artifacts = colorburst and mode_has_artifacts and composite_monitor
-    if composite_artifacts:
-        display.set_palette(composite_640_palette) 
-    elif not smooth:
-        display.set_palette(gamepalette)
-
 def set_colorburst(on, palette):
-    global colorburst
+    global colorburst, composite_artifacts
     if composite_monitor:
         colorburst = on
     update_palette(palette)
-        
+    composite_artifacts = colorburst and mode_has_artifacts and composite_monitor
+    
 def clear_rows(cattr, start, stop):
     global screen_changed
     bg = (cattr>>4) & 0x7
     scroll_area = pygame.Rect(0, (start-1)*font_height, 
                               size[0], (stop-start+1)*font_height) 
     surface0[apagenum].fill(bg, scroll_area)
-    surface1[apagenum].fill(bg, scroll_area)
     screen_changed = True
     
 def set_page(vpage, apage):
@@ -516,7 +497,6 @@ def set_page(vpage, apage):
 def copy_page(src,dst):
     global screen_changed
     surface0[dst].blit(surface0[src], (0,0))
-    surface1[dst].blit(surface1[src], (0,0))
     screen_changed = True
     
 def update_cursor_visibility(cursor_on):
@@ -529,7 +509,8 @@ def move_cursor(crow, ccol):
     cursor_row, cursor_col = crow, ccol
 
 def update_cursor_attr(attr):
-    cursor0.set_palette_at(254, screen.get_palette_at(attr))
+    color = screen.get_palette_at(attr).b
+    cursor0.set_palette_at(254, pygame.Color(0, color, color))
 
 def scroll(from_line, scroll_height, attr):
     global screen_changed
@@ -539,18 +520,14 @@ def scroll(from_line, scroll_height, attr):
                     (scroll_height-from_line+1) * font_height)
     # scroll
     surface0[apagenum].set_clip(temp_scroll_area)
-    surface1[apagenum].set_clip(temp_scroll_area)
     surface0[apagenum].scroll(0, -font_height)
-    surface1[apagenum].scroll(0, -font_height)
     # empty new line
     blank = pygame.Surface( (width * font_width, font_height) , depth=8)
     bg = (attr >> 4) & 0x7
-    blank.set_palette(workaround_palette)
+    blank.set_palette(workpalette)
     blank.fill(bg)
     surface0[apagenum].blit(blank, (0, (scroll_height-1) * font_height))
-    surface1[apagenum].blit(blank, (0, (scroll_height-1) * font_height))
     surface0[apagenum].set_clip(None)
-    surface1[apagenum].set_clip(None)
     screen_changed = True
    
 def scroll_down(from_line, scroll_height, attr):
@@ -558,18 +535,14 @@ def scroll_down(from_line, scroll_height, attr):
     temp_scroll_area = pygame.Rect(0, (from_line-1) * font_height, width * 8, 
                                    (scroll_height-from_line+1) * font_height)
     surface0[apagenum].set_clip(temp_scroll_area)
-    surface1[apagenum].set_clip(temp_scroll_area)
     surface0[apagenum].scroll(0, font_height)
-    surface1[apagenum].scroll(0, font_height)
     # empty new line
     blank = pygame.Surface( (width * font_width, font_height), depth=8 )
     bg = (attr>>4) & 0x7
-    blank.set_palette(workaround_palette)
+    blank.set_palette(workpalette)
     blank.fill(bg)
     surface0[apagenum].blit(blank, (0, (from_line-1) * font_height))
-    surface1[apagenum].blit(blank, (0, (from_line-1) * font_height))
     surface0[apagenum].set_clip(None)
-    surface1[apagenum].set_clip(None)
     screen_changed = True
 
 current_attr = None
@@ -577,9 +550,13 @@ current_attr_context = None
 def set_attr(cattr, force_rebuild=False):
     global current_attr, current_attr_context
     if (not force_rebuild and cattr == current_attr and apagenum == current_attr_context):
-        return    
-    color = (0, 0, cattr & 0xf)
-    bg = (0, 0, (cattr>>4) & 0x7)    
+        return  
+    if cattr >> 7: # blink      
+        color = (0, (cattr>>4) & 0x7, cattr & 0xf)
+        bg = (0, (cattr>>4) & 0x7, (cattr>>4) & 0x7)    
+    else:
+        color = (0, cattr & 0xf, cattr & 0xf)
+        bg = (0, (cattr>>4) & 0x7, (cattr>>4) & 0x7)    
     for glyph in glyphs:
         glyph.set_palette_at(255, bg)
         glyph.set_palette_at(254, color)
@@ -591,12 +568,7 @@ def putc_at(row, col, c, for_keys=False):
     glyph = glyphs[ord(c)]
     blank = glyphs[0] # using \0 for blank (tyoeface.py guarantees it's empty)
     top_left = ((col-1) * font_width, (row-1) * font_height)
-    if text_mode:
-        surface1[apagenum].blit(glyph, top_left)
-    if current_attr >> 7: #blink:
-        surface0[apagenum].blit(blank, top_left)
-    else:
-        surface0[apagenum].blit(glyph, top_left)
+    surface0[apagenum].blit(glyph, top_left)
     screen_changed = True
 
 def putwc_at(row, col, c, d, for_keys=False):
@@ -610,12 +582,7 @@ def putwc_at(row, col, c, d, for_keys=False):
     blank.fill(255)
     blank.set_palette_at(255, bg)
     top_left = ((col-1) * font_width, (row-1) * font_height)
-    if text_mode:
-        surface1[apagenum].blit(glyph, top_left)
-    if current_attr >> 7: #blink:
-        surface0[apagenum].blit(blank, top_left)
-    else:
-        surface0[apagenum].blit(glyph, top_left)
+    surface0[apagenum].blit(glyph, top_left)
     screen_changed = True
     
 
@@ -655,7 +622,7 @@ def build_cursor(width, height, from_line, to_line):
     global cursor_width, cursor_from, cursor_to
     cursor_width, cursor_from, cursor_to = width, from_line, to_line
     under_cursor = pygame.Surface((width, height), depth=8)
-    under_cursor.set_palette(workaround_palette)
+    under_cursor.set_palette(workpalette)
     cursor0 = pygame.Surface((width, height), depth=8)
     color, bg = 254, 255
     cursor0.set_colorkey(bg)
@@ -672,10 +639,7 @@ def build_cursor(width, height, from_line, to_line):
 # event loop
 
 def refresh_screen():
-    if (not text_mode) or blink_state == 0:
-        screen.blit(surface0[vpagenum], (0, 0))
-    elif blink_state == 1: 
-        screen.blit(surface1[vpagenum], (0, 0))
+    screen.blit(surface0[vpagenum], (0, 0))
     
 def remove_cursor():
     if not cursor_visible or vpagenum != apagenum:
@@ -766,16 +730,22 @@ def apply_composite_artifacts(screen, pixels=4):
     
 def do_flip():
     refresh_cursor()
-    if scrap.active():
-        scrap.create_feedback(screen)
-    if smooth and not colorburst:
-        screen.set_palette(gamepalette)
-        pygame.transform.smoothscale(screen.convert(display), display.get_size(), display)
-        screen.set_palette(workaround_palette)    
-    elif composite_artifacts and numpy:
-        pygame.transform.scale(apply_composite_artifacts(screen, 4//bitsperpixel), display.get_size(), display)  
+    if composite_artifacts and numpy:
+        workscreen = apply_composite_artifacts(screen, 4//bitsperpixel)
     else:
-        pygame.transform.scale(screen, display.get_size(), display)  
+        workscreen = screen
+    if scrap.active():
+        scrap.create_feedback(workscreen)
+    if composite_artifacts and numpy:
+        workscreen.set_palette(composite_640_palette)    
+    elif blink_state == 0:
+        workscreen.set_palette(gamepalette0)
+    elif blink_state == 1:
+        workscreen.set_palette(gamepalette1)
+    if smooth and not composite_artifacts:
+        pygame.transform.smoothscale(workscreen.convert(display), display.get_size(), display)
+    pygame.transform.scale(workscreen.convert(display), display.get_size(), display)  
+    workscreen.set_palette(workpalette)    
     pygame.display.flip()
 
 #######################################################
@@ -1075,7 +1045,6 @@ class Clipboard(object):
                 us = us.decode('utf-16')
             # null-terminated strings
             us = us[:us.find('\0')] #.decode('ascii', 'ignore')
-            print repr(us)    
             us = us.encode('utf-8')
         if not us:
             return
