@@ -468,8 +468,13 @@ def update_palette(palette):
             basepalette = [pygame.Color(*backend.colours16_mono[i % num_palette]) for i in palette]
     while len(basepalette) < 16:
         basepalette.append(pygame.Color(0, 0, 0))
+    # of these 16x16 combinations, only dim backgrounds and bg == fg are used    
     gamepalette[0] = [basepalette[f] for b in range(16) for f in range(16)]
     gamepalette[1] = [basepalette[b] for b in range(16) for f in range(16)]
+    # use an unused combination for feedback colour
+    # the colour needs to be on the palette or it won't be shown right
+    gamepalette[0][128] = pygame.Color(*scrap_feedback_colour)
+    gamepalette[1][128] = pygame.Color(*scrap_feedback_colour)
     screen_changed = True
 
 def set_colorburst(on, palette):
