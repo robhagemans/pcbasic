@@ -76,11 +76,10 @@ if pygame:
     composite_monitor = False
     mode_has_artifacts = False
     
+    # working palette - foreground index in blue channel, background in green.
     workpalette = [(0, b, f) for b in range(16) for f in range(16)]
-
-    # standard palettes
-    gamepalette0 = None
-    gamepalette1 = None
+    # display palettes for blink states 0, 1
+    gamepalette = [None, None]
 
     # colour of clipboard selection
     scrap_feedback_colour = (0x55, 0x00, 0x55)
@@ -458,19 +457,19 @@ def close():
 # console commands
 
 def update_palette(palette):
-    global screen_changed, gamepalette0, gamepalette1
+    global screen_changed, gamepalette
     if num_palette == 64:
-        gamepalette = [pygame.Color(*backend.colours64[i]) for i in palette]
+        basepalette = [pygame.Color(*backend.colours64[i]) for i in palette]
     else:
         if (colorburst or not composite_monitor):
             # take modulo in case we're e.g. resuming ega text into a cga machine
-            gamepalette = [pygame.Color(*backend.colours16[i % num_palette]) for i in palette]
+            basepalette = [pygame.Color(*backend.colours16[i % num_palette]) for i in palette]
         else:
-            gamepalette = [pygame.Color(*backend.colours16_mono[i % num_palette]) for i in palette]
-    while len(gamepalette) < 16:
-        gamepalette.append(pygame.Color(0, 0, 0))
-    gamepalette0 = [gamepalette[f] for b in range(16) for f in range(16)]
-    gamepalette1 = [gamepalette[b] for b in range(16) for f in range(16)]
+            basepalette = [pygame.Color(*backend.colours16_mono[i % num_palette]) for i in palette]
+    while len(basepalette) < 16:
+        basepalette.append(pygame.Color(0, 0, 0))
+    gamepalette[0] = [basepalette[f] for b in range(16) for f in range(16)]
+    gamepalette[1] = [basepalette[b] for b in range(16) for f in range(16)]
     screen_changed = True
 
 def set_colorburst(on, palette):
@@ -713,22 +712,16 @@ def do_flip(blink_state):
     screen = canvas[vpagenum].copy()
     draw_cursor(screen)
     if composite_artifacts and numpy:
-        workscreen = apply_composite_artifacts(screen, 4//bitsperpixel)
+        screen = apply_composite_artifacts(screen, 4//bitsperpixel)
+        screen.set_palette(composite_640_palette)    
     else:
-        workscreen = screen
-    if composite_artifacts and numpy:
-        workscreen.set_palette(composite_640_palette)    
-    elif blink_state == 0:
-        workscreen.set_palette(gamepalette0)
-    elif blink_state == 1:
-        workscreen.set_palette(gamepalette1)
+        screen.set_palette(gamepalette[blink_state])
     if scrap.active():
-        scrap.create_feedback(workscreen)
+        scrap.create_feedback(screen)
     if smooth and not composite_artifacts:
-        pygame.transform.smoothscale(workscreen.convert(display), display.get_size(), display)
+        pygame.transform.smoothscale(screen.convert(display), display.get_size(), display)
     else:
-        pygame.transform.scale(workscreen.convert(display), display.get_size(), display)  
-    workscreen.set_palette(workpalette)    
+        pygame.transform.scale(screen.convert(display), display.get_size(), display)  
     pygame.display.flip()
 
 #######################################################
