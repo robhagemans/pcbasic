@@ -314,14 +314,14 @@ def init():
     global text_mode, num_palette
     # set state objects to whatever is now in state (may have been unpickled)
     if not pygame:
-        logging.warning('Could not find PyGame module. Failed to initialise graphical interface.')
+        logging.warning('PyGame module not found. Failed to initialise graphical interface.')
         return False     
     pre_init_mixer()   
     pygame.init()
     # exclude some backend drivers as they give unusable results
     if pygame.display.get_driver() == 'caca':
         pygame.display.quit()
-        logging.warning('Refusing to open libcaca console. Failed to initialise graphical interface.')
+        logging.warning('Refusing to use libcaca. Failed to initialise graphical interface.')
         return False
     # get physical screen dimensions (needs to be called before set_mode)
     display_info = pygame.display.Info()
@@ -1209,7 +1209,10 @@ def fast_put(x0, y0, varname, new_version, operation_char):
 from math import ceil
 
 def init_sound():
-    return (numpy != None)
+    if not numpy:
+        logging.warning('NumPy module not found. Failed to initialise audio.')
+        return False
+    return True
     
 def stop_all_sound():
     global sound_queue, loop_sound
