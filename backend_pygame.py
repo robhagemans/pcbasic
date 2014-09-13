@@ -82,6 +82,9 @@ if pygame:
     gamepalette0 = None
     gamepalette1 = None
 
+    # colour of clipboard selection
+    scrap_feedback_colour = (0x55, 0x00, 0x55)
+
     # screen width and height in pixels
     display_size = (640, 480)
     display_size_text = (640, 480)
@@ -459,7 +462,7 @@ def close():
 # console commands
 
 def update_palette(palette):
-    global gamepalette, screen_changed, gamepalette0, gamepalette1
+    global screen_changed, gamepalette0, gamepalette1
     if num_palette == 64:
         gamepalette = [pygame.Color(*backend.colours64[i]) for i in palette]
     else:
@@ -734,14 +737,14 @@ def do_flip():
         workscreen = apply_composite_artifacts(screen, 4//bitsperpixel)
     else:
         workscreen = screen
-    if scrap.active():
-        scrap.create_feedback(workscreen)
     if composite_artifacts and numpy:
         workscreen.set_palette(composite_640_palette)    
     elif blink_state == 0:
         workscreen.set_palette(gamepalette0)
     elif blink_state == 1:
         workscreen.set_palette(gamepalette1)
+    if scrap.active():
+        scrap.create_feedback(workscreen)
     if smooth and not composite_artifacts:
         pygame.transform.smoothscale(workscreen.convert(display), display.get_size(), display)
     else:
@@ -1058,6 +1061,7 @@ class Clipboard(object):
                 
     def move(self, r, c):
         """ Move the head of the selection and update feedback. """
+        global screen_changed
         self.select_stop = [r, c]
         if self.select_stop[1] < 1: 
             if self.select_stop[0] > 1:       
@@ -1108,7 +1112,7 @@ class Clipboard(object):
             work_area = surface.subsurface(r)
             work = work_area.copy()
             work.set_colorkey(pygame.Color(0,0,0)) # use bg color 
-            work_area.fill(pygame.Color(0x55, 0, 0x55)) 
+            work_area.fill(pygame.Color(*scrap_feedback_colour))
             work_area.blit(work, (0,0))
         
 ###############################################
