@@ -744,7 +744,7 @@ def peek_char():
     ch = ''
     if len(state.console_state.keybuf)>0:
         ch = state.console_state.keybuf[0]
-        if ch == '\x00' and len(state.console_state.keybuf) > 0:
+        if ch == '\x00' and len(state.console_state.keybuf) > 1:
             ch += state.console_state.keybuf[1]
     return ch 
     
