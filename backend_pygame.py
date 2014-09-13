@@ -565,7 +565,7 @@ def set_attr(cattr, force_rebuild=False):
     global current_attr, current_attr_context
     if (not force_rebuild and cattr == current_attr and apagenum == current_attr_context):
         return  
-    color, bg = get_palette_index(attr)    
+    color, bg = get_palette_index(cattr)    
     for glyph in glyphs:
         glyph.set_palette_at(255, bg)
         glyph.set_palette_at(254, color)
