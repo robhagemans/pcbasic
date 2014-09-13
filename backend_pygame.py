@@ -84,6 +84,11 @@ if pygame:
     # colour of clipboard selection
     scrap_feedback_colour = (0x55, 0x00, 0x55)
 
+    # border attribute
+    border_attr = 0
+    # border widh in pixels
+    border_width = 4
+
     # screen width and height in pixels
     display_size = (640, 480)
     display_size_text = (640, 480)
@@ -233,10 +238,11 @@ if pygame:
 def prepare():
     global fullscreen, smooth, noquit, display_size
     global display_size_text, composite_monitor, heights_needed
-    global composite_640_palette
+    global composite_640_palette, border_width
     # screen width and height in pixels
-    display_size = (640, 480)
-    display_size_text = (8*80, 16*25)
+    border_width = config.options['border_width']
+    display_size = (640 + 2*border_width, 480 + 2*border_width)
+    display_size_text = (8*80 + 2*border_width, 16*25 + 2*border_width)
     if config.options['video'] in ('cga', 'cga_old', 'tandy', 'pcjr'):
         heights_needed = (8, )
     else:
@@ -270,7 +276,6 @@ def prepare():
         keycode_to_inpcode[pygame.K_F12] = '\xFA'
     if config.options['font']:
         font_families = config.options['font']
-
         
 ####################################
 # state saving and loading
@@ -488,6 +493,11 @@ def update_palette(palette):
     gamepalette[1][128] = pygame.Color(*scrap_feedback_colour)
     screen_changed = True
 
+def set_border(attr):
+    global border_attr, screen_changed
+    border_attr = attr
+    screen_changed = True
+    
 def set_colorburst(on, palette):
     global colorburst, composite_artifacts
     if composite_monitor:
@@ -719,15 +729,22 @@ def apply_composite_artifacts(screen, pixels=4):
     return pygame.surfarray.make_surface(numpy.repeat(s[0], pixels, axis=0))
     
 def do_flip(blink_state):
-    screen = canvas[vpagenum].copy()
-    draw_cursor(screen)
+    # create the screen that will be stretched onto the display
+    screen = pygame.Surface((size[0]+2*border_width, size[1]+2*border_width), 0, canvas[vpagenum])
+    screen.set_palette(workpalette)
+    # border colour
+    screen.fill(pygame.Color(0, border_attr, border_attr))
+    screen.blit(canvas[vpagenum], (border_width, border_width))
+    # subsurface referencing the canvas area
+    workscreen = screen.subsurface((border_width, border_width, size[0], size[1]))
+    draw_cursor(workscreen)
     if composite_artifacts and numpy:
         screen = apply_composite_artifacts(screen, 4//bitsperpixel)
         screen.set_palette(composite_640_palette)    
     else:
         screen.set_palette(gamepalette[blink_state])
     if scrap.active():
-        scrap.create_feedback(screen)
+        scrap.create_feedback(workscreen)
     if smooth:
         pygame.transform.smoothscale(screen.convert(display), display.get_size(), display)
     else:

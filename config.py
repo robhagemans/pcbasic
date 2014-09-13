@@ -233,6 +233,10 @@ arguments = {
     'utf8': { 
         'type': 'bool', 
         'help': 'Use UTF-8 for ascii-mode programs and redirected i/o' },
+    'border_width': { 
+        'type': 'int', 
+        'help': 'Width of the screen border in pixels '
+                '(graphical interface only).' },
 }
 
 def prepare():

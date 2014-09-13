@@ -301,3 +301,6 @@ def build_cursor(width, height, from_line, to_line):
 def load_state():
     pass
             
+def set_border(attr):
+    pass
+                

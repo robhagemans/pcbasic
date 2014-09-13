@@ -214,6 +214,8 @@ state.console_state.colorswitch = 1
 # use ega palette by default
 state.console_state.num_palette = 64
 state.console_state.palette = ega_palette
+# border colour
+state.console_state.border_attr = 0
 
 #############################################
 # initialisation
@@ -446,6 +448,8 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
         set_colorburst(new_colorswitch)
     elif new_mode == 2:
         set_colorburst(False)    
+    # start with black border 
+    set_border(0)
     return True
 
 def init_graphics(new_mode):
@@ -917,6 +921,9 @@ def set_colorburst(on=True):
         set_palette()    
     video.set_colorburst(on and colorburst_capable, state.console_state.palette)
 
+def set_border(attr):
+    state.console_state.border_attr = attr
+    video.set_border(attr)
 
 #############################################
 # I/O redirection

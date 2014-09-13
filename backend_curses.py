@@ -326,4 +326,7 @@ def copy_page(src, dst):
 def load_state():
     # console has already been loaded; just redraw
     redraw()
+
+def set_border(attr):
+    pass
         
