@@ -20,13 +20,17 @@ import select
 
 def parallel_port(port):
     if not parallel:
-        logging.warning('Parallel module not found. Parallel port communication not available.\n')
+        logging.warning('Parallel module not found. Parallel port communication not available.')
         return None
-    return ParallelStream(port)    
+    try:
+        stream = ParallelStream(port)
+    except (OSError, IOError):
+        logging.warning('Could not open parallel port %s.', port) 
+    return     
 
 def serial_for_url(url):
     if not serial:
-        logging.warning('Serial module not found. Serial port and socket communication not available.\n')
+        logging.warning('Serial module not found. Serial port and socket communication not available.')
         return None
     try:    
         stream = serial.serial_for_url(url, timeout=0, do_not_open=True)

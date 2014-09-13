@@ -201,7 +201,7 @@ class BaseFile(object):
     def close(self):
         try:
             self.fhandle.flush()
-        except IOError:
+        except (IOError, ValueError):
             # ignore errors on flushing
             pass    
         # don't close the handle - for devices
@@ -565,7 +565,7 @@ def create_device(name, arg, default=None):
     else:   
         stream = create_device_stream(arg, allowed_protocols[name[:3]])
         if not stream:
-            logging.warning('Could not attach %s to %s.\n' % (name, arg))
+            logging.warning('Could not attach %s to %s.' % (name, arg))
             stream = default
     if stream:        
         if name[:3] == 'COM':
