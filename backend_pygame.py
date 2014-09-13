@@ -718,7 +718,7 @@ def do_flip(blink_state):
         screen.set_palette(gamepalette[blink_state])
     if scrap.active():
         scrap.create_feedback(screen)
-    if smooth and not composite_artifacts:
+    if smooth:
         pygame.transform.smoothscale(screen.convert(display), display.get_size(), display)
     else:
         pygame.transform.scale(screen.convert(display), display.get_size(), display)  
