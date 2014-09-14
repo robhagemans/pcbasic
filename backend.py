@@ -318,6 +318,7 @@ def init_video():
             video.update_cursor_attr(
                     state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
             update_cursor_visibility()
+            video.set_border(state.console_state.border_attr)
         else:
             # mode not supported by backend
             logging.error(
