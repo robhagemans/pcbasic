@@ -231,6 +231,11 @@ if pygame:
 
     # this doesn't currently change
     height = 25
+
+    # mouse button functions
+    mousebutton_copy = 1
+    mousebutton_paste = 2
+    mousebutton_pen = 3
     
 ####################################            
 # set constants based on commandline arguments
@@ -239,6 +244,7 @@ def prepare():
     global fullscreen, smooth, noquit, display_size
     global display_size_text, composite_monitor, heights_needed
     global composite_640_palette, border_width
+    global mousebutton_copy, mousebutton_paste, mousebutton_pen
     # screen width and height in pixels
     border_width = config.options['border_width']
     display_size = (640 + 2*border_width, 480 + 2*border_width)
@@ -276,6 +282,18 @@ def prepare():
         keycode_to_inpcode[pygame.K_F12] = '\xFA'
     if config.options['font']:
         font_families = config.options['font']
+    if config.options['mouse']:
+        mousebutton_copy = -1
+        mousebutton_paste = -1
+        mousebutton_pen = -1
+        for i, s in enumerate(config.options['mouse'].split(',')):    
+            if s == 'copy':
+                mousebutton_copy = i+1
+            elif s == 'paste':
+                mousebutton_paste = i+1
+            elif s == 'pen':
+                mousebutton_pen = i+1
+            
         
 ####################################
 # state saving and loading
@@ -786,19 +804,20 @@ def check_events(pause=False):
         if event.type == pygame.KEYUP:
             if not pause:
                 handle_key_up(event)
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            # any mouse button is a pen press
-            backend.pen_down(*normalise_pos(*event.pos))
-            if event.button == 1:
+        elif event.type == pygame.MOUSEBUTTONDOWN: 
+            if event.button == mousebutton_copy:
                 # LEFT button: copy
                 pos = normalise_pos(*event.pos)
                 scrap.start(1+pos[1]//font_height, 1+pos[0]//font_width)
-            elif event.button == 2:
+            elif event.button == mousebutton_paste:
                 # MIDDLE button: paste
                 scrap.paste(mouse=True)    
+            elif event.button == mousebutton_pen:
+                # right mouse button is a pen press
+                backend.pen_down(*normalise_pos(*event.pos))
         elif event.type == pygame.MOUSEBUTTONUP: 
             backend.pen_up()
-            if event.button == 1:
+            if event.button == mousebutton_copy:
                 scrap.copy(mouse=True)
                 scrap.stop()
         elif event.type == pygame.MOUSEMOTION: 

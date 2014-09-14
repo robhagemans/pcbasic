@@ -237,6 +237,10 @@ arguments = {
         'type': 'int', 
         'help': 'Width of the screen border in pixels '
                 '(graphical interface only).' },
+    'mouse': {
+        'type': 'string', 'metavar': 'left,middle,right', 
+        'help': 'Set the functions of the three mouse buttons '
+                '(copy,paste,pen).' },
 }
 
 def prepare():
