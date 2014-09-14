@@ -759,8 +759,10 @@ def do_flip(blink_state):
     if composite_artifacts and numpy:
         screen = apply_composite_artifacts(screen, 4//bitsperpixel)
         screen.set_palette(composite_640_palette)    
+        workscreen.set_palette(composite_640_palette)    
     else:
         screen.set_palette(gamepalette[blink_state])
+        workscreen.set_palette(gamepalette[blink_state])
     if scrap.active():
         scrap.create_feedback(workscreen)
     if smooth:
