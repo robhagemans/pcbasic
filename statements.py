@@ -1941,7 +1941,7 @@ def exec_color(ins):
         state.console_state.attr = fore
         # in screen 7 and 8, only low intensity palette is used.
         backend.set_palette_entry(0, back % 8)    
-    elif mode == 9:
+    elif mode in (9, 10):
         util.range_check(0, state.console_state.num_colours-1, fore)
         util.range_check(0, state.console_state.num_palette-1, back)
         state.console_state.attr = fore

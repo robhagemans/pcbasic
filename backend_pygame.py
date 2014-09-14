@@ -409,12 +409,12 @@ def init_screen_mode(mode_info, is_text_mode=False):
     global font, under_cursor, size, text_mode
     global font_height, attr, num_colours, num_palette
     global width, num_pages, bitsperpixel, font_width
-    global mode_has_artifacts, cursor_fixed_attr
+    global mode_has_artifacts, cursor_fixed_attr, mode_has_blink
     text_mode = is_text_mode
     # unpack mode info struct
     (font_height, attr, num_colours, num_palette, 
            width, num_pages, bitsperpixel, font_width,
-           mode_has_artifacts, cursor_fixed_attr) = mode_info
+           mode_has_artifacts, cursor_fixed_attr, mode_has_blink) = mode_info
     font = fonts[font_height]
     glyphs = [ build_glyph(chr(c), font, font_width, font_height) 
                     for c in range(256) ]
@@ -491,19 +491,28 @@ def update_palette(palette):
     """ Build the game palette. """
     global screen_changed, gamepalette
     if num_palette == 64:
-        basepalette = [pygame.Color(*backend.colours64[i]) for i in palette]
+        # i.e. ega text mode
+        basepalette0 = [pygame.Color(*backend.colours64[i]) for i in palette]
+        basepalette1 = basepalette0
+    elif num_palette == 9:
+        # i.e. ega mono screen 10
+        basepalette0 = [pygame.Color(*backend.colours_ega_mono[0][i]) for i in palette]
+        basepalette1 = [pygame.Color(*backend.colours_ega_mono[1][i]) for i in palette]
     else:
         if (colorburst or not composite_monitor):
             # take modulo in case we're e.g. resuming ega text into a cga machine
-            basepalette = [pygame.Color(*backend.colours16[i % num_palette]) for i in palette]
+            basepalette0 = [pygame.Color(*backend.colours16[i % num_palette]) for i in palette]
         else:
-            basepalette = [pygame.Color(*backend.colours16_mono[i % num_palette]) for i in palette]
-    while len(basepalette) < 16:
-        basepalette.append(pygame.Color(0, 0, 0))
-    # of these 16x16 combinations, only dim backgrounds and bg == fg are used    
-    gamepalette[0] = [basepalette[f] for b in range(16) for f in range(16)]
-    gamepalette[1] = ([basepalette[f] for b in range(8) for f in range(16)] + 
-                      [basepalette[b] for b in range(8) for f in range(16)])
+            basepalette0 = [pygame.Color(*backend.colours16_mono[i % num_palette]) for i in palette]
+        basepalette1 = basepalette0
+    while len(basepalette0) < 16:
+        basepalette0.append(pygame.Color(0, 0, 0))
+    while len(basepalette1) < 16:
+        basepalette1.append(pygame.Color(0, 0, 0))
+    # combining into all 256 attribute combinations for screen 0:   
+    gamepalette[0] = [basepalette0[f] for b in range(16) for f in range(16)]
+    gamepalette[1] = ([basepalette1[f] for b in range(8) for f in range(16)] + 
+                      [basepalette1[b] for b in range(8) for f in range(16)])
     screen_changed = True
 
 def set_border(attr):
@@ -673,7 +682,7 @@ def check_screen():
     global cycle, last_cycle
     global screen_changed
     blink_state = 0
-    if text_mode:
+    if mode_has_blink:
         blink_state = 0 if cycle < blink_cycles * 2 else 1
         if cycle%blink_cycles == 0:    
             screen_changed = True

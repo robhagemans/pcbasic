@@ -134,30 +134,32 @@ state.console_state.width = 80
 state.console_state.height = 25
 
 #  font_height, attr, num_colours, num_palette, width, num_pages, bitsperpixel, 
-#   font_width, supports_artifacts, cursor_index
+#   font_width, supports_artifacts, cursor_index, has_blink
 mode_data_default = {
     # height 8, 14, or 16; font width 8 or 9; height 40 or 80 
-    0: (16,  7, 32, 64, 80, 4, 4, 8, False, None), 
+    0: (16,  7, 32, 64, 80, 4, 4, 8, False, None, True), 
     # 04h 320x200x4  16384B 2bpp 0xb8000 tandy:2 pages if 32k memory; ega: 1 page only 
-    1: ( 8,  3,  4, 16, 40, 1, 2, 8, False, None),
+    1: ( 8,  3,  4, 16, 40, 1, 2, 8, False, None, False),
     # 06h 640x200x2  16384B 1bpp 0xb8000 
-    2: ( 8,  1,  2, 16, 80, 1, 1, 8, True, None), 
+    2: ( 8,  1,  2, 16, 80, 1, 1, 8, True, None, False), 
     # 08h 160x200x16 16384B 4bpp 0xb8000
-    3: ( 8, 15, 16, 16, 20, 2, 4, 8, False, 3), 
+    3: ( 8, 15, 16, 16, 20, 2, 4, 8, False, 3, False), 
     #     320x200x4  16384B 2bpp 0xb8000   
-    4: ( 8,  3,  4, 16, 40, 2, 2, 8, False, 3), 
+    4: ( 8,  3,  4, 16, 40, 2, 2, 8, False, 3, False), 
     # 09h 320x200x16 32768B 4bpp 0xb8000    
-    5: ( 8, 15, 16, 16, 40, 1, 4, 8, False, 3), 
+    5: ( 8, 15, 16, 16, 40, 1, 4, 8, False, 3, False), 
     # 0Ah 640x200x4  32768B 2bpp 0xb8000   
-    6: ( 8,  3,  4, 16, 80, 1, 2, 8, False, 3), 
+    6: ( 8,  3,  4, 16, 80, 1, 2, 8, False, 3, False), 
     # 0Dh 320x200x16 32768B 4bpp 0xa0000
-    7: ( 8, 15, 16, 16, 40, 8, 4, 8, False, None), 
+    7: ( 8, 15, 16, 16, 40, 8, 4, 8, False, None, False), 
     # 0Eh 640x200x16 
-    8: ( 8, 15, 16, 16, 80, 4, 4, 8, False, None), 
+    8: ( 8, 15, 16, 16, 80, 4, 4, 8, False, None, False), 
     # 10h 640x350x16 
-    9: (14, 15, 16, 64, 80, 2, 4, 8, False, None), 
+    9: (14, 15, 16, 64, 80, 2, 4, 8, False, None, False), 
+    #     640x350x4 monochrome 
+    10: (14, 1, 4, 9, 80, 2, 2, 8, False, None, True),
     }
-mode_0_8bit = (8, 7, 32, 16, 80, 4, 4, 8, False, None)
+mode_0_8bit = (8, 7, 32, 16, 80, 4, 4, 8, False, None, False)
 mode_data = {}
 
 #############################################
@@ -189,6 +191,15 @@ colours64 = [
     (0x55,0x55,0x55), (0x55,0x55,0xff), (0x55,0xff,0x55), (0x55,0xff,0xff),
     (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff) ]
 
+# SCREEN 10 EGA pseudocolours, blink state 0 and 1
+colours_ega_mono = [
+    [(0x00,0x00,0x00), (0x00,0x00,0x00), (0x00,0x00,0x00), (0x7f,0x7f,0x7f),
+     (0x7f,0x7f,0x7f), (0x7f,0x7f,0x7f), (0xff,0xff,0xff), (0xff,0xff,0xff),
+     (0xff,0xff,0xff)],
+    [(0x00,0x00,0x00), (0x7f,0x7f,0x7f), (0xff,0xff,0xff), (0x00,0x00,0x00),
+     (0x7f,0x7f,0x7f), (0xff,0xff,0xff), (0x00,0x00,0x00), (0x7f,0x7f,0x7f),
+     (0xff,0xff,0xff)]]
+
 # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
 cga_palette_1_hi = [0, 11, 13, 15]
 cga_palette_1_lo = [0, 3, 5, 7]
@@ -209,6 +220,7 @@ cga_palettes = [cga_palette_0, cga_palette_1]
 # default 16-color and ega palettes
 cga16_palette = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 ega_palette = [0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63]
+ega_mono_palette = [0, 4, 1, 8]
 # colorburst value
 state.console_state.colorswitch = 1
 # use ega palette by default
@@ -279,12 +291,12 @@ def init_video():
     # only allow the screen modes that the given machine supports
     if video_capabilities in ('pcjr', 'tandy'):
         # no EGA modes (though apparently there were Tandy machines with EGA)
-        unavailable_modes = [7, 8, 9]
+        unavailable_modes = [7, 8, 9, 10]
         # 8-pixel characters, 16 colours in screen 0
         mode_data[0] = mode_0_8bit
         # TODO: determine the number of pages based on video memory size 
     elif video_capabilities in ('cga', 'cga_old'):
-        unavailable_modes = [3, 4, 5, 6, 7, 8, 9]
+        unavailable_modes = [3, 4, 5, 6, 7, 8, 9, 10]
         # 8-pixel characters, 16 colours in screen 0
         mode_data[0] = mode_0_8bit
     else:
@@ -430,7 +442,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
         state.console_state.num_colours, state.console_state.num_palette, 
         state.console_state.width, state.console_state.num_pages, 
         state.console_state.bitsperpixel, state.console_state.font_width, 
-        _, _ ) = info  
+        _, _, _ ) = info  
     # build the screen buffer    
     state.console_state.pages = []
     for _ in range(state.console_state.num_pages):
@@ -903,7 +915,10 @@ def set_palette(new_palette=None):
         elif state.console_state.num_colours >= 16:
             state.console_state.palette = cga16_palette[:]
         elif state.console_state.num_colours == 4:
-            state.console_state.palette = cga_palettes[1][:]
+            if state.console_state.screen_mode == 10:
+                state.console_state.palette = ega_mono_palette
+            else:
+                state.console_state.palette = cga_palettes[1][:]
         else:
             state.console_state.palette = [0, 15]
     video.update_palette(state.console_state.palette)
