@@ -61,21 +61,26 @@ class cStringIOPicklable(object):
 
 class FilePicklable(object):
     def __init__(self, f):
-        self.pos = f.tell()
+        try:
+            self.pos = f.tell()
+        except IOError:
+            # not seekable
+            self.pos = -1
         self.name = f.name
         self.mode = f.mode
 
     def unpickle(self):
-        if 'w' in self.mode:
+        if 'w' in self.mode and self.pos > 0:
             # preserve existing contents of writable file
-            f = open(self.name, 'rb')
-            buf = f.read(self.pos)
-            f.close()
-            f = open(self.name, self.mode)
-            f.write(buf)            
+                f = open(self.name, 'rb')
+                buf = f.read(self.pos)
+                f.close()
+                f = open(self.name, self.mode)
+                f.write(buf)            
         else:    
             f = open(self.name, self.mode)
-            f.seek(self.pos)
+            if self.pos > 0:
+                f.seek(self.pos)
         return f
     
 class FileDictPicklable(object):
@@ -87,6 +92,10 @@ class FileDictPicklable(object):
                 picklable_value.fhandle = get_picklable(picklable_value.fhandle)
             except AttributeError:
                 pass
+            try:
+                picklable_value.output_stream = get_picklable(picklable_value.output_stream)
+            except AttributeError:
+                pass
             self.dict[key] = picklable_value
 
     def unpickle(self):
@@ -95,9 +104,14 @@ class FileDictPicklable(object):
             try:
                 fhandle = value.fhandle
                 try:
-                    value.fhandle = fhandle.unpickle()
-                except AttributeError:
-                    pass
+                    try:
+                        value.fhandle = fhandle.unpickle()
+                    except AttributeError:
+                        pass
+                    try:
+                        value.output_stream = value.output_stream.unpickle()
+                    except AttributeError:
+                        pass
                 except IOError:
                     logging.warning('Could not reopen file %s', fhandle.name)
                     continue
