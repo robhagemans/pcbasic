@@ -213,7 +213,7 @@ ega_palette = [0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63]
 state.console_state.colorswitch = 1
 # use ega palette by default
 state.console_state.num_palette = 64
-state.console_state.palette = ega_palette
+state.console_state.palette = ega_palette[:]
 # border colour
 state.console_state.border_attr = 0
 
@@ -240,7 +240,7 @@ def prepare():
         video_capabilities = config.options['video']
     if video_capabilities != 'ega':
         state.console_state.num_palette = 16
-        state.console_state.palette = cga16_palette
+        state.console_state.palette = cga16_palette[:]
     if video_capabilities in ('pcjr', 'tandy'):
         # select pcjr cga palettes
         cga_palette_0, cga_palette_1 = cga_palette_0_pcjr, cga_palette_1_pcjr
@@ -896,14 +896,14 @@ def get_palette_entry(index):
 
 def set_palette(new_palette=None):
     if new_palette:
-        state.console_state.palette = new_palette
+        state.console_state.palette = new_palette[:]
     else:    
         if state.console_state.num_palette == 64:
-            state.console_state.palette = ega_palette
+            state.console_state.palette = ega_palette[:]
         elif state.console_state.num_colours >= 16:
-            state.console_state.palette = cga16_palette
+            state.console_state.palette = cga16_palette[:]
         elif state.console_state.num_colours == 4:
-            state.console_state.palette = cga_palettes[1]
+            state.console_state.palette = cga_palettes[1][:]
         else:
             state.console_state.palette = [0, 15]
     video.update_palette(state.console_state.palette)
