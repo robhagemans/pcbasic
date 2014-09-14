@@ -241,6 +241,10 @@ arguments = {
     'state': {
         'type': 'string', 'metavar': 'PCBASIC.SAV',
         'help': 'Set the save-state file. Default is info/PCBASIC.SAV' },                
+    'mono': {
+        'type': 'string', 'metavar': 'r,g,b', 
+        'help': 'Set monitor to monochrome and specify the tint as RGB.'
+                'in the range 0-255' },
 }
 
 def prepare():

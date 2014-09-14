@@ -133,10 +133,12 @@ state.console_state.width = 80
 # number of rows, counting 1..height
 state.console_state.height = 25
 
+# NOTE: what we call num_colours is really num_attributes
 #  font_height, attr, num_colours, num_palette, width, num_pages, bitsperpixel, 
 #   font_width, supports_artifacts, cursor_index, has_blink
 mode_data_default = {
     # height 8, 14, or 16; font width 8 or 9; height 40 or 80 
+    # shld be 14 for ega, 16 for vga
     0: (16,  7, 32, 64, 80, 4, 4, 8, False, None, True), 
     # 04h 320x200x4  16384B 2bpp 0xb8000 tandy:2 pages if 32k memory; ega: 1 page only 
     1: ( 8,  3,  4, 16, 40, 1, 2, 8, False, None, False),
@@ -159,7 +161,8 @@ mode_data_default = {
     #     640x350x4 monochrome 
     10: (14, 1, 4, 9, 80, 2, 2, 8, False, None, True),
     }
-mode_0_8bit = (8, 7, 32, 16, 80, 4, 4, 8, False, None, False)
+mode_0_8bit = (8, 7, 32, 16, 80, 4, 4, 8, False, None, True)
+mode_0_ega_mono = (14, 1, 32, 3, 80, 4, 4, 8, False, None, True)
 mode_data = {}
 
 #############################################
@@ -171,7 +174,6 @@ colours16 = [
     (0xaa,0x00,0x00), (0xaa,0x00,0xaa), (0xaa,0x55,0x00), (0xaa,0xaa,0xaa), 
     (0x55,0x55,0x55), (0x55,0x55,0xff), (0x55,0xff,0x55), (0x55,0xff,0xff),
     (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff) ]
-colours16_mono = [ (i, i, i) for i in range(0x00, 0x100, 0x11) ]
 # EGA colours
 colours64 = [ 
     (0x00,0x00,0x00), (0x00,0x00,0xaa), (0x00,0xaa,0x00), (0x00,0xaa,0xaa),
@@ -191,14 +193,15 @@ colours64 = [
     (0x55,0x55,0x55), (0x55,0x55,0xff), (0x55,0xff,0x55), (0x55,0xff,0xff),
     (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff) ]
 
+# CGA mono
+intensity16_mono = range(0x00, 0x100, 0x11) 
 # SCREEN 10 EGA pseudocolours, blink state 0 and 1
-colours_ega_mono = [
-    [(0x00,0x00,0x00), (0x00,0x00,0x00), (0x00,0x00,0x00), (0x7f,0x7f,0x7f),
-     (0x7f,0x7f,0x7f), (0x7f,0x7f,0x7f), (0xff,0xff,0xff), (0xff,0xff,0xff),
-     (0xff,0xff,0xff)],
-    [(0x00,0x00,0x00), (0x7f,0x7f,0x7f), (0xff,0xff,0xff), (0x00,0x00,0x00),
-     (0x7f,0x7f,0x7f), (0xff,0xff,0xff), (0x00,0x00,0x00), (0x7f,0x7f,0x7f),
-     (0xff,0xff,0xff)]]
+intensity_ega_mono_0 = [0x00, 0x00, 0x00, 0x7f, 0x7f, 0x7f, 0xff, 0xff, 0xff]
+intensity_ega_mono_1 = [0x00, 0x7f, 0xff, 0x00, 0x7f, 0xff, 0x00, 0x7f, 0xff]
+# EGA mono text intensity (blink is attr bit 7, like in colour mode)
+intensity_ega_mono_text = [0x00, 0x7f, 0xff] 
+# colour of monochrome monitor
+mono_tint = (0x00, 0xff, 0x00)
 
 # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
 cga_palette_1_hi = [0, 11, 13, 15]
@@ -221,6 +224,8 @@ cga_palettes = [cga_palette_0, cga_palette_1]
 cga16_palette = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 ega_palette = [0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63]
 ega_mono_palette = [0, 4, 1, 8]
+# this is just an assumption - 16 attributes, 3 colours ... really ?
+ega_mono_text_palette = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2, 2]
 # colorburst value
 state.console_state.colorswitch = 1
 # use ega palette by default
@@ -237,7 +242,9 @@ def prepare():
     global pcjr_sound, ignore_caps, egacursor
     global num_fn_keys
     global cga_palette_0, cga_palette_1, cga_palette_5, cga_palettes
-    global video_capabilities, composite_monitor
+    global video_capabilities, composite_monitor, mono_monitor, mono_tint
+    global colours16_mono, colours_ega_mono_0, colours_ega_mono_1
+    global colours_ega_mono_text
     if config.options['capture_caps']:
         ignore_caps = False
     # inserted keystrokes
@@ -264,6 +271,21 @@ def prepare():
         cga_palette_5 = cga_palette_5_lo
         cga_palettes = [cga_palette_0, cga_palette_1]
     composite_monitor = config.options['composite']
+    # set monochrome tint and build mono palettes
+    if config.options['mono']:
+        mono_tint = [int(s) for s in config.options['mono'].split(',')]
+        mono_monitor = True
+    else:
+        mono_tint = (0xff, 0xff, 0xff)
+        mono_monitor = False
+    colours16_mono = [ [tint*i//255 for tint in mono_tint]
+                       for i in intensity16_mono ]            
+    colours_ega_mono_0 = [ [tint*i//255 for tint in mono_tint]
+                       for i in intensity_ega_mono_0 ]            
+    colours_ega_mono_1 = [ [tint*i//255 for tint in mono_tint]
+                       for i in intensity_ega_mono_1 ]        
+    colours_ega_mono_text = [ [tint*i//255 for tint in mono_tint]
+                       for i in intensity_ega_mono_text ]
     # copy the mode data list
     for mode in mode_data_default:
         mode_data[mode] = mode_data_default[mode]
@@ -302,7 +324,11 @@ def init_video():
     else:
         # EGA
         # no PCjr modes
-        unavailable_modes = [3, 4, 5, 6]
+        if mono_monitor:
+            mode_data[0] = mode_0_ega_mono
+            unavailable_modes = [1, 3, 4, 5, 6, 7, 8, 9]
+        else:
+            unavailable_modes = [3, 4, 5, 6, 10]
     for mode in unavailable_modes:
         del mode_data[mode]
     # text mode backends: delete all graphics modes    
@@ -913,7 +939,10 @@ def set_palette(new_palette=None):
         if state.console_state.num_palette == 64:
             state.console_state.palette = ega_palette[:]
         elif state.console_state.num_colours >= 16:
-            state.console_state.palette = cga16_palette[:]
+            if mono_monitor:
+                state.console_state.palette = ega_mono_text_palette
+            else:            
+                state.console_state.palette = cga16_palette[:]
         elif state.console_state.num_colours == 4:
             if state.console_state.screen_mode == 10:
                 state.console_state.palette = ega_mono_palette

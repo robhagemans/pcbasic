@@ -81,9 +81,6 @@ if pygame:
     # display palettes for blink states 0, 1
     gamepalette = [None, None]
 
-    # colour of clipboard selection
-    scrap_feedback_colour = (0x55, 0x00, 0x55)
-
     # border attribute
     border_attr = 0
     # border widh in pixels
@@ -245,6 +242,7 @@ def prepare():
     global display_size_text, composite_monitor, heights_needed
     global composite_640_palette, border_width
     global mousebutton_copy, mousebutton_paste, mousebutton_pen
+    global mono_monitor
     # screen width and height in pixels
     border_width = config.options['border_width']
     display_size = (640 + 2*border_width, 480 + 2*border_width)
@@ -269,6 +267,7 @@ def prepare():
     composite_monitor = config.options['composite'] and config.options['video'] != 'ega'
     if composite_monitor:
         composite_640_palette = composite_640[config.options['video']]
+    mono_monitor = config.options['mono'] != ''
     if config.options['video'] == 'tandy':
         # enable tandy F11, F12
         # TODO: tandy scancodes are defined for many more keys than PC, e.g. ctrl+F5 and friends; check pcjr too
@@ -496,10 +495,14 @@ def update_palette(palette):
         basepalette1 = basepalette0
     elif num_palette == 9:
         # i.e. ega mono screen 10
-        basepalette0 = [pygame.Color(*backend.colours_ega_mono[0][i]) for i in palette]
-        basepalette1 = [pygame.Color(*backend.colours_ega_mono[1][i]) for i in palette]
+        basepalette0 = [pygame.Color(*backend.colours_ega_mono_0[i]) for i in palette]
+        basepalette1 = [pygame.Color(*backend.colours_ega_mono_1[i]) for i in palette]
+    elif num_palette == 3:
+        # i.e. ega mono text
+        basepalette0 = [pygame.Color(*backend.colours_ega_mono_text[i]) for i in palette] 
+        basepalette1 = basepalette0
     else:
-        if (colorburst or not composite_monitor):
+        if (colorburst or not composite_monitor and not mono_monitor):
             # take modulo in case we're e.g. resuming ega text into a cga machine
             basepalette0 = [pygame.Color(*backend.colours16[i % num_palette]) for i in palette]
         else:
