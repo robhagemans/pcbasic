@@ -158,11 +158,11 @@ mode_data_default = {
     8: ( 8, 15, 16, 16, 80, 4, 4, 8, False, None, False), 
     # 10h 640x350x16 
     9: (14, 15, 16, 64, 80, 2, 4, 8, False, None, False), 
-    #     640x350x4 monochrome 
+    # 0Fh 640x350x4 monochrome 
     10: (14, 1, 4, 9, 80, 2, 2, 8, False, None, True),
     }
 mode_0_8bit = (8, 7, 32, 16, 80, 4, 4, 8, False, None, True)
-mode_0_ega_mono = (14, 1, 32, 3, 80, 4, 4, 8, False, None, True)
+mode_0_ega_mono = (14, 7, 32, 3, 80, 4, 4, 8, False, None, True)
 mode_data = {}
 
 #############################################
@@ -224,8 +224,12 @@ cga_palettes = [cga_palette_0, cga_palette_1]
 cga16_palette = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 ega_palette = [0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63]
 ega_mono_palette = [0, 4, 1, 8]
-# this is just an assumption - 16 attributes, 3 colours ... really ?
-ega_mono_text_palette = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2, 2]
+# http://qbhlp.uebergeord.net/screen-statement-details-colors.html
+# http://www.seasip.info/VintagePC/mda.html
+# underline/intensity/reverse video attributes are slightly different from mda
+# attributes 1, 9 should have underlining. 
+ega_mono_text_palette = [0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 0]
+mda_mono_text_palette = [0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2]
 # colorburst value
 state.console_state.colorswitch = 1
 # use ega palette by default
