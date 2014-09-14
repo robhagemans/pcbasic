@@ -1012,8 +1012,7 @@ class Clipboard(object):
         else:
             self.select_start = [r, c]
             self.select_stop = [r, c]
-        self.selection_rect = [pygame.Rect((self.select_start[1]-1) * font_width,
-            (self.select_start[0]-1) * font_height, font_width, font_height)]
+        self.selection_rect = []
         
     def stop(self):
         """ Leave clipboard mode (Logo key released). """
@@ -1030,14 +1029,16 @@ class Clipboard(object):
         """ Copy screen characters from selection into clipboard. """
         if not self.ok:
             return 
+        start, stop = self.select_start, self.select_stop
+        if start[0] == stop[0] and start[1] == stop[1]:
+            return
+        if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
+            start, stop = stop, start
+        full = backend.get_text(start[0], start[1], stop[0], stop[1]-1)
         if mouse:
             pygame.scrap.set_mode(pygame.SCRAP_SELECTION)
         else:
             pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
-        start, stop = self.select_start, self.select_stop
-        if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
-            start, stop = stop, start
-        full = backend.get_text(start[0], start[1], stop[0], stop[1])
         try: 
             if plat.system == 'Windows':
                 pygame.scrap.put('text/plain;charset=utf-8', full.decode('utf-8').encode('utf-16'))
@@ -1085,19 +1086,19 @@ class Clipboard(object):
         start, stop = self.select_start, self.select_stop
         if stop[1] < 1: 
             stop[0] -= 1
-            stop[1] = width
-        if stop[1] > width:        
+            stop[1] = width+1
+        if stop[1] > width+1:        
             stop[0] += 1
             stop[1] = 1
         if stop[0] > height:
-            stop[:] = [height, width]
+            stop[:] = [height, width+1]
         if stop[0] < 1:
             stop[:] = [1, 1]            
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
             start, stop = stop, start
         rect_left = (start[1] - 1) * font_width
         rect_top = (start[0] - 1) * font_height
-        rect_right = stop[1] * font_width
+        rect_right = (stop[1] - 1) * font_width
         rect_bot = stop[0] * font_height
         if start[0] == stop[0]:
             # single row selection
@@ -1126,7 +1127,7 @@ class Clipboard(object):
         elif e.unicode.upper() == u'A':
             # select all
             self.select_start = [1, 1]
-            self.move(height, width)
+            self.move(height, width+1)
         elif e.key == pygame.K_LEFT:
             # move selection head left
             self.move(self.select_stop[0], self.select_stop[1]-1)
