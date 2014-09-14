@@ -1082,19 +1082,17 @@ class Clipboard(object):
         """ Move the head of the selection and update feedback. """
         global screen_changed
         self.select_stop = [r, c]
-        if self.select_stop[1] < 1: 
-            if self.select_stop[0] > 1:       
-                self.select_stop[0] -= 1
-                self.select_stop[1] = width
-            else:
-                self.select_stop[1] = 1       
-        if self.select_stop[1] > width:        
-            if self.select_stop[0] < height:       
-                self.select_stop[0] += 1
-                self.select_stop[1] = 1
-            else:
-                self.select_stop[1] = width    
         start, stop = self.select_start, self.select_stop
+        if stop[1] < 1: 
+            stop[0] -= 1
+            stop[1] = width
+        if stop[1] > width:        
+            stop[0] += 1
+            stop[1] = 1
+        if stop[0] > height:
+            stop[:] = [height, width]
+        if stop[0] < 1:
+            stop[:] = [1, 1]            
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
             start, stop = stop, start
         rect_left = (start[1] - 1) * font_width
@@ -1121,14 +1119,26 @@ class Clipboard(object):
         global screen_changed
         if not self.ok or not self.logo_pressed:
             return
-        if e.unicode in (u'c', u'C'):
+        if e.unicode.upper() ==  u'C':
             self.copy()
-        elif e.unicode in (u'v', u'V') and self.available():
+        elif e.unicode.upper() == u'V' and self.available():
             self.paste()
+        elif e.unicode.upper() == u'A':
+            # select all
+            self.select_start = [1, 1]
+            self.move(height, width)
         elif e.key == pygame.K_LEFT:
+            # move selection head left
             self.move(self.select_stop[0], self.select_stop[1]-1)
         elif e.key == pygame.K_RIGHT:
+            # move selection head right
             self.move(self.select_stop[0], self.select_stop[1]+1)
+        elif e.key == pygame.K_UP:
+            # move selection head up
+            self.move(self.select_stop[0]-1, self.select_stop[1])
+        elif e.key == pygame.K_DOWN:
+            # move selection head down
+            self.move(self.select_stop[0]+1, self.select_stop[1])
 
     def create_feedback(self, surface):
         """ Create visual feedback for selection onto a surface. """
