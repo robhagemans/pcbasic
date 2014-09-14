@@ -40,113 +40,68 @@ loaded = False
 
 state_file = os.path.join(plat.basepath, 'info', 'STATE.SAV')
 
+
 ###############################################
 
 try:
+    import cStringIO
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
 
-class cStringIOPicklable(object):
-    def __init__(self, csio):
-        self.value = csio.getvalue()
-        self.pos = csio.tell()
+import copy_reg
 
-    def unpickle(self):
-        # needs to be called without arguments or it's a StringI object without write()
-        csio = StringIO()
-        csio.write(self.value)
-        csio.seek(self.pos)
-        return csio             
 
-class FilePicklable(object):
-    def __init__(self, f):
-        try:
-            self.pos = f.tell()
-        except IOError:
-            # not seekable
-            self.pos = -1
-        self.name = f.name
-        self.mode = f.mode
-
-    def unpickle(self):
-        if 'w' in self.mode and self.pos > 0:
-            # preserve existing contents of writable file
-                f = open(self.name, 'rb')
-                buf = f.read(self.pos)
-                f.close()
-                f = open(self.name, self.mode)
-                f.write(buf)            
-        else:    
-            f = open(self.name, self.mode)
-            if self.pos > 0:
-                f.seek(self.pos)
-        return f
-    
-class FileDictPicklable(object):
-    def __init__(self, dict_obj):
-        self.dict = {}
-        for key, value in dict_obj.items():
-            picklable_value = copy.copy(value)
-            try:
-                picklable_value.fhandle = get_picklable(picklable_value.fhandle)
-            except AttributeError:
-                pass
-            try:
-                picklable_value.output_stream = get_picklable(picklable_value.output_stream)
-            except AttributeError:
-                pass
-            self.dict[key] = picklable_value
-
-    def unpickle(self):
-        unpickled_dict = {}
-        for key, value in self.dict.items():
-            try:
-                fhandle = value.fhandle
-                try:
-                    try:
-                        value.fhandle = fhandle.unpickle()
-                    except AttributeError:
-                        pass
-                    try:
-                        value.output_stream = value.output_stream.unpickle()
-                    except AttributeError:
-                        pass
-                except IOError:
-                    logging.warning('Could not reopen file %s', fhandle.name)
-                    continue
-            except AttributeError:
-                pass
-            unpickled_dict[key] = value
-        return unpickled_dict
-    
-    
-picklables = { "<type 'cStringIO.StringO'>": cStringIOPicklable, "<type 'file'>": FilePicklable, "<type 'dict'>": FileDictPicklable }
-
-def get_picklable(obj):
+def unpickle_file(name, mode, pos):
     try:
-        return picklables[str(type(obj))](obj)
-    except KeyError:
-        return obj
+        if 'w' in mode and pos > 0:
+            # preserve existing contents of writable file
+            f = open(name, 'rb')
+            buf = f.read(pos)
+            f.close()
+            f = open(name, mode)
+            f.write(buf)            
+        else:    
+            f = open(name, mode)
+            if pos > 0:
+                f.seek(pos)
+    except IOError:
+        logging.warning('Could not re-open file %s. Replacing with null file.', name)
+        f = open(os.devnull, mode)
+    return f
+        
+def pickle_file(f):
+    try:
+        return unpickle_file, (f.name, f.mode, f.tell())
+    except IOError:
+        # not seekable
+        return unpickle_file, (f.name, f.mode, -1)
+        
 
-    
+def unpickle_StringIO(value, pos):
+    # needs to be called without arguments or it's a StringI object without write()
+    csio = StringIO()
+    csio.write(value)
+    csio.seek(pos)
+    return csio             
+
+def pickle_StringIO(csio):
+    value = csio.getvalue()
+    pos = csio.tell()
+    return unpickle_StringIO, (value, pos)
+
+copy_reg.pickle(file, pickle_file)
+copy_reg.pickle(cStringIO.OutputType, pickle_StringIO)
+ 
+
 
 ###############################################
 
 def save():
     # prepare pickling object
     to_pickle = State()
-    # BASIC state
-    to_pickle.basic = copy.copy(basic_state)
-    to_pickle.basic.bytecode = get_picklable(basic_state.bytecode)
-    to_pickle.basic.direct_line = get_picklable(basic_state.direct_line)
-    # I/O
-    to_pickle.io = copy.copy(io_state)
-    to_pickle.io.files = get_picklable(to_pickle.io.files)
-    to_pickle.io.devices = get_picklable(to_pickle.io.devices)
-    # Console
-    to_pickle.console = copy.copy(console_state)
-    # Display 
+    to_pickle.basic, to_pickle.io, to_pickle.console = basic_state, io_state, console_state
+    # pack display
     to_pickle.display = display
     to_pickle.display.pickle()
     # pickle and compress
@@ -171,10 +126,7 @@ def load():
         return False
     # unpack pickling object
     io_state, basic_state, console_state = from_pickle.io, from_pickle.basic, from_pickle.console
-    basic_state.bytecode = basic_state.bytecode.unpickle()
-    basic_state.direct_line = basic_state.direct_line.unpickle()
-    io_state.devices = io_state.devices.unpickle()
-    io_state.files = io_state.files.unpickle()
+    # unpack display
     from_pickle.display.unpickle()
     loaded = True
     return True
