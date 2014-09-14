@@ -418,6 +418,9 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
             and state.console_state.apagenum == new_apagenum 
             and state.console_state.vpagenum == new_vpagenum):
         info[1] = state.console_state.attr              
+    # start with black border 
+    if new_mode != state.console_state.screen_mode:
+        set_border(0)
     # set all state vars
     state.console_state.screen_mode = new_mode
     state.console_state.colorswitch = new_colorswitch 
@@ -448,8 +451,6 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
         set_colorburst(new_colorswitch)
     elif new_mode == 2:
         set_colorburst(False)    
-    # start with black border 
-    set_border(0)
     return True
 
 def init_graphics(new_mode):
