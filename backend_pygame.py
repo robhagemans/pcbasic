@@ -76,8 +76,8 @@ if pygame:
     composite_monitor = False
     mode_has_artifacts = False
     
-    # working palette - foreground index in blue channel, background in green.
-    workpalette = [(0, b, f) for b in range(16) for f in range(16)]
+    # working palette - attribute index in blue channel
+    workpalette = [(0, 0, b * 16 + f) for b in range(16) for f in range(16)]
     # display palettes for blink states 0, 1
     gamepalette = [None, None]
 
@@ -483,12 +483,8 @@ def close():
 
 def get_palette_index(cattr):
     """ Find the index in the game palette for this attribute. """
-    if cattr >> 7: # blink      
-        color = (0, (cattr>>4) & 0x7, cattr & 0xf)
-        bg = (0, (cattr>>4) & 0x7, (cattr>>4) & 0x7)    
-    else:
-        color = (0, cattr & 0xf, cattr & 0xf)
-        bg = (0, (cattr>>4) & 0x7, (cattr>>4) & 0x7)    
+    color = (0, 0, cattr)
+    bg = (0, 0, (cattr>>4) & 7)
     return color, bg    
 
 def update_palette(palette):
@@ -506,11 +502,8 @@ def update_palette(palette):
         basepalette.append(pygame.Color(0, 0, 0))
     # of these 16x16 combinations, only dim backgrounds and bg == fg are used    
     gamepalette[0] = [basepalette[f] for b in range(16) for f in range(16)]
-    gamepalette[1] = [basepalette[b] for b in range(16) for f in range(16)]
-    # use an unused combination for feedback colour
-    # the colour needs to be on the palette or it won't be shown right
-    gamepalette[0][128] = pygame.Color(*scrap_feedback_colour)
-    gamepalette[1][128] = pygame.Color(*scrap_feedback_colour)
+    gamepalette[1] = ([basepalette[f] for b in range(8) for f in range(16)] + 
+                      [basepalette[b] for b in range(8) for f in range(16)])
     screen_changed = True
 
 def set_border(attr):
@@ -758,6 +751,8 @@ def do_flip(blink_state):
     # subsurface referencing the canvas area
     workscreen = screen.subsurface((border_width, border_width, size[0], size[1]))
     draw_cursor(workscreen)
+    if scrap.active():
+        scrap.create_feedback(workscreen)
     if composite_artifacts and numpy:
         screen = apply_composite_artifacts(screen, 4//bitsperpixel)
         screen.set_palette(composite_640_palette)    
@@ -765,8 +760,6 @@ def do_flip(blink_state):
     else:
         screen.set_palette(gamepalette[blink_state])
         workscreen.set_palette(gamepalette[blink_state])
-    if scrap.active():
-        scrap.create_feedback(workscreen)
     if smooth:
         pygame.transform.smoothscale(screen.convert(display), display.get_size(), display)
     else:
@@ -1147,10 +1140,10 @@ class Clipboard(object):
         """ Create visual feedback for selection onto a surface. """
         for r in self.selection_rect:
             work_area = surface.subsurface(r)
-            work = work_area.copy()
-            work.set_colorkey(pygame.Color(0,0,0)) # use bg color 
-            work_area.fill(pygame.Color(*scrap_feedback_colour))
-            work_area.blit(work, (0,0))
+            orig = work_area.copy()
+            # add 1 to the color as a highlight
+            orig.fill(pygame.Color(0, 0, 1))
+            work_area.blit(orig, (0, 0), special_flags=pygame.BLEND_ADD)
         
 ###############################################
 # graphics backend interface
