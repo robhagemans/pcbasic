@@ -15,9 +15,9 @@ except ImportError:
     import pickle
 import os
 import zlib
-import copy
 import logging
 import plat
+import config        
         
 class State(object):
     pass
@@ -38,7 +38,14 @@ display = DisplayState()
 # a state has been loaded
 loaded = False
 
-state_file = os.path.join(plat.basepath, 'info', 'STATE.SAV')
+def prepare():
+    global state_file, loaded
+    if config.options['state']:
+        state_file = config.options['state']
+    elif os.path.exists('PCBASIC.SAV'):
+        state_file = 'PCBASIC.SAV'
+    else:            
+        state_file = os.path.join(plat.info_dir, 'PCBASIC.SAV')
 
 
 ###############################################
@@ -111,7 +118,7 @@ def save():
         f.write(str(len(s)) + '\n' + s)
         f.close()
     except IOError:
-        logging.warning("Could not write to state file. Emulator state not saved.")
+        logging.warning("Could not write to state file %s. Emulator state not saved.", state_file)
     
 def load():
     global console_state, io_state, basic_state, loaded
@@ -122,7 +129,7 @@ def load():
         from_pickle = pickle.loads(zlib.decompress(f.read(length)))
         f.close()
     except IOError:
-        logging.warning("Could not load from state file.")
+        logging.warning("Could not read state file %s. Emulator state not loaded.", state_file)
         return False
     # unpack pickling object
     io_state, basic_state, console_state = from_pickle.io, from_pickle.basic, from_pickle.console
@@ -134,4 +141,5 @@ def load():
 def delete():
     os.remove(state_file)
 
+prepare()
     

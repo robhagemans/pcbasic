@@ -241,6 +241,9 @@ arguments = {
         'type': 'string', 'metavar': 'left,middle,right', 
         'help': 'Set the functions of the three mouse buttons '
                 '(copy,paste,pen).' },
+    'state': {
+        'type': 'string', 'metavar': 'PCBASIC.SAV',
+        'help': 'Set the save-state file. Default is info/PCBASIC.SAV' },                
 }
 
 def prepare():
