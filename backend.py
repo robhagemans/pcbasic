@@ -699,10 +699,11 @@ def copy_page(src, dst):
 def clear_screen_buffer_at(x, y):
     """ Remove the character covering a single pixel. """
     fx, fy = state.console_state.font_width, state.console_state.font_height
-    cymax, cxmax = state.console_state.height-1, state.console_state.width-1 
-    cx = min(cxmax, max(0, x // fx))
-    cy = min(cymax, max(0, y // fy)) 
-    state.console_state.apage.row[cy].buf[cx] = (' ', state.console_state.attr)
+    cymax, cxmax = state.console_state.height-1, state.console_state.width-1
+    cx, cy = x // fx, y // fy
+    if cx >= 0 and cy >= 0 and cx <= cxmax and cy <= cymax:
+        state.console_state.apage.row[cy].buf[cx] = (
+                ' ', state.console_state.attr)
 
 def clear_screen_buffer_area(x0, y0, x1, y1):
     """ Remove all characters from a rectangle of the graphics screen. """
