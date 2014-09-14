@@ -22,9 +22,6 @@ if plat.system == 'Android':
 else:
     import argparse
 
-# config file
-config_file = 'PCBASIC.INI'
-
 # by default, load what's in section [pcbasic] and override with anything 
 # in os-specific section [windows] [android] [linux] [osx] [unknown_os]
 default_presets = ['pcbasic', plat.system.lower()]
@@ -254,14 +251,30 @@ def prepare():
     
 def get_options():
     """ Retrieve command line and option file options. """
-    # read config file, if any
-    conf_dict = read_config_file()
-    if not argparse:
+    # find config file
+    if os.path.exists('PCBASIC.INI'):
+        config_file = 'PCBASIC.INI'
+    else:
+        config_file = os.path.join(plat.info_dir, 'PCBASIC.INI')
+    if argparse:
+        # define argument parser
+        # we need to disable -h and re-enable it manually 
+        # to avoid the wrong usage message from parse_known_args
+        parser = argparse.ArgumentParser(add_help=False, description=description)
+        parser.add_argument('--config', metavar='PCBASIC.INI', 
+            help='Read configuration file. Default is info/PCBASIC.INI')
+        arg_config, _ = parser.parse_known_args()       
+        if arg_config.config:
+            if os.path.exists(arg_config.config):
+                config_file = arg_config.config 
+            else:
+                logging.warning('Could not read configuration file %s. '
+                    'Using %s instead', arg_config.config, config_file)    
+        conf_dict = read_config_file(config_file)
+        return read_args(parser, conf_dict) 
+    else:
         # not available, use the preset defaults (this happens on Android)
-        return default_args(conf_dict)
-    else:    
-        # read command line arguments
-        return read_args(conf_dict)
+        return default_args(read_config_file(config_file))
 
 def default_args(conf_dict):
     """ Return default arguments for this operating system. """
@@ -273,12 +286,8 @@ def default_args(conf_dict):
             pass
     return args
     
-def read_args(conf_dict):
+def read_args(parser, conf_dict):
     """ Retrieve command line options. """
-    # define argument parser
-    # we need to disable -h and re-enable it manually 
-    # to avoid the wrong usage message from parse_known_args
-    parser = argparse.ArgumentParser(add_help=False, description=description)
     # parse presets
     parser.add_argument('--preset', nargs='*', choices=conf_dict.keys(), 
                         help='Load machine preset options')
@@ -346,12 +355,12 @@ def read_args(conf_dict):
 
 ################################################
 
-def read_config_file():
+def read_config_file(config_file):
     """ Read config file. """
     path = plat.basepath
     try:
         config = ConfigParser.RawConfigParser(allow_no_value=True)
-        config.read(os.path.join(path, 'info', 'PCBASIC.INI'))
+        config.read(config_file)
     except (ConfigParser.Error, IOError):
         logging.warning('Error in configuration file %s. '
                         'Configuration not loaded.', config_file)
