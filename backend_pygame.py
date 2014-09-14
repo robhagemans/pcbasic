@@ -1102,12 +1102,17 @@ class Clipboard(object):
         rect_right = stop[1] * font_width
         rect_bot = stop[0] * font_height
         if start[0] == stop[0]:
-            self.selection_rect = [pygame.Rect(rect_left, rect_top, rect_right-rect_left, rect_bot-rect_top)]
+            # single row selection
+            self.selection_rect = [pygame.Rect(rect_left, rect_top, 
+                                    rect_right-rect_left, rect_bot-rect_top)]
         else:
+            # multi-row selection
             self.selection_rect = [
-              pygame.Rect(rect_left, rect_top, size[0]-rect_left, rect_bot-rect_top-font_height),
-              pygame.Rect(0, rect_top+font_height, rect_right, rect_bot-rect_top-font_height)
-                ]
+              pygame.Rect(rect_left, rect_top, size[0]-rect_left, font_height),
+              pygame.Rect(0, rect_top + font_height, 
+                          size[0], rect_bot - rect_top - 2*font_height),
+              pygame.Rect(0, rect_bot - font_height, 
+                          rect_right, font_height)]
         screen_changed = True
     
     
