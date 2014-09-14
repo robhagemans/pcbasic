@@ -298,6 +298,10 @@ def prepare():
 ####################################
 # state saving and loading
 
+# picklable store for surfaces
+display_strings = ([], [])
+display_strings_loaded = False
+
 class PygameDisplayState(state.DisplayState):
     def pickle(self):
         self.display_strings = ([], [])
@@ -305,20 +309,15 @@ class PygameDisplayState(state.DisplayState):
             self.display_strings[0].append(pygame.image.tostring(s, 'P'))
         
     def unpickle(self):
-        global display_strings, load_flag
-        load_flag = True
+        global display_strings, display_strings_loaded
+        display_strings_loaded = True
         display_strings = self.display_strings
         del self.display_strings
 
 
-# picklable store for surfaces
-display_strings = ([], [])
-state.display = PygameDisplayState()
-load_flag = False
-
 def load_state():        
     global screen_changed
-    if load_flag:
+    if display_strings_loaded:
         try:
             for i in range(len(canvas)):    
                 canvas[i] = pygame.image.fromstring(display_strings[0][i], size, 'P')
@@ -327,6 +326,8 @@ def load_state():
         except (IndexError, ValueError):
             # couldn't load the state correctly; most likely a text screen saved from -t. just redraw what's unpickled.
             backend.redraw_text_screen()
+    else:
+        backend.redraw_text_screen()
         
 ####################################
 # initialisation
@@ -376,6 +377,7 @@ def init():
     scrap = Clipboard() 
     load_fonts(heights_needed)
     text_mode = True    
+    state.display = PygameDisplayState()
     return True
 
 def load_fonts(heights_needed):
