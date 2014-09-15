@@ -137,13 +137,13 @@ state.console_state.height = 25
 class ModeData(object):
     """ Holds settings for video modes. """
     
-    def __init__(self, font_height, attr, num_colours, num_palette, 
+    def __init__(self, font_height, attr, num_attr, num_palette, 
                  width, num_pages, bitsperpixel, font_width=8, 
                  supports_artifacts=False, cursor_index=None, has_blink=False):
         """ Settings for one video mode. """         
         self.font_height = font_height
         self.attr = attr
-        self.num_colours = num_colours
+        self.num_attr = num_attr
         self.num_palette = num_palette
         self.width = width
         self.num_pages = num_pages
@@ -154,12 +154,11 @@ class ModeData(object):
         self.has_blink = has_blink
 
 # video modes
-# NOTE: what we call num_colours is really num_attributes
 text_mode = {
     'vga': ModeData(
                 font_height = 16,
                 attr = 7,
-                num_colours = 32,
+                num_attr = 32,
                 num_palette = 64,
                 width = 80,
                 num_pages = 4,
@@ -168,7 +167,7 @@ text_mode = {
     'ega': ModeData(
                 font_height = 14,
                 attr = 7,
-                num_colours = 32,
+                num_attr = 32,
                 num_palette = 64,
                 width = 80,
                 num_pages = 4,
@@ -177,7 +176,7 @@ text_mode = {
     'mda':  ModeData(
                 font_height = 14, 
                 attr = 7,
-                num_colours = 32,
+                num_attr = 32,
                 num_palette = 3,
                 width = 80,
                 num_pages = 4,
@@ -186,7 +185,7 @@ text_mode = {
     'cga':  ModeData(
                 font_height = 8, 
                 attr = 7,
-                num_colours = 32,
+                num_attr = 32,
                 num_palette = 16,
                 width = 80,
                 num_pages = 4, # do we have 4 pages on CGA/Tandy text?
@@ -200,7 +199,7 @@ graphics_modes = {
     1: ModeData(
             font_height = 8, 
             attr = 3,
-            num_colours = 4,
+            num_attr = 4,
             num_palette = 16,
             width = 40,
             num_pages = 1,
@@ -209,7 +208,7 @@ graphics_modes = {
     2: ModeData(
             font_height = 8, 
             attr = 1,
-            num_colours = 2,
+            num_attr = 2,
             num_palette = 16,
             width = 80,
             num_pages = 1,
@@ -219,7 +218,7 @@ graphics_modes = {
     3: ModeData(
             font_height = 8, 
             attr = 15,
-            num_colours = 16,
+            num_attr = 16,
             num_palette = 16,
             width = 20,
             num_pages = 2,
@@ -229,7 +228,7 @@ graphics_modes = {
     4: ModeData(
             font_height = 8, 
             attr = 3,
-            num_colours = 4,
+            num_attr = 4,
             num_palette = 16,
             width = 40,
             num_pages = 2,
@@ -239,7 +238,7 @@ graphics_modes = {
     5: ModeData(
             font_height = 8, 
             attr = 15,
-            num_colours = 16,
+            num_attr = 16,
             num_palette = 16,
             width = 40,
             num_pages = 1,
@@ -249,7 +248,7 @@ graphics_modes = {
     6: ModeData(
             font_height = 8, 
             attr = 3,
-            num_colours = 4,
+            num_attr = 4,
             num_palette = 16,
             width = 80,
             num_pages = 1,
@@ -259,7 +258,7 @@ graphics_modes = {
     7: ModeData(
             font_height = 8, 
             attr = 15,
-            num_colours = 16,
+            num_attr = 16,
             num_palette = 16,
             width = 40,
             num_pages = 8,
@@ -268,7 +267,7 @@ graphics_modes = {
     8: ModeData(
             font_height = 8, 
             attr = 15,
-            num_colours = 16,
+            num_attr = 16,
             num_palette = 16,
             width = 80,
             num_pages = 4,
@@ -277,7 +276,7 @@ graphics_modes = {
     9: ModeData(
             font_height = 14, 
             attr = 15,
-            num_colours = 16,
+            num_attr = 16,
             num_palette = 64,
             width = 80,
             num_pages = 2,
@@ -286,7 +285,7 @@ graphics_modes = {
     10: ModeData(
             font_height = 14, 
             attr = 1,
-            num_colours = 4,
+            num_attr = 4,
             num_palette = 9,
             width = 80,
             num_pages = 2,
@@ -620,7 +619,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
     state.console_state.screen_mode = new_mode
     state.console_state.colorswitch = new_colorswitch 
     state.console_state.font_height = info.font_height 
-    state.console_state.num_colours = info.num_colours
+    state.console_state.num_attr = info.num_attr
     state.console_state.num_palette = info.num_palette
     state.console_state.height = 25
     state.console_state.width = info.width
@@ -1096,12 +1095,12 @@ def set_palette(new_palette=None):
     else:    
         if state.console_state.num_palette == 64:
             state.console_state.palette = ega_palette[:]
-        elif state.console_state.num_colours >= 16:
+        elif state.console_state.num_attr >= 16:
             if mono_monitor:
                 state.console_state.palette = ega_mono_text_palette
             else:            
                 state.console_state.palette = cga16_palette[:]
-        elif state.console_state.num_colours == 4:
+        elif state.console_state.num_attr == 4:
             if state.console_state.screen_mode == 10:
                 state.console_state.palette = ega_mono_palette
             else:

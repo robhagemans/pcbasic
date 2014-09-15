@@ -1931,18 +1931,18 @@ def exec_color(ins):
     # graphics mode bg is always 0; sets palette instead
     back = back_old if mode == 0 and back == None else (backend.get_palette_entry(0) if back == None else back)
     if mode == 0:
-        util.range_check(0, state.console_state.num_colours-1, fore)
+        util.range_check(0, state.console_state.num_attr-1, fore)
         util.range_check(0, 15, back, bord)
         state.console_state.attr = ((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10 + (fore & 0xf) 
         backend.set_border(bord)
     elif mode in (3, 4, 5, 6, 7, 8):
-        util.range_check(1, state.console_state.num_colours-1, fore)
-        util.range_check(0, state.console_state.num_colours-1, back)
+        util.range_check(1, state.console_state.num_attr-1, fore)
+        util.range_check(0, state.console_state.num_attr-1, back)
         state.console_state.attr = fore
         # in screen 7 and 8, only low intensity palette is used.
         backend.set_palette_entry(0, back % 8)    
     elif mode in (9, 10):
-        util.range_check(0, state.console_state.num_colours-1, fore)
+        util.range_check(0, state.console_state.num_attr-1, fore)
         util.range_check(0, state.console_state.num_palette-1, back)
         state.console_state.attr = fore
         backend.set_palette_entry(0, back)
@@ -1973,7 +1973,7 @@ def exec_palette(ins):
         exec_palette_using(ins)
     else:
         # can't set blinking colours separately
-        num_palette_entries = state.console_state.num_colours if state.console_state.num_colours != 32 else 16
+        num_palette_entries = state.console_state.num_attr if state.console_state.num_attr != 32 else 16
         pair = expressions.parse_int_list(ins, 2, err=5)
         if pair[0] == None or pair[1] == None:
             raise error.RunError(2)
@@ -1990,7 +1990,7 @@ def exec_palette(ins):
         util.require(ins, util.end_statement)    
 
 def exec_palette_using(ins):
-    num_palette_entries = state.console_state.num_colours if state.console_state.num_colours != 32 else 16
+    num_palette_entries = state.console_state.num_attr if state.console_state.num_attr != 32 else 16
     array_name, start_indices = expressions.get_var_or_array_name(ins)
     try:     
         dimensions, lst, _ = state.basic_state.arrays[array_name]    

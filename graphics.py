@@ -44,7 +44,7 @@ def get_colour_index(c):
     if c == -1: # foreground; graphics 'background' attrib is always 0
         c = state.console_state.attr & 0xf
     else:
-        c = min(state.console_state.num_colours - 1, max(0, c))
+        c = min(state.console_state.num_attr - 1, max(0, c))
     return c
 
 def check_coords(x, y):

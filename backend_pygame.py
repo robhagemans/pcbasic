@@ -410,14 +410,13 @@ def init_screen_mode(mode_info, is_text_mode=False):
     global glyphs, cursor
     global screen_changed, canvas
     global font, under_cursor, size, text_mode
-    global font_height, attr, num_colours, num_palette
+    global font_height, attr, num_palette
     global width, num_pages, bitsperpixel, font_width
     global mode_has_artifacts, cursor_fixed_attr, mode_has_blink
     text_mode = is_text_mode
     # unpack mode info struct
     font_height = mode_info.font_height
     attr = mode_info.attr
-    num_colours = mode_info.num_colours 
     num_palette = mode_info.num_palette
     width = mode_info.width
     num_pages = mode_info.num_pages
