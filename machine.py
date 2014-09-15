@@ -333,6 +333,14 @@ def get_video_memory(addr):
             page, addr = addr//32768, addr%32768
             x, y = (addr%80)*8, addr//80
             return get_pixel_byte(page, x, y, state.console_state.colour_plane % 4)
+        elif state.console_state.screen_mode == 10:
+            if colour_plane % 4 in (1, 3):
+                # only planes 0, 2 are used 
+                # http://webpages.charter.net/danrollins/techhelp/0089.HTM
+                return 0
+            page, addr = addr//32768, addr%32768
+            x, y = (addr%80)*8, addr//80
+            return get_pixel_byte(page, x, y, state.console_state.colour_plane % 4)
         return -1   
 
 def set_video_memory(addr, val):
@@ -387,6 +395,11 @@ def set_video_memory(addr, val):
             page, addr = addr//32768, addr%32768
             x, y = (addr%80)*8, addr//80
             set_pixel_byte(page, x, y, state.console_state.colour_plane_write_mask & 0xf, val)            
+        elif state.console_state.screen_mode == 10:
+            page, addr = addr//32768, addr%32768
+            x, y = (addr%80)*8, addr//80
+            # only use bits 0 and 2
+            set_pixel_byte(page, x, y, state.console_state.colour_plane_write_mask & 0x5, val)            
 
 def get_video_memory_block(addr, length):
     return bytearray( [ max(0, get_video_memory(a)) for a in range(addr, addr+length) ] )
