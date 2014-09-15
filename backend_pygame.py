@@ -75,7 +75,8 @@ if pygame:
     composite_artifacts = False
     composite_monitor = False
     mode_has_artifacts = False
-    
+    mono_monitor = False
+        
     # working palette - attribute index in blue channel
     workpalette = [(0, 0, b * 16 + f) for b in range(16) for f in range(16)]
     # display palettes for blink states 0, 1
@@ -233,6 +234,7 @@ if pygame:
     mousebutton_copy = 1
     mousebutton_paste = 2
     mousebutton_pen = 3
+
     
 ####################################            
 # set constants based on commandline arguments
@@ -267,7 +269,8 @@ def prepare():
     composite_monitor = config.options['composite'] and config.options['video'] != 'ega'
     if composite_monitor:
         composite_640_palette = composite_640[config.options['video']]
-    mono_monitor = config.options['mono'] != ''
+    if config.options['mono']:
+        mono_monitor = True
     if config.options['video'] == 'tandy':
         # enable tandy F11, F12
         # TODO: tandy scancodes are defined for many more keys than PC, e.g. ctrl+F5 and friends; check pcjr too
