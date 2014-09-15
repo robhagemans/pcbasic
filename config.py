@@ -386,7 +386,10 @@ def convert_config_file(arglist):
     return arglist        
 
 def parse_list_config(s):
-    return s.split(',')
+    lst = s.split(',')
+    if lst == ['']:
+        return []
+    return lst
 
 def parse_bool_config(s):
     """ Parse bool option from config file. """
@@ -409,7 +412,7 @@ def parse_list_arg(arglist):
             if type(sublist)==list:
                 newlist += sublist
             else:
-                newlist += [sublist]    
+                newlist += [sublist]
     return newlist    
 
 def parse_int_arg(inargs):
