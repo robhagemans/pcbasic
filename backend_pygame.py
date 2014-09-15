@@ -123,6 +123,7 @@ if pygame:
     # store for fast get & put arrays
     get_put_store = {}
 
+    # what we call "scancode" here is known as "extended ascii", real scancodes lower down.
     keycode_to_scancode = {
         pygame.K_UP:    '\x00\x48',        pygame.K_DOWN:  '\x00\x50',        pygame.K_RIGHT: '\x00\x4D',        
         pygame.K_LEFT:  '\x00\x4B',        pygame.K_INSERT:'\x00\x52',        pygame.K_DELETE:'\x00\x53',
@@ -173,6 +174,7 @@ if pygame:
         pygame.K_F10:       '\x00\x71',
     }
        
+    # these are the actual PC keyboard scancodes for a US keyboard
     keycode_to_inpcode = {
         # top row
         pygame.K_ESCAPE:    '\x01',        pygame.K_1:         '\x02',        pygame.K_2:         '\x03',
