@@ -103,13 +103,13 @@ def move_cursor(crow, ccol):
 
 def update_cursor_attr(attr):
     pass
-        
-def update_palette(palette):
-    pass
 
-def set_colorburst(on, palette):
+def update_palette(new_palette, colours, colours1):
     pass
     
+def set_colorburst(on, palette, colours, colours1):
+    pass
+        
 def update_cursor_visibility(cursor_on):
     pass
 

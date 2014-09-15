@@ -136,7 +136,6 @@ else:
             s = s.replace(esc, ansi.esc_to_scan[esc])
         return s
 
-
     def clear_line():
         term.write(ansi.esc_clear_line)
     
@@ -145,7 +144,6 @@ else:
 
     def move_right(num):
         term.write(ansi.esc_move_right*num)
-
 
     def putc_at(row, col, c, for_keys=False):
         global last_col
@@ -169,7 +167,6 @@ else:
             term.write('  ')
         term.flush()
         last_col += 2
-       
 
 def prepare(args):
     pass
@@ -192,23 +189,9 @@ def close():
 def idle():
     time.sleep(0.024)
     
-        
-def update_palette(palette):
-    pass
-
-def set_colorburst(on, palette):
-    pass
-        
 def move_cursor(crow, ccol):
     global cursor_row, cursor_col
     cursor_row, cursor_col = crow, ccol
-    pass
-
-def update_cursor_attr(attr):
-    pass
-    
-def update_cursor_visibility(cursor_on):
-    pass
 
 def check_events():
     check_keyboard()
@@ -242,17 +225,14 @@ def clear_rows(cattr, start, stop):
         clear_line()
         term.flush()
         update_position()
-            
-def set_attr(attr):
-    pass
 
 def scroll(from_line, scroll_height, attr):
     term.write('\r\n')
     term.flush()
-    
+
 def scroll_down(from_line, scroll_height, attr):
     pass
-        
+
 def check_keyboard():
     global pre_buffer
     s = ''
@@ -288,6 +268,21 @@ def check_keyboard():
             except KeyError:    
                 backend.insert_key(c)    
         c = ''
+
+def update_palette(new_palette, colours, colours1):
+    pass
+    
+def set_colorburst(on, palette, colours, colours1):
+    pass
+
+def update_cursor_attr(attr):
+    pass
+    
+def update_cursor_visibility(cursor_on):
+    pass
+            
+def set_attr(attr):
+    pass
 
 def set_page(vpage, apage):
     pass

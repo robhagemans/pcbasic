@@ -108,7 +108,7 @@ def supports_graphics_mode(mode_info):
 def init_screen_mode(mode_info=None, is_text_mode=False):
     global window, height, width
     height = 25
-    width = mode_info[4]
+    width = mode_info.width
     if window:
         window.clear()
         window.refresh()
@@ -184,13 +184,13 @@ def colours(at):
         cursattr |= curses.A_BLINK
     return cursattr
 
-def update_palette(new_palette):
+def update_palette(new_palette, colours, colours1):
     if can_change_palette:
         for i in range(len(new_palette)):
-            r, g, b = backend.colours64[new_palette[i]]
+            r, g, b = colours[new_palette[i]]
             curses.init_color(default_colors[i], (r*1000)//255, (g*1000)//255, (b*1000)//255)             
     
-def set_colorburst(on, palette):
+def set_colorburst(on, palette, colours, colours1):
     pass
     
 ####
