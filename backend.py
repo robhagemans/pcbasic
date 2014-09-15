@@ -10,6 +10,7 @@ please see text file COPYING for licence terms.
 """
 
 import logging
+from copy import copy
 
 import config
 import state 
@@ -133,36 +134,167 @@ state.console_state.width = 80
 # number of rows, counting 1..height
 state.console_state.height = 25
 
+class ModeData(object):
+    """ Holds settings for video modes. """
+    
+    def __init__(self, font_height, attr, num_colours, num_palette, 
+                 width, num_pages, bitsperpixel, font_width=8, 
+                 supports_artifacts=False, cursor_index=None, has_blink=False):
+        """ Settings for one video mode. """         
+        self.font_height = font_height
+        self.attr = attr
+        self.num_colours = num_colours
+        self.num_palette = num_palette
+        self.width = width
+        self.num_pages = num_pages
+        self.bitsperpixel = bitsperpixel
+        self.font_width = font_width
+        self.supports_artifacts = supports_artifacts
+        self.cursor_index = cursor_index
+        self.has_blink = has_blink
+
+# video modes
 # NOTE: what we call num_colours is really num_attributes
-#  font_height, attr, num_colours, num_palette, width, num_pages, bitsperpixel, 
-#   font_width, supports_artifacts, cursor_index, has_blink
-mode_data_default = {
-    # height 8, 14, or 16; font width 8 or 9; height 40 or 80 
-    # shld be 14 for ega, 16 for vga
-    0: (16,  7, 32, 64, 80, 4, 4, 8, False, None, True), 
-    # 04h 320x200x4  16384B 2bpp 0xb8000 tandy:2 pages if 32k memory; ega: 1 page only 
-    1: ( 8,  3,  4, 16, 40, 1, 2, 8, False, None, False),
-    # 06h 640x200x2  16384B 1bpp 0xb8000 
-    2: ( 8,  1,  2, 16, 80, 1, 1, 8, True, None, False), 
-    # 08h 160x200x16 16384B 4bpp 0xb8000
-    3: ( 8, 15, 16, 16, 20, 2, 4, 8, False, 3, False), 
-    #     320x200x4  16384B 2bpp 0xb8000   
-    4: ( 8,  3,  4, 16, 40, 2, 2, 8, False, 3, False), 
-    # 09h 320x200x16 32768B 4bpp 0xb8000    
-    5: ( 8, 15, 16, 16, 40, 1, 4, 8, False, 3, False), 
-    # 0Ah 640x200x4  32768B 2bpp 0xb8000   
-    6: ( 8,  3,  4, 16, 80, 1, 2, 8, False, 3, False), 
-    # 0Dh 320x200x16 32768B 4bpp 0xa0000
-    7: ( 8, 15, 16, 16, 40, 8, 4, 8, False, None, False), 
-    # 0Eh 640x200x16 
-    8: ( 8, 15, 16, 16, 80, 4, 4, 8, False, None, False), 
-    # 10h 640x350x16 
-    9: (14, 15, 16, 64, 80, 2, 4, 8, False, None, False), 
-    # 0Fh 640x350x4 monochrome 
-    10: (14, 1, 4, 9, 80, 2, 2, 8, False, None, True),
+text_mode = {
+    'vga': ModeData(
+                font_height = 16,
+                attr = 7,
+                num_colours = 32,
+                num_palette = 64,
+                width = 80,
+                num_pages = 4,
+                bitsperpixel = 4,
+                has_blink = True),
+    'ega': ModeData(
+                font_height = 14,
+                attr = 7,
+                num_colours = 32,
+                num_palette = 64,
+                width = 80,
+                num_pages = 4,
+                bitsperpixel = 4,
+                has_blink = True),
+    'mda':  ModeData(
+                font_height = 14, 
+                attr = 7,
+                num_colours = 32,
+                num_palette = 3,
+                width = 80,
+                num_pages = 4,
+                bitsperpixel = 4,
+                has_blink = True),
+    'cga':  ModeData(
+                font_height = 8, 
+                attr = 7,
+                num_colours = 32,
+                num_palette = 16,
+                width = 80,
+                num_pages = 4, # do we have 4 pages on CGA/Tandy text?
+                bitsperpixel = 4,
+                has_blink = True),
     }
-mode_0_8bit = (8, 7, 32, 16, 80, 4, 4, 8, False, None, True)
-mode_0_ega_mono = (14, 7, 32, 3, 80, 4, 4, 8, False, None, True)
+
+graphics_modes = {
+    # 04h 320x200x4  16384B 2bpp 0xb8000 
+    # tandy:2 pages if 32k memory; ega: 1 page only 
+    1: ModeData(
+            font_height = 8, 
+            attr = 3,
+            num_colours = 4,
+            num_palette = 16,
+            width = 40,
+            num_pages = 1,
+            bitsperpixel = 2),
+    # 06h 640x200x2  16384B 1bpp 0xb8000 
+    2: ModeData(
+            font_height = 8, 
+            attr = 1,
+            num_colours = 2,
+            num_palette = 16,
+            width = 80,
+            num_pages = 1,
+            bitsperpixel = 1,
+            supports_artifacts = True),
+    # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy
+    3: ModeData(
+            font_height = 8, 
+            attr = 15,
+            num_colours = 16,
+            num_palette = 16,
+            width = 20,
+            num_pages = 2,
+            bitsperpixel = 4,
+            cursor_index = 3),
+    #     320x200x4  16384B 2bpp 0xb8000   
+    4: ModeData(
+            font_height = 8, 
+            attr = 3,
+            num_colours = 4,
+            num_palette = 16,
+            width = 40,
+            num_pages = 2,
+            bitsperpixel = 2,
+            cursor_index = 3),
+    # 09h 320x200x16 32768B 4bpp 0xb8000    
+    5: ModeData(
+            font_height = 8, 
+            attr = 15,
+            num_colours = 16,
+            num_palette = 16,
+            width = 40,
+            num_pages = 1,
+            bitsperpixel = 4,
+            cursor_index = 3),
+    # 0Ah 640x200x4  32768B 2bpp 0xb8000   
+    6: ModeData(
+            font_height = 8, 
+            attr = 3,
+            num_colours = 4,
+            num_palette = 16,
+            width = 80,
+            num_pages = 1,
+            bitsperpixel = 2,
+            cursor_index = 3),
+    # 0Dh 320x200x16 32768B 4bpp 0xa0000
+    7: ModeData(
+            font_height = 8, 
+            attr = 15,
+            num_colours = 16,
+            num_palette = 16,
+            width = 40,
+            num_pages = 8,
+            bitsperpixel = 4),
+    # 0Eh 640x200x16 
+    8: ModeData(
+            font_height = 8, 
+            attr = 15,
+            num_colours = 16,
+            num_palette = 16,
+            width = 80,
+            num_pages = 4,
+            bitsperpixel = 4),
+    # 10h 640x350x16 
+    9: ModeData(
+            font_height = 14, 
+            attr = 15,
+            num_colours = 16,
+            num_palette = 64,
+            width = 80,
+            num_pages = 2,
+            bitsperpixel = 4),
+    # 0Fh 640x350x4 monochrome 
+    10: ModeData(
+            font_height = 14, 
+            attr = 1,
+            num_colours = 4,
+            num_palette = 9,
+            width = 80,
+            num_pages = 2,
+            bitsperpixel = 2,
+            has_blink = True),
+    }
+    
+# to be filled with the modes available to our video card    
 mode_data = {}
 
 #############################################
@@ -253,6 +385,13 @@ def prepare_keyboard():
     """ Prepare keyboard handling. """
     global ignore_caps
     global num_fn_keys
+    # inserted keystrokes
+    for u in config.options['keys'].decode('string_escape').decode('utf-8'):
+        c = u.encode('utf-8')
+        try:
+            state.console_state.keybuf += unicodepage.from_utf8(c)
+        except KeyError:
+            state.console_state.keybuf += c
     # handle caps lock only if requested
     if config.options['capture_caps']:
         ignore_caps = False
@@ -289,16 +428,9 @@ def prepare_video():
     global colours16_mono, colours_ega_mono_0, colours_ega_mono_1
     global colours_ega_mono_text
     global mode_data
-    # inserted keystrokes
-    for u in config.options['keys'].decode('string_escape').decode('utf-8'):
-        c = u.encode('utf-8')
-        try:
-            state.console_state.keybuf += unicodepage.from_utf8(c)
-        except KeyError:
-            state.console_state.keybuf += c
     egacursor = config.options['video'] == 'ega'
-    if config.options['video']:
-        video_capabilities = config.options['video']
+    video_capabilities = config.options['video']
+    composite_monitor = config.options['composite']
     if video_capabilities != 'ega':
         state.console_state.num_palette = 16
         state.console_state.palette = cga16_palette[:]
@@ -312,7 +444,6 @@ def prepare_video():
         cga_palette_1 = cga_palette_1_lo
         cga_palette_5 = cga_palette_5_lo
         cga_palettes = [cga_palette_0, cga_palette_1]
-    composite_monitor = config.options['composite']
     # set monochrome tint and build mono palettes
     if config.options['mono']:
         mono_tint = [int(s) for s in config.options['mono'].split(',')]
@@ -328,30 +459,29 @@ def prepare_video():
                        for i in intensity_ega_mono_1 ]        
     colours_ega_mono_text = [ [tint*i//255 for tint in mono_tint]
                        for i in intensity_ega_mono_text ]
-    # copy the mode data list
-    for mode in mode_data_default:
-        mode_data[mode] = mode_data_default[mode]
+    # prepare video mode list
     # only allow the screen modes that the given machine supports
     if video_capabilities in ('pcjr', 'tandy'):
         # no EGA modes (though apparently there were Tandy machines with EGA)
-        unavailable_modes = [7, 8, 9, 10]
+        available_modes = [1, 2, 3, 4, 5, 6]
         # 8-pixel characters, 16 colours in screen 0
-        mode_data[0] = mode_0_8bit
+        mode_data[0] = text_mode['cga']
         # TODO: determine the number of pages based on video memory size 
     elif video_capabilities in ('cga', 'cga_old'):
-        unavailable_modes = [3, 4, 5, 6, 7, 8, 9, 10]
+        available_modes = [1, 2]
         # 8-pixel characters, 16 colours in screen 0
-        mode_data[0] = mode_0_8bit
+        mode_data[0] = text_mode['cga']
     else:
         # EGA
-        # no PCjr modes
         if mono_monitor:
-            mode_data[0] = mode_0_ega_mono
-            unavailable_modes = [1, 3, 4, 5, 6, 7, 8, 9]
+            available_modes = [10]
+            mode_data[0] = text_mode['mda']
         else:
-            unavailable_modes = [3, 4, 5, 6, 10]
-    for mode in unavailable_modes:
-        del mode_data[mode]
+            available_modes = [1, 2, 7, 8, 9]
+            mode_data[0] = text_mode['vga']  # using vga instead of ega for now
+    # copy the mode data list
+    for mode in available_modes:
+        mode_data[mode] = graphics_modes[mode]
            
 def init_video():
     """ Initialise the video backend. """
@@ -373,9 +503,9 @@ def resume_screen():
             "Resumed screen mode %d not supported by this setup",
             state.console_state.screen_mode)
         return False
-    mode_info = list(mode_data[state.console_state.screen_mode])
-    mode_info[4] = state.console_state.width    
-    mode_info[1] = state.console_state.attr
+    mode_info = copy(mode_data[state.console_state.screen_mode])
+    mode_info.width = state.console_state.width    
+    mode_info.attr = state.console_state.attr
     # set up the appropriate screen resolution
     if (state.console_state.screen_mode == 0 or 
             video.supports_graphics_mode(mode_info)):
@@ -458,16 +588,16 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
     # 1: (default) erase old and new page if screen or bust changes
     # 2: erase all video memory if screen or bust changes 
     try:
-        info = list(mode_data[new_mode])
+        info = copy(mode_data[new_mode])
     except KeyError:
         # no such mode
         info = None
     # vpage and apage nums are persistent on mode switch
     # if the new mode has fewer pages than current vpage/apage, 
     # illegal fn call before anything happens.
-    if (not info or new_apagenum >= info[5] or new_vpagenum >= info[5] or 
-            (new_mode != 0 and 
-            not video.supports_graphics_mode(info))):
+    if (not info or new_apagenum >= info.num_pages or 
+            new_vpagenum >= info.num_pages or 
+            (new_mode != 0 and not video.supports_graphics_mode(info))):
         # reset palette happens 
         # even if the function fails with Illegal Function Call
         set_palette()
@@ -478,23 +608,28 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
         if new_width == 20:
             new_width = 40
     if new_width != None:
-        info[4] = new_width    
+        info.width = new_width
+    state.console_state.width = info.width
+    # attribute persists on width-only change
     if (state.console_state.screen_mode == 0 and new_mode == 0 
             and state.console_state.apagenum == new_apagenum 
             and state.console_state.vpagenum == new_vpagenum):
-        info[1] = state.console_state.attr              
+        info.attr = state.console_state.attr
+    state.console_state.attr = info.attr
     # start with black border 
     if new_mode != state.console_state.screen_mode:
         set_border(0)
     # set all state vars
     state.console_state.screen_mode = new_mode
     state.console_state.colorswitch = new_colorswitch 
+    state.console_state.font_height = info.font_height 
+    state.console_state.num_colours = info.num_colours
+    state.console_state.num_palette = info.num_palette
     state.console_state.height = 25
-    (   state.console_state.font_height, state.console_state.attr, 
-        state.console_state.num_colours, state.console_state.num_palette, 
-        state.console_state.width, state.console_state.num_pages, 
-        state.console_state.bitsperpixel, state.console_state.font_width, 
-        _, _, _ ) = info  
+    state.console_state.width = info.width
+    state.console_state.num_pages = info.num_pages
+    state.console_state.bitsperpixel = info.bitsperpixel
+    state.console_state.font_width = info.font_width
     # build the screen buffer    
     state.console_state.pages = []
     for _ in range(state.console_state.num_pages):

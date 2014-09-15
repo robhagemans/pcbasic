@@ -396,7 +396,7 @@ def load_fonts(heights_needed):
 def supports_graphics_mode(mode_info):
     """ Return whether we support a given graphics mode. """
     # unpack mode info struct
-    font_height = mode_info[0]
+    font_height = mode_info.font_height
     if not font_height in fonts:
         return False
     return True
@@ -411,12 +411,20 @@ def init_screen_mode(mode_info, is_text_mode=False):
     global mode_has_artifacts, cursor_fixed_attr, mode_has_blink
     text_mode = is_text_mode
     # unpack mode info struct
-    (font_height, attr, num_colours, num_palette, 
-           width, num_pages, bitsperpixel, font_width,
-           mode_has_artifacts, cursor_fixed_attr, mode_has_blink) = mode_info
+    font_height = mode_info.font_height
+    attr = mode_info.attr
+    num_colours = mode_info.num_colours 
+    num_palette = mode_info.num_palette
+    width = mode_info.width
+    num_pages = mode_info.num_pages
+    bitsperpixel = mode_info.bitsperpixel
+    font_width = mode_info.font_width
+    mode_has_artifacts = mode_info.supports_artifacts
+    cursor_fixed_attr = mode_info.cursor_index
+    mode_has_blink = mode_info.has_blink
     font = fonts[font_height]
-    glyphs = [ build_glyph(chr(c), font, font_width, font_height) 
-                    for c in range(256) ]
+    glyphs = [build_glyph(chr(c), font, font_width, font_height) 
+              for c in range(256)]
     # initialise glyph colour
     set_attr(attr, force_rebuild=True)
     if is_text_mode:
