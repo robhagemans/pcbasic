@@ -243,14 +243,52 @@ state.console_state.border_attr = 0
 
 def prepare():
     """ Initialise backend module. """
-    global pcjr_sound, ignore_caps, egacursor
+    prepare_keyboard()
+    prepare_audio()
+    prepare_video()
+    # initialise event triggers
+    reset_events()    
+
+def prepare_keyboard():
+    """ Prepare keyboard handling. """
+    global ignore_caps
     global num_fn_keys
+    # handle caps lock only if requested
+    if config.options['capture_caps']:
+        ignore_caps = False
+    # function keys: F1-F12 for tandy, F1-F10 for gwbasic and pcjr
+    if config.options['pcjr_syntax'] == 'tandy':
+        num_fn_keys = 12
+    else:
+        num_fn_keys = 10
+
+def prepare_audio():
+    """ Prepare the audio subsystem. """
+    global pcjr_sound
+    # pcjr/tandy sound
+    pcjr_sound = config.options['pcjr_syntax']
+    # tandy has SOUND ON by default, pcjr has it OFF
+    state.console_state.sound_on = (pcjr_sound == 'tandy')
+
+def init_audio():
+    """ Initialise the audio backend. """
+    global audio
+    if not audio or not audio.init_sound():
+        return False
+    # rebuild sound queue
+    for voice in range(4):    
+        for note in state.console_state.music_queue[voice]:
+            audio.play_sound(*note)
+    return True
+
+def prepare_video():
+    """ Prepare the video subsystem. """
+    global egacursor
     global cga_palette_0, cga_palette_1, cga_palette_5, cga_palettes
     global video_capabilities, composite_monitor, mono_monitor, mono_tint
     global colours16_mono, colours_ega_mono_0, colours_ega_mono_1
     global colours_ega_mono_text
-    if config.options['capture_caps']:
-        ignore_caps = False
+    global mode_data
     # inserted keystrokes
     for u in config.options['keys'].decode('string_escape').decode('utf-8'):
         c = u.encode('utf-8')
@@ -293,27 +331,6 @@ def prepare():
     # copy the mode data list
     for mode in mode_data_default:
         mode_data[mode] = mode_data_default[mode]
-    # pcjr/tandy sound
-    pcjr_sound = config.options['pcjr_syntax']
-    # tandy has SOUND ON by default, pcjr has it OFF
-    state.console_state.sound_on = (pcjr_sound == 'tandy')
-    # function keys: F1-F12 for tandy, F1-F10 for gwbasic and pcjr
-    if config.options['pcjr_syntax'] == 'tandy':
-        num_fn_keys = 12
-    else:
-        num_fn_keys = 10
-    # initialise event triggers
-    reset_events()    
-           
-def init_video():
-    """ Initialise the video backend. """
-    global video, mode_data
-    if not video or not video.init():
-        return False
-    # only allow the screen modes that the given machine supports
-    # reset modes in case init is called a second time for error fallback
-    for mode in mode_data_default:
-        mode_data[mode] = mode_data_default[mode]
     # only allow the screen modes that the given machine supports
     if video_capabilities in ('pcjr', 'tandy'):
         # no EGA modes (though apparently there were Tandy machines with EGA)
@@ -335,63 +352,62 @@ def init_video():
             unavailable_modes = [3, 4, 5, 6, 10]
     for mode in unavailable_modes:
         del mode_data[mode]
-    # text mode backends: delete all graphics modes    
-    # reload the screen in resumed state
+           
+def init_video():
+    """ Initialise the video backend. """
+    if not video or not video.init():
+        return False
     if state.loaded:
-        if state.console_state.screen_mode not in mode_data:
-            # mode not supported by backend
-            logging.warning(
-                "Resumed screen mode %d not supported by this setup",
-                state.console_state.screen_mode)
-            return False
-        mode_info = list(mode_data[state.console_state.screen_mode])
-        mode_info[4] = state.console_state.width    
-        mode_info[1] = state.console_state.attr
-        # set up the appropriate screen resolution
-        if (state.console_state.screen_mode == 0 or 
-                video.supports_graphics_mode(mode_info)):
-            # set the visible and active pages
-            video.set_page(state.console_state.vpagenum, 
-                           state.console_state.apagenum)
-            # set the screen mde
-            video.init_screen_mode(mode_info, 
-                                   state.console_state.screen_mode==0)
-            video.update_palette(state.console_state.palette)
-            # fix the cursor
-            video.build_cursor(
-                state.console_state.cursor_width, 
-                state.console_state.font_height, 
-                state.console_state.cursor_from, state.console_state.cursor_to)    
-            video.move_cursor(state.console_state.row, state.console_state.col)
-            video.update_cursor_attr(
-                    state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
-            update_cursor_visibility()
-            video.set_border(state.console_state.border_attr)
-        else:
-            # fix the terminal
-            video.close()
-            # mode not supported by backend
-            logging.warning(
-                "Resumed screen mode %d not supported by this interface.", 
-                state.console_state.screen_mode)
-            return False
-        # load the screen contents from storage
-        video.load_state()
+        # reload the screen in resumed state
+        return resume_screen()
     else:        
+        # initialise a fresh textmode screen
         screen(None, None, None, None)
+        return True
+
+def resume_screen():
+    """ Load a video mode from storage and initialise. """
+    if state.console_state.screen_mode not in mode_data:
+        # mode not supported by backend
+        logging.warning(
+            "Resumed screen mode %d not supported by this setup",
+            state.console_state.screen_mode)
+        return False
+    mode_info = list(mode_data[state.console_state.screen_mode])
+    mode_info[4] = state.console_state.width    
+    mode_info[1] = state.console_state.attr
+    # set up the appropriate screen resolution
+    if (state.console_state.screen_mode == 0 or 
+            video.supports_graphics_mode(mode_info)):
+        # set the visible and active pages
+        video.set_page(state.console_state.vpagenum, 
+                       state.console_state.apagenum)
+        # set the screen mde
+        video.init_screen_mode(mode_info, 
+                               state.console_state.screen_mode==0)
+        video.update_palette(state.console_state.palette)
+        # fix the cursor
+        video.build_cursor(
+            state.console_state.cursor_width, 
+            state.console_state.font_height, 
+            state.console_state.cursor_from, state.console_state.cursor_to)    
+        video.move_cursor(state.console_state.row, state.console_state.col)
+        video.update_cursor_attr(
+                state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
+        update_cursor_visibility()
+        video.set_border(state.console_state.border_attr)
+    else:
+        # fix the terminal
+        video.close()
+        # mode not supported by backend
+        logging.warning(
+            "Resumed screen mode %d not supported by this interface.", 
+            state.console_state.screen_mode)
+        return False
+    # load the screen contents from storage
+    video.load_state()
     return True
     
-def init_audio():
-    """ Initialise the audio backend. """
-    global audio
-    if not audio or not audio.init_sound():
-        return False
-    # rebuild sound queue
-    for voice in range(4):    
-        for note in state.console_state.music_queue[voice]:
-            audio.play_sound(*note)
-    return True
-
 #############################################
 # main event checker
     
