@@ -210,7 +210,7 @@ arguments = {
         'help': 'Set the terminal program run by the PCjr TERM command' },
     'video': { 
         'type': 'string', 'choices': ('ega', 'cga', 'cga_old', 'pcjr', 'tandy'), 
-        'help': 'Set video capabilities' },
+        'help': 'Set the video card to emulate.' },
     'windows_map_drives': { 
         'type': 'bool', 
         'help': 'Map all Windows drive letters to PC-BASIC drive letters '
@@ -219,11 +219,6 @@ arguments = {
         'type': 'bool', 
         'help': 'Use low-intensity palettes in CGA '
                 '(for --video={cga,ega} only).' },
-    'composite': { 
-        'type': 'bool', 
-        'help': 'Emulates the output on an NTSC composite monitor. Disables '
-                'smooth scaling. Enables colour artifacts on SCREEN 2 only '
-                '(and crudely). Ignored for --video=ega' },
     'nobox': { 
         'type': 'bool', 
         'help': 'Disable box-drawing recognition for DBCS code pages' },
@@ -241,10 +236,14 @@ arguments = {
     'state': {
         'type': 'string', 'metavar': 'PCBASIC.SAV',
         'help': 'Set the save-state file. Default is info/PCBASIC.SAV' },                
-    'mono': {
+    'mono_tint': {
         'type': 'string', 'metavar': 'r,g,b', 
-        'help': 'Set monitor to monochrome and specify the tint as RGB.'
-                'in the range 0-255' },
+        'help': 'Specify the monochrome tint as RGB, each in the range 0-255' },
+    'monitor': { 
+        'type': 'string', 'choices': ('rgb', 'composite', 'mono'),
+        'help': 'Sets the monitor type to emulate.' 
+                'Composite enables colour artifacts, crudely, on SCREEN 2 only '
+                'and is not allowed for --video=ega' },
 }
 
 def prepare():

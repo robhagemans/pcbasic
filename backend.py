@@ -333,7 +333,7 @@ intensity_ega_mono_1 = [0x00, 0x7f, 0xff, 0x00, 0x7f, 0xff, 0x00, 0x7f, 0xff]
 # EGA mono text intensity (blink is attr bit 7, like in colour mode)
 intensity_ega_mono_text = [0x00, 0x7f, 0xff] 
 # colour of monochrome monitor
-mono_tint = (0x00, 0xff, 0x00)
+mono_tint = (0xff, 0xff, 0xff)
 
 # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
 cga_palette_1_hi = [0, 11, 13, 15]
@@ -430,7 +430,8 @@ def prepare_video():
     global mode_data
     egacursor = config.options['video'] == 'ega'
     video_capabilities = config.options['video']
-    composite_monitor = config.options['composite']
+    composite_monitor = config.options['monitor'] == 'composite'
+    mono_monitor = config.options['monitor'] == 'mono'
     if video_capabilities != 'ega':
         state.console_state.num_palette = 16
         state.console_state.palette = cga16_palette[:]
@@ -445,12 +446,8 @@ def prepare_video():
         cga_palette_5 = cga_palette_5_lo
         cga_palettes = [cga_palette_0, cga_palette_1]
     # set monochrome tint and build mono palettes
-    if config.options['mono']:
-        mono_tint = [int(s) for s in config.options['mono'].split(',')]
-        mono_monitor = True
-    else:
-        mono_tint = (0xff, 0xff, 0xff)
-        mono_monitor = False
+    if config.options['mono_tint']:
+        mono_tint = [int(s) for s in config.options['mono_tint'].split(',')]
     colours16_mono = [ [tint*i//255 for tint in mono_tint]
                        for i in intensity16_mono ]            
     colours_ega_mono_0 = [ [tint*i//255 for tint in mono_tint]

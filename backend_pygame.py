@@ -266,11 +266,12 @@ def prepare():
     fullscreen = config.options['fullscreen']
     smooth = config.options['smooth']    
     noquit = config.options['noquit']
-    composite_monitor = config.options['composite'] and config.options['video'] != 'ega'
+    mono_monitor =  config.options['monitor'] == 'mono'
+    # if no composite palette available for this card, ignore.
+    composite_monitor = (config.options['monitor'] == 'composite' and
+                         config.options['video'] in composite_640)
     if composite_monitor:
-        composite_640_palette = composite_640[config.options['video']]
-    if config.options['mono']:
-        mono_monitor = True
+            composite_640_palette = composite_640[config.options['video']]
     if config.options['video'] == 'tandy':
         # enable tandy F11, F12
         # TODO: tandy scancodes are defined for many more keys than PC, e.g. ctrl+F5 and friends; check pcjr too
