@@ -816,6 +816,7 @@ def set_colorburst(on=True):
             state.console_state.colours, state.console_state.colours1)
 
 def set_border(attr):
+    """ Set the border attribute. """
     state.console_state.border_attr = attr
     video.set_border(attr)
 
