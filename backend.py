@@ -338,6 +338,12 @@ def init_video():
     # text mode backends: delete all graphics modes    
     # reload the screen in resumed state
     if state.loaded:
+        if state.console_state.screen_mode not in mode_data:
+            # mode not supported by backend
+            logging.warning(
+                "Resumed screen mode %d not supported by this setup",
+                state.console_state.screen_mode)
+            return False
         mode_info = list(mode_data[state.console_state.screen_mode])
         mode_info[4] = state.console_state.width    
         mode_info[1] = state.console_state.attr
