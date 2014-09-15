@@ -338,7 +338,7 @@ def load_state():
 def init():
     """ Initialise pygame interface. """
     global joysticks, physical_size, scrap, display_size, display_size_text
-    global text_mode, num_palette
+    global text_mode, num_colour_choices
     # set state objects to whatever is now in state (may have been unpickled)
     if not pygame:
         logging.warning('PyGame module not found. Failed to initialise graphical interface.')
@@ -363,7 +363,7 @@ def init():
     pygame.display.set_caption('PC-BASIC 3.23')
     pygame.key.set_repeat(500, 24)
     # load a game palette
-    num_palette = 64
+    num_colour_choices = 64
     update_palette(backend.ega_palette)
     if android:
         pygame_android.init()
@@ -410,14 +410,14 @@ def init_screen_mode(mode_info, is_text_mode=False):
     global glyphs, cursor
     global screen_changed, canvas
     global font, under_cursor, size, text_mode
-    global font_height, attr, num_palette
+    global font_height, attr, num_colour_choices
     global width, num_pages, bitsperpixel, font_width
     global mode_has_artifacts, cursor_fixed_attr, mode_has_blink
     text_mode = is_text_mode
     # unpack mode info struct
     font_height = mode_info.font_height
     attr = mode_info.attr
-    num_palette = mode_info.num_palette
+    num_colour_choices = mode_info.num_colour_choices
     width = mode_info.width
     num_pages = mode_info.num_pages
     bitsperpixel = mode_info.bitsperpixel
@@ -500,24 +500,24 @@ def get_palette_index(cattr):
 def update_palette(palette):
     """ Build the game palette. """
     global screen_changed, gamepalette
-    if num_palette == 64:
+    if num_colour_choices == 64:
         # i.e. ega text mode
         basepalette0 = [pygame.Color(*backend.colours64[i]) for i in palette]
         basepalette1 = basepalette0
-    elif num_palette == 9:
+    elif num_colour_choices == 9:
         # i.e. ega mono screen 10
         basepalette0 = [pygame.Color(*backend.colours_ega_mono_0[i]) for i in palette]
         basepalette1 = [pygame.Color(*backend.colours_ega_mono_1[i]) for i in palette]
-    elif num_palette == 3:
+    elif num_colour_choices == 3:
         # i.e. ega mono text
         basepalette0 = [pygame.Color(*backend.colours_ega_mono_text[i]) for i in palette] 
         basepalette1 = basepalette0
     else:
         if (colorburst or not composite_monitor and not mono_monitor):
             # take modulo in case we're e.g. resuming ega text into a cga machine
-            basepalette0 = [pygame.Color(*backend.colours16[i % num_palette]) for i in palette]
+            basepalette0 = [pygame.Color(*backend.colours16[i % num_colour_choices]) for i in palette]
         else:
-            basepalette0 = [pygame.Color(*backend.colours16_mono[i % num_palette]) for i in palette]
+            basepalette0 = [pygame.Color(*backend.colours16_mono[i % num_colour_choices]) for i in palette]
         basepalette1 = basepalette0
     while len(basepalette0) < 16:
         basepalette0.append(pygame.Color(0, 0, 0))

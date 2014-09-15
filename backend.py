@@ -137,14 +137,14 @@ state.console_state.height = 25
 class ModeData(object):
     """ Holds settings for video modes. """
     
-    def __init__(self, font_height, attr, num_attr, num_palette, 
+    def __init__(self, font_height, attr, num_attr, num_colour_choices, 
                  width, num_pages, bitsperpixel, font_width=8, 
                  supports_artifacts=False, cursor_index=None, has_blink=False):
         """ Settings for one video mode. """         
         self.font_height = font_height
         self.attr = attr
         self.num_attr = num_attr
-        self.num_palette = num_palette
+        self.num_colour_choices = num_colour_choices
         self.width = width
         self.num_pages = num_pages
         self.bitsperpixel = bitsperpixel
@@ -159,7 +159,7 @@ text_mode = {
                 font_height = 16,
                 attr = 7,
                 num_attr = 32,
-                num_palette = 64,
+                num_colour_choices = 64,
                 width = 80,
                 num_pages = 4,
                 bitsperpixel = 4,
@@ -168,7 +168,7 @@ text_mode = {
                 font_height = 14,
                 attr = 7,
                 num_attr = 32,
-                num_palette = 64,
+                num_colour_choices = 64,
                 width = 80,
                 num_pages = 4,
                 bitsperpixel = 4,
@@ -177,7 +177,7 @@ text_mode = {
                 font_height = 14, 
                 attr = 7,
                 num_attr = 32,
-                num_palette = 3,
+                num_colour_choices = 3,
                 width = 80,
                 num_pages = 4,
                 bitsperpixel = 4,
@@ -186,7 +186,7 @@ text_mode = {
                 font_height = 8, 
                 attr = 7,
                 num_attr = 32,
-                num_palette = 16,
+                num_colour_choices = 16,
                 width = 80,
                 num_pages = 4, # do we have 4 pages on CGA/Tandy text?
                 bitsperpixel = 4,
@@ -200,7 +200,7 @@ graphics_modes = {
             font_height = 8, 
             attr = 3,
             num_attr = 4,
-            num_palette = 16,
+            num_colour_choices = 16,
             width = 40,
             num_pages = 1,
             bitsperpixel = 2),
@@ -209,7 +209,7 @@ graphics_modes = {
             font_height = 8, 
             attr = 1,
             num_attr = 2,
-            num_palette = 16,
+            num_colour_choices = 16,
             width = 80,
             num_pages = 1,
             bitsperpixel = 1,
@@ -219,7 +219,7 @@ graphics_modes = {
             font_height = 8, 
             attr = 15,
             num_attr = 16,
-            num_palette = 16,
+            num_colour_choices = 16,
             width = 20,
             num_pages = 2,
             bitsperpixel = 4,
@@ -229,7 +229,7 @@ graphics_modes = {
             font_height = 8, 
             attr = 3,
             num_attr = 4,
-            num_palette = 16,
+            num_colour_choices = 16,
             width = 40,
             num_pages = 2,
             bitsperpixel = 2,
@@ -239,7 +239,7 @@ graphics_modes = {
             font_height = 8, 
             attr = 15,
             num_attr = 16,
-            num_palette = 16,
+            num_colour_choices = 16,
             width = 40,
             num_pages = 1,
             bitsperpixel = 4,
@@ -249,7 +249,7 @@ graphics_modes = {
             font_height = 8, 
             attr = 3,
             num_attr = 4,
-            num_palette = 16,
+            num_colour_choices = 16,
             width = 80,
             num_pages = 1,
             bitsperpixel = 2,
@@ -259,7 +259,7 @@ graphics_modes = {
             font_height = 8, 
             attr = 15,
             num_attr = 16,
-            num_palette = 16,
+            num_colour_choices = 16,
             width = 40,
             num_pages = 8,
             bitsperpixel = 4),
@@ -268,7 +268,7 @@ graphics_modes = {
             font_height = 8, 
             attr = 15,
             num_attr = 16,
-            num_palette = 16,
+            num_colour_choices = 16,
             width = 80,
             num_pages = 4,
             bitsperpixel = 4),
@@ -277,7 +277,7 @@ graphics_modes = {
             font_height = 14, 
             attr = 15,
             num_attr = 16,
-            num_palette = 64,
+            num_colour_choices = 64,
             width = 80,
             num_pages = 2,
             bitsperpixel = 4),
@@ -286,7 +286,7 @@ graphics_modes = {
             font_height = 14, 
             attr = 1,
             num_attr = 4,
-            num_palette = 9,
+            num_colour_choices = 9,
             width = 80,
             num_pages = 2,
             bitsperpixel = 2,
@@ -364,7 +364,7 @@ mda_mono_text_palette = [0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2]
 # colorburst value
 state.console_state.colorswitch = 1
 # use ega palette by default
-state.console_state.num_palette = 64
+state.console_state.num_colour_choices = 64
 state.console_state.palette = ega_palette[:]
 # border colour
 state.console_state.border_attr = 0
@@ -432,7 +432,7 @@ def prepare_video():
     composite_monitor = config.options['monitor'] == 'composite'
     mono_monitor = config.options['monitor'] == 'mono'
     if video_capabilities != 'ega':
-        state.console_state.num_palette = 16
+        state.console_state.num_colour_choices = 16
         state.console_state.palette = cga16_palette[:]
     if video_capabilities in ('pcjr', 'tandy'):
         # select pcjr cga palettes
@@ -620,7 +620,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
     state.console_state.colorswitch = new_colorswitch 
     state.console_state.font_height = info.font_height 
     state.console_state.num_attr = info.num_attr
-    state.console_state.num_palette = info.num_palette
+    state.console_state.num_colour_choices = info.num_colour_choices
     state.console_state.height = 25
     state.console_state.width = info.width
     state.console_state.num_pages = info.num_pages
@@ -1093,7 +1093,7 @@ def set_palette(new_palette=None):
     if new_palette:
         state.console_state.palette = new_palette[:]
     else:    
-        if state.console_state.num_palette == 64:
+        if state.console_state.num_colour_choices == 64:
             state.console_state.palette = ega_palette[:]
         elif state.console_state.num_attr >= 16:
             if mono_monitor:
