@@ -115,192 +115,10 @@ state.console_state.pen_is_on = False
 state.console_state.stick_is_on = False
 
 #############################################
-# video modes
-
-# ega, tandy, pcjr
-video_capabilities = 'ega'
-# video memory size - currently only used by tandy/pcjr
-state.console_state.pcjr_video_mem_size = 16384
-# default is EGA 64K
-#state.console_state.video_mem_size = 65536
-# SCREEN mode (0 is textmode)
-state.console_state.screen_mode = 0
-# number of active page
-state.console_state.apagenum = 0
-# number of visible page
-state.console_state.vpagenum = 0
-# number of columns, counting 1..width
-state.console_state.width = 80
-# number of rows, counting 1..height
-state.console_state.height = 25
-
-class ModeData(object):
-    """ Holds settings for video modes. """
-    
-    def __init__(self, font_height, attr, num_attr, num_colour_choices, 
-                 width, num_pages, bitsperpixel, font_width=8, 
-                 supports_artifacts=False, cursor_index=None, has_blink=False):
-        """ Settings for one video mode. """         
-        self.font_height = font_height
-        self.attr = attr
-        self.num_attr = num_attr
-        self.num_colour_choices = num_colour_choices
-        self.width = width
-        self.num_pages = num_pages
-        self.bitsperpixel = bitsperpixel
-        self.font_width = font_width
-        self.supports_artifacts = supports_artifacts
-        self.cursor_index = cursor_index
-        self.has_blink = has_blink
-
-# video modes
-text_mode = {
-    'vga': ModeData(
-                font_height = 16,
-                attr = 7,
-                num_attr = 32,
-                num_colour_choices = 64,
-                width = 80,
-                num_pages = 4,
-                bitsperpixel = 4,
-                has_blink = True),
-    'ega': ModeData(
-                font_height = 14,
-                attr = 7,
-                num_attr = 32,
-                num_colour_choices = 64,
-                width = 80,
-                num_pages = 4,
-                bitsperpixel = 4,
-                has_blink = True),
-    'mda':  ModeData(
-                font_height = 14, 
-                attr = 7,
-                num_attr = 32,
-                num_colour_choices = 3,
-                width = 80,
-                num_pages = 4,
-                bitsperpixel = 4,
-                has_blink = True),
-    'cga':  ModeData(
-                font_height = 8, 
-                attr = 7,
-                num_attr = 32,
-                num_colour_choices = 16,
-                width = 80,
-                num_pages = 4, # do we have 4 pages on CGA/Tandy text?
-                bitsperpixel = 4,
-                has_blink = True),
-    }
-
-graphics_modes = {
-    # 04h 320x200x4  16384B 2bpp 0xb8000 
-    # tandy:2 pages if 32k memory; ega: 1 page only 
-    1: ModeData(
-            font_height = 8, 
-            attr = 3,
-            num_attr = 4,
-            num_colour_choices = 16,
-            width = 40,
-            num_pages = 1,
-            bitsperpixel = 2),
-    # 06h 640x200x2  16384B 1bpp 0xb8000 
-    2: ModeData(
-            font_height = 8, 
-            attr = 1,
-            num_attr = 2,
-            num_colour_choices = 16,
-            width = 80,
-            num_pages = 1,
-            bitsperpixel = 1,
-            supports_artifacts = True),
-    # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy
-    3: ModeData(
-            font_height = 8, 
-            attr = 15,
-            num_attr = 16,
-            num_colour_choices = 16,
-            width = 20,
-            num_pages = 2,
-            bitsperpixel = 4,
-            cursor_index = 3),
-    #     320x200x4  16384B 2bpp 0xb8000   
-    4: ModeData(
-            font_height = 8, 
-            attr = 3,
-            num_attr = 4,
-            num_colour_choices = 16,
-            width = 40,
-            num_pages = 2,
-            bitsperpixel = 2,
-            cursor_index = 3),
-    # 09h 320x200x16 32768B 4bpp 0xb8000    
-    5: ModeData(
-            font_height = 8, 
-            attr = 15,
-            num_attr = 16,
-            num_colour_choices = 16,
-            width = 40,
-            num_pages = 1,
-            bitsperpixel = 4,
-            cursor_index = 3),
-    # 0Ah 640x200x4  32768B 2bpp 0xb8000   
-    6: ModeData(
-            font_height = 8, 
-            attr = 3,
-            num_attr = 4,
-            num_colour_choices = 16,
-            width = 80,
-            num_pages = 1,
-            bitsperpixel = 2,
-            cursor_index = 3),
-    # 0Dh 320x200x16 32768B 4bpp 0xa0000
-    7: ModeData(
-            font_height = 8, 
-            attr = 15,
-            num_attr = 16,
-            num_colour_choices = 16,
-            width = 40,
-            num_pages = 8,
-            bitsperpixel = 4),
-    # 0Eh 640x200x16 
-    8: ModeData(
-            font_height = 8, 
-            attr = 15,
-            num_attr = 16,
-            num_colour_choices = 16,
-            width = 80,
-            num_pages = 4,
-            bitsperpixel = 4),
-    # 10h 640x350x16 
-    9: ModeData(
-            font_height = 14, 
-            attr = 15,
-            num_attr = 16,
-            num_colour_choices = 64,
-            width = 80,
-            num_pages = 2,
-            bitsperpixel = 4),
-    # 0Fh 640x350x4 monochrome 
-    10: ModeData(
-            font_height = 14, 
-            attr = 1,
-            num_attr = 4,
-            num_colour_choices = 9,
-            width = 80,
-            num_pages = 2,
-            bitsperpixel = 2,
-            has_blink = True),
-    }
-    
-# to be filled with the modes available to our video card    
-mode_data = {}
-
-#############################################
-# palette
+# palettes
 
 # CGA colours
-colours16 = [    
+colours16_colour = [    
     (0x00,0x00,0x00), (0x00,0x00,0xaa), (0x00,0xaa,0x00), (0x00,0xaa,0xaa),
     (0xaa,0x00,0x00), (0xaa,0x00,0xaa), (0xaa,0x55,0x00), (0xaa,0xaa,0xaa), 
     (0x55,0x55,0x55), (0x55,0x55,0xff), (0x55,0xff,0x55), (0x55,0xff,0xff),
@@ -324,50 +142,256 @@ colours64 = [
     (0x55,0x55,0x55), (0x55,0x55,0xff), (0x55,0xff,0x55), (0x55,0xff,0xff),
     (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff) ]
 
+# mono intensities
 # CGA mono
 intensity16_mono = range(0x00, 0x100, 0x11) 
 # SCREEN 10 EGA pseudocolours, blink state 0 and 1
 intensity_ega_mono_0 = [0x00, 0x00, 0x00, 0x7f, 0x7f, 0x7f, 0xff, 0xff, 0xff]
 intensity_ega_mono_1 = [0x00, 0x7f, 0xff, 0x00, 0x7f, 0xff, 0x00, 0x7f, 0xff]
-# EGA mono text intensity (blink is attr bit 7, like in colour mode)
-intensity_ega_mono_text = [0x00, 0x7f, 0xff] 
+# MDA/EGA mono text intensity (blink is attr bit 7, like in colour mode)
+intensity_mda_mono = [0x00, 0x7f, 0xff] 
 # colour of monochrome monitor
 mono_tint = (0xff, 0xff, 0xff)
+# mono colours
+colours16_mono = [ [tint*i//255 for tint in mono_tint] 
+                   for i in intensity16_mono ]            
+colours_ega_mono_0 = [ [tint*i//255 for tint in mono_tint]
+                   for i in intensity_ega_mono_0 ]            
+colours_ega_mono_1 = [ [tint*i//255 for tint in mono_tint]
+                   for i in intensity_ega_mono_1 ]        
+colours_mda_mono = [ [tint*i//255 for tint in mono_tint]
+                   for i in intensity_mda_mono ]
+colours16 = copy(colours16_colour)
 
-# cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
-cga_palette_1_hi = [0, 11, 13, 15]
-cga_palette_1_lo = [0, 3, 5, 7]
-# cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
-cga_palette_0_hi = [0, 10, 12, 14]
-cga_palette_0_lo = [0, 2, 4, 6]
-# tandy/pcjr cga palette
-cga_palette_1_pcjr = [0, 3, 5, 15]
-cga_palette_0_pcjr = [0, 2, 4, 6]
-# mode 5 (SCREEN 1 + colorburst) palette on RGB monitor
-cga_palette_5_hi = [0, 11, 12, 15]
-cga_palette_5_lo = [0, 3, 4, 7]
-# default: high intensity 
-cga_palette_0 = cga_palette_0_hi
-cga_palette_1 = cga_palette_1_hi
-cga_palette_5 = cga_palette_5_hi
-cga_palettes = [cga_palette_0, cga_palette_1]
+# default cga 4-color palette can change with mode, so is a list
+cga_mode_5 = False
+cga4_palette = [0, 11, 13, 15]
 # default 16-color and ega palettes
-cga16_palette = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-ega_palette = [0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63]
-ega_mono_palette = [0, 4, 1, 8]
+cga16_palette = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+ega_palette = (0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63)
+ega_mono_palette = (0, 4, 1, 8)
 # http://qbhlp.uebergeord.net/screen-statement-details-colors.html
 # http://www.seasip.info/VintagePC/mda.html
 # underline/intensity/reverse video attributes are slightly different from mda
 # attributes 1, 9 should have underlining. 
-ega_mono_text_palette = [0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 0]
-mda_mono_text_palette = [0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2]
-# colorburst value
-state.console_state.colorswitch = 1
+ega_mono_text_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 0)
+mda_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2)
 # use ega palette by default
-state.console_state.num_colour_choices = 64
-state.console_state.palette = ega_palette[:]
+
+#############################################
+# video modes
+
+# ega, tandy, pcjr
+video_capabilities = 'ega'
+# video memory size - currently only used by tandy/pcjr
+state.console_state.pcjr_video_mem_size = 16384
+# default is EGA 64K
+#state.console_state.video_mem_size = 65536
+# SCREEN mode (0 is textmode)
+state.console_state.screen_mode = 0
+# number of active page
+state.console_state.apagenum = 0
+# number of visible page
+state.console_state.vpagenum = 0
+# number of columns, counting 1..width
+state.console_state.width = 80
+# number of rows, counting 1..height
+state.console_state.height = 25
+# the available colours
+state.console_state.colours = colours64
+# blinking *colours* - only SCREEN 10, otherwise blink is an *attribute*
+state.console_state.colours1 = None
+# the palette defines the colour for each attribute
+state.console_state.palette = list(ega_palette)
+
+
+class ModeData(object):
+    """ Holds settings for video modes. """
+    
+    def __init__(self, font_height, attr, num_attr, 
+                 width, num_pages, bitsperpixel, 
+                 palette, colours, colours1=None, 
+                 font_width=8, 
+                 supports_artifacts=False, cursor_index=None, has_blink=False):
+        """ Settings for one video mode. """         
+        self.font_height = font_height
+        self.attr = attr
+        self.num_attr = num_attr
+        self.colours = colours
+        self.colours1 = colours1
+        self.palette = palette
+        self.width = width
+        self.num_pages = num_pages
+        self.bitsperpixel = bitsperpixel
+        self.font_width = font_width
+        self.supports_artifacts = supports_artifacts
+        self.cursor_index = cursor_index
+        self.has_blink = has_blink
+
+# video modes
+text_mode = {
+    'vga': ModeData(
+                font_height = 16,
+                attr = 7,
+                num_attr = 32,
+                colours = colours64,
+                palette = ega_palette,
+                width = 80,
+                num_pages = 4,
+                bitsperpixel = 4,
+                has_blink = True),
+    'ega': ModeData(
+                font_height = 14,
+                attr = 7,
+                num_attr = 32,
+                colours = colours64,
+                palette = ega_palette,
+                width = 80,
+                num_pages = 4,
+                bitsperpixel = 4,
+                has_blink = True),
+    'mda':  ModeData(
+                font_height = 14, 
+                attr = 7,
+                num_attr = 32,
+                colours = colours_mda_mono,
+                palette = mda_palette,
+                width = 80,
+                num_pages = 4,
+                bitsperpixel = 4,
+                has_blink = True),
+    'cga':  ModeData(
+                font_height = 8, 
+                attr = 7,
+                num_attr = 32,
+                colours = colours16,
+                palette = cga16_palette,
+                width = 80,
+                num_pages = 4, # do we have 4 pages on CGA/Tandy text?
+                bitsperpixel = 4,
+                has_blink = True),
+    }
+
+graphics_modes = {
+    # 04h 320x200x4  16384B 2bpp 0xb8000 
+    # tandy:2 pages if 32k memory; ega: 1 page only 
+    1: ModeData(
+            font_height = 8, 
+            attr = 3,
+            num_attr = 4,
+            colours = colours16,
+            palette = cga4_palette,
+            width = 40,
+            num_pages = 1,
+            bitsperpixel = 2),
+    # 06h 640x200x2  16384B 1bpp 0xb8000 
+    2: ModeData(
+            font_height = 8, 
+            attr = 1,
+            num_attr = 2,
+            colours = colours16,
+            palette = [0, 15],
+            width = 80,
+            num_pages = 1,
+            bitsperpixel = 1,
+            supports_artifacts = True),
+    # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy
+    3: ModeData(
+            font_height = 8, 
+            attr = 15,
+            num_attr = 16,
+            colours = colours16,
+            palette = cga16_palette,
+            width = 20,
+            num_pages = 2,
+            bitsperpixel = 4,
+            cursor_index = 3),
+    #     320x200x4  16384B 2bpp 0xb8000   
+    4: ModeData(
+            font_height = 8, 
+            attr = 3,
+            num_attr = 4,
+            colours = colours16,
+            palette = cga4_palette,
+            width = 40,
+            num_pages = 2,
+            bitsperpixel = 2,
+            cursor_index = 3),
+    # 09h 320x200x16 32768B 4bpp 0xb8000    
+    5: ModeData(
+            font_height = 8, 
+            attr = 15,
+            num_attr = 16,
+            colours = colours16,
+            palette = cga16_palette,
+            width = 40,
+            num_pages = 1,
+            bitsperpixel = 4,
+            cursor_index = 3),
+    # 0Ah 640x200x4  32768B 2bpp 0xb8000   
+    6: ModeData(
+            font_height = 8, 
+            attr = 3,
+            num_attr = 4,
+            colours = colours16,
+            palette = cga4_palette,
+            width = 80,
+            num_pages = 1,
+            bitsperpixel = 2,
+            cursor_index = 3),
+    # 0Dh 320x200x16 32768B 4bpp 0xa0000
+    7: ModeData(
+            font_height = 8, 
+            attr = 15,
+            num_attr = 16,
+            colours = colours16,
+            palette = cga16_palette,
+            width = 40,
+            num_pages = 8,
+            bitsperpixel = 4),
+    # 0Eh 640x200x16 
+    8: ModeData(
+            font_height = 8, 
+            attr = 15,
+            num_attr = 16,
+            colours = colours16,
+            palette = cga16_palette,
+            width = 80,
+            num_pages = 4,
+            bitsperpixel = 4),
+    # 10h 640x350x16 
+    9: ModeData(
+            font_height = 14, 
+            attr = 15,
+            num_attr = 16,
+            colours = colours64,
+            palette = ega_palette,
+            width = 80,
+            num_pages = 2,
+            bitsperpixel = 4),
+    # 0Fh 640x350x4 monochrome 
+    10: ModeData(
+            font_height = 14, 
+            attr = 1,
+            num_attr = 4,
+            colours = colours_ega_mono_0,
+            colours1 = colours_ega_mono_1,
+            palette = ega_mono_palette,
+            width = 80,
+            num_pages = 2,
+            bitsperpixel = 2,
+            has_blink = True),
+    }
+
+
+# to be filled with the modes available to our video card    
+mode_data = {}
+
+
 # border colour
 state.console_state.border_attr = 0
+# colorburst value
+state.console_state.colorswitch = 1
 
 #############################################
 # initialisation
@@ -422,9 +446,8 @@ def init_audio():
 def prepare_video():
     """ Prepare the video subsystem. """
     global egacursor
-    global cga_palette_0, cga_palette_1, cga_palette_5, cga_palettes
     global video_capabilities, composite_monitor, mono_monitor, mono_tint
-    global colours16_mono, colours_ega_mono_0, colours_ega_mono_1
+    global colours16_mono, colours_ega_mono_0, colours_ega_mono_1, cga_low
     global colours_ega_mono_text
     global mode_data
     egacursor = config.options['video'] == 'ega'
@@ -432,29 +455,24 @@ def prepare_video():
     composite_monitor = config.options['monitor'] == 'composite'
     mono_monitor = config.options['monitor'] == 'mono'
     if video_capabilities != 'ega':
-        state.console_state.num_colour_choices = 16
+        state.console_state.colours = colours16
         state.console_state.palette = cga16_palette[:]
-    if video_capabilities in ('pcjr', 'tandy'):
-        # select pcjr cga palettes
-        cga_palette_0, cga_palette_1 = cga_palette_0_pcjr, cga_palette_1_pcjr
-        # pcjr does ot have mode 5
-        cga_palettes[:] = [cga_palette_0_pcjr, cga_palette_1_pcjr]       
-    elif config.options['cga_low']:
-        cga_palette_0 = cga_palette_0_lo
-        cga_palette_1 = cga_palette_1_lo
-        cga_palette_5 = cga_palette_5_lo
-        cga_palettes = [cga_palette_0, cga_palette_1]
+    cga_low = config.options['cga_low']
+    set_cga4_palette(1)    
     # set monochrome tint and build mono palettes
     if config.options['mono_tint']:
         mono_tint = [int(s) for s in config.options['mono_tint'].split(',')]
-    colours16_mono = [ [tint*i//255 for tint in mono_tint]
+    colours16_mono[:] = [ [tint*i//255 for tint in mono_tint]
                        for i in intensity16_mono ]            
-    colours_ega_mono_0 = [ [tint*i//255 for tint in mono_tint]
+    colours_ega_mono_0[:] = [ [tint*i//255 for tint in mono_tint]
                        for i in intensity_ega_mono_0 ]            
-    colours_ega_mono_1 = [ [tint*i//255 for tint in mono_tint]
+    colours_ega_mono_1[:] = [ [tint*i//255 for tint in mono_tint]
                        for i in intensity_ega_mono_1 ]        
-    colours_ega_mono_text = [ [tint*i//255 for tint in mono_tint]
-                       for i in intensity_ega_mono_text ]
+    colours_mda_mono[:] = [ [tint*i//255 for tint in mono_tint]
+                       for i in intensity_mda_mono ]
+    if mono_monitor:
+        # copy to replace 16-colours with 16-mono
+        colours16[:] = colours16_mono
     # prepare video mode list
     # only allow the screen modes that the given machine supports
     if video_capabilities in ('pcjr', 'tandy'):
@@ -511,7 +529,9 @@ def resume_screen():
         # set the screen mde
         video.init_screen_mode(mode_info, 
                                state.console_state.screen_mode==0)
-        video.update_palette(state.console_state.palette)
+        video.update_palette(state.console_state.palette,
+                             state.console_state.colours,
+                             state.console_state.colours1)
         # fix the cursor
         video.build_cursor(
             state.console_state.cursor_width, 
@@ -620,7 +640,9 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
     state.console_state.colorswitch = new_colorswitch 
     state.console_state.font_height = info.font_height 
     state.console_state.num_attr = info.num_attr
-    state.console_state.num_colour_choices = info.num_colour_choices
+    state.console_state.colours = info.colours
+    state.console_state.colours1 = info.colours1
+    state.console_state.default_palette = info.palette
     state.console_state.height = 25
     state.console_state.width = info.width
     state.console_state.num_pages = info.num_pages
@@ -1084,7 +1106,9 @@ def set_cursor_shape(from_line, to_line):
 
 def set_palette_entry(index, colour):
     state.console_state.palette[index] = colour
-    video.update_palette(state.console_state.palette)
+    video.update_palette(state.console_state.palette,
+                         state.console_state.colours,
+                         state.console_state.colours1)
 
 def get_palette_entry(index):
     return state.console_state.palette[index]
@@ -1093,37 +1117,56 @@ def set_palette(new_palette=None):
     if new_palette:
         state.console_state.palette = new_palette[:]
     else:    
-        if state.console_state.num_colour_choices == 64:
-            state.console_state.palette = ega_palette[:]
-        elif state.console_state.num_attr >= 16:
-            if mono_monitor:
-                state.console_state.palette = ega_mono_text_palette
-            else:            
-                state.console_state.palette = cga16_palette[:]
-        elif state.console_state.num_attr == 4:
-            if state.console_state.screen_mode == 10:
-                state.console_state.palette = ega_mono_palette
-            else:
-                state.console_state.palette = cga_palettes[1][:]
-        else:
-            state.console_state.palette = [0, 15]
-    video.update_palette(state.console_state.palette)
+        state.console_state.palette = list(state.console_state.default_palette)
+    video.update_palette(state.console_state.palette,
+                         state.console_state.colours,
+                         state.console_state.colours1)
+
+def set_cga4_palette(num):
+    # palette 1: Black, Ugh, Yuck, Bleah, choice of low & high intensity
+    # palette 0: Black, Green, Red, Brown/Yellow, low & high intensity
+    # tandy/pcjr have high-intensity white, but low-intensity colours
+    # mode 5 (SCREEN 1 + colorburst on RGB) has red instead of magenta
+    if video_capabilities in ('pcjr', 'tandy'):
+        # pcjr does not have mode 5
+        if num == 0:
+            cga4_palette[:] = (0, 2, 4, 6)
+        else:    
+            cga4_palette[:] = (0, 3, 5, 15)
+    elif cga_low:
+        if cga_mode_5:
+            cga4_palette[:] = (0, 3, 4, 7)
+        elif num == 0:
+            cga4_palette[:] = (0, 2, 4, 6)
+        else:    
+            cga4_palette[:] = (0, 3, 5, 7)
+    else:
+        if cga_mode_5:
+            cga4_palette[:] = (0, 11, 12, 15)
+        elif num == 0:
+            cga4_palette[:] = (0, 10, 12, 14)
+        else:    
+            cga4_palette[:] = (0, 11, 13, 15)
 
 # set the composite colorburst bit 
 # on SCREEN 2 on composite monitor this enables artifacting
 # on SCREEN 1 this switches between colour and greyscale (composite) or mode 4/5 palettes (RGB)
 # on SCREEN 0 this switches between colour and greyscale (composite) or is ignored (RGB)
 def set_colorburst(on=True):
-    global cga_palettes
+    global cga_mode_5
     colorburst_capable = video_capabilities in ('cga', 'cga_old', 'tandy', 'pcjr')
     if state.console_state.screen_mode == 1 and not composite_monitor:
-        if on or video_capabilities not in ('cga', 'cga_old'):
-            # ega ignores colorburst; tandy and pcjr have no mode 5
-            cga_palettes = [cga_palette_0, cga_palette_1]
-        else:
-            cga_palettes = [cga_palette_5, cga_palette_5]
+        # ega ignores colorburst; tandy and pcjr have no mode 5
+        cga_mode_5 = not (on or video_capabilities not in ('cga', 'cga_old'))
+        set_cga4_palette(1)
         set_palette()    
-    video.set_colorburst(on and colorburst_capable, state.console_state.palette)
+    elif (on or not composite_monitor and not mono_monitor):
+        # take modulo in case we're e.g. resuming ega text into a cga machine
+        colours16[:] = colours16_colour
+    else:
+        colours16[:] = colours16_mono
+    video.set_colorburst(on and colorburst_capable, state.console_state.palette, 
+            state.console_state.colours, state.console_state.colours1)
 
 def set_border(attr):
     state.console_state.border_attr = attr

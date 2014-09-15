@@ -1943,7 +1943,7 @@ def exec_color(ins):
         backend.set_palette_entry(0, back % 8)    
     elif mode in (9, 10):
         util.range_check(0, state.console_state.num_attr-1, fore)
-        util.range_check(0, state.console_state.num_colour_choices-1, back)
+        util.range_check(0, len(state.console_state.colours)-1, back)
         state.console_state.attr = fore
         backend.set_palette_entry(0, back)
     
@@ -1955,7 +1955,8 @@ def exec_color_mode_1(back, pal, override):
     util.range_check(0, 255, back)
     if pal != None:
         util.range_check(0, 255, pal)
-        palette = backend.cga_palettes[pal % 2]
+        backend.set_cga4_palette(pal%2)
+        palette = list(backend.cga4_palette)
         palette[0] = back&0xf
         # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
         # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
@@ -1978,7 +1979,7 @@ def exec_palette(ins):
         if pair[0] == None or pair[1] == None:
             raise error.RunError(2)
         util.range_check(0, num_palette_entries-1, pair[0])
-        util.range_check(-1, state.console_state.num_colour_choices-1, pair[1])
+        util.range_check(-1, len(state.console_state.colours)-1, pair[1])
         if pair[1] > -1:
             # effective palette change is an error in CGA; ignore in Tandy/PCjr SCREEN 0
             if backend.video_capabilities in ('cga', 'cga_old'):
@@ -2009,7 +2010,7 @@ def exec_palette_using(ins):
         new_palette = []
         for i in range(num_palette_entries):
             val = vartypes.pass_int_unpack(('%', lst[(start+i)*2:(start+i+1)*2]))
-            util.range_check(-1, state.console_state.num_colour_choices-1, val)
+            util.range_check(-1, len(state.console_state.colours)-1, val)
             new_palette.append(val if val > -1 else backend.get_palette_entry(i))
         backend.set_palette(new_palette)
     util.require(ins, util.end_statement) 

@@ -71,7 +71,6 @@ if pygame:
             (0x74, 0x53, 0xff),        (0x77, 0x77, 0x77),        (0xff, 0x79, 0xff),        (0x00, 0xc8, 0x71),
             (0x00, 0xcc, 0xff),        (0x00, 0xfa, 0x00),        (0xff, 0xff, 0xff) ]        }
                         
-    colorburst = False
     composite_artifacts = False
     composite_monitor = False
     mode_has_artifacts = False
@@ -338,7 +337,7 @@ def load_state():
 def init():
     """ Initialise pygame interface. """
     global joysticks, physical_size, scrap, display_size, display_size_text
-    global text_mode, num_colour_choices
+    global text_mode
     # set state objects to whatever is now in state (may have been unpickled)
     if not pygame:
         logging.warning('PyGame module not found. Failed to initialise graphical interface.')
@@ -362,9 +361,8 @@ def init():
     resize_display(*display_size_text, initial=True)
     pygame.display.set_caption('PC-BASIC 3.23')
     pygame.key.set_repeat(500, 24)
-    # load a game palette
-    num_colour_choices = 64
-    update_palette(backend.ega_palette)
+    # load a game palette to get started
+    update_palette(backend.ega_palette, backend.colours64, None)
     if android:
         pygame_android.init()
     init_mixer()
@@ -410,14 +408,13 @@ def init_screen_mode(mode_info, is_text_mode=False):
     global glyphs, cursor
     global screen_changed, canvas
     global font, under_cursor, size, text_mode
-    global font_height, attr, num_colour_choices
+    global font_height, attr
     global width, num_pages, bitsperpixel, font_width
     global mode_has_artifacts, cursor_fixed_attr, mode_has_blink
     text_mode = is_text_mode
     # unpack mode info struct
     font_height = mode_info.font_height
     attr = mode_info.attr
-    num_colour_choices = mode_info.num_colour_choices
     width = mode_info.width
     num_pages = mode_info.num_pages
     bitsperpixel = mode_info.bitsperpixel
@@ -497,27 +494,14 @@ def get_palette_index(cattr):
     bg = (0, 0, (cattr>>4) & 7)
     return color, bg    
 
-def update_palette(palette):
+def update_palette(palette, colours, colours1):
     """ Build the game palette. """
     global screen_changed, gamepalette
-    if num_colour_choices == 64:
-        # i.e. ega text mode
-        basepalette0 = [pygame.Color(*backend.colours64[i]) for i in palette]
-        basepalette1 = basepalette0
-    elif num_colour_choices == 9:
-        # i.e. ega mono screen 10
-        basepalette0 = [pygame.Color(*backend.colours_ega_mono_0[i]) for i in palette]
-        basepalette1 = [pygame.Color(*backend.colours_ega_mono_1[i]) for i in palette]
-    elif num_colour_choices == 3:
-        # i.e. ega mono text
-        basepalette0 = [pygame.Color(*backend.colours_ega_mono_text[i]) for i in palette] 
-        basepalette1 = basepalette0
-    else:
-        if (colorburst or not composite_monitor and not mono_monitor):
-            # take modulo in case we're e.g. resuming ega text into a cga machine
-            basepalette0 = [pygame.Color(*backend.colours16[i % num_colour_choices]) for i in palette]
-        else:
-            basepalette0 = [pygame.Color(*backend.colours16_mono[i % num_colour_choices]) for i in palette]
+    # take modulo in case we're e.g. resuming ega text into a cga machine
+    basepalette0 = [pygame.Color(*colours[i % len(colours)]) for i in palette]
+    if colours1:    
+        basepalette1 = [pygame.Color(*colours1[i % len(colours)]) for i in palette]
+    else:    
         basepalette1 = basepalette0
     while len(basepalette0) < 16:
         basepalette0.append(pygame.Color(0, 0, 0))
@@ -534,12 +518,10 @@ def set_border(attr):
     border_attr = attr
     screen_changed = True
     
-def set_colorburst(on, palette):
-    global colorburst, composite_artifacts
-    if composite_monitor:
-        colorburst = on
-    update_palette(palette)
-    composite_artifacts = colorburst and mode_has_artifacts and composite_monitor
+def set_colorburst(on, palette, new_colours, new_colours1):
+    global composite_artifacts
+    update_palette(palette, new_colours, new_colours1)
+    composite_artifacts = on and mode_has_artifacts and composite_monitor
     
 def clear_rows(cattr, start, stop):
     global screen_changed
