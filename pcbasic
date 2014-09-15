@@ -123,10 +123,11 @@ def prepare_console():
     # initialise video backend before console
     if not backend.video or not backend.init_video():
         backend.video.close()
-        logging.warning('Failed to initialise interface. '
-                        'Falling back to filter interface.')
+        logging.warning('Falling back to filter interface.')
         backend.video = novideo
-        backend.init_video()
+        if not backend.init_video():
+            logging.error('Failed to initialise interface.')
+            raise error.Exit()
     if not backend.init_audio():
         backend.audio = nosound
         logging.warning('Failed to initialise sound. Sound will be disabled.')

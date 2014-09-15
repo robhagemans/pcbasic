@@ -362,12 +362,12 @@ def init_video():
             update_cursor_visibility()
             video.set_border(state.console_state.border_attr)
         else:
-            # mode not supported by backend
-            logging.error(
-                "Resumed screen mode %d not supported by this interface.", 
-                state.console_state.screen_mode)
             # fix the terminal
             video.close()
+            # mode not supported by backend
+            logging.warning(
+                "Resumed screen mode %d not supported by this interface.", 
+                state.console_state.screen_mode)
             return False
         # load the screen contents from storage
         video.load_state()
