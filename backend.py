@@ -740,6 +740,85 @@ def check_video_memory():
             state.console_state.pcjr_video_mem_size < 32753):
         screen (0, None, None, None)
 
+#############################################
+# palette and colours
+
+def set_palette_entry(index, colour):
+    """ Set a new colour for a given attribute. """
+    state.console_state.palette[index] = colour
+    video.update_palette(state.console_state.palette,
+                         state.console_state.colours,
+                         state.console_state.colours1)
+
+def get_palette_entry(index):
+    """ Retrieve the colour for a given attribute. """
+    return state.console_state.palette[index]
+
+def set_palette(new_palette=None):
+    """ Set the colours for all attributes. """
+    if new_palette:
+        state.console_state.palette = new_palette[:]
+    else:    
+        state.console_state.palette = list(state.console_state.default_palette)
+    video.update_palette(state.console_state.palette,
+                         state.console_state.colours,
+                         state.console_state.colours1)
+
+def set_cga4_palette(num):
+    """ Change the default CGA palette according to palette number & mode. """
+    # palette 1: Black, Ugh, Yuck, Bleah, choice of low & high intensity
+    # palette 0: Black, Green, Red, Brown/Yellow, low & high intensity
+    # tandy/pcjr have high-intensity white, but low-intensity colours
+    # mode 5 (SCREEN 1 + colorburst on RGB) has red instead of magenta
+    if video_capabilities in ('pcjr', 'tandy'):
+        # pcjr does not have mode 5
+        if num == 0:
+            cga4_palette[:] = (0, 2, 4, 6)
+        else:    
+            cga4_palette[:] = (0, 3, 5, 15)
+    elif cga_low:
+        if cga_mode_5:
+            cga4_palette[:] = (0, 3, 4, 7)
+        elif num == 0:
+            cga4_palette[:] = (0, 2, 4, 6)
+        else:    
+            cga4_palette[:] = (0, 3, 5, 7)
+    else:
+        if cga_mode_5:
+            cga4_palette[:] = (0, 11, 12, 15)
+        elif num == 0:
+            cga4_palette[:] = (0, 10, 12, 14)
+        else:    
+            cga4_palette[:] = (0, 11, 13, 15)
+
+def set_colorburst(on=True):
+    """ Set the composite colorburst bit. """
+    # On a composite monitor:
+    # - on SCREEN 2 this enables artifacting
+    # - on SCREEN 1 and 0 this switches between colour and greyscale
+    # On an RGB monitor:
+    # - on SCREEN 1 this switches between mode 4/5 palettes (RGB)
+    # - ignored on other screens
+    global cga_mode_5
+    colorburst_capable = video_capabilities in (
+                                'cga', 'cga_old', 'tandy', 'pcjr')
+    if state.console_state.screen_mode == 1 and not composite_monitor:
+        # ega ignores colorburst; tandy and pcjr have no mode 5
+        cga_mode_5 = not (on or video_capabilities not in ('cga', 'cga_old'))
+        set_cga4_palette(1)
+        set_palette()    
+    elif (on or not composite_monitor and not mono_monitor):
+        # take modulo in case we're e.g. resuming ega text into a cga machine
+        colours16[:] = colours16_colour
+    else:
+        colours16[:] = colours16_mono
+    video.set_colorburst(on and colorburst_capable, state.console_state.palette, 
+            state.console_state.colours, state.console_state.colours1)
+
+def set_border(attr):
+    state.console_state.border_attr = attr
+    video.set_border(attr)
+
 ##############################
 # screen buffer read/write
 
@@ -1099,78 +1178,6 @@ def set_cursor_shape(from_line, to_line):
                        state.console_state.cursor_from, 
                        state.console_state.cursor_to)
     video.update_cursor_attr(state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
-
-
-#############################################
-# palette
-
-def set_palette_entry(index, colour):
-    state.console_state.palette[index] = colour
-    video.update_palette(state.console_state.palette,
-                         state.console_state.colours,
-                         state.console_state.colours1)
-
-def get_palette_entry(index):
-    return state.console_state.palette[index]
-
-def set_palette(new_palette=None):
-    if new_palette:
-        state.console_state.palette = new_palette[:]
-    else:    
-        state.console_state.palette = list(state.console_state.default_palette)
-    video.update_palette(state.console_state.palette,
-                         state.console_state.colours,
-                         state.console_state.colours1)
-
-def set_cga4_palette(num):
-    # palette 1: Black, Ugh, Yuck, Bleah, choice of low & high intensity
-    # palette 0: Black, Green, Red, Brown/Yellow, low & high intensity
-    # tandy/pcjr have high-intensity white, but low-intensity colours
-    # mode 5 (SCREEN 1 + colorburst on RGB) has red instead of magenta
-    if video_capabilities in ('pcjr', 'tandy'):
-        # pcjr does not have mode 5
-        if num == 0:
-            cga4_palette[:] = (0, 2, 4, 6)
-        else:    
-            cga4_palette[:] = (0, 3, 5, 15)
-    elif cga_low:
-        if cga_mode_5:
-            cga4_palette[:] = (0, 3, 4, 7)
-        elif num == 0:
-            cga4_palette[:] = (0, 2, 4, 6)
-        else:    
-            cga4_palette[:] = (0, 3, 5, 7)
-    else:
-        if cga_mode_5:
-            cga4_palette[:] = (0, 11, 12, 15)
-        elif num == 0:
-            cga4_palette[:] = (0, 10, 12, 14)
-        else:    
-            cga4_palette[:] = (0, 11, 13, 15)
-
-# set the composite colorburst bit 
-# on SCREEN 2 on composite monitor this enables artifacting
-# on SCREEN 1 this switches between colour and greyscale (composite) or mode 4/5 palettes (RGB)
-# on SCREEN 0 this switches between colour and greyscale (composite) or is ignored (RGB)
-def set_colorburst(on=True):
-    global cga_mode_5
-    colorburst_capable = video_capabilities in ('cga', 'cga_old', 'tandy', 'pcjr')
-    if state.console_state.screen_mode == 1 and not composite_monitor:
-        # ega ignores colorburst; tandy and pcjr have no mode 5
-        cga_mode_5 = not (on or video_capabilities not in ('cga', 'cga_old'))
-        set_cga4_palette(1)
-        set_palette()    
-    elif (on or not composite_monitor and not mono_monitor):
-        # take modulo in case we're e.g. resuming ega text into a cga machine
-        colours16[:] = colours16_colour
-    else:
-        colours16[:] = colours16_mono
-    video.set_colorburst(on and colorburst_capable, state.console_state.palette, 
-            state.console_state.colours, state.console_state.colours1)
-
-def set_border(attr):
-    state.console_state.border_attr = attr
-    video.set_border(attr)
 
 #############################################
 # I/O redirection
