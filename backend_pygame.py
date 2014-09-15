@@ -102,7 +102,7 @@ if pygame:
     # cursor shape
     cursor = None
     # screen & updating 
-    canvas = None
+    canvas = []
         
     screen_changed = True
     cycle = 0
