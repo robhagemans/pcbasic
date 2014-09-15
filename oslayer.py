@@ -14,6 +14,7 @@ import errno
 import fnmatch
 from functools import partial
 import StringIO
+import logging
 
 import config
 import error
@@ -68,14 +69,18 @@ nullstream = open(os.devnull, 'w')
 
 def prepare():
     """ Initialise oslayer module. """
-    try:
-        for a in config.options['mount']:
+    for a in config.options['mount']:
+        try:
             # the last one that's specified will stick
             letter, path = a.split(':', 1)
-            drives[letter.upper()] = os.path.realpath(path)
-            state.io_state.drive_cwd[letter.upper()] = ''
-    except (TypeError, ValueError):
-        pass                
+            path = os.path.realpath(path)
+            if not os.path.isdir(path):
+                logging.warning('Could not mount %s', a)
+            else:    
+                drives[letter.upper()] = path
+                state.io_state.drive_cwd[letter.upper()] = ''
+        except (TypeError, ValueError):
+            logging.warning('Could not mount %s', a)
     if config.options['windows_map_drives']:
         windows_map_drives()
 
