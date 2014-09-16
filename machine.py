@@ -450,6 +450,8 @@ def get_font_memory(addr):
 
 def get_low_memory(addr):
     addr -= low_segment*0x10
+    # from MEMORY.ABC: PEEKs and POKEs (Don Watkins)
+    # http://www.qbasicnews.com/abc/showsnippet.php?filename=MEMORY.ABC&snippet=6
     # &h40:&h17 keyboard flag
     # Byte 1:
     # &H80 - Insert state active
