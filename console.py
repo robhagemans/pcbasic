@@ -319,6 +319,7 @@ def delete_sbcs_char(crow, ccol):
 
     
 def clear_line(the_row):
+    """ Clear from start of logical line to end of logical line (ESC). """
     # find start of line
     srow = the_row
     while srow > 1 and state.console_state.apage.row[srow-2].wrap:
@@ -326,8 +327,10 @@ def clear_line(the_row):
     clear_rest_of_line(srow, 1)
 
 def clear_rest_of_line(srow, scol):
+    """ Clear from current position to end of logical line (CTRL+END). """
     therow = state.console_state.apage.row[srow-1] 
-    therow.buf = therow.buf[:scol-1] + [(' ', state.console_state.attr)]*(state.console_state.width-scol+1)
+    therow.buf = (therow.buf[:scol-1] + 
+        [(' ', state.console_state.attr)]*(state.console_state.width-scol+1))
     therow.end = min(therow.end, scol-1)
     crow = srow
     while state.console_state.apage.row[crow-1].wrap:
@@ -348,6 +351,7 @@ def clear_rest_of_line(srow, scol):
     therow.end = save_end
 
 def backspace(start_row, start_col):
+    """ Delete the char to the left (BACKSPACE). """
     crow, ccol = state.console_state.row, state.console_state.col
     # don't backspace through prompt
     if ccol == 1:
@@ -363,17 +367,21 @@ def backspace(start_row, start_col):
     delete_char(crow, ccol)
     
 def tab():
+    """ Insert 8 spaces (TAB). """
+    row, col = state.console_state.row, state.console_state.col 
     if state.console_state.overwrite_mode:
-        set_pos(state.console_state.row, state.console_state.col+8, scroll_ok=False)
+        set_pos(row, col + 8, scroll_ok=False)
     else:
         for _ in range(8):
-            insert_char(state.console_state.row, state.console_state.col, ' ', state.console_state.attr)
-        backend.redraw_row(state.console_state.col-1, state.console_state.row)
-        set_pos(state.console_state.row, state.console_state.col+8)
+            insert_char(row, col, ' ', state.console_state.attr)
+        backend.redraw_row(col - 1, row)
+        set_pos(row, col + 8)
         
 def end():
+    """ Jump to end of logical line; follow wraps (END). """
     crow = state.console_state.row
-    while state.console_state.apage.row[crow-1].wrap and crow < state.console_state.height:
+    while (state.console_state.apage.row[crow-1].wrap and 
+            crow < state.console_state.height):
         crow += 1
     if state.console_state.apage.row[crow-1].end == state.console_state.width:
         set_pos(crow, state.console_state.apage.row[crow-1].end)
@@ -382,18 +390,20 @@ def end():
         set_pos(crow, state.console_state.apage.row[crow-1].end+1)
 
 def line_feed():
-    # moves rest of line to next line
-    if state.console_state.col < state.console_state.apage.row[state.console_state.row-1].end:
-        for _ in range(state.console_state.width-state.console_state.col+1):
-            insert_char(state.console_state.row, state.console_state.col, ' ', state.console_state.attr)
-        backend.redraw_row(state.console_state.col-1, state.console_state.row)
-        state.console_state.apage.row[state.console_state.row-1].end = state.console_state.col-1 
+    """ Move the remainder of the line to the next row and wrap (LF). """
+    crow, ccol = state.console_state.row, state.console_state.col
+    if ccol < state.console_state.apage.row[crow-1].end:
+        for _ in range(state.console_state.width - ccol + 1):
+            insert_char(crow, ccol, ' ', state.console_state.attr)
+        backend.redraw_row(ccol - 1, crow)
+        state.console_state.apage.row[crow-1].end = ccol - 1 
     else:
-        crow = state.console_state.row
-        while state.console_state.apage.row[crow-1].wrap and crow < state.console_state.scroll_height:
+        while (state.console_state.apage.row[crow-1].wrap and 
+                crow < state.console_state.scroll_height):
             crow += 1
         if crow >= state.console_state.scroll_height:
             scroll()
+        # state.console_state.row has changed, don't use crow    
         if state.console_state.row < state.console_state.height:    
             scroll_down(state.console_state.row+1)
     # LF connects lines like word wrap
@@ -401,6 +411,7 @@ def line_feed():
     set_pos(state.console_state.row+1, 1)
     
 def skip_word_right():
+    """ Skip one word to the right (CTRL+RIGHT). """
     crow, ccol = state.console_state.row, state.console_state.col
     # find non-alphanumeric chars
     while True:
@@ -429,6 +440,7 @@ def skip_word_right():
     set_pos(crow, ccol)                            
         
 def skip_word_left():
+    """ Skip one word to the left (CTRL+LEFT). """
     crow, ccol = state.console_state.row, state.console_state.col
     # find alphanumeric chars
     while True:
@@ -457,8 +469,11 @@ def skip_word_left():
     set_pos(last_row, last_col)                            
 
 def clear():
-    save_view_set, save_view_start, save_scroll_height = state.console_state.view_set, state.console_state.view_start, state.console_state.scroll_height
-    set_view(1,25)
+    """ Clear the screen. """
+    save_view_set = state.console_state.view_set
+    save_view_start = state.console_state.view_start
+    save_scroll_height = state.console_state.scroll_height
+    set_view(1, 25)
     clear_view()
     if save_view_set:
         set_view(save_view_start, save_scroll_height)
@@ -542,7 +557,6 @@ def list_line(line):
         write(str(l))
         if i != len(cuts)-1:
             write('\n')
-    #clear_rest_of_line(state.console_state.row, state.console_state.col)
     write_line()
     # remove wrap after 80-column program line
     if len(line) == state.console_state.width and state.console_state.row > 2:
