@@ -141,7 +141,7 @@ if pygame:
         pygame.K_i: scancode.i, pygame.K_o: scancode.o, pygame.K_p: scancode.p, 
         pygame.K_LEFTBRACKET: scancode.LEFTBRACKET, 
         pygame.K_RIGHTBRACKET: scancode.RIGHTBRACKET, 
-        pygame.K_RETURN: scancode.RETURN,
+        pygame.K_RETURN: scancode.RETURN, pygame.K_KP_ENTER: scancode.RETURN,
         # row 2
         pygame.K_RCTRL: scancode.CTRL, pygame.K_LCTRL: scancode.CTRL, 
         pygame.K_a: scancode.a, pygame.K_s: scancode.s, pygame.K_d: scancode.d,
@@ -833,8 +833,11 @@ def handle_key_down(e):
                 # no codepage encoding found, ignore unless ascii
                 # this happens for control codes like '\r' since
                 # unicodepage defines the special graphic characters for those.
-                if len(utf8) == 1 and ord(utf8) < 128:
-                    c = utf8 
+                #if len(utf8) == 1 and ord(utf8) < 128:
+                #    c = utf8
+                # don't do this, let control codes be handled by scancode
+                # e.g. ctrl+enter should be '\n' but has e.unicode=='\r'
+                pass 
         # double NUL characters, as single NUL signals scan code
         if len(c) == 1 and ord(c) == 0:
             c = '\0\0'
