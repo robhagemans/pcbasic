@@ -470,38 +470,58 @@ def clear():
 ##### output methods
 
 def write(s, scroll_ok=True, do_echo=True):
+    """ Write a string to the screen at the current position. """
     if do_echo: 
         for echo in backend.output_echos:
             # CR -> CRLF, CRLF -> CRLF LF
             echo(''.join([ ('\r\n' if c == '\r' else c) for c in s ]))
     last = ''
     for c in s:
-        if c == '\t':                                       # TAB
-            num = (8 - (state.console_state.col-1 - 8*int((state.console_state.col-1)/8)))
+        row, col = state.console_state.row, state.console_state.col
+        if c == '\t':                                       
+            # TAB
+            num = (8 - (col - 1 - 8 * int((col-1) / 8)))
             for _ in range(num):
                 put_char(' ')
-        elif c == '\n':                                     # LF
+        elif c == '\n':                           
+            # LF
             # exclude CR/LF
             if last != '\r': 
                 # LF connects lines like word wrap
-                state.console_state.apage.row[state.console_state.row-1].wrap = True
-                set_pos(state.console_state.row+1, 1, scroll_ok)
+                state.console_state.apage.row[row-1].wrap = True
+                set_pos(row + 1, 1, scroll_ok)
         elif c == '\r':     
-            state.console_state.apage.row[state.console_state.row-1].wrap = False
-            set_pos(state.console_state.row+1, 1, scroll_ok)     # CR
-        elif c == '\a':     backend.beep()                     # BEL
-        elif c == '\x0B':   set_pos(1, 1, scroll_ok)         # HOME
-        elif c == '\x0C':   clear()
-        elif c == '\x1C':   set_pos(state.console_state.row, state.console_state.col+1, scroll_ok)
-        elif c == '\x1D':   set_pos(state.console_state.row, state.console_state.col-1, scroll_ok)
-        elif c == '\x1E':   set_pos(state.console_state.row-1, state.console_state.col, scroll_ok)
-        elif c == '\x1F':   set_pos(state.console_state.row+1, state.console_state.col, scroll_ok)
+            # CR        
+            state.console_state.apage.row[row-1].wrap = False
+            set_pos(row + 1, 1, scroll_ok)     
+        elif c == '\a':     
+            # BEL    
+            backend.beep()
+        elif c == '\x0B':   
+            # HOME
+            set_pos(1, 1, scroll_ok)
+        elif c == '\x0C':
+            # CLS    
+            clear()
+        elif c == '\x1C':   
+            # RIGHT    
+            set_pos(row, col + 1, scroll_ok)
+        elif c == '\x1D':   
+            # LEFT    
+            set_pos(row, col - 1, scroll_ok)
+        elif c == '\x1E':   
+            # UP    
+            set_pos(row - 1, col, scroll_ok)
+        elif c == '\x1F':   
+            # DOWN    
+            set_pos(row + 1, col, scroll_ok)
         else:
             # includes \b, \0, and non-control chars
             put_char(c)
         last = c
 
 def write_line(s='', scroll_ok=True, do_echo=True): 
+    """ Write a string to the screen and end with a newline. """
     write(s, scroll_ok, do_echo)
     if do_echo:
         for echo in backend.output_echos:
@@ -510,16 +530,11 @@ def write_line(s='', scroll_ok=True, do_echo=True):
     state.console_state.apage.row[state.console_state.row-1].wrap = False
     set_pos(state.console_state.row + 1, 1)
 
-# print a line from a program listing - no wrap if 80-column line, clear row before printing.
 def list_line(line):
+    """ Print a line from a program listing. """
+    # no wrap if 80-column line, clear row before printing.
     # flow of listing is visible on screen
     backend.check_events()
-    cuts = line.split('\a')
-    for i, l in enumerate(cuts):
-        clear_line(state.console_state.row)
-        write(str(l))
-        if i != len(cuts)-1:
-            write('\a')
     clear_rest_of_line(state.console_state.row, state.console_state.col)
     write_line()
     # remove wrap after 80-column program line
