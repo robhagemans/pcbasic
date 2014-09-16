@@ -535,13 +535,14 @@ def list_line(line):
     # no wrap if 80-column line, clear row before printing.
     # flow of listing is visible on screen
     backend.check_events()
-    cuts = line.split('\a')
+    cuts = line.split('\n')
     for i, l in enumerate(cuts):
-        clear_line(state.console_state.row)
+        # clear_line looks back along wraps, use clear_rest_of_line instead
+        clear_rest_of_line(state.console_state.row, 1)
         write(str(l))
         if i != len(cuts)-1:
-            write('\a')
-    clear_rest_of_line(state.console_state.row, state.console_state.col)
+            write('\n')
+    #clear_rest_of_line(state.console_state.row, state.console_state.col)
     write_line()
     # remove wrap after 80-column program line
     if len(line) == state.console_state.width and state.console_state.row > 2:
