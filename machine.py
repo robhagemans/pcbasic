@@ -453,16 +453,15 @@ def get_low_memory(addr):
     # from MEMORY.ABC: PEEKs and POKEs (Don Watkins)
     # http://www.qbasicnews.com/abc/showsnippet.php?filename=MEMORY.ABC&snippet=6
     # &h40:&h17 keyboard flag
-    # Byte 1:
     # &H80 - Insert state active
     # &H40 - CapsLock state has been toggled
     # &H20 - NumLock state has been toggled
     # &H10 - ScrollLock state has been toggled
-    # &H08 - Alternate shift key depressed
-    # &H04 - Control shift key depressed
+    # &H08 - Alternate key depressed
+    # &H04 - Control key depressed
     # &H02 - Left shift key depressed
     # &H01 - Right shift key depressed
-    # Byte 2:
+    # &h40:&h18 keyboard flag
     # &H80 - Insert key is depressed
     # &H40 - CapsLock key is depressed
     # &H20 - NumLock key is depressed
@@ -470,13 +469,7 @@ def get_low_memory(addr):
     # &H08 - Suspend key has been toggled
     backend.wait()
     if addr == 0x17:
-        val = state.console_state.keystatus 
-        val = val & (0xffff ^ 0x0080) if state.console_state.overwrite_mode else val | 0x0080
-        val = val | 0x0040 if state.console_state.caps else val & (0xffff ^ 0x0040)
-        val = val | 0x0020 if state.console_state.num else val & (0xffff ^ 0x0020)
-        val = val | 0x0010 if state.console_state.scroll else val & (0xffff ^ 0x0010)
-        # suspend key not implemented
-        return val
+        return state.console_state.mod 
     return -1    
     
 prepare()

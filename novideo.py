@@ -56,9 +56,9 @@ def check_keys():
         if c == '\n' and lf_to_cr:
             c = '\r'
         try:
-            backend.insert_key(unicodepage.from_utf8(c))
+            backend.insert_chars(unicodepage.from_utf8(c))
         except KeyError:        
-            backend.insert_key(c)
+            backend.insert_chars(c)
         
 def idle():
     time.sleep(0.024)

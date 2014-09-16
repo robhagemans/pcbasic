@@ -38,7 +38,7 @@ import config
 import unicodepage 
 import backend
 import typeface
-#
+import scancode
 import state
 
 
@@ -123,107 +123,72 @@ if pygame:
     # store for fast get & put arrays
     get_put_store = {}
 
-    # what we call "scancode" here is known as "extended ascii", real scancodes lower down.
-    keycode_to_scancode = {
-        pygame.K_UP:    '\x00\x48',        pygame.K_DOWN:  '\x00\x50',        pygame.K_RIGHT: '\x00\x4D',        
-        pygame.K_LEFT:  '\x00\x4B',        pygame.K_INSERT:'\x00\x52',        pygame.K_DELETE:'\x00\x53',
-        pygame.K_HOME:  '\x00\x47',        pygame.K_END:   '\x00\x4F',        pygame.K_PAGEUP:'\x00\x49',
-        pygame.K_PAGEDOWN:'\x00\x51',      pygame.K_F1:    '\x00\x3B',        pygame.K_F2:    '\x00\x3C',
-        pygame.K_F3:    '\x00\x3D',        pygame.K_F4:    '\x00\x3E',        pygame.K_F5:    '\x00\x3F',
-        pygame.K_F6:    '\x00\x40',        pygame.K_F7:    '\x00\x41',        pygame.K_F8:    '\x00\x42',
-        pygame.K_F9:    '\x00\x43',        pygame.K_F10:   '\x00\x44',        pygame.K_PRINT: '\x00\x37',    
-        # explicitly include BACKSPACE as its unicode is '\x7F' on OSX 
-        pygame.K_BACKSPACE: '\x08'
-        }
-    #K_SYSREQ              sysrq
-
-    ctrl_keycode_to_scancode = {
-        pygame.K_RIGHT:     '\x00\x74',        pygame.K_LEFT:      '\x00\x73',        pygame.K_HOME:      '\x00\x77',       
-        pygame.K_END:       '\x00\x75',        pygame.K_PAGEUP:    '\x00\x84',        pygame.K_PAGEDOWN:  '\x00\x76',
-        pygame.K_BACKSPACE: '\x7F',            pygame.K_RETURN:    '\x0A',            pygame.K_TAB:       '',            
-        pygame.K_1:         '',                pygame.K_2:         '\x00\x03',        pygame.K_3:         '',
-        pygame.K_4:         '',                pygame.K_5:         '',                # <CTRL+6> is passed normally
-        pygame.K_7:         '',                pygame.K_8:         '',                pygame.K_9:         '\x00\x84',       
-        pygame.K_0:         '',                pygame.K_F2:        '\x00\x5F',        pygame.K_F3:        '\x00\x60',        
-        pygame.K_MINUS:     '\x1F',
-    }
-
-    alt_keycode_to_scancode = {
-        # unknown: ESC, BACKSPACE, TAB, RETURN
-        pygame.K_1:         '\x00\x78',        pygame.K_2:         '\x00\x79',        pygame.K_3:         '\x00\x7A',
-        pygame.K_4:         '\x00\x7B',        pygame.K_5:         '\x00\x7C',        pygame.K_6:         '\x00\x7D',
-        pygame.K_7:         '\x00\x7E',        pygame.K_8:         '\x00\x7F',        pygame.K_9:         '\x00\x80',
-        pygame.K_0:         '\x00\x81',        pygame.K_MINUS:     '\x00\x82',        pygame.K_EQUALS:    '\x00\x83',
-        # row 1
-        pygame.K_q:         '\x00\x10',        pygame.K_w:         '\x00\x11',        pygame.K_e:         '\x00\x12',
-        pygame.K_r:         '\x00\x13',        pygame.K_t:         '\x00\x14',        pygame.K_y:         '\x00\x15',
-        pygame.K_u:         '\x00\x16',        pygame.K_i:         '\x00\x17',        pygame.K_o:         '\x00\x18',
-        pygame.K_p:         '\x00\x19',        
-        # row 2
-        pygame.K_a:         '\x00\x1E',        pygame.K_s:         '\x00\x1F',        pygame.K_d:         '\x00\x20',
-        pygame.K_f:         '\x00\x21',        pygame.K_g:         '\x00\x22',        pygame.K_h:         '\x00\x23',
-        pygame.K_j:         '\x00\x24',        pygame.K_k:         '\x00\x25',        pygame.K_l:         '\x00\x26',
-        # row 3        
-        pygame.K_z:         '\x00\x2C',        pygame.K_x:         '\x00\x2D',        pygame.K_c:         '\x00\x2E',
-        pygame.K_v:         '\x00\x2F',        pygame.K_b:         '\x00\x30',        pygame.K_n:         '\x00\x31',
-        pygame.K_m:         '\x00\x32',
-        # others    
-        pygame.K_F1:        '\x00\x68',        pygame.K_F2:        '\x00\x69',        pygame.K_F3:        '\x00\x6A',
-        pygame.K_F4:        '\x00\x6B',        pygame.K_F5:        '\x00\x6C',        pygame.K_F6:        '\x00\x6D',
-        pygame.K_F7:        '\x00\x6E',        pygame.K_F8:        '\x00\x6F',        pygame.K_F9:        '\x00\x70',
-        pygame.K_F10:       '\x00\x71',
-    }
-       
-    # these are the actual PC keyboard scancodes for a US keyboard
-    keycode_to_inpcode = {
+    # these are PC keyboard scancodes
+    key_to_scan = {
         # top row
-        pygame.K_ESCAPE:    '\x01',        pygame.K_1:         '\x02',        pygame.K_2:         '\x03',
-        pygame.K_3:         '\x04',        pygame.K_4:         '\x05',        pygame.K_5:         '\x06',
-        pygame.K_6:         '\x07',        pygame.K_7:         '\x08',        pygame.K_8:         '\x09',
-        pygame.K_9:         '\x0A',        pygame.K_0:         '\x0B',        pygame.K_MINUS:     '\x0C',
-        pygame.K_EQUALS:    '\x0D',        pygame.K_BACKSPACE: '\x0E',
-                # row 1
-        pygame.K_TAB:       '\x0F',        pygame.K_q:         '\x10',        pygame.K_w:         '\x11',
-        pygame.K_e:         '\x12',        pygame.K_r:         '\x13',        pygame.K_t:         '\x14',
-        pygame.K_y:         '\x15',        pygame.K_u:         '\x16',        pygame.K_i:         '\x17',
-        pygame.K_o:         '\x18',        pygame.K_p:         '\x19',        pygame.K_LEFTBRACKET:'\x1A',
-        pygame.K_RIGHTBRACKET:'\x1B',        pygame.K_RETURN:    '\x1C',
+        pygame.K_ESCAPE: scancode.ESCAPE, pygame.K_1: scancode.N1, 
+        pygame.K_2: scancode.N2, pygame.K_3: scancode.N3, 
+        pygame.K_4: scancode.N4, pygame.K_5: scancode.N5,
+        pygame.K_6: scancode.N6, pygame.K_7: scancode.N7, 
+        pygame.K_8: scancode.N8, pygame.K_9: scancode.N9,
+        pygame.K_0: scancode.N0, pygame.K_MINUS: scancode.MINUS,
+        pygame.K_EQUALS: scancode.EQUALS, 
+        pygame.K_BACKSPACE: scancode.BACKSPACE,
+        # row 1
+        pygame.K_TAB: scancode.TAB, pygame.K_q: scancode.q, 
+        pygame.K_w: scancode.w, pygame.K_e: scancode.e, pygame.K_r: scancode.r, 
+        pygame.K_t: scancode.t, pygame.K_y: scancode.y, pygame.K_u: scancode.u,
+        pygame.K_i: scancode.i, pygame.K_o: scancode.o, pygame.K_p: scancode.p, 
+        pygame.K_LEFTBRACKET: scancode.LEFTBRACKET, 
+        pygame.K_RIGHTBRACKET: scancode.RIGHTBRACKET, 
+        pygame.K_RETURN: scancode.RETURN,
         # row 2
-        pygame.K_RCTRL:     '\x1D',        pygame.K_LCTRL:     '\x1D',        pygame.K_a:         '\x1E',
-        pygame.K_s:         '\x1F',        pygame.K_d:         '\x20',        pygame.K_f:         '\x21',
-        pygame.K_g:         '\x22',        pygame.K_h:         '\x23',        pygame.K_j:         '\x24',
-        pygame.K_k:         '\x25',        pygame.K_l:         '\x26',        pygame.K_SEMICOLON: '\x27',
-        pygame.K_QUOTE:     '\x28',        pygame.K_BACKQUOTE :     '\x29',
+        pygame.K_RCTRL: scancode.CTRL, pygame.K_LCTRL: scancode.CTRL, 
+        pygame.K_a: scancode.a, pygame.K_s: scancode.s, pygame.K_d: scancode.d,
+        pygame.K_f: scancode.f, pygame.K_g: scancode.g, pygame.K_h: scancode.h, 
+        pygame.K_j: scancode.j, pygame.K_k: scancode.k, pygame.K_l: scancode.l, 
+        pygame.K_SEMICOLON: scancode.SEMICOLON, pygame.K_QUOTE: scancode.QUOTE,
+        pygame.K_BACKQUOTE: scancode.BACKQUOTE,
         # row 3        
-        pygame.K_LSHIFT:    '\x2A',        pygame.K_HASH:      '\x2B',     # assumes UK keyboard?
-        pygame.K_z:         '\x2C',        pygame.K_x:         '\x2D',        pygame.K_c:         '\x2E',
-        pygame.K_v:         '\x2F',        pygame.K_b:         '\x30',        pygame.K_n:         '\x31',
-        pygame.K_m:         '\x32',        pygame.K_COMMA:     '\x33',        pygame.K_PERIOD:    '\x34',
-        pygame.K_SLASH:     '\x35',        pygame.K_RSHIFT:    '\x36',        pygame.K_PRINT:     '\x37',
-        pygame.K_SYSREQ:    '\x37',        pygame.K_RALT:      '\x38',        pygame.K_LALT:      '\x38',      pygame.K_MODE:      '\x38',
-        pygame.K_SPACE:     '\x39',        pygame.K_CAPSLOCK:  '\x3A',
-        # others    
-        pygame.K_F1:        '\x3B',        pygame.K_F2:        '\x3C',        pygame.K_F3:        '\x3D',
-        pygame.K_F4:        '\x3E',        pygame.K_F5:        '\x3F',        pygame.K_F6:        '\x40',
-        pygame.K_F7:        '\x41',        pygame.K_F8:        '\x42',        pygame.K_F9:        '\x43',
-        pygame.K_F10:       '\x44',        pygame.K_NUMLOCK:   '\x45',        pygame.K_SCROLLOCK: '\x46',
-        pygame.K_HOME:      '\x47',        pygame.K_UP:        '\x48',        pygame.K_PAGEUP:    '\x49',
-        pygame.K_KP_MINUS:  '\x4A',        pygame.K_LEFT:      '\x4B',        pygame.K_KP5:       '\x4C',
-        pygame.K_RIGHT:     '\x4D',        pygame.K_KP_PLUS:   '\x4E',        pygame.K_END:       '\x4F',
-        pygame.K_DOWN:      '\x50',        pygame.K_PAGEDOWN:  '\x51',        pygame.K_INSERT:    '\x52',
-        pygame.K_DELETE:    '\x53',        pygame.K_BACKSLASH: '\x56',
+        pygame.K_LSHIFT: scancode.LSHIFT, 
+        pygame.K_BACKSLASH: scancode.BACKSLASH,
+        pygame.K_z: scancode.z, pygame.K_x: scancode.x, pygame.K_c: scancode.c,
+        pygame.K_v: scancode.v, pygame.K_b: scancode.b, pygame.K_n: scancode.n,
+        pygame.K_m: scancode.m, pygame.K_COMMA: scancode.COMMA, 
+        pygame.K_PERIOD: scancode.PERIOD, pygame.K_SLASH: scancode.SLASH,
+        pygame.K_RSHIFT: scancode.RSHIFT, pygame.K_PRINT: scancode.PRINT,
+        pygame.K_SYSREQ: scancode.SYSREQ,
+        pygame.K_RALT: scancode.ALT, pygame.K_LALT: scancode.ALT, 
+        pygame.K_MODE: scancode.ALT,
+        pygame.K_SPACE: scancode.SPACE, pygame.K_CAPSLOCK: scancode.CAPSLOCK,
+        # function key row    
+        pygame.K_F1: scancode.F1, pygame.K_F2: scancode.F2, 
+        pygame.K_F3: scancode.F3, pygame.K_F4: scancode.F4,
+        pygame.K_F5: scancode.F5, pygame.K_F6: scancode.F6,
+        pygame.K_F7: scancode.F7, pygame.K_F8: scancode.F8,
+        pygame.K_F9: scancode.F9, pygame.K_F10: scancode.F10,
+        # top middle
+        pygame.K_NUMLOCK: scancode.NUMLOCK, 
+        pygame.K_SCROLLOCK: scancode.SCROLLOCK,
+        # keypad
+        pygame.K_KP7: scancode.KP7, pygame.K_HOME: scancode.HOME,
+        pygame.K_KP8: scancode.KP8, pygame.K_UP: scancode.UP,        
+        pygame.K_KP9: scancode.KP9, pygame.K_PAGEUP: scancode.PAGEUP,
+        pygame.K_KP_MINUS: scancode.KPMINUS,
+        pygame.K_KP4: scancode.KP4, pygame.K_LEFT: scancode.LEFT,
+        pygame.K_KP5: scancode.KP5,
+        pygame.K_KP6: scancode.KP6, pygame.K_RIGHT: scancode.RIGHT,
+        pygame.K_KP_PLUS: scancode.KPPLUS,
+        pygame.K_KP1: scancode.KP1, pygame.K_END: scancode.END,
+        pygame.K_KP2: scancode.KP2, pygame.K_DOWN: scancode.DOWN,
+        pygame.K_KP3: scancode.KP3, pygame.K_PAGEDOWN: scancode.PAGEDOWN,
+        pygame.K_KP0: scancode.KP0, pygame.K_INSERT: scancode.INSERT,
+        # keypad dot, times, div, enter ?
+        # various
+        pygame.K_DELETE: scancode.DELETE, 
+        pygame.K_PAUSE: scancode.BREAK,
+        pygame.K_BREAK: scancode.BREAK,
     }
-
-    keypad_numbers = {
-        pygame.K_KP0:   '0',    pygame.K_KP1:   '1',    pygame.K_KP2:   '2',    pygame.K_KP3:   '3',    pygame.K_KP4:   '4',
-        pygame.K_KP5:   '5',    pygame.K_KP6:   '6',    pygame.K_KP7:   '7',    pygame.K_KP8:   '8',    pygame.K_KP9:   '9',
-    }
-
-    keycode_to_keystatus = {
-        pygame.K_INSERT: 0x0080, pygame.K_CAPSLOCK: 0x0040, pygame.K_NUMLOCK: 0x0020, pygame.K_SCROLLOCK: 0x0010,
-        pygame.K_LALT: 0x0008, pygame.K_RALT: 0x0008, pygame.K_MODE: 0x0008, # altgr activates K_MODE
-        pygame.K_LCTRL: 0x0004, pygame.K_RCTRL: 0x0004, pygame.K_LSHIFT: 0x0002, pygame.K_RSHIFT: 0x0001 }
-
     
     # cursor is visible
     cursor_visible = True
@@ -275,15 +240,8 @@ def prepare():
             composite_640_palette = composite_640[config.options['video']]
     if config.options['video'] == 'tandy':
         # enable tandy F11, F12
-        # TODO: tandy scancodes are defined for many more keys than PC, e.g. ctrl+F5 and friends; check pcjr too
-        keycode_to_scancode[pygame.K_F11] = '\x00\x98'
-        keycode_to_scancode[pygame.K_F12] = '\x00\x99'
-        ctrl_keycode_to_scancode[pygame.K_F11] = '\x00\xAC'
-        ctrl_keycode_to_scancode[pygame.K_F12] = '\x00\xAD'
-        alt_keycode_to_scancode[pygame.K_F11] = '\x00\xB6'
-        alt_keycode_to_scancode[pygame.K_F12] = '\x00\xB7'
-        keycode_to_inpcode[pygame.K_F11] = '\xF9'
-        keycode_to_inpcode[pygame.K_F12] = '\xFA'
+        key_to_scan[pygame.K_F11] = scancode.F11
+        key_to_scan[pygame.K_F12] = scancode.F12
     if config.options['font']:
         font_families = config.options['font']
     if config.options['mouse']:
@@ -851,42 +809,13 @@ def check_events(pause=False):
     return False
 
 def handle_key_down(e):
-    global keypad_ascii
     c = ''
     mods = pygame.key.get_mods()
-    if android:
-        mods |= pygame_android.apply_mods(e) 
-    if e.key in (pygame.K_PAUSE, pygame.K_BREAK):
-        if mods & pygame.KMOD_CTRL:
-            # ctrl-break
-            backend.insert_special_key('break')
-        else:
-            # pause until keypress
-            pause_key()    
-    elif e.key == pygame.K_DELETE and mods & pygame.KMOD_CTRL and mods & pygame.KMOD_ALT:
-        # if not caught by OS, reset the emulator
-        backend.insert_special_key('reset')
-    elif e.key == pygame.K_NUMLOCK and mods & pygame.KMOD_CTRL:
-        # ctrl+numlock is pause
+    if ((e.key == pygame.K_NUMLOCK and mods & pygame.KMOD_CTRL) or
+            (e.key in (pygame.K_PAUSE, pygame.K_BREAK) and 
+             not mods & pygame.KMOD_CTRL)):
+        # pause until keypress
         pause_key()    
-    elif e.key == pygame.K_SCROLLOCK and mods & pygame.KMOD_CTRL:
-        # ctrl+SCROLLLOCK breaks too
-        backend.insert_special_key('break')
-    elif e.key == pygame.K_CAPSLOCK:
-        backend.insert_special_key('caps')
-    elif e.key == pygame.K_NUMLOCK:
-        backend.insert_special_key('num')
-    elif e.key == pygame.K_SCROLLOCK:
-        backend.insert_special_key('scroll')
-    elif e.key == pygame.K_PRINT:
-        # these can't be caught by INKEY$ etc:
-        if mods & pygame.KMOD_CTRL:
-            backend.insert_special_key('c+print')
-        elif mods & pygame.KMOD_SHIFT:
-            backend.insert_special_key('s+print')
-    elif e.key == pygame.K_TAB and mods & pygame.KMOD_SHIFT:
-        # shift+tab -> \x00\x0F (scancode for TAB) but TAB -> \x09
-        c = '\x00\x0F'
     elif e.key == pygame.K_MENU and android:
         # Android: toggle keyboard on menu key
         pygame_android.toggle_keyboard()
@@ -895,65 +824,36 @@ def handle_key_down(e):
     elif scrap.active():
         scrap.handle_key(e)
     else:
-        try:
-            if (mods & pygame.KMOD_CTRL):
-                c = ctrl_keycode_to_scancode[e.key]
-            elif (mods & pygame.KMOD_ALT):
-                try:
-                    keypad_ascii += keypad_numbers[e.key]
-                    return
-                except KeyError:    
-                    c = alt_keycode_to_scancode[e.key]
-            else:
-                c = keycode_to_scancode[e.key]
-        except KeyError:
-            if android:
-                u = pygame_android.get_unicode(e, mods)
-            else:
-                u = e.unicode    
+        if not android:
+            # android unicode values are wrong, use the scancode only
+            utf8 = e.unicode.encode('utf-8')
             try:
-                c = unicodepage.from_utf8(u.encode('utf-8'))
+                c = unicodepage.from_utf8(utf8)
             except KeyError:
-                # fallback to ascii if no encoding found (shouldn't happen); if not ascii, ignore
-                if u and ord(u) <= 0x7f:
-                    c = chr(ord(u))    
-    # double NUL characters as single NUL signals scan code
-    if len(c) == 1 and ord(c) == 0:
-        c = '\0\0'
-    # current key pressed; modifiers ignored 
-    try:
-        inpcode = ord(keycode_to_inpcode[e.key])
-    except KeyError:
-        inpcode = None    
-    # set key-pressed status
-    try:
-        keystatuscode = keycode_to_keystatus[e.key]
-    except KeyError:
-        keystatuscode = None
-    ## insert into keyboard queue
-    backend.key_down(c, inpcode, keystatuscode) 
+                # no codepage encoding found, ignore unless ascii
+                # this happens for control codes like '\r' since
+                # unicodepage defines the special graphic characters for those.
+                if len(utf8) == 1 and ord(utf8) < 128:
+                    c = utf8 
+        # double NUL characters, as single NUL signals scan code
+        if len(c) == 1 and ord(c) == 0:
+            c = '\0\0'
+        # current key pressed; modifiers handled by backend interface
+        try:
+            scan = key_to_scan[e.key]
+        except KeyError:
+            scan = None    
+        # insert into keyboard queue
+        backend.key_down(scan, c) 
 
 def handle_key_up(e):
-    global keypad_ascii
-    # ALT+keycode    
-    if e.key in (pygame.K_RALT, pygame.K_LALT) and keypad_ascii:
-        char = chr(int(keypad_ascii)%256)
-        if char == '\0':
-            char = '\0\0'
-        backend.insert_key(char)
-        keypad_ascii = ''
-    elif e.key == pygame.K_LSUPER: # logo key, doesn't set a modifier
+    if e.key == pygame.K_LSUPER: # logo key, doesn't set a modifier
         scrap.stop()
     # last key released gets remembered
     try:
-        inpcode = ord(keycode_to_inpcode[e.key])
+        scan = backend.key_up(key_to_scan[e.key])
     except KeyError:
-        inpcode = None
-    # unset key-pressed status
-    try:
-        keystatuscode = keycode_to_keystatus[e.key]
-    except KeyError:
-        keystatuscode = None    
+        pass
 
 def normalise_pos(x, y):
     """ Convert physical to logical coordinates within screen bounds. """
@@ -1077,9 +977,9 @@ class Clipboard(object):
         for u in us.decode('utf-8'):
             c = u.encode('utf-8')
             try:
-                backend.insert_key(unicodepage.from_utf8(c))
+                backend.insert_chars(unicodepage.from_utf8(c))
             except KeyError:
-                backend.insert_key(c)
+                backend.insert_chars(c)
                 
     def move(self, r, c):
         """ Move the head of the selection and update feedback. """

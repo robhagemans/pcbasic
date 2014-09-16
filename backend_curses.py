@@ -10,6 +10,7 @@
 #
 
 import sys
+import os
 import time
 import locale
 import logging
@@ -19,6 +20,7 @@ except ImportError:
     curses = None
         
 import unicodepage
+import scancode
 import backend
 
 # for a few ansi sequences not supported by curses
@@ -43,29 +45,20 @@ cursor_col = 1
 if curses:
     # curses keycodes
     curses_to_scan = {
-        curses.KEY_F1: '\x00\x3b', # F1
-        curses.KEY_F2: '\x00\x3c', # F2
-        curses.KEY_F3: '\x00\x3d', # F3
-        curses.KEY_F4: '\x00\x3e', # F4
-        curses.KEY_F5:  '\x00\x3f', # F5
-        curses.KEY_F6:  '\x00\x40', # F6
-        curses.KEY_F7:  '\x00\x41', # F7
-        curses.KEY_F8:  '\x00\x42', # F8
-        curses.KEY_F9:  '\x00\x43', # F9
-        curses.KEY_F10:  '\x00\x44', # F10
-        curses.KEY_END: '\x00\x4F', # END
-        curses.KEY_HOME: '\x00\x47', # HOME
-        curses.KEY_UP: '\x00\x48', # arrow up
-        curses.KEY_DOWN: '\x00\x50', # arrow down
-        curses.KEY_RIGHT: '\x00\x4d', # arrow right
-        curses.KEY_LEFT: '\x00\x4b', # arrow left
-        curses.KEY_IC: '\x00\x52', # INS
-        curses.KEY_DC: '\x00\x53', # DEL
-        curses.KEY_PPAGE: '\x00\x49', # PG UP
-        curses.KEY_NPAGE: '\x00\x51', # PG DN
-        curses.KEY_BACKSPACE: '\b'
+        curses.KEY_F1: scancode.F1, curses.KEY_F2: scancode.F2,
+        curses.KEY_F3: scancode.F3, curses.KEY_F4: scancode.F4,
+        curses.KEY_F5: scancode.F5, curses.KEY_F6: scancode.F6,
+        curses.KEY_F7: scancode.F7, curses.KEY_F8: scancode.F8,
+        curses.KEY_F9: scancode.F9, curses.KEY_F10: scancode.F10,
+        curses.KEY_F11: scancode.F11, curses.KEY_F12: scancode.F12,
+        curses.KEY_END: scancode.END, curses.KEY_HOME: scancode.HOME,
+        curses.KEY_UP: scancode.UP, curses.KEY_DOWN: scancode.DOWN,
+        curses.KEY_RIGHT: scancode.RIGHT, curses.KEY_LEFT: scancode.LEFT,
+        curses.KEY_IC: scancode.INSERT, curses.KEY_DC: scancode.DELETE,
+        curses.KEY_PPAGE: scancode.PAGEUP, curses.KEY_NPAGE: scancode.PAGEDOWN,
+        curses.KEY_BACKSPACE: scancode.BACKSPACE, 
+        curses.KEY_PRINT: scancode.PRINT, curses.KEY_CANCEL: scancode.ESCAPE,
     }
-
         
     last_attr = None
     attr = curses.A_NORMAL
@@ -78,6 +71,10 @@ def init():
     if not curses:
         logging.warning('ANSI interface not supported.')
     locale.setlocale(locale.LC_ALL,('C', 'utf-8'))
+    # set the ESC-key delay to 25 ms unless otherwise set
+    # set_escdelay seems to be unavailable on python curses.
+    if not os.environ.has_key('ESCDELAY'):
+        os.environ['ESCDELAY'] = '25'
     screen = curses.initscr()
     curses.noecho()
     curses.cbreak()
@@ -274,6 +271,7 @@ def scroll_down(from_line, scroll_height, attr):
 
 def check_keyboard():
     s = ''
+    i = 0
     while True:
         i = window.getch()
         if i == -1:
@@ -292,7 +290,14 @@ def check_keyboard():
                 window.clear()
                 redraw()
             try:
-                s += curses_to_scan[i] 
+                # scancode, insert here and now
+                # there shouldn't be a mix of special keys and utf8 in one
+                # uninterrupted string, since the only reason an uninterrupted 
+                # string would be longer than 1 char is because it's a single 
+                # utf-8 sequence or a pasted utf-8 string, neither of which
+                # can contain special characters.
+                # however, if that does occur, this won't work correctly.
+                backend.key_down(curses_to_scan[i], '')
             except KeyError:
                 pass
     # replace utf-8 with codepage
@@ -310,9 +315,9 @@ def check_keyboard():
             continue
         else:
             try:
-                backend.insert_key(unicodepage.from_utf8(c))
+                backend.insert_chars(unicodepage.from_utf8(c))
             except KeyError:    
-                backend.insert_key(c)    
+                backend.insert_chars(c)    
         c = ''
         
 ########

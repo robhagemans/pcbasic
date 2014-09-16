@@ -16,6 +16,7 @@ import os
 import plat
 import unicodepage
 import backend
+import scancode
 
 # cursor is visible
 cursor_visible = True
@@ -47,7 +48,10 @@ if plat.system == 'Windows':
     
     def replace_scancodes(s):
         # windows scancodes should be the same as gw-basic ones
-        return s.replace('\xe0', '\0')
+        if len(s) == 0 and s[0] in ('\xe0', '\0'):
+            return ord(s[1])
+        else:
+            raise KeyError    
         
     def clear_line():
         wconio.gotoxy(0, wconio.wherey())
@@ -127,14 +131,9 @@ else:
             return ''
         return os.read(sys.stdin.fileno(), 1)        
         
-    def replace_scancodes(s):    
-        # avoid confusion of NUL with scancodes    
-        s = s.replace('\0', '\0\0')
-        # first replace escape sequences in s with scancodes
-        # this plays nice with utf8 as long as the scan codes are all in 7 bit ascii, ie no \00\f0 or above    
-        for esc in ansi.esc_to_scan:
-            s = s.replace(esc, ansi.esc_to_scan[esc])
-        return s
+    def get_scancode(s):    
+        # s should be at most one ansi sequence, if it contains ansi sequences.
+        return ansi.esc_to_scan[s]
 
     def clear_line():
         term.write(ansi.esc_clear_line)
@@ -245,29 +244,35 @@ def check_keyboard():
         s += c    
     if s == '':    
         return
-    s = replace_scancodes(s)
-    # replace utf-8 with codepage
-    # convert into unicode codepoints
-    u = s.decode('utf-8')
-    # then handle these one by one as UTF-8 sequences
-    c = ''
-    for uc in u:                    
-        c += uc.encode('utf-8')
-        if c == '\x03':         # ctrl-C
-            backend.insert_special_key('break')
-        if c == eof:            # ctrl-D (unix) / ctrl-Z (windows)
-            backend.insert_special_key('quit')
-        elif c == '\x7f':       # backspace
-            backend.insert_key('\b')
-        elif c == '\0':    
-            # scancode; go add next char
-            continue
-        else:
-            try:
-                backend.insert_key(unicodepage.from_utf8(c))
-            except KeyError:    
-                backend.insert_key(c)    
+    # s is either (1) a character (a) (2) a utf-8 character (e.g. sterling)
+    # (3) a string of utf-8 characters (when pasting) or 
+    # (4) one ansi sequence (Unix) or one scancode (Windows)
+    try:    
+        # if it's an ansi sequence/scan code, insert immediately
+        backend.key_down(get_scancode(s), '')
+    except KeyError:    
+        # replace utf-8 with codepage
+        # convert into unicode codepoints
+        u = s.decode('utf-8')
+        # then handle these one by one as UTF-8 sequences
         c = ''
+        for uc in u:                    
+            c += uc.encode('utf-8')
+            if c == '\x03':         # ctrl-C
+                backend.insert_special_key('break')
+            if c == eof:            # ctrl-D (unix) / ctrl-Z (windows)
+                backend.insert_special_key('quit')
+            elif c == '\x7f':       # backspace
+                backend.insert_chars('\b')
+            elif c == '\0':    
+                # scancode; go add next char
+                continue
+            else:
+                try:
+                    backend.insert_chars(unicodepage.from_utf8(c))
+                except KeyError:    
+                    backend.insert_chars(c)    
+            c = ''
 
 def update_palette(new_palette, colours, colours1):
     pass

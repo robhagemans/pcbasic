@@ -16,6 +16,7 @@ import config
 import state 
 import timedate
 import unicodepage
+import scancode
 import error
     
 # backend implementations
@@ -33,19 +34,15 @@ pcjr_sound = ''
 #############################################
 # keyboard queue
 
-# capslock, numlock, scrollock mode 
-state.console_state.caps = False
-state.console_state.num = False
-state.console_state.scroll = False
 # let OS handle capslock effects
 ignore_caps = True
 
-# default function keys for KEY autotext. F1-F10
-# F11 and F12 here are TANDY screencodes only!
-function_key = { 
-        '\x00\x3b':0, '\x00\x3c':1, '\x00\x3d':2, '\x00\x3e':3, '\x00\x3f':4,
-        '\x00\x40':5, '\x00\x41':6, '\x00\x42':7, '\x00\x43':8, '\x00\x44':9,
-        '\x00\x98':10, '\x00\x99':11 }
+# default function key scancodes for KEY autotext. F1-F10
+# F11 and F12 here are TANDY scancodes only!
+function_key = {
+    scancode.F1: 0, scancode.F2: 1, scancode.F3: 2, scancode.F4: 3, 
+    scancode.F5: 4, scancode.F6: 5, scancode.F7: 6, scancode.F8: 7,
+    scancode.F9: 8, scancode.F10: 9, scancode.F11: 10, scancode.F12: 11}
 # user definable key list
 state.console_state.key_replace = [ 
     'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r',
@@ -57,10 +54,19 @@ state.console_state.keybuf = ''
 # key buffer
 # INP(&H60) scancode
 state.console_state.inp_key = 0
-# keypressed status of caps, num, scroll, alt, ctrl, shift
-state.console_state.keystatus = 0
+# active status of caps, num, scroll, alt, ctrl, shift modifiers
+state.console_state.mod = 0
 # input has closed
 input_closed = False
+# bit flags for modifier keys
+toggle = {
+    scancode.INSERT: 0x80, scancode.CAPSLOCK: 0x40,  
+    scancode.NUMLOCK: 0x20, scancode.SCROLLOCK: 0x10}
+modifier = {    
+    scancode.ALT: 0x8, scancode.CTRL: 0x4, 
+    scancode.LSHIFT: 0x2, scancode.RSHIFT: 0x1}
+# store for alt+keypad ascii insertion    
+keypad_ascii = ''
 
 #############################################
 # screen buffer
@@ -1052,78 +1058,131 @@ def peek_char():
             ch += state.console_state.keybuf[1]
     return ch 
     
-def key_down(keycode, inpcode=None, keystatuscode=None):
-    """ Insert a key-down event. Keycode is ascii, DBCS or NUL+scancode. """
-    if keycode != '':
-        insert_key(keycode)
-    if inpcode != None:
-        state.console_state.inp_key = inpcode
-    if keystatuscode != None:
-        state.console_state.keystatus |= keystatuscode
+def key_down(scan, eascii=''):
+    global keypad_ascii
+    """ Insert a key-down event. Keycode is extended ascii, including DBCS. """
+    # set port and low memory address regardless of event triggers
+    if scan != None:
+        state.console_state.inp_key = scan
+    # set modifier status    
+    try:
+        state.console_state.mod |= modifier[scan]
+    except KeyError:
+       pass 
+    # set toggle-key modifier status    
+    try:
+        state.console_state.mod ^= toggle[scan]
+    except KeyError:
+       pass 
+    # handle BIOS events
+    if (scan == scancode.DELETE and 
+            state.console_state.mod & 
+                (modifier[scancode.CTRL] & modifier[scancode.ALT])):
+            # ctrl-alt-del: if not captured by the OS, reset the emulator
+            # meaning exit and delete state. This is useful on android.
+            raise error.Reset()
+    if (scan in (scancode.BREAK, scancode.SCROLLOCK) and
+            state.console_state.mod & modifier[scancode.CTRL]):
+            raise error.Break()
+    if scan == scancode.PRINT:
+        if (state.console_state.mod & 
+                (modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT])):
+            # shift + print screen
+            print_screen()
+        if state.console_state.mod & modifier[scancode.CTRL]:
+            # ctrl + print screen
+            toggle_echo_lpt1()
+    # alt+keypad ascii replacement        
+    # we can't depend on internal NUM LOCK state as it doesn't get updated
+    if (state.console_state.mod & modifier[scancode.ALT] and 
+            len(eascii) == 1 and eascii >= '0' and eascii <= '9'):
+        try:
+            keypad_ascii += scancode.keypad[scan]
+            return
+        except KeyError:    
+            pass
+    # trigger events
+    if check_key_event(scan, state.console_state.mod):
+        # this key is being trapped, don't replace
+        return
+    # function key macros
+    try:
+        # only check function keys
+        # can't be redefined in events - so must be fn 1-10 (1-12 on Tandy).
+        keynum = function_key[scan]
+        if (state.basic_state.key_macros_off or state.basic_state.run_mode 
+                and state.basic_state.key_handlers[keynum].enabled):
+            # this key is paused from being trapped, don't replace
+            state.console_state.keybuf += scan_to_eascii(scan, 
+                                              state.console_state.mod)
+            return
+        else:
+            macro = state.console_state.key_replace[keynum]
+            # insert directly, avoid caps handling
+            state.console_state.keybuf += macro
+            return
+    except KeyError:
+        pass
+    if not eascii:
+        # any provided e-ASCII value overrides
+        # this helps make keyboards do what's expected 
+        # independent of language setting
+        try:
+            eascii = scan_to_eascii(scan, state.console_state.mod)
+        except KeyError:            
+            # no eascii found
+            return
+    if (state.console_state.mod & toggle[scancode.CAPSLOCK]
+            and not ignore_caps and len(eascii) == 1):
+        if eascii >= 'a' and eascii <= 'z':
+            eascii = chr(ord(eascii)-32)
+        elif eascii >= 'A' and eascii <= 'z':
+            eascii = chr(ord(eascii)+32)
+    insert_chars(eascii)        
     
-def key_up(inpcode=None, keystatuscode=None):
+def key_up(scan):
     """ Insert a key-up event. """
-    if inpcode != None:
-        state.console_state.inp_key = 0x80 + inpcode
-    if keystatuscode != None:
-        state.console_state.keystatus &= (0xffff ^ keystatuscode)
+    global keypad_ascii
+    if scan != None:
+        state.console_state.inp_key = 0x80 + scan
+    try:
+        # switch off ephemeral modifiers
+        state.console_state.mod &= ~modifier[scan]
+        # ALT+keycode    
+        if scan == scancode.ALT and keypad_ascii:
+            char = chr(int(keypad_ascii)%256)
+            if char == '\0':
+                char = '\0\0'
+            insert_chars(char)
+            keypad_ascii = ''
+    except KeyError:
+       pass 
     
 def insert_special_key(name):
-    """ Insert a low-level handled: caps, num, scroll, print, break. """
-    if name == 'break':
-        raise error.Break()
+    """ Insert break, reset or quit events. """
+    if name == 'quit':
+        raise error.Exit()
     elif name == 'reset':
         raise error.Reset()
-    elif name == 'quit':
-        raise error.Exit()
-    elif name == 's+print':
-        print_screen()
-    elif name == 'c+print':
-        toggle_echo_lpt1()
-    elif name == 'caps':
-        state.console_state.caps = not state.console_state.caps
-    elif name == 'num':
-        state.console_state.num = not state.console_state.num
-    elif name == 'scroll':
-        state.console_state.scroll = not state.console_state.scroll
+    elif name == 'break':
+        raise error.Break()
     else:
         logging.debug('Unknown special key: %s', name)
         
-def insert_key(c):
-    """ Insert character into keyboard buffer, apply macros, trigger events. """
-    if len(c) > 0:
-        try:
-            keynum = state.basic_state.event_keys.index(c)
-            if keynum > -1 and keynum < 20:
-                if state.basic_state.key_handlers[keynum].enabled:
-                    # trigger only once at most
-                    state.basic_state.key_handlers[keynum].triggered = True
-                    # don't enter into key buffer
-                    return
-        except ValueError:
-            pass
-    if state.console_state.caps and not ignore_caps:
-        if c >= 'a' and c <= 'z':
-            c = chr(ord(c)-32)
-        elif c >= 'A' and c <= 'z':
-            c = chr(ord(c)+32)
-    if len(c) < 2:
-        state.console_state.keybuf += c
+def insert_chars(s):
+    """ Insert characters into keyboard buffer. """
+    state.console_state.keybuf += s
+
+def scan_to_eascii(scan, mod):
+    """ Translate scancode and modifier state to e-ASCII. """
+    if mod & modifier[scancode.ALT]:
+        return scancode.eascii_table[scan][3]
+    elif mod & modifier[scancode.CTRL]:
+        return scancode.eascii_table[scan][2]
+    elif mod & (modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT]):
+        return scancode.eascii_table[scan][1]
     else:
-        try:
-            # only check F1-F10
-            keynum = function_key[c]
-            # can't be redefined in events - so must be event keys 1-10.
-            if (state.basic_state.key_macros_off or state.basic_state.run_mode 
-                    and state.basic_state.key_handlers[keynum].enabled or 
-                    keynum > 9):
-                # this key is being trapped, don't replace
-                state.console_state.keybuf += c
-            else:
-                macro = state.console_state.key_replace[keynum]
-                state.console_state.keybuf += macro
-        except KeyError:
-            state.console_state.keybuf += c
+        return scancode.eascii_table[scan][0]
 
 #############################################
 # cursor
@@ -1449,14 +1508,14 @@ def reset_events():
     state.basic_state.suspend_all_events = False
 
 def check_timer_event():
-    """ Trigger timer events. """
+    """ Trigger TIMER events. """
     mutimer = timedate.timer_milliseconds() 
     if mutimer >= state.basic_state.timer_start+state.basic_state.timer_period:
         state.basic_state.timer_start = mutimer
         state.basic_state.timer_handler.triggered = True
 
 def check_play_event():
-    """ Trigger music queue events. """
+    """ Trigger PLAY (music queue) events. """
     play_now = [music_queue_length(voice) for voice in range(3)]
     if pcjr_sound: 
         for voice in range(3):
@@ -1476,5 +1535,53 @@ def check_com_events():
     for comport in (0, 1):
         if ports[comport] and ports[comport].peek_char():
             state.basic_state.com_handlers[comport].triggered = True
+
+def check_key_event(scancode, modifiers):
+    """ Trigger KEYboard events. """
+    # "Extended ascii": ascii 1-255 or NUL+code where code is often but not
+    # always the keyboard scancode. See e.g. Tandy 1000 BASIC manual for a good
+    # overview. DBCS is simply entered as a string of ascii codes.
+    # check for scancode (inp_code) events
+    if not scancode:
+        return False
+    try:
+        keynum = state.basic_state.event_keys.index('\0' + chr(scancode))
+        # for pre-defined KEYs 1-14 (and 1-16 on Tandy) the modifier status 
+        # is ignored.
+        if (keynum >= 0 and keynum < num_fn_keys + 4 and 
+                    state.basic_state.key_handlers[keynum].enabled):
+                # trigger function or arrow key event
+                state.basic_state.key_handlers[keynum].triggered = True
+                # don't enter into key buffer
+                return True
+    except ValueError:
+        pass
+    # build KEY trigger code
+    # see http://www.petesqbsite.com/sections/tutorials/tuts/keysdet.txt                
+    # second byte is scan code; first byte
+    #  0       if the key is pressed alone
+    #  1 to 3    if any Shift and the key are combined
+    #    4       if Ctrl and the key are combined
+    #    8       if Alt and the key are combined
+    #   32       if NumLock is activated
+    #   64       if CapsLock is activated
+    #  128       if we are defining some extended key
+    # extended keys are for example the arrow keys on the non-numerical keyboard
+    # presumably all the keys in the middle region of a standard PC keyboard?
+    # from modifiers, exclude scroll lock at 0x10 and insert 0x80.
+    trigger_code = chr(modifiers & 0x6f) + chr(scancode)
+    try:
+        keynum = state.basic_state.event_keys.index(trigger_code)
+        if (keynum >= num_fn_keys + 4 and keynum < 20 and
+                    state.basic_state.key_handlers[keynum].enabled):
+                # trigger user-defined key
+                state.basic_state.key_handlers[keynum].triggered = True
+                # don't enter into key buffer
+                return True
+    except ValueError:
+        pass
+    return False
+
+
 
 prepare()

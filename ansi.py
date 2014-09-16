@@ -8,6 +8,7 @@
 # This file is released under the GNU GPL version 3. 
 # please see text file COPYING for licence terms.
 #
+import scancode
 
 # ANSI colour numbers for EGA colours: black, blue, green, cyan, red, magenta, yellow, white
 colours = (0, 4, 2, 6, 1, 5, 3, 7)
@@ -43,27 +44,26 @@ esc_move_right = '\x1b\x5b\x43'
 esc_move_left = '\x1b\x5b\x44'
 
 # escape sequence to scancode dictionary
-# for scan codes, see e.g. http://www.antonis.de/qbebooks/gwbasman/appendix%20h.html
 esc_to_scan = {
-    '\x1b\x4f\x50': '\x00\x3b', # F1
-    '\x1b\x4f\x51': '\x00\x3c', # F2
-    '\x1b\x4f\x52': '\x00\x3d', # F3
-    '\x1b\x4f\x53': '\x00\x3e', # F4
-    '\x1b\x5b\x31\x35\x7e':  '\x00\x3f', # F5
-    '\x1b\x5b\x31\x37\x7e':  '\x00\x40', # F6
-    '\x1b\x5b\x31\x38\x7e':  '\x00\x41', # F7
-    '\x1b\x5b\x31\x39\x7e':  '\x00\x42', # F8
-    '\x1b\x5b\x32\x30\x7e':  '\x00\x43', # F9
-    '\x1b\x5b\x32\x31\x7e':  '\x00\x44', # F10
-    '\x1b\x4f\x46': '\x00\x4F', # END
-    '\x1b\x4f\x48': '\x00\x47', # HOME
-    '\x1b\x5b\x41': '\x00\x48', # arrow up
-    '\x1b\x5b\x42': '\x00\x50', # arrow down
-    '\x1b\x5b\x43': '\x00\x4d', # arrow right
-    '\x1b\x5b\x44': '\x00\x4b', # arrow left
-    '\x1b\x5b\x32\x7e': '\x00\x52', # INS
-    '\x1b\x5b\x33\x7e': '\x00\x53', # DEL
-    '\x1b\x5b\x35\x7e': '\x00\x49', # PG UP
-    '\x1b\x5b\x36\x7e': '\x00\x51', # PG DN
-}
+    '\x1b\x4f\x50': scancode.F1,
+    '\x1b\x4f\x51': scancode.F2,
+    '\x1b\x4f\x52': scancode.F3,
+    '\x1b\x4f\x53': scancode.F4,
+    '\x1b\x5b\x31\x35\x7e':  scancode.F5,
+    '\x1b\x5b\x31\x37\x7e':  scancode.F6,
+    '\x1b\x5b\x31\x38\x7e':  scancode.F7,
+    '\x1b\x5b\x31\x39\x7e':  scancode.F8,
+    '\x1b\x5b\x32\x30\x7e':  scancode.F9,
+    '\x1b\x5b\x32\x31\x7e':  scancode.F10,
+    '\x1b\x4f\x46': scancode.END,
+    '\x1b\x4f\x48': scancode.HOME,
+    '\x1b\x5b\x41': scancode.UP,
+    '\x1b\x5b\x42': scancode.DOWN,
+    '\x1b\x5b\x43': scancode.RIGHT,
+    '\x1b\x5b\x44': scancode.LEFT,
+    '\x1b\x5b\x32\x7e': scancode.INSERT,
+    '\x1b\x5b\x33\x7e': scancode.DELETE,
+    '\x1b\x5b\x35\x7e': scancode.PAGEUP,
+    '\x1b\x5b\x36\x7e': scancode.PAGEDOWN,
+    }
 
