@@ -1087,10 +1087,10 @@ def key_down(scan, eascii=''):
     if scan == scancode.PRINT:
         if (state.console_state.mod & 
                 (modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT])):
-            # shift + print screen
+            # shift + printscreen
             print_screen()
         if state.console_state.mod & modifier[scancode.CTRL]:
-            # ctrl + print screen
+            # ctrl + printscreen
             toggle_echo_lpt1()
     # alt+keypad ascii replacement        
     # we can't depend on internal NUM LOCK state as it doesn't get updated
@@ -1123,8 +1123,9 @@ def key_down(scan, eascii=''):
             return
     except KeyError:
         pass
-    if not eascii:
-        # any provided e-ASCII value overrides
+    if not eascii or (scan != None and state.console_state.mod & 
+                (modifier[scancode.ALT] | modifier[scancode.CTRL])):
+        # any provided e-ASCII value overrides when CTRL & ALT are off
         # this helps make keyboards do what's expected 
         # independent of language setting
         try:

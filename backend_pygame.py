@@ -159,7 +159,7 @@ if pygame:
         pygame.K_RSHIFT: scancode.RSHIFT, pygame.K_PRINT: scancode.PRINT,
         pygame.K_SYSREQ: scancode.SYSREQ,
         pygame.K_RALT: scancode.ALT, pygame.K_LALT: scancode.ALT, 
-        pygame.K_MODE: scancode.ALT,
+        #pygame.K_MODE: scancode.ALT,    # ALT GR sends MODE
         pygame.K_SPACE: scancode.SPACE, pygame.K_CAPSLOCK: scancode.CAPSLOCK,
         # function key row    
         pygame.K_F1: scancode.F1, pygame.K_F2: scancode.F2, 
