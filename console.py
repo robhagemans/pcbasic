@@ -418,7 +418,9 @@ def clear_rest_of_line(srow, scol):
     """ Clear from current position to end of logical line (CTRL+END). """
     therow = state.console_state.apage.row[srow-1] 
     therow.buf = (therow.buf[:scol-1] + 
-        [(' ', state.console_state.attr)]*(state.console_state.width-scol+1))
+        [(' ', state.console_state.attr)] * (state.console_state.width-scol+1))
+    therow.double = (therow.double[:scol-1] + 
+        [0] * (state.console_state.width-scol+1))
     therow.end = min(therow.end, scol-1)
     crow = srow
     while state.console_state.apage.row[crow-1].wrap:
