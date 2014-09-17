@@ -238,6 +238,7 @@ class ModeData(object):
 text_mode = {
     'vga': ModeData(
                 font_height = 16,
+                font_width = 9,
                 attr = 7,
                 num_attr = 32,
                 colours = colours64,
@@ -252,6 +253,17 @@ text_mode = {
                 num_attr = 32,
                 colours = colours64,
                 palette = ega_palette,
+                width = 80,
+                num_pages = 4,
+                bitsperpixel = 4,
+                has_blink = True),
+    'egamono': ModeData(
+                font_height = 14, 
+                font_width = 8,
+                attr = 7,
+                num_attr = 32,
+                colours = colours_mda_mono,
+                palette = mda_palette,
                 width = 80,
                 num_pages = 4,
                 bitsperpixel = 4,
@@ -496,10 +508,14 @@ def prepare_video():
         # EGA
         if mono_monitor:
             available_modes = [10]
-            mode_data[0] = text_mode['mda']
+            mode_data[0] = text_mode['egamono']
         else:
             available_modes = [1, 2, 7, 8, 9]
             mode_data[0] = text_mode['ega']
+    elif video_capabilities == 'mda':
+        mono_monitor = True
+        available_modes = []
+        mode_data[0] = text_mode['mda']
     else:
         available_modes = [1, 2, 7, 8, 9]
         mode_data[0] = text_mode['vga'] 

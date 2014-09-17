@@ -220,6 +220,8 @@ def prepare():
     display_size_text = (8*80 + 2*border_width, 16*25 + 2*border_width)
     if config.options['video'] in ('cga', 'cga_old', 'tandy', 'pcjr'):
         heights_needed = (8, )
+    elif config.options['video'] in ('mda', 'ega'):
+        heights_needed = (14, 8)
     else:
         heights_needed = (16, 14, 8)
     if config.options['dimensions']:

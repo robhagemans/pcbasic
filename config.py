@@ -210,7 +210,7 @@ arguments = {
         'help': 'Set the terminal program run by the PCjr TERM command' },
     'video': { 
         'type': 'string', 
-        'choices': ('vga', 'ega', 'cga', 'cga_old', 'pcjr', 'tandy'), 
+        'choices': ('vga', 'ega', 'cga', 'cga_old', 'mda', 'pcjr', 'tandy'), 
         'help': 'Set the video card to emulate.' },
     'windows_map_drives': { 
         'type': 'bool', 
