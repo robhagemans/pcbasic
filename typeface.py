@@ -23,9 +23,9 @@ def font_filename(name, height):
 
 def load(families, height, codepage_dict):
     """ Load the specified codepage from a unifont .hex file. Codepage should be a CP-to-UTF8 dict. """
-    names = reversed([ font_filename(name, height) for name in families ])
+    names = [ font_filename(name, height) for name in families ]
     cp_reverse = dict((reversed(item) for item in codepage_dict.items()))
-    fontfiles = [ open(name, 'rb') for name in names if os.path.exists(name) ]
+    fontfiles = [ open(name, 'rb') for name in reversed(names) if os.path.exists(name) ]
     if len(fontfiles) == 0:
         logging.warning('Could not read font file for height %d', height)
         return None
