@@ -218,7 +218,8 @@ class ModeData(object):
                  width, num_pages, bitsperpixel, 
                  palette, colours, colours1=None, 
                  font_width=8, 
-                 supports_artifacts=False, cursor_index=None, has_blink=False):
+                 supports_artifacts=False, cursor_index=None, has_blink=False,
+                 pixel_aspect=None):
         """ Settings for one video mode. """         
         self.font_height = font_height
         self.attr = attr
@@ -233,7 +234,8 @@ class ModeData(object):
         self.supports_artifacts = supports_artifacts
         self.cursor_index = cursor_index
         self.has_blink = has_blink
-
+        self.pixel_aspect = pixel_aspect
+            
 # video modes
 text_mode = {
     'vga': ModeData(
@@ -291,6 +293,14 @@ text_mode = {
                 has_blink = True),
     }
 
+# Tandy/PCjr pixel aspect ratio is different from normal
+# suggesting screen aspect ratio is not 4/3.
+# Tandy pixel aspect ratios, experimentally found with CIRCLE:
+# screen 2, 6:     48/100   normal if aspect = 3072, 2000
+# screen 1, 4, 5:  96/100   normal if aspect = 3072, 2000
+# screen 3:      1968/1000 
+# screen 3 is strange, slighly off the 192/100 you'd expect
+
 graphics_modes = {
     # 04h 320x200x4  16384B 2bpp 0xb8000 
     # tandy:2 pages if 32k memory; ega: 1 page only 
@@ -324,7 +334,9 @@ graphics_modes = {
             width = 20,
             num_pages = 2,
             bitsperpixel = 4,
-            cursor_index = 3),
+            cursor_index = 3,
+            pixel_aspect = (1968, 1000) # you'd expect 192, 100
+            ),
     #     320x200x4  16384B 2bpp 0xb8000   
     4: ModeData(
             font_height = 8, 
@@ -402,10 +414,8 @@ graphics_modes = {
             has_blink = True),
     }
 
-
 # to be filled with the modes available to our video card    
 mode_data = {}
-
 
 # border colour
 state.console_state.border_attr = 0
@@ -468,9 +478,13 @@ def prepare_video():
     global video_capabilities, composite_monitor, mono_monitor, mono_tint
     global colours16_mono, colours_ega_mono_0, colours_ega_mono_1, cga_low
     global colours_ega_mono_text
-    global mode_data
-    egacursor = config.options['video'] in ('ega', 'vga')
+    global mode_data, circle_aspect
     video_capabilities = config.options['video']
+    if video_capabilities in ('pcjr', 'tandy'):
+        circle_aspect = (3072, 2000)
+    else:
+        circle_aspect = (4, 3)
+    egacursor = config.options['video'] in ('ega', 'vga')
     composite_monitor = config.options['monitor'] == 'composite'
     mono_monitor = config.options['monitor'] == 'mono'
     if video_capabilities not in ('ega', 'vga'):
@@ -683,7 +697,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
     # set active page & visible page, counting from 0. 
     set_page(new_vpagenum, new_apagenum)
     # set graphics characteristics
-    init_graphics(new_mode)
+    init_graphics(info)
     # cursor width starts out as single char
     state.console_state.cursor_width = state.console_state.font_width        
     # signal the backend to change the screen resolution
@@ -697,7 +711,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
         set_colorburst(False)    
     return True
 
-def init_graphics(new_mode):
+def init_graphics(mode_info):
     """ Set the graphical characteristics of a new mode. """
     # resolution
     state.console_state.size = (
@@ -707,20 +721,14 @@ def init_graphics(new_mode):
     state.console_state.last_point = (
         state.console_state.size[0]/2, state.console_state.size[1]/2)
     # assumed aspect ratio for CIRCLE    
-    if video_capabilities in ('pcjr', 'tandy'):
-        if new_mode in (2,6):
-             state.console_state.pixel_aspect_ratio = 48, 100
-        elif new_mode in (1,4,5):
-             state.console_state.pixel_aspect_ratio = 96, 100
-        elif new_mode == 3:
-             state.console_state.pixel_aspect_ratio = 1968, 1000
-    else:    
-        # pixels e.g. 80*8 x 25*14, screen ratio 4x3 
-        # makes for pixel width/height (4/3)*(25*14/8*80)
-        # graphic screens always have 8-pixel widths (can be 9 on text)
+    # pixels e.g. 80*8 x 25*14, screen ratio 4x3 
+    # makes for pixel width/height (4/3)*(25*14/8*80)
+    if mode_info.pixel_aspect:
+        state.console_state.pixel_aspect_ratio = mode_info.pixel_aspect
+    else:      
         state.console_state.pixel_aspect_ratio = (
-            state.console_state.height * state.console_state.font_height,
-            6 * state.console_state.width)
+             25 * mode_info.font_height * circle_aspect[0], 
+             mode_info.width * mode_info.font_width * circle_aspect[1])
 
 def set_page(new_vpagenum, new_apagenum):
     """ Set active page & visible page, counting from 0. """
