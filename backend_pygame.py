@@ -222,16 +222,20 @@ def prepare():
         heights_needed = (8, )
     else:
         heights_needed = (16, 14, 8)
-    try:
-        x, y = config.options['dimensions'].split(',')
-        display_size = (int(x), int(y))
-    except (ValueError, TypeError):
-        pass    
-    try:
-        x, y = config.options['dimensions_text'].split(',')
-        display_size_text = (int(x), int(y))
-    except (ValueError, TypeError):
-        pass    
+    if config.options['dimensions']:
+        try:
+            x, y = config.options['dimensions'].split(',')
+            display_size = (int(x), int(y))
+        except (ValueError, TypeError):
+            logging.warning('Could not parse option: dimensions=%s. Use two values '
+                            'separated by a comma.', config.options['dimensions']) 
+    if config.options['dimensions_text']:
+        try:
+            x, y = config.options['dimensions_text'].split(',')
+            display_size_text = (int(x), int(y))
+        except (ValueError, TypeError):
+            logging.warning('Could not parse option: dimensions_text=%s. Use two values '
+                            'separated by a comma.', config.options['dimensions_text']) 
     fullscreen = config.options['fullscreen']
     smooth = config.options['smooth']    
     noquit = config.options['noquit']
