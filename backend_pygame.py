@@ -213,7 +213,7 @@ def prepare():
     global display_size_text, composite_monitor, heights_needed
     global composite_640_palette, border_width
     global mousebutton_copy, mousebutton_paste, mousebutton_pen
-    global mono_monitor
+    global mono_monitor, font_families
     # screen width and height in pixels
     border_width = config.options['border_width']
     display_size = (640 + 2*border_width, 480 + 2*border_width)
