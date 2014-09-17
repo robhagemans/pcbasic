@@ -14,25 +14,26 @@ import logging
 import config
 import state
 import backend
-# for Break, Exit, Reset
 import error
-# for dbcs
 import unicodepage
 
-# alt+key macros for interactive mode (these happen at a higher level than F-key macros)
+# alt+key macros for interactive mode 
+# these happen at a higher level than F-key macros
 alt_key_replace = {
-    '\x00\x1E': 'AUTO',  '\x00\x30': 'BSAVE',  '\x00\x2E': 'COLOR',  '\x00\x20': 'DELETE', '\x00\x12': 'ELSE', 
-    '\x00\x21': 'FOR',   '\x00\x22': 'GOT0',   '\x00\x23': 'HEX$',   '\x00\x17': 'INPUT',
-    '\x00\x25': 'KEY',   '\x00\x26': 'LOCATE', '\x00\x32': 'MOTOR',  '\x00\x31': 'NEXT',   '\x00\x18': 'OPEN', 
-    '\x00\x19': 'PRINT', '\x00\x13': 'RUN',    '\x00\x1F': 'SCREEN', '\x00\x14': 'THEN',   '\x00\x16': 'USING', 
-    '\x00\x2F': 'VAL',   '\x00\x11': 'WIDTH',  '\x00\x2D': 'XOR' }
+    '\0\x1E': 'AUTO',   '\0\x30': 'BSAVE',  '\0\x2E': 'COLOR',  
+    '\0\x20': 'DELETE', '\0\x12': 'ELSE',   '\0\x21': 'FOR',   
+    '\0\x22': 'GOTO',   '\0\x23': 'HEX$',   '\0\x17': 'INPUT',
+    '\0\x25': 'KEY',    '\0\x26': 'LOCATE', '\0\x32': 'MOTOR',  
+    '\0\x31': 'NEXT',   '\0\x18': 'OPEN',   '\0\x19': 'PRINT', 
+    '\0\x13': 'RUN',    '\0\x1F': 'SCREEN', '\0\x14': 'THEN',   
+    '\0\x16': 'USING',  '\0\x2F': 'VAL',    '\0\x11': 'WIDTH',  
+    '\0\x2D': 'XOR'}
 
 # on the keys line 25, what characters to replace & with which
 keys_line_replace_chars = { 
         '\x07': '\x0e',    '\x08': '\xfe',    '\x09': '\x1a',    '\x0A': '\x1b',
         '\x0B': '\x7f',    '\x0C': '\x16',    '\x0D': '\x1b',    '\x1C': '\x10',
-        '\x1D': '\x11',    '\x1E': '\x18',    '\x1F': '\x19',
-    }        
+        '\x1D': '\x11',    '\x1E': '\x18',    '\x1F': '\x19'}        
     
 # KEY ON?
 state.console_state.keys_visible = True
@@ -93,6 +94,7 @@ def set_width(to_width):
 # interactive mode         
 
 def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
+    """ Enter interactive mode and come back with a string. """
     prompt_row = state.console_state.row
     # force cursor visibility in all cases
     backend.show_cursor(True) 
@@ -145,52 +147,91 @@ def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
     return outstr    
 
 def wait_interactive(from_start=False, alt_replace = True):
+    """ Manage the interactive mode. """
     # this is where we started
-    start_row, furthest_left = state.console_state.row, (state.console_state.col if not from_start else 1)
+    start_row = state.console_state.row
+    furthest_left = (state.console_state.col if not from_start else 1)
     # this is where we arrow-keyed on the start line
     furthest_right = state.console_state.col 
     while True: 
-        if state.console_state.row == start_row:
-            furthest_left = min(state.console_state.col, furthest_left)
-            furthest_right = max(state.console_state.col, furthest_right)
-        # wait_char returns one ascii ar MS-DOS/GW-BASIC style keyscan code
+        row, col = state.console_state.row, state.console_state.col 
+        if row == start_row:
+            furthest_left = min(col, furthest_left)
+            furthest_right = max(col, furthest_right)
+        # wait_char returns one e-ASCII code
         d = backend.pass_char(backend.wait_char())
         if not d:
             # input stream closed
             raise error.Exit()
-        if d in ('\x00\x48', '\x1E', '\x00\x50', '\x1F',  '\x00\x4D', '\x1C', '\x00\x4B', 
-                    '\x1D', '\x00\x47', '\x0B', '\x00\x4F', '\x0E' ):
+        if d in ('\0\x48', '\x1e', '\0\x50', '\x1f',  '\0\x4d', '\x1c', 
+                  '\0\x4B', '\x1d', '\0\x47', '\x0b', '\0\x4f', '\x0e'):
+            # arrow keys drop us out of insert mode    
             set_overwrite_mode(True)
-        if d == '\x03':         
-            raise error.Break()    # not caught in wait_char like <CTRL+BREAK>
-        elif d == '\r':                     break                                   # <ENTER>
-        elif d == '\a':                     backend.beep()                            # <CTRL+G>
-        elif d == '\b':                     backspace(start_row, furthest_left)     # <BACKSPACE>
-        elif d == '\t':                     tab()                                   # <TAB> or <CTRL+I>
-        elif d == '\n':                     line_feed()                             # <CTRL+ENTER> or <CTRL+J>
-        elif d == '\x1B':                   clear_line(state.console_state.row)                     # <ESC> or <CTRL+[>
-        elif d in ('\x00\x75', '\x05'):     clear_rest_of_line(state.console_state.row, state.console_state.col)  # <CTRL+END> <CTRL+E>
-        elif d in ('\x00\x48', '\x1E'):                                             # <UP> <CTRL+6>
-            set_pos(state.console_state.row - 1, state.console_state.col, scroll_ok=False)    
-        elif d in ('\x00\x50', '\x1F'):                                             # <DOWN> <CTRL+->
-            set_pos(state.console_state.row + 1, state.console_state.col, scroll_ok=False)    
-        elif d in ('\x00\x4D', '\x1C'):                                             # <RIGHT> <CTRL+\>
+        if d == '\x03':
+            # CTRL-C -- only caught here, not in wait_char like <CTRL+BREAK>
+            raise error.Break()
+        elif d == '\r':
+            # ENTER, CTRL+M
+            break
+        elif d == '\a':
+            # BEL, CTRL+G
+            backend.beep()
+        elif d == '\b':
+            # BACKSPACE, CTRL+H
+            backspace(start_row, furthest_left)
+        elif d == '\t':                     
+            # TAB, CTRL+I
+            tab() 
+        elif d == '\n':
+            # CTRL+ENTER, CTRL+J
+            line_feed()
+        elif d == '\x1b':
+            # ESC, CTRL+[
+            clear_line(row)
+        elif d in ('\0\x75', '\x05'): 
+            # CTRL+END, CTRL+E
+            clear_rest_of_line(row, col)
+        elif d in ('\0\x48', '\x1e'): 
+            # UP, CTRL+6
+            set_pos(row - 1, col, scroll_ok=False)    
+        elif d in ('\0\x50', '\x1f'): 
+            # DOWN, CTRL+-
+            set_pos(row + 1, col, scroll_ok=False)    
+        elif d in ('\0\x4D', '\x1c'): 
+            # RIGHT, CTRL+\
             # skip dbcs trail byte
-            skip = 2 if state.console_state.apage.row[state.console_state.row-1].double[state.console_state.col-1] == 1 else 1   
-            set_pos(state.console_state.row, state.console_state.col + skip, scroll_ok=False)
-        elif d in ('\x00\x4B', '\x1D'):                                             # <LEFT> <CTRL+]>
-            set_pos(state.console_state.row, state.console_state.col - 1, scroll_ok=False)                
-        elif d in ('\x00\x74', '\x06'):     skip_word_right()                       # <CTRL+RIGHT> or <CTRL+F>
-        elif d in ('\x00\x73', '\x02'):     skip_word_left()                        # <CTRL+LEFT> or <CTRL+B>
-        elif d in ('\x00\x52', '\x12'):     set_overwrite_mode(not state.console_state.overwrite_mode)  # <INS> <CTRL+R>
-        elif d in ('\x00\x53', '\x7F'):     delete_char(state.console_state.row, state.console_state.col)                   # <DEL> <CTRL+BACKSPACE>
-        elif d in ('\x00\x47', '\x0B'):     set_pos(1, 1)                           # <HOME> <CTRL+K>
-        elif d in ('\x00\x4F', '\x0E'):     end()                                   # <END> <CTRL+N>
-        elif d in ('\x00\x77', '\x0C'):     clear()                                 # <CTRL+HOME> <CTRL+L>   
-        elif d == '\x00\x37':               backend.print_screen()                  # <SHIFT+PRT_SC>, already caught in wait_char()
+            if state.console_state.apage.row[row-1].double[col-1] == 1:
+                skip = 2 
+            else:
+                skip = 1   
+            set_pos(row, col + skip, scroll_ok=False)
+        elif d in ('\0\x4b', '\x1d'): 
+            # LEFT, CTRL+]
+            set_pos(row, col - 1, scroll_ok=False)                
+        elif d in ('\0\x74', '\x06'):
+            # CTRL+RIGHT, CTRL+F            
+            skip_word_right() 
+        elif d in ('\0\x73', '\x02'):
+            # CTRL+LEFT, CTRL+B     
+            skip_word_left()
+        elif d in ('\0\x52', '\x12'):     
+            # INS, CTRL+R
+            set_overwrite_mode(not state.console_state.overwrite_mode)  
+        elif d in ('\0\x53', '\x7f'):     
+            # DEL, CTRL+BACKSPACE
+            delete_char(row, col)
+        elif d in ('\0\x47', '\x0b'):     
+            # HOME, CTRL+K
+            set_pos(1, 1)
+        elif d in ('\0\x4f', '\x0e'):     
+            # END, CTRL+N
+            end()
+        elif d in ('\0\x77', '\x0c'):     
+            # CTRL+HOME, CTRL+L   
+            clear()
         else:
             try:
-                # these are done on a less deep level than the fn key replacement
+                # these are done on a less deep level than the fn key macros
                 letters = list(alt_key_replace[d]) + [' ']
             except KeyError:
                 letters = [d]
@@ -199,44 +240,57 @@ def wait_interactive(from_start=False, alt_replace = True):
             for d in letters:        
                 if d[0] not in ('\x00', '\r'): 
                     if not state.console_state.overwrite_mode:
-                        insert_char(state.console_state.row, state.console_state.col, d, state.console_state.attr)
-                        backend.redraw_row(state.console_state.col-1, state.console_state.row)
-                        set_pos(state.console_state.row, state.console_state.col+1)
+                        insert_char(row, col, d, state.console_state.attr)
+                        # row and col have changed
+                        backend.redraw_row(state.console_state.col-1, 
+                                           state.console_state.row)
+                        set_pos(state.console_state.row, 
+                                state.console_state.col+1)
                     else:    
                         put_char(d, do_scroll_down=True)
         # move left if we end up on dbcs trail byte
-        if state.console_state.apage.row[state.console_state.row-1].double[state.console_state.col-1] == 2:
-            set_pos(state.console_state.row, state.console_state.col-1, scroll_ok=False) 
+        # FIXME this is what's wrong with pasting in dbcs text
+        row, col = state.console_state.row, state.console_state.col 
+        if state.console_state.apage.row[row-1].double[col-1] == 2:
+            set_pos(row, col-1, scroll_ok=False) 
         # adjust cursor width
-        if state.console_state.apage.row[state.console_state.row-1].double[state.console_state.col-1] == 1:
-            cursor_width = 2*state.console_state.font_width
+        row, col = state.console_state.row, state.console_state.col 
+        if state.console_state.apage.row[row-1].double[col-1] == 1:
+            cursor_width = 2 * state.console_state.font_width
         else:
             cursor_width = state.console_state.font_width
         if cursor_width != state.console_state.cursor_width:
             state.console_state.cursor_width = cursor_width
-            backend.video.build_cursor(state.console_state.cursor_width, state.console_state.font_height, 
-                    state.console_state.cursor_from, state.console_state.cursor_to)
-            backend.video.update_cursor_attr(state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
+            backend.video.build_cursor(
+                state.console_state.cursor_width, 
+                state.console_state.font_height, 
+                state.console_state.cursor_from, state.console_state.cursor_to)
+            backend.video.update_cursor_attr(
+                state.console_state.apage.row[row-1].buf[col-1][1] & 0xf)
     set_overwrite_mode(True)
     return furthest_left, furthest_right
       
 def set_overwrite_mode(new_overwrite=True):
+    """ Set or unset the overwrite mode (INS). """
     if new_overwrite != state.console_state.overwrite_mode:
         state.console_state.overwrite_mode = new_overwrite
         set_default_cursor()
 
 def set_default_cursor():
+    """ Set the appropriate cursor for the current mode. """
+    font_height = state.console_state.font_height
     if state.console_state.overwrite_mode:
         if state.console_state.screen_mode != 0: 
-            backend.set_cursor_shape(0, state.console_state.font_height-1)
+            backend.set_cursor_shape(0, font_height-1)
         elif backend.video_capabilities == 'ega':
-            backend.set_cursor_shape(state.console_state.font_height-2, state.console_state.font_height-2)
+            backend.set_cursor_shape(font_height-2, font_height-2)
         else:
-            backend.set_cursor_shape(state.console_state.font_height-1, state.console_state.font_height-1)
+            backend.set_cursor_shape(font_height-1, font_height-1)
     else:
-        backend.set_cursor_shape(state.console_state.font_height/2, state.console_state.font_height-1)
+        backend.set_cursor_shape(font_height/2, font_height-1)
       
 def insert_char(crow, ccol, c, cattr):
+    """ Insert a character at the current position. """
     while True:
         therow = state.console_state.apage.row[crow-1]
         therow.buf.insert(ccol-1, (c, cattr))
@@ -261,32 +315,41 @@ def insert_char(crow, ccol, c, cattr):
     return crow            
         
 def delete_char(crow, ccol):
+    """ Delete the character (single/double width) at the current position. """
     double = state.console_state.apage.row[crow-1].double[ccol-1]
     if double == 0:
+        # we're on an sbcs byte.
         delete_sbcs_char(crow, ccol)
     elif double == 1:    
+        # we're on a lead byte, delete this and the next.
         delete_sbcs_char(crow, ccol)
         delete_sbcs_char(crow, ccol)
     elif double == 2:    
+        # we're on a trail byte, delete the previous and this.
         delete_sbcs_char(crow, ccol-1)
         delete_sbcs_char(crow, ccol-1)
         
 def delete_sbcs_char(crow, ccol):
+    """ Delete a single-byte character at the current position. """
     save_col = ccol
-    therow = state.console_state.apage.row[crow-1]
+    thepage = state.console_state.apage
+    therow = thepage.row[crow-1]
+    width = state.console_state.width
     if crow > 1 and ccol >= therow.end and therow.wrap:
-        nextrow = state.console_state.apage.row[crow]
+        nextrow = thepage.row[crow]
         # row was a LF-ending row
-        therow.buf[ccol-1:] = nextrow.buf[:state.console_state.width-ccol+1] 
-        therow.end = min(max(therow.end, ccol) + nextrow.end, state.console_state.width)
+        therow.buf[ccol-1:] = nextrow.buf[:width-ccol+1] 
+        therow.end = min(max(therow.end, ccol) + nextrow.end, width)
         while crow < state.console_state.scroll_height and nextrow.wrap:
-            nextrow2 = state.console_state.apage.row[crow+1]
-            nextrow.buf = nextrow.buf[state.console_state.width-ccol+1:] + nextrow2.buf[:state.console_state.width-ccol+1]  
-            nextrow.end = min(nextrow.end + nextrow2.end, state.console_state.width)
+            nextrow2 = thepage.row[crow+1]
+            nextrow.buf = (nextrow.buf[width-ccol+1:] + 
+                           nextrow2.buf[:width-ccol+1])  
+            nextrow.end = min(nextrow.end + nextrow2.end, width)
             crow += 1
-            therow, nextrow = state.console_state.apage.row[crow-1], state.console_state.apage.row[crow]
-        nextrow.buf = nextrow.buf[state.console_state.width-ccol+1:] + [(' ', state.console_state.attr)]*(state.console_state.width-ccol+1) 
-        nextrow.end -= state.console_state.width - ccol    
+            therow, nextrow = thepage.row[crow-1], thepage.row[crow]
+        nextrow.buf = (nextrow.buf[width-ccol+1:] + 
+                       [(' ', state.console_state.attr)] * (width-ccol+1)) 
+        nextrow.end -= width - ccol    
         backend.redraw_row(save_col-1, state.console_state.row)
         if nextrow.end <= 0:
             nextrow.end = 0
@@ -295,17 +358,18 @@ def delete_sbcs_char(crow, ccol):
             scroll(crow+1)
     elif ccol <= therow.end:
         while True:            
-            if therow.end < state.console_state.width or crow == state.console_state.scroll_height or not therow.wrap:
+            if (therow.end < width or crow == state.console_state.scroll_height
+                    or not therow.wrap):
                 del therow.buf[ccol-1]
                 therow.buf.insert(therow.end-1, (' ', state.console_state.attr))
                 break
             else:
-                nextrow = state.console_state.apage.row[crow]
+                nextrow = thepage.row[crow]
                 # wrap and end[row-1]==width
                 del therow.buf[ccol-1]
                 therow.buf.insert(therow.end-1, nextrow.buf[0])
                 crow += 1
-                therow, nextrow = state.console_state.apage.row[crow-1], state.console_state.apage.row[crow]
+                therow, nextrow = thepage.row[crow-1], thepage.row[crow]
                 ccol = 1
         # this works from *global* row onwrds
         backend.redraw_row(save_col-1, state.console_state.row)
@@ -315,8 +379,7 @@ def delete_sbcs_char(crow, ccol):
         else:
             scroll(crow)
             if crow > 1:
-                state.console_state.apage.row[crow-2].wrap = False            
-
+                thepage.row[crow-2].wrap = False            
     
 def clear_line(the_row):
     """ Clear from start of logical line to end of logical line (ESC). """
@@ -605,7 +668,7 @@ def show_keys(do_show):
         state.console_state.apage.row[24].end = state.console_state.width           
 
 def write_for_keys(s, col, cattr):
-    """ Write chars on the keys line, with no echo and some character replacements. """
+    """ Write chars on the keys line; no echo, some character replacements. """
     for c in s:
         if c == '\x00':
             # NUL character terminates display of a word
@@ -615,7 +678,8 @@ def write_for_keys(s, col, cattr):
                 c = keys_line_replace_chars[c]
             except KeyError:
                 pass    
-            backend.put_screen_char_attr(state.console_state.apage, 25, col, c, cattr, for_keys=True)    
+            backend.put_screen_char_attr(state.console_state.apage, 25, col,
+                                         c, cattr, for_keys=True)    
         col += 1
     backend.video.set_attr(state.console_state.attr)
     
@@ -623,6 +687,7 @@ def write_for_keys(s, col, cattr):
 # screen read/write
         
 def put_char(c, do_scroll_down=False):
+    """ Put one byte at the current position. """
     # check if scroll& repositioning needed
     if state.console_state.overflow:
         state.console_state.col += 1
@@ -633,11 +698,14 @@ def put_char(c, do_scroll_down=False):
     check_pos(scroll_ok=True) 
     # put the character
     backend.put_screen_char_attr(state.console_state.apage, 
-            state.console_state.row, state.console_state.col, c, state.console_state.attr)
+            state.console_state.row, state.console_state.col, 
+            c, state.console_state.attr)
     # adjust end of line marker
-    if state.console_state.col > state.console_state.apage.row[state.console_state.row-1].end:
+    if (state.console_state.col > 
+            state.console_state.apage.row[state.console_state.row-1].end):
          state.console_state.apage.row[state.console_state.row-1].end = state.console_state.col
-    # move cursor. if on col 80, only move cursor to the next row when the char is printed
+    # move cursor. if on col 80, only move cursor to the next row 
+    # when the char is printed
     if state.console_state.col < state.console_state.width:
         state.console_state.col += 1
     else:
@@ -646,6 +714,7 @@ def put_char(c, do_scroll_down=False):
     check_pos(scroll_ok=True)
     
 def check_wrap(do_scroll_down):    
+    """ Wrap if we need to. """
     if state.console_state.col > state.console_state.width:
         # wrap line
         state.console_state.apage.row[state.console_state.row-1].wrap = True
@@ -655,9 +724,11 @@ def check_wrap(do_scroll_down):
                 scroll_down(state.console_state.row+1)
         state.console_state.row += 1
         state.console_state.col = 1
-        backend.video.move_cursor(state.console_state.row, state.console_state.col)
+        backend.video.move_cursor(state.console_state.row, 
+                                  state.console_state.col)
             
 def set_pos(to_row, to_col, scroll_ok=True):
+    """ Set the current position. """
     state.console_state.overflow = False
     state.console_state.row, state.console_state.col = to_row, to_col
     check_pos(scroll_ok)
@@ -665,16 +736,18 @@ def set_pos(to_row, to_col, scroll_ok=True):
     backend.video.move_cursor(state.console_state.row,state. console_state.col)
 
 def check_pos(scroll_ok=True):
+    """ Check if we have crossed the screen boundaries and move as needed. """ 
     oldrow, oldcol = state.console_state.row, state.console_state.col
     if state.console_state.bottom_row_allowed:
         if state.console_state.row == state.console_state.height:
             state.console_state.col = min(state.console_state.width, state.console_state.col)
             if state.console_state.col < 1:
                 state.console_state.col += 1    
-            backend.video.move_cursor(state.console_state.row,state. console_state.col)
+            backend.video.move_cursor(state.console_state.row, state.console_state.col)
             return state.console_state.col == oldcol    
         else:
-            # if row > height, we also end up here (eg if we do INPUT on the bottom row)
+            # if row > height, we also end up here 
+            # (eg if we do INPUT on the bottom row)
             # adjust viewport if necessary
             state.console_state.bottom_row_allowed = False
     # see if we need to move to the next row        
@@ -702,7 +775,8 @@ def check_pos(scroll_ok=True):
         state.console_state.row = state.console_state.view_start
     backend.video.move_cursor(state.console_state.row,state. console_state.col)
     # signal position change
-    return state.console_state.row == oldrow and state.console_state.col == oldcol
+    return (state.console_state.row == oldrow and 
+             state.console_state.col == oldcol)
 
 def start_line():
     """ Move the cursor to the start of the next line, this line if empty. """

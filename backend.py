@@ -1059,8 +1059,8 @@ def peek_char():
     return ch 
     
 def key_down(scan, eascii=''):
-    global keypad_ascii
     """ Insert a key-down event. Keycode is extended ascii, including DBCS. """
+    global keypad_ascii
     # set port and low memory address regardless of event triggers
     if scan != None:
         state.console_state.inp_key = scan
