@@ -258,6 +258,7 @@ text_mode = {
                 has_blink = True),
     'mda':  ModeData(
                 font_height = 14, 
+                font_width = 9,
                 attr = 7,
                 num_attr = 32,
                 colours = colours_mda_mono,
