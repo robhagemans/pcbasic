@@ -160,6 +160,9 @@ def wait_interactive(from_start=False, alt_replace = True):
             furthest_right = max(col, furthest_right)
         # wait_char returns one e-ASCII code
         d = backend.pass_char(backend.wait_char())
+        # insert dbcs chars from keyboard buffer two bytes at a time
+        if d in unicodepage.lead and backend.peek_char() in unicodepage.trail:
+            d += backend.pass_char(backend.peek_char())
         if not d:
             # input stream closed
             raise error.Exit()
@@ -201,10 +204,9 @@ def wait_interactive(from_start=False, alt_replace = True):
             # RIGHT, CTRL+\
             # skip dbcs trail byte
             if state.console_state.apage.row[row-1].double[col-1] == 1:
-                skip = 2 
+                set_pos(row, col + 2, scroll_ok=False)
             else:
-                skip = 1   
-            set_pos(row, col + skip, scroll_ok=False)
+                set_pos(row, col + 1, scroll_ok=False)
         elif d in ('\0\x4b', '\x1d'): 
             # LEFT, CTRL+]
             set_pos(row, col - 1, scroll_ok=False)                
@@ -237,17 +239,21 @@ def wait_interactive(from_start=False, alt_replace = True):
                 letters = [d]
             if not alt_replace:
                 letters = [d]
-            for d in letters:        
+            for d in letters:
+                # ignore eascii by this point, but not dbcs        
                 if d[0] not in ('\x00', '\r'): 
                     if not state.console_state.overwrite_mode:
-                        insert_char(row, col, d, state.console_state.attr)
-                        # row and col have changed
-                        backend.redraw_row(state.console_state.col-1, 
-                                           state.console_state.row)
+                        for c in d:
+                            insert(row, col, c, state.console_state.attr)
+                            # row and col have changed
+                            backend.redraw_row(col-1, row)
+                            col += 1
                         set_pos(state.console_state.row, 
-                                state.console_state.col+1)
+                                state.console_state.col + len(d))
                     else:    
-                        put_char(d, do_scroll_down=True)
+                        # put all dbcs in before messing with cursor position
+                        for c in d:
+                            put_char(c, do_scroll_down=True)
         # move left if we end up on dbcs trail byte
         # FIXME this is what's wrong with pasting in dbcs text
         row, col = state.console_state.row, state.console_state.col 
@@ -293,9 +299,9 @@ def set_default_cursor():
     else:
         # half-block cursor for insert
         backend.set_cursor_shape(font_height/2, font_height-1)
-      
-def insert_char(crow, ccol, c, cattr):
-    """ Insert a character at the current position. """
+
+def insert(crow, ccol, c, cattr):
+    """ Insert a single byte at the current position. """
     while True:
         therow = state.console_state.apage.row[crow-1]
         therow.buf.insert(ccol-1, (c, cattr))
@@ -305,7 +311,7 @@ def insert_char(crow, ccol, c, cattr):
                 therow.end += 1
             else:
                 therow.end = ccol
-            break
+            break    
         else:
             if crow == state.console_state.scroll_height:
                 scroll()
@@ -317,7 +323,6 @@ def insert_char(crow, ccol, c, cattr):
             c, cattr = therow.buf.pop()
             crow += 1
             ccol = 1
-    return crow            
         
 def delete_char(crow, ccol):
     """ Delete the character (single/double width) at the current position. """
@@ -456,7 +461,7 @@ def tab():
         set_pos(row, col + 8, scroll_ok=False)
     else:
         for _ in range(8):
-            insert_char(row, col, ' ', state.console_state.attr)
+            insert(row, col, ' ', state.console_state.attr)
         backend.redraw_row(col - 1, row)
         set_pos(row, col + 8)
         
@@ -477,7 +482,7 @@ def line_feed():
     crow, ccol = state.console_state.row, state.console_state.col
     if ccol < state.console_state.apage.row[crow-1].end:
         for _ in range(state.console_state.width - ccol + 1):
-            insert_char(crow, ccol, ' ', state.console_state.attr)
+            insert(crow, ccol, ' ', state.console_state.attr)
         backend.redraw_row(ccol - 1, crow)
         state.console_state.apage.row[crow-1].end = ccol - 1 
     else:
