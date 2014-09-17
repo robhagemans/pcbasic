@@ -259,6 +259,7 @@ def wait_interactive(from_start=False, alt_replace = True):
             cursor_width = 2 * state.console_state.font_width
         else:
             cursor_width = state.console_state.font_width
+        # update cursor shape to new width if necessary    
         if cursor_width != state.console_state.cursor_width:
             state.console_state.cursor_width = cursor_width
             backend.video.build_cursor(
@@ -281,12 +282,16 @@ def set_default_cursor():
     font_height = state.console_state.font_height
     if state.console_state.overwrite_mode:
         if state.console_state.screen_mode != 0: 
+            # always a block cursor in graphics mode
             backend.set_cursor_shape(0, font_height-1)
         elif backend.video_capabilities == 'ega':
+            # EGA cursor is on second last line
             backend.set_cursor_shape(font_height-2, font_height-2)
         else:
+            # other cards have cursor on last line
             backend.set_cursor_shape(font_height-1, font_height-1)
     else:
+        # half-block cursor for insert
         backend.set_cursor_shape(font_height/2, font_height-1)
       
 def insert_char(crow, ccol, c, cattr):
@@ -336,10 +341,13 @@ def delete_sbcs_char(crow, ccol):
     therow = thepage.row[crow-1]
     width = state.console_state.width
     if crow > 1 and ccol >= therow.end and therow.wrap:
+        # row was an LF-ending row & we're deleting past the LF
         nextrow = thepage.row[crow]
-        # row was a LF-ending row
+        # replace everything after the delete location with 
+        # stuff from the next row
         therow.buf[ccol-1:] = nextrow.buf[:width-ccol+1] 
         therow.end = min(max(therow.end, ccol) + nextrow.end, width)
+        # and continue on the following rows as long as we wrap.
         while crow < state.console_state.scroll_height and nextrow.wrap:
             nextrow2 = thepage.row[crow+1]
             nextrow.buf = (nextrow.buf[width-ccol+1:] + 
@@ -347,36 +355,48 @@ def delete_sbcs_char(crow, ccol):
             nextrow.end = min(nextrow.end + nextrow2.end, width)
             crow += 1
             therow, nextrow = thepage.row[crow-1], thepage.row[crow]
+        # replenish last row with empty space
         nextrow.buf = (nextrow.buf[width-ccol+1:] + 
                        [(' ', state.console_state.attr)] * (width-ccol+1)) 
+        # adjust the row end
         nextrow.end -= width - ccol    
+        # redraw the full logical line from the original position onwards
         backend.redraw_row(save_col-1, state.console_state.row)
+        # if last row was empty, scroll up.
         if nextrow.end <= 0:
             nextrow.end = 0
             ccol += 1
             therow.wrap = False
             scroll(crow+1)
     elif ccol <= therow.end:
+        # row not ending with LF
         while True:            
             if (therow.end < width or crow == state.console_state.scroll_height
                     or not therow.wrap):
+                # no knock on to next row, just delete the char 
                 del therow.buf[ccol-1]
+                # and replenish the buffer at the end of the line
                 therow.buf.insert(therow.end-1, (' ', state.console_state.attr))
                 break
             else:
-                nextrow = thepage.row[crow]
                 # wrap and end[row-1]==width
+                nextrow = thepage.row[crow]
+                # delete the char and replenish from next row
                 del therow.buf[ccol-1]
                 therow.buf.insert(therow.end-1, nextrow.buf[0])
+                # then move on to the next row and delete the first char
                 crow += 1
                 therow, nextrow = thepage.row[crow-1], thepage.row[crow]
                 ccol = 1
-        # this works from *global* row onwrds
+        # redraw the full logical line
+        # this works from *global* row onwards
         backend.redraw_row(save_col-1, state.console_state.row)
+        # change the row end
         # this works on *local* row (last row edited)
         if therow.end > 0:
             therow.end -= 1
         else:
+            # if there was nothing on the line, scroll the next line up.
             scroll(crow)
             if crow > 1:
                 thepage.row[crow-2].wrap = False            
