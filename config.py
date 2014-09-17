@@ -209,7 +209,8 @@ arguments = {
         'type': 'string', 'metavar': 'TERM.BAS', 
         'help': 'Set the terminal program run by the PCjr TERM command' },
     'video': { 
-        'type': 'string', 'choices': ('ega', 'cga', 'cga_old', 'pcjr', 'tandy'), 
+        'type': 'string', 
+        'choices': ('vga', 'ega', 'cga', 'cga_old', 'pcjr', 'tandy'), 
         'help': 'Set the video card to emulate.' },
     'windows_map_drives': { 
         'type': 'bool', 
@@ -218,7 +219,7 @@ arguments = {
     'cga_low': { 
         'type': 'bool', 
         'help': 'Use low-intensity palettes in CGA '
-                '(for --video={cga,ega} only).' },
+                '(for --video={cga, ega, vga} only).' },
     'nobox': { 
         'type': 'bool', 
         'help': 'Disable box-drawing recognition for DBCS code pages' },

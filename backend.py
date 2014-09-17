@@ -457,11 +457,11 @@ def prepare_video():
     global colours16_mono, colours_ega_mono_0, colours_ega_mono_1, cga_low
     global colours_ega_mono_text
     global mode_data
-    egacursor = config.options['video'] == 'ega'
+    egacursor = config.options['video'] in ('ega', 'vga')
     video_capabilities = config.options['video']
     composite_monitor = config.options['monitor'] == 'composite'
     mono_monitor = config.options['monitor'] == 'mono'
-    if video_capabilities != 'ega':
+    if video_capabilities not in ('ega', 'vga'):
         state.console_state.colours = colours16
         state.console_state.palette = cga16_palette[:]
     cga_low = config.options['cga_low']
@@ -492,14 +492,17 @@ def prepare_video():
         available_modes = [1, 2]
         # 8-pixel characters, 16 colours in screen 0
         mode_data[0] = text_mode['cga']
-    else:
+    elif video_capabilities == 'ega':
         # EGA
         if mono_monitor:
             available_modes = [10]
             mode_data[0] = text_mode['mda']
         else:
             available_modes = [1, 2, 7, 8, 9]
-            mode_data[0] = text_mode['vga']  # using vga instead of ega for now
+            mode_data[0] = text_mode['ega']
+    else:
+        available_modes = [1, 2, 7, 8, 9]
+        mode_data[0] = text_mode['vga'] 
     # copy the mode data list
     for mode in available_modes:
         mode_data[mode] = graphics_modes[mode]
