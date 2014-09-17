@@ -98,6 +98,9 @@ if pygame:
     # letter shapes
     glyphs = []
     font = None
+    # the current attribute of the stored sbcs glyphs
+    current_attr = None
+    current_attr_context = None
     
     # cursor shape
     cursor = None
@@ -368,7 +371,7 @@ def init_screen_mode(mode_info, is_text_mode=False):
     global glyphs, cursor
     global screen_changed, canvas
     global font, under_cursor, size, text_mode
-    global font_height, attr
+    global font_height
     global width, num_pages, bitsperpixel, font_width
     global mode_has_artifacts, cursor_fixed_attr, mode_has_blink
     text_mode = is_text_mode
@@ -547,8 +550,6 @@ def scroll_down(from_line, scroll_height, attr):
     canvas[apagenum].set_clip(None)
     screen_changed = True
 
-current_attr = None
-current_attr_context = None
 def set_attr(cattr, force_rebuild=False):
     global current_attr, current_attr_context
     if (not force_rebuild and cattr == current_attr and apagenum == current_attr_context):
@@ -571,7 +572,7 @@ def putc_at(row, col, c, for_keys=False):
 def putwc_at(row, col, c, d, for_keys=False):
     global screen_changed
     glyph = build_glyph(c+d, font, 16, font_height)
-    color, bg = get_palette_index(attr)    
+    color, bg = get_palette_index(current_attr)    
     glyph.set_palette_at(255, bg)
     glyph.set_palette_at(254, color)
     blank = pygame.Surface((16, font_height), depth=8)
