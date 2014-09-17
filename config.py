@@ -424,6 +424,21 @@ def parse_int_arg(inargs):
         except ValueError:
             logging.warning('Illegal number value %s ignored', inargs)         
     return None
+
+#########################################################
+
+def parse_pair(option, default):
+    """ Split a string option into int values. """
+    if options[option]:
+        try:
+            sx, sy = options[option].split(',')
+            x, y = int(sx), int(sy)
+        except (ValueError, TypeError):
+            logging.warning('Could not parse option: %s=%s. '
+                            'Provide two values separated by a comma.', 
+                            option, options[option]) 
+        return x, y
+    return default    
         
 # initialise this module    
 prepare()

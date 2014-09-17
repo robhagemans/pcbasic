@@ -49,85 +49,85 @@ fonts = {}
 # screen aspect ratio x, y
 aspect = (4, 3)
 
+# composite palettes, see http://nerdlypleasures.blogspot.co.uk/2013_11_01_archive.html
+composite_640 = {
+    'cga_old': [
+        (0x00, 0x00, 0x00),        (0x00, 0x71, 0x00),        (0x00, 0x3f, 0xff),        (0x00, 0xab, 0xff),
+        (0xc3, 0x00, 0x67),        (0x73, 0x73, 0x73),        (0xe6, 0x39, 0xff),        (0x8c, 0xa8, 0xff),
+        (0x53, 0x44, 0x00),        (0x00, 0xcd, 0x00),        (0x73, 0x73, 0x73),        (0x00, 0xfc, 0x7e),
+        (0xff, 0x39, 0x00),        (0xe2, 0xca, 0x00),        (0xff, 0x7c, 0xf4),        (0xff, 0xff, 0xff)    ],
+    'cga': [
+        (0x00, 0x00, 0x00),        (0x00, 0x6a, 0x2c),        (0x00, 0x39, 0xff),        (0x00, 0x94, 0xff),        
+        (0xca, 0x00, 0x2c),        (0x77, 0x77, 0x77),        (0xff, 0x31, 0xff),        (0xc0, 0x98, 0xff),
+        (0x1a, 0x57, 0x00),        (0x00, 0xd6, 0x00),        (0x77, 0x77, 0x77),        (0x00, 0xf4, 0xb8),
+        (0xff, 0x57, 0x00),        (0xb0, 0xdd, 0x00),        (0xff, 0x7c, 0xb8),        (0xff, 0xff, 0xff)    ],
+    'tandy': [
+        (0x00, 0x00, 0x00),        (0x7c, 0x30, 0x00),        (0x00, 0x75, 0x00),        (0x00, 0xbe, 0x00),        
+        (0x00, 0x47, 0xee),        (0x77, 0x77, 0x77),        (0x00, 0xbb, 0xc4),        (0x00, 0xfb, 0x3f),        
+        (0xb2, 0x0f, 0x9d),        (0xff, 0x1e, 0x0f),        (0x77, 0x77, 0x77),        (0xff, 0xb8, 0x00),        
+        (0xb2, 0x44, 0xff),        (0xff, 0x78, 0xff),        (0x4b, 0xba, 0xff),        (0xff, 0xff, 0xff)    ],      
+    'pcjr': [
+        (0x00, 0x00, 0x00),
+        (0x98, 0x20, 0xcb),        (0x9f, 0x1c, 0x00),        (0xff, 0x11, 0x71),        (0x00, 0x76, 0x00),
+        (0x77, 0x77, 0x77),        (0x5b, 0xaa, 0x00),        (0xff, 0xa5, 0x00),        (0x00, 0x4e, 0xcb),
+        (0x74, 0x53, 0xff),        (0x77, 0x77, 0x77),        (0xff, 0x79, 0xff),        (0x00, 0xc8, 0x71),
+        (0x00, 0xcc, 0xff),        (0x00, 0xfa, 0x00),        (0xff, 0xff, 0xff) ]        }
+                    
+composite_artifacts = False
+composite_monitor = False
+mode_has_artifacts = False
+mono_monitor = False
+    
+# working palette - attribute index in blue channel
+workpalette = [(0, 0, b * 16 + f) for b in range(16) for f in range(16)]
+# display palettes for blink states 0, 1
+gamepalette = [None, None]
+
+# border attribute
+border_attr = 0
+# border widh in pixels
+border_width = 4
+
+# screen width and height in pixels
+display_size = (640, 480)
+
+fullscreen = False
+smooth = False
+# ignore ALT+F4 (and consequently window X button)
+noquit = False
+
+# letter shapes
+glyphs = []
+font = None
+# the current attribute of the stored sbcs glyphs
+current_attr = None
+current_attr_context = None
+
+# cursor shape
+cursor = None
+# screen & updating 
+canvas = []
+    
+screen_changed = True
+cycle = 0
+last_cycle = 0
+cycle_time = 120 
+blink_cycles = 5
+
+# current cursor location
+last_row = 1
+last_col = 1    
+
+under_cursor = None
+under_top_left = None
+
+# available joy sticks
+joysticks = []    
+
+# store for fast get & put arrays
+get_put_store = {}
+
 if pygame:
-    # composite palettes, see http://nerdlypleasures.blogspot.co.uk/2013_11_01_archive.html
-    composite_640 = {
-        'cga_old': [
-            (0x00, 0x00, 0x00),        (0x00, 0x71, 0x00),        (0x00, 0x3f, 0xff),        (0x00, 0xab, 0xff),
-            (0xc3, 0x00, 0x67),        (0x73, 0x73, 0x73),        (0xe6, 0x39, 0xff),        (0x8c, 0xa8, 0xff),
-            (0x53, 0x44, 0x00),        (0x00, 0xcd, 0x00),        (0x73, 0x73, 0x73),        (0x00, 0xfc, 0x7e),
-            (0xff, 0x39, 0x00),        (0xe2, 0xca, 0x00),        (0xff, 0x7c, 0xf4),        (0xff, 0xff, 0xff)    ],
-        'cga': [
-            (0x00, 0x00, 0x00),        (0x00, 0x6a, 0x2c),        (0x00, 0x39, 0xff),        (0x00, 0x94, 0xff),        
-            (0xca, 0x00, 0x2c),        (0x77, 0x77, 0x77),        (0xff, 0x31, 0xff),        (0xc0, 0x98, 0xff),
-            (0x1a, 0x57, 0x00),        (0x00, 0xd6, 0x00),        (0x77, 0x77, 0x77),        (0x00, 0xf4, 0xb8),
-            (0xff, 0x57, 0x00),        (0xb0, 0xdd, 0x00),        (0xff, 0x7c, 0xb8),        (0xff, 0xff, 0xff)    ],
-        'tandy': [
-            (0x00, 0x00, 0x00),        (0x7c, 0x30, 0x00),        (0x00, 0x75, 0x00),        (0x00, 0xbe, 0x00),        
-            (0x00, 0x47, 0xee),        (0x77, 0x77, 0x77),        (0x00, 0xbb, 0xc4),        (0x00, 0xfb, 0x3f),        
-            (0xb2, 0x0f, 0x9d),        (0xff, 0x1e, 0x0f),        (0x77, 0x77, 0x77),        (0xff, 0xb8, 0x00),        
-            (0xb2, 0x44, 0xff),        (0xff, 0x78, 0xff),        (0x4b, 0xba, 0xff),        (0xff, 0xff, 0xff)    ],      
-        'pcjr': [
-            (0x00, 0x00, 0x00),
-            (0x98, 0x20, 0xcb),        (0x9f, 0x1c, 0x00),        (0xff, 0x11, 0x71),        (0x00, 0x76, 0x00),
-            (0x77, 0x77, 0x77),        (0x5b, 0xaa, 0x00),        (0xff, 0xa5, 0x00),        (0x00, 0x4e, 0xcb),
-            (0x74, 0x53, 0xff),        (0x77, 0x77, 0x77),        (0xff, 0x79, 0xff),        (0x00, 0xc8, 0x71),
-            (0x00, 0xcc, 0xff),        (0x00, 0xfa, 0x00),        (0xff, 0xff, 0xff) ]        }
-                        
-    composite_artifacts = False
-    composite_monitor = False
-    mode_has_artifacts = False
-    mono_monitor = False
-        
-    # working palette - attribute index in blue channel
-    workpalette = [(0, 0, b * 16 + f) for b in range(16) for f in range(16)]
-    # display palettes for blink states 0, 1
-    gamepalette = [None, None]
-
-    # border attribute
-    border_attr = 0
-    # border widh in pixels
-    border_width = 4
-
-    # screen width and height in pixels
-    display_size = (640, 480)
-    
-    fullscreen = False
-    smooth = False
-    # ignore ALT+F4 (and consequently window X button)
-    noquit = False
-
-    # letter shapes
-    glyphs = []
-    font = None
-    # the current attribute of the stored sbcs glyphs
-    current_attr = None
-    current_attr_context = None
-    
-    # cursor shape
-    cursor = None
-    # screen & updating 
-    canvas = []
-        
-    screen_changed = True
-    cycle = 0
-    last_cycle = 0
-    cycle_time = 120 
-    blink_cycles = 5
-
-    # current cursor location
-    last_row = 1
-    last_col = 1    
-    
-    under_cursor = None
-    under_top_left = None
-
-    # available joy sticks
-    joysticks = []    
-
-    # store for fast get & put arrays
-    get_put_store = {}
-
     # these are PC keyboard scancodes
     key_to_scan = {
         # top row
@@ -195,32 +195,20 @@ if pygame:
         pygame.K_BREAK: scancode.BREAK,
     }
     
-    # cursor is visible
-    cursor_visible = True
+# cursor is visible
+cursor_visible = True
 
-    # this doesn't currently change
-    height = 25
+# this doesn't currently change
+height = 25
 
-    # mouse button functions
-    mousebutton_copy = 1
-    mousebutton_paste = 2
-    mousebutton_pen = 3
+# mouse button functions
+mousebutton_copy = 1
+mousebutton_paste = 2
+mousebutton_pen = 3
 
     
 ####################################            
 # set constants based on commandline arguments
-
-def parse_config_pair(option, default):
-    if config.options[option]:
-        try:
-            sx, sy = config.options[option].split(',')
-            x, y = int(sx), int(sy)
-        except (ValueError, TypeError):
-            logging.warning('Could not parse option: %s=%s. '
-                            'Provide two values separated by a comma.', 
-                            option, config.options[option]) 
-        return x, y
-    return default    
 
 def prepare():
     global fullscreen, smooth, noquit, force_display_size
@@ -229,8 +217,8 @@ def prepare():
     global mousebutton_copy, mousebutton_paste, mousebutton_pen
     global mono_monitor, font_families, aspect, force_square_pixel
     # display dimensions
-    force_display_size = parse_config_pair('dimensions', None)
-    aspect = parse_config_pair('aspect', aspect)
+    force_display_size = config.parse_pair('dimensions', None)
+    aspect = config.parse_pair('aspect', aspect)
     border_width = config.options['border_width']
     force_square_pixel = config.options['square_pixel']
     fullscreen = config.options['fullscreen']
