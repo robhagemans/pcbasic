@@ -155,22 +155,14 @@ arguments = {
         'help': 'Disable sound output' },
     'dimensions': { 
         'type': 'string', 'metavar':'X,Y', 
-        'help': 'Set pixel dimensions for graphics mode. Default is 640,480. '
-                'Use 640,400 or multiples for cleaner pixels - but incorrect '
-                'aspect ratio - on square-pixel LCDs. '
-                'Graphical interface only.' },
-    'dimensions_text':  { 
-        'type': 'string', 'metavar':'X,Y', 
-        'help': 'Set pixel dimensions for text mode. Default is 640,400. '
+        'help': 'Set pixel dimensions for graphics mode. Overrides '
+                '--square_pixel and --aspect.'
                 'Graphical interface only.' },
     'fullscreen': { 
         'type': 'bool',
         'help': 'Fullscreen mode. This is unlikely to have either the correct '
                 'aspect ratio or clean square pixels, but it does take up the '
                 'whole screen. Graphical interface only.' },
-    'smooth': { 
-        'type': 'bool',
-        'help': 'Use smooth display scaling. Graphical interface only.' },
     'noquit': { 
         'type': 'bool',
         'help': 'Allow BASIC to capture <ALT+F4>. Graphical interface only.' },
@@ -245,6 +237,14 @@ arguments = {
         'help': 'Sets the monitor type to emulate.' 
                 'Composite enables colour artifacts, crudely, on SCREEN 2 only '
                 'and is not allowed for --video=ega' },
+    'aspect': {
+        'type': 'string', 'metavar': 'x,y',
+        'help': 'Set the display aspect ratio to x/y. '
+                'Graphical interface only.' },
+    'square_pixel': {
+        'type': 'bool',
+        'help': 'Set the screen size such that pixels are square. '
+                'Overrides --aspect. Graphical interface only.' },                
 }
 
 def prepare():

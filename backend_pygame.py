@@ -46,6 +46,9 @@ import state
 font_families = ['unifont', 'univga', 'freedos']
 fonts = {}
 
+# screen aspect ratio x, y
+aspect = (4, 3)
+
 if pygame:
     # composite palettes, see http://nerdlypleasures.blogspot.co.uk/2013_11_01_archive.html
     composite_640 = {
@@ -88,7 +91,6 @@ if pygame:
 
     # screen width and height in pixels
     display_size = (640, 480)
-    display_size_text = (640, 480)
     
     fullscreen = False
     smooth = False
@@ -208,51 +210,55 @@ if pygame:
 ####################################            
 # set constants based on commandline arguments
 
+def parse_config_pair(option, default):
+    if config.options[option]:
+        try:
+            sx, sy = config.options[option].split(',')
+            x, y = int(sx), int(sy)
+        except (ValueError, TypeError):
+            logging.warning('Could not parse option: %s=%s. '
+                            'Provide two values separated by a comma.', 
+                            option, config.options[option]) 
+        return x, y
+    return default    
+
 def prepare():
-    global fullscreen, smooth, noquit, display_size
-    global display_size_text, composite_monitor, heights_needed
+    global fullscreen, smooth, noquit, force_display_size
+    global composite_monitor, heights_needed
     global composite_640_palette, border_width
     global mousebutton_copy, mousebutton_paste, mousebutton_pen
-    global mono_monitor, font_families
-    # screen width and height in pixels
+    global mono_monitor, font_families, aspect, force_square_pixel
+    # display dimensions
+    force_display_size = parse_config_pair('dimensions', None)
+    aspect = parse_config_pair('aspect', aspect)
     border_width = config.options['border_width']
-    display_size = (640 + 2*border_width, 480 + 2*border_width)
-    display_size_text = (8*80 + 2*border_width, 16*25 + 2*border_width)
-    if config.options['video'] in ('cga', 'cga_old', 'tandy', 'pcjr'):
-        heights_needed = (8, )
-    elif config.options['video'] in ('mda', 'ega'):
-        heights_needed = (14, 8)
-    else:
-        heights_needed = (16, 14, 8)
-    if config.options['dimensions']:
-        try:
-            x, y = config.options['dimensions'].split(',')
-            display_size = (int(x), int(y))
-        except (ValueError, TypeError):
-            logging.warning('Could not parse option: dimensions=%s. Use two values '
-                            'separated by a comma.', config.options['dimensions']) 
-    if config.options['dimensions_text']:
-        try:
-            x, y = config.options['dimensions_text'].split(',')
-            display_size_text = (int(x), int(y))
-        except (ValueError, TypeError):
-            logging.warning('Could not parse option: dimensions_text=%s. Use two values '
-                            'separated by a comma.', config.options['dimensions_text']) 
+    force_square_pixel = config.options['square_pixel']
     fullscreen = config.options['fullscreen']
-    smooth = config.options['smooth']    
+    smooth = not config.options['square_pixel']
+    # don't catch Alt+F4    
     noquit = config.options['noquit']
+    # monitor choice
     mono_monitor =  config.options['monitor'] == 'mono'
     # if no composite palette available for this card, ignore.
     composite_monitor = (config.options['monitor'] == 'composite' and
                          config.options['video'] in composite_640)
     if composite_monitor:
             composite_640_palette = composite_640[config.options['video']]
+    # keyboard setting based on video card...
     if config.options['video'] == 'tandy':
         # enable tandy F11, F12
         key_to_scan[pygame.K_F11] = scancode.F11
         key_to_scan[pygame.K_F12] = scancode.F12
+    # fonts
+    if config.options['video'] in ('cga', 'cga_old', 'tandy', 'pcjr'):
+        heights_needed = (8, )
+    elif config.options['video'] in ('mda', 'ega'):
+        heights_needed = (14, 8)
+    else:
+        heights_needed = (16, 14, 8)
     if config.options['font']:
         font_families = config.options['font']
+    # mouse setups
     if config.options['mouse']:
         mousebutton_copy = -1
         mousebutton_paste = -1
@@ -264,7 +270,6 @@ def prepare():
                 mousebutton_paste = i+1
             elif s == 'pen':
                 mousebutton_pen = i+1
-            
         
 ####################################
 # state saving and loading
@@ -305,7 +310,7 @@ def load_state():
 
 def init():
     """ Initialise pygame interface. """
-    global joysticks, physical_size, scrap, display_size, display_size_text
+    global joysticks, physical_size, scrap, display_size
     global text_mode
     # set state objects to whatever is now in state (may have been unpickled)
     if not pygame:
@@ -323,11 +328,13 @@ def init():
     physical_size = display_info.current_w, display_info.current_h
     # draw the icon
     pygame.display.set_icon(build_icon())
+    # determine initial display size
+    display_size = find_display_size(640, 480)   
     # first set the screen non-resizeable, to trick things like maximus into not full-screening
     # I hate it when applications do this ;)
     if not fullscreen:
-        pygame.display.set_mode(display_size_text, 0, 8)
-    resize_display(*display_size_text, initial=True)
+        pygame.display.set_mode(display_size, 0, 8)
+    resize_display(*display_size, initial=True)
     pygame.display.set_caption('PC-BASIC 3.23')
     pygame.key.set_repeat(500, 24)
     # load a game palette to get started
@@ -396,10 +403,9 @@ def init_screen_mode(mode_info, is_text_mode=False):
               for c in range(256)]
     # initialise glyph colour
     set_attr(attr, force_rebuild=True)
-    if is_text_mode:
-        resize_display(*display_size_text)
-    else:
-        resize_display(*display_size)
+    pixel_width = 2 * border_width + width * font_width
+    pixel_height = 2 * border_width + 25 * font_height
+    resize_display(*find_display_size(pixel_width, pixel_height))
     # logical size    
     height = 25
     size = (width * font_width, height * font_height)    
@@ -410,6 +416,18 @@ def init_screen_mode(mode_info, is_text_mode=False):
     for i in range(num_pages):
         canvas[i].set_palette(workpalette)
     screen_changed = True
+
+def find_display_size(pixel_x, pixel_y):
+    """ Determine the optimal size for the display. """
+    if force_display_size:
+        return force_display_size
+    if not force_square_pixel:
+        pixel_y = (pixel_x * aspect[1]) // aspect[0]
+    xmult = physical_size[0] // pixel_x
+    ymult = physical_size[1] // pixel_y
+    # find the maximum multiplier that keeps everything fitting on screen
+    mult = max(1, min(xmult, ymult))
+    return mult * pixel_x, mult * pixel_y
     
 def resize_display(width, height, initial=False): 
     """ Change the display size. """
@@ -422,8 +440,6 @@ def resize_display(width, height, initial=False):
         flags |= pygame.FULLSCREEN | pygame.NOFRAME
         if (not initial and not text_mode):
             width, height = display_size 
-        else:    
-            width, height = display_size_text
         # scale suggested dimensions to largest integer times pixel size that fits
         scale = min( physical_size[0]//width, physical_size[1]//height )
         width, height = width * scale, height * scale
