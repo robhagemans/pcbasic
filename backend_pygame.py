@@ -86,8 +86,9 @@ gamepalette = [None, None]
 # border attribute
 border_attr = 0
 # border widh in pixels
-border_width = 4
-
+border_width = 2
+# percentage of the screen to leave unused for indow decorations etc.
+display_slack = 5
 # screen width and height in pixels
 display_size = (640, 480)
 
@@ -219,7 +220,7 @@ def prepare():
     # display dimensions
     force_display_size = config.parse_pair('dimensions', None)
     aspect = config.parse_pair('aspect', aspect)
-    border_width = config.options['border_width']
+    border_width = config.options['border']
     force_square_pixel = config.options['blocky']
     fullscreen = config.options['fullscreen']
     smooth = not config.options['blocky']
@@ -393,8 +394,8 @@ def init_screen_mode(mode_info, is_text_mode=False):
               for c in range(256)]
     # initialise glyph colour
     set_attr(attr, force_rebuild=True)
-    pixel_width = 2 * border_width + width * font_width
-    pixel_height = 2 * border_width + 25 * font_height
+    pixel_width = int(width * font_width * (1 + border_width/100.))
+    pixel_height = int(25 * font_height * (1 + border_width/100.))
     resize_display(*find_display_size(pixel_width, pixel_height))
     # logical size    
     height = 25
@@ -414,10 +415,10 @@ def find_display_size(pixel_x, pixel_y): # separate out border_width
     if not force_square_pixel:
         # scale y to match aspect ratio
         pixel_y = (pixel_x * aspect[1]) / aspect[0]
-    # leave 10% of the screen either direction unused
+    # leave 5% of the screen either direction unused
     # to account for task bars, window decorations, etc.    
-    xmult = int(0.9 * physical_size[0] / pixel_x)
-    ymult = int(0.9 * physical_size[1] / pixel_y)
+    xmult = int((100.-display_slack) * physical_size[0] / (100.*pixel_x))
+    ymult = int((100.-display_slack) * physical_size[1] / (100.*pixel_y))
     if force_square_pixel:
         # find the multipliers mx <= xmult, my <= ymult
         # such that mx * pixel_x / my * pixel_y 
@@ -747,13 +748,16 @@ def apply_composite_artifacts(screen, pixels=4):
     
 def do_flip(blink_state):
     # create the screen that will be stretched onto the display
-    screen = pygame.Surface((size[0]+2*border_width, size[1]+2*border_width), 0, canvas[vpagenum])
+    border_x = int(size[0] * border_width / 200.)
+    border_y = int(size[1] * border_width / 200.)
+    screen = pygame.Surface((size[0] + 2*border_x, size[1] + 2*border_y),
+                             0, canvas[vpagenum])
     screen.set_palette(workpalette)
     # border colour
     screen.fill(pygame.Color(0, border_attr, border_attr))
-    screen.blit(canvas[vpagenum], (border_width, border_width))
+    screen.blit(canvas[vpagenum], (border_x, border_y))
     # subsurface referencing the canvas area
-    workscreen = screen.subsurface((border_width, border_width, size[0], size[1]))
+    workscreen = screen.subsurface((border_x, border_y, size[0], size[1]))
     draw_cursor(workscreen)
     if scrap.active():
         scrap.create_feedback(workscreen)

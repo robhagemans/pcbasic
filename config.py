@@ -216,9 +216,9 @@ arguments = {
     'utf8': { 
         'type': 'bool', 
         'help': 'Use UTF-8 for ascii-mode programs and redirected i/o' },
-    'border_width': { 
+    'border': { 
         'type': 'int', 
-        'help': 'Width of the screen border in pixels '
+        'help': 'Width of the screen border as a percentage 0-100 '
                 '(graphical interface only).' },
     'mouse': {
         'type': 'string', 'metavar': 'left,middle,right', 
