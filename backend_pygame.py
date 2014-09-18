@@ -381,6 +381,7 @@ def init_screen_mode(mode_info, is_text_mode=False):
     global font_height
     global width, num_pages, bitsperpixel, font_width
     global mode_has_artifacts, cursor_fixed_attr, mode_has_blink
+    global mode_has_underline
     text_mode = is_text_mode
     # unpack mode info struct
     font_height = mode_info.font_height
@@ -392,6 +393,7 @@ def init_screen_mode(mode_info, is_text_mode=False):
     mode_has_artifacts = mode_info.supports_artifacts
     cursor_fixed_attr = mode_info.cursor_index
     mode_has_blink = mode_info.has_blink
+    mode_has_underline = mode_info.has_underline
     font = fonts[font_height]
     glyphs = [build_glyph(chr(c), font, font_width, font_height) 
               for c in range(256)]
@@ -602,13 +604,18 @@ def set_attr(cattr, force_rebuild=False):
         glyph.set_palette_at(254, color)
     current_attr = cattr    
     current_attr_context = apagenum
-        
+
 def putc_at(row, col, c, for_keys=False):
     global screen_changed
     glyph = glyphs[ord(c)]
     blank = glyphs[0] # using \0 for blank (tyoeface.py guarantees it's empty)
     top_left = ((col-1) * font_width, (row-1) * font_height)
     canvas[apagenum].blit(glyph, top_left)
+    if mode_has_underline and (current_attr % 8 == 1):
+        color, _ = get_palette_index(current_attr)    
+        for xx in range(font_width):
+            canvas[apagenum].set_at(((col-1) * font_width + xx, 
+                                       row*font_height - 1), color)
     screen_changed = True
 
 def putwc_at(row, col, c, d, for_keys=False):

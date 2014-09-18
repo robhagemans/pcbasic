@@ -219,7 +219,7 @@ class ModeData(object):
                  palette, colours, colours1=None, 
                  font_width=8, 
                  supports_artifacts=False, cursor_index=None, has_blink=False,
-                 pixel_aspect=None):
+                 pixel_aspect=None, has_underline=False):
         """ Settings for one video mode. """         
         self.font_height = font_height
         self.attr = attr
@@ -234,6 +234,7 @@ class ModeData(object):
         self.supports_artifacts = supports_artifacts
         self.cursor_index = cursor_index
         self.has_blink = has_blink
+        self.has_underline = has_underline
         self.pixel_aspect = pixel_aspect
             
 # video modes
@@ -269,7 +270,8 @@ text_mode = {
                 width = 80,
                 num_pages = 4,
                 bitsperpixel = 4,
-                has_blink = True),
+                has_blink = True,
+                has_underline = True),
     'mda':  ModeData(
                 font_height = 14, 
                 font_width = 9,
@@ -280,7 +282,8 @@ text_mode = {
                 width = 80,
                 num_pages = 4,
                 bitsperpixel = 4,
-                has_blink = True),
+                has_blink = True,
+                has_underline = True),
     'cga':  ModeData(
                 font_height = 8, 
                 attr = 7,
