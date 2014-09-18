@@ -255,7 +255,6 @@ def wait_interactive(from_start=False, alt_replace = True):
                         for c in d:
                             put_char(c, do_scroll_down=True)
         # move left if we end up on dbcs trail byte
-        # FIXME this is what's wrong with pasting in dbcs text
         row, col = state.console_state.row, state.console_state.col 
         if state.console_state.apage.row[row-1].double[col-1] == 2:
             set_pos(row, col-1, scroll_ok=False) 
@@ -292,6 +291,9 @@ def set_default_cursor():
             backend.set_cursor_shape(0, font_height-1)
         elif backend.video_capabilities == 'ega':
             # EGA cursor is on second last line
+            backend.set_cursor_shape(font_height-2, font_height-2)
+        elif font_height == 9:
+            # Tandy 9-pixel fonts; cursor on 8th
             backend.set_cursor_shape(font_height-2, font_height-2)
         else:
             # other cards have cursor on last line
