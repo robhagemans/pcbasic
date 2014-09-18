@@ -291,6 +291,16 @@ text_mode = {
                 num_pages = 4, # do we have 4 pages on CGA/Tandy text?
                 bitsperpixel = 4,
                 has_blink = True),
+    'tandy':  ModeData(
+                font_height = 9, 
+                attr = 7,
+                num_attr = 32,
+                colours = colours16,
+                palette = cga16_palette,
+                width = 80,
+                num_pages = 4, # do we have 4 pages on CGA/Tandy text?
+                bitsperpixel = 4,
+                has_blink = True),
     }
 
 # Tandy/PCjr pixel aspect ratio is different from normal
@@ -508,11 +518,16 @@ def prepare_video():
         colours16[:] = colours16_mono
     # prepare video mode list
     # only allow the screen modes that the given machine supports
-    if video_capabilities in ('pcjr', 'tandy'):
+    if video_capabilities in ('pcjr'):
         # no EGA modes (though apparently there were Tandy machines with EGA)
         available_modes = [1, 2, 3, 4, 5, 6]
         # 8-pixel characters, 16 colours in screen 0
         mode_data[0] = text_mode['cga']
+    elif video_capabilities == 'tandy':
+        # no EGA modes (though apparently there were Tandy machines with EGA)
+        available_modes = [1, 2, 3, 4, 5, 6]
+        # 8-pixel characters, 16 colours in screen 0
+        mode_data[0] = text_mode['tandy']
         # TODO: determine the number of pages based on video memory size 
     elif video_capabilities in ('cga', 'cga_old'):
         available_modes = [1, 2]

@@ -357,6 +357,9 @@ def load_fonts(heights_needed):
         # load a Unifont .hex font and take the codepage subset
         fonts[height] = typeface.load(font_families, height, 
                                       unicodepage.cp_to_utf8)
+        if height == 8:
+            # also link as 9-pixel font for tandy
+            fonts[9] = fonts[8]                              
         # fix missing code points font based on 16-line font
         if 16 in fonts:
             typeface.fixfont(height, fonts[height], 
@@ -621,8 +624,10 @@ def putwc_at(row, col, c, d, for_keys=False):
     canvas[apagenum].blit(glyph, top_left)
     screen_changed = True
     
-
-carry_col_9 = range(0xc0, 0xdf+1)
+# ascii codepoints for which to repeat column 8 in column 9 (box drawing)
+carry_col_9 = [chr(c) for c in range(0xc0, 0xdf+1)]
+# ascii codepoints for which to repeat row 8 in row 9 (box drawing)
+carry_row_9 = [chr(c) for c in range(0xb0, 0xdf+1)]
 
 def build_glyph(c, font_face, req_width, req_height):
     color, bg = 254, 255
@@ -633,16 +638,17 @@ def build_glyph(c, font_face, req_width, req_height):
         # codepoint 0 must be blank by our definitions
         face = font_face['\0']
         c = '\0'
-    if len(face) < req_height*req_width//8:
-        u = unicodepage.cp_to_utf8[c]
-        logging.debug('Incorrect glyph width for %s [%s, code point %x].', repr(c), u, ord(u.decode('utf-8')))
-    glyph_width, glyph_height = 8*len(face)//req_height, req_height    
+    code_height = 8 if req_height == 9 else req_height    
+    glyph_width, glyph_height = 8*len(face)//code_height, req_height
     if req_width <= glyph_width + 2:
         # allow for 9-pixel widths (18-pixel dwidths) without scaling
         glyph_width = req_width
+    if len(face) < code_height*req_width//8:
+        u = unicodepage.cp_to_utf8[c]
+        logging.debug('Incorrect glyph width for %s [%s, code point %x].', repr(c), u, ord(u.decode('utf-8')))
     glyph = pygame.Surface((glyph_width, glyph_height), depth=8)
     glyph.fill(bg)
-    for yy in range(glyph_height):
+    for yy in range(code_height):
         for half in range(glyph_width//8):    
             line = ord(face[yy*(glyph_width//8)+half])
             for xx in range(8):
@@ -652,7 +658,13 @@ def build_glyph(c, font_face, req_width, req_height):
         if c in carry_col_9 and glyph_width == 9:
             if line & 1 == 1:
                 glyph.set_at((8, yy), color)
-    if req_width > glyph_width + 2:
+    # tandy 9-bit high characters            
+    if c in carry_row_9 and glyph_height == 9:
+        line = ord(face[7*(glyph_width//8)])
+        for xx in range(8):
+            if (line >> (7-xx)) & 1 == 1:
+                glyph.set_at((xx, 8), color)
+    if req_width > glyph_width:
         glyph = pygame.transform.scale(glyph, (req_width, req_height))    
     return glyph        
         
