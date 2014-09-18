@@ -240,7 +240,9 @@ def prepare():
     # fonts
     if config.options['video'] in ('cga', 'cga_old', 'tandy', 'pcjr'):
         heights_needed = (8, )
-    elif config.options['video'] in ('mda', 'ega'):
+    elif config.options['video'] == 'mda':
+        heights_needed = (14, )
+    elif config.options['video'] == 'ega':
         heights_needed = (14, 8)
     else:
         heights_needed = (16, 14, 8)
