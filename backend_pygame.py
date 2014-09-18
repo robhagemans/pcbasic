@@ -220,9 +220,9 @@ def prepare():
     force_display_size = config.parse_pair('dimensions', None)
     aspect = config.parse_pair('aspect', aspect)
     border_width = config.options['border_width']
-    force_square_pixel = config.options['square_pixel']
+    force_square_pixel = config.options['blocky']
     fullscreen = config.options['fullscreen']
-    smooth = not config.options['square_pixel']
+    smooth = not config.options['blocky']
     # don't catch Alt+F4    
     noquit = config.options['noquit']
     # monitor choice

@@ -156,13 +156,11 @@ arguments = {
     'dimensions': { 
         'type': 'string', 'metavar':'X,Y', 
         'help': 'Set pixel dimensions for graphics mode. Overrides '
-                '--square_pixel and --aspect.'
+                '--blocky and --aspect.'
                 'Graphical interface only.' },
     'fullscreen': { 
         'type': 'bool',
-        'help': 'Fullscreen mode. This is unlikely to have either the correct '
-                'aspect ratio or clean square pixels, but it does take up the '
-                'whole screen. Graphical interface only.' },
+        'help': 'Fullscreen mode. Graphical interface only.' },
     'noquit': { 
         'type': 'bool',
         'help': 'Allow BASIC to capture <ALT+F4>. Graphical interface only.' },
@@ -241,10 +239,10 @@ arguments = {
         'type': 'string', 'metavar': 'x,y',
         'help': 'Set the display aspect ratio to x/y. '
                 'Graphical interface only.' },
-    'square_pixel': {
+    'blocky': {
         'type': 'bool',
-        'help': 'Set the screen size such that pixels are square. '
-                'Overrides --aspect. Graphical interface only.' },                
+        'help': 'Choose whole multiples of pixel size for display and do not '
+                'smoothen. Overrides --aspect. Graphical interface only.' },                
 }
 
 def prepare():
