@@ -86,9 +86,9 @@ gamepalette = [None, None]
 # border attribute
 border_attr = 0
 # border widh in pixels
-border_width = 2
+border_width = 5
 # percentage of the screen to leave unused for indow decorations etc.
-display_slack = 5
+display_slack = 10
 # screen width and height in pixels
 display_size = (640, 480)
 
@@ -320,7 +320,7 @@ def init():
     # draw the icon
     pygame.display.set_icon(build_icon())
     # determine initial display size
-    display_size = find_display_size(640, 480)   
+    display_size = find_display_size(640, 480, border_width)   
     # first set the screen non-resizeable, to trick things like maximus into not full-screening
     # I hate it when applications do this ;)
     if not fullscreen:
@@ -394,9 +394,7 @@ def init_screen_mode(mode_info, is_text_mode=False):
               for c in range(256)]
     # initialise glyph colour
     set_attr(attr, force_rebuild=True)
-    pixel_width = int(width * font_width * (1 + border_width/100.))
-    pixel_height = int(25 * font_height * (1 + border_width/100.))
-    resize_display(*find_display_size(pixel_width, pixel_height))
+    resize_display(*find_display_size(width * font_width, 25 * font_height, border_width))
     # logical size    
     height = 25
     size = (width * font_width, height * font_height)    
@@ -408,29 +406,38 @@ def init_screen_mode(mode_info, is_text_mode=False):
         canvas[i].set_palette(workpalette)
     screen_changed = True
 
-def find_display_size(pixel_x, pixel_y): # separate out border_width
+def find_display_size(canvas_x, canvas_y, border_width): 
     """ Determine the optimal size for the display. """
     if force_display_size:
         return force_display_size
     if not force_square_pixel:
-        # scale y to match aspect ratio
-        pixel_y = (pixel_x * aspect[1]) / aspect[0]
-    # leave 5% of the screen either direction unused
-    # to account for task bars, window decorations, etc.    
-    xmult = int((100.-display_slack) * physical_size[0] / (100.*pixel_x))
-    ymult = int((100.-display_slack) * physical_size[1] / (100.*pixel_y))
-    if force_square_pixel:
+        # this assumes actual display aspect ratio is wider than 4:3
+        # scale y to fit screen
+        canvas_y = (1 - display_slack/100.) * physical_size[1] // (1 + border_width/100.)
+        # scale x to match aspect ratio
+        canvas_x = (canvas_y * aspect[0]) / aspect[1]
+        # add back border
+        pixel_x = int(canvas_x * (1 + border_width/100.))
+        pixel_y = int(canvas_y * (1 + border_width/100.))
+        return pixel_x, pixel_y
+    else:
+        pixel_x = int(canvas_x * (1 + border_width/100.))
+        pixel_y = int(canvas_y * (1 + border_width/100.))
+        # leave 5% of the screen either direction unused
+        # to account for task bars, window decorations, etc.    
+        xmult = max(1, int((100.-display_slack) * physical_size[0] / (100.*pixel_x)))
+        ymult = max(1, int((100.-display_slack) * physical_size[1] / (100.*pixel_y)))
         # find the multipliers mx <= xmult, my <= ymult
         # such that mx * pixel_x / my * pixel_y 
         # is multiplicaively closest to aspect[0] / aspect[1] 
         target = aspect[0]/(1.0*aspect[1])
-        current = xmult*pixel_x / (1.0*ymult*pixel_y) 
+        current = xmult*canvas_x / (1.0*ymult*canvas_y) 
         # find the absolute multiplicative distance (always > 1)
         best = max(current, target) / min(current, target)
         apx = xmult, ymult
         for mx in range(1, xmult+1):
             my = min(ymult, 
-                     int(round(mx*pixel_x*aspect[1] / (1.0*pixel_y*aspect[0]))))
+                     int(round(mx*canvas_x*aspect[1] / (1.0*canvas_y*aspect[0]))))
             current = mx*pixel_x / (1.0*my*pixel_y)         
             dist = max(current, target) / min(current, target)
             # prefer larger multipliers if distance is equal
@@ -438,10 +445,6 @@ def find_display_size(pixel_x, pixel_y): # separate out border_width
                 best = dist
                 apx = mx, my
         return apx[0] * pixel_x, apx[1] * pixel_y
-    else:
-        # the maximum multiplier that keeps everything fitting on screen
-        mult = max(1, min(xmult, ymult))
-        return mult * pixel_x, int(mult * pixel_y)
     
 def resize_display(width, height, initial=False): 
     """ Change the display size. """
