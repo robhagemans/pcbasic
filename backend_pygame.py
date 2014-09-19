@@ -877,7 +877,8 @@ def check_events(pause=False):
             if event.button == mousebutton_copy:
                 # LEFT button: copy
                 pos = normalise_pos(*event.pos)
-                scrap.start(1+pos[1]//font_height, 1+pos[0]//font_width)
+                scrap.start(1 + pos[1] // font_height, 
+                            1 + (pos[0]+font_width//2) // font_width)
             elif event.button == mousebutton_paste:
                 # MIDDLE button: paste
                 scrap.paste(mouse=True)    
@@ -893,7 +894,8 @@ def check_events(pause=False):
             pos = normalise_pos(*event.pos) 
             backend.pen_moved(*pos)
             if scrap.active():
-                scrap.move(1+pos[1]//font_height, 1+pos[0]//font_width)
+                scrap.move(1 + pos[1] // font_height,
+                           1 + (pos[0]+font_width//2) // font_width)
         elif event.type == pygame.JOYBUTTONDOWN:
             if event.joy < 2 and event.button < 2:
                 backend.stick_down(event.joy, event.button)
@@ -967,7 +969,6 @@ def handle_key_up(e):
 
 def normalise_pos(x, y):
     """ Convert physical to logical coordinates within screen bounds. """
-    # FIXME border
     border_x = int(size[0] * border_width / 200.)
     border_y = int(size[1] * border_width / 200.)
     display_info = pygame.display.Info()
