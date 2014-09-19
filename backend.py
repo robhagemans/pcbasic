@@ -769,7 +769,7 @@ def resume_screen():
             "Resumed screen mode %d not supported by this setup",
             state.console_state.screen_mode)
         return False
-    if screen_mode != 0:    
+    if state.console_state.screen_mode != 0:    
         mode_info = copy(mode_data[state.console_state.screen_mode])
     else:
         mode_info = copy(text_data[state.console_state.width])
