@@ -763,7 +763,8 @@ def init_video():
 
 def resume_screen():
     """ Load a video mode from storage and initialise. """
-    if state.console_state.screen_mode not in mode_data:
+    if (state.console_state.screen_mode != 0 and 
+            state.console_state.screen_mode not in mode_data):
         # mode not supported by backend
         logging.warning(
             "Resumed screen mode %d not supported by this setup",
