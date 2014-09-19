@@ -304,6 +304,16 @@ text_mode = {
                 num_pages = 4, # do we have 4 pages on CGA/Tandy text?
                 bitsperpixel = 4,
                 has_blink = True),
+    'olivetti':  ModeData(
+                font_height = 16, 
+                attr = 7,
+                num_attr = 32,
+                colours = colours16,
+                palette = cga16_palette,
+                width = 80,
+                num_pages = 4, # do we have 4 pages?
+                bitsperpixel = 4,
+                has_blink = True),
     }
 
 # Tandy/PCjr pixel aspect ratio is different from normal
@@ -426,6 +436,29 @@ graphics_mode = {
             num_pages = 2,
             bitsperpixel = 2,
             has_blink = True),
+    # 40h 640x400x2   1bpp  olivetti
+    '640x400x2': ModeData(
+            font_height = 16, 
+            attr = 1,
+            num_attr = 2,
+            colours = colours16,
+            palette = [0, 15],
+            width = 80,
+            num_pages = 1,
+            bitsperpixel = 1),
+    # hercules
+    '720x348x2': ModeData(
+            # FIXME hercules - this actually produces 350, not 348
+            # two scan lines must be left out somewhere, somehow
+            font_height = 14, 
+            font_width = 9,
+            attr = 1,
+            num_attr = 2,
+            colours = colours16,
+            palette = [0, 15],
+            width = 80,
+            num_pages = 1,
+            bitsperpixel = 1),
     }
 
 # mode numbers by video card
@@ -440,6 +473,15 @@ available_modes = {
         0: text_mode['cga'],
         1: graphics_mode['320x200x4'],
         2: graphics_mode['640x200x2']},
+    'olivetti': {
+        0: text_mode['vga'],
+        1: graphics_mode['320x200x4'],
+        2: graphics_mode['640x200x2'],
+        3: graphics_mode['640x400x2'],
+        },
+    'hercules': {
+        0: text_mode['mda'],
+        3: graphics_mode['720x348x2']},
     'pcjr': {
         0: text_mode['cga'],
         1: graphics_mode['320x200x4'],
@@ -474,6 +516,10 @@ available_modes = {
         8: graphics_mode['640x200x16'],
         9: graphics_mode['640x350x16']},
 }
+
+# on Olivetti M24, all numbers 3-255 give the same altissima risoluzione
+for mode in range(4, 256):
+    available_modes['olivetti'][mode] = graphics_mode['640x400x2']
 
 # to be filled with the modes available to our video card    
 mode_data = {}
@@ -545,7 +591,9 @@ def prepare_video():
         circle_aspect = (3072, 2000)
     else:
         circle_aspect = (4, 3)
-    egacursor = config.options['video'] in ('ega', 'mda', 'ega_mono', 'vga')
+    # do all text modes with >8 pixels have an ega-cursor?    
+    egacursor = config.options['video'] in (
+        'ega', 'mda', 'ega_mono', 'vga', 'olivetti', 'hercules')
     composite_monitor = config.options['monitor'] == 'composite'
     mono_monitor = config.options['monitor'] == 'mono'
     if video_capabilities == 'ega' and mono_monitor:
