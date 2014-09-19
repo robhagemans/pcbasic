@@ -967,10 +967,14 @@ def handle_key_up(e):
 
 def normalise_pos(x, y):
     """ Convert physical to logical coordinates within screen bounds. """
+    # FIXME border
+    border_x = int(size[0] * border_width / 200.)
+    border_y = int(size[1] * border_width / 200.)
     display_info = pygame.display.Info()
-    xscale, yscale = display_info.current_w / (1.*size[0]), display_info.current_h / (1.*size[1])
-    xpos = min(size[0]-1, max(0, int(x//xscale)))
-    ypos = min(size[1]-1, max(0, int(y//yscale))) 
+    xscale = display_info.current_w / (1.*(size[0]+2*border_x)) 
+    yscale = display_info.current_h / (1.*(size[1]+2*border_y))
+    xpos = min(size[0]-1, max(0, int((x-border_x)//xscale)))
+    ypos = min(size[1]-1, max(0, int((y-border_y)//yscale))) 
     return xpos, ypos
     
 ###############################################
