@@ -280,7 +280,22 @@ text_mode = {
                 colours = colours_mda_mono,
                 palette = mda_palette,
                 width = 80,
-                num_pages = 4,
+                num_pages = 1,
+                bitsperpixel = 4,
+                has_blink = True,
+                has_underline = True),
+    'hercules':  ModeData(
+                # not implemented: should lose two scan lines to fit on 348
+                # snd attributes shld distinguish black, dim, normal, bright
+                # see http://www.seasip.info/VintagePC/hercplus.html
+                font_height = 14, 
+                font_width = 9,
+                attr = 7,
+                num_attr = 32,
+                colours = colours_mda_mono,
+                palette = mda_palette,
+                width = 80,
+                num_pages = 2,
                 bitsperpixel = 4,
                 has_blink = True,
                 has_underline = True),
@@ -291,7 +306,7 @@ text_mode = {
                 colours = colours16,
                 palette = cga16_palette,
                 width = 80,
-                num_pages = 4, # do we have 4 pages on CGA/Tandy text?
+                num_pages = 1,
                 bitsperpixel = 4,
                 has_blink = True),
     'tandy':  ModeData(
@@ -301,7 +316,8 @@ text_mode = {
                 colours = colours16,
                 palette = cga16_palette,
                 width = 80,
-                num_pages = 4, # do we have 4 pages on CGA/Tandy text?
+                # does Tandy text have pages?
+                num_pages = 4,
                 bitsperpixel = 4,
                 has_blink = True),
     'olivetti':  ModeData(
@@ -311,7 +327,8 @@ text_mode = {
                 colours = colours16,
                 palette = cga16_palette,
                 width = 80,
-                num_pages = 4, # do we have 4 pages?
+                # does Olivetti text have pages?
+                num_pages = 4,
                 bitsperpixel = 4,
                 has_blink = True),
     }
@@ -457,7 +474,7 @@ graphics_mode = {
             colours = colours16,
             palette = [0, 15],
             width = 80,
-            num_pages = 1,
+            num_pages = 2,
             bitsperpixel = 1),
     }
 
@@ -480,7 +497,7 @@ available_modes = {
         3: graphics_mode['640x400x2'],
         },
     'hercules': {
-        0: text_mode['mda'],
+        0: text_mode['hercules'],
         3: graphics_mode['720x348x2']},
     'pcjr': {
         0: text_mode['cga'],
