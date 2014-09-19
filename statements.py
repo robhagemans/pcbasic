@@ -1593,7 +1593,7 @@ def exec_clear(ins):
                 state.console_state.pcjr_video_mem_size = fp.unpack(vartypes.pass_single_keep(
                                                            expressions.parse_expression(ins, empty_err=2))).round_to_int()
                 # check if we need to drop out of our current mode 
-                backend.check_video_memory()                                                           
+                backend.check_video_memory(state.console_state.screen_mode)                                                           
             elif not exp2:
                 raise error.RunError(2)    
     util.require(ins, util.end_statement)
@@ -2283,6 +2283,8 @@ def exec_screen(ins):
     # if any parameter not in [0,255], error 5 without doing anything 
     util.range_check(0, 255, mode, colorswitch, apagenum, vpagenum)
     util.range_check(0, 2, erase)
+    # if not enough memory, error 5 without doing anything
+    backend.check_video_memory(mode)
     # if the parameters are outside narrow ranges (e.g. not implemented screen mode, pagenum beyond max)
     # then the error is only raised after changing the palette.
     util.require(ins, util.end_statement)        
