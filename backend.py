@@ -260,7 +260,7 @@ text_mode = {
                 num_pages = 4,
                 bitsperpixel = 4,
                 has_blink = True),
-    'egamono': ModeData(
+    'ega_mono': ModeData(
                 font_height = 14, 
                 font_width = 8,
                 attr = 7,
@@ -314,10 +314,11 @@ text_mode = {
 # screen 3:      1968/1000 
 # screen 3 is strange, slighly off the 192/100 you'd expect
 
-graphics_modes = {
+graphics_mode = {
     # 04h 320x200x4  16384B 2bpp 0xb8000 
     # tandy:2 pages if 32k memory; ega: 1 page only 
-    1: ModeData(
+    # TODO: tandy/pcjr - determine the number of pages based on video memory
+    '320x200x4': ModeData(
             font_height = 8, 
             attr = 3,
             num_attr = 4,
@@ -327,7 +328,7 @@ graphics_modes = {
             num_pages = 1,
             bitsperpixel = 2),
     # 06h 640x200x2  16384B 1bpp 0xb8000 
-    2: ModeData(
+    '640x200x2': ModeData(
             font_height = 8, 
             attr = 1,
             num_attr = 2,
@@ -338,7 +339,7 @@ graphics_modes = {
             bitsperpixel = 1,
             supports_artifacts = True),
     # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy
-    3: ModeData(
+    '160x200x16': ModeData(
             font_height = 8, 
             attr = 15,
             num_attr = 16,
@@ -351,7 +352,7 @@ graphics_modes = {
             pixel_aspect = (1968, 1000) # you'd expect 192, 100
             ),
     #     320x200x4  16384B 2bpp 0xb8000   
-    4: ModeData(
+    '320x200x4': ModeData(
             font_height = 8, 
             attr = 3,
             num_attr = 4,
@@ -362,7 +363,7 @@ graphics_modes = {
             bitsperpixel = 2,
             cursor_index = 3),
     # 09h 320x200x16 32768B 4bpp 0xb8000    
-    5: ModeData(
+    '320x200x16': ModeData(
             font_height = 8, 
             attr = 15,
             num_attr = 16,
@@ -373,7 +374,7 @@ graphics_modes = {
             bitsperpixel = 4,
             cursor_index = 3),
     # 0Ah 640x200x4  32768B 2bpp 0xb8000   
-    6: ModeData(
+    '640x200x4': ModeData(
             font_height = 8, 
             attr = 3,
             num_attr = 4,
@@ -384,7 +385,7 @@ graphics_modes = {
             bitsperpixel = 2,
             cursor_index = 3),
     # 0Dh 320x200x16 32768B 4bpp 0xa0000
-    7: ModeData(
+    '320x200x16': ModeData(
             font_height = 8, 
             attr = 15,
             num_attr = 16,
@@ -394,7 +395,7 @@ graphics_modes = {
             num_pages = 8,
             bitsperpixel = 4),
     # 0Eh 640x200x16 
-    8: ModeData(
+    '640x200x16': ModeData(
             font_height = 8, 
             attr = 15,
             num_attr = 16,
@@ -404,7 +405,7 @@ graphics_modes = {
             num_pages = 4,
             bitsperpixel = 4),
     # 10h 640x350x16 
-    9: ModeData(
+    '640x350x16': ModeData(
             font_height = 14, 
             attr = 15,
             num_attr = 16,
@@ -414,7 +415,7 @@ graphics_modes = {
             num_pages = 2,
             bitsperpixel = 4),
     # 0Fh 640x350x4 monochrome 
-    10: ModeData(
+    '640x350x4': ModeData(
             font_height = 14, 
             attr = 1,
             num_attr = 4,
@@ -426,6 +427,53 @@ graphics_modes = {
             bitsperpixel = 2,
             has_blink = True),
     }
+
+# mode numbers by video card
+available_modes = {
+    'mda': {
+        0: text_mode['mda']},
+    'cga': {
+        0: text_mode['cga'],
+        1: graphics_mode['320x200x4'],
+        2: graphics_mode['640x200x2']},
+    'cga_old': {
+        0: text_mode['cga'],
+        1: graphics_mode['320x200x4'],
+        2: graphics_mode['640x200x2']},
+    'pcjr': {
+        0: text_mode['cga'],
+        1: graphics_mode['320x200x4'],
+        2: graphics_mode['640x200x2'],
+        3: graphics_mode['160x200x16'],
+        4: graphics_mode['320x200x4'],
+        5: graphics_mode['320x200x16'],
+        6: graphics_mode['640x200x4']},
+    'tandy': {
+        0: text_mode['tandy'],
+        1: graphics_mode['320x200x4'],
+        2: graphics_mode['640x200x2'],
+        3: graphics_mode['160x200x16'],
+        4: graphics_mode['320x200x4'],
+        5: graphics_mode['320x200x16'],
+        6: graphics_mode['640x200x4']},
+    'ega': {
+        0: text_mode['ega'],
+        1: graphics_mode['320x200x4'],
+        2: graphics_mode['640x200x2'],
+        7: graphics_mode['320x200x16'],
+        8: graphics_mode['640x200x16'],
+        9: graphics_mode['640x350x16']},
+    'ega_mono': {
+        0: text_mode['ega_mono'],
+        10: graphics_mode['640x350x4']},
+    'vga': {
+        0: text_mode['vga'],
+        1: graphics_mode['320x200x4'],
+        2: graphics_mode['640x200x2'],
+        7: graphics_mode['320x200x16'],
+        8: graphics_mode['640x200x16'],
+        9: graphics_mode['640x350x16']},
+}
 
 # to be filled with the modes available to our video card    
 mode_data = {}
@@ -497,9 +545,11 @@ def prepare_video():
         circle_aspect = (3072, 2000)
     else:
         circle_aspect = (4, 3)
-    egacursor = config.options['video'] in ('ega', 'vga')
+    egacursor = config.options['video'] in ('ega', 'mda', 'ega_mono', 'vga')
     composite_monitor = config.options['monitor'] == 'composite'
     mono_monitor = config.options['monitor'] == 'mono'
+    if video_capabilities == 'ega' and mono_monitor:
+        video_capabilities = 'ega_mono'
     if video_capabilities not in ('ega', 'vga'):
         state.console_state.colours = colours16
         state.console_state.palette = cga16_palette[:]
@@ -521,39 +571,7 @@ def prepare_video():
         colours16[:] = colours16_mono
     # prepare video mode list
     # only allow the screen modes that the given machine supports
-    if video_capabilities in ('pcjr'):
-        # no EGA modes (though apparently there were Tandy machines with EGA)
-        available_modes = [1, 2, 3, 4, 5, 6]
-        # 8-pixel characters, 16 colours in screen 0
-        mode_data[0] = text_mode['cga']
-    elif video_capabilities == 'tandy':
-        # no EGA modes (though apparently there were Tandy machines with EGA)
-        available_modes = [1, 2, 3, 4, 5, 6]
-        # 8-pixel characters, 16 colours in screen 0
-        mode_data[0] = text_mode['tandy']
-        # TODO: determine the number of pages based on video memory size 
-    elif video_capabilities in ('cga', 'cga_old'):
-        available_modes = [1, 2]
-        # 8-pixel characters, 16 colours in screen 0
-        mode_data[0] = text_mode['cga']
-    elif video_capabilities == 'ega':
-        # EGA
-        if mono_monitor:
-            available_modes = [10]
-            mode_data[0] = text_mode['egamono']
-        else:
-            available_modes = [1, 2, 7, 8, 9]
-            mode_data[0] = text_mode['ega']
-    elif video_capabilities == 'mda':
-        mono_monitor = True
-        available_modes = []
-        mode_data[0] = text_mode['mda']
-    else:
-        available_modes = [1, 2, 7, 8, 9]
-        mode_data[0] = text_mode['vga'] 
-    # copy the mode data list
-    for mode in available_modes:
-        mode_data[mode] = graphics_modes[mode]
+    mode_data = available_modes[video_capabilities]
            
 def init_video():
     """ Initialise the video backend. """

@@ -1982,7 +1982,7 @@ def exec_palette(ins):
         util.range_check(-1, len(state.console_state.colours)-1, pair[1])
         if pair[1] > -1:
             # effective palette change is an error in CGA; ignore in Tandy/PCjr SCREEN 0
-            if backend.video_capabilities in ('cga', 'cga_old', 'mda'):
+            if backend.video_capabilities in ('cga', 'cga_old', 'mda', 'ega_mono'):
                 raise error.RunError(5)
             elif backend.video_capabilities in ('tandy', 'pcjr') and state.console_state.screen_mode == 0:
                 pass
