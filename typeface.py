@@ -21,7 +21,7 @@ def font_filename(name, height):
         name = os.path.join(plat.font_dir, name)
     return name    
 
-def load(families, height, codepage_dict):
+def load(families, height, codepage_dict, nowarn=False):
     """ Load the specified codepage from a unifont .hex file. Codepage should be a CP-to-UTF8 dict. """
     names = [ font_filename(name, height) for name in families ]
     cp_reverse = dict((reversed(item) for item in codepage_dict.items()))
