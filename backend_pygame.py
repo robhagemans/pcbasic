@@ -364,6 +364,12 @@ def load_fonts(heights_needed):
             # also link as 9-pixel font for tandy
             fonts[9] = fonts[8]                              
         # fix missing code points font based on 16-line font
+        if 16 not in fonts:
+            # if available, load the 16-pixel font unrequested
+            font_16 = typeface.load(font_families, 16, 
+                                          unicodepage.cp_to_utf8, nowarn=True)
+            if font_16:
+                fonts[16] = font_16                              
         if 16 in fonts:
             typeface.fixfont(height, fonts[height], 
                              unicodepage.cp_to_utf8, fonts[16])
