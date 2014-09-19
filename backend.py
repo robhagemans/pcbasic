@@ -219,7 +219,7 @@ class ModeData(object):
                  palette, colours, colours1=None, 
                  font_width=8, 
                  supports_artifacts=False, cursor_index=None, has_blink=False,
-                 pixel_aspect=None, has_underline=False):
+                 pixel_aspect=None, has_underline=False, is_text_mode=False):
         """ Settings for one video mode. """         
         self.font_height = font_height
         self.attr = attr
@@ -233,12 +233,13 @@ class ModeData(object):
         self.font_width = font_width
         self.supports_artifacts = supports_artifacts
         self.cursor_index = cursor_index
+        self.is_text_mode = is_text_mode
         self.has_blink = has_blink
         self.has_underline = has_underline
         self.pixel_aspect = pixel_aspect
             
 # video modes
-text_mode = {
+text_mode_80 = {
     'vga': ModeData(
                 font_height = 16,
                 font_width = 9,
@@ -247,8 +248,9 @@ text_mode = {
                 colours = colours64,
                 palette = ega_palette,
                 width = 80,
-                num_pages = 4,
+                num_pages = 4, 
                 bitsperpixel = 4,
+                is_text_mode = True,
                 has_blink = True),
     'ega': ModeData(
                 font_height = 14,
@@ -257,8 +259,9 @@ text_mode = {
                 colours = colours64,
                 palette = ega_palette,
                 width = 80,
-                num_pages = 4,
+                num_pages = 4, 
                 bitsperpixel = 4,
+                is_text_mode = True,
                 has_blink = True),
     'ega_mono': ModeData(
                 font_height = 14, 
@@ -268,8 +271,9 @@ text_mode = {
                 colours = colours_mda_mono,
                 palette = mda_palette,
                 width = 80,
-                num_pages = 4,
+                num_pages = 4, 
                 bitsperpixel = 4,
+                is_text_mode = True,
                 has_blink = True,
                 has_underline = True),
     'mda':  ModeData(
@@ -282,6 +286,7 @@ text_mode = {
                 width = 80,
                 num_pages = 1,
                 bitsperpixel = 4,
+                is_text_mode = True,
                 has_blink = True,
                 has_underline = True),
     'hercules':  ModeData(
@@ -297,6 +302,7 @@ text_mode = {
                 width = 80,
                 num_pages = 2,
                 bitsperpixel = 4,
+                is_text_mode = True,
                 has_blink = True,
                 has_underline = True),
     'cga':  ModeData(
@@ -306,8 +312,9 @@ text_mode = {
                 colours = colours16,
                 palette = cga16_palette,
                 width = 80,
-                num_pages = 1,
+                num_pages = 4, 
                 bitsperpixel = 4,
+                is_text_mode = True,
                 has_blink = True),
     'tandy':  ModeData(
                 font_height = 9, 
@@ -319,6 +326,7 @@ text_mode = {
                 # does Tandy text have pages?
                 num_pages = 4,
                 bitsperpixel = 4,
+                is_text_mode = True,
                 has_blink = True),
     'olivetti':  ModeData(
                 font_height = 16, 
@@ -330,8 +338,116 @@ text_mode = {
                 # does Olivetti text have pages?
                 num_pages = 4,
                 bitsperpixel = 4,
+                is_text_mode = True,
                 has_blink = True),
     }
+text_mode_80['pcjr'] = text_mode_80['cga']
+text_mode_80['cga_old'] = text_mode_80['cga']
+
+text_mode_40 = {
+    'vga': ModeData(
+                font_height = 16,
+                font_width = 9,
+                attr = 7,
+                num_attr = 32,
+                colours = colours64,
+                palette = ega_palette,
+                width = 40,
+                num_pages = 8,
+                bitsperpixel = 4,
+                is_text_mode = True,
+                has_blink = True),
+    'ega': ModeData(
+                font_height = 14,
+                attr = 7,
+                num_attr = 32,
+                colours = colours64,
+                palette = ega_palette,
+                width = 40,
+                num_pages = 8, 
+                bitsperpixel = 4,
+                is_text_mode = True,
+                has_blink = True),
+    'ega_mono': ModeData(
+                font_height = 14, 
+                font_width = 8,
+                attr = 7,
+                num_attr = 32,
+                colours = colours_mda_mono,
+                palette = mda_palette,
+                width = 40,
+                num_pages = 8, 
+                bitsperpixel = 4,
+                is_text_mode = True,
+                has_blink = True,
+                has_underline = True),
+    'mda':  ModeData(
+                font_height = 14, 
+                font_width = 9,
+                attr = 7,
+                num_attr = 32,
+                colours = colours_mda_mono,
+                palette = mda_palette,
+                width = 40,
+                num_pages = 1,
+                bitsperpixel = 4,
+                is_text_mode = True,
+                has_blink = True,
+                has_underline = True),
+    'hercules':  ModeData(
+                # not implemented: should lose two scan lines to fit on 348
+                # snd attributes shld distinguish black, dim, normal, bright
+                # see http://www.seasip.info/VintagePC/hercplus.html
+                font_height = 14, 
+                font_width = 9,
+                attr = 7,
+                num_attr = 32,
+                colours = colours_mda_mono,
+                palette = mda_palette,
+                width = 40,
+                num_pages = 2,
+                bitsperpixel = 4,
+                is_text_mode = True,
+                has_blink = True,
+                has_underline = True),
+    'cga':  ModeData(
+                font_height = 8, 
+                attr = 7,
+                num_attr = 32,
+                colours = colours16,
+                palette = cga16_palette,
+                width = 40,
+                num_pages = 8, 
+                bitsperpixel = 4,
+                is_text_mode = True,
+                has_blink = True),
+    'tandy':  ModeData(
+                font_height = 9, 
+                attr = 7,
+                num_attr = 32,
+                colours = colours16,
+                palette = cga16_palette,
+                width = 40,
+                # does Tandy text have pages?
+                num_pages = 8, 
+                bitsperpixel = 4,
+                is_text_mode = True,
+                has_blink = True),
+    'olivetti':  ModeData(
+                font_height = 16, 
+                attr = 7,
+                num_attr = 32,
+                colours = colours16,
+                palette = cga16_palette,
+                width = 40,
+                # does Olivetti text have pages?
+                num_pages = 8,
+                bitsperpixel = 4,
+                is_text_mode = True,
+                has_blink = True),
+    }
+text_mode_40['pcjr'] = text_mode_40['cga']
+text_mode_40['cga_old'] = text_mode_40['cga']
 
 # Tandy/PCjr pixel aspect ratio is different from normal
 # suggesting screen aspect ratio is not 4/3.
@@ -480,27 +596,21 @@ graphics_mode = {
 
 # mode numbers by video card
 available_modes = {
-    'mda': {
-        0: text_mode['mda']},
+    'mda': { },
     'cga': {
-        0: text_mode['cga'],
         1: graphics_mode['320x200x4'],
         2: graphics_mode['640x200x2']},
     'cga_old': {
-        0: text_mode['cga'],
         1: graphics_mode['320x200x4'],
         2: graphics_mode['640x200x2']},
     'olivetti': {
-        0: text_mode['vga'],
         1: graphics_mode['320x200x4'],
         2: graphics_mode['640x200x2'],
         3: graphics_mode['640x400x2'],
         },
     'hercules': {
-        0: text_mode['hercules'],
         3: graphics_mode['720x348x2']},
     'pcjr': {
-        0: text_mode['cga'],
         1: graphics_mode['320x200x4'],
         2: graphics_mode['640x200x2'],
         3: graphics_mode['160x200x16'],
@@ -508,7 +618,6 @@ available_modes = {
         5: graphics_mode['320x200x16'],
         6: graphics_mode['640x200x4']},
     'tandy': {
-        0: text_mode['tandy'],
         1: graphics_mode['320x200x4'],
         2: graphics_mode['640x200x2'],
         3: graphics_mode['160x200x16'],
@@ -516,17 +625,14 @@ available_modes = {
         5: graphics_mode['320x200x16'],
         6: graphics_mode['640x200x4']},
     'ega': {
-        0: text_mode['ega'],
         1: graphics_mode['320x200x4'],
         2: graphics_mode['640x200x2'],
         7: graphics_mode['320x200x16'],
         8: graphics_mode['640x200x16'],
         9: graphics_mode['640x350x16']},
     'ega_mono': {
-        0: text_mode['ega_mono'],
         10: graphics_mode['640x350x4']},
     'vga': {
-        0: text_mode['vga'],
         1: graphics_mode['320x200x4'],
         2: graphics_mode['640x200x2'],
         7: graphics_mode['320x200x16'],
@@ -540,6 +646,7 @@ for mode in range(4, 256):
 
 # to be filled with the modes available to our video card    
 mode_data = {}
+text_data = {}
 
 # border colour
 state.console_state.border_attr = 0
@@ -602,7 +709,7 @@ def prepare_video():
     global video_capabilities, composite_monitor, mono_monitor, mono_tint
     global colours16_mono, colours_ega_mono_0, colours_ega_mono_1, cga_low
     global colours_ega_mono_text
-    global mode_data, circle_aspect
+    global mode_data, text_data, circle_aspect
     video_capabilities = config.options['video']
     if video_capabilities in ('pcjr', 'tandy'):
         circle_aspect = (3072, 2000)
@@ -637,6 +744,10 @@ def prepare_video():
     # prepare video mode list
     # only allow the screen modes that the given machine supports
     mode_data = available_modes[video_capabilities]
+    text_data = { 
+        40: text_mode_40[video_capabilities],
+        80: text_mode_80[video_capabilities]}
+    
            
 def init_video():
     """ Initialise the video backend. """
@@ -658,8 +769,10 @@ def resume_screen():
             "Resumed screen mode %d not supported by this setup",
             state.console_state.screen_mode)
         return False
-    mode_info = copy(mode_data[state.console_state.screen_mode])
-    mode_info.width = state.console_state.width    
+    if screen_mode != 0:    
+        mode_info = copy(mode_data[state.console_state.screen_mode])
+    else:
+        mode_info = copy(text_data[state.console_state.width])
     mode_info.attr = state.console_state.attr
     # set up the appropriate screen resolution
     if (state.console_state.screen_mode == 0 or 
@@ -668,8 +781,7 @@ def resume_screen():
         video.set_page(state.console_state.vpagenum, 
                        state.console_state.apagenum)
         # set the screen mde
-        video.init_screen_mode(mode_info, 
-                               state.console_state.screen_mode==0)
+        video.init_screen_mode(mode_info)
         video.update_palette(state.console_state.palette,
                              state.console_state.colours,
                              state.console_state.colours1)
@@ -744,8 +856,17 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
     # 0: do not erase video memory
     # 1: (default) erase old and new page if screen or bust changes
     # 2: erase all video memory if screen or bust changes 
+    if new_mode == 0 and new_width == None:
+        # width persists on change to screen 0
+        new_width = state.console_state.width 
+        # if we switch out of a 20-col mode (Tandy screen 3), switch to 40-col.
+        if new_width == 20:
+            new_width = 40
     try:
-        info = copy(mode_data[new_mode])
+        if new_mode != 0:    
+            info = copy(mode_data[new_mode])
+        else:
+            info = copy(text_data[new_width])
     except KeyError:
         # no such mode
         info = None
@@ -759,13 +880,6 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
         # even if the function fails with Illegal Function Call
         set_palette()
         return False
-    # width persists on change to screen 0
-    if new_mode == 0 and new_width == None:
-        new_width = state.console_state.width 
-        if new_width == 20:
-            new_width = 40
-    if new_width != None:
-        info.width = new_width
     state.console_state.width = info.width
     # attribute persists on width-only change
     if (state.console_state.screen_mode == 0 and new_mode == 0 
@@ -802,7 +916,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
     # cursor width starts out as single char
     state.console_state.cursor_width = state.console_state.font_width        
     # signal the backend to change the screen resolution
-    video.init_screen_mode(info, state.console_state.screen_mode == 0)
+    video.init_screen_mode(info)
     # set the palette (essential on first run, or not all globals defined)
     set_palette()
     # in screen 0, 1, set colorburst (not in SCREEN 2!)

@@ -86,7 +86,7 @@ def clear_rows(attr, start, stop):
 def supports_graphics_mode(mode_info):
     return False
 
-def init_screen_mode(mode_info, is_text_mode=False):
+def init_screen_mode(mode_info):
     pass
 
 def copy_page(src, dst):

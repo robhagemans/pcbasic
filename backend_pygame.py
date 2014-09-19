@@ -382,7 +382,7 @@ def supports_graphics_mode(mode_info):
         return False
     return True
 
-def init_screen_mode(mode_info, is_text_mode=False):
+def init_screen_mode(mode_info):
     """ Initialise a given text or graphics mode. """
     global glyphs, cursor
     global screen_changed, canvas
@@ -391,7 +391,7 @@ def init_screen_mode(mode_info, is_text_mode=False):
     global width, num_pages, bitsperpixel, font_width
     global mode_has_artifacts, cursor_fixed_attr, mode_has_blink
     global mode_has_underline
-    text_mode = is_text_mode
+    text_mode = mode_info.is_text_mode
     # unpack mode info struct
     font_height = mode_info.font_height
     attr = mode_info.attr

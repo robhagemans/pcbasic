@@ -102,7 +102,7 @@ def init():
 def supports_graphics_mode(mode_info):
     return False
     
-def init_screen_mode(mode_info=None, is_text_mode=False):
+def init_screen_mode(mode_info=None):
     global window, height, width
     height = 25
     width = mode_info.width
