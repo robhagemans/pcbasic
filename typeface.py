@@ -27,7 +27,8 @@ def load(families, height, codepage_dict):
     cp_reverse = dict((reversed(item) for item in codepage_dict.items()))
     fontfiles = [ open(name, 'rb') for name in reversed(names) if os.path.exists(name) ]
     if len(fontfiles) == 0:
-        logging.warning('Could not read font file for height %d', height)
+        if not nowarn:
+            logging.warning('Could not read font file for height %d', height)
         return None
     fontdict = {}
     for fontfile in fontfiles:
