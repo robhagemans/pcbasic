@@ -82,6 +82,9 @@ mono_monitor = False
 workpalette = [(0, 0, b * 16 + f) for b in range(16) for f in range(16)]
 # display palettes for blink states 0, 1
 gamepalette = [None, None]
+# text attributes supported
+mode_has_blink = True
+mode_has_underline = False
 
 # border attribute
 border_attr = 0
@@ -497,8 +500,40 @@ def close():
 
 def get_palette_index(cattr):
     """ Find the index in the game palette for this attribute. """
-    color = (0, 0, cattr)
-    bg = (0, 0, (cattr>>4) & 7)
+    # NOTE: we're using mode_has_underline as a proxy to "it's an MDA" here
+    # we're also counting on graphics modes not using colours beyond point 16
+    # where blink is for text mode. 
+    if not mode_has_underline:
+        color = (0, 0, cattr)
+        bg = (0, 0, (cattr>>4) & 7)
+    else:
+        # MDA palette, see http://www.seasip.info/VintagePC/mda.html
+        # don't try to change this with PALETTE, it won't work correctly
+        if cattr in (0x00, 0x08, 0x80, 0x88, 0x70):
+            color = (0, 0, 0)
+        elif cattr == 0x78:
+            # dim foreground on bright background
+            color = (0, 0, 1)    
+        elif cattr == 0xf8:
+            # dim foreground on bright background, blinking
+            color = (0, 0, 0xa2)    
+        elif cattr == 0xf0:
+            # black on bright background, blinking
+            color = (0, 0, 0xa0)    
+        elif cattr % 8 == 0:
+            color = (0, 0, (cattr&0x80) + 1)
+        elif cattr < 0x80:    
+            # most % 8 == 0 points aren't actually black; blink goes to black bg
+            color = (0, 0, cattr)
+        else:    
+            # most % 8 == 0 points aren't actually black; blink goes to black bg
+            color = (0, 0, 0x80 + cattr % 16)
+        if cattr in (0x70, 0x78, 0xF0, 0xF8):
+            # bright green background for these points
+            bg = (0, 0, 15)    
+        else:
+            # background is almost always black
+            bg = (0, 0, 0)
     return color, bg    
 
 def update_palette(palette, colours, colours1):
@@ -515,9 +550,16 @@ def update_palette(palette, colours, colours1):
     while len(basepalette1) < 16:
         basepalette1.append(pygame.Color(0, 0, 0))
     # combining into all 256 attribute combinations for screen 0:   
-    gamepalette[0] = [basepalette0[f] for b in range(16) for f in range(16)]
-    gamepalette[1] = ([basepalette1[f] for b in range(8) for f in range(16)] + 
-                      [basepalette1[b] for b in range(8) for f in range(16)])
+    # NOTE: we're using mode_has_underline as a proxy to "it's an MDA" here
+    if not mode_has_underline:
+        gamepalette[0] = [basepalette0[f] for b in range(16) for f in range(16)]
+        gamepalette[1] = ([basepalette1[f] for b in range(8) for f in range(16)] + 
+                          [basepalette1[b] for b in range(8) for f in range(16)])
+    else:
+        # MDA has bright backgrounds
+        gamepalette[0] = [basepalette0[f] for b in range(16) for f in range(16)]
+        gamepalette[1] = ([basepalette1[f] for b in range(8) for f in range(16)] + 
+                          [basepalette1[b+8] for b in range(8) for f in range(16)])
     screen_changed = True
 
 def set_border(attr):
