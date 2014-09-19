@@ -391,6 +391,7 @@ def init_screen_mode(mode_info):
     global width, num_pages, bitsperpixel, font_width
     global mode_has_artifacts, cursor_fixed_attr, mode_has_blink
     global mode_has_underline
+    global get_put_store
     text_mode = mode_info.is_text_mode
     # unpack mode info struct
     font_height = mode_info.font_height
@@ -418,7 +419,10 @@ def init_screen_mode(mode_info):
     canvas = [ pygame.Surface(size, depth=8) for _ in range(num_pages)]
     for i in range(num_pages):
         canvas[i].set_palette(workpalette)
+    # remove cached sprites
+    get_put_store = {}    
     screen_changed = True
+    
 
 def find_display_size(canvas_x, canvas_y, border_width): 
     """ Determine the optimal size for the display. """
