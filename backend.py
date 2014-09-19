@@ -1160,6 +1160,12 @@ def get_text(start_row, start_col, stop_row, stop_col):
     r, c = start_row, start_col
     full = ''
     clip = ''
+    if state.console_state.vpage.row[r-1].double[c-1] == 2:
+        # include lead byte
+        c -= 1
+    if state.console_state.vpage.row[stop_row-1].double[stop_col-1] == 1:
+        # include trail byte
+        stop_col += 1
     while r < stop_row or (r == stop_row and c <= stop_col):
         clip += state.console_state.vpage.row[r-1].buf[c-1][0]    
         c += 1
