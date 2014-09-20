@@ -497,13 +497,22 @@ def set_video_memory(addr, val):
 
 def get_video_memory_block(addr, length):
     """ Retrieve a contiguous block of bytes from video memory. """
-    return bytearray( [ max(0, get_video_memory(a)) 
-                         for a in range(addr, addr+length) ] )
+    block = bytearray()
+    for a in range(addr, addr+length):
+        block += chr(max(0, get_video_memory(a)))
+        # keep updating the screen
+        # we're not allowing keyboard breaks here 
+        # in GW this is so fast that you can't check if it does or not
+        backend.video.check_events()
+    return block
     
 def set_video_memory_block(addr, some_bytes):
     """ Set a contiguous block of bytes in video memory. """
     for a in range(len(some_bytes)):
         set_video_memory(addr + a, some_bytes[a])
+        # keep updating the screen
+        # we're not allowing keyboard breaks here 
+        backend.video.check_events()
     
 
 #################################################################################
