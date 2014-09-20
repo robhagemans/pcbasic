@@ -25,12 +25,6 @@ data_segment = 0x13ad
 # data memory model: current segment
 segment = data_segment
 
-# video memory
-state.console_state.colour_plane = 3
-state.console_state.colour_plane_write_mask = 0xff
-video_segment = { 0: 0xb800, 1: 0xb800, 2: 0xb800, 3: 0xb800, 4: 0xb800, 5: 0xb800, 6: 0xb800, 7: 0xa000, 8: 0xa000, 9: 0xa000 }
-# memory model: text mode video memory
-text_segment = 0xb800
 font_segment = 0xf000
 font_addr = 0xfa6e
 low_segment = 0x40
@@ -262,149 +256,252 @@ def get_data_memory(address):
 ###############################################################
 # video memory model
 
+# video memory
+state.console_state.colour_plane = 0
+state.console_state.colour_plane_write_mask = 0xff
+video_segment = { 0: 0xb800, 1: 0xb800, 2: 0xb800, 3: 0xb800, 4: 0xb800, 5: 0xb800, 6: 0xb800, 7: 0xa000, 8: 0xa000, 9: 0xa000 }
+# memory model: text mode video memory
+text_segment = 0xb800
+
 def get_pixel_byte(page, x, y, plane):
+    """ Retrieved a byte with 8 packed pixels for one colour plane. """
+    # modes 1-5: interlaced scan lines, pixels sequentially packed into bytes
     if y < state.console_state.size[1] and page < state.console_state.num_pages:
-        return sum(( ((backend.video.get_pixel(x+shift, y, page) >> plane) & 1) << (7-shift) for shift in range(8) ))
+        return sum(( ((backend.video.get_pixel(x+shift, y, page) >> plane) & 1) 
+                      << (7-shift) for shift in range(8) ))
     return -1    
     
+def get_video_memory_cga_4(addr):
+    """ Retrieve a byte from CGA 4-colour memory. """
+    # modes 1-5: interlaced scan lines, pixels sequentially packed into bytes
+    # tandy screen 1 allows 2 pages
+    page, addr = addr//16384, addr%16384
+    # 2 x interlaced scan lines of 80bytes, 4pixels per byte
+    x, y = ((addr%0x2000)%80)*4, (addr//0x2000) + 2*((addr%0x2000)//80)
+    if y < state.console_state.size[1] and page < state.console_state.num_pages:
+        return ( (backend.video.get_pixel(x  , y, page) << 6) + 
+                  (backend.video.get_pixel(x+1, y, page) << 4) +
+                  (backend.video.get_pixel(x+2, y, page) << 2) + 
+                  (backend.video.get_pixel(x+3, y, page)))
+
+def get_video_memory_cga_2(addr):
+    """ Retrieve a byte from CGA 2-colour memory. """
+    page, addr = addr//16384, addr%16384
+    # modes 1-5: interlaced scan lines, pixels sequentially packed into bytes
+    # interlaced scan lines of 80bytes, 8 pixes per byte
+    x, y = ((addr%0x2000)%80)*8, (addr//0x2000) + 2*((addr%0x2000)//80)
+    # mode 2 is simply 1 bit per pixel
+    return get_pixel_byte(page, x, y, 0)
+
+def get_video_memory_tandy_160(addr):
+    """ Retrieve a byte from Tandy 160x200x16 """
+    # modes 1-5: interlaced scan lines, pixels sequentially packed into bytes
+    page, addr = addr//16384, addr%16384
+    # interlaced scan lines of 80bytes, 2pixels per byte
+    x, y = ((addr%0x2000)%80)*2, (addr//0x2000) + 2*((addr%0x2000)//80)
+    if y < state.console_state.size[1] and page < state.console_state.num_pages:
+        return ( (backend.video.get_pixel(x, y, page)<<4) + 
+                  (backend.video.get_pixel(x+1, y, page)))
+    return -1
+    
+def get_video_memory_tandy_320(addr):
+    """ Retrieve a byte from Tandy 320x200x16 """
+    # modes 1-5: interlaced scan lines, pixels sequentially packed into bytes
+    page, addr = addr//32768, addr%32768
+    # 4 x interlaced scan lines of 160bytes, 4pixels per byte
+    x, y = ((addr%0x2000)%160)*2, (addr//0x2000) + 4*((addr%0x2000)//160)
+    if y < state.console_state.size[1] and page < state.console_state.num_pages:
+        return ( (backend.video.get_pixel(x, y, page)<<4) + 
+                  (backend.video.get_pixel(x+1, y, page)))
+    return -1
+    
+def get_video_memory_tandy_640(addr):
+    """ Retrieve a byte from Tandy 640x200x4 """
+    # mode 6: interlaced scan lines, 8 pixels per two bytes, 
+    # even bytes correspond to low attrib bit, odd bytes to high bit        
+    page, addr = addr//32768, addr%32768
+    # 4 x interlaced scan lines of 80bytes, 8pixels per 2bytes
+    x, y = (((addr%0x2000)%160)//2)*8, (addr//0x2000) + 4*((addr%0x2000)//160)
+    if y < state.console_state.size[1] and page < state.console_state.num_pages:
+        return get_pixel_byte(page, x, y, addr%2) 
+    return -1
+
+def get_video_memory_ega_7(addr):   
+    """ Retrieve a byte from EGA memory. """
+    # modes 7-9: 1 bit per pixel per colour plane                
+    page, addr = addr//8192, addr%8192
+    x, y = (addr%40)*8, addr//40
+    return get_pixel_byte(page, x, y, state.console_state.colour_plane % 4)
+
+def get_video_memory_ega_8(addr):   
+    """ Retrieve a byte from EGA memory. """
+    # modes 7-9: 1 bit per pixel per colour plane                
+    page, addr = addr//16384, addr%16384
+    x, y = (addr%80)*8, addr//80
+    return get_pixel_byte(page, x, y, state.console_state.colour_plane % 4)
+
+def get_video_memory_ega_9(addr):   
+    """ Retrieve a byte from EGA memory. """
+    # modes 7-9: 1 bit per pixel per colour plane                
+    page, addr = addr//32768, addr%32768
+    x, y = (addr%80)*8, addr//80
+    return get_pixel_byte(page, x, y, state.console_state.colour_plane % 4)
+
+def get_video_memory_ega_10(addr):   
+    """ Retrieve a byte from EGA memory. """
+    if colour_plane % 4 in (1, 3):
+        # only planes 0, 2 are used 
+        # http://webpages.charter.net/danrollins/techhelp/0089.HTM
+        return 0
+    page, addr = addr//32768, addr%32768
+    x, y = (addr%80)*8, addr//80
+    return get_pixel_byte(page, x, y, state.console_state.colour_plane % 4)
+
 def set_pixel_byte(page, x, y, plane_mask, byte):
+    """ Set a packed-pixel byte for a given colour plane. """
     inv_mask = 0xff ^ plane_mask
     if y < state.console_state.size[1] and page < state.console_state.num_pages:
         for shift in range(8):
-            bit = (byte>>(7-shift)) & 1
+            bit = (byte >> (7-shift)) & 1
             current = backend.video.get_pixel(x + shift, y, page) & inv_mask
-            backend.video.put_pixel(x + shift, y, current | (bit * plane_mask), page)  
+            backend.video.put_pixel(x + shift, y, 
+                                    current | (bit * plane_mask), page)  
+
+def set_video_memory_cga_4(addr, val):
+    """ Set a byte in CGA 4-colour memory. """
+    page, addr = addr//16384, addr%16384
+    # interlaced scan lines of 80bytes, 4pixels per byte
+    x, y = ((addr%0x2000)%80)*4, (addr>=0x2000) + 2*((addr%0x2000)//80)
+    if y < state.console_state.size[1] and page < state.console_state.num_pages:
+        for shift in range(4):
+            twobit = (val>>(6-shift*2)) & 3
+            backend.video.put_pixel(x + shift, y, twobit, page) 
+
+def set_video_memory_cga_2(addr, val):
+    """ Set a byte in CGA 2-colour memory. """
+    page, addr = addr//16384, addr%16384
+    # interlaced scan lines of 80bytes, 8 pixes per byte
+    x, y = ((addr%0x2000)%80)*8, (addr>=0x2000) + 2*((addr%0x2000)//80)
+    set_pixel_byte(page, x, y, 1, val)
+
+def set_video_memory_tandy_160(addr, val):
+    """ Set a byte in Tandy 160x200x16 memory. """
+    page, addr = addr//16384, addr%16384
+    # interlaced scan lines of 80bytes, 2pixels per byte
+    x, y = ((addr%0x2000)%80)*2, (addr//0x2000) + 2*((addr%0x2000)//80)
+    if y < state.console_state.size[1] and page < state.console_state.num_pages:
+        for shift in range(2):
+            fourbit = (val>>(4-shift*4)) & 15
+            backend.video.put_pixel(x + shift, y, fourbit, page) 
+
+def set_video_memory_tandy_320(addr, val):
+    """ Set a byte in Tandy 320x200x16 memory. """
+    page, addr = addr//32768, addr%32768
+    # 4 x interlaced scan lines of 160bytes, 2pixels per byte
+    x, y = ((addr%0x2000)%160)*2, (addr//0x2000) + 4*((addr%0x2000)//160)
+    if y < state.console_state.size[1] and page < state.console_state.num_pages:
+        for shift in range(2):
+            fourbit = (val>>(4-shift*4)) & 15
+            backend.video.put_pixel(x + shift, y, fourbit, page) 
+
+def set_video_memory_tandy_640(addr, val):
+    """ Set a byte in Tandy 640x200x4 memory. """
+    page, addr = addr//32768, addr%32768
+    # 4 x interlaced scan lines of 80bytes, 8pixels per 2bytes
+    x, y = (((addr%0x2000)%160)//2)*8, (addr//0x2000) + 4*((addr%0x2000)//160)
+    if y < state.console_state.size[1] and page < state.console_state.num_pages:
+        return set_pixel_byte(page, x, y, 1<<(addr%2), val) 
+
+def set_video_memory_ega_7(addr, val):
+    """ Set a byte in EGA video memory. """
+    page, addr = addr//8192, addr%8192
+    x, y = (addr%40)*8, addr//40
+    set_pixel_byte(page, x, y, 
+                   state.console_state.colour_plane_write_mask & 0xf, val)
+
+def set_video_memory_ega_8(addr, val):
+    """ Set a byte in EGA video memory. """
+    page, addr = addr//16384, addr%16384
+    x, y = (addr%80)*8, addr//80
+    set_pixel_byte(page, x, y, 
+                   state.console_state.colour_plane_write_mask & 0xf, val)
+
+def set_video_memory_ega_9(addr, val):
+    """ Set a byte in EGA video memory. """
+    page, addr = addr//32768, addr%32768
+    x, y = (addr%80)*8, addr//80
+    set_pixel_byte(page, x, y, 
+                   state.console_state.colour_plane_write_mask & 0xf, val)            
+
+def set_video_memory_ega_10(addr, val):
+    """ Set a byte in EGA video memory. """
+    page, addr = addr//32768, addr%32768
+    x, y = (addr%80)*8, addr//80
+    # only use bits 0 and 2
+    set_pixel_byte(page, x, y, 
+                   state.console_state.colour_plane_write_mask & 0x5, val)            
+
     
 def get_video_memory(addr):
+    """ Retrieve a byte from video memory. """
     if addr < video_segment[state.console_state.screen_mode]*0x10:
         return -1
     else:
         if state.console_state.screen_mode == 0:
             return get_text_memory(addr)
         addr -= video_segment[state.console_state.screen_mode]*0x10
-        #
-        # modes 1-5: interlaced scan lines, pixels sequentially packed into bytes
         if state.console_state.screen_mode in (1, 4):
-            # tandy screen 1 allows 2 pages
-            page, addr = addr//16384, addr%16384
-            # 2 x interlaced scan lines of 80bytes, 4pixels per byte
-            x, y = ((addr%0x2000)%80)*4, (addr//0x2000) + 2*((addr%0x2000)//80)
-            if y < state.console_state.size[1] and page < state.console_state.num_pages:
-                return ( (backend.video.get_pixel(x  , y, page)<<6) + (backend.video.get_pixel(x+1, y, page)<<4) 
-                        + (backend.video.get_pixel(x+2, y, page)<<2) + (backend.video.get_pixel(x+3, y, page)))
+            return get_video_memory_cga_4(addr)
         elif state.console_state.screen_mode == 2:
-            # tandy screen 1 allows 2 pages
-            page, addr = addr//16384, addr%16384
-            # interlaced scan lines of 80bytes, 8 pixes per byte
-            x, y = ((addr%0x2000)%80)*8, (addr//0x2000) + 2*((addr%0x2000)//80)
-            # mode 2 is simply 1 bit per pixel
-            return get_pixel_byte(page, x, y, 0)
+            return get_video_memory_cga_2(addr)
         elif state.console_state.screen_mode == 3:
-            page, addr = addr//16384, addr%16384
-            # interlaced scan lines of 80bytes, 2pixels per byte
-            x, y = ((addr%0x2000)%80)*2, (addr//0x2000) + 2*((addr%0x2000)//80)
-            if y < state.console_state.size[1] and page < state.console_state.num_pages:
-                return ( (backend.video.get_pixel(x, y, page)<<4) + (backend.video.get_pixel(x+1, y, page)))
+            return get_video_memory_tandy_160(addr)
         elif state.console_state.screen_mode == 5:
-            page, addr = addr//32768, addr%32768
-            # 4 x interlaced scan lines of 160bytes, 4pixels per byte
-            x, y = ((addr%0x2000)%160)*2, (addr//0x2000) + 4*((addr%0x2000)//160)
-            if y < state.console_state.size[1] and page < state.console_state.num_pages:
-                return ( (backend.video.get_pixel(x, y, page)<<4) + (backend.video.get_pixel(x+1, y, page)))
-        #
-        # mode 6: interlaced scan lines, 8 pixels per two bytes, even bytes correspond to low attrib bit, odd bytes to high bit        
+            return get_video_memory_tandy_320(addr)
         elif state.console_state.screen_mode == 6:
-            page, addr = addr//32768, addr%32768
-            # 4 x interlaced scan lines of 80bytes, 8pixels per 2bytes
-            x, y = (((addr%0x2000)%160)//2)*8, (addr//0x2000) + 4*((addr%0x2000)//160)
-            if y < state.console_state.size[1] and page < state.console_state.num_pages:
-                return get_pixel_byte(page, x, y, addr%2) 
-        #
-        # modes 7-9: 1 bit per pixel per colour plane                
+            return get_video_memory_tandy_640(addr)
         elif state.console_state.screen_mode == 7:
-            page, addr = addr//8192, addr%8192
-            x, y = (addr%40)*8, addr//40
-            return get_pixel_byte(page, x, y, state.console_state.colour_plane % 4)
+            return get_video_memory_ega_7(addr)
         elif state.console_state.screen_mode == 8:
-            page, addr = addr//16384, addr%16384
-            x, y = (addr%80)*8, addr//80
-            return get_pixel_byte(page, x, y, state.console_state.colour_plane % 4)
+            return get_video_memory_ega_8(addr)
         elif state.console_state.screen_mode == 9:
-            page, addr = addr//32768, addr%32768
-            x, y = (addr%80)*8, addr//80
-            return get_pixel_byte(page, x, y, state.console_state.colour_plane % 4)
+            return get_video_memory_ega_9(addr)
         elif state.console_state.screen_mode == 10:
-            if colour_plane % 4 in (1, 3):
-                # only planes 0, 2 are used 
-                # http://webpages.charter.net/danrollins/techhelp/0089.HTM
-                return 0
-            page, addr = addr//32768, addr%32768
-            x, y = (addr%80)*8, addr//80
-            return get_pixel_byte(page, x, y, state.console_state.colour_plane % 4)
+            return get_video_memory_ega_10(addr)
         return -1   
 
 def set_video_memory(addr, val):
+    """ Set a byte in video memory. """
     if addr >= video_segment[state.console_state.screen_mode]*0x10:
         if state.console_state.screen_mode == 0:
             return set_text_memory(addr, val)
         addr -= video_segment[state.console_state.screen_mode]*0x10
         if state.console_state.screen_mode in (1, 4):
-            page, addr = addr//16384, addr%16384
-            # interlaced scan lines of 80bytes, 4pixels per byte
-            x, y = ((addr%0x2000)%80)*4, (addr>=0x2000) + 2*((addr%0x2000)//80)
-            if y < state.console_state.size[1] and page < state.console_state.num_pages:
-                for shift in range(4):
-                    twobit = (val>>(6-shift*2)) & 3
-                    backend.video.put_pixel(x + shift, y, twobit, page) 
+            set_video_memory_cga_4(addr, val)
         elif state.console_state.screen_mode == 2:
-            page, addr = addr//16384, addr%16384
-            # interlaced scan lines of 80bytes, 8 pixes per byte
-            x, y = ((addr%0x2000)%80)*8, (addr>=0x2000) + 2*((addr%0x2000)//80)
-            set_pixel_byte(page, x, y, 1, val)
+            set_video_memory_cga_2(addr, val)
         elif state.console_state.screen_mode == 3:
-            page, addr = addr//16384, addr%16384
-            # interlaced scan lines of 80bytes, 2pixels per byte
-            x, y = ((addr%0x2000)%80)*2, (addr//0x2000) + 2*((addr%0x2000)//80)
-            if y < state.console_state.size[1] and page < state.console_state.num_pages:
-                for shift in range(2):
-                    fourbit = (val>>(4-shift*4)) & 15
-                    backend.video.put_pixel(x + shift, y, fourbit, page) 
+            set_video_memory_tandy_160(addr, val)
         elif state.console_state.screen_mode == 5:
-            page, addr = addr//32768, addr%32768
-            # 4 x interlaced scan lines of 160bytes, 2pixels per byte
-            x, y = ((addr%0x2000)%160)*2, (addr//0x2000) + 4*((addr%0x2000)//160)
-            if y < state.console_state.size[1] and page < state.console_state.num_pages:
-                for shift in range(2):
-                    fourbit = (val>>(4-shift*4)) & 15
-                    backend.video.put_pixel(x + shift, y, fourbit, page) 
+            set_video_memory_tandy_320(addr, val)
         elif state.console_state.screen_mode == 6:
-            page, addr = addr//32768, addr%32768
-            # 4 x interlaced scan lines of 80bytes, 8pixels per 2bytes
-            x, y = (((addr%0x2000)%160)//2)*8, (addr//0x2000) + 4*((addr%0x2000)//160)
-            if y < state.console_state.size[1] and page < state.console_state.num_pages:
-                return set_pixel_byte(page, x, y, 1<<(addr%2), val) 
+            set_video_memory_tandy_640(addr, val)
         elif state.console_state.screen_mode == 7:
-            page, addr = addr//8192, addr%8192
-            x, y = (addr%40)*8, addr//40
-            set_pixel_byte(page, x, y, state.console_state.colour_plane_write_mask & 0xf, val)
+            set_video_memory_ega_7(addr, val)
         elif state.console_state.screen_mode == 8:
-            page, addr = addr//16384, addr%16384
-            x, y = (addr%80)*8, addr//80
-            set_pixel_byte(page, x, y, state.console_state.colour_plane_write_mask & 0xf, val)
+            set_video_memory_ega_8(addr, val)
         elif state.console_state.screen_mode == 9:
-            page, addr = addr//32768, addr%32768
-            x, y = (addr%80)*8, addr//80
-            set_pixel_byte(page, x, y, state.console_state.colour_plane_write_mask & 0xf, val)            
+            set_video_memory_ega_9(addr, val)
         elif state.console_state.screen_mode == 10:
-            page, addr = addr//32768, addr%32768
-            x, y = (addr%80)*8, addr//80
-            # only use bits 0 and 2
-            set_pixel_byte(page, x, y, state.console_state.colour_plane_write_mask & 0x5, val)            
+            set_video_memory_ega_10(addr, val)
 
 def get_video_memory_block(addr, length):
-    return bytearray( [ max(0, get_video_memory(a)) for a in range(addr, addr+length) ] )
+    """ Retrieve a contiguous block of bytes from video memory. """
+    return bytearray( [ max(0, get_video_memory(a)) 
+                         for a in range(addr, addr+length) ] )
     
 def set_video_memory_block(addr, some_bytes):
+    """ Set a contiguous block of bytes in video memory. """
     for a in range(len(some_bytes)):
         set_video_memory(addr + a, some_bytes[a])
     
@@ -412,6 +509,7 @@ def set_video_memory_block(addr, some_bytes):
 #################################################################################
 
 def get_text_memory(addr):
+    """ Retrieve a byte from textmode video memory. """
     addr -= text_segment*0x10
     page = addr // ((state.console_state.width*state.console_state.height*2 + 96)*4)
     offset = addr % ((state.console_state.width*state.console_state.height*2 + 96)*4)
@@ -423,6 +521,7 @@ def get_text_memory(addr):
         return -1    
     
 def set_text_memory(addr, val):
+    """ Set a byte in textmode video memory. """
     addr -= text_segment*0x10
     page = addr // ((state.console_state.width*state.console_state.height*2 + 96)*4)
     offset = addr % ((state.console_state.width*state.console_state.height*2 + 96)*4)
