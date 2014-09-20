@@ -13,7 +13,7 @@ then
 fi
 mkdir output/$name
 pushd output/$name > /dev/null
-../../../pcbasic -bq "../../$name.BAS" > /dev/null
+../../../pcbasic -q "../../$name.BAS" 
 pass=1
 for file in *
 do
