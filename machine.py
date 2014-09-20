@@ -119,7 +119,10 @@ def bload(g, offset):
         c = g.read(1)
         if c == '':
             break
-        buf += c    
+        buf += c
+    # remove any EOF marker at end 
+    if buf and buf[-1] == 0x1a:  
+        buf = buf[:-1]
     g.close()
     addr = seg * 0x10 + offset
     if addr + len(buf) > video_segment[state.console_state.screen_mode]*0x10:
@@ -275,6 +278,7 @@ def get_video_memory_cga_4(addr):
     """ Retrieve a byte from CGA 4-colour memory. """
     # modes 1-5: interlaced scan lines, pixels sequentially packed into bytes
     # tandy screen 1 allows 2 pages
+    # 16384 <== x*y*bitsperpixel/8
     page, addr = addr//16384, addr%16384
     # 2 x interlaced scan lines of 80bytes, 4pixels per byte
     x, y = ((addr%0x2000)%80)*4, (addr//0x2000) + 2*((addr%0x2000)//80)
