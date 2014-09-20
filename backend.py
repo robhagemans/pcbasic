@@ -219,7 +219,8 @@ class ModeData(object):
                  palette, colours, colours1=None, 
                  font_width=8, 
                  supports_artifacts=False, cursor_index=None, has_blink=False,
-                 pixel_aspect=None, has_underline=False, is_text_mode=False):
+                 pixel_aspect=None, has_underline=False, is_text_mode=False,
+                 mem_start=0xb800, page_size=0x4000):
         """ Settings for one video mode. """         
         self.font_height = font_height
         self.attr = attr
@@ -237,6 +238,8 @@ class ModeData(object):
         self.has_blink = has_blink
         self.has_underline = has_underline
         self.pixel_aspect = pixel_aspect
+        self.mem_start = mem_start
+        self.page_size = page_size
             
 # video modes
 text_mode_80 = {
@@ -251,7 +254,10 @@ text_mode_80 = {
                 num_pages = 4, 
                 bitsperpixel = 4,
                 is_text_mode = True,
-                has_blink = True),
+                has_blink = True #,
+#                mem_start = 0xb800,
+#                page_size = 
+                ),
     'ega': ModeData(
                 font_height = 14,
                 attr = 7,
@@ -948,6 +954,9 @@ def init_graphics(mode_info):
 
 def set_page(new_vpagenum, new_apagenum):
     """ Set active page & visible page, counting from 0. """
+    if (new_vpagenum >= state.console_state.num_pages or
+            new_apagenum >= state.console_state.num_pages):
+        raise error.RunError(5)    
     state.console_state.vpagenum = new_vpagenum
     state.console_state.apagenum = new_apagenum
     state.console_state.vpage = state.console_state.pages[new_vpagenum]
@@ -1074,10 +1083,11 @@ def set_border(attr):
 ##############################
 # screen buffer read/write
 
-def put_screen_char_attr(cpage, crow, ccol, c, cattr, 
+def put_screen_char_attr(pagenum, crow, ccol, c, cattr, 
                          one_only=False, for_keys=False):
     """ Put a byte to the screen, redrawing SBCS and DBCS as necessary. """
     cattr = cattr & 0xf if state.console_state.screen_mode else cattr
+    cpage = state.console_state.pages[pagenum]
     # update the screen buffer
     cpage.row[crow-1].buf[ccol-1] = (c, cattr)
     # mark the replaced char for refreshing
@@ -1149,7 +1159,7 @@ def put_screen_char_attr(cpage, crow, ccol, c, cattr,
                         stop = max(stop, ccol+2)
                 ccol += 1        
     # update the screen            
-    refresh_screen_range(cpage, crow, start, stop, for_keys)
+    refresh_screen_range(pagenum, crow, start, stop, for_keys)
 
 def get_screen_char_attr(crow, ccol, want_attr):
     """ Retrieve a byte from the screen (SBCS or DBCS half-char). """
@@ -1186,7 +1196,7 @@ def redraw_row(start, crow, wrap=True):
         for i in range(start, therow.end): 
             # redrawing changes colour attributes to current foreground (cf. GW)
             # don't update all dbcs chars behind at each put
-            put_screen_char_attr(state.console_state.apage, crow, i+1, 
+            put_screen_char_attr(state.console_state.apagenum, crow, i+1, 
                     therow.buf[i][0], state.console_state.attr, one_only=True)
         if (wrap and therow.wrap and 
                 crow >= 0 and crow < state.console_state.height-1):
@@ -1195,8 +1205,9 @@ def redraw_row(start, crow, wrap=True):
         else:
             break    
 
-def refresh_screen_range(cpage, crow, start, stop, for_keys=False):
+def refresh_screen_range(pagenum, crow, start, stop, for_keys=False):
     """ Redraw a section of a screen row, assuming DBCS buffer has been set. """
+    cpage = state.console_state.pages[pagenum]
     therow = cpage.row[crow-1]
     ccol = start
     while ccol < stop:
@@ -1214,7 +1225,7 @@ def refresh_screen_range(cpage, crow, start, stop, for_keys=False):
                 logging.debug('DBCS buffer corrupted at %d, %d', crow, ccol)
             ca = therow.buf[ccol-1]        
             video.set_attr(ca[1]) 
-            video.putc_at(crow, ccol, ca[0], for_keys)
+            video.putc_at(pagenum, crow, ccol, ca[0], for_keys)
             ccol += 1
 
 
@@ -1226,10 +1237,9 @@ def redraw_text_screen():
     video.clear_rows(state.console_state.attr, 1, 25)
     # redraw every character
     for crow in range(state.console_state.height):
-        thepage = state.console_state.apage
-        therow = thepage.row[crow]  
+        therow = state.console_state.apage.row[crow]  
         for i in range(state.console_state.width): 
-            put_screen_char_attr(thepage, crow+1, i+1, 
+            put_screen_char_attr(state.console_state.apagenum, crow+1, i+1, 
                                  therow.buf[i][0], therow.buf[i][1])
     # set cursor back to previous state                             
     update_cursor_visibility()

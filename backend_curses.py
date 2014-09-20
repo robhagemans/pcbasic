@@ -226,14 +226,14 @@ def set_attr(cattr):
     last_attr = attr
     window.bkgdset(' ', colours(attr))
 
-def putc_at(row, col, c, for_keys=False):
+def putc_at(pagenum, row, col, c, for_keys=False):
     # this doesn't recognise DBCS
     try:
         window.addstr(row-1, col-1, unicodepage.UTF8Converter().to_utf8(c), colours(attr))
     except curses.error:
         pass
 
-def putwc_at(row, col, c, d, for_keys=False):
+def putwc_at(pagenum, row, col, c, d, for_keys=False):
     # this does recognise DBCS
     try:
         try:

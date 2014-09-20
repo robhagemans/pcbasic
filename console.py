@@ -707,7 +707,7 @@ def write_for_keys(s, col, cattr):
                 c = keys_line_replace_chars[c]
             except KeyError:
                 pass    
-            backend.put_screen_char_attr(state.console_state.apage, 25, col,
+            backend.put_screen_char_attr(state.console_state.apagenum, 25, col,
                                          c, cattr, for_keys=True)    
         col += 1
     backend.video.set_attr(state.console_state.attr)
@@ -726,7 +726,7 @@ def put_char(c, do_scroll_down=False):
     # move cursor and see if we need to scroll up
     check_pos(scroll_ok=True) 
     # put the character
-    backend.put_screen_char_attr(state.console_state.apage, 
+    backend.put_screen_char_attr(state.console_state.apagenum, 
             state.console_state.row, state.console_state.col, 
             c, state.console_state.attr)
     # adjust end of line marker

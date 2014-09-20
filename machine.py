@@ -524,8 +524,9 @@ def set_video_memory_block(addr, some_bytes):
 def get_text_memory(addr):
     """ Retrieve a byte from textmode video memory. """
     addr -= text_segment*0x10
-    page = addr // ((state.console_state.width*state.console_state.height*2 + 96)*4)
-    offset = addr % ((state.console_state.width*state.console_state.height*2 + 96)*4)
+    page_size = 4096 if state.console_state.width == 80 else 2048
+    page = addr // page_size
+    offset = addr % page_size
     ccol, crow = (offset%(state.console_state.width*2))//2, offset//(state.console_state.width*2)
     try:
         c = state.console_state.pages[page].row[crow].buf[ccol][addr%2]  
@@ -536,8 +537,9 @@ def get_text_memory(addr):
 def set_text_memory(addr, val):
     """ Set a byte in textmode video memory. """
     addr -= text_segment*0x10
-    page = addr // ((state.console_state.width*state.console_state.height*2 + 96)*4)
-    offset = addr % ((state.console_state.width*state.console_state.height*2 + 96)*4)
+    page_size = 4096 if state.console_state.width == 80 else 2048
+    page = addr // page_size
+    offset = addr % page_size
     ccol, crow = (offset%(state.console_state.width*2))//2, offset//(state.console_state.width*2)
     try:
         c, a = state.console_state.pages[page].row[crow].buf[ccol]
@@ -545,7 +547,7 @@ def set_text_memory(addr, val):
             c = chr(val)
         else:
             a = val
-        backend.put_screen_char_attr(state.console_state.pages[page], crow+1, ccol+1, c, a)
+        backend.put_screen_char_attr(page, crow+1, ccol+1, c, a)
     except IndexError:
         pass
     

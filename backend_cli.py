@@ -78,7 +78,7 @@ if plat.system == 'Windows':
         def flush(self):
             pass
 
-    def putc_at(row, col, c, for_keys=False):
+    def putc_at(pagenum, row, col, c, for_keys=False):
         global last_col
         if for_keys:
             return
@@ -87,7 +87,7 @@ if plat.system == 'Windows':
         wconio.putch(c)
         last_col += 1
 
-    def putwc_at(row, col, c, d, for_keys=False):
+    def putwc_at(pagenum, row, col, c, d, for_keys=False):
         global last_col
         if for_keys:
             return
@@ -144,7 +144,7 @@ else:
     def move_right(num):
         term.write(ansi.esc_move_right*num)
 
-    def putc_at(row, col, c, for_keys=False):
+    def putc_at(pagenum, row, col, c, for_keys=False):
         global last_col
         if for_keys:
             return
@@ -154,7 +154,7 @@ else:
         term.flush()
         last_col += 1
 
-    def putwc_at(row, col, c, d, for_keys=False):
+    def putwc_at(pagenum, row, col, c, d, for_keys=False):
         global last_col
         if for_keys:
             return

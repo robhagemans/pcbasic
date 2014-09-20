@@ -657,20 +657,20 @@ def set_attr(cattr, force_rebuild=False):
     current_attr = cattr    
     current_attr_context = apagenum
 
-def putc_at(row, col, c, for_keys=False):
+def putc_at(pagenum, row, col, c, for_keys=False):
     global screen_changed
     glyph = glyphs[ord(c)]
     blank = glyphs[0] # using \0 for blank (tyoeface.py guarantees it's empty)
     top_left = ((col-1) * font_width, (row-1) * font_height)
-    canvas[apagenum].blit(glyph, top_left)
+    canvas[pagenum].blit(glyph, top_left)
     if mode_has_underline and (current_attr % 8 == 1):
         color, _ = get_palette_index(current_attr)    
         for xx in range(font_width):
-            canvas[apagenum].set_at(((col-1) * font_width + xx, 
+            canvas[pagenum].set_at(((col-1) * font_width + xx, 
                                        row*font_height - 1), color)
     screen_changed = True
 
-def putwc_at(row, col, c, d, for_keys=False):
+def putwc_at(pagenum, row, col, c, d, for_keys=False):
     global screen_changed
     glyph = build_glyph(c+d, font, 16, font_height)
     color, bg = get_palette_index(current_attr)    
@@ -680,7 +680,7 @@ def putwc_at(row, col, c, d, for_keys=False):
     blank.fill(255)
     blank.set_palette_at(255, bg)
     top_left = ((col-1) * font_width, (row-1) * font_height)
-    canvas[apagenum].blit(glyph, top_left)
+    canvas[pagenum].blit(glyph, top_left)
     screen_changed = True
     
 # ascii codepoints for which to repeat column 8 in column 9 (box drawing)
