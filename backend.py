@@ -254,9 +254,9 @@ text_mode_80 = {
                 num_pages = 4, 
                 bitsperpixel = 4,
                 is_text_mode = True,
-                has_blink = True #,
-#                mem_start = 0xb800,
-#                page_size = 
+                has_blink = True,
+                mem_start = 0xb800,
+                page_size = 0x1000,
                 ),
     'ega': ModeData(
                 font_height = 14,
@@ -268,7 +268,10 @@ text_mode_80 = {
                 num_pages = 4, 
                 bitsperpixel = 4,
                 is_text_mode = True,
-                has_blink = True),
+                has_blink = True,
+                mem_start = 0xb800,
+                page_size = 0x1000,
+                ),
     'ega_mono': ModeData(
                 font_height = 14, 
                 font_width = 8,
@@ -281,7 +284,10 @@ text_mode_80 = {
                 bitsperpixel = 4,
                 is_text_mode = True,
                 has_blink = True,
-                has_underline = True),
+                has_underline = True,
+                mem_start = 0xb000,
+                page_size = 0x1000,
+                ),
     'mda':  ModeData(
                 font_height = 14, 
                 font_width = 9,
@@ -294,7 +300,10 @@ text_mode_80 = {
                 bitsperpixel = 4,
                 is_text_mode = True,
                 has_blink = True,
-                has_underline = True),
+                has_underline = True,
+                mem_start = 0xb000,
+                page_size = 0x1000,
+                ),
     'hercules':  ModeData(
                 # not implemented: should lose two scan lines to fit on 348
                 # snd attributes shld distinguish black, dim, normal, bright
@@ -310,7 +319,10 @@ text_mode_80 = {
                 bitsperpixel = 4,
                 is_text_mode = True,
                 has_blink = True,
-                has_underline = True),
+                has_underline = True,
+                mem_start = 0xb000,
+                page_size = 0x1000,
+                ),
     'cga':  ModeData(
                 font_height = 8, 
                 attr = 7,
@@ -321,7 +333,10 @@ text_mode_80 = {
                 num_pages = 4, 
                 bitsperpixel = 4,
                 is_text_mode = True,
-                has_blink = True),
+                has_blink = True,
+                mem_start = 0xb800,
+                page_size = 0x1000,
+                ),
     'tandy':  ModeData(
                 font_height = 9, 
                 attr = 7,
@@ -333,7 +348,10 @@ text_mode_80 = {
                 num_pages = 4,
                 bitsperpixel = 4,
                 is_text_mode = True,
-                has_blink = True),
+                has_blink = True,
+                mem_start = 0xb800,
+                page_size = 0x1000,
+                ),
     'olivetti':  ModeData(
                 font_height = 16, 
                 attr = 7,
@@ -345,7 +363,10 @@ text_mode_80 = {
                 num_pages = 4,
                 bitsperpixel = 4,
                 is_text_mode = True,
-                has_blink = True),
+                has_blink = True,
+                mem_start = 0xb800,
+                page_size = 0x1000,
+                ),
     }
 text_mode_80['pcjr'] = text_mode_80['cga']
 text_mode_80['cga_old'] = text_mode_80['cga']
@@ -362,7 +383,10 @@ text_mode_40 = {
                 num_pages = 8,
                 bitsperpixel = 4,
                 is_text_mode = True,
-                has_blink = True),
+                has_blink = True,
+                mem_start = 0xb800,
+                page_size = 0x800,
+                ),
     'ega': ModeData(
                 font_height = 14,
                 attr = 7,
@@ -373,7 +397,10 @@ text_mode_40 = {
                 num_pages = 8, 
                 bitsperpixel = 4,
                 is_text_mode = True,
-                has_blink = True),
+                has_blink = True,
+                mem_start = 0xb800,
+                page_size = 0x800,
+                ),
     'ega_mono': ModeData(
                 font_height = 14, 
                 font_width = 8,
@@ -386,7 +413,10 @@ text_mode_40 = {
                 bitsperpixel = 4,
                 is_text_mode = True,
                 has_blink = True,
-                has_underline = True),
+                has_underline = True,
+                mem_start = 0xb000,
+                page_size = 0x800,
+                ),
     'mda':  ModeData(
                 font_height = 14, 
                 font_width = 9,
@@ -399,7 +429,10 @@ text_mode_40 = {
                 bitsperpixel = 4,
                 is_text_mode = True,
                 has_blink = True,
-                has_underline = True),
+                has_underline = True,
+                mem_start = 0xb000,
+                page_size = 0x800,
+                ),
     'hercules':  ModeData(
                 # not implemented: should lose two scan lines to fit on 348
                 # snd attributes shld distinguish black, dim, normal, bright
@@ -415,7 +448,10 @@ text_mode_40 = {
                 bitsperpixel = 4,
                 is_text_mode = True,
                 has_blink = True,
-                has_underline = True),
+                has_underline = True,
+                mem_start = 0xb000,
+                page_size = 0x800,
+                ),
     'cga':  ModeData(
                 font_height = 8, 
                 attr = 7,
@@ -426,7 +462,10 @@ text_mode_40 = {
                 num_pages = 8, 
                 bitsperpixel = 4,
                 is_text_mode = True,
-                has_blink = True),
+                has_blink = True,
+                mem_start = 0xb800,
+                page_size = 0x800,
+                ),
     'tandy':  ModeData(
                 font_height = 9, 
                 attr = 7,
@@ -438,7 +477,10 @@ text_mode_40 = {
                 num_pages = 8, 
                 bitsperpixel = 4,
                 is_text_mode = True,
-                has_blink = True),
+                has_blink = True,
+                mem_start = 0xb800,
+                page_size = 0x800,
+                ),
     'olivetti':  ModeData(
                 font_height = 16, 
                 attr = 7,
@@ -450,7 +492,10 @@ text_mode_40 = {
                 num_pages = 8,
                 bitsperpixel = 4,
                 is_text_mode = True,
-                has_blink = True),
+                has_blink = True,
+                mem_start = 0xb800,
+                page_size = 0x800,
+                ),
     }
 text_mode_40['pcjr'] = text_mode_40['cga']
 text_mode_40['cga_old'] = text_mode_40['cga']
@@ -475,7 +520,10 @@ graphics_mode = {
             palette = cga4_palette,
             width = 40,
             num_pages = 1,
-            bitsperpixel = 2),
+            bitsperpixel = 2,
+            mem_start = 0xb800,
+            page_size = 0x4000,
+            ),            
     # 06h 640x200x2  16384B 1bpp 0xb8000 
     '640x200x2': ModeData(
             font_height = 8, 
@@ -486,7 +534,10 @@ graphics_mode = {
             width = 80,
             num_pages = 1,
             bitsperpixel = 1,
-            supports_artifacts = True),
+            supports_artifacts = True,
+            mem_start = 0xb800,
+            page_size = 0x4000,
+            ),
     # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy
     '160x200x16': ModeData(
             font_height = 8, 
@@ -498,9 +549,11 @@ graphics_mode = {
             num_pages = 2,
             bitsperpixel = 4,
             cursor_index = 3,
-            pixel_aspect = (1968, 1000) # you'd expect 192, 100
+            pixel_aspect = (1968, 1000), # you'd expect 192, 100
+            mem_start = 0xb800,
+            page_size = 0x4000,
             ),
-    #     320x200x4  16384B 2bpp 0xb8000   
+    #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr
     '320x200x4': ModeData(
             font_height = 8, 
             attr = 3,
@@ -510,8 +563,11 @@ graphics_mode = {
             width = 40,
             num_pages = 2,
             bitsperpixel = 2,
-            cursor_index = 3),
-    # 09h 320x200x16 32768B 4bpp 0xb8000    
+            cursor_index = 3,
+            mem_start = 0xb800,
+            page_size = 0x4000,
+            ),
+    # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr
     '320x200x16': ModeData(
             font_height = 8, 
             attr = 15,
@@ -521,8 +577,11 @@ graphics_mode = {
             width = 40,
             num_pages = 1,
             bitsperpixel = 4,
-            cursor_index = 3),
-    # 0Ah 640x200x4  32768B 2bpp 0xb8000   
+            cursor_index = 3,
+            mem_start = 0xb800,
+            page_size = 0x8000,
+            ),
+    # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr
     '640x200x4': ModeData(
             font_height = 8, 
             attr = 3,
@@ -532,8 +591,11 @@ graphics_mode = {
             width = 80,
             num_pages = 1,
             bitsperpixel = 2,
-            cursor_index = 3),
-    # 0Dh 320x200x16 32768B 4bpp 0xa0000
+            cursor_index = 3,
+            mem_start = 0xb800,
+            page_size = 0x8000,
+            ),
+    # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
     '320x200x16': ModeData(
             font_height = 8, 
             attr = 15,
@@ -542,8 +604,11 @@ graphics_mode = {
             palette = cga16_palette,
             width = 40,
             num_pages = 8,
-            bitsperpixel = 4),
-    # 0Eh 640x200x16 
+            bitsperpixel = 4,
+            mem_start = 0xa000,
+            page_size = 0x2000,
+            ),
+    # 0Eh 640x200x16    EGA screen 8
     '640x200x16': ModeData(
             font_height = 8, 
             attr = 15,
@@ -552,8 +617,11 @@ graphics_mode = {
             palette = cga16_palette,
             width = 80,
             num_pages = 4,
-            bitsperpixel = 4),
-    # 10h 640x350x16 
+            bitsperpixel = 4,
+            mem_start = 0xa000,
+            page_size = 0x4000,
+            ),
+    # 10h 640x350x16    EGA screen 9
     '640x350x16': ModeData(
             font_height = 14, 
             attr = 15,
@@ -562,8 +630,11 @@ graphics_mode = {
             palette = ega_palette,
             width = 80,
             num_pages = 2,
-            bitsperpixel = 4),
-    # 0Fh 640x350x4 monochrome 
+            bitsperpixel = 4,
+            mem_start = 0xa000,
+            page_size = 0x8000,
+            ),
+    # 0Fh 640x350x4     EGA monochrome screen 10
     '640x350x4': ModeData(
             font_height = 14, 
             attr = 1,
@@ -574,7 +645,10 @@ graphics_mode = {
             width = 80,
             num_pages = 2,
             bitsperpixel = 2,
-            has_blink = True),
+            has_blink = True,
+            mem_start = 0xa000,
+            page_size = 0x8000,
+            ),
     # 40h 640x400x2   1bpp  olivetti
     '640x400x2': ModeData(
             font_height = 16, 
@@ -584,7 +658,10 @@ graphics_mode = {
             palette = [0, 15],
             width = 80,
             num_pages = 1,
-            bitsperpixel = 1),
+            bitsperpixel = 1,
+            mem_start = 0xb800,
+            page_size = 0x8000,
+            ),
     # hercules
     '720x348x2': ModeData(
             # FIXME hercules - this actually produces 350, not 348
@@ -597,7 +674,10 @@ graphics_mode = {
             palette = [0, 15],
             width = 80,
             num_pages = 2,
-            bitsperpixel = 1),
+            bitsperpixel = 1,
+            mem_start = 0xb800,
+            page_size = 0x8000,
+            ),
     }
 
 # mode numbers by video card
