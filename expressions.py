@@ -472,7 +472,7 @@ def value_screen(ins):
     util.range_check(1, state.console_state.width, col)
     util.range_check(0, 255, z)
     util.require_read(ins, (')',))
-    if z and state.console_state.screen_mode:
+    if z and not state.console_state.current_mode.is_text_mode:
         return vartypes.null['%']    
     else:
         return vartypes.pack_int(backend.get_screen_char_attr(row, col, z!=0))
@@ -643,7 +643,7 @@ def value_pmap(ins):
     mode = vartypes.pass_int_unpack(parse_expression(ins))
     util.require_read(ins, (')',))
     util.range_check(0, 3, mode)
-    if not state.console_state.screen_mode:
+    if state.console_state.current_mode.is_text_mode:
         return vartypes.null['%']
     if mode == 0:
         value, _ = graphics.window_coords(fp.unpack(vartypes.pass_single_keep(coord)), fp.Single.zero)       

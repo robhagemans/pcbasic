@@ -1382,20 +1382,20 @@ def init_video():
 
 def resume_screen():
     """ Load a video mode from storage and initialise. """
-    if (state.console_state.screen_mode != 0 and 
+    if (not state.console_state.current_mode.is_text_mode and 
             state.console_state.screen_mode not in mode_data):
         # mode not supported by backend
         logging.warning(
             "Resumed screen mode %d not supported by this setup",
             state.console_state.screen_mode)
         return False
-    if state.console_state.screen_mode != 0:    
+    if not state.console_state.current_mode.is_text_mode:    
         mode_info = copy(mode_data[state.console_state.screen_mode])
     else:
         mode_info = copy(text_data[state.console_state.width])
     mode_info.attr = state.console_state.attr
     # set up the appropriate screen resolution
-    if (state.console_state.screen_mode == 0 or 
+    if (state.console_state.current_mode.is_text_mode or 
             video.supports_graphics_mode(mode_info)):
         # set the visible and active pages
         video.set_page(state.console_state.vpagenum, 
@@ -1678,7 +1678,8 @@ def set_colorburst(on=True):
     global cga_mode_5
     colorburst_capable = video_capabilities in (
                                 'cga', 'cga_old', 'tandy', 'pcjr')
-    if state.console_state.screen_mode == 1 and not composite_monitor:
+    if (state.console_state.current_mode == graphics_mode['320x200x4'] and 
+            not composite_monitor):
         # ega ignores colorburst; tandy and pcjr have no mode 5
         cga_mode_5 = not (on or video_capabilities not in ('cga', 'cga_old'))
         set_cga4_palette(1)
@@ -1702,7 +1703,8 @@ def set_border(attr):
 def put_screen_char_attr(pagenum, crow, ccol, c, cattr, 
                          one_only=False, for_keys=False):
     """ Put a byte to the screen, redrawing SBCS and DBCS as necessary. """
-    cattr = cattr & 0xf if state.console_state.screen_mode else cattr
+    if not state.console_state.current_mode.is_text_mode:
+        cattr = cattr & 0xf
     cpage = state.console_state.pages[pagenum]
     # update the screen buffer
     cpage.row[crow-1].buf[ccol-1] = (c, cattr)
@@ -2073,7 +2075,7 @@ def update_cursor_visibility():
     """ Set cursor visibility to its default state. """
     # visible if in interactive mode, unless forced visible in text mode.
     visible = (not state.basic_state.execute_mode)
-    if state.console_state.screen_mode == 0:
+    if state.console_state.current_mode.is_text_mode:
         visible = visible or state.console_state.cursor
     video.update_cursor_visibility(visible)
 

@@ -286,7 +286,7 @@ def set_default_cursor():
     """ Set the appropriate cursor for the current mode. """
     font_height = state.console_state.font_height
     if state.console_state.overwrite_mode:
-        if state.console_state.screen_mode != 0: 
+        if not state.console_state.current_mode.is_text_mode: 
             # always a block cursor in graphics mode
             backend.set_cursor_shape(0, font_height-1)
         elif backend.video_capabilities == 'ega':
@@ -687,7 +687,7 @@ def show_keys(do_show):
             text = str(state.console_state.key_replace[i][:6])
             kcol = 1+8*i
             write_for_keys(str(i+1)[-1], kcol, state.console_state.attr)
-            if state.console_state.screen_mode:
+            if not state.console_state.current_mode.is_text_mode:
                 write_for_keys(text, kcol+1, state.console_state.attr)
             else:
                 if (state.console_state.attr>>4) & 0x7 == 0:    

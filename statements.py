@@ -1215,8 +1215,9 @@ def exec_paint(ins):
                 border = vartypes.pass_int_unpack(bval)
             if util.skip_white_read_if(ins, (',',)):
                 background_pattern = vartypes.pass_string_unpack(expressions.parse_expression(ins), err=5)
-                # only in screen 7,8,9 is this an error
-                if background_pattern[:len(pattern)] == pattern and state.console_state.screen_mode in (7,8,9):
+                # only in screen 7,8,9 is this an error (use ega memory as a check)
+                if (background_pattern[:len(pattern)] == pattern and 
+                        state.console_state.current_mode.mem_start == 0xa000):
                     raise error.RunError(5)
     util.require(ins, util.end_statement)         
     graphics.flood_fill(x0, y0, pattern, c, border, background_pattern)        
@@ -1984,7 +1985,8 @@ def exec_palette(ins):
             # effective palette change is an error in CGA; ignore in Tandy/PCjr SCREEN 0
             if backend.video_capabilities in ('cga', 'cga_old', 'mda', 'ega_mono'):
                 raise error.RunError(5)
-            elif backend.video_capabilities in ('tandy', 'pcjr') and state.console_state.screen_mode == 0:
+            elif (backend.video_capabilities in ('tandy', 'pcjr') and 
+                    state.console_state.current_mode.is_text_mode):
                 pass
             else:       
                 backend.set_palette_entry(pair[0], pair[1])
@@ -2001,7 +2003,8 @@ def exec_palette_using(ins):
         raise error.RunError(13)
     if backend.video_capabilities in ('cga', 'cga_old'):
         raise error.RunError(5)
-    elif backend.video_capabilities in ('tandy', 'pcjr') and state.console_state.screen_mode == 0:
+    elif (backend.video_capabilities in ('tandy', 'pcjr') and 
+            state.console_state.current_mode.is_text_mode):
         pass
     else:            
         start = var.index_array(start_indices, dimensions)
@@ -2096,7 +2099,7 @@ def exec_locate(ins):
     if start != None:    
         util.range_check(0, 31, start, stop)
         # cursor shape only has an effect in text mode    
-        if state.console_state.screen_mode == 0:    
+        if state.console_state.current_mode.is_text_mode:    
             backend.set_cursor_shape(start, stop)
 
 def exec_write(ins, output=None):
