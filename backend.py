@@ -1589,7 +1589,7 @@ def set_width(to_width):
     elif state.console_state.current_mode.is_text_mode:
         return screen(0, None, None, None, new_width=to_width) 
     elif to_width == 40:
-        elif state.console_state.current_mode == graphics_mode['640x200x2']:
+        if state.console_state.current_mode == graphics_mode['640x200x2']:
             return screen(1, None, None, None)
         elif state.console_state.current_mode == graphics_mode['160x200x16']:
             return screen(1, None, None, None)
@@ -1600,7 +1600,7 @@ def set_width(to_width):
         elif state.console_state.current_mode == graphics_mode['640x350x16']:
             return screen(7, None, None, None)
     elif to_width == 80:
-        elif state.console_state.current_mode == graphics_mode['320x200x4']:
+        if state.console_state.current_mode == graphics_mode['320x200x4']:
             return screen(2, None, None, None)
         elif state.console_state.current_mode == graphics_mode['160x200x16']:
             return screen(2, None, None, None)

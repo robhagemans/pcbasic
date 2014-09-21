@@ -2287,7 +2287,10 @@ def exec_screen(ins):
     util.range_check(0, 255, mode, colorswitch, apagenum, vpagenum)
     util.range_check(0, 2, erase)
     # if not enough memory, error 5 without doing anything
-    backend.check_video_memory(backend.mode_data[mode])
+    try:
+        backend.check_video_memory(backend.mode_data[mode])
+    except KeyError:
+        pass    
     # if the parameters are outside narrow ranges (e.g. not implemented screen mode, pagenum beyond max)
     # then the error is only raised after changing the palette.
     util.require(ins, util.end_statement)        
