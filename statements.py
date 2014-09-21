@@ -1565,7 +1565,6 @@ def parse_var_list(ins):
 ################################################
 
 def exec_clear(ins):
-    reset.clear()
     # integer expression allowed but ignored
     intexp = expressions.parse_expression(ins, allow_empty=True)
     if intexp:
@@ -1597,6 +1596,7 @@ def exec_clear(ins):
             elif not exp2:
                 raise error.RunError(2)    
     util.require(ins, util.end_statement)
+    reset.clear()
 
 def exec_common(ins):    
     varlist, arraylist = [], []
