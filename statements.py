@@ -1982,14 +1982,7 @@ def exec_palette(ins):
         util.range_check(0, num_palette_entries-1, pair[0])
         util.range_check(-1, len(state.console_state.colours)-1, pair[1])
         if pair[1] > -1:
-            # effective palette change is an error in CGA; ignore in Tandy/PCjr SCREEN 0
-            if backend.video_capabilities in ('cga', 'cga_old', 'mda', 'ega_mono'):
-                raise error.RunError(5)
-            elif (backend.video_capabilities in ('tandy', 'pcjr') and 
-                    state.console_state.current_mode.is_text_mode):
-                pass
-            else:       
-                backend.set_palette_entry(pair[0], pair[1])
+            backend.set_palette_entry(pair[0], pair[1])
         util.require(ins, util.end_statement)    
 
 def exec_palette_using(ins):
@@ -2001,21 +1994,15 @@ def exec_palette_using(ins):
         raise error.RunError(5)    
     if array_name[-1] != '%':
         raise error.RunError(13)
-    if backend.video_capabilities in ('cga', 'cga_old'):
+    start = var.index_array(start_indices, dimensions)
+    if var.array_len(dimensions) - start  < num_palette_entries:
         raise error.RunError(5)
-    elif (backend.video_capabilities in ('tandy', 'pcjr') and 
-            state.console_state.current_mode.is_text_mode):
-        pass
-    else:            
-        start = var.index_array(start_indices, dimensions)
-        if var.array_len(dimensions) - start  < num_palette_entries:
-            raise error.RunError(5)
-        new_palette = []
-        for i in range(num_palette_entries):
-            val = vartypes.pass_int_unpack(('%', lst[(start+i)*2:(start+i+1)*2]))
-            util.range_check(-1, len(state.console_state.colours)-1, val)
-            new_palette.append(val if val > -1 else backend.get_palette_entry(i))
-        backend.set_palette(new_palette)
+    new_palette = []
+    for i in range(num_palette_entries):
+        val = vartypes.pass_int_unpack(('%', lst[(start+i)*2:(start+i+1)*2]))
+        util.range_check(-1, len(state.console_state.colours)-1, val)
+        new_palette.append(val if val > -1 else backend.get_palette_entry(i))
+    backend.set_palette(new_palette)
     util.require(ins, util.end_statement) 
 
 def exec_key(ins):

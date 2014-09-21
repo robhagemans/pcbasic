@@ -1627,6 +1627,13 @@ def check_video_memory(new_mode_info):
 
 def set_palette_entry(index, colour):
     """ Set a new colour for a given attribute. """
+    # effective palette change is an error in CGA; ignore in Tandy/PCjr SCREEN 0
+    if video_capabilities in ('cga', 'cga_old', 'mda', 'ega_mono', 
+                               'hercules', 'olivetti'):
+        raise error.RunError(5)
+    elif (video_capabilities in ('tandy', 'pcjr') and 
+            state.console_state.current_mode.is_text_mode):
+        return
     state.console_state.palette[index] = colour
     video.update_palette(state.console_state.palette,
                          state.console_state.colours,
@@ -1638,6 +1645,13 @@ def get_palette_entry(index):
 
 def set_palette(new_palette=None):
     """ Set the colours for all attributes. """
+    if new_palette:
+        if video_capabilities in ('cga', 'cga_old', 'mda', 'ega_mono', 
+                                   'hercules', 'olivetti'):
+            raise error.RunError(5)
+        elif (video_capabilities in ('tandy', 'pcjr') and 
+                state.console_state.current_mode.is_text_mode):
+            return
     if new_palette:
         state.console_state.palette = new_palette[:]
     else:    
