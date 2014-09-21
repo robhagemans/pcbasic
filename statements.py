@@ -1919,34 +1919,42 @@ def exec_cls(ins):
 
 def exec_color(ins):
     fore, back, bord = expressions.parse_int_list(ins, 3, 5)          
-    mode = state.console_state.screen_mode
-    if mode == 1:
+    mode = state.console_state.current_mode
+    graphics_mode = backend.graphics_mode
+    if mode.name == '320x200x4':
         return exec_color_mode_1(fore, back, bord)
-    elif mode == 2: 
-        # screen 2: illegal fn call
+    elif mode.name in ('640x200x2', '720x348x2'): 
+        # screen 2; hercules: illegal fn call
         raise error.RunError(5)
     fore_old, back_old = (state.console_state.attr>>7)*0x10 + (state.console_state.attr&0xf), (state.console_state.attr>>4) & 0x7
     bord = 0 if bord == None else bord
     util.range_check(0, 255, bord)
     fore = fore_old if fore == None else fore
     # graphics mode bg is always 0; sets palette instead
-    back = back_old if mode == 0 and back == None else (backend.get_palette_entry(0) if back == None else back)
-    if mode == 0:
+    back = back_old if mode.is_text_mode and back == None else (backend.get_palette_entry(0) if back == None else back)
+    if mode.is_text_mode:
         util.range_check(0, state.console_state.num_attr-1, fore)
         util.range_check(0, 15, back, bord)
         state.console_state.attr = ((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10 + (fore & 0xf) 
         backend.set_border(bord)
-    elif mode in (3, 4, 5, 6, 7, 8):
+    elif mode.name in ('160x200x16', '320x200x4pcjr', '320x200x16pcjr'
+                        '640x200x4', '320x200x16', '640x200x16'):
         util.range_check(1, state.console_state.num_attr-1, fore)
         util.range_check(0, state.console_state.num_attr-1, back)
         state.console_state.attr = fore
         # in screen 7 and 8, only low intensity palette is used.
-        backend.set_palette_entry(0, back % 8)    
-    elif mode in (9, 10):
+        backend.set_palette_entry(0, back % 8, check_mode=False)    
+    elif mode.name in ('640x350x16', '640x350x4'):
         util.range_check(0, state.console_state.num_attr-1, fore)
         util.range_check(0, len(state.console_state.colours)-1, back)
         state.console_state.attr = fore
-        backend.set_palette_entry(0, back)
+        backend.set_palette_entry(0, back, check_mode=False)
+    elif mode.name == '640x400x2':
+        util.range_check(0, len(state.console_state.colours)-1, fore)
+        if back != 0:
+            raise error.RunError(5)    
+        backend.set_palette_entry(1, fore, check_mode=False)
+        
     
 def exec_color_mode_1(back, pal, override):
     back = backend.get_palette_entry(0) if back == None else back
@@ -1961,9 +1969,9 @@ def exec_color_mode_1(back, pal, override):
         palette[0] = back&0xf
         # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
         # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
-        backend.set_palette(palette)
+        backend.set_palette(palette, check_mode=False)
     else:
-        backend.set_palette_entry(0, back & 0xf)        
+        backend.set_palette_entry(0, back & 0xf, check_mode=False)        
     
 def exec_palette(ins):
     d = util.skip_white(ins)

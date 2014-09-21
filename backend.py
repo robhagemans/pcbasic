@@ -600,7 +600,7 @@ class ModeData(object):
                  colours1=None, font_width=8, 
                  supports_artifacts=False, cursor_index=None, has_blink=False,
                  pixel_aspect=None, has_underline=False, is_text_mode=False,
-                 mem_start=0xb800, page_size=0x4000):
+                 mem_start=0xb800, page_size=0x4000, name=None):
         """ Settings for one video mode. """         
         self.font_height = font_height
         self.attr = attr
@@ -625,7 +625,8 @@ class ModeData(object):
         self.get_area = get_area
         self.set_area = set_area
         self.build_tile = build_tile
-            
+        self.name = name
+                
 # video modes
 text_mode_80 = {
     'vga': ModeData(
@@ -962,6 +963,7 @@ graphics_mode = {
     # tandy:2 pages if 32k memory; ega: 1 page only 
     # TODO: tandy/pcjr - determine the number of pages based on video memory
     '320x200x4': ModeData(
+            name = '320x200x4',
             font_height = 8, 
             attr = 3,
             num_attr = 4,
@@ -982,6 +984,7 @@ graphics_mode = {
             ),            
     # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
     '640x200x2': ModeData(
+            name = '640x200x2',
             font_height = 8, 
             attr = 1,
             num_attr = 2,
@@ -1003,6 +1006,7 @@ graphics_mode = {
             ),
     # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy 3
     '160x200x16': ModeData(
+            name = '160x200x16',
             font_height = 8, 
             attr = 15,
             num_attr = 16,
@@ -1025,6 +1029,7 @@ graphics_mode = {
             ),
     #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr 4
     '320x200x4pcjr': ModeData(
+            name = '320x200x4pcjr',
             font_height = 8, 
             attr = 3,
             num_attr = 4,
@@ -1046,6 +1051,7 @@ graphics_mode = {
             ),
     # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr 5
     '320x200x16pcjr': ModeData(
+            name = '320x200x16pcjr',
             font_height = 8, 
             attr = 15,
             num_attr = 16,
@@ -1067,6 +1073,7 @@ graphics_mode = {
             ),
     # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr 6
     '640x200x4': ModeData(
+            name = '640x200x4',
             font_height = 8, 
             attr = 3,
             num_attr = 4,
@@ -1088,6 +1095,7 @@ graphics_mode = {
             ),
     # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
     '320x200x16': ModeData(
+            name = '320x200x16', 
             font_height = 8, 
             attr = 15,
             num_attr = 16,
@@ -1108,6 +1116,7 @@ graphics_mode = {
             ),
     # 0Eh 640x200x16    EGA screen 8
     '640x200x16': ModeData(
+            name = '640x200x16',
             font_height = 8, 
             attr = 15,
             num_attr = 16,
@@ -1128,6 +1137,7 @@ graphics_mode = {
             ),
     # 10h 640x350x16    EGA screen 9
     '640x350x16': ModeData(
+            name = '640x350x16',
             font_height = 14, 
             attr = 15,
             num_attr = 16,
@@ -1148,6 +1158,7 @@ graphics_mode = {
             ),
     # 0Fh 640x350x4     EGA monochrome screen 10
     '640x350x4': ModeData(
+            name = '640x350x4',
             font_height = 14, 
             attr = 1,
             num_attr = 4,
@@ -1167,6 +1178,7 @@ graphics_mode = {
             ),
     # 40h 640x400x2   1bpp  olivetti
     '640x400x2': ModeData(
+            name = '640x400x2',
             font_height = 16, 
             attr = 1,
             num_attr = 2,
@@ -1188,6 +1200,7 @@ graphics_mode = {
             ),
     # hercules
     '720x348x2': ModeData(
+            name = '720x348x2',
             # FIXME hercules - this actually produces 350, not 348
             # two scan lines must be left out somewhere, somehow
             font_height = 14, 
@@ -1217,9 +1230,6 @@ available_modes = {
     'cga': {
         1: graphics_mode['320x200x4'],
         2: graphics_mode['640x200x2']},
-    'cga_old': {
-        1: graphics_mode['320x200x4'],
-        2: graphics_mode['640x200x2']},
     'olivetti': {
         1: graphics_mode['320x200x4'],
         2: graphics_mode['640x200x2'],
@@ -1228,13 +1238,6 @@ available_modes = {
     'hercules': {
         3: graphics_mode['720x348x2']},
     'pcjr': {
-        1: graphics_mode['320x200x4'],
-        2: graphics_mode['640x200x2'],
-        3: graphics_mode['160x200x16'],
-        4: graphics_mode['320x200x4pcjr'],
-        5: graphics_mode['320x200x16pcjr'],
-        6: graphics_mode['640x200x4']},
-    'tandy': {
         1: graphics_mode['320x200x4'],
         2: graphics_mode['640x200x2'],
         3: graphics_mode['160x200x16'],
@@ -1256,7 +1259,8 @@ available_modes = {
         8: graphics_mode['640x200x16'],
         9: graphics_mode['640x350x16']},
 }
-
+available_modes['cga_old'] = available_modes['cga']
+available_modes['tandy'] = available_modes['pcjr']
 # on Olivetti M24, all numbers 3-255 give the same altissima risoluzione
 for mode in range(4, 256):
     available_modes['olivetti'][mode] = graphics_mode['640x400x2']
@@ -1625,15 +1629,16 @@ def check_video_memory(new_mode_info):
 #############################################
 # palette and colours
 
-def set_palette_entry(index, colour):
+def set_palette_entry(index, colour, check_mode=True):
     """ Set a new colour for a given attribute. """
     # effective palette change is an error in CGA; ignore in Tandy/PCjr SCREEN 0
-    if video_capabilities in ('cga', 'cga_old', 'mda', 'ega_mono', 
-                               'hercules', 'olivetti'):
-        raise error.RunError(5)
-    elif (video_capabilities in ('tandy', 'pcjr') and 
-            state.console_state.current_mode.is_text_mode):
-        return
+    if check_mode:
+        if video_capabilities in ('cga', 'cga_old', 'mda', 'ega_mono', 
+                                   'hercules', 'olivetti'):
+            raise error.RunError(5)
+        elif (video_capabilities in ('tandy', 'pcjr') and 
+                state.console_state.current_mode.is_text_mode):
+            return
     state.console_state.palette[index] = colour
     video.update_palette(state.console_state.palette,
                          state.console_state.colours,
@@ -1643,9 +1648,9 @@ def get_palette_entry(index):
     """ Retrieve the colour for a given attribute. """
     return state.console_state.palette[index]
 
-def set_palette(new_palette=None):
+def set_palette(new_palette=None, check_mode=True):
     """ Set the colours for all attributes. """
-    if new_palette:
+    if check_mode and new_palette:
         if video_capabilities in ('cga', 'cga_old', 'mda', 'ega_mono', 
                                    'hercules', 'olivetti'):
             raise error.RunError(5)
