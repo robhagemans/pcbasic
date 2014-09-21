@@ -543,6 +543,51 @@ def set_area_ega(x0, y0, byte_array, operation):
         mask = 0x80
     video.remove_graph_clip()   
 
+def build_tile_ega(pattern):
+    """ Build a flood-fill tile for EGA screens. """
+    tile = []    
+    bpp = state.console_state.bitsperpixel
+    while len(pattern) % bpp != 0:
+        # finish off the pattern with zeros
+        pattern.append(0)
+    strlen = len(pattern)
+    # in modes (2), 7, 8, 9 each byte represents 8 bits
+    # colour planes encoded in consecutive bytes
+    mask = 7
+    for y in range(strlen//bpp):
+        line = []
+        for x in range(8):
+            c = 0
+            for b in range(bpp-1, -1, -1):
+                c = (c<<1) + ((pattern[(y*bpp+b)%strlen] >> mask) & 1)
+            mask -= 1
+            if mask < 0:
+                mask = 7
+            line.append(c)
+        tile.append(line)    
+    return tile
+
+def build_tile_cga(pattern):
+    """ Build a flodd-fill tile for CGA screens. """
+    tile = []    
+    bpp = state.console_state.bitsperpixel
+    strlen = len(pattern)
+    # in modes 1, (2), 3, 4, 5, 6 colours are encoded in consecutive bits
+    # each byte represents one scan line
+    mask = 8 - bpp
+    for y in range(strlen):
+        line = []
+        for x in range(8): # width is 8//bpp
+            c = 0
+            for b in range(bpp-1, -1, -1):
+                c = (c<<1) + ((pattern[y] >> (mask+b)) & 1) 
+            mask -= bpp
+            if mask < 0:
+                mask = 8 - bpp
+            line.append(c)    
+        tile.append(line)
+    return tile
+
 
 class ModeData(object):
     """ Holds settings for video modes. """
@@ -550,6 +595,7 @@ class ModeData(object):
     def __init__(self, font_height, attr, num_attr, 
                  width, num_pages, bitsperpixel, 
                  palette, colours, get_memory, set_memory, 
+                 build_tile=None,
                  get_area=None, set_area=None,
                  colours1=None, font_width=8, 
                  supports_artifacts=False, cursor_index=None, has_blink=False,
@@ -578,6 +624,7 @@ class ModeData(object):
         self.set_memory = set_memory
         self.get_area = get_area
         self.set_area = set_area
+        self.build_tile = build_tile
             
 # video modes
 text_mode_80 = {
@@ -931,6 +978,7 @@ graphics_mode = {
                 bitsperpixel=2, bytes_per_row=80, interlace_times=2),
             get_area = get_area_cga,
             set_area = set_area_cga,
+            build_tile = build_tile_cga,
             ),            
     # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
     '640x200x2': ModeData(
@@ -951,6 +999,7 @@ graphics_mode = {
                 bitsperpixel=1, bytes_per_row=80, interlace_times=2),
             get_area = get_area_cga,
             set_area = set_area_cga,
+            build_tile = build_tile_cga,
             ),
     # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy 3
     '160x200x16': ModeData(
@@ -972,9 +1021,10 @@ graphics_mode = {
                 bitsperpixel=4, bytes_per_row=80, interlace_times=2),
             get_area = get_area_cga,
             set_area = set_area_cga,
+            build_tile = build_tile_cga,
             ),
     #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr 4
-    '320x200x4': ModeData(
+    '320x200x4pcjr': ModeData(
             font_height = 8, 
             attr = 3,
             num_attr = 4,
@@ -992,6 +1042,7 @@ graphics_mode = {
                 bitsperpixel=2, bytes_per_row=80, interlace_times=2),
             get_area = get_area_cga,
             set_area = set_area_cga,
+            build_tile = build_tile_cga,
             ),
     # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr 5
     '320x200x16': ModeData(
@@ -1012,6 +1063,7 @@ graphics_mode = {
                 bitsperpixel=4, bytes_per_row=160, interlace_times=4),
             get_area = get_area_cga,
             set_area = set_area_cga,
+            build_tile = build_tile_cga,
             ),
     # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr 6
     '640x200x4': ModeData(
@@ -1031,6 +1083,8 @@ graphics_mode = {
             # mode 6 has (almost) EGA-style PUT/GET
             get_area = get_area_ega,
             set_area = set_area_ega,
+            # but PAINT tiles are CGA-style
+            build_tile = build_tile_cga,
             ),
     # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
     '320x200x16': ModeData(
@@ -1050,6 +1104,7 @@ graphics_mode = {
                 page_size = 0x2000, bytes_per_row=40),
             get_area = get_area_ega,
             set_area = set_area_ega,
+            build_tile = build_tile_ega,
             ),
     # 0Eh 640x200x16    EGA screen 8
     '640x200x16': ModeData(
@@ -1069,6 +1124,7 @@ graphics_mode = {
                 page_size = 0x4000, bytes_per_row=80),
             get_area = get_area_ega,
             set_area = set_area_ega,
+            build_tile = build_tile_ega,
             ),
     # 10h 640x350x16    EGA screen 9
     '640x350x16': ModeData(
@@ -1088,6 +1144,7 @@ graphics_mode = {
                 page_size = 0x8000, bytes_per_row=80),
             get_area = get_area_ega,
             set_area = set_area_ega,
+            build_tile = build_tile_ega,
             ),
     # 0Fh 640x350x4     EGA monochrome screen 10
     '640x350x4': ModeData(
@@ -1124,8 +1181,10 @@ graphics_mode = {
                 bitsperpixel=1, bytes_per_row=80, interlace_times=4),
             set_memory = partial(set_video_memory_cga, 
                 bitsperpixel=1, bytes_per_row=80, interlace_times=4),
+            # EGA/CGA distinction doesn't matter for monochrome
             get_area = get_area_cga,
             set_area = set_area_cga,
+            build_tile = build_tile_cga,
             ),
     # hercules
     '720x348x2': ModeData(
@@ -1148,6 +1207,7 @@ graphics_mode = {
                 bitsperpixel=1, bytes_per_row=90, interlace_times=4),
             get_area = get_area_cga,
             set_area = set_area_cga,
+            build_tile = build_tile_cga,
             ),
     }
 
@@ -1171,14 +1231,14 @@ available_modes = {
         1: graphics_mode['320x200x4'],
         2: graphics_mode['640x200x2'],
         3: graphics_mode['160x200x16'],
-        4: graphics_mode['320x200x4'],
+        4: graphics_mode['320x200x4pcjr'],
         5: graphics_mode['320x200x16'],
         6: graphics_mode['640x200x4']},
     'tandy': {
         1: graphics_mode['320x200x4'],
         2: graphics_mode['640x200x2'],
         3: graphics_mode['160x200x16'],
-        4: graphics_mode['320x200x4'],
+        4: graphics_mode['320x200x4pcjr'],
         5: graphics_mode['320x200x16'],
         6: graphics_mode['640x200x4']},
     'ega': {

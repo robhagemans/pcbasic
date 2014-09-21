@@ -505,48 +505,11 @@ def check_scanline(line_seed, x_start, x_stop, y, c, tile, back, border, ydir):
         line_seed.append([x_start_next, x_stop_next, y, ydir])
     return line_seed    
 
-# build a tile of width 8 pixels and the necessary height
 def build_tile(pattern):
+    """ Build a flood-fill tile of width 8 pixels and the necessary height. """
     if not pattern:
         return None
-    tile = []    
-    bpp = state.console_state.bitsperpixel
-    strlen = len(pattern)
-    if state.console_state.screen_mode in (2, 7, 8, 9):
-        while len(pattern) % bpp != 0:
-            # finish off the pattern with zeros
-            pattern.append(0)
-        # in modes 2, 7,8,9 each byte represents 8 bits
-        # colour planes encoded in consecutive bytes
-        mask = 7
-        for y in range(strlen//bpp):
-            line = []
-            for x in range(8):
-                c = 0
-                for b in range(bpp-1, -1, -1):
-                    c = (c<<1) + ((pattern[(y*bpp+b)%strlen] >> mask) & 1)
-                mask -= 1
-                if mask < 0:
-                    mask = 7
-                line.append(c)
-            tile.append(line)    
-    else:
-        # in modes 1, 3, 4, 5, 6 colours are encoded in consecutive bits
-        # each byte represents one scan line
-        mask = 8 - bpp
-        for y in range(strlen):
-            line = []
-            for x in range(8): # width is 8//bpp
-                c = 0
-                for b in range(bpp-1, -1, -1):
-                    c = (c<<1) + ((pattern[y] >> (mask+b)) & 1) 
-                mask -= bpp
-                if mask < 0:
-                    mask = 8 - bpp
-                line.append(c)    
-            tile.append(line)
-    return tile
-
+    return state.console_state.current_mode.build_tile(pattern)
 
 ### PUT and GET
 
