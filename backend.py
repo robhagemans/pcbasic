@@ -1045,7 +1045,7 @@ graphics_mode = {
             build_tile = build_tile_cga,
             ),
     # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr 5
-    '320x200x16': ModeData(
+    '320x200x16pcjr': ModeData(
             font_height = 8, 
             attr = 15,
             num_attr = 16,
@@ -1232,14 +1232,14 @@ available_modes = {
         2: graphics_mode['640x200x2'],
         3: graphics_mode['160x200x16'],
         4: graphics_mode['320x200x4pcjr'],
-        5: graphics_mode['320x200x16'],
+        5: graphics_mode['320x200x16pcjr'],
         6: graphics_mode['640x200x4']},
     'tandy': {
         1: graphics_mode['320x200x4'],
         2: graphics_mode['640x200x2'],
         3: graphics_mode['160x200x16'],
         4: graphics_mode['320x200x4pcjr'],
-        5: graphics_mode['320x200x16'],
+        5: graphics_mode['320x200x16pcjr'],
         6: graphics_mode['640x200x4']},
     'ega': {
         1: graphics_mode['320x200x4'],
@@ -1582,29 +1582,34 @@ def set_page(new_vpagenum, new_apagenum):
 def set_width(to_width):
     """ Set the character width of the screen. """
     if to_width == 20:
-        return screen(3, None, None, None)
-    elif state.console_state.screen_mode == 0:
+        if video_capabilities in ('pcjr', 'tandy'):
+            return screen(3, None, None, None)
+        else:
+            return -1
+    elif state.console_state.current_mode.is_text_mode:
         return screen(0, None, None, None, new_width=to_width) 
-    elif state.console_state.screen_mode == 1 and to_width == 80:
-        return screen(2, None, None, None)
-    elif state.console_state.screen_mode == 2 and to_width == 40:
-        return screen(1, None, None, None)
-    elif state.console_state.screen_mode == 3 and to_width == 40:
-        return screen(1, None, None, None)
-    elif state.console_state.screen_mode == 3 and to_width == 80:
-        return screen(2, None, None, None)
-    elif state.console_state.screen_mode == 4 and to_width == 80:
-        return screen(2, None, None, None)
-    elif state.console_state.screen_mode == 5 and to_width == 80:
-        return screen(6, None, None, None)
-    elif state.console_state.screen_mode == 6 and to_width == 40:
-        return screen(5, None, None, None)
-    elif state.console_state.screen_mode == 7 and to_width == 80:
-        return screen(8, None, None, None)
-    elif state.console_state.screen_mode == 8 and to_width == 40:
-        return screen(7, None, None, None)
-    elif state.console_state.screen_mode == 9 and to_width == 40:
-        return screen(7, None, None, None)
+    elif to_width == 40:
+        elif state.console_state.current_mode == graphics_mode['640x200x2']:
+            return screen(1, None, None, None)
+        elif state.console_state.current_mode == graphics_mode['160x200x16']:
+            return screen(1, None, None, None)
+        elif state.console_state.current_mode == graphics_mode['640x200x4']:
+            return screen(5, None, None, None)
+        elif state.console_state.current_mode == graphics_mode['640x200x16']:
+            return screen(7, None, None, None)
+        elif state.console_state.current_mode == graphics_mode['640x350x16']:
+            return screen(7, None, None, None)
+    elif to_width == 80:
+        elif state.console_state.current_mode == graphics_mode['320x200x4']:
+            return screen(2, None, None, None)
+        elif state.console_state.current_mode == graphics_mode['160x200x16']:
+            return screen(2, None, None, None)
+        elif state.console_state.current_mode == graphics_mode['320x200x4pcjr']:
+            return screen(2, None, None, None)
+        elif state.console_state.current_mode == graphics_mode['320x200x16pcjr']:
+            return screen(6, None, None, None)
+        elif state.console_state.current_mode == graphics_mode['320x200x16']:
+            return screen(8, None, None, None)
     return False
     
 def check_video_memory(new_mode):
