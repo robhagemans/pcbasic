@@ -23,7 +23,7 @@ peek_values = {}
 # data memory model: data segment
 data_segment = 0x13ad
 # data memory model: current segment
-segment = data_segment
+state.basic_state.segment = data_segment
 
 font_segment = 0xf000
 font_addr = 0xfa6e
@@ -41,7 +41,7 @@ def prepare():
 def peek(addr):
     if addr < 0: 
         addr += 0x10000
-    addr += segment*0x10
+    addr += state.basic_state.segment*0x10
     try:
         # try if there's a preset value
         return peek_values[addr]
@@ -62,7 +62,7 @@ def peek(addr):
 def poke(addr, val):    
     if addr < 0: 
         addr += 0x10000
-    addr += segment * 0x10
+    addr += state.basic_state.segment * 0x10
     if addr >= font_segment*0x10+ font_addr:
         # that's ROM it seems
         pass
@@ -131,10 +131,10 @@ def bload(g, offset):
 
 def bsave(g, offset, length):
     g.write('\xfd')
-    g.write(str(vartypes.value_to_uint(segment)))
+    g.write(str(vartypes.value_to_uint(state.basic_state.segment)))
     g.write(str(vartypes.value_to_uint(offset)))
     g.write(str(vartypes.value_to_uint(length)))
-    addr = segment * 0x10 + offset
+    addr = state.basic_state.segment * 0x10 + offset
     g.write(str(get_video_memory_block(addr, length)))
     g.write('\x1a')
     g.close()
@@ -177,7 +177,7 @@ def get_name_in_memory(name, offset):
         return ord(name[offset-1].upper()) - ord('A') + 0xC1
                             
 def get_data_memory(address):
-    address -= segment * 0x10
+    address -= state.basic_state.segment * 0x10
     if address < state.basic_state.var_current:
         # find the variable we're in
         name_addr = -1

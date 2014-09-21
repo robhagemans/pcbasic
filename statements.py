@@ -560,11 +560,11 @@ def exec_poke(ins):
 def exec_def_seg(ins):
     # &hb800: text screen buffer; &h13d: data segment
     if util.skip_white_read_if(ins, ('\xE7',)): #=
-        machine.segment = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=0xffff)
+        state.basic_state.segment = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=0xffff)
     else:
-        machine.segment = machine.data_segment   
-    if machine.segment < 0:
-        machine.segment += 0x10000     
+        state.basic_state.segment = machine.data_segment   
+    if state.basic_state.segment < 0:
+        state.basic_state.segment += 0x10000     
     util.require(ins, util.end_statement)
 
 # do-nothing DEF USR    
