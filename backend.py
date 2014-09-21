@@ -408,26 +408,28 @@ def get_area_cga(x0, y0, x1, y1, byte_array):
     # illegal fn call if outside screen boundary
     util.range_check(0, state.console_state.size[0]-1, x0, x1)
     util.range_check(0, state.console_state.size[1]-1, y0, y1)
-    # clear existing array
-    byte_array[:] = '\x00'*len(byte_array)
-    byte_array[0:2] = vartypes.value_to_uint(dx*state.console_state.bitsperpixel)
+    bpp = state.console_state.bitsperpixel
+    # clear existing array only up to the length we'll use
+    length = 4 + ((dx * bpp + 7) // 8)*dy
+    byte_array[:length] = '\x00'*length
+    byte_array[0:2] = vartypes.value_to_uint(dx*bpp)
     byte_array[2:4] = vartypes.value_to_uint(dy)
     byte = 4
-    shift = 8-state.console_state.bitsperpixel
+    shift = 8 - bpp
     for y in range(y0, y1+1):
         for x in range(x0, x1+1):
             if shift < 0:
                 byte += 1
-                shift = 8-state.console_state.bitsperpixel
+                shift = 8 - bpp
             pixel = video.get_pixel(x,y) # 2-bit value
             try:
                 byte_array[byte] |= pixel << shift
             except IndexError:
                 raise error.RunError(5)      
-            shift -= state.console_state.bitsperpixel
+            shift -= bpp
         # byte align next row
         byte += 1
-        shift = 8-state.console_state.bitsperpixel
+        shift = 8 - bpp
 
 def get_area_ega(x0, y0, x1, y1, byte_array):
     """ Read a sprite from the screen in EGA modes. """
@@ -438,28 +440,30 @@ def get_area_ega(x0, y0, x1, y1, byte_array):
     # illegal fn call if outside screen boundary
     util.range_check(0, state.console_state.size[0]-1, x0, x1)
     util.range_check(0, state.console_state.size[1]-1, y0, y1)
-    # clear existing array
-    byte_array[:] = '\x00'*len(byte_array)
     if state.console_state.current_mode == graphics_mode['640x200x4']:
         # Tandy screen 6 simply GETs twice the width, it seems
         dx *= 2
         x1 = x0 + dx -1 
+    bpp = state.console_state.bitsperpixel
+    # clear existing array only up to the length we'll use
+    row_bytes = (dx+7) // 8
+    length = 4 + dy * bpp * row_bytes
+    byte_array[:length] = '\x00'*length
     byte_array[0:4] = vartypes.value_to_uint(dx) + vartypes.value_to_uint(dy) 
     byte = 4
     mask = 0x80
-    row_bytes = (dx+7) // 8
     for y in range(y0, y1+1):
         for x in range(x0, x1+1):
             if mask == 0: 
                 mask = 0x80
             pixel = video.get_pixel(x, y)
-            for b in range(state.console_state.bitsperpixel):
-                if pixel & (1<<b) != 0:
-                    try:
-                        byte_array[4 + ((y-y0)*state.console_state.bitsperpixel 
-                                        + b)*row_bytes + (x-x0)//8] |= mask 
-                    except IndexError:
-                        raise error.RunError(5)   
+            for b in range(bpp):
+                offset = ((y-y0) * bpp + b) * row_bytes + (x-x0) // 8 + 4
+                try:
+                    if pixel & (1 << b):
+                        byte_array[offset] |= mask 
+                except IndexError:
+                    raise error.RunError(5)   
             mask >>= 1
         # byte align next row
         mask = 0x80
