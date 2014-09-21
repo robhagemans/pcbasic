@@ -11,6 +11,7 @@ please see text file COPYING for licence terms.
 
 import logging
 from copy import copy
+from functools import partial
 
 import config
 import state 
@@ -210,14 +211,192 @@ state.console_state.colours1 = None
 # the palette defines the colour for each attribute
 state.console_state.palette = list(ega_palette)
 
+# video memory
+state.console_state.colour_plane = 0
+state.console_state.colour_plane_write_mask = 0xff
+
+
+def get_text_memory(addr, text_segment, width):
+    """ Retrieve a byte from textmode video memory. """
+    addr -= text_segment*0x10
+    page_size = 4096 if width == 80 else 2048
+    page = addr // page_size
+    offset = addr % page_size
+    ccol = (offset%(width*2)) // 2
+    crow = offset // (width*2)
+    try:
+        c = state.console_state.pages[page].row[crow].buf[ccol][addr%2]  
+        return c if addr%2==1 else ord(c)
+    except IndexError:
+        return -1    
+    
+def set_text_memory(addr, val, text_segment, width):
+    """ Set a byte in textmode video memory. """
+    addr -= text_segment*0x10
+    page_size = 4096 if width == 80 else 2048
+    page = addr // page_size
+    offset = addr % page_size
+    ccol = (offset%(width*2)) // 2
+    crow = offset // (width*2)
+    try:
+        c, a = state.console_state.pages[page].row[crow].buf[ccol]
+        if addr%2==0:
+            c = chr(val)
+        else:
+            a = val
+        put_screen_char_attr(page, crow+1, ccol+1, c, a)
+    except IndexError:
+        pass
+
+def coord_ok(page, x, y):
+    return (page < state.console_state.num_pages and
+             x < state.console_state.size[0] and
+             y < state.console_state.size[1])
+            
+def get_pixel_byte(page, x, y, plane):
+    """ Retrieve a byte with 8 packed pixels for one colour plane. """
+    # modes 1-5: interlaced scan lines, pixels sequentially packed into bytes
+    if coord_ok(page, x, y):
+        return sum(( ((video.get_pixel(x+shift, y, page) >> plane) & 1) 
+                      << (7-shift) for shift in range(8) ))
+    return -1    
+
+def set_pixel_byte(page, x, y, plane_mask, byte):
+    """ Set a packed-pixel byte for a given colour plane. """
+    inv_mask = 0xff ^ plane_mask
+    if coord_ok(page, x, y):
+        for shift in range(8):
+            bit = (byte >> (7-shift)) & 1
+            current = video.get_pixel(x + shift, y, page) & inv_mask
+            video.put_pixel(x + shift, y, 
+                                    current | (bit * plane_mask), page)  
+
+
+def get_pixel_byte_cga(page, x, y, bitsperpixel):
+    """ Retrieve a byte with 8//bitsperpixel packed pixels. """
+    if coord_ok(page, x, y):
+        return sum(( (video.get_pixel(x+shift, y, page) 
+                       & (2**bitsperpixel-1)) 
+                     << (8-(shift+1)*bitsperpixel) 
+                     for shift in range(8//bitsperpixel)))
+    return -1
+
+def set_pixel_byte_cga(page, x, y, bitsperpixel, byte):
+    """ Set a CGA n-bits-per-pixel byte. """
+    if coord_ok(page, x, y):
+        for shift in range(8 // bitsperpixel):
+            nbit = (byte >> (8-(shift+1)*bitsperpixel)) & (2**bitsperpixel-1)
+            video.put_pixel(x + shift, y, nbit, page) 
+
+
+    
+def get_video_memory_cga(addr, bitsperpixel, 
+                         bytes_per_row, interlace_times):
+    """ Retrieve a byte from CGA memory. """
+    addr -= 0xb8000
+    if addr < 0:
+        return -1
+    # modes 1-5: interlaced scan lines, pixels sequentially packed into bytes
+    page_size = 0x2000*interlace_times
+    page, addr = addr//page_size, addr%page_size
+    # 2 x interlaced scan lines of 80bytes
+    x = ((addr%0x2000)%bytes_per_row)*8//bitsperpixel
+    y = (addr>=0x2000) + interlace_times*((addr%0x2000)//bytes_per_row)
+    return get_pixel_byte_cga(page, x, y, bitsperpixel)
+
+def set_video_memory_cga(addr, val, bitsperpixel, 
+                         bytes_per_row, interlace_times):
+    """ Set a byte in CGA memory. """
+    addr -= 0xb8000
+    if addr < 0:
+        return
+    # modes 1-5: interlaced scan lines, pixels sequentially packed into bytes
+    page_size = 0x2000*interlace_times
+    page, addr = addr//page_size, addr%page_size
+    # 2 or 4 x interlaced scan lines of 80 or 160 bytes
+    x = ((addr%0x2000)%bytes_per_row)*8//bitsperpixel
+    y = (addr>=0x2000) + interlace_times*((addr%0x2000)//bytes_per_row)
+    set_pixel_byte_cga(page, x, y, bitsperpixel, val)
+
+
+def get_video_memory_tandy_6(addr):
+    """ Retrieve a byte from Tandy 640x200x4 """
+    addr -= 0xb8000
+    if addr < 0:
+        return -1
+    # mode 6: interlaced scan lines, 8 pixels per two bytes, 
+    page, addr = addr//32768, addr%32768
+    # 4 x interlaced scan lines of 160bytes
+    x = (((addr%0x2000)%160)//2)*8
+    y = (addr//0x2000) + 4*((addr%0x2000)//160)
+    # 8 pixels per 2 bytes
+    # low attribute bits stored in even bytes, high bits in odd bytes.        
+    return get_pixel_byte(page, x, y, addr%2) 
+
+def set_video_memory_tandy_6(addr, val):
+    """ Set a byte in Tandy 640x200x4 memory. """
+    addr -= 0xb8000
+    if addr < 0:
+        return
+    page, addr = addr//32768, addr%32768
+    # 4 x interlaced scan lines of 80bytes, 8pixels per 2bytes
+    x = (((addr%0x2000)%160)//2)*8
+    y = (addr//0x2000) + 4*((addr%0x2000)//160)
+    set_pixel_byte(page, x, y, 1<<(addr%2), val) 
+
+
+def get_video_memory_ega(addr, page_size, bytes_per_row):   
+    """ Retrieve a byte from EGA memory. """
+    addr -= 0xa0000
+    if addr < 0:
+        return -1
+    # modes 7-9: 1 bit per pixel per colour plane                
+    page, addr = addr//page_size, addr%page_size
+    x, y = (addr%bytes_per_row)*8, addr//bytes_per_row
+    return get_pixel_byte(page, x, y, state.console_state.colour_plane % 4)
+
+def set_video_memory_ega(addr, val, page_size, bytes_per_row):
+    """ Set a byte in EGA video memory. """
+    addr -= 0xa0000
+    if addr < 0:
+        return
+    page, addr = addr//page_size, addr%page_size
+    x, y = (addr%bytes_per_row)*8, addr//bytes_per_row
+    set_pixel_byte(page, x, y, 
+                   state.console_state.colour_plane_write_mask & 0xf, val)
+
+
+def get_video_memory_ega_10(addr):   
+    """ Retrieve a byte from EGA memory. """
+    addr -= 0xa0000
+    if addr < 0:
+        return -1
+    if colour_plane % 4 in (1, 3):
+        # only planes 0, 2 are used 
+        # http://webpages.charter.net/danrollins/techhelp/0089.HTM
+        return 0
+    page, addr = addr//32768, addr%32768
+    x, y = (addr%80)*8, addr//80
+    return get_pixel_byte(page, x, y, state.console_state.colour_plane % 4)
+
+def set_video_memory_ega_10(addr, val):
+    """ Set a byte in EGA video memory. """
+    addr -= 0xa0000
+    if addr < 0:
+        return
+    page, addr = addr//32768, addr%32768
+    x, y = (addr%80)*8, addr//80
+    # only use bits 0 and 2
+    set_pixel_byte(page, x, y, 
+                   state.console_state.colour_plane_write_mask & 0x5, val)            
 
 class ModeData(object):
     """ Holds settings for video modes. """
     
     def __init__(self, font_height, attr, num_attr, 
                  width, num_pages, bitsperpixel, 
-                 palette, colours, colours1=None, 
-                 font_width=8, 
+                 palette, colours, get_memory, set_memory,
+                 colours1=None, font_width=8, 
                  supports_artifacts=False, cursor_index=None, has_blink=False,
                  pixel_aspect=None, has_underline=False, is_text_mode=False,
                  mem_start=0xb800, page_size=0x4000):
@@ -240,6 +419,8 @@ class ModeData(object):
         self.pixel_aspect = pixel_aspect
         self.mem_start = mem_start
         self.page_size = page_size
+        self.get_memory = get_memory
+        self.set_memory = set_memory
             
 # video modes
 text_mode_80 = {
@@ -257,6 +438,10 @@ text_mode_80 = {
                 has_blink = True,
                 mem_start = 0xb800,
                 page_size = 0x1000,
+                get_memory = partial(get_text_memory, 
+                    text_segment=0xb800, width=80),
+                set_memory = partial(set_text_memory, 
+                    text_segment=0xb800, width=80),
                 ),
     'ega': ModeData(
                 font_height = 14,
@@ -271,6 +456,10 @@ text_mode_80 = {
                 has_blink = True,
                 mem_start = 0xb800,
                 page_size = 0x1000,
+                get_memory = partial(get_text_memory, 
+                    text_segment=0xb800, width=80),
+                set_memory = partial(set_text_memory, 
+                    text_segment=0xb800, width=80),
                 ),
     'ega_mono': ModeData(
                 font_height = 14, 
@@ -287,6 +476,10 @@ text_mode_80 = {
                 has_underline = True,
                 mem_start = 0xb000,
                 page_size = 0x1000,
+                get_memory = partial(get_text_memory, 
+                    text_segment=0xb000, width=80),
+                set_memory = partial(set_text_memory, 
+                    text_segment=0xb000, width=80),
                 ),
     'mda':  ModeData(
                 font_height = 14, 
@@ -303,6 +496,10 @@ text_mode_80 = {
                 has_underline = True,
                 mem_start = 0xb000,
                 page_size = 0x1000,
+                get_memory = partial(get_text_memory, 
+                    text_segment=0xb000, width=80),
+                set_memory = partial(set_text_memory, 
+                    text_segment=0xb000, width=80),
                 ),
     'hercules':  ModeData(
                 # not implemented: should lose two scan lines to fit on 348
@@ -322,6 +519,10 @@ text_mode_80 = {
                 has_underline = True,
                 mem_start = 0xb000,
                 page_size = 0x1000,
+                get_memory = partial(get_text_memory, 
+                    text_segment=0xb000, width=80),
+                set_memory = partial(set_text_memory, 
+                    text_segment=0xb000, width=80),
                 ),
     'cga':  ModeData(
                 font_height = 8, 
@@ -336,6 +537,10 @@ text_mode_80 = {
                 has_blink = True,
                 mem_start = 0xb800,
                 page_size = 0x1000,
+                get_memory = partial(get_text_memory, 
+                    text_segment=0xb800, width=80),
+                set_memory = partial(set_text_memory, 
+                    text_segment=0xb800, width=80),
                 ),
     'tandy':  ModeData(
                 font_height = 9, 
@@ -351,6 +556,10 @@ text_mode_80 = {
                 has_blink = True,
                 mem_start = 0xb800,
                 page_size = 0x1000,
+                get_memory = partial(get_text_memory, 
+                    text_segment=0xb800, width=80),
+                set_memory = partial(set_text_memory, 
+                    text_segment=0xb800, width=80),
                 ),
     'olivetti':  ModeData(
                 font_height = 16, 
@@ -366,6 +575,10 @@ text_mode_80 = {
                 has_blink = True,
                 mem_start = 0xb800,
                 page_size = 0x1000,
+                get_memory = partial(get_text_memory, 
+                    text_segment=0xb800, width=80),
+                set_memory = partial(set_text_memory, 
+                    text_segment=0xb800, width=80),
                 ),
     }
 text_mode_80['pcjr'] = text_mode_80['cga']
@@ -386,6 +599,10 @@ text_mode_40 = {
                 has_blink = True,
                 mem_start = 0xb800,
                 page_size = 0x800,
+                get_memory = partial(get_text_memory, 
+                    text_segment=0xb800, width=40),
+                set_memory = partial(set_text_memory, 
+                    text_segment=0xb800, width=40),
                 ),
     'ega': ModeData(
                 font_height = 14,
@@ -400,6 +617,10 @@ text_mode_40 = {
                 has_blink = True,
                 mem_start = 0xb800,
                 page_size = 0x800,
+                get_memory = partial(get_text_memory, 
+                    text_segment=0xb800, width=40),
+                set_memory = partial(set_text_memory, 
+                    text_segment=0xb800, width=40),
                 ),
     'ega_mono': ModeData(
                 font_height = 14, 
@@ -416,6 +637,10 @@ text_mode_40 = {
                 has_underline = True,
                 mem_start = 0xb000,
                 page_size = 0x800,
+                get_memory = partial(get_text_memory, 
+                    text_segment=0xb000, width=40),
+                set_memory = partial(set_text_memory, 
+                    text_segment=0xb000, width=40),
                 ),
     'mda':  ModeData(
                 font_height = 14, 
@@ -432,6 +657,10 @@ text_mode_40 = {
                 has_underline = True,
                 mem_start = 0xb000,
                 page_size = 0x800,
+                get_memory = partial(get_text_memory, 
+                    text_segment=0xb000, width=40),
+                set_memory = partial(set_text_memory, 
+                    text_segment=0xb000, width=40),
                 ),
     'hercules':  ModeData(
                 # not implemented: should lose two scan lines to fit on 348
@@ -451,6 +680,10 @@ text_mode_40 = {
                 has_underline = True,
                 mem_start = 0xb000,
                 page_size = 0x800,
+                get_memory = partial(get_text_memory, 
+                    text_segment=0xb000, width=40),
+                set_memory = partial(set_text_memory, 
+                    text_segment=0xb000, width=40),
                 ),
     'cga':  ModeData(
                 font_height = 8, 
@@ -465,6 +698,10 @@ text_mode_40 = {
                 has_blink = True,
                 mem_start = 0xb800,
                 page_size = 0x800,
+                get_memory = partial(get_text_memory, 
+                    text_segment=0xb800, width=40),
+                set_memory = partial(set_text_memory, 
+                    text_segment=0xb800, width=40),
                 ),
     'tandy':  ModeData(
                 font_height = 9, 
@@ -480,6 +717,10 @@ text_mode_40 = {
                 has_blink = True,
                 mem_start = 0xb800,
                 page_size = 0x800,
+                get_memory = partial(get_text_memory, 
+                    text_segment=0xb800, width=40),
+                set_memory = partial(set_text_memory, 
+                    text_segment=0xb800, width=40),
                 ),
     'olivetti':  ModeData(
                 font_height = 16, 
@@ -495,6 +736,10 @@ text_mode_40 = {
                 has_blink = True,
                 mem_start = 0xb800,
                 page_size = 0x800,
+                get_memory = partial(get_text_memory, 
+                    text_segment=0xb800, width=40),
+                set_memory = partial(set_text_memory, 
+                    text_segment=0xb800, width=40),
                 ),
     }
 text_mode_40['pcjr'] = text_mode_40['cga']
@@ -509,7 +754,7 @@ text_mode_40['cga_old'] = text_mode_40['cga']
 # screen 3 is strange, slighly off the 192/100 you'd expect
 
 graphics_mode = {
-    # 04h 320x200x4  16384B 2bpp 0xb8000 
+    # 04h 320x200x4  16384B 2bpp 0xb8000    screen 1
     # tandy:2 pages if 32k memory; ega: 1 page only 
     # TODO: tandy/pcjr - determine the number of pages based on video memory
     '320x200x4': ModeData(
@@ -523,8 +768,12 @@ graphics_mode = {
             bitsperpixel = 2,
             mem_start = 0xb800,
             page_size = 0x4000,
+            get_memory = partial(get_video_memory_cga, 
+                bitsperpixel=2, bytes_per_row=80, interlace_times=2),
+            set_memory = partial(set_video_memory_cga, 
+                bitsperpixel=2, bytes_per_row=80, interlace_times=2),
             ),            
-    # 06h 640x200x2  16384B 1bpp 0xb8000 
+    # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
     '640x200x2': ModeData(
             font_height = 8, 
             attr = 1,
@@ -537,8 +786,12 @@ graphics_mode = {
             supports_artifacts = True,
             mem_start = 0xb800,
             page_size = 0x4000,
+            get_memory = partial(get_video_memory_cga, 
+                bitsperpixel=1, bytes_per_row=80, interlace_times=2),
+            set_memory = partial(set_video_memory_cga, 
+                bitsperpixel=1, bytes_per_row=80, interlace_times=2),
             ),
-    # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy
+    # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy 3
     '160x200x16': ModeData(
             font_height = 8, 
             attr = 15,
@@ -552,8 +805,12 @@ graphics_mode = {
             pixel_aspect = (1968, 1000), # you'd expect 192, 100
             mem_start = 0xb800,
             page_size = 0x4000,
+            get_memory = partial(get_video_memory_cga, 
+                bitsperpixel=4, bytes_per_row=80, interlace_times=2),
+            set_memory = partial(set_video_memory_cga, 
+                bitsperpixel=4, bytes_per_row=80, interlace_times=2),
             ),
-    #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr
+    #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr 4
     '320x200x4': ModeData(
             font_height = 8, 
             attr = 3,
@@ -566,8 +823,12 @@ graphics_mode = {
             cursor_index = 3,
             mem_start = 0xb800,
             page_size = 0x4000,
+            get_memory = partial(get_video_memory_cga, 
+                bitsperpixel=2, bytes_per_row=80, interlace_times=2),
+            set_memory = partial(set_video_memory_cga, 
+                bitsperpixel=2, bytes_per_row=80, interlace_times=2),
             ),
-    # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr
+    # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr 5
     '320x200x16': ModeData(
             font_height = 8, 
             attr = 15,
@@ -580,8 +841,12 @@ graphics_mode = {
             cursor_index = 3,
             mem_start = 0xb800,
             page_size = 0x8000,
+            get_memory = partial(get_video_memory_cga, 
+                bitsperpixel=4, bytes_per_row=160, interlace_times=4),
+            set_memory = partial(set_video_memory_cga, 
+                bitsperpixel=4, bytes_per_row=160, interlace_times=4),
             ),
-    # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr
+    # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr 6
     '640x200x4': ModeData(
             font_height = 8, 
             attr = 3,
@@ -594,6 +859,8 @@ graphics_mode = {
             cursor_index = 3,
             mem_start = 0xb800,
             page_size = 0x8000,
+            get_memory = get_video_memory_tandy_6,
+            set_memory = set_video_memory_tandy_6,
             ),
     # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
     '320x200x16': ModeData(
@@ -607,6 +874,10 @@ graphics_mode = {
             bitsperpixel = 4,
             mem_start = 0xa000,
             page_size = 0x2000,
+            get_memory = partial(get_video_memory_ega, 
+                page_size = 0x2000, bytes_per_row=40),
+            set_memory = partial(set_video_memory_ega, 
+                page_size = 0x2000, bytes_per_row=40),
             ),
     # 0Eh 640x200x16    EGA screen 8
     '640x200x16': ModeData(
@@ -620,6 +891,10 @@ graphics_mode = {
             bitsperpixel = 4,
             mem_start = 0xa000,
             page_size = 0x4000,
+            get_memory = partial(get_video_memory_ega, 
+                page_size = 0x4000, bytes_per_row=80),
+            set_memory = partial(set_video_memory_ega, 
+                page_size = 0x4000, bytes_per_row=80),
             ),
     # 10h 640x350x16    EGA screen 9
     '640x350x16': ModeData(
@@ -633,6 +908,10 @@ graphics_mode = {
             bitsperpixel = 4,
             mem_start = 0xa000,
             page_size = 0x8000,
+            get_memory = partial(get_video_memory_ega, 
+                page_size = 0x8000, bytes_per_row=80),
+            set_memory = partial(set_video_memory_ega, 
+                page_size = 0x8000, bytes_per_row=80),
             ),
     # 0Fh 640x350x4     EGA monochrome screen 10
     '640x350x4': ModeData(
@@ -648,6 +927,8 @@ graphics_mode = {
             has_blink = True,
             mem_start = 0xa000,
             page_size = 0x8000,
+            get_memory = get_video_memory_ega_10, 
+            set_memory = set_video_memory_ega_10, 
             ),
     # 40h 640x400x2   1bpp  olivetti
     '640x400x2': ModeData(
@@ -661,6 +942,10 @@ graphics_mode = {
             bitsperpixel = 1,
             mem_start = 0xb800,
             page_size = 0x8000,
+            get_memory = partial(get_video_memory_cga, 
+                bitsperpixel=1, bytes_per_row=80, interlace_times=4),
+            set_memory = partial(set_video_memory_cga, 
+                bitsperpixel=1, bytes_per_row=80, interlace_times=4),
             ),
     # hercules
     '720x348x2': ModeData(
@@ -677,6 +962,10 @@ graphics_mode = {
             bitsperpixel = 1,
             mem_start = 0xb800,
             page_size = 0x8000,
+            get_memory = partial(get_video_memory_cga, 
+                bitsperpixel=1, bytes_per_row=90, interlace_times=4),
+            set_memory = partial(set_video_memory_cga, 
+                bitsperpixel=1, bytes_per_row=90, interlace_times=4),
             ),
     }
 
@@ -734,6 +1023,8 @@ for mode in range(4, 256):
 mode_data = {}
 text_data = {}
 
+# all data for current mode
+state.console_state.current_mode = text_mode_80['vga']
 # border colour
 state.console_state.border_attr = 0
 # colorburst value
@@ -977,9 +1268,12 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
     # start with black border 
     if new_mode != state.console_state.screen_mode:
         set_border(0)
-    # set all state vars
+    # set the screen parameters
     state.console_state.screen_mode = new_mode
     state.console_state.colorswitch = new_colorswitch 
+    # set all state vars
+    state.console_state.current_mode = info
+    # these are all duplicates
     state.console_state.font_height = info.font_height 
     state.console_state.num_attr = info.num_attr
     state.console_state.colours = info.colours
