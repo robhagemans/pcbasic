@@ -440,7 +440,7 @@ def get_area_ega(x0, y0, x1, y1, byte_array):
     # illegal fn call if outside screen boundary
     util.range_check(0, state.console_state.size[0]-1, x0, x1)
     util.range_check(0, state.console_state.size[1]-1, y0, y1)
-    if state.console_state.current_mode == graphics_mode['640x200x4']:
+    if state.console_state.current_mode.name == '640x200x4':
         # Tandy screen 6 simply GETs twice the width, it seems
         dx *= 2
         x1 = x0 + dx -1 
@@ -1593,26 +1593,26 @@ def set_width(to_width):
     elif state.console_state.current_mode.is_text_mode:
         return screen(0, None, None, None, new_width=to_width) 
     elif to_width == 40:
-        if state.console_state.current_mode == graphics_mode['640x200x2']:
+        if state.console_state.current_mode.name == '640x200x2':
             return screen(1, None, None, None)
-        elif state.console_state.current_mode == graphics_mode['160x200x16']:
+        elif state.console_state.current_mode.name == '160x200x16':
             return screen(1, None, None, None)
-        elif state.console_state.current_mode == graphics_mode['640x200x4']:
+        elif state.console_state.current_mode.name == '640x200x4':
             return screen(5, None, None, None)
-        elif state.console_state.current_mode == graphics_mode['640x200x16']:
+        elif state.console_state.current_mode.name == '640x200x16':
             return screen(7, None, None, None)
-        elif state.console_state.current_mode == graphics_mode['640x350x16']:
+        elif state.console_state.current_mode.name == '640x350x16':
             return screen(7, None, None, None)
     elif to_width == 80:
-        if state.console_state.current_mode == graphics_mode['320x200x4']:
+        if state.console_state.current_mode.name == '320x200x4':
             return screen(2, None, None, None)
-        elif state.console_state.current_mode == graphics_mode['160x200x16']:
+        elif state.console_state.current_mode.name == '160x200x16':
             return screen(2, None, None, None)
-        elif state.console_state.current_mode == graphics_mode['320x200x4pcjr']:
+        elif state.console_state.current_mode.name == '320x200x4pcjr':
             return screen(2, None, None, None)
-        elif state.console_state.current_mode == graphics_mode['320x200x16pcjr']:
+        elif state.console_state.current_mode.name == '320x200x16pcjr':
             return screen(6, None, None, None)
-        elif state.console_state.current_mode == graphics_mode['320x200x16']:
+        elif state.console_state.current_mode.name == '320x200x16':
             return screen(8, None, None, None)
     return False
     
@@ -1703,7 +1703,7 @@ def set_colorburst(on=True):
     global cga_mode_5
     colorburst_capable = video_capabilities in (
                                 'cga', 'cga_old', 'tandy', 'pcjr')
-    if (state.console_state.current_mode == graphics_mode['320x200x4'] and 
+    if (state.console_state.current_mode.name =='320x200x4' and 
             not composite_monitor):
         # ega ignores colorburst; tandy and pcjr have no mode 5
         cga_mode_5 = not (on or video_capabilities not in ('cga', 'cga_old'))
