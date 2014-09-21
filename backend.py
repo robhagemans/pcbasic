@@ -1612,12 +1612,13 @@ def set_width(to_width):
             return screen(8, None, None, None)
     return False
     
-def check_video_memory(new_mode):
+def check_video_memory(new_mode_info):
     """ Raise an error if not enough video memory for this state. """
     # video memory size check for SCREENs 5 and 6: 
     # (pcjr/tandy only; this is a bit of a hack as is) 
     # (32753 determined experimentally on DOSBox)
-    if (new_mode in (5, 6) and 
+    if (new_mode_info in (graphics_mode['320x200x16pcjr'], 
+                                graphics_mode['640x200x4']) and 
             state.console_state.pcjr_video_mem_size < 32753):
         raise error.RunError(5)
         
