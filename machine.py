@@ -24,7 +24,8 @@ peek_values = {}
 data_segment = 0x13ad
 # data memory model: current segment
 state.basic_state.segment = data_segment
-
+# lowest (EGA) video memory address
+video_segment = 0xa000
 font_segment = 0xf000
 font_addr = 0xfa6e
 low_segment = 0x40
@@ -48,7 +49,7 @@ def peek(addr):
     except KeyError: 
         if addr >= font_segment*0x10+ font_addr:
             return max(0, get_font_memory(addr))
-        elif addr >= video_segment[state.console_state.screen_mode]*0x10:
+        elif addr >= video_segment*0x10:
             # graphics and text memory
             return max(0, get_video_memory(addr))
         elif addr >= data_segment*0x10 + var.var_mem_start:
@@ -66,7 +67,7 @@ def poke(addr, val):
     if addr >= font_segment*0x10+ font_addr:
         # that's ROM it seems
         pass
-    elif addr >= video_segment[state.console_state.screen_mode]*0x10:
+    elif addr >= video_segment*0x10:
         # can't poke into font memory, ignored even in GW-BASIC. ROM?
         # graphics and text memory
         set_video_memory(addr, val)
@@ -125,7 +126,7 @@ def bload(g, offset):
         buf = buf[:-1]
     g.close()
     addr = seg * 0x10 + offset
-    if addr + len(buf) > video_segment[state.console_state.screen_mode]*0x10:
+    if addr + len(buf) > video_segment*0x10:
         # graphics and text memory
         set_video_memory_block(addr, buf)
 
@@ -262,7 +263,6 @@ def get_data_memory(address):
 # video memory
 state.console_state.colour_plane = 0
 state.console_state.colour_plane_write_mask = 0xff
-video_segment = { 0: 0xb800, 1: 0xb800, 2: 0xb800, 3: 0xb800, 4: 0xb800, 5: 0xb800, 6: 0xb800, 7: 0xa000, 8: 0xa000, 9: 0xa000 }
 # memory model: text mode video memory
 text_segment = 0xb800
 
@@ -306,6 +306,9 @@ def set_pixel_byte_cga(page, x, y, bitsperpixel, byte):
 def get_video_memory_cga(addr, bitsperpixel, 
                          bytes_per_row, interlace_times):
     """ Retrieve a byte from CGA memory. """
+    addr -= 0xb8000
+    if addr < 0:
+        return -1
     # modes 1-5: interlaced scan lines, pixels sequentially packed into bytes
     page_size = 0x2000*interlace_times
     page, addr = addr//page_size, addr%page_size
@@ -317,6 +320,9 @@ def get_video_memory_cga(addr, bitsperpixel,
 def set_video_memory_cga(addr, val, bitsperpixel, 
                          bytes_per_row, interlace_times):
     """ Set a byte in CGA memory. """
+    addr -= 0xb8000
+    if addr < 0:
+        return
     # modes 1-5: interlaced scan lines, pixels sequentially packed into bytes
     page_size = 0x2000*interlace_times
     page, addr = addr//page_size, addr%page_size
@@ -328,6 +334,9 @@ def set_video_memory_cga(addr, val, bitsperpixel,
 
 def get_video_memory_tandy_6(addr):
     """ Retrieve a byte from Tandy 640x200x4 """
+    addr -= 0xb8000
+    if addr < 0:
+        return -1
     # mode 6: interlaced scan lines, 8 pixels per two bytes, 
     page, addr = addr//32768, addr%32768
     # 4 x interlaced scan lines of 160bytes
@@ -339,16 +348,22 @@ def get_video_memory_tandy_6(addr):
 
 def set_video_memory_tandy_6(addr, val):
     """ Set a byte in Tandy 640x200x4 memory. """
+    addr -= 0xb8000
+    if addr < 0:
+        return
     page, addr = addr//32768, addr%32768
     # 4 x interlaced scan lines of 80bytes, 8pixels per 2bytes
     x = (((addr%0x2000)%160)//2)*8
     y = (addr//0x2000) + 4*((addr%0x2000)//160)
     if y < state.console_state.size[1] and page < state.console_state.num_pages:
-        return set_pixel_byte(page, x, y, 1<<(addr%2), val) 
+        set_pixel_byte(page, x, y, 1<<(addr%2), val) 
 
 
 def get_video_memory_ega(addr, page_size, pixels_per_row):   
     """ Retrieve a byte from EGA memory. """
+    addr -= 0xa0000
+    if addr < 0:
+        return -1
     # modes 7-9: 1 bit per pixel per colour plane                
     page, addr = addr//page_size, addr%page_size
     x, y = (addr%pixels_per_row)*8, addr//pixels_per_row
@@ -356,6 +371,9 @@ def get_video_memory_ega(addr, page_size, pixels_per_row):
 
 def set_video_memory_ega(addr, val, page_size, pixels_per_row):
     """ Set a byte in EGA video memory. """
+    addr -= 0xa000
+    if addr < 0:
+        return
     page, addr = addr//page_size, addr%page_size
     x, y = (addr%pixels_per_row)*8, addr//pixels_per_row
     set_pixel_byte(page, x, y, 
@@ -364,6 +382,9 @@ def set_video_memory_ega(addr, val, page_size, pixels_per_row):
 
 def get_video_memory_ega_10(addr):   
     """ Retrieve a byte from EGA memory. """
+    addr -= 0xa0000
+    if addr < 0:
+        return -1
     if colour_plane % 4 in (1, 3):
         # only planes 0, 2 are used 
         # http://webpages.charter.net/danrollins/techhelp/0089.HTM
@@ -374,6 +395,9 @@ def get_video_memory_ega_10(addr):
 
 def set_video_memory_ega_10(addr, val):
     """ Set a byte in EGA video memory. """
+    addr -= 0xa0000
+    if addr < 0:
+        return
     page, addr = addr//32768, addr%32768
     x, y = (addr%80)*8, addr//80
     # only use bits 0 and 2
@@ -383,56 +407,50 @@ def set_video_memory_ega_10(addr, val):
     
 def get_video_memory(addr):
     """ Retrieve a byte from video memory. """
-    if addr < video_segment[state.console_state.screen_mode]*0x10:
-        return -1
-    else:
-        if state.console_state.screen_mode == 0:
-            return get_text_memory(addr)
-        addr -= video_segment[state.console_state.screen_mode]*0x10
-        if state.console_state.screen_mode in (1, 4):
-            return get_video_memory_cga(addr, 2, 80, 2)
-        elif state.console_state.screen_mode == 2:
-            return get_video_memory_cga(addr, 1, 80, 2)
-        elif state.console_state.screen_mode == 3:
-            return get_video_memory_cga(addr, 4, 80, 2)
-        elif state.console_state.screen_mode == 5:
-            return get_video_memory_cga(addr, 4, 160, 4)
-        elif state.console_state.screen_mode == 6:
-            return get_video_memory_tandy_6(addr)
-        elif state.console_state.screen_mode == 7:
-            return get_video_memory_ega(addr, 0x2000, 40)
-        elif state.console_state.screen_mode == 8:
-            return get_video_memory_ega(addr, 0x4000, 80)
-        elif state.console_state.screen_mode == 9:
-            return get_video_memory_ega(addr, 0x8000, 80)
-        elif state.console_state.screen_mode == 10:
-            return get_video_memory_ega_10(addr)
-        return -1   
+    if state.console_state.screen_mode == 0:
+        return get_text_memory(addr)
+    elif state.console_state.screen_mode in (1, 4):
+        return get_video_memory_cga(addr, 2, 80, 2)
+    elif state.console_state.screen_mode == 2:
+        return get_video_memory_cga(addr, 1, 80, 2)
+    elif state.console_state.screen_mode == 3:
+        return get_video_memory_cga(addr, 4, 80, 2)
+    elif state.console_state.screen_mode == 5:
+        return get_video_memory_cga(addr, 4, 160, 4)
+    elif state.console_state.screen_mode == 6:
+        return get_video_memory_tandy_6(addr)
+    elif state.console_state.screen_mode == 7:
+        return get_video_memory_ega(addr, 0x2000, 40)
+    elif state.console_state.screen_mode == 8:
+        return get_video_memory_ega(addr, 0x4000, 80)
+    elif state.console_state.screen_mode == 9:
+        return get_video_memory_ega(addr, 0x8000, 80)
+    elif state.console_state.screen_mode == 10:
+        return get_video_memory_ega_10(addr)
+    return -1   
 
 def set_video_memory(addr, val):
     """ Set a byte in video memory. """
-    if addr >= video_segment[state.console_state.screen_mode]*0x10:
-        if state.console_state.screen_mode == 0:
-            return set_text_memory(addr, val)
-        addr -= video_segment[state.console_state.screen_mode]*0x10
-        if state.console_state.screen_mode in (1, 4):
-            set_video_memory_cga(addr, val, 2, 80, 2)
-        elif state.console_state.screen_mode == 2:
-            set_video_memory_cga(addr, val, 1, 80, 2)
-        elif state.console_state.screen_mode == 3:
-            set_video_memory_cga(addr, val, 4, 80, 2)
-        elif state.console_state.screen_mode == 5:
-            set_video_memory_cga(addr, val, 4, 160, 4)
-        elif state.console_state.screen_mode == 6:
-            set_video_memory_tandy_6(addr, val)
-        elif state.console_state.screen_mode == 7:
-            set_video_memory_ega(addr, val, 0x2000, 40)
-        elif state.console_state.screen_mode == 8:
-            set_video_memory_ega(addr, val, 0x4000, 80)
-        elif state.console_state.screen_mode == 9:
-            set_video_memory_ega(addr, val, 0x8000, 80)
-        elif state.console_state.screen_mode == 10:
-            set_video_memory_ega_10(addr, val)
+    if state.console_state.screen_mode == 0:
+        set_text_memory(addr, val)
+    elif state.console_state.screen_mode in (1, 4):
+        set_video_memory_cga(addr, val, 2, 80, 2)
+    elif state.console_state.screen_mode == 2:
+        set_video_memory_cga(addr, val, 1, 80, 2)
+    elif state.console_state.screen_mode == 3:
+        set_video_memory_cga(addr, val, 4, 80, 2)
+    elif state.console_state.screen_mode == 5:
+        set_video_memory_cga(addr, val, 4, 160, 4)
+    elif state.console_state.screen_mode == 6:
+        set_video_memory_tandy_6(addr, val)
+    elif state.console_state.screen_mode == 7:
+        set_video_memory_ega(addr, val, 0x2000, 40)
+    elif state.console_state.screen_mode == 8:
+        set_video_memory_ega(addr, val, 0x4000, 80)
+    elif state.console_state.screen_mode == 9:
+        set_video_memory_ega(addr, val, 0x8000, 80)
+    elif state.console_state.screen_mode == 10:
+        set_video_memory_ega_10(addr, val)
 
 def get_video_memory_block(addr, length):
     """ Retrieve a contiguous block of bytes from video memory. """
