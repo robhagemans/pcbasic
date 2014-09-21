@@ -19,6 +19,8 @@ import timedate
 import unicodepage
 import scancode
 import error
+import vartypes
+import util
     
 # backend implementations
 video = None
@@ -120,6 +122,12 @@ state.console_state.cursor_to = 0
 # pen and stick
 state.console_state.pen_is_on = False
 state.console_state.stick_is_on = False
+
+#############################################
+# graphics viewport
+
+state.console_state.graph_view_set = False
+state.console_state.view_graph_absolute = True
 
 #############################################
 # palettes
@@ -390,12 +398,155 @@ def set_video_memory_ega_10(addr, val):
     set_pixel_byte(page, x, y, 
                    state.console_state.colour_plane_write_mask & 0x5, val)            
 
+
+def get_area_cga(x0, y0, x1, y1, byte_array):
+    """ Read a sprite from the screen in CGA modes. """
+    dx = x1 - x0 + 1
+    dy = y1 - y0 + 1
+    x0, y0 = view_coords(x0, y0)
+    x1, y1 = view_coords(x1, y1)
+    # illegal fn call if outside screen boundary
+    util.range_check(0, state.console_state.size[0]-1, x0, x1)
+    util.range_check(0, state.console_state.size[1]-1, y0, y1)
+    # clear existing array
+    byte_array[:] = '\x00'*len(byte_array)
+    byte_array[0:2] = vartypes.value_to_uint(dx*state.console_state.bitsperpixel)
+    byte_array[2:4] = vartypes.value_to_uint(dy)
+    byte = 4
+    shift = 8-state.console_state.bitsperpixel
+    for y in range(y0, y1+1):
+        for x in range(x0, x1+1):
+            if shift < 0:
+                byte += 1
+                shift = 8-state.console_state.bitsperpixel
+            pixel = video.get_pixel(x,y) # 2-bit value
+            try:
+                byte_array[byte] |= pixel << shift
+            except IndexError:
+                raise error.RunError(5)      
+            shift -= state.console_state.bitsperpixel
+        # byte align next row
+        byte += 1
+        shift = 8-state.console_state.bitsperpixel
+
+def get_area_ega(x0, y0, x1, y1, byte_array):
+    """ Read a sprite from the screen in EGA modes. """
+    dx = x1 - x0 + 1
+    dy = y1 - y0 + 1
+    x0, y0 = view_coords(x0, y0)
+    x1, y1 = view_coords(x1, y1)
+    # illegal fn call if outside screen boundary
+    util.range_check(0, state.console_state.size[0]-1, x0, x1)
+    util.range_check(0, state.console_state.size[1]-1, y0, y1)
+    # clear existing array
+    byte_array[:] = '\x00'*len(byte_array)
+    if state.console_state.current_mode == graphics_mode['640x200x4']:
+        # Tandy screen 6 simply GETs twice the width, it seems
+        dx *= 2
+        x1 = x0 + dx -1 
+    byte_array[0:4] = vartypes.value_to_uint(dx) + vartypes.value_to_uint(dy) 
+    byte = 4
+    mask = 0x80
+    row_bytes = (dx+7) // 8
+    for y in range(y0, y1+1):
+        for x in range(x0, x1+1):
+            if mask == 0: 
+                mask = 0x80
+            pixel = video.get_pixel(x, y)
+            for b in range(state.console_state.bitsperpixel):
+                if pixel & (1<<b) != 0:
+                    try:
+                        byte_array[4 + ((y-y0)*state.console_state.bitsperpixel 
+                                        + b)*row_bytes + (x-x0)//8] |= mask 
+                    except IndexError:
+                        raise error.RunError(5)   
+            mask >>= 1
+        # byte align next row
+        mask = 0x80
+
+def set_area_cga(x0, y0, byte_array, operation):
+    """ Put a stored sprite onto the screen in CGA modes. """
+    # in cga modes, number of x bits is given rather than pixels
+    dx = (vartypes.uint_to_value(byte_array[0:2]) 
+                / state.console_state.bitsperpixel)
+    dy = vartypes.uint_to_value(byte_array[2:4])
+    x1, y1 = x0+dx-1, y0+dy-1
+    x0, y0 = view_coords(x0, y0)
+    x1, y1 = view_coords(x1, y1)
+    # illegal fn call if outside screen boundary
+    util.range_check(0, state.console_state.size[0]-1, x0, x1)
+    util.range_check(0, state.console_state.size[1]-1, y0, y1)
+    video.apply_graph_clip()
+    byte = 4
+    shift = 8 - state.console_state.bitsperpixel
+    for y in range(y0, y1+1):
+        for x in range(x0, x1+1):
+            if shift < 0:
+                byte += 1
+                shift = 8 - state.console_state.bitsperpixel
+            if (x < 0 or x >= state.console_state.size[0] or 
+                    y < 0 or y >= state.console_state.size[1]):
+                pixel = 0
+            else:
+                pixel = video.get_pixel(x,y)
+                try:    
+                    index = (byte_array[byte] >> shift) & 3   
+                except IndexError:
+                    pass                
+                video.put_pixel(x, y, operation(pixel, index))    
+            shift -= state.console_state.bitsperpixel
+        # byte align next row
+        byte += 1
+        shift = 8 - state.console_state.bitsperpixel
+    video.remove_graph_clip()        
+
+def set_area_ega(x0, y0, byte_array, operation):
+    """ Put a stored sprite onto the screen in EGA modes. """
+    dx = vartypes.uint_to_value(byte_array[0:2])
+    dy = vartypes.uint_to_value(byte_array[2:4])
+    x1, y1 = x0+dx-1, y0+dy-1
+    x0, y0 = view_coords(x0, y0)
+    x1, y1 = view_coords(x1, y1)
+    # illegal fn call if outside screen boundary
+    util.range_check(0, state.console_state.size[0]-1, x0, x1)
+    util.range_check(0, state.console_state.size[1]-1, y0, y1)
+    video.apply_graph_clip()
+    byte = 4
+    mask = 0x80
+    row_bytes = (dx+7) // 8
+    for y in range(y0, y1+1):
+        for x in range(x0, x1+1):
+            if mask == 0: 
+                mask = 0x80
+            if (x < 0 or x >= state.console_state.size[0] 
+                    or y < 0 or y >= state.console_state.size[1]):
+                pixel = 0
+            else:
+                pixel = video.get_pixel(x,y)
+            index = 0
+            for b in range(state.console_state.bitsperpixel):
+                try:
+                    if byte_array[4 + ((y-y0)*state.console_state.bitsperpixel 
+                                        + b)*row_bytes + (x-x0)//8] & mask != 0:
+                        index |= 1 << b  
+                except IndexError:
+                    pass
+            mask >>= 1
+            if (x >= 0 and x < state.console_state.size[0] and 
+                    y >= 0 and y < state.console_state.size[1]):
+                video.put_pixel(x, y, operation(pixel, index)) 
+        # byte align next row
+        mask = 0x80
+    video.remove_graph_clip()   
+
+
 class ModeData(object):
     """ Holds settings for video modes. """
     
     def __init__(self, font_height, attr, num_attr, 
                  width, num_pages, bitsperpixel, 
-                 palette, colours, get_memory, set_memory,
+                 palette, colours, get_memory, set_memory, 
+                 get_area=None, set_area=None,
                  colours1=None, font_width=8, 
                  supports_artifacts=False, cursor_index=None, has_blink=False,
                  pixel_aspect=None, has_underline=False, is_text_mode=False,
@@ -421,6 +572,8 @@ class ModeData(object):
         self.page_size = page_size
         self.get_memory = get_memory
         self.set_memory = set_memory
+        self.get_area = get_area
+        self.set_area = set_area
             
 # video modes
 text_mode_80 = {
@@ -772,6 +925,8 @@ graphics_mode = {
                 bitsperpixel=2, bytes_per_row=80, interlace_times=2),
             set_memory = partial(set_video_memory_cga, 
                 bitsperpixel=2, bytes_per_row=80, interlace_times=2),
+            get_area = get_area_cga,
+            set_area = set_area_cga,
             ),            
     # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
     '640x200x2': ModeData(
@@ -790,6 +945,8 @@ graphics_mode = {
                 bitsperpixel=1, bytes_per_row=80, interlace_times=2),
             set_memory = partial(set_video_memory_cga, 
                 bitsperpixel=1, bytes_per_row=80, interlace_times=2),
+            get_area = get_area_cga,
+            set_area = set_area_cga,
             ),
     # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy 3
     '160x200x16': ModeData(
@@ -809,6 +966,8 @@ graphics_mode = {
                 bitsperpixel=4, bytes_per_row=80, interlace_times=2),
             set_memory = partial(set_video_memory_cga, 
                 bitsperpixel=4, bytes_per_row=80, interlace_times=2),
+            get_area = get_area_cga,
+            set_area = set_area_cga,
             ),
     #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr 4
     '320x200x4': ModeData(
@@ -827,6 +986,8 @@ graphics_mode = {
                 bitsperpixel=2, bytes_per_row=80, interlace_times=2),
             set_memory = partial(set_video_memory_cga, 
                 bitsperpixel=2, bytes_per_row=80, interlace_times=2),
+            get_area = get_area_cga,
+            set_area = set_area_cga,
             ),
     # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr 5
     '320x200x16': ModeData(
@@ -845,6 +1006,8 @@ graphics_mode = {
                 bitsperpixel=4, bytes_per_row=160, interlace_times=4),
             set_memory = partial(set_video_memory_cga, 
                 bitsperpixel=4, bytes_per_row=160, interlace_times=4),
+            get_area = get_area_cga,
+            set_area = set_area_cga,
             ),
     # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr 6
     '640x200x4': ModeData(
@@ -861,6 +1024,9 @@ graphics_mode = {
             page_size = 0x8000,
             get_memory = get_video_memory_tandy_6,
             set_memory = set_video_memory_tandy_6,
+            # mode 6 has (almost) EGA-style PUT/GET
+            get_area = get_area_ega,
+            set_area = set_area_ega,
             ),
     # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
     '320x200x16': ModeData(
@@ -878,6 +1044,8 @@ graphics_mode = {
                 page_size = 0x2000, bytes_per_row=40),
             set_memory = partial(set_video_memory_ega, 
                 page_size = 0x2000, bytes_per_row=40),
+            get_area = get_area_ega,
+            set_area = set_area_ega,
             ),
     # 0Eh 640x200x16    EGA screen 8
     '640x200x16': ModeData(
@@ -895,6 +1063,8 @@ graphics_mode = {
                 page_size = 0x4000, bytes_per_row=80),
             set_memory = partial(set_video_memory_ega, 
                 page_size = 0x4000, bytes_per_row=80),
+            get_area = get_area_ega,
+            set_area = set_area_ega,
             ),
     # 10h 640x350x16    EGA screen 9
     '640x350x16': ModeData(
@@ -912,6 +1082,8 @@ graphics_mode = {
                 page_size = 0x8000, bytes_per_row=80),
             set_memory = partial(set_video_memory_ega, 
                 page_size = 0x8000, bytes_per_row=80),
+            get_area = get_area_ega,
+            set_area = set_area_ega,
             ),
     # 0Fh 640x350x4     EGA monochrome screen 10
     '640x350x4': ModeData(
@@ -929,6 +1101,8 @@ graphics_mode = {
             page_size = 0x8000,
             get_memory = get_video_memory_ega_10, 
             set_memory = set_video_memory_ega_10, 
+            get_area = get_area_ega,
+            set_area = set_area_ega,
             ),
     # 40h 640x400x2   1bpp  olivetti
     '640x400x2': ModeData(
@@ -946,6 +1120,8 @@ graphics_mode = {
                 bitsperpixel=1, bytes_per_row=80, interlace_times=4),
             set_memory = partial(set_video_memory_cga, 
                 bitsperpixel=1, bytes_per_row=80, interlace_times=4),
+            get_area = get_area_cga,
+            set_area = set_area_cga,
             ),
     # hercules
     '720x348x2': ModeData(
@@ -966,6 +1142,8 @@ graphics_mode = {
                 bitsperpixel=1, bytes_per_row=90, interlace_times=4),
             set_memory = partial(set_video_memory_cga, 
                 bitsperpixel=1, bytes_per_row=90, interlace_times=4),
+            get_area = get_area_cga,
+            set_area = set_area_cga,
             ),
     }
 
@@ -1887,6 +2065,48 @@ def toggle_echo_lpt1():
     else:    
         input_echos.append(lpt1.write)
         output_echos.append(lpt1.write)
+
+
+#############################################
+## graphics viewport    
+    
+def set_graph_view(x0,y0,x1,y1, absolute=True):
+    """ Set the graphics viewport. """
+    # VIEW orders the coordinates
+    if x0 > x1:
+        x0, x1 = x1, x0
+    if y0 > y1:
+        y0, y1 = y1, y0
+    state.console_state.view_graph_absolute = absolute
+    state.console_state.graph_view_set = True
+    video.set_graph_clip(x0, y0, x1, y1)
+    if state.console_state.view_graph_absolute:
+        state.console_state.last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
+    else:
+        state.console_state.last_point = (x1-x0)/2, (y1-y0)/2
+    if state.console_state.graph_window_bounds != None:
+        set_graph_window(*state.console_state.graph_window_bounds)
+
+def unset_graph_view():
+    """ Unset the graphics viewport. """
+    state.console_state.view_graph_absolute = False
+    state.console_state.graph_view_set = False
+    state.console_state.last_point = video.unset_graph_clip()
+    if state.console_state.graph_window_bounds != None:
+        set_graph_window(*state.console_state.graph_window_bounds)
+
+def view_coords(x,y):
+    """ Retrieve absolute coordinates for viewport coordinates. """
+    if ((not state.console_state.graph_view_set) or 
+            state.console_state.view_graph_absolute):
+        return x, y
+    else:
+        lefttop = video.get_graph_clip()
+        return x + lefttop[0], y + lefttop[1]
+
+def clear_graphics_view():
+    """ Clear the current viewport. """
+    video.clear_graph_clip((state.console_state.attr>>4) & 0x7)
 
 ##############################################
 # light pen
