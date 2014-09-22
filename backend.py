@@ -263,7 +263,7 @@ def coord_ok(page, x, y):
             
 def get_pixel_byte(page, x, y, plane):
     """ Retrieve a byte with 8 packed pixels for one colour plane. """
-    # modes 1-5: interlaced scan lines, pixels sequentially packed into bytes
+    # modes 1-5: interleaved scan lines, pixels sequentially packed into bytes
     if coord_ok(page, x, y):
         return sum(( ((video.get_pixel(x+shift, y, page) >> plane) & 1) 
                       << (7-shift) for shift in range(8) ))
@@ -299,31 +299,31 @@ def set_pixel_byte_cga(page, x, y, bitsperpixel, byte):
 
     
 def get_video_memory_cga(addr, bitsperpixel, 
-                         bytes_per_row, interlace_times):
+                         bytes_per_row, interleave_times):
     """ Retrieve a byte from CGA memory. """
     addr -= 0xb8000
     if addr < 0:
         return -1
-    # modes 1-5: interlaced scan lines, pixels sequentially packed into bytes
-    page_size = 0x2000*interlace_times
+    # modes 1-5: interleaved scan lines, pixels sequentially packed into bytes
+    page_size = 0x2000*interleave_times
     page, addr = addr//page_size, addr%page_size
-    # 2 x interlaced scan lines of 80bytes
+    # 2 x interleaved scan lines of 80bytes
     x = ((addr%0x2000)%bytes_per_row)*8//bitsperpixel
-    y = (addr>=0x2000) + interlace_times*((addr%0x2000)//bytes_per_row)
+    y = (addr>=0x2000) + interleave_times*((addr%0x2000)//bytes_per_row)
     return get_pixel_byte_cga(page, x, y, bitsperpixel)
 
 def set_video_memory_cga(addr, val, bitsperpixel, 
-                         bytes_per_row, interlace_times):
+                         bytes_per_row, interleave_times):
     """ Set a byte in CGA memory. """
     addr -= 0xb8000
     if addr < 0:
         return
-    # modes 1-5: interlaced scan lines, pixels sequentially packed into bytes
-    page_size = 0x2000*interlace_times
+    # modes 1-5: interleaved scan lines, pixels sequentially packed into bytes
+    page_size = 0x2000*interleave_times
     page, addr = addr//page_size, addr%page_size
-    # 2 or 4 x interlaced scan lines of 80 or 160 bytes
+    # 2 or 4 x interleaved scan lines of 80 or 160 bytes
     x = ((addr%0x2000)%bytes_per_row)*8//bitsperpixel
-    y = (addr>=0x2000) + interlace_times*((addr%0x2000)//bytes_per_row)
+    y = (addr>=0x2000) + interleave_times*((addr%0x2000)//bytes_per_row)
     set_pixel_byte_cga(page, x, y, bitsperpixel, val)
 
 
@@ -332,9 +332,9 @@ def get_video_memory_tandy_6(addr):
     addr -= 0xb8000
     if addr < 0:
         return -1
-    # mode 6: interlaced scan lines, 8 pixels per two bytes, 
+    # mode 6: interleaved scan lines, 8 pixels per two bytes, 
     page, addr = addr//32768, addr%32768
-    # 4 x interlaced scan lines of 160bytes
+    # 4 x interleaved scan lines of 160bytes
     x = (((addr%0x2000)%160)//2)*8
     y = (addr//0x2000) + 4*((addr%0x2000)//160)
     # 8 pixels per 2 bytes
@@ -347,7 +347,7 @@ def set_video_memory_tandy_6(addr, val):
     if addr < 0:
         return
     page, addr = addr//32768, addr%32768
-    # 4 x interlaced scan lines of 80bytes, 8pixels per 2bytes
+    # 4 x interleaved scan lines of 80bytes, 8pixels per 2bytes
     x = (((addr%0x2000)%160)//2)*8
     y = (addr//0x2000) + 4*((addr%0x2000)//160)
     set_pixel_byte(page, x, y, 1<<(addr%2), val) 
@@ -975,9 +975,9 @@ graphics_mode = {
             mem_start = 0xb800,
             page_size = 0x4000,
             get_memory = partial(get_video_memory_cga, 
-                bitsperpixel=2, bytes_per_row=80, interlace_times=2),
+                bitsperpixel=2, bytes_per_row=80, interleave_times=2),
             set_memory = partial(set_video_memory_cga, 
-                bitsperpixel=2, bytes_per_row=80, interlace_times=2),
+                bitsperpixel=2, bytes_per_row=80, interleave_times=2),
             get_area = get_area_cga,
             set_area = set_area_cga,
             build_tile = build_tile_cga,
@@ -997,9 +997,9 @@ graphics_mode = {
             mem_start = 0xb800,
             page_size = 0x4000,
             get_memory = partial(get_video_memory_cga, 
-                bitsperpixel=1, bytes_per_row=80, interlace_times=2),
+                bitsperpixel=1, bytes_per_row=80, interleave_times=2),
             set_memory = partial(set_video_memory_cga, 
-                bitsperpixel=1, bytes_per_row=80, interlace_times=2),
+                bitsperpixel=1, bytes_per_row=80, interleave_times=2),
             get_area = get_area_cga,
             set_area = set_area_cga,
             build_tile = build_tile_cga,
@@ -1020,9 +1020,9 @@ graphics_mode = {
             mem_start = 0xb800,
             page_size = 0x4000,
             get_memory = partial(get_video_memory_cga, 
-                bitsperpixel=4, bytes_per_row=80, interlace_times=2),
+                bitsperpixel=4, bytes_per_row=80, interleave_times=2),
             set_memory = partial(set_video_memory_cga, 
-                bitsperpixel=4, bytes_per_row=80, interlace_times=2),
+                bitsperpixel=4, bytes_per_row=80, interleave_times=2),
             get_area = get_area_cga,
             set_area = set_area_cga,
             build_tile = build_tile_cga,
@@ -1042,9 +1042,9 @@ graphics_mode = {
             mem_start = 0xb800,
             page_size = 0x4000,
             get_memory = partial(get_video_memory_cga, 
-                bitsperpixel=2, bytes_per_row=80, interlace_times=2),
+                bitsperpixel=2, bytes_per_row=80, interleave_times=2),
             set_memory = partial(set_video_memory_cga, 
-                bitsperpixel=2, bytes_per_row=80, interlace_times=2),
+                bitsperpixel=2, bytes_per_row=80, interleave_times=2),
             get_area = get_area_cga,
             set_area = set_area_cga,
             build_tile = build_tile_cga,
@@ -1064,9 +1064,9 @@ graphics_mode = {
             mem_start = 0xb800,
             page_size = 0x8000,
             get_memory = partial(get_video_memory_cga, 
-                bitsperpixel=4, bytes_per_row=160, interlace_times=4),
+                bitsperpixel=4, bytes_per_row=160, interleave_times=4),
             set_memory = partial(set_video_memory_cga, 
-                bitsperpixel=4, bytes_per_row=160, interlace_times=4),
+                bitsperpixel=4, bytes_per_row=160, interleave_times=4),
             get_area = get_area_cga,
             set_area = set_area_cga,
             build_tile = build_tile_cga,
@@ -1190,9 +1190,9 @@ graphics_mode = {
             mem_start = 0xb800,
             page_size = 0x8000,
             get_memory = partial(get_video_memory_cga, 
-                bitsperpixel=1, bytes_per_row=80, interlace_times=4),
+                bitsperpixel=1, bytes_per_row=80, interleave_times=4),
             set_memory = partial(set_video_memory_cga, 
-                bitsperpixel=1, bytes_per_row=80, interlace_times=4),
+                bitsperpixel=1, bytes_per_row=80, interleave_times=4),
             # EGA/CGA distinction doesn't matter for monochrome
             get_area = get_area_cga,
             set_area = set_area_cga,
@@ -1215,9 +1215,9 @@ graphics_mode = {
             mem_start = 0xb800,
             page_size = 0x8000,
             get_memory = partial(get_video_memory_cga, 
-                bitsperpixel=1, bytes_per_row=90, interlace_times=4),
+                bitsperpixel=1, bytes_per_row=90, interleave_times=4),
             set_memory = partial(set_video_memory_cga, 
-                bitsperpixel=1, bytes_per_row=90, interlace_times=4),
+                bitsperpixel=1, bytes_per_row=90, interleave_times=4),
             get_area = get_area_cga,
             set_area = set_area_cga,
             build_tile = build_tile_cga,
