@@ -1397,7 +1397,6 @@ def resume_screen():
         mode_info = copy(mode_data[state.console_state.screen_mode])
     else:
         mode_info = copy(text_data[state.console_state.width])
-    mode_info.attr = state.console_state.attr
     # set up the appropriate screen resolution
     if (state.console_state.current_mode.is_text_mode or 
             video.supports_graphics_mode(mode_info)):
@@ -1409,6 +1408,7 @@ def resume_screen():
         video.update_palette(state.console_state.palette,
                              state.console_state.colours,
                              state.console_state.colours1)
+        video.set_attr(state.console_state.attr)
         # fix the cursor
         video.build_cursor(
             state.console_state.cursor_width, 
@@ -1506,11 +1506,10 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
         return False
     state.console_state.width = info.width
     # attribute persists on width-only change
-    if (state.console_state.screen_mode == 0 and new_mode == 0 
+    if not (state.console_state.screen_mode == 0 and new_mode == 0 
             and state.console_state.apagenum == new_apagenum 
             and state.console_state.vpagenum == new_vpagenum):
-        info.attr = state.console_state.attr
-    state.console_state.attr = info.attr
+        state.console_state.attr = info.attr
     # start with black border 
     if new_mode != state.console_state.screen_mode:
         set_border(0)
@@ -1546,6 +1545,8 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
     video.init_screen_mode(info)
     # set the palette (essential on first run, or not all globals defined)
     set_palette()
+    # set the attribute
+    video.set_attr(state.console_state.attr)
     # in screen 0, 1, set colorburst (not in SCREEN 2!)
     if new_mode in (0, 1):
         set_colorburst(new_colorswitch)
