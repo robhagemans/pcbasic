@@ -553,6 +553,9 @@ def get_area(x0, y0, x1, y1, array):
         _, byte_array, _ = state.basic_state.arrays[array]
     except KeyError:
         raise error.RunError(5)    
+    if state.console_state.current_mode.name == '640x200x4':
+        # Tandy screen 6 simply GETs twice the width, it seems
+        x1 = x0 + 2*(x1-x0+1)-1 
     state.console_state.current_mode.get_area(x0, y0, x1, y1, byte_array)
     # store a copy in the fast-put store
     # arrays[array] must exist at this point (or GET would have raised error 5)

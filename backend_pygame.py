@@ -202,9 +202,6 @@ if pygame:
 # cursor is visible
 cursor_visible = True
 
-# this doesn't currently change
-height = 25
-
 # mouse button functions
 mousebutton_copy = 1
 mousebutton_paste = 2
@@ -304,7 +301,7 @@ def load_state():
 
 def init():
     """ Initialise pygame interface. """
-    global joysticks, physical_size, scrap, display_size
+    global joysticks, physical_size, display_size
     global text_mode
     # set state objects to whatever is now in state (may have been unpickled)
     if not pygame:
@@ -345,7 +342,6 @@ def init():
         for joy in range(0, 1):
             for axis in range(0, 1):
                 backend.stick_moved(joy, axis, 128)
-    scrap = Clipboard() 
     load_fonts(heights_needed)
     text_mode = True    
     state.display = PygameDisplayState()
@@ -388,31 +384,31 @@ def init_screen_mode(mode_info):
     global screen_changed, canvas
     global font, under_cursor, size, text_mode
     global font_height
-    global width, num_pages, bitsperpixel, font_width
+    global scrap, num_pages, bitsperpixel, font_width
     global mode_has_artifacts, cursor_fixed_attr, mode_has_blink
     global mode_has_underline
     global get_put_store
     text_mode = mode_info.is_text_mode
     # unpack mode info struct
     font_height = mode_info.font_height
-    attr = mode_info.attr
-    width = mode_info.width
-    num_pages = mode_info.num_pages
-    bitsperpixel = mode_info.bitsperpixel
     font_width = mode_info.font_width
-    mode_has_artifacts = mode_info.supports_artifacts
-    cursor_fixed_attr = mode_info.cursor_index
+    num_pages = mode_info.num_pages
     mode_has_blink = mode_info.has_blink
     mode_has_underline = mode_info.has_underline
+    if not text_mode:
+        bitsperpixel = mode_info.bitsperpixel
+        mode_has_artifacts = mode_info.supports_artifacts
+        cursor_fixed_attr = mode_info.cursor_index
+        # logical size    
+        size = (mode_info.xsize, mode_info.ysize)    
+    else:
+        size = (mode_info.width*font_width, mode_info.height*font_height)    
     font = fonts[font_height]
     glyphs = [build_glyph(chr(c), font, font_width, font_height) 
               for c in range(256)]
     # initialise glyph colour
-    set_attr(attr, force_rebuild=True)
-    resize_display(*find_display_size(width * font_width, 25 * font_height, border_width))
-    # logical size    
-    height = 25
-    size = (width * font_width, height * font_height)    
+    set_attr(mode_info.attr, force_rebuild=True)
+    resize_display(*find_display_size(size[0], size[1], border_width))
     # set standard cursor
     build_cursor(font_width, font_height, 0, font_height)
     # whole screen (blink on & off)
@@ -421,6 +417,8 @@ def init_screen_mode(mode_info):
         canvas[i].set_palette(workpalette)
     # remove cached sprites
     get_put_store = {}    
+    # initialise clipboard
+    scrap = Clipboard(mode_info.width, mode_info.height)
     screen_changed = True
     
 
@@ -617,13 +615,13 @@ def scroll(from_line, scroll_height, attr):
     global screen_changed
     temp_scroll_area = pygame.Rect(
                     0, (from_line-1)*font_height,
-                    width * font_width, 
+                    size[0], 
                     (scroll_height-from_line+1) * font_height)
     # scroll
     canvas[apagenum].set_clip(temp_scroll_area)
     canvas[apagenum].scroll(0, -font_height)
     # empty new line
-    blank = pygame.Surface( (width * font_width, font_height) , depth=8)
+    blank = pygame.Surface( (size[0], font_height) , depth=8)
     _, bg = get_palette_index(attr)
     blank.set_palette(workpalette)
     blank.fill(bg)
@@ -633,12 +631,12 @@ def scroll(from_line, scroll_height, attr):
    
 def scroll_down(from_line, scroll_height, attr):
     global screen_changed
-    temp_scroll_area = pygame.Rect(0, (from_line-1) * font_height, width * 8, 
+    temp_scroll_area = pygame.Rect(0, (from_line-1) * font_height, size[0], 
                                    (scroll_height-from_line+1) * font_height)
     canvas[apagenum].set_clip(temp_scroll_area)
     canvas[apagenum].scroll(0, font_height)
     # empty new line
-    blank = pygame.Surface( (width * font_width, font_height), depth=8 )
+    blank = pygame.Surface( (size[0], font_height), depth=8 )
     _, bg = get_palette_index(attr)
     blank.set_palette(workpalette)
     blank.fill(bg)
@@ -998,12 +996,14 @@ class Clipboard(object):
     text = ('UTF8_STRING', 'text/plain;charset=utf-8', 'text/plain',
             'TEXT', 'STRING')
         
-    def __init__(self):
+    def __init__(self, width, height):
         """ Initialise pygame scrapboard. """
         self.logo_pressed = False
         self.select_start = None
         self.select_end = None
         self.selection_rect = None
+        self.width = width
+        self.height = height
         try:
             pygame.scrap.init()
             pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
@@ -1113,12 +1113,12 @@ class Clipboard(object):
         start, stop = self.select_start, self.select_stop
         if stop[1] < 1: 
             stop[0] -= 1
-            stop[1] = width+1
-        if stop[1] > width+1:        
+            stop[1] = self.width+1
+        if stop[1] > self.width+1:        
             stop[0] += 1
             stop[1] = 1
-        if stop[0] > height:
-            stop[:] = [height, width+1]
+        if stop[0] > self.height:
+            stop[:] = [self.height, self.width+1]
         if stop[0] < 1:
             stop[:] = [1, 1]            
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
@@ -1154,7 +1154,7 @@ class Clipboard(object):
         elif e.unicode.upper() == u'A':
             # select all
             self.select_start = [1, 1]
-            self.move(height, width+1)
+            self.move(self.height, self.width+1)
         elif e.key == pygame.K_LEFT:
             # move selection head left
             self.move(self.select_stop[0], self.select_stop[1]-1)
