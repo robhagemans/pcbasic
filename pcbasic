@@ -36,10 +36,11 @@ import backend
 # load backend modules
 # this can't be done in backend.py as it would create circular dependency
 import video_none
-import audio_none
 import video_cli
 import video_curses
 import video_pygame
+import audio_none
+import audio_pygame
 import audio_beep
 backend.audio = audio_none
 if config.options['filter'] or config.options['conv'] or (
@@ -56,7 +57,7 @@ elif config.options['ansi'] and plat.stdout_is_tty:
     backend.audio = audio_beep
 else:   
     backend.video = video_pygame   
-    backend.audio = video_pygame
+    backend.audio = audio_pygame
 if config.options['nosound']:
     backend.audio = audio_none
 
