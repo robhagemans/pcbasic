@@ -35,30 +35,30 @@ if config.options['program'] and not config.options['load']:
 import backend
 # load backend modules
 # this can't be done in backend.py as it would create circular dependency
-import novideo
-import nosound
-import backend_cli
-import backend_curses
-import backend_pygame
-import sound_beep
-backend.audio = nosound
+import video_none
+import audio_none
+import video_cli
+import video_curses
+import video_pygame
+import audio_beep
+backend.audio = audio_none
 if config.options['filter'] or config.options['conv'] or (
         not config.options['graphical'] and not config.options['ansi'] and
         (not plat.stdin_is_tty or not plat.stdout_is_tty)):
     # redirected input or output leads to dumbterm use
-    backend.video = novideo
-    backend.audio = nosound
+    backend.video = video_none
+    backend.audio = audio_none
 elif config.options['cli'] and plat.stdout_is_tty:
-    backend.video = backend_cli
-    backend.audio = sound_beep
+    backend.video = video_cli
+    backend.audio = audio_beep
 elif config.options['ansi'] and plat.stdout_is_tty:
-    backend.video = backend_curses
-    backend.audio = sound_beep
+    backend.video = video_curses
+    backend.audio = audio_beep
 else:   
-    backend.video = backend_pygame   
-    backend.audio = backend_pygame
+    backend.video = video_pygame   
+    backend.audio = video_pygame
 if config.options['nosound']:
-    backend.audio = nosound
+    backend.audio = audio_none
 
 import run
 import error
@@ -124,12 +124,12 @@ def prepare_console():
     if not backend.video or not backend.init_video():
         backend.video.close()
         logging.warning('Falling back to filter interface.')
-        backend.video = novideo
+        backend.video = video_none
         if not backend.init_video():
             logging.error('Failed to initialise interface.')
             raise error.Exit()
     if not backend.init_audio():
-        backend.audio = nosound
+        backend.audio = audio_none
         logging.warning('Failed to initialise sound. Sound will be disabled.')
     if not state.loaded:    
         console.init_mode()    
