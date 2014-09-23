@@ -1182,9 +1182,9 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
     # set the attribute
     video.set_attr(state.console_state.attr)
     # in screen 0, 1, set colorburst (not in SCREEN 2!)
-    if new_mode in (0, 1):
+    if info.is_text_mode or info.name == '320x200x4':
         set_colorburst(new_colorswitch)
-    elif new_mode == 2:
+    elif info.name == '640x200x2':
         set_colorburst(False)    
     return True
 
