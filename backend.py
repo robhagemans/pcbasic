@@ -835,7 +835,7 @@ graphics_mode = {
     # 40h 640x400x2   1bpp  olivetti
     '640x400x2': GraphicsMode('640x400x2',
         False, 16, 8, 25, 80, 1, 2,
-        [0, 15], colours16, 1, True, False,
+        [0, 15], colours16, None, 1, True, False,
         partial(get_video_memory_cga, 
                 bitsperpixel=1, bytes_per_row=80, interleave_times=4),
         partial(set_video_memory_cga, 
@@ -843,20 +843,20 @@ graphics_mode = {
         0xb800, 0x8000,
         640, 400, None, 1, 
         # EGA/CGA distinction doesn't matter for 1bpp
-        build_tile_cga, get_area_cga, set_area_cga, False, None, None),
+        build_tile_cga, get_area_cga, set_area_cga, False, None),
     # hercules
     '720x348x2': GraphicsMode('720x348x2',
         # FIXME hercules - this actually produces 350, not 348
         # two scan lines must be left out somewhere, somehow
         False, 14, 9, 25, 80, 2, 2,
-        [0, 15], colours16, 1, True, False,
+        [0, 15], colours16, None, 1, True, False,
         partial(get_video_memory_cga, 
                 bitsperpixel=1, bytes_per_row=90, interleave_times=4),
         partial(set_video_memory_cga, 
                 bitsperpixel=1, bytes_per_row=90, interleave_times=4),
         0xb800, 0x8000,
         720, 350, None, 1, 
-        build_tile_cga, get_area_cga, set_area_cga, False, None, None),
+        build_tile_cga, get_area_cga, set_area_cga, False, None),
     }
 
 # mode numbers by video card
