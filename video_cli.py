@@ -274,10 +274,10 @@ def check_keyboard():
                     backend.insert_chars(c)    
             c = ''
 
-def update_palette(new_palette, colours, colours1):
+def update_palette(new_palette, new_palette1):
     pass
     
-def set_colorburst(on, palette, colours, colours1):
+def set_colorburst(on, palette, palette1):
     pass
 
 def update_cursor_attr(attr):

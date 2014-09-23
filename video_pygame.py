@@ -324,8 +324,8 @@ def init():
     resize_display(*display_size, initial=True)
     pygame.display.set_caption('PC-BASIC 3.23')
     pygame.key.set_repeat(500, 24)
-    # load a game palette to get started
-    update_palette(backend.ega_palette, backend.colours64, None)
+    # load an all-black 16-colour game palette to get started
+    update_palette([(0,0,0)]*16, None)
     if android:
         pygame_android.init()
     pygame.joystick.init()
@@ -539,13 +539,12 @@ def get_palette_index(cattr):
             bg = (0, 0, 0)
     return color, bg    
 
-def update_palette(palette, colours, colours1):
+def update_palette(rgb_palette, rgb_palette1):
     """ Build the game palette. """
     global screen_changed, gamepalette
-    # take modulo in case we're e.g. resuming ega text into a cga machine
-    basepalette0 = [pygame.Color(*colours[i % len(colours)]) for i in palette]
-    if colours1:    
-        basepalette1 = [pygame.Color(*colours1[i % len(colours)]) for i in palette]
+    basepalette0 = [pygame.Color(*c) for c in rgb_palette]
+    if rgb_palette1:    
+        basepalette1 = [pygame.Color(*c) for c in rgb_palette1]
     else:    
         basepalette1 = basepalette0
     while len(basepalette0) < 16:
@@ -570,9 +569,9 @@ def set_border(attr):
     border_attr = attr
     screen_changed = True
     
-def set_colorburst(on, palette, new_colours, new_colours1):
+def set_colorburst(on, rgb_palette, rgb_palette1):
     global composite_artifacts
-    update_palette(palette, new_colours, new_colours1)
+    update_palette(rgb_palette, rgb_palette1)
     composite_artifacts = on and mode_has_artifacts and composite_monitor
     
 def clear_rows(cattr, start, stop):

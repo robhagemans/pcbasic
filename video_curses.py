@@ -181,13 +181,13 @@ def colours(at):
         cursattr |= curses.A_BLINK
     return cursattr
 
-def update_palette(new_palette, colours, colours1):
+def update_palette(new_palette, new_palette1):
     if can_change_palette:
         for i in range(len(new_palette)):
-            r, g, b = colours[new_palette[i]]
+            r, g, b = new_palette[i]
             curses.init_color(default_colors[i], (r*1000)//255, (g*1000)//255, (b*1000)//255)             
     
-def set_colorburst(on, palette, colours, colours1):
+def set_colorburst(on, palette, palette1):
     pass
     
 ####

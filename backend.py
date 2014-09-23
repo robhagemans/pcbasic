@@ -1040,9 +1040,8 @@ def resume_screen():
                        state.console_state.apagenum)
         # set the screen mde
         video.init_screen_mode(mode_info)
-        video.update_palette(state.console_state.palette,
-                             state.console_state.colours,
-                             state.console_state.colours1)
+        video.update_palette(state.console_state.rgb_palette,
+                             state.console_state.rgb_palette1)
         video.set_attr(state.console_state.attr)
         # fix the cursor
         video.build_cursor(
@@ -1274,9 +1273,13 @@ def set_palette_entry(index, colour, check_mode=True):
                 state.console_state.current_mode.is_text_mode):
             return
     state.console_state.palette[index] = colour
-    video.update_palette(state.console_state.palette,
-                         state.console_state.colours,
-                         state.console_state.colours1)
+    state.console_state.rgb_palette[index] = (
+        state.console_state.colours[colour])
+    if state.console_state.colours1:
+        state.console_state.rgb_palette1[index] = (
+        state.console_state.colours1[colour])
+    video.update_palette(state.console_state.rgb_palette,
+                         state.console_state.rgb_palette1)
 
 def get_palette_entry(index):
     """ Retrieve the colour for a given attribute. """
@@ -1295,9 +1298,15 @@ def set_palette(new_palette=None, check_mode=True):
         state.console_state.palette = new_palette[:]
     else:    
         state.console_state.palette = list(state.console_state.default_palette)
-    video.update_palette(state.console_state.palette,
-                         state.console_state.colours,
-                         state.console_state.colours1)
+    state.console_state.rgb_palette = [ 
+        state.console_state.colours[i] for i in state.console_state.palette]
+    if state.console_state.colours1:
+        state.console_state.rgb_palette1 = [ 
+            state.console_state.colours1[i] for i in state.console_state.palette]
+    else:
+        state.console_state.rgb_palette1 = None
+    video.update_palette(state.console_state.rgb_palette, 
+                         state.console_state.rgb_palette1)
 
 def set_cga4_palette(num):
     """ Change the default CGA palette according to palette number & mode. """
@@ -1349,8 +1358,8 @@ def set_colorburst(on=True):
         colours16[:] = colours16_colour
     else:
         colours16[:] = colours16_mono
-    video.set_colorburst(on and colorburst_capable, state.console_state.palette, 
-            state.console_state.colours, state.console_state.colours1)
+    video.set_colorburst(on and colorburst_capable, 
+        state.console_state.rgb_palette, state.console_state.rgb_palette1)
 
 def set_border(attr):
     """ Set the border attribute. """
