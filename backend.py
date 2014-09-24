@@ -601,7 +601,7 @@ GraphicsMode = namedtuple('GraphicsMode', textmode_args +
 
 # 80-column text modes
 text_mode_80 = {
-    'vga': TextMode('text80',
+    'vga': TextMode('vgatext80',
         True, 16, 9, 25, 80, 4, 32, 
         # technically, VGA text does have underline 
         # but it's set to an invisible scanline
@@ -610,31 +610,31 @@ text_mode_80 = {
         partial(get_text_memory, text_segment=0xb800, width=80),
         partial(set_text_memory, text_segment=0xb800, width=80),
         0xb800, 0x1000),
-    'ega': TextMode('text80',
+    'ega': TextMode('egatext80',
         True, 14, 8, 25, 80, 4, 32, 
         ega_palette, colours64, None, 7, True, False,  
         partial(get_text_memory, text_segment=0xb800, width=80),
         partial(set_text_memory, text_segment=0xb800, width=80),
         0xb800, 0x1000),
-    'cga': TextMode('text80',
+    'cga': TextMode('cgatext80',
         True, 8, 8, 25, 80, 4, 32, 
         cga16_palette, colours16, None, 7, True, False,  
         partial(get_text_memory, text_segment=0xb800, width=80),
         partial(set_text_memory, text_segment=0xb800, width=80),
         0xb800, 0x1000),
-    'ega_mono': TextMode('text80',
+    'ega_mono': TextMode('ega_monotext80',
         True, 14, 8, 25, 80, 4, 32, 
         mda_palette, colours_mda_mono, None, 7, True, True,  
         partial(get_text_memory, text_segment=0xb000, width=80),
         partial(set_text_memory, text_segment=0xb000, width=80),
         0xb000, 0x1000),
-    'mda': TextMode('text80',
+    'mda': TextMode('mdatext80',
         True, 14, 9, 25, 80, 1, 32, 
         mda_palette, colours_mda_mono, None, 7, True, True,  
         partial(get_text_memory, text_segment=0xb000, width=80),
         partial(set_text_memory, text_segment=0xb000, width=80),
         0xb000, 0x1000),
-    'hercules': TextMode('text80',
+    'hercules': TextMode('herculestext80',
         True, 14, 9, 25, 80, 2, 32, 
         # attributes shld distinguish black, dim, normal, bright
         # see http://www.seasip.info/VintagePC/hercplus.html
@@ -642,13 +642,13 @@ text_mode_80 = {
         partial(get_text_memory, text_segment=0xb000, width=80),
         partial(set_text_memory, text_segment=0xb000, width=80),
         0xb000, 0x1000),
-    'tandy': TextMode('text80',
+    'tandy': TextMode('tandytext80',
         True, 9, 8, 25, 80, 4, 32, 
         cga16_palette, colours16, None, 7, True, False,  
         partial(get_text_memory, text_segment=0xb800, width=80),
         partial(set_text_memory, text_segment=0xb800, width=80),
         0xb800, 0x1000),
-    'olivetti': TextMode('text80',
+    'olivetti': TextMode('olivettitext80',
         True, 16, 8, 25, 80, 4, 32, 
         cga16_palette, colours16, None, 7, True, False,  
         partial(get_text_memory, text_segment=0xb800, width=80),
@@ -660,7 +660,7 @@ text_mode_80['cga_old'] = text_mode_80['cga']
 
 # 40-column text modes
 text_mode_40 = {
-    'vga': TextMode('text40',
+    'vga': TextMode('vgatext40',
         True, 16, 9, 25, 40, 8, 32, 
         # technically, VGA text does have underline 
         # but it's set to an invisible scanline
@@ -669,31 +669,31 @@ text_mode_40 = {
         partial(get_text_memory, text_segment=0xb800, width=40),
         partial(set_text_memory, text_segment=0xb800, width=40),
         0xb800, 0x800),
-    'ega': TextMode('text40',
+    'ega': TextMode('egatext40',
         True, 14, 8, 25, 40, 8, 32, 
         ega_palette, colours64, None, 7, True, False,  
         partial(get_text_memory, text_segment=0xb800, width=40),
         partial(set_text_memory, text_segment=0xb800, width=40),
         0xb800, 0x800),
-    'cga': TextMode('text40',
+    'cga': TextMode('cgatext40',
         True, 8, 8, 25, 40, 8, 32, 
         cga16_palette, colours16, None, 7, True, False,  
         partial(get_text_memory, text_segment=0xb800, width=40),
         partial(set_text_memory, text_segment=0xb800, width=40),
         0xb800, 0x800),
-    'ega_mono': TextMode('text40',
+    'ega_mono': TextMode('ega_monotext40',
         True, 14, 8, 25, 40, 8, 32, 
         mda_palette, colours_mda_mono, None, 7, True, True,  
         partial(get_text_memory, text_segment=0xb000, width=40),
         partial(set_text_memory, text_segment=0xb000, width=40),
         0xb000, 0x800),
-    'mda': TextMode('text40',
+    'mda': TextMode('mdatext40',
         True, 14, 9, 25, 40, 1, 32, 
         mda_palette, colours_mda_mono, None, 7, True, True,  
         partial(get_text_memory, text_segment=0xb000, width=40),
         partial(set_text_memory, text_segment=0xb000, width=40),
         0xb000, 0x800),
-    'hercules': TextMode('text40',
+    'hercules': TextMode('herculestext40',
         True, 14, 9, 25, 40, 2, 32, 
         # attributes shld distinguish black, dim, normal, bright
         # see http://www.seasip.info/VintagePC/hercplus.html
@@ -701,13 +701,13 @@ text_mode_40 = {
         partial(get_text_memory, text_segment=0xb000, width=40),
         partial(set_text_memory, text_segment=0xb000, width=40),
         0xb000, 0x800),
-    'tandy': TextMode('text40',
+    'tandy': TextMode('tandytext40',
         True, 9, 8, 25, 40, 8, 32, 
         cga16_palette, colours16, None, 7, True, False,  
         partial(get_text_memory, text_segment=0xb800, width=40),
         partial(set_text_memory, text_segment=0xb800, width=40),
         0xb800, 0x800),
-    'olivetti': TextMode('text40',
+    'olivetti': TextMode('olivettitext40',
         True, 16, 8, 25, 40, 8, 32, 
         cga16_palette, colours16, None, 7, True, False,  
         partial(get_text_memory, text_segment=0xb800, width=40),
@@ -1022,16 +1022,28 @@ def init_video():
 def resume_screen():
     """ Load a video mode from storage and initialise. """
     if (not state.console_state.current_mode.is_text_mode and 
-            state.console_state.screen_mode not in mode_data):
+            (state.console_state.screen_mode not in mode_data or
+             state.console_state.current_mode.current_mode.name !=
+                           mode_data[state.console_state.screen_mode].name)):
         # mode not supported by backend
         logging.warning(
-            "Resumed screen mode %d not supported by this setup",
-            state.console_state.screen_mode)
+            "Resumed screen mode %d (%s) not supported by this setup",
+            state.console_state.screen_mode, 
+            state.console_state.current_mode.current_mode.name)
         return False
     if not state.console_state.current_mode.is_text_mode:    
         mode_info = copy(mode_data[state.console_state.screen_mode])
     else:
         mode_info = copy(text_data[state.console_state.width])
+    if (state.console_state.current_mode.is_text_mode and 
+            state.console_state.current_mode.name != mode_info.name):
+        # we switched adaptes on resume; fix font height, palette, cursor
+        state.console_state.cursor_from = (state.console_state.cursor_from *
+            mode_info.font_height) // state.console_state.font_height
+        state.console_state.cursor_to = (state.console_state.cursor_to *
+            mode_info.font_height) // state.console_state.font_height
+        state.console_state.font_height = mode_info.font_height
+        set_palette()
     # set up the appropriate screen resolution
     if (state.console_state.current_mode.is_text_mode or 
             video.supports_graphics_mode(mode_info)):
@@ -1061,8 +1073,13 @@ def resume_screen():
             "Resumed screen mode %d not supported by this interface.", 
             state.console_state.screen_mode)
         return False
-    # load the screen contents from storage
-    video.load_state()
+    if (state.console_state.current_mode.is_text_mode and 
+            state.console_state.current_mode.name != mode_info.name):
+        state.console_state.current_mode = mode_info
+        redraw_text_screen()
+    else:
+        # load the screen contents from storage
+        video.load_state()
     return True
     
 #############################################
