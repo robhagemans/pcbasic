@@ -108,7 +108,8 @@ def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
     backend.update_cursor_visibility()
     # find start of wrapped block
     crow = state.console_state.row
-    while crow > 1 and state.console_state.apage.row[crow-2].wrap:
+    while ((from_start or crow > prompt_row) and 
+            crow > 1 and state.console_state.apage.row[crow-2].wrap):
         crow -= 1
     line = []
     # add lines 
