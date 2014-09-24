@@ -1032,9 +1032,9 @@ def resume_screen():
             state.console_state.current_mode.current_mode.name)
         return False
     if not state.console_state.current_mode.is_text_mode:    
-        mode_info = copy(mode_data[state.console_state.screen_mode])
+        mode_info = mode_data[state.console_state.screen_mode]
     else:
-        mode_info = copy(text_data[state.console_state.width])
+        mode_info = text_data[state.console_state.width]
     if (state.console_state.current_mode.is_text_mode and 
             state.console_state.current_mode.name != mode_info.name):
         # we switched adaptes on resume; fix font height, palette, cursor
@@ -1139,9 +1139,9 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
             new_width = 40
     try:
         if new_mode != 0:    
-            info = copy(mode_data[new_mode])
+            info = mode_data[new_mode]
         else:
-            info = copy(text_data[new_width])
+            info = text_data[new_width]
     except KeyError:
         # no such mode
         info = None
