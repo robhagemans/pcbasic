@@ -1023,13 +1023,13 @@ def resume_screen():
     """ Load a video mode from storage and initialise. """
     if (not state.console_state.current_mode.is_text_mode and 
             (state.console_state.screen_mode not in mode_data or
-             state.console_state.current_mode.current_mode.name !=
+             state.console_state.current_mode.name !=
                            mode_data[state.console_state.screen_mode].name)):
         # mode not supported by backend
         logging.warning(
             "Resumed screen mode %d (%s) not supported by this setup",
             state.console_state.screen_mode, 
-            state.console_state.current_mode.current_mode.name)
+            state.console_state.current_mode.name)
         return False
     if not state.console_state.current_mode.is_text_mode:    
         mode_info = mode_data[state.console_state.screen_mode]
