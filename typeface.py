@@ -24,7 +24,6 @@ def font_filename(name, height):
 def load(families, height, codepage_dict, nowarn=False):
     """ Load the specified codepage from a unifont .hex file. Codepage should be a CP-to-UTF8 dict. """
     names = [ font_filename(name, height) for name in families ]
-    cp_reverse = dict((reversed(item) for item in codepage_dict.items()))
     fontfiles = [ open(name, 'rb') for name in reversed(names) if os.path.exists(name) ]
     if len(fontfiles) == 0:
         if not nowarn:
@@ -45,7 +44,7 @@ def load(families, height, codepage_dict, nowarn=False):
             try:
                 codepoint = unichr(int('0x' + splitline[0].strip(), 16)).encode('utf-8')
                 # skip chars we won't need 
-                if (codepoint in fontdict) or (codepoint not in cp_reverse):
+                if (codepoint in fontdict):
                     continue
                 string = splitline[1].strip().split()[0].decode('hex')
                 # string must be 32-byte or 16-byte; cut to required font size
