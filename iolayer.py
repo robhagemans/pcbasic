@@ -589,7 +589,10 @@ def create_device_stream(arg, allowed):
     if addr == 'PRINTER':
         stream = oslayer.CUPSStream(val)
     elif addr == 'FILE':
-        stream = oslayer.safe_open(val, 'R', 'RW')
+        try:
+            stream = open(val, 'rb')
+        except (IOError, OSError):
+            return None    
     elif addr == 'PARPORT':
         # port can be e.g. /dev/parport0 on Linux or LPT1 on Windows. Just a number counting from 0 would also work.
         stream = serial_socket.parallel_port(val)
