@@ -563,14 +563,6 @@ class CUPSStream(StringIO.StringIO):
     def close(self):
         self.flush()
 
-    def write(self, s):
-        for c in s:
-            if c == '\f':
-                # form feed
-                self.flush()
-            else:   
-                StringIO.StringIO.write(self, c)
-    
     # flush buffer to Windows printer    
     def flush(self):
         printbuf = self.getvalue()
