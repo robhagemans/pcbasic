@@ -530,12 +530,12 @@ def prepare_devices(args):
     # always defined
     state.io_state.devices['SCRN:'] = SCRNFile()
     state.io_state.devices['KYBD:'] = KYBDFile()
-    state.io_state.devices['LPT1:'] = create_device('LPT1:', args.lpt1, oslayer.nullstream) 
+    state.io_state.devices['LPT1:'] = create_device('LPT1:', args.lpt1[0] if args.lpt1 else None, oslayer.nullstream) 
     # optional
-    state.io_state.devices['LPT2:'] = create_device('LPT2:', args.lpt2)
-    state.io_state.devices['LPT3:'] = create_device('LPT3:', args.lpt3)
-    state.io_state.devices['COM1:'] = create_device('COM1:', args.com1)
-    state.io_state.devices['COM2:'] = create_device('COM2:', args.com2)
+    state.io_state.devices['LPT2:'] = create_device('LPT2:', args.lpt2[0] if args.lpt2 else None)
+    state.io_state.devices['LPT3:'] = create_device('LPT3:', args.lpt3[0] if args.lpt3 else None)
+    state.io_state.devices['COM1:'] = create_device('COM1:', args.com1[0] if args.com1 else None)
+    state.io_state.devices['COM2:'] = create_device('COM2:', args.com2[0] if args.com2 else None)
 
 def create_device(name, arg, default=None):
     if not arg:
