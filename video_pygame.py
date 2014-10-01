@@ -695,7 +695,7 @@ def build_glyph(c, font_face, req_width, req_height):
     if req_width <= glyph_width + 2:
         # allow for 9-pixel widths (18-pixel dwidths) without scaling
         glyph_width = req_width
-    if len(face) < code_height*req_width//8:
+    elif glyph_width < req_width:
         u = unicodepage.cp_to_utf8[c]
         logging.debug('Incorrect glyph width for %s [%s, code point %x].', repr(c), u, ord(u.decode('utf-8')))
     glyph = pygame.Surface((glyph_width, glyph_height), depth=8)
