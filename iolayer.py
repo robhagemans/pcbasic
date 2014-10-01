@@ -865,7 +865,8 @@ class LPTFile(BaseFile):
                 self.fhandle.write('\r\n')
                 self.flush()
                 self.col = 1
-            if c in ('\n', '\r'): # don't replace with CRLF when writing to files
+            if c in ('\n', '\r', '\f'): 
+                # don't replace CR or LF with CRLF when writing to files
                 self.fhandle.write(c)
                 self.flush()
                 self.col = 1

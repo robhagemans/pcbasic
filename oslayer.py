@@ -563,6 +563,14 @@ class CUPSStream(StringIO.StringIO):
     def close(self):
         self.flush()
 
+    def write(self, s):
+        for c in s.decode('utf-8'):
+            if c == u'\f':
+                # form feed
+                self.flush()
+            else:   
+                StringIO.StringIO.write(self, c.encode('utf-8'))
+    
     # flush buffer to Windows printer    
     def flush(self):
         printbuf = self.getvalue()
@@ -612,6 +620,7 @@ else:
         if printer_name != '' and printer_name != 'default':
             options += ' -P ' + printer_name
         if printbuf != '':
+            # cups defaults to 10 cpi, 6 lpi.
             pr = os.popen("lpr " + options, "w")
             pr.write(printbuf)
             pr.close()
