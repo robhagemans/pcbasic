@@ -117,7 +117,7 @@ def main():
         if backend.video:
             backend.video.close()
         iolayer.close_all()
-        #iolayer.close_devices()
+        iolayer.close_devices()
             
 def prepare_console():
     """ Initialise backend and console. """
