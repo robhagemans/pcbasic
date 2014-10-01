@@ -901,6 +901,7 @@ class LPTFile(BaseFile):
         except ValueError:
             # already closed, ignore
             pass    
+        BaseFile.close(self)
         
 class COMFile(RandomBase):
     allowed_modes = 'IOAR'
