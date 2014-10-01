@@ -591,7 +591,7 @@ if plat.system == 'Windows':
         for l in lines:
             slines += [l[i:i+96] for i in range(0, len(l), 96)]
         for line in slines:
-            handle.TextOut(75, y, line) 
+            handle.TextOut(75, y, line.decode('utf-8')) 
             y += yinc
             if y > 6500:  
                 y = 50
