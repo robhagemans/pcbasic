@@ -1522,7 +1522,7 @@ def refresh_screen_range(pagenum, crow, start, stop, for_keys=False):
             ca = therow.buf[ccol-1]
             da = therow.buf[ccol]
             video.set_attr(da[1]) 
-            video.putwc_at(crow, ccol, ca[0], da[0], for_keys)
+            video.putwc_at(pagenum, crow, ccol, ca[0], da[0], for_keys)
             therow.double[ccol-1] = 1
             therow.double[ccol] = 2
             ccol += 2
