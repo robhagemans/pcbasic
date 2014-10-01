@@ -995,7 +995,7 @@ class Clipboard(object):
         """ Initialise pygame scrapboard. """
         self.logo_pressed = False
         self.select_start = None
-        self.select_end = None
+        self.select_stop = None
         self.selection_rect = None
         self.width = width
         self.height = height
