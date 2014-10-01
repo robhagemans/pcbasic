@@ -564,12 +564,12 @@ class CUPSStream(StringIO.StringIO):
         self.flush()
 
     def write(self, s):
-        for c in s.decode('utf-8'):
-            if c == u'\f':
+        for c in s:
+            if c == '\f':
                 # form feed
                 self.flush()
             else:   
-                StringIO.StringIO.write(self, c.encode('utf-8'))
+                StringIO.StringIO.write(self, c)
     
     # flush buffer to Windows printer    
     def flush(self):
