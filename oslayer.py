@@ -511,6 +511,21 @@ else:
 ###################################################
 # printing
 
+# these values are not shown as special graphic chars but as their normal effect
+control = (
+    '\x07', # BEL
+    #'\x08',# BACKSPACE
+    '\x09', # TAB 
+    '\x0a', # LF
+    '\x0b', # HOME
+    '\x0c', # clear screen
+    '\x0d', # CR
+    '\x1c', # RIGHT
+    '\x1d', # LEFT
+    '\x1e', # UP
+    '\x1f', # DOWN
+    ) 
+    
 # print to CUPS or windows printer    
 class CUPSStream(StringIO.StringIO):
     def __init__(self, printer_name=''):
@@ -528,7 +543,10 @@ class CUPSStream(StringIO.StringIO):
         self.truncate(0)
         utf8buf = ''
         for c in printbuf:
-            utf8buf += unicodepage.cp_to_utf8[c]
+            if c in control:
+                utf8buf += c
+            else:    
+                utf8buf += unicodepage.cp_to_utf8[c]
         line_print(utf8buf, self.printer_name)
 
 if plat.system == 'Windows':
