@@ -790,14 +790,14 @@ def exec_list(ins):
     if util.skip_white_read_if(ins, (',',)):
         out = iolayer.open_file_or_device(0, vartypes.pass_string_unpack(expressions.parse_expression(ins)), 'O')
     else:
-        out = state.io_state.devices['SCRN:']
+        out = backend.devices['SCRN:']
     util.require(ins, util.end_statement)
     program.list_lines(out, from_line, to_line)    
 
 def exec_llist(ins):
     from_line, to_line = parse_line_range(ins)
     util.require(ins, util.end_statement)
-    program.list_lines(state.io_state.devices['LPT1:'], from_line, to_line)
+    program.list_lines(backend.devices['LPT1:'], from_line, to_line)
         
 def exec_load(ins):
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
@@ -2100,7 +2100,7 @@ def exec_locate(ins):
 def exec_write(ins, output=None):
     """ WRITE: Output machine-readable expressions to the screen or a file. """
     output = expressions.parse_file_number(ins, 'OAR')
-    output = state.io_state.devices['SCRN:'] if output == None else output
+    output = backend.devices['SCRN:'] if output == None else output
     expr = expressions.parse_expression(ins, allow_empty=True)
     outstr = ''
     if expr:
@@ -2122,7 +2122,7 @@ def exec_print(ins, output=None):
     """ PRINT: Write expressions to the screen or a file. """
     if output == None:
         output = expressions.parse_file_number(ins, 'OAR')
-        output = state.io_state.devices['SCRN:'] if output == None else output
+        output = backend.devices['SCRN:'] if output == None else output
     number_zones = max(1, int(output.width/14))
     newline = True
     while True:
@@ -2215,7 +2215,7 @@ def exec_print_using(ins, output):
 
 def exec_lprint(ins):
     """ LPRINT: Write expressions to printer LPT1. """
-    exec_print(ins, state.io_state.devices['LPT1:'])
+    exec_print(ins, backend.devices['LPT1:'])
                              
 def exec_view_print(ins):
     if util.skip_white(ins) in util.end_statement:
@@ -2236,7 +2236,7 @@ def exec_width(ins):
         w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     elif d == '\x9D': # LPRINT
         ins.read(1)
-        dev = state.io_state.devices['LPT1:']
+        dev = backend.devices['LPT1:']
         w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     else:
         expr = expressions.parse_expression(ins)
@@ -2244,14 +2244,14 @@ def exec_width(ins):
             raise error.RunError(2)
         if expr[0] == '$':
             try:
-                dev = state.io_state.devices[str(vartypes.pass_string_unpack(expr)).upper()]
+                dev = backend.devices[str(vartypes.pass_string_unpack(expr)).upper()]
             except KeyError:
                 # bad file name
                 raise error.RunError(64)           
             util.require_read(ins, (',',))
             w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         else:
-            dev = state.io_state.devices['SCRN:']
+            dev = backend.devices['SCRN:']
             # IN GW-BASIC, we can do calculations, but they must be bracketed...
             #w = vartypes.pass_int_unpack(expressions.parse_expr_unit(ins))
             w = vartypes.pass_int_unpack(expr)

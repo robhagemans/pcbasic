@@ -38,6 +38,12 @@ true_bias = 128
 # calculation exception states
 state.basic_state.overflow = False
 state.basic_state.zero_div = False
+# stream for Division by Zero and Overflow messages
+errstream = None
+
+def init(error_stream):
+    global errstream
+    errstream = error_stream
 
 def msg_overflow():
     if state.basic_state.overflow:
@@ -59,7 +65,7 @@ def math_error(errnum):
     else:
         # write a message & continue as normal
         # start_line() ?
-        state.io_state.devices['SCRN:'].write_line(error.get_message(errnum)) # no space, no line number
+        errstream.write_line(error.get_message(errnum)) # no space, no line number
 
 ####################################
 

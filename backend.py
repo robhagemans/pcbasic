@@ -106,6 +106,8 @@ class ScreenBuffer(object):
         """ Initialise the screen buffer to given dimensions. """
         self.row = [ScreenRow(battr, bwidth) for _ in xrange(bheight)]
 
+# devices - SCRN: KYBD: LPT1: etc. These are initialised in iolayer module
+devices = {}
 
 # redirect i/o to file or printer
 input_echos = []
@@ -1554,7 +1556,7 @@ def print_screen():
         line = ''
         for c, _ in state.console_state.vpage.row[crow-1].buf:
             line += c
-        state.io_state.devices['LPT1:'].write_line(line)
+        devices['LPT1:'].write_line(line)
 
 def copy_page(src, dst):
     """ Copy source to destination page. """
@@ -1810,7 +1812,7 @@ def set_cursor_shape(from_line, to_line):
 
 def toggle_echo_lpt1():
     """ Toggle copying of all screen I/O to LPT1. """
-    lpt1 = state.io_state.devices['LPT1:']
+    lpt1 = devices['LPT1:']
     if lpt1.write in input_echos:
         input_echos.remove(lpt1.write)
         output_echos.remove(lpt1.write)
@@ -2139,7 +2141,7 @@ def check_play_event():
 
 def check_com_events():
     """ Trigger COM-port events. """
-    ports = (state.io_state.devices['COM1:'], state.io_state.devices['COM2:'])
+    ports = (devices['COM1:'], devices['COM2:'])
     for comport in (0, 1):
         if ports[comport] and ports[comport].peek_char():
             state.basic_state.com_handlers[comport].triggered = True

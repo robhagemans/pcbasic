@@ -15,6 +15,7 @@ import vartypes
 import tokenise
 import protect
 import util
+import backend
 import console
 import state
 import flow
@@ -458,7 +459,7 @@ def list_lines(dev, from_line, to_line):
     for pos in listable:        
         state.basic_state.bytecode.seek(pos + 1)
         _, line, _ = tokenise.detokenise_line(state.basic_state.bytecode)
-        if dev == state.io_state.devices['SCRN:']:
+        if dev == backend.devices['SCRN:']:
             console.list_line(str(line))
         else:
             dev.write_line(str(line))

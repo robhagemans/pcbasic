@@ -9,6 +9,7 @@
 # please see text file COPYING for licence terms.
 #
 
+import os
 import copy
 import logging
 try:
@@ -40,8 +41,6 @@ max_reclen = 128
 serial_in_size = 256
 serial_out_size = 128
 
-state.io_state.devices = {}
-
 allowed_protocols = {
     # first protocol is default
     'LPT': ('FILE', 'PRINTER', 'PARPORT'),
@@ -58,7 +57,15 @@ def prepare():
         max_reclen = max(1, min(32767, max_reclen))
     if config.options['serial_in_size'] != None:
         serial_in_size = config.options['serial_in_size'] #config.parse_int_option_silent(args.serial_in_size)
-    prepare_devices()
+    # always defined
+    backend.devices['SCRN:'] = SCRNFile()
+    backend.devices['KYBD:'] = KYBDFile()
+    backend.devices['LPT1:'] = create_device('LPT1:', config.options['lpt1'], oslayer.nullstream) 
+    # optional
+    backend.devices['LPT2:'] = create_device('LPT2:', config.options['lpt2'])
+    backend.devices['LPT3:'] = create_device('LPT3:', config.options['lpt3'])
+    backend.devices['COM1:'] = create_device('COM1:', config.options['com1'])
+    backend.devices['COM2:'] = create_device('COM2:', config.options['com2'])
     
 def open_file_or_device(number, name, mode='I', access='R', lock='', reclen=128, defext=''):
     if (not name) or (number < 0) or (number > max_files):
@@ -125,7 +132,7 @@ def close_all():
 
 def lock_records(nr, start, stop):
     thefile = get_file(nr)
-    if thefile.name in state.io_state.devices:
+    if thefile.name in backend.devices:
         # permission denied
         raise error.RunError(70)
     lock_list = set()
@@ -144,7 +151,7 @@ def lock_records(nr, start, stop):
 
 def unlock_records(nr, start, stop):    
     thefile = get_file(nr)
-    if thefile.name in state.io_state.devices:
+    if thefile.name in backend.devices:
         # permission denied
         raise error.RunError(70)
     if isinstance(thefile, TextFile):
@@ -547,18 +554,6 @@ class ByteStream(object):
 ######################################################
 # Device files
 
-
-def prepare_devices():
-    # always defined
-    state.io_state.devices['SCRN:'] = SCRNFile()
-    state.io_state.devices['KYBD:'] = KYBDFile()
-    state.io_state.devices['LPT1:'] = create_device('LPT1:', config.options['lpt1'], oslayer.nullstream) 
-    # optional
-    state.io_state.devices['LPT2:'] = create_device('LPT2:', config.options['lpt2'])
-    state.io_state.devices['LPT3:'] = create_device('LPT3:', config.options['lpt3'])
-    state.io_state.devices['COM1:'] = create_device('COM1:', config.options['com1'])
-    state.io_state.devices['COM2:'] = create_device('COM2:', config.options['com2'])
-
 def create_device(name, arg, default=None):
     if not arg:
         stream = default
@@ -590,8 +585,11 @@ def create_device_stream(arg, allowed):
         stream = oslayer.CUPSStream(val)
     elif addr == 'FILE':
         try:
-            stream = open(val, 'rb')
-        except (IOError, OSError):
+            if not os.path.exists(val):
+                open(val, 'wb').close() 
+            stream = open(val, 'r+b')
+        except (IOError, OSError) as e:
+            print e
             return None    
     elif addr == 'PARPORT':
         # port can be e.g. /dev/parport0 on Linux or LPT1 on Windows. Just a number counting from 0 would also work.
@@ -609,7 +607,7 @@ def create_device_stream(arg, allowed):
 def device_open(device_name, number, mode, access, lock, reclen):
     # check if device exists and allows the requested mode    
     # if not exists, raise KeyError to caller
-    device = state.io_state.devices[str(device_name).upper()]
+    device = backend.devices[str(device_name).upper()]
     if not device:    
         # device unavailable
         raise error.RunError(68)      
@@ -620,9 +618,9 @@ def device_open(device_name, number, mode, access, lock, reclen):
     return device.open(number, mode, access, '', reclen)
 
 def close_devices():
-    for d in state.io_state.devices:
-        if state.io_state.devices[d]:
-            state.io_state.devices[d].close()
+    for d in backend.devices:
+        if backend.devices[d]:
+            backend.devices[d].close()
 
 
 ############################################################################

@@ -69,7 +69,7 @@ import program
 import state
 import iolayer
 import var
-
+import fp
 
 def main():
     """ Initialise and do operations or hand over to run module. """
@@ -117,7 +117,7 @@ def main():
         if backend.video:
             backend.video.close()
         iolayer.close_all()
-        iolayer.close_devices()
+        #iolayer.close_devices()
             
 def prepare_console():
     """ Initialise backend and console. """
@@ -134,7 +134,9 @@ def prepare_console():
         logging.warning('Failed to initialise sound. Sound will be disabled.')
     if not state.loaded:    
         console.init_mode()    
-
+    # set the output for maths error messages
+    fp.init(error_stream=console)
+    
 def convert():
     """ Perform file format conversion. """
     # set conversion output 
