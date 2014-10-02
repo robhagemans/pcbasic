@@ -10,6 +10,7 @@
 #
 
 import os 
+import subprocess
 import errno
 import fnmatch
 from functools import partial
@@ -554,8 +555,9 @@ def shell(command):
 ###################################################
 # printing
 
-# print to CUPS or windows printer    
 class CUPSStream(StringIO.StringIO):
+    """ Stream that prints to Unix or Windows printer. """
+    
     def __init__(self, printer_name=''):
         self.printer_name = printer_name
         StringIO.StringIO.__init__(self)
@@ -574,8 +576,8 @@ class CUPSStream(StringIO.StringIO):
         line_print(utf8buf, self.printer_name)
 
 if plat.system == 'Windows':
-    # print to Windows printer
     def line_print(printbuf, printer_name):        
+        """ Print the buffer to a Windows printer. """
         if printer_name == '' or printer_name=='default':
             printer_name = win32print.GetDefaultPrinter()
         handle = win32ui.CreateDC()
@@ -602,20 +604,39 @@ if plat.system == 'Windows':
 
 elif plat.system == 'Android':
     def line_print(printbuf, printer_name):
-        # printing not supported on Android
+        """ Don't print anything on Android. """
         pass          
 
-else:
-    # print to LPR printer (ok for CUPS)
+elif subprocess.call("command -v paps >/dev/null 2>&1", shell=True) == 0:
     def line_print(printbuf, printer_name): 
+        """ Print the buffer to a LPR printer using PAPS for conversion. """
         options = ''
         if printer_name != '' and printer_name != 'default':
-            options += ' -P ' + printer_name
+            options += '-P ' + printer_name
+        if printbuf != '':
+            # A4 paper is 595 points wide by 842 points high. 
+            # Letter paper is 612 by 792 points.
+            pr = subprocess.Popen(
+                'paps --cpi=10 --lpi=6 --left-margin=9 --right-margin=9 '
+                '--top-margin=6 --bottom-margin=6 '
+                '| lpr %s' % options, shell=True, stdin=subprocess.PIPE)
+            # PAPS does not recognise CRLF
+            printbuf = printbuf.replace('\r\n', '\n')
+            pr.stdin.write(printbuf)
+            pr.stdin.close()
+        
+else:
+    def line_print(printbuf, printer_name): 
+        """ Print the buffer to a LPR (CUPS or older UNIX) printer. """
+        options = ''
+        if printer_name != '' and printer_name != 'default':
+            options += '-P ' + printer_name
         if printbuf != '':
             # cups defaults to 10 cpi, 6 lpi.
-            pr = os.popen("lpr " + options, "w")
-            pr.write(printbuf)
-            pr.close()
+            pr = subprocess.Popen('lpr %s' % options, shell=True, 
+                                  stdin=subprocess.PIPE)
+            pr.stdin.write(printbuf)
+            pr.stdin.close()
 
 prepare()
 
