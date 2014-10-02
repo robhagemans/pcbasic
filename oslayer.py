@@ -583,23 +583,25 @@ if plat.system == 'Windows':
         handle = win32ui.CreateDC()
         handle.CreatePrinterDC(printer_name)
         handle.StartDoc("PC-BASIC 3_23 Document")
-        handle.StartPage()
-        # a4 = 210x297mm = 4950x7001px; Letter = 216x280mm=5091x6600px; 
-        # 65 tall, 100 wide with 50x50 margins works for US letter
-        # 96 wide works for A4 with 75 x-margin
-        y, yinc = 50, 100
-        lines = printbuf.split('\r\n')
-        slines = []
-        for l in lines:
-            slines += [l[i:i+96] for i in range(0, len(l), 96)]
-        for line in slines:
-            handle.TextOut(75, y, line.decode('utf-8')) 
-            y += yinc
-            if y > 6500:  
-                y = 50
-                handle.EndPage()
-                handle.StartPage()
-        handle.EndPage()
+        pages = printbuf.split('\f')
+        for page in pages:
+            handle.StartPage()
+            # a4 = 210x297mm = 4950x7001px; Letter = 216x280mm=5091x6600px; 
+            # 65 tall, 100 wide with 50x50 margins works for US letter
+            # 96 wide works for A4 with 75 x-margin
+            y, yinc = 50, 100
+            lines = page.split('\r\n')
+            slines = []
+            for l in lines:
+                slines += [l[i:i+96] for i in range(0, len(l), 96)]
+            for line in slines:
+                handle.TextOut(75, y, line.decode('utf-8')) 
+                y += yinc
+                if y > 6500:  
+                    y = 50
+                    handle.EndPage()
+                    handle.StartPage()
+            handle.EndPage()
         handle.EndDoc()       
 
 elif plat.system == 'Android':
@@ -616,8 +618,12 @@ elif subprocess.call("command -v paps >/dev/null 2>&1", shell=True) == 0:
         if printbuf != '':
             # A4 paper is 595 points wide by 842 points high. 
             # Letter paper is 612 by 792 points.
+            # the below seems to allow 82 chars horizontally on A4; it appears
+            # my PAPS version doesn't quite use cpi correctly as 10cpi should
+            # allow 80 chars on A4 with a narrow margin but only does so with a 
+            # margin of 0.
             pr = subprocess.Popen(
-                'paps --cpi=10 --lpi=6 --left-margin=9 --right-margin=9 '
+                'paps --cpi=11 --lpi=6 --left-margin=20 --right-margin=20 '
                 '--top-margin=6 --bottom-margin=6 '
                 '| lpr %s' % options, shell=True, stdin=subprocess.PIPE)
             # PAPS does not recognise CRLF
