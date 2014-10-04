@@ -1,3 +1,49 @@
+# Unicode VGA font
+#
+# This file is a conversion into .HEX of the Uni-VGA font file u_vga16.bdf
+# UNI-VGA can be obtained at http://www.inp.nsk.su/~bolkhov/files/fonts/univga/
+#
+# COPYRIGHT AND ACKNOWLEDGEMENTS
+#   Copyright (c) 2000 Dmitry Bolkhovityanov, bolkhov@inp.nsk.su
+#
+#   The UNI-VGA font can be distributed and modified freely, according to 
+#   the X license.
+#
+#   The Basic Latin block was taken almost unchanged from DosEmu's vga.bdf. 
+#   All the other blocks (except noted) were created mainly from scratch by me, 
+#   Dmitry Bolkhovityanov. Letters in the Hebrew block were taken unchanged from
+#   a public domain hebrew console font.
+#
+#   Glyphs in Arabic, Arabic Presentation Forms-A, Arabic Presentation Forms-B 
+#   and U+262B Farsi symbol were kindly donated by Behdad Esfahbod.
+# 
+#   Thanks to Birger Langkjer for idea, to Mark Leisher for his wonderful 
+#   XmBDFEd, and to many others for their support.
+#
+# X LICENSE
+#   Permission is hereby granted, free of charge, to any person obtaining 
+#   a copy of this software and associated documentation files (the 
+#   "Software"), to deal in the Software without restriction, including 
+#   without limitation the rights to use, copy, modify, merge, publish, 
+#   distribute, sublicense, and/or sell copies of the Software, and to 
+#   permit persons to whom the Software is furnished to do so, subject to 
+#   the following conditions:
+#
+#   The above copyright notice and this permission notice shall be included 
+#   in all copies or substantial portions of the Software.
+#
+#   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+#   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+#   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+#   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
+#   DEALINGS IN THE SOFTWARE.
+#
+#   Except as contained in this notice, the name(s) of the above copyright 
+#   holders shall not be used in advertising or otherwise to promote the sale, 
+#   use or other dealings in this Software without prior written authorization.
+#
 0000:0000DA0280820280820280B600000000
 0020:00000000000000000000000000000000
 0021:0000183C3C3C18181800181800000000
