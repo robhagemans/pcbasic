@@ -1,3 +1,32 @@
+# 14-pixel FreeDOS font
+#
+# The glyphs in this font are extracted from Henrique Perón's CPIDOS pack,
+# as distributed with FreeDOS at http://www.freedos.org/software/?prog=cpidos
+# They were mapped onto Unicode and converted to .HEX by Rob Hagemans.
+#
+# NOTES:
+# - CPIDOS contains several glyphs that have no corresponding code point in
+#   Unicode. These are not included in this file. Examples include
+#   Georgian Mkhedruli "capital letters", the złoty and forint signs, and
+#   letters with multiple precomposed diacritics.
+# - A choice has been made between multiple glyph variants included in CPIDOS
+#   for some code points. In particular, for Greek glyphs, the variants from
+#   the Greek codepages have been preferred over those from the Latin pages.
+#   Some of those variants have found a home elsewhere, in particular at
+#   MICRO SIGN (U+00B5) GREEK THETA SYMBOL (U+03D1) GREEK PHI SYMBOL (U+03A6)
+#   GREEK LUNATE EPSILON SYMBOL (U+03F5).
+# - The UniFont .HEX format only provides for 16-pixel-high glyphs, but is 
+#   used here to encode a 14- or 8-pixel font. Therefore, the last few bytes 
+#   of each glyph string should remain zero.
+#
+# AUTHORS:
+# Henrique Perón
+# Rob Hagemans
+#
+# LICENCE:
+# This file is distributed under the GNU GPL version 2.0
+# or, at your option, any later version.
+#
 0000:00000000000000000000000000000000
 0020:00000000000000000000000000000000
 0021:00183C3C181800180000000000000000
