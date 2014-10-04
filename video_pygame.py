@@ -677,7 +677,10 @@ def putwc_at(pagenum, row, col, c, d, for_keys=False):
     screen_changed = True
     
 # ascii codepoints for which to repeat column 8 in column 9 (box drawing)
-carry_col_9 = [chr(c) for c in range(0xc0, 0xdf+1)]
+# Many internet sources say this should be 0xC0--0xDF. However, that would
+# exclude the shading characters. It appears to be traced back to a mistake in 
+# IBM's VGA docs. See https://01.org/linuxgraphics/sites/default/files/documentation/ilk_ihd_os_vol3_part1r2.pdf
+carry_col_9 = [chr(c) for c in range(0xb0, 0xdf+1)]
 # ascii codepoints for which to repeat row 8 in row 9 (box drawing)
 carry_row_9 = [chr(c) for c in range(0xb0, 0xdf+1)]
 
