@@ -1,6 +1,9 @@
 # OEM 932: Shift-JIS superset
 # dbcs code points are http://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP932.TXT
 # sbcs code points 00-7F are OEM 437 
+# Note that in Shift-JIS:
+#    x5c is often YEN SYMBOL U+00A5; here it is REVERSE SOLIDUS \  
+#    x7e is often OVERLINE U+203E; here it is TILDE ~
 #
 00:0000
 01:263a
