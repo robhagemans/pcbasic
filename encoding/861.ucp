@@ -1,3 +1,6 @@
+# OEM 861: MS-DOS Icelandic
+# 80-FF: http://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP861.TXT
+#
 00:0000
 01:263a
 02:263b

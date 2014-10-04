@@ -1,3 +1,8 @@
+# OEM 864: MS-DOS Arabic
+# 80-FF: http://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP864.TXT
+# NOTE: Officially, OEM 864 has U+066a ARABIC PERCENT SIGN on point 0x25
+#       This conflicts ith BASIC use of %.
+#
 00:0000
 01:263a
 02:263b

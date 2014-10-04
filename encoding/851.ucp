@@ -1,3 +1,6 @@
+# OEM 851: MS-DOS Greek 1
+# 80-FF: http://www.kostis.net/charsets/cp851.htm
+#
 00:0000
 01:263a
 02:263b

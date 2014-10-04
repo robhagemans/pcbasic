@@ -1,3 +1,6 @@
+# OEM 863: MS-DOS French Canada
+# 80-FF: http://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP863.TXT
+#
 00:0000
 01:263a
 02:263b

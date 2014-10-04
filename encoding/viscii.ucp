@@ -1,3 +1,7 @@
+# Vietnamese ISCII
+# https://en.wikipedia.org/wiki/Vietnamese_Standard_Code_for_Information_Interchange
+# Note that this code page redefines 02, 05, 06, 14, 19, 1E in addition to 80-FF.
+#
 02:1EB2
 05:1EB4
 06:1EAA

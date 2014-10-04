@@ -1,3 +1,6 @@
+# OEM 852: MS-DOS Latin 2
+# 80-FF: http://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP852.TXT
+#
 00:0000
 01:263a
 02:263b

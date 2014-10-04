@@ -1,3 +1,6 @@
+# OEM 858: MS-DOS Latin 1 with Euro
+# This is equivalent to OEM 850 with code point D5 replaced by EURO SIGN
+#
 00:0000
 01:263a
 02:263b

@@ -1,3 +1,6 @@
+# OEM 856: MS-DOS Hebrew
+# 80-FF: GNU libiconv source - libiconv-1.14/tests/CP856.TXT
+#
 00:0000
 01:263a
 02:263b
