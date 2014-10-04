@@ -1,3 +1,9 @@
+# ArmSCII 8A
+# https://en.wikipedia.org/wiki/ArmSCII
+# The code points that ArmSCII leaves undefined are used for graphical 
+# and box drawing characters, conforming to 437.
+# This is equivalent to FreeDOS 899.
+#
 00:0000
 01:263a
 02:263b
