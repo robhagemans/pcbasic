@@ -1,5 +1,7 @@
 # MIK encoding
 # 80-FF: http://aspell.net/charsets/bulgarian-mik.txt.gz
+# except: e1:03b2 -> 00df, e6:03bc -> 00b5 
+#         conforming to our implementation of 437.
 #
 00:0000
 01:263a
@@ -226,12 +228,12 @@ dd:258c
 de:2590
 df:2580
 e0:03b1
-e1:03b2
+e1:00df
 e2:0393
 e3:03c0
 e4:03a3
 e5:03c3
-e6:03bc
+e6:00b5
 e7:03c4
 e8:03a6
 e9:0398
