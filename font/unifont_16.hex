@@ -1,3 +1,55 @@
+# GNU UniFont
+#
+# This file includes the glyphs of the Basic Multilingual plane, excluding 
+# Private Use Areas, from GNU UniFont 7.0.03. Unassigned and non-character
+# code points are left blank. In other words, it consists of the
+# following .HEX files concatenated:
+#   plane00/hangul-syllables.hex  
+#   plane00/spaces.hex  
+#   plane00/unifont-base.hex  
+#   plane00/wqy.hex
+# GNU UniFont can be obtained at https://savannah.gnu.org/projects/unifont
+#
+# AUTHORS:
+#     Roman Czyborra created the original GNU Unifont, including the
+#     .hex format. 
+#
+#     David Starner aggregated many glyphs contributed by others and
+#     incorporated these into pre-2004 Unifont releases.
+#
+#     Qianqian Fang began his Wen Quan Yi font in 2004, by which
+#     time work on Unifont had stopped.  Most of the almost 30,000
+#     CJK ideographs in Unifont versions 5.1 and later were taken
+#     from Wen Quan Yi with permission of Qianqian Fang.  The glyphs
+#     in "./font/plane00/wqy-cjk.hex" are for the most part Qianqian
+#     Fang's Unibit and Wen Quan Yi glyphs.
+#
+#     Paul Hardy drew most of the newly-drawn glyphs added to the BMP
+#     from the Unifont 5.1 release to the present release.  This includes
+#     the 11,172 glyphs in the Hangul Syllables block, plus approximately
+#     10,000 additional glyphs scattered throughout the BMP.
+#
+#     Andrew Miller drew the glyphs added to Unicode 6.3.0.
+#
+# LICENCE:
+#     All glyphs are released under the GNU General Public License
+#     (GPL) version 2 or (at your option) a later version, with the
+#     GNU font embedding exception:
+#
+#          ** GPL v2.0 license with font embedding exception:
+#
+#          As a special exception, if you create a document which
+#          uses this font, and embed this font or unaltered portions
+#          of this font into the document, this font does not by
+#          itself cause the resulting document to be covered by
+#          the GNU General Public License. This exception does not
+#          however invalidate any other reasons why the document
+#          might be covered by the GNU General Public License.
+#          If you modify this font, you may extend this exception
+#          to your version of the font, but you are not obligated
+#          to do so. If you do not wish to do so, delete this
+#          exception statement from your version.
+#
 0020:00000000000000000000000000000000
 00A0:00000000000000000000000000000000
 2000:00000000000000000000000000000000
