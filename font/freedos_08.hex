@@ -1,8 +1,9 @@
 # 14-pixel FreeDOS font
 #
-# The glyphs in this font are extracted from Henrique Perón's CPIDOS pack,
+# The glyphs in this font are extracted from Henrique Perón's CPIDOS v3.0,
 # as distributed with FreeDOS at http://www.freedos.org/software/?prog=cpidos
-# They were mapped onto Unicode and converted to .HEX by Rob Hagemans.
+# CPIDOS is Copyright (C) 2002-2011 by Henrique Peron (hperon@terra.com.br)
+# The glyphs were mapped onto Unicode and converted to .HEX by Rob Hagemans.
 #
 # NOTES:
 # - CPIDOS contains several glyphs that have no corresponding code point in
