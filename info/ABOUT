@@ -54,25 +54,13 @@ Fonts_________________________________________________________________________
     https://savannah.gnu.org/projects/unifont
 
 Unicode codepage mapping tables_______________________________________________
-* Masaki Nagasaki
-    https://github.com/skooler/camellia
-* Roman Czyborra 
-    http://aspell.net/charsets/ 
-* Kosta Kostis   
-    http://www.kostis.net/charsets/
-* M. Leisher     
-    http://www.math.nmsu.edu/~mleisher/Software/csets/
-* Bruno Haible   
-    http://www.haible.de/bruno/charsets/conversion-tables/index.html
 * The Unicode Consortium and contributors
     http://www.unicode.org/Public/MAPPINGS/VENDORS
-* Perl 5 Project 
-    http://cpansearch.perl.org/src/JHI/perl-5.8.0/ext/Encode/ucm/
-* Seed7 Project  
-    http://seed7.sourceforge.net/libraries/charsets.htm
-* Yii-Chinese Project 
-    https://code.google.com/p/yii-chinese/source/browse/trunk/chinese/config/
 * GNU libiconv Project
     https://www.gnu.org/software/libiconv/
+* Aivosto Oy 
+    http://www.aivosto.com/vbtips/charsets-codepages.html
+* Kosta Kostis   
+    http://www.kostis.net/charsets/
     
     
