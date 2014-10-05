@@ -22,13 +22,18 @@ def font_filename(name, height):
     return name    
 
 def load(families, height, codepage_dict, nowarn=False):
-    """ Load the specified codepage from a unifont .hex file. Codepage should be a CP-to-UTF8 dict. """
+    """ Load the specified fonts for a given CP-to-UTF8 codepage. """
     names = [ font_filename(name, height) for name in families ]
     fontfiles = [ open(name, 'rb') for name in reversed(names) if os.path.exists(name) ]
     if len(fontfiles) == 0:
         if not nowarn:
             logging.warning('Could not read font file for height %d', height)
         return None
+    fontdict = load_hex(fontfiles, height)
+    return build_codepage_font(fontdict, codepage_dict)
+    
+def load_hex(fontfiles, height):
+    """ Load a set of overlaying unifont .hex files. """
     fontdict = {}
     for fontfile in fontfiles:
         for line in fontfile:
@@ -37,12 +42,13 @@ def load(families, height, codepage_dict, nowarn=False):
                 continue
             # split unicodepoint and hex string
             splitline = line.split(':')    
-            # ignore malformed lines
-            if len(splitline) < 2:
-                continue    
-            # extract codepoint and hex string; discard anything following whitespace; ignore malformed lines
+            # extract codepoint and hex string; 
+            # discard anything following whitespace; ignore malformed lines
             try:
-                codepoint = unichr(int('0x' + splitline[0].strip(), 16)).encode('utf-8')
+                # ignore malformed lines
+                if len(splitline) < 2:
+                    raise ValueError
+                codepoint = unichr(int(splitline[0].strip(), 16)).encode('utf-8')
                 # skip chars we won't need 
                 if (codepoint in fontdict):
                     continue
@@ -58,8 +64,10 @@ def load(families, height, codepage_dict, nowarn=False):
                     raise ValueError
             except ValueError:
                 logging.warning('Could not parse line in font file: %s', repr(line))    
-    # char 0 should always be empty
-    fontdict['\0'] = '\0'*16
+    return fontdict
+
+def build_codepage_font(fontdict, codepage_dict):    
+    """ Extract the glyphs for a given codepage from a unicode font. """ 
     font = {}    
     warnings = 0
     for c in codepage_dict:
@@ -69,9 +77,12 @@ def load(families, height, codepage_dict, nowarn=False):
         except KeyError:
             warnings += 1
             if warnings <= 3:
-                logging.debug('Codepoint %x [%s] not represented in font for height %d.', ord(u.decode('utf-8')), u, height)
+                logging.debug('Codepoint %x [%s] not represented in font', 
+                              ord(u.decode('utf-8')), u)
             if warnings == 3:
                 logging.debug('Further codepoint warnings suppressed.')
+    # char 0 should always be empty
+    font['\0'] = '\0'*16
     return font
 
 def fixfont(height, font, codepage_dict, font16):
