@@ -665,11 +665,11 @@ def putc_at(pagenum, row, col, c, for_keys=False):
 
 def putwc_at(pagenum, row, col, c, d, for_keys=False):
     global screen_changed
-    glyph = build_glyph(c+d, font, 16, font_height)
+    glyph = build_glyph(c+d, font, 2*font_width, font_height)
     color, bg = get_palette_index(current_attr)    
     glyph.set_palette_at(255, bg)
     glyph.set_palette_at(254, color)
-    blank = pygame.Surface((16, font_height), depth=8)
+    blank = pygame.Surface((2*font_width, font_height), depth=8)
     blank.fill(255)
     blank.set_palette_at(255, bg)
     top_left = ((col-1) * font_width, (row-1) * font_height)
