@@ -1,10 +1,13 @@
 This directory contains 8-bit typefaces in unifont .HEX format for use with PC-BASIC. They have been derived from the sources below. 
 In most cases, the only change has been to extract a subset and to encode them in the .HEX format. 
 
+Below is a summary of the copyright and licences of the fonts in this directory. 
+Please check the individual .HEX file for authors and original licence terms.
+
 typeface family: unifont
 source: GNU Unifont (plane 0) - Roman Czyborra, Qianqian Fang et al.
 url: https://savannah.gnu.org/projects/unifont
-licence: GNU GPL v2.0+
+licence: GNU GPL v2.0+ with font exception
 
 typeface family: univga
 source: UNI-VGA - Dmitry Bolkhovityanov
@@ -12,7 +15,7 @@ url: http://www.inp.nsk.su/~bolkhov/files/fonts/univga/
 licence: XFree86 License 1.0
 
 typeface family: freedos 
-source: FreeDOS CPIDOS pack - Henrique Peron (Brazil) 	
+source: FreeDOS CPIDOS pack - Henrique Peron 	
 url: http://www.freedos.org/software/?prog=cpidos
 licence: GNU GPL v2.0+
 
