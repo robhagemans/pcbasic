@@ -28,7 +28,7 @@ mapping is at http://www.unicode.org/Public/MAPPINGS/VENDORS/MISC/IBMGRAPH.TXT
 874: MS-DOS Thai. Note that combining diacritics are not handled.
 932: MS-DOS Japanese. Superset of Shift-JIS. 
             Note that 5c, 7e are mapped to \, ~, not YEN, OVERLINE.
-936: MS-DOS Simplified Chinese. Superset of GB2312.
+936: MS-DOS Simplified Chinese. Equals GBK, superset of GB2312.
 949: MS-DOS Korean. Superset of EUC-KR.
 950: MS-DOS Traditional Chinese. Variant of Big-5.
 1258: Windows Vietnamese. Note that combining diacritics are not handled.
