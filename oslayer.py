@@ -31,11 +31,12 @@ sleep_time = 0.001
 
 if plat.system == 'Windows':
     #import msvcrt
-    import win32ui
+    #import win32ui
     #import win32gui
     import win32api
     #import win32con
     import win32print
+    import tempfile
     import subprocess
     import threading
 else:
@@ -576,33 +577,14 @@ class CUPSStream(StringIO.StringIO):
         line_print(utf8buf, self.printer_name)
 
 if plat.system == 'Windows':
-    def line_print(printbuf, printer_name):        
-        """ Print the buffer to a Windows printer. """
+    def line_print(printbuf, printer_name):
         if printer_name == '' or printer_name=='default':
             printer_name = win32print.GetDefaultPrinter()
-        handle = win32ui.CreateDC()
-        handle.CreatePrinterDC(printer_name)
-        handle.StartDoc("PC-BASIC 3_23 Document")
-        pages = printbuf.split('\f')
-        for page in pages:
-            handle.StartPage()
-            # a4 = 210x297mm = 4950x7001px; Letter = 216x280mm=5091x6600px; 
-            # 65 tall, 100 wide with 50x50 margins works for US letter
-            # 96 wide works for A4 with 75 x-margin
-            y, yinc = 50, 100
-            lines = page.split('\r\n')
-            slines = []
-            for l in lines:
-                slines += [l[i:i+96] for i in range(0, len(l), 96)]
-            for line in slines:
-                handle.TextOut(75, y, line.decode('utf-8')) 
-                y += yinc
-                if y > 6500:  
-                    y = 50
-                    handle.EndPage()
-                    handle.StartPage()
-            handle.EndPage()
-        handle.EndDoc()       
+        f = tempfile.TemporaryFile(prefix='pcbasic', suffix='.txt')
+        f.write(printbuf)
+        f.close()
+        win32api.ShellExecute(0, 'printto', filename, 
+                              '"%s"' % printer_name, ".", 0)
 
 elif plat.system == 'Android':
     def line_print(printbuf, printer_name):
