@@ -1055,6 +1055,8 @@ class Clipboard(object):
         if not self.ok:
             return 
         start, stop = self.select_start, self.select_stop
+        if not start or not stop:
+            return
         if start[0] == stop[0] and start[1] == stop[1]:
             return
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
