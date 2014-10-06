@@ -1068,7 +1068,8 @@ class Clipboard(object):
             pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
         try: 
             if plat.system == 'Windows':
-                pygame.scrap.put('text/plain;charset=utf-8', full.decode('utf-8').encode('utf-16'))
+                # on Windows, encode as utf-16 without FF FE byte order mark and null-terminate
+                pygame.scrap.put('text/plain;charset=utf-8', full.decode('utf-8').encode('utf-16le') + '\0\0')
             else:    
                 pygame.scrap.put(pygame.SCRAP_TEXT, full)
         except KeyError:
@@ -1092,14 +1093,16 @@ class Clipboard(object):
                 break            
         if plat.system == 'Windows':
             if text_type == 'text/plain;charset=utf-8':
-                # it's lying, it's giving us UTF16
-                us = us.decode('utf-16')
+                # it's lying, it's giving us UTF16 little-endian
+                # ignore any bad UTF16 characters from outside
+                us = us.decode('utf-16le', 'ignore')
             # null-terminated strings
-            us = us[:us.find('\0')] #.decode('ascii', 'ignore')
+            us = us[:us.find('\0')] 
             us = us.encode('utf-8')
         if not us:
             return
-        for u in us.decode('utf-8'):
+        # ignore any bad UTF8 characters from outside
+        for u in us.decode('utf-8', 'ignore'):
             c = u.encode('utf-8')
             try:
                 backend.insert_chars(unicodepage.from_utf8(c))
