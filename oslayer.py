@@ -580,10 +580,9 @@ if plat.system == 'Windows':
     def line_print(printbuf, printer_name):
         if printer_name == '' or printer_name=='default':
             printer_name = win32print.GetDefaultPrinter()
-        f = tempfile.TemporaryFile(prefix='pcbasic', suffix='.txt')
+        f = tempfile.NamedTemporaryFile(prefix='pcbasic', suffix='.txt')
         f.write(printbuf)
-        f.close()
-        win32api.ShellExecute(0, 'printto', filename, 
+        win32api.ShellExecute(0, 'printto', f.name, 
                               '"%s"' % printer_name, ".", 0)
 
 elif plat.system == 'Android':
