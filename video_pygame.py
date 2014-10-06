@@ -980,8 +980,8 @@ def normalise_pos(x, y):
     display_info = pygame.display.Info()
     xscale = display_info.current_w / (1.*(size[0]+2*border_x)) 
     yscale = display_info.current_h / (1.*(size[1]+2*border_y))
-    xpos = min(size[0]-1, max(0, int((x-border_x)//xscale)))
-    ypos = min(size[1]-1, max(0, int((y-border_y)//yscale))) 
+    xpos = min(size[0]-1, max(0, int(x//xscale - border_x)))
+    ypos = min(size[1]-1, max(0, int(y//yscale - border_y))) 
     return xpos, ypos
     
 ###############################################
