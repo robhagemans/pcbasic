@@ -969,7 +969,7 @@ def handle_key_up(e):
         scrap.stop()
     # last key released gets remembered
     try:
-        scan = backend.key_up(key_to_scan[e.key])
+        backend.key_up(key_to_scan[e.key])
     except KeyError:
         pass
 

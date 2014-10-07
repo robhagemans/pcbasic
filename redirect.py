@@ -41,7 +41,7 @@ def set_input(f):
     for c in all_input:
         # replace CRLF with CR
         if not (c == '\n' and last == '\r'):
-            backend.insert_key(c)
+            backend.insert_chars(c)
         last = c
     backend.input_closed = True
 

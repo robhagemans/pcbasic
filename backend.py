@@ -382,7 +382,7 @@ def get_video_memory_ega_10(addr):
     addr -= 0xa0000
     if addr < 0:
         return -1
-    if colour_plane % 4 in (1, 3):
+    if state.console_state.colour_plane % 4 in (1, 3):
         # only planes 0, 2 are used 
         # http://webpages.charter.net/danrollins/techhelp/0089.HTM
         return 0

@@ -1136,14 +1136,14 @@ def exec_view_graph(ins):
         fill, border = None, None
         if util.skip_white_read_if(ins, (',',)):
             fill, border = expressions.parse_int_list(ins, 2, err=2)
-        graphics.set_graph_view(x0-1, y0-1, x1+1, y1+1, True)
+        backend.set_graph_view(x0-1, y0-1, x1+1, y1+1, True)
         if fill != None:
             graphics.draw_box_filled(x0, y0, x1, y1, fill)
         if border != None:
             graphics.draw_box(x0-1, y0-1, x1+1, y1+1, border)
-        graphics.set_graph_view(x0, y0, x1, y1, absolute)
+        backend.set_graph_view(x0, y0, x1, y1, absolute)
     else:
-        graphics.unset_graph_view()
+        backend.unset_graph_view()
     util.require(ins, util.end_statement)        
     
 def exec_window(ins):
@@ -1912,7 +1912,7 @@ def exec_cls(ins):
         if graphics.is_graphics_mode():
             graphics.reset_graphics()
     elif val == 1 and graphics.is_graphics_mode():
-        graphics.clear_graphics_view()
+        backend.clear_graphics_view()
         graphics.reset_graphics()
     elif val == 2:
         console.clear_view()  

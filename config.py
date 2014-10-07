@@ -304,8 +304,7 @@ def read_args(parser, conf_dict):
             try:
                 defaults.update(**conf_dict[preset])
             except KeyError:
-                logging.warning('Preset %s not found in configuration file %s', 
-                                preset, config_file)
+                logging.warning('Preset %s not defined', preset)
     # set defaults
     parser.set_defaults(**defaults)
     # positional args: program name
