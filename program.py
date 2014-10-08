@@ -49,7 +49,7 @@ def prepare():
     """ Initialise program module. """
     global utf8_files, universal_newline, max_list_line, dont_protect
     utf8_files = config.options['utf8']
-    universal_newline = config.options['strict_newline']
+    universal_newline = not config.options['strict_newline']
     if (not config.options['strict_hidden_lines']) or config.options['conv']:
         max_list_line = 65535    
     else:
