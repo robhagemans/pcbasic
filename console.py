@@ -1018,7 +1018,7 @@ def set_pos(to_row, to_col, scroll_ok=True):
     state.console_state.overflow = False
     state.console_state.row, state.console_state.col = to_row, to_col
     check_pos(scroll_ok)
-    backend.video.update_cursor_attr(to_row, to_col)
+    backend.video.update_cursor_attr(state.console_state.row, state.console_state.col)
 
 def check_pos(scroll_ok=True):
     oldrow, oldcol = state.console_state.row, state.console_state.col
