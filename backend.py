@@ -493,7 +493,7 @@ def set_area_cga(x0, y0, byte_array, operation):
             else:
                 pixel = video.get_pixel(x,y)
                 try:    
-                    index = (byte_array[byte] >> shift) & 3   
+                    index = (byte_array[byte] >> shift) % state.console_state.num_attr   
                 except IndexError:
                     pass                
                 video.put_pixel(x, y, operation(pixel, index))    
