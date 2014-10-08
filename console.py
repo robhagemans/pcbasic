@@ -76,7 +76,11 @@ def init_mode():
     set_default_cursor()
     backend.update_cursor_visibility()
     # there is only one VIEW PRINT setting across all pages.
-    unset_view()
+    if state.console_state.scroll_height == 25:
+        # tandy/pcjr special case: VIEW PRINT to 25 is preserved
+        set_view(1, 25)
+    else:    
+        unset_view()
 
 def set_width(to_width):
     """ Change the width of the screen. """
