@@ -961,6 +961,16 @@ def handle_key_down(e):
             scan = key_to_scan[e.key]
         except KeyError:
             scan = None    
+            if android:
+                # android hacks - send keystroke sequences 
+                if e.key == pygame.K_ASTERISK:
+                    backend.key_down(scancode.RSHIFT, '')            
+                    backend.key_down(scancode.N8, '*')            
+                    backend.key_up(scancode.RSHIFT)            
+                elif e.key == pygame.K_AT:
+                    backend.key_down(scancode.RSHIFT, '')            
+                    backend.key_down(scancode.N2, '@')            
+                    backend.key_up(scancode.RSHIFT)            
         # insert into keyboard queue
         backend.key_down(scan, c) 
 

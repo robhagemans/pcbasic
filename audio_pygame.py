@@ -43,6 +43,8 @@ def init_sound():
     if not numpy:
         logging.warning('NumPy module not found. Failed to initialise audio.')
         return False
+    if not mixer:
+        return False    
     init_mixer()    
     return True
     

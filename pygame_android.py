@@ -84,6 +84,10 @@ android_to_pygame = {
     android.KEYCODE_CTRL_LEFT:    pygame.K_LCTRL,               android.KEYCODE_CTRL_RIGHT:   pygame.K_RCTRL,
     android.KEYCODE_ALT_LEFT:     pygame.K_LALT,                android.KEYCODE_ALT_RIGHT:    pygame.K_RALT,
     android.KEYCODE_MENU:         pygame.K_MENU,
+    android.KEYCODE_MINUS:        pygame.K_MINUS,
+    android.KEYCODE_GRAVE:        pygame.K_BACKQUOTE,
+    android.KEYCODE_AT:           pygame.K_AT,
+    android.KEYCODE_STAR:         pygame.K_ASTERISK,
 }
 
 keyboard_visible = False

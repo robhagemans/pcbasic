@@ -14,6 +14,7 @@ from copy import copy
 from functools import partial
 from collections import namedtuple
 
+import plat
 import config
 import state 
 import timedate
@@ -929,7 +930,12 @@ def prepare_keyboard():
     global ignore_caps
     global num_fn_keys
     # inserted keystrokes
-    for u in config.options['keys'].decode('string_escape').decode('utf-8'):
+    if plat.system == 'Android':
+        # string_escape not available on PGS4A
+        keystring = config.options['keys'].decode('utf-8')
+    else:
+        keystring = config.options['keys'].decode('string_escape').decode('utf-8')    
+    for u in keystring:
         c = u.encode('utf-8')
         try:
             state.console_state.keybuf += unicodepage.from_utf8(c)
