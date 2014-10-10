@@ -274,11 +274,19 @@ def get_options():
                 logging.warning('Could not read configuration file %s. '
                     'Using %s instead', arg_config.config, config_file)    
         conf_dict = read_config_file(config_file)
-        return read_args(parser, conf_dict) 
+        args = read_args(parser, conf_dict) 
     else:
         # not available, use the preset defaults (this happens on Android)
-        return default_args(read_config_file(config_file))
-
+        args = default_args(read_config_file(config_file))
+    for d in arguments:
+        # flatten list arguments
+        if (arguments[d]['type'] == 'list' and d in args):
+            args[d] = parse_list_arg(args[d])
+        # parse int parameters
+        if (arguments[d]['type'] == 'int' and d in args):
+            args[d] = parse_int_arg(args[d])
+    return args        
+            
 def default_args(conf_dict):
     """ Return default arguments for this operating system. """
     args = {}
@@ -346,13 +354,6 @@ def read_args(parser, conf_dict):
     if args['help']:
         parser.print_help()
         sys.exit(0)
-    for d in arguments:
-        # flatten list arguments
-        if (arguments[d]['type'] == 'list' and d in args):
-            args[d] = parse_list_arg(args[d])
-        # parse int parameters
-        if (arguments[d]['type'] == 'int' and d in args):
-            args[d] = parse_int_arg(args[d])
     return args
 
 ################################################
