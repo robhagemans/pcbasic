@@ -1891,7 +1891,8 @@ def pen_up():
     
 def pen_moved(x, y):
     """ Report a pen-move event at graphical x,y """
-    state.console_state.pen_pos = x, y
+    global pen_pos
+    pen_pos = x, y
     
 def get_pen(fn):
     """ Poll the pen. """
