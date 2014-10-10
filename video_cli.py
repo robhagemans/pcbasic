@@ -99,7 +99,7 @@ if plat.system == 'Windows':
 
     term = WinTerm()
 
-else:
+elif plat.system != 'Android':
     import tty, termios, select
     # ANSI escape codes for output, need arrow movements and clear line and esc_to_scan under Unix.
     import ansi

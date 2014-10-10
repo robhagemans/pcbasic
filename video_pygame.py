@@ -425,7 +425,7 @@ def find_display_size(canvas_x, canvas_y, border_width):
     if not force_square_pixel:
         # this assumes actual display aspect ratio is wider than 4:3
         # scale y to fit screen
-        canvas_y = (1 - display_slack/100.) * physical_size[1] // (1 + border_width/100.)
+        canvas_y = (1 - display_slack/100.) * physical_size[1] // int(1 + border_width/100.)
         # scale x to match aspect ratio
         canvas_x = (canvas_y * aspect[0]) / aspect[1]
         # add back border
