@@ -67,184 +67,188 @@ short_args = {
 # all long-form arguments
 arguments = {
     'input':   {
-        'type': 'string', 'metavar': 'input_file', 
+        'type': 'string', 'metavar': 'input_file', 'default': '',
         'help': 'Retrieve keyboard input from input_file, '
                 'except if KYBD: is read explicitly.' },
     'output':  {
-        'type': 'string', 'metavar': 'output_file', 
+        'type': 'string', 'metavar': 'output_file', 'default': '',
         'help': 'Send screen output to output_file, '
                 'except if SCRN: is written to explicitly.' },
     'append':  {
-        'type': 'bool',  
+        'type': 'bool', 'default': 'False',
         'help': 'Append to output_file, do not overwrite. Use with --output.' },
     'filter':  {
-        'type': 'bool',  
+        'type': 'bool', 'default': 'False', 
         'help': 'Use text filter interface. '
                 'This is the default if redirecting input.' },
     'cli': {
-        'type': 'bool', 
+        'type': 'bool', 'default': 'False',
         'help': 'Use command-line text interface' },
     'ansi': {
-        'type': 'bool',
+        'type': 'bool', 'default': 'False',
         'help': 'Use ANSI text interface' },
     'graphical': { 
-        'type': 'bool',
+        'type': 'bool', 'default': 'False',
         'help': 'Use graphical interface. This is the normal default; '
                 'use to override when redirecting i/o.' },
     'load': {
-        'type': 'bool',
+        'type': 'bool', 'default': 'False',
         'help': 'Load in_file only, do not execute' },
     'run': {
-        'type': 'bool',
+        'type': 'bool', 'default': 'False',
         'help': 'Execute input file (default if in_file given)' },
     'keys': {
-        'type': 'string', 'metavar':'keystring', 
+        'type': 'string', 'metavar':'keystring', 'default': '',
         'help': 'Insert keys into the key buffer' },
     'exec': {
-        'type': 'string', 'metavar': 'command_line', 
+        'type': 'string', 'metavar': 'command_line', 'default': '',
         'help': 'Execute BASIC command line' },
     'quit': {
-        'type': 'bool', 
+        'type': 'bool', 'default': 'False',
         'help': 'Quit interpreter when execution stops' },
     'double': {
-        'type': 'bool',
+        'type': 'bool', 'default': 'False',
         'help': 'Allow double-precision transcendental math functions' },
     'max_files': {
-        'type': 'int', 'metavar':'NUMBER', 
+        'type': 'int', 'metavar':'NUMBER', 'default': '3', 
         'help': 'Set maximum number of open files (default is 3).' },
     'max_reclen': { 
-        'type': 'int', 'metavar':'NUMBER', 
+        'type': 'int', 'metavar':'NUMBER', 'default': '128',
         'help': 'Set maximum record length for RANDOM files ' 
                 '(default is 128, max is 32767).' },
     'serial_in_size': { 
-        'type': 'int', 'metavar':'NUMBER', 
+        'type': 'int', 'metavar':'NUMBER', 'default': '256',
         'help': 'Set serial input buffer size (default is 256). '
                 'If 0, serial communications are disabled.' },
     'peek': { 
-        'type': 'list', 'metavar':'SEG:ADDR:VAL', 
+        'type': 'list', 'metavar':'SEG:ADDR:VAL', 'default': '',
         'help': 'Define PEEK preset values' },
     'lpt1': { 
-        'type': 'string', 'metavar':'TYPE:VAL', 
+        'type': 'string', 'metavar':'TYPE:VAL', 'default': '',
         'help': 'Set LPT1: to FILE:file_name or PRINTER:printer_name.' },
     'lpt2': { 
-        'type': 'string', 'metavar':'TYPE:VAL', 
+        'type': 'string', 'metavar':'TYPE:VAL', 'default': '',
         'help': 'Set LPT2: to FILE:file_name or PRINTER:printer_name.' },
     'lpt3': { 
-        'type': 'string', 'metavar':'TYPE:VAL', 
+        'type': 'string', 'metavar':'TYPE:VAL', 'default': '',
         'help': 'Set LPT3: to FILE:file_name or PRINTER:printer_name.' },
     'com1': { 
-        'type': 'string', 'metavar':'TYPE:VAL', 
+        'type': 'string', 'metavar':'TYPE:VAL', 'default': '',
         'help': 'Set COM1: to PORT:device_name or SOCKET:host:socket.' },
     'com2': { 
-        'type': 'string', 'metavar':'TYPE:VAL', 
+        'type': 'string', 'metavar':'TYPE:VAL', 'default': '',
         'help': 'Set COM2: to PORT:device_name or SOCKET:host:socket.' },
     'conv': { 
-        'type': 'string', 'metavar':'mode:outfile', 
+        'type': 'string', 'metavar':'mode:outfile', 'default': '',
         'help': 'Convert basic_program to (A)SCII, (B)ytecode or '
                 '(P)rotected mode.' },
     'codepage': { 
-        'type': 'string', 'choices': encodings, 
+        'type': 'string', 'choices': encodings, 'default': '437',
         'help': 'Load specified font codepage; default is 437' },
     'font': { 
         'type': 'list', 'choices': families, 
+        'default': 'unifont,univga,freedos',
         'help': 'Load current codepage from specified .hex fonts. '
                 'Last fonts specified take precedence, previous ones are '
                 'fallback. Default is unifont,univga,freedos.' },
     'nosound': { 
-        'type': 'bool', 
+        'type': 'bool', 'default': 'False', 
         'help': 'Disable sound output' },
     'dimensions': { 
-        'type': 'string', 'metavar':'X,Y', 
+        'type': 'string', 'metavar':'X,Y', 'default': '',
         'help': 'Set pixel dimensions for graphics mode. Overrides '
                 '--blocky and --aspect.'
                 'Graphical interface only.' },
     'fullscreen': { 
-        'type': 'bool',
+        'type': 'bool', 'default': 'False',
         'help': 'Fullscreen mode. Graphical interface only.' },
     'noquit': { 
-        'type': 'bool',
+        'type': 'bool', 'default': 'False',
         'help': 'Allow BASIC to capture <ALT+F4>. Graphical interface only.' },
     'debug': { 
-        'type': 'bool',
+        'type': 'bool', 'default': 'False',
         'help': 'Debugging mode.' },
     'strict_hidden_lines': { 
-        'type': 'bool', 
+        'type': 'bool', 'default': 'False',
         'help': 'Disable listing and ASCII saving of lines beyond 65530 '
                 '(as in GW-BASIC). Use with care as this allows execution '
                 'of invisible statements.' },
     'strict_protect': { 
-        'type': 'bool', 
+        'type': 'bool', 'default': 'False',
         'help': 'Disable listing and ASCII saving of protected files '
                 '(as in GW-BASIC). Use with care as this allows execution '
                 'of invisible statements.' },
     'capture_caps': {
-        'type': 'bool',
+        'type': 'bool', 'default': 'False',
         'help': "Handle CAPS LOCK; may collide with the operating system's "
                 "own handling." },
     'mount': { 
-        'type': 'list', 'metavar':'D:PATH', 
+        'type': 'list', 'metavar':'D:PATH', 'default': '',
         'help': 'Assign a drive letter to a path.' },
     'resume': { 
-        'type': 'bool', 
+        'type': 'bool', 'default': 'False',
         'help': 'Resume from saved state. Most other arguments are ignored.' },
     'strict_newline': { 
-        'type': 'bool', 
+        'type': 'bool', 'default': 'False',
         'help': 'Parse CR and LF in files strictly like GW-BASIC. '
                 'On Unix, you will need to convert your files to DOS text '
                 'if using this.' },
     'pcjr_syntax': { 
-        'type': 'string', 'choices': ('pcjr', 'tandy'), 
+        'type': 'string', 'choices': ('pcjr', 'tandy'), 'default': '',
         'help': 'Enable PCjr/Tandy 1000 syntax extensions' },
     'pcjr_term': { 
-        'type': 'string', 'metavar': 'TERM.BAS', 
+        'type': 'string', 'metavar': 'TERM.BAS', 'default': '',
         'help': 'Set the terminal program run by the PCjr TERM command' },
     'video': { 
-        'type': 'string', 
+        'type': 'string', 'default': 'vga',
         'choices': ('vga', 'ega', 'cga', 'cga_old', 'mda', 'pcjr', 'tandy',
                      'hercules', 'olivetti'), 
         'help': 'Set the video card to emulate.' },
     'windows_map_drives': { 
-        'type': 'bool', 
+        'type': 'bool', 'default': 'False',
         'help': 'Map all Windows drive letters to PC-BASIC drive letters '
                 '(Windows only)' },
     'cga_low': { 
-        'type': 'bool', 
+        'type': 'bool', 'default': 'False',
         'help': 'Use low-intensity palettes in CGA '
                 '(for --video={cga, ega, vga} only).' },
     'nobox': { 
-        'type': 'bool', 
+        'type': 'bool', 'default': 'False',
         'help': 'Disable box-drawing recognition for DBCS code pages' },
     'utf8': { 
-        'type': 'bool', 
+        'type': 'bool', 'default': 'False',
         'help': 'Use UTF-8 for ascii-mode programs and redirected i/o' },
     'border': { 
-        'type': 'int', 
+        'type': 'int', 'default': '5',
         'help': 'Width of the screen border as a percentage 0-100 '
                 '(graphical interface only).' },
     'mouse': {
         'type': 'string', 'metavar': 'left,middle,right', 
+        'default': 'copy,paste,pen',
         'help': 'Set the functions of the three mouse buttons '
                 '(copy,paste,pen).' },
     'state': {
-        'type': 'string', 'metavar': 'PCBASIC.SAV',
+        'type': 'string', 'metavar': 'PCBASIC.SAV', 'default': '',
         'help': 'Set the save-state file. Default is info/PCBASIC.SAV' },                
     'mono_tint': {
-        'type': 'string', 'metavar': 'r,g,b', 
+        'type': 'string', 'metavar': 'r,g,b', 'default': '255,255,255',
         'help': 'Specify the monochrome tint as RGB, each in the range 0-255' },
     'monitor': { 
         'type': 'string', 'choices': ('rgb', 'composite', 'mono'),
+        'default': 'rgb',
         'help': 'Sets the monitor type to emulate.' 
                 'Composite enables colour artifacts, crudely, on SCREEN 2 only '
                 'and is not allowed for --video=ega' },
     'aspect': {
-        'type': 'string', 'metavar': 'x,y',
+        'type': 'string', 'metavar': 'x,y', 'default': '4,3',
         'help': 'Set the display aspect ratio to x/y. '
                 'Graphical interface only.' },
     'blocky': {
-        'type': 'bool',
+        'type': 'bool', 'default': 'False',
         'help': 'Choose whole multiples of pixel size for display and do not '
                 'smoothen. Overrides --aspect. Graphical interface only.' },                
 }
+
 
 def prepare():
     """ Initialise config.py """
@@ -424,8 +428,6 @@ def parse_int_arg(inargs):
             logging.warning('Illegal number value %s ignored', inargs)         
     return None
 
-#########################################################
-
 def parse_pair(option, default):
     """ Split a string option into int values. """
     if options[option]:
@@ -438,6 +440,22 @@ def parse_pair(option, default):
                             option, options[option]) 
         return x, y
     return default    
+
+#########################################################
+
+def make_ini():
+    """ Write a default config file. """
+    argnames = sorted(arguments.keys())
+    f = open('PCBASIC.INI', 'w')
+    f.write('[pcbasic]\n')
+    for a in argnames:
+        f.write("# %s\n" % arguments[a]['help'])
+        try:
+            f.write('# choices: %s\n' % repr(arguments[a]['choices']))
+        except (KeyError, TypeError):
+            pass
+        f.write("%s=%s\n" % (a, arguments[a]['default']))
+    f.close()    
         
 # initialise this module    
 prepare()
