@@ -518,7 +518,7 @@ def operation_set(pix0, pix1):
 
 def operation_not(pix0, pix1):
 #    return ~pix1
-    return pix1 ^ ((1<<state.console_state.bitsperpixel)-1)
+    return pix1 ^ ((1<<state.console_state.current_mode.bitsperpixel)-1)
 
 def operation_and(pix0, pix1):
     return pix0 & pix1
