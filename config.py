@@ -207,7 +207,7 @@ arguments = {
         'choices': ('vga', 'ega', 'cga', 'cga_old', 'mda', 'pcjr', 'tandy',
                      'hercules', 'olivetti'), 
         'help': 'Set the video card to emulate.' },
-    'windows_map_drives': { 
+    'map_drives': { 
         'type': 'bool', 'default': 'False',
         'help': 'Map all Windows drive letters to PC-BASIC drive letters '
                 '(Windows only)' },
