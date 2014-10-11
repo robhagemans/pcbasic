@@ -39,6 +39,7 @@ options = {}
 # top line of usage statement
 description = (
     'PC-BASIC 3.23 interpreter. '
+    'A BAS program or BAZ package to run can be specified as the first argument. '
     'If no options are present, the interpreter will run in interactive mode.')
 
 # GWBASIC invocation, for reference:
@@ -247,6 +248,11 @@ arguments = {
         'type': 'bool', 'default': 'False',
         'help': 'Choose whole multiples of pixel size for display and do not '
                 'smoothen. Overrides --aspect. Graphical interface only.' },                
+    'program': {
+        'type': 'string', 'default': '',
+        'metavar': 'PROGRAM.BAS',  
+        'help': 'Run the specified .BAS program. '
+                'If --load is given, only load; if --conv is given, convert.'},
 }
 
 
@@ -266,7 +272,8 @@ def get_options():
         # we need to disable -h and re-enable it manually 
         # to avoid the wrong usage message from parse_known_args
         parser = argparse.ArgumentParser(
-                        add_help=False, description=description)
+                        add_help=False, description=description, 
+                        usage='%(prog)s [program_or_package] [options]')
         remaining = sys.argv[1:]
         # unpack any packages and parse program arguments
         arg_program, remaining = parse_package(parser, remaining)
@@ -324,20 +331,20 @@ def parse_presets(parser, remaining, conf_dict):
 def parse_package(parser, remaining):
     """ Load options from BAZ package, if specified. """
     # positional args: program or package name
-    parser.add_argument('program', metavar='basic_program_or_package', nargs='?', 
-        help='Run the specified .BAS program or .BAZ package. '
-             'If --load is given, only load; if --conv is given, convert.')
-    arg_package, remaining = parser.parse_known_args(
-                                remaining if remaining else '')
-    if arg_package.program and zipfile.is_zipfile(arg_package.program):
+    arg_package = None
+    if (remaining and remaining[0] and 
+        len(remaining[0]) < 1 or remaining[0][:1] != '-'):
+        arg_package = remaining[0]
+        remaining = remaining[1:]
+    if arg_package and zipfile.is_zipfile(arg_package):
         # extract the package to a temp directory
         # and make that the current dir for our run
-        zipfile.ZipFile(arg_package.program).extractall(path=plat.temp_dir)
+        zipfile.ZipFile(arg_package).extractall(path=plat.temp_dir)
         os.chdir(plat.temp_dir)    
         return None, remaining
     else:
         # it's not a package, treat it as a BAS program.
-        return arg_package.program, remaining
+        return arg_package, remaining
 
 def parse_config(parser, remaining):
     """ Find the correct config file and read it. """
