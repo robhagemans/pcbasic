@@ -317,13 +317,19 @@ def default_args(conf_dict):
 
 def parse_presets(parser, remaining, conf_dict):
     """ Parse presets. """
-    parser.add_argument('--preset', nargs='*', choices=conf_dict.keys(), 
+    parser.add_argument('--preset', nargs='*', action='append', 
+                        choices=conf_dict.keys(), 
                         help='Load machine preset options')
     arg_presets, remaining = parser.parse_known_args(
                                 remaining if remaining else '')
     presets = parse_list_arg(arg_presets.preset)
     # get dictionary of default config
     defaults = default_args(conf_dict)
+    # add any nested presets defined in [pcbasic] section
+    try:
+        presets += parse_list_config(conf_dict['pcbasic']['preset'])
+    except KeyError:
+        pass
     # set machine preset options; command-line args will override these
     if presets:
         for preset in presets:
