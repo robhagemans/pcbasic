@@ -54,3 +54,7 @@ else:
         stdin, stdout = None, None
     stdin, stdout = sys.stdin, sys.stdout
 
+import tempfile
+temp_dir = tempfile.mkdtemp(prefix='pcbasic-')    
+
+

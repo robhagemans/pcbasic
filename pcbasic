@@ -11,6 +11,7 @@ GW-BASIC is a trademark of Microsoft Corporation.
 """
 
 import os
+import shutil
 import logging
 
 import plat
@@ -118,6 +119,9 @@ def main():
             backend.video.close()
         iolayer.close_all()
         iolayer.close_devices()
+        # clean up our temp dir
+        if plat.temp_dir:
+            shutil.rmtree(plat.temp_dir)
             
 def prepare_console():
     """ Initialise backend and console. """

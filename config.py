@@ -13,7 +13,7 @@ import os
 import sys
 import ConfigParser
 import logging
-
+import zipfile
 import plat
 
 if plat.system == 'Android':
@@ -258,30 +258,29 @@ def prepare():
     
 def get_options():
     """ Retrieve command line and option file options. """
-    # find config file
-    if os.path.exists('PCBASIC.INI'):
-        config_file = 'PCBASIC.INI'
-    else:
-        config_file = os.path.join(plat.info_dir, 'PCBASIC.INI')
+    arg_program = None    
+    parser = None
+    remaining = None
     if argparse:
         # define argument parser
         # we need to disable -h and re-enable it manually 
         # to avoid the wrong usage message from parse_known_args
-        parser = argparse.ArgumentParser(add_help=False, description=description)
-        parser.add_argument('--config', metavar='PCBASIC.INI', 
-            help='Read configuration file. Default is info/PCBASIC.INI')
-        arg_config, _ = parser.parse_known_args()       
-        if arg_config.config:
-            if os.path.exists(arg_config.config):
-                config_file = arg_config.config 
-            else:
-                logging.warning('Could not read configuration file %s. '
-                    'Using %s instead', arg_config.config, config_file)    
-        conf_dict = read_config_file(config_file)
-        args = read_args(parser, conf_dict) 
+        parser = argparse.ArgumentParser(
+                        add_help=False, description=description)
+        remaining = sys.argv[1:]
+        # unpack any packages and parse program arguments
+        arg_program, remaining = parse_package(parser, remaining)
+    # parse config file
+    conf_dict, remaining = parse_config(parser, remaining)
+    if parser:
+        # set defaults based on presets
+        defaults, remaining = parse_presets(parser, remaining, conf_dict)
+        parser.set_defaults(**defaults)
+        # parse rest of command line
+        args = read_args(parser, remaining, conf_dict) 
     else:
         # not available, use the preset defaults (this happens on Android)
-        args = default_args(read_config_file(config_file))
+        args = default_args(conf_dict)
     for d in arguments:
         # flatten list arguments
         if (arguments[d]['type'] == 'list' and d in args):
@@ -289,6 +288,9 @@ def get_options():
         # parse int parameters
         if (arguments[d]['type'] == 'int' and d in args):
             args[d] = parse_int_arg(args[d])
+    # any program given on the command line overrides that in config files    
+    if arg_program:
+        args['program'] = arg_program        
     return args        
             
 def default_args(conf_dict):
@@ -300,13 +302,13 @@ def default_args(conf_dict):
         except KeyError:
             pass
     return args
-    
-def read_args(parser, conf_dict):
-    """ Retrieve command line options. """
-    # parse presets
+
+def parse_presets(parser, remaining, conf_dict):
+    """ Parse presets. """
     parser.add_argument('--preset', nargs='*', choices=conf_dict.keys(), 
                         help='Load machine preset options')
-    arg_presets, remaining = parser.parse_known_args()
+    arg_presets, remaining = parser.parse_known_args(
+                                remaining if remaining else '')
     presets = parse_list_arg(arg_presets.preset)
     # get dictionary of default config
     defaults = default_args(conf_dict)
@@ -317,11 +319,49 @@ def read_args(parser, conf_dict):
                 defaults.update(**conf_dict[preset])
             except KeyError:
                 logging.warning('Preset %s not defined', preset)
-    # set defaults
-    parser.set_defaults(**defaults)
-    # positional args: program name
-    parser.add_argument('program', metavar='basic_program', nargs='?', 
-                help='Input program file to run (default), load or convert.')
+    return defaults, remaining
+
+def parse_package(parser, remaining):
+    """ Load options from BAZ package, if specified. """
+    # positional args: program or package name
+    parser.add_argument('program', metavar='basic_program_or_package', nargs='?', 
+        help='Run the specified .BAS program or .BAZ package. '
+             'If --load is given, only load; if --conv is given, convert.')
+    arg_package, remaining = parser.parse_known_args(
+                                remaining if remaining else '')
+    if arg_package.program and zipfile.is_zipfile(arg_package.program):
+        # extract the package to a temp directory
+        # and make that the current dir for our run
+        zipfile.ZipFile(arg_package.program).extractall(path=plat.temp_dir)
+        os.chdir(plat.temp_dir)    
+        return None, remaining
+    else:
+        # it's not a package, treat it as a BAS program.
+        return arg_package.program, remaining
+
+def parse_config(parser, remaining):
+    """ Find the correct config file and read it. """
+    # find default config file
+    if os.path.exists('PCBASIC.INI'):
+        config_file = 'PCBASIC.INI'
+    else:
+        config_file = os.path.join(plat.info_dir, 'PCBASIC.INI')
+    if parser:    
+        # parse any overrides    
+        parser.add_argument('--config', metavar='PCBASIC.INI', 
+            help='Read configuration file. Default is info/PCBASIC.INI')
+        arg_config, remaining = parser.parse_known_args(
+                                    remaining if remaining else '')       
+        if arg_config.config:
+            if os.path.exists(arg_config.config):
+                config_file = arg_config.config 
+            else:
+                logging.warning('Could not read configuration file %s. '
+                    'Using %s instead', arg_config.config, config_file)    
+    return read_config_file(config_file), remaining
+    
+def read_args(parser, remaining, conf_dict):
+    """ Retrieve command line options. """
     # set arguments
     for argname in arguments:
         kwparms = {} 
@@ -352,7 +392,7 @@ def read_args(parser, conf_dict):
     parser.add_argument('-h', '--help', action='store_true', 
                         help='Show this message and exit')
     # parse command line arguments to override defaults
-    args = vars(parser.parse_args(remaining))
+    args = vars(parser.parse_args(remaining if remaining else ''))
     # display help message if requested, and exit
     # this needs to be done here as we need the parser object to exist
     if args['help']:
