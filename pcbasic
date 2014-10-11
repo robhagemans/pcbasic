@@ -24,10 +24,10 @@ formatstr = '%(levelname)s: %(message)s'
 if config.options['debug']:
     logging.basicConfig(format=formatstr, level=logging.DEBUG)
 elif logfile:
-    logging.basicConfig(format=formatstr, 
+    logging.basicConfig(format=formatstr, level=logging.INFO,
                         filename=os.path.join(plat.info_dir, logfile))
 else:
-    logging.basicConfig(format=formatstr)
+    logging.basicConfig(format=formatstr, level=logging.INFO)
 
 # implied RUN
 if config.options['program'] and not config.options['load']:
@@ -77,6 +77,10 @@ def main():
     reset = False
     resume = None
     try:
+        # in version mode, print version and exit
+        if config.options['version']:
+            logging.info(plat.version)
+            raise error.Exit()
         # in convertor mode, convert and exit
         if config.options['conv']:
             convert()

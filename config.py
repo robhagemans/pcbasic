@@ -64,7 +64,7 @@ gw_args = {
 # short-form arguments with single dash
 short_args = { 
     'cli': 'b', 'ansi': 't', 'graphical': 'g', 'load': 'l', 
-    'run': 'r', 'exec': 'e', 'quit': 'q', 'keys': 'k' 
+    'run': 'r', 'exec': 'e', 'quit': 'q', 'keys': 'k', 'version': 'v',
     }
 
 # all long-form arguments
@@ -255,6 +255,9 @@ arguments = {
         'metavar': 'PROGRAM.BAS',  
         'help': 'Run the specified .BAS program. '
                 'If --load is given, only load; if --conv is given, convert.'},
+    'version': {
+        'type': 'bool', 'default': 'False',
+        'help': 'Print version and exit'},
 }
 
 

@@ -54,7 +54,13 @@ else:
         stdin, stdout = None, None
     stdin, stdout = sys.stdin, sys.stdout
 
+# create temporary directory
 import tempfile
 temp_dir = tempfile.mkdtemp(prefix='pcbasic-')    
 
+# PC_BASIC version
+try:
+    version = open(os.path.join(info_dir, 'VERSION')).read().rstrip()
+except (IOError, OSError):
+    version = ''
 
