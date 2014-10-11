@@ -339,7 +339,7 @@ def parse_package(parser, remaining):
     # positional args: program or package name
     arg_package = None
     if (remaining and remaining[0] and 
-        len(remaining[0]) < 1 or remaining[0][:1] != '-'):
+        (len(remaining[0]) < 1 or remaining[0][0] != '-')):
         arg_package = remaining[0]
         remaining = remaining[1:]
     if arg_package and zipfile.is_zipfile(arg_package):
