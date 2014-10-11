@@ -46,7 +46,9 @@ def prepare():
         state_file = 'PCBASIC.SAV'
     else:            
         state_file = os.path.join(plat.info_dir, 'PCBASIC.SAV')
-
+    # do not load any state file from a package    
+    if config.package:
+        state_file = ''
 
 ###############################################
 
@@ -105,6 +107,8 @@ copy_reg.pickle(cStringIO.OutputType, pickle_StringIO)
 ###############################################
 
 def save():
+    if not state_file:
+        return
     # prepare pickling object
     to_pickle = State()
     to_pickle.basic, to_pickle.io, to_pickle.console = basic_state, io_state, console_state
@@ -122,6 +126,8 @@ def save():
     
 def load():
     global console_state, io_state, basic_state, loaded
+    if not state_file:
+        return False
     # decompress and unpickle
     try:
         f = open(state_file, 'rb')

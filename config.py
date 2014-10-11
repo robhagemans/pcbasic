@@ -35,6 +35,8 @@ families = sorted(list(set([ x[0] for x in [ c.split('_')
 
 # dictionary to hold all options chosen
 options = {}
+# flag True if we're running from a package
+package = False
 
 # top line of usage statement
 description = (
@@ -330,6 +332,7 @@ def parse_presets(parser, remaining, conf_dict):
 
 def parse_package(parser, remaining):
     """ Load options from BAZ package, if specified. """
+    global package
     # positional args: program or package name
     arg_package = None
     if (remaining and remaining[0] and 
@@ -341,6 +344,7 @@ def parse_package(parser, remaining):
         # and make that the current dir for our run
         zipfile.ZipFile(arg_package).extractall(path=plat.temp_dir)
         os.chdir(plat.temp_dir)    
+        package = arg_package
         return None, remaining
     else:
         # it's not a package, treat it as a BAS program.
