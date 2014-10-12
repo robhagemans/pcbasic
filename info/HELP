@@ -708,18 +708,20 @@ ERRORS:
 CLEAR statement
 CLEAR [expr] [, [mem_limit] [, stack_size] ]
 ---------------
-Sets all variables to null. Closes all files. Clears all DEF FN functions. 
-Clears all COMMON declarations. Turns off all sound. Resets music foreground.
-Turns PEN and STRIG off. Clears all ON ERROR traps. Resets ERR and ERL to zero.
-Disables all events. Resets the random number generator. Clears the loop stack;
-if called inside a FOR--NEXT or WHILE--WEND loop, an error will be raised at 
-the iteration keyword.
+Clears all variables, arrays, DEF FN user functions, DEFtype type definitions,
+and COMMON declarations. Closes all files.  
+Turns off all sound. Resets PLAY state and sets music to foreground.
+Clears all ON ERROR traps. Resets ERR and ERL to zero. Disables all events. 
+Turns PEN and STRIG off. Resets the random number generator. 
+Clears the loop stack; Resets the DRAW state and the current graphics position.
 NOTES:
 -  In GW-BASIC, 'mem_limit' specifies the upper limit of usable memory, and 
    'stack_size' specifies the amount of memory available to the stack and to
    string space. These are not implemented.
 -  In GW-BASIC, If 'mem_limit' or 'expr' are too low, OUT OF MEMORY is raised.
 -  The purpose of 'expr' is unknown.
+-  If called inside a FOR--NEXT or WHILE--WEND loop, an error will be raised at 
+   the iteration keyword as the loop stacks are cleared.
 ERRORS:
 -  If 'mem_limit' or 'stack_size' equal 0, ILLEGAL FUNCTION CALL is raised.
 -  If 'expr' is negative, ILLEGAL FUNCTION CALL is raised.
@@ -2428,14 +2430,8 @@ ERRORS:
 NEW statement
 NEW 
 -------------
-Deletes the program in memory. Clears all variables, arrays and user functions.
-Resets the DATA pointer. Removes DEFtype definitions. Clears COMMON 
-declarations. Closes all files. Turns off all sound. Resets music foreground. 
-Turns PEN and STRIG off. Clears all ON ERROR traps. Resets ERR and ERL to zero.
-Disables all events. Resets the random number generator.    
-Returns to interactive mode.
-NOTE:
--   NEW implies CLEAR
+Deletes the program in memory, executes CLEAR and RESTORE and returns to 
+interactive mode.
 
 
 NEXT statement
