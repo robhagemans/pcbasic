@@ -74,50 +74,50 @@ import fp
 
 def main():
     """ Initialise and do operations or hand over to run module. """
-    reset = False
-    resume = None
     try:
         # in version mode, print version and exit
         if config.options['version']:
             logging.info(plat.version)
-            raise error.Exit()
         # in convertor mode, convert and exit
-        if config.options['conv']:
+        elif config.options['conv']:
             convert()
-            raise error.Exit()
-        # ignore resume option in converter mode
-        if config.options['resume'] and not config.options['conv']:
-            # resume from saved emulator state
-            resume = state.load()
-        # choose the video and sound backends
-        prepare_console()
-        # ignore load and run options in resume mode    
-        if not resume:    
-            # print greeting
-            print_greeting()
-            # load any program    
-            load_program()
-            # run commands and programs
-            run_commands()
-        # start the interpreter loop
-        # and get out, if we ran with -q
-        run.loop(config.options['quit'])
-    except error.RunError as e:
-        # errors during startup/conversion are handled here, then exit
-        logging.error(error.get_message(e.err))
-    except error.Exit:
-        pass
-    except error.Reset:
-        reset = True
-    except KeyboardInterrupt:
-        if config.options['debug']:
-            raise
+        else:
+            reset = False
+            resume = None
+            try:
+                # in other modes, resume state if requested
+                if config.options['resume']:
+                    # resume from saved emulator state
+                    resume = state.load()
+                # choose the video and sound backends
+                prepare_console()
+                # ignore load and run options in resume mode    
+                if not resume:    
+                    # print greeting
+                    print_greeting()
+                    # load any program    
+                    load_program()
+                    # run commands and programs
+                    run_commands()
+                # start the interpreter loop
+                # and get out, if we ran with -q
+                run.loop(config.options['quit'])
+            except error.RunError as e:
+                logging.error(error.get_message(e.err))
+            except error.Exit:
+                pass
+            except error.Reset:
+                reset = True
+            except KeyboardInterrupt:
+                if config.options['debug']:
+                    raise
+            finally:
+                # do not save state if converting, delete state if resetting 
+                if reset:
+                    state.delete()
+                else:   
+                    state.save()
     finally:
-        # do not save state if converting, delete state if resetting 
-        if reset:
-            state.delete()
-        elif not config.options['conv']:   
-            state.save()
         # fix the terminal on exit or crashes (inportant for ANSI terminals)
         if backend.video:
             backend.video.close()
@@ -159,15 +159,18 @@ def convert():
     # keep uppercase first letter    
     mode = mode[0].upper() if mode else 'A'
     # load & save in different format
-    if config.options['program']:
-        program.load(oslayer.safe_open(config.options['program'], "L", "R"))
-    elif plat.stdin:
-        program.load(plat.stdin)      
-    if outfile:
-        program.save(oslayer.safe_open(outfile, "S", "W"), mode)
-    elif plat.stdout:
-        program.save(plat.stdout, mode)
-
+    try:
+        if config.options['program']:
+            program.load(oslayer.safe_open(config.options['program'], "L", "R"))
+        elif plat.stdin:
+            program.load(plat.stdin)      
+        if outfile:
+            program.save(oslayer.safe_open(outfile, "S", "W"), mode)
+        elif plat.stdout:
+            program.save(plat.stdout, mode)
+    except error.RunError as e:
+        logging.error(error.get_message(e.err))
+    
 def print_greeting():
     """ Print the greeting if we're not running a program. """
     greeting = (
