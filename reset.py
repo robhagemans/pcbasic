@@ -17,6 +17,8 @@ import iolayer
 import state
 import on_event
 import sound
+import draw_and_play
+import graphics
 
 # CLEAR
 def clear(close_files=False, preserve_common=False, preserve_all=False, preserve_deftype=False):
@@ -46,6 +48,10 @@ def clear(close_files=False, preserve_common=False, preserve_all=False, preserve
     # CLEAR also dumps for_next and while_wend stacks
     state.basic_state.for_next_stack = []
     state.basic_state.while_wend_stack = []
-
-
-
+    # reset PLAY state (tempo etc.)
+    state.basic_state.play_state = [ 
+        draw_and_play.PlayState(), draw_and_play.PlayState(), 
+        draw_and_play.PlayState() ]
+    # reset DRAW state (angle, scale) and current graphics position
+    graphics.reset_graphics()
+    

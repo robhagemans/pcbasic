@@ -29,8 +29,12 @@ ml_whitepace = (' ')
 
 # GRAPHICS MACRO LANGUAGE
 deg_to_rad = fp.div( fp.Single.twopi, fp.Single.from_int(360))
-state.basic_state.draw_scale = 4
-state.basic_state.draw_angle = 0
+
+def init_draw_state():
+    state.basic_state.draw_scale = 4
+    state.basic_state.draw_angle = 0
+
+init_draw_state()
 
 # MUSIC MACRO LANGUAGE
 # 12-tone equal temperament
