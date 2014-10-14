@@ -30,6 +30,8 @@ def is_graphics_mode():
 
 # reset graphics state    
 def reset_graphics():
+    if not is_graphics_mode():
+        return
     x0, y0, x1, y1 = backend.video.get_graph_clip()
     if state.console_state.view_graph_absolute:
         state.console_state.last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
