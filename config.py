@@ -63,7 +63,7 @@ gw_args = {
     
 # short-form arguments with single dash
 short_args = { 
-    'cli': 'b', 'ansi': 't', 'graphical': 'g', 'load': 'l', 
+    'cli': 'b', 'ansi': 't', 'load': 'l', 
     'run': 'r', 'exec': 'e', 'quit': 'q', 'keys': 'k', 'version': 'v',
     }
 
@@ -80,20 +80,17 @@ arguments = {
     'append':  {
         'type': 'bool', 'default': 'False',
         'help': 'Append to output_file, do not overwrite. Use with --output.' },
-    'filter':  {
-        'type': 'bool', 'default': 'False', 
-        'help': 'Use text filter interface. '
-                'This is the default if redirecting input.' },
     'cli': {
         'type': 'bool', 'default': 'False',
-        'help': 'Use command-line text interface' },
+        'help': 'Use command-line text interface. Same as --interface=cli' },
     'ansi': {
         'type': 'bool', 'default': 'False',
-        'help': 'Use ANSI text interface' },
-    'graphical': { 
-        'type': 'bool', 'default': 'False',
-        'help': 'Use graphical interface. This is the normal default; '
-                'use to override when redirecting i/o.' },
+        'help': 'Use ANSI text interface. Same as --interface=ansi' },
+    'interface': { 
+        'type': 'string', 'default': '',
+        'choices': ('none', 'cli', 'ansi', 'graphical'),
+        'help': 'Choose type of interface. When redirecting i/o, the default '
+                'is none; otherwise, default is graphical.' },
     'load': {
         'type': 'bool', 'default': 'False',
         'help': 'Load in_file only, do not execute' },

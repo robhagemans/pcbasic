@@ -47,22 +47,25 @@ def main():
         import audio_none
         import audio_pygame
         import audio_beep
-        backend.audio = audio_none
-        if config.options['filter'] or config.options['conv'] or (
-                not config.options['graphical'] and not config.options['ansi'] and
-                (not plat.stdin_is_tty or not plat.stdout_is_tty)):
-            # redirected input or output leads to dumbterm use
-            backend.video = video_none
-            backend.audio = audio_none
-        elif config.options['cli'] and plat.stdout_is_tty:
-            backend.video = video_cli
-            backend.audio = audio_beep
-        elif config.options['ansi'] and plat.stdout_is_tty:
-            backend.video = video_curses
-            backend.audio = audio_beep
-        else:   
-            backend.video = video_pygame   
-            backend.audio = audio_pygame
+        backends = {
+            'none': (video_none, audio_none),
+            'cli': (video_cli, audio_beep),
+            'ansi': (video_curses, audio_beep),
+            'graphical': (video_pygame, audio_pygame), 
+            }
+        # interface choice shortcuts
+        if config.options['ansi']:
+            config.options['interface'] = 'ansi'
+        elif config.options['cli']:
+            config.options['interface'] = 'cli'
+        elif not config.options['interface']:
+            # interface defaults
+            if not plat.stdin_is_tty or not plat.stdout_is_tty:
+                config.options['interface'] = 'none'
+            else:     
+                config.options['interface'] = 'graphical'
+        # select interface        
+        backend.video, backend.audio = backends[config.options['interface']]
         if config.options['nosound']:
             backend.audio = audio_none
         import run
