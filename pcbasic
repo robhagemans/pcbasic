@@ -154,10 +154,13 @@ def convert():
     # load & save in different format
     try:
         if config.options['program']:
-            program.load(oslayer.safe_open(config.options['program'], "L", "R"))
+            # on load, accept capitalised versions and default extension
+            program.load(iolayer.open_file_or_device(0, 
+                         config.options['program'], mode='L', defext='BAS'))
         elif plat.stdin:
             program.load(plat.stdin)      
         if outfile:
+            # on save from command-line, use exact file name
             program.save(oslayer.safe_open(outfile, "S", "W"), mode)
         elif plat.stdout:
             program.save(plat.stdout, mode)
@@ -180,8 +183,10 @@ def print_greeting():
 def load_program():
     """ Load program from command line. """
     if config.options['program']:
-        program.load(oslayer.safe_open(config.options['program'], "L", "R"))
-    
+        # on load, accept capitalised versions and default extension
+        program.load(iolayer.open_file_or_device(0, 
+                     config.options['program'], mode='L', defext='BAS'))
+        
 def run_commands():
     """ Schedule commands or program from command line for running. """
     command = config.options['exec']
