@@ -14,111 +14,125 @@ import os
 import shutil
 import logging
 
-import plat
-import config
-
-# logging setup before we import modules and may need to log errors
-# do we log to a file? 
-logfile = ''
-formatstr = '%(levelname)s: %(message)s'
-if config.options['debug']:
-    logging.basicConfig(format=formatstr, level=logging.DEBUG)
-elif logfile:
-    logging.basicConfig(format=formatstr, level=logging.INFO,
-                        filename=os.path.join(plat.info_dir, logfile))
-else:
-    logging.basicConfig(format=formatstr, level=logging.INFO)
-
-# implied RUN
-if config.options['program'] and not config.options['load']:
-    config.options['run'] = True 
-
-import backend
-# load backend modules
-# this can't be done in backend.py as it would create circular dependency
-import video_none
-import video_cli
-import video_curses
-import video_pygame
-import audio_none
-import audio_pygame
-import audio_beep
-backend.audio = audio_none
-if config.options['filter'] or config.options['conv'] or (
-        not config.options['graphical'] and not config.options['ansi'] and
-        (not plat.stdin_is_tty or not plat.stdout_is_tty)):
-    # redirected input or output leads to dumbterm use
-    backend.video = video_none
-    backend.audio = audio_none
-elif config.options['cli'] and plat.stdout_is_tty:
-    backend.video = video_cli
-    backend.audio = audio_beep
-elif config.options['ansi'] and plat.stdout_is_tty:
-    backend.video = video_curses
-    backend.audio = audio_beep
-else:   
-    backend.video = video_pygame   
-    backend.audio = audio_pygame
-if config.options['nosound']:
-    backend.audio = audio_none
-
-import run
-import error
-import oslayer
-import console
-import program
-import state
-import iolayer
-import var
-import fp
-
 def main():
-    """ Initialise and do operations or hand over to run module. """
+    """ Initialise and do requested operations. """
+    # make imported modules available in main module
+    global plat, config, state
+    global backend, run, error, oslayer, console, program
+    global iolayer, var, fp
     try:
+        import plat
+        import config
+        # logging setup before we import modules and may need to log errors
+        # do we log to a file? 
+        logfile = ''
+        formatstr = '%(levelname)s: %(message)s'
+        if config.options['debug']:
+            logging.basicConfig(format=formatstr, level=logging.DEBUG)
+        elif logfile:
+            logging.basicConfig(format=formatstr, level=logging.INFO,
+                                filename=os.path.join(plat.info_dir, logfile))
+        else:
+            logging.basicConfig(format=formatstr, level=logging.INFO)
+        # implied RUN
+        if config.options['program'] and not config.options['load']:
+            config.options['run'] = True 
+        import backend
+        # load backend modules
+        # this can't be done in backend.py as it would create circular dependency
+        import video_none
+        import video_cli
+        import video_curses
+        import video_pygame
+        import audio_none
+        import audio_pygame
+        import audio_beep
+        backend.audio = audio_none
+        if config.options['filter'] or config.options['conv'] or (
+                not config.options['graphical'] and not config.options['ansi'] and
+                (not plat.stdin_is_tty or not plat.stdout_is_tty)):
+            # redirected input or output leads to dumbterm use
+            backend.video = video_none
+            backend.audio = audio_none
+        elif config.options['cli'] and plat.stdout_is_tty:
+            backend.video = video_cli
+            backend.audio = audio_beep
+        elif config.options['ansi'] and plat.stdout_is_tty:
+            backend.video = video_curses
+            backend.audio = audio_beep
+        else:   
+            backend.video = video_pygame   
+            backend.audio = audio_pygame
+        if config.options['nosound']:
+            backend.audio = audio_none
+        import run
+        import error
+        import oslayer
+        import console
+        import program
+        import state
+        import iolayer
+        import var
+        import fp
         # in version mode, print version and exit
         if config.options['version']:
             logging.info(plat.version)
-        # in convertor mode, convert and exit
+        # in converter mode, convert and exit
         elif config.options['conv']:
             convert()
+        # otherwise, go into BASIC    
         else:
-            reset = False
-            try:
-                # resume from saved emulator state if requested and available
-                resume = config.options['resume'] and state.load()
-                # choose the video and sound backends
-                prepare_console()
-                # greet, load and run only if not resuming   
-                if not resume:    
-                    print_greeting()
-                    load_program()
-                    run_commands()
-                # start the interpreter (and get out if we ran with -q)
-                run.loop(config.options['quit'])
-            except error.RunError as e:
-                logging.error(error.get_message(e.err))
-            except error.Exit:
-                pass
-            except error.Reset:
-                reset = True
-            except KeyboardInterrupt:
-                if config.options['debug']:
-                    raise
-            finally:
-                # delete state if resetting 
-                if reset:
-                    state.delete()
-                else:   
-                    state.save()
+            start_basic()
     finally:
-        # fix the terminal on exit or crashes (important for ANSI terminals)
-        if backend.video:
-            backend.video.close()
-        iolayer.close_all()
-        iolayer.close_devices()
-        # clean up our temp dir
-        if plat.temp_dir:
-            shutil.rmtree(plat.temp_dir)
+        try:
+            # fix the terminal on exit or crashes (important for ANSI terminals)
+            if backend.video:
+                backend.video.close()
+        except NameError:
+            pass
+        try:
+            # close files if we opened any
+            iolayer.close_all()
+            iolayer.close_devices()
+        except NameError:
+            pass    
+        try:
+            # clean up our temp dir if we made one
+            if plat.temp_dir:
+                shutil.rmtree(plat.temp_dir)
+        except NameError:
+            pass
+            
+def start_basic():
+    """ Load & run programs and commands and hand over to interactive mode. """
+    reset = False
+    try:
+        # resume from saved emulator state if requested and available
+        resume = config.options['resume'] and state.load()
+        # choose the video and sound backends
+        prepare_console()
+        # greet, load and run only if not resuming   
+        if not resume:    
+            print_greeting()
+            load_program()
+            run_commands()
+        # start the interpreter (and get out if we ran with -q)
+        run.loop(config.options['quit'])
+    except error.RunError as e:
+        logging.error(error.get_message(e.err))
+    except error.Exit:
+        pass
+    except error.Reset:
+        reset = True
+    except KeyboardInterrupt:
+        if config.options['debug']:
+            raise
+    finally:
+        # delete state if resetting 
+        if reset:
+            state.delete()
+        else:   
+            state.save()
             
 def prepare_console():
     """ Initialise backend and console. """
