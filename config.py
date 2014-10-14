@@ -353,6 +353,16 @@ def parse_package(parser, remaining):
         # and make that the current dir for our run
         zipfile.ZipFile(arg_package).extractall(path=plat.temp_dir)
         os.chdir(plat.temp_dir)    
+        # recursively rename all files to all-caps to avoid case issues on Unix
+        # collisions: the last file renamed overwrites earlier ones
+        for root, dirs, files in os.walk('.', topdown=False):
+            for name in dirs + files:
+                try:
+                    os.rename(os.path.join(root, name), 
+                              os.path.join(root, name.upper()))
+                except OSError:
+                    # if we can't rename, ignore
+                    pass    
         package = arg_package
         return None, remaining
     else:
