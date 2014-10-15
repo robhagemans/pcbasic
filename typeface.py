@@ -87,16 +87,18 @@ def build_codepage_font(fontdict, codepage_dict):
 
 def fixfont(height, font, codepage_dict, font16):
     """ Fill in missing codepoints in font using 16-line font or blanks. """
-    if height not in font or font[height] == None:
-        font[height] = []
+    if not font:
+        font = {}
     if height == 16:            
         for c in codepage_dict:
             if c not in font:
                 font[c] = ('\0'*16 if len(c) == 1 else '\0'*32)
     else:
         for c in codepage_dict:
-            if c not in font:
+            if c not in font and font16 and c in font16:
                 font[c] = glyph_16_to(height, font16[c])
+            else:
+                font[c] = ('\0'*height if len(c) == 1 else '\0'*2*height)
     return font
             
 def glyph_16_to(height, glyph16):

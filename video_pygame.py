@@ -338,7 +338,8 @@ def init():
         for joy in range(0, 1):
             for axis in range(0, 1):
                 backend.stick_moved(joy, axis, 128)
-    load_fonts(heights_needed)
+    if not load_fonts(heights_needed):
+        return False
     text_mode = True    
     state.display = PygameDisplayState()
     return True
@@ -361,11 +362,15 @@ def load_fonts(heights_needed):
             font_16 = typeface.load(font_families, 16, 
                                           unicodepage.cp_to_utf8, nowarn=True)
             if font_16:
-                fonts[16] = font_16                              
+                fonts[16] = font_16 
         if 16 in fonts:
             typeface.fixfont(height, fonts[height], 
                              unicodepage.cp_to_utf8, fonts[16])
-
+    if 16 in heights_needed and not fonts[16]:
+        logging.error('No 16-pixel font specified')
+        return False
+    return True    
+        
 def supports_graphics_mode(mode_info):
     """ Return whether we support a given graphics mode. """
     # unpack mode info struct
