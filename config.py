@@ -265,8 +265,15 @@ def get_options():
     arg_program = None    
     parser = None
     remaining = None
+    # set default arguments
+    args = {}
+    for arg in arguments:
+        try:
+            args[arg] = arguments[arg]['default']
+        except KeyError:
+            pass
+    # define argument parser
     if argparse:
-        # define argument parser
         # we need to disable -h and re-enable it manually 
         # to avoid the wrong usage message from parse_known_args
         parser = argparse.ArgumentParser(
@@ -275,17 +282,16 @@ def get_options():
         remaining = sys.argv[1:]
         # unpack any packages and parse program arguments
         arg_program, remaining = parse_package(parser, remaining)
-    # parse config file
+    # get arguments ad presets from specified config file
     conf_dict, remaining = parse_config(parser, remaining)
+    # set defaults based on presets
+    defaults, remaining = parse_presets(parser, remaining, conf_dict)
+    args.update(defaults)
+    # parse rest of command line
     if parser:
-        # set defaults based on presets
-        defaults, remaining = parse_presets(parser, remaining, conf_dict)
-        parser.set_defaults(**defaults)
-        # parse rest of command line
-        args = read_args(parser, remaining, conf_dict) 
-    else:
-        # not available, use the preset defaults (this happens on Android)
-        args = default_args(conf_dict)
+        parser.set_defaults(**args)
+        args.update(parse_args(parser, remaining))
+    # clean up arguments    
     for d in arguments:
         # flatten list arguments
         if (arguments[d]['type'] == 'list' and d in args):
@@ -293,8 +299,6 @@ def get_options():
         # parse int parameters
         if (arguments[d]['type'] == 'int' and d in args):
             args[d] = parse_int_arg(args[d])
-    # any program given on the command line overrides that in config files    
-    args['program'] = '' or arg_program
     # argparse converts hyphens into underscores
     # takes more code correcting for argparse than would reimplementing it?
     dellist = []
@@ -305,6 +309,8 @@ def get_options():
             dellist.append(key)
     for key in dellist:
         del args[key]        
+    # any program given on the command line overrides that in config files    
+    args['program'] = '' or arg_program
     return args        
             
 def default_args(conf_dict):
@@ -319,12 +325,14 @@ def default_args(conf_dict):
 
 def parse_presets(parser, remaining, conf_dict):
     """ Parse presets. """
-    parser.add_argument('--preset', nargs='*', action='append', 
-                        choices=conf_dict.keys(), 
-                        help='Load machine preset options')
-    arg_presets, remaining = parser.parse_known_args(
-                                remaining if remaining else '')
-    presets = parse_list_arg(arg_presets.preset)
+    presets = []
+    if parser:
+        parser.add_argument('--preset', nargs='*', action='append', 
+                            choices=conf_dict.keys(), 
+                            help='Load machine preset options')
+        arg_presets, remaining = parser.parse_known_args(
+                                    remaining if remaining else '')
+        presets = parse_list_arg(arg_presets.preset)
     # get dictionary of default config
     defaults = default_args(conf_dict)
     # add any nested presets defined in [pcbasic] section
@@ -393,7 +401,7 @@ def parse_config(parser, remaining):
                     'Using %s instead', arg_config.config, config_file)    
     return read_config_file(config_file), remaining
     
-def read_args(parser, remaining, conf_dict):
+def parse_args(parser, remaining):
     """ Retrieve command line options. """
     # manually re-enable -h
     parser.add_argument('--help', '-h', action='store_true', 
