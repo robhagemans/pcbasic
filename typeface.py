@@ -95,10 +95,11 @@ def fixfont(height, font, codepage_dict, font16):
                 font[c] = ('\0'*16 if len(c) == 1 else '\0'*32)
     else:
         for c in codepage_dict:
-            if c not in font and font16 and c in font16:
-                font[c] = glyph_16_to(height, font16[c])
-            else:
-                font[c] = ('\0'*height if len(c) == 1 else '\0'*2*height)
+            if c not in font:
+                if font16 and c in font16:
+                    font[c] = glyph_16_to(height, font16[c])
+                else:
+                    font[c] = ('\0'*height if len(c) == 1 else '\0'*2*height)
     return font
             
 def glyph_16_to(height, glyph16):

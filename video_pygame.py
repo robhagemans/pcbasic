@@ -363,7 +363,7 @@ def load_fonts(heights_needed):
                                           unicodepage.cp_to_utf8, nowarn=True)
             if font_16:
                 fonts[16] = font_16 
-        if 16 in fonts:
+        if 16 in fonts and fonts[16]:
             typeface.fixfont(height, fonts[height], 
                              unicodepage.cp_to_utf8, fonts[16])
     if 16 in heights_needed and not fonts[16]:
