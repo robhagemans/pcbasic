@@ -5,7 +5,8 @@ Press 'Q' to exit INFO; then type SYSTEM to close PC-BASIC.
  
 Contributors__________________________________________________________________
 * Rob Hagemans          main author
-* WJB                   bugfixes
+* WJB                   bug fixes
+* Wengier Wu            bug reports, advice for CJK support
 
 Shoulders of Giants___________________________________________________________
 * The Python project
@@ -26,23 +27,23 @@ Shoulders of Giants___________________________________________________________
     http://www.mess.org
 
 Indispensable Technical Documentation_________________________________________
-* Norman De Forest      for documenting the file format:
+* Norman De Forest      GW-BASIC tokenised file format
      http://www.chebucto.ns.ca/~af380/GW-BASIC-tokens.html
-* Paul Kocher           for documenting the 'protection' algorithm:
+* Dan Vanderkam         GW-BASIC tokenised file format
+     http://www.danvk.org/wp/2008-02-03/reading-old-gw-basic-programs/
+* Paul Kocher           GW-BASIC protected file format
      The Cryptogram computer supplement #19, American Cryptogram Association, 
      Summer 1994 
-* John Elliott          for documenting vintage video cards
+* John Elliott          Vintage video card documentation
      http://http://www.seasip.info/VintagePC/
-* Dan Rollins           for documenting PC video memory layout:
+* Dan Rollins           PC video memory layout
      http://webpages.charter.net/danrollins/techhelp/0089.HTM
-* Dan Vanderkam         for sharing detokeniser source:
-     http://www.danvk.org/wp/2008-02-03/reading-old-gw-basic-programs/
-* Julian Bucknall       for describing the Microsoft Binary Format:
+* Julian Bucknall       Microsoft Binary Format
      http://www.boyet.com/Articles/MBFSinglePrecision.html
-* Adam Burgoyne         for describing the Microsoft Binary Format:     
+* Adam Burgoyne         Microsoft Binary Format
      http://www.experts-exchange.com/Programming/Languages/Pascal/Delphi/
      Q_20245266.html
-* Andries Brouwer       for documenting the CPI file format
+* Andries Brouwer       CPI font file format
     http://www.win.tue.nl/~aeb/linux/kbd/font-formats-3.html
 
 Fonts_________________________________________________________________________
