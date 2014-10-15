@@ -289,8 +289,7 @@ def get_options():
     args.update(defaults)
     # parse rest of command line
     if parser:
-        parser.set_defaults(**args)
-        args.update(parse_args(parser, remaining))
+        args.update(parse_args(parser, remaining, args))
     # clean up arguments    
     for d in arguments:
         # flatten list arguments
@@ -299,16 +298,6 @@ def get_options():
         # parse int parameters
         if (arguments[d]['type'] == 'int' and d in args):
             args[d] = parse_int_arg(args[d])
-    # argparse converts hyphens into underscores
-    # takes more code correcting for argparse than would reimplementing it?
-    dellist = []
-    for key in args:
-        if '_' in key:
-            key_corrected = key.replace('_', '-')
-            args[key_corrected] = args[key]
-            dellist.append(key)
-    for key in dellist:
-        del args[key]        
     # any program given on the command line overrides that in config files    
     args['program'] = '' or arg_program
     return args        
@@ -401,8 +390,15 @@ def parse_config(parser, remaining):
                     'Using %s instead', arg_config.config, config_file)    
     return read_config_file(config_file), remaining
     
-def parse_args(parser, remaining):
+def parse_args(parser, remaining, default):
     """ Retrieve command line options. """
+    # argparse converts hyphens into underscores
+    # takes more code correcting for argparse than would reimplementing it?
+    default_underscore = {}
+    for key in default:
+        key_corrected = key.replace('-', '_')
+        default_underscore[key_corrected] = default[key]
+    parser.set_defaults(**default_underscore)
     # manually re-enable -h
     parser.add_argument('--help', '-h', action='store_true', 
                         help='Show this message and exit')
@@ -439,7 +435,12 @@ def parse_args(parser, remaining):
     if args['help']:
         parser.print_help()
         sys.exit(0)
-    return args
+    # and convert the underscores back into hyphens...    
+    args_hyphen = {}
+    for key in args:
+        key_corrected = key.replace('_', '-')
+        args_hyphen[key_corrected] = args[key]
+    return args_hyphen
 
 ################################################
 
