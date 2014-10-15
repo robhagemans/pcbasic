@@ -292,12 +292,13 @@ def get_options():
         args.update(parse_args(parser, remaining, args))
     # clean up arguments    
     for d in arguments:
-        # flatten list arguments
-        if (arguments[d]['type'] == 'list' and d in args):
-            args[d] = parse_list_arg(args[d])
-        # parse int parameters
-        if (arguments[d]['type'] == 'int' and d in args):
-            args[d] = parse_int_arg(args[d])
+        if d in args:
+            if (arguments[d]['type'] == 'list'):
+                args[d] = parse_list_arg(args[d])
+            elif (arguments[d]['type'] == 'int'):
+                args[d] = parse_int_arg(args[d])
+            elif (arguments[d]['type'] == 'bool'):
+                args[d] = parse_bool_arg(args[d])
     # any program given on the command line overrides that in config files    
     args['program'] = '' or arg_program
     return args        
@@ -413,7 +414,8 @@ def parse_args(parser, remaining, default):
         if arguments[argname]['type'] in ('int', 'string'):
             kwparms['action'] = 'store'
         elif arguments[argname]['type'] == 'bool':
-            kwparms['action'] = 'store_true'
+            kwparms['action'] = 'store'
+            kwparms['nargs'] = '?'
         elif arguments[argname]['type'] == 'list':
             kwparms['action'] = 'append'
             kwparms['nargs'] = '*'
@@ -463,11 +465,9 @@ def convert_config_file(arglist):
     for d in arglist:
         # convert various boolean notations
         if d in arguments:
-            if arguments[d]['type'] == 'bool':
-                arglist[d] = parse_bool_config(arglist[d])
-            elif arguments[d]['type'] == 'list':
+            if arguments[d]['type'] == 'list':
                 arglist[d] = parse_list_config(arglist[d])
-            elif arguments[d]['type'] in ('string', 'int'):
+            elif arguments[d]['type'] in ('string', 'int', 'bool'):
                 arglist[d] = '' if not arglist[d] else arglist[d]      
     return arglist        
 
@@ -477,8 +477,12 @@ def parse_list_config(s):
         return []
     return lst
 
-def parse_bool_config(s):
-    """ Parse bool option from config file. """
+################################################
+    
+def parse_bool_arg(s):
+    """ Parse bool option. Empty means True (like store_true). """
+    if not s:
+        return True
     try:
         if s.upper() in ('YES', 'TRUE', 'ON'):
             return True
@@ -487,8 +491,6 @@ def parse_bool_config(s):
     except AttributeError:
         pass
     return None
-    
-################################################
     
 def parse_list_arg(arglist):
     """ Convert lists of lists to one dimension. """
