@@ -15,7 +15,9 @@
 100 REM main loop
 105   SCREEN 0,0,0,0 : WIDTH 80 : KEY OFF
 110   WHILE -1
-115     IF K > 0 AND K <= FILES.NUM THEN NM$ = FILE$(K) : GOSUB 13000 ' swap file
+111     IF K > 0 AND K <= FILES.NUM THEN CLS: COUNT=0
+112     IF K = 1 THEN NM$ = "@:VERSION": GOSUB 13000: COLOR 0,7: GOSUB 10000: COLOR 7,0: PRINT: COUNT=2
+115     IF K > 0 AND K <= FILES.NUM THEN NM$ = FILE$(K): GOSUB 13000
 120     GOSUB 10000 ' display text file
 125     GOSUB 1000  ' display bottom line
 130     GOSUB 1200  ' wait for key, fill K$ and K
@@ -59,8 +61,6 @@
 13000 REM swap files
 13010   CLOSE #1
 13020   OPEN NM$ FOR INPUT AS 1
-13030   CLS
-13040   COUNT = 0
 13050 RETURN 
 13999 '
 14000 REM display one line from text file
