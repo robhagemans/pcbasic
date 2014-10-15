@@ -416,7 +416,9 @@ def parse_args(parser, remaining, default):
             kwparms['action'] = 'store'
         elif arguments[argname]['type'] == 'bool':
             kwparms['action'] = 'store'
-            kwparms['nargs'] = '?'
+            # need * because *!&^# argparse makes no distinction between
+            # --foo empty and not specified for nargs='?'.
+            kwparms['nargs'] = '*'
         elif arguments[argname]['type'] == 'list':
             kwparms['action'] = 'append'
             kwparms['nargs'] = '*'
@@ -438,6 +440,14 @@ def parse_args(parser, remaining, default):
     if args['help']:
         parser.print_help()
         sys.exit(0)
+    # turn bool args into something sensible
+    for d in arguments:
+        if d in args:
+            if (arguments[d]['type'] == 'bool'):
+                if args[d] == []:
+                    args[d] = 'True'
+                elif args[d] and args[d]:  
+                    args[d] = args[d][-1]
     # and convert the underscores back into hyphens...    
     args_hyphen = {}
     for key in args:
@@ -482,7 +492,7 @@ def parse_list_config(s):
     
 def parse_bool_arg(s):
     """ Parse bool option. Empty means True (like store_true). """
-    if not s:
+    if s == '':
         return True
     try:
         if s.upper() in ('YES', 'TRUE', 'ON'):
@@ -490,8 +500,7 @@ def parse_bool_arg(s):
         elif s.upper() in ('NO', 'FALSE', 'OFF'):
             return False   
     except AttributeError:
-        pass
-    return None
+        return None
     
 def parse_list_arg(arglist):
     """ Convert lists of lists to one dimension. """
