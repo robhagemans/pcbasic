@@ -92,11 +92,15 @@ arguments = {
         'help': 'Choose type of interface. When redirecting i/o, the default '
                 'is none; otherwise, default is graphical.' },
     'load': {
-        'type': 'bool', 'default': 'False',
-        'help': 'Load in_file only, do not execute' },
+        'type': 'string', 'default': '', 'metavar': 'PROGRAM.BAS',
+        'help': 'Load the specified .BAS program.' },
     'run': {
-        'type': 'bool', 'default': 'False',
-        'help': 'Execute input file (default if in_file given)' },
+        'type': 'string', 'default': '', 'metavar': 'PROGRAM.BAS',
+        'help': 'Run the specified .BAS program. Overrides --load.' },
+    'convert': { 
+        'type': 'string', 'metavar':'mode[,infile[,outfile]]', 'default': '',
+        'help': 'Convert infile to mode=A,B,P for ASCII, Bytecode or '
+                'Protected mode. Write to outfile or standard output.' },
     'keys': {
         'type': 'string', 'metavar':'keystring', 'default': '',
         'help': 'Insert keys into the key buffer' },
@@ -138,10 +142,6 @@ arguments = {
     'com2': { 
         'type': 'string', 'metavar':'TYPE:VAL', 'default': '',
         'help': 'Set COM2: to PORT:device_name or SOCKET:host:socket.' },
-    'conv': { 
-        'type': 'string', 'metavar':'mode:outfile', 'default': '',
-        'help': 'Convert basic_program to (A)SCII, (B)ytecode or '
-                '(P)rotected mode.' },
     'codepage': { 
         'type': 'string', 'choices': encodings, 'default': '437',
         'help': 'Load specified font codepage; default is 437' },
@@ -248,11 +248,6 @@ arguments = {
         'type': 'bool', 'default': 'False',
         'help': 'Choose whole multiples of pixel size for display and do not '
                 'smoothen. Overrides --aspect. Graphical interface only.' },                
-    'program': {
-        'type': 'string', 'default': '',
-        'metavar': 'PROGRAM.BAS',  
-        'help': 'Run the specified .BAS program. '
-                'If --load is given, only load; if --conv is given, convert.'},
     'version': {
         'type': 'bool', 'default': 'False',
         'help': 'Print version and exit'},
@@ -391,8 +386,11 @@ def parse_config(parser, remaining):
     
 def read_args(parser, remaining, conf_dict):
     """ Retrieve command line options. """
+    # manually re-enable -h
+    parser.add_argument('--help', '-h', action='store_true', 
+                        help='Show this message and exit')
     # set arguments
-    for argname in arguments:
+    for argname in sorted(arguments.keys()):
         kwparms = {} 
         for n in ['help', 'choices', 'metavar']:
             try:
@@ -417,9 +415,6 @@ def read_args(parser, remaining, conf_dict):
         except KeyError:
             pass
         parser.add_argument(*parms, **kwparms)
-    # manually re-enable -h
-    parser.add_argument('-h', '--help', action='store_true', 
-                        help='Show this message and exit')
     # parse command line arguments to override defaults
     args = vars(parser.parse_args(remaining if remaining else ''))
     # display help message if requested, and exit
@@ -519,6 +514,10 @@ def make_ini():
     f.write('[pcbasic]\n')
     for a in argnames:
         f.write("# %s\n" % arguments[a]['help'])
+        try:
+            f.write('# %s=%s\n' % (a, arguments[a]['metavar']))
+        except (KeyError, TypeError):
+            pass
         try:
             f.write('# choices: %s\n' % repr(arguments[a]['choices']))
         except (KeyError, TypeError):

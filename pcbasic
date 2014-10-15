@@ -34,9 +34,6 @@ def main():
                                 filename=os.path.join(plat.info_dir, logfile))
         else:
             logging.basicConfig(format=formatstr, level=logging.INFO)
-        # implied RUN
-        if config.options['program'] and not config.options['load']:
-            config.options['run'] = True 
         import backend
         # load backend modules
         # this can't be done in backend.py as it would create circular dependency
@@ -81,7 +78,7 @@ def main():
         if config.options['version']:
             logging.info(plat.version)
         # in converter mode, convert and exit
-        elif config.options['conv']:
+        elif config.options['convert']:
             convert()
         # otherwise, go into BASIC    
         else:
@@ -109,6 +106,8 @@ def main():
 def start_basic():
     """ Load & run programs and commands and hand over to interactive mode. """
     reset = False
+    # positional argument will be interpreted as program to run
+    config.options['run'] = (config.options['run'] or config.options['program'])
     try:
         # resume from saved emulator state if requested and available
         resume = config.options['resume'] and state.load()
@@ -159,21 +158,24 @@ def convert():
     """ Perform file format conversion. """
     # set conversion output 
     # first arg, if given, is mode; second arg, if given, is outfile
-    outfile = ''
-    conv = config.options['conv'].split(':')
+    infile, outfile = '', ''
+    conv = config.options['convert'].split(',')
     try:
         mode = conv.pop(0)
+        infile = conv.pop(0)
         outfile = conv.pop(0)
     except IndexError:
         pass    
     # keep uppercase first letter    
     mode = mode[0].upper() if mode else 'A'
+    # if not specified but positional argument is, use that.
+    infile = infile or config.options['program']
     # load & save in different format
     try:
-        if config.options['program']:
+        if infile:
             # on load, accept capitalised versions and default extension
             program.load(iolayer.open_file_or_device(0, 
-                         config.options['program'], mode='L', defext='BAS'))
+                         infile, mode='L', defext='BAS'))
         elif plat.stdin:
             program.load(plat.stdin)      
         if outfile:
@@ -199,10 +201,11 @@ def print_greeting():
     
 def load_program():
     """ Load program from command line. """
-    if config.options['program']:
+    prog = config.options['run'] or config.options['load']
+    if prog:
         # on load, accept capitalised versions and default extension
         program.load(iolayer.open_file_or_device(0, 
-                     config.options['program'], mode='L', defext='BAS'))
+                     prog, mode='L', defext='BAS'))
         
 def run_commands():
     """ Schedule commands or program from command line for running. """
