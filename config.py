@@ -228,8 +228,9 @@ arguments = {
         'help': 'Set the functions of the three mouse buttons '
                 '(copy,paste,pen).' },
     'state': {
-        'type': 'string', 'metavar': 'PCBASIC.SAV', 'default': '',
-        'help': 'Set the save-state file. Default is info/PCBASIC.SAV' },                
+        'type': 'string', 'metavar': plat.state_name, 'default': '',
+        'help': 'Set the save-state file. Default is info/%s' % 
+                plat.state_name },                
     'mono_tint': {
         'type': 'string', 'metavar': 'r,g,b', 'default': '255,255,255',
         'help': 'Specify the monochrome tint as RGB, each in the range 0-255' },
@@ -369,14 +370,15 @@ def parse_package(parser, remaining):
 def parse_config(parser, remaining):
     """ Find the correct config file and read it. """
     # find default config file
-    if os.path.exists('PCBASIC.INI'):
-        config_file = 'PCBASIC.INI'
+    if os.path.exists(plat.config_name):
+        config_file = plat.config_name
     else:
-        config_file = os.path.join(plat.info_dir, 'PCBASIC.INI')
+        config_file = os.path.join(plat.info_dir, plat.config_name)
     if parser:    
         # parse any overrides    
-        parser.add_argument('--config', metavar='PCBASIC.INI', 
-            help='Read configuration file. Default is info/PCBASIC.INI')
+        parser.add_argument('--config', metavar=plat.config_name, 
+            help='Read configuration file. Default is info/%s' % 
+                 plat.config_name)
         arg_config, remaining = parser.parse_known_args(
                                     remaining if remaining else '')       
         if arg_config.config:
@@ -513,7 +515,7 @@ def parse_pair(option, default):
 def make_ini():
     """ Write a default config file. """
     argnames = sorted(arguments.keys())
-    f = open('PCBASIC.INI', 'w')
+    f = open(plat.config_name, 'w')
     f.write('[pcbasic]\n')
     for a in argnames:
         f.write("# %s\n" % arguments[a]['help'])

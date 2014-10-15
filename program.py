@@ -367,14 +367,19 @@ class LineGetter(object):
             line = line[:-1] + '\r'
         if self.utf8:
             # decode and encode back as an easy way to split up in single-character multibyte sequences
-            utf8line = line.decode('utf-8')
-            line = '' 
-            for c in utf8line:
-                try:
-                    line += unicodepage.from_utf8(c.encode('utf-8'))
-                except KeyError:
-                    # pass unknown sequences untranslated. this includes \r.
-                    line += c.encode('utf-8')    
+            try:
+                utf8line = line.decode('utf-8')
+                rline = '' 
+                for c in utf8line:
+                    try:
+                        rline += unicodepage.from_utf8(c.encode('utf-8'))
+                    except KeyError:
+                        # pass unknown sequences untranslated. this includes \r.
+                        rline += c.encode('utf-8')    
+                line = rline        
+            except UnicodeDecodeError:            
+                # not valid UTF8, pass through raw.
+                pass
         return line, eof
         
 def load_ascii_file(g, first_char=''):

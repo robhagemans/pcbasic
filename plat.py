@@ -39,6 +39,10 @@ encoding_dir = os.path.join(basepath, 'encoding')
 font_dir = os.path.join(basepath, 'font')
 info_dir = os.path.join(basepath, 'info')
 
+# default filenames
+config_name = 'PCBASIC.INI'
+state_name = 'PCBASIC.SAV'
+
 # OS-specific stdin/stdout selection
 # no stdin/stdout access allowed on packaged apps
 if system in ('OSX', 'Windows'):
