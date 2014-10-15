@@ -56,13 +56,13 @@ operator_tokens = [item for sublist in priority for item in sublist]
 # allow double precision math for ^, ATN, COS, EXP, LOG, SIN, SQR, and TAN
 option_double = False
 # enable pcjr/tandy syntax extensions
-pcjr_syntax = False
+is_pcjr_syntax = False
 
 
 def prepare():
     """ initialsie expressions module. """
-    global option_double, pcjr_syntax
-    pcjr_syntax = config.options['pcjr-syntax']
+    global option_double, is_pcjr_syntax
+    is_pcjr_syntax = config.options['syntax'] in ('pcjr', 'tandy')
     option_double = config.options['double']
 
 def parse_expression(ins, allow_empty=False, empty_err=22):
@@ -664,7 +664,7 @@ def value_pmap(ins):
 def value_play(ins):
     voice = vartypes.pass_int_unpack(parse_bracket(ins))    
     util.range_check(0, 255, voice)
-    if not(pcjr_syntax and voice in (1, 2)):
+    if not(is_pcjr_syntax and voice in (1, 2)):
         voice = 0    
     return vartypes.pack_int(backend.music_queue_length(voice))
     

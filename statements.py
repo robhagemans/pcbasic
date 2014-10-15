@@ -43,7 +43,10 @@ import backend
 def prepare():
     """ Initialise statements module. """
     global pcjr_syntax, pcjr_term
-    pcjr_syntax = config.options['pcjr-syntax']
+    if config.options['syntax'] in ('pcjr', 'tandy'):
+        pcjr_syntax = config.options['syntax']
+    else:
+        pcjr_syntax = None    
     pcjr_term = config.options['pcjr-term']
 
 # parses one statement at the current stream pointer in current codestream

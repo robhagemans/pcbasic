@@ -193,9 +193,10 @@ arguments = {
         'help': 'Parse CR and LF in files strictly like GW-BASIC. '
                 'On Unix, you will need to convert your files to DOS text '
                 'if using this.' },
-    'pcjr-syntax': { 
-        'type': 'string', 'choices': ('pcjr', 'tandy'), 'default': '',
-        'help': 'Enable PCjr/Tandy 1000 syntax extensions' },
+    'syntax': { 
+        'type': 'string', 'choices': ('advanced', 'pcjr', 'tandy'), 
+        'default': 'advanced',
+        'help': 'Choose GW-BASIC/BASICA, PCjr, or Tandy 1000 syntax.' },
     'pcjr-term': { 
         'type': 'string', 'metavar': 'TERM.BAS', 'default': '',
         'help': 'Set the terminal program run by the PCjr TERM command' },

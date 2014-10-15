@@ -945,7 +945,7 @@ def prepare_keyboard():
     if config.options['capture-caps']:
         ignore_caps = False
     # function keys: F1-F12 for tandy, F1-F10 for gwbasic and pcjr
-    if config.options['pcjr-syntax'] == 'tandy':
+    if config.options['syntax'] == 'tandy':
         num_fn_keys = 12
     else:
         num_fn_keys = 10
@@ -954,7 +954,8 @@ def prepare_audio():
     """ Prepare the audio subsystem. """
     global pcjr_sound
     # pcjr/tandy sound
-    pcjr_sound = config.options['pcjr-syntax']
+    if config.options['syntax'] in ('pcjr', 'tandy'):
+        pcjr_sound = config.options['syntax']
     # tandy has SOUND ON by default, pcjr has it OFF
     state.console_state.sound_on = (pcjr_sound == 'tandy')
 
