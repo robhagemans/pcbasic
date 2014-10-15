@@ -78,13 +78,13 @@ arguments = {
         'help': 'Send screen output to output_file, '
                 'except if SCRN: is written to explicitly.' },
     'append':  {
-        'type': 'bool', 'default': 'False',
+        'type': 'bool', 'default': False,
         'help': 'Append to output_file, do not overwrite. Use with --output.' },
     'cli': {
-        'type': 'bool', 'default': 'False',
+        'type': 'bool', 'default': False,
         'help': 'Use command-line text interface. Same as --interface=cli' },
     'ansi': {
-        'type': 'bool', 'default': 'False',
+        'type': 'bool', 'default': False,
         'help': 'Use ANSI text interface. Same as --interface=ansi' },
     'interface': { 
         'type': 'string', 'default': '',
@@ -108,24 +108,24 @@ arguments = {
         'type': 'string', 'metavar': 'command_line', 'default': '',
         'help': 'Execute BASIC command line' },
     'quit': {
-        'type': 'bool', 'default': 'False',
+        'type': 'bool', 'default': False,
         'help': 'Quit interpreter when execution stops' },
     'double': {
-        'type': 'bool', 'default': 'False',
+        'type': 'bool', 'default': False,
         'help': 'Allow double-precision transcendental math functions' },
     'max-files': {
-        'type': 'int', 'metavar':'NUMBER', 'default': '3', 
+        'type': 'int', 'metavar':'NUMBER', 'default': 3, 
         'help': 'Set maximum number of open files (default is 3).' },
     'max-reclen': { 
-        'type': 'int', 'metavar':'NUMBER', 'default': '128',
+        'type': 'int', 'metavar':'NUMBER', 'default': 128,
         'help': 'Set maximum record length for RANDOM files ' 
                 '(default is 128, max is 32767).' },
     'serial-buffer-size': { 
-        'type': 'int', 'metavar':'NUMBER', 'default': '256',
+        'type': 'int', 'metavar':'NUMBER', 'default': 256,
         'help': 'Set serial input buffer size (default is 256). '
                 'If 0, serial communications are disabled.' },
     'peek': { 
-        'type': 'list', 'metavar':'SEG:ADDR:VAL', 'default': '',
+        'type': 'list', 'metavar':'SEG:ADDR:VAL', 'default': [],
         'help': 'Define PEEK preset values' },
     'lpt1': { 
         'type': 'string', 'metavar':'TYPE:VAL', 'default': '',
@@ -147,12 +147,12 @@ arguments = {
         'help': 'Load specified font codepage; default is 437' },
     'font': { 
         'type': 'list', 'choices': families, 
-        'default': 'unifont,univga,freedos',
+        'default': ['unifont', 'univga', 'freedos'],
         'help': 'Load current codepage from specified .hex fonts. '
                 'Last fonts specified take precedence, previous ones are '
                 'fallback. Default is unifont,univga,freedos.' },
     'nosound': { 
-        'type': 'bool', 'default': 'False', 
+        'type': 'bool', 'default': False, 
         'help': 'Disable sound output' },
     'dimensions': { 
         'type': 'string', 'metavar':'X,Y', 'default': '',
@@ -160,36 +160,36 @@ arguments = {
                 '--blocky and --aspect.'
                 'Graphical interface only.' },
     'fullscreen': { 
-        'type': 'bool', 'default': 'False',
+        'type': 'bool', 'default': False,
         'help': 'Fullscreen mode. Graphical interface only.' },
     'noquit': { 
-        'type': 'bool', 'default': 'False',
+        'type': 'bool', 'default': False,
         'help': 'Allow BASIC to capture <ALT+F4>. Graphical interface only.' },
     'debug': { 
-        'type': 'bool', 'default': 'False',
+        'type': 'bool', 'default': False,
         'help': 'Debugging mode.' },
     'strict-hidden-lines': { 
-        'type': 'bool', 'default': 'False',
+        'type': 'bool', 'default': False,
         'help': 'Disable listing and ASCII saving of lines beyond 65530 '
                 '(as in GW-BASIC). Use with care as this allows execution '
                 'of invisible statements.' },
     'strict-protect': { 
-        'type': 'bool', 'default': 'False',
+        'type': 'bool', 'default': False,
         'help': 'Disable listing and ASCII saving of protected files '
                 '(as in GW-BASIC). Use with care as this allows execution '
                 'of invisible statements.' },
     'capture-caps': {
-        'type': 'bool', 'default': 'False',
+        'type': 'bool', 'default': False,
         'help': "Handle CAPS LOCK; may collide with the operating system's "
                 "own handling." },
     'mount': { 
-        'type': 'list', 'metavar':'D:PATH', 'default': '',
+        'type': 'list', 'metavar':'D:PATH', 'default': [],
         'help': 'Assign a drive letter to a path.' },
     'resume': { 
-        'type': 'bool', 'default': 'False',
+        'type': 'bool', 'default': False,
         'help': 'Resume from saved state. Most other arguments are ignored.' },
     'strict-newline': { 
-        'type': 'bool', 'default': 'False',
+        'type': 'bool', 'default': False,
         'help': 'Parse CR and LF in files strictly like GW-BASIC. '
                 'On Unix, you will need to convert your files to DOS text '
                 'if using this.' },
@@ -205,21 +205,21 @@ arguments = {
                      'hercules', 'olivetti'), 
         'help': 'Set the video card to emulate.' },
     'map-drives': { 
-        'type': 'bool', 'default': 'False',
+        'type': 'bool', 'default': False,
         'help': 'Map all Windows drive letters to PC-BASIC drive letters '
                 '(Windows only)' },
     'cga-low': { 
-        'type': 'bool', 'default': 'False',
+        'type': 'bool', 'default': False,
         'help': 'Use low-intensity palettes in CGA '
                 '(for --video={cga, ega, vga} only).' },
     'nobox': { 
-        'type': 'bool', 'default': 'False',
+        'type': 'bool', 'default': False,
         'help': 'Disable box-drawing recognition for DBCS code pages' },
     'utf8': { 
-        'type': 'bool', 'default': 'False',
+        'type': 'bool', 'default': False,
         'help': 'Use UTF-8 for ascii-mode programs and redirected i/o' },
     'border': { 
-        'type': 'int', 'default': '5',
+        'type': 'int', 'default': 5,
         'help': 'Width of the screen border as a percentage 0-100 '
                 '(graphical interface only).' },
     'mouse': {
@@ -245,11 +245,11 @@ arguments = {
         'help': 'Set the display aspect ratio to x/y. '
                 'Graphical interface only.' },
     'blocky': {
-        'type': 'bool', 'default': 'False',
+        'type': 'bool', 'default': False,
         'help': 'Choose whole multiples of pixel size for display and do not '
                 'smoothen. Overrides --aspect. Graphical interface only.' },                
     'version': {
-        'type': 'bool', 'default': 'False',
+        'type': 'bool', 'default': False,
         'help': 'Print version and exit'},
 }
 
@@ -539,7 +539,11 @@ def make_ini():
             f.write('# choices: %s\n' % repr(arguments[a]['choices']))
         except (KeyError, TypeError):
             pass
-        f.write("%s=%s\n" % (a, arguments[a]['default']))
+        if arguments[a]['type'] == 'list':
+            formatted = ','.join(arguments[a]['default'])
+        else:
+            formatted = str(arguments[a]['default'])
+        f.write("%s=%s\n" % (a, formatted))
     f.close()    
         
 # initialise this module    
