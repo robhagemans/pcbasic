@@ -187,7 +187,7 @@ def convert():
         logging.error(error.get_message(e.err))
     
 def print_greeting():
-    """ Print the greeting if we're not running a program. """
+    """ Print the greeting and the KEY row if we're not running a program. """
     greeting = (
         'PC-BASIC 3.23%s\r'
         '(C) Copyright 2013, 2014 PC-BASIC authors. '
@@ -198,7 +198,8 @@ def print_greeting():
         debugstr = ' [DEBUG mode]' if config.options['debug'] else ''
         if plat.stdin_is_tty:
             console.write_line(greeting % (debugstr, var.total_mem))
-    
+            console.show_keys(True)
+                
 def load_program():
     """ Load program from command line. """
     prog = config.options['run'] or config.options['load']

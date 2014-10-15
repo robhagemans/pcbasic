@@ -36,7 +36,7 @@ keys_line_replace_chars = {
         '\x1D': '\x11',    '\x1E': '\x18',    '\x1F': '\x19'}        
     
 # KEY ON?
-state.console_state.keys_visible = True
+state.console_state.keys_visible = False
 
 # viewport parameters
 state.console_state.view_start = 1
@@ -61,8 +61,7 @@ state.console_state.overwrite_mode = True
 
 def prepare():
     """ Initialise console module. """
-    if config.options['run']:
-        state.console_state.keys_visible = False
+    state.console_state.keys_visible = False
     
 def init_mode():
     """ Initialisation when we switched to new screen mode. """
