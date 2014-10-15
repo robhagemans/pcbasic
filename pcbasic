@@ -19,7 +19,7 @@ def main():
     # make imported modules available in main module
     global plat, config, state
     global backend, run, error, oslayer, console, program
-    global iolayer, var, fp
+    global iolayer, var, fp, video_none, audio_none
     try:
         import plat
         import config
