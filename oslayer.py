@@ -83,7 +83,7 @@ def prepare():
                 state.io_state.drive_cwd[letter.upper()] = ''
         except (TypeError, ValueError):
             logging.warning('Could not mount %s', a)
-    if config.options['map_drives']:
+    if config.options['map-drives']:
         windows_map_drives()
 
 

@@ -942,10 +942,10 @@ def prepare_keyboard():
         except KeyError:
             state.console_state.keybuf += c
     # handle caps lock only if requested
-    if config.options['capture_caps']:
+    if config.options['capture-caps']:
         ignore_caps = False
     # function keys: F1-F12 for tandy, F1-F10 for gwbasic and pcjr
-    if config.options['pcjr_syntax'] == 'tandy':
+    if config.options['pcjr-syntax'] == 'tandy':
         num_fn_keys = 12
     else:
         num_fn_keys = 10
@@ -954,7 +954,7 @@ def prepare_audio():
     """ Prepare the audio subsystem. """
     global pcjr_sound
     # pcjr/tandy sound
-    pcjr_sound = config.options['pcjr_syntax']
+    pcjr_sound = config.options['pcjr-syntax']
     # tandy has SOUND ON by default, pcjr has it OFF
     state.console_state.sound_on = (pcjr_sound == 'tandy')
 
@@ -991,11 +991,11 @@ def prepare_video():
     if video_capabilities not in ('ega', 'vga'):
         state.console_state.colours = colours16
         state.console_state.palette = cga16_palette[:]
-    cga_low = config.options['cga_low']
+    cga_low = config.options['cga-low']
     set_cga4_palette(1)    
     # set monochrome tint and build mono palettes
-    if config.options['mono_tint']:
-        mono_tint = [int(s) for s in config.options['mono_tint'].split(',')]
+    if config.options['mono-tint']:
+        mono_tint = [int(s) for s in config.options['mono-tint'].split(',')]
     colours16_mono[:] = [ [tint*i//255 for tint in mono_tint]
                        for i in intensity16_mono ]            
     colours_ega_mono_0[:] = [ [tint*i//255 for tint in mono_tint]

@@ -49,12 +49,12 @@ def prepare():
     """ Initialise program module. """
     global utf8_files, universal_newline, max_list_line, dont_protect
     utf8_files = config.options['utf8']
-    universal_newline = not config.options['strict_newline']
-    if (not config.options['strict_hidden_lines']) or config.options['conv']:
+    universal_newline = not config.options['strict-newline']
+    if (not config.options['strict-hidden-lines']) or config.options['convert']:
         max_list_line = 65535    
     else:
         max_list_line = 65530
-    dont_protect = (not config.options['strict_protect']) or config.options['conv']
+    dont_protect = (not config.options['strict-protect']) or config.options['convert']
     erase_program()
 
 def erase_program():

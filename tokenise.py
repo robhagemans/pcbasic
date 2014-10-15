@@ -113,7 +113,7 @@ def prepare():
     if config.options['debug']:
         # Note - I have implemented this as my own debugging command, executes python string.
         token_to_keyword['\xFF\xFF'] = 'DEBUG'
-    if config.options['pcjr_syntax']:        
+    if config.options['pcjr-syntax']:        
         # pcjr, tandy; incompatible with Sperry PC.
         token_to_keyword['\xFE\xA4'] = 'NOISE'
         token_to_keyword['\xFE\xA6'] = 'TERM'

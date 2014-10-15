@@ -62,7 +62,7 @@ pcjr_syntax = False
 def prepare():
     """ initialsie expressions module. """
     global option_double, pcjr_syntax
-    pcjr_syntax = config.options['pcjr_syntax']
+    pcjr_syntax = config.options['pcjr-syntax']
     option_double = config.options['double']
 
 def parse_expression(ins, allow_empty=False, empty_err=22):

@@ -57,8 +57,8 @@ description = (
 #   /i      Statically allocate file control blocks and data buffer.
 #   /m:n,m  Set the highest memory location to n and maximum block size to m
 gw_args = { 
-    'double': 'd', 'max_files': 'f', 'max_reclen': 's', 'serial_in_size': 'c' 
-    # 'max_memory': 'm', 'static_fcbs': 'i'
+    'double': 'd', 'max-files': 'f', 'max-reclen': 's', 'serial-buffer-size': 'c' 
+    # 'max-memory': 'm', 'static-fcbs': 'i'
     }
     
 # short-form arguments with single dash
@@ -113,14 +113,14 @@ arguments = {
     'double': {
         'type': 'bool', 'default': 'False',
         'help': 'Allow double-precision transcendental math functions' },
-    'max_files': {
+    'max-files': {
         'type': 'int', 'metavar':'NUMBER', 'default': '3', 
         'help': 'Set maximum number of open files (default is 3).' },
-    'max_reclen': { 
+    'max-reclen': { 
         'type': 'int', 'metavar':'NUMBER', 'default': '128',
         'help': 'Set maximum record length for RANDOM files ' 
                 '(default is 128, max is 32767).' },
-    'serial_in_size': { 
+    'serial-buffer-size': { 
         'type': 'int', 'metavar':'NUMBER', 'default': '256',
         'help': 'Set serial input buffer size (default is 256). '
                 'If 0, serial communications are disabled.' },
@@ -168,17 +168,17 @@ arguments = {
     'debug': { 
         'type': 'bool', 'default': 'False',
         'help': 'Debugging mode.' },
-    'strict_hidden_lines': { 
+    'strict-hidden-lines': { 
         'type': 'bool', 'default': 'False',
         'help': 'Disable listing and ASCII saving of lines beyond 65530 '
                 '(as in GW-BASIC). Use with care as this allows execution '
                 'of invisible statements.' },
-    'strict_protect': { 
+    'strict-protect': { 
         'type': 'bool', 'default': 'False',
         'help': 'Disable listing and ASCII saving of protected files '
                 '(as in GW-BASIC). Use with care as this allows execution '
                 'of invisible statements.' },
-    'capture_caps': {
+    'capture-caps': {
         'type': 'bool', 'default': 'False',
         'help': "Handle CAPS LOCK; may collide with the operating system's "
                 "own handling." },
@@ -188,15 +188,15 @@ arguments = {
     'resume': { 
         'type': 'bool', 'default': 'False',
         'help': 'Resume from saved state. Most other arguments are ignored.' },
-    'strict_newline': { 
+    'strict-newline': { 
         'type': 'bool', 'default': 'False',
         'help': 'Parse CR and LF in files strictly like GW-BASIC. '
                 'On Unix, you will need to convert your files to DOS text '
                 'if using this.' },
-    'pcjr_syntax': { 
+    'pcjr-syntax': { 
         'type': 'string', 'choices': ('pcjr', 'tandy'), 'default': '',
         'help': 'Enable PCjr/Tandy 1000 syntax extensions' },
-    'pcjr_term': { 
+    'pcjr-term': { 
         'type': 'string', 'metavar': 'TERM.BAS', 'default': '',
         'help': 'Set the terminal program run by the PCjr TERM command' },
     'video': { 
@@ -204,11 +204,11 @@ arguments = {
         'choices': ('vga', 'ega', 'cga', 'cga_old', 'mda', 'pcjr', 'tandy',
                      'hercules', 'olivetti'), 
         'help': 'Set the video card to emulate.' },
-    'map_drives': { 
+    'map-drives': { 
         'type': 'bool', 'default': 'False',
         'help': 'Map all Windows drive letters to PC-BASIC drive letters '
                 '(Windows only)' },
-    'cga_low': { 
+    'cga-low': { 
         'type': 'bool', 'default': 'False',
         'help': 'Use low-intensity palettes in CGA '
                 '(for --video={cga, ega, vga} only).' },
@@ -231,7 +231,7 @@ arguments = {
         'type': 'string', 'metavar': plat.state_name, 'default': '',
         'help': 'Set the save-state file. Default is info/%s' % 
                 plat.state_name },                
-    'mono_tint': {
+    'mono-tint': {
         'type': 'string', 'metavar': 'r,g,b', 'default': '255,255,255',
         'help': 'Specify the monochrome tint as RGB, each in the range 0-255' },
     'monitor': { 
@@ -294,7 +294,17 @@ def get_options():
         if (arguments[d]['type'] == 'int' and d in args):
             args[d] = parse_int_arg(args[d])
     # any program given on the command line overrides that in config files    
-    args['program'] = '' or arg_program        
+    args['program'] = '' or arg_program
+    # argparse converts hyphens into underscores
+    # takes more code correcting for argparse than would reimplementing it?
+    dellist = []
+    for key in args:
+        if '_' in key:
+            key_corrected = key.replace('_', '-')
+            args[key_corrected] = args[key]
+            dellist.append(key)
+    for key in dellist:
+        del args[key]        
     return args        
             
 def default_args(conf_dict):

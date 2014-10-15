@@ -50,13 +50,13 @@ allowed_protocols = {
 def prepare():
     """ Initialise iolayer module. """
     global max_files, max_reclen, serial_in_size
-    if config.options['max_files'] != None:
-        max_files = config.options['max_files'] #config.parse_int_option_silent(args.max_files)
-    if config.options['max_reclen'] != None:
-        max_reclen = config.options['max_reclen'] #config.parse_int_option_silent(args.max_reclen)
+    if config.options['max-files'] != None:
+        max_files = config.options['max-files']
+    if config.options['max-reclen'] != None:
+        max_reclen = config.options['max-reclen']
         max_reclen = max(1, min(32767, max_reclen))
-    if config.options['serial_in_size'] != None:
-        serial_in_size = config.options['serial_in_size'] #config.parse_int_option_silent(args.serial_in_size)
+    if config.options['serial-buffer-size'] != None:
+        serial_in_size = config.options['serial-buffer-size']
     # always defined
     backend.devices['SCRN:'] = SCRNFile()
     backend.devices['KYBD:'] = KYBDFile()
@@ -86,7 +86,7 @@ def open_file_or_device(number, name, mode='I', access='R', lock='', reclen=128,
                 # devname could be A:, B:, C:, etc.. but anything longer is an error (bad file number, for some reason).
                 raise error.RunError(52)   
     if not inst:
-        # translate the file name to something DOS-ish is necessary
+        # translate the file name to something DOS-ish if necessary
         if mode in ('I', 'L', 'R'):
             name = oslayer.dospath_read(name, defext, 53)
         else:
