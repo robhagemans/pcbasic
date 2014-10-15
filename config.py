@@ -294,8 +294,7 @@ def get_options():
         if (arguments[d]['type'] == 'int' and d in args):
             args[d] = parse_int_arg(args[d])
     # any program given on the command line overrides that in config files    
-    if arg_program:
-        args['program'] = arg_program        
+    args['program'] = '' or arg_program        
     return args        
             
 def default_args(conf_dict):
