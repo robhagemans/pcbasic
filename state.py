@@ -145,7 +145,10 @@ def load():
     return True
     
 def delete():
-    os.remove(state_file)
+    try:
+        os.remove(state_file)
+    except OSError:
+        pass
 
 prepare()
     

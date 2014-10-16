@@ -1652,13 +1652,13 @@ def key_down(scan, eascii=''):
        pass 
     # handle BIOS events
     if (scan == scancode.DELETE and 
-            state.console_state.mod & 
-                (modifier[scancode.CTRL] & modifier[scancode.ALT])):
+                state.console_state.mod & modifier[scancode.CTRL] and
+                state.console_state.mod & modifier[scancode.ALT]):
             # ctrl-alt-del: if not captured by the OS, reset the emulator
             # meaning exit and delete state. This is useful on android.
             raise error.Reset()
     if (scan in (scancode.BREAK, scancode.SCROLLOCK) and
-            state.console_state.mod & modifier[scancode.CTRL]):
+                state.console_state.mod & modifier[scancode.CTRL]):
             raise error.Break()
     if scan == scancode.PRINT:
         if (state.console_state.mod & 
