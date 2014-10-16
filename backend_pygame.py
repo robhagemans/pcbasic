@@ -1223,8 +1223,8 @@ class SoundGenerator(object):
             matrix = matrix.reshape((len(matrix)/resolution, resolution))
             chunk = numpy.int16(numpy.average(matrix, axis=1))
         if not self.loop:    
-            # make the last chunk longer than a normal chunk rather than shorter, to avoid jumping sound    
-            if self.count_samples + 2*len(chunk) < self.num_samples:
+            # last chunk is shorter
+            if self.count_samples + len(chunk) < self.num_samples:
                 self.count_samples += len(chunk)
             else:
                 # append final chunk
