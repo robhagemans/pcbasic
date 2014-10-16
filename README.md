@@ -18,12 +18,15 @@ If you find bugs, please report them on the [discussion page](https://sourceforg
 
 #### Installation ####
 Binary distributions are currently available for Windows XP and above, Mac OSX 10.6 and above, and Linux i386. They can be [downloaded from SourceForge](https://sourceforge.net/projects/pcbasic/files/).  
+
 On **Windows**:  
 - unzip the ZIP file  
 - run `pcbasic.exe`  
+
 On **OS X**:  
 - mount the disk image  
 - run `pcbasic.app`  
+
 On **Linux**:  
 - untar the TGZ file  
 - run `pcbasic`  
@@ -73,7 +76,7 @@ A PC-BASIC program called `INFO.BAS` is included on the virtual `@:` drive with 
 
 
 #### GW-BASIC, Tandy-1000 and PCjr modes ####
-By default, PC-BASIC emulates GW-BASIC on a system with EGA video capabilities. The emulation target can be changed by selecting one of the following presets with the `preset` option:
+By default, PC-BASIC emulates GW-BASIC on a system with EGA video capabilities. The emulation target can be changed by selecting one of the following presets with the `preset` option:  
 `cga` GW-BASIC with CGA graphics, including composite colourburst mode.  
 `pcjr` IBM PCjr Cartridge BASIC, including PCjr video and 3-voice sound capabilities and extended BASIC syntax.  
 `tandy` Tandy-1000 GW-BASIC, including Tandy video and 3-voice sound capabilities and extended BASIC syntax.  
