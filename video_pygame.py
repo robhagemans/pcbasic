@@ -842,10 +842,8 @@ def do_flip(blink_state):
     if composite_artifacts and numpy:
         screen = apply_composite_artifacts(screen, 4//bitsperpixel)
         screen.set_palette(composite_640_palette)    
-        #workscreen.set_palette(composite_640_palette)    
     else:
         screen.set_palette(gamepalette[blink_state])
-        #workscreen.set_palette(gamepalette[blink_state])
     if smooth:
         pygame.transform.smoothscale(screen.convert(display), display.get_size(), display)
     else:
