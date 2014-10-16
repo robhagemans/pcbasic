@@ -309,7 +309,7 @@ def get_video_memory_cga(addr, bitsperpixel,
     page, addr = addr//page_size, addr%page_size
     # 2 x interleaved scan lines of 80bytes
     x = ((addr%0x2000)%bytes_per_row)*8//bitsperpixel
-    y = (addr>=0x2000) + interleave_times*((addr%0x2000)//bytes_per_row)
+    y = (addr//0x2000) + interleave_times*((addr%0x2000)//bytes_per_row)
     return get_pixel_byte_cga(page, x, y, bitsperpixel)
 
 def set_video_memory_cga(addr, val, bitsperpixel, 
@@ -323,7 +323,7 @@ def set_video_memory_cga(addr, val, bitsperpixel,
     page, addr = addr//page_size, addr%page_size
     # 2 or 4 x interleaved scan lines of 80 or 160 bytes
     x = ((addr%0x2000)%bytes_per_row)*8//bitsperpixel
-    y = (addr>=0x2000) + interleave_times*((addr%0x2000)//bytes_per_row)
+    y = (addr//0x2000) + interleave_times*((addr%0x2000)//bytes_per_row)
     set_pixel_byte_cga(page, x, y, bitsperpixel, val)
 
 
