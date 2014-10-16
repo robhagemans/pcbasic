@@ -166,7 +166,7 @@ def draw_parse_gml(gml):
         elif c == 'X':
             # execute substring
             sub = ml_parse_string(gmls)
-            draw_parse_gml(sub)            
+            draw_parse_gml(str(sub))            
         elif c == 'C':
             # set foreground colour
             state.console_state.attr = ml_parse_number(gmls) 
@@ -232,7 +232,10 @@ def draw_parse_gml(gml):
 def play_parse_mml(mml_list):
     gmls_list = []
     for mml in mml_list:
-        gmls_list.append(StringIO(mml.upper()))
+        gmls = StringIO()
+        gmls.write(str(mml).upper())
+        gmls.seek(0)
+        gmls_list.append(gmls)
     next_oct = 0
     voices = range(3)
     while True:
@@ -249,7 +252,12 @@ def play_parse_mml(mml_list):
             elif c == 'X':
                 # execute substring
                 sub = ml_parse_string(gmls)
-                play_parse_mml(sub)
+                pos = gmls.tell()
+                rest = gmls.read()
+                gmls.truncate(pos)
+                gmls.write(str(sub))
+                gmls.write(rest)
+                gmls.seek(pos)
             elif c == 'N':
                 note = ml_parse_number(gmls)
                 dur = state.basic_state.play_state[voice].length
