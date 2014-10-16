@@ -321,7 +321,7 @@ def init():
     # first set the screen non-resizeable, to trick things like maximus into not full-screening
     # I hate it when applications do this ;)
     if not fullscreen:
-        pygame.display.set_mode(display_size, 0, 8)
+        pygame.display.set_mode(display_size, 0)
     resize_display(*display_size, initial=True)
     pygame.display.set_caption('PC-BASIC 3.23')
     pygame.key.set_repeat(500, 24)
@@ -466,7 +466,7 @@ def find_display_size(canvas_x, canvas_y, border_width):
 def resize_display(width, height, initial=False): 
     """ Change the display size. """
     global display, screen_changed
-    global fullscreen
+    global fullscreen, smooth
     display_info = pygame.display.Info()
     flags = pygame.RESIZABLE
     if fullscreen or (width, height) == physical_size:
@@ -480,6 +480,9 @@ def resize_display(width, height, initial=False):
     if (width, height) == (display_info.current_w, display_info.current_h) and not initial:
         return
     display = pygame.display.set_mode((width, height), flags)
+    if initial and smooth and display.get_bitsize() < 24:
+        logging.warning("Smooth scaling not available on this display (depth %d < 24)", display.get_bitsize())
+        smooth = False
     # load display if requested    
     screen_changed = True    
     
