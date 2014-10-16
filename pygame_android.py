@@ -101,6 +101,16 @@ def toggle_keyboard():
         android.show_keyboard()
     keyboard_visible = not keyboard_visible
 
+def shift_screen(screen, border_x, border_y, size, cursor_row, font_height):
+    if keyboard_visible:
+        # we can't figure out the screen dimensions relative to the keyboard 
+        # at least in PGS4A. Assume we'll have 5 rows not covered.
+        display_shift = font_height*max(0, min(cursor_row-2, size[1]//font_height-5))
+        screen.scroll(0, -display_shift)
+        screen.fill(0, (0, (size[1]+2*border_y)-display_shift, 
+                    size[0]+2*border_x, display_shift))
+
+
 def check_events():
     if android.check_pause():
         android.hide_keyboard()

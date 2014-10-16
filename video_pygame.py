@@ -832,13 +832,17 @@ def do_flip(blink_state):
                              0, canvas[vpagenum])
     screen.set_palette(workpalette)
     # border colour
-    screen.fill(pygame.Color(0, border_attr, border_attr))
+    border_colour = pygame.Color(0, border_attr, border_attr)
+    screen.fill(border_colour)
     screen.blit(canvas[vpagenum], (border_x, border_y))
     # subsurface referencing the canvas area
     workscreen = screen.subsurface((border_x, border_y, size[0], size[1]))
     draw_cursor(workscreen)
     if scrap.active():
         scrap.create_feedback(workscreen)
+    # android: shift screen if keyboard is on so that cursor remains visible
+    if android:
+        pygame_android.shift_screen(screen, border_x, border_y, size, cursor_row, font_height)
     if composite_artifacts and numpy:
         screen = apply_composite_artifacts(screen, 4//bitsperpixel)
         screen.set_palette(composite_640_palette)    
