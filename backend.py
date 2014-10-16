@@ -172,14 +172,10 @@ intensity_mda_mono = [0x00, 0xaa, 0xff]
 # colour of monochrome monitor
 mono_tint = (0xff, 0xff, 0xff)
 # mono colours
-colours16_mono = [ [tint*i//255 for tint in mono_tint] 
-                   for i in intensity16_mono ]            
-colours_ega_mono_0 = [ [tint*i//255 for tint in mono_tint]
-                   for i in intensity_ega_mono_0 ]            
-colours_ega_mono_1 = [ [tint*i//255 for tint in mono_tint]
-                   for i in intensity_ega_mono_1 ]        
-colours_mda_mono = [ [tint*i//255 for tint in mono_tint]
-                   for i in intensity_mda_mono ]
+colours16_mono = []
+colours_ega_mono_0 = []
+colours_ega_mono_1 = []
+colours_mda_mono = []
 colours16 = copy(colours16_colour)
 
 # default cga 4-color palette can change with mode, so is a list
@@ -602,313 +598,315 @@ GraphicsMode = namedtuple('GraphicsMode', textmode_args +
     'build_tile get_area set_area '
     'supports_artifacts cursor_index ')
 
-# 80-column text modes
-text_mode_80 = {
-    'vga': TextMode('vgatext80',
-        True, 16, 9, 25, 80, 4, 32, 
-        # technically, VGA text does have underline 
-        # but it's set to an invisible scanline
-        # so not, so long as we're not allowing to set the scanline
-        ega_palette, colours64, None, 7, True, False,  
-        partial(get_text_memory, text_segment=0xb800, width=80),
-        partial(set_text_memory, text_segment=0xb800, width=80),
-        0xb800, 0x1000),
-    'ega': TextMode('egatext80',
-        True, 14, 8, 25, 80, 4, 32, 
-        ega_palette, colours64, None, 7, True, False,  
-        partial(get_text_memory, text_segment=0xb800, width=80),
-        partial(set_text_memory, text_segment=0xb800, width=80),
-        0xb800, 0x1000),
-    'cga': TextMode('cgatext80',
-        True, 8, 8, 25, 80, 4, 32, 
-        cga16_palette, colours16, None, 7, True, False,  
-        partial(get_text_memory, text_segment=0xb800, width=80),
-        partial(set_text_memory, text_segment=0xb800, width=80),
-        0xb800, 0x1000),
-    'ega_mono': TextMode('ega_monotext80',
-        True, 14, 8, 25, 80, 4, 32, 
-        mda_palette, colours_mda_mono, None, 7, True, True,  
-        partial(get_text_memory, text_segment=0xb000, width=80),
-        partial(set_text_memory, text_segment=0xb000, width=80),
-        0xb000, 0x1000),
-    'mda': TextMode('mdatext80',
-        True, 14, 9, 25, 80, 1, 32, 
-        mda_palette, colours_mda_mono, None, 7, True, True,  
-        partial(get_text_memory, text_segment=0xb000, width=80),
-        partial(set_text_memory, text_segment=0xb000, width=80),
-        0xb000, 0x1000),
-    'hercules': TextMode('herculestext80',
-        True, 14, 9, 25, 80, 2, 32, 
-        # attributes shld distinguish black, dim, normal, bright
-        # see http://www.seasip.info/VintagePC/hercplus.html
-        mda_palette, colours_mda_mono, None, 7, True, True,  
-        partial(get_text_memory, text_segment=0xb000, width=80),
-        partial(set_text_memory, text_segment=0xb000, width=80),
-        0xb000, 0x1000),
-    'tandy': TextMode('tandytext80',
-        True, 9, 8, 25, 80, 4, 32, 
-        cga16_palette, colours16, None, 7, True, False,  
-        partial(get_text_memory, text_segment=0xb800, width=80),
-        partial(set_text_memory, text_segment=0xb800, width=80),
-        0xb800, 0x1000),
-    'olivetti': TextMode('olivettitext80',
-        True, 16, 8, 25, 80, 4, 32, 
-        cga16_palette, colours16, None, 7, True, False,  
-        partial(get_text_memory, text_segment=0xb800, width=80),
-        partial(set_text_memory, text_segment=0xb800, width=80),
-        0xb800, 0x1000),
+def prepare_modes():
+    global text_mode_80, text_mode_40, graphics_mode, available_modes
+    # 80-column text modes
+    text_mode_80 = {
+        'vga': TextMode('vgatext80',
+            True, 16, 9, 25, 80, 4, 32, 
+            # technically, VGA text does have underline 
+            # but it's set to an invisible scanline
+            # so not, so long as we're not allowing to set the scanline
+            ega_palette, colours64, None, 7, True, False,  
+            partial(get_text_memory, text_segment=0xb800, width=80),
+            partial(set_text_memory, text_segment=0xb800, width=80),
+            0xb800, 0x1000),
+        'ega': TextMode('egatext80',
+            True, 14, 8, 25, 80, 4, 32, 
+            ega_palette, colours64, None, 7, True, False,  
+            partial(get_text_memory, text_segment=0xb800, width=80),
+            partial(set_text_memory, text_segment=0xb800, width=80),
+            0xb800, 0x1000),
+        'cga': TextMode('cgatext80',
+            True, 8, 8, 25, 80, 4, 32, 
+            cga16_palette, colours16, None, 7, True, False,  
+            partial(get_text_memory, text_segment=0xb800, width=80),
+            partial(set_text_memory, text_segment=0xb800, width=80),
+            0xb800, 0x1000),
+        'ega_mono': TextMode('ega_monotext80',
+            True, 14, 8, 25, 80, 4, 32, 
+            mda_palette, colours_mda_mono, None, 7, True, True,  
+            partial(get_text_memory, text_segment=0xb000, width=80),
+            partial(set_text_memory, text_segment=0xb000, width=80),
+            0xb000, 0x1000),
+        'mda': TextMode('mdatext80',
+            True, 14, 9, 25, 80, 1, 32, 
+            mda_palette, colours_mda_mono, None, 7, True, True,  
+            partial(get_text_memory, text_segment=0xb000, width=80),
+            partial(set_text_memory, text_segment=0xb000, width=80),
+            0xb000, 0x1000),
+        'hercules': TextMode('herculestext80',
+            True, 14, 9, 25, 80, 2, 32, 
+            # attributes shld distinguish black, dim, normal, bright
+            # see http://www.seasip.info/VintagePC/hercplus.html
+            mda_palette, colours_mda_mono, None, 7, True, True,  
+            partial(get_text_memory, text_segment=0xb000, width=80),
+            partial(set_text_memory, text_segment=0xb000, width=80),
+            0xb000, 0x1000),
+        'tandy': TextMode('tandytext80',
+            True, 9, 8, 25, 80, 4, 32, 
+            cga16_palette, colours16, None, 7, True, False,  
+            partial(get_text_memory, text_segment=0xb800, width=80),
+            partial(set_text_memory, text_segment=0xb800, width=80),
+            0xb800, 0x1000),
+        'olivetti': TextMode('olivettitext80',
+            True, 16, 8, 25, 80, 4, 32, 
+            cga16_palette, colours16, None, 7, True, False,  
+            partial(get_text_memory, text_segment=0xb800, width=80),
+            partial(set_text_memory, text_segment=0xb800, width=80),
+            0xb800, 0x1000),
+        }
+    text_mode_80['pcjr'] = text_mode_80['cga']
+    text_mode_80['cga_old'] = text_mode_80['cga']
+
+    # 40-column text modes
+    text_mode_40 = {
+        'vga': TextMode('vgatext40',
+            True, 16, 9, 25, 40, 8, 32, 
+            # technically, VGA text does have underline 
+            # but it's set to an invisible scanline
+            # so not, so long as we're not allowing to set the scanline
+            ega_palette, colours64, None, 7, True, False,  
+            partial(get_text_memory, text_segment=0xb800, width=40),
+            partial(set_text_memory, text_segment=0xb800, width=40),
+            0xb800, 0x800),
+        'ega': TextMode('egatext40',
+            True, 14, 8, 25, 40, 8, 32, 
+            ega_palette, colours64, None, 7, True, False,  
+            partial(get_text_memory, text_segment=0xb800, width=40),
+            partial(set_text_memory, text_segment=0xb800, width=40),
+            0xb800, 0x800),
+        'cga': TextMode('cgatext40',
+            True, 8, 8, 25, 40, 8, 32, 
+            cga16_palette, colours16, None, 7, True, False,  
+            partial(get_text_memory, text_segment=0xb800, width=40),
+            partial(set_text_memory, text_segment=0xb800, width=40),
+            0xb800, 0x800),
+        'ega_mono': TextMode('ega_monotext40',
+            True, 14, 8, 25, 40, 8, 32, 
+            mda_palette, colours_mda_mono, None, 7, True, True,  
+            partial(get_text_memory, text_segment=0xb000, width=40),
+            partial(set_text_memory, text_segment=0xb000, width=40),
+            0xb000, 0x800),
+        'mda': TextMode('mdatext40',
+            True, 14, 9, 25, 40, 1, 32, 
+            mda_palette, colours_mda_mono, None, 7, True, True,  
+            partial(get_text_memory, text_segment=0xb000, width=40),
+            partial(set_text_memory, text_segment=0xb000, width=40),
+            0xb000, 0x800),
+        'hercules': TextMode('herculestext40',
+            True, 14, 9, 25, 40, 2, 32, 
+            # attributes shld distinguish black, dim, normal, bright
+            # see http://www.seasip.info/VintagePC/hercplus.html
+            mda_palette, colours_mda_mono, None, 7, True, True,  
+            partial(get_text_memory, text_segment=0xb000, width=40),
+            partial(set_text_memory, text_segment=0xb000, width=40),
+            0xb000, 0x800),
+        'tandy': TextMode('tandytext40',
+            True, 9, 8, 25, 40, 8, 32, 
+            cga16_palette, colours16, None, 7, True, False,  
+            partial(get_text_memory, text_segment=0xb800, width=40),
+            partial(set_text_memory, text_segment=0xb800, width=40),
+            0xb800, 0x800),
+        'olivetti': TextMode('olivettitext40',
+            True, 16, 8, 25, 40, 8, 32, 
+            cga16_palette, colours16, None, 7, True, False,  
+            partial(get_text_memory, text_segment=0xb800, width=40),
+            partial(set_text_memory, text_segment=0xb800, width=40),
+            0xb800, 0x800),
+        }
+    text_mode_40['pcjr'] = text_mode_40['cga']
+    text_mode_40['cga_old'] = text_mode_40['cga']
+
+    # Tandy/PCjr pixel aspect ratio is different from normal
+    # suggesting screen aspect ratio is not 4/3.
+    # Tandy pixel aspect ratios, experimentally found with CIRCLE:
+    # screen 2, 6:     48/100   normal if aspect = 3072, 2000
+    # screen 1, 4, 5:  96/100   normal if aspect = 3072, 2000
+    # screen 3:      1968/1000 
+    # screen 3 is strange, slighly off the 192/100 you'd expect
+
+    graphics_mode = {
+        # 04h 320x200x4  16384B 2bpp 0xb8000    screen 1
+        # tandy:2 pages if 32k memory; ega: 1 page only 
+        # TODO: tandy/pcjr - determine the number of pages based on video memory
+        '320x200x4': GraphicsMode('320x200x4', 
+            False, 8, 8, 25, 40, 1, 4,
+            cga4_palette, colours16, None, 3, False, False,
+            partial(get_video_memory_cga, 
+                            bitsperpixel=2, bytes_per_row=80, interleave_times=2),
+            partial(set_video_memory_cga, 
+                            bitsperpixel=2, bytes_per_row=80, interleave_times=2),
+            0xb800, 0x4000,
+            320, 200, None, 2, 
+            build_tile_cga, get_area_cga, set_area_cga, False, None),
+        # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
+        '640x200x2': GraphicsMode('640x200x2',
+            False, 8, 8, 25, 80, 1, 2,
+            [0, 15], colours16, None, 1, False, False,
+            partial(get_video_memory_cga, 
+                            bitsperpixel=1, bytes_per_row=80, interleave_times=2),
+            partial(set_video_memory_cga, 
+                            bitsperpixel=1, bytes_per_row=80, interleave_times=2),
+            0xb800, 0x4000,
+            640, 200, None, 1, 
+            build_tile_cga, get_area_cga, set_area_cga, True, None),
+        # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy 3
+        '160x200x16': GraphicsMode('160x200x16',
+            False, 8, 8, 25, 20, 2, 16,
+            cga16_palette, colours16, None, 15, False, False,
+            partial(get_video_memory_cga, 
+                            bitsperpixel=4, bytes_per_row=80, interleave_times=2),
+            partial(set_video_memory_cga, 
+                            bitsperpixel=4, bytes_per_row=80, interleave_times=2),
+            0xb800, 0x4000,
+            160, 200, (1968, 1000), 4, 
+            build_tile_cga, get_area_cga, set_area_cga, False, 3),
+        #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr 4
+        '320x200x4pcjr': GraphicsMode('320x200x4pcjr',
+            False, 8, 8, 25, 40, 2, 4,
+            cga4_palette, colours16, None, 3, False, False,
+            partial(get_video_memory_cga, 
+                            bitsperpixel=2, bytes_per_row=80, interleave_times=2),
+            partial(set_video_memory_cga, 
+                            bitsperpixel=2, bytes_per_row=80, interleave_times=2),
+            0xb800, 0x4000,
+            320, 200, None, 2, 
+            build_tile_cga, get_area_cga, set_area_cga, False, 3),
+        # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr 5
+        '320x200x16pcjr': GraphicsMode('320x200x16pcjr',
+            False, 8, 8, 25, 40, 1, 16,
+            cga16_palette, colours16, None, 15, False, False,
+            partial(get_video_memory_cga, 
+                            bitsperpixel=4, bytes_per_row=160, interleave_times=4),
+            partial(set_video_memory_cga, 
+                            bitsperpixel=4, bytes_per_row=160, interleave_times=4),
+            0xb800, 0x8000,
+            320, 200, None, 4, 
+            build_tile_cga, get_area_cga, set_area_cga, False, 3),
+        # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr 6
+        '640x200x4': GraphicsMode('640x200x4',
+            False, 8, 8, 25, 80, 1, 4,
+            cga4_palette, colours16, None, 3, False, False,
+            get_video_memory_tandy_6,
+            set_video_memory_tandy_6,
+            0xb800, 0x8000,
+            640, 200, None, 2, 
+            # mode 6 has (almost) EGA-style PUT/GET
+            # but PAINT tiles are CGA-style
+            build_tile_cga, get_area_ega, set_area_ega, False, 3),
+        # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
+        '320x200x16': GraphicsMode('320x200x16', 
+            False, 8, 8, 25, 40, 8, 16,
+            # cga16 palette?
+            cga16_palette, colours16, None, 15, False, False,
+            partial(get_video_memory_ega, page_size = 0x2000, bytes_per_row=40),
+            partial(set_video_memory_ega, page_size = 0x2000, bytes_per_row=40),
+            0xa000, 0x2000,
+            320, 200, None, 4, 
+            build_tile_ega, get_area_ega, set_area_ega, False, None),
+        # 0Eh 640x200x16    EGA screen 8
+        '640x200x16': GraphicsMode('640x200x16',
+            False, 8, 8, 25, 80, 4, 16,
+            # cga16 palette?
+            cga16_palette, colours16, None, 15, False, False,
+            partial(get_video_memory_ega, page_size = 0x4000, bytes_per_row=80),
+            partial(set_video_memory_ega, page_size = 0x4000, bytes_per_row=80),
+            0xa000, 0x4000,
+            640, 200, None, 4, 
+            build_tile_ega, get_area_ega, set_area_ega, False, None),
+        # 10h 640x350x16    EGA screen 9
+        '640x350x16': GraphicsMode('640x350x16',
+            False, 14, 8, 25, 80, 2, 16,
+            ega_palette, colours64, None, 15, False, False,
+            partial(get_video_memory_ega, page_size = 0x8000, bytes_per_row=80),
+            partial(set_video_memory_ega, page_size = 0x8000, bytes_per_row=80),
+            0xa000, 0x8000,
+            640, 350, None, 4, 
+            build_tile_ega, get_area_ega, set_area_ega, False, None),
+        # 0Fh 640x350x4     EGA monochrome screen 10
+        '640x350x4': GraphicsMode('640x350x4',
+            False, 14, 8, 25, 80, 2, 4,
+            ega_mono_palette, colours_ega_mono_0, colours_ega_mono_1, 1, True, False,
+            get_video_memory_ega_10, 
+            set_video_memory_ega_10, 
+            0xa000, 0x8000,
+            640, 350, None, 2, 
+            build_tile_ega, get_area_ega, set_area_ega, False, None), 
+        # 40h 640x400x2   1bpp  olivetti
+        '640x400x2': GraphicsMode('640x400x2',
+            False, 16, 8, 25, 80, 1, 2,
+            [0, 15], colours16, None, 1, True, False,
+            partial(get_video_memory_cga, 
+                    bitsperpixel=1, bytes_per_row=80, interleave_times=4),
+            partial(set_video_memory_cga, 
+                    bitsperpixel=1, bytes_per_row=80, interleave_times=4),
+            0xb800, 0x8000,
+            640, 400, None, 1, 
+            # EGA/CGA distinction doesn't matter for 1bpp
+            build_tile_cga, get_area_cga, set_area_cga, False, None),
+        # hercules
+        '720x348x2': GraphicsMode('720x348x2',
+            # FIXME hercules - this actually produces 350, not 348
+            # two scan lines must be left out somewhere, somehow
+            False, 14, 9, 25, 80, 2, 2,
+            [0, 15], colours16_mono, None, 1, True, False,
+            partial(get_video_memory_cga, 
+                    bitsperpixel=1, bytes_per_row=90, interleave_times=4),
+            partial(set_video_memory_cga, 
+                    bitsperpixel=1, bytes_per_row=90, interleave_times=4),
+            0xb800, 0x8000,
+            720, 350, None, 1, 
+            build_tile_cga, get_area_cga, set_area_cga, False, None),
+        }
+
+    # mode numbers by video card
+    available_modes = {
+        'mda': { },
+        'cga': {
+            1: graphics_mode['320x200x4'],
+            2: graphics_mode['640x200x2']},
+        'olivetti': {
+            1: graphics_mode['320x200x4'],
+            2: graphics_mode['640x200x2'],
+            3: graphics_mode['640x400x2'],
+            },
+        'hercules': {
+            3: graphics_mode['720x348x2']},
+        'pcjr': {
+            1: graphics_mode['320x200x4'],
+            2: graphics_mode['640x200x2'],
+            3: graphics_mode['160x200x16'],
+            4: graphics_mode['320x200x4pcjr'],
+            5: graphics_mode['320x200x16pcjr'],
+            6: graphics_mode['640x200x4']},
+        'ega': {
+            1: graphics_mode['320x200x4'],
+            2: graphics_mode['640x200x2'],
+            7: graphics_mode['320x200x16'],
+            8: graphics_mode['640x200x16'],
+            9: graphics_mode['640x350x16']},
+        'ega_mono': {
+            10: graphics_mode['640x350x4']},
+        'vga': {
+            1: graphics_mode['320x200x4'],
+            2: graphics_mode['640x200x2'],
+            7: graphics_mode['320x200x16'],
+            8: graphics_mode['640x200x16'],
+            9: graphics_mode['640x350x16']},
     }
-text_mode_80['pcjr'] = text_mode_80['cga']
-text_mode_80['cga_old'] = text_mode_80['cga']
-
-# 40-column text modes
-text_mode_40 = {
-    'vga': TextMode('vgatext40',
-        True, 16, 9, 25, 40, 8, 32, 
-        # technically, VGA text does have underline 
-        # but it's set to an invisible scanline
-        # so not, so long as we're not allowing to set the scanline
-        ega_palette, colours64, None, 7, True, False,  
-        partial(get_text_memory, text_segment=0xb800, width=40),
-        partial(set_text_memory, text_segment=0xb800, width=40),
-        0xb800, 0x800),
-    'ega': TextMode('egatext40',
-        True, 14, 8, 25, 40, 8, 32, 
-        ega_palette, colours64, None, 7, True, False,  
-        partial(get_text_memory, text_segment=0xb800, width=40),
-        partial(set_text_memory, text_segment=0xb800, width=40),
-        0xb800, 0x800),
-    'cga': TextMode('cgatext40',
-        True, 8, 8, 25, 40, 8, 32, 
-        cga16_palette, colours16, None, 7, True, False,  
-        partial(get_text_memory, text_segment=0xb800, width=40),
-        partial(set_text_memory, text_segment=0xb800, width=40),
-        0xb800, 0x800),
-    'ega_mono': TextMode('ega_monotext40',
-        True, 14, 8, 25, 40, 8, 32, 
-        mda_palette, colours_mda_mono, None, 7, True, True,  
-        partial(get_text_memory, text_segment=0xb000, width=40),
-        partial(set_text_memory, text_segment=0xb000, width=40),
-        0xb000, 0x800),
-    'mda': TextMode('mdatext40',
-        True, 14, 9, 25, 40, 1, 32, 
-        mda_palette, colours_mda_mono, None, 7, True, True,  
-        partial(get_text_memory, text_segment=0xb000, width=40),
-        partial(set_text_memory, text_segment=0xb000, width=40),
-        0xb000, 0x800),
-    'hercules': TextMode('herculestext40',
-        True, 14, 9, 25, 40, 2, 32, 
-        # attributes shld distinguish black, dim, normal, bright
-        # see http://www.seasip.info/VintagePC/hercplus.html
-        mda_palette, colours_mda_mono, None, 7, True, True,  
-        partial(get_text_memory, text_segment=0xb000, width=40),
-        partial(set_text_memory, text_segment=0xb000, width=40),
-        0xb000, 0x800),
-    'tandy': TextMode('tandytext40',
-        True, 9, 8, 25, 40, 8, 32, 
-        cga16_palette, colours16, None, 7, True, False,  
-        partial(get_text_memory, text_segment=0xb800, width=40),
-        partial(set_text_memory, text_segment=0xb800, width=40),
-        0xb800, 0x800),
-    'olivetti': TextMode('olivettitext40',
-        True, 16, 8, 25, 40, 8, 32, 
-        cga16_palette, colours16, None, 7, True, False,  
-        partial(get_text_memory, text_segment=0xb800, width=40),
-        partial(set_text_memory, text_segment=0xb800, width=40),
-        0xb800, 0x800),
-    }
-text_mode_40['pcjr'] = text_mode_40['cga']
-text_mode_40['cga_old'] = text_mode_40['cga']
-
-# Tandy/PCjr pixel aspect ratio is different from normal
-# suggesting screen aspect ratio is not 4/3.
-# Tandy pixel aspect ratios, experimentally found with CIRCLE:
-# screen 2, 6:     48/100   normal if aspect = 3072, 2000
-# screen 1, 4, 5:  96/100   normal if aspect = 3072, 2000
-# screen 3:      1968/1000 
-# screen 3 is strange, slighly off the 192/100 you'd expect
-
-graphics_mode = {
-    # 04h 320x200x4  16384B 2bpp 0xb8000    screen 1
-    # tandy:2 pages if 32k memory; ega: 1 page only 
-    # TODO: tandy/pcjr - determine the number of pages based on video memory
-    '320x200x4': GraphicsMode('320x200x4', 
-        False, 8, 8, 25, 40, 1, 4,
-        cga4_palette, colours16, None, 3, False, False,
-        partial(get_video_memory_cga, 
-                        bitsperpixel=2, bytes_per_row=80, interleave_times=2),
-        partial(set_video_memory_cga, 
-                        bitsperpixel=2, bytes_per_row=80, interleave_times=2),
-        0xb800, 0x4000,
-        320, 200, None, 2, 
-        build_tile_cga, get_area_cga, set_area_cga, False, None),
-    # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
-    '640x200x2': GraphicsMode('640x200x2',
-        False, 8, 8, 25, 80, 1, 2,
-        [0, 15], colours16, None, 1, False, False,
-        partial(get_video_memory_cga, 
-                        bitsperpixel=1, bytes_per_row=80, interleave_times=2),
-        partial(set_video_memory_cga, 
-                        bitsperpixel=1, bytes_per_row=80, interleave_times=2),
-        0xb800, 0x4000,
-        640, 200, None, 1, 
-        build_tile_cga, get_area_cga, set_area_cga, True, None),
-    # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy 3
-    '160x200x16': GraphicsMode('160x200x16',
-        False, 8, 8, 25, 20, 2, 16,
-        cga16_palette, colours16, None, 15, False, False,
-        partial(get_video_memory_cga, 
-                        bitsperpixel=4, bytes_per_row=80, interleave_times=2),
-        partial(set_video_memory_cga, 
-                        bitsperpixel=4, bytes_per_row=80, interleave_times=2),
-        0xb800, 0x4000,
-        160, 200, (1968, 1000), 4, 
-        build_tile_cga, get_area_cga, set_area_cga, False, 3),
-    #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr 4
-    '320x200x4pcjr': GraphicsMode('320x200x4pcjr',
-        False, 8, 8, 25, 40, 2, 4,
-        cga4_palette, colours16, None, 3, False, False,
-        partial(get_video_memory_cga, 
-                        bitsperpixel=2, bytes_per_row=80, interleave_times=2),
-        partial(set_video_memory_cga, 
-                        bitsperpixel=2, bytes_per_row=80, interleave_times=2),
-        0xb800, 0x4000,
-        320, 200, None, 2, 
-        build_tile_cga, get_area_cga, set_area_cga, False, 3),
-    # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr 5
-    '320x200x16pcjr': GraphicsMode('320x200x16pcjr',
-        False, 8, 8, 25, 40, 1, 16,
-        cga16_palette, colours16, None, 15, False, False,
-        partial(get_video_memory_cga, 
-                        bitsperpixel=4, bytes_per_row=160, interleave_times=4),
-        partial(set_video_memory_cga, 
-                        bitsperpixel=4, bytes_per_row=160, interleave_times=4),
-        0xb800, 0x8000,
-        320, 200, None, 4, 
-        build_tile_cga, get_area_cga, set_area_cga, False, 3),
-    # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr 6
-    '640x200x4': GraphicsMode('640x200x4',
-        False, 8, 8, 25, 80, 1, 4,
-        cga4_palette, colours16, None, 3, False, False,
-        get_video_memory_tandy_6,
-        set_video_memory_tandy_6,
-        0xb800, 0x8000,
-        640, 200, None, 2, 
-        # mode 6 has (almost) EGA-style PUT/GET
-        # but PAINT tiles are CGA-style
-        build_tile_cga, get_area_ega, set_area_ega, False, 3),
-    # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
-    '320x200x16': GraphicsMode('320x200x16', 
-        False, 8, 8, 25, 40, 8, 16,
-        # cga16 palette?
-        cga16_palette, colours16, None, 15, False, False,
-        partial(get_video_memory_ega, page_size = 0x2000, bytes_per_row=40),
-        partial(set_video_memory_ega, page_size = 0x2000, bytes_per_row=40),
-        0xa000, 0x2000,
-        320, 200, None, 4, 
-        build_tile_ega, get_area_ega, set_area_ega, False, None),
-    # 0Eh 640x200x16    EGA screen 8
-    '640x200x16': GraphicsMode('640x200x16',
-        False, 8, 8, 25, 80, 4, 16,
-        # cga16 palette?
-        cga16_palette, colours16, None, 15, False, False,
-        partial(get_video_memory_ega, page_size = 0x4000, bytes_per_row=80),
-        partial(set_video_memory_ega, page_size = 0x4000, bytes_per_row=80),
-        0xa000, 0x4000,
-        640, 200, None, 4, 
-        build_tile_ega, get_area_ega, set_area_ega, False, None),
-    # 10h 640x350x16    EGA screen 9
-    '640x350x16': GraphicsMode('640x350x16',
-        False, 14, 8, 25, 80, 2, 16,
-        ega_palette, colours64, None, 15, False, False,
-        partial(get_video_memory_ega, page_size = 0x8000, bytes_per_row=80),
-        partial(set_video_memory_ega, page_size = 0x8000, bytes_per_row=80),
-        0xa000, 0x8000,
-        640, 350, None, 4, 
-        build_tile_ega, get_area_ega, set_area_ega, False, None),
-    # 0Fh 640x350x4     EGA monochrome screen 10
-    '640x350x4': GraphicsMode('640x350x4',
-        False, 14, 8, 25, 80, 2, 4,
-        ega_mono_palette, colours_ega_mono_0, colours_ega_mono_1, 1, True, False,
-        get_video_memory_ega_10, 
-        set_video_memory_ega_10, 
-        0xa000, 0x8000,
-        640, 350, None, 2, 
-        build_tile_ega, get_area_ega, set_area_ega, False, None), 
-    # 40h 640x400x2   1bpp  olivetti
-    '640x400x2': GraphicsMode('640x400x2',
-        False, 16, 8, 25, 80, 1, 2,
-        [0, 15], colours16, None, 1, True, False,
-        partial(get_video_memory_cga, 
-                bitsperpixel=1, bytes_per_row=80, interleave_times=4),
-        partial(set_video_memory_cga, 
-                bitsperpixel=1, bytes_per_row=80, interleave_times=4),
-        0xb800, 0x8000,
-        640, 400, None, 1, 
-        # EGA/CGA distinction doesn't matter for 1bpp
-        build_tile_cga, get_area_cga, set_area_cga, False, None),
-    # hercules
-    '720x348x2': GraphicsMode('720x348x2',
-        # FIXME hercules - this actually produces 350, not 348
-        # two scan lines must be left out somewhere, somehow
-        False, 14, 9, 25, 80, 2, 2,
-        [0, 15], colours16, None, 1, True, False,
-        partial(get_video_memory_cga, 
-                bitsperpixel=1, bytes_per_row=90, interleave_times=4),
-        partial(set_video_memory_cga, 
-                bitsperpixel=1, bytes_per_row=90, interleave_times=4),
-        0xb800, 0x8000,
-        720, 350, None, 1, 
-        build_tile_cga, get_area_cga, set_area_cga, False, None),
-    }
-
-# mode numbers by video card
-available_modes = {
-    'mda': { },
-    'cga': {
-        1: graphics_mode['320x200x4'],
-        2: graphics_mode['640x200x2']},
-    'olivetti': {
-        1: graphics_mode['320x200x4'],
-        2: graphics_mode['640x200x2'],
-        3: graphics_mode['640x400x2'],
-        },
-    'hercules': {
-        3: graphics_mode['720x348x2']},
-    'pcjr': {
-        1: graphics_mode['320x200x4'],
-        2: graphics_mode['640x200x2'],
-        3: graphics_mode['160x200x16'],
-        4: graphics_mode['320x200x4pcjr'],
-        5: graphics_mode['320x200x16pcjr'],
-        6: graphics_mode['640x200x4']},
-    'ega': {
-        1: graphics_mode['320x200x4'],
-        2: graphics_mode['640x200x2'],
-        7: graphics_mode['320x200x16'],
-        8: graphics_mode['640x200x16'],
-        9: graphics_mode['640x350x16']},
-    'ega_mono': {
-        10: graphics_mode['640x350x4']},
-    'vga': {
-        1: graphics_mode['320x200x4'],
-        2: graphics_mode['640x200x2'],
-        7: graphics_mode['320x200x16'],
-        8: graphics_mode['640x200x16'],
-        9: graphics_mode['640x350x16']},
-}
-available_modes['cga_old'] = available_modes['cga']
-available_modes['tandy'] = available_modes['pcjr']
-# on Olivetti M24, all numbers 3-255 give the same altissima risoluzione
-for mode in range(4, 256):
-    available_modes['olivetti'][mode] = graphics_mode['640x400x2']
+    available_modes['cga_old'] = available_modes['cga']
+    available_modes['tandy'] = available_modes['pcjr']
+    # on Olivetti M24, all numbers 3-255 give the same altissima risoluzione
+    for mode in range(4, 256):
+        available_modes['olivetti'][mode] = graphics_mode['640x400x2']
 
 # to be filled with the modes available to our video card    
 mode_data = {}
 text_data = {}
 
 # all data for current mode
-state.console_state.current_mode = text_mode_80['vga']
+state.console_state.current_mode = None
 # border colour
 state.console_state.border_attr = 0
 # colorburst value
@@ -1010,11 +1008,12 @@ def prepare_video():
         colours16[:] = colours16_mono
     # prepare video mode list
     # only allow the screen modes that the given machine supports
+    prepare_modes()
     mode_data = available_modes[video_capabilities]
     text_data = { 
         40: text_mode_40[video_capabilities],
         80: text_mode_80[video_capabilities]}
-    
+    state.console_state.current_mode = text_mode_80['vga']
            
 def init_video():
     """ Initialise the video backend. """
