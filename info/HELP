@@ -450,7 +450,7 @@ represent them in a BASIC file.
  D5 ERR     D6 STRING$ D7 USING   D8 INSTR   D9 '       DA VARPTR  DB CSRLIN  
  DC POINT   DD OFF     DE INKEY$  E6 >       E7 =       E8 <       E9 + 
  EA -       EB *       EC /       ED ^       EE AND     EF OR      F0 XOR  
- F1 EQV     F2 IMP     F3 MOD     F4 \\
+ F1 EQV     F2 IMP     F3 MOD     F4 \
  FD81 CVI     FD82 CVS     FD83 CVD     FD84 MKI$    FD85 MKS$    FD86 MKD$
  FD8B EXTERR  FE81 FILES   FE82 FIELD   FE83 SYSTEM  FE84 NAME    FE85 LSET  
  FE86 RSET    FE87 KILL    FE88 PUT     FE89 GET     FE8A RESET   FE8B COMMON
@@ -472,12 +472,12 @@ NOTES:
     When the --debug flag is specified, variable names like DEBUG$ are not 
     allowed.
 -   On the IBM PCjr's Cartridge BASIC and Tandy 1000 GW-BASIC, some additional 
-    keywords were present. They can be activated using the --pcjr or --tandy 
-    command-line option:
+    keywords were present. They can be activated using the --syntax=pcjr or 
+    --syntax=tandy command-line option:
         FEA4 NOISE   FEA6 TERM
 -   Note that they are not currently implemented as statements. 
-    When ---pcjr or --tandy is specified, these words are not valid variable 
-    names and will be correctly transcribed in a listing.
+    When ---syntax=pcjr or --syntax=tandy is specified, these words are not 
+    valid variable names and will be correctly transcribed in a listing.
 
 
 ABS(x) function
@@ -2448,7 +2448,7 @@ ERRORS:
 -   If 'var_0', ... are string names, NEXT WITHOUT FOR is raised.
 
 
-NOISE statement                                       [--pcjr and --tandy only]
+NOISE statement                                    [pcjr and tandy syntax only]
 NOISE source, volume, duration
 -------------
 PCJR and TANDY:
@@ -2873,7 +2873,7 @@ ERRORS:
 
 PLAY statement
 PLAY mml_string
-PLAY [mml_string_0] [, [mml_string_1] ] [, [mml_string_2] ]]   [--tandy --pcjr]
+PLAY [mml_string_0] [, [mml_string_1] ] [, [mml_string_2] ]]      [tandy, pcjr]
 --------------
 Plays the tune defined by string-valued expression 'mml_string'. 'mml_string' 
 must be a string-valued expression in Music Macro Language (MML). 
@@ -3550,7 +3550,7 @@ ERRORS:
 -   If 'voice' is not in [0, 2], raises ILLEGAL FUNCTION CALL.
 
 
-SOUND statement (advanced-sound switch)               [--pcjr and --tandy only]
+SOUND statement (advanced-sound switch)            [pcjr and tandy syntax only]
 SOUND {ON | OFF}
 ---------------
 PCJR and TANDY:
@@ -3713,7 +3713,7 @@ ERRORS:
 -   If 'angle' has a string value, SIN raises TYPE MISMATCH.
 
 
-TERM statement [--pcjr and --tandy only]
+TERM statement                                     [pcjr and tandy syntax only]
 TERM 
 -------------
 PCJR:
