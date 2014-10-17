@@ -361,6 +361,16 @@ SCREEN 3    [pcjr/tandy only] low-res 16-colour
             20x25 characters of 8x8 pixels
             16 attributes picked from 16 colours; 4 bits per pixel
             2 pages
+SCREEN 3    [hercules only]
+            720x348 pixels
+            80x25 characters of 9x14 pixels (with bottom line truncated by 2 px)
+            2 attributes; 1 bit per pixel
+            2 pages
+SCREEN 3--255 [olivetti only]
+            640x400 pixels
+            80x25 characters of 8x16 pixels
+            2 attributes of which one picked from 16 colours; 2 bits per pixel
+            1 page            
 SCREEN 4    [pcjr/tandy only] med-res 4-colour
             320x200 pixels
             40x25 characters of 8x8 pixels
@@ -391,12 +401,17 @@ SCREEN 9    [ega only] EGA colour
             80x25 characters of 8x14 pixels
             16 attributes picked from 64 colours; 4 bits per pixel    
             2 pages
+SCREEN 10   [ega only, with monitor=mono] EGA monochrome
+            640x350 pixels
+            80x25 characters of 8x14 pixels
+            4 attributes picked from 9 pseudocolours; 2 bits per pixel    
+            2 pages
 
 
 DEVICES
 -------
 PC-BASIC recognises the following DOS-style devices, which can be opened, input
-to and output from much like normal files. 
+from and output to much like normal files. 
 device      allowed modes   description
 SCRN:       OUTPUT          The screen. Output to SCRN: has largely the same 
                             effect as straight output using PRINT. A difference
