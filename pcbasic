@@ -169,7 +169,8 @@ def convert():
     # keep uppercase first letter    
     mode = mode[0].upper() if mode else 'A'
     # if not specified but positional argument is, use that.
-    infile = infile or config.options['program']
+    infile = (infile or config.options['program'] 
+                or config.options['run'] or config.options['load'])
     # load & save in different format
     try:
         if infile:
