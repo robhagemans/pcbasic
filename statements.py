@@ -16,6 +16,7 @@ try:
 except ImportError:
     from StringIO import StringIO
 
+import plat
 import config
 import backend
 import console
@@ -47,7 +48,13 @@ def prepare():
         pcjr_syntax = config.options['syntax']
     else:
         pcjr_syntax = None    
+    # find program for PCjr TERM command    
     pcjr_term = config.options['pcjr-term']
+    if not os.path.exists(pcjr_term):
+        pcjr_term = os.path.join(plat.info_dir, pcjr_term)
+    if not os.path.exists(pcjr_term):
+        pcjr_term = ''
+        
 
 # parses one statement at the current stream pointer in current codestream
 # return value False: stream ends
