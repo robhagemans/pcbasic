@@ -70,6 +70,10 @@ def get_value_for_varptrstr(varptrstr):
         
 def ml_parse_value(gmls):
     c = util.skip(gmls, ml_whitepace)
+    sgn = -1 if c == '-' else 1   
+    if c in ('+', '-'):
+        gmls.read(1)
+        c = util.peek(gmls)
     if c == '=':
         gmls.read(1)
         c = util.peek(gmls)
@@ -82,14 +86,6 @@ def ml_parse_value(gmls):
             # varptr$
             step = get_value_for_varptrstr(gmls.read(3))
     else:
-        sgn = 1
-        if c == '+':
-            gmls.read(1)
-            c = util.peek(gmls)
-        elif c == '-':
-            gmls.read(1)
-            c = util.peek(gmls)
-            sgn = -1   
         if c in representation.ascii_digits:     
             numstr = ''
             while c in representation.ascii_digits:
@@ -97,10 +93,10 @@ def ml_parse_value(gmls):
                 numstr += c 
                 c = util.skip(gmls, ml_whitepace) 
             step = representation.str_to_value_keep(('$', numstr))
-            if sgn == -1:
-                step = vartypes.number_neg(step)
         else:
             raise error.RunError(5)
+    if sgn == -1:
+        step = vartypes.number_neg(step)
     return step
 
 def ml_parse_number(gmls):
