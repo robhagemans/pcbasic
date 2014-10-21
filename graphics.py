@@ -258,7 +258,7 @@ def draw_circle(x0, y0, r, c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, l
     x0, y0 = backend.view_coords(x0, y0)
     if oct0 == -1:
         hide_oct = range(0,0)
-    elif oct0 < oct1 or oct0 == oct1 and octant_gte(oct0, coo1, coo0):
+    elif oct0 < oct1 or oct0 == oct1 and octant_gt(oct0, coo1, coo0):
         hide_oct = range(0, oct0) + range(oct1+1, 8)
     else:
         hide_oct = range(oct1+1, oct0)
@@ -272,16 +272,16 @@ def draw_circle(x0, y0, r, c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, l
         for octant in range(0,8):
             if octant in hide_oct:
                 continue
-            elif oct0 != oct1 and (octant == oct0 and octant_gte(oct0, coo0, y)):
+            elif oct0 != oct1 and (octant == oct0 and octant_gt(oct0, coo0, y)):
                 continue
-            elif oct0 != oct1 and (octant == oct1 and octant_gte(oct1, y, coo1)):
+            elif oct0 != oct1 and (octant == oct1 and octant_gt(oct1, y, coo1)):
                 continue
             elif oct0 == oct1 and octant == oct0:
-                if octant_gte(oct0, coo1, coo0):
-                    if octant_gte(oct0, y, coo1) or octant_gte(oct0, coo0,y):
+                if octant_gt(oct0, coo1, coo0):
+                    if octant_gt(oct0, y, coo1) or octant_gt(oct0, coo0,y):
                         continue
                 else:
-                    if octant_gte(oct0, y, coo1) and octant_gte(oct0, coo0, y):
+                    if octant_gt(oct0, y, coo1) and octant_gt(oct0, coo0, y):
                         continue
             backend.video.put_pixel(*octant_coord(octant, x0, y0, x, y), index=c) 
         # remember endpoints for pie sectors
@@ -312,11 +312,11 @@ def octant_coord(octant, x0,y0, x,y):
     elif octant == 5:     return x0-y, y0+x
     elif octant == 2:     return x0-y, y0-x
     
-def octant_gte(octant, y, coord):
+def octant_gt(octant, y, coord):
     if octant%2 == 1: 
-        return y<=coord 
+        return y<coord 
     else: 
-        return y>=coord
+        return y>coord
     
 # notes on midpoint algo implementation:
 #    
@@ -362,7 +362,7 @@ def draw_ellipse(cx, cy, rx, ry, c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1,
     # find invisible quadrants
     if qua0 == -1:
         hide_qua = range(0,0)
-    elif qua0 < qua1 or qua0 == qua1 and quadrant_gte(qua0, x1, y1, x0, y0):
+    elif qua0 < qua1 or qua0 == qua1 and quadrant_gt(qua0, x1, y1, x0, y0):
         hide_qua = range(0, qua0) + range(qua1+1, 4)
     else:
         hide_qua = range(qua1+1,qua0)
@@ -380,16 +380,16 @@ def draw_ellipse(cx, cy, rx, ry, c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1,
             # skip invisible arc sectors
             if quadrant in hide_qua:
                 continue
-            elif qua0 != qua1 and (quadrant == qua0 and quadrant_gte(qua0, x0, y0, x, y)):
+            elif qua0 != qua1 and (quadrant == qua0 and quadrant_gt(qua0, x0, y0, x, y)):
                 continue
-            elif qua0 != qua1 and (quadrant == qua1 and quadrant_gte(qua1, x, y, x1, y1)):
+            elif qua0 != qua1 and (quadrant == qua1 and quadrant_gt(qua1, x, y, x1, y1)):
                 continue
             elif qua0 == qua1 and quadrant == qua0:
-                if quadrant_gte(qua0, x1,y1, x0,y0):
-                    if quadrant_gte(qua0, x, y, x1, y1) or quadrant_gte(qua0, x0, y0, x, y):
+                if quadrant_gt(qua0, x1,y1, x0,y0):
+                    if quadrant_gt(qua0, x, y, x1, y1) or quadrant_gt(qua0, x0, y0, x, y):
                         continue
                 else:
-                    if quadrant_gte(qua0, x, y, x1, y1) and quadrant_gte(qua0, x0, y0, x, y):
+                    if quadrant_gt(qua0, x, y, x1, y1) and quadrant_gt(qua0, x0, y0, x, y):
                         continue
             backend.video.put_pixel(*quadrant_coord(quadrant, cx,cy,x,y), index=c) 
         # bresenham error step
@@ -423,13 +423,13 @@ def quadrant_coord(quadrant, x0,y0, x,y):
     elif quadrant == 2:     return x0-x, y0+y
     elif quadrant == 1:     return x0-x, y0-y
     
-def quadrant_gte(quadrant, x,y, x0,y0):
+def quadrant_gt(quadrant, x,y, x0,y0):
     if quadrant%2 == 0:
         if y!=y0: return y>y0
-        else: return x<=x0
+        else: return x<x0
     else:
         if y!=y0: return y<y0 
-        else: return x>=x0 
+        else: return x>x0 
         
         
 #####        
