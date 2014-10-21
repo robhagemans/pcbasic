@@ -934,6 +934,7 @@ def check_events(pause=False):
     return False
 
 def handle_key_down(e):
+    global screen_changed
     c = ''
     mods = pygame.key.get_mods()
     if ((e.key == pygame.K_NUMLOCK and mods & pygame.KMOD_CTRL) or
@@ -944,6 +945,7 @@ def handle_key_down(e):
     elif e.key == pygame.K_MENU and android:
         # Android: toggle keyboard on menu key
         pygame_android.toggle_keyboard()
+        screen_changed = True
     elif e.key == pygame.K_LSUPER: # logo key, doesn't set a modifier
         scrap.start()
     elif scrap.active():
