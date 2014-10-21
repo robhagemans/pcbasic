@@ -1124,11 +1124,17 @@ class Clipboard(object):
         # ignore any bad UTF8 characters from outside
         for u in us.decode('utf-8', 'ignore'):
             c = u.encode('utf-8')
-            try:
-                backend.insert_chars(unicodepage.from_utf8(c))
-            except KeyError:
-                backend.insert_chars(c)
-                
+            last = ''
+            if c == '\n':
+                if last != '\r':
+                    backend.insert_chars('\r')
+            else:
+                try:
+                    backend.insert_chars(unicodepage.from_utf8(c))
+                except KeyError:
+                    backend.insert_chars(c)
+            last = c
+                        
     def move(self, r, c):
         """ Move the head of the selection and update feedback. """
         global screen_changed
