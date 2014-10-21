@@ -1603,7 +1603,8 @@ def exec_clear(ins):
                 state.console_state.pcjr_video_mem_size = fp.unpack(vartypes.pass_single_keep(
                                                            expressions.parse_expression(ins, empty_err=2))).round_to_int()
                 # check if we need to drop out of our current mode 
-                backend.check_video_memory(state.console_state.current_mode)                                                           
+                backend.check_video_memory(state.console_state.current_mode,
+                    state.console_state.vpagenum, state.console_state.apagenum)
             elif not exp2:
                 raise error.RunError(2)    
     util.require(ins, util.end_statement)
@@ -2293,7 +2294,7 @@ def exec_screen(ins):
     util.range_check(0, 2, erase)
     # if not enough memory, error 5 without doing anything
     try:
-        backend.check_video_memory(backend.mode_data[mode])
+        backend.check_video_memory(backend.mode_data[mode], vpagenum, apagenum)
     except KeyError:
         pass    
     # if the parameters are outside narrow ranges (e.g. not implemented screen mode, pagenum beyond max)

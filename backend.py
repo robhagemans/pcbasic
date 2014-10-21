@@ -775,7 +775,7 @@ def prepare_modes():
             build_tile_cga, get_area_cga, set_area_cga, False, 3),
         # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr 5
         '320x200x16pcjr': GraphicsMode('320x200x16pcjr',
-            False, 8, 8, 25, 40, 1, 16,
+            False, 8, 8, 25, 40, 2, 16,
             cga16_palette, colours16, None, 15, False, False,
             partial(get_video_memory_cga, 
                             bitsperpixel=4, bytes_per_row=160, interleave_times=4),
@@ -786,7 +786,7 @@ def prepare_modes():
             build_tile_cga, get_area_cga, set_area_cga, False, 3),
         # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr 6
         '640x200x4': GraphicsMode('640x200x4',
-            False, 8, 8, 25, 80, 1, 4,
+            False, 8, 8, 25, 80, 2, 4,
             cga4_palette, colours16, None, 3, False, False,
             get_video_memory_tandy_6,
             set_video_memory_tandy_6,
@@ -1276,14 +1276,15 @@ def set_width(to_width):
             return screen(8, None, None, None)
     return False
     
-def check_video_memory(new_mode_info):
+def check_video_memory(new_mode_info, vpage, apage):
     """ Raise an error if not enough video memory for this state. """
     # video memory size check for SCREENs 5 and 6: 
     # (pcjr/tandy only; this is a bit of a hack as is) 
     # (32753 determined experimentally on DOSBox)
     if (new_mode_info in (graphics_mode['320x200x16pcjr'], 
                                 graphics_mode['640x200x4']) and 
-            state.console_state.pcjr_video_mem_size < 32753):
+            state.console_state.pcjr_video_mem_size < 32753 
+                                            + max(vpage, apage) * 32768):
         raise error.RunError(5)
         
 #############################################
