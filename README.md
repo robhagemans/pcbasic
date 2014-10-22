@@ -76,11 +76,11 @@ A PC-BASIC program called `INFO.BAS` is included on the virtual `@:` drive with 
 
 
 #### GW-BASIC, Tandy-1000 and PCjr modes ####
-By default, PC-BASIC emulates GW-BASIC on a system with EGA video capabilities. The emulation target can be changed by selecting one of the following presets with the `preset` option:  
+By default, PC-BASIC emulates GW-BASIC on a system with VGA video capabilities. The emulation target can be changed by selecting one of the following presets with the `preset` option:  
 `cga` GW-BASIC with CGA graphics, including composite colourburst mode.  
+`mda`, `ega`, `hercules`, `olivetti` GW-BASIC on various hardware.
 `pcjr` IBM PCjr Cartridge BASIC, including PCjr video and 3-voice sound capabilities and extended BASIC syntax.  
 `tandy` Tandy-1000 GW-BASIC, including Tandy video and 3-voice sound capabilities and extended BASIC syntax.  
-
 
 #### BASIC language reference ###
 A full CC-licensed [GW-BASIC language reference](https://sourceforge.net/p/pcbasic/code/ci/master/tree/info/HELP) is included with PC-BASIC 3.23. You can find it in the `info/` directory as a text file called `HELP`; access it through your favourite text reader or through `RUN "@:INFO"`, option `Docs`. This documentation aims to document the actual behaviour of GW-BASIC 3.23, on which PC-BASIC 3.23 is modelled. Please note that the original Microsoft help file, which can be found on the internet, is rather hit-and-miss; GW-BASIC often behaves differently than documented by Microsoft. 
@@ -101,10 +101,8 @@ PC-BASIC does not attempt to sandbox its programs in any way. BASIC programs hav
 
 
 #### MS-DOS style 8.3 file names ####
-On Windows, PC-BASIC will work with the short file names provided by the operating system.
-On other operating systems, more than one file may match the specified 8.3 file name. PC-BASIC will first look for a file with the exact name as specified (e.g. `FileNameCreating.ExtraDifficulties`). If this does not exist, it will look for the file name truncated to all-caps 8.3 format (`FILENAME.EXT`); if that does not exist, it will look for variants that have the same 8.3 format - e.g. `filename.EXT`, `fIlEnAmEtHaTsQuItE.eXtRaOrDiNaRy` etcetera - in lexicographic order.
+PC-BASIC uses short file names in the MS-DOS 8.3 all-caps format. On Windows, PC-BASIC will work with the short file names provided by the operating system. On other operating systems, more than one file may match the specified 8.3 file name. PC-BASIC will first look for a file with the exact name as specified (e.g. `FileNameCreating.ExtraDifficulties`). If this does not exist, it will look for the file name truncated to all-caps 8.3 format (`FILENAME.EXT`); if that does not exist, it will look for variants that have the same 8.3 format - e.g. `filename.EXT`, `fIlEnAmEtHaTsQuItE.eXtRaOrDiNaRy` etcetera - in lexicographic order.
 If the name contains no dot (e.g. `FileName`), it will first try `FileName`, then `FILENAME`, then all case variants, and finally `FILENAME.BAS` and its case variants.
-
 
 
 #### Newline conventions ####
@@ -112,9 +110,12 @@ In default mode, PC-BASIC will accept both DOS and Unix newline conventions. Thi
 In `--strict-newline` mode, ASCII files in standard UNIX format (LF line endings, no EOF character) will fail to load: on Linux or Mac, use a utility such as [`unix2dos`](http://waterlan.home.xs4all.nl/dos2unix.html) to convert programs saved as text files before loading them. When saving as ASCII, PC-BASIC always uses the DOS conventions.
 
 
-#### Text terminals ####
-On Linux, in addition to the default graphical terminal, you can get a text terminal by running with the `-b` command-line option, and a curses-style terminal with the `-t` option. You can even get sound on the text terminal if you install the `beep` utility, but please be aware that Ubuntu blocks the pc-speaker by default using the line `blacklist pcspkr` in `/etc/modprobe.d/blacklist.conf`. Comment out that line, `apt-get install beep` and be sure to wear appropriate ear protection as the default volume level is LOUD.
-The text terminal is also available on OSX and other UNIXes when using the source distribution. On Windows and when using the packaged OSX app, the text terminal is not available.
+#### Codepages and UTF-8 ####
+PC-BASIC supports a large number of codepages, including double-byte character set codepages used for Chinese, Japanese and Korean. PC-BASIC will load and save all program files as if encoded in the codepage you select. It is possible to load and save in UTF-8 format, by choosing the `--utf-8` option. In `--utf-8` mode, ASCII program source will be saved and loaded in standard UTF-8 encoding. Please note that you will still need to select a codepage that provides the Unicode characters that your program needs.
+
+
+#### Command-line interface ####
+You can run PC-BASIC in command-line mode by running with the `-b` option. On Linux, there's also a curses-style interface available with the `-t` option. You can even get sound in the text and command-line interfaces if you install the Unix `beep` utility (if you use Ubintu, please be aware that the pc-speaker is switched off by default. You'll need to edit `/etc/modprobe.d/blacklist.conf` and comment out the line `blacklist pcspkr`. Then, `apt-get install beep` and be sure to wear appropriate ear protection as the default volume level is LOUD.) 
 
 #### Free BASIC compilers and saner dialects ####
 If you're starting a new project in BASIC, please consider one of the more sensible free versions of the language, such as [FreeBasic](www.freebasic.net), [QB64](http://www.qb64.net/) or [SmallBASIC](https://sourceforge.net/projects/smallbasic/). Under FreeDOS, you can use the [Bywater BASIC](https://sourceforge.net/projects/bwbasic/) interpreter. 
