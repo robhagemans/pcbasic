@@ -978,7 +978,7 @@ def prepare_video():
     global colours_ega_mono_text
     global mode_data, text_data, circle_aspect
     video_capabilities = config.options['video']
-    if video_capabilities in ('pcjr', 'tandy'):
+    if video_capabilities == 'tandy':
         circle_aspect = (3072, 2000)
     else:
         circle_aspect = (4, 3)
