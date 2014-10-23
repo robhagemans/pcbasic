@@ -469,6 +469,11 @@ def exec_on_com(ins):
 # sound
 
 def exec_beep(ins):
+    # Tandy/PCjr BEEP ON, OFF
+    if pcjr_syntax and util.skip_white(ins) in ('\x95', '\xDD'):
+        state.console_state.beep_on = (ins.read(1) == '\x95')
+        util.require(ins, util.end_statement)
+        return
     backend.beep() 
     # if a syntax error happens, we still beeped.
     util.require(ins, util.end_statement)

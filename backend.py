@@ -956,6 +956,8 @@ def prepare_audio():
         pcjr_sound = config.options['syntax']
     # tandy has SOUND ON by default, pcjr has it OFF
     state.console_state.sound_on = (pcjr_sound == 'tandy')
+    # pc-speaker on/off; (not implemented; not sure whether should be on)
+    state.console_state.beep_on = True
 
 def init_audio():
     """ Initialise the audio backend. """
