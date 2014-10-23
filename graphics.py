@@ -496,7 +496,7 @@ def check_scanline(line_seed, x_start, x_stop, y, c, tile, back, border, ydir):
         xy_colour = backend.video.get_pixel(x, y)
         if xy_colour != border:
             x_stop_next = x
-            has_same_pattern &= (xy_colour == tile[y%len(tile)][x%8] and (not back or xy_colour != back[y%len(tile)][x%8]))
+            has_same_pattern &= (xy_colour == tile[y%len(tile)][x%8] and (not back or xy_colour != back[y%len(back)][x%8]))
         else:
             # don't append if same fill colour/pattern, to avoid infinite loops over bits already painted (eg. 00 shape)
             if x_stop_next >= x_start_next and not has_same_pattern:
