@@ -1146,18 +1146,19 @@ where the default is to move and draw; the optional prefixes mean:
     B       move but do not plot
     N       return to original point after move
 and 'movement' is one of:
-    Un      up n steps
-    Ln      left n steps
-    Dn      down n steps
-    Rn      right n steps
-    En      up+right n steps
-    Fn      down+right n steps
-    Gn      down+left n steps
-    Hn      up+left n steps
+    U[n]    up n steps
+    L[n]    left n steps
+    D[n]    down n steps
+    R[n]    right n steps
+    E[n]    up+right n steps
+    F[n]    down+right n steps
+    G[n]    down+left n steps
+    H[n]    up+left n steps
     M{+|-}x,{+|-|}y
             move (x,y) steps
     Mx,y    move to view region coordinates x,y  
-where 'n','x','y' must be integers in [0, 9999].
+where 'n','x','y' must be integers in [0, 9999]. 
+Where optional, n defaults to 1.
 Scale commands are:
     Sn      sets the step size to n/4. The default step size is 1 pixel.  
             'n' must be an integer in [1, 255]
