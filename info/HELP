@@ -552,6 +552,17 @@ ERRORS:
 -   If a SYNTAX ERROR is raised, the beep is still produced.
 
 
+BEEP statement (internal speaker switch)           [pcjr and tandy syntax only]
+BEEP {ON | OFF}
+---------------
+PCJR and TANDY:
+    This statement has no effect.
+NOTES:
+-   On PCjr and Tandy computers, BEEP OFF would turn off the internal speaker. 
+    On PC-BASIC, both the internal and the external speaker are emulated through
+    the same sound system.
+
+
 BLOAD statement
 BLOAD filename [, offset]
 ---------------
@@ -3571,7 +3582,11 @@ SOUND {ON | OFF}
 PCJR and TANDY:
     Toggles the availability of advanced sound capabilities, including 3-voice 
     sound, noise generation and volume control.
-
+NOTES:
+-   On PCjr and Tandy computers, SOUND ON would turn on the external speaker as
+    well as make dvanced sound capabilities available. On PC-BASIC, both the
+    internal and the external speaker are emulated through the same sound
+    system.
 
 SPACE$ function
 spaces = SPACE$(number)
