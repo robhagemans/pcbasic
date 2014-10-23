@@ -168,18 +168,30 @@ def draw_parse_gml(gml):
             draw_parse_gml(str(sub))            
         elif c == 'C':
             # set foreground colour
-            state.console_state.attr = ml_parse_number(gmls) 
+            # allow empty spec (default 0), but only if followed by a semicolon
+            if util.skip(gmls, ml_whitepace) == ';':
+                state.console_state.attr = 0
+            else:
+                state.console_state.attr = ml_parse_number(gmls) 
         elif c == 'S':
             # set scale
             state.basic_state.draw_scale = ml_parse_number(gmls)
         elif c == 'A':
             # set angle
-            state.basic_state.draw_angle = 90 * ml_parse_number(gmls)   
+            # allow empty spec (default 0), but only if followed by a semicolon
+            if util.skip(gmls, ml_whitepace) == ';':
+                state.basic_state.draw_angle = 0
+            else:
+                state.basic_state.draw_angle = 90 * ml_parse_number(gmls)   
         elif c == 'T':
             # 'turn angle' - set (don't turn) the angle to any value
             if gmls.read(1).upper() != 'A':
                 raise error.RunError(5)
-            state.basic_state.draw_angle = ml_parse_number(gmls)
+            # allow empty spec (default 0), but only if followed by a semicolon
+            if util.skip(gmls, ml_whitepace) == ';':
+                state.basic_state.draw_angle = 0
+            else:    
+                state.basic_state.draw_angle = ml_parse_number(gmls)
         # one-variable movement commands:     
         elif c in ('U', 'D', 'L', 'R', 'E', 'F', 'G', 'H'):
             step = ml_parse_number(gmls, default=vartypes.pack_int(1))
