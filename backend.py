@@ -1130,10 +1130,6 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
         new_colorswitch = state.console_state.colorswitch 
     else:
         new_colorswitch = (new_colorswitch != 0)
-    if new_vpagenum == None:    
-        new_vpagenum = state.console_state.vpagenum 
-    if new_apagenum == None:
-        new_apagenum = state.console_state.apagenum
     # TODO: implement erase level (Tandy/pcjr)
     # Erase tells basic how much video memory to erase
     # 0: do not erase video memory
@@ -1154,6 +1150,17 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
         # no such mode
         info = None
     # vpage and apage nums are persistent on mode switch
+    # on pcjr only, reset page to zero if current page number would be too high.
+    if new_vpagenum == None:    
+        new_vpagenum = state.console_state.vpagenum 
+        if (video_capabilities == 'pcjr' and info and 
+                new_vpagenum >= info.num_pages):
+            new_vpagenum = 0
+    if new_apagenum == None:
+        new_apagenum = state.console_state.apagenum
+        if (video_capabilities == 'pcjr' and info and 
+                new_apagenum >= info.num_pages):
+            new_apagenum = 0    
     # if the new mode has fewer pages than current vpage/apage, 
     # illegal fn call before anything happens.
     if (not info or new_apagenum >= info.num_pages or 
@@ -1234,6 +1241,10 @@ def init_graphics(mode_info):
 
 def set_page(new_vpagenum, new_apagenum):
     """ Set active page & visible page, counting from 0. """
+    if new_vpagenum == None:
+        new_vpagenum = state.console_state.vpagenum
+    if new_apagenum == None:
+        new_apagenum = state.console_state.apagenum
     if (new_vpagenum >= state.console_state.num_pages or
             new_apagenum >= state.console_state.num_pages):
         raise error.RunError(5)    
@@ -1281,10 +1292,12 @@ def check_video_memory(new_mode_info, vpage, apage):
     # video memory size check for SCREENs 5 and 6: 
     # (pcjr/tandy only; this is a bit of a hack as is) 
     # (32753 determined experimentally on DOSBox)
+    page = max(vpage, apage)
+    if not page:
+        return
     if (new_mode_info in (graphics_mode['320x200x16pcjr'], 
                                 graphics_mode['640x200x4']) and 
-            state.console_state.pcjr_video_mem_size < 32753 
-                                            + max(vpage, apage) * 32768):
+            state.console_state.pcjr_video_mem_size < 32753 + page * 32768):
         raise error.RunError(5)
         
 #############################################
