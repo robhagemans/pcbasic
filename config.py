@@ -372,11 +372,12 @@ def parse_package(parser, remaining):
 
 def parse_config(parser, remaining):
     """ Find the correct config file and read it. """
-    # find default config file
+    # always read default config file
+    conf_dict = read_config_file(os.path.join(plat.info_dir, plat.config_name))
+    # find any overriding config file & read it
+    config_file = None
     if os.path.exists(plat.config_name):
         config_file = plat.config_name
-    else:
-        config_file = os.path.join(plat.info_dir, plat.config_name)
     if parser:    
         # parse any overrides    
         parser.add_argument('--config', metavar=plat.config_name, 
@@ -390,7 +391,10 @@ def parse_config(parser, remaining):
             else:
                 logging.warning('Could not read configuration file %s. '
                     'Using %s instead', arg_config.config, config_file)    
-    return read_config_file(config_file), remaining
+    # update a whole preset at once, there's no joining of settings.                
+    if config_file:
+        conf_dict.update(read_config_file(config_file))
+    return conf_dict, remaining
     
 def parse_args(parser, remaining, default):
     """ Retrieve command line options. """
