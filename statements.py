@@ -2287,10 +2287,12 @@ def exec_screen(ins):
     # set defaults to avoid err 5 on range check
     mode = mode if mode != None else state.console_state.screen_mode
     colorswitch = colorswitch if colorswitch != None else state.console_state.colorswitch    
-    apagenum = apagenum if apagenum != None else state.console_state.apagenum
-    vpagenum = vpagenum if vpagenum != None else state.console_state.vpagenum
     # if any parameter not in [0,255], error 5 without doing anything 
-    util.range_check(0, 255, mode, colorswitch, apagenum, vpagenum)
+    util.range_check(0, 255, mode, colorswitch)
+    if apagenum != None:
+        util.range_check(0, 255, apagenum)
+    if vpagenum != None:
+        util.range_check(0, 255, vpagenum)
     util.range_check(0, 2, erase)
     # if not enough memory, error 5 without doing anything
     try:
