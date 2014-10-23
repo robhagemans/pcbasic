@@ -493,7 +493,7 @@ def exec_sound(ins):
         raise error.RunError(5)
     # only look for args 3 and 4 if duration is > 0; otherwise those args are a syntax error (on tandy)    
     if dur.gt(fp.Single.zero):    
-        if (util.skip_white_read_if(ins, (',',)) and pcjr_syntax == 'tandy' or (pcjr_syntax == 'pcjr' and state.console_state.sound_on)):
+        if (util.skip_white_read_if(ins, (',',)) and (pcjr_syntax == 'tandy' or (pcjr_syntax == 'pcjr' and state.console_state.sound_on))):
             volume = vartypes.pass_int_unpack(expressions.parse_expression(ins))
             util.range_check(0, 15, volume)        
             if util.skip_white_read_if(ins, (',',)):
