@@ -1013,7 +1013,10 @@ def prepare_video():
     text_data = { 
         40: text_mode_40[video_capabilities],
         80: text_mode_80[video_capabilities]}
-    state.console_state.current_mode = text_mode_80['vga']
+    if video_capabilities == 'pcjr':
+        # PCjr starts in 40-column mode
+        state.console_state.width = 40
+    state.console_state.current_mode = text_data[state.console_state.width]
            
 def init_video():
     """ Initialise the video backend. """
