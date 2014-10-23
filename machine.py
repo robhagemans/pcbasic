@@ -295,7 +295,7 @@ def get_font_memory(addr):
     char = addr // 8
     if char > 127 or char<0:
         return -1
-    return ord(backend.video.fonts[8][char][addr%8])
+    return ord(backend.video.fonts[8][chr(char)][addr%8])
 
 #################################################################################
 
