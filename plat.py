@@ -59,14 +59,10 @@ else:
     stdin, stdout = sys.stdin, sys.stdout
 
 if system == 'Android':
-    import shutil
     # always use the same location on Android
     # to ensure we can delete at start
     # since we can't control exits
     temp_dir = os.path.join(basepath, 'temp')
-    if os.path.exists(temp_dir):
-        shutil.rmtree(temp_dir)
-    os.mkdir(temp_dir)
 else:
     # create temporary directory
     import tempfile

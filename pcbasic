@@ -23,6 +23,12 @@ def main():
     try:
         import plat
         import config
+        if plat.system == 'Android':
+            # resume from existing directory (or clear it if we're not resuming) 
+            if not config.options['resume'] and os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)
+            if not os.path.exists(temp_dir):
+                os.mkdir(temp_dir)
         # logging setup before we import modules and may need to log errors
         # do we log to a file? 
         logfile = ''
@@ -98,7 +104,7 @@ def main():
             pass    
         try:
             # clean up our temp dir if we made one
-            if plat.temp_dir:
+            if plat.temp_dir and plat.system != 'Android':
                 shutil.rmtree(plat.temp_dir)
         except NameError:
             pass
@@ -133,6 +139,8 @@ def start_basic():
         # delete state if resetting 
         if reset:
             state.delete()
+            if plat.system == 'Android':
+                shutil.rmtree(plat.temp_dir)
         else:   
             state.save()
             
