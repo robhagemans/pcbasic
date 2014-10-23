@@ -68,7 +68,7 @@ def get_value_for_varptrstr(varptrstr):
         raise error.RunError(5)
     return var.get_var(found_name)
         
-def ml_parse_value(gmls):
+def ml_parse_value(gmls, default=None):
     c = util.skip(gmls, ml_whitepace)
     sgn = -1 if c == '-' else 1   
     if c in ('+', '-'):
@@ -94,13 +94,16 @@ def ml_parse_value(gmls):
                 c = util.skip(gmls, ml_whitepace) 
             step = representation.str_to_value_keep(('$', numstr))
         else:
-            raise error.RunError(5)
+            if default == None:
+                raise error.RunError(5)
+            else:
+                return default
     if sgn == -1:
         step = vartypes.number_neg(step)
     return step
 
-def ml_parse_number(gmls):
-    return vartypes.pass_int_unpack(ml_parse_value(gmls), err=5)
+def ml_parse_number(gmls, default=None):
+    return vartypes.pass_int_unpack(ml_parse_value(gmls, default), err=5)
     
 def ml_parse_string(gmls):
     c = util.skip(gmls, ml_whitepace)
@@ -179,7 +182,7 @@ def draw_parse_gml(gml):
             state.basic_state.draw_angle = ml_parse_number(gmls)
         # one-variable movement commands:     
         elif c in ('U', 'D', 'L', 'R', 'E', 'F', 'G', 'H'):
-            step = ml_parse_number(gmls)
+            step = ml_parse_number(gmls, default=vartypes.pack_int(1))
             x0, y0 = state.console_state.last_point
             x1, y1 = 0, 0
             if c in ('U', 'E', 'H'):
