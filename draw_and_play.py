@@ -122,21 +122,24 @@ def ml_parse_string(gmls):
 def draw_step(x0,y0, sx,sy, plot, goback):
     scale = state.basic_state.draw_scale
     rotate = state.basic_state.draw_angle
+    aspect = state.console_state.pixel_aspect_ratio
+    yfac = aspect[1] / (1.*aspect[0])
     x1 = (scale*sx)/4  
     y1 = (scale*sy)/4
-    if rotate == 0:
+    if rotate == 0 or rotate == 360:
         pass
     elif rotate == 90:
-        x1, y1 = y1, -x1
+        x1, y1 = int(y1*yfac), -int(x1//yfac)
     elif rotate == 180:
         x1, y1 = -x1, -y1
     elif rotate == 270:
-        x1, y1 = -y1, x1
+        x1, y1 = -int(y1*yfac), int(x1//yfac)
     else:
         fx, fy = fp.Single.from_int(x1), fp.Single.from_int(y1)
         phi = fp.mul(fp.Single.from_int(rotate), deg_to_rad)
         sinr, cosr = fp.sin(phi), fp.cos(phi)
-        fx, fy = fp.add(fp.mul(cosr,fx), fp.mul(sinr,fy)), fp.sub(fp.mul(cosr,fy), fp.mul(sinr,fx)) 
+        fxfac = fp.div(fp.Single.from_int(aspect[0]), fp.Single.from_int(aspect[1]))
+        fx, fy = fp.add(fp.mul(cosr,fx), fp.div(fp.mul(sinr,fy), fxfac)), fp.mul(fp.sub(fp.mul(cosr,fy), fxfac), fp.mul(sinr,fx))
         x1, y1 = fx.round_to_int(), fy.round_to_int()
     y1 += y0
     x1 += x0
