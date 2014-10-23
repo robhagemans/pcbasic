@@ -1158,7 +1158,7 @@ and 'movement' is one of:
             move (x,y) steps
     Mx,y    move to view region coordinates x,y  
 where 'n','x','y' must be integers in [0, 9999]. 
-Where optional, n defaults to 1.
+Where optional, 'n' defaults to 1.
 Scale commands are:
     Sn      sets the step size to n/4. The default step size is 1 pixel.  
             'n' must be an integer in [1, 255]
@@ -1180,6 +1180,8 @@ Numeric variables 'n','x','y','b' in the commands above can be:
 NOTES:
 -   CLS resets the step size to 1 pixel, angle to 0 degrees and position to the
     centre of the view region.                 
+-   The value 'n' in the TA, A and C command can be left out but *only* if the 
+    command is terminated by a semicolon. 'n' defaults to 0.
 ERRORS:
 -   If 'gml_string' has a numeric value, TYPE MISMATCH is raised.
 -   If 'gml_string' has errors in the GML, ILLEGAL FUNCTION CALL is raised.
