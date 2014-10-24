@@ -3,23 +3,7 @@
 .SH NAME
 PC-BASIC 3.23: a BASIC intepreter compatible with GW-BASIC 3.23
 .SH SYNOPSIS
-pcbasic           [--preset [{cga,strict,pcbasic,tandy,pcjr} [{cga,strict,pcbasic,tandy,pcjr} ...]]]
-                  [--input input_file] [--output output_file] [-b] [-t] [-g]
-                  [-l] [-r] [-e command_line] [-q] [-d] [-f NUMBER]
-                  [-s NUMBER] [-c NUMBER]
-                  [--peek [SEG:ADDR:VAL [SEG:ADDR:VAL ...]]] [--lpt1 TYPE:VAL]
-                  [--lpt2 TYPE:VAL] [--lpt3 TYPE:VAL] [--com1 TYPE:VAL]
-                  [--com2 TYPE:VAL] [--conv [mode:outfile]]
-                  [--codepage NUMBER] [--font-family TYPEFACE]
-                  [--font [TYPEFACE [TYPEFACE ...]]] [--nosound]
-                  [--dimensions X, Y] [--dimensions-text X, Y] [--fullscreen]
-                  [--smooth] [--noquit] [--debug] [--strict-hidden-lines]
-                  [--strict-protect] [--caps] [--mount [D:PATH [D:PATH ...]]]
-                  [--resume] [--strict-newline] [--pcjr-syntax {pcjr,tandy}]
-                  [--pcjr-term PCJR_TERM]
-                  [--video {ega,cga,cga_old,pcjr,tandy}]
-                  [--windows-map-drives] [--cga-low] [--composite] [-h]
-                  [basic_program]
+pcbasic --options
 .SH DESCRIPTION
 PC-BASIC 3.23 is a BASIC interpreter compatible with Microsoft GW-BASIC, Tandy 1000 BASIC
 and IBM PCjr Cartridge BASIC. 
@@ -53,90 +37,7 @@ pcbasic -l PROGRAM.BAS -bqe "LIST"
 .PP
 .SH OPTIONS
   basic_program         Input program file to run (default), load or convert.
-  --preset [{cga,strict,pcbasic,tandy,pcjr} [{cga,strict,pcbasic,tandy,pcjr} ...]]
-                        Load machine preset options
-  --input input_file    Retrieve keyboard input from input_file, except if
-                        KYBD: is read explicitly.
-  --output output_file  Send screen output to output_file, except if SCRN: is
-                        written to explicitly.
-  -b, --dumb            Use dumb text terminal. This is the default if
-                        redirecting input.
-  -t, --ansi            Use ANSI textmode terminal
-  -g, --graphical       Use graphical terminal. This is the normal default;
-                        use to override when redirecting i/o.
-  -l, --load            Load in_file only, do not execute
-  -r, --run             Execute input file (default if in_file given)
-  -e command_line, --exec command_line
-                        Execute BASIC command line
-  -q, --quit            Quit interpreter when execution stops
-  -d, --double          Allow double-precision math functions
-  -f NUMBER, --max-files NUMBER
-                        Set maximum number of open files (default is 3).
-  -s NUMBER, --max-reclen NUMBER
-                        Set maximum record length for RANDOM files (default is
-                        128, max is 32767).
-  -c NUMBER, --serial-in-size NUMBER
-                        Set serial input buffer size (default is 256). If 0,
-                        serial communications are disabled.
-  --peek [SEG:ADDR:VAL [SEG:ADDR:VAL ...]]
-                        Define PEEK preset values
-  --lpt1 TYPE:VAL       Set LPT1: to FILE:file_name or PRINTER:printer_name.
-  --lpt2 TYPE:VAL       Set LPT2: to FILE:file_name or PRINTER:printer_name.
-  --lpt3 TYPE:VAL       Set LPT3: to FILE:file_name or PRINTER:printer_name.
-  --com1 TYPE:VAL       Set COM1: to PORT:device_name or SOCKET:host:socket.
-  --com2 TYPE:VAL       Set COM2: to PORT:device_name or SOCKET:host:socket.
-  --conv [mode:outfile]
-                        Convert basic_program to (A)SCII, (B)ytecode or
-                        (P)rotected mode. Implies --unprotect and --list-all.
-  --codepage NUMBER     Load specified font codepage; default is 437
-  --font-family TYPEFACE
-                        Load current codepage from specified font family.
-  --font [TYPEFACE [TYPEFACE ...]]
-                        Load specified fonts. These are used for the
-                        appropriate resolutions, regardless of font-family and
-                        codepage seetings.
-  --nosound             Disable sound output
-  --dimensions X, Y     Set pixel dimensions for graphics mode. Default is
-                        640,480. Use 640,400 or multiples for cleaner pixels -
-                        but incorrect aspect ratio - on square-pixel LCDs.
-                        Graphical terminal only.
-  --dimensions-text X, Y
-                        Set pixel dimensions for text mode. Default is
-                        640,400. Graphical terminal only.
-  --fullscreen          Fullscreen mode. This is unlikely to have either the
-                        correct aspect ratio or clean square pixels, but it
-                        does take up the whole screen. Graphical terminal
-                        only.
-  --smooth              Use smooth display scaling. Graphical terminal only.
-  --noquit              Allow BASIC to capture <ALT+F4>. Graphical terminal
-                        only.
-  --debug               Enable DEBUG keyword
-  --strict-hidden-lines
-                        Disable listing and ASCII saving of lines beyond 65530
-                        (as in GW-BASIC). Use with care as this allows
-                        execution of unseen statements.
-  --strict-protect      Disable listing and ASCII saving of protected files
-                        (as in GW-BASIC). Use with care as this allows
-                        execution of unseen statements.
-  --caps                Start in CAPS LOCK mode.
-  --mount [D:PATH [D:PATH ...]]
-                        Set a drive letter to PATH.
-  --resume              Resume from saved state. Most other arguments are
-                        ignored.
-  --strict-newline      Parse CR and LF strictly like GW-BASIC. May create
-                        problems with UNIX line endings.
-  --pcjr-syntax {pcjr,tandy}
-                        Enable PCjr/Tandy 1000 syntax extensions
-  --pcjr-term PCJR_TERM
-                        Set the program run by the PCjr TERM command
-  --video {ega,cga,cga_old,pcjr,tandy}
-                        Set video capabilities
-  --windows-map-drives  Map all Windows drive letters to PC-BASIC drive
-                        letters (Windows only)
-  --cga-low             Use low-intensity palettes in CGA (for
-                        --video={cga,ega} only).
-  --composite           Emulates the output on an NTSC composite monitor. Disables smooth scaling. Enables colour artifacts on SCREEN 2 only (and crudely). For --video={cga,cga_old,pcjr,tandy} only.
-  -h, --help            Show this message and exit
+
 .SH FILES
 .I ./info/PCBASIC.INI
 Configuration file. The configuration options correspond to the command-line option: if a command-line option is given as --option VALUE,
