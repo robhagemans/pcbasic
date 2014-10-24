@@ -589,7 +589,6 @@ def create_device_stream(arg, allowed):
                 open(val, 'wb').close() 
             stream = open(val, 'r+b')
         except (IOError, OSError) as e:
-            print e
             return None    
     elif addr == 'PARPORT':
         # port can be e.g. /dev/parport0 on Linux or LPT1 on Windows. Just a number counting from 0 would also work.
