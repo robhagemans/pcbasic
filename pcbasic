@@ -29,66 +29,73 @@ def main():
                 shutil.rmtree(temp_dir)
             if not os.path.exists(temp_dir):
                 os.mkdir(temp_dir)
-        # logging setup before we import modules and may need to log errors
-        # do we log to a file? 
-        logfile = ''
-        formatstr = '%(levelname)s: %(message)s'
-        if config.options['debug']:
-            logging.basicConfig(format=formatstr, level=logging.DEBUG)
-        elif logfile:
-            logging.basicConfig(format=formatstr, level=logging.INFO,
-                                filename=os.path.join(plat.info_dir, logfile))
-        else:
-            logging.basicConfig(format=formatstr, level=logging.INFO)
-        import backend
-        # load backend modules
-        # this can't be done in backend.py as it would create circular dependency
-        import video_none
-        import video_cli
-        import video_curses
-        import video_pygame
-        import audio_none
-        import audio_pygame
-        import audio_beep
-        backends = {
-            'none': (video_none, audio_none),
-            'cli': (video_cli, audio_beep),
-            'ansi': (video_curses, audio_beep),
-            'graphical': (video_pygame, audio_pygame), 
-            }
-        # interface choice shortcuts
-        if config.options['ansi']:
-            config.options['interface'] = 'ansi'
-        elif config.options['cli']:
-            config.options['interface'] = 'cli'
-        elif not config.options['interface']:
-            # interface defaults
-            if not plat.stdin_is_tty or not plat.stdout_is_tty:
-                config.options['interface'] = 'none'
-            else:     
-                config.options['interface'] = 'graphical'
-        # select interface        
-        backend.video, backend.audio = backends[config.options['interface']]
-        if config.options['nosound']:
-            backend.audio = audio_none
-        import run
-        import error
-        import oslayer
-        import console
-        import program
-        import state
-        import iolayer
-        import var
-        import fp
         # in version mode, print version and exit
         if config.options['version']:
+            logging.basicConfig(format='%(message)s', level=logging.INFO)
             logging.info(plat.version)
-        # in converter mode, convert and exit
-        elif config.options['convert']:
-            convert()
-        # otherwise, go into BASIC    
+        elif config.options['help']:
+            logging.basicConfig(format='%(message)s', level=logging.INFO)
+            f = open(os.path.join(plat.info_dir, 'USAGE'))
+            for line in f:
+                logging.info(line[:-1])
         else:
-            start_basic()
+            # logging setup before we import modules and may need to log errors
+            # do we log to a file? 
+            logfile = ''
+            formatstr = '%(levelname)s: %(message)s'
+            if config.options['debug']:
+                logging.basicConfig(format=formatstr, level=logging.DEBUG)
+            elif logfile:
+                logging.basicConfig(format=formatstr, level=logging.INFO,
+                                    filename=os.path.join(plat.info_dir, logfile))
+            else:
+                logging.basicConfig(format=formatstr, level=logging.INFO)
+            import backend
+            # load backend modules
+            # this can't be done in backend.py as it would create circular dependency
+            import video_none
+            import video_cli
+            import video_curses
+            import video_pygame
+            import audio_none
+            import audio_pygame
+            import audio_beep
+            backends = {
+                'none': (video_none, audio_none),
+                'cli': (video_cli, audio_beep),
+                'ansi': (video_curses, audio_beep),
+                'graphical': (video_pygame, audio_pygame), 
+                }
+            # interface choice shortcuts
+            if config.options['ansi']:
+                config.options['interface'] = 'ansi'
+            elif config.options['cli']:
+                config.options['interface'] = 'cli'
+            elif not config.options['interface']:
+                # interface defaults
+                if not plat.stdin_is_tty or not plat.stdout_is_tty:
+                    config.options['interface'] = 'none'
+                else:     
+                    config.options['interface'] = 'graphical'
+            # select interface        
+            backend.video, backend.audio = backends[config.options['interface']]
+            if config.options['nosound']:
+                backend.audio = audio_none
+            import run
+            import error
+            import oslayer
+            import console
+            import program
+            import state
+            import iolayer
+            import var
+            import fp
+            # in converter mode, convert and exit
+            if config.options['convert']:
+                convert()
+            # otherwise, go into BASIC    
+            else:
+                start_basic()
     finally:
         try:
             # fix the terminal on exit or crashes (important for ANSI terminals)

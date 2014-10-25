@@ -439,11 +439,6 @@ def parse_args(parser, remaining, default):
         parser.add_argument(*parms, **kwparms)
     # parse command line arguments to override defaults
     args = vars(parser.parse_args(remaining if remaining else ''))
-    # display help message if requested, and exit
-    # this needs to be done here as we need the parser object to exist
-    if args['help']:
-        parser.print_help()
-        sys.exit(0)
     # turn bool args into something sensible
     for d in arguments:
         if d in args:
