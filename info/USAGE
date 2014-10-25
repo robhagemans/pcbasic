@@ -375,35 +375,95 @@ OPTIONS
                 olivetti    Olivetti M24 graphics
                 
 
-
 EXAMPLES
 
     pcbasic
-    
+            Start PC-BASIC in interactive mode, emulating GW-BASIC/BASICA
+            with VGA graphics.
+
     
     pcbasic --codepage=950
-    
+            Start PC-BASIC in default mode but using the Traditional Chinese 
+            codepage.
     
     pcbasic Foobar.baz
-    
+            Start PC-BASIC with package Foobar. Load the settings from the
+            package; usually this will run a main program contained in the 
+            pazkage. 
+            
+    pcbasic Foobar.baz --conv A --utf8
+            List the main program of package Foobar to standard output as UTF-8.
     
     pcbasic MYPROG.BAS --mount=A:./files B:./morefiles
-    
+            Attach the current directory's subdirectory files as drive A:
+            and subdirectory morefiles as drive B:, then run MYPROG.BAS.
+            On Windows, mounts can also be specified as --mount=A:\\files etc.
     
     pcbasic @:\\INFO.BAS --preset=mda --mono-tint=255,128,0
-    
+            Run the information program included with PC-BASIC on 
+            an emulated MDA with amber tinted monitor.
     
     pcbasic /home/me/retro/COMP.BAS --preset=cga --monitor=composite
+            Run COMP.BAS stored at /home/me/retro on an emulated CGA machine
+            with a composite monitor.
     
-    
-    pcbasic PCJRGAME.BAS --preset=pcjr
-    
+    pcbasic PCJRGAME.BAS --preset=pcjr -k 'start\r'
+            Run PCJRGAME.BAS on an emulated PCjr and feed in the keystrokes 
+            start<ENTER>.
     
     pcbasic BANNER.BAS --lpt1=PRINTER:    
-
+            Run BANNER.BAS in default mode with the default printer connected
+            to LPT1:.
 
     pcbasic --resume
+            Resume the last closed PC-BASIC session.
+    
+    pcbasic -q -b -e "?1+1"
+            Execute the BASIC command PRINT 1+1 in the command-line interface 
+            and return to the calling shell.
 
 
+PACKAGES
+    
+    PC-BASIC can run packaged applications. A package is simply a zip file
+    that contains (at least) a configuration file named PCBASIC.INI. Settings
+    from the config file are loaded; usually, one of those settings will be a 
+    run= argument linking to a BAS file enclosed in the zip container.
+    A suggested extension for such packages is .BAZ, but PC-BASIC will 
+    recognise packages regardless of extension. 
+    Packages are unpacked to a temporary directory each time they are loaded.
+    The temporary directory is removed when PC-BASIC closes and it is therefore 
+    not possible to save emulator state or files and re-open them on the next 
+    run of the package.
 
 
+USING THE INTERFACE
+
+    By default, PC-BASIC starts in interactive mode, where BASIC commands
+    can be executed immediately or programs can be entered and edited.
+    See the BASIC language reference in HELP for more information about
+    using the interactive mode.
+    
+    In the graphical interface, you can copy and paste text to the clipboard
+    using the mouse (by default, left button is select and copy; middle button 
+    is paste) or the keyboard, if your operating system does not catch the
+    Logo key (Windows key). Logo key + arrow keys selects; Logo + A 
+    selects all; Logo + C copies; Logo + V pastes.
+    
+    In the command-line interface, the arrow keys can be used to move 
+    horizontally on the current line being edited. Using the vertical arrow keys
+    will show any screen lines above or below the current line. Copy and
+    paste are available only if the calling shell provides them. In command-
+    line mode, BASIC catches ctrl-C. You can close the interface using
+    the end-of-file key combination (ctrl+D on Unix, ctrl+Z on Windows).
+    
+    On Unix systems, a curses-style text interface is available using ANSI
+    escape codes. Operating this shell works largely the same as operating the
+    graphical shell, but many Alt- and Ctrl-key combinations are not 
+    available.
+    
+    Attempting to open a graphical screen in the command-line or text interface
+    will lead to an "Illegal function call" error.
+    
+     
+    
