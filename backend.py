@@ -1126,7 +1126,7 @@ def check_events():
 # video mode
 
 def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, 
-           erase=1, new_width=None):
+           erase=1, new_width=None, recursion_depth=0):
     """ Change the video mode, colourburst, visible or active page. """
     # set default arguments
     if new_mode == None:
@@ -1215,7 +1215,8 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
     if not video.init_screen_mode(info):
         # something broke at the backend. fallback to text mode and give error.
         # this is not ideal but better than crashing.
-        screen(0, 0, 0, 0)
+        if not recursion_depth:
+            screen(0, 0, 0, 0, recursion_depth=recursion_depth+1)
         return False
     # set the palette (essential on first run, or not all globals defined)
     set_palette()
