@@ -38,12 +38,6 @@ options = {}
 # flag True if we're running from a package
 package = False
 
-# top line of usage statement
-description = (
-    'PC-BASIC 3.23 interpreter. '
-    'A BAS program or BAZ package to run can be specified as the first argument. '
-    'If no options are present, the interpreter will run in interactive mode.')
-
 # GWBASIC invocation, for reference:
 # GWBASIC [prog] [<inp] [[>]>outp] [/f:n] [/i] [/s:n] [/c:n] [/m:[n][,n]] [/d]
 #   /d      Allow double-precision ATN, COS, EXP, LOG, SIN, SQR, and TAN. 
@@ -69,189 +63,67 @@ short_args = {
 
 # all long-form arguments
 arguments = {
-    'input':   {
-        'type': 'string', 'metavar': 'input_file', 'default': '',
-        'help': 'Retrieve keyboard input from input_file, '
-                'except if KYBD: is read explicitly.' },
-    'output':  {
-        'type': 'string', 'metavar': 'output_file', 'default': '',
-        'help': 'Send screen output to output_file, '
-                'except if SCRN: is written to explicitly.' },
-    'append':  {
-        'type': 'bool', 'default': 'False',
-        'help': 'Append to output_file, do not overwrite. Use with --output.' },
-    'cli': {
-        'type': 'bool', 'default': 'False',
-        'help': 'Use command-line text interface. Same as --interface=cli' },
-    'ansi': {
-        'type': 'bool', 'default': 'False',
-        'help': 'Use ANSI text interface. Same as --interface=ansi' },
+    'input': {'type': 'string', 'default': '', },
+    'output': {'type': 'string', 'default': '', },
+    'append': {'type': 'bool', 'default': 'False', },
+    'cli': {'type': 'bool', 'default': 'False', },
+    'ansi': {'type': 'bool', 'default': 'False', },
     'interface': { 
         'type': 'string', 'default': '',
-        'choices': ('none', 'cli', 'ansi', 'graphical'),
-        'help': 'Choose type of interface. When redirecting i/o, the default '
-                'is none; otherwise, default is graphical.' },
-    'load': {
-        'type': 'string', 'default': '', 'metavar': 'PROGRAM.BAS',
-        'help': 'Load the specified .BAS program.' },
-    'run': {
-        'type': 'string', 'default': '', 'metavar': 'PROGRAM.BAS',
-        'help': 'Run the specified .BAS program. Overrides --load.' },
-    'convert': { 
-        'type': 'string', 'metavar':'mode[,infile[,outfile]]', 'default': '',
-        'help': 'Convert infile to mode=A,B,P for ASCII, Bytecode or '
-                'Protected mode. Write to outfile or standard output.' },
-    'keys': {
-        'type': 'string', 'metavar':'keystring', 'default': '',
-        'help': 'Insert keys into the key buffer' },
-    'exec': {
-        'type': 'string', 'metavar': 'command_line', 'default': '',
-        'help': 'Execute BASIC command line' },
-    'quit': {
-        'type': 'bool', 'default': 'False',
-        'help': 'Quit interpreter when execution stops' },
-    'double': {
-        'type': 'bool', 'default': 'False',
-        'help': 'Allow double-precision transcendental math functions' },
-    'max-files': {
-        'type': 'int', 'metavar':'NUMBER', 'default': 3, 
-        'help': 'Set maximum number of open files (default is 3).' },
-    'max-reclen': { 
-        'type': 'int', 'metavar':'NUMBER', 'default': 128,
-        'help': 'Set maximum record length for RANDOM files ' 
-                '(default is 128, max is 32767).' },
-    'serial-buffer-size': { 
-        'type': 'int', 'metavar':'NUMBER', 'default': 256,
-        'help': 'Set serial input buffer size (default is 256). '
-                'If 0, serial communications are disabled.' },
-    'peek': { 
-        'type': 'list', 'metavar':'SEG:ADDR:VAL', 'default': [],
-        'help': 'Define PEEK preset values' },
-    'lpt1': { 
-        'type': 'string', 'metavar':'TYPE:VAL', 'default': '',
-        'help': 'Set LPT1: to FILE:file_name or PRINTER:printer_name.' },
-    'lpt2': { 
-        'type': 'string', 'metavar':'TYPE:VAL', 'default': '',
-        'help': 'Set LPT2: to FILE:file_name or PRINTER:printer_name.' },
-    'lpt3': { 
-        'type': 'string', 'metavar':'TYPE:VAL', 'default': '',
-        'help': 'Set LPT3: to FILE:file_name or PRINTER:printer_name.' },
-    'com1': { 
-        'type': 'string', 'metavar':'TYPE:VAL', 'default': '',
-        'help': 'Set COM1: to PORT:device_name or SOCKET:host:socket.' },
-    'com2': { 
-        'type': 'string', 'metavar':'TYPE:VAL', 'default': '',
-        'help': 'Set COM2: to PORT:device_name or SOCKET:host:socket.' },
-    'codepage': { 
-        'type': 'string', 'choices': encodings, 'default': '437',
-        'help': 'Load specified font codepage; default is 437' },
+        'choices': ('none', 'cli', 'ansi', 'graphical'), },
+    'load': {'type': 'string', 'default': '', },
+    'run': {'type': 'string', 'default': '',  },
+    'convert': {'type': 'string', 'default': '', },
+    'keys': {'type': 'string', 'default': '', },
+    'exec': {'type': 'string', 'default': '',  },
+    'quit': {'type': 'bool', 'default': 'False',},
+    'double': {'type': 'bool', 'default': 'False',},
+    'max-files': {'type': 'int', 'default': 3,}, 
+    'max-reclen': {'type': 'int', 'default': 128,},
+    'serial-buffer-size': {'type': 'int', 'default': 256,},
+    'peek': {'type': 'list', 'default': [],},
+    'lpt1': {'type': 'string', 'default': '',},
+    'lpt2': {'type': 'string', 'default': '',},
+    'lpt3': {'type': 'string', 'default': '',},
+    'com1': {'type': 'string', 'default': '',},
+    'com2': {'type': 'string', 'default': '',},
+    'codepage': {'type': 'string', 'choices': encodings, 'default': '437',},
     'font': { 
         'type': 'list', 'choices': families, 
-        'default': ['unifont', 'univga', 'freedos'],
-        'help': 'Load current codepage from specified .hex fonts. '
-                'Last fonts specified take precedence, previous ones are '
-                'fallback. Default is unifont,univga,freedos.' },
-    'nosound': { 
-        'type': 'bool', 'default': 'False', 
-        'help': 'Disable sound output' },
-    'dimensions': { 
-        'type': 'string', 'metavar':'X,Y', 'default': '',
-        'help': 'Set pixel dimensions for graphics mode. Overrides '
-                '--blocky and --aspect.'
-                'Graphical interface only.' },
-    'fullscreen': { 
-        'type': 'bool', 'default': 'False',
-        'help': 'Fullscreen mode. Graphical interface only.' },
-    'noquit': { 
-        'type': 'bool', 'default': 'False',
-        'help': 'Allow BASIC to capture <ALT+F4>. Graphical interface only.' },
-    'debug': { 
-        'type': 'bool', 'default': 'False',
-        'help': 'Debugging mode.' },
-    'strict-hidden-lines': { 
-        'type': 'bool', 'default': 'False',
-        'help': 'Disable listing and ASCII saving of lines beyond 65530 '
-                '(as in GW-BASIC). Use with care as this allows execution '
-                'of invisible statements.' },
-    'strict-protect': { 
-        'type': 'bool', 'default': 'False',
-        'help': 'Disable listing and ASCII saving of protected files '
-                '(as in GW-BASIC). Use with care as this allows execution '
-                'of invisible statements.' },
-    'capture-caps': {
-        'type': 'bool', 'default': 'False',
-        'help': "Handle CAPS LOCK; may collide with the operating system's "
-                "own handling." },
-    'mount': { 
-        'type': 'list', 'metavar':'D:PATH', 'default': [],
-        'help': 'Assign a drive letter to a path.' },
-    'resume': { 
-        'type': 'bool', 'default': 'False',
-        'help': 'Resume from saved state. Most other arguments are ignored.' },
-    'strict-newline': { 
-        'type': 'bool', 'default': 'False',
-        'help': 'Parse CR and LF in files strictly like GW-BASIC. '
-                'On Unix, you will need to convert your files to DOS text '
-                'if using this.' },
+        'default': ['unifont', 'univga', 'freedos'],},
+    'nosound': {'type': 'bool', 'default': 'False', },
+    'dimensions': {'type': 'string', 'default': '',},
+    'fullscreen': {'type': 'bool', 'default': 'False',},
+    'noquit': {'type': 'bool', 'default': 'False',},
+    'debug': {'type': 'bool', 'default': 'False',},
+    'strict-hidden-lines': {'type': 'bool', 'default': 'False',},
+    'strict-protect': {'type': 'bool', 'default': 'False',},
+    'capture-caps': {'type': 'bool', 'default': 'False',},
+    'mount': {'type': 'list', 'default': [],},
+    'resume': {'type': 'bool', 'default': 'False',},
+    'strict-newline': {'type': 'bool', 'default': 'False',},
     'syntax': { 
         'type': 'string', 'choices': ('advanced', 'pcjr', 'tandy'), 
-        'default': 'advanced',
-        'help': 'Choose GW-BASIC/BASICA, PCjr, or Tandy 1000 syntax.' },
-    'pcjr-term': { 
-        'type': 'string', 'metavar': 'TERM.BAS', 'default': '',
-        'help': 'Set the terminal program run by the PCjr TERM command' },
+        'default': 'advanced',},
+    'pcjr-term': {'type': 'string', 'default': '',},
     'video': { 
         'type': 'string', 'default': 'vga',
         'choices': ('vga', 'ega', 'cga', 'cga_old', 'mda', 'pcjr', 'tandy',
-                     'hercules', 'olivetti'), 
-        'help': 'Set the video card to emulate.' },
-    'map-drives': { 
-        'type': 'bool', 'default': 'False',
-        'help': 'Map all Windows drive letters to PC-BASIC drive letters '
-                '(Windows only)' },
-    'cga-low': { 
-        'type': 'bool', 'default': 'False',
-        'help': 'Use low-intensity palettes in CGA '
-                '(for --video={cga, ega, vga} only).' },
-    'nobox': { 
-        'type': 'bool', 'default': 'False',
-        'help': 'Disable box-drawing recognition for DBCS code pages' },
-    'utf8': { 
-        'type': 'bool', 'default': 'False',
-        'help': 'Use UTF-8 for ascii-mode programs and redirected i/o' },
-    'border': { 
-        'type': 'int', 'default': 5,
-        'help': 'Width of the screen border as a percentage 0-100 '
-                '(graphical interface only).' },
-    'mouse': {
-        'type': 'string', 'metavar': 'left,middle,right', 
-        'default': 'copy,paste,pen',
-        'help': 'Set the functions of the three mouse buttons '
-                '(copy,paste,pen).' },
-    'state': {
-        'type': 'string', 'metavar': plat.state_name, 'default': '',
-        'help': 'Set the save-state file. Default is info/%s' % 
-                plat.state_name },                
-    'mono-tint': {
-        'type': 'string', 'metavar': 'r,g,b', 'default': '255,255,255',
-        'help': 'Specify the monochrome tint as RGB, each in the range 0-255' },
+                     'hercules', 'olivetti'), },
+    'map-drives': {'type': 'bool', 'default': 'False',},
+    'cga-low': {'type': 'bool', 'default': 'False',},
+    'nobox': {'type': 'bool', 'default': 'False',},
+    'utf8': {'type': 'bool', 'default': 'False',},
+    'border': {'type': 'int', 'default': 5,},
+    'mouse': {'type': 'string', 'default': 'copy,paste,pen',},
+    'state': {'type': 'string', 'default': '',},
+    'mono-tint': {'type': 'string', 'default': '255,255,255',},
     'monitor': { 
         'type': 'string', 'choices': ('rgb', 'composite', 'mono'),
-        'default': 'rgb',
-        'help': 'Sets the monitor type to emulate.' 
-                'Composite enables colour artifacts, crudely, on SCREEN 2 only '
-                'and is not allowed for --video=ega' },
-    'aspect': {
-        'type': 'string', 'metavar': 'x,y', 'default': '4,3',
-        'help': 'Set the display aspect ratio to x/y. '
-                'Graphical interface only.' },
-    'blocky': {
-        'type': 'bool', 'default': 'False',
-        'help': 'Choose whole multiples of pixel size for display and do not '
-                'smoothen. Overrides --aspect. Graphical interface only.' },                
-    'version': {
-        'type': 'bool', 'default': 'False',
-        'help': 'Print version and exit'},
+        'default': 'rgb',},
+    'aspect': {'type': 'string', 'default': '4,3',},
+    'blocky': {'type': 'bool', 'default': 'False',},
+    'version': {'type': 'bool', 'default': 'False',},
 }
 
 
@@ -277,9 +149,7 @@ def get_options():
     if argparse:
         # we need to disable -h and re-enable it manually 
         # to avoid the wrong usage message from parse_known_args
-        parser = argparse.ArgumentParser(
-                        add_help=False, description=description, 
-                        usage='%(prog)s [program_or_package] [options]')
+        parser = argparse.ArgumentParser(add_help=False)
         remaining = sys.argv[1:]
         # unpack any packages and parse program arguments
         arg_program, remaining = parse_package(parser, remaining)
@@ -380,9 +250,7 @@ def parse_config(parser, remaining):
         config_file = plat.config_name
     if parser:    
         # parse any overrides    
-        parser.add_argument('--config', metavar=plat.config_name, 
-            help='Read configuration file. Default is info/%s' % 
-                 plat.config_name)
+        parser.add_argument('--config')
         arg_config, remaining = parser.parse_known_args(
                                     remaining if remaining else '')       
         if arg_config.config:
@@ -406,8 +274,7 @@ def parse_args(parser, remaining, default):
         default_underscore[key_corrected] = default[key]
     parser.set_defaults(**default_underscore)
     # manually re-enable -h
-    parser.add_argument('--help', '-h', action='store_true', 
-                        help='Show this message and exit')
+    parser.add_argument('--help', '-h', action='store_true')
     # set arguments
     for argname in sorted(arguments.keys()):
         kwparms = {} 
