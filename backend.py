@@ -1212,7 +1212,11 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
     # cursor width starts out as single char
     state.console_state.cursor_width = state.console_state.font_width        
     # signal the backend to change the screen resolution
-    video.init_screen_mode(info)
+    if not video.init_screen_mode(info):
+        # something broke at the backend. fallback to text mode and give error.
+        # this is not ideal but better than crashing.
+        screen(0, 0, 0, 0)
+        return False
     # set the palette (essential on first run, or not all globals defined)
     set_palette()
     # set the attribute

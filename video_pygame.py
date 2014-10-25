@@ -389,6 +389,8 @@ def init_screen_mode(mode_info):
     global mode_has_artifacts, cursor_fixed_attr, mode_has_blink
     global mode_has_underline
     global get_put_store
+    if not fonts[mode_info.font_height]:
+        return False
     text_mode = mode_info.is_text_mode
     # unpack mode info struct
     font_height = mode_info.font_height
@@ -421,7 +423,7 @@ def init_screen_mode(mode_info):
     # initialise clipboard
     scrap = Clipboard(mode_info.width, mode_info.height)
     screen_changed = True
-    
+    return True
 
 def find_display_size(canvas_x, canvas_y, border_width): 
     """ Determine the optimal size for the display. """
