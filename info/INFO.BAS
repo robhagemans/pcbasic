@@ -2,15 +2,16 @@
 15  REM Copyright (c) 2013, 2014 Rob Hagemans
 20  REM Released under the GNU GPL version 3
 25  '
-50  KEYS.NAME$(1)="1"     : KEYS.WHAT$(1)="About" : FILE$(1)="@:ABOUT"
-55  KEYS.NAME$(2)="2"     : KEYS.WHAT$(2)="Legal" : FILE$(2)="@:COPYING"
-60  KEYS.NAME$(3)="3"     : KEYS.WHAT$(3)="GPLv3" : FILE$(3)="@:GPL3"
-65  KEYS.NAME$(4)="4"     : KEYS.WHAT$(4)="Doc"   : FILE$(4)="@:HELP"
-70  KEYS.NAME$(5)="Q"     : KEYS.WHAT$(5)="Quit"
-75  KEYS.NAME$(6)="S"     : KEYS.WHAT$(6)="Search"
-80  KEYS.NAME$(7)="SPACE" : KEYS.WHAT$(7)="Line"
-85  KEYS.NAME$(8)="ENTER" : KEYS.WHAT$(8)="Page"
-90  KEYS.LEN = 8 : FILES.NUM = 4 : K = 1
+50  KEYS.NAME$(1)="1"     : KEYS.WHAT$(1)="About"    : FILE$(1)="@:ABOUT"
+55  KEYS.NAME$(2)="2"     : KEYS.WHAT$(2)="Legal"    : FILE$(2)="@:COPYING"
+60  KEYS.NAME$(3)="3"     : KEYS.WHAT$(3)="GPLv3"    : FILE$(3)="@:GPL3"
+62  KEYS.NAME$(4)="4"     : KEYS.WHAT$(4)="CC-BY-SA" : FILE$(4)="@:CC-BY-SA"
+65  KEYS.NAME$(5)="5"     : KEYS.WHAT$(5)="Doc"      : FILE$(5)="@:HELP"
+70  KEYS.NAME$(6)="Q"     : KEYS.WHAT$(6)="Quit"
+75  KEYS.NAME$(7)="S"     : KEYS.WHAT$(7)="Search"
+80  KEYS.NAME$(8)="SPACE" : KEYS.WHAT$(8)="Line"
+85  KEYS.NAME$(9)="ENTER" : KEYS.WHAT$(9)="Page"
+90  KEYS.LEN = 9 : FILES.NUM = 5 : K = 1
 99  '
 100 REM main loop
 105   SCREEN 0,0,0,0 : WIDTH 80 : KEY OFF
@@ -32,7 +33,7 @@
 1010   VIEW PRINT : LOCATE 25,1
 1020   FOR I = 1 TO KEYS.LEN
 1030     PRINT KEYS.NAME$(I);
-1040     COLOR 0,7 : PRINT " " KEYS.WHAT$(I); "  "; 
+1040     COLOR 0,7 : PRINT " " KEYS.WHAT$(I); " "; 
 1050     COLOR 7,0
 1060   NEXT 
 1070   COLOR 0,7 : PRINT SPC(81-POS(0));
