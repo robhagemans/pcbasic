@@ -1065,6 +1065,8 @@ def resume_screen():
                        state.console_state.apagenum)
         # set the screen mde
         video.init_screen_mode(mode_info)
+        # initialise rgb_palette global
+        set_palette(state.console_state.palette)
         video.update_palette(state.console_state.rgb_palette,
                              state.console_state.rgb_palette1)
         video.set_attr(state.console_state.attr)
