@@ -437,7 +437,7 @@ PACKAGES
     run of the package.
 
 
-USING THE INTERFACE
+THE INTERFACE
 
     By default, PC-BASIC starts in interactive mode, where BASIC commands
     can be executed immediately or programs can be entered and edited.
@@ -464,6 +464,30 @@ USING THE INTERFACE
     
     Attempting to open a graphical screen in the command-line or text interface
     will lead to an "Illegal function call" error.
+
     
-     
+THE FILE SYSTEM
+
+    PC-BASIC follows DOS file system conventions, where files consist of a 
+    8-character name and 3-character extension. PC-BASIC is case insensitive.
+    On case sensitive file systems, this behaviour is emulated. When saving or
+    writing to a new file on such systems, PC-BASIC will convert any name 
+    provided to all-uppercase 8.3. When opening an existing file, PC-BASIC will
+    first look for a file with the name exactly as provided. If that is not 
+    found, it will look for a file whose exact name is the name provided, 
+    truncated to all-caps 8.3 format. Finally, if that such a file is not 
+    found, it will look for files which when truncated to 8.3 is a case-
+    insensitive match for the provided filename, in lexicographic order.
+    On Windows, the system-defined short file name is used instead.
     
+    The path separator is the backslash (\). A forward slash may work in some 
+    cases, but this behaviour is not defined and may change in future.
+    
+    By default, drive letter C: is mapped to the current working directory.
+    In particular, it is not mapped to the Windows C: drive. Use --mount or 
+    (on Windows) --map-drives to change this behaviour.
+    
+    The arguments to the --load and --run options can be provided as PC-BASIC
+    paths or as paths in the standard form for your operating system.
+    
+
