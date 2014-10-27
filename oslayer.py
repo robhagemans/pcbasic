@@ -274,7 +274,10 @@ def find_name_read(s, defext='BAS', path='', err=53, isdir=False, find_case=True
     raise error.RunError(err)
         
 # substitute drives and cwds    
-def get_drive_path(s, err):    
+def get_drive_path(s, err): 
+    # don't accept forward slashes, they confuse issues.
+    if '/' in s:
+        raise error.RunError(53)   
     drivepath = s.split(':')
     if len(drivepath) > 1:
         letter, s = drivepath[0].upper(), drivepath[1]

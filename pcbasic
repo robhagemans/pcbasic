@@ -90,9 +90,7 @@ def convert():
     # load & save in different format
     try:
         if infile:
-            # on load, accept capitalised versions and default extension
-            program.load(iolayer.open_file_or_device(0, 
-                         infile, mode='L', defext='BAS'))
+            program.load(open_native_or_dos_filename(infile))
         elif plat.stdin:
             program.load(plat.stdin)      
         if outfile:
@@ -108,9 +106,7 @@ def start_basic():
     import program
     import run
     import error
-    import oslayer
     import state
-    import iolayer
     reset = False
     # positional argument will be interpreted as program to run
     config.options['run'] = (config.options['run'] or config.options['program'])
@@ -126,8 +122,7 @@ def start_basic():
             prog = config.options['run'] or config.options['load']
             if prog:
                 # on load, accept capitalised versions and default extension
-                program.load(iolayer.open_file_or_device(0, 
-                             prog, mode='L', defext='BAS'))
+                program.load(open_native_or_dos_filename(prog))
             # run commands
             command = config.options['exec']
             if config.options['run']: 
@@ -235,7 +230,19 @@ def print_greeting(console):
             console.write_line(greeting % (debugstr, var.total_mem))
             console.show_keys(True)
                 
-            
+def open_native_or_dos_filename(infile):
+    """ If the specified file exists, open it; if not, try as DOS file name. """
+    import iolayer
+    import oslayer
+    import error
+    try:
+        # first try exact file name
+        return oslayer.safe_open(infile, "L", "R")
+    except error.RunError:
+        # on load, accept capitalised versions and default extension
+        return iolayer.open_file_or_device(0, 
+                infile, mode='L', defext='BAS')
+                        
 if __name__ == "__main__":
     main()
         
