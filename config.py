@@ -172,6 +172,9 @@ def get_options():
                 args[d] = parse_bool_arg(args[d])
     # any program given on the command line overrides that in config files    
     args['program'] = '' or arg_program
+    # add missing help option
+    if not args.has_key('help'):
+        args['help'] = None
     return args        
             
 def default_args(conf_dict):
