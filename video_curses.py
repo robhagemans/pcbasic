@@ -75,7 +75,6 @@ def init():
                  [a for a in locale.locale_alias.values() 
                     if '.' in a and a.split('.')[1] == 'UTF-8'])
     for lang in languages:    
-        logging.info(lang)
         try:
             locale.setlocale(locale.LC_ALL,(lang, 'utf-8'))
             break
