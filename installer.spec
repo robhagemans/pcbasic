@@ -109,7 +109,10 @@ elif platform.system() == 'Darwin':
           upx=True,
           console=False )
 	coll = COLLECT(exe,
-               a.binaries,
+               a.binaries - [
+                    # exclude Scrap module as it leads to strange errors.
+                    ('pygame.scrap', None, None)
+                    ],
                a.zipfiles,
                a.datas,
                Tree('font', prefix='font'),
