@@ -70,7 +70,20 @@ def init():
     global screen, default_colors, can_change_palette
     if not curses:
         logging.warning('ANSI interface not supported.')
-    locale.setlocale(locale.LC_ALL,('C', 'utf-8'))
+    # find a supported UTF-8 locale, with a preference for C, en-us, default   
+    languages = (['C', 'en-US', locale.getdefaultlocale()[0]] + 
+                 [a for a in locale.locale_alias.values() 
+                    if '.' in a and a.split('.')[1] == 'UTF-8'])
+    for lang in languages:    
+        logging.info(lang)
+        try:
+            locale.setlocale(locale.LC_ALL,(lang, 'utf-8'))
+            break
+        except locale.Error:
+            pass    
+    if locale.getlocale()[1] != 'UTF-8':
+        logging.warning('No supported UTF-8 locale found.')
+        return False
     # set the ESC-key delay to 25 ms unless otherwise set
     # set_escdelay seems to be unavailable on python curses.
     if not os.environ.has_key('ESCDELAY'):
