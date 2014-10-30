@@ -89,7 +89,7 @@ def skip_to(ins, findrange, break_on_first_char=True):
             if len(off) < 2 or off == '\x00\x00':
                 break
             ins.read(2)
-        elif c in ('\xff', '\xfe', '\x0f'):
+        elif c in ('\xff', '\xfe', '\xfd', '\x0f'):
             ins.read(1)
         elif c in ('\x0b', '\x0c', '\x0d', '\x0e', '\x1c'):
             ins.read(2)
