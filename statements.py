@@ -1220,7 +1220,7 @@ def exec_get_graph(ins):
     util.require(ins, ('(')) # don't accept STEP
     x0,y0 = parse_coord(ins)
     util.require_read(ins, ('\xEA',)) #-
-    util.require(ins, ('(')) # don't accept STEP
+    util.require(ins, ('(', '\xCF')) # STEP
     x1,y1 = parse_coord(ins)
     util.require_read(ins, (',',)) 
     array = util.get_var_name(ins)    
