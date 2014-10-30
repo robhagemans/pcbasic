@@ -418,9 +418,7 @@ def tokenise_word(ins, outs):
                 ins.read(4)
             else:
                 # GOTO allows any number of spaces
-                nxt = ins.read(1) 
-                while nxt in tokenise_whitespace:
-                    nxt = ins.read(1)
+                nxt = util.skip(ins, tokenise_whitespace)
                 if ins.read(2) == 'TO':
                     word = 'GOTO'
                 else:
