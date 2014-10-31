@@ -1231,7 +1231,7 @@ def exec_paint(ins):
             if util.skip_white_read_if(ins, (',',)):
                 background_pattern = vartypes.pass_string_unpack(expressions.parse_expression(ins), err=5)
                 # only in screen 7,8,9 is this an error (use ega memory as a check)
-                if (background_pattern[:len(pattern)] == pattern and 
+                if (pattern and background_pattern[:len(pattern)] == pattern and 
                         state.console_state.current_mode.mem_start == 0xa000):
                     raise error.RunError(5)
     util.require(ins, util.end_statement)         
