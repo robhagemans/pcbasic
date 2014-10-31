@@ -145,16 +145,19 @@ def handle_error(s, quit):
     state.basic_state.error_handle_mode = False
     if quit:
         raise error.Exit()
+    # prompt is shown here
     set_execute_mode(False)
     state.basic_state.input_mode = False    
-    # special case
+    # special case: syntax error
     if s.err == 2:
         # for some reason, err is reset to zero by GW-BASIC in this case.
         state.basic_state.errn = 0
-        # for syntax error, line edit gadget appears
+        # line edit gadget appears
         if s.pos != -1:
             try:    
                 program.edit(program.get_line_number(s.pos), state.basic_state.bytecode.tell())
+                # reinstate prompt suppressed by edit
+                state.basic_state.prompt = True
             except error.RunError as e:
                 handle_error(e, quit)
 
