@@ -24,7 +24,7 @@ def main():
         import config
         if plat.system == 'Android':
             # resume from existing directory (or clear it if we're not resuming) 
-            if not config.options['resume'] and os.path.exists(temp_dir):
+            if not config.options['resume'] and os.path.exists(plat.temp_dir):
                 shutil.rmtree(plat.temp_dir)
             if not os.path.exists(plat.temp_dir):
                 os.mkdir(plat.temp_dir)
@@ -107,6 +107,7 @@ def start_basic():
     import run
     import error
     import state
+    import iolayer
     reset = False
     # positional argument will be interpreted as program to run
     config.options['run'] = (config.options['run'] or config.options['program'])
