@@ -678,7 +678,7 @@ def tokenise_number(ins, outs):
 def str_to_value_keep(strval, allow_nonnum=True):
     if strval == ('$', ''):
         return vartypes.null['%']
-    strval = vartypes.pass_string_unpack(strval)
+    strval = str(vartypes.pass_string_unpack(strval))
     ins = StringIO(strval)
     outs = StringIO()
     # skip spaces and line feeds (but not NUL).
