@@ -997,17 +997,18 @@ def exec_open(ins):
     util.require(ins, util.end_statement)
                 
 def exec_close(ins):
-    # allow empty CLOSE
     if util.skip_white(ins) in util.end_statement:
-        return
-    while True:
-        number = expressions.parse_file_number_opthash(ins)
-        try:    
-            state.io_state.files[number].close()
-        except KeyError:
-            pass    
-        if not util.skip_white_read_if(ins, (',',)):
-            break
+        # allow empty CLOSE; close all open files
+        iolayer.close_all()
+    else:    
+        while True:
+            number = expressions.parse_file_number_opthash(ins)
+            try:    
+                state.io_state.files[number].close()
+            except KeyError:
+                pass    
+            if not util.skip_white_read_if(ins, (',',)):
+                break
     util.require(ins, util.end_statement)
             
 def exec_field(ins):
