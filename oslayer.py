@@ -277,7 +277,8 @@ def find_name_read(s, defext='BAS', path='', err=53, isdir=False, find_case=True
 def get_drive_path(s, err): 
     # don't accept forward slashes, they confuse issues.
     if '/' in s:
-        raise error.RunError(53)   
+        # bad file number - this is what GW produces here
+        raise error.RunError(52)   
     drivepath = s.split(':')
     if len(drivepath) > 1:
         letter, s = drivepath[0].upper(), drivepath[1]
@@ -353,7 +354,14 @@ def pass_dosnames(path, files_list, mask='*.*'):
     return dosfiles
 
 def files(pathmask):
-    drive, path, mask = get_drive_path(str(pathmask), 53)
+    # strip trailing spaces
+    pathmask = str(pathmask).rstrip()
+    # forward slashes - file not found
+    # GW-BASIC sometimes allows leading or trailing slashes
+    # and then does weird things I don't understand. 
+    if '/' in pathmask:
+        raise error.RunError(53)   
+    drive, path, mask = get_drive_path(pathmask, 53)
     mask = mask.upper()
     if mask == '':
         mask = '*.*'
