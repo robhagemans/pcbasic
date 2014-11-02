@@ -194,7 +194,10 @@ def wait_interactive(from_start=False, alt_replace = True):
             line_feed()
         elif d == '\x1b':
             # ESC, CTRL+[
-            clear_line(row)
+            if from_start:
+                clear_line(row)
+            else:
+                clear_rest_of_line(row, furthest_left)
         elif d in ('\0\x75', '\x05'): 
             # CTRL+END, CTRL+E
             clear_rest_of_line(row, col)
