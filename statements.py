@@ -278,7 +278,7 @@ def exec_term(ins):
         # on Tandy, raises Internal Error
         raise error.RunError(51)
     util.require(ins, util.end_statement)
-    program.load(iolayer.open_file_or_device(0, pcjr_term, mode='L'))
+    program.load(oslayer.safe_open(pcjr_term, mode='L', access='R'))
     flow.init_program()
     reset.clear()
     flow.jump(None)
