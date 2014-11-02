@@ -433,7 +433,7 @@ def string_assign_into(name, indices, offset, num, value):
     v = get_var_or_array_string_pointer(name, indices)
     if v == None:
         # illegal function call
-        raise error.Runerror(5)    
+        raise error.RunError(5)    
     string_assign_unpacked_into(v, offset, num, s)
     
 def string_assign_unpacked_into(sequence, offset, num, val):    
