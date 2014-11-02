@@ -454,9 +454,9 @@ def string_assign_unpacked_into(sequence, offset, num, val):
     else:
         # string stored in field buffers
         # find the file we're in
-        start = address - iolayer.field_mem_start
-        number = 1 + start // iolayer.field_mem_offset
-        field_offset = start % iolayer.field_mem_offset
+        start = address - field_mem_start
+        number = 1 + start // field_mem_offset
+        field_offset = start % field_mem_offset
         try:
             state.io_state.fields[number][field_offset+offset:field_offset+offset+num] = val
         except KeyError, IndexError:
