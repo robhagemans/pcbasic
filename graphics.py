@@ -20,6 +20,7 @@ import backend
 state.console_state.graph_window = None
 state.console_state.graph_window_bounds = None
 state.console_state.last_point = (0, 0)    
+state.console_state.last_attr = state.console_state.attr
 
 def require_graphics_mode(err=5):
     if not is_graphics_mode():
@@ -55,8 +56,10 @@ def check_coords(x, y):
 def put_point(x, y, c):
     x, y = backend.view_coords(x,y)
     backend.video.apply_graph_clip()
-    backend.video.put_pixel(x, y, get_colour_index(c))
+    c = get_colour_index(c)
+    backend.video.put_pixel(x, y, c)
     backend.video.remove_graph_clip()
+    state.console_state.last_attr = c
     
 def get_point(x, y):
     x, y = backend.view_coords(x, y)
@@ -133,6 +136,7 @@ def draw_box_filled(x0, y0, x1, y1, c):
     backend.video.apply_graph_clip()
     backend.video.fill_rect(x0, y0, x1, y1, c)
     backend.video.remove_graph_clip()
+    state.console_state.last_attr = c
     
 def draw_line(x0, y0, x1, y1, c, pattern=0xffff):
     c = get_colour_index(c)
@@ -167,6 +171,7 @@ def draw_line(x0, y0, x1, y1, c, pattern=0xffff):
             y += sy
             line_error += dx    
     backend.video.remove_graph_clip()
+    state.console_state.last_attr = c
     
 def draw_straight(x0, y0, x1, y1, c, pattern, mask):
     if x0 == x1:
@@ -199,7 +204,8 @@ def draw_box(x0, y0, x1, y1, c, pattern=0xffff):
     mask = draw_straight(x1, y1, x1, y0, c, pattern, mask)
     mask = draw_straight(x0, y1, x0, y0, c, pattern, mask)
     backend.video.remove_graph_clip()
-
+    state.console_state.last_attr = c
+    
 ### circle, ellipse, sectors
 
 def draw_circle_or_ellipse(x0, y0, r, start, stop, c, aspect):
@@ -304,6 +310,7 @@ def draw_circle(x0, y0, r, c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, l
     if line1:
         draw_line(x0,y0, *octant_coord(oct1, x0, y0, coo1x, coo1), c=c)
     backend.video.remove_graph_clip()
+    state.console_state.last_attr = c
     
 def octant_coord(octant, x0,y0, x,y):    
     if   octant == 7:     return x0+x, y0+y
@@ -425,6 +432,7 @@ def draw_ellipse(cx, cy, rx, ry, c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1,
     if line1:
         draw_line(cx,cy, *quadrant_coord(qua1, cx, cy, x1, y1), c=c)
     backend.video.remove_graph_clip()     
+    state.console_state.last_attr = c
     
 def quadrant_coord(quadrant, x0,y0, x,y):    
     if   quadrant == 3:     return x0+x, y0+y
@@ -510,7 +518,8 @@ def flood_fill (x, y, pattern, c, border, background):
             backend.video.put_pixel(x, y, tile[y%len(tile)][x%8])
         # show progress
         backend.check_events()
-
+    state.console_state.last_attr = c
+    
 # look at a scanline for a given interval; add all subintervals between border colours to the pile
 def check_scanline(line_seed, x_start, x_stop, y, c, tile, back, border, ydir):
     if x_stop < x_start:

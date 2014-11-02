@@ -144,13 +144,12 @@ def draw_step(x0,y0, sx,sy, plot, goback):
     y1 += y0
     x1 += x0
     if plot:
-        graphics.draw_line(x0, y0, x1, y1, -1)    
+        graphics.draw_line(x0, y0, x1, y1, state.console_state.last_attr)    
     state.console_state.last_point = (x1, y1)
     if goback:
         state.console_state.last_point = (x0, y0)
             
 def draw_parse_gml(gml):
-    save_attr = state.console_state.attr
     gmls = StringIO(gml.upper())
     plot, goback = True, False
     while True:
@@ -173,9 +172,9 @@ def draw_parse_gml(gml):
             # set foreground colour
             # allow empty spec (default 0), but only if followed by a semicolon
             if util.skip(gmls, ml_whitepace) == ';':
-                state.console_state.attr = 0
+                state.console_state.last_attr = 0
             else:
-                state.console_state.attr = ml_parse_number(gmls) 
+                state.console_state.last_attr = ml_parse_number(gmls) 
         elif c == 'S':
             # set scale
             state.basic_state.draw_scale = ml_parse_number(gmls)
@@ -225,7 +224,7 @@ def draw_parse_gml(gml):
                 draw_step(x0, y0, x, y,  plot, goback)
             else:
                 if plot:
-                    graphics.draw_line(x0, y0, x, y, -1)    
+                    graphics.draw_line(x0, y0, x, y, state.console_state.last_attr)    
                 state.console_state.last_point = (x, y)
                 if goback:
                     state.console_state.last_point = (x0, y0)
@@ -239,7 +238,6 @@ def draw_parse_gml(gml):
                 raise error.RunError(5)
             bound = ml_parse_number(gmls)
             graphics.flood_fill(x0, y0, None, colour, bound, None)    
-    state.console_state.attr = save_attr        
     
 # MUSIC MACRO LANGUAGE
 
