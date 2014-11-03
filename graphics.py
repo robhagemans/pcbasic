@@ -524,7 +524,6 @@ def flood_fill (x, y, pattern, c, border, background):
     
 # look at a scanline for a given interval; add all subintervals between border colours to the pile
 def check_scanline(line_seed, x_start, x_stop, y, c, tile, back, border, ydir):
-    print x_start, x_stop, y
     if x_stop < x_start:
         return line_seed
     x_start_next = x_start
