@@ -516,13 +516,10 @@ def flood_fill (x, y, pattern, c, border, background):
                 line_seed = check_scanline(line_seed, x_left, x_start-1, y-ydir, c, tile, back, border, -ydir)
                 line_seed = check_scanline(line_seed, x_stop+1, x_right, y-ydir, c, tile, back, border, -ydir)
         # draw the pixels for the current interval   
-        if solid:
-            backend.video.fill_rect(x_left, y, x_right, y, c)
-        else:
-            for x in range(x_left, x_right+1):
-                backend.video.put_pixel(x, y, tile[y%len(tile)][x%8])
+        backend.video.fill_interval(x_left, x_right, y, tile, solid)
         # show progress
-        backend.check_events()
+        if y%4==0:
+            backend.check_events()
     state.console_state.last_attr = c
     
 # look at a scanline for a given interval; add all subintervals between border colours to the pile

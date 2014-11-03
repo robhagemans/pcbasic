@@ -1262,6 +1262,25 @@ def fill_rect(x0, y0, x1, y1, index):
     backend.clear_screen_buffer_area(x0, y0, x1, y1)
     screen_changed = True
 
+def fill_interval(x0, x1, y, tile, solid):
+    global screen_changed
+    dx = x1 - x0 + 1
+    h = len(tile)
+    w = len(tile[0])
+    if solid:
+        canvas[apagenum].fill(tile[0][0], (x0, y, dx, 1))
+    elif numpy:
+        # fast method using numpy instead of loop
+        ntile = numpy.roll(numpy.array(tile).astype(int)[y % h], int(-x0 % 8))
+        bar = numpy.tile(ntile, (dx+w-1) / w)
+        pygame.surfarray.pixels2d(canvas[apagenum])[x0:x1+1, y] = bar[:dx]
+    else:
+        # slow loop
+        for x in range(x0, x1+1):
+            canvas[apagenum].set_at((x,y), tile[y % h][x % 8])
+    backend.clear_screen_buffer_area(x0, y, x1, y)
+    screen_changed = True
+
 def numpy_set(left, right):
     left[:] = right
 
