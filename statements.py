@@ -1235,8 +1235,8 @@ def exec_paint(ins):
                 if (pattern and background_pattern[:len(pattern)] == pattern and 
                         state.console_state.current_mode.mem_start == 0xa000):
                     raise error.RunError(5)
-    util.require(ins, util.end_statement)         
-    graphics.flood_fill(x0, y0, pattern, c, border, background_pattern)        
+    util.require(ins, util.end_statement)  
+    graphics.flood_fill(x0, y0, pattern, c, border, background_pattern)
                 
 def exec_get_graph(ins):
     graphics.require_graphics_mode()

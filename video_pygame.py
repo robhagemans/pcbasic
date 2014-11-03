@@ -1281,6 +1281,22 @@ def fill_interval(x0, x1, y, tile, solid):
     backend.clear_screen_buffer_area(x0, y, x1, y)
     screen_changed = True
 
+def get_until(x0, x1, y, c):
+    if numpy:     
+        arr = pygame.surfarray.array2d(canvas[apagenum].subsurface((x0, y, x1-x0,1)))
+        found = numpy.where(arr == c)
+        if len(found[0]) >0:
+            arr = arr[:found[0][0]]
+        return list(arr.flatten())
+    else:
+        interval = []
+        for x in range(x0, x1):
+            index = canvas[apagenum].get_at((x,y)).b
+            if index == c:
+                break
+            interval.append(index)
+        return interval    
+    
 def numpy_set(left, right):
     left[:] = right
 
