@@ -478,8 +478,10 @@ def flood_fill (x, y, pattern, c, border, background):
     if pattern:    
         tile = build_tile(pattern) 
         back = build_tile(background) 
+        solid = False
     else:
         tile, back = [[c]*8], None
+        solid = True    
     bound_x0, bound_y0, bound_x1, bound_y1 = backend.video.get_graph_clip()  
     x, y = backend.view_coords(x, y)
     line_seed = [(x, x, y, 0)]
@@ -514,8 +516,11 @@ def flood_fill (x, y, pattern, c, border, background):
                 line_seed = check_scanline(line_seed, x_left, x_start-1, y-ydir, c, tile, back, border, -ydir)
                 line_seed = check_scanline(line_seed, x_stop+1, x_right, y-ydir, c, tile, back, border, -ydir)
         # draw the pixels for the current interval   
-        for x in range(x_left, x_right+1):
-            backend.video.put_pixel(x, y, tile[y%len(tile)][x%8])
+        if solid:
+            backend.video.fill_rect(x_left, y, x_right, y, c)
+        else:
+            for x in range(x_left, x_right+1):
+                backend.video.put_pixel(x, y, tile[y%len(tile)][x%8])
         # show progress
         backend.check_events()
     state.console_state.last_attr = c
