@@ -471,17 +471,16 @@ def quadrant_gte(quadrant, x, y, x0, y0):
 # flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
 # pattern tiling stops at intervals that equal the pattern to be drawn, unless this pattern is
 # also equal to the background pattern.
-def flood_fill (x, y, pattern, c, border, background): 
+def flood_fill(x, y, pattern, c, border, background): 
     c, border = get_colour_index(c), get_colour_index(border)
     if get_point(x, y) == border:
         return
-    if pattern:    
-        tile = build_tile(pattern) 
-        back = build_tile(background) 
-        solid = False
+    solid = (pattern == None)
+    if not solid:    
+        tile = state.console_state.current_mode.build_tile(pattern) if pattern else None 
+        back = state.console_state.current_mode.build_tile(background) if background else None
     else:
         tile, back = [[c]*8], None
-        solid = True    
     bound_x0, bound_y0, bound_x1, bound_y1 = backend.video.get_graph_clip()  
     x, y = backend.view_coords(x, y)
     line_seed = [(x, x, y, 0)]
@@ -492,14 +491,8 @@ def flood_fill (x, y, pattern, c, border, background):
         # consider next interval
         x_start, x_stop, y, ydir = line_seed.pop()
         # extend interval as far as it goes to left and right
-        # check left extension
-        x_left = x_start
-        while x_left-1 >= bound_x0 and backend.video.get_pixel(x_left-1,y) != border:
-            x_left -= 1
-        # check right extension
-        x_right = x_stop
-        while x_right+1 <= bound_x1 and backend.video.get_pixel(x_right+1,y) != border:
-            x_right += 1
+        x_left = x_start - len(backend.video.get_until(x_start-1, bound_x0-1, y, border))    
+        x_right = x_stop + len(backend.video.get_until(x_stop+1, bound_x1+1, y, border)) 
         # check next scanlines and add intervals to the list
         if ydir == 0:
             if y + 1 <= bound_y1:
@@ -553,11 +546,6 @@ def check_scanline(line_seed, x_start, x_stop, y, c, tile, back, border, ydir):
         x += 1
     return line_seed    
 
-def build_tile(pattern):
-    """ Build a flood-fill tile of width 8 pixels and the necessary height. """
-    if not pattern:
-        return None
-    return state.console_state.current_mode.build_tile(pattern)
 
 ### PUT and GET
 
