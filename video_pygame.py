@@ -1135,6 +1135,9 @@ class Clipboard(object):
             # null-terminated strings
             us = us[:us.find('\0')] 
             us = us.encode('utf-8')
+        elif plat.system == 'OSX':
+            # scrap.get returns unicode object for mac
+            us = us.encode('utf-8')    
         if not us:
             return
         # ignore any bad UTF8 characters from outside
