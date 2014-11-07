@@ -9,6 +9,8 @@
 # please see text file COPYING for licence terms.
 #
 
+import plat
+
 try:
     import pygame
 except ImportError:
@@ -19,15 +21,19 @@ try:
 except ImportError:
     numpy = None
 
-import plat
-if plat.system == 'Android':
-    android = True
+# workaround for broken pygame.scrap on Mac
+if pygame:
+    if plat.system == 'OSX':
+        import pygame_mac_scrap as scrap
+    else:
+        scrap = pygame.scrap
+
+android = (plat.system == 'Android')
+if android:
     numpy = None
     # Pygame for Android-specific definitions
     if pygame:
         import pygame_android
-else:
-    android = False
 
 import logging
 
@@ -385,7 +391,7 @@ def init_screen_mode(mode_info):
     global screen_changed, canvas
     global font, under_cursor, size, text_mode
     global font_height
-    global scrap, num_pages, bitsperpixel, font_width
+    global clipboard, num_pages, bitsperpixel, font_width
     global mode_has_artifacts, cursor_fixed_attr, mode_has_blink
     global mode_has_underline
     global get_put_store
@@ -421,7 +427,7 @@ def init_screen_mode(mode_info):
     # remove cached sprites
     get_put_store = {}    
     # initialise clipboard
-    scrap = Clipboard(mode_info.width, mode_info.height)
+    clipboard = Clipboard(mode_info.width, mode_info.height)
     screen_changed = True
     return True
 
@@ -840,8 +846,8 @@ def do_flip(blink_state):
     # subsurface referencing the canvas area
     workscreen = screen.subsurface((border_x, border_y, size[0], size[1]))
     draw_cursor(workscreen)
-    if scrap.active():
-        scrap.create_feedback(workscreen)
+    if clipboard.active():
+        clipboard.create_feedback(workscreen)
     # android: shift screen if keyboard is on so that cursor remains visible
     if android:
         pygame_android.shift_screen(screen, border_x, border_y, size, cursor_row, font_height)
@@ -895,24 +901,24 @@ def check_events(pause=False):
             if event.button == mousebutton_copy:
                 # LEFT button: copy
                 pos = normalise_pos(*event.pos)
-                scrap.start(1 + pos[1] // font_height, 
+                clipboard.start(1 + pos[1] // font_height, 
                             1 + (pos[0]+font_width//2) // font_width)
             elif event.button == mousebutton_paste:
                 # MIDDLE button: paste
-                scrap.paste(mouse=True)    
+                clipboard.paste(mouse=True)    
             elif event.button == mousebutton_pen:
                 # right mouse button is a pen press
                 backend.pen_down(*normalise_pos(*event.pos))
         elif event.type == pygame.MOUSEBUTTONUP: 
             backend.pen_up()
             if event.button == mousebutton_copy:
-                scrap.copy(mouse=True)
-                scrap.stop()
+                clipboard.copy(mouse=True)
+                clipboard.stop()
         elif event.type == pygame.MOUSEMOTION: 
             pos = normalise_pos(*event.pos) 
             backend.pen_moved(*pos)
-            if scrap.active():
-                scrap.move(1 + pos[1] // font_height,
+            if clipboard.active():
+                clipboard.move(1 + pos[1] // font_height,
                            1 + (pos[0]+font_width//2) // font_width)
         elif event.type == pygame.JOYBUTTONDOWN:
             if event.joy < 2 and event.button < 2:
@@ -949,9 +955,9 @@ def handle_key_down(e):
         pygame_android.toggle_keyboard()
         screen_changed = True
     elif e.key == pygame.K_LSUPER: # logo key, doesn't set a modifier
-        scrap.start()
-    elif scrap.active():
-        scrap.handle_key(e)
+        clipboard.start()
+    elif clipboard.active():
+        clipboard.handle_key(e)
     else:
         if not android:
             # android unicode values are wrong, use the scancode only
@@ -990,7 +996,7 @@ def handle_key_down(e):
 
 def handle_key_up(e):
     if e.key == pygame.K_LSUPER: # logo key, doesn't set a modifier
-        scrap.stop()
+        clipboard.stop()
     # last key released gets remembered
     try:
         backend.key_up(key_to_scan[e.key])
@@ -1027,8 +1033,8 @@ class Clipboard(object):
         self.width = width
         self.height = height
         try:
-            pygame.scrap.init()
-            pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
+            scrap.init()
+            scrap.set_mode(pygame.SCRAP_CLIPBOARD)
             self.ok = True
         except NotImplementedError:
             logging.warning('PyGame.Scrap module not found. Clipboard functions not available.')    
@@ -1038,7 +1044,7 @@ class Clipboard(object):
         if not self.ok:
             return False
         """ True if pasteable text is available on clipboard. """
-        types = pygame.scrap.get_types()
+        types = scrap.get_types()
         for t in types:
             if t in self.text:
                 return True
@@ -1087,15 +1093,15 @@ class Clipboard(object):
             start, stop = stop, start
         full = backend.get_text(start[0], start[1], stop[0], stop[1]-1)
         if mouse:
-            pygame.scrap.set_mode(pygame.SCRAP_SELECTION)
+            scrap.set_mode(pygame.SCRAP_SELECTION)
         else:
-            pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
+            scrap.set_mode(pygame.SCRAP_CLIPBOARD)
         try: 
             if plat.system == 'Windows':
                 # on Windows, encode as utf-16 without FF FE byte order mark and null-terminate
-                pygame.scrap.put('text/plain;charset=utf-8', full.decode('utf-8').encode('utf-16le') + '\0\0')
+                scrap.put('text/plain;charset=utf-8', full.decode('utf-8').encode('utf-16le') + '\0\0')
             else:    
-                pygame.scrap.put(pygame.SCRAP_TEXT, full)
+                scrap.put(pygame.SCRAP_TEXT, full)
         except KeyError:
             logging.debug('Clipboard copy failed for clip %s', repr(full))    
         
@@ -1104,15 +1110,21 @@ class Clipboard(object):
         if not self.ok:
             return 
         if mouse:
-            pygame.scrap.set_mode(pygame.SCRAP_SELECTION)
+            scrap.set_mode(pygame.SCRAP_SELECTION)
         else:
-            pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
+            scrap.set_mode(pygame.SCRAP_CLIPBOARD)
         us = None
-        available = pygame.scrap.get_types()
+        available = scrap.get_types()
+        # we must ask for text/plain on OSX 
+        if plat.system == 'OSX':
+            if 'public.utf8-plain-text' in available:
+                available = [pygame.SCRAP_TEXT]
+            else:
+                available = []
         for text_type in self.text:
             if text_type not in available:
                 continue
-            us = pygame.scrap.get(text_type)
+            us = scrap.get(text_type)
             if us:
                 break            
         if plat.system == 'Windows':
