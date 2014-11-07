@@ -1115,12 +1115,6 @@ class Clipboard(object):
             scrap.set_mode(pygame.SCRAP_CLIPBOARD)
         us = None
         available = scrap.get_types()
-        # we must ask for text/plain on OSX 
-        if plat.system == 'OSX':
-            if 'public.utf8-plain-text' in available:
-                available = [pygame.SCRAP_TEXT]
-            else:
-                available = []
         for text_type in self.text:
             if text_type not in available:
                 continue
@@ -1135,9 +1129,6 @@ class Clipboard(object):
             # null-terminated strings
             us = us[:us.find('\0')] 
             us = us.encode('utf-8')
-        elif plat.system == 'OSX':
-            # scrap.get returns unicode object for mac
-            us = us.encode('utf-8')    
         if not us:
             return
         # ignore any bad UTF8 characters from outside
