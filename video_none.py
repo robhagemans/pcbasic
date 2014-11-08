@@ -35,7 +35,7 @@ def prepare():
     global lf_to_cr
     # on unix ttys, replace input \n with \r 
     # setting termios won't do the trick as it will not trigger read_line, gets too complicated    
-    if plat.system != 'Windows' and sys.stdin.isatty():
+    if plat.system != 'Windows' and plat.stdin_is_tty:
         lf_to_cr = True
         
 def init():
@@ -45,7 +45,7 @@ def init():
 
 def check_keys():
     # avoid blocking on ttys if there's no input 
-    if sys.stdin.isatty() and not kbhit():
+    if plat.stdin_is_tty and not kbhit():
         return
     s = sys.stdin.readline().decode('utf-8')
     if s == '':
@@ -76,7 +76,7 @@ def putc_at(pagenum, row, col, c, for_keys=False):
         
 def putwc_at(pagenum, row, col, c, d, for_keys=False):
     pass
-            
+
 def close():
     pass
     

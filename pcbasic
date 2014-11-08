@@ -225,11 +225,13 @@ def print_greeting(console):
         'Type RUN "@:INFO" for more.\r'
         '%d Bytes free\r'
         'Ok\xff')
-    if (not config.options['run'] and not config.options['exec']):
+    # following GW, don't write greeting for redirected input 
+    # or command-line run
+    if (not config.options['run'] and not config.options['exec'] and
+             not config.options['input'] and plat.stdin_is_tty):
         debugstr = ' [DEBUG mode]' if config.options['debug'] else ''
-        if plat.stdin_is_tty:
-            console.write_line(greeting % (debugstr, var.total_mem))
-            console.show_keys(True)
+        console.write_line(greeting % (debugstr, var.total_mem))
+        console.show_keys(True)
                 
 def open_native_or_dos_filename(infile):
     """ If the specified file exists, open it; if not, try as DOS file name. """
