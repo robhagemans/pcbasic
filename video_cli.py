@@ -12,6 +12,7 @@
 import sys
 import time
 import os
+import logging
 
 import plat
 import unicodepage
@@ -171,6 +172,10 @@ def prepare(args):
     pass
 
 def init():
+    if not plat.stdin_is_tty:
+        logging.warning('Input device is not a terminal. '
+                        'Could not initialise cli interface.')
+        return False
     term_echo(False)
     term.flush()
     return True
