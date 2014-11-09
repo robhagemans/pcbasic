@@ -64,7 +64,7 @@ def loop(quit=False):
 def set_execute_mode(on, quit=False):
     if not on:
         if quit:
-            raise error.Exit()
+            check_quit()
         # always show prompt at the end of execution
         show_prompt()
     if on == state.basic_state.execute_mode:
@@ -144,7 +144,7 @@ def handle_error(s, quit):
     console.write_error_message(error.get_message(s.err), program.get_line_number(s.pos))   
     state.basic_state.error_handle_mode = False
     if quit:
-        raise error.Exit()
+        check_quit()
     # prompt is shown here
     set_execute_mode(False)
     state.basic_state.input_mode = False    
@@ -173,4 +173,10 @@ def handle_break(e):
         console.write_error_message("Break", -1)
     set_execute_mode(False)
     state.basic_state.input_mode = False    
+
+def check_quit():
+    # only quit if all keys have been handled
+    if len(state.console_state.keybuf) == 0:
+        raise error.Exit()
+        
     

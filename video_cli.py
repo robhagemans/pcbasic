@@ -46,7 +46,7 @@ if plat.system == 'Windows':
         return True
 
     def close():
-        pass
+        update_position()
             
     def getc():
         # won't work under WINE
@@ -185,6 +185,7 @@ elif plat.system != 'Android':
         return True
 
     def close():
+        update_position()
         term_echo()
         term.flush()
 
