@@ -66,15 +66,19 @@ def skip_white_read_if(ins, in_range):
 
 def skip_to(ins, findrange, break_on_first_char=True):        
     literal = False
+    rem = False
     while True: 
         c = ins.read(1)
         if c == '':
             break
         elif c == '"':
             literal = not literal
+        elif c == '\x8f':
+            rem = True    
         elif c == '\x00':   
             literal = False
-        if literal:
+            rem = False
+        if literal or rem:
             continue    
         if c in findrange:
             if break_on_first_char:
