@@ -60,7 +60,7 @@ def get_value_for_varptrstr(varptrstr):
     varptr = vartypes.uint_to_value(bytearray(varptrstr[1:3]))
     found_name = ''
     for name in state.basic_state.var_memory:
-        _, var_ptr, _ = state.basic_state.var_memory[name]
+        _, var_ptr = state.basic_state.var_memory[name]
         if var_ptr == varptr:
             found_name = name
             break

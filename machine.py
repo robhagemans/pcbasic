@@ -55,6 +55,9 @@ def peek(addr):
         elif addr >= data_segment*0x10 + var.var_mem_start:
             # variable memory
             return max(0, get_data_memory(addr))
+        elif addr >= data_segment*0x10 + var.field_mem_start:
+            # file & FIELD memory
+            return max(0, get_field_memory(addr))
         elif addr >= low_segment*0x10:
             return max(0, get_low_memory(addr))
         else:    
@@ -144,7 +147,7 @@ def varptr(name, indices):
     name = vartypes.complete_name(name)
     if indices == []:
         try:
-            _, var_ptr, _ = state.basic_state.var_memory[name]
+            _, var_ptr = state.basic_state.var_memory[name]
             return var_ptr
         except KeyError:
             return -1
@@ -176,19 +179,31 @@ def get_name_in_memory(name, offset):
     else:
         # rest of name is encoded such that c1 == 'A'
         return ord(name[offset-1].upper()) - ord('A') + 0xC1
+
+def get_field_memory(address):
+    address -= data_segment * 0x10
+    if address < var.field_mem_start:
+        return -1
+    # find the file we're in
+    start = address - var.field_mem_start
+    number = 1 + start // var.field_mem_offset
+    offset = start % var.field_mem_offset
+    try:
+        return state.io_state.fields[number][offset]
+    except KeyError, IndexError:
+        return -1    
                             
 def get_data_memory(address):
-    address -= state.basic_state.segment * 0x10
+    address -= data_segment * 0x10
     if address < state.basic_state.var_current:
         # find the variable we're in
         name_addr = -1
         var_addr = -1
-        str_addr = -1
         the_var = None 
         for name in state.basic_state.var_memory:
-            name_ptr, var_ptr, str_ptr = state.basic_state.var_memory[name]
+            name_ptr, var_ptr = state.basic_state.var_memory[name]
             if name_ptr <= address and name_ptr > name_addr:
-                name_addr, var_addr, str_addr = name_ptr, var_ptr, str_ptr
+                name_addr, var_addr = name_ptr, var_ptr
                 the_var = name
         if the_var == None:
             return -1        
@@ -196,11 +211,7 @@ def get_data_memory(address):
             offset = address - var_addr
             if offset >= var.byte_size[the_var[-1]]:
                 return -1
-            if the_var[-1] == '$':
-                # string is represented as 3 bytes: length + uint pointer
-                var_rep = bytearray(chr(len(state.basic_state.variables[the_var]))) + vartypes.value_to_uint(str_addr)
-            else:
-                var_rep = state.basic_state.variables[the_var]
+            var_rep = state.basic_state.variables[the_var]
             return var_rep[offset]
         else:
             offset = address - name_ptr
@@ -220,9 +231,6 @@ def get_data_memory(address):
             offset = address - arr_addr - state.basic_state.var_current
             if offset >= var.array_size_bytes(the_arr):
                 return -1
-            if the_arr[-1] == '$':
-                # TODO: not implemented for arrays of strings
-                return 0
             _, byte_array, _ = state.basic_state.arrays[the_arr]    
             return byte_array[offset]
         else:
@@ -236,25 +244,36 @@ def get_data_memory(address):
                 for d in dimensions:
                     data_rep += vartypes.value_to_uint(d + 1 - state.basic_state.array_base)
                 return data_rep[offset]               
-    elif address > state.basic_state.string_current:
+    elif address > state.basic_state.strings.current:
         # string space
         # find the variable we're in
-        name_addr = -1
-        var_addr = -1
-        str_addr = -1
+        str_nearest = -1
         the_var = None 
-        for name in state.basic_state.var_memory:
-            name_ptr, var_ptr, str_ptr = state.basic_state.var_memory[name]
-            if str_ptr <= address and str_ptr > str_addr:
-                name_addr, var_addr, str_addr = name_ptr, var_ptr, str_ptr
-                the_var = name
+        for name in state.basic_state.variables:
+            if name[-1] != '$':
+                continue
+            v = state.basic_state.variables[name]
+            str_ptr = state.basic_state.strings.address(v)
+            if str_ptr <= address and str_ptr > str_nearest:
+                str_nearest = str_ptr
+                the_var = v
         if the_var == None:
+            for name in state.basic_state.arrays:
+                if name[-1] != '$':
+                    continue
+                _, lst, _ = state.basic_state.arrays[name]
+                for i in range(0, len(lst), 3):
+                    str_ptr = state.basic_state.strings.address(lst[i:i+3])
+                    if str_ptr <= address and str_ptr > str_nearest:
+                        str_nearest = str_ptr
+                        the_var = lst[i:i+3]
+        try:
+            return state.basic_state.strings.retrieve(v)[address - str_nearest]
+        except IndexError, AttributeError:
             return -1
-        offset = address - str_addr
-        return state.basic_state.variables[the_var][offset]
     else:
         # unallocated var space
-        return 0 
+        return -1
         
     
 ###############################################################
