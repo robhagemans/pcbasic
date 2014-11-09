@@ -292,10 +292,6 @@ def get_video_memory_block(addr, length):
     block = bytearray()
     for a in range(addr, addr+length):
         block += chr(max(0, get_video_memory(a)))
-        # keep updating the screen
-        # we're not allowing keyboard breaks here 
-        # in GW this is so fast that you can't check if it does or not
-        backend.video.check_events()
     return block
     
 def set_video_memory_block(addr, some_bytes):
@@ -304,7 +300,8 @@ def set_video_memory_block(addr, some_bytes):
         set_video_memory(addr + a, some_bytes[a])
         # keep updating the screen
         # we're not allowing keyboard breaks here 
-        backend.video.check_events()
+        if a%640 == 0:
+            backend.video.check_events()
     
 
 #################################################################################

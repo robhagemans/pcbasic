@@ -1268,6 +1268,49 @@ def fill_rect(x0, y0, x1, y1, index):
     backend.clear_screen_buffer_area(x0, y0, x1, y1)
     screen_changed = True
 
+def fill_interval(x0, x1, y, tile, solid):
+    global screen_changed
+    dx = x1 - x0 + 1
+    h = len(tile)
+    w = len(tile[0])
+    if solid:
+        canvas[apagenum].fill(tile[0][0], (x0, y, dx, 1))
+    elif numpy:
+        # fast method using numpy instead of loop
+        ntile = numpy.roll(numpy.array(tile).astype(int)[y % h], int(-x0 % 8))
+        bar = numpy.tile(ntile, (dx+w-1) / w)
+        pygame.surfarray.pixels2d(canvas[apagenum])[x0:x1+1, y] = bar[:dx]
+    else:
+        # slow loop
+        for x in range(x0, x1+1):
+            canvas[apagenum].set_at((x,y), tile[y % h][x % 8])
+    backend.clear_screen_buffer_area(x0, y, x1, y)
+    screen_changed = True
+
+def get_until(x0, x1, y, c):
+    if x0 == x1:
+        return []
+    if numpy:     
+        toright = x1 > x0
+        if not toright:
+            x0, x1 = x1+1, x0+1
+        arr = pygame.surfarray.array2d(canvas[apagenum].subsurface((x0, y, x1-x0, 1)))
+        found = numpy.where(arr == c)
+        if len(found[0]) > 0:
+            if toright:
+                arr = arr[:found[0][0]]
+            else:
+                arr = arr[found[0][-1]+1:]    
+        return list(arr.flatten())
+    else:
+        interval = []
+        for x in range(x0, x1):
+            index = canvas[apagenum].get_at((x,y)).b
+            if index == c:
+                break
+            interval.append(index)
+        return interval    
+    
 def numpy_set(left, right):
     left[:] = right
 

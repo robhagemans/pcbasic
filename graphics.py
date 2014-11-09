@@ -471,13 +471,14 @@ def quadrant_gte(quadrant, x, y, x0, y0):
 # flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
 # pattern tiling stops at intervals that equal the pattern to be drawn, unless this pattern is
 # also equal to the background pattern.
-def flood_fill (x, y, pattern, c, border, background): 
+def flood_fill(x, y, pattern, c, border, background): 
     c, border = get_colour_index(c), get_colour_index(border)
     if get_point(x, y) == border:
         return
-    if pattern:    
-        tile = build_tile(pattern) 
-        back = build_tile(background) 
+    solid = (pattern == None)
+    if not solid:    
+        tile = state.console_state.current_mode.build_tile(pattern) if pattern else None 
+        back = state.console_state.current_mode.build_tile(background) if background else None
     else:
         tile, back = [[c]*8], None
     bound_x0, bound_y0, bound_x1, bound_y1 = backend.video.get_graph_clip()  
@@ -490,14 +491,8 @@ def flood_fill (x, y, pattern, c, border, background):
         # consider next interval
         x_start, x_stop, y, ydir = line_seed.pop()
         # extend interval as far as it goes to left and right
-        # check left extension
-        x_left = x_start
-        while x_left-1 >= bound_x0 and backend.video.get_pixel(x_left-1,y) != border:
-            x_left -= 1
-        # check right extension
-        x_right = x_stop
-        while x_right+1 <= bound_x1 and backend.video.get_pixel(x_right+1,y) != border:
-            x_right += 1
+        x_left = x_start - len(backend.video.get_until(x_start-1, bound_x0-1, y, border))    
+        x_right = x_stop + len(backend.video.get_until(x_stop+1, bound_x1+1, y, border)) 
         # check next scanlines and add intervals to the list
         if ydir == 0:
             if y + 1 <= bound_y1:
@@ -514,10 +509,10 @@ def flood_fill (x, y, pattern, c, border, background):
                 line_seed = check_scanline(line_seed, x_left, x_start-1, y-ydir, c, tile, back, border, -ydir)
                 line_seed = check_scanline(line_seed, x_stop+1, x_right, y-ydir, c, tile, back, border, -ydir)
         # draw the pixels for the current interval   
-        for x in range(x_left, x_right+1):
-            backend.video.put_pixel(x, y, tile[y%len(tile)][x%8])
+        backend.video.fill_interval(x_left, x_right, y, tile, solid)
         # show progress
-        backend.check_events()
+        if y%4==0:
+            backend.check_events()
     state.console_state.last_attr = c
     
 # look at a scanline for a given interval; add all subintervals between border colours to the pile
@@ -526,30 +521,31 @@ def check_scanline(line_seed, x_start, x_stop, y, c, tile, back, border, ydir):
         return line_seed
     x_start_next = x_start
     x_stop_next = x_start_next-1
-    # never match zero pattern
-    has_same_pattern = tile[y%len(tile)] != [0]*8
-    for x in range(x_start, x_stop+1):
+    rtile = tile[y%len(tile)]
+    if back:
+        rback = back[y%len(back)]
+    x = x_start
+    while x <= x_stop:
         # scan horizontally until border colour found, then append interval & continue scanning
-        xy_colour = backend.video.get_pixel(x, y)
-        if xy_colour != border:
-            x_stop_next = x
-            has_same_pattern &= (xy_colour == tile[y%len(tile)][x%8] and (not back or xy_colour != back[y%len(back)][x%8]))
-        else:
-            # we've reached a border colour, append our interval & start a new one
-            # don't append if same fill colour/pattern, to avoid infinite loops over bits already painted (eg. 00 shape)
-            if x_stop_next >= x_start_next and not has_same_pattern:
-                line_seed.append([x_start_next, x_stop_next, y, ydir])
-            x_start_next = x + 1
-            has_same_pattern = tile[y%len(tile)] != [0]*8
-    if x_stop_next >= x_start_next and not has_same_pattern:
-        line_seed.append([x_start_next, x_stop_next, y, ydir])
+        pattern = backend.video.get_until(x, x_stop+1, y, border)
+        x_stop_next = x + len(pattern) - 1
+        x = x_stop_next + 1
+        # never match zero pattern (special case)
+        has_same_pattern = (rtile != [0]*8)
+        for pat_x in range(len(pattern)):
+            if not has_same_pattern:
+                break
+            tile_x = (x_start_next + pat_x) % 8
+            has_same_pattern &= (pattern[pat_x] == rtile[tile_x])
+            has_same_pattern &= (not back or pattern[pat_x] != rback[tile_x])
+        # we've reached a border colour, append our interval & start a new one
+        # don't append if same fill colour/pattern, to avoid infinite loops over bits already painted (eg. 00 shape)
+        if x_stop_next >= x_start_next and not has_same_pattern:
+            line_seed.append([x_start_next, x_stop_next, y, ydir])
+        x_start_next = x + 1
+        x += 1
     return line_seed    
 
-def build_tile(pattern):
-    """ Build a flood-fill tile of width 8 pixels and the necessary height. """
-    if not pattern:
-        return None
-    return state.console_state.current_mode.build_tile(pattern)
 
 ### PUT and GET
 
