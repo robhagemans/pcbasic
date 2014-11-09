@@ -625,7 +625,9 @@ def exec_call(ins):
         raise error.RunError(13)
     if util.skip_white_read_if(ins, ('(',)):
         while True:
-            util.get_var_name(ins)
+            # if we wanted to call a function, we should distinguish varnames 
+            # (passed by ref) from constants (passed by value) here.
+            expressions.parse_expression(ins)
             if not util.skip_white_read_if(ins, (',',)):
                 break
         util.require_read(ins, (')',))        
