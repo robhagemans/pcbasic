@@ -38,7 +38,14 @@ if plat.system == 'Windows':
     # Ctrl+Z to exit
     eof = '\x1A'
     
-    def term_echo(on=True):
+    def init():
+        if not check_tty():
+            return False
+        # on windows, clear the screen or we get a messy console.
+        wconio.clrscr()
+        return True
+
+    def close():
         pass
             
     def getc():
@@ -47,9 +54,9 @@ if plat.system == 'Windows':
             return ''
         return msvcrt.getch()
     
-    def replace_scancodes(s):
+    def get_scancode(s):
         # windows scancodes should be the same as gw-basic ones
-        if len(s) == 0 and s[0] in ('\xe0', '\0'):
+        if len(s) > 1 and s[0] in ('\xe0', '\0'):
             return ord(s[1])
         else:
             raise KeyError    
@@ -84,8 +91,9 @@ if plat.system == 'Windows':
         if for_keys:
             return
         update_position(row, col)
-        # Windows CMD doesn't do UTF8, output raw & set codepage with CHCP
-        wconio.putch(c)
+        # output in cli codepage
+        uc = unicodepage.UTF8Converter().to_utf8(c).decode('utf-8')
+        wconio.putch(uc.encode(sys.stdout.encoding, 'replace'))
         last_col += 1
 
     def putwc_at(pagenum, row, col, c, d, for_keys=False):
@@ -94,8 +102,9 @@ if plat.system == 'Windows':
             return
         update_position(row, col)
         # Windows CMD doesn't do UTF8, output raw & set codepage with CHCP
-        wconio.putch(c)
-        wconio.putch(d)
+        # output in cli codepage
+        uc = unicodepage.UTF8Converter().to_utf8(c+d).decode('utf-8')
+        wconio.putch(uc.encode(sys.stdout.encoding, 'replace'))
         last_col += 2
 
     term = WinTerm()
@@ -168,28 +177,33 @@ elif plat.system != 'Android':
         term.flush()
         last_col += 2
 
-def prepare(args):
-    pass
+    def init():
+        if not check_tty():
+            return False
+        term_echo(False)
+        term.flush()
+        return True
 
-def init():
+    def close():
+        term_echo()
+        term.flush()
+
+def check_tty():
     if not plat.stdin_is_tty:
         logging.warning('Input device is not a terminal. '
                         'Could not initialise cli interface.')
         return False
-    term_echo(False)
-    term.flush()
     return True
-        
+
+def prepare(args):
+    pass
+
 def supports_graphics_mode(mode_info):
     return False
     
 def init_screen_mode(mode_info):
     pass
     
-def close():
-    term_echo()
-    term.flush()
-
 def idle():
     time.sleep(0.024)
     
@@ -258,7 +272,7 @@ def check_keyboard():
     except KeyError:    
         # replace utf-8 with codepage
         # convert into unicode codepoints
-        u = s.decode('utf-8')
+        u = s.decode(sys.stdin.encoding)
         # then handle these one by one as UTF-8 sequences
         c = ''
         for uc in u:                    
