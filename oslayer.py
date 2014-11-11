@@ -26,8 +26,6 @@ import state
 import backend
 import time
 
-# 1 ms sleep time for output process
-sleep_time = 0.001
 
 if plat.system == 'Windows':
     #import msvcrt
@@ -118,13 +116,128 @@ def safe_open(name, mode, access):
         return open(name, posix_access)
     except EnvironmentError as e:
         handle_oserror(e)
+
+#########################################
+# drives & paths
+
+drives = { 'C': os.getcwd(), '@': os.path.join(plat.basepath, 'info') }
+current_drive = 'C'
+# must not start with a /
+state.io_state.drive_cwd = { 'C': '', '@': '' }
+
+def chdir(name):
+    # substitute drives and cwds
+    letter, path, name = get_drive_path(str(name), err=76)
+    newdir = dospath(name, '', path, err=76, isdir=True)
+    # if cwd is shorter than drive prefix (like when we go .. on a drive letter root), this is just an empty path, ie the root.    
+    state.io_state.drive_cwd[letter] = newdir
+    if letter == current_drive:
+        safe(os.chdir, newdir)
+
+def mkdir(name):
+    safe(os.mkdir, dospath(str(name), '', err=76, isdir=True, make_new=True))
+    
+def rmdir(name):    
+    safe(os.rmdir, dospath(str(name), '', err=76, isdir=True))
+
+def files(pathmask):
+    # strip trailing spaces
+    pathmask = str(pathmask).rstrip()
+    # forward slashes - file not found
+    # GW-BASIC sometimes allows leading or trailing slashes
+    # and then does weird things I don't understand. 
+    if '/' in pathmask:
+        raise error.RunError(53)   
+    drive, path, mask = get_drive_path(pathmask, 53)
+    mask = mask.upper()
+    if mask == '':
+        mask = '*.*'
+    roots, dirs, files_list = [], [], []
+    for roots, dirs, files_list in safe(os.walk, path):
+        break
+    # get working dir in DOS format
+    # NOTE: this is always the current dir, not the one being listed
+    console.write_line(drive + ':\\' + state.io_state.drive_cwd[drive].replace(os.sep, '\\'))
+    if (roots, dirs, files_list) == ([], [], []):
+        raise error.RunError(53)
+    dosfiles = pass_dosnames(path, files_list, mask)
+    dosfiles = [ name+'     ' for name in dosfiles ]
+    dirs += ['.', '..']
+    dosdirs = pass_dosnames(path, dirs, mask)
+    dosdirs = [ name+'<DIR>' for name in dosdirs ]
+    dosfiles.sort()
+    dosdirs.sort()    
+    output = dosdirs + dosfiles
+    num = state.console_state.width/20
+    if len(output) == 0:
+        # file not found
+        raise error.RunError(53)
+    while len(output) > 0:
+        line = ' '.join(output[:num])
+        output = output[num:]
+        console.write_line(line)       
+        # allow to break during dir listing & show names flowing on screen
+        backend.check_events()             
+    console.write_line(' ' + str(disk_free(path)) + ' Bytes free')
+    
+def rename(oldname, newname):    
+    oldname = dospath(str(oldname), '', err=53, isdir=False)
+    newname = dospath(str(newname), '', err=76, isdir=False, make_new=True)
+    if os.path.exists(newname):
+        # file already exists
+        raise error.RunError(58)
+    safe(os.rename, oldname, newname)
+
+# find a unix path to match the given dos-style path
+def dospath(s, defext='', err=53, isdir=False, find_case=True, make_new=False):
+    # substitute drives and cwds
+    letter, path, name = get_drive_path(str(s), err)
+    # return absolute path to file        
+    if name:
+        path = os.path.join(path, match_filename(name, defext, path, err, isdir, find_case, make_new))
+    # get full normalised path (but don't follow symlinks)
+    path = os.path.abspath(path)
+    # 
+    base = len(drives[letter])
+    if drives[letter][base-1] == os.sep:
+        # root /
+        base -= 1
+    # if cwd is shorter than drive prefix or doesn't match, get out
+    if path[:base+1] != drives[letter]:
+        raise error.RunError(err)
+    return os.path.join(drives[letter], path[base+1:])   
+
+#########################################
+# shell
+
+def shell(command):
+    # sound stops playing and is forgotten
+    backend.stop_all_sound()
+    # no key macros
+    key_macros_save = state.basic_state.key_macros_off
+    state.basic_state.key_macros_off = True
+    # no user events
+    suspend_event_save = state.basic_state.suspend_all_events
+    state.basic_state.suspend_all_events = True
+    # run the os-specific shell
+    spawn_shell(command)
+    # re-enable key macros and event handling
+    state.basic_state.key_macros_off = key_macros_save
+    state.basic_state.suspend_all_events = suspend_event_save
+
+
+
+#########################################
+# implementation
+ 
     
 def safe(fnname, *fnargs):
     try:
         return fnname(*fnargs)
     except EnvironmentError as e:
         handle_oserror(e)
- 
+
+
 def handle_oserror(e):        
     try:
         basic_err = os_error[e.errno]
@@ -134,14 +247,6 @@ def handle_oserror(e):
     raise error.RunError(basic_err) 
 
         
-#########################################
-# drives & paths
-
-drives = { 'C': os.getcwd(), '@': os.path.join(plat.basepath, 'info') }
-current_drive = 'C'
-# must not start with a /
-state.io_state.drive_cwd = { 'C': '', '@': '' }
-
 if plat.system == 'Windows':
     def windows_map_drives():
         global current_drive
@@ -304,24 +409,6 @@ def get_drive_path(s, err):
             path = os.path.join(path, match_filename(e, '', path, err, isdir=True))
     return letter, path, name
     
-# find a unix path to match the given dos-style path
-def dospath(s, defext='', err=53, isdir=False, find_case=True, make_new=False):
-    # substitute drives and cwds
-    letter, path, name = get_drive_path(str(s), err)
-    # return absolute path to file        
-    if name:
-        path = os.path.join(path, match_filename(name, defext, path, err, isdir, find_case, make_new))
-    # get full normalised path (but don't follow symlinks)
-    path = os.path.abspath(path)
-    # 
-    base = len(drives[letter])
-    if drives[letter][base-1] == os.sep:
-        # root /
-        base -= 1
-    # if cwd is shorter than drive prefix or doesn't match, get out
-    if path[:base+1] != drives[letter]:
-        raise error.RunError(err)
-    return os.path.join(drives[letter], path[base+1:])   
 
 # for FILES command
 # apply filename filter and DOSify names
@@ -352,68 +439,6 @@ def pass_dosnames(path, files_list, mask='*.*'):
         dosfiles.append(trunk + ext)
     return dosfiles
 
-def files(pathmask):
-    # strip trailing spaces
-    pathmask = str(pathmask).rstrip()
-    # forward slashes - file not found
-    # GW-BASIC sometimes allows leading or trailing slashes
-    # and then does weird things I don't understand. 
-    if '/' in pathmask:
-        raise error.RunError(53)   
-    drive, path, mask = get_drive_path(pathmask, 53)
-    mask = mask.upper()
-    if mask == '':
-        mask = '*.*'
-    roots, dirs, files_list = [], [], []
-    for roots, dirs, files_list in safe(os.walk, path):
-        break
-    # get working dir in DOS format
-    # NOTE: this is always the current dir, not the one being listed
-    console.write_line(drive + ':\\' + state.io_state.drive_cwd[drive].replace(os.sep, '\\'))
-    if (roots, dirs, files_list) == ([], [], []):
-        raise error.RunError(53)
-    dosfiles = pass_dosnames(path, files_list, mask)
-    dosfiles = [ name+'     ' for name in dosfiles ]
-    dirs += ['.', '..']
-    dosdirs = pass_dosnames(path, dirs, mask)
-    dosdirs = [ name+'<DIR>' for name in dosdirs ]
-    dosfiles.sort()
-    dosdirs.sort()    
-    output = dosdirs + dosfiles
-    num = state.console_state.width/20
-    if len(output) == 0:
-        # file not found
-        raise error.RunError(53)
-    while len(output) > 0:
-        line = ' '.join(output[:num])
-        output = output[num:]
-        console.write_line(line)       
-        # allow to break during dir listing & show names flowing on screen
-        backend.check_events()             
-    console.write_line(' ' + str(disk_free(path)) + ' Bytes free')
-
-def chdir(name):
-    # substitute drives and cwds
-    letter, path, name = get_drive_path(str(name), err=76)
-    newdir = dospath(name, '', path, err=76, isdir=True)
-    # if cwd is shorter than drive prefix (like when we go .. on a drive letter root), this is just an empty path, ie the root.    
-    state.io_state.drive_cwd[letter] = newdir
-    if letter == current_drive:
-        safe(os.chdir, newdir)
-
-def mkdir(name):
-    safe(os.mkdir, dospath(str(name), '', err=76, isdir=True, make_new=True))
-    
-def rmdir(name):    
-    safe(os.rmdir, dospath(str(name), '', err=76, isdir=True))
-    
-def rename(oldname, newname):    
-    oldname = dospath(str(oldname), '', err=53, isdir=False)
-    newname = dospath(str(newname), '', err=76, isdir=False, make_new=True)
-    if os.path.exists(newname):
-        # file already exists
-        raise error.RunError(58)
-    safe(os.rename, oldname, newname)
         
 ###################################################
 # FILES: disk_free
@@ -440,6 +465,8 @@ else:
 
 if plat.system == 'Windows':
     shell_output = ''   
+    # 1 ms sleep time for output process
+    sleep_time = 0.001
 
     def process_stdout(p, stream):
         global shell_output
@@ -540,21 +567,6 @@ else:
                     console.write(c)
             if c == '' and not p.isalive(): 
                 return
-
-def shell(command):
-    # sound stops playing and is forgotten
-    backend.stop_all_sound()
-    # no key macros
-    key_macros_save = state.basic_state.key_macros_off
-    state.basic_state.key_macros_off = True
-    # no user events
-    suspend_event_save = state.basic_state.suspend_all_events
-    state.basic_state.suspend_all_events = True
-    # run the os-specific shell
-    spawn_shell(command)
-    # re-enable key macros and event handling
-    state.basic_state.key_macros_off = key_macros_save
-    state.basic_state.suspend_all_events = suspend_event_save
 
 prepare()
 
