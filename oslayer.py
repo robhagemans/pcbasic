@@ -194,15 +194,17 @@ else:
     def windows_map_drives():
         pass
     
-    # change names in FILES to some 8.3 variant             
-    def short_name(path, name):
+    # change names in FILES to some 8.3 variant 
+    # path is only needed for Windows            
+    def short_name(dummy_path, name):
+        name = dossify(name, '')
         if name.find('.') > -1:
             trunk, ext = name[:name.find('.')][:8], name[name.find('.')+1:][:3]
         else:
             trunk, ext = name[:8], ''
-        # non-DOSnames passed as UnixName....    
-        if (ext and name != trunk+'.'+ext) or (ext == '' and name != trunk and name != '.'):
-            ext = '...'
+#        # non-DOSnames passed as UnixName....    
+#        if (ext and name != trunk+'.'+ext) or (ext == '' and name != trunk and name != '.'):
+#            ext = '...'
         if name in ('.', '..'):
             trunk, ext = '', ''
         return trunk, ext
@@ -211,13 +213,13 @@ else:
         listdir = sorted(os.listdir(path))
         capsdict = {}
         for f in listdir:
-            caps = dossify(f, '', path)
+            caps = dossify(f, '')
             if caps in capsdict:
                 capsdict[caps] += [f]
             else:
                 capsdict[caps] = [f]
         try:
-            for scaps in capsdict[dossify(s, '', path)]:
+            for scaps in capsdict[dossify(s, '')]:
                 if istype(path, scaps, isdir):
                     return scaps
         except KeyError:
@@ -229,11 +231,7 @@ def istype(path, name, isdir):
     return os.path.exists(name) and ((isdir and os.path.isdir(name)) or (not isdir and os.path.isfile(name)))
         
 # put name in 8x3, all upper-case format the was GW-BASIC does it (differs from Windows short name)         
-#    # cryptic errors given by GW-BASIC:    
-#    if ext.find('.') > -1:
-#        # 53: file not found
-#        raise error.RunError(errdots)
-def dossify(s, defext='BAS', dummy_path='', dummy_err=0, dummy_isdir=False, dummy_findcase=True, dummy_make_new=False):
+def dossify(s, defext):
     # convert to all uppercase
     s = s.upper()
     # one trunk, one extension
@@ -253,7 +251,7 @@ def match_filename(s, defext='BAS', path='', err=53, isdir=False, find_case=True
     if istype(path, s, isdir):
         return s
     # check if the dossified name exists with no extension if none given   
-    full = dossify(s, '', path)
+    full = dossify(s, '')
     if istype(path, full, isdir):    
         return full
     # for case-sensitive filenames: find other case combinations, if present
@@ -263,7 +261,7 @@ def match_filename(s, defext='BAS', path='', err=53, isdir=False, find_case=True
             return full
     # check if the dossified name exists with a default extension
     if defext:
-        full = dossify(s, defext, path)
+        full = dossify(s, defext)
         if istype(path, full, isdir):    
             return full
         if find_case:
@@ -307,7 +305,7 @@ def get_drive_path(s, err):
     for e in elements:
         # skip double slashes
         if e:
-            path = os.path.join(path, match_filename(e, '', path, err, True))
+            path = os.path.join(path, match_filename(e, '', path, err, isdir=True))
     return letter, path, name
     
 # find a unix path to match the given dos-style path
@@ -392,9 +390,9 @@ def files(pathmask):
 
 def chdir(name):
     # substitute drives and cwds
-    letter, path, name = get_drive_path(str(name), 76)
+    letter, path, name = get_drive_path(str(name), err=76)
     if name:
-        newdir = os.path.abspath(os.path.join(path, match_filename(name, '', path, 76, True)))
+        newdir = os.path.abspath(os.path.join(path, match_filename(name, '', path, err=76, isdir=True)))
     else:
         newdir = path    
     base = len(drives[letter])
@@ -407,14 +405,14 @@ def chdir(name):
         safe(os.chdir, newdir)
 
 def mkdir(name):
-    safe(os.mkdir, dospath(str(name), '', 76, isdir=True, make_new=True))
+    safe(os.mkdir, dospath(str(name), '', err=76, isdir=True, make_new=True))
     
 def rmdir(name):    
-    safe(os.rmdir, dospath(str(name), '', 76, isdir=True))
+    safe(os.rmdir, dospath(str(name), '', err=76, isdir=True))
     
 def rename(oldname, newname):    
-    oldname = dospath(str(oldname), '', 53, isdir=False)
-    newname = dospath(str(newname), '', 76, isdir=False, make_new=True)
+    oldname = dospath(str(oldname), '', err=53, isdir=False)
+    newname = dospath(str(newname), '', err=76, isdir=False, make_new=True)
     if os.path.exists(newname):
         # file already exists
         raise error.RunError(58)
