@@ -128,10 +128,7 @@ def open_file_or_device(number, name, mode='I', access='R', lock='', reclen=128,
         else:    
             # random files: try to open matching file
             # if it doesn't exist, create an all-caps 8.3 file name
-            try:
-                name = oslayer.dospath_read(name, defext, 53)
-            except error.RunError:
-                name = oslayer.dospath_write(name, defext, 76)
+            name = oslayer.dospath_read(name, defext, 53, make_new=True)
         if mode in ('O', 'A'):
             # don't open output or append files more than once
             check_file_not_open(name)

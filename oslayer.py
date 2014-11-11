@@ -163,7 +163,7 @@ if plat.system == 'Windows':
         os.chdir(save_current)    
 
     # get windows short name
-    def dossify(path, name):
+    def short_name(path, name):
         if not path:
             path = current_drive
         try:
@@ -195,7 +195,7 @@ else:
         pass
     
     # change names in FILES to some 8.3 variant             
-    def dossify(path, name):
+    def short_name(path, name):
         if name.find('.') > -1:
             trunk, ext = name[:name.find('.')][:8], name[name.find('.')+1:][:3]
         else:
@@ -211,13 +211,13 @@ else:
         listdir = sorted(os.listdir(path))
         capsdict = {}
         for f in listdir:
-            caps = dossify_write(f, '', path)
+            caps = short_name(f, '', path)
             if caps in capsdict:
                 capsdict[caps] += [f]
             else:
                 capsdict[caps] = [f]
         try:
-            for scaps in capsdict[dossify_write(s, '', path)]:
+            for scaps in capsdict[short_name(s, '', path)]:
                 if istype(path, scaps, isdir):
                     return scaps
         except KeyError:
@@ -233,7 +233,7 @@ def istype(path, name, isdir):
 #    if ext.find('.') > -1:
 #        # 53: file not found
 #        raise error.RunError(errdots)
-def dossify_write(s, defext='BAS', dummy_path='', dummy_err=0, dummy_isdir=False, dummy_findcase=True):
+def dossify(s, defext='BAS', dummy_path='', dummy_err=0, dummy_isdir=False, dummy_findcase=True, dummy_make_new=False):
     # convert to all uppercase
     s = s.upper()
     # one trunk, one extension
@@ -248,12 +248,12 @@ def dossify_write(s, defext='BAS', dummy_path='', dummy_err=0, dummy_isdir=False
 
 # find a matching file/dir to read
 # if name does not exist, put name in 8x3, all upper-case format with standard extension            
-def find_name_read(s, defext='BAS', path='', err=53, isdir=False, find_case=True):
+def match_filename(s, defext='BAS', path='', err=53, isdir=False, find_case=True, make_new=False):
     # check if the name exists as-is
     if istype(path, s, isdir):
         return s
     # check if the dossified name exists with no extension if none given   
-    full = dossify_write(s, '', path)
+    full = dossify(s, '', path)
     if istype(path, full, isdir):    
         return full
     # for case-sensitive filenames: find other case combinations, if present
@@ -263,7 +263,7 @@ def find_name_read(s, defext='BAS', path='', err=53, isdir=False, find_case=True
             return full
     # check if the dossified name exists with a default extension
     if defext:
-        full = dossify_write(s, defext, path)
+        full = dossify(s, defext, path)
         if istype(path, full, isdir):    
             return full
         if find_case:
@@ -271,7 +271,10 @@ def find_name_read(s, defext='BAS', path='', err=53, isdir=False, find_case=True
             if full:    
                 return full
     # not found        
-    raise error.RunError(err)
+    if make_new:
+        return dossify(s, defext)
+    else:    
+        raise error.RunError(err)
         
 # substitute drives and cwds    
 def get_drive_path(s, err): 
@@ -304,25 +307,21 @@ def get_drive_path(s, err):
     for e in elements:
         # skip double slashes
         if e:
-            path = os.path.join(path, find_name_read(e, '', path, err, True))
+            path = os.path.join(path, match_filename(e, '', path, err, True))
     return letter, path, name
     
 # find a unix path to match the given dos-style path
-def dospath(s, defext, err, action, isdir, find_case=True):
+def dospath(s, defext, err, action, isdir, find_case=True, make_new=False):
     # substitute drives and cwds
     _, path, name = get_drive_path(str(s), err)
     # return absolute path to file        
     if name:
-        return os.path.join(path, action(name, defext, path, err, isdir, find_case))
+        return os.path.join(path, action(name, defext, path, err, isdir, find_case, make_new))
     else:
         # no file name, just dirs
         return path
 
-dospath_read = partial(dospath, action=find_name_read, isdir=False)
-dospath_write = partial(dospath, action=dossify_write, isdir=False)
-dospath_read_dir = partial(dospath, action=find_name_read, isdir=True)
-dospath_write_dir = partial(dospath, action=dossify_write, isdir=True)
-
+dospath_read = partial(dospath, action=match_filename, isdir=False)
     
 # for FILES command
 # apply filename filter and DOSify names
@@ -334,7 +333,7 @@ def pass_dosnames(path, files_list, mask='*.*'):
         trunkmask, extmask = mask[0], ''
     dosfiles = []
     for name in files_list:
-        trunk, ext = dossify(path, name)
+        trunk, ext = short_name(path, name)
         # apply mask separately to trunk and extension, dos-style.
         if not fnmatch.fnmatch(trunk.upper(), trunkmask.upper()) or not fnmatch.fnmatch(ext.upper(), extmask.upper()):
             continue
@@ -397,7 +396,7 @@ def chdir(name):
     # substitute drives and cwds
     letter, path, name = get_drive_path(str(name), 76)
     if name:
-        newdir = os.path.abspath(os.path.join(path, find_name_read(name, '', path, 76, True)))
+        newdir = os.path.abspath(os.path.join(path, match_filename(name, '', path, 76, True)))
     else:
         newdir = path    
     base = len(drives[letter])
@@ -410,14 +409,14 @@ def chdir(name):
         safe(os.chdir, newdir)
 
 def mkdir(name):
-    safe(os.mkdir, dospath_write_dir(str(name), '', 76))
+    safe(os.mkdir, dospath(str(name), '', 76, action=dossify, isdir=True))
     
 def rmdir(name):    
-    safe(os.rmdir, dospath_read_dir(str(name), '', 76))
+    safe(os.rmdir, dospath(str(name), '', 76, action=match_filename, isdir=True))
     
 def rename(oldname, newname):    
-    oldname = dospath_read(str(oldname), '', 53)
-    newname = dospath_write(str(newname), '', 76)
+    oldname = dospath(str(oldname), '', 53, action=match_filename, isdir=False)
+    newname = dospath(str(newname), '', 76, action=dossify, isdir=False)
     if os.path.exists(newname):
         # file already exists
         raise error.RunError(58)
