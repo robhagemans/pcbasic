@@ -687,10 +687,10 @@ def exec_name(ins):
     util.require(ins, util.end_statement)
 
 def exec_kill(ins):
-    name = oslayer.dospath(str(vartypes.pass_string_unpack(expressions.parse_expression(ins))), find_case=False)
+    name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # don't delete open files
     iolayer.check_file_not_open(name)
-    oslayer.safe(os.remove, name)
+    oslayer.kill(name)
     util.require(ins, util.end_statement)
 
 def exec_files(ins):

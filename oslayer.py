@@ -135,10 +135,13 @@ def chdir(name):
         safe(os.chdir, newdir)
 
 def mkdir(name):
-    safe(os.mkdir, dospath(str(name), '', err=76, isdir=True, make_new=True))
+    safe(os.mkdir, dospath(name, '', err=76, isdir=True, make_new=True))
     
 def rmdir(name):    
-    safe(os.rmdir, dospath(str(name), '', err=76, isdir=True))
+    safe(os.rmdir, dospath(name, '', err=76, isdir=True))
+
+def kill(name):
+    safe(os.remove, dospath(name, find_case=False))
 
 def files(pathmask):
     # strip trailing spaces
