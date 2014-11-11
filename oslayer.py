@@ -203,7 +203,7 @@ def dospath(s, defext='', err=53, isdir=False, find_case=True, make_new=False):
         # root /
         base -= 1
     # if cwd is shorter than drive prefix or doesn't match, get out
-    if path[:base+1] != drives[letter]:
+    if path[:base] != drives[letter]:
         raise error.RunError(err)
     return os.path.join(drives[letter], path[base+1:])   
 
