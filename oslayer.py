@@ -308,13 +308,21 @@ def get_drive_path(s, err):
 # find a unix path to match the given dos-style path
 def dospath(s, defext='', err=53, isdir=False, find_case=True, make_new=False):
     # substitute drives and cwds
-    _, path, name = get_drive_path(str(s), err)
+    letter, path, name = get_drive_path(str(s), err)
     # return absolute path to file        
     if name:
-        return os.path.join(path, match_filename(name, defext, path, err, isdir, find_case, make_new))
-    else:
-        # no file name, just dirs
-        return path
+        path = os.path.join(path, match_filename(name, defext, path, err, isdir, find_case, make_new))
+    # get full normalised path (but don't follow symlinks)
+    path = os.path.abspath(path)
+    # 
+    base = len(drives[letter])
+    if drives[letter][base-1] == os.sep:
+        # root /
+        base -= 1
+    # if cwd is shorter than drive prefix or doesn't match, get out
+    if path[:base+1] != drives[letter]:
+        raise error.RunError(err)
+    return os.path.join(drives[letter], path[base+1:])   
 
 # for FILES command
 # apply filename filter and DOSify names
@@ -388,16 +396,9 @@ def files(pathmask):
 def chdir(name):
     # substitute drives and cwds
     letter, path, name = get_drive_path(str(name), err=76)
-    if name:
-        newdir = os.path.abspath(dospath(name, '', path, err=76, isdir=True))
-    else:
-        newdir = path    
-    base = len(drives[letter])
-    if drives[letter][base-1] == os.sep:
-        # root /
-        base -= 1
+    newdir = dospath(name, '', path, err=76, isdir=True)
     # if cwd is shorter than drive prefix (like when we go .. on a drive letter root), this is just an empty path, ie the root.    
-    state.io_state.drive_cwd[letter] = newdir[base+1:]
+    state.io_state.drive_cwd[letter] = newdir
     if letter == current_drive:
         safe(os.chdir, newdir)
 
