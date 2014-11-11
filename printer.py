@@ -1,8 +1,8 @@
 
 """
-PC-BASIC 3.23 - io.py
+PC-BASIC 3.23 - printer.py
 
-File and Device I/O operations 
+Line printer output 
  
 (c) 2013, 2014 Rob Hagemans 
 
