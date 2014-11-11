@@ -409,14 +409,14 @@ def chdir(name):
         safe(os.chdir, newdir)
 
 def mkdir(name):
-    safe(os.mkdir, dospath(str(name), '', 76, action=dossify, isdir=True))
+    safe(os.mkdir, dospath(str(name), '', 76, action=match_filename, isdir=True, make_new=True))
     
 def rmdir(name):    
     safe(os.rmdir, dospath(str(name), '', 76, action=match_filename, isdir=True))
     
 def rename(oldname, newname):    
     oldname = dospath(str(oldname), '', 53, action=match_filename, isdir=False)
-    newname = dospath(str(newname), '', 76, action=dossify, isdir=False)
+    newname = dospath(str(newname), '', 76, action=match_filename, isdir=False, make_new=True)
     if os.path.exists(newname):
         # file already exists
         raise error.RunError(58)
