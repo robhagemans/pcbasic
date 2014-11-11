@@ -198,15 +198,12 @@ else:
     # path is only needed for Windows            
     def short_name(dummy_path, name):
         name = dossify(name, '')
-        if name.find('.') > -1:
+        if name in ('.', '..'):
+            trunk, ext = '', name[1:]
+        elif name.find('.') > -1:
             trunk, ext = name[:name.find('.')][:8], name[name.find('.')+1:][:3]
         else:
             trunk, ext = name[:8], ''
-#        # non-DOSnames passed as UnixName....    
-#        if (ext and name != trunk+'.'+ext) or (ext == '' and name != trunk and name != '.'):
-#            ext = '...'
-        if name in ('.', '..'):
-            trunk, ext = '', ''
         return trunk, ext
    
     def find_name_case(s, path, isdir):
