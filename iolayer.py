@@ -130,11 +130,11 @@ def open_file_or_device(number, name, mode='I', access='R', lock='', reclen=128,
             # don't open output or append files more than once
             check_file_not_open(name)
         if mode in ('I', 'L'):
-            name = oslayer.dospath(name, defext)
+            name = oslayer.native_path(name, defext)
         else:    
             # random files: try to open matching file
             # if it doesn't exist, create an all-caps 8.3 file name
-            name = oslayer.dospath(name, defext, make_new=True)
+            name = oslayer.native_path(name, defext, make_new=True)
         # obtain a lock
         request_lock(name, lock, access)
         # open the file
@@ -160,7 +160,7 @@ def get_file(num, mode='IOAR'):
      
 def check_file_not_open(path):
     for f in state.io_state.files:
-        if oslayer.dospath(path) == state.io_state.files[f].name:
+        if oslayer.native_path(path) == state.io_state.files[f].name:
             raise error.RunError(55)
 
 def find_files_by_name(name):

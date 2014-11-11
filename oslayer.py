@@ -128,20 +128,20 @@ state.io_state.drive_cwd = { 'C': '', '@': '' }
 def chdir(name):
     # substitute drives and cwds
     letter, path, name = get_drive_path(str(name), err=76)
-    newdir = dospath(name, '', path, err=76, isdir=True)
+    newdir = native_path(name, '', path, err=76, isdir=True)
     # if cwd is shorter than drive prefix (like when we go .. on a drive letter root), this is just an empty path, ie the root.    
     state.io_state.drive_cwd[letter] = newdir
     if letter == current_drive:
         safe(os.chdir, newdir)
 
 def mkdir(name):
-    safe(os.mkdir, dospath(name, '', err=76, isdir=True, make_new=True))
+    safe(os.mkdir, native_path(name, '', err=76, isdir=True, make_new=True))
     
 def rmdir(name):    
-    safe(os.rmdir, dospath(name, '', err=76, isdir=True))
+    safe(os.rmdir, native_path(name, '', err=76, isdir=True))
 
 def kill(name):
-    safe(os.remove, dospath(name, find_case=False))
+    safe(os.remove, native_path(name, find_case=False))
 
 def files(pathmask):
     # strip trailing spaces
@@ -184,15 +184,15 @@ def files(pathmask):
     console.write_line(' ' + str(disk_free(path)) + ' Bytes free')
     
 def rename(oldname, newname):    
-    oldname = dospath(str(oldname), '', err=53, isdir=False)
-    newname = dospath(str(newname), '', err=76, isdir=False, make_new=True)
+    oldname = native_path(str(oldname), '', err=53, isdir=False)
+    newname = native_path(str(newname), '', err=76, isdir=False, make_new=True)
     if os.path.exists(newname):
         # file already exists
         raise error.RunError(58)
     safe(os.rename, oldname, newname)
 
 # find a unix path to match the given dos-style path
-def dospath(s, defext='', err=53, isdir=False, find_case=True, make_new=False):
+def native_path(s, defext='', err=53, isdir=False, find_case=True, make_new=False):
     # substitute drives and cwds
     letter, path, name = get_drive_path(str(s), err)
     # return absolute path to file        
