@@ -50,7 +50,7 @@ def prepare():
         pcjr_syntax = None    
     # find program for PCjr TERM command    
     pcjr_term = config.options['pcjr-term']
-    if not os.path.exists(pcjr_term):
+    if pcjr_term and not os.path.exists(pcjr_term):
         pcjr_term = os.path.join(plat.info_dir, pcjr_term)
     if not os.path.exists(pcjr_term):
         pcjr_term = ''
@@ -274,11 +274,13 @@ def exec_debug(ins):
 
 # PCjr builtin serial terminal emulator
 def exec_term(ins):
-    if not pcjr_term:
+    try:
+        f = open(pcjr_term, 'rb')
+    except (OSError, IOError):
         # on Tandy, raises Internal Error
-        raise error.RunError(51)
+        raise error.RunError(51)   
     util.require(ins, util.end_statement)
-    program.load(oslayer.safe_open(pcjr_term, mode='L', access='R'))
+    program.load(f)
     flow.init_program()
     reset.clear()
     flow.jump(None)
