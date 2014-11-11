@@ -389,7 +389,7 @@ def chdir(name):
     # substitute drives and cwds
     letter, path, name = get_drive_path(str(name), err=76)
     if name:
-        newdir = os.path.abspath(os.path.join(path, match_filename(name, '', path, err=76, isdir=True)))
+        newdir = os.path.abspath(dospath(name, '', path, err=76, isdir=True))
     else:
         newdir = path    
     base = len(drives[letter])
