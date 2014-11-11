@@ -138,7 +138,7 @@ def open_file_or_device(number, name, mode='I', access='R', lock='', reclen=128,
         # obtain a lock
         request_lock(name, lock, access)
         # open the file
-        fhandle = oslayer.safe_open(name, mode, access)
+        fhandle = oslayer.open_file(name, mode, access)
         # apply the BASIC file wrapper
         if mode in ('S', 'L'): # save, load
             inst = BaseFile(fhandle, name, number, mode, access, lock)

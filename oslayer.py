@@ -106,7 +106,7 @@ def get_env_entry(expr):
 #########################################
 # error handling
 
-def safe_open(name, mode, access):
+def open_file(name, mode, access):
     name = str(name)
     posix_access = access_access[access] if (access and mode == 'R') else access_modes[mode]  
     try:
