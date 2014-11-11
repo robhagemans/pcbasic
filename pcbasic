@@ -69,7 +69,6 @@ def prepare_logging():
 def convert():
     """ Perform file format conversion. """
     import program
-    import oslayer
     import iolayer
     import error
     # set conversion output 
@@ -95,11 +94,13 @@ def convert():
             program.load(plat.stdin)      
         if outfile:
             # on save from command-line, use exact file name
-            program.save(oslayer.safe_open(outfile, "S", "W"), mode)
+            program.save(open(outfile, 'wb'), mode)
         elif plat.stdout:
             program.save(plat.stdout, mode)
     except error.RunError as e:
         logging.error(error.get_message(e.err))
+    except EnvironmentError as e:    
+        logging.error(str(e))    
         
 def start_basic():
     """ Load & run programs and commands and hand over to interactive mode. """
@@ -233,15 +234,14 @@ def print_greeting(console):
         console.write_line(greeting % (debugstr, var.total_mem))
         console.show_keys(True)
                 
-def open_native_or_dos_filename(infile):
+def open_native_or_dos_filename(infile, mode):
     """ If the specified file exists, open it; if not, try as DOS file name. """
     import iolayer
-    import oslayer
     import error
     try:
         # first try exact file name
-        return oslayer.safe_open(infile, "L", "R")
-    except error.RunError:
+        return open(infile, 'r')
+    except EnvironmentError:
         # on load, accept capitalised versions and default extension
         return iolayer.open_file_or_device(0, 
                 infile, mode='L', defext='BAS')
