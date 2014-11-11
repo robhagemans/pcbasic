@@ -211,13 +211,13 @@ else:
         listdir = sorted(os.listdir(path))
         capsdict = {}
         for f in listdir:
-            caps = short_name(f, '', path)
+            caps = dossify(f, '', path)
             if caps in capsdict:
                 capsdict[caps] += [f]
             else:
                 capsdict[caps] = [f]
         try:
-            for scaps in capsdict[short_name(s, '', path)]:
+            for scaps in capsdict[dossify(s, '', path)]:
                 if istype(path, scaps, isdir):
                     return scaps
         except KeyError:
