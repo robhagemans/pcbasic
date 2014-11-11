@@ -311,18 +311,16 @@ def get_drive_path(s, err):
     return letter, path, name
     
 # find a unix path to match the given dos-style path
-def dospath(s, defext, err, action, isdir, find_case=True, make_new=False):
+def dospath(s, defext='', err=53, isdir=False, find_case=True, make_new=False):
     # substitute drives and cwds
     _, path, name = get_drive_path(str(s), err)
     # return absolute path to file        
     if name:
-        return os.path.join(path, action(name, defext, path, err, isdir, find_case, make_new))
+        return os.path.join(path, match_filename(name, defext, path, err, isdir, find_case, make_new))
     else:
         # no file name, just dirs
         return path
 
-dospath_read = partial(dospath, action=match_filename, isdir=False)
-    
 # for FILES command
 # apply filename filter and DOSify names
 def pass_dosnames(path, files_list, mask='*.*'):
@@ -409,14 +407,14 @@ def chdir(name):
         safe(os.chdir, newdir)
 
 def mkdir(name):
-    safe(os.mkdir, dospath(str(name), '', 76, action=match_filename, isdir=True, make_new=True))
+    safe(os.mkdir, dospath(str(name), '', 76, isdir=True, make_new=True))
     
 def rmdir(name):    
-    safe(os.rmdir, dospath(str(name), '', 76, action=match_filename, isdir=True))
+    safe(os.rmdir, dospath(str(name), '', 76, isdir=True))
     
 def rename(oldname, newname):    
-    oldname = dospath(str(oldname), '', 53, action=match_filename, isdir=False)
-    newname = dospath(str(newname), '', 76, action=match_filename, isdir=False, make_new=True)
+    oldname = dospath(str(oldname), '', 53, isdir=False)
+    newname = dospath(str(newname), '', 76, isdir=False, make_new=True)
     if os.path.exists(newname):
         # file already exists
         raise error.RunError(58)
