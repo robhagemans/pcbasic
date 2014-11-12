@@ -81,7 +81,7 @@ def prepare():
         except (TypeError, ValueError):
             logging.warning('Could not mount %s', a)
     if config.options['map-drives']:
-        windows_map_drives()
+        map_drives()
 
 
 #########################################
@@ -104,10 +104,10 @@ def get_env_entry(expr):
         return bytearray(envlist[expr-1] + '=' + val)   
     
 #########################################
-# error handling
+# open a file & catch errors
 
-def open_file(name, mode, access):
-    name = str(name)
+def open_file(native_name, mode, access):
+    name = str(native_name)
     posix_access = access_access[access] if (access and mode == 'R') else access_modes[mode]  
     try:
         # create file if writing and doesn't exist yet    
@@ -128,17 +128,17 @@ state.io_state.drive_cwd = { 'C': '', '@': '' }
 def chdir(name):
     # substitute drives and cwds
     letter, path, name = get_drive_path(str(name), err=76)
-    newdir = native_path(name, '', path, err=76, isdir=True)
+    newdir = native_path(name, path, err=76, isdir=True)
     # if cwd is shorter than drive prefix (like when we go .. on a drive letter root), this is just an empty path, ie the root.    
     state.io_state.drive_cwd[letter] = newdir
     if letter == current_drive:
         safe(os.chdir, newdir)
 
 def mkdir(name):
-    safe(os.mkdir, native_path(name, '', err=76, isdir=True, make_new=True))
+    safe(os.mkdir, native_path(name, err=76, isdir=True, make_new=True))
     
 def rmdir(name):    
-    safe(os.rmdir, native_path(name, '', err=76, isdir=True))
+    safe(os.rmdir, native_path(name, err=76, isdir=True))
 
 def kill(name):
     safe(os.remove, native_path(name, find_case=False))
@@ -163,10 +163,10 @@ def files(pathmask):
     console.write_line(drive + ':\\' + state.io_state.drive_cwd[drive].replace(os.sep, '\\'))
     if (roots, dirs, files_list) == ([], [], []):
         raise error.RunError(53)
-    dosfiles = pass_dosnames(path, files_list, mask)
+    dosfiles = dossify_and_filter(path, files_list, mask)
     dosfiles = [ name+'     ' for name in dosfiles ]
     dirs += ['.', '..']
-    dosdirs = pass_dosnames(path, dirs, mask)
+    dosdirs = dossify_and_filter(path, dirs, mask)
     dosdirs = [ name+'<DIR>' for name in dosdirs ]
     dosfiles.sort()
     dosdirs.sort()    
@@ -192,23 +192,22 @@ def rename(oldname, newname):
     safe(os.rename, oldname, newname)
 
 # find a unix path to match the given dos-style path
-def native_path(s, defext='', err=53, isdir=False, find_case=True, make_new=False):
+def native_path(path_and_name, defext='', err=53, isdir=False, find_case=True, make_new=False):
     # substitute drives and cwds
-    letter, path, name = get_drive_path(str(s), err)
+    letter, path, name = get_drive_path(str(path_and_name), err)
     # return absolute path to file        
     if name:
         path = os.path.join(path, match_filename(name, defext, path, err, isdir, find_case, make_new))
     # get full normalised path (but don't follow symlinks)
     path = os.path.abspath(path)
-    # 
     base = len(drives[letter])
     if drives[letter][base-1] == os.sep:
         # root /
         base -= 1
-    # if cwd is shorter than drive prefix or doesn't match, get out
+    # if base path is shorter than drive prefix or doesn't match, get out
     if path[:base] != drives[letter]:
         raise error.RunError(err)
-    return os.path.join(drives[letter], path[base+1:])   
+    return path   
 
 #########################################
 # shell
@@ -233,25 +232,8 @@ def shell(command):
 #########################################
 # implementation
  
-    
-def safe(fnname, *fnargs):
-    try:
-        return fnname(*fnargs)
-    except EnvironmentError as e:
-        handle_oserror(e)
-
-
-def handle_oserror(e):        
-    try:
-        basic_err = os_error[e.errno]
-    except KeyError:
-        # unknown; internal error
-        basic_err = 51
-    raise error.RunError(basic_err) 
-
-        
 if plat.system == 'Windows':
-    def windows_map_drives():
+    def map_drives():
         global current_drive
         # get all drives in use by windows
         # if started from CMD.EXE, get the 'current working dir' for each drive
@@ -270,111 +252,113 @@ if plat.system == 'Windows':
         os.chdir(save_current)    
 
     # get windows short name
-    def short_name(path, name):
+    def short_name(path, longname):
         if not path:
             path = current_drive
+        path_and_longname = os.path.join(str(path), str(longname)) 
         try:
-            shortname = win32api.GetShortPathName(os.path.join(path, name)).upper()
+            # gets the short name if it exists, keeps long name otherwise
+            path_and_name = win32api.GetShortPathName(path_and_longname)
         except WindowsError:
-            # something went wrong, show as dots in FILES
-            return "........", "..."
-        split = shortname.split('\\')[-1].split('.')
-        trunk, ext = split[0], ''
-        if len(split)>1:
-            ext = split[1]
-        if len(trunk)>8 or len(ext)>3:
-            # on some file systems, ShortPathName returns the long name
-            trunk = trunk[:8]
-            ext = '...'    
-        return trunk, ext    
-
-    # assume Windows filesystems all case insensitive
-    # if you're using this with an EXT2 partition on Windows, you're just weird ;)
-    def find_name_case(s, path, isdir):
-        return None
+            # something went wrong - keep long name (happens for swap file)
+            path_and_name = path_and_longname
+        # last element of path is name    
+        name = path_and_name.split(os.sep)[-1]
+        # if we still have a long name, shorten it now
+        return split_dosname(name.upper())
         
 else:
 # to map root to C and set current to CWD:
 #    drives = { 'C': '/', '@': os.path.join(plat.basepath, 'info') }
 #    state.io_state.drive_cwd = { 'C': os.getcwd()[1:], '@': '' }
     
-    def windows_map_drives():
+    def map_drives():
         pass
     
-    # change names in FILES to some 8.3 variant 
-    # path is only needed for Windows            
-    def short_name(dummy_path, name):
-        name = dossify(name, '')
-        if name in ('.', '..'):
-            trunk, ext = '', name[1:]
-        elif name.find('.') > -1:
-            trunk, ext = name[:name.find('.')][:8], name[name.find('.')+1:][:3]
-        else:
-            trunk, ext = name[:8], ''
-        return trunk, ext
+    # change names in FILES to uppercase 8.3
+    # path is only needed for Windows     
+    def short_name(dummy_path, longname):
+        return split_dosname(longname.upper())
    
-    def find_name_case(s, path, isdir):
-        listdir = sorted(os.listdir(path))
-        capsdict = {}
-        for f in listdir:
-            caps = dossify(f, '')
-            if caps in capsdict:
-                capsdict[caps] += [f]
-            else:
-                capsdict[caps] = [f]
-        try:
-            for scaps in capsdict[dossify(s, '')]:
-                if istype(path, scaps, isdir):
-                    return scaps
-        except KeyError:
-            return None
 
+def safe(fnname, *fnargs):
+    try:
+        return fnname(*fnargs)
+    except EnvironmentError as e:
+        handle_oserror(e)
 
-def istype(path, name, isdir):
-    name = os.path.join(str(path), str(name))
+def handle_oserror(e):        
+    try:
+        basic_err = os_error[e.errno]
+    except KeyError:
+        # unknown; internal error
+        basic_err = 51
+    raise error.RunError(basic_err) 
+        
+def split_dosname(name):
+    if name in ('.', '..'):
+        trunk, ext = '', name[1:]
+    elif name.find('.') > -1:
+        trunk, ext = name[:name.find('.')][:8], name[name.find('.')+1:][:3]
+    else:
+        trunk, ext = name[:8], ''
+    return trunk, ext
+
+def join_dosname(trunk, ext):
+    return trunk + ('.' + ext if ext else '')
+
+def istype(path, native_name, isdir):
+    name = os.path.join(str(path), str(native_name))
     return os.path.exists(name) and ((isdir and os.path.isdir(name)) or (not isdir and os.path.isfile(name)))
         
-# put name in 8x3, all upper-case format the was GW-BASIC does it (differs from Windows short name)         
-def dossify(s, defext):
+# put name in 8x3, all upper-case format the way GW-BASIC does it (differs from Windows short name)         
+def dossify(longname, defext=''):
     # convert to all uppercase
-    s = s.upper()
     # one trunk, one extension
-    if '.' in s:
-        name, ext = s.split('.', 1)
-    else:
-        name, ext = s, defext
-    # 8.3, no spaces
-    name, ext = name[:8].strip(), ext[:3].strip()
+    name, ext = split_dosname(longname.upper())
+    if not ext:
+        ext = defext
     # no dot if no ext
-    return name + ('.' + ext if ext else '')
+    return join_dosname(name, ext)
+
+def match_dosname(dosname, path, isdir, find_case):
+    # check if the dossified name exists with no extension if none given   
+    if istype(path, dosname, isdir):    
+        return dosname
+    if not find_case:    
+        return None
+    # for case-sensitive filenames: find other case combinations, if present
+    listdir = sorted(os.listdir(path))
+    capsdict = {}
+    for f in listdir:
+        caps = dossify(f, '')
+        if caps in capsdict:
+            capsdict[caps] += [f]
+        else:
+            capsdict[caps] = [f]
+    try:
+        for scaps in capsdict[dosname]:
+            if istype(path, scaps, isdir):
+                return scaps
+    except KeyError:
+        return None
 
 # find a matching file/dir to read
 # if name does not exist, put name in 8x3, all upper-case format with standard extension            
-def match_filename(s, defext='BAS', path='', err=53, isdir=False, find_case=True, make_new=False):
+def match_filename(name, defext='BAS', path='', err=53, isdir=False, find_case=True, make_new=False):
     # check if the name exists as-is
-    if istype(path, s, isdir):
-        return s
-    # check if the dossified name exists with no extension if none given   
-    full = dossify(s, '')
-    if istype(path, full, isdir):    
-        return full
-    # for case-sensitive filenames: find other case combinations, if present
-    if find_case:
-        full = find_name_case(s, path, isdir)
-        if full:    
-            return full
-    # check if the dossified name exists with a default extension
-    if defext:
-        full = dossify(s, defext)
-        if istype(path, full, isdir):    
-            return full
-        if find_case:
-            full = find_name_case(s + '.' + defext, path, isdir)
-            if full:    
-                return full
+    # this should also match Windows short filenames
+    if istype(path, name, isdir):
+        return name
+    # try to match dossified names with and without default extension    
+    for ext in (('', defext) if defext else ('',)):    
+        dosname = dossify(name, ext)
+        fullname = match_dosname(dosname, path, isdir, find_case)
+        if fullname:    
+            return fullname
     # not found        
     if make_new:
-        return dossify(s, defext)
+        return dosname
     else:    
         raise error.RunError(err)
         
@@ -415,7 +399,7 @@ def get_drive_path(s, err):
 
 # for FILES command
 # apply filename filter and DOSify names
-def pass_dosnames(path, files_list, mask='*.*'):
+def dossify_and_filter(path, files_list, mask='*.*'):
     mask = str(mask).rsplit('.', 1)
     if len(mask) == 2:
         trunkmask, extmask = mask
