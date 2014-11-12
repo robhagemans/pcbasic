@@ -264,7 +264,7 @@ class BaseFile(object):
     
     def read_line(self):
         out = bytearray('')
-        while True:
+        while len(out) < 255:
             c = self.read(1)
             if c == '\r':
                 break
@@ -322,7 +322,7 @@ class TextFile(BaseFile):
             raise error.RunError(62)
         # readline breaks line on LF, we can only break on CR or CRLF
         s = ''
-        while True:
+        while len(s) < 255:
             c = self.fhandle.read(1)
             if c in ('', '\x1a'):
                 break
@@ -745,7 +745,7 @@ class KYBDFile(NullDevice):
         
     def read_line(self):
         s = bytearray('')
-        while True:
+        while len(s) < 255:
             c = self.read(1)
             if c == '\r':
                 # don't check for CR/LF when reading KYBD:
@@ -1000,7 +1000,7 @@ class COMFile(RandomBase):
     # blocking read line (from com port directly - NOT from field buffer!)    
     def read_line(self):
         out = bytearray('')
-        while True:
+        while len(out) < 255:
             c = self.read(1)
             if c == '\r':
                 c = self.read(1)
