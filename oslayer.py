@@ -109,7 +109,10 @@ def get_env_entry(expr):
 def open_file(native_name, mode, access):
     """ Open a file by os-native name with BASIC mode and access level. """
     name = str(native_name)
-    posix_access = access_access[access] if (access and mode == 'R') else access_modes[mode]  
+    if (access and mode == 'R'):
+        posix_access = access_access[access] 
+    else:
+        posix_access = access_modes[mode]  
     try:
         # create file if writing and doesn't exist yet    
         if '+' in posix_access and not os.path.exists(name):
@@ -120,12 +123,12 @@ def open_file(native_name, mode, access):
 
 def chdir(name):
     """ Change working directory to given BASIC path. """
-    # substitute drives and cwds
-    letter, drivepath, relpath, _ = native_path_elements(name, err=76, join_name=True)
-    # if cwd is shorter than drive prefix (like when we go .. on a drive letter root), this is just an empty path, ie the root.    
-    state.io_state.drive_cwd[letter] = relpath
+    # get drive path and relative path
+    letter, dpath, rpath, _ = native_path_elements(name, err=76, join_name=True)
+    # set cwd for the specified drive
+    state.io_state.drive_cwd[letter] = rpath
     if letter == current_drive:
-        safe(os.chdir, os.path.join(drivepath, relpath))
+        safe(os.chdir, os.path.join(dpath, rpath))
 
 def mkdir(name):
     """ Create directory at given BASIC path. """
@@ -151,7 +154,9 @@ def files(pathmask):
     mask = mask.upper() or '*.*'
     # output working dir in DOS format
     # NOTE: this is always the current dir, not the one being listed
-    console.write_line(drive + ':\\' + state.io_state.drive_cwd[drive].replace(os.sep, '\\'))
+    dir_elems = [join_dosname(*short_name(path, e)) 
+                 for e in state.io_state.drive_cwd[drive].split(os.sep)]
+    console.write_line(drive + ':\\' + '\\'.join(dir_elems))
     fils = ''
     if mask == '.':
         dirs = [split_dosname(dossify((os.sep+relpath).split(os.sep)[-1:][0]))]
@@ -188,14 +193,16 @@ def rename(oldname, newname):
         raise error.RunError(58)
     safe(os.rename, oldname, newname)
 
-def native_path(path_and_name, defext='', err=53, isdir=False, find_case=True, make_new=False):
+def native_path(path_and_name, defext='', err=53, 
+                isdir=False, find_case=True, make_new=False):
     """ Find os-native path to match the given BASIC path. """
     # substitute drives and cwds
     _, drivepath, relpath, name = native_path_elements(path_and_name, err)
     # return absolute path to file        
     path = os.path.join(drivepath, relpath)
     if name:
-        path = os.path.join(path, match_filename(name, defext, path, err, isdir, find_case, make_new))
+        path = os.path.join(path, 
+            match_filename(name, defext, path, err, isdir, find_case, make_new))
     # get full normalised path
     return os.path.abspath(path)
 
@@ -381,7 +388,7 @@ def split_drive(s):
         
 def native_path_elements(s, err, join_name=False): 
     """ Return elements of the native path for a given BASIC path. """
-    letter, drivepath, s = split_drive(s)
+    letter, path, s = split_drive(s)
     # get path below drive letter
     relpath = '' 
     if not s or s[0] != '\\':
@@ -391,8 +398,7 @@ def native_path_elements(s, err, join_name=False):
     # whatever's after the last \\ is the name of the subject file or dir
     # if the path ends in \\, there's no name
     name = '' if (join_name or not elements) else elements.pop()
-    # drop .. at top of relpath (don't go outside of 'drive')
-    # parse internal .. and . (like normpath)
+    # parse internal .. and . (like normpath);  drop leading . and ..
     i = 0
     while i < len(elements):
         if elements[i] == '.':
@@ -404,16 +410,16 @@ def native_path_elements(s, err, join_name=False):
                 i -= 1
         else:
             i += 1
-    # find a matching directory for every step in the path; append found name to path
-    path = drivepath
-    # include joining slash
-    baselen = len(drivepath) + 1
+    # cut original drive path; include a joining slash
+    baselen = len(path) + 1
     # find the native matches for each step in the path 
     for e in elements:
         # skip double slashes
         if e:
+            # find a matching directory for every step in the path;
+            # append found name to path
             path = os.path.join(path, match_filename(e, '', path, err, isdir=True))
-    return letter, drivepath, path[baselen:], name
+    return letter, path[:baselen], path[baselen:], name
 
 def filter_names(path, files_list, mask='*.*'):
     """ Apply filename filter to short version of names. """
@@ -430,7 +436,8 @@ if plat.system == 'Windows':
     def disk_free(path):
         """ Return the number of free bytes on the drive. """
         free_bytes = ctypes.c_ulonglong(0)
-        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(path), None, None, ctypes.pointer(free_bytes))
+        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(path), 
+                                        None, None, ctypes.pointer(free_bytes))
         return free_bytes.value
 elif plat.system == 'Android':
     def disk_free(path):
@@ -448,8 +455,6 @@ else:
 
 if plat.system == 'Windows':
     shell_output = ''   
-    # 1 ms sleep time for output process
-    sleep_time = 0.001
 
     def process_stdout(p, stream):
         """ Retrieve SHELL output and write to console. """
@@ -457,20 +462,22 @@ if plat.system == 'Windows':
         while True:
             c = stream.read(1)
             if c != '': 
-                # don't access screen in this thread, the other thread already does
+                # don't access screen in this thread
+                # the other thread already does
                 shell_output += c
             elif p.poll() != None:
                 break        
             else:
-                # don't hog cpu
-                time.sleep(sleep_time)
+                # don't hog cpu, sleep 1 ms
+                time.sleep(0.001)
 
     def spawn_shell(command):
         """ Run a SHELL subprocess. """
         global shell_output
         if not command:
             command = 'CMD'
-        p = subprocess.Popen( str(command).split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
+        p = subprocess.Popen( str(command).split(), stdin=subprocess.PIPE, 
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         outp = threading.Thread(target=process_stdout, args=(p, p.stdout))
         outp.daemon = True
         outp.start()
@@ -480,8 +487,7 @@ if plat.system == 'Windows':
         word = ''
         while p.poll() == None or shell_output:
             if shell_output:
-                lines = shell_output.split('\r\n')
-                shell_output = '' 
+                lines, shell_output = shell_output.split('\r\n'), ''
                 last = lines.pop()
                 for line in lines:
                     # progress visible - keep updating the backend
@@ -497,8 +503,9 @@ if plat.system == 'Windows':
             except error.Break:
                 pass    
             if c in ('\r', '\n'): 
-                # Windows CMD.EXE echo to overwrite the command that's already there
-                # NOTE: WINE cmd.exe doesn't echo the command, so it's overwritten by the output...
+                # shift the cursor left so that CMD.EXE's echo can overwrite 
+                # the command that's already there. Note that Wine's CMD.EXE
+                # doesn't echo the command, so it's overwritten by the output...
                 console.write('\x1D' * len(word))
                 p.stdin.write(word + '\r\n')
                 word = ''
@@ -508,9 +515,8 @@ if plat.system == 'Windows':
                     word = word[:-1]
                     console.write('\x1D \x1D')
             elif c != '':    
-                # only send to pipe when enter pressed rather than p.stdin.write(c)
-                # workaround for WINE - it seems to attach a CR to each letter sent to the pipe. not needed in proper Windows.
-                # also needed to handle backsapce properly
+                # only send to pipe when enter is pressed
+                # needed for Wine and to handle backspace properly
                 word += c
                 console.write(c)
         outp.join()
