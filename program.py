@@ -1,13 +1,10 @@
-#
-# PC-BASIC 3.23  - program.py
-#
-# Program buffer utilities
-# 
-# (c) 2013, 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
+"""
+PC-BASIC 3.23  - program.py
+Program buffer utilities
+ 
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+"""
 
 import config
 import error
@@ -58,6 +55,7 @@ def prepare():
     erase_program()
 
 def erase_program():
+    """ Erase the program from memory. """
     state.basic_state.bytecode.truncate(0)
     state.basic_state.bytecode.write('\0\0\0')
     state.basic_state.protected = False
@@ -68,12 +66,13 @@ def erase_program():
     flow.init_program()
 
 def truncate_program(rest=''):
+    """ Write bytecode and cut the program of beyond the current position. """
     state.basic_state.bytecode.write(rest if rest else '\0\0\0')
     # cut off at current position    
     state.basic_state.bytecode.truncate()    
       
-# get line number for stream position
 def get_line_number(pos):
+    """ Get line number for stream position. """
     pre = -1
     for linum in state.basic_state.line_numbers:
         linum_pos = state.basic_state.line_numbers[linum] 
@@ -82,7 +81,7 @@ def get_line_number(pos):
     return pre
 
 def rebuild_line_dict():
-    # preparse to build line number dictionary
+    """ Preparse to build line number dictionary. """
     state.basic_state.line_numbers, offsets = {}, []
     state.basic_state.bytecode.seek(0)
     scanline, scanpos, last = 0, 0, 0
@@ -111,6 +110,7 @@ def rebuild_line_dict():
     state.basic_state.bytecode.write('\0\0\0')
 
 def update_line_dict(pos, afterpos, length, deleteable, beyond):
+    """ Update line number dictionary after deleting lines. """
     # subtract length of line we replaced
     length -= afterpos - pos
     addr = program_memory_start + afterpos
@@ -131,6 +131,7 @@ def update_line_dict(pos, afterpos, length, deleteable, beyond):
         state.basic_state.line_numbers[key] += length
             
 def check_number_start(linebuf):
+    """ Check if the given line buffer starts with a line number. """
     # get the new line number
     linebuf.seek(1)
     scanline = util.parse_line_number(linebuf)
@@ -143,6 +144,7 @@ def check_number_start(linebuf):
     return empty, scanline   
 
 def store_line(linebuf): 
+    """ Store the given line buffer. """
     if state.basic_state.protected:
         raise error.RunError(5)
     # get the new line number
@@ -176,6 +178,7 @@ def store_line(linebuf):
     state.basic_state.last_stored = scanline
 
 def find_pos_line_dict(fromline, toline):
+    """ Find code positions for line range. """
     deleteable = [ num for num in state.basic_state.line_numbers if num >= fromline and num <= toline ]
     beyond = [num for num in state.basic_state.line_numbers if num > toline ]
     # find lowest number strictly above range
@@ -188,6 +191,7 @@ def find_pos_line_dict(fromline, toline):
     return startpos, afterpos, deleteable, beyond
 
 def delete(fromline, toline):
+    """ Delete range of lines from stored program. """
     fromline = fromline if fromline != None else min(state.basic_state.line_numbers)
     toline = toline if toline != None else 65535 
     startpos, afterpos, deleteable, beyond = find_pos_line_dict(fromline, toline)
@@ -205,6 +209,7 @@ def delete(fromline, toline):
     flow.init_program()
 
 def edit(from_line, bytepos=None):
+    """ Output program line to console and position cursor. """
     if state.basic_state.protected:
         console.write(str(from_line)+'\r')
         raise error.RunError(5)
@@ -220,6 +225,7 @@ def edit(from_line, bytepos=None):
     state.basic_state.prompt = False
     
 def renum(new_line, start_line, step):
+    """ Renumber stored program. """
     new_line = 10 if new_line == None else new_line
     start_line = 0 if start_line == None else start_line
     step = 10 if step == None else step 
@@ -278,6 +284,7 @@ def renum(new_line, start_line, step):
             handler.gosub = old_to_new[handler.gosub]    
         
 def load(g):
+    """ Load program from ascii, bytecode or protected stream. """
     erase_program()
     c = g.read(1)
     if c == '\xFF':
@@ -301,6 +308,7 @@ def load(g):
     rebuild_line_dict()
     
 def merge(g):
+    """ Merge program from ascii stream. """
     c = g.read(1)
     if c in ('\xFF', '\xFE', '\xFC', ''):
         # bad file mode
@@ -451,6 +459,7 @@ def save(g, mode='B'):
     g.close()
     
 def list_lines(dev, from_line, to_line):
+    """ List line range to console or device. """
     if state.basic_state.protected:
         # don't list protected files
         raise error.RunError(5)
