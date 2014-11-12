@@ -150,36 +150,26 @@ def files(pathmask):
         raise error.RunError(53)   
     drive, drivepath, relpath, mask = native_path_elements(pathmask, err=53)
     path = os.path.join(drivepath, relpath)
-    mask = mask.upper()
-    if mask == '':
-        mask = '*.*'
+    mask = mask.upper() or '*.*'
     roots, dirs, files_list = [], [], []
     for roots, dirs, files_list in safe(os.walk, path):
         break
     # get working dir in DOS format
     # NOTE: this is always the current dir, not the one being listed
     console.write_line(drive + ':\\' + state.io_state.drive_cwd[drive].replace(os.sep, '\\'))
-    if (roots, dirs, files_list) == ([], [], []):
-        raise error.RunError(53)
-    dosfiles = dossify_and_filter(path, files_list, mask)
-    dosfiles = [ name+'     ' for name in dosfiles ]
     dirs += ['.', '..']
-    dosdirs = dossify_and_filter(path, dirs, mask)
-    dosdirs = [ name+'<DIR>' for name in dosdirs ]
-    dosfiles.sort()
-    dosdirs.sort()    
-    output = dosdirs + dosfiles
-    num = state.console_state.width/20
+    output = (sorted([ name+'<DIR>' for name in dossify_and_filter(path, dirs, mask) ])
+             + sorted([ name+'     ' for name in dossify_and_filter(path, files_list, mask) ]))
     if len(output) == 0:
-        # file not found
         raise error.RunError(53)
+    num = state.console_state.width / 20
     while len(output) > 0:
         line = ' '.join(output[:num])
         output = output[num:]
         console.write_line(line)       
         # allow to break during dir listing & show names flowing on screen
         backend.check_events()             
-    console.write_line(' ' + str(disk_free(path)) + ' Bytes free')
+    console.write_line(' %d Bytes free' % disk_free(path))
     
 def rename(oldname, newname):    
     oldname = native_path(str(oldname), err=53, isdir=False)
