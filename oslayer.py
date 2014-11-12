@@ -429,7 +429,7 @@ def filter_names(path, files_list, mask='*.*'):
     trunkmask, extmask = split_dosname(mask)
     return sorted([(t, e) for (t, e) in all_files 
         if (fnmatch(t, trunkmask.upper()) and fnmatch(e, extmask.upper()) and
-            t or not e or e == '.')])
+            (t or not e or e == '.'))])
         
 if plat.system == 'Windows':
     import ctypes
