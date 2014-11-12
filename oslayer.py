@@ -127,7 +127,7 @@ state.io_state.drive_cwd = { 'C': '', '@': '' }
 
 def chdir(name):
     # substitute drives and cwds
-    letter, drivepath, relpath, _ = get_drive_path(name, err=76, join_name=True)
+    letter, drivepath, relpath, _ = native_path_elements(name, err=76, join_name=True)
     # if cwd is shorter than drive prefix (like when we go .. on a drive letter root), this is just an empty path, ie the root.    
     state.io_state.drive_cwd[letter] = relpath
     if letter == current_drive:
@@ -148,7 +148,7 @@ def files(pathmask):
     # and then does weird things I don't understand. 
     if '/' in str(pathmask):
         raise error.RunError(53)   
-    drive, drivepath, relpath, mask = get_drive_path(pathmask, err=53)
+    drive, drivepath, relpath, mask = native_path_elements(pathmask, err=53)
     path = os.path.join(drivepath, relpath)
     mask = mask.upper()
     if mask == '':
@@ -192,7 +192,7 @@ def rename(oldname, newname):
 # find a unix path to match the given dos-style path
 def native_path(path_and_name, defext='', err=53, isdir=False, find_case=True, make_new=False):
     # substitute drives and cwds
-    _, drivepath, relpath, name = get_drive_path(path_and_name, err)
+    _, drivepath, relpath, name = native_path_elements(path_and_name, err)
     # return absolute path to file        
     path = os.path.join(drivepath, relpath)
     if name:
@@ -374,7 +374,7 @@ def split_drive(s):
     return letter, drivepath, remainder
         
 # substitute drives and cwds    
-def get_drive_path(s, err, join_name=False): 
+def native_path_elements(s, err, join_name=False): 
     letter, drivepath, s = split_drive(s)
     # get path below drive letter
     relpath = '' 
