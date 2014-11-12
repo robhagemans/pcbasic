@@ -361,7 +361,7 @@ def parse_list_config(s):
     
 def parse_bool_arg(s):
     """ Parse bool option. Empty means True (like store_true). """
-    if s == '':
+    if s == '' or s == []:
         return True
     try:
         if s.upper() in ('YES', 'TRUE', 'ON'):
