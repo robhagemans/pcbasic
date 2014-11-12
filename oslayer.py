@@ -13,25 +13,21 @@ import os
 import subprocess
 import errno
 from fnmatch import fnmatch
-from functools import partial
-import StringIO
 import logging
 
+import plat
 import config
+import state
 import error
 import console
-import unicodepage
-import plat
-import state
 import backend
-import time
 
 if plat.system == 'Windows':
     import win32api
     import win32print
-    import tempfile
-    import subprocess
     import threading
+    import time
+    import ctypes
 else:
     try:
         import pexpect
@@ -432,7 +428,6 @@ def filter_names(path, files_list, mask='*.*'):
             (t or not e or e == '.'))])
         
 if plat.system == 'Windows':
-    import ctypes
     def disk_free(path):
         """ Return the number of free bytes on the drive. """
         free_bytes = ctypes.c_ulonglong(0)
