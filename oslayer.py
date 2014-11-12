@@ -261,10 +261,21 @@ if plat.system == 'Windows':
 else:
     def map_drives():
         """ Map drives to Windows drive letters. """
-        # to map root to C and set current to CWD:
-        #    drives = { 'C': '/', '@': os.path.join(plat.basepath, 'info') }
-        #    state.io_state.drive_cwd = { 'C': os.getcwd()[1:], '@': '' }
-        pass
+        global drives
+        # map root to C and set current to CWD:
+        cwd = os.getcwd()
+        # map C to root
+        drives['C'] = '/'
+        state.io_state.drive_cwd['C'] = cwd[1:]
+        # map Z to cwd
+        drives['Z'] = cwd
+        state.io_state.drive_cwd['Z'] = ''
+        # map H to home
+        drives['H'] = os.path.expanduser('~')
+        if cwd[:len(drives['H'])] == drives['H']:
+            state.io_state.drive_cwd['H'] = cwd[len(drives['H'])+1:]
+        else:    
+            state.io_state.drive_cwd['H'] = ''
     
     def short_name(dummy_path, longname):
         """ Get Windows short name or fake it. """
