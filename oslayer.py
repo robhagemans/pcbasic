@@ -149,15 +149,21 @@ def files(pathmask):
     drive, drivepath, relpath, mask = native_path_elements(pathmask, err=53)
     path = os.path.join(drivepath, relpath)
     mask = mask.upper() or '*.*'
-    all_names = safe(os.listdir, path)
-    dirs = [n for n in all_names if os.path.isdir(os.path.join(path, n))]
-    fils = [n for n in all_names if not os.path.isdir(os.path.join(path, n))]
     # output working dir in DOS format
     # NOTE: this is always the current dir, not the one being listed
     console.write_line(drive + ':\\' + state.io_state.drive_cwd[drive].replace(os.sep, '\\'))
-    # filter according to mask
-    dirs = filter_names(path, dirs + ['.', '..'], mask)
-    fils = filter_names(path, fils, mask)
+    fils = ''
+    if mask == '.':
+        dirs = [split_dosname(dossify((os.sep+relpath).split(os.sep)[-1:][0]))]
+    elif mask == '..':
+        dirs = [split_dosname(dossify((os.sep+relpath).split(os.sep)[-2:][0]))]
+    else:        
+        all_names = safe(os.listdir, path)
+        dirs = [n for n in all_names if os.path.isdir(os.path.join(path, n))]
+        fils = [n for n in all_names if not os.path.isdir(os.path.join(path, n))]
+        # filter according to mask
+        dirs = filter_names(path, dirs + ['.', '..'], mask)
+        fils = filter_names(path, fils, mask)
     if not dirs and not fils:
         raise error.RunError(53)
     # format and print contents
