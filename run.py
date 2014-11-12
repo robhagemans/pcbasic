@@ -1,12 +1,10 @@
-#
-# PC-BASIC 3.23 - run.py
-# Main loops for pc-basic 
-# 
-# (c) 2013, 3014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
+"""
+PC-BASIC 3.23 - run.py
+Main loops for pc-basic 
+
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+"""
 
 import error
 import util
@@ -28,8 +26,9 @@ state.basic_state.execute_mode = False
 # interpreter is waiting for INPUT or LINE INPUT
 state.basic_state.input_mode = False
 
+
 def loop(quit=False):
-    # interpreter loop
+    """ Read-eval-print loop. """
     while True:
         if state.basic_state.execute_mode:
             try:
@@ -62,6 +61,7 @@ def loop(quit=False):
                 handle_error(e, quit) 
 
 def set_execute_mode(on, quit=False):
+    """ Switch to or from execute mode and show prompt when needed. """
     if not on:
         if quit:
             check_quit()
@@ -75,6 +75,7 @@ def set_execute_mode(on, quit=False):
     backend.update_cursor_visibility()
 
 def execute(line):
+    """ Store a program line or schedule a command line for execution. """
     state.basic_state.direct_line = tokenise.tokenise_line(line)    
     c = util.peek(state.basic_state.direct_line)
     if c == '\x00':
@@ -88,12 +89,14 @@ def execute(line):
         set_execute_mode(True)
                         
 def show_prompt():
+    """ Show the Ok prompt, unless suppressed. """
     if state.basic_state.prompt:
         console.start_line()
         console.write_line("Ok\xff")
     state.basic_state.prompt = True
                    
 def auto_step():
+    """ Generate an AUTO line number and wait for input. """
     numstr = str(state.basic_state.auto_linenum)
     console.write(numstr)
     if state.basic_state.auto_linenum in state.basic_state.line_numbers:
@@ -139,6 +142,7 @@ def handle_basic_events():
             flow.jump_gosub(event.gosub, event)
         
 def handle_error(s, quit):
+    """ Handle a BASIC error through trapping or error message. """
     error.set_err(s)
     # not handled by ON ERROR, stop execution
     console.write_error_message(error.get_message(s.err), program.get_line_number(s.pos))   
@@ -162,6 +166,7 @@ def handle_error(s, quit):
                 handle_error(e, quit)
 
 def handle_break(e):
+    """ Handle a Break event. """
     # print ^C at current position
     if not state.basic_state.input_mode and not e.stop:
         console.write('^C')
@@ -175,8 +180,8 @@ def handle_break(e):
     state.basic_state.input_mode = False    
 
 def check_quit():
+    """ Check if keyboard buffer is empty; exit the interpreter if so. """
     # only quit if all keys have been handled
     if len(state.console_state.keybuf) == 0:
         raise error.Exit()
         
-    
