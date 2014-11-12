@@ -12,7 +12,7 @@
 import os 
 import subprocess
 import errno
-import fnmatch
+from fnmatch import fnmatch
 from functools import partial
 import StringIO
 import logging
@@ -151,18 +151,22 @@ def files(pathmask):
     drive, drivepath, relpath, mask = native_path_elements(pathmask, err=53)
     path = os.path.join(drivepath, relpath)
     mask = mask.upper() or '*.*'
-    roots, dirs, files_list = [], [], []
-    for roots, dirs, files_list in safe(os.walk, path):
-        break
-    # get working dir in DOS format
+    all_names = safe(os.listdir, path)
+    dirs = [n for n in all_names if os.path.isdir(os.path.join(path, n))]
+    fils = [n for n in all_names if not os.path.isdir(os.path.join(path, n))]
+    # output working dir in DOS format
     # NOTE: this is always the current dir, not the one being listed
     console.write_line(drive + ':\\' + state.io_state.drive_cwd[drive].replace(os.sep, '\\'))
-    dirs += ['.', '..']
-    output = (sorted([ name+'<DIR>' for name in dossify_and_filter(path, dirs, mask) ])
-             + sorted([ name+'     ' for name in dossify_and_filter(path, files_list, mask) ]))
-    if len(output) == 0:
+    # filter according to mask
+    dirs = filter_names(path, dirs + ['.', '..'], mask)
+    fils = filter_names(path, fils, mask)
+    if not dirs and not fils:
         raise error.RunError(53)
-    num = state.console_state.width / 20
+    # format and print contents
+    output = ( 
+          [('%-8s.%-3s' % (t, e) if (e or not t) else '%-8s    ' % t) + '<DIR>' for t, e in dirs]
+        + [('%-8s.%-3s' % (t, e) if e else '%-8s    ' % t) + '     ' for t, e in fils])
+    num = state.console_state.width // 20
     while len(output) > 0:
         line = ' '.join(output[:num])
         output = output[num:]
@@ -400,35 +404,15 @@ def native_path_elements(s, err, join_name=False):
     return letter, drivepath, path[baselen:], name
     
 
-# for FILES command
-# apply filename filter and DOSify names
-def dossify_and_filter(path, files_list, mask='*.*'):
-    mask = str(mask).rsplit('.', 1)
-    if len(mask) == 2:
-        trunkmask, extmask = mask
-    else:
-        trunkmask, extmask = mask[0], ''
-    dosfiles = []
-    for name in files_list:
-        trunk, ext = short_name(path, name)
-        # apply mask separately to trunk and extension, dos-style.
-        if not fnmatch.fnmatch(trunk.upper(), trunkmask.upper()) or not fnmatch.fnmatch(ext.upper(), extmask.upper()):
-            continue
-        if not trunk and ext and ext != '.':
-            # hide dotfiles
-            continue    
-        trunk += ' ' * (8-len(trunk))
-        if ext:
-            ext = '.' + ext + ' ' * (3-len(ext)) 
-        elif name == '.':
-            ext = '.   '
-        elif name == '..':
-            ext = '..  '
-        else:
-            ext = '    '    
-        dosfiles.append(trunk + ext)
-    return dosfiles
-
+# apply filename filter to short names
+def filter_names(path, files_list, mask='*.*'):
+    all_files = [short_name(path, name) for name in files_list]
+    # apply mask separately to trunk and extension, dos-style.
+    # hide dotfiles
+    trunkmask, extmask = split_dosname(mask)
+    return sorted([(t, e) for (t, e) in all_files 
+        if (fnmatch(t, trunkmask.upper()) and fnmatch(e, extmask.upper()) and
+            t or not e or e == '.')])
         
 ###################################################
 # FILES: disk_free
