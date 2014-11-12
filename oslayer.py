@@ -1,13 +1,13 @@
-#
-# PC-BASIC 3.23  - oslayer.py
-#
-# Operating system utilities
-# 
-# (c) 2013, 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
+"""
+PC-BASIC 3.23  - oslayer.py
+
+Operating system utilities
+ 
+(c) 2013, 2014 Rob Hagemans 
+
+This file is released under the GNU GPL version 3. 
+please see text file COPYING for licence terms.
+"""
 
 import os 
 import subprocess
@@ -26,13 +26,8 @@ import state
 import backend
 import time
 
-
 if plat.system == 'Windows':
-    #import msvcrt
-    #import win32ui
-    #import win32gui
     import win32api
-    #import win32con
     import win32print
     import tempfile
     import subprocess
@@ -41,20 +36,22 @@ else:
     try:
         import pexpect
     except ImportError:
-        import logging
-        logging.warning('Pexpect module not found. SHELL command will not work.')    
+        logging.warning('Pexpect module not found. SHELL command disabled.')    
     
 
-# posix access modes for BASIC modes INPUT ,OUTPUT, RANDOM, APPEND and internal LOAD and SAVE modes
+# posix access modes for BASIC modes INPUT, OUTPUT, RANDOM, APPEND 
+# and internal LOAD and SAVE modes
 access_modes = { 'I':'rb', 'O':'wb', 'R':'r+b', 'A':'ab', 'L': 'rb', 'S': 'wb' }
 # posix access modes for BASIC ACCESS mode for RANDOM files only
 access_access = { 'R': 'rb', 'W': 'wb', 'RW': 'r+b' }
 
+# translate os error codes to BASIC error codes
 os_error = {
     # file not found
     errno.ENOENT: 53, errno.EISDIR: 53, errno.ENOTDIR: 53,
     # permission denied
-    errno.EAGAIN: 70, errno.EACCES: 70, errno.EBUSY: 70, errno.EROFS: 70, errno.EPERM: 70,
+    errno.EAGAIN: 70, errno.EACCES: 70, errno.EBUSY: 70, 
+    errno.EROFS: 70, errno.EPERM: 70,
     # disk full
     errno.ENOSPC: 61, 
     # disk not ready
@@ -64,6 +61,12 @@ os_error = {
     # path/file access error
     errno.EEXIST: 75, errno.ENOTEMPTY: 75,
     }
+
+# standard drive mappings
+drives = { 'C': os.getcwd(), '@': os.path.join(plat.basepath, 'info') }
+current_drive = 'C'
+# working directories; must not start with a /
+state.io_state.drive_cwd = { 'C': '', '@': '' }
 
 
 def prepare():
@@ -83,30 +86,28 @@ def prepare():
     if config.options['map-drives']:
         map_drives()
 
-
 #########################################
-# environment
+# calling shell environment
 
 def get_env(parm):
+    """ Retrieve environment string by name. """
     if not parm:
         raise error.RunError(5)
-    val = os.getenv(str(parm))
-    if val == None:
-        val = ''
-    return bytearray(val)    
+    return bytearray(os.getenv(str(parm)) or '')    
         
 def get_env_entry(expr):
+    """ Retrieve environment string by number. """
     envlist = list(os.environ)
     if expr > len(envlist):
         return bytearray()            
     else:
-        val = os.getenv(envlist[expr-1])
-        return bytearray(envlist[expr-1] + '=' + val)   
+        return bytearray(envlist[expr-1] + '=' + os.getenv(envlist[expr-1]))   
     
 #########################################
-# open a file & catch errors
+# file system
 
 def open_file(native_name, mode, access):
+    """ Open a file by os-native name with BASIC mode and access level. """
     name = str(native_name)
     posix_access = access_access[access] if (access and mode == 'R') else access_modes[mode]  
     try:
@@ -117,15 +118,8 @@ def open_file(native_name, mode, access):
     except EnvironmentError as e:
         handle_oserror(e)
 
-#########################################
-# drives & paths
-
-drives = { 'C': os.getcwd(), '@': os.path.join(plat.basepath, 'info') }
-current_drive = 'C'
-# must not start with a /
-state.io_state.drive_cwd = { 'C': '', '@': '' }
-
 def chdir(name):
+    """ Change working directory to given BASIC path. """
     # substitute drives and cwds
     letter, drivepath, relpath, _ = native_path_elements(name, err=76, join_name=True)
     # if cwd is shorter than drive prefix (like when we go .. on a drive letter root), this is just an empty path, ie the root.    
@@ -134,15 +128,19 @@ def chdir(name):
         safe(os.chdir, os.path.join(drivepath, relpath))
 
 def mkdir(name):
+    """ Create directory at given BASIC path. """
     safe(os.mkdir, native_path(name, err=76, isdir=True, make_new=True))
     
 def rmdir(name):    
+    """ Remove directory at given BASIC path. """
     safe(os.rmdir, native_path(name, err=76, isdir=True))
 
 def kill(name):
+    """ Remove regular file at given BASIC path. """
     safe(os.remove, native_path(name, find_case=False))
 
 def files(pathmask):
+    """ Write directory listing to console. """
     # forward slashes - file not found
     # GW-BASIC sometimes allows leading or trailing slashes
     # and then does weird things I don't understand. 
@@ -176,6 +174,7 @@ def files(pathmask):
     console.write_line(' %d Bytes free' % disk_free(path))
     
 def rename(oldname, newname):    
+    """ Rename a file or directory. """
     oldname = native_path(str(oldname), err=53, isdir=False)
     newname = native_path(str(newname), err=76, isdir=False, make_new=True)
     if os.path.exists(newname):
@@ -183,8 +182,8 @@ def rename(oldname, newname):
         raise error.RunError(58)
     safe(os.rename, oldname, newname)
 
-# find a unix path to match the given dos-style path
 def native_path(path_and_name, defext='', err=53, isdir=False, find_case=True, make_new=False):
+    """ Find os-native path to match the given BASIC path. """
     # substitute drives and cwds
     _, drivepath, relpath, name = native_path_elements(path_and_name, err)
     # return absolute path to file        
@@ -198,6 +197,7 @@ def native_path(path_and_name, defext='', err=53, isdir=False, find_case=True, m
 # shell
 
 def shell(command):
+    """ Execute a shell command or enter interactive shell. """
     # sound stops playing and is forgotten
     backend.stop_all_sound()
     # no key macros
@@ -213,12 +213,12 @@ def shell(command):
     state.basic_state.suspend_all_events = suspend_event_save
 
 
-
 #########################################
 # implementation
  
 if plat.system == 'Windows':
     def map_drives():
+        """ Map drives to Windows drive letters. """
         global current_drive
         # get all drives in use by windows
         # if started from CMD.EXE, get the 'current working dir' for each drive
@@ -236,8 +236,8 @@ if plat.system == 'Windows':
                 pass    
         os.chdir(save_current)    
 
-    # get windows short name
     def short_name(path, longname):
+        """ Get Windows short name or fake it. """
         if not path:
             path = current_drive
         path_and_longname = os.path.join(str(path), str(longname)) 
@@ -253,26 +253,28 @@ if plat.system == 'Windows':
         return split_dosname(name.strip().upper())
         
 else:
-# to map root to C and set current to CWD:
-#    drives = { 'C': '/', '@': os.path.join(plat.basepath, 'info') }
-#    state.io_state.drive_cwd = { 'C': os.getcwd()[1:], '@': '' }
-    
     def map_drives():
+        """ Map drives to Windows drive letters. """
+        # to map root to C and set current to CWD:
+        #    drives = { 'C': '/', '@': os.path.join(plat.basepath, 'info') }
+        #    state.io_state.drive_cwd = { 'C': os.getcwd()[1:], '@': '' }
         pass
     
-    # change names in FILES to uppercase 8.3
-    # path is only needed for Windows     
     def short_name(dummy_path, longname):
+        """ Get Windows short name or fake it. """
+        # path is only needed on Windows     
         return split_dosname(longname.strip().upper())
    
 
 def safe(fnname, *fnargs):
+    """ Execute OS function and handle errors. """
     try:
         return fnname(*fnargs)
     except EnvironmentError as e:
         handle_oserror(e)
 
-def handle_oserror(e):        
+def handle_oserror(e):     
+    """ Translate OS and I/O exceptions to BASIC errors. """   
     try:
         basic_err = os_error[e.errno]
     except KeyError:
@@ -281,25 +283,28 @@ def handle_oserror(e):
     raise error.RunError(basic_err) 
         
 def split_dosname(name):
+    """ Convert filename into 8-char trunk and 3-char extension. """
+    dotloc = name.find('.')
     if name in ('.', '..'):
         trunk, ext = '', name[1:]
-    elif name.find('.') > -1:
-        trunk, ext = name[:name.find('.')][:8], name[name.find('.')+1:][:3]
+    elif dotloc > -1:
+        trunk, ext = name[:dotloc][:8], name[dotloc+1:][:3]
     else:
         trunk, ext = name[:8], ''
     return trunk, ext
 
 def join_dosname(trunk, ext):
+    """ Join trunk and extension into file name. """
     return trunk + ('.' + ext if ext else '')
 
 def istype(path, native_name, isdir):
+    """ Return whether a file exists and is a directory or regular. """
     name = os.path.join(str(path), str(native_name))
-    return os.path.exists(name) and ((isdir and os.path.isdir(name)) or (not isdir and os.path.isfile(name)))
+    return os.path.isdir(name) if isdir else os.path.isfile(name)
         
-# put name in 8x3, all upper-case format the way GW-BASIC does it (differs from Windows short name)         
 def dossify(longname, defext=''):
-    # convert to all uppercase
-    # one trunk, one extension
+    """ Put name in 8x3, all upper-case format and apply default extension. """ 
+    # convert to all uppercase; one trunk, one extension
     name, ext = split_dosname(longname.strip().upper())
     if not ext:
         ext = defext
@@ -307,6 +312,7 @@ def dossify(longname, defext=''):
     return join_dosname(name, ext)
 
 def match_dosname(dosname, path, isdir, find_case):
+    """ Find a matching native file name for a given 8.3 DOS name. """
     # check if the dossified name exists with no extension if none given   
     if istype(path, dosname, isdir):    
         return dosname
@@ -328,9 +334,9 @@ def match_dosname(dosname, path, isdir, find_case):
     except KeyError:
         return None
 
-# find a matching file/dir to read
-# if name does not exist, put name in 8x3, all upper-case format with standard extension            
-def match_filename(name, defext='BAS', path='', err=53, isdir=False, find_case=True, make_new=False):
+def match_filename(name, defext='BAS', path='', err=53, 
+                   isdir=False, find_case=True, make_new=False):
+    """ Find or create a matching native file name for a given BASIC name. """
     # check if the name exists as-is
     # this should also match Windows short filenames
     if istype(path, name, isdir):
@@ -347,8 +353,8 @@ def match_filename(name, defext='BAS', path='', err=53, isdir=False, find_case=T
     else:    
         raise error.RunError(err)
 
-
 def split_drive(s):
+    """ Split string in drive letter and rest; return native path for drive. """ 
     s = str(s)
     # don't accept forward slashes, they confuse issues.
     if '/' in s:
@@ -367,8 +373,8 @@ def split_drive(s):
         raise error.RunError(76)   
     return letter, drivepath, remainder
         
-# substitute drives and cwds    
 def native_path_elements(s, err, join_name=False): 
+    """ Return elements of the native path for a given BASIC path. """
     letter, drivepath, s = split_drive(s)
     # get path below drive letter
     relpath = '' 
@@ -402,10 +408,9 @@ def native_path_elements(s, err, join_name=False):
         if e:
             path = os.path.join(path, match_filename(e, '', path, err, isdir=True))
     return letter, drivepath, path[baselen:], name
-    
 
-# apply filename filter to short names
 def filter_names(path, files_list, mask='*.*'):
+    """ Apply filename filter to short version of names. """
     all_files = [short_name(path, name) for name in files_list]
     # apply mask separately to trunk and extension, dos-style.
     # hide dotfiles
@@ -414,23 +419,21 @@ def filter_names(path, files_list, mask='*.*'):
         if (fnmatch(t, trunkmask.upper()) and fnmatch(e, extmask.upper()) and
             t or not e or e == '.')])
         
-###################################################
-# FILES: disk_free
-
 if plat.system == 'Windows':
     import ctypes
     def disk_free(path):
+        """ Return the number of free bytes on the drive. """
         free_bytes = ctypes.c_ulonglong(0)
         ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(path), None, None, ctypes.pointer(free_bytes))
         return free_bytes.value
-
 elif plat.system == 'Android':
     def disk_free(path):
+        """ Return the number of free bytes on the drive. """
         # TODO: implement with jnius
         return 0        
-
 else:
     def disk_free(path):
+        """ Return the number of free bytes on the drive. """
         st = os.statvfs(path)
         return st.f_bavail * st.f_frsize
         
@@ -443,6 +446,7 @@ if plat.system == 'Windows':
     sleep_time = 0.001
 
     def process_stdout(p, stream):
+        """ Retrieve SHELL output and write to console. """
         global shell_output
         while True:
             c = stream.read(1)
@@ -456,6 +460,7 @@ if plat.system == 'Windows':
                 time.sleep(sleep_time)
 
     def spawn_shell(command):
+        """ Run a SHELL subprocess. """
         global shell_output
         if not command:
             command = 'CMD'
@@ -507,6 +512,7 @@ if plat.system == 'Windows':
 
 else:
     def spawn_shell(command):
+        """ Run a SHELL subprocess. """
         cmd = '/bin/sh'
         if command:
             cmd += ' -c "' + command + '"'            
