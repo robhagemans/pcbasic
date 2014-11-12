@@ -127,12 +127,11 @@ state.io_state.drive_cwd = { 'C': '', '@': '' }
 
 def chdir(name):
     # substitute drives and cwds
-    letter, path, name = get_drive_path(str(name), err=76)
-    newdir = native_path(name, path, err=76, isdir=True)
+    letter, drivepath, relpath, _ = get_drive_path(name, err=76, join_name=True)
     # if cwd is shorter than drive prefix (like when we go .. on a drive letter root), this is just an empty path, ie the root.    
-    state.io_state.drive_cwd[letter] = newdir
+    state.io_state.drive_cwd[letter] = relpath
     if letter == current_drive:
-        safe(os.chdir, newdir)
+        safe(os.chdir, os.path.join(drivepath, relpath))
 
 def mkdir(name):
     safe(os.mkdir, native_path(name, err=76, isdir=True, make_new=True))
@@ -144,14 +143,13 @@ def kill(name):
     safe(os.remove, native_path(name, find_case=False))
 
 def files(pathmask):
-    # strip trailing spaces
-    pathmask = str(pathmask).rstrip()
     # forward slashes - file not found
     # GW-BASIC sometimes allows leading or trailing slashes
     # and then does weird things I don't understand. 
-    if '/' in pathmask:
+    if '/' in str(pathmask):
         raise error.RunError(53)   
-    drive, path, mask = get_drive_path(pathmask, 53)
+    drive, drivepath, relpath, mask = get_drive_path(pathmask, err=53)
+    path = os.path.join(drivepath, relpath)
     mask = mask.upper()
     if mask == '':
         mask = '*.*'
@@ -184,8 +182,8 @@ def files(pathmask):
     console.write_line(' ' + str(disk_free(path)) + ' Bytes free')
     
 def rename(oldname, newname):    
-    oldname = native_path(str(oldname), '', err=53, isdir=False)
-    newname = native_path(str(newname), '', err=76, isdir=False, make_new=True)
+    oldname = native_path(str(oldname), err=53, isdir=False)
+    newname = native_path(str(newname), err=76, isdir=False, make_new=True)
     if os.path.exists(newname):
         # file already exists
         raise error.RunError(58)
@@ -194,20 +192,13 @@ def rename(oldname, newname):
 # find a unix path to match the given dos-style path
 def native_path(path_and_name, defext='', err=53, isdir=False, find_case=True, make_new=False):
     # substitute drives and cwds
-    letter, path, name = get_drive_path(str(path_and_name), err)
+    _, drivepath, relpath, name = get_drive_path(path_and_name, err)
     # return absolute path to file        
+    path = os.path.join(drivepath, relpath)
     if name:
         path = os.path.join(path, match_filename(name, defext, path, err, isdir, find_case, make_new))
-    # get full normalised path (but don't follow symlinks)
-    path = os.path.abspath(path)
-    base = len(drives[letter])
-    if drives[letter][base-1] == os.sep:
-        # root /
-        base -= 1
-    # if base path is shorter than drive prefix or doesn't match, get out
-    if path[:base] != drives[letter]:
-        raise error.RunError(err)
-    return path   
+    # get full normalised path
+    return os.path.abspath(path)
 
 #########################################
 # shell
@@ -265,7 +256,7 @@ if plat.system == 'Windows':
         # last element of path is name    
         name = path_and_name.split(os.sep)[-1]
         # if we still have a long name, shorten it now
-        return split_dosname(name.upper())
+        return split_dosname(name.strip().upper())
         
 else:
 # to map root to C and set current to CWD:
@@ -278,7 +269,7 @@ else:
     # change names in FILES to uppercase 8.3
     # path is only needed for Windows     
     def short_name(dummy_path, longname):
-        return split_dosname(longname.upper())
+        return split_dosname(longname.strip().upper())
    
 
 def safe(fnname, *fnargs):
@@ -315,7 +306,7 @@ def istype(path, native_name, isdir):
 def dossify(longname, defext=''):
     # convert to all uppercase
     # one trunk, one extension
-    name, ext = split_dosname(longname.upper())
+    name, ext = split_dosname(longname.strip().upper())
     if not ext:
         ext = defext
     # no dot if no ext
@@ -361,40 +352,62 @@ def match_filename(name, defext='BAS', path='', err=53, isdir=False, find_case=T
         return dosname
     else:    
         raise error.RunError(err)
-        
-# substitute drives and cwds    
-def get_drive_path(s, err): 
+
+
+def split_drive(s):
+    s = str(s)
     # don't accept forward slashes, they confuse issues.
     if '/' in s:
         # bad file number - this is what GW produces here
         raise error.RunError(52)   
-    drivepath = s.split(':')
-    if len(drivepath) > 1:
-        letter, s = drivepath[0].upper(), drivepath[1]
+    drive_and_path = s.split(':')
+    if len(drive_and_path) > 1:
+        letter, remainder = drive_and_path[0].upper(), drive_and_path[1]
     else:
         # no drive specified, use current drive & dir
-        letter = current_drive
+        letter, remainder = current_drive, s
     try:    
-        if not s or s[0] != '\\':
-            # relative path
-            path = os.path.join(drives[letter], state.io_state.drive_cwd[letter])
-        else:
-            # absolute path
-            path = drives[letter] 
-            s = s[1:]
+        drivepath = drives[letter]
     except KeyError:        
         # path not found
         raise error.RunError(76)   
-    # split relative path over backslashes
-    elements = s.split('\\')
+    return letter, drivepath, remainder
+        
+# substitute drives and cwds    
+def get_drive_path(s, err, join_name=False): 
+    letter, drivepath, s = split_drive(s)
+    # get path below drive letter
+    relpath = '' 
+    if not s or s[0] != '\\':
+        relpath = state.io_state.drive_cwd[letter]
+    # split into path elements and strip whitespace
+    elements = [ e.strip() for e in relpath.split(os.sep) + s.split('\\') ]
     # whatever's after the last \\ is the name of the subject file or dir
-    name = elements.pop()
+    # if the path ends in \\, there's no name
+    name = '' if (join_name or not elements) else elements.pop()
+    # drop .. at top of relpath (don't go outside of 'drive')
+    # parse internal .. and . (like normpath)
+    i = 0
+    while i < len(elements):
+        if elements[i] == '.':
+            del elements[i]
+        elif elements[i] == '..':
+            del elements[i]     
+            if i > 0:
+                del elements[i-1]
+                i -= 1
+        else:
+            i += 1
     # find a matching directory for every step in the path; append found name to path
+    path = drivepath
+    # include joining slash
+    baselen = len(drivepath) + 1
+    # find the native matches for each step in the path 
     for e in elements:
         # skip double slashes
         if e:
             path = os.path.join(path, match_filename(e, '', path, err, isdir=True))
-    return letter, path, name
+    return letter, drivepath, path[baselen:], name
     
 
 # for FILES command
