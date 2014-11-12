@@ -411,7 +411,7 @@ def native_path_elements(s, err, join_name=False):
         else:
             i += 1
     # cut original drive path; include a joining slash
-    baselen = len(path) + 1
+    baselen = len(path) + (path and path[-1] != os.sep)
     # find the native matches for each step in the path 
     for e in elements:
         # skip double slashes
