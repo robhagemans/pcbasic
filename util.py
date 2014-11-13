@@ -58,7 +58,9 @@ skip_white_read = partial(skip_read, skip_range=whitespace)
 skip_white = partial(skip, skip_range=whitespace)
 
 def skip_white_read_if(ins, in_range):
-    d = skip_white(ins, n=len(in_range[0]))
+    return read_if(ins, skip_white(ins, n=len(in_range[0])), in_range)
+
+def read_if(ins, d, in_range):
     if d != '' and d in in_range:
         ins.read(len(d))
         return True

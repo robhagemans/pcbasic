@@ -302,14 +302,11 @@ def exec_term(ins):
 def exec_def(ins):
     """ DEF: select DEF FN, DEF USR, DEF SEG. """
     c = util.skip_white(ins)
-    if c == '\xD1': #FN
-        ins.read(1)
+    if util.read_if(ins, c, ('\xD1',)): #FN
         exec_def_fn(ins)
-    elif c == '\xD0': #USR
-        ins.read(1)
+    elif util.read_if(ins, c, ('\xD0',)): #USR
         exec_def_usr(ins)
-    elif util.peek(ins, 3) == 'SEG':
-        ins.read(3)
+    elif util.read_if(ins, c, ('SEG',)):
         exec_def_seg(ins)
     else:        
         raise error.RunError(2)      
@@ -346,37 +343,26 @@ def exec_on(ins):
     """ ON: select ON ERROR, ON KEY, ON TIMER, ON PLAY, ON COM, ON PEN, ON STRIG
         or ON (jump statement). """
     c = util.skip_white(ins)
-    if c == '\xA7':             # ERROR
-        ins.read(1)
+    if util.read_if(ins, c, ('\xA7',)):             # ERROR
         exec_on_error(ins)
-        return
-    elif c == '\xC9':           # KEY
-        ins.read(1)
+    elif util.read_if(ins, c, ('\xC9',)):           # KEY
         exec_on_key(ins)
-        return
     elif c in ('\xFE', '\xFF'):
         c = util.peek(ins, 2)
-        if c == '\xFE\x94':     # TIMER
-            ins.read(2)
+        if util.read_if(ins, c, ('\xFE\x94',)):     # TIMER
             exec_on_timer(ins)
-            return
-        elif c == '\xFE\x93':   # PLAY
-            ins.read(2)
+        elif util.read_if(ins, c, ('\xFE\x93',)):   # PLAY
             exec_on_play(ins)
-            return
-        elif c == '\xFE\x90':   # COM
-            ins.read(2)
+        elif util.read_if(ins, c, ('\xFE\x90',)):   # COM
             exec_on_com(ins)
-            return
-        elif c == '\xFF\xA0':  # PEN
-            ins.read(2)
+        elif util.read_if(ins, c, ('\xFF\xA0',)):  # PEN
             exec_on_pen(ins)
-            return
-        elif c == '\xFF\xA2':  # STRIG
-            ins.read(2)
+        elif util.read_if(ins, c, ('\xFF\xA2',)):  # STRIG
             exec_on_strig(ins)
-            return
-    exec_on_jump(ins)
+        else:
+            raise error.RunError(2)
+    else:        
+        exec_on_jump(ins)
 
 ##########################################################
 # event switches (except PLAY, KEY) and event definitions
