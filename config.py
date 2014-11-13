@@ -165,8 +165,8 @@ def get_arguments(argv):
     for arg in argv:
         arglist = arg.split('=', 1)
         key = arglist[0]
-        if len(arglist) > 0:
-            value = arglist[0]
+        if len(arglist) > 1:
+            value = arglist[1]
         else:
             value = ''
         pos = 0
@@ -177,7 +177,7 @@ def get_arguments(argv):
             elif key[0] == '-':
                 for i, short_arg in enumerate(key[1:]):
                     try:
-                        if i == len(key)-1:
+                        if i == len(key)-2:
                             # assign value to last argument specified    
                             args[short_args[short_arg]] = value 
                         else:
