@@ -73,7 +73,7 @@ arguments = {
     'max-files': {'type': 'int', 'default': 3,}, 
     'max-reclen': {'type': 'int', 'default': 128,},
     'serial-buffer-size': {'type': 'int', 'default': 256,},
-    'peek': {'type': 'list', 'default': '',},
+    'peek': {'type': 'string', 'list': '*', 'default': '',},
     'lpt1': {'type': 'string', 'default': '',},
     'lpt2': {'type': 'string', 'default': '',},
     'lpt3': {'type': 'string', 'default': '',},
@@ -81,17 +81,17 @@ arguments = {
     'com2': {'type': 'string', 'default': '',},
     'codepage': {'type': 'string', 'choices': encodings, 'default': '437',},
     'font': { 
-        'type': 'list', 'choices': families, 
+        'type': 'string', 'list': '*', 'choices': families, 
         'default': 'unifont,univga,freedos',},
     'nosound': {'type': 'bool', 'default': 'False', },
-    'dimensions': {'type': 'string', 'default': '',},
+    'dimensions': {'type': 'int', 'list': 2, 'default': '',},
     'fullscreen': {'type': 'bool', 'default': 'False',},
     'noquit': {'type': 'bool', 'default': 'False',},
     'debug': {'type': 'bool', 'default': 'False',},
     'strict-hidden-lines': {'type': 'bool', 'default': 'False',},
     'strict-protect': {'type': 'bool', 'default': 'False',},
     'capture-caps': {'type': 'bool', 'default': 'False',},
-    'mount': {'type': 'list', 'default': '',},
+    'mount': {'type': 'string', 'list': '*', 'default': '',},
     'resume': {'type': 'bool', 'default': 'False',},
     'strict-newline': {'type': 'bool', 'default': 'False',},
     'syntax': { 
@@ -107,16 +107,16 @@ arguments = {
     'nobox': {'type': 'bool', 'default': 'False',},
     'utf8': {'type': 'bool', 'default': 'False',},
     'border': {'type': 'int', 'default': 5,},
-    'mouse': {'type': 'string', 'default': 'copy,paste,pen',},
+    'mouse': {'type': 'string', 'list': 3, 'default': 'copy,paste,pen',},
     'state': {'type': 'string', 'default': '',},
-    'mono-tint': {'type': 'string', 'default': '255,255,255',},
+    'mono-tint': {'type': 'int', 'list': 3, 'default': '255,255,255',},
     'monitor': { 
         'type': 'string', 'choices': ('rgb', 'composite', 'mono'),
         'default': 'rgb',},
-    'aspect': {'type': 'string', 'default': '4,3',},
+    'aspect': {'type': 'int', 'list': 2, 'default': '4,3',},
     'blocky': {'type': 'bool', 'default': 'False',},
     'version': {'type': 'bool', 'default': 'False',},
-    'preset': {'type': 'list', 'default': ','.join(default_presets), },
+    'preset': {'type': 'string', 'list': '*', 'default': ','.join(default_presets), },
     'config': {'type': 'string', 'default': '',},
 }
 
@@ -131,33 +131,21 @@ def get_options():
     """ Retrieve command line and option file options. """
     # convert command line arguments to string dictionary form
     remaining = get_arguments(sys.argv[1:])
-    # set overall default arguments
-    args = default_arguments()
     # unpack any packages and parse program arguments
-    args.update(parse_package(remaining))
+    args_program = parse_package(remaining)
     # get arguments and presets from specified config file
     conf_dict = parse_config(remaining)
+    # set overall default arguments
+    args = default_arguments()
     # set defaults based on presets
     args.update(parse_presets(remaining, conf_dict))
     # parse rest of command line
     args.update(parse_args(remaining))
     # clean up arguments    
     clean_arguments(args)
+    # apply postional arguments
+    args.update(args_program)
     return args        
-
-def clean_arguments(args):
-    """ Convert arguments to required type. """
-    for d in args:
-        try:
-            if (arguments[d]['type'] == 'list'):
-                args[d] = parse_list(args[d])
-            elif (arguments[d]['type'] == 'int'):
-                args[d] = parse_int(args[d])
-            elif (arguments[d]['type'] == 'bool'):
-                args[d] = parse_bool(args[d])
-        except KeyError:
-            pass
-
 
 def get_arguments(argv):
     """ Convert arguments to { key: value } dictionary. """
@@ -280,17 +268,6 @@ def parse_config(remaining):
         conf_dict.update(read_config_file(config_file))
     return conf_dict
     
-def parse_args(remaining):
-    """ Retrieve command line options. """
-    # set arguments
-    args = { d:remaining[d] for d in remaining if d in arguments }
-    not_recognised = { d:remaining[d] for d in remaining if d not in arguments }
-    for d in not_recognised:
-        logging.warning('Ignored unrecognised argument %s=%s', d, not_recognised[d])
-    return args
-
-################################################
-
 def read_config_file(config_file):
     """ Read config file. """
     path = plat.basepath
@@ -305,50 +282,71 @@ def read_config_file(config_file):
                 for header in config.sections() }    
     return presets
 
+def parse_args(remaining):
+    """ Retrieve command line options. """
+    # set arguments
+    args = { d:remaining[d] for d in remaining if d in arguments }
+    not_recognised = { d:remaining[d] for d in remaining if d not in arguments }
+    for d in not_recognised:
+        logging.warning('Ignored unrecognised argument %s=%s', d, not_recognised[d])
+    return args
+
 ################################################
     
-def parse_list(s):
-    """ Convert list strings from option file to lists. """
+def clean_arguments(args):
+    """ Convert arguments to required type and list length. """
+    for d in args:
+        try:
+            args[d] = parse_list(args[d], arguments[d]['list'], arguments[d]['type'])
+        except KeyError:
+            # not a list    
+            args[d] = parse_type(args[d], arguments[d]['type']) 
+            
+def parse_type(arg, typestr):            
+    """ Convert argument to required type. """
+    try:
+        if (typestr == 'int'):
+            arg = parse_int(arg)
+        elif (typestr == 'bool'):
+            arg = parse_bool(arg)
+    except KeyError:
+        pass
+    return arg
+    
+def parse_list(s, length, typestr):
+    """ Convert list strings to typed lists. """
     lst = s.split(',')
     if lst == ['']:
-        return []
+        if length == '*':
+            return []
+        else:
+            return None    
+    lst = [parse_type(arg, typestr) for arg in lst]
+    if length != '*' and len(lst) != length:
+        logging.warning('List %s ignored, should have %d elements', s, length)
     return lst
 
 def parse_bool(s):
-    """ Parse bool option. Empty means True (like store_true). """
-    if s == '' or s == []:
+    """ Parse bool option. Empty string (i.e. specified) means True. """
+    if s == '':
         return True
     try:
-        if s.upper() in ('YES', 'TRUE', 'ON'):
+        if s.upper() in ('YES', 'TRUE', 'ON', '1'):
             return True
-        elif s.upper() in ('NO', 'FALSE', 'OFF'):
+        elif s.upper() in ('NO', 'FALSE', 'OFF', '0'):
             return False   
     except AttributeError:
+        logging.warning('Illegal boolean value %s ignored', s)
         return None
 
-def parse_int(inargs):
+def parse_int(s):
     """ Parse int option provided as a one-element list of string. """
-    if inargs:
+    if s:
         try:
-            return int(inargs)
+            return int(s)
         except ValueError:
-            logging.warning('Illegal number value %s ignored', inargs)         
+            logging.warning('Illegal number value %s ignored', s)
     return None
-
-
-# DEPRECATE
-def parse_pair(option, default):
-    """ Split a string option into int values. """
-    if options[option]:
-        try:
-            sx, sy = options[option].split(',')
-            x, y = int(sx), int(sy)
-        except (ValueError, TypeError):
-            logging.warning('Could not parse option: %s=%s. '
-                            'Provide two values separated by a comma.', 
-                            option, options[option]) 
-        return x, y
-    return default    
 
 #########################################################
 
