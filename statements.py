@@ -303,7 +303,7 @@ def exec_def(ins):
         exec_def_fn(ins)
     elif util.read_if(ins, c, ('\xD0',)): #USR
         exec_def_usr(ins)
-    elif util.read_if(ins, c, ('SEG',)):
+    elif util.skip_white_read_if(ins, ('SEG',)):
         exec_def_seg(ins)
     else:        
         raise error.RunError(2)      
