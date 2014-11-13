@@ -16,12 +16,6 @@ import logging
 import zipfile
 import plat
 
-if plat.system == 'Android':
-    # crashes on Android
-    argparse = None
-else:
-    import argparse
-
 # by default, load what's in section [pcbasic] and override with anything 
 # in os-specific section [windows] [android] [linux] [osx] [unknown_os]
 default_presets = ['pcbasic', plat.system.lower()]
@@ -50,15 +44,12 @@ package = False
 # NOT IMPLEMENTED:
 #   /i      Statically allocate file control blocks and data buffer.
 #   /m:n,m  Set the highest memory location to n and maximum block size to m
-gw_args = { 
-    'double': 'd', 'max-files': 'f', 'max-reclen': 's', 'serial-buffer-size': 'c' 
-    # 'max-memory': 'm', 'static-fcbs': 'i'
-    }
-    
-# short-form arguments with single dash
 short_args = { 
-    'cli': 'b', 'ansi': 't', 'load': 'l', 
-    'run': 'r', 'exec': 'e', 'quit': 'q', 'keys': 'k', 'version': 'v',
+    'd': 'double', 'f': 'max-files', 
+    's': 'max-reclen', 'c': 'serial-buffer-size',
+    # 'm': 'max-memory', 'i': 'static-fcbs': 'i',
+    'b': 'cli', 't': 'ansi', 'l': 'load', 'h': 'help',  
+    'r': 'run', 'e': 'exec', 'q': 'quit', 'k': 'keys', 'v': 'version',
     }
 
 # all long-form arguments
@@ -74,6 +65,7 @@ arguments = {
     'load': {'type': 'string', 'default': '', },
     'run': {'type': 'string', 'default': '',  },
     'convert': {'type': 'string', 'default': '', },
+    'help': {'type': 'bool', 'default': 'False', },
     'keys': {'type': 'string', 'default': '', },
     'exec': {'type': 'string', 'default': '',  },
     'quit': {'type': 'bool', 'default': 'False',},
@@ -81,7 +73,7 @@ arguments = {
     'max-files': {'type': 'int', 'default': 3,}, 
     'max-reclen': {'type': 'int', 'default': 128,},
     'serial-buffer-size': {'type': 'int', 'default': 256,},
-    'peek': {'type': 'list', 'default': [],},
+    'peek': {'type': 'list', 'default': '',},
     'lpt1': {'type': 'string', 'default': '',},
     'lpt2': {'type': 'string', 'default': '',},
     'lpt3': {'type': 'string', 'default': '',},
@@ -90,7 +82,7 @@ arguments = {
     'codepage': {'type': 'string', 'choices': encodings, 'default': '437',},
     'font': { 
         'type': 'list', 'choices': families, 
-        'default': ['unifont', 'univga', 'freedos'],},
+        'default': 'unifont,univga,freedos',},
     'nosound': {'type': 'bool', 'default': 'False', },
     'dimensions': {'type': 'string', 'default': '',},
     'fullscreen': {'type': 'bool', 'default': 'False',},
@@ -99,7 +91,7 @@ arguments = {
     'strict-hidden-lines': {'type': 'bool', 'default': 'False',},
     'strict-protect': {'type': 'bool', 'default': 'False',},
     'capture-caps': {'type': 'bool', 'default': 'False',},
-    'mount': {'type': 'list', 'default': [],},
+    'mount': {'type': 'list', 'default': '',},
     'resume': {'type': 'bool', 'default': 'False',},
     'strict-newline': {'type': 'bool', 'default': 'False',},
     'syntax': { 
@@ -124,6 +116,8 @@ arguments = {
     'aspect': {'type': 'string', 'default': '4,3',},
     'blocky': {'type': 'bool', 'default': 'False',},
     'version': {'type': 'bool', 'default': 'False',},
+    'preset': {'type': 'list', 'default': ','.join(default_presets), },
+    'config': {'type': 'string', 'default': '',},
 }
 
 
@@ -135,49 +129,80 @@ def prepare():
     
 def get_options():
     """ Retrieve command line and option file options. """
-    arg_program = None    
-    parser = None
-    remaining = None
-    # set default arguments
+    # convert command line arguments to string dictionary form
+    remaining = get_arguments(sys.argv[1:])
+    # set overall default arguments
+    args = default_arguments()
+    # unpack any packages and parse program arguments
+    args.update(parse_package(remaining))
+    # get arguments and presets from specified config file
+    conf_dict = parse_config(remaining)
+    # set defaults based on presets
+    args.update(parse_presets(remaining, conf_dict))
+    # parse rest of command line
+    args.update(parse_args(remaining))
+    # clean up arguments    
+    clean_arguments(args)
+    return args        
+
+def clean_arguments(args):
+    """ Convert arguments to required type. """
+    for d in args:
+        try:
+            if (arguments[d]['type'] == 'list'):
+                args[d] = parse_list(args[d])
+            elif (arguments[d]['type'] == 'int'):
+                args[d] = parse_int(args[d])
+            elif (arguments[d]['type'] == 'bool'):
+                args[d] = parse_bool(args[d])
+        except KeyError:
+            pass
+
+
+def get_arguments(argv):
+    """ Convert arguments to { key: value } dictionary. """
+    args = {}
+    for arg in argv:
+        arglist = arg.split('=', 1)
+        key = arglist[0]
+        if len(arglist) > 0:
+            value = arglist[0]
+        else:
+            value = ''
+        pos = 0
+        if key:
+            if key[0:2] == '--':
+                if key[2:]:
+                    args[key[2:]] = value
+            elif key[0] == '-':
+                for i, short_arg in enumerate(key[1:]):
+                    try:
+                        if i == len(key)-1:
+                            # assign value to last argument specified    
+                            args[short_args[short_arg]] = value 
+                        else:
+                            args[short_args[short_arg]] = ''
+                    except KeyError:    
+                        logging.warning('Ignored unrecognised argument -%s', short_arg)
+            else:
+                # positional argument
+                args[pos] = arg  
+                pos += 1
+        else:
+            logging.warning('Ignored unrecognised argument =%s', value)
+    return args    
+
+def default_arguments():
+    """ Set overall default arguments. """
     args = {}
     for arg in arguments:
         try:
             args[arg] = arguments[arg]['default']
         except KeyError:
             pass
-    # define argument parser
-    if argparse:
-        # we need to disable -h and re-enable it manually 
-        # to avoid the wrong usage message from parse_known_args
-        parser = argparse.ArgumentParser(add_help=False)
-        remaining = sys.argv[1:]
-        # unpack any packages and parse program arguments
-        arg_program, remaining = parse_package(parser, remaining)
-    # get arguments ad presets from specified config file
-    conf_dict, remaining = parse_config(parser, remaining)
-    # set defaults based on presets
-    defaults, remaining = parse_presets(parser, remaining, conf_dict)
-    args.update(defaults)
-    # parse rest of command line
-    if parser:
-        args.update(parse_args(parser, remaining, args))
-    # clean up arguments    
-    for d in arguments:
-        if d in args:
-            if (arguments[d]['type'] == 'list'):
-                args[d] = parse_list_arg(args[d])
-            elif (arguments[d]['type'] == 'int'):
-                args[d] = parse_int_arg(args[d])
-            elif (arguments[d]['type'] == 'bool'):
-                args[d] = parse_bool_arg(args[d])
-    # any program given on the command line overrides that in config files    
-    args['program'] = '' or arg_program
-    # add missing help option
-    if not args.has_key('help'):
-        args['help'] = None
-    return args        
+    return args
             
-def default_args(conf_dict):
+def preset_default_args(conf_dict):
     """ Return default arguments for this operating system. """
     args = {}
     for p in default_presets:
@@ -187,21 +212,17 @@ def default_args(conf_dict):
             pass
     return args
 
-def parse_presets(parser, remaining, conf_dict):
+def parse_presets(remaining, conf_dict):
     """ Parse presets. """
-    presets = []
-    if parser:
-        parser.add_argument('--preset', nargs='*', action='append', 
-                            choices=conf_dict.keys(), 
-                            help='Load machine preset options')
-        arg_presets, remaining = parser.parse_known_args(
-                                    remaining if remaining else '')
-        presets = parse_list_arg(arg_presets.preset)
+    try:
+        presets = parse_list(remaining.pop('preset'))
+    except KeyError:
+        presets = []    
     # get dictionary of default config
-    defaults = default_args(conf_dict)
+    defaults = preset_default_args(conf_dict)
     # add any nested presets defined in [pcbasic] section
     try:
-        presets += parse_list_config(conf_dict['pcbasic']['preset'])
+        presets += parse_list(conf_dict['pcbasic']['preset'])
     except KeyError:
         pass
     # set machine preset options; command-line args will override these
@@ -211,18 +232,18 @@ def parse_presets(parser, remaining, conf_dict):
                 defaults.update(**conf_dict[preset])
             except KeyError:
                 logging.warning('Preset %s not defined', preset)
-    return defaults, remaining
+    return defaults
 
-def parse_package(parser, remaining):
+def parse_package(remaining):
     """ Load options from BAZ package, if specified. """
     global package
-    # positional args: program or package name
-    arg_package = None
-    if (remaining and remaining[0] and 
-        (len(remaining[0]) < 1 or remaining[0][0] != '-')):
-        arg_package = remaining[0]
-        remaining = remaining[1:]
-    if arg_package and zipfile.is_zipfile(arg_package):
+    # first positional arg: program or package name
+    args = { 'program': None }
+    try:
+        arg_package = remaining.pop(0)
+    except KeyError:
+        return args
+    if zipfile.is_zipfile(arg_package):
         # extract the package to a temp directory
         # and make that the current dir for our run
         zipfile.ZipFile(arg_package).extractall(path=plat.temp_dir)
@@ -238,91 +259,35 @@ def parse_package(parser, remaining):
                     # if we can't rename, ignore
                     pass    
         package = arg_package
-        return None, remaining
     else:
         # it's not a package, treat it as a BAS program.
-        return arg_package, remaining
+        args['program'] = arg_package
+    return args
 
-def parse_config(parser, remaining):
+def parse_config(remaining):
     """ Find the correct config file and read it. """
     # always read default config file
     conf_dict = read_config_file(os.path.join(plat.info_dir, plat.config_name))
     # find any overriding config file & read it
     config_file = None
-    if os.path.exists(plat.config_name):
-        config_file = plat.config_name
-    if parser:    
-        # parse any overrides    
-        parser.add_argument('--config')
-        arg_config, remaining = parser.parse_known_args(
-                                    remaining if remaining else '')       
-        if arg_config.config:
-            if os.path.exists(arg_config.config):
-                config_file = arg_config.config 
-            else:
-                logging.warning('Could not read configuration file %s. '
-                    'Using %s instead', arg_config.config, config_file)    
+    try:
+        config_file = remaining.pop('config')
+    except KeyError:
+        if os.path.exists(plat.config_name):
+            config_file = plat.config_name
     # update a whole preset at once, there's no joining of settings.                
     if config_file:
         conf_dict.update(read_config_file(config_file))
-    return conf_dict, remaining
+    return conf_dict
     
-def parse_args(parser, remaining, default):
+def parse_args(remaining):
     """ Retrieve command line options. """
-    # argparse converts hyphens into underscores
-    # takes more code correcting for argparse than would reimplementing it?
-    default_underscore = {}
-    for key in default:
-        key_corrected = key.replace('-', '_')
-        default_underscore[key_corrected] = default[key]
-    parser.set_defaults(**default_underscore)
-    # manually re-enable -h
-    parser.add_argument('--help', '-h', action='store_true')
     # set arguments
-    for argname in sorted(arguments.keys()):
-        kwparms = {} 
-        for n in ['help', 'choices', 'metavar']:
-            try:
-                kwparms[n] = arguments[argname][n]            
-            except KeyError:
-                pass  
-        if arguments[argname]['type'] in ('int', 'string'):
-            kwparms['action'] = 'store'
-        elif arguments[argname]['type'] == 'bool':
-            kwparms['action'] = 'store'
-            # need * because *!&^# argparse makes no distinction between
-            # --foo empty and not specified for nargs='?'.
-            kwparms['nargs'] = '*'
-        elif arguments[argname]['type'] == 'list':
-            kwparms['action'] = 'append'
-            kwparms['nargs'] = '*'
-        parms = ['--' + argname ]
-        # add short options
-        try:
-            parms.append('-' + gw_args[argname])
-        except KeyError:
-            pass
-        try:
-            parms.append('-' + short_args[argname])
-        except KeyError:
-            pass
-        parser.add_argument(*parms, **kwparms)
-    # parse command line arguments to override defaults
-    args = vars(parser.parse_args(remaining if remaining else ''))
-    # turn bool args into something sensible
-    for d in arguments:
-        if d in args:
-            if (arguments[d]['type'] == 'bool'):
-                if args[d] == []:
-                    args[d] = 'True'
-                elif type(args[d]) is list:  
-                    args[d] = args[d][-1]
-    # and convert the underscores back into hyphens...    
-    args_hyphen = {}
-    for key in args:
-        key_corrected = key.replace('_', '-')
-        args_hyphen[key_corrected] = args[key]
-    return args_hyphen
+    args = { d:remaining[d] for d in remaining if d in arguments }
+    not_recognised = { d:remaining[d] for d in remaining if d not in arguments }
+    for d in not_recognised:
+        logging.warning('Ignored unrecognised argument %s=%s', d, not_recognised[d])
+    return args
 
 ################################################
 
@@ -336,30 +301,20 @@ def read_config_file(config_file):
         logging.warning('Error in configuration file %s. '
                         'Configuration not loaded.', config_file)
         return {}
-    presets = { header: convert_config_file(dict(config.items(header))) 
+    presets = { header: dict(config.items(header)) 
                 for header in config.sections() }    
     return presets
 
-def convert_config_file(arglist):
+################################################
+    
+def parse_list(s):
     """ Convert list strings from option file to lists. """
-    for d in arglist:
-        # convert various boolean notations
-        if d in arguments:
-            if arguments[d]['type'] == 'list':
-                arglist[d] = parse_list_config(arglist[d])
-            elif arguments[d]['type'] in ('string', 'int', 'bool'):
-                arglist[d] = '' if not arglist[d] else arglist[d]      
-    return arglist        
-
-def parse_list_config(s):
     lst = s.split(',')
     if lst == ['']:
         return []
     return lst
 
-################################################
-    
-def parse_bool_arg(s):
+def parse_bool(s):
     """ Parse bool option. Empty means True (like store_true). """
     if s == '' or s == []:
         return True
@@ -370,19 +325,8 @@ def parse_bool_arg(s):
             return False   
     except AttributeError:
         return None
-    
-def parse_list_arg(arglist):
-    """ Convert lists of lists to one dimension. """
-    newlist = []
-    if arglist:
-        for sublist in arglist:
-            if type(sublist)==list:
-                newlist += sublist
-            else:
-                newlist += [sublist]
-    return newlist    
 
-def parse_int_arg(inargs):
+def parse_int(inargs):
     """ Parse int option provided as a one-element list of string. """
     if inargs:
         try:
@@ -391,6 +335,8 @@ def parse_int_arg(inargs):
             logging.warning('Illegal number value %s ignored', inargs)         
     return None
 
+
+# DEPRECATE
 def parse_pair(option, default):
     """ Split a string option into int values. """
     if options[option]:
@@ -406,7 +352,7 @@ def parse_pair(option, default):
 
 #########################################################
 
-def make_ini():
+def write_config():
     """ Write a default config file. """
     argnames = sorted(arguments.keys())
     f = open(plat.config_name, 'w')
