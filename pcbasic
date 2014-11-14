@@ -166,21 +166,14 @@ def prepare_console():
     import backend
     # load backend modules
     # this can't be done in backend.py as it would create circular dependency
-    import video_none
-    import video_cli
-    import video_curses
-    import video_pygame
-    import audio_none
-    import audio_pygame
-    import audio_beep
     import console
     import error
     import fp
     backends = {
-        'none': (video_none, audio_none),
-        'cli': (video_cli, audio_beep),
-        'ansi': (video_curses, audio_beep),
-        'graphical': (video_pygame, audio_pygame), 
+        'none': ('video_none', 'audio_none'),
+        'cli': ('video_cli', 'audio_beep'),
+        'ansi': ('video_curses', 'audio_beep'),
+        'graphical': ('video_pygame', 'audio_pygame'), 
         }
     # interface choice shortcuts
     if config.options['ansi']:
@@ -194,19 +187,20 @@ def prepare_console():
         else:     
             config.options['interface'] = 'graphical'
     # select interface        
-    backend.video, backend.audio = backends[config.options['interface']]
+    video_name, audio_name = backends[config.options['interface']]
+    backend.video, backend.audio = __import__(video_name), __import__(audio_name)
     if config.options['nosound']:
-        backend.audio = audio_none
+        backend.audio = __import__('audio_none')
     # initialise video backend before console
     if not backend.video or not backend.init_video():
         backend.video.close()
         logging.warning('Falling back to filter interface.')
-        backend.video = video_none
+        backend.video = __import__('video_none')
         if not backend.init_video():
             logging.error('Failed to initialise interface.')
             raise error.Exit()
     if not backend.init_audio():
-        backend.audio = audio_none
+        backend.audio = __import__('audio_none')
         logging.warning('Failed to initialise sound. Sound will be disabled.')
     if not state.loaded:    
         console.init_mode()    
