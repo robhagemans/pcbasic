@@ -221,8 +221,8 @@ def prepare():
     global mousebutton_copy, mousebutton_paste, mousebutton_pen
     global mono_monitor, font_families, aspect, force_square_pixel
     # display dimensions
-    force_display_size = config.parse_pair('dimensions', None)
-    aspect = config.parse_pair('aspect', aspect)
+    force_display_size = config.options['dimensions']
+    aspect = config.options['aspect'] or aspect
     border_width = config.options['border']
     force_square_pixel = config.options['blocky']
     fullscreen = config.options['fullscreen']
@@ -257,7 +257,7 @@ def prepare():
         mousebutton_copy = -1
         mousebutton_paste = -1
         mousebutton_pen = -1
-        for i, s in enumerate(config.options['mouse'].split(',')):    
+        for i, s in enumerate(config.options['mouse']):    
             if s == 'copy':
                 mousebutton_copy = i+1
             elif s == 'paste':

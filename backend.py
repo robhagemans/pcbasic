@@ -996,7 +996,7 @@ def prepare_video():
     set_cga4_palette(1)    
     # set monochrome tint and build mono palettes
     if config.options['mono-tint']:
-        mono_tint = [int(s) for s in config.options['mono-tint'].split(',')]
+        mono_tint = config.options['mono-tint']
     colours16_mono[:] = [ [tint*i//255 for tint in mono_tint]
                        for i in intensity16_mono ]            
     colours_ega_mono_0[:] = [ [tint*i//255 for tint in mono_tint]
