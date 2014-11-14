@@ -310,7 +310,7 @@ def parse_type(arg, typestr):
         pass
     return arg
     
-def parse_list(s, length, typestr):
+def parse_list(s, length='*', typestr='string'):
     """ Convert list strings to typed lists. """
     lst = s.split(',')
     if lst == ['']:
