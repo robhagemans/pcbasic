@@ -117,7 +117,8 @@ arguments = {
 
 def prepare():
     """ Initialise config.py """
-    global options
+    global options, logger
+    logger = get_logger()
     # store options in options dictionary
     options = get_options()
     
@@ -178,13 +179,13 @@ def get_arguments(argv):
                         else:
                             append_arg(args, skey, svalue)
                     except KeyError:    
-                        logging.warning('Ignored unrecognised option "-%s"', short_arg)
+                        logger.warning('Ignored unrecognised option "-%s"', short_arg)
             else:
                 # positional argument
                 args[pos] = arg  
                 pos += 1
         else:
-            logging.warning('Ignored unrecognised option "=%s"', value)
+            logger.warning('Ignored unrecognised option "=%s"', value)
     return args    
 
 def apply_defaults(args):
@@ -212,7 +213,7 @@ def parse_presets(remaining, conf_dict):
                 merge_arguments(argdict, conf_dict[p])
             except KeyError:
                 if p not in default_presets:
-                    logging.warning('Ignored undefined preset "%s"', p)
+                    logger.warning('Ignored undefined preset "%s"', p)
         # look for more presets in expended arglist
         try:
             presets = parse_list('preset', argdict.pop('preset'))
@@ -273,7 +274,7 @@ def read_config_file(config_file):
         config = ConfigParser.RawConfigParser(allow_no_value=True)
         config.read(config_file)
     except (ConfigParser.Error, IOError):
-        logging.warning('Error in configuration file %s. '
+        logger.warning('Error in configuration file %s. '
                         'Configuration not loaded.', config_file)
         return {}
     presets = { header: dict(config.items(header)) 
@@ -286,7 +287,7 @@ def parse_args(remaining):
     args = {d:remaining[d] for d in remaining if d in arguments}
     not_recognised = {d:remaining[d] for d in remaining if d not in arguments}
     for d in not_recognised:
-        logging.warning('Ignored unrecognised option "%s=%s"', 
+        logger.warning('Ignored unrecognised option "%s=%s"', 
                         d, not_recognised[d])
     return args
 
@@ -324,7 +325,7 @@ def parse_type(d, arg):
             arg = parse_bool(d, arg)
     if 'choices' in arguments[d]:
         if arg and arg not in arguments[d]['choices']:
-            logging.warning('Value "%s=%s" ignored; should be one of (%s)',
+            logger.warning('Value "%s=%s" ignored; should be one of (%s)',
                             d, str(arg), ', '.join(arguments[d]['choices']))
             arg = ''
     return arg
@@ -339,7 +340,7 @@ def parse_list(d, s, length='*'):
             return None    
     lst = [parse_type(d, arg) for arg in lst]
     if length != '*' and len(lst) != length:
-        logging.warning('Option "%s=%s" ignored, should have %d elements', 
+        logger.warning('Option "%s=%s" ignored, should have %d elements', 
                         d, s, length)
     return lst
 
@@ -353,7 +354,7 @@ def parse_bool(d, s):
         elif s.upper() in ('NO', 'FALSE', 'OFF', '0'):
             return False   
     except AttributeError:
-        logging.warning('Option "%s=%s" ignored; should be a boolean', d, s)
+        logger.warning('Option "%s=%s" ignored; should be a boolean', d, s)
         return None
 
 def parse_int(d, s):
@@ -362,8 +363,20 @@ def parse_int(d, s):
         try:
             return int(s)
         except ValueError:
-            logging.warning('Option "%s=%s" ignored; should be an integer', d, s)
+            logger.warning('Option "%s=%s" ignored; should be an integer', d, s)
     return None
+
+#########################################################
+
+def get_logger():
+    # use the awkward logging interface as we can only use basicConfig once
+    l = logging.getLogger('config')
+    l.setLevel(logging.INFO)
+    h = logging.StreamHandler()
+    h.setLevel(logging.INFO)
+    h.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+    l.addHandler(h)
+    return l
 
 #########################################################
 
