@@ -30,6 +30,8 @@ def main():
         if config.options['version']:
             # in version mode, print version and exit
             logging.info(plat.version)
+            if config.options['debug']:
+                debug_details()
         elif config.options['help']:
             # in help mode, print usage and exit
             f = open(os.path.join(plat.info_dir, 'USAGE'))
@@ -230,7 +232,17 @@ def open_native_or_dos_filename(infile):
         # on load, accept capitalised versions and default extension
         return iolayer.open_file_or_device(0, 
                 infile, mode='L', defext='BAS')
-                        
+
+def debug_details():
+    logging.info('os: %s', plat.system)
+    modules = ('pygame', 'numpy', 'WConio', 'curses', 'pexpect')
+    for module in modules:
+        try:
+            __import__(module)
+            logging.info("%s: available", module)
+        except ImportError:
+            logging.info("%s: not available", module)
+                            
 if __name__ == "__main__":
     main()
         
