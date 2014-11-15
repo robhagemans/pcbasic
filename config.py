@@ -190,7 +190,7 @@ def get_arguments(argv):
 def apply_defaults(args):
     """ Apply default argument where no option specified. """
     for arg in arguments:
-        if arg not in args or not args[arg]:
+        if arg not in args or args[arg] in ('', None):
             try:
                 args[arg] = arguments[arg]['default']
             except KeyError:
