@@ -391,10 +391,11 @@ EXAMPLES
     pcbasic Foobar.baz --convert=A --utf8
             List the main program of package Foobar to standard output as UTF-8.
     
-    pcbasic MYPROG.BAS --mount=A:./files,B:./morefiles
+    pcbasic MYPROG.BAS --mount=A:./files,B:./morefiles     [unix]
+    pcbasic MYPROG.BAS --mount=A:.\\files,B:.\\morefiles   [windows]
             Attach the current directory's subdirectory files as drive A:
             and subdirectory morefiles as drive B:, then run MYPROG.BAS.
-            On Windows, mounts can also be specified as --mount=A:\\files etc.
+            On Windows, mounts can also be specified as --mount=A:C:\\fakeflop 
     
     pcbasic @:\\INFO.BAS --preset=mda --mono-tint=255,128,0
             Run the information program included with PC-BASIC on 
