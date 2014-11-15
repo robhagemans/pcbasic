@@ -131,7 +131,8 @@ def init_screen_mode(mode_info=None):
     window.keypad(True)
     window.scrollok(False)
     set_curses_palette()
-
+    return True
+    
 def close():
     curses.noraw()
     curses.nl()
