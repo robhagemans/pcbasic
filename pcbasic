@@ -51,6 +51,7 @@ def main():
      
 def prepare_logging():
     """ Set up the logging system. """
+    logfile = config.options['logfile']
     if config.options['version'] or config.options['help']:
         formatstr = '%(message)s'
         loglevel = logging.INFO
@@ -61,7 +62,7 @@ def prepare_logging():
             loglevel = logging.DEBUG
         else:
             loglevel = logging.INFO
-    logging.basicConfig(format=formatstr, level=loglevel)
+    logging.basicConfig(format=formatstr, level=loglevel, filename=logfile)
         
 def convert():
     """ Perform file format conversion. """

@@ -199,6 +199,9 @@ OPTIONS
   --load=program
             Load the specified .BAS program and return to interactive mode.
             
+  --logfile=log
+            Write error and warning output to log file instead of stderr.
+                      
   --lpt1=TYPE:VAL       
             Attach a resource to the LPT1: parallel device. TYPE:VAL can be
                 PARPORT:device_name     Connect to a parallel device

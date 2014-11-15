@@ -112,13 +112,21 @@ arguments = {
     'blocky': {'type': 'bool', 'default': False,},
     'version': {'type': 'bool', 'default': False,},
     'config': {'type': 'string', 'default': '',},
+    'logfile': {'type': 'string', 'default': '',},
 }
 
 
 def prepare():
     """ Initialise config.py """
     global options, logger
-    logger = get_logger()
+    # first parse a logfile argument, if any
+    for args in sys.argv:
+        if args[:9] == '--logfile':
+            logfile = args[10:]
+            break
+    else:
+        logfile = None
+    logger = get_logger(logfile)
     # store options in options dictionary
     options = get_options()
     
@@ -178,7 +186,7 @@ def get_arguments(argv):
                             append_arg(args, skey, value)
                         else:
                             append_arg(args, skey, svalue)
-                    except KeyError:    
+                    except KeyError:
                         logger.warning('Ignored unrecognised option "-%s"', short_arg)
             else:
                 # positional argument
@@ -197,7 +205,7 @@ def apply_defaults(args):
             except KeyError:
                 pass
     return args    
-            
+
 def parse_presets(remaining, conf_dict):
     """ Parse presets. """
     presets = default_presets
@@ -368,11 +376,14 @@ def parse_int(d, s):
 
 #########################################################
 
-def get_logger():
+def get_logger(logfile=None):
     # use the awkward logging interface as we can only use basicConfig once
     l = logging.getLogger('config')
     l.setLevel(logging.INFO)
-    h = logging.StreamHandler()
+    if logfile:
+        h = logging.FileHandler(logfile, mode='w')
+    else:
+        h = logging.StreamHandler()
     h.setLevel(logging.INFO)
     h.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
     l.addHandler(h)
