@@ -299,8 +299,7 @@ def merge_arguments(args0, args1):
         except KeyError:
             pass
         # override
-        if args1[a]:
-            args0[a] = args1[a]        
+        args0[a] = args1[a]        
 
 def clean_arguments(args):
     """ Convert arguments to required type and list length. """
