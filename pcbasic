@@ -172,12 +172,7 @@ def prepare_console():
         'ansi': ('video_curses', 'audio_beep'),
         'graphical': ('video_pygame', 'audio_pygame'), 
         }
-    # interface choice shortcuts
-    if config.options['ansi']:
-        config.options['interface'] = 'ansi'
-    elif config.options['cli']:
-        config.options['interface'] = 'cli'
-    elif not config.options['interface']:
+    if not config.options['interface']:
         # interface defaults
         if not plat.stdin_is_tty or not plat.stdout_is_tty:
             config.options['interface'] = 'none'

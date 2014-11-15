@@ -45,7 +45,7 @@ short_args = {
     'd': 'double', 'f': 'max-files', 
     's': 'max-reclen', 'c': 'serial-buffer-size',
     # 'm': 'max-memory', 'i': 'static-fcbs': 'i',
-    'b': 'cli', 't': 'ansi', 'l': 'load', 'h': 'help',  
+    'b': 'interface=cli', 't': 'interface=ansi', 'l': 'load', 'h': 'help',  
     'r': 'run', 'e': 'exec', 'q': 'quit', 'k': 'keys', 'v': 'version',
     }
 
@@ -54,8 +54,6 @@ arguments = {
     'input': {'type': 'string', 'default': '', },
     'output': {'type': 'string', 'default': '', },
     'append': {'type': 'bool', 'default': False, },
-    'cli': {'type': 'bool', 'default': False, },
-    'ansi': {'type': 'bool', 'default': False, },
     'interface': { 
         'type': 'string', 'default': '',
         'choices': ('', 'none', 'cli', 'ansi', 'graphical'), },
@@ -151,16 +149,20 @@ def append_arg(args, key, value):
     else:
         args[key] = value    
 
+def safe_split(s, sep):
+    slist = s.split(sep, 1)
+    s0 = slist[0]
+    if len(slist) > 1:
+        s1 = slist[1]
+    else:
+        s1 = ''
+    return s0, s1
+    
 def get_arguments(argv):
     """ Convert arguments to { key: value } dictionary. """
     args = {}
     for arg in argv:
-        arglist = arg.split('=', 1)
-        key = arglist[0]
-        if len(arglist) > 1:
-            value = arglist[1]
-        else:
-            value = ''
+        key, value = safe_split(arg, '=')
         pos = 0
         if key:
             if key[0:2] == '--':
@@ -169,11 +171,12 @@ def get_arguments(argv):
             elif key[0] == '-':
                 for i, short_arg in enumerate(key[1:]):
                     try:
-                        if i == len(key)-2:
+                        skey, svalue = safe_split(short_args[short_arg], '=')
+                        if (not svalue) and i == len(key)-2:
                             # assign value to last argument specified    
-                            append_arg(args, short_args[short_arg], value)
+                            append_arg(args, skey, value)
                         else:
-                            append_arg(args, short_args[short_arg], '')
+                            append_arg(args, skey, svalue)
                     except KeyError:    
                         logging.warning('Ignored unrecognised option "-%s"', short_arg)
             else:

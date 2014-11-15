@@ -21,7 +21,6 @@ OPTIONS
   If no options are present, the interpreter will run in interactive mode.
 
   -t
-  --ansi [True|False]
             Use ANSI text interface. Same as --interface=ansi. 
             Only available on Unix systems.
 
@@ -49,7 +48,6 @@ OPTIONS
             emulated cga, ega or vga cards.
             
   -b
-  --cli [True|False]
             Use command-line text interface. Same as --interface=cli. 
             
   --codepage codepage-id
