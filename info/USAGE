@@ -21,8 +21,7 @@ OPTIONS
   If no options are present, the interpreter will run in interactive mode.
 
   -t
-            Use ANSI text interface. Same as --interface=ansi. 
-            Only available on Unix systems.
+            Use text-based interface. Same as --interface=text. 
 
   --append [=True|=False]
             Append to output_file, do not overwrite. Use with --output.
@@ -183,13 +182,13 @@ OPTIONS
             except if KYBD: is read explicitly. Input from KYBD: files remains
             read from the keyboard, following GW-BASIC behaviour.
             
-  --interface={none|cli|ansi|graphical}
+  --interface={none|cli|text|graphical}
             Choose the type of interface. When redirecting i/o, the
             default is none; otherwise, default is graphical. The following
             interface types are available:
                 none        Filter for use with pipes.
                 cli         Command-line interface.
-                ansi        Curses-style text interface (Unix only).
+                text        Text-based interface.
                 graphical   Graphical interface.
          
   -k=keystring   

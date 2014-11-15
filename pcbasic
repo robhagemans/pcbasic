@@ -170,7 +170,7 @@ def prepare_console():
     backends = {
         'none': ('video_none', 'audio_none'),
         'cli': ('video_cli', 'audio_beep'),
-        'ansi': (video_text, 'audio_beep'),
+        'text': (video_text, 'audio_beep'),
         'graphical': ('video_pygame', 'audio_pygame'), 
         }
     if not config.options['interface']:

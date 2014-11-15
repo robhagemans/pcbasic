@@ -45,7 +45,7 @@ short_args = {
     'd': 'double', 'f': 'max-files', 
     's': 'max-reclen', 'c': 'serial-buffer-size',
     # 'm': 'max-memory', 'i': 'static-fcbs': 'i',
-    'b': 'interface=cli', 't': 'interface=ansi', 'l': 'load', 'h': 'help',  
+    'b': 'interface=cli', 't': 'interface=text', 'l': 'load', 'h': 'help',  
     'r': 'run', 'e': 'exec', 'q': 'quit', 'k': 'keys', 'v': 'version',
     }
 
@@ -56,7 +56,7 @@ arguments = {
     'append': {'type': 'bool', 'default': False, },
     'interface': { 
         'type': 'string', 'default': '',
-        'choices': ('', 'none', 'cli', 'ansi', 'graphical'), },
+        'choices': ('', 'none', 'cli', 'text', 'graphical'), },
     'load': {'type': 'string', 'default': '', },
     'run': {'type': 'string', 'default': '',  },
     'convert': {'type': 'string', 'default': '', },
