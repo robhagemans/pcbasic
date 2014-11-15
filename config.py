@@ -53,24 +53,24 @@ short_args = {
 arguments = {
     'input': {'type': 'string', 'default': '', },
     'output': {'type': 'string', 'default': '', },
-    'append': {'type': 'bool', 'default': 'False', },
-    'cli': {'type': 'bool', 'default': 'False', },
-    'ansi': {'type': 'bool', 'default': 'False', },
+    'append': {'type': 'bool', 'default': False, },
+    'cli': {'type': 'bool', 'default': False, },
+    'ansi': {'type': 'bool', 'default': False, },
     'interface': { 
-        'type': 'string', 'default': '',
+        'type': 'string', 'default': 'none',
         'choices': ('none', 'cli', 'ansi', 'graphical'), },
     'load': {'type': 'string', 'default': '', },
     'run': {'type': 'string', 'default': '',  },
     'convert': {'type': 'string', 'default': '', },
-    'help': {'type': 'bool', 'default': 'False', },
+    'help': {'type': 'bool', 'default': False, },
     'keys': {'type': 'string', 'default': '', },
     'exec': {'type': 'string', 'default': '',  },
-    'quit': {'type': 'bool', 'default': 'False',},
-    'double': {'type': 'bool', 'default': 'False',},
+    'quit': {'type': 'bool', 'default': False,},
+    'double': {'type': 'bool', 'default': False,},
     'max-files': {'type': 'int', 'default': 3,}, 
     'max-reclen': {'type': 'int', 'default': 128,},
     'serial-buffer-size': {'type': 'int', 'default': 256,},
-    'peek': {'type': 'string', 'list': '*', 'default': '',},
+    'peek': {'type': 'string', 'list': '*', 'default': [],},
     'lpt1': {'type': 'string', 'default': '',},
     'lpt2': {'type': 'string', 'default': '',},
     'lpt3': {'type': 'string', 'default': '',},
@@ -79,18 +79,18 @@ arguments = {
     'codepage': {'type': 'string', 'choices': encodings, 'default': '437',},
     'font': { 
         'type': 'string', 'list': '*', 'choices': families, 
-        'default': 'unifont,univga,freedos',},
-    'nosound': {'type': 'bool', 'default': 'False', },
-    'dimensions': {'type': 'int', 'list': 2, 'default': '',},
-    'fullscreen': {'type': 'bool', 'default': 'False',},
-    'noquit': {'type': 'bool', 'default': 'False',},
-    'debug': {'type': 'bool', 'default': 'False',},
-    'strict-hidden-lines': {'type': 'bool', 'default': 'False',},
-    'strict-protect': {'type': 'bool', 'default': 'False',},
-    'capture-caps': {'type': 'bool', 'default': 'False',},
-    'mount': {'type': 'string', 'list': '*', 'default': '',},
-    'resume': {'type': 'bool', 'default': 'False',},
-    'strict-newline': {'type': 'bool', 'default': 'False',},
+        'default': ['unifont', 'univga', 'freedos'],},
+    'nosound': {'type': 'bool', 'default': False, },
+    'dimensions': {'type': 'int', 'list': 2, 'default': None,},
+    'fullscreen': {'type': 'bool', 'default': False,},
+    'noquit': {'type': 'bool', 'default': False,},
+    'debug': {'type': 'bool', 'default': False,},
+    'strict-hidden-lines': {'type': 'bool', 'default': False,},
+    'strict-protect': {'type': 'bool', 'default': False,},
+    'capture-caps': {'type': 'bool', 'default': False,},
+    'mount': {'type': 'string', 'list': '*', 'default': [],},
+    'resume': {'type': 'bool', 'default': False,},
+    'strict-newline': {'type': 'bool', 'default': False,},
     'syntax': { 
         'type': 'string', 'choices': ('advanced', 'pcjr', 'tandy'), 
         'default': 'advanced',},
@@ -99,20 +99,20 @@ arguments = {
         'type': 'string', 'default': 'vga',
         'choices': ('vga', 'ega', 'cga', 'cga_old', 'mda', 'pcjr', 'tandy',
                      'hercules', 'olivetti'), },
-    'map-drives': {'type': 'bool', 'default': 'False',},
-    'cga-low': {'type': 'bool', 'default': 'False',},
-    'nobox': {'type': 'bool', 'default': 'False',},
-    'utf8': {'type': 'bool', 'default': 'False',},
+    'map-drives': {'type': 'bool', 'default': False,},
+    'cga-low': {'type': 'bool', 'default': False,},
+    'nobox': {'type': 'bool', 'default': False,},
+    'utf8': {'type': 'bool', 'default': False,},
     'border': {'type': 'int', 'default': 5,},
-    'mouse': {'type': 'string', 'list': 3, 'default': 'copy,paste,pen',},
+    'mouse': {'type': 'string', 'list': 3, 'default': ['copy', 'paste', 'pen'],},
     'state': {'type': 'string', 'default': '',},
-    'mono-tint': {'type': 'int', 'list': 3, 'default': '255,255,255',},
+    'mono-tint': {'type': 'int', 'list': 3, 'default': [255, 255, 255],},
     'monitor': { 
         'type': 'string', 'choices': ('rgb', 'composite', 'mono'),
         'default': 'rgb',},
-    'aspect': {'type': 'int', 'list': 2, 'default': '4,3',},
-    'blocky': {'type': 'bool', 'default': 'False',},
-    'version': {'type': 'bool', 'default': 'False',},
+    'aspect': {'type': 'int', 'list': 2, 'default': [4, 3],},
+    'blocky': {'type': 'bool', 'default': False,},
+    'version': {'type': 'bool', 'default': False,},
     'config': {'type': 'string', 'default': '',},
 }
 
@@ -131,17 +131,17 @@ def get_options():
     args_program = parse_package(remaining)
     # get arguments and presets from specified config file
     conf_dict = parse_config(remaining)
-    # set overall default arguments
-    args = default_arguments()
-    # set defaults based on presets. overwrite builtin defaults; do not merge
-    args.update(parse_presets(remaining, conf_dict))
+    # set defaults based on presets. 
+    args = parse_presets(remaining, conf_dict)
     # parse rest of command line
     merge_arguments(args, parse_args(remaining))
-    # clean up arguments    
-    clean_arguments(args)
     # apply program argument
     merge_arguments(args, args_program)
-    return args        
+    # clean up arguments    
+    clean_arguments(args)
+    # apply builtin defaults for unspecified options
+    apply_defaults(args)
+    return args
 
 def append_arg(args, key, value):
     """ Update a single argument by appending a value """
@@ -184,15 +184,15 @@ def get_arguments(argv):
             logging.warning('Ignored unrecognised option "=%s"', value)
     return args    
 
-def default_arguments():
-    """ Set overall default arguments. """
-    args = {}
+def apply_defaults(args):
+    """ Apply default argument where no option specified. """
     for arg in arguments:
-        try:
-            args[arg] = arguments[arg]['default']
-        except KeyError:
-            pass
-    return args
+        if arg not in args or not args[arg]:
+            try:
+                args[arg] = arguments[arg]['default']
+            except KeyError:
+                pass
+    return args    
             
 def parse_presets(remaining, conf_dict):
     """ Parse presets. """
@@ -293,14 +293,15 @@ def merge_arguments(args0, args1):
     """ Update args0 with args1. Lists of indefinite length are appended. """
     for a in args1:
         try:
-            if a in args0 and arguments[a]['list'] == '*' and args0[a]:
+            if (a in args0 and arguments[a]['list'] == '*' and args0[a]):
                 args0[a] += ',' + args1[a]
                 continue
         except KeyError:
             pass
-        # not a list
-        args0[a] = args1[a]        
-    
+        # override
+        if args1[a]:
+            args0[a] = args1[a]        
+
 def clean_arguments(args):
     """ Convert arguments to required type and list length. """
     for d in args:
@@ -312,17 +313,18 @@ def clean_arguments(args):
             
 def parse_type(d, arg):
     """ Convert argument to required type. """
-    try:
-        typestr = arguments[d]['type']
-    except KeyError:
-        typestr = 'string'
-    try:
-        if (typestr == 'int'):
+    if d not in arguments:
+        return arg
+    if 'type' in arguments[d]:
+        if (arguments[d]['type'] == 'int'):
             arg = parse_int(d, arg)
-        elif (typestr == 'bool'):
+        elif (arguments[d]['type'] == 'bool'):
             arg = parse_bool(d, arg)
-    except KeyError:
-        pass
+    if 'choices' in arguments[d]:
+        if arg and arg not in arguments[d]['choices']:
+            logging.warning('Value "%s=%s" ignored; should be one of (%s)',
+                            d, str(arg), ', '.join(arguments[d]['choices']))
+            arg = ''
     return arg
     
 def parse_list(d, s, length='*'):
