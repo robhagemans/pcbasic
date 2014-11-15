@@ -148,7 +148,7 @@ OPTIONS
             --exec is currently ignored (but this may change in future 
             releases).
             
-  --font=font_name [font_name ...]
+  --font=font_name[,font_name ...]
             Load current codepage from specified .hex fonts. The last
             fonts specified take precedence, previous ones are
             fallback. Default is unifont, univga, freedos (i.e. freedos has
