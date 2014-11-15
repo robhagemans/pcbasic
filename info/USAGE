@@ -24,33 +24,33 @@ OPTIONS
             Use ANSI text interface. Same as --interface=ansi. 
             Only available on Unix systems.
 
-  --append [True|False]
+  --append [=True|=False]
             Append to output_file, do not overwrite. Use with --output.
 
-  --aspect x,y          
+  --aspect=x,y          
             Set the display aspect ratio to x/y. Graphical interface only.
             
-  --blocky [True|False]
+  --blocky [=True|=False]
             Choose whole multiples of pixel size for display and
             do not smoothen. Overrides --aspect. Graphical interface only.
             
-  --border width       
+  --border=width       
             Width of the screen border as a percentage 0-100. The percentage
             refers to the total width of the borders on both sides as a fraction
             of the usable screen width. Graphical interface only.
             
-  --capture-caps [True|False]
+  --capture-caps [=True|=False]
             Handle CAPS LOCK. This may collide with the operating system's own 
             handling.
             
-  --cga-low [True|False]
+  --cga-low [=True|=False]
             Use low-intensity palettes in CGA. This only has an effect on 
             emulated cga, ega or vga cards.
             
   -b
             Use command-line text interface. Same as --interface=cli. 
             
-  --codepage codepage-id
+  --codepage=codepage-id
             Load the specified codepage. The codepage determines which 
             characters are associated to a given character byte or, in the
             case of double-byte codepages, two character bytes. PC-BASIC 
@@ -102,13 +102,13 @@ OPTIONS
             codepages in common use in the days of GW-BASIC but not represented
             in this list, please contact the author.
                
-  --config ini-file
+  --config=ini-file
             Read a configuration file. The default configuration file 
             info/PCBASIC.INI is always read, but any preset section in a
             specified configuration file replaces the whole equivalent section
             in the default file.
 
-  --com1 TYPE:VAL       
+  --com1=TYPE:VAL       
             Attach a resource to the COM1: serial device. TYPE:VAL can be
                 PORT:device_name        connect to a serial device
                                         such as COM1 (--com1 PORT:COM1)
@@ -117,10 +117,10 @@ OPTIONS
                                         a remote or local host.
             If not specified, the COM1 device is unavailable.                            
             
-  --com2 TYPE:VAL       
+  --com2=TYPE:VAL       
             Attach a resource to the COM2: serial device. See --com1.
   
-  --convert mode[,infile[,outfile]]
+  --convert=mode[,infile[,outfile]]
             Convert infile to mode=A,B,P for ASCII, Bytecode or Protected mode.
             If outfile is not specified, write to standard output.
             If infile is not specified, use the program form the first argument,
@@ -132,23 +132,23 @@ OPTIONS
             statement. For the DEBUG statement, the source code is your 
             documentation ;)
             
-  --dimensions X,Y      
+  --dimensions=X,Y      
             Set window dimensions to X by Y pixels. This overrides
             --blocky and --aspect. Graphical interface only.
             
   -d          
-  --double [True|False]
+  --double [=True|=False]
             Allow double-precision transcendental math functions. This is
             equivalent to the /d option in GW-BASIC.
          
-  -e command_line          
-  --exec command_line
+  -e=command_line          
+  --exec=command_line
             Execute BASIC command line. The specified commands are executed 
             before entering into interactive mode. If --run is specified,
             --exec is currently ignored (but this may change in future 
             releases).
             
-  --font font_name [font_name ...]
+  --font=font_name [font_name ...]
             Load current codepage from specified .hex fonts. The last
             fonts specified take precedence, previous ones are
             fallback. Default is unifont, univga, freedos (i.e. freedos has
@@ -171,19 +171,19 @@ OPTIONS
             and the FreeDOS CPIDOS fonts are therefore more suitable, when
             they have the required glyphs.
             
-  --fullscreen [True|False]
+  --fullscreen=[True|False]
             Fullscreen mode. Graphical interface only.
             
   -h
   --help
             Show a usage message and exit.
 
-  --input input_file    
+  --input=input_file    
             Retrieve keyboard input from input_file, 
             except if KYBD: is read explicitly. Input from KYBD: files remains
             read from the keyboard, following GW-BASIC behaviour.
             
-  --interface {none|cli|ansi|graphical}
+  --interface={none|cli|ansi|graphical}
             Choose the type of interface. When redirecting i/o, the
             default is none; otherwise, default is graphical. The following
             interface types are available:
@@ -192,15 +192,15 @@ OPTIONS
                 ansi        Curses-style text interface (Unix only).
                 graphical   Graphical interface.
          
-  -k keystring   
-  --keys keystring
+  -k=keystring   
+  --keys=keystring
             Insert keys into the key buffer. 
          
-  -l program               
-  --load program
+  -l=program               
+  --load=program
             Load the specified .BAS program and return to interactive mode.
             
-  --lpt1 TYPE:VAL       
+  --lpt1=TYPE:VAL       
             Attach a resource to the LPT1: parallel device. TYPE:VAL can be
                 PARPORT:device_name     Connect to a parallel device
                                         such as LPT1 (--lpt1 PARPORT:LPT1)
@@ -212,30 +212,30 @@ OPTIONS
                                         device such as /dev/stdout.
             If not specified, LPT1: is available but its output is ignored.            
             
-  --lpt2 TYPE:VAL       
+  --lpt2=TYPE:VAL       
             Attach a resource to the LPT2: parallel device. See --lpt1.
             If not specified, LPT2: is unavailable.            
             
-  --lpt3 TYPE:VAL       
+  --lpt3=TYPE:VAL       
             Attach a resource to the LPT3: parallel device. See --lpt1.
             If not specified, LPT3: is unavailable.            
             
-  --map-drives [True|False]
+  --map-drives [=True|=False]
             Map all Windows drive letters to PC-BASIC drive letters. 
             Windows only.
             
-  -f number_of_files
-  --max-files number_of_files 
+  -f=number_of_files
+  --max-files=number_of_files 
             Set maximum number of open files (default is 3). 
             This is equivalent to GWBASIC's /f option.
   
-  -s record_length
-  --max-reclen record_length, 
+  -s=record_length
+  --max-reclen=record_length, 
             Set maximum record length for RANDOM files. 
             Default is 128, maximum is 32767.
             This is equivalent to GWBASIC's /s option.
             
-  --monitor {rgb|composite|mono}
+  --monitor={rgb|composite|mono}
             Sets the monitor type to emulate. Available types:
                 rgb         RGB colour monitor (default).
                 composite   Composite colour monitor. Enables colour
@@ -243,14 +243,14 @@ OPTIONS
                             --video={pcjr|tandy|cga|cga_old}.
                 mono        Monochrome monitor.
                 
-  --mono-tint r,g,b     
+  --mono-tint=r,g,b     
             Specify the monochrome tint as RGB, each in the range 0--255.
             
-  --mount D:path [D:path ...]
+  --mount=D:path,[D:path ...]
             Assign a drive letter to a path. Path can be absolute or relative.
             By default, C: is mapped to the current working directory.
             
-  --mouse left,middle,right
+  --mouse=left,middle,right
             Set the functions of the three mouse buttons. 
             Available functions are:
                 copy    Select and copy to clipboard.
@@ -258,37 +258,37 @@ OPTIONS
                 pen     Light pen emulation.
             On Android, touch is mapped to the light pen.
 
-  --nobox [True|False]
+  --nobox [=True|=False]
             Disable box-drawing recognition for DBCS code pages. 
             By default, sequences of box-drawing characters are recognised by
             an algorithm that isn't as smart as it thinks it is, and displayed
             as box drawing rather than as DBCS characters. If --nobox is set,
             they will be displayed as DBCS.
 
-  --noquit [True|False]
+  --noquit [=True|=False]
             Allow BASIC to capture <ALT+F4>. Graphical interface only. By 
             default, <Alt+F4> is captured by most operating systems as a quit
             signal, and will terminate PC-BASIC. Set --noquit to allow BASIC
             to capture <Alt+F4> instead. This is useful if your program uses
             this key combination.
             
-  --nosound [True|False]
+  --nosound [=True|=False]
             Disable sound output.
   
-  --output output_file  
+  --output=output_file  
             Send screen output to output_file, except if SCRN: is
             written to explicitly. Output to SCRN: files will be shown on
             the screen, as in GW-BASIC.
   
-  --pcjr-term TERM.BAS  
+  --pcjr-term=TERM.BAS  
             Set the terminal program run by the PCjr TERM command. 
-            This only has an effect with --syntax {pcjr|tandy}.
+            This only has an effect with --syntax={pcjr|tandy}.
   
-  --peek [seg:addr:val [seg:addr:val ...]]
+  --peek=[seg:addr:val,[seg:addr:val ...]]
             Define PEEK preset values. If defined, DEF SEG:? PEEK(addr) will
             return val.
   
-  --preset preset-option     
+  --preset=preset-option     
             Load machine preset options. A preset option corresponds to a 
             section defined in a config file by a name between square brackets,
             like [this]. --preset=this will load all settings defined in that
@@ -309,48 +309,48 @@ OPTIONS
                             convenience or security. 
 
   -q
-  --quit [True|False]
+  --quit [=True|=False]
             Quit interpreter when execution stops. If combined with --run, this
             is when the program ends; in interactive mode, after the first 
             command is executed.
   
-  --resume [True|False]
+  --resume [=True|=False]
             Resume from saved state. Overrides --run and --load.
   
-  -r program
-  --run program
+  -r=program
+  --run=program
             Run the specified .BAS program. Overrides --load.
   
-  -c size
-  --serial-buffer-size size, 
+  -c=size
+  --serial-buffer-size=size, 
             Set serial input buffer size (default is 256). If set to 0,
             serial communications are disabled.
   
-  --state state_file   
+  --state=state_file   
             Set the save-state file. Default is info/PCBASIC.SAV
   
-  --strict-hidden-lines [True|False]
+  --strict-hidden-lines [=True|=False]
             Disable listing and ASCII saving of lines beyond 65530
             (as in GW-BASIC). Use with care as this allows
             execution of invisible statements.
   
-  --strict-newline [True|False]
+  --strict-newline [=True|=False]
             Parse CR and LF in files strictly like GW-BASIC. 
             On Unix, you will need to convert your files to DOS text first
             if using this.
   
-  --strict-protect [True|False]
+  --strict-protect [=True|=False]
             Disable listing and ASCII saving of protected files
             (as in GW-BASIC). Use with care as this allows
             execution of invisible statements.
   
-  --syntax {advanced,pcjr,tandy}
+  --syntax={advanced,pcjr,tandy}
             Choose BASIC dialect. Available dialects:
                 advanced    Microsoft GW-BASIC and IBM BASICA (default).
                 pcjr        IBM PCjr Cartridge BASIC
                 tandy       Tandy 1000 GW-BASIC.
   
-  --utf8 [True|False]
+  --utf8 [=True|=False]
             Use UTF-8 for ascii-mode programs and redirected i/o. If set, 
             programs stored as ascii (rather than bytecode) will be converted
             from UTF-8 on LOAD and to UTF-8 on SAVE. Redirected input and output
@@ -360,7 +360,7 @@ OPTIONS
   --version
             Print PC-BASIC version and exit.
   
-  --video card
+  --video=card
             Set the video card to emulate. Available video cards:
                 vga         Video Graphics Array
                 ega         Enhanced Graphics Adapter
@@ -378,7 +378,6 @@ EXAMPLES
     pcbasic
             Start PC-BASIC in interactive mode, emulating GW-BASIC/BASICA
             with VGA graphics.
-
     
     pcbasic --codepage=950
             Start PC-BASIC in default mode but using the Traditional Chinese 
@@ -389,10 +388,10 @@ EXAMPLES
             package; usually this will run a main program contained in the 
             pazkage. 
             
-    pcbasic Foobar.baz --conv A --utf8
+    pcbasic Foobar.baz --convert=A --utf8
             List the main program of package Foobar to standard output as UTF-8.
     
-    pcbasic MYPROG.BAS --mount=A:./files B:./morefiles
+    pcbasic MYPROG.BAS --mount=A:./files,B:./morefiles
             Attach the current directory's subdirectory files as drive A:
             and subdirectory morefiles as drive B:, then run MYPROG.BAS.
             On Windows, mounts can also be specified as --mount=A:\\files etc.
@@ -405,7 +404,7 @@ EXAMPLES
             Run COMP.BAS stored at /home/me/retro on an emulated CGA machine
             with a composite monitor.
     
-    pcbasic PCJRGAME.BAS --preset=pcjr -k 'start\r'
+    pcbasic PCJRGAME.BAS --preset=pcjr -k='start\r'
             Run PCJRGAME.BAS on an emulated PCjr and feed in the keystrokes 
             start<ENTER>.
     
@@ -416,7 +415,7 @@ EXAMPLES
     pcbasic --resume
             Resume the last closed PC-BASIC session.
     
-    pcbasic -q -b -e "?1+1"
+    pcbasic -qbe="?1+1"
             Execute the BASIC command PRINT 1+1 in the command-line interface 
             and return to the calling shell.
 
