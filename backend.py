@@ -1319,7 +1319,7 @@ def set_palette_entry(index, colour, check_mode=True):
     """ Set a new colour for a given attribute. """
     # effective palette change is an error in CGA; ignore in Tandy/PCjr SCREEN 0
     if check_mode:
-        if video_capabilities in ('cga', 'cga_old', 'mda', 'ega_mono', 
+        if video_capabilities in ('cga', 'cga_old', 'mda', 
                                    'hercules', 'olivetti'):
             raise error.RunError(5)
         elif (video_capabilities in ('tandy', 'pcjr') and 
@@ -1341,7 +1341,7 @@ def get_palette_entry(index):
 def set_palette(new_palette=None, check_mode=True):
     """ Set the colours for all attributes. """
     if check_mode and new_palette:
-        if video_capabilities in ('cga', 'cga_old', 'mda', 'ega_mono', 
+        if video_capabilities in ('cga', 'cga_old', 'mda', 
                                    'hercules', 'olivetti'):
             raise error.RunError(5)
         elif (video_capabilities in ('tandy', 'pcjr') and 
