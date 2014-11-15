@@ -32,7 +32,10 @@ last_col = 1
     
 
 if plat.system == 'Windows':
-    import WConio as wconio
+    try:
+        import WConio as wconio
+    except ImportError:
+        wconio = None
     import msvcrt
 
     # Ctrl+Z to exit
@@ -40,6 +43,10 @@ if plat.system == 'Windows':
     
     def init():
         if not check_tty():
+            return False
+        if not wconio:
+            logging.warning('WConio module not found. '
+                            'CLI interface not supported.')
             return False
         # on windows, clear the screen or we get a messy console.
         wconio.clrscr()
@@ -192,7 +199,7 @@ elif plat.system != 'Android':
 def check_tty():
     if not plat.stdin_is_tty:
         logging.warning('Input device is not a terminal. '
-                        'Could not initialise cli interface.')
+                        'Could not initialise CLI interface.')
         return False
     return True
 

@@ -69,7 +69,8 @@ def prepare(args):
 def init():
     global screen, default_colors, can_change_palette
     if not curses:
-        logging.warning('ANSI interface not supported.')
+        logging.warning('Curses module not found. Text interface not supported.')
+        return False
     # find a supported UTF-8 locale, with a preference for C, en-us, default   
     languages = (['C', 'en-US', locale.getdefaultlocale()[0]] + 
                  [a for a in locale.locale_alias.values() 
@@ -81,7 +82,7 @@ def init():
         except locale.Error:
             pass    
     if locale.getlocale()[1] != 'UTF-8':
-        logging.warning('No supported UTF-8 locale found.')
+        logging.warning('No supported UTF-8 locale found. Text interface not supported.')
         return False
     # set the ESC-key delay to 25 ms unless otherwise set
     # set_escdelay seems to be unavailable on python curses.
@@ -97,7 +98,7 @@ def init():
 #    init_screen_mode()
     can_change_palette = (curses.can_change_color() and curses.COLORS >= 16 
                           and curses.COLOR_PAIRS > 128)
-    sys.stdout.write(ansi.esc_set_title % 'PC-BASIC 3.23 %d' % can_change_palette)
+    sys.stdout.write(ansi.esc_set_title % 'PC-BASIC 3.23')
     if can_change_palette:
         default_colors = range(16, 32)
     else:    
