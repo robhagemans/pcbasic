@@ -113,7 +113,6 @@ arguments = {
     'aspect': {'type': 'int', 'list': 2, 'default': '4,3',},
     'blocky': {'type': 'bool', 'default': 'False',},
     'version': {'type': 'bool', 'default': 'False',},
-    'preset': {'type': 'string', 'list': '*', 'default': ','.join(default_presets), },
     'config': {'type': 'string', 'default': '',},
 }
 
@@ -195,37 +194,28 @@ def default_arguments():
             pass
     return args
             
-def preset_default_args(conf_dict):
-    """ Return default arguments for this operating system. """
-    args = {}
-    for p in default_presets:
-        try:
-            merge_arguments(args, conf_dict[p])
-        except KeyError:
-            pass
-    return args
-
 def parse_presets(remaining, conf_dict):
     """ Parse presets. """
+    presets = default_presets
     try:
-        presets = parse_list(remaining.pop('preset'))
-    except KeyError:
-        presets = []    
-    # get dictionary of default config
-    defaults = preset_default_args(conf_dict)
-    # add any nested presets defined in [pcbasic] section
-    try:
-        presets += parse_list(conf_dict['pcbasic']['preset'])
-    except KeyError:
-        pass
-    # set machine preset options; command-line args will override these
-    if presets:
-        for preset in presets:
+        argdict = remaining.pop('preset')
+    except KeyError:    
+        argdict = {}
+    # apply default presets, including nested presets
+    while True:
+        # get dictionary of default config
+        for p in presets:
             try:
-                defaults.update(**conf_dict[preset])
+                merge_arguments(argdict, conf_dict[p])
             except KeyError:
-                logging.warning('Preset %s not defined', preset)
-    return defaults
+                if p not in default_presets:
+                    logging.warning('Preset "%s" not defined', p)
+        # look for more presets in expended arglist
+        try:
+            presets = parse_list(argdict.pop('preset'))
+        except KeyError:
+            break    
+    return argdict
 
 def parse_package(remaining):
     """ Load options from BAZ package, if specified. """
