@@ -1272,7 +1272,7 @@ def set_width(to_width):
         if video_capabilities in ('pcjr', 'tandy'):
             return screen(3, None, None, None)
         else:
-            return -1
+            return False
     elif state.console_state.current_mode.is_text_mode:
         return screen(0, None, None, None, new_width=to_width) 
     elif to_width == 40:
