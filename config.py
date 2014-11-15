@@ -175,13 +175,13 @@ def get_arguments(argv):
                         else:
                             append_arg(args, short_args[short_arg], '')
                     except KeyError:    
-                        logging.warning('Ignored unrecognised argument -%s', short_arg)
+                        logging.warning('Ignored unrecognised option "-%s"', short_arg)
             else:
                 # positional argument
                 args[pos] = arg  
                 pos += 1
         else:
-            logging.warning('Ignored unrecognised argument =%s', value)
+            logging.warning('Ignored unrecognised option "=%s"', value)
     return args    
 
 def default_arguments():
@@ -209,10 +209,10 @@ def parse_presets(remaining, conf_dict):
                 merge_arguments(argdict, conf_dict[p])
             except KeyError:
                 if p not in default_presets:
-                    logging.warning('Preset "%s" not defined', p)
+                    logging.warning('Ignored undefined preset "%s"', p)
         # look for more presets in expended arglist
         try:
-            presets = parse_list(argdict.pop('preset'))
+            presets = parse_list('preset', argdict.pop('preset'))
         except KeyError:
             break    
     return argdict
@@ -280,10 +280,11 @@ def read_config_file(config_file):
 def parse_args(remaining):
     """ Retrieve command line options. """
     # set arguments
-    args = { d:remaining[d] for d in remaining if d in arguments }
-    not_recognised = { d:remaining[d] for d in remaining if d not in arguments }
+    args = {d:remaining[d] for d in remaining if d in arguments}
+    not_recognised = {d:remaining[d] for d in remaining if d not in arguments}
     for d in not_recognised:
-        logging.warning('Ignored unrecognised argument %s=%s', d, not_recognised[d])
+        logging.warning('Ignored unrecognised option "%s=%s"', 
+                        d, not_recognised[d])
     return args
 
 ################################################
@@ -304,23 +305,27 @@ def clean_arguments(args):
     """ Convert arguments to required type and list length. """
     for d in args:
         try:
-            args[d] = parse_list(args[d], arguments[d]['list'], arguments[d]['type'])
+            args[d] = parse_list(d, args[d], arguments[d]['list'])
         except KeyError:
             # not a list    
-            args[d] = parse_type(args[d], arguments[d]['type']) 
+            args[d] = parse_type(d, args[d]) 
             
-def parse_type(arg, typestr):            
+def parse_type(d, arg):
     """ Convert argument to required type. """
     try:
+        typestr = arguments[d]['type']
+    except KeyError:
+        typestr = 'string'
+    try:
         if (typestr == 'int'):
-            arg = parse_int(arg)
+            arg = parse_int(d, arg)
         elif (typestr == 'bool'):
-            arg = parse_bool(arg)
+            arg = parse_bool(d, arg)
     except KeyError:
         pass
     return arg
     
-def parse_list(s, length='*', typestr='string'):
+def parse_list(d, s, length='*'):
     """ Convert list strings to typed lists. """
     lst = s.split(',')
     if lst == ['']:
@@ -328,12 +333,13 @@ def parse_list(s, length='*', typestr='string'):
             return []
         else:
             return None    
-    lst = [parse_type(arg, typestr) for arg in lst]
+    lst = [parse_type(d, arg) for arg in lst]
     if length != '*' and len(lst) != length:
-        logging.warning('List %s ignored, should have %d elements', s, length)
+        logging.warning('Option "%s=%s" ignored, should have %d elements', 
+                        d, s, length)
     return lst
 
-def parse_bool(s):
+def parse_bool(d, s):
     """ Parse bool option. Empty string (i.e. specified) means True. """
     if s == '':
         return True
@@ -343,16 +349,16 @@ def parse_bool(s):
         elif s.upper() in ('NO', 'FALSE', 'OFF', '0'):
             return False   
     except AttributeError:
-        logging.warning('Illegal boolean value %s ignored', s)
+        logging.warning('Option "%s=%s" ignored; should be a boolean', d, s)
         return None
 
-def parse_int(s):
+def parse_int(d, s):
     """ Parse int option provided as a one-element list of string. """
     if s:
         try:
             return int(s)
         except ValueError:
-            logging.warning('Illegal number value %s ignored', s)
+            logging.warning('Option "%s=%s" ignored; should be an integer', d, s)
     return None
 
 #########################################################
