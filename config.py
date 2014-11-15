@@ -134,15 +134,23 @@ def get_options():
     conf_dict = parse_config(remaining)
     # set overall default arguments
     args = default_arguments()
-    # set defaults based on presets
+    # set defaults based on presets. overwrite builtin defaults; do not merge
     args.update(parse_presets(remaining, conf_dict))
     # parse rest of command line
-    args.update(parse_args(remaining))
+    merge_arguments(args, parse_args(remaining))
     # clean up arguments    
     clean_arguments(args)
     # apply program argument
-    args.update(args_program)
+    merge_arguments(args, args_program)
     return args        
+
+def append_arg(args, key, value):
+    """ Update a single argument by appending a value """
+    if key in args and args[key]: 
+        if value:
+            args[key] += ',' + value
+    else:
+        args[key] = value    
 
 def get_arguments(argv):
     """ Convert arguments to { key: value } dictionary. """
@@ -158,15 +166,15 @@ def get_arguments(argv):
         if key:
             if key[0:2] == '--':
                 if key[2:]:
-                    args[key[2:]] = value
+                    append_arg(args, key[2:], value)
             elif key[0] == '-':
                 for i, short_arg in enumerate(key[1:]):
                     try:
                         if i == len(key)-2:
                             # assign value to last argument specified    
-                            args[short_args[short_arg]] = value 
+                            append_arg(args, short_args[short_arg], value)
                         else:
-                            args[short_args[short_arg]] = ''
+                            append_arg(args, short_args[short_arg], '')
                     except KeyError:    
                         logging.warning('Ignored unrecognised argument -%s', short_arg)
             else:
@@ -192,7 +200,7 @@ def preset_default_args(conf_dict):
     args = {}
     for p in default_presets:
         try:
-            args.update(conf_dict[p])
+            merge_arguments(args, conf_dict[p])
         except KeyError:
             pass
     return args
@@ -289,6 +297,18 @@ def parse_args(remaining):
     return args
 
 ################################################
+    
+def merge_arguments(args0, args1):
+    """ Update args0 with args1. Lists of indefinite length are appended. """
+    for a in args1:
+        try:
+            if a in args0 and arguments[a]['list'] == '*' and args0[a]:
+                args0[a] += ',' + args1[a]
+                continue
+        except KeyError:
+            pass
+        # not a list
+        args0[a] = args1[a]        
     
 def clean_arguments(args):
     """ Convert arguments to required type and list length. """
