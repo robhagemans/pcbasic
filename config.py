@@ -57,8 +57,8 @@ arguments = {
     'cli': {'type': 'bool', 'default': False, },
     'ansi': {'type': 'bool', 'default': False, },
     'interface': { 
-        'type': 'string', 'default': 'none',
-        'choices': ('none', 'cli', 'ansi', 'graphical'), },
+        'type': 'string', 'default': '',
+        'choices': ('', 'none', 'cli', 'ansi', 'graphical'), },
     'load': {'type': 'string', 'default': '', },
     'run': {'type': 'string', 'default': '',  },
     'convert': {'type': 'string', 'default': '', },
