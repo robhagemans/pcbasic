@@ -166,10 +166,11 @@ def prepare_console():
     import console
     import error
     import fp
+    video_text = 'video_wconio' if plat.system == 'Windows' else 'video_curses'
     backends = {
         'none': ('video_none', 'audio_none'),
         'cli': ('video_cli', 'audio_beep'),
-        'ansi': ('video_curses', 'audio_beep'),
+        'ansi': (video_text, 'audio_beep'),
         'graphical': ('video_pygame', 'audio_pygame'), 
         }
     if not config.options['interface']:
