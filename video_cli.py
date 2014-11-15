@@ -203,7 +203,7 @@ def supports_graphics_mode(mode_info):
     return False
     
 def init_screen_mode(mode_info):
-    pass
+    return True
     
 def idle():
     time.sleep(0.024)
