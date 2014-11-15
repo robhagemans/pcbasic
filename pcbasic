@@ -81,8 +81,7 @@ def convert():
     # keep uppercase first letter    
     mode = mode[0].upper() if mode else 'A'
     # if not specified but positional argument is, use that.
-    infile = (infile or config.options['program'] 
-                or config.options['run'] or config.options['load'])
+    infile = (infile or config.options['run'] or config.options['load'])
     # load & save in different format
     try:
         if infile:
@@ -107,8 +106,6 @@ def start_basic():
     import state
     import iolayer
     reset = False
-    # positional argument will be interpreted as program to run
-    config.options['run'] = (config.options['run'] or config.options['program'])
     try:
         # resume from saved emulator state if requested and available
         resume = config.options['resume'] and state.load()
@@ -225,7 +222,7 @@ def print_greeting(console):
         console.write_line(greeting % (debugstr, var.total_mem))
         console.show_keys(True)
                 
-def open_native_or_dos_filename(infile, mode):
+def open_native_or_dos_filename(infile):
     """ If the specified file exists, open it; if not, try as DOS file name. """
     import iolayer
     import error

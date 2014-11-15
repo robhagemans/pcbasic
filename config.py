@@ -140,7 +140,7 @@ def get_options():
     args.update(parse_args(remaining))
     # clean up arguments    
     clean_arguments(args)
-    # apply postional arguments
+    # apply program argument
     args.update(args_program)
     return args        
 
@@ -223,7 +223,7 @@ def parse_package(remaining):
     """ Load options from BAZ package, if specified. """
     global package
     # first positional arg: program or package name
-    args = { 'program': None }
+    args = {}
     try:
         arg_package = remaining.pop(0)
     except KeyError:
@@ -246,7 +246,7 @@ def parse_package(remaining):
         package = arg_package
     else:
         # it's not a package, treat it as a BAS program.
-        args['program'] = arg_package
+        args['run'] = arg_package
     return args
 
 def parse_config(remaining):
