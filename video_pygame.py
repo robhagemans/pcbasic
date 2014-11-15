@@ -228,7 +228,7 @@ def prepare():
     fullscreen = config.options['fullscreen']
     smooth = not config.options['blocky']
     # don't catch Alt+F4    
-    noquit = config.options['noquit']
+    noquit = config.options['nokill']
     # monitor choice
     mono_monitor =  config.options['monitor'] == 'mono'
     # if no composite palette available for this card, ignore.

@@ -81,7 +81,7 @@ arguments = {
     'nosound': {'type': 'bool', 'default': False, },
     'dimensions': {'type': 'int', 'list': 2, 'default': None,},
     'fullscreen': {'type': 'bool', 'default': False,},
-    'noquit': {'type': 'bool', 'default': False,},
+    'nokill': {'type': 'bool', 'default': False,},
     'debug': {'type': 'bool', 'default': False,},
     'strict-hidden-lines': {'type': 'bool', 'default': False,},
     'strict-protect': {'type': 'bool', 'default': False,},

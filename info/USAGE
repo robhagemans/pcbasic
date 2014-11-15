@@ -264,10 +264,10 @@ OPTIONS
             as box drawing rather than as DBCS characters. If --nobox is set,
             they will be displayed as DBCS.
 
-  --noquit [=True|=False]
+  --nokill [=True|=False]
             Allow BASIC to capture <ALT+F4>. Graphical interface only. By 
             default, <Alt+F4> is captured by most operating systems as a quit
-            signal, and will terminate PC-BASIC. Set --noquit to allow BASIC
+            signal, and will terminate PC-BASIC. Set --nokill to allow BASIC
             to capture <Alt+F4> instead. This is useful if your program uses
             this key combination.
             
