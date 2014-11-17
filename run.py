@@ -17,7 +17,7 @@ import backend
 import reset
 import flow
 
-# suppress one prompt by setting to False (used by EDIT)
+# Prompt style: True for OK; (linenum, pos) for EDIT
 state.basic_state.prompt = True
 # input mode is AUTO (used by AUTO)
 state.basic_state.auto_mode = False
@@ -30,16 +30,15 @@ state.basic_state.input_mode = False
 def loop(quit=False):
     """ Read-eval-print loop. """
     while True:
+        last_mode = state.basic_state.execute_mode, state.basic_state.auto_mode
         if state.basic_state.execute_mode:
             try:
                 # may raise Break
                 backend.check_events()
                 handle_basic_events()
-                keep_running = statements.parse_statement()
-                # may raise Break or Error
-                set_execute_mode(keep_running, quit)
+                state.basic_state.execute_mode = statements.parse_statement()
             except error.RunError as e:
-                handle_error(e, quit) 
+                handle_error(e) 
             except error.Break as e:
                 handle_break(e)
         elif state.basic_state.auto_mode:
@@ -47,7 +46,6 @@ def loop(quit=False):
                 # auto step, checks events
                 auto_step()
             except error.Break:
-                show_prompt()
                 state.basic_state.auto_mode = False    
         else:    
             try:
@@ -58,22 +56,30 @@ def loop(quit=False):
             except error.Break:
                 continue
             except error.RunError as e:
-                handle_error(e, quit) 
-
-def set_execute_mode(on, quit=False):
-    """ Switch to or from execute mode and show prompt when needed. """
-    if not on:
-        if quit:
-            check_quit()
-        # always show prompt at the end of execution
+                handle_error(e) 
+        try:
+            # change loop modes; show Ok or EDIT prompt if necessary        
+            switch_mode(quit, last_mode, 
+                        state.basic_state.execute_mode, 
+                        state.basic_state.auto_mode)
+        except error.RunError as e:
+            # program.edit may raise Illegal Function Call in protect mode
+            handle_error(e)
+            
+def switch_mode(quit, last_mode, execute_mode, auto_mode):
+    """ Switch loop mode and show prompt when needed. """
+    last_execute, last_auto = last_mode
+    if not auto_mode and last_auto:
         show_prompt()
-    if on == state.basic_state.execute_mode:
-        return
-    # move pointer to the start of direct line (for both on and off!)
-    flow.set_pointer(False, 0)
-    state.basic_state.execute_mode = on        
-    backend.update_cursor_visibility()
-
+    if execute_mode != last_execute:
+        if not execute_mode and not auto_mode:
+            if quit:
+                check_quit()
+            show_prompt()
+        # move pointer to the start of direct line (for both on and off!)
+        flow.set_pointer(False, 0)
+        backend.update_cursor_visibility()
+        
 def execute(line):
     """ Store a program line or schedule a command line for execution. """
     state.basic_state.direct_line = tokenise.tokenise_line(line)    
@@ -86,13 +92,16 @@ def execute(line):
         # no prompt
     elif c != '':
         # it is a command, go and execute    
-        set_execute_mode(True)
+        state.basic_state.execute_mode = True
                         
 def show_prompt():
-    """ Show the Ok prompt, unless suppressed. """
-    if state.basic_state.prompt:
+    """ Show the Ok or EDIT prompt, unless suppressed. """
+    if state.basic_state.prompt == True:
         console.start_line()
         console.write_line("Ok\xff")
+    elif state.basic_state.prompt:
+        linenum, tell = state.basic_state.prompt
+        program.edit(linenum, tell)
     state.basic_state.prompt = True
                    
 def auto_step():
@@ -121,7 +130,8 @@ def auto_step():
         state.basic_state.auto_linenum = scanline + state.basic_state.auto_increment
     elif c != '':    
         # it is a command, go and execute    
-        set_execute_mode(True)
+        state.basic_state.execute_mode = True
+
 
 ############################
 # event and error handling
@@ -141,29 +151,22 @@ def handle_basic_events():
             # attach handler to allow un-stopping event on RETURN
             flow.jump_gosub(event.gosub, event)
         
-def handle_error(s, quit):
+def handle_error(s):
     """ Handle a BASIC error through trapping or error message. """
     error.set_err(s)
     # not handled by ON ERROR, stop execution
     console.write_error_message(error.get_message(s.err), program.get_line_number(s.pos))   
     state.basic_state.error_handle_mode = False
-    if quit:
-        check_quit()
-    # prompt is shown here
-    set_execute_mode(False)
+    state.basic_state.execute_mode = False
     state.basic_state.input_mode = False    
     # special case: syntax error
     if s.err == 2:
         # for some reason, err is reset to zero by GW-BASIC in this case.
         state.basic_state.errn = 0
-        # line edit gadget appears
         if s.pos != -1:
-            try:    
-                program.edit(program.get_line_number(s.pos), state.basic_state.bytecode.tell())
-                # reinstate prompt suppressed by edit
-                state.basic_state.prompt = True
-            except error.RunError as e:
-                handle_error(e, quit)
+            # line edit gadget appears
+            state.basic_state.prompt = (program.get_line_number(s.pos), 
+                                        state.basic_state.bytecode.tell())
 
 def handle_break(e):
     """ Handle a Break event. """
@@ -176,7 +179,7 @@ def handle_break(e):
         state.basic_state.stop = state.basic_state.bytecode.tell()
     else:
         console.write_error_message("Break", -1)
-    set_execute_mode(False)
+    state.basic_state.execute_mode = False
     state.basic_state.input_mode = False    
 
 def check_quit():

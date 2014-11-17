@@ -219,10 +219,6 @@ def edit(from_line, bytepos=None):
     console.list_line(str(output))
     length = (len(output)-1)//80 + 1
     console.set_pos(state.console_state.row-length, textpos+1 if bytepos else 1)
-    # throws back to direct mode
-    flow.set_pointer(False)
-    # suppress prompt
-    state.basic_state.prompt = False
     
 def renum(new_line, start_line, step):
     """ Renumber stored program. """

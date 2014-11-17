@@ -806,8 +806,11 @@ def exec_edit(ins):
     if from_line == None or from_line not in state.basic_state.line_numbers:
         raise error.RunError(8)
     util.require(ins, util.end_statement, err=5)
-    # print the line, position cursor, back to direct mode. suppress prompt.
-    program.edit(from_line)
+    # throws back to direct mode
+    flow.set_pointer(False)
+    state.basic_state.execute_mode = False    
+    # request edit prompt
+    state.basic_state.prompt = (from_line, None)
     
 def exec_auto(ins):
     """ AUTO: enter automatic line numbering mode. """
@@ -823,8 +826,6 @@ def exec_auto(ins):
     flow.set_pointer(False)
     # continue input in AUTO mode
     state.basic_state.auto_mode = True
-    # suppress prompt
-    state.basic_state.prompt = False
     
 def exec_list(ins):
     """ LIST: output program lines. """
