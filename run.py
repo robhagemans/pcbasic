@@ -28,14 +28,17 @@ state.basic_state.input_mode = False
 # previous interpreter mode
 state.basic_state.last_mode = False, False
 
-def loop(cmd='', run=False, quit=False):
-    """ Read-eval-print loop. """
+def start(cmd='', run=False, quit=False):
+    """ Start the interpreter. """
     if cmd:
         store_line(cmd)
-        run_once()
     if run:
+        # run command before program
+        if cmd:        
+            run_once()
         flow.jump(None)
         state.basic_state.execute_mode = True
+    # read-eval-print loop until quit or exception
     while True:
         run_once()
         if quit and len(state.console_state.keybuf) == 0:
