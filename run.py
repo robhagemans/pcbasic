@@ -25,60 +25,59 @@ state.basic_state.auto_mode = False
 state.basic_state.execute_mode = False
 # interpreter is waiting for INPUT or LINE INPUT
 state.basic_state.input_mode = False
-
+# previous interpreter mode
+state.basic_state.last_mode = False, False
 
 def loop(quit=False):
     """ Read-eval-print loop. """
     while True:
-        last_mode = state.basic_state.execute_mode, state.basic_state.auto_mode
-        if state.basic_state.execute_mode:
-            try:
-                # may raise Break
-                backend.check_events()
-                handle_basic_events()
-                state.basic_state.execute_mode = statements.parse_statement()
-            except error.RunError as e:
-                handle_error(e) 
-            except error.Break as e:
-                handle_break(e)
-        elif state.basic_state.auto_mode:
-            try:
-                # auto step, checks events
-                auto_step()
-            except error.Break:
-                state.basic_state.auto_mode = False    
-        else:    
-            try:
-                # input loop, checks events
-                line = console.wait_screenline(from_start=True, alt_replace=True) 
-                if line:
-                    execute(line)
-            except error.Break:
-                continue
-            except error.RunError as e:
-                handle_error(e) 
-        try:
+        run()
+        if quit and len(state.console_state.keybuf) == 0:
+            break
+
+def run():
+    """ Read-eval-print loop: run once. """
+    try:
+        while True:
+            show_prompt() 
+            state.basic_state.last_mode = state.basic_state.execute_mode, state.basic_state.auto_mode
+            if state.basic_state.execute_mode:
+                try:
+                    # may raise Break
+                    backend.check_events()
+                    handle_basic_events()
+                    state.basic_state.execute_mode = statements.parse_statement()
+                except error.Break as e:
+                    handle_break(e)
+            elif state.basic_state.auto_mode:
+                try:
+                    # auto step, checks events
+                    auto_step()
+                except error.Break:
+                    state.basic_state.auto_mode = False    
+            else:    
+                try:
+                    # input loop, checks events
+                    line = console.wait_screenline(from_start=True, alt_replace=True) 
+                    if line:
+                        execute(line)
+                except error.Break:
+                    continue
             # change loop modes; show Ok or EDIT prompt if necessary        
-            switch_mode(quit, last_mode, 
-                        state.basic_state.execute_mode, 
-                        state.basic_state.auto_mode)
-        except error.RunError as e:
-            # program.edit may raise Illegal Function Call in protect mode
-            handle_error(e)
-            
-def switch_mode(quit, last_mode, execute_mode, auto_mode):
+            if switch_mode():
+                break
+    except error.RunError as e:
+        handle_error(e) 
+    
+def switch_mode():
     """ Switch loop mode and show prompt when needed. """
-    last_execute, last_auto = last_mode
-    if not auto_mode and last_auto:
-        show_prompt()
-    if execute_mode != last_execute:
-        if not execute_mode and not auto_mode:
-            if quit:
-                check_quit()
-            show_prompt()
+    last_execute, last_auto = state.basic_state.last_mode
+    if state.basic_state.execute_mode != last_execute:
         # move pointer to the start of direct line (for both on and off!)
         flow.set_pointer(False, 0)
         backend.update_cursor_visibility()
+    return ((not state.basic_state.auto_mode) and 
+            (not state.basic_state.execute_mode) and last_execute)
         
 def execute(line):
     """ Store a program line or schedule a command line for execution. """
@@ -89,14 +88,18 @@ def execute(line):
         program.check_number_start(state.basic_state.direct_line)
         program.store_line(state.basic_state.direct_line)
         reset.clear()
-        # no prompt
     elif c != '':
         # it is a command, go and execute    
         state.basic_state.execute_mode = True
                         
 def show_prompt():
     """ Show the Ok or EDIT prompt, unless suppressed. """
+    last_execute, last_auto = state.basic_state.last_mode
+    if state.basic_state.execute_mode:
+        return        
     if state.basic_state.prompt == True:
+        if state.basic_state.auto_mode or not last_auto and not last_execute:
+            return 
         console.start_line()
         console.write_line("Ok\xff")
     elif state.basic_state.prompt:
@@ -164,6 +167,7 @@ def handle_error(s):
         # for some reason, err is reset to zero by GW-BASIC in this case.
         state.basic_state.errn = 0
         if s.pos != -1:
+            show_prompt()
             # line edit gadget appears
             state.basic_state.prompt = (program.get_line_number(s.pos), 
                                         state.basic_state.bytecode.tell())
@@ -182,9 +186,4 @@ def handle_break(e):
     state.basic_state.execute_mode = False
     state.basic_state.input_mode = False    
 
-def check_quit():
-    """ Check if keyboard buffer is empty; exit the interpreter if so. """
-    # only quit if all keys have been handled
-    if len(state.console_state.keybuf) == 0:
-        raise error.Exit()
         
