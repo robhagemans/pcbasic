@@ -9,7 +9,7 @@ these BASIC dialects in their time.
 
 SYNOPSIS
 
-  pcbasic [program_or_package] [options]
+  pcbasic [program_or_package] [convert_output] [options]
 
 
 OPTIONS
@@ -119,12 +119,12 @@ OPTIONS
   --com2=TYPE:VAL       
             Attach a resource to the COM2: serial device. See --com1.
   
-  --convert=mode[,infile[,outfile]]
-            Convert infile to mode=A,B,P for ASCII, Bytecode or Protected mode.
-            If outfile is not specified, write to standard output.
-            If infile is not specified, use the program form the first argument,
-            from --run or from --load. If none of those are given, read from
-            standard input. Overrides --resume, --run and --load.
+  --convert=mode
+            Convert program to mode=A,B,P for ASCII, Bytecode or Protected mode.
+            If convert_output is not specified, write to standard output.
+            If program is not specified, use the argument of --run or --load. 
+            If none of those are given, read from standard input. 
+            Overrides --resume, --run and --load.
            
   --debug 
             Debugging mode. This enables crash tracebacks and the DEBUG 
