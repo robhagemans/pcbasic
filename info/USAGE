@@ -143,9 +143,7 @@ OPTIONS
   -e=command_line          
   --exec=command_line
             Execute BASIC command line. The specified commands are executed 
-            before entering into interactive mode. If --run is specified,
-            --exec is currently ignored (but this may change in future 
-            releases).
+            before entering into interactive mode or running a program. 
             
   --font=font_name[,font_name ...]
             Load current codepage from specified .hex fonts. The last
