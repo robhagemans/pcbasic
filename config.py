@@ -29,6 +29,9 @@ options = {}
 # flag True if we're running from a package
 package = False
 
+# number of positional arguments
+positional = 2
+
 # GWBASIC invocation, for reference:
 # GWBASIC [prog] [<inp] [[>]>outp] [/f:n] [/i] [/s:n] [/c:n] [/m:[n][,n]] [/d]
 #   /d      Allow double-precision ATN, COS, EXP, LOG, SIN, SQR, and TAN. 
@@ -170,9 +173,9 @@ def safe_split(s, sep):
 def get_arguments(argv):
     """ Convert arguments to { key: value } dictionary. """
     args = {}
+    pos = 0
     for arg in argv:
         key, value = safe_split(arg, '=')
-        pos = 0
         if key:
             if key[0:2] == '--':
                 if key[2:]:
@@ -188,10 +191,12 @@ def get_arguments(argv):
                             append_arg(args, skey, svalue)
                     except KeyError:
                         logger.warning('Ignored unrecognised option "-%s"', short_arg)
-            else:
+            elif pos < positional:
                 # positional argument
                 args[pos] = arg  
                 pos += 1
+            else:
+                logger.warning('Ignored extra positional argument "%s"', arg)    
         else:
             logger.warning('Ignored unrecognised option "=%s"', value)
     return args    
@@ -235,10 +240,11 @@ def parse_package(remaining):
     # first positional arg: program or package name
     args = {}
     try:
-        arg_package = remaining.pop(0)
+        arg_package = remaining[0]
     except KeyError:
         return args
     if zipfile.is_zipfile(arg_package):
+        remaining.pop(0)
         # extract the package to a temp directory
         # and make that the current dir for our run
         zipfile.ZipFile(arg_package).extractall(path=plat.temp_dir)
@@ -254,9 +260,6 @@ def parse_package(remaining):
                     # if we can't rename, ignore
                     pass    
         package = arg_package
-    else:
-        # it's not a package, treat it as a BAS program.
-        args['run'] = arg_package
     return args
 
 def parse_config(remaining):
@@ -292,8 +295,9 @@ def read_config_file(config_file):
 def parse_args(remaining):
     """ Retrieve command line options. """
     # set arguments
-    args = {d:remaining[d] for d in remaining if d in arguments}
-    not_recognised = {d:remaining[d] for d in remaining if d not in arguments}
+    known = arguments.keys() + range(positional)
+    args = {d:remaining[d] for d in remaining if d in known}
+    not_recognised = {d:remaining[d] for d in remaining if d not in known}
     for d in not_recognised:
         logger.warning('Ignored unrecognised option "%s=%s"', 
                         d, not_recognised[d])

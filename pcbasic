@@ -84,7 +84,8 @@ def convert():
     # keep uppercase first letter    
     mode = mode[0].upper() if mode else 'A'
     # if not specified but positional argument is, use that.
-    infile = (infile or config.options['run'] or config.options['load'])
+    infile = (infile or config.options[0] or 
+              config.options['run'] or config.options['load'])
     # load & save in different format
     try:
         if infile:
@@ -119,7 +120,8 @@ def start_basic():
             run.start('', False, config.options['quit'])
         else:    
             print_greeting(console)
-            # load program
+            # load/run program
+            config.options['run'] = config.options[0] or config.options['run']
             prog = config.options['run'] or config.options['load']
             if prog:
                 # on load, accept capitalised versions and default extension
