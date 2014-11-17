@@ -209,6 +209,9 @@ def apply_defaults(args):
                 args[arg] = arguments[arg]['default']
             except KeyError:
                 pass
+    for pos in range(positional):
+        if pos not in args:
+            args[pos] = ''
     return args    
 
 def parse_presets(remaining, conf_dict):

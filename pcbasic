@@ -73,19 +73,12 @@ def convert():
     import error
     # set conversion output 
     # first arg, if given, is mode; second arg, if given, is outfile
-    infile, outfile = '', ''
-    conv = config.options['convert'].split(',')
-    try:
-        mode = conv.pop(0)
-        infile = conv.pop(0)
-        outfile = conv.pop(0)
-    except IndexError:
-        pass    
+    mode = config.options['convert']
+    infile = (config.options[0] or 
+              config.options['run'] or config.options['load'])
+    outfile = config.options[1]
     # keep uppercase first letter    
     mode = mode[0].upper() if mode else 'A'
-    # if not specified but positional argument is, use that.
-    infile = (infile or config.options[0] or 
-              config.options['run'] or config.options['load'])
     # load & save in different format
     try:
         if infile:
