@@ -122,14 +122,9 @@ def start_basic():
             if prog:
                 # on load, accept capitalised versions and default extension
                 program.load(open_native_or_dos_filename(prog))
-            # run commands
-            command = config.options['exec']
-            if config.options['run']: 
-                command = 'RUN'
-            if command:    
-                run.execute(command)
         # start the interpreter (and get out if we ran with -q)
-        run.loop(config.options['quit'])
+        run.loop(config.options['exec'], config.options['run'] != '', 
+                 config.options['quit'])
     except error.RunError as e:
         logging.error(error.get_message(e.err))
     except error.Exit:

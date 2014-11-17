@@ -28,14 +28,20 @@ state.basic_state.input_mode = False
 # previous interpreter mode
 state.basic_state.last_mode = False, False
 
-def loop(quit=False):
+def loop(cmd='', run=False, quit=False):
     """ Read-eval-print loop. """
+    if cmd:
+        store_line(cmd)
+        run_once()
+    if run:
+        flow.jump(None)
+        state.basic_state.execute_mode = True
     while True:
-        run()
+        run_once()
         if quit and len(state.console_state.keybuf) == 0:
             break
 
-def run():
+def run_once():
     """ Read-eval-print loop: run once. """
     try:
         while True:
@@ -59,8 +65,7 @@ def run():
                 try:
                     # input loop, checks events
                     line = console.wait_screenline(from_start=True, alt_replace=True) 
-                    if line:
-                        execute(line)
+                    store_line(line)
                 except error.Break:
                     continue
             # change loop modes; show Ok or EDIT prompt if necessary        
@@ -79,8 +84,10 @@ def switch_mode():
     return ((not state.basic_state.auto_mode) and 
             (not state.basic_state.execute_mode) and last_execute)
         
-def execute(line):
+def store_line(line):
     """ Store a program line or schedule a command line for execution. """
+    if not line:
+        return
     state.basic_state.direct_line = tokenise.tokenise_line(line)    
     c = util.peek(state.basic_state.direct_line)
     if c == '\x00':
