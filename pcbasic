@@ -210,7 +210,7 @@ def print_greeting(console):
     if (not config.options['run'] and not config.options['exec'] and
              not config.options['input'] and plat.stdin_is_tty):
         debugstr = ' [DEBUG mode]' if config.options['debug'] else ''
-        console.write_line(greeting % (debugstr, var.total_mem))
+        console.write_line(greeting % (debugstr, var.fre()))
         console.show_keys(True)
                 
 def open_native_or_dos_filename(infile):
