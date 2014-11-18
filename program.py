@@ -17,6 +17,7 @@ import console
 import state
 import flow
 import unicodepage
+import memory
 
 try:
     from cStringIO import StringIO
@@ -32,8 +33,8 @@ max_list_line = 65530
 # don't protect files
 dont_protect = False
 
-# program memory model; offsets in files
-program_memory_start = 0x126e
+# program memory model; offsets in files (4718 == 0x126e)
+program_memory_start = memory.code_start + 1
 
 # accept CR, LF and CRLF line endings; interpret as CR only if the next line starts with a number
 universal_newline = False
