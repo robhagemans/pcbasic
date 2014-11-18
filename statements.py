@@ -26,6 +26,7 @@ import fp
 import graphics
 import iolayer
 import machine
+import memory
 import oslayer
 import program
 import representation
@@ -1671,13 +1672,14 @@ def exec_clear(ins):
             #  0 leads to illegal fn call
             raise error.RunError(5)
         if util.skip_white_read_if(ins, (',',)):
-            # TODO: CLEAR - NOT IMPLEMENTED: sets aside stack space for GW-BASIC. The default is the previous stack space size. 
-            # When GW-BASIC is first executed, the stack space is set to 512 bytes, or one-eighth of the available memory, 
-            # whichever is smaller.
+            # set aside stack space for GW-BASIC. The default is the previous stack space size. 
             exp2 = expressions.parse_expression(ins, allow_empty = True)
-            if exp2 and vartypes.pass_int_unpack(exp2, maxint=0xffff) == 0:
-                #  0 leads to illegal fn call
-                raise error.RunError(5)
+            if exp2:
+                stack_size = vartypes.pass_int_unpack(exp2, maxint=0xffff) 
+                if stack_size == 0:
+                    #  0 leads to illegal fn call
+                    raise error.RunError(5)
+                memory.set_stack_size(stack_size)    
             if pcjr_syntax and util.skip_white_read_if(ins, (',',)):
                 # Tandy/PCjr: select video memory size
                 state.console_state.pcjr_video_mem_size = fp.unpack(vartypes.pass_single_keep(
