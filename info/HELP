@@ -3853,12 +3853,15 @@ pointer = VARPTR(#file_num)
 Returns the memory address of variable 'name'. 'name' must be the name of a
 previously defined variable or fully indexed array element. The value of VAPTR 
 can be used with PEEK to read the variable's internal representation.
+In the second syntax, return the memory address of the File Control Block of 
+file number 'file_num'.
 NOTES:
 -   In PC-BASIC 3.23, VARPTR is implemented for all variable and array types,
     except arrays of strings.
--   VARPTR for file numbers is not implemented in PC-BASIC 3.23.
 ERRORS:
 -   If 'name' is not previously defined, raises ILLEGAL FUNCTION CALL.
+-   If 'file_num' is not in [1, max number of files], raises BAD FILE NUMBER.
+-   If 'file_num' has a string value, raises TYPE MISMATCH.
 
 
 VARPTR$ function
@@ -3872,9 +3875,6 @@ The first byte is the length of the record the pointer points to:
     8   for double-precision floats
 The last two bytes are the pointer address (as returned by VARPTR) in little-
 endian order.
-NOTES:
--   In PC-BASIC 3.23, VARPTR is implemented for all variable and array types,
-    except arrays of strings.
 ERRORS:
 -   If 'name' is not previously defined, raises ILLEGAL FUNCTION CALL.
 

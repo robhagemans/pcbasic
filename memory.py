@@ -55,7 +55,7 @@ state.basic_state.bytecode.write('\0\0\0')
 
 def prepare():
     """ Initialise the memory module """
-    global field_mem_start, field_mem_offset, code_start, stack_size
+    global field_mem_base, field_mem_start, field_mem_offset, code_start, stack_size
     # length of field record (by default 128)
     file_rec_len = config.options['max-reclen']
     # file header (at head of field memory)

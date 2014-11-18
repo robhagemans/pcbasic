@@ -720,9 +720,13 @@ def value_peek(ins):
 def value_varptr(ins):   
     dollar = util.skip_white_read_if(ins, ('$',)) 
     util.require_read(ins, ('(',))
-    name, indices = get_var_or_array_name(ins)
+    if (not dollar) and util.skip_white(ins) == '#':
+        filenum = parse_file_number_opthash(ins)
+        var_ptr = machine.varptr_file(filenum)
+    else:
+        name, indices = get_var_or_array_name(ins)
+        var_ptr = machine.varptr(name, indices)
     util.require_read(ins, (')',))
-    var_ptr = machine.varptr(name, indices)
     if var_ptr < 0:
         raise error.RunError(5) # ill fn cll
     if dollar:

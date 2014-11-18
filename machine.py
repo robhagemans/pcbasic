@@ -17,6 +17,7 @@ import var
 import console
 import error
 import memory
+import iolayer
 
 # pre-defined PEEK outputs
 peek_values = {}
@@ -143,6 +144,12 @@ def bsave(g, offset, length):
     g.write(str(get_video_memory_block(addr, length)))
     g.write('\x1a')
     g.close()
+
+def varptr_file(filenum):
+    if filenum < 1 or filenum > iolayer.max_files:
+        # bad file number
+        raise error.RunError(52)    
+    return memory.field_mem_base + filenum * memory.field_mem_offset + 6
 
 def varptr(name, indices):
     name = vartypes.complete_name(name)
