@@ -16,19 +16,20 @@ import vartypes
 import var
 import console
 import error
+import memory
 
 # pre-defined PEEK outputs
 peek_values = {}
 
-# data memory model: data segment
-data_segment = 0x13ad
-# data memory model: current segment
-state.basic_state.segment = data_segment
-# lowest (EGA) video memory address
-video_segment = 0xa000
-font_segment = 0xf000
+# where to find the fonts
+font_segment = memory.rom_segment
 font_addr = 0xfa6e
+
+# base for our low-memory addresses
 low_segment = 0x40
+
+# data memory model: current segment
+state.basic_state.segment = memory.data_segment
 
 def prepare():
     """ Initialise machine module. """ 
@@ -49,13 +50,13 @@ def peek(addr):
     except KeyError: 
         if addr >= font_segment*0x10+ font_addr:
             return max(0, get_font_memory(addr))
-        elif addr >= video_segment*0x10:
+        elif addr >= memory.video_segment*0x10:
             # graphics and text memory
             return max(0, get_video_memory(addr))
-        elif addr >= data_segment*0x10 + var.var_mem_start:
+        elif addr >= memory.data_segment*0x10 + var.var_mem_start:
             # variable memory
             return max(0, get_data_memory(addr))
-        elif addr >= data_segment*0x10 + var.field_mem_start:
+        elif addr >= memory.data_segment*0x10 + var.field_mem_start:
             # file & FIELD memory
             return max(0, get_field_memory(addr))
         elif addr >= low_segment*0x10:
@@ -70,11 +71,11 @@ def poke(addr, val):
     if addr >= font_segment*0x10+ font_addr:
         # that's ROM it seems
         pass
-    elif addr >= video_segment*0x10:
+    elif addr >= memory.video_segment*0x10:
         # can't poke into font memory, ignored even in GW-BASIC. ROM?
         # graphics and text memory
         set_video_memory(addr, val)
-    elif addr >= data_segment*0x10 + var.var_mem_start:
+    elif addr >= memory.data_segment*0x10 + var.var_mem_start:
         # POKING in variables not implemented
         #set_data_memory(addr, val)
         # just use it as storage...
@@ -129,7 +130,7 @@ def bload(g, offset):
         buf = buf[:-1]
     g.close()
     addr = seg * 0x10 + offset
-    if addr + len(buf) > video_segment*0x10:
+    if addr + len(buf) > memory.video_segment*0x10:
         # graphics and text memory
         set_video_memory_block(addr, buf)
 
@@ -181,7 +182,7 @@ def get_name_in_memory(name, offset):
         return ord(name[offset-1].upper()) - ord('A') + 0xC1
 
 def get_field_memory(address):
-    address -= data_segment * 0x10
+    address -= memory.data_segment * 0x10
     if address < var.field_mem_start:
         return -1
     # find the file we're in
@@ -194,7 +195,7 @@ def get_field_memory(address):
         return -1    
                             
 def get_data_memory(address):
-    address -= data_segment * 0x10
+    address -= memory.data_segment * 0x10
     if address < state.basic_state.var_current:
         # find the variable we're in
         name_addr = -1

@@ -11,23 +11,17 @@
 
 from operator import itemgetter
 
+import config
 import error
 import vartypes
 import state
+import memory
 
 byte_size = {'$': 3, '%': 2, '!': 4, '#': 8}
 
-# data memory model: start of variables section
-var_mem_start = 4720
-# 'free memory' as reported by FRE
-total_mem = 60300    
-
-
-# first field buffer address 
-field_mem_start = 3757 + 188 # 3945
-# bytes distance between field buffers
-field_mem_offset = 188 + 128 # FIXME - needs to update to 188+max_reclen from options
-
+def prepare():
+    """ Initialise the var module """
+    clear_variables()
 
 class StringSpace(object):
     """ String space is a table of strings accessible by their 2-byte pointers. """
@@ -39,7 +33,8 @@ class StringSpace(object):
     def clear(self):
         """ Empty string space. """
         self.strings = {}
-        self.current = var_mem_start + total_mem # 65020
+        # strings are placed at the top of string memory, just below the stack
+        self.current = memory.stack_start()
     
     def retrieve(self, key):
         """ Retrieve a string by its 3-byte sequence. 2-byte keys allowed, but will return longer string for empty string. """
@@ -78,17 +73,17 @@ def get_string_copy_packed(sequence):
     """ Return a packed copy of a string from its 3-byte sequence. """
     length = ord(sequence[0:1])
     address = vartypes.uint_to_value(sequence[-2:])
-    if address >= var_mem_start:
+    if address >= memory.var_start():
         # string is stored in string space
         return state.basic_state.strings.copy_packed(sequence)
     else: 
         # string is stored in code space or field buffers
-        if address < field_mem_start:
+        if address < memory.field_mem_start:
             return vartypes.pack_string('\0' * length)
         # find the file we're in
-        start = address - field_mem_start
-        number = 1 + start // field_mem_offset
-        offset = start % field_mem_offset
+        start = address - memory.field_mem_start
+        number = 1 + start // memory.field_mem_offset
+        offset = start % memory.field_mem_offset
         try:
             return vartypes.pack_string(state.io_state.fields[number][offset:offset+length])
         except KeyError, IndexError:
@@ -129,7 +124,7 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
         state.basic_state.arrays = {}
         state.basic_state.var_memory = {}
         state.basic_state.array_memory = {}
-        state.basic_state.var_current = var_mem_start
+        state.basic_state.var_current = memory.var_start()
         # arrays are always kept after all vars
         state.basic_state.array_current = 0
         # functions are cleared except when CHAIN ... ALL is specified
@@ -144,8 +139,6 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
             dim_array(a, common_arrays[a][0])
             state.basic_state.arrays[a] = common_arrays[a]
 
-# initialise the var module
-clear_variables()
 
 
 def set_var(name, value):
@@ -448,15 +441,15 @@ def string_assign_unpacked_into(sequence, offset, num, val):
         num = length - offset
     if num <= 0:
         return     
-    if address >= var_mem_start:
+    if address >= memory.var_start():
         # string stored in string space
         state.basic_state.strings.retrieve(sequence)[offset:offset+num] = val
     else:
         # string stored in field buffers
         # find the file we're in
-        start = address - field_mem_start
-        number = 1 + start // field_mem_offset
-        field_offset = start % field_mem_offset
+        start = address - memory.field_mem_start
+        number = 1 + start // memory.field_mem_offset
+        field_offset = start % memory.field_mem_offset
         try:
             state.io_state.fields[number][field_offset+offset:field_offset+offset+num] = val
         except KeyError, IndexError:
@@ -490,15 +483,10 @@ def collect_garbage():
     for item in string_list:
         # re-allocate string space; no need to copy buffer
         item[0][item[1]:item[1]+3] = state.basic_state.strings.store(item[3]) 
-    
+
 def fre():
     """ Return the amount of memory available to variables, arrays, strings and code. """
-    # NOTE this is in var.py because it's used by set_var. 
-    # This can be avoided when we set var_mem_start correctly at the top of code space - e.g. use a parameter in clear_variables
-    return state.basic_state.strings.current - state.basic_state.var_current - state.basic_state.array_current - program_memory_size()
-      
-def program_memory_size():
-    """ Return the size of the code buffer. """
-    # NOTE this is in var.py because it's used by set_var through fre() 
-    return len(state.basic_state.bytecode.getvalue()) - 3
-    
+    return state.basic_state.strings.current - state.basic_state.var_current - state.basic_state.array_current
+
+prepare()
+

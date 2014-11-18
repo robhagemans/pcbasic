@@ -23,8 +23,7 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-# program bytecode buffer
-state.basic_state.bytecode = StringIO()
+# bytecode buffer is defined in memory.py
 # direct line buffer
 state.basic_state.direct_line = StringIO()
 
