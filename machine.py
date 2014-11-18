@@ -53,10 +53,10 @@ def peek(addr):
         elif addr >= memory.video_segment*0x10:
             # graphics and text memory
             return max(0, get_video_memory(addr))
-        elif addr >= memory.data_segment*0x10 + var.var_mem_start:
+        elif addr >= memory.data_segment*0x10 + memory.var_start():
             # variable memory
             return max(0, get_data_memory(addr))
-        elif addr >= memory.data_segment*0x10 + var.field_mem_start:
+        elif addr >= memory.data_segment*0x10 + memory.field_mem_start:
             # file & FIELD memory
             return max(0, get_field_memory(addr))
         elif addr >= low_segment*0x10:
@@ -75,7 +75,7 @@ def poke(addr, val):
         # can't poke into font memory, ignored even in GW-BASIC. ROM?
         # graphics and text memory
         set_video_memory(addr, val)
-    elif addr >= memory.data_segment*0x10 + var.var_mem_start:
+    elif addr >= memory.data_segment*0x10 + memory.var_start():
         # POKING in variables not implemented
         #set_data_memory(addr, val)
         # just use it as storage...
@@ -183,12 +183,12 @@ def get_name_in_memory(name, offset):
 
 def get_field_memory(address):
     address -= memory.data_segment * 0x10
-    if address < var.field_mem_start:
+    if address < memory.field_mem_start:
         return -1
     # find the file we're in
-    start = address - var.field_mem_start
-    number = 1 + start // var.field_mem_offset
-    offset = start % var.field_mem_offset
+    start = address - memory.field_mem_start
+    number = 1 + start // memory.field_mem_offset
+    offset = start % memory.field_mem_offset
     try:
         return state.io_state.fields[number][offset]
     except KeyError, IndexError:

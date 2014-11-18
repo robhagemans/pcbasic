@@ -27,9 +27,9 @@ total = 65536
 # Data Segment Map - default situation
 # addr      size
 # 0         3757        workspace - undefined in PC-BASIC
-# 3429      6           file 0 (unused??) 6-byte header
+# 3429      6           file 0 (the program) 6-byte header
 #           188             FCB
-#           128             FIELD buffer          
+#           128             FIELD buffer ??       
 # 3751      6           1st file 6-byte header: 0, (66*filenum)%256, 0, 0, 0, 0
 #           188             FCB
 #           128             FIELD buffer (smaller or larger depending on /s)

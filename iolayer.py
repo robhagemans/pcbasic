@@ -23,9 +23,9 @@ import error
 import console
 import util
 import state
+import memory
 import backend
 import serial_socket
-import var
 import printer
 
 # file numbers
@@ -420,7 +420,7 @@ class RandomBase(BaseFile):
             self.field = bytearray()
             state.io_state.fields[self.number] = self.field
         if self.number > 0:    
-            self.field_address = var.field_mem_start + (self.number-1)*var.field_mem_offset
+            self.field_address = memory.field_mem_start + (self.number-1)*memory.field_mem_offset
         else:
             self.field_address = -1    
         self.field[:] = bytearray('\x00')*reclen
