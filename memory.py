@@ -21,8 +21,6 @@ data_segment = 0x13ad
 video_segment = 0xa000
 # read only memory
 rom_segment = 0xf000
-# total size of data segment
-total = 65536
 
 # Data Segment Map - default situation
 # addr      size
@@ -42,10 +40,10 @@ total = 65536
 # 4720+c    v           scalar variables 
 # 4720+c+v  a           array variables
 # 65020-s               top of string space        
-# 65020     4           unknown
-# 65024     512         BASIC stack (size determined by CLEAR)
-# NOTE - the last two sections may be the other way around (4 bytes at end)
-# 65536                 total size
+# 65020     2           unknown
+# 65022     512         BASIC stack (size determined by CLEAR)
+# NOTE - the last two sections may be the other way around (2 bytes at end)
+# 65534                 total size (determined by CLEAR)
 
 
 
@@ -56,7 +54,7 @@ state.basic_state.bytecode.write('\0\0\0')
 def prepare():
     """ Initialise the memory module """
     global field_mem_base, field_mem_start, field_mem_offset
-    global code_start, stack_size
+    global code_start, stack_size, max_memory
     # length of field record (by default 128)
     file_rec_len = config.options['max-reclen']
     # file header (at head of field memory)
@@ -76,6 +74,8 @@ def prepare():
     # Initially, the stack space should be set to 512 bytes, 
     # or one-eighth of the available memory, whichever is smaller.
     stack_size = 512
+    # total size of data segment (set by CLEAR)
+    max_memory = 65534
 
 def code_size():
     """ Size of code space """
@@ -87,13 +87,20 @@ def var_start():
 
 def stack_start():
     """ Top of string space; start of stack space """
-    return total - stack_size - 4
+    return max_memory - stack_size - 2
 
 def set_stack_size(new_stack_size):
     """ Set the stack size (on CLEAR) """
     global stack_size
     stack_size = new_stack_size
     
+def set_data_memory_size(new_size):
+    """ Set the data memory size (on CLEAR) """
+    global max_memory
+    if new_size < 0:
+        new_size += 0x10000
+    max_memory = new_size
+
 prepare()
 
 

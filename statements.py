@@ -1664,13 +1664,18 @@ def exec_clear(ins):
         if expr < 0:
             raise error.RunError(5)
     if util.skip_white_read_if(ins, (',',)):
-        # TODO: CLEAR - NOT IMPLEMENTED: sets the maximum number of bytes available for use by GW-BASIC        
         exp1 = expressions.parse_expression(ins, allow_empty=True)
         if exp1:
-            exp1 = vartypes.pass_int_unpack(exp1, maxint=0xffff)
-        if exp1 == 0:
-            #  0 leads to illegal fn call
-            raise error.RunError(5)
+            # this produces a *signed* int
+            mem_size = vartypes.pass_int_unpack(exp1, maxint=0xffff)
+            if mem_size == 0:
+                #  0 leads to illegal fn call
+                raise error.RunError(5)
+            elif mem_size == -1:
+                # 65535: out of memory
+                raise error.RunError(7)    
+            else:
+                memory.set_data_memory_size(mem_size)    
         if util.skip_white_read_if(ins, (',',)):
             # set aside stack space for GW-BASIC. The default is the previous stack space size. 
             exp2 = expressions.parse_expression(ins, allow_empty = True)
