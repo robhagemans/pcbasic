@@ -90,7 +90,7 @@ def prepare():
     """ Initialise iolayer module. """
     global max_files, max_reclen, serial_in_size
     if config.options['max-files'] != None:
-        max_files = config.options['max-files']
+        max_files = min(16, config.options['max-files'])
     if config.options['max-reclen'] != None:
         max_reclen = config.options['max-reclen']
         max_reclen = max(1, min(32767, max_reclen))
