@@ -41,13 +41,14 @@ positional = 2
 #           Default is 128, maximum is 32768.
 #   /c:n    Set the COM receive buffer to n bytes. 
 #           If n==0, disable the COM ports.   
-# NOT IMPLEMENTED:
 #   /i      Statically allocate file control blocks and data buffer.
+#           NOTE: this appears to be always the case in GW-BASIC, as here.
 #   /m:n,m  Set the highest memory location to n and maximum block size to m
 short_args = { 
     'd': 'double', 'f': 'max-files', 
     's': 'max-reclen', 'c': 'serial-buffer-size',
-    # 'm': 'max-memory', 'i': 'static-fcbs': 'i',
+    # 'm': 'max-memory', 
+    'i': '',
     'b': 'interface=cli', 't': 'interface=text', 'l': 'load', 'h': 'help',  
     'r': 'run', 'e': 'exec', 'q': 'quit', 'k': 'keys', 'v': 'version',
     }
@@ -184,6 +185,8 @@ def get_arguments(argv):
                 for i, short_arg in enumerate(key[1:]):
                     try:
                         skey, svalue = safe_split(short_args[short_arg], '=')
+                        if not svalue and not skey:
+                            continue
                         if (not svalue) and i == len(key)-2:
                             # assign value to last argument specified    
                             append_arg(args, skey, value)
