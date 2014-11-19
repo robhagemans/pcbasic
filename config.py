@@ -218,7 +218,7 @@ def parse_presets(remaining, conf_dict):
     """ Parse presets. """
     presets = default_presets
     try:
-        argdict = remaining.pop('preset')
+        argdict = {'preset': remaining.pop('preset')}
     except KeyError:    
         argdict = {}
     # apply default presets, including nested presets
