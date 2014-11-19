@@ -113,6 +113,9 @@ def open_file(native_name, mode, access):
         return open(name, posix_access)
     except EnvironmentError as e:
         handle_oserror(e)
+    except TypeError:
+        # bad file number, which is what GW throws for open chr$(0)
+        raise error.RunError(52)    
 
 def chdir(name):
     """ Change working directory to given BASIC path. """
@@ -317,8 +320,12 @@ def join_dosname(trunk, ext):
 def istype(path, native_name, isdir):
     """ Return whether a file exists and is a directory or regular. """
     name = os.path.join(str(path), str(native_name))
-    return os.path.isdir(name) if isdir else os.path.isfile(name)
-        
+    try:
+        return os.path.isdir(name) if isdir else os.path.isfile(name)
+    except TypeError:
+        # happens for name = '\0'
+        return False
+            
 def dossify(longname, defext=''):
     """ Put name in 8x3, all upper-case format and apply default extension. """ 
     # convert to all uppercase; one trunk, one extension
