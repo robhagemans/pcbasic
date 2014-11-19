@@ -99,7 +99,7 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
     if not preserve_all:     
         if preserve_common:
             # preserve COMMON variables (CHAIN does this)
-            common, common_arrays = {}, {}
+            common, common_arrays, common_strings = {}, {}, {}
             for varname in state.basic_state.common_names:
                 try:
                     common[varname] = state.basic_state.variables[varname]
@@ -130,16 +130,29 @@ def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=
         # functions are cleared except when CHAIN ... ALL is specified
         state.basic_state.functions = {}
         # reset string space
-        state.basic_state.strings = StringSpace()
+        new_strings = StringSpace()
         # preserve common variables
         # use set_var and dim_array to rebuild memory model
         for v in common:    
-            set_var(v, (v[-1], common[v]))
+            if v[-1] == '$':
+                state.basic_state.variables[v] = (
+                    new_strings.store(bytearray(vartypes.unpack_string(
+                        get_string_copy_packed(common[v])
+                    ))))
+            else:
+                set_var(v, (v[-1], common[v]))
         for a in common_arrays:
             dim_array(a, common_arrays[a][0])
-            state.basic_state.arrays[a] = common_arrays[a]
-
-
+            if a[-1] == '$':
+                s = bytearray()
+                for i in range(0, len(common_arrays[a][1]), byte_size['$']):
+                    s += (new_strings.store(bytearray(vartypes.unpack_string(
+                        get_string_copy_packed(common_arrays[a][1][i+1:i+byte_size['$']])
+                    ))))
+                state.basic_state.arrays[a][1] = s
+            else:
+                state.basic_state.arrays[a] = common_arrays[a]
+        state.basic_state.strings = new_strings
 
 def set_var(name, value):
     """ Assign a value to a variable. """
