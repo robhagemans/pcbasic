@@ -9,6 +9,8 @@
 # please see text file COPYING for licence terms.
 #
 
+import logging
+
 import config
 import state
 import backend
@@ -18,6 +20,7 @@ import console
 import error
 import memory
 import iolayer
+import program
 
 # pre-defined PEEK outputs
 peek_values = {}
@@ -34,12 +37,14 @@ state.basic_state.segment = memory.data_segment
 
 def prepare():
     """ Initialise machine module. """ 
+    global allow_code_poke
     try:
         for a in config.options['peek']:
             seg, addr, val = a.split(':')
             peek_values[int(seg)*0x10 + int(addr)] = int(val)
     except (TypeError, ValueError):
         pass     
+    allow_code_poke = config.options['allow-code-poke']
 
 def peek(addr):
     if addr < 0: 
@@ -72,20 +77,35 @@ def poke(addr, val):
     if addr < 0: 
         addr += 0x10000
     addr += state.basic_state.segment * 0x10
-    if addr >= font_segment*0x10+ font_addr:
-        # that's ROM it seems
+    if addr >= memory.rom_segment*0x10:
+        # ROM includes font memory
         pass
     elif addr >= memory.video_segment*0x10:
-        # can't poke into font memory, ignored even in GW-BASIC. ROM?
         # graphics and text memory
         set_video_memory(addr, val)
     elif addr >= memory.data_segment*0x10 + memory.var_start():
-        # POKING in variables not implemented
-        #set_data_memory(addr, val)
-        # just use it as storage...
-        peek_values[addr] = val
+        # POKING in variables
+        set_data_memory(addr, val)
+    elif addr >= memory.data_segment*0x10 + memory.code_start:
+        # code memory
+        set_code_memory(addr, val)
+    elif addr >= memory.data_segment*0x10 + memory.field_mem_start:
+        # file & FIELD memory
+        set_field_memory(addr, val)
+    elif addr >= low_segment*0x10:
+        set_low_memory(addr, val)
     else:
         pass
+
+def not_implemented_poke(addr, val):
+    # just use it as storage...
+    peek_values[addr] = val
+    
+# sections of memory for which POKE is not currently implemented
+set_data_memory = not_implemented_poke
+set_field_memory = not_implemented_poke
+set_low_memory = not_implemented_poke
+
         
 def inp(port):    
     if port == 0x60:
@@ -211,7 +231,25 @@ def get_code_memory(address):
         return ord(code[address])
     except IndexError:
         return -1    
-                            
+
+def set_code_memory(address, val):
+    if not allow_code_poke:
+        logging.warning('Ignored POKE into program code') 
+    else:
+        address -= memory.data_segment * 0x10 + memory.code_start
+        loc = state.basic_state.bytecode.tell()
+        # move pointer to end
+        state.basic_state.bytecode.seek(0, 2)
+        if address > state.basic_state.bytecode.tell():
+            state.basic_state.bytecode.write('\0' * 
+                        (address-state.basic_state.bytecode.tell()) + chr(val))
+        else:
+            state.basic_state.bytecode.seek(address)
+            state.basic_state.bytecode.write(chr(val))
+        # restore program pointer
+        state.basic_state.bytecode.seek(loc)    
+        program.rebuild_line_dict()
+    
 def get_data_memory(address):
     address -= memory.data_segment * 0x10
     if address < state.basic_state.var_current:
