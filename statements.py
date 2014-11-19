@@ -1671,11 +1671,10 @@ def exec_clear(ins):
             if mem_size == 0:
                 #  0 leads to illegal fn call
                 raise error.RunError(5)
-            elif mem_size == -1:
-                # 65535: out of memory
-                raise error.RunError(7)    
             else:
-                memory.set_data_memory_size(mem_size)    
+                if not memory.set_basic_memory_size(mem_size):
+                    # out of memory    
+                    raise error.RunError(7)    
         if util.skip_white_read_if(ins, (',',)):
             # set aside stack space for GW-BASIC. The default is the previous stack space size. 
             exp2 = expressions.parse_expression(ins, allow_empty = True)

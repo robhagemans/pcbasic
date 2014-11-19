@@ -33,7 +33,7 @@ package = False
 positional = 2
 
 # GWBASIC invocation, for reference:
-# GWBASIC [prog] [<inp] [[>]>outp] [/f:n] [/i] [/s:n] [/c:n] [/m:[n][,n]] [/d]
+# GWBASIC [prog] [<inp] [[>]>outp] [/f:n] [/i] [/s:n] [/c:n] [/m:[n][,m]] [/d]
 #   /d      Allow double-precision ATN, COS, EXP, LOG, SIN, SQR, and TAN. 
 #   /f:n    Set maximum number of open files to n. Default is 3. 
 #           Each additional file reduces free memory by 322 bytes.
@@ -43,12 +43,12 @@ positional = 2
 #           If n==0, disable the COM ports.   
 #   /i      Statically allocate file control blocks and data buffer.
 #           NOTE: this appears to be always the case in GW-BASIC, as here.
-#   /m:n,m  Set the highest memory location to n and maximum block size to m
+#   /m:n,m  Set the highest memory location to n (default 65534) and maximum
+#           BASIC memory to m*16 bytes (default is all available). 
 short_args = { 
     'd': 'double', 'f': 'max-files', 
     's': 'max-reclen', 'c': 'serial-buffer-size',
-    # 'm': 'max-memory', 
-    'i': '',
+    'm': 'max-memory', 'i': '',
     'b': 'interface=cli', 't': 'interface=text', 'l': 'load', 'h': 'help',  
     'r': 'run', 'e': 'exec', 'q': 'quit', 'k': 'keys', 'v': 'version',
     }
@@ -117,6 +117,8 @@ arguments = {
     'version': {'type': 'bool', 'default': False,},
     'config': {'type': 'string', 'default': '',},
     'logfile': {'type': 'string', 'default': '',},
+    # negatove length means optional up to (ok, ugly convention)
+    'max-memory': {'type': 'int', 'list': -2, 'default': [65534, 4096]},
 }
 
 
@@ -354,12 +356,17 @@ def parse_list(d, s, length='*'):
     if lst == ['']:
         if length == '*':
             return []
+        elif length < 0:
+            return [None]*(-length)    
         else:
             return None    
     lst = [parse_type(d, arg) for arg in lst]
-    if length != '*' and len(lst) != length:
+    # negative length: optional up-to
+    if length < 0:
+        lst += [None]*(-length-len(lst))
+    if length != '*' and (len(lst) > abs(length) or len(lst) < length):
         logger.warning('Option "%s=%s" ignored, should have %d elements', 
-                        d, s, length)
+                        d, s, abs(length))
     return lst
 
 def parse_bool(d, s):

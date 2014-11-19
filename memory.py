@@ -54,7 +54,7 @@ state.basic_state.bytecode.write('\0\0\0')
 def prepare():
     """ Initialise the memory module """
     global field_mem_base, field_mem_start, field_mem_offset
-    global code_start, stack_size, max_memory
+    global code_start, stack_size, max_memory, total_memory
     # length of field record (by default 128)
     file_rec_len = config.options['max-reclen']
     # file header (at head of field memory)
@@ -74,8 +74,13 @@ def prepare():
     # Initially, the stack space should be set to 512 bytes, 
     # or one-eighth of the available memory, whichever is smaller.
     stack_size = 512
+    # max available memory to BASIC (set by /m)
+    max_list = config.options['max-memory']
+    max_list[1] = max_list[1]*16 if max_list[1] else max_list[0]
+    max_list[0] = max_list[0] or max_list[1]
+    max_memory = min(max_list) or 65534
     # total size of data segment (set by CLEAR)
-    max_memory = 65534
+    total_memory = max_memory
 
 def code_size():
     """ Size of code space """
@@ -87,19 +92,24 @@ def var_start():
 
 def stack_start():
     """ Top of string space; start of stack space """
-    return max_memory - stack_size - 2
+    return total_memory - stack_size - 2
 
 def set_stack_size(new_stack_size):
     """ Set the stack size (on CLEAR) """
     global stack_size
     stack_size = new_stack_size
     
-def set_data_memory_size(new_size):
+def set_basic_memory_size(new_size):
     """ Set the data memory size (on CLEAR) """
-    global max_memory
+    global total_memory
     if new_size < 0:
         new_size += 0x10000
-    max_memory = new_size
+    if new_size > max_memory:
+        return False
+    total_memory = new_size
+    return True
+    
+    
 
 prepare()
 

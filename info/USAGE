@@ -175,6 +175,10 @@ OPTIONS
   --help
             Show a usage message and exit.
 
+  -i
+            This option is ignored. It is included for compatibility with 
+            GW-BASIC /i.
+
   --input=input_file    
             Retrieve keyboard input from input_file, 
             except if KYBD: is read explicitly. Input from KYBD: files remains
@@ -228,6 +232,14 @@ OPTIONS
   --max-files=number_of_files 
             Set maximum number of open files (default is 3). 
             This is equivalent to GWBASIC's /f option.
+  
+  -m=max_memory[,basic_memory_blocks]
+  --max-memory=max_memory[,basic_memory_blocks]
+            Set the maximum size of the data memory segment to max-memory
+            and the maximum size of the data memory available to BASIC to
+            basic_memory_blocks*16. In PC-BASIC, the minimum of these values
+            is simply the data memory size; the two values are allowed for 
+            compatibility with GW-BASIC /m. 
   
   -s=record_length
   --max-reclen=record_length, 
