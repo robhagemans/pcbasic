@@ -102,7 +102,8 @@ def start_basic():
     import error
     import state
     import iolayer
-    reset = False
+    import reset
+    do_reset = False
     try:
         # resume from saved emulator state if requested and available
         resume = config.options['resume'] and state.load()
@@ -119,6 +120,7 @@ def start_basic():
             if prog:
                 # on load, accept capitalised versions and default extension
                 program.load(open_native_or_dos_filename(prog))
+                reset.clear()
             # start the interpreter (and get out if we ran with -q)
             run.start(config.options['exec'], config.options['run'], 
                       config.options['quit'])
@@ -127,13 +129,13 @@ def start_basic():
     except error.Exit:
         pass
     except error.Reset:
-        reset = True
+        do_reset = True
     except KeyboardInterrupt:
         if config.options['debug']:
             raise
     finally:
         # delete state if resetting 
-        if reset:
+        if do_reset:
             state.delete()
             if plat.system == 'Android':
                 shutil.rmtree(plat.temp_dir)

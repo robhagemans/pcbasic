@@ -33,9 +33,6 @@ max_list_line = 65530
 # don't protect files
 dont_protect = False
 
-# program memory model; offsets in files (4718 == 0x126e)
-program_memory_start = memory.code_start + 1
-
 # accept CR, LF and CRLF line endings; interpret as CR only if the next line starts with a number
 universal_newline = False
 # interpret "ascii" program files as UTF-8
@@ -45,6 +42,7 @@ utf8_files = False
 def prepare():
     """ Initialise program module. """
     global utf8_files, universal_newline, max_list_line, dont_protect
+    global program_memory_start
     utf8_files = config.options['utf8']
     universal_newline = not config.options['strict-newline']
     if (not config.options['strict-hidden-lines']) or config.options['convert']:
@@ -52,6 +50,8 @@ def prepare():
     else:
         max_list_line = 65530
     dont_protect = (not config.options['strict-protect']) or config.options['convert']
+    # program memory model; offsets in files (4718 == 0x126e)
+    program_memory_start = memory.code_start + 1
     erase_program()
 
 def erase_program():
