@@ -326,6 +326,12 @@ OPTIONS
             is when the program ends; in interactive mode, after the first 
             command is executed.
   
+  --reserved-memory=amount
+            Reserve amount of bytes at the bottom of the data segment. For
+            compatibility with GW-BASIC. Default is 3429 bytes. Lowering this
+            value makes more string and variable space available for use by
+            programs.
+  
   --resume [=True|=False]
             Resume from saved state. Overrides --run and --load.
   

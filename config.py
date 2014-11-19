@@ -120,6 +120,7 @@ arguments = {
     # negatove length means optional up to (ok, ugly convention)
     'max-memory': {'type': 'int', 'list': -2, 'default': [65534, 4096]},
     'allow-code-poke': {'type': 'bool', 'default': False,},
+    'reserved-memory': {'type': 'int', 'default': 3429,},
 }
 
 

@@ -61,8 +61,8 @@ def prepare():
     file_header_size = 194
     # number of file records
     num_files = config.options['max-files']
-    # first field buffer address 
-    field_mem_base = 3429
+    # first field buffer address (workspace size; 3429 for gw-basic)
+    field_mem_base = config.options['reserved-memory']
     # bytes distance between field buffers
     field_mem_offset = file_header_size + file_rec_len
     # start of 1st field =3945, includes FCB & header header of 1st field
