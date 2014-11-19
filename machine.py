@@ -57,6 +57,9 @@ def peek(addr):
         elif addr >= memory.data_segment*0x10 + memory.var_start():
             # variable memory
             return max(0, get_data_memory(addr))
+        elif addr >= memory.data_segment*0x10 + memory.code_start:
+            # code memory
+            return max(0, get_code_memory(addr))   
         elif addr >= memory.data_segment*0x10 + memory.field_mem_start:
             # file & FIELD memory
             return max(0, get_field_memory(addr))
@@ -199,6 +202,14 @@ def get_field_memory(address):
     try:
         return state.io_state.fields[number][offset]
     except KeyError, IndexError:
+        return -1   
+        
+def get_code_memory(address):
+    address -= memory.data_segment * 0x10 + memory.code_start
+    code = state.basic_state.bytecode.getvalue()
+    try:
+        return ord(code[address])
+    except IndexError:
         return -1    
                             
 def get_data_memory(address):
