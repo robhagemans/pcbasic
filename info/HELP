@@ -740,19 +740,22 @@ Turns off all sound. Resets PLAY state and sets music to foreground.
 Clears all ON ERROR traps. Resets ERR and ERL to zero. Disables all events. 
 Turns PEN and STRIG off. Resets the random number generator. 
 Clears the loop stack; Resets the DRAW state and the current graphics position.
+'mem_limit' specifies the upper limit of usable memory. Default is previous
+memory size. Default memory size is 65534.
+'stack_size' specifies the amount of memory available to the BASIC stack. 
+Default is previous stack size. Default stack size is 512.
 NOTES:
--  In GW-BASIC, 'mem_limit' specifies the upper limit of usable memory, and 
-   'stack_size' specifies the amount of memory available to the stack and to
-   string space. These are not implemented.
--  In GW-BASIC, If 'mem_limit' or 'expr' are too low, OUT OF MEMORY is raised.
 -  The purpose of 'expr' is unknown.
 -  If called inside a FOR--NEXT or WHILE--WEND loop, an error will be raised at 
    the iteration keyword as the loop stacks are cleared.
 ERRORS:
+-  If any of the arguments has a string value, TYPE MISMATCH is raised.
 -  If 'mem_limit' or 'stack_size' equal 0, ILLEGAL FUNCTION CALL is raised.
+-  If 'mem_limit', 'stack_size' are not in [-32768, 65535], OVERFLOW is raised.
+-  If 'mem_limit' equals -1 or 65535, OUT OF MEMORY is raised.
+-  If 'mem_limit' or 'expr' are too low, OUT OF MEMORY is raised.
 -  If 'expr' is negative, ILLEGAL FUNCTION CALL is raised.
 -  If 'expr' is not in [-32768, 32767], OVERFLOW.
--  If 'mem_limit','stack_size' are not in [-32768, 65535], OVERFLOW.
 
 
 CLOSE statement
