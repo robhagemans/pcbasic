@@ -208,7 +208,8 @@ def print_greeting(console):
     # following GW, don't write greeting for redirected input 
     # or command-line run
     if (not config.options['run'] and not config.options['exec'] and
-             not config.options['input'] and plat.stdin_is_tty):
+             not config.options['input'] and not config.options[0] and
+             plat.stdin_is_tty):
         debugstr = ' [DEBUG mode]' if config.options['debug'] else ''
         console.write_line(greeting % (debugstr, var.fre()))
         console.show_keys(True)
