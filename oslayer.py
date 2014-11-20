@@ -133,7 +133,7 @@ def rmdir(name):
 
 def kill(name):
     """ Remove regular file at given BASIC path. """
-    safe(os.remove, native_path(name, find_case=False))
+    safe(os.remove, native_path(name))
 
 def files(pathmask):
     """ Write directory listing to console. """
@@ -299,7 +299,7 @@ def handle_oserror(e):
         basic_err = 51
     raise error.RunError(basic_err) 
         
-def split_dosname(name):
+def split_dosname(name, defext=''):
     """ Convert filename into 8-char trunk and 3-char extension. """
     dotloc = name.find('.')
     if name in ('.', '..'):
@@ -307,7 +307,7 @@ def split_dosname(name):
     elif dotloc > -1:
         trunk, ext = name[:dotloc][:8], name[dotloc+1:][:3]
     else:
-        trunk, ext = name[:8], ''
+        trunk, ext = name[:8], defext
     return trunk, ext
 
 def join_dosname(trunk, ext):
@@ -322,48 +322,38 @@ def istype(path, native_name, isdir):
 def dossify(longname, defext=''):
     """ Put name in 8x3, all upper-case format and apply default extension. """ 
     # convert to all uppercase; one trunk, one extension
-    name, ext = split_dosname(longname.strip().upper())
-    if not ext:
+    name, ext = split_dosname(longname.strip().upper(), defext)
+    if ext == None:
         ext = defext
     # no dot if no ext
     return join_dosname(name, ext)
 
 def match_dosname(dosname, path, isdir, find_case):
     """ Find a matching native file name for a given 8.3 DOS name. """
-    # check if the dossified name exists with no extension if none given   
+    # check if the dossified name exists as-is
     if istype(path, dosname, isdir):    
         return dosname
     if not find_case:    
         return None
     # for case-sensitive filenames: find other case combinations, if present
-    listdir = sorted(os.listdir(path))
-    capsdict = {}
-    for f in listdir:
-        caps = dossify(f, '')
-        if caps in capsdict:
-            capsdict[caps] += [f]
-        else:
-            capsdict[caps] = [f]
-    try:
-        for scaps in capsdict[dosname]:
-            if istype(path, scaps, isdir):
-                return scaps
-    except KeyError:
-        return None
+    for f in sorted(os.listdir(path)):
+        if f.upper() == dosname and istype(path, f, isdir):
+            return f
+    return None
 
-def match_filename(name, defext='BAS', path='', err=53, 
+def match_filename(name, defext, path='', err=53, 
                    isdir=False, find_case=True, make_new=False):
     """ Find or create a matching native file name for a given BASIC name. """
-    # check if the name exists as-is
-    # this should also match Windows short filenames
-    if istype(path, name, isdir):
+    # check if the name exists as-is; should also match Windows short names.
+    # EXCEPT if default extension is not empty, in which case
+    # default extension must be found first. Necessary for GW compatibility.
+    if not defext and istype(path, name, isdir):
         return name
-    # try to match dossified names with and without default extension    
-    for ext in (('', defext) if defext else ('',)):    
-        dosname = dossify(name, ext)
-        fullname = match_dosname(dosname, path, isdir, find_case)
-        if fullname:    
-            return fullname
+    # try to match dossified names with default extension    
+    dosname = dossify(name, defext)
+    fullname = match_dosname(dosname, path, isdir, find_case)
+    if fullname:    
+        return fullname
     # not found        
     if make_new:
         return dosname
