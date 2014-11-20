@@ -586,7 +586,7 @@ def exec_def_seg(ins):
     if util.skip_white_read_if(ins, ('\xE7',)): #=
         state.basic_state.segment = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=0xffff)
     else:
-        state.basic_state.segment = machine.data_segment   
+        state.basic_state.segment = memory.data_segment   
     if state.basic_state.segment < 0:
         state.basic_state.segment += 0x10000     
     util.require(ins, util.end_statement)
