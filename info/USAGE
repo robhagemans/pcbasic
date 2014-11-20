@@ -485,25 +485,39 @@ THE INTERFACE
 THE FILE SYSTEM
 
     PC-BASIC follows DOS file system conventions, where files consist of a 
-    8-character name and 3-character extension. PC-BASIC is case insensitive.
-    On case sensitive file systems, this behaviour is emulated. When saving or
-    writing to a new file on such systems, PC-BASIC will convert any name 
-    provided to all-uppercase 8.3. When opening an existing file, PC-BASIC will
-    first look for a file with the name exactly as provided. If that is not 
-    found, it will look for a file whose exact name is the name provided, 
-    truncated to all-caps 8.3 format. Finally, if that such a file is not 
-    found, it will look for files which when truncated to 8.3 is a case-
-    insensitive match for the provided filename, in lexicographic order.
-    On Windows, the system-defined short file name is used instead.
+    8-character name and 3-character extension and names are case insensitive.
+    Note that DOS conventions are subtly different from Windows short filename 
+    conventions and not-so-subtly different from Unix conventions. This may lead
+    to surprising effects in the presence of several files that match 
+    the same DOS name. To avoid such surprises, run PC-BASIC in a working 
+    directory of its own and limit file names to all-caps 8.3 format.
     
-    The path separator is the backslash (\). A forward slash may work in some 
-    cases, but this behaviour is not defined and may change in future.
+    When opening a data file, PC-BASIC will first look for a file with the name 
+    exactly as provided. This can be a long name and will be case sensitive if
+    your file system is. If such a file is not found, it will truncate the name
+    provided to 8.3 format and convert to all uppercase. If that exact name is
+    not found, it will look for 8.3 names in mixed case which match the name
+    provided in a case-insensitive way. Such files are searched in lexicographic
+    order. On Windows, the name matched can be a short filename as well as a 
+    long filename (provided it is of 8.3 length; it may, for example, contain 
+    spaces).
+    
+    When loading or saving a program file, no attempt is made to find an exact 
+    match. Instead, the search will first match the all-caps 8.3 version of the
+    name and continue in lexicographic order as above. If no extension is 
+    specified, the extension .BAS will be implicitly added. To load a program
+    with no extension, end the filename in a dot. On file systems without
+    short filenames, it is not possible to load a program if its filename is 
+    longer than 8.3 or ends in a dot.
+    
+    The only valid path separator is the backslash (\). 
     
     By default, drive letter C: is mapped to the current working directory.
     In particular, it is not mapped to the Windows C: drive. Use --mount or 
-    (on Windows) --map-drives to change this behaviour.
+    --map-drives to change this behaviour.
     
-    The arguments to the --load and --run options can be provided as PC-BASIC
-    paths or as paths in the standard form for your operating system.
+    The arguments to the --load and --run command-line options can be provided 
+    as PC-BASIC paths or as paths in the standard form for your operating 
+    system.
     
 
