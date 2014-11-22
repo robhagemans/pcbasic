@@ -198,10 +198,8 @@ mda_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2)
 
 # ega, tandy, pcjr
 video_capabilities = 'ega'
-# video memory size - currently only used by tandy/pcjr
-state.console_state.pcjr_video_mem_size = 16384
-# default is EGA 64K
-#state.console_state.video_mem_size = 65536
+# video memory size - default is EGA 64K
+state.console_state.video_mem_size = 65536
 # SCREEN mode (0 is textmode)
 state.console_state.screen_mode = 0
 # number of active page
@@ -1019,6 +1017,8 @@ def prepare_video():
     # PCjr starts in 40-column mode
     state.console_state.width = config.options['text-width']
     state.console_state.current_mode = text_data[state.console_state.width]
+    # video memory size
+    state.console_state.video_mem_size = config.options['video-memory']
            
 def init_video():
     """ Initialise the video backend. """
@@ -1309,7 +1309,7 @@ def check_video_memory(new_mode_info, vpage, apage):
         return
     if (new_mode_info in (graphics_mode['320x200x16pcjr'], 
                                 graphics_mode['640x200x4']) and 
-            state.console_state.pcjr_video_mem_size < 32753 + page * 32768):
+            state.console_state.video_mem_size < 32753 + page * 32768):
         raise error.RunError(5)
         
 #############################################

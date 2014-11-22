@@ -395,7 +395,12 @@ OPTIONS
                 pcjr        IBM PCjr graphics
                 tandy       Tandy 1000 graphics
                 olivetti    Olivetti M24 graphics
-                
+  
+  --video-memory=size
+            Set the amount of emulated video memory available. This affects the
+            number of video pages that can be used. On PCjr and Tandy, this can 
+            be changed at runtime through the CLEAR statement; more than 16384
+            needs to be available to enter SCREEN 5 and 6. Default is 65536.
 
 EXAMPLES
 

@@ -1687,8 +1687,9 @@ def exec_clear(ins):
                 memory.set_stack_size(stack_size)    
             if pcjr_syntax and util.skip_white_read_if(ins, (',',)):
                 # Tandy/PCjr: select video memory size
-                state.console_state.pcjr_video_mem_size = fp.unpack(vartypes.pass_single_keep(
-                                                           expressions.parse_expression(ins, empty_err=2))).round_to_int()
+                state.console_state.video_mem_size = fp.unpack(
+                    vartypes.pass_single_keep(expressions.parse_expression(
+                            ins, empty_err=2))).round_to_int()
                 # check if we need to drop out of our current mode 
                 backend.check_video_memory(state.console_state.current_mode,
                     state.console_state.vpagenum, state.console_state.apagenum)
