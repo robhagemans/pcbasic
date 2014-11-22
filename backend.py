@@ -198,8 +198,8 @@ mda_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2)
 
 # ega, tandy, pcjr
 video_capabilities = 'ega'
-# video memory size - default is EGA 64K
-state.console_state.video_mem_size = 65536
+# video memory size - default is EGA 256K
+state.console_state.video_mem_size = 262144
 # SCREEN mode (0 is textmode)
 state.console_state.screen_mode = 0
 # number of active page
@@ -800,7 +800,7 @@ def prepare_modes():
             build_tile_cga, get_area_ega, set_area_ega, False, 3),
         # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
         '320x200x16': GraphicsMode('320x200x16', 
-            False, 8, 8, 25, 40, 8, 16,
+            False, 8, 8, 25, 40, state.console_state.video_mem_size//0x8000, 16,
             # cga16 palette?
             cga16_palette, colours16, None, 15, False, False,
             partial(get_video_memory_ega, page_size = 0x2000, bytes_per_row=40),
@@ -810,7 +810,7 @@ def prepare_modes():
             build_tile_ega, get_area_ega, set_area_ega, False, None),
         # 0Eh 640x200x16    EGA screen 8
         '640x200x16': GraphicsMode('640x200x16',
-            False, 8, 8, 25, 80, 4, 16,
+            False, 8, 8, 25, 80, state.console_state.video_mem_size//0x10000, 16,
             # cga16 palette?
             cga16_palette, colours16, None, 15, False, False,
             partial(get_video_memory_ega, page_size = 0x4000, bytes_per_row=80),
@@ -820,7 +820,7 @@ def prepare_modes():
             build_tile_ega, get_area_ega, set_area_ega, False, None),
         # 10h 640x350x16    EGA screen 9
         '640x350x16': GraphicsMode('640x350x16',
-            False, 14, 8, 25, 80, 2, 16,
+            False, 14, 8, 25, 80, state.console_state.video_mem_size//0x20000, 16,
             ega_palette, colours64, None, 15, False, False,
             partial(get_video_memory_ega, page_size = 0x8000, bytes_per_row=80),
             partial(set_video_memory_ega, page_size = 0x8000, bytes_per_row=80),
@@ -829,7 +829,7 @@ def prepare_modes():
             build_tile_ega, get_area_ega, set_area_ega, False, None),
         # 0Fh 640x350x4     EGA monochrome screen 10
         '640x350x4': GraphicsMode('640x350x4',
-            False, 14, 8, 25, 80, 2, 4,
+            False, 14, 8, 25, 80, state.console_state.video_mem_size//0x20000, 4,
             ega_mono_palette, colours_ega_mono_0, colours_ega_mono_1, 1, True, False,
             get_video_memory_ega_10, 
             set_video_memory_ega_10, 

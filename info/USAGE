@@ -400,7 +400,7 @@ OPTIONS
             Set the amount of emulated video memory available. This affects the
             number of video pages that can be used. On PCjr and Tandy, this can 
             be changed at runtime through the CLEAR statement; more than 16384
-            needs to be available to enter SCREEN 5 and 6. Default is 65536.
+            needs to be available to enter SCREEN 5 and 6. Default is 262144.
 
 EXAMPLES
 
