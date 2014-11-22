@@ -34,6 +34,7 @@ import reset
 import rnd
 import state
 import timedate
+import tokenise
 import util
 import var
 import vartypes
@@ -2363,9 +2364,10 @@ def exec_width(ins):
         dev = backend.devices['LPT1:']
         w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     else:
-        expr = expressions.parse_expression(ins)
-        if expr == None:
-            raise error.RunError(2)
+        if d in tokenise.tokens_number:
+            expr = expressions.parse_expr_unit(ins)
+        else:         
+            expr = expressions.parse_expression(ins)
         if expr[0] == '$':
             try:
                 dev = backend.devices[str(vartypes.pass_string_unpack(expr)).upper()]
@@ -2387,6 +2389,8 @@ def exec_width(ins):
                     util.range_check(min_num_rows, 25, vartypes.pass_int_unpack(num_rows_dummy))
                 # trailing comma is accepted
                 util.skip_white_read_if(ins, (',',))
+            # gives illegal function call, not syntax error
+        util.require(ins, util.end_statement, err=5)        
     util.require(ins, util.end_statement)        
     dev.set_width(w)
     
