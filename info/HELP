@@ -3591,7 +3591,7 @@ PCJR and TANDY:
     sound, noise generation and volume control.
 NOTES:
 -   On PCjr and Tandy computers, SOUND ON would turn on the external speaker as
-    well as make dvanced sound capabilities available. On PC-BASIC, both the
+    well as make advanced sound capabilities available. On PC-BASIC, both the
     internal and the external speaker are emulated through the same sound
     system.
 
