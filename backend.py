@@ -599,6 +599,7 @@ GraphicsMode = namedtuple('GraphicsMode', textmode_args +
 
 def prepare_modes():
     global text_mode_80, text_mode_40, graphics_mode, available_modes
+    global mode_data, text_data
     # 80-column text modes
     text_mode_80 = {
         'vga': TextMode('vgatext80',
@@ -728,9 +729,12 @@ def prepare_modes():
     graphics_mode = {
         # 04h 320x200x4  16384B 2bpp 0xb8000    screen 1
         # tandy:2 pages if 32k memory; ega: 1 page only 
-        # TODO: tandy/pcjr - determine the number of pages based on video memory
         '320x200x4': GraphicsMode('320x200x4', 
-            False, 8, 8, 25, 40, 1, 4,
+            False, 8, 8, 25, 40, 
+            (state.console_state.video_mem_size//0x4000 
+                if video_capabilities in ('pcjr', 'tandy') 
+                else 1),
+            4,
             cga4_palette, colours16, None, 3, False, False,
             partial(get_video_memory_cga, 
                             bitsperpixel=2, bytes_per_row=80, interleave_times=2),
@@ -752,7 +756,7 @@ def prepare_modes():
             build_tile_cga, get_area_cga, set_area_cga, True, None),
         # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy 3
         '160x200x16': GraphicsMode('160x200x16',
-            False, 8, 8, 25, 20, 2, 16,
+            False, 8, 8, 25, 20, state.console_state.video_mem_size//0x4000, 16,
             cga16_palette, colours16, None, 15, False, False,
             partial(get_video_memory_cga, 
                             bitsperpixel=4, bytes_per_row=80, interleave_times=2),
@@ -763,7 +767,7 @@ def prepare_modes():
             build_tile_cga, get_area_cga, set_area_cga, False, 3),
         #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr 4
         '320x200x4pcjr': GraphicsMode('320x200x4pcjr',
-            False, 8, 8, 25, 40, 2, 4,
+            False, 8, 8, 25, 40, state.console_state.video_mem_size//0x4000, 4,
             cga4_palette, colours16, None, 3, False, False,
             partial(get_video_memory_cga, 
                             bitsperpixel=2, bytes_per_row=80, interleave_times=2),
@@ -774,7 +778,7 @@ def prepare_modes():
             build_tile_cga, get_area_cga, set_area_cga, False, 3),
         # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr 5
         '320x200x16pcjr': GraphicsMode('320x200x16pcjr',
-            False, 8, 8, 25, 40, 2, 16,
+            False, 8, 8, 25, 40, state.console_state.video_mem_size//0x8000, 16,
             cga16_palette, colours16, None, 15, False, False,
             partial(get_video_memory_cga, 
                             bitsperpixel=4, bytes_per_row=160, interleave_times=4),
@@ -785,7 +789,7 @@ def prepare_modes():
             build_tile_cga, get_area_cga, set_area_cga, False, 3),
         # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr 6
         '640x200x4': GraphicsMode('640x200x4',
-            False, 8, 8, 25, 80, 2, 4,
+            False, 8, 8, 25, 80, state.console_state.video_mem_size//0x8000, 4,
             cga4_palette, colours16, None, 3, False, False,
             get_video_memory_tandy_6,
             set_video_memory_tandy_6,
@@ -899,6 +903,10 @@ def prepare_modes():
     # on Olivetti M24, all numbers 3-255 give the same altissima risoluzione
     for mode in range(4, 256):
         available_modes['olivetti'][mode] = graphics_mode['640x400x2']
+    mode_data = available_modes[video_capabilities]
+    text_data = { 
+        40: text_mode_40[video_capabilities],
+        80: text_mode_80[video_capabilities]}
 
 # to be filled with the modes available to our video card    
 mode_data = {}
@@ -975,7 +983,7 @@ def prepare_video():
     global video_capabilities, composite_monitor, mono_monitor, mono_tint
     global colours16_mono, colours_ega_mono_0, colours_ega_mono_1, cga_low
     global colours_ega_mono_text
-    global mode_data, text_data, circle_aspect
+    global circle_aspect
     video_capabilities = config.options['video']
     if video_capabilities == 'tandy':
         circle_aspect = (3072, 2000)
@@ -1007,18 +1015,14 @@ def prepare_video():
     if mono_monitor:
         # copy to replace 16-colours with 16-mono
         colours16[:] = colours16_mono
+    # video memory size
+    state.console_state.video_mem_size = config.options['video-memory']
     # prepare video mode list
     # only allow the screen modes that the given machine supports
     prepare_modes()
-    mode_data = available_modes[video_capabilities]
-    text_data = { 
-        40: text_mode_40[video_capabilities],
-        80: text_mode_80[video_capabilities]}
     # PCjr starts in 40-column mode
     state.console_state.width = config.options['text-width']
     state.console_state.current_mode = text_data[state.console_state.width]
-    # video memory size
-    state.console_state.video_mem_size = config.options['video-memory']
            
 def init_video():
     """ Initialise the video backend. """
@@ -1299,19 +1303,22 @@ def set_width(to_width):
             return screen(8, None, None, None)
     return False
     
-def check_video_memory(new_mode_info, vpage, apage):
+def set_video_memory_size(new_size):
     """ Raise an error if not enough video memory for this state. """
     # video memory size check for SCREENs 5 and 6: 
     # (pcjr/tandy only; this is a bit of a hack as is) 
     # (32753 determined experimentally on DOSBox)
-    page = max(vpage, apage)
-    if not page:
-        return
-    if (new_mode_info in (graphics_mode['320x200x16pcjr'], 
-                                graphics_mode['640x200x4']) and 
-            state.console_state.video_mem_size < 32753 + page * 32768):
-        raise error.RunError(5)
-        
+    state.console_state.video_mem_size = new_size
+    # redefine number of video pages
+    prepare_modes()
+    # check if we need to drop out of our current mode
+    page = max(state.console_state.vpagenum, state.console_state.apagenum)
+    # reload max number of pages; do we fit? if not, drop to text
+    if state.console_state.screen_mode == 0:
+        return True
+    if (page >= available_modes[video_capabilities][state.console_state.screen_mode].num_pages):
+        return False        
+    
 #############################################
 # palette and colours
 

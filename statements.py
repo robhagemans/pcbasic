@@ -1687,12 +1687,11 @@ def exec_clear(ins):
                 memory.set_stack_size(stack_size)    
             if pcjr_syntax and util.skip_white_read_if(ins, (',',)):
                 # Tandy/PCjr: select video memory size
-                state.console_state.video_mem_size = fp.unpack(
+                if not backend.set_video_memory_size(fp.unpack(
                     vartypes.pass_single_keep(expressions.parse_expression(
-                            ins, empty_err=2))).round_to_int()
-                # check if we need to drop out of our current mode 
-                backend.check_video_memory(state.console_state.current_mode,
-                    state.console_state.vpagenum, state.console_state.apagenum)
+                            ins, empty_err=2))).round_to_int()):
+                    backend.screen(0, 0, 0, 0)
+                    console.init_mode()
             elif not exp2:
                 raise error.RunError(2)    
     util.require(ins, util.end_statement)
@@ -2413,11 +2412,6 @@ def exec_screen(ins):
     if vpagenum != None:
         util.range_check(0, 255, vpagenum)
     util.range_check(0, 2, erase)
-    # if not enough memory, error 5 without doing anything
-    try:
-        backend.check_video_memory(backend.mode_data[mode], vpagenum, apagenum)
-    except KeyError:
-        pass    
     # if the parameters are outside narrow ranges (e.g. not implemented screen mode, pagenum beyond max)
     # then the error is only raised after changing the palette.
     util.require(ins, util.end_statement)        
