@@ -313,7 +313,7 @@ def check_keyboard():
                 # utf-8 sequence or a pasted utf-8 string, neither of which
                 # can contain special characters.
                 # however, if that does occur, this won't work correctly.
-                backend.key_down(curses_to_scan[i], '')
+                backend.key_down(curses_to_scan[i], '', check_full=False)
             except KeyError:
                 pass
     # replace utf-8 with codepage

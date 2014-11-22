@@ -1659,7 +1659,7 @@ def peek_char():
             ch += state.console_state.keybuf[1]
     return ch 
     
-def key_down(scan, eascii=''):
+def key_down(scan, eascii='', check_full=True):
     """ Insert a key-down event. Keycode is extended ascii, including DBCS. """
     global keypad_ascii
     # set port and low memory address regardless of event triggers
@@ -1714,13 +1714,13 @@ def key_down(scan, eascii=''):
         if (state.basic_state.key_macros_off or state.basic_state.run_mode 
                 and state.basic_state.key_handlers[keynum].enabled):
             # this key is paused from being trapped, don't replace
-            state.console_state.keybuf += scan_to_eascii(scan, 
-                                              state.console_state.mod)
+            insert_chars(scan_to_eascii(scan, state.console_state.mod,
+                         check_full=check_full))
             return
         else:
             macro = state.console_state.key_replace[keynum]
             # insert directly, avoid caps handling
-            state.console_state.keybuf += macro
+            insert_chars(macro, check_full=check_full)
             return
     except KeyError:
         pass
@@ -1740,7 +1740,7 @@ def key_down(scan, eascii=''):
             eascii = chr(ord(eascii)-32)
         elif eascii >= 'A' and eascii <= 'z':
             eascii = chr(ord(eascii)+32)
-    insert_chars(eascii)        
+    insert_chars(eascii, check_full=True)        
     
 def key_up(scan):
     """ Insert a key-up event. """
@@ -1755,7 +1755,7 @@ def key_up(scan):
             char = chr(int(keypad_ascii)%256)
             if char == '\0':
                 char = '\0\0'
-            insert_chars(char)
+            insert_chars(char, check_full=True)
             keypad_ascii = ''
     except KeyError:
        pass 
@@ -1771,9 +1771,13 @@ def insert_special_key(name):
     else:
         logging.debug('Unknown special key: %s', name)
         
-def insert_chars(s):
+def insert_chars(s, check_full=False):
     """ Insert characters into keyboard buffer. """
-    state.console_state.keybuf += s
+    if check_full and len(state.console_state.keybuf) >= 15:
+        # keyboard buffer is full; short beep and exit
+        play_sound(800, 0.01)
+    else:
+        state.console_state.keybuf += s
 
 def scan_to_eascii(scan, mod):
     """ Translate scancode and modifier state to e-ASCII. """

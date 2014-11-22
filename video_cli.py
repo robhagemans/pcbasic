@@ -276,7 +276,7 @@ def check_keyboard():
     # (4) one ansi sequence (Unix) or one scancode (Windows)
     try:    
         # if it's an ansi sequence/scan code, insert immediately
-        backend.key_down(get_scancode(s), '')
+        backend.key_down(get_scancode(s), '', check_full=False)
     except KeyError:    
         # replace utf-8 with codepage
         # convert into unicode codepoints
@@ -290,7 +290,7 @@ def check_keyboard():
             if c == eof:            # ctrl-D (unix) / ctrl-Z (windows)
                 backend.insert_special_key('quit')
             elif c == '\x7f':       # backspace
-                backend.insert_chars('\b')
+                backend.insert_chars('\b', check_full=True)
             elif c == '\0':    
                 # scancode; go add next char
                 continue

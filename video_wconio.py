@@ -181,7 +181,7 @@ def check_keyboard():
         return
     try:    
         # if it's an ansi sequence/scan code, insert immediately
-        backend.key_down(get_scancode(s), '')
+        backend.key_down(get_scancode(s), '', check_full=False)
     except KeyError:    
         # convert into unicode codepoints
         u = s.decode(sys.stdin.encoding)
