@@ -1016,9 +1016,8 @@ def prepare_video():
     text_data = { 
         40: text_mode_40[video_capabilities],
         80: text_mode_80[video_capabilities]}
-    if video_capabilities == 'pcjr':
-        # PCjr starts in 40-column mode
-        state.console_state.width = 40
+    # PCjr starts in 40-column mode
+    state.console_state.width = config.options['text-width']
     state.console_state.current_mode = text_data[state.console_state.width]
            
 def init_video():

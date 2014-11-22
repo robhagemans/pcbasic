@@ -371,6 +371,9 @@ OPTIONS
                 pcjr        IBM PCjr Cartridge BASIC
                 tandy       Tandy 1000 GW-BASIC.
   
+  --text-width={40,80}
+            Set the number of columns in text mode at startup. Default is 80.
+  
   --utf8 [=True|=False]
             Use UTF-8 for ascii-mode programs and redirected i/o. If set, 
             programs stored as ascii (rather than bytecode) will be converted

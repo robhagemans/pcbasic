@@ -122,6 +122,7 @@ arguments = {
     'allow-code-poke': {'type': 'bool', 'default': False,},
     'reserved-memory': {'type': 'int', 'default': 3429,},
     'caption': {'type': 'string', 'default': 'PC-BASIC 3.23',},
+    'text-width': {'type': 'int', 'choices':(40, 80), 'default': 80,},
 }
 
 
