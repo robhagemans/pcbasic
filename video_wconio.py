@@ -20,6 +20,7 @@ except ImportError:
     wconio = None
 import msvcrt
 
+import config
 import unicodepage
 import scancode
 import backend
@@ -37,13 +38,14 @@ cursor_col = 1
 last_attr = None
 attr = 7
  
-def prepare(args):
-    pass
+def prepare():
+    global caption
+    caption = config.options['caption']
 
 def init():
     if not wconio:
         logging.warning('WConio module not found. Text interface not supported.')
-    wconio.settitle('PC-BASIC 3.23')
+    wconio.settitle(caption)
     return True
     
 def supports_graphics_mode(mode_info):
@@ -217,3 +219,5 @@ def load_state():
 def set_border(attr):
     pass
         
+prepare()
+

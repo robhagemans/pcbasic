@@ -19,6 +19,7 @@ try:
 except ImportError:
     curses = None
         
+import config
 import unicodepage
 import scancode
 import backend
@@ -63,8 +64,9 @@ if curses:
     last_attr = None
     attr = curses.A_NORMAL
  
-def prepare(args):
-    pass
+def prepare():
+    global caption
+    caption = config.options['caption']
 
 def init():
     global screen, default_colors, can_change_palette
@@ -98,7 +100,7 @@ def init():
 #    init_screen_mode()
     can_change_palette = (curses.can_change_color() and curses.COLORS >= 16 
                           and curses.COLOR_PAIRS > 128)
-    sys.stdout.write(ansi.esc_set_title % 'PC-BASIC 3.23')
+    sys.stdout.write(ansi.esc_set_title % caption)
     if can_change_palette:
         default_colors = range(16, 32)
     else:    
@@ -348,4 +350,6 @@ def load_state():
 
 def set_border(attr):
     pass
-        
+
+prepare()
+

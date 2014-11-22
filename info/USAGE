@@ -37,6 +37,9 @@ OPTIONS
             Width of the screen border as a percentage 0-100. The percentage
             refers to the total width of the borders on both sides as a fraction
             of the usable screen width. Graphical interface only.
+  
+  --caption=title
+            Set the title of the PC-BASIC window. Default is "PC-BASIC 3.23".
             
   --capture-caps [=True|=False]
             Handle CAPS LOCK. This may collide with the operating system's own 

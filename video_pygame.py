@@ -220,6 +220,7 @@ def prepare():
     global composite_640_palette, border_width
     global mousebutton_copy, mousebutton_paste, mousebutton_pen
     global mono_monitor, font_families, aspect, force_square_pixel
+    global caption
     # display dimensions
     force_display_size = config.options['dimensions']
     aspect = config.options['aspect'] or aspect
@@ -264,7 +265,9 @@ def prepare():
                 mousebutton_paste = i+1
             elif s == 'pen':
                 mousebutton_pen = i+1
-        
+    # window caption/title
+    caption = config.options['caption'] or 'PC-BASIC 3.23'
+    
 ####################################
 # state saving and loading
 
@@ -329,7 +332,7 @@ def init():
     if not fullscreen:
         pygame.display.set_mode(display_size, 0)
     resize_display(*display_size, initial=True)
-    pygame.display.set_caption('PC-BASIC 3.23')
+    pygame.display.set_caption(caption)
     pygame.key.set_repeat(500, 24)
     # load an all-black 16-colour game palette to get started
     update_palette([(0,0,0)]*16, None)
@@ -935,7 +938,7 @@ def check_events(pause=False):
             resize_display(event.w, event.h)
         elif event.type == pygame.QUIT:
             if noquit:
-                pygame.display.set_caption('PC-BASIC 3.23 - to exit type <CTRL+BREAK> <ESC> SYSTEM')
+                pygame.display.set_caption('%s - to exit type <CTRL+BREAK> <ESC> SYSTEM' % caption)
             else:
                 backend.insert_special_key('quit')
     check_screen()
