@@ -2005,16 +2005,20 @@ def exec_randomize(ins):
 
 def exec_cls(ins):
     """ CLS: clear the screen. """
-    if util.skip_white(ins) in util.end_statement:
+    if pcjr_syntax == 'pcjr' or util.skip_white(ins) in (',', util.end_statement):
         val = 1 if state.console_state.graph_view_set else (2 if state.console_state.view_set else 0)
     else:
         val = vartypes.pass_int_unpack(expressions.parse_expression(ins))
+        if pcjr_syntax == 'tandy':
+            # tandy gives illegal function call on CLS number
+            raise error.RunError(5)
     util.range_check(0, 2, val)
-    if util.skip_white_read_if(ins, (',',)):
-        # comma is ignored, but a number after means syntax error
-        util.require(ins, util.end_statement)    
-    else:
-        util.require(ins, util.end_statement, err=5)    
+    if pcjr_syntax != 'pcjr':
+        if util.skip_white_read_if(ins, (',',)):
+            # comma is ignored, but a number after means syntax error
+            util.require(ins, util.end_statement)    
+        else:
+            util.require(ins, util.end_statement, err=5)    
     # cls is only executed if no errors have occurred    
     if val == 0:
         console.clear()  
@@ -2025,6 +2029,8 @@ def exec_cls(ins):
         graphics.reset_graphics()
     elif val == 2:
         console.clear_view()  
+    if pcjr_syntax == 'pcjr':
+        util.require(ins, util.end_statement)
 
 def exec_color(ins):
     """ COLOR: set colour attributes. """
