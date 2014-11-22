@@ -257,6 +257,7 @@ def set_text_memory(addr, val, text_segment, width):
         pass
 
 def coord_ok(page, x, y):
+    """ Check if a page and coordinates are within limits. """
     return (page < state.console_state.num_pages and
              x < state.console_state.size[0] and
              y < state.console_state.size[1])
