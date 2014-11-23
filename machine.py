@@ -29,6 +29,8 @@ peek_values = {}
 rom_font_addr = 0xfa6e
 # where to find the ram font (chars 128-254)
 ram_font_addr = 0x500
+# protection flag
+protection_flag_addr = 1450
 
 # base for our low-memory addresses
 low_segment = 0
@@ -113,7 +115,6 @@ def not_implemented_pass(addr, val):
 # sections of memory for which POKE is not currently implemented
 set_data_memory = not_implemented_poke
 set_field_memory = not_implemented_poke
-set_basic_memory = not_implemented_pass
 set_low_memory = not_implemented_pass
 
         
@@ -388,13 +389,19 @@ def get_basic_memory(addr):
     if addr == 0x30:
         return (memory.code_start+1) % 256
     elif addr == 0x31:
-        return (memory.code_start+1) // 256    
+        return (memory.code_start+1) // 256
     if addr == 0x358:
         return memory.var_start() % 256
     elif addr == 0x359:
-        return memory.var_start() // 256    
+        return memory.var_start() // 256
+    elif addr == protection_flag_addr:
+        return state.basic_state.protected * 255        
     return -1
 
+def set_basic_memory(addr, val):
+    addr -= memory.data_segment*0x10
+    if addr == protection_flag_addr and not program.dont_protect:
+        state.basic_state.protected = (val != 0)
 
 key_buffer_offset = 30
 blink_enabled = True
