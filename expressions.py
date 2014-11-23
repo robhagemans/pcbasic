@@ -714,6 +714,8 @@ def value_fre(ins):
 # currently, var memory, text&graphics memory and preset values only    
 def value_peek(ins):
     addr = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
+    if state.basic_state.protected and not state.basic_state.run_mode:
+        raise error.RunError(5)
     return vartypes.pack_int(machine.peek(addr))
     
 # VARPTR, VARPTR$    

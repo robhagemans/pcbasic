@@ -575,6 +575,8 @@ def exec_noise(ins):
 def exec_poke(ins):
     """ POKE: write to a memory location. Limited implementation. """
     addr = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=0xffff) 
+    if state.basic_state.protected and not state.basic_state.run_mode:
+        raise error.RunError(5)
     util.require_read(ins, (',',))
     val = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.range_check(0, 255, val)
@@ -602,6 +604,8 @@ def exec_def_usr(ins):
 
 def exec_bload(ins):
     """ BLOAD: load a file into a memory location. Limited implementation. """
+    if state.basic_state.protected and not state.basic_state.run_mode:
+        raise error.RunError(5)
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
     offset = None
@@ -614,7 +618,9 @@ def exec_bload(ins):
     
 def exec_bsave(ins):
     """ BSAVE: save a block of memory to a file. Limited implementation. """
-    name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    if state.basic_state.protected and not state.basic_state.run_mode:
+        raise error.RunError(5)
+    namade = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
     util.require_read(ins, (',',))
     offset = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint = 0xffff) 
@@ -864,7 +870,10 @@ def exec_load(ins):
         
 def exec_chain(ins):
     """ CHAIN: load program and chain execution. """
-    action = program.merge if util.skip_white_read_if(ins, ('\xBD',)) else program.load     # MERGE
+    if util.skip_white_read_if(ins, ('\xBD',)): # MERGE
+        action = program.merge
+    else:   
+        action = program.load
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     jumpnum, common_all, delete_lines = None, False, None    
     if util.skip_white_read_if(ins, (',',)):
@@ -885,6 +894,8 @@ def exec_chain(ins):
                 # CHAIN "file", , DELETE
                 delete_lines = parse_delete_clause(ins)
     util.require(ins, util.end_statement)
+    if state.basic_state.protected and action == program.merge:
+            raise error.RunError(5)
     program.chain(action, iolayer.open_file_or_device(0, name, mode='L', defext='BAS'), jumpnum, delete_lines)
     # preserve DEFtype on MERGE
     reset.clear(preserve_common=True, preserve_all=common_all, preserve_deftype=(action==program.merge))
