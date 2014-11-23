@@ -30,7 +30,7 @@ font_segment = memory.rom_segment
 font_addr = 0xfa6e
 
 # base for our low-memory addresses
-low_segment = 0x40
+low_segment = 0
 
 # data memory model: current segment
 state.basic_state.segment = memory.data_segment
@@ -394,6 +394,9 @@ def get_basic_memory(addr):
         return memory.var_start() // 256    
     return -1
 
+# 0 -- 28
+key_ring_buf_start = 0
+
 def get_low_memory(addr):
     addr -= low_segment*0x10
     # from MEMORY.ABC: PEEKs and POKEs (Don Watkins)
@@ -414,8 +417,19 @@ def get_low_memory(addr):
     # &H10 - ScrollLock key is depressed
     # &H08 - Suspend key has been toggled
     backend.wait()
-    if addr == 0x17:
-        return state.console_state.mod 
+    if addr == 1047:
+        return state.console_state.mod
+    # not implemented: peek(1048)==4 if sysrq pressed, 0 otherwise
+    elif addr == 1048:
+        return 0
+    elif addr == 1049:
+        return int(backend.keypad_ascii)%256
+    elif addr == 1050:
+        # keyboard ring buffer starts at n+1024; lowest 1054
+        return key_ring_buf_start + 30
+    elif addr == 1052:
+        # ring buffer ends at n + 1023
+        return key_ring_buf_start + max(15, len(state.console_state.keybuf))*2 + 30
     return -1    
     # from basic_ref_3.pdf: the keyboard buffer may be cleared with
     # DEF SEG=0: POKE 1050, PEEK(1052)
