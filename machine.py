@@ -68,6 +68,9 @@ def peek(addr):
         elif addr >= memory.data_segment*0x10 + memory.field_mem_start:
             # file & FIELD memory
             return max(0, get_field_memory(addr))
+        elif addr >= memory.data_segment*0x10:
+            # other BASIC data memory
+            return max(0, get_basic_memory(addr))
         elif addr >= low_segment*0x10:
             return max(0, get_low_memory(addr))
         else:    
@@ -92,6 +95,8 @@ def poke(addr, val):
     elif addr >= memory.data_segment*0x10 + memory.field_mem_start:
         # file & FIELD memory
         set_field_memory(addr, val)
+    elif addr >= memory.data_segment*0x10:
+        set_basic_memory(addr, val)
     elif addr >= low_segment*0x10:
         set_low_memory(addr, val)
     else:
@@ -100,11 +105,15 @@ def poke(addr, val):
 def not_implemented_poke(addr, val):
     # just use it as storage...
     peek_values[addr] = val
+
+def not_implemented_pass(addr, val):
+    pass
     
 # sections of memory for which POKE is not currently implemented
 set_data_memory = not_implemented_poke
 set_field_memory = not_implemented_poke
-set_low_memory = not_implemented_poke
+set_basic_memory = not_implemented_pass
+set_low_memory = not_implemented_pass
 
         
 def inp(port):    
@@ -372,6 +381,19 @@ def get_font_memory(addr):
 
 #################################################################################
 
+def get_basic_memory(addr):
+    addr -= memory.data_segment*0x10
+    # DS:30, DS:31: pointer to start of program, excluding initial \0
+    if addr == 0x30:
+        return (memory.code_start+1) % 256
+    elif addr == 0x31:
+        return (memory.code_start+1) // 256    
+    if addr == 0x358:
+        return memory.var_start() % 256
+    elif addr == 0x359:
+        return memory.var_start() // 256    
+    return -1
+
 def get_low_memory(addr):
     addr -= low_segment*0x10
     # from MEMORY.ABC: PEEKs and POKEs (Don Watkins)
@@ -395,6 +417,8 @@ def get_low_memory(addr):
     if addr == 0x17:
         return state.console_state.mod 
     return -1    
+    # from basic_ref_3.pdf: the keyboard buffer may be cleared with
+    # DEF SEG=0: POKE 1050, PEEK(1052)
     
 prepare()
     
