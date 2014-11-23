@@ -25,9 +25,8 @@ import program
 # pre-defined PEEK outputs
 peek_values = {}
 
-# where to find the fonts
-font_segment = memory.rom_segment
-font_addr = 0xfa6e
+# where to find the rom font (chars 0-127)
+rom_font_addr = 0xfa6e
 
 # base for our low-memory addresses
 low_segment = 0
@@ -54,8 +53,8 @@ def peek(addr):
         # try if there's a preset value
         return peek_values[addr]
     except KeyError: 
-        if addr >= font_segment*0x10+ font_addr:
-            return max(0, get_font_memory(addr))
+        if addr >= memory.rom_segment*0x10:
+            return max(0, get_rom_memory(addr))
         elif addr >= memory.video_segment*0x10:
             # graphics and text memory
             return max(0, get_video_memory(addr))
@@ -372,8 +371,8 @@ def set_video_memory_block(addr, some_bytes):
 
 #################################################################################
 
-def get_font_memory(addr):
-    addr -= font_segment*0x10 + font_addr
+def get_rom_memory(addr):
+    addr -= memory.rom_segment*0x10 + rom_font_addr
     char = addr // 8
     if char > 127 or char<0:
         return -1
@@ -417,6 +416,7 @@ def get_low_memory(addr):
     # &H10 - ScrollLock key is depressed
     # &H08 - Suspend key has been toggled
     backend.wait()
+    # 108-115 control Ctrl-break capture; not implemented (see PC Mag POKEs)
     if addr == 1047:
         return state.console_state.mod
     # not implemented: peek(1048)==4 if sysrq pressed, 0 otherwise
@@ -426,10 +426,14 @@ def get_low_memory(addr):
         return int(backend.keypad_ascii)%256
     elif addr == 1050:
         # keyboard ring buffer starts at n+1024; lowest 1054
-        return state.console_state.keybuf.start*2 + key_buffer_offset
+        return state.console_state.keybuf.start*2 + key_buffer_offset // 256
+    elif addr == 1051:
+        return state.console_state.keybuf.start*2 + key_buffer_offset % 256
     elif addr == 1052:
         # ring buffer ends at n + 1023
-        return state.console_state.keybuf.stop()*2 + key_buffer_offset
+        return state.console_state.keybuf.stop()*2 + key_buffer_offset // 256
+    elif addr == 1053:
+        return state.console_state.keybuf.stop()*2 + key_buffer_offset % 256
     elif addr in range(1024+key_buffer_offset, 1024+key_buffer_offset+32):
         index = (addr-1024-key_buffer_offset)//2
         odd = (addr-1024-key_buffer_offset)%2
@@ -439,6 +443,17 @@ def get_low_memory(addr):
         else:
             # should return scancode here, not implemented
             return 0 if odd else ord(c[0])
+    # 1040 monitor type
+    # 1097 screen mode number
+    # 1098, 1099 screen width
+    # 1100, 1101 graphics page buffer size (32k for screen 9, 4k for screen 0)
+    # 1102, 1103 zero (PCmag says graphics page buffer offset)
+    # 1104 + 2*n (cursor column of page n) - 1
+    # 1105 + 2*n (cursor row of page n) - 1
+    # 1120, 1121 cursor shape
+    # 1122 visual page number
+    # 1125 screen mode info
+    # 1126 color
     return -1    
     # from basic_ref_3.pdf: the keyboard buffer may be cleared with
     # DEF SEG=0: POKE 1050, PEEK(1052)
