@@ -21,6 +21,8 @@ data_segment = 0x13ad
 video_segment = 0xa000
 # read only memory
 rom_segment = 0xf000
+# segment that holds ram font
+ram_font_segment = 0xc000
 
 # Data Segment Map - default situation
 # addr      size

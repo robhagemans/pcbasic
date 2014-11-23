@@ -27,6 +27,8 @@ peek_values = {}
 
 # where to find the rom font (chars 0-127)
 rom_font_addr = 0xfa6e
+# where to find the ram font (chars 128-254)
+ram_font_addr = 0x500
 
 # base for our low-memory addresses
 low_segment = 0
@@ -395,6 +397,7 @@ def get_basic_memory(addr):
 
 
 key_buffer_offset = 30
+blink_enabled = True
 
 def get_low_memory(addr):
     addr -= low_segment*0x10
@@ -417,7 +420,23 @@ def get_low_memory(addr):
     # &H08 - Suspend key has been toggled
     backend.wait()
     # 108-115 control Ctrl-break capture; not implemented (see PC Mag POKEs)
-    if addr == 1047:
+    # 1040 monitor type
+    if addr == 124:
+        return ram_font_addr % 256
+    elif addr == 125:
+        return ram_font_addr // 256
+    elif addr == 126:
+        return memory.ram_font_segment % 256
+    elif addr == 127:
+        return memory.ram_font_segment // 256
+    elif addr == 1040:
+        if backend.mono_monitor:
+            # mono
+            return 48 + 6
+        else:
+            # 80x25 graphics
+            return 32 + 6
+    elif addr == 1047:
         return state.console_state.mod
     # not implemented: peek(1048)==4 if sysrq pressed, 0 otherwise
     elif addr == 1048:
@@ -426,14 +445,14 @@ def get_low_memory(addr):
         return int(backend.keypad_ascii)%256
     elif addr == 1050:
         # keyboard ring buffer starts at n+1024; lowest 1054
-        return state.console_state.keybuf.start*2 + key_buffer_offset // 256
-    elif addr == 1051:
         return state.console_state.keybuf.start*2 + key_buffer_offset % 256
+    elif addr == 1051:
+        return state.console_state.keybuf.start*2 + key_buffer_offset // 256
     elif addr == 1052:
         # ring buffer ends at n + 1023
-        return state.console_state.keybuf.stop()*2 + key_buffer_offset // 256
-    elif addr == 1053:
         return state.console_state.keybuf.stop()*2 + key_buffer_offset % 256
+    elif addr == 1053:
+        return state.console_state.keybuf.stop()*2 + key_buffer_offset // 256
     elif addr in range(1024+key_buffer_offset, 1024+key_buffer_offset+32):
         index = (addr-1024-key_buffer_offset)//2
         odd = (addr-1024-key_buffer_offset)%2
@@ -443,18 +462,74 @@ def get_low_memory(addr):
         else:
             # should return scancode here, not implemented
             return 0 if odd else ord(c[0])
-    # 1040 monitor type
     # 1097 screen mode number
+    elif addr == 1097:
+        # these are the low-level mode numbers used by mode switching interrupt
+        cval = state.console_state.colorswitch % 2
+        if state.console_state.current_mode.is_text_mode:
+            if (backend.video_capabilities in ('mda', 'ega_mono') and 
+                    state.console_state.current_mode.width == 80):
+                return 7
+            return (state.console_state.current_mode.width == 40)*2 + cval
+        elif state.console_state.current_mode.name == '320x200x4':
+            return 4 + cval
+        else:
+            mode_num = {'640x200x2': 6, '160x200x16': 8, '320x200x16pcjr': 9,
+                '640x200x4': 10, '320x200x16': 13, '640x200x16': 14,
+                '640x350x4': 15, '640x350x16': 16, '640x400x2': 0x40,
+                '320x200x4pcjr': 4 }
+                # '720x348x2': ? # hercules - unknown
+            try:
+                return mode_num[state.console_state.current_mode.name]
+            except KeyError:
+                return 0xff
     # 1098, 1099 screen width
+    elif addr == 1098:
+        return state.console_state.current_mode.width % 256
+    elif addr == 1099:
+        return state.console_state.current_mode.width // 256
     # 1100, 1101 graphics page buffer size (32k for screen 9, 4k for screen 0)
     # 1102, 1103 zero (PCmag says graphics page buffer offset)
+    elif addr == 1100:
+        return state.console_state.current_mode.page_size % 256
+    elif addr == 1101:
+        return state.console_state.current_mode.page_size // 256
     # 1104 + 2*n (cursor column of page n) - 1
     # 1105 + 2*n (cursor row of page n) - 1
+    # we only keep track of one row,col position
+    elif addr in range(1104, 1120, 2):
+        return state.console_state.col - 1
+    elif addr in range(1105, 1120, 2):
+        return state.console_state.row - 1
     # 1120, 1121 cursor shape
+    elif addr == 1120:
+        return state.console_state.cursor_to
+    elif addr == 1121:
+        return state.console_state.cursor_from
     # 1122 visual page number
+    elif addr == 1122:
+        return state.console_state.vpagenum
     # 1125 screen mode info
+    elif addr == 1125:
+        # bit 0: only in text mode?
+        # bit 2: should this be colorswitch or colorburst_is_enabled?
+        return ((state.console_state.current_mode.width == 80) * 1 +
+                (not state.console_state.current_mode.is_text_mode) * 2 + 
+                 state.console_state.colorswitch * 4 + 8 +
+                 (state.console_state.current_mode.name == '640x200x2') * 16 +
+                 blink_enabled * 32)
     # 1126 color
+    elif addr == 1126:
+        if state.console_state.current_mode.name == '320x200x4':
+            return backend.get_palette_entry(0) + 32 * backend.cga4_palette_num
+        elif state.console_state.current_mode.is_text_mode:
+            return state.console_state.border_attr % 16 
+            # not implemented: + 16 "if current color specified through 
+            # COLOR f,b with f in [0,15] and b > 7
+    # 1296, 1297: zero (PCmag says data segment address)
     return -1    
+
+#def set_low_memory(addr):
     # from basic_ref_3.pdf: the keyboard buffer may be cleared with
     # DEF SEG=0: POKE 1050, PEEK(1052)
     

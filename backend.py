@@ -1445,8 +1445,12 @@ def set_palette(new_palette=None, check_mode=True):
     video.update_palette(state.console_state.rgb_palette, 
                          state.console_state.rgb_palette1)
 
+
+cga4_palette_num = 1
 def set_cga4_palette(num):
     """ Change the default CGA palette according to palette number & mode. """
+    global cga4_palette_num
+    cga4_palette_num = num
     # palette 1: Black, Ugh, Yuck, Bleah, choice of low & high intensity
     # palette 0: Black, Green, Red, Brown/Yellow, low & high intensity
     # tandy/pcjr have high-intensity white, but low-intensity colours
