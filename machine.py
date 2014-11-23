@@ -394,8 +394,8 @@ def get_basic_memory(addr):
         return memory.var_start() // 256    
     return -1
 
-# 0 -- 28
-key_ring_buf_start = 0
+
+key_buffer_offset = 30
 
 def get_low_memory(addr):
     addr -= low_segment*0x10
@@ -426,10 +426,19 @@ def get_low_memory(addr):
         return int(backend.keypad_ascii)%256
     elif addr == 1050:
         # keyboard ring buffer starts at n+1024; lowest 1054
-        return key_ring_buf_start + 30
+        return state.console_state.keybuf.start*2 + key_buffer_offset
     elif addr == 1052:
         # ring buffer ends at n + 1023
-        return key_ring_buf_start + max(15, len(state.console_state.keybuf))*2 + 30
+        return state.console_state.keybuf.stop()*2 + key_buffer_offset
+    elif addr in range(1024+key_buffer_offset, 1024+key_buffer_offset+32):
+        index = (addr-1024-key_buffer_offset)//2
+        odd = (addr-1024-key_buffer_offset)%2
+        c = state.console_state.keybuf.ring_read(index)
+        if c[0] == '\0':
+            return ord(c[-1]) if odd else 0xe0
+        else:
+            # should return scancode here, not implemented
+            return 0 if odd else ord(c[0])
     return -1    
     # from basic_ref_3.pdf: the keyboard buffer may be cleared with
     # DEF SEG=0: POKE 1050, PEEK(1052)

@@ -54,8 +54,6 @@ state.console_state.key_replace = [
     'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
 # switch off macro repacements
 state.basic_state.key_macros_off = False    
-# keyboard queue
-state.console_state.keybuf = ''
 # key buffer
 # INP(&H60) scancode
 state.console_state.inp_key = 0
@@ -106,6 +104,85 @@ class ScreenBuffer(object):
     def __init__(self, battr, bwidth, bheight):
         """ Initialise the screen buffer to given dimensions. """
         self.row = [ScreenRow(battr, bwidth) for _ in xrange(bheight)]
+
+#############################################
+
+class KeyboardBuffer(object):
+    """ Quirky emulated ring buffer for keystrokes. """
+
+    def __init__(self, ring_length, s=''):
+        """ Initialise to given length. """
+        self.buffer = []
+        self.ring_length = ring_length
+        self.start = 0
+        self.insert(s)
+
+    def length(self):
+        """ Return the number of keystrokes in the buffer. """
+        return min(self.ring_length, len(self.buffer))
+
+    def is_empty(self):
+        """ True if no keystrokes in buffer. """
+        return len(self.buffer) == 0
+    
+    def insert(self, s, check_full=True):
+        """ Append a string of e-ascii keystrokes. """
+        d = ''
+        for c in s:
+            if check_full and len(self.buffer) >= self.ring_length:
+                return False
+            if d or c != '\0':
+                self.buffer.append(d+c)
+                d = ''
+            elif c == '\0':
+                d = c
+        return True
+        
+    def getc(self):
+        """ Read a keystroke. """
+        try:
+            c = self.buffer.pop(0)
+        except IndexError:
+            c = ''
+        if c:
+            self.start = (self.start + 1) % self.ring_length
+        return c
+            
+    def peek(self):
+        """ Show top keystroke in keyboard buffer. """
+        try:
+            return self.buffer[0]
+        except IndexError:
+            return ''
+            
+    def drop(self, n):
+        """ Drop n characters from keyboard buffer. """
+        n = min(n, len(self.buffer))
+        self.buffer = self.buffer[n:]        
+        self.start = (self.start + n) % self.ring_length
+    
+    def stop(self):
+        """ Ring buffer stopping index. """
+        return (self.start + self.length()) % self.ring_length
+    
+    def ring_read(self, index):
+        """ Read character at position i in ring. """
+        index -= self.start
+        if index < 0:
+            index += self.ring_length + 1
+        if index == self.ring_length:
+            # marker of buffer position
+            return '\x0d'
+        try:
+            return self.buffer[index]
+        except IndexError:
+            return '\0\0'
+        
+# keyboard queue
+state.console_state.keybuf = KeyboardBuffer(15)
+
+
+#############################################
 
 # devices - SCRN: KYBD: LPT1: etc. These are initialised in iolayer module
 devices = {}
@@ -943,9 +1020,9 @@ def prepare_keyboard():
     for u in keystring:
         c = u.encode('utf-8')
         try:
-            state.console_state.keybuf += unicodepage.from_utf8(c)
+            state.console_state.keybuf.insert(unicodepage.from_utf8(c))
         except KeyError:
-            state.console_state.keybuf += c
+            state.console_state.keybuf.insert(c)
     # handle caps lock only if requested
     if config.options['capture-caps']:
         ignore_caps = False
@@ -1637,35 +1714,25 @@ def read_chars(num):
     """ Read num keystrokes, blocking. """
     word = []
     for _ in range(num):
-        wait_char()
-        word.append(get_char())
+        word.append(get_char_block())
     return word
 
 def get_char():
     """ Read any keystroke, nonblocking. """
     wait()    
-    return pass_char(peek_char())
+    return state.console_state.keybuf.getc()
 
 def wait_char():
     """ Wait for character, then return it but don't drop from queue. """
-    while len(state.console_state.keybuf) == 0 and not input_closed:
+    while state.console_state.keybuf.is_empty() and not input_closed:
         wait()
-    return peek_char()
+    return state.console_state.keybuf.peek()
 
-def pass_char(ch):
-    """ Drop characters from keyboard buffer. """
-    state.console_state.keybuf = state.console_state.keybuf[len(ch):]        
-    return ch
+def get_char_block():
+    """ Read any keystroke, blocking. """
+    wait_char()
+    return state.console_state.keybuf.getc()
 
-def peek_char():
-    """ Peek character or scancode from keyboard buffer. """
-    ch = ''
-    if len(state.console_state.keybuf)>0:
-        ch = state.console_state.keybuf[0]
-        if ch == '\x00' and len(state.console_state.keybuf) > 1:
-            ch += state.console_state.keybuf[1]
-    return ch 
-    
 def key_down(scan, eascii='', check_full=True):
     """ Insert a key-down event. Keycode is extended ascii, including DBCS. """
     global keypad_ascii
@@ -1780,11 +1847,9 @@ def insert_special_key(name):
         
 def insert_chars(s, check_full=False):
     """ Insert characters into keyboard buffer. """
-    if check_full and len(state.console_state.keybuf) >= 15:
+    if not state.console_state.keybuf.insert(s, check_full):
         # keyboard buffer is full; short beep and exit
         play_sound(800, 0.01)
-    else:
-        state.console_state.keybuf += s
 
 def scan_to_eascii(scan, mod):
     """ Translate scancode and modifier state to e-ASCII. """
