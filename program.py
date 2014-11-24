@@ -367,7 +367,7 @@ class LineGetter(object):
                 break 
         if not eof:        
             self.cache = line2, eof2   
-        if line[-1] == '\n':
+        if line and line[-1] == '\n':
             line = line[:-1] + '\r'
         if self.utf8:
             # decode and encode back as an easy way to split up in single-character multibyte sequences
