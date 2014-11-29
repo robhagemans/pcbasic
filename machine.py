@@ -123,8 +123,6 @@ def not_implemented_pass(addr, val):
 set_data_memory = not_implemented_poke
 set_field_memory = not_implemented_poke
 set_low_memory = not_implemented_pass
-set_font_memory = not_implemented_pass
-
         
 def inp(port):    
     """ Get the value in an emulated machine port. """
@@ -410,6 +408,14 @@ def get_font_memory(addr):
         return -1
     return ord(backend.video.fonts[8][chr(char)][addr%8])
 
+def set_font_memory(addr, value):
+    """ Retrieve RAM font data. """
+    addr -= memory.ram_font_segment*0x10 + ram_font_addr
+    char = addr // 8 + 128
+    if char < 128 or char > 254:
+        return 
+    old = backend.video.fonts[8][chr(char)]
+    backend.video.fonts[8][chr(char)] = old[:addr%8]+chr(value)+old[addr%8+1:]
 
 #################################################################################
 
