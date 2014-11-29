@@ -1,13 +1,10 @@
-#
-# PC-BASIC 3.23 - audio_pygame.py
-#
-# Sound interface based on PyGame
-# 
-# (c) 2013, 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
+"""
+PC-BASIC 3.23 - audio_pygame.py
+Sound interface based on PyGame
+
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+"""
 
 from math import ceil
 
@@ -35,28 +32,34 @@ import backend
 import logging
 
 def prepare():
+    """ Initialise sound module. """
     if pygame:
         # must be called before pygame.init()
-        pre_init_mixer()
+        if mixer:
+            mixer.pre_init(sample_rate, -mixer_bits, channels=1, buffer=1024) #4096
 
 def init_sound():
+    """ Initialise sound system. """
     if not numpy:
         logging.warning('NumPy module not found. Failed to initialise audio.')
         return False
     if not mixer:
         return False    
-    init_mixer()    
+    # initialise mixer as silent
+    else:
+        mixer.quit()    
     return True
     
 def stop_all_sound():
+    """ Clear all sound queues and turn off all sounds. """
     global sound_queue, loop_sound
     for voice in range(4):
         stop_channel(voice)
     loop_sound = [ None, None, None, None ]
     sound_queue = [ [], [], [], [] ]
     
-# process sound queue in event loop
 def check_sound():
+    """ Update the sound queue and play sounds. """
     global loop_sound
     current_chunk = [ None, None, None, None ]
     if sound_queue == [ [], [], [], [] ] and loop_sound == [ None, None, None, None ]:
@@ -93,14 +96,22 @@ def check_sound():
         backend.sound_done(voice, len(sound_queue[voice]))
             
 def busy():
+    """ Is the mixer busy? """
     return (not loop_sound[0] and not loop_sound[1] and not loop_sound[2] and not loop_sound[3]) and mixer.get_busy()
         
 def play_sound(frequency, total_duration, fill, loop, voice=0, volume=15):
+    """ Queue a sound for playing; ignore and work off backend queue. """
     sound_queue[voice].append(SoundGenerator(signal_sources[voice], frequency, total_duration, fill, loop, volume))
 
 def set_noise(is_white):
+    """ Set the character of the noise channel. """
     signal_sources[3].feedback = feedback_noise if is_white else feedback_periodic
     
+def quit_sound():
+    """ Shut down the mixer. """
+    if mixer.get_init() != None:
+        mixer.quit()
+
 # implementation
 
 # sound generators for sounds not played yet
@@ -122,12 +133,15 @@ feedback_periodic = 0x4000
 feedback_tone = 0x2 
 
 class SignalSource(object):
+    """ Linear Feedback Shift Register to generate noise or tone. """
+    
     def __init__(self, feedback, init=0x01):
+        """ Initialise the signal source. """
         self.lfsr = init 
         self.feedback = feedback
     
     def next(self):
-        # get new sample bit
+        """ Get a sample bit. """
         bit = self.lfsr & 1
         self.lfsr >>= 1
         if bit:
@@ -150,7 +164,10 @@ amplitude[0] = 0
 
 
 class SoundGenerator(object):
+    """ Sound sample chunk generator. """
+    
     def __init__(self, signal_source, frequency, total_duration, fill, loop, volume):
+        """ Initialise the generator. """
         # noise generator
         self.signal_source = signal_source
         # one wavelength at 37 Hz is 1192 samples at 44100 Hz
@@ -166,6 +183,7 @@ class SoundGenerator(object):
         self.num_samples = int(self.duration * sample_rate)
         
     def build_chunk(self):
+        """ Build a sound chunk. """
         if self.count_samples >= self.num_samples:
             # done already
             return None
@@ -208,27 +226,17 @@ class SoundGenerator(object):
         return pygame.sndarray.make_sound(chunk)   
 
 def stop_channel(channel):
+    """ Stop sound on a channel. """
     if mixer.get_init():
         mixer.Channel(channel).stop()
         # play short silence to avoid blocking the channel - it won't play on queue()
         silence = pygame.sndarray.make_sound(numpy.zeros(1, numpy.int16))
         mixer.Channel(channel).play(silence)
     
-def pre_init_mixer():
-    if mixer:
-        mixer.pre_init(sample_rate, -mixer_bits, channels=1, buffer=1024) #4096
-
-def init_mixer():    
-    if mixer:
-        mixer.quit()
-    
 def check_init_mixer():
+    """ Initialise the mixer if necessary. """
     if mixer.get_init() == None:
         mixer.init()
-
-def quit_sound():
-    if mixer.get_init() != None:
-        mixer.quit()
 
 prepare()
 
