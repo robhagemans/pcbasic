@@ -1,13 +1,10 @@
-#
-# PC-BASIC 3.23 - pygame_android.py
-#
-# Graphical console backend based on PyGame - Android-specific
-# 
-# (c) 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
+"""
+PC-BASIC 3.23 - pygame_android.py
+Android-specific helpers and workarounds for video_pygame interface
+
+(c) 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+"""
 
 import pygame
 import android
@@ -94,6 +91,7 @@ keyboard_visible = False
 
 
 def toggle_keyboard():
+    """ Togle soft keyboard visibility. """
     global keyboard_visible
     if keyboard_visible:
         android.hide_keyboard()
@@ -102,6 +100,7 @@ def toggle_keyboard():
     keyboard_visible = not keyboard_visible
 
 def shift_screen(screen, border_x, border_y, size, cursor_row, font_height):
+    """ Shift the screen to keep the cursor visible when the soft keyboard is on. """
     if keyboard_visible:
         # we can't figure out the screen dimensions relative to the keyboard 
         # at least in PGS4A. Assume we'll have 5 rows not covered.
@@ -110,8 +109,8 @@ def shift_screen(screen, border_x, border_y, size, cursor_row, font_height):
         screen.fill(0, (0, (size[1]+2*border_y)-display_shift, 
                     size[0]+2*border_x, display_shift))
 
-
 def check_events():
+    """ Check android-specific pause event. """
     if android.check_pause():
         android.hide_keyboard()
         # save emulator state
@@ -122,11 +121,14 @@ def check_events():
     return False
         
 def init():
+    """ Android-specific initialisation. """
     android.init()
     # map android keycodes that aren't yet mapped in PGS4A
     for key in android_to_pygame:
         android.map_key(key, android_to_pygame[key])
 
 def close():
+    """ Android-specific cleanup. """
     android.hide_keyboard()
+    
 
