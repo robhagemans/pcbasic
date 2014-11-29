@@ -1,13 +1,10 @@
-#
-# PC-BASIC 3.23  - timedate.py
-#
-# Time and date utilities
-# 
-# (c) 2013, 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
+"""
+PC-BASIC 3.23  - timedate.py
+Time and date utilities
+
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+"""
 
 import datetime
 
@@ -18,7 +15,9 @@ import state
 # given in seconds        
 state.basic_state.time_offset = datetime.timedelta()
 
+
 def timer_milliseconds():
+    """ Get milliseconds since midnight. """
     now = datetime.datetime.today() + state.basic_state.time_offset
     midnight = datetime.datetime(now.year, now.month, now.day)
     diff = now-midnight
@@ -27,6 +26,7 @@ def timer_milliseconds():
     return long(seconds)*1000 + long(micro)/1000 
 
 def set_time(timestr):    
+    """ Set the system time offset. """
     now = datetime.datetime.today() + state.basic_state.time_offset
     timelist = [0, 0, 0]
     pos, listpos, word = 0, 0, ''
@@ -51,6 +51,7 @@ def set_time(timestr):
     state.basic_state.time_offset += newtime - now    
         
 def set_date(datestr):    
+    """ Set the system date offset. """
     now = datetime.datetime.today() + state.basic_state.time_offset
     datelist = [1, 1, 1]
     pos, listpos, word = 0, 0, ''
@@ -89,9 +90,11 @@ def set_date(datestr):
     state.basic_state.time_offset += newtime - now    
     
 def get_time():
+    """ Get (offset) system time. """
     return bytearray((datetime.datetime.today() + state.basic_state.time_offset).strftime('%H:%M:%S'))
     
 def get_date():
+    """ Get (offset) system date. """
     return bytearray((datetime.datetime.today() + state.basic_state.time_offset).strftime('%m-%d-%Y'))
 
 
