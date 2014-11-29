@@ -1,12 +1,10 @@
-#
-# PC-BASIC 3.23 - representation.py
-#
-# Convert between numbers and their string representations\ 
-# 
-# (c) 2013, 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
+"""
+PC-BASIC 3.23 - representation.py
+Convert between numbers and their string representations\ 
+
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+"""
 
 try:
     from cStringIO import StringIO
@@ -24,17 +22,16 @@ import vartypes
 # whitespace for INPUT#, INPUT
 # TAB x09 is not whitespace for input#. NUL \x00 and LF \x0a are. 
 ascii_white = (' ', '\x00', '\n')
-
-
+# octal, decimal and hex digits
 ascii_octits = ('0','1','2','3','4','5','6','7')
 ascii_digits = ascii_octits + ('8','9')
 ascii_hexits = ascii_digits + ('A','B','C','D','E','F')
 
     
-# BASIC number to BASIC string
-# screen=False means in a program listing
-# screen=True is used for screen, str$ and sequential files
 def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=False):
+    """ Convert BASIC number to BASIC string. """
+    # screen=False means in a program listing
+    # screen=True is used for screen, str$ and sequential files
     if not inp:
         if allow_empty_expression:
             return ('$', '')
@@ -55,27 +52,31 @@ def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=Fal
     else:
         raise error.RunError(2)    
         
-        
-# python int to python str
-
+#D        
 def int_to_str(num):
+    """ Convert Python int to Python str. """
     return str(num)   
 
 # tokenised ints to python str
 
 def uint_to_str(s):
+    """ Convert unsigned int token to Python string. """
     return str(vartypes.uint_to_value(s))
 
 def sint_to_str(s):
+    """ Convert signed int token to Python string. """
     return str(vartypes.sint_to_value(s))
 
 def ubyte_to_str(s):
+    """ Convert unsigned byte token to Python string. """
     return str(s[0])
     
 def hex_to_str(s):
+    """ Convert hex token to Python string. """
     return "&H" + hex(vartypes.uint_to_value(s))[2:].upper()
 
 def oct_to_str(s):
+    """ Convert oct token to Python string. """
     return "&O" + oct(vartypes.uint_to_value(s))[1:]
     
 
@@ -100,11 +101,12 @@ Double.type_sign, Double.exp_sign = '#', 'D'
 
 
 def just_under(n_in):
+    """ Return the largest floating-point number less than the given value. """
     # decrease mantissa by one (leaving carry unchanged)
     return n_in.__class__(n_in.neg, n_in.man - 0x100, n_in.exp)
 
-# for Ints?    
 def get_digits(num, digits, remove_trailing=True):    
+    """ Get the digits for an int. """
     pow10 = 10L**(digits-1)  
     digitstr = ''
     while pow10 >= 1:
@@ -121,6 +123,7 @@ def get_digits(num, digits, remove_trailing=True):
     return digitstr
 
 def scientific_notation(digitstr, exp10, exp_sign='E', digits_to_dot=1, force_dot=False):
+    """ Put digits in scientific E-notation. """
     valstr = digitstr[:digits_to_dot] 
     if len(digitstr) > digits_to_dot: 
         valstr += '.' + digitstr[digits_to_dot:] 
@@ -136,6 +139,7 @@ def scientific_notation(digitstr, exp10, exp_sign='E', digits_to_dot=1, force_do
     return valstr
 
 def decimal_notation(digitstr, exp10, type_sign='!', force_dot=False):
+    """ Put digits in decimal notation. """
     valstr = ''
     # digits to decimal point
     exp10 += 1
@@ -155,10 +159,11 @@ def decimal_notation(digitstr, exp10, type_sign='!', force_dot=False):
             valstr += type_sign
     return valstr
 
-# screen=True (ie PRINT) - leading space, no type sign
-# screen='w' (ie WRITE) - no leading space, no type sign
-# default mode is for LIST    
 def float_to_str(n_in, screen=False, write=False):
+    """ Convert BASIC float to Python string. """
+    # screen=True (ie PRINT) - leading space, no type sign
+    # screen='w' (ie WRITE) - no leading space, no type sign
+    # default mode is for LIST    
     # zero exponent byte means zero
     if n_in.is_zero(): 
         if screen and not write:
@@ -191,8 +196,8 @@ def float_to_str(n_in, screen=False, write=False):
         valstr += decimal_notation(digitstr, exp10, type_sign)
     return valstr
     
-# for PRINT USING
 def format_number(value, tokens, digits_before, decimals):
+    """ Format a number to a format string. For PRINT USING. """
     # illegal function call if too many digits
     if digits_before + decimals > 24:
         raise error.RunError(5)
@@ -237,6 +242,7 @@ def format_number(value, tokens, digits_before, decimals):
     return valstr
     
 def format_float_scientific(expr, digits_before, decimals, force_dot):
+    """ Put a float in scientific format. """
     work_digits = digits_before + decimals
     if work_digits > expr.digits:
         # decimal precision of the type
@@ -268,7 +274,7 @@ def format_float_scientific(expr, digits_before, decimals, force_dot):
     return scientific_notation(digitstr, exp10, expr.exp_sign, digits_to_dot=digits_before, force_dot=force_dot)
     
 def format_float_fixed(expr, decimals, force_dot):
-    # fixed-point representation
+    """ Put a float in fixed-point representation. """
     unrounded = mul(expr, pow_int(expr.ten, decimals)) # expr * 10**decimals
     num = unrounded.copy().iround()
     # find exponent 
@@ -292,9 +298,8 @@ def format_float_fixed(expr, decimals, force_dot):
     
 ##################################
 
-# create Float from string
-
 def from_str(s, allow_nonnum = True):
+    """ Return Float value for Python string. """
     found_sign = False
     found_point = False
     found_exp = False
@@ -406,6 +411,7 @@ def from_str(s, allow_nonnum = True):
 # for PRINT USING
 
 def get_string_tokens(fors):
+    """ Get consecutive string-related formatting tokens. """
     word = ''
     c = util.peek(fors)
     if c in ('!', '&'):
@@ -424,6 +430,7 @@ def get_string_tokens(fors):
     return word
 
 def get_number_tokens(fors):
+    """ Get consecutive number-related formatting tokens. """
     word, digits_before, decimals = '', 0, 0
     # + comes first
     leading_plus = (util.peek(fors) == '+')
@@ -472,10 +479,10 @@ def get_number_tokens(fors):
     return word, digits_before, decimals    
                 
 ########################################
-####
 
 
 def input_vars_file(readvar, text_file):
+    """ Read a variable for INPUT from a file. """
     for v in readvar:
         typechar = v[0][-1]
         if typechar == '$':
@@ -502,6 +509,7 @@ def input_vars_file(readvar, text_file):
     return readvar    
 
 def input_vars(readvar, text_file):
+    """ Read a variable for INPUT. """
     # copy to allow multiple calls (for Redo)
     count_commas, count_values, has_empty = 0, 0, False
     for v in readvar:
@@ -522,6 +530,7 @@ def input_vars(readvar, text_file):
     return readvar            
             
 def text_skip(text_file, skip_range):
+    """ Skip characters from a specified range in text file. """
     d = ''
     while True:
         if text_file.end_of_file():
@@ -533,6 +542,7 @@ def text_skip(text_file, skip_range):
     return d
 
 def input_entry(text_file, allow_quotes, end_all=(), end_not_quoted=(',',)):
+    """ Read a number or string entry for INPUT """
     word, blanks = '', ''
     # skip leading spaces and line feeds and NUL. 
     c = text_skip(text_file, ascii_white)
@@ -566,6 +576,7 @@ def input_entry(text_file, allow_quotes, end_all=(), end_not_quoted=(',',)):
     return word
 
 def str_to_type(word, type_char):
+    """ Convert Python-string to requested type. """
     packed = vartypes.pack_string(bytearray(word))
     if type_char == '$':
         return packed
@@ -576,8 +587,8 @@ def str_to_type(word, type_char):
             return None
 #####      
 
-# string to token             
 def tokenise_number(ins, outs):
+    """ Convert Python-string number representation to number token. """
     c = util.peek(ins)
     # handle hex or oct constants
     if c == '&':
@@ -676,6 +687,7 @@ def tokenise_number(ins, outs):
 ##########################################
 
 def str_to_value_keep(strval, allow_nonnum=True):
+    """ Convert BASIC string to BASIC value. """
     if strval == ('$', ''):
         return vartypes.null['%']
     strval = str(vartypes.pass_string_unpack(strval))
@@ -692,9 +704,8 @@ def str_to_value_keep(strval, allow_nonnum=True):
             return None    
     return value
 
-
-# token to string
 def detokenise_number(ins, output):
+    """ Convert number token to Python string. """
     s = ins.read(1)
     if s == '\x0b':                           # 0B: octal constant (unsigned int)
         output += oct_to_str(bytearray(ins.read(2)))
