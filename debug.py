@@ -1,13 +1,10 @@
-#
-# PC-BASIC 3.23 - debug.py
-#
-# DEBUG statement and utilities
-# 
-# (c) 2013, 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
+"""
+PC-BASIC 3.23 - debug.py
+DEBUG statement and utilities
+
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+"""
 
 from StringIO import StringIO
 import sys
@@ -33,6 +30,7 @@ def prepare():
         debug_mode = True  
 
 def debug_exec(debug_cmd):
+    """ Execute a debug command. """
     buf = StringIO()
     sys.stdout = buf
     try:
@@ -44,6 +42,7 @@ def debug_exec(debug_cmd):
     logging.debug(buf.getvalue()[:-1]) # exclude \n
         
 def debug_step(linum):
+    """ Execute traces and watches on a program step. """
     if not debug_mode:
         return
     outstr = ''
@@ -65,16 +64,21 @@ def debug_step(linum):
         logging.debug(outstr)
         
 def debug_handle_exc(e):
+    """ Handle debugging exception. """
     logging.debug(str(type(e))+' '+str(e))    
         
 # DEBUG user utilities
+
 def dump_program():
+    """ Hex dump the program to the log. """
     logging.debug(state.basic_state.bytecode.getvalue().encode('hex'))    
 
 def dump_vars():
+    """ Dump all variables to the log. """
     logging.debug(repr(state.basic_state.variables))    
     
 def show_screen():
+    """ Copy the screen buffer to the log. """
     logging.debug('  +' + '-'*state.console_state.width+'+')
     i = 0
     lastwrap = False
@@ -95,6 +99,7 @@ def show_screen():
     logging.debug('  +' + '-'*state.console_state.width+'+')
 
 def show_program():
+    """ Write a marked-up hex dump of the program to the log. """
     code = state.basic_state.bytecode.getvalue()
     offset_val, p = 0, 0
     for key in sorted(state.basic_state.line_numbers.keys())[1:]:
@@ -113,10 +118,12 @@ def show_program():
                 code[p+3:p+5].encode('hex') + ' ' + code[p+5:].encode('hex'))   
         
 def trace(on=True):
+    """ Switch line number tracing on or off. """
     global debug_tron
     debug_tron = on        
 
 def watch(expr):
+    """ Add an expression to the watch list. """
     outs = tokenise.tokenise_line('?'+expr) 
     watch_list.append((expr, outs))
 
