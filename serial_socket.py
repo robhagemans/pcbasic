@@ -1,6 +1,12 @@
-#
-# serial_socket.py
-# workaround for some limitations of SocketSerial with timeout==0
+"""
+PC-BASIC 3.23 - serial_socket.py
+Workaround for some limitations of SocketSerial with timeout==0
+
+Contains code from PySerial (c) 2001-2013 Chris Liechtl <cliechti(at)gmx.net>; All Rights Reserved.
+as well as modifications (c) 2013-2014 Rob Hagemans.
+This file is released under the Python licence.
+"""
+
 
 import logging
 
@@ -23,10 +29,10 @@ def parallel_port(port):
         logging.warning('Parallel module not found. Parallel port communication not available.')
         return None
     try:
-        stream = ParallelStream(port)
+        return ParallelStream(port)
     except (OSError, IOError):
         logging.warning('Could not open parallel port %s.', port) 
-    return     
+        return None
 
 def serial_for_url(url):
     if not serial:
