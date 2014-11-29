@@ -1,12 +1,9 @@
 """
 PC-BASIC 3.23 - scancode.py
-
 Keyboard scancodes
 
 (c) 2014 Rob Hagemans
-
 This file is released under the GNU GPL version 3.
-please see text file COPYING for licence terms.
 """
 
 # these are PC keyboard scancodes for a UK keyboard
