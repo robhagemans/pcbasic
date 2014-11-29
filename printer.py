@@ -1,13 +1,9 @@
-
 """
 PC-BASIC 3.23 - printer.py
-
 Line printer output 
  
 (c) 2013, 2014 Rob Hagemans 
-
 This file is released under the GNU GPL version 3. 
-please see text file COPYING for licence terms.
 """
 
 from StringIO import StringIO
@@ -20,14 +16,16 @@ class PrinterStream(StringIO):
     """ Stream that prints to Unix or Windows printer. """
     
     def __init__(self, printer_name=''):
+        """ Initialise the printer stream. """
         self.printer_name = printer_name
         StringIO.__init__(self)
 
     def close(self):
+        """ Close the printer stream. """
         self.flush()
 
-    # flush buffer to Windows printer    
     def flush(self):
+        """ Flush the printer buffer to a printer. """
         printbuf = self.getvalue()
         if not printbuf:
             return      
@@ -38,6 +36,7 @@ class PrinterStream(StringIO):
 
 if plat.system == 'Windows':
     def line_print(printbuf, printer_name):
+        """ Print the buffer to a Windows printer. """
         if printer_name == '' or printer_name=='default':
             printer_name = win32print.GetDefaultPrinter()
         f = tempfile.NamedTemporaryFile(mode='w', prefix='pcbasic_', suffix='.txt', delete=False)
