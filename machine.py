@@ -122,7 +122,6 @@ def not_implemented_pass(addr, val):
 # sections of memory for which POKE is not currently implemented
 set_data_memory = not_implemented_poke
 set_field_memory = not_implemented_poke
-set_low_memory = not_implemented_pass
         
 def inp(port):    
     """ Get the value in an emulated machine port. """
