@@ -1,13 +1,11 @@
-#
-# PC-BASIC 3.23 - draw_and_play.py
-#
-# DRAW and PLAY macro languages
-# 
-# (c) 2013, 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
+"""
+PC-BASIC 3.23 - draw_and_play.py
+DRAW and PLAY macro languages
+
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+"""
+
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -30,12 +28,6 @@ ml_whitepace = (' ')
 # GRAPHICS MACRO LANGUAGE
 deg_to_rad = fp.div( fp.Single.twopi, fp.Single.from_int(360))
 
-def init_draw_state():
-    state.basic_state.draw_scale = 4
-    state.basic_state.draw_angle = 0
-
-init_draw_state()
-
 # MUSIC MACRO LANGUAGE
 # 12-tone equal temperament
 # C, C#, D, D#, E, F, F#, G, G#, A, A#, B
@@ -44,7 +36,10 @@ notes = {   'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6,
             'G-':6, 'G':7, 'G#':8, 'A-':8, 'A':9, 'A#':10, 'B-':10, 'B':11 }
 
 class PlayState(object):
+    """ State variables of the PLAY command. """
+    
     def __init__(self):
+        """ Initialise play state. """
         self.octave = 4
         self.speed = 7./8.
         self.tempo = 2. # 2*0.25 =0 .5 seconds per quarter note
@@ -53,7 +48,17 @@ class PlayState(object):
 
 state.basic_state.play_state = [ PlayState(), PlayState(), PlayState() ]
 
+def prepare():
+    """ Initialise the draw and play module. """
+    init_draw_state()
+
+def init_draw_state():
+    """ Initilaise state variables of the draw command. """
+    state.basic_state.draw_scale = 4
+    state.basic_state.draw_angle = 0
+
 def get_value_for_varptrstr(varptrstr):
+    """ Get a value given a VARPTR$ representation. """
     if len(varptrstr) < 3:    
         raise error.RunError(5)
     varptrstr = bytearray(varptrstr)
@@ -69,6 +74,7 @@ def get_value_for_varptrstr(varptrstr):
     return var.get_var(found_name)
         
 def ml_parse_value(gmls, default=None):
+    """ Parse a value in a macro-language string. """
     c = util.skip(gmls, ml_whitepace)
     sgn = -1 if c == '-' else 1   
     if c in ('+', '-'):
@@ -103,9 +109,11 @@ def ml_parse_value(gmls, default=None):
     return step
 
 def ml_parse_number(gmls, default=None):
+    """ Parse a number value in a macro-language string. """
     return vartypes.pass_int_unpack(ml_parse_value(gmls, default), err=5)
     
 def ml_parse_string(gmls):
+    """ Parse a string value in a macro-language string. """
     c = util.skip(gmls, ml_whitepace)
     if len(c) == 0:
         raise error.RunError(5)
@@ -117,9 +125,11 @@ def ml_parse_string(gmls):
         # varptr$
         return vartypes.pass_string_unpack(get_value_for_varptrstr(gmls.read(3)))
         
+        
 # GRAPHICS MACRO LANGUAGE
 
-def draw_step(x0,y0, sx,sy, plot, goback):
+def draw_step(x0, y0, sx, sy, plot, goback):
+    """ Make a DRAW step, drawing a line and reurning if requested. """
     scale = state.basic_state.draw_scale
     rotate = state.basic_state.draw_angle
     aspect = state.console_state.pixel_aspect_ratio
@@ -150,6 +160,7 @@ def draw_step(x0,y0, sx,sy, plot, goback):
         state.console_state.last_point = (x0, y0)
             
 def draw_parse_gml(gml):
+    """ Parse a Graphics Macro Language string. """
     gmls = StringIO(gml.upper())
     plot, goback = True, False
     while True:
@@ -242,6 +253,7 @@ def draw_parse_gml(gml):
 # MUSIC MACRO LANGUAGE
 
 def play_parse_mml(mml_list):
+    """ Parse a Music Macro Language string. """
     gmls_list = []
     for mml in mml_list:
         gmls = StringIO()
@@ -347,3 +359,5 @@ def play_parse_mml(mml_list):
     if state.console_state.music_foreground:
         backend.wait_music()
  
+prepare()
+
