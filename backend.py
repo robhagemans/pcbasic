@@ -162,11 +162,15 @@ class KeyboardBuffer(object):
         """ Ring buffer stopping index. """
         return (self.start + self.length()) % self.ring_length
     
-    def ring_read(self, index):
-        """ Read character at position i in ring. """
+    def ring_index(self, index):
+        """ Get index for ring position. """
         index -= self.start
         if index < 0:
             index += self.ring_length + 1
+        
+    def ring_read(self, index):
+        """ Read character at position i in ring. """
+        index = ring_index(index)
         if index == self.ring_length:
             # marker of buffer position
             return '\x0d'
@@ -174,6 +178,24 @@ class KeyboardBuffer(object):
             return self.buffer[index]
         except IndexError:
             return '\0\0'
+    
+    def ring_write(self, index, c):
+        """ Write e-ascii character at position i in ring. """
+        index = ring_index(index)
+        if index < self.ring_length:
+            try:
+                self.buffer[index] = c
+            except IndexError:
+                pass
+    
+    def ring_set_boundaries(self, start, stop):
+        """ Set start and stop index. """ 
+        length = (stop - start) % self.ring_length
+        # rotate buffer to account for new start and stop
+        start_index = ring_index(start)
+        stop_index = ring_index(stop)
+        self.buffer = self.buffer[start_index:] + self.buffer[:stop_index]
+        self.start = start
         
 # keyboard queue
 state.console_state.keybuf = KeyboardBuffer(15)
