@@ -1,9 +1,9 @@
 """
-# PC-BASIC 3.23 - fp.py
-# MBF Floating-point arithmetic 
-# 
-# (c) 2013, 2014 Rob Hagemans 
-# This file is released under the GNU GPL version 3. 
+PC-BASIC 3.23 - fp.py
+MBF Floating-point arithmetic 
+
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
 """
 
 # descriptions of the Microsoft Binary Format found here:
