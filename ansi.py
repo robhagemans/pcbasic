@@ -1,13 +1,11 @@
-#
-# PC-BASIC 3.23 - ansi.py
-#
-# Definitions for ANSI escape sequences
-#
-# (c) 2013, 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
+"""
+PC-BASIC 3.23 - ansi.py
+Definitions for ANSI escape sequences
+
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+"""
+
 import scancode
 
 # ANSI colour numbers for EGA colours: black, blue, green, cyan, red, magenta, yellow, white
