@@ -1,15 +1,10 @@
-#
-# PC-BASIC 3.23  - reset.py
-#
-# General reset commands (NEW and CLEAR)
-# 
-# (c) 2013, 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
+"""
+PC-BASIC 3.23  - reset.py
+CLEAR command
 
-# NOTE: RESTORE is in program.py
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+"""
 
 import var
 import rnd
@@ -19,8 +14,9 @@ import backend
 import draw_and_play
 import graphics
 
-# CLEAR
+
 def clear(close_files=False, preserve_common=False, preserve_all=False, preserve_deftype=False):
+    """ Execute a CLEAR command. """
     #   Resets the stack and string space
     #   Clears all COMMON and user variables
     var.clear_variables(preserve_common, preserve_all, preserve_deftype)
@@ -53,4 +49,5 @@ def clear(close_files=False, preserve_common=False, preserve_all=False, preserve
         draw_and_play.PlayState() ]
     # reset DRAW state (angle, scale) and current graphics position
     graphics.reset_graphics()
+    
     
