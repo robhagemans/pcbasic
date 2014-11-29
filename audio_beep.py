@@ -1,39 +1,43 @@
-#
-# PC-BASIC 3.23 - sound_beep.py
-#
-# Sound implementation through the linux beep utility
-# 
-# (c) 2013, 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
+"""
+PC-BASIC 3.23 - sound_beep.py
+Sound implementation through the linux beep utility
+
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+"""
 
 import plat
+import state
+
+
 if plat.system == 'Windows':
     def init_sound():
+        """ This module is not supported under Windows. """
         return False
 else:    
     import subprocess
     
     def init_sound():
+        """ Initialise sound module. """
         return subprocess.call("command -v beep >/dev/null 2>&1", 
                                 shell=True) == 0
     
     def beep(frequency, duration, fill):
+        """ Emit a sound. """
         return subprocess.Popen(('beep -f %f -l %d -D %d' % 
             (frequency, duration*fill*1000, duration*(1-fill)*1000)).split())
     
     def hush():
+        """ Turn off any sound. """
         subprocess.call('beep -f 1 -l 0'.split())
-        
-import state
+
 
 now_playing = [None, None, None, None]
 now_loop = [None, None, None, None]
 
     
 def stop_all_sound():
+    """ Clear all sound queues and turn off all sounds. """
     global now_loop, now_playing
     for voice in now_playing:
         if voice and voice.poll() == None:
@@ -43,9 +47,11 @@ def stop_all_sound():
     hush()
     
 def play_sound(frequency, duration, fill, loop, voice=0, volume=15):
+    """ Queue a sound for playing; ignore and work off backend queue. """
     pass
         
 def check_sound():
+    """ Update the sound queue and play sounds. """
     global now_loop
     for voice in range(4):
         length = len(state.console_state.music_queue[voice])
@@ -66,13 +72,21 @@ def check_sound():
             state.console_state.music_queue[voice].pop(0)
     
 def busy():
+    """ Is the mixer busy? """
     is_busy = False
     for voice in range(4):
         is_busy = is_busy or ((not now_loop[voice]) and 
                     now_playing[voice] and now_playing[voice].poll() == None)
     return is_busy
 
+def set_noise(is_white):
+    """ Set the character of the noise channel. """
+    pass      
+      
+# implementation
+      
 def play_now(frequency, duration, fill, loop, volume, voice):
+    """ Play a sound immediately. """
     frequency = max(1, min(19999, frequency))
     if loop:
         duration = 5
@@ -84,6 +98,3 @@ def play_now(frequency, duration, fill, loop, volume, voice):
     else:    
         now_playing[voice] = beep(frequency, duration, fill)
     
-def set_noise(is_white):
-    pass      
-      
