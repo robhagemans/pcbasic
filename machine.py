@@ -47,6 +47,7 @@ def prepare():
     allow_code_poke = config.options['allow-code-poke']
 
 def peek(addr):
+    """ Retrieve the value at an emulated memory location. """
     if addr < 0: 
         addr += 0x10000
     addr += state.basic_state.segment*0x10
@@ -77,6 +78,7 @@ def peek(addr):
             return 0
 
 def poke(addr, val):    
+    """ Set the value at an emulated memory location. """
     if addr < 0: 
         addr += 0x10000
     addr += state.basic_state.segment * 0x10
@@ -103,10 +105,11 @@ def poke(addr, val):
         pass
 
 def not_implemented_poke(addr, val):
-    # just use it as storage...
+    """ POKE into not implemented location; retain value. """
     peek_values[addr] = val
 
 def not_implemented_pass(addr, val):
+    """ POKE into not implemented location; ignore. """
     pass
     
 # sections of memory for which POKE is not currently implemented
@@ -116,6 +119,7 @@ set_low_memory = not_implemented_pass
 
         
 def inp(port):    
+    """ Get the value in an emulated machine port. """
     if port == 0x60:
         backend.wait()
         return state.console_state.inp_key 
@@ -123,6 +127,7 @@ def inp(port):
         return 0
         
 def out(addr, val):    
+    """ Send a value to an emulated machine port. """
     if addr == 0x3c5:
         # officially, requires OUT &H3C4, 2 first (not implemented)
         state.console_state.colour_plane_write_mask = val
@@ -136,6 +141,7 @@ def out(addr, val):
         backend.set_colorburst(val & 4 == 0)
 
 def wait(addr, ander, xorer):
+    """ Wait untial an emulated machine port has a specified value. """
     store_suspend = state.basic_state.suspend_all_events
     state.basic_state.suspend_all_events = True
     while (((state.console_state.inp_key if addr == 0x60 else 0) ^ xorer) & ander) == 0:
@@ -143,6 +149,7 @@ def wait(addr, ander, xorer):
     state.basic_state.suspend_all_events = store_suspend     
 
 def bload(g, offset):    
+    """ Load a file into a block of memory. """
     if g.read(1) != '\xfd':
         raise error.RunError(54)
     seg = vartypes.uint_to_value(bytearray(g.read(2)))
@@ -167,6 +174,7 @@ def bload(g, offset):
         set_video_memory_block(addr, buf)
 
 def bsave(g, offset, length):
+    """ Save a block of memory into a file. """
     g.write('\xfd')
     g.write(str(vartypes.value_to_uint(state.basic_state.segment)))
     g.write(str(vartypes.value_to_uint(offset)))
@@ -177,12 +185,14 @@ def bsave(g, offset, length):
     g.close()
 
 def varptr_file(filenum):
+    """ Get address of FCB for a given file number. """
     if filenum < 1 or filenum > iolayer.max_files:
         # bad file number
         raise error.RunError(52)    
     return memory.field_mem_base + filenum * memory.field_mem_offset + 6
 
 def varptr(name, indices):
+    """Get address of variable. """
     name = vartypes.complete_name(name)
     if indices == []:
         try:
@@ -199,8 +209,8 @@ def varptr(name, indices):
         except KeyError:
             return -1
 
-
 def get_name_in_memory(name, offset):
+    """ Memory representation of variable name. """
     if offset == 0:
         return var.byte_size[name[-1]]
     elif offset == 1:
@@ -220,6 +230,7 @@ def get_name_in_memory(name, offset):
         return ord(name[offset-1].upper()) - ord('A') + 0xC1
 
 def get_field_memory(address):
+    """ Retrieve data from FIELD buffer. """
     address -= memory.data_segment * 0x10
     if address < memory.field_mem_start:
         return -1
@@ -233,6 +244,7 @@ def get_field_memory(address):
         return -1   
         
 def get_code_memory(address):
+    """ Retrieve data from program code. """
     address -= memory.data_segment * 0x10 + memory.code_start
     code = state.basic_state.bytecode.getvalue()
     try:
@@ -241,6 +253,7 @@ def get_code_memory(address):
         return -1    
 
 def set_code_memory(address, val):
+    """ Change program code. """
     if not allow_code_poke:
         logging.warning('Ignored POKE into program code') 
     else:
@@ -259,6 +272,7 @@ def set_code_memory(address, val):
         program.rebuild_line_dict()
     
 def get_data_memory(address):
+    """ Retreive data from data memory. """
     address -= memory.data_segment * 0x10
     if address < state.basic_state.var_current:
         # find the variable we're in
@@ -372,6 +386,7 @@ def set_video_memory_block(addr, some_bytes):
 #################################################################################
 
 def get_rom_memory(addr):
+    """ Retrieve data from ROM. """
     addr -= memory.rom_segment*0x10 + rom_font_addr
     char = addr // 8
     if char > 127 or char<0:
@@ -381,6 +396,7 @@ def get_rom_memory(addr):
 #################################################################################
 
 def get_basic_memory(addr):
+    """ Retrieve data from BASIC memory. """
     addr -= memory.data_segment*0x10
     # DS:30, DS:31: pointer to start of program, excluding initial \0
     if addr == 0x30:
@@ -396,6 +412,7 @@ def get_basic_memory(addr):
     return -1
 
 def set_basic_memory(addr, val):
+    """ Change BASIC memory. """
     addr -= memory.data_segment*0x10
     if addr == protection_flag_addr and not program.dont_protect:
         state.basic_state.protected = (val != 0)
@@ -404,6 +421,7 @@ key_buffer_offset = 30
 blink_enabled = True
 
 def get_low_memory(addr):
+    """ Retrieve data from low memory. """
     addr -= low_segment*0x10
     # from MEMORY.ABC: PEEKs and POKEs (Don Watkins)
     # http://www.qbasicnews.com/abc/showsnippet.php?filename=MEMORY.ABC&snippet=6
@@ -534,6 +552,7 @@ def get_low_memory(addr):
     return -1    
 
 #def set_low_memory(addr):
+    """ Set data in low memory. """
     # from basic_ref_3.pdf: the keyboard buffer may be cleared with
     # DEF SEG=0: POKE 1050, PEEK(1052)
     
