@@ -1,12 +1,10 @@
-#
+"""
 # PC-BASIC 3.23 - fp.py
-#
 # MBF Floating-point arithmetic 
 # 
 # (c) 2013, 2014 Rob Hagemans 
-#
 # This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
+"""
 
 # descriptions of the Microsoft Binary Format found here:
 # http://www.experts-exchange.com/Programming/Languages/Pascal/Delphi/Q_20245266.html
@@ -42,23 +40,26 @@ state.basic_state.zero_div = False
 errstream = None
 
 def init(error_stream):
+    """ Initialise the Floating-point system. """
     global errstream
     errstream = error_stream
 
 def msg_overflow():
+    """ Write an Overflow message. """
     if state.basic_state.overflow:
         return
     state.basic_state.overflow = True    
     math_error(6)
 
 def msg_zero_div():
+    """ Write a Division by Zero message. """
     if state.basic_state.zero_div:
         return
     state.basic_state.zero_div = True
     math_error(11)
 
-# math errors only break execution if handler is set
 def math_error(errnum):
+    """ Write an error message; only break execution if a handler is active. """
     if state.basic_state.on_error: 
         # also raises exception in error_handle_mode! in that case, prints a normal error message
         raise(error.RunError(errnum))
@@ -70,14 +71,19 @@ def math_error(errnum):
 ####################################
 
 class Float(object):
+    """ Floating-point number in Microsoft Binary Format. """
+    
     def __init__(self, neg=False, man=0, exp=0):
+        """ Initialise float. """
         self.neg, self.man, self.exp = neg, man, exp
             
     def copy(self):
+        """ Clone float. """
         return self.__class__(self.neg, self.man, self.exp)
     
     @classmethod
     def from_int(cls, num):
+        """ Convert int to float. """
         # this creates an mbf float. the carry byte will also be in use. call discard_carry afterwards if you want an empty carry.    
         # set mantissa to number, shift to create carry bytes
         n = cls( (num<0), long(abs(num) << 8), cls.bias )
@@ -87,6 +93,7 @@ class Float(object):
 
     @classmethod
     def from_bytes(cls,s):
+        """ Convert byte representation to float. """
         # put mantissa in form . 1 f1 f2 f3 ... f23
         # internal representation has four bytes, last byte is carry for intermediate results
         # put mantissa in form . 1 f1 f2 f3 ... f55
@@ -98,7 +105,7 @@ class Float(object):
         return cls( (s[-2] >= 0x80), man, s[-1])
     
     def to_bytes(self):
-        #n = self.copy()
+        """ Convert float to byte representation. """
         self.apply_carry()
         # extract bytes    
         s = bytearray()
@@ -115,9 +122,11 @@ class Float(object):
         return s
 
     def is_zero(self):
+        """ Check if float equals zero. """
         return self.exp==0
 
     def sign(self):
+        """ Return sign of float. """
         if self.exp==0:
             return 0
         elif self.neg:
@@ -126,6 +135,7 @@ class Float(object):
             return 1
 
     def apply_carry(self):
+        """ Apply the carry byte. """
         # carry bit set? then round up
         if (self.man & 0xff) > 0x7f:
             self.man += 0x100 
@@ -138,10 +148,12 @@ class Float(object):
         return self
         
     def discard_carry(self):
+        """ Discard the carry byte. """
         self.man ^= (self.man&0xff) 
         return self
     
     def trunc_to_int(self):
+        """ Truncate float to integer. """
         man = self.man >> 8 
         if self.exp > self.bias :
             val = long(man << (self.exp-self.bias))
@@ -153,6 +165,7 @@ class Float(object):
             return val    
 
     def round_to_int(self):
+        """ Round float to integer. """
         if self.exp > self.bias:
             man = long(self.man << (self.exp-self.bias))
         else:
@@ -167,6 +180,7 @@ class Float(object):
             return (man >> 8)
 
     def normalise(self):
+        """ Bring float to normal form. """
         # zero mantissa -> make zero
         if self.man == 0 or self.exp == 0:
             self.neg, self.man, self.exp = self.zero.neg, self.zero.man, self.zero.exp
@@ -191,7 +205,7 @@ class Float(object):
         return self
             
     def ifloor(self):
-        # discards carry & truncates towards neg infty, returns mbf
+        """ In-place. Discard carry & truncate towards -infinity; return as float. """
         if self.is_zero():
             return self
         n = self.from_int(self.trunc_to_int())
@@ -202,6 +216,7 @@ class Float(object):
         return self
 
     def iround(self):
+        """ In-place. Round and return as float. """
         if self.exp-self.bias > 0:
             self.man = long(self.man * 2**(self.exp-self.bias))
         else:
@@ -213,11 +228,12 @@ class Float(object):
         return self
         
     def negate(self):
+        """ In-place negation. """
         self.neg = not self.neg
         return self
         
-    # unnormalised add in place        
     def iadd_raw(self, right_in):
+        """ Unnormalised add in-place. """
         if right_in.is_zero():
             return self
         if self.is_zero():
@@ -245,12 +261,15 @@ class Float(object):
         return self
         
     def iadd(self, right):
+        """ In-place addition. """
         return self.iadd_raw(right).normalise()
         
     def isub(self, right_in):
+        """ In-place subtraction. """
         return self.iadd(self.__class__(not right_in.neg, right_in.man, right_in.exp))
         
     def imul10(self):    
+        """ In-place multiplication by 10. """
         if self.is_zero():
             return self
         # 10x == 2(x+4x)    
@@ -261,6 +280,7 @@ class Float(object):
         return self
         
     def imul(self, right_in):    
+        """ In-place multiplication. """
         if self.is_zero():
             return self
         if right_in.is_zero():
@@ -273,10 +293,12 @@ class Float(object):
         return self
         
     def isq(self):
+        """ In-place square. """
         self.imul(self)
         return self
         
     def idiv(self, right_in):
+        """ In-place division. """
         if right_in.is_zero():
             msg_zero_div()
             self.man, self.exp = self.max.man, self.max.exp
@@ -303,12 +325,13 @@ class Float(object):
         return self
         
     def idiv10(self):
+        """ In-place division by 10. """
         self.idiv(self.ten)
         return self
         
-    # Float raised to integer exponent
-    # exponentiation by squares
     def ipow_int(self, expt):
+        """ In-place exponentiation by integer. """
+        # exponentiation by squares
         if expt < 0:
             self.ipow_int(-expt)
             self = div(self.one, self)
@@ -325,25 +348,28 @@ class Float(object):
             self = self.one.copy()
         return self
               
-    # absolute value is greater than
     def abs_gt(self, right):
+        """ Absolute value is greater than. """
         if self.exp != right.exp:
             return (self.exp > right.exp)     
         return (self.man > right.man)     
 
-    # greater than    
     def gt(self, right):
+        """ Greater than. """
         if self.neg != right.neg:
             return right.neg
         return self.neg != self.abs_gt(right)
     
     def equals(self, right):
+        """ Float equals other float. """
         return (self.neg==right.neg and self.exp==right.exp and self.man&self.carry_mask == right.man&right.carry_mask)
         
     def equals_inc_carry(self, right, grace_bits=0):
+        """ Float equals other float, taking carry into account. """
         return (self.neg==right.neg and self.exp==right.exp and abs(self.man-right.man) < (1<<grace_bits)) 
      
     def bring_to_range(self, lim_bot, lim_top):
+        """ Return exponentiation needed to bring float into range. """
         exp10 = 0    
         while self.abs_gt(lim_top):
             self.idiv10()
@@ -366,14 +392,15 @@ class Float(object):
             num += 1
         return num, exp10
 
-    # get python float
     def to_value(self):
+        """ Convert to Python float. """
         self.apply_carry()
         man = self.man >> 8
         return man * 2**(self.exp - self.bias) * (1-2*self.neg)
 
     @classmethod
     def from_value(cls, value):
+        """ Set to value of Python float. """
         neg = value < 0
         fexp = math.log(abs(value), 2) - cls.mantissa_bits
         man = int(abs(value) * 0.5**int(fexp-8))
@@ -382,6 +409,7 @@ class Float(object):
 
         
 class Single(Float):
+    """ Single-precision float. """
     digits = 7
     mantissa_bits = 24
     byte_size = 4
@@ -390,6 +418,7 @@ class Single(Float):
 
     
 class Double(Float):
+    """ Double-precision float. """
     digits = 16
     mantissa_bits = 56
     byte_size = 8
@@ -397,25 +426,30 @@ class Double(Float):
     carry_mask = 0xffffffffffffff00    
     
     def round_to_single(self):
+        """ Round double to single. """
         mybytes = self.to_bytes()
         single = Single.from_bytes(mybytes[4:])
         single.man += mybytes[3]
         return single.normalise()
 
+
 ####################################
 
 def from_bytes(s):
+    """ Convert byte sequence to single or double. """
     if len(s) == 4:   
         return Single.from_bytes(s)
     elif len(s) == 8:   
         return Double.from_bytes(s)
     
 def unpack(value):
+    """ Unpack a float for manipulation. """
     state.basic_state.overflow = False
     state.basic_state.zero_div = False
     return from_bytes(value[1])
 
 def pack(n):
+    """ Pack a float into BASIC representation. """
     s = n.to_bytes()
     if len(s) == 8:
         return ('#', s)
@@ -427,28 +461,34 @@ def pack(n):
 # standalone arithmetic operators
 
 def add(left_in, right_in):
+    """ Add two floats. """
     return left_in.copy().iadd(right_in)
 
 def sub(left_in, right_in):
+    """ Subtract two floats. """
     return left_in.copy().isub(right_in)
 
 def mul(left_in, right_in):
+    """ Multiply two floats. """
     return left_in.copy().imul(right_in)
     
 def div(left_in, right_in):
+    """ Divide two floats. """
     return left_in.copy().idiv(right_in)
     
 def sq(n):
+    """ Square a float. """
     return mul(n, n)
 
 def pow_int(left_in, right_in):
+    """ Raise a float to an integer power. """
     return left_in.copy().ipow_int(right_in)
     
 ####################################
 # math function       
 
-# convert to IEEE 754, do library math operations, convert back
 def power(base_in, exp_in):
+    """ Convert to IEEE 754, raise to float power, convert back. """
     try:
         return base_in.__class__().from_value(base_in.to_value() ** exp_in.to_value())    
     except OverflowError:
@@ -456,6 +496,7 @@ def power(base_in, exp_in):
         return base_in.__class__(base_in.neg, base_in.carry_mask, 0xff)
 
 def unary(mbf_in, fn):
+    """ Convert to IEEE 754, apply math library function, convert back. """
     try:
         return mbf_in.__class__().from_value(fn(mbf_in.to_value()))    
     except OverflowError:
