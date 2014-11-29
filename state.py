@@ -1,34 +1,43 @@
-#
-# PC-BASIC 3.23 - state.py
-#
-# Emulator state
-# 
-# (c) 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
+"""
+PC-BASIC 3.23 - state.py
+Emulator state
+
+(c) 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+"""
 
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
+try:
+    import cStringIO
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+import copy_reg
 import os
 import zlib
 import logging
 import plat
 import config        
+
         
 class State(object):
+    """ Base class for state """
     pass
 
-# display backends can extend this for their pickling needs
 class DisplayState(State):
+    """ Display state; video modules can extend this for their pickling needs. """
+
     def pickle(self):
+        """ Pickle the display information. """
         pass
     
     def unpickle(self):
+        """ unpickle the display information. """
         pass
+        
         
 basic_state = State()        
 io_state = State()
@@ -38,7 +47,9 @@ display = DisplayState()
 # a state has been loaded
 loaded = False
 
+
 def prepare():
+    """ Initialise the state module. """
     global state_file, loaded
     if config.options['state']:
         state_file = config.options['state']
@@ -49,19 +60,12 @@ def prepare():
     # do not load any state file from a package    
     if config.package:
         state_file = ''
-
-###############################################
-
-try:
-    import cStringIO
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-
-import copy_reg
-
+    # register the picklers for file and cStringIO
+    copy_reg.pickle(file, pickle_file)
+    copy_reg.pickle(cStringIO.OutputType, pickle_StringIO)
 
 def unpickle_file(name, mode, pos):
+    """ Unpickle a file object. """
     try:
         if 'w' in mode and pos > 0:
             # preserve existing contents of writable file
@@ -80,14 +84,15 @@ def unpickle_file(name, mode, pos):
     return f
         
 def pickle_file(f):
+    """ Pickle a file object. """
     try:
         return unpickle_file, (f.name, f.mode, f.tell())
     except IOError:
         # not seekable
         return unpickle_file, (f.name, f.mode, -1)
-        
 
 def unpickle_StringIO(value, pos):
+    """ Unpickle a cStringIO object. """
     # needs to be called without arguments or it's a StringI object without write()
     csio = StringIO()
     csio.write(value)
@@ -95,18 +100,13 @@ def unpickle_StringIO(value, pos):
     return csio             
 
 def pickle_StringIO(csio):
+    """ Pickle a cStringIO object. """
     value = csio.getvalue()
     pos = csio.tell()
     return unpickle_StringIO, (value, pos)
 
-copy_reg.pickle(file, pickle_file)
-copy_reg.pickle(cStringIO.OutputType, pickle_StringIO)
- 
-
-
-###############################################
-
 def save():
+    """ Save emulator state to file. """
     if not state_file:
         return
     # prepare pickling object
@@ -125,6 +125,7 @@ def save():
         logging.warning("Could not write to state file %s. Emulator state not saved.", state_file)
     
 def load():
+    """ Load emulator state from file. """
     global console_state, io_state, basic_state, loaded
     if not state_file:
         return False
@@ -145,6 +146,7 @@ def load():
     return True
     
 def delete():
+    """ Delete emulator state file. """
     try:
         os.remove(state_file)
     except OSError:

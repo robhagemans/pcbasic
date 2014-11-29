@@ -1,13 +1,10 @@
-#
-# PC-BASIC 3.23  - rnd.py
-#
-# Random number generator
-# 
-# (c) 2013, 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
+"""
+PC-BASIC 3.23  - rnd.py
+Random number generator
+
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+"""
 
 import fp
 import vartypes
@@ -18,12 +15,16 @@ rnd_period = 2**24
 rnd_a = 214013
 rnd_c = 2531011
 
+def prepare():
+    """ Initialise the rnd module. """
+    clear()
+
 def clear():
+    """ Reset the random number generator. """
     state.basic_state.rnd_seed = 5228370 # 0x4fc752
 
-clear()
-
 def randomize(val):        
+    """ Reseed the random number generator. """
     # RANDOMIZE converts to int in a non-standard way - looking at the first two bytes in the internal representation
     # on a program line, if a number outside the signed int range (or -32768) is entered,
     # the number is stored as a MBF double or float. Randomize then:
@@ -47,6 +48,7 @@ def randomize(val):
     state.basic_state.rnd_seed %= rnd_period
     
 def get_random_int(n):
+    """ Get a value from the random number generator (int argument). """
     if n < 0:
         n = -n
         while n < 2**23:
@@ -57,9 +59,10 @@ def get_random_int(n):
     # rnd_seed/rnd_period
     return fp.pack(fp.div(fp.Single.from_int(state.basic_state.rnd_seed), fp.Single.from_int(rnd_period)))
 
-# takes mbf Single arg
 def get_random(mbf):
+    """ Get a value from the random number generator (MBF single argument). """
     return get_random_int(-(mbf.man>>8) if mbf.neg else mbf.man>>8)    
     
-    
-    
+prepare()
+
+
