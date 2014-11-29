@@ -56,7 +56,11 @@ def peek(addr):
         return peek_values[addr]
     except KeyError: 
         if addr >= memory.rom_segment*0x10:
+            # ROM font
             return max(0, get_rom_memory(addr))
+        elif addr >= memory.ram_font_segment*0x10:
+            # RAM font
+            return max(0, get_font_memory(addr))
         elif addr >= memory.video_segment*0x10:
             # graphics and text memory
             return max(0, get_video_memory(addr))
@@ -85,6 +89,9 @@ def poke(addr, val):
     if addr >= memory.rom_segment*0x10:
         # ROM includes font memory
         pass
+    elif addr >= memory.ram_font_segment*0x10:
+        # RAM font memory
+        set_font_memory(addr, val)
     elif addr >= memory.video_segment*0x10:
         # graphics and text memory
         set_video_memory(addr, val)
@@ -116,6 +123,7 @@ def not_implemented_pass(addr, val):
 set_data_memory = not_implemented_poke
 set_field_memory = not_implemented_poke
 set_low_memory = not_implemented_pass
+set_font_memory = not_implemented_pass
 
         
 def inp(port):    
@@ -392,6 +400,16 @@ def get_rom_memory(addr):
     if char > 127 or char<0:
         return -1
     return ord(backend.video.fonts[8][chr(char)][addr%8])
+
+
+def get_font_memory(addr):
+    """ Retrieve RAM font data. """
+    addr -= memory.ram_font_segment*0x10 + ram_font_addr
+    char = addr // 8 + 128
+    if char < 128 or char > 254:
+        return -1
+    return ord(backend.video.fonts[8][chr(char)][addr%8])
+
 
 #################################################################################
 
