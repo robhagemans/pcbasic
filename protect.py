@@ -1,12 +1,12 @@
 """
-# PC-BASIC 3.23  - protect.py
-# Source encryption/decryption 
-# 
-# (c) 2013, 2014 Rob Hagemans 
-# This file is released under the GNU GPL version 3. 
-#
-# Paul Kocher reverse engineered the decryption algorithm, published in:
-# The Cryptogram computer supplement #19, American Cryptogram Association, Summer 1994 
+PC-BASIC 3.23  - protect.py
+Source encryption/decryption 
+
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+
+Paul Kocher reverse engineered the decryption algorithm, published in:
+The Cryptogram computer supplement #19, American Cryptogram Association, Summer 1994 
 """
  
 # 13-byte and 11-byte keys used by GW-BASIC 
