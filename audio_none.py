@@ -46,4 +46,8 @@ def busy():
 def set_noise(is_white):
     """ Set the character of the noise channel. """
     pass      
-    
+
+def quit_sound():
+    """ Shut down the mixer. """
+    pass
+
