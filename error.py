@@ -1,13 +1,11 @@
-#
-# PC-BASIC 3.23 - error.py
-#
-# Error handling 
-# 
-# (c) 2013, 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
+"""
+PC-BASIC 3.23 - error.py
+Error handling 
+
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+"""
+
 import state
 
 # number and line number of last error
@@ -83,9 +81,11 @@ errors = {
 
 
 class Error(Exception):
+    """ Base type for exceptions. """
     pass
             
 class Break(Error):
+    """ Program interrupt. """
     def __init__(self, stop=False):
         Error.__init__(self)
         if not state.basic_state.run_mode:
@@ -95,14 +95,17 @@ class Break(Error):
         self.stop = stop
         
 class Reset(Error):
+    """ Reset emulator. """
     def __init__(self):
         Error.__init__(self)
         
 class Exit(Error):
+    """ Exit emulator. """
     def __init__(self):
         Error.__init__(self)
             
 class RunError(Error):
+    """ Runtime error. """
     def __init__(self, value, pos=-1):
         Error.__init__(self)
         self.err = value
@@ -111,13 +114,14 @@ class RunError(Error):
         else: 
             self.pos = state.basic_state.current_statement
 
-
 def set_err(e):
+    """ Set the ERR and ERL values. """
     # set ERR and ERL
     state.basic_state.errn = e.err
     state.basic_state.errp = e.pos 
     
 def get_message(errnum):
+    """ Get error message for error code. """
     try:
         return errors[errnum]
     except KeyError:
