@@ -1,13 +1,10 @@
-#
-# PC-BASIC 3.23  - flow.py
-#
-# Program pointer utilities
-# 
-# (c) 2013, 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
+"""
+PC-BASIC 3.23  - flow.py
+Program pointer utilities
+
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+"""
 
 import state
 import fp
@@ -22,6 +19,7 @@ state.basic_state.run_mode = False
 state.basic_state.tron = False
 
 def init_program():
+    """ Initialise the stacks and pointers for a new program. """
     # stop running if we were
     set_pointer(False)
     # reset loop stacks
@@ -35,14 +33,15 @@ def init_program():
     # reset data reader
     restore()
 
-# RESTORE
 def restore(datanum=-1):
+    """ Reset data pointer (RESTORE) """
     try:
         state.basic_state.data_pos = 0 if datanum == -1 else state.basic_state.line_numbers[datanum]
     except KeyError:
         raise error.RunError(8)
 
 def set_pointer(new_runmode, pos=None):
+    """ Set program pointer to the given codestream and position. """
     state.basic_state.run_mode = new_runmode
     codestream = get_codestream()
     if pos != None:
@@ -53,14 +52,17 @@ def set_pointer(new_runmode, pos=None):
         codestream.seek(0, 2)
 
 def get_codestream():
+    """ Get the current codestream. """
     return state.basic_state.bytecode if state.basic_state.run_mode else state.basic_state.direct_line   
 
 def jump_gosub(jumpnum, handler=None):    
+    """ Execute jump for a GOSUB. """
     # set return position
     state.basic_state.gosub_return.append((get_codestream().tell(), state.basic_state.run_mode, handler))
     jump(jumpnum)
  
-def jump_return(jumpnum):        
+def jump_return(jumpnum):
+    """ Execute jump for a RETURN. """
     try:
         pos, orig_runmode, handler = state.basic_state.gosub_return.pop()
     except IndexError:
@@ -78,6 +80,7 @@ def jump_return(jumpnum):
         jump(jumpnum)
 
 def loop_init(ins, forpos, nextpos, varname, start, stop, step):
+    """ Initialise a FOR loop. """
     # set start to start-step, then iterate - slower on init but allows for faster iterate
     var.set_var(varname, vartypes.number_add(start, vartypes.number_neg(step)))
     # NOTE: all access to varname must be in-place into the bytearray - no assignments!
@@ -86,12 +89,14 @@ def loop_init(ins, forpos, nextpos, varname, start, stop, step):
     ins.seek(nextpos)
 
 def number_unpack(value):
+    """ Unpack a number value. """
     if value[0] in ('#', '!'):
         return fp.unpack(value)
     else:
         return vartypes.unpack_int(value)
 
 def number_inc_gt(typechar, loopvar, stop, step, sgn):
+    """ Increase number and check if it exceeds a limit. """
     if sgn == 0:
         return False
     if typechar in ('#', '!'):
@@ -104,6 +109,7 @@ def number_inc_gt(typechar, loopvar, stop, step, sgn):
         return int_left > stop if sgn > 0 else stop > int_left
         
 def loop_iterate(ins):   
+    """ Iterate a loop (NEXT). """
     # we MUST be at nextpos to run this
     # find the matching NEXT record
     pos = ins.tell()
@@ -126,6 +132,7 @@ def loop_iterate(ins):
     return loop_ends
     
 def resume(jumpnum):  
+    """ Execute jump for a RESUME instruction. """
     start_statement, runmode = state.basic_state.error_resume 
     state.basic_state.errn = 0
     state.basic_state.error_handle_mode = False
@@ -142,8 +149,8 @@ def resume(jumpnum):
         # RESUME n
         jump(jumpnum)
          
-# jump to line number    
 def jump(jumpnum, err=8):
+    """ Execute jump for a GOTO or RUN instruction. """
     if jumpnum == None:
         set_pointer(True, 0)
     else:    
@@ -154,8 +161,8 @@ def jump(jumpnum, err=8):
             # Undefined line number
             raise error.RunError(err)
             
-# READ a unit of DATA
 def read_entry():
+    """ READ a unit of DATA. """
     current = state.basic_state.bytecode.tell()
     state.basic_state.bytecode.seek(state.basic_state.data_pos)
     if util.peek(state.basic_state.bytecode) in util.end_statement:
