@@ -601,6 +601,7 @@ def exec_def_usr(ins):
     util.require_read(ins, ('\xE7',))     
     vartypes.pass_int_keep(expressions.parse_expression(ins), maxint=0xffff)
     util.require(ins, util.end_statement)
+    logging.warning("DEF USR statement not implemented")
 
 def exec_bload(ins):
     """ BLOAD: load a file into a memory location. Limited implementation. """
@@ -648,8 +649,8 @@ def exec_call(ins):
                 break
         util.require_read(ins, (')',))        
     util.require(ins, util.end_statement)
-    # advanced feature
-    raise error.RunError(73)    
+    # ignore the statement
+    logging.warning("CALL or CALLS statement not implemented")
 
 def exec_calls(ins):
     """ CALLS: call an external procedure. Not implemented. """
@@ -1125,6 +1126,7 @@ exec_unlock = partial(exec_lock_or_unlock, action = iolayer.unlock_records)
 def exec_ioctl(ins):
     """ IOCTL: send control string to I/O device. Not implemented. """
     iolayer.get_file(expressions.parse_file_number_opthash(ins))
+    logging.warning("IOCTL statement not implemented.")
     raise error.RunError(5)   
     
 ##########################################################

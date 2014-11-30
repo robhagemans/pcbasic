@@ -791,7 +791,8 @@ def value_usr(ins):
     if util.peek(ins) in ('\x11','\x12','\x13','\x14','\x15','\x16','\x17','\x18','\x19','\x1a'): # digits 0--9
         ins.read(1)
     parse_bracket(ins)
-    raise error.RunError(5)
+    logging.warning("USR() function not implemented.")
+    return vartypes.null['%']
     
 def value_inp(ins):
     """ INP: get value from machine port. """
@@ -800,6 +801,7 @@ def value_inp(ins):
 
 def value_erdev(ins):
     """ ERDEV$: device error string; not implemented. """
+    logging.warning("ERDEV or ERDEV$ function not implemented.")
     if util.skip_white_read_if(ins, ('$',)):
         return vartypes.null['$']
     else:    
@@ -809,6 +811,7 @@ def value_exterr(ins):
     """ EXTERR: device error information; not implemented. """
     x = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 3, x)
+    logging.warning("EXTERR() function not implemented.")
     return vartypes.null['%']
     
 def value_ioctl(ins):
@@ -818,6 +821,7 @@ def value_ioctl(ins):
     num = parse_file_number_opthash(ins)
     util.require_read(ins, (')',))
     iolayer.get_file(num)
+    logging.warning("IOCTL$() function not implemented.")
     raise error.RunError(5)   
     
 ###########################################################

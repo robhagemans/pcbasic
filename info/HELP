@@ -602,7 +602,7 @@ ERRORS:
 CALL statement
 CALL address_var [(parm_0 [, parm_1 [, ...] )]
 --------------
-Raises ADVANCED FEATURE.
+Does nothing.
 NOTES:
 -   In GW-BASIC, CALL executes a machine language subroutine. 'address_var' is
     a numeric variable. 'parm_0' etc are variable names; these variables are 
@@ -616,7 +616,7 @@ ERRORS:
 CALLS statement
 CALLS address_var [(parm_0 [, parm_1 [, ...] )]
 ------------
-Raises ADVANCED FEATURE.
+Does nothing.
 NOTES:
 -   In GW-BASIC, CALLS executes a MS-FORTRAN subroutine. 'address_var' is
     a numeric variable. 'parm_0' etc are variable names; these variables are 
@@ -3826,7 +3826,7 @@ ERRORS:
 USR function
 value = USR[n](expr)
 ------------
-Raises ILLEGAL FUNCTION CALL.
+Returns zero.
 'n' is a digit between 0 and 9 inclusive. 
 'expr' is an expression.
 NOTES:
@@ -3834,7 +3834,6 @@ NOTES:
     This is not implemented in PC-BASIC 3.23.
 ERRORS:
 -   If 'n' is not a digit 0--9, raises SYNTAX ERROR.
--   Raises ILLEGAL FUNCTION CALL.
 
 
 VAL function
