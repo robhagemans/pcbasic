@@ -1,72 +1,69 @@
-#
+"""
 # PC-BASIC 3.23 - util.py
-#
 # Token stream utilities
 # 
 # (c) 2013, 2014 Rob Hagemans 
-#
 # This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
-
-# basic stream utility functions
-
-# peek next char in stream
-def peek(ins, n=1):
-    d = ins.read(n)
-    ins.seek(-len(d), 1)
-    return d
-
-# skip chars in skip_range, then read next
-def skip_read(ins, skip_range, n=1):
-    while True: 
-        d = ins.read(1)
-        # skip_range must not include ''
-        if d == '' or d not in skip_range:
-            return d + ins.read(n-1)
-
-# skip chars in skip_range, then peek next
-def skip(ins, skip_range, n=1):
-    d = skip_read(ins, skip_range, n) 
-    ins.seek(-len(d), 1)
-    return d
-    
-##################################################
-##################################################
+"""
 
 from functools import partial
+import error
+import vartypes
 
-# tokens
-
+# TOKENS
 # LF is just whitespace if not preceded by CR
-# (what about TAB? are there other whitespace chars in a tokenised file?)
 whitespace = (' ', '\t', '\x0a')
 # line ending tokens
 end_line = ('\x00', '')
 # statement ending tokens
 end_statement = end_line + (':',) 
 # expression ending tokens
-# '\xCC is 'TO', \x89 is GOTO, \x8D is GOSUB, \xCF is STEP, \xCD is THEN 
+# \xCC is TO, \x89 is GOTO, \x8D is GOSUB, \xCF is STEP, \xCD is THEN 
 end_expression = end_statement + (')', ']', ',', ';', '\xCC', '\x89', '\x8D', '\xCF', '\xCD') 
 ## tokens followed by one or more bytes to be skipped
 plus_bytes = {'\x0f':1, '\xff':1 , '\xfe':1, '\x0b':2, '\x0c':2, '\x0d':2, '\x0e':2, '\x1c':2, '\x1d':4, '\x1f':8, '\x00':4}
 
+###############################################################################
+# stream utilities
 
-# these are for tokenised streams only
+def peek(ins, n=1):
+    """ Peek next char in stream. """
+    d = ins.read(n)
+    ins.seek(-len(d), 1)
+    return d
 
+def skip_read(ins, skip_range, n=1):
+    """ Skip chars in skip_range, then read next. """
+    while True: 
+        d = ins.read(1)
+        # skip_range must not include ''
+        if d == '' or d not in skip_range:
+            return d + ins.read(n-1)
+
+def skip(ins, skip_range, n=1):
+    """ Skip chars in skip_range, then peek next. """
+    d = skip_read(ins, skip_range, n) 
+    ins.seek(-len(d), 1)
+    return d
+
+# skip whitespace, then read next
 skip_white_read = partial(skip_read, skip_range=whitespace)
+# skip whitespace, then peek next
 skip_white = partial(skip, skip_range=whitespace)
 
 def skip_white_read_if(ins, in_range):
+    """ Skip whitespace, then read if next char is in range. """
     return read_if(ins, skip_white(ins, n=len(in_range[0])), in_range)
 
 def read_if(ins, d, in_range):
+    """ Read if next char is in range. """
     if d != '' and d in in_range:
         ins.read(len(d))
         return True
     return False
 
 def skip_to(ins, findrange, break_on_first_char=True):        
+    """ Skip until character is in findrange. """
     literal = False
     rem = False
     while True: 
@@ -105,22 +102,20 @@ def skip_to(ins, findrange, break_on_first_char=True):
             ins.read(8)
 
 def skip_to_read(ins, findrange):
+    """ Skip until character is in findrange, then read. """
     skip_to(ins, findrange)
     return ins.read(1)
 
-##################################################
-##################################################
-
-# parsing
-
-import error
-import vartypes
+###############################################################################
+# parsing utilities
 
 def require_read(ins, in_range, err=2):
+    """ Skip whitespace, read and raise error if not in range. """
     if skip_white_read(ins, n=len(in_range[0])) not in in_range:
         raise error.RunError(err)
     
 def require(ins, rnge, err=2):
+    """ Skip whitespace, peek and raise error if not in range. """
     a = skip_white(ins, n=len(rnge[0]))
     if a not in rnge:
         # position correctly for EDIT gadget and throw the (syntax) error
@@ -128,9 +123,9 @@ def require(ins, rnge, err=2):
             ins.read(1)
         raise error.RunError(err)
     
-# parse line number and leve pointer at first char of line
-# if end of program or truncated, leave pointer at start of line number C0 DE or 00 00    
 def parse_line_number(ins):
+    """ Parse line number and leave pointer at first char of line. """
+    # if end of program or truncated, leave pointer at start of line number C0 DE or 00 00    
     off = ins.read(2)
     if off=='\x00\x00' or len(off) < 2:
         ins.seek(-len(off),1)
@@ -142,18 +137,18 @@ def parse_line_number(ins):
     else:
         return vartypes.uint_to_value(bytearray(off))
   
-# parses a line number when referred toindirectly as in GOTO, GOSUB, LIST, RENUM, EDIT, etc.
 def parse_jumpnum(ins, allow_empty=False, err=2):
+    """ Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc. """
     if skip_white_read_if(ins, ('\x0e',)):
-        return vartypes.uint_to_value(bytearray(ins.read(2)))    
+        return vartypes.uint_to_value(bytearray(ins.read(2)))
     else:
         if allow_empty:
             return -1
         # Syntax error
         raise error.RunError(err)
 
-# token to value
 def parse_value(ins):
+    """ Token to value. """
     d = ins.read(1)
     # note that hex and oct strings are interpreted signed here, but unsigned the other way!
     try:
@@ -178,6 +173,7 @@ def parse_value(ins):
 
 
 def get_var_name(ins, allow_empty=False):
+    """ Get variable name from token stream. """
     name = ''
     d = skip_white_read(ins).upper()
     if not (d >= 'A' and d <= 'Z'):
@@ -201,11 +197,13 @@ def get_var_name(ins, allow_empty=False):
     return name
 
 def range_check(lower, upper, *allvars):
+    """ Check if all variables in list are within the given inclusive range. """
     for v in allvars:
         if v != None and v < lower or v > upper:
             raise error.RunError(5)
             
 def range_check_err(lower, upper, v, err=5):
+    """ Check if variable is within the given inclusive range. """
     if v != None and v < lower or v > upper:
         raise error.RunError(err)
             
