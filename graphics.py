@@ -1,13 +1,10 @@
-#
-# PC-BASIC 3.23 - graphics.py
-#
-# Graphics methods (frontend)
-# 
-# (c) 2013, 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
+"""
+PC-BASIC 3.23 - graphics.py
+Graphics methods (frontend)
+
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+"""
 
 import error
 import fp
@@ -23,14 +20,16 @@ state.console_state.last_point = (0, 0)
 state.console_state.last_attr = state.console_state.attr
 
 def require_graphics_mode(err=5):
+    """ Raise error if not in graphics mode. """
     if not is_graphics_mode():
         raise error.RunError(err)
 
 def is_graphics_mode():
+    """ Return whether in graphics mode. """
     return backend.video and not state.console_state.current_mode.is_text_mode
 
-# reset graphics state    
 def reset_graphics():
+    """ Reset graphics state. """
     if not is_graphics_mode():
         return
     x0, y0, x1, y1 = backend.video.get_graph_clip()
@@ -42,6 +41,7 @@ def reset_graphics():
     state.basic_state.draw_angle = 0
 
 def get_colour_index(c):
+    """ Get the index of the specified attribute. """
     if c == -1: # foreground; graphics 'background' attrib is always 0
         c = state.console_state.attr & 0xf
     else:
@@ -49,11 +49,13 @@ def get_colour_index(c):
     return c
 
 def check_coords(x, y):
+    """ Ensure coordinates are within screen. """
     return min(state.console_state.size[0], max(-1, x)), min(state.console_state.size[1], max(-1, y))
     
 ### PSET, POINT
 
 def put_point(x, y, c):
+    """ Draw a pixel in the give attribute (PSET, PRESET). """
     x, y = backend.view_coords(x,y)
     backend.video.apply_graph_clip()
     c = get_colour_index(c)
@@ -62,6 +64,7 @@ def put_point(x, y, c):
     state.console_state.last_attr = c
     
 def get_point(x, y):
+    """ Return the attribute of a pixel (POINT). """
     x, y = backend.view_coords(x, y)
     if x < 0 or x >= state.console_state.size[0]:
         return -1
@@ -72,6 +75,7 @@ def get_point(x, y):
 ### WINDOW coords
 
 def set_graph_window(fx0, fy0, fx1, fy1, cartesian=True):
+    """ Set the logical coordinate window (WINDOW). """
     if fy0.gt(fy1):
         fy0, fy1 = fy1, fy0
     if fx0.gt(fx1):
@@ -87,11 +91,12 @@ def set_graph_window(fx0, fy0, fx1, fy1, cartesian=True):
     state.console_state.graph_window_bounds = fx0, fy0, fx1, fy1, cartesian
 
 def unset_graph_window():
+    """ Unset the logical coorndinate window. """
     state.console_state.graph_window = None
     state.console_state.graph_window_bounds = None
 
-# input logical coords, output physical coords
 def window_coords(fx, fy, step=False):
+    """ Convert logical to physical coordinates. """
     if state.console_state.graph_window:
         scalex, scaley, offsetx, offsety = state.console_state.graph_window
         fx0, fy0 = get_window_coords(*state.console_state.last_point) if step else (fp.Single.zero.copy(), fp.Single.zero.copy())    
@@ -106,9 +111,8 @@ def window_coords(fx, fy, step=False):
         raise error.RunError(6)    
     return x, y
 
-# inverse function
-# input physical coords, output logical coords
 def get_window_coords(x, y):
+    """ Convert physical to logical coordinates. """
     x, y = fp.Single.from_int(x), fp.Single.from_int(y)
     if state.console_state.graph_window:
         scalex, scaley, offsetx, offsety = state.console_state.graph_window
@@ -117,6 +121,7 @@ def get_window_coords(x, y):
         return x, y
 
 def window_scale(fx, fy):
+    """ Get logical to physical scale factor. """
     if state.console_state.graph_window:
         scalex, scaley, _, _ = state.console_state.graph_window
         return fp.mul(fx, scalex).round_to_int(), fp.mul(fy, scaley).round_to_int()
@@ -126,6 +131,7 @@ def window_scale(fx, fy):
 ### LINE
             
 def draw_box_filled(x0, y0, x1, y1, c):
+    """ Draw a filled box between the given corner points. """
     x0, y0 = backend.view_coords(x0, y0)
     x1, y1 = backend.view_coords(x1, y1)
     c = get_colour_index(c)
@@ -139,6 +145,7 @@ def draw_box_filled(x0, y0, x1, y1, c):
     state.console_state.last_attr = c
     
 def draw_line(x0, y0, x1, y1, c, pattern=0xffff):
+    """ Draw a line between the given points. """
     c = get_colour_index(c)
     x0, y0 = check_coords(*backend.view_coords(x0, y0))
     x1, y1 = check_coords(*backend.view_coords(x1, y1))
@@ -174,6 +181,7 @@ def draw_line(x0, y0, x1, y1, c, pattern=0xffff):
     state.console_state.last_attr = c
     
 def draw_straight(x0, y0, x1, y1, c, pattern, mask):
+    """ Draw a horizontal or vertical line. """
     if x0 == x1:
         p0, p1, q, direction = y0, y1, x0, 'y' 
     else:
@@ -191,6 +199,7 @@ def draw_straight(x0, y0, x1, y1, c, pattern, mask):
     return mask
                         
 def draw_box(x0, y0, x1, y1, c, pattern=0xffff):
+    """ Draw an empty box between the given corner points. """
     x0, y0 = check_coords(*backend.view_coords(x0, y0))
     x1, y1 = check_coords(*backend.view_coords(x1, y1))
     c = get_colour_index(c)
@@ -206,9 +215,45 @@ def draw_box(x0, y0, x1, y1, c, pattern=0xffff):
     backend.video.remove_graph_clip()
     state.console_state.last_attr = c
     
-### circle, ellipse, sectors
+###############################################################################
+# circle, ellipse, sectors (CIRCLE)
+
+# NOTES ON THE MIDPOINT ALGORITHM
+#    
+# CIRCLE:
+# x*x + y*y == r*r
+# look at y'=y+1
+# err(y) = y*y+x*x-r*r
+# err(y') = y*y + 2y+1 + x'*x' - r*r == err(y) + x'*x' -x*x + 2y+1 
+# if x the same:
+#   err(y') == err(y) +2y+1
+# if x -> x-1:
+#   err(y') == err(y) +2y+1 -2x+1 == err(y) +2(y-x+1)
+#
+# why initialise error with 1-x == 1-r?
+# we change x if the radius is more than 0.5pix out so err(y, r+0.5) == y*y + x*x - (r*r+r+0.25) == err(y,r) - r - 0.25 >0
+# with err and r both integers, this just means err - r > 0 <==> err - r +1 >= 0
+# above, error == err(y) -r + 1 and we change x if it's >=0.
+#
+# ELLIPSE: 
+# ry^2*x^2 + rx^2*y^2 == rx^2*ry^2
+# look at y'=y+1 (quadrant between points of 45deg slope)
+# err == ry^2*x^2 + rx^2*y^2 - rx^2*ry^2
+# err(y') == rx^2*(y^2+2y+1) + ry^2(x'^2)- rx^2*ry^2 == err(y) + ry^2(x'^2-x^2) + rx^2*(2y+1)
+# if x the same:
+#   err(y') == err(y) + rx^2*(2y+1)
+# if x' -> x-1:
+#   err(y') == err(y) + rx^2*(2y+1) +rx^2(-2x+1)
+#
+# change x if radius more than 0.5pix out: err(y, rx+0.5, ry) == ry^2*y*y+rx^2*x*x - (ry*ry)*(rx*rx+rx+0.25) > 0
+#  ==> err(y) - (rx+0.25)*(ry*ry) >0
+#  ==> err(y) - (rx*ry*ry + 0.25*ry*ry ) > 0 
+#
+# break yinc loop if one step no longer suffices
+
 
 def draw_circle_or_ellipse(x0, y0, r, start, stop, c, aspect):
+    """ Draw a circle, ellipse, arc or sector (CIRCLE). """
     if aspect.equals(aspect.one):
         rx, dummy = window_scale(r,fp.Single.zero)
         ry = rx
@@ -240,6 +285,7 @@ def draw_circle_or_ellipse(x0, y0, r, start, stop, c, aspect):
         draw_ellipse(x0, y0, rx, ry, c, start_octant/2, startx, starty, start_line, stop_octant/2, stopx, stopy, stop_line)
 
 def get_octant(mbf, rx, ry):
+    """ Get the circle octant for a given coordinate. """
     neg = mbf.neg 
     if neg:
         mbf.negate()
@@ -258,8 +304,9 @@ def get_octant(mbf, rx, ry):
         coord = abs(fp.mul(fp.Single.from_int(rx), fp.cos(mbf)).round_to_int())
     return octant, coord, neg          
 
-# see e.g. http://en.wikipedia.org/wiki/Midpoint_circle_algorithm
 def draw_circle(x0, y0, r, c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, line1=False):
+    """ Draw a circle using the midpoint algorithm. """
+    # see e.g. http://en.wikipedia.org/wiki/Midpoint_circle_algorithm
     c = get_colour_index(c)
     x0, y0 = backend.view_coords(x0, y0)
     if oct0 == -1:
@@ -312,7 +359,8 @@ def draw_circle(x0, y0, r, c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, l
     backend.video.remove_graph_clip()
     state.console_state.last_attr = c
     
-def octant_coord(octant, x0,y0, x,y):    
+def octant_coord(octant, x0, y0, x, y):    
+    """ Return symmetrically reflected coordinates for a given pair. """
     if   octant == 7:     return x0+x, y0+y
     elif octant == 0:     return x0+x, y0-y
     elif octant == 4:     return x0-x, y0+y
@@ -323,56 +371,22 @@ def octant_coord(octant, x0,y0, x,y):
     elif octant == 2:     return x0-y, y0-x
     
 def octant_gt(octant, y, coord):
+    """ Return whether y is further along the circle than coord. """
     if octant%2 == 1: 
         return y < coord 
     else: 
         return y > coord
 
 def octant_gte(octant, y, coord):
+    """ Return whether y is further along the circle than coord, or equal. """
     if octant%2 == 1: 
         return y <= coord 
     else: 
         return y >= coord
-    
-# notes on midpoint algo implementation:
-#    
-# x*x + y*y == r*r
-# look at y'=y+1
-# err(y) = y*y+x*x-r*r
-# err(y') = y*y + 2y+1 + x'*x' - r*r == err(y) + x'*x' -x*x + 2y+1 
-# if x the same:
-#   err(y') == err(y) +2y+1
-# if x -> x-1:
-#   err(y') == err(y) +2y+1 -2x+1 == err(y) +2(y-x+1)
 
-# why initialise error with 1-x == 1-r?
-# we change x if the radius is more than 0.5pix out so err(y, r+0.5) == y*y + x*x - (r*r+r+0.25) == err(y,r) - r - 0.25 >0
-# with err and r both integers, this just means err - r > 0 <==> err - r +1 >= 0
-# above, error == err(y) -r + 1 and we change x if it's >=0.
-
-
-
-# ellipse: 
-# ry^2*x^2 + rx^2*y^2 == rx^2*ry^2
-# look at y'=y+1 (quadrant between points of 45deg slope)
-# err == ry^2*x^2 + rx^2*y^2 - rx^2*ry^2
-# err(y') == rx^2*(y^2+2y+1) + ry^2(x'^2)- rx^2*ry^2 == err(y) + ry^2(x'^2-x^2) + rx^2*(2y+1)
-# if x the same:
-#   err(y') == err(y) + rx^2*(2y+1)
-# if x' -> x-1:
-#   err(y') == err(y) + rx^2*(2y+1) +rx^2(-2x+1)
-
-# change x if radius more than 0.5pix out: err(y, rx+0.5, ry) == ry^2*y*y+rx^2*x*x - (ry*ry)*(rx*rx+rx+0.25) > 0
-#  ==> err(y) - (rx+0.25)*(ry*ry) >0
-#  ==> err(y) - (rx*ry*ry + 0.25*ry*ry ) > 0 
-
-# break yinc loop if one step no longer suffices
-
-
-    
-# ellipse using midpoint algorithm
-# for algorithm see http://members.chello.at/~easyfilter/bresenham.html
 def draw_ellipse(cx, cy, rx, ry, c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1, x1=-1, y1=-1, line1=False):
+    """ Draw ellipse using the midpoint algorithm. """
+    # for algorithm see http://members.chello.at/~easyfilter/bresenham.html
     c = get_colour_index(c)
     cx, cy = backend.view_coords(cx, cy)
     # find invisible quadrants
@@ -435,12 +449,14 @@ def draw_ellipse(cx, cy, rx, ry, c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1,
     state.console_state.last_attr = c
     
 def quadrant_coord(quadrant, x0,y0, x,y):    
+    """ Return symmetrically reflected coordinates for a given pair. """
     if   quadrant == 3:     return x0+x, y0+y
     elif quadrant == 0:     return x0+x, y0-y
     elif quadrant == 2:     return x0-x, y0+y
     elif quadrant == 1:     return x0-x, y0-y
     
 def quadrant_gt(quadrant, x, y, x0, y0):
+    """ Return whether y is further along the ellipse than coord. """
     if quadrant%2 == 0:
         if y != y0: 
             return y > y0
@@ -453,6 +469,7 @@ def quadrant_gt(quadrant, x, y, x0, y0):
             return x > x0 
         
 def quadrant_gte(quadrant, x, y, x0, y0):
+    """ Return whether y is further along the ellipse than coord, or equal. """
     if quadrant%2 == 0:
         if y != y0:
             return y > y0
@@ -464,14 +481,15 @@ def quadrant_gte(quadrant, x, y, x0, y0):
         else: 
             return x >= x0 
         
-#####        
-# 4-way scanline flood fill
-# http://en.wikipedia.org/wiki/Flood_fill
+###############################################################################
+# Flood fill (PAINT)
 
-# flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
-# pattern tiling stops at intervals that equal the pattern to be drawn, unless this pattern is
-# also equal to the background pattern.
 def flood_fill(x, y, pattern, c, border, background): 
+    """ Flood fill an area defined by a border attribute with a tiled pattern. """
+    # 4-way scanline flood fill: http://en.wikipedia.org/wiki/Flood_fill
+    # flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
+    # pattern tiling stops at intervals that equal the pattern to be drawn, unless this pattern is
+    # also equal to the background pattern.
     c, border = get_colour_index(c), get_colour_index(border)
     if get_point(x, y) == border:
         return
@@ -515,8 +533,8 @@ def flood_fill(x, y, pattern, c, border, background):
             backend.check_events()
     state.console_state.last_attr = c
     
-# look at a scanline for a given interval; add all subintervals between border colours to the pile
 def check_scanline(line_seed, x_start, x_stop, y, c, tile, back, border, ydir):
+    """ Append all subintervals between border colours to the scanning stack. """
     if x_stop < x_start:
         return line_seed
     x_start_next = x_start
@@ -547,33 +565,40 @@ def check_scanline(line_seed, x_start, x_stop, y, c, tile, back, border, ydir):
     return line_seed    
 
 
-### PUT and GET
+###############################################################################
+# Sprtie operations (PUT and GET)
 
-def operation_set(pix0, pix1):
+def operation_set(pix0, pix1):  
+    """ PUT transformation: PSET """
     return pix1
 
 def operation_not(pix0, pix1):
-#    return ~pix1
+    """ PUT transformation: PRESET """
     return pix1 ^ ((1<<state.console_state.current_mode.bitsperpixel)-1)
 
 def operation_and(pix0, pix1):
+    """ PUT transformation: AND """
     return pix0 & pix1
 
 def operation_or(pix0, pix1):
+    """ PUT transformation: OR """
     return pix0 | pix1
 
 def operation_xor(pix0, pix1):
+    """ PUT transformation: XOR """
     return pix0 ^ pix1
 
+# code tokens for these operations
 operations = {
-    '\xC6': operation_set, #PSET
-    '\xC7': operation_not, #PRESET
+    '\xC6': operation_set, # PSET
+    '\xC7': operation_not, # PRESET
     '\xEE': operation_and,
     '\xEF': operation_or,
     '\xF0': operation_xor,
     }
      
 def set_area(x0, y0, array, operation_char):
+    """ Put a sprite on the screen (PUT). """
     # array must exist at this point (or PUT would have raised error 5)       
     if backend.video.fast_put(x0, y0, array, state.basic_state.arrays[array][2], operation_char):
         return
@@ -585,6 +610,7 @@ def set_area(x0, y0, array, operation_char):
     state.console_state.current_mode.set_area(x0, y0, byte_array, operation)
         
 def get_area(x0, y0, x1, y1, array):
+    """ Read a sprite from the screen (GET). """
     try:
         _, byte_array, _ = state.basic_state.arrays[array]
     except KeyError:
