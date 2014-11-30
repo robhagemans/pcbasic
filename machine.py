@@ -38,7 +38,7 @@ state.basic_state.segment = memory.data_segment
 
 def prepare():
     """ Initialise machine module. """ 
-    global allow_code_poke
+    global allow_code_poke, tandy_syntax
     try:
         for a in config.options['peek']:
             seg, addr, val = a.split(':')
@@ -46,6 +46,7 @@ def prepare():
     except (TypeError, ValueError):
         pass     
     allow_code_poke = config.options['allow-code-poke']
+    tandy_syntax = config.options['syntax'] == 'tandy'
 
 def peek(addr):
     """ Retrieve the value at an emulated memory location. """
@@ -144,12 +145,16 @@ def bload(g, offset):
 
 def bsave(g, offset, length):
     """ Save a block of memory into a file. """
-    g.write('\xfd')
-    g.write(str(vartypes.value_to_uint(state.basic_state.segment)))
-    g.write(str(vartypes.value_to_uint(offset)))
-    g.write(str(vartypes.value_to_uint(length)))
+    seven_bytes = str('\xfd' + 
+                    vartypes.value_to_uint(state.basic_state.segment) +
+                    vartypes.value_to_uint(offset) +
+                    vartypes.value_to_uint(length))
+    g.write(seven_bytes)
     addr = state.basic_state.segment * 0x10 + offset
     g.write(str(get_memory_block(addr, length)))
+    # Tandys repeat the header at the end of the file
+    if tandy_syntax:
+        g.write(seven_bytes)
     g.write('\x1a')
     g.close()
 
