@@ -18,6 +18,7 @@ import error
 import memory
 import iolayer
 import program
+import timedate
 
 # pre-defined PEEK outputs
 peek_values = {}
@@ -122,18 +123,45 @@ def not_implemented_pass(addr, val):
 # sections of memory for which POKE is not currently implemented
 set_data_memory = not_implemented_poke
 set_field_memory = not_implemented_poke
-        
+# timer for reading game port
+joystick_out_time = timedate.timer_milliseconds()
+# time delay for port value to drop to 0 on maximum reading.
+#  use 100./255. for 100ms.
+joystick_time_factor = 75. / 255.
+
 def inp(port):    
     """ Get the value in an emulated machine port. """
+    # keyboard
     if port == 0x60:
         backend.wait()
         return state.console_state.inp_key 
+    # game port (joystick)    
+    elif port == 0x201:
+        value = (
+            (not backend.stick_is_firing[0][0]) * 0x40 +
+            (not backend.stick_is_firing[0][1]) * 0x20 +
+            (not backend.stick_is_firing[1][0]) * 0x10 +
+            (not backend.stick_is_firing[1][1]) * 0x80)
+        decay = (timedate.timer_milliseconds() - joystick_out_time) % 86400000
+        if decay < backend.stick_axis[0][0] * joystick_time_factor:
+            value += 0x04
+        if decay < backend.stick_axis[0][1] * joystick_time_factor:
+            value += 0x02
+        if decay < backend.stick_axis[1][0] * joystick_time_factor:
+            value += 0x01
+        if decay < backend.stick_axis[1][1] * joystick_time_factor:
+            value += 0x08
+        return value
     else:
         return 0
         
 def out(addr, val):    
     """ Send a value to an emulated machine port. """
-    if addr == 0x3c5:
+    global joystick_out_time
+    if addr == 0x201:
+        # game port reset
+        joystick_out_time = timedate.timer_milliseconds()
+    elif addr == 0x3c5:
         # officially, requires OUT &H3C4, 2 first (not implemented)
         state.console_state.colour_plane_write_mask = val
     elif addr == 0x3cf:
@@ -144,7 +172,7 @@ def out(addr, val):
         #OUT &H3D8,&H1E: REM disable color burst
         # 0x1a == 0001 1010     0x1e == 0001 1110
         backend.set_colorburst(val & 4 == 0)
-
+        
 def wait(addr, ander, xorer):
     """ Wait untial an emulated machine port has a specified value. """
     store_suspend = state.basic_state.suspend_all_events

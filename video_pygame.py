@@ -342,11 +342,10 @@ def init():
     joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
     for j in joysticks:
         j.init()
-    # if one joystick is present, all are active and report 128 for mid, not 0
-    if len(joysticks) > 0:
-        for joy in range(0, 1):
-            for axis in range(0, 1):
-                backend.stick_moved(joy, axis, 128)
+    # if a joystick is present, its axes report 128 for mid, not 0
+    for joy in range(len(joysticks)):
+        for axis in (0, 1):
+            backend.stick_moved(joy, axis, 128)
     if not load_fonts(heights_needed):
         return False
     text_mode = True    
