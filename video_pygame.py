@@ -1,15 +1,12 @@
-#
-# PC-BASIC 3.23 - video_pygame.py
-#
-# Graphical interface based on PyGame
-# 
-# (c) 2013, 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
+"""
+PC-BASIC 3.23 - video_pygame.py
+Graphical interface based on PyGame
 
-import plat
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+"""
+
+import logging
 
 try:
     import pygame
@@ -21,28 +18,27 @@ try:
 except ImportError:
     numpy = None
 
-# workaround for broken pygame.scrap on Mac
-if pygame:
-    if plat.system == 'OSX':
-        import pygame_mac_scrap as scrap
-    else:
-        scrap = pygame.scrap
-
-android = (plat.system == 'Android')
-if android:
-    numpy = None
-    # Pygame for Android-specific definitions
-    if pygame:
-        import pygame_android
-
-import logging
-
+import plat
 import config
 import unicodepage 
 import backend
 import typeface
 import scancode
 import state
+
+# Workaround for broken pygame.scrap on Mac
+if pygame:
+    if plat.system == 'OSX':
+        import pygame_mac_scrap as scrap
+    else:
+        scrap = pygame.scrap
+
+# Android-specific definitions
+android = (plat.system == 'Android')
+if android:
+    numpy = None
+    if pygame:
+        import pygame_android
 
 
 # default font family
@@ -210,11 +206,10 @@ mousebutton_copy = 1
 mousebutton_paste = 2
 mousebutton_pen = 3
 
+###############################################################################
     
-####################################            
-# set constants based on commandline arguments
-
 def prepare():
+    """ Initialise video_pygame module. """
     global fullscreen, smooth, noquit, force_display_size
     global composite_monitor, heights_needed
     global composite_640_palette, border_width
@@ -268,7 +263,7 @@ def prepare():
     # window caption/title
     caption = config.options['caption'] or 'PC-BASIC 3.23'
     
-####################################
+###############################################################################
 # state saving and loading
 
 # picklable store for surfaces
@@ -276,12 +271,16 @@ display_strings = ([], [])
 display_strings_loaded = False
 
 class PygameDisplayState(state.DisplayState):
+    """ Display state saving and restoring. """
+    
     def pickle(self):
+        """ Convert display state to string. """
         self.display_strings = ([], [])
         for s in canvas:    
             self.display_strings[0].append(pygame.image.tostring(s, 'P'))
         
     def unpickle(self):
+        """ Convert string to display state. """
         global display_strings, display_strings_loaded
         display_strings_loaded = True
         display_strings = self.display_strings
@@ -289,6 +288,7 @@ class PygameDisplayState(state.DisplayState):
 
 
 def load_state():        
+    """ Restore display state from file. """
     global screen_changed
     if display_strings_loaded:
         try:
@@ -585,16 +585,19 @@ def update_palette(rgb_palette, rgb_palette1):
     screen_changed = True
 
 def set_border(attr):
+    """ Change the border attribute. """
     global border_attr, screen_changed
     border_attr = attr
     screen_changed = True
     
 def set_colorburst(on, rgb_palette, rgb_palette1):
+    """ Change the NTSC colorburst setting. """
     global composite_artifacts
     update_palette(rgb_palette, rgb_palette1)
     composite_artifacts = on and mode_has_artifacts and composite_monitor
     
 def clear_rows(cattr, start, stop):
+    """ Clear a range of screen rows. """
     global screen_changed
     _, bg = get_palette_index(cattr)
     scroll_area = pygame.Rect(0, (start-1)*font_height, 
@@ -603,29 +606,35 @@ def clear_rows(cattr, start, stop):
     screen_changed = True
     
 def set_page(vpage, apage):
+    """ Set the visible and active page. """
     global vpagenum, apagenum, screen_changed
     vpagenum, apagenum = vpage, apage
     screen_changed = True
 
-def copy_page(src,dst):
+def copy_page(src, dst):
+    """ Copy source to destination page. """
     global screen_changed
     canvas[dst].blit(canvas[src], (0,0))
     screen_changed = True
     
 def update_cursor_visibility(cursor_on):
+    """ Change visibility of cursor. """
     global screen_changed, cursor_visible
     cursor_visible = cursor_on
     screen_changed = True
 
 def move_cursor(crow, ccol):
+    """ Move the cursor to a new position. """
     global cursor_row, cursor_col
     cursor_row, cursor_col = crow, ccol
 
 def update_cursor_attr(attr):
+    """ Change attribute of cursor. """
     color = canvas[vpagenum].get_palette_at(attr).b
     cursor.set_palette_at(254, pygame.Color(0, color, color))
 
 def scroll(from_line, scroll_height, attr):
+    """ Scroll the screen up between from_line and scroll_height. """
     global screen_changed
     temp_scroll_area = pygame.Rect(
                     0, (from_line-1)*font_height,
@@ -644,6 +653,7 @@ def scroll(from_line, scroll_height, attr):
     screen_changed = True
    
 def scroll_down(from_line, scroll_height, attr):
+    """ Scroll the screen down between from_line and scroll_height. """
     global screen_changed
     temp_scroll_area = pygame.Rect(0, (from_line-1) * font_height, size[0], 
                                    (scroll_height-from_line+1) * font_height)
@@ -659,6 +669,7 @@ def scroll_down(from_line, scroll_height, attr):
     screen_changed = True
 
 def set_attr(cattr, force_rebuild=False):
+    """ Set the current attribuite. """
     global current_attr, current_attr_context
     if (not force_rebuild and cattr == current_attr and apagenum == current_attr_context):
         return  
@@ -670,6 +681,7 @@ def set_attr(cattr, force_rebuild=False):
     current_attr_context = apagenum
 
 def putc_at(pagenum, row, col, c, for_keys=False):
+    """ Put a single-byte character at a given position. """
     global screen_changed
     glyph = glyphs[ord(c)]
     blank = glyphs[0] # using \0 for blank (tyoeface.py guarantees it's empty)
@@ -683,6 +695,7 @@ def putc_at(pagenum, row, col, c, for_keys=False):
     screen_changed = True
 
 def putwc_at(pagenum, row, col, c, d, for_keys=False):
+    """ Put a double-byte character at a given position. """
     global screen_changed
     glyph = build_glyph(c+d, font, 2*font_width, font_height)
     color, bg = get_palette_index(current_attr)    
@@ -704,6 +717,7 @@ carry_col_9 = [chr(c) for c in range(0xb0, 0xdf+1)]
 carry_row_9 = [chr(c) for c in range(0xb0, 0xdf+1)]
 
 def build_glyph(c, font_face, req_width, req_height):
+    """ Build a sprite for the given character glyph. """
     color, bg = 254, 255
     try:
         face = font_face[c]
@@ -743,6 +757,7 @@ def build_glyph(c, font_face, req_width, req_height):
     return glyph        
         
 def build_cursor(width, height, from_line, to_line):
+    """ Build a sprite for the cursor. """
     global screen_changed, cursor, under_cursor
     global cursor_width, cursor_from, cursor_to
     cursor_width, cursor_from, cursor_to = width, from_line, to_line
@@ -760,10 +775,11 @@ def build_cursor(width, height, from_line, to_line):
                 cursor.set_at((xx, yy), color)
     screen_changed = True            
 
-######################################
+###############################################################################
 # event loop
 
 def check_screen():
+    """ Check screen and blink events; update screen if necessary. """
     global cycle, last_cycle
     global screen_changed
     blink_state = 0
@@ -784,6 +800,7 @@ def check_screen():
             screen_changed = False
     
 def draw_cursor(screen):
+    """ Draw the cursor on the screen. """
     global under_top_left, last_row, last_col
     if not cursor_visible or vpagenum != apagenum:
         return
@@ -826,6 +843,7 @@ def draw_cursor(screen):
     last_col = cursor_col
 
 def apply_composite_artifacts(screen, pixels=4):
+    """ Process the canvas to apply composite colour artifacts. """
     src_array = pygame.surfarray.array2d(screen)
     width, height = src_array.shape
     s = [None]*pixels
@@ -836,6 +854,7 @@ def apply_composite_artifacts(screen, pixels=4):
     return pygame.surfarray.make_surface(numpy.repeat(s[0], pixels, axis=0))
     
 def do_flip(blink_state):
+    """ Draw the canvas to the screen. """
     # create the screen that will be stretched onto the display
     border_x = int(size[0] * border_width / 200.)
     border_y = int(size[1] * border_width / 200.)
@@ -865,23 +884,27 @@ def do_flip(blink_state):
         pygame.transform.scale(screen.convert(display), display.get_size(), display)  
     pygame.display.flip()
 
-#######################################################
+###############################################################################
 # event queue
 
 # buffer for alt+numpad ascii character construction
 keypad_ascii = ''
 
 def pause_key():
-    # pause key press waits for any key down. continues to process screen events (blink) but not user events.
+    """ Wait for key in pause state. """
+    # pause key press waits for any key down. 
+    # continues to process screen events (blink) but not user events.
     while not check_events(pause=True):
         # continue playing background music
         backend.audio.check_sound()
         idle()
         
 def idle():
+    """ Video idle process. """
     pygame.time.wait(cycle_time/blink_cycles/8)  
 
 def check_events(pause=False):
+    """ Handle screen and interface events. """
     global screen_changed, fullscreen
     # handle Android pause/resume
     if android and pygame_android.check_events():
@@ -945,6 +968,7 @@ def check_events(pause=False):
     return False
 
 def handle_key_down(e):
+    """ Handle key-down event. """
     global screen_changed
     c = ''
     mods = pygame.key.get_mods()
@@ -998,6 +1022,7 @@ def handle_key_down(e):
         backend.key_down(scan, c) 
 
 def handle_key_up(e):
+    """ Handle key-up event. """
     if e.key == pygame.K_LSUPER: # logo key, doesn't set a modifier
         clipboard.stop()
     # last key released gets remembered
@@ -1017,7 +1042,7 @@ def normalise_pos(x, y):
     ypos = min(size[1]-1, max(0, int(y//yscale - border_y))) 
     return xpos, ypos
     
-###############################################
+###############################################################################
 # clipboard handling
 
 class Clipboard(object):
@@ -1219,13 +1244,14 @@ class Clipboard(object):
             orig.fill(pygame.Color(0, 0, 1))
             work_area.blit(orig, (0, 0), special_flags=pygame.BLEND_ADD)
         
-###############################################
+###############################################################################
 # graphics backend interface
 # low-level methods (pygame implementation)
 
 graph_view = None
 
 def put_pixel(x, y, index, pagenum=None):
+    """ Put a pixel on the screen; callback to empty character buffer. """
     global screen_changed
     if pagenum == None:
         pagenum = apagenum
@@ -1234,37 +1260,51 @@ def put_pixel(x, y, index, pagenum=None):
     screen_changed = True
 
 def get_pixel(x, y, pagenum=None):    
+    """ Return the attribute a pixel on the screen. """
     if pagenum == None:
         pagenum = apagenum
     return canvas[pagenum].get_at((x,y)).b
 
+# graphics view area (pygame clip)
+
 def get_graph_clip():
+    """ Get the graphics view area. """
     view = graph_view if graph_view else canvas[apagenum].get_rect()
     return view.left, view.top, view.right-1, view.bottom-1
 
 def set_graph_clip(x0, y0, x1, y1):
+    """ Set the graphics view area. """
     global graph_view
     graph_view = pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)    
     
 def unset_graph_clip():
+    """ Unset the graphics view area. """
     global graph_view
     graph_view = None    
     return canvas[apagenum].get_rect().center
 
 def clear_graph_clip(bg):
+    """ Clear the graphics view area. """
     global screen_changed
     canvas[apagenum].set_clip(graph_view)
     canvas[apagenum].fill(bg)
     canvas[apagenum].set_clip(None)
     screen_changed = True
 
+# these are called by graphics.py:
+
 def remove_graph_clip():
+    """ Un-apply the graphics clip. """
     canvas[apagenum].set_clip(None)
 
 def apply_graph_clip():
+    """ Apply the graphics clip. """
     canvas[apagenum].set_clip(graph_view)
 
+# fill functions
+
 def fill_rect(x0, y0, x1, y1, index):
+    """ Fill a rectangle in a solid attribute. """
     global screen_changed
     rect = pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)
     canvas[apagenum].fill(index, rect)
@@ -1272,6 +1312,7 @@ def fill_rect(x0, y0, x1, y1, index):
     screen_changed = True
 
 def fill_interval(x0, x1, y, tile, solid):
+    """ Fill a scanline interval in a tile pattern or solid attribute. """
     global screen_changed
     dx = x1 - x0 + 1
     h = len(tile)
@@ -1291,6 +1332,7 @@ def fill_interval(x0, x1, y, tile, solid):
     screen_changed = True
 
 def get_until(x0, x1, y, c):
+    """ Get the attribute values of a scanline interval. """
     if x0 == x1:
         return []
     if numpy:     
@@ -1313,21 +1355,29 @@ def get_until(x0, x1, y, c):
                 break
             interval.append(index)
         return interval    
+
+###############################################################################
+# Numpy-optimised sprite operations (PUT and GET)
     
 def numpy_set(left, right):
+    """ Fast PUT: PSET operation. """
     left[:] = right
 
 def numpy_not(left, right):
+    """ Fast PUT: PRESET operation. """
     left[:] = right
     left ^= (1<<bitsperpixel) - 1
 
 def numpy_iand(left, right):
+    """ Fast PUT: AND operation. """
     left &= right
 
 def numpy_ior(left, right):
+    """ Fast PUT: OR operation. """
     left |= right
 
 def numpy_ixor(left, right):
+    """ Fast PUT: XOR operation. """
     left ^= right
         
 fast_operations = {
@@ -1339,6 +1389,7 @@ fast_operations = {
     }
 
 def fast_get(x0, y0, x1, y1, varname, version):
+    """ Store sprite in numpy array for fast operations. """
     if not numpy:
         return
     # copy a numpy array of the target area
@@ -1346,6 +1397,7 @@ def fast_get(x0, y0, x1, y1, varname, version):
     get_put_store[varname] = ( x1-x0+1, y1-y0+1, clip, version )
 
 def fast_put(x0, y0, varname, new_version, operation_char):
+    """ Write sprite to screen; use numpy array if available. """
     global screen_changed
     try:
         width, height, clip, version = get_put_store[varname]
@@ -1368,7 +1420,6 @@ def fast_put(x0, y0, varname, new_version, operation_char):
     backend.clear_screen_buffer_area(x0, y0, x0+width-1, y0+height-1)
     screen_changed = True
     return True
-
                 
 prepare()
 
