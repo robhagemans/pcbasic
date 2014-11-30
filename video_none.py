@@ -87,7 +87,7 @@ def load_state():
 
 def init_screen_mode(mode_info):
     """ Change screen mode (no-op). """
-    pass
+    return True
 
 def set_page(vpage, apage):
     """ Set the visible and active page (no-op). """
