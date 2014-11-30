@@ -173,7 +173,7 @@ def clear_rows(cattr, start, stop):
             pass
 
 def update_palette(new_palette, new_palette1):
-    """ Build the game palette (no-op). """
+    """ Build the game palette. """
     if can_change_palette:
         for i in range(len(new_palette)):
             r, g, b = new_palette[i]

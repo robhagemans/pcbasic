@@ -36,19 +36,23 @@ last_attr = None
 attr = 7
  
 def prepare():
+    """ Initialise the video_wconio module. """
     global caption
     caption = config.options['caption']
 
 def init():
+    """ Initialise the text interface. """
     if not wconio:
         logging.warning('WConio module not found. Text interface not supported.')
     wconio.settitle(caption)
     return True
     
 def supports_graphics_mode(mode_info):
+    """ We do not support graphics modes. """
     return False
     
 def init_screen_mode(mode_info=None):
+    """ Change screen mode. """
     global height, width
     height = 25
     width = mode_info.width
@@ -57,14 +61,26 @@ def init_screen_mode(mode_info=None):
     return True
     
 def close():
+    """ Close the text interface. """
     wconio.clrscr()
     
 def idle():
+    """ Video idle process. """
     time.sleep(0.024)
-    
-######
 
+def check_events():
+    """ Handle screen and interface events. """
+    if cursor_visible:
+        wconio.gotoxy(cursor_col-1, cursor_row-1)
+    check_keyboard()
+    
+def load_state():
+    """ Restore display state from file. """
+    # console has already been loaded; just redraw
+    redraw()
+    
 def clear_rows(cattr, start, stop):
+    """ Clear screen rows. """
     for r in range(start, stop+1):
         try:
             wconio.gotoxy(0, r-1)
@@ -72,46 +88,27 @@ def clear_rows(cattr, start, stop):
         except curses.error:
             pass
                     
-def redraw():
-    backend.redraw_text_screen()
-
-def colours(at):
-    # blink not supported
-    return at & 0x7f 
-
-def update_palette(new_palette, new_palette1):
-    pass
-    
-def set_colorburst(on, palette, palette1):
-    pass
-    
-####
-
 def move_cursor(crow, ccol):
+    """ Move the cursor to a new position. """
     global cursor_row, cursor_col
     cursor_row, cursor_col = crow, ccol
 
-def update_cursor_attr(attr):
-    pass
-
 def update_cursor_visibility(cursor_on):
+    """ Change visibility of cursor. """
     global cursor_visible
     cursor_visible = cursor_on
     wconio.setcursortype(cursor_shape if cursor_on else 0)
 
 def build_cursor(width, height, from_line, to_line):
+    """ Set the cursor shape. """
     if (to_line-from_line) >= 4:
         cursor_shape = 2
     else:
         cursor_shape = 1
     wconio.setcursortype(cursor_shape if cursor_visible else 0)
 
-def check_events():
-    if cursor_visible:
-        wconio.gotoxy(cursor_col-1, cursor_row-1)
-    check_keyboard()
-    
 def set_attr(cattr):
+    """ Set the current attribute. """
     global attr, last_attr
     attr = cattr
     if attr == last_attr:
@@ -120,20 +117,21 @@ def set_attr(cattr):
     wconio.textattr(colours(attr))
 
 def putc_at(pagenum, row, col, c, for_keys=False):
-    # this doesn't recognise DBCS
+    """ Put a single-byte character at a given position. """
     wconio.gotoxy(col-1, row-1)
     # output in cli codepage
     uc = unicodepage.UTF8Converter().to_utf8(c).decode('utf-8')
     wconio.putch(uc.encode(sys.stdout.encoding, 'replace'))    
 
 def putwc_at(pagenum, row, col, c, d, for_keys=False):
-    # this does recognise DBCS
+    """ Put a double-byte character at a given position. """
     wconio.gotoxy(col-1, row-1)
     # output in cli codepage
     uc = unicodepage.UTF8Converter().to_utf8(c+d).decode('utf-8')
     wconio.putch(uc.encode(sys.stdout.encoding, 'replace'))
         
 def scroll(from_line, scroll_height, attr):
+    """ Scroll the screen up between from_line and scroll_height. """
     wconio.gotoxy(0, from_line-1)
     wconio.delline()
     wconio.gotoxy(0, scroll_height-1)
@@ -142,22 +140,63 @@ def scroll(from_line, scroll_height, attr):
         wconio.gotoxy(cursor_col-1, cursor_row-2)
     
 def scroll_down(from_line, scroll_height, attr):
+    """ Scroll the screen down between from_line and scroll_height. """
     wconio.gotoxy(0, from_line-1)
     wconio.insline()
     wconio.gotoxy(0, scroll_height-1)
     wconio.delline()
     if cursor_row < height:
         window.move(cursor_col-1, cursor_row)
-    
-#######
+
+###############################################################################
+# The following are no-op responses to requests from backend
+
+def update_palette(new_palette, new_palette1):
+    """ Build the game palette (not implemented). """
+    pass
+
+def update_cursor_attr(attr):
+    """ Change attribute of cursor (not implemented). """
+    pass
+
+def set_page(vpage, apage):
+    """ Set the visible and active page (not implemented). """
+    pass
+
+def copy_page(src, dst):
+    """ Copy source to destination page (not implemented). """
+    pass
+
+def set_border(attr):
+    """ Change the border attribute (not implemented). """
+    pass
+
+def set_colorburst(on, palette, palette1):
+    """ Change the NTSC colorburst setting (no-op). """
+    pass
+
+
+###############################################################################
+# IMPLEMENTATION
+
+def redraw():
+    """ Force redrawing of the screen (callback). """
+    backend.redraw_text_screen()
+
+def colours(at):
+    """ Convert BASIC attribute byte to console attribute. """
+    # blink not supported
+    return at & 0x7f 
 
 def getc():
+    """ Read character from keyboard, non-blocking. """
     # won't work under WINE
     if not msvcrt.kbhit():
         return ''
     return msvcrt.getch()
 
 def get_scancode(s):
+    """ Convert BASIC scancodes to Windows scancodes. """
     # windows scancodes should be the same as gw-basic ones
     if len(s) > 1 and s[0] in ('\xe0', '\0'):
         return ord(s[1])
@@ -165,6 +204,7 @@ def get_scancode(s):
         raise KeyError    
 
 def check_keyboard():
+    """ Handle keyboard events. """
     global pre_buffer
     s = ''
     # drain input buffer of all charaters available
@@ -201,20 +241,7 @@ def check_keyboard():
                     backend.insert_chars(c)    
             c = ''
         
-########
 
-def set_page(vpage, apage):
-    pass
-
-def copy_page(src, dst):
-    pass
-
-def load_state():
-    # console has already been loaded; just redraw
-    redraw()
-
-def set_border(attr):
-    pass
         
 prepare()
 
