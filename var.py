@@ -1,13 +1,10 @@
-#
-# PC-BASIC 3.23 - var.py
-#
-# Variable & array management
-# 
-# (c) 2013, 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
+"""
+PC-BASIC 3.23 - var.py
+Variable & array management
+
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+"""
 
 from operator import itemgetter
 
@@ -88,8 +85,6 @@ def get_string_copy_packed(sequence):
             return vartypes.pack_string(state.io_state.fields[number][offset:offset+length])
         except KeyError, IndexError:
             return vartypes.pack_string('\0' * length)
-
-
 
 def clear_variables(preserve_common=False, preserve_all=False, preserve_deftype=False):
     """ Reset and clear variables, arrays, common definitions and functions. """
@@ -395,6 +390,7 @@ def set_field_var_or_array(random_file, varname, indices, offset, length):
         lst[bigindex*3:(bigindex+1)*3] = str_sequence
 
 def get_var_or_array_string_pointer(name, indices):
+    """ Retrieve the pointer value of a string or a string-array element. """
     if name[-1] != '$':
         # type mismatch
         raise error.RunError(13)
