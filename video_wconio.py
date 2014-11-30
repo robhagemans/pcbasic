@@ -1,24 +1,21 @@
-#
-# PC-BASIC 3.23 - backend_curses.py
-#
-# Curses interface (Unix only)
-#
-# (c) 2013, 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
+"""
+PC-BASIC 3.23 - video_wconio.py
+Text interface implementation for Windows
+
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+"""
 
 import sys
 import os
 import time
 import locale
 import logging
+import msvcrt
 try:
     import WConio as wconio
 except ImportError:
     wconio = None
-import msvcrt
 
 import config
 import unicodepage

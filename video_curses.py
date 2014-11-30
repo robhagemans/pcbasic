@@ -1,13 +1,10 @@
-#
-# PC-BASIC 3.23 - backend_curses.py
-#
-# Curses interface (Unix only)
-#
-# (c) 2013, 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
+"""
+PC-BASIC 3.23 - video_curses.py
+Text interface implementation for Unix
+
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
+"""
 
 import sys
 import os
@@ -25,7 +22,7 @@ import scancode
 import backend
 
 # for a few ansi sequences not supported by curses
-# onlu yse these if you clear the screen afterwards, 
+# only use these if you clear the screen afterwards, 
 # so you don't see gibberish if the terminal doesn't support the sequence.
 import ansi
 
@@ -65,10 +62,12 @@ if curses:
     attr = curses.A_NORMAL
  
 def prepare():
+    """ Initialise the video_curses module. """
     global caption
     caption = config.options['caption']
 
 def init():
+    """ Initialise the text interface. """
     global screen, default_colors, can_change_palette
     if not curses:
         logging.warning('Curses module not found. Text interface not supported.')
@@ -97,7 +96,7 @@ def init():
     curses.raw()
     curses.start_color()
     screen.clear()
-#    init_screen_mode()
+    # init_screen_mode()
     can_change_palette = (curses.can_change_color() and curses.COLORS >= 16 
                           and curses.COLOR_PAIRS > 128)
     sys.stdout.write(ansi.esc_set_title % caption)
@@ -115,9 +114,11 @@ def init():
     return True
     
 def supports_graphics_mode(mode_info):
+    """ We do not support graphics modes. """
     return False
     
 def init_screen_mode(mode_info=None):
+    """ Change screen mode. """
     global window, height, width
     height = 25
     width = mode_info.width
@@ -137,19 +138,32 @@ def init_screen_mode(mode_info=None):
     return True
     
 def close():
+    """ Close the text interface. """
     curses.noraw()
     curses.nl()
     curses.nocbreak()
     screen.keypad(False)
     curses.echo()
     curses.endwin()
+
+def check_events():
+    """ Handle screen and interface events. """
+    if cursor_visible:
+        window.move(cursor_row-1, cursor_col-1)
+    window.refresh()
+    check_keyboard()
     
 def idle():
+    """ Video idle process. """
     time.sleep(0.024)
-    
-######
+
+def load_state():
+    """ Restore display state from file. """
+    # console has already been loaded; just redraw
+    redraw()
 
 def clear_rows(cattr, start, stop):
+    """ Clear screen rows. """
     window.bkgdset(' ', colours(cattr))
     for r in range(start, stop+1):
         try:
@@ -157,84 +171,40 @@ def clear_rows(cattr, start, stop):
             window.clrtoeol()
         except curses.error:
             pass
-                    
-def redraw():
-    backend.redraw_text_screen()
-
-def set_curses_palette():
-    global default_colors
-    if can_change_palette:
-        for back in range(8):
-            for fore in range(16):
-                curses.init_pair(back*16+fore+1, default_colors[fore], default_colors[back])
-    else:
-        for back in range(8):
-            for fore in range(8):
-                if back == 0 and fore == 7:
-                    # black on white mandatorily mapped on color 0
-                    pass
-                elif back == 0:
-                    curses.init_pair(back*8+fore+1, default_colors[fore], default_colors[back])
-                else:
-                    curses.init_pair(back*8+fore, default_colors[fore], default_colors[back])
-            
-def colours(at):
-    back = (at>>4)&0x7
-    blink = (at>>7)
-    fore = (blink*0x10) + (at&0xf)
-    if can_change_palette:
-        cursattr = curses.color_pair(1 + (back&7)*16 + (fore&15))
-    else:        
-        if back == 0 and fore&7 == 7:
-            cursattr = 0
-        elif back == 0:
-            cursattr = curses.color_pair(1 + (back&7)*8 + (fore&7))
-        else:    
-            cursattr = curses.color_pair((back&7)*8 + (fore&7))
-        if fore&15 > 7:
-            cursattr |= curses.A_BOLD
-    if blink:
-        cursattr |= curses.A_BLINK
-    return cursattr
 
 def update_palette(new_palette, new_palette1):
+    """ Build the game palette (no-op). """
     if can_change_palette:
         for i in range(len(new_palette)):
             r, g, b = new_palette[i]
             curses.init_color(default_colors[i], (r*1000)//255, (g*1000)//255, (b*1000)//255)             
     
-def set_colorburst(on, palette, palette1):
-    pass
-    
-####
-
 def move_cursor(crow, ccol):
+    """ Move the cursor to a new position. """
     global cursor_row, cursor_col
     cursor_row, cursor_col = crow, ccol
 
 def update_cursor_attr(attr):
-#    term.write(esc_set_cursor_colour % get_fg_colourname(attr))
+    """ Change attribute of cursor. """
+    # term.write(ansi.esc_set_cursor_colour % ansi.colournames[attr%16])
     pass
 
 def update_cursor_visibility(cursor_on):
+    """ Change visibility of cursor. """
     global cursor_visible
     cursor_visible = cursor_on
     curses.curs_set(cursor_shape if cursor_on else 0)
 
 def build_cursor(width, height, from_line, to_line):
+    """ Set the cursor shape. """
     if (to_line-from_line) >= 4:
         cursor_shape = 2
     else:
         cursor_shape = 1
     curses.curs_set(cursor_shape if cursor_visible else 0)
 
-def check_events():
-    if cursor_visible:
-        window.move(cursor_row-1, cursor_col-1)
-    window.refresh()
-    check_keyboard()
-    
 def set_attr(cattr):
+    """ Set the current attribute. """
     global attr, last_attr
     attr = cattr
     if attr == last_attr:
@@ -243,14 +213,14 @@ def set_attr(cattr):
     window.bkgdset(' ', colours(attr))
 
 def putc_at(pagenum, row, col, c, for_keys=False):
-    # this doesn't recognise DBCS
+    """ Put a single-byte character at a given position. """
     try:
         window.addstr(row-1, col-1, unicodepage.UTF8Converter().to_utf8(c), colours(attr))
     except curses.error:
         pass
 
 def putwc_at(pagenum, row, col, c, d, for_keys=False):
-    # this does recognise DBCS
+    """ Put a double-byte character at a given position. """
     try:
         try:
             window.addstr(row-1, col-1, unicodepage.UTF8Converter().to_utf8(c+d), colours(attr))
@@ -260,6 +230,7 @@ def putwc_at(pagenum, row, col, c, d, for_keys=False):
         pass
         
 def scroll(from_line, scroll_height, attr):
+    """ Scroll the screen up between from_line and scroll_height. """
     window.scrollok(True)
     window.setscrreg(from_line-1, scroll_height-1)
     try:
@@ -272,6 +243,7 @@ def scroll(from_line, scroll_height, attr):
         window.move(cursor_row-2, cursor_col-1)
     
 def scroll_down(from_line, scroll_height, attr):
+    """ Scroll the screen down between from_line and scroll_height. """
     window.scrollok(True)
     window.setscrreg(from_line-1, scroll_height-1)
     try:
@@ -283,9 +255,36 @@ def scroll_down(from_line, scroll_height, attr):
     if cursor_row < height:
         window.move(cursor_row, cursor_col-1)
     
-#######
+        
+###############################################################################
+# The following are no-op responses to requests from backend
+
+def set_page(vpage, apage):
+    """ Set the visible and active page (not implemented). """
+    pass
+
+def copy_page(src, dst):
+    """ Copy source to destination page (not implemented). """
+    pass
+
+def set_border(attr):
+    """ Change the border attribute (not implemented). """
+    pass
+
+def set_colorburst(on, palette, palette1):
+    """ Change the NTSC colorburst setting (no-op). """
+    pass
+
+
+###############################################################################
+# IMPLEMENTATION
+                    
+def redraw():
+    """ Force redrawing of the screen (callback). """
+    backend.redraw_text_screen()
 
 def check_keyboard():
+    """ Handle keyboard events. """
     s = ''
     i = 0
     while True:
@@ -335,21 +334,45 @@ def check_keyboard():
             except KeyError:    
                 backend.insert_chars(c)    
         c = ''
-        
-########
 
-def set_page(vpage, apage):
-    pass
+def set_curses_palette():
+    """ Initialise the curses colour palette. """
+    global default_colors
+    if can_change_palette:
+        for back in range(8):
+            for fore in range(16):
+                curses.init_pair(back*16+fore+1, default_colors[fore], default_colors[back])
+    else:
+        for back in range(8):
+            for fore in range(8):
+                if back == 0 and fore == 7:
+                    # black on white mandatorily mapped on color 0
+                    pass
+                elif back == 0:
+                    curses.init_pair(back*8+fore+1, default_colors[fore], default_colors[back])
+                else:
+                    curses.init_pair(back*8+fore, default_colors[fore], default_colors[back])
+            
+def colours(at):
+    """ Convert BASIC attribute byte to curses colour. """
+    back = (at>>4)&0x7
+    blink = (at>>7)
+    fore = (blink*0x10) + (at&0xf)
+    if can_change_palette:
+        cursattr = curses.color_pair(1 + (back&7)*16 + (fore&15))
+    else:        
+        if back == 0 and fore&7 == 7:
+            cursattr = 0
+        elif back == 0:
+            cursattr = curses.color_pair(1 + (back&7)*8 + (fore&7))
+        else:    
+            cursattr = curses.color_pair((back&7)*8 + (fore&7))
+        if fore&15 > 7:
+            cursattr |= curses.A_BOLD
+    if blink:
+        cursattr |= curses.A_BLINK
+    return cursattr
 
-def copy_page(src, dst):
-    pass
-
-def load_state():
-    # console has already been loaded; just redraw
-    redraw()
-
-def set_border(attr):
-    pass
 
 prepare()
 
