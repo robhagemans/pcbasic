@@ -735,6 +735,9 @@ def exec_shell(ins):
         cmd = ''
     else:
         cmd = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    # no SHELL on PCjr.
+    if pcjr_syntax == 'pcjr':
+        raise error.RunError(5)
     # force cursor visible in all cases
     backend.show_cursor(True)
     # execute cms or open interactive shell
