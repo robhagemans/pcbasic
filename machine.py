@@ -52,77 +52,15 @@ def peek(addr):
     if addr < 0: 
         addr += 0x10000
     addr += state.basic_state.segment*0x10
-    try:
-        # try if there's a preset value
-        return peek_values[addr]
-    except KeyError: 
-        if addr >= memory.rom_segment*0x10:
-            # ROM font
-            return max(0, get_rom_memory(addr))
-        elif addr >= memory.ram_font_segment*0x10:
-            # RAM font
-            return max(0, get_font_memory(addr))
-        elif addr >= memory.video_segment*0x10:
-            # graphics and text memory
-            return max(0, get_video_memory(addr))
-        elif addr >= memory.data_segment*0x10 + memory.var_start():
-            # variable memory
-            return max(0, get_data_memory(addr))
-        elif addr >= memory.data_segment*0x10 + memory.code_start:
-            # code memory
-            return max(0, get_code_memory(addr))   
-        elif addr >= memory.data_segment*0x10 + memory.field_mem_start:
-            # file & FIELD memory
-            return max(0, get_field_memory(addr))
-        elif addr >= memory.data_segment*0x10:
-            # other BASIC data memory
-            return max(0, get_basic_memory(addr))
-        elif addr >= low_segment*0x10:
-            return max(0, get_low_memory(addr))
-        else:    
-            return 0
+    return get_memory(addr)
 
 def poke(addr, val):    
     """ Set the value at an emulated memory location. """
     if addr < 0: 
         addr += 0x10000
     addr += state.basic_state.segment * 0x10
-    if addr >= memory.rom_segment*0x10:
-        # ROM includes font memory
-        pass
-    elif addr >= memory.ram_font_segment*0x10:
-        # RAM font memory
-        set_font_memory(addr, val)
-    elif addr >= memory.video_segment*0x10:
-        # graphics and text memory
-        set_video_memory(addr, val)
-    elif addr >= memory.data_segment*0x10 + memory.var_start():
-        # POKING in variables
-        set_data_memory(addr, val)
-    elif addr >= memory.data_segment*0x10 + memory.code_start:
-        # code memory
-        set_code_memory(addr, val)
-    elif addr >= memory.data_segment*0x10 + memory.field_mem_start:
-        # file & FIELD memory
-        set_field_memory(addr, val)
-    elif addr >= memory.data_segment*0x10:
-        set_basic_memory(addr, val)
-    elif addr >= low_segment*0x10:
-        set_low_memory(addr, val)
-    else:
-        pass
+    set_memory(addr, val)
 
-def not_implemented_poke(addr, val):
-    """ POKE into not implemented location; retain value. """
-    peek_values[addr] = val
-
-def not_implemented_pass(addr, val):
-    """ POKE into not implemented location; ignore. """
-    pass
-    
-# sections of memory for which POKE is not currently implemented
-set_data_memory = not_implemented_poke
-set_field_memory = not_implemented_poke
 # timer for reading game port
 joystick_out_time = timedate.timer_milliseconds()
 # time delay for port value to drop to 0 on maximum reading.
@@ -202,9 +140,7 @@ def bload(g, offset):
         buf = buf[:-1]
     g.close()
     addr = seg * 0x10 + offset
-    if addr + len(buf) > memory.video_segment*0x10:
-        # graphics and text memory
-        set_video_memory_block(addr, buf)
+    set_memory_block(addr, buf)
 
 def bsave(g, offset, length):
     """ Save a block of memory into a file. """
@@ -213,7 +149,7 @@ def bsave(g, offset, length):
     g.write(str(vartypes.value_to_uint(offset)))
     g.write(str(vartypes.value_to_uint(length)))
     addr = state.basic_state.segment * 0x10 + offset
-    g.write(str(get_video_memory_block(addr, length)))
+    g.write(str(get_memory_block(addr, length)))
     g.write('\x1a')
     g.close()
 
@@ -241,6 +177,106 @@ def varptr(name, indices):
             return state.basic_state.var_current + array_ptr + var.var_size_bytes(name) * var.index_array(indices, dimensions) 
         except KeyError:
             return -1
+
+###############################################################################
+# IMPLEMENTATION
+
+def get_memory(addr):
+    """ Retrieve the value at an emulated memory location. """
+    try:
+        # try if there's a preset value
+        return peek_values[addr]
+    except KeyError: 
+        if addr >= memory.rom_segment*0x10:
+            # ROM font
+            return max(0, get_rom_memory(addr))
+        elif addr >= memory.ram_font_segment*0x10:
+            # RAM font
+            return max(0, get_font_memory(addr))
+        elif addr >= memory.video_segment*0x10:
+            # graphics and text memory
+            return max(0, get_video_memory(addr))
+        elif addr >= memory.data_segment*0x10 + memory.var_start():
+            # variable memory
+            return max(0, get_data_memory(addr))
+        elif addr >= memory.data_segment*0x10 + memory.code_start:
+            # code memory
+            return max(0, get_code_memory(addr))   
+        elif addr >= memory.data_segment*0x10 + memory.field_mem_start:
+            # file & FIELD memory
+            return max(0, get_field_memory(addr))
+        elif addr >= memory.data_segment*0x10:
+            # other BASIC data memory
+            return max(0, get_basic_memory(addr))
+        elif addr >= low_segment*0x10:
+            return max(0, get_low_memory(addr))
+        else:    
+            return 0
+    
+def set_memory(addr, val):
+    """ Set the value at an emulated memory location. """
+    if addr >= memory.rom_segment*0x10:
+        # ROM includes font memory
+        pass
+    elif addr >= memory.ram_font_segment*0x10:
+        # RAM font memory
+        set_font_memory(addr, val)
+    elif addr >= memory.video_segment*0x10:
+        # graphics and text memory
+        set_video_memory(addr, val)
+    elif addr >= memory.data_segment*0x10 + memory.var_start():
+        # POKING in variables
+        set_data_memory(addr, val)
+    elif addr >= memory.data_segment*0x10 + memory.code_start:
+        # code memory
+        set_code_memory(addr, val)
+    elif addr >= memory.data_segment*0x10 + memory.field_mem_start:
+        # file & FIELD memory
+        set_field_memory(addr, val)
+    elif addr >= memory.data_segment*0x10:
+        set_basic_memory(addr, val)
+    elif addr >= low_segment*0x10:
+        set_low_memory(addr, val)
+    else:
+        pass
+
+def not_implemented_poke(addr, val):
+    """ POKE into not implemented location; retain value. """
+    peek_values[addr] = val
+
+def not_implemented_pass(addr, val):
+    """ POKE into not implemented location; ignore. """
+    pass
+    
+# sections of memory for which POKE is not currently implemented
+set_data_memory = not_implemented_poke
+set_field_memory = not_implemented_poke
+
+def get_memory_block(addr, length):
+    """ Retrieve a contiguous block of bytes from memory. """
+    block = bytearray()
+    if addr >= memory.video_segment*0x10:
+        video_len = 0x20000 - (addr - memory.video_segment*0x10)
+        # graphics and text memory - specialised call
+        block += get_video_memory_block(addr, min(length, video_len)) 
+        addr += video_len
+        length -= video_len
+    for a in range(addr, addr+length):
+        block += chr(max(0, get_memory(a)))
+    return block
+
+def set_memory_block(addr, buf):
+    """ Set a contiguous block of bytes in memory. """
+    if addr >= memory.video_segment*0x10:
+        video_len = 0x20000 - (addr - memory.video_segment*0x10)
+        # graphics and text memory - specialised call
+        set_video_memory_block(addr, buf[:video_len])
+        addr += video_len
+        buf = buf[video_len:]
+    for a in range(len(buf)):
+        set_memory(addr + a, buf[a])
+
+###############################################################################
 
 def get_name_in_memory(name, offset):
     """ Memory representation of variable name. """
@@ -414,9 +450,8 @@ def set_video_memory_block(addr, some_bytes):
         # we're not allowing keyboard breaks here 
         if a%640 == 0:
             backend.video.check_events()
-    
 
-#################################################################################
+###############################################################################
 
 def get_rom_memory(addr):
     """ Retrieve data from ROM. """

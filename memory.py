@@ -17,7 +17,7 @@ import state
 # data memory model: data segment
 # location depends on which flavour of BASIC we use (this is for GW-BASIC)
 data_segment = 0x13ad
-# lowest (EGA) video memory address
+# lowest (EGA) video memory address; max 128k reserved for video
 video_segment = 0xa000
 # read only memory
 rom_segment = 0xf000
