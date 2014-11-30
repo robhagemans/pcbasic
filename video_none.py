@@ -126,7 +126,7 @@ def set_colorburst(on, palette, palette1):
     pass
 
 def build_cursor(width, height, from_line, to_line):
-    """ Build a sprite for the cursor (no-op). """
+    """ Set the cursor shape (no-op). """
     pass
 
 def move_cursor(crow, ccol):
@@ -146,7 +146,7 @@ def set_attr(cattr):
     pass
     
 def set_border(attr):
-    """ Change the border attribute. """
+    """ Change the border attribute (no-op). """
     pass
 
 prepare()
