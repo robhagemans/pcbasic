@@ -1,9 +1,9 @@
 """
-# PC-BASIC 3.23 - video_cli.py
-# Command-line interface 
-#
-# (c) 2013, 2014 Rob Hagemans 
-# This file is released under the GNU GPL version 3. 
+PC-BASIC 3.23 - video_cli.py
+Command-line interface 
+
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
 """
 
 import sys
