@@ -3513,15 +3513,17 @@ ERRORS:
 -   If 'number' has a string value, raises TYPE MISMATCH.
 
 
-SHELL statement
+SHELL statement [--allow-shell only]
 SHELL [command]
 ---------------
 Starts a subshell on the console.   
-The type of shell is determined by your OS> On Unix systems, an sh shell is 
+The type of shell is determined by your OS. On Unix systems, an sh shell is 
 started. On Windows systems, a CMD.EXE shell is started. 
 'command' is a string-valued expression.
 If 'command' is specified, the command is executed on the shell and execution
 returns to the program.
+NOTES:
+-   If the --allow-shell option is not specified, this statement does nothing.
 ERRORS:
 -   If 'command' has a number value, raises TYPE MISMATCH.
 -   All output including errors from the operating system subshell is displayed

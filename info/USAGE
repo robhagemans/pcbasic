@@ -23,6 +23,12 @@ OPTIONS
   -t
             Use text-based interface. Same as --interface=text. 
 
+  --allow-code-poke [=True|=False]
+            Allow programs to POKE into code memory.
+            
+  --allow-shell [=True|=False]
+            Enable the SHELL statement.
+
   --append [=True|=False]
             Append to output_file, do not overwrite. Use with --output.
 

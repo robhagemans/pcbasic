@@ -29,8 +29,7 @@ else:
     try:
         import pexpect
     except ImportError:
-        logging.warning('Pexpect module not found. SHELL command disabled.')    
-    
+        pexpect = None    
 
 # posix access modes for BASIC modes INPUT, OUTPUT, RANDOM, APPEND 
 # and internal LOAD and SAVE modes
@@ -61,9 +60,11 @@ current_drive = 'C'
 # working directories; must not start with a /
 state.io_state.drive_cwd = { 'C': '', '@': '' }
 
+shell_enabled = False
 
 def prepare():
     """ Initialise oslayer module. """
+    global shell_enabled
     for a in config.options['mount']:
         try:
             # the last one that's specified will stick
@@ -78,6 +79,12 @@ def prepare():
             logging.warning('Could not mount %s', a)
     if config.options['map-drives']:
         map_drives()
+    if config.options['allow-shell']:
+        if (plat.system == 'Windows' or pexpect):
+            shell_enabled = True
+        else:
+            logging.warning('Pexpect module not found. SHELL command disabled.')    
+            
 
 #########################################
 # calling shell environment
@@ -216,7 +223,10 @@ def shell(command):
     suspend_event_save = state.basic_state.suspend_all_events
     state.basic_state.suspend_all_events = True
     # run the os-specific shell
-    spawn_shell(command)
+    if shell_enabled:
+        spawn_shell(command)
+    else:
+        logging.warning('SHELL statement disabled.')
     # re-enable key macros and event handling
     state.basic_state.key_macros_off = key_macros_save
     state.basic_state.suspend_all_events = suspend_event_save
@@ -528,10 +538,7 @@ else:
         cmd = '/bin/sh'
         if command:
             cmd += ' -c "' + command + '"'            
-        try:
-            p = pexpect.spawn(str(cmd))
-        except Exception:
-            return 
+        p = pexpect.spawn(str(cmd))
         while True:
             try:
                 c = backend.get_char()
