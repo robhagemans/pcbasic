@@ -615,12 +615,12 @@ def set_low_memory(addr, value):
     # DEF SEG=0: POKE 1050, PEEK(1052)
     elif addr == 1050:
         # keyboard ring buffer starts at n+1024; lowest 1054
-        state.console_state.keybuf.set_boundaries(
+        state.console_state.keybuf.ring_set_boundaries(
                 (value - key_buffer_offset) // 2,
                 state.console_state.keybuf.stop())
     elif addr == 1052:
         # ring buffer ends at n + 1023
-        state.console_state.keybuf.set_boundaries(
+        state.console_state.keybuf.ring_set_boundaries(
                 state.console_state.keybuf.start,
                 (value - key_buffer_offset) // 2)
     elif addr in range(1024+key_buffer_offset, 1024+key_buffer_offset+32):
@@ -635,6 +635,8 @@ def set_low_memory(addr, value):
             c = c[0] + chr(value)
         else:
             c = chr(value) + c[1]    
+        if c[1] == '\0' and c[0] != '\0':
+            c = c[0]
         state.console_state.keybuf.ring_write(index, c)
         
 prepare()
