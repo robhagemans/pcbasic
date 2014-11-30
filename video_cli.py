@@ -28,7 +28,7 @@ last_row = 1
 last_col = 1
 
 
-def prepare(args):
+def prepare():
     """ Initialise the video_cli module. """
     pass
 
