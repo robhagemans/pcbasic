@@ -1,26 +1,20 @@
-#
-# PC-BASIC 3.23 - tokenise.py
-#
-# Token parser
-# converts between tokenised and ASCII formats of a GW-BASIC program file
-# 
-# (c) 2013, 2014 Rob Hagemans 
-#
-# This file is released under the GNU GPL version 3. 
-# please see text file COPYING for licence terms.
-#
-# Acknowledgements:
-#
-# Norman De Forest for documentation of the file format:
-#   http://www.chebucto.ns.ca/~af380/GW-BASIC-tokens.html
-# danvk for the open-source detokenise implementation here:
-#   http://www.danvk.org/wp/2008-02-03/reading-old-gw-basic-programs/
-# Julian Bucknall and asburgoyne for descriptions of the Microsoft Binary Format posted here:
-#   http://www.boyet.com/Articles/MBFSinglePrecision.html
-#   http://www.experts-exchange.com/Programming/Languages/Pascal/Delphi/Q_20245266.html
+"""
+PC-BASIC 3.23 - tokenise.py
+Convert between tokenised and ASCII formats of a GW-BASIC program file
 
+(c) 2013, 2014 Rob Hagemans 
+This file is released under the GNU GPL version 3. 
 
-#################################################################
+Acknowledgements:
+Norman De Forest for documentation of the file format:
+  http://www.chebucto.ns.ca/~af380/GW-BASIC-tokens.html
+danvk for the open-source detokenise implementation here:
+  http://www.danvk.org/wp/2008-02-03/reading-old-gw-basic-programs/
+Julian Bucknall and asburgoyne for descriptions of the Microsoft Binary Format posted here:
+  http://www.boyet.com/Articles/MBFSinglePrecision.html
+  http://www.experts-exchange.com/Programming/Languages/Pascal/Delphi/Q_20245266.html
+"""
+
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -123,6 +117,7 @@ def prepare():
 # Detokenise functions
 
 def ascii_read_to(ins, findrange):
+    """ Read until a character from a given range is found. """
     out = ''
     while True:
         d = ins.read(1)
@@ -135,6 +130,7 @@ def ascii_read_to(ins, findrange):
     return out
 
 def detokenise_line(ins, bytepos=None):
+    """ Convert a tokenised program line to ascii text. """
     litstring, comment = False, False
     textpos = 0
     current_line = util.parse_line_number(ins)
@@ -175,9 +171,8 @@ def detokenise_line(ins, bytepos=None):
             comment = detokenise_keyword(ins, output)
     return current_line, output, textpos
 
-# de tokenise one- or two-byte tokens
-# output must be mutable
 def detokenise_keyword(ins, output):
+    """ Convert a one- or two-byte keyword token to ascii. """
     # try for single-byte token or two-byte token
     # if no match, first char is passed unchanged
     s = ins.read(1)
@@ -237,7 +232,8 @@ def detokenise_keyword(ins, output):
 #################################################################
 # Tokenise functions
 
-def tokenise_line(line):      
+def tokenise_line(line):
+    """ Convert an ascii program line to tokenised form. """
     ins = StringIO(line)
     outs = StringIO()          
     # skip whitespace at start of line
@@ -330,11 +326,11 @@ def tokenise_line(line):
     return outs
 
 def tokenise_rem(ins, outs):
-    # anything after REM is passed as is till EOL
+    """ Pass anything after REM as is till EOL. """
     outs.write(ascii_read_to(ins, ('', '\r', '\0')))
 
 def tokenise_data(ins, outs):
-    # read DATA as is, till end of statement, except for literals    
+    """ Pass DATA as is, till end of statement, except for literals. """
     while True:
         outs.write(ascii_read_to(ins, ('', '\r', '\0', ':', '"')))
         if util.peek(ins) == '"':
@@ -344,13 +340,14 @@ def tokenise_data(ins, outs):
             break            
     
 def tokenise_literal(ins, outs):
-    # string literal
+    """ Pass a string literal. """
     outs.write(ins.read(1))
     outs.write(ascii_read_to(ins, ('', '\r', '\0', '"') ))
     if util.peek(ins)=='"':
         outs.write(ins.read(1))    
             
 def tokenise_line_number(ins, outs): 
+    """ Convert an ascii line number to tokenised start-of-line. """
     linenum = tokenise_uint(ins)
     if linenum != '':    
         # terminates last line and fills up the first char in the buffer (that would be the magic number when written to file)
@@ -366,6 +363,7 @@ def tokenise_line_number(ins, outs):
         outs.write(':')
             
 def tokenise_jump_number(ins, outs):
+    """ Convert an ascii line number pointer to tokenised form. """
     word = tokenise_uint(ins)
     if word != '':
         outs.write('\x0e' + word)
@@ -374,6 +372,7 @@ def tokenise_jump_number(ins, outs):
         outs.write('.')
     
 def tokenise_uint(ins):
+    """ Convert an unsigned int (line number) to tokenised form. """
     word = bytearray()
     while True:
         c = ins.read(1)
@@ -405,6 +404,7 @@ def tokenise_uint(ins):
         return ''    
 
 def tokenise_word(ins, outs):
+    """ Convert a keyword to tokenised form. """
     word = ''
     while True: 
         c = ins.read(1).upper()
@@ -454,9 +454,6 @@ def tokenise_word(ins, outs):
             outs.write(word)            
             break
     return word
-
-#################################################################
-# initialise module
 
 prepare()
 
