@@ -2017,7 +2017,8 @@ def exec_randomize(ins):
 
 def exec_cls(ins):
     """ CLS: clear the screen. """
-    if pcjr_syntax == 'pcjr' or util.skip_white(ins) in (',', util.end_statement):
+    if (pcjr_syntax == 'pcjr' or 
+                    util.skip_white(ins) in (',',) + util.end_statement):
         val = 1 if state.console_state.graph_view_set else (2 if state.console_state.view_set else 0)
     else:
         val = vartypes.pass_int_unpack(expressions.parse_expression(ins))
