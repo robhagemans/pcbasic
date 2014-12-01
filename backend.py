@@ -1514,12 +1514,12 @@ def set_colorburst(on=True):
         # ega ignores colorburst; tandy and pcjr have no mode 5
         cga_mode_5 = not (on or video_capabilities not in ('cga', 'cga_old'))
         set_cga4_palette(1)
-        set_palette()    
     elif (on or not composite_monitor and not mono_monitor):
         # take modulo in case we're e.g. resuming ega text into a cga machine
         colours16[:] = colours16_colour
     else:
         colours16[:] = colours16_mono
+    set_palette()
     video.set_colorburst(on and colorburst_capable, 
         state.console_state.rgb_palette, state.console_state.rgb_palette1)
 
