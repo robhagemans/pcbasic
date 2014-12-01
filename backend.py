@@ -772,69 +772,8 @@ class Tandy6Mode(GraphicsMode):
     build_tile = build_tile_cga
 
 
-
-
 def prepare_modes():
     global mode_data, text_data
-    if video_capabilities == 'vga':    
-        # technically, VGA text does have underline 
-        # but it's set to an invisible scanline
-        # so not, so long as we're not allowing to set the scanline
-        text_data = {
-            40: TextMode('vgatext40', 25, 40, 16, 9, 7, 
-                         ega_palette, colours64, num_pages=8),            
-            80: TextMode('vgatext80', 25, 80, 16, 9, 7, 
-                         ega_palette, colours64, num_pages=4) }
-    elif video_capabilities == 'ega':    
-        text_data = {
-            40: TextMode('egatext40', 25, 40, 14, 8, 7, 
-                         ega_palette, colours64, num_pages=8),
-            80: TextMode('egatext80', 25, 80, 14, 8, 7, 
-                         ega_palette, colours64, num_pages=4) }
-    elif video_capabilities in ('cga', 'cga_old', 'pcjr'):    
-        text_data = {
-            40: TextMode('cgatext40', 25, 40, 8, 8, 7, 
-                         cga16_palette, colours16, num_pages=8),
-            80: TextMode('cgatext80', 25, 80, 8, 8, 7, 
-                         cga16_palette, colours16, num_pages=4) }
-    elif video_capabilities == 'ega_mono': 
-        text_data = {
-            40: TextMode('ega_monotext40', 25, 40, 14, 8, 7, 
-                         mda_palette, colours_mda_mono, 
-                         is_mono=True, has_underline=True, num_pages=8),
-            80: TextMode('ega_monotext80', 25, 80, 14, 8, 7, 
-                         mda_palette, colours_mda_mono, 
-                         is_mono=True, has_underline=True, num_pages=4) }
-    elif video_capabilities == 'mda': 
-        text_data = {
-            40: TextMode('mdatext40', 25, 40, 14, 9, 7,
-                         mda_palette, colours_mda_mono,
-                         is_mono=True, has_underline=True, num_pages=1),
-            80: TextMode('mdatext80', 25, 80, 14, 9, 7,
-                         mda_palette, colours_mda_mono,
-                         is_mono=True, has_underline=True, num_pages=1) }
-    elif video_capabilities == 'hercules': 
-        # herc attributes shld distinguish black, dim, normal, bright
-        # see http://www.seasip.info/VintagePC/hercplus.html
-        text_data = {
-            40: TextMode('herculestext40', 25, 40, 14, 9, 7, 
-                         mda_palette, colours_mda_mono,
-                         is_mono=True, has_underline=True, num_pages=2),
-            80: TextMode('herculestext80', 25, 80, 14, 9, 7, 
-                         mda_palette, colours_mda_mono,
-                         is_mono=True, has_underline=True, num_pages=2) }
-    elif video_capabilities == 'tandy': 
-        text_data = {
-            40: TextMode('tandytext40', 25, 40, 9, 8, 7, 
-                          cga16_palette, colours16, num_pages=8),
-            80: TextMode('tandytext80', 25, 80, 9, 8, 7, 
-                          cga16_palette, colours16, num_pages=4) }
-    elif video_capabilities == 'olivetti': 
-        text_data = {
-            40: TextMode('olivettitext40', 25, 40, 16, 8, 7,
-                          cga16_palette, colours16, num_pages=8),
-            80: TextMode('olivettitext80', 25, 80, 16, 8, 7,
-                          cga16_palette, colours16, num_pages=4) }
     # Tandy/PCjr pixel aspect ratio is different from normal
     # suggesting screen aspect ratio is not 4/3.
     # Tandy pixel aspect ratios, experimentally found with CIRCLE:
@@ -919,51 +858,103 @@ def prepare_modes():
                     interleave_times=4, bank_size=0x2000,
                     has_blink=True),
         }
-    # mode numbers by video card
-    available_modes = {
-        'mda': { },
-        'cga': {
-            1: graphics_mode['320x200x4'],
-            2: graphics_mode['640x200x2']},
-        'olivetti': {
-            1: graphics_mode['320x200x4'],
-            2: graphics_mode['640x200x2'],
-            3: graphics_mode['640x400x2'],
-            },
-        'hercules': {
-            3: graphics_mode['720x348x2']},
-        'pcjr': {
-            1: graphics_mode['320x200x4'],
-            2: graphics_mode['640x200x2'],
-            3: graphics_mode['160x200x16'],
-            4: graphics_mode['320x200x4pcjr'],
-            5: graphics_mode['320x200x16pcjr'],
-            6: graphics_mode['640x200x4']},
-        'ega': {
+    if video_capabilities == 'vga':    
+        # technically, VGA text does have underline 
+        # but it's set to an invisible scanline
+        # so not, so long as we're not allowing to set the scanline
+        text_data = {
+            40: TextMode('vgatext40', 25, 40, 16, 9, 7, 
+                         ega_palette, colours64, num_pages=8),            
+            80: TextMode('vgatext80', 25, 80, 16, 9, 7, 
+                         ega_palette, colours64, num_pages=4)}
+        mode_data = {
             1: graphics_mode['320x200x4'],
             2: graphics_mode['640x200x2'],
             7: graphics_mode['320x200x16'],
             8: graphics_mode['640x200x16'],
-            9: graphics_mode['640x350x16']},
-        'ega_mono': {
-            10: graphics_mode['640x350x4']},
-        'vga': {
+            9: graphics_mode['640x350x16']}
+    elif video_capabilities == 'ega':    
+        text_data = {
+            40: TextMode('egatext40', 25, 40, 14, 8, 7, 
+                         ega_palette, colours64, num_pages=8),
+            80: TextMode('egatext80', 25, 80, 14, 8, 7, 
+                         ega_palette, colours64, num_pages=4)}
+        mode_data = {
             1: graphics_mode['320x200x4'],
             2: graphics_mode['640x200x2'],
             7: graphics_mode['320x200x16'],
             8: graphics_mode['640x200x16'],
-            9: graphics_mode['640x350x16']},
-    }
-    available_modes['cga_old'] = available_modes['cga']
-    available_modes['tandy'] = available_modes['pcjr']
-    # on Olivetti M24, all numbers 3-255 give the same altissima risoluzione
-    for mode in range(4, 256):
-        available_modes['olivetti'][mode] = graphics_mode['640x400x2']
-    mode_data = available_modes[video_capabilities]
-
-# to be filled with the modes available to our video card    
-mode_data = {}
-text_data = {}
+            9: graphics_mode['640x350x16']}
+    elif video_capabilities == 'ega_mono': 
+        text_data = {
+            40: TextMode('ega_monotext40', 25, 40, 14, 8, 7, 
+                         mda_palette, colours_mda_mono, 
+                         is_mono=True, has_underline=True, num_pages=8),
+            80: TextMode('ega_monotext80', 25, 80, 14, 8, 7, 
+                         mda_palette, colours_mda_mono, 
+                         is_mono=True, has_underline=True, num_pages=4)}
+        mode_data = {
+            10: graphics_mode['640x350x4']}
+    elif video_capabilities == 'mda': 
+        text_data = {
+            40: TextMode('mdatext40', 25, 40, 14, 9, 7,
+                         mda_palette, colours_mda_mono,
+                         is_mono=True, has_underline=True, num_pages=1),
+            80: TextMode('mdatext80', 25, 80, 14, 9, 7,
+                         mda_palette, colours_mda_mono,
+                         is_mono=True, has_underline=True, num_pages=1) }
+        mode_data = {}
+    elif video_capabilities in ('cga', 'cga_old', 'pcjr', 'tandy'):    
+        if video_capabilities == 'tandy': 
+            text_data = {
+                40: TextMode('tandytext40', 25, 40, 9, 8, 7, 
+                              cga16_palette, colours16, num_pages=8),
+                80: TextMode('tandytext80', 25, 80, 9, 8, 7, 
+                              cga16_palette, colours16, num_pages=4)}
+        else:
+            text_data = {
+                40: TextMode('cgatext40', 25, 40, 8, 8, 7, 
+                             cga16_palette, colours16, num_pages=8),
+                80: TextMode('cgatext80', 25, 80, 8, 8, 7, 
+                             cga16_palette, colours16, num_pages=4)}
+        if video_capabilities in ('cga', 'cga_old'):                     
+            mode_data = {
+                1: graphics_mode['320x200x4'],
+                2: graphics_mode['640x200x2']}
+        else:
+            mode_data = {
+                1: graphics_mode['320x200x4'],
+                2: graphics_mode['640x200x2'],
+                3: graphics_mode['160x200x16'],
+                4: graphics_mode['320x200x4pcjr'],
+                5: graphics_mode['320x200x16pcjr'],
+                6: graphics_mode['640x200x4']}
+    elif video_capabilities == 'hercules': 
+        # herc attributes shld distinguish black, dim, normal, bright
+        # see http://www.seasip.info/VintagePC/hercplus.html
+        text_data = {
+            40: TextMode('herculestext40', 25, 40, 14, 9, 7, 
+                         mda_palette, colours_mda_mono,
+                         is_mono=True, has_underline=True, num_pages=2),
+            80: TextMode('herculestext80', 25, 80, 14, 9, 7, 
+                         mda_palette, colours_mda_mono,
+                         is_mono=True, has_underline=True, num_pages=2) }
+        mode_data = {
+            3: graphics_mode['720x348x2']}
+    elif video_capabilities == 'olivetti': 
+        text_data = {
+            40: TextMode('olivettitext40', 25, 40, 16, 8, 7,
+                          cga16_palette, colours16, num_pages=8),
+            80: TextMode('olivettitext80', 25, 80, 16, 8, 7,
+                          cga16_palette, colours16, num_pages=4) }
+        mode_data = {
+            1: graphics_mode['320x200x4'],
+            2: graphics_mode['640x200x2'],
+            3: graphics_mode['640x400x2']}
+        # on Olivetti M24, all numbers 3-255 give the same altissima risoluzione
+        for mode in range(4, 256):
+            mode_data[mode] = graphics_mode['640x400x2']
+            
 
 # all data for current mode
 state.console_state.current_mode = None
