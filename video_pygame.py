@@ -410,10 +410,8 @@ def init_screen_mode(mode_info):
         bitsperpixel = mode_info.bitsperpixel
         mode_has_artifacts = mode_info.supports_artifacts
         cursor_fixed_attr = mode_info.cursor_index
-        # logical size    
-        size = (mode_info.xsize, mode_info.ysize)    
-    else:
-        size = (mode_info.width*font_width, mode_info.height*font_height)    
+    # logical size    
+    size = (mode_info.pixel_width, mode_info.pixel_height)    
     font = fonts[font_height]
     glyphs = [build_glyph(chr(c), font, font_width, font_height) 
               for c in range(256)]

@@ -320,224 +320,115 @@ state.console_state.colour_plane = 0
 state.console_state.colour_plane_write_mask = 0xff
 
 
-def get_text_memory(addr, text_segment, width):
-    """ Retrieve a byte from textmode video memory. """
-    addr -= text_segment*0x10
-    page_size = 4096 if width == 80 else 2048
-    page = addr // page_size
-    offset = addr % page_size
-    ccol = (offset%(width*2)) // 2
-    crow = offset // (width*2)
-    try:
-        c = state.console_state.pages[page].row[crow].buf[ccol][addr%2]  
-        return c if addr%2==1 else ord(c)
-    except IndexError:
-        return -1    
+class VideoMode(object):
+    """ Base class for video modes. """
+    def __init__(self, name, height, width,
+                  font_height, font_width, 
+                  attr, palette, colours, 
+                  num_pages,
+                  has_underline, has_blink,
+                  video_segment, page_size
+                  ):
+        """ Initialise video mode settings. """
+        self.is_text_mode = False
+        self.name = name
+        self.height = int(height)
+        self.width = int(width)
+        self.font_height = int(font_height)
+        self.font_width = int(font_width)
+        self.pixel_height = self.height*self.font_height
+        self.pixel_width = self.width*self.font_width
+        self.attr = int(attr)
+        self.palette = tuple(palette)
+        self.num_attr = len(palette)
+        # colours is a reference
+        self.colours = colours
+        # colours1 is only used by EGA mono mode
+        self.colours1 = None
+        self.has_blink = has_blink
+        self.has_underline = has_underline
+        self.video_segment = int(video_segment)
+        available_mem = (state.console_state.video_mem_size - 
+                         (self.video_segment - 0xa000) * 0x10)
+        self.page_size = int(page_size)
+        self.num_pages = int(num_pages or available_mem // self.page_size)
     
-def set_text_memory(addr, val, text_segment, width):
-    """ Set a byte in textmode video memory. """
-    addr -= text_segment*0x10
-    page_size = 4096 if width == 80 else 2048
-    page = addr // page_size
-    offset = addr % page_size
-    ccol = (offset%(width*2)) // 2
-    crow = offset // (width*2)
-    try:
-        c, a = state.console_state.pages[page].row[crow].buf[ccol]
-        if addr%2==0:
-            c = chr(val)
-        else:
-            a = val
-        put_screen_char_attr(page, crow+1, ccol+1, c, a)
-    except IndexError:
-        pass
+class TextMode(VideoMode):
+    """ Default settings for a text mode. """
+    
+    def __init__(self, name, height, width,
+                  font_height, font_width, 
+                  attr, palette, colours, 
+                  num_pages=None,
+                  is_mono=False, has_underline=False, has_blink=True,
+                  ):
+        """ Initialise video mode settings. """
+        video_segment = 0xb000 if is_mono else 0xb800
+        page_size = 0x1000 if width == 80 else 0x800
+        VideoMode.__init__(self, name, height, width,
+                  font_height, font_width, 
+                  attr, palette, colours, 
+                  num_pages, has_underline, has_blink, video_segment, page_size)
+        self.is_text_mode = True
+        self.num_attr = 32
+        self.has_underline = has_underline
+    
+    def get_memory(addr):
+        """ Retrieve a byte from textmode video memory. """
+        addr -= self.video_segment*0x10
+        page = addr // self.page_size
+        offset = addr % self.page_size
+        ccol = (offset % (self.width*2)) // 2
+        crow = offset // (self.width*2)
+        try:
+            c = state.console_state.pages[page].row[crow].buf[ccol][addr%2]  
+            return c if addr%2==1 else ord(c)
+        except IndexError:
+            return -1    
+    
+    def set_memory(addr, val):
+        """ Set a byte in textmode video memory. """
+        addr -= self.video_segment*0x10
+        page = addr // self.page_size
+        offset = addr % self.page_size
+        ccol = (offset % (self.width*2)) // 2
+        crow = offset // (self.width*2)
+        try:
+            c, a = state.console_state.pages[page].row[crow].buf[ccol]
+            if addr%2 == 0:
+                c = chr(val)
+            else:
+                a = val
+            put_screen_char_attr(page, crow+1, ccol+1, c, a)
+        except IndexError:
+            pass
 
-def coord_ok(page, x, y):
-    """ Check if a page and coordinates are within limits. """
-    return (page < state.console_state.num_pages and
-             x < state.console_state.size[0] and
-             y < state.console_state.size[1])
-            
+
 def get_pixel_byte(page, x, y, plane):
     """ Retrieve a byte with 8 packed pixels for one colour plane. """
     # modes 1-5: interleaved scan lines, pixels sequentially packed into bytes
-    if coord_ok(page, x, y):
-        return sum(( ((video.get_pixel(x+shift, y, page) >> plane) & 1) 
-                      << (7-shift) for shift in range(8) ))
-    return -1    
+    return sum(( ((video.get_pixel(x+shift, y, page) >> plane) & 1) 
+                  << (7-shift) for shift in range(8) ))
 
 def set_pixel_byte(page, x, y, plane_mask, byte):
     """ Set a packed-pixel byte for a given colour plane. """
     inv_mask = 0xff ^ plane_mask
-    if coord_ok(page, x, y):
-        for shift in range(8):
-            bit = (byte >> (7-shift)) & 1
-            current = video.get_pixel(x + shift, y, page) & inv_mask
-            video.put_pixel(x + shift, y, 
-                                    current | (bit * plane_mask), page)  
+    for shift in range(8):
+        bit = (byte >> (7-shift)) & 1
+        current = video.get_pixel(x + shift, y, page) & inv_mask
+        video.put_pixel(x + shift, y, 
+                                current | (bit * plane_mask), page)  
 
-
-def get_pixel_byte_cga(page, x, y, bitsperpixel):
-    """ Retrieve a byte with 8//bitsperpixel packed pixels. """
-    if coord_ok(page, x, y):
-        return sum(( (video.get_pixel(x+shift, y, page) 
-                       & (2**bitsperpixel-1)) 
-                     << (8-(shift+1)*bitsperpixel) 
-                     for shift in range(8//bitsperpixel)))
-    return -1
-
-def set_pixel_byte_cga(page, x, y, bitsperpixel, byte):
-    """ Set a CGA n-bits-per-pixel byte. """
-    if coord_ok(page, x, y):
-        for shift in range(8 // bitsperpixel):
-            nbit = (byte >> (8-(shift+1)*bitsperpixel)) & (2**bitsperpixel-1)
-            video.put_pixel(x + shift, y, nbit, page) 
-
-
-    
-def get_video_memory_cga(addr, bitsperpixel, 
-                         bytes_per_row, interleave_times):
-    """ Retrieve a byte from CGA memory. """
-    addr -= 0xb8000
-    if addr < 0:
-        return -1
-    # modes 1-5: interleaved scan lines, pixels sequentially packed into bytes
-    page_size = 0x2000*interleave_times
-    page, addr = addr//page_size, addr%page_size
-    # 2 x interleaved scan lines of 80bytes
-    x = ((addr%0x2000)%bytes_per_row)*8//bitsperpixel
-    y = (addr//0x2000) + interleave_times*((addr%0x2000)//bytes_per_row)
-    return get_pixel_byte_cga(page, x, y, bitsperpixel)
-
-def set_video_memory_cga(addr, val, bitsperpixel, 
-                         bytes_per_row, interleave_times):
-    """ Set a byte in CGA memory. """
-    addr -= 0xb8000
-    if addr < 0:
-        return
-    # modes 1-5: interleaved scan lines, pixels sequentially packed into bytes
-    page_size = 0x2000*interleave_times
-    page, addr = addr//page_size, addr%page_size
-    # 2 or 4 x interleaved scan lines of 80 or 160 bytes
-    x = ((addr%0x2000)%bytes_per_row)*8//bitsperpixel
-    y = (addr//0x2000) + interleave_times*((addr%0x2000)//bytes_per_row)
-    set_pixel_byte_cga(page, x, y, bitsperpixel, val)
-
-
-def get_video_memory_tandy_6(addr):
-    """ Retrieve a byte from Tandy 640x200x4 """
-    addr -= 0xb8000
-    if addr < 0:
-        return -1
-    # mode 6: interleaved scan lines, 8 pixels per two bytes, 
-    page, addr = addr//32768, addr%32768
-    # 4 x interleaved scan lines of 160bytes
-    x = (((addr%0x2000)%160)//2)*8
-    y = (addr//0x2000) + 4*((addr%0x2000)//160)
-    # 8 pixels per 2 bytes
-    # low attribute bits stored in even bytes, high bits in odd bytes.        
-    return get_pixel_byte(page, x, y, addr%2) 
-
-def set_video_memory_tandy_6(addr, val):
-    """ Set a byte in Tandy 640x200x4 memory. """
-    addr -= 0xb8000
-    if addr < 0:
-        return
-    page, addr = addr//32768, addr%32768
-    # 4 x interleaved scan lines of 80bytes, 8pixels per 2bytes
-    x = (((addr%0x2000)%160)//2)*8
-    y = (addr//0x2000) + 4*((addr%0x2000)//160)
-    set_pixel_byte(page, x, y, 1<<(addr%2), val) 
-
-
-def get_video_memory_ega(addr, page_size, bytes_per_row):   
-    """ Retrieve a byte from EGA memory. """
-    addr -= 0xa0000
-    if addr < 0:
-        return -1
-    # modes 7-9: 1 bit per pixel per colour plane                
-    page, addr = addr//page_size, addr%page_size
-    x, y = (addr%bytes_per_row)*8, addr//bytes_per_row
-    return get_pixel_byte(page, x, y, state.console_state.colour_plane % 4)
-
-def set_video_memory_ega(addr, val, page_size, bytes_per_row):
-    """ Set a byte in EGA video memory. """
-    addr -= 0xa0000
-    if addr < 0:
-        return
-    page, addr = addr//page_size, addr%page_size
-    x, y = (addr%bytes_per_row)*8, addr//bytes_per_row
-    set_pixel_byte(page, x, y, 
-                   state.console_state.colour_plane_write_mask & 0xf, val)
-
-
-def get_video_memory_ega_10(addr):   
-    """ Retrieve a byte from EGA memory. """
-    addr -= 0xa0000
-    if addr < 0:
-        return -1
-    if state.console_state.colour_plane % 4 in (1, 3):
-        # only planes 0, 2 are used 
-        # http://webpages.charter.net/danrollins/techhelp/0089.HTM
-        return 0
-    page, addr = addr//32768, addr%32768
-    x, y = (addr%80)*8, addr//80
-    return get_pixel_byte(page, x, y, state.console_state.colour_plane % 4)
-
-def set_video_memory_ega_10(addr, val):
-    """ Set a byte in EGA video memory. """
-    addr -= 0xa0000
-    if addr < 0:
-        return
-    page, addr = addr//32768, addr%32768
-    x, y = (addr%80)*8, addr//80
-    # only use bits 0 and 2
-    set_pixel_byte(page, x, y, 
-                   state.console_state.colour_plane_write_mask & 0x5, val)            
-
-
-def get_area_cga(x0, y0, x1, y1, byte_array):
-    """ Read a sprite from the screen in CGA modes. """
-    dx = x1 - x0 + 1
-    dy = y1 - y0 + 1
-    x0, y0 = view_coords(x0, y0)
-    x1, y1 = view_coords(x1, y1)
-    # illegal fn call if outside screen boundary
-    util.range_check(0, state.console_state.size[0]-1, x0, x1)
-    util.range_check(0, state.console_state.size[1]-1, y0, y1)
-    bpp = state.console_state.current_mode.bitsperpixel
-    # clear existing array only up to the length we'll use
-    length = 4 + ((dx * bpp + 7) // 8)*dy
-    byte_array[:length] = '\x00'*length
-    byte_array[0:2] = vartypes.value_to_uint(dx*bpp)
-    byte_array[2:4] = vartypes.value_to_uint(dy)
-    byte = 4
-    shift = 8 - bpp
-    for y in range(y0, y1+1):
-        for x in range(x0, x1+1):
-            if shift < 0:
-                byte += 1
-                shift = 8 - bpp
-            pixel = video.get_pixel(x,y) # 2-bit value
-            try:
-                byte_array[byte] |= pixel << shift
-            except IndexError:
-                raise error.RunError(5)      
-            shift -= bpp
-        # byte align next row
-        byte += 1
-        shift = 8 - bpp
-
-def get_area_ega(x0, y0, x1, y1, byte_array):
+def get_area_ega(self, x0, y0, x1, y1, byte_array):
     """ Read a sprite from the screen in EGA modes. """
     dx = x1 - x0 + 1
     dy = y1 - y0 + 1
     x0, y0 = view_coords(x0, y0)
     x1, y1 = view_coords(x1, y1)
     # illegal fn call if outside screen boundary
-    util.range_check(0, state.console_state.size[0]-1, x0, x1)
-    util.range_check(0, state.console_state.size[1]-1, y0, y1)
-    bpp = state.console_state.current_mode.bitsperpixel
+    util.range_check(0, self.pixel_width-1, x0, x1)
+    util.range_check(0, self.pixel_height-1, y0, y1)
+    bpp = self.bitsperpixel
     # clear existing array only up to the length we'll use
     row_bytes = (dx+7) // 8
     length = 4 + dy * bpp * row_bytes
@@ -561,53 +452,17 @@ def get_area_ega(x0, y0, x1, y1, byte_array):
         # byte align next row
         mask = 0x80
 
-def set_area_cga(x0, y0, byte_array, operation):
-    """ Put a stored sprite onto the screen in CGA modes. """
-    # in cga modes, number of x bits is given rather than pixels
-    bpp = state.console_state.current_mode.bitsperpixel
-    dx = vartypes.uint_to_value(byte_array[0:2]) / bpp
-    dy = vartypes.uint_to_value(byte_array[2:4])
-    x1, y1 = x0+dx-1, y0+dy-1
-    x0, y0 = view_coords(x0, y0)
-    x1, y1 = view_coords(x1, y1)
-    # illegal fn call if outside screen boundary
-    util.range_check(0, state.console_state.size[0]-1, x0, x1)
-    util.range_check(0, state.console_state.size[1]-1, y0, y1)
-    video.apply_graph_clip()
-    byte = 4
-    shift = 8 - bpp
-    for y in range(y0, y1+1):
-        for x in range(x0, x1+1):
-            if shift < 0:
-                byte += 1
-                shift = 8 - bpp
-            if (x < 0 or x >= state.console_state.size[0] or 
-                    y < 0 or y >= state.console_state.size[1]):
-                pixel = 0
-            else:
-                pixel = video.get_pixel(x,y)
-                try:    
-                    index = (byte_array[byte] >> shift) % state.console_state.num_attr   
-                except IndexError:
-                    pass                
-                video.put_pixel(x, y, operation(pixel, index))    
-            shift -= bpp
-        # byte align next row
-        byte += 1
-        shift = 8 - bpp
-    video.remove_graph_clip()        
-
-def set_area_ega(x0, y0, byte_array, operation):
+def set_area_ega(self, x0, y0, byte_array, operation):
     """ Put a stored sprite onto the screen in EGA modes. """
-    bpp = state.console_state.current_mode.bitsperpixel
+    bpp = self.bitsperpixel
     dx = vartypes.uint_to_value(byte_array[0:2])
     dy = vartypes.uint_to_value(byte_array[2:4])
     x1, y1 = x0+dx-1, y0+dy-1
     x0, y0 = view_coords(x0, y0)
     x1, y1 = view_coords(x1, y1)
     # illegal fn call if outside screen boundary
-    util.range_check(0, state.console_state.size[0]-1, x0, x1)
-    util.range_check(0, state.console_state.size[1]-1, y0, y1)
+    util.range_check(0, self.pixel_width-1, x0, x1)
+    util.range_check(0, self.pixel_height-1, y0, y1)
     video.apply_graph_clip()
     byte = 4
     mask = 0x80
@@ -616,8 +471,8 @@ def set_area_ega(x0, y0, byte_array, operation):
         for x in range(x0, x1+1):
             if mask == 0: 
                 mask = 0x80
-            if (x < 0 or x >= state.console_state.size[0] 
-                    or y < 0 or y >= state.console_state.size[1]):
+            if (x < 0 or x >= self.pixel_width
+                    or y < 0 or y >= self.pixel_height):
                 pixel = 0
             else:
                 pixel = video.get_pixel(x,y)
@@ -630,41 +485,17 @@ def set_area_ega(x0, y0, byte_array, operation):
                 except IndexError:
                     pass
             mask >>= 1
-            if (x >= 0 and x < state.console_state.size[0] and 
-                    y >= 0 and y < state.console_state.size[1]):
+            if (x >= 0 and x < self.pixel_width and 
+                    y >= 0 and y < self.pixel_height):
                 video.put_pixel(x, y, operation(pixel, index)) 
         # byte align next row
         mask = 0x80
     video.remove_graph_clip()   
 
-def build_tile_ega(pattern):
-    """ Build a flood-fill tile for EGA screens. """
+def build_tile_cga(self, pattern):
+    """ Build a flood-fill tile for CGA screens. """
     tile = []    
-    bpp = state.console_state.current_mode.bitsperpixel
-    while len(pattern) % bpp != 0:
-        # finish off the pattern with zeros
-        pattern.append(0)
-    strlen = len(pattern)
-    # in modes (2), 7, 8, 9 each byte represents 8 bits
-    # colour planes encoded in consecutive bytes
-    mask = 7
-    for y in range(strlen//bpp):
-        line = []
-        for x in range(8):
-            c = 0
-            for b in range(bpp-1, -1, -1):
-                c = (c<<1) + ((pattern[(y*bpp+b)%strlen] >> mask) & 1)
-            mask -= 1
-            if mask < 0:
-                mask = 7
-            line.append(c)
-        tile.append(line)    
-    return tile
-
-def build_tile_cga(pattern):
-    """ Build a flodd-fill tile for CGA screens. """
-    tile = []    
-    bpp = state.console_state.current_mode.bitsperpixel
+    bpp = self.bitsperpixel
     strlen = len(pattern)
     # in modes 1, (2), 3, 4, 5, 6 colours are encoded in consecutive bits
     # each byte represents one scan line
@@ -682,140 +513,328 @@ def build_tile_cga(pattern):
         tile.append(line)
     return tile
 
-textmode_args = ('name is_text_mode '
-    'font_height font_width '
-    'height width num_pages '
-    'num_attr palette colours colours1 attr '
-    'has_blink has_underline '
-    'get_memory set_memory '
-    'mem_start page_size ')
-TextMode = namedtuple('TextMode', textmode_args)
-GraphicsMode = namedtuple('GraphicsMode', textmode_args + 
-    'xsize ysize pixel_aspect bitsperpixel '
-    'build_tile get_area set_area '
-    'supports_artifacts cursor_index ')
+
+class GraphicsMode(VideoMode):
+    """ Default settings for a graphics mode. """
+    
+    def __init__(self, name, pixel_width, pixel_height,
+                  text_height, text_width, 
+                  attr, palette, colours, bitsperpixel, 
+                  interleave_times, bank_size,
+                  num_pages=None,
+                  has_blink=False,
+                  supports_artifacts=False,
+                  cursor_index=None,
+                  pixel_aspect=None,
+                  video_segment=0xb800
+                  ):
+        """ Initialise video mode settings. """
+        font_width = int(pixel_width // text_width)
+        font_height = int(pixel_height // text_height)
+        self.interleave_times = int(interleave_times)
+        # cga bank_size = 0x2000 interleave_times=2
+        self.bank_size = int(bank_size)
+        page_size = self.interleave_times * self.bank_size
+        VideoMode.__init__(self, name, text_height, text_width, 
+                          font_height, font_width, attr, palette, colours,
+                          num_pages, False, has_blink, video_segment, page_size)
+        self.is_text_mode = False
+        self.bitsperpixel = int(bitsperpixel)
+        self.num_attr = 2**self.bitsperpixel
+        self.bytes_per_row = int(pixel_width) * self.bitsperpixel // 8
+        self.supports_artifacts = supports_artifacts
+        self.cursor_index = cursor_index
+        self.pixel_aspect = pixel_aspect
+
+    def coord_ok(self, page, x, y):
+        """ Check if a page and coordinates are within limits. """
+        return (page >= 0 and page < self.num_pages and
+                x >= 0 and x < self.pixel.width and
+                y >= 0 and y < self.pixel.height)
+
+
+class CGAMode(GraphicsMode):
+    """ Default settings for a CGA graphics mode. """
+
+    def get_coords(self, addr):
+        """ Get video page and coordinates for address. """
+        addr = int(addr) - self.video_segment * 0x10
+        # modes 1-5: interleaved scan lines, pixels sequentially packed into bytes
+        page, addr = addr//self.page_size, addr%self.page_size
+        # 2 x interleaved scan lines of 80bytes
+        bank, offset = addr//self.bank_size, addr%self.bank_size
+        row, col = offset//self.bytes_per_row, offset%self.bytes_per_row
+        x = col * 8 // self.bitsperpixel
+        y = bank + self.interleave_times * row
+        return page, x, y        
+        
+    def get_memory(self, addr):
+        """ Retrieve a byte from CGA memory. """
+        page, x, y = self.get_coords(addr)
+        if self.coord_ok(page, x, y):
+            return sum(( (video.get_pixel(x+shift, y, page) 
+                            & (2**self.bitsperpixel-1)) 
+                            << (8-(shift+1)*self.bitsperpixel) 
+                    for shift in range(8//self.bitsperpixel)))
+
+    def set_memory(self, addr, val):
+        """ Set a byte in CGA memory. """
+        mask = self.num_attr - 1 # 2**bpp-1
+        page, x, y = self.get_coords(addr)
+        if self.coord_ok(page, x, y):
+            for shift in range(8 // self.bitsperpixel):
+                nbit = (byte >> (8-(shift+1)*self.bitsperpixel)) & mask
+                video.put_pixel(x + shift, y, nbit, page) 
+
+    def get_area(self, x0, y0, x1, y1, byte_array):
+        """ Read a sprite from the screen. """
+        dx = x1 - x0 + 1
+        dy = y1 - y0 + 1
+        x0, y0 = view_coords(x0, y0)
+        x1, y1 = view_coords(x1, y1)
+        # illegal fn call if outside screen boundary
+        util.range_check(0, state.console_state.size[0]-1, x0, x1)
+        util.range_check(0, state.console_state.size[1]-1, y0, y1)
+        bpp = state.console_state.current_mode.bitsperpixel
+        # clear existing array only up to the length we'll use
+        length = 4 + ((dx * bpp + 7) // 8)*dy
+        byte_array[:length] = '\x00'*length
+        byte_array[0:2] = vartypes.value_to_uint(dx*bpp)
+        byte_array[2:4] = vartypes.value_to_uint(dy)
+        byte = 4
+        shift = 8 - bpp
+        for y in range(y0, y1+1):
+            for x in range(x0, x1+1):
+                if shift < 0:
+                    byte += 1
+                    shift = 8 - bpp
+                pixel = video.get_pixel(x,y) # 2-bit value
+                try:
+                    byte_array[byte] |= pixel << shift
+                except IndexError:
+                    raise error.RunError(5)      
+                shift -= bpp
+            # byte align next row
+            byte += 1
+            shift = 8 - bpp
+
+    def set_area(self, x0, y0, byte_array, operation):
+        """ Put a stored sprite onto the screen. """
+        # in cga modes, number of x bits is given rather than pixels
+        bpp = state.console_state.current_mode.bitsperpixel
+        dx = vartypes.uint_to_value(byte_array[0:2]) / bpp
+        dy = vartypes.uint_to_value(byte_array[2:4])
+        x1, y1 = x0+dx-1, y0+dy-1
+        x0, y0 = view_coords(x0, y0)
+        x1, y1 = view_coords(x1, y1)
+        # illegal fn call if outside screen boundary
+        util.range_check(0, state.console_state.size[0]-1, x0, x1)
+        util.range_check(0, state.console_state.size[1]-1, y0, y1)
+        video.apply_graph_clip()
+        byte = 4
+        shift = 8 - bpp
+        for y in range(y0, y1+1):
+            for x in range(x0, x1+1):
+                if shift < 0:
+                    byte += 1
+                    shift = 8 - bpp
+                if (x < 0 or x >= state.console_state.size[0] or 
+                        y < 0 or y >= state.console_state.size[1]):
+                    pixel = 0
+                else:
+                    pixel = video.get_pixel(x,y)
+                    try:    
+                        index = (byte_array[byte] >> shift) % state.console_state.num_attr   
+                    except IndexError:
+                        pass                
+                    video.put_pixel(x, y, operation(pixel, index))    
+                shift -= bpp
+            # byte align next row
+            byte += 1
+            shift = 8 - bpp
+        video.remove_graph_clip()        
+
+    build_tile = build_tile_cga
+
+
+class EGAMode(GraphicsMode):
+    """ Default settings for a EGA graphics mode. """
+
+    def __init__(self, name, pixel_width, pixel_height,
+                  text_height, text_width, 
+                  attr, palette, colours, bitsperpixel, 
+                  interleave_times, bank_size, colours1=None,
+                  num_pages=None, has_blink=False, planes_used=range(4), 
+                  ):
+        """ Initialise video mode settings. """
+        GraphicsMode.__init__(self, name, pixel_height, pixel_width,
+                  text_height, text_width, 
+                  attr, palette, colours, bitsperpixel, 
+                  interleave_times, bank_size,
+                  num_pages, has_blink)
+        # EGA uses colour planes, 1 bpp for each plane
+        self.bytes_per_row = pixel_width // 8
+        self.video_segment = 0xa000
+        self.planes_used = planes_used
+        self.plane_mask = sum([ 2**x for x in planes_used ])
+        # this is a reference
+        self.colours1 = colours1
+
+    def get_coords(self, addr):
+        """ Get video page and coordinates for address. """
+        addr = int(addr) - self.video_segment * 0x10
+        # modes 7-9: 1 bit per pixel per colour plane                
+        page, addr = addr//self.page_size, addr%self.page_size
+        x, y = (addr%self.bytes_per_row)*8, addr//self.bytes_per_row
+        return page, x, y
+
+    def get_memory(self, addr):   
+        """ Retrieve a byte from EGA memory. """
+        page, x, y = self.get_coords(addr)
+        if self.coord_ok(page, x, y):
+            plane = state.console_state.colour_plane % (max(planes_used)+1)
+            if plane in planes_used:
+                return get_pixel_byte(page, x, y, plane)
+
+    def set_memory(self, addr, val):
+        """ Set a byte in EGA video memory. """
+        page, x, y = self.get_coords(addr)
+        if self.coord_ok(page, x, y):
+            mask = state.console_state.colour_plane_write_mask & self.plane_mask
+            set_pixel_byte(page, x, y, mask, val)
+
+    set_area = set_area_ega
+    get_area = get_area_ega
+
+    def build_tile(self, pattern):
+        """ Build a flood-fill tile. """
+        tile = []    
+        bpp = self.bitsperpixel
+        while len(pattern) % bpp != 0:
+            # finish off the pattern with zeros
+            pattern.append(0)
+        strlen = len(pattern)
+        # in modes (2), 7, 8, 9 each byte represents 8 bits
+        # colour planes encoded in consecutive bytes
+        mask = 7
+        for y in range(strlen//bpp):
+            line = []
+            for x in range(8):
+                c = 0
+                for b in range(bpp-1, -1, -1):
+                    c = (c<<1) + ((pattern[(y*bpp+b)%strlen] >> mask) & 1)
+                mask -= 1
+                if mask < 0:
+                    mask = 7
+                line.append(c)
+            tile.append(line)    
+        return tile
+
+
+class Tandy6Mode(GraphicsMode):
+    """ Default settings for Tandy graphics mode 6. """
+
+    def __init__(self, *args, **kwargs):
+        """ Initialise video mode settings. """
+        GraphicsMode.__init__(self, *args, **kwargs)
+        # mode 6: 4x interleaved scan lines, 8 pixels per two bytes, 
+        # low attribute bits stored in even bytes, high bits in odd bytes.        
+        self.bytes_per_row = self.pixel_width * 2 // 8
+        self.video_segment = 0xb800
+
+    def get_coords(addr):
+        """ Get video page and coordinates for address. """
+        addr =  int(addr) - self.video_segment * 0x10
+        page, addr = addr//self.page_size, addr%self.page_size
+        # 4 x interleaved scan lines of 160bytes
+        bank, offset = addr//self.bank_size, addr%self.bank_size
+        row, col = offset//self.bytes_per_row, offset%self.bytes_per_row
+        x = (col // 2) * 8
+        y = bank + 4 * row
+        return page, x, y
+
+    def get_memory(addr):
+        """ Retrieve a byte from Tandy 640x200x4 """
+        # 8 pixels per 2 bytes
+        # low attribute bits stored in even bytes, high bits in odd bytes.        
+        page, x, y = self.get_coords(addr)
+        if self.coord_ok(page, x, y):
+            return get_pixel_byte(page, x, y, addr%2) 
+
+    def set_memory(addr, val):
+        """ Set a byte in Tandy 640x200x4 memory. """
+        page, x, y = self.get_coords(addr)
+        if self.coord_ok(page, x, y):
+            set_pixel_byte(page, x, y, 1<<(addr%2), val) 
+
+    set_area = set_area_ega
+    get_area = get_area_ega
+    build_tile = build_tile_cga
+
+
+
 
 def prepare_modes():
-    global text_mode_80, text_mode_40, graphics_mode, available_modes
     global mode_data, text_data
-    # 80-column text modes
-    text_mode_80 = {
-        'vga': TextMode('vgatext80',
-            True, 16, 9, 25, 80, 4, 32, 
-            # technically, VGA text does have underline 
-            # but it's set to an invisible scanline
-            # so not, so long as we're not allowing to set the scanline
-            ega_palette, colours64, None, 7, True, False,  
-            partial(get_text_memory, text_segment=0xb800, width=80),
-            partial(set_text_memory, text_segment=0xb800, width=80),
-            0xb800, 0x1000),
-        'ega': TextMode('egatext80',
-            True, 14, 8, 25, 80, 4, 32, 
-            ega_palette, colours64, None, 7, True, False,  
-            partial(get_text_memory, text_segment=0xb800, width=80),
-            partial(set_text_memory, text_segment=0xb800, width=80),
-            0xb800, 0x1000),
-        'cga': TextMode('cgatext80',
-            True, 8, 8, 25, 80, 4, 32, 
-            cga16_palette, colours16, None, 7, True, False,  
-            partial(get_text_memory, text_segment=0xb800, width=80),
-            partial(set_text_memory, text_segment=0xb800, width=80),
-            0xb800, 0x1000),
-        'ega_mono': TextMode('ega_monotext80',
-            True, 14, 8, 25, 80, 4, 32, 
-            mda_palette, colours_mda_mono, None, 7, True, True,  
-            partial(get_text_memory, text_segment=0xb000, width=80),
-            partial(set_text_memory, text_segment=0xb000, width=80),
-            0xb000, 0x1000),
-        'mda': TextMode('mdatext80',
-            True, 14, 9, 25, 80, 1, 32, 
-            mda_palette, colours_mda_mono, None, 7, True, True,  
-            partial(get_text_memory, text_segment=0xb000, width=80),
-            partial(set_text_memory, text_segment=0xb000, width=80),
-            0xb000, 0x1000),
-        'hercules': TextMode('herculestext80',
-            True, 14, 9, 25, 80, 2, 32, 
-            # attributes shld distinguish black, dim, normal, bright
-            # see http://www.seasip.info/VintagePC/hercplus.html
-            mda_palette, colours_mda_mono, None, 7, True, True,  
-            partial(get_text_memory, text_segment=0xb000, width=80),
-            partial(set_text_memory, text_segment=0xb000, width=80),
-            0xb000, 0x1000),
-        'tandy': TextMode('tandytext80',
-            True, 9, 8, 25, 80, 4, 32, 
-            cga16_palette, colours16, None, 7, True, False,  
-            partial(get_text_memory, text_segment=0xb800, width=80),
-            partial(set_text_memory, text_segment=0xb800, width=80),
-            0xb800, 0x1000),
-        'olivetti': TextMode('olivettitext80',
-            True, 16, 8, 25, 80, 4, 32, 
-            cga16_palette, colours16, None, 7, True, False,  
-            partial(get_text_memory, text_segment=0xb800, width=80),
-            partial(set_text_memory, text_segment=0xb800, width=80),
-            0xb800, 0x1000),
-        }
-    text_mode_80['pcjr'] = text_mode_80['cga']
-    text_mode_80['cga_old'] = text_mode_80['cga']
-
-    # 40-column text modes
-    text_mode_40 = {
-        'vga': TextMode('vgatext40',
-            True, 16, 9, 25, 40, 8, 32, 
-            # technically, VGA text does have underline 
-            # but it's set to an invisible scanline
-            # so not, so long as we're not allowing to set the scanline
-            ega_palette, colours64, None, 7, True, False,  
-            partial(get_text_memory, text_segment=0xb800, width=40),
-            partial(set_text_memory, text_segment=0xb800, width=40),
-            0xb800, 0x800),
-        'ega': TextMode('egatext40',
-            True, 14, 8, 25, 40, 8, 32, 
-            ega_palette, colours64, None, 7, True, False,  
-            partial(get_text_memory, text_segment=0xb800, width=40),
-            partial(set_text_memory, text_segment=0xb800, width=40),
-            0xb800, 0x800),
-        'cga': TextMode('cgatext40',
-            True, 8, 8, 25, 40, 8, 32, 
-            cga16_palette, colours16, None, 7, True, False,  
-            partial(get_text_memory, text_segment=0xb800, width=40),
-            partial(set_text_memory, text_segment=0xb800, width=40),
-            0xb800, 0x800),
-        'ega_mono': TextMode('ega_monotext40',
-            True, 14, 8, 25, 40, 8, 32, 
-            mda_palette, colours_mda_mono, None, 7, True, True,  
-            partial(get_text_memory, text_segment=0xb000, width=40),
-            partial(set_text_memory, text_segment=0xb000, width=40),
-            0xb000, 0x800),
-        'mda': TextMode('mdatext40',
-            True, 14, 9, 25, 40, 1, 32, 
-            mda_palette, colours_mda_mono, None, 7, True, True,  
-            partial(get_text_memory, text_segment=0xb000, width=40),
-            partial(set_text_memory, text_segment=0xb000, width=40),
-            0xb000, 0x800),
-        'hercules': TextMode('herculestext40',
-            True, 14, 9, 25, 40, 2, 32, 
-            # attributes shld distinguish black, dim, normal, bright
-            # see http://www.seasip.info/VintagePC/hercplus.html
-            mda_palette, colours_mda_mono, None, 7, True, True,  
-            partial(get_text_memory, text_segment=0xb000, width=40),
-            partial(set_text_memory, text_segment=0xb000, width=40),
-            0xb000, 0x800),
-        'tandy': TextMode('tandytext40',
-            True, 9, 8, 25, 40, 8, 32, 
-            cga16_palette, colours16, None, 7, True, False,  
-            partial(get_text_memory, text_segment=0xb800, width=40),
-            partial(set_text_memory, text_segment=0xb800, width=40),
-            0xb800, 0x800),
-        'olivetti': TextMode('olivettitext40',
-            True, 16, 8, 25, 40, 8, 32, 
-            cga16_palette, colours16, None, 7, True, False,  
-            partial(get_text_memory, text_segment=0xb800, width=40),
-            partial(set_text_memory, text_segment=0xb800, width=40),
-            0xb800, 0x800),
-        }
-    text_mode_40['pcjr'] = text_mode_40['cga']
-    text_mode_40['cga_old'] = text_mode_40['cga']
-
+    if video_capabilities == 'vga':    
+        # technically, VGA text does have underline 
+        # but it's set to an invisible scanline
+        # so not, so long as we're not allowing to set the scanline
+        text_data = {
+            40: TextMode('vgatext40', 25, 40, 16, 9, 7, 
+                         ega_palette, colours64, num_pages=8),            
+            80: TextMode('vgatext80', 25, 80, 16, 9, 7, 
+                         ega_palette, colours64, num_pages=4) }
+    elif video_capabilities == 'ega':    
+        text_data = {
+            40: TextMode('egatext40', 25, 40, 14, 8, 7, 
+                         ega_palette, colours64, num_pages=8),
+            80: TextMode('egatext80', 25, 80, 14, 8, 7, 
+                         ega_palette, colours64, num_pages=4) }
+    elif video_capabilities in ('cga', 'cga_old', 'pcjr'):    
+        text_data = {
+            40: TextMode('cgatext40', 25, 40, 8, 8, 7, 
+                         cga16_palette, colours16, num_pages=8),
+            80: TextMode('cgatext80', 25, 80, 8, 8, 7, 
+                         cga16_palette, colours16, num_pages=4) }
+    elif video_capabilities == 'ega_mono': 
+        text_data = {
+            40: TextMode('ega_monotext40', 25, 40, 14, 8, 7, 
+                         mda_palette, colours_mda_mono, 
+                         is_mono=True, has_underline=True, num_pages=8),
+            80: TextMode('ega_monotext80', 25, 80, 14, 8, 7, 
+                         mda_palette, colours_mda_mono, 
+                         is_mono=True, has_underline=True, num_pages=4) }
+    elif video_capabilities == 'mda': 
+        text_data = {
+            40: TextMode('mdatext40', 25, 40, 14, 9, 7,
+                         mda_palette, colours_mda_mono,
+                         is_mono=True, has_underline=True, num_pages=1),
+            80: TextMode('mdatext80', 25, 80, 14, 9, 7,
+                         mda_palette, colours_mda_mono,
+                         is_mono=True, has_underline=True, num_pages=1) }
+    elif video_capabilities == 'hercules': 
+        # herc attributes shld distinguish black, dim, normal, bright
+        # see http://www.seasip.info/VintagePC/hercplus.html
+        text_data = {
+            40: TextMode('herculestext40', 25, 40, 14, 9, 7, 
+                         mda_palette, colours_mda_mono,
+                         is_mono=True, has_underline=True, num_pages=2),
+            80: TextMode('herculestext80', 25, 80, 14, 9, 7, 
+                         mda_palette, colours_mda_mono,
+                         is_mono=True, has_underline=True, num_pages=2) }
+    elif video_capabilities == 'tandy': 
+        text_data = {
+            40: TextMode('tandytext40', 25, 40, 9, 8, 7, 
+                          cga16_palette, colours16, num_pages=8),
+            80: TextMode('tandytext80', 25, 80, 9, 8, 7, 
+                          cga16_palette, colours16, num_pages=4) }
+    elif video_capabilities == 'olivetti': 
+        text_data = {
+            40: TextMode('olivettitext40', 25, 40, 16, 8, 7,
+                          cga16_palette, colours16, num_pages=8),
+            80: TextMode('olivettitext80', 25, 80, 16, 8, 7,
+                          cga16_palette, colours16, num_pages=4) }
     # Tandy/PCjr pixel aspect ratio is different from normal
     # suggesting screen aspect ratio is not 4/3.
     # Tandy pixel aspect ratios, experimentally found with CIRCLE:
@@ -823,144 +842,83 @@ def prepare_modes():
     # screen 1, 4, 5:  96/100   normal if aspect = 3072, 2000
     # screen 3:      1968/1000 
     # screen 3 is strange, slighly off the 192/100 you'd expect
-
     graphics_mode = {
         # 04h 320x200x4  16384B 2bpp 0xb8000    screen 1
         # tandy:2 pages if 32k memory; ega: 1 page only 
-        '320x200x4': GraphicsMode('320x200x4', 
-            False, 8, 8, 25, 40, 
-            (state.console_state.video_mem_size//0x4000 
-                if video_capabilities in ('pcjr', 'tandy') 
-                else 1),
-            4,
-            cga4_palette, colours16, None, 3, False, False,
-            partial(get_video_memory_cga, 
-                            bitsperpixel=2, bytes_per_row=80, interleave_times=2),
-            partial(set_video_memory_cga, 
-                            bitsperpixel=2, bytes_per_row=80, interleave_times=2),
-            0xb800, 0x4000,
-            320, 200, None, 2, 
-            build_tile_cga, get_area_cga, set_area_cga, False, None),
+        '320x200x4': 
+            CGAMode('320x200x4', 320, 200, 25, 40, 3,
+                    cga4_palette, colours16, bitsperpixel=2, 
+                    interleave_times=2, bank_size=0x2000, 
+                    num_pages=(
+                        None if video_capabilities in ('pcjr', 'tandy') 
+                        else 1)),
         # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
-        '640x200x2': GraphicsMode('640x200x2',
-            False, 8, 8, 25, 80, 1, 2,
-            [0, 15], colours16, None, 1, False, False,
-            partial(get_video_memory_cga, 
-                            bitsperpixel=1, bytes_per_row=80, interleave_times=2),
-            partial(set_video_memory_cga, 
-                            bitsperpixel=1, bytes_per_row=80, interleave_times=2),
-            0xb800, 0x4000,
-            640, 200, None, 1, 
-            build_tile_cga, get_area_cga, set_area_cga, True, None),
-        # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy 3
-        '160x200x16': GraphicsMode('160x200x16',
-            False, 8, 8, 25, 20, state.console_state.video_mem_size//0x4000, 16,
-            cga16_palette, colours16, None, 15, False, False,
-            partial(get_video_memory_cga, 
-                            bitsperpixel=4, bytes_per_row=80, interleave_times=2),
-            partial(set_video_memory_cga, 
-                            bitsperpixel=4, bytes_per_row=80, interleave_times=2),
-            0xb800, 0x4000,
-            160, 200, (1968, 1000), 4, 
-            build_tile_cga, get_area_cga, set_area_cga, False, 3),
-        #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr 4
-        '320x200x4pcjr': GraphicsMode('320x200x4pcjr',
-            False, 8, 8, 25, 40, state.console_state.video_mem_size//0x4000, 4,
-            cga4_palette, colours16, None, 3, False, False,
-            partial(get_video_memory_cga, 
-                            bitsperpixel=2, bytes_per_row=80, interleave_times=2),
-            partial(set_video_memory_cga, 
-                            bitsperpixel=2, bytes_per_row=80, interleave_times=2),
-            0xb800, 0x4000,
-            320, 200, None, 2, 
-            build_tile_cga, get_area_cga, set_area_cga, False, 3),
-        # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr 5
-        '320x200x16pcjr': GraphicsMode('320x200x16pcjr',
-            False, 8, 8, 25, 40, state.console_state.video_mem_size//0x8000, 16,
-            cga16_palette, colours16, None, 15, False, False,
-            partial(get_video_memory_cga, 
-                            bitsperpixel=4, bytes_per_row=160, interleave_times=4),
-            partial(set_video_memory_cga, 
-                            bitsperpixel=4, bytes_per_row=160, interleave_times=4),
-            0xb800, 0x8000,
-            320, 200, None, 4, 
-            build_tile_cga, get_area_cga, set_area_cga, False, 3),
-        # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr 6
-        '640x200x4': GraphicsMode('640x200x4',
-            False, 8, 8, 25, 80, state.console_state.video_mem_size//0x8000, 4,
-            cga4_palette, colours16, None, 3, False, False,
-            get_video_memory_tandy_6,
-            set_video_memory_tandy_6,
-            0xb800, 0x8000,
-            640, 200, None, 2, 
-            # mode 6 has (almost) EGA-style PUT/GET
-            # but PAINT tiles are CGA-style
-            build_tile_cga, get_area_ega, set_area_ega, False, 3),
+        '640x200x2': 
+            CGAMode('640x200x2', 640, 200, 25, 80, 1,
+                    palette=(0, 15), colours=colours16, bitsperpixel=1,
+                    interleave_times=2, bank_size=0x2000, num_pages=1,
+                    supports_artifacts=True),
+        # 08h 160x200x16 16384B 4bpp 0xb8000    PCjr/Tandy screen 3
+        '160x200x16': 
+            CGAMode('160x200x16', 160, 200, 25, 20, 15,
+                    cga16_palette, colours16, bitsperpixel=4,
+                    interleave_times=2, bank_size=0x2000,
+                    pixel_aspect=(1968, 1000), cursor_index=3),
+        #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr screen 4
+        '320x200x4pcjr': 
+            CGAMode('320x200x4pcjr', 320, 200, 25, 40, 3,
+                    cga4_palette, colours16, bitsperpixel=2,
+                    interleave_times=2, bank_size=0x2000,
+                    cursor_index=3),
+        # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr screen 5
+        '320x200x16pcjr': 
+            CGAMode('320x200x16pcjr', 320, 200, 25, 40, 15,
+                    cga16_palette, colours16, bitsperpixel=4,
+                    interleave_times=4, bank_size=0x2000,
+                    cursor_index=3),
+        # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr screen 6
+        '640x200x4': 
+            Tandy6Mode('640x200x4', 640, 200, 25, 80, 3,
+                        cga4_palette, colours16, bitsperpixel=2,
+                        interleave_times=4, bank_size=0x2000,
+                        cursor_index=3),
         # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
-        '320x200x16': GraphicsMode('320x200x16', 
-            False, 8, 8, 25, 40, state.console_state.video_mem_size//0x8000, 16,
-            # cga16 palette?
-            cga16_palette, colours16, None, 15, False, False,
-            partial(get_video_memory_ega, page_size = 0x2000, bytes_per_row=40),
-            partial(set_video_memory_ega, page_size = 0x2000, bytes_per_row=40),
-            0xa000, 0x2000,
-            320, 200, None, 4, 
-            build_tile_ega, get_area_ega, set_area_ega, False, None),
+        '320x200x16': 
+            EGAMode('320x200x16', 320, 200, 25, 40, 15,
+                    cga16_palette, colours16, bitsperpixel=4,
+                    interleave_times=1, bank_size=0x2000),                 
         # 0Eh 640x200x16    EGA screen 8
-        '640x200x16': GraphicsMode('640x200x16',
-            False, 8, 8, 25, 80, state.console_state.video_mem_size//0x10000, 16,
-            # cga16 palette?
-            cga16_palette, colours16, None, 15, False, False,
-            partial(get_video_memory_ega, page_size = 0x4000, bytes_per_row=80),
-            partial(set_video_memory_ega, page_size = 0x4000, bytes_per_row=80),
-            0xa000, 0x4000,
-            640, 200, None, 4, 
-            build_tile_ega, get_area_ega, set_area_ega, False, None),
+        '640x200x16': 
+            EGAMode('640x200x16', 640, 200, 25, 80, 15,
+                    cga16_palette, colours16, bitsperpixel=4,
+                    interleave_times=1, bank_size=0x4000),                 
         # 10h 640x350x16    EGA screen 9
-        '640x350x16': GraphicsMode('640x350x16',
-            False, 14, 8, 25, 80, state.console_state.video_mem_size//0x20000, 16,
-            ega_palette, colours64, None, 15, False, False,
-            partial(get_video_memory_ega, page_size = 0x8000, bytes_per_row=80),
-            partial(set_video_memory_ega, page_size = 0x8000, bytes_per_row=80),
-            0xa000, 0x8000,
-            640, 350, None, 4, 
-            build_tile_ega, get_area_ega, set_area_ega, False, None),
+        '640x350x16': 
+            EGAMode('640x350x16', 640, 350, 25, 80, 15,
+                    ega_palette, colours64, bitsperpixel=4,
+                    interleave_times=1, bank_size=0x8000),                 
         # 0Fh 640x350x4     EGA monochrome screen 10
-        '640x350x4': GraphicsMode('640x350x4',
-            False, 14, 8, 25, 80, state.console_state.video_mem_size//0x20000, 4,
-            ega_mono_palette, colours_ega_mono_0, colours_ega_mono_1, 1, True, False,
-            get_video_memory_ega_10, 
-            set_video_memory_ega_10, 
-            0xa000, 0x8000,
-            640, 350, None, 2, 
-            build_tile_ega, get_area_ega, set_area_ega, False, None), 
-        # 40h 640x400x2   1bpp  olivetti
-        '640x400x2': GraphicsMode('640x400x2',
-            False, 16, 8, 25, 80, 1, 2,
-            [0, 15], colours16, None, 1, True, False,
-            partial(get_video_memory_cga, 
-                    bitsperpixel=1, bytes_per_row=80, interleave_times=4),
-            partial(set_video_memory_cga, 
-                    bitsperpixel=1, bytes_per_row=80, interleave_times=4),
-            0xb800, 0x8000,
-            640, 400, None, 1, 
-            # EGA/CGA distinction doesn't matter for 1bpp
-            build_tile_cga, get_area_cga, set_area_cga, False, None),
-        # hercules
-        '720x348x2': GraphicsMode('720x348x2',
-            # FIXME hercules - this actually produces 350, not 348
+        '640x350x4': 
+            EGAMode('640x350x16', 640, 350, 25, 80, 1,
+                    ega_mono_palette, colours_ega_mono_0, bitsperpixel=2,
+                    interleave_times=1, bank_size=0x8000,
+                    colours1=colours_ega_mono_1, has_blink=True,
+                    planes_used=(1, 3)),                 
+        # 40h 640x400x2   1bpp  olivetti screen 3
+        '640x400x2': 
+            CGAMode('640x400x2', 640, 400, 25, 80, 1,
+                    palette=(0, 15), colours=colours16, bitsperpixel=1,
+                    interleave_times=4, bank_size=0x2000,
+                    has_blink=True),
+        # hercules screen 3
+        '720x348x2': 
+            # TODO hercules - this actually produces 350, not 348
             # two scan lines must be left out somewhere, somehow
-            False, 14, 9, 25, 80, 2, 2,
-            [0, 15], colours16_mono, None, 1, True, False,
-            partial(get_video_memory_cga, 
-                    bitsperpixel=1, bytes_per_row=90, interleave_times=4),
-            partial(set_video_memory_cga, 
-                    bitsperpixel=1, bytes_per_row=90, interleave_times=4),
-            0xb800, 0x8000,
-            720, 350, None, 1, 
-            build_tile_cga, get_area_cga, set_area_cga, False, None),
+            CGAMode('720x348x2', 720, 350, 25, 80, 1,
+                    palette=(0, 15), colours=colours16_mono, bitsperpixel=1,
+                    interleave_times=4, bank_size=0x2000,
+                    has_blink=True),
         }
-
     # mode numbers by video card
     available_modes = {
         'mda': { },
@@ -1002,9 +960,6 @@ def prepare_modes():
     for mode in range(4, 256):
         available_modes['olivetti'][mode] = graphics_mode['640x400x2']
     mode_data = available_modes[video_capabilities]
-    text_data = { 
-        40: text_mode_40[video_capabilities],
-        80: text_mode_80[video_capabilities]}
 
 # to be filled with the modes available to our video card    
 mode_data = {}
@@ -1340,9 +1295,9 @@ def init_graphics(mode_info):
     if mode_info.is_text_mode:
         return
     # resolution
-    state.console_state.size = (mode_info.xsize, mode_info.ysize)
+    state.console_state.size = (mode_info.pixel_width, mode_info.pixel_height)
     # centre of new graphics screen
-    state.console_state.last_point = (mode_info.xsize/2, mode_info.ysize/2)
+    state.console_state.last_point = (mode_info.pixel_width/2, mode_info.pixel_height/2)
     # assumed aspect ratio for CIRCLE    
     # pixels e.g. 80*8 x 25*14, screen ratio 4x3 
     # makes for pixel width/height (4/3)*(25*14/8*80)
@@ -1350,8 +1305,8 @@ def init_graphics(mode_info):
         state.console_state.pixel_aspect_ratio = mode_info.pixel_aspect
     else:      
         state.console_state.pixel_aspect_ratio = (
-             mode_info.ysize * circle_aspect[0], 
-             mode_info.xsize * circle_aspect[1])
+             mode_info.pixel_height * circle_aspect[0], 
+             mode_info.pixel_width * circle_aspect[1])
 
 def set_page(new_vpagenum, new_apagenum):
     """ Set active page & visible page, counting from 0. """
@@ -1402,20 +1357,20 @@ def set_width(to_width):
     return False
     
 def set_video_memory_size(new_size):
-    """ Raise an error if not enough video memory for this state. """
-    # video memory size check for SCREENs 5 and 6: 
-    # (pcjr/tandy only; this is a bit of a hack as is) 
-    # (32753 determined experimentally on DOSBox)
+    """ Change the amount of memory available to the video card. """
     state.console_state.video_mem_size = new_size
     # redefine number of video pages
     prepare_modes()
+    # text screen modes don't depend on video memory size
+    if state.console_state.screen_mode == 0:
+        return True
     # check if we need to drop out of our current mode
     page = max(state.console_state.vpagenum, state.console_state.apagenum)
     # reload max number of pages; do we fit? if not, drop to text
-    if state.console_state.screen_mode == 0:
-        return True
-    if (page >= available_modes[video_capabilities][state.console_state.screen_mode].num_pages):
+    new_mode = mode_data[state.console_state.screen_mode]
+    if (page >= new_mode.num_pages):
         return False        
+    state.console_state.current_mode = new_mode
     
 #############################################
 # palette and colours

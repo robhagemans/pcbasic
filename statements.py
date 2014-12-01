@@ -2054,7 +2054,6 @@ def exec_color(ins):
     """ COLOR: set colour attributes. """
     fore, back, bord = expressions.parse_int_list(ins, 3, 5)          
     mode = state.console_state.current_mode
-    graphics_mode = backend.graphics_mode
     if mode.name == '320x200x4':
         return exec_color_mode_1(fore, back, bord)
     elif mode.name in ('640x200x2', '720x348x2'): 
