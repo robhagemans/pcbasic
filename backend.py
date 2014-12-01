@@ -33,40 +33,233 @@ state.console_state.music_queue = [[], [], [], []]
 # sound capabilities - '', 'pcjr' or 'tandy'
 pcjr_sound = ''
 
+
 #############################################
-# keyboard queue
 
-# let OS handle capslock effects
-ignore_caps = True
+# devices - SCRN: KYBD: LPT1: etc. These are initialised in iolayer module
+devices = {}
 
-# default function key scancodes for KEY autotext. F1-F10
-# F11 and F12 here are TANDY scancodes only!
-function_key = {
-    scancode.F1: 0, scancode.F2: 1, scancode.F3: 2, scancode.F4: 3, 
-    scancode.F5: 4, scancode.F6: 5, scancode.F7: 6, scancode.F8: 7,
-    scancode.F9: 8, scancode.F10: 9, scancode.F11: 10, scancode.F12: 11}
-# user definable key list
-state.console_state.key_replace = [ 
-    'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r',
-    'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
-# switch off macro repacements
-state.basic_state.key_macros_off = False    
-# key buffer
-# INP(&H60) scancode
-state.console_state.inp_key = 0
-# active status of caps, num, scroll, alt, ctrl, shift modifiers
-state.console_state.mod = 0
-# input has closed
-input_closed = False
-# bit flags for modifier keys
-toggle = {
-    scancode.INSERT: 0x80, scancode.CAPSLOCK: 0x40,  
-    scancode.NUMLOCK: 0x20, scancode.SCROLLOCK: 0x10}
-modifier = {    
-    scancode.ALT: 0x8, scancode.CTRL: 0x4, 
-    scancode.LSHIFT: 0x2, scancode.RSHIFT: 0x1}
-# store for alt+keypad ascii insertion    
-keypad_ascii = ''
+# redirect i/o to file or printer
+input_echos = []
+output_echos = []
+
+
+#############################################
+# graphics viewport
+
+state.console_state.graph_view_set = False
+state.console_state.view_graph_absolute = True
+
+
+#############################################
+# initialisation
+
+def prepare():
+    """ Initialise backend module. """
+    prepare_keyboard()
+    prepare_audio()
+    prepare_video()
+    # initialise event triggers
+    reset_events()    
+
+def prepare_keyboard():
+    """ Prepare keyboard handling. """
+    global ignore_caps
+    global num_fn_keys
+    # inserted keystrokes
+    if plat.system == 'Android':
+        # string_escape not available on PGS4A
+        keystring = config.options['keys'].decode('utf-8')
+    else:
+        keystring = config.options['keys'].decode('string_escape').decode('utf-8')    
+    for u in keystring:
+        c = u.encode('utf-8')
+        try:
+            state.console_state.keybuf.insert(unicodepage.from_utf8(c))
+        except KeyError:
+            state.console_state.keybuf.insert(c)
+    # handle caps lock only if requested
+    if config.options['capture-caps']:
+        ignore_caps = False
+    # function keys: F1-F12 for tandy, F1-F10 for gwbasic and pcjr
+    if config.options['syntax'] == 'tandy':
+        num_fn_keys = 12
+    else:
+        num_fn_keys = 10
+
+def prepare_audio():
+    """ Prepare the audio subsystem. """
+    global pcjr_sound
+    # pcjr/tandy sound
+    if config.options['syntax'] in ('pcjr', 'tandy'):
+        pcjr_sound = config.options['syntax']
+    # tandy has SOUND ON by default, pcjr has it OFF
+    state.console_state.sound_on = (pcjr_sound == 'tandy')
+    # pc-speaker on/off; (not implemented; not sure whether should be on)
+    state.console_state.beep_on = True
+
+def init_audio():
+    """ Initialise the audio backend. """
+    global audio
+    if not audio or not audio.init_sound():
+        return False
+    # rebuild sound queue
+    for voice in range(4):    
+        for note in state.console_state.music_queue[voice]:
+            audio.play_sound(*note)
+    return True
+
+def prepare_video():
+    """ Prepare the video subsystem. """
+    global egacursor
+    global video_capabilities, composite_monitor, mono_monitor, mono_tint
+    global colours16_mono, colours_ega_mono_0, colours_ega_mono_1, cga_low
+    global colours_ega_mono_text
+    global circle_aspect
+    video_capabilities = config.options['video']
+    if video_capabilities == 'tandy':
+        circle_aspect = (3072, 2000)
+    else:
+        circle_aspect = (4, 3)
+    # do all text modes with >8 pixels have an ega-cursor?    
+    egacursor = config.options['video'] in (
+        'ega', 'mda', 'ega_mono', 'vga', 'olivetti', 'hercules')
+    composite_monitor = config.options['monitor'] == 'composite'
+    mono_monitor = config.options['monitor'] == 'mono'
+    if video_capabilities == 'ega' and mono_monitor:
+        video_capabilities = 'ega_mono'
+    if video_capabilities not in ('ega', 'vga'):
+        state.console_state.colours = colours16
+        state.console_state.palette = cga16_palette[:]
+    cga_low = config.options['cga-low']
+    set_cga4_palette(1)    
+    # set monochrome tint and build mono palettes
+    if config.options['mono-tint']:
+        mono_tint = config.options['mono-tint']
+    colours16_mono[:] = [ [tint*i//255 for tint in mono_tint]
+                       for i in intensity16_mono ]            
+    colours_ega_mono_0[:] = [ [tint*i//255 for tint in mono_tint]
+                       for i in intensity_ega_mono_0 ]            
+    colours_ega_mono_1[:] = [ [tint*i//255 for tint in mono_tint]
+                       for i in intensity_ega_mono_1 ]        
+    colours_mda_mono[:] = [ [tint*i//255 for tint in mono_tint]
+                       for i in intensity_mda_mono ]
+    if mono_monitor:
+        # copy to replace 16-colours with 16-mono
+        colours16[:] = colours16_mono
+    # video memory size
+    state.console_state.video_mem_size = config.options['video-memory']
+    # prepare video mode list
+    # only allow the screen modes that the given machine supports
+    prepare_modes()
+    # PCjr starts in 40-column mode
+    state.console_state.width = config.options['text-width']
+    state.console_state.current_mode = text_data[state.console_state.width]
+           
+def init_video():
+    """ Initialise the video backend. """
+    if not video or not video.init():
+        return False
+    if state.loaded:
+        # reload the screen in resumed state
+        return resume_screen()
+    else:        
+        # initialise a fresh textmode screen
+        screen(None, None, None, None)
+        return True
+
+def resume_screen():
+    """ Load a video mode from storage and initialise. """
+    if (not state.console_state.current_mode.is_text_mode and 
+            (state.console_state.screen_mode not in mode_data or
+             state.console_state.current_mode.name !=
+                           mode_data[state.console_state.screen_mode].name)):
+        # mode not supported by backend
+        logging.warning(
+            "Resumed screen mode %d (%s) not supported by this setup",
+            state.console_state.screen_mode, 
+            state.console_state.current_mode.name)
+        return False
+    if not state.console_state.current_mode.is_text_mode:    
+        mode_info = mode_data[state.console_state.screen_mode]
+    else:
+        mode_info = text_data[state.console_state.width]
+    if (state.console_state.current_mode.is_text_mode and 
+            state.console_state.current_mode.name != mode_info.name):
+        # we switched adaptes on resume; fix font height, palette, cursor
+        state.console_state.cursor_from = (state.console_state.cursor_from *
+            mode_info.font_height) // state.console_state.font_height
+        state.console_state.cursor_to = (state.console_state.cursor_to *
+            mode_info.font_height) // state.console_state.font_height
+        state.console_state.font_height = mode_info.font_height
+        set_palette()
+    # set up the appropriate screen resolution
+    if (state.console_state.current_mode.is_text_mode or 
+            video.supports_graphics_mode(mode_info)):
+        # set the visible and active pages
+        video.set_page(state.console_state.vpagenum, 
+                       state.console_state.apagenum)
+        # set the screen mde
+        video.init_screen_mode(mode_info)
+        # initialise rgb_palette global
+        set_palette(state.console_state.palette, check_mode=False)
+        video.update_palette(state.console_state.rgb_palette,
+                             state.console_state.rgb_palette1)
+        video.set_attr(state.console_state.attr)
+        # fix the cursor
+        video.build_cursor(
+            state.console_state.cursor_width, 
+            state.console_state.font_height, 
+            state.console_state.cursor_from, state.console_state.cursor_to)    
+        video.move_cursor(state.console_state.row, state.console_state.col)
+        video.update_cursor_attr(
+                state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
+        update_cursor_visibility()
+        video.set_border(state.console_state.border_attr)
+    else:
+        # fix the terminal
+        video.close()
+        # mode not supported by backend
+        logging.warning(
+            "Resumed screen mode %d not supported by this interface.", 
+            state.console_state.screen_mode)
+        return False
+    if (state.console_state.current_mode.is_text_mode and 
+            state.console_state.current_mode.name != mode_info.name):
+        state.console_state.current_mode = mode_info
+        redraw_text_screen()
+    else:
+        # load the screen contents from storage
+        video.load_state()
+    return True
+    
+#############################################
+# main event checker
+    
+def wait():
+    """ Wait and check events. """
+    video.idle()
+    check_events()    
+
+def idle():
+    """ Wait a tick. """
+    video.idle()
+
+def check_events():
+    """ Main event cycle. """
+    # manage sound queue
+    audio.check_sound()
+    check_quit_sound()
+    # check video, keyboard, pen and joystick events
+    video.check_events()   
+    # trigger & handle BASIC events
+    if state.basic_state.run_mode:
+        # trigger TIMER, PLAY and COM events
+        check_timer_event()
+        check_play_event()
+        check_com_events()
+        # KEY, PEN and STRIG are triggered on handling the queue
+
 
 #############################################
 # screen buffer
@@ -102,7 +295,42 @@ class ScreenBuffer(object):
         """ Initialise the screen buffer to given dimensions. """
         self.row = [ScreenRow(battr, bwidth) for _ in xrange(bheight)]
 
+
 #############################################
+# keyboard queue
+
+# let OS handle capslock effects
+ignore_caps = True
+
+# default function key scancodes for KEY autotext. F1-F10
+# F11 and F12 here are TANDY scancodes only!
+function_key = {
+    scancode.F1: 0, scancode.F2: 1, scancode.F3: 2, scancode.F4: 3, 
+    scancode.F5: 4, scancode.F6: 5, scancode.F7: 6, scancode.F8: 7,
+    scancode.F9: 8, scancode.F10: 9, scancode.F11: 10, scancode.F12: 11}
+# user definable key list
+state.console_state.key_replace = [ 
+    'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r',
+    'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
+# switch off macro repacements
+state.basic_state.key_macros_off = False    
+# key buffer
+# INP(&H60) scancode
+state.console_state.inp_key = 0
+# active status of caps, num, scroll, alt, ctrl, shift modifiers
+state.console_state.mod = 0
+# input has closed
+input_closed = False
+# bit flags for modifier keys
+toggle = {
+    scancode.INSERT: 0x80, scancode.CAPSLOCK: 0x40,  
+    scancode.NUMLOCK: 0x20, scancode.SCROLLOCK: 0x10}
+modifier = {    
+    scancode.ALT: 0x8, scancode.CTRL: 0x4, 
+    scancode.LSHIFT: 0x2, scancode.RSHIFT: 0x1}
+# store for alt+keypad ascii insertion    
+keypad_ascii = ''
+
 
 class KeyboardBuffer(object):
     """ Quirky emulated ring buffer for keystrokes. """
@@ -202,37 +430,163 @@ class KeyboardBuffer(object):
 # keyboard queue
 state.console_state.keybuf = KeyboardBuffer(15)
 
+# keyboard buffer read/write
+
+def read_chars(num):
+    """ Read num keystrokes, blocking. """
+    word = []
+    for _ in range(num):
+        word.append(get_char_block())
+    return word
+
+def get_char():
+    """ Read any keystroke, nonblocking. """
+    wait()    
+    return state.console_state.keybuf.getc()
+
+def wait_char():
+    """ Wait for character, then return it but don't drop from queue. """
+    while state.console_state.keybuf.is_empty() and not input_closed:
+        wait()
+    return state.console_state.keybuf.peek()
+
+def get_char_block():
+    """ Read any keystroke, blocking. """
+    wait_char()
+    return state.console_state.keybuf.getc()
+
+def key_down(scan, eascii='', check_full=True):
+    """ Insert a key-down event. Keycode is extended ascii, including DBCS. """
+    global keypad_ascii
+    # set port and low memory address regardless of event triggers
+    if scan != None:
+        state.console_state.inp_key = scan
+    # set modifier status    
+    try:
+        state.console_state.mod |= modifier[scan]
+    except KeyError:
+       pass 
+    # set toggle-key modifier status    
+    try:
+        state.console_state.mod ^= toggle[scan]
+    except KeyError:
+       pass 
+    # handle BIOS events
+    if (scan == scancode.DELETE and 
+                state.console_state.mod & modifier[scancode.CTRL] and
+                state.console_state.mod & modifier[scancode.ALT]):
+            # ctrl-alt-del: if not captured by the OS, reset the emulator
+            # meaning exit and delete state. This is useful on android.
+            raise error.Reset()
+    if (scan in (scancode.BREAK, scancode.SCROLLOCK) and
+                state.console_state.mod & modifier[scancode.CTRL]):
+            raise error.Break()
+    if scan == scancode.PRINT:
+        if (state.console_state.mod & 
+                (modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT])):
+            # shift + printscreen
+            print_screen()
+        if state.console_state.mod & modifier[scancode.CTRL]:
+            # ctrl + printscreen
+            toggle_echo_lpt1()
+    # alt+keypad ascii replacement        
+    # we can't depend on internal NUM LOCK state as it doesn't get updated
+    if (state.console_state.mod & modifier[scancode.ALT] and 
+            len(eascii) == 1 and eascii >= '0' and eascii <= '9'):
+        try:
+            keypad_ascii += scancode.keypad[scan]
+            return
+        except KeyError:    
+            pass
+    # trigger events
+    if check_key_event(scan, state.console_state.mod):
+        # this key is being trapped, don't replace
+        return
+    # function key macros
+    try:
+        # only check function keys
+        # can't be redefined in events - so must be fn 1-10 (1-12 on Tandy).
+        keynum = function_key[scan]
+        if (state.basic_state.key_macros_off or state.basic_state.run_mode 
+                and state.basic_state.key_handlers[keynum].enabled):
+            # this key is paused from being trapped, don't replace
+            insert_chars(scan_to_eascii(scan, state.console_state.mod,
+                         check_full=check_full))
+            return
+        else:
+            macro = state.console_state.key_replace[keynum]
+            # insert directly, avoid caps handling
+            insert_chars(macro, check_full=check_full)
+            return
+    except KeyError:
+        pass
+    if not eascii or (scan != None and state.console_state.mod & 
+                (modifier[scancode.ALT] | modifier[scancode.CTRL])):
+        # any provided e-ASCII value overrides when CTRL & ALT are off
+        # this helps make keyboards do what's expected 
+        # independent of language setting
+        try:
+            eascii = scan_to_eascii(scan, state.console_state.mod)
+        except KeyError:            
+            # no eascii found
+            return
+    if (state.console_state.mod & toggle[scancode.CAPSLOCK]
+            and not ignore_caps and len(eascii) == 1):
+        if eascii >= 'a' and eascii <= 'z':
+            eascii = chr(ord(eascii)-32)
+        elif eascii >= 'A' and eascii <= 'z':
+            eascii = chr(ord(eascii)+32)
+    insert_chars(eascii, check_full=True)        
+    
+def key_up(scan):
+    """ Insert a key-up event. """
+    global keypad_ascii
+    if scan != None:
+        state.console_state.inp_key = 0x80 + scan
+    try:
+        # switch off ephemeral modifiers
+        state.console_state.mod &= ~modifier[scan]
+        # ALT+keycode    
+        if scan == scancode.ALT and keypad_ascii:
+            char = chr(int(keypad_ascii)%256)
+            if char == '\0':
+                char = '\0\0'
+            insert_chars(char, check_full=True)
+            keypad_ascii = ''
+    except KeyError:
+       pass 
+    
+def insert_special_key(name):
+    """ Insert break, reset or quit events. """
+    if name == 'quit':
+        raise error.Exit()
+    elif name == 'reset':
+        raise error.Reset()
+    elif name == 'break':
+        raise error.Break()
+    else:
+        logging.debug('Unknown special key: %s', name)
+        
+def insert_chars(s, check_full=False):
+    """ Insert characters into keyboard buffer. """
+    if not state.console_state.keybuf.insert(s, check_full):
+        # keyboard buffer is full; short beep and exit
+        play_sound(800, 0.01)
+
+def scan_to_eascii(scan, mod):
+    """ Translate scancode and modifier state to e-ASCII. """
+    if mod & modifier[scancode.ALT]:
+        return scancode.eascii_table[scan][3]
+    elif mod & modifier[scancode.CTRL]:
+        return scancode.eascii_table[scan][2]
+    elif mod & (modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT]):
+        return scancode.eascii_table[scan][1]
+    else:
+        return scancode.eascii_table[scan][0]
+
 
 #############################################
-
-# devices - SCRN: KYBD: LPT1: etc. These are initialised in iolayer module
-devices = {}
-
-# redirect i/o to file or printer
-input_echos = []
-output_echos = []
-
-#############################################
-# cursor
-
-# cursor visible in execute mode?
-state.console_state.cursor = False
-# cursor shape
-state.console_state.cursor_from = 0
-state.console_state.cursor_to = 0    
-
-# pen and stick
-state.console_state.pen_is_on = False
-state.console_state.stick_is_on = False
-
-#############################################
-# graphics viewport
-
-state.console_state.graph_view_set = False
-state.console_state.view_graph_absolute = True
-
-#############################################
-# palettes
+# palette and colours
 
 # CGA colours
 colours16_colour = [    
@@ -291,6 +645,116 @@ ega_mono_text_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 0)
 mda_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2)
 # use ega palette by default
 
+
+def set_palette_entry(index, colour, check_mode=True):
+    """ Set a new colour for a given attribute. """
+    # effective palette change is an error in CGA; ignore in Tandy/PCjr SCREEN 0
+    if check_mode:
+        if video_capabilities in ('cga', 'cga_old', 'mda', 
+                                   'hercules', 'olivetti'):
+            raise error.RunError(5)
+        elif (video_capabilities in ('tandy', 'pcjr') and 
+                state.console_state.current_mode.is_text_mode):
+            return
+    state.console_state.palette[index] = colour
+    state.console_state.rgb_palette[index] = (
+        state.console_state.colours[colour])
+    if state.console_state.colours1:
+        state.console_state.rgb_palette1[index] = (
+        state.console_state.colours1[colour])
+    video.update_palette(state.console_state.rgb_palette,
+                         state.console_state.rgb_palette1)
+
+def get_palette_entry(index):
+    """ Retrieve the colour for a given attribute. """
+    return state.console_state.palette[index]
+
+def set_palette(new_palette=None, check_mode=True):
+    """ Set the colours for all attributes. """
+    if check_mode and new_palette:
+        if video_capabilities in ('cga', 'cga_old', 'mda', 
+                                   'hercules', 'olivetti'):
+            raise error.RunError(5)
+        elif (video_capabilities in ('tandy', 'pcjr') and 
+                state.console_state.current_mode.is_text_mode):
+            return
+    if new_palette:
+        state.console_state.palette = new_palette[:]
+    else:    
+        state.console_state.palette = list(state.console_state.default_palette)
+    state.console_state.rgb_palette = [ 
+        state.console_state.colours[i] for i in state.console_state.palette]
+    if state.console_state.colours1:
+        state.console_state.rgb_palette1 = [ 
+            state.console_state.colours1[i] for i in state.console_state.palette]
+    else:
+        state.console_state.rgb_palette1 = None
+    video.update_palette(state.console_state.rgb_palette, 
+                         state.console_state.rgb_palette1)
+
+
+cga4_palette_num = 1
+def set_cga4_palette(num):
+    """ Change the default CGA palette according to palette number & mode. """
+    global cga4_palette_num
+    cga4_palette_num = num
+    # palette 1: Black, Ugh, Yuck, Bleah, choice of low & high intensity
+    # palette 0: Black, Green, Red, Brown/Yellow, low & high intensity
+    # tandy/pcjr have high-intensity white, but low-intensity colours
+    # mode 5 (SCREEN 1 + colorburst on RGB) has red instead of magenta
+    if video_capabilities in ('pcjr', 'tandy'):
+        # pcjr does not have mode 5
+        if num == 0:
+            cga4_palette[:] = (0, 2, 4, 6)
+        else:    
+            cga4_palette[:] = (0, 3, 5, 15)
+    elif cga_low:
+        if cga_mode_5:
+            cga4_palette[:] = (0, 3, 4, 7)
+        elif num == 0:
+            cga4_palette[:] = (0, 2, 4, 6)
+        else:    
+            cga4_palette[:] = (0, 3, 5, 7)
+    else:
+        if cga_mode_5:
+            cga4_palette[:] = (0, 11, 12, 15)
+        elif num == 0:
+            cga4_palette[:] = (0, 10, 12, 14)
+        else:    
+            cga4_palette[:] = (0, 11, 13, 15)
+
+def set_colorburst(on=True):
+    """ Set the composite colorburst bit. """
+    # On a composite monitor:
+    # - on SCREEN 2 this enables artifacting
+    # - on SCREEN 1 and 0 this switches between colour and greyscale
+    # On an RGB monitor:
+    # - on SCREEN 1 this switches between mode 4/5 palettes (RGB)
+    # - ignored on other screens
+    global cga_mode_5
+    colorburst_capable = video_capabilities in (
+                                'cga', 'cga_old', 'tandy', 'pcjr')
+    if ((not state.console_state.current_mode.is_text_mode) and
+            state.console_state.current_mode.name =='320x200x4' and 
+            not composite_monitor):
+        # ega ignores colorburst; tandy and pcjr have no mode 5
+        cga_mode_5 = not (on or video_capabilities not in ('cga', 'cga_old'))
+        set_cga4_palette(1)
+    elif (on or not composite_monitor and not mono_monitor):
+        # take modulo in case we're e.g. resuming ega text into a cga machine
+        colours16[:] = colours16_colour
+    else:
+        colours16[:] = colours16_mono
+    set_palette()
+    video.set_colorburst(on and colorburst_capable, 
+        state.console_state.rgb_palette, state.console_state.rgb_palette1)
+
+def set_border(attr):
+    """ Set the border attribute. """
+    state.console_state.border_attr = attr
+    video.set_border(attr)
+
+
 #############################################
 # video modes
 
@@ -318,6 +782,14 @@ state.console_state.palette = list(ega_palette)
 # video memory
 state.console_state.colour_plane = 0
 state.console_state.colour_plane_write_mask = 0xff
+
+
+# all data for current mode
+state.console_state.current_mode = None
+# border colour
+state.console_state.border_attr = 0
+# colorburst value
+state.console_state.colorswitch = 1
 
 
 class VideoMode(object):
@@ -956,223 +1428,6 @@ def prepare_modes():
             mode_data[mode] = graphics_mode['640x400x2']
             
 
-# all data for current mode
-state.console_state.current_mode = None
-# border colour
-state.console_state.border_attr = 0
-# colorburst value
-state.console_state.colorswitch = 1
-
-#############################################
-# initialisation
-
-def prepare():
-    """ Initialise backend module. """
-    prepare_keyboard()
-    prepare_audio()
-    prepare_video()
-    # initialise event triggers
-    reset_events()    
-
-def prepare_keyboard():
-    """ Prepare keyboard handling. """
-    global ignore_caps
-    global num_fn_keys
-    # inserted keystrokes
-    if plat.system == 'Android':
-        # string_escape not available on PGS4A
-        keystring = config.options['keys'].decode('utf-8')
-    else:
-        keystring = config.options['keys'].decode('string_escape').decode('utf-8')    
-    for u in keystring:
-        c = u.encode('utf-8')
-        try:
-            state.console_state.keybuf.insert(unicodepage.from_utf8(c))
-        except KeyError:
-            state.console_state.keybuf.insert(c)
-    # handle caps lock only if requested
-    if config.options['capture-caps']:
-        ignore_caps = False
-    # function keys: F1-F12 for tandy, F1-F10 for gwbasic and pcjr
-    if config.options['syntax'] == 'tandy':
-        num_fn_keys = 12
-    else:
-        num_fn_keys = 10
-
-def prepare_audio():
-    """ Prepare the audio subsystem. """
-    global pcjr_sound
-    # pcjr/tandy sound
-    if config.options['syntax'] in ('pcjr', 'tandy'):
-        pcjr_sound = config.options['syntax']
-    # tandy has SOUND ON by default, pcjr has it OFF
-    state.console_state.sound_on = (pcjr_sound == 'tandy')
-    # pc-speaker on/off; (not implemented; not sure whether should be on)
-    state.console_state.beep_on = True
-
-def init_audio():
-    """ Initialise the audio backend. """
-    global audio
-    if not audio or not audio.init_sound():
-        return False
-    # rebuild sound queue
-    for voice in range(4):    
-        for note in state.console_state.music_queue[voice]:
-            audio.play_sound(*note)
-    return True
-
-def prepare_video():
-    """ Prepare the video subsystem. """
-    global egacursor
-    global video_capabilities, composite_monitor, mono_monitor, mono_tint
-    global colours16_mono, colours_ega_mono_0, colours_ega_mono_1, cga_low
-    global colours_ega_mono_text
-    global circle_aspect
-    video_capabilities = config.options['video']
-    if video_capabilities == 'tandy':
-        circle_aspect = (3072, 2000)
-    else:
-        circle_aspect = (4, 3)
-    # do all text modes with >8 pixels have an ega-cursor?    
-    egacursor = config.options['video'] in (
-        'ega', 'mda', 'ega_mono', 'vga', 'olivetti', 'hercules')
-    composite_monitor = config.options['monitor'] == 'composite'
-    mono_monitor = config.options['monitor'] == 'mono'
-    if video_capabilities == 'ega' and mono_monitor:
-        video_capabilities = 'ega_mono'
-    if video_capabilities not in ('ega', 'vga'):
-        state.console_state.colours = colours16
-        state.console_state.palette = cga16_palette[:]
-    cga_low = config.options['cga-low']
-    set_cga4_palette(1)    
-    # set monochrome tint and build mono palettes
-    if config.options['mono-tint']:
-        mono_tint = config.options['mono-tint']
-    colours16_mono[:] = [ [tint*i//255 for tint in mono_tint]
-                       for i in intensity16_mono ]            
-    colours_ega_mono_0[:] = [ [tint*i//255 for tint in mono_tint]
-                       for i in intensity_ega_mono_0 ]            
-    colours_ega_mono_1[:] = [ [tint*i//255 for tint in mono_tint]
-                       for i in intensity_ega_mono_1 ]        
-    colours_mda_mono[:] = [ [tint*i//255 for tint in mono_tint]
-                       for i in intensity_mda_mono ]
-    if mono_monitor:
-        # copy to replace 16-colours with 16-mono
-        colours16[:] = colours16_mono
-    # video memory size
-    state.console_state.video_mem_size = config.options['video-memory']
-    # prepare video mode list
-    # only allow the screen modes that the given machine supports
-    prepare_modes()
-    # PCjr starts in 40-column mode
-    state.console_state.width = config.options['text-width']
-    state.console_state.current_mode = text_data[state.console_state.width]
-           
-def init_video():
-    """ Initialise the video backend. """
-    if not video or not video.init():
-        return False
-    if state.loaded:
-        # reload the screen in resumed state
-        return resume_screen()
-    else:        
-        # initialise a fresh textmode screen
-        screen(None, None, None, None)
-        return True
-
-def resume_screen():
-    """ Load a video mode from storage and initialise. """
-    if (not state.console_state.current_mode.is_text_mode and 
-            (state.console_state.screen_mode not in mode_data or
-             state.console_state.current_mode.name !=
-                           mode_data[state.console_state.screen_mode].name)):
-        # mode not supported by backend
-        logging.warning(
-            "Resumed screen mode %d (%s) not supported by this setup",
-            state.console_state.screen_mode, 
-            state.console_state.current_mode.name)
-        return False
-    if not state.console_state.current_mode.is_text_mode:    
-        mode_info = mode_data[state.console_state.screen_mode]
-    else:
-        mode_info = text_data[state.console_state.width]
-    if (state.console_state.current_mode.is_text_mode and 
-            state.console_state.current_mode.name != mode_info.name):
-        # we switched adaptes on resume; fix font height, palette, cursor
-        state.console_state.cursor_from = (state.console_state.cursor_from *
-            mode_info.font_height) // state.console_state.font_height
-        state.console_state.cursor_to = (state.console_state.cursor_to *
-            mode_info.font_height) // state.console_state.font_height
-        state.console_state.font_height = mode_info.font_height
-        set_palette()
-    # set up the appropriate screen resolution
-    if (state.console_state.current_mode.is_text_mode or 
-            video.supports_graphics_mode(mode_info)):
-        # set the visible and active pages
-        video.set_page(state.console_state.vpagenum, 
-                       state.console_state.apagenum)
-        # set the screen mde
-        video.init_screen_mode(mode_info)
-        # initialise rgb_palette global
-        set_palette(state.console_state.palette, check_mode=False)
-        video.update_palette(state.console_state.rgb_palette,
-                             state.console_state.rgb_palette1)
-        video.set_attr(state.console_state.attr)
-        # fix the cursor
-        video.build_cursor(
-            state.console_state.cursor_width, 
-            state.console_state.font_height, 
-            state.console_state.cursor_from, state.console_state.cursor_to)    
-        video.move_cursor(state.console_state.row, state.console_state.col)
-        video.update_cursor_attr(
-                state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
-        update_cursor_visibility()
-        video.set_border(state.console_state.border_attr)
-    else:
-        # fix the terminal
-        video.close()
-        # mode not supported by backend
-        logging.warning(
-            "Resumed screen mode %d not supported by this interface.", 
-            state.console_state.screen_mode)
-        return False
-    if (state.console_state.current_mode.is_text_mode and 
-            state.console_state.current_mode.name != mode_info.name):
-        state.console_state.current_mode = mode_info
-        redraw_text_screen()
-    else:
-        # load the screen contents from storage
-        video.load_state()
-    return True
-    
-#############################################
-# main event checker
-    
-def wait():
-    """ Wait and check events. """
-    video.idle()
-    check_events()    
-
-def idle():
-    """ Wait a tick. """
-    video.idle()
-
-def check_events():
-    """ Main event cycle. """
-    # manage sound queue
-    audio.check_sound()
-    check_quit_sound()
-    # check video, keyboard, pen and joystick events
-    video.check_events()   
-    # trigger & handle BASIC events
-    if state.basic_state.run_mode:
-        # trigger TIMER, PLAY and COM events
-        check_timer_event()
-        check_play_event()
-        check_com_events()
-        # KEY, PEN and STRIG are triggered on handling the queue
-
-##############################
 # video mode
 
 def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum, 
@@ -1363,117 +1618,6 @@ def set_video_memory_size(new_size):
         return False        
     state.console_state.current_mode = new_mode
     
-#############################################
-# palette and colours
-
-def set_palette_entry(index, colour, check_mode=True):
-    """ Set a new colour for a given attribute. """
-    # effective palette change is an error in CGA; ignore in Tandy/PCjr SCREEN 0
-    if check_mode:
-        if video_capabilities in ('cga', 'cga_old', 'mda', 
-                                   'hercules', 'olivetti'):
-            raise error.RunError(5)
-        elif (video_capabilities in ('tandy', 'pcjr') and 
-                state.console_state.current_mode.is_text_mode):
-            return
-    state.console_state.palette[index] = colour
-    state.console_state.rgb_palette[index] = (
-        state.console_state.colours[colour])
-    if state.console_state.colours1:
-        state.console_state.rgb_palette1[index] = (
-        state.console_state.colours1[colour])
-    video.update_palette(state.console_state.rgb_palette,
-                         state.console_state.rgb_palette1)
-
-def get_palette_entry(index):
-    """ Retrieve the colour for a given attribute. """
-    return state.console_state.palette[index]
-
-def set_palette(new_palette=None, check_mode=True):
-    """ Set the colours for all attributes. """
-    if check_mode and new_palette:
-        if video_capabilities in ('cga', 'cga_old', 'mda', 
-                                   'hercules', 'olivetti'):
-            raise error.RunError(5)
-        elif (video_capabilities in ('tandy', 'pcjr') and 
-                state.console_state.current_mode.is_text_mode):
-            return
-    if new_palette:
-        state.console_state.palette = new_palette[:]
-    else:    
-        state.console_state.palette = list(state.console_state.default_palette)
-    state.console_state.rgb_palette = [ 
-        state.console_state.colours[i] for i in state.console_state.palette]
-    if state.console_state.colours1:
-        state.console_state.rgb_palette1 = [ 
-            state.console_state.colours1[i] for i in state.console_state.palette]
-    else:
-        state.console_state.rgb_palette1 = None
-    video.update_palette(state.console_state.rgb_palette, 
-                         state.console_state.rgb_palette1)
-
-
-cga4_palette_num = 1
-def set_cga4_palette(num):
-    """ Change the default CGA palette according to palette number & mode. """
-    global cga4_palette_num
-    cga4_palette_num = num
-    # palette 1: Black, Ugh, Yuck, Bleah, choice of low & high intensity
-    # palette 0: Black, Green, Red, Brown/Yellow, low & high intensity
-    # tandy/pcjr have high-intensity white, but low-intensity colours
-    # mode 5 (SCREEN 1 + colorburst on RGB) has red instead of magenta
-    if video_capabilities in ('pcjr', 'tandy'):
-        # pcjr does not have mode 5
-        if num == 0:
-            cga4_palette[:] = (0, 2, 4, 6)
-        else:    
-            cga4_palette[:] = (0, 3, 5, 15)
-    elif cga_low:
-        if cga_mode_5:
-            cga4_palette[:] = (0, 3, 4, 7)
-        elif num == 0:
-            cga4_palette[:] = (0, 2, 4, 6)
-        else:    
-            cga4_palette[:] = (0, 3, 5, 7)
-    else:
-        if cga_mode_5:
-            cga4_palette[:] = (0, 11, 12, 15)
-        elif num == 0:
-            cga4_palette[:] = (0, 10, 12, 14)
-        else:    
-            cga4_palette[:] = (0, 11, 13, 15)
-
-def set_colorburst(on=True):
-    """ Set the composite colorburst bit. """
-    # On a composite monitor:
-    # - on SCREEN 2 this enables artifacting
-    # - on SCREEN 1 and 0 this switches between colour and greyscale
-    # On an RGB monitor:
-    # - on SCREEN 1 this switches between mode 4/5 palettes (RGB)
-    # - ignored on other screens
-    global cga_mode_5
-    colorburst_capable = video_capabilities in (
-                                'cga', 'cga_old', 'tandy', 'pcjr')
-    if ((not state.console_state.current_mode.is_text_mode) and
-            state.console_state.current_mode.name =='320x200x4' and 
-            not composite_monitor):
-        # ega ignores colorburst; tandy and pcjr have no mode 5
-        cga_mode_5 = not (on or video_capabilities not in ('cga', 'cga_old'))
-        set_cga4_palette(1)
-    elif (on or not composite_monitor and not mono_monitor):
-        # take modulo in case we're e.g. resuming ega text into a cga machine
-        colours16[:] = colours16_colour
-    else:
-        colours16[:] = colours16_mono
-    set_palette()
-    video.set_colorburst(on and colorburst_capable, 
-        state.console_state.rgb_palette, state.console_state.rgb_palette1)
-
-def set_border(attr):
-    """ Set the border attribute. """
-    state.console_state.border_attr = attr
-    video.set_border(attr)
-
 ##############################
 # screen buffer read/write
 
@@ -1678,163 +1822,19 @@ def clear_screen_buffer_area(x0, y0, x1, y1):
         state.console_state.apage.row[r].buf[cx0:cx1+1] = [
             (' ', state.console_state.attr)] * (cx1 - cx0 + 1)
     
-##############################
-# keyboard buffer read/write
-
-def read_chars(num):
-    """ Read num keystrokes, blocking. """
-    word = []
-    for _ in range(num):
-        word.append(get_char_block())
-    return word
-
-def get_char():
-    """ Read any keystroke, nonblocking. """
-    wait()    
-    return state.console_state.keybuf.getc()
-
-def wait_char():
-    """ Wait for character, then return it but don't drop from queue. """
-    while state.console_state.keybuf.is_empty() and not input_closed:
-        wait()
-    return state.console_state.keybuf.peek()
-
-def get_char_block():
-    """ Read any keystroke, blocking. """
-    wait_char()
-    return state.console_state.keybuf.getc()
-
-def key_down(scan, eascii='', check_full=True):
-    """ Insert a key-down event. Keycode is extended ascii, including DBCS. """
-    global keypad_ascii
-    # set port and low memory address regardless of event triggers
-    if scan != None:
-        state.console_state.inp_key = scan
-    # set modifier status    
-    try:
-        state.console_state.mod |= modifier[scan]
-    except KeyError:
-       pass 
-    # set toggle-key modifier status    
-    try:
-        state.console_state.mod ^= toggle[scan]
-    except KeyError:
-       pass 
-    # handle BIOS events
-    if (scan == scancode.DELETE and 
-                state.console_state.mod & modifier[scancode.CTRL] and
-                state.console_state.mod & modifier[scancode.ALT]):
-            # ctrl-alt-del: if not captured by the OS, reset the emulator
-            # meaning exit and delete state. This is useful on android.
-            raise error.Reset()
-    if (scan in (scancode.BREAK, scancode.SCROLLOCK) and
-                state.console_state.mod & modifier[scancode.CTRL]):
-            raise error.Break()
-    if scan == scancode.PRINT:
-        if (state.console_state.mod & 
-                (modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT])):
-            # shift + printscreen
-            print_screen()
-        if state.console_state.mod & modifier[scancode.CTRL]:
-            # ctrl + printscreen
-            toggle_echo_lpt1()
-    # alt+keypad ascii replacement        
-    # we can't depend on internal NUM LOCK state as it doesn't get updated
-    if (state.console_state.mod & modifier[scancode.ALT] and 
-            len(eascii) == 1 and eascii >= '0' and eascii <= '9'):
-        try:
-            keypad_ascii += scancode.keypad[scan]
-            return
-        except KeyError:    
-            pass
-    # trigger events
-    if check_key_event(scan, state.console_state.mod):
-        # this key is being trapped, don't replace
-        return
-    # function key macros
-    try:
-        # only check function keys
-        # can't be redefined in events - so must be fn 1-10 (1-12 on Tandy).
-        keynum = function_key[scan]
-        if (state.basic_state.key_macros_off or state.basic_state.run_mode 
-                and state.basic_state.key_handlers[keynum].enabled):
-            # this key is paused from being trapped, don't replace
-            insert_chars(scan_to_eascii(scan, state.console_state.mod,
-                         check_full=check_full))
-            return
-        else:
-            macro = state.console_state.key_replace[keynum]
-            # insert directly, avoid caps handling
-            insert_chars(macro, check_full=check_full)
-            return
-    except KeyError:
-        pass
-    if not eascii or (scan != None and state.console_state.mod & 
-                (modifier[scancode.ALT] | modifier[scancode.CTRL])):
-        # any provided e-ASCII value overrides when CTRL & ALT are off
-        # this helps make keyboards do what's expected 
-        # independent of language setting
-        try:
-            eascii = scan_to_eascii(scan, state.console_state.mod)
-        except KeyError:            
-            # no eascii found
-            return
-    if (state.console_state.mod & toggle[scancode.CAPSLOCK]
-            and not ignore_caps and len(eascii) == 1):
-        if eascii >= 'a' and eascii <= 'z':
-            eascii = chr(ord(eascii)-32)
-        elif eascii >= 'A' and eascii <= 'z':
-            eascii = chr(ord(eascii)+32)
-    insert_chars(eascii, check_full=True)        
-    
-def key_up(scan):
-    """ Insert a key-up event. """
-    global keypad_ascii
-    if scan != None:
-        state.console_state.inp_key = 0x80 + scan
-    try:
-        # switch off ephemeral modifiers
-        state.console_state.mod &= ~modifier[scan]
-        # ALT+keycode    
-        if scan == scancode.ALT and keypad_ascii:
-            char = chr(int(keypad_ascii)%256)
-            if char == '\0':
-                char = '\0\0'
-            insert_chars(char, check_full=True)
-            keypad_ascii = ''
-    except KeyError:
-       pass 
-    
-def insert_special_key(name):
-    """ Insert break, reset or quit events. """
-    if name == 'quit':
-        raise error.Exit()
-    elif name == 'reset':
-        raise error.Reset()
-    elif name == 'break':
-        raise error.Break()
-    else:
-        logging.debug('Unknown special key: %s', name)
-        
-def insert_chars(s, check_full=False):
-    """ Insert characters into keyboard buffer. """
-    if not state.console_state.keybuf.insert(s, check_full):
-        # keyboard buffer is full; short beep and exit
-        play_sound(800, 0.01)
-
-def scan_to_eascii(scan, mod):
-    """ Translate scancode and modifier state to e-ASCII. """
-    if mod & modifier[scancode.ALT]:
-        return scancode.eascii_table[scan][3]
-    elif mod & modifier[scancode.CTRL]:
-        return scancode.eascii_table[scan][2]
-    elif mod & (modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT]):
-        return scancode.eascii_table[scan][1]
-    else:
-        return scancode.eascii_table[scan][0]
-
 #############################################
 # cursor
+
+# cursor visible in execute mode?
+state.console_state.cursor = False
+# cursor shape
+state.console_state.cursor_from = 0
+state.console_state.cursor_to = 0    
+
+# pen and stick
+state.console_state.pen_is_on = False
+state.console_state.stick_is_on = False
+
 
 def show_cursor(do_show):
     """ Force cursor to be visible/invisible. """
