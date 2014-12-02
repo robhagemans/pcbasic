@@ -782,7 +782,7 @@ class TextMode(VideoMode):
         ccol = (offset % (self.width*2)) // 2
         crow = offset // (self.width*2)
         try:
-            c = state.console_state.pages[page].row[crow].buf[ccol][addr%2]  
+            c = state.console_state.text.pages[page].row[crow].buf[ccol][addr%2]  
             return c if addr%2==1 else ord(c)
         except IndexError:
             return -1    
@@ -795,7 +795,7 @@ class TextMode(VideoMode):
         ccol = (offset % (self.width*2)) // 2
         crow = offset // (self.width*2)
         try:
-            c, a = state.console_state.pages[page].row[crow].buf[ccol]
+            c, a = state.console_state.text.pages[page].row[crow].buf[ccol]
             if addr%2 == 0:
                 c = chr(val)
             else:
@@ -1426,10 +1426,8 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
     state.console_state.colours1 = info.colours1
     state.console_state.default_palette = info.palette
     # build the screen buffer    
-    state.console_state.pages = []
-    for _ in range(info.num_pages):
-        state.console_state.pages.append(
-                TextPage(state.console_state.attr, info.width, info.height))
+    state.console_state.text = TextBuffer(state.console_state.attr, 
+            info.width, info.height, info.num_pages)
     # set active page & visible page, counting from 0. 
     set_page(new_vpagenum, new_apagenum)
     # set graphics characteristics
@@ -1483,8 +1481,8 @@ def set_page(new_vpagenum, new_apagenum):
         raise error.RunError(5)    
     state.console_state.vpagenum = new_vpagenum
     state.console_state.apagenum = new_apagenum
-    state.console_state.vpage = state.console_state.pages[new_vpagenum]
-    state.console_state.apage = state.console_state.pages[new_apagenum]
+    state.console_state.vpage = state.console_state.text.pages[new_vpagenum]
+    state.console_state.apage = state.console_state.text.pages[new_apagenum]
     video.set_page(new_vpagenum, new_apagenum)
 
 def set_width(to_width):
@@ -1572,6 +1570,18 @@ class TextPage(object):
         """ Initialise the screen buffer to given dimensions. """
         self.row = [TextRow(battr, bwidth) for _ in xrange(bheight)]
 
+class TextBuffer(object):
+    """ Buffer for text on all screen pages. """
+
+    def __init__(self, battr, bwidth, bheight, bpages):
+        """ Initialise the screen buffer to given pages and dimensions. """
+        self.pages = []
+        for _ in range(bpages):
+            self.pages.append(TextPage(battr, bwidth, bheight))
+        self.width = bwidth
+        self.height = bheight
+
+
 
 def put_screen_char_attr(pagenum, crow, ccol, c, cattr, 
                          one_only=False, for_keys=False):
@@ -1579,7 +1589,7 @@ def put_screen_char_attr(pagenum, crow, ccol, c, cattr,
     mode = state.console_state.current_mode
     if not mode.is_text_mode:
         cattr = cattr & 0xf
-    cpage = state.console_state.pages[pagenum]
+    cpage = state.console_state.text.pages[pagenum]
     # update the screen buffer
     cpage.row[crow-1].buf[ccol-1] = (c, cattr)
     # mark the replaced char for refreshing
@@ -1699,7 +1709,7 @@ def redraw_row(start, crow, wrap=True):
 
 def refresh_screen_range(pagenum, crow, start, stop, for_keys=False):
     """ Redraw a section of a screen row, assuming DBCS buffer has been set. """
-    cpage = state.console_state.pages[pagenum]
+    cpage = state.console_state.text.pages[pagenum]
     therow = cpage.row[crow-1]
     ccol = start
     while ccol < stop:
@@ -1748,8 +1758,8 @@ def print_screen():
 def copy_page(src, dst):
     """ Copy source to destination page. """
     for x in range(state.console_state.current_mode.height):
-        dstrow = state.console_state.pages[dst].row[x]
-        srcrow = state.console_state.pages[src].row[x]
+        dstrow = state.console_state.text.pages[dst].row[x]
+        srcrow = state.console_state.text.pages[src].row[x]
         dstrow.buf[:] = srcrow.buf[:]
         dstrow.end = srcrow.end
         dstrow.wrap = srcrow.wrap            
