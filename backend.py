@@ -26,29 +26,9 @@ video = None
 audio = None 
 
 #############################################
-# sound queue
-
-# sound queue
-state.console_state.music_queue = [[], [], [], []]
-# sound capabilities - '', 'pcjr' or 'tandy'
-pcjr_sound = ''
-
-
-#############################################
 
 # devices - SCRN: KYBD: LPT1: etc. These are initialised in iolayer module
 devices = {}
-
-# redirect i/o to file or printer
-input_echos = []
-output_echos = []
-
-
-#############################################
-# graphics viewport
-
-state.console_state.graph_view_set = False
-state.console_state.view_graph_absolute = True
 
 
 #############################################
@@ -1891,6 +1871,10 @@ def set_cursor_shape(from_line, to_line):
 #############################################
 # I/O redirection
 
+# redirect i/o to file or printer
+input_echos = []
+output_echos = []
+
 def toggle_echo_lpt1():
     """ Toggle copying of all screen I/O to LPT1. """
     lpt1 = devices['LPT1:']
@@ -1903,8 +1887,11 @@ def toggle_echo_lpt1():
 
 
 #############################################
-## graphics viewport    
-    
+# graphics viewport
+
+state.console_state.graph_view_set = False
+state.console_state.view_graph_absolute = True
+
 def set_graph_view(x0,y0,x1,y1, absolute=True):
     """ Set the graphics viewport. """
     # VIEW orders the coordinates
@@ -2036,8 +2023,14 @@ def get_strig(fn):
         # is currently firing
         return stick_is_firing[joy][trig]
 
+
 ##############################
 # sound queue read/write
+
+# sound queue
+state.console_state.music_queue = [[], [], [], []]
+# sound capabilities - '', 'pcjr' or 'tandy'
+pcjr_sound = ''
 
 state.console_state.music_foreground = True
 
