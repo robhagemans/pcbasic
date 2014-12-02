@@ -1594,6 +1594,7 @@ def set_video_memory_size(new_size):
     if (page >= new_mode.num_pages):
         return False        
     state.console_state.current_mode = new_mode
+    return True
     
 ##############################
 # screen buffer read/write
