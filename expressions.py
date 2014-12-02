@@ -495,13 +495,14 @@ def value_screen(ins):
         raise error.RunError(5)
     if z == None:
         z = 0    
-    util.range_check(1, state.console_state.height, row)
+    cmode = state.console_state.current_mode
+    util.range_check(1, cmode.height, row)
     if state.console_state.view_set:
         util.range_check(state.console_state.view_start, state.console_state.scroll_height, row)
-    util.range_check(1, state.console_state.width, col)
+    util.range_check(1, cmode.width, col)
     util.range_check(0, 255, z)
     util.require_read(ins, (')',))
-    if z and not state.console_state.current_mode.is_text_mode:
+    if z and not cmode.is_text_mode:
         return vartypes.null['%']    
     else:
         return vartypes.pack_int(backend.get_screen_char_attr(row, col, z!=0))
@@ -534,7 +535,9 @@ def value_inkey(ins):
 def value_csrlin(ins):
     """ CSRLIN: get the current screen row. """
     row, col = state.console_state.row, state.console_state.col 
-    if col == state.console_state.width and state.console_state.overflow and row < state.console_state.scroll_height:
+    if (col == state.console_state.current_mode.width and 
+            state.console_state.overflow and 
+            row < state.console_state.scroll_height):
         # in overflow position, return row+1 except on the last row
         row += 1
     return vartypes.pack_int(row)
@@ -544,7 +547,7 @@ def value_pos(ins):
     # parse the dummy argument, doesnt matter what it is as long as it's a legal expression
     parse_bracket(ins)
     col = state.console_state.col
-    if col == state.console_state.width and state.console_state.overflow:
+    if col == state.console_state.current_mode.width and state.console_state.overflow:
         # in overflow position, return column 1.
         col = 1
     return vartypes.pack_int(col)

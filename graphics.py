@@ -45,12 +45,13 @@ def get_colour_index(c):
     if c == -1: # foreground; graphics 'background' attrib is always 0
         c = state.console_state.attr & 0xf
     else:
-        c = min(state.console_state.num_attr - 1, max(0, c))
+        c = min(state.console_state.current_mode.num_attr - 1, max(0, c))
     return c
 
 def check_coords(x, y):
     """ Ensure coordinates are within screen. """
-    return min(state.console_state.size[0], max(-1, x)), min(state.console_state.size[1], max(-1, y))
+    mode = state.console_state.current_mode
+    return min(mode.pixel_width, max(-1, x)), min(mode.pixel_height, max(-1, y))
     
 ### PSET, POINT
 
@@ -66,9 +67,9 @@ def put_point(x, y, c):
 def get_point(x, y):
     """ Return the attribute of a pixel (POINT). """
     x, y = backend.view_coords(x, y)
-    if x < 0 or x >= state.console_state.size[0]:
+    if x < 0 or x >= state.console_state.current_mode.pixel_width:
         return -1
-    if y < 0 or y >= state.console_state.size[1]:
+    if y < 0 or y >= state.console_state.current_mode.pixel_height:
         return -1
     return backend.video.get_pixel(x,y)
 

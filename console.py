@@ -83,7 +83,7 @@ def set_width(to_width):
     # raise an error if the width value doesn't make sense
     if to_width not in (20, 40, 80):
         return False
-    if to_width == state.console_state.width:
+    if to_width == state.console_state.current_mode.width:
         return True
     if not backend.set_width(to_width):
         return False
@@ -113,7 +113,7 @@ def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
         crow -= 1
     line = []
     # add lines 
-    while crow <= state.console_state.height:
+    while crow <= state.console_state.current_mode.height:
         therow = state.console_state.apage.row[crow-1]
         # exclude prompt, if any; only go from furthest_left to furthest_right
         if crow == prompt_row and not from_start:
@@ -121,7 +121,7 @@ def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
         else:    
             line += therow.buf[:therow.end]
         if therow.wrap:
-            if therow.end < state.console_state.width:
+            if therow.end < state.console_state.current_mode.width:
                 # wrap before end of line means LF
                 line += ('\n', state.console_state.attr),
             crow += 1
@@ -266,15 +266,15 @@ def wait_interactive(from_start=False, alt_replace = True):
         # adjust cursor width
         row, col = state.console_state.row, state.console_state.col 
         if state.console_state.apage.row[row-1].double[col-1] == 1:
-            cursor_width = 2 * state.console_state.font_width
+            cursor_width = 2 * state.console_state.current_mode.font_width
         else:
-            cursor_width = state.console_state.font_width
+            cursor_width = state.console_state.current_mode.font_width
         # update cursor shape to new width if necessary    
         if cursor_width != state.console_state.cursor_width:
             state.console_state.cursor_width = cursor_width
             backend.video.build_cursor(
                 state.console_state.cursor_width, 
-                state.console_state.font_height, 
+                state.console_state.current_mode.font_height, 
                 state.console_state.cursor_from, state.console_state.cursor_to)
             backend.video.update_cursor_attr(
                 state.console_state.apage.row[row-1].buf[col-1][1] & 0xf)
@@ -289,7 +289,7 @@ def set_overwrite_mode(new_overwrite=True):
 
 def set_default_cursor():
     """ Set the appropriate cursor for the current mode. """
-    font_height = state.console_state.font_height
+    font_height = state.console_state.current_mode.font_height
     if state.console_state.overwrite_mode:
         if not state.console_state.current_mode.is_text_mode: 
             # always a block cursor in graphics mode
@@ -312,7 +312,7 @@ def insert(crow, ccol, c, cattr):
     while True:
         therow = state.console_state.apage.row[crow-1]
         therow.buf.insert(ccol-1, (c, cattr))
-        if therow.end < state.console_state.width:
+        if therow.end < state.console_state.current_mode.width:
             therow.buf.pop()
             if therow.end > ccol-1:
                 therow.end += 1
@@ -324,7 +324,7 @@ def insert(crow, ccol, c, cattr):
                 scroll()
                 # this is not the global row which is changed by scroll()
                 crow -= 1
-            if not therow.wrap and crow < state.console_state.height:
+            if not therow.wrap and crow < state.console_state.current_mode.height:
                 scroll_down(crow+1)
                 therow.wrap = True    
             c, cattr = therow.buf.pop()
@@ -351,7 +351,7 @@ def delete_sbcs_char(crow, ccol):
     save_col = ccol
     thepage = state.console_state.apage
     therow = thepage.row[crow-1]
-    width = state.console_state.width
+    width = state.console_state.current_mode.width
     if crow > 1 and ccol >= therow.end and therow.wrap:
         # row was an LF-ending row & we're deleting past the LF
         nextrow = thepage.row[crow]
@@ -423,11 +423,11 @@ def clear_line(the_row):
 
 def clear_rest_of_line(srow, scol):
     """ Clear from current position to end of logical line (CTRL+END). """
+    mode = state.console_state.current_mode
     therow = state.console_state.apage.row[srow-1] 
     therow.buf = (therow.buf[:scol-1] + 
-        [(' ', state.console_state.attr)] * (state.console_state.width-scol+1))
-    therow.double = (therow.double[:scol-1] + 
-        [0] * (state.console_state.width-scol+1))
+        [(' ', state.console_state.attr)] * (mode.width-scol+1))
+    therow.double = (therow.double[:scol-1] + [0] * (mode.width-scol+1))
     therow.end = min(therow.end, scol-1)
     crow = srow
     while state.console_state.apage.row[crow-1].wrap:
@@ -440,7 +440,7 @@ def clear_rest_of_line(srow, scol):
     therow.wrap = False
     set_pos(srow, scol)
     save_end = therow.end
-    therow.end = state.console_state.width
+    therow.end = mode.width
     if scol > 1:
         backend.redraw_row(scol-1, srow)
     else:
@@ -453,7 +453,7 @@ def backspace(start_row, start_col):
     # don't backspace through prompt
     if ccol == 1:
         if crow > 1 and state.console_state.apage.row[crow-2].wrap:
-            ccol = state.console_state.width 
+            ccol = state.console_state.current_mode.width 
             crow -= 1
     elif ccol != start_col or state.console_state.row != start_row: 
         ccol -= 1
@@ -478,9 +478,9 @@ def end():
     """ Jump to end of logical line; follow wraps (END). """
     crow = state.console_state.row
     while (state.console_state.apage.row[crow-1].wrap and 
-            crow < state.console_state.height):
+            crow < state.console_state.current_mode.height):
         crow += 1
-    if state.console_state.apage.row[crow-1].end == state.console_state.width:
+    if state.console_state.apage.row[crow-1].end == state.console_state.current_mode.width:
         set_pos(crow, state.console_state.apage.row[crow-1].end)
         state.console_state.overflow = True
     else:        
@@ -490,7 +490,7 @@ def line_feed():
     """ Move the remainder of the line to the next row and wrap (LF). """
     crow, ccol = state.console_state.row, state.console_state.col
     if ccol < state.console_state.apage.row[crow-1].end:
-        for _ in range(state.console_state.width - ccol + 1):
+        for _ in range(state.console_state.current_mode.width - ccol + 1):
             insert(crow, ccol, ' ', state.console_state.attr)
         backend.redraw_row(ccol - 1, crow)
         state.console_state.apage.row[crow-1].end = ccol - 1 
@@ -501,7 +501,7 @@ def line_feed():
         if crow >= state.console_state.scroll_height:
             scroll()
         # state.console_state.row has changed, don't use crow    
-        if state.console_state.row < state.console_state.height:    
+        if state.console_state.row < state.console_state.current_mode.height:    
             scroll_down(state.console_state.row+1)
     # LF connects lines like word wrap
     state.console_state.apage.row[state.console_state.row-1].wrap = True
@@ -516,7 +516,7 @@ def skip_word_right():
         if (c < '0' or c > '9') and (c < 'A' or c > 'Z'):
             break
         ccol += 1
-        if ccol > state.console_state.width:
+        if ccol > state.console_state.current_mode.width:
             if crow >= state.console_state.scroll_height:
                 # nothing found
                 return
@@ -528,7 +528,7 @@ def skip_word_right():
         if not ((c < '0' or c > '9') and (c < 'A' or c > 'Z')):
             break
         ccol += 1
-        if ccol > state.console_state.width:
+        if ccol > state.console_state.current_mode.width:
             if crow >= state.console_state.scroll_height:
                 # nothing found
                 return
@@ -547,7 +547,7 @@ def skip_word_left():
                 # not found
                 return
             crow -= 1
-            ccol = state.console_state.width
+            ccol = state.console_state.current_mode.width
         c = state.console_state.apage.row[crow-1].buf[ccol-1][0].upper()
         if not ((c < '0' or c > '9') and (c < 'A' or c > 'Z')):
             break
@@ -559,7 +559,7 @@ def skip_word_left():
             if crow <= state.console_state.view_start:
                 break
             crow -= 1
-            ccol = state.console_state.width
+            ccol = state.console_state.current_mode.width
         c = state.console_state.apage.row[crow-1].buf[ccol-1][0].upper()
         if (c < '0' or c > '9') and (c < 'A' or c > 'Z'):
             break
@@ -656,7 +656,7 @@ def list_line(line):
             write('\n')
     write_line()
     # remove wrap after 80-column program line
-    if len(line) == state.console_state.width and state.console_state.row > 2:
+    if len(line) == state.console_state.current_mode.width and state.console_state.row > 2:
         state.console_state.apage.row[state.console_state.row-3].wrap = False
     
 #####################
@@ -688,7 +688,7 @@ def show_keys(do_show):
     else:
         state.console_state.keys_visible = True
         clear_key_row()
-        for i in range(state.console_state.width/8):
+        for i in range(state.console_state.current_mode.width/8):
             text = str(state.console_state.key_replace[i][:6])
             kcol = 1+8*i
             write_for_keys(str(i+1)[-1], kcol, state.console_state.attr)
@@ -699,7 +699,7 @@ def show_keys(do_show):
                     write_for_keys(text, kcol+1, 0x70)
                 else:
                     write_for_keys(text, kcol+1, 0x07)
-        state.console_state.apage.row[24].end = state.console_state.width           
+        state.console_state.apage.row[24].end = state.console_state.current_mode.width           
 
 def write_for_keys(s, col, cattr):
     """ Write chars on the keys line; no echo, some character replacements. """
@@ -740,7 +740,7 @@ def put_char(c, do_scroll_down=False):
          state.console_state.apage.row[state.console_state.row-1].end = state.console_state.col
     # move cursor. if on col 80, only move cursor to the next row 
     # when the char is printed
-    if state.console_state.col < state.console_state.width:
+    if state.console_state.col < state.console_state.current_mode.width:
         state.console_state.col += 1
     else:
         state.console_state.overflow = True
@@ -749,7 +749,7 @@ def put_char(c, do_scroll_down=False):
     
 def check_wrap(do_scroll_down):    
     """ Wrap if we need to. """
-    if state.console_state.col > state.console_state.width:
+    if state.console_state.col > state.console_state.current_mode.width:
         # wrap line
         state.console_state.apage.row[state.console_state.row-1].wrap = True
         if do_scroll_down:
@@ -773,8 +773,8 @@ def check_pos(scroll_ok=True):
     """ Check if we have crossed the screen boundaries and move as needed. """ 
     oldrow, oldcol = state.console_state.row, state.console_state.col
     if state.console_state.bottom_row_allowed:
-        if state.console_state.row == state.console_state.height:
-            state.console_state.col = min(state.console_state.width, state.console_state.col)
+        if state.console_state.row == state.console_state.current_mode.height:
+            state.console_state.col = min(state.console_state.current_mode.width, state.console_state.col)
             if state.console_state.col < 1:
                 state.console_state.col += 1    
             backend.video.move_cursor(state.console_state.row, state.console_state.col)
@@ -785,18 +785,18 @@ def check_pos(scroll_ok=True):
             # adjust viewport if necessary
             state.console_state.bottom_row_allowed = False
     # see if we need to move to the next row        
-    if state.console_state.col > state.console_state.width:
+    if state.console_state.col > state.console_state.current_mode.width:
         if state.console_state.row < state.console_state.scroll_height or scroll_ok:
             # either we don't nee to scroll, or we're allowed to
-            state.console_state.col -= state.console_state.width
+            state.console_state.col -= state.console_state.current_mode.width
             state.console_state.row += 1
         else:
             # we can't scroll, so we just stop at the right border 
-            state.console_state.col = state.console_state.width        
+            state.console_state.col = state.console_state.current_mode.width        
     # see if we eed to move a row up
     elif state.console_state.col < 1:
         if state.console_state.row > state.console_state.view_start:
-            state.console_state.col += state.console_state.width
+            state.console_state.col += state.console_state.current_mode.width
             state.console_state.row -= 1
         else:
             state.console_state.col = 1   
@@ -859,7 +859,7 @@ def clear_view():
     state.console_state.row = state.console_state.view_start 
     state.console_state.col = 1
     if state.console_state.bottom_row_allowed:
-        last_row = state.console_state.height 
+        last_row = state.console_state.current_mode.height 
     else:
         last_row = state.console_state.scroll_height 
     backend.video.clear_rows(state.console_state.attr, 
@@ -880,7 +880,7 @@ def scroll(from_line=None):
         state.console_state.row -= 1
     state.console_state.apage.row.insert(state.console_state.scroll_height, 
             backend.ScreenRow(state.console_state.attr, 
-                              state.console_state.width))
+                              state.console_state.current_mode.width))
     del state.console_state.apage.row[from_line-1]
    
 def scroll_down(from_line):
@@ -892,7 +892,7 @@ def scroll_down(from_line):
     # sync buffers with the new screen reality:
     state.console_state.apage.row.insert(from_line - 1, 
             backend.ScreenRow(state.console_state.attr, 
-                              state.console_state.width))
+                              state.console_state.current_mode.width))
     del state.console_state.apage.row[state.console_state.scroll_height-1] 
 
 ################################################

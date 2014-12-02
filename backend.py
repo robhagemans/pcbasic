@@ -132,8 +132,7 @@ def prepare_video():
     # only allow the screen modes that the given machine supports
     prepare_modes()
     # PCjr starts in 40-column mode
-    state.console_state.width = config.options['text-width']
-    state.console_state.current_mode = text_data[state.console_state.width]
+    state.console_state.current_mode = text_data[config.options['text-width']]
            
 def init_video():
     """ Initialise the video backend. """
@@ -149,32 +148,27 @@ def init_video():
 
 def resume_screen():
     """ Load a video mode from storage and initialise. """
-    if (not state.console_state.current_mode.is_text_mode and 
-            (state.console_state.screen_mode not in mode_data or
-             state.console_state.current_mode.name !=
-                           mode_data[state.console_state.screen_mode].name)):
-        # mode not supported by backend
+    cmode = state.console_state.current_mode
+    nmode = state.console_state.screen_mode
+    if (not cmode.is_text_mode and 
+            (nmode not in mode_data or cmode.name != mode_data[nmode].name)):
         logging.warning(
             "Resumed screen mode %d (%s) not supported by this setup",
-            state.console_state.screen_mode, 
-            state.console_state.current_mode.name)
+            nmode, cmode.name)
         return False
-    if not state.console_state.current_mode.is_text_mode:    
-        mode_info = mode_data[state.console_state.screen_mode]
+    if not cmode.is_text_mode:    
+        mode_info = mode_data[nmode]
     else:
-        mode_info = text_data[state.console_state.width]
-    if (state.console_state.current_mode.is_text_mode and 
-            state.console_state.current_mode.name != mode_info.name):
+        mode_info = text_data[cmode.width]
+    if (cmode.is_text_mode and cmode.name != mode_info.name):
         # we switched adaptes on resume; fix font height, palette, cursor
         state.console_state.cursor_from = (state.console_state.cursor_from *
-            mode_info.font_height) // state.console_state.font_height
+            mode_info.font_height) // cmode.font_height
         state.console_state.cursor_to = (state.console_state.cursor_to *
-            mode_info.font_height) // state.console_state.font_height
-        state.console_state.font_height = mode_info.font_height
+            mode_info.font_height) // cmode.font_height
         set_palette()
     # set up the appropriate screen resolution
-    if (state.console_state.current_mode.is_text_mode or 
-            video.supports_graphics_mode(mode_info)):
+    if (cmode.is_text_mode or video.supports_graphics_mode(mode_info)):
         # set the visible and active pages
         video.set_page(state.console_state.vpagenum, 
                        state.console_state.apagenum)
@@ -187,8 +181,7 @@ def resume_screen():
         video.set_attr(state.console_state.attr)
         # fix the cursor
         video.build_cursor(
-            state.console_state.cursor_width, 
-            state.console_state.font_height, 
+            state.console_state.cursor_width, mode_info.font_height, 
             state.console_state.cursor_from, state.console_state.cursor_to)    
         video.move_cursor(state.console_state.row, state.console_state.col)
         video.update_cursor_attr(
@@ -200,11 +193,9 @@ def resume_screen():
         video.close()
         # mode not supported by backend
         logging.warning(
-            "Resumed screen mode %d not supported by this interface.", 
-            state.console_state.screen_mode)
+            "Resumed screen mode %d not supported by this interface.", nmode)
         return False
-    if (state.console_state.current_mode.is_text_mode and 
-            state.console_state.current_mode.name != mode_info.name):
+    if (cmode.is_text_mode and cmode.name != mode_info.name):
         state.console_state.current_mode = mode_info
         redraw_text_screen()
     else:
@@ -711,10 +702,6 @@ state.console_state.screen_mode = 0
 state.console_state.apagenum = 0
 # number of visible page
 state.console_state.vpagenum = 0
-# number of columns, counting 1..width
-state.console_state.width = 80
-# number of rows, counting 1..height
-state.console_state.height = 25
 # the available colours
 state.console_state.colours = colours64
 # blinking *colours* - only SCREEN 10, otherwise blink is an *attribute*
@@ -1007,9 +994,9 @@ class CGAMode(GraphicsMode):
         x0, y0 = view_coords(x0, y0)
         x1, y1 = view_coords(x1, y1)
         # illegal fn call if outside screen boundary
-        util.range_check(0, state.console_state.size[0]-1, x0, x1)
-        util.range_check(0, state.console_state.size[1]-1, y0, y1)
-        bpp = state.console_state.current_mode.bitsperpixel
+        util.range_check(0, self.pixel_width-1, x0, x1)
+        util.range_check(0, self.pixel_height-1, y0, y1)
+        bpp = self.bitsperpixel
         # clear existing array only up to the length we'll use
         length = 4 + ((dx * bpp + 7) // 8)*dy
         byte_array[:length] = '\x00'*length
@@ -1035,15 +1022,15 @@ class CGAMode(GraphicsMode):
     def set_area(self, x0, y0, byte_array, operation):
         """ Put a stored sprite onto the screen. """
         # in cga modes, number of x bits is given rather than pixels
-        bpp = state.console_state.current_mode.bitsperpixel
+        bpp = self.bitsperpixel
         dx = vartypes.uint_to_value(byte_array[0:2]) / bpp
         dy = vartypes.uint_to_value(byte_array[2:4])
         x1, y1 = x0+dx-1, y0+dy-1
         x0, y0 = view_coords(x0, y0)
         x1, y1 = view_coords(x1, y1)
         # illegal fn call if outside screen boundary
-        util.range_check(0, state.console_state.size[0]-1, x0, x1)
-        util.range_check(0, state.console_state.size[1]-1, y0, y1)
+        util.range_check(0, self.pixel_width-1, x0, x1)
+        util.range_check(0, self.pixel_height-1, y0, y1)
         video.apply_graph_clip()
         byte = 4
         shift = 8 - bpp
@@ -1052,13 +1039,13 @@ class CGAMode(GraphicsMode):
                 if shift < 0:
                     byte += 1
                     shift = 8 - bpp
-                if (x < 0 or x >= state.console_state.size[0] or 
-                        y < 0 or y >= state.console_state.size[1]):
+                if (x < 0 or x >= self.pixel_width or 
+                        y < 0 or y >= self.pixel_height):
                     pixel = 0
                 else:
                     pixel = video.get_pixel(x,y)
                     try:    
-                        index = (byte_array[byte] >> shift) % state.console_state.num_attr   
+                        index = (byte_array[byte] >> shift) % self.num_attr   
                     except IndexError:
                         pass                
                     video.put_pixel(x, y, operation(pixel, index))    
@@ -1388,7 +1375,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
     # 2: erase all video memory if screen or bust changes 
     if new_mode == 0 and new_width == None:
         # width persists on change to screen 0
-        new_width = state.console_state.width 
+        new_width = state.console_state.current_mode.width 
         # if we switch out of a 20-col mode (Tandy screen 3), switch to 40-col.
         if new_width == 20:
             new_width = 40
@@ -1421,7 +1408,6 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
         # even if the function fails with Illegal Function Call
         set_palette()
         return False
-    state.console_state.width = info.width
     # attribute persists on width-only change
     if not (state.console_state.screen_mode == 0 and new_mode == 0 
             and state.console_state.apagenum == new_apagenum 
@@ -1436,27 +1422,20 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
     # set all state vars
     state.console_state.current_mode = info
     # these are all duplicates
-    state.console_state.font_height = info.font_height 
-    state.console_state.num_attr = info.num_attr
     state.console_state.colours = info.colours
     state.console_state.colours1 = info.colours1
     state.console_state.default_palette = info.palette
-    state.console_state.height = 25
-    state.console_state.width = info.width
-    state.console_state.num_pages = info.num_pages
-    state.console_state.font_width = info.font_width
     # build the screen buffer    
     state.console_state.pages = []
-    for _ in range(state.console_state.num_pages):
+    for _ in range(info.num_pages):
         state.console_state.pages.append(
-                ScreenBuffer(state.console_state.attr, 
-                    state.console_state.width, state.console_state.height))
+                ScreenBuffer(state.console_state.attr, info.width, info.height))
     # set active page & visible page, counting from 0. 
     set_page(new_vpagenum, new_apagenum)
     # set graphics characteristics
     init_graphics(info)
     # cursor width starts out as single char
-    state.console_state.cursor_width = state.console_state.font_width        
+    state.console_state.cursor_width = info.font_width        
     # signal the backend to change the screen resolution
     if not video.init_screen_mode(info):
         # something broke at the backend. fallback to text mode and give error.
@@ -1481,8 +1460,6 @@ def init_graphics(mode_info):
     """ Set the graphical characteristics of a new mode. """
     if mode_info.is_text_mode:
         return
-    # resolution
-    state.console_state.size = (mode_info.pixel_width, mode_info.pixel_height)
     # centre of new graphics screen
     state.console_state.last_point = (mode_info.pixel_width/2, mode_info.pixel_height/2)
     # assumed aspect ratio for CIRCLE    
@@ -1497,12 +1474,12 @@ def init_graphics(mode_info):
 
 def set_page(new_vpagenum, new_apagenum):
     """ Set active page & visible page, counting from 0. """
+    mode = state.console_state.current_mode
     if new_vpagenum == None:
         new_vpagenum = state.console_state.vpagenum
     if new_apagenum == None:
         new_apagenum = state.console_state.apagenum
-    if (new_vpagenum >= state.console_state.num_pages or
-            new_apagenum >= state.console_state.num_pages):
+    if (new_vpagenum >= mode.num_pages or new_apagenum >= mode.num_pages):
         raise error.RunError(5)    
     state.console_state.vpagenum = new_vpagenum
     state.console_state.apagenum = new_apagenum
@@ -1599,7 +1576,8 @@ class ScreenBuffer(object):
 def put_screen_char_attr(pagenum, crow, ccol, c, cattr, 
                          one_only=False, for_keys=False):
     """ Put a byte to the screen, redrawing SBCS and DBCS as necessary. """
-    if not state.console_state.current_mode.is_text_mode:
+    mode = state.console_state.current_mode
+    if not mode.is_text_mode:
         cattr = cattr & 0xf
     cpage = state.console_state.pages[pagenum]
     # update the screen buffer
@@ -1609,7 +1587,7 @@ def put_screen_char_attr(pagenum, crow, ccol, c, cattr,
     cpage.row[crow-1].double[ccol-1] = 0
     # mark out sbcs and dbcs characters
     # only do dbcs in 80-character modes
-    if unicodepage.dbcs and state.console_state.width == 80:
+    if unicodepage.dbcs and mode.width == 80:
         orig_col = ccol
         # replace chars from here until necessary to update double-width chars
         therow = cpage.row[crow-1]    
@@ -1621,7 +1599,7 @@ def put_screen_char_attr(pagenum, crow, ccol, c, cattr,
             ccol -= 1
             start -= 1
         # check all dbcs characters between here until it doesn't matter anymore
-        while ccol < state.console_state.width:
+        while ccol < mode.width:
             c = therow.buf[ccol-1][0]
             d = therow.buf[ccol][0]  
             if (c in unicodepage.lead and d in unicodepage.trail):
@@ -1638,7 +1616,7 @@ def put_screen_char_attr(pagenum, crow, ccol, c, cattr,
                 therow.double[ccol-1] = 0
                 start, stop = min(start, ccol), max(stop, ccol+1)
                 ccol += 1
-            if (ccol >= state.console_state.width or 
+            if (ccol >= mode.width or 
                     (one_only and ccol > orig_col)):
                 break  
         # check for box drawing
@@ -1646,7 +1624,7 @@ def put_screen_char_attr(pagenum, crow, ccol, c, cattr,
             ccol = start-2
             connecting = 0
             bset = -1
-            while ccol < stop+2 and ccol < state.console_state.width:
+            while ccol < stop+2 and ccol < mode.width:
                 c = therow.buf[ccol-1][0]
                 d = therow.buf[ccol][0]  
                 if bset > -1 and unicodepage.connects(c, d, bset): 
@@ -1667,7 +1645,7 @@ def put_screen_char_attr(pagenum, crow, ccol, c, cattr,
                     if ccol > 2 and therow.double[ccol-3] == 1:
                         therow.double[ccol-3] = 0
                         start = min(start, ccol-2)
-                    if (ccol < state.console_state.width-1 and 
+                    if (ccol < mode.width-1 and 
                             therow.double[ccol+1] == 2):
                         therow.double[ccol+1] = 0
                         stop = max(stop, ccol+2)
@@ -1694,7 +1672,7 @@ def get_text(start_row, start_col, stop_row, stop_col):
     while r < stop_row or (r == stop_row and c <= stop_col):
         clip += state.console_state.vpage.row[r-1].buf[c-1][0]    
         c += 1
-        if c > state.console_state.width:
+        if c > state.console_state.current_mode.width:
             if not state.console_state.vpage.row[r-1].wrap:
                 full += unicodepage.UTF8Converter().to_utf8(clip) + '\r\n'
                 clip = ''
@@ -1713,7 +1691,7 @@ def redraw_row(start, crow, wrap=True):
             put_screen_char_attr(state.console_state.apagenum, crow, i+1, 
                     therow.buf[i][0], state.console_state.attr, one_only=True)
         if (wrap and therow.wrap and 
-                crow >= 0 and crow < state.console_state.height-1):
+                crow >= 0 and crow < state.console_state.current_mode.height-1):
             crow += 1
             start = 0
         else:
@@ -1748,11 +1726,12 @@ def redraw_text_screen():
     # force cursor invisible during redraw
     show_cursor(False)
     # this makes it feel faster
-    video.clear_rows(state.console_state.attr, 1, state.console_state.height)
+    mode = state.console_state.current_mode
+    video.clear_rows(state.console_state.attr, 1, mode.height)
     # redraw every character
-    for crow in range(state.console_state.height):
+    for crow in range(height):
         therow = state.console_state.apage.row[crow]  
-        for i in range(state.console_state.width): 
+        for i in range(mode.width): 
             put_screen_char_attr(state.console_state.apagenum, crow+1, i+1, 
                                  therow.buf[i][0], therow.buf[i][1])
     # set cursor back to previous state                             
@@ -1760,7 +1739,7 @@ def redraw_text_screen():
 
 def print_screen():
     """ Output the visible page to LPT1. """
-    for crow in range(1, state.console_state.height+1):
+    for crow in range(1, state.console_state.current_mode.height+1):
         line = ''
         for c, _ in state.console_state.vpage.row[crow-1].buf:
             line += c
@@ -1768,7 +1747,7 @@ def print_screen():
 
 def copy_page(src, dst):
     """ Copy source to destination page. """
-    for x in range(state.console_state.height):
+    for x in range(state.console_state.current_mode.height):
         dstrow = state.console_state.pages[dst].row[x]
         srcrow = state.console_state.pages[src].row[x]
         dstrow.buf[:] = srcrow.buf[:]
@@ -1778,8 +1757,9 @@ def copy_page(src, dst):
 
 def clear_screen_buffer_at(x, y):
     """ Remove the character covering a single pixel. """
-    fx, fy = state.console_state.font_width, state.console_state.font_height
-    cymax, cxmax = state.console_state.height-1, state.console_state.width-1
+    mode = state.console_state.current_mode
+    fx, fy = mode.font_width, mode.font_height
+    cymax, cxmax = mode.height-1, mode.width-1
     cx, cy = x // fx, y // fy
     if cx >= 0 and cy >= 0 and cx <= cxmax and cy <= cymax:
         state.console_state.apage.row[cy].buf[cx] = (
@@ -1787,8 +1767,9 @@ def clear_screen_buffer_at(x, y):
 
 def clear_screen_buffer_area(x0, y0, x1, y1):
     """ Remove all characters from a rectangle of the graphics screen. """
-    fx, fy = state.console_state.font_width, state.console_state.font_height
-    cymax, cxmax = state.console_state.height-1, state.console_state.width-1 
+    mode = state.console_state.current_mode
+    fx, fy = mode.font_width, mode.font_height
+    cymax, cxmax = mode.height-1, mode.width-1 
     cx0 = min(cxmax, max(0, x0 // fx)) 
     cy0 = min(cymax, max(0, y0 // fy))
     cx1 = min(cxmax, max(0, x1 // fx)) 
@@ -1827,12 +1808,14 @@ def set_cursor_shape(from_line, to_line):
     """ Set the cursor shape. """
     # A block from from_line to to_line in 8-line modes.
     # Use compatibility algo in higher resolutions
+    mode = state.console_state.current_mode
+    fx, fy = mode.font_width, mode.font_height
     if egacursor:
         # odd treatment of cursors on EGA machines, 
         # presumably for backward compatibility
         # the following algorithm is based on DOSBox source int10_char.cpp 
         #     INT10_SetCursorShape(Bit8u first,Bit8u last)    
-        max_line = state.console_state.font_height-1
+        max_line = fy - 1
         if from_line & 0xe0 == 0 and to_line & 0xe0 == 0:
             if (to_line < from_line):
                 # invisible only if to_line is zero and to_line < from_line
@@ -1853,12 +1836,9 @@ def set_cursor_shape(from_line, to_line):
                         if max_line > 0xc:
                             from_line -= 1
                             to_line -= 1
-    state.console_state.cursor_from = max(0, min(from_line, 
-                                      state.console_state.font_height-1))
-    state.console_state.cursor_to = max(0, min(to_line, 
-                                    state.console_state.font_height-1))
-    video.build_cursor(state.console_state.cursor_width, 
-                       state.console_state.font_height, 
+    state.console_state.cursor_from = max(0, min(from_line, fy-1))
+    state.console_state.cursor_to = max(0, min(to_line, fy-1))
+    video.build_cursor(state.console_state.cursor_width, fy, 
                        state.console_state.cursor_from, 
                        state.console_state.cursor_to)
     video.update_cursor_attr(state.console_state.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
@@ -1954,8 +1934,8 @@ def pen_moved(x, y):
 def get_pen(fn):
     """ Poll the pen. """
     posx, posy = pen_pos
-    fw = state.console_state.font_width
-    fh = state.console_state.font_height
+    fw = state.console_state.current_mode.font_width
+    fh = state.console_state.current_mode.font_height
     if fn == 0:
         pen_down_old, state.console_state.pen_was_down = (
                 state.console_state.pen_was_down, False)

@@ -1211,8 +1211,8 @@ def exec_view_graph(ins):
         util.require_read(ins, (',',))
         y1 = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         util.require_read(ins, (')',))
-        util.range_check(0, state.console_state.size[0]-1, x0, x1)
-        util.range_check(0, state.console_state.size[1]-1, y0, y1)
+        util.range_check(0, state.console_state.current_mode.pixel_width-1, x0, x1)
+        util.range_check(0, state.console_state.current_mode.pixel_height-1, y0, y1)
         x0, x1 = min(x0, x1), max(x0, x1)
         y0, y1 = min(y0, y1), max(y0, y1)
         fill, border = None, None
@@ -2066,19 +2066,19 @@ def exec_color(ins):
     # graphics mode bg is always 0; sets palette instead
     back = back_old if mode.is_text_mode and back == None else (backend.get_palette_entry(0) if back == None else back)
     if mode.is_text_mode:
-        util.range_check(0, state.console_state.num_attr-1, fore)
+        util.range_check(0, mode.num_attr-1, fore)
         util.range_check(0, 15, back, bord)
         state.console_state.attr = ((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10 + (fore & 0xf) 
         backend.set_border(bord)
     elif mode.name in ('160x200x16', '320x200x4pcjr', '320x200x16pcjr'
                         '640x200x4', '320x200x16', '640x200x16'):
-        util.range_check(1, state.console_state.num_attr-1, fore)
-        util.range_check(0, state.console_state.num_attr-1, back)
+        util.range_check(1, mode.num_attr-1, fore)
+        util.range_check(0, mode.num_attr-1, back)
         state.console_state.attr = fore
         # in screen 7 and 8, only low intensity palette is used.
         backend.set_palette_entry(0, back % 8, check_mode=False)    
     elif mode.name in ('640x350x16', '640x350x4'):
-        util.range_check(0, state.console_state.num_attr-1, fore)
+        util.range_check(0, mode.num_attr-1, fore)
         util.range_check(0, len(state.console_state.colours)-1, back)
         state.console_state.attr = fore
         backend.set_palette_entry(0, back, check_mode=False)
@@ -2118,7 +2118,8 @@ def exec_palette(ins):
         exec_palette_using(ins)
     else:
         # can't set blinking colours separately
-        num_palette_entries = state.console_state.num_attr if state.console_state.num_attr != 32 else 16
+        num_attr = state.console_state.current_mode.num_attr
+        num_palette_entries = num_attr if num_attr != 32 else 16
         pair = expressions.parse_int_list(ins, 2, err=5)
         if pair[0] == None or pair[1] == None:
             raise error.RunError(2)
@@ -2130,7 +2131,8 @@ def exec_palette(ins):
 
 def exec_palette_using(ins):
     """ PALETTE USING: set full colour palette. """
-    num_palette_entries = state.console_state.num_attr if state.console_state.num_attr != 32 else 16
+    num_attr = state.console_state.current_mode.num_attr
+    num_palette_entries = num_attr if num_attr != 32 else 16
     array_name, start_indices = expressions.get_var_or_array_name(ins)
     try:     
         dimensions, lst, _ = state.basic_state.arrays[array_name]    
@@ -2206,20 +2208,21 @@ def exec_key_define(ins):
     
 def exec_locate(ins):
     """ LOCATE: Set cursor position, shape and visibility."""
+    cmode = state.console_state.current_mode
     row, col, cursor, start, stop, dummy = expressions.parse_int_list(ins, 6, 2, allow_last_empty=True)          
     if dummy != None:
         # can end on a 5th comma but no stuff allowed after it
         raise error.RunError(2)
     row = state.console_state.row if row == None else row
     col = state.console_state.col if col == None else col
-    if row == state.console_state.height and state.console_state.keys_visible:
+    if row == cmode.height and state.console_state.keys_visible:
         raise error.RunError(5)
     elif state.console_state.view_set:
         util.range_check(state.console_state.view_start, state.console_state.scroll_height, row)
     else:
-        util.range_check(1, state.console_state.height, row)
-    util.range_check(1, state.console_state.width, col)
-    if row == state.console_state.height:
+        util.range_check(1, cmode.height, row)
+    util.range_check(1, cmode.width, col)
+    if row == cmode.height:
         # temporarily allow writing on last row
         state.console_state.bottom_row_allowed = True       
     console.set_pos(row, col, scroll_ok=False) 
@@ -2233,7 +2236,7 @@ def exec_locate(ins):
     if start != None:    
         util.range_check(0, 31, start, stop)
         # cursor shape only has an effect in text mode    
-        if state.console_state.current_mode.is_text_mode:    
+        if cmode.is_text_mode:    
             backend.set_cursor_shape(start, stop)
 
 def exec_write(ins, output=None):
@@ -2444,11 +2447,11 @@ def exec_screen(ins):
 def exec_pcopy(ins):
     """ PCOPY: copy video pages. """
     src = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-    util.range_check(0, state.console_state.num_pages-1, src)
+    util.range_check(0, state.console_state.current_mode.num_pages-1, src)
     util.require_read(ins, (',',))
     dst = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
-    util.range_check(0, state.console_state.num_pages-1, dst)
+    util.range_check(0, state.console_state.current_mode.num_pages-1, dst)
     backend.copy_page(src, dst)
         
         

@@ -178,7 +178,7 @@ def files(pathmask):
     output = ( 
           [('%-8s.%-3s' % (t, e) if (e or not t) else '%-8s    ' % t) + '<DIR>' for t, e in dirs]
         + [('%-8s.%-3s' % (t, e) if e else '%-8s    ' % t) + '     ' for t, e in fils])
-    num = state.console_state.width // 20
+    num = state.console_state.current_mode.width // 20
     while len(output) > 0:
         line = ' '.join(output[:num])
         output = output[num:]

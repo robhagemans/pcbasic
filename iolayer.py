@@ -876,7 +876,7 @@ class SCRNFile(NullDevice):
         """ Initialise screen device. """
         self.name = 'SCRN:'
         self.mode = 'O'
-        self._width = state.console_state.width
+        self._width = state.console_state.current_mode.width
         self._col = state.console_state.col
         NullDevice.__init__(self)
     
@@ -906,11 +906,12 @@ class SCRNFile(NullDevice):
                 and self.col != 1 and self.col-1 + s_width > self.width and not newline):
             console.write_line(do_echo=do_echo)
             self._col = 1
+        cwidth = state.console_state.current_mode.width
         for c in str(s):
-            if self.width <= state.console_state.width and self.col > self.width:
+            if self.width <= cwidth and self.col > self.width:
                 console.write_line(do_echo=do_echo)
                 self._col = 1
-            if self.col <= state.console_state.width or self.width <= state.console_state.width:
+            if self.col <= cwidth or self.width <= cwidth:
                 console.write(c, do_echo=do_echo)
             if c in ('\n', '\r'):
                 self._col = 1
@@ -936,7 +937,7 @@ class SCRNFile(NullDevice):
     def width(self):
         """ Return (virtual) screen width. """
         if self.number == 0:    
-            return state.console_state.width
+            return state.console_state.current_mode.width
         else:
             return self._width
     
