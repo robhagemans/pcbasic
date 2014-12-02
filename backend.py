@@ -799,10 +799,9 @@ class VideoMode(object):
         self.has_blink = has_blink
         self.has_underline = has_underline
         self.video_segment = int(video_segment)
-        available_mem = (state.console_state.video_mem_size - 
-                         (self.video_segment - 0xa000) * 0x10)
         self.page_size = int(page_size)
-        self.num_pages = int(num_pages or available_mem // self.page_size)
+        self.num_pages = int(num_pages or 
+                          state.console_state.video_mem_size // self.page_size)
     
 class TextMode(VideoMode):
     """ Default settings for a text mode. """
