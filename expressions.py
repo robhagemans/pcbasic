@@ -505,7 +505,7 @@ def value_screen(ins):
     if z and not cmode.is_text_mode:
         return vartypes.null['%']    
     else:
-        return vartypes.pack_int(backend.get_screen_char_attr(row, col, z!=0))
+        return vartypes.pack_int(state.console_state.apage.get_char_attr(row, col, z!=0))
     
 def value_input(ins):
     """ INPUT$: get a string from the keyboard. """
