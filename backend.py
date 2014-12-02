@@ -239,42 +239,6 @@ def check_events():
         check_com_events()
         # KEY, PEN and STRIG are triggered on handling the queue
 
-
-#############################################
-# screen buffer
-
-class ScreenRow(object):
-    """ Buffer for a single row of the screen. """
-    
-    def __init__(self, battr, bwidth):
-        """ Set up screen row empty and unwrapped. """
-        # screen buffer, initialised to spaces, dim white on black
-        self.buf = [(' ', battr)] * bwidth
-        # character is part of double width char; 0 = no; 1 = lead, 2 = trail
-        self.double = [ 0 ] * bwidth
-        # last non-whitespace character
-        self.end = 0    
-        # line continues on next row (either LF or word wrap happened)
-        self.wrap = False
-    
-    def clear(self, battr):
-        """ Clear the screen row buffer. Leave wrap untouched. """
-        bwidth = len(self.buf)
-        self.buf = [(' ', battr)] * bwidth
-        # character is part of double width char; 0 = no; 1 = lead, 2 = trail
-        self.double = [ 0 ] * bwidth
-        # last non-whitespace character
-        self.end = 0    
-
-
-class ScreenBuffer(object):
-    """ Buffer for a screen page. """
-    
-    def __init__(self, battr, bwidth, bheight):
-        """ Initialise the screen buffer to given dimensions. """
-        self.row = [ScreenRow(battr, bwidth) for _ in xrange(bheight)]
-
-
 #############################################
 # keyboard queue
 
@@ -1596,8 +1560,41 @@ def set_video_memory_size(new_size):
     state.console_state.current_mode = new_mode
     return True
     
-##############################
-# screen buffer read/write
+
+#############################################
+# screen buffer
+
+class ScreenRow(object):
+    """ Buffer for a single row of the screen. """
+    
+    def __init__(self, battr, bwidth):
+        """ Set up screen row empty and unwrapped. """
+        # screen buffer, initialised to spaces, dim white on black
+        self.buf = [(' ', battr)] * bwidth
+        # character is part of double width char; 0 = no; 1 = lead, 2 = trail
+        self.double = [ 0 ] * bwidth
+        # last non-whitespace character
+        self.end = 0    
+        # line continues on next row (either LF or word wrap happened)
+        self.wrap = False
+    
+    def clear(self, battr):
+        """ Clear the screen row buffer. Leave wrap untouched. """
+        bwidth = len(self.buf)
+        self.buf = [(' ', battr)] * bwidth
+        # character is part of double width char; 0 = no; 1 = lead, 2 = trail
+        self.double = [ 0 ] * bwidth
+        # last non-whitespace character
+        self.end = 0    
+
+
+class ScreenBuffer(object):
+    """ Buffer for a screen page. """
+    
+    def __init__(self, battr, bwidth, bheight):
+        """ Initialise the screen buffer to given dimensions. """
+        self.row = [ScreenRow(battr, bwidth) for _ in xrange(bheight)]
+
 
 def put_screen_char_attr(pagenum, crow, ccol, c, cattr, 
                          one_only=False, for_keys=False):
