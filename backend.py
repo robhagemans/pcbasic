@@ -1429,7 +1429,7 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
     state.console_state.pages = []
     for _ in range(info.num_pages):
         state.console_state.pages.append(
-                ScreenBuffer(state.console_state.attr, info.width, info.height))
+                TextPage(state.console_state.attr, info.width, info.height))
     # set active page & visible page, counting from 0. 
     set_page(new_vpagenum, new_apagenum)
     # set graphics characteristics
@@ -1541,7 +1541,7 @@ def set_video_memory_size(new_size):
 #############################################
 # screen buffer
 
-class ScreenRow(object):
+class TextRow(object):
     """ Buffer for a single row of the screen. """
     
     def __init__(self, battr, bwidth):
@@ -1565,12 +1565,12 @@ class ScreenRow(object):
         self.end = 0    
 
 
-class ScreenBuffer(object):
+class TextPage(object):
     """ Buffer for a screen page. """
     
     def __init__(self, battr, bwidth, bheight):
         """ Initialise the screen buffer to given dimensions. """
-        self.row = [ScreenRow(battr, bwidth) for _ in xrange(bheight)]
+        self.row = [TextRow(battr, bwidth) for _ in xrange(bheight)]
 
 
 def put_screen_char_attr(pagenum, crow, ccol, c, cattr, 

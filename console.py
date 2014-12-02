@@ -879,7 +879,7 @@ def scroll(from_line=None):
     if state.console_state.row > from_line:
         state.console_state.row -= 1
     state.console_state.apage.row.insert(state.console_state.scroll_height, 
-            backend.ScreenRow(state.console_state.attr, 
+            backend.TextRow(state.console_state.attr, 
                               state.console_state.current_mode.width))
     del state.console_state.apage.row[from_line-1]
    
@@ -891,7 +891,7 @@ def scroll_down(from_line):
         state.console_state.row += 1
     # sync buffers with the new screen reality:
     state.console_state.apage.row.insert(from_line - 1, 
-            backend.ScreenRow(state.console_state.attr, 
+            backend.TextRow(state.console_state.attr, 
                               state.console_state.current_mode.width))
     del state.console_state.apage.row[state.console_state.scroll_height-1] 
 
