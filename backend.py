@@ -30,7 +30,6 @@ audio = None
 # devices - SCRN: KYBD: LPT1: etc. These are initialised in iolayer module
 devices = {}
 
-
 #############################################
 # initialisation
 
@@ -1119,7 +1118,7 @@ class EGAMode(GraphicsMode):
                   num_pages=None, has_blink=False, planes_used=range(4), 
                   ):
         """ Initialise video mode settings. """
-        GraphicsMode.__init__(self, name, pixel_height, pixel_width,
+        GraphicsMode.__init__(self, name, pixel_width, pixel_height,
                   text_height, text_width, 
                   attr, palette, colours, bitsperpixel, 
                   interleave_times, bank_size,
@@ -1406,7 +1405,6 @@ def prepare_modes():
         # on Olivetti M24, all numbers 3-255 give the same altissima risoluzione
         for mode in range(4, 256):
             mode_data[mode] = graphics_mode['640x400x2']
-            
 
 # video mode
 
