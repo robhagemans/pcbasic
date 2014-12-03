@@ -495,7 +495,7 @@ def value_screen(ins):
         raise error.RunError(5)
     if z == None:
         z = 0    
-    cmode = state.console_state.current_mode
+    cmode = state.console_state.screen.mode
     util.range_check(1, cmode.height, row)
     if state.console_state.view_set:
         util.range_check(state.console_state.view_start, state.console_state.scroll_height, row)
@@ -505,7 +505,7 @@ def value_screen(ins):
     if z and not cmode.is_text_mode:
         return vartypes.null['%']    
     else:
-        return vartypes.pack_int(state.console_state.apage.get_char_attr(row, col, z!=0))
+        return vartypes.pack_int(state.console_state.screen.apage.get_char_attr(row, col, z!=0))
     
 def value_input(ins):
     """ INPUT$: get a string from the keyboard. """
@@ -535,7 +535,7 @@ def value_inkey(ins):
 def value_csrlin(ins):
     """ CSRLIN: get the current screen row. """
     row, col = state.console_state.row, state.console_state.col 
-    if (col == state.console_state.current_mode.width and 
+    if (col == state.console_state.screen.mode.width and 
             state.console_state.overflow and 
             row < state.console_state.scroll_height):
         # in overflow position, return row+1 except on the last row
@@ -547,7 +547,7 @@ def value_pos(ins):
     # parse the dummy argument, doesnt matter what it is as long as it's a legal expression
     parse_bracket(ins)
     col = state.console_state.col
-    if col == state.console_state.current_mode.width and state.console_state.overflow:
+    if col == state.console_state.screen.mode.width and state.console_state.overflow:
         # in overflow position, return column 1.
         col = 1
     return vartypes.pack_int(col)
@@ -690,7 +690,7 @@ def value_pmap(ins):
     mode = vartypes.pass_int_unpack(parse_expression(ins))
     util.require_read(ins, (')',))
     util.range_check(0, 3, mode)
-    if state.console_state.current_mode.is_text_mode:
+    if state.console_state.screen.mode.is_text_mode:
         return vartypes.null['%']
     if mode == 0:
         value, _ = graphics.window_coords(fp.unpack(vartypes.pass_single_keep(coord)), fp.Single.zero)       

@@ -1211,8 +1211,8 @@ def exec_view_graph(ins):
         util.require_read(ins, (',',))
         y1 = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         util.require_read(ins, (')',))
-        util.range_check(0, state.console_state.current_mode.pixel_width-1, x0, x1)
-        util.range_check(0, state.console_state.current_mode.pixel_height-1, y0, y1)
+        util.range_check(0, state.console_state.screen.mode.pixel_width-1, x0, x1)
+        util.range_check(0, state.console_state.screen.mode.pixel_height-1, y0, y1)
         x0, x1 = min(x0, x1), max(x0, x1)
         y0, y1 = min(y0, y1), max(y0, y1)
         fill, border = None, None
@@ -1302,7 +1302,7 @@ def exec_paint(ins):
                 background_pattern = vartypes.pass_string_unpack(expressions.parse_expression(ins), err=5)
                 # only in screen 7,8,9 is this an error (use ega memory as a check)
                 if (pattern and background_pattern[:len(pattern)] == pattern and 
-                        state.console_state.current_mode.mem_start == 0xa000):
+                        state.console_state.screen.mode.mem_start == 0xa000):
                     raise error.RunError(5)
     util.require(ins, util.end_statement)  
     graphics.flood_fill(x0, y0, pattern, c, border, background_pattern)
@@ -1706,7 +1706,7 @@ def exec_clear(ins):
                 if not backend.set_video_memory_size(fp.unpack(
                     vartypes.pass_single_keep(expressions.parse_expression(
                             ins, empty_err=2))).round_to_int()):
-                    backend.screen(0, 0, 0, 0)
+                    state.console_state.screen.screen(0, 0, 0, 0)
                     console.init_mode()
             elif not exp2:
                 raise error.RunError(2)    
@@ -2053,13 +2053,14 @@ def exec_cls(ins):
 def exec_color(ins):
     """ COLOR: set colour attributes. """
     fore, back, bord = expressions.parse_int_list(ins, 3, 5)          
-    mode = state.console_state.current_mode
+    mode = state.console_state.screen.mode
     if mode.name == '320x200x4':
         return exec_color_mode_1(fore, back, bord)
     elif mode.name in ('640x200x2', '720x348x2'): 
         # screen 2; hercules: illegal fn call
         raise error.RunError(5)
-    fore_old, back_old = (state.console_state.attr>>7)*0x10 + (state.console_state.attr&0xf), (state.console_state.attr>>4) & 0x7
+    attr = state.console_state.screen.attr
+    fore_old, back_old = (attr>>7)*0x10 + (attr&0xf), (attr>>4) & 0x7
     bord = 0 if bord == None else bord
     util.range_check(0, 255, bord)
     fore = fore_old if fore == None else fore
@@ -2068,19 +2069,19 @@ def exec_color(ins):
     if mode.is_text_mode:
         util.range_check(0, mode.num_attr-1, fore)
         util.range_check(0, 15, back, bord)
-        state.console_state.attr = ((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10 + (fore & 0xf) 
+        state.console_state.screen.set_attr(((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10 + (fore & 0xf)) 
         backend.set_border(bord)
     elif mode.name in ('160x200x16', '320x200x4pcjr', '320x200x16pcjr'
                         '640x200x4', '320x200x16', '640x200x16'):
         util.range_check(1, mode.num_attr-1, fore)
         util.range_check(0, mode.num_attr-1, back)
-        state.console_state.attr = fore
+        state.console_state.screen.set_attr(fore)
         # in screen 7 and 8, only low intensity palette is used.
         backend.set_palette_entry(0, back % 8, check_mode=False)    
     elif mode.name in ('640x350x16', '640x350x4'):
         util.range_check(0, mode.num_attr-1, fore)
         util.range_check(0, len(state.console_state.colours)-1, back)
-        state.console_state.attr = fore
+        state.console_state.screen.set_attr(fore)
         backend.set_palette_entry(0, back, check_mode=False)
     elif mode.name == '640x400x2':
         util.range_check(0, len(state.console_state.colours)-1, fore)
@@ -2118,7 +2119,7 @@ def exec_palette(ins):
         exec_palette_using(ins)
     else:
         # can't set blinking colours separately
-        num_attr = state.console_state.current_mode.num_attr
+        num_attr = state.console_state.screen.mode.num_attr
         num_palette_entries = num_attr if num_attr != 32 else 16
         pair = expressions.parse_int_list(ins, 2, err=5)
         if pair[0] == None or pair[1] == None:
@@ -2131,7 +2132,7 @@ def exec_palette(ins):
 
 def exec_palette_using(ins):
     """ PALETTE USING: set full colour palette. """
-    num_attr = state.console_state.current_mode.num_attr
+    num_attr = state.console_state.screen.mode.num_attr
     num_palette_entries = num_attr if num_attr != 32 else 16
     array_name, start_indices = expressions.get_var_or_array_name(ins)
     try:     
@@ -2208,7 +2209,7 @@ def exec_key_define(ins):
     
 def exec_locate(ins):
     """ LOCATE: Set cursor position, shape and visibility."""
-    cmode = state.console_state.current_mode
+    cmode = state.console_state.screen.mode
     row, col, cursor, start, stop, dummy = expressions.parse_int_list(ins, 6, 2, allow_last_empty=True)          
     if dummy != None:
         # can end on a 5th comma but no stuff allowed after it
@@ -2422,8 +2423,8 @@ def exec_screen(ins):
         # in GW, screen 0,0,0,0,0,0 raises error after changing the palette... this raises error before:
         mode, colorswitch, apagenum, vpagenum = expressions.parse_int_list(ins, 4)
     # set defaults to avoid err 5 on range check
-    mode = mode if mode != None else state.console_state.screen_mode
-    colorswitch = colorswitch if colorswitch != None else state.console_state.colorswitch    
+    mode = mode if mode != None else state.console_state.screen.screen_mode
+    colorswitch = colorswitch if colorswitch != None else state.console_state.screen.colorswitch    
     # if any parameter not in [0,255], error 5 without doing anything 
     util.range_check(0, 255, mode, colorswitch)
     if apagenum != None:
@@ -2435,23 +2436,23 @@ def exec_screen(ins):
     # then the error is only raised after changing the palette.
     util.require(ins, util.end_statement)        
     # decide whether to redraw the screen    
-    do_redraw = ((mode != state.console_state.screen_mode) or 
-                 (colorswitch != state.console_state.colorswitch))
+    do_redraw = ((mode != state.console_state.screen.screen_mode) or 
+                 (colorswitch != state.console_state.screen.colorswitch))
     if do_redraw:             
-        if not backend.screen(mode, colorswitch, apagenum, vpagenum, erase):
+        if not state.console_state.screen.screen(mode, colorswitch, apagenum, vpagenum, erase):
             raise error.RunError(5)
         console.init_mode()    
     else:
-        backend.set_page(vpagenum, apagenum)
+        state.console_state.screen.set_page(vpagenum, apagenum)
     
 def exec_pcopy(ins):
     """ PCOPY: copy video pages. """
     src = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-    util.range_check(0, state.console_state.current_mode.num_pages-1, src)
+    util.range_check(0, state.console_state.screen.mode.num_pages-1, src)
     util.require_read(ins, (',',))
     dst = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
-    util.range_check(0, state.console_state.current_mode.num_pages-1, dst)
+    util.range_check(0, state.console_state.screen.mode.num_pages-1, dst)
     state.console_state.text.copy_page(src, dst)
         
         

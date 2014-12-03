@@ -11,13 +11,31 @@ import fp
 import vartypes
 import state
 import util
-import backend
 
-# real state variables
-state.console_state.graph_window = None
-state.console_state.graph_window_bounds = None
-state.console_state.last_point = (0, 0)    
-state.console_state.last_attr = state.console_state.attr
+def init(mode_info, backend_module):
+    """ Set the graphical characteristics of a new mode. """
+    # hackish, but circular imports cause no end of pain
+    global backend
+    backend = backend_module
+    # real state variables
+    state.console_state.graph_window = None
+    state.console_state.graph_window_bounds = None
+    state.console_state.last_point = (0, 0)    
+    state.console_state.last_attr = state.console_state.screen.attr
+    if mode_info.is_text_mode:
+        return
+    # centre of new graphics screen
+    state.console_state.last_point = (mode_info.pixel_width/2, mode_info.pixel_height/2)
+    # assumed aspect ratio for CIRCLE    
+    # pixels e.g. 80*8 x 25*14, screen ratio 4x3 
+    # makes for pixel width/height (4/3)*(25*14/8*80)
+    if mode_info.pixel_aspect:
+        state.console_state.pixel_aspect_ratio = mode_info.pixel_aspect
+    else:      
+        state.console_state.pixel_aspect_ratio = (
+             mode_info.pixel_height * backend.circle_aspect[0], 
+             mode_info.pixel_width * backend.circle_aspect[1])
+
 
 def require_graphics_mode(err=5):
     """ Raise error if not in graphics mode. """
@@ -26,7 +44,7 @@ def require_graphics_mode(err=5):
 
 def is_graphics_mode():
     """ Return whether in graphics mode. """
-    return backend.video and not state.console_state.current_mode.is_text_mode
+    return backend.video and not state.console_state.screen.mode.is_text_mode
 
 def reset_graphics():
     """ Reset graphics state. """
@@ -43,14 +61,14 @@ def reset_graphics():
 def get_colour_index(c):
     """ Get the index of the specified attribute. """
     if c == -1: # foreground; graphics 'background' attrib is always 0
-        c = state.console_state.attr & 0xf
+        c = state.console_state.screen.attr & 0xf
     else:
-        c = min(state.console_state.current_mode.num_attr - 1, max(0, c))
+        c = min(state.console_state.screen.mode.num_attr - 1, max(0, c))
     return c
 
 def check_coords(x, y):
     """ Ensure coordinates are within screen. """
-    mode = state.console_state.current_mode
+    mode = state.console_state.screen.mode
     return min(mode.pixel_width, max(-1, x)), min(mode.pixel_height, max(-1, y))
     
 ### PSET, POINT
@@ -67,9 +85,9 @@ def put_point(x, y, c):
 def get_point(x, y):
     """ Return the attribute of a pixel (POINT). """
     x, y = backend.view_coords(x, y)
-    if x < 0 or x >= state.console_state.current_mode.pixel_width:
+    if x < 0 or x >= state.console_state.screen.mode.pixel_width:
         return -1
-    if y < 0 or y >= state.console_state.current_mode.pixel_height:
+    if y < 0 or y >= state.console_state.screen.mode.pixel_height:
         return -1
     return backend.video.get_pixel(x,y)
 
@@ -496,8 +514,8 @@ def flood_fill(x, y, pattern, c, border, background):
         return
     solid = (pattern == None)
     if not solid:    
-        tile = state.console_state.current_mode.build_tile(pattern) if pattern else None 
-        back = state.console_state.current_mode.build_tile(background) if background else None
+        tile = state.console_state.screen.mode.build_tile(pattern) if pattern else None 
+        back = state.console_state.screen.mode.build_tile(background) if background else None
     else:
         tile, back = [[c]*8], None
     bound_x0, bound_y0, bound_x1, bound_y1 = backend.video.get_graph_clip()  
@@ -575,7 +593,7 @@ def operation_set(pix0, pix1):
 
 def operation_not(pix0, pix1):
     """ PUT transformation: PRESET """
-    return pix1 ^ ((1<<state.console_state.current_mode.bitsperpixel)-1)
+    return pix1 ^ ((1<<state.console_state.screen.mode.bitsperpixel)-1)
 
 def operation_and(pix0, pix1):
     """ PUT transformation: AND """
@@ -608,7 +626,7 @@ def set_area(x0, y0, array, operation_char):
     except KeyError:
         byte_array = bytearray()
     operation = operations[operation_char]
-    state.console_state.current_mode.set_area(x0, y0, byte_array, operation)
+    state.console_state.screen.mode.set_area(x0, y0, byte_array, operation)
         
 def get_area(x0, y0, x1, y1, array):
     """ Read a sprite from the screen (GET). """
@@ -616,10 +634,10 @@ def get_area(x0, y0, x1, y1, array):
         _, byte_array, _ = state.basic_state.arrays[array]
     except KeyError:
         raise error.RunError(5)    
-    if state.console_state.current_mode.name == '640x200x4':
+    if state.console_state.screen.mode.name == '640x200x4':
         # Tandy screen 6 simply GETs twice the width, it seems
         x1 = x0 + 2*(x1-x0+1)-1 
-    state.console_state.current_mode.get_area(x0, y0, x1, y1, byte_array)
+    state.console_state.screen.mode.get_area(x0, y0, x1, y1, byte_array)
     # store a copy in the fast-put store
     # arrays[array] must exist at this point (or GET would have raised error 5)
     backend.video.fast_get(x0, y0, x1, y1, array, state.basic_state.arrays[array][2])

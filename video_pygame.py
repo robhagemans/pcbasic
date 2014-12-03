@@ -1253,7 +1253,7 @@ def put_pixel(x, y, index, pagenum=None):
     if pagenum == None:
         pagenum = apagenum
     canvas[pagenum].set_at((x,y), index)
-    backend.clear_screen_buffer_at(x, y)
+    state.console_state.screen.clear_text_at(x, y)
     screen_changed = True
 
 def get_pixel(x, y, pagenum=None):    
@@ -1305,7 +1305,7 @@ def fill_rect(x0, y0, x1, y1, index):
     global screen_changed
     rect = pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)
     canvas[apagenum].fill(index, rect)
-    backend.clear_screen_buffer_area(x0, y0, x1, y1)
+    state.console_satte.screen.clear_text_area(x0, y0, x1, y1)
     screen_changed = True
 
 def fill_interval(x0, x1, y, tile, solid):
@@ -1325,7 +1325,7 @@ def fill_interval(x0, x1, y, tile, solid):
         # slow loop
         for x in range(x0, x1+1):
             canvas[apagenum].set_at((x,y), tile[y % h][x % 8])
-    backend.clear_screen_buffer_area(x0, y, x1, y)
+    state.console_state.screen.clear_text_area(x0, y, x1, y)
     screen_changed = True
 
 def get_until(x0, x1, y, c):
@@ -1414,7 +1414,7 @@ def fast_put(x0, y0, varname, new_version, operation_char):
     # apply the operation
     operation = fast_operations[operation_char]
     operation(dest_array, clip)
-    backend.clear_screen_buffer_area(x0, y0, x0+width-1, y0+height-1)
+    state.console_state.screen.clear_text_area(x0, y0, x0+width-1, y0+height-1)
     screen_changed = True
     return True
                 

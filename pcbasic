@@ -178,15 +178,15 @@ def prepare_console():
             config.options['interface'] = 'graphical'
     # select interface        
     video_name, audio_name = backends[config.options['interface']]
-    backend.video, backend.audio = __import__(video_name), __import__(audio_name)
+    video, backend.audio = __import__(video_name), __import__(audio_name)
     if config.options['nosound']:
         backend.audio = __import__('audio_none')
     # initialise video backend before console
-    if not backend.video or not backend.init_video():
-        backend.video.close()
+    if not video or not backend.init_video(video):
+        if video:
+            video.close()
         logging.warning('Falling back to filter interface.')
-        backend.video = __import__('video_none')
-        if not backend.init_video():
+        if not backend.init_video(__import__('video_none')):
             logging.error('Failed to initialise interface.')
             raise error.Exit()
     if not backend.init_audio():

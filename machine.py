@@ -434,11 +434,11 @@ def get_data_memory(address):
     
 def get_video_memory(addr):
     """ Retrieve a byte from video memory. """
-    return state.console_state.current_mode.get_memory(addr)
+    return state.console_state.screen.mode.get_memory(addr)
 
 def set_video_memory(addr, val):
     """ Set a byte in video memory. """
-    return state.console_state.current_mode.set_memory(addr, val)
+    return state.console_state.screen.mode.set_memory(addr, val)
 
 def get_video_memory_block(addr, length):
     """ Retrieve a contiguous block of bytes from video memory. """
@@ -598,13 +598,13 @@ def get_low_memory(addr):
     # 1097 screen mode number
     elif addr == 1097:
         # these are the low-level mode numbers used by mode switching interrupt
-        cval = state.console_state.colorswitch % 2
-        if state.console_state.current_mode.is_text_mode:
+        cval = state.console_state.screen.colorswitch % 2
+        if state.console_state.screen.mode.is_text_mode:
             if (backend.video_capabilities in ('mda', 'ega_mono') and 
-                    state.console_state.current_mode.width == 80):
+                    state.console_state.screen.mode.width == 80):
                 return 7
-            return (state.console_state.current_mode.width == 40)*2 + cval
-        elif state.console_state.current_mode.name == '320x200x4':
+            return (state.console_state.screen.mode.width == 40)*2 + cval
+        elif state.console_state.screen.mode.name == '320x200x4':
             return 4 + cval
         else:
             mode_num = {'640x200x2': 6, '160x200x16': 8, '320x200x16pcjr': 9,
@@ -613,20 +613,20 @@ def get_low_memory(addr):
                 '320x200x4pcjr': 4 }
                 # '720x348x2': ? # hercules - unknown
             try:
-                return mode_num[state.console_state.current_mode.name]
+                return mode_num[state.console_state.screen.mode.name]
             except KeyError:
                 return 0xff
     # 1098, 1099 screen width
     elif addr == 1098:
-        return state.console_state.current_mode.width % 256
+        return state.console_state.screen.mode.width % 256
     elif addr == 1099:
-        return state.console_state.current_mode.width // 256
+        return state.console_state.screen.mode.width // 256
     # 1100, 1101 graphics page buffer size (32k for screen 9, 4k for screen 0)
     # 1102, 1103 zero (PCmag says graphics page buffer offset)
     elif addr == 1100:
-        return state.console_state.current_mode.page_size % 256
+        return state.console_state.screen.mode.page_size % 256
     elif addr == 1101:
-        return state.console_state.current_mode.page_size // 256
+        return state.console_state.screen.mode.page_size // 256
     # 1104 + 2*n (cursor column of page n) - 1
     # 1105 + 2*n (cursor row of page n) - 1
     # we only keep track of one row,col position
@@ -646,16 +646,16 @@ def get_low_memory(addr):
     elif addr == 1125:
         # bit 0: only in text mode?
         # bit 2: should this be colorswitch or colorburst_is_enabled?
-        return ((state.console_state.current_mode.width == 80) * 1 +
-                (not state.console_state.current_mode.is_text_mode) * 2 + 
-                 state.console_state.colorswitch * 4 + 8 +
-                 (state.console_state.current_mode.name == '640x200x2') * 16 +
+        return ((state.console_state.screen.mode.width == 80) * 1 +
+                (not state.console_state.screen.mode.is_text_mode) * 2 + 
+                 state.console_state.screen.colorswitch * 4 + 8 +
+                 (state.console_state.screen.mode.name == '640x200x2') * 16 +
                  blink_enabled * 32)
     # 1126 color
     elif addr == 1126:
-        if state.console_state.current_mode.name == '320x200x4':
+        if state.console_state.screen.mode.name == '320x200x4':
             return backend.get_palette_entry(0) + 32 * backend.cga4_palette_num
-        elif state.console_state.current_mode.is_text_mode:
+        elif state.console_state.screen.mode.is_text_mode:
             return state.console_state.border_attr % 16 
             # not implemented: + 16 "if current color specified through 
             # COLOR f,b with f in [0,15] and b > 7

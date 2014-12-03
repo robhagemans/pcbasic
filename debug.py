@@ -79,10 +79,10 @@ def dump_vars():
     
 def show_screen():
     """ Copy the screen buffer to the log. """
-    logging.debug('  +' + '-'*state.console_state.current_mode.width+'+')
+    logging.debug('  +' + '-'*state.console_state.screen.mode.width+'+')
     i = 0
     lastwrap = False
-    for row in state.console_state.apage.row:
+    for row in state.console_state.screen.apage.row:
         s = [ c[0] for c in row.buf ]
         i += 1
         outstr = '{0:2}'.format(i)
@@ -96,7 +96,7 @@ def show_screen():
         else:
             logging.debug(outstr + '| {0:2}'.format(row.end))        
         lastwrap = row.wrap    
-    logging.debug('  +' + '-'*state.console_state.current_mode.width+'+')
+    logging.debug('  +' + '-'*state.console_state.screen.mode.width+'+')
 
 def show_program():
     """ Write a marked-up hex dump of the program to the log. """
