@@ -299,9 +299,9 @@ def load_state():
         except (IndexError, ValueError):
             # couldn't load the state correctly; most likely a text screen saved from -t. just redraw what's unpickled.
             # this also happens if the screen resolution has changed 
-            backend.redraw_text_screen()
+            state.console_state.screen.redraw_text_screen()
     else:
-        backend.redraw_text_screen()
+        state.console_state.screen.redraw_text_screen()
         
 ####################################
 # initialisation

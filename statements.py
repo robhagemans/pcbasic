@@ -2452,7 +2452,7 @@ def exec_pcopy(ins):
     dst = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
     util.range_check(0, state.console_state.current_mode.num_pages-1, dst)
-    backend.copy_page(src, dst)
+    state.console_state.text.copy_page(src, dst)
         
         
 prepare()

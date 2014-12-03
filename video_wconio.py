@@ -22,6 +22,9 @@ import unicodepage
 import scancode
 import backend
 
+#D!!
+import state
+
 # cursor is visible
 cursor_visible = True
 
@@ -181,7 +184,7 @@ def set_colorburst(on, palette, palette1):
 
 def redraw():
     """ Force redrawing of the screen (callback). """
-    backend.redraw_text_screen()
+    state.console_state.screen.redraw_text_screen()
 
 def colours(at):
     """ Convert BASIC attribute byte to console attribute. """

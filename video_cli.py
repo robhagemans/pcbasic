@@ -16,6 +16,9 @@ import unicodepage
 import backend
 import scancode
 
+#D!!
+import state
+
 # cursor is visible
 cursor_visible = True
 
@@ -374,7 +377,7 @@ def update_position(row=None, col=None):
         # show what's on the line where we are. 
         # note: recursive by one level, last_row now equals row
         # this reconstructs DBCS buffer, no need to do that
-        backend.redraw_row(0, cursor_row, wrap=False)
+        state.console_state.screen.redraw_row(0, cursor_row, wrap=False)
     if col != last_col:
         move_left(last_col-col)
         move_right(col-last_col)

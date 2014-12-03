@@ -1426,8 +1426,8 @@ def screen(new_mode, new_colorswitch, new_apagenum, new_vpagenum,
     state.console_state.colours1 = info.colours1
     state.console_state.default_palette = info.palette
     # build the screen buffer    
-    state.console_state.text = TextBuffer(state.console_state.attr, 
-            info.width, info.height, info.num_pages)
+    state.console_state.screen = Screen(info)
+    state.console_state.text = state.console_state.screen.text
     # set active page & visible page, counting from 0. 
     set_page(new_vpagenum, new_apagenum)
     # set graphics characteristics
@@ -1578,11 +1578,8 @@ class TextPage(object):
         ca = self.row[crow-1].buf[ccol-1][want_attr]
         return ca if want_attr else ord(ca)
 
-    def put_char_attr(self, crow, ccol, c, cattr, 
-                            one_only=False, for_keys=False):
-        """ Put a byte to the screen, redrawing SBCS and DBCS as necessary. """
-        if not state.console_state.current_mode.is_text_mode:
-            cattr = cattr & 0xf
+    def put_char_attr(self, crow, ccol, c, cattr, one_only=False):
+        """ Put a byte to the screen, reinterpreting SBCS and DBCS as necessary. """
         # update the screen buffer
         self.row[crow-1].buf[ccol-1] = (c, cattr)
         # mark the replaced char for refreshing
@@ -1653,33 +1650,7 @@ class TextPage(object):
                             therow.double[ccol+1] = 0
                             stop = max(stop, ccol+2)
                     ccol += 1        
-        # update the screen            
-        self.refresh_screen_range(crow, start, stop, for_keys)
-
-    def refresh_screen_range(self, crow, start, stop, for_keys=False):
-        """ Redraw a section of a screen row, assuming DBCS buffer has been set. """
-        therow = self.row[crow-1]
-        ccol = start
-        while ccol < stop:
-            double = therow.double[ccol-1]
-            if double == 1:
-                ca = therow.buf[ccol-1]
-                da = therow.buf[ccol]
-                video.set_attr(da[1]) 
-                video.putwc_at(self.pagenum, crow, ccol, ca[0], da[0], for_keys)
-                therow.double[ccol-1] = 1
-                therow.double[ccol] = 2
-                ccol += 2
-            else:
-                if double != 0:
-                    logging.debug('DBCS buffer corrupted at %d, %d', crow, ccol)
-                ca = therow.buf[ccol-1]        
-                video.set_attr(ca[1]) 
-                video.putc_at(self.pagenum, crow, ccol, ca[0], for_keys)
-                ccol += 1
-
-
-
+        return start, stop
 
 class TextBuffer(object):
     """ Buffer for text on all screen pages. """
@@ -1690,102 +1661,146 @@ class TextBuffer(object):
         self.width = bwidth
         self.height = bheight
 
+    def copy_page(self, src, dst):
+        """ Copy source to destination page. """
+        for x in range(self.height):
+            dstrow = self.pages[dst].row[x]
+            srcrow = self.pages[src].row[x]
+            dstrow.buf[:] = srcrow.buf[:]
+            dstrow.end = srcrow.end
+            dstrow.wrap = srcrow.wrap            
+        
+        
+class Screen(object):
+    """ Screen manipulation operations. """
 
-def get_text(start_row, start_col, stop_row, stop_col):   
-    """ Retrieve a clip of the text between start and stop. """     
-    r, c = start_row, start_col
-    full = ''
-    clip = ''
-    if state.console_state.vpage.row[r-1].double[c-1] == 2:
-        # include lead byte
-        c -= 1
-    if state.console_state.vpage.row[stop_row-1].double[stop_col-1] == 1:
-        # include trail byte
-        stop_col += 1
-    while r < stop_row or (r == stop_row and c <= stop_col):
-        clip += state.console_state.vpage.row[r-1].buf[c-1][0]    
-        c += 1
-        if c > state.console_state.current_mode.width:
-            if not state.console_state.vpage.row[r-1].wrap:
-                full += unicodepage.UTF8Converter().to_utf8(clip) + '\r\n'
-                clip = ''
-            r += 1
-            c = 1
-    full += unicodepage.UTF8Converter().to_utf8(clip)        
-    return full
+    def __init__(self, mode):
+        """ Initialise the screen. """
+        self.mode = mode
+        self.attr = self.mode.attr
+        self.text = TextBuffer(self.attr, self.mode.width, self.mode.height, self.mode.num_pages)
 
-def redraw_row(start, crow, wrap=True):
-    """ Draw the screen row, wrapping around and reconstructing DBCS buffer. """
-    while True:
-        therow = state.console_state.apage.row[crow-1]  
-        for i in range(start, therow.end): 
-            # redrawing changes colour attributes to current foreground (cf. GW)
-            # don't update all dbcs chars behind at each put
-            state.console_state.apage.put_char_attr(crow, i+1, 
-                    therow.buf[i][0], state.console_state.attr, one_only=True)
-        if (wrap and therow.wrap and 
-                crow >= 0 and crow < state.console_state.current_mode.height-1):
-            crow += 1
-            start = 0
-        else:
-            break    
+    def copy_page(self, src, dst):
+        """ Copy source to destination page. """
+        self.text.copy_page(src, dst)    
+        video.copy_page(src, dst)
 
-def redraw_text_screen():
-    """ Redraw the active screen page, reconstructing DBCS buffers. """
-    # force cursor invisible during redraw
-    show_cursor(False)
-    # this makes it feel faster
-    mode = state.console_state.current_mode
-    video.clear_rows(state.console_state.attr, 1, mode.height)
-    # redraw every character
-    for crow in range(height):
-        therow = state.console_state.apage.row[crow]  
-        for i in range(mode.width): 
-            state.console_state.apage.put_char_attr(crow+1, i+1, 
-                                 therow.buf[i][0], therow.buf[i][1])
-    # set cursor back to previous state                             
-    update_cursor_visibility()
+    def get_char_attr(self, pagenum, crow, ccol, want_attr):
+        """ Retrieve a byte from the screen. """
+        return self.text.pages[pagenum].get_char_attr(crow, ccol, want_attr)
 
-def print_screen():
-    """ Output the visible page to LPT1. """
-    for crow in range(1, state.console_state.current_mode.height+1):
-        line = ''
-        for c, _ in state.console_state.vpage.row[crow-1].buf:
-            line += c
-        devices['LPT1:'].write_line(line)
+    def put_char_attr(self, pagenum, crow, ccol, c, cattr, 
+                            one_only=False, for_keys=False):
+        """ Put a byte to the screen, redrawing as necessary. """
+        if not self.mode.is_text_mode:
+            cattr = cattr & 0xf
+        start, stop = self.text.pages[pagenum].put_char_attr(crow, ccol, c, cattr, one_only)
+        # update the screen            
+        self.refresh_range(pagenum, crow, start, stop, for_keys)
 
-def copy_page(src, dst):
-    """ Copy source to destination page. """
-    for x in range(state.console_state.current_mode.height):
-        dstrow = state.console_state.text.pages[dst].row[x]
-        srcrow = state.console_state.text.pages[src].row[x]
-        dstrow.buf[:] = srcrow.buf[:]
-        dstrow.end = srcrow.end
-        dstrow.wrap = srcrow.wrap            
-    video.copy_page(src, dst)
+    def get_text(self, start_row, start_col, stop_row, stop_col):   
+        """ Retrieve a clip of the text between start and stop. """     
+        r, c = start_row, start_col
+        full = ''
+        clip = ''
+        if state.console_state.vpage.row[r-1].double[c-1] == 2:
+            # include lead byte
+            c -= 1
+        if state.console_state.vpage.row[stop_row-1].double[stop_col-1] == 1:
+            # include trail byte
+            stop_col += 1
+        while r < stop_row or (r == stop_row and c <= stop_col):
+            clip += state.console_state.vpage.row[r-1].buf[c-1][0]    
+            c += 1
+            if c > self.mode.width:
+                if not state.console_state.vpage.row[r-1].wrap:
+                    full += unicodepage.UTF8Converter().to_utf8(clip) + '\r\n'
+                    clip = ''
+                r += 1
+                c = 1
+        full += unicodepage.UTF8Converter().to_utf8(clip)        
+        return full
 
-def clear_screen_buffer_at(x, y):
-    """ Remove the character covering a single pixel. """
-    mode = state.console_state.current_mode
-    fx, fy = mode.font_width, mode.font_height
-    cymax, cxmax = mode.height-1, mode.width-1
-    cx, cy = x // fx, y // fy
-    if cx >= 0 and cy >= 0 and cx <= cxmax and cy <= cymax:
-        state.console_state.apage.row[cy].buf[cx] = (
-                ' ', state.console_state.attr)
+    def refresh_range(self, pagenum, crow, start, stop, for_keys=False):
+        """ Redraw a section of a screen row, assuming DBCS buffer has been set. """
+        therow = self.text.pages[pagenum].row[crow-1]
+        ccol = start
+        while ccol < stop:
+            double = therow.double[ccol-1]
+            if double == 1:
+                ca = therow.buf[ccol-1]
+                da = therow.buf[ccol]
+                video.set_attr(da[1]) 
+                video.putwc_at(pagenum, crow, ccol, ca[0], da[0], for_keys)
+                therow.double[ccol-1] = 1
+                therow.double[ccol] = 2
+                ccol += 2
+            else:
+                if double != 0:
+                    logging.debug('DBCS buffer corrupted at %d, %d', crow, ccol)
+                ca = therow.buf[ccol-1]        
+                video.set_attr(ca[1]) 
+                video.putc_at(pagenum, crow, ccol, ca[0], for_keys)
+                ccol += 1
 
-def clear_screen_buffer_area(x0, y0, x1, y1):
-    """ Remove all characters from a rectangle of the graphics screen. """
-    mode = state.console_state.current_mode
-    fx, fy = mode.font_width, mode.font_height
-    cymax, cxmax = mode.height-1, mode.width-1 
-    cx0 = min(cxmax, max(0, x0 // fx)) 
-    cy0 = min(cymax, max(0, y0 // fy))
-    cx1 = min(cxmax, max(0, x1 // fx)) 
-    cy1 = min(cymax, max(0, y1 // fy))
-    for r in range(cy0, cy1+1):
-        state.console_state.apage.row[r].buf[cx0:cx1+1] = [
-            (' ', state.console_state.attr)] * (cx1 - cx0 + 1)
+    def redraw_row(self, start, crow, wrap=True):
+        """ Draw the screen row, wrapping around and reconstructing DBCS buffer. """
+        while True:
+            therow = state.console_state.apage.row[crow-1]  
+            for i in range(start, therow.end): 
+                # redrawing changes colour attributes to current foreground (cf. GW)
+                # don't update all dbcs chars behind at each put
+                self.put_char_attr(state.console_state.apagenum, crow, i+1, 
+                        therow.buf[i][0], self.attr, one_only=True)
+            if (wrap and therow.wrap and 
+                    crow >= 0 and crow < self.text.height-1):
+                crow += 1
+                start = 0
+            else:
+                break    
+
+    def redraw_text_screen():
+        """ Redraw the active screen page, reconstructing DBCS buffers. """
+        # force cursor invisible during redraw
+        show_cursor(False)
+        # this makes it feel faster
+        video.clear_rows(self.attr, 1, self.mode.height)
+        # redraw every character
+        for crow in range(self.mode.height):
+            therow = state.console_state.apage.row[crow]  
+            for i in range(self.mode.width): 
+                self.put_char_attr(state.console_state.apagenum, crow+1, i+1, 
+                                     therow.buf[i][0], therow.buf[i][1])
+        # set cursor back to previous state                             
+        update_cursor_visibility()
+
+    def print_screen():
+        """ Output the visible page to LPT1. """
+        for crow in range(1, self.mode.height+1):
+            line = ''
+            for c, _ in state.console_state.vpage.row[crow-1].buf:
+                line += c
+            devices['LPT1:'].write_line(line)
+
+    def clear_screen_buffer_at(x, y):
+        """ Remove the character covering a single pixel. """
+        fx, fy = self.mode.font_width, self.mode.font_height
+        cymax, cxmax = self.mode.height-1, self.mode.width-1
+        cx, cy = x // fx, y // fy
+        if cx >= 0 and cy >= 0 and cx <= cxmax and cy <= cymax:
+            state.console_state.apage.row[cy].buf[cx] = (' ', self.attr)
+
+    def clear_screen_buffer_area(x0, y0, x1, y1):
+        """ Remove all characters from a rectangle of the graphics screen. """
+        fx, fy = self.mode.font_width, self.mode.font_height
+        cymax, cxmax = self.mode.height-1, self.mode.width-1 
+        cx0 = min(cxmax, max(0, x0 // fx)) 
+        cy0 = min(cymax, max(0, y0 // fy))
+        cx1 = min(cxmax, max(0, x1 // fx)) 
+        cy1 = min(cymax, max(0, y1 // fy))
+        for r in range(cy0, cy1+1):
+            state.console_state.apage.row[r].buf[cx0:cx1+1] = [
+                (' ', self.attr)] * (cx1 - cx0 + 1)
     
 #############################################
 # cursor

@@ -251,7 +251,7 @@ def wait_interactive(from_start=False, alt_replace = True):
                         for c in d:
                             insert(row, col, c, state.console_state.attr)
                             # row and col have changed
-                            backend.redraw_row(col-1, row)
+                            state.console_state.screen.redraw_row(col-1, row)
                             col += 1
                         set_pos(state.console_state.row, 
                                 state.console_state.col + len(d))
@@ -373,7 +373,7 @@ def delete_sbcs_char(crow, ccol):
         # adjust the row end
         nextrow.end -= width - ccol    
         # redraw the full logical line from the original position onwards
-        backend.redraw_row(save_col-1, state.console_state.row)
+        state.console_state.screen.redraw_row(save_col-1, state.console_state.row)
         # if last row was empty, scroll up.
         if nextrow.end <= 0:
             nextrow.end = 0
@@ -402,7 +402,7 @@ def delete_sbcs_char(crow, ccol):
                 ccol = 1
         # redraw the full logical line
         # this works from *global* row onwards
-        backend.redraw_row(save_col-1, state.console_state.row)
+        state.console_state.screen.redraw_row(save_col-1, state.console_state.row)
         # change the row end
         # this works on *local* row (last row edited)
         if therow.end > 0:
@@ -442,7 +442,7 @@ def clear_rest_of_line(srow, scol):
     save_end = therow.end
     therow.end = mode.width
     if scol > 1:
-        backend.redraw_row(scol-1, srow)
+        state.console_state.screen.redraw_row(scol-1, srow)
     else:
         backend.video.clear_rows(state.console_state.attr, srow, srow)
     therow.end = save_end
@@ -471,7 +471,7 @@ def tab():
     else:
         for _ in range(8):
             insert(row, col, ' ', state.console_state.attr)
-        backend.redraw_row(col - 1, row)
+        state.console_state.screen.redraw_row(col - 1, row)
         set_pos(row, col + 8)
         
 def end():
@@ -492,7 +492,7 @@ def line_feed():
     if ccol < state.console_state.apage.row[crow-1].end:
         for _ in range(state.console_state.current_mode.width - ccol + 1):
             insert(crow, ccol, ' ', state.console_state.attr)
-        backend.redraw_row(ccol - 1, crow)
+        state.console_state.screen.redraw_row(ccol - 1, crow)
         state.console_state.apage.row[crow-1].end = ccol - 1 
     else:
         while (state.console_state.apage.row[crow-1].wrap and 
@@ -712,7 +712,7 @@ def write_for_keys(s, col, cattr):
                 c = keys_line_replace_chars[c]
             except KeyError:
                 pass    
-            state.console_state.apage.put_char_attr(25, col, c, cattr, for_keys=True)    
+            state.console_state.screen.put_char_attr(state.console_state.apagenum, 25, col, c, cattr, for_keys=True)    
         col += 1
     backend.video.set_attr(state.console_state.attr)
     
@@ -730,7 +730,7 @@ def put_char(c, do_scroll_down=False):
     # move cursor and see if we need to scroll up
     check_pos(scroll_ok=True) 
     # put the character
-    state.console_state.apage.put_char_attr(
+    state.console_state.screen.put_char_attr(state.console_state.apagenum, 
             state.console_state.row, state.console_state.col, 
             c, state.console_state.attr)
     # adjust end of line marker

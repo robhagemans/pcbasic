@@ -21,6 +21,9 @@ import unicodepage
 import scancode
 import backend
 
+#D!!
+import state
+
 # for a few ansi sequences not supported by curses
 # only use these if you clear the screen afterwards, 
 # so you don't see gibberish if the terminal doesn't support the sequence.
@@ -281,7 +284,7 @@ def set_colorburst(on, palette, palette1):
                     
 def redraw():
     """ Force redrawing of the screen (callback). """
-    backend.redraw_text_screen()
+    state.console_state.screen.redraw_text_screen()
 
 def check_keyboard():
     """ Handle keyboard events. """
