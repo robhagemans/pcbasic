@@ -11,31 +11,7 @@ import fp
 import vartypes
 import state
 import util
-
-def init(mode_info, backend_module):
-    """ Set the graphical characteristics of a new mode. """
-    # hackish, but circular imports cause no end of pain
-    global backend
-    backend = backend_module
-    # real state variables
-    state.console_state.graph_window = None
-    state.console_state.graph_window_bounds = None
-    state.console_state.last_point = (0, 0)    
-    state.console_state.last_attr = state.console_state.screen.attr
-    if mode_info.is_text_mode:
-        return
-    # centre of new graphics screen
-    state.console_state.last_point = (mode_info.pixel_width/2, mode_info.pixel_height/2)
-    # assumed aspect ratio for CIRCLE    
-    # pixels e.g. 80*8 x 25*14, screen ratio 4x3 
-    # makes for pixel width/height (4/3)*(25*14/8*80)
-    if mode_info.pixel_aspect:
-        state.console_state.pixel_aspect_ratio = mode_info.pixel_aspect
-    else:      
-        state.console_state.pixel_aspect_ratio = (
-             mode_info.pixel_height * backend.circle_aspect[0], 
-             mode_info.pixel_width * backend.circle_aspect[1])
-
+import backend
 
 def require_graphics_mode(err=5):
     """ Raise error if not in graphics mode. """

@@ -20,7 +20,6 @@ import scancode
 import error
 import vartypes
 import util
-import graphics
 
 # backend implementations
 video = None
@@ -938,7 +937,11 @@ class GraphicsMode(VideoMode):
         self.bytes_per_row = int(pixel_width) * self.bitsperpixel // 8
         self.supports_artifacts = supports_artifacts
         self.cursor_index = cursor_index
-        self.pixel_aspect = pixel_aspect
+        if pixel_aspect:
+            self.pixel_aspect = pixel_aspect
+        else:      
+            self.pixel_aspect = (self.pixel_height * circle_aspect[0], 
+                                 self.pixel_width * circle_aspect[1])
 
     def coord_ok(self, page, x, y):
         """ Check if a page and coordinates are within limits. """
@@ -1588,9 +1591,14 @@ class Screen(object):
         # set active page & visible page, counting from 0. 
         self.set_page(new_vpagenum, new_apagenum)
         # set graphics characteristics
-        # ugly self-reference hack to avoid circular import
-        import sys
-        graphics.init(info, sys.modules[__name__])
+        if not self.mode.is_text_mode:
+            state.console_state.graph_window = None
+            state.console_state.graph_window_bounds = None
+            state.console_state.last_attr = self.attr
+            # centre of new graphics screen
+            state.console_state.last_point = (
+                            self.mode.pixel_width/2, self.mode.pixel_height/2)
+            state.console_state.pixel_aspect_ratio = self.mode.pixel_aspect
         # cursor width starts out as single char
         state.console_state.cursor_width = info.font_width        
         # signal the backend to change the screen resolution
