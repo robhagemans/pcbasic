@@ -310,6 +310,9 @@ OPTIONS
                 strict      Choose strict compatibility with GW-BASIC over
                             convenience or security. 
 
+  --print-trigger {close|page|line}
+            Output to printer on closing BASIC, on page feed or on line feed.
+
   -q
   --quit [True|False]
             Quit interpreter when execution stops. If combined with --run, this

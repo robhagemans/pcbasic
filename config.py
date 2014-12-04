@@ -124,6 +124,7 @@ arguments = {
     'aspect': {'type': 'string', 'default': '4,3',},
     'blocky': {'type': 'bool', 'default': 'False',},
     'version': {'type': 'bool', 'default': 'False',},
+    'print-trigger': {'type': 'string', 'default': 'close'},
 }
 
 

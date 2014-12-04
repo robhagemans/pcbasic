@@ -575,35 +575,45 @@ class CUPSStream(StringIO.StringIO):
         StringIO.StringIO.__init__(self)
 
     def close(self):
-        self.flush()
+        self.flush(wait=True)
 
     # flush buffer to Windows printer    
-    def flush(self):
+    def flush(self, wait=False):
         printbuf = self.getvalue()
         if not printbuf:
             return      
         self.truncate(0)
         # any naked lead bytes in DBCS will remain just that - avoid in-line flushes.
         utf8buf = unicodepage.UTF8Converter(preserve_control=True).to_utf8(printbuf)
-        line_print(utf8buf, self.printer_name)
+        line_print(utf8buf, self.printer_name, wait)
 
 if plat.system == 'Windows':
-    def line_print(printbuf, printer_name):
+    def line_print(printbuf, printer_name, wait):
+        import win32com.shell.shell as winshell
+        import win32com.shell.shellcon as shellcon
+        import win32event
         if printer_name == '' or printer_name=='default':
             printer_name = win32print.GetDefaultPrinter()
         f = tempfile.NamedTemporaryFile(mode='w', prefix='pcbasic_', suffix='.txt', delete=False)
         f.write(printbuf)
-        win32api.ShellExecute(0, 'printto', f.name, 
-                              '"%s"' % printer_name, ".", 0)
+        #win32api.ShellExecute(0, 'printto', f.name, '"%s"' % printer_name, ".", 0)
+        # fMask = SEE_MASK_NOASYNC(0x00000100) + SEE_MASK_NOCLOSEPROCESS
+        resdict = winshell.ShellExecuteEx(fMask=256+64, 
+                        lpVerb='printto', lpFile=f.name, 
+                        lpParameters='"%s"' % printer_name)
+        if wait:
+            handle = resdict['hProcess']
+            if win32event.WaitForSingleProcess(handle, 500) != win32event.WAIT_OBJECT_0:
+                logging.warning('Printing process timeout')
         f.close()
         
 elif plat.system == 'Android':
-    def line_print(printbuf, printer_name):
+    def line_print(printbuf, printer_name, wait):
         """ Don't print anything on Android. """
         pass          
 
 elif subprocess.call("command -v paps >/dev/null 2>&1", shell=True) == 0:
-    def line_print(printbuf, printer_name): 
+    def line_print(printbuf, printer_name, wait): 
         """ Print the buffer to a LPR printer using PAPS for conversion. """
         options = ''
         if printer_name != '' and printer_name != 'default':
@@ -625,7 +635,7 @@ elif subprocess.call("command -v paps >/dev/null 2>&1", shell=True) == 0:
             pr.stdin.close()
         
 else:
-    def line_print(printbuf, printer_name): 
+    def line_print(printbuf, printer_name, wait): 
         """ Print the buffer to a LPR (CUPS or older UNIX) printer. """
         options = ''
         if printer_name != '' and printer_name != 'default':
