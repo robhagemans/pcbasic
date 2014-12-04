@@ -834,7 +834,7 @@ def draw_cursor(screen):
                                   (cursor_col-1) * font_width + cursor_width):
                 for y in range((cursor_row-1) * font_height + cursor_from, 
                                 (cursor_row-1) * font_height + cursor_to + 1):
-                    pixel = get_pixel(x,y)
+                    pixel = get_pixel(x, y, apagenum)
                     screen.set_at((x,y), pixel^index)
     last_row = cursor_row
     last_col = cursor_col
@@ -1247,23 +1247,19 @@ class Clipboard(object):
 
 graph_view = None
 
-def put_pixel(x, y, index, pagenum=None):
+def put_pixel(x, y, index, pagenum):
     """ Put a pixel on the screen; callback to empty character buffer. """
     global screen_changed
-    if pagenum == None:
-        pagenum = apagenum
     canvas[pagenum].set_at((x,y), index)
-    state.console_state.screen.clear_text_at(x, y)
     screen_changed = True
 
-def get_pixel(x, y, pagenum=None):    
+def get_pixel(x, y, pagenum):    
     """ Return the attribute a pixel on the screen. """
-    if pagenum == None:
-        pagenum = apagenum
     return canvas[pagenum].get_at((x,y)).b
 
 # graphics view area (pygame clip)
 
+#D, keep in Screen
 def get_graph_clip():
     """ Get the graphics view area. """
     view = graph_view if graph_view else canvas[apagenum].get_rect()
@@ -1274,12 +1270,14 @@ def set_graph_clip(x0, y0, x1, y1):
     global graph_view
     graph_view = pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)    
     
+# move to Screen? just have video.set_graph_clip(0, 0, pixel_width, pixel_height )
 def unset_graph_clip():
     """ Unset the graphics view area. """
     global graph_view
     graph_view = None    
     return canvas[apagenum].get_rect().center
 
+#D! fill_rect(*get_graph_clip, bg)
 def clear_graph_clip(bg):
     """ Clear the graphics view area. """
     global screen_changed
@@ -1305,7 +1303,6 @@ def fill_rect(x0, y0, x1, y1, index):
     global screen_changed
     rect = pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)
     canvas[apagenum].fill(index, rect)
-    state.console_satte.screen.clear_text_area(x0, y0, x1, y1)
     screen_changed = True
 
 def fill_interval(x0, x1, y, tile, solid):
@@ -1325,7 +1322,6 @@ def fill_interval(x0, x1, y, tile, solid):
         # slow loop
         for x in range(x0, x1+1):
             canvas[apagenum].set_at((x,y), tile[y % h][x % 8])
-    state.console_state.screen.clear_text_area(x0, y, x1, y)
     screen_changed = True
 
 def get_until(x0, x1, y, c):
@@ -1400,23 +1396,22 @@ def fast_put(x0, y0, varname, new_version, operation_char):
         width, height, clip, version = get_put_store[varname]
     except KeyError:
         # not yet stored, do it the slow way
-        return False
+        return None
     if x0 < 0 or x0+width-1 > size[0] or y0 < 0 or y0+height-1 > size[1]:
         # let the normal version handle errors
-        return False    
+        return None    
     # if the versions are not the same, use the slow method 
     # (array has changed since clip was stored)
     if version != new_version:
-        return False
+        return None
     # reference the destination area
     dest_array = pygame.surfarray.pixels2d(
             canvas[apagenum].subsurface(pygame.Rect(x0, y0, width, height))) 
     # apply the operation
     operation = fast_operations[operation_char]
     operation(dest_array, clip)
-    state.console_state.screen.clear_text_area(x0, y0, x0+width-1, y0+height-1)
     screen_changed = True
-    return True
+    return x0, y0, x0+width-1, y0+height-1
                 
 prepare()
 

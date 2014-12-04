@@ -13,6 +13,7 @@ import state
 import util
 import backend
 
+
 def require_graphics_mode(err=5):
     """ Raise error if not in graphics mode. """
     if not is_graphics_mode():
@@ -54,7 +55,7 @@ def put_point(x, y, c):
     x, y = backend.view_coords(x,y)
     backend.video.apply_graph_clip()
     c = get_colour_index(c)
-    backend.video.put_pixel(x, y, c)
+    state.console_state.screen.put_pixel(x, y, c)
     backend.video.remove_graph_clip()
     state.console_state.last_attr = c
     
@@ -65,7 +66,7 @@ def get_point(x, y):
         return -1
     if y < 0 or y >= state.console_state.screen.mode.pixel_height:
         return -1
-    return backend.video.get_pixel(x,y)
+    return state.console_state.screen.get_pixel(x,y)
 
 ### WINDOW coords
 
@@ -135,7 +136,7 @@ def draw_box_filled(x0, y0, x1, y1, c):
     if x1 < x0:
         x0, x1 = x1, x0    
     backend.video.apply_graph_clip()
-    backend.video.fill_rect(x0, y0, x1, y1, c)
+    state.console_state.screen.fill_rect(x0, y0, x1, y1, c)
     backend.video.remove_graph_clip()
     state.console_state.last_attr = c
     
@@ -162,9 +163,9 @@ def draw_line(x0, y0, x1, y1, c, pattern=0xffff):
     for x in xrange(x0, x1+sx, sx):
         if pattern&mask != 0:
             if steep:
-                backend.video.put_pixel(y, x, c)
+                state.console_state.screen.put_pixel(y, x, c)
             else:
-                backend.video.put_pixel(x, y, c)
+                state.console_state.screen.put_pixel(x, y, c)
         mask >>= 1
         if mask == 0:
             mask = 0x8000
@@ -185,9 +186,9 @@ def draw_straight(x0, y0, x1, y1, c, pattern, mask):
     for p in range (p0, p1+sp, sp):
         if pattern & mask != 0:
             if direction == 'x':
-                backend.video.put_pixel(p, q, c)
+                state.console_state.screen.put_pixel(p, q, c)
             else:
-                backend.video.put_pixel(q, p, c)
+                state.console_state.screen.put_pixel(q, p, c)
         mask >>= 1
         if mask == 0:
             mask = 0x8000
@@ -334,7 +335,7 @@ def draw_circle(x0, y0, r, c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, l
                     # if coo0 > y > c001 (don't draw if y is between coo's)
                     if octant_gt(oct0, y, coo1) and octant_gt(oct0, coo0, y):
                         continue
-            backend.video.put_pixel(*octant_coord(octant, x0, y0, x, y), index=c) 
+            state.console_state.screen.put_pixel(*octant_coord(octant, x0, y0, x, y), index=c) 
         # remember endpoints for pie sectors
         if y == coo0:
             coo0x = x
@@ -416,7 +417,7 @@ def draw_ellipse(cx, cy, rx, ry, c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1,
                 else:
                     if quadrant_gt(qua0, x, y, x1, y1) and quadrant_gt(qua0, x0, y0, x, y):
                         continue
-            backend.video.put_pixel(*quadrant_coord(quadrant, cx,cy,x,y), index=c) 
+            state.console_state.screen.put_pixel(*quadrant_coord(quadrant, cx,cy,x,y), index=c) 
         # bresenham error step
         e2 = 2 * err
         if (e2 <= dy):
@@ -433,8 +434,8 @@ def draw_ellipse(cx, cy, rx, ry, c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1,
     # too early stop of flat vertical ellipses
     # finish tip of ellipse
     while (y < ry): 
-        backend.video.put_pixel(cx, cy+y, c) 
-        backend.video.put_pixel(cx, cy-y, c) 
+        state.console_state.screen.put_pixel(cx, cy+y, c) 
+        state.console_state.screen.put_pixel(cx, cy-y, c) 
         y += 1 
     if line0:
         draw_line(cx,cy, *quadrant_coord(qua0, cx, cy, x0, y0), c=c)
@@ -522,7 +523,7 @@ def flood_fill(x, y, pattern, c, border, background):
                 line_seed = check_scanline(line_seed, x_left, x_start-1, y-ydir, c, tile, back, border, -ydir)
                 line_seed = check_scanline(line_seed, x_stop+1, x_right, y-ydir, c, tile, back, border, -ydir)
         # draw the pixels for the current interval   
-        backend.video.fill_interval(x_left, x_right, y, tile, solid)
+        state.console_state.screen.fill_interval(x_left, x_right, y, tile, solid)
         # show progress
         if y%4==0:
             backend.check_events()
@@ -594,15 +595,18 @@ operations = {
      
 def set_area(x0, y0, array, operation_char):
     """ Put a sprite on the screen (PUT). """
-    # array must exist at this point (or PUT would have raised error 5)       
-    if backend.video.fast_put(x0, y0, array, state.basic_state.arrays[array][2], operation_char):
-        return
-    try:
-        _, byte_array, _ = state.basic_state.arrays[array]
-    except KeyError:
-        byte_array = bytearray()
-    operation = operations[operation_char]
-    state.console_state.screen.mode.set_area(x0, y0, byte_array, operation)
+    # array must exist at this point (or PUT would have raised error 5)      
+    rect = backend.video.fast_put(x0, y0, array, state.basic_state.arrays[array][2], operation_char)
+    if rect:
+        x0, y0, x1, y1 = rect
+    else:
+        try:
+            _, byte_array, _ = state.basic_state.arrays[array]
+        except KeyError:
+            byte_array = bytearray()
+        operation = operations[operation_char]
+        x0, y0, x1, y1 = state.console_state.screen.mode.set_area(x0, y0, byte_array, operation)
+    state.console_state.screen.clear_text_area(x0, y0, x1, y1)
         
 def get_area(x0, y0, x1, y1, array):
     """ Read a sprite from the screen (GET). """

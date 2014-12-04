@@ -883,7 +883,8 @@ def set_area_ega(self, x0, y0, byte_array, operation):
                 video.put_pixel(x, y, operation(pixel, index)) 
         # byte align next row
         mask = 0x80
-    video.remove_graph_clip()   
+    video.remove_graph_clip()
+    return x0, y0, x1, y1
 
 def build_tile_cga(self, pattern):
     """ Build a flood-fill tile for CGA screens. """
@@ -1050,6 +1051,7 @@ class CGAMode(GraphicsMode):
             byte += 1
             shift = 8 - bpp
         video.remove_graph_clip()        
+        return x0, y0, x1, y1
 
     build_tile = build_tile_cga
 
@@ -1793,6 +1795,30 @@ class Screen(object):
         for r in range(cy0, cy1+1):
             self.apage.row[r].buf[cx0:cx1+1] = [
                 (' ', self.attr)] * (cx1 - cx0 + 1)
+
+    def put_pixel(self, x, y, index, pagenum=None):
+        """ Put a pixel on the screen; empty character buffer. """
+        if pagenum == None:
+            pagenum = self.apagenum
+        video.put_pixel(x, y, index, pagenum)
+        self.clear_text_at(x, y)
+
+    def get_pixel(self, x, y, pagenum=None):    
+        """ Return the attribute a pixel on the screen. """
+        if pagenum == None:
+            pagenum = self.apagenum
+        return video.get_pixel(x, y, pagenum)
+
+    def fill_rect(self, x0, y0, x1, y1, index):
+        """ Fill a rectangle in a solid attribute. """
+        video.fill_rect(x0, y0, x1, y1, index)
+        self.clear_text_area(x0, y0, x1, y1)
+
+    def fill_interval(self, x0, x1, y, tile, solid):
+        """ Fill a scanline interval in a tile pattern or solid attribute. """
+        video.fill_interval(x0, x1, y, tile, solid)
+        self.clear_text_area(x0, y, x1, y)
+    
     
 #############################################
 # cursor
