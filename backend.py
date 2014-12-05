@@ -1825,7 +1825,7 @@ class Screen(object):
         video.fill_interval(x0, x1, y, tile, solid)
         self.clear_text_area(x0, y, x1, y)
     
-    
+
 #############################################
 # cursor
 

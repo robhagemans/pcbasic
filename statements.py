@@ -2040,9 +2040,8 @@ def exec_cls(ins):
     # cls is only executed if no errors have occurred    
     if val == 0:
         console.clear()  
-        if graphics.is_graphics_mode():
-            graphics.reset_graphics()
-    elif val == 1 and graphics.is_graphics_mode():
+        graphics.reset_graphics()
+    elif val == 1 and not state.console_state.screen.mode.is_text_mode:
         backend.clear_graphics_view()
         graphics.reset_graphics()
     elif val == 2:

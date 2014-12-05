@@ -16,16 +16,12 @@ import backend
 
 def require_graphics_mode(err=5):
     """ Raise error if not in graphics mode. """
-    if not is_graphics_mode():
+    if state.console_state.screen.mode.is_text_mode:
         raise error.RunError(err)
-
-def is_graphics_mode():
-    """ Return whether in graphics mode. """
-    return backend.video and not state.console_state.screen.mode.is_text_mode
 
 def reset_graphics():
     """ Reset graphics state. """
-    if not is_graphics_mode():
+    if state.console_state.screen.mode.is_text_mode:
         return
     x0, y0, x1, y1 = backend.video.get_graph_clip()
     if state.console_state.view_graph_absolute:
