@@ -43,11 +43,6 @@ def get_colour_index(c):
         c = min(state.console_state.screen.mode.num_attr - 1, max(0, c))
     return c
 
-def check_coords(x, y):
-    """ Ensure coordinates are within screen. """
-    mode = state.console_state.screen.mode
-    return min(mode.pixel_width, max(-1, x)), min(mode.pixel_height, max(-1, y))
-    
 ### PSET, POINT
 
 def put_point(x, y, c):
@@ -143,8 +138,8 @@ def draw_box_filled(x0, y0, x1, y1, c):
 def draw_line(x0, y0, x1, y1, c, pattern=0xffff):
     """ Draw a line between the given points. """
     c = get_colour_index(c)
-    x0, y0 = check_coords(*backend.view_coords(x0, y0))
-    x1, y1 = check_coords(*backend.view_coords(x1, y1))
+    x0, y0 = state.console_state.screen.mode.cutoff_coord(*backend.view_coords(x0, y0))
+    x1, y1 = state.console_state.screen.mode.cutoff_coord(*backend.view_coords(x1, y1))
     if y1 <= y0:
         # work from top to bottom, or from x1,y1 if at the same height. this matters for mask.
         x1, y1, x0, y0 = x0, y0, x1, y1
@@ -196,8 +191,8 @@ def draw_straight(x0, y0, x1, y1, c, pattern, mask):
                         
 def draw_box(x0, y0, x1, y1, c, pattern=0xffff):
     """ Draw an empty box between the given corner points. """
-    x0, y0 = check_coords(*backend.view_coords(x0, y0))
-    x1, y1 = check_coords(*backend.view_coords(x1, y1))
+    x0, y0 = state.console_state.screen.mode.cutoff_coord(*backend.view_coords(x0, y0))
+    x1, y1 = state.console_state.screen.mode.cutoff_coord(*backend.view_coords(x1, y1))
     c = get_colour_index(c)
     mask = 0x8000
     backend.video.apply_graph_clip()

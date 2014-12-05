@@ -950,6 +950,10 @@ class GraphicsMode(VideoMode):
                 x >= 0 and x < self.pixel.width and
                 y >= 0 and y < self.pixel.height)
 
+    def cutoff_coord(self, x, y):
+        """ Ensure coordinates are within screen + 1 pixel. """
+        return min(self.pixel_width, max(-1, x)), min(self.pixel_height, max(-1, y))
+    
 
 class CGAMode(GraphicsMode):
     """ Default settings for a CGA graphics mode. """
@@ -1737,6 +1741,7 @@ class Screen(object):
                 video.putc_at(pagenum, crow, ccol, ca[0], for_keys)
                 ccol += 1
 
+    # should be in console? uses wrap
     def redraw_row(self, start, crow, wrap=True):
         """ Draw the screen row, wrapping around and reconstructing DBCS buffer. """
         while True:
@@ -1768,6 +1773,7 @@ class Screen(object):
         # set cursor back to previous state                             
         update_cursor_visibility()
 
+    #D -> devices['LPT1'].write(get_text(...))
     def print_screen(self):
         """ Output the visible page to LPT1. """
         for crow in range(1, self.mode.height+1):
