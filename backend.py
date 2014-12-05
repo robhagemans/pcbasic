@@ -2151,7 +2151,7 @@ class Sound(object):
     def check_quit(self):
         """ Quit the mixer if not running a program and sound quiet for a while. """
         global quiet_ticks
-        if self.queue == [[], [], [], []] and not audio.busy():
+        if self.queue != [[], [], [], []] or audio.busy():
             # could leave out the is_quiet call but for looping sounds 
             quiet_ticks = 0
         else:
