@@ -2075,7 +2075,8 @@ pcjr_sound = ''
 # quit sound server after quiet period of quiet_quit ticks
 # to avoid high-ish cpu load from the sound server.
 quiet_quit = 10000
-quiet_ticks = 0
+# base frequency for noise source
+base_freq = 3579545./1024.
 
 class Sound(object):
     """ Sound queue manipulations. """
@@ -2087,11 +2088,10 @@ class Sound(object):
         self.foreground = True
         # Tandy/PCjr noise generator
         # frequency for noise sources
-        base_freq = 3579545./1024.
-        self.noise_freq = [base_freq / v 
-                           for v in [1., 2., 4., 1., 1., 2., 4., 1.]]
+        self.noise_freq = [base_freq / v for v in [1., 2., 4., 1., 1., 2., 4., 1.]]
         self.noise_freq[3] = 0.
         self.noise_freq[7] = 0.
+        self.quiet_ticks = 0
 
     def beep(self):
         """ Play the BEEP sound. """
@@ -2150,19 +2150,18 @@ class Sound(object):
 
     def check_quit(self):
         """ Quit the mixer if not running a program and sound quiet for a while. """
-        global quiet_ticks
         if self.queue != [[], [], [], []] or audio.busy():
             # could leave out the is_quiet call but for looping sounds 
-            quiet_ticks = 0
+            self.quiet_ticks = 0
         else:
-            quiet_ticks += 1    
-            if quiet_ticks > quiet_quit:
+            self.quiet_ticks += 1    
+            if self.quiet_ticks > quiet_quit:
                 # mixer is quiet and we're not running a program. 
                 # quit to reduce pulseaudio cpu load
                 if not state.basic_state.run_mode:
                     # this takes quite a while and leads to missed frames...
                     audio.quit_sound()
-                    quiet_ticks = 0
+                    self.quiet_ticks = 0
 
 state.console_state.sound = Sound()
 #D
