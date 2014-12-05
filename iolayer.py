@@ -829,12 +829,12 @@ class KYBDFile(NullDevice):
 
     def read_chars(self, num):
         """ Read a list of chars from the keyboard - INPUT$ """
-        return backend.read_chars(num)
+        return state.console_state.keyb.read_chars(num)
 
     def read(self, n):
         """ Read a string from the keyboard - INPUT and LINE INPUT. """
         word = ''
-        for c in backend.read_chars(n):
+        for c in stte.console_state.keyb.read_chars(n):
             if len(c) > 1 and c[0] == '\x00':
                 try:
                     word += self.input_replace[c]
@@ -856,8 +856,8 @@ class KYBDFile(NullDevice):
         """ KYBD only EOF if ^Z is read. """
         if self.mode in ('A', 'O'):
             return False
-        # blocking read
-        return (backend.wait_char() == '\x1a')
+        # blocking peek
+        return (state.console_state.keyb.wait_char() == '\x1a')
 
     def set_width(self, new_width=255):
         """ Setting width on KYBD device (not files) changes screen width. """

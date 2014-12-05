@@ -509,7 +509,7 @@ if plat.system == 'Windows':
                 # drain output then break
                 continue    
             try:    
-                c = backend.get_char()
+                c = state.console_state.keyb.get_char()
             except error.Break:
                 pass    
             if c in ('\r', '\n'): 
@@ -541,7 +541,7 @@ else:
         p = pexpect.spawn(str(cmd))
         while True:
             try:
-                c = backend.get_char()
+                c = state.console_state.keyb.get_char()
             except error.Break:
                 # ignore ctrl+break in SHELL
                 pass

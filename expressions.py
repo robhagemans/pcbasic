@@ -530,7 +530,7 @@ def value_input(ins):
     
 def value_inkey(ins):
     """ INKEY$: get a character from the keyboard. """
-    return vartypes.pack_string(bytearray(backend.get_char()))
+    return vartypes.pack_string(bytearray(state.console_state.keyb.get_char()))
 
 def value_csrlin(ins):
     """ CSRLIN: get the current screen row. """

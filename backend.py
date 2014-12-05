@@ -373,133 +373,151 @@ class Keyboard(object):
         # store for alt+keypad ascii insertion    
         self.keypad_ascii = ''
 
+    def read_chars(self, num):
+        """ Read num keystrokes, blocking. """
+        word = []
+        for _ in range(num):
+            word.append(self.get_char_block())
+        return word
+
+    def get_char(self):
+        """ Read any keystroke, nonblocking. """
+        wait()    
+        return self.buf.getc()
+
+    def wait_char(self):
+        """ Wait for character, then return it but don't drop from queue. """
+        while self.buf.is_empty() and not input_closed:
+            wait()
+        return self.buf.peek()
+
+    def get_char_block(self):
+        """ Read any keystroke, blocking. """
+        self.wait_char()
+        return self.buf.getc()
+
+    def insert_chars(self, s, check_full=False):
+        """ Insert characters into keyboard buffer. """
+        if not self.buf.insert(s, check_full):
+            # keyboard buffer is full; short beep and exit
+            play_sound(800, 0.01)
+
+    def key_down(self, scan, eascii='', check_full=True):
+        """ Insert a key-down event. Keycode is extended ascii, including DBCS. """
+        # set port and low memory address regardless of event triggers
+        if scan != None:
+            self.last_scancode = scan
+        # set modifier status    
+        try:
+            self.mod |= modifier[scan]
+        except KeyError:
+           pass 
+        # set toggle-key modifier status    
+        try:
+           self.mod ^= toggle[scan]
+        except KeyError:
+           pass 
+        # handle BIOS events
+        if (scan == scancode.DELETE and 
+                    self.mod & modifier[scancode.CTRL] and
+                    self.mod & modifier[scancode.ALT]):
+                # ctrl-alt-del: if not captured by the OS, reset the emulator
+                # meaning exit and delete state. This is useful on android.
+                raise error.Reset()
+        if (scan in (scancode.BREAK, scancode.SCROLLOCK) and
+                    self.mod & modifier[scancode.CTRL]):
+                raise error.Break()
+        if scan == scancode.PRINT:
+            if (self.mod & 
+                    (modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT])):
+                # shift + printscreen
+                state.console_state.screen.print_screen()
+            if self.mod & modifier[scancode.CTRL]:
+                # ctrl + printscreen
+                toggle_echo_lpt1()
+        # alt+keypad ascii replacement        
+        # we can't depend on internal NUM LOCK state as it doesn't get updated
+        if (self.mod & modifier[scancode.ALT] and 
+                len(eascii) == 1 and eascii >= '0' and eascii <= '9'):
+            try:
+                self.keypad_ascii += scancode.keypad[scan]
+                return
+            except KeyError:    
+                pass
+        # trigger events
+        if check_key_event(scan, self.mod):
+            # this key is being trapped, don't replace
+            return
+        # function key macros
+        try:
+            # only check function keys
+            # can't be redefined in events - so must be fn 1-10 (1-12 on Tandy).
+            keynum = function_key[scan]
+            if (state.basic_state.key_macros_off or state.basic_state.run_mode 
+                    and state.basic_state.key_handlers[keynum].enabled):
+                # this key is paused from being trapped, don't replace
+                self.insert_chars(scan_to_eascii(scan, self.mod, 
+                                  check_full=check_full))
+                return
+            else:
+                macro = state.console_state.key_replace[keynum]
+                # insert directly, avoid caps handling
+                self.insert_chars(macro, check_full=check_full)
+                return
+        except KeyError:
+            pass
+        if not eascii or (scan != None and self.mod & 
+                    (modifier[scancode.ALT] | modifier[scancode.CTRL])):
+            # any provided e-ASCII value overrides when CTRL & ALT are off
+            # this helps make keyboards do what's expected 
+            # independent of language setting
+            try:
+                eascii = scan_to_eascii(scan, self.mod)
+            except KeyError:            
+                # no eascii found
+                return
+        if (self.mod & toggle[scancode.CAPSLOCK]
+                and not ignore_caps and len(eascii) == 1):
+            if eascii >= 'a' and eascii <= 'z':
+                eascii = chr(ord(eascii)-32)
+            elif eascii >= 'A' and eascii <= 'z':
+                eascii = chr(ord(eascii)+32)
+        self.insert_chars(eascii, check_full=True)        
+
+    def key_up(self, scan):
+        """ Insert a key-up event. """
+        if scan != None:
+            self.last_scancode = 0x80 + scan
+        try:
+            # switch off ephemeral modifiers
+            self.mod &= ~modifier[scan]
+            # ALT+keycode    
+            if scan == scancode.ALT and self.keypad_ascii:
+                char = chr(int(self.keypad_ascii)%256)
+                if char == '\0':
+                    char = '\0\0'
+                self.insert_chars(char, check_full=True)
+                self.keypad_ascii = ''
+        except KeyError:
+           pass 
+
 
 state.console_state.keyb = Keyboard()
 # keyboard queue
 state.console_state.keybuf = state.console_state.keyb.buf
 
 
-def read_chars(num):
-    """ Read num keystrokes, blocking. """
-    word = []
-    for _ in range(num):
-        word.append(get_char_block())
-    return word
-
-def get_char():
-    """ Read any keystroke, nonblocking. """
-    wait()    
-    return state.console_state.keybuf.getc()
-
-def wait_char():
-    """ Wait for character, then return it but don't drop from queue. """
-    while state.console_state.keybuf.is_empty() and not input_closed:
-        wait()
-    return state.console_state.keybuf.peek()
-
-def get_char_block():
-    """ Read any keystroke, blocking. """
-    wait_char()
-    return state.console_state.keybuf.getc()
+def insert_chars(s, check_full=False):
+    """ Insert characters into keyboard buffer. """
+    state.console_state.keyb.insert_chars(s, check_full)
 
 def key_down(scan, eascii='', check_full=True):
     """ Insert a key-down event. Keycode is extended ascii, including DBCS. """
-    # set port and low memory address regardless of event triggers
-    if scan != None:
-        state.console_state.keyb.last_scancode = scan
-    # set modifier status    
-    try:
-        state.console_state.keyb.mod |= modifier[scan]
-    except KeyError:
-       pass 
-    # set toggle-key modifier status    
-    try:
-        state.console_state.keyb.mod ^= toggle[scan]
-    except KeyError:
-       pass 
-    # handle BIOS events
-    if (scan == scancode.DELETE and 
-                state.console_state.keyb.mod & modifier[scancode.CTRL] and
-                state.console_state.keyb.mod & modifier[scancode.ALT]):
-            # ctrl-alt-del: if not captured by the OS, reset the emulator
-            # meaning exit and delete state. This is useful on android.
-            raise error.Reset()
-    if (scan in (scancode.BREAK, scancode.SCROLLOCK) and
-                state.console_state.keyb.mod & modifier[scancode.CTRL]):
-            raise error.Break()
-    if scan == scancode.PRINT:
-        if (state.console_state.keyb.mod & 
-                (modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT])):
-            # shift + printscreen
-            state.console_state.screen.print_screen()
-        if state.console_state.keyb.mod & modifier[scancode.CTRL]:
-            # ctrl + printscreen
-            toggle_echo_lpt1()
-    # alt+keypad ascii replacement        
-    # we can't depend on internal NUM LOCK state as it doesn't get updated
-    if (state.console_state.keyb.mod & modifier[scancode.ALT] and 
-            len(eascii) == 1 and eascii >= '0' and eascii <= '9'):
-        try:
-            state.console_state.keyb.keypad_ascii += scancode.keypad[scan]
-            return
-        except KeyError:    
-            pass
-    # trigger events
-    if check_key_event(scan, state.console_state.keyb.mod):
-        # this key is being trapped, don't replace
-        return
-    # function key macros
-    try:
-        # only check function keys
-        # can't be redefined in events - so must be fn 1-10 (1-12 on Tandy).
-        keynum = function_key[scan]
-        if (state.basic_state.key_macros_off or state.basic_state.run_mode 
-                and state.basic_state.key_handlers[keynum].enabled):
-            # this key is paused from being trapped, don't replace
-            insert_chars(scan_to_eascii(scan, state.console_state.keyb.mod,
-                         check_full=check_full))
-            return
-        else:
-            macro = state.console_state.key_replace[keynum]
-            # insert directly, avoid caps handling
-            insert_chars(macro, check_full=check_full)
-            return
-    except KeyError:
-        pass
-    if not eascii or (scan != None and state.console_state.keyb.mod & 
-                (modifier[scancode.ALT] | modifier[scancode.CTRL])):
-        # any provided e-ASCII value overrides when CTRL & ALT are off
-        # this helps make keyboards do what's expected 
-        # independent of language setting
-        try:
-            eascii = scan_to_eascii(scan, state.console_state.keyb.mod)
-        except KeyError:            
-            # no eascii found
-            return
-    if (state.console_state.keyb.mod & toggle[scancode.CAPSLOCK]
-            and not ignore_caps and len(eascii) == 1):
-        if eascii >= 'a' and eascii <= 'z':
-            eascii = chr(ord(eascii)-32)
-        elif eascii >= 'A' and eascii <= 'z':
-            eascii = chr(ord(eascii)+32)
-    insert_chars(eascii, check_full=True)        
-    
+    state.console_state.keyb.key_down(scan, eascii, check_full)
+
 def key_up(scan):
     """ Insert a key-up event. """
-    if scan != None:
-        state.console_state.keyb.last_scancode = 0x80 + scan
-    try:
-        # switch off ephemeral modifiers
-        state.console_state.keyb.mod &= ~modifier[scan]
-        # ALT+keycode    
-        if scan == scancode.ALT and state.console_state.keyb.keypad_ascii:
-            char = chr(int(state.console_state.keyb.keypad_ascii)%256)
-            if char == '\0':
-                char = '\0\0'
-            insert_chars(char, check_full=True)
-            state.console_state.keyb.keypad_ascii = ''
-    except KeyError:
-       pass 
+    state.console_state.keyb.key_up(scan)
     
 def insert_special_key(name):
     """ Insert break, reset or quit events. """
@@ -511,12 +529,6 @@ def insert_special_key(name):
         raise error.Break()
     else:
         logging.debug('Unknown special key: %s', name)
-        
-def insert_chars(s, check_full=False):
-    """ Insert characters into keyboard buffer. """
-    if not state.console_state.keybuf.insert(s, check_full):
-        # keyboard buffer is full; short beep and exit
-        play_sound(800, 0.01)
 
 def scan_to_eascii(scan, mod):
     """ Translate scancode and modifier state to e-ASCII. """

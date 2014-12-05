@@ -158,7 +158,7 @@ def wait_interactive(from_start=False, alt_replace = True):
             furthest_left = min(col, furthest_left)
             furthest_right = max(col, furthest_right)
         # wait_char returns one e-ASCII code
-        d = backend.get_char_block()
+        d = state.console_state.keyb.get_char_block()
         # insert dbcs chars from keyboard buffer two bytes at a time
         if (d in unicodepage.lead and 
                 state.console_state.keybuf.peek() in unicodepage.trail):

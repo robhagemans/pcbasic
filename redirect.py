@@ -12,6 +12,7 @@ from functools import partial
 import config
 import unicodepage
 import backend
+import state
                             
 # converter with DBCS lead-byte buffer for utf8 output redirection
 utf8conv = unicodepage.UTF8Converter(preserve_control=True)
@@ -38,7 +39,7 @@ def set_input(f):
     for c in all_input:
         # replace CRLF with CR
         if not (c == '\n' and last == '\r'):
-            backend.insert_chars(c)
+            state.console_state.keyb.insert_chars(c)
         last = c
     backend.input_closed = True
 
