@@ -215,7 +215,7 @@ def native_path(path_and_name, defext='', err=53,
 def shell(command):
     """ Execute a shell command or enter interactive shell. """
     # sound stops playing and is forgotten
-    backend.stop_all_sound()
+    state.console_state.sound.stop_all_sound()
     # no key macros
     key_macros_save = state.basic_state.key_macros_off
     state.basic_state.key_macros_off = True

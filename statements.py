@@ -482,11 +482,11 @@ def exec_beep(ins):
         state.console_state.beep_on = (ins.read(1) == '\x95')
         util.require(ins, util.end_statement)
         return
-    backend.beep() 
+    state.console_state.sound.beep() 
     # if a syntax error happens, we still beeped.
     util.require(ins, util.end_statement)
-    if state.console_state.music_foreground:
-        backend.wait_music(wait_last=False)
+    if state.console_state.sound.foreground:
+        state.console_state.sound.wait_music(wait_last=False)
     
 def exec_sound(ins):
     """ SOUND: produce an arbitrary sound or switch external speaker on/off. """
@@ -514,7 +514,7 @@ def exec_sound(ins):
             volume, voice = 15, 0                
     util.require(ins, util.end_statement)
     if dur.is_zero():
-        backend.stop_all_sound()
+        state.console_state.sound.stop_all_sound()
         return
     # Tandy only allows frequencies below 37 (but plays them as 110 Hz)    
     if freq != 0:
@@ -524,11 +524,11 @@ def exec_sound(ins):
     dur_sec = dur.to_value()/18.2
     if one_over_44.gt(dur):
         # play indefinitely in background
-        backend.play_sound(freq, dur_sec, loop=True, voice=voice, volume=volume)
+        state.console_state.sound.play_sound(freq, dur_sec, loop=True, voice=voice, volume=volume)
     else:
-        backend.play_sound(freq, dur_sec, voice=voice, volume=volume)
-        if state.console_state.music_foreground:
-            backend.wait_music(wait_last=False)
+        state.console_state.sound.play_sound(freq, dur_sec, voice=voice, volume=volume)
+        if state.console_state.sound.foreground:
+            state.console_state.sound.wait_music(wait_last=False)
     
 def exec_play(ins):
     """ PLAY: play sound sequence defined by a Music Macro Language string. """
@@ -564,9 +564,9 @@ def exec_noise(ins):
     one_over_44 = fp.Single.from_bytes(bytearray('\x8c\x2e\x3a\x7b')) # 1/44 = 0.02272727248
     dur_sec = dur.to_value()/18.2
     if one_over_44.gt(dur):
-        backend.play_noise(source, volume, dur_sec, loop=True)
+        state.console_state.sound.play_noise(source, volume, dur_sec, loop=True)
     else:
-        backend.play_noise(source, volume, dur_sec)
+        state.console_state.sound.play_noise(source, volume, dur_sec)
     
  
 ##########################################################

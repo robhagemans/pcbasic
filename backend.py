@@ -221,7 +221,7 @@ def check_events():
     """ Main event cycle. """
     # manage sound queue
     audio.check_sound()
-    check_quit_sound()
+    state.console_state.sound.check_quit()
     # check video, keyboard, pen and joystick events
     video.check_events()   
     # trigger & handle BASIC events
@@ -503,7 +503,7 @@ class Keyboard(object):
 
 
 state.console_state.keyb = Keyboard()
-# keyboard queue
+#D 
 state.console_state.keybuf = state.console_state.keyb.buf
 
 
@@ -2069,96 +2069,110 @@ def get_strig(fn):
 ##############################
 # sound queue read/write
 
-# sound queue
-state.console_state.music_queue = [[], [], [], []]
 # sound capabilities - '', 'pcjr' or 'tandy'
 pcjr_sound = ''
-
-state.console_state.music_foreground = True
-
-base_freq = 3579545./1024.
-state.console_state.noise_freq = [base_freq / v 
-                                  for v in [1., 2., 4., 1., 1., 2., 4., 1.]]
-state.console_state.noise_freq[3] = 0.
-state.console_state.noise_freq[7] = 0.
 
 # quit sound server after quiet period of quiet_quit ticks
 # to avoid high-ish cpu load from the sound server.
 quiet_quit = 10000
 quiet_ticks = 0
 
-def beep():
-    """ Play the BEEP sound. """
-    play_sound(800, 0.25)
+class Sound(object):
+    """ Sound queue manipulations. """
 
-def play_sound(frequency, duration, fill=1, loop=False, voice=0, volume=15):
-    """ Play a sound on the tone generator. """
-    if frequency < 0:
-        frequency = 0
-    if ((pcjr_sound == 'tandy' or 
-            (pcjr_sound == 'pcjr' and state.console_state.sound_on)) and
-            frequency < 110. and frequency != 0):
-        # pcjr, tandy play low frequencies as 110Hz
-        frequency = 110.
-    state.console_state.music_queue[voice].append(
-            (frequency, duration, fill, loop, volume))
-    audio.play_sound(frequency, duration, fill, loop, voice, volume) 
-    if voice == 2:
-        # reset linked noise frequencies
-        # /2 because we're using a 0x4000 rotation rather than 0x8000
-        state.console_state.noise_freq[3] = frequency/2.
-        state.console_state.noise_freq[7] = frequency/2.
-    # at most 16 notes in the sound queue (not 32 as the guide says!)
-    wait_music(15, wait_last=False)    
+    def __init__(self):
+        """ Initialise sound queue. """
+        self.queue = [[], [], [], []]
+        # music foreground (MF) mode        
+        self.foreground = True
+        # Tandy/PCjr noise generator
+        # frequency for noise sources
+        base_freq = 3579545./1024.
+        self.noise_freq = [base_freq / v 
+                           for v in [1., 2., 4., 1., 1., 2., 4., 1.]]
+        self.noise_freq[3] = 0.
+        self.noise_freq[7] = 0.
 
-def play_noise(source, volume, duration, loop=False):
-    """ Play a sound on the noise generator. """
-    audio.set_noise(source > 3)
-    frequency = state.console_state.noise_freq[source]
-    state.console_state.music_queue[3].append(
-            (frequency, duration, 1, loop, volume))
-    audio.play_sound(frequency, duration, 1, loop, 3, volume) 
-    # don't wait for noise
+    def beep(self):
+        """ Play the BEEP sound. """
+        self.play_sound(800, 0.25)
 
-def stop_all_sound():
-    """ Terminate all sounds immediately. """
-    state.console_state.music_queue = [ [], [], [], [] ]
-    audio.stop_all_sound()
+    def play_sound(self, frequency, duration, fill=1, loop=False, voice=0, volume=15):
+        """ Play a sound on the tone generator. """
+        if frequency < 0:
+            frequency = 0
+        if ((pcjr_sound == 'tandy' or 
+                (pcjr_sound == 'pcjr' and state.console_state.sound_on)) and
+                frequency < 110. and frequency != 0):
+            # pcjr, tandy play low frequencies as 110Hz
+            frequency = 110.
+        self.queue[voice].append((frequency, duration, fill, loop, volume))
+        audio.play_sound(frequency, duration, fill, loop, voice, volume) 
+        if voice == 2:
+            # reset linked noise frequencies
+            # /2 because we're using a 0x4000 rotation rather than 0x8000
+            self.noise_freq[3] = frequency/2.
+            self.noise_freq[7] = frequency/2.
+        # at most 16 notes in the sound queue (not 32 as the guide says!)
+        self.wait_music(15, wait_last=False)    
+
+    def wait_music(self, wait_length=0, wait_last=True):
+        """ Wait until the music has finished playing. """
+        while ((wait_last and audio.busy()) or
+                len(self.queue[0]) + wait_last - 1 > wait_length or
+                len(self.queue[1]) + wait_last - 1 > wait_length or
+                len(self.queue[2]) + wait_last - 1 > wait_length):
+            wait()
+
+    def stop_all_sound(self):
+        """ Terminate all sounds immediately. """
+        self.music_queue = [ [], [], [], [] ]
+        audio.stop_all_sound()
         
-def wait_music(wait_length=0, wait_last=True):
-    """ Wait until the music has finished playing. """
-    while ((wait_last and audio.busy()) or
-            len(state.console_state.music_queue[0])+wait_last-1 > wait_length or
-            len(state.console_state.music_queue[1])+wait_last-1 > wait_length or
-            len(state.console_state.music_queue[2])+wait_last-1 > wait_length ):
-        wait()
-    
-def music_queue_length(voice=0):
-    """ Return the number of notes in the queue. """
-    # top of sound_queue is currently playing
-    return max(0, len(state.console_state.music_queue[voice])-1)
+    def play_noise(self, source, volume, duration, loop=False):
+        """ Play a sound on the noise generator. """
+        audio.set_noise(source > 3)
+        frequency = self.noise_freq[source]
+        self.queue[3].append((frequency, duration, 1, loop, volume))
+        audio.play_sound(frequency, duration, 1, loop, 3, volume) 
+        # don't wait for noise
+
+    def queue_length(self, voice=0):
+        """ Return the number of notes in the queue. """
+        # top of sound_queue is currently playing
+        return max(0, len(self.queue[voice])-1)
+
+    def done(self, voice, number_left):
+        """ Report a sound has finished playing, remove from queue. """ 
+        # remove the notes that have been played
+        while len(self.queue[voice]) > number_left:
+            self.queue[voice].pop(0)
+
+    def check_quit(self):
+        """ Quit the mixer if not running a program and sound quiet for a while. """
+        global quiet_ticks
+        if self.queue == [[], [], [], []] and not audio.busy():
+            # could leave out the is_quiet call but for looping sounds 
+            quiet_ticks = 0
+        else:
+            quiet_ticks += 1    
+            if quiet_ticks > quiet_quit:
+                # mixer is quiet and we're not running a program. 
+                # quit to reduce pulseaudio cpu load
+                if not state.basic_state.run_mode:
+                    # this takes quite a while and leads to missed frames...
+                    audio.quit_sound()
+                    quiet_ticks = 0
+
+state.console_state.sound = Sound()
+#D
+state.console_state.music_queue = state.console_state.sound.queue
         
+#D        
 def sound_done(voice, number_left):
     """ Report a sound has finished playing, remove from queue. """ 
-    # remove the notes that have been played
-    while len(state.console_state.music_queue[voice]) > number_left:
-        state.console_state.music_queue[voice].pop(0)
+    state.console_state.sound.done(voice, number_left)
 
-def check_quit_sound():
-    """ Quit the mixer if not running a program and sound quiet for a while. """
-    global quiet_ticks
-    if state.console_state.music_queue == [[], [], [], []] and not audio.busy():
-        # could leave out the is_quiet call but for looping sounds 
-        quiet_ticks = 0
-    else:
-        quiet_ticks += 1    
-        if quiet_ticks > quiet_quit:
-            # mixer is quiet and we're not running a program. 
-            # quit to reduce pulseaudio cpu load
-            if not state.basic_state.run_mode:
-                # this takes quite a while and leads to missed frames...
-                audio.quit_sound()
-                quiet_ticks = 0
             
 #############################################
 # BASIC event triggers        
@@ -2243,7 +2257,7 @@ def check_timer_event():
 
 def check_play_event():
     """ Trigger PLAY (music queue) events. """
-    play_now = [music_queue_length(voice) for voice in range(3)]
+    play_now = [state.console_state.sound.queue_length(voice) for voice in range(3)]
     if pcjr_sound: 
         for voice in range(3):
             if (play_now[voice] <= state.basic_state.play_trig and 

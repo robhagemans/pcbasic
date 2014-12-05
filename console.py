@@ -178,7 +178,7 @@ def wait_interactive(from_start=False, alt_replace = True):
             break
         elif d == '\a':
             # BEL, CTRL+G
-            backend.beep()
+            state.console_state.sound.beep()
         elif d == '\b':
             # BACKSPACE, CTRL+H
             backspace(start_row, furthest_left)
@@ -606,7 +606,7 @@ def write(s, scroll_ok=True, do_echo=True):
             set_pos(row + 1, 1, scroll_ok)     
         elif c == '\a':     
             # BEL    
-            backend.beep()
+            state.console_state.sound.beep()
         elif c == '\x0B':   
             # HOME
             set_pos(1, 1, scroll_ok)

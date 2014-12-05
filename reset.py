@@ -33,7 +33,7 @@ def clear(close_files=False, preserve_common=False, preserve_all=False, preserve
     state.basic_state.on_error = None
     state.basic_state.error_resume = None
     # stop all sound
-    backend.stop_all_sound()
+    state.console_state.sound.stop_all_sound()
     #   Resets STRIG to off
     state.console_state.stick_is_on = False
     # disable all event trapping (resets PEN to OFF too)
@@ -42,7 +42,7 @@ def clear(close_files=False, preserve_common=False, preserve_all=False, preserve
     state.basic_state.for_next_stack = []
     state.basic_state.while_wend_stack = []
     #   Resets sound to music foreground
-    backend.music_foreground = True
+    state.console_state.sound.foreground = True
     # reset PLAY state (tempo etc.)
     state.basic_state.play_state = [ 
         draw_and_play.PlayState(), draw_and_play.PlayState(), 

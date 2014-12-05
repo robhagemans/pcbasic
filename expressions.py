@@ -714,7 +714,7 @@ def value_play(ins):
     util.range_check(0, 255, voice)
     if not(is_pcjr_syntax and voice in (1, 2)):
         voice = 0    
-    return vartypes.pack_int(backend.music_queue_length(voice))
+    return vartypes.pack_int(state.console_state.sound.queue_length(voice))
     
 #####################################################################
 # error functions
