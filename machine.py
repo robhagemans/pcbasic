@@ -73,7 +73,7 @@ def inp(port):
     # keyboard
     if port == 0x60:
         backend.wait()
-        return state.console_state.inp_key 
+        return state.console_state.keybuf.last_scancode 
     # game port (joystick)    
     elif port == 0x201:
         value = (
@@ -116,7 +116,7 @@ def wait(addr, ander, xorer):
     """ Wait untial an emulated machine port has a specified value. """
     store_suspend = state.basic_state.suspend_all_events
     state.basic_state.suspend_all_events = True
-    while (((state.console_state.inp_key if addr == 0x60 else 0) ^ xorer) & ander) == 0:
+    while (((state.console_state.keybuf.last_scancode if addr == 0x60 else 0) ^ xorer) & ander) == 0:
         backend.wait()
     state.basic_state.suspend_all_events = store_suspend     
 

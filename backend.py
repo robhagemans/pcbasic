@@ -251,8 +251,6 @@ state.console_state.key_replace = [
 # switch off macro repacements
 state.basic_state.key_macros_off = False    
 # key buffer
-# INP(&H60) scancode
-state.console_state.inp_key = 0
 # active status of caps, num, scroll, alt, ctrl, shift modifiers
 state.console_state.mod = 0
 # input has closed
@@ -277,6 +275,8 @@ class KeyboardBuffer(object):
         self.ring_length = ring_length
         self.start = 0
         self.insert(s)
+        # INP(&H60) scancode
+        self.last_scancode = 0
 
     def length(self):
         """ Return the number of keystrokes in the buffer. """
@@ -396,7 +396,7 @@ def key_down(scan, eascii='', check_full=True):
     global keypad_ascii
     # set port and low memory address regardless of event triggers
     if scan != None:
-        state.console_state.inp_key = scan
+        state.console_state.keybuf.last_scancode = scan
     # set modifier status    
     try:
         state.console_state.mod |= modifier[scan]
@@ -478,7 +478,7 @@ def key_up(scan):
     """ Insert a key-up event. """
     global keypad_ascii
     if scan != None:
-        state.console_state.inp_key = 0x80 + scan
+        state.console_state.keybuf.last_scancode = 0x80 + scan
     try:
         # switch off ephemeral modifiers
         state.console_state.mod &= ~modifier[scan]
