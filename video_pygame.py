@@ -1113,7 +1113,7 @@ class Clipboard(object):
             return
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
             start, stop = stop, start
-        full = backend.get_text(start[0], start[1], stop[0], stop[1]-1)
+        full = state.console_state.screen.get_text(start[0], start[1], stop[0], stop[1]-1)
         if mouse:
             scrap.set_mode(pygame.SCRAP_SELECTION)
         else:
