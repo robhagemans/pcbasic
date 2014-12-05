@@ -575,7 +575,7 @@ def get_low_memory(addr):
     elif addr == 1048:
         return 0
     elif addr == 1049:
-        return int(backend.keypad_ascii)%256
+        return int(state.console_state.keyb.keypad_ascii)%256
     elif addr == 1050:
         # keyboard ring buffer starts at n+1024; lowest 1054
         return (state.console_state.keybuf.start*2 + key_buffer_offset) % 256

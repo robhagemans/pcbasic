@@ -884,9 +884,6 @@ def do_flip(blink_state):
 ###############################################################################
 # event queue
 
-# buffer for alt+numpad ascii character construction
-keypad_ascii = ''
-
 def pause_key():
     """ Wait for key in pause state. """
     # pause key press waits for any key down. 

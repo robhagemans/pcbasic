@@ -259,8 +259,6 @@ toggle = {
 modifier = {    
     scancode.ALT: 0x8, scancode.CTRL: 0x4, 
     scancode.LSHIFT: 0x2, scancode.RSHIFT: 0x1}
-# store for alt+keypad ascii insertion    
-keypad_ascii = ''
 
 
 class KeyboardBuffer(object):
@@ -372,6 +370,8 @@ class Keyboard(object):
         self.last_scancode = 0
         # active status of caps, num, scroll, alt, ctrl, shift modifiers
         self.mod = 0
+        # store for alt+keypad ascii insertion    
+        self.keypad_ascii = ''
 
 
 state.console_state.keyb = Keyboard()
@@ -404,7 +404,6 @@ def get_char_block():
 
 def key_down(scan, eascii='', check_full=True):
     """ Insert a key-down event. Keycode is extended ascii, including DBCS. """
-    global keypad_ascii
     # set port and low memory address regardless of event triggers
     if scan != None:
         state.console_state.keyb.last_scancode = scan
@@ -441,7 +440,7 @@ def key_down(scan, eascii='', check_full=True):
     if (state.console_state.keyb.mod & modifier[scancode.ALT] and 
             len(eascii) == 1 and eascii >= '0' and eascii <= '9'):
         try:
-            keypad_ascii += scancode.keypad[scan]
+            state.console_state.keyb.keypad_ascii += scancode.keypad[scan]
             return
         except KeyError:    
             pass
@@ -487,19 +486,18 @@ def key_down(scan, eascii='', check_full=True):
     
 def key_up(scan):
     """ Insert a key-up event. """
-    global keypad_ascii
     if scan != None:
         state.console_state.keyb.last_scancode = 0x80 + scan
     try:
         # switch off ephemeral modifiers
         state.console_state.keyb.mod &= ~modifier[scan]
         # ALT+keycode    
-        if scan == scancode.ALT and keypad_ascii:
-            char = chr(int(keypad_ascii)%256)
+        if scan == scancode.ALT and state.console_state.keyb.keypad_ascii:
+            char = chr(int(state.console_state.keyb.keypad_ascii)%256)
             if char == '\0':
                 char = '\0\0'
             insert_chars(char, check_full=True)
-            keypad_ascii = ''
+            state.console_state.keyb.keypad_ascii = ''
     except KeyError:
        pass 
     
