@@ -1856,10 +1856,6 @@ state.console_state.cursor = False
 state.console_state.cursor_from = 0
 state.console_state.cursor_to = 0    
 
-# pen and stick
-state.console_state.pen_is_on = False
-state.console_state.stick_is_on = False
-
 
 def show_cursor(do_show):
     """ Force cursor to be visible/invisible. """
@@ -1977,6 +1973,7 @@ def clear_graphics_view():
 ##############################################
 # light pen
 
+state.console_state.pen_is_on = False
 state.console_state.pen_was_down = False
 pen_is_down = False
 state.console_state.pen_down_pos = (0, 0)
@@ -2031,6 +2028,7 @@ def get_pen(fn):
 ##############################################
 # joysticks
 
+state.console_state.stick_is_on = False
 state.console_state.stick_was_fired = [[False, False], [False, False]]
 stick_is_firing = [[False, False], [False, False]]
 # axis 0--255; 128 is mid but reports 0, not 128 if no joysticks present
