@@ -73,7 +73,7 @@ def inp(port):
     # keyboard
     if port == 0x60:
         backend.wait()
-        return state.console_state.keybuf.last_scancode 
+        return state.console_state.keyb.last_scancode 
     # game port (joystick)    
     elif port == 0x201:
         value = (
@@ -570,7 +570,7 @@ def get_low_memory(addr):
                 (backend.devices['LPT2:'] != None) + 
                 (backend.devices['LPT3:'] != None))
     elif addr == 1047:
-        return state.console_state.mod
+        return state.console_state.keyb.mod
     # not implemented: peek(1048)==4 if sysrq pressed, 0 otherwise
     elif addr == 1048:
         return 0
@@ -666,7 +666,7 @@ def set_low_memory(addr, value):
     """ Set data in low memory. """
     addr -= low_segment*0x10
     if addr == 1047:
-        state.console_state.mod = value    
+        state.console_state.keyb.mod = value    
     # from basic_ref_3.pdf: the keyboard buffer may be cleared with
     # DEF SEG=0: POKE 1050, PEEK(1052)
     elif addr == 1050:

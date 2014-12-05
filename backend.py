@@ -250,9 +250,6 @@ state.console_state.key_replace = [
     'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
 # switch off macro repacements
 state.basic_state.key_macros_off = False    
-# key buffer
-# active status of caps, num, scroll, alt, ctrl, shift modifiers
-state.console_state.mod = 0
 # input has closed
 input_closed = False
 # bit flags for modifier keys
@@ -275,8 +272,6 @@ class KeyboardBuffer(object):
         self.ring_length = ring_length
         self.start = 0
         self.insert(s)
-        # INP(&H60) scancode
-        self.last_scancode = 0
 
     def length(self):
         """ Return the number of keystrokes in the buffer. """
@@ -363,10 +358,26 @@ class KeyboardBuffer(object):
         self.buffer += ['\0']*(length - len(self.buffer))
         self.start = start
         
-# keyboard queue
-state.console_state.keybuf = KeyboardBuffer(15)
 
 # keyboard buffer read/write
+
+class Keyboard(object):
+    """ Keyboard handling. """
+
+    def __init__(self):
+        """ Initilise keyboard state. """
+        # key queue
+        self.buf = KeyboardBuffer(15)
+        # INP(&H60) scancode
+        self.last_scancode = 0
+        # active status of caps, num, scroll, alt, ctrl, shift modifiers
+        self.mod = 0
+
+
+state.console_state.keyb = Keyboard()
+# keyboard queue
+state.console_state.keybuf = state.console_state.keyb.buf
+
 
 def read_chars(num):
     """ Read num keystrokes, blocking. """
@@ -396,38 +407,38 @@ def key_down(scan, eascii='', check_full=True):
     global keypad_ascii
     # set port and low memory address regardless of event triggers
     if scan != None:
-        state.console_state.keybuf.last_scancode = scan
+        state.console_state.keyb.last_scancode = scan
     # set modifier status    
     try:
-        state.console_state.mod |= modifier[scan]
+        state.console_state.keyb.mod |= modifier[scan]
     except KeyError:
        pass 
     # set toggle-key modifier status    
     try:
-        state.console_state.mod ^= toggle[scan]
+        state.console_state.keyb.mod ^= toggle[scan]
     except KeyError:
        pass 
     # handle BIOS events
     if (scan == scancode.DELETE and 
-                state.console_state.mod & modifier[scancode.CTRL] and
-                state.console_state.mod & modifier[scancode.ALT]):
+                state.console_state.keyb.mod & modifier[scancode.CTRL] and
+                state.console_state.keyb.mod & modifier[scancode.ALT]):
             # ctrl-alt-del: if not captured by the OS, reset the emulator
             # meaning exit and delete state. This is useful on android.
             raise error.Reset()
     if (scan in (scancode.BREAK, scancode.SCROLLOCK) and
-                state.console_state.mod & modifier[scancode.CTRL]):
+                state.console_state.keyb.mod & modifier[scancode.CTRL]):
             raise error.Break()
     if scan == scancode.PRINT:
-        if (state.console_state.mod & 
+        if (state.console_state.keyb.mod & 
                 (modifier[scancode.LSHIFT] | modifier[scancode.RSHIFT])):
             # shift + printscreen
             state.console_state.screen.print_screen()
-        if state.console_state.mod & modifier[scancode.CTRL]:
+        if state.console_state.keyb.mod & modifier[scancode.CTRL]:
             # ctrl + printscreen
             toggle_echo_lpt1()
     # alt+keypad ascii replacement        
     # we can't depend on internal NUM LOCK state as it doesn't get updated
-    if (state.console_state.mod & modifier[scancode.ALT] and 
+    if (state.console_state.keyb.mod & modifier[scancode.ALT] and 
             len(eascii) == 1 and eascii >= '0' and eascii <= '9'):
         try:
             keypad_ascii += scancode.keypad[scan]
@@ -435,7 +446,7 @@ def key_down(scan, eascii='', check_full=True):
         except KeyError:    
             pass
     # trigger events
-    if check_key_event(scan, state.console_state.mod):
+    if check_key_event(scan, state.console_state.keyb.mod):
         # this key is being trapped, don't replace
         return
     # function key macros
@@ -446,7 +457,7 @@ def key_down(scan, eascii='', check_full=True):
         if (state.basic_state.key_macros_off or state.basic_state.run_mode 
                 and state.basic_state.key_handlers[keynum].enabled):
             # this key is paused from being trapped, don't replace
-            insert_chars(scan_to_eascii(scan, state.console_state.mod,
+            insert_chars(scan_to_eascii(scan, state.console_state.keyb.mod,
                          check_full=check_full))
             return
         else:
@@ -456,17 +467,17 @@ def key_down(scan, eascii='', check_full=True):
             return
     except KeyError:
         pass
-    if not eascii or (scan != None and state.console_state.mod & 
+    if not eascii or (scan != None and state.console_state.keyb.mod & 
                 (modifier[scancode.ALT] | modifier[scancode.CTRL])):
         # any provided e-ASCII value overrides when CTRL & ALT are off
         # this helps make keyboards do what's expected 
         # independent of language setting
         try:
-            eascii = scan_to_eascii(scan, state.console_state.mod)
+            eascii = scan_to_eascii(scan, state.console_state.keyb.mod)
         except KeyError:            
             # no eascii found
             return
-    if (state.console_state.mod & toggle[scancode.CAPSLOCK]
+    if (state.console_state.keyb.mod & toggle[scancode.CAPSLOCK]
             and not ignore_caps and len(eascii) == 1):
         if eascii >= 'a' and eascii <= 'z':
             eascii = chr(ord(eascii)-32)
@@ -478,10 +489,10 @@ def key_up(scan):
     """ Insert a key-up event. """
     global keypad_ascii
     if scan != None:
-        state.console_state.keybuf.last_scancode = 0x80 + scan
+        state.console_state.keyb.last_scancode = 0x80 + scan
     try:
         # switch off ephemeral modifiers
-        state.console_state.mod &= ~modifier[scan]
+        state.console_state.keyb.mod &= ~modifier[scan]
         # ALT+keycode    
         if scan == scancode.ALT and keypad_ascii:
             char = chr(int(keypad_ascii)%256)
