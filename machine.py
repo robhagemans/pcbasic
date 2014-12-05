@@ -116,7 +116,7 @@ def wait(addr, ander, xorer):
     """ Wait untial an emulated machine port has a specified value. """
     store_suspend = state.basic_state.suspend_all_events
     state.basic_state.suspend_all_events = True
-    while (((state.console_state.keybuf.last_scancode if addr == 0x60 else 0) ^ xorer) & ander) == 0:
+    while (inp(addr) ^ xorer) & ander == 0:
         backend.wait()
     state.basic_state.suspend_all_events = store_suspend     
 
