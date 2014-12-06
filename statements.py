@@ -1705,9 +1705,10 @@ def exec_clear(ins):
                 memory.set_stack_size(stack_size)    
             if pcjr_syntax and util.skip_white_read_if(ins, (',',)):
                 # Tandy/PCjr: select video memory size
-                if not backend.set_video_memory_size(fp.unpack(
-                    vartypes.pass_single_keep(expressions.parse_expression(
-                            ins, empty_err=2))).round_to_int()):
+                if not state.console_state.screen.set_video_memory_size(
+                    fp.unpack(vartypes.pass_single_keep(
+                                 expressions.parse_expression(ins, empty_err=2)
+                             )).round_to_int()):
                     state.console_state.screen.screen(0, 0, 0, 0)
                     console.init_mode()
             elif not exp2:

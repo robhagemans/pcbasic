@@ -130,12 +130,10 @@ def prepare_video():
     if mono_monitor:
         # copy to replace 16-colours with 16-mono
         colours16[:] = colours16_mono
-    # video memory size
-    state.console_state.video_mem_size = config.options['video-memory']
     # prepare video mode list
     # only allow the screen modes that the given machine supports
-    prepare_modes()
-    state.console_state.screen = Screen(config.options['text-width'])
+    state.console_state.screen = Screen(config.options['text-width'], 
+                                        config.options['video-memory'])
            
 def init_video(video_module):
     """ Initialise the video backend. """
@@ -768,8 +766,7 @@ class VideoMode(object):
         self.has_underline = has_underline
         self.video_segment = int(video_segment)
         self.page_size = int(page_size)
-        self.num_pages = int(num_pages or 
-                          state.console_state.video_mem_size // self.page_size)
+        self.num_pages = int(num_pages) # or video_mem_size // self.page_size)
     
 class TextMode(VideoMode):
     """ Default settings for a text mode. """
@@ -777,16 +774,16 @@ class TextMode(VideoMode):
     def __init__(self, name, height, width,
                   font_height, font_width, 
                   attr, palette, colours, 
-                  num_pages=None,
-                  is_mono=False, has_underline=False, has_blink=True,
-                  ):
+                  num_pages,
+                  is_mono=False, has_underline=False, has_blink=True):
         """ Initialise video mode settings. """
         video_segment = 0xb000 if is_mono else 0xb800
         page_size = 0x1000 if width == 80 else 0x800
         VideoMode.__init__(self, name, height, width,
                   font_height, font_width, 
                   attr, palette, colours, 
-                  num_pages, has_underline, has_blink, video_segment, page_size)
+                  num_pages, has_underline, has_blink, 
+                  video_segment, page_size)
         self.is_text_mode = True
         self.num_attr = 32
         self.has_underline = has_underline
@@ -945,7 +942,7 @@ class GraphicsMode(VideoMode):
                   supports_artifacts=False,
                   cursor_index=None,
                   pixel_aspect=None,
-                  video_segment=0xb800
+                  video_segment=0xb800,
                   ):
         """ Initialise video mode settings. """
         font_width = int(pixel_width // text_width)
@@ -1091,8 +1088,8 @@ class EGAMode(GraphicsMode):
     def __init__(self, name, pixel_width, pixel_height,
                   text_height, text_width, 
                   attr, palette, colours, bitsperpixel, 
-                  interleave_times, bank_size, colours1=None,
-                  num_pages=None, has_blink=False, planes_used=range(4), 
+                  interleave_times, bank_size, num_pages, 
+                  colours1=None, has_blink=False, planes_used=range(4), 
                   ):
         """ Initialise video mode settings. """
         GraphicsMode.__init__(self, name, pixel_width, pixel_height,
@@ -1200,7 +1197,7 @@ class Tandy6Mode(GraphicsMode):
     build_tile = build_tile_cga
 
 
-def prepare_modes():
+def prepare_modes(video_mem_size):
     global mode_data, text_data
     # Tandy/PCjr pixel aspect ratio is different from normal
     # suggesting screen aspect ratio is not 4/3.
@@ -1217,7 +1214,8 @@ def prepare_modes():
                     cga4_palette, colours16, bitsperpixel=2, 
                     interleave_times=2, bank_size=0x2000, 
                     num_pages=(
-                        None if video_capabilities in ('pcjr', 'tandy') 
+                        video_mem_size // (2*0x2000)
+                        if video_capabilities in ('pcjr', 'tandy') 
                         else 1)),
         # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
         '640x200x2': 
@@ -1230,45 +1228,53 @@ def prepare_modes():
             CGAMode('160x200x16', 160, 200, 25, 20, 15,
                     cga16_palette, colours16, bitsperpixel=4,
                     interleave_times=2, bank_size=0x2000,
+                    num_pages=video_mem_size//(2*0x2000),
                     pixel_aspect=(1968, 1000), cursor_index=3),
         #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr screen 4
         '320x200x4pcjr': 
             CGAMode('320x200x4pcjr', 320, 200, 25, 40, 3,
                     cga4_palette, colours16, bitsperpixel=2,
                     interleave_times=2, bank_size=0x2000,
+                    num_pages=video_mem_size//(2*0x2000),
                     cursor_index=3),
         # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr screen 5
         '320x200x16pcjr': 
             CGAMode('320x200x16pcjr', 320, 200, 25, 40, 15,
                     cga16_palette, colours16, bitsperpixel=4,
                     interleave_times=4, bank_size=0x2000,
+                    num_pages=video_mem_size//(4*0x2000),
                     cursor_index=3),
         # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr screen 6
         '640x200x4': 
             Tandy6Mode('640x200x4', 640, 200, 25, 80, 3,
                         cga4_palette, colours16, bitsperpixel=2,
                         interleave_times=4, bank_size=0x2000,
+                        num_pages=video_mem_size//(4*0x2000),
                         cursor_index=3),
         # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
         '320x200x16': 
             EGAMode('320x200x16', 320, 200, 25, 40, 15,
                     cga16_palette, colours16, bitsperpixel=4,
+                    num_pages=video_mem_size//(4*0x2000),
                     interleave_times=1, bank_size=0x2000),                 
         # 0Eh 640x200x16    EGA screen 8
         '640x200x16': 
             EGAMode('640x200x16', 640, 200, 25, 80, 15,
                     cga16_palette, colours16, bitsperpixel=4,
+                    num_pages=video_mem_size//(4*0x4000),
                     interleave_times=1, bank_size=0x4000),                 
         # 10h 640x350x16    EGA screen 9
         '640x350x16': 
             EGAMode('640x350x16', 640, 350, 25, 80, 15,
                     ega_palette, colours64, bitsperpixel=4,
+                    num_pages=video_mem_size//(4*0x8000),
                     interleave_times=1, bank_size=0x8000),                 
         # 0Fh 640x350x4     EGA monochrome screen 10
         '640x350x4': 
             EGAMode('640x350x16', 640, 350, 25, 80, 1,
                     ega_mono_palette, colours_ega_mono_0, bitsperpixel=2,
                     interleave_times=1, bank_size=0x8000,
+                    num_pages=video_mem_size//(2*0x8000),
                     colours1=colours_ega_mono_1, has_blink=True,
                     planes_used=(1, 3)),                 
         # 40h 640x400x2   1bpp  olivetti screen 3
@@ -1276,6 +1282,7 @@ def prepare_modes():
             CGAMode('640x400x2', 640, 400, 25, 80, 1,
                     palette=(0, 15), colours=colours16, bitsperpixel=1,
                     interleave_times=4, bank_size=0x2000,
+                    num_pages=1,
                     has_blink=True),
         # hercules screen 3
         '720x348x2': 
@@ -1284,6 +1291,7 @@ def prepare_modes():
             CGAMode('720x348x2', 720, 350, 25, 80, 1,
                     palette=(0, 15), colours=colours16_mono, bitsperpixel=1,
                     interleave_times=4, bank_size=0x2000,
+                    num_pages=2,
                     has_blink=True),
         }
     if video_capabilities == 'vga':    
@@ -1383,25 +1391,6 @@ def prepare_modes():
         for mode in range(4, 256):
             mode_data[mode] = graphics_mode['640x400x2']
 
-# video mode
-   
-def set_video_memory_size(new_size):
-    """ Change the amount of memory available to the video card. """
-    state.console_state.video_mem_size = new_size
-    # redefine number of video pages
-    prepare_modes()
-    # text screen modes don't depend on video memory size
-    if state.console_state.screen.screen_mode == 0:
-        return True
-    # check if we need to drop out of our current mode
-    page = max(state.console_state.screen.vpagenum, state.console_state.screen.apagenum)
-    # reload max number of pages; do we fit? if not, drop to text
-    new_mode = mode_data[state.console_state.screen.screen_mode]
-    if (page >= new_mode.num_pages):
-        return False        
-    state.console_state.screen.mode = new_mode
-    return True
-    
 
 #############################################
 # screen buffer
@@ -1541,13 +1530,15 @@ class TextBuffer(object):
 class Screen(object):
     """ Screen manipulation operations. """
 
-    def __init__(self, initial_width):
+    def __init__(self, initial_width, video_mem_size):
         """ Minimal initialisiation of the screen. """
         self.screen_mode = 0
         self.colorswitch= 1
         self.apagenum = 0
         self.vpagenum = 0
         self.attr = 7
+        self.video_mem_size = video_mem_size
+        prepare_modes(video_mem_size)
         self.mode = text_data[initial_width]
 
     def screen(self, new_mode, new_colorswitch, new_apagenum, new_vpagenum, 
@@ -1684,6 +1675,23 @@ class Screen(object):
             elif self.mode.name == '320x200x16':
                 return self.screen(8, None, None, None)
         return False
+
+    def set_video_memory_size(new_size):
+        """ Change the amount of memory available to the video card. """
+        self.video_mem_size = new_size
+        # redefine number of available video pages
+        prepare_modes(self.video_mem_size)
+        # text screen modes don't depend on video memory size
+        if self.screen_mode == 0:
+            return True
+        # check if we need to drop out of our current mode
+        page = max(self.vpagenum, self.apagenum)
+        # reload max number of pages; do we fit? if not, drop to text
+        new_mode = mode_data[self.screen_mode]
+        if (page >= new_mode.num_pages):
+            return False        
+        self.mode = new_mode
+        return True
 
     def set_page(self, new_vpagenum, new_apagenum):
         """ Set active page & visible page, counting from 0. """
