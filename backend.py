@@ -698,31 +698,6 @@ def set_cga4_palette(num):
         else:    
             cga4_palette[:] = (0, 11, 13, 15)
 
-def set_colorburst(on=True):
-    """ Set the composite colorburst bit. """
-    # On a composite monitor:
-    # - on SCREEN 2 this enables artifacting
-    # - on SCREEN 1 and 0 this switches between colour and greyscale
-    # On an RGB monitor:
-    # - on SCREEN 1 this switches between mode 4/5 palettes (RGB)
-    # - ignored on other screens
-    global cga_mode_5
-    colorburst_capable = video_capabilities in (
-                                'cga', 'cga_old', 'tandy', 'pcjr')
-    if ((not state.console_state.screen.mode.is_text_mode) and
-            state.console_state.screen.mode.name =='320x200x4' and 
-            not composite_monitor):
-        # ega ignores colorburst; tandy and pcjr have no mode 5
-        cga_mode_5 = not (on or video_capabilities not in ('cga', 'cga_old'))
-        set_cga4_palette(1)
-    elif (on or not composite_monitor and not mono_monitor):
-        # take modulo in case we're e.g. resuming ega text into a cga machine
-        colours16[:] = colours16_colour
-    else:
-        colours16[:] = colours16_mono
-    set_palette()
-    video.set_colorburst(on and colorburst_capable, 
-        state.console_state.rgb_palette, state.console_state.rgb_palette1)
 
 ###############################################################################
 # video modes
@@ -1344,8 +1319,6 @@ class Screen(object):
         self.prepare_modes()
         self.mode = text_data[initial_width]
 
-
-
     def prepare_modes(self):
         # Tandy/PCjr pixel aspect ratio is different from normal
         # suggesting screen aspect ratio is not 4/3.
@@ -1639,11 +1612,11 @@ class Screen(object):
         video.set_attr(self.attr)
         # in screen 0, 1, set colorburst (not in SCREEN 2!)
         if info.is_text_mode:
-            set_colorburst(new_colorswitch)
+            self.set_colorburst(new_colorswitch)
         elif info.name == '320x200x4':    
-            set_colorburst(not new_colorswitch)
+            self.set_colorburst(not new_colorswitch)
         elif info.name == '640x200x2':
-            set_colorburst(False)    
+            self.set_colorburst(False)    
         return True
 
     def set_width(self, to_width):
@@ -1679,7 +1652,33 @@ class Screen(object):
                 return self.screen(8, None, None, None)
         return False
 
-    def set_video_memory_size(new_size):
+    def set_colorburst(self, on=True):
+        """ Set the composite colorburst bit. """
+        # On a composite monitor:
+        # - on SCREEN 2 this enables artifacting
+        # - on SCREEN 1 and 0 this switches between colour and greyscale
+        # On an RGB monitor:
+        # - on SCREEN 1 this switches between mode 4/5 palettes (RGB)
+        # - ignored on other screens
+        global cga_mode_5
+        colorburst_capable = video_capabilities in (
+                                    'cga', 'cga_old', 'tandy', 'pcjr')
+        if ((not self.mode.is_text_mode) and
+                self.mode.name =='320x200x4' and 
+                not composite_monitor):
+            # ega ignores colorburst; tandy and pcjr have no mode 5
+            cga_mode_5 = not (on or video_capabilities not in ('cga', 'cga_old'))
+            set_cga4_palette(1)
+        elif (on or not composite_monitor and not mono_monitor):
+            # take modulo in case we're e.g. resuming ega text into a cga machine
+            colours16[:] = colours16_colour
+        else:
+            colours16[:] = colours16_mono
+        set_palette()
+        video.set_colorburst(on and colorburst_capable, 
+            state.console_state.rgb_palette, state.console_state.rgb_palette1)
+
+    def set_video_memory_size(self, new_size):
         """ Change the amount of memory available to the video card. """
         self.video_mem_size = new_size
         # redefine number of available video pages
