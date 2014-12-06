@@ -81,9 +81,11 @@ def set_width(to_width):
     # raise an error if the width value doesn't make sense
     if to_width not in (20, 40, 80):
         return False
+    # if we're currnetly at that width, do nothing
     if to_width == state.console_state.screen.mode.width:
         return True
-    if not backend.set_width(to_width):
+    # change video mode to one with new width
+    if not state.console_state.screen.set_width(to_width):
         return False
     init_mode()
     return True
