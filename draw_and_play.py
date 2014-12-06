@@ -354,7 +354,7 @@ def play_parse_mml(mml_list):
                 else:
                     raise error.RunError(5)    
             elif c == 'V' and ( backend.pcjr_sound == 'tandy' or 
-                                (backend.pcjr_sound == 'pcjr' and state.console_state.sound_on)): 
+                                (backend.pcjr_sound == 'pcjr' and state.console_state.sound.sound_on)): 
                 state.basic_state.play_state[voice].volume = min(15, max(0, ml_parse_number(gmls)))
             else:
                 raise error.RunError(5)    

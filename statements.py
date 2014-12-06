@@ -492,7 +492,7 @@ def exec_sound(ins):
     """ SOUND: produce an arbitrary sound or switch external speaker on/off. """
     # Tandy/PCjr SOUND ON, OFF
     if pcjr_syntax and util.skip_white(ins) in ('\x95', '\xDD'):
-        state.console_state.sound_on = (ins.read(1) == '\x95')
+        state.console_state.sound.sound_on = (ins.read(1) == '\x95')
         util.require(ins, util.end_statement)
         return
     freq = vartypes.pass_int_unpack(expressions.parse_expression(ins))
@@ -502,7 +502,8 @@ def exec_sound(ins):
         raise error.RunError(5)
     # only look for args 3 and 4 if duration is > 0; otherwise those args are a syntax error (on tandy)    
     if dur.gt(fp.Single.zero):    
-        if (util.skip_white_read_if(ins, (',',)) and (pcjr_syntax == 'tandy' or (pcjr_syntax == 'pcjr' and state.console_state.sound_on))):
+        if (util.skip_white_read_if(ins, (',',)) and (pcjr_syntax == 'tandy' or 
+                (pcjr_syntax == 'pcjr' and state.console_state.sound.sound_on))):
             volume = vartypes.pass_int_unpack(expressions.parse_expression(ins))
             util.range_check(0, 15, volume)        
             if util.skip_white_read_if(ins, (',',)):
@@ -539,7 +540,8 @@ def exec_play(ins):
         # retrieve Music Macro Language string
         mml0 = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         mml1, mml2 = '', ''
-        if ((pcjr_syntax == 'tandy' or (pcjr_syntax == 'pcjr' and state.console_state.sound_on))
+        if ((pcjr_syntax == 'tandy' or (pcjr_syntax == 'pcjr' and 
+                                         state.console_state.sound.sound_on))
                 and util.skip_white_read_if(ins, (',',))):
             mml1 = vartypes.pass_string_unpack(expressions.parse_expression(ins))
             if util.skip_white_read_if(ins, (',',)):
@@ -549,7 +551,7 @@ def exec_play(ins):
           
 def exec_noise(ins):
     """ NOISE: produce sound on the noise generator (Tandy/PCjr). """
-    if not state.console_state.sound_on:
+    if not state.console_state.sound.sound_on:
         raise error.RunError(5)
     source = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.require_read(ins, (',',))

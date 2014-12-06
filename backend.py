@@ -72,10 +72,14 @@ def prepare_audio():
     # pcjr/tandy sound
     if config.options['syntax'] in ('pcjr', 'tandy'):
         pcjr_sound = config.options['syntax']
+    # initialise sound queue
+    state.console_state.sound = Sound()
+    #D
+    state.console_state.music_queue = state.console_state.sound.queue
     # tandy has SOUND ON by default, pcjr has it OFF
-    state.console_state.sound_on = (pcjr_sound == 'tandy')
+    state.console_state.sound.sound_on = (pcjr_sound == 'tandy')
     # pc-speaker on/off; (not implemented; not sure whether should be on)
-    state.console_state.beep_on = True
+    state.console_state.sound.beep_on = True
 
 def init_audio():
     """ Initialise the audio backend. """
@@ -2092,6 +2096,9 @@ class Sound(object):
         self.noise_freq[3] = 0.
         self.noise_freq[7] = 0.
         self.quiet_ticks = 0
+        # Tandy/PCjr SOUND ON and BEEP ON
+        self.sound_on = False
+        self.beep_on = True
 
     def beep(self):
         """ Play the BEEP sound. """
@@ -2102,7 +2109,7 @@ class Sound(object):
         if frequency < 0:
             frequency = 0
         if ((pcjr_sound == 'tandy' or 
-                (pcjr_sound == 'pcjr' and state.console_state.sound_on)) and
+                (pcjr_sound == 'pcjr' and state.console_state.sound.sound_on)) and
                 frequency < 110. and frequency != 0):
             # pcjr, tandy play low frequencies as 110Hz
             frequency = 110.
@@ -2163,10 +2170,6 @@ class Sound(object):
                     audio.quit_sound()
                     self.quiet_ticks = 0
 
-state.console_state.sound = Sound()
-#D
-state.console_state.music_queue = state.console_state.sound.queue
-        
 #D        
 def sound_done(voice, number_left):
     """ Report a sound has finished playing, remove from queue. """ 
