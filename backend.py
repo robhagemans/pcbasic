@@ -937,7 +937,15 @@ class GraphicsMode(VideoMode):
     def cutoff_coord(self, x, y):
         """ Ensure coordinates are within screen + 1 pixel. """
         return min(self.pixel_width, max(-1, x)), min(self.pixel_height, max(-1, y))
-    
+
+    def set_plane(self, plane):
+        """ Set the current colour plane (EGA only). """
+        pass
+
+    def set_plane_mask(self, mask):
+        """ Set the current colour plane mask (EGA only). """
+        pass    
+
 
 class CGAMode(GraphicsMode):
     """ Default settings for a CGA graphics mode. """
@@ -1059,9 +1067,22 @@ class EGAMode(GraphicsMode):
         self.bytes_per_row = pixel_width // 8
         self.video_segment = 0xa000
         self.planes_used = planes_used
-        self.plane_mask = sum([ 2**x for x in planes_used ])
+        # additional colour plane mask
+        self.master_plane_mask = sum([ 2**x for x in planes_used ])
         # this is a reference
         self.colours1 = colours1
+        # current ega memory colour plane to read
+        self.plane = 0
+        # current ega memory colour planes to write to
+        self.plane_mask = 0xff
+
+    def set_plane(self, plane):
+        """ Set the current colour plane. """
+        self.plane = plane
+
+    def set_plane_mask(self, mask):
+        """ Set the current colour plane mask. """
+        self.plane_mask = mask
 
     def get_coords(self, addr):
         """ Get video page and coordinates for address. """
@@ -1075,7 +1096,7 @@ class EGAMode(GraphicsMode):
         """ Retrieve a byte from EGA memory. """
         page, x, y = self.get_coords(addr)
         if self.coord_ok(page, x, y):
-            plane = state.console_state.colour_plane % (max(planes_used)+1)
+            plane = self.plane % (max(planes_used)+1)
             if plane in planes_used:
                 return get_pixel_byte(page, x, y, plane)
 
@@ -1083,7 +1104,7 @@ class EGAMode(GraphicsMode):
         """ Set a byte in EGA video memory. """
         page, x, y = self.get_coords(addr)
         if self.coord_ok(page, x, y):
-            mask = state.console_state.colour_plane_write_mask & self.plane_mask
+            mask = self.plane_mask & self.master_plane_mask
             set_pixel_byte(page, x, y, mask, val)
 
     set_area = set_area_ega
@@ -1292,16 +1313,6 @@ class TextBuffer(object):
 
 ###############################################################################
 # screen operations
-
-# ega, tandy, pcjr
-video_capabilities = 'ega'
-
-
-# video memory
-state.console_state.colour_plane = 0
-state.console_state.colour_plane_write_mask = 0xff
-
-        
         
 class Screen(object):
     """ Screen manipulation operations. """
@@ -1317,6 +1328,7 @@ class Screen(object):
         # border attribute
         self.border_attr = 0
         self.video_mem_size = video_mem_size
+        # prepare video modes
         self.prepare_modes()
         self.mode = self.text_data[initial_width]
 

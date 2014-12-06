@@ -102,10 +102,10 @@ def out(addr, val):
         joystick_out_time = timedate.timer_milliseconds()
     elif addr == 0x3c5:
         # officially, requires OUT &H3C4, 2 first (not implemented)
-        state.console_state.colour_plane_write_mask = val
+        state.console_state.screen.mode.set_plane_mask(val)
     elif addr == 0x3cf:
         # officially, requires OUT &H3CE, 4 first (not implemented)
-        state.console_state.colour_plane = val        
+        state.console_state.screen.mode.set_plane(val)
     elif addr == 0x3d8:
         #OUT &H3D8,&H1A: REM enable color burst
         #OUT &H3D8,&H1E: REM disable color burst
