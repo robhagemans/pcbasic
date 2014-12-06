@@ -158,15 +158,16 @@ def resume_screen():
     cmode = state.console_state.screen.mode
     nmode = state.console_state.screen.screen_mode
     if (not cmode.is_text_mode and 
-            (nmode not in mode_data or cmode.name != mode_data[nmode].name)):
+            (nmode not in state.console_state.screen.mode_data or 
+             cmode.name != state.console_state.screen.mode_data[nmode].name)):
         logging.warning(
             "Resumed screen mode %d (%s) not supported by this setup",
             nmode, cmode.name)
         return False
     if not cmode.is_text_mode:    
-        mode_info = mode_data[nmode]
+        mode_info = state.console_state.screen.mode_data[nmode]
     else:
-        mode_info = text_data[cmode.width]
+        mode_info = state.console_state.screen.text_data[cmode.width]
     if (cmode.is_text_mode and cmode.name != mode_info.name):
         # we switched adaptes on resume; fix font height, palette, cursor
         state.console_state.cursor_from = (state.console_state.cursor_from *
@@ -1317,7 +1318,7 @@ class Screen(object):
         self.border_attr = 0
         self.video_mem_size = video_mem_size
         self.prepare_modes()
-        self.mode = text_data[initial_width]
+        self.mode = self.text_data[initial_width]
 
     def prepare_modes(self):
         # Tandy/PCjr pixel aspect ratio is different from normal
@@ -1349,53 +1350,53 @@ class Screen(object):
                 CGAMode('160x200x16', 160, 200, 25, 20, 15,
                         cga16_palette, colours16, bitsperpixel=4,
                         interleave_times=2, bank_size=0x2000,
-                        num_pages=video_mem_size//(2*0x2000),
+                        num_pages=self.video_mem_size//(2*0x2000),
                         pixel_aspect=(1968, 1000), cursor_index=3),
             #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr screen 4
             '320x200x4pcjr': 
                 CGAMode('320x200x4pcjr', 320, 200, 25, 40, 3,
                         cga4_palette, colours16, bitsperpixel=2,
                         interleave_times=2, bank_size=0x2000,
-                        num_pages=video_mem_size//(2*0x2000),
+                        num_pages=self.video_mem_size//(2*0x2000),
                         cursor_index=3),
             # 09h 320x200x16 32768B 4bpp 0xb8000    Tandy/PCjr screen 5
             '320x200x16pcjr': 
                 CGAMode('320x200x16pcjr', 320, 200, 25, 40, 15,
                         cga16_palette, colours16, bitsperpixel=4,
                         interleave_times=4, bank_size=0x2000,
-                        num_pages=video_mem_size//(4*0x2000),
+                        num_pages=self.video_mem_size//(4*0x2000),
                         cursor_index=3),
             # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr screen 6
             '640x200x4': 
                 Tandy6Mode('640x200x4', 640, 200, 25, 80, 3,
                             cga4_palette, colours16, bitsperpixel=2,
                             interleave_times=4, bank_size=0x2000,
-                            num_pages=video_mem_size//(4*0x2000),
+                            num_pages=self.video_mem_size//(4*0x2000),
                             cursor_index=3),
             # 0Dh 320x200x16 32768B 4bpp 0xa0000    EGA screen 7
             '320x200x16': 
                 EGAMode('320x200x16', 320, 200, 25, 40, 15,
                         cga16_palette, colours16, bitsperpixel=4,
-                        num_pages=video_mem_size//(4*0x2000),
+                        num_pages=self.video_mem_size//(4*0x2000),
                         interleave_times=1, bank_size=0x2000),                 
             # 0Eh 640x200x16    EGA screen 8
             '640x200x16': 
                 EGAMode('640x200x16', 640, 200, 25, 80, 15,
                         cga16_palette, colours16, bitsperpixel=4,
-                        num_pages=video_mem_size//(4*0x4000),
+                        num_pages=self.video_mem_size//(4*0x4000),
                         interleave_times=1, bank_size=0x4000),                 
             # 10h 640x350x16    EGA screen 9
             '640x350x16': 
                 EGAMode('640x350x16', 640, 350, 25, 80, 15,
                         ega_palette, colours64, bitsperpixel=4,
-                        num_pages=video_mem_size//(4*0x8000),
+                        num_pages=self.video_mem_size//(4*0x8000),
                         interleave_times=1, bank_size=0x8000),                 
             # 0Fh 640x350x4     EGA monochrome screen 10
             '640x350x4': 
                 EGAMode('640x350x16', 640, 350, 25, 80, 1,
                         ega_mono_palette, colours_ega_mono_0, bitsperpixel=2,
                         interleave_times=1, bank_size=0x8000,
-                        num_pages=video_mem_size//(2*0x8000),
+                        num_pages=self.video_mem_size//(2*0x8000),
                         colours1=colours_ega_mono_1, has_blink=True,
                         planes_used=(1, 3)),                 
             # 40h 640x400x2   1bpp  olivetti screen 3
@@ -1536,9 +1537,9 @@ class Screen(object):
                 new_width = 40
         try:
             if new_mode != 0:    
-                info = mode_data[new_mode]
+                info = self.mode_data[new_mode]
             else:
-                info = text_data[new_width]
+                info = self.text_data[new_width]
         except KeyError:
             # no such mode
             info = None
@@ -1570,7 +1571,7 @@ class Screen(object):
             self.attr = info.attr
         # start with black border 
         if new_mode != self.screen_mode:
-            set_border(0)
+            self.set_border(0)
         # set the screen parameters
         self.screen_mode = new_mode
         self.colorswitch = new_colorswitch 
@@ -1689,7 +1690,7 @@ class Screen(object):
         # check if we need to drop out of our current mode
         page = max(self.vpagenum, self.apagenum)
         # reload max number of pages; do we fit? if not, drop to text
-        new_mode = mode_data[self.screen_mode]
+        new_mode = self.mode_data[self.screen_mode]
         if (page >= new_mode.num_pages):
             return False        
         self.mode = new_mode

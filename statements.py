@@ -2077,7 +2077,7 @@ def exec_color(ins):
         util.range_check(0, mode.num_attr-1, fore)
         util.range_check(0, 15, back, bord)
         state.console_state.screen.set_attr(((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10 + (fore & 0xf)) 
-        backend.set_border(bord)
+        state.console_state.screen.set_border(bord)
     elif mode.name in ('160x200x16', '320x200x4pcjr', '320x200x16pcjr'
                         '640x200x4', '320x200x16', '640x200x16'):
         util.range_check(1, mode.num_attr-1, fore)
