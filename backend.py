@@ -838,8 +838,6 @@ def get_area_ega(self, x0, y0, x1, y1, byte_array):
     """ Read a sprite from the screen in EGA modes. """
     dx = x1 - x0 + 1
     dy = y1 - y0 + 1
-    x0, y0 = view_coords(x0, y0)
-    x1, y1 = view_coords(x1, y1)
     # illegal fn call if outside screen boundary
     util.range_check(0, self.pixel_width-1, x0, x1)
     util.range_check(0, self.pixel_height-1, y0, y1)
@@ -873,8 +871,6 @@ def set_area_ega(self, x0, y0, byte_array, operation):
     dx = vartypes.uint_to_value(byte_array[0:2])
     dy = vartypes.uint_to_value(byte_array[2:4])
     x1, y1 = x0+dx-1, y0+dy-1
-    x0, y0 = view_coords(x0, y0)
-    x1, y1 = view_coords(x1, y1)
     # illegal fn call if outside screen boundary
     util.range_check(0, self.pixel_width-1, x0, x1)
     util.range_check(0, self.pixel_height-1, y0, y1)
@@ -1014,8 +1010,6 @@ class CGAMode(GraphicsMode):
         """ Read a sprite from the screen. """
         dx = x1 - x0 + 1
         dy = y1 - y0 + 1
-        x0, y0 = view_coords(x0, y0)
-        x1, y1 = view_coords(x1, y1)
         # illegal fn call if outside screen boundary
         util.range_check(0, self.pixel_width-1, x0, x1)
         util.range_check(0, self.pixel_height-1, y0, y1)
@@ -1049,8 +1043,6 @@ class CGAMode(GraphicsMode):
         dx = vartypes.uint_to_value(byte_array[0:2]) / bpp
         dy = vartypes.uint_to_value(byte_array[2:4])
         x1, y1 = x0+dx-1, y0+dy-1
-        x0, y0 = view_coords(x0, y0)
-        x1, y1 = view_coords(x1, y1)
         # illegal fn call if outside screen boundary
         util.range_check(0, self.pixel_width-1, x0, x1)
         util.range_check(0, self.pixel_height-1, y0, y1)
@@ -1614,13 +1606,17 @@ class Screen(object):
         self.set_page(new_vpagenum, new_apagenum)
         # set graphics characteristics
         if not self.mode.is_text_mode:
+            # viewport        
+            self.view_absolute = False
+            self.view = None
+            # logical window
             state.console_state.graph_window = None
             state.console_state.graph_window_bounds = None
-            state.console_state.last_attr = self.attr
             # centre of new graphics screen
             state.console_state.last_point = (
                             self.mode.pixel_width/2, self.mode.pixel_height/2)
             state.console_state.pixel_aspect_ratio = self.mode.pixel_aspect
+            state.console_state.last_attr = self.attr
         # cursor width starts out as single char
         state.console_state.cursor_width = info.font_width        
         # signal the backend to change the screen resolution
@@ -1835,6 +1831,8 @@ class Screen(object):
             self.apage.row[r].buf[cx0:cx1+1] = [
                 (' ', self.attr)] * (cx1 - cx0 + 1)
 
+    ## graphics primitives
+
     def put_pixel(self, x, y, index, pagenum=None):
         """ Put a pixel on the screen; empty character buffer. """
         if pagenum == None:
@@ -1857,6 +1855,46 @@ class Screen(object):
         """ Fill a scanline interval in a tile pattern or solid attribute. """
         video.fill_interval(x0, x1, y, tile, solid)
         self.clear_text_area(x0, y, x1, y)
+
+    ## viewport
+
+    def unset_view(self):
+        """ Unset the graphics viewport. """
+        self.view_absolute = False
+        self.view = None
+        state.console_state.last_point = video.unset_graph_clip()
+        if state.console_state.graph_window_bounds != None:
+            graphics.set_graph_window(*state.console_state.graph_window_bounds)
+    
+    def set_view(self, x0, y0, x1, y1, absolute=True):
+        """ Set the graphics viewport. """
+        # VIEW orders the coordinates
+        if x0 > x1:
+            x0, x1 = x1, x0
+        if y0 > y1:
+            y0, y1 = y1, y0
+        self.view_absolute = absolute
+        self.view = x0, y0, x1, y1
+        video.set_graph_clip(x0, y0, x1, y1)
+        if self.view_absolute:
+            state.console_state.last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
+        else:
+            state.console_state.last_point = (x1-x0)/2, (y1-y0)/2
+        if state.console_state.graph_window_bounds != None:
+            graphics.set_graph_window(*state.console_state.graph_window_bounds)
+
+    def view_coords(self, x, y):
+        """ Retrieve absolute coordinates for viewport coordinates. """
+        if (not self.view) or self.view_absolute:
+            return x, y
+        else:
+            return x + self.view[0], y + self.view[1]
+
+    def clear_view(self):
+        """ Clear the current graphics viewport. """
+        if not state.console_state.screen.mode.is_text_mode:
+            video.clear_graph_clip((self.attr>>4) & 0x7)
+
     
 
 #############################################
@@ -1938,49 +1976,7 @@ def toggle_echo_lpt1():
         output_echos.append(lpt1.write)
 
 
-#############################################
-# graphics viewport
 
-state.console_state.graph_view_set = False
-state.console_state.view_graph_absolute = True
-
-def set_graph_view(x0,y0,x1,y1, absolute=True):
-    """ Set the graphics viewport. """
-    # VIEW orders the coordinates
-    if x0 > x1:
-        x0, x1 = x1, x0
-    if y0 > y1:
-        y0, y1 = y1, y0
-    state.console_state.view_graph_absolute = absolute
-    state.console_state.graph_view_set = True
-    video.set_graph_clip(x0, y0, x1, y1)
-    if state.console_state.view_graph_absolute:
-        state.console_state.last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
-    else:
-        state.console_state.last_point = (x1-x0)/2, (y1-y0)/2
-    if state.console_state.graph_window_bounds != None:
-        set_graph_window(*state.console_state.graph_window_bounds)
-
-def unset_graph_view():
-    """ Unset the graphics viewport. """
-    state.console_state.view_graph_absolute = False
-    state.console_state.graph_view_set = False
-    state.console_state.last_point = video.unset_graph_clip()
-    if state.console_state.graph_window_bounds != None:
-        set_graph_window(*state.console_state.graph_window_bounds)
-
-def view_coords(x,y):
-    """ Retrieve absolute coordinates for viewport coordinates. """
-    if ((not state.console_state.graph_view_set) or 
-            state.console_state.view_graph_absolute):
-        return x, y
-    else:
-        lefttop = video.get_graph_clip()
-        return x + lefttop[0], y + lefttop[1]
-
-def clear_graphics_view():
-    """ Clear the current viewport. """
-    video.clear_graph_clip((state.console_state.screen.attr>>4) & 0x7)
 
 ##############################################
 # light pen

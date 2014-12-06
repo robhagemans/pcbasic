@@ -23,8 +23,8 @@ def reset_graphics():
     """ Reset graphics state. """
     if state.console_state.screen.mode.is_text_mode:
         return
-    x0, y0, x1, y1 = backend.video.get_graph_clip()
-    if state.console_state.view_graph_absolute:
+    x0, y0, x1, y1 = state.console_state.screen.view
+    if state.console_state.screen.view_absolute:
         state.console_state.last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
     else:
         state.console_state.last_point = (x1-x0)/2, (y1-y0)/2
@@ -43,7 +43,7 @@ def get_colour_index(c):
 
 def put_point(x, y, c):
     """ Draw a pixel in the give attribute (PSET, PRESET). """
-    x, y = backend.view_coords(x,y)
+    x, y = state.console_state.screen.view_coords(x,y)
     backend.video.apply_graph_clip()
     c = get_colour_index(c)
     state.console_state.screen.put_pixel(x, y, c)
@@ -52,7 +52,7 @@ def put_point(x, y, c):
     
 def get_point(x, y):
     """ Return the attribute of a pixel (POINT). """
-    x, y = backend.view_coords(x, y)
+    x, y = state.console_state.screen.view_coords(x, y)
     if x < 0 or x >= state.console_state.screen.mode.pixel_width:
         return -1
     if y < 0 or y >= state.console_state.screen.mode.pixel_height:
@@ -69,7 +69,7 @@ def set_graph_window(fx0, fy0, fx1, fy1, cartesian=True):
         fx0, fx1 = fx1, fx0
     if cartesian:
         fy0, fy1 = fy1, fy0
-    left,top, right,bottom = backend.video.get_graph_clip()
+    left, top, right, bottom = state.console_state.screen.view
     x0, y0 = fp.Single.zero, fp.Single.zero 
     x1, y1 = fp.Single.from_int(right-left), fp.Single.from_int(bottom-top)        
     scalex, scaley = fp.div(fp.sub(x1, x0), fp.sub(fx1,fx0)), fp.div(fp.sub(y1, y0), fp.sub(fy1,fy0)) 
@@ -119,8 +119,8 @@ def window_scale(fx, fy):
             
 def draw_box_filled(x0, y0, x1, y1, c):
     """ Draw a filled box between the given corner points. """
-    x0, y0 = backend.view_coords(x0, y0)
-    x1, y1 = backend.view_coords(x1, y1)
+    x0, y0 = state.console_state.screen.view_coords(x0, y0)
+    x1, y1 = state.console_state.screen.view_coords(x1, y1)
     c = get_colour_index(c)
     if y1 < y0:
         y0, y1 = y1, y0
@@ -134,8 +134,8 @@ def draw_box_filled(x0, y0, x1, y1, c):
 def draw_line(x0, y0, x1, y1, c, pattern=0xffff):
     """ Draw a line between the given points. """
     c = get_colour_index(c)
-    x0, y0 = state.console_state.screen.mode.cutoff_coord(*backend.view_coords(x0, y0))
-    x1, y1 = state.console_state.screen.mode.cutoff_coord(*backend.view_coords(x1, y1))
+    x0, y0 = state.console_state.screen.mode.cutoff_coord(*state.console_state.screen.view_coords(x0, y0))
+    x1, y1 = state.console_state.screen.mode.cutoff_coord(*state.console_state.screen.view_coords(x1, y1))
     if y1 <= y0:
         # work from top to bottom, or from x1,y1 if at the same height. this matters for mask.
         x1, y1, x0, y0 = x0, y0, x1, y1
@@ -187,8 +187,8 @@ def draw_straight(x0, y0, x1, y1, c, pattern, mask):
                         
 def draw_box(x0, y0, x1, y1, c, pattern=0xffff):
     """ Draw an empty box between the given corner points. """
-    x0, y0 = state.console_state.screen.mode.cutoff_coord(*backend.view_coords(x0, y0))
-    x1, y1 = state.console_state.screen.mode.cutoff_coord(*backend.view_coords(x1, y1))
+    x0, y0 = state.console_state.screen.mode.cutoff_coord(*state.console_state.screen.view_coords(x0, y0))
+    x1, y1 = state.console_state.screen.mode.cutoff_coord(*state.console_state.screen.view_coords(x1, y1))
     c = get_colour_index(c)
     mask = 0x8000
     backend.video.apply_graph_clip()
@@ -295,7 +295,7 @@ def draw_circle(x0, y0, r, c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, l
     """ Draw a circle using the midpoint algorithm. """
     # see e.g. http://en.wikipedia.org/wiki/Midpoint_circle_algorithm
     c = get_colour_index(c)
-    x0, y0 = backend.view_coords(x0, y0)
+    x0, y0 = state.console_state.screen.view_coords(x0, y0)
     if oct0 == -1:
         hide_oct = range(0,0)
     elif oct0 < oct1 or oct0 == oct1 and octant_gte(oct0, coo1, coo0):
@@ -375,7 +375,7 @@ def draw_ellipse(cx, cy, rx, ry, c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1,
     """ Draw ellipse using the midpoint algorithm. """
     # for algorithm see http://members.chello.at/~easyfilter/bresenham.html
     c = get_colour_index(c)
-    cx, cy = backend.view_coords(cx, cy)
+    cx, cy = state.console_state.screen.view_coords(cx, cy)
     # find invisible quadrants
     if qua0 == -1:
         hide_qua = range(0,0)
@@ -487,7 +487,7 @@ def flood_fill(x, y, pattern, c, border, background):
     else:
         tile, back = [[c]*8], None
     bound_x0, bound_y0, bound_x1, bound_y1 = backend.video.get_graph_clip()  
-    x, y = backend.view_coords(x, y)
+    x, y = state.console_state.screen.view_coords(x, y)
     line_seed = [(x, x, y, 0)]
     # paint nothing if seed is out of bounds
     if x < bound_x0 or x > bound_x1 or y < bound_y0 or y > bound_y1:
@@ -587,6 +587,7 @@ operations = {
 def set_area(x0, y0, array, operation_char):
     """ Put a sprite on the screen (PUT). """
     # array must exist at this point (or PUT would have raised error 5)      
+    x0, y0 = state.console_state.screen.view_coords(x0, y0)
     rect = backend.video.fast_put(x0, y0, array, state.basic_state.arrays[array][2], operation_char)
     if rect:
         x0, y0, x1, y1 = rect
@@ -608,6 +609,8 @@ def get_area(x0, y0, x1, y1, array):
     if state.console_state.screen.mode.name == '640x200x4':
         # Tandy screen 6 simply GETs twice the width, it seems
         x1 = x0 + 2*(x1-x0+1)-1 
+    x0, y0 = state.console_state.screen.view_coords(x0, y0)
+    x1, y1 = state.console_state.screen.view_coords(x1, y1)
     state.console_state.screen.mode.get_area(x0, y0, x1, y1, byte_array)
     # store a copy in the fast-put store
     # arrays[array] must exist at this point (or GET would have raised error 5)

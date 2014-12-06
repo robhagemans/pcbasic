@@ -1220,14 +1220,14 @@ def exec_view_graph(ins):
         fill, border = None, None
         if util.skip_white_read_if(ins, (',',)):
             fill, border = expressions.parse_int_list(ins, 2, err=2)
-        backend.set_graph_view(x0-1, y0-1, x1+1, y1+1, True)
+        state.console_state.screen.set_view(x0-1, y0-1, x1+1, y1+1, True)
         if fill != None:
             graphics.draw_box_filled(x0, y0, x1, y1, fill)
         if border != None:
             graphics.draw_box(x0-1, y0-1, x1+1, y1+1, border)
-        backend.set_graph_view(x0, y0, x1, y1, absolute)
+        state.console_state.screen.set_view(x0, y0, x1, y1, absolute)
     else:
-        backend.unset_graph_view()
+        state.console_state.screen.unset_view()
     util.require(ins, util.end_statement)        
     
 def exec_window(ins):
@@ -2027,7 +2027,12 @@ def exec_cls(ins):
     """ CLS: clear the screen. """
     if (pcjr_syntax == 'pcjr' or 
                     util.skip_white(ins) in (',',) + util.end_statement):
-        val = 1 if state.console_state.graph_view_set else (2 if state.console_state.view_set else 0)
+        if state.console_state.screen.view != None:
+            val = 1
+        elif state.console_state.view_set:
+            val = 2
+        else:
+            val = 0
     else:
         val = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         if pcjr_syntax == 'tandy':
@@ -2044,8 +2049,8 @@ def exec_cls(ins):
     if val == 0:
         console.clear()  
         graphics.reset_graphics()
-    elif val == 1 and not state.console_state.screen.mode.is_text_mode:
-        backend.clear_graphics_view()
+    elif val == 1:
+        state.console_state.screen.clear_view()
         graphics.reset_graphics()
     elif val == 2:
         console.clear_view()  
