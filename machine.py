@@ -656,7 +656,7 @@ def get_low_memory(addr):
         if state.console_state.screen.mode.name == '320x200x4':
             return backend.get_palette_entry(0) + 32 * backend.cga4_palette_num
         elif state.console_state.screen.mode.is_text_mode:
-            return state.console_state.border_attr % 16 
+            return state.console_state.screen.border_attr % 16 
             # not implemented: + 16 "if current color specified through 
             # COLOR f,b with f in [0,15] and b > 7
     # 1296, 1297: zero (PCmag says data segment address)
