@@ -834,7 +834,7 @@ class KYBDFile(NullDevice):
     def read(self, n):
         """ Read a string from the keyboard - INPUT and LINE INPUT. """
         word = ''
-        for c in stte.console_state.keyb.read_chars(n):
+        for c in state.console_state.keyb.read_chars(n):
             if len(c) > 1 and c[0] == '\x00':
                 try:
                     word += self.input_replace[c]

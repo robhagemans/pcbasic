@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3.
 
 import os
 from functools import partial
+import logging
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -623,7 +624,7 @@ def exec_bsave(ins):
     """ BSAVE: save a block of memory to a file. Limited implementation. """
     if state.basic_state.protected and not state.basic_state.run_mode:
         raise error.RunError(5)
-    namade = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
     util.require_read(ins, (',',))
     offset = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint = 0xffff) 
@@ -823,7 +824,7 @@ def exec_edit(ins):
     # throws back to direct mode
     flow.set_pointer(False)
     state.basic_state.execute_mode = False 
-    state.console_state.cursor.reset_visibility()   
+    state.console_state.screen.cursor.reset_visibility()   
     # request edit prompt
     state.basic_state.prompt = (from_line, None)
     
@@ -2467,7 +2468,7 @@ def exec_pcopy(ins):
     dst = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
     util.range_check(0, state.console_state.screen.mode.num_pages-1, dst)
-    state.console_state.text.copy_page(src, dst)
+    state.console_state.screen.copy_page(src, dst)
         
         
 prepare()

@@ -19,6 +19,9 @@ import error
 import vartypes
 import util
 
+# FIXME: circular import
+import graphics
+
 # backend implementations
 video = None
 audio = None 
@@ -74,8 +77,6 @@ def prepare_audio():
         pcjr_sound = config.options['syntax']
     # initialise sound queue
     state.console_state.sound = Sound()
-    #D
-    state.console_state.music_queue = state.console_state.sound.queue
     # tandy has SOUND ON by default, pcjr has it OFF
     state.console_state.sound.sound_on = (pcjr_sound == 'tandy')
     # pc-speaker on/off; (not implemented; not sure whether should be on)
@@ -88,7 +89,7 @@ def init_audio():
         return False
     # rebuild sound queue
     for voice in range(4):    
-        for note in state.console_state.music_queue[voice]:
+        for note in state.console_state.sound.queue[voice]:
             audio.play_sound(*note)
     return True
 
@@ -192,7 +193,7 @@ def resume_screen():
         return False
     if (cmode.is_text_mode and cmode.name != mode_info.name):
         screen.mode = mode_info
-        redraw_text_screen()
+        screen.redraw_text_screen()
     else:
         # load the screen contents from storage
         video.load_state()
@@ -417,7 +418,7 @@ class Keyboard(object):
         """ Insert characters into keyboard buffer. """
         if not self.buf.insert(s, check_full):
             # keyboard buffer is full; short beep and exit
-            play_sound(800, 0.01)
+            state.console_state.sound.play_sound(800, 0.01)
 
     def key_down(self, scan, eascii='', check_full=True):
         """ Insert a key-down event. Keycode is extended ascii, including DBCS. """
@@ -473,8 +474,7 @@ class Keyboard(object):
             if (state.basic_state.key_macros_off or state.basic_state.run_mode 
                     and state.basic_state.key_handlers[keynum].enabled):
                 # this key is paused from being trapped, don't replace
-                self.insert_chars(scan_to_eascii(scan, self.mod, 
-                                  check_full=check_full))
+                self.insert_chars(scan_to_eascii(scan, self.mod), check_full)
                 return
             else:
                 macro = state.console_state.key_replace[keynum]
@@ -710,7 +710,7 @@ class TextMode(VideoMode):
         self.num_attr = 32
         self.has_underline = has_underline
     
-    def get_memory(addr):
+    def get_memory(self, addr):
         """ Retrieve a byte from textmode video memory. """
         addr -= self.video_segment*0x10
         page = addr // self.page_size
@@ -718,12 +718,12 @@ class TextMode(VideoMode):
         ccol = (offset % (self.width*2)) // 2
         crow = offset // (self.width*2)
         try:
-            c = state.console_state.text.pages[page].row[crow].buf[ccol][addr%2]  
+            c = state.console_state.screen.text.pages[page].row[crow].buf[ccol][addr%2]  
             return c if addr%2==1 else ord(c)
         except IndexError:
             return -1    
     
-    def set_memory(addr, val):
+    def set_memory(self, addr, val):
         """ Set a byte in textmode video memory. """
         addr -= self.video_segment*0x10
         page = addr // self.page_size
@@ -731,12 +731,12 @@ class TextMode(VideoMode):
         ccol = (offset % (self.width*2)) // 2
         crow = offset // (self.width*2)
         try:
-            c, a = state.console_state.text.pages[page].row[crow].buf[ccol]
+            c, a = state.console_state.screen.text.pages[page].row[crow].buf[ccol]
             if addr%2 == 0:
                 c = chr(val)
             else:
                 a = val
-            state.console_state.pages[page].put_char_attr(crow+1, ccol+1, c, a)
+            state.console_state.screen.put_char_attr(page, crow+1, ccol+1, c, a)
         except IndexError:
             pass
 
@@ -887,8 +887,8 @@ class GraphicsMode(VideoMode):
     def coord_ok(self, page, x, y):
         """ Check if a page and coordinates are within limits. """
         return (page >= 0 and page < self.num_pages and
-                x >= 0 and x < self.pixel.width and
-                y >= 0 and y < self.pixel.height)
+                x >= 0 and x < self.pixel_width and
+                y >= 0 and y < self.pixel_height)
 
     def cutoff_coord(self, x, y):
         """ Ensure coordinates are within screen + 1 pixel. """
@@ -933,7 +933,7 @@ class CGAMode(GraphicsMode):
         page, x, y = self.get_coords(addr)
         if self.coord_ok(page, x, y):
             for shift in range(8 // self.bitsperpixel):
-                nbit = (byte >> (8-(shift+1)*self.bitsperpixel)) & mask
+                nbit = (val >> (8-(shift+1)*self.bitsperpixel)) & mask
                 video.put_pixel(x + shift, y, nbit, page) 
 
     def get_area(self, x0, y0, x1, y1, byte_array):
@@ -1052,8 +1052,8 @@ class EGAMode(GraphicsMode):
         """ Retrieve a byte from EGA memory. """
         page, x, y = self.get_coords(addr)
         if self.coord_ok(page, x, y):
-            plane = self.plane % (max(planes_used)+1)
-            if plane in planes_used:
+            plane = self.plane % (max(self.planes_used)+1)
+            if plane in self.planes_used:
                 return get_pixel_byte(page, x, y, plane)
 
     def set_memory(self, addr, val):
@@ -1102,7 +1102,7 @@ class Tandy6Mode(GraphicsMode):
         self.bytes_per_row = self.pixel_width * 2 // 8
         self.video_segment = 0xb800
 
-    def get_coords(addr):
+    def get_coords(self, addr):
         """ Get video page and coordinates for address. """
         addr =  int(addr) - self.video_segment * 0x10
         page, addr = addr//self.page_size, addr%self.page_size
@@ -1113,7 +1113,7 @@ class Tandy6Mode(GraphicsMode):
         y = bank + 4 * row
         return page, x, y
 
-    def get_memory(addr):
+    def get_memory(self, addr):
         """ Retrieve a byte from Tandy 640x200x4 """
         # 8 pixels per 2 bytes
         # low attribute bits stored in even bytes, high bits in odd bytes.        
@@ -1121,7 +1121,7 @@ class Tandy6Mode(GraphicsMode):
         if self.coord_ok(page, x, y):
             return get_pixel_byte(page, x, y, addr%2) 
 
-    def set_memory(addr, val):
+    def set_memory(self, addr, val):
         """ Set a byte in Tandy 640x200x4 memory. """
         page, x, y = self.get_coords(addr)
         if self.coord_ok(page, x, y):
@@ -1311,7 +1311,7 @@ class Screen(object):
                         self.cga4_palette, colours16, bitsperpixel=2, 
                         interleave_times=2, bank_size=0x2000, 
                         num_pages=(
-                            video_mem_size // (2*0x2000)
+                            self.video_mem_size // (2*0x2000)
                             if video_capabilities in ('pcjr', 'tandy') 
                             else 1)),
             # 06h 640x200x2  16384B 1bpp 0xb8000    screen 2
@@ -2139,7 +2139,7 @@ def pen_up():
 #D
 def pen_moved(x, y):
     """ Report a pen-move event at graphical x,y """
-    state.console_state.pen_moved(x, y)    
+    state.console_state.pen.moved(x, y)    
     
  
 ###############################################################################
@@ -2181,7 +2181,7 @@ class Stick(object):
         joy, axis = fn // 2, fn % 2
         return stick_axis[joy][axis]
         
-    def poll_trigger(fn):       
+    def poll_trigger(self, fn):       
         """ Poll the joystick buttons. """    
         joy, trig = fn // 4, (fn//2) % 2
         if fn % 2 == 0:
@@ -2274,7 +2274,7 @@ class Sound(object):
 
     def stop_all_sound(self):
         """ Terminate all sounds immediately. """
-        self.music_queue = [ [], [], [], [] ]
+        self.queue = [ [], [], [], [] ]
         audio.stop_all_sound()
         
     def play_noise(self, source, volume, duration, loop=False):

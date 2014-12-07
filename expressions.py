@@ -11,6 +11,7 @@ try:
 except ImportError:
     from StringIO import StringIO
 from functools import partial
+import logging
 
 import config
 import fp
@@ -751,7 +752,7 @@ def value_strig(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     # 0,1 -> [0][0] 2,3 -> [0][1]  4,5-> [1][0]  6,7 -> [1][1]
     util.range_check(0, 7, fn)
-    return vartypes.bool_to_int_keep(state.console_state.strig.poll_trigger(fn))
+    return vartypes.bool_to_int_keep(state.console_state.stick.poll_trigger(fn))
     
 #########################################################
 # memory and machine

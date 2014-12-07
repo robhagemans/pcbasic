@@ -85,11 +85,8 @@ def load_state():
 def clear_rows(cattr, start, stop):
     """ Clear screen rows. """
     for r in range(start, stop+1):
-        try:
-            wconio.gotoxy(0, r-1)
-            wconio.clreol()
-        except curses.error:
-            pass
+        wconio.gotoxy(0, r-1)
+        wconio.clreol()
                     
 def move_cursor(crow, ccol):
     """ Move the cursor to a new position. """
@@ -149,7 +146,7 @@ def scroll_down(from_line, scroll_height, attr):
     wconio.gotoxy(0, scroll_height-1)
     wconio.delline()
     if cursor_row < height:
-        window.move(cursor_col-1, cursor_row)
+        wconio.gotoxy(cursor_col-1, cursor_row)
 
 ###############################################################################
 # The following are no-op responses to requests from backend
@@ -230,7 +227,7 @@ def check_keyboard():
             c += uc.encode('utf-8')
             if c == '\x03':         # ctrl-C
                 backend.insert_special_key('break')
-            if c == eof:            # ctrl-D (unix) / ctrl-Z (windows)
+            if c == '\x1A':         # ctrl-Z (windows EOF)
                 backend.insert_special_key('quit')
             elif c == '\x7f':       # backspace
                 backend.insert_chars('\b')
