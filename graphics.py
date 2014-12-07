@@ -23,11 +23,7 @@ def reset_graphics():
     """ Reset graphics state. """
     if state.console_state.screen.mode.is_text_mode:
         return
-    x0, y0, x1, y1 = state.console_state.screen.get_view()
-    if state.console_state.screen.view_absolute:
-        state.console_state.last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
-    else:
-        state.console_state.last_point = (x1-x0)/2, (y1-y0)/2
+    state.console_state.last_point = state.console_state.screen.get_view_mid()
     state.basic_state.draw_scale = 4
     state.basic_state.draw_angle = 0
 

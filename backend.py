@@ -1884,7 +1884,7 @@ class Screen(object):
         video.fill_interval(x0, x1, y, tile, solid)
         self.clear_text_area(x0, y, x1, y)
 
-    ## viewport
+    ## graphics viewport
 
     def unset_view(self):
         """ Unset the graphics viewport. """
@@ -1904,10 +1904,7 @@ class Screen(object):
         self.view_absolute = absolute
         self.view = x0, y0, x1, y1
         video.set_graph_clip(x0, y0, x1, y1)
-        if self.view_absolute:
-            state.console_state.last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
-        else:
-            state.console_state.last_point = (x1-x0)/2, (y1-y0)/2
+        state.console_state.last_point = self.get_view_mid()
         if state.console_state.graph_window_bounds != None:
             graphics.set_graph_window(*state.console_state.graph_window_bounds)
     
@@ -1917,6 +1914,14 @@ class Screen(object):
             return self.view
         else:
             return 0, 0, self.mode.pixel_width-1, self.mode.pixel_height-1
+
+    def get_view_mid(self):
+        """ Get the midpoint of the current graphics view. """
+        x0, y0, x1, y1 = self.get_view()
+        if self.view_absolute:
+            state.console_state.last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
+        else:
+            state.console_state.last_point = (x1-x0)/2, (y1-y0)/2
 
     def view_coords(self, x, y):
         """ Retrieve absolute coordinates for viewport coordinates. """
