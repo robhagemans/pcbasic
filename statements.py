@@ -2060,47 +2060,52 @@ def exec_cls(ins):
 
 def exec_color(ins):
     """ COLOR: set colour attributes. """
-    fore, back, bord = expressions.parse_int_list(ins, 3, 5)          
-    mode = state.console_state.screen.mode
+    fore, back, bord = expressions.parse_int_list(ins, 3, 5)
+    screen = state.console_state.screen
+    mode = screen.mode
     if mode.name == '320x200x4':
         return exec_color_mode_1(fore, back, bord)
     elif mode.name in ('640x200x2', '720x348x2'): 
         # screen 2; hercules: illegal fn call
         raise error.RunError(5)
-    attr = state.console_state.screen.attr
-    fore_old, back_old = (attr>>7)*0x10 + (attr&0xf), (attr>>4) & 0x7
+    fore_old = (screen.attr>>7)*0x10 + (screen.attr&0xf)
+    back_old = (screen.attr>>4) & 0x7
     bord = 0 if bord == None else bord
     util.range_check(0, 255, bord)
     fore = fore_old if fore == None else fore
     # graphics mode bg is always 0; sets palette instead
-    back = back_old if mode.is_text_mode and back == None else (backend.get_palette_entry(0) if back == None else back)
+    if mode.is_text_mode and back == None:
+        back = back_old 
+    else:
+        back = screen.palette.get_entry(0) if back == None else back
     if mode.is_text_mode:
         util.range_check(0, mode.num_attr-1, fore)
         util.range_check(0, 15, back, bord)
-        state.console_state.screen.set_attr(((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10 + (fore & 0xf)) 
-        state.console_state.screen.set_border(bord)
+        screen.set_attr(((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10 
+                        + (fore & 0xf)) 
+        screen.set_border(bord)
     elif mode.name in ('160x200x16', '320x200x4pcjr', '320x200x16pcjr'
                         '640x200x4', '320x200x16', '640x200x16'):
         util.range_check(1, mode.num_attr-1, fore)
         util.range_check(0, mode.num_attr-1, back)
-        state.console_state.screen.set_attr(fore)
+        screen.set_attr(fore)
         # in screen 7 and 8, only low intensity palette is used.
-        backend.set_palette_entry(0, back % 8, check_mode=False)    
+        screen.palette.set_entry(0, back % 8, check_mode=False)    
     elif mode.name in ('640x350x16', '640x350x4'):
         util.range_check(0, mode.num_attr-1, fore)
-        util.range_check(0, len(state.console_state.colours)-1, back)
-        state.console_state.screen.set_attr(fore)
-        backend.set_palette_entry(0, back, check_mode=False)
+        util.range_check(0, len(mode.colours)-1, back)
+        screen.set_attr(fore)
+        screen.palette.set_entry(0, back, check_mode=False)
     elif mode.name == '640x400x2':
-        util.range_check(0, len(state.console_state.colours)-1, fore)
+        util.range_check(0, len(mode.colours)-1, fore)
         if back != 0:
             raise error.RunError(5)    
-        backend.set_palette_entry(1, fore, check_mode=False)
+        screen.palette.set_entry(1, fore, check_mode=False)
         
     
 def exec_color_mode_1(back, pal, override):
     """ Helper function for COLOR in SCREEN 1. """
-    back = backend.get_palette_entry(0) if back == None else back
+    back = screen.palette.get_entry(0) if back == None else back
     if override != None:
         # uses last entry as palette if given
         pal = override
@@ -2112,36 +2117,37 @@ def exec_color_mode_1(back, pal, override):
         palette[0] = back&0xf
         # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
         # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
-        backend.set_palette(palette, check_mode=False)
+        screen.palette.set_all(palette, check_mode=False)
     else:
-        backend.set_palette_entry(0, back & 0xf, check_mode=False)        
+        screen.palette.set_entry(0, back & 0xf, check_mode=False)        
     
 def exec_palette(ins):
     """ PALETTE: set colour palette entry. """
     d = util.skip_white(ins)
     if d in util.end_statement:
         # reset palette
-        backend.set_palette()
+        state.console_state.screen.palette.set_all(state.console_state.screen.mode.palette)
     elif d == '\xD7': # USING
         ins.read(1)
         exec_palette_using(ins)
     else:
         # can't set blinking colours separately
-        num_attr = state.console_state.screen.mode.num_attr
-        num_palette_entries = num_attr if num_attr != 32 else 16
+        mode = state.console_state.screen.mode
+        num_palette_entries = mode.num_attr if mode.num_attr != 32 else 16
         pair = expressions.parse_int_list(ins, 2, err=5)
         if pair[0] == None or pair[1] == None:
             raise error.RunError(2)
         util.range_check(0, num_palette_entries-1, pair[0])
-        util.range_check(-1, len(state.console_state.colours)-1, pair[1])
+        util.range_check(-1, len(mode.colours)-1, pair[1])
         if pair[1] > -1:
-            backend.set_palette_entry(pair[0], pair[1])
+            state.console_state.screen.palette.set_entry(pair[0], pair[1])
         util.require(ins, util.end_statement)    
 
 def exec_palette_using(ins):
     """ PALETTE USING: set full colour palette. """
-    num_attr = state.console_state.screen.mode.num_attr
-    num_palette_entries = num_attr if num_attr != 32 else 16
+    screen = state.console_state.screen
+    mode = screen.mode
+    num_palette_entries = mode.num_attr if mode.num_attr != 32 else 16
     array_name, start_indices = expressions.get_var_or_array_name(ins)
     try:     
         dimensions, lst, _ = state.basic_state.arrays[array_name]    
@@ -2150,14 +2156,14 @@ def exec_palette_using(ins):
     if array_name[-1] != '%':
         raise error.RunError(13)
     start = var.index_array(start_indices, dimensions)
-    if var.array_len(dimensions) - start  < num_palette_entries:
+    if var.array_len(dimensions) - start < num_palette_entries:
         raise error.RunError(5)
     new_palette = []
     for i in range(num_palette_entries):
         val = vartypes.pass_int_unpack(('%', lst[(start+i)*2:(start+i+1)*2]))
-        util.range_check(-1, len(state.console_state.colours)-1, val)
-        new_palette.append(val if val > -1 else backend.get_palette_entry(i))
-    backend.set_palette(new_palette)
+        util.range_check(-1, len(mode.colours)-1, val)
+        new_palette.append(val if val > -1 else screen.palette.get_entry(i))
+    screen.palette.set_all(new_palette)
     util.require(ins, util.end_statement) 
 
 def exec_key(ins):

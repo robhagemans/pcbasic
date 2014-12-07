@@ -95,7 +95,7 @@ def init_audio():
 def prepare_video():
     """ Prepare the video subsystem. """
     global egacursor
-    global video_capabilities, composite_monitor, mono_monitor, mono_tint
+    global video_capabilities, composite_monitor, mono_monitor
     global colours16_mono, colours_ega_mono_0, colours_ega_mono_1, cga_low
     global colours_ega_mono_text
     global circle_aspect
@@ -111,31 +111,20 @@ def prepare_video():
     mono_monitor = config.options['monitor'] == 'mono'
     if video_capabilities == 'ega' and mono_monitor:
         video_capabilities = 'ega_mono'
-    if video_capabilities not in ('ega', 'vga'):
-        state.console_state.colours = colours16
-        state.console_state.palette = cga16_palette[:]
     cga_low = config.options['cga-low']
+    # set monochrome tint
+    mono_tint = config.options['mono-tint']
+    # build colour sets
+    prepare_colours(mono_monitor, mono_tint)
+    # initialise the 4-colour CGA palette    
     set_cga4_palette(1)    
-    # set monochrome tint and build mono palettes
-    if config.options['mono-tint']:
-        mono_tint = config.options['mono-tint']
-    colours16_mono[:] = [ [tint*i//255 for tint in mono_tint]
-                       for i in intensity16_mono ]            
-    colours_ega_mono_0[:] = [ [tint*i//255 for tint in mono_tint]
-                       for i in intensity_ega_mono_0 ]            
-    colours_ega_mono_1[:] = [ [tint*i//255 for tint in mono_tint]
-                       for i in intensity_ega_mono_1 ]        
-    colours_mda_mono[:] = [ [tint*i//255 for tint in mono_tint]
-                       for i in intensity_mda_mono ]
-    if mono_monitor:
-        # copy to replace 16-colours with 16-mono
-        colours16[:] = colours16_mono
     # prepare video mode list
     # only allow the screen modes that the given machine supports
     # PCjr starts in 40-column mode
     # video memory size - default is EGA 256K
     state.console_state.screen = Screen(config.options['text-width'], 
                                         config.options['video-memory'])
+
 
 ###############################################################################
 # stage 2 initialisation
@@ -171,22 +160,20 @@ def resume_screen():
     else:
         mode_info = screen.text_data[cmode.width]
     if (cmode.is_text_mode and cmode.name != mode_info.name):
-        # we switched adaptes on resume; fix font height, palette, cursor
+        # we switched adapters on resume; fix font height, palette, cursor
         screen.cursor.from_line = (screen.cursor.from_line *
                                    mode_info.font_height) // cmode.font_height
         screen.cursor.to_line = (screen.cursor.to_line *
                                  mode_info.font_height) // cmode.font_height
-        set_palette()
+        screen.palette = Palette(screen.mode)
     # set up the appropriate screen resolution
     if (cmode.is_text_mode or video.supports_graphics_mode(mode_info)):
         # set the visible and active pages
         video.set_page(screen.vpagenum, screen.apagenum)
         # set the screen mde
         video.init_screen_mode(mode_info)
-        # initialise rgb_palette global
-        set_palette(state.console_state.palette, check_mode=False)
-        video.update_palette(state.console_state.rgb_palette,
-                             state.console_state.rgb_palette1)
+        # rebuild palette
+        screen.palette.set_all(screen.palette.palette, check_mode=False)
         video.set_attr(screen.attr)
         # fix the cursor
         video.build_cursor(screen.cursor.width, mode_info.font_height, 
@@ -576,16 +563,16 @@ def scan_to_eascii(scan, mod):
 
 
 ###############################################################################
-# palette and colours
+# colour set
 
 # CGA colours
-colours16_colour = [    
+colours16_colour = (    
     (0x00,0x00,0x00), (0x00,0x00,0xaa), (0x00,0xaa,0x00), (0x00,0xaa,0xaa),
     (0xaa,0x00,0x00), (0xaa,0x00,0xaa), (0xaa,0x55,0x00), (0xaa,0xaa,0xaa), 
     (0x55,0x55,0x55), (0x55,0x55,0xff), (0x55,0xff,0x55), (0x55,0xff,0xff),
-    (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff) ]
+    (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff) )
 # EGA colours
-colours64 = [ 
+colours64 = (
     (0x00,0x00,0x00), (0x00,0x00,0xaa), (0x00,0xaa,0x00), (0x00,0xaa,0xaa),
     (0xaa,0x00,0x00), (0xaa,0x00,0xaa), (0xaa,0xaa,0x00), (0xaa,0xaa,0xaa), 
     (0x00,0x00,0x55), (0x00,0x00,0xff), (0x00,0xaa,0x55), (0x00,0xaa,0xff),
@@ -601,97 +588,42 @@ colours64 = [
     (0x55,0x55,0x00), (0x55,0x55,0xaa), (0x55,0xff,0x00), (0x55,0xff,0xaa),
     (0xff,0x55,0x00), (0xff,0x55,0xaa), (0xff,0xff,0x00), (0xff,0xff,0xaa),
     (0x55,0x55,0x55), (0x55,0x55,0xff), (0x55,0xff,0x55), (0x55,0xff,0xff),
-    (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff) ]
+    (0xff,0x55,0x55), (0xff,0x55,0xff), (0xff,0xff,0x55), (0xff,0xff,0xff) )
 
 # mono intensities
 # CGA mono
 intensity16_mono = range(0x00, 0x100, 0x11) 
 # SCREEN 10 EGA pseudocolours, blink state 0 and 1
-intensity_ega_mono_0 = [0x00, 0x00, 0x00, 0xaa, 0xaa, 0xaa, 0xff, 0xff, 0xff]
-intensity_ega_mono_1 = [0x00, 0xaa, 0xff, 0x00, 0xaa, 0xff, 0x00, 0xaa, 0xff]
+intensity_ega_mono_0 = (0x00, 0x00, 0x00, 0xaa, 0xaa, 0xaa, 0xff, 0xff, 0xff)
+intensity_ega_mono_1 = (0x00, 0xaa, 0xff, 0x00, 0xaa, 0xff, 0x00, 0xaa, 0xff)
 # MDA/EGA mono text intensity (blink is attr bit 7, like in colour mode)
-intensity_mda_mono = [0x00, 0xaa, 0xff] 
-# colour of monochrome monitor
-mono_tint = (0xff, 0xff, 0xff)
-# mono colours
-colours16_mono = []
-colours_ega_mono_0 = []
-colours_ega_mono_1 = []
-colours_mda_mono = []
-colours16 = copy(colours16_colour)
+intensity_mda_mono = (0x00, 0xaa, 0xff)
+
+
+def prepare_colours(mono_monitor, mono_tint):
+    """ Prepare the colour sets. """
+    global colours16, colours16_mono, colours_ega_mono_0, colours_ega_mono_1
+    global colours_mda_mono
+    # initialise tinted monochrome palettes
+    colours16_mono = tuple(tuple(tint*i//255 for tint in mono_tint)
+                           for i in intensity16_mono)
+    colours_ega_mono_0 = tuple(tuple(tint*i//255 for tint in mono_tint)
+                               for i in intensity_ega_mono_0)
+    colours_ega_mono_1 = tuple(tuple(tint*i//255 for tint in mono_tint)
+                               for i in intensity_ega_mono_1)
+    colours_mda_mono = tuple(tuple(tint*i//255 for tint in mono_tint)
+                             for i in intensity_mda_mono)
+    if mono_monitor:
+        colours16 = list(colours16_mono)
+    else:
+        colours16 = list(colours16_colour)
+
 
 # default cga 4-color palette can change with mode, so is a list
 cga_mode_5 = False
 cga4_palette = [0, 11, 13, 15]
-# default 16-color and ega palettes
-cga16_palette = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
-ega_palette = (0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63)
-ega_mono_palette = (0, 4, 1, 8)
-# http://qbhlp.uebergeord.net/screen-statement-details-colors.html
-# http://www.seasip.info/VintagePC/mda.html
-# underline/intensity/reverse video attributes are slightly different from mda
-# attributes 1, 9 should have underlining. 
-ega_mono_text_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 0)
-mda_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2)
-# use ega palette by default
-
-
-# the available colours
-state.console_state.colours = colours64
-# blinking *colours* - only SCREEN 10, otherwise blink is an *attribute*
-state.console_state.colours1 = None
-# the palette defines the colour for each attribute
-state.console_state.palette = list(ega_palette)
-
-
-def set_palette_entry(index, colour, check_mode=True):
-    """ Set a new colour for a given attribute. """
-    # effective palette change is an error in CGA; ignore in Tandy/PCjr SCREEN 0
-    if check_mode:
-        if video_capabilities in ('cga', 'cga_old', 'mda', 
-                                   'hercules', 'olivetti'):
-            raise error.RunError(5)
-        elif (video_capabilities in ('tandy', 'pcjr') and 
-                state.console_state.screen.mode.is_text_mode):
-            return
-    state.console_state.palette[index] = colour
-    state.console_state.rgb_palette[index] = (
-        state.console_state.colours[colour])
-    if state.console_state.colours1:
-        state.console_state.rgb_palette1[index] = (
-        state.console_state.colours1[colour])
-    video.update_palette(state.console_state.rgb_palette,
-                         state.console_state.rgb_palette1)
-
-def get_palette_entry(index):
-    """ Retrieve the colour for a given attribute. """
-    return state.console_state.palette[index]
-
-def set_palette(new_palette=None, check_mode=True):
-    """ Set the colours for all attributes. """
-    if check_mode and new_palette:
-        if video_capabilities in ('cga', 'cga_old', 'mda', 
-                                   'hercules', 'olivetti'):
-            raise error.RunError(5)
-        elif (video_capabilities in ('tandy', 'pcjr') and 
-                state.console_state.screen.mode.is_text_mode):
-            return
-    if new_palette:
-        state.console_state.palette = new_palette[:]
-    else:    
-        state.console_state.palette = list(state.console_state.screen.mode.palette)
-    state.console_state.rgb_palette = [ 
-        state.console_state.colours[i] for i in state.console_state.palette]
-    if state.console_state.colours1:
-        state.console_state.rgb_palette1 = [ 
-            state.console_state.colours1[i] for i in state.console_state.palette]
-    else:
-        state.console_state.rgb_palette1 = None
-    video.update_palette(state.console_state.rgb_palette, 
-                         state.console_state.rgb_palette1)
-
-
 cga4_palette_num = 1
+
 def set_cga4_palette(num):
     """ Change the default CGA palette according to palette number & mode. """
     global cga4_palette_num
@@ -722,8 +654,21 @@ def set_cga4_palette(num):
             cga4_palette[:] = (0, 11, 13, 15)
 
 
+
 ###############################################################################
 # video modes
+
+# default 16-color and ega palettes
+cga16_palette = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+ega_palette = (0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63)
+ega_mono_palette = (0, 4, 1, 8)
+# http://qbhlp.uebergeord.net/screen-statement-details-colors.html
+# http://www.seasip.info/VintagePC/mda.html
+# underline/intensity/reverse video attributes are slightly different from mda
+# attributes 1, 9 should have underlining. 
+ega_mono_text_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 0)
+mda_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2)
+
 
 class VideoMode(object):
     """ Base class for video modes. """
@@ -1601,7 +1546,7 @@ class Screen(object):
                 (new_mode != 0 and not video.supports_graphics_mode(info))):
             # reset palette happens 
             # even if the function fails with Illegal Function Call
-            set_palette(self.mode.palette)
+            self.palette = Palette(self.mode)
             return False
         # attribute persists on width-only change
         if not (self.screen_mode == 0 and new_mode == 0 
@@ -1616,9 +1561,6 @@ class Screen(object):
         self.colorswitch = new_colorswitch 
         # set all state vars
         self.mode = info
-        # these are all duplicates
-        state.console_state.colours = info.colours
-        state.console_state.colours1 = info.colours1
         # build the screen buffer    
         self.text = TextBuffer(self.attr, self.mode.width, 
                                self.mode.height, self.mode.num_pages)
@@ -1646,8 +1588,8 @@ class Screen(object):
             return False
         # cursor width starts out as single char
         self.cursor.init_mode(info)
-        # set the palette (essential on first run, or not all globals defined)
-        set_palette()
+        # set the palette
+        self.palette = Palette(self.mode)
         # set the attribute
         video.set_attr(self.attr)
         # in screen 0, 1, set colorburst (not in SCREEN 2!)
@@ -1710,13 +1652,13 @@ class Screen(object):
             cga_mode_5 = not (on or video_capabilities not in ('cga', 'cga_old'))
             set_cga4_palette(1)
         elif (on or not composite_monitor and not mono_monitor):
-            # take modulo in case we're e.g. resuming ega text into a cga machine
             colours16[:] = colours16_colour
         else:
             colours16[:] = colours16_mono
-        set_palette()
-        video.set_colorburst(on and colorburst_capable, 
-            state.console_state.rgb_palette, state.console_state.rgb_palette1)
+        # reset the palette to reflect the new mono or mode-5 situation
+        self.palette = Palette(self.mode)
+        video.set_colorburst(on and colorburst_capable,
+                            self.palette.rgb_palette, self.palette.rgb_palette1)
 
     def set_video_memory_size(self, new_size):
         """ Change the amount of memory available to the video card. """
@@ -1957,6 +1899,56 @@ class Screen(object):
         """ Clear the current graphics viewport. """
         if not state.console_state.screen.mode.is_text_mode:
             video.clear_graph_clip((self.attr>>4) & 0x7)
+
+
+###############################################################################
+# palette
+
+class Palette(object):
+    """ Colour palette. """
+    
+    def __init__(self, mode):
+        """ Initialise palette. """
+        self.set_all(mode.palette, check_mode=False)
+
+    def set_entry(self, index, colour, check_mode=True):
+        """ Set a new colour for a given attribute. """
+        mode = state.console_state.screen.mode
+        if check_mode and not self.mode_allows_palette(mode):
+            return
+        self.palette[index] = colour
+        self.rgb_palette[index] = mode.colours[colour]
+        if mode.colours1:
+            self.rgb_palette1[index] = mode.colours1[colour]
+        video.update_palette(self.rgb_palette, self.rgb_palette1)
+
+    def get_entry(self, index):
+        """ Retrieve the colour for a given attribute. """
+        return self.palette[index]
+
+    def set_all(self, new_palette, check_mode=True):
+        """ Set the colours for all attributes. """
+        mode = state.console_state.screen.mode
+        if check_mode and new_palette and not self.mode_allows_palette(mode):
+            return
+        self.palette = list(new_palette)
+        self.rgb_palette = [mode.colours[i] for i in self.palette]
+        if mode.colours1:
+            self.rgb_palette1 = [mode.colours1[i] for i in self.palette]
+        else:
+            self.rgb_palette1 = None
+        video.update_palette(self.rgb_palette, self.rgb_palette1)
+
+    def mode_allows_palette(self, mode):
+        """ Check if the video mode allows palette change. """
+        # effective palette change is an error in CGA
+        if video_capabilities in ('cga', 'cga_old', 'mda', 'hercules', 'olivetti'):
+            raise error.RunError(5)
+        # ignore palette changes in Tandy/PCjr SCREEN 0
+        elif video_capabilities in ('tandy', 'pcjr') and mode.is_text_mode:
+            return False
+        else:
+            return True
 
 
 ###############################################################################
