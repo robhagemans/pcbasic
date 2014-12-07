@@ -636,9 +636,9 @@ def get_low_memory(addr):
         return state.console_state.row - 1
     # 1120, 1121 cursor shape
     elif addr == 1120:
-        return state.console_state.cursor_to
+        return state.console_state.screen.cursor.to_line
     elif addr == 1121:
-        return state.console_state.cursor_from
+        return state.console_state.screen.cursor.from_line
     # 1122 visual page number
     elif addr == 1122:
         return state.console_state.vpagenum

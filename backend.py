@@ -155,47 +155,47 @@ def init_video(video_module):
 
 def resume_screen():
     """ Load a video mode from storage and initialise. """
-    cmode = state.console_state.screen.mode
-    nmode = state.console_state.screen.screen_mode
+    screen = state.console_state.screen
+    cmode = screen.mode
+    nmode = screen.screen_mode
     if (not cmode.is_text_mode and 
-            (nmode not in state.console_state.screen.mode_data or 
-             cmode.name != state.console_state.screen.mode_data[nmode].name)):
+            (nmode not in screen.mode_data or 
+             cmode.name != screen.mode_data[nmode].name)):
         logging.warning(
             "Resumed screen mode %d (%s) not supported by this setup",
             nmode, cmode.name)
         return False
     if not cmode.is_text_mode:    
-        mode_info = state.console_state.screen.mode_data[nmode]
+        mode_info = screen.mode_data[nmode]
     else:
-        mode_info = state.console_state.screen.text_data[cmode.width]
+        mode_info = screen.text_data[cmode.width]
     if (cmode.is_text_mode and cmode.name != mode_info.name):
         # we switched adaptes on resume; fix font height, palette, cursor
-        state.console_state.cursor_from = (state.console_state.cursor_from *
-            mode_info.font_height) // cmode.font_height
-        state.console_state.cursor_to = (state.console_state.cursor_to *
-            mode_info.font_height) // cmode.font_height
+        screen.cursor.from_line = (screen.cursor.from_line *
+                                   mode_info.font_height) // cmode.font_height
+        screen.cursor.to_line = (screen.cursor.to_line *
+                                 mode_info.font_height) // cmode.font_height
         set_palette()
     # set up the appropriate screen resolution
     if (cmode.is_text_mode or video.supports_graphics_mode(mode_info)):
         # set the visible and active pages
-        video.set_page(state.console_state.screen.vpagenum, 
-                       state.console_state.screen.apagenum)
+        video.set_page(screen.vpagenum, screen.apagenum)
         # set the screen mde
         video.init_screen_mode(mode_info)
         # initialise rgb_palette global
         set_palette(state.console_state.palette, check_mode=False)
         video.update_palette(state.console_state.rgb_palette,
                              state.console_state.rgb_palette1)
-        video.set_attr(state.console_state.screen.attr)
+        video.set_attr(screen.attr)
         # fix the cursor
         video.build_cursor(
             state.console_state.cursor_width, mode_info.font_height, 
-            state.console_state.cursor_from, state.console_state.cursor_to)    
+            screen.cursor.from_line, screen.cursor.to_line)    
         video.move_cursor(state.console_state.row, state.console_state.col)
         video.update_cursor_attr(
-                state.console_state.screen.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
-        update_cursor_visibility()
-        video.set_border(state.console_state.screen.border_attr)
+            screen.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
+        screen.cursor.reset_visibility()
+        video.set_border(screen.border_attr)
     else:
         # fix the terminal
         video.close()
@@ -204,7 +204,7 @@ def resume_screen():
             "Resumed screen mode %d not supported by this interface.", nmode)
         return False
     if (cmode.is_text_mode and cmode.name != mode_info.name):
-        state.console_state.screen.mode = mode_info
+        screen.mode = mode_info
         redraw_text_screen()
     else:
         # load the screen contents from storage
@@ -1331,6 +1331,7 @@ class Screen(object):
         # prepare video modes
         self.prepare_modes()
         self.mode = self.text_data[initial_width]
+        self.cursor = Cursor(self)
 
     def prepare_modes(self):
         # Tandy/PCjr pixel aspect ratio is different from normal
@@ -1814,7 +1815,7 @@ class Screen(object):
     def redraw_text_screen(self):
         """ Redraw the active screen page, reconstructing DBCS buffers. """
         # force cursor invisible during redraw
-        show_cursor(False)
+        self.cursor.show(False)
         # this makes it feel faster
         video.clear_rows(self.attr, 1, self.mode.height)
         # redraw every character
@@ -1824,7 +1825,7 @@ class Screen(object):
                 self.put_char_attr(self.apagenum, crow+1, i+1, 
                                      therow.buf[i][0], therow.buf[i][1])
         # set cursor back to previous state                             
-        update_cursor_visibility()
+        self.cursor.reset_visibility()
 
     #D -> devices['LPT1'].write(get_text(...))
     def print_screen(self):
@@ -1924,63 +1925,75 @@ class Screen(object):
 #############################################
 # cursor
 
-# cursor visible in execute mode?
-state.console_state.cursor = False
-# cursor shape
-state.console_state.cursor_from = 0
-state.console_state.cursor_to = 0    
 
+class Cursor(object):
+    """ Manage the cursor. """
 
-def show_cursor(do_show):
-    """ Force cursor to be visible/invisible. """
-    video.update_cursor_visibility(do_show)
+    def __init__(self, screen):
+        """ Initialise the cursor. """
+        self.screen = screen
+        # cursor visible in execute mode?
+        self.visible_run = False
+        # cursor shape
+        self.from_line = 0
+        self.to_line = 0    
 
-def update_cursor_visibility():
-    """ Set cursor visibility to its default state. """
-    # visible if in interactive mode, unless forced visible in text mode.
-    visible = (not state.basic_state.execute_mode)
-    if state.console_state.screen.mode.is_text_mode:
-        visible = visible or state.console_state.cursor
-    video.update_cursor_visibility(visible)
+    def show(self, do_show):
+        """ Force cursor to be visible/invisible. """
+        video.update_cursor_visibility(do_show)
 
-def set_cursor_shape(from_line, to_line):
-    """ Set the cursor shape. """
-    # A block from from_line to to_line in 8-line modes.
-    # Use compatibility algo in higher resolutions
-    mode = state.console_state.screen.mode
-    fx, fy = mode.font_width, mode.font_height
-    if egacursor:
-        # odd treatment of cursors on EGA machines, 
-        # presumably for backward compatibility
-        # the following algorithm is based on DOSBox source int10_char.cpp 
-        #     INT10_SetCursorShape(Bit8u first,Bit8u last)    
-        max_line = fy - 1
-        if from_line & 0xe0 == 0 and to_line & 0xe0 == 0:
-            if (to_line < from_line):
-                # invisible only if to_line is zero and to_line < from_line
-                if to_line != 0: 
-                    # block shape from *to_line* to end
-                    from_line = to_line
-                    to_line = max_line
-            elif ((from_line | to_line) >= max_line or 
-                        to_line != max_line-1 or from_line != max_line):
-                if to_line > 3:
-                    if from_line+2 < to_line:
-                        if from_line > 2:
-                            from_line = (max_line+1) // 2
+    def set_visibility(self, visible_run):
+        """ Set default cursor visibility. """
+        self.visible_run = visible_run
+        self.reset_visibility()
+        
+    def reset_visibility(self):
+        """ Set cursor visibility to its default state. """
+        # visible if in interactive mode, unless forced visible in text mode.
+        visible = (not state.basic_state.execute_mode)
+        # in graphics mode, we can't force the cursor to be visible on execute.
+        if self.screen.mode.is_text_mode:
+            visible = visible or self.visible_run
+        video.update_cursor_visibility(visible)
+
+    def set_shape(self, from_line, to_line):
+        """ Set the cursor shape. """
+        # A block from from_line to to_line in 8-line modes.
+        # Use compatibility algo in higher resolutions
+        mode = self.screen.mode
+        fx, fy = mode.font_width, mode.font_height
+        if egacursor:
+            # odd treatment of cursors on EGA machines, 
+            # presumably for backward compatibility
+            # the following algorithm is based on DOSBox source int10_char.cpp 
+            #     INT10_SetCursorShape(Bit8u first,Bit8u last)    
+            max_line = fy - 1
+            if from_line & 0xe0 == 0 and to_line & 0xe0 == 0:
+                if (to_line < from_line):
+                    # invisible only if to_line is zero and to_line < from_line
+                    if to_line != 0: 
+                        # block shape from *to_line* to end
+                        from_line = to_line
                         to_line = max_line
-                    else:
-                        from_line = from_line - to_line + max_line
-                        to_line = max_line
-                        if max_line > 0xc:
-                            from_line -= 1
-                            to_line -= 1
-    state.console_state.cursor_from = max(0, min(from_line, fy-1))
-    state.console_state.cursor_to = max(0, min(to_line, fy-1))
-    video.build_cursor(state.console_state.cursor_width, fy, 
-                       state.console_state.cursor_from, 
-                       state.console_state.cursor_to)
-    video.update_cursor_attr(state.console_state.screen.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
+                elif ((from_line | to_line) >= max_line or 
+                            to_line != max_line-1 or from_line != max_line):
+                    if to_line > 3:
+                        if from_line+2 < to_line:
+                            if from_line > 2:
+                                from_line = (max_line+1) // 2
+                            to_line = max_line
+                        else:
+                            from_line = from_line - to_line + max_line
+                            to_line = max_line
+                            if max_line > 0xc:
+                                from_line -= 1
+                                to_line -= 1
+        self.from_line = max(0, min(from_line, fy-1))
+        self.to_line = max(0, min(to_line, fy-1))
+        video.build_cursor(state.console_state.cursor_width, fy, 
+                           self.from_line, 
+                           self.to_line)
+        video.update_cursor_attr(self.screen.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
 
 #############################################
 # I/O redirection

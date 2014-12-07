@@ -741,11 +741,11 @@ def exec_shell(ins):
     if pcjr_syntax == 'pcjr':
         raise error.RunError(5)
     # force cursor visible in all cases
-    backend.show_cursor(True)
+    state.console_state.screen.cursor.show(True)
     # execute cms or open interactive shell
     oslayer.shell(cmd) 
     # reset cursor visibility to its previous state
-    backend.update_cursor_visibility()
+    state.console_state.screen.cursor.reset_visibility()
     util.require(ins, util.end_statement)
         
 def exec_environ(ins):
@@ -822,7 +822,8 @@ def exec_edit(ins):
     util.require(ins, util.end_statement, err=5)
     # throws back to direct mode
     flow.set_pointer(False)
-    state.basic_state.execute_mode = False    
+    state.basic_state.execute_mode = False 
+    state.console_state.cursor.reset_visibility()   
     # request edit prompt
     state.basic_state.prompt = (from_line, None)
     
@@ -2237,15 +2238,14 @@ def exec_locate(ins):
     if cursor != None:
         util.range_check(0, (255 if pcjr_syntax else 1), cursor)   
         # set cursor visibility - this should set the flag but have no effect in graphics modes
-        state.console_state.cursor = (cursor != 0)
-        backend.update_cursor_visibility()
+        state.console_state.screen.cursor.set_visibility(cursor != 0)
     if stop == None:
         stop = start
     if start != None:    
         util.range_check(0, 31, start, stop)
         # cursor shape only has an effect in text mode    
         if cmode.is_text_mode:    
-            backend.set_cursor_shape(start, stop)
+            state.console_state.screen.cursor.set_shape(start, stop)
 
 def exec_write(ins, output=None):
     """ WRITE: Output machine-readable expressions to the screen or a file. """

@@ -68,7 +68,7 @@ def init_mode():
     # first move to home in case the screen has shrunk
     set_pos(1, 1)
     set_default_cursor()
-    backend.update_cursor_visibility()
+    state.console_state.screen.cursor.reset_visibility()
     # there is only one VIEW PRINT setting across all pages.
     if state.console_state.scroll_height == 25:
         # tandy/pcjr special case: VIEW PRINT to 25 is preserved
@@ -97,7 +97,7 @@ def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
     """ Enter interactive mode and come back with a string. """
     prompt_row = state.console_state.row
     # force cursor visibility in all cases
-    backend.show_cursor(True) 
+    state.console_state.screen.cursor.show(True) 
     try:
         furthest_left, furthest_right = wait_interactive(from_start, alt_replace)
     except error.Break:
@@ -105,7 +105,7 @@ def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
             echo ('\x0e')
         write_line()    
         raise        
-    backend.update_cursor_visibility()
+    state.console_state.screen.cursor.reset_visibility()
     # find start of wrapped block
     crow = state.console_state.row
     while ((from_start or crow > prompt_row) and 
@@ -275,7 +275,8 @@ def wait_interactive(from_start=False, alt_replace = True):
             backend.video.build_cursor(
                 state.console_state.cursor_width, 
                 state.console_state.screen.mode.font_height, 
-                state.console_state.cursor_from, state.console_state.cursor_to)
+                state.console_state.screen.cursor.from_line, 
+                state.console_state.screen.cursor.to_line)
             backend.video.update_cursor_attr(
                 state.console_state.screen.apage.row[row-1].buf[col-1][1] & 0xf)
     set_overwrite_mode(True)
@@ -293,19 +294,19 @@ def set_default_cursor():
     if state.console_state.overwrite_mode:
         if not state.console_state.screen.mode.is_text_mode: 
             # always a block cursor in graphics mode
-            backend.set_cursor_shape(0, font_height-1)
+            state.console_state.screen.cursor.set_shape(0, font_height-1)
         elif backend.video_capabilities == 'ega':
             # EGA cursor is on second last line
-            backend.set_cursor_shape(font_height-2, font_height-2)
+            state.console_state.screen.cursor.set_shape(font_height-2, font_height-2)
         elif font_height == 9:
             # Tandy 9-pixel fonts; cursor on 8th
-            backend.set_cursor_shape(font_height-2, font_height-2)
+            state.console_state.screen.cursor.set_shape(font_height-2, font_height-2)
         else:
             # other cards have cursor on last line
-            backend.set_cursor_shape(font_height-1, font_height-1)
+            state.console_state.screen.cursor.set_shape(font_height-1, font_height-1)
     else:
         # half-block cursor for insert
-        backend.set_cursor_shape(font_height/2, font_height-1)
+        state.console_state.screen.cursor.set_shape(font_height/2, font_height-1)
 
 def insert(crow, ccol, c, cattr):
     """ Insert a single byte at the current position. """

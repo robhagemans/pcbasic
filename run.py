@@ -83,7 +83,7 @@ def switch_mode():
     if state.basic_state.execute_mode != last_execute:
         # move pointer to the start of direct line (for both on and off!)
         flow.set_pointer(False, 0)
-        backend.update_cursor_visibility()
+        state.console_state.screen.cursor.reset_visibility()
     return ((not state.basic_state.auto_mode) and 
             (not state.basic_state.execute_mode) and last_execute)
         
