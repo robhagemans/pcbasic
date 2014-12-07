@@ -1154,7 +1154,8 @@ def parse_coord(ins, absolute=False):
 
 def exec_pset(ins, c=-1):
     """ PSET: set a pixel to a given attribute, or foreground. """
-    graphics.require_graphics_mode()
+    if state.console_state.screen.mode.is_text_mode:
+        raise error.RunError(5)
     x, y = parse_coord(ins)
     state.console_state.screen.last_point = x, y
     if util.skip_white_read_if(ins, (',',)):
@@ -1169,7 +1170,8 @@ def exec_preset(ins):
 
 def exec_line_graph(ins):
     """ LINE: draw a line between two points. """
-    graphics.require_graphics_mode()
+    if state.console_state.screen.mode.is_text_mode:
+        raise error.RunError(5)
     if util.skip_white(ins) in ('(', '\xCF'):
         x0, y0 = parse_coord(ins)
         state.console_state.screen.last_point = x0, y0
@@ -1202,7 +1204,8 @@ def exec_line_graph(ins):
             
 def exec_view_graph(ins):
     """ VIEW: set graphics viewport. """
-    graphics.require_graphics_mode()
+    if state.console_state.screen.mode.is_text_mode:
+        raise error.RunError(5)
     absolute = util.skip_white_read_if(ins, ('\xC8',)) #SCREEN
     if util.skip_white_read_if(ins, '('):
         x0 = vartypes.pass_int_unpack(expressions.parse_expression(ins))
@@ -1234,7 +1237,8 @@ def exec_view_graph(ins):
     
 def exec_window(ins):
     """ WINDOW: define logical coordinate system. """
-    graphics.require_graphics_mode()
+    if state.console_state.screen.mode.is_text_mode:
+        raise error.RunError(5)
     cartesian = not util.skip_white_read_if(ins, ('\xC8',)) #SCREEN
     if util.skip_white(ins) == '(':
         x0, y0 = parse_coord(ins, absolute=True)
@@ -1249,7 +1253,8 @@ def exec_window(ins):
         
 def exec_circle(ins):
     """ CIRCLE: Draw a circle, ellipse, arc or sector. """
-    graphics.require_graphics_mode()
+    if state.console_state.screen.mode.is_text_mode:
+        raise error.RunError(5)
     x0, y0 = parse_coord(ins)
     state.console_state.screen.last_point = x0, y0
     util.require_read(ins, (',',))
@@ -1281,7 +1286,8 @@ def exec_paint(ins):
     """ PAINT: flood fill from point. """
     # if paint *colour* specified, border default = paint colour
     # if paint *attribute* specified, border default = current foreground      
-    graphics.require_graphics_mode()
+    if state.console_state.screen.mode.is_text_mode:
+        raise error.RunError(5)
     x0, y0 = parse_coord(ins)
     pattern, c, border, background_pattern = None, -1, -1, None
     if util.skip_white_read_if(ins, (',',)):
@@ -1313,7 +1319,8 @@ def exec_paint(ins):
                 
 def exec_get_graph(ins):
     """ GET: read a sprite to memory. """
-    graphics.require_graphics_mode()
+    if state.console_state.screen.mode.is_text_mode:
+        raise error.RunError(5)
     util.require(ins, ('(')) # don't accept STEP
     x0,y0 = parse_coord(ins)
     util.require_read(ins, ('\xEA',)) #-
@@ -1330,7 +1337,8 @@ def exec_get_graph(ins):
     
 def exec_put_graph(ins):
     """ PUT: draw sprite on screen. """
-    graphics.require_graphics_mode()
+    if state.console_state.screen.mode.is_text_mode:
+        raise error.RunError(5)
     util.require(ins, ('(')) # don't accept STEP
     x0,y0 = parse_coord(ins)
     util.require_read(ins, (',',)) 
@@ -1348,7 +1356,8 @@ def exec_put_graph(ins):
     
 def exec_draw(ins):
     """ DRAW: draw a figure defined by a Graphics Macro Language string. """
-    graphics.require_graphics_mode()
+    if state.console_state.screen.mode.is_text_mode:
+        raise error.RunError(5)
     gml = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_expression)
     draw_and_play.draw_parse_gml(gml)

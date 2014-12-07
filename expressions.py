@@ -677,8 +677,9 @@ def value_point(ins):
             _, fy = graphics.get_window_coords(x, y)
             return fp.pack(fy)
     else:       
-        # two-argument mode
-        graphics.require_graphics_mode()
+        # two-argument mode    
+        if state.console_state.screen.mode.is_text_mode:
+            raise error.RunError(err)
         return vartypes.pack_int(graphics.get_point(*graphics.window_coords(
                         fp.unpack(vartypes.pass_single_keep(lst[0])), 
                         fp.unpack(vartypes.pass_single_keep(lst[1])))))     

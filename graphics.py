@@ -14,11 +14,6 @@ import util
 import backend
 
 
-def require_graphics_mode(err=5):
-    """ Raise error if not in graphics mode. """
-    if state.console_state.screen.mode.is_text_mode:
-        raise error.RunError(err)
-
 def reset_graphics():
     """ Reset graphics state. """
     if state.console_state.screen.mode.is_text_mode:
