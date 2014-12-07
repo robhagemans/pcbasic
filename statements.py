@@ -2059,10 +2059,10 @@ def exec_cls(ins):
     # cls is only executed if no errors have occurred    
     if val == 0:
         console.clear()  
-        graphics.reset_graphics()
+        state.console_state.drawing.screen.graphics.reset()
     elif val == 1:
         state.console_state.screen.clear_view()
-        graphics.reset_graphics()
+        state.console_state.drawing.screen.graphics.reset()
     elif val == 2:
         console.clear_view()  
     if pcjr_syntax == 'pcjr':

@@ -48,6 +48,6 @@ def clear(close_files=False, preserve_common=False, preserve_all=False, preserve
         draw_and_play.PlayState(), draw_and_play.PlayState(), 
         draw_and_play.PlayState() ]
     # reset DRAW state (angle, scale) and current graphics position
-    graphics.reset_graphics()
+    state.console_state.screen.drawing.reset()
     
     

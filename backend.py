@@ -1561,10 +1561,11 @@ class Screen(object):
         if not self.mode.is_text_mode:
             # viewport        
             self.unset_view()
+            # graphics drawing
+            self.drawing = graphics.Drawing(self)
             # logical window
             state.console_state.graph_window = None
             state.console_state.graph_window_bounds = None
-            graphics.reset_graphics()
         # signal the backend to change the screen resolution
         if not video.init_screen_mode(info):
             # something broke at the backend. fallback to text mode and give error.

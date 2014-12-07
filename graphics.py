@@ -13,16 +13,6 @@ import state
 import util
 import backend
 
-
-def reset_graphics():
-    """ Reset graphics state. """
-    if state.console_state.screen.mode.is_text_mode:
-        return
-    state.console_state.screen.last_point = state.console_state.screen.get_view_mid()
-    state.console_state.last_attr = state.console_state.screen.mode.attr
-    state.basic_state.draw_scale = 4
-    state.basic_state.draw_angle = 0
-
 def get_colour_index(c):
     """ Get the index of the specified attribute. """
     if c == -1: # foreground; graphics 'background' attrib is always 0
@@ -30,6 +20,24 @@ def get_colour_index(c):
     else:
         c = min(state.console_state.screen.mode.num_attr - 1, max(0, c))
     return c
+
+
+class Drawing(object):
+    """ Manage graphics drawing. """
+    
+    def __init__(self, screen):
+        self.screen = screen
+        self.reset()  
+        unset_graph_window()      
+    
+    def reset(self):
+        """ Reset graphics state. """
+        if self.screen.mode.is_text_mode:
+            return
+        state.console_state.screen.last_point = self.screen.get_view_mid()
+        self.last_attr = self.screen.mode.attr
+        state.basic_state.draw_scale = 4
+        state.basic_state.draw_angle = 0
 
 ### PSET, POINT
 
@@ -40,7 +48,7 @@ def put_point(x, y, c):
     c = get_colour_index(c)
     state.console_state.screen.put_pixel(x, y, c)
     backend.video.remove_graph_clip()
-    state.console_state.last_attr = c
+    state.console_state.screen.drawing.last_attr = c
     
 def get_point(x, y):
     """ Return the attribute of a pixel (POINT). """
@@ -124,7 +132,7 @@ def draw_box_filled(x0, y0, x1, y1, c):
     backend.video.apply_graph_clip()
     state.console_state.screen.fill_rect(x0, y0, x1, y1, c)
     backend.video.remove_graph_clip()
-    state.console_state.last_attr = c
+    state.console_state.screen.drawing.last_attr = c
     
 def draw_line(x0, y0, x1, y1, c, pattern=0xffff):
     """ Draw a line between the given points. """
@@ -160,7 +168,7 @@ def draw_line(x0, y0, x1, y1, c, pattern=0xffff):
             y += sy
             line_error += dx    
     backend.video.remove_graph_clip()
-    state.console_state.last_attr = c
+    state.console_state.screen.drawing.last_attr = c
     
 def draw_straight(x0, y0, x1, y1, c, pattern, mask):
     """ Draw a horizontal or vertical line. """
@@ -195,7 +203,7 @@ def draw_box(x0, y0, x1, y1, c, pattern=0xffff):
     mask = draw_straight(x1, y1, x1, y0, c, pattern, mask)
     mask = draw_straight(x0, y1, x0, y0, c, pattern, mask)
     backend.video.remove_graph_clip()
-    state.console_state.last_attr = c
+    state.console_state.screen.drawing.last_attr = c
     
 ###############################################################################
 # circle, ellipse, sectors (CIRCLE)
@@ -339,7 +347,7 @@ def draw_circle(x0, y0, r, c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, l
     if line1:
         draw_line(x0,y0, *octant_coord(oct1, x0, y0, coo1x, coo1), c=c)
     backend.video.remove_graph_clip()
-    state.console_state.last_attr = c
+    state.console_state.screen.drawing.last_attr = c
     
 def octant_coord(octant, x0, y0, x, y):    
     """ Return symmetrically reflected coordinates for a given pair. """
@@ -428,7 +436,7 @@ def draw_ellipse(cx, cy, rx, ry, c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1,
     if line1:
         draw_line(cx,cy, *quadrant_coord(qua1, cx, cy, x1, y1), c=c)
     backend.video.remove_graph_clip()     
-    state.console_state.last_attr = c
+    state.console_state.screen.drawing.last_attr = c
     
 def quadrant_coord(quadrant, x0,y0, x,y):    
     """ Return symmetrically reflected coordinates for a given pair. """
@@ -513,7 +521,7 @@ def flood_fill(x, y, pattern, c, border, background):
         # show progress
         if y%4==0:
             backend.check_events()
-    state.console_state.last_attr = c
+    state.console_state.screen.drawing.last_attr = c
     
 def check_scanline(line_seed, x_start, x_stop, y, c, tile, back, border, ydir):
     """ Append all subintervals between border colours to the scanning stack. """
