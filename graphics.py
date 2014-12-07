@@ -36,8 +36,8 @@ class Drawing(object):
             return
         state.console_state.screen.last_point = self.screen.get_view_mid()
         self.last_attr = self.screen.mode.attr
-        state.basic_state.draw_scale = 4
-        state.basic_state.draw_angle = 0
+        self.draw_scale = 4
+        self.draw_angle = 0
 
 ### PSET, POINT
 

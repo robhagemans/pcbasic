@@ -54,8 +54,8 @@ def prepare():
 
 def init_draw_state():
     """ Initilaise state variables of the draw command. """
-    state.basic_state.draw_scale = 4
-    state.basic_state.draw_angle = 0
+    state.console_state.screen.drawing.draw_scale = 4
+    state.console_state.screen.drawing.draw_angle = 0
 
 def get_value_for_varptrstr(varptrstr):
     """ Get a value given a VARPTR$ representation. """
@@ -130,8 +130,8 @@ def ml_parse_string(gmls):
 
 def draw_step(x0, y0, sx, sy, plot, goback):
     """ Make a DRAW step, drawing a line and reurning if requested. """
-    scale = state.basic_state.draw_scale
-    rotate = state.basic_state.draw_angle
+    scale = state.console_state.screen.drawing.draw_scale
+    rotate = state.console_state.screen.drawing.draw_angle
     aspect = state.console_state.screen.mode.pixel_aspect
     yfac = aspect[1] / (1.*aspect[0])
     x1 = (scale*sx)/4  
@@ -188,23 +188,23 @@ def draw_parse_gml(gml):
                 state.console_state.screen.drawing.last_attr = ml_parse_number(gmls) 
         elif c == 'S':
             # set scale
-            state.basic_state.draw_scale = ml_parse_number(gmls)
+            state.console_state.screen.drawing.draw_scale = ml_parse_number(gmls)
         elif c == 'A':
             # set angle
             # allow empty spec (default 0), but only if followed by a semicolon
             if util.skip(gmls, ml_whitepace) == ';':
-                state.basic_state.draw_angle = 0
+                state.console_state.screen.drawing.draw_angle = 0
             else:
-                state.basic_state.draw_angle = 90 * ml_parse_number(gmls)   
+                state.console_state.screen.drawing.draw_angle = 90 * ml_parse_number(gmls)   
         elif c == 'T':
             # 'turn angle' - set (don't turn) the angle to any value
             if gmls.read(1).upper() != 'A':
                 raise error.RunError(5)
             # allow empty spec (default 0), but only if followed by a semicolon
             if util.skip(gmls, ml_whitepace) == ';':
-                state.basic_state.draw_angle = 0
+                state.console_state.screen.drawing.draw_angle = 0
             else:    
-                state.basic_state.draw_angle = ml_parse_number(gmls)
+                state.console_state.screen.drawing.draw_angle = ml_parse_number(gmls)
         # one-variable movement commands:     
         elif c in ('U', 'D', 'L', 'R', 'E', 'F', 'G', 'H'):
             step = ml_parse_number(gmls, default=vartypes.pack_int(1))
