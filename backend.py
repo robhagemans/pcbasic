@@ -1560,15 +1560,10 @@ class Screen(object):
         # set graphics characteristics
         if not self.mode.is_text_mode:
             # viewport        
-            self.view_absolute = False
-            self.view = None
+            self.unset_view()
             # logical window
             state.console_state.graph_window = None
             state.console_state.graph_window_bounds = None
-            # centre of new graphics screen
-            state.console_state.last_point = (
-                            self.mode.pixel_width/2, self.mode.pixel_height/2)
-            state.console_state.pixel_aspect_ratio = self.mode.pixel_aspect
             state.console_state.last_attr = self.attr
         # signal the backend to change the screen resolution
         if not video.init_screen_mode(info):

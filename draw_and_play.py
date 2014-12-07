@@ -132,7 +132,7 @@ def draw_step(x0, y0, sx, sy, plot, goback):
     """ Make a DRAW step, drawing a line and reurning if requested. """
     scale = state.basic_state.draw_scale
     rotate = state.basic_state.draw_angle
-    aspect = state.console_state.pixel_aspect_ratio
+    aspect = state.console_state.screen.mode.pixel_aspect
     yfac = aspect[1] / (1.*aspect[0])
     x1 = (scale*sx)/4  
     y1 = (scale*sy)/4

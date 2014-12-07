@@ -1256,8 +1256,8 @@ def exec_circle(ins):
     r = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
     start, stop, c = None, None, -1
     aspect = fp.div(
-        fp.Single.from_int(state.console_state.pixel_aspect_ratio[0]), 
-        fp.Single.from_int(state.console_state.pixel_aspect_ratio[1]))
+        fp.Single.from_int(state.console_state.screen.mode.pixel_aspect[0]), 
+        fp.Single.from_int(state.console_state.screen.mode.pixel_aspect[1]))
     if util.skip_white_read_if(ins, (',',)):
         cval = expressions.parse_expression(ins, allow_empty=True)
         if cval:
