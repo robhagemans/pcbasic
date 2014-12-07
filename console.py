@@ -67,7 +67,7 @@ def init_mode():
     # rebuild build the cursor; 
     # first move to home in case the screen has shrunk
     set_pos(1, 1)
-    set_default_cursor()
+    state.console_state.screen.cursor.set_default_shape(state.console_state.overwrite_mode)
     state.console_state.screen.cursor.reset_visibility()
     # there is only one VIEW PRINT setting across all pages.
     if state.console_state.scroll_height == 25:
@@ -276,27 +276,7 @@ def set_overwrite_mode(new_overwrite=True):
     """ Set or unset the overwrite mode (INS). """
     if new_overwrite != state.console_state.overwrite_mode:
         state.console_state.overwrite_mode = new_overwrite
-        set_default_cursor()
-
-def set_default_cursor():
-    """ Set the appropriate cursor for the current mode. """
-    font_height = state.console_state.screen.mode.font_height
-    if state.console_state.overwrite_mode:
-        if not state.console_state.screen.mode.is_text_mode: 
-            # always a block cursor in graphics mode
-            state.console_state.screen.cursor.set_shape(0, font_height-1)
-        elif backend.video_capabilities == 'ega':
-            # EGA cursor is on second last line
-            state.console_state.screen.cursor.set_shape(font_height-2, font_height-2)
-        elif font_height == 9:
-            # Tandy 9-pixel fonts; cursor on 8th
-            state.console_state.screen.cursor.set_shape(font_height-2, font_height-2)
-        else:
-            # other cards have cursor on last line
-            state.console_state.screen.cursor.set_shape(font_height-1, font_height-1)
-    else:
-        # half-block cursor for insert
-        state.console_state.screen.cursor.set_shape(font_height/2, font_height-1)
+        state.console_state.screen.cursor.set_default_shape(new_overwrite)
 
 def insert(crow, ccol, c, cattr):
     """ Insert a single byte at the current position. """

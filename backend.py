@@ -2020,6 +2020,25 @@ class Cursor(object):
         self.to_line = max(0, min(to_line, fy-1))
         video.build_cursor(self.width, fy, self.from_line, self.to_line)
         self.reset_attr()
+        
+    def set_default_shape(self, overwrite_shape):
+        """ Set the cursor to one of two default shapes. """
+        if overwrite_shape:
+            if not self.screen.mode.is_text_mode: 
+                # always a block cursor in graphics mode
+                self.set_shape(0, self.height-1)
+            elif video_capabilities == 'ega':
+                # EGA cursor is on second last line
+                self.set_shape(self.height-2, self.height-2)
+            elif self.height == 9:
+                # Tandy 9-pixel fonts; cursor on 8th
+                self.set_shape(self.height-2, self.height-2)
+            else:
+                # other cards have cursor on last line
+                self.set_shape(self.height-1, self.height-1)
+        else:
+            # half-block cursor for insert
+            self.set_shape(self.height//2, self.height-1)
 
     def set_width(self, num_chars):
         """ Set the cursor with to num_chars characters. """
