@@ -117,7 +117,7 @@ def prepare_video():
     # build colour sets
     prepare_colours(mono_monitor, mono_tint)
     # initialise the 4-colour CGA palette    
-    set_cga4_palette(1)    
+    prepare_default_palettes(cga_low)
     # prepare video mode list
     # only allow the screen modes that the given machine supports
     # PCjr starts in 40-column mode
@@ -619,56 +619,44 @@ def prepare_colours(mono_monitor, mono_tint):
         colours16 = list(colours16_colour)
 
 
-# default cga 4-color palette can change with mode, so is a list
-cga_mode_5 = False
-cga4_palette = [0, 11, 13, 15]
-cga4_palette_num = 1
+###############################################################################
+# CGA default 4-colour palette
 
-def set_cga4_palette(num):
-    """ Change the default CGA palette according to palette number & mode. """
-    global cga4_palette_num
-    cga4_palette_num = num
+def get_cga4_palettes(cga_low):
+    """ Get the default CGA palette according to palette number & mode. """
     # palette 1: Black, Ugh, Yuck, Bleah, choice of low & high intensity
     # palette 0: Black, Green, Red, Brown/Yellow, low & high intensity
     # tandy/pcjr have high-intensity white, but low-intensity colours
     # mode 5 (SCREEN 1 + colorburst on RGB) has red instead of magenta
     if video_capabilities in ('pcjr', 'tandy'):
         # pcjr does not have mode 5
-        if num == 0:
-            cga4_palette[:] = (0, 2, 4, 6)
-        else:    
-            cga4_palette[:] = (0, 3, 5, 15)
+        return {0: (0, 2, 4, 6), 1: (0, 3, 5, 15), 5: None}
     elif cga_low:
-        if cga_mode_5:
-            cga4_palette[:] = (0, 3, 4, 7)
-        elif num == 0:
-            cga4_palette[:] = (0, 2, 4, 6)
-        else:    
-            cga4_palette[:] = (0, 3, 5, 7)
+        return {0: (0, 2, 4, 6), 1: (0, 3, 5, 7), 5: (0, 3, 4, 7)}
     else:
-        if cga_mode_5:
-            cga4_palette[:] = (0, 11, 12, 15)
-        elif num == 0:
-            cga4_palette[:] = (0, 10, 12, 14)
-        else:    
-            cga4_palette[:] = (0, 11, 13, 15)
+        return {0: (0, 10, 12, 14), 1: (0, 11, 13, 15), 5: (0, 11, 12, 15)}
 
+
+def prepare_default_palettes(cga_low):
+    """ Set the default palettes. """
+    global cga4_palettes
+    global cga16_palette, ega_palette, ega_mono_palette
+    global mda_palette, ega_mono_text_palette
+    cga4_palettes = get_cga4_palettes(cga_low)
+    # default 16-color and ega palettes
+    cga16_palette = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+    ega_palette = (0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63)
+    ega_mono_palette = (0, 4, 1, 8)
+    # http://qbhlp.uebergeord.net/screen-statement-details-colors.html
+    # http://www.seasip.info/VintagePC/mda.html
+    # underline/intensity/reverse video attributes are slightly different from mda
+    # attributes 1, 9 should have underlining. 
+    ega_mono_text_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 0)
+    mda_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2)
 
 
 ###############################################################################
 # video modes
-
-# default 16-color and ega palettes
-cga16_palette = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
-ega_palette = (0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63)
-ega_mono_palette = (0, 4, 1, 8)
-# http://qbhlp.uebergeord.net/screen-statement-details-colors.html
-# http://www.seasip.info/VintagePC/mda.html
-# underline/intensity/reverse video attributes are slightly different from mda
-# attributes 1, 9 should have underlining. 
-ega_mono_text_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 0)
-mda_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2)
-
 
 class VideoMode(object):
     """ Base class for video modes. """
@@ -689,9 +677,10 @@ class VideoMode(object):
         self.pixel_height = self.height*self.font_height
         self.pixel_width = self.width*self.font_width
         self.attr = int(attr)
-        self.palette = tuple(palette)
+        # palette is a reference (changes with cga_mode_5 and cga4_palette_num)
+        self.palette = palette
         self.num_attr = len(palette)
-        # colours is a reference
+        # colours is a reference (changes with colorburst on composite)
         self.colours = colours
         # colours1 is only used by EGA mono mode
         self.colours1 = None
@@ -1287,7 +1276,7 @@ class Screen(object):
     def __init__(self, initial_width, video_mem_size):
         """ Minimal initialisiation of the screen. """
         self.screen_mode = 0
-        self.colorswitch= 1
+        self.colorswitch = 1
         self.apagenum = 0
         self.vpagenum = 0
         # current attribute
@@ -1296,6 +1285,8 @@ class Screen(object):
         self.border_attr = 0
         self.video_mem_size = video_mem_size
         # prepare video modes
+        self.cga_mode_5 = False
+        self.cga4_palette = list(cga4_palettes[1])
         self.prepare_modes()
         self.mode = self.text_data[initial_width]
         # cursor
@@ -1317,7 +1308,7 @@ class Screen(object):
             # tandy:2 pages if 32k memory; ega: 1 page only 
             '320x200x4': 
                 CGAMode('320x200x4', 320, 200, 25, 40, 3,
-                        cga4_palette, colours16, bitsperpixel=2, 
+                        self.cga4_palette, colours16, bitsperpixel=2, 
                         interleave_times=2, bank_size=0x2000, 
                         num_pages=(
                             video_mem_size // (2*0x2000)
@@ -1339,7 +1330,7 @@ class Screen(object):
             #     320x200x4  16384B 2bpp 0xb8000   Tandy/PCjr screen 4
             '320x200x4pcjr': 
                 CGAMode('320x200x4pcjr', 320, 200, 25, 40, 3,
-                        cga4_palette, colours16, bitsperpixel=2,
+                        self.cga4_palette, colours16, bitsperpixel=2,
                         interleave_times=2, bank_size=0x2000,
                         num_pages=self.video_mem_size//(2*0x2000),
                         cursor_index=3),
@@ -1353,7 +1344,7 @@ class Screen(object):
             # 0Ah 640x200x4  32768B 2bpp 0xb8000   Tandy/PCjr screen 6
             '640x200x4': 
                 Tandy6Mode('640x200x4', 640, 200, 25, 80, 3,
-                            cga4_palette, colours16, bitsperpixel=2,
+                            self.cga4_palette, colours16, bitsperpixel=2,
                             interleave_times=4, bank_size=0x2000,
                             num_pages=self.video_mem_size//(4*0x2000),
                             cursor_index=3),
@@ -1589,6 +1580,7 @@ class Screen(object):
         # cursor width starts out as single char
         self.cursor.init_mode(info)
         # set the palette
+        self.set_cga4_palette(1)
         self.palette = Palette(self.mode)
         # set the attribute
         video.set_attr(self.attr)
@@ -1642,15 +1634,12 @@ class Screen(object):
         # On an RGB monitor:
         # - on SCREEN 1 this switches between mode 4/5 palettes (RGB)
         # - ignored on other screens
-        global cga_mode_5
         colorburst_capable = video_capabilities in (
                                     'cga', 'cga_old', 'tandy', 'pcjr')
-        if ((not self.mode.is_text_mode) and
-                self.mode.name =='320x200x4' and 
-                not composite_monitor):
+        if self.mode.name == '320x200x4' and not composite_monitor:
             # ega ignores colorburst; tandy and pcjr have no mode 5
-            cga_mode_5 = not (on or video_capabilities not in ('cga', 'cga_old'))
-            set_cga4_palette(1)
+            self.cga_mode_5 = not on
+            self.set_cga4_palette(1)
         elif (on or not composite_monitor and not mono_monitor):
             colours16[:] = colours16_colour
         else:
@@ -1660,6 +1649,15 @@ class Screen(object):
         video.set_colorburst(on and colorburst_capable,
                             self.palette.rgb_palette, self.palette.rgb_palette1)
 
+    def set_cga4_palette(self, num):
+        """ set the default 4-colour CGA palette. """
+        self.cga4_palette_num = num
+        # we need to copy into cga4_palette as it's referenced by mode.palette
+        if self.cga_mode_5 and video_capabilities in ('cga', 'cga_old'):
+            self.cga4_palette[:] = cga4_palettes[5]
+        else:
+            self.cga4_palette[:] = cga4_palettes[num]
+        
     def set_video_memory_size(self, new_size):
         """ Change the amount of memory available to the video card. """
         self.video_mem_size = new_size

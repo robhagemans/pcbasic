@@ -2105,6 +2105,7 @@ def exec_color(ins):
     
 def exec_color_mode_1(back, pal, override):
     """ Helper function for COLOR in SCREEN 1. """
+    screen = state.console_state.screen
     back = screen.palette.get_entry(0) if back == None else back
     if override != None:
         # uses last entry as palette if given
@@ -2112,8 +2113,8 @@ def exec_color_mode_1(back, pal, override):
     util.range_check(0, 255, back)
     if pal != None:
         util.range_check(0, 255, pal)
-        backend.set_cga4_palette(pal%2)
-        palette = list(backend.cga4_palette)
+        screen.set_cga4_palette(pal%2)
+        palette = list(screen.mode.palette)
         palette[0] = back&0xf
         # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
         # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 

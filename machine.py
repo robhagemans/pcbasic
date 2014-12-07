@@ -654,7 +654,8 @@ def get_low_memory(addr):
     # 1126 color
     elif addr == 1126:
         if state.console_state.screen.mode.name == '320x200x4':
-            return state.console_state.screen.palette.get_entry(0) + 32 * backend.cga4_palette_num
+            return (state.console_state.screen.palette.get_entry(0) 
+                    + 32 * state.console_state.screen.cga4_palette_num)
         elif state.console_state.screen.mode.is_text_mode:
             return state.console_state.screen.border_attr % 16 
             # not implemented: + 16 "if current color specified through 
