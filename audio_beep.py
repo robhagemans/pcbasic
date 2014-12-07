@@ -54,9 +54,9 @@ def check_sound():
     """ Update the sound queue and play sounds. """
     global now_loop
     for voice in range(4):
-        length = len(state.console_state.music_queue[voice])
+        length = len(state.console_state.sound.queue[voice])
         if now_loop[voice]:
-            if (state.console_state.music_queue[voice] and now_playing[voice] 
+            if (state.console_state.sound.queue[voice] and now_playing[voice] 
                     and now_playing[voice].poll() == None):
                 now_playing[voice].terminate()
                 now_loop[voice] = None
@@ -65,11 +65,10 @@ def check_sound():
                 play_now(*now_loop[voice], voice=voice)
         if length and (not now_playing[voice] or 
                         now_playing[voice].poll() != None):
-            play_now(*state.console_state.music_queue[voice][0], voice=voice)
+            play_now(*state.console_state.sound.queue[voice][0], voice=voice)
             length -= 1
         # remove the notes that have been played
-        while len(state.console_state.music_queue[voice]) > length:
-            state.console_state.music_queue[voice].pop(0)
+        backend.sound_done(voice, length)
     
 def busy():
     """ Is the mixer busy? """
