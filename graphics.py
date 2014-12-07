@@ -19,6 +19,7 @@ def reset_graphics():
     if state.console_state.screen.mode.is_text_mode:
         return
     state.console_state.screen.last_point = state.console_state.screen.get_view_mid()
+    state.console_state.last_attr = state.console_state.screen.mode.attr
     state.basic_state.draw_scale = 4
     state.basic_state.draw_angle = 0
 

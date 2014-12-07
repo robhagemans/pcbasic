@@ -1564,7 +1564,7 @@ class Screen(object):
             # logical window
             state.console_state.graph_window = None
             state.console_state.graph_window_bounds = None
-            state.console_state.last_attr = self.attr
+            graphics.reset_graphics()
         # signal the backend to change the screen resolution
         if not video.init_screen_mode(info):
             # something broke at the backend. fallback to text mode and give error.
