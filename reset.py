@@ -34,8 +34,8 @@ def clear(close_files=False, preserve_common=False, preserve_all=False, preserve
     state.basic_state.error_resume = None
     # stop all sound
     state.console_state.sound.stop_all_sound()
-    #   Resets STRIG to off
-    state.console_state.stick_is_on = False
+    # Resets STRIG to off
+    state.console_state.stick.switch(False)
     # disable all event trapping (resets PEN to OFF too)
     backend.reset_events()
     # CLEAR also dumps for_next and while_wend stacks

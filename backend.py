@@ -2074,104 +2074,155 @@ class Cursor(object):
             self.reset_attr()
 
 
-##############################################
+###############################################################################
 # light pen
 
-state.console_state.pen_is_on = False
-state.console_state.pen_was_down = False
 pen_is_down = False
-state.console_state.pen_down_pos = (0, 0)
 pen_pos = (0, 0)
 
+class Pen(object):
+    """ Light pen support. """
+    
+    def __init__(self):
+        """ Initialise light pen. """
+        self.was_down = False
+        self.down_pos = (0, 0)
+
+    def down(self, x, y):
+        """ Report a pen-down event at graphical x,y """
+        global pen_is_down
+        # trigger PEN event
+        state.basic_state.pen_handler.triggered = True
+        # TRUE until polled
+        self.was_down = True 
+        # TRUE until pen up
+        pen_is_down = True 
+        self.down_pos = x, y
+
+    def up(self):
+        """ Report a pen-up event at graphical x,y """
+        global pen_is_down
+        pen_is_down = False
+
+    def moved(self, x, y):
+        """ Report a pen-move event at graphical x,y """
+        global pen_pos
+        pen_pos = x, y
+
+    def poll(self, fn):
+        """ Poll the pen. """
+        posx, posy = pen_pos
+        fw = state.console_state.screen.mode.font_width
+        fh = state.console_state.screen.mode.font_height
+        if fn == 0:
+            pen_down_old, self.was_down = self.was_down, False
+            return -1 if pen_down_old else 0
+        elif fn == 1:
+            return self.down_pos[0]
+        elif fn == 2:
+            return self.down_pos[1]
+        elif fn == 3:
+            return -1 if pen_is_down else 0 
+        elif fn == 4:
+            return posx
+        elif fn == 5:
+            return posy
+        elif fn == 6:
+            return 1 + self.down_pos[1]//fh
+        elif fn == 7:
+            return 1 + self.down_pos[0]//fw
+        elif fn == 8:
+            return 1 + posy//fh
+        elif fn == 9:
+            return 1 + posx//fw
+
+state.console_state.pen = Pen()
+
+#D
 def pen_down(x, y):
     """ Report a pen-down event at graphical x,y """
-    global pen_is_down
-    state.basic_state.pen_handler.triggered = True
-    state.console_state.pen_was_down = True # TRUE until polled
-    pen_is_down = True # TRUE until pen up
-    state.console_state.pen_down_pos = x, y
-
+    state.console_state.pen.down(x, y)    
+#D
 def pen_up():
     """ Report a pen-up event at graphical x,y """
-    global pen_is_down
-    pen_is_down = False
-    
+    state.console_state.pen.up()    
+#D
 def pen_moved(x, y):
     """ Report a pen-move event at graphical x,y """
-    global pen_pos
-    pen_pos = x, y
+    state.console_state.pen_moved(x, y)    
     
-def get_pen(fn):
-    """ Poll the pen. """
-    posx, posy = pen_pos
-    fw = state.console_state.screen.mode.font_width
-    fh = state.console_state.screen.mode.font_height
-    if fn == 0:
-        pen_down_old, state.console_state.pen_was_down = (
-                state.console_state.pen_was_down, False)
-        return -1 if pen_down_old else 0
-    elif fn == 1:
-        return state.console_state.pen_down_pos[0]
-    elif fn == 2:
-        return state.console_state.pen_down_pos[1]
-    elif fn == 3:
-        return -1 if pen_is_down else 0 
-    elif fn == 4:
-        return posx
-    elif fn == 5:
-        return posy
-    elif fn == 6:
-        return 1 + state.console_state.pen_down_pos[1]//fh
-    elif fn == 7:
-        return 1 + state.console_state.pen_down_pos[0]//fw
-    elif fn == 8:
-        return 1 + posy//fh
-    elif fn == 9:
-        return 1 + posx//fw
  
-##############################################
+###############################################################################
 # joysticks
 
-state.console_state.stick_is_on = False
-state.console_state.stick_was_fired = [[False, False], [False, False]]
 stick_is_firing = [[False, False], [False, False]]
 # axis 0--255; 128 is mid but reports 0, not 128 if no joysticks present
 stick_axis = [[0, 0], [0, 0]]
 
+class Stick(object):
+    """ Joystick support. """    
+
+    def __init__(self):
+        """ Initialise joysticks. """
+        self.is_on = False
+        self.was_fired = [[False, False], [False, False]]
+
+    def switch(self, on):
+        """ Switch joystick handling on or off. """
+        self.is_on = on
+
+    def down(self, joy, button):
+        """ Report a joystick button down event. """
+        self.was_fired[joy][button] = True
+        stick_is_firing[joy][button] = True
+        # trigger STRIG event
+        state.basic_state.strig_handlers[joy*2 + button].triggered = True
+
+    def up(self, joy, button):
+        """ Report a joystick button up event. """
+        stick_is_firing[joy][button] = False
+
+    def moved(self, joy, axis, value):
+        """ Report a joystick axis move. """
+        stick_axis[joy][axis] = value
+
+    def poll(self, fn):
+        """ Poll the joystick axes. """    
+        joy, axis = fn // 2, fn % 2
+        return stick_axis[joy][axis]
+        
+    def poll_trigger(fn):       
+        """ Poll the joystick buttons. """    
+        joy, trig = fn // 4, (fn//2) % 2
+        if fn % 2 == 0:
+            # has been fired
+            stick_was_trig = self.was_fired[joy][trig]
+            self.was_fired[joy][trig] = False
+            return stick_was_trig
+        else:
+            # is currently firing
+            return stick_is_firing[joy][trig]
+
+
+state.console_state.stick = Stick()
+
+
+#D
 def stick_down(joy, button):
     """ Report a joystick button down event. """
-    state.console_state.stick_was_fired[joy][button] = True
-    stick_is_firing[joy][button] = True
-    state.basic_state.strig_handlers[joy*2 + button].triggered = True
-
+    state.console_state.stick.down(joy, button)
+#D
 def stick_up(joy, button):
     """ Report a joystick button up event. """
-    stick_is_firing[joy][button] = False
-
+    state.console_state.stick.up(joy, button)
+#D
 def stick_moved(joy, axis, value):
     """ Report a joystick axis move. """
-    stick_axis[joy][axis] = value
-
-def get_stick(fn):
-    """ Poll the joystick axes. """    
-    joy, axis = fn // 2, fn % 2
-    return stick_axis[joy][axis]
+    state.console_state.stick.moved(joy, axis, value)
     
-def get_strig(fn):       
-    """ Poll the joystick buttons. """    
-    joy, trig = fn // 4, (fn//2) % 2
-    if fn % 2 == 0:
-        # has been fired
-        stick_was_trig = state.console_state.stick_was_fired[joy][trig]
-        state.console_state.stick_was_fired[joy][trig] = False
-        return stick_was_trig
-    else:
-        # is currently firing
-        return stick_is_firing[joy][trig]
 
-
-##############################
-# sound queue read/write
+###############################################################################
+# sound queue
 
 # sound capabilities - '', 'pcjr' or 'tandy'
 pcjr_sound = ''
@@ -2276,7 +2327,7 @@ def sound_done(voice, number_left):
     state.console_state.sound.done(voice, number_left)
 
             
-#############################################
+###############################################################################
 # BASIC event triggers        
         
 class EventHandler(object):

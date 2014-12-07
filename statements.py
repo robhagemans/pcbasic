@@ -388,10 +388,10 @@ def exec_strig(ins):
             raise error.RunError(2)
     elif d == '\x95': # ON
         ins.read(1)
-        state.console_state.stick_is_on = True
+        state.console_state.stick.switch(True)
     elif d == '\xDD': # OFF
         ins.read(1)
-        state.console_state.stick_is_on = False
+        state.console_state.stick.switch(False)
     else:
         raise error.RunError(2)
     util.require(ins, util.end_statement)
