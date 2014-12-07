@@ -266,19 +266,9 @@ def wait_interactive(from_start=False, alt_replace = True):
         # adjust cursor width
         row, col = state.console_state.row, state.console_state.col 
         if state.console_state.screen.apage.row[row-1].double[col-1] == 1:
-            cursor_width = 2 * state.console_state.screen.mode.font_width
+            state.console_state.screen.cursor.set_width(2)
         else:
-            cursor_width = state.console_state.screen.mode.font_width
-        # update cursor shape to new width if necessary    
-        if cursor_width != state.console_state.cursor_width:
-            state.console_state.cursor_width = cursor_width
-            backend.video.build_cursor(
-                state.console_state.cursor_width, 
-                state.console_state.screen.mode.font_height, 
-                state.console_state.screen.cursor.from_line, 
-                state.console_state.screen.cursor.to_line)
-            backend.video.update_cursor_attr(
-                state.console_state.screen.apage.row[row-1].buf[col-1][1] & 0xf)
+            state.console_state.screen.cursor.set_width(1)
     set_overwrite_mode(True)
     return furthest_left, furthest_right
       

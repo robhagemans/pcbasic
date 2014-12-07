@@ -188,9 +188,8 @@ def resume_screen():
                              state.console_state.rgb_palette1)
         video.set_attr(screen.attr)
         # fix the cursor
-        video.build_cursor(
-            state.console_state.cursor_width, mode_info.font_height, 
-            screen.cursor.from_line, screen.cursor.to_line)    
+        video.build_cursor(screen.cursor.width, mode_info.font_height, 
+                           screen.cursor.from_line, screen.cursor.to_line)    
         video.move_cursor(state.console_state.row, state.console_state.col)
         video.update_cursor_attr(
             screen.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
@@ -1331,7 +1330,11 @@ class Screen(object):
         # prepare video modes
         self.prepare_modes()
         self.mode = self.text_data[initial_width]
+        # cursor
         self.cursor = Cursor(self)
+        # graphics viewport
+        self.view_absolute = False
+        self.view = None
 
     def prepare_modes(self):
         # Tandy/PCjr pixel aspect ratio is different from normal
@@ -1611,8 +1614,6 @@ class Screen(object):
                             self.mode.pixel_width/2, self.mode.pixel_height/2)
             state.console_state.pixel_aspect_ratio = self.mode.pixel_aspect
             state.console_state.last_attr = self.attr
-        # cursor width starts out as single char
-        state.console_state.cursor_width = info.font_width        
         # signal the backend to change the screen resolution
         if not video.init_screen_mode(info):
             # something broke at the backend. fallback to text mode and give error.
@@ -1620,6 +1621,8 @@ class Screen(object):
             if not recursion_depth:
                 self.screen(0, 0, 0, 0, recursion_depth=recursion_depth+1)
             return False
+        # cursor width starts out as single char
+        self.cursor.init_mode(info)
         # set the palette (essential on first run, or not all globals defined)
         set_palette()
         # set the attribute
@@ -1907,6 +1910,13 @@ class Screen(object):
             state.console_state.last_point = (x1-x0)/2, (y1-y0)/2
         if state.console_state.graph_window_bounds != None:
             graphics.set_graph_window(*state.console_state.graph_window_bounds)
+    
+    def get_view(self):
+        """ Return the graphics viewport or full screen dimensions if not set. """
+        if self.view:
+            return self.view
+        else:
+            return 0, 0, self.mode.pixel_width-1, self.mode.pixel_height-1
 
     def view_coords(self, x, y):
         """ Retrieve absolute coordinates for viewport coordinates. """
@@ -1920,11 +1930,9 @@ class Screen(object):
         if not state.console_state.screen.mode.is_text_mode:
             video.clear_graph_clip((self.attr>>4) & 0x7)
 
-    
 
-#############################################
+###############################################################################
 # cursor
-
 
 class Cursor(object):
     """ Manage the cursor. """
@@ -1937,6 +1945,21 @@ class Cursor(object):
         # cursor shape
         self.from_line = 0
         self.to_line = 0    
+        self.width = screen.mode.font_width
+        self.height = screen.mode.font_height
+
+    def init_mode(self, mode):
+        """ Change the cursor for a new screen mode. """
+        self.width = mode.font_width
+        self.height = mode.font_height
+        video.build_cursor(self.width, self.height, self.from_line, self.to_line)
+        self.reset_attr()
+    
+    def reset_attr(self):
+        """ Set the text cursor attribute to that of the current location. """
+        video.update_cursor_attr(self.screen.apage.row[
+                state.console_state.row-1].buf[
+                state.console_state.col-1][1] & 0xf)
 
     def show(self, do_show):
         """ Force cursor to be visible/invisible. """
@@ -1961,7 +1984,7 @@ class Cursor(object):
         # A block from from_line to to_line in 8-line modes.
         # Use compatibility algo in higher resolutions
         mode = self.screen.mode
-        fx, fy = mode.font_width, mode.font_height
+        fx, fy = self.width, self.height
         if egacursor:
             # odd treatment of cursors on EGA machines, 
             # presumably for backward compatibility
@@ -1990,10 +2013,19 @@ class Cursor(object):
                                 to_line -= 1
         self.from_line = max(0, min(from_line, fy-1))
         self.to_line = max(0, min(to_line, fy-1))
-        video.build_cursor(state.console_state.cursor_width, fy, 
-                           self.from_line, 
-                           self.to_line)
-        video.update_cursor_attr(self.screen.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
+        video.build_cursor(self.width, fy, self.from_line, self.to_line)
+        self.reset_attr()
+
+    def set_width(self, num_chars):
+        """ Set the cursor with to num_chars characters. """
+        new_width = num_chars * self.screen.mode.font_width
+        # update cursor shape to new width if necessary    
+        if new_width != self.width:
+            self.width = new_width
+            video.build_cursor(self.width, self.height, 
+                               self.from_line, self.to_line)
+            self.reset_attr()
+
 
 #############################################
 # I/O redirection
