@@ -1848,7 +1848,8 @@ class Screen(object):
         """ Unset the graphics viewport. """
         self.view_absolute = False
         self.view = None
-        state.console_state.last_point = video.unset_graph_clip()
+        video.unset_graph_clip()
+        self.last_point = self.get_view_mid()
         if state.console_state.graph_window_bounds != None:
             graphics.set_graph_window(*state.console_state.graph_window_bounds)
     
@@ -1862,7 +1863,7 @@ class Screen(object):
         self.view_absolute = absolute
         self.view = x0, y0, x1, y1
         video.set_graph_clip(x0, y0, x1, y1)
-        state.console_state.last_point = self.get_view_mid()
+        self.last_point = self.get_view_mid()
         if state.console_state.graph_window_bounds != None:
             graphics.set_graph_window(*state.console_state.graph_window_bounds)
     
@@ -1877,9 +1878,9 @@ class Screen(object):
         """ Get the midpoint of the current graphics view. """
         x0, y0, x1, y1 = self.get_view()
         if self.view_absolute:
-            state.console_state.last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
+            self.last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
         else:
-            state.console_state.last_point = (x1-x0)/2, (y1-y0)/2
+            self.last_point = (x1-x0)/2, (y1-y0)/2
 
     def view_coords(self, x, y):
         """ Retrieve absolute coordinates for viewport coordinates. """

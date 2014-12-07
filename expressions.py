@@ -664,7 +664,7 @@ def value_point(ins):
         raise error.RunError(2)
     if not lst[1]:
         # single-argument version
-        x, y = state.console_state.last_point
+        x, y = state.console_state.screen.last_point
         fn = vartypes.pass_int_unpack(lst[0])
         if fn == 0:
             return vartypes.pack_int(x)

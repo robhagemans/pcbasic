@@ -23,7 +23,7 @@ def reset_graphics():
     """ Reset graphics state. """
     if state.console_state.screen.mode.is_text_mode:
         return
-    state.console_state.last_point = state.console_state.screen.get_view_mid()
+    state.console_state.screen.last_point = state.console_state.screen.get_view_mid()
     state.basic_state.draw_scale = 4
     state.basic_state.draw_angle = 0
 
@@ -82,11 +82,14 @@ def window_coords(fx, fy, step=False):
     """ Convert logical to physical coordinates. """
     if state.console_state.graph_window:
         scalex, scaley, offsetx, offsety = state.console_state.graph_window
-        fx0, fy0 = get_window_coords(*state.console_state.last_point) if step else (fp.Single.zero.copy(), fp.Single.zero.copy())    
+        if step:
+            fx0, fy0 = get_window_coords(*state.console_state.screen.last_point)
+        else:
+            fx0, fy0 = fp.Single.zero.copy(), fp.Single.zero.copy()
         x = fp.add(offsetx, fp.mul(fx0.iadd(fx), scalex)).round_to_int()
         y = fp.add(offsety, fp.mul(fy0.iadd(fy), scaley)).round_to_int()
     else:
-        x, y = state.console_state.last_point if step else (0, 0)
+        x, y = state.console_state.screen.last_point if step else (0, 0)
         x += fx.round_to_int()
         y += fy.round_to_int()
     # overflow check
