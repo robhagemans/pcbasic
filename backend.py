@@ -1878,9 +1878,9 @@ class Screen(object):
         """ Get the midpoint of the current graphics view. """
         x0, y0, x1, y1 = self.get_view()
         if self.view_absolute:
-            self.last_point = x0 + (x1-x0)/2, y0 + (y1-y0)/2
+            return x0 + (x1-x0)/2, y0 + (y1-y0)/2
         else:
-            self.last_point = (x1-x0)/2, (y1-y0)/2
+            return (x1-x0)/2, (y1-y0)/2
 
     def view_coords(self, x, y):
         """ Retrieve absolute coordinates for viewport coordinates. """
