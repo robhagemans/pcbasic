@@ -29,6 +29,7 @@ audio = None
 devices = {}
 
 
+
 ###############################################################################
 # initialisation
 
@@ -209,6 +210,7 @@ def resume_screen():
         # load the screen contents from storage
         video.load_state()
     return True
+
     
 ###############################################################################
 # main event checker
@@ -236,6 +238,27 @@ def check_events():
         check_play_event()
         check_com_events()
         # KEY, PEN and STRIG are triggered on handling the queue
+
+
+
+###############################################################################
+# I/O redirection
+
+# redirect i/o to file or printer
+input_echos = []
+output_echos = []
+
+def toggle_echo_lpt1():
+    """ Toggle copying of all screen I/O to LPT1. """
+    lpt1 = devices['LPT1:']
+    if lpt1.write in input_echos:
+        input_echos.remove(lpt1.write)
+        output_echos.remove(lpt1.write)
+    else:    
+        input_echos.append(lpt1.write)
+        output_echos.append(lpt1.write)
+
+
 
 
 ###############################################################################
@@ -2049,26 +2072,6 @@ class Cursor(object):
             video.build_cursor(self.width, self.height, 
                                self.from_line, self.to_line)
             self.reset_attr()
-
-
-#############################################
-# I/O redirection
-
-# redirect i/o to file or printer
-input_echos = []
-output_echos = []
-
-def toggle_echo_lpt1():
-    """ Toggle copying of all screen I/O to LPT1. """
-    lpt1 = devices['LPT1:']
-    if lpt1.write in input_echos:
-        input_echos.remove(lpt1.write)
-        output_echos.remove(lpt1.write)
-    else:    
-        input_echos.append(lpt1.write)
-        output_echos.append(lpt1.write)
-
-
 
 
 ##############################################
