@@ -578,18 +578,18 @@ def get_low_memory(addr):
         return int(state.console_state.keyb.keypad_ascii)%256
     elif addr == 1050:
         # keyboard ring buffer starts at n+1024; lowest 1054
-        return (state.console_state.keybuf.start*2 + key_buffer_offset) % 256
+        return (state.console_state.keyb.buf.start*2 + key_buffer_offset) % 256
     elif addr == 1051:
-        return (state.console_state.keybuf.start*2 + key_buffer_offset) // 256
+        return (state.console_state.keyb.buf.start*2 + key_buffer_offset) // 256
     elif addr == 1052:
         # ring buffer ends at n + 1023
-        return (state.console_state.keybuf.stop()*2 + key_buffer_offset) % 256
+        return (state.console_state.keyb.buf.stop()*2 + key_buffer_offset) % 256
     elif addr == 1053:
-        return (state.console_state.keybuf.stop()*2 + key_buffer_offset) // 256
+        return (state.console_state.keyb.buf.stop()*2 + key_buffer_offset) // 256
     elif addr in range(1024+key_buffer_offset, 1024+key_buffer_offset+32):
         index = (addr-1024-key_buffer_offset)//2
         odd = (addr-1024-key_buffer_offset)%2
-        c = state.console_state.keybuf.ring_read(index)
+        c = state.console_state.keyb.buf.ring_read(index)
         if c[0] == '\0':
             return ord(c[-1]) if odd else 0xe0
         else:
@@ -672,20 +672,20 @@ def set_low_memory(addr, value):
     # DEF SEG=0: POKE 1050, PEEK(1052)
     elif addr == 1050:
         # keyboard ring buffer starts at n+1024; lowest 1054
-        state.console_state.keybuf.ring_set_boundaries(
+        state.console_state.keyb.buf.ring_set_boundaries(
                 (value - key_buffer_offset) // 2,
-                state.console_state.keybuf.stop())
+                state.console_state.keyb.buf.stop())
     elif addr == 1052:
         # ring buffer ends at n + 1023
-        state.console_state.keybuf.ring_set_boundaries(
-                state.console_state.keybuf.start,
+        state.console_state.keyb.buf.ring_set_boundaries(
+                state.console_state.keyb.buf.start,
                 (value - key_buffer_offset) // 2)
     elif addr in range(1024+key_buffer_offset, 1024+key_buffer_offset+32):
         index = (addr-1024-key_buffer_offset)//2
         odd = (addr-1024-key_buffer_offset)%2
         if not odd and value == 0xe0:
             value = 0
-        c = state.console_state.keybuf.ring_read(index)
+        c = state.console_state.keyb.buf.ring_read(index)
         if len(c) < 2:
             c += '\0'
         if odd:
@@ -694,7 +694,7 @@ def set_low_memory(addr, value):
             c = chr(value) + c[1]    
         if c[1] == '\0' and c[0] != '\0':
             c = c[0]
-        state.console_state.keybuf.ring_write(index, c)
+        state.console_state.keyb.buf.ring_write(index, c)
         
 prepare()
     

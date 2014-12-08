@@ -328,12 +328,13 @@ def prepare_keyboard():
         keystring = config.options['keys'].decode('utf-8')
     else:
         keystring = config.options['keys'].decode('string_escape').decode('utf-8')    
+    state.console_state.keyb = Keyboard()
     for u in keystring:
         c = u.encode('utf-8')
         try:
-            state.console_state.keybuf.insert(unicodepage.from_utf8(c))
+            state.console_state.keyb.buf.insert(unicodepage.from_utf8(c))
         except KeyError:
-            state.console_state.keybuf.insert(c)
+            state.console_state.keyb.buf.insert(c)
     # handle caps lock only if requested
     if config.options['capture-caps']:
         ignore_caps = False
@@ -585,9 +586,6 @@ class Keyboard(object):
            pass 
 
 
-state.console_state.keyb = Keyboard()
-#D 
-state.console_state.keybuf = state.console_state.keyb.buf
 
 #D
 def insert_chars(s, check_full=False):

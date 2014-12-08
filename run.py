@@ -41,7 +41,7 @@ def start(cmd='', run=False, quit=False):
     # read-eval-print loop until quit or exception
     while True:
         run_once()
-        if quit and state.console_state.keybuf.is_empty():
+        if quit and state.console_state.keyb.buf.is_empty():
             break
 
 def run_once():

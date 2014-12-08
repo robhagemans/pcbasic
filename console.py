@@ -164,8 +164,8 @@ def wait_interactive(from_start=False, alt_replace = True):
         d = state.console_state.keyb.get_char_block()
         # insert dbcs chars from keyboard buffer two bytes at a time
         if (d in unicodepage.lead and 
-                state.console_state.keybuf.peek() in unicodepage.trail):
-            d += state.console_state.keybuf.getc()
+                state.console_state.keyb.buf.peek() in unicodepage.trail):
+            d += state.console_state.keyb.buf.getc()
         if not d:
             # input stream closed
             raise error.Exit()
