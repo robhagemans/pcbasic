@@ -1277,7 +1277,7 @@ def exec_paint(ins):
     # if paint *attribute* specified, border default = current foreground      
     if state.console_state.screen.mode.is_text_mode:
         raise error.RunError(5)
-    x0, y0 = parse_coord(ins)
+    coord = parse_coord_bare(ins)
     pattern, c, border, background_pattern = None, -1, -1, None
     if util.skip_white_read_if(ins, (',',)):
         cval = expressions.parse_expression(ins, allow_empty=True)
@@ -1304,7 +1304,7 @@ def exec_paint(ins):
                         state.console_state.screen.mode.mem_start == 0xa000):
                     raise error.RunError(5)
     util.require(ins, util.end_statement)  
-    graphics.flood_fill(x0, y0, pattern, c, border, background_pattern)
+    state.console_state.screen.drawing.paint(coord, pattern, c, border, background_pattern)
                 
 def exec_get_graph(ins):
     """ GET: read a sprite to memory. """

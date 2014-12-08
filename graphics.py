@@ -494,6 +494,92 @@ class Drawing(object):
         backend.video.remove_graph_clip()     
 
 
+    ### PAINT: Flood fill
+
+    def paint(self, lcoord, pattern, c, border, background): 
+        """ Fill an area defined by a border attribute with a tiled pattern. """
+        # 4-way scanline flood fill: http://en.wikipedia.org/wiki/Flood_fill
+        # flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
+        # pattern tiling stops at intervals that equal the pattern to be drawn, unless this pattern is
+        # also equal to the background pattern.
+        c, border = get_colour_index(c), get_colour_index(border)
+        solid = (pattern == None)
+        if not solid:    
+            tile = self.screen.mode.build_tile(pattern) if pattern else None 
+            back = self.screen.mode.build_tile(background) if background else None
+        else:
+            tile, back = [[c]*8], None
+        bound_x0, bound_y0, bound_x1, bound_y1 = backend.video.get_graph_clip()  
+        x, y = self.view_coords(*self.get_window_physical(*lcoord))
+        line_seed = [(x, x, y, 0)]
+        # paint nothing if seed is out of bounds
+        if x < bound_x0 or x > bound_x1 or y < bound_y0 or y > bound_y1:
+            return
+        self.last_point = x, y
+        # paint nothing if we start on border attrib    
+        if self.screen.get_pixel(x,y) == border:
+            return
+        while len(line_seed) > 0:
+            # consider next interval
+            x_start, x_stop, y, ydir = line_seed.pop()
+            # extend interval as far as it goes to left and right
+            x_left = x_start - len(backend.video.get_until(x_start-1, bound_x0-1, y, border))    
+            x_right = x_stop + len(backend.video.get_until(x_stop+1, bound_x1+1, y, border)) 
+            # check next scanlines and add intervals to the list
+            if ydir == 0:
+                if y + 1 <= bound_y1:
+                    line_seed = self.check_scanline(line_seed, x_left, x_right, y+1, c, tile, back, border, 1)
+                if y - 1 >= bound_y0:
+                    line_seed = self.check_scanline(line_seed, x_left, x_right, y-1, c, tile, back, border, -1)
+            else:
+                # check the same interval one scanline onward in the same direction
+                if y+ydir <= bound_y1 and y+ydir >= bound_y0:
+                    line_seed = self.check_scanline(line_seed, x_left, x_right, y+ydir, c, tile, back, border, ydir)
+                # check any bit of the interval that was extended one scanline backward 
+                # this is where the flood fill goes around corners.
+                if y-ydir <= bound_y1 and y-ydir >= bound_y0:
+                    line_seed = self.check_scanline(line_seed, x_left, x_start-1, y-ydir, c, tile, back, border, -ydir)
+                    line_seed = self.check_scanline(line_seed, x_stop+1, x_right, y-ydir, c, tile, back, border, -ydir)
+            # draw the pixels for the current interval   
+            self.screen.fill_interval(x_left, x_right, y, tile, solid)
+            # show progress
+            if y%4 == 0:
+                backend.check_events()
+        self.last_attr = c
+        
+    def check_scanline(self, line_seed, x_start, x_stop, y, 
+                       c, tile, back, border, ydir):
+        """ Append all subintervals between border colours to the scanning stack. """
+        if x_stop < x_start:
+            return line_seed
+        x_start_next = x_start
+        x_stop_next = x_start_next-1
+        rtile = tile[y%len(tile)]
+        if back:
+            rback = back[y%len(back)]
+        x = x_start
+        while x <= x_stop:
+            # scan horizontally until border colour found, then append interval & continue scanning
+            pattern = backend.video.get_until(x, x_stop+1, y, border)
+            x_stop_next = x + len(pattern) - 1
+            x = x_stop_next + 1
+            # never match zero pattern (special case)
+            has_same_pattern = (rtile != [0]*8)
+            for pat_x in range(len(pattern)):
+                if not has_same_pattern:
+                    break
+                tile_x = (x_start_next + pat_x) % 8
+                has_same_pattern &= (pattern[pat_x] == rtile[tile_x])
+                has_same_pattern &= (not back or pattern[pat_x] != rback[tile_x])
+            # we've reached a border colour, append our interval & start a new one
+            # don't append if same fill colour/pattern, to avoid infinite loops over bits already painted (eg. 00 shape)
+            if x_stop_next >= x_start_next and not has_same_pattern:
+                line_seed.append([x_start_next, x_stop_next, y, ydir])
+            x_start_next = x + 1
+            x += 1
+        return line_seed    
+
+
 ###############################################################################
 # octant logic for CIRCLE
         
@@ -580,91 +666,6 @@ def quadrant_gte(quadrant, x, y, x0, y0):
             return x >= x0 
 
         
-###############################################################################
-# Flood fill (PAINT)
-
-def flood_fill(x, y, pattern, c, border, background): 
-    """ Flood fill an area defined by a border attribute with a tiled pattern. """
-    # 4-way scanline flood fill: http://en.wikipedia.org/wiki/Flood_fill
-    # flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
-    # pattern tiling stops at intervals that equal the pattern to be drawn, unless this pattern is
-    # also equal to the background pattern.
-    c, border = get_colour_index(c), get_colour_index(border)
-    solid = (pattern == None)
-    if not solid:    
-        tile = state.console_state.screen.mode.build_tile(pattern) if pattern else None 
-        back = state.console_state.screen.mode.build_tile(background) if background else None
-    else:
-        tile, back = [[c]*8], None
-    bound_x0, bound_y0, bound_x1, bound_y1 = backend.video.get_graph_clip()  
-    x, y = state.console_state.screen.drawing.view_coords(x, y)
-    line_seed = [(x, x, y, 0)]
-    # paint nothing if seed is out of bounds
-    if x < bound_x0 or x > bound_x1 or y < bound_y0 or y > bound_y1:
-        return
-    # paint nothing if we start on border attrib    
-    if state.console_state.screen.get_pixel(x,y) == border:
-        return
-    while len(line_seed) > 0:
-        # consider next interval
-        x_start, x_stop, y, ydir = line_seed.pop()
-        # extend interval as far as it goes to left and right
-        x_left = x_start - len(backend.video.get_until(x_start-1, bound_x0-1, y, border))    
-        x_right = x_stop + len(backend.video.get_until(x_stop+1, bound_x1+1, y, border)) 
-        # check next scanlines and add intervals to the list
-        if ydir == 0:
-            if y + 1 <= bound_y1:
-                line_seed = check_scanline(line_seed, x_left, x_right, y+1, c, tile, back, border, 1)
-            if y - 1 >= bound_y0:
-                line_seed = check_scanline(line_seed, x_left, x_right, y-1, c, tile, back, border, -1)
-        else:
-            # check the same interval one scanline onward in the same direction
-            if y+ydir <= bound_y1 and y+ydir >= bound_y0:
-                line_seed = check_scanline(line_seed, x_left, x_right, y+ydir, c, tile, back, border, ydir)
-            # check any bit of the interval that was extended one scanline backward 
-            # this is where the flood fill goes around corners.
-            if y-ydir <= bound_y1 and y-ydir >= bound_y0:
-                line_seed = check_scanline(line_seed, x_left, x_start-1, y-ydir, c, tile, back, border, -ydir)
-                line_seed = check_scanline(line_seed, x_stop+1, x_right, y-ydir, c, tile, back, border, -ydir)
-        # draw the pixels for the current interval   
-        state.console_state.screen.fill_interval(x_left, x_right, y, tile, solid)
-        # show progress
-        if y%4==0:
-            backend.check_events()
-    state.console_state.screen.drawing.last_attr = c
-    
-def check_scanline(line_seed, x_start, x_stop, y, c, tile, back, border, ydir):
-    """ Append all subintervals between border colours to the scanning stack. """
-    if x_stop < x_start:
-        return line_seed
-    x_start_next = x_start
-    x_stop_next = x_start_next-1
-    rtile = tile[y%len(tile)]
-    if back:
-        rback = back[y%len(back)]
-    x = x_start
-    while x <= x_stop:
-        # scan horizontally until border colour found, then append interval & continue scanning
-        pattern = backend.video.get_until(x, x_stop+1, y, border)
-        x_stop_next = x + len(pattern) - 1
-        x = x_stop_next + 1
-        # never match zero pattern (special case)
-        has_same_pattern = (rtile != [0]*8)
-        for pat_x in range(len(pattern)):
-            if not has_same_pattern:
-                break
-            tile_x = (x_start_next + pat_x) % 8
-            has_same_pattern &= (pattern[pat_x] == rtile[tile_x])
-            has_same_pattern &= (not back or pattern[pat_x] != rback[tile_x])
-        # we've reached a border colour, append our interval & start a new one
-        # don't append if same fill colour/pattern, to avoid infinite loops over bits already painted (eg. 00 shape)
-        if x_stop_next >= x_start_next and not has_same_pattern:
-            line_seed.append([x_start_next, x_stop_next, y, ydir])
-        x_start_next = x + 1
-        x += 1
-    return line_seed    
-
-
 ###############################################################################
 # Sprtie operations (PUT and GET)
 
