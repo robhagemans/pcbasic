@@ -1299,7 +1299,6 @@ def put_interval(pagenum, x, y, colours):
     else:
         for i, index in enumerate(colours):
             canvas[pagenum].set_at((x,y), index)
-    backend.clear_screen_buffer_area(x, y, x+len(colours), y)
     screen_changed = True
     
 def get_until(x0, x1, y, c):

@@ -438,7 +438,7 @@ def get_video_memory(addr):
 
 def set_video_memory(addr, val):
     """ Set a byte in video memory. """
-    return state.console_state.screen.mode.set_memory(addr, val)
+    return state.console_state.screen.mode.set_memory(addr, [val])
 
 def get_video_memory_block(addr, length):
     """ Retrieve a contiguous block of bytes from video memory. """
@@ -449,12 +449,7 @@ def get_video_memory_block(addr, length):
     
 def set_video_memory_block(addr, some_bytes):
     """ Set a contiguous block of bytes in video memory. """
-    for a in range(len(some_bytes)):
-        set_video_memory(addr + a, some_bytes[a])
-        # keep updating the screen
-        # we're not allowing keyboard breaks here 
-        if a%640 == 0:
-            backend.video.check_events()
+    state.console_state.screen.mode.set_memory(addr, some_bytes)
 
 ###############################################################################
 

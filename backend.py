@@ -1233,7 +1233,8 @@ class Screen(object):
 
     def put_interval(self, pagenum, x, y, colours):
         """ Write a list of attributes to a scanline interval. """
-        return video.put_interval(pagenum, x, y, colours)
+        video.put_interval(pagenum, x, y, colours)
+        self.clear_text_area(x, y, x+len(colours), y)
         
     def get_until(self, x0, x1, y, c):
         """ Get the attribute values of a scanline interval. """
