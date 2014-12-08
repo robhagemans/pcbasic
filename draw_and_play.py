@@ -15,38 +15,13 @@ import error
 import fp
 import vartypes
 import representation
-import expressions
 import util
 import var
-import graphics
 import state
-import backend
 
 # generic for both macro languages
 ml_whitepace = (' ')
 
-# GRAPHICS MACRO LANGUAGE
-deg_to_rad = fp.div( fp.Single.twopi, fp.Single.from_int(360))
-
-# MUSIC MACRO LANGUAGE
-# 12-tone equal temperament
-# C, C#, D, D#, E, F, F#, G, G#, A, A#, B
-note_freq = [ 440.*2**((i-33.)/12.) for i in range(84) ]
-notes = {   'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6, 
-            'G-':6, 'G':7, 'G#':8, 'A-':8, 'A':9, 'A#':10, 'B-':10, 'B':11 }
-
-class PlayState(object):
-    """ State variables of the PLAY command. """
-    
-    def __init__(self):
-        """ Initialise play state. """
-        self.octave = 4
-        self.speed = 7./8.
-        self.tempo = 2. # 2*0.25 =0 .5 seconds per quarter note
-        self.length = 0.25
-        self.volume = 15
-
-state.basic_state.play_state = [ PlayState(), PlayState(), PlayState() ]
 
 def prepare():
     """ Initialise the draw and play module. """
@@ -75,53 +50,86 @@ def ml_parse_value(gmls, default=None):
     if c in ('+', '-'):
         gmls.read(1)
         c = util.peek(gmls)
+        # don't allow default if sign is given
+        default = None
     if c == '=':
         gmls.read(1)
         c = util.peek(gmls)
         if len(c) == 0:
             raise error.RunError(5)
         elif ord(c) > 8:
-            step = var.get_var_or_array(*expressions.get_var_or_array_name(gmls))
+            name = util.get_var_name(gmls)
+            indices = ml_parse_indices(gmls)
+            step = var.get_var_or_array(name, indices)
             util.require_read(gmls, (';',), err=5)
         else:
             # varptr$
             step = get_value_for_varptrstr(gmls.read(3))
+    elif c in representation.ascii_digits:     
+        step = ml_parse_const(gmls)
+    elif default != None:
+        step = default
     else:
-        if c in representation.ascii_digits:     
-            numstr = ''
-            while c in representation.ascii_digits:
-                gmls.read(1)
-                numstr += c 
-                c = util.skip(gmls, ml_whitepace) 
-            step = representation.str_to_value_keep(('$', numstr))
-        else:
-            if default == None:
-                raise error.RunError(5)
-            else:
-                return default
+        raise error.RunError(5)
     if sgn == -1:
         step = vartypes.number_neg(step)
     return step
 
 def ml_parse_number(gmls, default=None):
-    """ Parse a number value in a macro-language string. """
+    """ Parse and return a number value in a macro-language string. """
     return vartypes.pass_int_unpack(ml_parse_value(gmls, default), err=5)
-    
+
+def ml_parse_const(gmls):
+    """ Parse and return a constant value in a macro-language string. """
+    c = util.skip(gmls, ml_whitepace)
+    if c in representation.ascii_digits:     
+        numstr = ''
+        while c in representation.ascii_digits:
+            gmls.read(1)
+            numstr += c 
+            c = util.skip(gmls, ml_whitepace) 
+        return representation.str_to_value_keep(('$', numstr))
+    else:
+        raise error.RunError(5)
+
+def ml_parse_const_int(gmls):
+    """ Parse a constant value in a macro-language string, return Python int. """
+    return vartypes.pass_int_unpack(ml_parse_const(gmls), err=5)    
+
 def ml_parse_string(gmls):
     """ Parse a string value in a macro-language string. """
     c = util.skip(gmls, ml_whitepace)
     if len(c) == 0:
         raise error.RunError(5)
     elif ord(c) > 8:
-        sub = var.get_var_or_array(*expressions.get_var_or_array_name(gmls))
+        name = util.get_var_name(gmls)
+        indices = ml_parse_indices(gmls)
+        sub = var.get_var_or_array(name, indices)
         util.require_read(gmls, (';',), err=5)
         return vartypes.pass_string_unpack(sub, err=5)
     else:
         # varptr$
         return vartypes.pass_string_unpack(get_value_for_varptrstr(gmls.read(3)))
+
+def ml_parse_indices(gmls):
+    """ Parse constant array indices. """
+    indices = []
+    c = util.skip(gmls, ml_whitepace)
+    if c in ('[', '('):
+        gmls.read(1)
+        while True:
+            indices.append(ml_parse_const_int(gmls))
+            c = util.skip(gmls, ml_whitepace)
+            if c == ',':
+                gmls.read(1)
+            else:
+                break
+        util.require_read(gmls, (']', ')'))
+    return indices
         
-        
-# GRAPHICS MACRO LANGUAGE
+# DRAW statement
+
+deg_to_rad = fp.div(fp.Single.twopi, fp.Single.from_int(360))
 
 def draw_step(x0, y0, sx, sy, plot, goback):
     """ Make a DRAW step, drawing a line and reurning if requested. """
@@ -245,8 +253,31 @@ def draw_parse_gml(gml):
                 raise error.RunError(5)
             bound = ml_parse_number(gmls)
             state.console_state.screen.drawing.paint((x, y, False), None, colour, bound, None)    
+
+
     
-# MUSIC MACRO LANGUAGE
+# PLAY statement
+
+import backend
+
+# 12-tone equal temperament
+# C, C#, D, D#, E, F, F#, G, G#, A, A#, B
+note_freq = [ 440.*2**((i-33.)/12.) for i in range(84) ]
+notes = {   'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6, 
+            'G-':6, 'G':7, 'G#':8, 'A-':8, 'A':9, 'A#':10, 'B-':10, 'B':11 }
+
+class PlayState(object):
+    """ State variables of the PLAY command. """
+    
+    def __init__(self):
+        """ Initialise play state. """
+        self.octave = 4
+        self.speed = 7./8.
+        self.tempo = 2. # 2*0.25 =0 .5 seconds per quarter note
+        self.length = 0.25
+        self.volume = 15
+
+state.basic_state.play_state = [ PlayState(), PlayState(), PlayState() ]
 
 def play_parse_mml(mml_list):
     """ Parse a Music Macro Language string. """
