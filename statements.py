@@ -1148,6 +1148,12 @@ def parse_coord_bare(ins):
     util.require_read(ins, (')',))
     return x, y
 
+def parse_coord_step(ins):
+    """ Helper function: parse coordinate pair. """
+    step = util.skip_white_read_if(ins, ('\xCF',)) # STEP
+    x, y = parse_coord_bare(ins)
+    return x, y, step
+
 def parse_coord(ins, absolute=False):
     """ Helper function: parse coordinate pair. """
     step = not absolute and util.skip_white_read_if(ins, ('\xCF',)) # STEP
@@ -1161,31 +1167,28 @@ def exec_pset(ins, c=-1):
     """ PSET: set a pixel to a given attribute, or foreground. """
     if state.console_state.screen.mode.is_text_mode:
         raise error.RunError(5)
-    step = util.skip_white_read_if(ins, ('\xCF',)) # STEP
-    x, y = parse_coord_bare(ins)
+    lcoord = parse_coord_step(ins)
     if util.skip_white_read_if(ins, (',',)):
         c = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.range_check(-1, 255, c)
     util.require(ins, util.end_statement)    
-    state.console_state.screen.drawing.put_point(x, y, step, c)
+    state.console_state.screen.drawing.pset(lcoord, c)
 
 def exec_preset(ins):
     """ PRESET: set a pixel to a given attribute, or background. """
     exec_pset(ins, 0)   
 
 def exec_line_graph(ins):
-    """ LINE: draw a line between two points. """
+    """ LINE: draw a line or box between two points. """
     if state.console_state.screen.mode.is_text_mode:
         raise error.RunError(5)
     if util.skip_white(ins) in ('(', '\xCF'):
-        x0, y0 = parse_coord(ins)
-        state.console_state.screen.drawing.last_point = x0, y0
+        coord0 = parse_coord_step(ins)
     else:
-        x0, y0 = state.console_state.screen.drawing.last_point
+        coord0 = None
     util.require_read(ins, ('\xEA',)) # -
-    x1, y1 = parse_coord(ins)
-    state.console_state.screen.drawing.last_point = x1, y1
-    c, mode, mask = -1, '', 0xffff
+    coord1 = parse_coord_step(ins)
+    c, mode, pattern = -1, '', 0xffff
     if util.skip_white_read_if(ins, (',',)):
         expr = expressions.parse_expression(ins, allow_empty=True)
         if expr:
@@ -1196,19 +1199,14 @@ def exec_line_graph(ins):
             else:
                 util.require(ins, (',',))
             if util.skip_white_read_if(ins, (',',)):
-                mask = vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=22), maxint=0x7fff)
+                pattern = vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=22), maxint=0x7fff)
         elif not expr:
-            raise error.RunError(22)        
-    util.require(ins, util.end_statement)    
-    if mode == '':
-        state.console_state.screen.drawing.draw_line(x0, y0, x1, y1, c, mask)
-    elif mode == 'B':
-        state.console_state.screen.drawing.draw_box(x0, y0, x1, y1, c, mask)
-    elif mode == 'BF':
-        state.console_state.screen.drawing.draw_box_filled(x0, y0, x1, y1, c)
+            raise error.RunError(22)
+    util.require(ins, util.end_statement)
+    state.console_state.screen.drawing.line(coord0, coord1, c, pattern, mode)
             
 def exec_view_graph(ins):
-    """ VIEW: set graphics viewport. """
+    """ VIEW: set graphics viewport and optionally draw a box. """
     if state.console_state.screen.mode.is_text_mode:
         raise error.RunError(5)
     absolute = util.skip_white_read_if(ins, ('\xC8',)) #SCREEN
@@ -1226,8 +1224,10 @@ def exec_view_graph(ins):
         state.console_state.screen.set_view(x0-1, y0-1, x1+1, y1+1, True)
         if fill != None:
             state.console_state.screen.drawing.draw_box_filled(x0, y0, x1, y1, fill)
+            state.console_state.screen.drawing.last_attr = fill
         if border != None:
             state.console_state.screen.drawing.draw_box(x0-1, y0-1, x1+1, y1+1, border)
+            state.console_state.screen.drawing.last_attr = border
         state.console_state.screen.set_view(x0, y0, x1, y1, absolute)
     else:
         state.console_state.screen.unset_view()

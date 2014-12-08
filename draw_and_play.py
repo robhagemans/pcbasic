@@ -232,6 +232,7 @@ def draw_parse_gml(gml):
                 if plot:
                     state.console_state.screen.drawing.draw_line(x0, y0, x, y, state.console_state.screen.drawing.last_attr)    
                 state.console_state.screen.drawing.last_point = (x, y)
+                state.console_state.screen.drawing.last_attr = c
                 if goback:
                     state.console_state.screen.drawing.last_point = (x0, y0)
             plot = True

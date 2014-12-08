@@ -684,9 +684,9 @@ def value_point(ins):
         # two-argument mode    
         if screen.mode.is_text_mode:
             raise error.RunError(err)
-        return vartypes.pack_int(screen.drawing.get_point(
-                        fp.unpack(vartypes.pass_single_keep(lst[0])), 
-                        fp.unpack(vartypes.pass_single_keep(lst[1]))))
+        return vartypes.pack_int(screen.drawing.point(
+                        (fp.unpack(vartypes.pass_single_keep(lst[0])), 
+                         fp.unpack(vartypes.pass_single_keep(lst[1])), False)))
 
 def value_pmap(ins):
     """ PMAP: convert between logical and physical coordinates. """

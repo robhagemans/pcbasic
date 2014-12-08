@@ -45,27 +45,6 @@ class Drawing(object):
         if self.window_bounds != None:
             self.set_window(*self.window_bounds)
 
-    ### PSET, POINT
-
-    def put_point(self, x, y, step, c):
-        """ Draw a pixel in the given attribute (PSET, PRESET). """
-        x, y = self.screen.view_coords(*self.get_window_physical(x, y, step))
-        c = get_colour_index(c)
-        backend.video.apply_graph_clip()
-        self.screen.put_pixel(x, y, c)
-        backend.video.remove_graph_clip()
-        self.last_attr = c
-        self.last_point = x, y
-    
-    def get_point(self, x, y):
-        """ Return the attribute of a pixel (POINT). """
-        x, y = self.screen.view_coords(*self.get_window_physical(x, y))
-        if x < 0 or x >= self.screen.mode.pixel_width:
-            return -1
-        if y < 0 or y >= self.screen.mode.pixel_height:
-            return -1
-        return self.screen.get_pixel(x,y)
-
     ### WINDOW coords
 
     def set_window(self, fx0, fy0, fx1, fy1, cartesian=True):
@@ -129,27 +108,51 @@ class Drawing(object):
         else:
             return fx.round_to_int(), fy.round_to_int()
 
-    ### LINE
-            
-    def draw_box_filled(self, x0, y0, x1, y1, c):
-        """ Draw a filled box between the given corner points. """
-        x0, y0 = self.screen.view_coords(x0, y0)
-        x1, y1 = self.screen.view_coords(x1, y1)
+    ### PSET, POINT
+
+    def pset(self, lcoord, c):
+        """ Draw a pixel in the given attribute (PSET, PRESET). """
+        x, y = self.screen.view_coords(*self.get_window_physical(*lcoord))
         c = get_colour_index(c)
-        if y1 < y0:
-            y0, y1 = y1, y0
-        if x1 < x0:
-            x0, x1 = x1, x0    
         backend.video.apply_graph_clip()
-        self.screen.fill_rect(x0, y0, x1, y1, c)
+        self.screen.put_pixel(x, y, c)
         backend.video.remove_graph_clip()
         self.last_attr = c
+        self.last_point = x, y
     
-    def draw_line(self, x0, y0, x1, y1, c, pattern=0xffff):
-        """ Draw a line between the given points. """
+    def point(self, lcoord):
+        """ Return the attribute of a pixel (POINT). """
+        x, y = self.screen.view_coords(*self.get_window_physical(*lcoord))
+        if x < 0 or x >= self.screen.mode.pixel_width:
+            return -1
+        if y < 0 or y >= self.screen.mode.pixel_height:
+            return -1
+        return self.screen.get_pixel(x,y)
+
+    ### LINE
+            
+    def line(self, lcoord0, lcoord1, c, pattern, shape):
+        """ Draw a patterned line or box (LINE). """
+        if lcoord0:
+            x0, y0 = self.screen.view_coords(*self.get_window_physical(*lcoord0))
+        else:
+            x0, y0 = self.last_point
+        x1, y1 = self.screen.view_coords(*self.get_window_physical(*lcoord1))
         c = get_colour_index(c)
-        x0, y0 = self.screen.mode.cutoff_coord(*self.screen.view_coords(x0, y0))
-        x1, y1 = self.screen.mode.cutoff_coord(*self.screen.view_coords(x1, y1))
+        if shape == '':
+            self.draw_line(x0, y0, x1, y1, c, pattern)
+        elif shape == 'B':
+            self.draw_box(x0, y0, x1, y1, c, pattern)
+        elif shape == 'BF':
+            self.draw_box_filled(x0, y0, x1, y1, c)
+        self.last_point = x1, y1
+        self.last_attr = c
+        
+    def draw_line(self, x0, y0, x1, y1, c, pattern=0xffff):
+        """ Draw a line between the given physical points. """
+        # cut off any out-of-bound coordinates
+        x0, y0 = self.screen.mode.cutoff_coord(x0, y0)
+        x1, y1 = self.screen.mode.cutoff_coord(x1, y1)
         if y1 <= y0:
             # work from top to bottom, or from x1,y1 if at the same height. this matters for mask.
             x1, y1, x0, y0 = x0, y0, x1, y1
@@ -166,7 +169,7 @@ class Drawing(object):
         x, y = x0, y0
         backend.video.apply_graph_clip()
         for x in xrange(x0, x1+sx, sx):
-            if pattern&mask != 0:
+            if pattern & mask != 0:
                 if steep:
                     self.screen.put_pixel(y, x, c)
                 else:
@@ -179,43 +182,51 @@ class Drawing(object):
                 y += sy
                 line_error += dx    
         backend.video.remove_graph_clip()
-        self.last_attr = c
-
+    
+    def draw_box_filled(self, x0, y0, x1, y1, c):
+        """ Draw a filled box between the given corner points. """
+        x0, y0 = self.screen.mode.cutoff_coord(x0, y0)
+        x1, y1 = self.screen.mode.cutoff_coord(x1, y1)
+        if y1 < y0:
+            y0, y1 = y1, y0
+        if x1 < x0:
+            x0, x1 = x1, x0    
+        backend.video.apply_graph_clip()
+        self.screen.fill_rect(x0, y0, x1, y1, c)
+        backend.video.remove_graph_clip()
+    
     def draw_box(self, x0, y0, x1, y1, c, pattern=0xffff):
         """ Draw an empty box between the given corner points. """
-        x0, y0 = self.screen.mode.cutoff_coord(*self.screen.view_coords(x0, y0))
-        x1, y1 = self.screen.mode.cutoff_coord(*self.screen.view_coords(x1, y1))
-        c = get_colour_index(c)
+        x0, y0 = self.screen.mode.cutoff_coord(x0, y0)
+        x1, y1 = self.screen.mode.cutoff_coord(x1, y1)
         mask = 0x8000
         backend.video.apply_graph_clip()
-        mask = draw_straight(x1, y1, x0, y1, c, pattern, mask)
-        mask = draw_straight(x1, y0, x0, y0, c, pattern, mask)
+        mask = self.draw_straight(x1, y1, x0, y1, c, pattern, mask)
+        mask = self.draw_straight(x1, y0, x0, y0, c, pattern, mask)
         # verticals always drawn top to bottom
         if y0 < y1:
             y0, y1 = y1, y0
-        mask = draw_straight(x1, y1, x1, y0, c, pattern, mask)
-        mask = draw_straight(x0, y1, x0, y0, c, pattern, mask)
+        mask = self.draw_straight(x1, y1, x1, y0, c, pattern, mask)
+        mask = self.draw_straight(x0, y1, x0, y0, c, pattern, mask)
         backend.video.remove_graph_clip()
-        self.last_attr = c
-    
-def draw_straight(x0, y0, x1, y1, c, pattern, mask):
-    """ Draw a horizontal or vertical line. """
-    if x0 == x1:
-        p0, p1, q, direction = y0, y1, x0, 'y' 
-    else:
-        p0, p1, q, direction = x0, x1, y0, 'x'
-    sp = 1 if p1 > p0 else -1
-    for p in range (p0, p1+sp, sp):
-        if pattern & mask != 0:
-            if direction == 'x':
-                state.console_state.screen.put_pixel(p, q, c)
-            else:
-                state.console_state.screen.put_pixel(q, p, c)
-        mask >>= 1
-        if mask == 0:
-            mask = 0x8000
-    return mask
-                        
+        
+    def draw_straight(self, x0, y0, x1, y1, c, pattern, mask):
+        """ Draw a horizontal or vertical line. """
+        if x0 == x1:
+            p0, p1, q, direction = y0, y1, x0, 'y' 
+        else:
+            p0, p1, q, direction = x0, x1, y0, 'x'
+        sp = 1 if p1 > p0 else -1
+        for p in range(p0, p1+sp, sp):
+            if pattern & mask != 0:
+                if direction == 'x':
+                    self.screen.put_pixel(p, q, c)
+                else:
+                    self.screen.put_pixel(q, p, c)
+            mask >>= 1
+            if mask == 0:
+                mask = 0x8000
+        return mask
     
 ###############################################################################
 # circle, ellipse, sectors (CIRCLE)
