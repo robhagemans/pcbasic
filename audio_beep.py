@@ -8,7 +8,7 @@ This file is released under the GNU GPL version 3.
 
 import plat
 import state
-
+import backend
 
 if plat.system == 'Windows':
     def init_sound():
