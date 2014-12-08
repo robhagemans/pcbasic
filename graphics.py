@@ -34,10 +34,17 @@ class Drawing(object):
         """ Reset graphics state. """
         if self.screen.mode.is_text_mode:
             return
-        state.console_state.screen.last_point = self.screen.get_view_mid()
+        self.last_point = self.screen.get_view_mid()
         self.last_attr = self.screen.mode.attr
         self.draw_scale = 4
         self.draw_angle = 0
+
+    def reset_view(self):
+        """ Update graphics state after viewport reset. """
+        self.last_point = self.screen.get_view_mid()
+        if state.console_state.graph_window_bounds != None:
+            graphics.set_graph_window(*state.console_state.graph_window_bounds)
+
 
 ### PSET, POINT
 
@@ -87,13 +94,13 @@ def window_coords(fx, fy, step=False):
     if state.console_state.graph_window:
         scalex, scaley, offsetx, offsety = state.console_state.graph_window
         if step:
-            fx0, fy0 = get_window_coords(*state.console_state.screen.last_point)
+            fx0, fy0 = get_window_coords(*state.console_state.screen.drawing.last_point)
         else:
             fx0, fy0 = fp.Single.zero.copy(), fp.Single.zero.copy()
         x = fp.add(offsetx, fp.mul(fx0.iadd(fx), scalex)).round_to_int()
         y = fp.add(offsety, fp.mul(fy0.iadd(fy), scaley)).round_to_int()
     else:
-        x, y = state.console_state.screen.last_point if step else (0, 0)
+        x, y = state.console_state.screen.drawing.last_point if step else (0, 0)
         x += fx.round_to_int()
         y += fy.round_to_int()
     # overflow check

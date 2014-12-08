@@ -1850,9 +1850,7 @@ class Screen(object):
         self.view_absolute = False
         self.view = None
         video.unset_graph_clip()
-        self.last_point = self.get_view_mid()
-        if state.console_state.graph_window_bounds != None:
-            graphics.set_graph_window(*state.console_state.graph_window_bounds)
+        self.drawing.reset_view()
     
     def set_view(self, x0, y0, x1, y1, absolute=True):
         """ Set the graphics viewport. """
@@ -1864,9 +1862,7 @@ class Screen(object):
         self.view_absolute = absolute
         self.view = x0, y0, x1, y1
         video.set_graph_clip(x0, y0, x1, y1)
-        self.last_point = self.get_view_mid()
-        if state.console_state.graph_window_bounds != None:
-            graphics.set_graph_window(*state.console_state.graph_window_bounds)
+        self.drawing.reset_view()
     
     def get_view(self):
         """ Return the graphics viewport or full screen dimensions if not set. """

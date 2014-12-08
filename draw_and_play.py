@@ -155,9 +155,9 @@ def draw_step(x0, y0, sx, sy, plot, goback):
     x1 += x0
     if plot:
         graphics.draw_line(x0, y0, x1, y1, state.console_state.screen.drawing.last_attr)    
-    state.console_state.screen.last_point = (x1, y1)
+    state.console_state.screen.drawing.last_point = (x1, y1)
     if goback:
-        state.console_state.screen.last_point = (x0, y0)
+        state.console_state.screen.drawing.last_point = (x0, y0)
             
 def draw_parse_gml(gml):
     """ Parse a Graphics Macro Language string. """
@@ -208,7 +208,7 @@ def draw_parse_gml(gml):
         # one-variable movement commands:     
         elif c in ('U', 'D', 'L', 'R', 'E', 'F', 'G', 'H'):
             step = ml_parse_number(gmls, default=vartypes.pack_int(1))
-            x0, y0 = state.console_state.screen.last_point
+            x0, y0 = state.console_state.screen.drawing.last_point
             x1, y1 = 0, 0
             if c in ('U', 'E', 'H'):
                 y1 -= step
@@ -230,20 +230,20 @@ def draw_parse_gml(gml):
             else:
                 gmls.read(1)
             y = ml_parse_number(gmls)
-            x0, y0 = state.console_state.screen.last_point
+            x0, y0 = state.console_state.screen.drawing.last_point
             if relative:
                 draw_step(x0, y0, x, y,  plot, goback)
             else:
                 if plot:
                     graphics.draw_line(x0, y0, x, y, state.console_state.screen.drawing.last_attr)    
-                state.console_state.screen.last_point = (x, y)
+                state.console_state.screen.drawing.last_point = (x, y)
                 if goback:
-                    state.console_state.screen.last_point = (x0, y0)
+                    state.console_state.screen.drawing.last_point = (x0, y0)
             plot = True
             goback = False
         elif c =='P':
             # paint - flood fill
-            x0, y0 = state.console_state.screen.last_point
+            x0, y0 = state.console_state.screen.drawing.last_point
             colour = ml_parse_number(gmls)
             if util.skip_read(gmls, ml_whitepace) != ',':
                 raise error.RunError(5)

@@ -1149,15 +1149,15 @@ def parse_coord(ins, absolute=False):
     util.require_read(ins, (')',))
     if absolute:
         return x, y
-    state.console_state.screen.last_point = graphics.window_coords(x, y, step)
-    return state.console_state.screen.last_point
+    state.console_state.screen.drawing.last_point = graphics.window_coords(x, y, step)
+    return state.console_state.screen.drawing.last_point
 
 def exec_pset(ins, c=-1):
     """ PSET: set a pixel to a given attribute, or foreground. """
     if state.console_state.screen.mode.is_text_mode:
         raise error.RunError(5)
     x, y = parse_coord(ins)
-    state.console_state.screen.last_point = x, y
+    state.console_state.screen.drawing.last_point = x, y
     if util.skip_white_read_if(ins, (',',)):
         c = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.range_check(-1, 255, c)
@@ -1174,12 +1174,12 @@ def exec_line_graph(ins):
         raise error.RunError(5)
     if util.skip_white(ins) in ('(', '\xCF'):
         x0, y0 = parse_coord(ins)
-        state.console_state.screen.last_point = x0, y0
+        state.console_state.screen.drawing.last_point = x0, y0
     else:
-        x0, y0 = state.console_state.screen.last_point
+        x0, y0 = state.console_state.screen.drawing.last_point
     util.require_read(ins, ('\xEA',)) # -
     x1, y1 = parse_coord(ins)
-    state.console_state.screen.last_point = x1, y1
+    state.console_state.screen.drawing.last_point = x1, y1
     c, mode, mask = -1, '', 0xffff
     if util.skip_white_read_if(ins, (',',)):
         expr = expressions.parse_expression(ins, allow_empty=True)
@@ -1256,7 +1256,7 @@ def exec_circle(ins):
     if state.console_state.screen.mode.is_text_mode:
         raise error.RunError(5)
     x0, y0 = parse_coord(ins)
-    state.console_state.screen.last_point = x0, y0
+    state.console_state.screen.drawing.last_point = x0, y0
     util.require_read(ins, (',',))
     r = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
     start, stop, c = None, None, -1
