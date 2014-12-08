@@ -149,7 +149,7 @@ def draw_step(x0, y0, sx, sy, plot, goback):
     y1 += y0
     x1 += x0
     if plot:
-        graphics.draw_line(x0, y0, x1, y1, state.console_state.screen.drawing.last_attr)    
+        state.console_state.screen.drawing.draw_line(x0, y0, x1, y1, state.console_state.screen.drawing.last_attr)    
     state.console_state.screen.drawing.last_point = (x1, y1)
     if goback:
         state.console_state.screen.drawing.last_point = (x0, y0)
@@ -230,7 +230,7 @@ def draw_parse_gml(gml):
                 draw_step(x0, y0, x, y,  plot, goback)
             else:
                 if plot:
-                    graphics.draw_line(x0, y0, x, y, state.console_state.screen.drawing.last_attr)    
+                    state.console_state.screen.drawing.draw_line(x0, y0, x, y, state.console_state.screen.drawing.last_attr)    
                 state.console_state.screen.drawing.last_point = (x, y)
                 if goback:
                     state.console_state.screen.drawing.last_point = (x0, y0)

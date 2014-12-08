@@ -129,57 +129,74 @@ class Drawing(object):
         else:
             return fx.round_to_int(), fy.round_to_int()
 
-### LINE
+    ### LINE
             
-def draw_box_filled(x0, y0, x1, y1, c):
-    """ Draw a filled box between the given corner points. """
-    x0, y0 = state.console_state.screen.view_coords(x0, y0)
-    x1, y1 = state.console_state.screen.view_coords(x1, y1)
-    c = get_colour_index(c)
-    if y1 < y0:
-        y0, y1 = y1, y0
-    if x1 < x0:
-        x0, x1 = x1, x0    
-    backend.video.apply_graph_clip()
-    state.console_state.screen.fill_rect(x0, y0, x1, y1, c)
-    backend.video.remove_graph_clip()
-    state.console_state.screen.drawing.last_attr = c
+    def draw_box_filled(self, x0, y0, x1, y1, c):
+        """ Draw a filled box between the given corner points. """
+        x0, y0 = self.screen.view_coords(x0, y0)
+        x1, y1 = self.screen.view_coords(x1, y1)
+        c = get_colour_index(c)
+        if y1 < y0:
+            y0, y1 = y1, y0
+        if x1 < x0:
+            x0, x1 = x1, x0    
+        backend.video.apply_graph_clip()
+        self.screen.fill_rect(x0, y0, x1, y1, c)
+        backend.video.remove_graph_clip()
+        self.last_attr = c
     
-def draw_line(x0, y0, x1, y1, c, pattern=0xffff):
-    """ Draw a line between the given points. """
-    c = get_colour_index(c)
-    x0, y0 = state.console_state.screen.mode.cutoff_coord(*state.console_state.screen.view_coords(x0, y0))
-    x1, y1 = state.console_state.screen.mode.cutoff_coord(*state.console_state.screen.view_coords(x1, y1))
-    if y1 <= y0:
-        # work from top to bottom, or from x1,y1 if at the same height. this matters for mask.
-        x1, y1, x0, y0 = x0, y0, x1, y1
-    # Bresenham algorithm
-    dx, dy = abs(x1-x0), abs(y1-y0)
-    steep = dy > dx
-    if steep:
-        x0, y0, x1, y1 = y0, x0, y1, x1
-        dx, dy = dy, dx
-    sx = 1 if x1 > x0 else -1
-    sy = 1 if y1 > y0 else -1
-    mask = 0x8000
-    line_error = dx / 2
-    x, y = x0, y0
-    backend.video.apply_graph_clip()
-    for x in xrange(x0, x1+sx, sx):
-        if pattern&mask != 0:
-            if steep:
-                state.console_state.screen.put_pixel(y, x, c)
-            else:
-                state.console_state.screen.put_pixel(x, y, c)
-        mask >>= 1
-        if mask == 0:
-            mask = 0x8000
-        line_error -= dy
-        if line_error < 0:
-            y += sy
-            line_error += dx    
-    backend.video.remove_graph_clip()
-    state.console_state.screen.drawing.last_attr = c
+    def draw_line(self, x0, y0, x1, y1, c, pattern=0xffff):
+        """ Draw a line between the given points. """
+        c = get_colour_index(c)
+        x0, y0 = self.screen.mode.cutoff_coord(*self.screen.view_coords(x0, y0))
+        x1, y1 = self.screen.mode.cutoff_coord(*self.screen.view_coords(x1, y1))
+        if y1 <= y0:
+            # work from top to bottom, or from x1,y1 if at the same height. this matters for mask.
+            x1, y1, x0, y0 = x0, y0, x1, y1
+        # Bresenham algorithm
+        dx, dy = abs(x1-x0), abs(y1-y0)
+        steep = dy > dx
+        if steep:
+            x0, y0, x1, y1 = y0, x0, y1, x1
+            dx, dy = dy, dx
+        sx = 1 if x1 > x0 else -1
+        sy = 1 if y1 > y0 else -1
+        mask = 0x8000
+        line_error = dx / 2
+        x, y = x0, y0
+        backend.video.apply_graph_clip()
+        for x in xrange(x0, x1+sx, sx):
+            if pattern&mask != 0:
+                if steep:
+                    self.screen.put_pixel(y, x, c)
+                else:
+                    self.screen.put_pixel(x, y, c)
+            mask >>= 1
+            if mask == 0:
+                mask = 0x8000
+            line_error -= dy
+            if line_error < 0:
+                y += sy
+                line_error += dx    
+        backend.video.remove_graph_clip()
+        self.last_attr = c
+
+    def draw_box(self, x0, y0, x1, y1, c, pattern=0xffff):
+        """ Draw an empty box between the given corner points. """
+        x0, y0 = self.screen.mode.cutoff_coord(*self.screen.view_coords(x0, y0))
+        x1, y1 = self.screen.mode.cutoff_coord(*self.screen.view_coords(x1, y1))
+        c = get_colour_index(c)
+        mask = 0x8000
+        backend.video.apply_graph_clip()
+        mask = draw_straight(x1, y1, x0, y1, c, pattern, mask)
+        mask = draw_straight(x1, y0, x0, y0, c, pattern, mask)
+        # verticals always drawn top to bottom
+        if y0 < y1:
+            y0, y1 = y1, y0
+        mask = draw_straight(x1, y1, x1, y0, c, pattern, mask)
+        mask = draw_straight(x0, y1, x0, y0, c, pattern, mask)
+        backend.video.remove_graph_clip()
+        self.last_attr = c
     
 def draw_straight(x0, y0, x1, y1, c, pattern, mask):
     """ Draw a horizontal or vertical line. """
@@ -199,22 +216,6 @@ def draw_straight(x0, y0, x1, y1, c, pattern, mask):
             mask = 0x8000
     return mask
                         
-def draw_box(x0, y0, x1, y1, c, pattern=0xffff):
-    """ Draw an empty box between the given corner points. """
-    x0, y0 = state.console_state.screen.mode.cutoff_coord(*state.console_state.screen.view_coords(x0, y0))
-    x1, y1 = state.console_state.screen.mode.cutoff_coord(*state.console_state.screen.view_coords(x1, y1))
-    c = get_colour_index(c)
-    mask = 0x8000
-    backend.video.apply_graph_clip()
-    mask = draw_straight(x1, y1, x0, y1, c, pattern, mask)
-    mask = draw_straight(x1, y0, x0, y0, c, pattern, mask)
-    # verticals always drawn top to bottom
-    if y0 < y1:
-        y0, y1 = y1, y0
-    mask = draw_straight(x1, y1, x1, y0, c, pattern, mask)
-    mask = draw_straight(x0, y1, x0, y0, c, pattern, mask)
-    backend.video.remove_graph_clip()
-    state.console_state.screen.drawing.last_attr = c
     
 ###############################################################################
 # circle, ellipse, sectors (CIRCLE)
@@ -354,9 +355,9 @@ def draw_circle(x0, y0, r, c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, l
             x -= 1
             bres_error += 2*(y-x+1)
     if line0:
-        draw_line(x0,y0, *octant_coord(oct0, x0, y0, coo0x, coo0), c=c)
+        state.console_state.screen.drawing.draw_line(x0, y0, *octant_coord(oct0, x0, y0, coo0x, coo0), c=c)
     if line1:
-        draw_line(x0,y0, *octant_coord(oct1, x0, y0, coo1x, coo1), c=c)
+        state.console_state.screen.drawing.draw_line(x0, y0, *octant_coord(oct1, x0, y0, coo1x, coo1), c=c)
     backend.video.remove_graph_clip()
     state.console_state.screen.drawing.last_attr = c
     
@@ -443,9 +444,9 @@ def draw_ellipse(cx, cy, rx, ry, c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1,
         state.console_state.screen.put_pixel(cx, cy-y, c) 
         y += 1 
     if line0:
-        draw_line(cx,cy, *quadrant_coord(qua0, cx, cy, x0, y0), c=c)
+        state.console_state.screen.drawing.draw_line(cx, cy, *quadrant_coord(qua0, cx, cy, x0, y0), c=c)
     if line1:
-        draw_line(cx,cy, *quadrant_coord(qua1, cx, cy, x1, y1), c=c)
+        state.console_state.screen.drawing.draw_line(cx, cy, *quadrant_coord(qua1, cx, cy, x1, y1), c=c)
     backend.video.remove_graph_clip()     
     state.console_state.screen.drawing.last_attr = c
     

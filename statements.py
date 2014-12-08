@@ -1201,28 +1201,21 @@ def exec_line_graph(ins):
             raise error.RunError(22)        
     util.require(ins, util.end_statement)    
     if mode == '':
-        graphics.draw_line(x0, y0, x1, y1, c, mask)
+        state.console_state.screen.drawing.draw_line(x0, y0, x1, y1, c, mask)
     elif mode == 'B':
-        graphics.draw_box(x0, y0, x1, y1, c, mask)
+        state.console_state.screen.drawing.draw_box(x0, y0, x1, y1, c, mask)
     elif mode == 'BF':
-        graphics.draw_box_filled(x0, y0, x1, y1, c)
+        state.console_state.screen.drawing.draw_box_filled(x0, y0, x1, y1, c)
             
 def exec_view_graph(ins):
     """ VIEW: set graphics viewport. """
     if state.console_state.screen.mode.is_text_mode:
         raise error.RunError(5)
     absolute = util.skip_white_read_if(ins, ('\xC8',)) #SCREEN
-    if util.skip_white_read_if(ins, '('):
-        x0 = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-        util.require_read(ins, (',',))
-        y0 = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-        util.require_read(ins, (')',))
+    if util.skip_white(ins) == '(':
+        x0, y0 = parse_coord_bare(ins)
         util.require_read(ins, ('\xEA',)) #-
-        util.require_read(ins, ('(',))
-        x1 = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-        util.require_read(ins, (',',))
-        y1 = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-        util.require_read(ins, (')',))
+        x1, y1 = parse_coord_bare(ins)
         util.range_check(0, state.console_state.screen.mode.pixel_width-1, x0, x1)
         util.range_check(0, state.console_state.screen.mode.pixel_height-1, y0, y1)
         x0, x1 = min(x0, x1), max(x0, x1)
@@ -1232,9 +1225,9 @@ def exec_view_graph(ins):
             fill, border = expressions.parse_int_list(ins, 2, err=2)
         state.console_state.screen.set_view(x0-1, y0-1, x1+1, y1+1, True)
         if fill != None:
-            graphics.draw_box_filled(x0, y0, x1, y1, fill)
+            state.console_state.screen.drawing.draw_box_filled(x0, y0, x1, y1, fill)
         if border != None:
-            graphics.draw_box(x0-1, y0-1, x1+1, y1+1, border)
+            state.console_state.screen.drawing.draw_box(x0-1, y0-1, x1+1, y1+1, border)
         state.console_state.screen.set_view(x0, y0, x1, y1, absolute)
     else:
         state.console_state.screen.unset_view()
