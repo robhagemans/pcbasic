@@ -239,12 +239,12 @@ def draw_parse_gml(gml):
             goback = False
         elif c =='P':
             # paint - flood fill
-            x0, y0 = state.console_state.screen.drawing.last_point
+            x, y = state.console_state.screen.drawing.get_window_logical(*state.console_state.screen.drawing.last_point)
             colour = ml_parse_number(gmls)
             if util.skip_read(gmls, ml_whitepace) != ',':
                 raise error.RunError(5)
             bound = ml_parse_number(gmls)
-            graphics.flood_fill(x0, y0, None, colour, bound, None)    
+            state.console_state.screen.drawing.paint((x, y, False), None, colour, bound, None)    
     
 # MUSIC MACRO LANGUAGE
 
