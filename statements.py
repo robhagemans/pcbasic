@@ -227,7 +227,7 @@ def parse_statement():
             state.basic_state.error_resume = state.basic_state.current_statement, state.basic_state.run_mode
             flow.jump(state.basic_state.on_error)
             state.basic_state.error_handle_mode = True
-            state.basic_state.suspend_all_events = True
+            state.basic_state.events.suspend_all = True
             return True
         else:    
             raise e
@@ -364,11 +364,11 @@ def exec_on(ins):
         exec_on_jump(ins)
 
 ##########################################################
-# event switches (except PLAY, KEY) and event definitions
+# event switches (except PLAY) and event definitions
 
 def exec_pen(ins):
     """ PEN: switch on/off light pen event handling. """
-    if state.basic_state.pen_handler.command(util.skip_white(ins)):
+    if state.basic_state.events.pen.command(util.skip_white(ins)):
         ins.read(1)
     else:    
         raise error.RunError(2)
@@ -382,7 +382,7 @@ def exec_strig(ins):
         num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
         if num not in (0,2,4,6):
             raise error.RunError(5)
-        if state.basic_state.strig_handlers[num//2].command(util.skip_white(ins)):
+        if state.basic_state.events.strig[num//2].command(util.skip_white(ins)):
             ins.read(1)
         else:    
             raise error.RunError(2)
@@ -401,7 +401,7 @@ def exec_com(ins):
     util.require(ins, ('(',))
     num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
     util.range_check(1, 2, num)
-    if state.basic_state.com_handlers[num].command(util.skip_white(ins)):
+    if state.basic_state.events.com[num].command(util.skip_white(ins)):
         ins.read(1)
     else:    
         raise error.RunError(2)
@@ -409,12 +409,23 @@ def exec_com(ins):
 
 def exec_timer(ins):
     """ TIMER: switch on/off timer event handling. """
-    if state.basic_state.timer_handler.command(util.skip_white(ins)):
+    if state.basic_state.events.timer.command(util.skip_white(ins)):
         ins.read(1)
     else:    
         raise error.RunError(2)
     util.require(ins, util.end_statement)      
 
+def exec_key_events(ins):
+    """ KEY: switch on/off keyboard events. """
+    num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
+    util.range_check(0, 255, num)
+    d = util.skip_white(ins)
+    # others are ignored
+    if num >= 1 and num <= 20:
+        if state.basic_state.events.key[num-1].command(d):
+            ins.read(1)
+        else:    
+            raise error.RunError(2)
 
 def parse_on_event(ins, bracket=True):
     """ Helper function for ON event trap definitions. """
@@ -435,26 +446,27 @@ def exec_on_key(ins):
     keynum, jumpnum = parse_on_event(ins)
     keynum = vartypes.pass_int_unpack(keynum)
     util.range_check(1, 20, keynum)
-    state.basic_state.key_handlers[keynum-1].gosub = jumpnum
+    state.basic_state.events.key[keynum-1].set_jump(jumpnum)
 
 def exec_on_timer(ins):
     """ ON TIMER: define timer event trapping. """
     timeval, jumpnum = parse_on_event(ins)
     timeval = vartypes.pass_single_keep(timeval)
-    state.basic_state.timer_period = fp.mul(fp.unpack(timeval), fp.Single.from_int(1000)).round_to_int()
-    state.basic_state.timer_handler.gosub = jumpnum
+    period = fp.mul(fp.unpack(timeval), fp.Single.from_int(1000)).round_to_int()
+    state.basic_state.events.timer.set_trigger(period)
+    state.basic_state.events.timer.set_jump(jumpnum)
 
 def exec_on_play(ins):
     """ ON PLAY: define music event trapping. """
     playval, jumpnum = parse_on_event(ins)
     playval = vartypes.pass_int_unpack(playval)
-    state.basic_state.play_trig = playval
-    state.basic_state.play_handler.gosub = jumpnum
+    state.basic_state.events.play.set_trigger(playval)
+    state.basic_state.events.play.set_jump(jumpnum)
     
 def exec_on_pen(ins):
     """ ON PEN: define light pen event trapping. """
     _, jumpnum = parse_on_event(ins, bracket=False)
-    state.basic_state.pen_handler.gosub = jumpnum
+    state.basic_state.events.pen.set_jump(jumpnum)
     
 def exec_on_strig(ins):
     """ ON STRIG: define fire button event trapping. """
@@ -463,14 +475,14 @@ def exec_on_strig(ins):
     ## 0 -> [0][0] 2 -> [0][1]  4-> [1][0]  6 -> [1][1]
     if strigval not in (0,2,4,6):
         raise error.RunError(5)
-    state.basic_state.strig_handlers[strigval//2].gosub = jumpnum
+    state.basic_state.events.strig[strigval//2].set_jump(jumpnum)
     
 def exec_on_com(ins):
     """ ON COM: define serial port event trapping. """
     keynum, jumpnum = parse_on_event(ins)
     keynum = vartypes.pass_int_unpack(keynum)
     util.range_check(1, 2, keynum)
-    state.basic_state.com_handlers[keynum-1].gosub = jumpnum
+    state.basic_state.events.com[keynum-1].set_jump(jumpnum)
 
 ##########################################################
 # sound
@@ -533,7 +545,8 @@ def exec_sound(ins):
     
 def exec_play(ins):
     """ PLAY: play sound sequence defined by a Music Macro Language string. """
-    if state.basic_state.play_handler.command(util.skip_white(ins)):
+    # PLAY: event switch
+    if state.basic_state.events.play.command(util.skip_white(ins)):
         ins.read(1)
         util.require(ins, util.end_statement)
     else:    
@@ -2183,18 +2196,6 @@ def exec_key(ins):
         exec_key_define(ins)
     util.require(ins, util.end_statement)        
 
-def exec_key_events(ins):
-    """ KEY: switch on/off keyboard events. """
-    num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
-    util.range_check(0, 255, num)
-    d = util.skip_white(ins)
-    # others are ignored
-    if num >= 1 and num <= 20:
-        if state.basic_state.key_handlers[num-1].command(d):
-            ins.read(1)
-        else:    
-            raise error.RunError(2)
-
 def exec_key_define(ins):
     """ KEY: define function-key shortcut or scancode for event trapping. """
     keynum = vartypes.pass_int_unpack(expressions.parse_expression(ins))
@@ -2212,7 +2213,7 @@ def exec_key_define(ins):
             raise error.RunError(5)
         # can't redefine scancodes for keys 1-14 (pc) 1-16 (tandy)
         if keynum > backend.num_fn_keys + 4 and keynum <= 20:    
-            state.basic_state.event_keys[keynum-1] = str(text)
+            state.basic_state.events.event_keys[keynum-1] = str(text)
     
 def exec_locate(ins):
     """ LOCATE: Set cursor position, shape and visibility."""

@@ -275,9 +275,9 @@ def renum(new_line, start_line, step):
     if state.basic_state.on_error:
         state.basic_state.on_error = old_to_new[state.basic_state.on_error]
     # renumber event traps
-    for handler in state.basic_state.all_handlers:
+    for handler in state.basic_state.events.all:
         if handler.gosub:
-            handler.gosub = old_to_new[handler.gosub]    
+            handler.set_jump(old_to_new[handler.gosub])
         
 def load(g):
     """ Load program from ascii, bytecode or protected stream. """

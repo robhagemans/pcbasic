@@ -10,9 +10,6 @@ import var
 import rnd
 import iolayer
 import state
-import backend
-import draw_and_play
-import graphics
 
 
 def clear(close_files=False, preserve_common=False, preserve_all=False, preserve_deftype=False):
@@ -37,7 +34,7 @@ def clear(close_files=False, preserve_common=False, preserve_all=False, preserve
     # Resets STRIG to off
     state.console_state.stick.switch(False)
     # disable all event trapping (resets PEN to OFF too)
-    backend.reset_events()
+    state.basic_state.events.reset()
     # CLEAR also dumps for_next and while_wend stacks
     state.basic_state.for_next_stack = []
     state.basic_state.while_wend_stack = []

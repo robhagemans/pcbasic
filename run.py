@@ -151,9 +151,9 @@ def auto_step():
 
 def handle_basic_events():
     """ Jump to user-defined event subs if events triggered. """
-    if state.basic_state.suspend_all_events or not state.basic_state.run_mode:
+    if state.basic_state.events.suspend_all or not state.basic_state.run_mode:
         return
-    for event in state.basic_state.all_handlers:
+    for event in state.basic_state.events.all:
         if (event.enabled and event.triggered 
                 and not event.stopped and event.gosub != None):
             # release trigger

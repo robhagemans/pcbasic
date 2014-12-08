@@ -220,8 +220,8 @@ def shell(command):
     key_macros_save = state.basic_state.key_macros_off
     state.basic_state.key_macros_off = True
     # no user events
-    suspend_event_save = state.basic_state.suspend_all_events
-    state.basic_state.suspend_all_events = True
+    suspend_event_save = state.basic_state.events.suspend_all
+    state.basic_state.events.suspend_all = True
     # run the os-specific shell
     if shell_enabled:
         spawn_shell(command)
@@ -229,7 +229,7 @@ def shell(command):
         logging.warning('SHELL statement disabled.')
     # re-enable key macros and event handling
     state.basic_state.key_macros_off = key_macros_save
-    state.basic_state.suspend_all_events = suspend_event_save
+    state.basic_state.events.suspend_all = suspend_event_save
 
 
 #########################################

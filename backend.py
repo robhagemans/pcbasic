@@ -27,7 +27,7 @@ import util
 import representation
 import draw_and_play
 import redirect
-# FIXME: circular import
+# FIXME: circular imports
 import graphics
 
 # backend implementations
@@ -45,8 +45,7 @@ def prepare():
     prepare_keyboard()
     prepare_audio()
     prepare_video()
-    # initialise event triggers
-    reset_events()    
+    state.basic_state.events = Events()
 
 
 ###############################################################################
@@ -71,9 +70,10 @@ def check_events():
     # trigger & handle BASIC events
     if state.basic_state.run_mode:
         # trigger TIMER, PLAY and COM events
-        check_timer_event()
-        check_play_event()
-        check_com_events()
+        state.basic_state.events.timer.check()
+        state.basic_state.events.play.check()
+        for c in state.basic_state.events.com:
+            c.check()
         # KEY, PEN and STRIG are triggered on handling the queue
 
    
@@ -81,18 +81,22 @@ def check_events():
 # BASIC event triggers        
         
 class EventHandler(object):
-    """ Keeps track of event triggers. """
+    """ Manage event triggers. """
     
     def __init__(self):
         """ Initialise untriggered and disabled. """
         self.reset()
         
     def reset(self):
-        """ Reet to untriggered and disabled initial state. """
+        """ Reset to untriggered and disabled initial state. """
         self.gosub = None
         self.enabled = False
         self.stopped = False
         self.triggered = False
+
+    def set_jump(self, jump):
+        """ Set the jump line number. """
+        self.gosub = jump
 
     def command(self, command_char):
         """ Turn the event ON, OFF and STOP. """
@@ -110,121 +114,177 @@ class EventHandler(object):
             return False
         return True
 
-def reset_events():
-    """ Initialise or reset event triggers. """
-    # TIMER
-    state.basic_state.timer_period, state.basic_state.timer_start = 0, 0
-    state.basic_state.timer_handler = EventHandler()
-    # KEY
-    state.basic_state.event_keys = [''] * 20
-    # F1-F10
-    state.basic_state.event_keys[0:10] = [
-        '\x00\x3b', '\x00\x3c', '\x00\x3d', '\x00\x3e', '\x00\x3f',
-        '\x00\x40', '\x00\x41', '\x00\x42', '\x00\x43', '\x00\x44']
-    # Tandy F11, F12
-    if num_fn_keys == 12:
-        state.basic_state.event_keys[10:12] = ['\x00\x98', '\x00\x99']
-    # up, left, right, down
-    state.basic_state.event_keys[num_fn_keys:num_fn_keys+4] = [   
-        '\x00\x48', '\x00\x4b', '\x00\x4d', '\x00\x50']
-    # the remaining keys are user definable        
-    state.basic_state.key_handlers = [EventHandler() for _ in xrange(20)]
-    # PLAY
-    state.basic_state.play_last = [0, 0, 0]
-    state.basic_state.play_trig = 1
-    state.basic_state.play_handler = EventHandler()
-    # COM
-    state.basic_state.com_handlers = [EventHandler(), EventHandler()]  
-    # PEN
-    state.basic_state.pen_handler = EventHandler()
-    # STRIG
-    state.basic_state.strig_handlers = [EventHandler() for _ in xrange(4)]
-    # all handlers in order of handling; TIMER first
-    state.basic_state.all_handlers = [state.basic_state.timer_handler]  
-    # key events are not handled FIFO but first 11-20 in that order, then 1-10
-    state.basic_state.all_handlers += [state.basic_state.key_handlers[num] 
-                                       for num in (range(10, 20) + range(10))]
-    # this determined handling order
-    state.basic_state.all_handlers += (
-            [state.basic_state.play_handler] + state.basic_state.com_handlers + 
-            [state.basic_state.pen_handler] + state.basic_state.strig_handlers)
-    # set suspension off
-    state.basic_state.suspend_all_events = False
+    def trigger(self):
+        """ Trigger the event. """
+        self.triggered = True
 
-def check_timer_event():
-    """ Trigger TIMER events. """
-    mutimer = timedate.timer_milliseconds() 
-    if mutimer >= state.basic_state.timer_start+state.basic_state.timer_period:
-        state.basic_state.timer_start = mutimer
-        state.basic_state.timer_handler.triggered = True
+    def check(self):
+        """ Stub for event checker. """
+        pass
 
-def check_play_event():
-    """ Trigger PLAY (music queue) events. """
-    play_now = [state.console_state.sound.queue_length(voice) for voice in range(3)]
-    if pcjr_sound: 
-        for voice in range(3):
-            if (play_now[voice] <= state.basic_state.play_trig and 
-                    play_now[voice] > 0 and 
-                    play_now[voice] != state.basic_state.play_last[voice] ):
-                state.basic_state.play_handler.triggered = True 
-    else:    
-        if (state.basic_state.play_last[0] >= state.basic_state.play_trig and 
-                play_now[0] < state.basic_state.play_trig):    
-            state.basic_state.play_handler.triggered = True     
-    state.basic_state.play_last = play_now
 
-def check_com_events():
-    """ Trigger COM-port events. """
-    ports = (devices['COM1:'], devices['COM2:'])
-    for comport in (0, 1):
-        if ports[comport] and ports[comport].peek_char():
-            state.basic_state.com_handlers[comport].triggered = True
+class PlayHandler(EventHandler):
+    """ Manage PLAY (music queue) events. """
+    
+    def __init__(self):
+        """ Initialise PLAY trigger. """
+        EventHandler.__init__(self)
+        self.last = [0, 0, 0]
+        self.trig = 1
+    
+    def check(self):
+        """ Check and trigger PLAY (music queue) events. """
+        play_now = [state.console_state.sound.queue_length(voice) for voice in range(3)]
+        if pcjr_sound: 
+            for voice in range(3):
+                if (play_now[voice] <= self.trig and 
+                        play_now[voice] > 0 and 
+                        play_now[voice] != self.last[voice]):
+                    self.trigger() 
+        else:    
+            if (self.last[0] >= self.trig and 
+                    play_now[0] < self.trig):    
+                self.trigger()
+        self.last = play_now
 
+    def set_trigger(self, n):
+        """ Set PLAY trigger to n notes. """
+        self.trig = n
+
+
+class TimerHandler(EventHandler):
+    """ Manage TIMER events. """
+    
+    def __init__(self):
+        """ Initialise TIMER trigger. """
+        EventHandler.__init__(self)
+        self.period = 0
+        self.start = 0
+
+    def set_trigger(self, n):
+        """ Set TIMER trigger to n milliseconds. """
+        self.period = n
+
+    def check(self):
+        """ Trigger TIMER events. """
+        mutimer = timedate.timer_milliseconds() 
+        if mutimer >= self.start + self.period:
+            self.start = mutimer
+            self.trigger()
+
+
+class ComHandler(EventHandler):
+    """ Manage COM-port events. """
+    
+    def __init__(self, port):
+        """ Initialise COM trigger. """
+        EventHandler.__init__(self)
+        # devices aren't initialised at this time so just keep the name
+        self.portname = ('COM1:', 'COM2:')[port]
+    
+    def check(self):
+        """ Trigger COM-port events. """
+        if devices[self.portname] and devices[self.portname].peek_char():
+            self.trigger()
+
+
+class KeyHandler(EventHandler):
+    """ Manage KEY events. """
+    
+    def __init__(self, scancode=None):
+        """ Initialise KEY trigger. """
+        EventHandler.__init__(self)
+        self.modcode = None
+        self.scancode = scancode
+        self.predefined = (scancode != None)
+    
+    #D
+    # access keyqueue from check() instead
+    def set_scancode_for_check(self, scancode, modifiers):
+        """ Kludge. """
+        self.check_scancode = scancode
+        self.check_modifiers = modifiers
+    
+    def check(self):
+        """ Trigger KEY events. """
+        scancode = self.check_scancode
+        modifiers = self.check_modifiers
+        # build KEY trigger code
+        # see http://www.petesqbsite.com/sections/tutorials/tuts/keysdet.txt                
+        # second byte is scan code; first byte
+        #  0       if the key is pressed alone
+        #  1 to 3    if any Shift and the key are combined
+        #    4       if Ctrl and the key are combined
+        #    8       if Alt and the key are combined
+        #   32       if NumLock is activated
+        #   64       if CapsLock is activated
+        #  128       if we are defining some extended key
+        # extended keys are for example the arrow keys on the non-numerical keyboard
+        # presumably all the keys in the middle region of a standard PC keyboard?
+        if self.predefined:
+            # for predefined keys, modifier is ignored
+            modcode = None
+        else:
+            # from modifiers, exclude scroll lock at 0x10 and insert 0x80.
+            modcode = modifiers & 0x6f 
+        if (self.modcode == modcode and self.scancode and 
+                    self.scancode == scancode):
+            self.trigger()
+            return self.enabled
+        return False            
+
+    def set_trigger(self, keystr):
+        """ Set KEY trigger to chr(modcode)+chr(scancode). """
+        if not self.predefined:
+            self.modcode = ord(keystr[0])
+            self.scancode = ord(keystr[1])
+
+#D
 def check_key_event(scancode, modifiers):
     """ Trigger KEYboard events. """
-    # "Extended ascii": ascii 1-255 or NUL+code where code is often but not
-    # always the keyboard scancode. See e.g. Tandy 1000 BASIC manual for a good
-    # overview. DBCS is simply entered as a string of ascii codes.
-    # check for scancode (inp_code) events
     if not scancode:
         return False
-    try:
-        keynum = state.basic_state.event_keys.index('\0' + chr(scancode))
-        # for pre-defined KEYs 1-14 (and 1-16 on Tandy) the modifier status 
-        # is ignored.
-        if (keynum >= 0 and keynum < num_fn_keys + 4 and 
-                    state.basic_state.key_handlers[keynum].enabled):
-                # trigger function or arrow key event
-                state.basic_state.key_handlers[keynum].triggered = True
-                # don't enter into key buffer
-                return True
-    except ValueError:
-        pass
-    # build KEY trigger code
-    # see http://www.petesqbsite.com/sections/tutorials/tuts/keysdet.txt                
-    # second byte is scan code; first byte
-    #  0       if the key is pressed alone
-    #  1 to 3    if any Shift and the key are combined
-    #    4       if Ctrl and the key are combined
-    #    8       if Alt and the key are combined
-    #   32       if NumLock is activated
-    #   64       if CapsLock is activated
-    #  128       if we are defining some extended key
-    # extended keys are for example the arrow keys on the non-numerical keyboard
-    # presumably all the keys in the middle region of a standard PC keyboard?
-    # from modifiers, exclude scroll lock at 0x10 and insert 0x80.
-    trigger_code = chr(modifiers & 0x6f) + chr(scancode)
-    try:
-        keynum = state.basic_state.event_keys.index(trigger_code)
-        if (keynum >= num_fn_keys + 4 and keynum < 20 and
-                    state.basic_state.key_handlers[keynum].enabled):
-                # trigger user-defined key
-                state.basic_state.key_handlers[keynum].triggered = True
-                # don't enter into key buffer
-                return True
-    except ValueError:
-        pass
-    return False
+    result = False
+    for k in state.basic_state.events.key:
+        k.set_scancode_for_check(scancode, modifiers)
+        # drop from keyboard queu if triggered and enabled
+        result = result or k.check()
+    return result
+
+
+class Events(object):
+    """ Event management. """
+
+    def __init__(self):
+        """ Initialise event triggers. """
+        self.reset()
+
+    def reset(self):
+        """ Initialise or reset event triggers. """
+        # KEY: init key events
+        keys = [
+            scancode.F1, scancode.F2, scancode.F3, scancode.F4, scancode.F5, 
+            scancode.F6, scancode.F7, scancode.F8, scancode.F9, scancode.F10]
+        if num_fn_keys == 12:
+            # Tandy only
+            keys += [scancode.F11, scancode.F12]
+        keys += [scancode.UP, scancode.LEFT, scancode.RIGHT, scancode.DOWN]
+        keys += [None] * (20 - num_fn_keys - 4)
+        self.key = [KeyHandler(sc) for sc in keys]
+        # other events            
+        self.timer = TimerHandler()
+        self.play = PlayHandler()
+        self.com = [ComHandler(0), ComHandler(1)]  
+        self.pen = EventHandler()
+        self.strig = [EventHandler() for _ in xrange(4)]
+        # all handlers in order of handling; TIMER first
+        # key events are not handled FIFO but first 11-20 in that order, then 1-10
+        self.all = ([self.timer]
+            + [self.key[num] for num in (range(10, 20) + range(10))]
+            + [self.play] + self.com + [self.pen] + self.strig)
+        # set suspension off
+        self.suspend_all = False
+
 
 
 ###############################################################################
@@ -239,12 +299,6 @@ function_key = {
     scancode.F1: 0, scancode.F2: 1, scancode.F3: 2, scancode.F4: 3, 
     scancode.F5: 4, scancode.F6: 5, scancode.F7: 6, scancode.F8: 7,
     scancode.F9: 8, scancode.F10: 9, scancode.F11: 10, scancode.F12: 11}
-# user definable key list
-state.console_state.key_replace = [ 
-    'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r',
-    'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
-# switch off macro repacements
-state.basic_state.key_macros_off = False    
 # bit flags for modifier keys
 toggle = {
     scancode.INSERT: 0x80, scancode.CAPSLOCK: 0x40,  
@@ -252,6 +306,14 @@ toggle = {
 modifier = {    
     scancode.ALT: 0x8, scancode.CTRL: 0x4, 
     scancode.LSHIFT: 0x2, scancode.RSHIFT: 0x1}
+
+
+# user definable key list
+state.console_state.key_replace = [ 
+    'LIST ', 'RUN\r', 'LOAD"', 'SAVE"', 'CONT\r', ',"LPT1:"\r',
+    'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
+# switch off macro repacements
+state.basic_state.key_macros_off = False    
 
 
 def prepare_keyboard():
@@ -474,7 +536,7 @@ class Keyboard(object):
             # can't be redefined in events - so must be fn 1-10 (1-12 on Tandy).
             keynum = function_key[scan]
             if (state.basic_state.key_macros_off or state.basic_state.run_mode 
-                    and state.basic_state.key_handlers[keynum].enabled):
+                    and state.basic_state.events.key[keynum].enabled):
                 # this key is paused from being trapped, don't replace
                 self.insert_chars(scan_to_eascii(scan, self.mod), check_full)
                 return
@@ -1664,10 +1726,6 @@ class Screen(object):
                                self.mode.height, self.mode.num_pages)
         # set active page & visible page, counting from 0. 
         self.set_page(new_vpagenum, new_apagenum)
-        # set graphics characteristics
-        if not self.mode.is_text_mode:
-            # graphics drawing
-            self.drawing = graphics.Drawing(self)
         # signal the backend to change the screen resolution
         if not video.init_screen_mode(info):
             # something broke at the backend. fallback to text mode and give error.
@@ -1675,6 +1733,8 @@ class Screen(object):
             if not recursion_depth:
                 self.screen(0, 0, 0, 0, recursion_depth=recursion_depth+1)
             return False
+        # set graphics characteristics
+        self.drawing = graphics.Drawing(self)
         # cursor width starts out as single char
         self.cursor.init_mode(info)
         # set the palette
@@ -2167,7 +2227,7 @@ class Pen(object):
         """ Report a pen-down event at graphical x,y """
         global pen_is_down
         # trigger PEN event
-        state.basic_state.pen_handler.triggered = True
+        state.basic_state.events.pen.trigger()
         # TRUE until polled
         self.was_down = True 
         # TRUE until pen up
@@ -2251,7 +2311,7 @@ class Stick(object):
         self.was_fired[joy][button] = True
         stick_is_firing[joy][button] = True
         # trigger STRIG event
-        state.basic_state.strig_handlers[joy*2 + button].triggered = True
+        state.basic_state.events.strig[joy*2 + button].trigger()
 
     def up(self, joy, button):
         """ Report a joystick button up event. """
