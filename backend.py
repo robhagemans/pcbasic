@@ -6,6 +6,12 @@ Event loop; video, audio, keyboard, pen and joystick handling
 This file is released under the GNU GPL version 3. 
 """
 
+
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+    
 import logging
 from copy import copy
 
@@ -18,7 +24,8 @@ import scancode
 import error
 import vartypes
 import util
-
+import representation
+import draw_and_play
 # FIXME: circular import
 import graphics
 
@@ -2198,14 +2205,29 @@ quiet_quit = 10000
 # base frequency for noise source
 base_freq = 3579545./1024.
 
+# 12-tone equal temperament
+# C, C#, D, D#, E, F, F#, G, G#, A, A#, B
+note_freq = [ 440.*2**((i-33.)/12.) for i in range(84) ]
+notes = {   'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6, 
+            'G-':6, 'G':7, 'G#':8, 'A-':8, 'A':9, 'A#':10, 'B-':10, 'B':11 }
+
+class PlayState(object):
+    """ State variables of the PLAY command. """
+    
+    def __init__(self):
+        """ Initialise play state. """
+        self.octave = 4
+        self.speed = 7./8.
+        self.tempo = 2. # 2*0.25 =0 .5 seconds per quarter note
+        self.length = 0.25
+        self.volume = 15
+
 class Sound(object):
     """ Sound queue manipulations. """
 
     def __init__(self):
         """ Initialise sound queue. """
         self.queue = [[], [], [], []]
-        # music foreground (MF) mode        
-        self.foreground = True
         # Tandy/PCjr noise generator
         # frequency for noise sources
         self.noise_freq = [base_freq / v for v in [1., 2., 4., 1., 1., 2., 4., 1.]]
@@ -2215,6 +2237,14 @@ class Sound(object):
         # Tandy/PCjr SOUND ON and BEEP ON
         self.sound_on = False
         self.beep_on = True
+        self.reset()
+
+    def reset(self):
+        """ Reset PLAY state (CLEAR). """
+        # music foreground (MF) mode        
+        self.foreground = True
+        # reset all PLAY state
+        self.play_state = [ PlayState(), PlayState(), PlayState() ]
 
     def beep(self):
         """ Play the BEEP sound. """
@@ -2225,7 +2255,7 @@ class Sound(object):
         if frequency < 0:
             frequency = 0
         if ((pcjr_sound == 'tandy' or 
-                (pcjr_sound == 'pcjr' and state.console_state.sound.sound_on)) and
+                (pcjr_sound == 'pcjr' and self.sound_on)) and
                 frequency < 110. and frequency != 0):
             # pcjr, tandy play low frequencies as 110Hz
             frequency = 110.
@@ -2285,6 +2315,123 @@ class Sound(object):
                     # this takes quite a while and leads to missed frames...
                     audio.quit_sound()
                     self.quiet_ticks = 0
+
+    ### PLAY statement
+
+    def play(self, mml_list):
+        """ Parse a list of Music Macro Language strings. """
+        gmls_list = []
+        for mml in mml_list:
+            gmls = StringIO()
+            gmls.write(str(mml).upper())
+            gmls.seek(0)
+            gmls_list.append(gmls)
+        next_oct = 0
+        voices = range(3)
+        while True:
+            if not voices:
+                break
+            for voice in voices:
+                vstate = self.play_state[voice]
+                gmls = gmls_list[voice]
+                c = util.skip_read(gmls, draw_and_play.ml_whitepace).upper()
+                if c == '':
+                    voices.remove(voice)
+                    continue
+                elif c == ';':
+                    continue
+                elif c == 'X':
+                    # execute substring
+                    sub = draw_and_play.ml_parse_string(gmls)
+                    pos = gmls.tell()
+                    rest = gmls.read()
+                    gmls.truncate(pos)
+                    gmls.write(str(sub))
+                    gmls.write(rest)
+                    gmls.seek(pos)
+                elif c == 'N':
+                    note = draw_and_play.ml_parse_number(gmls)
+                    dur = vstate.length
+                    c = util.skip(gmls, draw_and_play.ml_whitepace).upper()
+                    if c == '.':
+                        gmls.read(1)
+                        dur *= 1.5
+                    if note > 0 and note <= 84:
+                        self.play_sound(note_freq[note-1], dur*vstate.tempo, 
+                                         vstate.speed, volume=vstate.volume,
+                                         voice=voice)
+                    elif note == 0:
+                        self.play_sound(0, dur*vstate.tempo, vstate.speed,
+                                        volume=0, voice=voice)
+                elif c == 'L':
+                    vstate.length = 1./draw_and_play.ml_parse_number(gmls)    
+                elif c == 'T':
+                    vstate.tempo = 240./draw_and_play.ml_parse_number(gmls)    
+                elif c == 'O':
+                    vstate.octave = min(6, max(0, draw_and_play.ml_parse_number(gmls)))
+                elif c == '>':
+                    vstate.octave += 1
+                    if vstate.octave > 6:
+                        vstate.octave = 6
+                elif c == '<':
+                    vstate.octave -= 1
+                    if vstate.octave < 0:
+                        vstate.octave = 0
+                elif c in ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'P'):
+                    note = c
+                    dur = vstate.length
+                    while True:    
+                        c = util.skip(gmls, draw_and_play.ml_whitepace).upper()
+                        if c == '.':
+                            gmls.read(1)
+                            dur *= 1.5
+                        elif c in representation.ascii_digits:
+                            numstr = ''
+                            while c in representation.ascii_digits:
+                                gmls.read(1)
+                                numstr += c 
+                                c = util.skip(gmls, draw_and_play.ml_whitepace) 
+                            length = vartypes.pass_int_unpack(representation.str_to_value_keep(('$', numstr)))
+                            dur = 1. / float(length)
+                        elif c in ('#', '+'):
+                            gmls.read(1)
+                            note += '#'
+                        elif c == '-':
+                            gmls.read(1)
+                            note += '-'
+                        else:
+                            break                    
+                    if note == 'P':
+                        self.play_sound(0, dur * vstate.tempo, vstate.speed,
+                                        volume=vstate.volume, voice=voice)
+                    else:
+                        self.play_sound(
+                            note_freq[(vstate.octave+next_oct)*12 + notes[note]], 
+                            dur * vstate.tempo, vstate.speed, 
+                            volume=vstate.volume, voice=voice)
+                    next_oct = 0
+                elif c == 'M':
+                    c = util.skip_read(gmls, draw_and_play.ml_whitepace).upper()
+                    if c == 'N':        
+                        vstate.speed = 7./8.
+                    elif c == 'L':      
+                        vstate.speed = 1.
+                    elif c == 'S':      
+                        vstate.speed = 3./4.        
+                    elif c == 'F':      
+                        self.foreground = True
+                    elif c == 'B':      
+                        self.foreground = False
+                    else:
+                        raise error.RunError(5)    
+                elif c == 'V' and (pcjr_sound == 'tandy' or 
+                                    (pcjr_sound == 'pcjr' and self.sound_on)): 
+                    vstate.volume = min(15, 
+                                    max(0, draw_and_play.ml_parse_number(gmls)))
+                else:
+                    raise error.RunError(5)    
+        if self.foreground:
+            self.wait_music()
 
 #D        
 def sound_done(voice, number_left):
@@ -2440,7 +2587,6 @@ def check_key_event(scancode, modifiers):
     except ValueError:
         pass
     return False
-
 
 
 prepare()

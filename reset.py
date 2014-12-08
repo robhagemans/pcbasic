@@ -41,12 +41,8 @@ def clear(close_files=False, preserve_common=False, preserve_all=False, preserve
     # CLEAR also dumps for_next and while_wend stacks
     state.basic_state.for_next_stack = []
     state.basic_state.while_wend_stack = []
-    #   Resets sound to music foreground
-    state.console_state.sound.foreground = True
-    # reset PLAY state (tempo etc.)
-    state.basic_state.play_state = [ 
-        draw_and_play.PlayState(), draw_and_play.PlayState(), 
-        draw_and_play.PlayState() ]
+    # reset sound and PLAY state
+    state.console_state.sound.reset()
     # reset DRAW state (angle, scale) and current graphics position
     state.console_state.screen.drawing.reset()
     

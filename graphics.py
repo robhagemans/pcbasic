@@ -6,10 +6,21 @@ Graphics operations
 This file is released under the GNU GPL version 3. 
 """
 
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+
 import error
 import fp
 import vartypes
 import backend
+import util
+import draw_and_play
+
+# degree-to-radian conversion factor
+deg_to_rad = fp.div(fp.Single.twopi, fp.Single.from_int(360))
+
 
 class Drawing(object):
     """ Manage graphics drawing. """
@@ -593,7 +604,131 @@ class Drawing(object):
         self.last_point = x1, y1
         return self.screen.get_area(x0, y0, x1, y1, array)
 
+    ### DRAW statement
 
+    def draw(self, gml):
+        """ DRAW: Execute a Graphics Macro Language string. """
+        gmls = StringIO(gml.upper())
+        plot, goback = True, False
+        while True:
+            c = util.skip_read(gmls, draw_and_play.ml_whitepace).upper()
+            if c == '':
+                break
+            elif c == ';':
+                continue
+            elif c == 'B':
+                # do not draw
+                plot = False
+            elif c == 'N':
+                # return to postiton after move
+                goback = True            
+            elif c == 'X':
+                # execute substring
+                sub = draw_and_play.ml_parse_string(gmls)
+                self.draw(str(sub))            
+            elif c == 'C':
+                # set foreground colour
+                # allow empty spec (default 0), but only if followed by a semicolon
+                if util.skip(gmls, draw_and_play.ml_whitepace) == ';':
+                    self.last_attr = 0
+                else:
+                    self.last_attr = draw_and_play.ml_parse_number(gmls) 
+            elif c == 'S':
+                # set scale
+                self.draw_scale = draw_and_play.ml_parse_number(gmls)
+            elif c == 'A':
+                # set angle
+                # allow empty spec (default 0), but only if followed by a semicolon
+                if util.skip(gmls, draw_and_play.ml_whitepace) == ';':
+                    self.draw_angle = 0
+                else:
+                    self.draw_angle = 90 * draw_and_play.ml_parse_number(gmls)   
+            elif c == 'T':
+                # 'turn angle' - set (don't turn) the angle to any value
+                if gmls.read(1).upper() != 'A':
+                    raise error.RunError(5)
+                # allow empty spec (default 0), but only if followed by a semicolon
+                if util.skip(gmls, draw_and_play.ml_whitepace) == ';':
+                    self.draw_angle = 0
+                else:    
+                    self.draw_angle = draw_and_play.ml_parse_number(gmls)
+            # one-variable movement commands:     
+            elif c in ('U', 'D', 'L', 'R', 'E', 'F', 'G', 'H'):
+                step = draw_and_play.ml_parse_number(gmls, default=vartypes.pack_int(1))
+                x0, y0 = self.last_point
+                x1, y1 = 0, 0
+                if c in ('U', 'E', 'H'):
+                    y1 -= step
+                elif c in ('D', 'F', 'G'):
+                    y1 += step
+                if c in ('L', 'G', 'H'):
+                    x1 -= step
+                elif c in ('R', 'E', 'F'):
+                    x1 += step
+                self.draw_step(x0, y0, x1, y1, plot, goback)
+                plot = True
+                goback = False
+            # two-variable movement command
+            elif c == 'M':
+                relative =  util.skip(gmls, draw_and_play.ml_whitepace) in ('+','-')
+                x = draw_and_play.ml_parse_number(gmls)
+                if util.skip(gmls, draw_and_play.ml_whitepace) != ',':
+                    raise error.RunError(5)
+                else:
+                    gmls.read(1)
+                y = draw_and_play.ml_parse_number(gmls)
+                x0, y0 = self.last_point
+                if relative:
+                    self.draw_step(x0, y0, x, y,  plot, goback)
+                else:
+                    if plot:
+                        self.draw_line(x0, y0, x, y, self.last_attr)    
+                    self.last_point = x, y
+                    self.last_attr = c
+                    if goback:
+                        self.last_point = x0, y0
+                plot = True
+                goback = False
+            elif c =='P':
+                # paint - flood fill
+                colour = draw_and_play.ml_parse_number(gmls)
+                if util.skip_read(gmls, draw_and_play.ml_whitepace) != ',':
+                    raise error.RunError(5)
+                bound = draw_and_play.ml_parse_number(gmls)
+                x, y = self.get_window_logical(*self.last_point)
+                self.paint((x, y, False), None, colour, bound, None)    
+
+    def draw_step(self, x0, y0, sx, sy, plot, goback):
+        """ Make a DRAW step, drawing a line and reurning if requested. """
+        scale = self.draw_scale
+        rotate = self.draw_angle
+        aspect = self.screen.mode.pixel_aspect
+        yfac = aspect[1] / (1.*aspect[0])
+        x1 = (scale*sx) / 4  
+        y1 = (scale*sy) / 4
+        if rotate == 0 or rotate == 360:
+            pass
+        elif rotate == 90:
+            x1, y1 = int(y1*yfac), -int(x1//yfac)
+        elif rotate == 180:
+            x1, y1 = -x1, -y1
+        elif rotate == 270:
+            x1, y1 = -int(y1*yfac), int(x1//yfac)
+        else:
+            fx, fy = fp.Single.from_int(x1), fp.Single.from_int(y1)
+            phi = fp.mul(fp.Single.from_int(rotate), deg_to_rad)
+            sinr, cosr = fp.sin(phi), fp.cos(phi)
+            fxfac = fp.div(fp.Single.from_int(aspect[0]), fp.Single.from_int(aspect[1]))
+            fx, fy = fp.add(fp.mul(cosr,fx), fp.div(fp.mul(sinr,fy), fxfac)), fp.mul(fp.sub(fp.mul(cosr,fy), fxfac), fp.mul(sinr,fx))
+            x1, y1 = fx.round_to_int(), fy.round_to_int()
+        y1 += y0
+        x1 += x0
+        if plot:
+            self.draw_line(x0, y0, x1, y1, self.last_attr)    
+        self.last_point = x1, y1
+        if goback:
+            self.last_point = x0, y0
+                
 ###############################################################################
 # octant logic for CIRCLE
         

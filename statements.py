@@ -19,7 +19,6 @@ import config
 import backend
 import console
 import debug
-import draw_and_play
 import error
 import expressions
 import flow
@@ -548,7 +547,7 @@ def exec_play(ins):
             if util.skip_white_read_if(ins, (',',)):
                 mml2 = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_expression)
-        draw_and_play.play_parse_mml((mml0, mml1, mml2))
+        state.console_state.sound.play((mml0, mml1, mml2))
           
 def exec_noise(ins):
     """ NOISE: produce sound on the noise generator (Tandy/PCjr). """
@@ -1343,7 +1342,7 @@ def exec_draw(ins):
         raise error.RunError(5)
     gml = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_expression)
-    draw_and_play.draw_parse_gml(gml)
+    state.console_state.screen.drawing.draw(gml)
     
 ##########################################################
 # Flow-control statements
