@@ -2211,9 +2211,7 @@ def exec_key_define(ins):
         # in which case it's a key scancode definition
         if len(text) != 2:
             raise error.RunError(5)
-        # can't redefine scancodes for keys 1-14 (pc) 1-16 (tandy)
-        if keynum > backend.num_fn_keys + 4 and keynum <= 20:    
-            state.basic_state.events.event_keys[keynum-1] = str(text)
+        state.basic_state.events.key[keynum-1].set_trigger(str(text))
     
 def exec_locate(ins):
     """ LOCATE: Set cursor position, shape and visibility."""

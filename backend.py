@@ -236,6 +236,7 @@ class KeyHandler(EventHandler):
 
     def set_trigger(self, keystr):
         """ Set KEY trigger to chr(modcode)+chr(scancode). """
+        # can't redefine scancodes for predefined keys 1-14 (pc) 1-16 (tandy)
         if not self.predefined:
             self.modcode = ord(keystr[0])
             self.scancode = ord(keystr[1])
