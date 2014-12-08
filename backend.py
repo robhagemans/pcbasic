@@ -33,11 +33,24 @@ import graphics
 video = None
 audio = None 
 
-#############################################
-
-# devices - SCRN: KYBD: LPT1: etc. These are initialised in iolayer module
+### devices - SCRN: KYBD: LPT1: etc. These are initialised in iolayer module
 devices = {}
 
+### I/O redirect -> redirect.py
+
+# redirect i/o to file or printer
+input_echos = []
+output_echos = []
+
+def toggle_echo_lpt1():
+    """ Toggle copying of all screen I/O to LPT1. """
+    lpt1 = devices['LPT1:']
+    if lpt1.write in input_echos:
+        input_echos.remove(lpt1.write)
+        output_echos.remove(lpt1.write)
+    else:    
+        input_echos.append(lpt1.write)
+        output_echos.append(lpt1.write)
 
 
 ###############################################################################
@@ -51,162 +64,7 @@ def prepare():
     # initialise event triggers
     reset_events()    
 
-def prepare_keyboard():
-    """ Prepare keyboard handling. """
-    global ignore_caps
-    global num_fn_keys
-    # inserted keystrokes
-    if plat.system == 'Android':
-        # string_escape not available on PGS4A
-        keystring = config.options['keys'].decode('utf-8')
-    else:
-        keystring = config.options['keys'].decode('string_escape').decode('utf-8')    
-    for u in keystring:
-        c = u.encode('utf-8')
-        try:
-            state.console_state.keybuf.insert(unicodepage.from_utf8(c))
-        except KeyError:
-            state.console_state.keybuf.insert(c)
-    # handle caps lock only if requested
-    if config.options['capture-caps']:
-        ignore_caps = False
-    # function keys: F1-F12 for tandy, F1-F10 for gwbasic and pcjr
-    if config.options['syntax'] == 'tandy':
-        num_fn_keys = 12
-    else:
-        num_fn_keys = 10
 
-def prepare_audio():
-    """ Prepare the audio subsystem. """
-    global pcjr_sound
-    # pcjr/tandy sound
-    if config.options['syntax'] in ('pcjr', 'tandy'):
-        pcjr_sound = config.options['syntax']
-    # initialise sound queue
-    state.console_state.sound = Sound()
-    # tandy has SOUND ON by default, pcjr has it OFF
-    state.console_state.sound.sound_on = (pcjr_sound == 'tandy')
-    # pc-speaker on/off; (not implemented; not sure whether should be on)
-    state.console_state.sound.beep_on = True
-
-def init_audio():
-    """ Initialise the audio backend. """
-    global audio
-    if not audio or not audio.init_sound():
-        return False
-    # rebuild sound queue
-    for voice in range(4):    
-        for note in state.console_state.sound.queue[voice]:
-            audio.play_sound(*note)
-    return True
-
-def prepare_video():
-    """ Prepare the video subsystem. """
-    global egacursor
-    global video_capabilities, composite_monitor, mono_monitor
-    global colours16_mono, colours_ega_mono_0, colours_ega_mono_1, cga_low
-    global colours_ega_mono_text
-    global circle_aspect
-    video_capabilities = config.options['video']
-    if video_capabilities == 'tandy':
-        circle_aspect = (3072, 2000)
-    else:
-        circle_aspect = (4, 3)
-    # do all text modes with >8 pixels have an ega-cursor?    
-    egacursor = config.options['video'] in (
-        'ega', 'mda', 'ega_mono', 'vga', 'olivetti', 'hercules')
-    composite_monitor = config.options['monitor'] == 'composite'
-    mono_monitor = config.options['monitor'] == 'mono'
-    if video_capabilities == 'ega' and mono_monitor:
-        video_capabilities = 'ega_mono'
-    cga_low = config.options['cga-low']
-    # set monochrome tint
-    mono_tint = config.options['mono-tint']
-    # build colour sets
-    prepare_colours(mono_monitor, mono_tint)
-    # initialise the 4-colour CGA palette    
-    prepare_default_palettes(cga_low)
-    # prepare video mode list
-    # only allow the screen modes that the given machine supports
-    # PCjr starts in 40-column mode
-    # video memory size - default is EGA 256K
-    state.console_state.screen = Screen(config.options['text-width'], 
-                                        config.options['video-memory'])
-
-
-###############################################################################
-# stage 2 initialisation
-           
-def init_video(video_module):
-    """ Initialise the video backend. """
-    global video
-    video = video_module
-    if not video or not video.init():
-        return False
-    if state.loaded:
-        # reload the screen in resumed state
-        return resume_screen()
-    else:        
-        # initialise a fresh textmode screen
-        state.console_state.screen.screen(None, None, None, None)
-        return True
-
-def resume_screen():
-    """ Load a video mode from storage and initialise. """
-    screen = state.console_state.screen
-    cmode = screen.mode
-    nmode = screen.screen_mode
-    if (not cmode.is_text_mode and 
-            (nmode not in screen.mode_data or 
-             cmode.name != screen.mode_data[nmode].name)):
-        logging.warning(
-            "Resumed screen mode %d (%s) not supported by this setup",
-            nmode, cmode.name)
-        return False
-    if not cmode.is_text_mode:    
-        mode_info = screen.mode_data[nmode]
-    else:
-        mode_info = screen.text_data[cmode.width]
-    if (cmode.is_text_mode and cmode.name != mode_info.name):
-        # we switched adapters on resume; fix font height, palette, cursor
-        screen.cursor.from_line = (screen.cursor.from_line *
-                                   mode_info.font_height) // cmode.font_height
-        screen.cursor.to_line = (screen.cursor.to_line *
-                                 mode_info.font_height) // cmode.font_height
-        screen.palette = Palette(screen.mode)
-    # set up the appropriate screen resolution
-    if (cmode.is_text_mode or video.supports_graphics_mode(mode_info)):
-        # set the visible and active pages
-        video.set_page(screen.vpagenum, screen.apagenum)
-        # set the screen mde
-        video.init_screen_mode(mode_info)
-        # rebuild palette
-        screen.palette.set_all(screen.palette.palette, check_mode=False)
-        video.set_attr(screen.attr)
-        # fix the cursor
-        video.build_cursor(screen.cursor.width, mode_info.font_height, 
-                           screen.cursor.from_line, screen.cursor.to_line)    
-        video.move_cursor(state.console_state.row, state.console_state.col)
-        video.update_cursor_attr(
-            screen.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
-        screen.cursor.reset_visibility()
-        video.set_border(screen.border_attr)
-    else:
-        # fix the terminal
-        video.close()
-        # mode not supported by backend
-        logging.warning(
-            "Resumed screen mode %d not supported by this interface.", nmode)
-        return False
-    if (cmode.is_text_mode and cmode.name != mode_info.name):
-        screen.mode = mode_info
-        screen.redraw_text_screen()
-    else:
-        # load the screen contents from storage
-        video.load_state()
-    return True
-
-    
 ###############################################################################
 # main event checker
     
@@ -234,26 +92,155 @@ def check_events():
         check_com_events()
         # KEY, PEN and STRIG are triggered on handling the queue
 
-
-
+   
 ###############################################################################
-# I/O redirection
+# BASIC event triggers        
+        
+class EventHandler(object):
+    """ Keeps track of event triggers. """
+    
+    def __init__(self):
+        """ Initialise untriggered and disabled. """
+        self.reset()
+        
+    def reset(self):
+        """ Reet to untriggered and disabled initial state. """
+        self.gosub = None
+        self.enabled = False
+        self.stopped = False
+        self.triggered = False
 
-# redirect i/o to file or printer
-input_echos = []
-output_echos = []
+    def command(self, command_char):
+        """ Turn the event ON, OFF and STOP. """
+        if command_char == '\x95': 
+            # ON
+            self.enabled = True
+            self.stopped = False
+        elif command_char == '\xDD': 
+            # OFF
+            self.enabled = False
+        elif command_char == '\x90': 
+            # STOP
+            self.stopped = True
+        else:
+            return False
+        return True
 
-def toggle_echo_lpt1():
-    """ Toggle copying of all screen I/O to LPT1. """
-    lpt1 = devices['LPT1:']
-    if lpt1.write in input_echos:
-        input_echos.remove(lpt1.write)
-        output_echos.remove(lpt1.write)
+def reset_events():
+    """ Initialise or reset event triggers. """
+    # TIMER
+    state.basic_state.timer_period, state.basic_state.timer_start = 0, 0
+    state.basic_state.timer_handler = EventHandler()
+    # KEY
+    state.basic_state.event_keys = [''] * 20
+    # F1-F10
+    state.basic_state.event_keys[0:10] = [
+        '\x00\x3b', '\x00\x3c', '\x00\x3d', '\x00\x3e', '\x00\x3f',
+        '\x00\x40', '\x00\x41', '\x00\x42', '\x00\x43', '\x00\x44']
+    # Tandy F11, F12
+    if num_fn_keys == 12:
+        state.basic_state.event_keys[10:12] = ['\x00\x98', '\x00\x99']
+    # up, left, right, down
+    state.basic_state.event_keys[num_fn_keys:num_fn_keys+4] = [   
+        '\x00\x48', '\x00\x4b', '\x00\x4d', '\x00\x50']
+    # the remaining keys are user definable        
+    state.basic_state.key_handlers = [EventHandler() for _ in xrange(20)]
+    # PLAY
+    state.basic_state.play_last = [0, 0, 0]
+    state.basic_state.play_trig = 1
+    state.basic_state.play_handler = EventHandler()
+    # COM
+    state.basic_state.com_handlers = [EventHandler(), EventHandler()]  
+    # PEN
+    state.basic_state.pen_handler = EventHandler()
+    # STRIG
+    state.basic_state.strig_handlers = [EventHandler() for _ in xrange(4)]
+    # all handlers in order of handling; TIMER first
+    state.basic_state.all_handlers = [state.basic_state.timer_handler]  
+    # key events are not handled FIFO but first 11-20 in that order, then 1-10
+    state.basic_state.all_handlers += [state.basic_state.key_handlers[num] 
+                                       for num in (range(10, 20) + range(10))]
+    # this determined handling order
+    state.basic_state.all_handlers += (
+            [state.basic_state.play_handler] + state.basic_state.com_handlers + 
+            [state.basic_state.pen_handler] + state.basic_state.strig_handlers)
+    # set suspension off
+    state.basic_state.suspend_all_events = False
+
+def check_timer_event():
+    """ Trigger TIMER events. """
+    mutimer = timedate.timer_milliseconds() 
+    if mutimer >= state.basic_state.timer_start+state.basic_state.timer_period:
+        state.basic_state.timer_start = mutimer
+        state.basic_state.timer_handler.triggered = True
+
+def check_play_event():
+    """ Trigger PLAY (music queue) events. """
+    play_now = [state.console_state.sound.queue_length(voice) for voice in range(3)]
+    if pcjr_sound: 
+        for voice in range(3):
+            if (play_now[voice] <= state.basic_state.play_trig and 
+                    play_now[voice] > 0 and 
+                    play_now[voice] != state.basic_state.play_last[voice] ):
+                state.basic_state.play_handler.triggered = True 
     else:    
-        input_echos.append(lpt1.write)
-        output_echos.append(lpt1.write)
+        if (state.basic_state.play_last[0] >= state.basic_state.play_trig and 
+                play_now[0] < state.basic_state.play_trig):    
+            state.basic_state.play_handler.triggered = True     
+    state.basic_state.play_last = play_now
 
+def check_com_events():
+    """ Trigger COM-port events. """
+    ports = (devices['COM1:'], devices['COM2:'])
+    for comport in (0, 1):
+        if ports[comport] and ports[comport].peek_char():
+            state.basic_state.com_handlers[comport].triggered = True
 
+def check_key_event(scancode, modifiers):
+    """ Trigger KEYboard events. """
+    # "Extended ascii": ascii 1-255 or NUL+code where code is often but not
+    # always the keyboard scancode. See e.g. Tandy 1000 BASIC manual for a good
+    # overview. DBCS is simply entered as a string of ascii codes.
+    # check for scancode (inp_code) events
+    if not scancode:
+        return False
+    try:
+        keynum = state.basic_state.event_keys.index('\0' + chr(scancode))
+        # for pre-defined KEYs 1-14 (and 1-16 on Tandy) the modifier status 
+        # is ignored.
+        if (keynum >= 0 and keynum < num_fn_keys + 4 and 
+                    state.basic_state.key_handlers[keynum].enabled):
+                # trigger function or arrow key event
+                state.basic_state.key_handlers[keynum].triggered = True
+                # don't enter into key buffer
+                return True
+    except ValueError:
+        pass
+    # build KEY trigger code
+    # see http://www.petesqbsite.com/sections/tutorials/tuts/keysdet.txt                
+    # second byte is scan code; first byte
+    #  0       if the key is pressed alone
+    #  1 to 3    if any Shift and the key are combined
+    #    4       if Ctrl and the key are combined
+    #    8       if Alt and the key are combined
+    #   32       if NumLock is activated
+    #   64       if CapsLock is activated
+    #  128       if we are defining some extended key
+    # extended keys are for example the arrow keys on the non-numerical keyboard
+    # presumably all the keys in the middle region of a standard PC keyboard?
+    # from modifiers, exclude scroll lock at 0x10 and insert 0x80.
+    trigger_code = chr(modifiers & 0x6f) + chr(scancode)
+    try:
+        keynum = state.basic_state.event_keys.index(trigger_code)
+        if (keynum >= num_fn_keys + 4 and keynum < 20 and
+                    state.basic_state.key_handlers[keynum].enabled):
+                # trigger user-defined key
+                state.basic_state.key_handlers[keynum].triggered = True
+                # don't enter into key buffer
+                return True
+    except ValueError:
+        pass
+    return False
 
 
 ###############################################################################
@@ -283,6 +270,32 @@ toggle = {
 modifier = {    
     scancode.ALT: 0x8, scancode.CTRL: 0x4, 
     scancode.LSHIFT: 0x2, scancode.RSHIFT: 0x1}
+
+
+def prepare_keyboard():
+    """ Prepare keyboard handling. """
+    global ignore_caps
+    global num_fn_keys
+    # inserted keystrokes
+    if plat.system == 'Android':
+        # string_escape not available on PGS4A
+        keystring = config.options['keys'].decode('utf-8')
+    else:
+        keystring = config.options['keys'].decode('string_escape').decode('utf-8')    
+    for u in keystring:
+        c = u.encode('utf-8')
+        try:
+            state.console_state.keybuf.insert(unicodepage.from_utf8(c))
+        except KeyError:
+            state.console_state.keybuf.insert(c)
+    # handle caps lock only if requested
+    if config.options['capture-caps']:
+        ignore_caps = False
+    # function keys: F1-F12 for tandy, F1-F10 for gwbasic and pcjr
+    if config.options['syntax'] == 'tandy':
+        num_fn_keys = 12
+    else:
+        num_fn_keys = 10
 
 
 class KeyboardBuffer(object):
@@ -1276,6 +1289,54 @@ class TextBuffer(object):
 
 ###############################################################################
 # screen operations
+
+def prepare_video():
+    """ Prepare the video subsystem. """
+    global egacursor
+    global video_capabilities, composite_monitor, mono_monitor
+    global colours16_mono, colours_ega_mono_0, colours_ega_mono_1, cga_low
+    global colours_ega_mono_text
+    global circle_aspect
+    video_capabilities = config.options['video']
+    if video_capabilities == 'tandy':
+        circle_aspect = (3072, 2000)
+    else:
+        circle_aspect = (4, 3)
+    # do all text modes with >8 pixels have an ega-cursor?    
+    egacursor = config.options['video'] in (
+        'ega', 'mda', 'ega_mono', 'vga', 'olivetti', 'hercules')
+    composite_monitor = config.options['monitor'] == 'composite'
+    mono_monitor = config.options['monitor'] == 'mono'
+    if video_capabilities == 'ega' and mono_monitor:
+        video_capabilities = 'ega_mono'
+    cga_low = config.options['cga-low']
+    # set monochrome tint
+    mono_tint = config.options['mono-tint']
+    # build colour sets
+    prepare_colours(mono_monitor, mono_tint)
+    # initialise the 4-colour CGA palette    
+    prepare_default_palettes(cga_low)
+    # prepare video mode list
+    # only allow the screen modes that the given machine supports
+    # PCjr starts in 40-column mode
+    # video memory size - default is EGA 256K
+    state.console_state.screen = Screen(config.options['text-width'], 
+                                        config.options['video-memory'])
+
+def init_video(video_module):
+    """ Initialise the video backend. """
+    global video
+    video = video_module
+    if not video or not video.init():
+        return False
+    if state.loaded:
+        # reload the screen in resumed state
+        return state.console_state.screen.resume()
+    else:        
+        # initialise a fresh textmode screen
+        state.console_state.screen.screen(None, None, None, None)
+        return True
+
         
 class Screen(object):
     """ Screen manipulation operations. """
@@ -1492,6 +1553,61 @@ class Screen(object):
             for mode in range(4, 256):
                 self.mode_data[mode] = graphics_mode['640x400x2']
 
+    def resume(self):
+        """ Load a video mode from storage and initialise. """
+        # recalculate modes in case we've changed hardware emulations
+        self.prepare_modes()
+        cmode = self.mode
+        nmode = self.screen_mode
+        if (not cmode.is_text_mode and 
+                (nmode not in self.mode_data or 
+                 cmode.name != self.mode_data[nmode].name)):
+            logging.warning(
+                "Resumed screen mode %d (%s) not supported by this setup",
+                nmode, cmode.name)
+            return False
+        if not cmode.is_text_mode:    
+            mode_info = self.mode_data[nmode]
+        else:
+            mode_info = self.text_data[cmode.width]
+        if (cmode.is_text_mode and cmode.name != mode_info.name):
+            # we switched adapters on resume; fix font height, palette, cursor
+            self.cursor.from_line = (self.cursor.from_line *
+                                       mode_info.font_height) // cmode.font_height
+            self.cursor.to_line = (self.cursor.to_line *
+                                     mode_info.font_height) // cmode.font_height
+            self.palette = Palette(self.mode)
+        # set up the appropriate screen resolution
+        if (cmode.is_text_mode or video.supports_graphics_mode(mode_info)):
+            # set the visible and active pages
+            video.set_page(self.vpagenum, self.apagenum)
+            # set the screen mde
+            video.init_screen_mode(mode_info)
+            # rebuild palette
+            self.palette.set_all(self.palette.palette, check_mode=False)
+            video.set_attr(self.attr)
+            # fix the cursor
+            video.build_cursor(self.cursor.width, mode_info.font_height, 
+                               self.cursor.from_line, self.cursor.to_line)    
+            video.move_cursor(state.console_state.row, state.console_state.col)
+            video.update_cursor_attr(
+                self.apage.row[state.console_state.row-1].buf[state.console_state.col-1][1] & 0xf)
+            self.cursor.reset_visibility()
+            video.set_border(self.border_attr)
+        else:
+            # fix the terminal
+            video.close()
+            # mode not supported by backend
+            logging.warning(
+                "Resumed screen mode %d not supported by this interface.", nmode)
+            return False
+        if (cmode.is_text_mode and cmode.name != mode_info.name):
+            self.mode = mode_info
+            self.redraw_text_screen()
+        else:
+            # load the screen contents from storage
+            video.load_state()
+        return True
 
     def screen(self, new_mode, new_colorswitch, new_apagenum, new_vpagenum, 
                  erase=1, new_width=None, recursion_depth=0):
@@ -2211,6 +2327,32 @@ note_freq = [ 440.*2**((i-33.)/12.) for i in range(84) ]
 notes = {   'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6, 
             'G-':6, 'G':7, 'G#':8, 'A-':8, 'A':9, 'A#':10, 'B-':10, 'B':11 }
 
+
+def prepare_audio():
+    """ Prepare the audio subsystem. """
+    global pcjr_sound
+    # pcjr/tandy sound
+    if config.options['syntax'] in ('pcjr', 'tandy'):
+        pcjr_sound = config.options['syntax']
+    # initialise sound queue
+    state.console_state.sound = Sound()
+    # tandy has SOUND ON by default, pcjr has it OFF
+    state.console_state.sound.sound_on = (pcjr_sound == 'tandy')
+    # pc-speaker on/off; (not implemented; not sure whether should be on)
+    state.console_state.sound.beep_on = True
+
+def init_audio():
+    """ Initialise the audio backend. """
+    global audio
+    if not audio or not audio.init_sound():
+        return False
+    # rebuild sound queue
+    for voice in range(4):    
+        for note in state.console_state.sound.queue[voice]:
+            audio.play_sound(*note)
+    return True
+
+
 class PlayState(object):
     """ State variables of the PLAY command. """
     
@@ -2438,155 +2580,6 @@ def sound_done(voice, number_left):
     """ Report a sound has finished playing, remove from queue. """ 
     state.console_state.sound.done(voice, number_left)
 
-            
 ###############################################################################
-# BASIC event triggers        
-        
-class EventHandler(object):
-    """ Keeps track of event triggers. """
-    
-    def __init__(self):
-        """ Initialise untriggered and disabled. """
-        self.reset()
-        
-    def reset(self):
-        """ Reet to untriggered and disabled initial state. """
-        self.gosub = None
-        self.enabled = False
-        self.stopped = False
-        self.triggered = False
-
-    def command(self, command_char):
-        """ Turn the event ON, OFF and STOP. """
-        if command_char == '\x95': 
-            # ON
-            self.enabled = True
-            self.stopped = False
-        elif command_char == '\xDD': 
-            # OFF
-            self.enabled = False
-        elif command_char == '\x90': 
-            # STOP
-            self.stopped = True
-        else:
-            return False
-        return True
-
-def reset_events():
-    """ Initialise or reset event triggers. """
-    # TIMER
-    state.basic_state.timer_period, state.basic_state.timer_start = 0, 0
-    state.basic_state.timer_handler = EventHandler()
-    # KEY
-    state.basic_state.event_keys = [''] * 20
-    # F1-F10
-    state.basic_state.event_keys[0:10] = [
-        '\x00\x3b', '\x00\x3c', '\x00\x3d', '\x00\x3e', '\x00\x3f',
-        '\x00\x40', '\x00\x41', '\x00\x42', '\x00\x43', '\x00\x44']
-    # Tandy F11, F12
-    if num_fn_keys == 12:
-        state.basic_state.event_keys[10:12] = ['\x00\x98', '\x00\x99']
-    # up, left, right, down
-    state.basic_state.event_keys[num_fn_keys:num_fn_keys+4] = [   
-        '\x00\x48', '\x00\x4b', '\x00\x4d', '\x00\x50']
-    # the remaining keys are user definable        
-    state.basic_state.key_handlers = [EventHandler() for _ in xrange(20)]
-    # PLAY
-    state.basic_state.play_last = [0, 0, 0]
-    state.basic_state.play_trig = 1
-    state.basic_state.play_handler = EventHandler()
-    # COM
-    state.basic_state.com_handlers = [EventHandler(), EventHandler()]  
-    # PEN
-    state.basic_state.pen_handler = EventHandler()
-    # STRIG
-    state.basic_state.strig_handlers = [EventHandler() for _ in xrange(4)]
-    # all handlers in order of handling; TIMER first
-    state.basic_state.all_handlers = [state.basic_state.timer_handler]  
-    # key events are not handled FIFO but first 11-20 in that order, then 1-10
-    state.basic_state.all_handlers += [state.basic_state.key_handlers[num] 
-                                       for num in (range(10, 20) + range(10))]
-    # this determined handling order
-    state.basic_state.all_handlers += (
-            [state.basic_state.play_handler] + state.basic_state.com_handlers + 
-            [state.basic_state.pen_handler] + state.basic_state.strig_handlers)
-    # set suspension off
-    state.basic_state.suspend_all_events = False
-
-def check_timer_event():
-    """ Trigger TIMER events. """
-    mutimer = timedate.timer_milliseconds() 
-    if mutimer >= state.basic_state.timer_start+state.basic_state.timer_period:
-        state.basic_state.timer_start = mutimer
-        state.basic_state.timer_handler.triggered = True
-
-def check_play_event():
-    """ Trigger PLAY (music queue) events. """
-    play_now = [state.console_state.sound.queue_length(voice) for voice in range(3)]
-    if pcjr_sound: 
-        for voice in range(3):
-            if (play_now[voice] <= state.basic_state.play_trig and 
-                    play_now[voice] > 0 and 
-                    play_now[voice] != state.basic_state.play_last[voice] ):
-                state.basic_state.play_handler.triggered = True 
-    else:    
-        if (state.basic_state.play_last[0] >= state.basic_state.play_trig and 
-                play_now[0] < state.basic_state.play_trig):    
-            state.basic_state.play_handler.triggered = True     
-    state.basic_state.play_last = play_now
-
-def check_com_events():
-    """ Trigger COM-port events. """
-    ports = (devices['COM1:'], devices['COM2:'])
-    for comport in (0, 1):
-        if ports[comport] and ports[comport].peek_char():
-            state.basic_state.com_handlers[comport].triggered = True
-
-def check_key_event(scancode, modifiers):
-    """ Trigger KEYboard events. """
-    # "Extended ascii": ascii 1-255 or NUL+code where code is often but not
-    # always the keyboard scancode. See e.g. Tandy 1000 BASIC manual for a good
-    # overview. DBCS is simply entered as a string of ascii codes.
-    # check for scancode (inp_code) events
-    if not scancode:
-        return False
-    try:
-        keynum = state.basic_state.event_keys.index('\0' + chr(scancode))
-        # for pre-defined KEYs 1-14 (and 1-16 on Tandy) the modifier status 
-        # is ignored.
-        if (keynum >= 0 and keynum < num_fn_keys + 4 and 
-                    state.basic_state.key_handlers[keynum].enabled):
-                # trigger function or arrow key event
-                state.basic_state.key_handlers[keynum].triggered = True
-                # don't enter into key buffer
-                return True
-    except ValueError:
-        pass
-    # build KEY trigger code
-    # see http://www.petesqbsite.com/sections/tutorials/tuts/keysdet.txt                
-    # second byte is scan code; first byte
-    #  0       if the key is pressed alone
-    #  1 to 3    if any Shift and the key are combined
-    #    4       if Ctrl and the key are combined
-    #    8       if Alt and the key are combined
-    #   32       if NumLock is activated
-    #   64       if CapsLock is activated
-    #  128       if we are defining some extended key
-    # extended keys are for example the arrow keys on the non-numerical keyboard
-    # presumably all the keys in the middle region of a standard PC keyboard?
-    # from modifiers, exclude scroll lock at 0x10 and insert 0x80.
-    trigger_code = chr(modifiers & 0x6f) + chr(scancode)
-    try:
-        keynum = state.basic_state.event_keys.index(trigger_code)
-        if (keynum >= num_fn_keys + 4 and keynum < 20 and
-                    state.basic_state.key_handlers[keynum].enabled):
-                # trigger user-defined key
-                state.basic_state.key_handlers[keynum].triggered = True
-                # don't enter into key buffer
-                return True
-    except ValueError:
-        pass
-    return False
-
-
+         
 prepare()
