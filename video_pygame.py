@@ -1290,6 +1290,18 @@ def fill_interval(x0, x1, y, tile, solid):
             canvas[apagenum].set_at((x,y), tile[y % h][x % 8])
     screen_changed = True
 
+def put_interval(pagenum, x, y, colours):
+    """ Write a list of attributes to a scanline interval. """
+    global screen_changed
+    if numpy:
+        colours = numpy.array(colours).astype(int)
+        pygame.surfarray.pixels2d(canvas[pagenum])[x:x+len(colours), y] = colours
+    else:
+        for i, index in enumerate(colours):
+            canvas[pagenum].set_at((x,y), index)
+    backend.clear_screen_buffer_area(x, y, x+len(colours), y)
+    screen_changed = True
+    
 def get_until(x0, x1, y, c):
     """ Get the attribute values of a scanline interval. """
     if x0 == x1:
