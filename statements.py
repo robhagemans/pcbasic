@@ -1246,14 +1246,10 @@ def exec_circle(ins):
     """ CIRCLE: Draw a circle, ellipse, arc or sector. """
     if state.console_state.screen.mode.is_text_mode:
         raise error.RunError(5)
-    x0, y0 = parse_coord(ins)
-    state.console_state.screen.drawing.last_point = x0, y0
+    centre = parse_coord_step(ins)
     util.require_read(ins, (',',))
     r = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
-    start, stop, c = None, None, -1
-    aspect = fp.div(
-        fp.Single.from_int(state.console_state.screen.mode.pixel_aspect[0]), 
-        fp.Single.from_int(state.console_state.screen.mode.pixel_aspect[1]))
+    start, stop, c, aspect = None, None, -1, None
     if util.skip_white_read_if(ins, (',',)):
         cval = expressions.parse_expression(ins, allow_empty=True)
         if cval:
@@ -1263,15 +1259,17 @@ def exec_circle(ins):
             if util.skip_white_read_if(ins, (',',)):
                 stop = expressions.parse_expression(ins, allow_empty=True)
                 if util.skip_white_read_if(ins, (',',)):
-                    aspect = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
+                    aspect = fp.unpack(vartypes.pass_single_keep(
+                                            expressions.parse_expression(ins)))
                 elif stop == None:
-                    raise error.RunError(22) # missing operand
+                    # missing operand
+                    raise error.RunError(22)
             elif start == None:
                 raise error.RunError(22) 
         elif cval == None:
             raise error.RunError(22)                     
     util.require(ins, util.end_statement)    
-    graphics.draw_circle_or_ellipse(x0, y0, r, start, stop, c, aspect)
+    state.console_state.screen.drawing.circle(centre, r, start, stop, c, aspect)
       
 def exec_paint(ins):
     """ PAINT: flood fill from point. """

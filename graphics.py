@@ -288,75 +288,88 @@ class Drawing(object):
                 mask = 0x8000
         return mask
     
-###############################################################################
-# circle, ellipse, sectors (CIRCLE)
+    ### CIRCLE: circle, ellipse, sectors
 
-# NOTES ON THE MIDPOINT ALGORITHM
-#    
-# CIRCLE:
-# x*x + y*y == r*r
-# look at y'=y+1
-# err(y) = y*y+x*x-r*r
-# err(y') = y*y + 2y+1 + x'*x' - r*r == err(y) + x'*x' -x*x + 2y+1 
-# if x the same:
-#   err(y') == err(y) +2y+1
-# if x -> x-1:
-#   err(y') == err(y) +2y+1 -2x+1 == err(y) +2(y-x+1)
-#
-# why initialise error with 1-x == 1-r?
-# we change x if the radius is more than 0.5pix out so err(y, r+0.5) == y*y + x*x - (r*r+r+0.25) == err(y,r) - r - 0.25 >0
-# with err and r both integers, this just means err - r > 0 <==> err - r +1 >= 0
-# above, error == err(y) -r + 1 and we change x if it's >=0.
-#
-# ELLIPSE: 
-# ry^2*x^2 + rx^2*y^2 == rx^2*ry^2
-# look at y'=y+1 (quadrant between points of 45deg slope)
-# err == ry^2*x^2 + rx^2*y^2 - rx^2*ry^2
-# err(y') == rx^2*(y^2+2y+1) + ry^2(x'^2)- rx^2*ry^2 == err(y) + ry^2(x'^2-x^2) + rx^2*(2y+1)
-# if x the same:
-#   err(y') == err(y) + rx^2*(2y+1)
-# if x' -> x-1:
-#   err(y') == err(y) + rx^2*(2y+1) +rx^2(-2x+1)
-#
-# change x if radius more than 0.5pix out: err(y, rx+0.5, ry) == ry^2*y*y+rx^2*x*x - (ry*ry)*(rx*rx+rx+0.25) > 0
-#  ==> err(y) - (rx+0.25)*(ry*ry) >0
-#  ==> err(y) - (rx*ry*ry + 0.25*ry*ry ) > 0 
-#
-# break yinc loop if one step no longer suffices
+    # NOTES ON THE MIDPOINT ALGORITHM
+    #    
+    # CIRCLE:
+    # x*x + y*y == r*r
+    # look at y'=y+1
+    # err(y) = y*y+x*x-r*r
+    # err(y') = y*y + 2y+1 + x'*x' - r*r == err(y) + x'*x' -x*x + 2y+1 
+    # if x the same:
+    #   err(y') == err(y) +2y+1
+    # if x -> x-1:
+    #   err(y') == err(y) +2y+1 -2x+1 == err(y) +2(y-x+1)
+    #
+    # why initialise error with 1-x == 1-r?
+    # we change x if the radius is more than 0.5pix out so 
+    #     err(y, r+0.5) == y*y + x*x - (r*r+r+0.25) == err(y,r) - r - 0.25 >0
+    # with err and r both integers, this just means 
+    #     err - r > 0 <==> err - r +1 >= 0
+    # above, error == err(y) -r + 1 and we change x if it's >=0.
+    #
+    # ELLIPSE: 
+    # ry^2*x^2 + rx^2*y^2 == rx^2*ry^2
+    # look at y'=y+1 (quadrant between points of 45deg slope)
+    # err == ry^2*x^2 + rx^2*y^2 - rx^2*ry^2
+    # err(y') == rx^2*(y^2+2y+1) + ry^2(x'^2)- rx^2*ry^2 
+    #         == err(y) + ry^2(x'^2-x^2) + rx^2*(2y+1)
+    # if x the same:
+    #   err(y') == err(y) + rx^2*(2y+1)
+    # if x' -> x-1:
+    #   err(y') == err(y) + rx^2*(2y+1) +rx^2(-2x+1)
+    #
+    # change x if radius more than 0.5pix out: 
+    #      err(y, rx+0.5, ry) == ry^2*y*y+rx^2*x*x - (ry*ry)*(rx*rx+rx+0.25) > 0
+    #  ==> err(y) - (rx+0.25)*(ry*ry) > 0
+    #  ==> err(y) - (rx*ry*ry + 0.25*ry*ry ) > 0 
+    #
+    # break yinc loop if one step no longer suffices
 
 
-def draw_circle_or_ellipse(x0, y0, r, start, stop, c, aspect):
-    """ Draw a circle, ellipse, arc or sector (CIRCLE). """
-    if aspect.equals(aspect.one):
-        rx, dummy = state.console_state.screen.drawing.get_window_scale(r,fp.Single.zero)
-        ry = rx
-    else:
-        if aspect.gt(aspect.one):
-            dummy, ry = state.console_state.screen.drawing.get_window_scale(fp.Single.zero,r)
+    def circle(self, lcoord, r, start, stop, c, aspect):
+        """ Draw a circle, ellipse, arc or sector (CIRCLE). """
+        x0, y0 = self.view_coords(*self.get_window_physical(*lcoord))
+        if aspect == None:
+            aspect = fp.div(
+                fp.Single.from_int(self.screen.mode.pixel_aspect[0]), 
+                fp.Single.from_int(self.screen.mode.pixel_aspect[1]))
+        if aspect.equals(aspect.one):
+            rx, _ = self.get_window_scale(r, fp.Single.zero)
+            ry = rx
+        elif aspect.gt(aspect.one):
+            _, ry = self.get_window_scale(fp.Single.zero, r)
             rx = fp.div(r, aspect).round_to_int()
         else:
-            rx, dummy = state.console_state.screen.drawing.get_window_scale(r,fp.Single.zero)
+            rx, _ = self.get_window_scale(r, fp.Single.zero)
             ry = fp.mul(r, aspect).round_to_int()
-    start_octant, start_coord, start_line = -1, -1, False
-    if start:
-        start = fp.unpack(vartypes.pass_single_keep(start))
-        start_octant, start_coord, start_line = get_octant(start, rx, ry)
-    stop_octant, stop_coord, stop_line = -1, -1, False
-    if stop:
-        stop = fp.unpack(vartypes.pass_single_keep(stop))
-        stop_octant, stop_coord, stop_line = get_octant(stop, rx, ry)
-    if aspect.equals(aspect.one):
-        draw_circle(x0, y0, rx, c, start_octant, start_coord, start_line, stop_octant, stop_coord, stop_line)
-    else:
-        startx, starty, stopx, stopy = -1, -1, -1, -1
-        if start != None:
-            startx = abs(fp.mul(fp.Single.from_int(rx), fp.cos(start)).round_to_int())
-            starty = abs(fp.mul(fp.Single.from_int(ry), fp.sin(start)).round_to_int())
-        if stop != None:
-            stopx = abs(fp.mul(fp.Single.from_int(rx), fp.cos(stop)).round_to_int())
-            stopy = abs(fp.mul(fp.Single.from_int(ry), fp.sin(stop)).round_to_int())
-        draw_ellipse(x0, y0, rx, ry, c, start_octant/2, startx, starty, start_line, stop_octant/2, stopx, stopy, stop_line)
-
+        start_octant, start_coord, start_line = -1, -1, False
+        if start:
+            start = fp.unpack(vartypes.pass_single_keep(start))
+            start_octant, start_coord, start_line = get_octant(start, rx, ry)
+        stop_octant, stop_coord, stop_line = -1, -1, False
+        if stop:
+            stop = fp.unpack(vartypes.pass_single_keep(stop))
+            stop_octant, stop_coord, stop_line = get_octant(stop, rx, ry)
+        if aspect.equals(aspect.one):
+            draw_circle(x0, y0, rx, c, 
+                        start_octant, start_coord, start_line, 
+                        stop_octant, stop_coord, stop_line)
+        else:
+            startx, starty, stopx, stopy = -1, -1, -1, -1
+            if start != None:
+                startx = abs(fp.mul(fp.Single.from_int(rx), fp.cos(start)).round_to_int())
+                starty = abs(fp.mul(fp.Single.from_int(ry), fp.sin(start)).round_to_int())
+            if stop != None:
+                stopx = abs(fp.mul(fp.Single.from_int(rx), fp.cos(stop)).round_to_int())
+                stopy = abs(fp.mul(fp.Single.from_int(ry), fp.sin(stop)).round_to_int())
+            draw_ellipse(x0, y0, rx, ry, c, 
+                         start_octant/2, startx, starty, start_line, 
+                         stop_octant/2, stopx, stopy, stop_line)
+        self.last_attr = c
+        self.last_point = x0, y0
+        
 def get_octant(mbf, rx, ry):
     """ Get the circle octant for a given coordinate. """
     neg = mbf.neg 
