@@ -683,7 +683,7 @@ def value_point(ins):
     else:       
         # two-argument mode    
         if screen.mode.is_text_mode:
-            raise error.RunError(err)
+            raise error.RunError(5)
         return vartypes.pack_int(screen.drawing.point(
                         (fp.unpack(vartypes.pass_single_keep(lst[0])), 
                          fp.unpack(vartypes.pass_single_keep(lst[1])), False)))

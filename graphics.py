@@ -27,25 +27,81 @@ class Drawing(object):
     
     def __init__(self, screen):
         self.screen = screen
-        self.reset()  
         self.unset_window()      
+        self.unset_view()
+        self.reset()  
     
     def reset(self):
         """ Reset graphics state. """
         if self.screen.mode.is_text_mode:
             return
-        self.last_point = self.screen.get_view_mid()
+        self.last_point = self.get_view_mid()
         self.last_attr = self.screen.mode.attr
         self.draw_scale = 4
         self.draw_angle = 0
 
+    ## VIEW graphics viewport
+
+    def set_view(self, x0, y0, x1, y1, absolute, fill, border):
+        """ Set the graphics viewport and optionally draw a box (VIEW). """
+        # first unset the viewport so that we can draw the box
+        self.unset_view()
+        if fill != None:
+            self.draw_box_filled(x0, y0, x1, y1, fill)
+            self.last_attr = fill
+        if border != None:
+            self.draw_box(x0-1, y0-1, x1+1, y1+1, border)
+            self.last_attr = border
+        # VIEW orders the coordinates
+        x0, x1 = min(x0, x1), max(x0, x1)
+        y0, y1 = min(y0, y1), max(y0, y1)
+        self.view_absolute = absolute
+        self.view = x0, y0, x1, y1
+        backend.video.set_graph_clip(x0, y0, x1, y1)
+        self.reset_view()
+
+    def unset_view(self):
+        """ Unset the graphics viewport. """
+        self.view_absolute = False
+        self.view = None
+        backend.video.unset_graph_clip()
+        self.reset_view()
+
+    def view_is_set(self):
+        """ Return whether the graphics viewport is set. """
+        return self.view != None
+        
     def reset_view(self):
         """ Update graphics state after viewport reset. """
-        self.last_point = self.screen.get_view_mid()
+        self.last_point = self.get_view_mid()
         if self.window_bounds != None:
             self.set_window(*self.window_bounds)
+    
+    def get_view(self):
+        """ Return the graphics viewport or full screen dimensions if not set. """
+        if self.view:
+            return self.view
+        else:
+            return 0, 0, self.screen.mode.pixel_width-1, self.screen.mode.pixel_height-1
 
-    ### WINDOW coords
+    def get_view_mid(self):
+        """ Get the midpoint of the current graphics view. """
+        x0, y0, x1, y1 = self.get_view()
+        return x0 + (x1-x0)/2, y0 + (y1-y0)/2
+
+    def view_coords(self, x, y):
+        """ Retrieve absolute coordinates for viewport coordinates. """
+        if (not self.view) or self.view_absolute:
+            return x, y
+        else:
+            return x + self.view[0], y + self.view[1]
+
+    def clear_view(self):
+        """ Clear the current graphics viewport. """
+        if not self.screen.mode.is_text_mode:
+            backend.video.clear_graph_clip((self.screen.attr>>4) & 0x7)
+
+    ### WINDOW logical coords
 
     def set_window(self, fx0, fy0, fx1, fy1, cartesian=True):
         """ Set the logical coordinate window (WINDOW). """
@@ -55,7 +111,7 @@ class Drawing(object):
             fx0, fx1 = fx1, fx0
         if cartesian:
             fy0, fy1 = fy1, fy0
-        left, top, right, bottom = self.screen.get_view()
+        left, top, right, bottom = self.get_view()
         x0, y0 = fp.Single.zero, fp.Single.zero 
         x1, y1 = fp.Single.from_int(right-left), fp.Single.from_int(bottom-top)        
         scalex = fp.div(fp.sub(x1, x0), fp.sub(fx1,fx0))
@@ -66,9 +122,13 @@ class Drawing(object):
         self.window_bounds = fx0, fy0, fx1, fy1, cartesian
 
     def unset_window(self):
-        """ Unset the logical coorndinate window. """
+        """ Unset the logical coordinate window. """
         self.window = None
         self.window_bounds = None
+
+    def window_is_set(self):
+        """ Return whether the logical coordinate window is set. """
+        return self.window != None
 
     def get_window_physical(self, fx, fy, step=False):
         """ Convert logical to physical coordinates. """
@@ -99,7 +159,7 @@ class Drawing(object):
         else:
             return x, y
 
-    def window_scale(self, fx, fy):
+    def get_window_scale(self, fx, fy):
         """ Get logical to physical scale factor. """
         if self.window:
             scalex, scaley, _, _ = self.window
@@ -112,7 +172,7 @@ class Drawing(object):
 
     def pset(self, lcoord, c):
         """ Draw a pixel in the given attribute (PSET, PRESET). """
-        x, y = self.screen.view_coords(*self.get_window_physical(*lcoord))
+        x, y = self.view_coords(*self.get_window_physical(*lcoord))
         c = get_colour_index(c)
         backend.video.apply_graph_clip()
         self.screen.put_pixel(x, y, c)
@@ -122,7 +182,7 @@ class Drawing(object):
     
     def point(self, lcoord):
         """ Return the attribute of a pixel (POINT). """
-        x, y = self.screen.view_coords(*self.get_window_physical(*lcoord))
+        x, y = self.view_coords(*self.get_window_physical(*lcoord))
         if x < 0 or x >= self.screen.mode.pixel_width:
             return -1
         if y < 0 or y >= self.screen.mode.pixel_height:
@@ -134,10 +194,10 @@ class Drawing(object):
     def line(self, lcoord0, lcoord1, c, pattern, shape):
         """ Draw a patterned line or box (LINE). """
         if lcoord0:
-            x0, y0 = self.screen.view_coords(*self.get_window_physical(*lcoord0))
+            x0, y0 = self.view_coords(*self.get_window_physical(*lcoord0))
         else:
             x0, y0 = self.last_point
-        x1, y1 = self.screen.view_coords(*self.get_window_physical(*lcoord1))
+        x1, y1 = self.view_coords(*self.get_window_physical(*lcoord1))
         c = get_colour_index(c)
         if shape == '':
             self.draw_line(x0, y0, x1, y1, c, pattern)
@@ -268,14 +328,14 @@ class Drawing(object):
 def draw_circle_or_ellipse(x0, y0, r, start, stop, c, aspect):
     """ Draw a circle, ellipse, arc or sector (CIRCLE). """
     if aspect.equals(aspect.one):
-        rx, dummy = window_scale(r,fp.Single.zero)
+        rx, dummy = state.console_state.screen.drawing.get_window_scale(r,fp.Single.zero)
         ry = rx
     else:
         if aspect.gt(aspect.one):
-            dummy, ry = window_scale(fp.Single.zero,r)
+            dummy, ry = state.console_state.screen.drawing.get_window_scale(fp.Single.zero,r)
             rx = fp.div(r, aspect).round_to_int()
         else:
-            rx, dummy = window_scale(r,fp.Single.zero)
+            rx, dummy = state.console_state.screen.drawing.get_window_scale(r,fp.Single.zero)
             ry = fp.mul(r, aspect).round_to_int()
     start_octant, start_coord, start_line = -1, -1, False
     if start:
@@ -321,7 +381,7 @@ def draw_circle(x0, y0, r, c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, l
     """ Draw a circle using the midpoint algorithm. """
     # see e.g. http://en.wikipedia.org/wiki/Midpoint_circle_algorithm
     c = get_colour_index(c)
-    x0, y0 = state.console_state.screen.view_coords(x0, y0)
+    x0, y0 = state.console_state.screen.drawing.view_coords(x0, y0)
     if oct0 == -1:
         hide_oct = range(0,0)
     elif oct0 < oct1 or oct0 == oct1 and octant_gte(oct0, coo1, coo0):
@@ -401,7 +461,7 @@ def draw_ellipse(cx, cy, rx, ry, c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1,
     """ Draw ellipse using the midpoint algorithm. """
     # for algorithm see http://members.chello.at/~easyfilter/bresenham.html
     c = get_colour_index(c)
-    cx, cy = state.console_state.screen.view_coords(cx, cy)
+    cx, cy = state.console_state.screen.drawing.view_coords(cx, cy)
     # find invisible quadrants
     if qua0 == -1:
         hide_qua = range(0,0)
@@ -511,7 +571,7 @@ def flood_fill(x, y, pattern, c, border, background):
     else:
         tile, back = [[c]*8], None
     bound_x0, bound_y0, bound_x1, bound_y1 = backend.video.get_graph_clip()  
-    x, y = state.console_state.screen.view_coords(x, y)
+    x, y = state.console_state.screen.drawing.view_coords(x, y)
     line_seed = [(x, x, y, 0)]
     # paint nothing if seed is out of bounds
     if x < bound_x0 or x > bound_x1 or y < bound_y0 or y > bound_y1:
@@ -614,7 +674,7 @@ operations = {
 def set_area(x0, y0, array, operation_char):
     """ Put a sprite on the screen (PUT). """
     # array must exist at this point (or PUT would have raised error 5)      
-    x0, y0 = state.console_state.screen.view_coords(x0, y0)
+    x0, y0 = state.console_state.screen.drawing.view_coords(x0, y0)
     rect = backend.video.fast_put(x0, y0, array, state.basic_state.arrays[array][2], operation_char)
     if rect:
         x0, y0, x1, y1 = rect
@@ -636,8 +696,8 @@ def get_area(x0, y0, x1, y1, array):
     if state.console_state.screen.mode.name == '640x200x4':
         # Tandy screen 6 simply GETs twice the width, it seems
         x1 = x0 + 2*(x1-x0+1)-1 
-    x0, y0 = state.console_state.screen.view_coords(x0, y0)
-    x1, y1 = state.console_state.screen.view_coords(x1, y1)
+    x0, y0 = state.console_state.screen.drawing.view_coords(x0, y0)
+    x1, y1 = state.console_state.screen.drawing.view_coords(x1, y1)
     state.console_state.screen.mode.get_area(x0, y0, x1, y1, byte_array)
     # store a copy in the fast-put store
     # arrays[array] must exist at this point (or GET would have raised error 5)

@@ -1212,25 +1212,18 @@ def exec_view_graph(ins):
     absolute = util.skip_white_read_if(ins, ('\xC8',)) #SCREEN
     if util.skip_white(ins) == '(':
         x0, y0 = parse_coord_bare(ins)
+        x0, y0 = x0.round_to_int(), y0.round_to_int()
         util.require_read(ins, ('\xEA',)) #-
         x1, y1 = parse_coord_bare(ins)
+        x1, y1 = x1.round_to_int(), y1.round_to_int()
         util.range_check(0, state.console_state.screen.mode.pixel_width-1, x0, x1)
         util.range_check(0, state.console_state.screen.mode.pixel_height-1, y0, y1)
-        x0, x1 = min(x0, x1), max(x0, x1)
-        y0, y1 = min(y0, y1), max(y0, y1)
         fill, border = None, None
         if util.skip_white_read_if(ins, (',',)):
             fill, border = expressions.parse_int_list(ins, 2, err=2)
-        state.console_state.screen.set_view(x0-1, y0-1, x1+1, y1+1, True)
-        if fill != None:
-            state.console_state.screen.drawing.draw_box_filled(x0, y0, x1, y1, fill)
-            state.console_state.screen.drawing.last_attr = fill
-        if border != None:
-            state.console_state.screen.drawing.draw_box(x0-1, y0-1, x1+1, y1+1, border)
-            state.console_state.screen.drawing.last_attr = border
-        state.console_state.screen.set_view(x0, y0, x1, y1, absolute)
+        state.console_state.screen.drawing.set_view(x0, y0, x1, y1, absolute, fill, border)
     else:
-        state.console_state.screen.unset_view()
+        state.console_state.screen.drawing.unset_view()
     util.require(ins, util.end_statement)        
     
 def exec_window(ins):
@@ -2036,7 +2029,7 @@ def exec_cls(ins):
     """ CLS: clear the screen. """
     if (pcjr_syntax == 'pcjr' or 
                     util.skip_white(ins) in (',',) + util.end_statement):
-        if state.console_state.screen.view != None:
+        if state.console_state.screen.drawing.view_is_set():
             val = 1
         elif state.console_state.view_set:
             val = 2
@@ -2057,10 +2050,10 @@ def exec_cls(ins):
     # cls is only executed if no errors have occurred    
     if val == 0:
         console.clear()  
-        state.console_state.drawing.screen.graphics.reset()
+        state.console_state.screen.drawing.reset()
     elif val == 1:
-        state.console_state.screen.clear_view()
-        state.console_state.drawing.screen.graphics.reset()
+        state.console_state.screen.drawing.clear_view()
+        state.console_state.screen.drawing.reset()
     elif val == 2:
         console.clear_view()  
     if pcjr_syntax == 'pcjr':

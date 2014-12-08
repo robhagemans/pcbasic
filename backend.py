@@ -1291,9 +1291,6 @@ class Screen(object):
         self.mode = self.text_data[initial_width]
         # cursor
         self.cursor = Cursor(self)
-        # graphics viewport
-        self.view_absolute = False
-        self.view = None
 
     def prepare_modes(self):
         # Tandy/PCjr pixel aspect ratio is different from normal
@@ -1561,9 +1558,6 @@ class Screen(object):
         if not self.mode.is_text_mode:
             # graphics drawing
             self.drawing = graphics.Drawing(self)
-            # viewport        
-            self.unset_view()
-            # logical window
         # signal the backend to change the screen resolution
         if not video.init_screen_mode(info):
             # something broke at the backend. fallback to text mode and give error.
@@ -1840,54 +1834,6 @@ class Screen(object):
         """ Fill a scanline interval in a tile pattern or solid attribute. """
         video.fill_interval(x0, x1, y, tile, solid)
         self.clear_text_area(x0, y, x1, y)
-
-    ## graphics viewport
-
-    def unset_view(self):
-        """ Unset the graphics viewport. """
-        self.view_absolute = False
-        self.view = None
-        video.unset_graph_clip()
-        self.drawing.reset_view()
-    
-    def set_view(self, x0, y0, x1, y1, absolute=True):
-        """ Set the graphics viewport. """
-        # VIEW orders the coordinates
-        if x0 > x1:
-            x0, x1 = x1, x0
-        if y0 > y1:
-            y0, y1 = y1, y0
-        self.view_absolute = absolute
-        self.view = x0, y0, x1, y1
-        video.set_graph_clip(x0, y0, x1, y1)
-        self.drawing.reset_view()
-    
-    def get_view(self):
-        """ Return the graphics viewport or full screen dimensions if not set. """
-        if self.view:
-            return self.view
-        else:
-            return 0, 0, self.mode.pixel_width-1, self.mode.pixel_height-1
-
-    def get_view_mid(self):
-        """ Get the midpoint of the current graphics view. """
-        x0, y0, x1, y1 = self.get_view()
-        if self.view_absolute:
-            return x0 + (x1-x0)/2, y0 + (y1-y0)/2
-        else:
-            return (x1-x0)/2, (y1-y0)/2
-
-    def view_coords(self, x, y):
-        """ Retrieve absolute coordinates for viewport coordinates. """
-        if (not self.view) or self.view_absolute:
-            return x, y
-        else:
-            return x + self.view[0], y + self.view[1]
-
-    def clear_view(self):
-        """ Clear the current graphics viewport. """
-        if not state.console_state.screen.mode.is_text_mode:
-            video.clear_graph_clip((self.attr>>4) & 0x7)
 
 
 ###############################################################################
