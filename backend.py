@@ -1559,13 +1559,11 @@ class Screen(object):
         self.set_page(new_vpagenum, new_apagenum)
         # set graphics characteristics
         if not self.mode.is_text_mode:
-            # viewport        
-            self.unset_view()
             # graphics drawing
             self.drawing = graphics.Drawing(self)
+            # viewport        
+            self.unset_view()
             # logical window
-            state.console_state.graph_window = None
-            state.console_state.graph_window_bounds = None
         # signal the backend to change the screen resolution
         if not video.init_screen_mode(info):
             # something broke at the backend. fallback to text mode and give error.

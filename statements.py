@@ -1139,30 +1139,35 @@ def exec_ioctl(ins):
 ##########################################################
 # Graphics statements
 
-def parse_coord(ins, absolute=False):
+def parse_coord_bare(ins):
     """ Helper function: parse coordinate pair. """
-    step = not absolute and util.skip_white_read_if(ins, ('\xCF',)) # STEP
     util.require_read(ins, ('(',))
     x = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
     util.require_read(ins, (',',))
     y = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
     util.require_read(ins, (')',))
+    return x, y
+
+def parse_coord(ins, absolute=False):
+    """ Helper function: parse coordinate pair. """
+    step = not absolute and util.skip_white_read_if(ins, ('\xCF',)) # STEP
+    x, y = parse_coord_bare(ins)
     if absolute:
         return x, y
-    state.console_state.screen.drawing.last_point = graphics.window_coords(x, y, step)
+    state.console_state.screen.drawing.last_point = state.console_state.screen.drawing.get_window_physical(x, y, step)
     return state.console_state.screen.drawing.last_point
 
 def exec_pset(ins, c=-1):
     """ PSET: set a pixel to a given attribute, or foreground. """
     if state.console_state.screen.mode.is_text_mode:
         raise error.RunError(5)
-    x, y = parse_coord(ins)
-    state.console_state.screen.drawing.last_point = x, y
+    step = util.skip_white_read_if(ins, ('\xCF',)) # STEP
+    x, y = parse_coord_bare(ins)
     if util.skip_white_read_if(ins, (',',)):
         c = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.range_check(-1, 255, c)
     util.require(ins, util.end_statement)    
-    graphics.put_point(x, y, c)
+    state.console_state.screen.drawing.put_point(x, y, step, c)
 
 def exec_preset(ins):
     """ PRESET: set a pixel to a given attribute, or background. """
@@ -1241,14 +1246,14 @@ def exec_window(ins):
         raise error.RunError(5)
     cartesian = not util.skip_white_read_if(ins, ('\xC8',)) #SCREEN
     if util.skip_white(ins) == '(':
-        x0, y0 = parse_coord(ins, absolute=True)
+        x0, y0 = parse_coord_bare(ins)
         util.require_read(ins, ('\xEA',)) #-
-        x1, y1 = parse_coord(ins, absolute=True)
+        x1, y1 = parse_coord_bare(ins)
         if x0.equals(x1) or y0.equals(y1):
             raise error.RunError(5)
-        graphics.set_graph_window(x0, y0, x1, y1, cartesian)
+        state.console_state.screen.drawing.set_window(x0, y0, x1, y1, cartesian)
     else:
-        graphics.unset_graph_window()
+        state.console_state.screen.drawing.unset_window()
     util.require(ins, util.end_statement)        
         
 def exec_circle(ins):

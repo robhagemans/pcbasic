@@ -50,12 +50,7 @@ state.basic_state.play_state = [ PlayState(), PlayState(), PlayState() ]
 
 def prepare():
     """ Initialise the draw and play module. """
-    init_draw_state()
-
-def init_draw_state():
-    """ Initilaise state variables of the draw command. """
-    state.console_state.screen.drawing.draw_scale = 4
-    state.console_state.screen.drawing.draw_angle = 0
+    pass
 
 def get_value_for_varptrstr(varptrstr):
     """ Get a value given a VARPTR$ representation. """

@@ -662,27 +662,31 @@ def value_point(ins):
     util.require_read(ins, (')',))
     if not lst[0]:
         raise error.RunError(2)
+    screen = state.console_state.screen
     if not lst[1]:
         # single-argument version
-        x, y = state.console_state.screen.drawing.last_point
-        fn = vartypes.pass_int_unpack(lst[0])
-        if fn == 0:
-            return vartypes.pack_int(x)
-        elif fn == 1:
-            return vartypes.pack_int(y)
-        elif fn == 2:
-            fx, _ = graphics.get_window_coords(x, y)
-            return fp.pack(fx)
-        elif fn == 3:
-            _, fy = graphics.get_window_coords(x, y)
-            return fp.pack(fy)
+        try:
+            x, y = screen.drawing.last_point
+            fn = vartypes.pass_int_unpack(lst[0])
+            if fn == 0:
+                return vartypes.pack_int(x)
+            elif fn == 1:
+                return vartypes.pack_int(y)
+            elif fn == 2:
+                fx, _ = screen.drawing.get_window_logical(x, y)
+                return fp.pack(fx)
+            elif fn == 3:
+                _, fy = screen.drawing.get_window_logical(x, y)
+                return fp.pack(fy)
+        except AttributeError:
+            return vartypes.null['%']
     else:       
         # two-argument mode    
-        if state.console_state.screen.mode.is_text_mode:
+        if screen.mode.is_text_mode:
             raise error.RunError(err)
-        return vartypes.pack_int(graphics.get_point(*graphics.window_coords(
+        return vartypes.pack_int(screen.drawing.get_point(
                         fp.unpack(vartypes.pass_single_keep(lst[0])), 
-                        fp.unpack(vartypes.pass_single_keep(lst[1])))))     
+                        fp.unpack(vartypes.pass_single_keep(lst[1]))))
 
 def value_pmap(ins):
     """ PMAP: convert between logical and physical coordinates. """
@@ -692,19 +696,20 @@ def value_pmap(ins):
     mode = vartypes.pass_int_unpack(parse_expression(ins))
     util.require_read(ins, (')',))
     util.range_check(0, 3, mode)
-    if state.console_state.screen.mode.is_text_mode:
+    screen = state.console_state.screen
+    if screen.mode.is_text_mode:
         return vartypes.null['%']
     if mode == 0:
-        value, _ = graphics.window_coords(fp.unpack(vartypes.pass_single_keep(coord)), fp.Single.zero)       
+        value, _ = screen.drawing.get_window_physical(fp.unpack(vartypes.pass_single_keep(coord)), fp.Single.zero)       
         return vartypes.pack_int(value)        
     elif mode == 1:
-        _, value = graphics.window_coords(fp.Single.zero, fp.unpack(vartypes.pass_single_keep(coord)))       
+        _, value = screen.drawing.get_window_physical(fp.Single.zero, fp.unpack(vartypes.pass_single_keep(coord)))       
         return vartypes.pack_int(value)        
     elif mode == 2:
-        value, _ = graphics.get_window_coords(vartypes.pass_int_unpack(coord), 0)       
+        value, _ = screen.drawing.get_window_logical(vartypes.pass_int_unpack(coord), 0)       
         return fp.pack(value)
     elif mode == 3:
-        _, value = graphics.get_window_coords(0, vartypes.pass_int_unpack(coord))       
+        _, value = screen.drawing.get_window_logical(0, vartypes.pass_int_unpack(coord))       
         return fp.pack(value)
     
 #####################################################################

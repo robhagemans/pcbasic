@@ -28,7 +28,7 @@ class Drawing(object):
     def __init__(self, screen):
         self.screen = screen
         self.reset()  
-        unset_graph_window()      
+        self.unset_window()      
     
     def reset(self):
         """ Reset graphics state. """
@@ -42,88 +42,92 @@ class Drawing(object):
     def reset_view(self):
         """ Update graphics state after viewport reset. """
         self.last_point = self.screen.get_view_mid()
-        if state.console_state.graph_window_bounds != None:
-            graphics.set_graph_window(*state.console_state.graph_window_bounds)
+        if self.window_bounds != None:
+            self.set_window(*self.window_bounds)
 
+    ### PSET, POINT
 
-### PSET, POINT
-
-def put_point(x, y, c):
-    """ Draw a pixel in the give attribute (PSET, PRESET). """
-    x, y = state.console_state.screen.view_coords(x,y)
-    backend.video.apply_graph_clip()
-    c = get_colour_index(c)
-    state.console_state.screen.put_pixel(x, y, c)
-    backend.video.remove_graph_clip()
-    state.console_state.screen.drawing.last_attr = c
+    def put_point(self, x, y, step, c):
+        """ Draw a pixel in the given attribute (PSET, PRESET). """
+        x, y = self.screen.view_coords(*self.get_window_physical(x, y, step))
+        c = get_colour_index(c)
+        backend.video.apply_graph_clip()
+        self.screen.put_pixel(x, y, c)
+        backend.video.remove_graph_clip()
+        self.last_attr = c
+        self.last_point = x, y
     
-def get_point(x, y):
-    """ Return the attribute of a pixel (POINT). """
-    x, y = state.console_state.screen.view_coords(x, y)
-    if x < 0 or x >= state.console_state.screen.mode.pixel_width:
-        return -1
-    if y < 0 or y >= state.console_state.screen.mode.pixel_height:
-        return -1
-    return state.console_state.screen.get_pixel(x,y)
+    def get_point(self, x, y):
+        """ Return the attribute of a pixel (POINT). """
+        x, y = self.screen.view_coords(*self.get_window_physical(x, y))
+        if x < 0 or x >= self.screen.mode.pixel_width:
+            return -1
+        if y < 0 or y >= self.screen.mode.pixel_height:
+            return -1
+        return self.screen.get_pixel(x,y)
 
-### WINDOW coords
+    ### WINDOW coords
 
-def set_graph_window(fx0, fy0, fx1, fy1, cartesian=True):
-    """ Set the logical coordinate window (WINDOW). """
-    if fy0.gt(fy1):
-        fy0, fy1 = fy1, fy0
-    if fx0.gt(fx1):
-        fx0, fx1 = fx1, fx0
-    if cartesian:
-        fy0, fy1 = fy1, fy0
-    left, top, right, bottom = state.console_state.screen.view
-    x0, y0 = fp.Single.zero, fp.Single.zero 
-    x1, y1 = fp.Single.from_int(right-left), fp.Single.from_int(bottom-top)        
-    scalex, scaley = fp.div(fp.sub(x1, x0), fp.sub(fx1,fx0)), fp.div(fp.sub(y1, y0), fp.sub(fy1,fy0)) 
-    offsetx, offsety = fp.sub(x0, fp.mul(fx0,scalex)), fp.sub(y0, fp.mul(fy0,scaley))
-    state.console_state.graph_window = scalex, scaley, offsetx, offsety
-    state.console_state.graph_window_bounds = fx0, fy0, fx1, fy1, cartesian
+    def set_window(self, fx0, fy0, fx1, fy1, cartesian=True):
+        """ Set the logical coordinate window (WINDOW). """
+        if fy0.gt(fy1):
+            fy0, fy1 = fy1, fy0
+        if fx0.gt(fx1):
+            fx0, fx1 = fx1, fx0
+        if cartesian:
+            fy0, fy1 = fy1, fy0
+        left, top, right, bottom = self.screen.get_view()
+        x0, y0 = fp.Single.zero, fp.Single.zero 
+        x1, y1 = fp.Single.from_int(right-left), fp.Single.from_int(bottom-top)        
+        scalex = fp.div(fp.sub(x1, x0), fp.sub(fx1,fx0))
+        scaley = fp.div(fp.sub(y1, y0), fp.sub(fy1,fy0)) 
+        offsetx = fp.sub(x0, fp.mul(fx0,scalex))
+        offsety = fp.sub(y0, fp.mul(fy0,scaley))
+        self.window = scalex, scaley, offsetx, offsety
+        self.window_bounds = fx0, fy0, fx1, fy1, cartesian
 
-def unset_graph_window():
-    """ Unset the logical coorndinate window. """
-    state.console_state.graph_window = None
-    state.console_state.graph_window_bounds = None
+    def unset_window(self):
+        """ Unset the logical coorndinate window. """
+        self.window = None
+        self.window_bounds = None
 
-def window_coords(fx, fy, step=False):
-    """ Convert logical to physical coordinates. """
-    if state.console_state.graph_window:
-        scalex, scaley, offsetx, offsety = state.console_state.graph_window
-        if step:
-            fx0, fy0 = get_window_coords(*state.console_state.screen.drawing.last_point)
+    def get_window_physical(self, fx, fy, step=False):
+        """ Convert logical to physical coordinates. """
+        if self.window:
+            scalex, scaley, offsetx, offsety = self.window
+            if step:
+                fx0, fy0 = self.get_window_logical(*self.last_point)
+            else:
+                fx0, fy0 = fp.Single.zero.copy(), fp.Single.zero.copy()
+            x = fp.add(offsetx, fp.mul(fx0.iadd(fx), scalex)).round_to_int()
+            y = fp.add(offsety, fp.mul(fy0.iadd(fy), scaley)).round_to_int()
         else:
-            fx0, fy0 = fp.Single.zero.copy(), fp.Single.zero.copy()
-        x = fp.add(offsetx, fp.mul(fx0.iadd(fx), scalex)).round_to_int()
-        y = fp.add(offsety, fp.mul(fy0.iadd(fy), scaley)).round_to_int()
-    else:
-        x, y = state.console_state.screen.drawing.last_point if step else (0, 0)
-        x += fx.round_to_int()
-        y += fy.round_to_int()
-    # overflow check
-    if x < -0x8000 or y < -0x8000 or x > 0x7fff or y > 0x7fff:
-        raise error.RunError(6)    
-    return x, y
-
-def get_window_coords(x, y):
-    """ Convert physical to logical coordinates. """
-    x, y = fp.Single.from_int(x), fp.Single.from_int(y)
-    if state.console_state.graph_window:
-        scalex, scaley, offsetx, offsety = state.console_state.graph_window
-        return fp.div(fp.sub(x, offsetx), scalex), fp.div(fp.sub(y, offsety), scaley)
-    else:
+            x, y = self.last_point if step else (0, 0)
+            x += fx.round_to_int()
+            y += fy.round_to_int()
+        # overflow check
+        if x < -0x8000 or y < -0x8000 or x > 0x7fff or y > 0x7fff:
+            raise error.RunError(6)    
         return x, y
 
-def window_scale(fx, fy):
-    """ Get logical to physical scale factor. """
-    if state.console_state.graph_window:
-        scalex, scaley, _, _ = state.console_state.graph_window
-        return fp.mul(fx, scalex).round_to_int(), fp.mul(fy, scaley).round_to_int()
-    else:
-        return fx.round_to_int(), fy.round_to_int()
+    def get_window_logical(self, x, y):
+        """ Convert physical to logical coordinates. """
+        x, y = fp.Single.from_int(x), fp.Single.from_int(y)
+        if self.window:
+            scalex, scaley, offsetx, offsety = self.window
+            return (fp.div(fp.sub(x, offsetx), scalex), 
+                     fp.div(fp.sub(y, offsety), scaley))
+        else:
+            return x, y
+
+    def window_scale(self, fx, fy):
+        """ Get logical to physical scale factor. """
+        if self.window:
+            scalex, scaley, _, _ = self.window
+            return (fp.mul(fx, scalex).round_to_int(), 
+                     fp.mul(fy, scaley).round_to_int())
+        else:
+            return fx.round_to_int(), fy.round_to_int()
 
 ### LINE
             
@@ -488,8 +492,6 @@ def flood_fill(x, y, pattern, c, border, background):
     # pattern tiling stops at intervals that equal the pattern to be drawn, unless this pattern is
     # also equal to the background pattern.
     c, border = get_colour_index(c), get_colour_index(border)
-    if get_point(x, y) == border:
-        return
     solid = (pattern == None)
     if not solid:    
         tile = state.console_state.screen.mode.build_tile(pattern) if pattern else None 
@@ -501,6 +503,9 @@ def flood_fill(x, y, pattern, c, border, background):
     line_seed = [(x, x, y, 0)]
     # paint nothing if seed is out of bounds
     if x < bound_x0 or x > bound_x1 or y < bound_y0 or y > bound_y1:
+        return
+    # paint nothing if we start on border attrib    
+    if state.console_state.screen.get_pixel(x,y) == border:
         return
     while len(line_seed) > 0:
         # consider next interval
