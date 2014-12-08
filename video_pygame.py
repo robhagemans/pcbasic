@@ -1242,8 +1242,6 @@ class Clipboard(object):
 # graphics backend interface
 # low-level methods (pygame implementation)
 
-graph_view = None
-
 def put_pixel(x, y, index, pagenum):
     """ Put a pixel on the screen; callback to empty character buffer. """
     global screen_changed
@@ -1256,42 +1254,13 @@ def get_pixel(x, y, pagenum):
 
 # graphics view area (pygame clip)
 
-#D, keep in Screen
-def get_graph_clip():
-    """ Get the graphics view area. """
-    view = graph_view if graph_view else canvas[apagenum].get_rect()
-    return view.left, view.top, view.right-1, view.bottom-1
-
-def set_graph_clip(x0, y0, x1, y1):
-    """ Set the graphics view area. """
-    global graph_view
-    graph_view = pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)    
-    
-# move to Screen? just have video.set_graph_clip(0, 0, pixel_width, pixel_height )
-def unset_graph_clip():
-    """ Unset the graphics view area. """
-    global graph_view
-    graph_view = None    
-    return canvas[apagenum].get_rect().center
-
-#D! fill_rect(*get_graph_clip, bg)
-def clear_graph_clip(bg):
-    """ Clear the graphics view area. """
-    global screen_changed
-    canvas[apagenum].set_clip(graph_view)
-    canvas[apagenum].fill(bg)
-    canvas[apagenum].set_clip(None)
-    screen_changed = True
-
-# these are called by graphics.py:
-
 def remove_graph_clip():
     """ Un-apply the graphics clip. """
     canvas[apagenum].set_clip(None)
 
-def apply_graph_clip():
+def apply_graph_clip(x0, y0, x1, y1):
     """ Apply the graphics clip. """
-    canvas[apagenum].set_clip(graph_view)
+    canvas[apagenum].set_clip(pygame.Rect(x0, y0, x1-x0+1, y1-y0+1))
 
 # fill functions
 
