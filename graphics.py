@@ -1,6 +1,6 @@
 """
 PC-BASIC 3.23 - graphics.py
-Graphics methods (frontend)
+Graphics operations
 
 (c) 2013, 2014 Rob Hagemans 
 This file is released under the GNU GPL version 3. 
@@ -9,18 +9,7 @@ This file is released under the GNU GPL version 3.
 import error
 import fp
 import vartypes
-import state
-import util
 import backend
-
-def get_colour_index(c):
-    """ Get the index of the specified attribute. """
-    if c == -1: # foreground; graphics 'background' attrib is always 0
-        c = state.console_state.screen.attr & 0xf
-    else:
-        c = min(state.console_state.screen.mode.num_attr - 1, max(0, c))
-    return c
-
 
 class Drawing(object):
     """ Manage graphics drawing. """
@@ -39,6 +28,17 @@ class Drawing(object):
         self.last_attr = self.screen.mode.attr
         self.draw_scale = 4
         self.draw_angle = 0
+
+    ### attributes
+    
+    def get_attr_index(self, c):
+        """ Get the index of the specified attribute. """
+        if c == -1: 
+            # foreground; graphics 'background' attrib is always 0
+            c = self.screen.attr & 0xf
+        else:
+            c = min(self.screen.mode.num_attr-1, max(0, c))
+        return c
 
     ## VIEW graphics viewport
 
@@ -173,7 +173,7 @@ class Drawing(object):
     def pset(self, lcoord, c):
         """ Draw a pixel in the given attribute (PSET, PRESET). """
         x, y = self.view_coords(*self.get_window_physical(*lcoord))
-        c = get_colour_index(c)
+        c = self.get_attr_index(c)
         backend.video.apply_graph_clip()
         self.screen.put_pixel(x, y, c)
         backend.video.remove_graph_clip()
@@ -198,7 +198,7 @@ class Drawing(object):
         else:
             x0, y0 = self.last_point
         x1, y1 = self.view_coords(*self.get_window_physical(*lcoord1))
-        c = get_colour_index(c)
+        c = self.get_attr_index(c)
         if shape == '':
             self.draw_line(x0, y0, x1, y1, c, pattern)
         elif shape == 'B':
@@ -330,7 +330,7 @@ class Drawing(object):
     def circle(self, lcoord, r, start, stop, c, aspect):
         """ Draw a circle, ellipse, arc or sector (CIRCLE). """
         x0, y0 = self.view_coords(*self.get_window_physical(*lcoord))
-        c = get_colour_index(c)
+        c = self.get_attr_index(c)
         if aspect == None:
             aspect = fp.div(
                 fp.Single.from_int(self.screen.mode.pixel_aspect[0]), 
@@ -500,7 +500,7 @@ class Drawing(object):
         # flood fill stops on border colour in all directions; it also stops on scanlines in fill_colour
         # pattern tiling stops at intervals that equal the pattern to be drawn, unless this pattern is
         # also equal to the background pattern.
-        c, border = get_colour_index(c), get_colour_index(border)
+        c, border = self.get_attr_index(c), self.get_attr_index(border)
         solid = (pattern == None)
         if not solid:    
             tile = self.screen.mode.build_tile(pattern) if pattern else None 
