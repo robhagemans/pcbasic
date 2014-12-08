@@ -287,6 +287,7 @@ class Drawing(object):
             if mask == 0:
                 mask = 0x8000
         return mask
+
     
     ### CIRCLE: circle, ellipse, sectors
 
@@ -327,10 +328,10 @@ class Drawing(object):
     #
     # break yinc loop if one step no longer suffices
 
-
     def circle(self, lcoord, r, start, stop, c, aspect):
         """ Draw a circle, ellipse, arc or sector (CIRCLE). """
         x0, y0 = self.view_coords(*self.get_window_physical(*lcoord))
+        c = get_colour_index(c)
         if aspect == None:
             aspect = fp.div(
                 fp.Single.from_int(self.screen.mode.pixel_aspect[0]), 
@@ -353,9 +354,9 @@ class Drawing(object):
             stop = fp.unpack(vartypes.pass_single_keep(stop))
             stop_octant, stop_coord, stop_line = get_octant(stop, rx, ry)
         if aspect.equals(aspect.one):
-            draw_circle(x0, y0, rx, c, 
-                        start_octant, start_coord, start_line, 
-                        stop_octant, stop_coord, stop_line)
+            self.draw_circle(x0, y0, rx, c, 
+                             start_octant, start_coord, start_line, 
+                             stop_octant, stop_coord, stop_line)
         else:
             startx, starty, stopx, stopy = -1, -1, -1, -1
             if start != None:
@@ -364,11 +365,137 @@ class Drawing(object):
             if stop != None:
                 stopx = abs(fp.mul(fp.Single.from_int(rx), fp.cos(stop)).round_to_int())
                 stopy = abs(fp.mul(fp.Single.from_int(ry), fp.sin(stop)).round_to_int())
-            draw_ellipse(x0, y0, rx, ry, c, 
-                         start_octant/2, startx, starty, start_line, 
-                         stop_octant/2, stopx, stopy, stop_line)
+            self.draw_ellipse(x0, y0, rx, ry, c, 
+                              start_octant/2, startx, starty, start_line, 
+                              stop_octant/2, stopx, stopy, stop_line)
         self.last_attr = c
         self.last_point = x0, y0
+
+    def draw_circle(self, x0, y0, r, c, 
+                    oct0=-1, coo0=-1, line0=False, 
+                    oct1=-1, coo1=-1, line1=False):
+        """ Draw a circle sector using the midpoint algorithm. """
+        # see e.g. http://en.wikipedia.org/wiki/Midpoint_circle_algorithm
+        # find invisible octants
+        if oct0 == -1:
+            hide_oct = range(0,0)
+        elif oct0 < oct1 or oct0 == oct1 and octant_gte(oct0, coo1, coo0):
+            hide_oct = range(0, oct0) + range(oct1+1, 8)
+        else:
+            hide_oct = range(oct1+1, oct0)
+        # if oct1==oct0: 
+        # ----|.....|--- : coo1 lt coo0 : print if y in [0,coo1] or in [coo0, r]  
+        # ....|-----|... ; coo1 gte coo0: print if y in [coo0,coo1]
+        backend.video.apply_graph_clip()
+        x, y = r, 0
+        bres_error = 1-r 
+        while x >= y:
+            for octant in range(0,8):
+                if octant in hide_oct:
+                    continue
+                elif oct0 != oct1 and octant == oct0 and octant_gt(oct0, coo0, y):
+                    continue
+                elif oct0 != oct1 and octant == oct1 and octant_gt(oct1, y, coo1):
+                    continue
+                elif oct0 == oct1 and octant == oct0:
+                    # if coo1 >= coo0
+                    if octant_gte(oct0, coo1, coo0):
+                        # if y > coo1 or y < coo0 
+                        # (don't draw if y is outside coo's)
+                        if octant_gt(oct0, y, coo1) or octant_gt(oct0, coo0,y):
+                            continue
+                    else:
+                        # if coo0 > y > c001 
+                        # (don't draw if y is between coo's)
+                        if octant_gt(oct0, y, coo1) and octant_gt(oct0, coo0, y):
+                            continue
+                self.screen.put_pixel(*octant_coord(octant, x0, y0, x, y), index=c) 
+            # remember endpoints for pie sectors
+            if y == coo0:
+                coo0x = x
+            if y == coo1:
+                coo1x = x    
+            # bresenham error step
+            y += 1
+            if bres_error < 0:
+                bres_error += 2*y+1
+            else:
+                x -= 1
+                bres_error += 2*(y-x+1)
+        # draw pie-slice lines
+        if line0:
+            self.draw_line(x0, y0, *octant_coord(oct0, x0, y0, coo0x, coo0), c=c)
+        if line1:
+            self.draw_line(x0, y0, *octant_coord(oct1, x0, y0, coo1x, coo1), c=c)
+        backend.video.remove_graph_clip()
+            
+    def draw_ellipse(self, cx, cy, rx, ry, c, 
+                     qua0=-1, x0=-1, y0=-1, line0=False, 
+                     qua1=-1, x1=-1, y1=-1, line1=False):
+        """ Draw ellipse using the midpoint algorithm. """
+        # for algorithm see http://members.chello.at/~easyfilter/bresenham.html
+        # find invisible quadrants
+        if qua0 == -1:
+            hide_qua = range(0,0)
+        elif qua0 < qua1 or qua0 == qua1 and quadrant_gte(qua0, x1, y1, x0, y0):
+            hide_qua = range(0, qua0) + range(qua1+1, 4)
+        else:
+            hide_qua = range(qua1+1,qua0)
+        # error increment
+        dx = 16 * (1-2*rx) * ry * ry    
+        dy = 16 * rx * rx 
+        ddy = 32 * rx * rx
+        ddx = 32 * ry * ry
+        # error for first step
+        err = dx + dy   
+        backend.video.apply_graph_clip()        
+        x, y = rx, 0
+        while True: 
+            for quadrant in range(0,4):
+                # skip invisible arc sectors
+                if quadrant in hide_qua:
+                    continue
+                elif qua0 != qua1 and quadrant == qua0 and quadrant_gt(qua0, x0, y0, x, y):
+                    continue
+                elif qua0 != qua1 and quadrant == qua1 and quadrant_gt(qua1, x, y, x1, y1):
+                    continue
+                elif qua0 == qua1 and quadrant == qua0:
+                    if quadrant_gte(qua0, x1, y1, x0, y0):
+                        if quadrant_gt(qua0, x, y, x1, y1) or quadrant_gt(qua0, x0, y0, x, y):
+                            continue
+                    else:
+                        if quadrant_gt(qua0, x, y, x1, y1) and quadrant_gt(qua0, x0, y0, x, y):
+                            continue
+                self.screen.put_pixel(*quadrant_coord(quadrant, cx, cy, x, y), index=c) 
+            # bresenham error step
+            e2 = 2 * err
+            if (e2 <= dy):
+                y += 1
+                dy += ddy
+                err += dy
+            if (e2 >= dx or e2 > dy):
+                x -= 1
+                dx += ddx
+                err += dx
+            # NOTE - err changes sign at the change from y increase to x increase
+            if (x < 0):
+                break
+        # too early stop of flat vertical ellipses
+        # finish tip of ellipse
+        while (y < ry): 
+            self.screen.put_pixel(cx, cy+y, c) 
+            self.screen.put_pixel(cx, cy-y, c) 
+            y += 1 
+        # draw pie-slice lines
+        if line0:
+            self.draw_line(cx, cy, *quadrant_coord(qua0, cx, cy, x0, y0), c=c)
+        if line1:
+            self.draw_line(cx, cy, *quadrant_coord(qua1, cx, cy, x1, y1), c=c)
+        backend.video.remove_graph_clip()     
+
+
+###############################################################################
+# octant logic for CIRCLE
         
 def get_octant(mbf, rx, ry):
     """ Get the circle octant for a given coordinate. """
@@ -390,61 +517,6 @@ def get_octant(mbf, rx, ry):
         coord = abs(fp.mul(fp.Single.from_int(rx), fp.cos(mbf)).round_to_int())
     return octant, coord, neg          
 
-def draw_circle(x0, y0, r, c, oct0=-1, coo0=-1, line0=False, oct1=-1, coo1=-1, line1=False):
-    """ Draw a circle using the midpoint algorithm. """
-    # see e.g. http://en.wikipedia.org/wiki/Midpoint_circle_algorithm
-    c = get_colour_index(c)
-    x0, y0 = state.console_state.screen.drawing.view_coords(x0, y0)
-    if oct0 == -1:
-        hide_oct = range(0,0)
-    elif oct0 < oct1 or oct0 == oct1 and octant_gte(oct0, coo1, coo0):
-        hide_oct = range(0, oct0) + range(oct1+1, 8)
-    else:
-        hide_oct = range(oct1+1, oct0)
-    # if oct1==oct0: 
-    # ----|.....|--- : coo1 lt coo0 : print if y in [0,coo1] or in [coo0, r]  
-    # ....|-----|... ; coo1 gte coo0: print if y in [coo0,coo1]
-    backend.video.apply_graph_clip()
-    x, y = r, 0
-    bres_error = 1-r 
-    while x >= y:
-        for octant in range(0,8):
-            if octant in hide_oct:
-                continue
-            elif oct0 != oct1 and (octant == oct0 and octant_gt(oct0, coo0, y)):
-                continue
-            elif oct0 != oct1 and (octant == oct1 and octant_gt(oct1, y, coo1)):
-                continue
-            elif oct0 == oct1 and octant == oct0:
-                # if coo1 >= coo0
-                if octant_gte(oct0, coo1, coo0):
-                    # if y > coo1 or y < coo0 (don't draw if y is outside coo's)
-                    if octant_gt(oct0, y, coo1) or octant_gt(oct0, coo0,y):
-                        continue
-                else:
-                    # if coo0 > y > c001 (don't draw if y is between coo's)
-                    if octant_gt(oct0, y, coo1) and octant_gt(oct0, coo0, y):
-                        continue
-            state.console_state.screen.put_pixel(*octant_coord(octant, x0, y0, x, y), index=c) 
-        # remember endpoints for pie sectors
-        if y == coo0:
-            coo0x = x
-        if y == coo1:
-            coo1x = x    
-        # bresenham error step
-        y += 1
-        if bres_error < 0:
-            bres_error += 2*y+1
-        else:
-            x -= 1
-            bres_error += 2*(y-x+1)
-    if line0:
-        state.console_state.screen.drawing.draw_line(x0, y0, *octant_coord(oct0, x0, y0, coo0x, coo0), c=c)
-    if line1:
-        state.console_state.screen.drawing.draw_line(x0, y0, *octant_coord(oct1, x0, y0, coo1x, coo1), c=c)
-    backend.video.remove_graph_clip()
-    state.console_state.screen.drawing.last_attr = c
-    
 def octant_coord(octant, x0, y0, x, y):    
     """ Return symmetrically reflected coordinates for a given pair. """
     if   octant == 7:     return x0+x, y0+y
@@ -470,70 +542,10 @@ def octant_gte(octant, y, coord):
     else: 
         return y >= coord
 
-def draw_ellipse(cx, cy, rx, ry, c, qua0=-1, x0=-1, y0=-1, line0=False, qua1=-1, x1=-1, y1=-1, line1=False):
-    """ Draw ellipse using the midpoint algorithm. """
-    # for algorithm see http://members.chello.at/~easyfilter/bresenham.html
-    c = get_colour_index(c)
-    cx, cy = state.console_state.screen.drawing.view_coords(cx, cy)
-    # find invisible quadrants
-    if qua0 == -1:
-        hide_qua = range(0,0)
-    elif qua0 < qua1 or qua0 == qua1 and quadrant_gte(qua0, x1, y1, x0, y0):
-        hide_qua = range(0, qua0) + range(qua1+1, 4)
-    else:
-        hide_qua = range(qua1+1,qua0)
-    # error increment
-    dx = 16 * (1-2*rx) * ry * ry    
-    dy = 16 * rx * rx 
-    ddy = 32 * rx * rx
-    ddx = 32 * ry * ry
-    # error for first step
-    err = dx + dy   
-    backend.video.apply_graph_clip()        
-    x, y = rx, 0
-    while True: 
-        for quadrant in range(0,4):
-            # skip invisible arc sectors
-            if quadrant in hide_qua:
-                continue
-            elif qua0 != qua1 and (quadrant == qua0 and quadrant_gt(qua0, x0, y0, x, y)):
-                continue
-            elif qua0 != qua1 and (quadrant == qua1 and quadrant_gt(qua1, x, y, x1, y1)):
-                continue
-            elif qua0 == qua1 and quadrant == qua0:
-                if quadrant_gte(qua0, x1,y1, x0,y0):
-                    if quadrant_gt(qua0, x, y, x1, y1) or quadrant_gt(qua0, x0, y0, x, y):
-                        continue
-                else:
-                    if quadrant_gt(qua0, x, y, x1, y1) and quadrant_gt(qua0, x0, y0, x, y):
-                        continue
-            state.console_state.screen.put_pixel(*quadrant_coord(quadrant, cx,cy,x,y), index=c) 
-        # bresenham error step
-        e2 = 2 * err
-        if (e2 <= dy):
-            y += 1
-            dy += ddy
-            err += dy
-        if (e2 >= dx or e2 > dy):
-            x -= 1
-            dx += ddx
-            err += dx
-        # NOTE - err changes sign at the change from y increase to x increase
-        if (x < 0):
-            break
-    # too early stop of flat vertical ellipses
-    # finish tip of ellipse
-    while (y < ry): 
-        state.console_state.screen.put_pixel(cx, cy+y, c) 
-        state.console_state.screen.put_pixel(cx, cy-y, c) 
-        y += 1 
-    if line0:
-        state.console_state.screen.drawing.draw_line(cx, cy, *quadrant_coord(qua0, cx, cy, x0, y0), c=c)
-    if line1:
-        state.console_state.screen.drawing.draw_line(cx, cy, *quadrant_coord(qua1, cx, cy, x1, y1), c=c)
-    backend.video.remove_graph_clip()     
-    state.console_state.screen.drawing.last_attr = c
-    
+
+###############################################################################
+# quadrant logic for CIRCLE
+
 def quadrant_coord(quadrant, x0,y0, x,y):    
     """ Return symmetrically reflected coordinates for a given pair. """
     if   quadrant == 3:     return x0+x, y0+y
@@ -566,6 +578,7 @@ def quadrant_gte(quadrant, x, y, x0, y0):
             return y < y0 
         else: 
             return x >= x0 
+
         
 ###############################################################################
 # Flood fill (PAINT)
