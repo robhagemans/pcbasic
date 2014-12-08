@@ -1154,15 +1154,6 @@ def parse_coord_step(ins):
     x, y = parse_coord_bare(ins)
     return x, y, step
 
-def parse_coord(ins, absolute=False):
-    """ Helper function: parse coordinate pair. """
-    step = not absolute and util.skip_white_read_if(ins, ('\xCF',)) # STEP
-    x, y = parse_coord_bare(ins)
-    if absolute:
-        return x, y
-    state.console_state.screen.drawing.last_point = state.console_state.screen.drawing.get_window_physical(x, y, step)
-    return state.console_state.screen.drawing.last_point
-
 def exec_pset(ins, c=-1):
     """ PSET: set a pixel to a given attribute, or foreground. """
     if state.console_state.screen.mode.is_text_mode:
@@ -1277,7 +1268,7 @@ def exec_paint(ins):
     # if paint *attribute* specified, border default = current foreground      
     if state.console_state.screen.mode.is_text_mode:
         raise error.RunError(5)
-    coord = parse_coord_bare(ins)
+    coord = parse_coord_step(ins)
     pattern, c, border, background_pattern = None, -1, -1, None
     if util.skip_white_read_if(ins, (',',)):
         cval = expressions.parse_expression(ins, allow_empty=True)
@@ -1310,11 +1301,11 @@ def exec_get_graph(ins):
     """ GET: read a sprite to memory. """
     if state.console_state.screen.mode.is_text_mode:
         raise error.RunError(5)
-    util.require(ins, ('(')) # don't accept STEP
-    x0,y0 = parse_coord(ins)
+    # don't accept STEP for first coord
+    util.require(ins, ('(')) 
+    coord0 = parse_coord_step(ins)
     util.require_read(ins, ('\xEA',)) #-
-    util.require(ins, ('(', '\xCF')) # STEP
-    x1,y1 = parse_coord(ins)
+    coord1 = parse_coord_step(ins)
     util.require_read(ins, (',',)) 
     array = util.get_var_name(ins)    
     util.require(ins, util.end_statement)
@@ -1322,26 +1313,29 @@ def exec_get_graph(ins):
         raise error.RunError(5)
     elif array[-1] == '$':
         raise error.RunError(13) # type mismatch    
-    graphics.get_area(x0, y0, x1, y1, array)
+    state.console_state.screen.drawing.get(coord0, coord1, array)
     
 def exec_put_graph(ins):
     """ PUT: draw sprite on screen. """
     if state.console_state.screen.mode.is_text_mode:
         raise error.RunError(5)
-    util.require(ins, ('(')) # don't accept STEP
-    x0,y0 = parse_coord(ins)
+    # don't accept STEP
+    util.require(ins, ('(')) 
+    coord = parse_coord_step(ins)
     util.require_read(ins, (',',)) 
     array = util.get_var_name(ins)    
-    action = '\xF0' # graphics.operation_xor
+    action = '\xF0' # XOR
     if util.skip_white_read_if(ins, (',',)):
-        util.require(ins, ('\xC6', '\xC7', '\xEE', '\xEF', '\xF0')) #PSET, PRESET, AND, OR, XOR
+        # PSET, PRESET, AND, OR, XOR
+        util.require(ins, ('\xC6', '\xC7', '\xEE', '\xEF', '\xF0')) 
         action = ins.read(1)
     util.require(ins, util.end_statement)
     if array not in state.basic_state.arrays:
         raise error.RunError(5)
     elif array[-1] == '$':
-        raise error.RunError(13) # type mismatch    
-    graphics.set_area(x0, y0, array, action)
+        # type mismatch
+        raise error.RunError(13)    
+    state.console_state.screen.drawing.put(coord, array, action)
     
 def exec_draw(ins):
     """ DRAW: draw a figure defined by a Graphics Macro Language string. """

@@ -287,7 +287,6 @@ class Drawing(object):
             if mask == 0:
                 mask = 0x8000
         return mask
-
     
     ### CIRCLE: circle, ellipse, sectors
 
@@ -493,7 +492,6 @@ class Drawing(object):
             self.draw_line(cx, cy, *quadrant_coord(qua1, cx, cy, x1, y1), c=c)
         backend.video.remove_graph_clip()     
 
-
     ### PAINT: Flood fill
 
     def paint(self, lcoord, pattern, c, border, background): 
@@ -578,6 +576,22 @@ class Drawing(object):
             x_start_next = x + 1
             x += 1
         return line_seed    
+     
+    ### PUT and GET: Sprite operations
+         
+    def put(self, lcoord, array, operation_char):
+        """ Put a sprite on the screen (PUT). """
+        # array must exist at this point (or PUT would have raised error 5)      
+        x, y = self.view_coords(*self.get_window_physical(*lcoord))
+        self.screen.put_area(x, y, array, operation_char)
+        self.last_point = x, y
+        
+    def get(self, lcoord0, lcoord1, array):
+        """ Read a sprite from the screen (GET). """
+        x0, y0 = self.view_coords(*self.get_window_physical(*lcoord0))
+        x1, y1 = self.view_coords(*self.get_window_physical(*lcoord1))
+        self.last_point = x1, y1
+        return self.screen.get_area(x0, y0, x1, y1, array)
 
 
 ###############################################################################
@@ -664,70 +678,4 @@ def quadrant_gte(quadrant, x, y, x0, y0):
             return y < y0 
         else: 
             return x >= x0 
-
-        
-###############################################################################
-# Sprtie operations (PUT and GET)
-
-def operation_set(pix0, pix1):  
-    """ PUT transformation: PSET """
-    return pix1
-
-def operation_not(pix0, pix1):
-    """ PUT transformation: PRESET """
-    return pix1 ^ ((1<<state.console_state.screen.mode.bitsperpixel)-1)
-
-def operation_and(pix0, pix1):
-    """ PUT transformation: AND """
-    return pix0 & pix1
-
-def operation_or(pix0, pix1):
-    """ PUT transformation: OR """
-    return pix0 | pix1
-
-def operation_xor(pix0, pix1):
-    """ PUT transformation: XOR """
-    return pix0 ^ pix1
-
-# code tokens for these operations
-operations = {
-    '\xC6': operation_set, # PSET
-    '\xC7': operation_not, # PRESET
-    '\xEE': operation_and,
-    '\xEF': operation_or,
-    '\xF0': operation_xor,
-    }
-     
-def set_area(x0, y0, array, operation_char):
-    """ Put a sprite on the screen (PUT). """
-    # array must exist at this point (or PUT would have raised error 5)      
-    x0, y0 = state.console_state.screen.drawing.view_coords(x0, y0)
-    rect = backend.video.fast_put(x0, y0, array, state.basic_state.arrays[array][2], operation_char)
-    if rect:
-        x0, y0, x1, y1 = rect
-    else:
-        try:
-            _, byte_array, _ = state.basic_state.arrays[array]
-        except KeyError:
-            byte_array = bytearray()
-        operation = operations[operation_char]
-        x0, y0, x1, y1 = state.console_state.screen.mode.set_area(x0, y0, byte_array, operation)
-    state.console_state.screen.clear_text_area(x0, y0, x1, y1)
-        
-def get_area(x0, y0, x1, y1, array):
-    """ Read a sprite from the screen (GET). """
-    try:
-        _, byte_array, _ = state.basic_state.arrays[array]
-    except KeyError:
-        raise error.RunError(5)    
-    if state.console_state.screen.mode.name == '640x200x4':
-        # Tandy screen 6 simply GETs twice the width, it seems
-        x1 = x0 + 2*(x1-x0+1)-1 
-    x0, y0 = state.console_state.screen.drawing.view_coords(x0, y0)
-    x1, y1 = state.console_state.screen.drawing.view_coords(x1, y1)
-    state.console_state.screen.mode.get_area(x0, y0, x1, y1, byte_array)
-    # store a copy in the fast-put store
-    # arrays[array] must exist at this point (or GET would have raised error 5)
-    backend.video.fast_get(x0, y0, x1, y1, array, state.basic_state.arrays[array][2])
-    
 

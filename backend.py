@@ -787,7 +787,7 @@ def get_area_ega(self, x0, y0, x1, y1, byte_array):
         # byte align next row
         mask = 0x80
 
-def set_area_ega(self, x0, y0, byte_array, operation):
+def put_area_ega(self, x0, y0, byte_array, operation):
     """ Put a stored sprite onto the screen in EGA modes. """
     bpp = self.bitsperpixel
     dx = vartypes.uint_to_value(byte_array[0:2])
@@ -966,7 +966,7 @@ class CGAMode(GraphicsMode):
             byte += 1
             shift = 8 - bpp
 
-    def set_area(self, x0, y0, byte_array, operation):
+    def put_area(self, x0, y0, byte_array, operation):
         """ Put a stored sprite onto the screen. """
         # in cga modes, number of x bits is given rather than pixels
         bpp = self.bitsperpixel
@@ -1063,7 +1063,7 @@ class EGAMode(GraphicsMode):
             mask = self.plane_mask & self.master_plane_mask
             set_pixel_byte(page, x, y, mask, val)
 
-    set_area = set_area_ega
+    put_area = put_area_ega
     get_area = get_area_ega
 
     def build_tile(self, pattern):
@@ -1127,7 +1127,7 @@ class Tandy6Mode(GraphicsMode):
         if self.coord_ok(page, x, y):
             set_pixel_byte(page, x, y, 1<<(addr%2), val) 
 
-    set_area = set_area_ega
+    put_area = put_area_ega
     get_area = get_area_ega
     build_tile = build_tile_cga
 
@@ -1835,6 +1835,44 @@ class Screen(object):
         video.fill_interval(x0, x1, y, tile, solid)
         self.clear_text_area(x0, y, x1, y)
 
+    def put_area(self, x0, y0, array, operation_char):
+        """ Put a sprite on the screen (PUT). """
+        rect = video.fast_put(x0, y0, array, state.basic_state.arrays[array][2], operation_char)
+        if rect:
+            x0, y0, x1, y1 = rect
+        else:
+            try:
+                _, byte_array, _ = state.basic_state.arrays[array]
+            except KeyError:
+                byte_array = bytearray()
+            # code tokens for sprite operations
+            if operation_char == '\xC6': # PSET
+                operation = lambda x, y: y
+            elif operation_char == '\xC7': # PRESET
+                operation = lambda x, y: y ^ ((1<<self.mode.bitsperpixel)-1)
+            elif operation_char == '\xEE': # AND
+                operation = lambda x, y: x & y
+            elif operation_char == '\xEF': # OR
+                operation = lambda x, y: x | y
+            elif operation_char == '\xF0': # XOR
+                operation = lambda x, y: x ^ y
+            x0, y0, x1, y1 = self.mode.put_area(x0, y0, byte_array, operation)
+        self.clear_text_area(x0, y0, x1, y1)
+            
+    def get_area(self, x0, y0, x1, y1, array):
+        """ Read a sprite from the screen (GET). """
+        try:
+            _, byte_array, _ = state.basic_state.arrays[array]
+        except KeyError:
+            raise error.RunError(5)    
+        if self.mode.name == '640x200x4':
+            # Tandy screen 6 simply GETs twice the width, it seems
+            x1 = x0 + 2*(x1-x0+1)-1 
+        self.mode.get_area(x0, y0, x1, y1, byte_array)
+        # store a copy in the fast-put store
+        # arrays[array] must exist at this point (or GET would have raised error 5)
+        video.fast_get(x0, y0, x1, y1, array, state.basic_state.arrays[array][2])
+        
 
 ###############################################################################
 # palette
