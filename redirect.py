@@ -11,11 +11,16 @@ from functools import partial
 
 import config
 import unicodepage
-import backend
 import state
-                            
+
+# input has closed
+input_closed = False
+
 # converter with DBCS lead-byte buffer for utf8 output redirection
 utf8conv = unicodepage.UTF8Converter(preserve_control=True)
+
+# redirect i/o to file or printer
+output_echos = []
 
 def prepare():
     """ Initialise redirect module. """
@@ -33,6 +38,7 @@ def prepare():
 
 def set_input(f):
     """ BASIC-style redirected input. """
+    global input_closed
     # read everything
     all_input = f.read()
     last = ''
@@ -41,7 +47,7 @@ def set_input(f):
         if not (c == '\n' and last == '\r'):
             state.console_state.keyb.insert_chars(c)
         last = c
-    backend.input_closed = True
+    input_closed = True
 
 def set_output(f, utf8=False):
     """ Redirected output in ASCII or UTF-8 """
@@ -49,8 +55,7 @@ def set_output(f, utf8=False):
         echo = partial(echo_ascii, f=f)
     else:
         echo = partial(echo_utf8, f=f)
-    backend.output_echos.append(echo) 
-    backend.input_echos.append(echo)
+    output_echos.append(echo) 
         
 def echo_ascii(s, f):
     """ Output redirection echo as raw bytes. """
@@ -59,6 +64,14 @@ def echo_ascii(s, f):
 def echo_utf8(s, f):
     """ Output redirection echo as UTF-8. """
     f.write(utf8conv.to_utf8(str(s))) 
+
+def toggle_echo(device):
+    """ Toggle copying of all screen I/O to LPT1. """
+    if device.write in output_echos:
+        output_echos.remove(device.write)
+    else:    
+        output_echos.append(device.write)
+
 
 prepare()
     

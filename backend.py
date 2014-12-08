@@ -26,6 +26,7 @@ import vartypes
 import util
 import representation
 import draw_and_play
+import redirect
 # FIXME: circular import
 import graphics
 
@@ -35,23 +36,6 @@ audio = None
 
 ### devices - SCRN: KYBD: LPT1: etc. These are initialised in iolayer module
 devices = {}
-
-### I/O redirect -> redirect.py
-
-# redirect i/o to file or printer
-input_echos = []
-output_echos = []
-
-def toggle_echo_lpt1():
-    """ Toggle copying of all screen I/O to LPT1. """
-    lpt1 = devices['LPT1:']
-    if lpt1.write in input_echos:
-        input_echos.remove(lpt1.write)
-        output_echos.remove(lpt1.write)
-    else:    
-        input_echos.append(lpt1.write)
-        output_echos.append(lpt1.write)
-
 
 ###############################################################################
 # initialisation
@@ -261,8 +245,6 @@ state.console_state.key_replace = [
     'TRON\r', 'TROFF\r', 'KEY ', 'SCREEN 0,0,0\r', '', '' ]
 # switch off macro repacements
 state.basic_state.key_macros_off = False    
-# input has closed
-input_closed = False
 # bit flags for modifier keys
 toggle = {
     scancode.INSERT: 0x80, scancode.CAPSLOCK: 0x40,  
@@ -425,7 +407,7 @@ class Keyboard(object):
 
     def wait_char(self):
         """ Wait for character, then return it but don't drop from queue. """
-        while self.buf.is_empty() and not input_closed:
+        while self.buf.is_empty() and not redirect.input_closed:
             wait()
         return self.buf.peek()
 
@@ -472,7 +454,7 @@ class Keyboard(object):
                 state.console_state.screen.print_screen()
             if self.mod & modifier[scancode.CTRL]:
                 # ctrl + printscreen
-                toggle_echo_lpt1()
+                redirect.toggle_echo(devices['LPT1:'])
         # alt+keypad ascii replacement        
         # we can't depend on internal NUM LOCK state as it doesn't get updated
         if (self.mod & modifier[scancode.ALT] and 
@@ -569,6 +551,11 @@ def insert_special_key(name):
         raise error.Break()
     else:
         logging.debug('Unknown special key: %s', name)
+
+#D?
+def close_input():
+    """ Signal end of keyboard stream. """
+    redirect.input_closed = True
 
 def scan_to_eascii(scan, mod):
     """ Translate scancode and modifier state to e-ASCII. """

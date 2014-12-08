@@ -11,6 +11,7 @@ import logging
 import config
 import state
 import backend
+import redirect
 import error
 import unicodepage
 
@@ -101,7 +102,7 @@ def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
     try:
         furthest_left, furthest_right = wait_interactive(from_start, alt_replace)
     except error.Break:
-        for echo in backend.input_echos:  
+        for echo in redirect.output_echos:  
             echo ('\x0e')
         write_line()    
         raise        
@@ -138,11 +139,11 @@ def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
     # only the first 255 chars are registered    
     outstr = outstr[:255]    
     # redirections receive exactly what's going to the parser
-    for echo in backend.input_echos:
+    for echo in redirect.output_echos:
         echo(outstr)
     # echo the CR, if requested
     if write_endl:
-        for echo in backend.input_echos:
+        for echo in redirect.output_echos:
             echo('\r\n')
         set_pos(state.console_state.row+1, 1)
     return outstr    
@@ -555,7 +556,7 @@ def clear():
 def write(s, scroll_ok=True, do_echo=True):
     """ Write a string to the screen at the current position. """
     if do_echo: 
-        for echo in backend.output_echos:
+        for echo in redirect.output_echos:
             # CR -> CRLF, CRLF -> CRLF LF
             echo(''.join([ ('\r\n' if c == '\r' else c) for c in s ]))
     last = ''
@@ -607,7 +608,7 @@ def write_line(s='', scroll_ok=True, do_echo=True):
     """ Write a string to the screen and end with a newline. """
     write(s, scroll_ok, do_echo)
     if do_echo:
-        for echo in backend.output_echos:
+        for echo in redirect.output_echos:
             echo('\r\n')
     check_pos(scroll_ok=True)
     state.console_state.screen.apage.row[state.console_state.row-1].wrap = False
@@ -785,7 +786,7 @@ def check_pos(scroll_ok=True):
 def start_line():
     """ Move the cursor to the start of the next line, this line if empty. """
     if state.console_state.col != 1:
-        for echo in backend.input_echos:
+        for echo in redirect.output_echos:
             echo('\r\n')
         check_pos(scroll_ok=True)
         set_pos(state.console_state.row + 1, 1)

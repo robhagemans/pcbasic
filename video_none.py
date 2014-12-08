@@ -59,7 +59,7 @@ def check_keys():
         return
     s = sys.stdin.readline().decode('utf-8')
     if s == '':
-        backend.input_closed = True
+        backend.close_input()
     for u in s:
         c = u.encode('utf-8')
         # replace LF -> CR if needed
