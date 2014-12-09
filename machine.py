@@ -130,12 +130,7 @@ def bload(g, offset):
         offset = foffset
     # size. this gets ignored; even the \x1a at the end gets dumped onto the screen.
     vartypes.uint_to_value(bytearray(g.read(2))) 
-    buf = bytearray()
-    while True:
-        c = g.read(1)
-        if c == '':
-            break
-        buf += c
+    buf = bytearray(g.read())
     # remove any EOF marker at end 
     if buf and buf[-1] == 0x1a:  
         buf = buf[:-1]
