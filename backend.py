@@ -790,7 +790,8 @@ def prepare_video():
     state.console_state.screen = Screen(config.options['text-width'], 
                                         config.options['video-memory'])
     # load the 8-pixel font that's available in RAM.
-    font_8 = typeface.load(config.options['font'], 8, unicodepage.cp_to_utf8)
+    font_8 = typeface.load(config.options['font'], 8, 
+                           unicodepage.cp_to_unicodepoint)
     
     
 def init_video(video_module):

@@ -30,7 +30,8 @@ def prepare():
 
 def load_codepage(codepage_name):
     """ Load codepage to Unicode table. """
-    global cp_to_utf8, utf8_to_cp, lead, trail, dbcs, dbcs_num_chars, box_left, box_right
+    global cp_to_utf8, utf8_to_cp, cp_to_unicodepoint
+    global lead, trail, dbcs, dbcs_num_chars, box_left, box_right
     name = os.path.join(plat.encoding_dir, codepage_name + '.ucp')
     # lead and trail bytes
     lead = set()
@@ -38,6 +39,7 @@ def load_codepage(codepage_name):
     box_left = [set(), set()]
     box_right = [set(), set()]
     cp_to_utf8 = {}
+    cp_to_unicodepoint = {}
     dbcs_num_chars = 0
     try:
         f = open(name, 'rb')
@@ -55,6 +57,7 @@ def load_codepage(codepage_name):
                 cp_point = splitline[0].strip().decode('hex')
                 # extract unicode point
                 ucs_point = int('0x' + splitline[1].split()[0].strip(), 16)
+                cp_to_unicodepoint[cp_point] = ucs_point
                 cp_to_utf8[cp_point] = unichr(ucs_point).encode('utf-8')
                 # track lead and trail bytes
                 if len(cp_point) == 2:
@@ -81,6 +84,7 @@ def load_codepage(codepage_name):
     for c in range(256):
         if chr(c) not in cp_to_utf8:
             cp_to_utf8[chr(c)] = '\0'
+            cp_to_unicodepoint[chr(c)] = 0
     utf8_to_cp = dict((reversed(item) for item in cp_to_utf8.items()))
     if dbcs_num_chars > 0:
         dbcs = True

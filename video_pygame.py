@@ -357,17 +357,17 @@ def load_fonts(heights_needed):
             continue
         # load a Unifont .hex font and take the codepage subset
         fonts[height] = typeface.load(font_families, height, 
-                                      unicodepage.cp_to_utf8)
+                                      unicodepage.cp_to_unicodepoint)
         # fix missing code points font based on 16-line font
         if 16 not in fonts:
             # if available, load the 16-pixel font unrequested
             font_16 = typeface.load(font_families, 16, 
-                                          unicodepage.cp_to_utf8, nowarn=True)
+                                    unicodepage.cp_to_unicodepoint, nowarn=True)
             if font_16:
                 fonts[16] = font_16 
         if 16 in fonts and fonts[16]:
             typeface.fixfont(height, fonts[height], 
-                             unicodepage.cp_to_utf8, fonts[16])
+                             unicodepage.cp_to_unicodepoint, fonts[16])
     if 16 in heights_needed and not fonts[16]:
         logging.error('No 16-pixel font specified')
         return False
@@ -494,9 +494,9 @@ def build_icon():
     icon.fill(255)
     icon.fill(254, (1, 8, 8, 8))
     # hardcoded O and k from freedos cga font
-    okfont = { ord('O'): '\x00\x7C\xC6\xC6\xC6\xC6\xC6\x7C', ord('k'): '\x00\xE0\x60\x66\x6C\x78\x6C\xE6' }
-    O = build_glyph(ord('O'), okfont, 8, 8)
-    k = build_glyph(ord('k'), okfont, 8, 8)
+    okfont = { 'O': '\x00\x7C\xC6\xC6\xC6\xC6\xC6\x7C', 'k': '\x00\xE0\x60\x66\x6C\x78\x6C\xE6' }
+    O = build_glyph('O', okfont, 8, 8)
+    k = build_glyph('k', okfont, 8, 8)
     icon.blit(O, (1, 0, 8, 8))
     icon.blit(k, (9, 0, 8, 8))
     icon.set_palette_at(255, (0, 0, 0))
@@ -710,7 +710,7 @@ carry_row_9 = [chr(c) for c in range(0xb0, 0xdf+1)]
 def rebuild_glyph(ordval):
     """ Rebuild a glyph after POKE. """
     if font_height == 8:
-        glyphs[ordval] = build_glyph(chr(c), font, font_width, 8) 
+        glyphs[ordval] = build_glyph(chr(ordval), font, font_width, 8) 
 
 
 def build_glyph(c, font_face, req_width, req_height):

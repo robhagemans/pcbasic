@@ -15,7 +15,7 @@ import plat
 
 # declare to avoid pylint errors
 config = None
-
+            
 def main():
     """ Initialise and do requested operations. """
     # make imported modules available in main module
