@@ -892,6 +892,18 @@ class Screen(object):
         # set default arguments
         if new_mode == None:
             new_mode = self.screen_mode
+        # THIS IS HOW COLORSWITCH SHOULD WORK:
+        #   SCREEN 0,0 - mono on composite, color on RGB
+        #   SCREEN 0,1 - color (colorburst=True)
+        #   SCREEN 1,0 - color (colorburst=True)
+        #   SCREEN 1,1 - mono on composite, mode 5 on RGB
+        # default colorswitch:
+        #   SCREEN 0 = SCREEN 0,0 (pcjr)
+        #   SCREEN 0 = SCREEN 0,1 (tandy, cga, ega, vga, ..)
+        #   SCREEN 1 = SCREEN 1,0 (pcjr, tandy)
+        #   SCREEN 1 = SCREEN 1,1 (cga, ega, vga, ...)
+        # colorswitch is NOT preserved between screens when unspecified
+        # colorswitch is NOT the same as colorburst (opposite on screen 1)
         if new_colorswitch == None:    
             new_colorswitch = self.colorswitch 
         else:
