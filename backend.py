@@ -1235,7 +1235,12 @@ class Screen(object):
         """ Write a list of attributes to a scanline interval. """
         video.put_interval(pagenum, x, y, colours)
         self.clear_text_area(x, y, x+len(colours), y)
-        
+
+    def put_interval_packed(self, pagenum, x, y, bytes, plane_mask):
+        """ Write a list of bits to a scanline interval. """
+        video.put_interval_packed(pagenum, x, y, bytes, plane_mask)
+        self.clear_text_area(x, y, x+len(bytes)//8, y)
+
     def get_until(self, x0, x1, y, c):
         """ Get the attribute values of a scanline interval. """
         return video.get_until(x0, x1, y, c)

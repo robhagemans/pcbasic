@@ -1298,7 +1298,27 @@ def put_interval(pagenum, x, y, colours):
         pygame.surfarray.pixels2d(canvas[pagenum])[x:x+len(colours), y] = colours
     else:
         for i, index in enumerate(colours):
-            canvas[pagenum].set_at((x,y), index)
+            canvas[pagenum].set_at((x+i, y), index)
+    screen_changed = True
+
+def put_interval_packed(pagenum, x, y, bytes, plane_mask):
+    """ Write a list of attributes to a scanline interval. """
+    global screen_changed
+    inv_mask = 0xff ^ plane_mask
+    if numpy:
+        bits = (numpy.repeat(numpy.array(bytes).astype(int), 8) &
+               numpy.tile(numpy.array([128, 64, 32, 16, 8, 4, 2, 1]), len(bytes))) != 0
+        colours = numpy.multiply(numpy.array(bits).astype(int), plane_mask)
+        pygame.surfarray.pixels2d(canvas[pagenum])[x:x+len(colours), y] &= inv_mask
+        pygame.surfarray.pixels2d(canvas[pagenum])[x:x+len(colours), y] |= colours
+    else:
+        bits = []
+        for byte in bytes:
+            for shift in range(8):
+                bits.append((byte >> (7-shift)) & 1)
+        for i, index in enumerate(bits):
+            c = canvas[pagenum].get_at((x+i, y)).b & inv_mask
+            canvas[pagenum].set_at((x+i, y), c | index * plane_mask)
     screen_changed = True
     
 def get_until(x0, x1, y, c):

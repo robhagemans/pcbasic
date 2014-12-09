@@ -411,7 +411,6 @@ class TextMode(VideoMode):
 
 def get_pixel_byte(screen, page, x, y, plane):
     """ Retrieve a byte with 8 packed pixels for one colour plane. """
-    # modes 1-5: interleaved scan lines, pixels sequentially packed into bytes
     return sum(( ((screen.get_pixel(x+shift, y, page) >> plane) & 1) 
                   << (7-shift) for shift in range(8) ))
 
@@ -422,7 +421,6 @@ def set_pixel_byte(screen, page, x, y, plane_mask, byte):
         bit = (byte >> (7-shift)) & 1
         current = screen.get_pixel(x + shift, y, page) & inv_mask
         screen.put_pixel(x + shift, y, current | (bit * plane_mask), page)  
-
 
 def get_area_ega(self, x0, y0, x1, y1, byte_array):
     """ Read a sprite from the screen in EGA modes. """
@@ -740,13 +738,41 @@ class EGAMode(GraphicsMode):
             plane = self.plane % (max(self.planes_used)+1)
             if plane in self.planes_used:
                 return get_pixel_byte(self.screen, page, x, y, plane)
-
-    def set_memory(self, addr, val):
+        return -1
+        
+    def set_memory(self, addr, bytes):
         """ Set a byte in EGA video memory. """
-        page, x, y = self.get_coords(addr)
-        if self.coord_ok(page, x, y):
-            mask = self.plane_mask & self.master_plane_mask
-            set_pixel_byte(self.screen, page, x, y, mask, val)
+        # EGA memory is planar with memory-mapped colour planes.
+        # Within a plane, 8 pixels are encoded into each byte.
+        # The colour plane is set through a port OUT and
+        # determines which bit of each pixel's attribute is affected.
+        mask = self.plane_mask & self.master_plane_mask
+        # return immediately for unused colour planes
+        if mask == 0:
+            return
+        row_bytes = self.screen.mode.pixel_width // 8 
+        # if first row is incomplete, do a slow draw till the end of row.
+        # length of short first row; 0 if full row
+        _, x, _ = self.get_coords(addr)
+        short_row = min((-x//8) % row_bytes, len(bytes))
+        # slow draw of short first row
+        for i in range(short_row):
+            page, x, y = self.get_coords(addr + i)
+            if self.coord_ok(page, x, y):
+                set_pixel_byte(self.screen, page, x, y, mask, bytes[i])
+        offset = short_row
+        # fast draw for complete rows
+        bank_offset = 0
+        while bank_offset + offset < len(bytes):
+            ofs = bank_offset + offset
+            page, x, y = self.get_coords(addr + ofs)
+            if self.coord_ok(page, x, y):
+                self.screen.put_interval_packed(page, x, y, 
+                                              bytes[ofs:ofs + row_bytes], mask)
+            offset += row_bytes
+            if offset > self.bank_size:
+                bank_offset += self.bank_size
+                offset = 0
 
     put_area = put_area_ega
     get_area = get_area_ega
@@ -805,7 +831,8 @@ class Tandy6Mode(GraphicsMode):
         page, x, y = self.get_coords(addr)
         if self.coord_ok(page, x, y):
             return get_pixel_byte(self.screen, page, x, y, addr%2) 
-
+        return -1
+        
     def set_memory(self, addr, val):
         """ Set a byte in Tandy 640x200x4 memory. """
         page, x, y = self.get_coords(addr)
