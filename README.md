@@ -45,9 +45,9 @@ On other operating systems, use the following links:
 - [PyGame 1.9.1](http://www.pygame.org/download.shtml)  
 - [NumPy](https://sourceforge.net/projects/numpy/files/)  
 - [PySerial](https://pypi.python.org/pypi/pyserial)  
-- [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html) (needed on Unix only)  
-- [PyWin32](https://sourceforge.net/projects/pywin32/) (needed on Windows only)  
-- [WConio](http://newcenturycomputers.net/projects/wconio.html) (needed for Windows command-line interface only)
+- [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html) (needed on Unix if SHELL command is enabled)  
+- [PyWin32](https://sourceforge.net/projects/pywin32/) (needed on Windows)  
+- [WConio](http://newcenturycomputers.net/projects/wconio.html) (needed for Windows text and command-line interface only)
 
 Note that there are several versions of Python 2.7 for OSX and all downloads need to match your version and CPU architecture. It's a bit tricky, I'm afraid. The easiest option seems to be installing both Python and PyGame through MacPorts or Homebrew.
 
@@ -61,6 +61,7 @@ A few selected command-line options:
 `pcbasic --preset=tandy` runs PC-BASIC in Tandy-1000 mode. See below for more preset options.  
 `pcbasic -h` shows all available command line options.  
 
+A complete list of command-line options is included in the file `info/USAGE`.
 In the packaged versions for Windows and OSX, no command-line options can be specified. You can set the required options in `info/PCBASIC.INI` instead.
 
 
@@ -72,7 +73,7 @@ A few essential statements:
 `RUN` starts the currently loaded program.  
 `RUN "PROGRAM"` loads and starts `PROGRAM.BAS`.  
 
-A PC-BASIC program called `INFO.BAS` is included on the virtual `@:` drive with more information on usage. Type `RUN "@:INFO"` in interactive mode to access it.
+A PC-BASIC program called `INFO.BAS` is included on the virtual `@:` drive with more information on usage. Type `RUN "@:INFO"` in interactive mode to access it. 
 
 
 #### GW-BASIC, Tandy-1000 and PCjr modes ####
@@ -81,6 +82,7 @@ By default, PC-BASIC emulates GW-BASIC on a system with VGA video capabilities. 
 `mda`, `ega`, `hercules`, `olivetti` GW-BASIC on various hardware.
 `pcjr` IBM PCjr Cartridge BASIC, including PCjr video and 3-voice sound capabilities and extended BASIC syntax.  
 `tandy` Tandy-1000 GW-BASIC, including Tandy video and 3-voice sound capabilities and extended BASIC syntax.  
+
 
 #### BASIC language reference ###
 A full CC-licensed [GW-BASIC language reference](https://sourceforge.net/p/pcbasic/code/ci/master/tree/info/HELP) is included with PC-BASIC 3.23. You can find it in the `info/` directory as a text file called `HELP`; access it through your favourite text reader or through `RUN "@:INFO"`, option `Docs`. This documentation aims to document the actual behaviour of GW-BASIC 3.23, on which PC-BASIC 3.23 is modelled. Please note that the original Microsoft help file, which can be found on the internet, is rather hit-and-miss; GW-BASIC often behaves differently than documented by Microsoft. 
@@ -101,8 +103,9 @@ PC-BASIC does not attempt to sandbox its programs in any way. BASIC programs hav
 
 
 #### MS-DOS style 8.3 file names ####
-PC-BASIC uses short file names in the MS-DOS 8.3 all-caps format. On Windows, PC-BASIC will work with the short file names provided by the operating system. On other operating systems, more than one file may match the specified 8.3 file name. PC-BASIC will first look for a file with the exact name as specified (e.g. `FileNameCreating.ExtraDifficulties`). If this does not exist, it will look for the file name truncated to all-caps 8.3 format (`FILENAME.EXT`); if that does not exist, it will look for variants that have the same 8.3 format - e.g. `filename.EXT`, `fIlEnAmEtHaTsQuItE.eXtRaOrDiNaRy` etcetera - in lexicographic order.
-If the name contains no dot (e.g. `FileName`), it will first try `FileName`, then `FILENAME`, then all case variants, and finally `FILENAME.BAS` and its case variants.
+PC-BASIC uses short file names in the MS-DOS 8.3 all-caps format. On Windows, PC-BASIC will work with the short file names provided by the operating system. On other operating systems, more than one file may match the specified 8.3 file name. PC-BASIC will first look for a file with the exact name as specified (e.g. `FileNameCreating.ExtraDifficulties`). If this does not exist, it will look for the file name truncated to all-caps 8.3 format (`FILENAME.EXT`); if that does not exist, it will look for 8.3 variants in mixed case - e.g. `filename.EXT`, `fIlEnAmE.eXt` etcetera - in lexicographic order.
+If the name contains no dot (e.g. `FileName`), it will first try `FileName`, then `FILENAME`, then all case variants. 
+For .BAS programs, the lookup is a bit more restricted in order to be able to match GW-BASIC behaviour. No attempt is made to match the exact filename specified. `LOAD "filename"` will use an implied extension of `".BAS"` and will first match `FILENAME.BAS` and then its case variants. To load a file without an extension, you must end the name with a dot: `LOAD "PROGRAM."` will match a file called `"PROGRAM"`, and its case variants, on the file system. It is not possible to `LOAD` a program with a filename longer than 8.3 or ending in a dot, except with `--load=` on the command line.
 
 
 #### Newline conventions ####
@@ -115,7 +118,7 @@ PC-BASIC supports a large number of codepages, including double-byte character s
 
 
 #### Command-line interface ####
-You can run PC-BASIC in command-line mode by running with the `-b` option. On Linux, there's also a curses-style interface available with the `-t` option. You can even get sound in the text and command-line interfaces if you install the Unix `beep` utility (if you use Ubintu, please be aware that the pc-speaker is switched off by default. You'll need to edit `/etc/modprobe.d/blacklist.conf` and comment out the line `blacklist pcspkr`. Then, `apt-get install beep` and be sure to wear appropriate ear protection as the default volume level is LOUD.) 
+You can run PC-BASIC in command-line mode by running with the `-b` option. On Linux, there's also a curses-style text interface available with the `-t` option. You can even get sound in the text and command-line interfaces if you install the Unix `beep` utility (if you use Ubintu, please be aware that the pc-speaker is switched off by default. You'll need to edit `/etc/modprobe.d/blacklist.conf` and comment out the line `blacklist pcspkr`. Then, `apt-get install beep` and be sure to wear appropriate ear protection as the default volume level is LOUD.) 
 
 #### Free BASIC compilers and saner dialects ####
 If you're starting a new project in BASIC, please consider one of the more sensible free versions of the language, such as [FreeBasic](www.freebasic.net), [QB64](http://www.qb64.net/) or [SmallBASIC](https://sourceforge.net/projects/smallbasic/). Under FreeDOS, you can use the [Bywater BASIC](https://sourceforge.net/projects/bwbasic/) interpreter. 
