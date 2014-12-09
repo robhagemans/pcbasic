@@ -1668,7 +1668,8 @@ def init_audio():
     # rebuild sound queue
     for voice in range(4):    
         for note in state.console_state.sound.queue[voice]:
-            audio.play_sound(*note)
+            frequency, duration, fill, loop, volume = note
+            audio.play_sound(frequency, duration, fill, loop, voice, volume)
     return True
 
 
