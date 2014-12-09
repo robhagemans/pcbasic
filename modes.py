@@ -422,6 +422,32 @@ def set_pixel_byte(screen, page, x, y, plane_mask, byte):
         current = screen.get_pixel(x + shift, y, page) & inv_mask
         screen.put_pixel(x + shift, y, current | (bit * plane_mask), page)  
 
+def set_memory_ega(self, addr, bytes, mask, factor=1):
+    """ Set bytes in EGA video memory (helper). """
+    row_bytes = self.screen.mode.pixel_width // 8 
+    # if first row is incomplete, do a slow draw till the end of row.
+    # length of short first row; 0 if full row
+    _, x, _ = self.get_coords(addr)
+    short_row = min((-x//8) % row_bytes, len(bytes))
+    # slow draw of short first row
+    for i in range(short_row):
+        page, x, y = self.get_coords(addr + i)
+        if self.coord_ok(page, x, y):
+            set_pixel_byte(self.screen, page, x, y, mask, bytes[i])
+    offset = short_row
+    # fast draw for complete rows
+    bank_offset = 0
+    while bank_offset + offset < len(bytes):
+        ofs = bank_offset + offset
+        page, x, y = self.get_coords(addr + ofs*factor)
+        if self.coord_ok(page, 0, y):
+            self.screen.put_interval_packed(page, 0, y, 
+                                            bytes[ofs:ofs + row_bytes], mask)
+        offset += row_bytes
+        if offset > self.bank_size//factor:
+            bank_offset += self.bank_size//factor
+            offset = 0
+
 def get_area_ega(self, x0, y0, x1, y1, byte_array):
     """ Read a sprite from the screen in EGA modes. """
     dx = x1 - x0 + 1
@@ -741,7 +767,7 @@ class EGAMode(GraphicsMode):
         return -1
         
     def set_memory(self, addr, bytes):
-        """ Set a byte in EGA video memory. """
+        """ Set bytes in EGA video memory. """
         # EGA memory is planar with memory-mapped colour planes.
         # Within a plane, 8 pixels are encoded into each byte.
         # The colour plane is set through a port OUT and
@@ -750,29 +776,7 @@ class EGAMode(GraphicsMode):
         # return immediately for unused colour planes
         if mask == 0:
             return
-        row_bytes = self.screen.mode.pixel_width // 8 
-        # if first row is incomplete, do a slow draw till the end of row.
-        # length of short first row; 0 if full row
-        _, x, _ = self.get_coords(addr)
-        short_row = min((-x//8) % row_bytes, len(bytes))
-        # slow draw of short first row
-        for i in range(short_row):
-            page, x, y = self.get_coords(addr + i)
-            if self.coord_ok(page, x, y):
-                set_pixel_byte(self.screen, page, x, y, mask, bytes[i])
-        offset = short_row
-        # fast draw for complete rows
-        bank_offset = 0
-        while bank_offset + offset < len(bytes):
-            ofs = bank_offset + offset
-            page, x, y = self.get_coords(addr + ofs)
-            if self.coord_ok(page, x, y):
-                self.screen.put_interval_packed(page, x, y, 
-                                              bytes[ofs:ofs + row_bytes], mask)
-            offset += row_bytes
-            if offset > self.bank_size:
-                bank_offset += self.bank_size
-                offset = 0
+        set_memory_ega(self, addr, bytes, mask)
 
     put_area = put_area_ega
     get_area = get_area_ega
@@ -833,11 +837,19 @@ class Tandy6Mode(GraphicsMode):
             return get_pixel_byte(self.screen, page, x, y, addr%2) 
         return -1
         
-    def set_memory(self, addr, val):
+    def set_memory(self, addr, bytes):
         """ Set a byte in Tandy 640x200x4 memory. """
-        page, x, y = self.get_coords(addr)
-        if self.coord_ok(page, x, y):
-            set_pixel_byte(self.screen, page, x, y, 1<<(addr%2), val) 
+        # page, x, y = self.get_coords(addr)
+        # if self.coord_ok(page, x, y):
+        #     set_pixel_byte(self.screen, page, x, y, 1<<(addr%2), val) 
+        even_bytes = bytes[0::2]
+        odd_bytes = bytes[1::2]
+        if addr%2:
+            even_bytes, odd_bytes = odd_bytes, even_bytes
+        # Tandy-6 encodes 8 pixels per byte, alternating colour planes.
+        # I.e. even addresses are 'colour plane 0', odd ones are 'plane 1'
+        set_memory_ega(self, addr, even_bytes, 1, factor=2)
+        set_memory_ega(self, addr, odd_bytes, 2, factor=2)
 
     put_area = put_area_ega
     get_area = get_area_ega

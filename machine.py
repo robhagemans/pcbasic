@@ -139,6 +139,8 @@ def bload(g, offset):
     # remove any EOF marker at end 
     if buf and buf[-1] == 0x1a:  
         buf = buf[:-1]
+    if tandy_syntax:
+        buf = buf[:-7]        
     g.close()
     addr = seg * 0x10 + offset
     set_memory_block(addr, buf)
