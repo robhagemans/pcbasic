@@ -20,6 +20,7 @@ import config
 import state 
 import timedate
 import unicodepage
+import typeface
 import scancode
 import error
 import vartypes
@@ -773,6 +774,7 @@ def prepare_video():
     """ Prepare the video subsystem. """
     global egacursor
     global video_capabilities, composite_monitor, mono_monitor
+    global font_8
     video_capabilities = config.options['video']
     # do all text modes with >8 pixels have an ega-cursor?    
     egacursor = config.options['video'] in (
@@ -787,7 +789,10 @@ def prepare_video():
     # video memory size - default is EGA 256K
     state.console_state.screen = Screen(config.options['text-width'], 
                                         config.options['video-memory'])
-
+    # load the 8-pixel font that's available in RAM.
+    font_8 = typeface.load(config.options['font'], 8, unicodepage.cp_to_utf8)
+    
+    
 def init_video(video_module):
     """ Initialise the video backend. """
     global video
@@ -1219,6 +1224,10 @@ class Screen(object):
         for r in range(cy0, cy1+1):
             self.apage.row[r].buf[cx0:cx1+1] = [
                 (' ', self.attr)] * (cx1 - cx0 + 1)
+
+    def rebuild_glyph(self, ordval):
+        """ Signal the backend to rebuild a character after POKE. """
+        video.rebuild_glyph(ordval)
 
     ## graphics primitives
 

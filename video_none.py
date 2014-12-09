@@ -149,5 +149,9 @@ def set_border(attr):
     """ Change the border attribute (no-op). """
     pass
 
+def rebuild_glyph(ordval):
+    """ Rebuild a glyph after POKE. """
+    pass
+
 prepare()
 

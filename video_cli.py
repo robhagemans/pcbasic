@@ -306,6 +306,10 @@ def build_cursor(width, height, from_line, to_line):
 def load_state():
     """ Restore display state from file (no-op). """
     pass
+
+def rebuild_glyph(ordval):
+    """ Rebuild a glyph after POKE. """
+    pass
             
 ###############################################################################
 # IMPLEMENTATION

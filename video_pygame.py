@@ -41,10 +41,6 @@ if android:
         import pygame_android
 
 
-# default font family
-font_families = ['unifont', 'univga', 'freedos']
-fonts = {}
-
 # screen aspect ratio x, y
 aspect = (4, 3)
 
@@ -101,7 +97,6 @@ noquit = False
 
 # letter shapes
 glyphs = []
-font = None
 # the current attribute of the stored sbcs glyphs
 current_attr = None
 current_attr_context = None
@@ -246,8 +241,7 @@ def prepare():
         heights_needed = (14, 8)
     else:
         heights_needed = (16, 14, 8)
-    if config.options['font']:
-        font_families = config.options['font']
+    font_families = config.options['font']
     # mouse setups
     if config.options['mouse']:
         mousebutton_copy = -1
@@ -309,7 +303,7 @@ def load_state():
 def init():
     """ Initialise pygame interface. """
     global joysticks, physical_size, display_size
-    global text_mode
+    global text_mode, fonts
     # set state objects to whatever is now in state (may have been unpickled)
     if not pygame:
         logging.warning('PyGame module not found. Failed to initialise graphical interface.')
@@ -346,6 +340,9 @@ def init():
     for joy in range(len(joysticks)):
         for axis in (0, 1):
             backend.stick_moved(joy, axis, 128)
+    # retrieve 8-pixel font from backend
+    # also link as 9-pixel font for tandy
+    fonts = { 8: backend.font_8, 9: backend.font_8 }
     if not load_fonts(heights_needed):
         return False
     text_mode = True    
@@ -361,9 +358,6 @@ def load_fonts(heights_needed):
         # load a Unifont .hex font and take the codepage subset
         fonts[height] = typeface.load(font_families, height, 
                                       unicodepage.cp_to_utf8)
-        if height == 8:
-            # also link as 9-pixel font for tandy
-            fonts[9] = fonts[8]                              
         # fix missing code points font based on 16-line font
         if 16 not in fonts:
             # if available, load the 16-pixel font unrequested
@@ -377,7 +371,7 @@ def load_fonts(heights_needed):
     if 16 in heights_needed and not fonts[16]:
         logging.error('No 16-pixel font specified')
         return False
-    return True    
+    return True
         
 def supports_graphics_mode(mode_info):
     """ Return whether we support a given graphics mode. """
@@ -712,6 +706,12 @@ def putwc_at(pagenum, row, col, c, d, for_keys=False):
 carry_col_9 = [chr(c) for c in range(0xb0, 0xdf+1)]
 # ascii codepoints for which to repeat row 8 in row 9 (box drawing)
 carry_row_9 = [chr(c) for c in range(0xb0, 0xdf+1)]
+
+def rebuild_glyph(ordval):
+    """ Rebuild a glyph after POKE. """
+    if font_height == 8:
+        glyphs[ordval] = build_glyph(chr(c), font, font_width, 8) 
+
 
 def build_glyph(c, font_face, req_width, req_height):
     """ Build a sprite for the given character glyph. """

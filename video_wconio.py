@@ -175,6 +175,9 @@ def set_colorburst(on, palette, palette1):
     """ Change the NTSC colorburst setting (no-op). """
     pass
 
+def rebuild_glyph(ordval):
+    """ Rebuild a glyph after POKE. """
+    pass
 
 ###############################################################################
 # IMPLEMENTATION
