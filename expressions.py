@@ -30,22 +30,23 @@ import state
 import machine
 import backend
 import timedate
+import token
 
 # binary operator priority, lowest index is tightest bound 
 # operators of the same priority are evaluated left to right      
-priority = [
-    ['\xED'], # ^  
-    ['\xEB', '\xEC'], # *, /
-    ['\xF4'], # \
-    ['\xF3'], # MOD
-    ['\xE9', '\xEA'], # +, -
-    ['\xE6', '\xE7', '\xE8', '\xE6\xE7', '\xE8\xE7', '\xE8\xE6' ], # >, =, <, >=, <=, <>  
-    ['\xEE'], # AND
-    ['\xEF'], # OR
-    ['\xF0'], # XOR
-    ['\xF1'], # EQV
-    ['\xF2'] # IMP
-]
+priority = (
+    (token.O_CARET,),
+    (token.O_TIMES, token.O_DIV)
+    (token.O_INTDIV,), 
+    (token.MOD,),
+    (token.O_PLUS, token.O_MINUS),
+    (token.O_GT, token.O_EQ, token.O_LT, 
+     token.O_GT + token.O_EQ, token.O_LT + token.O_EQ, token.O_LT + token.O_GT),
+    (token.AND,),
+    (token.OR,),
+    (token.XOR,),
+    (token.EQV,),
+    (token.IMP,))
 
 # flatten list
 operator_tokens = [item for sublist in priority for item in sublist]
@@ -76,19 +77,19 @@ def parse_expression(ins, allow_empty=False, empty_err=22):
             break
         else:
             ins.read(1)
-        if d in ('\xE6', '\xE7', '\xE8'):
+        if d in (token.O_LT, token.O_EQ, token.O_GT):
             nxt = util.skip_white(ins)
-            if nxt in ('\xE6', '\xE7', '\xE8'):
+            if nxt in (token.O_LT, token.O_EQ, token.O_GT):
                 ins.read(1)
                 if d == nxt:
                     raise error.RunError(2)
                 else:    
                     d += nxt
-                    if d[0] == '\xe7': #= 
+                    if d[0] == token.O_EQ:
                         # =>, =<
-                        d = d[1]+d[0]
-                    elif d == '\xe6\xe8': # ><
-                        d = '\xe8\xe6'    
+                        d = d[1] + d[0]
+                    elif d == token.O_GT + token.O_LT: # ><
+                        d = token.O_LT + token.O_GT
         operators.append(d)
     # empty expression is a syntax error (inside brackets) or Missing Operand (in an assignment) or ok (in print)
     # PRINT 1+      :err 22
@@ -137,10 +138,10 @@ def parse_expr_unit(ins):
         # a \00 character, even if inside a tokenised number, will break a string literal (and make the parser expect a 
         # line number afterwards, etc. We follow this.
         d = ins.read(1)
-        while d not in util.end_line + ('"',)  : # ['"', '\x00', '']:
+        while d not in util.end_line + ('"',):
             output += d
-            d = ins.read(1)        
-        if d == '\x00':
+            d = ins.read(1)
+        if d == '\0':
             ins.seek(-1, 1)
         return vartypes.pack_string(output)
     # variable name
@@ -155,11 +156,10 @@ def parse_expr_unit(ins):
         outs.seek(0)
         return util.parse_value(outs)
     # number literals
-    elif d in ('\x0b','\x0c','\x0f', '\x11','\x12','\x13','\x14','\x15','\x16',
-                '\x17','\x18','\x19','\x1a','\x1b', '\x1c','\x1d', '\x1f'):
+    elif d in token.number:
         return util.parse_value(ins)   
     # gw-basic allows adding line numbers to numbers     
-    elif d == '\x0e':
+    elif d == token.T_UINT:
         return vartypes.pack_int(util.parse_jumpnum(ins))
     # brackets
     elif d == '(':
@@ -788,7 +788,7 @@ def value_varptr(ins):
         
 def value_usr(ins):
     """ USR: get value of machine-code function; not implemented. """
-    if util.peek(ins) in ('\x11','\x12','\x13','\x14','\x15','\x16','\x17','\x18','\x19','\x1a'): # digits 0--9
+    if util.peek(ins) in token.digits: # digits 0--9
         ins.read(1)
     parse_bracket(ins)
     logging.warning("USR() function not implemented.")
@@ -887,47 +887,47 @@ def value_not(ins):
         
 def value_operator(op, left, right):
     """ Get value of binary operator expression. """
-    if op == '\xED':                # ^
+    if op == token.O_CARET:
         return vcaret(left, right)
-    elif op == '\xEB':              # *
+    elif op == token.O_TIMES:
         return vtimes(left, right)
-    elif op == '\xEC':              # /
+    elif op == token.O_DIV:
         return vdiv(left, right)
-    elif op == '\xF4':              # \
+    elif op == token.O_INTDIV:
         return fp.pack(fp.div(fp.unpack(vartypes.pass_single_keep(left)).ifloor(), 
                 fp.unpack(vartypes.pass_single_keep(right)).ifloor()).apply_carry().ifloor())
-    elif op == '\xF3':              # %
+    elif op == token.MOD:
         numerator = vartypes.pass_int_unpack(right)
         if numerator == 0:
             # simulate division by zero
             return fp.pack(fp.div(fp.unpack(vartypes.pass_single_keep(left)).ifloor(), 
                     fp.unpack(vartypes.pass_single_keep(right)).ifloor()).ifloor())
         return vartypes.pack_int(vartypes.pass_int_unpack(left) % numerator)    
-    elif op == '\xE9':              # +
+    elif op == token.O_PLUS:
         return vplus(left, right)
-    elif op == '\xEA':              # -
+    elif op == token.O_MINUS:
         return vartypes.number_add(left, vartypes.number_neg(right))
-    elif op ==  '\xE6':             # >
+    elif op == token.O_GT:
         return vartypes.bool_to_int_keep(vartypes.gt(left,right)) 
-    elif op ==  '\xE7':             # =
+    elif op == token.O_EQ:
         return vartypes.bool_to_int_keep(vartypes.equals(left, right))
-    elif op ==  '\xE8':             # <  
+    elif op == token.O_LT:
         return vartypes.bool_to_int_keep(not(vartypes.gt(left,right) or vartypes.equals(left, right)))
-    elif op ==  '\xE6\xE7':         # >=
+    elif op == token.O_GT + token.O_EQ:
         return vartypes.bool_to_int_keep(vartypes.gt(left,right) or vartypes.equals(left, right))
-    elif op ==  '\xE8\xE7':         # <=
+    elif op == token.O_LT + token.O_EQ:
         return vartypes.bool_to_int_keep(not vartypes.gt(left,right))
-    elif op ==  '\xE8\xE6':         # <>
+    elif op == token.O_LT + token.O_GT:
         return vartypes.bool_to_int_keep(not vartypes.equals(left, right))
-    elif op ==  '\xEE':             # AND
+    elif op == token.AND:
         return vartypes.twoscomp_to_int( vartypes.pass_twoscomp(left) & vartypes.pass_twoscomp(right) )
-    elif op ==  '\xEF':             # OR
+    elif op == token.OR:
         return vartypes.twoscomp_to_int( vartypes.pass_twoscomp(left) | vartypes.pass_twoscomp(right) )
-    elif op ==  '\xF0':             # XOR
+    elif op == token.XOR:
         return vartypes.twoscomp_to_int( vartypes.pass_twoscomp(left) ^ vartypes.pass_twoscomp(right) )
-    elif op == '\xF1':              # EQV
+    elif op == token.EQV:
         return vartypes.twoscomp_to_int( ~(vartypes.pass_twoscomp(left) ^ vartypes.pass_twoscomp(right)) )
-    elif op ==  '\xF2':             # IMP
+    elif op == token.IMP:
         return vartypes.twoscomp_to_int( (~vartypes.pass_twoscomp(left)) | vartypes.pass_twoscomp(right) )
     else:
         raise error.RunError(2)
