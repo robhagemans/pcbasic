@@ -23,6 +23,8 @@ import scancode
 import error
 import vartypes
 import util
+# circular!
+import graphics
     
 # backend implementations
 video = None
@@ -1873,7 +1875,7 @@ def set_graph_view(x0,y0,x1,y1, absolute=True):
     else:
         state.console_state.last_point = (x1-x0)/2, (y1-y0)/2
     if state.console_state.graph_window_bounds != None:
-        set_graph_window(*state.console_state.graph_window_bounds)
+        graphics.set_graph_window(*state.console_state.graph_window_bounds)
 
 def unset_graph_view():
     """ Unset the graphics viewport. """
@@ -1881,7 +1883,7 @@ def unset_graph_view():
     state.console_state.graph_view_set = False
     state.console_state.last_point = video.unset_graph_clip()
     if state.console_state.graph_window_bounds != None:
-        set_graph_window(*state.console_state.graph_window_bounds)
+        graphics.set_graph_window(*state.console_state.graph_window_bounds)
 
 def view_coords(x,y):
     """ Retrieve absolute coordinates for viewport coordinates. """
