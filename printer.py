@@ -44,7 +44,8 @@ if plat.system == 'Windows':
         """ Print the buffer to a Windows printer. """
         if printer_name == '' or printer_name=='default':
             printer_name = win32print.GetDefaultPrinter()
-        f = tempfile.NamedTemporaryFile(mode='w', prefix='pcbasic_', suffix='.txt', delete=False)
+        f = tempfile.NamedTemporaryFile(mode='wb', prefix='pcbasic_', 
+                                        suffix='.txt', delete=False)
         f.write(printbuf)
         win32api.ShellExecute(0, 'printto', f.name, 
                               '"%s"' % printer_name, ".", 0)
