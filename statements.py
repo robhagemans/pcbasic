@@ -34,7 +34,7 @@ import reset
 import rnd
 import state
 import timedate
-import tokenise
+import token
 import util
 import var
 import vartypes
@@ -2381,7 +2381,7 @@ def exec_width(ins):
         dev = backend.devices['LPT1:']
         w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     else:
-        if d in tokenise.tokens_number:
+        if d in token.number:
             expr = expressions.parse_expr_unit(ins)
         else:         
             expr = expressions.parse_expression(ins)
