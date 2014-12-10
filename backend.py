@@ -925,6 +925,7 @@ class Screen(object):
             # if we switch out of a 20-col mode (Tandy screen 3), switch to 40-col.
             if new_width == 20:
                 new_width = 40
+        # retrieve the specs for the new video mode
         try:
             if new_mode != 0:    
                 info = self.mode_data[new_mode]
@@ -933,7 +934,7 @@ class Screen(object):
         except KeyError:
             # no such mode
             info = None
-        # vpage and apage nums are persistent on mode switch
+        # vpage and apage nums are persistent on mode switch with SCREEN
         # on pcjr only, reset page to zero if current page number would be too high.
         if new_vpagenum == None:    
             new_vpagenum = self.vpagenum 
@@ -998,36 +999,37 @@ class Screen(object):
         return True
 
     def set_width(self, to_width):
-        """ Set the character width of the screen. """
+        """ Set the character width of the screen, reset pages and change modes. """
         if to_width == 20:
             if video_capabilities in ('pcjr', 'tandy'):
-                return self.screen(3, None, None, None)
+                return self.screen(3, None, 0, 0)
             else:
                 return False
         elif self.mode.is_text_mode:
-            return self.screen(0, None, None, None, new_width=to_width) 
+            return self.screen(0, None, 0, 0, new_width=to_width) 
         elif to_width == 40:
             if self.mode.name == '640x200x2':
-                return self.screen(1, None, None, None)
+                return self.screen(1, None, 0, 0)
             elif self.mode.name == '160x200x16':
-                return self.screen(1, None, None, None)
+                return self.screen(1, None, 0, 0)
             elif self.mode.name == '640x200x4':
-                return self.screen(5, None, None, None)
+                return self.screen(5, None, 0, 0)
             elif self.mode.name == '640x200x16':
-                return self.screen(7, None, None, None)
+                return self.screen(7, None, 0, 0)
             elif self.mode.name == '640x350x16':
-                return self.screen(7, None, None, None)
+                # screen 9 switches to screen 1 (not 7) on WIDTH 40
+                return self.screen(1, None, 0, 0)
         elif to_width == 80:
             if self.mode.name == '320x200x4':
-                return self.screen(2, None, None, None)
+                return self.screen(2, None, 0, 0)
             elif self.mode.name == '160x200x16':
-                return self.screen(2, None, None, None)
+                return self.screen(2, None, 0, 0)
             elif self.mode.name == '320x200x4pcjr':
-                return self.screen(2, None, None, None)
+                return self.screen(2, None, 0, 0)
             elif self.mode.name == '320x200x16pcjr':
-                return self.screen(6, None, None, None)
+                return self.screen(6, None, 0, 0)
             elif self.mode.name == '320x200x16':
-                return self.screen(8, None, None, None)
+                return self.screen(8, None, 0, 0)
         return False
 
     def set_colorburst(self, on=True):
