@@ -347,6 +347,7 @@ def init():
         return False
     text_mode = True    
     state.display = PygameDisplayState()
+    set_page(0, 0)
     return True
 
 def load_fonts(heights_needed):

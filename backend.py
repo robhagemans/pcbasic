@@ -893,8 +893,8 @@ class Screen(object):
         return True
 
     def screen(self, new_mode, new_colorswitch, new_apagenum, new_vpagenum, 
-                 erase=1, new_width=None, recursion_depth=0):
-        """ Change the video mode, colourburst, visible or active page. """
+               erase=1, new_width=None):
+        """ SCREEN: change the video mode, colourburst, visible or active page. """
         # set default arguments
         if new_mode == None:
             new_mode = self.screen_mode
@@ -954,51 +954,57 @@ class Screen(object):
         # illegal fn call before anything happens.
         if (not info or new_apagenum >= info.num_pages or 
                 new_vpagenum >= info.num_pages or 
-                (new_mode != 0 and not video.supports_graphics_mode(info))):
-            # reset palette happens 
-            # even if the function fails with Illegal Function Call
+                (not info.is_text_mode and not video.supports_graphics_mode(info))):
+            # reset palette happens even if the SCREEN call fails
             self.palette = Palette(self.mode)
             return False
-        # attribute persists on width-only change
-        if not (self.screen_mode == 0 and new_mode == 0 
-                and self.apagenum == new_apagenum 
-                and self.vpagenum == new_vpagenum):
-            self.attr = info.attr
-        # start with black border 
-        if new_mode != self.screen_mode:
+        return self.set_mode(info, new_mode, new_colorswitch, 
+                              new_apagenum, new_vpagenum)
+
+    def set_mode(self, mode_info, new_mode, new_colorswitch, 
+                 new_apagenum, new_vpagenum, recursion_depth=0):
+        """ Change the video mode, colourburst, visible or active page. """
+        # attribute and border persist on width-only change
+        if (not (self.mode.is_text_mode and mode_info.is_text_mode) or
+                self.apagenum != new_apagenum or self.vpagenum != new_vpagenum):
+            self.attr = mode_info.attr
+        if (not (self.mode.is_text_mode and mode_info.is_text_mode) and
+                mode_info.name != self.mode.name):
+            # start with black border 
             self.set_border(0)
         # set the screen parameters
         self.screen_mode = new_mode
         self.colorswitch = new_colorswitch 
         # set all state vars
-        self.mode = info
+        self.mode = mode_info
         # build the screen buffer    
         self.text = TextBuffer(self.attr, self.mode.width, 
                                self.mode.height, self.mode.num_pages)
         # set active page & visible page, counting from 0. 
         self.set_page(new_vpagenum, new_apagenum)
         # signal the backend to change the screen resolution
-        if not video.init_screen_mode(info):
+        if not video.init_screen_mode(self.mode):
             # something broke at the backend. fallback to text mode and give error.
             # this is not ideal but better than crashing.
             if not recursion_depth:
-                self.screen(0, 0, 0, 0, recursion_depth=recursion_depth+1)
+                self.set_mode(self.text_data[self.mode.width], 0, 0, 0, 0, 
+                              recursion_depth=recursion_depth+1)
             return False
         # set graphics characteristics
         self.drawing = graphics.Drawing(self)
         # cursor width starts out as single char
-        self.cursor.init_mode(info)
+        self.cursor.init_mode(self.mode)
         # set the palette
         self.set_cga4_palette(1)
         self.palette = Palette(self.mode)
         # set the attribute
         video.set_attr(self.attr)
         # in screen 0, 1, set colorburst (not in SCREEN 2!)
-        if info.is_text_mode:
+        if self.mode.is_text_mode:
             self.set_colorburst(new_colorswitch)
-        elif info.name == '320x200x4':    
+        elif self.mode.name == '320x200x4':    
             self.set_colorburst(not new_colorswitch)
-        elif info.name == '640x200x2':
+        elif self.mode.name == '640x200x2':
             self.set_colorburst(False)    
         return True
 

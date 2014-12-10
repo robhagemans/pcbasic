@@ -2421,34 +2421,30 @@ def exec_width(ins):
     
 def exec_screen(ins):
     """ SCREEN: change video mode or page. """
-    erase = 1
     if pcjr_syntax:
-        mode, colorswitch, apagenum, vpagenum, erase = expressions.parse_int_list(ins, 5)
+        mode, color, apagenum, vpagenum, erase = expressions.parse_int_list(ins, 5)
     else:    
-        # in GW, screen 0,0,0,0,0,0 raises error after changing the palette... this raises error before:
-        mode, colorswitch, apagenum, vpagenum = expressions.parse_int_list(ins, 4)
-    # set defaults to avoid err 5 on range check
-    mode = mode if mode != None else state.console_state.screen.screen_mode
-    colorswitch = colorswitch if colorswitch != None else state.console_state.screen.colorswitch    
+        # in GW, screen 0,0,0,0,0,0 raises error after changing the palette
+        # this raises error before:
+        mode, color, apagenum, vpagenum = expressions.parse_int_list(ins, 4)
+        erase = 1
     # if any parameter not in [0,255], error 5 without doing anything 
-    util.range_check(0, 255, mode, colorswitch)
-    if apagenum != None:
-        util.range_check(0, 255, apagenum)
-    if vpagenum != None:
-        util.range_check(0, 255, vpagenum)
-    util.range_check(0, 2, erase)
-    # if the parameters are outside narrow ranges (e.g. not implemented screen mode, pagenum beyond max)
+    # if the parameters are outside narrow ranges 
+    # (e.g. not implemented screen mode, pagenum beyond max)
     # then the error is only raised after changing the palette.
-    util.require(ins, util.end_statement)        
-    # decide whether to redraw the screen    
-    do_redraw = ((mode != state.console_state.screen.screen_mode) or 
-                 (colorswitch != state.console_state.screen.colorswitch))
-    if do_redraw:             
-        if not state.console_state.screen.screen(mode, colorswitch, apagenum, vpagenum, erase):
+    util.range_check(0, 255, mode, color, apagenum, vpagenum)
+    util.range_check(0, 2, erase)
+    util.require(ins, util.end_statement)
+    # decide whether to redraw the screen
+    screen = state.console_state.screen    
+    if ((mode and screen.mode_data[mode].name != screen.mode.name) or
+            (mode == 0 and not screen.mode.is_text_mode) or
+            (color != None and color != screen.colorswitch)):
+        if not screen.screen(mode, color, apagenum, vpagenum, erase):
             raise error.RunError(5)
         console.init_mode()    
     else:
-        state.console_state.screen.set_page(vpagenum, apagenum)
+        screen.set_page(vpagenum, apagenum)
     
 def exec_pcopy(ins):
     """ PCOPY: copy video pages. """

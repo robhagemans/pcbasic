@@ -61,8 +61,7 @@ def prepare():
     
 def init_mode():
     """ Initialisation when we switched to new screen mode. """
-    # only redraw keys if screen has been cleared 
-    # (any colours stay the same). s.c_s.screen_mode must be set for this
+    # only redraw keys if screen has been cleared  (any colours stay the same).
     if state.console_state.keys_visible:  
         show_keys(True)
     # rebuild build the cursor; 
