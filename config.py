@@ -125,6 +125,7 @@ arguments = {
     'text-width': {'type': 'int', 'choices':(40, 80), 'default': 80,},
     'video-memory': {'type': 'int', 'default': 262144,},
     'allow-shell': {'type': 'bool', 'default': False,},
+    'print-trigger': {'type': 'string', 'default':'close',},
 }
 
 
