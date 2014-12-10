@@ -70,10 +70,6 @@ def check_keys():
         except KeyError:        
             backend.insert_chars(c)
 
-def supports_graphics_mode(mode_info):
-    """ We do not support graphics modes. """
-    return False
-
 def close():
     """ Close the filter interface. """
     pass
@@ -86,8 +82,9 @@ def load_state():
     pass
 
 def init_screen_mode(mode_info):
-    """ Change screen mode (no-op). """
-    return True
+    """ Change screen mode. """
+    # we don't support graphics
+    return mode_info.is_text_mode
 
 def set_page(vpage, apage):
     """ Set the visible and active page (no-op). """

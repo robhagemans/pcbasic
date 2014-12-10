@@ -374,14 +374,6 @@ def load_fonts(heights_needed):
         return False
     return True
         
-def supports_graphics_mode(mode_info):
-    """ Return whether we support a given graphics mode. """
-    # unpack mode info struct
-    font_height = mode_info.font_height
-    if not font_height in fonts:
-        return False
-    return True
-
 def init_screen_mode(mode_info):
     """ Initialise a given text or graphics mode. """
     global glyphs, cursor
@@ -392,7 +384,10 @@ def init_screen_mode(mode_info):
     global mode_has_artifacts, cursor_fixed_attr, mode_has_blink
     global mode_has_underline
     global get_put_store
-    if not fonts[mode_info.font_height]:
+    if mode_info.font_height not in fonts or not fonts[mode_info.font_height]:
+        logging.warning(
+            'No %d-pixel font available. Could not enter video mode %s.',
+            mode_info.font_height, mode_info.name)
         return False
     text_mode = mode_info.is_text_mode
     # unpack mode info struct

@@ -234,13 +234,10 @@ def idle():
     """ Video idle process. """
     time.sleep(0.024)
 
-def supports_graphics_mode(mode_info):
-    """ We do not support graphics modes. """
-    return False
-    
 def init_screen_mode(mode_info):
-    """ Change screen mode (no-op). """
-    return True
+    """ Change screen mode. """
+    # we don't support graphics
+    return mode_info.is_text_mode
     
 def move_cursor(crow, ccol):
     """ Move the cursor to a new position. """

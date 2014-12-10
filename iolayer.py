@@ -877,8 +877,7 @@ class KYBDFile(NullDevice):
     def set_width(self, new_width=255):
         """ Setting width on KYBD device (not files) changes screen width. """
         if self.number == 0:
-            if not console.set_width(new_width):
-                raise error.RunError(5)
+            console.set_width(new_width)
 
 
 class SCRNFile(NullDevice):
@@ -959,8 +958,7 @@ class SCRNFile(NullDevice):
     def set_width(self, new_width=255):
         """ Set (virtual) screen width. """
         if self.number == 0:
-            if not console.set_width(new_width):
-                raise error.RunError(5)
+            console.set_width(new_width)
         else:    
             self._width = new_width
 

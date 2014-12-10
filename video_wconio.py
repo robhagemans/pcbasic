@@ -50,13 +50,12 @@ def init():
     wconio.settitle(caption)
     return True
     
-def supports_graphics_mode(mode_info):
-    """ We do not support graphics modes. """
-    return False
-    
 def init_screen_mode(mode_info=None):
     """ Change screen mode. """
     global height, width
+    # we don't support graphics
+    if not mode_info.is_text_mode:
+        return False
     height = 25
     width = mode_info.width
     wconio.clrscr()

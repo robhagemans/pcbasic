@@ -860,12 +860,10 @@ class Screen(object):
             self.cursor.to_line = (self.cursor.to_line *
                                      mode_info.font_height) // cmode.font_height
             self.palette = Palette(self.mode)
-        # set up the appropriate screen resolution
-        if (cmode.is_text_mode or video.supports_graphics_mode(mode_info)):
+        # set the screen mde
+        if video.init_screen_mode(mode_info):
             # set the visible and active pages
             video.set_page(self.vpagenum, self.apagenum)
-            # set the screen mde
-            video.init_screen_mode(mode_info)
             # rebuild palette
             self.palette.set_all(self.palette.palette, check_mode=False)
             video.set_attr(self.attr)
@@ -950,20 +948,24 @@ class Screen(object):
             if (video_capabilities == 'pcjr' and info and 
                     new_apagenum >= info.num_pages):
                 new_apagenum = 0    
-        # if the new mode has fewer pages than current vpage/apage, 
-        # illegal fn call before anything happens.
-        if (not info or new_apagenum >= info.num_pages or 
-                new_vpagenum >= info.num_pages or 
-                (not info.is_text_mode and not video.supports_graphics_mode(info))):
-            # reset palette happens even if the SCREEN call fails
-            self.palette = Palette(self.mode)
-            return False
-        return self.set_mode(info, new_mode, new_colorswitch, 
-                              new_apagenum, new_vpagenum)
+        self.set_mode(info, new_mode, new_colorswitch, 
+                      new_apagenum, new_vpagenum)
 
     def set_mode(self, mode_info, new_mode, new_colorswitch, 
-                 new_apagenum, new_vpagenum, recursion_depth=0):
+                 new_apagenum, new_vpagenum):
         """ Change the video mode, colourburst, visible or active page. """
+        # reset palette happens even if the SCREEN call fails
+        self.set_cga4_palette(1)
+        # if the new mode has fewer pages than current vpage/apage, 
+        # illegal fn call before anything happens.
+        # signal the backend to change the screen resolution
+        if (not mode_info or
+                new_apagenum >= mode_info.num_pages or 
+                new_vpagenum >= mode_info.num_pages or
+                not video.init_screen_mode(mode_info)):
+            # reset palette happens even if the SCREEN call fails
+            self.palette = Palette(self.mode)
+            raise error.RunError(5)
         # attribute and border persist on width-only change
         if (not (self.mode.is_text_mode and mode_info.is_text_mode) or
                 self.apagenum != new_apagenum or self.vpagenum != new_vpagenum):
@@ -982,20 +984,10 @@ class Screen(object):
                                self.mode.height, self.mode.num_pages)
         # set active page & visible page, counting from 0. 
         self.set_page(new_vpagenum, new_apagenum)
-        # signal the backend to change the screen resolution
-        if not video.init_screen_mode(self.mode):
-            # something broke at the backend. fallback to text mode and give error.
-            # this is not ideal but better than crashing.
-            if not recursion_depth:
-                self.set_mode(self.text_data[self.mode.width], 0, 0, 0, 0, 
-                              recursion_depth=recursion_depth+1)
-            return False
         # set graphics characteristics
         self.drawing = graphics.Drawing(self)
         # cursor width starts out as single char
         self.cursor.init_mode(self.mode)
-        # set the palette
-        self.set_cga4_palette(1)
         self.palette = Palette(self.mode)
         # set the attribute
         video.set_attr(self.attr)
@@ -1006,41 +998,41 @@ class Screen(object):
             self.set_colorburst(not new_colorswitch)
         elif self.mode.name == '640x200x2':
             self.set_colorburst(False)    
-        return True
 
     def set_width(self, to_width):
         """ Set the character width of the screen, reset pages and change modes. """
         if to_width == 20:
             if video_capabilities in ('pcjr', 'tandy'):
-                return self.screen(3, None, 0, 0)
+                self.screen(3, None, 0, 0)
             else:
-                return False
+                raise error.RunError(5)
         elif self.mode.is_text_mode:
-            return self.screen(0, None, 0, 0, new_width=to_width) 
+            self.screen(0, None, 0, 0, new_width=to_width) 
         elif to_width == 40:
             if self.mode.name == '640x200x2':
-                return self.screen(1, None, 0, 0)
+                self.screen(1, None, 0, 0)
             elif self.mode.name == '160x200x16':
-                return self.screen(1, None, 0, 0)
+                self.screen(1, None, 0, 0)
             elif self.mode.name == '640x200x4':
-                return self.screen(5, None, 0, 0)
+                self.screen(5, None, 0, 0)
             elif self.mode.name == '640x200x16':
-                return self.screen(7, None, 0, 0)
+                self.screen(7, None, 0, 0)
             elif self.mode.name == '640x350x16':
                 # screen 9 switches to screen 1 (not 7) on WIDTH 40
-                return self.screen(1, None, 0, 0)
+                self.screen(1, None, 0, 0)
         elif to_width == 80:
             if self.mode.name == '320x200x4':
-                return self.screen(2, None, 0, 0)
+                self.screen(2, None, 0, 0)
             elif self.mode.name == '160x200x16':
-                return self.screen(2, None, 0, 0)
+                self.screen(2, None, 0, 0)
             elif self.mode.name == '320x200x4pcjr':
-                return self.screen(2, None, 0, 0)
+                self.screen(2, None, 0, 0)
             elif self.mode.name == '320x200x16pcjr':
-                return self.screen(6, None, 0, 0)
+                self.screen(6, None, 0, 0)
             elif self.mode.name == '320x200x16':
-                return self.screen(8, None, 0, 0)
-        return False
+                self.screen(8, None, 0, 0)
+        else:
+            raise error.RunError(5)
 
     def set_colorburst(self, on=True):
         """ Set the composite colorburst bit. """
@@ -1399,7 +1391,7 @@ class Cursor(object):
         """ Change the cursor for a new screen mode. """
         self.width = mode.font_width
         self.height = mode.font_height
-        video.build_cursor(self.width, self.height, self.from_line, self.to_line)
+        self.set_default_shape(True)
         self.reset_attr()
     
     def reset_attr(self):

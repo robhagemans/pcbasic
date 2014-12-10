@@ -2436,15 +2436,14 @@ def exec_screen(ins):
     util.range_check(0, 2, erase)
     util.require(ins, util.end_statement)
     # decide whether to redraw the screen
-    screen = state.console_state.screen    
-    if ((mode and screen.mode_data[mode].name != screen.mode.name) or
-            (mode == 0 and not screen.mode.is_text_mode) or
-            (color != None and color != screen.colorswitch)):
-        if not screen.screen(mode, color, apagenum, vpagenum, erase):
-            raise error.RunError(5)
+    screen = state.console_state.screen
+    oldmode, oldcolor = screen.mode, screen.colorswitch
+    screen.screen(mode, color, apagenum, vpagenum, erase)
+    if ((not screen.mode.is_text_mode and screen.mode.name != oldmode.name) or
+            (screen.mode.is_text_mode and not oldmode.is_text_mode) or
+            (screen.colorswitch != oldcolor)):
+        # rebuild the console if we've switched modes or colorswitch
         console.init_mode()    
-    else:
-        screen.set_page(vpagenum, apagenum)
     
 def exec_pcopy(ins):
     """ PCOPY: copy video pages. """
