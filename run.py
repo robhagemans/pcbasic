@@ -17,7 +17,7 @@ import backend
 import reset
 import flow
 
-# Prompt style: True for OK; (linenum, pos) for EDIT
+# true if a prompt is needed on next cycle
 state.basic_state.prompt = True
 # input mode is AUTO (used by AUTO)
 state.basic_state.auto_mode = False
@@ -48,14 +48,14 @@ def run_once():
     """ Read-eval-print loop: run once. """
     try:
         while True:
-            show_prompt() 
             state.basic_state.last_mode = state.basic_state.execute_mode, state.basic_state.auto_mode
             if state.basic_state.execute_mode:
                 try:
                     # may raise Break
                     backend.check_events()
                     handle_basic_events()
-                    state.basic_state.execute_mode = statements.parse_statement()
+                    if not statements.parse_statement():
+                        state.basic_state.execute_mode = False
                 except error.Break as e:
                     handle_break(e)
             elif state.basic_state.auto_mode:
@@ -65,20 +65,23 @@ def run_once():
                 except error.Break:
                     state.basic_state.auto_mode = False    
             else:    
+                show_prompt()
                 try:
                     # input loop, checks events
                     line = console.wait_screenline(from_start=True, alt_replace=True) 
-                    store_line(line)
+                    state.basic_state.prompt = not store_line(line)
                 except error.Break:
+                    state.basic_state.prompt = False
                     continue
-            # change loop modes; show Ok or EDIT prompt if necessary        
+            # change loop modes
             if switch_mode():
                 break
     except error.RunError as e:
         handle_error(e) 
-    
+        state.basic_state.prompt = True
+
 def switch_mode():
-    """ Switch loop mode and show prompt when needed. """
+    """ Switch loop mode. """
     last_execute, last_auto = state.basic_state.last_mode
     if state.basic_state.execute_mode != last_execute:
         # move pointer to the start of direct line (for both on and off!)
@@ -90,7 +93,7 @@ def switch_mode():
 def store_line(line):
     """ Store a program line or schedule a command line for execution. """
     if not line:
-        return
+        return True
     state.basic_state.direct_line = tokenise.tokenise_line(line)    
     c = util.peek(state.basic_state.direct_line)
     if c == '\x00':
@@ -101,21 +104,19 @@ def store_line(line):
     elif c != '':
         # it is a command, go and execute    
         state.basic_state.execute_mode = True
+    return not state.basic_state.execute_mode
                         
 def show_prompt():
     """ Show the Ok or EDIT prompt, unless suppressed. """
-    last_execute, last_auto = state.basic_state.last_mode
     if state.basic_state.execute_mode:
         return        
-    if state.basic_state.prompt == True:
-        if state.basic_state.auto_mode or not last_auto and not last_execute:
-            return 
+    if state.basic_state.edit_prompt:
+        linenum, tell = state.basic_state.edit_prompt
+        program.edit(linenum, tell)
+        state.basic_state.edit_prompt = False
+    elif state.basic_state.prompt:
         console.start_line()
         console.write_line("Ok\xff")
-    elif state.basic_state.prompt:
-        linenum, tell = state.basic_state.prompt
-        program.edit(linenum, tell)
-    state.basic_state.prompt = True
                    
 def auto_step():
     """ Generate an AUTO line number and wait for input. """
@@ -177,10 +178,9 @@ def handle_error(s):
         # for some reason, err is reset to zero by GW-BASIC in this case.
         state.basic_state.errn = 0
         if s.pos != -1:
-            show_prompt()
             # line edit gadget appears
-            state.basic_state.prompt = (program.get_line_number(s.pos), 
-                                        state.basic_state.bytecode.tell())
+            state.basic_state.edit_prompt = (program.get_line_number(s.pos), 
+                                             state.basic_state.bytecode.tell())
 
 def handle_break(e):
     """ Handle a Break event. """

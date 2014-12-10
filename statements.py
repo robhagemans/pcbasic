@@ -53,7 +53,7 @@ def prepare():
         pcjr_term = os.path.join(plat.info_dir, pcjr_term)
     if not os.path.exists(pcjr_term):
         pcjr_term = ''
-        
+    state.basic_state.edit_prompt = False
 
 def parse_statement():
     """ Parse one statement at the current pointer in current codestream. 
@@ -822,7 +822,7 @@ def exec_edit(ins):
     flow.set_pointer(False)
     state.basic_state.execute_mode = False    
     # request edit prompt
-    state.basic_state.prompt = (from_line, None)
+    state.basic_state.edit_prompt = (from_line, None)
     
 def exec_auto(ins):
     """ AUTO: enter automatic line numbering mode. """
