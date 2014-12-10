@@ -9,8 +9,13 @@ This file is released under the GNU GPL version 3.
 from StringIO import StringIO
 import subprocess
 
-import plat
 import unicodepage
+import plat
+
+if plat.system == 'Windows':
+    import win32print 
+    import tempfile
+    import win32api
 
 class PrinterStream(StringIO):
     """ Stream that prints to Unix or Windows printer. """
