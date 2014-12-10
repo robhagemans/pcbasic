@@ -73,7 +73,7 @@ arguments = {
     'max-reclen': {'type': 'int', 'default': 128,},
     'serial-buffer-size': {'type': 'int', 'default': 256,},
     'peek': {'type': 'string', 'list': '*', 'default': [],},
-    'lpt1': {'type': 'string', 'default': '',},
+    'lpt1': {'type': 'string', 'default': 'PRINTER:',},
     'lpt2': {'type': 'string', 'default': '',},
     'lpt3': {'type': 'string', 'default': '',},
     'com1': {'type': 'string', 'default': '',},
