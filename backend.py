@@ -910,10 +910,14 @@ class Screen(object):
         #   SCREEN 1 = SCREEN 1,1 (cga, ega, vga, ...)
         # colorswitch is NOT preserved between screens when unspecified
         # colorswitch is NOT the same as colorburst (opposite on screen 1)
-        if new_colorswitch == None:    
-            new_colorswitch = self.colorswitch 
-        else:
-            new_colorswitch = (new_colorswitch != 0)
+        if new_colorswitch == None:
+            if video_capabilities == 'pcjr':
+                new_colorswitch = 0
+            elif video_capabilities == 'tandy':
+                new_colorswitch = not new_mode
+            else:
+                new_colorswitch = 1
+        new_colorswitch = (new_colorswitch != 0)
         # TODO: implement erase level (Tandy/pcjr)
         # Erase tells basic how much video memory to erase
         # 0: do not erase video memory
