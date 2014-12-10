@@ -76,11 +76,15 @@ def check_events():
         wconio.gotoxy(cursor_col-1, cursor_row-1)
     check_keyboard()
     
-def load_state():
+def load_state(display_str):
     """ Restore display state from file. """
     # console has already been loaded; just redraw
     redraw()
     
+def save_state():
+    """ Save display state to file (no-op). """
+    return None
+
 def clear_rows(cattr, start, stop):
     """ Clear screen rows. """
     for r in range(start, stop+1):

@@ -24,6 +24,8 @@ import unicodepage
 import backend
 import typeface
 import scancode
+
+#D
 import state
 
 # Workaround for broken pygame.scrap on Mac
@@ -260,42 +262,24 @@ def prepare():
 ###############################################################################
 # state saving and loading
 
-# picklable store for surfaces
-display_strings = ([], [])
-display_strings_loaded = False
+def save_state():
+    """ Save display state as list of strings. """
+    return [pygame.image.tostring(s, 'P') for s in canvas]
 
-class PygameDisplayState(state.DisplayState):
-    """ Display state saving and restoring. """
-    
-    def pickle(self):
-        """ Convert display state to string. """
-        self.display_strings = ([], [])
-        for s in canvas:    
-            self.display_strings[0].append(pygame.image.tostring(s, 'P'))
-        
-    def unpickle(self):
-        """ Convert string to display state. """
-        global display_strings, display_strings_loaded
-        display_strings_loaded = True
-        display_strings = self.display_strings
-        del self.display_strings
-
-
-def load_state():        
-    """ Restore display state from file. """
+def load_state(display_str):        
+    """ Restore display state. """
     global screen_changed
-    if display_strings_loaded:
-        try:
-            for i in range(len(canvas)):    
-                canvas[i] = pygame.image.fromstring(display_strings[0][i], size, 'P')
-                canvas[i].set_palette(workpalette)
-            screen_changed = True    
-        except (IndexError, ValueError):
-            # couldn't load the state correctly; most likely a text screen saved from -t. just redraw what's unpickled.
-            # this also happens if the screen resolution has changed 
-            state.console_state.screen.redraw_text_screen()
-    else:
-        state.console_state.screen.redraw_text_screen()
+    try:
+        for i in range(len(canvas)):    
+            canvas[i] = pygame.image.fromstring(display_str[i], size, 'P')
+            canvas[i].set_palette(workpalette)
+        screen_changed = True    
+        return True
+    except (IndexError, ValueError, TypeError):
+        # couldn't load the state correctly
+        # e.g. saved from different interface. just redraw what's unpickled.
+        # this also happens if the screen resolution has changed 
+        return False
         
 ####################################
 # initialisation
@@ -346,7 +330,6 @@ def init():
     if not load_fonts(heights_needed):
         return False
     text_mode = True    
-    state.display = PygameDisplayState()
     set_page(0, 0)
     return True
 

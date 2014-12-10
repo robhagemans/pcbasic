@@ -77,9 +77,13 @@ def close():
 ###############################################################################
 # The following are no-op responses to requests from backend
 
-def load_state():
+def load_state(display_str):
     """ Restore display state from file. """
     pass
+    
+def save_state():
+    """ Save display state to file (no-op). """
+    return None
 
 def init_screen_mode(mode_info):
     """ Change screen mode. """

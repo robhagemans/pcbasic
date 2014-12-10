@@ -159,10 +159,14 @@ def idle():
     """ Video idle process. """
     time.sleep(0.024)
 
-def load_state():
+def load_state(display_str):
     """ Restore display state from file. """
     # console has already been loaded; just redraw
     redraw()
+
+def save_state():
+    """ Save display state to file (no-op). """
+    return None
 
 def clear_rows(cattr, start, stop):
     """ Clear screen rows. """

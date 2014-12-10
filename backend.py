@@ -830,11 +830,26 @@ class Screen(object):
         self.mode = self.text_data[initial_width]
         # cursor
         self.cursor = Cursor(self)
+        # storage space for backend display strings
+        self.display_storage = None
 
     def prepare_modes(self):
         """ Build lists of allowed graphics modes. """
         self.text_data, self.mode_data = modes.get_modes(self, 
                                     self.cga4_palette, self.video_mem_size)
+
+    def close(self):
+        """ Close the display. """
+        self.save_state()
+        video.close()
+
+    def save_state(self):
+        """ Save display for possible resume. """
+        self.display_storage = video.save_state()
+
+    def clear_saved_state(self):
+        """ Clear storage space for saved display state. """
+        self.display_storage = None
 
     def resume(self):
         """ Load a video mode from storage and initialise. """
@@ -883,11 +898,16 @@ class Screen(object):
                 "Resumed screen mode %d not supported by this interface.", nmode)
             return False
         if (cmode.is_text_mode and cmode.name != mode_info.name):
+            # text mode in different resolution; redraw.
             self.mode = mode_info
             self.redraw_text_screen()
         else:
             # load the screen contents from storage
-            video.load_state()
+            if not video.load_state(self.display_storage):
+                # couldn't restore graphics - redraw the text screen
+                self.redraw_text_screen()
+        # throw away the display strings after use
+        self.display_storage = None
         return True
 
     def screen(self, new_mode, new_colorswitch, new_apagenum, new_vpagenum, 
@@ -1196,8 +1216,9 @@ class Screen(object):
         for crow in range(self.mode.height):
             therow = self.apage.row[crow]  
             for i in range(self.mode.width): 
+                # set for_keys to avoid echoing to CLI
                 self.put_char_attr(self.apagenum, crow+1, i+1, 
-                                     therow.buf[i][0], therow.buf[i][1])
+                             therow.buf[i][0], therow.buf[i][1], for_keys=True)
         # set cursor back to previous state                             
         self.cursor.reset_visibility()
 

@@ -27,8 +27,8 @@ cursor_row = 1
 cursor_col = 1
 
 # last row and column printed on
-last_row = 1
-last_col = 1
+last_row = None
+last_col = None
 
 
 def prepare():
@@ -300,9 +300,13 @@ def build_cursor(width, height, from_line, to_line):
     """ Set the cursor shape (no-op). """
     pass
 
-def load_state():
+def load_state(display_str):
     """ Restore display state from file (no-op). """
     pass
+
+def save_state():
+    """ Save display state to file (no-op). """
+    return None
 
 def rebuild_glyph(ordval):
     """ Rebuild a glyph after POKE. """
@@ -365,6 +369,13 @@ def check_keyboard():
 def update_position(row=None, col=None):
     """ Update screen for new cursor position. """
     global last_row, last_col
+    # this happens on resume
+    if last_row == None:
+        last_row = cursor_row
+        state.console_state.screen.redraw_row(0, cursor_row, wrap=False)
+    if last_col == None:
+        last_col = cursor_col
+    # allow updating without moving the cursor
     if row == None:
         row = cursor_row
     if col == None:
