@@ -208,8 +208,7 @@ def print_greeting(console):
         'PC-BASIC 3.23%s\r'
         '(C) Copyright 2013-14 PC-BASIC authors. '
         'Type RUN "@:INFO" for more.\r'
-        '%d Bytes free\r'
-        'Ok\xff')
+        '%d Bytes free')
     # following GW, don't write greeting for redirected input 
     # or command-line run
     if (not config.options['run'] and not config.options['exec'] and

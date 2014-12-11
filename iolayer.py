@@ -86,6 +86,7 @@ nullstream = open(os.devnull, 'w')
 def prepare():
     """ Initialise iolayer module. """
     global max_files, max_reclen, serial_in_size
+    global print_trigger
     if config.options['max-files'] != None:
         max_files = min(16, config.options['max-files'])
     if config.options['max-reclen'] != None:
@@ -93,6 +94,7 @@ def prepare():
         max_reclen = max(1, min(32767, max_reclen))
     if config.options['serial-buffer-size'] != None:
         serial_in_size = config.options['serial-buffer-size']
+    print_trigger = config.options['print-trigger']
     # always defined
     backend.devices['SCRN:'] = SCRNFile()
     backend.devices['KYBD:'] = KYBDFile()
@@ -678,7 +680,7 @@ def create_device(name, arg, default=None):
         if name[:3] == 'COM':
             return COMFile(stream, name)
         else:
-            return LPTFile(stream, name)    
+            return LPTFile(stream, name, flush_trigger=print_trigger)    
     else:
         return None        
 
@@ -968,13 +970,14 @@ class LPTFile(BaseFile):
     
     allowed_modes = 'OR'
     
-    def __init__(self, stream, name):
+    def __init__(self, stream, name, flush_trigger='close'):
         """ Initialise LPTn. """
         # width=255 means line wrap
         self.width = 255
         self.col = 1
         self.output_stream = stream
         BaseFile.__init__(self, StringIO(), name)
+        self.flush_trigger = flush_trigger
 
     def open(self, number, mode, access, lock, reclen):
         """ Open a file on LPTn. """
@@ -1005,6 +1008,9 @@ class LPTFile(BaseFile):
                 self.fhandle.write(c)
                 self.flush()
                 self.col = 1
+                # do the actual printing if we're on a short trigger
+                if (self.flush_trigger == 'line' and c == '\n') or (self.flush_trigger == 'page' and c == '\f'):
+                    self.output_stream.flush()
             elif c == '\b':   # BACKSPACE
                 if self.col > 1:
                     self.col -= 1
