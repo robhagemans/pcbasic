@@ -1281,13 +1281,14 @@ def put_interval(pagenum, x, y, colours):
     screen_changed = True
 
 def put_interval_packed(pagenum, x, y, bytes, plane_mask):
-    """ Write a list of attributes to a scanline interval. """
+    """ Write masked attributes packed into bytes to a scanline interval. """
     global screen_changed
     inv_mask = 0xff ^ plane_mask
     if numpy:
         bits = (numpy.repeat(numpy.array(bytes).astype(int), 8) &
                numpy.tile(numpy.array([128, 64, 32, 16, 8, 4, 2, 1]), len(bytes))) != 0
-        colours = numpy.multiply(numpy.array(bits).astype(int), plane_mask)
+#        colours = numpy.multiply(numpy.array(bits).astype(int), plane_mask)
+        colours = numpy.array(bits) * plane_mask 
         pygame.surfarray.pixels2d(canvas[pagenum])[x:x+len(colours), y] &= inv_mask
         pygame.surfarray.pixels2d(canvas[pagenum])[x:x+len(colours), y] |= colours
     else:
@@ -1299,6 +1300,27 @@ def put_interval_packed(pagenum, x, y, bytes, plane_mask):
             c = canvas[pagenum].get_at((x+i, y)).b & inv_mask
             canvas[pagenum].set_at((x+i, y), c | index * plane_mask)
     screen_changed = True
+    
+def get_interval(pagenum, x, y, length):
+    """ Read a scanline interval into a list of colours. """
+    global screen_changed
+    if numpy:
+        # copy into numpy array
+        return pygame.surfarray.array2d(canvas[pagenum])[x:x+length, y]
+    else:
+        return [canvas[pagenum].get_at((x+i, y)).b for i in xrange(length)]
+
+def get_interval_packed(pagenum, x, y, num_bytes, plane_mask):
+    """ Read a scanline interval into masked attributes packed into bytes. """
+    global screen_changed
+    length = 8 * num_bytes
+    if numpy:
+        bits = (pygame.surfarray.array2d(canvas[pagenum])[x:x+length, y] & plane_mask) != 0
+        return numpy.dot(numpy.split(bits, num_bytes), numpy.array([128, 64, 32, 16, 8, 4, 2, 1]))
+    else:
+        bits = ([canvas[pagenum].get_at((x+i, y)).b for i in xrange(length)] & plane_mask) != 0
+        groups = [bits[i:i+8] for i in xrange(0, num_bytes*8, 8)]
+        return [sum(xx*yy for xx, yy in zip([128,64,32,16,8,4,2,1], y)) for y in groups]
     
 def get_until(x0, x1, y, c):
     """ Get the attribute values of a scanline interval. """

@@ -1278,6 +1278,14 @@ class Screen(object):
             pagenum = self.apagenum
         return video.get_pixel(x, y, pagenum)
 
+    def get_interval(self, pagenum, x, y, length):
+        """ Read a scanline interval into a list of colours. """
+        return video.get_interval(pagenum, x, y, length)
+
+    def get_interval_packed(self, pagenum, x, y, bytes, plane_mask):
+        """ Read a scanline interval into masked attributes packed into bytes. """
+        return video.get_interval_packed(pagenum, x, y, bytes, plane_mask)
+
     def put_interval(self, pagenum, x, y, colours):
         """ Write a list of attributes to a scanline interval. """
         video.put_interval(pagenum, x, y, colours)

@@ -431,7 +431,7 @@ def get_data_memory(address):
     
 def get_video_memory(addr):
     """ Retrieve a byte from video memory. """
-    return state.console_state.screen.mode.get_memory(addr)
+    return state.console_state.screen.mode.get_memory(addr, 1)
 
 def set_video_memory(addr, val):
     """ Set a byte in video memory. """
@@ -439,11 +439,8 @@ def set_video_memory(addr, val):
 
 def get_video_memory_block(addr, length):
     """ Retrieve a contiguous block of bytes from video memory. """
-    block = bytearray()
-    for a in range(addr, addr+length):
-        block += chr(max(0, get_video_memory(a)))
-    return block
-    
+    return bytearray(state.console_state.screen.mode.get_memory(addr, length))
+        
 def set_video_memory_block(addr, some_bytes):
     """ Set a contiguous block of bytes in video memory. """
     state.console_state.screen.mode.set_memory(addr, some_bytes)
