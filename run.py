@@ -36,8 +36,10 @@ def start(cmd='', run=False, quit=False):
         # run command before program
         if cmd:        
             run_once()
+        # position the pointer at start of program and enter execute mode
         flow.jump(None)
         state.basic_state.execute_mode = True
+        state.console_state.screen.cursor.reset_visibility()
     # read-eval-print loop until quit or exception
     while True:
         run_once()
