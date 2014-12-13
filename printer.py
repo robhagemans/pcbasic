@@ -49,8 +49,13 @@ if plat.system == 'Windows':
         # write UTF-8 Byte Order mark to ensure Notepad recognises encoding
         f.write('\xef\xbb\xbf')
         f.write(printbuf)
-        win32api.ShellExecute(0, 'printto', f.name, 
-                              '"%s"' % printer_name, ".", 0)
+        # fMask = SEE_MASK_NOASYNC(0x00000100) + SEE_MASK_NOCLOSEPROCESS
+        resdict = winshell.ShellExecuteEx(fMask=256+64, 
+                        lpVerb='printto', lpFile=f.name, 
+                        lpParameters='"%s"' % printer_name)
+        handle = resdict['hProcess']
+        if win32event.WaitForSingleProcess(handle, 500) != win32event.WAIT_OBJECT_0:
+            logging.warning('Printing process timeout')
         f.close()
         
 elif plat.system == 'Android':
