@@ -221,7 +221,7 @@ def format_number(value, tokens, digits_before, decimals):
             if digits_before < 0:
                 digits_before = 0
             # just one of those things GW does
-            if force_dot and digits_before == 0 and decimals == 0:
+            if force_dot and digits_before == 0 and decimals != 0:
                 valstr += '0'
     # take absolute value 
     value.neg = False
