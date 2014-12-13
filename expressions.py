@@ -36,7 +36,7 @@ import token
 # operators of the same priority are evaluated left to right      
 priority = (
     (token.O_CARET,),
-    (token.O_TIMES, token.O_DIV)
+    (token.O_TIMES, token.O_DIV),
     (token.O_INTDIV,), 
     (token.MOD,),
     (token.O_PLUS, token.O_MINUS),
