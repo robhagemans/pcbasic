@@ -114,9 +114,23 @@ def open_file(native_name, mode, access):
     else:
         posix_access = access_modes[mode]  
     try:
-        # create file if writing and doesn't exist yet    
-        if '+' in posix_access and not os.path.exists(name):
+        # create file if in RANDOM or APPEND mode and doesn't exist yet
+        # OUTPUT mode files are created anyway since they're opened with wb.
+        if ((mode == 'A' or (mode == 'R' and access == 'RW')) and 
+                not os.path.exists(name)):
             open(name, 'wb').close() 
+        if mode == 'A':
+            # APPEND mode is only valid for text files (which are seekable);
+            # first cut of EOF byte, if any.
+            f = open(name, 'r+b')
+            try:
+                f.seek(-1, 2)
+                if f.read(1) == '\x1a':
+                    f.seek(-1, 1)
+                    f.truncate()
+            except IOError:
+                pass
+            f.close()
         return open(name, posix_access)
     except EnvironmentError as e:
         handle_oserror(e)
