@@ -46,6 +46,8 @@ if plat.system == 'Windows':
             printer_name = win32print.GetDefaultPrinter()
         f = tempfile.NamedTemporaryFile(mode='wb', prefix='pcbasic_', 
                                         suffix='.txt', delete=False)
+        # write UTF-8 Byte Order mark to ensure Notepad recognises encoding
+        f.write('\xef\xbb\xbf')
         f.write(printbuf)
         win32api.ShellExecute(0, 'printto', f.name, 
                               '"%s"' % printer_name, ".", 0)
