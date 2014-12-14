@@ -126,6 +126,7 @@ arguments = {
     'video-memory': {'type': 'int', 'default': 262144,},
     'allow-shell': {'type': 'bool', 'default': False,},
     'print-trigger': {'type': 'string', 'default':'close',},
+    'altgr': {'type': 'bool', 'default': True,},
 }
 
 
