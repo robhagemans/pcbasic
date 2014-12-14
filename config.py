@@ -125,6 +125,7 @@ arguments = {
     'blocky': {'type': 'bool', 'default': 'False',},
     'version': {'type': 'bool', 'default': 'False',},
     'print-trigger': {'type': 'string', 'default': 'close'},
+    'altgr': {'type': 'bool', 'default': 'True',},
 }
 
 

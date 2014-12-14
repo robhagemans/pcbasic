@@ -20,6 +20,10 @@ OPTIONS
   This behaviour is affected by the --run, --load and --convert options.
   If no options are present, the interpreter will run in interactive mode.
 
+  --altgr [True|False]
+            If True (default), interpret the right Alt key as AltGr instead
+            of Alt. The left Alt key is always seen as Alt.
+
   -t
   --ansi [True|False]
             Use ANSI text interface. Same as --interface=ansi. 

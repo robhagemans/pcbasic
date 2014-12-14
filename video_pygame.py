@@ -170,8 +170,7 @@ if pygame:
         pygame.K_PERIOD: scancode.PERIOD, pygame.K_SLASH: scancode.SLASH,
         pygame.K_RSHIFT: scancode.RSHIFT, pygame.K_PRINT: scancode.PRINT,
         pygame.K_SYSREQ: scancode.SYSREQ,
-        pygame.K_RALT: scancode.ALT, pygame.K_LALT: scancode.ALT, 
-        #pygame.K_MODE: scancode.ALT,    # ALT GR sends MODE
+        pygame.K_LALT: scancode.ALT, 
         pygame.K_SPACE: scancode.SPACE, pygame.K_CAPSLOCK: scancode.CAPSLOCK,
         # function key row    
         pygame.K_F1: scancode.F1, pygame.K_F2: scancode.F2, 
@@ -264,6 +263,11 @@ def prepare():
                 mousebutton_paste = i+1
             elif s == 'pen':
                 mousebutton_pen = i+1
+    if not config.options['altgr']:
+        # on Windows, AltGr key is reported as right-alt
+        key_to_scan[pygame.K_RALT] = scancode.ALT
+        # on Linux, AltGr is reported as mode key
+        key_to_scan[pygame.K_MODE] = scancode.ALT
         
 ####################################
 # state saving and loading
