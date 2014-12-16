@@ -1250,78 +1250,52 @@ def fill_rect(x0, y0, x1, y1, index):
     canvas[apagenum].fill(index, rect)
     screen_changed = True
 
-def fill_interval(x0, x1, y, tile, solid):
-    """ Fill a scanline interval in a tile pattern or solid attribute. """
+def fill_interval(x0, x1, y, index):
+    """ Fill a scanline interval in a solid attribute. """
     global screen_changed
     dx = x1 - x0 + 1
-    h = len(tile)
-    w = len(tile[0])
-    if solid:
-        canvas[apagenum].fill(tile[0][0], (x0, y, dx, 1))
-    elif numpy:
-        # fast method using numpy instead of loop
-        ntile = numpy.roll(numpy.array(tile).astype(int)[y % h], int(-x0 % 8))
-        bar = numpy.tile(ntile, (dx+w-1) / w)
-        pygame.surfarray.pixels2d(canvas[apagenum])[x0:x1+1, y] = bar[:dx]
-    else:
-        # slow loop
-        for x in range(x0, x1+1):
-            canvas[apagenum].set_at((x,y), tile[y % h][x % 8])
+    canvas[apagenum].fill(index, (x0, y, dx, 1))
     screen_changed = True
 
-def put_interval(pagenum, x, y, colours):
-    """ Write a list of attributes to a scanline interval. """
-    global screen_changed
-    if numpy:
+
+if numpy:
+    def put_interval(pagenum, x, y, colours, mask=0xff):
+        """ Write a list of attributes to a scanline interval. """
+        global screen_changed
+        # reference the interval on the canvas
+        ref = pygame.surfarray.pixels2d(canvas[pagenum])[x:x+len(colours), y]
         colours = numpy.array(colours).astype(int)
-        pygame.surfarray.pixels2d(canvas[pagenum])[x:x+len(colours), y] = colours
-    else:
-        for i, index in enumerate(colours):
-            canvas[pagenum].set_at((x+i, y), index)
-    screen_changed = True
+        if mask != 0xff:
+            inv_mask = 0xff ^ mask
+            colours &= mask
+            ref &= inv_mask
+            ref |= colours
+        else:
+            ref = colours
+        screen_changed = True
 
-def put_interval_packed(pagenum, x, y, bytes, plane_mask):
-    """ Write masked attributes packed into bytes to a scanline interval. """
-    global screen_changed
-    inv_mask = 0xff ^ plane_mask
-    if numpy:
-        bits = (numpy.repeat(numpy.array(bytes).astype(int), 8) &
-               numpy.tile(numpy.array([128, 64, 32, 16, 8, 4, 2, 1]), len(bytes))) != 0
-#        colours = numpy.multiply(numpy.array(bits).astype(int), plane_mask)
-        colours = numpy.array(bits) * plane_mask 
-        pygame.surfarray.pixels2d(canvas[pagenum])[x:x+len(colours), y] &= inv_mask
-        pygame.surfarray.pixels2d(canvas[pagenum])[x:x+len(colours), y] |= colours
-    else:
-        bits = []
-        for byte in bytes:
-            for shift in range(8):
-                bits.append((byte >> (7-shift)) & 1)
-        for i, index in enumerate(bits):
-            c = canvas[pagenum].get_at((x+i, y)).b & inv_mask
-            canvas[pagenum].set_at((x+i, y), c | index * plane_mask)
-    screen_changed = True
-    
-def get_interval(pagenum, x, y, length):
-    """ Read a scanline interval into a list of colours. """
-    global screen_changed
-    if numpy:
+    def get_interval(pagenum, x, y, length):
+        """ Read a scanline interval into a list of colours. """
         # copy into numpy array
         return pygame.surfarray.array2d(canvas[pagenum])[x:x+length, y]
-    else:
+
+else:
+    def put_interval(pagenum, x, y, colours, mask=0xff):
+        """ Write a list of attributes to a scanline interval. """
+        global screen_changed
+        if mask != 0xff:
+            inv_mask = 0xff ^ mask
+            colours &= mask
+            colours |= get_interval(pagenum, x, y, length) & inv_mask
+        # list comprehension and ignoring result seems faster than loop
+        [canvas[pagenum].set_at((x+i, y), index) 
+                         for i, index in enumerate(colours)]
+        screen_changed = True
+
+    def get_interval(pagenum, x, y, length):
+        """ Read a scanline interval into a list of colours. """
         return [canvas[pagenum].get_at((x+i, y)).b for i in xrange(length)]
 
-def get_interval_packed(pagenum, x, y, num_bytes, plane_mask):
-    """ Read a scanline interval into masked attributes packed into bytes. """
-    global screen_changed
-    length = 8 * num_bytes
-    if numpy:
-        bits = (pygame.surfarray.array2d(canvas[pagenum])[x:x+length, y] & plane_mask) != 0
-        return numpy.dot(numpy.split(bits, num_bytes), numpy.array([128, 64, 32, 16, 8, 4, 2, 1]))
-    else:
-        bits = ([canvas[pagenum].get_at((x+i, y)).b for i in xrange(length)] & plane_mask) != 0
-        groups = [bits[i:i+8] for i in xrange(0, num_bytes*8, 8)]
-        return [sum(xx*yy for xx, yy in zip([128,64,32,16,8,4,2,1], y)) for y in groups]
-    
 def get_until(x0, x1, y, c):
     """ Get the attribute values of a scanline interval. """
     if x0 == x1:

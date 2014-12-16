@@ -11,6 +11,11 @@ try:
 except ImportError:
     from StringIO import StringIO
 
+try:
+    import numpy
+except ImportError:
+    numpy = None
+
 import error
 import fp
 import vartypes
@@ -548,8 +553,12 @@ class Drawing(object):
                 if y-ydir <= bound_y1 and y-ydir >= bound_y0:
                     line_seed = self.check_scanline(line_seed, x_left, x_start-1, y-ydir, c, tile, back, border, -ydir)
                     line_seed = self.check_scanline(line_seed, x_stop+1, x_right, y-ydir, c, tile, back, border, -ydir)
-            # draw the pixels for the current interval   
-            self.screen.fill_interval(x_left, x_right, y, tile, solid)
+            # draw the pixels for the current interval 
+            if solid:
+                self.screen.fill_interval(x_left, x_right, y, tile[0][0])
+            else:  
+                interval = tile_to_interval(x_left, x_right, y, tile)
+                self.screen.put_interval(self.screen.apagenum, x_left, y, interval)   
             # show progress
             if y%4 == 0:
                 backend.check_events()
@@ -727,6 +736,20 @@ class Drawing(object):
         self.last_point = x1, y1
         if goback:
             self.last_point = x0, y0
+
+
+def tile_to_interval(x0, x1, y, tile):
+    """ Convert a tile to a list of attributes. """
+    dx = x1 - x0 + 1
+    h = len(tile)
+    w = len(tile[0])
+    if numpy:
+        # fast method using numpy instead of loop
+        ntile = numpy.roll(numpy.array(tile).astype(int)[y % h], int(-x0 % 8))
+        return numpy.tile(ntile, (dx+w-1) / w)[:dx]
+    else:
+        return [tile[y % h][x % 8] for x in xrange(x0, x1+1)]
+    
                 
 ###############################################################################
 # octant logic for CIRCLE

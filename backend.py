@@ -11,7 +11,7 @@ try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
-    
+
 import logging
 from copy import copy
 
@@ -808,7 +808,7 @@ def init_video(video_module):
         state.console_state.screen.screen(None, None, None, None)
         return True
 
-        
+
 class Screen(object):
     """ Screen manipulation operations. """
 
@@ -1282,19 +1282,15 @@ class Screen(object):
         """ Read a scanline interval into a list of colours. """
         return video.get_interval(pagenum, x, y, length)
 
-    def get_interval_packed(self, pagenum, x, y, bytes, plane_mask):
-        """ Read a scanline interval into masked attributes packed into bytes. """
-        return video.get_interval_packed(pagenum, x, y, bytes, plane_mask)
-
-    def put_interval(self, pagenum, x, y, colours):
+    def put_interval(self, pagenum, x, y, colours, mask=0xff):
         """ Write a list of attributes to a scanline interval. """
-        video.put_interval(pagenum, x, y, colours)
+        video.put_interval(pagenum, x, y, colours, mask)
         self.clear_text_area(x, y, x+len(colours), y)
 
-    def put_interval_packed(self, pagenum, x, y, bytes, plane_mask):
-        """ Write a list of bits to a scanline interval. """
-        video.put_interval_packed(pagenum, x, y, bytes, plane_mask)
-        self.clear_text_area(x, y, x+len(bytes)//8, y)
+    def fill_interval(self, x0, x1, y, index):
+        """ Fill a scanline interval in a solid attribute. """
+        video.fill_interval(x0, x1, y, index)
+        self.clear_text_area(x0, y, x1, y)
 
     def get_until(self, x0, x1, y, c):
         """ Get the attribute values of a scanline interval. """
@@ -1304,11 +1300,6 @@ class Screen(object):
         """ Fill a rectangle in a solid attribute. """
         video.fill_rect(x0, y0, x1, y1, index)
         self.clear_text_area(x0, y0, x1, y1)
-
-    def fill_interval(self, x0, x1, y, tile, solid):
-        """ Fill a scanline interval in a tile pattern or solid attribute. """
-        video.fill_interval(x0, x1, y, tile, solid)
-        self.clear_text_area(x0, y, x1, y)
 
     def put_area(self, x0, y0, array, operation_char):
         """ Put a sprite on the screen (PUT). """
@@ -1347,8 +1338,7 @@ class Screen(object):
         # store a copy in the fast-put store
         # arrays[array] must exist at this point (or GET would have raised error 5)
         video.fast_get(x0, y0, x1, y1, array, state.basic_state.arrays[array][2])
-        
-
+ 
 ###############################################################################
 # palette
 

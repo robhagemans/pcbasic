@@ -12,6 +12,11 @@ import error
 import util
 import vartypes
 
+try:
+    import numpy
+except ImportError:
+    numpy = None
+    
 def prepare():
     """ Prepare the video modes. """
     global video_capabilities, mono_monitor
@@ -408,73 +413,95 @@ class TextMode(VideoMode):
         except IndexError:
             pass
 
+def bytes_to_interval(bytes, pixels_per_byte, mask=1):
+    """ Convert masked attributes packed into bytes to a scanline interval. """
+    bpp = 8//pixels_per_byte
+    attrmask = (1<<bpp) - 1
+    if False:
+        shifts = numpy.array([128, 64, 32, 16, 8, 4, 2, 1])
+        shifts = shifts[(bpp-1)::bpp]
+        attrs = (numpy.repeat(numpy.array(bytes).astype(int), pixels_per_byte) &
+               numpy.tile(shifts, len(bytes))) & attrmask
+        return numpy.array(attrs) * mask
+    else:
+        return [((byte >> (7-shift)) & attrmask) * mask
+                for byte in bytes for shift in xrange(0, 8, bpp)]
 
-def get_pixel_byte(screen, page, x, y, plane):
-    """ Retrieve a byte with 8 packed pixels for one colour plane. """
-    return sum(( ((screen.get_pixel(x+shift, y, page) >> plane) & 1) 
-                  << (7-shift) for shift in range(8) ))
-
-def set_pixel_byte(screen, page, x, y, plane_mask, byte):
-    """ Set a packed-pixel byte for a given colour plane. """
-    inv_mask = 0xff ^ plane_mask
-    for shift in range(8):
-        bit = (byte >> (7-shift)) & 1
-        current = screen.get_pixel(x + shift, y, page) & inv_mask
-        screen.put_pixel(x + shift, y, current | (bit * plane_mask), page)  
+def interval_to_bytes(colours, pixels_per_byte, plane=0):
+    """ Convert a scanline interval into masked attributes packed into bytes. """
+    num_bytes = len(colours)//pixels_per_byte
+    bpp = 8//pixels_per_byte
+    attrmask = (1<<bpp) - 1
+    shifts = [128, 64, 32, 16, 8, 4, 2, 1]
+    shifts = shifts[(bpp-1)::bpp]
+    if False:
+        attrs = (numpy.array(colours) >> plane) & attrmask
+        return list(numpy.dot(numpy.split(attrs, num_bytes), numpy.array(shifts)))
+    else:
+        attrs = (colours >> plane) & attrmask
+        groups = [attrs[i:i+pixels_per_byte] 
+                  for i in xrange(0, len(colours), pixels_per_byte)]
+        return [sum(xx*yy for xx, yy in zip(shifts, y)) for y in groups]
 
 def set_memory_ega(self, addr, bytes, mask, factor=1):
+    """ Set bytes in EGA video memory (helper). """
+    ppb = 8
+    row_bytes = self.screen.mode.pixel_width // ppb
+    # if first row is incomplete, do a slow draw till the end of row.
+    # length of short first row; 0 if full row
+    page, x, y = self.get_coords(addr)
+    short_row = min((-x//ppb) % row_bytes, len(bytes))
+    # short first row
+    if self.coord_ok(page, x, y):
+        colours = bytes_to_interval(bytes[:short_row], ppb, mask)
+        self.screen.put_interval(page, 0, y, colours, mask)
+    offset = short_row
+    # full rows
+    bank_offset = 0
+    while bank_offset + offset < len(bytes):
+        y += 1
+        if offset > self.bank_size//factor:
+            bank_offset += self.bank_size//factor
+            offset = 0
+            y = 0
+            page += 1
+        if self.coord_ok(page, x, y):
+            ofs = bank_offset + offset
+            colours = bytes_to_interval(bytes[ofs:ofs+row_bytes], ppb, mask)
+            self.screen.put_interval(page, 0, y, colours, mask) 
+        offset += row_bytes
+
+def get_memory_ega(self, addr, num_bytes, plane, factor=1):
     """ Set bytes in EGA video memory (helper). """
     row_bytes = self.screen.mode.pixel_width // 8 
     # if first row is incomplete, do a slow draw till the end of row.
     # length of short first row; 0 if full row
-    _, x, _ = self.get_coords(addr)
-    short_row = min((-x//8) % row_bytes, len(bytes))
-    # slow draw of short first row
-    for i in range(short_row):
-        page, x, y = self.get_coords(addr + i)
-        if self.coord_ok(page, x, y):
-            set_pixel_byte(self.screen, page, x, y, mask, bytes[i])
-    offset = short_row
-    # fast draw for complete rows
-    bank_offset = 0
-    while bank_offset + offset < len(bytes):
-        ofs = bank_offset + offset
-        page, x, y = self.get_coords(addr + ofs*factor)
-        if self.coord_ok(page, 0, y):
-            self.screen.put_interval_packed(page, 0, y, 
-                                            bytes[ofs:ofs + row_bytes], mask)
-        offset += row_bytes
-        if offset > self.bank_size//factor:
-            bank_offset += self.bank_size//factor
-            offset = 0
-
-def get_memory_ega(self, addr, num_bytes, mask, factor=1):
-    """ Get bytes from EGA video memory (helper). """
-    row_bytes = self.screen.mode.pixel_width // 8 
-    # if first row is incomplete, do a slow draw till the end of row.
-    # length of short first row; 0 if full row
-    _, x, _ = self.get_coords(addr)
-    short_row = min((-x//8) % row_bytes, num_bytes)
-    # slow draw of short first row
-    bytes = []
-    for i in range(short_row):
-        page, x, y = self.get_coords(addr + i)
-        if self.coord_ok(page, x, y):
-            bytes.append(get_pixel_byte(self.screen, page, x, y, mask))
-    offset = short_row
-    # fast draw for complete rows
+    page, x, y = self.get_coords(addr)
+    byteshift = min(self.bytes_per_row - x//8, num_bytes)
+    # first row, may be short
+    attrs = self.screen.get_interval(page, 0, y, byteshift*8) 
+    bytes = interval_to_bytes(attrs, 8, plane)
+    offset = byteshift
+    # full rows
     bank_offset = 0
     while bank_offset + offset < num_bytes:
-        ofs = bank_offset + offset
-        page, x, y = self.get_coords(addr + ofs*factor)
-        if self.coord_ok(page, 0, y):
-            bytes += list(self.screen.get_interval_packed(page, 0, y, row_bytes, mask))
-        offset += row_bytes
+        y += 1
+        # not an integer number of rows in a bank
         if offset > self.bank_size//factor:
+            bytes += [0] * (offset - self.bank_size//factor)
             bank_offset += self.bank_size//factor
             offset = 0
+            y = 0
+            page += 1
+        if self.coord_ok(page, 0, y):
+            attrs = self.screen.get_interval(page, 0, y, self.pixel_width)
+            bytes += interval_to_bytes(attrs, 8, plane)
+        else:
+            bytes += [0] * self.bytes_per_row
+        offset += self.bytes_per_row
+    offset += self.bytes_per_row
     return bytes
-
+        
 def get_area_ega(self, x0, y0, x1, y1, byte_array):
     """ Read a sprite from the screen in EGA modes. """
     dx = x1 - x0 + 1
@@ -639,66 +666,74 @@ class CGAMode(GraphicsMode):
         
     def get_memory(self, addr, num_bytes):
         """ Retrieve a byte from CGA memory. """
-        offset = 0
+        page, x, y = self.get_coords(addr)
+        ppb = 8//self.bitsperpixel
+        byteshift = min(self.bytes_per_row - x//ppb, num_bytes)
+        if self.coord_ok(page, x, y):
+            attrs = self.screen.get_interval(page, x, y, byteshift*ppb)
+            bytes = interval_to_bytes(attrs, ppb)
+        else: 
+            bytes = [0]*byteshift
+        offset = byteshift        
         bank_offset = 0
-        bytes = []
-        while True:
-            offs = bank_offset + offset
-            page, x, y = self.get_coords(addr+offs)
-            byteshift = x*self.bitsperpixel//8
-            next = min(self.bytes_per_row - byteshift, num_bytes-offset-bank_offset)
-            offset += next
+        page_offset = 0
+        i = 0
+        while page_offset + bank_offset + offset < num_bytes:
+            y += self.interleave_times
             # not an integer number of rows in a bank
             if offset > self.bank_size:
                 bytes += [0] * (offset - self.bank_size)
                 bank_offset += self.bank_size
                 offset = 0
+                y += 1
+                y = i
+                if bank_offset > self.page_size:
+                    page_offset += self.page_size
+                    bank_offset = 0
+                    offset = 0
+                    page += 1
+                    y = 0
+                    i = 0
+            if self.coord_ok(page, 0, y):
+                attrs = self.screen.get_interval(page, 0, y, self.pixel_width)
+                bytes += interval_to_bytes(attrs, ppb)
             else:
-                bytes += self.get_memory_row(page, x, y, next)
-            if bank_offset + offset >= num_bytes:
-                break
+                bytes += [0] * self.bytes_per_row
+            offset += self.bytes_per_row
         return bytes
-
-    def get_memory_row(self, page, x, y, num_bytes):                
-        """ Get a list of bytes in CGA memory of max one row length. """
-        bpp = self.bitsperpixel
-        mask = self.num_attr - 1 # 2**bpp-1
-        shifts = [1 << (8-(shift+1)*bpp) for shift in xrange(8//bpp)]
-        length = (num_bytes * 8)//bpp
-        if self.coord_ok(page, x, y):
-            attrs = self.screen.get_interval(page, x, y, length) & mask
-        else:
-            attrs = [0]*length
-#        return numpy.dot(numpy.split(attrs, num_bytes), shifts)     
-        groups = [attrs[i:i+8//bpp] for i in xrange(0, num_bytes*8//bpp, 8//bpp)]
-        return [sum(xx*yy for xx, yy in zip(shifts, y)) for y in groups]
 
     def set_memory(self, addr, bytes):
         """ Set a list of bytes in CGA memory. """
-        offset = 0
+        # draw (potentially incomplete) first row
+        page, x, y = self.get_coords(addr)
+        ppb = 8//self.bitsperpixel
+        byteshift = min(self.bytes_per_row - x//ppb, len(bytes))
+        if self.coord_ok(page, x, y):
+            interval = bytes_to_interval(bytes[:byteshift], ppb)
+            self.screen.put_interval(page, x, y, interval) 
+        offset = byteshift        
         bank_offset = 0
-        while True:
-            offs = bank_offset + offset
-            page, x, y = self.get_coords(addr+offs)
-            byteshift = x*self.bitsperpixel//8
-            self.set_memory_row(page, x, y, bytes[offs:offs+byteshift])
-            offset += byteshift
+        page_offset = 0
+        i = 0
+        while page_offset + bank_offset + offset < len(bytes):
+            y += self.interleave_times
             if offset > self.bank_size:
                 bank_offset += self.bank_size
                 offset = 0
-            if bank_offset + offset >= len(bytes):
-                break
-
-    def set_memory_row(self, page, x, y, bytes):                
-        """ Set a list of bytes in CGA memory of max one row length. """
-        mask = self.num_attr - 1 # 2**bpp-1
-        if self.coord_ok(page, x, y):
-            clist = []
-            for val in bytes:
-                for shift in range(8 // self.bitsperpixel):
-                    nbit = (val >> (8-(shift+1)*self.bitsperpixel)) & mask
-                    clist.append(nbit)
-            self.screen.put_interval(page, x, y, clist) 
+                i += 1
+                y = i
+                if bank_offset > self.page_size:
+                    page_offset += self.page_size
+                    bank_offset = 0
+                    offset = 0
+                    page += 1
+                    y = 0
+                    i = 0
+            if self.coord_ok(page, 0, y):
+                offs = bank_offset + offset
+                interval = bytes_to_interval(bytes[offs:offs+self.bytes_per_row], ppb)
+                self.screen.put_interval(page, 0, y, interval) 
+                offset += self.bytes_per_row
 
     def get_area(self, x0, y0, x1, y1, byte_array):
         """ Read a sprite from the screen. """
@@ -815,10 +850,9 @@ class EGAMode(GraphicsMode):
     def get_memory(self, addr, num_bytes):
         """ Retrieve a byte from EGA memory. """
         plane = self.plane % (max(self.planes_used)+1)
-        mask = (1 << plane) & self.master_plane_mask
-        if mask == 0:
+        if plane not in self.planes_used:
             return [0]*num_bytes
-        return get_memory_ega(self, addr, num_bytes, mask)    
+        return get_memory_ega(self, addr, num_bytes, plane)    
         
     def set_memory(self, addr, bytes):
         """ Set bytes in EGA video memory. """
@@ -882,14 +916,21 @@ class Tandy6Mode(GraphicsMode):
         y = bank + 4 * row
         return page, x, y
 
-    def get_memory(self, addr):
+    def get_memory(self, addr, num_bytes):
         """ Retrieve a byte from Tandy 640x200x4 """
         # 8 pixels per 2 bytes
         # low attribute bits stored in even bytes, high bits in odd bytes.        
+        num_odd, num_even = num_bytes // 2
         page, x, y = self.get_coords(addr)
-        if self.coord_ok(page, x, y):
-            return get_pixel_byte(self.screen, page, x, y, addr%2) 
-        return -1
+        if addr%2:
+            num_even -= num_bytes%2
+        else:
+            num_odd -= num_bytes%2
+        even_bytes = get_memory_ega(self, addr, num_even, 0, factor=2)
+        odd_bytes = get_memory_ega(self, addr, num_odd, 1, factor=2)
+        if addr%2:
+            even_bytes, odd_bytes = odd_bytes, even_bytes
+        return [item for pair in zip(even_bytes, odd_bytes) for item in pair]
         
     def set_memory(self, addr, bytes):
         """ Set a byte in Tandy 640x200x4 memory. """
