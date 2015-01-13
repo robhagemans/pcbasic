@@ -994,7 +994,15 @@ def handle_key_down(e):
                 elif e.key == pygame.K_AT:
                     backend.key_down(scancode.RSHIFT, '')            
                     backend.key_down(scancode.N2, '@')            
-                    backend.key_up(scancode.RSHIFT)            
+                    backend.key_up(scancode.RSHIFT)   
+            if plat.system == 'Windows':
+                # Windows 7 and above send AltGr as Ctrl+RAlt
+                # if 'altgr' option is off, Ctrl+RAlt is sent.
+                # if 'altgr' is on, the RAlt key is being ignored
+                # but a Ctrl keydown event has already been sent
+                # so send keyup event to tell backend to release Ctrl modifier
+                if e.key == pygame.K_RALT:
+                    backend.key_up(scancode.CTRL)
         # insert into keyboard queue
         backend.key_down(scan, c) 
 
