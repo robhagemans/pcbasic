@@ -139,6 +139,15 @@ OPTIONS
             If none of those are given, read from standard input. 
             Overrides --resume, --run and --load.
            
+  --ctrl-c-break [=True|=False]
+            If True, treat Ctrl+C exactly like Ctrl+Break and Ctrl+ScrollLock
+            in graphical interface mode. If False, follow GW-BASIC behaviour 
+            where Ctrl+C breaks AUTO and INPUT but not program execution or 
+            LIST. Set to True if your keyboard does not have a Break or 
+            ScrollLock key. Default is False on Windows and Linux and True on 
+            OSX. In text and cli interface mode, Ctrl+C is always treated like
+            Ctrl+Break. If interface=none, Ctrl+C exits pc-basic.
+  
   --debug 
             Debugging mode. This enables crash tracebacks and the DEBUG 
             statement. For the DEBUG statement, the source code is your 

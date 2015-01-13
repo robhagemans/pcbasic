@@ -1032,6 +1032,7 @@ def prepare_keyboard():
     """ Prepare keyboard handling. """
     global ignore_caps
     global num_fn_keys
+    global ctrl_c_is_break
     # inserted keystrokes
     if plat.system == 'Android':
         # string_escape not available on PGS4A
@@ -1052,6 +1053,9 @@ def prepare_keyboard():
         num_fn_keys = 12
     else:
         num_fn_keys = 10
+    # if true, treat Ctrl+C *exactly* like ctrl+break (unlike GW-BASIC)
+    ctrl_c_is_break = config.options['ctrl-c-break']
+
 
 def prepare_audio():
     """ Prepare the audio subsystem. """
@@ -1781,8 +1785,9 @@ def key_down(scan, eascii='', check_full=True):
             # ctrl-alt-del: if not captured by the OS, reset the emulator
             # meaning exit and delete state. This is useful on android.
             raise error.Reset()
-    if (scan in (scancode.BREAK, scancode.SCROLLOCK) and
-                state.console_state.mod & modifier[scancode.CTRL]):
+    if ((scan in (scancode.BREAK, scancode.SCROLLOCK) or
+                ctrl_c_is_break and scan==scancode.c) 
+                and state.console_state.mod & modifier[scancode.CTRL]) :
             raise error.Break()
     if scan == scancode.PRINT:
         if (state.console_state.mod & 
