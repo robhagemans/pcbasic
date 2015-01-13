@@ -1842,7 +1842,7 @@ def key_down(scan, eascii='', check_full=True):
             and not ignore_caps and len(eascii) == 1):
         if eascii >= 'a' and eascii <= 'z':
             eascii = chr(ord(eascii)-32)
-        elif eascii >= 'A' and eascii <= 'z':
+        elif eascii >= 'A' and eascii <= 'Z':
             eascii = chr(ord(eascii)+32)
     insert_chars(eascii, check_full=True)        
     
