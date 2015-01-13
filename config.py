@@ -126,6 +126,7 @@ arguments = {
     'version': {'type': 'bool', 'default': 'False',},
     'print-trigger': {'type': 'string', 'default': 'close'},
     'altgr': {'type': 'bool', 'default': 'True',},
+    'ctrl-c-break': {'type': 'bool', 'default': False,},
 }
 
 
