@@ -163,6 +163,9 @@ def prepare_console():
     import console
     import error
     import fp
+    # we need this prepared for input to work, 
+    # even if we don't use any function from it
+    import redirect
     video_text = 'video_wconio' if plat.system == 'Windows' else 'video_curses'
     backends = {
         'none': ('video_none', 'audio_none'),
@@ -171,11 +174,7 @@ def prepare_console():
         'graphical': ('video_pygame', 'audio_pygame'), 
         }
     if not config.options['interface']:
-        # interface defaults
-        if not plat.stdin_is_tty or not plat.stdout_is_tty:
-            config.options['interface'] = 'none'
-        else:     
-            config.options['interface'] = 'graphical'
+        config.options['interface'] = 'graphical'
     # select interface        
     video_name, audio_name = backends[config.options['interface']]
     backend.video, backend.audio = __import__(video_name), __import__(audio_name)
@@ -207,10 +206,10 @@ def print_greeting(console):
         'Type RUN "@:INFO" for more.\r'
         '%d Bytes free')
     # following GW, don't write greeting for redirected input 
-    # or command-line run
+    # or command-line filter run
     if (not config.options['run'] and not config.options['exec'] and
              not config.options['input'] and not config.options[0] and
-             plat.stdin_is_tty):
+             not config.options['interface'] == 'none'):
         debugstr = ' [DEBUG mode]' if config.options['debug'] else ''
         console.write_line(greeting % (debugstr, var.fre()))
         console.show_keys(True)

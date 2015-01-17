@@ -207,9 +207,8 @@ OPTIONS
             read from the keyboard, following GW-BASIC behaviour.
             
   --interface={none|cli|text|graphical}
-            Choose the type of interface. When redirecting i/o, the
-            default is none; otherwise, default is graphical. The following
-            interface types are available:
+            Choose the type of interface. The default is graphical. 
+            The following interface types are available:
                 none        Filter for use with pipes.
                 cli         Command-line interface.
                 text        Text-based interface.
@@ -291,6 +290,9 @@ OPTIONS
                 paste   Paste from clipboard.
                 pen     Light pen emulation.
             On Android, touch is mapped to the light pen.
+
+  -n 
+            Run PC-BASIC as a command-line filter. Same as --interface=none.
 
   --nobox [=True|=False]
             Disable box-drawing recognition for DBCS code pages. 

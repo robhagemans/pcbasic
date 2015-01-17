@@ -49,7 +49,8 @@ short_args = {
     'd': 'double', 'f': 'max-files', 
     's': 'max-reclen', 'c': 'serial-buffer-size',
     'm': 'max-memory', 'i': '',
-    'b': 'interface=cli', 't': 'interface=text', 'l': 'load', 'h': 'help',  
+    'b': 'interface=cli', 't': 'interface=text', 'n': 'interface=none',
+    'l': 'load', 'h': 'help',  
     'r': 'run', 'e': 'exec', 'q': 'quit', 'k': 'keys', 'v': 'version',
     }
 
