@@ -166,6 +166,9 @@ def prepare_console():
     """ Initialise backend and console. """
     import state
     import backend
+    # we need to prepare this for --input to work, even if we don't use 
+    # anything from the namespace in this module
+    import redirect
     # load backend modules
     # this can't be done in backend.py as it would create circular dependency
     import video_none
