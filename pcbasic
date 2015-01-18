@@ -111,6 +111,9 @@ def start_basic():
         backend, console = prepare_console()
         # greet, load and run only if not resuming   
         if resume:
+            # suppress double prompt
+            if not state.basic_state.execute_mode:
+                state.basic_state.prompt = False
             run.start('', False, config.options['quit'])
         else:    
             print_greeting(console)
