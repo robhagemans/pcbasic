@@ -1,6 +1,8 @@
 # -*- mode: python -*-
-a = Analysis(['pcbasic'],
-             pathex=['/home/rob/Projects/basic-project/pc-basic'],
+basedir = '/home/rob/Projects/basic-project/pc-basic'
+
+a = Analysis([basedir+'/pcbasic'],
+             pathex=[basedir],
              hiddenimports=[],
              hookspath=None,
              runtime_hooks=None)
@@ -39,21 +41,31 @@ coll = COLLECT(exe,
                     ('libbz2.so.1.0', None, None),
                     ('libdbus-1.so.3', None, None),
                     ('libstdc++.so.6', None, None),
-                    ('libreadline.so.6', None, None), # though this may be useful in future for dumbterm mode 
+                    ('libreadline.so.6', None, None), 
                     ('libtinfo.so.5', None, None),
                     ('libexpat.so.1', None, None),
                     ('libmad.so.0', None, None),
                     ('libjson.so.0', None, None),
                     ('libgcc_s.so.1', None, None),
                     ('libasyncns.so.0', None, None),
-               ],
+               ]     
+               ,
                a.zipfiles,
                a.datas,
-               Tree('font', prefix='font'),
-               Tree('encoding', prefix='encoding'),
-               Tree('info', prefix='info'),
+               Tree(basedir+'/font', prefix='font'),
+               Tree(basedir+'/encoding', prefix='encoding'),
+               Tree(basedir+'/info', prefix='info'),
                strip=None,
                upx=True,
                name='pcbasic')
                
-               
+# add files to top level of archive
+import shutil
+shutil.copyfile('install.sh', 'dist/install.sh')
+shutil.copyfile('pcbasic.png', 'dist/pcbasic.png')
+shutil.copyfile(basedir+'/README.md', 'dist/README.md')
+import os
+os.chmod('dist/install.sh', 0775)
+
+
+

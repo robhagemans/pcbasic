@@ -170,6 +170,17 @@ def prepare_console():
     # we need this prepared for input to work, 
     # even if we don't use any function from it
     import redirect
+    # hack: mark modules for inclusion by pyinstaller
+    # see https://groups.google.com/forum/#!topic/pyinstaller/S8QgHXiGJ_A
+    if False:
+        import video_none
+        import video_wconio
+        import video_curses
+        import video_cli
+        import video_pygame
+        import audio_none
+        import audio_beep
+        import audio_pygame
     video_text = 'video_wconio' if plat.system == 'Windows' else 'video_curses'
     backends = {
         'none': ('video_none', 'audio_none'),
