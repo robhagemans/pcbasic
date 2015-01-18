@@ -37,8 +37,9 @@ attr = 7
  
 def prepare():
     """ Initialise the video_wconio module. """
-    global caption
+    global caption, wait_on_close
     caption = config.options['caption']
+    wait_on_close = config.options['wait']
 
 def init():
     """ Initialise the text interface. """
@@ -62,6 +63,9 @@ def init_screen_mode(mode_info=None):
     
 def close():
     """ Close the text interface. """
+    if wait_on_close:
+        wconio.settitle(caption + ' - press a key to close window')
+        msvcrt.getch()    
     wconio.clrscr()
     
 def idle():
