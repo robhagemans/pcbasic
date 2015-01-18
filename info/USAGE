@@ -423,6 +423,13 @@ OPTIONS
             be changed at runtime through the CLEAR statement; more than 16384
             needs to be available to enter SCREEN 5 and 6. Default is 262144.
 
+  -w
+  --wait [=True|=False]
+            If True, PC-BASIC waits for a keystroke before closing the window
+            on exit. Only works for interface=graphical or text. 
+            Defalt is False. 
+
+
 EXAMPLES
 
     pcbasic

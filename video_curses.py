@@ -63,8 +63,9 @@ if curses:
  
 def prepare():
     """ Initialise the video_curses module. """
-    global caption
+    global caption, wait_on_close
     caption = config.options['caption']
+    wait_on_close = config.options['wait']
 
 def init():
     """ Initialise the text interface. """
@@ -139,6 +140,13 @@ def init_screen_mode(mode_info=None):
     
 def close():
     """ Close the text interface. """
+    if wait_on_close:
+        sys.stdout.write(ansi.esc_set_title % (caption + 
+                                              ' - press a key to close window'))
+        # redraw in case terminal didn't recognise ansi sequence
+        redraw()
+        while window.getch() == -1:
+            pass
     curses.noraw()
     curses.nl()
     curses.nocbreak()

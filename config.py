@@ -52,6 +52,7 @@ short_args = {
     'b': 'interface=cli', 't': 'interface=text', 'n': 'interface=none',
     'l': 'load', 'h': 'help',  
     'r': 'run', 'e': 'exec', 'q': 'quit', 'k': 'keys', 'v': 'version',
+    'w': 'wait',
     }
 
 # all long-form arguments
@@ -129,6 +130,7 @@ arguments = {
     'print-trigger': {'type': 'string', 'default':'close',},
     'altgr': {'type': 'bool', 'default': True,},
     'ctrl-c-break': {'type': 'bool', 'default': False,},
+    'wait': {'type': 'bool', 'default': False,},
 }
 
 

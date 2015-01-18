@@ -215,6 +215,7 @@ def prepare():
     global mousebutton_copy, mousebutton_paste, mousebutton_pen
     global mono_monitor, font_families, aspect, force_square_pixel
     global caption
+    global wait_on_close
     # display dimensions
     force_display_size = config.options['dimensions']
     aspect = config.options['aspect'] or aspect
@@ -266,6 +267,8 @@ def prepare():
         key_to_scan[pygame.K_MODE] = scancode.ALT
     # window caption/title
     caption = config.options['caption'] or 'PC-BASIC 3.23'
+    # wait before closing window
+    wait_on_close = config.options['wait']
     
 ###############################################################################
 # state saving and loading
@@ -519,6 +522,12 @@ def build_icon():
 
 def close():
     """ Close the pygame interface. """
+    if wait_on_close:
+        pygame.display.set_caption('%s - press a key to close window' % caption)   
+        update_cursor_visibility(False)
+        # wait for a keystroke
+        while not check_events(pause=True):
+            idle()
     if android:
         pygame_android.close()
     pygame.joystick.quit()

@@ -125,7 +125,11 @@ def start_basic():
             run.start(config.options['exec'], config.options['run'], 
                       config.options['quit'])
     except error.RunError as e:
-        logging.error(error.get_message(e.err))
+        msg = error.get_message(e.err)
+        if console:
+            console.write_error_message(msg, None)
+        else:
+            logging.error(msg)
     except error.Exit:
         pass
     except error.Reset:
