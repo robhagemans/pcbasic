@@ -21,17 +21,18 @@ If you find bugs, please report them on the SourceForge discussion page at [http
 Binary distributions are currently available for Windows XP and above, Mac OSX 10.6 and above, and Linux on i386 architecture. They can be downloaded from SourceForge at [https://sourceforge.net/projects/pcbasic/files/](https://sourceforge.net/projects/pcbasic/files/).  
 
 On **Windows**:  
-- unzip the ZIP file  
-- run `pcbasic.exe`  
+- run the installer  
+- to start, click the PC-BASIC 3.23 item in your Start menu.
 
 On **OS X**:  
 - mount the disk image  
-- run `pcbasic.app`  
+- move `PC-BASIC.app` to your Applications folder  
+- to start, double click the PC-BASIC app  
 
 On **Linux**:  
-- untar the TGZ file  
-- run `pcbasic`  
-
+- untar the archive  
+- run `sudo ./install.sh`  
+- to start, click the PC-BASIC 3.23 item in your Applications menu (or run `pcbasic` on the command line).  
 
 #### Using the source distribution ####
 If you prefer to use PC-BASIC from source you should install the following dependencies:
