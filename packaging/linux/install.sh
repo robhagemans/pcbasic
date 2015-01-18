@@ -1,13 +1,19 @@
 #!/bin/bash
 # PC-BASIC install script for Linux
 
-abort () {
-    echo "Installation aborted. No changes were made."
-    if [ "$1" = "spawned" ]; then
-        echo "Press a key to exit."
+SPAWNED=$1
+
+do_close () {
+    if [ "$SPAWNED" = "spawned" ]; then
+        echo "Press ENTER to exit."
         read KEY
     fi
     exit 0
+}
+
+abort () {
+    echo "Installation aborted. No changes were made."
+    do_close
 }
 
 cat pcbasic/info/VERSION
@@ -20,7 +26,7 @@ DESKTOP_DIR="/usr/share/applications"
 ICON_DIR="/usr/share/icons"
 
 if [ ! -t 1 ]; then 
-	if [ "$1" = "spawned"  -o  -z $DISPLAY  ]; then
+	if [ "$SPAWNED" = "spawned"  -o  -z $DISPLAY  ]; then
 		>&2 echo "This script must be run interactively."
         exit 1
 	else
@@ -141,8 +147,11 @@ echo "echo \"Removing program files ... \"" >> $UNINSTALLER
 if [ -n "$INSTALL_DIR" ]; then
     echo "rm -r $INSTALL_DIR" >> $UNINSTALLER
 fi
+echo "echo" >> $UNINSTALLER
 echo "echo \"UNINSTALL COMPLETED\"" >> $UNINSTALLER
 chmod ugo+x $UNINSTALLER
 
+echo
 echo "INSTALLATION COMPLETED."
+do_close
 

@@ -59,13 +59,6 @@ coll = COLLECT(exe,
                upx=True,
                name='pcbasic')
                
-# add files to top level of archive
-import shutil
-shutil.copyfile('install.sh', 'dist/install.sh')
-shutil.copyfile('pcbasic.png', 'dist/pcbasic.png')
-shutil.copyfile(basedir+'/README.md', 'dist/README.md')
-import os
-os.chmod('dist/install.sh', 0775)
 
 
 
