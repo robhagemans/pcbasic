@@ -285,7 +285,7 @@ def parse_package(remaining):
 def parse_config(remaining):
     """ Find the correct config file and read it. """
     # always read default config file
-    conf_dict = read_config_file(os.path.join(plat.info_dir, plat.config_name))
+    conf_dict = read_config_file(os.path.join(plat.config_path, plat.config_name))
     # find any overriding config file & read it
     config_file = None
     try:

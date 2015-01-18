@@ -53,11 +53,11 @@ def prepare():
     global state_file, loaded
     if config.options['state']:
         state_file = config.options['state']
-    elif os.path.exists('PCBASIC.SAV'):
-        state_file = 'PCBASIC.SAV'
+    elif os.path.exists(plat.state_name):
+        state_file = plat.state_name
     else:            
-        state_file = os.path.join(plat.info_dir, 'PCBASIC.SAV')
-    # do not load any state file from a package    
+        state_file = os.path.join(plat.state_path, plat.state_name)
+    # do not load any state file from a package
     if config.package:
         state_file = ''
     # register the picklers for file and cStringIO

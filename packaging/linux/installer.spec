@@ -55,6 +55,7 @@ coll = COLLECT(exe,
                Tree(basedir+'/font', prefix='font'),
                Tree(basedir+'/encoding', prefix='encoding'),
                Tree(basedir+'/info', prefix='info'),
+               Tree(basedir+'/config', prefix='config'),
                strip=None,
                upx=True,
                name='pcbasic')
