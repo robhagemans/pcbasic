@@ -71,14 +71,14 @@ For more information, consult the text file [`info/USAGE`](https://sourceforge.n
 
 
 #### Basic BASIC commands ####
-PC-BASIC 3.23 starts in interactive mode, where you can execute BASIC statements directly. 
+PC-BASIC starts in interactive mode, where you can execute BASIC statements directly. 
 A few essential statements:  
 `SYSTEM` exits PC-BASIC.  
 `LOAD "PROGRAM"` loads `PROGRAM.BAS` but does not start it.  
 `RUN` starts the currently loaded program.  
 `RUN "PROGRAM"` loads and starts `PROGRAM.BAS`.  
 
-A full CC-licensed [GW-BASIC language reference](https://sourceforge.net/p/pcbasic/code/ci/master/tree/info/HELP) is included with PC-BASIC 3.23. You can find it in the `info/` directory as a text file called `HELP`; access it through your favourite text reader or through `RUN "@:INFO"`, option `Docs`. This documentation aims to document the actual behaviour of GW-BASIC 3.23, on which PC-BASIC 3.23 is modelled. Please note that the original Microsoft help file, which can be found on the internet, is rather hit-and-miss; GW-BASIC often behaves differently than documented by Microsoft. 
+A full CC-licensed [GW-BASIC language reference](https://sourceforge.net/p/pcbasic/code/ci/master/tree/info/HELP) is included with PC-BASIC. You can find it in the `info/` directory as a text file called `HELP`; access it through your favourite text reader or through `RUN "@:INFO"`, option `Docs`. This documentation aims to document the actual behaviour of GW-BASIC 3.23, on which PC-BASIC is modelled. Please note that the original Microsoft help file, which can be found on the internet, is rather hit-and-miss; GW-BASIC often behaves differently than documented by Microsoft. 
 
 
 #### .BAS files ####
