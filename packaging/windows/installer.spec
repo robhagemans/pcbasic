@@ -1,6 +1,8 @@
+#basedir = 'C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\'
+basedir='..\\..'
 # -*- mode: python -*-
-a = Analysis(['pcbasic'],
-             pathex=['C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic'],
+a = Analysis([basedir+'\\pcbasic'],
+             pathex=[basedir],
              hiddenimports=[],
              hookspath=None,
              runtime_hooks=None)
@@ -13,14 +15,15 @@ exe = EXE(pyz,
           strip=None,
           upx=True,
           console=False , 
-	  icon='C:\\Documents and Settings\\rob\\My Documents\\Projects\\pc-basic_distributions\\pc-basic\\resources\\pcbasic.ico')
+	  icon='pcbasic.ico')
 coll = COLLECT(exe,
                a.binaries,
                a.zipfiles,
                a.datas,
-               Tree('font', prefix='font'),
-               Tree('encoding', prefix='encoding'),
-               Tree('info', prefix='info'),
+               Tree(basedir+'\\font', prefix='font'),
+               Tree(basedir+'\\encoding', prefix='encoding'),
+               Tree(basedir+'\\info', prefix='info'),
+               Tree(basedir+'\\config', prefix='config'),
                strip=None,
                upx=True,
                name='pcbasic')
