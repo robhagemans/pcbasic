@@ -98,9 +98,22 @@ do_install () {
 
     echo
     echo "Copying program files ... "
+    # make list of directories and files for uninstall log
     mkdir -p "$INSTALL_DIR"
-    cp -R pcbasic/* "$INSTALL_DIR"
 
+    cd pcbasic
+    DIRS=$(find ./* -type d -print)
+    FILES=$(find ./* -type f -print)
+    cd ..
+    
+    for dir in $DIRS; do
+        mkdir -p "$INSTALL_DIR/$dir"
+    done
+
+    for file in $FILES; do
+        cp "pcbasic/$file" "$INSTALL_DIR/$file"
+    done
+    
     if [ "$(id -u)" = "0" ]; then
         echo "Creating symlink ... "
         ln -s "$INSTALL_DIR/pcbasic" "/usr/bin/pcbasic"
@@ -125,6 +138,11 @@ do_install () {
     echo "DESKTOP_DIR=$DESKTOP_DIR" >> $UNINSTALLER
     echo "ICON_DIR=$ICON_DIR" >> $UNINSTALLER
     echo "INSTALL_DIR=$INSTALL_DIR">> $UNINSTALLER
+    
+    # invert dirs to delete them recursively
+    INVERTED_DIRS=$(echo "$DIRS" | sed '1!G;h;$!d')
+    echo "DIRS=\"$INVERTED_DIRS\"" >> $UNINSTALLER
+    echo "FILES=\"$FILES\"" >> $UNINSTALLER
     cat $SCRIPT >> $UNINSTALLER
     chmod ugo+x $UNINSTALLER
 
@@ -142,7 +160,7 @@ do_uninstall () {
     echo "SUMMARY OF WHAT WILL BE DONE:"
     echo "I will delete the icon $ICON_DIR/pcbasic.png"
     echo "I will delete the desktop menu entry $DESKTOP_DIR/pcbasic.desktop"
-    echo "I will delete all files from $INSTALL_DIR"
+    echo "I will delete program files from $INSTALL_DIR"
     echo
     
     echo -n "Start un-installation [y/N] ?"
@@ -164,11 +182,19 @@ do_uninstall () {
     fi
     
     echo "Removing program files ... "
-    if [ -n "$INSTALL_DIR" ]; then
-        rm -r "$INSTALL_DIR"
-    fi
-    echo 
+#    if [ -n "$INSTALL_DIR" ]; then
+#        rm -r "$INSTALL_DIR"
+#    fi
+    for file in $FILES; do
+        rm "$INSTALL_DIR/$file"
+    done
+    for dir in $DIRS; do
+        rmdir "$INSTALL_DIR/$dir"
+    done
+    rm "$INSTALL_DIR/uninstall.sh"
+    rmdir "$INSTALL_DIR"
 
+    echo 
     echo "UNINSTALL COMPLETED"
 }
 
