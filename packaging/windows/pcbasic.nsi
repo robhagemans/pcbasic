@@ -11,7 +11,7 @@
 
   ;Name and file
   Name "PC-BASIC 3.23"
-  OutFile "pcbasic-win32.exe"
+  OutFile "pc-basic-win32.exe"
 
   ;Default installation folder
   InstallDir "$programfiles\PC-BASIC"
