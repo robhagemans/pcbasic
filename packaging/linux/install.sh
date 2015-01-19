@@ -141,8 +141,8 @@ do_install () {
     
     # invert dirs to delete them recursively
     INVERTED_DIRS=$(echo "$DIRS" | sed '1!G;h;$!d')
-    echo "DIRS=\"$INVERTED_DIRS\"" >> $UNINSTALLER
-    echo "FILES=\"$FILES\"" >> $UNINSTALLER
+    echo "DIRS='$INVERTED_DIRS'" >> $UNINSTALLER
+    echo "FILES='$FILES'" >> $UNINSTALLER
     cat $SCRIPT >> $UNINSTALLER
     chmod ugo+x $UNINSTALLER
 
@@ -160,6 +160,9 @@ do_uninstall () {
     echo "SUMMARY OF WHAT WILL BE DONE:"
     echo "I will delete the icon $ICON_DIR/pcbasic.png"
     echo "I will delete the desktop menu entry $DESKTOP_DIR/pcbasic.desktop"
+    if [ "$(id -u)" = "0" ]; then
+        echo "I will delete the symlink /usr/bin/pcbasic"
+    fi
     echo "I will delete program files from $INSTALL_DIR"
     echo
     
