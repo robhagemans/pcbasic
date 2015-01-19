@@ -1,5 +1,5 @@
 # -*- mode: python -*-
-basedir = '/home/rob/Projects/basic-project/pc-basic'
+basedir = '../..'
 
 a = Analysis([basedir+'/pcbasic'],
              pathex=[basedir],
