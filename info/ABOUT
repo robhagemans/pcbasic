@@ -1,8 +1,9 @@
 PC-BASIC 3.23 is a BASIC interpreter that aims to be fully compatible
-with Microsoft(R) GW-BASIC 3.23. 
+with Microsoft GW-BASIC 3.23. 
 
-Press 'Q' to exit INFO; then type SYSTEM to close PC-BASIC.
- 
+Project home: https://sourceforge.net/projects/pcbasic/
+
+
 Contributors__________________________________________________________________
 * Rob Hagemans          main author
 * WJB                   bug fixes
