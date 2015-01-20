@@ -1,6 +1,7 @@
+basedir='../..'
 # -*- mode: python -*-
-a = Analysis(['pcbasic'],
-         pathex=['/Users/rob/pc-basic'],
+a = Analysis([basedir+'/pcbasic'],
+         pathex=[basedir],
          hiddenimports=[],
          hookspath=None,
          runtime_hooks=None)
@@ -12,7 +13,7 @@ exe = EXE(pyz,
       debug=False,
       strip=None,
       upx=True,
-      console=False )
+      console=False)
 coll = COLLECT(exe,
            a.binaries - [
                 # exclude Scrap module as it leads to strange errors.
@@ -20,13 +21,14 @@ coll = COLLECT(exe,
                 ],
            a.zipfiles,
            a.datas,
-           Tree('font', prefix='font'),
-           Tree('encoding', prefix='encoding'),
-           Tree('info', prefix='info'),
+           Tree(basedir+'/font', prefix='font'),
+           Tree(basedir+'/encoding', prefix='encoding'),
+           Tree(basedir+'/info', prefix='info'),
+           Tree(basedir+'/config', prefix='config'),
            strip=None,
            upx=True,
            name='pcbasic')
 app = BUNDLE(coll,
-         name='pcbasic.app',
+         name='PC-BASIC.app',
          icon='/Users/rob/pc-basic/resources/pcbasic.icns')
 
