@@ -43,15 +43,15 @@ On **Unix-like systems**, you also have the option to install PC-BASIC to a dedi
 #### Source dependencies ####
 The following packages are needed or recommended when installing PC-BASIC from source:
 
-| Package                                                         | OS      | Status    | Notes  
-|-----------------------------------------------------------------|---------|-----------|----------------------------  
-| [Python 2.7.6](http://www.python.org/download/releases/2.7.6/)  | all     | required  |   
-| [PyWin32](https://sourceforge.net/projects/pywin32/)            | Windows | required  |  
-| [PyGame 1.9.1](http://www.pygame.org/download.shtml)            | all     | essential | needed for graphical interface  
-| [NumPy](https://sourceforge.net/projects/numpy/files/)          | all     | essential | needed for sound  
-| [PySerial](https://pypi.python.org/pypi/pyserial)               | all     | optional  | needed for serial/parallel port access  
-| [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html)| Unix    | optional  | needed for `SHELL`  
-| [WConio](http://newcenturycomputers.net/projects/wconio.html)   | Windows | optional  | needed for command-line interface   
+| Package                                                         | OS      | Status       | Notes  
+|-----------------------------------------------------------------|---------|--------------|----------------------------  
+| [Python 2.7.6](http://www.python.org/download/releases/2.7.6/)  | all     | required     |   
+| [PyWin32](https://sourceforge.net/projects/pywin32/)            | Windows | required     |  
+| [PyGame 1.9.1](http://www.pygame.org/download.shtml)            | all     | essential    | needed for graphical interface  
+| [NumPy](https://sourceforge.net/projects/numpy/files/)          | all     | essential    | needed for sound  
+| [PySerial](https://pypi.python.org/pypi/pyserial)               | all     | recommended  | needed for serial/parallel port access  
+| [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html)| Unix    | recommended  | needed for `SHELL`  
+| [WConio](http://newcenturycomputers.net/projects/wconio.html)   | Windows | recommended  | needed for command-line interface   
 
 Note that the official Pygame release 1.9.1 has a bug in its handling of copy & paste on X11-based systems.
 If you run into this, install one of the [`xsel`](http://www.vergenet.net/~conrad/software/xsel/) or 
@@ -72,6 +72,7 @@ A few selected command-line options:
 `pcbasic -h` shows all available command line options.  
 
 By default, PC-BASIC emulates GW-BASIC on a system with VGA video capabilities. The emulation target can be changed by selecting one of the following presets with the `preset` option:  
+|--------------------------|------------------------------------------------------------------  
 | `pcbasic --preset=cga`   |  GW-BASIC with CGA graphics, including composite colourburst mode.  
 | `pcbasic --preset=pcjr`  |  IBM PCjr Cartridge BASIC, including PCjr video and 3-voice sound capabilities and extended BASIC syntax.  
 | `pcbasic --preset=tandy` |  Tandy-1000 GW-BASIC, including Tandy video and 3-voice sound capabilities and extended BASIC syntax.  
