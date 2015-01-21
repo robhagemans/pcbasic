@@ -72,10 +72,13 @@ A few selected command-line options:
 `pcbasic -h` shows all available command line options.  
 
 By default, PC-BASIC emulates GW-BASIC on a system with VGA video capabilities. The emulation target can be changed by selecting one of the following presets with the `preset` option:  
+
+| Preset                   |  Emulation target  
 |--------------------------|------------------------------------------------------------------  
 | `pcbasic --preset=cga`   |  GW-BASIC with CGA graphics, including composite colourburst mode.  
 | `pcbasic --preset=pcjr`  |  IBM PCjr Cartridge BASIC, including PCjr video and 3-voice sound capabilities and extended BASIC syntax.  
 | `pcbasic --preset=tandy` |  Tandy-1000 GW-BASIC, including Tandy video and 3-voice sound capabilities and extended BASIC syntax.  
+
 Other available presets include `mda`, `ega`, `hercules`, `olivetti`. 
 
 If you're running PC-BASIC from a GUI, you can set the required options in `info/PCBASIC.INI` instead.
