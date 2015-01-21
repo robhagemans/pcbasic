@@ -73,17 +73,28 @@ A few selected command-line options:
 
 By default, PC-BASIC emulates GW-BASIC on a system with VGA video capabilities. The emulation target can be changed by selecting one of the following presets with the `preset` option:  
 
-| Preset                   |  Emulation target  
-|--------------------------|------------------------------------------------------------------  
-| `pcbasic --preset=cga`   |  GW-BASIC with CGA graphics, including composite colourburst mode.  
-| `pcbasic --preset=pcjr`  |  IBM PCjr Cartridge BASIC, including PCjr video and 3-voice sound capabilities and extended BASIC syntax.  
-| `pcbasic --preset=tandy` |  Tandy-1000 GW-BASIC, including Tandy video and 3-voice sound capabilities and extended BASIC syntax.  
+| Preset  |  Emulation target  
+|---------|------------------------------------------------------------------  
+| `cga`   |  GW-BASIC with CGA graphics, including composite colourburst mode.  
+| `pcjr`  |  IBM PCjr Cartridge BASIC, including PCjr video and 3-voice sound capabilities and extended BASIC syntax.  
+| `tandy` |  Tandy-1000 GW-BASIC, including Tandy video and 3-voice sound capabilities and extended BASIC syntax.  
 
-Other available presets include `mda`, `ega`, `hercules`, `olivetti`. 
+For example, run `pcbasic --preset=pcjr`. Other available presets include `mda`, `ega`, `hercules`, `olivetti`. 
 
-If you're running PC-BASIC from a GUI, you can set the required options in `info/PCBASIC.INI` instead.
+If you're running PC-BASIC from a GUI, you can set the required options in the configuration file instead. The configuration file is a file names `PCBASIC.INI` that is stored in the following location:
 
-For more information, consult the text file [`info/USAGE`](https://sourceforge.net/p/pcbasic/code/ci/master/tree/info/USAGE) or run `pcbasic -h`.
+| OS      | Configuration file location  
+|---------|-----------------------------  
+| Windows | `C:\Users\` (your user name) `\AppData\pcbasic`  
+| OS X    | `~/Library/Application Support/pcbasic`   
+| Linux   | `~/.config/pcbasic`  
+
+For example, you could include the following line in `PCBASIC.INI` to emulate Cartridge Basic by default:
+
+    preset=pcjr
+
+
+For a full list of options, consult the text file [`info/USAGE`](https://sourceforge.net/p/pcbasic/code/ci/master/tree/info/USAGE) or run `pcbasic -h`.
 
 
 #### Basic BASIC commands ####
