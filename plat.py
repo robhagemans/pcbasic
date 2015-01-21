@@ -42,7 +42,7 @@ home_dir = os.path.expanduser('~')
 config_name = 'PCBASIC.INI'
 state_name = 'PCBASIC.SAV'
 if system == 'Windows':
-    config_path = os.getenv('APPDATA')
+    config_path = os.path.join(os.getenv('APPDATA'), 'pcbasic')
     state_path = config_path
 elif system == 'OSX':
     config_path = os.path.join(home_dir, 'Library/Application Support/pcbasic')
