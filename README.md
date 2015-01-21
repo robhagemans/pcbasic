@@ -46,7 +46,9 @@ If you prefer to use PC-BASIC from source you should install the following depen
 - [WConio](http://newcenturycomputers.net/projects/wconio.html) (needed for Windows command-line interface only)  
 
 Of these, only Python is mandatory; however, without the optional dependencies functionality will be limited.
-After installing the dependencies, unpack the TGZ archive and run the `pcbasic` script with Python. 
+After installing the dependencies, unpack the TGZ archive. You can now run `pcbasic` straight from the unpacked directory. 
+Alternatively, an optional `install.sh` script is provided for Unix-like systems. This will install PC-BASIC into a system-wide 
+directory and create a FreeDesktop menu item.
 
 On **Linux** systems, Python 2.7 usually comes pre-installed; the other packages can often be installed through your package manager. For example, on Ubuntu you can install all dependencies at once through APT:  
 `sudo apt-get install python2.7 python-pygame python-numpy python-pexpect python-serial python-parallel`  

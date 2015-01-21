@@ -4,6 +4,9 @@
 SCRIPT=$0
 SPAWNED=$1
 
+DEPS="pygame numpy serial parallel pexpect"
+PYTHON="/usr/bin/env python2"
+
 do_close () {
     if [ "$SPAWNED" = "spawned" ]; then
         echo "Press ENTER to exit."
@@ -27,7 +30,7 @@ check_permissions () {
 }
 
 check_python () {
-    if !( /usr/bin/env python2 -c 'quit()' ); then 
+    if !( $PYTHON -c 'quit()' 2>/dev/null ); then 
         echo
         echo "ERROR: Python 2 not found."
         abort
@@ -35,18 +38,30 @@ check_python () {
 }
 
 check_dependencies () {
-    DEPS="pygame numpy pyserial pyparallel pexpect"
+    DEPS_NOT=""
     
-    # no check for now, just a reminder
     echo
-    echo "Please make sure the following Python modules are installed."
-    echo "Without them PC-BASIC may not work correctly."
-    echo $DEPS
+    for DEP in $DEPS; do
+        echo -n "checking Python module $DEP ... "
+        if ( $PYTHON -c "import $DEP" 2>/dev/null ); then 
+            echo "installed"
+        else 
+            echo "NOT INSTALLED"
+            DEPS_NOT="$DEPS_NOT $DEP"
+        fi
+    done
+
+    #
+    if [ -n "$DEPS_NOT" ]; then
+        echo
+        echo "WARNING: Please make sure the following Python modules are installed: $DEPS_NOT"
+        echo "Without them PC-BASIC may not work correctly."
+    fi
     echo
 }
 
 do_install () {
-    cat pcbasic/info/VERSION
+    cat info/VERSION
     echo "INSTALLATION SCRIPT"
     echo
 
@@ -123,7 +138,8 @@ do_install () {
     
     # create build environment
     mkdir build
-    cp -R * build
+    # suppress 'cannot copy build/ into itself' message
+    cp -R * build 2>/dev/null
     echo
 
     /usr/bin/env python2 -m compileall build/
