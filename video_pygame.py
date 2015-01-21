@@ -26,12 +26,10 @@ import typeface
 import scancode
 import state
 
-# Workaround for broken pygame.scrap on Mac
+# Workaround for broken pygame.scrap on various systems
 if pygame:
-    if plat.system == 'OSX':
-        import pygame_mac_scrap as scrap
-    else:
-        scrap = pygame.scrap
+    import pygame_clipboard
+    scrap = pygame_clipboard.scrap
 
 # Android-specific definitions
 android = (plat.system == 'Android')
