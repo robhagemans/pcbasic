@@ -79,7 +79,7 @@ By default, PC-BASIC emulates GW-BASIC on a system with VGA video capabilities. 
 
 For example, run `pcbasic --preset=pcjr`. Other available presets include `mda`, `ega`, `hercules`, `olivetti`. 
 
-If you're running PC-BASIC from a GUI, you can set the required options in the configuration file instead. The configuration file is a file names `PCBASIC.INI` that is stored in the following location:
+If you're running PC-BASIC from a GUI, you can set the required options in the configuration file instead. The configuration file is a file named `PCBASIC.INI`, stored in the following location:
 
 | OS         | Configuration file location  
 |------------|-------------------------------------------------------------------------  

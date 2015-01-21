@@ -1,5 +1,5 @@
 #!/bin/sh
-NAME="pc-basic-$1-linux-i386"
+NAME="pcbasic-$1-linux-i386"
 
 pyinstaller installer.spec
 # add files to top level of archive
