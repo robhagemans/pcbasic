@@ -1,4 +1,4 @@
-#### PC-BASIC 3.23 ####
+### PC-BASIC 3.23 ###
 _A free, cross-platform emulator for GW-BASIC, BASICA, PCjr Cartridge Basic and Tandy 1000 GW-BASIC._
 
 PC-BASIC is an interpreter for GW-BASIC programs. It runs on Windows, Mac and Linux and other 
@@ -18,7 +18,7 @@ If you find bugs, please report them on the SourceForge discussion page at [http
 
 
 #### Installation ####
-Binary distributions are currently available for Windows XP and above, Mac OSX 10.6 and above, and Linux on i386 architecture. They can be downloaded from SourceForge at [https://sourceforge.net/projects/pcbasic/files/](https://sourceforge.net/projects/pcbasic/files/).  
+Packaged distributions are currently available for Windows XP and above, Mac OSX 10.6 and above, and Linux on 32-bit or 64-bit Intel/AMD architecture. They can be downloaded from SourceForge at [https://sourceforge.net/projects/pcbasic/files/](https://sourceforge.net/projects/pcbasic/files/).  
 
 On **Windows**:  
 - run the installer  
@@ -34,8 +34,14 @@ On **Linux**:
 - run `sudo ./install.sh`  
 - to start, click the PC-BASIC 3.23 item in your Applications menu (or run `pcbasic` on the command line).  
 
-#### Using the source distribution ####
-If you prefer to use PC-BASIC from source you should install the following dependencies:
+#### Installation from source ####
+If your system is not supported or you prefer to install from source, download the source distribution and unpack the TGZ archive. You should also make sure you have the required dependencies installed (see below).
+If you want, you can run the Python script `pcbasic` straight from the unpacked directory.
+
+On **Unix-like systems**, you also have the option to install PC-BASIC to a dedicated directory and create FreeDesktop menu items using the `install.sh` shell script. Run with root privileges if you wish to install to a system-wide directory and be able to access `pcbasic` from anywhere.
+
+#### Source dependencies ####
+The following packages are needed or recommended when installing PC-BASIC from source:
 
 | Package                                                         | OS      | Status    | Notes  
 |-----------------------------------------------------------------|---------|-----------|----------------------------  
@@ -45,11 +51,7 @@ If you prefer to use PC-BASIC from source you should install the following depen
 | [NumPy](https://sourceforge.net/projects/numpy/files/)          | all     | essential | needed for sound  
 | [PySerial](https://pypi.python.org/pypi/pyserial)               | all     | optional  | needed for serial/parallel port access  
 | [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html)| Unix    | optional  | needed for `SHELL`  
-| [WConio](http://newcenturycomputers.net/projects/wconio.html)   | Windows | optioanl  | needed for command-line interface   
-
-After installing the dependencies, unpack the TGZ archive. You can now run `pcbasic` straight from the unpacked directory. 
-Alternatively, an optional `install.sh` script is provided for Unix-like systems. This will install PC-BASIC into a system-wide 
-directory and create a FreeDesktop menu item.
+| [WConio](http://newcenturycomputers.net/projects/wconio.html)   | Windows | optional  | needed for command-line interface   
 
 Note that the official Pygame release 1.9.1 has a bug in its handling of copy & paste on X11-based systems.
 If you run into this, install one of the [`xsel`](http://www.vergenet.net/~conrad/software/xsel/) or 
@@ -60,6 +62,8 @@ On **Linux** systems, Python 2.7 usually comes pre-installed; the other packages
 
 On **OSX** systems, there are several versions of Python 2.7 and all downloads need to match your version and CPU architecture. It's a bit tricky, I'm afraid. The easiest option seems to be installing both Python and PyGame through MacPorts or Homebrew.
 
+On **Windows** systems, you should download all the required packages from the project web sites linked above.
+
 
 #### Usage essentials ####
 Double-click on `pcbasic` or run `pcbasic` on the command line to start in interactive mode with no programs.  
@@ -68,9 +72,9 @@ A few selected command-line options:
 `pcbasic -h` shows all available command line options.  
 
 By default, PC-BASIC emulates GW-BASIC on a system with VGA video capabilities. The emulation target can be changed by selecting one of the following presets with the `preset` option:  
-`pcbasic --preset=cga` GW-BASIC with CGA graphics, including composite colourburst mode.  
-`pcbasic --preset=pcjr` IBM PCjr Cartridge BASIC, including PCjr video and 3-voice sound capabilities and extended BASIC syntax.  
-`pcbasic --preset=tandy` Tandy-1000 GW-BASIC, including Tandy video and 3-voice sound capabilities and extended BASIC syntax.  
+| `pcbasic --preset=cga`   |  GW-BASIC with CGA graphics, including composite colourburst mode.  
+| `pcbasic --preset=pcjr`  |  IBM PCjr Cartridge BASIC, including PCjr video and 3-voice sound capabilities and extended BASIC syntax.  
+| `pcbasic --preset=tandy` |  Tandy-1000 GW-BASIC, including Tandy video and 3-voice sound capabilities and extended BASIC syntax.  
 Other available presets include `mda`, `ega`, `hercules`, `olivetti`. 
 
 If you're running PC-BASIC from a GUI, you can set the required options in `info/PCBASIC.INI` instead.
