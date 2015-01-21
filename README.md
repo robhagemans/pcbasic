@@ -36,9 +36,8 @@ On **Linux**:
 
 #### Installation from source ####
 If your system is not supported or you prefer to install from source, download the source distribution and unpack the TGZ archive. You should also make sure you have the required dependencies installed (see below).
-If you want, you can run the Python script `pcbasic` straight from the unpacked directory.
 
-On **Unix-like systems**, you also have the option to install PC-BASIC to a dedicated directory and create FreeDesktop menu items using the `install.sh` shell script. Run with root privileges if you wish to install to a system-wide directory and be able to access `pcbasic` from anywhere.
+If you want, you can run the Python script `pcbasic` straight from the unpacked directory. On **Unix-like systems**, you also have the option to install PC-BASIC to a dedicated directory and create FreeDesktop menu items using the `install.sh` shell script. Run with root privileges if you wish to install to a system-wide directory and be able to access `pcbasic` from anywhere.
 
 #### Source dependencies ####
 The following packages are needed or recommended when installing PC-BASIC from source:
@@ -54,8 +53,7 @@ The following packages are needed or recommended when installing PC-BASIC from s
 | [WConio](http://newcenturycomputers.net/projects/wconio.html)   | Windows | recommended  | needed for command-line interface   
 
 Note that the official Pygame release 1.9.1 has a bug in its handling of copy & paste on X11-based systems.
-If you run into this, install one of the [`xsel`](http://www.vergenet.net/~conrad/software/xsel/) or 
-[`xclip`](https://sourceforge.net/projects/xclip/)  utilities and PC-BASIC will work around the issue.  
+If you run into this, install one of the [`xsel`](http://www.vergenet.net/~conrad/software/xsel/) or [`xclip`](https://sourceforge.net/projects/xclip/)  utilities and PC-BASIC will work around the issue.  
 
 On **Linux** systems, Python 2.7 usually comes pre-installed; the other packages can often be installed through your package manager. For example, on Ubuntu you can install all dependencies at once through APT:  
 `sudo apt-get install python2.7 python-pygame python-numpy python-pexpect python-serial python-parallel xsel`  
@@ -83,15 +81,17 @@ For example, run `pcbasic --preset=pcjr`. Other available presets include `mda`,
 
 If you're running PC-BASIC from a GUI, you can set the required options in the configuration file instead. The configuration file is a file names `PCBASIC.INI` that is stored in the following location:
 
-| OS      | Configuration file location  
-|---------|-----------------------------  
-| Windows | `C:\Users\` (your user name) `\AppData\pcbasic`  
-| OS X    | `~/Library/Application Support/pcbasic`   
-| Linux   | `~/.config/pcbasic`  
+| OS         | Configuration file location  
+|------------|-------------------------------------------------------------------------  
+| Windows XP | `C:\Documents and Settings\` (your username) `\Application Data\pcbasic`  
+| Windows 7  | `C:\Users\` (your username) `\AppData\Roaming\pcbasic`  
+| OS X       | `~/Library/Application Support/pcbasic`   
+| Linux      | `~/.config/pcbasic`  
 
 For example, you could include the following line in `PCBASIC.INI` to emulate Cartridge Basic by default:
 
-    preset=pcjr
+    preset=pcjr  
+
 
 
 For a full list of options, consult the text file [`info/USAGE`](https://sourceforge.net/p/pcbasic/code/ci/master/tree/info/USAGE) or run `pcbasic -h`.
