@@ -29,7 +29,6 @@ import representation
 import draw_and_play
 import redirect
 import modes
-# FIXME: circular imports
 import graphics
 
 # backend implementations
