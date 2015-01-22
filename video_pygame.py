@@ -1276,8 +1276,8 @@ if numpy:
 
     def get_interval(pagenum, x, y, length):
         """ Read a scanline interval into a list of colours. """
-        # copy into numpy array
-        return pygame.surfarray.array2d(canvas[pagenum])[x:x+length, y]
+        # NOTE that this references (much faster), we need to copy afterwards!
+        return pygame.surfarray.pixels2d(canvas[pagenum])[x:x+length, y]
 
 else:
     def put_interval(pagenum, x, y, colours, mask=0xff):

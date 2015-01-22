@@ -417,11 +417,16 @@ def bytes_to_interval(bytes, pixels_per_byte, mask=1):
     """ Convert masked attributes packed into bytes to a scanline interval. """
     bpp = 8//pixels_per_byte
     attrmask = (1<<bpp) - 1
-    if False:
-        shifts = numpy.array([128, 64, 32, 16, 8, 4, 2, 1])
-        shifts = shifts[(bpp-1)::bpp]
-        attrs = (numpy.repeat(numpy.array(bytes).astype(int), pixels_per_byte) &
-               numpy.tile(shifts, len(bytes))) & attrmask
+    if numpy:
+        # OK for EGA
+        pre_shifts = numpy.array([128, 64, 32, 16, 8, 4, 2, 1])[(bpp-1)::bpp]
+        post_shifts = numpy.array([7, 6, 5, 4, 3, 2, 1, 0])[(bpp-1)::bpp]
+        pre_shift = numpy.tile(pre_shifts, len(bytes))
+        post_shift = numpy.tile(post_shifts, len(bytes))
+        attrs = numpy.right_shift(
+                    numpy.repeat(numpy.array(bytes).astype(int), 
+                                 pixels_per_byte) & pre_shift,
+                    post_shift) & attrmask
         return numpy.array(attrs) * mask
     else:
         return [((byte >> (7-shift)) & attrmask) * mask
@@ -432,11 +437,21 @@ def interval_to_bytes(colours, pixels_per_byte, plane=0):
     num_bytes = len(colours)//pixels_per_byte
     bpp = 8//pixels_per_byte
     attrmask = (1<<bpp) - 1
-    shifts = [128, 64, 32, 16, 8, 4, 2, 1]
-    shifts = shifts[(bpp-1)::bpp]
-    if False:
-        attrs = (numpy.array(colours) >> plane) & attrmask
-        return list(numpy.dot(numpy.split(attrs, num_bytes), numpy.array(shifts)))
+    shifts = [128, 64, 32, 16, 8, 4, 2, 1][(bpp-1)::bpp]
+    if numpy:
+        post_shifts = numpy.array([7, 6, 5, 4, 3, 2, 1, 0])[(bpp-1)::bpp]
+        post_shift = numpy.tile(post_shifts, num_bytes)
+        attrs = numpy.right_shift(numpy.array(colours).astype(int), plane) & attrmask
+        attrs = numpy.left_shift(attrs, post_shift)
+        # below is much faster than:
+        #   return list([ sum(attrs[i:i+pixels_per_byte]) 
+        #                 for i in xrange(0, len(attrs), pixels_per_byte) ])
+        # and anything involving numpy.array_split or numpy.dot is even slower.
+        # numpy.roll is ok but this is the fastest I've found:
+        nattrs = attrs[0::pixels_per_byte]
+        for i in xrange(pixels_per_byte):
+            nattrs |= attrs[i::pixels_per_byte]
+        return list(nattrs)
     else:
         attrs = (colours >> plane) & attrmask
         groups = [attrs[i:i+pixels_per_byte] 
