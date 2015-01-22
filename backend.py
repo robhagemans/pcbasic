@@ -30,6 +30,7 @@ import draw_and_play
 import redirect
 import modes
 import graphics
+import memory
 
 # backend implementations
 video = None
@@ -935,11 +936,6 @@ class Screen(object):
             else:
                 new_colorswitch = 1
         new_colorswitch = (new_colorswitch != 0)
-        # TODO: implement erase level (Tandy/pcjr)
-        # Erase tells basic how much video memory to erase
-        # 0: do not erase video memory
-        # 1: (default) erase old and new page if screen or bust changes
-        # 2: erase all video memory if screen or bust changes 
         if new_mode == 0 and new_width == None:
             # width persists on change to screen 0
             new_width = self.mode.width 
@@ -967,8 +963,20 @@ class Screen(object):
             if (video_capabilities == 'pcjr' and info and 
                     new_apagenum >= info.num_pages):
                 new_apagenum = 0    
+        # Erase tells basic how much video memory to erase
+        # 0: do not erase video memory
+        # 1: (default) erase old and new page if screen or width changes
+        # 2: erase all video memory if screen or width changes 
+        # -> we're not distinguishing between 1 and 2 here
+        if (erase == 0 and self.mode.video_segment == info.video_segment):
+            save_mem = self.mode.get_memory(
+                            self.mode.video_segment*0x10, self.video_mem_size)
+        else:
+            save_mem = None
         self.set_mode(info, new_mode, new_colorswitch, 
                       new_apagenum, new_vpagenum)
+        if save_mem:
+            self.mode.set_memory(self.mode.video_segment*0x10, save_mem)
 
     def set_mode(self, mode_info, new_mode, new_colorswitch, 
                  new_apagenum, new_vpagenum):
