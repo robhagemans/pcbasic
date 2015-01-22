@@ -1265,13 +1265,10 @@ if numpy:
         # reference the interval on the canvas
         ref = pygame.surfarray.pixels2d(canvas[pagenum])[x:x+len(colours), y]
         colours = numpy.array(colours).astype(int)
-        if mask != 0xff:
-            inv_mask = 0xff ^ mask
-            colours &= mask
-            ref &= inv_mask
-            ref |= colours
-        else:
-            ref = colours
+        inv_mask = 0xff ^ mask
+        colours &= mask
+        ref &= inv_mask
+        ref |= colours
         screen_changed = True
 
     def get_interval(pagenum, x, y, length):
