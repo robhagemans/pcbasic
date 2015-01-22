@@ -748,7 +748,7 @@ class CGAMode(GraphicsMode):
                 offs = bank_offset + offset
                 interval = bytes_to_interval(bytes[offs:offs+self.bytes_per_row], ppb)
                 self.screen.put_interval(page, 0, y, interval) 
-                offset += self.bytes_per_row
+            offset += self.bytes_per_row
 
     def get_area(self, x0, y0, x1, y1, byte_array):
         """ Read a sprite from the screen. """
