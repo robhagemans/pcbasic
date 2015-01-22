@@ -116,7 +116,6 @@ def start_basic():
                 state.basic_state.prompt = False
             run.start('', False, config.options['quit'])
         else:    
-            print_greeting(console)
             # load/run program
             config.options['run'] = config.options[0] or config.options['run']
             prog = config.options['run'] or config.options['load']
@@ -124,15 +123,18 @@ def start_basic():
                 # on load, accept capitalised versions and default extension
                 program.load(open_native_or_dos_filename(prog))
                 reset.clear()
+            print_greeting(console)
             # start the interpreter (and get out if we ran with -q)
             run.start(config.options['exec'], config.options['run'], 
                       config.options['quit'])
     except error.RunError as e:
         msg = error.get_message(e.err)
-        if console:
+        if console and config.options['wait']:
             console.write_error_message(msg, None)
-        else:
-            logging.error(msg)
+        # close terminal to avoid garbled error message
+        backend.video.close()
+        backend.video = None    
+        logging.error(msg)
     except error.Exit:
         pass
     except error.Reset:
