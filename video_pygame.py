@@ -613,11 +613,9 @@ def scroll(from_line, scroll_height, attr):
     canvas[apagenum].set_clip(temp_scroll_area)
     canvas[apagenum].scroll(0, -font_height)
     # empty new line
-    blank = pygame.Surface( (size[0], font_height) , depth=8)
     _, bg = get_palette_index(attr)
-    blank.set_palette(workpalette)
-    blank.fill(bg)
-    canvas[apagenum].blit(blank, (0, (scroll_height-1) * font_height))
+    canvas[apagenum].fill(bg, (0, (scroll_height-1) * font_height, 
+                               size[0], font_height))
     canvas[apagenum].set_clip(None)
     screen_changed = True
    
@@ -629,11 +627,9 @@ def scroll_down(from_line, scroll_height, attr):
     canvas[apagenum].set_clip(temp_scroll_area)
     canvas[apagenum].scroll(0, font_height)
     # empty new line
-    blank = pygame.Surface( (size[0], font_height), depth=8 )
     _, bg = get_palette_index(attr)
-    blank.set_palette(workpalette)
-    blank.fill(bg)
-    canvas[apagenum].blit(blank, (0, (from_line-1) * font_height))
+    canvas[apagenum].fill(bg, (0, (from_line-1) * font_height,
+                                  size[0], font_height))
     canvas[apagenum].set_clip(None)
     screen_changed = True
 
