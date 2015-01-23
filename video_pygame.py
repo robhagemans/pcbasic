@@ -101,7 +101,6 @@ noquit = False
 glyphs = []
 # the current attribute of the stored sbcs glyphs
 current_attr = None
-current_attr_context = None
 
 # cursor shape
 cursor = None
@@ -639,22 +638,22 @@ def scroll_down(from_line, scroll_height, attr):
     screen_changed = True
 
 def set_attr(cattr, force_rebuild=False):
-    """ Set the current attribuite. """
-    global current_attr, current_attr_context
-    if (not force_rebuild and cattr == current_attr and apagenum == current_attr_context):
-        return  
-    color, bg = get_palette_index(cattr)    
-    for glyph in glyphs:
-        glyph.set_palette_at(255, bg)
-        glyph.set_palette_at(254, color)
-    current_attr = cattr    
-    current_attr_context = apagenum
-
+    """ Set the current attribute. """
+    global current_attr
+    current_attr = cattr
+    
 def putc_at(pagenum, row, col, c, for_keys=False):
     """ Put a single-byte character at a given position. """
     global screen_changed
     glyph = glyphs[ord(c)]
     blank = glyphs[0] # using \0 for blank (tyoeface.py guarantees it's empty)
+    color, bg = get_palette_index(current_attr)    
+    if blank.get_palette_at(255) != bg:
+        blank.set_palette_at(255, bg)
+    if glyph.get_palette_at(255) != bg:
+        glyph.set_palette_at(255, bg)
+    if glyph.get_palette_at(254) != color:
+        glyph.set_palette_at(254, color)
     top_left = ((col-1) * font_width, (row-1) * font_height)
     canvas[pagenum].blit(glyph, top_left)
     if mode_has_underline and (current_attr % 8 == 1):
