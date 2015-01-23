@@ -646,7 +646,7 @@ def putc_at(pagenum, row, col, c, for_keys=False):
     """ Put a single-byte character at a given position. """
     global screen_changed
     glyph = glyphs[ord(c)]
-    blank = glyphs[0] # using \0 for blank (tyoeface.py guarantees it's empty)
+    blank = glyphs[0] # using \0 for blank (typeface.py guarantees it's empty)
     color, bg = get_palette_index(current_attr)    
     if blank.get_palette_at(255) != bg:
         blank.set_palette_at(255, bg)
