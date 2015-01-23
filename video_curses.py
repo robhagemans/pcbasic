@@ -195,7 +195,7 @@ def update_cursor_attr(attr):
     # term.write(ansi.esc_set_cursor_colour % ansi.colournames[attr%16])
     pass
 
-def update_cursor_visibility(cursor_on):
+def show_cursor(cursor_on):
     """ Change visibility of cursor. """
     global cursor_visible
     cursor_visible = cursor_on

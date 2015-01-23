@@ -1431,7 +1431,7 @@ class Cursor(object):
 
     def show(self, do_show):
         """ Force cursor to be visible/invisible. """
-        video.update_cursor_visibility(do_show)
+        video.show_cursor(do_show)
 
     def set_visibility(self, visible_run):
         """ Set default cursor visibility. """
@@ -1445,7 +1445,7 @@ class Cursor(object):
         # in graphics mode, we can't force the cursor to be visible on execute.
         if self.screen.mode.is_text_mode:
             visible = visible or self.visible_run
-        video.update_cursor_visibility(visible)
+        video.show_cursor(visible)
 
     def set_shape(self, from_line, to_line):
         """ Set the cursor shape. """

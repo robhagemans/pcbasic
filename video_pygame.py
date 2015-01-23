@@ -586,7 +586,7 @@ def copy_page(src, dst):
     canvas[dst].blit(canvas[src], (0,0))
     screen_changed = True
     
-def update_cursor_visibility(cursor_on):
+def show_cursor(cursor_on):
     """ Change visibility of cursor. """
     global screen_changed, cursor_visible
     cursor_visible = cursor_on

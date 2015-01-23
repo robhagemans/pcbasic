@@ -96,7 +96,7 @@ def move_cursor(crow, ccol):
     global cursor_row, cursor_col
     cursor_row, cursor_col = crow, ccol
 
-def update_cursor_visibility(cursor_on):
+def show_cursor(cursor_on):
     """ Change visibility of cursor. """
     global cursor_visible
     cursor_visible = cursor_on

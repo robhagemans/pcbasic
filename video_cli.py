@@ -288,7 +288,7 @@ def update_cursor_attr(attr):
     """ Change attribute of cursor (no-op). """
     pass
     
-def update_cursor_visibility(cursor_on):
+def show_cursor(cursor_on):
     """ Change visibility of cursor (no-op). """
     pass
 

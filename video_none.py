@@ -134,7 +134,7 @@ def move_cursor(crow, ccol):
     """ Move the cursor to a new position (no-op). """
     pass
 
-def update_cursor_visibility(cursor_on):
+def show_cursor(cursor_on):
     """ Change visibility of cursor (no-op). """
     pass
 
