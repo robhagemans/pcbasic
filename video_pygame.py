@@ -646,16 +646,12 @@ def putc_at(pagenum, row, col, c, for_keys=False):
     """ Put a single-byte character at a given position. """
     global screen_changed
     glyph = glyphs[ord(c)]
-    blank = glyphs[0] # using \0 for blank (typeface.py guarantees it's empty)
     color, bg = get_palette_index(current_attr)    
-    if blank.get_palette_at(255) != bg:
-        blank.set_palette_at(255, bg)
     if glyph.get_palette_at(255) != bg:
         glyph.set_palette_at(255, bg)
     if glyph.get_palette_at(254) != color:
         glyph.set_palette_at(254, color)
-    top_left = ((col-1) * font_width, (row-1) * font_height)
-    canvas[pagenum].blit(glyph, top_left)
+    canvas[pagenum].blit(glyph, ((col-1) * font_width, (row-1) * font_height))
     if mode_has_underline and (current_attr % 8 == 1):
         color, _ = get_palette_index(current_attr)    
         for xx in range(font_width):
@@ -670,9 +666,6 @@ def putwc_at(pagenum, row, col, c, d, for_keys=False):
     color, bg = get_palette_index(current_attr)    
     glyph.set_palette_at(255, bg)
     glyph.set_palette_at(254, color)
-    blank = pygame.Surface((2*font_width, font_height), depth=8)
-    blank.fill(255)
-    blank.set_palette_at(255, bg)
     top_left = ((col-1) * font_width, (row-1) * font_height)
     canvas[pagenum].blit(glyph, top_left)
     screen_changed = True
