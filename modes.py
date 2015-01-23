@@ -419,13 +419,17 @@ def bytes_to_interval(bytes, pixels_per_byte, mask=1):
     attrmask = (1<<bpp) - 1
     if numpy:
         # OK for EGA
-        pre_shifts = numpy.array([128, 64, 32, 16, 8, 4, 2, 1])[(bpp-1)::bpp]
-        post_shifts = numpy.array([7, 6, 5, 4, 3, 2, 1, 0])[(bpp-1)::bpp]
-        pre_shift = numpy.tile(pre_shifts, len(bytes))
-        post_shift = numpy.tile(post_shifts, len(bytes))
+        bitval = numpy.array([128, 64, 32, 16, 8, 4, 2, 1], dtype=numpy.uint8)
+        bitmask = numpy.zeros(pixels_per_byte, dtype=numpy.uint8);
+        for i in xrange(bpp):
+            bitmask |= bitval[i::bpp]
+        pre_mask = numpy.tile(bitmask, len(bytes))
+        post_shift = numpy.tile(
+                        numpy.array([7, 6, 5, 4, 3, 2, 1, 0])[(bpp-1)::bpp], 
+                        len(bytes))
         attrs = numpy.right_shift(
                     numpy.repeat(numpy.array(bytes).astype(int), 
-                                 pixels_per_byte) & pre_shift,
+                                 pixels_per_byte) & pre_mask,
                     post_shift) & attrmask
         return numpy.array(attrs) * mask
     else:
@@ -439,6 +443,7 @@ def interval_to_bytes(colours, pixels_per_byte, plane=0):
     attrmask = (1<<bpp) - 1
     shifts = [128, 64, 32, 16, 8, 4, 2, 1][(bpp-1)::bpp]
     if numpy:
+        # FIXME: awful naming
         post_shifts = numpy.array([7, 6, 5, 4, 3, 2, 1, 0])[(bpp-1)::bpp]
         post_shift = numpy.tile(post_shifts, num_bytes)
         attrs = numpy.right_shift(numpy.array(colours).astype(int), plane) & attrmask
@@ -449,6 +454,7 @@ def interval_to_bytes(colours, pixels_per_byte, plane=0):
         # and anything involving numpy.array_split or numpy.dot is even slower.
         # numpy.roll is ok but this is the fastest I've found:
         nattrs = attrs[0::pixels_per_byte]
+        # FIXME: can start from 1?
         for i in xrange(pixels_per_byte):
             nattrs |= attrs[i::pixels_per_byte]
         return list(nattrs)
