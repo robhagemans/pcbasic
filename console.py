@@ -84,8 +84,7 @@ def set_width(to_width):
     # if we're currently at that width, do nothing
     if to_width != state.console_state.screen.mode.width:
         # change video mode to one with new width
-        if not state.console_state.screen.set_width(to_width):
-            raise error.RunError(5)
+        state.console_state.screen.set_width(to_width)
         init_mode()
 
 ############################### 
