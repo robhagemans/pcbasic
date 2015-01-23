@@ -388,7 +388,7 @@ def init_screen_mode(mode_info):
     glyphs = [build_glyph(chr(c), font, font_width, font_height) 
               for c in range(256)]
     # initialise glyph colour
-    set_attr(mode_info.attr, force_rebuild=True)
+    set_attr(mode_info.attr)
     resize_display(*find_display_size(size[0], size[1], border_width))
     # set standard cursor
     build_cursor(font_width, font_height, 0, font_height)
@@ -637,7 +637,7 @@ def scroll_down(from_line, scroll_height, attr):
     canvas[apagenum].set_clip(None)
     screen_changed = True
 
-def set_attr(cattr, force_rebuild=False):
+def set_attr(cattr):
     """ Set the current attribute. """
     global current_attr
     current_attr = cattr
