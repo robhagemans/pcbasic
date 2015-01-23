@@ -382,7 +382,7 @@ class TextMode(VideoMode):
         self.is_text_mode = True
         self.num_attr = 32
         self.has_underline = has_underline
-    
+
     def get_memory(self, addr, num_bytes):
         """ Retrieve bytes from textmode video memory. """
         addr -= self.video_segment*0x10
@@ -402,6 +402,7 @@ class TextMode(VideoMode):
     def set_memory(self, addr, bytes):
         """ Set bytes in textmode video memory. """
         addr -= self.video_segment*0x10
+        last_row = -1
         for i in xrange(len(bytes)):
             page = (addr+i) // self.page_size
             offset = (addr+i) % self.page_size
@@ -413,10 +414,16 @@ class TextMode(VideoMode):
                     c = chr(bytes[i])
                 else:
                     a = bytes[i]
-                self.screen.put_char_attr(page, crow+1, ccol+1, c, a)
+                self.screen.text.pages[page].put_char_attr(crow+1, ccol+1, c, a, one_only=False)
+                if last_row != crow:
+                    # set for_keys to true to avoid echoing to text terminal
+                    self.screen.refresh_range(page, last_row+1, 1, self.width, for_keys=True)
             except IndexError:
                 pass
-
+            last_row = crow
+        if last_row>=0 and last_row<25:
+            self.screen.refresh_range(page, last_row+1, 1, self.width, for_keys=True)
+        
 def bytes_to_interval(bytes, pixels_per_byte, mask=1):
     """ Convert masked attributes packed into bytes to a scanline interval. """
     bpp = 8//pixels_per_byte
