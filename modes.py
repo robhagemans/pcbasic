@@ -429,7 +429,7 @@ def bytes_to_interval(bytes, pixels_per_byte, mask=1):
                     post_shift) & attrmask
         return numpy.array(attrs) * mask
     else:
-        return [((byte >> (7-shift)) & attrmask) * mask
+        return [((byte >> (8-bpp-shift)) & attrmask) * mask
                 for byte in bytes for shift in xrange(0, 8, bpp)]
 
 def interval_to_bytes(colours, pixels_per_byte, plane=0):
@@ -697,10 +697,10 @@ class CGAMode(GraphicsMode):
             y += self.interleave_times
             # not an integer number of rows in a bank
             if offset > self.bank_size:
-                bytes += [0] * (offset - self.bank_size)
+                bytes = bytes[:self.bank_size-offset]
                 bank_offset += self.bank_size
                 offset = 0
-                y += 1
+                i += 1
                 y = i
                 if bank_offset > self.page_size:
                     page_offset += self.page_size
@@ -715,7 +715,7 @@ class CGAMode(GraphicsMode):
             else:
                 bytes += [0] * self.bytes_per_row
             offset += self.bytes_per_row
-        return bytes
+        return bytes[:num_bytes]
 
     def set_memory(self, addr, bytes):
         """ Set a list of bytes in CGA memory. """
@@ -745,7 +745,7 @@ class CGAMode(GraphicsMode):
                     y = 0
                     i = 0
             if self.coord_ok(page, 0, y):
-                offs = bank_offset + offset
+                offs = page_offset + bank_offset + offset
                 interval = bytes_to_interval(bytes[offs:offs+self.bytes_per_row], ppb)
                 self.screen.put_interval(page, 0, y, interval) 
             offset += self.bytes_per_row
