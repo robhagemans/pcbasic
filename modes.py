@@ -420,8 +420,8 @@ def bytes_to_interval(bytes, pixels_per_byte, mask=1):
     if numpy:
         # OK for EGA
         bitval = numpy.array([128, 64, 32, 16, 8, 4, 2, 1], dtype=numpy.uint8)
-        bitmask = numpy.zeros(pixels_per_byte, dtype=numpy.uint8);
-        for i in xrange(bpp):
+        bitmask = bitval[0::bpp]
+        for i in xrange(1, bpp):
             bitmask |= bitval[i::bpp]
         pre_mask = numpy.tile(bitmask, len(bytes))
         post_shift = numpy.tile(
@@ -441,28 +441,26 @@ def interval_to_bytes(colours, pixels_per_byte, plane=0):
     num_bytes = len(colours)//pixels_per_byte
     bpp = 8//pixels_per_byte
     attrmask = (1<<bpp) - 1
-    shifts = [128, 64, 32, 16, 8, 4, 2, 1][(bpp-1)::bpp]
     if numpy:
-        # FIXME: awful naming
-        post_shifts = numpy.array([7, 6, 5, 4, 3, 2, 1, 0])[(bpp-1)::bpp]
-        post_shift = numpy.tile(post_shifts, num_bytes)
-        attrs = numpy.right_shift(numpy.array(colours).astype(int), plane) & attrmask
-        attrs = numpy.left_shift(attrs, post_shift)
+        shift = numpy.tile(numpy.array([7, 6, 5, 4, 3, 2, 1, 0])[(bpp-1)::bpp], 
+                           num_bytes)
+        attrs = numpy.right_shift(numpy.array(colours).astype(int), plane)
+        attrs = numpy.left_shift(attrs & attrmask, shift)
         # below is much faster than:
         #   return list([ sum(attrs[i:i+pixels_per_byte]) 
         #                 for i in xrange(0, len(attrs), pixels_per_byte) ])
         # and anything involving numpy.array_split or numpy.dot is even slower.
         # numpy.roll is ok but this is the fastest I've found:
         nattrs = attrs[0::pixels_per_byte]
-        # FIXME: can start from 1?
-        for i in xrange(pixels_per_byte):
+        for i in xrange(1, pixels_per_byte):
             nattrs |= attrs[i::pixels_per_byte]
         return list(nattrs)
     else:
         attrs = (colours >> plane) & attrmask
         groups = [attrs[i:i+pixels_per_byte] 
                   for i in xrange(0, len(colours), pixels_per_byte)]
-        return [sum(xx*yy for xx, yy in zip(shifts, y)) for y in groups]
+        bitval = [128, 64, 32, 16, 8, 4, 2, 1][(bpp-1)::bpp]
+        return [sum(xx*yy for xx, yy in zip(bitval, y)) for y in groups]
 
 def set_memory_ega(self, addr, bytes, mask, factor=1):
     """ Set bytes in EGA video memory (helper). """
