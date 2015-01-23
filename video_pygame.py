@@ -647,11 +647,17 @@ def putc_at(pagenum, row, col, c, for_keys=False):
     global screen_changed
     glyph = glyphs[ord(c)]
     color, bg = get_palette_index(current_attr)    
-    if glyph.get_palette_at(255) != bg:
-        glyph.set_palette_at(255, bg)
-    if glyph.get_palette_at(254) != color:
-        glyph.set_palette_at(254, color)
-    canvas[pagenum].blit(glyph, ((col-1) * font_width, (row-1) * font_height))
+    if c == '\0':
+        # guaranteed to be blank, saves time on some BLOADs
+        canvas[pagenum].fill(bg, 
+                             ((col-1)*font_width, (row-1)*font_height, 8, 8))
+    else:    
+        if glyph.get_palette_at(255) != bg:
+            glyph.set_palette_at(255, bg)
+        if glyph.get_palette_at(254) != color:
+            glyph.set_palette_at(254, color)
+        canvas[pagenum].blit(glyph, 
+                             ((col-1) * font_width, (row-1) * font_height))
     if mode_has_underline and (current_attr % 8 == 1):
         color, _ = get_palette_index(current_attr)    
         for xx in range(font_width):
