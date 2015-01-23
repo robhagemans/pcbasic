@@ -676,6 +676,9 @@ class TextPage(object):
 
     def put_char_attr(self, crow, ccol, c, cattr, one_only=False):
         """ Put a byte to the screen, reinterpreting SBCS and DBCS as necessary. """
+        if self.row[crow-1].buf[ccol-1] == (c, cattr):
+            # nothing to do
+            return ccol, ccol+1
         # update the screen buffer
         self.row[crow-1].buf[ccol-1] = (c, cattr)
         # mark the replaced char for refreshing
