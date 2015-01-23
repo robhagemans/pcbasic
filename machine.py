@@ -431,7 +431,7 @@ def get_data_memory(address):
     
 def get_video_memory(addr):
     """ Retrieve a byte from video memory. """
-    return state.console_state.screen.mode.get_memory(addr, 1)
+    return state.console_state.screen.mode.get_memory(addr, 1)[0]
 
 def set_video_memory(addr, val):
     """ Set a byte in video memory. """

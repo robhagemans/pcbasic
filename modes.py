@@ -383,35 +383,39 @@ class TextMode(VideoMode):
         self.num_attr = 32
         self.has_underline = has_underline
     
-    def get_memory(self, addr):
-        """ Retrieve a byte from textmode video memory. """
+    def get_memory(self, addr, num_bytes):
+        """ Retrieve bytes from textmode video memory. """
         addr -= self.video_segment*0x10
-        page = addr // self.page_size
-        offset = addr % self.page_size
-        ccol = (offset % (self.width*2)) // 2
-        crow = offset // (self.width*2)
-        try:
-            c = self.screen.text.pages[page].row[crow].buf[ccol][addr%2]  
-            return c if addr%2==1 else ord(c)
-        except IndexError:
-            return -1    
+        bytes = [0]*num_bytes
+        for i in xrange(num_bytes):
+            page = (addr+i) // self.page_size
+            offset = (addr+i) % self.page_size
+            ccol = (offset % (self.width*2)) // 2
+            crow = offset // (self.width*2)
+            try:
+                c = self.screen.text.pages[page].row[crow].buf[ccol][(addr+i)%2]  
+                bytes[i] = c if (addr+i)%2==1 else ord(c)
+            except IndexError:
+                pass
+        return bytes    
     
-    def set_memory(self, addr, val):
-        """ Set a byte in textmode video memory. """
+    def set_memory(self, addr, bytes):
+        """ Set bytes in textmode video memory. """
         addr -= self.video_segment*0x10
-        page = addr // self.page_size
-        offset = addr % self.page_size
-        ccol = (offset % (self.width*2)) // 2
-        crow = offset // (self.width*2)
-        try:
-            c, a = self.screen.text.pages[page].row[crow].buf[ccol]
-            if addr%2 == 0:
-                c = chr(val)
-            else:
-                a = val
-            self.screen.put_char_attr(page, crow+1, ccol+1, c, a)
-        except IndexError:
-            pass
+        for i in xrange(len(bytes)):
+            page = (addr+i) // self.page_size
+            offset = (addr+i) % self.page_size
+            ccol = (offset % (self.width*2)) // 2
+            crow = offset // (self.width*2)
+            try:
+                c, a = self.screen.text.pages[page].row[crow].buf[ccol]
+                if (addr+i)%2 == 0:
+                    c = chr(bytes[i])
+                else:
+                    a = bytes[i]
+                self.screen.put_char_attr(page, crow+1, ccol+1, c, a)
+            except IndexError:
+                pass
 
 def bytes_to_interval(bytes, pixels_per_byte, mask=1):
     """ Convert masked attributes packed into bytes to a scanline interval. """
