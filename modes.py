@@ -429,7 +429,6 @@ def bytes_to_interval(bytes, pixels_per_byte, mask=1):
     bpp = 8//pixels_per_byte
     attrmask = (1<<bpp) - 1
     if numpy:
-        # OK for EGA
         bitval = numpy.array([128, 64, 32, 16, 8, 4, 2, 1], dtype=numpy.uint8)
         bitmask = bitval[0::bpp]
         for i in xrange(1, bpp):
@@ -449,13 +448,19 @@ def bytes_to_interval(bytes, pixels_per_byte, mask=1):
 
 def interval_to_bytes(colours, pixels_per_byte, plane=0):
     """ Convert a scanline interval into masked attributes packed into bytes. """
-    num_bytes = len(colours)//pixels_per_byte
+    num_pixels = len(colours)
+    num_bytes, odd_out = divmod(num_pixels, pixels_per_byte)
+    if odd_out:
+        num_bytes += 1
     bpp = 8//pixels_per_byte
     attrmask = (1<<bpp) - 1
-    if numpy:
+    if numpy: 
+        colours = numpy.array(colours).astype(int)
+        if odd_out:
+            colours.resize(len(colours)+pixels_per_byte-odd_out)
         shift = numpy.tile(numpy.array([7, 6, 5, 4, 3, 2, 1, 0])[(bpp-1)::bpp], 
                            num_bytes)
-        attrs = numpy.right_shift(numpy.array(colours).astype(int), plane)
+        attrs = numpy.right_shift(colours, plane)
         attrs = numpy.left_shift(attrs & attrmask, shift)
         # below is much faster than:
         #   return list([ sum(attrs[i:i+pixels_per_byte]) 
@@ -467,11 +472,16 @@ def interval_to_bytes(colours, pixels_per_byte, plane=0):
             nattrs |= attrs[i::pixels_per_byte]
         return list(nattrs)
     else:
-        attrs = (colours >> plane) & attrmask
-        groups = [attrs[i:i+pixels_per_byte] 
-                  for i in xrange(0, len(colours), pixels_per_byte)]
-        bitval = [128, 64, 32, 16, 8, 4, 2, 1][(bpp-1)::bpp]
-        return [sum(xx*yy for xx, yy in zip(bitval, y)) for y in groups]
+        colours = list(colours)
+        byte_list = [0]*num_bytes
+        shift, byte = -1, -1
+        for x in xrange(num_pixels):
+            if shift < 0:
+                shift = 8 - bpp
+                byte += 1
+            byte_list[byte] |= ((colours[x] >> plane) & attrmask) << shift
+            shift -= bpp
+        return byte_list            
 
 def set_memory_ega(self, addr, bytes, mask, factor=1):
     """ Set bytes in EGA video memory (helper). """
@@ -545,23 +555,21 @@ def get_area_ega(self, x0, y0, x1, y1, byte_array):
     length = 4 + dy * bpp * row_bytes
     byte_array[:length] = '\x00'*length
     byte_array[0:4] = vartypes.value_to_uint(dx) + vartypes.value_to_uint(dy) 
-    byte = 4
-    mask = 0x80
+    # build the sprite byte array
+    # for EGA modes, sprites have 8 pixels per byte 
+    # with colour planes in consecutive rows
+    # each new row is aligned on a new byte
+    #
+    # this is much faster for wide selections 
+    # but for narrow selections storing in an array and indexing take longer
+    # than just getting each pixel separately
+    offset = 4 
     for y in range(y0, y1+1):
-        for x in range(x0, x1+1):
-            if mask == 0: 
-                mask = 0x80
-            pixel = self.screen.get_pixel(x, y)
-            for b in range(bpp):
-                offset = ((y-y0) * bpp + b) * row_bytes + (x-x0) // 8 + 4
-                try:
-                    if pixel & (1 << b):
-                        byte_array[offset] |= mask 
-                except IndexError:
-                    raise error.RunError(5)   
-            mask >>= 1
-        # byte align next row
-        mask = 0x80
+        attrs = self.screen.get_interval(self.screen.apagenum, x0, y, dx)
+        for plane in range(bpp):
+            byte_array[offset:offset+row_bytes] = (
+                    bytearray(interval_to_bytes(attrs, 8, plane)))
+            offset += row_bytes
 
 def put_area_ega(self, x0, y0, byte_array, operation):
     """ Put a stored sprite onto the screen in EGA modes. """
@@ -573,32 +581,19 @@ def put_area_ega(self, x0, y0, byte_array, operation):
     util.range_check(0, self.pixel_width-1, x0, x1)
     util.range_check(0, self.pixel_height-1, y0, y1)
     self.screen.start_graph()
-    byte = 4
-    mask = 0x80
     row_bytes = (dx+7) // 8
+    offset = 4 
     for y in range(y0, y1+1):
-        for x in range(x0, x1+1):
-            if mask == 0: 
-                mask = 0x80
-            if (x < 0 or x >= self.pixel_width
-                    or y < 0 or y >= self.pixel_height):
-                pixel = 0
-            else:
-                pixel = self.screen.get_pixel(x,y)
-            index = 0
-            for b in range(bpp):
-                try:
-                    if (byte_array[4 + ((y-y0)*bpp + b)*row_bytes + (x-x0)//8] 
-                            & mask) != 0:
-                        index |= 1 << b  
-                except IndexError:
-                    pass
-            mask >>= 1
-            if (x >= 0 and x < self.pixel_width and 
-                    y >= 0 and y < self.pixel_height):
-                self.screen.put_pixel(x, y, operation(pixel, index)) 
-        # byte align next row
-        mask = 0x80
+        attrs = bytes_to_interval(byte_array[offset:offset+row_bytes], 8, 1)
+        offset += row_bytes
+        for plane in range(1, bpp):
+            attrs |= bytes_to_interval(byte_array[offset:offset+row_bytes], 8, 
+                                       1 << plane)
+            offset += row_bytes
+        attrs = attrs[:dx]
+        old_attrs = self.screen.get_interval(self.screen.apagenum, x0, y, dx)
+        self.screen.put_interval(self.screen.apagenum, x0, y, 
+                                 operation(old_attrs, attrs))
     self.screen.finish_graph()
     return x0, y0, x1, y1
 
@@ -774,27 +769,18 @@ class CGAMode(GraphicsMode):
         util.range_check(0, self.pixel_height-1, y0, y1)
         bpp = self.bitsperpixel
         # clear existing array only up to the length we'll use
-        length = 4 + ((dx * bpp + 7) // 8)*dy
+        row_bytes = (dx * bpp + 7) // 8
+        length = 4 + row_bytes*dy
         byte_array[:length] = '\x00'*length
         byte_array[0:2] = vartypes.value_to_uint(dx*bpp)
         byte_array[2:4] = vartypes.value_to_uint(dy)
-        byte = 4
-        shift = 8 - bpp
+        offset = 4 
         for y in range(y0, y1+1):
-            for x in range(x0, x1+1):
-                if shift < 0:
-                    byte += 1
-                    shift = 8 - bpp
-                pixel = self.screen.get_pixel(x,y) # 2-bit value
-                try:
-                    byte_array[byte] |= pixel << shift
-                except IndexError:
-                    raise error.RunError(5)      
-                shift -= bpp
-            # byte align next row
-            byte += 1
-            shift = 8 - bpp
-
+            attrs = self.screen.get_interval(self.screen.apagenum, x0, y, dx)
+            byte_array[offset:offset+row_bytes] = (
+                    bytearray(interval_to_bytes(attrs, 8//bpp, 0)))
+            offset += row_bytes
+        
     def put_area(self, x0, y0, byte_array, operation):
         """ Put a stored sprite onto the screen. """
         # in cga modes, number of x bits is given rather than pixels
@@ -802,31 +788,20 @@ class CGAMode(GraphicsMode):
         dx = vartypes.uint_to_value(byte_array[0:2]) / bpp
         dy = vartypes.uint_to_value(byte_array[2:4])
         x1, y1 = x0+dx-1, y0+dy-1
+        row_bytes = (dx * bpp + 7) // 8
         # illegal fn call if outside screen boundary
         util.range_check(0, self.pixel_width-1, x0, x1)
         util.range_check(0, self.pixel_height-1, y0, y1)
         self.screen.start_graph()
-        byte = 4
-        shift = 8 - bpp
+        offset = 4 
         for y in range(y0, y1+1):
-            for x in range(x0, x1+1):
-                if shift < 0:
-                    byte += 1
-                    shift = 8 - bpp
-                if (x < 0 or x >= self.pixel_width or 
-                        y < 0 or y >= self.pixel_height):
-                    pixel = 0
-                else:
-                    pixel = self.screen.get_pixel(x,y)
-                    try:    
-                        index = (byte_array[byte] >> shift) % self.num_attr   
-                    except IndexError:
-                        pass                
-                    self.screen.put_pixel(x, y, operation(pixel, index))    
-                shift -= bpp
-            # byte align next row
-            byte += 1
-            shift = 8 - bpp
+            attrs = bytes_to_interval(byte_array[offset:offset+row_bytes], 
+                                      8//bpp, 1)
+            offset += row_bytes
+            attrs = attrs[:dx]
+            old_attrs = self.screen.get_interval(self.screen.apagenum, x0, y, dx)
+            self.screen.put_interval(self.screen.apagenum, x0, y, 
+                                     operation(old_attrs, attrs))
         self.screen.finish_graph()
         return x0, y0, x1, y1
 
