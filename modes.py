@@ -503,9 +503,9 @@ def set_memory_ega(self, addr, bytes, mask, factor=1):
     ppb = 8
     row_bytes = self.screen.mode.pixel_width // ppb
     # if first row is incomplete, do a slow draw till the end of row.
-    # length of short first row; 0 if full row
+    # length of short or full first row
     page, x, y = self.get_coords(addr)
-    short_row = min((-x//ppb) % row_bytes, len(bytes))
+    short_row = min(row_bytes - x//ppb, len(bytes))
     # short first row
     if self.coord_ok(page, x, y):
         colours = bytes_to_interval(bytes[:short_row], ppb, mask)
@@ -530,7 +530,7 @@ def get_memory_ega(self, addr, num_bytes, plane, factor=1):
     """ Set bytes in EGA video memory (helper). """
     row_bytes = self.screen.mode.pixel_width // 8 
     # if first row is incomplete, do a slow draw till the end of row.
-    # length of short first row; 0 if full row
+    # length of short or full first row
     page, x, y = self.get_coords(addr)
     byteshift = min(self.bytes_per_row - x//8, num_bytes)
     # first row, may be short
