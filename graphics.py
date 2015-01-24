@@ -18,6 +18,7 @@ except ImportError:
 
 import error
 import fp
+import state
 import vartypes
 import util
 import draw_and_play
@@ -45,6 +46,8 @@ class Drawing(object):
         self.last_attr = self.screen.mode.attr
         self.draw_scale = 4
         self.draw_angle = 0
+        # storage for faster access to sprites
+        self.sprites = {}
 
     ### attributes
     
@@ -598,19 +601,59 @@ class Drawing(object):
      
     ### PUT and GET: Sprite operations
          
-    def put(self, lcoord, array, operation_char):
+    def put(self, lcoord, array_name, operation_token):
         """ Put a sprite on the screen (PUT). """
         # array must exist at this point (or PUT would have raised error 5)      
-        x, y = self.view_coords(*self.get_window_physical(*lcoord))
-        self.screen.put_area(x, y, array, operation_char)
-        self.last_point = x, y
-        
-    def get(self, lcoord0, lcoord1, array):
+        x0, y0 = self.view_coords(*self.get_window_physical(*lcoord))
+        self.last_point = x0, y0
+        try:
+            _, byte_array, a_version = state.basic_state.arrays[array_name]
+        except KeyError:
+            byte_array = bytearray()
+        try:
+            spriterec = self.sprites[array_name]
+            dx, dy, sprite, s_version = spriterec
+        except KeyError:
+            spriterec = None
+        if (not spriterec) or (s_version != a_version):
+            # we don't have it stored or it has been modified
+            dx, dy = self.screen.mode.record_to_sprite_size(byte_array)
+            sprite = self.screen.mode.array_to_sprite(byte_array, 4, dx, dy)
+            # store it now that we have it!
+            self.sprites[array_name] = (dx, dy, sprite, a_version)
+        # illegal fn call if outside screen boundary
+        x1, y1 = x0+dx-1, y0+dy-1
+        util.range_check(0, self.screen.mode.pixel_width-1, x0, x1)
+        util.range_check(0, self.screen.mode.pixel_height-1, y0, y1)
+        # apply the sprite to the screen
+        self.screen.start_graph()
+        self.screen.put_rect(x0, y0, x1, y1, sprite, operation_token)
+        self.screen.finish_graph()
+
+    def get(self, lcoord0, lcoord1, array_name):
         """ Read a sprite from the screen (GET). """
         x0, y0 = self.view_coords(*self.get_window_physical(*lcoord0))
         x1, y1 = self.view_coords(*self.get_window_physical(*lcoord1))
         self.last_point = x1, y1
-        return self.screen.get_area(x0, y0, x1, y1, array)
+        try:
+            _, byte_array, version = state.basic_state.arrays[array_name]
+        except KeyError:
+            raise error.RunError(5)    
+        dx, dy = x1-x0+1, y1-y0+1
+        # Tandy screen 6 simply GETs twice the width, it seems
+        if self.screen.mode.name == '640x200x4':
+            x1 = x0 + 2*dx - 1 
+        # illegal fn call if outside screen boundary
+        util.range_check(0, self.screen.mode.pixel_width-1, x0, x1)
+        util.range_check(0, self.screen.mode.pixel_height-1, y0, y1)
+        # set size record
+        byte_array[0:4] = self.screen.mode.sprite_size_to_record(dx, dy)
+        # read from screen and convert to byte array
+        sprite = self.screen.get_rect(x0, y0, x1, y1)
+        self.screen.mode.sprite_to_array(sprite, dx, dy, byte_array, 4)
+        # store a copy in the sprite store
+        self.sprites[array_name] = (dx, dy, sprite, version)
+
 
     ### DRAW statement
 

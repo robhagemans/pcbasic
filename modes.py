@@ -9,11 +9,7 @@ This file is released under the GNU GPL version 3.
 import config
 import state
 import error
-import util
 import vartypes
-
-# FIXME: circular import
-import backend
 
 try:
     import numpy
@@ -560,21 +556,19 @@ def get_memory_ega(self, addr, num_bytes, plane, factor=1):
         offset += self.bytes_per_row
     offset += self.bytes_per_row
     return bytes
-        
-def get_area_ega(self, x0, y0, x1, y1, byte_array):
-    """ Read a sprite from the screen in EGA modes. """
-    dx = x1 - x0 + 1
-    dy = y1 - y0 + 1
-    # illegal fn call if outside screen boundary
-    util.range_check(0, self.pixel_width-1, x0, x1)
-    util.range_check(0, self.pixel_height-1, y0, y1)
-    bpp = self.bitsperpixel
-    # clear existing array only up to the length we'll use
-    row_bytes = (dx+7) // 8
-    length = 4 + dy * bpp * row_bytes
-    byte_array[:length] = '\x00'*length
-    byte_array[0:4] = vartypes.value_to_uint(dx) + vartypes.value_to_uint(dy) 
-    # build the sprite byte array
+
+def sprite_size_to_record_ega(self, dx, dy):
+    """ Write 4-byte record of sprite size in EGA modes. """
+    return vartypes.value_to_uint(dx) + vartypes.value_to_uint(dy)
+
+def record_to_sprite_size_ega(self, byte_array):
+    """ Read 4-byte record of sprite size in EGA modes. """
+    dx = vartypes.uint_to_value(byte_array[0:2])
+    dy = vartypes.uint_to_value(byte_array[2:4])
+    return dx, dy
+
+def sprite_to_array_ega(self, attrs, dx, dy, byte_array, offset):
+    """ Build the sprite byte array in EGA modes. """
     # for EGA modes, sprites have 8 pixels per byte 
     # with colour planes in consecutive rows
     # each new row is aligned on a new byte
@@ -582,16 +576,14 @@ def get_area_ega(self, x0, y0, x1, y1, byte_array):
     # this is much faster for wide selections 
     # but for narrow selections storing in an array and indexing take longer
     # than just getting each pixel separately
-    offset = 4 
-    attrs = backend.video.get_rect(x0, y0, x1, y1)
+    row_bytes = (dx+7) // 8
+    length = dy * self.bitsperpixel * row_bytes
+    byte_array[offset:offset+length] = '\x00'*length
     for row in attrs:
-        for plane in range(bpp):
+        for plane in range(self.bitsperpixel):
             byte_array[offset:offset+row_bytes] = (
                     bytearray(interval_to_bytes(row, 8, plane)))
             offset += row_bytes
-    # return unmodified array for use in sprite storage
-    return attrs
-
 
 # elementwise OR, in-place if possible
 if numpy:
@@ -600,31 +592,20 @@ else:
     def or_i(list0, list1):
         return [ x | y for x, y in zip(list0, list1) ]
 
-def put_area_ega(self, x0, y0, byte_array, operation):
-    """ Put a stored sprite onto the screen in EGA modes. """
-    bpp = self.bitsperpixel
-    dx = vartypes.uint_to_value(byte_array[0:2])
-    dy = vartypes.uint_to_value(byte_array[2:4])
-    x1, y1 = x0+dx-1, y0+dy-1
-    # illegal fn call if outside screen boundary
-    util.range_check(0, self.pixel_width-1, x0, x1)
-    util.range_check(0, self.pixel_height-1, y0, y1)
-    self.screen.start_graph()
+def array_to_sprite_ega(self, byte_array, offset, dx, dy):
+    """ Build sprite from byte_array in EGA modes. """
     row_bytes = (dx+7) // 8
-    offset = 4 
     attrs = []
     for y in range(y1-y0+1):
         row = bytes_to_interval(byte_array[offset:offset+row_bytes], 8, 1)
         offset += row_bytes
-        for plane in range(1, bpp):
+        for plane in range(1, self.bitsperpixel):
             row = or_i(row, bytes_to_interval(
                             byte_array[offset:offset+row_bytes], 8, 1 << plane))
             offset += row_bytes
         attrs.append(row[:dx])
-    backend.video.put_rect(x0, y0, x1, y1, attrs, operation)
-    self.screen.finish_graph()
-    return x0, y0, x1, y1
-
+    return attrs
+    
 def build_tile_cga(self, pattern):
     """ Build a flood-fill tile for CGA screens. """
     tile = []    
@@ -700,7 +681,6 @@ class GraphicsMode(VideoMode):
     def set_plane_mask(self, mask):
         """ Set the current colour plane mask (EGA only). """
         pass    
-
 
 class CGAMode(GraphicsMode):
     """ Default settings for a CGA graphics mode. """
@@ -788,51 +768,37 @@ class CGAMode(GraphicsMode):
                 self.screen.put_interval(page, 0, y, interval) 
             offset += self.bytes_per_row
 
-    def get_area(self, x0, y0, x1, y1, byte_array):
-        """ Read a sprite from the screen. """
-        dx = x1 - x0 + 1
-        dy = y1 - y0 + 1
-        # illegal fn call if outside screen boundary
-        util.range_check(0, self.pixel_width-1, x0, x1)
-        util.range_check(0, self.pixel_height-1, y0, y1)
-        bpp = self.bitsperpixel
-        # clear existing array only up to the length we'll use
-        row_bytes = (dx * bpp + 7) // 8
-        length = 4 + row_bytes*dy
-        byte_array[:length] = '\x00'*length
-        byte_array[0:2] = vartypes.value_to_uint(dx*bpp)
-        byte_array[2:4] = vartypes.value_to_uint(dy)
-        offset = 4 
-        attrs = backend.video.get_rect(x0, y0, x1, y1)
+    def sprite_size_to_record(self, dx, dy):
+        """ Write 4-byte record of sprite size. """
+        return vartypes.value_to_uint(dx*self.bitsperpixel) + vartypes.value_to_uint(dy)
+
+    def record_to_sprite_size(self, byte_array):
+        """ Read 4-byte record of sprite size. """
+        dx = vartypes.uint_to_value(byte_array[0:2]) / self.bitsperpixel
+        dy = vartypes.uint_to_value(byte_array[2:4])
+        return dx, dy
+
+    def sprite_to_array(self, attrs, dx, dy, byte_array, offset):
+        """ Build the sprite byte array. """
+        row_bytes = (dx * self.bitsperpixel + 7) // 8
+        length = row_bytes*dy
+        byte_array[offset:offset+length] = '\x00'*length
         for row in attrs:
             byte_array[offset:offset+row_bytes] = (
-                    bytearray(interval_to_bytes(row, 8//bpp, 0)))
+                bytearray(interval_to_bytes(row, 8//self.bitsperpixel, 0)))
             offset += row_bytes
-        # return unmodified array for use in sprite storage
-        return attrs
         
-    def put_area(self, x0, y0, byte_array, operation):
-        """ Put a stored sprite onto the screen. """
-        # in cga modes, number of x bits is given rather than pixels
-        bpp = self.bitsperpixel
-        dx = vartypes.uint_to_value(byte_array[0:2]) / bpp
-        dy = vartypes.uint_to_value(byte_array[2:4])
-        x1, y1 = x0+dx-1, y0+dy-1
+    def array_to_sprite(self, byte_array, offset, dx, dy):
+        """ Build sprite from byte_array. """
         row_bytes = (dx * bpp + 7) // 8
         # illegal fn call if outside screen boundary
-        util.range_check(0, self.pixel_width-1, x0, x1)
-        util.range_check(0, self.pixel_height-1, y0, y1)
-        self.screen.start_graph()
-        offset = 4 
         attrs = []
         for y in range(y1-y0+1):
             row = bytes_to_interval(byte_array[offset:offset+row_bytes], 
-                                      8//bpp, 1)
+                                      8//self.bitsperpixel, 1)
             offset += row_bytes
             attrs.append(row[:dx])
-        backend.video.put_rect(x0, y0, x1, y1, attrs, operation)
-        self.screen.finish_graph()
-        return x0, y0, x1, y1
+        return attrs
 
     build_tile = build_tile_cga
 
@@ -900,8 +866,11 @@ class EGAMode(GraphicsMode):
             return
         set_memory_ega(self, addr, bytes, mask)
 
-    put_area = put_area_ega
-    get_area = get_area_ega
+    sprite_to_array = sprite_to_array_ega
+    array_to_sprite = array_to_sprite_ega
+
+    sprite_size_to_record = sprite_size_to_record_ega
+    record_to_sprite_size = record_to_sprite_size_ega
 
     def build_tile(self, pattern):
         """ Build a flood-fill tile. """
@@ -980,8 +949,12 @@ class Tandy6Mode(GraphicsMode):
         set_memory_ega(self, addr, even_bytes, 1, factor=2)
         set_memory_ega(self, addr, odd_bytes, 2, factor=2)
 
-    put_area = put_area_ega
-    get_area = get_area_ega
+    sprite_to_array = sprite_to_array_ega
+    array_to_sprite = array_to_sprite_ega
+
+    sprite_size_to_record = sprite_size_to_record_ega
+    record_to_sprite_size = record_to_sprite_size_ega
+
     build_tile = build_tile_cga
 
 

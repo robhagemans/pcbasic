@@ -835,8 +835,6 @@ class Screen(object):
         self.cursor = Cursor(self)
         # storage space for backend display strings
         self.display_storage = None
-        # storage for faster access to sprites
-        self.sprites = {}
 
     def prepare_modes(self):
         """ Build lists of allowed graphics modes. """
@@ -1291,7 +1289,7 @@ class Screen(object):
         return video.get_pixel(x, y, pagenum)
 
     def get_interval(self, pagenum, x, y, length):
-        """ Read a scanline interval into a list of colours. """
+        """ Read a scanline interval into a list of attributes. """
         return video.get_interval(pagenum, x, y, length)
 
     def put_interval(self, pagenum, x, y, colours, mask=0xff):
@@ -1308,48 +1306,20 @@ class Screen(object):
         """ Get the attribute values of a scanline interval. """
         return video.get_until(x0, x1, y, c)
 
+    def get_rect(self, x0, y0, x1, y1):
+        """ Read a screen rect into an [y][x] array of attributes. """
+        return video.get_rect(x0, y0, x1, y1)
+
+    def put_rect(self, x0, y0, x1, y1, sprite, operation_token):
+        """ Apply an [y][x] array of attributes onto a screen rect. """
+        video.put_rect(x0, y0, x1, y1, sprite, operation_token)
+        self.clear_text_area(x0, y0, x1, y1)
+
     def fill_rect(self, x0, y0, x1, y1, index):
         """ Fill a rectangle in a solid attribute. """
         video.fill_rect(x0, y0, x1, y1, index)
         self.clear_text_area(x0, y0, x1, y1)
 
-    def put_area(self, x0, y0, array_name, operation_char):
-        """ Put a sprite on the screen (PUT). """
-        try:
-            _, byte_array, a_version = state.basic_state.arrays[array_name]
-        except KeyError:
-            byte_array = bytearray()
-        try:
-            sprite = self.sprites[array_name]
-            width, height, clip, s_version = sprite
-            x1, y1 = x0 + width -1, y0 + height-1
-            if (x0 < 0 or x1 > self.mode.pixel_width or 
-                    y0 < 0 or y1 > self.mode.pixel_height or
-                    s_version != a_version):
-                # array has changed since sprite was stored
-                # or does not fit on screen
-                sprite = None
-        except KeyError:
-            # not yet stored, do it the slow way
-            sprite = None
-        if sprite:
-            video.put_rect(x0, y0, x1, y1, clip, operation_char)
-        else:
-            x0, y0, x1, y1 = self.mode.put_area(x0, y0, byte_array, operation_char)
-        self.clear_text_area(x0, y0, x1, y1)
-            
-    def get_area(self, x0, y0, x1, y1, array_name):
-        """ Read a sprite from the screen (GET). """
-        try:
-            _, byte_array, version = state.basic_state.arrays[array_name]
-        except KeyError:
-            raise error.RunError(5)    
-        if self.mode.name == '640x200x4':
-            # Tandy screen 6 simply GETs twice the width, it seems
-            x1 = x0 + 2*(x1-x0+1)-1 
-        sprite = self.mode.get_area(x0, y0, x1, y1, byte_array)
-        # store a copy in the sprite store
-        self.sprites[array_name] = (x1-x0+1, y1-y0+1, sprite, version)
  
 ###############################################################################
 # palette
