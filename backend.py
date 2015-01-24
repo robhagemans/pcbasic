@@ -835,6 +835,8 @@ class Screen(object):
         self.cursor = Cursor(self)
         # storage space for backend display strings
         self.display_storage = None
+        # storage for faster access to sprites
+        self.sprites = {}
 
     def prepare_modes(self):
         """ Build lists of allowed graphics modes. """
@@ -1311,43 +1313,43 @@ class Screen(object):
         video.fill_rect(x0, y0, x1, y1, index)
         self.clear_text_area(x0, y0, x1, y1)
 
-    def put_area(self, x0, y0, array, operation_char):
+    def put_area(self, x0, y0, array_name, operation_char):
         """ Put a sprite on the screen (PUT). """
-        rect = video.fast_put(x0, y0, array, state.basic_state.arrays[array][2], operation_char)
-        if rect:
-            x0, y0, x1, y1 = rect
+        try:
+            _, byte_array, a_version = state.basic_state.arrays[array_name]
+        except KeyError:
+            byte_array = bytearray()
+        try:
+            sprite = self.sprites[array_name]
+            width, height, clip, s_version = sprite
+            x1, y1 = x0 + width -1, y0 + height-1
+            if (x0 < 0 or x1 > self.mode.pixel_width or 
+                    y0 < 0 or y1 > self.mode.pixel_height or
+                    s_version != a_version):
+                # array has changed since sprite was stored
+                # or does not fit on screen
+                sprite = None
+        except KeyError:
+            # not yet stored, do it the slow way
+            sprite = None
+        if sprite:
+            video.put_rect(x0, y0, x1, y1, clip, operation_char)
         else:
-            try:
-                _, byte_array, _ = state.basic_state.arrays[array]
-            except KeyError:
-                byte_array = bytearray()
-            # code tokens for sprite operations
-            if operation_char == '\xC6': # PSET
-                operation = lambda x, y: y
-            elif operation_char == '\xC7': # PRESET
-                operation = lambda x, y: y ^ ((1<<self.mode.bitsperpixel)-1)
-            elif operation_char == '\xEE': # AND
-                operation = lambda x, y: x & y
-            elif operation_char == '\xEF': # OR
-                operation = lambda x, y: x | y
-            elif operation_char == '\xF0': # XOR
-                operation = lambda x, y: x ^ y
-            x0, y0, x1, y1 = self.mode.put_area(x0, y0, byte_array, operation)
+            x0, y0, x1, y1 = self.mode.put_area(x0, y0, byte_array, operation_char)
         self.clear_text_area(x0, y0, x1, y1)
             
-    def get_area(self, x0, y0, x1, y1, array):
+    def get_area(self, x0, y0, x1, y1, array_name):
         """ Read a sprite from the screen (GET). """
         try:
-            _, byte_array, _ = state.basic_state.arrays[array]
+            _, byte_array, version = state.basic_state.arrays[array_name]
         except KeyError:
             raise error.RunError(5)    
         if self.mode.name == '640x200x4':
             # Tandy screen 6 simply GETs twice the width, it seems
             x1 = x0 + 2*(x1-x0+1)-1 
-        self.mode.get_area(x0, y0, x1, y1, byte_array)
-        # store a copy in the fast-put store
-        # arrays[array] must exist at this point (or GET would have raised error 5)
-        video.fast_get(x0, y0, x1, y1, array, state.basic_state.arrays[array][2])
+        sprite = self.mode.get_area(x0, y0, x1, y1, byte_array)
+        # store a copy in the sprite store
+        self.sprites[array_name] = (x1-x0+1, y1-y0+1, sprite, version)
  
 ###############################################################################
 # palette

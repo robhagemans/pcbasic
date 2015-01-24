@@ -12,6 +12,9 @@ import error
 import util
 import vartypes
 
+# FIXME: circular import
+import backend
+
 try:
     import numpy
 except ImportError:
@@ -564,12 +567,14 @@ def get_area_ega(self, x0, y0, x1, y1, byte_array):
     # but for narrow selections storing in an array and indexing take longer
     # than just getting each pixel separately
     offset = 4 
-    for y in range(y0, y1+1):
-        attrs = self.screen.get_interval(self.screen.apagenum, x0, y, dx)
+    attrs = backend.video.get_rect(x0, y0, x1, y1)
+    for row in attrs:
         for plane in range(bpp):
             byte_array[offset:offset+row_bytes] = (
-                    bytearray(interval_to_bytes(attrs, 8, plane)))
+                    bytearray(interval_to_bytes(row, 8, plane)))
             offset += row_bytes
+    # return unmodified array for use in sprite storage
+    return attrs
 
 def put_area_ega(self, x0, y0, byte_array, operation):
     """ Put a stored sprite onto the screen in EGA modes. """
@@ -583,17 +588,16 @@ def put_area_ega(self, x0, y0, byte_array, operation):
     self.screen.start_graph()
     row_bytes = (dx+7) // 8
     offset = 4 
-    for y in range(y0, y1+1):
-        attrs = bytes_to_interval(byte_array[offset:offset+row_bytes], 8, 1)
+    attrs = []
+    for y in range(y1-y0+1):
+        row = bytes_to_interval(byte_array[offset:offset+row_bytes], 8, 1)
         offset += row_bytes
         for plane in range(1, bpp):
-            attrs |= bytes_to_interval(byte_array[offset:offset+row_bytes], 8, 
+            row |= bytes_to_interval(byte_array[offset:offset+row_bytes], 8, 
                                        1 << plane)
             offset += row_bytes
-        attrs = attrs[:dx]
-        old_attrs = self.screen.get_interval(self.screen.apagenum, x0, y, dx)
-        self.screen.put_interval(self.screen.apagenum, x0, y, 
-                                 operation(old_attrs, attrs))
+        attrs.append(row[:dx])
+    backend.video.put_rect(x0, y0, x1, y1, attrs, operation)
     self.screen.finish_graph()
     return x0, y0, x1, y1
 
@@ -775,11 +779,13 @@ class CGAMode(GraphicsMode):
         byte_array[0:2] = vartypes.value_to_uint(dx*bpp)
         byte_array[2:4] = vartypes.value_to_uint(dy)
         offset = 4 
-        for y in range(y0, y1+1):
-            attrs = self.screen.get_interval(self.screen.apagenum, x0, y, dx)
+        attrs = backend.video.get_rect(x0, y0, x1, y1)
+        for row in attrs:
             byte_array[offset:offset+row_bytes] = (
-                    bytearray(interval_to_bytes(attrs, 8//bpp, 0)))
+                    bytearray(interval_to_bytes(row, 8//bpp, 0)))
             offset += row_bytes
+        # return unmodified array for use in sprite storage
+        return attrs
         
     def put_area(self, x0, y0, byte_array, operation):
         """ Put a stored sprite onto the screen. """
@@ -794,14 +800,13 @@ class CGAMode(GraphicsMode):
         util.range_check(0, self.pixel_height-1, y0, y1)
         self.screen.start_graph()
         offset = 4 
-        for y in range(y0, y1+1):
-            attrs = bytes_to_interval(byte_array[offset:offset+row_bytes], 
+        attrs = []
+        for y in range(y1-y0+1):
+            row = bytes_to_interval(byte_array[offset:offset+row_bytes], 
                                       8//bpp, 1)
             offset += row_bytes
-            attrs = attrs[:dx]
-            old_attrs = self.screen.get_interval(self.screen.apagenum, x0, y, dx)
-            self.screen.put_interval(self.screen.apagenum, x0, y, 
-                                     operation(old_attrs, attrs))
+            attrs.append(row[:dx])
+        backend.video.put_rect(x0, y0, x1, y1, attrs, operation)
         self.screen.finish_graph()
         return x0, y0, x1, y1
 

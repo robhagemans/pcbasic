@@ -24,6 +24,8 @@ import unicodepage
 import backend
 import typeface
 import scancode
+# for operation token for PUT
+import token
 
 #D
 import state
@@ -122,9 +124,6 @@ under_top_left = None
 
 # available joy sticks
 joysticks = []    
-
-# store for fast get & put arrays
-get_put_store = {}
 
 if pygame:
     # these are PC keyboard scancodes
@@ -365,7 +364,6 @@ def init_screen_mode(mode_info):
     global clipboard, num_pages, bitsperpixel, font_width
     global mode_has_artifacts, cursor_fixed_attr, mode_has_blink
     global mode_has_underline
-    global get_put_store
     if mode_info.font_height not in fonts or not fonts[mode_info.font_height]:
         logging.warning(
             'No %d-pixel font available. Could not enter video mode %s.',
@@ -396,8 +394,6 @@ def init_screen_mode(mode_info):
     canvas = [ pygame.Surface(size, depth=8) for _ in range(num_pages)]
     for i in range(num_pages):
         canvas[i].set_palette(workpalette)
-    # remove cached sprites
-    get_put_store = {}    
     # initialise clipboard
     clipboard = Clipboard(mode_info.width, mode_info.height)
     screen_changed = True
@@ -1266,7 +1262,7 @@ if numpy:
         screen_changed = True
 
     def get_interval(pagenum, x, y, length):
-        """ Read a scanline interval into a list of colours. """
+        """ Get *reference to* scanline interval into a list of colours. """
         # NOTE that this references (much faster), we need to copy afterwards!
         return pygame.surfarray.pixels2d(canvas[pagenum])[x:x+length, y]
 
@@ -1312,69 +1308,56 @@ def get_until(x0, x1, y, c):
             interval.append(index)
         return interval    
 
-###############################################################################
-# Numpy-optimised sprite operations (PUT and GET)
-    
-def numpy_set(left, right):
-    """ Fast PUT: PSET operation. """
-    left[:] = right
+# sprite operations (PUT and GET)
 
-def numpy_not(left, right):
-    """ Fast PUT: PRESET operation. """
-    left[:] = right
-    left ^= (1<<bitsperpixel) - 1
+if numpy:
+    operations = {
+        token.PSET: lambda x, y: x.__setitem__(slice(len(x)), y),
+        token.PRESET: lambda x, y: x.__setitem__(slice(len(x)), y.__xor__((1<<bitsperpixel) - 1)),
+        token.AND: lambda x, y: x.__iand__(y),
+        token.OR: lambda x, y: x.__ior__(y),
+        token.XOR: lambda x, y: x.__ixor__(y),
+        }
 
-def numpy_iand(left, right):
-    """ Fast PUT: AND operation. """
-    left &= right
+    def get_rect(x0, y0, x1, y1):
+        """ Get *copy of* numpy array [y][x] of target area. """
+        return pygame.surfarray.array2d(canvas[apagenum].subsurface(
+                                    pygame.Rect(x0, y0, x1-x0+1, y1-y0+1))).T
 
-def numpy_ior(left, right):
-    """ Fast PUT: OR operation. """
-    left |= right
+    def put_rect(x0, y0, x1, y1, array, operation_token):
+        """ Apply numpy array [y][x] of attribytes to an area. """
+        global screen_changed
+        # reference the destination area
+        dest_array = pygame.surfarray.pixels2d(
+            canvas[apagenum].subsurface(pygame.Rect(x0, y0, x1-x0+1, y1-y0+1))) 
+        # apply the operation
+        operations[operation_token](dest_array, numpy.array(array).T)
+        screen_changed = True
 
-def numpy_ixor(left, right):
-    """ Fast PUT: XOR operation. """
-    left ^= right
-        
-fast_operations = {
-    '\xC6': numpy_set, #PSET
-    '\xC7': numpy_not, #PRESET
-    '\xEE': numpy_iand,
-    '\xEF': numpy_ior,
-    '\xF0': numpy_ixor,
-    }
+else:
+    operations = {
+        token.PSET: lambda x, y: y, 
+        token.PRESET: lambda x, y: y ^ ((1<<bitsperpixel)-1),
+        token.AND: lambda x, y: x & y,
+        token.OR: lambda x, y: x | y,
+        token.XOR: lambda x, y: x ^ y,
+        }
 
-def fast_get(x0, y0, x1, y1, varname, version):
-    """ Store sprite in numpy array for fast operations. """
-    if not numpy:
-        return
-    # copy a numpy array of the target area
-    clip = pygame.surfarray.array2d(canvas[apagenum].subsurface(pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)))
-    get_put_store[varname] = ( x1-x0+1, y1-y0+1, clip, version )
+    def get_rect(x0, y0, x1, y1):
+        """ Read 2D list [y][x] of attributes from target area. """
+        return [[ canvas[apagenum].get_at((x0+i, y0+j)).b 
+                            for i in xrange(x1-x0+1) ]
+                                for j in xrange(y1-y0+1) ] 
 
-def fast_put(x0, y0, varname, new_version, operation_char):
-    """ Write sprite to screen; use numpy array if available. """
-    global screen_changed
-    try:
-        width, height, clip, version = get_put_store[varname]
-    except KeyError:
-        # not yet stored, do it the slow way
-        return None
-    if x0 < 0 or x0+width-1 > size[0] or y0 < 0 or y0+height-1 > size[1]:
-        # let the normal version handle errors
-        return None    
-    # if the versions are not the same, use the slow method 
-    # (array has changed since clip was stored)
-    if version != new_version:
-        return None
-    # reference the destination area
-    dest_array = pygame.surfarray.pixels2d(
-            canvas[apagenum].subsurface(pygame.Rect(x0, y0, width, height))) 
-    # apply the operation
-    operation = fast_operations[operation_char]
-    operation(dest_array, clip)
-    screen_changed = True
-    return x0, y0, x0+width-1, y0+height-1
-                
+    def put_rect(x0, y0, x1, y1, array, operation_token):
+        """ Apply a 2D list [y][x] of attributes to an area. """
+        global screen_changed
+        operation = operations[operation_token]
+        [[ canvas[apagenum].set_at((x0+i, y0+j), 
+                operation(canvas[apagenum].get_at((x0+i, y0+j)).b, index)) 
+                            for i, index in enumerate(array[j]) ]
+                                for j in xrange(y1-y0+1) ]
+        screen_changed = True
+
 prepare()
 
