@@ -19,7 +19,7 @@ try:
     import numpy
 except ImportError:
     numpy = None
-    
+
 def prepare():
     """ Prepare the video modes. """
     global video_capabilities, mono_monitor
@@ -365,6 +365,7 @@ class VideoMode(object):
         self.video_segment = int(video_segment)
         self.page_size = int(page_size)
         self.num_pages = int(num_pages) # or video_mem_size // self.page_size)
+
     
 class TextMode(VideoMode):
     """ Default settings for a text mode. """
@@ -426,12 +427,15 @@ class TextMode(VideoMode):
             last_row = crow
         if last_row>=0 and last_row<25:
             self.screen.refresh_range(page, last_row+1, 1, self.width, for_keys=True)
-        
-def bytes_to_interval(bytes, pixels_per_byte, mask=1):
-    """ Convert masked attributes packed into bytes to a scanline interval. """
-    bpp = 8//pixels_per_byte
-    attrmask = (1<<bpp) - 1
-    if numpy:
+
+
+# helper functions: convert between attribute lists and byte arrays
+
+if numpy:
+    def bytes_to_interval(bytes, pixels_per_byte, mask=1):
+        """ Convert masked attributes packed into bytes to a scanline interval. """
+        bpp = 8//pixels_per_byte
+        attrmask = (1<<bpp) - 1
         bitval = numpy.array([128, 64, 32, 16, 8, 4, 2, 1], dtype=numpy.uint8)
         bitmask = bitval[0::bpp]
         for i in xrange(1, bpp):
@@ -445,19 +449,15 @@ def bytes_to_interval(bytes, pixels_per_byte, mask=1):
                                  pixels_per_byte) & pre_mask,
                     post_shift) & attrmask
         return numpy.array(attrs) * mask
-    else:
-        return [((byte >> (8-bpp-shift)) & attrmask) * mask
-                for byte in bytes for shift in xrange(0, 8, bpp)]
 
-def interval_to_bytes(colours, pixels_per_byte, plane=0):
-    """ Convert a scanline interval into masked attributes packed into bytes. """
-    num_pixels = len(colours)
-    num_bytes, odd_out = divmod(num_pixels, pixels_per_byte)
-    if odd_out:
-        num_bytes += 1
-    bpp = 8//pixels_per_byte
-    attrmask = (1<<bpp) - 1
-    if numpy: 
+    def interval_to_bytes(colours, pixels_per_byte, plane=0):
+        """ Convert a scanline interval into masked attributes packed into bytes. """
+        num_pixels = len(colours)
+        num_bytes, odd_out = divmod(num_pixels, pixels_per_byte)
+        if odd_out:
+            num_bytes += 1
+        bpp = 8//pixels_per_byte
+        attrmask = (1<<bpp) - 1
         colours = numpy.array(colours).astype(int)
         if odd_out:
             colours.resize(len(colours)+pixels_per_byte-odd_out)
@@ -474,7 +474,23 @@ def interval_to_bytes(colours, pixels_per_byte, plane=0):
         for i in xrange(1, pixels_per_byte):
             nattrs |= attrs[i::pixels_per_byte]
         return list(nattrs)
-    else:
+
+else:
+    def bytes_to_interval(bytes, pixels_per_byte, mask=1):
+        """ Convert masked attributes packed into bytes to a scanline interval. """
+        bpp = 8//pixels_per_byte
+        attrmask = (1<<bpp) - 1
+        return [((byte >> (8-bpp-shift)) & attrmask) * mask
+                    for byte in bytes for shift in xrange(0, 8, bpp)]
+
+    def interval_to_bytes(colours, pixels_per_byte, plane=0):
+        """ Convert a scanline interval into masked attributes packed into bytes. """
+        num_pixels = len(colours)
+        num_bytes, odd_out = divmod(num_pixels, pixels_per_byte)
+        if odd_out:
+            num_bytes += 1
+        bpp = 8//pixels_per_byte
+        attrmask = (1<<bpp) - 1
         colours = list(colours)
         byte_list = [0]*num_bytes
         shift, byte = -1, -1
@@ -576,6 +592,14 @@ def get_area_ega(self, x0, y0, x1, y1, byte_array):
     # return unmodified array for use in sprite storage
     return attrs
 
+
+# elementwise OR, in-place if possible
+if numpy:
+    or_i = numpy.ndarray.__ior__
+else:    
+    def or_i(list0, list1):
+        return [ x | y for x, y in zip(list0, list1) ]
+
 def put_area_ega(self, x0, y0, byte_array, operation):
     """ Put a stored sprite onto the screen in EGA modes. """
     bpp = self.bitsperpixel
@@ -593,8 +617,8 @@ def put_area_ega(self, x0, y0, byte_array, operation):
         row = bytes_to_interval(byte_array[offset:offset+row_bytes], 8, 1)
         offset += row_bytes
         for plane in range(1, bpp):
-            row |= bytes_to_interval(byte_array[offset:offset+row_bytes], 8, 
-                                       1 << plane)
+            row = or_i(row, bytes_to_interval(
+                            byte_array[offset:offset+row_bytes], 8, 1 << plane))
             offset += row_bytes
         attrs.append(row[:dx])
     backend.video.put_rect(x0, y0, x1, y1, attrs, operation)
