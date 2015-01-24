@@ -692,7 +692,6 @@ class Drawing(object):
                     if plot:
                         self.draw_line(x0, y0, x, y, self.last_attr)    
                     self.last_point = x, y
-                    self.last_attr = c
                     if goback:
                         self.last_point = x0, y0
                 plot = True
