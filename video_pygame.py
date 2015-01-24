@@ -1273,7 +1273,7 @@ else:
         if mask != 0xff:
             inv_mask = 0xff ^ mask
             colours &= mask
-            colours |= get_interval(pagenum, x, y, length) & inv_mask
+            colours |= get_interval(pagenum, x, y, len(colours)) & inv_mask
         # list comprehension and ignoring result seems faster than loop
         [canvas[pagenum].set_at((x+i, y), index) 
                          for i, index in enumerate(colours)]

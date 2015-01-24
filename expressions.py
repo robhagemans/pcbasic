@@ -798,7 +798,7 @@ def value_varptr(ins):
         
 def value_usr(ins):
     """ USR: get value of machine-code function; not implemented. """
-    if util.peek(ins) in token.digits: # digits 0--9
+    if util.peek(ins) in token.digit: # digits 0--9
         ins.read(1)
     parse_bracket(ins)
     logging.warning("USR() function not implemented.")

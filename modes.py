@@ -596,7 +596,7 @@ def array_to_sprite_ega(self, byte_array, offset, dx, dy):
     """ Build sprite from byte_array in EGA modes. """
     row_bytes = (dx+7) // 8
     attrs = []
-    for y in range(y1-y0+1):
+    for y in range(dy):
         row = bytes_to_interval(byte_array[offset:offset+row_bytes], 8, 1)
         offset += row_bytes
         for plane in range(1, self.bitsperpixel):
@@ -790,10 +790,10 @@ class CGAMode(GraphicsMode):
         
     def array_to_sprite(self, byte_array, offset, dx, dy):
         """ Build sprite from byte_array. """
-        row_bytes = (dx * bpp + 7) // 8
+        row_bytes = (dx * self.bitsperpixel + 7) // 8
         # illegal fn call if outside screen boundary
         attrs = []
-        for y in range(y1-y0+1):
+        for y in range(dy):
             row = bytes_to_interval(byte_array[offset:offset+row_bytes], 
                                       8//self.bitsperpixel, 1)
             offset += row_bytes
