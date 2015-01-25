@@ -603,7 +603,6 @@ class Drawing(object):
          
     def put(self, lcoord, array_name, operation_token):
         """ Put a sprite on the screen (PUT). """
-        # array must exist at this point (or PUT would have raised error 5)      
         x0, y0 = self.view_coords(*self.get_window_physical(*lcoord))
         self.last_point = x0, y0
         try:
@@ -621,10 +620,12 @@ class Drawing(object):
             sprite = self.screen.mode.array_to_sprite(byte_array, 4, dx, dy)
             # store it now that we have it!
             self.sprites[array_name] = (dx, dy, sprite, a_version)
-        # illegal fn call if outside screen boundary
+        # sprite must be fully inside *viewport* boundary
         x1, y1 = x0+dx-1, y0+dy-1
-        util.range_check(0, self.screen.mode.pixel_width-1, x0, x1)
-        util.range_check(0, self.screen.mode.pixel_height-1, y0, y1)
+        # illegal fn call if outside viewport boundary
+        vx0, vy0, vx1, vy1 = self.get_view()
+        util.range_check(vx0, vx1, x0, x1)
+        util.range_check(vy0, vy1, y0, y1)
         # apply the sprite to the screen
         self.screen.start_graph()
         self.screen.put_rect(x0, y0, x1, y1, sprite, operation_token)
@@ -643,9 +644,10 @@ class Drawing(object):
         # Tandy screen 6 simply GETs twice the width, it seems
         if self.screen.mode.name == '640x200x4':
             x1 = x0 + 2*dx - 1 
-        # illegal fn call if outside screen boundary
-        util.range_check(0, self.screen.mode.pixel_width-1, x0, x1)
-        util.range_check(0, self.screen.mode.pixel_height-1, y0, y1)
+        # illegal fn call if outside viewport boundary
+        vx0, vy0, vx1, vy1 = self.get_view()
+        util.range_check(vx0, vx1, x0, x1)
+        util.range_check(vy0, vy1, y0, y1)
         # set size record
         byte_array[0:4] = self.screen.mode.sprite_size_to_record(dx, dy)
         # read from screen and convert to byte array
