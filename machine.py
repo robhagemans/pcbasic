@@ -361,9 +361,9 @@ def get_data_memory_var(address):
     var_addr = -1
     the_var = None 
     for name in state.basic_state.var_memory:
-        name_ptr, var_ptr = state.basic_state.var_memory[name]
-        if name_ptr <= address and name_ptr > name_addr:
-            name_addr, var_addr = name_ptr, var_ptr
+        name_try, var_try = state.basic_state.var_memory[name]
+        if name_try <= address and name_try > name_addr:
+            name_addr, var_addr = name_try, var_try
             the_var = name
     if the_var == None:
         return -1        
@@ -374,7 +374,7 @@ def get_data_memory_var(address):
         var_rep = state.basic_state.variables[the_var]
         return var_rep[offset]
     else:
-        offset = address - name_ptr
+        offset = address - name_addr
         return get_name_in_memory(the_var, offset)
 
 def get_data_memory_array(address):
@@ -383,9 +383,9 @@ def get_data_memory_array(address):
     arr_addr = -1
     the_arr = None 
     for name in state.basic_state.array_memory:
-        name_ptr, arr_ptr = state.basic_state.array_memory[name]
-        if name_ptr <= address and name_ptr > name_addr:
-            name_addr, arr_addr = name_ptr, arr_ptr
+        name_try, arr_try = state.basic_state.array_memory[name]
+        if name_try <= address and name_try > name_addr:
+            name_addr, arr_addr = name_try, arr_try
             the_arr = name
     if the_arr == None:
         return -1        
@@ -396,7 +396,7 @@ def get_data_memory_array(address):
         _, byte_array, _ = state.basic_state.arrays[the_arr]    
         return byte_array[offset]
     else:
-        offset = address - name_ptr - state.basic_state.var_current
+        offset = address - name_addr - state.basic_state.var_current
         if offset < max(3, len(the_arr))+1:
             return get_name_in_memory(the_arr, offset)
         else:
@@ -416,9 +416,9 @@ def get_data_memory_string(address):
         if name[-1] != '$':
             continue
         v = state.basic_state.variables[name]
-        str_ptr = state.basic_state.strings.address(v)
-        if str_ptr <= address and str_ptr > str_nearest:
-            str_nearest = str_ptr
+        str_try = state.basic_state.strings.address(v)
+        if str_try <= address and str_try > str_nearest:
+            str_nearest = str_try
             the_var = v
     if the_var == None:
         for name in state.basic_state.arrays:
@@ -426,9 +426,9 @@ def get_data_memory_string(address):
                 continue
             _, lst, _ = state.basic_state.arrays[name]
             for i in range(0, len(lst), 3):
-                str_ptr = state.basic_state.strings.address(lst[i:i+3])
-                if str_ptr <= address and str_ptr > str_nearest:
-                    str_nearest = str_ptr
+                str_try = state.basic_state.strings.address(lst[i:i+3])
+                if str_try <= address and str_try > str_nearest:
+                    str_nearest = str_try
                     the_var = lst[i:i+3]
     try:
         return state.basic_state.strings.retrieve(v)[address - str_nearest]
