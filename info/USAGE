@@ -239,8 +239,9 @@ OPTIONS
             If not specified, LPT3: is unavailable.            
             
   --map-drives [=True|=False]
-            Map all Windows drive letters to PC-BASIC drive letters. 
-            Windows only.
+            On Windows, assign all Windows drive letters to PC-BASIC drive 
+            letters. On other systems, assign Z: to the current working 
+            directory, C: to the filesystem root and H: to the home directory.
             
   -f=number_of_files
   --max-files=number_of_files 
@@ -274,7 +275,8 @@ OPTIONS
             
   --mount=D:path,[D:path ...]
             Assign a drive letter to a path. Path can be absolute or relative.
-            By default, C: is mapped to the current working directory.
+            By default, Z: is assigned to the current working directory and no 
+            other drive letters are assigned.
             
   --mouse=left,middle,right
             Set the functions of the three mouse buttons. 
@@ -557,9 +559,9 @@ THE FILE SYSTEM
     
     The only valid path separator is the backslash (\). 
     
-    By default, drive letter C: is mapped to the current working directory.
-    In particular, it is not mapped to the Windows C: drive. Use --mount or 
-    --map-drives to change this behaviour.
+    By default, drive letter Z: is mapped to the current working directory and 
+    is the current drive. In particular, it is not mapped to the Windows Z: 
+    drive, if that exists. Use --mount or --map-drives to change this behaviour.
     
     The arguments to the --load and --run command-line options can be provided 
     as PC-BASIC paths or as paths in the standard form for your operating 
