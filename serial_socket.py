@@ -15,6 +15,8 @@ try:
     from serial import SerialException, serialutil
 except Exception:
     serial = None
+    # serial sometimes sends ValueError, so caller needs to catch this anyway
+    SerialException = ValueError
     
 try:
     import parallel    

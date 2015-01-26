@@ -117,9 +117,10 @@ def open_file_or_device(number, name, mode='I', access='R', lock='', reclen=128,
     inst = None
     split_colon = name.upper().split(':')
     if len(split_colon) > 1: # : found
-        dev_name = split_colon[0] + ':' 
+        dev_name = split_colon[0] + ':'
+        dev_param = split_colon[1] 
         try:
-            inst = device_open(dev_name, number, mode, access, lock, reclen)
+            inst = device_open(dev_name, number, mode, access, lock, reclen, dev_param)
         except KeyError:    
             if len(dev_name) > 2:
                 # devname could be A:, B:, C:, etc.. but anything longer is an error (bad file number, for some reason).
@@ -718,7 +719,7 @@ def create_device_stream(arg, allowed):
         raise error.RunError(53)
     return stream
             
-def device_open(device_name, number, mode, access, lock, reclen):
+def device_open(device_name, number, mode, access, lock, reclen, param=''):
     """ Open a file on a device. """
     # check if device exists and allows the requested mode    
     # if not exists, raise KeyError to caller
@@ -730,7 +731,7 @@ def device_open(device_name, number, mode, access, lock, reclen):
         # bad file mode
         raise error.RunError(54)
     # don't lock devices
-    return device.open(number, mode, access, '', reclen)
+    return device.open(number, mode, access, '', reclen, param)
 
 def close_devices():
     """ Close all devices. """
@@ -761,7 +762,7 @@ class NullDevice(object):
         """ Initialse device object. """
         self.number = 0
 
-    def open(self, number, mode, access, lock, reclen):
+    def open(self, number, mode, access, lock, reclen, param=''):
         """ Open a file on this device. """
         if number != 0:
             state.io_state.files[number] = self
@@ -812,6 +813,10 @@ class NullDevice(object):
         """ Check for end-of-file. """
         return False    
 
+    def set_parameters(self, param):
+        """ Set device parameters. """
+        pass
+        
         
 class KYBDFile(NullDevice):
     """ KYBD device: keyboard. """
@@ -979,7 +984,7 @@ class LPTFile(BaseFile):
         BaseFile.__init__(self, StringIO(), name)
         self.flush_trigger = flush_trigger
 
-    def open(self, number, mode, access, lock, reclen):
+    def open(self, number, mode, access, lock, reclen, param=''):
         """ Open a file on LPTn. """
         return open_device_file(self, number, mode, access, lock, reclen)
 
@@ -1059,7 +1064,7 @@ class COMFile(RandomBase):
         self._in_buffer = bytearray()
         RandomBase.__init__(self, stream, name, 0, 'R', 'RW', '', serial_in_size)
 
-    def open(self, number, mode, access, lock, reclen):
+    def open(self, number, mode, access, lock, reclen, param=''):
         """ Open a file on COMn """
         # open the COM port
         if self.fhandle._isOpen:
@@ -1071,13 +1076,19 @@ class COMFile(RandomBase):
             except serial_socket.SerialException:
                 # device timeout
                 raise error.RunError(24)
+        self.linefeed = False
+        try:
+            self.set_parameters(param)
+        except Exception:
+            self.close()
+            raise
         return open_device_file(self, number, mode, access, lock, reclen)   
     
     def check_read(self):
         """ Fill buffer at most up to buffer size; non blocking. """
         try:
             self._in_buffer += self.fhandle.read(serial_in_size - len(self._in_buffer))
-        except serial_socket.SerialException:
+        except (serial_socket.SerialException, ValueError):
             # device I/O
             raise error.RunError(57)
         
@@ -1104,9 +1115,12 @@ class COMFile(RandomBase):
         while len(out) < 255:
             c = self.read(1)
             if c == '\r':
-                c = self.read(1)
-                out += ''.join(c)
-                if c == '\n':    
+                if self.linefeed:
+                    c = self.read(1)
+                    if c == '\n':    
+                        break
+                    out += ''.join(c)
+                else:
                     break
             out += ''.join(c)
         return out
@@ -1118,11 +1132,17 @@ class COMFile(RandomBase):
         else:
             return ''    
         
+    def write_line(self, s=''):
+        """ Write string or bytearray and newline to port. """ 
+        self.write(str(s) + '\r')    
+
     def write(self, s):
         """ Write string to port. """
         try:
+            if self.linefeed:
+                s = s.replace('\r', '\r\n')    
             self.fhandle.write(s)
-        except serial_socket.SerialException:
+        except (serial_socket.SerialException, ValueError):
             # device I/O
             raise error.RunError(57)
     
@@ -1156,6 +1176,49 @@ class COMFile(RandomBase):
         self.fhandle.close()
         RandomBase.close(self)
 
+    def set_parameters(self, param):
+        """ Set serial port connection parameters """
+        max_param = 10
+        param_list = param.upper().split(',')
+        if len(param_list) > max_param:
+            # Bad file name
+            raise error.RunError(64)
+        param_list += ['']*(max_param-len(param_list))
+        speed, parity, data, stop, RS, CS, DS, CD, LF, PE = param_list
+        # set speed
+        if speed not in ('75', '110', '150', '300', '600', '1200', 
+                          '1800', '2400', '4800', '9600', ''):
+            # Bad file name
+            raise error.RunError(64)
+        speed = int(speed) if speed else 300
+        self.fhandle.baudrate = speed
+        # set parity
+        if parity not in ('S', 'M', 'O', 'E', 'N', ''):
+            raise error.RunError(64)
+        parity = parity or 'E'
+        self.fhandle.parity = parity
+        # set data bits
+        if data not in ('4', '5', '6', '7', '8', ''):
+            raise error.RunError(64)
+        data = int(data) if data else 7
+        bytesize = data + (parity != 'N')
+        if bytesize not in range(5, 9):
+            raise error.RunError(64)
+        self.fhandle.bytesize = bytesize
+        # set stopbits
+        if stop not in ('1', '2', ''):
+            raise error.RunError(64)
+        if not stop:
+            stop = 2 if (speed in (75, 110)) else 1
+        else:
+            stop = int(stop)
+        self.fhandle.stopbits = stop
+        if (RS not in ('RS', '') or CS[:2] not in ('CS', '')
+            or DS[:2] not in ('DS', '') or CD[:2] not in ('CD', '')
+            or LF not in ('LF', '') or PE not in ('PE', '')):
+            raise error.RunError(64)
+        # set LF
+        self.linefeed = (LF != '')
 
 prepare()
 

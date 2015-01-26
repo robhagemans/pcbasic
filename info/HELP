@@ -2617,9 +2617,7 @@ The FOR modes:
     length 'rec_len'. If LEN is not specified, the record length defaults to 
     128. The file contents can be accessed using GET and PUT of the FIELD
     buffer; the FIELD buffer can be accessed through FIELD variables or through
-    PRINT# and INPUT# statements. If a COM port is opened for RANDOM, access is
-    byte-for-byte rather than through FIELD records; PRINT# and INPUT# access 
-    the port directly. 
+    PRINT# and INPUT# statements. 
 -   If no FOR mode / mode_char is specified, the file is opened for RANDOM.
 The ACCESS modes:
 -   If no ACCESS mode is specified, the default is READ WRITE for RANDOM,
@@ -2648,12 +2646,48 @@ In GW-BASIC under MS-DOS with SHARE active, these locks should be functioning
 across a network as well as inside a single BASIC process. In PC-BASIC 3.23,  
 the locks are only implemented internally; whether other processes may access 
 the file will depend on the host OS.
+SERIAL PORT (COM1) ACCESS:
+-   When opening a COM port, additional expressions may be include following the
+    colon of the device name. These specify parameters for the serial
+    connection. This string has the form
+    "COMn:[speed][,parity][,data][,stop][,RS][,CS[n]][,DS[n]][,CD[n]][,LF][,PE]"
+    The meaning of the parameters is:
+    speed   baud (bps) rate for the connection. 'speed' must be one of
+            {75, 110, 150, 300, 600, 1200, 1800, 2400, 4800, 9600}.
+            Default is 300.
+    parity  parity bit convention. 'parity' must be one of [S, M, O, E, N]. 
+            S   SPACE   Parity bit always set to 0.
+            M   MARK    Parity bit always set to 1.
+            O   ODD     Parity bit set so that character parity is odd.
+            E   EVEN    Parity bit set so that character parity is even.
+            N   NONE    No parity bit transmitted or received.
+            Default is E.
+    data    data bits per byte. 'data' must be one of {4, 5, 6, 7, 8}. 
+            A byte consists of the data bits plus parity bit, if
+            any. Byte size must be in the range [5...8]: if 'data' is 4, 
+            'parity' must not be N; if 'data' is 8, 'parity' must be N.
+            Default is 7.
+    stop    The number of stop bits. 'stop' must be 1 or 2.
+            Default is 2 if speed is 75 or 110; 1 otherwise.
+    LF      if specified, send a line feed after each return.
+    The following GW-BASIC specifications are ignored by PC-BASIC:
+    RS      if specified, suppress Request To Send.
+    CS[n]   set Clear To Send timeout to n milliseconds. 
+            If n is not given, set timeout to 0. 
+            Default is CS0 if RS is set; CS1000 otherwise.
+    DS[n]   set Data Set Ready timeout to n milliseconds. 
+            If n is not given, set timeout to 0. 
+            Default is DS1000.
+    CD[n]   set Carrier Detect timeout to n milliseconds. 
+            If n is not given, set timeout to 0. 
+            Default is CD0.
+    PE      enable parity checking.
+-   If a COM port is opened for RANDOM, access is
+    byte-for-byte rather than through FIELD records; PRINT# and INPUT# access 
+    the port directly. 'rec_len' sets the number of bytes read by the GET and
+    PUT statements.
 NOTES:
 -   For INPUT, OUTPUT and APPEND modes, LEN may be specified but is ignored.
--   In GW-BASIC, when opening one of the COM devices, the string 'file_name' 
-    may contain additional qualifiers after the colon. This string has the form
-    "COMn:[spd][,pty][,data][,stop][,RS][,CS[n]][,DS[n]][,CD[n]][,LF][,PE]"
-    This is not implemented in PC-BASIC 3.23. 
 -   If i/o is attempted contravening the FOR mode specified, the PRINT or INPUT
     statement will raise BAD FILE MODE.
 -   If RANDOM i/o is attempted contravening the ACCESS mode specified, the 
@@ -2663,7 +2697,7 @@ ERRORS:
 -   If 'file_name' is empty or a non-existant device, raises BAD FILE NUMBER.
 -   If FOR APPEND ACCESS WRITE is specified, raises PATH/FILE ACCESS ERROR.
 -   If FOR and ACCESS mismatch in other ways, raises SYNTAX ERROR.
--   In GW-BASIC, if the COM: file_name does not follow the specification,
+-   If the COM: file_name parameters do not follow the specification,
     BAD FILE NAME is raised.
 -   If a file is already open for OUTPUT or APPEND, raises FILE ALREADY OPEN.
     This is not the case for devices.
