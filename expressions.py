@@ -11,6 +11,7 @@ try:
 except ImportError:
     from StringIO import StringIO
 from functools import partial
+import logging
 
 import config
 import fp
@@ -495,16 +496,17 @@ def value_screen(ins):
         raise error.RunError(5)
     if z == None:
         z = 0    
-    util.range_check(1, state.console_state.height, row)
+    cmode = state.console_state.screen.mode
+    util.range_check(1, cmode.height, row)
     if state.console_state.view_set:
         util.range_check(state.console_state.view_start, state.console_state.scroll_height, row)
-    util.range_check(1, state.console_state.width, col)
+    util.range_check(1, cmode.width, col)
     util.range_check(0, 255, z)
     util.require_read(ins, (')',))
-    if z and not state.console_state.current_mode.is_text_mode:
+    if z and not cmode.is_text_mode:
         return vartypes.null['%']    
     else:
-        return vartypes.pack_int(backend.get_screen_char_attr(row, col, z!=0))
+        return vartypes.pack_int(state.console_state.screen.apage.get_char_attr(row, col, z!=0))
     
 def value_input(ins):
     """ INPUT$: get a string from the keyboard. """
@@ -529,12 +531,14 @@ def value_input(ins):
     
 def value_inkey(ins):
     """ INKEY$: get a character from the keyboard. """
-    return vartypes.pack_string(bytearray(backend.get_char()))
+    return vartypes.pack_string(bytearray(state.console_state.keyb.get_char()))
 
 def value_csrlin(ins):
     """ CSRLIN: get the current screen row. """
     row, col = state.console_state.row, state.console_state.col 
-    if col == state.console_state.width and state.console_state.overflow and row < state.console_state.scroll_height:
+    if (col == state.console_state.screen.mode.width and 
+            state.console_state.overflow and 
+            row < state.console_state.scroll_height):
         # in overflow position, return row+1 except on the last row
         row += 1
     return vartypes.pack_int(row)
@@ -544,7 +548,7 @@ def value_pos(ins):
     # parse the dummy argument, doesnt matter what it is as long as it's a legal expression
     parse_bracket(ins)
     col = state.console_state.col
-    if col == state.console_state.width and state.console_state.overflow:
+    if col == state.console_state.screen.mode.width and state.console_state.overflow:
         # in overflow position, return column 1.
         col = 1
     return vartypes.pack_int(col)
@@ -658,26 +662,31 @@ def value_point(ins):
     util.require_read(ins, (')',))
     if not lst[0]:
         raise error.RunError(2)
+    screen = state.console_state.screen
     if not lst[1]:
         # single-argument version
-        x, y = state.console_state.last_point
-        fn = vartypes.pass_int_unpack(lst[0])
-        if fn == 0:
-            return vartypes.pack_int(x)
-        elif fn == 1:
-            return vartypes.pack_int(y)
-        elif fn == 2:
-            fx, _ = graphics.get_window_coords(x, y)
-            return fp.pack(fx)
-        elif fn == 3:
-            _, fy = graphics.get_window_coords(x, y)
-            return fp.pack(fy)
+        try:
+            x, y = screen.drawing.last_point
+            fn = vartypes.pass_int_unpack(lst[0])
+            if fn == 0:
+                return vartypes.pack_int(x)
+            elif fn == 1:
+                return vartypes.pack_int(y)
+            elif fn == 2:
+                fx, _ = screen.drawing.get_window_logical(x, y)
+                return fp.pack(fx)
+            elif fn == 3:
+                _, fy = screen.drawing.get_window_logical(x, y)
+                return fp.pack(fy)
+        except AttributeError:
+            return vartypes.null['%']
     else:       
-        # two-argument mode
-        graphics.require_graphics_mode()
-        return vartypes.pack_int(graphics.get_point(*graphics.window_coords(
-                        fp.unpack(vartypes.pass_single_keep(lst[0])), 
-                        fp.unpack(vartypes.pass_single_keep(lst[1])))))     
+        # two-argument mode    
+        if screen.mode.is_text_mode:
+            raise error.RunError(5)
+        return vartypes.pack_int(screen.drawing.point(
+                        (fp.unpack(vartypes.pass_single_keep(lst[0])), 
+                         fp.unpack(vartypes.pass_single_keep(lst[1])), False)))
 
 def value_pmap(ins):
     """ PMAP: convert between logical and physical coordinates. """
@@ -687,19 +696,20 @@ def value_pmap(ins):
     mode = vartypes.pass_int_unpack(parse_expression(ins))
     util.require_read(ins, (')',))
     util.range_check(0, 3, mode)
-    if state.console_state.current_mode.is_text_mode:
+    screen = state.console_state.screen
+    if screen.mode.is_text_mode:
         return vartypes.null['%']
     if mode == 0:
-        value, _ = graphics.window_coords(fp.unpack(vartypes.pass_single_keep(coord)), fp.Single.zero)       
+        value, _ = screen.drawing.get_window_physical(fp.unpack(vartypes.pass_single_keep(coord)), fp.Single.zero)       
         return vartypes.pack_int(value)        
     elif mode == 1:
-        _, value = graphics.window_coords(fp.Single.zero, fp.unpack(vartypes.pass_single_keep(coord)))       
+        _, value = screen.drawing.get_window_physical(fp.Single.zero, fp.unpack(vartypes.pass_single_keep(coord)))       
         return vartypes.pack_int(value)        
     elif mode == 2:
-        value, _ = graphics.get_window_coords(vartypes.pass_int_unpack(coord), 0)       
+        value, _ = screen.drawing.get_window_logical(vartypes.pass_int_unpack(coord), 0)       
         return fp.pack(value)
     elif mode == 3:
-        _, value = graphics.get_window_coords(0, vartypes.pass_int_unpack(coord))       
+        _, value = screen.drawing.get_window_logical(0, vartypes.pass_int_unpack(coord))       
         return fp.pack(value)
     
 #####################################################################
@@ -711,7 +721,7 @@ def value_play(ins):
     util.range_check(0, 255, voice)
     if not(is_pcjr_syntax and voice in (1, 2)):
         voice = 0    
-    return vartypes.pack_int(backend.music_queue_length(voice))
+    return vartypes.pack_int(state.console_state.sound.queue_length(voice))
     
 #####################################################################
 # error functions
@@ -731,8 +741,8 @@ def value_pen(ins):
     """ PEN: poll the light pen. """
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 9, fn)
-    pen = backend.get_pen(fn)
-    if pen == None or not state.basic_state.pen_handler.enabled:
+    pen = state.console_state.pen.poll(fn)
+    if pen == None or not state.basic_state.events.pen.enabled:
         # should return 0 or char pos 1 if PEN not ON    
         pen = 1 if fn >= 6 else 0 
     return vartypes.pack_int(pen)
@@ -741,14 +751,14 @@ def value_stick(ins):
     """ STICK: poll the joystick. """
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 3, fn)
-    return vartypes.pack_int(backend.get_stick(fn))
+    return vartypes.pack_int(state.console_state.stick.poll(fn))
     
 def value_strig(ins):
     """ STRIG: poll the joystick fire button. """
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     # 0,1 -> [0][0] 2,3 -> [0][1]  4,5-> [1][0]  6,7 -> [1][1]
     util.range_check(0, 7, fn)
-    return vartypes.bool_to_int_keep(backend.get_strig(fn))
+    return vartypes.bool_to_int_keep(state.console_state.stick.poll_trigger(fn))
     
 #########################################################
 # memory and machine
@@ -788,7 +798,7 @@ def value_varptr(ins):
         
 def value_usr(ins):
     """ USR: get value of machine-code function; not implemented. """
-    if util.peek(ins) in token.digits: # digits 0--9
+    if util.peek(ins) in token.digit: # digits 0--9
         ins.read(1)
     parse_bracket(ins)
     logging.warning("USR() function not implemented.")

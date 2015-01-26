@@ -137,7 +137,7 @@ def resume(jumpnum):
     state.basic_state.errn = 0
     state.basic_state.error_handle_mode = False
     state.basic_state.error_resume = None
-    state.basic_state.suspend_all_events = False    
+    state.basic_state.events.suspend_all = False    
     if jumpnum == 0: 
         # RESUME or RESUME 0 
         set_pointer(runmode, start_statement)

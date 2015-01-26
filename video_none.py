@@ -59,7 +59,7 @@ def check_keys():
         return
     s = sys.stdin.readline().decode('utf-8')
     if s == '':
-        backend.input_closed = True
+        backend.close_input()
     for u in s:
         c = u.encode('utf-8')
         # replace LF -> CR if needed
@@ -70,10 +70,6 @@ def check_keys():
         except KeyError:        
             backend.insert_chars(c)
 
-def supports_graphics_mode(mode_info):
-    """ We do not support graphics modes. """
-    return False
-
 def close():
     """ Close the filter interface. """
     pass
@@ -81,13 +77,18 @@ def close():
 ###############################################################################
 # The following are no-op responses to requests from backend
 
-def load_state():
+def load_state(display_str):
     """ Restore display state from file. """
     pass
+    
+def save_state():
+    """ Save display state to file (no-op). """
+    return None
 
 def init_screen_mode(mode_info):
-    """ Change screen mode (no-op). """
-    return True
+    """ Change screen mode. """
+    # we don't support graphics
+    return mode_info.is_text_mode
 
 def set_page(vpage, apage):
     """ Set the visible and active page (no-op). """
@@ -133,7 +134,7 @@ def move_cursor(crow, ccol):
     """ Move the cursor to a new position (no-op). """
     pass
 
-def update_cursor_visibility(cursor_on):
+def show_cursor(cursor_on):
     """ Change visibility of cursor (no-op). """
     pass
 
@@ -147,6 +148,10 @@ def set_attr(cattr):
     
 def set_border(attr):
     """ Change the border attribute (no-op). """
+    pass
+
+def rebuild_glyph(ordval):
+    """ Rebuild a glyph after POKE. """
     pass
 
 prepare()

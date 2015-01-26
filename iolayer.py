@@ -267,13 +267,13 @@ class BaseFile(object):
         if self.number != 0:
             del state.io_state.files[self.number]
     
-    def read_chars(self, num):
-        """ Read num chars as a list. """
+    def read_chars(self, num=-1):
+        """ Read num chars as a list. If num==-1, read all available. """
         return list(self.fhandle.read(num)) 
         
-    def read(self, num):
-        """ Read num chars as a string. """
-        return ''.join(self.read_chars(num))
+    def read(self, num=-1):
+        """ Read num chars as a string. If num==-1, read all available. """
+        return self.fhandle.read(num)
     
     def read_line(self):
         """ Read a single line. """
@@ -371,14 +371,25 @@ class TextFile(BaseFile):
 
     def read_chars(self, num):
         """ Read num characters as list. """
-        s = []
-        for _ in range(num):
+        return list(self.read(num))
+
+    def read(self, num=-1):
+        """ Read num characters as string. """
+        s = ''
+        l = 0
+        while True:
+            if num > -1 and l >= num:
+                break
+            l += 1
             c = self.fhandle.read(1)
             # check for \x1A (EOF char - this will actually stop further reading (that's true in files but not devices)
             if c in ('\x1a', ''):
-                # input past end
-                raise error.RunError(62)
-            s.append(c)
+                if num == -1:
+                    break
+                else:
+                    # input past end
+                    raise error.RunError(62)
+            s += c
         return s 
         
     def write(self, s):
@@ -473,12 +484,16 @@ class RandomBase(BaseFile):
         if self.field_text_file.fhandle.tell() >= self.reclen-1:
             raise error.RunError(self.overflow_error) # FIELD overflow
         return self.field_text_file.read_line()
+
+    def read_chars(self, num=-1):
+        """ Read num characters as list. """
+        return list(self.read(num))
         
-    def read_chars(self, num):
-        """ Read num chars as a list, from FIELD buffer. """
-        if self.field_text_file.fhandle.tell() + num > self.reclen-1:
+    def read(self, num=-1):
+        """ Read num chars as a string, from FIELD buffer. """
+        if num==-1 or self.field_text_file.fhandle.tell() + num > self.reclen-1:
             raise error.RunError(self.overflow_error) # FIELD overflow
-        return self.field_text_file.read_chars(num)
+        return self.field_text_file.read(num)
     
     def write(self, s):
         """ Write one or more chars to FIELD buffer. """
@@ -829,14 +844,14 @@ class KYBDFile(NullDevice):
                 s += c    
         return s
 
-    def read_chars(self, num):
+    def read_chars(self, num=1):
         """ Read a list of chars from the keyboard - INPUT$ """
-        return backend.read_chars(num)
+        return state.console_state.keyb.read_chars(num)
 
-    def read(self, n):
+    def read(self, n=1):
         """ Read a string from the keyboard - INPUT and LINE INPUT. """
         word = ''
-        for c in backend.read_chars(n):
+        for c in state.console_state.keyb.read_chars(n):
             if len(c) > 1 and c[0] == '\x00':
                 try:
                     word += self.input_replace[c]
@@ -858,14 +873,13 @@ class KYBDFile(NullDevice):
         """ KYBD only EOF if ^Z is read. """
         if self.mode in ('A', 'O'):
             return False
-        # blocking read
-        return (backend.wait_char() == '\x1a')
+        # blocking peek
+        return (state.console_state.keyb.wait_char() == '\x1a')
 
     def set_width(self, new_width=255):
         """ Setting width on KYBD device (not files) changes screen width. """
         if self.number == 0:
-            if not console.set_width(new_width):
-                raise error.RunError(5)
+            console.set_width(new_width)
 
 
 class SCRNFile(NullDevice):
@@ -878,7 +892,7 @@ class SCRNFile(NullDevice):
         """ Initialise screen device. """
         self.name = 'SCRN:'
         self.mode = 'O'
-        self._width = state.console_state.width
+        self._width = state.console_state.screen.mode.width
         self._col = state.console_state.col
         NullDevice.__init__(self)
     
@@ -908,11 +922,12 @@ class SCRNFile(NullDevice):
                 and self.col != 1 and self.col-1 + s_width > self.width and not newline):
             console.write_line(do_echo=do_echo)
             self._col = 1
+        cwidth = state.console_state.screen.mode.width
         for c in str(s):
-            if self.width <= state.console_state.width and self.col > self.width:
+            if self.width <= cwidth and self.col > self.width:
                 console.write_line(do_echo=do_echo)
                 self._col = 1
-            if self.col <= state.console_state.width or self.width <= state.console_state.width:
+            if self.col <= cwidth or self.width <= cwidth:
                 console.write(c, do_echo=do_echo)
             if c in ('\n', '\r'):
                 self._col = 1
@@ -938,15 +953,14 @@ class SCRNFile(NullDevice):
     def width(self):
         """ Return (virtual) screen width. """
         if self.number == 0:    
-            return state.console_state.width
+            return state.console_state.screen.mode.width
         else:
             return self._width
     
     def set_width(self, new_width=255):
         """ Set (virtual) screen width. """
         if self.number == 0:
-            if not console.set_width(new_width):
-                raise error.RunError(5)
+            console.set_width(new_width)
         else:    
             self._width = new_width
 
@@ -1067,7 +1081,7 @@ class COMFile(RandomBase):
             # device I/O
             raise error.RunError(57)
         
-    def read(self, num):
+    def read(self, num=1):
         """ Read num characters from the port as a string; blocking """
         out = ''
         while len(out) < num:

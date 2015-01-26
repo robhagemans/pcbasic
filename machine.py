@@ -73,7 +73,7 @@ def inp(port):
     # keyboard
     if port == 0x60:
         backend.wait()
-        return state.console_state.inp_key 
+        return state.console_state.keyb.last_scancode 
     # game port (joystick)    
     elif port == 0x201:
         value = (
@@ -102,23 +102,23 @@ def out(addr, val):
         joystick_out_time = timedate.timer_milliseconds()
     elif addr == 0x3c5:
         # officially, requires OUT &H3C4, 2 first (not implemented)
-        state.console_state.colour_plane_write_mask = val
+        state.console_state.screen.mode.set_plane_mask(val)
     elif addr == 0x3cf:
         # officially, requires OUT &H3CE, 4 first (not implemented)
-        state.console_state.colour_plane = val        
+        state.console_state.screen.mode.set_plane(val)
     elif addr == 0x3d8:
         #OUT &H3D8,&H1A: REM enable color burst
         #OUT &H3D8,&H1E: REM disable color burst
         # 0x1a == 0001 1010     0x1e == 0001 1110
-        backend.set_colorburst(val & 4 == 0)
+        state.console_state.screen.set_colorburst(val & 4 == 0)
         
 def wait(addr, ander, xorer):
     """ Wait untial an emulated machine port has a specified value. """
-    store_suspend = state.basic_state.suspend_all_events
-    state.basic_state.suspend_all_events = True
-    while (((state.console_state.inp_key if addr == 0x60 else 0) ^ xorer) & ander) == 0:
+    store_suspend = state.basic_state.events.suspend_all
+    state.basic_state.events.suspend_all = True
+    while (inp(addr) ^ xorer) & ander == 0:
         backend.wait()
-    state.basic_state.suspend_all_events = store_suspend     
+    state.basic_state.events.suspend_all = store_suspend     
 
 def bload(g, offset):    
     """ Load a file into a block of memory. """
@@ -130,15 +130,12 @@ def bload(g, offset):
         offset = foffset
     # size. this gets ignored; even the \x1a at the end gets dumped onto the screen.
     vartypes.uint_to_value(bytearray(g.read(2))) 
-    buf = bytearray()
-    while True:
-        c = g.read(1)
-        if c == '':
-            break
-        buf += c
+    buf = bytearray(g.read())
     # remove any EOF marker at end 
     if buf and buf[-1] == 0x1a:  
         buf = buf[:-1]
+    if tandy_syntax:
+        buf = buf[:-7]        
     g.close()
     addr = seg * 0x10 + offset
     set_memory_block(addr, buf)
@@ -346,115 +343,116 @@ def set_code_memory(address, val):
         program.rebuild_line_dict()
     
 def get_data_memory(address):
-    """ Retreive data from data memory. """
+    """ Retrieve data from data memory. """
     address -= memory.data_segment * 0x10
     if address < state.basic_state.var_current:
-        # find the variable we're in
-        name_addr = -1
-        var_addr = -1
-        the_var = None 
-        for name in state.basic_state.var_memory:
-            name_ptr, var_ptr = state.basic_state.var_memory[name]
-            if name_ptr <= address and name_ptr > name_addr:
-                name_addr, var_addr = name_ptr, var_ptr
-                the_var = name
-        if the_var == None:
-            return -1        
-        if address >= var_addr:
-            offset = address - var_addr
-            if offset >= var.byte_size[the_var[-1]]:
-                return -1
-            var_rep = state.basic_state.variables[the_var]
-            return var_rep[offset]
-        else:
-            offset = address - name_ptr
-            return get_name_in_memory(the_var, offset)
+        return get_data_memory_var(address)
     elif address < state.basic_state.var_current + state.basic_state.array_current:
-        name_addr = -1
-        arr_addr = -1
-        the_arr = None 
-        for name in state.basic_state.array_memory:
-            name_ptr, arr_ptr = state.basic_state.array_memory[name]
-            if name_ptr <= address and name_ptr > name_addr:
-                name_addr, arr_addr = name_ptr, arr_ptr
-                the_arr = name
-        if the_arr == None:
-            return -1        
-        if address >= state.basic_state.var_current + arr_addr:
-            offset = address - arr_addr - state.basic_state.var_current
-            if offset >= var.array_size_bytes(the_arr):
-                return -1
-            _, byte_array, _ = state.basic_state.arrays[the_arr]    
-            return byte_array[offset]
-        else:
-            offset = address - name_ptr - state.basic_state.var_current
-            if offset < max(3, len(the_arr))+1:
-                return get_name_in_memory(the_arr, offset)
-            else:
-                offset -= max(3, len(the_arr))+1
-                dimensions, _, _ = state.basic_state.arrays[the_arr]
-                data_rep = vartypes.value_to_uint(var.array_size_bytes(the_arr) + 1 + 2*len(dimensions)) + chr(len(dimensions)) 
-                for d in dimensions:
-                    data_rep += vartypes.value_to_uint(d + 1 - state.basic_state.array_base)
-                return data_rep[offset]               
+        return get_data_memory_array(address)
     elif address > state.basic_state.strings.current:
-        # string space
-        # find the variable we're in
-        str_nearest = -1
-        the_var = None 
-        for name in state.basic_state.variables:
-            if name[-1] != '$':
-                continue
-            v = state.basic_state.variables[name]
-            str_ptr = state.basic_state.strings.address(v)
-            if str_ptr <= address and str_ptr > str_nearest:
-                str_nearest = str_ptr
-                the_var = v
-        if the_var == None:
-            for name in state.basic_state.arrays:
-                if name[-1] != '$':
-                    continue
-                _, lst, _ = state.basic_state.arrays[name]
-                for i in range(0, len(lst), 3):
-                    str_ptr = state.basic_state.strings.address(lst[i:i+3])
-                    if str_ptr <= address and str_ptr > str_nearest:
-                        str_nearest = str_ptr
-                        the_var = lst[i:i+3]
-        try:
-            return state.basic_state.strings.retrieve(v)[address - str_nearest]
-        except IndexError, AttributeError:
-            return -1
+        return get_data_memory_string(address)
     else:
         # unallocated var space
         return -1
-        
+
+def get_data_memory_var(address):
+    """ Retrieve data from data memory: variable space """
+    name_addr = -1
+    var_addr = -1
+    the_var = None 
+    for name in state.basic_state.var_memory:
+        name_try, var_try = state.basic_state.var_memory[name]
+        if name_try <= address and name_try > name_addr:
+            name_addr, var_addr = name_try, var_try
+            the_var = name
+    if the_var == None:
+        return -1        
+    if address >= var_addr:
+        offset = address - var_addr
+        if offset >= var.byte_size[the_var[-1]]:
+            return -1
+        var_rep = state.basic_state.variables[the_var]
+        return var_rep[offset]
+    else:
+        offset = address - name_addr
+        return get_name_in_memory(the_var, offset)
+
+def get_data_memory_array(address):
+    """ Retrieve data from data memory: array space """
+    name_addr = -1
+    arr_addr = -1
+    the_arr = None 
+    for name in state.basic_state.array_memory:
+        name_try, arr_try = state.basic_state.array_memory[name]
+        if name_try <= address and name_try > name_addr:
+            name_addr, arr_addr = name_try, arr_try
+            the_arr = name
+    if the_arr == None:
+        return -1        
+    if address >= state.basic_state.var_current + arr_addr:
+        offset = address - arr_addr - state.basic_state.var_current
+        if offset >= var.array_size_bytes(the_arr):
+            return -1
+        _, byte_array, _ = state.basic_state.arrays[the_arr]    
+        return byte_array[offset]
+    else:
+        offset = address - name_addr - state.basic_state.var_current
+        if offset < max(3, len(the_arr))+1:
+            return get_name_in_memory(the_arr, offset)
+        else:
+            offset -= max(3, len(the_arr))+1
+            dimensions, _, _ = state.basic_state.arrays[the_arr]
+            data_rep = vartypes.value_to_uint(var.array_size_bytes(the_arr) + 1 + 2*len(dimensions)) + chr(len(dimensions)) 
+            for d in dimensions:
+                data_rep += vartypes.value_to_uint(d + 1 - state.basic_state.array_base)
+            return data_rep[offset]               
+
+def get_data_memory_string(address):
+    """ Retrieve data from data memory: string space """
+    # find the variable we're in
+    str_nearest = -1
+    the_var = None 
+    for name in state.basic_state.variables:
+        if name[-1] != '$':
+            continue
+        v = state.basic_state.variables[name]
+        str_try = state.basic_state.strings.address(v)
+        if str_try <= address and str_try > str_nearest:
+            str_nearest = str_try
+            the_var = v
+    if the_var == None:
+        for name in state.basic_state.arrays:
+            if name[-1] != '$':
+                continue
+            _, lst, _ = state.basic_state.arrays[name]
+            for i in range(0, len(lst), 3):
+                str_try = state.basic_state.strings.address(lst[i:i+3])
+                if str_try <= address and str_try > str_nearest:
+                    str_nearest = str_try
+                    the_var = lst[i:i+3]
+    try:
+        return state.basic_state.strings.retrieve(v)[address - str_nearest]
+    except IndexError, AttributeError:
+        return -1
     
 ###############################################################
 # video memory model
     
 def get_video_memory(addr):
     """ Retrieve a byte from video memory. """
-    return state.console_state.current_mode.get_memory(addr)
+    return state.console_state.screen.mode.get_memory(addr, 1)[0]
 
 def set_video_memory(addr, val):
     """ Set a byte in video memory. """
-    return state.console_state.current_mode.set_memory(addr, val)
+    return state.console_state.screen.mode.set_memory(addr, [val])
 
 def get_video_memory_block(addr, length):
     """ Retrieve a contiguous block of bytes from video memory. """
-    block = bytearray()
-    for a in range(addr, addr+length):
-        block += chr(max(0, get_video_memory(a)))
-    return block
-    
+    return bytearray(state.console_state.screen.mode.get_memory(addr, length))
+        
 def set_video_memory_block(addr, some_bytes):
     """ Set a contiguous block of bytes in video memory. """
-    for a in range(len(some_bytes)):
-        set_video_memory(addr + a, some_bytes[a])
-        # keep updating the screen
-        # we're not allowing keyboard breaks here 
-        if a%640 == 0:
-            backend.video.check_events()
+    state.console_state.screen.mode.set_memory(addr, some_bytes)
 
 ###############################################################################
 
@@ -473,7 +471,7 @@ def get_font_memory(addr):
     char = addr // 8 + 128
     if char < 128 or char > 254:
         return -1
-    return ord(backend.video.fonts[8][chr(char)][addr%8])
+    return ord(backend.font_8[chr(char)][addr%8])
 
 def set_font_memory(addr, value):
     """ Retrieve RAM font data. """
@@ -481,8 +479,9 @@ def set_font_memory(addr, value):
     char = addr // 8 + 128
     if char < 128 or char > 254:
         return 
-    old = backend.video.fonts[8][chr(char)]
-    backend.video.fonts[8][chr(char)] = old[:addr%8]+chr(value)+old[addr%8+1:]
+    old = backend.font_8[chr(char)]
+    backend.font_8[chr(char)] = old[:addr%8]+chr(value)+old[addr%8+1:]
+    state.console_state.screen.rebuild_glyph(char)
 
 #################################################################################
 
@@ -570,26 +569,26 @@ def get_low_memory(addr):
                 (backend.devices['LPT2:'] != None) + 
                 (backend.devices['LPT3:'] != None))
     elif addr == 1047:
-        return state.console_state.mod
+        return state.console_state.keyb.mod
     # not implemented: peek(1048)==4 if sysrq pressed, 0 otherwise
     elif addr == 1048:
         return 0
     elif addr == 1049:
-        return int(backend.keypad_ascii)%256
+        return int(state.console_state.keyb.keypad_ascii or 0)%256
     elif addr == 1050:
         # keyboard ring buffer starts at n+1024; lowest 1054
-        return (state.console_state.keybuf.start*2 + key_buffer_offset) % 256
+        return (state.console_state.keyb.buf.start*2 + key_buffer_offset) % 256
     elif addr == 1051:
-        return (state.console_state.keybuf.start*2 + key_buffer_offset) // 256
+        return (state.console_state.keyb.buf.start*2 + key_buffer_offset) // 256
     elif addr == 1052:
         # ring buffer ends at n + 1023
-        return (state.console_state.keybuf.stop()*2 + key_buffer_offset) % 256
+        return (state.console_state.keyb.buf.stop()*2 + key_buffer_offset) % 256
     elif addr == 1053:
-        return (state.console_state.keybuf.stop()*2 + key_buffer_offset) // 256
+        return (state.console_state.keyb.buf.stop()*2 + key_buffer_offset) // 256
     elif addr in range(1024+key_buffer_offset, 1024+key_buffer_offset+32):
         index = (addr-1024-key_buffer_offset)//2
         odd = (addr-1024-key_buffer_offset)%2
-        c = state.console_state.keybuf.ring_read(index)
+        c = state.console_state.keyb.buf.ring_read(index)
         if c[0] == '\0':
             return ord(c[-1]) if odd else 0xe0
         else:
@@ -598,13 +597,13 @@ def get_low_memory(addr):
     # 1097 screen mode number
     elif addr == 1097:
         # these are the low-level mode numbers used by mode switching interrupt
-        cval = state.console_state.colorswitch % 2
-        if state.console_state.current_mode.is_text_mode:
+        cval = state.console_state.screen.colorswitch % 2
+        if state.console_state.screen.mode.is_text_mode:
             if (backend.video_capabilities in ('mda', 'ega_mono') and 
-                    state.console_state.current_mode.width == 80):
+                    state.console_state.screen.mode.width == 80):
                 return 7
-            return (state.console_state.current_mode.width == 40)*2 + cval
-        elif state.console_state.current_mode.name == '320x200x4':
+            return (state.console_state.screen.mode.width == 40)*2 + cval
+        elif state.console_state.screen.mode.name == '320x200x4':
             return 4 + cval
         else:
             mode_num = {'640x200x2': 6, '160x200x16': 8, '320x200x16pcjr': 9,
@@ -613,20 +612,20 @@ def get_low_memory(addr):
                 '320x200x4pcjr': 4 }
                 # '720x348x2': ? # hercules - unknown
             try:
-                return mode_num[state.console_state.current_mode.name]
+                return mode_num[state.console_state.screen.mode.name]
             except KeyError:
                 return 0xff
     # 1098, 1099 screen width
     elif addr == 1098:
-        return state.console_state.current_mode.width % 256
+        return state.console_state.screen.mode.width % 256
     elif addr == 1099:
-        return state.console_state.current_mode.width // 256
+        return state.console_state.screen.mode.width // 256
     # 1100, 1101 graphics page buffer size (32k for screen 9, 4k for screen 0)
     # 1102, 1103 zero (PCmag says graphics page buffer offset)
     elif addr == 1100:
-        return state.console_state.current_mode.page_size % 256
+        return state.console_state.screen.mode.page_size % 256
     elif addr == 1101:
-        return state.console_state.current_mode.page_size // 256
+        return state.console_state.screen.mode.page_size // 256
     # 1104 + 2*n (cursor column of page n) - 1
     # 1105 + 2*n (cursor row of page n) - 1
     # we only keep track of one row,col position
@@ -636,27 +635,28 @@ def get_low_memory(addr):
         return state.console_state.row - 1
     # 1120, 1121 cursor shape
     elif addr == 1120:
-        return state.console_state.cursor_to
+        return state.console_state.screen.cursor.to_line
     elif addr == 1121:
-        return state.console_state.cursor_from
+        return state.console_state.screen.cursor.from_line
     # 1122 visual page number
     elif addr == 1122:
-        return state.console_state.vpagenum
+        return state.console_state.screen.vpagenum
     # 1125 screen mode info
     elif addr == 1125:
         # bit 0: only in text mode?
         # bit 2: should this be colorswitch or colorburst_is_enabled?
-        return ((state.console_state.current_mode.width == 80) * 1 +
-                (not state.console_state.current_mode.is_text_mode) * 2 + 
-                 state.console_state.colorswitch * 4 + 8 +
-                 (state.console_state.current_mode.name == '640x200x2') * 16 +
+        return ((state.console_state.screen.mode.width == 80) * 1 +
+                (not state.console_state.screen.mode.is_text_mode) * 2 + 
+                 state.console_state.screen.colorswitch * 4 + 8 +
+                 (state.console_state.screen.mode.name == '640x200x2') * 16 +
                  blink_enabled * 32)
     # 1126 color
     elif addr == 1126:
-        if state.console_state.current_mode.name == '320x200x4':
-            return backend.get_palette_entry(0) + 32 * backend.cga4_palette_num
-        elif state.console_state.current_mode.is_text_mode:
-            return state.console_state.border_attr % 16 
+        if state.console_state.screen.mode.name == '320x200x4':
+            return (state.console_state.screen.palette.get_entry(0) 
+                    + 32 * state.console_state.screen.cga4_palette_num)
+        elif state.console_state.screen.mode.is_text_mode:
+            return state.console_state.screen.border_attr % 16 
             # not implemented: + 16 "if current color specified through 
             # COLOR f,b with f in [0,15] and b > 7
     # 1296, 1297: zero (PCmag says data segment address)
@@ -666,25 +666,25 @@ def set_low_memory(addr, value):
     """ Set data in low memory. """
     addr -= low_segment*0x10
     if addr == 1047:
-        state.console_state.mod = value    
+        state.console_state.keyb.mod = value    
     # from basic_ref_3.pdf: the keyboard buffer may be cleared with
     # DEF SEG=0: POKE 1050, PEEK(1052)
     elif addr == 1050:
         # keyboard ring buffer starts at n+1024; lowest 1054
-        state.console_state.keybuf.ring_set_boundaries(
+        state.console_state.keyb.buf.ring_set_boundaries(
                 (value - key_buffer_offset) // 2,
-                state.console_state.keybuf.stop())
+                state.console_state.keyb.buf.stop())
     elif addr == 1052:
         # ring buffer ends at n + 1023
-        state.console_state.keybuf.ring_set_boundaries(
-                state.console_state.keybuf.start,
+        state.console_state.keyb.buf.ring_set_boundaries(
+                state.console_state.keyb.buf.start,
                 (value - key_buffer_offset) // 2)
     elif addr in range(1024+key_buffer_offset, 1024+key_buffer_offset+32):
         index = (addr-1024-key_buffer_offset)//2
         odd = (addr-1024-key_buffer_offset)%2
         if not odd and value == 0xe0:
             value = 0
-        c = state.console_state.keybuf.ring_read(index)
+        c = state.console_state.keyb.buf.ring_read(index)
         if len(c) < 2:
             c += '\0'
         if odd:
@@ -693,7 +693,7 @@ def set_low_memory(addr, value):
             c = chr(value) + c[1]    
         if c[1] == '\0' and c[0] != '\0':
             c = c[0]
-        state.console_state.keybuf.ring_write(index, c)
+        state.console_state.keyb.buf.ring_write(index, c)
         
 prepare()
     

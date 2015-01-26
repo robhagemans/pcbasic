@@ -16,6 +16,9 @@ import unicodepage
 import backend
 import scancode
 
+#D!!
+import state
+
 # cursor is visible
 cursor_visible = True
 
@@ -24,8 +27,8 @@ cursor_row = 1
 cursor_col = 1
 
 # last row and column printed on
-last_row = 1
-last_col = 1
+last_row = None
+last_col = None
 
 
 def prepare():
@@ -231,13 +234,10 @@ def idle():
     """ Video idle process. """
     time.sleep(0.024)
 
-def supports_graphics_mode(mode_info):
-    """ We do not support graphics modes. """
-    return False
-    
 def init_screen_mode(mode_info):
-    """ Change screen mode (no-op). """
-    return True
+    """ Change screen mode. """
+    # we don't support graphics
+    return mode_info.is_text_mode
     
 def move_cursor(crow, ccol):
     """ Move the cursor to a new position. """
@@ -288,7 +288,7 @@ def update_cursor_attr(attr):
     """ Change attribute of cursor (no-op). """
     pass
     
-def update_cursor_visibility(cursor_on):
+def show_cursor(cursor_on):
     """ Change visibility of cursor (no-op). """
     pass
 
@@ -300,8 +300,16 @@ def build_cursor(width, height, from_line, to_line):
     """ Set the cursor shape (no-op). """
     pass
 
-def load_state():
+def load_state(display_str):
     """ Restore display state from file (no-op). """
+    pass
+
+def save_state():
+    """ Save display state to file (no-op). """
+    return None
+
+def rebuild_glyph(ordval):
+    """ Rebuild a glyph after POKE. """
     pass
             
 ###############################################################################
@@ -361,6 +369,13 @@ def check_keyboard():
 def update_position(row=None, col=None):
     """ Update screen for new cursor position. """
     global last_row, last_col
+    # this happens on resume
+    if last_row == None:
+        last_row = cursor_row
+        state.console_state.screen.redraw_row(0, cursor_row, wrap=False)
+    if last_col == None:
+        last_col = cursor_col
+    # allow updating without moving the cursor
     if row == None:
         row = cursor_row
     if col == None:
@@ -374,7 +389,7 @@ def update_position(row=None, col=None):
         # show what's on the line where we are. 
         # note: recursive by one level, last_row now equals row
         # this reconstructs DBCS buffer, no need to do that
-        backend.redraw_row(0, cursor_row, wrap=False)
+        state.console_state.screen.redraw_row(0, cursor_row, wrap=False)
     if col != last_col:
         move_left(last_col-col)
         move_right(col-last_col)

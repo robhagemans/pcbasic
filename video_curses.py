@@ -21,6 +21,9 @@ import unicodepage
 import scancode
 import backend
 
+#D!!
+import state
+
 # for a few ansi sequences not supported by curses
 # only use these if you clear the screen afterwards, 
 # so you don't see gibberish if the terminal doesn't support the sequence.
@@ -114,13 +117,12 @@ def init():
             curses.COLOR_YELLOW, curses.COLOR_WHITE)
     return True
     
-def supports_graphics_mode(mode_info):
-    """ We do not support graphics modes. """
-    return False
-    
 def init_screen_mode(mode_info=None):
     """ Change screen mode. """
     global window, height, width
+    # we don't support graphics
+    if not mode_info.is_text_mode:
+        return False
     height = 25
     width = mode_info.width
     if window:
@@ -165,10 +167,14 @@ def idle():
     """ Video idle process. """
     time.sleep(0.024)
 
-def load_state():
+def load_state(display_str):
     """ Restore display state from file. """
     # console has already been loaded; just redraw
     redraw()
+
+def save_state():
+    """ Save display state to file (no-op). """
+    return None
 
 def clear_rows(cattr, start, stop):
     """ Clear screen rows. """
@@ -197,7 +203,7 @@ def update_cursor_attr(attr):
     # term.write(ansi.esc_set_cursor_colour % ansi.colournames[attr%16])
     pass
 
-def update_cursor_visibility(cursor_on):
+def show_cursor(cursor_on):
     """ Change visibility of cursor. """
     global cursor_visible
     cursor_visible = cursor_on
@@ -283,13 +289,16 @@ def set_colorburst(on, palette, palette1):
     """ Change the NTSC colorburst setting (no-op). """
     pass
 
+def rebuild_glyph(ordval):
+    """ Rebuild a glyph after POKE. """
+    pass
 
 ###############################################################################
 # IMPLEMENTATION
                     
 def redraw():
     """ Force redrawing of the screen (callback). """
-    backend.redraw_text_screen()
+    state.console_state.screen.redraw_text_screen()
 
 def check_keyboard():
     """ Handle keyboard events. """

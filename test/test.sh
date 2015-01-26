@@ -6,10 +6,14 @@ then
 fi 
 name=$1
 echo -n "Running test $name... "
-if [ ! -e $name.BAS ]
+if [ ! -e $name.BAS -a ! -e $name ]
 then
      echo "no such test"
      exit
+fi
+if [ -e $name -a ! -e $name.BAS ]
+then
+    name=$(echo $name|sed -e 's/.BAS//')
 fi
 mkdir output/$name
 pushd output/$name > /dev/null

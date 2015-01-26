@@ -13,6 +13,9 @@ import logging
 
 import plat
 
+# declare to avoid pylint errors
+config = None
+            
 def main():
     """ Initialise and do requested operations. """
     # make imported modules available in main module
@@ -143,6 +146,12 @@ def start_basic():
         if config.options['debug']:
             raise
     finally:
+        try:
+            # fix the terminal on exit (important for ANSI terminals)
+            # and save display interface state into screen state
+            state.console_state.screen.close()
+        except (NameError, AttributeError):
+            pass
         # delete state if resetting 
         if do_reset:
             state.delete()
@@ -151,16 +160,10 @@ def start_basic():
         else:   
             state.save()
         try:
-            # fix the terminal on exit or crashes (important for ANSI terminals)
-            if backend and backend.video:
-                backend.video.close()
-        except NameError:
-            pass
-        try:
             # close files if we opened any
             iolayer.close_all()
             iolayer.close_devices()
-        except NameError:
+        except (NameError, AttributeError):
             pass    
             
 def prepare_console():
@@ -197,15 +200,15 @@ def prepare_console():
         config.options['interface'] = 'graphical'
     # select interface        
     video_name, audio_name = backends[config.options['interface']]
-    backend.video, backend.audio = __import__(video_name), __import__(audio_name)
+    video, backend.audio = __import__(video_name), __import__(audio_name)
     if config.options['nosound']:
         backend.audio = __import__('audio_none')
     # initialise video backend before console
-    if not backend.video or not backend.init_video():
-        backend.video.close()
+    if not video or not backend.init_video(video):
+        if video:
+            video.close()
         logging.warning('Falling back to filter interface.')
-        backend.video = __import__('video_none')
-        if not backend.init_video():
+        if not backend.init_video(__import__('video_none')):
             logging.error('Failed to initialise interface.')
             raise error.Exit()
     if not backend.init_audio():

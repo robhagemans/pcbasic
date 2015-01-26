@@ -8,7 +8,9 @@ This file is released under the GNU GPL version 3.
 
 import plat
 import state
+import backend
 
+music_queue = [ [], [], [], [] ]
 
 if plat.system == 'Windows':
     def init_sound():
@@ -47,29 +49,26 @@ def stop_all_sound():
     hush()
     
 def play_sound(frequency, duration, fill, loop, voice=0, volume=15):
-    """ Queue a sound for playing; ignore and work off backend queue. """
-    pass
+    """ Queue a sound for playing. """
+    music_queue[voice].append((frequency, duration, fill, loop, volume))
         
 def check_sound():
     """ Update the sound queue and play sounds. """
     global now_loop
     for voice in range(4):
-        length = len(state.console_state.music_queue[voice])
         if now_loop[voice]:
-            if (state.console_state.music_queue[voice] and now_playing[voice] 
+            if (music_queue[voice] and now_playing[voice] 
                     and now_playing[voice].poll() == None):
                 now_playing[voice].terminate()
                 now_loop[voice] = None
                 hush()
             elif not now_playing[voice] or now_playing[voice].poll() != None:
                 play_now(*now_loop[voice], voice=voice)
-        if length and (not now_playing[voice] or 
-                        now_playing[voice].poll() != None):
-            play_now(*state.console_state.music_queue[voice][0], voice=voice)
-            length -= 1
+        if (music_queue[voice] and 
+                (not now_playing[voice] or now_playing[voice].poll() != None)):
+            play_now(*music_queue[voice].pop(0), voice=voice)
         # remove the notes that have been played
-        while len(state.console_state.music_queue[voice]) > length:
-            state.console_state.music_queue[voice].pop(0)
+        backend.sound_done(voice, len(music_queue[voice]))
     
 def busy():
     """ Is the mixer busy? """

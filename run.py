@@ -36,12 +36,14 @@ def start(cmd='', run=False, quit=False):
         # run command before program
         if cmd:        
             run_once()
+        # position the pointer at start of program and enter execute mode
         flow.jump(None)
         state.basic_state.execute_mode = True
+        state.console_state.screen.cursor.reset_visibility()
     # read-eval-print loop until quit or exception
     while True:
         run_once()
-        if quit and state.console_state.keybuf.is_empty():
+        if quit and state.console_state.keyb.buf.is_empty():
             break
 
 def run_once():
@@ -86,7 +88,7 @@ def switch_mode():
     if state.basic_state.execute_mode != last_execute:
         # move pointer to the start of direct line (for both on and off!)
         flow.set_pointer(False, 0)
-        backend.update_cursor_visibility()
+        state.console_state.screen.cursor.reset_visibility()
     return ((not state.basic_state.auto_mode) and 
             (not state.basic_state.execute_mode) and last_execute)
         
@@ -152,9 +154,9 @@ def auto_step():
 
 def handle_basic_events():
     """ Jump to user-defined event subs if events triggered. """
-    if state.basic_state.suspend_all_events or not state.basic_state.run_mode:
+    if state.basic_state.events.suspend_all or not state.basic_state.run_mode:
         return
-    for event in state.basic_state.all_handlers:
+    for event in state.basic_state.events.all:
         if (event.enabled and event.triggered 
                 and not event.stopped and event.gosub != None):
             # release trigger

@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3.
 
 import os
 from functools import partial
+import logging
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -18,7 +19,6 @@ import config
 import backend
 import console
 import debug
-import draw_and_play
 import error
 import expressions
 import flow
@@ -227,7 +227,7 @@ def parse_statement():
             state.basic_state.error_resume = state.basic_state.current_statement, state.basic_state.run_mode
             flow.jump(state.basic_state.on_error)
             state.basic_state.error_handle_mode = True
-            state.basic_state.suspend_all_events = True
+            state.basic_state.events.suspend_all = True
             return True
         else:    
             raise e
@@ -364,11 +364,11 @@ def exec_on(ins):
         exec_on_jump(ins)
 
 ##########################################################
-# event switches (except PLAY, KEY) and event definitions
+# event switches (except PLAY) and event definitions
 
 def exec_pen(ins):
     """ PEN: switch on/off light pen event handling. """
-    if state.basic_state.pen_handler.command(util.skip_white(ins)):
+    if state.basic_state.events.pen.command(util.skip_white(ins)):
         ins.read(1)
     else:    
         raise error.RunError(2)
@@ -382,16 +382,16 @@ def exec_strig(ins):
         num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
         if num not in (0,2,4,6):
             raise error.RunError(5)
-        if state.basic_state.strig_handlers[num//2].command(util.skip_white(ins)):
+        if state.basic_state.events.strig[num//2].command(util.skip_white(ins)):
             ins.read(1)
         else:    
             raise error.RunError(2)
     elif d == token.ON:
         ins.read(1)
-        state.console_state.stick_is_on = True
+        state.console_state.stick.switch(True)
     elif d == token.OFF:
         ins.read(1)
-        state.console_state.stick_is_on = False
+        state.console_state.stick.switch(False)
     else:
         raise error.RunError(2)
     util.require(ins, util.end_statement)
@@ -401,7 +401,7 @@ def exec_com(ins):
     util.require(ins, ('(',))
     num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
     util.range_check(1, 2, num)
-    if state.basic_state.com_handlers[num].command(util.skip_white(ins)):
+    if state.basic_state.events.com[num].command(util.skip_white(ins)):
         ins.read(1)
     else:    
         raise error.RunError(2)
@@ -409,12 +409,23 @@ def exec_com(ins):
 
 def exec_timer(ins):
     """ TIMER: switch on/off timer event handling. """
-    if state.basic_state.timer_handler.command(util.skip_white(ins)):
+    if state.basic_state.events.timer.command(util.skip_white(ins)):
         ins.read(1)
     else:    
         raise error.RunError(2)
     util.require(ins, util.end_statement)      
 
+def exec_key_events(ins):
+    """ KEY: switch on/off keyboard events. """
+    num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
+    util.range_check(0, 255, num)
+    d = util.skip_white(ins)
+    # others are ignored
+    if num >= 1 and num <= 20:
+        if state.basic_state.events.key[num-1].command(d):
+            ins.read(1)
+        else:    
+            raise error.RunError(2)
 
 def parse_on_event(ins, bracket=True):
     """ Helper function for ON event trap definitions. """
@@ -435,26 +446,27 @@ def exec_on_key(ins):
     keynum, jumpnum = parse_on_event(ins)
     keynum = vartypes.pass_int_unpack(keynum)
     util.range_check(1, 20, keynum)
-    state.basic_state.key_handlers[keynum-1].gosub = jumpnum
+    state.basic_state.events.key[keynum-1].set_jump(jumpnum)
 
 def exec_on_timer(ins):
     """ ON TIMER: define timer event trapping. """
     timeval, jumpnum = parse_on_event(ins)
     timeval = vartypes.pass_single_keep(timeval)
-    state.basic_state.timer_period = fp.mul(fp.unpack(timeval), fp.Single.from_int(1000)).round_to_int()
-    state.basic_state.timer_handler.gosub = jumpnum
+    period = fp.mul(fp.unpack(timeval), fp.Single.from_int(1000)).round_to_int()
+    state.basic_state.events.timer.set_trigger(period)
+    state.basic_state.events.timer.set_jump(jumpnum)
 
 def exec_on_play(ins):
     """ ON PLAY: define music event trapping. """
     playval, jumpnum = parse_on_event(ins)
     playval = vartypes.pass_int_unpack(playval)
-    state.basic_state.play_trig = playval
-    state.basic_state.play_handler.gosub = jumpnum
+    state.basic_state.events.play.set_trigger(playval)
+    state.basic_state.events.play.set_jump(jumpnum)
     
 def exec_on_pen(ins):
     """ ON PEN: define light pen event trapping. """
     _, jumpnum = parse_on_event(ins, bracket=False)
-    state.basic_state.pen_handler.gosub = jumpnum
+    state.basic_state.events.pen.set_jump(jumpnum)
     
 def exec_on_strig(ins):
     """ ON STRIG: define fire button event trapping. """
@@ -463,14 +475,14 @@ def exec_on_strig(ins):
     ## 0 -> [0][0] 2 -> [0][1]  4-> [1][0]  6 -> [1][1]
     if strigval not in (0,2,4,6):
         raise error.RunError(5)
-    state.basic_state.strig_handlers[strigval//2].gosub = jumpnum
+    state.basic_state.events.strig[strigval//2].set_jump(jumpnum)
     
 def exec_on_com(ins):
     """ ON COM: define serial port event trapping. """
     keynum, jumpnum = parse_on_event(ins)
     keynum = vartypes.pass_int_unpack(keynum)
     util.range_check(1, 2, keynum)
-    state.basic_state.com_handlers[keynum-1].gosub = jumpnum
+    state.basic_state.events.com[keynum-1].set_jump(jumpnum)
 
 ##########################################################
 # sound
@@ -482,17 +494,17 @@ def exec_beep(ins):
         state.console_state.beep_on = (ins.read(1) == token.ON)
         util.require(ins, util.end_statement)
         return
-    backend.beep() 
+    state.console_state.sound.beep() 
     # if a syntax error happens, we still beeped.
     util.require(ins, util.end_statement)
-    if state.console_state.music_foreground:
-        backend.wait_music(wait_last=False)
+    if state.console_state.sound.foreground:
+        state.console_state.sound.wait_music(wait_last=False)
     
 def exec_sound(ins):
     """ SOUND: produce an arbitrary sound or switch external speaker on/off. """
     # Tandy/PCjr SOUND ON, OFF
     if pcjr_syntax and util.skip_white(ins) in (token.ON, token.OFF):
-        state.console_state.sound_on = (ins.read(1) == token.ON)
+        state.console_state.sound.sound_on = (ins.read(1) == token.ON)
         util.require(ins, util.end_statement)
         return
     freq = vartypes.pass_int_unpack(expressions.parse_expression(ins))
@@ -502,7 +514,8 @@ def exec_sound(ins):
         raise error.RunError(5)
     # only look for args 3 and 4 if duration is > 0; otherwise those args are a syntax error (on tandy)    
     if dur.gt(fp.Single.zero):    
-        if (util.skip_white_read_if(ins, (',',)) and (pcjr_syntax == 'tandy' or (pcjr_syntax == 'pcjr' and state.console_state.sound_on))):
+        if (util.skip_white_read_if(ins, (',',)) and (pcjr_syntax == 'tandy' or 
+                (pcjr_syntax == 'pcjr' and state.console_state.sound.sound_on))):
             volume = vartypes.pass_int_unpack(expressions.parse_expression(ins))
             util.range_check(0, 15, volume)        
             if util.skip_white_read_if(ins, (',',)):
@@ -514,7 +527,7 @@ def exec_sound(ins):
             volume, voice = 15, 0                
     util.require(ins, util.end_statement)
     if dur.is_zero():
-        backend.stop_all_sound()
+        state.console_state.sound.stop_all_sound()
         return
     # Tandy only allows frequencies below 37 (but plays them as 110 Hz)    
     if freq != 0:
@@ -524,32 +537,34 @@ def exec_sound(ins):
     dur_sec = dur.to_value()/18.2
     if one_over_44.gt(dur):
         # play indefinitely in background
-        backend.play_sound(freq, dur_sec, loop=True, voice=voice, volume=volume)
+        state.console_state.sound.play_sound(freq, dur_sec, loop=True, voice=voice, volume=volume)
     else:
-        backend.play_sound(freq, dur_sec, voice=voice, volume=volume)
-        if state.console_state.music_foreground:
-            backend.wait_music(wait_last=False)
+        state.console_state.sound.play_sound(freq, dur_sec, voice=voice, volume=volume)
+        if state.console_state.sound.foreground:
+            state.console_state.sound.wait_music(wait_last=False)
     
 def exec_play(ins):
     """ PLAY: play sound sequence defined by a Music Macro Language string. """
-    if state.basic_state.play_handler.command(util.skip_white(ins)):
+    # PLAY: event switch
+    if state.basic_state.events.play.command(util.skip_white(ins)):
         ins.read(1)
         util.require(ins, util.end_statement)
     else:    
         # retrieve Music Macro Language string
         mml0 = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         mml1, mml2 = '', ''
-        if ((pcjr_syntax == 'tandy' or (pcjr_syntax == 'pcjr' and state.console_state.sound_on))
+        if ((pcjr_syntax == 'tandy' or (pcjr_syntax == 'pcjr' and 
+                                         state.console_state.sound.sound_on))
                 and util.skip_white_read_if(ins, (',',))):
             mml1 = vartypes.pass_string_unpack(expressions.parse_expression(ins))
             if util.skip_white_read_if(ins, (',',)):
                 mml2 = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_expression)
-        draw_and_play.play_parse_mml((mml0, mml1, mml2))
+        state.console_state.sound.play((mml0, mml1, mml2))
           
 def exec_noise(ins):
     """ NOISE: produce sound on the noise generator (Tandy/PCjr). """
-    if not state.console_state.sound_on:
+    if not state.console_state.sound.sound_on:
         raise error.RunError(5)
     source = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.require_read(ins, (',',))
@@ -564,9 +579,9 @@ def exec_noise(ins):
     one_over_44 = fp.Single.from_bytes(bytearray('\x8c\x2e\x3a\x7b')) # 1/44 = 0.02272727248
     dur_sec = dur.to_value()/18.2
     if one_over_44.gt(dur):
-        backend.play_noise(source, volume, dur_sec, loop=True)
+        state.console_state.sound.play_noise(source, volume, dur_sec, loop=True)
     else:
-        backend.play_noise(source, volume, dur_sec)
+        state.console_state.sound.play_noise(source, volume, dur_sec)
     
  
 ##########################################################
@@ -621,7 +636,7 @@ def exec_bsave(ins):
     """ BSAVE: save a block of memory to a file. Limited implementation. """
     if state.basic_state.protected and not state.basic_state.run_mode:
         raise error.RunError(5)
-    namade = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+    name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
     util.require_read(ins, (',',))
     offset = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint = 0xffff) 
@@ -739,11 +754,11 @@ def exec_shell(ins):
     if pcjr_syntax == 'pcjr':
         raise error.RunError(5)
     # force cursor visible in all cases
-    backend.show_cursor(True)
+    state.console_state.screen.cursor.show(True)
     # execute cms or open interactive shell
     oslayer.shell(cmd) 
     # reset cursor visibility to its previous state
-    backend.update_cursor_visibility()
+    state.console_state.screen.cursor.reset_visibility()
     util.require(ins, util.end_statement)
         
 def exec_environ(ins):
@@ -820,7 +835,8 @@ def exec_edit(ins):
     util.require(ins, util.end_statement, err=5)
     # throws back to direct mode
     flow.set_pointer(False)
-    state.basic_state.execute_mode = False    
+    state.basic_state.execute_mode = False 
+    state.console_state.screen.cursor.reset_visibility()   
     # request edit prompt
     state.basic_state.edit_prompt = (from_line, None)
     
@@ -1135,46 +1151,47 @@ def exec_ioctl(ins):
 ##########################################################
 # Graphics statements
 
-def parse_coord(ins, absolute=False):
+def parse_coord_bare(ins):
     """ Helper function: parse coordinate pair. """
-    step = not absolute and util.skip_white_read_if(ins, (token.STEP,))
     util.require_read(ins, ('(',))
     x = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
     util.require_read(ins, (',',))
     y = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
     util.require_read(ins, (')',))
-    if absolute:
-        return x, y
-    state.console_state.last_point = graphics.window_coords(x, y, step)
-    return state.console_state.last_point
+    return x, y
+
+def parse_coord_step(ins):
+    """ Helper function: parse coordinate pair. """
+    step = util.skip_white_read_if(ins, (token.STEP,))
+    x, y = parse_coord_bare(ins)
+    return x, y, step
 
 def exec_pset(ins, c=-1):
     """ PSET: set a pixel to a given attribute, or foreground. """
-    graphics.require_graphics_mode()
-    x, y = parse_coord(ins)
-    state.console_state.last_point = x, y
+    if state.console_state.screen.mode.is_text_mode:
+        raise error.RunError(5)
+    lcoord = parse_coord_step(ins)
     if util.skip_white_read_if(ins, (',',)):
         c = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.range_check(-1, 255, c)
     util.require(ins, util.end_statement)    
-    graphics.put_point(x, y, c)
+    state.console_state.screen.drawing.pset(lcoord, c)
 
 def exec_preset(ins):
     """ PRESET: set a pixel to a given attribute, or background. """
     exec_pset(ins, 0)   
 
 def exec_line_graph(ins):
-    """ LINE: draw a line between two points. """
-    graphics.require_graphics_mode()
+    """ LINE: draw a line or box between two points. """
+    if state.console_state.screen.mode.is_text_mode:
+        raise error.RunError(5)
     if util.skip_white(ins) in ('(', token.STEP):
-        x0, y0 = parse_coord(ins)
-        state.console_state.last_point = x0, y0
+        coord0 = parse_coord_step(ins)
     else:
-        x0, y0 = state.console_state.last_point
+        coord0 = None
     util.require_read(ins, (token.O_MINUS,))
-    x1, y1 = parse_coord(ins)
-    state.console_state.last_point = x1, y1
-    c, mode, mask = -1, '', 0xffff
+    coord1 = parse_coord_step(ins)
+    c, mode, pattern = -1, '', 0xffff
     if util.skip_white_read_if(ins, (',',)):
         expr = expressions.parse_expression(ins, allow_empty=True)
         if expr:
@@ -1185,75 +1202,57 @@ def exec_line_graph(ins):
             else:
                 util.require(ins, (',',))
             if util.skip_white_read_if(ins, (',',)):
-                mask = vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=22), maxint=0x7fff)
+                pattern = vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=22), maxint=0x7fff)
         elif not expr:
-            raise error.RunError(22)        
-    util.require(ins, util.end_statement)    
-    if mode == '':
-        graphics.draw_line(x0, y0, x1, y1, c, mask)
-    elif mode == 'B':
-        graphics.draw_box(x0, y0, x1, y1, c, mask)
-    elif mode == 'BF':
-        graphics.draw_box_filled(x0, y0, x1, y1, c)
+            raise error.RunError(22)
+    util.require(ins, util.end_statement)
+    state.console_state.screen.drawing.line(coord0, coord1, c, pattern, mode)
             
 def exec_view_graph(ins):
-    """ VIEW: set graphics viewport. """
-    graphics.require_graphics_mode()
+    """ VIEW: set graphics viewport and optionally draw a box. """
+    if state.console_state.screen.mode.is_text_mode:
+        raise error.RunError(5)
     absolute = util.skip_white_read_if(ins, (token.SCREEN,))
-    if util.skip_white_read_if(ins, '('):
-        x0 = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-        util.require_read(ins, (',',))
-        y0 = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-        util.require_read(ins, (')',))
+    if util.skip_white(ins) == '(':
+        x0, y0 = parse_coord_bare(ins)
+        x0, y0 = x0.round_to_int(), y0.round_to_int()
         util.require_read(ins, (token.O_MINUS,))
-        util.require_read(ins, ('(',))
-        x1 = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-        util.require_read(ins, (',',))
-        y1 = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-        util.require_read(ins, (')',))
-        util.range_check(0, state.console_state.size[0]-1, x0, x1)
-        util.range_check(0, state.console_state.size[1]-1, y0, y1)
-        x0, x1 = min(x0, x1), max(x0, x1)
-        y0, y1 = min(y0, y1), max(y0, y1)
+        x1, y1 = parse_coord_bare(ins)
+        x1, y1 = x1.round_to_int(), y1.round_to_int()
+        util.range_check(0, state.console_state.screen.mode.pixel_width-1, x0, x1)
+        util.range_check(0, state.console_state.screen.mode.pixel_height-1, y0, y1)
         fill, border = None, None
         if util.skip_white_read_if(ins, (',',)):
             fill, border = expressions.parse_int_list(ins, 2, err=2)
-        backend.set_graph_view(x0-1, y0-1, x1+1, y1+1, True)
-        if fill != None:
-            graphics.draw_box_filled(x0, y0, x1, y1, fill)
-        if border != None:
-            graphics.draw_box(x0-1, y0-1, x1+1, y1+1, border)
-        backend.set_graph_view(x0, y0, x1, y1, absolute)
+        state.console_state.screen.drawing.set_view(x0, y0, x1, y1, absolute, fill, border)
     else:
-        backend.unset_graph_view()
+        state.console_state.screen.drawing.unset_view()
     util.require(ins, util.end_statement)        
     
 def exec_window(ins):
     """ WINDOW: define logical coordinate system. """
-    graphics.require_graphics_mode()
+    if state.console_state.screen.mode.is_text_mode:
+        raise error.RunError(5)
     cartesian = not util.skip_white_read_if(ins, (token.SCREEN,))
     if util.skip_white(ins) == '(':
-        x0, y0 = parse_coord(ins, absolute=True)
+        x0, y0 = parse_coord_bare(ins)
         util.require_read(ins, (token.O_MINUS,))
-        x1, y1 = parse_coord(ins, absolute=True)
+        x1, y1 = parse_coord_bare(ins)
         if x0.equals(x1) or y0.equals(y1):
             raise error.RunError(5)
-        graphics.set_graph_window(x0, y0, x1, y1, cartesian)
+        state.console_state.screen.drawing.set_window(x0, y0, x1, y1, cartesian)
     else:
-        graphics.unset_graph_window()
+        state.console_state.screen.drawing.unset_window()
     util.require(ins, util.end_statement)        
         
 def exec_circle(ins):
     """ CIRCLE: Draw a circle, ellipse, arc or sector. """
-    graphics.require_graphics_mode()
-    x0, y0 = parse_coord(ins)
-    state.console_state.last_point = x0, y0
+    if state.console_state.screen.mode.is_text_mode:
+        raise error.RunError(5)
+    centre = parse_coord_step(ins)
     util.require_read(ins, (',',))
     r = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
-    start, stop, c = None, None, -1
-    aspect = fp.div(
-        fp.Single.from_int(state.console_state.pixel_aspect_ratio[0]), 
-        fp.Single.from_int(state.console_state.pixel_aspect_ratio[1]))
+    start, stop, c, aspect = None, None, -1, None
     if util.skip_white_read_if(ins, (',',)):
         cval = expressions.parse_expression(ins, allow_empty=True)
         if cval:
@@ -1263,22 +1262,25 @@ def exec_circle(ins):
             if util.skip_white_read_if(ins, (',',)):
                 stop = expressions.parse_expression(ins, allow_empty=True)
                 if util.skip_white_read_if(ins, (',',)):
-                    aspect = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins)))
+                    aspect = fp.unpack(vartypes.pass_single_keep(
+                                            expressions.parse_expression(ins)))
                 elif stop == None:
-                    raise error.RunError(22) # missing operand
+                    # missing operand
+                    raise error.RunError(22)
             elif start == None:
                 raise error.RunError(22) 
         elif cval == None:
             raise error.RunError(22)                     
     util.require(ins, util.end_statement)    
-    graphics.draw_circle_or_ellipse(x0, y0, r, start, stop, c, aspect)
+    state.console_state.screen.drawing.circle(centre, r, start, stop, c, aspect)
       
 def exec_paint(ins):
     """ PAINT: flood fill from point. """
     # if paint *colour* specified, border default = paint colour
     # if paint *attribute* specified, border default = current foreground      
-    graphics.require_graphics_mode()
-    x0, y0 = parse_coord(ins)
+    if state.console_state.screen.mode.is_text_mode:
+        raise error.RunError(5)
+    coord = parse_coord_step(ins)
     pattern, c, border, background_pattern = None, -1, -1, None
     if util.skip_white_read_if(ins, (',',)):
         cval = expressions.parse_expression(ins, allow_empty=True)
@@ -1302,19 +1304,20 @@ def exec_paint(ins):
                 background_pattern = vartypes.pass_string_unpack(expressions.parse_expression(ins), err=5)
                 # only in screen 7,8,9 is this an error (use ega memory as a check)
                 if (pattern and background_pattern[:len(pattern)] == pattern and 
-                        state.console_state.current_mode.mem_start == 0xa000):
+                        state.console_state.screen.mode.mem_start == 0xa000):
                     raise error.RunError(5)
     util.require(ins, util.end_statement)  
-    graphics.flood_fill(x0, y0, pattern, c, border, background_pattern)
+    state.console_state.screen.drawing.paint(coord, pattern, c, border, background_pattern)
                 
 def exec_get_graph(ins):
     """ GET: read a sprite to memory. """
-    graphics.require_graphics_mode()
-    util.require(ins, ('(')) # don't accept STEP
-    x0,y0 = parse_coord(ins)
+    if state.console_state.screen.mode.is_text_mode:
+        raise error.RunError(5)
+    # don't accept STEP for first coord
+    util.require(ins, ('(')) 
+    coord0 = parse_coord_step(ins)
     util.require_read(ins, (token.O_MINUS,))
-    util.require(ins, ('(', token.STEP))
-    x1,y1 = parse_coord(ins)
+    coord1 = parse_coord_step(ins)
     util.require_read(ins, (',',)) 
     array = util.get_var_name(ins)    
     util.require(ins, util.end_statement)
@@ -1322,13 +1325,15 @@ def exec_get_graph(ins):
         raise error.RunError(5)
     elif array[-1] == '$':
         raise error.RunError(13) # type mismatch    
-    graphics.get_area(x0, y0, x1, y1, array)
+    state.console_state.screen.drawing.get(coord0, coord1, array)
     
 def exec_put_graph(ins):
     """ PUT: draw sprite on screen. """
-    graphics.require_graphics_mode()
-    util.require(ins, ('(')) # don't accept STEP
-    x0,y0 = parse_coord(ins)
+    if state.console_state.screen.mode.is_text_mode:
+        raise error.RunError(5)
+    # don't accept STEP
+    util.require(ins, ('(')) 
+    coord = parse_coord_step(ins)
     util.require_read(ins, (',',)) 
     array = util.get_var_name(ins)    
     action = token.XOR
@@ -1340,15 +1345,17 @@ def exec_put_graph(ins):
     if array not in state.basic_state.arrays:
         raise error.RunError(5)
     elif array[-1] == '$':
-        raise error.RunError(13) # type mismatch    
-    graphics.set_area(x0, y0, array, action)
+        # type mismatch
+        raise error.RunError(13)    
+    state.console_state.screen.drawing.put(coord, array, action)
     
 def exec_draw(ins):
     """ DRAW: draw a figure defined by a Graphics Macro Language string. """
-    graphics.require_graphics_mode()
+    if state.console_state.screen.mode.is_text_mode:
+        raise error.RunError(5)
     gml = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_expression)
-    draw_and_play.draw_parse_gml(gml)
+    state.console_state.screen.drawing.draw(gml)
     
 ##########################################################
 # Flow-control statements
@@ -1704,10 +1711,11 @@ def exec_clear(ins):
                 memory.set_stack_size(stack_size)    
             if pcjr_syntax and util.skip_white_read_if(ins, (',',)):
                 # Tandy/PCjr: select video memory size
-                if not backend.set_video_memory_size(fp.unpack(
-                    vartypes.pass_single_keep(expressions.parse_expression(
-                            ins, empty_err=2))).round_to_int()):
-                    backend.screen(0, 0, 0, 0)
+                if not state.console_state.screen.set_video_memory_size(
+                    fp.unpack(vartypes.pass_single_keep(
+                                 expressions.parse_expression(ins, empty_err=2)
+                             )).round_to_int()):
+                    state.console_state.screen.screen(0, 0, 0, 0)
                     console.init_mode()
             elif not exp2:
                 raise error.RunError(2)    
@@ -2025,7 +2033,12 @@ def exec_cls(ins):
     """ CLS: clear the screen. """
     if (pcjr_syntax == 'pcjr' or 
                     util.skip_white(ins) in (',',) + util.end_statement):
-        val = 1 if state.console_state.graph_view_set else (2 if state.console_state.view_set else 0)
+        if state.console_state.screen.drawing.view_is_set():
+            val = 1
+        elif state.console_state.view_set:
+            val = 2
+        else:
+            val = 0
     else:
         val = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         if pcjr_syntax == 'tandy':
@@ -2041,11 +2054,10 @@ def exec_cls(ins):
     # cls is only executed if no errors have occurred    
     if val == 0:
         console.clear()  
-        if graphics.is_graphics_mode():
-            graphics.reset_graphics()
-    elif val == 1 and graphics.is_graphics_mode():
-        backend.clear_graphics_view()
-        graphics.reset_graphics()
+        state.console_state.screen.drawing.reset()
+    elif val == 1:
+        state.console_state.screen.drawing.clear_view()
+        state.console_state.screen.drawing.reset()
     elif val == 2:
         console.clear_view()  
     if pcjr_syntax == 'pcjr':
@@ -2053,86 +2065,95 @@ def exec_cls(ins):
 
 def exec_color(ins):
     """ COLOR: set colour attributes. """
-    fore, back, bord = expressions.parse_int_list(ins, 3, 5)          
-    mode = state.console_state.current_mode
-    graphics_mode = backend.graphics_mode
+    fore, back, bord = expressions.parse_int_list(ins, 3, 5)
+    screen = state.console_state.screen
+    mode = screen.mode
     if mode.name == '320x200x4':
         return exec_color_mode_1(fore, back, bord)
     elif mode.name in ('640x200x2', '720x348x2'): 
         # screen 2; hercules: illegal fn call
         raise error.RunError(5)
-    fore_old, back_old = (state.console_state.attr>>7)*0x10 + (state.console_state.attr&0xf), (state.console_state.attr>>4) & 0x7
+    fore_old = (screen.attr>>7)*0x10 + (screen.attr&0xf)
+    back_old = (screen.attr>>4) & 0x7
     bord = 0 if bord == None else bord
     util.range_check(0, 255, bord)
     fore = fore_old if fore == None else fore
     # graphics mode bg is always 0; sets palette instead
-    back = back_old if mode.is_text_mode and back == None else (backend.get_palette_entry(0) if back == None else back)
+    if mode.is_text_mode and back == None:
+        back = back_old 
+    else:
+        back = screen.palette.get_entry(0) if back == None else back
     if mode.is_text_mode:
-        util.range_check(0, state.console_state.num_attr-1, fore)
+        util.range_check(0, mode.num_attr-1, fore)
         util.range_check(0, 15, back, bord)
-        state.console_state.attr = ((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10 + (fore & 0xf) 
-        backend.set_border(bord)
+        screen.set_attr(((0x8 if (fore > 0xf) else 0x0) + (back & 0x7))*0x10 
+                        + (fore & 0xf)) 
+        screen.set_border(bord)
     elif mode.name in ('160x200x16', '320x200x4pcjr', '320x200x16pcjr'
                         '640x200x4', '320x200x16', '640x200x16'):
-        util.range_check(1, state.console_state.num_attr-1, fore)
-        util.range_check(0, state.console_state.num_attr-1, back)
-        state.console_state.attr = fore
+        util.range_check(1, mode.num_attr-1, fore)
+        util.range_check(0, mode.num_attr-1, back)
+        screen.set_attr(fore)
         # in screen 7 and 8, only low intensity palette is used.
-        backend.set_palette_entry(0, back % 8, check_mode=False)    
+        screen.palette.set_entry(0, back % 8, check_mode=False)    
     elif mode.name in ('640x350x16', '640x350x4'):
-        util.range_check(0, state.console_state.num_attr-1, fore)
-        util.range_check(0, len(state.console_state.colours)-1, back)
-        state.console_state.attr = fore
-        backend.set_palette_entry(0, back, check_mode=False)
+        util.range_check(0, mode.num_attr-1, fore)
+        util.range_check(0, len(mode.colours)-1, back)
+        screen.set_attr(fore)
+        screen.palette.set_entry(0, back, check_mode=False)
     elif mode.name == '640x400x2':
-        util.range_check(0, len(state.console_state.colours)-1, fore)
+        util.range_check(0, len(mode.colours)-1, fore)
         if back != 0:
             raise error.RunError(5)    
-        backend.set_palette_entry(1, fore, check_mode=False)
+        screen.palette.set_entry(1, fore, check_mode=False)
         
     
 def exec_color_mode_1(back, pal, override):
     """ Helper function for COLOR in SCREEN 1. """
-    back = backend.get_palette_entry(0) if back == None else back
+    screen = state.console_state.screen
+    back = screen.palette.get_entry(0) if back == None else back
     if override != None:
         # uses last entry as palette if given
         pal = override
     util.range_check(0, 255, back)
     if pal != None:
         util.range_check(0, 255, pal)
-        backend.set_cga4_palette(pal%2)
-        palette = list(backend.cga4_palette)
+        screen.set_cga4_palette(pal%2)
+        palette = list(screen.mode.palette)
         palette[0] = back&0xf
         # cga palette 0: 0,2,4,6    hi 0, 10, 12, 14
         # cga palette 1: 0,3,5,7 (Black, Ugh, Yuck, Bleah), hi: 0, 11,13,15 
-        backend.set_palette(palette, check_mode=False)
+        screen.palette.set_all(palette, check_mode=False)
     else:
-        backend.set_palette_entry(0, back & 0xf, check_mode=False)        
+        screen.palette.set_entry(0, back & 0xf, check_mode=False)        
     
 def exec_palette(ins):
     """ PALETTE: set colour palette entry. """
     d = util.skip_white(ins)
     if d in util.end_statement:
         # reset palette
-        backend.set_palette()
+        state.console_state.screen.palette.set_all(state.console_state.screen.mode.palette)
     elif d == token.USING:
         ins.read(1)
         exec_palette_using(ins)
     else:
         # can't set blinking colours separately
-        num_palette_entries = state.console_state.num_attr if state.console_state.num_attr != 32 else 16
+        mode = state.console_state.screen.mode
+        num_palette_entries = mode.num_attr if mode.num_attr != 32 else 16
         pair = expressions.parse_int_list(ins, 2, err=5)
         if pair[0] == None or pair[1] == None:
             raise error.RunError(2)
         util.range_check(0, num_palette_entries-1, pair[0])
-        util.range_check(-1, len(state.console_state.colours)-1, pair[1])
+        util.range_check(-1, len(mode.colours)-1, pair[1])
         if pair[1] > -1:
-            backend.set_palette_entry(pair[0], pair[1])
+            state.console_state.screen.palette.set_entry(pair[0], pair[1])
         util.require(ins, util.end_statement)    
 
 def exec_palette_using(ins):
     """ PALETTE USING: set full colour palette. """
-    num_palette_entries = state.console_state.num_attr if state.console_state.num_attr != 32 else 16
+    screen = state.console_state.screen
+    mode = screen.mode
+    num_palette_entries = mode.num_attr if mode.num_attr != 32 else 16
     array_name, start_indices = expressions.get_var_or_array_name(ins)
     try:     
         dimensions, lst, _ = state.basic_state.arrays[array_name]    
@@ -2141,14 +2162,14 @@ def exec_palette_using(ins):
     if array_name[-1] != '%':
         raise error.RunError(13)
     start = var.index_array(start_indices, dimensions)
-    if var.array_len(dimensions) - start  < num_palette_entries:
+    if var.array_len(dimensions) - start < num_palette_entries:
         raise error.RunError(5)
     new_palette = []
     for i in range(num_palette_entries):
         val = vartypes.pass_int_unpack(('%', lst[(start+i)*2:(start+i+1)*2]))
-        util.range_check(-1, len(state.console_state.colours)-1, val)
-        new_palette.append(val if val > -1 else backend.get_palette_entry(i))
-    backend.set_palette(new_palette)
+        util.range_check(-1, len(mode.colours)-1, val)
+        new_palette.append(val if val > -1 else screen.palette.get_entry(i))
+    screen.palette.set_all(new_palette)
     util.require(ins, util.end_statement) 
 
 def exec_key(ins):
@@ -2175,18 +2196,6 @@ def exec_key(ins):
         exec_key_define(ins)
     util.require(ins, util.end_statement)        
 
-def exec_key_events(ins):
-    """ KEY: switch on/off keyboard events. """
-    num = vartypes.pass_int_unpack(expressions.parse_bracket(ins))
-    util.range_check(0, 255, num)
-    d = util.skip_white(ins)
-    # others are ignored
-    if num >= 1 and num <= 20:
-        if state.basic_state.key_handlers[num-1].command(d):
-            ins.read(1)
-        else:    
-            raise error.RunError(2)
-
 def exec_key_define(ins):
     """ KEY: define function-key shortcut or scancode for event trapping. """
     keynum = vartypes.pass_int_unpack(expressions.parse_expression(ins))
@@ -2202,41 +2211,39 @@ def exec_key_define(ins):
         # in which case it's a key scancode definition
         if len(text) != 2:
             raise error.RunError(5)
-        # can't redefine scancodes for keys 1-14 (pc) 1-16 (tandy)
-        if keynum > backend.num_fn_keys + 4 and keynum <= 20:    
-            state.basic_state.event_keys[keynum-1] = str(text)
+        state.basic_state.events.key[keynum-1].set_trigger(str(text))
     
 def exec_locate(ins):
     """ LOCATE: Set cursor position, shape and visibility."""
+    cmode = state.console_state.screen.mode
     row, col, cursor, start, stop, dummy = expressions.parse_int_list(ins, 6, 2, allow_last_empty=True)          
     if dummy != None:
         # can end on a 5th comma but no stuff allowed after it
         raise error.RunError(2)
     row = state.console_state.row if row == None else row
     col = state.console_state.col if col == None else col
-    if row == state.console_state.height and state.console_state.keys_visible:
+    if row == cmode.height and state.console_state.keys_visible:
         raise error.RunError(5)
     elif state.console_state.view_set:
         util.range_check(state.console_state.view_start, state.console_state.scroll_height, row)
     else:
-        util.range_check(1, state.console_state.height, row)
-    util.range_check(1, state.console_state.width, col)
-    if row == state.console_state.height:
+        util.range_check(1, cmode.height, row)
+    util.range_check(1, cmode.width, col)
+    if row == cmode.height:
         # temporarily allow writing on last row
         state.console_state.bottom_row_allowed = True       
     console.set_pos(row, col, scroll_ok=False) 
     if cursor != None:
         util.range_check(0, (255 if pcjr_syntax else 1), cursor)   
         # set cursor visibility - this should set the flag but have no effect in graphics modes
-        state.console_state.cursor = (cursor != 0)
-        backend.update_cursor_visibility()
+        state.console_state.screen.cursor.set_visibility(cursor != 0)
     if stop == None:
         stop = start
     if start != None:    
         util.range_check(0, 31, start, stop)
         # cursor shape only has an effect in text mode    
-        if state.console_state.current_mode.is_text_mode:    
-            backend.set_cursor_shape(start, stop)
+        if cmode.is_text_mode:    
+            state.console_state.screen.cursor.set_shape(start, stop)
 
 def exec_write(ins, output=None):
     """ WRITE: Output machine-readable expressions to the screen or a file. """
@@ -2414,44 +2421,39 @@ def exec_width(ins):
     
 def exec_screen(ins):
     """ SCREEN: change video mode or page. """
-    erase = 1
     if pcjr_syntax:
-        mode, colorswitch, apagenum, vpagenum, erase = expressions.parse_int_list(ins, 5)
+        mode, color, apagenum, vpagenum, erase = expressions.parse_int_list(ins, 5)
     else:    
-        # in GW, screen 0,0,0,0,0,0 raises error after changing the palette... this raises error before:
-        mode, colorswitch, apagenum, vpagenum = expressions.parse_int_list(ins, 4)
-    # set defaults to avoid err 5 on range check
-    mode = mode if mode != None else state.console_state.screen_mode
-    colorswitch = colorswitch if colorswitch != None else state.console_state.colorswitch    
+        # in GW, screen 0,0,0,0,0,0 raises error after changing the palette
+        # this raises error before:
+        mode, color, apagenum, vpagenum = expressions.parse_int_list(ins, 4)
+        erase = 1
     # if any parameter not in [0,255], error 5 without doing anything 
-    util.range_check(0, 255, mode, colorswitch)
-    if apagenum != None:
-        util.range_check(0, 255, apagenum)
-    if vpagenum != None:
-        util.range_check(0, 255, vpagenum)
-    util.range_check(0, 2, erase)
-    # if the parameters are outside narrow ranges (e.g. not implemented screen mode, pagenum beyond max)
+    # if the parameters are outside narrow ranges 
+    # (e.g. not implemented screen mode, pagenum beyond max)
     # then the error is only raised after changing the palette.
-    util.require(ins, util.end_statement)        
-    # decide whether to redraw the screen    
-    do_redraw = ((mode != state.console_state.screen_mode) or 
-                 (colorswitch != state.console_state.colorswitch))
-    if do_redraw:             
-        if not backend.screen(mode, colorswitch, apagenum, vpagenum, erase):
-            raise error.RunError(5)
+    util.range_check(0, 255, mode, color, apagenum, vpagenum)
+    util.range_check(0, 2, erase)
+    util.require(ins, util.end_statement)
+    # decide whether to redraw the screen
+    screen = state.console_state.screen
+    oldmode, oldcolor = screen.mode, screen.colorswitch
+    screen.screen(mode, color, apagenum, vpagenum, erase)
+    if ((not screen.mode.is_text_mode and screen.mode.name != oldmode.name) or
+            (screen.mode.is_text_mode and not oldmode.is_text_mode) or
+            (screen.colorswitch != oldcolor)):
+        # rebuild the console if we've switched modes or colorswitch
         console.init_mode()    
-    else:
-        backend.set_page(vpagenum, apagenum)
     
 def exec_pcopy(ins):
     """ PCOPY: copy video pages. """
     src = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-    util.range_check(0, state.console_state.num_pages-1, src)
+    util.range_check(0, state.console_state.screen.mode.num_pages-1, src)
     util.require_read(ins, (',',))
     dst = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
-    util.range_check(0, state.console_state.num_pages-1, dst)
-    backend.copy_page(src, dst)
+    util.range_check(0, state.console_state.screen.mode.num_pages-1, dst)
+    state.console_state.screen.copy_page(src, dst)
         
         
 prepare()

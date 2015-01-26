@@ -192,7 +192,7 @@ def files(pathmask):
     output = ( 
           [('%-8s.%-3s' % (t, e) if (e or not t) else '%-8s    ' % t) + '<DIR>' for t, e in dirs]
         + [('%-8s.%-3s' % (t, e) if e else '%-8s    ' % t) + '     ' for t, e in fils])
-    num = state.console_state.width // 20
+    num = state.console_state.screen.mode.width // 20
     while len(output) > 0:
         line = ' '.join(output[:num])
         output = output[num:]
@@ -229,13 +229,13 @@ def native_path(path_and_name, defext='', err=53,
 def shell(command):
     """ Execute a shell command or enter interactive shell. """
     # sound stops playing and is forgotten
-    backend.stop_all_sound()
+    state.console_state.sound.stop_all_sound()
     # no key macros
     key_macros_save = state.basic_state.key_macros_off
     state.basic_state.key_macros_off = True
     # no user events
-    suspend_event_save = state.basic_state.suspend_all_events
-    state.basic_state.suspend_all_events = True
+    suspend_event_save = state.basic_state.events.suspend_all
+    state.basic_state.events.suspend_all = True
     # run the os-specific shell
     if shell_enabled:
         spawn_shell(command)
@@ -243,7 +243,7 @@ def shell(command):
         logging.warning('SHELL statement disabled.')
     # re-enable key macros and event handling
     state.basic_state.key_macros_off = key_macros_save
-    state.basic_state.suspend_all_events = suspend_event_save
+    state.basic_state.events.suspend_all = suspend_event_save
 
 
 #########################################
@@ -523,7 +523,7 @@ if plat.system == 'Windows':
                 # drain output then break
                 continue    
             try:    
-                c = backend.get_char()
+                c = state.console_state.keyb.get_char()
             except error.Break:
                 pass    
             if c in ('\r', '\n'): 
@@ -555,7 +555,7 @@ else:
         p = pexpect.spawn(str(cmd))
         while True:
             try:
-                c = backend.get_char()
+                c = state.console_state.keyb.get_char()
             except error.Break:
                 # ignore ctrl+break in SHELL
                 pass

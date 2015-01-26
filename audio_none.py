@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3.
 
 import datetime
 import state
+import backend
 
 music_queue = [ [], [], [], [] ]
 
@@ -36,8 +37,7 @@ def check_sound():
         while music_queue[voice] and now >= music_queue[voice][0]:
             music_queue[voice].pop(0)
         # remove the notes that have been played
-        while len(state.console_state.music_queue[voice]) > len(music_queue[voice]):
-            state.console_state.music_queue[voice].pop(0)
+        backend.sound_done(voice, len(music_queue[voice]))
     
 def busy():
     """ Is the mixer busy? """

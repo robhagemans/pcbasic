@@ -115,7 +115,7 @@ arguments = {
         'type': 'string', 'choices': ('rgb', 'composite', 'mono'),
         'default': 'rgb',},
     'aspect': {'type': 'int', 'list': 2, 'default': [4, 3],},
-    'blocky': {'type': 'bool', 'default': False,},
+    'scaling': {'type': 'string', 'choices':('smooth', 'native', 'crisp'), 'default': 'smooth',},
     'version': {'type': 'bool', 'default': False,},
     'config': {'type': 'string', 'default': '',},
     'logfile': {'type': 'string', 'default': '',},

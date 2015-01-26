@@ -27,22 +27,9 @@ class State(object):
     """ Base class for state """
     pass
 
-class DisplayState(State):
-    """ Display state; video modules can extend this for their pickling needs. """
-
-    def pickle(self):
-        """ Pickle the display information. """
-        pass
-    
-    def unpickle(self):
-        """ unpickle the display information. """
-        pass
-        
-        
 basic_state = State()        
 io_state = State()
 console_state = State()
-display = DisplayState()
 
 # a state has been loaded
 loaded = False
@@ -112,9 +99,6 @@ def save():
     # prepare pickling object
     to_pickle = State()
     to_pickle.basic, to_pickle.io, to_pickle.console = basic_state, io_state, console_state
-    # pack display
-    to_pickle.display = display
-    to_pickle.display.pickle()
     # pickle and compress
     s = zlib.compress(pickle.dumps(to_pickle, 2))
     try:
@@ -140,8 +124,6 @@ def load():
         return False
     # unpack pickling object
     io_state, basic_state, console_state = from_pickle.io, from_pickle.basic, from_pickle.console
-    # unpack display
-    from_pickle.display.unpickle()
     loaded = True
     return True
     

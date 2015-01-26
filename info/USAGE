@@ -39,10 +39,6 @@ OPTIONS
   --aspect=x,y          
             Set the display aspect ratio to x/y. Graphical interface only.
             
-  --blocky [=True|=False]
-            Choose whole multiples of pixel size for display and
-            do not smoothen. Overrides --aspect. Graphical interface only.
-            
   --border=width       
             Width of the screen border as a percentage 0-100. The percentage
             refers to the total width of the borders on both sides as a fraction
@@ -367,6 +363,14 @@ OPTIONS
   --serial-buffer-size=size, 
             Set serial input buffer size (default is 256). If set to 0,
             serial communications are disabled.
+
+  --scaling={smooth|crisp|native}
+            Choose scaling method. In smooth mode, te display is smoothly scaled 
+            to the largest size that allows for the correct aspect ratio. In 
+            crisp mode, it is scaled to the same size but without smoothing. 
+            In native mode, scaling and aspect ratio are optimised for the 
+            display's native pixel size, without smoothing. Native mode 
+            overrides --aspect. Default is smooth. Graphical interface only.
   
   --state=state_file   
             Set the save-state file. Default is info/PCBASIC.SAV
@@ -443,7 +447,7 @@ EXAMPLES
     pcbasic Foobar.baz
             Start PC-BASIC with package Foobar. Load the settings from the
             package; usually this will run a main program contained in the 
-            pazkage. 
+            package. 
             
     pcbasic Foobar.baz --convert=A --utf8
             List the main program of package Foobar to standard output as UTF-8.

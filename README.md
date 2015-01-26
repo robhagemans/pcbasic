@@ -162,7 +162,7 @@ PC-BASIC supports a large number of codepages, including double-byte character s
 
 
 #### Command-line interface ####
-You can run PC-BASIC in command-line mode by running with the `-b` option. On Linux, there's also a curses-style interface available with the `-t` option. You can even get sound in the text and command-line interfaces if you install the Unix `beep` utility (if you use Ubuntu, please be aware that the pc-speaker is switched off by default. You'll need to edit `/etc/modprobe.d/blacklist.conf` and comment out the line `blacklist pcspkr`. Then, `apt-get install beep` and be sure to wear appropriate ear protection as the default volume level is LOUD.) 
+You can run PC-BASIC in command-line mode by running with the `-b` option. On Linux, there's also a curses-style text interface available with the `-t` option. You can even get sound in the text and command-line interfaces if you install the Unix `beep` utility (if you use Ubintu, please be aware that the pc-speaker is switched off by default. You'll need to edit `/etc/modprobe.d/blacklist.conf` and comment out the line `blacklist pcspkr`. Then, `apt-get install beep` and be sure to wear appropriate ear protection as the default volume level is LOUD.) 
 
 #### Free BASIC compilers and saner dialects ####
 If you're starting a new project in BASIC, please consider one of the more sensible free versions of the language, such as [FreeBasic](www.freebasic.net), [QB64](http://www.qb64.net/) or [SmallBASIC](https://sourceforge.net/projects/smallbasic/). Under FreeDOS, you can use the [Bywater BASIC](https://sourceforge.net/projects/bwbasic/) interpreter. 

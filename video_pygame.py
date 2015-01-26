@@ -24,6 +24,10 @@ import unicodepage
 import backend
 import typeface
 import scancode
+# for operation token for PUT
+import token
+
+#D
 import state
 
 # Workaround for broken pygame.scrap on various systems
@@ -38,10 +42,6 @@ if android:
     if pygame:
         import pygame_android
 
-
-# default font family
-font_families = ['unifont', 'univga', 'freedos']
-fonts = {}
 
 # screen aspect ratio x, y
 aspect = (4, 3)
@@ -99,10 +99,8 @@ noquit = False
 
 # letter shapes
 glyphs = []
-font = None
 # the current attribute of the stored sbcs glyphs
 current_attr = None
-current_attr_context = None
 
 # cursor shape
 cursor = None
@@ -124,9 +122,6 @@ under_top_left = None
 
 # available joy sticks
 joysticks = []    
-
-# store for fast get & put arrays
-get_put_store = {}
 
 if pygame:
     # these are PC keyboard scancodes
@@ -218,9 +213,9 @@ def prepare():
     force_display_size = config.options['dimensions']
     aspect = config.options['aspect'] or aspect
     border_width = config.options['border']
-    force_square_pixel = config.options['blocky']
+    force_square_pixel = (config.options['scaling'] == 'native')
     fullscreen = config.options['fullscreen']
-    smooth = not config.options['blocky']
+    smooth = (config.options['scaling'] == 'smooth')
     # don't catch Alt+F4    
     noquit = config.options['nokill']
     # monitor choice
@@ -244,8 +239,7 @@ def prepare():
         heights_needed = (14, 8)
     else:
         heights_needed = (16, 14, 8)
-    if config.options['font']:
-        font_families = config.options['font']
+    font_families = config.options['font']
     # mouse setups
     if config.options['mouse']:
         mousebutton_copy = -1
@@ -271,42 +265,24 @@ def prepare():
 ###############################################################################
 # state saving and loading
 
-# picklable store for surfaces
-display_strings = ([], [])
-display_strings_loaded = False
+def save_state():
+    """ Save display state as list of strings. """
+    return [pygame.image.tostring(s, 'P') for s in canvas]
 
-class PygameDisplayState(state.DisplayState):
-    """ Display state saving and restoring. """
-    
-    def pickle(self):
-        """ Convert display state to string. """
-        self.display_strings = ([], [])
-        for s in canvas:    
-            self.display_strings[0].append(pygame.image.tostring(s, 'P'))
-        
-    def unpickle(self):
-        """ Convert string to display state. """
-        global display_strings, display_strings_loaded
-        display_strings_loaded = True
-        display_strings = self.display_strings
-        del self.display_strings
-
-
-def load_state():        
-    """ Restore display state from file. """
+def load_state(display_str):        
+    """ Restore display state. """
     global screen_changed
-    if display_strings_loaded:
-        try:
-            for i in range(len(canvas)):    
-                canvas[i] = pygame.image.fromstring(display_strings[0][i], size, 'P')
-                canvas[i].set_palette(workpalette)
-            screen_changed = True    
-        except (IndexError, ValueError):
-            # couldn't load the state correctly; most likely a text screen saved from -t. just redraw what's unpickled.
-            # this also happens if the screen resolution has changed 
-            backend.redraw_text_screen()
-    else:
-        backend.redraw_text_screen()
+    try:
+        for i in range(len(canvas)):    
+            canvas[i] = pygame.image.fromstring(display_str[i], size, 'P')
+            canvas[i].set_palette(workpalette)
+        screen_changed = True    
+        return True
+    except (IndexError, ValueError, TypeError):
+        # couldn't load the state correctly
+        # e.g. saved from different interface. just redraw what's unpickled.
+        # this also happens if the screen resolution has changed 
+        return False
         
 ####################################
 # initialisation
@@ -314,7 +290,7 @@ def load_state():
 def init():
     """ Initialise pygame interface. """
     global joysticks, physical_size, display_size
-    global text_mode
+    global text_mode, fonts
     # set state objects to whatever is now in state (may have been unpickled)
     if not pygame:
         logging.warning('PyGame module not found. Failed to initialise graphical interface.')
@@ -351,10 +327,13 @@ def init():
     for joy in range(len(joysticks)):
         for axis in (0, 1):
             backend.stick_moved(joy, axis, 128)
+    # retrieve 8-pixel font from backend
+    # also link as 9-pixel font for tandy
+    fonts = { 8: backend.font_8, 9: backend.font_8 }
     if not load_fonts(heights_needed):
         return False
     text_mode = True    
-    state.display = PygameDisplayState()
+    set_page(0, 0)
     return True
 
 def load_fonts(heights_needed):
@@ -365,33 +344,22 @@ def load_fonts(heights_needed):
             continue
         # load a Unifont .hex font and take the codepage subset
         fonts[height] = typeface.load(font_families, height, 
-                                      unicodepage.cp_to_utf8)
-        if height == 8:
-            # also link as 9-pixel font for tandy
-            fonts[9] = fonts[8]                              
+                                      unicodepage.cp_to_unicodepoint)
         # fix missing code points font based on 16-line font
         if 16 not in fonts:
             # if available, load the 16-pixel font unrequested
             font_16 = typeface.load(font_families, 16, 
-                                          unicodepage.cp_to_utf8, nowarn=True)
+                                    unicodepage.cp_to_unicodepoint, nowarn=True)
             if font_16:
                 fonts[16] = font_16 
         if 16 in fonts and fonts[16]:
             typeface.fixfont(height, fonts[height], 
-                             unicodepage.cp_to_utf8, fonts[16])
+                             unicodepage.cp_to_unicodepoint, fonts[16])
     if 16 in heights_needed and not fonts[16]:
         logging.error('No 16-pixel font specified')
         return False
-    return True    
-        
-def supports_graphics_mode(mode_info):
-    """ Return whether we support a given graphics mode. """
-    # unpack mode info struct
-    font_height = mode_info.font_height
-    if not font_height in fonts:
-        return False
     return True
-
+        
 def init_screen_mode(mode_info):
     """ Initialise a given text or graphics mode. """
     global glyphs, cursor
@@ -401,8 +369,10 @@ def init_screen_mode(mode_info):
     global clipboard, num_pages, bitsperpixel, font_width
     global mode_has_artifacts, cursor_fixed_attr, mode_has_blink
     global mode_has_underline
-    global get_put_store
-    if not fonts[mode_info.font_height]:
+    if mode_info.font_height not in fonts or not fonts[mode_info.font_height]:
+        logging.warning(
+            'No %d-pixel font available. Could not enter video mode %s.',
+            mode_info.font_height, mode_info.name)
         return False
     text_mode = mode_info.is_text_mode
     # unpack mode info struct
@@ -415,15 +385,13 @@ def init_screen_mode(mode_info):
         bitsperpixel = mode_info.bitsperpixel
         mode_has_artifacts = mode_info.supports_artifacts
         cursor_fixed_attr = mode_info.cursor_index
-        # logical size    
-        size = (mode_info.xsize, mode_info.ysize)    
-    else:
-        size = (mode_info.width*font_width, mode_info.height*font_height)    
+    # logical size    
+    size = (mode_info.pixel_width, mode_info.pixel_height)    
     font = fonts[font_height]
     glyphs = [build_glyph(chr(c), font, font_width, font_height) 
               for c in range(256)]
     # initialise glyph colour
-    set_attr(mode_info.attr, force_rebuild=True)
+    set_attr(mode_info.attr)
     resize_display(*find_display_size(size[0], size[1], border_width))
     # set standard cursor
     build_cursor(font_width, font_height, 0, font_height)
@@ -431,8 +399,6 @@ def init_screen_mode(mode_info):
     canvas = [ pygame.Surface(size, depth=8) for _ in range(num_pages)]
     for i in range(num_pages):
         canvas[i].set_palette(workpalette)
-    # remove cached sprites
-    get_put_store = {}    
     # initialise clipboard
     clipboard = Clipboard(mode_info.width, mode_info.height)
     screen_changed = True
@@ -507,9 +473,9 @@ def build_icon():
     icon.fill(255)
     icon.fill(254, (1, 8, 8, 8))
     # hardcoded O and k from freedos cga font
-    okfont = { ord('O'): '\x00\x7C\xC6\xC6\xC6\xC6\xC6\x7C', ord('k'): '\x00\xE0\x60\x66\x6C\x78\x6C\xE6' }
-    O = build_glyph(ord('O'), okfont, 8, 8)
-    k = build_glyph(ord('k'), okfont, 8, 8)
+    okfont = { 'O': '\x00\x7C\xC6\xC6\xC6\xC6\xC6\x7C', 'k': '\x00\xE0\x60\x66\x6C\x78\x6C\xE6' }
+    O = build_glyph('O', okfont, 8, 8)
+    k = build_glyph('k', okfont, 8, 8)
     icon.blit(O, (1, 0, 8, 8))
     icon.blit(k, (9, 0, 8, 8))
     icon.set_palette_at(255, (0, 0, 0))
@@ -627,7 +593,7 @@ def copy_page(src, dst):
     canvas[dst].blit(canvas[src], (0,0))
     screen_changed = True
     
-def update_cursor_visibility(cursor_on):
+def show_cursor(cursor_on):
     """ Change visibility of cursor. """
     global screen_changed, cursor_visible
     cursor_visible = cursor_on
@@ -654,11 +620,9 @@ def scroll(from_line, scroll_height, attr):
     canvas[apagenum].set_clip(temp_scroll_area)
     canvas[apagenum].scroll(0, -font_height)
     # empty new line
-    blank = pygame.Surface( (size[0], font_height) , depth=8)
     _, bg = get_palette_index(attr)
-    blank.set_palette(workpalette)
-    blank.fill(bg)
-    canvas[apagenum].blit(blank, (0, (scroll_height-1) * font_height))
+    canvas[apagenum].fill(bg, (0, (scroll_height-1) * font_height, 
+                               size[0], font_height))
     canvas[apagenum].set_clip(None)
     screen_changed = True
    
@@ -670,33 +634,33 @@ def scroll_down(from_line, scroll_height, attr):
     canvas[apagenum].set_clip(temp_scroll_area)
     canvas[apagenum].scroll(0, font_height)
     # empty new line
-    blank = pygame.Surface( (size[0], font_height), depth=8 )
     _, bg = get_palette_index(attr)
-    blank.set_palette(workpalette)
-    blank.fill(bg)
-    canvas[apagenum].blit(blank, (0, (from_line-1) * font_height))
+    canvas[apagenum].fill(bg, (0, (from_line-1) * font_height,
+                                  size[0], font_height))
     canvas[apagenum].set_clip(None)
     screen_changed = True
 
-def set_attr(cattr, force_rebuild=False):
-    """ Set the current attribuite. """
-    global current_attr, current_attr_context
-    if (not force_rebuild and cattr == current_attr and apagenum == current_attr_context):
-        return  
-    color, bg = get_palette_index(cattr)    
-    for glyph in glyphs:
-        glyph.set_palette_at(255, bg)
-        glyph.set_palette_at(254, color)
-    current_attr = cattr    
-    current_attr_context = apagenum
-
+def set_attr(cattr):
+    """ Set the current attribute. """
+    global current_attr
+    current_attr = cattr
+    
 def putc_at(pagenum, row, col, c, for_keys=False):
     """ Put a single-byte character at a given position. """
     global screen_changed
     glyph = glyphs[ord(c)]
-    blank = glyphs[0] # using \0 for blank (tyoeface.py guarantees it's empty)
-    top_left = ((col-1) * font_width, (row-1) * font_height)
-    canvas[pagenum].blit(glyph, top_left)
+    color, bg = get_palette_index(current_attr)    
+    if c == '\0':
+        # guaranteed to be blank, saves time on some BLOADs
+        canvas[pagenum].fill(bg, 
+                             ((col-1)*font_width, (row-1)*font_height, 8, 8))
+    else:    
+        if glyph.get_palette_at(255) != bg:
+            glyph.set_palette_at(255, bg)
+        if glyph.get_palette_at(254) != color:
+            glyph.set_palette_at(254, color)
+        canvas[pagenum].blit(glyph, 
+                             ((col-1) * font_width, (row-1) * font_height))
     if mode_has_underline and (current_attr % 8 == 1):
         color, _ = get_palette_index(current_attr)    
         for xx in range(font_width):
@@ -711,9 +675,6 @@ def putwc_at(pagenum, row, col, c, d, for_keys=False):
     color, bg = get_palette_index(current_attr)    
     glyph.set_palette_at(255, bg)
     glyph.set_palette_at(254, color)
-    blank = pygame.Surface((2*font_width, font_height), depth=8)
-    blank.fill(255)
-    blank.set_palette_at(255, bg)
     top_left = ((col-1) * font_width, (row-1) * font_height)
     canvas[pagenum].blit(glyph, top_left)
     screen_changed = True
@@ -725,6 +686,12 @@ def putwc_at(pagenum, row, col, c, d, for_keys=False):
 carry_col_9 = [chr(c) for c in range(0xb0, 0xdf+1)]
 # ascii codepoints for which to repeat row 8 in row 9 (box drawing)
 carry_row_9 = [chr(c) for c in range(0xb0, 0xdf+1)]
+
+def rebuild_glyph(ordval):
+    """ Rebuild a glyph after POKE. """
+    if font_height == 8:
+        glyphs[ordval] = build_glyph(chr(ordval), font, font_width, 8) 
+
 
 def build_glyph(c, font_face, req_width, req_height):
     """ Build a sprite for the given character glyph. """
@@ -847,7 +814,7 @@ def draw_cursor(screen):
                                   (cursor_col-1) * font_width + cursor_width):
                 for y in range((cursor_row-1) * font_height + cursor_from, 
                                 (cursor_row-1) * font_height + cursor_to + 1):
-                    pixel = get_pixel(x,y)
+                    pixel = get_pixel(x, y, apagenum)
                     screen.set_at((x,y), pixel^index)
     last_row = cursor_row
     last_col = cursor_col
@@ -896,9 +863,6 @@ def do_flip(blink_state):
 
 ###############################################################################
 # event queue
-
-# buffer for alt+numpad ascii character construction
-keypad_ascii = ''
 
 def pause_key():
     """ Wait for key in pause state. """
@@ -1137,7 +1101,7 @@ class Clipboard(object):
             return
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
             start, stop = stop, start
-        full = backend.get_text(start[0], start[1], stop[0], stop[1]-1)
+        full = state.console_state.screen.get_text(start[0], start[1], stop[0], stop[1]-1)
         if mouse:
             scrap.set_mode(pygame.SCRAP_SELECTION)
         else:
@@ -1266,58 +1230,25 @@ class Clipboard(object):
 # graphics backend interface
 # low-level methods (pygame implementation)
 
-graph_view = None
-
-def put_pixel(x, y, index, pagenum=None):
+def put_pixel(x, y, index, pagenum):
     """ Put a pixel on the screen; callback to empty character buffer. """
     global screen_changed
-    if pagenum == None:
-        pagenum = apagenum
     canvas[pagenum].set_at((x,y), index)
-    backend.clear_screen_buffer_at(x, y)
     screen_changed = True
 
-def get_pixel(x, y, pagenum=None):    
+def get_pixel(x, y, pagenum):    
     """ Return the attribute a pixel on the screen. """
-    if pagenum == None:
-        pagenum = apagenum
     return canvas[pagenum].get_at((x,y)).b
 
 # graphics view area (pygame clip)
-
-def get_graph_clip():
-    """ Get the graphics view area. """
-    view = graph_view if graph_view else canvas[apagenum].get_rect()
-    return view.left, view.top, view.right-1, view.bottom-1
-
-def set_graph_clip(x0, y0, x1, y1):
-    """ Set the graphics view area. """
-    global graph_view
-    graph_view = pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)    
-    
-def unset_graph_clip():
-    """ Unset the graphics view area. """
-    global graph_view
-    graph_view = None    
-    return canvas[apagenum].get_rect().center
-
-def clear_graph_clip(bg):
-    """ Clear the graphics view area. """
-    global screen_changed
-    canvas[apagenum].set_clip(graph_view)
-    canvas[apagenum].fill(bg)
-    canvas[apagenum].set_clip(None)
-    screen_changed = True
-
-# these are called by graphics.py:
 
 def remove_graph_clip():
     """ Un-apply the graphics clip. """
     canvas[apagenum].set_clip(None)
 
-def apply_graph_clip():
+def apply_graph_clip(x0, y0, x1, y1):
     """ Apply the graphics clip. """
-    canvas[apagenum].set_clip(graph_view)
+    canvas[apagenum].set_clip(pygame.Rect(x0, y0, x1-x0+1, y1-y0+1))
 
 # fill functions
 
@@ -1326,28 +1257,50 @@ def fill_rect(x0, y0, x1, y1, index):
     global screen_changed
     rect = pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)
     canvas[apagenum].fill(index, rect)
-    backend.clear_screen_buffer_area(x0, y0, x1, y1)
     screen_changed = True
 
-def fill_interval(x0, x1, y, tile, solid):
-    """ Fill a scanline interval in a tile pattern or solid attribute. """
+def fill_interval(x0, x1, y, index):
+    """ Fill a scanline interval in a solid attribute. """
     global screen_changed
     dx = x1 - x0 + 1
-    h = len(tile)
-    w = len(tile[0])
-    if solid:
-        canvas[apagenum].fill(tile[0][0], (x0, y, dx, 1))
-    elif numpy:
-        # fast method using numpy instead of loop
-        ntile = numpy.roll(numpy.array(tile).astype(int)[y % h], int(-x0 % 8))
-        bar = numpy.tile(ntile, (dx+w-1) / w)
-        pygame.surfarray.pixels2d(canvas[apagenum])[x0:x1+1, y] = bar[:dx]
-    else:
-        # slow loop
-        for x in range(x0, x1+1):
-            canvas[apagenum].set_at((x,y), tile[y % h][x % 8])
-    backend.clear_screen_buffer_area(x0, y, x1, y)
+    canvas[apagenum].fill(index, (x0, y, dx, 1))
     screen_changed = True
+
+
+if numpy:
+    def put_interval(pagenum, x, y, colours, mask=0xff):
+        """ Write a list of attributes to a scanline interval. """
+        global screen_changed
+        # reference the interval on the canvas
+        ref = pygame.surfarray.pixels2d(canvas[pagenum])[x:x+len(colours), y]
+        colours = numpy.array(colours).astype(int)
+        inv_mask = 0xff ^ mask
+        colours &= mask
+        ref &= inv_mask
+        ref |= colours
+        screen_changed = True
+
+    def get_interval(pagenum, x, y, length):
+        """ Get *reference to* scanline interval into a list of colours. """
+        # NOTE that this references (much faster), we need to copy afterwards!
+        return pygame.surfarray.pixels2d(canvas[pagenum])[x:x+length, y]
+
+else:
+    def put_interval(pagenum, x, y, colours, mask=0xff):
+        """ Write a list of attributes to a scanline interval. """
+        global screen_changed
+        if mask != 0xff:
+            inv_mask = 0xff ^ mask
+            colours &= mask
+            colours |= get_interval(pagenum, x, y, len(colours)) & inv_mask
+        # list comprehension and ignoring result seems faster than loop
+        [canvas[pagenum].set_at((x+i, y), index) 
+                         for i, index in enumerate(colours)]
+        screen_changed = True
+
+    def get_interval(pagenum, x, y, length):
+        """ Read a scanline interval into a list of colours. """
+        return [canvas[pagenum].get_at((x+i, y)).b for i in xrange(length)]
 
 def get_until(x0, x1, y, c):
     """ Get the attribute values of a scanline interval. """
@@ -1374,70 +1327,56 @@ def get_until(x0, x1, y, c):
             interval.append(index)
         return interval    
 
-###############################################################################
-# Numpy-optimised sprite operations (PUT and GET)
-    
-def numpy_set(left, right):
-    """ Fast PUT: PSET operation. """
-    left[:] = right
+# sprite operations (PUT and GET)
 
-def numpy_not(left, right):
-    """ Fast PUT: PRESET operation. """
-    left[:] = right
-    left ^= (1<<bitsperpixel) - 1
+if numpy:
+    operations = {
+        token.PSET: lambda x, y: x.__setitem__(slice(len(x)), y),
+        token.PRESET: lambda x, y: x.__setitem__(slice(len(x)), y.__xor__((1<<bitsperpixel) - 1)),
+        token.AND: lambda x, y: x.__iand__(y),
+        token.OR: lambda x, y: x.__ior__(y),
+        token.XOR: lambda x, y: x.__ixor__(y),
+        }
 
-def numpy_iand(left, right):
-    """ Fast PUT: AND operation. """
-    left &= right
+    def get_rect(x0, y0, x1, y1):
+        """ Get *copy of* numpy array [y][x] of target area. """
+        return pygame.surfarray.array2d(canvas[apagenum].subsurface(
+                                    pygame.Rect(x0, y0, x1-x0+1, y1-y0+1))).T
 
-def numpy_ior(left, right):
-    """ Fast PUT: OR operation. """
-    left |= right
+    def put_rect(x0, y0, x1, y1, array, operation_token):
+        """ Apply numpy array [y][x] of attribytes to an area. """
+        global screen_changed
+        # reference the destination area
+        dest_array = pygame.surfarray.pixels2d(
+            canvas[apagenum].subsurface(pygame.Rect(x0, y0, x1-x0+1, y1-y0+1))) 
+        # apply the operation
+        operations[operation_token](dest_array, numpy.array(array).T)
+        screen_changed = True
 
-def numpy_ixor(left, right):
-    """ Fast PUT: XOR operation. """
-    left ^= right
-        
-fast_operations = {
-    '\xC6': numpy_set, #PSET
-    '\xC7': numpy_not, #PRESET
-    '\xEE': numpy_iand,
-    '\xEF': numpy_ior,
-    '\xF0': numpy_ixor,
-    }
+else:
+    operations = {
+        token.PSET: lambda x, y: y, 
+        token.PRESET: lambda x, y: y ^ ((1<<bitsperpixel)-1),
+        token.AND: lambda x, y: x & y,
+        token.OR: lambda x, y: x | y,
+        token.XOR: lambda x, y: x ^ y,
+        }
 
-def fast_get(x0, y0, x1, y1, varname, version):
-    """ Store sprite in numpy array for fast operations. """
-    if not numpy:
-        return
-    # copy a numpy array of the target area
-    clip = pygame.surfarray.array2d(canvas[apagenum].subsurface(pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)))
-    get_put_store[varname] = ( x1-x0+1, y1-y0+1, clip, version )
+    def get_rect(x0, y0, x1, y1):
+        """ Read 2D list [y][x] of attributes from target area. """
+        return [[ canvas[apagenum].get_at((x0+i, y0+j)).b 
+                            for i in xrange(x1-x0+1) ]
+                                for j in xrange(y1-y0+1) ] 
 
-def fast_put(x0, y0, varname, new_version, operation_char):
-    """ Write sprite to screen; use numpy array if available. """
-    global screen_changed
-    try:
-        width, height, clip, version = get_put_store[varname]
-    except KeyError:
-        # not yet stored, do it the slow way
-        return False
-    if x0 < 0 or x0+width-1 > size[0] or y0 < 0 or y0+height-1 > size[1]:
-        # let the normal version handle errors
-        return False    
-    # if the versions are not the same, use the slow method 
-    # (array has changed since clip was stored)
-    if version != new_version:
-        return False
-    # reference the destination area
-    dest_array = pygame.surfarray.pixels2d(
-            canvas[apagenum].subsurface(pygame.Rect(x0, y0, width, height))) 
-    # apply the operation
-    operation = fast_operations[operation_char]
-    operation(dest_array, clip)
-    backend.clear_screen_buffer_area(x0, y0, x0+width-1, y0+height-1)
-    screen_changed = True
-    return True
-                
+    def put_rect(x0, y0, x1, y1, array, operation_token):
+        """ Apply a 2D list [y][x] of attributes to an area. """
+        global screen_changed
+        operation = operations[operation_token]
+        [[ canvas[apagenum].set_at((x0+i, y0+j), 
+                operation(canvas[apagenum].get_at((x0+i, y0+j)).b, index)) 
+                            for i, index in enumerate(array[j]) ]
+                                for j in xrange(y1-y0+1) ]
+        screen_changed = True
+
 prepare()
 

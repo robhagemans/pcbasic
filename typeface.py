@@ -10,9 +10,9 @@ import os
 import logging
 import plat
 
-def font_filename(name, height):
+def font_filename(name, height, ext='hex'):
     """ Return name_height.hex if filename exists in current path, else font_dir/name_height.hex. """
-    name = '%s_%02d.hex' % (name, height)
+    name = '%s_%02d.%s' % (name, height, ext)
     if not os.path.exists(name):
         # if not found in current dir, try in font directory
         name = os.path.join(plat.font_dir, name)
@@ -26,40 +26,41 @@ def load(families, height, codepage_dict, nowarn=False):
         if not nowarn:
             logging.warning('Could not read font file for height %d', height)
         return None
-    fontdict = load_hex(fontfiles, height)
+    fontdict = load_hex(fontfiles, height, codepage_dict)
+    for f in fontfiles:
+        f.close()
     return build_codepage_font(fontdict, codepage_dict)
     
-def load_hex(fontfiles, height):
+def load_hex(fontfiles, height, codepage_dict):
     """ Load a set of overlaying unifont .hex files. """
     fontdict = {}
+    # use set() for speed - lookup is O(1) rather than O(n) for list
+    codepoints_needed = set(codepage_dict.values())
     for fontfile in fontfiles:
         for line in fontfile:
             # ignore empty lines and comment lines (first char is #)
             if (not line) or (line[0] == '#'): 
                 continue
-            # split unicodepoint and hex string
-            splitline = line.split(':')    
+            # split unicodepoint and hex string (max 32 chars)
+            ucshex = line[0:4]
+            fonthex = line[5:69]  
             # extract codepoint and hex string; 
             # discard anything following whitespace; ignore malformed lines
             try:
-                # ignore malformed lines
-                if len(splitline) < 2:
-                    raise ValueError
-                codepoint = unichr(int(splitline[0].strip(), 16)).encode('utf-8')
-                # skip chars we won't need 
+                codepoint = int(ucshex, 16)
+                # skip chars we won't need
+                if codepoint not in codepoints_needed:
+                    continue
+                # skip chars we already have
                 if (codepoint in fontdict):
                     continue
-                string = splitline[1].strip().split()[0].decode('hex')
                 # string must be 32-byte or 16-byte; cut to required font size
-                if len(string) == 32:
-                    # dbcs glyph
-                    fontdict[codepoint] = string[:2*height]
-                elif len(string) == 16:
-                    # sbcs glyph
-                    fontdict[codepoint] = string[:height]
-                else:        
+                if len(fonthex) < 64:
+                    fonthex = fonthex[:32]
+                if len(fonthex) < 32:
                     raise ValueError
-            except ValueError:
+                fontdict[codepoint] = fonthex.decode('hex')
+            except Exception as e:
                 logging.warning('Could not parse line in font file: %s', repr(line))    
     return fontdict
 
@@ -67,15 +68,15 @@ def build_codepage_font(fontdict, codepage_dict):
     """ Extract the glyphs for a given codepage from a unicode font. """ 
     font = {}    
     warnings = 0
-    for c in codepage_dict:
-        u = codepage_dict[c]
+    for ucs in codepage_dict:
+        u = codepage_dict[ucs]
         try:
-            font[c] = fontdict[u]
+            font[ucs] = fontdict[u]
         except KeyError:
             warnings += 1
             if warnings <= 3:
                 logging.debug('Codepoint %x [%s] not represented in font', 
-                              ord(u.decode('utf-8')), u)
+                              u, unicode(u).encode('utf-8'))
             if warnings == 3:
                 logging.debug('Further codepoint warnings suppressed.')
     # char 0 should always be empty

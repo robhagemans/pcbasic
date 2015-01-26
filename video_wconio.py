@@ -22,6 +22,9 @@ import unicodepage
 import scancode
 import backend
 
+#D!!
+import state
+
 # cursor is visible
 cursor_visible = True
 
@@ -48,13 +51,12 @@ def init():
     wconio.settitle(caption)
     return True
     
-def supports_graphics_mode(mode_info):
-    """ We do not support graphics modes. """
-    return False
-    
 def init_screen_mode(mode_info=None):
     """ Change screen mode. """
     global height, width
+    # we don't support graphics
+    if not mode_info.is_text_mode:
+        return False
     height = 25
     width = mode_info.width
     wconio.clrscr()
@@ -78,26 +80,27 @@ def check_events():
         wconio.gotoxy(cursor_col-1, cursor_row-1)
     check_keyboard()
     
-def load_state():
+def load_state(display_str):
     """ Restore display state from file. """
     # console has already been loaded; just redraw
     redraw()
     
+def save_state():
+    """ Save display state to file (no-op). """
+    return None
+
 def clear_rows(cattr, start, stop):
     """ Clear screen rows. """
     for r in range(start, stop+1):
-        try:
-            wconio.gotoxy(0, r-1)
-            wconio.clreol()
-        except curses.error:
-            pass
+        wconio.gotoxy(0, r-1)
+        wconio.clreol()
                     
 def move_cursor(crow, ccol):
     """ Move the cursor to a new position. """
     global cursor_row, cursor_col
     cursor_row, cursor_col = crow, ccol
 
-def update_cursor_visibility(cursor_on):
+def show_cursor(cursor_on):
     """ Change visibility of cursor. """
     global cursor_visible
     cursor_visible = cursor_on
@@ -150,7 +153,7 @@ def scroll_down(from_line, scroll_height, attr):
     wconio.gotoxy(0, scroll_height-1)
     wconio.delline()
     if cursor_row < height:
-        window.move(cursor_col-1, cursor_row)
+        wconio.gotoxy(cursor_col-1, cursor_row)
 
 ###############################################################################
 # The following are no-op responses to requests from backend
@@ -179,13 +182,16 @@ def set_colorburst(on, palette, palette1):
     """ Change the NTSC colorburst setting (no-op). """
     pass
 
+def rebuild_glyph(ordval):
+    """ Rebuild a glyph after POKE. """
+    pass
 
 ###############################################################################
 # IMPLEMENTATION
 
 def redraw():
     """ Force redrawing of the screen (callback). """
-    backend.redraw_text_screen()
+    state.console_state.screen.redraw_text_screen()
 
 def colours(at):
     """ Convert BASIC attribute byte to console attribute. """
@@ -231,7 +237,7 @@ def check_keyboard():
             c += uc.encode('utf-8')
             if c == '\x03':         # ctrl-C
                 backend.insert_special_key('break')
-            if c == eof:            # ctrl-D (unix) / ctrl-Z (windows)
+            if c == '\x1A':         # ctrl-Z (windows EOF)
                 backend.insert_special_key('quit')
             elif c == '\x7f':       # backspace
                 backend.insert_chars('\b')
