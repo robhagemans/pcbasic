@@ -246,11 +246,11 @@ def move_cursor(crow, ccol):
 
 def clear_rows(cattr, start, stop):
     """ Clear screen rows. """
-    if start == cursor_row and stop == cursor_row:
-        update_position(None, 1)
+    if start <= cursor_row and stop >= cursor_row:
+        # clear_line before update_position to avoid redrawing old lines on CLS
         clear_line()
+        update_position(cursor_row, 1)
         term.flush()
-        update_position()
 
 def scroll(from_line, scroll_height, attr):
     """ Scroll the screen up between from_line and scroll_height. """
@@ -395,7 +395,6 @@ def update_position(row=None, col=None):
         move_right(col-last_col)
         term.flush()
         last_col = col
-
-
+    
 prepare()
 
