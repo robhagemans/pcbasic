@@ -343,88 +343,97 @@ def set_code_memory(address, val):
         program.rebuild_line_dict()
     
 def get_data_memory(address):
-    """ Retreive data from data memory. """
+    """ Retrieve data from data memory. """
     address -= memory.data_segment * 0x10
     if address < state.basic_state.var_current:
-        # find the variable we're in
-        name_addr = -1
-        var_addr = -1
-        the_var = None 
-        for name in state.basic_state.var_memory:
-            name_ptr, var_ptr = state.basic_state.var_memory[name]
-            if name_ptr <= address and name_ptr > name_addr:
-                name_addr, var_addr = name_ptr, var_ptr
-                the_var = name
-        if the_var == None:
-            return -1        
-        if address >= var_addr:
-            offset = address - var_addr
-            if offset >= var.byte_size[the_var[-1]]:
-                return -1
-            var_rep = state.basic_state.variables[the_var]
-            return var_rep[offset]
-        else:
-            offset = address - name_ptr
-            return get_name_in_memory(the_var, offset)
+        return get_data_memory_var(address)
     elif address < state.basic_state.var_current + state.basic_state.array_current:
-        name_addr = -1
-        arr_addr = -1
-        the_arr = None 
-        for name in state.basic_state.array_memory:
-            name_ptr, arr_ptr = state.basic_state.array_memory[name]
-            if name_ptr <= address and name_ptr > name_addr:
-                name_addr, arr_addr = name_ptr, arr_ptr
-                the_arr = name
-        if the_arr == None:
-            return -1        
-        if address >= state.basic_state.var_current + arr_addr:
-            offset = address - arr_addr - state.basic_state.var_current
-            if offset >= var.array_size_bytes(the_arr):
-                return -1
-            _, byte_array, _ = state.basic_state.arrays[the_arr]    
-            return byte_array[offset]
-        else:
-            offset = address - name_ptr - state.basic_state.var_current
-            if offset < max(3, len(the_arr))+1:
-                return get_name_in_memory(the_arr, offset)
-            else:
-                offset -= max(3, len(the_arr))+1
-                dimensions, _, _ = state.basic_state.arrays[the_arr]
-                data_rep = vartypes.value_to_uint(var.array_size_bytes(the_arr) + 1 + 2*len(dimensions)) + chr(len(dimensions)) 
-                for d in dimensions:
-                    data_rep += vartypes.value_to_uint(d + 1 - state.basic_state.array_base)
-                return data_rep[offset]               
+        return get_data_memory_array(address)
     elif address > state.basic_state.strings.current:
-        # string space
-        # find the variable we're in
-        str_nearest = -1
-        the_var = None 
-        for name in state.basic_state.variables:
-            if name[-1] != '$':
-                continue
-            v = state.basic_state.variables[name]
-            str_ptr = state.basic_state.strings.address(v)
-            if str_ptr <= address and str_ptr > str_nearest:
-                str_nearest = str_ptr
-                the_var = v
-        if the_var == None:
-            for name in state.basic_state.arrays:
-                if name[-1] != '$':
-                    continue
-                _, lst, _ = state.basic_state.arrays[name]
-                for i in range(0, len(lst), 3):
-                    str_ptr = state.basic_state.strings.address(lst[i:i+3])
-                    if str_ptr <= address and str_ptr > str_nearest:
-                        str_nearest = str_ptr
-                        the_var = lst[i:i+3]
-        try:
-            return state.basic_state.strings.retrieve(v)[address - str_nearest]
-        except IndexError, AttributeError:
-            return -1
+        return get_data_memory_string(address)
     else:
         # unallocated var space
         return -1
-        
+
+def get_data_memory_var(address):
+    """ Retrieve data from data memory: variable space """
+    name_addr = -1
+    var_addr = -1
+    the_var = None 
+    for name in state.basic_state.var_memory:
+        name_ptr, var_ptr = state.basic_state.var_memory[name]
+        if name_ptr <= address and name_ptr > name_addr:
+            name_addr, var_addr = name_ptr, var_ptr
+            the_var = name
+    if the_var == None:
+        return -1        
+    if address >= var_addr:
+        offset = address - var_addr
+        if offset >= var.byte_size[the_var[-1]]:
+            return -1
+        var_rep = state.basic_state.variables[the_var]
+        return var_rep[offset]
+    else:
+        offset = address - name_ptr
+        return get_name_in_memory(the_var, offset)
+
+def get_data_memory_array(address):
+    """ Retrieve data from data memory: array space """
+    name_addr = -1
+    arr_addr = -1
+    the_arr = None 
+    for name in state.basic_state.array_memory:
+        name_ptr, arr_ptr = state.basic_state.array_memory[name]
+        if name_ptr <= address and name_ptr > name_addr:
+            name_addr, arr_addr = name_ptr, arr_ptr
+            the_arr = name
+    if the_arr == None:
+        return -1        
+    if address >= state.basic_state.var_current + arr_addr:
+        offset = address - arr_addr - state.basic_state.var_current
+        if offset >= var.array_size_bytes(the_arr):
+            return -1
+        _, byte_array, _ = state.basic_state.arrays[the_arr]    
+        return byte_array[offset]
+    else:
+        offset = address - name_ptr - state.basic_state.var_current
+        if offset < max(3, len(the_arr))+1:
+            return get_name_in_memory(the_arr, offset)
+        else:
+            offset -= max(3, len(the_arr))+1
+            dimensions, _, _ = state.basic_state.arrays[the_arr]
+            data_rep = vartypes.value_to_uint(var.array_size_bytes(the_arr) + 1 + 2*len(dimensions)) + chr(len(dimensions)) 
+            for d in dimensions:
+                data_rep += vartypes.value_to_uint(d + 1 - state.basic_state.array_base)
+            return data_rep[offset]               
+
+def get_data_memory_string(address):
+    """ Retrieve data from data memory: string space """
+    # find the variable we're in
+    str_nearest = -1
+    the_var = None 
+    for name in state.basic_state.variables:
+        if name[-1] != '$':
+            continue
+        v = state.basic_state.variables[name]
+        str_ptr = state.basic_state.strings.address(v)
+        if str_ptr <= address and str_ptr > str_nearest:
+            str_nearest = str_ptr
+            the_var = v
+    if the_var == None:
+        for name in state.basic_state.arrays:
+            if name[-1] != '$':
+                continue
+            _, lst, _ = state.basic_state.arrays[name]
+            for i in range(0, len(lst), 3):
+                str_ptr = state.basic_state.strings.address(lst[i:i+3])
+                if str_ptr <= address and str_ptr > str_nearest:
+                    str_nearest = str_ptr
+                    the_var = lst[i:i+3]
+    try:
+        return state.basic_state.strings.retrieve(v)[address - str_nearest]
+    except IndexError, AttributeError:
+        return -1
     
 ###############################################################
 # video memory model
