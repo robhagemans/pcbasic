@@ -125,22 +125,32 @@ class XClipboard(object):
         check = "command -v %s >/dev/null 2>&1"
         if subprocess.call(check % 'xsel', shell=True) == 0:
             self._command = 'xsel'
+            self._notmouse = ['-b']
             self.ok = True
         elif subprocess.call(check % 'xclip', shell=True) == 0:
             self._command = 'xclip'
+            self._notmouse = ['-selection', 'clipboard']
             self.ok = True
         else:
             self.ok = False
             
     def paste(self, mouse=False):
         """ Get text from clipboard. """
-        return subprocess.check_output((self._command, '-o'), env=env)
+        if mouse:
+            return subprocess.check_output((self._command, '-o'), env=env)
+        else:
+            return subprocess.check_output(
+                                [self._command, '-o'] + self._notmouse, env=env)
         
     def copy(self, thing, mouse=False):
         """ Put text on clipboard. """
         try:
-            p = subprocess.Popen((self._command, '-i'), env=env, 
-                                 stdin=subprocess.PIPE)
+            if mouse:
+                p = subprocess.Popen((self._command, '-i'),
+                                     env=env, stdin=subprocess.PIPE)
+            else:
+                p = subprocess.Popen([self._command, '-i'] + self._notmouse, 
+                                     env=env, stdin=subprocess.PIPE)
             p.communicate(thing)
         except subprocess.CalledProcessError:
             pass
