@@ -565,7 +565,7 @@ def get_low_memory(addr):
     elif addr == 1048:
         return 0
     elif addr == 1049:
-        return int(state.console_state.keyb.keypad_ascii)%256
+        return int(state.console_state.keyb.keypad_ascii or 0)%256
     elif addr == 1050:
         # keyboard ring buffer starts at n+1024; lowest 1054
         return (state.console_state.keyb.buf.start*2 + key_buffer_offset) % 256
@@ -631,7 +631,7 @@ def get_low_memory(addr):
         return state.console_state.screen.cursor.from_line
     # 1122 visual page number
     elif addr == 1122:
-        return state.console_state.vpagenum
+        return state.console_state.screen.vpagenum
     # 1125 screen mode info
     elif addr == 1125:
         # bit 0: only in text mode?
