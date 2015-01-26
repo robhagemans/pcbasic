@@ -31,6 +31,7 @@ import redirect
 import modes
 import graphics
 import memory
+import clipboard
 
 # backend implementations
 video = None
@@ -635,6 +636,31 @@ def scan_to_eascii(scan, mod):
 
 
 ###############################################################################
+# clipboard
+
+#D
+def copy_clipboard(start_row, start_col, stop_row, stop_col, mouse):
+    clipboard_handler.copy(state.console_state.screen.get_text(
+                            start_row, start_col, stop_row, stop_col), mouse)
+
+#D
+def paste_clipboard(mouse):
+    # ignore any bad UTF8 characters from outside
+    text_utf8 = clipboard_handler.paste(mouse)
+    for u in text_utf8.decode('utf-8', 'ignore'):
+        c = u.encode('utf-8')
+        last = ''
+        if c == '\n':
+            if last != '\r':
+                insert_chars('\r')
+        else:
+            try:
+                insert_chars(unicodepage.from_utf8(c))
+            except KeyError:
+                insert_chars(c)
+        last = c
+
+###############################################################################
 # screen buffer
 
 class TextRow(object):
@@ -802,9 +828,12 @@ def prepare_video():
 def init_video(video_module):
     """ Initialise the video backend. """
     global video
+    global clipboard_handler
     video = video_module
     if not video or not video.init():
         return False
+    # clipboard handler may need an initialised pygame screen
+    clipboard_handler = clipboard.get_handler()
     if state.loaded:
         # reload the screen in resumed state
         return state.console_state.screen.resume()
@@ -812,7 +841,6 @@ def init_video(video_module):
         # initialise a fresh textmode screen
         state.console_state.screen.screen(None, None, None, None)
         return True
-
 
 class Screen(object):
     """ Screen manipulation operations. """

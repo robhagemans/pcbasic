@@ -400,7 +400,7 @@ def init_screen_mode(mode_info):
     for i in range(num_pages):
         canvas[i].set_palette(workpalette)
     # initialise clipboard
-    clipboard = Clipboard(mode_info.width, mode_info.height)
+    clipboard = ClipboardInterface(mode_info.width, mode_info.height)
     screen_changed = True
     return True
 
@@ -1027,13 +1027,9 @@ def normalise_pos(x, y):
 ###############################################################################
 # clipboard handling
 
-class Clipboard(object):
-    """ Clipboard handling """    
+class ClipboardInterface(object):
+    """ Clipboard user interface. """
     
-    # text type we look for in the clipboard
-    text = ('UTF8_STRING', 'text/plain;charset=utf-8', 'text/plain',
-            'TEXT', 'STRING')
-        
     def __init__(self, width, height):
         """ Initialise pygame scrapboard. """
         self.logo_pressed = False
@@ -1042,33 +1038,12 @@ class Clipboard(object):
         self.selection_rect = None
         self.width = width
         self.height = height
-        try:
-            scrap.init()
-            scrap.set_mode(pygame.SCRAP_CLIPBOARD)
-            self.ok = True
-        except NotImplementedError:
-            logging.warning('PyGame.Scrap module not found. Clipboard functions not available.')    
-            self.ok = False
-
-    def available(self):
-        if not self.ok:
-            return False
-        """ True if pasteable text is available on clipboard. """
-        types = scrap.get_types()
-        for t in types:
-            if t in self.text:
-                return True
-        return False        
 
     def active(self):
-        if not self.ok:
-            return False
         """ True if clipboard mode is active. """
         return self.logo_pressed
         
     def start(self, r=None, c=None):
-        if not self.ok:
-            return 
         """ Enter clipboard mode (Logo key pressed). """
         self.logo_pressed = True
         if r == None or c == None:
@@ -1082,8 +1057,6 @@ class Clipboard(object):
     def stop(self):
         """ Leave clipboard mode (Logo key released). """
         global screen_changed
-        if not self.ok:
-            return 
         self.logo_pressed = False
         self.select_start = None
         self.select_stop = None
@@ -1092,8 +1065,6 @@ class Clipboard(object):
 
     def copy(self, mouse=False):
         """ Copy screen characters from selection into clipboard. """
-        if not self.ok:
-            return 
         start, stop = self.select_start, self.select_stop
         if not start or not stop:
             return
@@ -1101,59 +1072,11 @@ class Clipboard(object):
             return
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
             start, stop = stop, start
-        full = state.console_state.screen.get_text(start[0], start[1], stop[0], stop[1]-1)
-        if mouse:
-            scrap.set_mode(pygame.SCRAP_SELECTION)
-        else:
-            scrap.set_mode(pygame.SCRAP_CLIPBOARD)
-        try: 
-            if plat.system == 'Windows':
-                # on Windows, encode as utf-16 without FF FE byte order mark and null-terminate
-                scrap.put('text/plain;charset=utf-8', full.decode('utf-8').encode('utf-16le') + '\0\0')
-            else:    
-                scrap.put(pygame.SCRAP_TEXT, full)
-        except KeyError:
-            logging.debug('Clipboard copy failed for clip %s', repr(full))    
+        backend.copy_clipboard(start[0], start[1], stop[0], stop[1]-1, mouse)
         
     def paste(self, mouse=False):
         """ Paste from clipboard into keyboard buffer. """
-        if not self.ok:
-            return 
-        if mouse:
-            scrap.set_mode(pygame.SCRAP_SELECTION)
-        else:
-            scrap.set_mode(pygame.SCRAP_CLIPBOARD)
-        us = None
-        available = scrap.get_types()
-        for text_type in self.text:
-            if text_type not in available:
-                continue
-            us = scrap.get(text_type)
-            if us:
-                break            
-        if plat.system == 'Windows':
-            if text_type == 'text/plain;charset=utf-8':
-                # it's lying, it's giving us UTF16 little-endian
-                # ignore any bad UTF16 characters from outside
-                us = us.decode('utf-16le', 'ignore')
-            # null-terminated strings
-            us = us[:us.find('\0')] 
-            us = us.encode('utf-8')
-        if not us:
-            return
-        # ignore any bad UTF8 characters from outside
-        for u in us.decode('utf-8', 'ignore'):
-            c = u.encode('utf-8')
-            last = ''
-            if c == '\n':
-                if last != '\r':
-                    backend.insert_chars('\r')
-            else:
-                try:
-                    backend.insert_chars(unicodepage.from_utf8(c))
-                except KeyError:
-                    backend.insert_chars(c)
-            last = c
+        backend.paste_clipboard(mouse)
                         
     def move(self, r, c):
         """ Move the head of the selection and update feedback. """
@@ -1194,11 +1117,11 @@ class Clipboard(object):
     def handle_key(self, e):
         """ Handle logo+key clipboard commands. """
         global screen_changed
-        if not self.ok or not self.logo_pressed:
+        if not self.logo_pressed:
             return
         if e.unicode.upper() ==  u'C':
             self.copy()
-        elif e.unicode.upper() == u'V' and self.available():
+        elif e.unicode.upper() == u'V':
             self.paste()
         elif e.unicode.upper() == u'A':
             # select all
@@ -1225,6 +1148,10 @@ class Clipboard(object):
             # add 1 to the color as a highlight
             orig.fill(pygame.Color(0, 0, 1))
             work_area.blit(orig, (0, 0), special_flags=pygame.BLEND_ADD)
+
+
+
+
         
 ###############################################################################
 # graphics backend interface
