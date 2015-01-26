@@ -62,9 +62,15 @@ state.io_state.drive_cwd = { 'C': '', '@': '' }
 
 shell_enabled = False
 
+native_shell = {
+    'Windows': 'CMD.EXE',
+    'OSX': '/bin/sh',
+    'Linux': '/bin/sh',
+    'Unknown_OS': '/bin/sh' }
+
 def prepare():
     """ Initialise oslayer module. """
-    global shell_enabled
+    global shell_enabled, shell_command
     for a in config.options['mount']:
         try:
             # the last one that's specified will stick
@@ -79,9 +85,13 @@ def prepare():
             logging.warning('Could not mount %s', a)
     if config.options['map-drives']:
         map_drives()
-    if config.options['allow-shell']:
+    if config.options['shell'] and config.options['shell'] != 'none':
         if (plat.system == 'Windows' or pexpect):
             shell_enabled = True
+            if config.options['shell'] == 'native':
+                shell_command = native_shell[plat.system]
+            else:
+                shell_command = config.options['shell']
         else:
             logging.warning('Pexpect module not found. SHELL command disabled.')    
             
@@ -498,9 +508,10 @@ if plat.system == 'Windows':
     def spawn_shell(command):
         """ Run a SHELL subprocess. """
         global shell_output
-        if not command:
-            command = 'CMD'
-        p = subprocess.Popen( str(command).split(), stdin=subprocess.PIPE, 
+        cmd = shell_command
+        if command:
+            cmd += ' /C "' + command + '"'            
+        p = subprocess.Popen( str(cmd).split(), stdin=subprocess.PIPE, 
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         outp = threading.Thread(target=process_stdout, args=(p, p.stdout))
         outp.daemon = True
@@ -549,7 +560,7 @@ if plat.system == 'Windows':
 else:
     def spawn_shell(command):
         """ Run a SHELL subprocess. """
-        cmd = '/bin/sh'
+        cmd = shell_command
         if command:
             cmd += ' -c "' + command + '"'            
         p = pexpect.spawn(str(cmd))

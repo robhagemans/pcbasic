@@ -126,7 +126,7 @@ arguments = {
     'caption': {'type': 'string', 'default': 'PC-BASIC 3.23',},
     'text-width': {'type': 'int', 'choices':(40, 80), 'default': 80,},
     'video-memory': {'type': 'int', 'default': 262144,},
-    'allow-shell': {'type': 'bool', 'default': False,},
+    'shell': {'type': 'string', 'default': 'none',},
     'print-trigger': {'type': 'string', 'default':'close',},
     'altgr': {'type': 'bool', 'default': True,},
     'ctrl-c-break': {'type': 'bool', 'default': False,},
