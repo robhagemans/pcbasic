@@ -217,9 +217,25 @@ def edit(from_line, bytepos=None):
     # list line
     state.basic_state.bytecode.seek(state.basic_state.line_numbers[from_line]+1)
     _, output, textpos = tokenise.detokenise_line(state.basic_state.bytecode, bytepos)
-    console.list_line(str(output))
-    length = (len(output)-1)//80 + 1
-    console.set_pos(state.console_state.row-length, textpos+1 if bytepos else 1)
+    # no newline to avoid scrolling on line 24
+    console.list_line(str(output), newline=False)
+    # find row, column position for textpos
+    newlines, c = 0, 0
+    pos_row, pos_col = 0, 0
+    for i, byte in enumerate(output):
+        c += 1
+        if chr(byte) == '\n' or c > state.console_state.screen.mode.width:
+            newlines += 1
+            c = 0
+        if i == textpos:
+            pos_row, pos_col = newlines, c
+    if textpos > i:
+        pos_row, pos_col = newlines, c + 1
+    if bytepos:
+        console.set_pos(state.console_state.row-newlines+pos_row, pos_col)
+    else:
+        console.set_pos(state.console_state.row-newlines, 1)
+    
     
 def renum(new_line, start_line, step):
     """ Renumber stored program. """

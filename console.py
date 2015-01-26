@@ -610,8 +610,8 @@ def write_line(s='', scroll_ok=True, do_echo=True):
     state.console_state.screen.apage.row[state.console_state.row-1].wrap = False
     set_pos(state.console_state.row + 1, 1)
 
-def list_line(line):
-    """ Print a line from a program listing. """
+def list_line(line, newline=True):
+    """ Print a line from a program listing or EDIT prompt. """
     # no wrap if 80-column line, clear row before printing.
     # flow of listing is visible on screen
     backend.check_events()
@@ -622,7 +622,8 @@ def list_line(line):
         write(str(l))
         if i != len(cuts)-1:
             write('\n')
-    write_line()
+    if newline:
+        write_line()
     # remove wrap after 80-column program line
     if len(line) == state.console_state.screen.mode.width and state.console_state.row > 2:
         state.console_state.screen.apage.row[state.console_state.row-3].wrap = False
