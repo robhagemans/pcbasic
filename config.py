@@ -13,6 +13,10 @@ import logging
 import zipfile
 import plat
 
+# system-wide config path
+system_config_path = os.path.join(plat.system_config_dir, plat.config_name)
+user_config_path = os.path.join(plat.user_config_dir, plat.config_name)
+
 # by default, load what's in section [pcbasic] and override with anything 
 # in os-specific section [windows] [android] [linux] [osx] [unknown_os]
 default_presets = ['pcbasic', plat.system.lower()]
@@ -145,6 +149,13 @@ def prepare():
     else:
         logfile = None
     logger = get_logger(logfile)
+    # create user config file if needed
+    if not os.path.exists(user_config_path):
+        try:
+            os.makedirs(plat.user_config_dir)
+        except OSError:
+            pass
+        build_default_config_file(user_config_path)
     # store options in options dictionary
     options = get_options()
     
@@ -255,7 +266,7 @@ def parse_presets(remaining, conf_dict):
     return argdict
 
 def parse_package(remaining):
-    """ Load options from BAZ package, if specified. """
+    """ Unpack BAZ package, if specified, and make its temp dir current. """
     global package
     # first positional arg: program or package name
     args = {}
@@ -284,23 +295,23 @@ def parse_package(remaining):
 
 def parse_config(remaining):
     """ Find the correct config file and read it. """
-    # always read default config file
-    conf_dict = read_config_file(os.path.join(plat.config_path, plat.config_name))
-    # find any overriding config file & read it
+    # always read default config files; private config overrides system config
+    # we update a whole preset at once, there's no joining of settings.                
+    conf_dict = read_config_file(system_config_path)
+    conf_dict.update(read_config_file(user_config_path))
+    # find any local overriding config file & read it
     config_file = None
     try:
         config_file = remaining.pop('config')
     except KeyError:
         if os.path.exists(plat.config_name):
             config_file = plat.config_name
-    # update a whole preset at once, there's no joining of settings.                
     if config_file:
         conf_dict.update(read_config_file(config_file))
     return conf_dict
     
 def read_config_file(config_file):
     """ Read config file. """
-    path = plat.basepath
     try:
         config = ConfigParser.RawConfigParser(allow_no_value=True)
         config.read(config_file)
@@ -420,28 +431,49 @@ def get_logger(logfile=None):
 
 #########################################################
 
-def write_config():
+def build_default_config_file(file_name):
     """ Write a default config file. """
+    header = (
+    "# PC-BASIC private configuration file.\n"
+    "# Edit this file to change your default settings or add presets.\n"
+    "# Changes to this file will not affect any other users of your computer.\n"
+    "\n"
+    "[pcbasic]\n"
+    "# Use the [pcbasic] section to specify options you want to be enabled by default.\n"
+    "# See USAGE or run pcbasic -h for a list of available options.\n"
+    "# for example (for version '%s'):\n" % plat.version)
+    footer = (
+    "\n\n# To add presets, create a section header between brackets and put the \n"
+    "# options you need below it, like this:\n"
+    "# [your_preset]\n"
+    "# border=0\n"
+    "# \n"
+    "# You will then be able to load these options with --preset=your_preset.\n"
+    "# If you choose the same name as a system preset, PC-BASIC will use your\n"
+    "# options for that preset and not the system ones. This is not recommended.\n")
     argnames = sorted(arguments.keys())
-    f = open(plat.config_name, 'w')
-    f.write('[pcbasic]\n')
-    for a in argnames:
-        f.write("# %s\n" % arguments[a]['help'])
-        try:
-            f.write('# %s=%s\n' % (a, arguments[a]['metavar']))
-        except (KeyError, TypeError):
-            pass
-        try:
-            f.write('# choices: %s\n' % repr(arguments[a]['choices']))
-        except (KeyError, TypeError):
-            pass
-        if arguments[a]['type'] == 'list':
-            formatted = ','.join(arguments[a]['default'])
-        else:
-            formatted = str(arguments[a]['default'])
-        f.write("%s=%s\n" % (a, formatted))
-    f.close()    
-        
+    try:
+        f = open(file_name, 'w')
+        f.write(header)
+        for a in argnames:
+            try:
+                # check if it's a list
+                arguments[a]['list']
+                formatted = ', '.join(map(str, arguments[a]['default']))
+            except(KeyError, TypeError):
+                formatted = str(arguments[a]['default'])
+            f.write("# %s=%s" % (a, formatted))
+            try:
+                f.write(' # choices: %s\n' % 
+                                ', '.join(map(str, arguments[a]['choices'])))
+            except(KeyError, TypeError):
+                f.write('\n')
+        f.write(footer)
+        f.close()    
+    except (OSError, IOError):
+        # can't create file, ignore. we'll get a message later.
+        pass
+            
 # initialise this module    
 prepare()
     

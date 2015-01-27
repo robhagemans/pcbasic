@@ -41,25 +41,20 @@ home_dir = os.path.expanduser('~')
 # configuration and state
 config_name = 'PCBASIC.INI'
 state_name = 'PCBASIC.SAV'
+system_config_dir = os.path.join(basepath, 'config')
 if system == 'Windows':
-    config_path = os.path.join(os.getenv('APPDATA'), 'pcbasic')
+    user_config_dir = os.path.join(os.getenv('APPDATA'), 'pcbasic')
     state_path = config_path
 elif system == 'OSX':
-    config_path = os.path.join(home_dir, 'Library/Application Support/pcbasic')
+    user_config_dir = os.path.join(home_dir, 'Library/Application Support/pcbasic')
     state_path = config_path
 elif system == 'Android':
-    config_path = info_dir
+    user_config_dir = info_dir
     state_path = info_dir
 else:
     import xdg.BaseDirectory
-    config_path = os.path.join(xdg.BaseDirectory.xdg_config_home, 'pcbasic')
+    user_config_dir = os.path.join(xdg.BaseDirectory.xdg_config_home, 'pcbasic')
     state_path = os.path.join(xdg.BaseDirectory.xdg_data_home, 'pcbasic')
-if not os.path.exists(config_path):
-    os.makedirs(config_path)
-    # copy default configuration as user config
-    import shutil
-    shutil.copyfile(os.path.join(basepath, 'config', config_name), 
-                    os.path.join(config_path, config_name))
 if not os.path.exists(state_path):
     os.makedirs(state_path)
 
