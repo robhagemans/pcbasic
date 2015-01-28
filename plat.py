@@ -44,10 +44,10 @@ state_name = 'PCBASIC.SAV'
 system_config_dir = os.path.join(basepath, 'config')
 if system == 'Windows':
     user_config_dir = os.path.join(os.getenv('APPDATA'), 'pcbasic')
-    state_path = config_path
+    state_path = user_config_dir
 elif system == 'OSX':
     user_config_dir = os.path.join(home_dir, 'Library/Application Support/pcbasic')
-    state_path = config_path
+    state_path = user_config_dir
 elif system == 'Android':
     user_config_dir = info_dir
     state_path = info_dir
