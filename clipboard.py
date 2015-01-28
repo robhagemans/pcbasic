@@ -53,10 +53,10 @@ class PygameClipboard(Clipboard):
         """ Initialise the clipboard handler. """
         try:
             pygame.scrap.init()
-            pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
             self.ok = True
-        except (NotImplementedError, AttributeError):
-            logging.warning('PyGame.Scrap clipboard handling module not found.')    
+        except Exception:
+            if pygame:
+                logging.warning('PyGame.Scrap clipboard handling module not found.')    
             self.ok = False    
 
     def copy(self, text, mouse=False):
