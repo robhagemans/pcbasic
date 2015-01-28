@@ -15,6 +15,8 @@ import plat
 import unicodepage
 import backend
 import scancode
+# ANSI escape codes for output, need arrow movements and clear line and esc_to_scan under Unix.
+import ansi
 
 #D!!
 import state
@@ -30,43 +32,16 @@ cursor_col = 1
 last_row = None
 last_col = None
 
+# output to stdout
+term = sys.stdout
 
 def prepare():
     """ Initialise the video_cli module. """
     pass
 
 if plat.system == 'Windows':
-    try:
-        import WConio as wconio
-    except ImportError:
-        wconio = None
-    import msvcrt
-
     # Ctrl+Z to exit
     eof = '\x1A'
-    
-    def init():
-        """ Initialise command-line interface. """
-        if not check_tty():
-            return False
-        if not wconio:
-            logging.warning('WConio module not found. '
-                            'CLI interface not supported.')
-            return False
-        # on windows, clear the screen or we get a messy console.
-        wconio.clrscr()
-        return True
-
-    def close():
-        """ Close command-line interface. """
-        update_position()
-            
-    def getc():
-        """ Read character from keyboard, non-blocking. """
-        # won't work under WINE
-        if not msvcrt.kbhit():
-            return ''
-        return msvcrt.getch()
     
     def get_scancode(s):
         """ Convert Windows scancodes to BASIC scancodes. """
@@ -76,91 +51,18 @@ if plat.system == 'Windows':
         else:
             raise KeyError    
         
-    def clear_line():
-        """ Clear the current line. """
-        wconio.gotoxy(0, wconio.wherey())
-        wconio.clreol()
-    
-    def move_left(num):
-        """ Move num positions to the left. """
-        if num < 0:
-            return
-        x = wconio.wherex() - num
-        if x < 0:
-            x = 0
-        wconio.gotoxy(x, wconio.wherey())
-        
-    def move_right(num):
-        """ Move num positions to the right. """
-        if num < 0:
-            return
-        x = wconio.wherex() + num
-        wconio.gotoxy(x, wconio.wherey())
-
-    def putc_at(pagenum, row, col, c, for_keys=False):
-        """ Put a single-byte character at a given position. """
-        global last_col
-        if for_keys:
-            return
-        update_position(row, col)
-        # output in cli codepage
-        uc = unicodepage.UTF8Converter().to_utf8(c).decode('utf-8')
-        wconio.putch(uc.encode(sys.stdout.encoding, 'replace'))
-        last_col += 1
-
-    def putwc_at(pagenum, row, col, c, d, for_keys=False):
-        """ Put a double-byte character at a given position. """
-        global last_col
-        if for_keys:
-            return
-        update_position(row, col)
-        # Windows CMD doesn't do UTF8, output raw & set codepage with CHCP
-        # output in cli codepage
-        uc = unicodepage.UTF8Converter().to_utf8(c+d).decode('utf-8')
-        wconio.putch(uc.encode(sys.stdout.encoding, 'replace'))
-        last_col += 2
-
-    class WinTerm(object):
-        """ Minimal stream interface for Windows terminal (stdout shim). """
-        
-        def write(self, s):
-            """ Write string to terminal. """
-            for c in s:
-                wconio.putch(c)
-
-        def flush(self):
-            """ No buffer to flush. """
-            pass
-
-    term = WinTerm()
+    def term_echo(on=True):
+        """ Set/unset raw terminal attributes. """
+        pass
 
 elif plat.system != 'Android':
-    import tty, termios, select
-    # ANSI escape codes for output, need arrow movements and clear line and esc_to_scan under Unix.
-    import ansi
-
-    # output to stdout
-    term = sys.stdout
+    import tty, termios
 
     # Ctrl+D to exit
     eof = '\x04'
 
     term_echo_on = True
     term_attr = None
-
-    def init():
-        """ Initialise command-line interface. """
-        if not check_tty():
-            return False
-        term_echo(False)
-        term.flush()
-        return True
-
-    def close():
-        """ Close command-line interface. """
-        update_position()
-        term_echo()
-        term.flush()
 
     def term_echo(on=True):
         """ Set/unset raw terminal attributes. """
@@ -176,54 +78,86 @@ elif plat.system != 'Android':
         term_echo_on = on    
         return previous
 
-    def getc():
-        """ Read character from keyboard, non-blocking. """
-        if select.select([sys.stdin], [], [], 0)[0] == []:
-            return ''
-        return os.read(sys.stdin.fileno(), 1)        
-        
     def get_scancode(s):    
         """ Convert ANSI sequences to BASIC scancodes. """
         # s should be at most one ansi sequence, if it contains ansi sequences.
         return ansi.esc_to_scan[s]
 
-    def clear_line():
-        """ Clear the current line. """
-        term.write(ansi.esc_clear_line)
-    
-    def move_left(num):
-        """ Move num positions to the left. """
-        term.write(ansi.esc_move_left*num)
+import sys
+import threading
+import Queue
 
-    def move_right(num):
-        """ Move num positions to the right. """
-        term.write(ansi.esc_move_right*num)
+def read_stdin(queue):
+    """ Wait for stdin and put any input on the queue. """
+    while True:
+        queue.put(sys.stdin.read(1))
+        # don't be a hog
+        time.sleep(0.001)
 
-    def putc_at(pagenum, row, col, c, for_keys=False):
-        """ Put a single-byte character at a given position. """
-        global last_col
-        if for_keys:
-            return
-        update_position(row, col)
-        # this doesn't recognise DBCS
-        term.write(unicodepage.UTF8Converter().to_utf8(c))
-        term.flush()
-        last_col += 1
+def getc():
+    """ Read character from keyboard, non-blocking. """
+    try:
+        return stdin_q.get_nowait()
+    except Queue.Empty:
+        return ''
 
-    def putwc_at(pagenum, row, col, c, d, for_keys=False):
-        """ Put a double-byte character at a given position. """
-        global last_col
-        if for_keys:
-            return
-        update_position(row, col)
-        # this does recognise DBCS
-        try:
-            term.write(unicodepage.UTF8Converter().to_utf8(c+d))
-        except KeyError:
-            term.write('  ')
-        term.flush()
-        last_col += 2
+def clear_line():
+    """ Clear the current line. """
+    term.write(ansi.esc_clear_line)
 
+def move_left(num):
+    """ Move num positions to the left. """
+    term.write(ansi.esc_move_left*num)
+
+def move_right(num):
+    """ Move num positions to the right. """
+    term.write(ansi.esc_move_right*num)
+
+def putc_at(pagenum, row, col, c, for_keys=False):
+    """ Put a single-byte character at a given position. """
+    global last_col
+    if for_keys:
+        return
+    update_position(row, col)
+    # this doesn't recognise DBCS
+    term.write(unicodepage.UTF8Converter().to_utf8(c))
+    term.flush()
+    last_col += 1
+
+def putwc_at(pagenum, row, col, c, d, for_keys=False):
+    """ Put a double-byte character at a given position. """
+    global last_col
+    if for_keys:
+        return
+    update_position(row, col)
+    # this does recognise DBCS
+    try:
+        term.write(unicodepage.UTF8Converter().to_utf8(c+d))
+    except KeyError:
+        term.write('  ')
+    term.flush()
+    last_col += 2
+
+
+def init():
+    """ Initialise command-line interface. """
+    global stdin_q
+    if not check_tty():
+        return False
+    term_echo(False)
+    term.flush()
+    # start the stdin thread for non-blocking reads
+    stdin_q = Queue.Queue()
+    t = threading.Thread(target=read_stdin, args=(stdin_q,))
+    t.daemon = True
+    t.start()
+    return True
+
+def close():
+    """ Close command-line interface. """
+    update_position()
+    term_echo()
+    term.flush()
 
 def check_events():
     """ Handle screen and interface events. """
@@ -345,7 +279,7 @@ def check_keyboard():
     except KeyError:    
         # replace utf-8 with codepage
         # convert into unicode codepoints
-        u = s.decode(sys.stdin.encoding)
+        u = s.decode(sys.stdin.encoding or 'utf-8')
         # then handle these one by one as UTF-8 sequences
         c = ''
         for uc in u:                    
