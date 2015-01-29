@@ -70,43 +70,6 @@ elif plat.system != 'Android':
         term_echo_on = on    
         return previous
 
-import sys
-import threading
-import Queue
-
-def read_stdin(queue):
-    """ Wait for stdin and put any input on the queue. """
-    while True:
-        queue.put(sys.stdin.read(1))
-        # don't be a hog
-        time.sleep(0.0001)
-
-def getc():
-    """ Read character from keyboard, non-blocking. """
-    # give time for the queue to fill up
-    time.sleep(0.001)
-    try:
-        return stdin_q.get_nowait()
-    except Queue.Empty:
-        return ''
-
-def get_scancode(s):    
-    """ Convert ANSI sequences to BASIC scancodes. """
-    # s should be at most one ansi sequence, if it contains ansi sequences.
-    return ansi.esc_to_scan[s]
-
-def clear_line():
-    """ Clear the current line. """
-    term.write(ansi.esc_clear_line)
-
-def move_left(num):
-    """ Move num positions to the left. """
-    term.write(ansi.esc_move_left*num)
-
-def move_right(num):
-    """ Move num positions to the right. """
-    term.write(ansi.esc_move_right*num)
-
 def putc_at(pagenum, row, col, c, for_keys=False):
     """ Put a single-byte character at a given position. """
     global last_col
@@ -243,6 +206,85 @@ def rebuild_glyph(ordval):
 ###############################################################################
 # IMPLEMENTATION
 
+
+import sys
+import threading
+import Queue
+
+def read_stdin(queue):
+    """ Wait for stdin and put any input on the queue. """
+    while True:
+        queue.put(sys.stdin.read(1))
+        # don't be a hog
+        time.sleep(0.0001)
+
+def getc():
+    """ Read character from keyboard, non-blocking. """
+    try:
+        return stdin_q.get_nowait()
+    except Queue.Empty:
+        return ''
+
+def get_scancode(s):    
+    """ Convert ANSI sequences to BASIC scancodes. """
+    # s should be at most one ansi sequence, if it contains ansi sequences.
+    try:
+        return ansi.esc_to_scan[s]
+    except KeyError:
+        return s;
+
+def get_key():
+    """ Retrieve one scancode, or one UTF-8 sequence from keyboard. """
+    s = getc()
+    esc = False
+    more = 0
+    if s == '':
+        return None, None
+    if s == '\x1b':
+        # ansi sequence, +4 bytes max
+        esc = True
+        more = 4
+    elif ord(s) >= 0b11110000:
+        # utf-8, +3 bytes
+        more = 3
+    elif ord(s) >= 0b11100000:
+        # utf-8, +2 bytes
+        more = 2
+    elif ord(s) >= 0b11000000:
+        # utf-8, +1 bytes
+        more = 1
+    cutoff = 0
+    while (more > 0) and (cutoff < 100):
+        # give time for the queue to fill up
+        time.sleep(0.0005)
+        c = getc()
+        cutoff += 1
+        if c == '':
+            continue
+        more -= 1
+        s += c
+        if esc:
+            code = get_scancode(s)
+            if code != s:
+                return None, code
+    # convert into utf-8 if necessary
+    if sys.stdin.encoding and sys.stdin.encoding != 'utf-8':
+        return s.decode(sys.stdin.encoding).encode('utf-8'), None
+    else:
+        return s, None
+    
+def clear_line():
+    """ Clear the current line. """
+    term.write(ansi.esc_clear_line)
+
+def move_left(num):
+    """ Move num positions to the left. """
+    term.write(ansi.esc_move_left*num)
+
+def move_right(num):
+    """ Move num positions to the right. """
+    term.write(ansi.esc_move_right*num)
+
 def check_tty():
     """ Check if input stream is a typewriter. """
     if not plat.stdin_is_tty:
@@ -254,45 +296,24 @@ def check_tty():
 def check_keyboard():
     """ Handle keyboard events. """
     global pre_buffer
-    s = ''
-    # drain input buffer of all charaters available
-    while True:
-        c = getc()
-        # break if stdin has no more characters to read
-        if c == '':
-            break
-        s += c    
-    if s == '':    
-        return
-    # s is either (1) a character (a) (2) a utf-8 character (e.g. sterling)
-    # (3) a string of utf-8 characters (when pasting) or 
-    # (4) one ansi sequence (Unix) or one scancode (Windows)
-    try:    
+    # s is one utf-8 sequence or one scancode
+    # or a failed attempt at one of the above
+    u8, sc = get_key()
+    if sc:
         # if it's an ansi sequence/scan code, insert immediately
-        backend.key_down(get_scancode(s), '', check_full=False)
-    except KeyError:    
-        # replace utf-8 with codepage
-        # convert into unicode codepoints
-        u = s.decode(sys.stdin.encoding or 'utf-8')
-        # then handle these one by one as UTF-8 sequences
-        c = ''
-        for uc in u:                    
-            c += uc.encode('utf-8')
-            if c == '\x03':         # ctrl-C
-                backend.insert_special_key('break')
-            if c == eof:            # ctrl-D (unix) / ctrl-Z (windows)
-                backend.insert_special_key('quit')
-            elif c == '\x7f':       # backspace
-                backend.insert_chars('\b', check_full=True)
-            elif c == '\0':    
-                # scancode; go add next char
-                continue
-            else:
-                try:
-                    backend.insert_chars(unicodepage.from_utf8(c))
-                except KeyError:    
-                    backend.insert_chars(c)    
-            c = ''
+        backend.key_down(sc, '', check_full=False)
+    elif u8:
+        if u8 == '\x03':         # ctrl-C
+            backend.insert_special_key('break')
+        if u8 == eof:            # ctrl-D (unix) / ctrl-Z (windows)
+            backend.insert_special_key('quit')
+        elif u8 == '\x7f':       # backspace
+            backend.insert_chars('\b', check_full=True)
+        else:
+            try:
+                backend.insert_chars(unicodepage.from_utf8(u8))
+            except KeyError:
+                backend.insert_chars(u8)
 
 def update_position(row=None, col=None):
     """ Update screen for new cursor position. """
