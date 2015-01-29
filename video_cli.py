@@ -10,6 +10,8 @@ import sys
 import time
 import os
 import logging
+import threading
+import Queue
 
 import plat
 import unicodepage
@@ -31,9 +33,6 @@ cursor_col = 1
 # last row and column printed on
 last_row = None
 last_col = None
-
-# output to stdout
-term = sys.stdout
 
 def prepare():
     """ Initialise the video_cli module. """
@@ -77,8 +76,8 @@ def putc_at(pagenum, row, col, c, for_keys=False):
         return
     update_position(row, col)
     # this doesn't recognise DBCS
-    term.write(unicodepage.UTF8Converter().to_utf8(c))
-    term.flush()
+    sys.stdout.write(unicodepage.UTF8Converter().to_utf8(c))
+    sys.stdout.flush()
     last_col += 1
 
 def putwc_at(pagenum, row, col, c, d, for_keys=False):
@@ -89,10 +88,10 @@ def putwc_at(pagenum, row, col, c, d, for_keys=False):
     update_position(row, col)
     # this does recognise DBCS
     try:
-        term.write(unicodepage.UTF8Converter().to_utf8(c+d))
+        sys.stdout.write(unicodepage.UTF8Converter().to_utf8(c+d))
     except KeyError:
-        term.write('  ')
-    term.flush()
+        sys.stdout.write('  ')
+    sys.stdout.flush()
     last_col += 2
 
 
@@ -102,7 +101,7 @@ def init():
     if not check_tty():
         return False
     term_echo(False)
-    term.flush()
+    sys.stdout.flush()
     # start the stdin thread for non-blocking reads
     stdin_q = Queue.Queue()
     t = threading.Thread(target=read_stdin, args=(stdin_q,))
@@ -114,7 +113,7 @@ def close():
     """ Close command-line interface. """
     update_position()
     term_echo()
-    term.flush()
+    sys.stdout.flush()
 
 def check_events():
     """ Handle screen and interface events. """
@@ -141,12 +140,12 @@ def clear_rows(cattr, start, stop):
         # clear_line before update_position to avoid redrawing old lines on CLS
         clear_line()
         update_position(cursor_row, 1)
-        term.flush()
+        sys.stdout.flush()
 
 def scroll(from_line, scroll_height, attr):
     """ Scroll the screen up between from_line and scroll_height. """
-    term.write('\r\n')
-    term.flush()
+    sys.stdout.write('\r\n')
+    sys.stdout.flush()
 
 ###############################################################################
 # The following are no-op responses to requests from backend
@@ -207,9 +206,6 @@ def rebuild_glyph(ordval):
 # IMPLEMENTATION
 
 
-import sys
-import threading
-import Queue
 
 def read_stdin(queue):
     """ Wait for stdin and put any input on the queue. """
@@ -275,15 +271,15 @@ def get_key():
     
 def clear_line():
     """ Clear the current line. """
-    term.write(ansi.esc_clear_line)
+    sys.stdout.write(ansi.esc_clear_line)
 
 def move_left(num):
     """ Move num positions to the left. """
-    term.write(ansi.esc_move_left*num)
+    sys.stdout.write(ansi.esc_move_left*num)
 
 def move_right(num):
     """ Move num positions to the right. """
-    term.write(ansi.esc_move_right*num)
+    sys.stdout.write(ansi.esc_move_right*num)
 
 def check_tty():
     """ Check if input stream is a typewriter. """
@@ -331,8 +327,8 @@ def update_position(row=None, col=None):
         col = cursor_col
     # move cursor if necessary
     if row != last_row:
-        term.write('\r\n')
-        term.flush()
+        sys.stdout.write('\r\n')
+        sys.stdout.flush()
         last_col = 1
         last_row = row
         # show what's on the line where we are. 
@@ -342,7 +338,7 @@ def update_position(row=None, col=None):
     if col != last_col:
         move_left(last_col-col)
         move_right(col-last_col)
-        term.flush()
+        sys.stdout.flush()
         last_col = col
     
 prepare()
