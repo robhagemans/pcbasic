@@ -53,6 +53,8 @@ esc_to_scan = {
     '\x1b\x5b\x31\x39\x7e':  scancode.F8,
     '\x1b\x5b\x32\x30\x7e':  scancode.F9,
     '\x1b\x5b\x32\x31\x7e':  scancode.F10,
+    '\x1b\x5b\x32\x33\x7e':  scancode.F11,
+    '\x1b\x5b\x32\x34\x7e':  scancode.F12,
     '\x1b\x4f\x46': scancode.END,
     '\x1b\x4f\x48': scancode.HOME,
     '\x1b\x5b\x41': scancode.UP,
