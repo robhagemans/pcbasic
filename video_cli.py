@@ -43,14 +43,6 @@ if plat.system == 'Windows':
     # Ctrl+Z to exit
     eof = '\x1A'
     
-    def get_scancode(s):
-        """ Convert Windows scancodes to BASIC scancodes. """
-        # windows scancodes should be the same as gw-basic ones
-        if len(s) > 1 and s[0] in ('\xe0', '\0'):
-            return ord(s[1])
-        else:
-            raise KeyError    
-        
     def term_echo(on=True):
         """ Set/unset raw terminal attributes. """
         pass
@@ -78,11 +70,6 @@ elif plat.system != 'Android':
         term_echo_on = on    
         return previous
 
-    def get_scancode(s):    
-        """ Convert ANSI sequences to BASIC scancodes. """
-        # s should be at most one ansi sequence, if it contains ansi sequences.
-        return ansi.esc_to_scan[s]
-
 import sys
 import threading
 import Queue
@@ -92,14 +79,21 @@ def read_stdin(queue):
     while True:
         queue.put(sys.stdin.read(1))
         # don't be a hog
-        time.sleep(0.001)
+        time.sleep(0.0001)
 
 def getc():
     """ Read character from keyboard, non-blocking. """
+    # give time for the queue to fill up
+    time.sleep(0.001)
     try:
         return stdin_q.get_nowait()
     except Queue.Empty:
         return ''
+
+def get_scancode(s):    
+    """ Convert ANSI sequences to BASIC scancodes. """
+    # s should be at most one ansi sequence, if it contains ansi sequences.
+    return ansi.esc_to_scan[s]
 
 def clear_line():
     """ Clear the current line. """
