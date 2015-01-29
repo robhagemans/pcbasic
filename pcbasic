@@ -12,9 +12,7 @@ import shutil
 import logging
 
 import plat
-
-if plat.system == 'Windows':
-    import ansipipe_connect
+import ansipipe
 
 # declare to avoid pylint errors
 config = None
@@ -192,7 +190,7 @@ def prepare_console():
         import audio_none
         import audio_beep
         import audio_pygame
-    video_text = 'video_wconio' if plat.system == 'Windows' else 'video_curses'
+    video_text = 'video_ansi' if plat.system == 'Windows' else 'video_curses'
     backends = {
         'none': ('video_none', 'audio_none'),
         'cli': ('video_cli', 'audio_beep'),
