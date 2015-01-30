@@ -23,6 +23,9 @@ import ansi
 #D!!
 import state
 
+# fallback to filter interface if not working
+fallback = 'video_none'
+
 # cursor is visible
 cursor_visible = True
 

@@ -190,28 +190,40 @@ def prepare_console():
         import audio_none
         import audio_beep
         import audio_pygame
-    video_text = 'video_ansi' if plat.system == 'Windows' else 'video_curses'
     backends = {
         'none': ('video_none', 'audio_none'),
         'cli': ('video_cli', 'audio_beep'),
-        'text': (video_text, 'audio_beep'),
+        'text': ('video_curses', 'audio_beep'),
         'graphical': ('video_pygame', 'audio_pygame'), 
         }
     if not config.options['interface']:
         config.options['interface'] = 'graphical'
     # select interface        
     video_name, audio_name = backends[config.options['interface']]
-    video, backend.audio = __import__(video_name), __import__(audio_name)
+    # initialise video backend before console
+    while True:
+        try:
+            video = __import__(video_name)
+        except ImportError:
+            video = None
+        if not video:
+            if not video_name or video_name == 'video_none':
+                logging.error('Failed to initialise interface.')
+                raise error.Exit()
+            video_name = 'video_none'
+            continue
+        if backend.init_video(video):
+            break
+        else:
+            video_name = video.fallback
+            if video:
+                video.close()
+            if video_name:
+                logging.info('Falling back to %s interface.', video_name)
     if config.options['nosound']:
         backend.audio = __import__('audio_none')
-    # initialise video backend before console
-    if not video or not backend.init_video(video):
-        if video:
-            video.close()
-        logging.warning('Falling back to filter interface.')
-        if not backend.init_video(__import__('video_none')):
-            logging.error('Failed to initialise interface.')
-            raise error.Exit()
+    else:
+        backend.audio = __import__(audio_name)
     if not backend.init_audio():
         backend.audio = __import__('audio_none')
         logging.warning('Failed to initialise sound. Sound will be disabled.')

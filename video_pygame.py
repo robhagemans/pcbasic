@@ -30,6 +30,9 @@ import token
 #D
 import state
 
+# fallback to curses if not working
+fallback = 'video_curses'
+
 # Workaround for broken pygame.scrap on various systems
 if pygame:
     import pygame_clipboard

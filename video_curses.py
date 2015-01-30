@@ -29,6 +29,10 @@ import state
 # so you don't see gibberish if the terminal doesn't support the sequence.
 import ansi
 
+# fallback to ANSI interface if not working
+fallback = 'video_ansi'
+
+
 # cursor is visible
 cursor_visible = True
 
@@ -74,7 +78,7 @@ def init():
     """ Initialise the text interface. """
     global screen, default_colors, can_change_palette
     if not curses:
-        logging.warning('Curses module not found. Text interface not supported.')
+        # fail silently, we're going to try ANSI
         return False
     # find a supported UTF-8 locale, with a preference for C, en-us, default   
     languages = (['C', 'en-US', locale.getdefaultlocale()[0]] + 
@@ -87,7 +91,7 @@ def init():
         except locale.Error:
             pass    
     if locale.getlocale()[1] != 'UTF-8':
-        logging.warning('No supported UTF-8 locale found. Text interface not supported.')
+        logging.warning('No supported UTF-8 locale found.')
         return False
     # set the ESC-key delay to 25 ms unless otherwise set
     # set_escdelay seems to be unavailable on python curses.
@@ -149,12 +153,13 @@ def close():
         redraw()
         while window.getch() == -1:
             pass
-    curses.noraw()
-    curses.nl()
-    curses.nocbreak()
-    screen.keypad(False)
-    curses.echo()
-    curses.endwin()
+    if curses:
+        curses.noraw()
+        curses.nl()
+        curses.nocbreak()
+        screen.keypad(False)
+        curses.echo()
+        curses.endwin()
 
 def check_events():
     """ Handle screen and interface events. """

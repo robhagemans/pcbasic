@@ -14,6 +14,9 @@ import backend
 import plat
 import redirect
 
+# no fallback - if this doesn't work, quit
+fallback = None
+
 # replace lf with cr
 lf_to_cr = False
 
