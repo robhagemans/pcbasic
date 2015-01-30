@@ -44,8 +44,19 @@ if plat.system == 'Windows':
     
     def term_echo(on=True):
         """ Set/unset raw terminal attributes. """
-        pass
-
+        # ansipipe-only 'ANSI sequences'
+        if on:
+            # ECHO on
+            sys.stdout.write('\x1b]255;ECHO\x07');
+            # ICRNL on
+            sys.stdout.write('\x1b]255;ICRNL\x07');
+        else:
+            # ECHO off
+            sys.stdout.write('\x1b]254;ECHO\x07');
+            # ICRNL off
+            sys.stdout.write('\x1b]254;ICRNL\x07');
+        sys.stdout.flush()
+        
 elif plat.system != 'Android':
     import tty, termios
 
