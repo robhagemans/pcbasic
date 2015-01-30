@@ -50,7 +50,6 @@ The following packages are needed or recommended when installing PC-BASIC from s
 | [NumPy](https://sourceforge.net/projects/numpy/files/)          | all     | essential    | needed for sound  
 | [PySerial](https://pypi.python.org/pypi/pyserial)               | all     | recommended  | needed for serial/parallel port access  
 | [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html)| Unix    | recommended  | needed for `SHELL`  
-| [WConio](http://newcenturycomputers.net/projects/wconio.html)   | Windows | recommended  | needed for command-line interface   
 
 Note that the official Pygame release 1.9.1 has a bug in its handling of copy & paste on X11-based systems.
 If you run into this, install one of the [`xsel`](http://www.vergenet.net/~conrad/software/xsel/) or [`xclip`](https://sourceforge.net/projects/xclip/)  utilities and PC-BASIC will work around the issue.  
@@ -162,7 +161,7 @@ PC-BASIC supports a large number of codepages, including double-byte character s
 
 
 #### Command-line interface ####
-You can run PC-BASIC in command-line mode by running with the `-b` option. On Linux, there's also a curses-style text interface available with the `-t` option. You can even get sound in the text and command-line interfaces if you install the Unix `beep` utility (if you use Ubintu, please be aware that the pc-speaker is switched off by default. You'll need to edit `/etc/modprobe.d/blacklist.conf` and comment out the line `blacklist pcspkr`. Then, `apt-get install beep` and be sure to wear appropriate ear protection as the default volume level is LOUD.) 
+You can run PC-BASIC in command-line mode by running with the `-b` option. There is also a full-screen text interface available with the `-t` option. On Linux, you can even get sound in the text and command-line interfaces if you install the Unix `beep` utility (if you use Ubintu, please be aware that the pc-speaker is switched off by default. You'll need to edit `/etc/modprobe.d/blacklist.conf` and comment out the line `blacklist pcspkr`. Then, `apt-get install beep` and be sure to wear appropriate ear protection as the default volume level is LOUD.) 
 
 #### Free BASIC compilers and saner dialects ####
 If you're starting a new project in BASIC, please consider one of the more sensible free versions of the language, such as [FreeBasic](www.freebasic.net), [QB64](http://www.qb64.net/) or [SmallBASIC](https://sourceforge.net/projects/smallbasic/). Under FreeDOS, you can use the [Bywater BASIC](https://sourceforge.net/projects/bwbasic/) interpreter. 

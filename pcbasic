@@ -183,8 +183,8 @@ def prepare_console():
     # see https://groups.google.com/forum/#!topic/pyinstaller/S8QgHXiGJ_A
     if False:
         import video_none
-        import video_wconio
         import video_curses
+        import video_ansi
         import video_cli
         import video_pygame
         import audio_none
@@ -252,7 +252,7 @@ def open_native_or_dos_filename(infile):
 
 def debug_details():
     logging.info('os: %s', plat.system)
-    modules = ('pygame', 'numpy', 'WConio', 'curses', 'pexpect', 'serial')
+    modules = ('pygame', 'numpy', 'curses', 'pexpect', 'serial')
     for module in modules:
         try:
             __import__(module)
