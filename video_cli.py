@@ -37,49 +37,7 @@ last_col = None
 def prepare():
     """ Initialise the video_cli module. """
     pass
-
-if plat.system == 'Windows':
-    # Ctrl+Z to exit
-    eof = '\x1A'
     
-    def term_echo(on=True):
-        """ Set/unset raw terminal attributes. """
-        # ansipipe-only 'ANSI sequences'
-        if on:
-            # ECHO on
-            sys.stdout.write('\x1b]255;ECHO\x07');
-            # ICRNL on
-            sys.stdout.write('\x1b]255;ICRNL\x07');
-        else:
-            # ECHO off
-            sys.stdout.write('\x1b]254;ECHO\x07');
-            # ICRNL off
-            sys.stdout.write('\x1b]254;ICRNL\x07');
-        sys.stdout.flush()
-        
-elif plat.system != 'Android':
-    import tty, termios
-
-    # Ctrl+D to exit
-    eof = '\x04'
-
-    term_echo_on = True
-    term_attr = None
-
-    def term_echo(on=True):
-        """ Set/unset raw terminal attributes. """
-        global term_attr, term_echo_on
-        # sets raw terminal - no echo, by the character rather than by the line
-        fd = sys.stdin.fileno()
-        if (not on) and term_echo_on:
-            term_attr = termios.tcgetattr(fd)
-            tty.setraw(fd)
-        elif not term_echo_on and term_attr != None:
-            termios.tcsetattr(fd, termios.TCSADRAIN, term_attr)
-        previous = term_echo_on
-        term_echo_on = on    
-        return previous
-
 def putc_at(pagenum, row, col, c, for_keys=False):
     """ Put a single-byte character at a given position. """
     global last_col
@@ -216,7 +174,33 @@ def rebuild_glyph(ordval):
 ###############################################################################
 # IMPLEMENTATION
 
+if plat.system == 'Windows':
+    import ansipipe
+    tty = ansipipe
+    termios = ansipipe
+    # Ctrl+Z to exit
+    eof = '\x1A'
+elif plat.system != 'Android':
+    import tty, termios
+    # Ctrl+D to exit
+    eof = '\x04'
 
+term_echo_on = True
+term_attr = None
+
+def term_echo(on=True):
+    """ Set/unset raw terminal attributes. """
+    global term_attr, term_echo_on
+    # sets raw terminal - no echo, by the character rather than by the line
+    fd = sys.stdin.fileno()
+    if (not on) and term_echo_on:
+        term_attr = termios.tcgetattr(fd)
+        tty.setraw(fd)
+    elif not term_echo_on and term_attr != None:
+        termios.tcsetattr(fd, termios.TCSADRAIN, term_attr)
+    previous = term_echo_on
+    term_echo_on = on    
+    return previous
 
 def read_stdin(queue):
     """ Wait for stdin and put any input on the queue. """
