@@ -90,9 +90,13 @@ def init():
     t.daemon = True
     t.start()
     sys.stdout.write(ansi.esc_set_title % caption)
-    
-    # not shared by video_cli:
-    sys.stdout.write(ansi.esc_clear_screen)
+    sys.stdout.flush()
+
+# not shared by video_cli
+    # prevent logger from defacing the screen
+    if logging.getLogger().handlers[0].stream.name == sys.stderr.name:
+        logger = logging.getLogger()
+        logger.disabled = True
     return True
 
 #######
@@ -106,6 +110,8 @@ def init_screen_mode(mode_info=None):
     height = 25
     width = mode_info.width
     sys.stdout.write(ansi.esc_resize_term % (height, width))
+    sys.stdout.write(ansi.esc_clear_screen)
+    sys.stdout.flush()
     return True
     
 def close():
@@ -123,6 +129,8 @@ def close():
     sys.stdout.write(ansi.esc_move_cursor % (1, 1))
     show_cursor(True)
     sys.stdout.flush()
+    # re-enable logger
+    logger.disabled = False
 
 last_pos = None
 

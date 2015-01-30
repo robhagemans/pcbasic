@@ -32,13 +32,14 @@ def prepare():
 def debug_exec(debug_cmd):
     """ Execute a debug command. """
     buf = StringIO()
+    save_stdout = sys.stdout
     sys.stdout = buf
     try:
         exec(debug_cmd)
     except Exception as e:
         debug_handle_exc(e)
         traceback.print_tb(sys.exc_info()[2])
-    sys.stdout = sys.__stdout__
+    sys.stdout = save_stdout
     logging.debug(buf.getvalue()[:-1]) # exclude \n
         
 def debug_step(linum):
