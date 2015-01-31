@@ -33,11 +33,6 @@ import state
 # fallback to curses if not working
 fallback = 'video_curses'
 
-# Workaround for broken pygame.scrap on various systems
-if pygame:
-    import pygame_clipboard
-    scrap = pygame_clipboard.scrap
-
 # Android-specific definitions
 android = (plat.system == 'Android')
 if android:
@@ -1034,7 +1029,7 @@ class ClipboardInterface(object):
     """ Clipboard user interface. """
     
     def __init__(self, width, height):
-        """ Initialise pygame scrapboard. """
+        """ Initialise clipboard feedback handler. """
         self.logo_pressed = False
         self.select_start = None
         self.select_stop = None
