@@ -210,6 +210,7 @@ def prepare_console():
             if not video_name or video_name == 'video_none':
                 logging.error('Failed to initialise interface.')
                 raise error.Exit()
+            logging.error('Could not load module %s.', video_name)
             video_name = 'video_none'
             continue
         if backend.init_video(video):
