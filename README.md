@@ -46,10 +46,10 @@ The following packages are needed or recommended when installing PC-BASIC from s
 |-----------------------------------------------------------------|---------|--------------|----------------------------  
 | [Python 2.7.6](http://www.python.org/download/releases/2.7.6/)  | all     | required     |   
 | [PyWin32](https://sourceforge.net/projects/pywin32/)            | Windows | required     |  
-| [PyGame 1.9.1](http://www.pygame.org/download.shtml)            | all     | essential    | needed for graphical interface  
-| [NumPy](https://sourceforge.net/projects/numpy/files/)          | all     | essential    | needed for sound  
-| [PySerial](https://pypi.python.org/pypi/pyserial)               | all     | recommended  | needed for serial/parallel port access  
-| [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html)| Unix    | recommended  | needed for `SHELL`  
+| [PyGame 1.9.1](http://www.pygame.org/download.shtml)            | all     | essential    | for sound and graphics  
+| [NumPy](https://sourceforge.net/projects/numpy/files/)          | all     | essential    | for sound and graphics  
+| [PySerial](https://pypi.python.org/pypi/pyserial)               | all     | recommended  | for serial/parallel port access  
+| [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html)| Unix    | optional     | for native `SHELL`  
 
 Note that the official Pygame release 1.9.1 has a bug in its handling of copy & paste on X11-based systems.
 If you run into this, install one of the [`xsel`](http://www.vergenet.net/~conrad/software/xsel/) or [`xclip`](https://sourceforge.net/projects/xclip/)  utilities and PC-BASIC will work around the issue.  
@@ -106,62 +106,6 @@ A few essential statements:
 
 A full CC-licensed [GW-BASIC language reference](https://sourceforge.net/p/pcbasic/code/ci/master/tree/info/HELP) is included with PC-BASIC. You can find it in the `info/` directory as a text file called `HELP`; access it through your favourite text reader or through `RUN "@:INFO"`, option `Docs`. This documentation aims to document the actual behaviour of GW-BASIC 3.23, on which PC-BASIC is modelled. Please note that the original Microsoft help file, which can be found on the internet, is rather hit-and-miss; GW-BASIC often behaves differently than documented by Microsoft. 
 
-
-#### .BAS files ####
-Many BASIC dialects use the same extension `.BAS`, but their files are not compatible. 
-PC-BASIC runs GW-BASIC files only. Some tips to recognise GW-BASIC files:  
-- ASCII files are plain text with line numbers.  
-- Bytecode files start with magic byte `FF`.  
-- Protected files start with magic byte `FE`.  
-
-In particular, QBASIC files (which have no line numbers) and QuickBASIC files (magic byte `FC`) will not run. 
-
-
-#### Security ####
-PC-BASIC does not attempt to sandbox its programs in any way. BASIC programs have full access to your operating system - indeed, through the SHELL command, they have exactly the same capabilities as scripts or binaries run on the command line. You should treat them with the same caution as you would shell scripts or binaries. Therefore, do not run a program from the internet that you have not inspected first using LIST or one of the command line conversion options. You wouldn't just download an executable fom the internet and run it either, right?
-
-
-#### MS-DOS style 8.3 file names ####
-PC-BASIC follows DOS file system conventions, where files consist of a 
-8-character name and 3-character extension and names are case insensitive.
-Note that DOS conventions are subtly different from Windows short filename 
-conventions and not-so-subtly different from Unix conventions. This may lead
-to surprising effects in the presence of several files that match 
-the same DOS name. To avoid such surprises, run PC-BASIC in a working 
-directory of its own and limit file names to all-caps 8.3 format.
-
-When opening a data file, PC-BASIC will first look for a file with the name 
-exactly as provided. This can be a long name and will be case sensitive if
-your file system is. If such a file is not found, it will truncate the name
-provided to 8.3 format and convert to all uppercase. If that exact name is
-not found, it will look for 8.3 names in mixed case which match the name
-provided in a case-insensitive way. Such files are searched in lexicographic
-order. On Windows, the name matched can be a short filename as well as a 
-long filename (provided it is of 8.3 length; it may, for example, contain 
-spaces).
-
-When loading or saving a program file, no attempt is made to find an exact 
-match. Instead, the search will first match the all-caps 8.3 version of the
-name and continue in lexicographic order as above. If no extension is 
-specified, the extension .BAS will be implicitly added. To load a program
-with no extension, end the filename in a dot. On file systems without
-short filenames, it is not possible to load a program if its filename is 
-longer than 8.3 or ends in a dot.
-
-The only valid path separator is the backslash `\`. 
-
-
-#### Newline conventions ####
-In default mode, PC-BASIC will accept both DOS and Unix newline conventions. This behaviour is different from GW-BASIC, which only accepts text files in DOS format (CR/LF line endings, ctrl-Z at end-of-file). In exceptional cases, correct GW-BASIC ASCII files will not be loaded correctly, in particular if they contain LF characters followed by a number. If you encounter such a case, use the `--strict-newline` option. 
-In `--strict-newline` mode, ASCII files in standard UNIX format (LF line endings, no EOF character) will fail to load: on Linux or Mac, use a utility such as [`unix2dos`](http://waterlan.home.xs4all.nl/dos2unix.html) to convert programs saved as text files before loading them. When saving as ASCII, PC-BASIC always uses the DOS conventions.
-
-
-#### Codepages and UTF-8 ####
-PC-BASIC supports a large number of codepages, including double-byte character set codepages used for Chinese, Japanese and Korean. PC-BASIC will load and save all program files as if encoded in the codepage you select. It is possible to load and save in UTF-8 format, by choosing the `--utf-8` option. In `--utf-8` mode, ASCII program source will be saved and loaded in standard UTF-8 encoding. Please note that you will still need to select a codepage that provides the Unicode characters that your program needs.
-
-
-#### Command-line interface ####
-You can run PC-BASIC in command-line mode by running with the `-b` option. There is also a full-screen text interface available with the `-t` option. On Linux, you can even get sound in the text and command-line interfaces if you install the Unix `beep` utility (if you use Ubintu, please be aware that the pc-speaker is switched off by default. You'll need to edit `/etc/modprobe.d/blacklist.conf` and comment out the line `blacklist pcspkr`. Then, `apt-get install beep` and be sure to wear appropriate ear protection as the default volume level is LOUD.) 
 
 #### Free BASIC compilers and saner dialects ####
 If you're starting a new project in BASIC, please consider one of the more sensible free versions of the language, such as [FreeBasic](www.freebasic.net), [QB64](http://www.qb64.net/) or [SmallBASIC](https://sourceforge.net/projects/smallbasic/). Under FreeDOS, you can use the [Bywater BASIC](https://sourceforge.net/projects/bwbasic/) interpreter. 
