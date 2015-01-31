@@ -96,7 +96,6 @@ def close():
         while getch() == '':
             sleep(0.01)
     term_echo()
-    sys.stdout.write("screen clear")
     sys.stdout.write(ansi.esc_set_colour % 0)
     sys.stdout.write(ansi.esc_clear_screen)
     sys.stdout.write(ansi.esc_move_cursor % (1, 1))
