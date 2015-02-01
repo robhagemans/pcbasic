@@ -167,12 +167,12 @@ in the default file.
 <code>--com1=</code><em><code>type:value</code></em>
 </dt><dd>
 Attach a resource to the <code>COM1:</code> serial device. <em><code>type:value</code></em> can be
-<dl>
-<dt><code>PORT:</code><em><code>device_name</code></em></dt>
-<dd>connect to a serial device. <em><code>device_name</code></em> can be a device name such as <code>COM1</code> or <code>/dev/ttyS0</code> or a number, where the first serial port is number 0.
-<dt><code>SOCKET:</code><em><code>host:socket</code></em></dt>
-<dd>connect to a TCP <em><code>socket</code></em> on a remote or local <em><code>host</code></em>.</dd>
-</dl>
+<table>
+<tr><td><code>PORT:</code><em><code>device_name</code></em></td>
+<td>connect to a serial device. <em><code>device_name</code></em> can be a device name such as <code>COM1</code> or <code>/dev/ttyS0</code> or a number, where the first serial port is number 0.</td></tr>
+<tr><td><code>SOCKET:</code><em><code>host:socket</code></em></td>
+<td>connect to a TCP <em><code>socket</code></em> on a remote or local <em><code>host</code></em>.</td></tr>
+</table>
 If this option is not specified, the <code>COM1</code> device is unavailable.                            
 </dd>
 <dt>
@@ -184,11 +184,11 @@ Attach a resource to the <code>COM2:</code> serial device. See <code>--com1</cod
 <code>--convert=</code><em><code>mode</code></em>
 </dt><dd>
 Convert program to <em><code>mode</code></em>, which can be
-<dl>
-<dt><code>A</code></dt><dd>ASCII</dd>
-<dt><code>B</code></dt><dd>Bytecode (tokenised)</dd>
-<dt><code>P</code></dt><dd>Protected (encrypted)</dd>
-</dl>
+<table>
+<tr><td><code>A</code></td><td>ASCII</td></tr>
+<tr><td><code>B</code></td><td>Bytecode (tokenised)</td></tr>
+<tr><td><code>P</code></td><td>Protected (encrypted)</td></tr>
+</table>
 If <em><code>convert_output</code></em> is not specified, write to standard output.
 If program is not specified, use the argument of <code>--run</code> or <code>--load</code>. 
 If none of those are given, read from standard input. 
@@ -329,12 +329,12 @@ files is always read from the keyboard, following GW-BASIC behaviour.
 </dt><dd>
 Choose the type of interface. The default is <code>graphical</code>. 
 The following interface types are available:
-<dl>
-<dt><code>none</code></dt><dd>Filter for use with pipes.</dd>
-<dt><code>cli</code></dt><dd>Command-line interface.</dd>
-<dt><code>text</code></dt><dd>Text-based interface.</dd>
-<dt><code>graphical</code></dt><dd>Graphical interface.</dd>
-</dl>
+<table>
+<tr><td><code>none</code></td><td>Filter for use with pipes.</td></tr>
+<tr><td><code>cli</code></td><td>Command-line interface.</td></tr>
+<tr><td><code>text</code></td><td>Text-based interface.</td></tr>
+<tr><td><code>graphical</code></td><td>Graphical interface.</td></tr>
+</table>
 </dd>
 <dt>
 <code>-k=</code><em><code>keystring</code></em><br />
@@ -357,15 +357,15 @@ Write error and warning output to <em><code>log_file</code></em> instead of <cod
 <code>--lpt1=</code><em><code>type:value</code></em>
 </dt><dd>
 Attach a resource to the <code>LPT1:</code> parallel device. <em><code>type:value</code></em> can be
-<dl>
-<dt><code>PARPORT:</code><em><code>device_name</code></em></dt>
-<dd>Connect to a parallel device. <em><code>device_name</code></em> such as <code>LPT1</code> or <code>/dev/parport0</code>.</dd>
-<dt><code>PRINTER:</code><em><code>printer_name</code></em></dt>    
-<dd>Connect to a Windows or CUPS printer. If <em><code>printer_name</code></em> is not specified, the default printer is used.</dd>
-<dt><code>FILE:</code><em><code>file_name</code></em></dt> 
-<dd>Connect to any file or to a character device such as <code>/dev/stdout</code>.
-If not specified, <code>LPT1:</code> is connected to the default printer.</dd>
-</dl>
+<table>
+<tr><td><code>PARPORT:</code><em><code>device_name</code></em></td>
+<td>Connect to a parallel device. <em><code>device_name</code></em> such as <code>LPT1</code> or <code>/dev/parport0</code>.</td></tr>
+<tr><td><code>PRINTER:</code><em><code>printer_name</code></em></td>    
+<td>Connect to a Windows or CUPS printer. If <em><code>printer_name</code></em> is not specified, the default printer is used.</td></tr>
+<tr><td><code>FILE:</code><em><code>file_name</code></em></td>
+<td>Connect to any file or to a character device such as <code>/dev/stdout</code>.
+If not specified, <code>LPT1:</code> is connected to the default printer.</td></tr>
+</table>
 <dt>
 <code>--lpt2=</code><em><code>type:value</code></em>
 </dt><dd>
@@ -413,15 +413,11 @@ Default is 128, maximum is 32767. This is equivalent to GWBASIC's <code>/s</code
 <code>--monitor={rgb|composite|mono}</code>
 </dt><dd>
 Sets the monitor type to emulate. Available types:
-<dl>
-<dt><code>rgb</code></dt>
-<dd>RGB colour monitor (default).</dd>
-<dt><code>composite</code></dt>
-<dd>Composite colour monitor. Enables colour artifacts on <code>SCREEN 2</code> (crudely). Requires <code>--video={pcjr|tandy|cga|cga_old}</code>.</dd>
-<dt><code>mono</code></dt>
-<dd>Monochrome monitor.</dd>
-<dt>
-</dl>
+<table>
+<tr><td><code>rgb</code></td><td>RGB colour monitor (default).</td></tr>
+<tr><td><code>composite</code></td><td>Composite colour monitor. Enables colour artifacts on <code>SCREEN 2</code> (crudely). Requires <code>--video={pcjr|tandy|cga|cga_old}</code>.</td></tr>
+<tr><td><code>mono</code></td><td>Monochrome monitor.</td></tr>
+</table>
 </dd>
 <dt>    
 <code>--mono-tint=<em>r,g,b</em></code>
@@ -440,11 +436,11 @@ other drive letters are assigned.
 </dt><dd>
 Set the functions of the three mouse buttons. 
 Available functions are:
-<dl>
-<dt>copy</dt><dd>Select and copy to clipboard.</dd>
-<dt>paste</dt><dd>Paste from clipboard.</dd>
-<dt>pen</dt><dd>Light pen emulation.</dd>
-</dl>
+<table>
+<tr><td>copy</td><td>Select and copy to clipboard.</td></tr>
+<tr><td>paste</td><td>Paste from clipboard.</td></tr>
+<tr><td>pen</td><td>Light pen emulation.</td></tr>
+</table>
 On Android, touch is mapped to the light pen.
 </dd>
 <dt>
@@ -503,26 +499,26 @@ like <code>[this]</code>. <code>--preset=this</code> will load all settings defi
 section. Available presets depend on your configuration file. 
 By default, the following presets are available, which specify
 different emulation targets:
-<dl>
-<dt><code>pcjr</code></dt>
-<dd>IBM PCjr with Cartridge BASIC.</dd>
-<dt><code>tandy</code></dt>
-<dd>Tandy 1000.</dd>
-<dt><code>olivetti</code></dt>
-<dd>Olivetti M24 or AT&T PC 6300.</dd>
-<dt><code>cga</code></dt>
-<dd>IBM or compatible with Color/Graphics Adapter.</dd>
-<dt><code>ega</code></dt>
-<dd>IBM or compatible with Extended Graphics Adapter.</dd>
-<dt><code>vga</code></dt>
-<dd>IBM or compatible with Video Graphics Array.</dd>
-<dt><code>mda</code></dt>
-<dd>IBM or compatible with Monochrome Display Adapter and green-tinted monochrome monitor.</dd>
-<dt><code>hercules</code></dt>
-<dd>IBM compatible with Hercules Graphics Adapter and green-tinted monochrome monitor.</dd>
-<dt><code>strict</code></dt>
-<dd>Choose strict compatibility with GW-BASIC over convenience, security, rhyme or reason.</dd>
-</dl>
+<table>
+<tr><td><code>pcjr</code></td>
+<td>IBM PCjr with Cartridge BASIC.</td></tr>
+<tr><td><code>tandy</code></td>
+<td>Tandy 1000.</td></tr>
+<tr><td><code>olivetti</code></td>
+<td>Olivetti M24 or AT&T PC 6300.</td></tr>
+<tr><td><code>cga</code></td>
+<td>IBM or compatible with Color/Graphics Adapter.</td></tr>
+<tr><td><code>ega</code></td>
+<td>IBM or compatible with Extended Graphics Adapter.</td></tr>
+<tr><td><code>vga</code></td>
+<td>IBM or compatible with Video Graphics Array.</td></tr>
+<tr><td><code>mda</code></td>
+<td>IBM or compatible with Monochrome Display Adapter and green-tinted monochrome monitor.</td></tr>
+<tr><td><code>hercules</code></td>
+<td>IBM compatible with Hercules Graphics Adapter and green-tinted monochrome monitor.</td></tr>
+<tr><td><code>strict</code></td>
+<td>Choose strict compatibility with GW-BASIC over convenience, security, rhyme or reason.</td></tr>
+</table>
 </dd>
 <dt>
 <code>-q</code><br />
@@ -555,16 +551,16 @@ Run the specified <code><em>program</em></code>. Overrides <code>--load</code>.
 <code>--scaling={smooth|crisp|native}</code>
 </dt><dd>
 Choose scaling method. 
-<dl>
-<dt><code>smooth</code></dt>
-<dd>display is smoothly scaled to the largest size that allows for the correct aspect ratio.</dd>
-<dt><code>crisp</code></dt>
-<dd>display is scaled to the same size as <code>smooth</code>, but without smoothing.</dd>
-<dt><code>native</code></dt>
-<dd>scaling and aspect ratio are optimised for the 
+<table>
+<tr><td><code>smooth</code></td>
+<td>display is smoothly scaled to the largest size that allows for the correct aspect ratio.</td></tr>
+<tr><td><code>crisp</code></td>
+<td>display is scaled to the same size as <code>smooth</code>, but without smoothing.</td></tr>
+<tr><td><code>native</code></td>
+<td>scaling and aspect ratio are optimised for the 
 display's native pixel size, without smoothing. <code>--scaling=native</code> 
-overrides <code>--aspect.</code></dd>
-</dl>
+overrides <code>--aspect.</code></td></tr>
+</table>
 Default is <code>smooth</code>. Graphical interface only.
 </dd>
 <dt>
@@ -611,14 +607,14 @@ execution of invisible statements.
 <code>--syntax={advanced,pcjr,tandy}</code>
 </dt><dd>
 Choose BASIC dialect. Available dialects:
-<dl>
-<dt><code>advanced</code></dt>
-<dd>Microsoft GW-BASIC and IBM BASICA (default).</dd>
-<dt><code>pcjr</code></dt>
-<dd>IBM PCjr Cartridge BASIC</dd>
-<dt><code>tandy</code></dt>
-<dd>Tandy 1000 GW-BASIC.</dd>
-</dl>
+<table>
+<tr><td><code>advanced</code></td>
+<td>Microsoft GW-BASIC and IBM BASICA (default).</td></tr>
+<td><code>pcjr</code></td>
+<td>IBM PCjr Cartridge BASIC</td></tr>
+<td><code>tandy</code></td>
+<td>Tandy 1000 GW-BASIC.</td></tr>
+</table>
 </dd>
 <dt>
 <code>--text-width={40,80}</code>
@@ -643,62 +639,62 @@ Print PC-BASIC version and exit.
 <code>--video=<em>card</em></code>
 </dt><dd>
 Set the video card to emulate. Available video cards:
-<dl>
-<dt><code>
+<table>
+<tr><td><code>
 vga
-</code></dt>
-<dd>
+</code></td>
+<td>
 Video Graphics Array
-</dd>
-<dt><code>
+</td></tr>
+<tr><td><code>
 ega
-</code></dt>
-<dd>
+</code></td>
+<td>
 Enhanced Graphics Adapter
-</dd>
-<dt><code>
+</td></tr>
+<tr><td><code>
 cga
-</code></dt>
-<dd>
+</code></td>
+<td>
 Color/Graphics Adapter
-</dd>
-<dt><code>
+</td></tr>
+<tr><td><code>
 cga_old
-</code></dt>
-<dd>
+</code></td>
+<td>
 Color/Graphics Adapter (old version; affects composite)
-</dd>
-<dt><code>
+</td></tr>
+<tr><td><code>
 mda
-</code></dt>
-<dd>
+</code></td>
+<td>
 Monochrome Display Adapter
-</dd>
-<dt><code>
+</td></tr>
+<tr><td><code>
 hercules
-</code></dt>
-<dd>
+</code></td>
+<td>
 Hercules Graphics Adapter
-</dd>
-<dt><code>
+</td></tr>
+<tr><td><code>
 pcjr
-</code></dt>
-<dd>
+</code></td>
+<td>
 IBM PCjr graphics
-</dd>
-<dt><code>
+</td></tr>
+<tr><td><code>
 tandy
-</code></dt>
-<dd>
+</code></td>
+<td>
 Tandy 1000 graphics
-</dd>
-<dt><code>
+</td></tr>
+<tr><td><code>
 olivetti
-</code></dt>
-<dd>
+</code></td>
+<td>
 Olivetti M24 graphics
-</dd>
-</dl>
+</td></tr>
+</table>
 </dd>
 <dt>
 <code>--video-memory=<em>size</em></code>
