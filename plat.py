@@ -60,19 +60,22 @@ if not os.path.exists(state_path):
 
 
 # OS-specific stdin/stdout selection
-# no stdin/stdout access allowed on packaged apps
-if system in ('OSX', 'Windows'):
+# no stdin/stdout access allowed on packaged apps in OSX
+if system == 'OSX':
     stdin_is_tty, stdout_is_tty = True, True
-    stdin, stdout = None, None
+    has_stdin, has_stdout = False, False
+elif system == 'Windows':
+    stdin_is_tty, stdout_is_tty = True, True
+    has_stdin, has_stdout = True, True
 else:
     # Unix, Linux including Android
     try:
         stdin_is_tty = sys.stdin.isatty()
         stdout_is_tty = sys.stdout.isatty()
+        has_stdin, has_stdout = True, True
     except AttributeError:
         stdin_is_tty, stdout_is_tty = True, True
-        stdin, stdout = None, None
-    stdin, stdout = sys.stdin, sys.stdout
+        has_stdin, has_stdout = False, False
 
 if system == 'Android':
     # always use the same location on Android

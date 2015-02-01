@@ -87,13 +87,13 @@ def convert():
     try:
         if infile:
             program.load(open_native_or_dos_filename(infile))
-        elif plat.stdin:
-            program.load(plat.stdin)      
+        elif plat.has_stdin:
+            program.load(stdin)
         if outfile:
             # on save from command-line, use exact file name
             program.save(open(outfile, 'wb'), mode)
-        elif plat.stdout:
-            program.save(plat.stdout, mode)
+        elif plat.has_stdout:
+            program.save(stdout, mode)
     except error.RunError as e:
         logging.error(error.get_message(e.err))
     except EnvironmentError as e:    
