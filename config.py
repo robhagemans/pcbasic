@@ -66,7 +66,7 @@ arguments = {
     'append': {'type': 'bool', 'default': False, },
     'interface': { 
         'type': 'string', 'default': '',
-        'choices': ('', 'none', 'cli', 'text', 'graphical'), },
+        'choices': ('', 'none', 'cli', 'ansi', 'text', 'graphical'), },
     'load': {'type': 'string', 'default': '', },
     'run': {'type': 'string', 'default': '',  },
     'convert': {'type': 'string', 'default': '', },

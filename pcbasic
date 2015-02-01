@@ -194,6 +194,7 @@ def prepare_console():
         'none': ('video_none', 'audio_none'),
         'cli': ('video_cli', 'audio_beep'),
         'text': ('video_curses', 'audio_beep'),
+        'ansi': ('video_ansi', 'audio_beep'),
         'graphical': ('video_pygame', 'audio_pygame'), 
         }
     if not config.options['interface']:
