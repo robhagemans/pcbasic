@@ -258,6 +258,7 @@ def scroll(from_line, scroll_height, attr):
         pass
     window.scrollok(False)
     window.setscrreg(1, height-1)
+    clear_rows(attr, scroll_height, scroll_height)
     if cursor_row > 1:
         window.move(cursor_row-2, cursor_col-1)
     
@@ -271,6 +272,7 @@ def scroll_down(from_line, scroll_height, attr):
         pass
     window.scrollok(False)
     window.setscrreg(1, height-1)
+    clear_rows(attr, from_line, from_line)
     if cursor_row < height:
         window.move(cursor_row, cursor_col-1)
     

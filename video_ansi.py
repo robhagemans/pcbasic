@@ -213,7 +213,7 @@ def scroll(from_line, scroll_height, attr):
     if cursor_row > 1:
         sys.stdout.write(ansi.esc_move_cursor % (cursor_row, cursor_col))
         last_pos = (cursor_row, cursor_col)
-    sys.stdout.flush()
+    clear_rows(attr, scroll_height, scroll_height)
         
 def scroll_down(from_line, scroll_height, attr):
     """ Scroll the screen down between from_line and scroll_height. """
@@ -223,7 +223,7 @@ def scroll_down(from_line, scroll_height, attr):
     if cursor_row > 1:
         sys.stdout.write(ansi.esc_move_cursor % (cursor_row, cursor_col))
         last_pos = (cursor_row, cursor_col)
-    sys.stdout.flush()
+    clear_rows(attr, from_line, from_line)
     
         
 ###############################################################################
