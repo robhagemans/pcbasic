@@ -1,0 +1,368 @@
+
+
+<h1>PC-BASIC documentation</h1>
+
+<p>PC-BASIC is a free, cross-platform interpreter for GW-BASIC,
+BASICA, PCjr Cartridge Basic and Tandy 1000 GW-BASIC. It interprets
+the BASIC dialects with a high degree of accuracy, aiming for
+bug-for-bug compatibility. PC-BASIC also emulates the most common
+video and audio hardware supported by these BASIC dialects in their
+time.</p>
+
+<p>This documentation is copyright (c) 2014-2015 Rob Hagemans and licensed under a 
+Creative Commons Attribution-ShareAlike 4.0 International License.</p>
+
+
+<h2>The working environment</h2>
+<p>The first thing you'll see when starting PC-BASIC is the working environment. 
+Like GW-BASIC, but unlike practically all modern compilers and interpreters, 
+PC-BASIC's working environment serves both as a development environment and as a 
+canvas on which to execute BASIC commands directly. With a few exceptions, 
+practically all commands that can be run in the working environment can be used 
+in a program, and vice versa.</p>
+
+<p>The default PC-BASIC screen has 25 rows and 80 columns. The 25th row is used
+by PC-BASIC to show keyboard shortcuts &ndash; more about those later &ndash; 
+which means you can't use it to type on. In some video modes, there are only 40 
+or even only 20 columns.</p>
+
+<p><em>Logical lines</em> exceed the width of the physical row: if you keep 
+typing beyond the screen width, the text will 
+wrap to the next line but PC-BASIC will still consider it part of the same line.
+A logical line can be at most 255 characters long; if you type more than 255 
+characters, it will ignore the remainder. A line can also be wrapped by a 
+line-feed, entered with <code><b>Ctrl</b>+<b>Enter</b></code>.</p>
+
+<p>If you press <code><b>Enter</b></code>, PC-BASIC will attempt to execute the
+logical line on which the cursor is placed as a command. When the command is executed correctly, PC-BASIC will display the prompt <code>Ok</code>. If there is an error, it will display an error message followed by <code>Ok</code>.
+If the line starts with a number, it will be stored as a program line. No prompt is displayed.</p>
+
+The following keys have a special effect in the working environment:
+<table>
+<tr>
+<td><code><b>&#8593;<!--up--></b></code> or <code><b>Ctrl</b>+<b>6</b></code></td>
+<td>Move the cursor up, except at the top row.</td>
+</tr>
+<tr>
+<td><code><b>&#8595;<!--down--></b></code> or <code><b>Ctrl</b>+<b>-</b></code></td>
+<td>Move the cursor down, except at row 24.</td>
+</tr>
+<tr>
+<td><code><b>&#8592;<!--left--></b></code> or <code><b>Ctrl</b>+<b>]</b></code></td>
+<td>Move the cursor left. The left edge of the screen wraps around, except at the top row.</td>
+</tr>
+<tr>
+<td><code><b>&#8594;<!--right--></b></code> or <code><b>Ctrl</b>+<b>/</b></code></td>
+<td>Move the cursor right. The right edge of the screen wraps around, except at row 24.</td>
+</tr>
+<tr>
+<td><code><b>Ctrl</b>+<b>&#8592;<!--left--></b></code> or <code><b>Ctrl</b>+<b>B</b></code></td>
+<td>Move to the first letter of the previous word. Words consist of letters A-Z and figures 0-9.</b>
+</tr>
+<tr>
+<td><code><b>Ctrl</b>+<b>&#8594;<!--right--></b></code> or <code><b>Ctrl</b>+<b>F</b></code></td>
+<td>Move to the first letter of the next word.</td>
+</tr>
+<tr>
+<td><code><b>Tab</b></code> or <code><b>Ctrl</b>+<b>I</b></code></td>
+<td>Move the cursor to the next tab stop. Tab stops are 8 columns wide.</td>
+</tr>
+<tr>
+<td><code><b>Backspace</b></code> or <code><b>Ctrl</b>+<b>H</b></code></td>
+<td>Delete the character left of the cursor, shift all further characters on the logical line one 
+position to the left and change the attributes of those characters to the current attribute. At the 
+left edge of the screen, this does the same as <code><b>Del</b></code>.</td>
+</tr>
+<tr>
+<td><code><b>Del</b></code> or <code><b>Ctrl</b>+<b>Backspace</b></code></td>
+<td>Delete the character at the cursor and shift all 
+further characters one position to the left, 
+changing attributes to current.</td>
+</tr>
+<tr>
+<td><code><b>Esc</b></code> or <code><b>Ctrl</b>+<b>[</b></code></td>
+<td>Delete the current logical line.</td>
+</tr>
+<tr>
+<td><code><b>Ctrl</b>+<b>End</b></code> or <code><b>Ctrl</b>+<b>E</b></code></td>
+<td>Delete all characters from the cursor to the end 
+of the logical line.</td>
+</tr>
+<tr>
+<td><code><b>Ctrl</b>+<b>Break</b></code> or <code><b>Ctrl</b>+<b>C</b></code> or <code><b>Ctrl</b>+<b>Scroll Lock</b></code></td>
+<td>Jump to the first column of the next line, without executing or storing the line under the cursor.</td>
+</tr>
+<tr>
+<td><code><b>Enter</b></code> or <code><b>Ctrl</b>+<b>M</b></code></td>
+<td>Execute or store the current logical line. The 
+complete line on the screen is considered part of 
+the command, even if you did not type it.
+A line starting with a number is stored as a 
+program line.</td>
+</tr>
+<td><code><b>End</b></code> or <code><b>Ctrl</b>+<b>N</b></code></td>
+<td>Move the cursor to the first position after the 
+end of the logical line.</td>
+</tr>
+<tr>
+<td><code><b>Home</b></code> or <code><b>Ctrl</b>+<b>K</b></code></td>
+<td>Move the cursor to the top left of the screen.</td>
+</tr>
+<tr>
+<td><code><b>Ctrl</b>+<code><b>Home</b></code> or <code><b>Ctrl</b>+<b>L</b></code></td>
+<td>Clear the screen and move the cursor to the top 
+left of the screen.</td>
+</tr>
+<tr>
+<td><code><b>Ctrl</b>+<code><b>Enter</b></code> or <code><b>Ctrl</b>+<b>J</b></code></td>
+<td>Move to the first column of the next line, 
+connecting the two lines into one logical line.</td>
+<td><b>Ctrl</b>+<code><b>G</b></code></td>
+<td>Beep the speaker.</td>
+</tr>
+<tr>
+<td><code><b>Pause</b></code> or <code><b>Ctrl</b>+<b>Num Lock</b></code></td>
+<td>Pause. Press another key to resume.</td>
+</tr>
+<tr>
+<td><code><b>Ctrl</b>+<b>Prt Sc</b></code></td>
+<td>Toggle echoing screen output to the printer (or other device attached to <code>LPT1:</code>).</td>
+</tr>
+<tr>
+<td><code><b>Shift</b>+<b>Prt Sc</b></code></td>
+<td>Print the screen.</td>
+</tr>
+<tr>
+<td><code><b>Ins</b></code> or <code><b>Ctrl</b>+<b>R</b></code></td>
+<td>Toggle <em>insert mode</em>. In insert mode, characters  
+are inserted rather than overwritten at the 
+current location. If insertion causes the line to 
+extend the physical screen width, the logical 
+line extends onto the next line. Arrow keys exit 
+insert mode.</td>
+</tr>
+</table>
+    
+<p>Unlike in GW-BASIC, you can copy and paste text to the clipboard. Two ways:
+<dl>
+<dt>Using the mouse:</dt><dd>Left button is select and copy; middle button 
+is paste.</dd>
+<dt>Using the keyboard:</dt><dd>
+If your operating system does not catch the
+<code><b>Logo</b></code> key (Windows key), you can also copy and paste using the keyboard.
+<table>
+<tr>
+<td><code><b>Logo</b>+</code>arrow keys</td>
+<td>Select a screen region.</td>
+</tr>
+<tr>
+<td><code><b>Logo</b>+<b>A</b></code></td>
+<td>Select all.</td>
+</tr>
+<tr>
+<td><code><b>Logo</b>+<b>C</b></code></td>
+<td>Copy to clipboard.</td>
+</tr>
+<tr>
+<td><code><b>Logo</b>+<b>V</b></code></td>
+<td>Paste from clipboard.</td>
+</tr>
+</table>
+</dl>
+
+<h2>Changing settings</h2>
+<p>PC-BASIC has a number of settings that change the way it operates. There are 
+two ways to change these settings:</p>
+<dl>
+<dt>Command-line options</dt>
+<dd>You can enter command-line options if you start PC-BASIC from the console (the <em>Command Prompt</em> or <em>PowerShell</em> in Windows, or a <em>Terminal</em> in Unix), by preceding the name of the option with two dashes, like so:<br />
+<pre>pcbasic --preset=tandy --ctrl-c-break=True
+</pre>
+On the command line, you can leave out the expression <code>=True</code> that is common in switching options.
+Some options have an alternative, short name consisting of a single letter preceded by a single dash, whcih you can use on the command line.</dd>
+<dt>Configuration files</dt>
+<dd>You can change options by adding or removing lines in the configuration file. The configuration file is a file named <code>PCBASIC.INI</code> stored in your Application Data folder. The location of this folder is as follows:
+<table>
+<tr><th>OS</th><th>Configuration file location</th></tr>
+<tr><td>Windows XP</td><td><code>C:\Documents and Settings\<em>your username</em>\Application Data\pcbasic</code></td></tr>
+<tr><td>Windows 7</td><td><code>C:\Users\<em>your username</em>\AppData\Roaming\pcbasic</code></td></tr>
+<tr><td>OS X</td><td><code>~/Library/Application Support/pcbasic</code></td></tr>
+<tr><td>Linux</td><td><code>~/.config/pcbasic</code></td></tr>  
+</table>
+Change an option in the configuration file by adding a line in the section named <code>[pcbasic]</code>, like so:<br />
+<pre>preset=tandy
+ctrl-c-break=True
+</pre>
+You cannot use the sort name of options in the configuration file. You can also not leave out the expression <code>=True</code>.
+</dd>
+</ol>
+<p>In either method, the options have the same name and syntax. In what follows, we will often refer to 
+a particular option setting; remember that you can always set this from the command line as well as from the configuration file.</p>
+</dl>
+** add ref to USAGE file with full list of options **
+
+<h2>BASIC programs</h2>
+<p>PC-BASIC can hold one BASIC program at a time in memory. To enter a program line, start with a <em>line number</em> and enter BASIC commands after that. The maximum length of a program line is 255 characters, including the line number and any spaces. The program line will not be immediately executed, but stored in the program. Program lines are sorted by line number, so that line <code>10</code> is executed before line <code>20</code>.
+To run the program, type the command <code>RUN</code> (without a line number). PC-BASIC will now execute all program lines in order inside the working environment. You cannot move the cursor around or enter commands while the program is running. If and when the program finishes, it will return control of the working environment to you. You can interrupt a program at any time by using one of the key combinations <code><b>Ctrl</b>+<b>Break</b></code> or <code><b>Ctrl</b>+<b>Scroll Lock</b></code>. The program will stop immediately, print a <code>Break</code> message and return control to you.</p>
+
+<p>Normally, you can <em>not</em> use  <code><b>Ctrl</b>+<b>C</b></code> to interrupt a running program. However, some keyboards do not have a <code><b>Ctrl</b>+<b>Break</b></code> or <code><b>Ctrl</b>+<b>Scroll Lock</b></code> key, which would make it impossible to interrupt a program that does not exit. If you have such a system, you can enable the <code>ctrl-c-break</code> option. This is enabled by default on OS X systems as well as when using the text-based or command-line interface.
+</p>
+
+<p>A program can be stored on a drive by using the <code>SAVE</code> command, in one of three ways:
+<ol>
+<li>ASCII text, readable by a text editor: <code>SAVE "MYPROG",A</code></li>
+<li>Bytecode, taking up less storage space: <code>SAVE "MYPROG"</code></li>
+<li>Protected, which is an encrypted format:  <code>SAVE "MYPROG",P</code></li>
+</ol>
+In all three cases, the program will be written to the current working directory with the name <code>PROGRAM.BAS</code>.</p>
+
+<p>PC-BASIC can read and write Protected files created by GW-BASIC. Unlike GW-BASIC, however, it does not disable accessing the unencrypted contents of the file. The encryption used by GW-BASIC has been broken many decades ago, so Protected mode offered little protection anyway; disallowing access is a small security hazard as it would allow someone to send you a program that you cannot inspect before running it. However, it is possible to disable access of protected files by enabling the option <code>strict-protect</code>.
+</p>
+You can read a program file into memory with <code>LOAD "MYPROG"</code>. This will erase the program currently in memory and replace it with the one read from the current working directory.
+To access files in a different directory, specify a path from the current 
+directory. The path specification follows DOS conventions. The only valid path 
+separator is the backslash <code>\</code>. For example, <code>LOAD "PROGRAMS\MYPROG"</code>.
+</p>
+
+<p>You can load or run a program immediately on starting PC-BASIC by using the <code>load</code> or <code>run</code> options.
+For example,
+<pre>pcbasic --run=MYPROG.BAS
+</pre>
+The arguments to these options can be provided 
+as PC-BASIC paths or as paths in the standard form for your operating 
+system.</p>
+
+<p>PC-BASIC can be used to convert between the three program formats: either by loading the program and saving 
+in your desired format, or from the command line using the <code>convert</code> option. To convert a 
+bytecode or protected file to ASCII you could use, for example:
+<pre>pcbasic --convert=A PROGRAMP.BAS PROGRAMA.BAS
+</pre>
+</p>
+
+
+
+<h3>A note on file names</h3>
+<p>PC-BASIC follows DOS file system conventions, where file and directory names consist of a 
+8-character name and 3-character extension. Names are case insensitive.
+Note that DOS conventions are subtly different from Windows short filename 
+conventions and not-so-subtly different from Unix conventions. This may lead
+to surprising effects in the presence of several files that match 
+the same DOS name. To avoid such surprises, run PC-BASIC in a working 
+directory of its own and limit file names to all-caps 8.3 format.</p>
+
+<p>When opening a data file, PC-BASIC will first look for a file with the name 
+exactly as provided. This can be a long name and will be case sensitive if
+your file system is. If such a file is not found, it will truncate the name
+provided to 8.3 format and convert to all uppercase. If that exact name is
+not found, it will look for 8.3 names in mixed case which match the name
+provided in a case-insensitive way. Such files are searched in lexicographic
+order. Files names longer than 8.3 will ot be matched, unless their name is entered exactly. 
+On Windows, the name matched can be a short filename as well as a 
+long filename provided it is of 8.3 length &mdash; it may, for example, contain 
+spaces and thus not be a valid Windows short file name.</p>
+
+<p>When loading or saving a program file, no attempt is made to find an exact 
+match. Instead, the search will first match the all-caps 8.3 version of the
+name and continue in lexicographic order as above. If no extension is 
+specified, the extension .BAS will be implicitly added. To load a program
+with no extension, end the filename in a dot. On file systems without
+short filenames, it is not possible to load a program if its filename is 
+longer than 8.3 or ends in a dot.</p>
+
+<h3>Accessing your drives</h3>
+<p>By default, drive letter <code>Z:</code> is mapped to the current working directory and 
+is the current drive. In particular, it is not mapped to the Windows <code>Z:</code> 
+drive, if that exists. You can map drives and other file system locations as PC-BASIC drive letters by
+using the <code>mount</code> option. For example, 
+<pre>pcbasic --mount=A:C:\Users\Me\BasicFloppy,C:C:\Users\Me\Stuff
+</pre> or, on Unix,
+<pre>pcbasic --mount=A:/home/me/BasicFloppy,C:/home/me/Stuff
+</pre>
+will map those locations to the PC-BASIC <code>A:</code> and <code>C:</code> drives.<p>
+
+<p>If you want PC-BASIC's drive letters to be the same as those in Windows, enable the option <code>map-drives</code>. Use this with caution, since it means that your programs can now read and write on all drives that Windows allows you access to. On non-Windows systems, <code>map-drives</code> will map <code>C:</code> to your file system root, <code>H:</code> to your home directory and <code>Z:</code> to your current working directory.</p>
+
+
+<h3>A note on BASIC files</h3>
+<p>Many BASIC dialects use the same extension <code>.BAS</code>, but their files are not compatible. 
+PC-BASIC runs GW-BASIC program files only. Some tips to recognise GW-BASIC programs:  
+<ul>
+<li>GW-BASIC files stored as ASCII are plain text files with line numbers.</li>
+<li>Bytecode files are binary files that start with magic byte <code>FF</code>.</li>
+<li>Protected files are binary files that start with magic byte <code>FE</code>.</li>
+</ul>
+In particular, QBASIC files (which have no line numbers) and QuickBASIC files (magic byte <code>FC</code>) will not run.</p>
+
+<p>PC-BASIC will accept both DOS and Unix newline conventions for programs stored as ASCII text. This behaviour is different from GW-BASIC, which only accepts text files in DOS format: <code>CR/LF</code> line endings, <code>^Z</code> (character 26) at end-of-file. In some exceptional cases, correct GW-BASIC ASCII files may not be loaded correctly: for example, if they contain LF characters followed by a number. If you encounter such a case, use the <code>strict-newline</code> option to enable GW-BASIC behaviour.
+If <code>strict-newline</code> is enabled, ASCII files in standard Unix format (<code>LF</code> line endings, no end-of-file character) will fail to load. On Linux or Mac, use a utility such as <a href="http://waterlan.home.xs4all.nl/dos2unix.html"><code>unix2dos</code></a> to convert programs saved as text files before loading them. When saving as ASCII, PC-BASIC always uses the DOS conventions.
+</p>
+
+
+<h2>Packages</h2>
+<p>PC-BASIC can run packaged programs. A package is simply a zip archive
+that contains (at least) a configuration file named <code>PCBASIC.INI</code>. Settings
+from the config file are loaded; usually, one of those settings will be a 
+run= argument linking to a BASIC program enclosed in the zip archive.
+PC-BASIC will recognise packages regardless of their extension.
+A suggested extension for PC-BASIC packages is <code>.BAZ</code>. 
+Packages are a convenient choice if a program needs to change many PC-BASIC options 
+to function as desired, or if it needs a particular working directory setup.
+Packages are unpacked to a temporary directory each time they are loaded.
+The temporary directory is removed when PC-BASIC closes and it is therefore 
+not possible to save files and re-open them on the next run of the package.</p>
+
+
+<h2>Working with files</h2>
+
+
+
+ + maximum number of files, random access, etc.
+
+
+<h2>Printing</h2>
+
+
+<h2>Accessing serial and parallel ports</h2>
+
+
+<h2>Emulation targets</h2>
+
+
+
+
+
+
+
+
+
+
+<h2>International encoding standards</h2>
+<p>PC-BASIC supports a large number of legacy codepages that were common at the time GW-BASIC was popular, including double-byte character set codepages used for Chinese, Japanese and Korean. You can select your codepage by using the <code>codepage=</code> option. For example, <code>codepage=936</code> selects the GBK codepage commonly used on the Chinese mainland.
+PC-BASIC will load and save all program files as if encoded in the codepage you select.</p>
+
+<p>It is also possible to load and save programs in the nowadays common UTF-8 standard format, by enabling the <code>utf-8</code> option. When <code>utf-8</code> is enabled, "ASCII" program source will be saved and loaded in standard UTF-8 encoding. Please note that you will still need to select a codepage that provides all the Unicode characters that your program needs.</p>
+
+
+<h2>Fonts</h2>
+
+
+
+<h2>Command-line interface</h2>
+<p>You can run PC-BASIC as a command-line interface by setting the <code>interface=cli</code> (or <code>-b</code>) option. No window will be opened: you can type BASIC commands straight into your Command Prompt/Terminal. Use the horizontal arrow keys to move on the current line you're editing; use the vertical arrow keys to show screen rows above and below. Copy and
+paste are available only if the calling shell provides them. On Windows, <code><b>Ctrl</b>+<b>Break</b></code> will terminate PC-BASIC immediately. You can use <code><b>Ctrl</b>+<b>C</b></code> to interrupt the program. The end-of-file key combination (<code><b>Ctrl</b>+<b>D</b></code> on Unix, <code><b>Ctrl</b>+<b>Z</b></code> on Windows) will exit PC-BASIC.
+
+<h2>Text-based interface</h2>
+<p>There is also a full-screen text interface available: enable it by setting <code>interface=text</code> (or <code>-t</code>). 
+the text-based interface is very similar to the default graphical interface, but runs in your Command Prompt or Terminal window. </p>
+
+<p>In the text-based and command-line interfaces, graphics are not available. Attempting to open a graphical screen mode will lead to an <code>Illegal function call</code> error. Furthermore, many <code><b>Ctrl</b></code> and <code><b>Alt</b></code> key combinations are not available.</p>
+
+<p>On Unix systems only, you can get sound in the text and command-line interfaces over the PC speaker if you install the <code>beep</code> utility. If you use Ubuntu, be aware that the PC speaker is switched off by default. You'll need to edit <code>/etc/modprobe.d/blacklist.conf</code> and comment out the line <code>blacklist pcspkr</code>. Then, <code>apt-get install beep</code> and be sure to wear appropriate ear protection: the default sound volume is <strong>loud</strong>.</p>
+
+
+<h2>Security</h2>
+<p>PC-BASIC makes some default choices with basic security in mind, but does not sandbox its programs in any meaningful way. BASIC programs have more or less full access to your computer. You should treat them with the same caution as you would shell scripts or binaries. Therefore, do not run a program from the internet that you have not inspected first using <code>LIST</code> or <code>--convert=A</code> on the command line. You wouldn't just download an executable fom the internet and run it either, right?</p>
+
+
+<h2>Differences with GW-BASIC</h2>
+
