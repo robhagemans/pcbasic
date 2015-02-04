@@ -179,9 +179,11 @@ two ways to change these settings:</p>
 <pre>pcbasic --preset=tandy --ctrl-c-break=True
 </pre>
 On the command line, you can leave out the expression <code>=True</code> that is common in switching options.
-Some options have an alternative, short name consisting of a single letter preceded by a single dash, whcih you can use on the command line.</dd>
+Some options have an alternative, short name consisting of a single letter preceded by a single dash, which you can use on the command line. You can combine multiple short options with a single dash.</dd>
 <dt>Configuration files</dt>
-<dd>You can change options by adding or removing lines in the configuration file. The configuration file is a file named <code>PCBASIC.INI</code> stored in your Application Data folder. The location of this folder is as follows:
+<dd>You can change options by adding or removing lines in your private configuration file. 
+This configuration file is a file named <code>PCBASIC.INI</code> stored in your 
+Application Data folder. The location of this folder is as follows:
 <table>
 <tr><th>OS</th><th>Configuration file location</th></tr>
 <tr><td>Windows XP</td><td><code>C:\Documents and Settings\<em>your username</em>\Application Data\pcbasic</code></td></tr>
@@ -312,44 +314,156 @@ The temporary directory is removed when PC-BASIC closes and it is therefore
 not possible to save files and re-open them on the next run of the package.</p>
 
 
-<h2>Working with files</h2>
-
-
-
- + maximum number of files, random access, etc.
-
-
 <h2>Printing</h2>
+<p>You can print from PC-BASIC programs 
+by accessing the <code>LPT1:</code> device. PC-BASIC will send the output to 
+your operating system's default printer, unless you change the <code>lpt1=</code>
+option. To print through a printer named <code>MyPrinter</code>, set 
+<code>lpt1=PRINTER:MyPrinter</code>. You can also attach printers to the 
+<code>LPT2:</code> and <code>LPT3:</code> devices.</p>
 
+<p>The output will be sent to the printer when you close PC-BASIC. If you prefer,
+you can instead send every page separately to the printer by setting 
+<code>print-trigger=page</code>. You can even send every line separately, but 
+this only makes sense on a tractor-fed printer (as was common in GW-BASIC's 
+heyday).</p>
+
+<p>It's easy to print to a file instead of a printer: set <code>lpt1=FILE:output.txt</code> 
+to send all <code>LPT1:</code> printer output to the text file <code>output.txt</code>.
+
+<p>The printing statements <code>LPRINT</code> and <code>LLIST</code> always send 
+their output to PC-BASIC's <code>LPT1:</code> device.<p>
+
+<p>The presentation of printed documents is left to your operating system: it 
+will be the default presentation of text files. If you wist to change the way 
+documents are printed, please refer to your OS's settings. On Windows, for example, text files
+are printed by <code>notepad.exe</code> and changing the default settings in that
+application will change the way PC-BASIC documents are printed. You will need to set a
+printer font that includes the characters you need to print. On Unix systems,
+PC-BASIC will use the <code>paps</code> utility if it is available; this will 
+automatically select fonts that support the characters you need.</p>
 
 <h2>Accessing serial and parallel ports</h2>
+<p>PC-BASIC provides the serial devices <code>COM1:</code> and <code>COM2:</code>.
+To make use of these, you need to attach them to a communications port on your 
+computer with the <code>com1=</code> or <code>com2=</code> option. To attach to 
+the first physical serial port, set <code>com1=PORT:0</code> (or, alternatively, 
+<code>com1=PORT:COM1</code> on Windows or <code>com1=PORT:/dev/ttyS0</code> on
+Linux). If you do not have a serial port, you can emulate one by sending the
+communications over a network socket: set <code>com1=SOCKET:localhost:7000</code>
+and all <code>COM1:</code> traffic will be sent through socket <code>7000</code>.</p>
+
+<p>To access a parallel port, attach it to one of <code>LPT1:</code>, <code>LPT2:</code> or <code>LPT3:</code>.
+For example, set <code>lpt2=PARPORT:0</code> to attach your computer's first
+parallel port to <code>LPT2:</code>.</p>
 
 
 <h2>Emulation targets</h2>
+<p>By default, PC-BASIC emulates GW-BASIC on a system with VGA video capabilities. 
+However, it can emulate several other setups, which differ from each other in 
+terms of video and audio capacity, fonts, memory size, as well as available BASIC syntax.
+The easiest way to set the emulation target is by using a <code>preset</code> option.
+For example, run <code>pcbasic --preset=pcjr</code>. 
+Other available emulation target presets are:</p>
 
+<table>
+<tr>
+<th>Preset</th><th>Emulation target</th>
+</tr>
+<tr>
+<td><code>pcjr</code></td>
+<td>IBM PCjr with Cartridge BASIC, including PCjr video and 3-voice sound capabilities and extended BASIC syntax.</td>
+</tr>
+<tr>
+<td><code>tandy</code></td>
+<td>Tandy 1000 with GW-BASIC, including Tandy video and 3-voice sound capabilities and extended BASIC syntax.</td>
+</tr>
+<tr>
+<td><code>olivetti</code></td>
+<td>Olivetti M24 or AT&amp;T PC 6300.</td>
+</tr>
+<tr>
+<td><code>cga</code></td>
+<td>IBM or compatible with Color/Graphics Adapter and a composite monitor. This enables composite colorburst emulation.</td>
+</tr>
+<tr>
+<td><code>ega</code></td>
+<td>IBM or compatible with Extended Graphics Adapter.</td>
+</tr>
+<tr>
+<td><code>vga</code></td>
+<td>IBM or compatible with Video Graphics Array.</td>
+</tr>
+<tr>
+<td><code>mda</code></td>
+<td>IBM or compatible with Monochrome Display Adapter and
+green-tinted monochrome monitor.</td>
+</tr>
+<tr>
+<td><code>hercules</code></td>
+<td>IBM compatible with Hercules Graphics Adapter and green-tinted
+monochrome monitor.</td>
+</tr>
+</table>
 
-
-
-
-
-
-
+<em>Presets</em> are groups of options that are defined in the default configuration 
+file. You can create your own presets by creating a header in your private configuration 
+file with the name of the new preset, followed by the options you want to apply. For example,
+if you define:
+<pre>[my_preset]
+video=vga
+syntax=pcjr
+</pre>
+you can now run <code>pcbasic --preset=my_preset</code> to start an emulation of 
+a hypothetical machine with a VGA video card running PCjr Cartridge BASIC.
 
 
 <h2>International encoding standards</h2>
 <p>PC-BASIC supports a large number of legacy codepages that were common at the time GW-BASIC was popular, including double-byte character set codepages used for Chinese, Japanese and Korean. You can select your codepage by using the <code>codepage=</code> option. For example, <code>codepage=936</code> selects the GBK codepage commonly used on the Chinese mainland.
 PC-BASIC will load and save all program files as if encoded in the codepage you select.</p>
 
-<p>It is also possible to load and save programs in the nowadays common UTF-8 standard format, by enabling the <code>utf-8</code> option. When <code>utf-8</code> is enabled, "ASCII" program source will be saved and loaded in standard UTF-8 encoding. Please note that you will still need to select a codepage that provides all the Unicode characters that your program needs.</p>
+<p>It is also possible to load and save programs in the nowadays common UTF-8 standard format, by enabling the <code>utf8</code> option. When <code>utf8</code> is enabled, "ASCII" program source will be saved and loaded in standard UTF-8 encoding. Please note that you will still need to select a codepage that provides all the Unicode characters that your program needs.</p>
 
 
 <h2>Fonts</h2>
+<p>PC-BASIC emulates the distinctive raster fonts of IBM-compatible machines. The ROM
+fonts of the original IBM and Tandy adapters (which are in the public 
+domain in a number of countries) have been included in PC-BASIC. These provide the most
+accuate emulation. However, the font ROMs only included a single code page &ndash;
+US-ASCII 437. </p>
+<p>To support code pages beyond 437, PC-BASIC defaults to the <b>CPIDOS</b> font used by 
+default in FreeDOS and DOSBox. This font is very similar in style to the IBM VGA 
+font but has support for many more code pages, in particular Western and Middle 
+Eastern alphabets. If CPIDOS does not include the characters you need, PC-BASIC 
+tries to find them in <b>UNI-VGA</b>, which is also very similar in style to VGA. 
+If that does not suffice, PC-BASIC falls back to <b>GNU UniFont</b> for the 
+missing characters. UniFont's Western glyphs are less similar to the VGA font, but
+it provides support for the full Unicode Basic Multilingual Plane. For example, all Chinese, 
+Japanese and Korean glyphs in PC-BASIC are taken from UniFont.</p>
+<p>It is possible to change the choice of font using the <code>font=</code> option.
+You can provide a list of fonts, where the last font specified is the 
+most preferred one.</p>
+<p>PC-BASIC reads fonts in the <code>.hex</code> format introduced by UniFont. It's 
+easy to define custom fonts in this format: it can be edited in a regular text editor. 
+See the UniFont project for an authoring tool. You can add custom fonts to PC-BASIC by 
+instaling them into the <code>font/</code> subdirectory of PC-BASIC's installation
+directory.</p>
 
-
+<h2>Redirecting input and output</h2>
+<p>PC-BASIC supports redirecting input and output the GW-BASIC way: output redirected with the <code>output=</code> option will be sent to the screen as well as the specified file, while input redirected with <code>input=</code> is taken only from the specified file. Note that screen output through the <code>SCRN:</code> device and keyboard input through the <code>KYBD:</code> device are not redirected. Files are read and written in the codepage set with PC-BASIC.</p>
 
 <h2>Command-line interface</h2>
 <p>You can run PC-BASIC as a command-line interface by setting the <code>interface=cli</code> (or <code>-b</code>) option. No window will be opened: you can type BASIC commands straight into your Command Prompt/Terminal. Use the horizontal arrow keys to move on the current line you're editing; use the vertical arrow keys to show screen rows above and below. Copy and
 paste are available only if the calling shell provides them. On Windows, <code><b>Ctrl</b>+<b>Break</b></code> will terminate PC-BASIC immediately. You can use <code><b>Ctrl</b>+<b>C</b></code> to interrupt the program. The end-of-file key combination (<code><b>Ctrl</b>+<b>D</b></code> on Unix, <code><b>Ctrl</b>+<b>Z</b></code> on Windows) will exit PC-BASIC.
+
+<p>You can use the command-line interface to run one or a few BASIC commands directly, like so:
+<pre>> pcbasic -bqe="?1+1"
+ 2
+>
+</pre>
+</p>
+
+<p>For scripting purposes, it is also possible to run PC-BAIC without any interface by setting <code>interface=none</code> or <code>-n</code>. If this is set, PC-BASIC will take input from and send output to the console as UTF-8 without further modification. This is useful in combination with redirection and pipes.</p>
 
 <h2>Text-based interface</h2>
 <p>There is also a full-screen text interface available: enable it by setting <code>interface=text</code> (or <code>-t</code>). 
@@ -363,6 +477,155 @@ the text-based interface is very similar to the default graphical interface, but
 <h2>Security</h2>
 <p>PC-BASIC makes some default choices with basic security in mind, but does not sandbox its programs in any meaningful way. BASIC programs have more or less full access to your computer. You should treat them with the same caution as you would shell scripts or binaries. Therefore, do not run a program from the internet that you have not inspected first using <code>LIST</code> or <code>--convert=A</code> on the command line. You wouldn't just download an executable fom the internet and run it either, right?</p>
 
-
 <h2>Differences with GW-BASIC</h2>
+
+<p>GW-BASIC was a real-mode DOS program, which means that it had full control over an IBM-compatible 8086 computer. It had direct access to all areas of memory and all devices. Some BASIC programs used this fact, by using <code>POKE</code> and <code>OUT</code> statements as well as <code>CALL</code> and <code>USR</code> machine-code subroutines to perform taks for which BASIC did not provide support. PC-BASIC runs on modern machines which may be based on completely different architectures and anyway do not allow applications to directly access
+memory ar devices. Therefore, it is not possible to run machine code on PC-BASIC. It you need machine code, you'll need to use full 
+CPU emulation such as provided by DOSBox, Bochs or VirtualBox.</p>
+
+<p>PC-BASIC <em>does</em> provide limited support for the <code>POKE</code> and <code>PEEK</code> statements: some of the most commonly accessed regions of memory are emulated and can be read and (sometimes) written. There is read and write support for video memory, font RAM and selected locations of the low memory segment, including the keyboard buffer. Additionally, there is read support for font ROM, variable, array and string memory, <code>FIELD</code> buffers as well as the program code itself. Writing into the program code is disabled by default, but can be enabled with the <code>allow-code-poke</code> option. Use with care. A number of machine ports related to keyboard input and video modes are supported as well.</p> 
+
+<p>The <code>SHELL</code> statement is, by default, disabled; this is to avoid unpleasant surprises. In GW-BASIC under MS-DOS, <code>SHELL</code> opens a DOS prompt or executes commands in it. The command shells of modern operating systems work differently than those of DOS; in particular, it is impossible to retrieve changes in the environment variables, so that many use cases of <code>SHELL</code> simply would not work; for example, changing the current drive on Windows. Moreover, Unix shells have a syntax that is completely different from that of DOS. You can, however, enable <code>SHELL</code> by setting the <code>shell=native</code> option. Use with care.<p>
+
+<table>
+<tr>
+<th>Statement</th>
+<th>Support level</th>
+</tr>
+<tr>
+<td><code>BLOAD</code></td>
+<td>Selected memory areas supported.</td>
+</tr>
+<tr>
+<td><code>BSAVE</code></td>
+<td>Selected memory areas supported.</td>
+</tr>
+<tr>
+<td><code>CALL</code></td>
+<td>Not supported.</td>
+</tr>
+<tr>
+<td><code>CALLS</code></td>
+<td>Not supported.</td>
+</tr>
+<tr>
+<td><code>DEF USR</code></td>
+<td>Not supported.</td>
+</tr>
+<tr>
+<td><code>ERDEV</code></td>
+<td>Not supported.</td>
+</tr>
+<tr>
+<td><code>EXTERR</code></td>
+<td>Not supported.</td>
+</tr>
+<tr>
+<td><code>INP</code></td>
+<td>Selected ports supported.</td>
+</tr>
+<tr>
+<td><code>IOCTL</code>, <code>IOCTL$</code></td>
+<td>Not supported.</td>
+</tr>
+<tr>
+<td><code>OUT</code></td>
+<td>Selected ports supported.</td>
+</tr>
+<tr>
+<td><code>PEEK</code></td>
+<td>Selected memory areas supported.</td>
+</tr>
+<tr>
+<td><code>POKE</code></td>
+<td>Selected memory areas supported.</td>
+</tr>
+<tr>
+<td><code>SHELL</code></td>
+<td>Supported through OS-native shell if <code>shell=native</code> is set.</td>
+</tr>
+<tr>
+<td><code>USR</code></td>
+<td>Not supported.</td>
+</tr>
+<tr>
+<td><code>WAIT</code></td>
+<td>Selected ports supported.</td>
+</tr>
+</table>
+
+<h2>GW-BASIC command-line options</h2>
+<p>GW-BASIC recognised a number of options on the command-line. 
+These are matched by PC-BASIC with only minor modifications:
+<table>
+<tr>
+<th>
+GW-BASIC option
+</th>
+<th>
+PC-BASIC short option
+</th>
+<th>
+PC-BASIC option
+</th>
+<th>
+Effect
+</th>
+</tr>
+<tr>
+<td><code>/d</code></td>
+<td><code>-d</code></td>
+<td><code>--double</code></td>
+<td>Enable double-precision floating-point math functions.</td>
+</tr>
+<tr>
+<td><code>/f:<em>n</em></code></td>
+<td><code>-f=<em>n</em></code></td>
+<td><code>--max-files=<em>n</em></code></td>
+<td>Set the maximum number of open files.</td>
+</tr>
+<tr>
+<td><code>/s:<em>n</em></code></td>
+<td><code>-s=<em>n</em></code></td>
+<td><code>--max-reclen=<em>n</em></code></td>
+<td>Set the maximum record length for <code>RANDOM</code> files.</td>
+</tr>
+<tr>
+<td><code>/c:<em>n</em></code></td>
+<td><code>-c=<em>n</em></code></td>
+<td><code>--serial-buffer-size=<em>n</em></code></td>
+<td>Set the size of the receive buffer for <code>COM</code> devices.</td>
+</tr>
+<tr>
+<td><code>/i:<em>n</em></code></td>
+<td><code>-i=<em>n</em></code></td>
+<td></td>
+<td>No effect.</td>
+</tr>
+<tr>
+<td><code>/m:<em>n</em>,<em>m</em></code></td>
+<td><code>-m=<em>n</em>,<em>m</em></code></td>
+<td><code>--max-memory=<em>n</em>,<em>m</em></code></td>
+<td>Set the highest memory location to <code><em>n</em></code> and maximum BASIC memory size to <code><em>m</em>*16</code> bytes.</td>
+</tr>
+<tr>
+<td><code>><em>filename</em></code></td>
+<td></td>
+<td><code>--output=<em>filename</em></code></td>
+<td>Write screen output to <code><em>filename</em></code>.</td>
+</tr>
+<tr>
+<td><code>>><em>filename</em></code></td>
+<td></td>
+<td><code>--output=<em>filename</em> --append</code></td>
+<td>Append screen output to <code><em>filename</em></code>.</td>
+</tr>
+<tr>
+<td><code><<em>filename</em></code></td>
+<td></td>
+<td><code>--input=<em>filename</em></code></td>
+<td>Read keyboard input from <code><em>filename</em></code>.</td>
+</tr>
+</table>
+
 

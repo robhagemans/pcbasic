@@ -68,16 +68,6 @@ A few selected command-line options:
 `pcbasic PROGRAM.BAS` runs PROGRAM.BAS directly.  
 `pcbasic -h` shows all available command line options.  
 
-By default, PC-BASIC emulates GW-BASIC on a system with VGA video capabilities. The emulation target can be changed by selecting one of the following presets with the `preset` option:  
-
-| Preset  |  Emulation target  
-|---------|------------------------------------------------------------------  
-| `cga`   |  GW-BASIC with CGA graphics, including composite colourburst mode.  
-| `pcjr`  |  IBM PCjr Cartridge BASIC, including PCjr video and 3-voice sound capabilities and extended BASIC syntax.  
-| `tandy` |  Tandy-1000 GW-BASIC, including Tandy video and 3-voice sound capabilities and extended BASIC syntax.  
-
-For example, run `pcbasic --preset=pcjr`. Other available presets include `mda`, `ega`, `hercules`, `olivetti`. 
-
 If you're running PC-BASIC from a GUI, you can set the required options in the configuration file instead. The configuration file is a file named `PCBASIC.INI`, stored in the following location:
 
 | OS         | Configuration file location  
@@ -87,10 +77,9 @@ If you're running PC-BASIC from a GUI, you can set the required options in the c
 | OS X       | `~/Library/Application Support/pcbasic`   
 | Linux      | `~/.config/pcbasic`  
 
-For example, you could include the following line in `PCBASIC.INI` to emulate Cartridge Basic by default:
+For example, you could include the following line in `PCBASIC.INI` to emulate IBM PCjr Cartridge Basic instead of GW-BASIC 3.23:
 
     preset=pcjr  
-
 
 
 For a full list of options, consult the text file [`info/USAGE`](https://sourceforge.net/p/pcbasic/code/ci/master/tree/info/USAGE) or run `pcbasic -h`.
