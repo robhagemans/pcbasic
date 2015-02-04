@@ -48,6 +48,7 @@ def prepare():
     prepare_keyboard()
     prepare_audio()
     prepare_video()
+    redirect.prepare_redirects()
     state.basic_state.events = Events()
 
 

@@ -24,6 +24,10 @@ output_echos = []
 
 def prepare():
     """ Initialise redirect module. """
+    pass
+
+def prepare_redirects():
+    """ Initialise i/o redirects. """
     if config.options['output']:
         mode = 'ab' if config.options['append'] else 'wb'
         try:
