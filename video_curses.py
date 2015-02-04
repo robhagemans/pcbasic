@@ -233,6 +233,8 @@ def set_attr(cattr):
 
 def putc_at(pagenum, row, col, c, for_keys=False):
     """ Put a single-byte character at a given position. """
+    if c == '\0':
+        c = ' '
     try:
         window.addstr(row-1, col-1, unicodepage.UTF8Converter().to_utf8(c), colours(attr))
     except curses.error:
