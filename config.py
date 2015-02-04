@@ -131,7 +131,7 @@ arguments = {
     'text-width': {'type': 'int', 'choices':(40, 80), 'default': 80,},
     'video-memory': {'type': 'int', 'default': 262144,},
     'shell': {'type': 'string', 'default': 'none',},
-    'print-trigger': {'type': 'string', 'default':'close',},
+    'print-trigger': {'type': 'string', 'choices':('close', 'page', 'line'), 'default':'close',},
     'altgr': {'type': 'bool', 'default': True,},
     'ctrl-c-break': {'type': 'bool', 'default': False,},
     'wait': {'type': 'bool', 'default': False,},
