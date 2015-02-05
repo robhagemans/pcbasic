@@ -1,8 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
-<meta name="generator" content=
-"HTML Tidy for Linux/x86 (vers 25 March 2009), see www.w3.org">
+<link rel="stylesheet" type="text/css" href="docstyle.css">
 <title></title>
 </head>
 <body>
@@ -13,24 +12,24 @@ the BASIC dialects with a high degree of accuracy, aiming for
 bug-for-bug compatibility. PC-BASIC also emulates the most common
 video and audio hardware supported by these BASIC dialects in their
 time.</p>
-<h2>SYNOPSIS</h2>
-<code>pcbasic</code> <em><code>[program|package] [convert_output]
-[options]</code></em>
-<h2>OPTIONS</h2>
-<p><em><code>program|package</code></em><br>
-A <code>.bas</code> program or <code>.zip</code> package can be
+<h2>Synopsis</h2>
+<p><code>pcbasic</code> <em><code>[program|package] [convert_output]
+[options]</code></em></p>
+<h2>Options</h2>
+<dl>
+<dt><em><code>program|package</code></em></dt>
+<dd>A <code>.bas</code> program or <code>.zip</code> package can be
 specified as the first argument. If a program is specified, it will
 be run. If a package is specified, its configuration file
 <code>PCBASIC.INI</code> will be loaded; usually, it will run a
 packaged program file. This behaviour is affected by the
 <code>--run</code>, <code>--load</code> and <code>--convert</code>
-options.</p>
-<p><em><code>convert_output</code></em><br>
-See the <code>--convert</code> option.</p>
-<p><em><code>options</code></em><br>
-See the full table of options below. If no options are present, the
-interpreter will run in interactive mode.</p>
-<dl>
+options.</dd>
+<dt><em><code>convert_output</code></em></dt>
+<dd>See the <code>--convert</code> option.</dd>
+<dt><em><code>options</code></em></dt>
+<dd>See the full table of options below. If no options are present, the
+interpreter will run in interactive mode.</dd>
 <dt><code>--altgr [=True|=False]</code></dt>
 <dd>If <code>True</code> (default), interpret the right
 <strong><code>Alt</code></strong> key as
@@ -781,7 +780,7 @@ closing the window on exit. Only works for
 <code>--interface=graphical</code> or
 <code>--interface=text</code>. Default is <code>False</code>.</dd>
 </dl>
-<h2>EXAMPLES</h2>
+<h2>Examples</h2>
 <dl>
 <dt><code>pcbasic</code></dt>
 <dd>Start PC-BASIC in interactive mode, emulating GW-BASIC/BASICA
@@ -797,8 +796,8 @@ package.</dd>
 <dd>List the main program of package Foobar to standard output as
 UTF-8.</dd>
 <dt><code>pcbasic MYPROG.BAS --mount=A:./files,B:./morefiles</code>
-[unix]<code><br>
-pcbasic MYPROG.BAS --mount=A:.\\files,B:.\\morefiles</code>
+[unix]<br />
+<code>pcbasic MYPROG.BAS --mount=A:.\\files,B:.\\morefiles</code>
 [windows]</dt>
 <dd>Mount the current directory's subdirectory <code>files</code>
 as drive <code>A:</code> and subdirectory <code>morefiles</code> as
