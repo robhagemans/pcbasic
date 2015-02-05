@@ -23,9 +23,9 @@ practically all commands that can be run in the working environment can be used
 in a program, and vice versa.</p>
 
 <p>The default PC-BASIC screen has 25 rows and 80 columns. The 25th row is used
-by PC-BASIC to show keyboard shortcuts &ndash; more about those later &ndash; 
+by PC-BASIC to show keyboard shortcuts,
 which means you can't use it to type on. In some video modes, there are only 40 
-or even only 20 columns.</p>
+or 20 columns.</p>
 
 <p><em>Logical lines</em> exceed the width of the physical row: if you keep 
 typing beyond the screen width, the text will 
@@ -38,7 +38,7 @@ line-feed, entered with <code><b>Ctrl</b>+<b>Enter</b></code>.</p>
 logical line on which the cursor is placed as a command. When the command is executed correctly, PC-BASIC will display the prompt <code>Ok</code>. If there is an error, it will display an error message followed by <code>Ok</code>.
 If the line starts with a number, it will be stored as a program line. No prompt is displayed.</p>
 
-The following keys have a special effect in the working environment:
+<p>The following keys have a special effect in the working environment:</p>
 <table>
 <tr>
 <td><code><b>&#8593;<!--up--></b></code> or <code><b>Ctrl</b>+<b>6</b></code></td>
@@ -155,7 +155,8 @@ If your operating system does not catch the
 <code><b>Logo</b></code> key (Windows key), you can also copy and paste using the keyboard.
 <table>
 <tr>
-<td><code><b>Logo</b>+</code>arrow keys</td>
+<td><code><b>Logo</b>+<b>&#8593;<!--up--></b><b>&#8595;<!--down--></b><b>&#8592;<!--left--></b><b>&#8594;<!--right--></b></code>
+</td>
 <td>Select a screen region.</td>
 </tr>
 <tr>
@@ -172,6 +173,8 @@ If your operating system does not catch the
 </tr>
 </table>
 </dl>
+
+
 
 <h2>Changing settings</h2>
 <p>PC-BASIC has a number of settings that change the way it operates. There are 
@@ -197,7 +200,7 @@ Change an option in the configuration file by adding a line in the section named
 <pre>preset=tandy
 ctrl-c-break=True
 </pre>
-You cannot use the sort name of options in the configuration file. You can also not leave out the expression <code>=True</code>.
+You cannot use the sort name of options in the configuration file. You also cannot leave out the expression <code>=True</code>.
 </dd>
 </ol>
 <p>In either method, the options have the same name and syntax. In what follows, we will often refer to 
@@ -212,27 +215,27 @@ To run the program, type the command <code>RUN</code> (without a line number). P
 <p>Normally, you can <em>not</em> use  <code><b>Ctrl</b>+<b>C</b></code> to interrupt a running program. However, some keyboards do not have a <code><b>Ctrl</b>+<b>Break</b></code> or <code><b>Ctrl</b>+<b>Scroll Lock</b></code> key, which would make it impossible to interrupt a program that does not exit. If you have such a system, you can enable the <code>ctrl-c-break</code> option. This is enabled by default on OS X systems as well as when using the text-based or command-line interface.
 </p>
 
-<p>A program can be stored on a drive by using the <code>SAVE</code> command, in one of three ways:
+<p>A program can be stored on a drive by using the <code>SAVE</code> command, in one of three ways:</p>
 <ol>
 <li>ASCII text, readable by a text editor: <code>SAVE "MYPROG",A</code></li>
 <li>Bytecode, taking up less storage space: <code>SAVE "MYPROG"</code></li>
 <li>Protected, which is an encrypted format:  <code>SAVE "MYPROG",P</code></li>
 </ol>
-In all three cases, the program will be written to the current working directory with the name <code>PROGRAM.BAS</code>.</p>
+<p>In all three cases, the program will be written to the current working directory with the name <code>PROGRAM.BAS</code>.</p>
 
 <p>PC-BASIC can read and write Protected files created by GW-BASIC. Unlike GW-BASIC, however, it does not disable accessing the unencrypted contents of the file. The encryption used by GW-BASIC has been broken many decades ago, so Protected mode offered little protection anyway; disallowing access is a small security hazard as it would allow someone to send you a program that you cannot inspect before running it. However, it is possible to disable access of protected files by enabling the option <code>strict-protect</code>.
 </p>
-You can read a program file into memory with <code>LOAD "MYPROG"</code>. This will erase the program currently in memory and replace it with the one read from the current working directory.
+<p>You can read a program file into memory with <code>LOAD "MYPROG"</code>. This will erase the program currently in memory and replace it with the one read from the current working directory.
 To access files in a different directory, specify a path from the current 
 directory. The path specification follows DOS conventions. The only valid path 
 separator is the backslash <code>\</code>. For example, <code>LOAD "PROGRAMS\MYPROG"</code>.
 </p>
 
 <p>You can load or run a program immediately on starting PC-BASIC by using the <code>load</code> or <code>run</code> options.
-For example,
+For example,</p>
 <pre>pcbasic --run=MYPROG.BAS
 </pre>
-The arguments to these options can be provided 
+<p>The arguments to these options can be provided 
 as PC-BASIC paths or as paths in the standard form for your operating 
 system.</p>
 
@@ -277,24 +280,26 @@ longer than 8.3 or ends in a dot.</p>
 <p>By default, drive letter <code>Z:</code> is mapped to the current working directory and 
 is the current drive. In particular, it is not mapped to the Windows <code>Z:</code> 
 drive, if that exists. You can map drives and other file system locations as PC-BASIC drive letters by
-using the <code>mount</code> option. For example, 
+using the <code>mount</code> option. For example, </p>
 <pre>pcbasic --mount=A:C:\Users\Me\BasicFloppy,C:C:\Users\Me\Stuff
-</pre> or, on Unix,
+</pre> 
+<p>or, on Unix,</p>
 <pre>pcbasic --mount=A:/home/me/BasicFloppy,C:/home/me/Stuff
 </pre>
-will map those locations to the PC-BASIC <code>A:</code> and <code>C:</code> drives.<p>
+<p>will map those locations to the PC-BASIC <code>A:</code> and <code>C:</code> drives.</p>
 
 <p>If you want PC-BASIC's drive letters to be the same as those in Windows, enable the option <code>map-drives</code>. Use this with caution, since it means that your programs can now read and write on all drives that Windows allows you access to. On non-Windows systems, <code>map-drives</code> will map <code>C:</code> to your file system root, <code>H:</code> to your home directory and <code>Z:</code> to your current working directory.</p>
 
 
 <h3>A note on BASIC files</h3>
 <p>Many BASIC dialects use the same extension <code>.BAS</code>, but their files are not compatible. 
-PC-BASIC runs GW-BASIC program files only. Some tips to recognise GW-BASIC programs:  
+PC-BASIC runs GW-BASIC program files only. Some tips to recognise GW-BASIC programs:  </p>
 <ul>
 <li>GW-BASIC files stored as ASCII are plain text files with line numbers.</li>
 <li>Bytecode files are binary files that start with magic byte <code>FF</code>.</li>
 <li>Protected files are binary files that start with magic byte <code>FE</code>.</li>
 </ul>
+<p>
 In particular, QBASIC files (which have no line numbers) and QuickBASIC files (magic byte <code>FC</code>) will not run.</p>
 
 <p>PC-BASIC will accept both DOS and Unix newline conventions for programs stored as ASCII text. This behaviour is different from GW-BASIC, which only accepts text files in DOS format: <code>CR/LF</code> line endings, <code>^Z</code> (character 26) at end-of-file. In some exceptional cases, correct GW-BASIC ASCII files may not be loaded correctly: for example, if they contain LF characters followed by a number. If you encounter such a case, use the <code>strict-newline</code> option to enable GW-BASIC behaviour.
@@ -334,7 +339,7 @@ heyday).</p>
 to send all <code>LPT1:</code> printer output to the text file <code>output.txt</code>.
 
 <p>The printing statements <code>LPRINT</code> and <code>LLIST</code> always send 
-their output to PC-BASIC's <code>LPT1:</code> device.<p>
+their output to PC-BASIC's <code>LPT1:</code> device.</p>
 
 <p>The presentation of printed documents is left to your operating system: it 
 will be the default presentation of text files. If you wist to change the way 
@@ -407,18 +412,19 @@ green-tinted monochrome monitor.</td>
 monochrome monitor.</td>
 </tr>
 </table>
-
+<p>
 <em>Presets</em> are groups of options that are defined in the default configuration 
 file. You can create your own presets by creating a header in your private configuration 
 file with the name of the new preset, followed by the options you want to apply. For example,
-if you define:
+if you define:</p>
 <pre>[my_preset]
 video=vga
 syntax=pcjr
 </pre>
+<p>
 you can now run <code>pcbasic --preset=my_preset</code> to start an emulation of 
 a hypothetical machine with a VGA video card running PCjr Cartridge BASIC.
-
+</p>
 
 <h2>International encoding standards</h2>
 <p>PC-BASIC supports a large number of legacy codepages that were common at the time GW-BASIC was popular, including double-byte character set codepages used for Chinese, Japanese and Korean. You can select your codepage by using the <code>codepage=</code> option. For example, <code>codepage=936</code> selects the GBK codepage commonly used on the Chinese mainland.
@@ -460,12 +466,12 @@ directory.</p>
 <p>You can run PC-BASIC as a command-line interface by setting the <code>interface=cli</code> (or <code>-b</code>) option. No window will be opened: you can type BASIC commands straight into your Command Prompt/Terminal. Use the horizontal arrow keys to move on the current line you're editing; use the vertical arrow keys to show screen rows above and below. Copy and
 paste are available only if the calling shell provides them. On Windows, <code><b>Ctrl</b>+<b>Break</b></code> will terminate PC-BASIC immediately. You can use <code><b>Ctrl</b>+<b>C</b></code> to interrupt the program. The end-of-file key combination (<code><b>Ctrl</b>+<b>D</b></code> on Unix, <code><b>Ctrl</b>+<b>Z</b></code> on Windows) will exit PC-BASIC.
 
-<p>You can use the command-line interface to run one or a few BASIC commands directly, like so:
+<p>You can use the command-line interface to run one or a few BASIC commands directly, like so:</p>
 <pre>> pcbasic -bqe="?1+1"
  2
 >
 </pre>
-</p>
+
 
 <p>For scripting purposes, it is also possible to run PC-BASIC without any interface by setting <code>interface=none</code> or <code>-n</code>. If this is set, PC-BASIC will take input from and send output to the console as UTF-8 without further modification. This is useful in combination with redirection and pipes.</p>
 
@@ -558,7 +564,9 @@ CPU emulation such as provided by DOSBox, Bochs or VirtualBox.</p>
 </tr>
 </table>
 
-**strict preset**
+<p>The highest level of compatibility with GW-BASIC can be attained bt setting <code>preset=strict</code>, 
+which switches off all convenience and security features that cause differences with
+GWBASIC.</p>
 
 <h2>GW-BASIC command-line options</h2>
 <p>GW-BASIC recognised a number of options on the command-line. 

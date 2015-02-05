@@ -8,10 +8,13 @@
 <h1><code>pcbasic</code> &ndash; PC-BASIC interpreter</h1>
 <p>PC-BASIC is a free, cross-platform interpreter for GW-BASIC,
 BASICA, PCjr Cartridge Basic and Tandy 1000 GW-BASIC. It interprets
-the BASIC dialects with a high degree of accuracy, aiming for
-bug-for-bug compatibility. PC-BASIC also emulates the most common
-video and audio hardware supported by these BASIC dialects in their
+these BASIC dialects with a high degree of accuracy, aiming for
+bug-for-bug compatibility. PC-BASIC emulates the most common
+video and audio hardware supported in their
 time.</p>
+
+<p><small>This documentation is copyright (c) 2014-2015 Rob Hagemans and licensed under a 
+Creative Commons Attribution-ShareAlike 4.0 International License.</small></p>
 <h2>Synopsis</h2>
 <p><code>pcbasic <em>[program|package] [convert_output]
 [options]</em></code></p>
@@ -26,10 +29,12 @@ packaged program file. This behaviour is affected by the
 <code>--run</code>, <code>--load</code> and <code>--convert</code>
 options.</dd>
 <dt><code><em>convert_output</em></code></dt>
-<dd>See the <code>--convert</code> option.</dd>
+<dd>Set the output file for file format conversion. See the <code>--convert</code> option.</dd>
 <dt><code><em>options</em></code></dt>
 <dd>See the full table of options below. If no options are present, the
 interpreter will run in interactive mode.</dd>
+<dt><code>--allow-code-poke[=True|=False]</code></dt>
+<dd>Allow programs to <code>POKE</code> into code memory.</dd>
 <dt><code>--altgr[=True|=False]</code></dt>
 <dd>If <code>True</code> (default), interpret the right
 <code><b>Alt</b></code> key as
@@ -37,25 +42,23 @@ interpreter will run in interactive mode.</dd>
 <code><b>Alt</b></code>. The left
 <code><b>Alt</b></code> key is always seen as
 <code><b>Alt</b></code>.</dd>
-<dt><code>-t</code></dt>
-<dd>Use text-based interface. Same as
-<code>--interface=text</code>.</dd>
-<dt><code>--allow-code-poke[=True|=False]</code></dt>
-<dd>Allow programs to <code>POKE</code> into code memory.</dd>
 <dt><code>--append[=True|=False]</code></dt>
 <dd>Use with
 <code>--output=<em>output_file</em></code>. Append to
 <code><em>output_file</em></code>, do not overwrite.</dd>
 <dt><code>--aspect=<em>x,y</em></code></dt>
-<dd>Set the display aspect ratio to <code><em>x/y</em></code>.
+<dd>Set the display aspect ratio to <code><em>x</em>:<em>y</em></code>.
 Graphical interface only.</dd>
+<dt><code>-b</code></dt>
+<dd>Use command-line text interface. Same as
+<code>--interface=cli</code>.</dd>
 <dt><code>--border=<em>width</em></code></dt>
-<dd>Set the <code><em>width</em></code> of the screen border as a
+<dd>Set the width of the screen border as a
 percentage from 0&mdash;100. The percentage refers to the total
 width of the borders on both sides as a fraction of the usable
 screen width. Graphical interface only.</dd>
 <dt><code>--caption=<em>title</em></code></dt>
-<dd>Set the <code><em>title</em></code> of the PC-BASIC window.
+<dd>Set the title of the PC-BASIC window.
 Default is <em>PC-BASIC 3.23</em>.</dd>
 <dt><code>--capture-caps[=True|=False]</code></dt>
 <dd>Handle the <code><b>Caps Lock</b></code> key. This
@@ -63,16 +66,11 @@ may collide with the operating system's own handling.</dd>
 <dt><code>--cga-low[=True|=False]</code></dt>
 <dd>Use low-intensity palettes in CGA. This only has an effect on
 CGA, EGA or VGA card emulation.</dd>
-<dt><code>-b</code></dt>
-<dd>Use command-line text interface. Same as
-<code>--interface=cli</code>.</dd>
 <dt><code>--codepage=<em>codepage_id</em></code></dt>
 <dd>Load the specified codepage. The codepage determines which
 characters are associated to a given character byte or, in the case
-of double-byte codepages, two character bytes. PC-BASIC specifies
-codepages through a mapping to Unicode. The available codepages
-depend on which mappings are stored in the encodings/ directory. By
-default, the following codepages are available:
+of double-byte codepages, two character bytes. 
+The following codepages are available:
 <table>
 <tr>
 <th><code><em>codepage_id</em></code></th>
@@ -239,15 +237,14 @@ default, the following codepages are available:
 <td>VISCII</td><td>Vietnamese</td>
 </tr>
 </table>
-Codepages are not officially standardised, but for those represented
-by a number in this list the implementation by IBM and Microsoft
-has been largely consistent. Some codepages that have been assigned
-numbers inconsistently or whose numbers conflict with others have
-been assigned a name instead. Some languages remain woefully
+You can add custom codepages to PC-BASIC, by adding a file with
+its mapping to Unicode to the <code>encodings/</code> directory.<br />
+Some languages remain woefully
 underrepresented in this list, most notably the Indic languages. If
 you have information on codepages in common use in the days of
 GW-BASIC but not represented in this list, please contact the
-author.</dd>
+author.
+</dd>
 <dt><code>--config=<em>config_file</em></code></dt>
 <dd>Read a configuration file. The default configuration file
 <code>info/PCBASIC.INI</code> is always read, but any preset
@@ -266,8 +263,8 @@ number 0.</td>
 </tr>
 <tr>
 <td><code>SOCKET:<em>host</em>:<em>socket</em></code></td>
-<td>connect to a TCP <code><em>socket</em></code> on a remote or
-local <code><em>host</em></code>.</td>
+<td>connect to a TCP socket on a remote or
+local host.</td>
 </tr>
 </table>
 If this option is not specified, the <code>COM1</code> device is
@@ -297,26 +294,23 @@ standard output. If program is not specified, use the argument of
 given, read from standard input. Overrides <code>--resume</code>,
 <code>--run</code> and <code>--load</code>.</dd>
 <dt><code>--ctrl-c-break[=True|=False]</code></dt>
-<dd>If <code>True</code>, treat
+<dd>
+If <code>False</code>, follow GW-BASIC behaviour
+where <code><b>Ctrl</b>+<b>C</b></code> breaks <code>AUTO</code>
+and <code>INPUT</code> but not program execution or
+<code>LIST</code>.<br />
+If <code>True</code>, treat
 <code><b>Ctrl</b>+<b>C</b></code> exactly like
 <code><b>Ctrl</b>+<b>Break</b></code> and
 <code><b>Ctrl</b>+<b>Scroll Lock</b></code> in graphical
-interface mode. If <code>False</code>, follow GW-BASIC behaviour
-where <code><b>Ctrl</b>+<b>C</b></code> breaks <code>AUTO</code>
-and <code>INPUT</code> but not program execution or
-<code>LIST</code>. Set to <code>True</code> if your keyboard does
+interface mode.  Use if your keyboard does
 not have a <code><b>Break</b></code> or
-<code><b>Scroll Lock</b></code> key. Default is False on
-Windows and Linux and True on OSX. In <code>text</code> and
+<code><b>Scroll Lock</b></code> key.<br /> 
+Default is <code>False</code> on
+Windows and Linux and <code>True</code> on OSX. In <code>text</code> and
 <code>cli</code> interface mode,
 <code><b>Ctrl</b>+<b>C</b></code> is always treated like
-<code><b>Ctrl</b>+<b>Break</b></code>. If
-<code>--interface=none</code>, <code><b>Ctrl</b>+<b>C</b></code>
-exits pc-basic.</dd>
-<dt><code>--debug</code></dt>
-<dd>Debugging mode. This enables crash tracebacks and the
-<code>DEBUG</code> statement. For the <code>DEBUG</code> statement,
-the source code is your documentation ;)</dd>
+<code><b>Ctrl</b>+<b>Break</b></code>.
 <dt><code>--dimensions=<em>X</em>,<em>Y</em></code></dt>
 <dd>Set window dimensions to <code><em>X</em></code> by
 <code><em>Y</em></code> pixels. This overrides
@@ -343,7 +337,7 @@ are available:
 <tr>
 <th><code><em>font_name</em></code></th>
 <th>Name</th>
-<th>Pixel sizes</th>
+<th>Sizes</th>
 <th>Codepages</th>
 </tr>
 <tr>
@@ -714,14 +708,16 @@ statements.</dd>
 </tr>
 </table>
 </dd>
+<dt><code>-t</code></dt>
+<dd>Use text-based interface. Same as
+<code>--interface=text</code>.</dd>
 <dt><code>--text-width={40,80}</code></dt>
 <dd>Set the number of columns in text mode at startup. Default is
 80.</dd>
 <dt><code>--utf8[=True|=False]</code></dt>
-<dd>Use UTF-8 for ascii-mode programs and redirected I/O. If set,
-programs stored as ascii (rather than bytecode) will be converted
-from UTF-8 on LOAD and to UTF-8 on SAVE. Redirected input and
-output is also converted to and from UTF-8.</dd>
+<dd>Use UTF-8 for ASCII-mode programs. If <code>True</code>,
+programs stored as ASCII (rather than bytecode) will be converted
+from UTF-8 on <code>LOAD</code> and to UTF-8 on <code>SAVE</code>.</dd>
 <dt><code>-v</code><br>
 <code>--version</code></dt>
 <dd>Print PC-BASIC version and exit.</dd>
@@ -785,8 +781,7 @@ closing the window on exit. Only works for
 <dd>Start PC-BASIC in interactive mode, emulating GW-BASIC/BASICA
 with VGA graphics.</dd>
 <dt><code>pcbasic --codepage=950</code></dt>
-<dd>Start PC-BASIC in default mode but using the Traditional
-Chinese codepage.</dd>
+<dd>Start PC-BASIC using the Big-5 codepage.</dd>
 <dt><code>pcbasic Foobar.baz</code></dt>
 <dd>Start PC-BASIC with package Foobar. Load the settings from the
 package; usually this will run a main program contained in the
@@ -820,7 +815,7 @@ the keystrokes <code><b>s</b><b>t</b><b>a</b><b>r</b><b>t</b><b>ENTER</b></code>
 <dd>Run <code>BANNER.BAS</code> in default mode with the default
 printer attached to <code>LPT2:</code>.</dd>
 <dt><code>pcbasic --resume</code></dt>
-<dd>Resume the last closed PC-BASIC session.</dd>
+<dd>Resume the most recently closed PC-BASIC session.</dd>
 <dt><code>pcbasic -qbe="?1+1"</code></dt>
 <dd>Execute the BASIC command <code>PRINT 1+1</code> in the
 command-line interface and return to the calling shell.</dd>
