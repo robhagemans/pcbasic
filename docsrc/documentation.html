@@ -145,7 +145,44 @@ line extends onto the next line. Arrow keys exit
 insert mode.</td>
 </tr>
 </table>
-    
+
+<p>When a program is started, the commands in the program are followed until the
+program quits and returns to interactive mode or until user input is required.
+When a program is running, a few keys have immediate effect:</p>
+<table>
+<tr>
+<td>
+<code><b>Pause</b></code> or <code><b>Ctrl</b></code>+<code><b>Num Lock</b></code>  
+</td><td>
+Pause execution. Press another key to resume.
+</td></tr><tr>
+<td>
+<code><b>Ctrl</b></code>+<code><b>Break</b></code>                
+or <code><b>Ctrl</b></code>+<code><b>Scroll Lock</b></code>       
+</td>
+<td>
+Stop execution and return to interactive mode. A <code>Break</code> message is printed.
+</td>
+</tr>
+</table>
+
+<p>If user input is required by the statements <code>INPUT</code>, <code>LINE INPUT</code>, or <code>RANDOMIZE</code>, 
+most keys have the same effect as in interactive mode. The following keys have a different effect:</p>
+<table>
+<tr>
+<td>
+<code><b>Ctrl</b></code>+<code><b>Break</b></code> or <code><b>Ctrl</b></code>+<code><b>C</b></code>    
+or <code><b>Ctrl</b></code>+<code><b>Scroll Lock</b></code>       
+</td><td>
+Stop execution and return to interactive mode.
+A <code>Break</code> message is printed.
+</td></tr><tr><td>
+<code><b>Enter</b></code>                     
+</td><td>
+Finish input and return to the previous mode.
+</td>
+</tr>
+</table>    
 <p>Unlike in GW-BASIC, you can copy and paste text to the clipboard. Two ways:
 <dl>
 <dt>Using the mouse:</dt><dd>Left button is select and copy; middle button 
@@ -175,6 +212,53 @@ If your operating system does not catch the
 </dl>
 
 
+<h2>Keyboard shortcuts</h2>
+<p>The function keys and the alt key can be used as keyboard shortcuts for some
+keywords. 
+The default values for the function keys are:</p>
+<table>
+<tr>
+<td><code><b>F1</b></code></td><td><code>LIST</code></td>
+</tr>
+<tr>
+<td><code><b>F2</b></code></td><td><code>RUN</code><code><b>Enter</b></code></td>
+</tr>
+<tr>
+<td><code><b>F3</b></code></td><td><code>LOAD"</code></td>
+</tr>
+<tr>
+<td><code><b>F4</b></code></td><td><code>SAVE"</code></td>
+</tr>
+<tr>
+<td><code><b>F5</b></code></td><td><code>CONT</code><code><b>Enter</b></code></td>
+</tr>
+<tr>
+<td><code><b>F6</b></code></td><td><code>,"LPT1:"</code><code><b>Enter</b></code></td>
+</tr>
+<tr>
+<td><code><b>F7</b></code></td><td><code>TRON</code><code><b>Enter</b></code></td>
+</tr>
+<tr>
+<td><code><b>F8</b></code></td><td><code>TROFF</code><code><b>Enter</b></code></td>
+</tr>
+<tr>
+<td><code><b>F9</b></code></td><td><code>KEY</code><code><b>Space</b></code></td>
+</tr>
+<tr>
+<td><code><b>F10</b></code></td><td><code>SCREEN 0,0,0</code><code><b>Enter</b></code></td>
+</table>
+<p>The function key shortcuts can be redefined (see the <code>KEY</code> statement). The key
+values are displayed at the bottom of the screen.</p>
+<p>
+The <code><b>Alt</b></code> shortcuts cannot be redefined. The following keywords can be entered 
+with <code><b>Alt</b></code>+the first letter:</p>
+<pre>  AUTO     BSAVE    COLOR    DELETE   ELSE    FOR     GOTO     HEX$
+  INPUT    KEY      LOCATE   MOTOR    NEXT    OPEN    PRINT    RUN
+  SCREEN   THEN     USING    VAL      WIDTH   XOR
+</pre><p>Furthermore, the <code><b>Alt</b></code> key can be used to enter characters by their ASCII code.
+This is done by pressing the <code><b>Alt</b></code> key and typing the decimal value of the 
+ ASCII code on the numeric keypad, then releasing the <code><b>Alt</b></code> key.
+</p>
 
 <h2>Changing settings</h2>
 <p>PC-BASIC has a number of settings that change the way it operates. There are 
@@ -210,7 +294,16 @@ a particular option setting; remember that you can always set this from the comm
 
 <h2>BASIC programs</h2>
 <p>PC-BASIC can hold one BASIC program at a time in memory. To enter a program line, start with a <em>line number</em> and enter BASIC commands after that. The maximum length of a program line is 255 characters, including the line number and any spaces. The program line will not be immediately executed, but stored in the program. Program lines are sorted by line number, so that line <code>10</code> is executed before line <code>20</code>.
-To run the program, type the command <code>RUN</code> (without a line number). PC-BASIC will now execute all program lines in order inside the working environment. You cannot move the cursor around or enter commands while the program is running. If and when the program finishes, it will return control of the working environment to you. You can interrupt a program at any time by using one of the key combinations <code><b>Ctrl</b>+<b>Break</b></code> or <code><b>Ctrl</b>+<b>Scroll Lock</b></code>. The program will stop immediately, print a <code>Break</code> message and return control to you.</p>
+All program 
+lines must have a line number. Line numbers range from <code>0</code> to <code>65535</code> inclusive.
+It is not possible to enter a line number higher than <code>65529</code>, but these can 
+exist in loaded programs. In GW-BASIC and if <code>strict-hidden-lines=True</code>, 
+lines between <code>65530</code> and <code>65535</code> are not visible in 
+the program's <code>LIST</code>.
+Within one program line, statements are separated by colons <code>:</code>.</p>
+
+<p>To run the program, type the command <code>RUN</code>. PC-BASIC will now execute all program lines in order inside the working environment. You cannot move the cursor around or enter commands while the program is running. If and when the program finishes, it will return control of the working environment to you. You can interrupt a program at any time by using one of the key combinations <code><b>Ctrl</b>+<b>Break</b></code> or <code><b>Ctrl</b>+<b>Scroll Lock</b></code>. The program will stop immediately, print a <code>Break</code> message and return control to you.</p>
+
 
 <p>Normally, you can <em>not</em> use  <code><b>Ctrl</b>+<b>C</b></code> to interrupt a running program. However, some keyboards do not have a <code><b>Ctrl</b>+<b>Break</b></code> or <code><b>Ctrl</b>+<b>Scroll Lock</b></code> key, which would make it impossible to interrupt a program that does not exit. If you have such a system, you can enable the <code>ctrl-c-break</code> option. This is enabled by default on OS X systems as well as when using the text-based or command-line interface.
 </p>

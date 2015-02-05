@@ -14,17 +14,33 @@ body {
     padding: 1em;
 }
 
-h1, h2 {
-    border-bottom: 2px solid #333333;
-}
 
 h1 {
     font-size: 130%;
+    border-bottom: 2px solid #333333;
 }
 h2 {
     margin-top: 2em;
     margin-bottom: 0em;
     font-size: 120%;
+    border-bottom: 2px solid #333333;
+}
+h3 {
+    border-top: 1px solid #333333;
+/*    border-bottom: 1px solid #333333; */
+    margin-top: 2em;
+    margin-bottom: 0em;
+    font-size: 110%;
+}
+h4 {
+    margin-top: 0em;
+    margin-bottom: 0em;
+    font-weight: 600;
+}
+
+
+ul {
+    margin-top: 0em;
 }
 
 p {
@@ -51,7 +67,7 @@ code {
     white-space: nowrap;
 }
 
-dd>code, p>code, dt>code {
+dd>code, p>code, dt>code, li>code {
     background-color: #eeeeff;
     border-radius: 0.2em;
     padding: 0.1em 0.5em 0.1em 0.5em;
@@ -89,6 +105,7 @@ code>strong, code>b {
 
 pre {
     background-color: #eeeeff;
+    margin-top: 0.5em;
     border-top: 1px dotted;
     border-bottom: 1px dotted;
     padding: 0.1em 0.5em 0.1em 0.5em;
