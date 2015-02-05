@@ -258,7 +258,7 @@ your file system is. If such a file is not found, it will truncate the name
 provided to 8.3 format and convert to all uppercase. If that exact name is
 not found, it will look for 8.3 names in mixed case which match the name
 provided in a case-insensitive way. Such files are searched in lexicographic
-order. Files names longer than 8.3 will ot be matched, unless their name is entered exactly. 
+order. Files names longer than 8.3 will not be matched, unless their name is entered exactly. 
 On Windows, the name matched can be a short filename as well as a 
 long filename provided it is of 8.3 length &mdash; it may, for example, contain 
 spaces and thus not be a valid Windows short file name.</p>
@@ -429,7 +429,7 @@ PC-BASIC will load and save all program files as if encoded in the codepage you 
 <p>PC-BASIC emulates the distinctive raster fonts of IBM-compatible machines. The ROM
 fonts of the original IBM and Tandy adapters (which are in the public 
 domain in a number of countries) have been included in PC-BASIC. These provide the most
-accuate emulation. However, the font ROMs only included a single code page &ndash;
+accurate emulation. However, the font ROMs only included a single code page &ndash;
 US-ASCII 437. </p>
 <p>To support code pages beyond 437, PC-BASIC defaults to the <b>CPIDOS</b> font used by 
 default in FreeDOS and DOSBox. This font is very similar in style to the IBM VGA 
@@ -446,7 +446,7 @@ most preferred one.</p>
 <p>PC-BASIC reads fonts in the <code>.hex</code> format introduced by UniFont. It's 
 easy to define custom fonts in this format: it can be edited in a regular text editor. 
 See the UniFont project for an authoring tool. You can add custom fonts to PC-BASIC by 
-instaling them into the <code>font/</code> subdirectory of PC-BASIC's installation
+installing them into the <code>font/</code> subdirectory of PC-BASIC's installation
 directory.</p>
 
 <h2>Redirecting input and output</h2>
@@ -465,7 +465,7 @@ paste are available only if the calling shell provides them. On Windows, <code><
 </pre>
 </p>
 
-<p>For scripting purposes, it is also possible to run PC-BAIC without any interface by setting <code>interface=none</code> or <code>-n</code>. If this is set, PC-BASIC will take input from and send output to the console as UTF-8 without further modification. This is useful in combination with redirection and pipes.</p>
+<p>For scripting purposes, it is also possible to run PC-BASIC without any interface by setting <code>interface=none</code> or <code>-n</code>. If this is set, PC-BASIC will take input from and send output to the console as UTF-8 without further modification. This is useful in combination with redirection and pipes.</p>
 
 <h2>Text-based interface</h2>
 <p>There is also a full-screen text interface available: enable it by setting <code>interface=text</code> (or <code>-t</code>). 
@@ -477,12 +477,12 @@ the text-based interface is very similar to the default graphical interface, but
 
 
 <h2>Security</h2>
-<p>PC-BASIC makes some default choices with basic security in mind, but does not sandbox its programs in any meaningful way. BASIC programs have more or less full access to your computer. You should treat them with the same caution as you would shell scripts or binaries. Therefore, do not run a program from the internet that you have not inspected first using <code>LIST</code> or <code>--convert=A</code> on the command line. You wouldn't just download an executable fom the internet and run it either, right?</p>
+<p>PC-BASIC makes some default choices with basic security in mind, but does not sandbox its programs in any meaningful way. BASIC programs have more or less full access to your computer. You should treat them with the same caution as you would shell scripts or binaries. Therefore, do not run a program from the internet that you have not inspected first using <code>LIST</code> or <code>--convert=A</code> on the command line. You wouldn't just download an executable from the internet and run it either, right?</p>
 
 <h2>Differences with GW-BASIC</h2>
 
-<p>GW-BASIC was a real-mode DOS program, which means that it had full control over an IBM-compatible 8086 computer. It had direct access to all areas of memory and all devices. Some BASIC programs used this fact, by using <code>POKE</code> and <code>OUT</code> statements as well as <code>CALL</code> and <code>USR</code> machine-code subroutines to perform taks for which BASIC did not provide support. PC-BASIC runs on modern machines which may be based on completely different architectures and anyway do not allow applications to directly access
-memory ar devices. Therefore, it is not possible to run machine code on PC-BASIC. It you need machine code, you'll need to use full 
+<p>GW-BASIC was a real-mode DOS program, which means that it had full control over an IBM-compatible 8086 computer. It had direct access to all areas of memory and all devices. Some BASIC programs used this fact, by using <code>POKE</code> and <code>OUT</code> statements as well as <code>CALL</code> and <code>USR</code> machine-code subroutines to perform tasks for which BASIC did not provide support. PC-BASIC runs on modern machines which may be based on completely different architectures and anyway do not allow applications to directly access
+memory or devices. Therefore, it is not possible to run machine code on PC-BASIC. It you need machine code, you'll need to use full 
 CPU emulation such as provided by DOSBox, Bochs or VirtualBox.</p>
 
 <p>PC-BASIC <em>does</em> provide limited support for the <code>POKE</code> and <code>PEEK</code> statements: some of the most commonly accessed regions of memory are emulated and can be read and (sometimes) written. There is read and write support for video memory, font RAM and selected locations of the low memory segment, including the keyboard buffer. Additionally, there is read support for font ROM, variable, array and string memory, <code>FIELD</code> buffers as well as the program code itself. Writing into the program code is disabled by default, but can be enabled with the <code>allow-code-poke</code> option. Use with care. A number of machine ports related to keyboard input and video modes are supported as well.</p> 

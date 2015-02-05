@@ -195,8 +195,8 @@ Variable names must start with a letter; all characters of the variable name
 Only the first 40 characters in the name are significant. Variable names must
 not be identical to keywords -- roughly, statement or function names; more 
 accurately, anything that has a defined keyword token, including such words as
-TO but not, for instace, AS. There is no particular logic to this. Variable
-names may start with a keyword, with the exeption of USR and FN. Thus, FNORD$
+TO but not, for instance, AS. There is no particular logic to this. Variable
+names may start with a keyword, with the exception of USR and FN. Thus, FNORD$
 is not a legal variable name while FRECKLE% is. For each name, four different 
 variables may exist corresponding to the four types. That is, you can have A$, 
 A%, A! and A# with different values. Which one of those is called A depends on 
@@ -498,7 +498,7 @@ Line numbering starts at 'line_number', if specified. If . is specified, line
 numbering starts at the last program line that was stored. Otherwise, line
 numbering starts at 10. 
 Each next line number is incremented by 'increment', if specified. If a comma 
-is used withoud specifying an increment, the last increment specified in an 
+is used without specifying an increment, the last increment specified in an 
 AUTO command is used. If not, increment defaults to 10.
 If a program line exists at a generated line number, a '*' is shown after the 
 line number. To avoid overwriting this line, leave it empty and press <ENTER>.
@@ -803,7 +803,7 @@ Assigns new colours to the palette of attributes.
     If 'palette' is even, the alternative palette (green, red, brown) is set.
     All pixels with attributes 1,2,3 will change colour to the new palette.
 'override' is a numeric expression with a value between 0 and 255 (incl.)
-    If 'override' is specified, palette is set as above but useing 'override'
+    If 'override' is specified, palette is set as above but using 'override'
     instead of 'palette'. 'palette' is then ignored.
 ERRORS:
 -   If any of the parameters has a string value, TYPE MISMATCH is raised.
@@ -866,7 +866,7 @@ NOTES:
     direct line. As the subroutine RETURNs to the position after the GOSUB in
     the old direct line, strange things may happen if commands are given after
     CONT. In GW-BASIC, this can lead to strange errors in non-existing
-    progam lines as the parser executes bytes that are not part of a program 
+    program lines as the parser executes bytes that are not part of a program 
     line. In PC-BASIC 3.23, if the new direct line is shorter, execution stops
     after RETURN; but if the direct line is extended beyond the old return
     position, the parser tries to resume at that return position, with strange
@@ -1086,7 +1086,7 @@ specifying the array to be dimensioned. 'limit_0', ... are number-valued
 expressions that specify the greatest index allowed at that position. Mixed
 brackets are allowed. The least index allowed is determined by OPTION BASE.
 The DIM statement also fixes the number of indices of the array. 
-An array can only de dimensioned once; to re-dimension an array, ERASE or 
+An array can only be dimensioned once; to re-dimension an array, ERASE or 
  CLEAR must be executed first. 
 If an array is used without a DIM statement, its maximum indices are set at 10
 for each index position used. If an array's DIM statement specifies no indices,
@@ -1237,7 +1237,7 @@ ERRORS:
 ERASE statement
 ERASE array_0 [, array_1 [, ...] ] 
 ---------------
-Disallocates arrays to allow them to be re-dimensioned. The data stored in the
+De-allocates arrays to allow them to be re-dimensioned. The data stored in the
 array is lost. 'array_0', ... are names of existing arrays. The names must be
 specified without brackets.
 NOTES:
@@ -1364,7 +1364,7 @@ parts and the wildcards ?, matching any character but not the \ or .; and the
 * matching any series of characters excluding . or \. If specified, a filter
 will only match MS-DOS style 8.3 all-uppercase filenames. If all files in a 
 specified directory are required, end the directory name with a backslash \.
-The path directories, however, can be case sentitive and longer according to
+The path directories, however, can be case sensitive and longer according to
 the host OS's standards.
 ERRORS:
 -   If 'path_and_filter' has a numeric value, TYPE MISMATCH is raised.
@@ -1517,7 +1517,7 @@ ERRORS:
 GOSUB statement
 GO[ ]SUB line_number [ anything ]
 ---------------
-Jumps to a subroutine at 'line_number'. The next RETURN satement jumps back to
+Jumps to a subroutine at 'line_number'. The next RETURN statement jumps back to
 the statement after GOSUB. Anything after 'line_number' until the end of the 
 statement is ignored. If executed in interactive mode, GOSUB enters runmode and
 the following RETURN returns execution to the direct line.
@@ -1585,7 +1585,7 @@ NOTES:
 INKEY$ function
 key = INKEY$
 ---------------
-Returns one keypress from the keyboard buffer. If the keyboard buffer is 
+Returns one key-press from the keyboard buffer. If the keyboard buffer is 
 empty, returns the empty string. Otherwise, the return value is either a one
 character string or a two-character string of which the first is CHR$(0) and
 the second a keyboard scancode.
@@ -1730,7 +1730,7 @@ If 'port'==&H201:
         5       joystick 1 button 2
         6       joystick 1 button 1
         7       joystick 2 button 2
-    The button bits are 0 when the button is fired, 1 otherwise. The acis values
+    The button bits are 0 when the button is fired, 1 otherwise. The axis values
     are normally 0 but are set to 1 by OUT &H201, x and then fall back to 0 
     after a delay. The longer the delay, the higher the axis value. 
 Returns zero for other 'port' values.
@@ -1781,7 +1781,7 @@ of a random access file. 'file_num' must be the number of a file open in
 INPUT mode or a device or random-access file open in RANDOM mode. 'var_0', ... 
 are variable names or fully indexed array elements.   
 NOTES:
--   The # is mandatory. There may or may not be whitepace between INPUT and #.        
+-   The # is mandatory. There may or may not be whitespace between INPUT and #.        
 -   String values can be entered with or without double quotes ("). 
 -   Numeric values are terminated by space, LF, CR, comma.
 -   Unquoted strings are terminated by LF, CR, comma.
@@ -1896,7 +1896,7 @@ KEY { ON | OFF | LIST }
 Turns string macros ON or OFF; if LIST is specified, produces a list of
 the 10 function keys with the string macros defined for those keys. Special 
 characters are represented by their symbol equivalent in the loaded codepage;
-some characters get a special representaation. E.g. chr$(13) is represented 
+some characters get a special representation. E.g. CHR$(13) is represented 
 as a back arrow. 
 
 
@@ -1905,7 +1905,7 @@ KEY key_id, string_value
 -------------
 Defines the string macro for key 'key_id'. 'key_id' must be a number-valued 
 expression in the range 1--10, inclusive. 'string_value' must be a string-
-valued expression. Only the first 15 caracters of 'string_value' are stored.
+valued expression. Only the first 15 characters of 'string_value' are stored.
 NOES:
 -   IF 'key_id' is not in the range [1, 10], the statement is interpreted as an
     event trapping key definition (see below).
@@ -2096,7 +2096,7 @@ of a random access file. All input is read until <ENTER> is pressed; the first
 INPUT mode or a device or random-access file open in RANDOM mode. 
 'string_name' must be a valid string variable name or array element.
 NOTES:
--   The # is mandatory. There may or may not be whitepace between INPUT and #.        
+-   The # is mandatory. There may or may not be whitespace between INPUT and #.        
 -   Input is only terminated by a <CR>.
 -   If 'file_num' is open to KYBD:, INPUT# reads from the keyboard until a
     return or comma is encountered (as in a file). Arrow keys and delete are
@@ -2207,7 +2207,7 @@ Cursor shape and visibility options have no effect in graphics mode.
 NOTES:
 -   In GW-BASIC, the cursor shape option calls DOS INT 10h;01. What happens
     to the cursor is then determined by the video card; the result is
-    fairly unlogical. PC-BASIC does not implement this quirk.
+    fairly illogical. PC-BASIC does not implement this quirk.
 -   In GW-BASIC, cursor shape is preserved after changing to INSERT mode and 
     back; the INSERT cursor is different from the usual half-block. 
     In PC-BASIC, INSERT mode resets the cursor shape to default.
@@ -2240,7 +2240,7 @@ NOTES:
     not been activated or all locks are used, LOCK raises PERMISSION DENIED.
     PC-BASIC behaves as if SHARE has been activated with unlimited locks.
 -   If 'file_number' is open for RANDOM, LOCK and UNLOCK statements must match 
-    in terms of 'record_0' and 'record_1'. An unmatching UNLOCK will raise 
+    in terms of 'record_0' and 'record_1'. An non-matching UNLOCK will raise 
     PERMISSION DENIED.    
 ERRORS:
 -   Attempting to LOCK (part of) a file already locked raises PERMISSION DENIED.
@@ -2319,7 +2319,7 @@ NOTES:
     detached from the field and becomes a normal string variable.
 ERRORS:
 -   If 'string_name' is not a string variable, TYPE MISMATCH is raised.
--   If 'expression' does not have a string value, TTYPE MISMATCH is raised.
+-   If 'expression' does not have a string value, TYPE MISMATCH is raised.
 
 
 MERGE statement
@@ -2392,7 +2392,7 @@ ERRORS:
 MKD$ function
 bytes = MKD$(double)
 -------------
-Retuns the internal 8-byte Microsoft Binary Format representation of a double-
+Returns the internal 8-byte Microsoft Binary Format representation of a double-
 precision number.
 ERRORS:
 -   If 'double' is a string, raises TYPE MISMATCH.
@@ -2410,7 +2410,7 @@ ERRORS:
 MKS$ function
 bytes = MKS$(single)
 -------------
-Retuns the internal 4-byte Microsoft Binary Format representation of a single-
+Returns the internal 4-byte Microsoft Binary Format representation of a single-
 precision number.
 ERRORS:
 -   If 'single' is a string, raises TYPE MISMATCH.
@@ -2600,7 +2600,7 @@ The SHARED/LOCK modes:
     modes.
 -   If specified as SHARED, LOCK READ, LOCK WRITE or LOCK READ WRITE, whether 
     two OPEN statements may access the same file depends on one's LOCK status
-    and the other's ACCESS status and vice versa. ASssuming the following:
+    and the other's ACCESS status and vice versa. Assuming the following:
         OPEN "file" ACCESS acc_1 lock_1 AS 1
         OPEN "file" ACCESS acc_2 lock_2 AS 2
     The following combinations are allowed, and vice versa:
@@ -2662,7 +2662,7 @@ NOTES:
     PUT or GET statement will raise PATH/FILE ACCESS ERROR.
 -   The # is optional and has no effect.    
 ERRORS:
--   If 'file_name' is empty or a non-existant device, raises BAD FILE NUMBER.
+-   If 'file_name' is empty or a non-existent device, raises BAD FILE NUMBER.
 -   If FOR APPEND ACCESS WRITE is specified, raises PATH/FILE ACCESS ERROR.
 -   If FOR and ACCESS mismatch in other ways, raises SYNTAX ERROR.
 -   If the COM: file_name parameters do not follow the specification,
@@ -2752,13 +2752,13 @@ TILE PATTERNS
     SCREEN 2:
         For a one-bit-per-pixel mode (as in SCREEN 2), here is an example:
                   76543210    value
-                  *.......    chr$(&h80)        
-                  .*......    chr$(&h40)        
-                  ..*.....    chr$(&h20)        
-                  ...*....    chr$(&h10)        
-                  ....*...    chr$(&h08)
-                  .....*..    chr$(&h04)
-                  ......*.    chr$(&h02)
+                  *.......    CHR$(&h80)        
+                  .*......    CHR$(&h40)        
+                  ..*.....    CHR$(&h20)        
+                  ...*....    CHR$(&h10)        
+                  ....*...    CHR$(&h08)
+                  .....*..    CHR$(&h04)
+                  ......*.    CHR$(&h02)
     SCREEN 7, 8, 9:
         The tile pattern is always 8 pixels wide. The first character in the 
         pattern string contains the first bit of each of these 8 pixels, the 
@@ -2766,22 +2766,22 @@ TILE PATTERNS
         For example, in a 2-bits-per-pixel mode, the pattern can have many
         colours. However, the same size pattern as above in attribute &h03 is:
             bit   76543210    value
-            0     *.......    chr$(&h80)        
-            1     *.......    chr$(&h80)        
-            0     .*......    chr$(&h40)        
-            1     .*......    chr$(&h40)        
-            0     ..*.....    chr$(&h20)        
-            1     ..*.....    chr$(&h20)        
-            0     ...*....    chr$(&h10)        
-            1     ...*....    chr$(&h10)        
-            0     ....*...    chr$(&h08)
-            1     ....*...    chr$(&h08)
-            0     .....*..    chr$(&h04)
-            1     .....*..    chr$(&h04)
-            0     ......*.    chr$(&h02)    
-            1     ......*.    chr$(&h02)    
+            0     *.......    CHR$(&h80)        
+            1     *.......    CHR$(&h80)        
+            0     .*......    CHR$(&h40)        
+            1     .*......    CHR$(&h40)        
+            0     ..*.....    CHR$(&h20)        
+            1     ..*.....    CHR$(&h20)        
+            0     ...*....    CHR$(&h10)        
+            1     ...*....    CHR$(&h10)        
+            0     ....*...    CHR$(&h08)
+            1     ....*...    CHR$(&h08)
+            0     .....*..    CHR$(&h04)
+            1     .....*..    CHR$(&h04)
+            0     ......*.    CHR$(&h02)    
+            1     ......*.    CHR$(&h02)    
         If the pattern string is truncated before all bits of the last line 
-        have been defined, the remining bits will be zero.
+        have been defined, the remaining bits will be zero.
     SCREEN 1, 3, 4, 5, 6:
         Each row of the tile pattern represents a screen row. Colours are 
         encoded in consecutive bits - the more bits per pixel, the narrow the
@@ -2789,13 +2789,13 @@ TILE PATTERNS
         bits per pixel it is 2 pixels wide. The pattern form above now encodes
         a multicoloured tile:
             3210  76543210    value
-            2000  *.......    chr$(&h80)        
-            1000  .*......    chr$(&h40)        
-            0200  ..*.....    chr$(&h20)        
-            0100  ...*....    chr$(&h10)        
-            0020  ....*...    chr$(&h08)
-            0010  .....*..    chr$(&h04)
-            0002  ......*.    chr$(&h02)
+            2000  *.......    CHR$(&h80)        
+            1000  .*......    CHR$(&h40)        
+            0200  ..*.....    CHR$(&h20)        
+            0100  ...*....    CHR$(&h10)        
+            0020  ....*...    CHR$(&h08)
+            0010  .....*..    CHR$(&h04)
+            0002  ......*.    CHR$(&h02)
     The tile pattern is locked to the screen; imagine a grid starting at 
     (0,0) and covering the screen. Whenever an area is tile-filled,
     the tiles are put into this grid. In this way, adjacent areas will have
@@ -2905,10 +2905,10 @@ x = PEN(mode)
 Reads the light pen. What PEN returns depends on 'mode'.
 'mode' is a number-valued expression in [0, 9]. PEN returns the following:
 'mode'  PEN result
-  0     boolean: whether the light pen has been down since last poll.
+  0     Boolean: whether the light pen has been down since last poll.
   1     x coordinate of last pen down position
   2     y coordinate of last pen down position
-  3     boolean: if the pen is currently down
+  3     Boolean: if the pen is currently down
   4     x coordinate of current pen position  
   5     y coordinate of current pen position  
   6     character row coordinate of last pen down position
@@ -2932,7 +2932,7 @@ Plays the tune defined by string-valued expression 'mml_string'. 'mml_string'
 must be a string-valued expression in Music Macro Language (MML). 
 MML reference:
 Notes:
-    { A|B|C|D|E|F|G }[ #|+|- ][n]   Plays the correspoding note, with or + for 
+    { A|B|C|D|E|F|G }[ #|+|- ][n]   Plays the corresponding note, with or + for 
                                     sharp and - for flat. If 'n' follows, it
                                     indicates duration as in L below.
     Nn  Play note 'n', in the range [0, 84] (7 octaves). 'n' = 0 means rest.                                    
