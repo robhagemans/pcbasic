@@ -1,13 +1,13 @@
 html {
     background-color: #eeeeff;
     font-family: sans;
-
+    font-size: 90%;
+    line-height: 140%;
+    
 }
 body {
     margin-left: 2em;
     margin-right: 2em;
-    font-size: 90%;
-    line-height: 140%;
     max-width: 40em;
     max-width: 40em;
     background-color: white;
@@ -40,6 +40,10 @@ dl {
     margin-bottom: 1em;
 }
 
+dt {
+    font-weight: bold;
+}
+
 dd {
     margin-bottom: 1em;
     padding-right: 1em;
@@ -62,8 +66,10 @@ th {
 }
 
 table {
+    font-size: 100%;
     margin-top: 1em;
     margin-bottom: 1em;
+    line-height: 140%;
 }  
 
 tr:nth-child(odd)		{ background-color:#eeeeff; }
@@ -72,4 +78,21 @@ tr:nth-child(even)		{ background-color:#ffffff; }
 td, th {
     padding-left: 0.5em;
     padding-right: 0.5em;
+    vertical-align: top;
 }
+
+code>strong, code>b {
+    background-color: gray;
+    color: white;
+    border-radius: 0.2em;
+    padding: 0.1em 0.5em 0.1em 0.5em;
+    margin: 0px 1px 0px 1px;
+}
+
+pre {
+    background-color: #eeeeff;
+    border-top: 1px dotted;
+    border-bottom: 1px dotted;
+    padding: 0.1em 0.5em 0.1em 0.5em;
+}
+
