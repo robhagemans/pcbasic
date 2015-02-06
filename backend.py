@@ -1821,7 +1821,8 @@ class Sound(object):
         gmls_list = []
         for mml in mml_list:
             gmls = StringIO()
-            gmls.write(str(mml).upper())
+            # don't convert to uppercase as VARPTR$ elements are case sensitive
+            gmls.write(str(mml))
             gmls.seek(0)
             gmls_list.append(gmls)
         next_oct = 0

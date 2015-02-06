@@ -661,7 +661,8 @@ class Drawing(object):
 
     def draw(self, gml):
         """ DRAW: Execute a Graphics Macro Language string. """
-        gmls = StringIO(gml.upper())
+        # don't convert to uppercase as VARPTR$ elements are case sensitive
+        gmls = StringIO(gml)
         plot, goback = True, False
         while True:
             c = util.skip_read(gmls, draw_and_play.ml_whitepace).upper()
