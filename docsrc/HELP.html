@@ -506,7 +506,7 @@ No error is raised if the specified file numbers were not open.
 </li><li>
 <code><em>file_1</em>, <em>file_2</em>, ...</code> have a string value: <code>Type mismatch</code>.
 </li><li>
-The statement ends in a comma, <code>Missing operand</code> is raised.
+The statement ends in a comma, <code>Missing operand</code> .
 </li><li>
  If an error occurs, only the files before the erratic value are closed.
 </li></ul>
@@ -531,7 +531,7 @@ The comma is optional and has no effect.</p>
 <ul><li>
 <code><em>x</em></code> is has a string value: <code>Type mismatch</code>.
 </li><li>
-<code><em>x</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code> is raised.
+<code><em>x</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code> .
 </li><li>
 <code><em>x</em></code> is not in <code>[0, 1, 2]</code>: <code>Illegal function call</code>.
 </li><li>
@@ -1390,113 +1390,189 @@ value.
 
 
 <h3><code>FIELD</code> statement</h3>
-FIELD [#] file_number [, width_0 AS name_0 [, width_1 AS name_1 [, ...] ] ]
----------------
-Maps variables to the random-access record buffer. The record buffer is a 
-region of memory of length defined by the OPEN statement; the default record
-length is 128 bytes. The FIELD statement associates a portion of this region to
+<pre>FIELD [#] <em>file_number</em> [, <em>width_0</em> AS <em>name_0</em> [, <em>width_1</em> AS <em>name_1</em> [, ...] ] ]</pre>
+<p>Assigns variables to the random-access record buffer. The record buffer is a
+region of memory of length defined by the <code>OPEN</code> statement; the default record
+length is 128 bytes. The <code>FIELD</code> statement assigns a portion of this region to
 one or more fixed-length string variables, so that the value of these strings
 is whatever happens to be in the record buffer at that location. 
-'file_number' is a numeric expression that yields the number of an open random-
-access file. The # is optional and has no effect. 'width_0' is a numeric 
-expression giving the length of the first string variable; 'name_0' is a valid 
-string variable name, and so on for further variables. A FIELD statement 
+<h4>Notes</h4>
+<ul><li>
+A <code>FIELD</code> statement
 without any variables specified has no effect.
-A FIELD statement on the same file will specify an alternative mapping of the 
+</li><li>
+Another  <code>FIELD</code> statement on the same file will specify an alternative mapping of the
 same file buffer; all mappings will be in effect simultaneously.
-A subsequent assignment or LET or MID$ statement on 'name_0', ... will dis-
-associate the string variable from the field buffer. Use LSET or RSET to change
-values in the field buffer. Use GET to read values from the file into the field
-buffer, changing the variables. Use PUT to write the field buffer to the file.
+</li><li>
+A subsequent assignment or <code>LET</code> or <code>MID$</code> statement on <code><em>name_0</em> , <em>name_1</em> ...</code> will dis-
+associate the string variable from the field buffer.
+</li><li>
+Use <code>LSET</code> or <code>RSET</code> to change
+values in the field buffer.
+</li><li>
+Use <code>GET</code> to read values from the file into the field
+buffer, changing the variables.
+</li><li>
+Use <code>PUT</code> to write the field buffer to the file.
+</li></ul>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>file_number</em></code> is a numeric expression that yields the number of an open random-access file. The <code>#</code> is optional and has no effect.
+</li><li>
+<code><em>width_0</em>, <em>width_1</em>, ...</code> are numeric
+expressions giving the length of the string variables
+</li><li>
+<code><em>name_0</em> , <em>name_1</em> ...</code> are valid
+string variable names.
+</li></ul>
 <h4>Errors</h4>
--   If 'file_number' is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If 'file_number' is not the number of an open file:
-    <code>Bad file number</code>.
--   If 'file_number' is open under a mode other than <code>RANDOM</code>:
-    <code>Bad file mode</code>.
--   If the statement ends in a comma: <code>Missing operand</code>.
--   If no file number is specified: <code>Missing operand</code>.
--   If the lengths in a FIELD statement add up to a number larger than the 
-    record length of the field buffer, FIELD <code>Overflow</code> is raised.
--   If 'name_0', ... specify a non-string variable: <code>Type mismatch</code>.
+<ul><li>
+<code><em>file_number</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+</li><li>
+<code><em>file_number</em></code> is not the number of an open file:
+<code>Bad file number</code>.
+</li><li>
+<code><em>file_number</em></code> is open under a mode other than <code>RANDOM</code>:
+<code>Bad file mode</code>.
+</li><li>
+The statement ends in a comma: <code>Missing operand</code>.
+</li><li>
+No file number is specified: <code>Missing operand</code>.
+</li><li>
+The lengths in a <code>FIELD</code> statement add up to a number larger than the
+record length of the field buffer: <code>Field overflow</code>.
+</li><li>
+<code><em>name_0</em> , <em>name_1</em> ...</code> specify a non-string variable: <code>Type mismatch</code>.
+</li></ul>
 
 
-FILES statement
-FILES path_and_filter
----------------
-Displays the files fitting the specified filter in the specified directory. If
-'path_and_filter' is not specified, displays all files in the current working 
-directory. If specified, 'path_and_filter' is a string expression that
+<h3><code>FILES</code> statement</h3>
+<pre>FILES [<em>path_and_filter</em>]</pre>
+<p>Displays the files fitting the specified filter in the specified directory. If
+<code><em>path_and_filter</em></code> is not specified, displays all files in the current working
+directory. </p>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>path_and_filter</em></code> is a string expression that
 consists of two optional parts: the first part is the path to the directory; 
-the second part is the filename filter. The file part is a path list separated
-by backslashes (\) as in MS-DOS. The filename filter consists of file name
-parts and the wildcards ?, matching any character but not the \ or .; and the 
-* matching any series of characters excluding . or \. If specified, a filter
-will only match MS-DOS style 8.3 all-uppercase filenames. If all files in a 
-specified directory are required, end the directory name with a backslash \.
+the second part is the filename filter.
+</li></ul>
+<h4>Notes</h4>
+<ul><li>
+The filename filter consists of file name
+parts and the following wildcards:
+<table><tr>
+<td><code>?</code></td>
+<td>matches any character but not the <code>\</code> or <code>.</code>
+</td>
+</tr><tr>
+<td><code>*</code></td>
+<td>matches any series of characters excluding <code>\</code> or <code>.</code></td>
+</tr></table>
+</li><li>
+A filter
+will only match MS-DOS style 8.3 all-uppercase filenames.
 The path directories, however, can be case sensitive and longer according to
 the host OS's standards.
+</li><li>
+If all files in a
+specified directory are required, end the directory name with a backslash <code>\</code>.
+</li></ul>
 <h4>Errors</h4>
--   If 'path_and_filter' has a numeric value, <code>Type mismatch</code> is raised.
--   If 'path_and_filter' is the empty string, <code>Bad file name</code> is raised.
--   If the specified filter does not match any files, <code>File not found</code> is raised.
+<ul><li>
+ <code><em>path_and_filter</em></code> has a numeric value: <code>Type mismatch</code>.
+</li><li>
+ <code><em>path_and_filter</em></code> is the empty string: <code>Bad file name</code>.
+</li><li>
+The specified filter does not match any files: <code>File not found</code>.
+</li></ul>
 
 
-FIX function
-whole = FIX(number)
-------------
-Returns <code><em>number</em></code> truncated towards zero.    
-<code><em>number</em></code> must be a numeric expression.
+<h3><code>FIX</code> function</h3>
+<pre><em>whole</em> = FIX(<em>number</em>)</pre>
+<p>Returns <code><em>number</em></code> truncated towards zero.</p>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>number</em></code> is a numeric expression.
+</li></ul>
 <h4>Notes</h4>
--   While FIX truncates towards zero (i.e. removes the fractional part), INT
-    truncates towards negative infinity. For negative <code><em>x</em></code>, FIX(x)-INT(x)==1.
+<ul><li>
+ <code>FIX</code> truncates towards zero: it removes the fractional part. By contrast, <code>INT</code>
+    truncates towards negative infinity. For negative <code><em>x</em></code>, <code>FIX(<em>x</em>)-INT(<em>x</em>)=1</code>.
+</li></ul>
 <h4>Errors</h4>
--   If <code><em>number</em></code> is a string expression, <code>Type mismatch</code> is raised.
+<ul><li>
+<code><em>number</em></code> is a string expression: <code>Type mismatch</code>.
+</li></ul>
 
 
-FN function
-result = FN name (arg_0 [, arg_1 [, ...] ])
------------
-Evaluates a user_defined function. <code><em>name</em></code> must be a legal variable name. 
-Spaces between FN and name are optional.
-'arg0', ... must be legal variable names; these are the parameters of the
-function. 
+<h3><code>FN</code> function</h3>
+<pre><em>result</em> = FN[ ]<em>name</em> (<em>arg_0</em> [, <em>arg_1</em> [, ...] ])</pre>
+<p>Evaluates a user-defined function.
+Spaces between <code>FN</code> and <code><em>name</em></code> are optional.
+<h4>Parameters</h4>
+<ul><li>
+<code><em>name</em></code> is the name of a previously defined function.
+</li><li>
+<code><em>arg_0</em>, <em>arg_1</em>, ...</code> are expressions, given as parameters to the function.
+</li></ul>
 <h4>Errors</h4>
--   If no function named <code><em>name</em></code> is defined: 
-    UNDEFINED USER FUNCTION.
+<ul><li>
+No function named <code><em>name</em></code> is defined:
+    <code>Undefined user function</code>.
+</li><li>
+The number of parameters differs from the function definition:
+    <code>Syntax error</code>.
+</li><li>
+The type of one or more parameters differs from the function definition:
+    <code>Type mismatch</code>.
+</li></ul>
 
- 
-FOR statement
-FOR loop_var = start TO stop [STEP step]
-----------------------------------------
-Initiates a FOR--NEXT loop. 'loop_var' is a valid numeric variable name. 
-<code><em>start</em></code>, 'stop' and 'step' are numeric expressions. 
-Initially, 'loop_var' is set to <code><em>start</em></code> Then, the statements between the FOR 
-statement and the NEXT statement are executed and 'loop_var' is incremented by
-'step' (if 'step' is not specified, by 1). This is repeated until 'loop_var' 
-has become greater than 'stop'. Execution then continues at the statement 
-following NEXT. The value of 'loop_var' equals 'stop'+'step' after the loop.
+
+<h3><code>FOR</code> statement</h3>
+<pre>FOR <em>loop_var</em> = <em>start</em> TO <em>stop</em> [STEP <em>step</em>]</pre>
+<p>Initiates a <code>FOR&mdash;NEXT</code> loop.</p>
+<p>Initially, <code><em>loop_var</em></code> is set to <code><em>start</em></code> Then, the statements between the FOR
+statement and the <code>NEXT</code> statement are executed and <code><em>loop_var</em></code> is incremented by
+<code><em>step</em></code> (if <code><em>step</em></code> is not specified, by 1). This is repeated until <code><em>loop_var</em></code>
+has become greater than <code><em>stop</em></code>. Execution then continues at the statement
+following <code>NEXT</code>. The value of <code><em>loop_var</em></code> equals <code><em>stop</em>+<em>step</em></code> after the loop.</p>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>loop_var</em></code> is a valid numeric variable name.
+</li><li>
+<code><em>start</em></code>, <code><em>stop</em></code> and <code><em>step</em></code> are numeric expressions.
+</li></ul>
 <h4>Errors</h4>
--   If no NEXT statement is found to match the FOR statement, FOR WITHOUT NEXT
-    is raised at the FOR statement.
--   If 'loop_var' is a string name or <code><em>start</em></code>,'stop',<code><em>end</em></code> are string,
-    <code>Type mismatch</code> is raised.
--   If 'loop_var' is an array element, <code>Syntax error</code> is raised.
+<ul><li>
+No <code>NEXT</code> statement is found to match the <code>FOR</code> statement: <code>FOR without NEXT</code>
+    occurs at the <code>FOR</code> statement.
+</li><li>
+ <code><em>loop_var</em></code> is a string variable name or <code><em>start</em></code>, <code><em>stop</em></code>, or <code><em>end</em></code> has a string value:
+    <code>Type mismatch</code>.
+</li><li>
+ <code><em>loop_var</em></code> is an array element: <code>Syntax error</code> .
+</li></ul>
         
 
-FRE function
-free_mem = FRE(x)
-------------
-Returns the available model memory. <code><em>x</em></code> is an expression. If <code><em>x</em></code> is number-
-valued, it is ignored. If <code><em>x</em></code> is string valued, garbage collection is performed
-before returning available model memory.
+<h3><code>FRE</code> function</h3>
+<pre><em>free_mem</em> = FRE(<em>x</em>)</pre>
+<p>Returns the available BASIC memory.</p>
+<h4>Parameters</h4>
+<p><code><em>x</em></code> is an expression.</p>
+<ul><li>
+If <code><em>x</em></code> has a numeric value, it is ignored.
+</li><li>
+If <code><em>x</em></code> has a string value, garbage collection is performed
+before returning available memory.
+</li></ul>
 
 
 GET statement   (random-access files)
 GET [#] file_number [, record_number]
 -------------
-Read a record from the random-access file 'file_number' at position
-'record_number'. 'file_number' is a numeric expression that yields the number 
+Read a record from the random-access file <code><em>file_number</em></code> at position
+'record_number'. <code><em>file_number</em></code> is a numeric expression that yields the number
 of an open random-access file. The # is optional and has no effect. 
 'record_number' is a numeric expression that gives a number between 1 and 
 33554432 (2^25), inclusive, and is interpreted as the record number. 
@@ -1507,12 +1583,12 @@ The record can be accessed through the FIELD variables, or through INPUT$,
     filled with null bytes.
 <h4>Errors</h4>
 -   If 'record_number' is not in [1, 33554432]: <code>Bad record number</code>.
--   If 'file_number' is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If 'file_number' is not the number of an open file:
+-   If <code><em>file_number</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+-   If <code><em>file_number</em></code> is not the number of an open file:
     <code>Bad file number</code>.
--   If 'file_number' is open under a mode other than <code>RANDOM</code>:
+-   If <code><em>file_number</em></code> is open under a mode other than <code>RANDOM</code>:
     <code>Bad file mode</code>.
--   If 'file_number' is not specified: <code>Missing operand</code>.
+-   If <code><em>file_number</em></code> is not specified: <code>Missing operand</code>.
     
 
 GET statement   (communications)
@@ -1627,8 +1703,8 @@ Returns a string with the hexadecimal representation of <code><em>x</em></code>.
 numeric expression between -32768 and 65535, inclusive. Values for 
 negative <code><em>x</em></code> are shown as two's-complement. 
 <h4>Errors</h4>
--   If <code><em>x</em></code> is not in <code>[-32768&mdash;65535]</code>, <code>Overflow</code> is raised.
--   If <code><em>x</em></code> has a string value, <code>Type mismatch</code> is raised.
+-   If <code><em>x</em></code> is not in <code>[-32768&mdash;65535]</code>, <code>Overflow</code> .
+-   If <code><em>x</em></code> has a string value, <code>Type mismatch</code> .
 
 
 IF statement
@@ -1810,8 +1886,8 @@ Returns zero for other <code><em>port</em></code> values.
 <h4>Notes</h4>
 -   Only a limited number of machine ports are emulated in PC-BASIC 3.23.
 <h4>Errors</h4>
--   If <code><em>port</em></code> is not in <code>[-32768&mdash;65535]</code>, <code>Overflow</code> is raised.
--   If <code><em>port</em></code> has a string value, <code>Type mismatch</code> is raised.
+-   If <code><em>port</em></code> is not in <code>[-32768&mdash;65535]</code>, <code>Overflow</code> .
+-   If <code><em>port</em></code> has a string value, <code>Type mismatch</code> .
         
 
 INPUT statement (screen)
@@ -1932,7 +2008,7 @@ Returns <code><em>number</em></code> truncated towards negative infinity.
 -   While FIX truncates towards zero (i.e. removes the fractional part), INT
     truncates towards negative infinity. For negative <code><em>x</em></code>, FIX(x)-INT(x)==1.
 <h4>Errors</h4>
--   If <code><em>number</em></code> is a string expression, <code>Type mismatch</code> is raised.
+-   If <code><em>number</em></code> is a string expression, <code>Type mismatch</code> .
  
 
 IOCTL statement
@@ -2138,8 +2214,8 @@ If 'pattern' is specified, it must be a numeric expression between -32768
     less than 0) or the screen dimension (if larger than the screen dimension).
 <h4>Errors</h4>
 -   If LINE ends in a comma and it is the first or third, <code>Missing operand</code> is
-    raised. If it is the second, <code>Syntax error</code> is raised.
--   If any of the coordinates is not in <code>[-32768&mdash;32767]</code>, <code>Overflow</code> is raised.
+    raised. If it is the second, <code>Syntax error</code> .
+-   If any of the coordinates is not in <code>[-32768&mdash;32767]</code>, <code>Overflow</code> .
 -   If any of the parameters has a string value: <code>Type mismatch</code>.
 
 
@@ -2199,10 +2275,10 @@ Also stops program execution and returns to interactive mode. Any further
 statements on a line after LIST will be ignored both in a program and in direct
 mode. 
 <h4>Errors</h4>
--   If a line number is greater than 65529, <code>Syntax error</code> is raised.
--   If <code><em>file_name</em></code> has a numeric value, <code>Type mismatch</code> is raised.
+-   If a line number is greater than 65529, <code>Syntax error</code> .
+-   If <code><em>file_name</em></code> has a numeric value, <code>Type mismatch</code> .
 -   If <code><em>file_name</em></code> ends in a colon but is not a device name or drive letter,
-    <code>Bad file number</code> is raised.
+    <code>Bad file number</code> .
     
 
 LLIST statement
@@ -2215,7 +2291,7 @@ or a . to indicate the last line edited. The line numbers do not need to exist;
 they specify a range. If the range is empty, nothing is printed.
 Also stops program execution and returns to interactive mode.
 <h4>Errors</h4>
--   If a line number is greater than 65529, <code>Syntax error</code> is raised.
+-   If a line number is greater than 65529, <code>Syntax error</code> .
 
 
 LOAD statement
@@ -2302,7 +2378,7 @@ LOCK [#] file_number [, record_0 ]
 LOCK [#] file_number, [record_0] TO record_1
 --------------
 Locks a file or part of a file against access by other users. On a <code>RANDOM</code> file,
-'file_number' is a numeric expression in the range <code>[0&mdash;255]</code>. 
+<code><em>file_number</em></code> is a numeric expression in the range <code>[0&mdash;255]</code>.
 If specified, 'record_0' is the first record locked and 'record_1' is the last 
 record locked. On any other kind of file 'record_0' and 'record_1' have no 
 effect. If 'record_0' is not specified, it is assumed to be 1. If no records 
@@ -2312,7 +2388,7 @@ are specified, the whole file is locked.
     The maximum number of locks is specified in the SHARE command. If SHARE has
     not been activated or all locks are used, LOCK raises PERMISSION DENIED.
     PC-BASIC behaves as if SHARE has been activated with unlimited locks.
--   If 'file_number' is open for <code>RANDOM</code>, LOCK and UNLOCK statements must match 
+-   If <code><em>file_number</em></code> is open for <code>RANDOM</code>, LOCK and UNLOCK statements must match
     in terms of 'record_0' and 'record_1'. An non-matching UNLOCK will raise 
     PERMISSION DENIED.    
 <h4>Errors</h4>
@@ -2391,8 +2467,8 @@ the FIELD variable. With RSET, it will be right-justified.
 -   If LET is used on a FIELD variable instead of L|RSET, the variable is 
     detached from the field and becomes a normal string variable.
 <h4>Errors</h4>
--   If 'string_name' is not a string variable, <code>Type mismatch</code> is raised.
--   If <code><em>expression</em></code> does not have a string value, <code>Type mismatch</code> is raised.
+-   If 'string_name' is not a string variable, <code>Type mismatch</code> .
+-   If <code><em>expression</em></code> does not have a string value, <code>Type mismatch</code> .
 
 
 <code>MERGE</code> statement
@@ -2534,8 +2610,8 @@ using the variable list. If one or more variables are specified, their order
 must match the order of earlier FOR statements.  
 <h4>Errors</h4>
 -   If no FOR statement is found to match the NEXT statement and variables, 
-    NEXT WITHOUT FOR is raised.
--   If 'var_0', ... are string names, NEXT WITHOUT FOR is raised.
+    NEXT WITHOUT FOR .
+-   If 'var_0', ... are string names, NEXT WITHOUT FOR .
 
 
 NOISE statement                                    [pcjr and tandy syntax only]
@@ -2572,8 +2648,8 @@ Returns a string with the octal representation of <code><em>x</em></code>. <code
 numeric expression between -32768 and 65535, inclusive. Values for 
 negative <code><em>x</em></code> are shown as two's-complement. 
 <h4>Errors</h4>
--   If <code><em>x</em></code> is not in <code>[-32768&mdash;65535]</code>, <code>Overflow</code> is raised.
--   If <code><em>x</em></code> has a string value, <code>Type mismatch</code> is raised.
+-   If <code><em>x</em></code> is not in <code>[-32768&mdash;65535]</code>, <code>Overflow</code> .
+-   If <code><em>x</em></code> has a string value, <code>Type mismatch</code> .
 
 
 ON statement (switched jump)
@@ -2586,7 +2662,7 @@ the jump is unconditional; if GOSUB is specified, jumps to a subroutine.
 <h4>Errors</h4>
 -   If <code><em>n</em></code> is a string: <code>Type mismatch</code>.
 -   If <code><em>n</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If <code><em>n</em></code> is not in <code>[-32768&mdash;32767]</code>, <code>Overflow</code> is raised.
+-   If <code><em>n</em></code> is not in <code>[-32768&mdash;32767]</code>, <code>Overflow</code> .
 
 
 ON statement (event trapping)
@@ -2708,7 +2784,7 @@ SERIAL PORT (COM1) ACCESS:
             any. Byte size must be in the range [5...8]: if 'data' is 4, 
             'parity' must not be N; if 'data' is 8, 'parity' must be N.
             Default is 7.
-    stop    The number of stop bits. 'stop' must be 1 or 2.
+    stop    The number of stop bits. <code><em>stop</em></code> must be 1 or 2.
             Default is 2 if speed is 75 or 110; 1 otherwise.
     LF      if specified, send a line feed after each return.
     The following GW-BASIC specifications are ignored by PC-BASIC:
@@ -2739,7 +2815,7 @@ SERIAL PORT (COM1) ACCESS:
 -   If FOR APPEND ACCESS WRITE is specified: PATH/FILE ACCESS ERROR.
 -   If FOR and ACCESS mismatch in other ways: <code>Syntax error</code>.
 -   If the COM: file_name parameters do not follow the specification,
-    <code>Bad file name</code> is raised.
+    <code>Bad file name</code> .
 -   If a file is already open for OUTPUT or APPEND: FILE ALREADY OPEN.
     This is not the case for devices.
 -   IF <code><em>rec_len</em></code> or <code><em>file_num</em></code> have string values: <code>Type mismatch</code>.
@@ -2762,12 +2838,12 @@ Sets the starting index of all arrays to <code><em>n</em></code>, where <code><e
 -   If OPTION BASE is not called, the first array DIM defaults to starting 
     index 0.
 <h4>Errors</h4>
--   If <code><em>n</em></code> is not a digit 0 or 1, <code>Syntax error</code> is raised.
+-   If <code><em>n</em></code> is not a digit 0 or 1, <code>Syntax error</code> .
 -   If OPTION BASE 1 is called but any array has already been DIMmed or indexed
     before calling OPTION BASE 
-    with a different starting index, <code>Duplicate definition</code> is raised.
+    with a different starting index, <code>Duplicate definition</code> .
 -   If OPTION BASE is called more than once with different starting index,
-    <code>Duplicate definition</code> is raised.
+    <code>Duplicate definition</code> .
 
 
 OUT statement
@@ -3050,8 +3126,8 @@ TANDY and PCJR:
         Vn  Set the volume to <code><em>n</em></code>, in the range [0, 15]. On PCjr, if SOUND ON
             has not been executed, this has no effect. On Tandy it does.              
 <h4>Errors</h4>
--   If 'mml_string' has a numeric value, <code>Type mismatch</code> is raised.
--   If 'mml_string' has errors in the MML, <code>Illegal function call</code> is raised.
+-   If 'mml_string' has a numeric value, <code>Type mismatch</code> .
+-   If 'mml_string' has errors in the MML, <code>Illegal function call</code> .
 -   If a variable in the mml_string is of incorrect type, <code>Type mismatch</code>.
 -   If no mml string is specified: <code>Missing operand</code>.
 -   On PCjr, if SOUND ON has not been executed, using the three-voice syntax
@@ -3275,27 +3351,27 @@ printed preceding it.
 <h4>Errors</h4>
 -   If the expression doesn't match the format token type, <code>Type mismatch</code> is 
     raised.
--   If a number field exceeds 24 characters, <code>Illegal function call</code> is raised.
--   If the format string contains no tokens, <code>Illegal function call</code> is raised.   
--   If a number field contains no # characters, ILLEGAL FUCTION CALL is raised.
+-   If a number field exceeds 24 characters, <code>Illegal function call</code> .
+-   If the format string contains no tokens, <code>Illegal function call</code> .
+-   If a number field contains no # characters, ILLEGAL FUCTION CALL .
 
 
 PUT statement   (random-access files)
 PUT [#] file_number [, record_number]
 -------------
-Writes a record to the random-access file 'file_number' at position
-'record_number'. 'file_number' is a numeric expression that yields the number 
+Writes a record to the random-access file <code><em>file_number</em></code> at position
+'record_number'. <code><em>file_number</em></code> is a numeric expression that yields the number
 of an open random-access file. The # is optional and has no effect. 
 'record_number' is a numeric expression that gives a number between 1 and 
 33554432 (2^25), inclusive, and is interpreted as the record number. 
 <h4>Errors</h4>
 -   If 'record_number' is not in [1, 33554432]: <code>Bad record number</code>.
--   If 'file_number' is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If 'file_number' is not the number of an open file:
+-   If <code><em>file_number</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+-   If <code><em>file_number</em></code> is not the number of an open file:
     <code>Bad file number</code>.
--   If 'file_number' is open under a mode other than <code>RANDOM</code>:
+-   If <code><em>file_number</em></code> is open under a mode other than <code>RANDOM</code>:
     <code>Bad file mode</code>.
--   If 'file_number' is not specified: <code>Missing operand</code>.
+-   If <code><em>file_number</em></code> is not specified: <code>Missing operand</code>.
     
 
 PUT statement   (communications)
@@ -3487,9 +3563,9 @@ Unix) path <code><em>pathname</em></code>; if this does not exist then an upperc
 truncated to 8.3 is attempted. The search will match the first 8.3 filename 
 (in lexicographic order) whose uppercase version equals the requested name. 
 <h4>Errors</h4>
--  If no matching path is found, <code>Path not found</code> is raised.
--  If <code><em>pathname</em></code> is not string, <code>Type mismatch</code> is raised.
--  If <code><em>pathname</em></code> is empty, <code>Bad file name</code> is raised.
+-  If no matching path is found, <code>Path not found</code> .
+-  If <code><em>pathname</em></code> is not string, <code>Type mismatch</code> .
+-  If <code><em>pathname</em></code> is empty, <code>Bad file name</code> .
     
 
 RND function
@@ -3502,7 +3578,7 @@ returned. If <code><em>x</em></code> is negative, the value of <code><em>x</em><
 random number seed; after that, a new pseudorandom number is returned.
 Note that the seed is generated in a different way than by RANDOMIZE.
 <h4>Errors</h4>
--   If <code><em>x</em></code> is a string, <code>Type mismatch</code> is raised.
+-   If <code><em>x</em></code> is a string, <code>Type mismatch</code> .
 
     
 <h3><code>RSET</code> statement</h3>
@@ -3913,7 +3989,7 @@ UNLOCK [#] file_number, [record_0] TO record_1
 ----------------
 Unlocks a file or part of it that has previously been locked with LOCK. 
 <h4>Errors</h4>
--   If 'file_number' is open for <code>RANDOM</code>, LOCK and UNLOCK statements must match 
+-   If <code><em>file_number</em></code> is open for <code>RANDOM</code>, LOCK and UNLOCK statements must match
     in terms of 'record_0' and 'record_1'. An unmatching UNLOCK will raise      
     PERMISSION DENIED.
 -   If 'record_0' or 'record_1' is not in [1, 2^25-2]: <code>Bad record number</code>.
@@ -3998,7 +4074,7 @@ clipping area.
 If VIEW is called without arguments, the clipping area is reset to the whole
 screen.
 <h4>Errors</h4>
--   If any of the coordinates is not in <code>[-32768&mdash;32767]</code>, <code>Overflow</code> is raised.
+-   If any of the coordinates is not in <code>[-32768&mdash;32767]</code>, <code>Overflow</code> .
 -   If any of the coordinate pairs is outside the physical screen, 
     raises <code>Illegal function call</code>.
 -   If any of the parameters has a string value: <code>Type mismatch</code>.
@@ -4030,8 +4106,8 @@ default is 0.
     This is not implemented in PC_BASIC 3.23, except for use cases discussed
     at INP.
 <h4>Errors</h4>
--   If <code><em>port</em></code> is not in <code>[-32768&mdash;65535]</code>, <code>Overflow</code> is raised.
--   If any parameter has a string value, <code>Type mismatch</code> is raised.
+-   If <code><em>port</em></code> is not in <code>[-32768&mdash;65535]</code>, <code>Overflow</code> .
+-   If any parameter has a string value, <code>Type mismatch</code> .
 -   If 'and_mask' or 'xor_mask' are not in <code>[0&mdash;255]</code>: <code>Type mismatch</code>.
 
 
@@ -4107,7 +4183,7 @@ affects LPRINT and LLIST.
     <code>Illegal function call</code>.
 -   If <code><em>file_num</em></code> or 'num_columns' are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 -   In the second syntax, if an unbracketed expression is used, 
-    <code>Illegal function call</code> is raised.
+    <code>Illegal function call</code> .
 -   If 'num_rows' is not in its accepted range: <code>Illegal function call</code>.
     
 
@@ -4125,7 +4201,7 @@ the bottom right of the screen is mapped to the higher coordinates.
 If WINDOW is called without arguments, the logical coordinates are 
 reset to the physical ones.
 <h4>Errors</h4>
--   If any of the coordinates are strings, <code>Type mismatch</code> is raised.
+-   If any of the coordinates are strings, <code>Type mismatch</code> .
 -   If 'x0'='x1' or 'y0'='y1': <code>Illegal function call</code>.
 
 
@@ -4137,8 +4213,8 @@ separated by commas and the line is ended with a CR/LF sequence. Strings are
 delimited by double quotes ". No padding spaces are inserted.
 'expr_0', ... are expressions whose value is to be printed.
 <h4>Errors</h4>
--   If <code><em>file_num</em></code> is a string, <code>Type mismatch</code> is raised.
--   If <code><em>file_num</em></code> is open for INPUT, <code>Bad file mode</code> is raised. 
+-   If <code><em>file_num</em></code> is a string, <code>Type mismatch</code> .
+-   If <code><em>file_num</em></code> is open for INPUT, <code>Bad file mode</code> .
 
 
 
