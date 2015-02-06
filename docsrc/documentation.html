@@ -341,14 +341,14 @@ bytecode or protected file to ASCII you could use, for example:
 
 
 
-<h3>A note on file names</h3>
+<h3>MS-DOS-style 8.3 file names</h3>
 <p>PC-BASIC follows DOS file system conventions, where file and directory names consist of a 
 8-character name and 3-character extension. Names are case insensitive.
 Note that DOS conventions are subtly different from Windows short filename 
 conventions and not-so-subtly different from Unix conventions. This may lead
 to surprising effects in the presence of several files that match 
 the same DOS name. To avoid such surprises, run PC-BASIC in a working 
-directory of its own and limit file names to all-caps 8.3 format.</p>
+directory of its own and use all-caps 8.3 format for all files.</p>
 
 <p>When opening a data file, PC-BASIC will first look for a file with the name 
 exactly as provided. This can be a long name and will be case sensitive if
@@ -384,7 +384,7 @@ using the <code>mount</code> option. For example, </p>
 <p>If you want PC-BASIC's drive letters to be the same as those in Windows, enable the option <code>map-drives</code>. Use this with caution, since it means that your programs can now read and write on all drives that Windows allows you access to. On non-Windows systems, <code>map-drives</code> will map <code>C:</code> to your file system root, <code>H:</code> to your home directory and <code>Z:</code> to your current working directory.</p>
 
 
-<h3>A note on BASIC files</h3>
+<h3>Compatible BASIC files</h3>
 <p>Many BASIC dialects use the same extension <code>.BAS</code>, but their files are not compatible. 
 PC-BASIC runs GW-BASIC program files only. Some tips to recognise GW-BASIC programs:  </p>
 <ul>
