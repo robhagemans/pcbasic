@@ -2988,7 +2988,8 @@ With <code>LSET</code>, the value will be left-justified if it is shorter than t
 the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justified.
 </p>
 <h4>Parameters</h4>
-<ul><li><code><em>string_name</em></code> is a string variable.
+<ul><li>
+<code><em>string_name</em></code> is a string variable.
 </li><li><code><em>expression</em></code> is a string expression.
 </li></ul>
 <h4>Notes</h4>
@@ -3010,111 +3011,155 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
 
 
 <h3><code>MERGE</code> statement</h3>
-<code>MERGE</code> file_name
----------------
-Overlays the lines of program <code><em>file_name</em></code> into the existing program. The loaded
+<pre>MERGE <em>file_name</em></pre>
+<p>Overlays the lines of program <code><em>file_name</em></code> into the existing program. The loaded
 lines overwrite existing lines if they have the same line number. <code><em>file_name</em></code> 
 must be the name of an existing program file stored in ASCII format only. 
 <h4>Notes</h4>
--   If <code><em>file_name</em></code> does not include an extension, <code>MERGE</code> will try the name 
-    specified, then an all-caps version, then an all-caps version with a .BAS 
-    extension.
+<ul><li>
+Refer to the section on <a href="8.3">MS-DOS filenames</a> for information on how this statement matches filenames.
+</li></ul>
 <h4>Errors</h4>
+<ul><li>
 <code><em>file_name</em></code> cannot be found: <code>File not found</code>.
+</li><li>
 <code><em>file_name</em></code> was not saved as ASCII: <code>Bad file mode</code>.
-a loaded ASCII file contains lines without line numbers:
-    DIRECT STATEMENT IN FILE.
-    
+</li><li>
+A loaded ASCII file contains lines without line numbers:
+    <code>Direct statement in file</code>.
+</li></ul>
 
-MID$ function
-substring = MID$(string, position [, length])
--------------
-Returns a substring of <code><em>string</em></code> starting at 'position', counting from 1. The
-substring has length 'length' if specified, defaulting to 1.
+<h3><code>MID$</code> function</h3>
+<pre><em>substring</em> = MID$(<em>string</em>, <em>position</em> [, <em>length</em>])</pre>
+<p>Returns a substring of <code><em>string</em></code> starting at <code><em>position</em></code>, counting from 1. The
+substring has length <code><em>length</em></code> if specified, defaulting to 1.
+<h4>Parameters</h4>
+<ul><li>
 <code><em>string</em></code> is a string expression.
-'position' is a numeric expression between 1 and the string length.
-'length' is a numeric expression between 0 and 255, inclusive.
+</li><li>
+<code><em>position</em></code> is a numeric expression between 1 and the string length, inclusive.
+</li><li>
+<code><em>length</em></code> is a numeric expression in <code>[0&mdash;255]</code>.
+</li></ul>
 <h4>Errors</h4>
-<code><em>string</em></code> has a number value or 'position' or 'length' have string values,
-    raises <code>Type mismatch</code>.
-'position' is not in [1,255]: <code>Illegal function call</code>.
-'length' is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
-'position' or 'length' are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+<ul><li>
+<code><em>string</em></code> has a number value or <code><em>position</em></code> or <code><em>length</em></code> have string values: <code>Type mismatch</code>.
+</li><li>
+<code><em>position</em></code> or <code><em>length</em></code> are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>position</em></code> is not in <code>[1&mdash;255]</code>: <code>Illegal function call</code>.
+</li><li>
+<code><em>length</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+</li></ul>
 
 
-MID$ statement
-MID$(string_name, position [, length]) = substring
---------------
-Replaces part of <code><em>string_name</em></code> with 'substring'.
+<h3><code>MID$</code> statement</h3>
+<pre>MID$(<em>string_name</em>, <em>position</em> [, <em>length</em>]) = <em>substring</em></pre>
+<p>Replaces part of <code><em>string_name</em></code> with <code><em>substring</em></code>.
+<h4>Parameters</h4>
+<ul><li>
 <code><em>string_name</em></code> is a valid string variable name.
-'position' is a numeric expression between 1 and the string length.
-'length' is a numeric expression between 0 and 255, inclusive.
+</li><li>
+<code><em>position</em></code> is a numeric expression between 1 and the string length, inclusive.
+</li><li>
+<code><em>length</em></code> is a numeric expression in <code>[0&mdash;255]</code>.
+</li></ul>
 <h4>Notes</h4>
--   If 'substring' is longer than 'length', only the first 'length' characters
+<ul><li>
+   If <code><em>substring</em></code> is longer than <code><em>length</em></code>, only the first <code><em>length</em></code> characters
     are used.
--   If 'substring' is shorter than 'length', only LEN(substring) characters
+</li><li>
+   If <code><em>substring</em></code> is shorter than <code><em>length</em></code>, only <code>LEN(<em>substring</em>)</code> characters
     are replaced.
+</li></ul>
 <h4>Errors</h4>
-'position' is greater than the length of <code><em>string_name</em></code>,
-    raises <code>Illegal function call</code>, except if 'length' is specified as 0.
-'position' is not in [1,255]: <code>Illegal function call</code>.
-'length' is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
-'position' or 'length' are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+<ul><li>
+<code><em>position</em></code> is greater than the length of <code><em>string_name</em></code>: <code>Illegal function call</code>, except if <code><em>length</em></code> is specified as 0.
+</li><li>
+<code><em>position</em></code> is not in <code>[1&mdash;255]</code>: <code>Illegal function call</code>.
+</li><li>
+<code><em>length</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+</li><li>
+<code><em>position</em></code> or <code><em>length</em></code> are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li></ul>
 
 
-MKDIR statement
-MKDIR path
----------------
-Creates a directory. 'path' is a string expression that specifies the 
-path of the new directory.  
+<h3><code>MKDIR</code> statement</h3>
+<pre>MKDIR <em>path</em></pre>
+<p>Creates a directory.  </p>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>path</em></code> is a string expression that specifies the
+path of the new directory.
+</li></ul>
 <h4>Notes</h4>
--   'path' will be modified into all-uppercase 8.3 format.
+<ul><li>
+   <code><em>path</em></code> will be truncated into all-uppercase 8.3 format.
+</li></ul>
 <h4>Errors</h4>
-'path' is not a string: <code>Type mismatch</code>.
-the parent directory of 'path' does not exist: <code>Path not found</code>.
-the pathname already exists: PATH/FILE ACCESS ERROR.
-the user has no write permission: <code>Permission denied</code>.
+<ul><li>
+<code><em>path</em></code> is not a string: <code>Type mismatch</code>.
+</li><li>
+The parent directory of <code><em>path</em></code> does not exist: <code>Path not found</code>.
+</li><li>
+The pathname already exists: <code>Path/File access error</code>.
+</li><li>
+The user has no write permission: <code>Permission denied</code>.
+</li></ul>
 
 
-MKD$ function
-bytes = MKD$(double)
--------------
-Returns the internal 8-byte Microsoft Binary Format representation of a double-
-precision number.
+<h3><code>MKD$</code> function</h3>
+<pre><em>bytes</em> = MKD$(<em>double</em>)</pre>
+<p>Returns the internal 8-byte Microsoft Binary Format representation of a double-
+precision number.</p>
 <h4>Errors</h4>
-'double' is a string: <code>Type mismatch</code>.
+<ul><li>
+<code><em>double</em></code> is a string: <code>Type mismatch</code>.
+</li></ul>
 
 
-MKI$ function
-bytes = MKI$(int)
--------------
-Returns the internal 2-byte little-endian representation of an integer.
+<h3><code>MKI$</code> function</h3>
+<pre><em>bytes</em> = MKI$(<em>int</em>)</pre>
+<p>Returns the internal 2-byte little-endian representation of an integer.
 <h4>Errors</h4>
-'int' is a string: <code>Type mismatch</code>.
-'int' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+<ul><li>
+<code><em>int</em></code> is a string: <code>Type mismatch</code>.
+</li><li>
+<code><em>int</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li></ul>
 
 
-MKS$ function
-bytes = MKS$(single)
--------------
-Returns the internal 4-byte Microsoft Binary Format representation of a single-
-precision number.
+<h3><code>MKS$</code> function</h3>
+<pre><em>bytes</em> = MKS$(<em>single</em>)</pre>
+<p>Returns the internal 8-byte Microsoft Binary Format representation of a single-
+precision number.</p>
 <h4>Errors</h4>
-'single' is a string: <code>Type mismatch</code>.
+<ul><li>
+<code><em>single</em></code> is a string: <code>Type mismatch</code>.
+</li></ul>
 
 
-MOTOR statement
-MOTOR [num]
----------------
-Does nothing. <code><em>num</em></code> is a numeric expression between 0 and 255, inclusive.
+<h3><code>MOTOR</code> statement</h3>
+<pre>MOTOR [<em>num</em>]</pre>
+<p>Does nothing.
+<h4>Parameters</h4>
+<ul><li>
+<code><em>num</em></code> is a numeric expression in <code>[0&mdash;255]</code>.
+</li></ul>
 <h4>Notes</h4>
--   This statement does nothing in GW-BASIC. Presumably, it is left over from a
+<ul><li>
+   This statement does nothing in GW-BASIC. Presumably, it is left over from a
     statement in older versions of MS Basic that would drive the cassette tape 
     player.
+</li></ul>
 <h4>Errors</h4>
-<code><em>num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
-<code><em>num</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+<ul><li>
 <code><em>num</em></code> has a string value: <code>Type mismatch</code>.
+</li><li>
+<code><em>num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>num</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+</li></ul>
 
 
 NAME statement
@@ -3346,11 +3391,11 @@ SERIAL PORT (COM1) ACCESS:
 -   If i/o is attempted contravening the FOR mode specified, the PRINT or INPUT
     statement will raise <code>Bad file mode</code>.
 -   If <code>RANDOM</code> i/o is attempted contravening the ACCESS mode specified, the 
-    PUT or GET statement will raise PATH/FILE ACCESS ERROR.
+    PUT or GET statement will raise <code>Path/File access error</code>.
 -   The # is optional and has no effect.    
 <h4>Errors</h4>
 <code><em>file_name</em></code> is empty or a non-existent device: <code>Bad file number</code>.
-FOR APPEND ACCESS WRITE is specified: PATH/FILE ACCESS ERROR.
+FOR APPEND ACCESS WRITE is specified: <code>Path/File access error</code>.
 FOR and ACCESS mismatch in other ways: <code>Syntax error</code>.
 the COM: file_name parameters do not follow the specification,
     <code>Bad file name</code> .
@@ -4095,7 +4140,7 @@ returns <code><em>parent</em></code>.
 RMDIR statement
 RMDIR path
 ---------------
-Removes an empty directory. 'path' is a string expression that specifies 
+Removes an empty directory. <code><em>path</em></code> is a string expression that specifies
 the path of the directory.  RMDIR first looks for the exact, case-sensitive (on
 Unix) path <code><em>pathname</em></code>; if this does not exist then an uppercase version 
 truncated to 8.3 is attempted. The search will match the first 8.3 filename 
@@ -4137,7 +4182,7 @@ cleared and any program in memory will be erased. RUN implies a CLEAR.
 <code><em>filename</em></code> cannot be found: <code>File not found</code>.
 <code><em>filename</em></code> is an empty string: <code>Bad file number</code>.
 a loaded ASCII file contains lines without line numbers:
-    DIRECT STATEMENT IN FILE.
+    <code>Direct statement in file</code>.
 
 
 SAVE statement
@@ -4424,8 +4469,8 @@ interprested as the ASCII value of the character.
 If 'char' is a string expression, its first character is used.
 <h4>Errors</h4>
 'char' is the empty string: <code>Illegal function call</code>.
-'char' or 'length' is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
-'char' or 'length' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+'char' or <code><em>length</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+'char' or <code><em>length</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 
 
 SWAP statement
