@@ -675,8 +675,8 @@ must be followed by round or square brackets. Brackets may also be mixed <code>a
 <ul><li>
 Anything after the <code>CONT</code> keyword is ignored.
 </li><li>
-   If a break is encountered in <code>GOSUB</code> routine called from a continuing 
-    direct line (e.g. <code>GOSUB 100:PRINT A$</code>), <code>CONT</code> will overwrite the running 
+   If a break is encountered in <code>GOSUB</code> routine called from a continuing
+    direct line (e.g. <code>GOSUB 100:PRINT A$</code>), <code>CONT</code> will overwrite the running
     direct line. As the subroutine <code>RETURN</code>s to the position after the <code>GOSUB</code> in
     the old direct line, strange things may happen if commands are given after
     <code>CONT</code>. In GW-BASIC, this can lead to strange errors in non-existing
@@ -1532,7 +1532,7 @@ The type of one or more parameters differs from the function definition:
 <h3><code>FOR</code> statement</h3>
 <pre>FOR <em>loop_var</em> = <em>start</em> TO <em>stop</em> [STEP <em>step</em>]</pre>
 <p>Initiates a <code>FOR&mdash;NEXT</code> loop.</p>
-<p>Initially, <code><em>loop_var</em></code> is set to <code><em>start</em></code> Then, the statements between the FOR
+<p>Initially, <code><em>loop_var</em></code> is set to <code><em>start</em></code>. Then, the statements between the <code>FOR</code>
 statement and the <code>NEXT</code> statement are executed and <code><em>loop_var</em></code> is incremented by
 <code><em>step</em></code> (if <code><em>step</em></code> is not specified, by 1). This is repeated until <code><em>loop_var</em></code>
 has become greater than <code><em>stop</em></code>. Execution then continues at the statement
@@ -1568,133 +1568,201 @@ before returning available memory.
 </li></ul>
 
 
-GET statement   (random-access files)
-GET [#] file_number [, record_number]
--------------
-Read a record from the random-access file <code><em>file_number</em></code> at position
-'record_number'. <code><em>file_number</em></code> is a numeric expression that yields the number
-of an open random-access file. The # is optional and has no effect. 
-'record_number' is a numeric expression that gives a number between 1 and 
-33554432 (2^25), inclusive, and is interpreted as the record number. 
-The record can be accessed through the FIELD variables, or through INPUT$,
- INPUT or LINE INPUT.
+<h3><code>GET</code> statement (random-access files)</h3>
+<pre>GET [#] <em>file_number</em> [, <em>record_number</em>]</pre>
+<p>Read a record from the random-access file <code><em>file_number</em></code> at position
+<code><em>record_number</em></code>.
+The record can be accessed through the <code>FIELD</code> variables or through <code>INPUT$</code>,
+ <code>INPUT</code> or <code>LINE INPUT</code>.
+<h4>Parameters</h4>
+<ul><li>
+<code><em>file_number</em></code> is a numeric expression that yields the number
+of an open random-access file. The <code>#</code> is optional and has no effect.
+</li><li>
+<code><em>record_number</em></code> is a numeric expression in <code>[1&mdash;33554432]</code> (<code>2^25</code>), and is interpreted as the record number.
+</li></ul>
 <h4>Notes</h4>
--   If the record number is beyond the end of the file, the file buffer is 
+<ul><li>
+If the record number is beyond the end of the file, the file buffer is 
     filled with null bytes.
-<h4>Errors</h4>
--   If 'record_number' is not in [1, 33554432]: <code>Bad record number</code>.
--   If <code><em>file_number</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If <code><em>file_number</em></code> is not the number of an open file:
+</li></ul>
+    <h4>Errors</h4>
+<ul><li>
+<code><em>record_number</em></code> is not in <code>[1&mdash;33554432]</code>: <code>Bad record number</code>.
+</li><li>
+<code><em>file_number</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+</li><li>
+<code><em>file_number</em></code> is not the number of an open file:
     <code>Bad file number</code>.
--   If <code><em>file_number</em></code> is open under a mode other than <code>RANDOM</code>:
+</li><li>
+<code><em>file_number</em></code> is open under a mode other than <code>RANDOM</code>:
     <code>Bad file mode</code>.
--   If <code><em>file_number</em></code> is not specified: <code>Missing operand</code>.
-    
+</li><li>
+<code><em>file_number</em></code> is not specified: <code>Missing operand</code>.
+</li></ul>
 
-GET statement   (communications)
-GET [#] com_file_number, [, number_bytes]
--------------
-Read 'number_bytes' bytes from the communications buffer opened under file 
-number <code><em>com_file_number</em></code>. 'number_bytes' is a numeric expression between 1
-and the COM buffer length, inclusive.
-The record can be accessed through the FIELD variables but not through INPUT,
- INPUT$ and LINE INPUT.
+<h3><code>GET</code> statement (serial communications)</h3>
+<pre>GET [#] <em>com_file_number</em> [, <em>number_bytes</em>]</pre>
+<p>Read <code><em>number_bytes</em></code> bytes from the communications buffer opened under file
+number <code><em>com_file_number</em></code>.
+The record can be accessed through the <code>FIELD</code> variables or through <code>INPUT$</code>,
+ <code>INPUT</code> or <code>LINE INPUT</code>.</p>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>file_number</em></code> is a numeric expression that yields the number
+of a file open to a <code>COM</code> device. The <code>#</code> is optional and has no effect.
+</li><li>
+ <code><em>number_bytes</em></code> is a numeric expression between <code>1</code>
+and the <code>COM</code> buffer length, inclusive.
+</li></ul>
 <h4>Notes</h4>
--   If <code><em>bytes</em></code> is 32768 or greater, GW-BASIC hangs (tries to read that many 
-    bytes?). This is not implemented in PC-BASIC 3.23.
--   In GW-BASIC, DEVICE I/O ERROR is raised for overrun error, framing error,
-    and break interrupt. DEVICE FAULT is raised if DSR is lost during I/O. A
-    PARITY ERROR is raised if parity is enabled and incorrect parity is 
+<ul><li>
+   If <code><em>bytes</em></code> is <code>32768</code> or greater, GW-BASIC hangs. This functionality is not implemented in PC-BASIC.
+</li><li>
+   In GW-BASIC, <code>Device I/O error</code> is raised for overrun error, framing error,
+    and break interrupt. <code>Device fault</code> is raised if DSR is lost during I/O. 
+    <code>Parity error</code> is raised if parity is enabled and incorrect parity is
     encountered. This is according to the manual; it is untested.
+</li></ul>
 <h4>Errors</h4>
--   If <code><em>bytes</em></code> is less than 1: <code>Bad record number</code>
--   If <code><em>bytes</em></code> is less than 32768 and greater than the COM buffer length,
-    raises <code>Illegal function call</code>
--   If <code><em>com_file_number</em></code> is not specified: <code>Missing operand</code>.
--   If <code><em>com_file_number</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If <code><em>com_file_number</em></code> is not the number of an open file:
+<ul><li>
+<code><em>bytes</em></code> is less than 1: <code>Bad record number</code>
+</li><li>
+<code><em>bytes</em></code> is less than <code>32768</code> and greater than the <code>COM</code> buffer length: <code>Illegal function call</code>.
+</li><li>
+<code><em>com_file_number</em></code> is not specified: <code>Missing operand</code>.
+</li><li>
+<code><em>com_file_number</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+</li><li>
+<code><em>com_file_number</em></code> is not the number of an open file:
     <code>Bad file number</code>.
--   If the serial input buffer is full, i.e. LOF(com_file_number) == 0, and 
-    LOC(com_file_number)==255: <code>Communication buffer overflow</code>
--   If the carrier drops during GET, hangs until a break key is entered.
+</li><li>
+If the serial input buffer is full, i.e. <code>LOF(<em>com_file_number</em>) = 0</code>, and
+    <code>LOC(<em>com_file_number</em>) = 255</code>: <code>Communication buffer overflow</code>
+</li><li>
+   If the carrier drops during <code>GET</code>, hangs until the <code><b>Ctrl</b></code>+<code><b>Break</b></code> key is pressed.
+</li></ul>
         
     
-GET statement   (graphics)
-GET (x0,y0) - [STEP] (x1,y1), array_name
--------------
-Stores a rectangular area of the graphics screen in an array. 'array_name' must
-be the name of a numeric array dimensioned with enough space to store the area. 
-The area stored is a rectangle parallel to the screen edges, bounded by the 
-top-left and bottom-right coordinates 'x0','y0' and 'x1','y1'. If STEP is 
-specified, 'x1','y1' is an offset from 'x0','y0'. The area is such that these 
-corner points are inside it. 'x0', ... 'y1' are numeric expressions. 
-The image stored in the array can then be put on the screen using PUT. For the 
-purposes of GET, any array is considered a string of bytes. The byte size of an
-array can be calculated as number_elements * byte_size with bytes_size equal to
-2 for integers (%), 4 for single (!) and 8 for double (#). Array byte size for
-string is 3, but string arrays are not allowed in GET. For calculating the 
-number of elements, keep in mind that OPTION BASE 0 is the default; in which 
-case an array with maximum index 10 has 11 elements. This works trough in
-multidimensional arrays. 
-Format in array:
-    0,1 number of x pixels, unsigned int. In SCREEN 1, this value is doubled.
-    2,3 number of y pixels, unsigned int.
-    4...pixel data (many bytes)
-Pixel data format:
-    Data is arranged in 2-byte words. The first 16-bit word holds the bit 0 of 
+<h3><code>GET</code> statement (graphics)</h3>
+<pre>GET (<em>x0</em>, <em>y0</em>) - [STEP] (<em>x1</em>, <em>y1</em>), <em>array_name</em></pre>
+<p>Stores a rectangular area of the graphics screen in an array.
+The area stored is a rectangle parallel to the screen edges, bounded by the
+top-left and bottom-right coordinates <code><em>x0</em></code>,<code><em>y0</em></code> and <code><em>x1</em></code>,<code><em>y1</em></code>. If <code>STEP</code> is
+specified, <code><em>x1</em></code>,<code><em>y1</em></code> is an offset from <code><em>x0</em></code>,<code><em>y0</em></code>. The area is such that these
+corner points are inside it.</p>
+<p>The image stored in the array can then be put on the screen using PUT. For the
+purposes of <code>GET</code>, any array is considered a string of bytes. The byte size of an
+array can be calculated as <code><em>number_elements</em> * <em>byte_size</em></code> with <code><em>byte_size</em></code> equal to
+<code>2</code> for integers (<code>%</code>), 4 for single (<code>!</code>) and 8 for double (<code>#</code>).
+Array byte size for
+string is 3, but string arrays are not allowed in <code>GET</code>. For calculating the
+number of elements, keep in mind that <code>OPTION BASE 0</code> is the default; in which
+case an array with maximum index 10 has 11 elements. This works through in
+multidimensional arrays.</p>
+
+<p>The array format is as follows:</p>
+<table>
+
+<tr>
+<th>Byte</th>
+<th>Contains</th>
+</tr><tr>
+<td>0, 1</td>
+<td>Number of x pixels, unsigned int. In <code>SCREEN 1</code>, this value is doubled.</td>
+</tr><tr>
+<td>2, 3</td>
+<td>Number of y pixels, unsigned int.
+</tr><tr>
+<td>4&mdash;</td>
+<td>Pixel data. Data is arranged in 2-byte words. The first 16-bit word holds the bit 0 of
     the first 16 pixels on the top row. The second word holds the second bit,
-    etc. Data is word-aligned at the end of each row. Thus, in a screen mode 
+    etc. Data is word-aligned at the end of each row. Thus, in a screen mode
     with 4 bits per pixel, the first row takes at least 8 bytes (4 words), even
-    if it consists of only one pixel. The number of bits per pixel depends on 
-    the SCREEN mode.
+    if it consists of only one pixel. The number of bits per pixel depends on
+    the <code>SCREEN</code> mode.
+</td>
+</tr>
+</table>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>array_name</em></code> is the name of a numeric array dimensioned with enough space to store the area.
+</li><li>
+ <code><em>x0</em></code>, <code><em>y0</em></code>, <code><em>x1</em></code>, <code><em>y1</em></code> are numeric expressions.
+</li></ul>
 <h4>Notes</h4>
--   In PCjr/Tandy mode, in SCREEN 6, GET stores an area of *twice the width* 
-    of the specified rectangle.    
+<ul><li>
+   In PCjr/Tandy mode, in <code>SCREEN 6</code>, <code>GET</code> stores an area of <em>twice the width</em>
+    of the specified rectangle.
+</li></ul>
 <h4>Errors</h4>
--   If the array does not exist: <code>Illegal function call</code>.
--   If 'array_name' refers to a string array: <code>Type mismatch</code>.
--   If the area is too large for the array: <code>Illegal function call</code>.
--   If 'x0', ... 'y1' are string expressions: <code>Type mismatch</code>.
--   If 'x0', ... 'y1' are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If 'x0', ... 'y1' are outside the current VIEW or WINDOW:
+<ul><li>
+The array does not exist: <code>Illegal function call</code>.
+</li><li>
+<code><em>array_name</em></code> refers to a string array: <code>Type mismatch</code>.
+</li><li>
+The area is too large for the array: <code>Illegal function call</code>.
+</li><li>
+<code><em>x0</em></code>, ... <code><em>y1</em></code> are string expressions: <code>Type mismatch</code>.
+</li><li>
+<code><em>x0</em></code>, ... <code><em>y1</em></code> are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>x0</em></code>, ... <code><em>y1</em></code> are outside the current <code>VIEW</code> or <code>WINDOW</code>:
     <code>Illegal function call</code>
-    
+</li></ul>
 
-GOSUB statement
-GO[ ]SUB line_number [ anything ]
----------------
-Jumps to a subroutine at <code><em>line_number</em></code>. The next RETURN statement jumps back to
-the statement after GOSUB. Anything after <code><em>line_number</em></code> until the end of the 
-statement is ignored. If executed in interactive mode, GOSUB enters runmode and
-the following RETURN returns execution to the direct line.
-<code><em>line_number</em></code> must be an existing line number literal. Further characters on 
+<h3><code>GOSUB</code> statement</h3>
+<pre>GO[ ]SUB <em>line_number</em> [<em>anything</em>]</pre>
+<p>Jumps to a subroutine at <code><em>line_number</em></code>. The next <code>RETURN</code> statement jumps back to
+the statement after <code>GOSUB</code>. Anything after <code><em>line_number</em></code> until the end of the
+statement is ignored. If executed from a direct line, <code>GOSUB</code> runs the subroutine and
+the following <code>RETURN</code> returns execution to the direct line.
+<h4>Parameters</h4>
+<ul><li>
+<code><em>line_number</em></code> is an existing line number literal.
+</li><li>
+Further characters on
 the line are ignored until end of statement.
+</li></ul>
 <h4>Notes</h4>
--   If no RETURN is encountered, no problem.
--   An optional space is allowed between GO and SUB; it will not be retained in
+<ul><li>
+   If no <code>RETURN</code> is encountered, no problem.
+</li><li>
+One optional space is allowed between <code>GO</code> and <code>SUB</code>; it will not be retained in
     the program.
+</li></ul>
 <h4>Errors</h4>
--   If <code><em>line_number</em></code> does not exist: <code>Undefined line number</code>.
--   If <code><em>line_number</em></code> is greater than 65529, only the first 4 characters are 
-    read (e.g. 6553)
+<ul><li>
+   If <code><em>line_number</em></code> does not exist: <code>Undefined line number</code>.
+</li><li>
+   If <code><em>line_number</em></code> is greater than <code>65529</code>, only the first 4 characters are
+    read (e.g. <code>6553</code>)
+</li></ul>
 
 
-GOTO statement
-GO[ ]TO line_number [anything]
---------------
-Jumps to <code><em>line_number</em></code>.  Anything after <code><em>line_number</em></code> until the end of the 
-statement is ignored. If executed in interactive mode, GOTO enters runmode and
-the following RETURN returns execution to the direct line.
-<code><em>line_number</em></code> must be an existing line number literal. Further characters on 
+<h3><code>GOTO</code> statement</h3>
+<pre>GO[ ]TO <em>line_number</em> [<em>anything</em>]</pre>
+<p>Jumps to <code><em>line_number</em></code>.  Anything after <code><em>line_number</em></code> until the end of the 
+statement is ignored. If executed from a direct line, <code>GOTO</code> starts execution of the program at the specified line.
+<h4>Parameters</h4>
+<ul><li>
+<code><em>line_number</em></code> is an existing line number literal.
+</li><li>
+Further characters on
 the line are ignored until end of statement.
+</li></ul>
 <h4>Notes</h4>
--   Any number of optional spaces is allowed between GO and TO, but they will
+<ul><li>
+   Any number of optional spaces is allowed between <code>GO</code> and <code>TO</code>, but they will
     not be retained in the program.
+</li></ul>
 <h4>Errors</h4>
--   If <code><em>line_number</em></code> does not exist: <code>Undefined line number</code>.
--   If <code><em>line_number</em></code> is greater than 65529, only the first 4 characters are 
-    read (e.g. 6553)
-    
+<ul><li>
+<code><em>line_number</em></code> does not exist: <code>Undefined line number</code>.
+</li><li>
+   If <code><em>line_number</em></code> is greater than <code>65529</code>, only the first 4 characters are
+    read (e.g. <code>6553</code>)
+</li></ul>
 
 HEX$ function
 hex_repr = HEX(x)
@@ -2188,12 +2256,12 @@ LINE statement
 LINE [ [STEP] (x0, y0)] - [STEP] (x1, y1) [, [attr] [, [B [F]] [, pattern]]]
 --------------
 Draws a line or a box in graphics mode. If B is not specified, a line is drawn
-from ('x0', 'y0') to ('x1', 'y1'), endpoints inclusive. If B is specified, a 
+from (<code><em>x0</em></code>, <code><em>y0</em></code>) to (<code><em>x1</em></code>, <code><em>y1</em></code>), endpoints inclusive. If B is specified, a
 rectangle is drawn with sides parallel to the screen and two opposing corners 
-specified by ('x0', 'y0') and ('x1', 'y1'). If the starting point is not given, 
+specified by (<code><em>x0</em></code>, <code><em>y0</em></code>) and (<code><em>x1</em></code>, <code><em>y1</em></code>). If the starting point is not given,
 the current graphics position is used as a staring point.  If STEP is 
-specified, 'x0','y0' is an offset from the current position and 'x1','y1' is an
-offset from 'x0','y0'. 
+specified, <code><em>x0</em></code>,<code><em>y0</em></code> is an offset from the current position and <code><em>x1</em></code>,<code><em>y1</em></code> is an
+offset from <code><em>x0</em></code>,<code><em>y0</em></code>.
 LINE moves the current graphics position to the last given endpoint. 
 If F is specified with B, the rectangle is filled with the specified attribute. 
 F and B may be separated by zero or more spaces. 
@@ -2653,12 +2721,12 @@ negative <code><em>x</em></code> are shown as two's-complement.
 
 
 ON statement (switched jump)
-ON n {GOTO|GOSUB} line_number_0 [, line_number_1 [, ...] ]
+ON n {GOTO|<code>GOSUB</code>} line_number_0 [, line_number_1 [, ...] ]
 ------------
 Jumps to the <code><em>n</em></code>th line number specified in the list. If <code><em>n</em></code> is 0 or greater 
 than the number of line_numbers in the list, no jump is performed. <code><em>n</em></code> must 
 be a numeric expression in the range <code>[0&mdash;255]</code>. IF GOTO is specified, 
-the jump is unconditional; if GOSUB is specified, jumps to a subroutine.
+the jump is unconditional; if <code>GOSUB</code> is specified, jumps to a subroutine.
 <h4>Errors</h4>
 -   If <code><em>n</em></code> is a string: <code>Type mismatch</code>.
 -   If <code><em>n</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
@@ -2666,7 +2734,7 @@ the jump is unconditional; if GOSUB is specified, jumps to a subroutine.
 
 
 ON statement (event trapping)
-ON { COM(n) | KEY(n) | STRIG(n) | PEN | PLAY(n) | TIMER (x) } GOSUB line_number
+ON { COM(n) | KEY(n) | STRIG(n) | PEN | PLAY(n) | TIMER (x) } <code>GOSUB</code> line_number
 ------------
 Defines an event trapping subroutine. 
 The type of event is given by one of the following keywords:
@@ -3360,12 +3428,12 @@ PUT statement   (random-access files)
 PUT [#] file_number [, record_number]
 -------------
 Writes a record to the random-access file <code><em>file_number</em></code> at position
-'record_number'. <code><em>file_number</em></code> is a numeric expression that yields the number
+<code><em>record_number</em></code>. <code><em>file_number</em></code> is a numeric expression that yields the number
 of an open random-access file. The # is optional and has no effect. 
-'record_number' is a numeric expression that gives a number between 1 and 
+<code><em>record_number</em></code> is a numeric expression that gives a number between 1 and
 33554432 (2^25), inclusive, and is interpreted as the record number. 
 <h4>Errors</h4>
--   If 'record_number' is not in [1, 33554432]: <code>Bad record number</code>.
+-   If <code><em>record_number</em></code> is not in [1, 33554432]: <code>Bad record number</code>.
 -   If <code><em>file_number</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
 -   If <code><em>file_number</em></code> is not the number of an open file:
     <code>Bad file number</code>.
@@ -3377,8 +3445,8 @@ of an open random-access file. The # is optional and has no effect.
 PUT statement   (communications)
 PUT [#] com_file_number, [, number_bytes]
 -------------
-Writes 'number_bytes' bytes to the communications buffer opened under file 
-number <code><em>com_file_number</em></code>. 'number_bytes' is a numeric expression between 1
+Writes <code><em>number_bytes</em></code> bytes to the communications buffer opened under file
+number <code><em>com_file_number</em></code>. <code><em>number_bytes</em></code> is a numeric expression between 1
 and the COM buffer length, inclusive.
 <h4>Notes</h4>
 -   In GW-BASIC, DEVICE I/O ERROR is raised for overrun error, framing error,
@@ -3400,8 +3468,8 @@ and the COM buffer length, inclusive.
 PUT statement   (graphics)
 PUT (x0, y0), array_name [, {PSET|PRESET|AND|OR|XOR}]
 -------------
-Displays an array to a rectangular area of the graphics screen. 'array_name' must
-be the name of a numeric array. 'x0', 'y0' are numeric expressions. 
+Displays an array to a rectangular area of the graphics screen. <code><em>array_name</em></code> must
+be the name of a numeric array. <code><em>x0</em></code>, <code><em>y0</em></code> are numeric expressions.
 Usually, PUT is used with arrays that have been stored using GET. See GET for the
 format of the array. 
 If specified, the keywords have the following effect:
@@ -3412,10 +3480,10 @@ OR      Combines the old and new attributes with bitwise OR
 XOR     Combines the old and new attributes with bitwise XOR
 <h4>Errors</h4>
 -   If the array does not exist: <code>Illegal function call</code>.
--   If 'array_name' refers to a string array: <code>Type mismatch</code>.
--   If 'x0', 'y0' are string expressions: <code>Type mismatch</code>.
--   If 'x0', 'y0' are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If 'x0', 'y0' is outside the current VIEW or WINDOW:
+-   If <code><em>array_name</em></code> refers to a string array: <code>Type mismatch</code>.
+-   If <code><em>x0</em></code>, <code><em>y0</em></code> are string expressions: <code>Type mismatch</code>.
+-   If <code><em>x0</em></code>, <code><em>y0</em></code> are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+-   If <code><em>x0</em></code>, <code><em>y0</em></code> is outside the current VIEW or WINDOW:
     <code>Illegal function call</code>
 
 
@@ -3473,8 +3541,8 @@ less than 'old remain unchanged.
 'increment' is a line number but must not be a dot or zero.
 <h4>Notes</h4>
 -   The following keywords can reference line numbers, which will be renumbered
-    by renum: AUTO, EDIT, ELSE, ERL, DELETE, GOSUB, GOTO, LIST, LLIST, RENUM, 
-    RESTORE, RESUME, RETURN, RUN, THEN. 
+    by renum: AUTO, EDIT, ELSE, ERL, DELETE, <code>GOSUB</code>, GOTO, LIST, LLIST, RENUM,
+    RESTORE, RESUME, <code>RETURN</code>, RUN, THEN.
 -   Some keywords contain line numbers in a different program, which will not be 
     renumbered: CHAIN. However, a line number in a RUN statement that 
     opens a new file *will* be (incorrectly) renumbered. Furthermore, any RENUM 
@@ -3527,14 +3595,14 @@ caused the error. If 'line' is specified, it must be a valid line number.
 -   If 'line' is not an existing line number: <code>Undefined line number</code>.
     
 
-RETURN statement
-RETURN [line]
+<code>RETURN</code> statement
+<code>RETURN</code> [line]
 ----------------
-Returns from a GOSUB subroutine. If 'line' is not specified, RETURN jumps back
-to the statement after the GOSUB that jumped into the subroutine. 
-If 'line' is specified, it must be a valid line number. RETURN jumps to that 
-line (and pops the GOSUB stack).
-When returning from an error trapping routine, RETURN re-enables the event 
+Returns from a <code>GOSUB</code> subroutine. If 'line' is not specified, <code>RETURN</code> jumps back
+to the statement after the <code>GOSUB</code> that jumped into the subroutine.
+If 'line' is specified, it must be a valid line number. <code>RETURN</code> jumps to that
+line (and pops the <code>GOSUB</code> stack).
+When returning from an error trapping routine, <code>RETURN</code> re-enables the event
 trapping which was stopped on entering the trap routine.
 <h4>Errors</h4>
 -   If 'line' is not an existing line number: <code>Undefined line number</code>.
@@ -4062,7 +4130,7 @@ VIEW statement
 VIEW [ [SCREEN] (x0,y0)-(x1,y1) [, [fill] [, border]] ]
 --------------
 Defines a graphics clipping area. Graphics drawn outside the clipping area will
-not be shown. 'x0', 'y0', 'x1', y1' are absolute screen coordinates of two 
+not be shown. <code><em>x0</em></code>, <code><em>y0</em></code>, <code><em>x1</em></code>, y1' are absolute screen coordinates of two
 opposing corners of the area.
 If 'fill' is specified, it must be a valid attribute. The clipping area will be
 filled with this attribute.
@@ -4191,7 +4259,7 @@ WINDOW statement
 WINDOW [ [SCREEN] (x0,y0)-(x1,y1) ]
 ----------------
 Define logical coordinates for the screen.
-'x0', 'y0', 'x1', 'y1' are numeric expressions.
+<code><em>x0</em></code>, <code><em>y0</em></code>, <code><em>x1</em></code>, <code><em>y1</em></code> are numeric expressions.
 If SCREEN is not specified,
 the bottom left of the screen is mapped to the lower coordinates;
 the top right of the screen is mapped to the higher coordinates.
@@ -4202,7 +4270,7 @@ If WINDOW is called without arguments, the logical coordinates are
 reset to the physical ones.
 <h4>Errors</h4>
 -   If any of the coordinates are strings, <code>Type mismatch</code> .
--   If 'x0'='x1' or 'y0'='y1': <code>Illegal function call</code>.
+-   If <code><em>x0</em></code>=<code><em>x1</em></code> or <code><em>y0</em></code>=<code><em>y1</em></code>: <code>Illegal function call</code>.
 
 
 WRITE and WRITE# statements
@@ -4223,7 +4291,7 @@ delimited by double quotes ". No padding spaces are inserted.
 <pre>
 1   NEXT without FOR
 2   Syntax error
-3   RETURN without GOSUB
+3   <code>RETURN</code> without <code>GOSUB</code>
 4   Out of DATA
 5   Illegal function call
 6   Overflow
@@ -4552,7 +4620,7 @@ name it AS!. The keywords are here listed with the bytecode token used to
 represent them in a BASIC file.
 <pre>
  81 END     82 FOR     83 NEXT    84 DATA    85 INPUT   86 DIM     87 READ  
- 88 LET     89 GOTO    8A RUN     8B IF      8C RESTORE 8D GOSUB   8E RETURN  
+ 88 LET     89 GOTO    8A RUN     8B IF      8C RESTORE 8D <code>GOSUB</code>   8E <code>RETURN</code>
  8F REM     90 STOP    91 PRINT   92 CLEAR   93 LIST    94 NEW     95 ON  
  96 WAIT    97 DEF     98 POKE    99 CONT    9C OUT     9D LPRINT  9E LLIST  
  A0 WIDTH   A1 ELSE    A2 TRON    A3 TROFF   A4 SWAP    A5 ERASE   A6 EDIT  
