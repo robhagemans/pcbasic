@@ -29,7 +29,7 @@ error trapping
 Technical documentation
 - MBF
 - random numbers
-
+- memory map
 
 <h2>Keywords</h2>
 
@@ -791,223 +791,361 @@ If the type of the literal does not match that of the corresponding <code>READ</
 statement, a <code>Syntax error</code> occurs on the <code>DATA</code> statement.
 </li></ul>
     
-
-DATE$ function
---------------
-Returns the system date as a string in the format "mm-dd-yyyy".
-Note that DATE$ has no brackets.
-
-
-DATE$ statement
-DATE$ = date
----------------
-Sets the system date. 'date' is a string expression that represents a 
-date in one of the formats: "mm-dd-yyyy", "mm/dd/yyyy", "mm-dd-yy", "mm/dd/yy".
-Of these, mm must be in [01, 12], dd must be in [01, 31]. If specified as yyyy,
-the year must be in [1980, 2099]. If specified as yy, the year must be in the
-range [00, 77], in which case it is interpreted as 2000--2077, or in the range
- [80, 99], which is interpreted as 1980-1999.
+<h3><code>DATE$</code> function</h3>
+<pre><em>s</em> = DATE$</pre>
+<p>Returns the system date as a string in the format <code>"mm-dd-yyyy"</code>.</p>
 <h4>Notes</h4>
--   The system date is not actually changed; rather, PC-BASIC remembers the 
+<ul><li>
+This function has no brackets.
+</li></ul>
+
+<h3><code>DATE$</code> statement</h3>
+<pre>DATE$ = <em>date</em></pre>
+<p>Sets the system date. <code><em>date</em></code> is a string expression that represents a 
+date in one of the formats: <code>"mm-dd-yyyy"</code>, <code>"mm/dd/yyyy"</code>, <code>"mm-dd-yy"</code>, <code>"mm/dd/yy"</code>.</p>
+<p>Of these, </p>
+<ul><li>
+<code>mm</code> must be in <code>[01&mdash;12]</code>.
+</li><li>
+<code>dd</code> must be in <code>[01&mdash;31]</code>. 
+</li><li>
+<code>yyyy</code> must be in <code>[1980&mdash;2099]</code>. 
+</li><li>
+<code>yy</code> must be in one of the ranges:
+    <ul><li>
+    <code>[00&mdash;77]</code>, interpreted as <code>2000&mdash;2077</code>; or
+    </li><li>
+    <code>[80&mdash;99]</code>, interpreted as <code>1980&mdash;1999</code>.
+    </li></ul>
+</li></ul>
+<h4>Notes</h4>
+<ul><li>
+   The system date is not actually changed; rather, PC-BASIC remembers the 
     offset from the true system date. This avoids requiring user permission
-    to change the system time
--   GW-BASIC appears to accept invalid dates such as "02-31-2000". PC-BASIC
+    to change the system time.
+</li><li>
+   GW-BASIC appears to accept invalid dates such as <code>"02-31-2000"</code>. PC-BASIC
     raises <code>Illegal function call</code> for these.
+</li></ul>
 <h4>Errors</h4>
--   If the value of 'date' is not in the format specified above, DATE$ raises
+<ul><li>
+<code><em>date</em></code> has a numeric value: <code>Type mismatch</code>.
+</li><li>
+<code><em>date</em></code> is not in the format specified above:
     <code>Illegal function call</code>.
--   If 'date' yields a numeric value, <code>Type mismatch</code> is raised.
+</li></ul>
 
-
-DEBUG statement [--debug only]
-DEBUG python_statements
-----------------
-This statement is not present by default, but can be activated with the --debug
-command-line flag. Executes the specified Python statements. 
-<h4>Notes</h4>
--   This statement is not present in GW-BASIC. 
--   This statement is intended for debugging purposes only. It may be removed,
-    changed or moved to a different token across PC-BASIC 3.23 versions. 
-
-
-DEF FN statement
-DEF FN name[( arg_0 [, arg_1 [, ...] )] = expression
-----------------
-Defines a function. 'name' must be a legal variable name. The function will 
-then be called FNname (or FN name). Spaces between FN and name are optional.
-'arg0', ... must be legal variable names; these are the parameters of the
-function. 'expression' must be a legal PC-BASIC expression that may use the
-parameters 'arg_0', 'arg_1', ... . On calling FNname(...), 'expression' is 
+<h3><code>DEF FN</code> statement</h3>
+<pre>DEF FN[ ]<em>name</em>[( <em>arg_0</em> [, <em>arg_1</em> [, ...] )] = <em>expression</em></pre>
+<p>Defines a function called <code>FN<em>name</em></code> (or <code>FN<em> name</em></code>: spaces between <code>FN</code> and <code><em>name</em></code> are optional).
+On calling <code>FN<em>name</em>( ... )</code>, <code><em>expression</em></code> is 
 evaluated with the supplied parameters substituted. The result of the 
-evaluation is then the value of FNname.
-
-
-DEFINT statement
-DEFINT letters
-----------------
-Sets the default type for variables starting with 'letters' to integer (%). 
-This is the type that is assumed if no type character is specified. 'letters' 
-are letters of the alphabet separated by commas or ranges specified with a 
-dash: for example, DEFINT A,B,C-Z
-
-
-DEFDBL statement
-DEFDBL letters
-----------------
-Sets the default type for variables starting with 'letters' to double (#). 
-This is the type that is assumed if no type character is specified. 'letters' 
-are letters of the alphabet separated by commas or ranges specified with a 
-dash: for example, DEFDBL A,B,C-Z
-
-
-DEFSNG statement
-DEFSNG letters
-----------------
-Sets the default type for variables starting with 'letters' to single (!). 
-This is the type that is assumed if no type character is specified. 'letters' 
-are letters of the alphabet separated by commas or ranges specified with a 
-dash: for example, DEFSNG A,B,C-Z. DEFSNG A-Z is the default setting.
-
-
-DEFSTR statement
-DEFSTR letters
-----------------
-Sets the default type for variables starting with 'letters' to string ($). 
-This is the type that is assumed if no type character is specified. 'letters' 
-are letters of the alphabet separated by commas or ranges specified with a 
-dash: for example, DEFSTR A,B,C-Z.
-
-
-DEF SEG statement
-DEF SEG [=address]
------------------
-Sets the memory segment to be used by BLOAD, BSAVE, CALL, PEEK, POKE, or USR.
-'address' is a numeric expression in <code>[-32768&mdash;65535]</code>.
-the following segments are implemented/known:
-    data            &h13ad
-    video           &hb800  (SCREENs 0, 1, 2)
-    video           &ha000  (SCREENs 7, 8, 9)
-    font            &hf000  (font starts at &hfa6e)
+evaluation is the return value of <code>FN<em>name</em></code>.
+</p>
 <h4>Notes</h4>
--   If 'address' is negative, it is interpreted as its two's complement.
--   If 'address' is not specified, the segment is set to the GW-BASIC data
+<ul><li>
+This statement may only be used on a program line.
+</ul></li>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>name</em></code> must be a legal variable name.
+</li><li>
+<code><em>arg_0</em>, <em>arg_1</em>, ...</code> must be legal variable names. These are the parameters of the
+function. Variables of the same name may or may not exist in the program; their value is not affected or used by the defined function.
+</li><li>
+<code><em>expression</em></code> must be a legal PC-BASIC expression that may use the
+parameters <code><em>arg_0</em>, <em>arg_1</em>, ...</code>. 
+</li></ul>
+<h4>Errors</h4>
+<ul><li>
+The statement is executed directly instead of in a program line: <code>Illegal direct</code>.
+</li></ul>
+
+
+<h3><code>DEFINT</code> statement</h3>
+<pre>DEFINT <em>letters</em></pre>
+<p>Sets the default type for variables starting with <code><em>letters</em></code> to integer (<code>%</code>). 
+This is the type that is assumed if no type character is specified. <code><em>letters</em></code> 
+are letters of the alphabet separated by commas or ranges specified with a 
+dash: for example, <code>DEFINT A,B,C-Z</code>.</p>
+
+
+<h3><code>DEFDBL</code> statement</h3>
+<pre>DEFDBL <em>letters</em></pre>
+<p>Sets the default type for variables starting with <code><em>letters</em></code> to double (<code>#</code>). 
+This is the type that is assumed if no type character is specified. <code><em>letters</em></code> 
+are letters of the alphabet separated by commas or ranges specified with a 
+dash: for example, <code>DEFDBL A,B,C-Z</code>.</p>
+
+
+<h3><code>DEFSNG</code> statement</h3>
+<pre>DEFSNG <em>letters</em></pre>
+<p>Sets the default type for variables starting with <code><em>letters</em></code> to single (<code>!</code>). 
+This is the type that is assumed if no type character is specified. <code><em>letters</em></code> 
+are letters of the alphabet separated by commas or ranges specified with a 
+dash: for example, <code>DEFSNG A,B,C-Z</code>. <code>DEFSNG A-Z</code> is the default setting.</p>
+
+
+<h3><code>DEFSTR</code> statement</h3>
+<pre>DEFSTR <em>letters</em></pre>
+<p>Sets the default type for variables starting with <code><em>letters</em></code> to string (<code>$</code>). 
+This is the type that is assumed if no type character is specified. <code><em>letters</em></code> 
+are letters of the alphabet separated by commas or ranges specified with a 
+dash: for example, <code>DEFSTR A,B,C-Z</code>.</p>
+
+
+<h3><code>DEF SEG</code> statement</h3>
+<pre>DEF SEG [=<em>address</em>]</pre>
+<p>Sets the memory segment to be used by <code>BLOAD</code>, <code>BSAVE</code>, <code>CALL</code>, <code>PEEK</code>, <code>POKE</code>, or <code>USR</code>.
+<code><em>address</em></code> is a numeric expression in <code>[-32768&mdash;65535]</code>.
+<h4>Notes</h4>
+<ul><li>
+   If <code><em>address</em></code> is negative, it is interpreted as its two's complement.
+</li><li>
+   If <code><em>address</em></code> is not specified, the segment is set to the GW-BASIC data
     segment.
+</li></ul>
 <h4>Errors</h4>
--   If 'address' is not in <code>[-32768&mdash;65535]</code>, <code>Overflow</code> is raised.
--   If 'address' has a string value, <code>Type mismatch</code> is raised.
+<ul><li>
+ <code><em>address</em></code> has a string value: <code>Type mismatch</code>.
+</li><li>
+ <code><em>address</em></code> is not in <code>[-32768&mdash;65535]</code>: <code>Overflow</code>.
+</li></ul>
 
 
-DEF USR statement
-DEF USR[n] = address
------------------
-Does nothing. 'n' is a digit between 0 and 9 inclusive. 'address' is a numeric-
-valued expression in <code>[-32768&mdash;65535]</code>.
+<h3><code>DEF USR</code> statement</h3>
+<pre>DEF USR[<em>n</em>] = <em>address</em></pre>
+<p>Does nothing. </p>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>n</em></code> is a digit between 0 and 9 inclusive. 
+</li><li>
+<code><em>address</em></code> is a numeric expression in <code>[-32768&mdash;65535]</code>.
+</li></ul>
 <h4>Notes</h4>
--   In GW-BASIC, sets the starting address of an assembly-language function. 
-    This is not implemented in PC-BASIC.
--   If 'address' is negative, it is interpreted as its two's complement.
+<ul><li>
+   In GW-BASIC, this statement sets the starting address of an assembly-language function. 
+</li><li>
+    This statement is not implemented in PC-BASIC.
+</li><li>
+   If <code><em>address</em></code> is negative, it is interpreted as its two's complement.
+</li></ul>
 <h4>Errors</h4>
--   If 'n' is not a digit in [0,9], raises <code>Syntax error</code>.
--   If 'address' is not in <code>[-32768&mdash;65535]</code>, <code>Overflow</code> is raised.
--   If 'address' has a string value, <code>Type mismatch</code> is raised.
+<ul><li>
+ <code><em>n</em></code> is not a digit in <code>[0&mdash;9]</code>: <code>Syntax error</code>.
+</li><li>
+ <code><em>address</em></code> has a string value: <code>Type mismatch</code>.
+</li><li>
+ <code><em>address</em></code> is not in <code>[-32768&mdash;65535]</code>: <code>Overflow</code>.
+</li></ul>
 
  
-DELETE statement
-DELETE [ [line_number_0] - [line_number_1] ]
-DELETE [line_number_0]
-----------------
-Deletes lines from the program, starting with 'line_number_0' up to 
-'line_number_1', which must be line numbers in the range [0, 65529] or a .
-to indicate the last line edited.
-Also stops program execution and returns to interactive mode.
+<h3><code>DELETE</code> statement</h3>
+<pre>
+DELETE [<em>line_number_0</em> | .] - [<em>line_number_1</em> | .]
+DELETE [<em>line_number_0</em> | .]
+</pre>
+<p>Deletes a range of lines from the program.
+Also stops program execution and returns to interactive mode.</p>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>line_number_0</code></em> and 
+<code><em>line_number_1</code></em> are line numbers in the range <code>[0&mdash;65529]</code>, specifying the inclusive range of line numbers to delete.
+</li><li>
+A <code>.</code> indicates the last line edited.
+</li><li>
+If the start point is omitted, the range will start at the start of the program.
+</li><li>
+If the end point is omitted, the range will end at the end of the program.
+</li><li>
+If no range is specified, the whole program will be deleted.
+</li></ul>
 <h4>Errors</h4>
--   If a line number is greater than 65529, <code>Syntax error</code> is raised.
--   If the range specified does not include any program lines stored, DELETE
-    raises <code>Illegal function call</code>.
+<ul><li>
+<code><em>line_number_0</code></em> or 
+<code><em>line_number_1</code></em> is greater than <code>65529</code>: <code>Syntax error</code>.
+</li><li>
+The range specified does not include any program lines stored: <code>Illegal function call</code>.
+</li></ul>
     
     
-DIM statement
-DIM name  { ( | [ } limit_0 [, limit_1 [, ...] ] { ) | } ]   
--------------
-Dimensions (allocates memory for) arrays. 'name' is a legal variable name
-specifying the array to be dimensioned. 'limit_0', ... are numeric 
-expressions that specify the greatest index allowed at that position. Mixed
-brackets are allowed. The least index allowed is determined by OPTION BASE.
-The DIM statement also fixes the number of indices of the array. 
-An array can only be dimensioned once; to re-dimension an array, ERASE or 
- CLEAR must be executed first. 
-If an array is used without a DIM statement, its maximum indices are set at 10
-for each index position used. If an array's DIM statement specifies no indices,
- it is dimensioned with a single index with maximum 10.
+<h3><code>DIM</code> statement</h3>
+<pre>DIM <em>name</em> { ( | [ } <em>limit_0</em> [, <em>limit_1</em> [, ...] ] { ) | } ]
+</pre>
+<p>Allocates memory for arrays. 
+The <code>DIM</code> statement also fixes the number of indices of the array. 
+An array can only be allocated once; to re-allocate an array, <code>ERASE</code> or 
+ <code>CLEAR</code> must be executed first. 
+If an array is first used without a <code>DIM</code> statement, it is automatically allocated with its maximum indices set at <code>10</code>
+for each index position used. If an array's <code>DIM</code> statement specifies no indices,
+ it is allocated with a single index with maximum <code>10</code>.
+The least index allowed is determined by <code>OPTION BASE</code>.
+<h4>Parameters</h4>
+<ul><li>
+<code><em>name</em></code> is a legal variable name
+specifying the array to be allocated. 
+</li><li>
+<code><em>limit_0</em>, <em>limit_1</em>, ...</code> are numeric 
+expressions that specify the greatest index allowed at that position. 
+</li></ul>
 <h4>Notes</h4>
--   The size of arrays is limited by the available memory. In GW-BASIC, an 
-    <code>Out of memory</code> is raised if the array exceeds the size of available variable
-    space. This is not currently implemented in PC-BASIC.
--   The maximum number of indices is, theoretically, 255. However, in practice,
+<ul><li>
+Mixed brackets are allowed. 
+</li><li>
+   The size of arrays is limited by the available BASIC memory.
+</li><li>
+   The maximum number of indices is, theoretically, <code>255</code>. In practice,
     it is limited by the 255-byte limit on the length of program lines.
+</li></ul>
 <h4>Errors</h4>
--   If 'name' has already been dimensioned, DUPLICATE DEFINITION is raised.
--   If an index is empty, <code>Syntax error</code> is raised.
--   If an index is missing at the end, <code>Missing operand</code> is raised.
--   If 'limit_0', ... are not within <code>[-32768&mdash;32767]</code>, <code>Overflow</code> is raised.        
--   If 'limit_0', ... are negative, <code>Illegal function call</code> is raised.
+<ul><li>
+<code><em>name</em></code> has already been dimensioned: <code>Duplicate definition</code>.
+</li><li>
+An index is empty: <code>Syntax error</code>.
+</li><li>
+An index is missing at the end: <code>Missing operand</code>.
+</li><li>
+<code><em>limit_0</em>, <em>limit_1</em>, ...</code> have a string value: <code>Type mismatch</code>.
+</li><li>
+<code><em>limit_0</em>, <em>limit_1</em>, ...</code> are not within <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>limit_0</em>, <em>limit_1</em>, ...</code> are negative: <code>Illegal function call</code>.
+</li><li>
+The array exceeds the size of available variable
+    space:    <code>Out of memory</code>.
+    </li></ul>
 
 
-DRAW statement
-DRAW gml_string
---------------
-In graphics mode, draws the shape specified by 'gml_string'. 'gml_string' must
-be a string expression in Graphics Macro Language (GML). 
-GML reference:
-Movement commands have the form 
-    [B][N] movement
-where the default is to move and draw; the optional prefixes mean:
-    B       move but do not plot
-    N       return to original point after move
-and 'movement' is one of:
-    U[n]    up n steps
-    L[n]    left n steps
-    D[n]    down n steps
-    R[n]    right n steps
-    E[n]    up+right n steps
-    F[n]    down+right n steps
-    G[n]    down+left n steps
-    H[n]    up+left n steps
-    M{+|-}x,{+|-|}y
-            move (x,y) steps
-    Mx,y    move to view region coordinates x,y  
-where 'n',<code><em>x</em></code>,<code><em>y</em></code> must be integers in [0, 9999]. 
-Where optional, 'n' defaults to 1.
-Scale commands are:
-    Sn      sets the step size to n/4. The default step size is 1 pixel.  
-            'n' must be an integer in [1, 255]
-    TAn     sets the angle to n degrees. The default angle is 0 degrees.
-            'n' must be an integer in [-360, 360]
-    An      sets the angle to 0 for n=0, 90 for n=1, 180 for n=2, 270 for n=3.    
-            'n' must be an integer in [0, 3]
-Colour commands:    
-    Cn      sets the colour attribute to n. See COLOR.
-    Pn,b    flood fills with attribute n and boundary attribute b. See PAINT.
-Subroutine command:
-    Xs      execute substring. 's' is one of the following:
-            -   a string variable name followed by semicolon (;)
-            -   the result of VARPTR$() on a string variable
-Numeric variables 'n',<code><em>x</em></code>,<code><em>y</em></code>,'b' in the commands above can be:
-    -   an integer literal e.g. "100"
-    -   a numeric variable name preceded by = and followed by ; e.g. "=name;"
-    -   the result of VARPTR$() on a numeric variable, preceded by =.               
+<h3><code>DRAW</code> statement</h3>
+<pre>DRAW <em>gml_string</em></pre>
+<p>Draws the shape specified by <code><em>gml_string</em></code>, a string expression in Graphics Macro Language (GML). </p>
+<h4>GML reference</h4>
+<dl>
+<dt>Movement commands</dt>
+<dd>
+    <pre>[B][N] <em>movement</em> </pre>
+    where the default is to move and draw; the optional prefixes mean:
+    <table>
+    <tr>
+    <td><code>B</code></td>
+    <td>move but do not plot</td>
+    </tr><tr>
+    <td><code>N</code></td>
+    <td>return to original point after move</td>
+    </tr>
+    </table>
+    and <code><em>movement</em></code> is one of:
+    <table>
+    <tr>
+    <td><code>U[<em>n</em>]</code></td>
+    <td>up <code><em>n</em></code> steps</td>
+    </tr><tr>
+    <td><code>L[<em>n</em>]</code></td>
+    <td>left <code><em>n</em></code> steps</td>
+    </tr><tr>
+    <td><code>D[<em>n</em>]</code></td>
+    <td>down <code><em>n</em></code> steps</td>
+    </tr><tr>
+    <td><code>R[<em>n</em>]</code></td>
+    <td>right <code><em>n</em></code> steps</td>
+    </tr><tr>
+    <td><code>E[<em>n</em>]</code></td>
+    <td>up and right <code><em>n</em></code> steps</td>
+    </tr><tr>
+    <td><code>F[<em>n</em>]</code></td>
+    <td>down and right <code><em>n</em></code> steps</td>
+    </tr><tr>
+    <td><code>G[<em>n</em>]</code></td>
+    <td>down and left <code><em>n</em></code> steps</td>
+    </tr><tr>
+    <td><code>H[<em>n</em>]</code></td>
+    <td>up and left <code><em>n</em></code> steps</td>
+    </tr><tr>
+    <td><code>M{+|-}<em>x</em>,[+|-]<em>y</em></code></td>
+    <td>move (<code><em>x</em></code>,<code><em>y</em></code>) steps</td>
+    </tr><tr>
+    <td><code>M<em>x</em>,<em>y</em></code></td>
+    <td>move to view region coordinate (<code><em>x</em></code>,<code><em>y</em></code>) </td>
+    </tr></table>
+    <p>where <code><em>n</em></code>, <code><em>x</em></code>, <code><em>y</em></code> are integers in <code>[0&mdash;9999]</code>. 
+    Where optional, <code><em>n</em></code> defaults to <code>1</code>.
+</dd>
+<dt>Scale commands</dt>
+<dd>
+    <table><tr>
+    <td><code>S<em>n</em></code></td>
+    <td>set the step size to <code><em>n</em>/4</code>. The default step size is 1 pixel.  
+                <code><em>n</em></code> is an integer in <code>[1&mdash;255]</code>
+    </td>
+    </tr><tr>
+    <td><code>TA<em>n</em></code></td>
+    <td>
+        set the angle to <code><em>n</em></code> degrees. The default angle is 0 degrees.
+                <code><em>n</em></code> is an integer in <code>[-360&mdash;360]</code>
+    </td>
+    </tr><tr>
+    <td><code>A<em>n</em></code></td>
+    <td>    
+        set the angle to 0 for <code><em>n</em>=0</code>, 
+                90 for <code><em>n</em>=1</code>,
+                180 for <code><em>n</em>=2</code>, 
+                270 for <code><em>n</em>=3</code>.    
+                <code><em>n</em></code> is an integer in <code>[0&mdash;3]</code>
+    </td>
+    </tr></table>
+</dd>
+<dt>Colour commands</dt>
+<dd>
+    <table><tr>
+    <td><code>C<em>n</em></code></td>
+    <td>      set the foreground attribute to <code><em>n</em></code>. See <code>COLOR</code>. </td>
+    </tr><tr>
+    <td><code>P<em>n</em>,<em>b</em></code></td>
+    <td>flood fill with attribute <code><em>n</em></code> and boundary attribute <code><em>b</em></code>. See <code>PAINT</code>.
+    </tr></table>
+</dd>
+<dt>Subroutine command</dt>
+<dd>
+    <table><tr>
+    <td><code>X<em>s</em></code></td>
+    <td>      execute a substring</td>
+    </tr></table>
+    <p><code><em>s</em></code> is one of the following:</p>
+    <ul><li>
+       a string variable name followed by semicolon (<code>;</code>)
+    </li><li>
+       the result of <code>VARPTR$()</code> on a string variable
+    </li></ul>
+</dd>
+</dl>
+    
+<p>Numeric variables <code><em>n</em></code>, <code><em>x</em></code>, <code><em>y</em></code>, <code><em>b</em></code> in the commands above can be:</p>
+<ul><li>
+an integer literal, e.g. <code>DRAW "U100"</code>
+</li><li>
+a numeric variable name <code><em>var</em></code> preceded by <code>=</code> and followed by <code>;</code> e.g. <code>DRAW "U=VAR;"</code>
+</li><li>
+    the result of <code>VARPTR$(<em>var</em>)</code> preceded by <code>=</code>.  For example, <code>DRAW "U=" + VARPTR$(VAR)</code>
+</ul>
 <h4>Notes</h4>
--   CLS resets the step size to 1 pixel, angle to 0 degrees and position to the
+<ul><li>
+   The <code>CLS</code> statement resets the step size to 1 pixel, angle to 0 degrees and position to the
     centre of the view region.                 
--   The value 'n' in the TA, A and C command can be left out but *only* if the 
-    command is terminated by a semicolon. 'n' defaults to 0.
+</li><li>
+   The value <code><em>n</em></code> in the <code>TA</code>, <code>A</code> and <code>C</code> command can be left out but <em>only</em> if the 
+    command is terminated by a semicolon. <code><em>n</em></code> defaults to <code>0</code>.
+</li></ul>
 <h4>Errors</h4>
--   If 'gml_string' has a numeric value, <code>Type mismatch</code> is raised.
--   If 'gml_string' has errors in the GML, <code>Illegal function call</code> is raised.
--   If a variable in the gml_string is of incorrect type, <code>Type mismatch</code>.
+<ul><li>
+ <code><em>gml_string</em></code> has a numeric value: <code>Type mismatch</code>.
+</li><li>
+ <code><em>gml_string</em></code> has errors in the GML: <code>Illegal function call</code>.
+</li><li>
+A variable referenced in the GML string is of incorrect type: <code>Type mismatch</code>.
+</li></ul>
 
 
-EDIT statement
+<h3><code>EDIT</code> statement</h3>
 EDIT {line_number | .}
 --------------
 Displays the specified program line with the cursor positioned for editing.
@@ -1015,10 +1153,9 @@ Displays the specified program line with the cursor positioned for editing.
 indicate the last line stored.
 <h4>Errors</h4>
 -   If no line_number is specified, raises <code>Undefined line number</code>.
--   If more characters are written after the line number, raises ILLEGAL 
-    FUNCTION CALL.
--   If <code><em>line_number</em></code> is not in [0,65529], raises <code>Illegal function call</code>.    
--   If the specified line number dos not exist, raises <code>Undefined line number</code>.
+-   If more characters are written after the line number: <code>Illegal function call</code>.
+-   If <code><em>line_number</em></code> is not in <code>[0&mdash;65529]</code>, raises <code>Illegal function call</code>.    
+-   If the specified line number does not exist, raises <code>Undefined line number</code>.
 
 
 ELSE statement
@@ -1235,12 +1372,12 @@ Returns <code><em>number</em></code> truncated towards zero.
 FN function
 result = FN name (arg_0 [, arg_1 [, ...] ])
 -----------
-Evaluates a user_defined function. 'name' must be a legal variable name. 
+Evaluates a user_defined function. <code><em>name</em></code> must be a legal variable name. 
 Spaces between FN and name are optional.
 'arg0', ... must be legal variable names; these are the parameters of the
 function. 
 <h4>Errors</h4>
--   If no function named 'name' is defined, raises 
+-   If no function named <code><em>name</em></code> is defined, raises 
     UNDEFINED USER FUNCTION.
 
  
@@ -1878,12 +2015,12 @@ expression.
 LET statement
 [LET] name = expression
 -------------
-Assigns the value of 'expression' to the variable or array element 'name'. 
-'name' must be a valid variable name that may or may not already exist. The
-type of 'expression' must match that of 'name': that is, all numeric types can 
+Assigns the value of <code><em>expression</em></code> to the variable or array element <code><em>name</em></code>. 
+<code><em>name</em></code> must be a valid variable name that may or may not already exist. The
+type of <code><em>expression</em></code> must match that of <code><em>name</em></code>: that is, all numeric types can 
 be assigned to each other but strings can only be assigned to strings.
 <h4>Errors</h4>
--   If 'name' and 'expression' are not of matching types, raises <code>Type mismatch</code>.
+-   If <code><em>name</em></code> and <code><em>expression</em></code> are not of matching types, raises <code>Type mismatch</code>.
 
 
 LINE statement
@@ -2160,17 +2297,17 @@ Assigns a value to a FIELD variable such that it overwrites the FIELD record.
 With LSET, the value will be left-justified if it is shorter than the length of
 the FIELD variable. With RSET, it will be right-justified.
 'string_name' is a valid name of a string variable.
-'expression' is a string expression.
+<code><em>expression</em></code> is a string expression.
 <h4>Notes</h4>
 -   If 'string_name' is not a FIELD variable, the value is justified into the 
     existing string, which retains its length.
--   If 'expression' has a value that is longer than the length of the variable,
+-   If <code><em>expression</em></code> has a value that is longer than the length of the variable,
     it is truncated at the back at the length of the variable.
 -   If LET is used on a FIELD variable instead of L|RSET, the variable is 
     detached from the field and becomes a normal string variable.
 <h4>Errors</h4>
 -   If 'string_name' is not a string variable, <code>Type mismatch</code> is raised.
--   If 'expression' does not have a string value, <code>Type mismatch</code> is raised.
+-   If <code><em>expression</em></code> does not have a string value, <code>Type mismatch</code> is raised.
 
 
 <code>MERGE</code> statement
@@ -2357,14 +2494,14 @@ negative <code><em>x</em></code> are shown as two's-complement.
 ON statement (switched jump)
 ON n {GOTO|GOSUB} line_number_0 [, line_number_1 [, ...] ]
 ------------
-Jumps to the 'n'th line number specified in the list. If 'n' is 0 or greater 
-than the number of line_numbers in the list, no jump is performed. 'n' must 
+Jumps to the <code><em>n</em></code>th line number specified in the list. If <code><em>n</em></code> is 0 or greater 
+than the number of line_numbers in the list, no jump is performed. <code><em>n</em></code> must 
 be a numeric expression in the range <code>[0&mdash;255]</code>. IF GOTO is specified, 
 the jump is unconditional; if GOSUB is specified, jumps to a subroutine.
 <h4>Errors</h4>
--   If 'n' is a string, raises <code>Type mismatch</code>.
--   If 'n' is not in <code>[0&mdash;255]</code>, raises <code>Illegal function call</code>.
--   If 'n' is not in <code>[-32768&mdash;32767]</code>, <code>Overflow</code> is raised.
+-   If <code><em>n</em></code> is a string, raises <code>Type mismatch</code>.
+-   If <code><em>n</em></code> is not in <code>[0&mdash;255]</code>, raises <code>Illegal function call</code>.
+-   If <code><em>n</em></code> is not in <code>[-32768&mdash;32767]</code>, <code>Overflow</code> is raised.
 
 
 ON statement (event trapping)
@@ -2372,27 +2509,27 @@ ON { COM(n) | KEY(n) | STRIG(n) | PEN | PLAY(n) | TIMER (x) } GOSUB line_number
 ------------
 Defines an event trapping subroutine. 
 The type of event is given by one of the following keywords:
-COM(n)      'n' in [1,2] is the COM1 or COM2 port. The event is triggered 
+COM(n)      <code><em>n</em></code> in [1,2] is the COM1 or COM2 port. The event is triggered 
             if data is present in the input buffer of the port.
-KEY(n)      'n' is the key number: 1-10 are <F1>-<F10>, 11: <UP>, 12: <LEFT>, 
+KEY(n)      <code><em>n</em></code> is the key number: 1-10 are <F1>-<F10>, 11: <UP>, 12: <LEFT>, 
             13: <RIGHT>, 14: <DOWN>. 15-20 are user-definable. The event is
             triggered if the key is pressed.
-STRIG(n)    'n' in [0,2,4,6] refer to the two fire triggers on two joysticks. 
+STRIG(n)    <code><em>n</em></code> in [0,2,4,6] refer to the two fire triggers on two joysticks. 
             They event is triggered if the button is pressed.
 PEN         In GW-BASIC, the event is triggered if the light pen is on the 
             screen. In PC-BASIC, the event is triggered if the left mouse 
             button is pressed. 
-PLAY (n)    The event is triggered if there are exactly 'n' notes left on the
-            music background queue. 'n' is a numeric expression in [1,32]    
+PLAY (n)    The event is triggered if there are exactly <code><em>n</em></code> notes left on the
+            music background queue. <code><em>n</em></code> is a numeric expression in [1,32]    
 TIMER (x)   The event is triggered every <code><em>x</em></code> seconds after the TIMER ON 
             statement. <code><em>x</em></code> is a numeric expression in [1, 86400].
 Before event trapping is active, the event needs to be enabled using the event
 statements: COM(n) ON | KEY(n) ON | STRIG(n) ON | PEN ON | PLAY ON | TIMER ON.
 Events are not trapped in interactive mode.
 <h4>Errors</h4>
--   If 'n' or <code><em>x</em></code> is a string, raises <code>Type mismatch</code>.
--   If 'n' or <code><em>x</em></code> is outside the specified range, raises <code>Illegal function call</code>.
--   If 'n' is not in <code>[-32768&mdash;32767]</code>, raises <code>Overflow</code>.
+-   If <code><em>n</em></code> or <code><em>x</em></code> is a string, raises <code>Type mismatch</code>.
+-   If <code><em>n</em></code> or <code><em>x</em></code> is outside the specified range, raises <code>Illegal function call</code>.
+-   If <code><em>n</em></code> is not in <code>[-32768&mdash;32767]</code>, raises <code>Overflow</code>.
 
 
 ON ERROR statement 
@@ -2534,18 +2671,18 @@ SERIAL PORT (COM1) ACCESS:
 OPTION BASE statement
 OPTION BASE n
 ---------------------
-Sets the starting index of all arrays to 'n', where 'n' must be a literal digit
+Sets the starting index of all arrays to <code><em>n</em></code>, where <code><em>n</em></code> must be a literal digit
  0 or 1. Note that expressions are not allowed for n.
 <h4>Notes</h4>
 -   If OPTION BASE is not called, the first array DIM defaults to starting 
     index 0.
 <h4>Errors</h4>
--   If 'n' is not a digit 0 or 1, <code>Syntax error</code> is raised.
+-   If <code><em>n</em></code> is not a digit 0 or 1, <code>Syntax error</code> is raised.
 -   If OPTION BASE 1 is called but any array has already been DIMmed or indexed
     before calling OPTION BASE 
-    with a different starting index, DUPLICATE DEFINITION is raised.
+    with a different starting index, <code>Duplicate definition</code> is raised.
 -   If OPTION BASE is called more than once with different starting index,
-    DUPLICATE DEFINITION is raised.
+    <code>Duplicate definition</code> is raised.
 
 
 OUT statement
@@ -2727,8 +2864,8 @@ mode's number of pages, less one.
 PEEK function
 value = PEEK(address)
 -------------
-Returns the value of the memory at the current DEF SEG segment * 16 + 'address'
-'address' must be in [-32768, 65536]. Negative values are interpreted as their 
+Returns the value of the memory at the current DEF SEG segment * 16 + <code><em>address</em></code>
+<code><em>address</em></code> must be in [-32768, 65536]. Negative values are interpreted as their 
 two's complement.
 <h4>Notes</h4>
 -   The memory is only partly emulated in PC-BASIC 3.23. PEEK can be used to
@@ -2741,8 +2878,8 @@ two's complement.
     are in those locations.
 -   Outside these emulated areas, PEEK returns 0. 
 <h4>Errors</h4>
--   If 'address' is a string, raises <code>Type mismatch</code>.
--   If 'address' is not in [-32768, 65536], raises <code>Overflow</code>.
+-   If <code><em>address</em></code> is a string, raises <code>Type mismatch</code>.
+-   If <code><em>address</em></code> is not in [-32768, 65536], raises <code>Overflow</code>.
 
 
 PEN statement
@@ -2790,23 +2927,23 @@ must be a string expression in Music Macro Language (MML).
 MML reference:
 Notes:
     { A|B|C|D|E|F|G }[ #|+|- ][n]   Plays the corresponding note, with or + for 
-                                    sharp and - for flat. If 'n' follows, it
+                                    sharp and - for flat. If <code><em>n</em></code> follows, it
                                     indicates duration as in L below.
-    Nn  Play note 'n', in the range [0, 84] (7 octaves). 'n' = 0 means rest.                                    
-    On  Sets the current octave to 'n', in the range [0,6]. Default is 4.
+    Nn  Play note <code><em>n</em></code>, in the range [0, 84] (7 octaves). <code><em>n</em></code> = 0 means rest.                                    
+    On  Sets the current octave to <code><em>n</em></code>, in the range [0,6]. Default is 4.
     >   Increases the current octave by 1, with a maximum of 6.   
     <   Decreases the current octave by 1, with a minimum of 0.   
-    Pn  Pause for duration 'n' as in L below.
+    Pn  Pause for duration <code><em>n</em></code> as in L below.
 Duration:
     .   Increase the duration of the preceding note by 1/2 times its normal
         duration. Periods can be repeated to increase duration further.
-    Ln  Set the duration of following note. 'n'=4 is a quarter note, etc.
-        'n' is in the range [1, 64].
+    Ln  Set the duration of following note. <code><em>n</em></code>=4 is a quarter note, etc.
+        <code><em>n</em></code> is in the range [1, 64].
     MN  Normal: 7/8 of the duration is sound, with 1/8 silence. Default mode.
     ML  Legato: full duration is sound.
     MS  Staccato: 3/4 of the duration is sound, with 1/4 silence. 
 Tempo:    
-    Tn  Sets the tempo to 'n' L4s per minute. Default is 120.
+    Tn  Sets the tempo to <code><em>n</em></code> L4s per minute. Default is 120.
 Background mode (affects SOUND, PLAY and BEEP)
     MB  Turns on background mode; sound commands exit without waiting for the 
         music to finish. The music keeps playing while other commands are 
@@ -2817,7 +2954,7 @@ Subroutine command:
     Xs      execute substring. 's' is one of the following:
             -   a string variable name followed by semicolon (;)
             -   the result of VARPTR$() on a string variable
-Numeric variables 'n' in the commands above can be:
+Numeric variables <code><em>n</em></code> in the commands above can be:
     -   an integer literal e.g. "100"
     -   a numeric variable name preceded by = and followed by ; e.g. "=name;"
     -   the result of VARPTR$() on a numeric variable, preceded by =.  
@@ -2825,7 +2962,7 @@ TANDY and PCJR:
     The three separate mml strings correspond to the three tone voice channels.
     The notes in these strings are played synchronously.
     Volume control:
-        Vn  Set the volume to 'n', in the range [0, 15]. On PCjr, if SOUND ON
+        Vn  Set the volume to <code><em>n</em></code>, in the range [0, 15]. On PCjr, if SOUND ON
             has not been executed, this has no effect. On Tandy it does.              
 <h4>Errors</h4>
 -   If 'mml_string' has a numeric value, <code>Type mismatch</code> is raised.
@@ -2921,18 +3058,18 @@ Returns the attribute of the pixel at logical coordinate <code><em>x</em></code>
 POKE statement
 POKE address, value
 --------------
-Sets the value of the memory at the current DEF SEG segment * 16 + 'address'.
-'address' is anumeric expression in <code>[-32768&mdash;65535]</code>. Negative values are
+Sets the value of the memory at the current DEF SEG segment * 16 + <code><em>address</em></code>.
+<code><em>address</em></code> is anumeric expression in <code>[-32768&mdash;65535]</code>. Negative values are
 interpreted as their two's complement.
 <code><em>value</em></code> is a numeric expression in <code>[0&mdash;255]</code>.
 <h4>Notes</h4>
--   In GW-BASIC, POKE sets memory location 'address' to <code><em>value</em></code>. This is not 
+-   In GW-BASIC, POKE sets memory location <code><em>address</em></code> to <code><em>value</em></code>. This is not 
     implemented in PC-BASIC 3.23 outside the emulated areas.
 -   Currently, only writing to video memory is supported.
 <h4>Errors</h4>
--   If 'address' or <code><em>value</em></code> has a string value, raises <code>Type mismatch</code>.
+-   If <code><em>address</em></code> or <code><em>value</em></code> has a string value, raises <code>Type mismatch</code>.
 -   If <code><em>value</em></code> is not in <code>[0&mdash;255]</code>, raises <code>Illegal function call</code>.
--   If 'address' is not in <code>[-32768&mdash;65535]</code>, raises <code>Overflow</code>.
+-   If <code><em>address</em></code> is not in <code>[-32768&mdash;65535]</code>, raises <code>Overflow</code>.
 -   If <code><em>value</em></code> is not in <code>[-32768&mdash;32767]</code>, raises <code>Overflow</code>.
 
 
@@ -2981,13 +3118,13 @@ Expressions can be separated by one of the following tokens:
     zone ofn the next line is used instead. If the file has a width of less 
     than 14 characters, the zones are determined as if the file were wrapping 
     continuously.
-SPC The expression SPC(n) produces 'n' spaces, where 'n' is a numeric 
-    expression. if 'n' is less than zero, it defaults to zero. If 'n' is 
+SPC The expression SPC(n) produces <code><em>n</em></code> spaces, where <code><em>n</em></code> is a numeric 
+    expression. if <code><em>n</em></code> is less than zero, it defaults to zero. If <code><em>n</em></code> is 
     greater than the file width, it is taken modulo the file width.      
-TAB The expression TAB(n) moves to column 'n', where 'n' is a numeric 
-    expression. if 'n' is less than zero, it defaults to zero. If 'n' is 
+TAB The expression TAB(n) moves to column <code><em>n</em></code>, where <code><em>n</em></code> is a numeric 
+    expression. if <code><em>n</em></code> is less than zero, it defaults to zero. If <code><em>n</em></code> is 
     greater than the file width, it is taken modulo the file width. If the 
-    current column is greater than 'n', TAB moves to column 'n' on the next 
+    current column is greater than <code><em>n</em></code>, TAB moves to column <code><em>n</em></code> on the next 
     line.     
 If the print statement does not end in one of these four tokens, a newline is 
 printed after the last expression.         
@@ -2998,8 +3135,8 @@ effect as separating by semicolons
     printed as normal.
 -   See below for the syntax of the optional USING declaration
 <h4>Errors</h4>
--   If 'n' is not in [-32768,65535], raises <code>Overflow</code>.
--   If 'n' is a string, raises <code>Type mismatch</code>.
+-   If <code><em>n</em></code> is not in [-32768,65535], raises <code>Overflow</code>.
+-   If <code><em>n</em></code> is a string, raises <code>Type mismatch</code>.
 
 USING declaration:
 ------------------
@@ -3705,13 +3842,13 @@ USR function
 value = USR[n](expr)
 ------------
 Returns zero.
-'n' is a digit between 0 and 9 inclusive. 
+<code><em>n</em></code> is a digit between 0 and 9 inclusive. 
 <code><em>expr</em></code> is an expression.
 <h4>Notes</h4>
 -   In GW-BASIC, calls an assembly-language function and returns a value.
     This is not implemented in PC-BASIC 3.23.
 <h4>Errors</h4>
--   If 'n' is not a digit 0--9, raises <code>Syntax error</code>.
+-   If <code><em>n</em></code> is not a digit 0--9, raises <code>Syntax error</code>.
 
 
 VAL function
@@ -3731,7 +3868,7 @@ VARPTR function
 pointer = VARPTR(name)
 pointer = VARPTR(#file_num)
 ---------------
-Returns the memory address of variable 'name'. 'name' must be the name of a
+Returns the memory address of variable <code><em>name</em></code>. <code><em>name</em></code> must be the name of a
 previously defined variable or fully indexed array element. The value of VAPTR 
 can be used with PEEK to read the variable's internal representation.
 In the second syntax, return the memory address of the File Control Block of 
@@ -3740,7 +3877,7 @@ file number <code><em>file_num</em></code>.
 -   In PC-BASIC 3.23, VARPTR is implemented for all variable and array types,
     except arrays of strings.
 <h4>Errors</h4>
--   If 'name' is not previously defined, raises <code>Illegal function call</code>.
+-   If <code><em>name</em></code> is not previously defined, raises <code>Illegal function call</code>.
 -   If <code><em>file_num</em></code> is not in [1, max number of files], raises <code>Bad file number</code>.
 -   If <code><em>file_num</em></code> has a string value, raises <code>Type mismatch</code>.
 
@@ -3748,7 +3885,7 @@ file number <code><em>file_num</em></code>.
 VARPTR$ function
 pointer = VARPTR$(name)
 ----------------
-Returns the memory address of variable 'name' in the form of a 3-byte string.
+Returns the memory address of variable <code><em>name</em></code> in the form of a 3-byte string.
 The first byte is the length of the record the pointer points to: 
     2   for integer
     3   for strings (length + pointer to string space)
@@ -3757,7 +3894,7 @@ The first byte is the length of the record the pointer points to:
 The last two bytes are the pointer address (as returned by VARPTR) in little-
 endian order.
 <h4>Errors</h4>
--   If 'name' is not previously defined, raises <code>Illegal function call</code>.
+-   If <code><em>name</em></code> is not previously defined, raises <code>Illegal function call</code>.
 
 
 VIEW statement
