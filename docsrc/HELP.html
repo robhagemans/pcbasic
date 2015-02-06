@@ -164,7 +164,7 @@ On PCjr and Tandy computers, <code>BEEP OFF</code> would turn off the internal s
 
 <h3><code>BLOAD</code> statement</h3>
 <pre>
-BLOAD <em>filename</em> [ ,<em>offset</em> ]
+BLOAD <em>filename</em> [, <em>offset</em> ]
 </pre>
 <p>Loads an image file into memory. </p>
 <h4>Parameters</h4>
@@ -219,7 +219,7 @@ complement will be used.</li>
 
 <h3><code>CALL</code> statement</h3>
 <pre>
-CALL <em>address_var</em> [ ( <em>p0</em> [ ,<em>p1</em> [ , ... ] ) ]
+CALL <em>address_var</em> [ ( <em>p0</em> [, <em>p1</em> [, ... ] ) ]
 </pre>
 <p>Does nothing.</p>
 <h4>Notes</h4>
@@ -244,7 +244,7 @@ This statement is not implemented in PC-BASIC.
 
 <h3><code>CALLS</code> statement</h3>
 <pre>
-CALLS <em>address_var</em> [ ( <em>p0</em> [ ,<em>p1</em> [ , ... ] ) ]
+CALLS <em>address_var</em> [ ( <em>p0</em> [, <em>p1</em> [, ... ] ) ]
 </pre>
 <p>Does nothing.</p>
 <h4>Notes</h4>
@@ -283,7 +283,7 @@ Converts the numeric expression <code><em>x</em></code> to a double-precision va
 
 <h3><code>CHAIN</code> statement</h3>
 <pre>
-CHAIN [MERGE] <em>program</em> [ ,[<em>line_number_expr</em>] [ ,ALL ] [ ,DELETE <em>range</em> [ ,<em>ign</em> ] ] ]
+CHAIN [MERGE] <em>program</em> [, [<em>line_number_expr</em>] [, ALL ] [, DELETE <em>range</em> [, <em>ign</em> ] ] ]
 </pre>
 <p>Loads <code><em>program</em></code> into memory and runs it, optionally transferring variables.</p>
 <ul>
@@ -488,7 +488,7 @@ Any of the arguments has a string value: <code>Type mismatch</code>.
 <h3><code>CLOSE</code> statement</h3>
 <pre>CLOSE [[#] <em>file_1</em> [, [#] <em>file_2</em> [, ...] ]</pre>
 <p>Closes files. If no file numbers are specified, all open files are closed.
-The hash (#) is optional and has no effect.</p>
+The hash (<code>#</code>) is optional and has no effect.</p>
 <h4>Parameters</h4>
 <ul><li>
 <code><em>file_1</em>, <em>file_2</em>, ...</code> are numeric expressions yielding 
@@ -1763,473 +1763,807 @@ the line are ignored until end of statement.
    If <code><em>line_number</em></code> is greater than <code>65529</code>, only the first 4 characters are
     read (e.g. <code>6553</code>)
 </li></ul>
-
-HEX$ function
-hex_repr = HEX(x)
-----------------
-Returns a string with the hexadecimal representation of <code><em>x</em></code>. <code><em>x</em></code> must be a 
-numeric expression between -32768 and 65535, inclusive. Values for 
-negative <code><em>x</em></code> are shown as two's-complement. 
+<h3><code>HEX$</code> function</h3>
+<pre><em>hex_repr</em> = HEX(<em>x</em>)</pre>
+<p>Returns a string with the hexadecimal representation of <code><em>x</em></code>.
+<h4>Parameters</h4>
+<ul><li>
+<code><em>x</em></code> is a
+numeric expression in <code>[-32768&mdash;65535]</code>. Values for
+negative <code><em>x</em></code> are shown as two's-complement.
+</li></ul>
 <h4>Errors</h4>
--   If <code><em>x</em></code> is not in <code>[-32768&mdash;65535]</code>, <code>Overflow</code> .
--   If <code><em>x</em></code> has a string value, <code>Type mismatch</code> .
+<ul><li>
+ <code><em>x</em></code> is not in <code>[-32768&mdash;65535]</code>: <code>Overflow</code>.
+</li><li>
+ <code><em>x</em></code> has a string value: <code>Type mismatch</code>.
+</li></ul>
 
 
-IF statement
-IF truth_value [,] { THEN | GOTO } [ statements_1 | line_number_1 [anything] ]
-    [ ELSE [ statements_0 | line_number_0 [anything] ] ]
-------------
-If 'truth_value' is non-zero, executes statements_1 / jumps to line_number_1. 
-If it is zero, executes statements_0 or jumps to line_number_1. 'truth_value' 
+<h3><code>IF</code> statement</h3>
+<pre>IF <em>truth_value</em> [,] { THEN | GOTO } [ <em>statements_1</em> | <em>line_number_1</em> [<em>anything</em>] ] [ ELSE [ <em>statements_0</em> | <em>line_number_0</em> [<em>anything</em>] ] ]</pre>
+<p>
+If <code><em>truth_value</em></code> is non-zero, executes <code><em>statements_1</em></code> or jumps to <code><em>line_number_1</em></code> .
+If it is zero, executes <code><em>statements_0</em></code> or jumps to <code><em>line_number_0</em></code> . <code><em>truth_value</em></code>
 is a numeric expression. The comma is optional and ignored. 
-'line_number_0' and 'line_number_1' are valid existing line numbers. 
-Statements 'statements_0' and 'statements_1' can be compound statements with
-one or more colons (:) separating single statements. The compound statements 
-can contain nested IF..THEN..ELSE statements. ELSE clauses are optional; they
-are bound to the innermost free IF statement if nested. Additional ELSE 
-clauses that have no matching IF are ignored. All clauses must be on the same 
+<code><em>line_number_0</em></code> and <code><em>line_number_1</em></code> are valid existing line numbers.
+Statements <code><em>statements_0</em></code> and <code><em>statements_1</em></code> can be compound statements with
+one or more colons (<code>:</code>) separating single statements. The compound statements 
+can contain nested <code>IF&mdash;THEN&mdash;ELSE</code> statements. <code>ELSE</code> clauses are optional; they
+are bound to the innermost free <code>IF</code> statement if nested. Additional <code>ELSE</code>
+clauses that have no matching <code>IF</code> are ignored. All clauses must be on the same 
 program line.
 <h4>Notes</h4>
--   THEN and GOTO are interchangeable; which one is chosen is independent
-    of whether a statement or a line number is given. GOTO PRINT 1 is fine.
--   As in GOTO, anything after the line number is ignored.
--   If 'truth_value' has a string value: <code>Type mismatch</code>.
-    
-    
-INKEY$ function
-key = INKEY$
----------------
-Returns one key-press from the keyboard buffer. If the keyboard buffer is 
+<ul><li>
+   <code>THEN</code> and <code>GOTO</code> are interchangeable; which one is chosen is independent
+    of whether a statement or a line number is given. <code>GOTO PRINT 1</code> is fine.
+</li><li>
+   As in <code>GOTO</code>, anything after the line number is ignored.
+</li><li>
+   If <code><em>truth_value</em></code> has a string value: <code>Type mismatch</code>.
+</li></ul>
+
+
+<h3><code>INKEY$</code> function</h3>
+<pre><em>key</em> = INKEY$</pre>
+<p>Returns one key-press from the keyboard buffer. If the keyboard buffer is 
 empty, returns the empty string. Otherwise, the return value is either a one
-character string or a two-character string of which the first is CHR$(0) and
-the second a keyboard scancode.
-The hex values for keyboard scancodes returned by INKEY$ are:
-<pre>
-    <UP>            48
-    <DOWN>          50
-    <RIGHT>         4D
-    <LEFT>          4B
-    <code><b>Ins</b></code>        52
-    <code><b>Del</b></code>        53
-    <code><b>Home</b></code>          47
-    <code><b>End</b></code>           4F
-    <PAGEUP>        49
-    <PAGEDOWN>      51
-    <F1>            3B
-    <F2>            3C
-    <F3>            3D
-    <F4>            3E
-    <F5>            3F
-    <F6>            40
-    <F7>            41
-    <F8>            42
-    <F9>            43
-    <F10>           44
-    <PRINT>         37
-    <CTRL+RIGHT>    74
-    <CTRL+LEFT>     73
-    <CTRL+HOME>     77
-    <CTRL+END>      75
-    <CTRL+PAGEUP>   84
-    <CTRL+PAGEDOWN> 76
-    <CTRL+2>        03
-    <CTRL+9>        84
-    <CTRL+F2>       5F
-    <CTRL+F3>       60
-</pre>
+character string or a two-character string of which the first is <code>CHR$(0)</code> and
+the second a keyboard scancode.</p>
+<h4>Keyboard scancodes returned by <code>INKEY$</code></h4>
+<table><tr>
+<th>Key</th><th>Scancode</th>
+</tr><tr>
+<td><code><b>&#8593;<!--up--></b></code></td><td>            48</td>
+</tr><tr>
+<td><code><b>&#8595;<!--down--></b></code></td><td>          50</td>
+</tr><tr>
+<td><code><b>&#8594;<!--right--></b></code></td><td>         4D</td>
+</tr><tr>
+<td><code><b>&#8592;<!--left--></b></code></td><td>          4B</td>
+</tr><tr>
+<td><code><b>Ins</b></code></td><td>        52</td>
+</tr><tr>
+<td><code><b>Del</b></code></td><td>        53</td>
+</tr><tr>
+<td><code><b>Home</b></code></td><td>          47</td>
+</tr><tr>
+<td><code><b>End</b></code></td><td>           4F</td>
+</tr><tr>
+<td><code><b>Pg Up</b></code></td><td>        49</td>
+</tr><tr>
+<td><code><b>Pg Dn</b></code></td><td>      51</td>
+</tr><tr>
+<td><code><b>F1</b></code></td><td>            3B</td>
+</tr><tr>
+<td><code><b>F2</b></code></td><td>            3C</td>
+</tr><tr>
+<td><code><b>F3</b></code></td><td>            3D</td>
+</tr><tr>
+<td><code><b>F4</b></code></td><td>            3E</td>
+</tr><tr>
+<td><code><b>F5</b></code></td><td>            3F</td>
+</tr><tr>
+<td><code><b>F6</b></code></td><td>            40</td>
+</tr><tr>
+<td><code><b>F7</b></code></td><td>            41</td>
+</tr><tr>
+<td><code><b>F8</b></code></td><td>            42</td>
+</tr><tr>
+<td><code><b>F9</b></code></td><td>            43</td>
+</tr><tr>
+<td><code><b>F10</b></code></td><td>           44</td>
+</tr><tr>
+<td><code><b>PrtSc</b></code></td><td>         37</td>
+</tr><tr>
+<td><code><b>CTRL</b></code>+<code><b>&#8594;<!--right--></b></code></td><td>    74</td>
+</tr><tr>
+<td><code><b>CTRL</b></code>+<code><b>&#8592;<!--left--></b></code></td><td>     73</td>
+</tr><tr>
+<td><code><b>CTRL</b></code>+<code><b>Home</b></code></td><td>     77</td>
+</tr><tr>
+<td><code><b>CTRL</b></code>+<code><b>End</b></code></td><td>      75</td>
+</tr><tr>
+<td><code><b>CTRL</b></code>+<code><b>Pg Up</b></code></td><td>   84</td>
+</tr><tr>
+<td><code><b>CTRL</b></code>+<code><b>Pg Dn</b></code></td><td> 76</td>
+</tr><tr>
+<td><code><b>CTRL</b></code>+<code><b>2</b></code></td><td>        03</td>
+</tr><tr>
+<td><code><b>CTRL</b></code>+<code><b>9</b></code></td><td>        84</td>
+</tr><tr>
+<td><code><b>CTRL</b></code>+<code><b>F2</b></code></td><td>       5F</td>
+</tr><tr>
+<td><code><b>CTRL</b></code>+<code><b>F3</b></code></td><td>       60</td>
+</tr></table>
 
-INP function
-code = INP(port)
-------------
-Returns the value of an emulated machine port.
-<code><em>port</em></code> is a numeric expression with a value between 0 and 65535, inclusive.
-If <code><em>port</em></code>==&H60:
+<h3><code>INP</code> function</h3>
+<pre><em>code</em> = INP(<em>port</em>)</pre>
+<p>
+Returns the value of an emulated machine port.</p>
+<h4>Parameters</h4>
+<p><code><em>port</em></code> is a numeric expression in <code>[0&mdash;65535]</code>.</p>
+<table>
+<tr>
+<th><code>port</code></th><th>Effect</th>
+</tr><tr>
+<td><code>&amp;H60</code></td>
+<td>
     Returns the keyboard scancode for the last key pressed.
-    The scancodes returned by INP(&H60) are listed below. If the key is 
+    The scancodes returned by <code>INP(&amp;H60)</code> are listed below. If the key is
     currently down, the scancode is returned; if it has been released, 
-    the scancode is incremented by 128. Scancodes returned by INP(&H60):
-    <pre>
-        key         scancode
-        <code><b>Esc</b></code>       01
-        <1>         02
-        <2>         03
-        <3>         04
-        <4>         05
-        <5>         06
-        <6>         07
-        <7>         08
-        <8>         09
-        <9>         0A
-        <0>         0B
-        <->         0C
-        <=>         0D
-        <BACKSPACE> 0E
-        <code><b>Tab</b></code>       0F
-        <q>         10
-        <w>         11
-        <e>         12
-        <r>         13
-        <t>         14
-        <y>         15
-        <code><b>U</b></code>         16
-        <code><b>I</b></code>         17
-        <code><b>O</b></code>         18
-        <code><b>P</b></code>         19
-        <[>         1A
-        <]>         1B
-        <code><b>Enter</b></code>     1C
-        <code><b>Ctrl</b></code>      1D
-        <a>         1E
-        <code><b>S</b></code>         1F
-        <code><b>D</b></code>         20
-        <f>         21
-        <g>         22
-        <h>         23
-        <j>         24
-        <k>         25
-        <l>         26
-        <;>         27
-        <'>         28
-        <`>         29
-        <LSHIFT>    2A
-        <#>         2B
-        <z>         2C
-        <x>         2D
-        <c>         2E
-        <v>         2F
-        <code><b>B</b></code>         30
-        <n>         31
-        <m>         32
-        <,>         33
-        <.>         34
-        </>         35
-        <RSHIFT>    36
-        <PRTSC>     37
-        <SYSRQ>     37
-        <code><b>Alt</b></code>       38
-        <SPACE>     39
-        <code><b>Caps Lock</b></code>  3A
-        <F1>        3B
-        <F2>        3C
-        <F3>        3D
-        <F4>        3E
-        <F5>        3F
-        <F6>        40
-        <F7>        41
-        <F8>        42
-        <F9>        43
-        <F10>       44
-        <code><b>Num Lock</b></code>   45
-        <SCROLLOCK> 46
-        <code><b>Home</b></code>      47
-        <UP>        48
-        <PGUP>      49
-        <KEYPAD ->  4A
-        <LEFT>      4B
-        <KEYPAD 5>  4C
-        <RIGHT>     4D
-        <KEYPAD +>  4E
-        <code><b>End</b></code>       4F
-        <DOWN>      50
-        <PGDN>      51
-        <code><b>Ins</b></code>       52
-        <code><b>Del</b></code>       53
-    </pre>
-If <code><em>port</em></code>==&H201:
-    Returns the value of the game port (joystick port). This value is 
+    the scancode is incremented by 128.
+</td>
+</tr><tr>
+<td><code>&H201</code></td>
+<td>
+    Returns the value of the game port (joystick port). This value is
     constructed as follows:
-        bit     meaning
-        0       joystick 2 x-axis
-        1       joystick 1 y-axis
-        2       joystick 1 x-axis
-        3       joystick 2 y-axis
-        4       joystick 2 button 1
-        5       joystick 1 button 2
-        6       joystick 1 button 1
-        7       joystick 2 button 2
+    <table><tr>
+    <th>Bit</th><th>Meaning</th>
+    </tr><tr>
+    <td>0</td><td>       joystick 2 x-axis</td>
+    </tr><tr>
+    <td>    1</td><td>       joystick 1 y-axis</td>
+    </tr><tr>
+        <td>2       </td><td>joystick 1 x-axis</td>
+    </tr><tr>
+    <td>    3       </td><td>joystick 2 y-axis</td>
+    </tr><tr>
+    <td>    4</td><td>       joystick 2 button 1</td>
+    </tr><tr>
+    <td>    5       </td><td>joystick 1 button 2</td>
+    </tr><tr>
+    <td>    6</td><td>       joystick 1 button 1</td>
+    </tr><tr>
+    <td>    7       </td><td>joystick 2 button 2</td>
+    </tr></table>
     The button bits are 0 when the button is fired, 1 otherwise. The axis values
-    are normally 0 but are set to 1 by OUT &H201, x and then fall back to 0 
-    after a delay. The longer the delay, the higher the axis value. 
-Returns zero for other <code><em>port</em></code> values.
+    are normally 0 but are set to 1 by OUT &H201, x and then fall back to 0
+    after a delay. The longer the delay, the higher the axis value.
+</td>
+</tr><tr>
+<td>other values</td>
+<td>Returns zero.</td>
+</tr>
+</table>
 <h4>Notes</h4>
--   Only a limited number of machine ports are emulated in PC-BASIC 3.23.
+<ul><li>
+   Only a limited number of machine ports are emulated in PC-BASIC.
+</li></ul>
 <h4>Errors</h4>
--   If <code><em>port</em></code> is not in <code>[-32768&mdash;65535]</code>, <code>Overflow</code> .
--   If <code><em>port</em></code> has a string value, <code>Type mismatch</code> .
-        
+<ul><li>
+ <code><em>port</em></code> is not in <code>[-32768&mdash;65535]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>port</em></code> has a string value: <code>Type mismatch</code>.
+</li></ul>
 
-INPUT statement (screen)
-INPUT [;] [ prompt {;|,} ] var_0 [, var_1 [, ... ] ]
----------------
-Prints 'prompt' to the screen and waits for the user to input values for var_0,
- ... . 'prompt' is a string literal. 'var_0', ... are variable names or 
-fully indexed array elements.  The semicolon before the prompt, if present, 
+
+<h4>Scancodes returned by <code>INP(&amp;H60)</code></h4>
+<table>
+<tr>
+<th>Key</th><th>Scancode</th>
+</tr><tr>
+<td><code><b>Esc</b></code></td><td>01</td></tr><tr>
+<td><code><b>1</b></code></td><td>02
+</td></tr><tr>
+<td><code><b>2</b></code></td><td>03
+</td></tr><tr>
+<td><code><b>3</b></code></td><td>04
+</td></tr><tr>
+<td><code><b>4</b></code></td><td>05
+</td></tr><tr>
+<td><code><b>5</b></code></td><td>06
+</td></tr><tr>
+<td><code><b>6</b></code></td><td>07
+</td></tr><tr>
+<td><code><b>7</b></code></td><td>08
+</td></tr><tr>
+<td><code><b>8</b></code></td><td>09
+</td></tr><tr>
+<td><code><b>9</b></code></td><td>0A
+</td></tr><tr>
+<td><code><b>0</b></code></td><td>0B
+</td></tr><tr>
+<td><code><b>-</b></code></td><td>0C
+</td></tr><tr>
+<td><code><b>=</b></code></td><td>0D
+</td></tr><tr>
+<td><code><b>Backspace</b></code></td><td>0E
+</td></tr><tr>
+<td><code><b>Tab</b></code></td><td>0F
+</td></tr><tr>
+<td><code><b>q</b></code></td><td>10
+</td></tr><tr>
+<td><code><b>w</b></code></td><td>11
+</td></tr><tr>
+<td><code><b>e</b></code></td><td>12
+</td></tr><tr>
+<td><code><b>r</b></code></td><td>13
+</td></tr><tr>
+<td><code><b>t</b></code></td><td>14
+</td></tr><tr>
+<td><code><b>y</b></code></td><td>15
+</td></tr><tr>
+<td><code><b>u</b></code></td><td>  16
+</td></tr><tr>
+<td><code><b>i</b></code></td><td>  17
+</td></tr><tr>
+<td><code><b>o</b></code></td><td>  18
+</td></tr><tr>
+<td><code><b>p</b></code></td><td>  19
+</td></tr><tr>
+<td><code><b>[</b></code></td><td>1A
+</td></tr><tr>
+<td><code><b>]</b></code></td><td>1B
+</td></tr><tr>
+<td><code><b>Enter</b></code></td><td>1C
+</td></tr><tr>
+<td><code><b>Ctrl</b></code></td><td>1D
+</td></tr><tr>
+<td><code><b>a</b></code></td><td>1E
+</td></tr><tr>
+<td><code><b>s</b></code></td><td>  1F
+</td></tr><tr>
+<td><code><b>d</b></code></td><td>  20
+</td></tr><tr>
+<td><code><b>f</b></code></td><td>21
+</td></tr><tr>
+<td><code><b>g</b></code></td><td>22
+</td></tr><tr>
+<td><code><b>h</b></code></td><td>23
+</td></tr><tr>
+<td><code><b>j</b></code></td><td>24
+</td></tr><tr>
+<td><code><b>k</b></code></td><td>25
+</td></tr><tr>
+<td><code><b>l</b></code></td><td>26
+</td></tr><tr>
+<td><code><b>;</b></code></td><td>27
+</td></tr><tr>
+<td><code><b>'</b></code></td><td>28
+</td></tr><tr>
+<td><code><b>`</b></code></td><td>29
+</td></tr><tr>
+<td><code><b>Left Shift</td><td>2A
+</td></tr><tr>
+<td><code><b>#</b></code></td><td>2B
+</td></tr><tr>
+<td><code><b>z</b></code></td><td>2C
+</td></tr><tr>
+<td><code><b>x</b></code></td><td>2D
+</td></tr><tr>
+<td><code><b>c</b></code></td><td>2E
+</td></tr><tr>
+<td><code><b>v</b></code></td><td>2F
+</td></tr><tr>
+<td><code><b>b</b></code></td><td>  30
+</td></tr><tr>
+<td><code><b>n</b></code></td><td>31
+</td></tr><tr>
+<td><code><b>m</b></code></td><td>32
+</td></tr><tr>
+<td><code><b>,</b></code></td><td>33
+</td></tr><tr>
+<td><code><b>.</b></code></td><td>34
+</td></tr><tr>
+<td><code><b>/</b></code></td><td>35
+</td></tr><tr>
+<td><code><b>Right Shift</b></code></td><td>36
+</td></tr><tr>
+<td><code><b>PrtSc</b></code></td><td>37
+</td></tr><tr>
+<td><code><b>SysRq</b></code></td><td>37
+</td></tr><tr>
+<td><code><b>Alt</b></code></td><td>38
+</td></tr><tr>
+<td><code><b>Space</b></code></td><td>39
+</td></tr><tr>
+<td><code><b>Caps Lock</b></code></td><td>3A
+</td></tr><tr>
+<td><code><b>F1</b></code></td><td>3B
+</td></tr><tr>
+<td><code><b>F2</b></code></td><td>3C
+</td></tr><tr>
+<td><code><b>F3</b></code></td><td>3D
+</td></tr><tr>
+<td><code><b>F4</b></code></td><td>3E
+</td></tr><tr>
+<td><code><b>F5</b></code></td><td>3F
+</td></tr><tr>
+<td><code><b>F6</b></code></td><td>40
+</td></tr><tr>
+<td><code><b>F7</b></code></td><td>41
+</td></tr><tr>
+<td><code><b>F8</b></code></td><td>42
+</td></tr><tr>
+<td><code><b>F9</b></code></td><td>43
+</td></tr><tr>
+<td><code><b>F10</b></code></td><td>44
+</td></tr><tr>
+<td><code><b>Num Lock</b></code></td><td>   45
+</td></tr><tr>
+<td><code><b>Scroll Lock</b></code></td><td>46
+</td></tr><tr>
+<td><code><b>Home</b></code></td><td>      47
+</td></tr><tr>
+<td><code><b>&#8593;<!--up--></b></code></td><td>48
+</td></tr><tr>
+<td><code><b>Pg Up</b></code></td><td>49
+</td></tr><tr>
+<td><code><b>keypad -</b></code></td><td>4A
+</td></tr><tr>
+<td><code><b>&#8592;<!--left--></b></code></td><td>4B
+</td></tr><tr>
+<td><code><b>keypad 5</b></code></td><td>4C
+</td></tr><tr>
+<td><code><b>&#8594;<!--right--></b></code></td><td>4D
+</td></tr><tr>
+<td><code><b>keypad +</b></code></td><td>4E
+</td></tr><tr>
+<td><code><b>End</b></code></td><td>4F
+</td></tr><tr>
+<td><code><b>&#8595;<!--down--></b></code></td><td>50
+</td></tr><tr>
+<td><code><b>Pg Dn</b></code></td><td>51
+</td></tr><tr>
+<td><code><b>Ins</b></code></td><td>52
+</td></tr><tr>
+<td><code><b>Del</b></code></td><td>53
+</tr>
+</table>        
+
+<h3><code>INPUT</code> statement (console)</h3>
+<pre>INPUT [;] [<em>prompt</em> {;|,} ]<em>var_0</em> [, <em>var_1</em> [, ... ] ]</pre>
+<p>
+Prints <code><em>prompt</em></code> to the screen and waits for the user to input values for the specified variables.
+The semicolon before the prompt, if present,
 stops a newline from being printed after the values have been entered.
-If the prompt is followed by a semicolon, it is printed with a trailing ?. If 
-the prompt is followed by a comma, no question mark is added. 
+If the prompt is followed by a semicolon, it is printed with a trailing <code>?</code>. If
+the prompt is followed by a comma, no question mark is added. </p>
+<h4>Parameters</h4>
+<ul><li>
+ <code><em>prompt</em></code> is a string literal.
+</li><li>
+ <code><em>var_0</em>, <em>var_1</em>, ...</code> are variable names or fully indexed array elements.
+</li></ul>
 <h4>Notes</h4>
--   Values entered must be separated by commas. Leading and trailing whitespace
+<ul><li>
+   Values entered must be separated by commas. Leading and trailing whitespace
     is discarded.
--   String values can be entered with or without double quotes ("). 
--   If a string with a comma, leading or trailing whitespace is needed, 
+</li><li>
+   String values can be entered with or without double quotes (<code>"</code>).
+</li><li>
+   If a string with a comma, leading or trailing whitespace is needed,
     quotes are the only way to enter it. 
--   Between a closing quote and the comma at the end of the entry, only white-
+</li><li>
+   Between a closing quote and the comma at the end of the entry, only white-
     space is allowed.    
--   If quotes are needed in the string itself, the first character must be 
+</li><li>
+   If quotes are needed in the string itself, the first character must be
     neither a quote nor whitespace. It is not possible to enter a string that
-    starts with a quote through INPUT.
--   If a given 'var_n' is a numeric variable, the value entered must be a valid
+    starts with a quote through <code>INPUT</code>.
+</li><li>
+   If a given <code><em>var_n</em></code> is a numeric variable, the value entered must be a valid
     number literal.
--   Characters beyond the 255th character of the screen line are discarded.    
+</li><li>
+   Characters beyond the 255th character of the screen line are discarded.
+</li></ul>
 <h4>Errors</h4>
--   If the value entered for a numeric variable is not a valid numeric literal,
+<ul><li>
+   If the value entered for a numeric variable is not a valid numeric literal,
     or the number of values entered does not match the number of variables in 
     the statement,
-    ?REDO FROM START is printed and all values must be entered again. 
--   A <code>Syntax error</code> that is caused after the prompt is printed is only raised
+    <code>?Redo from start</code> is printed and all values must be entered again.
+</li><li>
+   A <code>Syntax error</code> that is caused after the prompt is printed is only raised
     after the value shave been entered. No values are stored.
+</li></ul>
     
 
-INPUT# statement (text files, devices, or random-access files)
-INPUT # file_num, var_0 [, var_1 [, ...] ]
-----------------
-Reads string or numeric variables from a text file, device, or the FIELD buffer
-of a random access file. <code><em>file_num</em></code> must be the number of a file open in 
-INPUT mode or a device or random-access file open in <code>RANDOM</code> mode. 'var_0', ... 
-are variable names or fully indexed array elements.   
+<h3><code>INPUT#</code> statement (text files, devices, or random-access files)</h3>
+<pre>INPUT[ ]# <em>file_num</em>, <em>var_0</em> [, <em>var_1</em> [, ...] ]</pre>
+<p>Reads string or numeric variables from a text file, device, or the <code>FIELD</code> buffer
+of a random access file.</p>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>file_num</em></code> is the number of a file open in
+<code>INPUT</code> mode or a device or random-access file open in <code>RANDOM</code> mode.
+</li><li>
+ <code><em>var_0</em>, <em>var_1</em>, ...</code> are variable names or fully indexed array elements.
+</li></ul>
 <h4>Notes</h4>
--   The # is mandatory. There may or may not be whitespace between INPUT and #.        
--   String values can be entered with or without double quotes ("). 
--   Numeric values are terminated by space, LF, CR, comma.
--   Unquoted strings are terminated by LF, CR, comma.
--   Quoted strings are terminated by the closing quote.
--   Any entry is terminated by end-of-file &h1a or its 255th character.
--   Leading and trailing whitespace is discarded.
--   If the entry cannot be converted to the requested type, a zero value is
+<ul><li>
+   The <code>#</code> is mandatory. There may or may not be whitespace between <code>INPUT</code> and <code>#</code>.
+</li><li>
+   String values can be entered with or without double quotes (<code>"</code>).
+</li><li>
+   Numeric values are terminated by <code> </code>, <code>LF</code>, <code>CR</code>, <code>,</code>.
+</li><li>
+   Unquoted strings are terminated by <code>LF</code>, <code>CR</code>, <code>,</code>.
+</li><li>
+   Quoted strings are terminated by the closing quote.
+</li><li>
+   Any entry is terminated by <code>EOF</code> character or its 255th character.
+</li><li>
+   Leading and trailing whitespace is discarded.
+</li><li>
+   If the entry cannot be converted to the requested type, a zero value is
     returned.
--   If <code><em>file_num</em></code> is open to KYBD:, INPUT# reads from the keyboard until a
+</li><li>
+   If <code><em>file_num</em></code> is open to <code>KYBD:</code>, <code>INPUT#</code> reads from the keyboard until a
     return or comma is encountered (as in a file). Arrow keys and delete are
-    passed as their control characters (NOT scancodes!) preceded by CHR$(&HFF).
+    passed as their control characters (<em>not</em> scancodes!) preceded by <code>CHR$(&amp;HFF)</code>.
+</li></ul>
 <h4>Errors</h4>
--   If input is requested after the end of a text file has been reached or an
-    EOF char has been encountered: INPUT PAST END.
--   If the last character of the field buffer is read: <code>Field overflow</code>.
--   If <code><em>file_num</em></code> is not an open file: <code>Bad file number</code>.
--   If <code><em>file_num</em></code> is less than zero: <code>Illegal function call</code>.
--   If <code><em>file_num</em></code> is greater than 32767: <code>Overflow</code>.
--   If <code><em>file_num</em></code> is not open for INPUT or <code>RANDOM</code>: <code>Bad file mode</code>.
--   If <code><em>file_num</em></code> is a string: <code>Type mismatch</code>.
-    
+<ul><li>
+Input is requested after the end of a text file has been reached or an
+    <code>EOF</code> character has been encountered: <code>Input past end</code>.
+</li><li>
+The last character of the field buffer is read: <code>Field overflow</code>.
+</li><li>
+<code><em>file_num</em></code> is a string: <code>Type mismatch</code>.
+</li><li>
+<code><em>file_num</em></code> is greater than <code>32767</code>: <code>Overflow</code>.
+</li><li>
+<code><em>file_num</em></code> is less than zero: <code>Illegal function call</code>.
+</li><li>
+<code><em>file_num</em></code> is not an open file: <code>Bad file number</code>.
+</li><li>
+<code><em>file_num</em></code> is not open for <code>INPUT</code> or <code>RANDOM</code>: <code>Bad file mode</code>.
+</li></ul>
 
-INPUT$ function
-chars = INPUT[ ]$(num_chars [, [#] file_num])
----------------
-Returns a string of <code><em>num_chars</em></code> characters from the keyboard or a file. 
-<code><em>num_chars</em></code> must be a numeric expression between 1 and 255, inclusive.
-If <code><em>file_num</em></code> is provided, reads the string from a text file. <code><em>file_num</em></code> must
-be a number valued expression that returns the number of a text file opened in
- INPUT mode. The hash is optional and has no effect.
+<h3><code>INPUT$</code> function</h3>
+<pre><em>chars</em> = INPUT[ ]$(<em>num_chars</em> [, [#] <em>file_num</em>])</pre>
+<p>Returns a string of <code><em>num_chars</em></code> characters from the keyboard or,
+if <code><em>file_num</em></code> is provided, from a text file.
+<h4>Parameters</h4>
+<ul><li>
+<code><em>num_chars</em></code> is a numeric expression in <code>[1&mdash;255]</code>.
+</li><li>
+<code><em>file_num</em></code> is a numeric expression that returns the number of a text file opened in
+ <code>INPUT</code> mode. The <code>#</code> is optional and has no effect.
+</li></ul>
 <h4>Notes</h4>
--   This is a blocking read. It will wait for characters if there are none 
+<ul><li>
+   This is a blocking read. It will wait for characters if there are none
     in the buffer.
--   All control characters except <code><b>Ctrl</b></code>+<code><b>Break</b></code>, <code><b>Ctrl</b></code>+<code><b>Scroll Lock</b></code> and <code><b>Pause</b></code> 
-    are passed to the string by INPUT$. <code><b>Ctrl</b></code>+<code><b>Break</b></code> and <code><b>Ctrl</b></code>+<code><b>Scroll Lock</b></code> break
+</li><li>
+   All control characters except <code><b>Ctrl</b></code>+<code><b>Break</b></code>, <code><b>Ctrl</b></code>+<code><b>Scroll Lock</b></code> and <code><b>Pause</b></code>
+    are passed to the string by <code>INPUT$</code>. <code><b>Ctrl</b></code>+<code><b>Break</b></code> and <code><b>Ctrl</b></code>+<code><b>Scroll Lock</b></code> break
     execution whereas <code><b>Pause</b></code> halts until another key is pressed (and not read).
--   When reading from the keyboard directly or through KYBD:, arrow keys, <code><b>Del</b></code>,
-    <code><b>Home</b></code>, <code><b>End</b></code>, <PGUP>, <PGDN> are passed as NUL characters. Function keys
+</li><li>
+   When reading from the keyboard directly or through <code>KYBD:</code>, arrow keys, <code><b>Del</b></code>,
+    <code><b>Home</b></code>, <code><b>End</b></code>, <code><b>Pg Up</b></code>, <code><b>Pg Dn</b></code> are passed as <code>NUL</code> characters. Function keys
     are ignored if they are event-trapped, otherwise keyword replacement is
-    active as normal.    
+    active as normal.
+</li></ul>
 <h4>Errors</h4>
--   If <code><em>num_chars</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If <code><em>num_chars</em></code> is not in [1, 255]: <code>Illegal function call</code>.
--   If <code><em>file_num</em></code> is not an open file: <code>Bad file number</code>.
--   If <code><em>file_num</em></code> is less than zero: <code>Illegal function call</code>.
--   If <code><em>file_num</em></code> is greater than 32767: <code>Overflow</code>.
--   If <code><em>file_num</em></code> is not open for INPUT: <code>Bad file mode</code>.
--   If <code><em>num_chars</em></code> or <code><em>file_num</em></code> are strings: <code>Type mismatch</code>.
-    
-    
-INSTR function
-position = INSTR([start,] parent, child)
---------------
-Returns the location of the first occurrence of the substring 'child' in 
-'parent'. 'parent' and 'child' must be string expressions. If <code><em>start</em></code> is
-provided, it must be a numeric expression between 1 and 255, specifying
+<ul><li>
+<code><em>num_chars</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>num_chars</em></code> is not in <code>[1&mdash;255]</code>: <code>Illegal function call</code>.
+</li><li>
+<code><em>file_num</em></code> is not an open file: <code>Bad file number</code>.
+</li><li>
+<code><em>file_num</em></code> is less than zero: <code>Illegal function call</code>.
+</li><li>
+<code><em>file_num</em></code> is greater than <code>32767</code>: <code>Overflow</code>.
+</li><li>
+<code><em>file_num</em></code> is not open for <code>INPUT</code>: <code>Bad file mode</code>.
+</li><li>
+<code><em>num_chars</em></code> or <code><em>file_num</em></code> are strings: <code>Type mismatch</code>.
+</li></ul>
+
+<h3><code>INSTR</code> function</h3>
+<pre><em>position</em> = INSTR([<em>start</em>,] <em>parent</em>, <em>child</em>)</pre>
+<p>
+Returns the location of the first occurrence of the substring <code><em>child</em></code> in
+<code><em>parent</em></code>.</p>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>parent</em></code> and <code><em>child</em></code> are string expressions.
+</li><li>
+<code><em>start</em></code> is a numeric expression in <code>[1&mdash;255]</code>, specifying
 the starting position from where to look; if not specified, the search starts 
 at character 1.
+</li></ul>
 <h4>Notes</h4>
--   If 'child' is not a substring of 'parent' occurring at or before <code><em>start</em></code>, 
-    INSTR returns 0.
+<ul><li>
+   If <code><em>child</em></code> is not a substring of <code><em>parent</em></code> occurring at or before <code><em>start</em></code>,
+    <code>INSTR</code> returns 0.
+</li></ul>
 <h4>Errors</h4>
--   If <code><em>start</em></code> is not in [-32768, 32768]: <code>Overflow</code>.
--   If <code><em>start</em></code> is not in [1, 255]: <code>Illegal function call</code>.
--   If <code><em>start</em></code> has a string value or 'parent' or 'child' have number values, 
-    raises <code>Type mismatch</code>.
+<ul><li>
+<code><em>start</em></code> has a string value or <code><em>parent</em></code> or <code><em>child</em></code> have numeric values: <code>Type mismatch</code>.
+</li><li>
+<code><em>start</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>start</em></code> is not in <code>[1&mdash;255]</code>: <code>Illegal function call</code>.
+</li></ul>
 
 
-INT function
-whole = INT(number)
-------------
-Returns <code><em>number</em></code> truncated towards negative infinity.    
-<code><em>number</em></code> must be a numeric expression.
+<h3><code>INT</code> function</h3>
+<pre><em>whole</em> = INT(<em>number</em>)</pre>
+<p>Returns <code><em>number</em></code> truncated towards negative infinity.
+<h4>Parameters</h4>
+<ul><li>
+<code><em>number</em></code> is a numeric expression.
+</li></ul>
 <h4>Notes</h4>
--   While FIX truncates towards zero (i.e. removes the fractional part), INT
-    truncates towards negative infinity. For negative <code><em>x</em></code>, FIX(x)-INT(x)==1.
+<ul><li>
+ <code>FIX</code> truncates towards zero: it removes the fractional part. By contrast, <code>INT</code>
+    truncates towards negative infinity. For negative <code><em>x</em></code>, <code>FIX(<em>x</em>)-INT(<em>x</em>)=1</code>.
+</li></ul>
 <h4>Errors</h4>
--   If <code><em>number</em></code> is a string expression, <code>Type mismatch</code> .
+<ul><li>
+<code><em>number</em></code> is a string expression, <code>Type mismatch</code> .
+</li></ul>
  
 
-IOCTL statement
-IOCTL [#] file_num, control_string
----------------
-Raises <code>Illegal function call</code>.
+<h3><code>IOCTL</code> statement</h3>
+<pre>IOCTL [#] <em>file_num</em>, <em>control_string</em></pre>
+<p>Raises <code>Illegal function call</code>.</p>
 <h4>Notes</h4>
--   In GW-BASIC, IOCTL send a control string to a device. This is not 
-    implemented in PC-BASIC 3.23.
+<ul><li>
+   In GW-BASIC, <code>IOCTL</code> sends a control string to a device.
+</li><li>
+   This statement is not implemented in PC-BASIC.
+</li></ul>
 <h4>Errors</h4>
--   If <code><em>file_num</em></code> is not an open file: <code>Bad file number</code>.
--   If <code><em>file_num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If <code><em>file_num</em></code> has a string value: <code>Type mismatch</code>.
--   Otherwise: <code>Illegal function call</code>
+<ul><li>
+<code><em>file_num</em></code> has a string value: <code>Type mismatch</code>.
+</li><li>
+<code><em>file_num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>file_num</em></code> is not an open file: <code>Bad file number</code>.
+</li><li>
+   Otherwise: <code>Illegal function call</code>
+</li></ul>
 
 
-IOCTL$ function
-result = IOCTL[ ]$([#] file_num)
----------------
-Raises <code>Illegal function call</code>.
+<h3><code>IOCTL$</code> function</h3>
+<pre><em>result</em> = IOCTL[ ]$([#] <em>file_num</em>)</pre>
+<p>Raises <code>Illegal function call</code>.</p>
 <h4>Notes</h4>
--   In GW-BASIC, IOCTL$ reads the reply to IOCTL from a device. This is not 
-    implemented in PC-BASIC 3.23.
+<ul><li>
+   In GW-BASIC, <code>IOCTL$</code> reads the reply to <code>IOCTL</code> from a device.
+</li><li>
+   This function is not implemented in PC-BASIC.
+</li></ul>
 <h4>Errors</h4>
--   If <code><em>file_num</em></code> is not an open file: <code>Bad file number</code>.
--   If <code><em>file_num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If <code><em>file_num</em></code> has a string value: <code>Type mismatch</code>.
--   Otherwise: <code>Illegal function call</code>
+<ul><li>
+<code><em>file_num</em></code> has a string value: <code>Type mismatch</code>.
+</li><li>
+<code><em>file_num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>file_num</em></code> is not an open file: <code>Bad file number</code>.
+</li><li>
+   Otherwise: <code>Illegal function call</code>
+</li></ul>
 
     
-KEY statement (string macro control)
-KEY { ON | OFF | LIST }
--------------
-Turns string macros ON or OFF; if LIST is specified, produces a list of
-the 10 function keys with the string macros defined for those keys. Special 
-characters are represented by their symbol equivalent in the loaded codepage;
-some characters get a special representation. E.g. CHR$(13) is represented 
-as a back arrow. 
+<h3><code>KEY</code> statement (function-key macro control)</h3>
+<pre>KEY { ON | OFF | LIST }</pre>
+<p>Turns string macros <code>ON</code> or <code>OFF</code>; if <code>LIST</code> is specified, prints a list of
+the 10 function keys with the string macros defined for those keys to the console. Special 
+characters are represented by their symbol equivalent in the loaded codepage.
+Some characters get a special representation: e.g. <code>CHR$(13)</code> is represented
+as a back arrow. </p>
 
 
-KEY statement (string macro definition)
-KEY key_id, string_value
--------------
-Defines the string macro for key <code><em>key_id</em></code>. <code><em>key_id</em></code> must be a numeric 
-expression in the range 1--10, inclusive. 'string_value' must be a string-
-valued expression. Only the first 15 characters of 'string_value' are stored.
-NOES:
--   IF <code><em>key_id</em></code> is not in the range [1, 10], the statement is interpreted as an
-    event trapping key definition (see below).
+<h3><code>KEY</code> statement (function-key macro definition)</h3>
+<pre>KEY <em>key_id</em>, <em>string_value</em></pre>
+<p>Defines the string macro for function key <code><em>key_id</em></code>.
+Only the first 15 characters of <code><em>string_value</em></code> are stored.</p>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>key_id</em></code> is a numeric expression in the range <code>[1&mdash;10]</code>.
+</li><li>
+<code><em>string_value</em></code> is a string expression. 
+</li></ul>
+<h4>Notes</h4>
+<ul><li>
+   If <code><em>key_id</em></code> is not in the range <code>[1&mdash;10]</code>, the statement is interpreted as an
+    event-trapping <code>KEY</code> statement (see below).
+</li></ul>
 <h4>Errors</h4>
--   If <code><em>key_id</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If <code><em>key_id</em></code> is not in [1, 255]: <code>Illegal function call</code>.
--   If <code><em>key_id</em></code> has a string value: <code>Type mismatch</code>.
+<ul><li>
+<code><em>key_id</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>key_id</em></code> is not in <code>[1&mdash;255]</code>: <code>Illegal function call</code>.
+</li><li>
+<code><em>key_id</em></code> has a string value: <code>Type mismatch</code>.
+</li></ul>
 
 
-KEY statement (event trapping control)
-KEY ( key_id ) { ON | OFF | STOP } 
--------------
-Controls event trapping of the key with identifier <code><em>key_id</em></code>. If ON is specified
-event trapping is switched on; if OFF, off. STOP suspends event trapping until 
-another KEY() ON is executed. Up to one event can be triggered during 
+<h3><code>KEY</code> statement (event-trapping control)</h3>
+<pre>KEY ( <em>key_id</em> ) { ON | OFF | STOP } </pre>
+<p>Controls event trapping of the key with identifier <code><em>key_id</em></code>.
+Event trapping is switched <code>ON</code> or <code>OFF</code>. <code>STOP</code> suspends event trapping until
+a <code>KEY() ON</code> is executed. Up to one event can be triggered during
 suspension, provided that event handling was switched on prior to suspension. 
-he event triggered during suspension is handled immediately after the next ..ON
-statement.
-<code><em>key_id</em></code> must be a numeric expression in the range 1--20, inclusive. 
-Keys 1--10 are F1--F10. Keys 11--14 are:
-    11  <UP>
-    12  <LEFT>
-    13  <RIGHT>
-    14  <DOWN>
-Keys 15 to 20 are defined using the event trapping KEY definition statement
-as described below.    
+The event triggered during suspension is handled immediately after the next <code>KEY() ON</code>
+statement.</p>
+<h4>Parameters</h4>
+<p><code><em>key_id</em></code> is a numeric expression in <code>[1&mdash;20]</code>.
+Keys are:
+<table><tr>
+<td>1</td>
+<td><code><b>F1</b></code></td>
+</tr><tr>
+<td>2</td>
+<td><code><b>F2</b></code></td>
+</tr><tr>
+<td>3</td>
+<td><code><b>F3</b></code></td>
+</tr><tr>
+<td>4</td>
+<td><code><b>F4</b></code></td>
+</tr><tr>
+<td>5</td>
+<td><code><b>F5</b></code></td>
+</tr><tr>
+<td>6</td>
+<td><code><b>F6</b></code></td>
+</tr><tr>
+<td>7</td>
+<td><code><b>F7</b></code></td>
+</tr><tr>
+<td>8</td>
+<td><code><b>F8</b></code></td>
+</tr><tr>
+<td>9</td>
+<td><code><b>F9</b></code></td>
+</tr><tr>
+<td>10</td>
+<td><code><b>F10</b></code></td>
+</tr><tr>
+<td>11</td>
+<td><code><b>&#8593;<!--up--></b></code></td>
+</tr><tr>
+<td>12</td>
+<td><code><b>&#8592;<!--left--></b></code></td>
+</tr><tr>
+<td>13</td>
+<td><code><b>&#8594;<!--right--></b></code></td>
+</tr><tr>
+<td>14</td>
+<td><code><b>&#8595;<!--down--></b></code></td>
+</tr></table>
+Keys 15 to 20 are defined using the event trapping <code>KEY</code> definition statement
+as described below.</p>
+</li></ul>
+<h4>Notes</h4>
+<ul><li>
+With <code>--syntax=tandy</code>, key 11 id <code><b>F11</b></code> and key 12 is <code><b>F12</b></code>. Pre-defined keys 11&mdash;14 shift to 13&mdash;16.
+</li></ul>
 <h4>Errors</h4>
--   If <code><em>key_id</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If <code><em>key_id</em></code> is not in [0, 20]: <code>Illegal function call</code>.
--   If <code><em>key_id</em></code> has a string value: <code>Type mismatch</code>.
+<ul><li>
+<code><em>key_id</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>key_id</em></code> is not in <code>[0&mdash;20]</code>: <code>Illegal function call</code>.
+</li><li>
+<code><em>key_id</em></code> has a string value: <code>Type mismatch</code>.
+</li></ul>
  
 
-KEY statement (event trapping key definition)
-KEY key_id, two_char_string
--------------
-Defines the key to trap for <code><em>key_id</em></code>. <code><em>key_id</em></code> must be a numeric 
-expression in the range 15--20, inclusive. 'string_value' must be a string-
-valued expression of length 2. The first character is interpreted as a modifier
-while the second character is interpreted as a scan code. See INP for scan
-codes. Modifiers are:
-    &h80    Extended
-    &h40    <code><b>Caps Lock</b></code>
-    &h20    <code><b>Num Lock</b></code>
-    &h08    <code><b>Alt</b></code>
-    &h04    <code><b>Ctrl</b></code>
-    &h02    <code><b>Shift</b></code> (either side)
-    &h01    <code><b>Shift</b></code> (either side)
+<h3><code>KEY</code> statement (event-trapping key definition)</h3>
+<pre>KEY <em>key_id</em>, <em>two_char_string</em></pre>
+<p>Defines the key to trap for <code><em>key_id</em></code>.
+<h4>Parameters</h4>
+<ul><li>
+<code><em>key_id</em></code> is a numeric
+expression in <code>[15&mdash;20]</code>.
+</li><li>
+<code><em>string_value</em></code> is a string expression of length 2. The first character is interpreted as a modifier
+while the second character is interpreted as a scancode. See <code>INP</code> for scancodes.
+Modifiers are:
+<table><tr>
+    <td><code>CHR$(&amp;h80)</code></td>
+    <td>Extended</td>
+</tr><tr>
+    <td><code>CHR$(&amp;h40)</code></td>
+    <td><code><b>Caps Lock</b></code></td>
+</tr><tr>
+    <td><code>CHR$(&amp;h20)</code></td>
+    <td><code><b>Num Lock</b></code></td>
+</tr><tr>
+    <td><code>CHR$(&amp;h08)</code></td>
+    <td><code><b>Alt</b></code></td>
+</tr><tr>
+    <td><code>CHR$(&amp;h04)</code></td>
+    <td><code><b>Ctrl</b></code></td>
+</tr><tr>
+    <td><code>CHR$(&amp;h02)</code></td>
+    <td><code><b>Shift</b></code> (either side)</td>
+</tr><tr>
+    <td><code>CHR$(&amp;h01)</code></td>
+    <td><code><b>Shift</b></code> (either side)</td>
+</tr></table>
+</li></ul>
 <h4>Notes</h4>
--   If <code><em>key_id</em></code> is not in [15,20], no error is raised, but strange things can 
+<ul><li>
+   If <code><em>key_id</em></code> is not in <code>[15&mdash;20]</code>, no error is raised, but strange things can
     happen in GW-BASIC: screen anomalies and crashes suggestive of unintended
     memory access. This is not implemented in PC-BASIC: such values are 
     ignored.
--   If <code><em>key_id</em></code> is in 1--10, the statement is interpreted as a string macro
-    definition, see above.
+</li><li>
+   If <code><em>key_id</em></code> is in <code>[1&mdash;10]</code>, the statement is interpreted as a string macro
+    definition; see above.
+</li></ul>
 <h4>Errors</h4>
--   If <code><em>key_id</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If <code><em>key_id</em></code> is not in [1, 255]: <code>Illegal function call</code>.
--   If <code><em>key_id</em></code> has a string value: <code>Type mismatch</code>.
--   If 'two_char_string' is longer than two: <code>Illegal function call</code>.
--   If 'two_char_string' has a numeric value: <code>Type mismatch</code>.
+<ul><li>
+<code><em>key_id</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>key_id</em></code> is not in <code>[1&mdash;255]</code>: <code>Illegal function call</code>.
+</li><li>
+<code><em>key_id</em></code> has a string value: <code>Type mismatch</code>.
+</li><li>
+<code><em>two_char_string</em></code> is longer than two: <code>Illegal function call</code>.
+</li><li>
+<code><em>two_char_string</em></code> has a numeric value: <code>Type mismatch</code>.
+</li></ul>
 
 
-KILL statement
-KILL file_path
---------------
-Deletes a file. 'file_path' must be a string expression that specifies a
-valid path to an existing file with MS-DOS path separators (\). The extension 
-must be specified: no default extensions are assumed. KILL will first attempt 
+<h3><code>KILL</code> statement</h3>
+<pre>KILL <em>file_path</em></pre>
+<p>Deletes a file. <code><em>file_path</em></code> must be a string expression that specifies a
+valid path to an existing file with MS-DOS path separators <code>\</code>. The extension
+must be specified: no default extensions are assumed. <code>KILL</code> will first attempt 
 to delete a file with the name exactly as provided; this is case-sensitive if
-the file system is. If such a file does not exist, KILL attempts to delete the
+the file system is. If such a file does not exist, <code>KILL</code> attempts to delete the
 UPPERCASE 8.3 variant of the file name; lacking that, it will match the first
-8.3 name in lexicographic order.
+8.3 name in lexicographic order.</p>
 <h4>Errors</h4>
--   If the file 'file_path' is open: FILE ALREADY OPEN
--   If the file or path 'file_path' does not exist: <code>File not found</code>
--   If the user has no write permission: PERMISSION DENIED
--   If a syntax error occurs after the closing quote, the file is removed 
-    anyway.
--   If 'file_path' has a number value: <code>Type mismatch</code>.
+<ul><li>
+<code><em>file_path</em></code> has a number value: <code>Type mismatch</code>.
+</li><li>
+The file <code><em>file_path</em></code> is open: <code>File already open</code>
+</li><li>
+The file or path <code><em>file_path</em></code> does not exist: <code>File not found</code>
+</li><li>
+The user has no write permission: <code>Permission denied</code>
+</li><li>
+If a syntax error occurs after the closing quote, the file is removed    anyway.
+</li></ul>
 
 
-LCOPY statement
-LCOPY [num]
----------------
-Does nothing. <code><em>num</em></code> is a numeric expression between 0 and 255, inclusive.
+<h3><code>LCOPY</code> statement</h3>
+<pre>LCOPY [<em>num</em>]</pre>
+<p>Does nothing.</p>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>num</em></code> is a numeric expression in <code>[0&mdash;255]</code>.
+</li></ul>
 <h4>Notes</h4>
--   This statement does nothing in GW-BASIC. Presumably, it is left over from a
+<ul><li>
+   This statement does nothing in GW-BASIC. Presumably, it is left over from a
     statement in older versions of MS Basic that would copy the screen to the 
     printer.
+</li></ul>
 <h4>Errors</h4>
--   If <code><em>num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If <code><em>num</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If <code><em>num</em></code> has a string value: <code>Type mismatch</code>.
+<ul><li>
+<code><em>num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>num</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+</li><li>
+<code><em>num</em></code> has a string value: <code>Type mismatch</code>.
+</li></ul>
 
 
 LEFT$ function
 child = LEFT$(parent, num_chars)
 --------------
-Returns the leftmost <code><em>num_chars</em></code> characters of 'parent'. 'parent' must be a 
+Returns the leftmost <code><em>num_chars</em></code> characters of <code><em>parent</em></code>. <code><em>parent</em></code> must be a
 string expression. <code><em>num_chars</em></code> must be a numeric expression between 0 
-and 255, inclusive. If <code><em>num_chars</em></code> is zero or 'parent' is empty, LEFT$ returns
-an empty string "". If <code><em>num_chars</em></code> is greater than the length of 'parent', 
-returns 'parent'.
+and 255, inclusive. If <code><em>num_chars</em></code> is zero or <code><em>parent</em></code> is empty, LEFT$ returns
+an empty string "". If <code><em>num_chars</em></code> is greater than the length of <code><em>parent</em></code>,
+returns <code><em>parent</em></code>.
 <h4>Errors</h4>
--   If <code><em>num_chars</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If <code><em>num_chars</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If <code><em>num_chars</em></code> has a string value: <code>Type mismatch</code>.
+<code><em>num_chars</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+<code><em>num_chars</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+<code><em>num_chars</em></code> has a string value: <code>Type mismatch</code>.
 
 
 LEN function
@@ -2238,7 +2572,7 @@ length = LEN(string)
 Returns the number of characters in 'string'. 'string' is a string
 expression.
 <h4>Errors</h4>
--   If 'string' has a number value: <code>Type mismatch</code>.
+'string' has a number value: <code>Type mismatch</code>.
 
 
 LET statement
@@ -2249,7 +2583,7 @@ Assigns the value of <code><em>expression</em></code> to the variable or array e
 type of <code><em>expression</em></code> must match that of <code><em>name</em></code>: that is, all numeric types can 
 be assigned to each other but strings can only be assigned to strings.
 <h4>Errors</h4>
--   If <code><em>name</em></code> and <code><em>expression</em></code> are not of matching types: <code>Type mismatch</code>.
+<code><em>name</em></code> and <code><em>expression</em></code> are not of matching types: <code>Type mismatch</code>.
 
 
 LINE statement
@@ -2281,10 +2615,10 @@ If 'pattern' is specified, it must be a numeric expression between -32768
 -   If a coordinate is outside the screen boundary, it is replaced with -1 (if
     less than 0) or the screen dimension (if larger than the screen dimension).
 <h4>Errors</h4>
--   If LINE ends in a comma and it is the first or third, <code>Missing operand</code> is
+LINE ends in a comma and it is the first or third, <code>Missing operand</code> is
     raised. If it is the second, <code>Syntax error</code> .
--   If any of the coordinates is not in <code>[-32768&mdash;32767]</code>, <code>Overflow</code> .
--   If any of the parameters has a string value: <code>Type mismatch</code>.
+any of the coordinates is not in <code>[-32768&mdash;32767]</code>, <code>Overflow</code> .
+any of the parameters has a string value: <code>Type mismatch</code>.
 
 
 LINE INPUT statement
@@ -2319,22 +2653,22 @@ INPUT mode or a device or random-access file open in <code>RANDOM</code> mode.
     return or comma is encountered (as in a file). Arrow keys and delete are
     passed as their control characters (NOT scancodes!) preceded by CHR$(&HFF).
 <h4>Errors</h4>
--   If input is requested after the end of a text file has been reached or an
-    EOF char has been encountered: INPUT PAST END.
--   If the last character of the field buffer is read: <code>Field overflow</code>.
--   If <code><em>file_num</em></code> is not an open file: <code>Bad file number</code>.
--   If <code><em>file_num</em></code> is less than zero: <code>Illegal function call</code>.
--   If <code><em>file_num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If <code><em>file_num</em></code> is not open for INPUT or <code>RANDOM</code>: <code>Bad file mode</code>.
--   If <code><em>file_num</em></code> is a string: <code>Type mismatch</code>.
+input is requested after the end of a text file has been reached or an
+    EOF char has been encountered: <code>Input past end</code>.
+the last character of the field buffer is read: <code>Field overflow</code>.
+<code><em>file_num</em></code> is not an open file: <code>Bad file number</code>.
+<code><em>file_num</em></code> is less than zero: <code>Illegal function call</code>.
+<code><em>file_num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+<code><em>file_num</em></code> is not open for INPUT or <code>RANDOM</code>: <code>Bad file mode</code>.
+<code><em>file_num</em></code> is a string: <code>Type mismatch</code>.
 
 
 LIST statement
 LIST [ [line_number_0 | . ] - [line_number_1 | .] ] [, file_name]
 LIST [line_number_0 | .] [, file_name]
 --------------
-Prints the program to the screen, starting with 'line_number_0' up to and 
-including 'line_number_1', which must be line numbers in the range [0, 65529]
+Prints the program to the screen, starting with <code><em>line_number_0</em></code> up to and
+including <code><em>line_number_1</em></code>, which must be line numbers in the range [0, 65529]
 or a . to indicate the last line edited. The line numbers do not need to exist;
 they specify a range. If the range is empty, nothing is printed.
 <code><em>file_name</em></code> is a valid file name. This file will be created; if it already 
@@ -2343,9 +2677,9 @@ Also stops program execution and returns to interactive mode. Any further
 statements on a line after LIST will be ignored both in a program and in direct
 mode. 
 <h4>Errors</h4>
--   If a line number is greater than 65529, <code>Syntax error</code> .
--   If <code><em>file_name</em></code> has a numeric value, <code>Type mismatch</code> .
--   If <code><em>file_name</em></code> ends in a colon but is not a device name or drive letter,
+a line number is greater than 65529, <code>Syntax error</code> .
+<code><em>file_name</em></code> has a numeric value, <code>Type mismatch</code> .
+<code><em>file_name</em></code> ends in a colon but is not a device name or drive letter,
     <code>Bad file number</code> .
     
 
@@ -2353,13 +2687,13 @@ LLIST statement
 LLIST [ [line_number_0|.] - [line_number_1|.] ] 
 LLIST [line_number_0|.] 
 ---------------
-Prints the program to LPT1:, starting with 'line_number_0' up to and 
-including 'line_number_1', which must be line numbers in the range [0, 65529]
+Prints the program to LPT1:, starting with <code><em>line_number_0</em></code> up to and
+including <code><em>line_number_1</em></code>, which must be line numbers in the range [0, 65529]
 or a . to indicate the last line edited. The line numbers do not need to exist;
 they specify a range. If the range is empty, nothing is printed.
 Also stops program execution and returns to interactive mode.
 <h4>Errors</h4>
--   If a line number is greater than 65529, <code>Syntax error</code> .
+a line number is greater than 65529, <code>Syntax error</code> .
 
 
 LOAD statement
@@ -2381,8 +2715,8 @@ cleared and any program in memory will be erased. LOAD implies a CLEAR.
 -   On Unix, it is not possible to load a program with a filename longer than 
     8.3 or ending in a dot.
 <h4>Errors</h4>
--   If <code><em>file_name</em></code> cannot be found: <code>File not found</code>.
--   If a loaded ASCII file contains lines without line numbers:
+<code><em>file_name</em></code> cannot be found: <code>File not found</code>.
+a loaded ASCII file contains lines without line numbers:
     DIRECT STATEMENT IN FILE.
 
 
@@ -2405,11 +2739,11 @@ If the file is opened to KYBD:, LOC returns 0.
 -   In INPUT mode, before any reads LOC returns 1. After the *129th* character
     is read, LOC returns 2. 
 <h4>Errors</h4>
--   If <code><em>file_num</em></code> is not an open file: <code>Bad file number</code>.
--   If <code><em>file_num</em></code> is open for output to a device: <code>Bad file mode</code>.
--   If <code><em>file_num</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If <code><em>file_num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If <code><em>file_num</em></code> is a string: <code>Type mismatch</code>.
+<code><em>file_num</em></code> is not an open file: <code>Bad file number</code>.
+<code><em>file_num</em></code> is open for output to a device: <code>Bad file mode</code>.
+<code><em>file_num</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+<code><em>file_num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+<code><em>file_num</em></code> is a string: <code>Type mismatch</code>.
 
 
 LOCATE statement
@@ -2433,12 +2767,12 @@ Cursor shape and visibility options have no effect in graphics mode.
     in fact not to happen. 
 -   Locate accepts a 5th comma at the end, which is ignored.    
 <h4>Errors</h4>
--   If 'row' is outside the current view area: <code>Illegal function call</code>.
--   If 'col' is greater than the current width: <code>Illegal function call</code>.
--   If 'cursor_visible' is not in [0, 1] (<code>[0&mdash;255]</code> on Tandy/PCjr),
+'row' is outside the current view area: <code>Illegal function call</code>.
+'col' is greater than the current width: <code>Illegal function call</code>.
+'cursor_visible' is not in [0, 1] (<code>[0&mdash;255]</code> on Tandy/PCjr),
     raises <code>Illegal function call</code>.
--   If any parameter is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If any parameter is a string: <code>Type mismatch</code>.
+any parameter is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+any parameter is a string: <code>Type mismatch</code>.
 
 
 LOCK statement
@@ -2454,18 +2788,18 @@ are specified, the whole file is locked.
 <h4>Notes</h4>
 -   In GW-BASIC under MS-DOS, the LOCK command required SHARE.EXE to be loaded.
     The maximum number of locks is specified in the SHARE command. If SHARE has
-    not been activated or all locks are used, LOCK raises PERMISSION DENIED.
+    not been activated or all locks are used, LOCK raises <code>Permission denied</code>.
     PC-BASIC behaves as if SHARE has been activated with unlimited locks.
 -   If <code><em>file_number</em></code> is open for <code>RANDOM</code>, LOCK and UNLOCK statements must match
     in terms of 'record_0' and 'record_1'. An non-matching UNLOCK will raise 
-    PERMISSION DENIED.    
+    <code>Permission denied</code>.
 <h4>Errors</h4>
--   Attempting to LOCK (part of) a file already locked raises PERMISSION DENIED.
--   If 'record_0' or 'record_1' is not in [1, 2^25-2]: <code>Bad record number</code>.
--   If <code><em>file_num</em></code> is not an open file: <code>Bad file number</code>.
--   If <code><em>file_num</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If <code><em>file_num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If any parameter is a string: <code>Type mismatch</code>.
+-   Attempting to LOCK (part of) a file already locked raises <code>Permission denied</code>.
+'record_0' or 'record_1' is not in [1, 2^25-2]: <code>Bad record number</code>.
+<code><em>file_num</em></code> is not an open file: <code>Bad file number</code>.
+<code><em>file_num</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+<code><em>file_num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+any parameter is a string: <code>Type mismatch</code>.
     
 
 LOF function
@@ -2477,11 +2811,11 @@ Returns the number of bytes in the file open under <code><em>file_num</em></code
 -   If <code><em>file_num</em></code> is open to a COM: device, LOF returns the number of bytes
     free in the input buffer.
 <h4>Errors</h4>
--   If <code><em>file_num</em></code> is not an open file: <code>Bad file number</code>.
--   If <code><em>file_num</em></code> is open for output to a device: <code>Bad file mode</code>.
--   If <code><em>file_num</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If <code><em>file_num</em></code> is a string: <code>Type mismatch</code>.
--   If <code><em>file_num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+<code><em>file_num</em></code> is not an open file: <code>Bad file number</code>.
+<code><em>file_num</em></code> is open for output to a device: <code>Bad file mode</code>.
+<code><em>file_num</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+<code><em>file_num</em></code> is a string: <code>Type mismatch</code>.
+<code><em>file_num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 
 
 LOG function
@@ -2494,8 +2828,8 @@ Returns the natural logarithm of <code><em>x</em></code>.
     precision value.
 -   LOG(x) can differ from GW-BASIC by 1 in the least significant digit.
 <h4>Errors</h4>
--   If <code><em>x</em></code> is a string: <code>Type mismatch</code>.
--   If <code><em>x</em></code> is zero or less: <code>Illegal function call</code>.
+<code><em>x</em></code> is a string: <code>Type mismatch</code>.
+<code><em>x</em></code> is zero or less: <code>Illegal function call</code>.
 
 
 LPOS function
@@ -2509,9 +2843,9 @@ or 1, the position for LPT1 is returned. If it is 2, LPT2; 3, LPT3.
     is flushed and its position is reset to 1. This is not implemented in 
     PC-BASIC 3.23.
 <h4>Errors</h4>
--   If 'printer_number' is not in [0,3]: <code>Illegal function call</code>.
--   If 'printer_number' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If 'printer_number' is a string: <code>Type mismatch</code>.
+'printer_number' is not in [0,3]: <code>Illegal function call</code>.
+'printer_number' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+'printer_number' is a string: <code>Type mismatch</code>.
 
 
 LPRINT statement
@@ -2535,8 +2869,8 @@ the FIELD variable. With RSET, it will be right-justified.
 -   If LET is used on a FIELD variable instead of L|RSET, the variable is 
     detached from the field and becomes a normal string variable.
 <h4>Errors</h4>
--   If 'string_name' is not a string variable, <code>Type mismatch</code> .
--   If <code><em>expression</em></code> does not have a string value, <code>Type mismatch</code> .
+'string_name' is not a string variable, <code>Type mismatch</code> .
+<code><em>expression</em></code> does not have a string value, <code>Type mismatch</code> .
 
 
 <code>MERGE</code> statement
@@ -2550,9 +2884,9 @@ must be the name of an existing program file stored in ASCII format only.
     specified, then an all-caps version, then an all-caps version with a .BAS 
     extension.
 <h4>Errors</h4>
--   If <code><em>file_name</em></code> cannot be found: <code>File not found</code>.
--   If <code><em>file_name</em></code> was not saved as ASCII: <code>Bad file mode</code>.
--   If a loaded ASCII file contains lines without line numbers:
+<code><em>file_name</em></code> cannot be found: <code>File not found</code>.
+<code><em>file_name</em></code> was not saved as ASCII: <code>Bad file mode</code>.
+a loaded ASCII file contains lines without line numbers:
     DIRECT STATEMENT IN FILE.
     
 
@@ -2565,11 +2899,11 @@ substring has length 'length' if specified, defaulting to 1.
 'position' is a numeric expression between 1 and the string length.
 'length' is a numeric expression between 0 and 255, inclusive.
 <h4>Errors</h4>
--   If 'string' has a number value or 'position' or 'length' have string values,
+'string' has a number value or 'position' or 'length' have string values,
     raises <code>Type mismatch</code>.
--   If 'position' is not in [1,255]: <code>Illegal function call</code>.
--   If 'length' is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If 'position' or 'length' are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+'position' is not in [1,255]: <code>Illegal function call</code>.
+'length' is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+'position' or 'length' are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 
 
 MID$ statement
@@ -2585,11 +2919,11 @@ Replaces part of 'string_name' with 'substring'.
 -   If 'substring' is shorter than 'length', only LEN(substring) characters
     are replaced.
 <h4>Errors</h4>
--   If 'position' is greater than the length of 'string_name',
+'position' is greater than the length of 'string_name',
     raises <code>Illegal function call</code>, except if 'length' is specified as 0.
--   If 'position' is not in [1,255]: <code>Illegal function call</code>.
--   If 'length' is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If 'position' or 'length' are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+'position' is not in [1,255]: <code>Illegal function call</code>.
+'length' is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+'position' or 'length' are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 
 
 MKDIR statement
@@ -2600,10 +2934,10 @@ path of the new directory.
 <h4>Notes</h4>
 -   'path' will be modified into all-uppercase 8.3 format.
 <h4>Errors</h4>
--   If 'path' is not a string: <code>Type mismatch</code>.
--   If the parent directory of 'path' does not exist: <code>Path not found</code>.
--   If the pathname already exists: PATH/FILE ACCESS ERROR.
--   If the user has no write permission: PERMISSION DENIED.
+'path' is not a string: <code>Type mismatch</code>.
+the parent directory of 'path' does not exist: <code>Path not found</code>.
+the pathname already exists: PATH/FILE ACCESS ERROR.
+the user has no write permission: <code>Permission denied</code>.
 
 
 MKD$ function
@@ -2612,7 +2946,7 @@ bytes = MKD$(double)
 Returns the internal 8-byte Microsoft Binary Format representation of a double-
 precision number.
 <h4>Errors</h4>
--   If 'double' is a string: <code>Type mismatch</code>.
+'double' is a string: <code>Type mismatch</code>.
 
 
 MKI$ function
@@ -2620,8 +2954,8 @@ bytes = MKI$(int)
 -------------
 Returns the internal 2-byte little-endian representation of an integer.
 <h4>Errors</h4>
--   If 'int' is a string: <code>Type mismatch</code>.
--   If 'int' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+'int' is a string: <code>Type mismatch</code>.
+'int' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 
 
 MKS$ function
@@ -2630,7 +2964,7 @@ bytes = MKS$(single)
 Returns the internal 4-byte Microsoft Binary Format representation of a single-
 precision number.
 <h4>Errors</h4>
--   If 'single' is a string: <code>Type mismatch</code>.
+'single' is a string: <code>Type mismatch</code>.
 
 
 MOTOR statement
@@ -2642,9 +2976,9 @@ Does nothing. <code><em>num</em></code> is a numeric expression between 0 and 25
     statement in older versions of MS Basic that would drive the cassette tape 
     player.
 <h4>Errors</h4>
--   If <code><em>num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If <code><em>num</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If <code><em>num</em></code> has a string value: <code>Type mismatch</code>.
+<code><em>num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+<code><em>num</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+<code><em>num</em></code> has a string value: <code>Type mismatch</code>.
 
 
 NAME statement
@@ -2655,10 +2989,10 @@ Renames the file 'old_name' into 'new_name'
 <h4>Notes</h4>
 -   'new_name' will be modified into all-uppercase 8.3 format.
 <h4>Errors</h4>
--   If 'old_name' or 'new_name' have number values: <code>Type mismatch</code>.
--   If 'old_name' does not exist: <code>File not found</code>.
--   If 'old_name' is open: FILE ALREADY OPEN.
--   If 'new_name' exists: FILE ALREADY EXISTS.
+'old_name' or 'new_name' have number values: <code>Type mismatch</code>.
+'old_name' does not exist: <code>File not found</code>.
+'old_name' is open: <code>File already open</code>.
+'new_name' exists: FILE ALREADY EXISTS.
 
 
 NEW statement
@@ -2677,9 +3011,9 @@ statement. Several nested NEXT statements can be consolidated into one by
 using the variable list. If one or more variables are specified, their order 
 must match the order of earlier FOR statements.  
 <h4>Errors</h4>
--   If no FOR statement is found to match the NEXT statement and variables, 
+no FOR statement is found to match the NEXT statement and variables,
     NEXT WITHOUT FOR .
--   If 'var_0', ... are string names, NEXT WITHOUT FOR .
+<code><em>var_0</em></code>, ... are string names, NEXT WITHOUT FOR .
 
 
 NOISE statement                                    [pcjr and tandy syntax only]
@@ -2704,9 +3038,9 @@ PCJR and TANDY:
     statement; see there.
 <h4>Errors</h4>
 -   IF SOUND ON has not been executed: <code>Illegal function call</code>.
--   If 'duration' is not in [-65535, 65535]: <code>Illegal function call</code>.
--   If 'volume' is not in [0, 15]: <code>Illegal function call</code>.
--   If 'voice' is not in [0, 2]: <code>Illegal function call</code>.
+'duration' is not in [-65535, 65535]: <code>Illegal function call</code>.
+'volume' is not in [0, 15]: <code>Illegal function call</code>.
+'voice' is not in [0, 2]: <code>Illegal function call</code>.
 
 
 OCT$ function
@@ -2716,8 +3050,8 @@ Returns a string with the octal representation of <code><em>x</em></code>. <code
 numeric expression between -32768 and 65535, inclusive. Values for 
 negative <code><em>x</em></code> are shown as two's-complement. 
 <h4>Errors</h4>
--   If <code><em>x</em></code> is not in <code>[-32768&mdash;65535]</code>, <code>Overflow</code> .
--   If <code><em>x</em></code> has a string value, <code>Type mismatch</code> .
+<code><em>x</em></code> is not in <code>[-32768&mdash;65535]</code>, <code>Overflow</code> .
+<code><em>x</em></code> has a string value, <code>Type mismatch</code> .
 
 
 ON statement (switched jump)
@@ -2728,9 +3062,9 @@ than the number of line_numbers in the list, no jump is performed. <code><em>n</
 be a numeric expression in the range <code>[0&mdash;255]</code>. IF GOTO is specified, 
 the jump is unconditional; if <code>GOSUB</code> is specified, jumps to a subroutine.
 <h4>Errors</h4>
--   If <code><em>n</em></code> is a string: <code>Type mismatch</code>.
--   If <code><em>n</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If <code><em>n</em></code> is not in <code>[-32768&mdash;32767]</code>, <code>Overflow</code> .
+<code><em>n</em></code> is a string: <code>Type mismatch</code>.
+<code><em>n</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+<code><em>n</em></code> is not in <code>[-32768&mdash;32767]</code>, <code>Overflow</code> .
 
 
 ON statement (event trapping)
@@ -2756,9 +3090,9 @@ Before event trapping is active, the event needs to be enabled using the event
 statements: COM(n) ON | KEY(n) ON | STRIG(n) ON | PEN ON | PLAY ON | TIMER ON.
 Events are not trapped in interactive mode.
 <h4>Errors</h4>
--   If <code><em>n</em></code> or <code><em>x</em></code> is a string: <code>Type mismatch</code>.
--   If <code><em>n</em></code> or <code><em>x</em></code> is outside the specified range: <code>Illegal function call</code>.
--   If <code><em>n</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+<code><em>n</em></code> or <code><em>x</em></code> is a string: <code>Type mismatch</code>.
+<code><em>n</em></code> or <code><em>x</em></code> is outside the specified range: <code>Illegal function call</code>.
+<code><em>n</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 
 
 ON ERROR statement 
@@ -2774,7 +3108,7 @@ Error trapping remains active in interactive mode.
 <h4>Notes</h4>
 -   If <code><em>line_number</em></code> is 0, turns off error trapping.
 <h4>Errors</h4>
--   If <code><em>line_number</em></code> does not exist: <code>Undefined line number</code>.
+<code><em>line_number</em></code> does not exist: <code>Undefined line number</code>.
 
 
 OPEN statement
@@ -2879,21 +3213,21 @@ SERIAL PORT (COM1) ACCESS:
     PUT or GET statement will raise PATH/FILE ACCESS ERROR.
 -   The # is optional and has no effect.    
 <h4>Errors</h4>
--   If <code><em>file_name</em></code> is empty or a non-existent device: <code>Bad file number</code>.
--   If FOR APPEND ACCESS WRITE is specified: PATH/FILE ACCESS ERROR.
--   If FOR and ACCESS mismatch in other ways: <code>Syntax error</code>.
--   If the COM: file_name parameters do not follow the specification,
+<code><em>file_name</em></code> is empty or a non-existent device: <code>Bad file number</code>.
+FOR APPEND ACCESS WRITE is specified: PATH/FILE ACCESS ERROR.
+FOR and ACCESS mismatch in other ways: <code>Syntax error</code>.
+the COM: file_name parameters do not follow the specification,
     <code>Bad file name</code> .
--   If a file is already open for OUTPUT or APPEND: FILE ALREADY OPEN.
+a file is already open for OUTPUT or APPEND: <code>File already open</code>.
     This is not the case for devices.
 -   IF <code><em>rec_len</em></code> or <code><em>file_num</em></code> have string values: <code>Type mismatch</code>.
--   If <code><em>file_name</em></code> or 'mode_char' have number values: <code>Type mismatch</code>.
--   If <code><em>file_num</em></code> is not in [1,3]: <code>Bad file number</code>.
--   If <code><em>file_num</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If <code><em>file_num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If <code><em>rec_len</em></code> is not in [1,128]: <code>Illegal function call</code>.
--   If <code><em>rec_len</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If 'mode_char' shorter than 1 or the first character is not in  
+<code><em>file_name</em></code> or 'mode_char' have number values: <code>Type mismatch</code>.
+<code><em>file_num</em></code> is not in [1,3]: <code>Bad file number</code>.
+<code><em>file_num</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+<code><em>file_num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+<code><em>rec_len</em></code> is not in [1,128]: <code>Illegal function call</code>.
+<code><em>rec_len</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+'mode_char' shorter than 1 or the first character is not in
     ["I", "O", "A", "R"]: <code>Bad file mode</code>.
     
 
@@ -2906,11 +3240,11 @@ Sets the starting index of all arrays to <code><em>n</em></code>, where <code><e
 -   If OPTION BASE is not called, the first array DIM defaults to starting 
     index 0.
 <h4>Errors</h4>
--   If <code><em>n</em></code> is not a digit 0 or 1, <code>Syntax error</code> .
--   If OPTION BASE 1 is called but any array has already been DIMmed or indexed
+<code><em>n</em></code> is not a digit 0 or 1, <code>Syntax error</code> .
+OPTION BASE 1 is called but any array has already been DIMmed or indexed
     before calling OPTION BASE 
     with a different starting index, <code>Duplicate definition</code> .
--   If OPTION BASE is called more than once with different starting index,
+OPTION BASE is called more than once with different starting index,
     <code>Duplicate definition</code> .
 
 
@@ -2939,10 +3273,10 @@ Does nothing otherwise.
         OUT &h3CF, plane 
     The initial OUT statements currently have no effect in PC-BASIC 3.23.    
 <h4>Errors</h4>
--   If <code><em>port</em></code> is not in <code>[-32768&mdash;65535]</code>: <code>Overflow</code>.
--   If <code><em>value</em></code> is not in [-32768, 32768]: <code>Overflow</code>.
--   If <code><em>value</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If <code><em>port</em></code> or <code><em>value</em></code> are strings: <code>Type mismatch</code>.
+<code><em>port</em></code> is not in <code>[-32768&mdash;65535]</code>: <code>Overflow</code>.
+<code><em>value</em></code> is not in [-32768, 32768]: <code>Overflow</code>.
+<code><em>value</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+<code><em>port</em></code> or <code><em>value</em></code> are strings: <code>Type mismatch</code>.
 
 
 PAINT statement
@@ -3034,12 +3368,12 @@ BOUNDARIES
 <h4>Errors</h4>
 -   In SCREENs 7,8,9, if <code><em>background</em></code> equals 'attrib' up to the length of
     'attrib': <code>Illegal function call</code>.
--   If <code><em>background</em></code> has a number value: <code>Illegal function call</code>.
--   If <code><em>border</em></code>,<code><em>x</em></code>, or <code><em>y</em></code> have a string value: <code>Type mismatch</code>.
--   If <code><em>border</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If 'attrib' is numeric and not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If <code><em>border</em></code>,<code><em>x</em></code>, or <code><em>y</em></code> are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If 'attrib' is numeric and not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+<code><em>background</em></code> has a number value: <code>Illegal function call</code>.
+<code><em>border</em></code>,<code><em>x</em></code>, or <code><em>y</em></code> have a string value: <code>Type mismatch</code>.
+<code><em>border</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+'attrib' is numeric and not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+<code><em>border</em></code>,<code><em>x</em></code>, or <code><em>y</em></code> are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+'attrib' is numeric and not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 
 
 PALETTE statement
@@ -3054,9 +3388,9 @@ size, less one.
 colours for the current screen mode, less one. If <code><em>colour</em></code> equals -1,
 the palette remains unchanged.
 <h4>Errors</h4>
--   If 'attrib' or <code><em>colour</em></code> are strings: <code>Type mismatch</code>.
--   If 'attrib' or <code><em>colour</em></code> are not in range: <code>Illegal function call</code>
--   If 'attrib' or <code><em>colour</em></code> are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>
+'attrib' or <code><em>colour</em></code> are strings: <code>Type mismatch</code>.
+'attrib' or <code><em>colour</em></code> are not in range: <code>Illegal function call</code>
+'attrib' or <code><em>colour</em></code> are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>
 
 
 PALETTE USING statement
@@ -3068,13 +3402,13 @@ new values for the palette. 'start_index' is a numeric expression that
 indicates at which index in the array to start mapping to the palette. If an 
 array index equals -1, the matching attribute is left unchanged.
 <h4>Errors</h4>
--   If 'int_array_name' has not been dimensioned: <code>Illegal function call</code>.
+'int_array_name' has not been dimensioned: <code>Illegal function call</code>.
     The array will not be automatically dimensioned.
--   If 'int_array_name' is not an integer array: <code>Type mismatch</code>.
--   If 'int_array_name' is too short: <code>Illegal function call</code>.
--   If 'start_index' is a string: <code>Type mismatch</code>.
--   If 'start_index' is outside array dimensions: SUBSCRIPT OUT OF RANGE
--   If 'start_index' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>
+'int_array_name' is not an integer array: <code>Type mismatch</code>.
+'int_array_name' is too short: <code>Illegal function call</code>.
+'start_index' is a string: <code>Type mismatch</code>.
+'start_index' is outside array dimensions: SUBSCRIPT OUT OF RANGE
+'start_index' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>
 
 
 PCOPY statement
@@ -3085,9 +3419,9 @@ replaced by those of 'src'.
 'src' and 'dst' are numeric expressions between 0 and the current video 
 mode's number of pages, less one. 
 <h4>Errors</h4>
--   If 'src' or 'dst' are string: <code>Type mismatch</code>.
--   If 'src' or 'dst' are out of range: <code>Illegal function call</code>.
--   If 'src' or 'dst' are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+'src' or 'dst' are string: <code>Type mismatch</code>.
+'src' or 'dst' are out of range: <code>Illegal function call</code>.
+'src' or 'dst' are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 
 
 PEEK function
@@ -3107,8 +3441,8 @@ two's complement.
     are in those locations.
 -   Outside these emulated areas, PEEK returns 0. 
 <h4>Errors</h4>
--   If <code><em>address</em></code> is a string: <code>Type mismatch</code>.
--   If <code><em>address</em></code> is not in [-32768, 65536]: <code>Overflow</code>.
+<code><em>address</em></code> is a string: <code>Type mismatch</code>.
+<code><em>address</em></code> is not in [-32768, 65536]: <code>Overflow</code>.
 
 
 PEN statement
@@ -3142,9 +3476,9 @@ Reads the light pen. What PEN returns depends on 'mode'.
 -   In PC-BASIC 3.23, for 'pen down' read 'left mouse button pressed'. For 'pen
     position' read 'mouse pointer position'.
 <h4>Errors</h4>
--   If 'mode' is a string: <code>Type mismatch</code>.
--   If 'mode' is not in [0, 9]: <code>Illegal function call</code>.
--   If 'mode' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+'mode' is a string: <code>Type mismatch</code>.
+'mode' is not in [0, 9]: <code>Illegal function call</code>.
+'mode' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
     
 
 PLAY statement
@@ -3194,10 +3528,10 @@ TANDY and PCJR:
         Vn  Set the volume to <code><em>n</em></code>, in the range [0, 15]. On PCjr, if SOUND ON
             has not been executed, this has no effect. On Tandy it does.              
 <h4>Errors</h4>
--   If 'mml_string' has a numeric value, <code>Type mismatch</code> .
--   If 'mml_string' has errors in the MML, <code>Illegal function call</code> .
--   If a variable in the mml_string is of incorrect type, <code>Type mismatch</code>.
--   If no mml string is specified: <code>Missing operand</code>.
+'mml_string' has a numeric value, <code>Type mismatch</code> .
+'mml_string' has errors in the MML, <code>Illegal function call</code> .
+a variable in the mml_string is of incorrect type, <code>Type mismatch</code>.
+no mml string is specified: <code>Missing operand</code>.
 -   On PCjr, if SOUND ON has not been executed, using the three-voice syntax
     will raise <code>Syntax error</code>. This is not the case on Tandy.
 
@@ -3219,9 +3553,9 @@ The return value is in [0,16].
     claim there can be up to 32, but in reality PLAY only returns at the
     last 16 notes.
 <h4>Errors</h4>
--   If <code><em>dummy</em></code> is a string: <code>Type mismatch</code>.
--   If <code><em>dummy</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If <code><em>dummy</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+<code><em>dummy</em></code> is a string: <code>Type mismatch</code>.
+<code><em>dummy</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+<code><em>dummy</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 
 
 PMAP function
@@ -3242,10 +3576,10 @@ The operation depends on 'fn':
     returns results as if the last WINDOW setting had persisted. This is not
     implemented in PC-BASIC 3.23. 
 <h4>Errors</h4>
--   If a physical coordinate is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If any of the parameters has a string value: <code>Type mismatch</code>.
--   If 'fn' is not in [0,3]: <code>Illegal function call</code>.
--   If 'fn' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+a physical coordinate is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+any of the parameters has a string value: <code>Type mismatch</code>.
+'fn' is not in [0,3]: <code>Illegal function call</code>.
+'fn' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 
 
 POINT function (current coordinate)
@@ -3265,9 +3599,9 @@ fn  return value
 -   In SCREEN 0, returns the active coordinate of any previous graphics mode;
     if no graphics mode has been active, returns 0.
 <h4>Errors</h4>    
--   If 'fn' has a string value: <code>Type mismatch</code>.
--   If 'fn' is not in [0,3]: <code>Illegal function call</code>.
--   If 'fn' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+'fn' has a string value: <code>Type mismatch</code>.
+'fn' is not in [0,3]: <code>Illegal function call</code>.
+'fn' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 
 
 POINT function (pixel attribute)
@@ -3279,8 +3613,8 @@ Returns the attribute of the pixel at logical coordinate <code><em>x</em></code>
 -   If <code><em>x</em></code>,<code><em>y</em></code> is outside the screen, returns -1.
 <h4>Errors</h4>
 -   In SCREEN 0: <code>Illegal function call</code>.
--   If <code><em>x</em></code> or <code><em>y</em></code> has a string value: <code>Type mismatch</code>.
--   If <code><em>x</em></code> or <code><em>y</em></code> or the physical coordinates they translate into are not in
+<code><em>x</em></code> or <code><em>y</em></code> has a string value: <code>Type mismatch</code>.
+<code><em>x</em></code> or <code><em>y</em></code> or the physical coordinates they translate into are not in
     <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 
 
@@ -3296,10 +3630,10 @@ interpreted as their two's complement.
     implemented in PC-BASIC 3.23 outside the emulated areas.
 -   Currently, only writing to video memory is supported.
 <h4>Errors</h4>
--   If <code><em>address</em></code> or <code><em>value</em></code> has a string value: <code>Type mismatch</code>.
--   If <code><em>value</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If <code><em>address</em></code> is not in <code>[-32768&mdash;65535]</code>: <code>Overflow</code>.
--   If <code><em>value</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+<code><em>address</em></code> or <code><em>value</em></code> has a string value: <code>Type mismatch</code>.
+<code><em>value</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+<code><em>address</em></code> is not in <code>[-32768&mdash;65535]</code>: <code>Overflow</code>.
+<code><em>value</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 
 
 POS function
@@ -3322,9 +3656,9 @@ attribute is changed to the highest legal attribute value.
 If 'attrib' is not specified, PSET changes the attribute to the current 
 foreground attribute while PRESET changes it to zero.
 <h4>Errors</h4>
--   If <code><em>x</em></code> or <code><em>y</em></code> has a string value: <code>Type mismatch</code>.
--   If 'attrib' is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If 'attrib', <code><em>x</em></code> or <code><em>y</em></code> or the physical coordinates they translate into are not in
+<code><em>x</em></code> or <code><em>y</em></code> has a string value: <code>Type mismatch</code>.
+'attrib' is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+'attrib', <code><em>x</em></code> or <code><em>y</em></code> or the physical coordinates they translate into are not in
     <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
  
 
@@ -3364,8 +3698,8 @@ effect as separating by semicolons
     printed as normal.
 -   See below for the syntax of the optional USING declaration
 <h4>Errors</h4>
--   If <code><em>n</em></code> is not in [-32768,65535]: <code>Overflow</code>.
--   If <code><em>n</em></code> is a string: <code>Type mismatch</code>.
+<code><em>n</em></code> is not in [-32768,65535]: <code>Overflow</code>.
+<code><em>n</em></code> is a string: <code>Type mismatch</code>.
 
 USING declaration:
 ------------------
@@ -3417,11 +3751,11 @@ printed preceding it.
 -   After USING, other parts of the PRINT syntax such as SPC( and TAB( can not
     be used.
 <h4>Errors</h4>
--   If the expression doesn't match the format token type, <code>Type mismatch</code> is 
+the expression doesn't match the format token type, <code>Type mismatch</code> is
     raised.
--   If a number field exceeds 24 characters, <code>Illegal function call</code> .
--   If the format string contains no tokens, <code>Illegal function call</code> .
--   If a number field contains no # characters, ILLEGAL FUCTION CALL .
+a number field exceeds 24 characters, <code>Illegal function call</code> .
+the format string contains no tokens, <code>Illegal function call</code> .
+a number field contains no # characters, ILLEGAL FUCTION CALL .
 
 
 PUT statement   (random-access files)
@@ -3433,13 +3767,13 @@ of an open random-access file. The # is optional and has no effect.
 <code><em>record_number</em></code> is a numeric expression that gives a number between 1 and
 33554432 (2^25), inclusive, and is interpreted as the record number. 
 <h4>Errors</h4>
--   If <code><em>record_number</em></code> is not in [1, 33554432]: <code>Bad record number</code>.
--   If <code><em>file_number</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If <code><em>file_number</em></code> is not the number of an open file:
+<code><em>record_number</em></code> is not in [1, 33554432]: <code>Bad record number</code>.
+<code><em>file_number</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+<code><em>file_number</em></code> is not the number of an open file:
     <code>Bad file number</code>.
--   If <code><em>file_number</em></code> is open under a mode other than <code>RANDOM</code>:
+<code><em>file_number</em></code> is open under a mode other than <code>RANDOM</code>:
     <code>Bad file mode</code>.
--   If <code><em>file_number</em></code> is not specified: <code>Missing operand</code>.
+<code><em>file_number</em></code> is not specified: <code>Missing operand</code>.
     
 
 PUT statement   (communications)
@@ -3454,14 +3788,14 @@ and the COM buffer length, inclusive.
     PARITY ERROR is raised if parity is enabled and incorrect parity is 
     encountered. This is according to the manual; it is untested.
 <h4>Errors</h4>
--   If <code><em>bytes</em></code> is less than 1: <code>Bad record number</code>
--   If <code><em>bytes</em></code> is less than 32768 and greater than the COM buffer length,
+<code><em>bytes</em></code> is less than 1: <code>Bad record number</code>
+<code><em>bytes</em></code> is less than 32768 and greater than the COM buffer length,
     raises <code>Illegal function call</code>
--   If <code><em>com_file_number</em></code> is not specified: <code>Missing operand</code>.
--   If <code><em>com_file_number</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If <code><em>com_file_number</em></code> is not the number of an open file:
+<code><em>com_file_number</em></code> is not specified: <code>Missing operand</code>.
+<code><em>com_file_number</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+<code><em>com_file_number</em></code> is not the number of an open file:
     <code>Bad file number</code>.
--   If the serial input buffer is full, i.e. LOF(com_file_number) == 0, and 
+the serial input buffer is full, i.e. LOF(com_file_number) == 0, and
     LOC(com_file_number)==255: COMMUNICATION BUFFER <code>Overflow</code>
         
     
@@ -3479,11 +3813,11 @@ AND     Combines the old and new attributes with bitwise AND
 OR      Combines the old and new attributes with bitwise OR
 XOR     Combines the old and new attributes with bitwise XOR
 <h4>Errors</h4>
--   If the array does not exist: <code>Illegal function call</code>.
--   If <code><em>array_name</em></code> refers to a string array: <code>Type mismatch</code>.
--   If <code><em>x0</em></code>, <code><em>y0</em></code> are string expressions: <code>Type mismatch</code>.
--   If <code><em>x0</em></code>, <code><em>y0</em></code> are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If <code><em>x0</em></code>, <code><em>y0</em></code> is outside the current VIEW or WINDOW:
+the array does not exist: <code>Illegal function call</code>.
+<code><em>array_name</em></code> refers to a string array: <code>Type mismatch</code>.
+<code><em>x0</em></code>, <code><em>y0</em></code> are string expressions: <code>Type mismatch</code>.
+<code><em>x0</em></code>, <code><em>y0</em></code> are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+<code><em>x0</em></code>, <code><em>y0</em></code> is outside the current VIEW or WINDOW:
     <code>Illegal function call</code>
 
 
@@ -3503,8 +3837,8 @@ being generated by the RND function.
 -   For the same seed, PC-BASIC 3.23 produces the same pseudorandom numbers as
     GW-BASIC 3.23.
 <h4>Errors</h4>
--   If <code><em>expr</em></code> is a string: <code>Illegal function call</code>.
--   If the user provides a seed outside <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+<code><em>expr</em></code> is a string: <code>Illegal function call</code>.
+the user provides a seed outside <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 
 
 READ statement
@@ -3514,10 +3848,10 @@ Assigns data from a DATA statement to variables. Reading starts at the current
 DATA position, which is the DATA entry immediately after the last one read by 
 previous READ statements. The DATA position is reset to the start by the RUN 
 and RESTORE statements.
-'var_0', 'var_1' are valid variable names or array elements.
+<code><em>var_0</em></code>, <code><em>var_1</em></code> are valid variable names or array elements.
 <h4>Errors</h4>
--   If not enough data is present in DATA statements: OUT OF DATA.
--   If the type of the variable is not compatible with that of the data entry
+not enough data is present in DATA statements: OUT OF DATA.
+the type of the variable is not compatible with that of the data entry
     being read, a <code>Syntax error</code> is raised on the DATA line.
 
 
@@ -3553,12 +3887,12 @@ less than 'old remain unchanged.
     is the line number prior to renumbering. The referenced line number will be
     left unchanged, but the line's old line number will be renumbered.
 <h4>Errors</h4>
--   If any of the parameters is not in [0, 65529]: <code>Syntax error</code>.
--   If any of the newly generated line numbers is greater than 65529:
+any of the parameters is not in [0, 65529]: <code>Syntax error</code>.
+any of the newly generated line numbers is greater than 65529:
     <code>Illegal function call</code>. The line numbers up to the error have not been 
     changed.
--   If 'increment' is empty or zero: <code>Illegal function call</code>.
--   If 'old' is specified and 'new' is less than or equal to an existing line 
+'increment' is empty or zero: <code>Illegal function call</code>.
+'old' is specified and 'new' is less than or equal to an existing line
     number less than old: <code>Illegal function call</code>.
     
     
@@ -3576,8 +3910,8 @@ Resets the DATA pointer.
 to the first DATA entry in the program. If it is specified, the DATA pointer is
 reset to the first DATA entry in or after 'line'.
 <h4>Errors</h4>
--   If 'line' is not an existing line number: <code>Undefined line number</code>.
--   If 'line' is not a line number: <code>Undefined line number</code>.
+'line' is not an existing line number: <code>Undefined line number</code>.
+'line' is not a line number: <code>Undefined line number</code>.
 
 
 RESUME statement
@@ -3588,11 +3922,11 @@ If 0 or no option is specified, re-executes the statement that caused the
 error. If NEXT is specified, executes the statement following the one that 
 caused the error. If 'line' is specified, it must be a valid line number.
 <h4>Errors</h4>
--   If RESUME is encountered outside of an error trapping routine:
+RESUME is encountered outside of an error trapping routine:
     RESUME WITHOUT ERROR.
--   If the program ends inside an error trapping routine without a RESUME 
+the program ends inside an error trapping routine without a RESUME
     or END statement: NO RESUME.
--   If 'line' is not an existing line number: <code>Undefined line number</code>.
+'line' is not an existing line number: <code>Undefined line number</code>.
     
 
 <code>RETURN</code> statement
@@ -3605,21 +3939,21 @@ line (and pops the <code>GOSUB</code> stack).
 When returning from an error trapping routine, <code>RETURN</code> re-enables the event
 trapping which was stopped on entering the trap routine.
 <h4>Errors</h4>
--   If 'line' is not an existing line number: <code>Undefined line number</code>.
+'line' is not an existing line number: <code>Undefined line number</code>.
 
 
 RIGHT$ function
 child = RIGHT$(parent, num_chars)
 --------------
-Returns the rightmost <code><em>num_chars</em></code> characters of 'parent'. 'parent' must be a 
+Returns the rightmost <code><em>num_chars</em></code> characters of <code><em>parent</em></code>. <code><em>parent</em></code> must be a
 string expression. <code><em>num_chars</em></code> must be a numeric expression between 0 
-and 255, inclusive. If <code><em>num_chars</em></code> is zero or 'parent' is empty, RIGHT$ returns
-an empty string "". If <code><em>num_chars</em></code> is greater than the length of 'parent', 
-returns 'parent'.
+and 255, inclusive. If <code><em>num_chars</em></code> is zero or <code><em>parent</em></code> is empty, RIGHT$ returns
+an empty string "". If <code><em>num_chars</em></code> is greater than the length of <code><em>parent</em></code>,
+returns <code><em>parent</em></code>.
 <h4>Errors</h4>
--   If <code><em>num_chars</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If <code><em>num_chars</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If <code><em>num_chars</em></code> has a string value: <code>Type mismatch</code>.
+<code><em>num_chars</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+<code><em>num_chars</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+<code><em>num_chars</em></code> has a string value: <code>Type mismatch</code>.
     
     
 RMDIR statement
@@ -3646,7 +3980,7 @@ returned. If <code><em>x</em></code> is negative, the value of <code><em>x</em><
 random number seed; after that, a new pseudorandom number is returned.
 Note that the seed is generated in a different way than by RANDOMIZE.
 <h4>Errors</h4>
--   If <code><em>x</em></code> is a string, <code>Type mismatch</code> .
+<code><em>x</em></code> is a string, <code>Type mismatch</code> .
 
     
 <h3><code>RSET</code> statement</h3>
@@ -3663,10 +3997,10 @@ If <code><em>filename</em></code> is specified, the file with that name is loade
 RUN,R keeps all data files open. Existing variables will be 
 cleared and any program in memory will be erased. RUN implies a CLEAR.
 <h4>Errors</h4>
--   If 'line' does not exist: <code>Undefined line number</code>.
--   If <code><em>filename</em></code> cannot be found: <code>File not found</code>.
--   If <code><em>filename</em></code> is an empty string: <code>Bad file number</code>.
--   If a loaded ASCII file contains lines without line numbers:
+'line' does not exist: <code>Undefined line number</code>.
+<code><em>filename</em></code> cannot be found: <code>File not found</code>.
+<code><em>filename</em></code> is an empty string: <code>Bad file number</code>.
+a loaded ASCII file contains lines without line numbers:
     DIRECT STATEMENT IN FILE.
 
 
@@ -3685,9 +4019,9 @@ form.
 -   In PC-BASIC 3.23, use the --conv option to convert any file type to any 
     other file type, including encrypted to ASCII or bytecode.
 <h4>Errors</h4>
--   If <code><em>filename</em></code> has a number value: <code>Type mismatch</code>.
--   If <code><em>filename</em></code> is an empty string: <code>Bad file number</code>.
--   If the current program is encrypted and ,P is not specified:
+<code><em>filename</em></code> has a number value: <code>Type mismatch</code>.
+<code><em>filename</em></code> is an empty string: <code>Bad file number</code>.
+the current program is encrypted and ,P is not specified:
     <code>Illegal function call</code>.
 
 
@@ -3702,13 +4036,13 @@ Returns the ASCII code or colour attribute for the character at position
 the ASCII code of the character is returned. If it is non-zero, in SCREEN 0 the
 attribute is returned; in other screens, 0 is returned.
 <h4>Errors</h4>
--   If any parameter has a string value: <code>Type mismatch</code>.
--   If 'fn' is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If 'fn' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If 'row' is not inside the current VIEW PRINT area:
+any parameter has a string value: <code>Type mismatch</code>.
+'fn' is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+'fn' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+'row' is not inside the current VIEW PRINT area:
     <code>Illegal function call</code>.
--   If KEY ON and 'row'=25: <code>Illegal function call</code>.
--   If 'col' is not in [1, width]: <code>Illegal function call</code>.
+KEY ON and 'row'=25: <code>Illegal function call</code>.
+'col' is not in [1, width]: <code>Illegal function call</code>.
 
 
 SCREEN statement
@@ -3735,13 +4069,13 @@ NOTE:
 -   Composite colour artifacts are emulated only crudely in PC-BASIC, and not at
     all in SCREEN 1.
 <h4>Errors</h4>
--   If no parameters are specified: <code>Missing operand</code>.
--   If any parameter has a string value: <code>Type mismatch</code>.
--   If any parameter is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If 'mode' is not in 0,1,2,7,8,9: <code>Illegal function call</code>.
--   If 'vpage', 'apage' are not between 0 and the number of pages for the 
+no parameters are specified: <code>Missing operand</code>.
+any parameter has a string value: <code>Type mismatch</code>.
+any parameter is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+'mode' is not in 0,1,2,7,8,9: <code>Illegal function call</code>.
+'vpage', 'apage' are not between 0 and the number of pages for the
     screen chosen, less one: ILLEGAL FUNCION CALL.
--   If 'colorburst' is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+'colorburst' is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
 
 
 SGN function
@@ -3752,7 +4086,7 @@ If <code><em>number</em></code> is greater than zero, returns 1;
 if <code><em>number</em></code> equals zero, returns 0;
 if <code><em>number</em></code> is less than zero, returns -1.
 <h4>Errors</h4>
--   If <code><em>number</em></code> has a string value: <code>Type mismatch</code>.
+<code><em>number</em></code> has a string value: <code>Type mismatch</code>.
 
 
 SHELL statement [--allow-shell only]
@@ -3767,7 +4101,7 @@ returns to the program.
 <h4>Notes</h4>
 -   If the --allow-shell option is not specified, this statement does nothing.
 <h4>Errors</h4>
--   If 'command' has a number value: <code>Type mismatch</code>.
+'command' has a number value: <code>Type mismatch</code>.
 -   All output including errors from the operating system subshell is displayed
     on the PC-BASIC 3.23 screen.
 
@@ -3784,7 +4118,7 @@ value.
     values, the difference is only in the least significant figure, but it
     increases with the size of the angle.
 <h4>Errors</h4>
--   If <code><em>x</em></code> has a string value, SIN raises <code>Type mismatch</code>.
+<code><em>x</em></code> has a string value, SIN raises <code>Type mismatch</code>.
      
 
 SOUND statement
@@ -3817,14 +4151,14 @@ PCJR and TANDY:
     executed. This is also the behaviour for negative 'duration'.
 -   If 'frequency' equals 32767 or 0, a silence of length 'duration' is queued.
 <h4>Errors</h4>
--   If 'frequency' is not in its allowed range, and 'duration' is not zero, 
+'frequency' is not in its allowed range, and 'duration' is not zero,
     raises <code>Illegal function call</code>.
--   If 'duration' is zero, specifying more than two aruments raises
+'duration' is zero, specifying more than two aruments raises
     <code>Syntax error</code>.    
--   If 'frequency' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If 'duration' is not in [-65535, 65535]: <code>Illegal function call</code>.
--   If 'volume' is not in [0, 15]: <code>Illegal function call</code>.
--   If 'voice' is not in [0, 2]: <code>Illegal function call</code>.
+'frequency' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+'duration' is not in [-65535, 65535]: <code>Illegal function call</code>.
+'volume' is not in [0, 15]: <code>Illegal function call</code>.
+'voice' is not in [0, 2]: <code>Illegal function call</code>.
 
 
 SOUND statement (advanced-sound switch)            [pcjr and tandy syntax only]
@@ -3845,9 +4179,9 @@ spaces = SPACE$(number)
 Returns a string of <code><em>number</em></code> spaces.
 <code><em>number</em></code> is a numeric expression in <code>[0&mdash;255]</code>.
 <h4>Errors</h4>
--   If <code><em>number</em></code> is a string: <code>Type mismatch</code>
--   If <code><em>number</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If <code><em>number</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+<code><em>number</em></code> is a string: <code>Type mismatch</code>
+<code><em>number</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+<code><em>number</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 
 
 SQR function
@@ -3858,7 +4192,7 @@ Returns the square root of <code><em>number</em></code>.
 The return value is a single-precision float unless PC-BASIC 3.23 is run with
 the --double option, in which case the precision matches that of <code><em>number</em></code>.
 <h4>Errors</h4>
--   If <code><em>number</em></code> is a string: <code>Type mismatch</code>
+<code><em>number</em></code> is a string: <code>Type mismatch</code>
 
 
 STICK function
@@ -3873,9 +4207,9 @@ range [1,254] with 128 indicating the neutral position.
     2   2nd joystick x coordinate
     3   2nd joystick y coordinate
 <h4>Errors</h4>
--   If 'axis' is a string: <code>Type mismatch</code>
--   If 'axis' is not in [0,3]: <code>Illegal function call</code>.
--   If 'axis' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+'axis' is a string: <code>Type mismatch</code>
+'axis' is not in [0,3]: <code>Illegal function call</code>.
+'axis' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 
 
 STOP statement
@@ -3892,7 +4226,7 @@ repr = STR$(number)
 Returns the string representation of <code><em>number</em></code>.
 <code><em>number</em></code> is a numeric expression.
 <h4>Errors</h4>
--   If <code><em>number</em></code> is a string: <code>Type mismatch</code>.
+<code><em>number</em></code> is a string: <code>Type mismatch</code>.
 
 
 STRIG statement (overall)
@@ -3916,9 +4250,9 @@ statement.
 4   joystick 1, trigger 2
 6   joystick 2, trigger 2
 <h4>Errors</h4>
--   If 'button' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If 'button' is not in [0,2,4,6]: <code>Illegal function call</code>.
--   If 'button' has a string value: <code>Type mismatch</code>.
+'button' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+'button' is not in [0,2,4,6]: <code>Illegal function call</code>.
+'button' has a string value: <code>Type mismatch</code>.
 
 
 STRIG function
@@ -3940,9 +4274,9 @@ results, all boolean values:
 -   The STRIG function returns correct results regardless of the STRIG ON 
     status or whether STRIG(0) has been called first.
 <h4>Errors</h4>
--   If 'mode' is a string: <code>Type mismatch</code>.
--   If 'mode' is not in [0, 97: <code>Illegal function call</code>.
--   If 'mode' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+'mode' is a string: <code>Type mismatch</code>.
+'mode' is not in [0, 97: <code>Illegal function call</code>.
+'mode' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 
 
 STRING$ function
@@ -3953,19 +4287,19 @@ If 'char' is a numeric expression, it must be between 0 and 255 and is
 interprested as the ASCII value of the character.
 If 'char' is a string expression, its first character is used.
 <h4>Errors</h4>
--   If 'char' is the empty string: <code>Illegal function call</code>.
--   If 'char' or 'length' is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If 'char' or 'length' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+'char' is the empty string: <code>Illegal function call</code>.
+'char' or 'length' is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+'char' or 'length' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 
 
 SWAP statement
 SWAP var_0, var_1
 --------------
-Exchanges the values of 'var_0' and 'var_1', which must be variable names of 
+Exchanges the values of <code><em>var_0</em></code> and <code><em>var_1</em></code>, which must be variable names of
 the exact same type.
 <h4>Errors</h4>
--   If 'var_0' or 'var_1' is undefined: <code>Illegal function call</code>.
--   If the types of 'var_0' and 'var_1' are not the same: <code>Type mismatch</code>.
+<code><em>var_0</em></code> or <code><em>var_1</em></code> is undefined: <code>Illegal function call</code>.
+the types of <code><em>var_0</em></code> and <code><em>var_1</em></code> are not the same: <code>Type mismatch</code>.
 
 
 SYSTEM statement
@@ -3991,7 +4325,7 @@ value.
 -   For <code><em>angle</em></code> close to multiples of PI/2, the tangent is divergent or close
     to zero. The values returned will have very low precision in these cases.
 <h4>Errors</h4>
--   If <code><em>angle</em></code> has a string value, SIN raises <code>Type mismatch</code>.
+<code><em>angle</em></code> has a string value, SIN raises <code>Type mismatch</code>.
 
 
 TERM statement                                     [pcjr and tandy syntax only]
@@ -4023,8 +4357,8 @@ of the form "HH:mm:ss" where <code>00&lt;=HH&lt;24</code>, <code>00&lt;=mm&lt;60
     calls to TIME and DATE functions in the same interpreter session. The 
     system time is not changed, unlike GW-BASIC under MS-DOS.
 <h4>Errors</h4>
--   If 'time' is not a string: <code>Type mismatch</code>.
--   If 'time' is not of the correct form: <code>Illegal function call</code>.
+'time' is not a string: <code>Type mismatch</code>.
+'time' is not of the correct form: <code>Illegal function call</code>.
 
 
 TIMER function
@@ -4057,14 +4391,14 @@ UNLOCK [#] file_number, [record_0] TO record_1
 ----------------
 Unlocks a file or part of it that has previously been locked with LOCK. 
 <h4>Errors</h4>
--   If <code><em>file_number</em></code> is open for <code>RANDOM</code>, LOCK and UNLOCK statements must match
+<code><em>file_number</em></code> is open for <code>RANDOM</code>, LOCK and UNLOCK statements must match
     in terms of 'record_0' and 'record_1'. An unmatching UNLOCK will raise      
-    PERMISSION DENIED.
--   If 'record_0' or 'record_1' is not in [1, 2^25-2]: <code>Bad record number</code>.
--   If <code><em>file_num</em></code> is not an open file: <code>Bad file number</code>.
--   If <code><em>file_num</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
--   If <code><em>file_num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   If any parameter is a string: <code>Type mismatch</code>.
+    <code>Permission denied</code>.
+'record_0' or 'record_1' is not in [1, 2^25-2]: <code>Bad record number</code>.
+<code><em>file_num</em></code> is not an open file: <code>Bad file number</code>.
+<code><em>file_num</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+<code><em>file_num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+any parameter is a string: <code>Type mismatch</code>.
 
 
 USR function
@@ -4077,7 +4411,7 @@ Returns zero.
 -   In GW-BASIC, calls an assembly-language function and returns a value.
     This is not implemented in PC-BASIC 3.23.
 <h4>Errors</h4>
--   If <code><em>n</em></code> is not a digit 0--9: <code>Syntax error</code>.
+<code><em>n</em></code> is not a digit 0--9: <code>Syntax error</code>.
 
 
 VAL function
@@ -4090,7 +4424,7 @@ Parsing stops as soon as the first character is encountered that cannot be
 part of a number. If that is the first character of the string, or the 
 string is empty, VAL returns zero. 
 <h4>Errors</h4>
--   If 'string' has a number value: <code>Type mismatch</code>.
+'string' has a number value: <code>Type mismatch</code>.
 
 
 VARPTR function
@@ -4106,9 +4440,9 @@ file number <code><em>file_num</em></code>.
 -   In PC-BASIC 3.23, VARPTR is implemented for all variable and array types,
     except arrays of strings.
 <h4>Errors</h4>
--   If <code><em>name</em></code> is not previously defined: <code>Illegal function call</code>.
--   If <code><em>file_num</em></code> is not in [1, max number of files]: <code>Bad file number</code>.
--   If <code><em>file_num</em></code> has a string value: <code>Type mismatch</code>.
+<code><em>name</em></code> is not previously defined: <code>Illegal function call</code>.
+<code><em>file_num</em></code> is not in [1, max number of files]: <code>Bad file number</code>.
+<code><em>file_num</em></code> has a string value: <code>Type mismatch</code>.
 
 
 VARPTR$ function
@@ -4123,7 +4457,7 @@ The first byte is the length of the record the pointer points to:
 The last two bytes are the pointer address (as returned by VARPTR) in little-
 endian order.
 <h4>Errors</h4>
--   If <code><em>name</em></code> is not previously defined: <code>Illegal function call</code>.
+<code><em>name</em></code> is not previously defined: <code>Illegal function call</code>.
 
 
 VIEW statement
@@ -4142,10 +4476,10 @@ clipping area.
 If VIEW is called without arguments, the clipping area is reset to the whole
 screen.
 <h4>Errors</h4>
--   If any of the coordinates is not in <code>[-32768&mdash;32767]</code>, <code>Overflow</code> .
--   If any of the coordinate pairs is outside the physical screen, 
+any of the coordinates is not in <code>[-32768&mdash;32767]</code>, <code>Overflow</code> .
+any of the coordinate pairs is outside the physical screen,
     raises <code>Illegal function call</code>.
--   If any of the parameters has a string value: <code>Type mismatch</code>.
+any of the parameters has a string value: <code>Type mismatch</code>.
 
 
 VIEW PRINT statement
@@ -4158,7 +4492,7 @@ cursor movement and scrolling ill be limited to the scroll area.
 -   Regardless of the KEY ON|OFF setting, screen row 25 cannot be part fo the 
     scrolling area.
 <h4>Errors</h4>
--   If 'top_row' or 'bottom_row' is not in [1,24], <code>Illegal function call</code> is 
+'top_row' or 'bottom_row' is not in [1,24], <code>Illegal function call</code> is
     raised. On Tandy/PCjr, 'bottom_row' may be 25 if KEY OFF.
 
 
@@ -4174,9 +4508,9 @@ default is 0.
     This is not implemented in PC_BASIC 3.23, except for use cases discussed
     at INP.
 <h4>Errors</h4>
--   If <code><em>port</em></code> is not in <code>[-32768&mdash;65535]</code>, <code>Overflow</code> .
--   If any parameter has a string value, <code>Type mismatch</code> .
--   If 'and_mask' or 'xor_mask' are not in <code>[0&mdash;255]</code>: <code>Type mismatch</code>.
+<code><em>port</em></code> is not in <code>[-32768&mdash;65535]</code>, <code>Overflow</code> .
+any parameter has a string value, <code>Type mismatch</code> .
+'and_mask' or 'xor_mask' are not in <code>[0&mdash;255]</code>: <code>Type mismatch</code>.
 
 
 WEND statement
@@ -4188,7 +4522,7 @@ condition can be checked.
 -   WHILE--WEND statements can be nested; WEND jumps to the most recent WHILE 
     statement that has not been closed by another WEND.
 <h4>Errors</h4>
--   If all previous WHILE statements have been closed by WEND:
+all previous WHILE statements have been closed by WEND:
     <code>WEND without WHILE</code>.
 
 
@@ -4200,8 +4534,8 @@ Initiates a WHILE--WEND loop.
 to the statement immediately after the matching WEND. If not, execution
 continues. 
 <h4>Errors</h4>
--   If no matching END is found: <code>WHILE without WEND</code>.
--   If <code><em>expr</em></code> is a string: <code>Type mismatch</code>.
+no matching END is found: <code>WHILE without WEND</code>.
+<code><em>expr</em></code> is a string: <code>Type mismatch</code>.
 
 
 WIDTH statement
@@ -4242,17 +4576,17 @@ affects LPRINT and LLIST.
         SCREEN 5 (40)  <-->  SCREEN 6 (80)
 -   On Tandy and PCjr, 'num_rows' may be in [0,25] but its value is ignored.
 <h4>Errors</h4>
--   If 'device_name' is not one of the allowed devices: <code>Bad file name</code>.
--   If 'device_name' is SCRN:, KYBD: or omitted, and num_columns is not 40 or 
+'device_name' is not one of the allowed devices: <code>Bad file name</code>.
+'device_name' is SCRN:, KYBD: or omitted, and num_columns is not 40 or
     80: <code>Illegal function call</code>.
--   If <code><em>file_num</em></code> is not an open file: <code>Bad file mode</code>.
--   If <code><em>file_num</em></code> or 'num_columns' are strings: <code>Type mismatch</code>.
--   If <code><em>file_num</em></code> or 'num_columns' are not in <code>[0&mdash;255]</code>:
+<code><em>file_num</em></code> is not an open file: <code>Bad file mode</code>.
+<code><em>file_num</em></code> or 'num_columns' are strings: <code>Type mismatch</code>.
+<code><em>file_num</em></code> or 'num_columns' are not in <code>[0&mdash;255]</code>:
     <code>Illegal function call</code>.
--   If <code><em>file_num</em></code> or 'num_columns' are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+<code><em>file_num</em></code> or 'num_columns' are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 -   In the second syntax, if an unbracketed expression is used, 
     <code>Illegal function call</code> .
--   If 'num_rows' is not in its accepted range: <code>Illegal function call</code>.
+'num_rows' is not in its accepted range: <code>Illegal function call</code>.
     
 
 WINDOW statement
@@ -4269,8 +4603,8 @@ the bottom right of the screen is mapped to the higher coordinates.
 If WINDOW is called without arguments, the logical coordinates are 
 reset to the physical ones.
 <h4>Errors</h4>
--   If any of the coordinates are strings, <code>Type mismatch</code> .
--   If <code><em>x0</em></code>=<code><em>x1</em></code> or <code><em>y0</em></code>=<code><em>y1</em></code>: <code>Illegal function call</code>.
+any of the coordinates are strings, <code>Type mismatch</code> .
+<code><em>x0</em></code>=<code><em>x1</em></code> or <code><em>y0</em></code>=<code><em>y1</em></code>: <code>Illegal function call</code>.
 
 
 WRITE and WRITE# statements
@@ -4281,8 +4615,8 @@ separated by commas and the line is ended with a CR/LF sequence. Strings are
 delimited by double quotes ". No padding spaces are inserted.
 'expr_0', ... are expressions whose value is to be printed.
 <h4>Errors</h4>
--   If <code><em>file_num</em></code> is a string, <code>Type mismatch</code> .
--   If <code><em>file_num</em></code> is open for INPUT, <code>Bad file mode</code> .
+<code><em>file_num</em></code> is a string, <code>Type mismatch</code> .
+<code><em>file_num</em></code> is open for INPUT, <code>Bad file mode</code> .
 
 
 
