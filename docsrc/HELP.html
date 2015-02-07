@@ -42,7 +42,7 @@ Technical documentation
 <p>Returns the absolute value of <code><em>x</em></code>. 
 <h4>Parameters</h4>
 <ul><li>
-<code><em>x</em></code> is an expression with a numeric value.</p>
+<code><em>x</em></code> is an expression with a numeric value.
 </li></ul>
 <h4>Errors</h4>
 <ul>
@@ -76,11 +76,8 @@ a string value.
 <h3>
 <code>ATN</code> function
 </h3>
-<pre>
-<em>y</em> = ATN(<em>x</em>)</code>
-</pre>
+<pre><em>y</em> = ATN(<em>x</em>)</pre>
 <p>Returns the inverse tangent of <code><em>x</em></code>. 
-
 <h4>Parameters</h4>
 <ul><li>
 <code><em>x</em></code> is a numeric expression that gives 
@@ -126,7 +123,6 @@ Each next line number is incremented by <code><em>increment</em></code>, if spec
 is used without specifying an increment, the last increment specified in an 
 <code>AUTO</code> command is used. If not, <code><em>increment</em></code> defaults to <code>10</code>.
 </li></ul>
-</p>
 <h4>Errors</h4>
 <ul>
 <li>
@@ -171,9 +167,9 @@ BLOAD <em>filename</em> [, <em>offset</em> ]
 <ul>
 <li>
 <code><em>filename</em></code> is a string expression indicating the 
-file to read from.</em>
+file to read from.
 </li><li>
-<code><em>offset</em></code> is a numeric expression in the range <code>[-32768&mdash;65536]</code>.
+<code><em>offset</em></code> is a numeric expression in the range <code>[-32768&mdash;65535]</code>.
 It indicates an offset in the current <code>DEF SEG</code> segment where the file is to be
 stored. If not specified, the offset stored in the <code>BSAVE</code> file will be used. If
 negative, its two's complement will be used.
@@ -184,7 +180,7 @@ negative, its two's complement will be used.
 <li>
 <code><em>filename</em></code> has a numeric value: <code>Type mismatch</code>.
 </li><li>
-<code><em>offset</em></code> is not in the range <code>[-32768&mdash;65536]</code>: <code>Overflow</code>.
+<code><em>offset</em></code> is not in the range <code>[-32768&mdash;65535]</code>: <code>Overflow</code>.
 </li></ul>
 
 
@@ -197,12 +193,12 @@ BSAVE <em>filename</em>, <em>offset</em>, <em>length</em>
 <ul>
 <li>
 <code><em>filename</em></code> is a string expression indicating the 
-file to read from.</em>
+file to read from.
 </li><li>
-<code><em>offset</em></code> is a numeric expression in the range <code>[-32768&mdash;65536]</code> indicating
+<code><em>offset</em></code> is a numeric expression in the range <code>[-32768&mdash;65535]</code> indicating
 the offset into the current <code>DEF SEG</code> segment from where to start reading.
 </li><li>
-<code><em>length</em></code> is a numeric expression in the range <code>[-32768&mdash;65536]</code> indicating
+<code><em>length</em></code> is a numeric expression in the range <code>[-32768&mdash;65535]</code> indicating
 the number of bytes to read. 
 </li><li>
 If <code><em>offset</em></code> or <code><em>length</em></code> are negative, their two's
@@ -212,9 +208,9 @@ complement will be used.</li>
 <ul><li>
 <code><em>filename</em></code> has a numeric value: <code>Type mismatch</code>.
 </li><li>
-<code><em>offset</em></code> is not in the range <code>[-32768&mdash;65536]</code>: <code>Overflow</code>.
+<code><em>offset</em></code> is not in the range <code>[-32768&mdash;65535]</code>: <code>Overflow</code>.
 </li><li>
-<code><em>length</em></code> is not in the range <code>[-32768&mdash;65536]</code>: <code>Overflow</code>.
+<code><em>length</em></code> is not in the range <code>[-32768&mdash;65535]</code>: <code>Overflow</code>.
 </li></ul>
 
 <h3><code>CALL</code> statement</h3>
@@ -308,7 +304,7 @@ specified and exists before the merge.
 </li><li>
 <code><em>ign</em></code> is optional and ignored. 
 </li></ul>
-</p>
+
 <h4>Notes</h4>
 <ul><li>
 <code>CHAIN</code> preserves the <code>OPTION BASE</code> setting.
@@ -644,7 +640,7 @@ Any of the parameters is not in <code>[-32768&mdash;32767]</code>: <code>Overflo
 <code>OFF</code>: disables trapping.
 </li><li>
 <code>STOP</code>: halts trapping until <code>COM(<em>port</em>) ON</code> is used. Events that occur 
-while trapping is halted will trigger immediately when trapping is re-enabled.</p>
+while trapping is halted will trigger immediately when trapping is re-enabled.
 </li></ul>
 <h4>Parameters</h4>
 <ul><li><code><em>port</em></code> is a numeric expression with a value of <code>1</code> or <code>2</code>. This specifies which
@@ -653,7 +649,7 @@ serial port (<code>COM1:</code> or <code>COM2:</code>) is trapped.
 
 
 <h3><code>COMMON</code> statement</h3>
-<pre>COMMON</code> [ [<em>var_0</em>] [, [<em>var_1</em>] [, [...] ] ] ]</pre>
+<pre>COMMON [ [<em>var_0</em>] [, [<em>var_1</em>] [, [...] ] ] ]</pre>
 <p>Specifies variables to be passed as common variables to the program called 
 with <code>CHAIN</code>. 
 The statement may end with one or more commas. </p>
@@ -732,7 +728,6 @@ This function has no brackets.
 <h3><code>CVI</code> function</h3>
 <pre><em>y</em> = CVI(<em>s</em>)</pre>
 <p>Converts a two-byte string to a signed integer.</p>
-</p>
 <h4>Parameters</h4>
 <ul><li>
 <code><em>s</em></code> is a string expression that represents an integer using
@@ -771,7 +766,7 @@ number in Microsoft Binary Format. Only the first eight bytes are used.
  
 
 <h3><code>DATA</code> statement</h3>
-<pre>DATA [ [<em>const_0</em>] [, [<em>const_1</em>] [, ... ]</pre>
+<pre>DATA [<em>const_0</em>] [, [<em>const_1</em>] [, ... ] ]</pre>
 <p>Specifies data that can be read by a READ statement.</p>
 <h4>Parameters</h4>
 <ul><li>
@@ -832,7 +827,7 @@ date in one of the formats: <code>"mm-dd-yyyy"</code>, <code>"mm/dd/yyyy"</code>
 </li></ul>
 
 <h3><code>DEF FN</code> statement</h3>
-<pre>DEF FN[ ]<em>name</em>[( <em>arg_0</em> [, <em>arg_1</em> [, ...] )] = <em>expression</em></pre>
+<pre>DEF FN[ ]<em>name</em>[( <em>arg_0</em> [, <em>arg_1</em> [, ...] ] )] = <em>expression</em></pre>
 <p>Defines a function called <code>FN<em>name</em></code> (or <code>FN<em> name</em></code>: spaces between <code>FN</code> and <code><em>name</em></code> are optional).
 On calling <code>FN<em>name</em>( ... )</code>, <code><em>expression</em></code> is 
 evaluated with the supplied parameters substituted. The result of the 
@@ -841,7 +836,8 @@ evaluation is the return value of <code>FN<em>name</em></code>.
 <h4>Notes</h4>
 <ul><li>
 This statement may only be used on a program line.
-</ul></li>
+</li></ul>
+
 <h4>Parameters</h4>
 <ul><li>
 <code><em>name</em></code> must be a legal variable name.
@@ -935,18 +931,14 @@ dash: for example, <code>DEFSTR A,B,C-Z</code>.</p>
  <code><em>address</em></code> is not in <code>[-32768&mdash;65535]</code>: <code>Overflow</code>.
 </li></ul>
 
- 
 <h3><code>DELETE</code> statement</h3>
-<pre>
-DELETE [<em>line_number_0</em> | .] - [<em>line_number_1</em> | .]
-DELETE [<em>line_number_0</em> | .]
-</pre>
+<pre>DELETE [ <em>line_number_0</em> | . ] [ - [ <em>line_number_1</em> | . ] ]</pre>
 <p>Deletes a range of lines from the program.
 Also stops program execution and returns control to the user.</p>
 <h4>Parameters</h4>
 <ul><li>
-<code><em>line_number_0</code></em> and 
-<code><em>line_number_1</code></em> are line numbers in the range <code>[0&mdash;65529]</code>, specifying the inclusive range of line numbers to delete.
+<code><em>line_number_0</em></code> and
+<code><em>line_number_1</em></code> are line numbers in the range <code>[0&mdash;65529]</code>, specifying the inclusive range of line numbers to delete.
 </li><li>
 A <code>.</code> indicates the last line edited.
 </li><li>
@@ -958,16 +950,15 @@ If no range is specified, the whole program will be deleted.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><em>line_number_0</code></em> or 
-<code><em>line_number_1</code></em> is greater than <code>65529</code>: <code>Syntax error</code>.
+<code><em>line_number_0</em></code> or
+<code><em>line_number_1</em></code> is greater than <code>65529</code>: <code>Syntax error</code>.
 </li><li>
 The range specified does not include any program lines stored: <code>Illegal function call</code>.
 </li></ul>
     
     
 <h3><code>DIM</code> statement</h3>
-<pre>DIM <em>name</em> { ( | [ } <em>limit_0</em> [, <em>limit_1</em> [, ...] ] { ) | } ]
-</pre>
+<pre>DIM <em>name</em> { ( | [ } <em>limit_0</em> [, <em>limit_1</em> [, ...] ] { ) | } ]</pre>
 <p>Allocates memory for arrays. 
 The <code>DIM</code> statement also fixes the number of indices of the array. 
 An array can only be allocated once; to re-allocate an array, <code>ERASE</code> or 
@@ -1178,15 +1169,17 @@ using <code>CONT</code>.
 <pre>ENVIRON <em>command_string</em></pre>
 <p>Sets a shell environment variable.</p>
 <h4>Parameters</h4>
-<p> <code><em>command_string</em></code> is a string
+<p>
+<code><em>command_string</em></code> is a string
 expression of one of the following forms:
+</p>
 <table><tr>
 <td><code>"<em>VARIABLE</em>=<em>VALUE</em>"</code></td>
 <td>to set <code><em>VARIABLE</em></code> to <code><em>VALUE</em></code></td>
 </tr><tr>
 <td><code>"<em>VARIABLE</em>="</code></td>
 <td>to unset <code><em>VARIABLE</em></code></td>
-</tr></table></p>
+</tr></table>
 <h4>Errors</h4>
 <ul><li>
 <code><em>command_string</em></code> has a numeric value: <code>Type mismatch</code>.
@@ -1230,7 +1223,7 @@ the console.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-<code><em>file_num</em></code> has a string value</code>: <code>Type mismatch</code>.
+<code><em>file_num</em></code> has a string value: <code>Type mismatch</code>.
 </li><li>
 <code><em>file_num</em></code> is a number not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 </li><li>
@@ -1777,7 +1770,7 @@ negative <code><em>x</em></code> are shown as two's-complement.
 
 <h3><code>IF</code> statement</h3>
 <pre>IF <em>truth_value</em> [,] { THEN | GOTO } [ <em>statements_1</em> | <em>line_number_1</em> [<em>anything</em>] ]
-  [ ELSE [ <em>statements_0</em> | <em>line_number_0</em> [<em>anything</em>] ] ]</pre>
+                   [ ELSE [ <em>statements_0</em> | <em>line_number_0</em> [<em>anything</em>] ] ]</pre>
 <p>
 If <code><em>truth_value</em></code> is non-zero, executes <code><em>statements_1</em></code> or jumps to <code><em>line_number_1</em></code> .
 If it is zero, executes <code><em>statements_0</em></code> or jumps to <code><em>line_number_0</em></code> . <code><em>truth_value</em></code>
@@ -1891,7 +1884,7 @@ Returns the value of an emulated machine port.</p>
     the scancode is incremented by 128.
 </td>
 </tr><tr>
-<td><code>&H201</code></td>
+<td><code>&amp;H201</code></td>
 <td>
     Returns the value of the game port (joystick port). This value is
     constructed as follows:
@@ -1915,7 +1908,7 @@ Returns the value of an emulated machine port.</p>
     <td>    7       </td><td>joystick 2 button 2</td>
     </tr></table>
     The button bits are 0 when the button is fired, 1 otherwise. The axis values
-    are normally 0 but are set to 1 by OUT &H201, x and then fall back to 0
+    are normally 0 but are set to 1 by OUT &amp;H201, x and then fall back to 0
     after a delay. The longer the delay, the higher the axis value.
 </td>
 </tr><tr>
@@ -2021,7 +2014,7 @@ Returns the value of an emulated machine port.</p>
 </td></tr><tr>
 <td><code><b>`</b></code></td><td>29
 </td></tr><tr>
-<td><code><b>Left Shift</td><td>2A
+<td><code><b>Left Shift</b></code></td><td>2A
 </td></tr><tr>
 <td><code><b>#</b></code></td><td>2B
 </td></tr><tr>
@@ -2387,7 +2380,7 @@ The event triggered during suspension is handled immediately after the next <cod
 statement.</p>
 <h4>Parameters</h4>
 <p><code><em>key_id</em></code> is a numeric expression in <code>[1&mdash;20]</code>.
-Keys are:
+Keys are:</p>
 <table><tr>
 <td>1</td>
 <td><code><b>F1</b></code></td>
@@ -2431,9 +2424,8 @@ Keys are:
 <td>14</td>
 <td><code><b>&#8595;<!--down--></b></code></td>
 </tr></table>
-Keys 15 to 20 are defined using the event trapping <code>KEY</code> definition statement
+<p>Keys 15 to 20 are defined using the event trapping <code>KEY</code> definition statement
 as described below.</p>
-</li></ul>
 <h4>Notes</h4>
 <ul><li>
 With <code>--syntax=tandy</code>, key 11 id <code><b>F11</b></code> and key 12 is <code><b>F12</b></code>. Pre-defined keys 11&mdash;14 shift to 13&mdash;16.
@@ -2658,7 +2650,7 @@ Any of the parameters has a string value: <code>Type mismatch</code>.
 
 
 <h3><code>LINE INPUT</code> statement</h3>
-<pre>LINE INPUT [;] [<em>prompt_literal</em> {;|,}] <em>string_name</em></pre>
+<pre>LINE INPUT [ ; ] [ <em>prompt_literal</em> { ; | , } ] <em>string_name</em></pre>
 <p>Displays the prompt given in <code><em>prompt_literal</em></code> and reads user input from the
 keyboard, storing it into the variable <code><em>string_name</em></code>. All input is read until
 <code><b>Enter</b></code> is pressed; the first 255 characters are stored. If the <code>;</code> is given
@@ -2720,8 +2712,7 @@ The last character of the field buffer is read: <code>Field overflow</code>.
 
 
 <h3><code>LIST</code> statement</h3>
-<pre>LIST [ [<em>line_number_0</em> | . ] - [<em>line_number_1</em> | . ] ] [, <em>file_name</em>]
-LIST [<em>line_number_0</em> | .] [, <em>file_name</em>]</pre>
+<pre>LIST [ <em>line_number_0</em> | . ] [ - [ <em>line_number_1</em> | . ] ] [, <em>file_name</em>]</pre>
 <p>Prints the program to the screen, starting with <code><em>line_number_0</em></code> up to and
 including <code><em>line_number_1</em></code>.
 Also stops program execution and returns cotrol to the user. Any further
@@ -2746,8 +2737,7 @@ A line number is greater than <code>65529</code>: <code>Syntax error</code>.
 </li></ul>
 
 <h3><code>LLIST</code> statement</h3>
-<pre>LLIST [ [ <em>line_number_0</em> | . ] - [ <em>line_number_1</em> | . ] ] 
-LLIST [ <em>line_number_0</em> | . ] </pre>
+<pre>LLIST [ <em>line_number_0</em> | . ] [ - [ <em>line_number_1</em> | . ] ]</pre>
 <p>Prints the program to the screen, starting with <code><em>line_number_0</em></code> up to and
 including <code><em>line_number_1</em></code>.
 Also stops program execution and returns cotrol to the user. Any further
@@ -2831,7 +2821,7 @@ If the file is opened to <code>KYBD:</code>, <code>LOC</code> returns 0.
 
 
 <h3><code>LOCATE</code> statement</h3>
-<pre>LOCATE [<em>row</em>] [, [<em>col</em>] [, [<em>cursor_visible</em>] [, [<em>start_line</em>] [, [<em>stop_line</em>] [ , ] ] ] </pre>
+<pre>LOCATE [<em>row</em>] [, [<em>col</em>] [, [<em>cursor_visible</em>] [, [<em>start_line</em>] [, [<em>stop_line</em>] [ , ] ] ] ] ]</pre>
 <p>Positions the cursor at <code><em>row</em></code>, <code><em>col</em></code> on the screen and changes the cursor shape and visibility.
 <code><em>cursor_visible</em></code> may be 0 or 1. If <code><em>cursor_visible</em></code> is 0, it makes
     the cursor invisible; if it is 1, makes the cursor visible. This works only while a program is running. 
@@ -2866,8 +2856,8 @@ Any parameter is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>
 
 
 <h3><code>LOCK</code> statement</h3>
-<pre>LOCK [#] <em>file_number</em> [, <em>record_0</em> ]
-LOCK [#] <em>file_number</em>, [<em>record_0</em>] TO <em>record_1</em></pre>
+<pre>LOCK [#] <em>file_number</em> [, <em>record_0</em> ]</pre>
+<pre>LOCK [#] <em>file_number</em>, [<em>record_0</em>] TO <em>record_1</em></pre>
 <p>Locks a file or part of a file against access by other users. On a <code>RANDOM</code> file,
  <code><em>record_0</em></code> is the first record locked and <code><em>record_1</em></code> is the last
 record locked. On any other kind of file <code><em>record_0</em></code> and <code><em>record_1</em></code> have no
@@ -3162,302 +3152,569 @@ precision number.</p>
 </li></ul>
 
 
-NAME statement
-NAME old_name AS new_name
---------------
-Renames the file 'old_name' into 'new_name'
-'old_name' and 'new_name' are string expressions.
+<h3><code>NAME</code> statement</h3>
+<pre>NAME <em>old_name</em> AS <em>new_name</em></pre>
+<p>
+Renames the file <code><em>old_name</em></code> into <code><em>new_name</em></code>.
+</p>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>old_name</em></code> and <code><em>new_name</em></code> are string expressions.
+</li></ul>
 <h4>Notes</h4>
--   'new_name' will be modified into all-uppercase 8.3 format.
+<ul><li>
+   <code><em>new_name</em></code> will be modified into all-uppercase 8.3 format.
+</li></ul>
 <h4>Errors</h4>
-'old_name' or 'new_name' have number values: <code>Type mismatch</code>.
-'old_name' does not exist: <code>File not found</code>.
-'old_name' is open: <code>File already open</code>.
-'new_name' exists: FILE ALREADY EXISTS.
+<ul><li>
+<code><em>old_name</em></code> or <code><em>new_name</em></code> have number values: <code>Type mismatch</code>.
+</li><li>
+<code><em>old_name</em></code> does not exist: <code>File not found</code>.
+</li><li>
+<code><em>old_name</em></code> is open: <code>File already open</code>.
+</li><li>
+<code><em>new_name</em></code> exists: <code>File already exists</code>.
+</li></ul>
 
 
-NEW statement
-NEW 
--------------
-Deletes the program in memory, executes CLEAR and RESTORE and returns to 
-interactive mode.
+<h3><code>NEW</code> statement</h3>
+<pre>NEW</pre>
+<p>Stops execution of a program, deletes the program in memory, executes <code>CLEAR</code> and <code>RESTORE</code> and returns control to the user.</p>
 
 
-NEXT statement
-NEXT [var_0 [, var_1 [, ...] ] ]
---------------
-Iterates a FOR--NEXT loop: increments the loop variable and jumps to the FOR 
-statement. If no variables are specified, next matches the most recent FOR 
-statement. Several nested NEXT statements can be consolidated into one by 
+<h3><code>NEXT</code> statement</h3>
+<pre>NEXT [<em>var_0</em> [, <em>var_1</em> [, ...] ] ]</pre>
+<p>Iterates a <code>FOR&mdash;NEXT</code> loop: increments the loop variable and jumps to the <code>FOR</code>
+statement. If no variables are specified, next matches the most recent <code>FOR</code>
+statement. Several nested <code>NEXT</code> statements can be consolidated into one by 
 using the variable list. If one or more variables are specified, their order 
-must match the order of earlier FOR statements.  
+must match the order of earlier <code>FOR</code> statements.</p>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>var_0</em>, <em>var_1</em>, ...</code> are numeric variables which are loop counters in a <code>FOR</code> statement.
+</li></ul>
 <h4>Errors</h4>
-no FOR statement is found to match the NEXT statement and variables,
-    NEXT WITHOUT FOR .
-<code><em>var_0</em></code>, ... are string names, NEXT WITHOUT FOR .
+<ul><li>
+No <code>FOR</code> statement is found to match the <code>NEXT</code> statement and variables:
+    <code>NEXT without FOR</code>.
+</li><li>
+<code><em>var_0</em>, <em>var_1</em>, ...</code> are string variables: <code>NEXT without FOR</code>.
+</li></ul>
 
 
-NOISE statement                                    [pcjr and tandy syntax only]
-NOISE source, volume, duration
--------------
-PCJR and TANDY:
-    Generates various kinds of noise.
-    'source' is a numeric expression in [0, 7]. 
+<h3><code>NOISE</code> statement</h3>
+<pre>NOISE <em>source</em>, <em>volume</em>, <em>duration</em></pre>
+<p>
+    Generates various kinds of noise.</p>
+<h4>Parameters</h4>
+<ul><li>
+    <code><em>source</em></code> is a numeric expression in  <code>[0&mdash;7]</code>.
     It indicates the type of noise:
-    source  type            max frequency (Hz)
-    0       periodic        6991
-    1       periodic        3495
-    2       periodic        1747
-    3       periodic        last tone played on tone voice channel 2
-    0       white noise     6991
-    1       white noise     3495
-    2       white noise     1747
-    3       white noise     last tone played on tone voice channel 2
-    'volume' is a numeric expression in [0,15].
-    'duration' is a numeric expression.
-    Volume and duration are determined in the same way as for the SOUND 
-    statement; see there.
+    <table><tr>
+    <th>source</th>  <th>type</th>            <th>top of frequency band (Hz)</th>
+    </tr><tr>
+    <td>0</td><td>       periodic        </td><td>6991</td>
+    </tr><tr>
+    <td>1</td><td>       periodic        </td><td>3495</td>
+    </tr><tr>
+    <td>2</td><td>       periodic        </td><td>1747</td>
+    </tr><tr>
+    <td>3</td><td>       periodic        </td><td>last tone played on voice 2</td>
+    </tr><tr>
+    <td>0</td><td>       white noise     </td><td>6991</td>
+    </tr><tr>
+    <td>1</td><td>       white noise     </td><td>3495</td>
+    </tr><tr>
+    <td>2</td><td>       white noise     </td><td>1747</td>
+    </tr><tr>
+    <td>3</td><td>       white noise     </td><td>last tone played on voice 2</td>
+    </tr></table>
+</li><li>
+    <code><em>volume</em></code> is a numeric expression in <code>[0&mdash;15]</code>.
+</li><li>
+    <code><em>duration</em></code> is a numeric expression.
+</li></ul>
+<p>    Volume and duration are determined in the same way as for the <code>SOUND</code>
+    statement; see there.</p>
+<h4>Notes</h4>
+<ul><li>
+This statement is only available if <code>--syntax={pcjr|tandy}</code> is set.
+</li></ul>
 <h4>Errors</h4>
--   IF SOUND ON has not been executed: <code>Illegal function call</code>.
-'duration' is not in [-65535, 65535]: <code>Illegal function call</code>.
-'volume' is not in [0, 15]: <code>Illegal function call</code>.
-'voice' is not in [0, 2]: <code>Illegal function call</code>.
+<ul><li>
+<code>SOUND ON</code> has not been executed: <code>Illegal function call</code>.
+</li><li>
+<code><em>duration</em></code> is not in <code>[-65535&mdash;65535]</code>: <code>Illegal function call</code>.
+</li><li>
+<code><em>volume</em></code> is not in <code>[0&mdash;15]</code>: <code>Illegal function call</code>.
+</li><li>
+<code><em>source</em></code> is not in <code>[0&mdash;7]</code>: <code>Illegal function call</code>.
+</li></ul>
 
 
-OCT$ function
-octal = OCT$(x)
--------------
-Returns a string with the octal representation of <code><em>x</em></code>. <code><em>x</em></code> must be a 
-numeric expression between -32768 and 65535, inclusive. Values for 
+<h3><code>OCT$</code> function</h3>
+<pre><em>octal</em> = OCT$(<em>x</em>)</pre>
+<p>Returns a string with the octal representation of <code><em>x</em></code>.</p>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>x</em></code> is a
+numeric expression in <code>[-32768&mdash;65535]</code>. Values for 
 negative <code><em>x</em></code> are shown as two's-complement. 
+</li></ul>
 <h4>Errors</h4>
-<code><em>x</em></code> is not in <code>[-32768&mdash;65535]</code>, <code>Overflow</code> .
-<code><em>x</em></code> has a string value, <code>Type mismatch</code> .
+<ul><li>
+<code><em>x</em></code> has a string value: <code>Type mismatch</code>.
+</li><li>
+<code><em>x</em></code> is not in <code>[-32768&mdash;65535]</code>: <code>Overflow</code>.
+</li></ul>
 
 
-ON statement (switched jump)
-ON n {GOTO|<code>GOSUB</code>} line_number_0 [, line_number_1 [, ...] ]
-------------
-Jumps to the <code><em>n</em></code>th line number specified in the list. If <code><em>n</em></code> is 0 or greater 
-than the number of line_numbers in the list, no jump is performed. <code><em>n</em></code> must 
-be a numeric expression in the range <code>[0&mdash;255]</code>. IF GOTO is specified, 
-the jump is unconditional; if <code>GOSUB</code> is specified, jumps to a subroutine.
+<h3><code>ON</code> statement (calculated jump)</h3>
+<pre>ON <em>n</em> {GOTO | GOSUB} <em>line_number_0</em> [, <em>line_number_1</em> [, ...] ]</pre>
+<p>Jumps to the <code><em>n</em></code>th line number specified in the list. If <code><em>n</em></code> is 0 or greater 
+than the number of line numbers in the list, no jump is performed. If <code>GOTO</code> is specified,
+the jump is unconditional; if <code>GOSUB</code> is specified, jumps to a subroutine.</p>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>n</em></code> is a numeric expression in <code>[0&mdash;255]</code>.
+</li><li>
+<code><em>line_number_0</em>, <em>line_number_1</em>, ...</code> are existing line numbers in the program.
+</li></ul>
 <h4>Errors</h4>
+<ul><li>
 <code><em>n</em></code> is a string: <code>Type mismatch</code>.
-<code><em>n</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+</li><li>
 <code><em>n</em></code> is not in <code>[-32768&mdash;32767]</code>, <code>Overflow</code> .
+</li><li>
+<code><em>n</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+</li><li>
+The line number jumped to does not exist: <code>Undefined line number</code>.
+</li></ul>
 
 
-ON statement (event trapping)
-ON { COM(n) | KEY(n) | STRIG(n) | PEN | PLAY(n) | TIMER (x) } <code>GOSUB</code> line_number
-------------
-Defines an event trapping subroutine. 
-The type of event is given by one of the following keywords:
-COM(n)      <code><em>n</em></code> in [1,2] is the COM1 or COM2 port. The event is triggered 
-            if data is present in the input buffer of the port.
-KEY(n)      <code><em>n</em></code> is the key number: 1-10 are <F1>-<F10>, 11: <UP>, 12: <LEFT>, 
-            13: <RIGHT>, 14: <DOWN>. 15-20 are user-definable. The event is
-            triggered if the key is pressed.
-STRIG(n)    <code><em>n</em></code> in [0,2,4,6] refer to the two fire triggers on two joysticks. 
-            They event is triggered if the button is pressed.
-PEN         In GW-BASIC, the event is triggered if the light pen is on the 
-            screen. In PC-BASIC, the event is triggered if the left mouse 
-            button is pressed. 
-PLAY (n)    The event is triggered if there are exactly <code><em>n</em></code> notes left on the
-            music background queue. <code><em>n</em></code> is a numeric expression in [1,32]    
-TIMER (x)   The event is triggered every <code><em>x</em></code> seconds after the TIMER ON 
-            statement. <code><em>x</em></code> is a numeric expression in [1, 86400].
-Before event trapping is active, the event needs to be enabled using the event
-statements: COM(n) ON | KEY(n) ON | STRIG(n) ON | PEN ON | PLAY ON | TIMER ON.
-Events are not trapped in interactive mode.
+<h3><code>ON</code> statement (event trapping)</h3>
+<pre>ON { COM(<em>n</em>) | KEY(<em>n</em>) | STRIG(<em>n</em>) | PEN | PLAY(<em>n</em>) | TIMER(<em>x</em>) } GOSUB <em>line_number</em></pre>
+<p>Defines an event trapping subroutine. 
+The type of event is given by one of the following keywords:</p>
+<table><tr>
+<td><code>COM(<em>n</em>)</code></td>
+<td>The event is triggered
+            if data is present in the input buffer of the <code>COM<em>n</em>:</code>. <code><em>n</em></code> is the port number in <code>[1,2]</code>.
+</tr><tr>
+<td><code>KEY(<em>n</em>)</code></td>
+<td>The event is
+            triggered if key <code><em>n</em></code> is pressed.
+            <code><em>n</em></code> is the key number <code>[1&mdash;10]</code> defined in the <code>KEY</code> statement.</td>
+</tr><tr>
+<td><code>STRIG(<em>n</em>)</code></td>
+<td>They event is triggered if fire button <code><em>n</em></code> is pressed.
+<code><em>n</em></code> in <code>[0,2,4,6]</code> refer to the two fire triggers on two joysticks.
+            </td>
+</tr><tr>
+<td><code>PEN</code></td>
+<td>The event is triggered if the light pen is on the
+            screen. (In PC-BASIC, the light pen is emulated by default by the right mouse button).</td>
+</tr><tr>
+<td><code>PLAY(<em>n</em>)</code></td>
+<td>The event is triggered if there are exactly <code><em>n</em></code> notes left on the
+            music background queue. <code><em>n</em></code> is a numeric expression in <code>[1&mdash;32]</code>.</td>
+</tr><tr>
+<td><code>TIMER(<em>x</em>)</code></td>
+<td>The event is triggered every <code><em>x</em></code> seconds after the TIMER ON
+            statement. <code><em>x</em></code> is a numeric expression in <code>[1&mdash;86400]</code>.</td>
+</tr></table>
+            <h4>Notes</h4>
+<ul><li>
+Event trapping for your chosen event first needs to be enabled using one of the
+statements: <code>COM(<em>n</em>) ON</code>, <code>KEY(<em>n</em>) ON</code>, <code>STRIG(<em>n</em>) ON</code>, <code>PEN ON</code>,
+<code>PLAY ON</code>, <code>TIMER ON.</code>
+</li><li>
+Events are only trapped when a program is running.
+</li></ul>
 <h4>Errors</h4>
+<ul><li>
 <code><em>n</em></code> or <code><em>x</em></code> is a string: <code>Type mismatch</code>.
-<code><em>n</em></code> or <code><em>x</em></code> is outside the specified range: <code>Illegal function call</code>.
+</li><li>
 <code><em>n</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>n</em></code> or <code><em>x</em></code> is outside the specified range: <code>Illegal function call</code>.
+</li></ul>
 
 
-ON ERROR statement 
-ON ERROR GOTO line_number
-------------------
-Defines an error handler. After this statement, any error causes the handler
-routine to be called; no message is printed and execution is not stopped. The
-handler routine is ended by a RESUME statement.
+<h3><code>ON ERROR</code> statement</h3>
+<pre>ON ERROR GOTO { <em>line_number</em> | 0 }</pre>
+<p>Turns error trapping on or off. When <code><em>line_number</em></code> is set, any error causes the error handling
+routine starting at that line number to be called; no message is printed and program execution is not stopped. The
+error handling routine is ended by a <code>RESUME</code> statement.
 While in an error handling routine, events are paused and error trapping is
-disabled. After the RESUME statement, events are picked up in the following 
-order: KEY, TIMER, PLAY - the order of the others is unknown.
-Error trapping remains active in interactive mode.
+disabled. After the <code>RESUME</code> statement, any triggered events are picked up in the following
+order: <code>KEY</code>, <code>TIMER</code>, <code>PLAY</code> - the order of the others is unknown.
+Unlike event trapping, error trapping remains active when no program is running.
+<code>ON ERROR GOTO 0</code> turns off error trapping.
+<h4>Parameters</h4>
+<ul><li>
+<code><em>line_number</em></code> is an existing line number in the program.
+</li></ul>
 <h4>Notes</h4>
--   If <code><em>line_number</em></code> is 0, turns off error trapping.
+<ul><li>
+It is not possible to start the error handler at line number <code>0</code>.
+</li></ul>
 <h4>Errors</h4>
+<ul><li>
 <code><em>line_number</em></code> does not exist: <code>Undefined line number</code>.
+</li></ul>
 
 
-OPEN statement
-OPEN mode_char, [#] file_num, file_name [, rec_len]
-OPEN file_name 
-    [ FOR { INPUT | OUTPUT | APPEND | RANDOM } ] 
-    [ ACCESS { READ | WRITE | READ WRITE } ] 
-    [ SHARED | LOCK { READ | WRITE | READ WRITE } ] 
-    AS [#] file_num [ LEN = rec_len ]
---------------
-Opens a data file or device.
+<h3><code>OPEN</code> statement</h3>
+<pre>OPEN <em>mode_char</em>, [#] <em>file_num</em>, <em>file_name</em> [, <em>rec_len</em>]</pre>
+<pre>OPEN <em>file_name</em> [ FOR { INPUT | OUTPUT | APPEND | RANDOM } ]
+               [ ACCESS { READ | WRITE | READ WRITE } ]
+               [ SHARED | LOCK { READ | WRITE | READ WRITE } ]
+               AS [#] <em>file_num</em> [ LEN = <em>rec_len</em> ]</pre>
+<p>Opens a data file or device.</p>
+
+<h4>Parameters</h4>
+<ul><li>
 <code><em>file_name</em></code> is a string expression: the name of the file or device.
-<code><em>file_num</em></code> is a numeric expression in [1,3].
-<code><em>rec_len</em></code> is a numeric expression in [1,128]: the record length.
-In the first syntax only:
--   'mode_char' is a string expression of which the first character is
-    one of "I" for INPUT, "O" for OUTPUT, "A" for APPEND, "R" for <code>RANDOM</code>.
-The FOR modes:
--   INPUT opens a text file for reading and positions the file pointer at the 
-    start.
--   OUTPUT truncates a text file at the start and opens it for writing. Any 
-    data previously present in the file will be deleted.
--   APPEND opens a text file for writing at the end of any existing data.
--   <code>RANDOM</code> opens a file for random access; the file is divided in records of
-    length <code><em>rec_len</em></code>. If LEN is not specified, the record length defaults to 
-    128. The file contents can be accessed using GET and PUT of the FIELD
-    buffer; the FIELD buffer can be accessed through FIELD variables or through
-    PRINT# and INPUT# statements. 
--   If no FOR mode / mode_char is specified, the file is opened for <code>RANDOM</code>.
-The ACCESS modes:
--   If no ACCESS mode is specified, the default is READ WRITE for <code>RANDOM</code>,
-    READ for INPUT, WRITE for OUTPUT, READ WRITE for APPEND.
--   If both FOR and ACCESS are specified, any ACCESS mode is allowed for
-    <code>RANDOM</code> but for the other modes the access must match as above.
-The SHARED/<code>LOCK</code> modes:
--   If not specified, the file is locked exclusively for use by the 
-    current BASIC process. Inside this process, a file may be opened multiple
-    times for INPUT or <code>RANDOM</code> but only once for OUTPUT or APPEND, as long as it
-    is again opened in default mode. It may not be opened in SHARED or any LOCK 
+</li><li>
+<code><em>file_num</em></code> is a numeric expression in <code>[1&mdash;3]</code>.
+</li><li>
+<code><em>rec_len</em></code> is a numeric expression in <code>[1&mdash;128]</code>: the record length.
+</li><li>
+<code><em>mode_char</em></code> is a string expression of which the first character is
+    one of <code>["I", "O", "A", "R"]</code>.
+</li></ul>
+
+<h4>Access modes</h4>
+<p>The <code>FOR</code> modes or <code><em>mode_char</em></code> are as follows:
+<table><tr>
+<th><code><em>mode_char</em></code></th>
+<th><code>FOR</code></th>
+<th>Effect</th>
+</tr><tr>
+<td><code>"I"</code></td>
+<td><code>INPUT</code></td>
+<td>Opens a text file for reading and positions the file pointer at the
+    start.</td>
+</tr><tr>
+<td><code>"O"</code></td>
+<td><code>OUTPUT</code></td>
+<td>Truncates a text file at the start and opens it for writing. Any
+    data previously present in the file will be deleted.</td>
+</tr><tr>
+<td><code>"A"</code></td>
+<td><code>APPEND</code></td>
+<td>Opens a text file for writing at the end of any existing data.</td>
+</tr><tr>
+<td><code>"R"</code></td>
+<td><code>RANDOM</code></td>
+<td>Opens a file for random access; the file is divided in records of
+    length <code><em>rec_len</em></code>. If <code>LEN</code> is not specified, the record length defaults to 
+    128. The file contents can be accessed using <code>GET</code> and <code>PUT</code> of the <code>FIELD</code>
+    buffer; the <code>FIELD</code> buffer can be accessed through <code>FIELD</code> variables or through
+    <code>PRINT#</code> and <code>INPUT#</code> statements.
+</td></tr></table>
+<p>
+If no <code>FOR</code> mode or <code><em>mode_char</em></code> is specified, the file is opened for <code>RANDOM</code>.</p>
+<p>
+If both <code>FOR</code> and <code>ACCESS</code> are specified, any <code>ACCESS</code> mode is allowed for
+    <code>RANDOM</code> but for the other modes the access must match as follows:
+</p>
+<table>
+
+<tr>
+<th><code>FOR</code></th>
+<th>default <code>ACCESS</code></th>
+<th>allowed <code>ACCESS</code></th>
+</tr>
+
+<tr>
+<td><code>INPUT</code></td>
+<td><code>READ</code></td>
+<td><code>READ</code></td>
+</tr>
+
+<tr>
+<td><code>OUTPUT</code></td>
+<td><code>WRITE</code></td>
+<td><code>WRITE</code></td>
+</tr>
+
+<tr>
+<td><code>APPEND</code></td>
+<td><code>READ WRITE</code></td>
+<td><code>READ WRITE</code></td>
+</tr>
+
+<tr>
+<td><code>RANDOM</code></td>
+<td><code>READ WRITE</code></td>
+<td>all</td>
+</tr>
+
+</table>
+
+
+<h4>Sharing and locks</h4>
+<p>
+If neither <code>SHARED</code> nor <code>LOCK</code> are specified. Inside this process, a file may be opened multiple
+    times for <code>INPUT</code> or <code>RANDOM</code> but only once for <code>OUTPUT</code> or <code>APPEND</code>, as long as it
+    is again opened in default mode. It may not be opened in <code>SHARED</code> or any <code>LOCK</code> 
     modes.
--   If specified as SHARED, LOCK READ, LOCK WRITE or LOCK READ WRITE, whether 
-    two OPEN statements may access the same file depends on one's <code>LOCK</code> status
-    and the other's ACCESS status and vice versa. Assuming the following:
-        OPEN "file" ACCESS acc_1 lock_1 AS 1
-        OPEN "file" ACCESS acc_2 lock_2 AS 2
-    The following combinations are allowed, and vice versa:
-               acc_2 >      READ    WRITE    READ WRITE
-        lock_1 
-        SHARED              yes     yes     yes      
-        LOCK READ           no      yes     no
-        LOCK WRITE          yes     no      no
-        LOCK READ WRITE     no      no      no
-In GW-BASIC under MS-DOS with SHARE active, these locks should be functioning
-across a network as well as inside a single BASIC process. In PC-BASIC 3.23,  
-the locks are only implemented internally; whether other processes may access 
-the file will depend on the host OS.
-SERIAL PORT (COM1) ACCESS:
--   When opening a COM port, additional expressions may be include following the
+</p>
+<p>
+If <code>SHARED</code>, <code>LOCK READ</code>, <code>LOCK WRITE</code> or <code>LOCK READ WRITE</code> is specified, whether
+    two <code>OPEN</code> statements may access the same file depends on one's <code>LOCK</code> status
+    and the other's <code>ACCESS</code> status and vice versa.
+    Assuming the following:
+</p>
+<pre>OPEN "file" ACCESS <em>acc_1</em> <em>lock_1</em> AS 1
+OPEN "file" ACCESS <em>acc_2</em> <em>lock_2</em> AS 2</pre>
+<p>The following combinations are allowed:
+<table>
+<tr>
+<th rowspan="2" colspan="2">Access allowed</th>
+<th colspan="4"><code>acc_2</code>
+    </tr><tr>
+<th><code>READ</code></th>
+<th><code>WRITE</code></th>
+<th><code>READ WRITE</code></th>
+    </tr><tr>
+<th rowspan="4"><code>lock_1</code></th>
+<th><code>SHARED</code></th><td>yes</td><td>yes</td><td>yes</td>
+    </tr><tr>
+<th><code>LOCK READ</code></th><td>no</td><td>yes</td><td>no</td>
+    </tr><tr>
+<th><code>LCOK WRITE</code></th><td>yes</td><td>no</td><td>no</td>
+    </tr><tr>
+<th><code>LOCK READ WRITE</code></th><td>no</td><td>no</td><td>no</td>
+</tr></table>
+<p>
+    and vice versa for <code><em>acc_1</em></code> and <code><em>lock_2</em></code>.
+</p>
+<p>In GW-BASIC under MS-DOS with <code>SHARE.EXE</code> active, these locks should be functioning
+across a network as well as inside a single BASIC process. Without <code>SHARED</code> and <code>LOCK</code>, the file is locked exclusively for use by the
+GW-BASIC process. By contrast, in PC-BASIC,
+the locks are only implemented internally. Whether other processes may access
+the file will depend on the host OS.</p>
+<h4>
+Serial port (<code>COM1:</code>) access</h4>
+<p>If a <code>COM</code> port is opened for <code>RANDOM</code>, access is
+byte-for-byte rather than through <code>FIELD</code> records; <code>PRINT#</code> and <code>INPUT#</code> access
+the port directly. <code><em>rec_len</em></code> sets the number of bytes read by the <code>GET</code> and
+<code>PUT</code> statements.</p>
+<p>When opening a <code>COM</code> port, additional expressions may be included following the
     colon of the device name. These specify parameters for the serial
-    connection. This string has the form
-    "COMn:[speed][,parity][,data][,stop][,RS][,CS[n]][,DS[n]][,CD[n]][,LF][,PE]"
+    connection. This string has the form</p>
+    <pre>"COMn:[speed][,parity][,data][,stop][,RS][,CS[n]][,DS[n]][,CD[n]][,LF][,PE]"</pre>
     The meaning of the parameters is:
-    speed   baud (bps) rate for the connection. 'speed' must be one of
-            {75, 110, 150, 300, 600, 1200, 1800, 2400, 4800, 9600}.
-            Default is 300.
-    parity  parity bit convention. 'parity' must be one of [S, M, O, E, N]. 
-            S   SPACE   Parity bit always set to 0.
-            M   MARK    Parity bit always set to 1.
-            O   ODD     Parity bit set so that character parity is odd.
-            E   EVEN    Parity bit set so that character parity is even.
-            N   NONE    No parity bit transmitted or received.
-            Default is E.
-    data    data bits per byte. 'data' must be one of {4, 5, 6, 7, 8}. 
+<table><tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr><tr>
+<td><code><em>speed</em></code></td>
+<td><code>300</code></td>
+<td>Baud (bps) rate for the connection. <code><em>speed</em></code> is one of
+            <code>[75, 110, 150, 300, 600, 1200, 1800, 2400, 4800, 9600]</code>.
+</td>
+</tr><tr>
+<td><code><em>parity</em></code></td>
+<td><code>E</code></td>
+<td>Parity bit convention. <code><em>parity</em></code> is one of <code>[S, M, O, E, N]</code>.
+    <table><tr>
+    <th><code><em>parity</em></code></th>
+    <th>Meaning</th>
+    <th>Effect</th>
+    </tr><tr>
+            <td><code>S</code></td>   <td>SPACE</td>   <td>Parity bit always set to 0.</td>
+    </tr><tr>
+            <td><code>M</code></td>   <td>MARK</td>    <td>Parity bit always set to 1.</td>
+    </tr><tr>
+            <td><code>O</code></td>   <td>ODD</td>     <td>Parity bit set so that character parity is odd.</td>
+    </tr><tr>
+            <td><code>E</code></td>   <td>EVEN</td>    <td>Parity bit set so that character parity is even.</td>
+    </tr><tr>
+            <td><code>N</code></td>   <td>NONE</td>    <td>No parity bit transmitted or received.</td>
+    </tr></table>
+</td>
+</tr><tr>
+<td><code><em>data</em></code></td>
+<td><code>7</code></td>
+<td>Data bits per byte. <code><em>data</em></code> must be one of <code>[4, 5, 6, 7, 8]</code>.
             A byte consists of the data bits plus parity bit, if
-            any. Byte size must be in the range [5...8]: if 'data' is 4, 
-            'parity' must not be N; if 'data' is 8, 'parity' must be N.
-            Default is 7.
-    stop    The number of stop bits. <code><em>stop</em></code> must be 1 or 2.
-            Default is 2 if speed is 75 or 110; 1 otherwise.
-    LF      if specified, send a line feed after each return.
-    The following GW-BASIC specifications are ignored by PC-BASIC:
-    RS      if specified, suppress Request To Send.
-    CS[n]   set Clear To Send timeout to n milliseconds. 
-            If n is not given, set timeout to 0. 
-            Default is CS0 if RS is set; CS1000 otherwise.
-    DS[n]   set Data Set Ready timeout to n milliseconds. 
-            If n is not given, set timeout to 0. 
-            Default is DS1000.
-    CD[n]   set Carrier Detect timeout to n milliseconds. 
-            If n is not given, set timeout to 0. 
-            Default is CD0.
-    PE      enable parity checking.
--   If a COM port is opened for <code>RANDOM</code>, access is
-    byte-for-byte rather than through FIELD records; PRINT# and INPUT# access 
-    the port directly. <code><em>rec_len</em></code> sets the number of bytes read by the GET and
-    PUT statements.
+            any. Byte size must be in the range <code>[5&mdash;8]</code>: if <code><em>data</em></code> is <code>4</code>,
+            <code><em>parity</em></code> must not be <code>N</code>; if <code><em>data</em></code> is <code>8</code>, <code><em>parity</em></code> must be <code>N</code>.
+</td>
+</tr><tr>
+<td><code><em>stop</em></code></td>
+<td><code>1</code></td>
+<td>The number of stop bits. <code><em>stop</em></code> must be <code>1</code> or <code>2</code>.
+            Default is <code>2</code> if <code><em>speed</em></code> is <code>75</code> or <code>110</code>; <code>1</code> otherwise.
+</tr><tr>
+<td><code>LF</code></td>
+<td>no</td>
+<td>Send a line feed after each carriage return.</code>
+</tr></table>
+
+<p>    The following GW-BASIC specifications are ignored by PC-BASIC:</p>
+<table><tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr><tr>
+<td><code>RS</code></td>
+<td>no</td>
+<td>Suppress <em>Request To Send</em>.</code>
+</tr><tr>
+<td><code>CS[<em>n</em>]</code></code></td>
+<td><code>CS1000</code></td>
+<td>Set <em>Clear To Send</em> timeout to <code><em>n</em></code> milliseconds.
+            If <code><em>n</em></code> is not given, set timeout to <code>0</code>.
+            Default is <code>CS0</code> if <code>RS</code> is set; <code>CS1000</code> otherwise.
+</td>
+</tr><tr>
+<td><code>DS[<em>n</em>]</code></code></td>
+<td><code>DS1000</code></td>
+<td>
+Set <em>Data Set Ready</em> timeout to <code><em>n</em></code> milliseconds.
+            If <code><em>n</em></code> is not given, set timeout to <code>0</code>.
+</td>
+</tr><tr>
+<td><code>CD[<em>n</em>]</code></code></td>
+<td><code>CD0</code></td>
+<td>
+Set <em>Carrier Detect</em> timeout to <code><em>n</em></code> milliseconds.
+            If <code><em>n</em></code> is not given, set timeout to <code>0</code>.
+</td>
+</tr><tr>
+    <td><code>PE</code></td>
+<td>no</td>
+    <td>Enable parity checking.</code>
+</tr></table>
+
+
 <h4>Notes</h4>
--   For INPUT, OUTPUT and APPEND modes, LEN may be specified but is ignored.
--   If i/o is attempted contravening the FOR mode specified, the PRINT or INPUT
+<ul><li>
+   For <code>INPUT</code>, <code>OUTPUT</code> and <code>APPEND</code> modes, <code>LEN</code> may be specified but is ignored.
+</li><li>
+   If I/O is attempted contravening the <code>FOR</code> mode specified, the <code>PRINT</code> or <code>INPUT</code>
     statement will raise <code>Bad file mode</code>.
--   If <code>RANDOM</code> i/o is attempted contravening the ACCESS mode specified, the 
-    PUT or GET statement will raise <code>Path/File access error</code>.
--   The # is optional and has no effect.    
+</li><li>
+   If <code>RANDOM</code> I/O is attempted contravening the <code>ACCESS</code> mode specified, the
+    <code>PUT</code> or <code>GET</code> statement will raise <code>Path/File access error</code>.
+</li><li>
+   The <code>#</code> is optional and has no effect.
+</li></ul>
 <h4>Errors</h4>
+<ul><li>
 <code><em>file_name</em></code> is empty or a non-existent device: <code>Bad file number</code>.
-FOR APPEND ACCESS WRITE is specified: <code>Path/File access error</code>.
-FOR and ACCESS mismatch in other ways: <code>Syntax error</code>.
-the COM: file_name parameters do not follow the specification,
-    <code>Bad file name</code> .
-a file is already open for OUTPUT or APPEND: <code>File already open</code>.
-    This is not the case for devices.
--   IF <code><em>rec_len</em></code> or <code><em>file_num</em></code> have string values: <code>Type mismatch</code>.
-<code><em>file_name</em></code> or 'mode_char' have number values: <code>Type mismatch</code>.
-<code><em>file_num</em></code> is not in [1,3]: <code>Bad file number</code>.
-<code><em>file_num</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+</li><li>
+<code>FOR APPEND ACCESS WRITE</code> is specified: <code>Path/File access error</code>.
+</li><li>
+<code>FOR</code> and <code>ACCESS</code> mismatch in other ways: <code>Syntax error</code>.
+</li><li>
+The <code>COM:</code> <code><em>file_name</em></code> parameters do not follow the specification:
+    <code>Bad file name</code>.
+</li><li>
+A file is already open for <code>OUTPUT</code> or <code>APPEND</code>: <code>File already open</code>.
+    This is not raised for devices.
+</li><li>
+ <code><em>rec_len</em></code> or <code><em>file_num</em></code> have string values: <code>Type mismatch</code>.
+</li><li>
+<code><em>file_name</em></code> or <code><em>mode_char</em></code> have number values: <code>Type mismatch</code>.
+</li><li>
 <code><em>file_num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
-<code><em>rec_len</em></code> is not in [1,128]: <code>Illegal function call</code>.
+</li><li>
+<code><em>file_num</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+</li><li>
+<code><em>file_num</em></code> is not in <code>[1&mdash;3]</code>: <code>Bad file number</code>.
+</li><li>
 <code><em>rec_len</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
-'mode_char' shorter than 1 or the first character is not in
-    ["I", "O", "A", "R"]: <code>Bad file mode</code>.
-    
+</li><li>
+<code><em>rec_len</em></code> is not in <code>[1&mdash;128]</code>: <code>Illegal function call</code>.
+</li><li>
+<code><em>mode_char</em></code> is empty or the first character is not in
+    <code>["I", "O", "A", "R"]</code>: <code>Bad file mode</code>.
+</li></ul>
 
-OPTION BASE statement
-OPTION BASE n
----------------------
-Sets the starting index of all arrays to <code><em>n</em></code>, where <code><em>n</em></code> must be a literal digit
- 0 or 1. Note that expressions are not allowed for n.
+<h3><code>OPTION BASE</code> statement</h3>
+<pre>OPTION BASE <em>n</em></pre>
+<p>Sets the starting index of all arrays to <code><em>n</em></code>.</p>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>n</em></code> is a literal digit  <code>0</code> or <code>1</code>. Expressions are not allowed.
+</li></ul>
 <h4>Notes</h4>
--   If OPTION BASE is not called, the first array DIM defaults to starting 
+<ul><li>
+   If <code>OPTION BASE</code> has not been called, the first array allocation defaults to starting
     index 0.
+</li></ul>
 <h4>Errors</h4>
-<code><em>n</em></code> is not a digit 0 or 1, <code>Syntax error</code> .
-OPTION BASE 1 is called but any array has already been DIMmed or indexed
-    before calling OPTION BASE 
-    with a different starting index, <code>Duplicate definition</code> .
-OPTION BASE is called more than once with different starting index,
-    <code>Duplicate definition</code> .
+<ul><li>
+<code><em>n</em></code> is not a digit <code>0</code> or <code>1</code>: <code>Syntax error</code>.
+</li><li>
+<code>OPTION BASE 1</code> is called but an array has already been allocated before: <code>Duplicate definition</code>.
+</li><li>
+<code>OPTION BASE</code> is called more than once with different starting index:
+    <code>Duplicate definition</code>.
+</li></ul>
 
 
-OUT statement
-OUT port, value
--------------
-Sends a byte to an emulated machine port. 
-<code><em>port</em></code> is a numeric expression in [-32768,65535].
-<code><em>value</em></code> is a numeric expression in <code>[0&mdash;255]</code>.
-The following ports are emulated:
-    port    effect
-    &h201   resets the game port (joystick port)
-    &h3C5   sets the write mask for SCREEN 7,8,9 colour planes; 
-            bitmask = 2 ^ <code><em>value</em></code>.
-    &h3CF   sets the read colour plane to <code><em>value</em></code>.
-    &h3D8   if <code><em>value</em></code> = &h1A, enable composite colorburst (cga, tandy, pcjr)
-            if <code><em>value</em></code> = &h1E, disable composite colorburst (cga, tandy, pcjr)
-Does nothing otherwise.
+<h3><code>OUT</code> statement</h3>
+<pre>OUT <em>port</em>, <em>value</em></pre>
+<p>
+Sends a byte to an emulated machine port.</p>
+<p>The following machine ports are emulated in PC-BASIC:</p>
+<table><tr>
+<th><code><em>port</em></code></th>
+<th>Effect</th>
+</tr><tr>
+<td><code>&amp;h201</code></td>
+<td>resets the game port (joystick port)</td>
+</tr><tr>
+<td><code>&amp;h3C5</code></td>
+<td>sets the write bitmask for <code>SCREEN 7</code>, <code>8</code>, <code>9</code> colour planes.
+            <code><em>bitmask</em> = 2 ^ <em>value</em></code>.</td>
+</tr><tr>
+<td><code>&amp;h3CF</code></td>
+<td>sets the read colour plane to <code><em>value</em></code>.</td>
+</tr><tr>
+<td><code>&amp;h3D8</code></td>
+<td>if <code><em>value</em> = &amp;h1A</code>, enable composite colorburst.<br />
+    if <code><em>value</em> = &amp;h1E</code>, disable composite colorburst.<br />
+Requires <code>--video={cga, tandy, pcjr}</code>.
+</tr></table>
 <h4>Notes</h4>
--   Only a limited number of machine ports are emulated.
--   In GW-BASIC, the sequence needed to set the colour plane mask is:
-        OUT &h3C4, 2        
-        OUT &h3C5, 2 ^ plane
+<ul><li>
+   Only a limited number of machine ports are emulated.
+</li><li>
+   In GW-BASIC under MS-DOS, the sequence needed to set the colour plane mask is:
+<pre>OUT &h3C4, 2
+OUT &h3C5, 2 ^ <em>plane</em></pre>
     The sequence needed to set the colour plane is:
-        OUT &h3CE, 4     
-        OUT &h3CF, plane 
-    The initial OUT statements currently have no effect in PC-BASIC 3.23.    
+<pre>OUT &h3CE, 4
+OUT &h3CF, <em>plane</em></pre>
+The initial <code>OUT</code> statements currently have no effect in PC-BASIC.    
+</li></ul>
+
+<h4>Parameters</h4>
+<ul><li>
+<code><em>port</em></code> is a numeric expression in <code>[-32768&mdash;65535]</code>.
+</li><li>
+<code><em>value</em></code> is a numeric expression in <code>[0&mdash;255]</code>.
+</li></ul>
+
 <h4>Errors</h4>
-<code><em>port</em></code> is not in <code>[-32768&mdash;65535]</code>: <code>Overflow</code>.
-<code><em>value</em></code> is not in [-32768, 32768]: <code>Overflow</code>.
-<code><em>value</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+<ul><li>
 <code><em>port</em></code> or <code><em>value</em></code> are strings: <code>Type mismatch</code>.
+</li><li>
+<code><em>port</em></code> is not in <code>[-32768&mdash;65535]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>value</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>value</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+</li></ul>
 
 
 PAINT statement
@@ -3609,7 +3866,7 @@ PEEK function
 value = PEEK(address)
 -------------
 Returns the value of the memory at the current DEF SEG segment * 16 + <code><em>address</em></code>
-<code><em>address</em></code> must be in [-32768, 65536]. Negative values are interpreted as their 
+<code><em>address</em></code> must be in <code>[-32768&mdash;65535</code>. Negative values are interpreted as their
 two's complement.
 <h4>Notes</h4>
 -   The memory is only partly emulated in PC-BASIC 3.23. PEEK can be used to
@@ -3623,7 +3880,7 @@ two's complement.
 -   Outside these emulated areas, PEEK returns 0. 
 <h4>Errors</h4>
 <code><em>address</em></code> is a string: <code>Type mismatch</code>.
-<code><em>address</em></code> is not in [-32768, 65536]: <code>Overflow</code>.
+<code><em>address</em></code> is not in <code>[-32768&mdash;65535</code>: <code>Overflow</code>.
 
 
 PEN statement
@@ -4306,9 +4563,9 @@ SOUND statement
 SOUND frequency, duration
 SOUND frequency, duration [, volume [, voice] ]       [pcjr and tandy only]
 ---------------
-Produces a sound at 'frequency' Hz for 'duration'/18.2 seconds.
+Produces a sound at 'frequency' Hz for <code><em>duration</em></code>/18.2 seconds.
 'frequency' is a numeric expression in [37, 32767] or 0.
-'duration' is a numeric expression in [0, 65535]. 
+<code><em>duration</em></code> is a numeric expression in [0, 65535].
 If PLAY "MB" has been executed, SOUND playes in the background. If PLAY "MF" 
 has been executed, sound plays in the foreground and the interpreter blocks
 until the sound is finished. Foreground mode is default. Unlike PLAY, the 
@@ -4319,26 +4576,26 @@ PCJR and TANDY:
     'frequency' is a numeric expression in <code>[-32768&mdash;32767]</code> (on Tandy)
     or [37, 32767] if nonzero (on PCjr). 
     Frequencies below 110 Hz are played as 110 Hz.
-    If 'duration' is zero, 'volume' and 'voice' must not be specified.
-    'volume' is a numeric expression in [0, 15]. 0 is silent, 15 is full
+    If <code><em>duration</em></code> is zero, <code><em>volume</em></code> and 'voice' must not be specified.
+    <code><em>volume</em></code> is a numeric expression in [0, 15]. 0 is silent, 15 is full
     volume; every step less reduces the volume by 2 dB.
     'voice' is a numeric expression in [0, 2], indicating which of the 
     three tone voice channels is used for this sound.
 <h4>Notes</h4>
--   If 'duration' is zero, any active background sound is stopped and 
+-   If <code><em>duration</em></code> is zero, any active background sound is stopped and
     the sound queue is emptied.
--   If 'duration' is less than .022 but nonzero, the sound will be played in 
+-   If <code><em>duration</em></code> is less than .022 but nonzero, the sound will be played in
     background and continue indefinitely until another sound statement is 
-    executed. This is also the behaviour for negative 'duration'.
--   If 'frequency' equals 32767 or 0, a silence of length 'duration' is queued.
+    executed. This is also the behaviour for negative <code><em>duration</em></code>.
+-   If 'frequency' equals 32767 or 0, a silence of length <code><em>duration</em></code> is queued.
 <h4>Errors</h4>
-'frequency' is not in its allowed range, and 'duration' is not zero,
+'frequency' is not in its allowed range, and <code><em>duration</em></code> is not zero,
     raises <code>Illegal function call</code>.
-'duration' is zero, specifying more than two aruments raises
+<code><em>duration</em></code> is zero, specifying more than two aruments raises
     <code>Syntax error</code>.    
 'frequency' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
-'duration' is not in [-65535, 65535]: <code>Illegal function call</code>.
-'volume' is not in [0, 15]: <code>Illegal function call</code>.
+<code><em>duration</em></code> is not in [-65535, 65535]: <code>Illegal function call</code>.
+<code><em>volume</em></code> is not in [0, 15]: <code>Illegal function call</code>.
 'voice' is not in [0, 2]: <code>Illegal function call</code>.
 
 
