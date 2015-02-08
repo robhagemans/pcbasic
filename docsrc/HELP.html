@@ -1797,7 +1797,11 @@ program line.
 <p>Returns one key-press from the keyboard buffer. If the keyboard buffer is 
 empty, returns the empty string. Otherwise, the return value is either a one
 character string or a two-character string of which the first is <code>CHR$(0)</code> and
-the second a keyboard scancode.</p>
+the second a keyboard scancode.</p><h4>Notes</h4>
+<ul><li>
+This function has no brackets.
+</li></ul>
+
 <h4>Keyboard scancodes returned by <code>INKEY$</code></h4>
 <table><tr>
 <th>Key</th><th>Scancode</th>
@@ -3846,6 +3850,10 @@ size, less one.
 colours for the current screen mode, less one. If <code><em>colour</em></code> equals -1,
 the palette remains unchanged.
 </li></ul>
+<h4>Notes</h4>
+<p>The emulated EGA adapter can produce more colours than can be shown on the
+screen at one time. These <em>colours</em> can be used by assigning them to <em>attributes</em>
+in a <em>palette</em>.</p>
 <h4>Errors</h4>
 <ul><li>
 <code><em>attrib</em></code> or <code><em>colour</em></code> has a string value: <code>Type mismatch</code>.
@@ -5292,391 +5300,442 @@ The types of <code><em>var_0</em></code> and <code><em>var_1</em></code> are not
 
 
 <h3><code>TAN</code> function</h3>
-tangent = TAN(angle)
-------------
-Returns the sine of <code><em>angle</em></code>. <code><em>angle</em></code> is a numeric expression that gives 
-the angle in radians. 
-Unless BASIC is run with the --double option, TAN returns a single-precision
-value.
+<pre><em>tangent</em> = TAN(<em>angle</em>)</pre>
+<p>Returns the tangent of <code><em>angle</em></code>.
+<h4>Parameters</h4>
+<ul><li>
+<code><em>angle</em></code> is a numeric expression giving
+the angle in radians.
+</li></ul>
 <h4>Notes</h4>
--   TAN(x) usually differs from the value returned by GW-BASIC. For one-digit 
-    values, the difference is only in the least significant figure, but it
-    increases with the size of the angle.
--   For <code><em>angle</em></code> close to multiples of PI/2, the tangent is divergent or close
+<ul><li>
+Unless PC-BASIC is run with the <code>--double</code> option, this function returns a single-precision
+value.
+</li><li>
+  The tangent returned usually differs from the value returned by GW-BASIC in the least significant figure.
+</li><li>
+   For <code><em>angle</em></code> close to multiples of <code>&pi;/2</code>, the tangent is divergent or close
     to zero. The values returned will have very low precision in these cases.
+</li></ul>
 <h4>Errors</h4>
-<code><em>angle</em></code> has a string value, SIN raises <code>Type mismatch</code>.
+<ul><li>
+<code><em>angle</em></code> has a string value: <code>Type mismatch</code>.
+</li></ul>
 
 
-<h3><code>TERM</code> statement</h3>                                     [pcjr and tandy syntax only]
-TERM 
--------------
-PCJR:
-    Starts a built-in serial terminal emulator application. 
+
+<h3><code>TERM</code> statement</h3>
+<pre>TERM</pre>
+<p>If <code>--preset=pcjr</code> is set, starts a built-in serial terminal emulator application.
     This is a BASIC program that is loaded and run instead of the current 
-    program.
-TANDY:
-    Raises INTERNAL ERROR.
-DEFAULT:
-    In default mode, this keyword is not present.
+    program.</p>
+<p>If <code>--preset=tandy</code> is set, this statement raises <code>Internal error</code>.</p>
+<p>In the default preset, this keyword is not present. Calling <code>TERM</code> will raise <code>Syntax error</code>.</p>
 
 
 <h3><code>TIME$</code> function</h3>
-time = TIME$
---------------
-Returns the current BASIC time in the form "HH:mm:ss".
+<pre><em>time</em> = TIME$</pre>
+<p>Returns the current BASIC time in the form <code>"HH:mm:ss"</code>.</p>
+<h4>Notes</h4>
+<ul><li>
+This function has no brackets.
+</li></ul>
 
 
 <h3><code>TIME$</code> statement</h3>
-TIME$ = time
----------------
-Sets the current BASIC time to 'time'. Time must be a string expression
-of the form "HH:mm:ss" where <code>00&lt;=HH&lt;24</code>, <code>00&lt;=mm&lt;60</code> and <code>00&lt;=ss&lt;60</code>.
+<pre>TIME$ = <em>time</em></pre>
+<p>Sets the current BASIC time to <code><em>time</em></code>.
+<h4>Parameters</h4>
+<ul><li>
+Time is a string expression
+of the form <code>"HH:mm:ss"</code> where <code>00&lt;=HH&lt;24</code>, <code>00&lt;=mm&lt;60</code> and <code>00&lt;=ss&lt;60</code>.
+</li></ul>
 <h4>Notes</h4>
--   PC-BASIC 3.23stores an offset to the system time and uses this for future 
-    calls to TIME and DATE functions in the same interpreter session. The 
+<ul><li>
+   PC-BASIC stores an offset to the system time and uses this for future
+    calls to <code>TIME</code> and <code>DATE</code> functions in the same interpreter session. The 
     system time is not changed, unlike GW-BASIC under MS-DOS.
+</li></ul>
 <h4>Errors</h4>
-'time' is not a string: <code>Type mismatch</code>.
-'time' is not of the correct form: <code>Illegal function call</code>.
+<ul><li>
+<code><em>time</em></code> has a numeric value: <code>Type mismatch</code>.
+</li><li>
+<code><em>time</em></code> is not of the correct form: <code>Illegal function call</code>.
+</li></ul>
 
 
 <h3><code>TIMER</code> function</h3>
-ticks = TIMER
---------------
-Returns the number of seconds since midnight, as defined by the internal BASIC 
-time.
+<pre><em>seconds</em> = TIMER</pre>
+<p>Returns the number of seconds since midnight on the internal BASIC
+clock.</p>
 <h4>Notes</h4>
--   TIMER updates in ticks of 1/20 second.
--   The least-significant two bytes of TIMER are often used as a seed for the 
-    pseudorandom number generator through RANDOMIZE TIMER. Since these bytes
+<ul><li>
+   <code>TIMER</code> updates in ticks of 1/20 second.
+</li><li>
+   The least-significant two bytes of <code>TIMER</code> are often used as a seed for the
+    pseudorandom number generator through <code>RANDOMIZE TIMER</code>. Since these bytes
     only take values from a limited set, that's not in fact a particularly good
-    random seed. However, the pseudorandom number generator included with BASIC
+    random seed. However, the pseudorandom number generator included with GW-BASIC and PC-BASIC
     is so weak that is should not be used for anything serious anyway.
+</li><li>
+This function has no brackets.
+</li></ul>
     
 
-<h3><code>TRON</code> and <code>TROFF</code> statement</h3>s
-TR{ON|OFF}
--------------------------
-Turns line number tracing on or off. If line number tracing is on, BASIC prints
-a tag [100] to the screen when program line 100 is executed, and so forth.
+<h3><code>TRON</code> and <code>TROFF</code> statements</h3>
+<pre>{ TRON | TROFF }</pre>
+<p>Turns line number tracing on or off. If line number tracing is on, BASIC prints
+a tag <code>[100]</code> to the console when program line <code>100</code> is executed, and so forth.
 <h4>Notes</h4>
--   Tracing is turned off by the NEW and LOAD statements.
--   There must be no space between TR and ON or OFF.
+<ul><li>
+   Tracing is turned off by the <code>NEW</code> and <code>LOAD</code> statements.
+</li></ul>
 
 
 <h3><code>UNLOCK</code> statement</h3>
-UNLOCK [#] file_number [, record_0 ]
-UNLOCK [#] file_number, [record_0] TO record_1
-----------------
-Unlocks a file or part of it that has previously been locked with <code>LOCK</code>. 
+<pre>UNLOCK [#] <em>file_number</em> [, <em>record_0</em> ]</pre>
+<pre>UNLOCK [#] <em>file_number</em>, [ <em>record_0</em> ] TO <em>record_1</em></pre>
+<p>
+Unlocks a file or part of it that has previously been locked with <code>LOCK</code>. </p>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>file_number</em></code> is a numeric expression in <code>[0&mdash;255]</code>.
+</li><li><code><em>record_0</em></code> and <code><em>record_1</em></code> are numeric expressions in <code>[1&mdash;2^25-2]</code>.
+</li></ul>
 <h4>Errors</h4>
+<ul><li>
+Any parameter has a string value: <code>Type mismatch</code>.
+</li><li>
+<code><em>file_number</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>file_number</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+</li><li>
+<code><em>file_number</em></code> is not an open file: <code>Bad file number</code>.
+</li><li>
 <code><em>file_number</em></code> is open for <code>RANDOM</code>, <code>LOCK</code> and <code>UNLOCK</code> statements must match
     in terms of <code><em>record_0</em></code> and <code><em>record_1</em></code>. An unmatching <code>UNLOCK</code> will raise
     <code>Permission denied</code>.
-<code><em>record_0</em></code> or <code><em>record_1</em></code> is not in [1, 2^25-2]: <code>Bad record number</code>.
-<code><em>file_num</em></code> is not an open file: <code>Bad file number</code>.
-<code><em>file_num</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
-<code><em>file_num</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
-Any parameter has a string value: <code>Type mismatch</code>.
+</li><li>
+<code><em>record_0</em></code> or <code><em>record_1</em></code> is not in <code>[1&mdash;2^25-2]</code>: <code>Bad record number</code>.
+</li></ul>
 
 
 <h3><code>USR</code> function</h3>
-value = USR[n](expr)
-------------
-Returns zero.
-<code><em>n</em></code> is a digit between 0 and 9 inclusive. 
+<pre><em>value</em> = USR[<em>n</em>](<em>expr</em>)</pre>
+<p>Returns zero.</p>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>n</em></code> is a digit <code>[0&mdash;9]</code>. 
+</li><li>
 <code><em>expr</em></code> is an expression.
+</li></ul>
 <h4>Notes</h4>
--   In GW-BASIC, calls an assembly-language function and returns a value.
-    This is not implemented in PC-BASIC 3.23.
+<ul><li>
+   In GW-BASIC, calls a machine-code function and returns its return value.
+</li><li>
+    This function is not implemented in PC-BASIC.
+</li></ul>
 <h4>Errors</h4>
-<code><em>n</em></code> is not a digit 0--9: <code>Syntax error</code>.
+<ul><li>
+<code><em>n</em></code> is not a digit <code>[0&mdash;9]</code>: <code>Syntax error</code>.
+</li></ul>
 
 
 <h3><code>VAL</code> function</h3>
-value = VAL(string)
-------------
-Returns the numeric value of the string -valued expression <code><em>string</em></code>.
+<pre><em>value</em> = VAL(<em>string</em>)</pre>
+<p>
+Returns the numeric value of the string expression <code><em>string</em></code>.
 The interpretation is the same a that used in program lines. For instance, 
-spaces before or even inside a number are ignored: VAL(" 1 0") returns 10. 
+spaces before or even inside a number are ignored: <code>VAL(" 1 0")</code> returns <code>10</code>.
 Parsing stops as soon as the first character is encountered that cannot be 
 part of a number. If that is the first character of the string, or the 
-string is empty, VAL returns zero. 
+string is empty, <code>VAL</code> returns zero. </p>
 <h4>Errors</h4>
+<ul><li>
 <code><em>string</em></code> has a number value: <code>Type mismatch</code>.
+</li></ul>
 
 
 <h3><code>VARPTR</code> function</h3>
-pointer = VARPTR(name)
-pointer = VARPTR(#file_num)
----------------
-Returns the memory address of variable <code><em>name</em></code>. <code><em>name</em></code> must be the name of a
-previously defined variable or fully indexed array element. The value of VAPTR 
-can be used with PEEK to read the variable's internal representation.
-In the second syntax, return the memory address of the File Control Block of 
-file number <code><em>file_num</em></code>.
+<pre><em>pointer</em> = VARPTR(<em>name</em>)</pre>
+<p>Returns the memory address of variable <code><em>name</em></code>.
+<pre><em>pointer</em> = VARPTR(#<em>file_num</em>)</pre>
+<p>Returns the memory address of the File Control Block of
+file number <code><em>file_num</em></code>.</p>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>name</em></code> is a
+previously defined variable or fully indexed array element.
+</li><li>
+<code><em>file_num</em></code> is a legal file number.
+</li></ul>
 <h4>Notes</h4>
--   In PC-BASIC 3.23, VARPTR is implemented for all variable and array types,
-    except arrays of strings.
+<ul><li>
+<code>VAPTR</code>
+can be used with <code>PEEK</code> to read a variable's internal representation.
+</li></ul>
 <h4>Errors</h4>
-<code><em>name</em></code> is not previously defined: <code>Illegal function call</code>.
-<code><em>file_num</em></code> is not in [1, max number of files]: <code>Bad file number</code>.
+<ul><li>
+<code><em>name</em></code> has not been previously defined: <code>Illegal function call</code>.
+</li><li>
 <code><em>file_num</em></code> has a string value: <code>Type mismatch</code>.
+</li><li>
+<code><em>file_num</em></code> is not in <code>[1, max number of files]</code>: <code>Bad file number</code>.
+</li></ul>
 
 
 <h3><code>VARPTR$</code> function</h3>
-pointer = VARPTR$(name)
-----------------
-Returns the memory address of variable <code><em>name</em></code> in the form of a 3-byte string.
-The first byte is the length of the record the pointer points to: 
-    2   for integer
-    3   for strings (length + pointer to string space)
-    4   for single-precision floats
-    8   for double-precision floats
-The last two bytes are the pointer address (as returned by VARPTR) in little-
-endian order.
+<pre><em>pointer</em> = VARPTR$(<em>name</em>)</pre>
+<p>Returns the memory address of variable <code><em>name</em></code> in the form of a 3-byte string.
+The first byte is the length of the record the pointer points to:</p>
+<table><tr>
+    <td>2</td>   <td>for integers</td>
+</tr><tr>
+    <td>3</td>   <td>for strings (length + pointer to string space)</td>
+</tr><tr>
+    <td>4</td>   <td>for single-precision floats</td>
+</tr><tr>
+    <td>8</td>   <td>for double-precision floats</td>
+</tr></table>
+<p>The last two bytes are the pointer address (as returned by <code>VAPTR</code>) in little-
+endian order.</p>
 <h4>Errors</h4>
-<code><em>name</em></code> is not previously defined: <code>Illegal function call</code>.
+<ul><li>
+<code><em>name</em></code> has not been previously defined: <code>Illegal function call</code>.
+</li></ul>
 
 
 <h3><code>VIEW</code> statement</h3>
-VIEW [ [SCREEN] (x0,y0)-(x1,y1) [, [fill] [, border]] ]
---------------
-Defines a graphics clipping area. Graphics drawn outside the clipping area will
-not be shown. <code><em>x0</em></code>, <code><em>y0</em></code>, <code><em>x1</em></code>, y1' are absolute screen coordinates of two
-opposing corners of the area.
-If 'fill' is specified, it must be a valid attribute. The clipping area will be
+<pre>VIEW [ [ SCREEN ] (<em>x0</em>, <em>y0</em>)-(<em>x1</em>, <em>y1</em>) [, [ <em>fill</em> ] [, <em>border</em> ] ] ]</pre>
+<p>Defines a graphics viewport. Graphics drawn outside the viewport will
+not be shown. <code>(<em>x0</em>, <em>y0</em>)</code>, <code>(<em>x1</em>, <em>y1</em>)</code> are absolute screen coordinates of two
+opposing corners of the area.</p>
+<p>Unless <code>SCREEN</code> is specified, after a VIEW statement the coordinate
+system is shifted such that <code>(0, 0)</code> becomes the top left coordinate of the viewport.
+If <code>VIEW</code> is called without arguments, the viewport is reset to the whole
+screen.</p>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>fill</em></code> is an attribute. The viewport will be
 filled with this attribute.
-If <code><em>border</em></code> is specified, it must be a valid attribute. A border will be drawn 
-with this attribute just outside the clipping area.
-Unless SCREEN is specified, after a VIEW statements the 'physical' coordinate 
-system is shifted such that (0,0) becomes the top left coordinate of the 
-clipping area.
-If VIEW is called without arguments, the clipping area is reset to the whole
-screen.
+</li><li>
+<code><em>border</em></code> is an attribute. A border will be drawn
+ just outside the viewport with this attribute.
+</li></ul>
 <h4>Errors</h4>
-any of the coordinates is not in <code>[-32768&mdash;32767]</code>, <code>Overflow</code> .
-any of the coordinate pairs is outside the physical screen,
-    raises <code>Illegal function call</code>.
-any of the parameters has a string value: <code>Type mismatch</code>.
+<ul><li>
+Any of the parameters has a string value: <code>Type mismatch</code>.
+</li><li>
+Any of the coordinates is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+Any of the coordinate pairs is outside the physical screen: <code>Illegal function call</code>.
+</li></ul>
 
 
 <h3><code>VIEW PRINT</code> statement</h3>
-VIEW PRINT [top_row] TO [bottom_row]
---------------------
-Defines the text scrolling area of the screen. 'top_row' and 'bottom_row' are
-numeric expressions in the range 1 to 24, inclusive. LOCATE statements,
-cursor movement and scrolling ill be limited to the scroll area.
+<pre>VIEW PRINT [<em>top_row</em>] TO [<em>bottom_row</em>]</pre>
+<p>Defines the text scrolling area of the screen. <code>LOCATE</code> statements,
+cursor movement and scrolling will be limited to the scrolling area.</p>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>top_row</em></code> and <code><em>bottom_row</em></code> are
+numeric expressions in  <code>[1&mdash;24]</code>.
+</li></ul>
 <h4>Notes</h4>
--   Regardless of the KEY ON|OFF setting, screen row 25 cannot be part fo the 
+<ul><li>
+   If <code>--syntax={pcjr | tandy}</code> and <code>KEY OFF</code> is set, <code><em>bottom_row</em></code> may be 25.
+Otherwise, screen row 25 cannot be part of the
     scrolling area.
+</li></ul>
 <h4>Errors</h4>
-'top_row' or 'bottom_row' is not in [1,24], <code>Illegal function call</code> is
-    raised. On Tandy/PCjr, 'bottom_row' may be 25 if KEY OFF.
+<ul><li>
+<code><em>top_row</em></code> or <code><em>bottom_row</em></code> is not in <code>[1&mdash;24]</code>: <code>Illegal function call</code>.
+</li></ul>
 
 
 
 <h3><code>WAIT</code> statement</h3>
-WAIT port, and_mask [, xor_mask]
---------------
-Waits for the value of (INP(port) XOR xor_mask) AND and_mask to become nonzero.
-Events are STOPped until WAIT returns. If xor_mask is not specified, its 
-default is 0.
+<pre>WAIT <em>port</em>, <em>and_mask</em> [, <em>xor_mask</em>]</pre>
+<p>Waits for the value of <code>(INP(<em>port</em>) XOR <em>xor_mask</em>) AND <em>and_mask</em></code> to become nonzero.
+Event handling is suspended until <code>WAIT</code> returns. If <code><em>xor_mask</em></code> is not specified, it defaults to <code>0</code>.</p>
 <h4>Notes</h4>
--   In GW-BASIC, waits for machine port <code><em>port</em></code> to turn to a specific value. 
-    This is not implemented in PC_BASIC 3.23, except for use cases discussed
-    at INP.
+<ul><li>
+A limited number of machine ports are emulated in PC-BASIC. See <code>INP</code>.
+</li></ul>
 <h4>Errors</h4>
-<code><em>port</em></code> is not in <code>[-32768&mdash;65535]</code>, <code>Overflow</code> .
-any parameter has a string value, <code>Type mismatch</code> .
-'and_mask' or 'xor_mask' are not in <code>[0&mdash;255]</code>: <code>Type mismatch</code>.
+<ul><li>
+Any parameter has a string value: <code>Type mismatch</code>.
+</li><li>
+<code><em>port</em></code> is not in <code>[-32768&mdash;65535]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>and_mask</em></code> or <code><em>xor_mask</em></code> are not in <code>[0&mdash;255]</code>: <code>Type mismatch</code>.
+</li></ul>
 
 
 <h3><code>WEND</code> statement</h3>
-WEND
---------------
-Iterates a WHILE--WEND loop: jumps to the matching WHILE statement, where its 
-condition can be checked.
+<pre>WEND</pre>
+<p>Iterates a <code>WHILE&mdash;WEND</code> loop: jumps to the matching <code>WHILE</code> statement, where its
+condition can be checked.</p>
 <h4>Notes</h4>
--   WHILE--WEND statements can be nested; WEND jumps to the most recent WHILE 
-    statement that has not been closed by another WEND.
+<ul><li>
+   <code>WHILE&mdash;WEND</code> loops can be nested. <code>WEND</code> jumps to the most recent <code>WHILE</code>
+    statement that has not been closed by another <code>WEND</code>.
+</li></ul>
 <h4>Errors</h4>
-all previous WHILE statements have been closed by WEND:
+<ul><li>
+All previous <code>WHILE</code> statements have been closed by another <code>WEND</code> or no <code>WHILE</code> statement has been executed before:
     <code>WEND without WHILE</code>.
+</li></ul>
 
 
 <h3><code>WHILE</code> statement</h3>
-WHILE expr
----------------
-Initiates a WHILE--WEND loop. 
-<code><em>expr</em></code> is a numeric expression. If <code><em>expr</em></code> evaluates to zero, WHILE jumps 
-to the statement immediately after the matching WEND. If not, execution
-continues. 
+<pre>WHILE <em>expr</em></pre>
+<p>Initiates a <code>WHILE&mdash;WEND</code> loop. 
+If <code><em>expr</em></code> evaluates to zero, <code>WHILE</code> jumps
+to the statement immediately after the matching <code>WEND</code>. If not, execution
+continues. </p>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>expr</em></code> is a numeric expression. 
+</li></ul>
 <h4>Errors</h4>
-no matching END is found: <code>WHILE without WEND</code>.
+<ul><li>
+No matching <code>WEND</code> is found: <code>WHILE without WEND</code>.
+</li><li>
 <code><em>expr</em></code> has a string value: <code>Type mismatch</code>.
+</li></ul>
 
 
 <h3><code>WIDTH</code> statement</h3>
-WIDTH { # file_num | device_name | LPRINT }, num_columns 
-WIDTH { 20 | 40 | 80 | (num_columns) } [, [num_rows] [,]]
----------------
-Set the line width for the screen, a file or a device.
-'num_columns' is a numeric expression between 0 and the new column width. 
-When a write operation passes beyond the column width, a CR/LF sequence is 
-inserted. 
-<code><em>file_num</em></code> is a numeric expression that is the numer of an open file. 
-If specified, the width for operations through that file  number will be 
-changed.
-'device_name' is a string expression that is one of the devices
- KYBD:, SCRN:, LPT1:, LPT2:, LPT3:, COM1:, COM2:, CAS1:
-If a device is specified, it does not need to be open; the width setting will
-be the default width next time a file is opened to that device.
-If 'device_name' is "SCRN:", "KYBD:", or omitted, the screen width is changed.
-In this case, 'num_columns' must be one of 20, 40 or 80.
-If 'device_name' is "LPT1:" or LPRINT is specified, the device width setting 
-affects LPRINT and LLIST.
-'num_rows' is optional and must equal 25. 
+<pre>WIDTH { 20 | 40 | 80 | (<em>num_columns</em>) } [, [ <em>num_rows</em>] [ , ] ]</pre>
+<p>Sets the screen width to 20, 40 or 80 columns.</p>
+<p><code><em>num_columns</em></code> can only be an expression
+    if it is bracketed. Otherwise it must be a literal 20, 40 or 80. The trailing comma is optional and has no effect.</p>
+<pre>WIDTH { # <em>file_num</em>, | <em>device_name</em>, | LPRINT } <em>num_columns</em> </pre>
+<p>Sets the line width for a file or a device. 
+When a write operation passes beyond the column width, a <code>CR LF</code> sequence is
+inserted.
+</p><p>
+If a device is specified, it does not need to have a file open to it; the width setting will
+be the default width next time a file is opened to that device. 
+</p><p>
+If <code><em>device_name</em></code> is <code>"LPT1:"</code> or <code>LPRINT</code> is specified, the device width setting
+affects <code>LPRINT</code> and <code>LLIST</code>.
+</p><p>
+If <code><em>device_name</em></code> is <code>"SCRN:"</code>, <code>"KYBD:"</code>, or omitted, the screen width is changed.
+In this case, <code><em>num_columns</em></code> must be one of 20, 40 or 80.
+</p>
 <h4>Notes</h4>
--   In GW-BASIC, in the second syntax, num_columnns can only be an expression 
-    if it is bracketed. Otherwise it must be a literal 40 or 80. PC-BASIC
-    accepts unbracketed expressions, as long as they evaluate to 40 or 80.
--   In the second syntax, the trailing comma is optional and have no effect.
--   When changing screen width in graphics mode, the screen mode is changed.
-    The following changes occur:
-        SCREEN 1 (40)  <-->  SCREEN 2 (80)
-        SCREEN 7 (40)  <-->  SCREEN 8 (80)
-        SCREEN 7 (40)  <---- SCREEN 9 (80)
--   Width value 20 is only allowed on Tandy and PCjr. Changing to this width
-    changes to graphical SCREEN 3. Additionally, the following changes occur:
-        SCREEN 3 (20) ---->  SCREEN 1 (40)
-        SCREEN 3 (20) ---->  SCREEN 2 (80)
-        SCREEN 4 (40) ---->  SCREEN 2 (80)
-        SCREEN 5 (40)  <-->  SCREEN 6 (80)
--   On Tandy and PCjr, 'num_rows' may be in [0,25] but its value is ignored.
+<ul><li>
+   When changing screen width in graphics mode, the video mode is changed.
+    The following changes occur:<br />
+        <code>SCREEN 1</code> (40)  &harr;  <code>SCREEN 2</code> (80)<br />
+        <code>SCREEN 7</code> (40)  &harr;  <code>SCREEN 8</code> (80)<br />
+        <code>SCREEN 7</code> (40)  &larr;  <code>SCREEN 9</code> (80)<br />
+</pre>
+</li><li>
+   Screen width value 20 is only allowed on Tandy and PCjr. Changing to this width
+    changes to <code>SCREEN 3</code>. Additionally, the following changes occur:<br />
+        <code>SCREEN 3</code> (20)  &rarr;  <code>SCREEN 1</code> (40)<br />
+        <code>SCREEN 3</code> (20)  &rarr;  <code>SCREEN 2</code> (80)<br />
+        <code>SCREEN 4</code> (40)  &rarr;  <code>SCREEN 2</code> (80)<br />
+        <code>SCREEN 5</code> (40)  &harr;  <code>SCREEN 6</code> (80)<br />
+</li></ul>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>file_num</em></code> is a numeric expression which is the number of an open file.
+</li><li>
+<code><em>device_name</em></code> is a string expression that is one of
+ <code>"KYBD:"</code>, <code>"SCRN:"</code>, <code>"LPT1:"</code>, <code>"LPT2:"</code>, <code>"LPT3:"</code>, <code>"COM1:"</code>, <code>"COM2:"</code>, <code>"CAS1:"</code>
+</li><li>
+<code><em>num_columns</em></code> is a numeric expression.
+</li><li>
+<code><em>num_rows</em></code> is optional and must equal 25. If <code>--syntax={pcjr | tandy}</code> is set, <code><em>num_rows</em></code>
+may be in <code>[0&mdash;25]</code> but its value is ignored.
+</li></ul>
 <h4>Errors</h4>
-'device_name' is not one of the allowed devices: <code>Bad file name</code>.
-'device_name' is SCRN:, KYBD: or omitted, and num_columns is not 40 or
+<ul><li>
+<code><em>device_name</em></code> is not one of the allowed devices: <code>Bad file name</code>.
+</li><li>
+<code><em>device_name</em></code> is <code>"SCRN:"</code>, <code>"KYBD:"</code> or omitted, and <code><em>num_columns</em></code> is not 40 or
     80: <code>Illegal function call</code>.
+</li><li>
+<code><em>file_num</em></code> or <code><em>num_columns</em></code> are strings: <code>Type mismatch</code>.
+</li><li>
+<code><em>file_num</em></code> or <code><em>num_columns</em></code> are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>file_num</em></code> or <code><em>num_columns</em></code> are not in <code>[0&mdash;255]</code>:    <code>Illegal function call</code>.
+</li><li>
 <code><em>file_num</em></code> is not an open file: <code>Bad file mode</code>.
-<code><em>file_num</em></code> or 'num_columns' are strings: <code>Type mismatch</code>.
-<code><em>file_num</em></code> or 'num_columns' are not in <code>[0&mdash;255]</code>:
-    <code>Illegal function call</code>.
-<code><em>file_num</em></code> or 'num_columns' are not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
--   In the second syntax, if an unbracketed expression is used, 
-    <code>Illegal function call</code> .
-'num_rows' is not in its accepted range: <code>Illegal function call</code>.
+</li><li>
+An unbracketed expression is used in the first syntax: <code>Illegal function call</code>.
+</li><li>
+<code><em>num_rows</em></code> is not in its accepted range: <code>Illegal function call</code>.
+</li></ul>
     
 
 <h3><code>WINDOW</code> statement</h3>
-WINDOW [ [SCREEN] (x0,y0)-(x1,y1) ]
-----------------
-Define logical coordinates for the screen.
-<code><em>x0</em></code>, <code><em>y0</em></code>, <code><em>x1</em></code>, <code><em>y1</em></code> are numeric expressions.
-If SCREEN is not specified,
+<pre>WINDOW [ [ SCREEN ] (<em>x0</em>, <em>y0</em>)-(<em>x1</em>, <em>y1</em>) ]</pre>
+<p>Define logical coordinates for the viewport.
+If <code>SCREEN</code> is not specified,
 the bottom left of the screen is mapped to the lower coordinates;
 the top right of the screen is mapped to the higher coordinates.
-If SCREEN is specified,
+If <code>SCREEN</code> is specified,
 the top left of the screen is mapped to the lower coordinates;
-the bottom right of the screen is mapped to the higher coordinates.
-If WINDOW is called without arguments, the logical coordinates are 
-reset to the physical ones.
+the bottom right of the screen is mapped to the higher coordinates.</p>
+<p>If <code>WINDOW</code> is called without arguments, the logical coordinates are
+reset to the viewport coordinates.</p>
+
+<h4>Parameters</h4>
+<ul><li>
+<code><em>x0</em></code>, <code><em>y0</em></code>, <code><em>x1</em></code>, <code><em>y1</em></code> are numeric expressions.
+</li></ul>
+
 <h4>Errors</h4>
-any of the coordinates are strings, <code>Type mismatch</code> .
-<code><em>x0</em></code>=<code><em>x1</em></code> or <code><em>y0</em></code>=<code><em>y1</em></code>: <code>Illegal function call</code>.
+<ul><li>
+Any of the coordinates have a string value: <code>Type mismatch</code>.
+</li><li>
+<code><em>x0</em> = <em>x1</em></code> or <code><em>y0</em> = <em>y1</em></code>: <code>Illegal function call</code>.
+</li></ul>
 
 
 <h3><code>WRITE</code> and <code>WRITE#</code> statements</h3>
-WRITE [#file_num,] expr_0 [ {,|;} expr_1 [...] ]
----------------------------
-Writes values to a file or the screen in machine-readable form. Values are
-separated by commas and the line is ended with a CR/LF sequence. Strings are 
-delimited by double quotes ". No padding spaces are inserted.
-'expr_0', ... are expressions whose value is to be printed.
+<pre>WRITE [ # <em>file_num</em>, ] <em>expr_0</em> [ { , | ; } <em>expr_1</em> [...] ]</pre>
+<p>Writes values to a file or the screen in machine-readable form. Values are
+separated by commas and the line is ended with a <code>CR LF</code> sequence. Strings are
+delimited by double quotes <code>"</code>. No padding spaces are inserted.</p>
+
+<h4>Parameters</h4>
+<ul><li>
+<code><em>expr_0</em>, <em>expr_1</em>, ...</code> are expressions whose value is to be printed.
+</li></ul>
+
 <h4>Errors</h4>
+<ul><li>
 <code><em>file_num</em></code> has a string value: <code>Type mismatch</code>.
-<code><em>file_num</em></code> is open for INPUT, <code>Bad file mode</code> .
+</li><li>
+<code><em>file_num</em></code> is open for <code>INPUT</code>: <code>Bad file mode</code>.
+</li></ul>
 
 
 
 
-<h2>Error codes</h2>
-<pre>
-1   NEXT without FOR
-2   Syntax error
-3   <code>RETURN</code> without <code>GOSUB</code>
-4   Out of DATA
-5   Illegal function call
-6   Overflow
-7   Out of memory
-8   Undefined line number
-9   Subscript out of range
-10  Duplicate Definition
-11  Division by zero
-12  Illegal direct
-13  Type mismatch
-14  Out of string space
-15  String too long
-16  String formula too complex
-17  Can't continue
-18  Undefined user function
-19  No RESUME
-20  RESUME without error
-21
-22  Missing operand
-23  Line buffer overflow
-24  Device Timeout
-25  Device Fault
-26  FOR without NEXT
-27  Out of paper
-28
-29  WHILE without WEND
-30  WEND without WHILE
-31--49
-50  FIELD overflow
-51  Internal error
-52  Bad file number
-53  File not found
-54  Bad file mode
-55  File already open
-56
-57  Device I/O error
-58  File already exists
-59--60
-61  Disk full
-62  Input past end
-63  Bad record number
-64  Bad file name
-65
-66  Direct statement in file
-67  Too many files
-68  Device Unavailable
-69  Communication buffer overflow
-70  Permission Denied
-71  Disk not Ready
-72  Disk media error
-73  Advanced Feature
-74  Rename across disks
-75  Path/File access error
-76  Path not found
-77  Deadlock
-</pre>
-Any error code that does not have a message associated to it will generate
-the message "Unprintable error".
 
+<h2>Literals</h2>
 
-LITERALS
---------
-String literals can be specified between double quotes. There is no escaping
+<p>String literals can be specified between double quotes. There is no escaping
 mechanism. To include a double quote or a special character in a string, use
-the CHR$() function.
-Numeric literals:
+the <code>CHR$</code> function.</p>
+
+<p>Numeric literals have the following form:</p>
+<pre>
   [{+|-}] [digits] [.] [digits] [ { {E|D} [{+|-}] [digits] | # | ! | % } ]
-  &{H|h}hexadecimal_digits
-  &[O|o]octal_digits
-Trailing % is ignored, ! or # specify the type.
-Examples of valid numeric literals:
+  &amp;{H|h}hexadecimal_digits
+  &amp;[O|o]octal_digits
+</pre>
+<p>Trailing <code>%</code> is ignored; trailing <code>!</code> or <code>#</code> specify the type.
+Examples of valid numeric literals:</p>
+<pre>
   -1
   42
   42!
@@ -5692,247 +5751,319 @@ Examples of valid numeric literals:
   1.1d+7
   1e2
   1e-2
-  &7
-  &hffff
-  &O20
-Hexadecimal literals can be specified like &HFFFF. They must range between 
--&H7FFF and &HFFFF. &HFFFF = -&H1 = &H-1 .
-Octal literals can be specified as &o777 or &777.
+  &amp;7
+  &amp;hffff
+  &amp;O20
+</pre>
+<p>Hexadecimal literals can be specified like <code>&amp;hFFFF</code>. They must range between
+<code>-&amp;h7FFF</code> and <code>&amp;hFFFF</code>. <code>&amp;hFFFF = -&amp;h1 = &amp;h-1</code>.
+<p>Octal literals can be specified as <code>&amp;o777</code> or <code>&amp;777</code>.</p>
 
 
-VARIABLES
----------
-Variable names must start with a letter; all characters of the variable name
-(except the type character) must be letters (A-Z), figures (0-9), or a dot (.)
+<h2 id="variables">Variables</h2>
+<p>Variable names must start with a letter; all characters of the variable name
+(except the type character) must be letters <code>A&mdash;Z</code>, figures <code>0&mdash;9</code>, or a dot <code>.</code>
 Only the first 40 characters in the name are significant. Variable names must
-not be identical to keywords -- roughly, statement or function names; more 
-accurately, anything that has a defined keyword token, including such words as
-TO but not, for instance, AS. There is no particular logic to this. Variable
-names may start with a keyword, with the exception of USR and FN. Thus, FNORD$
-is not a legal variable name while FRECKLE% is. For each name, four different 
-variables may exist corresponding to the four types. That is, you can have A$, 
-A%, A! and A# with different values. Which one of those is called A depends on 
-the settings in DEFINT/DEFDBL/DEFSNG/DEFSTR. The default is A==A!. In addition,
-you can have arrays A$(), A%(), A!(), A#() which are separate from the scalar 
-variables of the same name.
+not be identical to <a href="#keywords">keywords</a>. Variable
+names may start with a keyword, with the exception of <code>USR</code> and <code>FN</code>. Thus, <code>FNORD$</code>
+is not a legal variable name while <code>FRECKLE%</code> is.</p>
+<p>For each name, four different 
+variables may exist corresponding to the four types. That is, you can have <code>A$</code>, 
+<code>A%</code>, <code>A!</code> and <code>A#</code> as different variables. Which one of those is also known as <code>A</code> depends on
+the settings in <code>DEFINT</code>/<code>DEFDBL</code>/<code>DEFSNG</code>/<code>DEFSTR</code>. The default is <code> A = A!</code>. In addition,
+you can have <a href="#arrays">arrays</a> <code>A$()</code>, <code>A%()</code>, <code>A!()</code>, <code>A#()</code> which are separate from the scalar variables of the same name.
 
 
-TYPES
------
-PC-BASIC recognises four variable types, distinguished by their type character
-which is the last character of the variable's name:
-char    type                    size
- $      string                  3 bytes plus allocated string space
- %      integer                 2 bytes 
- !      single-precision float  4 bytes
- #      double-precision float  8 bytes 
-If the type character is not specified, the first letter of the name determines
-the type through DEFINT/DEFSTR/DEFSNG/DEFDBL. Unless otherwise specified, all
-variables are single-precision floats.
-Internal representation:
--   Line numbers are two-byte unsigned little-endian.
--   Integers are two-byte signed little-endian two's complement ints.
--   Booleans are represented as 0 (FALSE); -1 or other non-zero (TRUE). 
--   Floats are represented in the Microsoft Binary Format (MBF).
-Machine limits:
-    Line numbers are in [0, 65529]. 65530-65535 are unused.
-    Integers are in <code>[-32768&mdash;32767]</code>. 
-    Floats: largest 1.701412E+38; smallest 2.938726E-39
-    Double-precision floats can hold more decimals but not larger or smaller 
-    numbers.
+<h2 id="arrays">Arrays</h2>
+<p>Arrays are groups of variables and can have the same types as variables. Arrays are indexed with round or square
+brackets; even mixing brackets is allowed. The following all work: <code>A[0]</code>, <code>A(0)</code>,
+<code>A(0]</code>, <code>A[0)</code>. Multidimensional arrays are specified with commas: <code>A(0, 0)</code>, <code>A[0, 0, 0]</code>, etc.</p>
+<p>By default, arrays are indexed from <code>0</code>. This can be changed to <code>1</code> using
+ <code>OPTION BASE 1</code>.</p>
+<p>Arrays can be allocated using <code>DIM</code>. If all indices of the array
+are <code>10</code> or less, they need not be explicitly allocated. The first
+access of the array (read or write) will automatically allocate it with
+a maximum index of <code>10</code> and the same number of indices as in the first
+access. To re-allocate an array, the old array must first be deleted
+with <code>CLEAR</code> or <code>ERASE</code>.</p>
 
 
-FLOATING POINT: THE MICROSOFT BINARY FORMAT
-------------------------------------------------------------------
-GW-BASIC's floating point numbers are implemented in Microsoft Binary Format 
-(MBF), which differs from the now ubiquitous IEEE 754 format. PC-BASIC follows
-this implementation. Consequently, binary files generated by either BASIC are 
-fully compatible with each other and with some applications contemporary to 
-GW-BASIC, but not easily interchanged with other software. QBASIC uses IEEE 754 
-floats. 
-The MBF differs from IEEE 754 in positioning the sign bit in a mantissa byte
-rather than the exponent, and in using only an 8-bit exponent even for double
-precision, making the range of allowable numbers in double precision smaller,
-but their precision higher, than for an IEEE double.
-Schematically, MBF floating point numbers are represented as follows.
-single precision:
-          offset                       00 | 01 | 02 | 03 
-             use                       m3 | m2 | m1 | exp
-double precision:
-          offset   00 | 01 | 02 | 03 | 04 | 05 | 06 | 07               
-             use   m7 | m6 | m5 | m4 | m3 | m2 | m1 | exp
-where:
-     exp is the exponent byte
-     m1 is most significant mantissa byte:   m1 =  s f1 f2 f3 f4 f5 f6 f7                  
-     m2--m7 are of decreasing significance:  m2 = f8 f9 fA fB fC fD fE fF, etc.          
-     s = sign bit                                   
-     f = fraction bit                                              
-sign:
-    If the sign bit is set, the number is negative.     
-mantissa:
-    There is an assumed 1 bit after the radix point, so the mantissa binary 
-    fraction is 0 . 1 f0 f1 f2 ... where f's are the fraction bits.
-exponent:
-    The exponent is biased by 128: the mantissa fraction is multiplied by
-    2 ^ (exp - 128).
-zero:
-    Any float with the exponent byte set to 0 is interpreted as a zero.
-A single-precision MBF float therefore has 23 bits of precision, while a double
-precision MBF float has 55 bits of precision.
-    
-    
-ARRAYS
-------
-Arrays of any type can be generated. Arrays are indexed with round or square 
-brackets; even mixing brackets is allowed. The following work: A[0] A(0) 
-A(0] A[0). Multidimensional arrays are specified with commas: A(0,0) etc.
-By default, arrays are counted from 0. This can be changed to 1 using 
- OPTION BASE 1. Arrays can be allocated using DIM. If all indices of the array
-are 10 or less, arrays can be used without using the DIM command. The first 
-
-referencing of the array (read or write) will automatically dimension it with 
-a maximum index of 10 and the same number of indices as in the first 
-referencing. To re-allocate an array, first the old array must be deleted 
-through CLEAR or ERASE.
-
-
-OPERATORS
----------
-Order of precedence:    
-    ^	Exponentiation
-    -	Negation
-    *	Multiplication  
-    /	Floating-point Division   \   Integer division   MOD  Integer modulo
-    +	Addition   - Subtraction
-NOTE: Exponentiation is tighter bound than negation: -1^2 = -1 but (-1)^2 = 1.
-Relational:
+<h2>Operators</h2>
+<p>Mathematical operators, by order of precedence:</p>
+<pre>
+    ^   Exponentiation
+    -   Negation
+    *   Multiplication
+    /   Floating-point Division   \   Integer division   MOD  Integer modulo
+    +   Addition   - Subtraction
+</pre>
+<p>Nothe that exponentiation is more tightly bound than negation: <code>-1^2 = -1</code> but <code>(-1)^2 = 1</code>.</p>
+<p>Relational operators:</p>
+<pre>
     =       Equal
     <> ><   Not equal
     <       Less than
     >       Greater than
     <= =<   Less than or equal
     >= =>   Greater than or equal
-Boolean:
+</pre>
+<p>Boolean operators:</p>
+<pre>
     NOT, AND, OR, XOR, EQV, IMP
+</pre>
 
 
-<a name="videomodes"></a>
-SCREEN MODES, ATTRIBUTES, PALETTES AND COLOURS
-----------------------------------------------
-The emulated VGA adapter can produce more colours than can be shown on the 
-screen at one time. These colours can be used by assigning them to attributes 
-in a palette.
-The screen modes are as follows:
-SCREEN 0    Text mode
-            80x25 or 40x25 characters of 8x16 pixels
-            16 attributes picked from 64 colours
-            Attributes 16-31 are blinking versions of 0-15
-            4 pages [ega]
-SCREEN 1    CGA colour
-            320x200 pixels
-            40x25 characters of 8x8 pixels
-            4 attributes picked from 16 colours; 2 bits per pixel    
-            1 page [ega] 2 pages [pcjr/tandy]
-SCREEN 2    CGA monochrome
-            640x200 pixels
-            80x25 characters of 8x8 pixels
-            2 attributes picked from 16 colours; 1 bit per pixel    
-            1 page [ega] 2 pages [pcjr/tandy]
-SCREEN 3    [pcjr/tandy only] low-res 16-colour
-            160x200 pixels
-            20x25 characters of 8x8 pixels
-            16 attributes picked from 16 colours; 4 bits per pixel
-            2 pages
-SCREEN 3    [hercules only]
-            720x348 pixels
-            80x25 characters of 9x14 pixels (with bottom line truncated by 2 px)
-            2 attributes; 1 bit per pixel
-            2 pages
-SCREEN 3--255 [olivetti only]
-            640x400 pixels
-            80x25 characters of 8x16 pixels
-            2 attributes of which one picked from 16 colours; 2 bits per pixel
-            1 page            
-SCREEN 4    [pcjr/tandy only] med-res 4-colour
-            320x200 pixels
-            40x25 characters of 8x8 pixels
-            4 attributes picked from 16 colours; 2 bits per pixel
-            2 pages
-SCREEN 5    [pcjr/tandy only] med-res 16-colour
-            320x200 pixels
-            40x25 characters of 8x8 pixels
-            16 attributes picked from 16 colours; 4 bits per pixel
-            1 page
-SCREEN 6    [pcjr/tandy only] high-res 4-colour
-            640x200 pixels
-            80x25 characters of 8x8 pixels
-            4 attributes picked from 16 colours; 2 bits per pixel
-            1 page
-SCREEN 7    [ega only] EGA colour
-            320x200 pixels
-            40x25 characters of 8x8 pixels
-            16 attributes picked from 16 colours; 4 bits per pixel    
-            8 pages
-SCREEN 8    [ega only] EGA colour
-            640x200 pixels
-            80x25 characters of 8x8 pixels
-            16 attributes picked from 16 colours; 4 bits per pixel    
-            4 pages
-SCREEN 9    [ega only] EGA colour
-            640x350 pixels
-            80x25 characters of 8x14 pixels
-            16 attributes picked from 64 colours; 4 bits per pixel    
-            2 pages
-SCREEN 10   [ega only, with monitor=mono] EGA monochrome
-            640x350 pixels
-            80x25 characters of 8x14 pixels
-            4 attributes picked from 9 pseudocolours; 2 bits per pixel    
-            2 pages
+<h2>Types</h2>
+<p>PC-BASIC recognises four variable types, distinguished by their type character
+which is the last character of the variable's full name:</p>
+<table><tr>
+<th>char</th>    <th>type</th>                    <th>size</th>
+</tr><tr>
+<td><code>$</code></td>      <td>string</td>                  <td>3 bytes plus allocated string space</td>
+</tr><tr>
+ <td><code>%</code></td>      <td>integer</td>                 <td>2 bytes </td>
+</tr><tr>
+ <td><code>!</code></td>      <td>single-precision float</td>  <td>4 bytes</td>
+</tr><tr>
+ <td><code>#</code></td>      <td>double-precision float</td>  <td>8 bytes</td>
+</tr></table>
+<p>If no type character is specified, the first letter of the name determines
+the type according to the settings of <code>DEFINT</code>/<code>DEFDBL</code>/<code>DEFSNG</code>/<code>DEFSTR</code>. 
+If no such setting has been made, the default type is single-precision float.</p>
+<p>Machine limits:</p>
+<ul><li>
+    Line numbers are in <code>[0&mdash;65535]</code>, although line numbers <code>65530&mdash;65535</code> cannot be entered from the console.
+</li><li>
+    Booleans are integers: <code>0</code> for False; <code>-1</code> or other non-zero for True.
+</li><li>
+    Integers are in <code>[-32768&mdash;32767]</code>. 
+</li><li>
+    Floats: largest <code>1.701412E+38</code>; smallest <code>2.938726E-39</code>
+</li><li>
+    Double-precision floats can hold more decimals, but not larger or smaller numbers, than single-precision floats.
+</li></ul>
 
+<h2>Internal representation of variables</h2>
+<p>Internal representation:</p>
+<ul><li>
+   Line numbers are two-byte unsigned little-endian ints.
+</li><li>
+   Integers are two-byte signed little-endian two's complement ints.
+</li><li>
+   Floats are represented in the Microsoft Binary Format (MBF).
+</li></ul>
+<p>GW-BASIC's floating point numbers are implemented in Microsoft Binary Format 
+(MBF), which differs from the now ubiquitous IEEE 754 format. PC-BASIC follows
+GW-BASIC's implementation. Consequently, binary files generated by either BASIC are
+fully compatible with each other and with some applications contemporary to 
+GW-BASIC, but not easily interchanged with other software. QBASIC, for example, uses IEEE 754
+floats. </p>
+<p>MBF differs from IEEE 754 in positioning the sign bit in a mantissa byte
+rather than the exponent, and in using only an 8-bit exponent even for double
+precision, making the range of allowable numbers in double precision smaller,
+but their precision higher, than for an IEEE double.
+Schematically, MBF floating point numbers are represented as follows.</p>
+<h4>Single precision</h4>
+<pre>
+    offset                             00   01   02   03
+       use <em>                            m3   m2   m1   exp</em>
+</pre>
+<h4>Double precision</h4>
+<pre>
+    offset         00   01   02   03   04   05   06   07
+       use <em>        m7   m6   m5   m4   m3   m2   m1   exp</em>
+</pre>
+<p>where:</p>
+<table><tr>
+<td><code><em>exp</em></code></td>
+<td>the exponent byte</td>
+</tr><tr>
+<td><code><em>m1</em></code></td>
+<td>most significant mantissa byte:   <code><em>m1</em> = <em>s f1 f2 f3 f4 f5 f6 f7</em></code>
+</tr><tr>
+<td><code><em>m2</em>&mdash;<em>m7</em></td>
+<td>bytes of decreasing significance: <code><em>m2</em> = <em>f8 f9 fA fB fC fD fE fF</em></code>, etc.</td>
+</tr><tr>
+<td><code><em>s</em></code></td>
+<td>sign bit</td>
+</tr><tr>
+<td><code><em>f</em></code></td>
+<td>fraction bit</td>
+</tr></table>
+<dl>
+<dt>sign</dt>
+<dd>If the sign bit is set, the number is negative.</dd>
+<dt>mantissa</dt>
+<dd>There is an assumed <code>1</code> bit after the radix point, so the mantissa binary 
+    fraction is <code>0 . 1 <em>f0 f1 f2</em> ...</code> where <code><em>f</em></code>s are the fraction bits.</dd>
+<dt>exponent</dt>
+<dd>The exponent is biased by 128: the mantissa fraction is multiplied by
+    <code>2 ^ (<em>exp</em> - 128)</code>.</dd>
+<dt>zero</dt>
+<dd>Any float with the exponent byte set to <code>0</code> is interpreted as a zero.</dd>
+</dl>
+<p>A single-precision MBF float therefore has 23 bits of precision, while a double-precision MBF float has 55 bits of precision.</pre>
+    
+    
 
-DEVICES
--------
-PC-BASIC recognises the following DOS-style devices, which can be opened, input
-from and output to much like normal files. 
-device      allowed modes   description
-SCRN:       OUTPUT          The screen. Output to SCRN: has largely the same 
-                            effect as straight output using PRINT. A difference
-                            is the WIDTH setting which is independent of the 
+<h2 id="videomodes">Video modes</h2>
+<p>The video modes are as follows:</p>
+<dl>
+<dt><code>SCREEN 0</code> Text mode</dt>
+<dd>
+            80x25 or 40x25 characters of 8x16 pixels<br />
+            16 attributes picked from 64 colours<br />
+            Attributes 16-31 are blinking versions of 0-15<br />
+            4 pages <code>ega</code>
+</dd>
+<dt><code>SCREEN 1</code> CGA colour</dt>
+<dd>
+            320x200 pixels<br />
+            40x25 characters of 8x8 pixels<br />
+            4 attributes picked from 16 colours; 2 bits per pixel<br />
+            1 page <code>ega</code> 2 pages <code>pcjr</code> <code>tandy</code><br />
+</dd>
+<dt><code>SCREEN 2</code> CGA monochrome</dt>
+<dd>
+            640x200 pixels<br />
+            80x25 characters of 8x8 pixels<br />
+            2 attributes picked from 16 colours; 1 bit per pixel<br />
+            1 page <code>ega</code> 2 pages <code>pcjr</code> <code>tandy</code><br />
+</dd>
+<dt><code>SCREEN 3</code> Low-res 16-colour <code>pcjr</code> <code>tandy</code></dt>
+<dd>
+            160x200 pixels<br />
+            20x25 characters of 8x8 pixels<br />
+            16 attributes picked from 16 colours; 4 bits per pixel<br />
+            2 pages<br />
+<dt><code>SCREEN 3</code> Hercules monochrome <code>hercules</code><br /></dt>
+<dd>
+            720x348 pixels<br />
+            80x25 characters of 9x14 pixels (with bottom line truncated by 2 px)<br />
+            2 attributes; 1 bit per pixel<br />
+            2 pages<br />
+</dd>
+<dt><code>SCREEN 3&mdash;255</code> Altissima risoluzione <code>olivetti</code><br /></dt>
+<dd>
+            640x400 pixels<br />
+            80x25 characters of 8x16 pixels<br />
+            2 attributes of which one picked from 16 colours; 2 bits per pixel<br />
+            1 page<br />
+</dd>
+<dt><code>SCREEN 4</code> Med-res 4-colour <code>pcjr</code> <code>tandy</code><br /></dt>
+<dd>
+            320x200 pixels<br />
+            40x25 characters of 8x8 pixels<br />
+            4 attributes picked from 16 colours; 2 bits per pixel<br />
+            2 pages<br />
+</dd>
+<dt><code>SCREEN 5</code> Med-res 16-colour <code>pcjr</code> <code>tandy</code><br /></dt>
+<dd>
+            320x200 pixels<br />
+            40x25 characters of 8x8 pixels<br />
+            16 attributes picked from 16 colours; 4 bits per pixel<br />
+            1 page<br />
+</dd>
+<dt><code>SCREEN 6</code> High-res 4-colour <code>pcjr</code> <code>tandy</code><br /></dt>
+<dd>
+            640x200 pixels<br />
+            80x25 characters of 8x8 pixels<br />
+            4 attributes picked from 16 colours; 2 bits per pixel<br />
+            1 page<br />
+</dd>
+<dt><code>SCREEN 7</code> EGA colour <code>ega</code></dt>
+<dd>
+            320x200 pixels<br />
+            40x25 characters of 8x8 pixels<br />
+            16 attributes picked from 16 colours; 4 bits per pixel<br />
+            8 pages<br />
+</dd>
+<dt><code>SCREEN 8</code> EGA colour <code>ega</code></dt>
+<dd>
+            640x200 pixels<br />
+            80x25 characters of 8x8 pixels<br />
+            16 attributes picked from 16 colours; 4 bits per pixel<br />
+            4 pages<br />
+</dd>
+<dt><code>SCREEN 9</code> EGA colour <code>ega</code></dt>
+<dd>
+            640x350 pixels<br />
+            80x25 characters of 8x14 pixels<br />
+            16 attributes picked from 64 colours; 4 bits per pixel<br />
+            2 pages<br />
+</dd>
+<dt><code>SCREEN 10</code> EGA monochrome <code>ega</code> <code>monitor=mono</code></dt>
+<dd>
+            640x350 pixels<br />
+            80x25 characters of 8x14 pixels<br />
+            4 attributes picked from 9 pseudocolours; 2 bits per pixel<br />
+            2 pages<br />
+</dd>
+</dl>
+
+<h2>Devices</h2>
+<p>PC-BASIC recognises the following DOS-style devices, which can be opened, input
+from and output to much like normal files.</p>
+<table><tr>
+<th>device</th><th>      allowed modes</th><th>   description</th>
+</tr><tr>
+<td><code>SCRN:</code></td>
+<td><code>OUTPUT</code></td>
+<td>
+The screen. Output to <code>SCRN:</code> has largely the same
+                            effect as straight output using <code>PRINT</code>. A difference
+                            is the <code>WIDTH</code> setting which is independent of the 
                             real screen width.
-KYBD:       INPUT           The keyboard. Input read from KYBD: is not echoed 
+</td>
+</tr><tr>
+<td><code>KYBD:</code></td>
+       <td><code>INPUT</code></td>
+<td>
+           The keyboard. Input read from <code>KYBD:</code> is not echoed 
                             to the screen. Special keys like arrow keys are
-                            registered differently than when using INPUT or
-                            INPUT$ straight (see the keyword reference).
-LPT1:       OUTPUT          Parallel ports 1--3. These are usually used to 
-LPT2:                       connect a printer. In PC-BASIC, output to the LPT
-LPT3:                       ports can be redirected to a printer connected to 
-                            the OS or to a text file. Direct access of the 
-                            parallel port is not implemented.
-COM1:       INPUT, OUTPUT,  Serial ports 1--2. In PC-BASIC 3.23, direct access
-COM2:       APPEND, <code>RANDOM</code>  of the serial port is allowed; alternatively, i/o
-                            can be redirected through a UNIX socket or a text
-                            file.                   
-CONS:       OUTPUT          The screen (console). Output to CONS is displayed 
+                            registered differently than when using <code>INPUT</code> or
+                            <code>INPUT$</code> straight (see the keyword reference).
+</td>
+</tr><tr>
+<td><code>LPT1:</code> <code>LPT2:</code> <code>LPT3:</code></td>
+<td><code>OUTPUT</code></td>
+<td>
+Parallel ports 1&mdash;3.  In PC-BASIC, <code>LPT</code> devices can be attached to the physical parallel port, to a printer or to a text file.
+</td>
+</tr><tr>
+<td><code>COM1:</code> <code>COM2:</code></td>
+<td><code>INPUT</code> <code>OUTPUT</code> <code>APPEND</code> <code>RANDOM</code></td>
+<td>Serial ports 1&mdash;2. In PC-BASIC, <code>COM</code> devices can be attached to the physical serial port or to a network socket.
+</td>
+</tr></table>
+<p>GW-BASIC additionally recognises the following little-used devices, which are not implemented in PC-BASIC.</p>
+<table><tr>
+<th>device</th><th>      allowed modes</th><th>   description</th>
+</tr><tr>
+<td><code>CONS:</code></td>
+<td><code>OUTPUT</code></td>
+<td>The screen (console). Output to <code>CONS:</code> is displayed
                             directly at the cursor position when <code><b>Enter</b></code> is 
                             pressed. It does not update the end-of-line value
                             for the interpreter, which means that it does not 
-                            move with <BACKSPACE> or <code><b>Del</b></code> and is not 
+                            move with <code><b>Backspace</b></code> or <code><b>Del</b></code> and is not
                             stored in program lines if it appears beyond the 
-                            end of the existing line. CONS: can be opened with
+                            end of the existing line. <code>CONS:</code> can be opened with
                             any access mode, but the effect is always to open 
-                            it for OUTPUT. This device is not implemented in 
-                            PC-BASIC 3.23.                             
-CAS1:       INPUT, OUTPUT   Cassette tape driver. This device is not 
-                            implemented in PC-BASIC 3.23. 
-                                                            
+                            it for <code>OUTPUT</code>.
+</td>
+</tr><tr>
+<td><code>CAS1:</code></td>
+<td><code>INPUT</code> <code>OUTPUT</code></td>
+<td>Cassette tape driver.</td>
+</tr></table>
 
-KEYWORD LIST
-------------
-Not all keywords are statements or functions; some parts of statement or 
-function syntax are not keywords. The relevance of this is that keywords are 
-not legal variable names. Therefore, you cannot name a variable TO! but you can
-name it AS!. The keywords are here listed with the bytecode token used to 
-represent them in a BASIC file.
+<h2 id="keywords">Keywords</h2>
+<p>Not all keywords are statements or functions. Conversely, some parts of statement or
+function syntax are not keywords. Keywords are
+not legal variable names. Therefore, you cannot name a variable <code>TO!</code> but you can
+name it <code>AS!</code>. The keywords are here listed with the bytecode token used to 
+represent them in a BASIC file.</p>
 <pre>
  81 END     82 FOR     83 NEXT    84 DATA    85 INPUT   86 DIM     87 READ  
  88 LET     89 GOTO    8A RUN     8B IF      8C RESTORE 8D <code>GOSUB</code>   8E <code>RETURN</code>
@@ -5965,16 +6096,135 @@ represent them in a BASIC file.
  FFA3 EOF     FFA4 LOC     FFA5 LOF          
 </pre>
 <h4>Notes</h4>
--   If PC-BASIC 3.23 is run with the --debug flag, the following additional 
-    keyword is reserved, which is not present in standard versions of GW-BASIC:
-        FFFF DEBUG
-    When the --debug flag is specified, variable names like DEBUG$ are not 
-    allowed.
--   On the IBM PCjr's Cartridge BASIC and Tandy 1000 GW-BASIC, some additional 
-    keywords were present. They can be activated using the --syntax=pcjr or 
-    --syntax=tandy command-line option:
-        FEA4 NOISE   FEA6 TERM
--   Note that they are not currently implemented as statements. 
-    When ---syntax=pcjr or --syntax=tandy is specified, these words are not 
-    valid variable names and will be correctly transcribed in a listing.
+<ul><li>
+   On the IBM PCjr's Cartridge BASIC and Tandy 1000 GW-BASIC, additional
+    keywords were present, which can be activated using the <code>--syntax=pcjr</code> or
+    <code>--syntax=tandy</code> command-line option:
+<code> FEA4 NOISE   FEA6 TERM</code>
+</li><li>
+   If PC-BASIC is run with the <code>--debug</code> flag, the following additional
+    keyword is reserved, which is not present in GW-BASIC:
+<code> FFFF DEBUG</code>
+</li></ul>
 
+<h2>Error codes</h2>
+<table><tr>
+<td><code>
+1</code></td><td><code>NEXT without FOR
+</code></td></tr><tr><td><code>
+2</code></td><td><code>Syntax error
+</code></td></tr><tr><td><code>
+3</code></td><td><code>RETURN without GOSUB
+</code></td></tr><tr><td><code>
+4</code></td><td><code>Out of DATA
+</code></td></tr><tr><td><code>
+5</code></td><td><code>Illegal function call
+</code></td></tr><tr><td><code>
+6</code></td><td><code>Overflow
+</code></td></tr><tr><td><code>
+7</code></td><td><code>Out of memory
+</code></td></tr><tr><td><code>
+8</code></td><td><code>Undefined line number
+</code></td></tr><tr><td><code>
+9</code></td><td><code>Subscript out of range
+</code></td></tr><tr><td><code>
+10</code></td><td><code>Duplicate Definition
+</code></td></tr><tr><td><code>
+11</code></td><td><code>Division by zero
+</code></td></tr><tr><td><code>
+12</code></td><td><code>Illegal direct
+</code></td></tr><tr><td><code>
+13</code></td><td><code>Type mismatch
+</code></td></tr><tr><td><code>
+14</code></td><td><code>Out of string space
+</code></td></tr><tr><td><code>
+15</code></td><td><code>String too long
+</code></td></tr><tr><td><code>
+16</code></td><td><code>String formula too complex
+</code></td></tr><tr><td><code>
+17</code></td><td><code>Can't continue
+</code></td></tr><tr><td><code>
+18</code></td><td><code>Undefined user function
+</code></td></tr><tr><td><code>
+19</code></td><td><code>No RESUME
+</code></td></tr><tr><td><code>
+20</code></td><td><code>RESUME without error
+</code></td></tr><tr><td><code>
+21</code></td><td><em>unused</em>
+</td></tr><tr><td><code>
+22</code></td><td><code>Missing operand
+</code></td></tr><tr><td><code>
+23</code></td><td><code>Line buffer overflow
+</code></td></tr><tr><td><code>
+24</code></td><td><code>Device Timeout
+</code></td></tr><tr><td><code>
+25</code></td><td><code>Device Fault
+</code></td></tr><tr><td><code>
+26</code></td><td><code>FOR without NEXT
+</code></td></tr><tr><td><code>
+27</code></td><td><code>Out of paper
+</code></td></tr><tr><td><code>
+28</code></td><td><em>unused</em>
+</td></tr><tr><td><code>
+29</code></td><td><code>WHILE without WEND
+</code></td></tr><tr><td><code>
+30</code></td><td><code>WEND without WHILE
+</code></td></tr><tr><td><code>
+31&mdash;49</code></td><td><em>unused</em>
+</td></tr><tr><td><code>
+50</code></td><td><code>FIELD overflow
+</code></td></tr><tr><td><code>
+51</code></td><td><code>Internal error
+</code></td></tr><tr><td><code>
+52</code></td><td><code>Bad file number
+</code></td></tr><tr><td><code>
+53</code></td><td><code>File not found
+</code></td></tr><tr><td><code>
+54</code></td><td><code>Bad file mode
+</code></td></tr><tr><td><code>
+55</code></td><td><code>File already open
+</code></td></tr><tr><td><code>
+56</code></td><td><em>unused</em>
+</code></td></tr><tr><td><code>
+57</code></td><td><code>Device I/O error
+</code></td></tr><tr><td><code>
+58</code></td><td><code>File already exists
+</code></td></tr><tr><td><code>
+59&mdash;60</code></td><td><em>unused</em>
+</td></tr><tr><td><code>
+61</code></td><td><code>Disk full
+</code></td></tr><tr><td><code>
+62</code></td><td><code>Input past end
+</code></td></tr><tr><td><code>
+63</code></td><td><code>Bad record number
+</code></td></tr><tr><td><code>
+64</code></td><td><code>Bad file name
+</code></td></tr><tr><td><code>
+65</code></td><td><em>unused</em>
+</code></td></tr><tr><td><code>
+66</code></td><td><code>Direct statement in file
+</code></td></tr><tr><td><code>
+67</code></td><td><code>Too many files
+</code></td></tr><tr><td><code>
+68</code></td><td><code>Device Unavailable
+</code></td></tr><tr><td><code>
+69</code></td><td><code>Communication buffer overflow
+</code></td></tr><tr><td><code>
+70</code></td><td><code>Permission Denied
+</code></td></tr><tr><td><code>
+71</code></td><td><code>Disk not Ready
+</code></td></tr><tr><td><code>
+72</code></td><td><code>Disk media error
+</code></td></tr><tr><td><code>
+73</code></td><td><code>Advanced Feature
+</code></td></tr><tr><td><code>
+74</code></td><td><code>Rename across disks
+</code></td></tr><tr><td><code>
+75</code></td><td><code>Path/File access error
+</code></td></tr><tr><td><code>
+76</code></td><td><code>Path not found
+</code></td></tr><tr><td><code>
+77</code></td><td><code>Deadlock
+</tr></table>
+<p>Any error code that does not have a message associated to it will generate
+the message <code>Unprintable error</code>.</p>
