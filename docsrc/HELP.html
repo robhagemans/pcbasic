@@ -4821,310 +4821,474 @@ A loaded ASCII file contains lines without line numbers:
 
 
 <h3><code>SAVE</code> statement</h3>
-SAVE filename [,{A|P}]
---------------
-Stores the program in file <code><em>filename</em></code>. If <code><em>filename</em></code> is not in 8.3 uppercase
+<pre>SAVE <em>filename</em> [, { A | P }]</pre>
+<p>Stores the program in file <code><em>filename</em></code>. If <code><em>filename</em></code> is not in 8.3 uppercase
 format, additional characters will be clipped off and the name is converted to
-uppercase. If <code><em>filename</em></code> contains no dot (.), a default extension of .BAS will
-be added. If the resulting file name already exists, it will be overwritten.
-If ,A is specified, the program will be saved as plain ASCII. 
-If ,P is specified, the program will be saved in encrypted form. When an 
-encrypted program is loaded, it cannot be LISTed or SAVEd in non-encrypted 
-form.
-<h4>Notes</h4>
--   In PC-BASIC 3.23, use the --conv option to convert any file type to any 
-    other file type, including encrypted to ASCII or bytecode.
+uppercase. If <code><em>filename</em></code> contains no <code>.</code>, a default extension <code>.BAS</code> will
+be added. If the resulting file name already exists, it will be overwritten.</p>
+<p>
+If <code>,A</code> is specified, the program will be saved as plain ASCII. <br />
+If <code>,P</code> is specified, the program will be saved in encrypted form.<br />
+When an
+encrypted program is loaded in GW-BASIC, it cannot be <code>LIST</code>ed or <code>SAVE</code>d in non-encrypted
+form.</p>
 <h4>Errors</h4>
+<ul><li>
 <code><em>filename</em></code> has a number value: <code>Type mismatch</code>.
+</li><li>
 <code><em>filename</em></code> is an empty string: <code>Bad file number</code>.
-the current program is encrypted and ,P is not specified:
+</li><li>
+<code>--strict-protect</code> is enabled, the current program is encrypted and <code>,P</code> is not specified:
     <code>Illegal function call</code>.
+</li></ul>
 
 
 <h3><code>SCREEN</code> function</h3>
-value = SCREEN(row, column [, fn])
----------------
-Returns the ASCII code or colour attribute for the character at position 
+<pre><em>value</em> = SCREEN(<em>row</em>, <em>column</em> [, <em>fn</em>])</pre>
+<p>Returns the ASCII code or colour attribute for the character at position 
 <code><em>row</em></code>, <code><em>col</em></code>.
-<code><em>row</em></code> is a numeric expression in the range [1,25].
+<h4>Parameters</h4>
+<ul><li>
+
+<code><em>row</em></code> is a numeric expression in the range <code>[1&mdash;25]</code>.
+</li><li>
 <code><em>col</em></code> is a numeric expression between 1 and the screen width (40 or 80).
+</li><li>
 <code><em>fn</em></code> is a numeric expression in <code>[0&mdash;255]</code>. If it is zero or not specified,
-the ASCII code of the character is returned. If it is non-zero, in SCREEN 0 the
+the ASCII code of the character is returned. If it is non-zero, in text mode the
 attribute is returned; in other screens, 0 is returned.
+</li></ul>
 <h4>Errors</h4>
-any parameter has a string value: <code>Type mismatch</code>.
+</li></ul>
+Any parameter has a string value: <code>Type mismatch</code>.
+</li><li>
 <code><em>fn</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+</li><li>
 <code><em>fn</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
-<code><em>row</em></code> is not inside the current VIEW PRINT area:
+</li><li>
+<code><em>row</em></code> is not inside the current <code>VIEW PRINT</code> area:
     <code>Illegal function call</code>.
-KEY ON and <code><em>row</em></code>=25: <code>Illegal function call</code>.
-<code><em>col</em></code> is not in [1, width]: <code>Illegal function call</code>.
+</li><li>
+<code>KEY ON</code> and <code><em>row</em>=25</code>: <code>Illegal function call</code>.
+</li><li>
+<code><em>col</em></code> is not in <code>[1, <em>width</em>]</code>: <code>Illegal function call</code>.
+</li></ul>
 
 
 <h3><code>SCREEN</code> statement</h3>
-SCREEN [mode] [, [colorburst] [, [apage] [, vpage] ] ]
-----------------
-Change the screen resolution mode. The modes are described at the start of this
-document.
-<code><em>mode</em></code> is a numeric expression that sets the screen mode.
-'apage' is a numeric expression that sets the active page.
-'vpage' is a numeric expression that sets the visible page.
-'colorburst' is a numeric expression; if the switch setting changes between 
-zero and non-zero, the screen is cleared. 
-On CGA, Tandy and PCjr, 'colorburst' has the following effects, depending on the 
+<pre>SCREEN [<em>mode</em>] [, [<em>colorburst</em>] [, [<em>apage</em>] [, <em>vpage</em>] ] ]</pre>
+<p>Change the video mode, composite colorburst, active page and visible page. Video modes are described in the <a href="#videomodes">Video Modes</a> section.
+<h4>NTSC Composite Colorburst</h4>
+On CGA, Tandy and PCjr, <code><em>colorburst</em></code> has the following effects, depending on the
 type of monitor - RGB (default) or composite:
-SCREEN  value   CGA mode    effect on composite     effect on RGB
-    0       0   0, 2        greyscale               colour
-    0       1   1, 3        colour                  colour
-    1       0   4           colour                  colour 
-    1       1   5           greyscale               colour (alternate palette)
-On SCREEN 2, 'colorburst' has no effect; on a composite monitor, colour artifacts 
-can be enabled on this screen through OUT (see there).    
-NOTE:
--   At least one parameter must be specified.
--   Composite colour artifacts are emulated only crudely in PC-BASIC, and not at
-    all in SCREEN 1.
+<table><tr>
+<th><code><em>mode</em></code></th>
+<th><code><em>colorburst</em></code></th>
+<th>CGA mode</th>
+<th>Effect (composite)</th>
+<th>Effect (RGB)</th>
+</tr><tr>
+<td>    0</td><td>       0</td><td>   0, 2</td><td>        greyscale</td><td>               default palette</td>
+</tr><tr>
+    <td>0</td><td>       1</td><td>   1, 3</td><td>        colour</td><td>                  default palette</td>
+</tr><tr>
+    <td>1</td><td>       0</td><td>   4</td><td>           colour</td><td>                  default palette</td>
+</tr><tr>
+    <td>1</td><td>       1</td><td>   5</td><td>           greyscale</td><td>               alternate palette</td>
+</tr></table>
+On <code>SCREEN 2</code>, <code><em>colorburst</em></code> has no effect; on a composite monitor, colour artifacts
+can be enabled on this screen through <code>OUT</code> (see there). On <code>SCREEN 3</code> and up, <code><em>colorburst</em></code> has no effect.
+<h4>Parameters</h4>
+<ul><li>
+<code><em>mode</em></code> is a numeric expression that sets the screen mode.
+</li><li>
+<code><em>apage</em></code> is a numeric expression that sets the active page.
+</li><li>
+<code><em>vpage</em></code> is a numeric expression that sets the visible page.
+</li><li>
+<code><em>colorburst</em></code> is a numeric expression.
+</li></ul>
+<h4>Notes</h4>
+<ul><li>
+   At least one parameter must be specified.
+</li><li>
+   Composite colour artifacts are emulated only crudely in PC-BASIC, and not at
+    all in <code>SCREEN 1</code>.
+</li><li>
+If the <code><em>mode</em></code> changes or the <code><em>colorburst</em></code>
+changes between
+zero and non-zero, the screen is cleared.
+</li></ul>
 <h4>Errors</h4>
-no parameters are specified: <code>Missing operand</code>.
-any parameter has a string value: <code>Type mismatch</code>.
-any parameter is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
-<code><em>mode</em></code> is not in 0,1,2,7,8,9: <code>Illegal function call</code>.
-'vpage', 'apage' are not between 0 and the number of pages for the
-    screen chosen, less one: ILLEGAL FUNCION CALL.
-'colorburst' is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+<ul><li>
+No parameters are specified: <code>Missing operand</code>.
+</li><li>
+Any parameter has a string value: <code>Type mismatch</code>.
+</li><li>
+Any parameter is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>mode</em></code> is not an available video mode number for your video card setting: <code>Illegal function call</code>.
+</li><li>
+<code><em>vpage</em></code>, <code><em>apage</em></code> are not between 0 and the number of pages for the
+    chosen video mode, less one:  <code>Illegal function call</code>.
+</li><li>
+<code><em>colorburst</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+</li></ul>
 
 
 <h3><code>SGN</code> function</h3>
-sign = SGN(number)
-------------
-Returns the sign of <code><em>number</em></code>. <code><em>number</em></code> is a numeric expression.
-If <code><em>number</em></code> is greater than zero, returns 1; 
-if <code><em>number</em></code> equals zero, returns 0;
-if <code><em>number</em></code> is less than zero, returns -1.
+<pre><em>sign</em> = SGN(<em>number</em>)</pre>
+<p>Returns the sign of <code><em>number</em></code>: <code>1</code> for positive, <code>0</code> for zero and <code>-1</code> for negative.
+<h4>Parameters</h4>
+<ul><li>
+<code><em>number</em></code> is a numeric expression.
+</li></ul>
 <h4>Errors</h4>
+<ul><li>
 <code><em>number</em></code> has a string value: <code>Type mismatch</code>.
+</li></ul>
 
 
-<h3><code>SHELL</code> statement</h3> [--allow-shell only]
-SHELL [command]
----------------
-Starts a subshell on the console.   
-The type of shell is determined by your OS. On Unix systems, an sh shell is 
-started. On Windows systems, a CMD.EXE shell is started. 
-'command' is a string expression.
-If 'command' is specified, the command is executed on the shell and execution
+<h3><code>SHELL</code> statement</h3>
+<pre>SHELL [<em>command</em>]</pre>
+<p>Starts a subshell on the console.
+The type of shell is determined by your OS. On Unix systems, an <code>sh</code> shell is 
+started. On Windows systems, a <code>CMD.EXE</code> shell is started. 
+If <code><em>command</em></code> is specified, the command is executed on the shell and execution
 returns to the program.
+<h4>Parameters</h4>
+<ul><li>
+<code><em>command</em></code> is a string expression.
+</li></ul>
 <h4>Notes</h4>
--   If the --allow-shell option is not specified, this statement does nothing.
+<ul><li>
+   If the <code>--shell=native</code> option is not specified, this statement does nothing.
+</li><li>
+Be careful when enabling this command, as it allows the running BASIC program full access to your files and operating system.
+</li></ul>
 <h4>Errors</h4>
-'command' has a number value: <code>Type mismatch</code>.
--   All output including errors from the operating system subshell is displayed
-    on the PC-BASIC 3.23 screen.
+<ul><li>
+<code><em>command</em></code> has a number value: <code>Type mismatch</code>.
+</li><li>
+   All output from the operating system subshell, including error messages, is displayed
+    on the PC-BASIC screen.
+</li></ul>
 
 
 <h3><code>SIN</code> function</h3>
-sine = SIN(angle)
-------------
-Returns the sine of <code><em>angle</em></code>. <code><em>angle</em></code> is a numeric expression that gives 
-the angle in radians. 
-Unless BASIC is run with the --double option, SIN(x) returns a single-precision
-value.
+<pre><em>sine</em> = SIN(<em>angle</em>)</pre>
+<p>Returns the sine of <code><em>angle</em></code>.
+<h4>Parameters</h4>
+<ul><li>
+<code><em>angle</em></code> is a numeric expression giving
+the angle in radians.
+</li></ul>
 <h4>Notes</h4>
--   SIN(x) usually differs from the value returned by GW-BASIC. For one-digit 
-    values, the difference is only in the least significant figure, but it
-    increases with the size of the angle.
+<ul><li>
+Unless PC-BASIC is run with the <code>--double</code> option, this function returns a single-precision
+value.
+</li><li>
+  The sine returned usually differs from the value returned by GW-BASIC in the least significant figure.
+</li></ul>
 <h4>Errors</h4>
-<code><em>x</em></code> has a string value, SIN raises <code>Type mismatch</code>.
+<ul><li>
+<code><em>angle</em></code> has a string value: <code>Type mismatch</code>.
+</li></ul>
      
 
 <h3><code>SOUND</code> statement</h3>
-SOUND frequency, duration
-SOUND frequency, duration [, volume [, voice] ]       [pcjr and tandy only]
----------------
-Produces a sound at 'frequency' Hz for <code><em>duration</em></code>/18.2 seconds.
-'frequency' is a numeric expression in [37, 32767] or 0.
-<code><em>duration</em></code> is a numeric expression in [0, 65535].
-If PLAY "MB" has been executed, SOUND playes in the background. If PLAY "MF" 
+<pre>SOUND <em>frequency</em>, <em>duration</em> [, <em>volume</em> [, <em>voice</em> ] ]</pre>
+<p>Produces a sound at <code><em>frequency</em></code> Hz for <code><em>duration</em>/18.2</code> seconds.
+On PCjr and Tandy, the volume and voice channel can additionally be specified.</p>
+<p>If <code>PLAY "MB"</code> has been executed, <code>SOUND</code> plays in the background. If <code>PLAY "MF"</code>
 has been executed, sound plays in the foreground and the interpreter blocks
-until the sound is finished. Foreground mode is default. Unlike PLAY, the 
-sound played by the most recent SOUND statement always plays in the background,
-even if PLAY "MF" has been entered. In background mode, each SOUND statement 
-counts as 1 toward the length of the queue reported by the PLAY function.
-PCJR and TANDY:
-    'frequency' is a numeric expression in <code>[-32768&mdash;32767]</code> (on Tandy)
-    or [37, 32767] if nonzero (on PCjr). 
-    Frequencies below 110 Hz are played as 110 Hz.
-    If <code><em>duration</em></code> is zero, <code><em>volume</em></code> and <code><em>voice</em></code> must not be specified.
+until the sound is finished. Foreground mode is default. Unlike <code>PLAY</code>, the
+sound played by the most recent <code>SOUND</code> statement always plays in the background,
+even if <code>PLAY "MF"</code> has been entered. In background mode, each <code>SOUND</code> statement
+counts as 1 toward the length of the queue reported by the <code>PLAY</code> function.</p>
+<h4>Parameters</h4>
+<ul><li>
+
+<code><em>frequency</em></code> is a numeric expression in <code>[37&mdash;32767]</code> or <code>0</code> (for <code>--syntax={advanced | pcjr}</code>)
+or in <code>[-32768&mdash;32767]</code> (for <code>--syntax=tandy</code>).
+</li><li>
+<code><em>duration</em></code> is a numeric expression in <code>[0&mdash;65535]</code>.
+</li><li>
+
     <code><em>volume</em></code> is a numeric expression in [0, 15]. 0 is silent, 15 is full
-    volume; every step less reduces the volume by 2 dB.
+    volume; every step less reduces the volume by 2 dB. (For <code>--syntax={pcjr | tandy}</code>)
+</li><li>
     <code><em>voice</em></code> is a numeric expression in [0, 2], indicating which of the
-    three tone voice channels is used for this sound.
+    three tone voice channels is used for this sound. (For <code>--syntax={pcjr | tandy}</code>)
+</li></ul>
 <h4>Notes</h4>
--   If <code><em>duration</em></code> is zero, any active background sound is stopped and
+<ul><li>
+On PCjr and Tandy, Frequencies below 110 Hz are played as 110 Hz.
+</li><li>
+   If <code><em>duration</em></code> is zero, any active background sound is stopped and
     the sound queue is emptied.
--   If <code><em>duration</em></code> is less than .022 but nonzero, the sound will be played in
+</li><li>
+If <code><em>duration</em></code> is zero, <code><em>volume</em></code> and <code><em>voice</em></code> must not be specified.
+</li><li>
+   If <code><em>duration</em></code> is less than <code>.022</code> but nonzero, the sound will be played in
     background and continue indefinitely until another sound statement is 
     executed. This is also the behaviour for negative <code><em>duration</em></code>.
--   If 'frequency' equals 32767 or 0, a silence of length <code><em>duration</em></code> is queued.
+</li><li>
+   If <code><em>frequency</em></code> equals <code>32767</code> or <code>0</code>, a silence of length <code><em>duration</em></code> is queued.
+</li></ul>
 <h4>Errors</h4>
-'frequency' is not in its allowed range, and <code><em>duration</em></code> is not zero,
-    raises <code>Illegal function call</code>.
-<code><em>duration</em></code> is zero, specifying more than two aruments raises
+<ul><li>
+Any argument has a string value: <code>Type mismatch</code>.
+</li><li>
+<code><em>frequency</em></code> is not in its allowed range, and <code><em>duration</em></code> is not zero:
+    <code>Illegal function call</code>.
+</li><li>
+<code><em>duration</em></code> is zero and more than two arguments are specified:
     <code>Syntax error</code>.    
-'frequency' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
-<code><em>duration</em></code> is not in [-65535, 65535]: <code>Illegal function call</code>.
-<code><em>volume</em></code> is not in [0, 15]: <code>Illegal function call</code>.
-<code><em>voice</em></code> is not in [0, 2]: <code>Illegal function call</code>.
+</li><li>
+<code>--syntax={ pcjr | tandy }</code> is not set and more than two arguments are specified:
+    <code>Syntax error</code>.
+</li><li>
+<code><em>frequency</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>duration</em></code> is not in <code>[-65535&mdash;65535]</code>: <code>Illegal function call</code>.
+</li><li>
+<code><em>volume</em></code> is not in <code>[0&mdash;15]</code>: <code>Illegal function call</code>.
+</li><li>
+<code><em>voice</em></code> is not in <code>[0&mdash;2]</code>: <code>Illegal function call</code>.
+</li></ul>
 
 
-<h3><code>SOUND</code> statement</h3> (advanced-sound switch)            [pcjr and tandy syntax only]
-SOUND {ON | OFF}
----------------
-PCJR and TANDY:
-    Toggles the availability of advanced sound capabilities, including 3-voice 
-    sound, noise generation and volume control.
+<h3><code>SOUND</code> statement (advanced-sound switch)</h3>
+<pre>SOUND { ON | OFF }</pre>
+<p> Toggles the availability of advanced sound capabilities on PCjr and Tandy. This includes 3-voice
+    sound, noise generation and volume control.</p>
 <h4>Notes</h4>
--   On PCjr and Tandy computers, SOUND ON would turn on the external speaker as
+<ul><li>
+Only available with <code>--syntax={pcjr | tandy}</code>.
+</li><li>
+   On PCjr and Tandy computers, <code>SOUND ON</code> would turn on the external speaker as
     well as make advanced sound capabilities available. On PC-BASIC, both the
     internal and the external speaker are emulated through the same sound
     system.
+</li></ul>
+<h4>Errors</h4>
+<ul><li>
+This statement is used and <code>--syntax={ pcjr | tandy }</code> is not set:
+    <code>Syntax error</code>.
+</li></ul>
 
 <h3><code>SPACE$</code> function</h3>
-spaces = SPACE$(number)
----------------
-Returns a string of <code><em>number</em></code> spaces.
+<pre><em>spaces</em> = SPACE$(<em>number</em>)</pre>
+<p>Returns a string of <code><em>number</em></code> spaces.
+<h4>Parameters</h4>
+<ul><li>
 <code><em>number</em></code> is a numeric expression in <code>[0&mdash;255]</code>.
+</li></ul>
 <h4>Errors</h4>
-<code><em>number</em></code> has a string value: <code>Type mismatch</code>
-<code><em>number</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+<ul><li>
+<code><em>number</em></code> has a string value: <code>Type mismatch</code>.
+</li><li>
 <code><em>number</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>number</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+</li></ul>
 
 
 <h3><code>SQR</code> function</h3>
-root = SQR(number)
-------------
-Returns the square root of <code><em>number</em></code>. 
+<pre><em>root</em> = SQR(<em>number</em>)</pre>
+<p>Returns the square root of <code><em>number</em></code>. </p>
+<h4>Parameters</h4>
+<ul><li>
 <code><em>number</em></code> is a numeric expression.
-The return value is a single-precision float unless PC-BASIC 3.23 is run with
-the --double option, in which case the precision matches that of <code><em>number</em></code>.
+</li></ul>
+<h4>Notes</h4>
+<ul><li>
+Unless PC-BASIC is run with the <code>--double</code> option, this function returns a single-precision
+value.
+</li></ul>
 <h4>Errors</h4>
+<ul><li>
 <code><em>number</em></code> has a string value: <code>Type mismatch</code>
+</li></ul>
 
 
 <h3><code>STICK</code> function</h3>
-pos = STICK(axis)
---------------
-Returns q coordinate of a joystick axis. All coordinates returned are in the 
-range [1,254] with 128 indicating the neutral position.
-'axis' is a numeric expression in [0,3] and indicates which axis to read.
-'axis'  return value
-    0   1st joystick x coordinate
-    1   1st joystick y coordinate
-    2   2nd joystick x coordinate
-    3   2nd joystick y coordinate
+<pre><em>pos</em> = STICK(<em>axis</em>)</pre>
+<p>Returns a coordinate of a joystick axis. All coordinates returned are in the
+range <code>[1&mdash;254]</code> with <code>128</code> indicating the neutral position.
+<table><tr>
+<th><code><em>axis</em></code></th><th>  return value</th>
+</tr><tr>
+<td>    0</td><td>   1st joystick x coordinate</td>
+</tr><tr>
+<td>    1</td><td>   1st joystick y coordinate</td>
+</tr><tr>
+<td>    2</td><td>   2nd joystick x coordinate</td>
+</tr><tr>
+<td>    3</td><td>   2nd joystick y coordinate</td>
+</tr></table>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>axis</em></code> is a numeric expression in <code>[0&mdash;3]</code> and indicates which axis to read.
+</li></ul>
 <h4>Errors</h4>
-'axis' has a string value: <code>Type mismatch</code>
-'axis' is not in [0,3]: <code>Illegal function call</code>.
-'axis' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+<ul><li>
+<code><em>axis</em></code> has a string value: <code>Type mismatch</code>
+</li><li>
+<code><em>axis</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>axis</em></code> is not in <code>[0&mdash;3]</code>: <code>Illegal function call</code>.
+</li></ul>
 
 
 <h3><code>STOP</code> statement</h3>
-STOP
---------------
-Breaks program execution and returns to interactive mode. STOP prints a Break 
-message on the console. Files are not closed. It is possible to resume 
-execution at the next statement using CONT.
-
+<pre>STOP</pre>
+<p>Breaks program execution, prints a <code>Break</code>
+message on the console and returns control to the user. Files are not closed. It is possible to resume program
+execution at the next statement using <code>CONT</code>.
+</p>
 
 <h3><code>STR$</code> function</h3>
-repr = STR$(number)
--------------
-Returns the string representation of <code><em>number</em></code>.
+<pre><em>repr</em> = STR$(<em>number</em>)</pre>
+<p>Returns the string representation of <code><em>number</em></code>.
+<h4>Parameters</h4>
+<ul><li>
 <code><em>number</em></code> is a numeric expression.
+</li></ul>
 <h4>Errors</h4>
+<ul><li>
 <code><em>number</em></code> has a string value: <code>Type mismatch</code>.
+</li></ul>
 
 
-<h3><code>STRIG</code> statement</h3> (overall)
-STRIG { ON | OFF }
----------------
-Has no effect.
+<h3><code>STRIG</code> statement</h3>
+<pre>STRIG { ON | OFF }</pre>
+<p>Has no effect.</p>
 
 
-<h3><code>STRIG</code> statement</h3> (events)
-STRIG(button) { ON | OFF | STOP }
----------------
-Controls event trapping of the joystick trigger 'button'. If ON is specified
-event trapping is switched on; if OFF, off. STOP suspends event trapping until 
-another STRIG() ON is executed. Up to one event can be triggered during 
+<h3><code>STRIG</code> statement (events)</h3>
+<pre>STRIG(<em>button</em>) { ON | OFF | STOP }</pre>
+<p>Switches event trapping of the joystick trigger <code><em>button</em></code> <code>ON</code> or <code>OFF</code>.
+<code>STRIG (<em>button</em>) STOP</code> suspends event trapping until
+<code>STRIG (<em>button</em>) ON</code> is executed. Up to one event can be triggered during
 suspension, provided that event handling was switched on prior to suspension. 
-The event triggered during suspension is handled immediately after the next ON
-statement.
-'button' must be a numeric expression in [0,2,4,6]:
-0   joystick 1, trigger 1
-2   joystick 2, trigger 1
-4   joystick 1, trigger 2
-6   joystick 2, trigger 2
+The event triggered during suspension is handled immediately after the next <code>STRIG (<em>button</em>) ON</code>
+statement.</p>
+<table><tr>
+<th><code><em>button</em></code></th><th>  return value</th>
+</tr><tr>
+<td>    0</td><td>   1st joystick 1st trigger</td>
+</tr><tr>
+<td>    2</td><td>   2nd joystick 1st trigger</td>
+</tr><tr>
+<td>    4</td><td>   1st joystick 2nd trigger</td>
+</tr><tr>
+<td>    6</td><td>   2nd joystick 2nd trigger</td>
+</tr></table>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>button</em></code> is a numeric expression in <code>[0, 2, 4, 6]</code>.
+</li></ul>
 <h4>Errors</h4>
-'button' is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
-'button' is not in [0,2,4,6]: <code>Illegal function call</code>.
-'button' has a string value: <code>Type mismatch</code>.
+<ul><li>
+<code><em>button</em></code> has a string value: <code>Type mismatch</code>.
+</li><li>
+<code><em>button</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>button</em></code> is not in <code>[0, 2, 4, 6]</code>: <code>Illegal function call</code>.
+</li></ul>
 
 
 <h3><code>STRIG</code> function</h3>
-result = STRIG(mode)
---------------
-Returns the status of the joystick trigger buttons.
-<code><em>mode</em></code> is a numeric expression in [0, 7]. STRIG returns the following
-results, all boolean values:
-<code><em>mode</em></code>  STRIG result
-  0     whether 1st joystick, 1st trigger has been pressed since last poll.
-  1     whether 1st joystick, 1st trigger is currently pressed.
-  2     whether 2nd joystick, 1st trigger has been pressed since last poll.
-  3     whether 2nd joystick, 1st trigger is currently pressed.
-  4     whether 1st joystick, 2nd trigger has been pressed since last poll.
-  5     whether 1st joystick, 2nd trigger is currently pressed.
-  6     whether 2nd joystick, 2nd trigger has been pressed since last poll.
-  7     whether 2nd joystick, 2nd trigger is currently pressed.
+<pre><em>result</em> = STRIG(<em>mode</em>)</pre>
+<p>Returns the status of the joystick trigger buttons.
+ <code>STRIG</code> returns the following
+results, all Boolean values:</p>
+<table><tr>
+<th><code><em>mode</em></code></th><th>Return value</th>
+</tr><tr>
+  <td>0</td><td>     1st joystick, 1st trigger has been pressed since last poll.</td>
+</tr><tr>
+  <td>1</td><td>     1st joystick, 1st trigger is currently pressed.</td>
+</tr><tr>
+  <td>2</td><td>     2nd joystick, 1st trigger has been pressed since last poll.</td>
+</tr><tr>
+  <td>3</td><td>     2nd joystick, 1st trigger is currently pressed.</td>
+</tr><tr>
+  <td>4</td><td>     1st joystick, 2nd trigger has been pressed since last poll.</td>
+</tr><tr>
+  <td>5</td><td>     1st joystick, 2nd trigger is currently pressed.</td>
+</tr><tr>
+  <td>6</td><td>     2nd joystick, 2nd trigger has been pressed since last poll.</td>
+</tr><tr>
+  <td>7</td><td>     2nd joystick, 2nd trigger is currently pressed.</td>
+</tr></table>
+<h4>Parameters</h4>
+<ul><li>
+<code><em>mode</em></code> is a numeric expression in <code>[0&mdash;7]</code>.
+</li></ul>
 <h4>Notes</h4>
--   The STRIG function returns correct results regardless of the STRIG ON 
-    status or whether STRIG(0) has been called first.
+<ul><li>
+   The <code>STRIG</code> function returns correct results regardless of the <code>STRIG ON</code>
+    status or whether <code>STRIG(0)</code> has been called first.
+</li></ul>
 <h4>Errors</h4>
+<ul><li>
 <code><em>mode</em></code> has a string value: <code>Type mismatch</code>.
-<code><em>mode</em></code> is not in [0, 97: <code>Illegal function call</code>.
+</li><li>
 <code><em>mode</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>mode</em></code> is not in <code>[0&mdash;7]</code>: <code>Illegal function call</code>.
+</li></ul>
 
 
 <h3><code>STRING$</code> function</h3>
-string = STRING$(length, char)
-----------------
-Returns a string of n times character 'char'.
-If 'char' is a numeric expression, it must be between 0 and 255 and is
-interprested as the ASCII value of the character.
-If 'char' is a string expression, its first character is used.
+<pre><em>string</em> = STRING$(<em>length</em>, <em>char</em>)</pre>
+<p>Returns a string of <code><em>length</em></code> times character <code><em>char</em></code>.</p>
+<h4>Parameters</h4>
+<ul><li>
+If <code><em>char</em></code> is a numeric expression, it must be in <code>[0&mdash;255]</code> and is
+interpreted as the ASCII value of the character.
+</li><li>
+If <code><em>char</em></code> is a string expression, its first character is used.
+</li></ul>
 <h4>Errors</h4>
-'char' is the empty string: <code>Illegal function call</code>.
-'char' or <code><em>length</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
-'char' or <code><em>length</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+<ul><li>
+<code><em>length</em></code> has a string value: <code>Type mismatch</code>.
+</li><li>
+<code><em>char</em></code> is the empty string: <code>Illegal function call</code>.
+</li><li>
+<code><em>char</em></code> or <code><em>length</em></code> is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
+</li><li>
+<code><em>char</em></code> or <code><em>length</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
+</li></ul>
 
 
 <h3><code>SWAP</code> statement</h3>
-SWAP var_0, var_1
---------------
-Exchanges the values of <code><em>var_0</em></code> and <code><em>var_1</em></code>, which must be variable names of
-the exact same type.
+<pre>SWAP <em>var_0</em>, <em>var_1</em></pre>
+<p>Exchanges the values of <code><em>var_0</em></code> and <code><em>var_1</em></code>.
+<h4>Parameters</h4>
+<ul><li>
+ <code><em>var_0</em></code> and <code><em>var_1</em></code> are previously defined variables of
+the same type.
+</li></ul>
 <h4>Errors</h4>
+<ul><li>
 <code><em>var_0</em></code> or <code><em>var_1</em></code> is undefined: <code>Illegal function call</code>.
-the types of <code><em>var_0</em></code> and <code><em>var_1</em></code> are not the same: <code>Type mismatch</code>.
+</li><li>
+The types of <code><em>var_0</em></code> and <code><em>var_1</em></code> are not the same: <code>Type mismatch</code>.
+</li></ul>
 
 
 <h3><code>SYSTEM</code> statement</h3>
-SYSTEM
-----------------
-Exits the interpreter. 
+<pre>SYSTEM</pre>
+<p>Exits the interpreter.</p>
 <h4>Notes</h4>
--   SYSTEM closes the BASIC interpreter immediately without prompt.
-    Any unsaved program will be lost.
+<ul><li>
+   <code>SYSTEM</code> quits the PC-BASIC interpreter immediately without further interaction.
+    Any unsaved program or data will be lost.
+</li></ul>
 
 
 <h3><code>TAN</code> function</h3>
@@ -5652,6 +5816,7 @@ Boolean:
     NOT, AND, OR, XOR, EQV, IMP
 
 
+<a name="videomodes"></a>
 SCREEN MODES, ATTRIBUTES, PALETTES AND COLOURS
 ----------------------------------------------
 The emulated VGA adapter can produce more colours than can be shown on the 
