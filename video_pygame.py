@@ -517,14 +517,15 @@ def get_palette_index(cattr):
         elif cattr == 0xf0:
             # black on bright background, blinking
             color = (0, 0, 0xa0)    
-        elif cattr % 8 == 0:
-            color = (0, 0, (cattr&0x80) + 1)
-        elif cattr < 0x80:    
-            # most % 8 == 0 points aren't actually black; blink goes to black bg
-            color = (0, 0, cattr)
-        else:    
-            # most % 8 == 0 points aren't actually black; blink goes to black bg
-            color = (0, 0, 0x80 + cattr % 16)
+        else:
+            # most % 8 == 0 points aren't actually black
+            if cattr % 8 == 0:
+                cattr += 1
+            if cattr < 0x80:    
+                color = (0, 0, cattr)
+            else:    
+                # blink goes to black bg
+                color = (0, 0, 0x80 + cattr % 16)
         if cattr in (0x70, 0x78, 0xF0, 0xF8):
             # bright green background for these points
             bg = (0, 0, 15)    

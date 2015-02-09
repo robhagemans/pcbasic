@@ -122,12 +122,16 @@ def prepare_default_palettes(cga_low):
     cga16_palette = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
     ega_palette = (0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63)
     ega_mono_palette = (0, 4, 1, 8)
+    # MDA text attributes: http://www.seasip.info/VintagePC/mda.html
+    # see also http://support.microsoft.com/KB/35148
+    # MDA palette is currently something of a hack; 
+    # half-hardcoded in in video_curses. 
+    # As a consequence ega_mono_text_palette is unused.
+    mda_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2)
     # http://qbhlp.uebergeord.net/screen-statement-details-colors.html
-    # http://www.seasip.info/VintagePC/mda.html
     # underline/intensity/reverse video attributes are slightly different from mda
     # attributes 1, 9 should have underlining. 
     ega_mono_text_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 0)
-    mda_palette = (0, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2)
 
 
 ###############################################################################
