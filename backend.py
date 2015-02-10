@@ -1029,7 +1029,8 @@ class Screen(object):
             raise error.RunError(5)
         # attribute and border persist on width-only change
         if (not (self.mode.is_text_mode and mode_info.is_text_mode) or
-                self.apagenum != new_apagenum or self.vpagenum != new_vpagenum):
+                self.apagenum != new_apagenum or self.vpagenum != new_vpagenum
+                or self.colorswitch != new_colorswitch):
             self.attr = mode_info.attr
         if (not (self.mode.is_text_mode and mode_info.is_text_mode) and
                 mode_info.name != self.mode.name):
