@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3.
 """
 
 import os
+import sys
 import shutil
 import logging
 
@@ -88,12 +89,12 @@ def convert():
         if infile:
             program.load(open_native_or_dos_filename(infile))
         elif plat.has_stdin:
-            program.load(stdin)
+            program.load(sys.stdin)
         if outfile:
             # on save from command-line, use exact file name
             program.save(open(outfile, 'wb'), mode)
         elif plat.has_stdout:
-            program.save(stdout, mode)
+            program.save(sys.stdout, mode)
     except error.RunError as e:
         logging.error(error.get_message(e.err))
     except EnvironmentError as e:    
