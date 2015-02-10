@@ -425,7 +425,7 @@ class TextMode(VideoMode):
             except IndexError:
                 pass
             last_row = crow
-        if last_row>=0 and last_row<25:
+        if last_row >= 0 and last_row < 25 and page >= 0 and page < self.num_pages:
             self.screen.refresh_range(page, last_row+1, 1, self.width, for_keys=True)
 
 
