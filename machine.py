@@ -431,8 +431,8 @@ def get_data_memory_string(address):
                     str_nearest = str_try
                     the_var = lst[i:i+3]
     try:
-        return state.basic_state.strings.retrieve(v)[address - str_nearest]
-    except IndexError, AttributeError:
+        return state.basic_state.strings.retrieve(the_var)[address - str_nearest]
+    except (IndexError, AttributeError, KeyError):
         return -1
     
 ###############################################################
