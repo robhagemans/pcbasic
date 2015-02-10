@@ -816,7 +816,7 @@ def unset_view():
 
 def clear_view():
     """ Clear the scroll area. """
-    if backend.video_capabilities in ('ega', 'cga', 'cga_old'):
+    if backend.video_capabilities in ('vga', 'ega', 'cga', 'cga_old'):
         # keep background, set foreground to 7
         attr_save = state.console_state.screen.attr
         state.console_state.screen.set_attr(attr_save & 0x70 | 0x7)
@@ -833,7 +833,7 @@ def clear_view():
     backend.video.clear_rows(state.console_state.screen.attr, 
                              state.console_state.view_start, last_row)
     backend.video.move_cursor(state.console_state.row, state.console_state.col)
-    if backend.video_capabilities in ('ega', 'cga', 'cga_old'):
+    if backend.video_capabilities in ('vga', 'ega', 'cga', 'cga_old'):
         # restore attr
         state.console_state.screen.set_attr(attr_save)
     
