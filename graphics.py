@@ -622,6 +622,9 @@ class Drawing(object):
             self.sprites[array_name] = (dx, dy, sprite, a_version)
         # sprite must be fully inside *viewport* boundary
         x1, y1 = x0+dx-1, y0+dy-1
+        # Tandy screen 6 sprites are twice as wide as claimed
+        if self.screen.mode.name == '640x200x4':
+            x1 = x0 + 2*dx - 1 
         # illegal fn call if outside viewport boundary
         vx0, vy0, vx1, vy1 = self.get_view()
         util.range_check(vx0, vx1, x0, x1)
