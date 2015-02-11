@@ -109,6 +109,7 @@ def start_basic():
     import iolayer
     import reset
     do_reset = False
+    backend, console = None, None
     try:
         # resume from saved emulator state if requested and available
         resume = config.options['resume'] and state.load()
@@ -136,9 +137,10 @@ def start_basic():
         msg = error.get_message(e.err)
         if console and config.options['wait']:
             console.write_error_message(msg, None)
-        # close terminal to avoid garbled error message
-        backend.video.close()
-        backend.video = None    
+        if backend and backend.video:
+            # close terminal to avoid garbled error message
+            backend.video.close()
+            backend.video = None    
         logging.error(msg)
     except error.Exit:
         pass

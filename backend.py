@@ -806,7 +806,7 @@ def prepare_video():
     """ Prepare the video subsystem. """
     global egacursor
     global video_capabilities, composite_monitor, mono_monitor
-    global font_8
+    global font_8, heights_needed
     video_capabilities = config.options['video']
     # do all text modes with >8 pixels have an ega-cursor?    
     egacursor = config.options['video'] in (
@@ -821,6 +821,12 @@ def prepare_video():
     # video memory size - default is EGA 256K
     state.console_state.screen = Screen(config.options['text-width'], 
                                         config.options['video-memory'])
+
+    heights_needed = set()
+    for mode in state.console_state.screen.text_data.values():
+        heights_needed.add(mode.font_height)
+    for mode in state.console_state.screen.mode_data.values():
+        heights_needed.add(mode.font_height)
     # load the 8-pixel font that's available in RAM.
     font_8 = typeface.load(config.options['font'], 8, 
                            unicodepage.cp_to_unicodepoint)

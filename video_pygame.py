@@ -229,14 +229,6 @@ def prepare():
         key_to_scan[pygame.K_F11] = scancode.F11
         key_to_scan[pygame.K_F12] = scancode.F12
     # fonts
-    if config.options['video'] in ('cga', 'cga_old', 'tandy', 'pcjr'):
-        heights_needed = (8, )
-    elif config.options['video'] == 'mda':
-        heights_needed = (14, )
-    elif config.options['video'] == 'ega':
-        heights_needed = (14, 8)
-    else:
-        heights_needed = (16, 14, 8)
     font_families = config.options['font']
     # mouse setups
     if config.options['mouse']:
@@ -328,7 +320,7 @@ def init():
     # retrieve 8-pixel font from backend
     # also link as 9-pixel font for tandy
     fonts = { 8: backend.font_8, 9: backend.font_8 }
-    if not load_fonts(heights_needed):
+    if not load_fonts(backend.heights_needed):
         return False
     text_mode = True    
     set_page(0, 0)
@@ -336,7 +328,7 @@ def init():
 
 def load_fonts(heights_needed):
     """ Load font typefaces. """
-    for height in heights_needed:
+    for height in reversed(sorted(heights_needed)):
         if height in fonts:
             # already force loaded
             continue
@@ -353,9 +345,6 @@ def load_fonts(heights_needed):
         if 16 in fonts and fonts[16]:
             typeface.fixfont(height, fonts[height], 
                              unicodepage.cp_to_unicodepoint, fonts[16])
-    if 16 in heights_needed and not fonts[16]:
-        logging.error('No 16-pixel font specified')
-        return False
     return True
         
 def init_screen_mode(mode_info):
