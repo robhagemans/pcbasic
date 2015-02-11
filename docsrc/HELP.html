@@ -2161,7 +2161,7 @@ of a random access file.</p>
 </li><li>
    String values can be entered with or without double quotes (<code>"</code>).
 </li><li>
-   Numeric values are terminated by <code> </code>, <code>LF</code>, <code>CR</code>, <code>,</code>.
+   Numeric values are terminated by <code>&nbsp;</code>, <code>LF</code>, <code>CR</code>, <code>,</code>.
 </li><li>
    Unquoted strings are terminated by <code>LF</code>, <code>CR</code>, <code>,</code>.
 </li><li>
@@ -3545,7 +3545,7 @@ the port directly. <code><em>rec_len</em></code> sets the number of bytes read b
 </tr><tr>
 <td><code>LF</code></td>
 <td>no</td>
-<td>Send a line feed after each carriage return.</code>
+<td>Send a line feed after each carriage return.</td>
 </tr></table>
 
 <p>    The following GW-BASIC specifications are ignored by PC-BASIC:</p>
@@ -3556,23 +3556,23 @@ the port directly. <code><em>rec_len</em></code> sets the number of bytes read b
 </tr><tr>
 <td><code>RS</code></td>
 <td>no</td>
-<td>Suppress <em>Request To Send</em>.</code>
+<td>Suppress <em>Request To Send</em>.</td>
 </tr><tr>
-<td><code>CS[<em>n</em>]</code></code></td>
+<td><code>CS[<em>n</em>]</code></td>
 <td><code>CS1000</code></td>
 <td>Set <em>Clear To Send</em> timeout to <code><em>n</em></code> milliseconds.
             If <code><em>n</em></code> is not given, set timeout to <code>0</code>.
             Default is <code>CS0</code> if <code>RS</code> is set; <code>CS1000</code> otherwise.
 </td>
 </tr><tr>
-<td><code>DS[<em>n</em>]</code></code></td>
+<td><code>DS[<em>n</em>]</code></td>
 <td><code>DS1000</code></td>
 <td>
 Set <em>Data Set Ready</em> timeout to <code><em>n</em></code> milliseconds.
             If <code><em>n</em></code> is not given, set timeout to <code>0</code>.
 </td>
 </tr><tr>
-<td><code>CD[<em>n</em>]</code></code></td>
+<td><code>CD[<em>n</em>]</code></td>
 <td><code>CD0</code></td>
 <td>
 Set <em>Carrier Detect</em> timeout to <code><em>n</em></code> milliseconds.
@@ -3581,7 +3581,7 @@ Set <em>Carrier Detect</em> timeout to <code><em>n</em></code> milliseconds.
 </tr><tr>
     <td><code>PE</code></td>
 <td>no</td>
-    <td>Enable parity checking.</code>
+    <td>Enable parity checking.</td>
 </tr></table>
 
 
@@ -3681,11 +3681,11 @@ Requires <code>--video={cga, tandy, pcjr}</code>.
    Only a limited number of machine ports are emulated.
 </li><li>
    In GW-BASIC under MS-DOS, the sequence needed to set the colour plane mask is:
-<pre>OUT &h3C4, 2
-OUT &h3C5, 2 ^ <em>plane</em></pre>
+<pre>OUT &amp;h3C4, 2
+OUT &amp;h3C5, 2 ^ <em>plane</em></pre>
     The sequence needed to set the colour plane is:
-<pre>OUT &h3CE, 4
-OUT &h3CF, <em>plane</em></pre>
+<pre>OUT &amp;h3CE, 4
+OUT &amp;h3CF, <em>plane</em></pre>
 The initial <code>OUT</code> statements currently have no effect in PC-BASIC.    
 </li></ul>
 
@@ -4014,7 +4014,7 @@ suspension is handled immediately after the next <code>PEN ON</code> statement.<
 </li></ul>
 <h4>Music Macro Language reference</h4>
 <dl>
-<dt>Notes and Pauses</td>
+<dt>Notes and Pauses</dt>
 <dd>
 <table><tr>
 <td><code><em>note</em></code></td>
@@ -4851,7 +4851,7 @@ the ASCII code of the character is returned. If it is non-zero, in text mode the
 attribute is returned; in other screens, 0 is returned.
 </li></ul>
 <h4>Errors</h4>
-</li></ul>
+<ul><li>
 Any parameter has a string value: <code>Type mismatch</code>.
 </li><li>
 <code><em>fn</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
@@ -5616,7 +5616,6 @@ In this case, <code><em>num_columns</em></code> must be one of 20, 40 or 80.
         <code>SCREEN 1</code> (40)  &harr;  <code>SCREEN 2</code> (80)<br />
         <code>SCREEN 7</code> (40)  &harr;  <code>SCREEN 8</code> (80)<br />
         <code>SCREEN 7</code> (40)  &larr;  <code>SCREEN 9</code> (80)<br />
-</pre>
 </li><li>
    Screen width value 20 is only allowed on Tandy and PCjr. Changing to this width
     changes to <code>SCREEN 3</code>. Additionally, the following changes occur:<br />
@@ -5865,7 +5864,7 @@ Schematically, MBF floating point numbers are represented as follows.</p>
 <td><code><em>m1</em></code></td>
 <td>most significant mantissa byte:   <code><em>m1</em> = <em>s f1 f2 f3 f4 f5 f6 f7</em></code>
 </tr><tr>
-<td><code><em>m2</em>&mdash;<em>m7</em></td>
+<td><code><em>m2</em>&mdash;<em>m7</em></code></td>
 <td>bytes of decreasing significance: <code><em>m2</em> = <em>f8 f9 fA fB fC fD fE fF</em></code>, etc.</td>
 </tr><tr>
 <td><code><em>s</em></code></td>
@@ -5886,7 +5885,7 @@ Schematically, MBF floating point numbers are represented as follows.</p>
 <dt>zero</dt>
 <dd>Any float with the exponent byte set to <code>0</code> is interpreted as a zero.</dd>
 </dl>
-<p>A single-precision MBF float therefore has 23 bits of precision, while a double-precision MBF float has 55 bits of precision.</pre>
+<p>A single-precision MBF float therefore has 23 bits of precision, while a double-precision MBF float has 55 bits of precision.</p>
     
     
 
@@ -6054,7 +6053,6 @@ in a <em>palette</em>.</p>
 <td>14</td><td>Light Yellow</td><td style="background-color: #ffff55;"></td>
 </tr><tr>
 <td>15</td><td>High-intensity white</td><td style="background-color: #ffffff;"></td>
-</tr><tr>
 </tr>
 </table>
 
@@ -6335,7 +6333,7 @@ represent them in a BASIC file.</p>
 55</code></td><td><code>File already open
 </code></td></tr><tr><td><code>
 56</code></td><td><em>unused</em>
-</code></td></tr><tr><td><code>
+</td></tr><tr><td><code>
 57</code></td><td><code>Device I/O error
 </code></td></tr><tr><td><code>
 58</code></td><td><code>File already exists
@@ -6351,7 +6349,7 @@ represent them in a BASIC file.</p>
 64</code></td><td><code>Bad file name
 </code></td></tr><tr><td><code>
 65</code></td><td><em>unused</em>
-</code></td></tr><tr><td><code>
+</td></tr><tr><td><code>
 66</code></td><td><code>Direct statement in file
 </code></td></tr><tr><td><code>
 67</code></td><td><code>Too many files
@@ -6374,7 +6372,7 @@ represent them in a BASIC file.</p>
 </code></td></tr><tr><td><code>
 76</code></td><td><code>Path not found
 </code></td></tr><tr><td><code>
-77</code></td><td><code>Deadlock
+77</code></td><td><code>Deadlock</code>
 </tr></table>
 <p>Any error code that does not have a message associated to it will generate
 the message <code>Unprintable error</code>.</p>
