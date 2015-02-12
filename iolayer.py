@@ -742,8 +742,8 @@ def close_devices():
 
 ############################################################################
 
-def open_device_file(dev, number, mode, access, lock='', reclen=128):
-    """ Clone device object as device file object. """   
+def clone_device(dev, number, mode, access, lock='', reclen=128):
+    """ Clone device object as device file object (helper method). """
     inst = copy.copy(dev)
     inst.number = number
     inst.access = access
@@ -766,7 +766,7 @@ class NullDevice(object):
         """ Open a file on this device. """
         if number != 0:
             state.io_state.files[number] = self
-        return open_device_file(self, number, mode, access, lock, reclen)
+        return clone_device(self, number, mode, access, lock, reclen)
     
     def close(self):
         """ Close this device file. """
@@ -986,7 +986,10 @@ class LPTFile(BaseFile):
 
     def open(self, number, mode, access, lock, reclen, param=''):
         """ Open a file on LPTn. """
-        return open_device_file(self, number, mode, access, lock, reclen)
+        f = clone_device(self, number, mode, access, lock, reclen)
+        # don't trigger flushes on LPT files, just on the device directly
+        f.flush_trigger = 'close'
+        return f
 
     def flush(self):
         """ Flush the printer buffer to the underlying stream. """
@@ -1082,7 +1085,7 @@ class COMFile(RandomBase):
         except Exception:
             self.close()
             raise
-        return open_device_file(self, number, mode, access, lock, reclen)   
+        return clone_device(self, number, mode, access, lock, reclen)   
     
     def check_read(self):
         """ Fill buffer at most up to buffer size; non blocking. """
