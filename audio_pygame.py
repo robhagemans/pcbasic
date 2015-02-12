@@ -46,8 +46,8 @@ def init_sound():
     if not mixer:
         return False    
     # initialise mixer as silent
-    else:
-        mixer.quit()    
+    # this takes 0.7s but is necessary to be able to set channels to mono
+    mixer.quit()    
     return True
     
 def stop_all_sound():

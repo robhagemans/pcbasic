@@ -18,7 +18,7 @@ state.basic_state.time_offset = datetime.timedelta()
 
 def timer_milliseconds():
     """ Get milliseconds since midnight. """
-    now = datetime.datetime.today() + state.basic_state.time_offset
+    now = datetime.datetime.now() + state.basic_state.time_offset
     midnight = datetime.datetime(now.year, now.month, now.day)
     diff = now-midnight
     seconds = diff.seconds
@@ -27,7 +27,7 @@ def timer_milliseconds():
 
 def set_time(timestr):    
     """ Set the system time offset. """
-    now = datetime.datetime.today() + state.basic_state.time_offset
+    now = datetime.datetime.now() + state.basic_state.time_offset
     timelist = [0, 0, 0]
     pos, listpos, word = 0, 0, ''
     while pos < len(timestr):
@@ -52,7 +52,7 @@ def set_time(timestr):
         
 def set_date(datestr):    
     """ Set the system date offset. """
-    now = datetime.datetime.today() + state.basic_state.time_offset
+    now = datetime.datetime.now() + state.basic_state.time_offset
     datelist = [1, 1, 1]
     pos, listpos, word = 0, 0, ''
     if len(datestr) < 8:
@@ -91,10 +91,10 @@ def set_date(datestr):
     
 def get_time():
     """ Get (offset) system time. """
-    return bytearray((datetime.datetime.today() + state.basic_state.time_offset).strftime('%H:%M:%S'))
+    return bytearray((datetime.datetime.now() + state.basic_state.time_offset).strftime('%H:%M:%S'))
     
 def get_date():
     """ Get (offset) system date. """
-    return bytearray((datetime.datetime.today() + state.basic_state.time_offset).strftime('%m-%d-%Y'))
+    return bytearray((datetime.datetime.now() + state.basic_state.time_offset).strftime('%m-%d-%Y'))
 
 
