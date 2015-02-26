@@ -231,17 +231,10 @@ def prepare():
     # fonts
     font_families = config.options['font']
     # mouse setups
-    if config.options['mouse']:
-        mousebutton_copy = -1
-        mousebutton_paste = -1
-        mousebutton_pen = -1
-        for i, s in enumerate(config.options['mouse']):    
-            if s == 'copy':
-                mousebutton_copy = i+1
-            elif s == 'paste':
-                mousebutton_paste = i+1
-            elif s == 'pen':
-                mousebutton_pen = i+1
+    buttons = { 'left': 1, 'middle': 2, 'right': 3, 'none': -1 }
+    mousebutton_copy = buttons[config.options['copy-paste'][0]]
+    mousebutton_paste = buttons[config.options['copy-paste'][1]]
+    mousebutton_pen = buttons[config.options['pen']]
     if not config.options['altgr']:
         # on Windows, AltGr key is reported as right-alt
         key_to_scan[pygame.K_RALT] = scancode.ALT

@@ -112,7 +112,11 @@ arguments = {
     'nobox': {'type': 'bool', 'default': False,},
     'utf8': {'type': 'bool', 'default': False,},
     'border': {'type': 'int', 'default': 5,},
-    'mouse': {'type': 'string', 'list': 3, 'default': ['copy', 'paste', 'pen'],},
+    'pen': {
+        'type': 'string', 'default': 'left', 
+        'choices': ('left', 'middle', 'right', 'none',), },
+    'copy-paste': {'type': 'string', 'list': 2, 'default': ['left', 'middle'],
+                   'choices': ('left', 'middle', 'right', 'none',),},
     'state': {'type': 'string', 'default': '',},
     'mono-tint': {'type': 'int', 'list': 3, 'default': [255, 255, 255],},
     'monitor': { 

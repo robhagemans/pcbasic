@@ -293,6 +293,12 @@ standard output. If program is not specified, use the argument of
 <code>--run</code> or <code>--load</code>. If none of those are
 given, read from standard input. Overrides <code>--resume</code>,
 <code>--run</code> and <code>--load</code>.</dd>
+<dt><code>--copy-paste=<em>copy_button</em>,<em>paste_button</em></code></dt>
+<dd>
+Choose the mouse buttons for clipboard operations. 
+<code><em>copy_button</em></code> and <code><em>paste_button</em></code> are 
+one of <code>left</code>,<code>middle</code>,<code>right</code>,<code>none</code>.
+</dd>
 <dt><code>--ctrl-c-break[=True|=False]</code></dt>
 <dd>
 If <code>False</code>, follow GW-BASIC behaviour
@@ -529,24 +535,6 @@ values are allowed for compatibility with GW-BASIC
 <code><em>path</em></code>. Path can be absolute or relative. By
 default, <code>Z:</code> is assigned to the current working
 directory and no other drive letters are assigned.</dd>
-<dt><code>--mouse=<em>left</em>,<em>middle</em>,<em>right</em></code></dt>
-<dd>Set the functions of the three mouse buttons. Available
-functions are:
-<table>
-<tr>
-<td>copy</td>
-<td>Select and copy to clipboard.</td>
-</tr>
-<tr>
-<td>paste</td>
-<td>Paste from clipboard.</td>
-</tr>
-<tr>
-<td>pen</td>
-<td>Light pen emulation.</td>
-</tr>
-</table>
-On Android, touch is mapped to the light pen.</dd>
 <dt><code>-n</code></dt>
 <dd>Run PC-BASIC as a command-line filter. Same as
 <code>--interface=none</code>.</dd>
@@ -579,6 +567,10 @@ effect with <code>--syntax={pcjr|tandy}</code>.</dd>
 <dd>Define <code>PEEK</code> preset values. If defined, <code>DEF
 SEG:? PEEK(<em>addr</em>)</code> will return
 <code><em>val</em></code>.</dd>
+<dt><code>--pen={left|middle|right|none}</code></dt>
+<dd>Set the mouse button for light pen emulation. Default is <code>left</code>. 
+If set to <code>none</code>, light pen emulation is switched off. 
+On Android, <code>left</code> means touch input.</dd>
 <dt><code>--preset=<em>option_block</em></code></dt>
 <dd>Load machine preset options. A preset option corresponds to a
 section defined in a config file by a name between square brackets,
