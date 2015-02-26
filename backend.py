@@ -1050,6 +1050,8 @@ class Screen(object):
         # build the screen buffer    
         self.text = TextBuffer(self.attr, self.mode.width, 
                                self.mode.height, self.mode.num_pages)
+        # ensure current position is not outside new boundaries
+        state.console_state.row, state.console_state.col = 1, 1
         # set active page & visible page, counting from 0. 
         self.set_page(new_vpagenum, new_apagenum)
         # set graphics characteristics
