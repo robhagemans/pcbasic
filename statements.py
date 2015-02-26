@@ -551,15 +551,23 @@ def exec_play(ins):
         util.require(ins, util.end_statement)
     else:    
         # retrieve Music Macro Language string
-        mml0 = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+        mml0 = vartypes.pass_string_unpack(
+                    expressions.parse_expression(ins, allow_empty=True),
+                    allow_empty=True)
         mml1, mml2 = '', ''
         if ((pcjr_syntax == 'tandy' or (pcjr_syntax == 'pcjr' and 
                                          state.console_state.sound.sound_on))
                 and util.skip_white_read_if(ins, (',',))):
-            mml1 = vartypes.pass_string_unpack(expressions.parse_expression(ins))
+            mml1 = vartypes.pass_string_unpack(
+                        expressions.parse_expression(ins, allow_empty=True),
+                        allow_empty=True)
             if util.skip_white_read_if(ins, (',',)):
-                mml2 = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-        util.require(ins, util.end_expression)
+                mml2 = vartypes.pass_string_unpack(
+                            expressions.parse_expression(ins, allow_empty=True),
+                            allow_empty=True)
+        util.require(ins, util.end_statement)
+        if not (mml0 or mml1 or mml2):
+            raise error.RunError(22)
         state.console_state.sound.play((mml0, mml1, mml2))
           
 def exec_noise(ins):
