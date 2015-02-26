@@ -358,7 +358,10 @@ class Float(object):
         """ Greater than. """
         if self.neg != right.neg:
             return right.neg
-        return self.neg != self.abs_gt(right)
+        elif self.neg:
+            return right.abs_gt(self)
+        else:
+            return self.abs_gt(right)
     
     def equals(self, right):
         """ Float equals other float. """
