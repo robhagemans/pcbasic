@@ -707,7 +707,7 @@ class TextPage(object):
         """ Put a byte to the screen, reinterpreting SBCS and DBCS as necessary. """
         if self.row[crow-1].buf[ccol-1] == (c, cattr):
             # nothing to do
-            return ccol, ccol+1
+            return ccol, ccol
         # update the screen buffer
         self.row[crow-1].buf[ccol-1] = (c, cattr)
         # mark the replaced char for refreshing
@@ -1189,7 +1189,7 @@ class Screen(object):
         if not self.mode.is_text_mode:
             cattr = cattr & 0xf
         start, stop = self.text.pages[pagenum].put_char_attr(crow, ccol, c, cattr, one_only)
-        # update the screen            
+        # update the screen 
         self.refresh_range(pagenum, crow, start, stop, for_keys)
 
     def get_text(self, start_row, start_col, stop_row, stop_col):   
@@ -1231,7 +1231,7 @@ class Screen(object):
                 ccol += 2
             else:
                 if double != 0:
-                    logging.debug('DBCS buffer corrupted at %d, %d', crow, ccol)
+                    logging.debug('DBCS buffer corrupted at %d, %d (%d)', crow, ccol, double)
                 ca = therow.buf[ccol-1]        
                 video.set_attr(ca[1]) 
                 video.putc_at(pagenum, crow, ccol, ca[0], for_keys)
