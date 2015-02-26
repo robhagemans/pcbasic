@@ -611,8 +611,7 @@ def exec_def_seg(ins):
 
 def exec_def_usr(ins):
     """ DEF USR: Define a machine language function. Not implemented. """
-    if util.peek(ins) in token.digit: # digits 0--9
-        ins.read(1)
+    util.require_read(ins, token.digit)
     util.require_read(ins, (token.O_EQ,))     
     vartypes.pass_int_keep(expressions.parse_expression(ins), maxint=0xffff)
     util.require(ins, util.end_statement)
