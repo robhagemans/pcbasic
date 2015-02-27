@@ -1,0 +1,3 @@
+[submodule "ansipipe"]
+	path = ansipipe
+	url = git://github.com/robhagemans/ansipipe.git
