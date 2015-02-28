@@ -1,0 +1,1 @@
+ansipipe python pcbasic %*
