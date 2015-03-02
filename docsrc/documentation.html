@@ -32,111 +32,111 @@ typing beyond the screen width, the text will
 wrap to the next line but PC-BASIC will still consider it part of the same line.
 A logical line can be at most 255 characters long; if you type more than 255 
 characters, it will ignore the remainder. A line can also be wrapped by a 
-line-feed, entered with <code><b>Ctrl</b>+<b>Enter</b></code>.</p>
+line-feed, entered with <code class="key">Ctrl</code>+<code class="key">Enter</code>.</p>
 
-<p>If you press <code><b>Enter</b></code>, PC-BASIC will attempt to execute the
+<p>If you press <code class="key">Enter</code>, PC-BASIC will attempt to execute the
 logical line on which the cursor is placed as a command. When the command is executed correctly, PC-BASIC will display the prompt <code>Ok</code>. If there is an error, it will display an error message followed by <code>Ok</code>.
 If the line starts with a number, it will be stored as a program line. No prompt is displayed.</p>
 
 <p>The following keys have a special effect in the working environment:</p>
 <table>
 <tr>
-<td><code><b>&#8593;<!--up--></b></code> or <code><b>Ctrl</b>+<b>6</b></code></td>
+<td><code class="key">&#8593;<!--up--></code> or <code class="key">Ctrl</code>+<code class="key">6</code></td>
 <td>Move the cursor up, except at the top row.</td>
 </tr>
 <tr>
-<td><code><b>&#8595;<!--down--></b></code> or <code><b>Ctrl</b>+<b>-</b></code></td>
+<td><code class="key">&#8595;<!--down--></code> or <code class="key">Ctrl</code>+<code class="key">-</code></td>
 <td>Move the cursor down, except at row 24.</td>
 </tr>
 <tr>
-<td><code><b>&#8592;<!--left--></b></code> or <code><b>Ctrl</b>+<b>]</b></code></td>
+<td><code class="key">&#8592;<!--left--></code> or <code class="key">Ctrl</code>+<code class="key">]</code></td>
 <td>Move the cursor left. The left edge of the screen wraps around, except at the top row.</td>
 </tr>
 <tr>
-<td><code><b>&#8594;<!--right--></b></code> or <code><b>Ctrl</b>+<b>/</b></code></td>
+<td><code class="key">&#8594;<!--right--></code> or <code class="key">Ctrl</code>+<code class="key">/</code></td>
 <td>Move the cursor right. The right edge of the screen wraps around, except at row 24.</td>
 </tr>
 <tr>
-<td><code><b>Ctrl</b>+<b>&#8592;<!--left--></b></code> or <code><b>Ctrl</b>+<b>B</b></code></td>
-<td>Move to the first letter of the previous word. Words consist of letters A-Z and figures 0-9.</b>
+<td><code class="key">Ctrl</code>+<code class="key">&#8592;<!--left--></code> or <code class="key">Ctrl</code>+<code class="key">B</code></td>
+<td>Move to the first letter of the previous word. Words consist of letters A-Z and figures 0-9.</code>
 </tr>
 <tr>
-<td><code><b>Ctrl</b>+<b>&#8594;<!--right--></b></code> or <code><b>Ctrl</b>+<b>F</b></code></td>
+<td><code class="key">Ctrl</code>+<code class="key">&#8594;<!--right--></code> or <code class="key">Ctrl</code>+<code class="key">F</code></td>
 <td>Move to the first letter of the next word.</td>
 </tr>
 <tr>
-<td><code><b>Tab</b></code> or <code><b>Ctrl</b>+<b>I</b></code></td>
+<td><code class="key">Tab</code> or <code class="key">Ctrl</code>+<code class="key">I</code></td>
 <td>Move the cursor to the next tab stop. Tab stops are 8 columns wide.</td>
 </tr>
 <tr>
-<td><code><b>Backspace</b></code> or <code><b>Ctrl</b>+<b>H</b></code></td>
+<td><code class="key">Backspace</code> or <code class="key">Ctrl</code>+<code class="key">H</code></td>
 <td>Delete the character left of the cursor, shift all further characters on the logical line one 
 position to the left and change the attributes of those characters to the current attribute. At the 
-left edge of the screen, this does the same as <code><b>Del</b></code>.</td>
+left edge of the screen, this does the same as <code class="key">Del</code>.</td>
 </tr>
 <tr>
-<td><code><b>Del</b></code> or <code><b>Ctrl</b>+<b>Backspace</b></code></td>
+<td><code class="key">Del</code> or <code class="key">Ctrl</code>+<code class="key">Backspace</code></td>
 <td>Delete the character at the cursor and shift all 
 further characters one position to the left, 
 changing attributes to current.</td>
 </tr>
 <tr>
-<td><code><b>Esc</b></code> or <code><b>Ctrl</b>+<b>[</b></code></td>
+<td><code class="key">Esc</code> or <code class="key">Ctrl</code>+<code class="key">[</code></td>
 <td>Delete the current logical line.</td>
 </tr>
 <tr>
-<td><code><b>Ctrl</b>+<b>End</b></code> or <code><b>Ctrl</b>+<b>E</b></code></td>
+<td><code class="key">Ctrl</code>+<code class="key">End</code> or <code class="key">Ctrl</code>+<code class="key">E</code></td>
 <td>Delete all characters from the cursor to the end 
 of the logical line.</td>
 </tr>
 <tr>
-<td><code><b>Ctrl</b>+<b>Break</b></code> or <code><b>Ctrl</b>+<b>C</b></code> or <code><b>Ctrl</b>+<b>Scroll Lock</b></code></td>
+<td><code class="key">Ctrl</code>+<code class="key">Break</code> or <code class="key">Ctrl</code>+<code class="key">C</code> or <code class="key">Ctrl</code>+<code class="key">Scroll Lock</code></td>
 <td>Jump to the first column of the next line, without executing or storing the line under the cursor.</td>
 </tr>
 <tr>
-<td><code><b>Enter</b></code> or <code><b>Ctrl</b>+<b>M</b></code></td>
+<td><code class="key">Enter</code> or <code class="key">Ctrl</code>+<code class="key">M</code></td>
 <td>Execute or store the current logical line. The 
 complete line on the screen is considered part of 
 the command, even if you did not type it.
 A line starting with a number is stored as a 
 program line.</td>
 </tr>
-<td><code><b>End</b></code> or <code><b>Ctrl</b>+<b>N</b></code></td>
+<td><code class="key">End</code> or <code class="key">Ctrl</code>+<code class="key">N</code></td>
 <td>Move the cursor to the first position after the 
 end of the logical line.</td>
 </tr>
 <tr>
-<td><code><b>Home</b></code> or <code><b>Ctrl</b>+<b>K</b></code></td>
+<td><code class="key">Home</code> or <code class="key">Ctrl</code>+<code class="key">K</code></td>
 <td>Move the cursor to the top left of the screen.</td>
 </tr>
 <tr>
-<td><code><b>Ctrl</b>+<code><b>Home</b></code> or <code><b>Ctrl</b>+<b>L</b></code></td>
+<td><code class="key">Ctrl</code>+<code class="key">Home</code> or <code class="key">Ctrl</code>+<code class="key">L</code></td>
 <td>Clear the screen and move the cursor to the top 
 left of the screen.</td>
 </tr>
 <tr>
-<td><code><b>Ctrl</b>+<code><b>Enter</b></code> or <code><b>Ctrl</b>+<b>J</b></code></td>
+<td><code class="key">Ctrl</code>+<code class="key">Enter</code> or <code class="key">Ctrl</code>+<code class="key">J</code></td>
 <td>Move to the first column of the next line, 
 connecting the two lines into one logical line.</td>
 </tr>
 <tr>
-<td><code><b>Ctrl</b>+<code><b>G</b></code></td>
+<td><code class="key">Ctrl</code>+<code class="key">G</code></td>
 <td>Beep the speaker.</td>
 </tr>
 <tr>
-<td><code><b>Pause</b></code> or <code><b>Ctrl</b>+<b>Num Lock</b></code></td>
+<td><code class="key">Pause</code> or <code class="key">Ctrl</code>+<code class="key">Num Lock</code></td>
 <td>Pause. Press another key to resume.</td>
 </tr>
 <tr>
-<td><code><b>Ctrl</b>+<b>Prt Sc</b></code></td>
+<td><code class="key">Ctrl</code>+<code class="key">Prt Sc</code></td>
 <td>Toggle echoing screen output to the printer (or other device attached to <code>LPT1:</code>).</td>
 </tr>
 <tr>
-<td><code><b>Shift</b>+<b>Prt Sc</b></code></td>
+<td><code class="key">Shift</code>+<code class="key">Prt Sc</code></td>
 <td>Print the screen.</td>
 </tr>
 <tr>
-<td><code><b>Ins</b></code> or <code><b>Ctrl</b>+<b>R</b></code></td>
+<td><code class="key">Ins</code> or <code class="key">Ctrl</code>+<code class="key">R</code></td>
 <td>Toggle <em>insert mode</em>. In insert mode, characters  
 are inserted rather than overwritten at the 
 current location. If insertion causes the line to 
@@ -152,13 +152,13 @@ When a program is running, a few keys have immediate effect:</p>
 <table>
 <tr>
 <td>
-<code><b>Pause</b></code> or <code><b>Ctrl</b></code>+<code><b>Num Lock</b></code>  
+<code class="key">Pause</code> or <code class="key">Ctrl</code>+<code class="key">Num Lock</code>  
 </td><td>
 Pause execution. Press another key to resume.
 </td></tr><tr>
 <td>
-<code><b>Ctrl</b></code>+<code><b>Break</b></code>                
-or <code><b>Ctrl</b></code>+<code><b>Scroll Lock</b></code>       
+<code class="key">Ctrl</code>+<code class="key">Break</code>                
+or <code class="key">Ctrl</code>+<code class="key">Scroll Lock</code>       
 </td>
 <td>
 Stop execution and return to interactive mode. A <code>Break</code> message is printed.
@@ -171,13 +171,13 @@ most keys have the same effect as in interactive mode. The following keys have a
 <table>
 <tr>
 <td>
-<code><b>Ctrl</b></code>+<code><b>Break</b></code> or <code><b>Ctrl</b></code>+<code><b>C</b></code>    
-or <code><b>Ctrl</b></code>+<code><b>Scroll Lock</b></code>       
+<code class="key">Ctrl</code>+<code class="key">Break</code> or <code class="key">Ctrl</code>+<code class="key">C</code>    
+or <code class="key">Ctrl</code>+<code class="key">Scroll Lock</code>       
 </td><td>
 Stop execution and return to interactive mode.
 A <code>Break</code> message is printed.
 </td></tr><tr><td>
-<code><b>Enter</b></code>                     
+<code class="key">Enter</code>                     
 </td><td>
 Finish input and return to the previous mode.
 </td>
@@ -189,23 +189,23 @@ Finish input and return to the previous mode.
 is paste.</dd>
 <dt>Using the keyboard:</dt><dd>
 If your operating system does not catch the
-<code><b>Logo</b></code> key (Windows key), you can also copy and paste using the keyboard.
+<code class="key">Logo</code> key (Windows key), you can also copy and paste using the keyboard.
 <table>
 <tr>
-<td><code><b>Logo</b>+<b>&#8593;<!--up--></b><b>&#8595;<!--down--></b><b>&#8592;<!--left--></b><b>&#8594;<!--right--></b></code>
+<td><code class="key">Logo</code>+<code class="key">&#8593;<!--up--></code><code class="key">&#8595;<!--down--></code><code class="key">&#8592;<!--left--></code><code class="key">&#8594;<!--right--></code>
 </td>
 <td>Select a screen region.</td>
 </tr>
 <tr>
-<td><code><b>Logo</b>+<b>A</b></code></td>
+<td><code class="key">Logo</code>+<code class="key">A</code></td>
 <td>Select all.</td>
 </tr>
 <tr>
-<td><code><b>Logo</b>+<b>C</b></code></td>
+<td><code class="key">Logo</code>+<code class="key">C</code></td>
 <td>Copy to clipboard.</td>
 </tr>
 <tr>
-<td><code><b>Logo</b>+<b>V</b></code></td>
+<td><code class="key">Logo</code>+<code class="key">V</code></td>
 <td>Paste from clipboard.</td>
 </tr>
 </table>
@@ -218,46 +218,46 @@ keywords.
 The default values for the function keys are:</p>
 <table>
 <tr>
-<td><code><b>F1</b></code></td><td><code>LIST</code></td>
+<td><code class="key">F1</code></td><td><code>LIST</code></td>
 </tr>
 <tr>
-<td><code><b>F2</b></code></td><td><code>RUN</code><code><b>Enter</b></code></td>
+<td><code class="key">F2</code></td><td><code>RUN</code><code class="key">Enter</code></td>
 </tr>
 <tr>
-<td><code><b>F3</b></code></td><td><code>LOAD"</code></td>
+<td><code class="key">F3</code></td><td><code>LOAD"</code></td>
 </tr>
 <tr>
-<td><code><b>F4</b></code></td><td><code>SAVE"</code></td>
+<td><code class="key">F4</code></td><td><code>SAVE"</code></td>
 </tr>
 <tr>
-<td><code><b>F5</b></code></td><td><code>CONT</code><code><b>Enter</b></code></td>
+<td><code class="key">F5</code></td><td><code>CONT</code><code class="key">Enter</code></td>
 </tr>
 <tr>
-<td><code><b>F6</b></code></td><td><code>,"LPT1:"</code><code><b>Enter</b></code></td>
+<td><code class="key">F6</code></td><td><code>,"LPT1:"</code><code class="key">Enter</code></td>
 </tr>
 <tr>
-<td><code><b>F7</b></code></td><td><code>TRON</code><code><b>Enter</b></code></td>
+<td><code class="key">F7</code></td><td><code>TRON</code><code class="key">Enter</code></td>
 </tr>
 <tr>
-<td><code><b>F8</b></code></td><td><code>TROFF</code><code><b>Enter</b></code></td>
+<td><code class="key">F8</code></td><td><code>TROFF</code><code class="key">Enter</code></td>
 </tr>
 <tr>
-<td><code><b>F9</b></code></td><td><code>KEY</code><code><b>Space</b></code></td>
+<td><code class="key">F9</code></td><td><code>KEY</code><code class="key">Space</code></td>
 </tr>
 <tr>
-<td><code><b>F10</b></code></td><td><code>SCREEN 0,0,0</code><code><b>Enter</b></code></td>
+<td><code class="key">F10</code></td><td><code>SCREEN 0,0,0</code><code class="key">Enter</code></td>
 </table>
 <p>The function key shortcuts can be redefined (see the <code>KEY</code> statement). The key
 values are displayed at the bottom of the screen.</p>
 <p>
-The <code><b>Alt</b></code> shortcuts cannot be redefined. The following keywords can be entered 
-with <code><b>Alt</b></code>+the first letter:</p>
+The <code class="key">Alt</code> shortcuts cannot be redefined. The following keywords can be entered 
+with <code class="key">Alt</code>+the first letter:</p>
 <pre>  AUTO     BSAVE    COLOR    DELETE   ELSE    FOR     GOTO     HEX$
   INPUT    KEY      LOCATE   MOTOR    NEXT    OPEN    PRINT    RUN
   SCREEN   THEN     USING    VAL      WIDTH   XOR
-</pre><p>Furthermore, the <code><b>Alt</b></code> key can be used to enter characters by their ASCII code.
-This is done by pressing the <code><b>Alt</b></code> key and typing the decimal value of the 
- ASCII code on the numeric keypad, then releasing the <code><b>Alt</b></code> key.
+</pre><p>Furthermore, the <code class="key">Alt</code> key can be used to enter characters by their ASCII code.
+This is done by pressing the <code class="key">Alt</code> key and typing the decimal value of the 
+ ASCII code on the numeric keypad, then releasing the <code class="key">Alt</code> key.
 </p>
 
 <h2>Changing settings</h2>
@@ -302,10 +302,10 @@ lines between <code>65530</code> and <code>65535</code> are not visible in
 the program's <code>LIST</code>.
 Within one program line, statements are separated by colons <code>:</code>.</p>
 
-<p>To run the program, type the command <code>RUN</code>. PC-BASIC will now execute all program lines in order inside the working environment. You cannot move the cursor around or enter commands while the program is running. If and when the program finishes, it will return control of the working environment to you. You can interrupt a program at any time by using one of the key combinations <code><b>Ctrl</b>+<b>Break</b></code> or <code><b>Ctrl</b>+<b>Scroll Lock</b></code>. The program will stop immediately, print a <code>Break</code> message and return control to you.</p>
+<p>To run the program, type the command <code>RUN</code>. PC-BASIC will now execute all program lines in order inside the working environment. You cannot move the cursor around or enter commands while the program is running. If and when the program finishes, it will return control of the working environment to you. You can interrupt a program at any time by using one of the key combinations <code class="key">Ctrl</code>+<code class="key">Break</code> or <code class="key">Ctrl</code>+<code class="key">Scroll Lock</code>. The program will stop immediately, print a <code>Break</code> message and return control to you.</p>
 
 
-<p>Normally, you can <em>not</em> use  <code><b>Ctrl</b>+<b>C</b></code> to interrupt a running program. However, some keyboards do not have a <code><b>Ctrl</b>+<b>Break</b></code> or <code><b>Ctrl</b>+<b>Scroll Lock</b></code> key, which would make it impossible to interrupt a program that does not exit. If you have such a system, you can enable the <code>ctrl-c-break</code> option. This is enabled by default on OS X systems as well as when using the text-based or command-line interface.
+<p>Normally, you can <em>not</em> use  <code class="key">Ctrl</code>+<code class="key">C</code> to interrupt a running program. However, some keyboards do not have a <code class="key">Ctrl</code>+<code class="key">Break</code> or <code class="key">Ctrl</code>+<code class="key">Scroll Lock</code> key, which would make it impossible to interrupt a program that does not exit. If you have such a system, you can enable the <code>ctrl-c-break</code> option. This is enabled by default on OS X systems as well as when using the text-based or command-line interface.
 </p>
 
 <p>A program can be stored on a drive by using the <code>SAVE</code> command, in one of three ways:</p>
@@ -532,12 +532,12 @@ fonts of the original IBM and Tandy adapters (which are in the public
 domain in a number of countries) have been included in PC-BASIC. These provide the most
 accurate emulation. However, the font ROMs only included a single code page &ndash;
 US-ASCII 437. </p>
-<p>To support code pages beyond 437, PC-BASIC defaults to the <b>CPIDOS</b> font used by 
+<p>To support code pages beyond 437, PC-BASIC defaults to the <code class="key">CPIDOS</code> font used by 
 default in FreeDOS and DOSBox. This font is very similar in style to the IBM VGA 
 font but has support for many more code pages, in particular Western and Middle 
 Eastern alphabets. If CPIDOS does not include the characters you need, PC-BASIC 
-tries to find them in <b>UNI-VGA</b>, which is also very similar in style to VGA. 
-If that does not suffice, PC-BASIC falls back to <b>GNU UniFont</b> for the 
+tries to find them in <code class="key">UNI-VGA</code>, which is also very similar in style to VGA. 
+If that does not suffice, PC-BASIC falls back to <code class="key">GNU UniFont</code> for the 
 missing characters. UniFont's Western glyphs are less similar to the VGA font, but
 it provides support for the full Unicode Basic Multilingual Plane. For example, all Chinese, 
 Japanese and Korean glyphs in PC-BASIC are taken from UniFont.</p>
@@ -557,7 +557,7 @@ directory.</p>
 
 <h2>Command-line interface</h2>
 <p>You can run PC-BASIC as a command-line interface by setting the <code>interface=cli</code> (or <code>-b</code>) option. No window will be opened: you can type BASIC commands straight into your Command Prompt/Terminal. Use the horizontal arrow keys to move on the current line you're editing; use the vertical arrow keys to show screen rows above and below. Copy and
-paste are available only if the calling shell provides them. On Windows, <code><b>Ctrl</b>+<b>Break</b></code> will terminate PC-BASIC immediately. You can use <code><b>Ctrl</b>+<b>C</b></code> to interrupt the program. The end-of-file key combination (<code><b>Ctrl</b>+<b>D</b></code> on Unix, <code><b>Ctrl</b>+<b>Z</b></code> on Windows) will exit PC-BASIC.
+paste are available only if the calling shell provides them. On Windows, <code class="key">Ctrl</code>+<code class="key">Break</code> will terminate PC-BASIC immediately. You can use <code class="key">Ctrl</code>+<code class="key">C</code> to interrupt the program. The end-of-file key combination (<code class="key">Ctrl</code>+<code class="key">D</code> on Unix, <code class="key">Ctrl</code>+<code class="key">Z</code> on Windows) will exit PC-BASIC.
 
 <p>You can use the command-line interface to run one or a few BASIC commands directly, like so:</p>
 <pre>> pcbasic -bqe="?1+1"
@@ -572,7 +572,7 @@ paste are available only if the calling shell provides them. On Windows, <code><
 <p>There is also a full-screen text interface available: enable it by setting <code>interface=text</code> (or <code>-t</code>). 
 the text-based interface is very similar to the default graphical interface, but runs in your Command Prompt or Terminal window. </p>
 
-<p>In the text-based and command-line interfaces, graphics are not available. Attempting to open a graphical screen mode will lead to an <code>Illegal function call</code> error. Furthermore, many <code><b>Ctrl</b></code> and <code><b>Alt</b></code> key combinations are not available.</p>
+<p>In the text-based and command-line interfaces, graphics are not available. Attempting to open a graphical screen mode will lead to an <code>Illegal function call</code> error. Furthermore, many <code class="key">Ctrl</code> and <code class="key">Alt</code> key combinations are not available.</p>
 
 <p>On Unix systems only, you can get sound in the text and command-line interfaces over the PC speaker if you install the <code>beep</code> utility. If you use Ubuntu, be aware that the PC speaker is switched off by default. You'll need to edit <code>/etc/modprobe.d/blacklist.conf</code> and comment out the line <code>blacklist pcspkr</code>. Then, <code>apt-get install beep</code> and be sure to wear appropriate ear protection: the default sound volume is <strong>loud</strong>.</p>
 
@@ -657,7 +657,7 @@ CPU emulation such as provided by DOSBox, Bochs or VirtualBox.</p>
 </tr>
 </table>
 
-<p>The highest level of compatibility with GW-BASIC can be attained bt setting <code>preset=strict</code>, 
+<p>The highest level of compatibility with GW-BASIC can be attained by setting <code>preset=strict</code>, 
 which switches off all convenience and security features that cause differences with
 GWBASIC.</p>
 

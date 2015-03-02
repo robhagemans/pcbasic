@@ -103,6 +103,13 @@ code>strong, code>b {
     margin: 0px 1px 0px 1px;
 }
 
+.key {
+    background-color: gray;
+    color: white;
+    border-radius: 0.2em;
+    padding: 0.1em 0.5em 0.1em 0.5em;
+    margin: 0px 1px 0px 1px;
+}
 pre {
     background-color: #eeeeff;
     margin-top: 0.5em;

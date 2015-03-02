@@ -96,10 +96,10 @@ AUTO</code> statement
 AUTO [ { <em>line_number</em> | . } ] [, [<em>increment</em>]] 
 </pre>
 <p>Start automatic line numbering. Line numbers 
-are automatically generated when <code><b>Enter</b></code> is pressed.
+are automatically generated when <code class="key">Enter</code> is pressed.
 If a program line exists at a generated line number, a <code>*</code> is shown after the 
-line number. To avoid overwriting this line, leave it empty and press <code><b>Enter</b></code>.
-To stop automatic line numbering, press <code><b>Ctrl</b></code>+<code><b>Break</b></code> or <code><b>Ctrl</b></code>+<code><b>C</b></code>. The line being edited at 
+line number. To avoid overwriting this line, leave it empty and press <code class="key">Enter</code>.
+To stop automatic line numbering, press <code class="key">Ctrl</code>+<code class="key">Break</code> or <code class="key">Ctrl</code>+<code class="key">C</code>. The line being edited at 
 that point is not saved. BASIC will return to command mode, even if <code>AUTO</code> was 
 run from a program line.
 <h4>Parameters</h4>
@@ -118,7 +118,7 @@ is used without specifying an increment, the last increment specified in an
 <code><em>line_number</em></code> is not an unsigned-integer value in <code>[0&mdash;65529]</code>:
    <code>Syntax error</code>.
 </li><li>
-When automatic line numbering is enabled and <code><b>Enter</b></code> is pressed on an empty line with number larger than 
+When automatic line numbering is enabled and <code class="key">Enter</code> is pressed on an empty line with number larger than 
    <code>65519</code>: <code>Undefined line number</code>.
 </li></ul>
 
@@ -650,7 +650,7 @@ must be followed by round or square brackets. Brackets may also be mixed <code>a
 
 <h3><code>CONT</code> statement</h3>
 <pre>CONT [ <em>anything</em> ]</pre>
-<p>Resumes execution of a program that has been halted by <code>STOP</code>, <code>END</code>, <code><b>Ctrl</b></code>+<code><b>C</b></code>, or  <code><b>Ctrl</b></code>+<code><b>Break</b></code>. </p>
+<p>Resumes execution of a program that has been halted by <code>STOP</code>, <code>END</code>, <code class="key">Ctrl</code>+<code class="key">C</code>, or  <code class="key">Ctrl</code>+<code class="key">Break</code>. </p>
 <h4>Notes</h4>
 <ul><li>
 Anything after the <code>CONT</code> keyword is ignored.
@@ -1205,7 +1205,7 @@ The file must be open in <code>INPUT</code> or <code>RANDOM</code> mode. <code>E
 <h4>Notes</h4>
 <ul><li>
 If <code><em>file_num</em></code> is open to <code>KYBD:</code>, performs a blocking read and returns -1 if
-<code><b>CTRL</b></code>+<code><b>Z</b></code> is entered, 0 otherwise. The character entered is then echoed to
+<code class="key">CTRL</code>+<code class="key">Z</code> is entered, 0 otherwise. The character entered is then echoed to
 the console.
 </li></ul>
 <h4>Errors</h4>
@@ -1615,7 +1615,7 @@ and the <code>COM</code> buffer length, inclusive.
 If the serial input buffer is full, i.e. <code>LOF(<em>com_file_number</em>) = 0</code>, and
     <code>LOC(<em>com_file_number</em>) = 255</code>: <code>Communication buffer overflow</code>
 </li><li>
-   If the carrier drops during <code>GET</code>, hangs until the <code><b>Ctrl</b></code>+<code><b>Break</b></code> key is pressed.
+   If the carrier drops during <code>GET</code>, hangs until the <code class="key">Ctrl</code>+<code class="key">Break</code> key is pressed.
 </li></ul>
         
     
@@ -1794,67 +1794,67 @@ This function has no brackets.
 <table><tr>
 <th>Key</th><th>Scancode</th>
 </tr><tr>
-<td><code><b>&#8593;<!--up--></b></code></td><td>            48</td>
+<td><code class="key">&#8593;<!--up--></code></td><td>            48</td>
 </tr><tr>
-<td><code><b>&#8595;<!--down--></b></code></td><td>          50</td>
+<td><code class="key">&#8595;<!--down--></code></td><td>          50</td>
 </tr><tr>
-<td><code><b>&#8594;<!--right--></b></code></td><td>         4D</td>
+<td><code class="key">&#8594;<!--right--></code></td><td>         4D</td>
 </tr><tr>
-<td><code><b>&#8592;<!--left--></b></code></td><td>          4B</td>
+<td><code class="key">&#8592;<!--left--></code></td><td>          4B</td>
 </tr><tr>
-<td><code><b>Ins</b></code></td><td>        52</td>
+<td><code class="key">Ins</code></td><td>        52</td>
 </tr><tr>
-<td><code><b>Del</b></code></td><td>        53</td>
+<td><code class="key">Del</code></td><td>        53</td>
 </tr><tr>
-<td><code><b>Home</b></code></td><td>          47</td>
+<td><code class="key">Home</code></td><td>          47</td>
 </tr><tr>
-<td><code><b>End</b></code></td><td>           4F</td>
+<td><code class="key">End</code></td><td>           4F</td>
 </tr><tr>
-<td><code><b>Pg Up</b></code></td><td>        49</td>
+<td><code class="key">Pg Up</code></td><td>        49</td>
 </tr><tr>
-<td><code><b>Pg Dn</b></code></td><td>      51</td>
+<td><code class="key">Pg Dn</code></td><td>      51</td>
 </tr><tr>
-<td><code><b>F1</b></code></td><td>            3B</td>
+<td><code class="key">F1</code></td><td>            3B</td>
 </tr><tr>
-<td><code><b>F2</b></code></td><td>            3C</td>
+<td><code class="key">F2</code></td><td>            3C</td>
 </tr><tr>
-<td><code><b>F3</b></code></td><td>            3D</td>
+<td><code class="key">F3</code></td><td>            3D</td>
 </tr><tr>
-<td><code><b>F4</b></code></td><td>            3E</td>
+<td><code class="key">F4</code></td><td>            3E</td>
 </tr><tr>
-<td><code><b>F5</b></code></td><td>            3F</td>
+<td><code class="key">F5</code></td><td>            3F</td>
 </tr><tr>
-<td><code><b>F6</b></code></td><td>            40</td>
+<td><code class="key">F6</code></td><td>            40</td>
 </tr><tr>
-<td><code><b>F7</b></code></td><td>            41</td>
+<td><code class="key">F7</code></td><td>            41</td>
 </tr><tr>
-<td><code><b>F8</b></code></td><td>            42</td>
+<td><code class="key">F8</code></td><td>            42</td>
 </tr><tr>
-<td><code><b>F9</b></code></td><td>            43</td>
+<td><code class="key">F9</code></td><td>            43</td>
 </tr><tr>
-<td><code><b>F10</b></code></td><td>           44</td>
+<td><code class="key">F10</code></td><td>           44</td>
 </tr><tr>
-<td><code><b>PrtSc</b></code></td><td>         37</td>
+<td><code class="key">PrtSc</code></td><td>         37</td>
 </tr><tr>
-<td><code><b>CTRL</b></code>+<code><b>&#8594;<!--right--></b></code></td><td>    74</td>
+<td><code class="key">CTRL</code>+<code class="key">&#8594;<!--right--></code></td><td>    74</td>
 </tr><tr>
-<td><code><b>CTRL</b></code>+<code><b>&#8592;<!--left--></b></code></td><td>     73</td>
+<td><code class="key">CTRL</code>+<code class="key">&#8592;<!--left--></code></td><td>     73</td>
 </tr><tr>
-<td><code><b>CTRL</b></code>+<code><b>Home</b></code></td><td>     77</td>
+<td><code class="key">CTRL</code>+<code class="key">Home</code></td><td>     77</td>
 </tr><tr>
-<td><code><b>CTRL</b></code>+<code><b>End</b></code></td><td>      75</td>
+<td><code class="key">CTRL</code>+<code class="key">End</code></td><td>      75</td>
 </tr><tr>
-<td><code><b>CTRL</b></code>+<code><b>Pg Up</b></code></td><td>   84</td>
+<td><code class="key">CTRL</code>+<code class="key">Pg Up</code></td><td>   84</td>
 </tr><tr>
-<td><code><b>CTRL</b></code>+<code><b>Pg Dn</b></code></td><td> 76</td>
+<td><code class="key">CTRL</code>+<code class="key">Pg Dn</code></td><td> 76</td>
 </tr><tr>
-<td><code><b>CTRL</b></code>+<code><b>2</b></code></td><td>        03</td>
+<td><code class="key">CTRL</code>+<code class="key">2</code></td><td>        03</td>
 </tr><tr>
-<td><code><b>CTRL</b></code>+<code><b>9</b></code></td><td>        84</td>
+<td><code class="key">CTRL</code>+<code class="key">9</code></td><td>        84</td>
 </tr><tr>
-<td><code><b>CTRL</b></code>+<code><b>F2</b></code></td><td>       5F</td>
+<td><code class="key">CTRL</code>+<code class="key">F2</code></td><td>       5F</td>
 </tr><tr>
-<td><code><b>CTRL</b></code>+<code><b>F3</b></code></td><td>       60</td>
+<td><code class="key">CTRL</code>+<code class="key">F3</code></td><td>       60</td>
 </tr></table>
 
 <h3><code>INP</code> function</h3>
@@ -1924,172 +1924,172 @@ Returns the value of an emulated machine port.</p>
 <tr>
 <th>Key</th><th>Scancode</th>
 </tr><tr>
-<td><code><b>Esc</b></code></td><td>01</td></tr><tr>
-<td><code><b>1</b></code></td><td>02
+<td><code class="key">Esc</code></td><td>01</td></tr><tr>
+<td><code class="key">1</code></td><td>02
 </td></tr><tr>
-<td><code><b>2</b></code></td><td>03
+<td><code class="key">2</code></td><td>03
 </td></tr><tr>
-<td><code><b>3</b></code></td><td>04
+<td><code class="key">3</code></td><td>04
 </td></tr><tr>
-<td><code><b>4</b></code></td><td>05
+<td><code class="key">4</code></td><td>05
 </td></tr><tr>
-<td><code><b>5</b></code></td><td>06
+<td><code class="key">5</code></td><td>06
 </td></tr><tr>
-<td><code><b>6</b></code></td><td>07
+<td><code class="key">6</code></td><td>07
 </td></tr><tr>
-<td><code><b>7</b></code></td><td>08
+<td><code class="key">7</code></td><td>08
 </td></tr><tr>
-<td><code><b>8</b></code></td><td>09
+<td><code class="key">8</code></td><td>09
 </td></tr><tr>
-<td><code><b>9</b></code></td><td>0A
+<td><code class="key">9</code></td><td>0A
 </td></tr><tr>
-<td><code><b>0</b></code></td><td>0B
+<td><code class="key">0</code></td><td>0B
 </td></tr><tr>
-<td><code><b>-</b></code></td><td>0C
+<td><code class="key">-</code></td><td>0C
 </td></tr><tr>
-<td><code><b>=</b></code></td><td>0D
+<td><code class="key">=</code></td><td>0D
 </td></tr><tr>
-<td><code><b>Backspace</b></code></td><td>0E
+<td><code class="key">Backspace</code></td><td>0E
 </td></tr><tr>
-<td><code><b>Tab</b></code></td><td>0F
+<td><code class="key">Tab</code></td><td>0F
 </td></tr><tr>
-<td><code><b>q</b></code></td><td>10
+<td><code class="key">q</code></td><td>10
 </td></tr><tr>
-<td><code><b>w</b></code></td><td>11
+<td><code class="key">w</code></td><td>11
 </td></tr><tr>
-<td><code><b>e</b></code></td><td>12
+<td><code class="key">e</code></td><td>12
 </td></tr><tr>
-<td><code><b>r</b></code></td><td>13
+<td><code class="key">r</code></td><td>13
 </td></tr><tr>
-<td><code><b>t</b></code></td><td>14
+<td><code class="key">t</code></td><td>14
 </td></tr><tr>
-<td><code><b>y</b></code></td><td>15
+<td><code class="key">y</code></td><td>15
 </td></tr><tr>
-<td><code><b>u</b></code></td><td>  16
+<td><code class="key">u</code></td><td>  16
 </td></tr><tr>
-<td><code><b>i</b></code></td><td>  17
+<td><code class="key">i</code></td><td>  17
 </td></tr><tr>
-<td><code><b>o</b></code></td><td>  18
+<td><code class="key">o</code></td><td>  18
 </td></tr><tr>
-<td><code><b>p</b></code></td><td>  19
+<td><code class="key">p</code></td><td>  19
 </td></tr><tr>
-<td><code><b>[</b></code></td><td>1A
+<td><code class="key">[</code></td><td>1A
 </td></tr><tr>
-<td><code><b>]</b></code></td><td>1B
+<td><code class="key">]</code></td><td>1B
 </td></tr><tr>
-<td><code><b>Enter</b></code></td><td>1C
+<td><code class="key">Enter</code></td><td>1C
 </td></tr><tr>
-<td><code><b>Ctrl</b></code></td><td>1D
+<td><code class="key">Ctrl</code></td><td>1D
 </td></tr><tr>
-<td><code><b>a</b></code></td><td>1E
+<td><code class="key">a</code></td><td>1E
 </td></tr><tr>
-<td><code><b>s</b></code></td><td>  1F
+<td><code class="key">s</code></td><td>  1F
 </td></tr><tr>
-<td><code><b>d</b></code></td><td>  20
+<td><code class="key">d</code></td><td>  20
 </td></tr><tr>
-<td><code><b>f</b></code></td><td>21
+<td><code class="key">f</code></td><td>21
 </td></tr><tr>
-<td><code><b>g</b></code></td><td>22
+<td><code class="key">g</code></td><td>22
 </td></tr><tr>
-<td><code><b>h</b></code></td><td>23
+<td><code class="key">h</code></td><td>23
 </td></tr><tr>
-<td><code><b>j</b></code></td><td>24
+<td><code class="key">j</code></td><td>24
 </td></tr><tr>
-<td><code><b>k</b></code></td><td>25
+<td><code class="key">k</code></td><td>25
 </td></tr><tr>
-<td><code><b>l</b></code></td><td>26
+<td><code class="key">l</code></td><td>26
 </td></tr><tr>
-<td><code><b>;</b></code></td><td>27
+<td><code class="key">;</code></td><td>27
 </td></tr><tr>
-<td><code><b>'</b></code></td><td>28
+<td><code class="key">'</code></td><td>28
 </td></tr><tr>
-<td><code><b>`</b></code></td><td>29
+<td><code class="key">`</code></td><td>29
 </td></tr><tr>
-<td><code><b>Left Shift</b></code></td><td>2A
+<td><code class="key">Left Shift</code></td><td>2A
 </td></tr><tr>
-<td><code><b>#</b></code></td><td>2B
+<td><code class="key">#</code></td><td>2B
 </td></tr><tr>
-<td><code><b>z</b></code></td><td>2C
+<td><code class="key">z</code></td><td>2C
 </td></tr><tr>
-<td><code><b>x</b></code></td><td>2D
+<td><code class="key">x</code></td><td>2D
 </td></tr><tr>
-<td><code><b>c</b></code></td><td>2E
+<td><code class="key">c</code></td><td>2E
 </td></tr><tr>
-<td><code><b>v</b></code></td><td>2F
+<td><code class="key">v</code></td><td>2F
 </td></tr><tr>
-<td><code><b>b</b></code></td><td>  30
+<td><code class="key">b</code></td><td>  30
 </td></tr><tr>
-<td><code><b>n</b></code></td><td>31
+<td><code class="key">n</code></td><td>31
 </td></tr><tr>
-<td><code><b>m</b></code></td><td>32
+<td><code class="key">m</code></td><td>32
 </td></tr><tr>
-<td><code><b>,</b></code></td><td>33
+<td><code class="key">,</code></td><td>33
 </td></tr><tr>
-<td><code><b>.</b></code></td><td>34
+<td><code class="key">.</code></td><td>34
 </td></tr><tr>
-<td><code><b>/</b></code></td><td>35
+<td><code class="key">/</code></td><td>35
 </td></tr><tr>
-<td><code><b>Right Shift</b></code></td><td>36
+<td><code class="key">Right Shift</code></td><td>36
 </td></tr><tr>
-<td><code><b>PrtSc</b></code></td><td>37
+<td><code class="key">PrtSc</code></td><td>37
 </td></tr><tr>
-<td><code><b>SysRq</b></code></td><td>37
+<td><code class="key">SysRq</code></td><td>37
 </td></tr><tr>
-<td><code><b>Alt</b></code></td><td>38
+<td><code class="key">Alt</code></td><td>38
 </td></tr><tr>
-<td><code><b>Space</b></code></td><td>39
+<td><code class="key">Space</code></td><td>39
 </td></tr><tr>
-<td><code><b>Caps Lock</b></code></td><td>3A
+<td><code class="key">Caps Lock</code></td><td>3A
 </td></tr><tr>
-<td><code><b>F1</b></code></td><td>3B
+<td><code class="key">F1</code></td><td>3B
 </td></tr><tr>
-<td><code><b>F2</b></code></td><td>3C
+<td><code class="key">F2</code></td><td>3C
 </td></tr><tr>
-<td><code><b>F3</b></code></td><td>3D
+<td><code class="key">F3</code></td><td>3D
 </td></tr><tr>
-<td><code><b>F4</b></code></td><td>3E
+<td><code class="key">F4</code></td><td>3E
 </td></tr><tr>
-<td><code><b>F5</b></code></td><td>3F
+<td><code class="key">F5</code></td><td>3F
 </td></tr><tr>
-<td><code><b>F6</b></code></td><td>40
+<td><code class="key">F6</code></td><td>40
 </td></tr><tr>
-<td><code><b>F7</b></code></td><td>41
+<td><code class="key">F7</code></td><td>41
 </td></tr><tr>
-<td><code><b>F8</b></code></td><td>42
+<td><code class="key">F8</code></td><td>42
 </td></tr><tr>
-<td><code><b>F9</b></code></td><td>43
+<td><code class="key">F9</code></td><td>43
 </td></tr><tr>
-<td><code><b>F10</b></code></td><td>44
+<td><code class="key">F10</code></td><td>44
 </td></tr><tr>
-<td><code><b>Num Lock</b></code></td><td>   45
+<td><code class="key">Num Lock</code></td><td>   45
 </td></tr><tr>
-<td><code><b>Scroll Lock</b></code></td><td>46
+<td><code class="key">Scroll Lock</code></td><td>46
 </td></tr><tr>
-<td><code><b>Home</b></code></td><td>      47
+<td><code class="key">Home</code></td><td>      47
 </td></tr><tr>
-<td><code><b>&#8593;<!--up--></b></code></td><td>48
+<td><code class="key">&#8593;<!--up--></code></td><td>48
 </td></tr><tr>
-<td><code><b>Pg Up</b></code></td><td>49
+<td><code class="key">Pg Up</code></td><td>49
 </td></tr><tr>
-<td><code><b>keypad -</b></code></td><td>4A
+<td><code class="key">keypad -</code></td><td>4A
 </td></tr><tr>
-<td><code><b>&#8592;<!--left--></b></code></td><td>4B
+<td><code class="key">&#8592;<!--left--></code></td><td>4B
 </td></tr><tr>
-<td><code><b>keypad 5</b></code></td><td>4C
+<td><code class="key">keypad 5</code></td><td>4C
 </td></tr><tr>
-<td><code><b>&#8594;<!--right--></b></code></td><td>4D
+<td><code class="key">&#8594;<!--right--></code></td><td>4D
 </td></tr><tr>
-<td><code><b>keypad +</b></code></td><td>4E
+<td><code class="key">keypad +</code></td><td>4E
 </td></tr><tr>
-<td><code><b>End</b></code></td><td>4F
+<td><code class="key">End</code></td><td>4F
 </td></tr><tr>
-<td><code><b>&#8595;<!--down--></b></code></td><td>50
+<td><code class="key">&#8595;<!--down--></code></td><td>50
 </td></tr><tr>
-<td><code><b>Pg Dn</b></code></td><td>51
+<td><code class="key">Pg Dn</code></td><td>51
 </td></tr><tr>
-<td><code><b>Ins</b></code></td><td>52
+<td><code class="key">Ins</code></td><td>52
 </td></tr><tr>
-<td><code><b>Del</b></code></td><td>53
+<td><code class="key">Del</code></td><td>53
 </tr>
 </table>        
 
@@ -2129,7 +2129,7 @@ the prompt is followed by a comma, no question mark is added. </p>
 </li><li>
    Characters beyond the 255th character of the screen line are discarded.
 </li><li>
-   If user input is interrupted by <code><b>Ctrl</b></code>+<code><b>Break</b></code>, <code>CONT</code> will re-execute the
+   If user input is interrupted by <code class="key">Ctrl</code>+<code class="key">Break</code>, <code>CONT</code> will re-execute the
    <code>INPUT</code> statement.
 </li></ul>
 <h4>Errors</h4>
@@ -2212,12 +2212,12 @@ if <code><em>file_num</em></code> is provided, from a text file.
    This is a blocking read. It will wait for characters if there are none
     in the buffer.
 </li><li>
-   All control characters except <code><b>Ctrl</b></code>+<code><b>Break</b></code>, <code><b>Ctrl</b></code>+<code><b>Scroll Lock</b></code> and <code><b>Pause</b></code>
-    are passed to the string by <code>INPUT$</code>. <code><b>Ctrl</b></code>+<code><b>Break</b></code> and <code><b>Ctrl</b></code>+<code><b>Scroll Lock</b></code> break
-    execution whereas <code><b>Pause</b></code> halts until another key is pressed (and not read).
+   All control characters except <code class="key">Ctrl</code>+<code class="key">Break</code>, <code class="key">Ctrl</code>+<code class="key">Scroll Lock</code> and <code class="key">Pause</code>
+    are passed to the string by <code>INPUT$</code>. <code class="key">Ctrl</code>+<code class="key">Break</code> and <code class="key">Ctrl</code>+<code class="key">Scroll Lock</code> break
+    execution whereas <code class="key">Pause</code> halts until another key is pressed (and not read).
 </li><li>
-   When reading from the keyboard directly or through <code>KYBD:</code>, arrow keys, <code><b>Del</b></code>,
-    <code><b>Home</b></code>, <code><b>End</b></code>, <code><b>Pg Up</b></code>, <code><b>Pg Dn</b></code> are passed as <code>NUL</code> characters. Function keys
+   When reading from the keyboard directly or through <code>KYBD:</code>, arrow keys, <code class="key">Del</code>,
+    <code class="key">Home</code>, <code class="key">End</code>, <code class="key">Pg Up</code>, <code class="key">Pg Dn</code> are passed as <code>NUL</code> characters. Function keys
     are ignored if they are event-trapped, otherwise keyword replacement is
     active as normal.
 </li></ul>
@@ -2374,52 +2374,52 @@ statement.</p>
 Keys are:</p>
 <table><tr>
 <td>1</td>
-<td><code><b>F1</b></code></td>
+<td><code class="key">F1</code></td>
 </tr><tr>
 <td>2</td>
-<td><code><b>F2</b></code></td>
+<td><code class="key">F2</code></td>
 </tr><tr>
 <td>3</td>
-<td><code><b>F3</b></code></td>
+<td><code class="key">F3</code></td>
 </tr><tr>
 <td>4</td>
-<td><code><b>F4</b></code></td>
+<td><code class="key">F4</code></td>
 </tr><tr>
 <td>5</td>
-<td><code><b>F5</b></code></td>
+<td><code class="key">F5</code></td>
 </tr><tr>
 <td>6</td>
-<td><code><b>F6</b></code></td>
+<td><code class="key">F6</code></td>
 </tr><tr>
 <td>7</td>
-<td><code><b>F7</b></code></td>
+<td><code class="key">F7</code></td>
 </tr><tr>
 <td>8</td>
-<td><code><b>F8</b></code></td>
+<td><code class="key">F8</code></td>
 </tr><tr>
 <td>9</td>
-<td><code><b>F9</b></code></td>
+<td><code class="key">F9</code></td>
 </tr><tr>
 <td>10</td>
-<td><code><b>F10</b></code></td>
+<td><code class="key">F10</code></td>
 </tr><tr>
 <td>11</td>
-<td><code><b>&#8593;<!--up--></b></code></td>
+<td><code class="key">&#8593;<!--up--></code></td>
 </tr><tr>
 <td>12</td>
-<td><code><b>&#8592;<!--left--></b></code></td>
+<td><code class="key">&#8592;<!--left--></code></td>
 </tr><tr>
 <td>13</td>
-<td><code><b>&#8594;<!--right--></b></code></td>
+<td><code class="key">&#8594;<!--right--></code></td>
 </tr><tr>
 <td>14</td>
-<td><code><b>&#8595;<!--down--></b></code></td>
+<td><code class="key">&#8595;<!--down--></code></td>
 </tr></table>
 <p>Keys 15 to 20 are defined using the event trapping <code>KEY</code> definition statement
 as described below.</p>
 <h4>Notes</h4>
 <ul><li>
-With <code>--syntax=tandy</code>, key 11 id <code><b>F11</b></code> and key 12 is <code><b>F12</b></code>. Pre-defined keys 11&mdash;14 shift to 13&mdash;16.
+With <code>--syntax=tandy</code>, key 11 id <code class="key">F11</code> and key 12 is <code class="key">F12</code>. Pre-defined keys 11&mdash;14 shift to 13&mdash;16.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
@@ -2447,22 +2447,22 @@ Modifiers are:
     <td>Extended</td>
 </tr><tr>
     <td><code>CHR$(&amp;h40)</code></td>
-    <td><code><b>Caps Lock</b></code></td>
+    <td><code class="key">Caps Lock</code></td>
 </tr><tr>
     <td><code>CHR$(&amp;h20)</code></td>
-    <td><code><b>Num Lock</b></code></td>
+    <td><code class="key">Num Lock</code></td>
 </tr><tr>
     <td><code>CHR$(&amp;h08)</code></td>
-    <td><code><b>Alt</b></code></td>
+    <td><code class="key">Alt</code></td>
 </tr><tr>
     <td><code>CHR$(&amp;h04)</code></td>
-    <td><code><b>Ctrl</b></code></td>
+    <td><code class="key">Ctrl</code></td>
 </tr><tr>
     <td><code>CHR$(&amp;h02)</code></td>
-    <td><code><b>Shift</b></code> (either side)</td>
+    <td><code class="key">Shift</code> (either side)</td>
 </tr><tr>
     <td><code>CHR$(&amp;h01)</code></td>
-    <td><code><b>Shift</b></code> (either side)</td>
+    <td><code class="key">Shift</code> (either side)</td>
 </tr></table>
 </li></ul>
 <h4>Notes</h4>
@@ -2644,8 +2644,8 @@ Any of the parameters has a string value: <code>Type mismatch</code>.
 <pre>LINE INPUT [ ; ] [ <em>prompt_literal</em> { ; | , } ] <em>string_name</em></pre>
 <p>Displays the prompt given in <code><em>prompt_literal</em></code> and reads user input from the
 keyboard, storing it into the variable <code><em>string_name</em></code>. All input is read until
-<code><b>Enter</b></code> is pressed; the first 255 characters are stored. If the <code>;</code> is given
-right after <code>LINE INPUT</code>, the <code><b>Enter</b></code> ending user input is not echoed to the
+<code class="key">Enter</code> is pressed; the first 255 characters are stored. If the <code>;</code> is given
+right after <code>LINE INPUT</code>, the <code class="key">Enter</code> ending user input is not echoed to the
 screen. 
 <h4>Parameters</h4>
 <ul><li>
@@ -2656,7 +2656,7 @@ followed by a comma or a semicolon.
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
-   If user input is interrupted by <code><b>Ctrl</b></code>+<code><b>Break</b></code>, <code>CONT</code> will re-execute the <code>LINE
+   If user input is interrupted by <code class="key">Ctrl</code>+<code class="key">Break</code>, <code>CONT</code> will re-execute the <code>LINE
     INPUT</code> statement.
 </li><li>
    Unlike <code>INPUT</code>, <code>LINE INPUT</code> does not end the prompt with <code>?</code>.
@@ -2666,7 +2666,7 @@ followed by a comma or a semicolon.
 <h3><code>LINE INPUT#</code> statement</h3>
 <pre>LINE INPUT[ ]# <em>file_num</em>, <em>string_name</em></pre>
 <p>Reads string or numeric variables from a text file, device, or the <code>FIELD</code> buffer
-of a random access file. All input is read until <code><b>Enter</b></code> is pressed; the first 
+of a random access file. All input is read until <code class="key">Enter</code> is pressed; the first 
 255 characters are stored. <code><em>file_num</em></code> must be the number of a file open in 
 <code>INPUT</code> mode or a device or random-access file open in <code>RANDOM</code> mode. 
 <h4>Parameters</h4>
@@ -2825,7 +2825,7 @@ greater than the character cell height (15), substitute 15.
 On emulated VGA cards, the cursor shape parameters are interpreted
     in a complicated way that is intended to maintain functional compatibility with CGA.
 </li><li>
-   In GW-BASIC, cursor shape is preserved after pressing <code><b>Ins</b></code> twice. The insert-mode cursor is different from the usual half-block.
+   In GW-BASIC, cursor shape is preserved after pressing <code class="key">Ins</code> twice. The insert-mode cursor is different from the usual half-block.
     In PC-BASIC, insert mode resets the cursor shape to default.
 </li><li>
    Cursor shape and visibility options have no effect in graphics mode.
@@ -6191,10 +6191,10 @@ Parallel ports 1&mdash;3.  In PC-BASIC, <code>LPT</code> devices can be attached
 <td><code>CONS:</code></td>
 <td><code>OUTPUT</code></td>
 <td>The screen (console). Output to <code>CONS:</code> is displayed
-                            directly at the cursor position when <code><b>Enter</b></code> is 
+                            directly at the cursor position when <code class="key">Enter</code> is 
                             pressed. It does not update the end-of-line value
                             for the interpreter, which means that it does not 
-                            move with <code><b>Backspace</b></code> or <code><b>Del</b></code> and is not
+                            move with <code class="key">Backspace</code> or <code class="key">Del</code> and is not
                             stored in program lines if it appears beyond the 
                             end of the existing line. <code>CONS:</code> can be opened with
                             any access mode, but the effect is always to open 
