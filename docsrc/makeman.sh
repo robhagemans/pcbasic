@@ -1,1 +1,1 @@
-pandoc USAGE.html | ronn > pcbasic.man
+pandoc USAGE.html -t markdown | ronn > pcbasic.man
