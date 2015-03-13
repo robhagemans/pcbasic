@@ -1,0 +1,45 @@
+<h2>Examples</h2>
+<dl>
+<dt><code>pcbasic</code></dt>
+<dd>Start PC-BASIC in interactive mode, emulating GW-BASIC/BASICA
+with VGA graphics.</dd>
+<dt><code>pcbasic --codepage=950</code></dt>
+<dd>Start PC-BASIC using the Big-5 codepage.</dd>
+<dt><code>pcbasic Foobar.baz</code></dt>
+<dd>Start PC-BASIC with package Foobar. Load the settings from the
+package; usually this will run a main program contained in the
+package.</dd>
+<dt><code>pcbasic Foobar.baz --convert=A --utf8</code></dt>
+<dd>List the main program of package Foobar to standard output as
+UTF-8.</dd>
+<dt><code>pcbasic MYPROG.BAS --mount=A:./files,B:./morefiles</code>
+[unix]<br />
+<code>pcbasic MYPROG.BAS --mount=A:.\\files,B:.\\morefiles</code>
+[windows]</dt>
+<dd>Mount the current directory's subdirectory <code>files</code>
+as drive <code>A:</code> and subdirectory <code>morefiles</code> as
+drive <code>B:</code>, then run <code>MYPROG.BAS</code>.</dd>
+<dt><code>pcbasic --mount=A:C:\\fakeflop</code></dt>
+<dd>Run PC-BASIC with directory <code>C:\fakeflop</code> mounted as
+<code>A:</code> drive.</dd>
+<dt><code>pcbasic @:\\INFO.BAS --preset=mda
+--mono-tint=255,128,0</code></dt>
+<dd>Run the information program included with PC-BASIC on an
+emulated MDA with amber tinted monitor.</dd>
+<dt><code>pcbasic /home/me/retro/COMP.BAS --preset=cga
+--monitor=composite</code></dt>
+<dd>Run <code>COMP.BAS</code> stored at <code>/home/me/retro</code>
+on an emulated CGA machine with a composite monitor.</dd>
+<dt><code>pcbasic PCJRGAME.BAS --preset=pcjr
+-k='start\r'</code></dt>
+<dd>Run <code>PCJRGAME.BAS</code> on an emulated PCjr and feed in
+the keystrokes <code><b>s</b><b>t</b><b>a</b><b>r</b><b>t</b><b>ENTER</b></code>.</dd>
+<dt><code>pcbasic BANNER.BAS --lpt2=PRINTER:</code></dt>
+<dd>Run <code>BANNER.BAS</code> in default mode with the default
+printer attached to <code>LPT2:</code>.</dd>
+<dt><code>pcbasic --resume</code></dt>
+<dd>Resume the most recently closed PC-BASIC session.</dd>
+<dt><code>pcbasic -qbe="?1+1"</code></dt>
+<dd>Execute the BASIC command <code>PRINT 1+1</code> in the
+command-line interface and return to the calling shell.</dd>
+</dl>
