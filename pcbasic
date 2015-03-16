@@ -243,8 +243,7 @@ def print_greeting(console):
     import var
     greeting = (
         'PC-BASIC 3.23%s\r'
-        '(C) Copyright 2013--2015 Rob Hagemans.  '
-        'Type RUN "@:INFO" for more information.\r'
+        '(C) Copyright 2013--2015 Rob Hagemans.\r'
         '%d Bytes free')
     # following GW, don't write greeting for redirected input 
     # or command-line filter run

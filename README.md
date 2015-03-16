@@ -9,9 +9,6 @@ read and write binary data files created by GW-BASIC.
 
 PC-BASIC is free and open source software released under the GPL version 3. 
 
-See [`info/ABOUT`](https://sourceforge.net/p/pcbasic/code/ci/master/tree/info/ABOUT) for authors, [`info/COPYING`](https://sourceforge.net/p/pcbasic/code/ci/master/tree/info/COPYING) for licensing details,
-[`info/USAGE`](https://sourceforge.net/p/pcbasic/code/ci/master/tree/info/USAGE) for usage essentials and [`info/HELP`](https://sourceforge.net/p/pcbasic/code/ci/master/tree/info/HELP) for BASIC language documentation.
-
 If you find bugs, please report them on the SourceForge discussion page at [https://sourceforge.net/p/pcbasic/discussion/bugs/](https://sourceforge.net/p/pcbasic/discussion/bugs/). It would be most helpful if you could include a short bit of BASIC code that triggers the bug.
 
 ----------
@@ -82,7 +79,7 @@ For example, you could include the following line in `PCBASIC.INI` to emulate IB
     preset=pcjr  
 
 
-For a full list of options, consult the text file [`info/USAGE`](https://sourceforge.net/p/pcbasic/code/ci/master/tree/info/USAGE) or run `pcbasic -h`.
+For a full list of options, run `pcbasic -h`.
 
 
 #### Basic BASIC commands ####
@@ -93,7 +90,7 @@ A few essential statements:
 `RUN` starts the currently loaded program.  
 `RUN "PROGRAM"` loads and starts `PROGRAM.BAS`.  
 
-A full CC-licensed [GW-BASIC language reference](https://sourceforge.net/p/pcbasic/code/ci/master/tree/info/HELP) is included with PC-BASIC. You can find it in the `info/` directory as a text file called `HELP`; access it through your favourite text reader or through `RUN "@:INFO"`, option `Docs`. This documentation aims to document the actual behaviour of GW-BASIC 3.23, on which PC-BASIC is modelled. Please note that the original Microsoft help file, which can be found on the internet, is rather hit-and-miss; GW-BASIC often behaves differently than documented by Microsoft. 
+A full CC-licensed [GW-BASIC language reference](https://sourceforge.net/p/pcbasic/code/ci/master/tree/info/HELP) is included with PC-BASIC. This documentation aims to document the actual behaviour of GW-BASIC 3.23, on which PC-BASIC is modelled. Please note that the original Microsoft help file, which can be found on the internet, is rather hit-and-miss; GW-BASIC often behaves differently than documented by Microsoft. 
 
 
 #### Free BASIC compilers and saner dialects ####

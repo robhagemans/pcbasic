@@ -55,10 +55,10 @@ os_error = {
     }
 
 # standard drive mappings
-drives = { 'Z': os.getcwd(), '@': os.path.join(plat.basepath, 'info') }
+drives = { 'Z': os.getcwd(), }
 current_drive = 'Z'
 # working directories; must not start with a /
-state.io_state.drive_cwd = { 'Z': '', '@': '' }
+state.io_state.drive_cwd = { 'Z': '', }
 
 shell_enabled = False
 
