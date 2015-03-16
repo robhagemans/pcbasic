@@ -2,7 +2,8 @@ files/
 packaging/
 patches/
 test/
-info/*.SAV
+docsrc/
+data/*.SAV
 *.pyc
 *.pyo
 *~

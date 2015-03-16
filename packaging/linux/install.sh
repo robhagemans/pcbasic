@@ -27,7 +27,7 @@ check_permissions () {
 }
 
 do_install () {
-    cat pcbasic/info/VERSION
+    cat pcbasic/data/VERSION
     echo "INSTALLATION SCRIPT"
     echo 
 

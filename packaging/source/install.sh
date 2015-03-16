@@ -61,7 +61,7 @@ check_dependencies () {
 }
 
 do_install () {
-    cat info/VERSION
+    cat data/VERSION
     echo "INSTALLATION SCRIPT"
     echo
 

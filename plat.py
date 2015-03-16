@@ -34,7 +34,7 @@ else:
 # directories
 encoding_dir = os.path.join(basepath, 'encoding')
 font_dir = os.path.join(basepath, 'font')
-info_dir = os.path.join(basepath, 'info')
+info_dir = os.path.join(basepath, 'data')
 # use home
 home_dir = os.path.expanduser('~')
 
