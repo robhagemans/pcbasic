@@ -14,17 +14,17 @@ package.</dd>
 UTF-8.</dd>
 <dt><code>pcbasic MYPROG.BAS --mount=A:./files,B:./morefiles</code>
 [unix]<br />
-<code>pcbasic MYPROG.BAS --mount=A:.\\files,B:.\\morefiles</code>
+<code>pcbasic MYPROG.BAS --mount=A:.\files,B:.\morefiles</code>
 [windows]</dt>
 <dd>Mount the current directory's subdirectory <code>files</code>
 as drive <code>A:</code> and subdirectory <code>morefiles</code> as
 drive <code>B:</code>, then run <code>MYPROG.BAS</code>.</dd>
-<dt><code>pcbasic --mount=A:C:\\fakeflop</code></dt>
+<dt><code>pcbasic --mount=A:C:\fakeflop</code></dt>
 <dd>Run PC-BASIC with directory <code>C:\fakeflop</code> mounted as
 <code>A:</code> drive.</dd>
-<dt><code>pcbasic @:\\INFO.BAS --preset=mda
+<dt><code>pcbasic Z:\INFO.BAS --preset=mda
 --mono-tint=255,128,0</code></dt>
-<dd>Run the information program included with PC-BASIC on an
+<dd>Run INFO.BAS in the current directory on an
 emulated MDA with amber tinted monitor.</dd>
 <dt><code>pcbasic /home/me/retro/COMP.BAS --preset=cga
 --monitor=composite</code></dt>
