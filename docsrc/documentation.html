@@ -43,7 +43,7 @@ If the line starts with a number, it will be stored as a program line. No prompt
 </tr>
 <tr>
 <td><code class="key">Ctrl</code>+<code class="key">&#8592;<!--left--></code> or <code class="key">Ctrl</code>+<code class="key">B</code></td>
-<td>Move to the first letter of the previous word. Words consist of letters A-Z and figures 0-9.</code>
+<td>Move to the first letter of the previous word. Words consist of letters <code>A&mdash;Z</code> and figures <code>0&mdash;9</code>.
 </tr>
 <tr>
 <td><code class="key">Ctrl</code>+<code class="key">&#8594;<!--right--></code> or <code class="key">Ctrl</code>+<code class="key">F</code></td>
@@ -86,6 +86,7 @@ the command, even if you did not type it.
 A line starting with a number is stored as a 
 program line.</td>
 </tr>
+<tr>
 <td><code class="key">End</code> or <code class="key">Ctrl</code>+<code class="key">N</code></td>
 <td>Move the cursor to the first position after the 
 end of the logical line.</td>
@@ -271,11 +272,9 @@ ctrl-c-break=True
 </pre>
 You cannot use the sort name of options in the configuration file. You also cannot leave out the expression <code>=True</code>.
 </dd>
-</ol>
+</dl>
 <p>In either method, the options have the same name and syntax. In what follows, we will often refer to 
 a particular option setting; remember that you can always set this from the command line as well as from the configuration file.</p>
-</dl>
-** add ref to USAGE file with full list of options **
 
 <h2>BASIC programs</h2>
 <p>PC-BASIC can hold one BASIC program at a time in memory. To enter a program line, start with a <em>line number</em> and enter BASIC commands after that. The maximum length of a program line is 255 characters, including the line number and any spaces. The program line will not be immediately executed, but stored in the program. Program lines are sorted by line number, so that line <code>10</code> is executed before line <code>20</code>.
@@ -320,13 +319,12 @@ system.</p>
 <p>PC-BASIC can be used to convert between the three program formats: either by loading the program and saving 
 in your desired format, or from the command line using the <code>convert</code> option. To convert a 
 bytecode or protected file to ASCII you could use, for example:
+</p>
 <pre>pcbasic --convert=A PROGRAMP.BAS PROGRAMA.BAS
 </pre>
-</p>
 
 
-<a name="8.3">
-<h3>MS-DOS-style 8.3 file names</h3>
+<h3 id="eightpointthree">MS-DOS-style 8.3 file names</h3>
 <p>PC-BASIC follows DOS file system conventions, where file and directory names consist of a 
 8-character name and 3-character extension. Names are case insensitive.
 Note that DOS conventions are subtly different from Windows short filename 
@@ -538,7 +536,7 @@ directory.</p>
 <h2>Redirecting input and output</h2>
 <p>PC-BASIC supports redirecting input and output the GW-BASIC way: output redirected with the <code>output=</code> option will be sent to the screen as well as the specified file, while input redirected with <code>input=</code> is taken only from the specified file. Note that screen output through the <code>SCRN:</code> device and keyboard input through the <code>KYBD:</code> device are not redirected. Files are read and written in the codepage set with PC-BASIC.</p>
 
-<p>Note that it is also possible to use your operating system's facility to redirect console output using the <code><</code> and <code>></code> operators. It's best to set <code>interface=none</code> so that I/O is redirected through the console. This will produce files in UTF-8 encoding.</p>
+<p>Note that it is also possible to use your operating system's facility to redirect console output using the <code>&lt;</code> and <code>&gt;</code> operators. It's best to set <code>interface=none</code> so that I/O is redirected through the console. This will produce files in UTF-8 encoding.</p>
 
 <h2>Command-line interface</h2>
 <p>You can run PC-BASIC as a command-line interface by setting the <code>interface=cli</code> (or <code>-b</code>) option. No window will be opened: you can type BASIC commands straight into your Command Prompt/Terminal. Use the horizontal arrow keys to move on the current line you're editing; use the vertical arrow keys to show screen rows above and below. Copy and
@@ -573,7 +571,7 @@ CPU emulation such as provided by DOSBox, Bochs or VirtualBox.</p>
 
 <p>PC-BASIC <em>does</em> provide limited support for the <code>POKE</code> and <code>PEEK</code> statements: some of the most commonly accessed regions of memory are emulated and can be read and (sometimes) written. There is read and write support for video memory, font RAM and selected locations of the low memory segment, including the keyboard buffer. Additionally, there is read support for font ROM, variable, array and string memory, <code>FIELD</code> buffers as well as the program code itself. Writing into the program code is disabled by default, but can be enabled with the <code>allow-code-poke</code> option. Use with care. A number of machine ports related to keyboard input and video modes are supported as well.</p> 
 
-<p>The <code>SHELL</code> statement is, by default, disabled; this is to avoid unpleasant surprises. In GW-BASIC under MS-DOS, <code>SHELL</code> opens a DOS prompt or executes commands in it. The command shells of modern operating systems work differently than those of DOS; in particular, it is impossible to retrieve changes in the environment variables, so that many use cases of <code>SHELL</code> simply would not work; for example, changing the current drive on Windows. Moreover, Unix shells have a syntax that is completely different from that of DOS. You can, however, enable <code>SHELL</code> by setting the <code>shell=native</code> option. Use with care.<p>
+<p>The <code>SHELL</code> statement is, by default, disabled; this is to avoid unpleasant surprises. In GW-BASIC under MS-DOS, <code>SHELL</code> opens a DOS prompt or executes commands in it. The command shells of modern operating systems work differently than those of DOS; in particular, it is impossible to retrieve changes in the environment variables, so that many use cases of <code>SHELL</code> simply would not work; for example, changing the current drive on Windows. Moreover, Unix shells have a syntax that is completely different from that of DOS. You can, however, enable <code>SHELL</code> by setting the <code>shell=native</code> option. Use with care.</p>
 
 <table>
 <tr>
@@ -713,7 +711,7 @@ Effect
 <td>Append screen output to <code><em>filename</em></code>.</td>
 </tr>
 <tr>
-<td><code><<em>filename</em></code></td>
+<td><code>&lt;<em>filename</em></code></td>
 <td></td>
 <td><code>--input=<em>filename</em></code></td>
 <td>Read keyboard input from <code><em>filename</em></code>.</td>
