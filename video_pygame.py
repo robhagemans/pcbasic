@@ -879,15 +879,16 @@ def check_events(pause=False):
             if not pause:
                 handle_key_up(event)
         elif event.type == pygame.MOUSEBUTTONDOWN: 
+            # copy, paste and pen may be on the same button, so no elifs
             if event.button == mousebutton_copy:
                 # LEFT button: copy
                 pos = normalise_pos(*event.pos)
                 clipboard.start(1 + pos[1] // font_height, 
                             1 + (pos[0]+font_width//2) // font_width)
-            elif event.button == mousebutton_paste:
+            if event.button == mousebutton_paste:
                 # MIDDLE button: paste
                 clipboard.paste(mouse=True)    
-            elif event.button == mousebutton_pen:
+            if event.button == mousebutton_pen:
                 # right mouse button is a pen press
                 backend.pen_down(*normalise_pos(*event.pos))
         elif event.type == pygame.MOUSEBUTTONUP: 
