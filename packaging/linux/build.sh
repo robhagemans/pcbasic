@@ -1,11 +1,13 @@
-#!/bin/sh
+#!/bin/bash
 NAME="pcbasic-$1-linux-i386"
 
 pyinstaller installer.spec
+
 # add files to top level of archive
 cp install.sh dist/install.sh
 cp pcbasic.png dist/pcbasic.png
 cp ../../README.md dist/README.md
+cp ../../LICENSE.md dist/LICENSE.md
 chmod ugo+x dist/install.sh
 
 mv dist "$NAME"
