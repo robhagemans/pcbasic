@@ -10,7 +10,7 @@
 90 PRINT#1, H(0)
 100 CLOSE 1
 110 DEFSTR S, T
-120 CHAIN "..\..\chain.ba3",,ALL
+120 CHAIN "c:..\..\chain.ba3",,ALL
 999 END
 1000 PRINT#1, "error: "; ERR ; ERL
 1010 RESUME NEXT
