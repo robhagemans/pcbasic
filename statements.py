@@ -359,7 +359,7 @@ def exec_on(ins):
         elif util.read_if(ins, c, (token.STRIG,)):
             exec_on_strig(ins)
         else:
-            raise error.RunError(2)
+            exec_on_jump(ins)
     else:        
         exec_on_jump(ins)
 
