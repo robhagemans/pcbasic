@@ -20,11 +20,11 @@ interpreter will run in interactive mode.</dd>
 <dd>Allow programs to <code>POKE</code> into code memory.</dd>
 <dt><code>--altgr[=True|=False]</code></dt>
 <dd>If <code>True</code> (default), interpret the right
-<code><b>Alt</b></code> key as
-<code><b>Alt Gr</b></code> instead of
-<code><b>Alt</b></code>. The left
-<code><b>Alt</b></code> key is always seen as
-<code><b>Alt</b></code>.</dd>
+<code class="key">Alt</code> key as
+<code class="key">Alt Gr</code> instead of
+<code class="key">Alt</code>. The left
+<code class="key">Alt</code> key is always seen as
+<code class="key">Alt</code>.</dd>
 <dt><code>--append[=True|=False]</code></dt>
 <dd>Use with
 <code>--output=<em>output_file</em></code>. Append to
@@ -44,7 +44,7 @@ screen width. Graphical interface only.</dd>
 <dd>Set the title of the PC-BASIC window.
 Default is <em>PC-BASIC 3.23</em>.</dd>
 <dt><code>--capture-caps[=True|=False]</code></dt>
-<dd>Handle the <code><b>Caps Lock</b></code> key. This
+<dd>Handle the <code class="key">Caps Lock</code> key. This
 may collide with the operating system's own handling.</dd>
 <dt><code>--cga-low[=True|=False]</code></dt>
 <dd>Use low-intensity palettes in CGA. This only has an effect on
@@ -285,21 +285,21 @@ one of <code>left</code>,<code>middle</code>,<code>right</code>,<code>none</code
 <dt><code>--ctrl-c-break[=True|=False]</code></dt>
 <dd>
 If <code>False</code>, follow GW-BASIC behaviour
-where <code><b>Ctrl</b>+<b>C</b></code> breaks <code>AUTO</code>
+where <code class="key">Ctrl</code>+<code class="key">C</code> breaks <code>AUTO</code>
 and <code>INPUT</code> but not program execution or
 <code>LIST</code>.<br />
 If <code>True</code>, treat
-<code><b>Ctrl</b>+<b>C</b></code> exactly like
-<code><b>Ctrl</b>+<b>Break</b></code> and
-<code><b>Ctrl</b>+<b>Scroll Lock</b></code> in graphical
+<code class="key">Ctrl</code>+<code class="key">C</code> exactly like
+<code class="key">Ctrl</code>+<code class="key">Break</code> and
+<code class="key">Ctrl</code>+<code class="key">Scroll Lock</code> in graphical
 interface mode.  Use if your keyboard does
-not have a <code><b>Break</b></code> or
-<code><b>Scroll Lock</b></code> key.<br /> 
+not have a <code class="key">Break</code> or
+<code class="key">Scroll Lock</code> key.<br /> 
 Default is <code>False</code> on
 Windows and Linux and <code>True</code> on OSX. In <code>text</code> and
 <code>cli</code> interface mode,
-<code><b>Ctrl</b>+<b>C</b></code> is always treated like
-<code><b>Ctrl</b>+<b>Break</b></code>.
+<code class="key">Ctrl</code>+<code class="key">C</code> is always treated like
+<code class="key">Ctrl</code>+<code class="key">Break</code>.
 <dt><code>--dimensions=<em>X</em>,<em>Y</em></code></dt>
 <dd>Set window dimensions to <code><em>X</em></code> by
 <code><em>Y</em></code> pixels. This overrides
@@ -528,12 +528,12 @@ algorithm that isn't as smart as it thinks it is, and displayed as
 box drawing rather than as DBCS characters. If <code>--nobox</code>
 is set, they will be displayed as DBCS.</dd>
 <dt><code>--nokill[=True|=False]</code></dt>
-<dd>Allow BASIC to capture <code><b>Alt+F4</b></code>.
+<dd>Allow BASIC to capture <code class="key">Alt+F4</code>.
 Graphical interface only. By default,
-<code><b>Alt</b>+<b>F4</b></code> is captured by most operating
+<code class="key">Alt</code>+<code class="key">F4</code> is captured by most operating
 systems as a quit signal, and will terminate PC-BASIC. Set
 <code>--nokill</code> to allow BASIC to capture
-<code><b>Alt</b>+<b>F4</b></code> instead. This is useful if
+<code class="key">Alt</code>+<code class="key">F4</code> instead. This is useful if
 your program uses this key combination.</dd>
 <dt><code>--nosound[=True|=False]</code></dt>
 <dd>Disable sound output.</dd>
