@@ -846,7 +846,8 @@ def init_video(video_module):
         return state.console_state.screen.resume()
     else:        
         # initialise a fresh textmode screen
-        state.console_state.screen.screen(None, None, None, None)
+        info = state.console_state.screen.mode
+        state.console_state.screen.set_mode(info, 0, 1, 0, 0)
         return True
 
 class Screen(object):
@@ -1003,20 +1004,31 @@ class Screen(object):
             if (video_capabilities == 'pcjr' and info and 
                     new_apagenum >= info.num_pages):
                 new_apagenum = 0    
-        # Erase tells basic how much video memory to erase
-        # 0: do not erase video memory
-        # 1: (default) erase old and new page if screen or width changes
-        # 2: erase all video memory if screen or width changes 
-        # -> we're not distinguishing between 1 and 2 here
-        if (erase == 0 and self.mode.video_segment == info.video_segment):
-            save_mem = self.mode.get_memory(
-                            self.mode.video_segment*0x10, self.video_mem_size)
+        if ((not info.is_text_mode and info.name != self.mode.name) or
+                (info.is_text_mode and not self.mode.is_text_mode) or
+                (info.width != self.mode.width) or
+                (new_colorswitch != self.colorswitch)):
+            # Erase tells basic how much video memory to erase
+            # 0: do not erase video memory
+            # 1: (default) erase old and new page if screen or width changes
+            # 2: erase all video memory if screen or width changes 
+            # -> we're not distinguishing between 1 and 2 here
+            if (erase == 0 and self.mode.video_segment == info.video_segment):
+                save_mem = self.mode.get_memory(
+                                self.mode.video_segment*0x10, self.video_mem_size)
+            else:
+                save_mem = None
+            self.set_mode(info, new_mode, new_colorswitch, 
+                          new_apagenum, new_vpagenum)
+            if save_mem:
+                self.mode.set_memory(self.mode.video_segment*0x10, save_mem)
         else:
-            save_mem = None
-        self.set_mode(info, new_mode, new_colorswitch, 
-                      new_apagenum, new_vpagenum)
-        if save_mem:
-            self.mode.set_memory(self.mode.video_segment*0x10, save_mem)
+            # only switch pages
+            if (not info or
+                    new_apagenum >= info.num_pages or 
+                    new_vpagenum >= info.num_pages):
+                raise error.RunError(5)
+            self.set_page(new_vpagenum, new_apagenum)
 
     def set_mode(self, mode_info, new_mode, new_colorswitch, 
                  new_apagenum, new_vpagenum):

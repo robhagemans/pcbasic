@@ -2448,6 +2448,7 @@ def exec_screen(ins):
     screen.screen(mode, color, apagenum, vpagenum, erase)
     if ((not screen.mode.is_text_mode and screen.mode.name != oldmode.name) or
             (screen.mode.is_text_mode and not oldmode.is_text_mode) or
+            (screen.mode.width != oldmode.width) or
             (screen.colorswitch != oldcolor)):
         # rebuild the console if we've switched modes or colorswitch
         console.init_mode()    
