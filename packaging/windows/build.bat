@@ -1,6 +1,6 @@
 pyinstaller installer.spec
 cd ..\..\ansipipe
-make launcher
+gcc -s launcher.c -o launcher -DSUPPRESS_STDERR
 cd ..\packaging\windows
 move ..\..\ansipipe\launcher.exe dist\pcbasic\pcbasic.com
 makensis pcbasic.nsi
