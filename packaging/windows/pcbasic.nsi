@@ -20,9 +20,15 @@
 ;--------------------------------
 ;General
 
+
 ;Name and file
 Name "PC-BASIC 3.23"
 OutFile "pcbasic-win32.exe"
+
+
+
+
+
 
 ;Default installation folder
 InstallDir "$programfiles\PC-BASIC"
@@ -30,7 +36,13 @@ InstallDir "$programfiles\PC-BASIC"
 InstallDirRegKey ${INSTDIR_REG_ROOT} "${INSTDIR_REG_KEY}" "InstallDir"
 
 ;Request application privileges for Windows Vista
-RequestExecutionLevel user
+;RequestExecutionLevel user
+
+RequestExecutionLevel admin ;Require admin rights on NT6+ (When UAC is turned on)
+
+!include LogicLib.nsh
+
+
 
 ;Start Menu Folder Page Configuration
 !define MUI_STARTMENUPAGE_REGISTRY_ROOT "HKCU" 
@@ -115,6 +127,15 @@ SectionEnd
 
 Function .onInit
     ;prepare log always within .onInit function
+
+    UserInfo::GetAccountType
+    pop $0
+    ${If} $0 != "admin" ;Require admin rights on NT4+
+        MessageBox mb_iconstop "Administrator rights required!"
+        SetErrorLevel 740 ;ERROR_ELEVATION_REQUIRED
+        Quit
+    ${EndIf}
+
     !insertmacro UNINSTALL.LOG_PREPARE_INSTALL
 FunctionEnd
 
