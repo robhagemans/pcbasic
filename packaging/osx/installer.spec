@@ -31,5 +31,5 @@ coll = COLLECT(exe,
            name='pcbasic')
 app = BUNDLE(coll,
          name='PC-BASIC.app',
-         icon='/Users/rob/pc-basic/resources/pcbasic.icns')
+         icon='/Users/rob/pc-basic/packaging/osx/pcbasic.icns')
 
