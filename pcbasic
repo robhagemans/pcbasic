@@ -34,14 +34,14 @@ def main():
         prepare_logging()        
         if config.options['version']:
             # in version mode, print version and exit
-            logging.info(plat.version)
+            sys.stdout.write(plat.version + '\n')
             if config.options['debug']:
                 debug_details()
         elif config.options['help']:
             # in help mode, print usage and exit
             f = open(os.path.join(plat.info_dir, 'USAGE'))
             for line in f:
-                logging.info(line[:-1])
+                sys.stdout.write(line)
         elif config.options['convert']:
             # in converter mode, convert and exit
             convert()
@@ -273,9 +273,9 @@ def debug_details():
     for module in modules:
         try:
             __import__(module)
-            logging.info("%s: available", module)
+            sys.stdout.write("%s: available\n" % module)
         except ImportError:
-            logging.info("%s: not available", module)
+            sys.stdout.write("%s: not available\n" % module)
                             
 if __name__ == "__main__":
     main()
