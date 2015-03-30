@@ -1,5 +1,5 @@
 #!/bin/bash
-NAME="pcbasic-$1-linux-i386"
+NAME="pcbasic-$1-linux-$2"
 
 pyinstaller installer.spec
 
