@@ -842,8 +842,10 @@ def init_video(video_module):
     # clipboard handler may need an initialised pygame screen
     # incidentally, we only need a clipboard handler when we use pygame
     # avoid error messages by not calling
-    if video_module.__name__ == 'pygame':
+    if video_module.__name__ == 'video_pygame':
         clipboard_handler = clipboard.get_handler()
+    else:
+        clipboard_handler = clipboard.Clipboard()
     if state.loaded:
         # reload the screen in resumed state
         return state.console_state.screen.resume()
