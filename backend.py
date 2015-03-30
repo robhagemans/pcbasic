@@ -1285,8 +1285,10 @@ class Screen(object):
             therow = self.apage.row[crow]  
             for i in range(self.mode.width): 
                 # set for_keys to avoid echoing to CLI
+                # set force to force actual redrawing of non-updated chars
                 self.put_char_attr(self.apagenum, crow+1, i+1, 
-                             therow.buf[i][0], therow.buf[i][1], for_keys=True)
+                             therow.buf[i][0], therow.buf[i][1], 
+                             for_keys=True, force=True)
         # set cursor back to previous state                             
         self.cursor.reset_visibility()
 
