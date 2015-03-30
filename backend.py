@@ -1202,6 +1202,9 @@ class Screen(object):
         """ Put a byte to the screen, redrawing as necessary. """
         if not self.mode.is_text_mode:
             cattr = cattr & 0xf
+            # always force drawing of spaces, it may have been overdrawn
+            if c == ' ':
+                force = True
         start, stop = self.text.pages[pagenum].put_char_attr(crow, ccol, c, cattr, one_only, force)
         # update the screen 
         self.refresh_range(pagenum, crow, start, stop, for_keys)
