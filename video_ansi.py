@@ -52,6 +52,7 @@ def prepare():
 def init():
     """ Initialise the text interface. """
     global stdin_q
+    global logger
     if not check_tty():
         return False
     term_echo(False)
@@ -93,8 +94,8 @@ def close():
                                               ' - press a key to close window'))
         # redraw in case terminal didn't recognise ansi sequence
         redraw()
-        while getch() == '':
-            sleep(0.01)
+        while getc() == '':
+            time.sleep(0.01)
     term_echo()
     sys.stdout.write(ansi.esc_set_colour % 0)
     sys.stdout.write(ansi.esc_clear_screen)
