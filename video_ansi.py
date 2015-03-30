@@ -353,7 +353,7 @@ def check_tty():
     """ Check if input stream is a typewriter. """
     if not plat.stdin_is_tty:
         logging.warning('Input device is not a terminal. '
-                        'Could not initialise CLI interface.')
+                        'Could not initialise ansi interface.')
         return False
     return True
 
