@@ -468,7 +468,7 @@ def close():
     """ Close the pygame interface. """
     if wait_on_close:
         pygame.display.set_caption('%s - press a key to close window' % caption)   
-        update_cursor_visibility(False)
+        show_cursor(False)
         # wait for a keystroke
         while not check_events(pause=True):
             idle()
