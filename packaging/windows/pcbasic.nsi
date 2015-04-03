@@ -133,7 +133,7 @@ Function .onInit
     UserInfo::GetAccountType
     pop $0
     ${If} $0 != "admin" ;Require admin rights on NT4+
-        MessageBox mb_iconstop "Administrator rights required!"
+        MessageBox mb_iconstop "The PC-BASIC installer requires administrator rights, which you appear not to have."
         SetErrorLevel 740 ;ERROR_ELEVATION_REQUIRED
         Quit
     ${EndIf}
