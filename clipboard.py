@@ -101,7 +101,7 @@ class PygameClipboard(Clipboard):
         return us
 
 
-class MacClipboard(object):
+class MacClipboard(Clipboard):
     """ Clipboard handling for OSX. """
     
     def paste(self, mouse=False):
@@ -117,7 +117,7 @@ class MacClipboard(object):
             pass
     
 
-class XClipboard(object):
+class XClipboard(Clipboard):
     """ Clipboard handling for X Window System using xsel or xclip. """
 
     def __init__(self):
