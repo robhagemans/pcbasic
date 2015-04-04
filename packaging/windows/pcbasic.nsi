@@ -11,9 +11,14 @@
 !define INSTDIR_REG_ROOT "HKLM"
 !define INSTDIR_REG_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\PC-BASIC"
 
-;--------------------------------
-;Include Modern UI
 
+; multiuser, modern UI
+
+!define MULTIUSER_EXECUTIONLEVEL Highest
+!define MULTIUSER_MUI
+!define MULTIUSER_INSTALLMODE_COMMANDLINE
+!define MULTIUSER_INSTALLMODE_INSTDIR "PC-BASIC"
+!include "MultiUser.nsh"
 !include "MUI2.nsh"
 !include "AdvUninstLog.nsh"
 ;
@@ -24,21 +29,6 @@
 ;Name and file
 Name "PC-BASIC 3.23"
 OutFile "pcbasic-win32.exe"
-
-
-
-
-
-
-;Default installation folder
-InstallDir "$programfiles\PC-BASIC"
-;Get installation folder from registry if available
-InstallDirRegKey ${INSTDIR_REG_ROOT} "${INSTDIR_REG_KEY}" "InstallDir"
-
-;Request application privileges for Windows Vista
-;RequestExecutionLevel user
-
-RequestExecutionLevel admin ;Require admin rights on NT6+ (When UAC is turned on)
 
 !include LogicLib.nsh
 
@@ -53,6 +43,8 @@ RequestExecutionLevel admin ;Require admin rights on NT6+ (When UAC is turned on
 ;Variables
 
 Var StartMenuFolder
+Var Shortcuts
+
 
 ;--------------------------------
 ;Interface Settings
@@ -66,6 +58,9 @@ Var StartMenuFolder
 
 ;--------------------------------
 ;Pages
+
+
+!insertmacro MULTIUSER_PAGE_INSTALLMODE
 
 !insertmacro UNATTENDED_UNINSTALL
 ;!insertmacro INTERACTIVE_UNINSTALL
@@ -107,37 +102,21 @@ Section "PC-BASIC" SecDummy
     SetOutPath "$PROFILE"
     CreateShortCut "$SMPROGRAMS\$StartMenuFolder\PC-BASIC.lnk" "$INSTDIR\pcbasic.exe"
 
+    ; workaround as multiuser doesn't seem to get the right location for shortcuts if an admin user installs 'just for me'
+    WriteRegStr HKCU "Software\PC-BASIC" "Shortcuts" "$SMPROGRAMS\$StartMenuFolder"
+
 
     !insertmacro MUI_STARTMENU_WRITE_END
 SectionEnd
-
-;--------------------------------
-;Descriptions
-
-  ;Language strings
-;  LangString DESC_SecDummy ${LANG_ENGLISH} "Main section."
-
-  ;Assign language strings to sections
-;  !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-;  !insertmacro MUI_DESCRIPTION_TEXT ${SecDummy} $(DESC_SecDummy)
-;  !insertmacro MUI_FUNCTION_DESCRIPTION_END
-
 
 ;--------------------------------
 ;Uninstaller Section
 
 
 Function .onInit
+    !insertmacro MULTIUSER_INIT
+
     ;prepare log always within .onInit function
-
-    UserInfo::GetAccountType
-    pop $0
-    ${If} $0 != "admin" ;Require admin rights on NT4+
-        MessageBox mb_iconstop "The PC-BASIC installer requires administrator rights, which you appear not to have."
-        SetErrorLevel 740 ;ERROR_ELEVATION_REQUIRED
-        Quit
-    ${EndIf}
-
     !insertmacro UNINSTALL.LOG_PREPARE_INSTALL
 FunctionEnd
 
@@ -155,16 +134,23 @@ Section UnInstall
     !insertmacro UNINSTALL.LOG_END_UNINSTALL
 
     !insertmacro MUI_STARTMENU_GETFOLDER Application $StartMenuFolder
-    Delete "$SMPROGRAMS\$StartMenuFolder\PC-BASIC.lnk"  
-    Delete "$SMPROGRAMS\$StartMenuFolder\Documentation.lnk"  
-    Delete "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk"
-    RMDir "$SMPROGRAMS\$StartMenuFolder"
+
+    ; workaround as multiuser doesn't seem to get the right location for shortcuts if an admin user installs 'just for me'
+    ReadRegStr $Shortcuts HKCU "Software\PC-BASIC" "Shortcuts"
+
+    Delete "$Shortcuts\PC-BASIC.lnk"  
+    Delete "$Shortcuts\Documentation.lnk"  
+    Delete "$Shortcuts\Uninstall.lnk"
+    RMDir "$Shortcuts"
     
-    DeleteRegKey /ifempty HKCU "Software\PC-BASIC"
+    DeleteRegKey HKCU "Software\PC-BASIC"
+;    DeleteRegKey /ifempty HKCU "Software\PC-BASIC"
 SectionEnd
 
 
 Function UN.onInit
+    !insertmacro MULTIUSER_UNINIT
+
     ;begin uninstall, could be added on top of uninstall section instead
     !insertmacro UNINSTALL.LOG_BEGIN_UNINSTALL
 FunctionEnd
