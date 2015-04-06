@@ -397,6 +397,8 @@ class Float(object):
 
     def to_value(self):
         """ Convert to Python float. """
+        if self.is_zero():
+            return 0.0
         self.apply_carry()
         man = self.man >> 8
         return man * 2**(self.exp - self.bias) * (1-2*self.neg)
@@ -404,6 +406,8 @@ class Float(object):
     @classmethod
     def from_value(cls, value):
         """ Set to value of Python float. """
+        if value == 0.0:
+            return cls.zero
         neg = value < 0
         fexp = math.log(abs(value), 2) - cls.mantissa_bits
         man = int(abs(value) * 0.5**int(fexp-8))
@@ -505,6 +509,9 @@ def unary(mbf_in, fn):
     except OverflowError:
         msg_overflow()
         return mbf_in.__class__(mbf_in.neg, mbf_in.carry_mask, 0xff)
+    except ValueError:
+        raise error.RunError(5)
+        
     
 sqrt = partial(unary, fn=math.sqrt)
 exp  = partial(unary, fn=math.exp )
