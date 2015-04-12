@@ -1766,7 +1766,7 @@ def check_queue():
             elif signal.event_type == AUDIO_STOP:
                 audio.stop_all_sound()
             elif signal.event_type == AUDIO_NOISE:
-                audio.play_noise(signal.params)
+                audio.play_noise(*signal.params)
             q.task_done()
         # handle playing queues
         audio.check_sound()
