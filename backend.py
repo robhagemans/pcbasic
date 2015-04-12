@@ -1746,7 +1746,7 @@ def init_audio():
     audio_queue = [Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue()]
     for voice in range(4):    
         for signal in state.console_state.sound.queue[voice]:
-            audio_queue[voice].append(signal)
+            audio_queue[voice].put(signal)
     # launch consumer thread
     t = Thread(target=check_queue)
     t.setDaemon(True)
@@ -1883,7 +1883,7 @@ class Sound(object):
         # remove the notes that have been played
         while len(self.queue[voice]) > number_left:
             self.queue[voice].pop(0)
-
+        
     ### PLAY statement
 
     def play(self, mml_list):
