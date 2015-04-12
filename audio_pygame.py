@@ -28,7 +28,6 @@ else:
     android = False
     import pygame.mixer as mixer
 
-import backend
 import logging
 
 def prepare():
@@ -91,28 +90,46 @@ def check_sound():
     for voice in range(4):
         if current_chunk[voice]:
             mixer.Channel(voice).queue(current_chunk[voice])
-    for voice in range(4):
-        # remove the notes that have been sent to mixer
-        backend.sound_done(voice, len(sound_queue[voice]))
             
 def busy():
     """ Is the mixer busy? """
     return (not loop_sound[0] and not loop_sound[1] and not loop_sound[2] and not loop_sound[3]) and mixer.get_busy()
         
 def play_sound(frequency, total_duration, fill, loop, voice=0, volume=15):
-    """ Queue a sound for playing; ignore and work off backend queue. """
+    """ Queue a sound for playing. """
     sound_queue[voice].append(SoundGenerator(signal_sources[voice], frequency, total_duration, fill, loop, volume))
 
-def set_noise(is_white):
-    """ Set the character of the noise channel. """
+def play_noise(is_white, frequency, total_duration, fill, loop, volume=15):
+    """ Queue a noise for playing. """
     signal_sources[3].feedback = feedback_noise if is_white else feedback_periodic
-    
-def quit_sound():
-    """ Shut down the mixer. """
-    if mixer.get_init() != None:
-        mixer.quit()
+    sound_queue[3].append(SoundGenerator(signal_sources[3], frequency, total_duration, fill, loop, volume))
+
+def check_quit():
+    """ Quit the mixer if not running a program and sound quiet for a while. """
+    global quiet_ticks
+    if sound_queue != [[], [], [], []] or busy():
+        # could leave out the is_quiet call but for looping sounds 
+        quiet_ticks = 0
+    else:
+        quiet_ticks += 1    
+        if quiet_ticks > quiet_quit:
+            # mixer is quiet and we're not running a program. 
+            # quit to reduce pulseaudio cpu load
+            # this takes quite a while and leads to missed frames...
+            if mixer.get_init() != None:
+                mixer.quit()
+            quiet_ticks = 0
+
+def queue_length(voice):
+    """ Number of unfinished sounds per voice. """
+    return len(sound_queue[voice])
 
 # implementation
+
+# quit sound server after quiet period of quiet_quit ticks
+# to avoid high-ish cpu load from the sound server.
+quiet_quit = 10000
+quiet_ticks = 0
 
 # sound generators for sounds not played yet
 sound_queue = [ [], [], [], [] ]
