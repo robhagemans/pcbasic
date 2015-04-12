@@ -498,7 +498,7 @@ def exec_beep(ins):
     # if a syntax error happens, we still beeped.
     util.require(ins, util.end_statement)
     if state.console_state.sound.foreground:
-        state.console_state.sound.wait_music(wait_last=False)
+        state.console_state.sound.wait_music()
     
 def exec_sound(ins):
     """ SOUND: produce an arbitrary sound or switch external speaker on/off. """
@@ -541,7 +541,7 @@ def exec_sound(ins):
     else:
         state.console_state.sound.play_sound(freq, dur_sec, voice=voice, volume=volume)
         if state.console_state.sound.foreground:
-            state.console_state.sound.wait_music(wait_last=False)
+            state.console_state.sound.wait_music()
     
 def exec_play(ins):
     """ PLAY: play sound sequence defined by a Music Macro Language string. """

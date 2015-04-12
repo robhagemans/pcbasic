@@ -1838,14 +1838,18 @@ class Sound(object):
             self.noise_freq[3] = frequency/2.
             self.noise_freq[7] = frequency/2.
         # at most 16 notes in the sound queue (not 32 as the guide says!)
-        self.wait_music(15, wait_last=False)    
+        self.wait_music(15)    
 
-    def wait_music(self, wait_length=0, wait_last=True):
-        """ Wait until the music has finished playing. """
-        while ((wait_last and audio.busy()) or
-                len(self.queue[0]) + wait_last - 1 > wait_length or
-                len(self.queue[1]) + wait_last - 1 > wait_length or
-                len(self.queue[2]) + wait_last - 1 > wait_length):
+    def wait_music(self, wait_length=0):
+        """ Wait until a given number of notes are left on the queue. """
+        while (len(self.queue[0]) - 1 > wait_length or
+                len(self.queue[1]) - 1 > wait_length or
+                len(self.queue[2]) - 1 > wait_length):
+            wait()
+
+    def wait_all_music(self):
+        """ Wait until all music (not noise) has finished playing. """
+        while (audio.busy() or self.queue[0] or self.queue[1] or self.queue[2]):
             wait()
 
     def stop_all_sound(self):
@@ -1996,7 +2000,7 @@ class Sound(object):
                 else:
                     raise error.RunError(5)    
         if self.foreground:
-            self.wait_music()
+            self.wait_all_music()
 
 
 ###############################################################################
