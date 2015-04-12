@@ -11,6 +11,7 @@ import os
 import sys
 import shutil
 import logging
+import traceback
 
 import plat
 import ansipipe
@@ -150,7 +151,7 @@ def start_basic():
         if config.options['debug']:
             raise
     except Exception as e:
-        logging.error("Unhandled exception: %s", str(e))
+        logging.error("Unhandled exception\n%s", traceback.format_exc())
     finally:
         try:
             # fix the terminal on exit (important for ANSI terminals)
