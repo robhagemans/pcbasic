@@ -1748,40 +1748,10 @@ def init_audio():
         for signal in state.console_state.sound.queue[voice]:
             audio_queue[voice].put(signal)
     # launch consumer thread
-    t = Thread(target=check_queue)
+    t = Thread(target=state.console_state.sound.check_queue)
     t.setDaemon(True)
     t.start()
     return True
-
-def check_queue():
-    """ Audio queue consumer thread. """
-    while True:
-        for i, q in enumerate(audio_queue):
-            try:
-                signal = q.get(False)
-            except Queue.Empty:
-                continue
-            if signal.event_type == AUDIO_TONE:
-                audio.play_sound(*signal.params)
-                state.console_state.sound.queue[i].append(signal)
-            elif signal.event_type == AUDIO_STOP:
-                audio.stop_all_sound()
-                state.console_state.sound.queue = [[], [], [], []]
-            elif signal.event_type == AUDIO_NOISE:
-                audio.play_noise(*signal.params)
-                state.console_state.sound.queue[i].append(signal)
-            q.task_done()
-        # handle playing queues
-        audio.check_sound()
-        # reads global run_mode from other thread
-        if not state.basic_state.run_mode:
-            audio.check_quit()
-        for voice in range(4):
-            # remove the notes that have started playing
-            while len(state.console_state.sound.queue[voice]) > audio.queue_length(voice):
-                state.console_state.sound.queue[voice].pop(0)
-        # do not hog cpu
-        time.sleep(0.024)
 
 
 class PlayState(object):
@@ -1877,6 +1847,36 @@ class Sound(object):
         """ Return the number of notes in the queue. """
         # top of sound_queue is currently playing
         return max(0, len(self.queue[voice])-1)
+
+    def check_queue(self):
+        """ Audio queue consumer thread. """
+        while True:
+            for i, q in enumerate(audio_queue):
+                try:
+                    signal = q.get(False)
+                except Queue.Empty:
+                    continue
+                if signal.event_type == AUDIO_TONE:
+                    audio.play_sound(*signal.params)
+                    self.queue[i].append(signal)
+                elif signal.event_type == AUDIO_STOP:
+                    audio.stop_all_sound()
+                    self.queue = [[], [], [], []]
+                elif signal.event_type == AUDIO_NOISE:
+                    audio.play_noise(*signal.params)
+                    self.queue[i].append(signal)
+                q.task_done()
+            # handle playing queues
+            audio.check_sound()
+            # reads global run_mode from other thread
+            if not state.basic_state.run_mode:
+                audio.check_quit()
+            for voice in range(4):
+                # remove the notes that have started playing
+                while len(self.queue[voice]) > audio.queue_length(voice):
+                    self.queue[voice].pop(0)
+            # do not hog cpu
+            time.sleep(0.024)
 
     ### PLAY statement
 
