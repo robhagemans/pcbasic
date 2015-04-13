@@ -51,11 +51,11 @@ def init():
     
 def stop_all_sound():
     """ Clear all sound queues and turn off all sounds. """
-    global sound_queue, loop_sound
+    global sound_queue, loop_sound, play_queue
     for voice in range(4):
         stop_channel(voice)
-    loop_sound = [ None, None, None, None ]
-    sound_queue = [ [], [], [], [] ]
+    loop_sound = [None, None, None, None]
+    sound_queue = [[], [], [], []]
     
 def check_sound():
     """ Update the sound queue and play sounds. """
@@ -112,7 +112,7 @@ def check_quit():
         quiet_ticks = 0
     else:
         quiet_ticks += 1    
-        if quiet_ticks > quiet_quit:
+        if not persist and quiet_ticks > quiet_quit:
             # mixer is quiet and we're not running a program. 
             # quit to reduce pulseaudio cpu load
             # this takes quite a while and leads to missed frames...
@@ -130,6 +130,8 @@ def queue_length(voice):
 # to avoid high-ish cpu load from the sound server.
 quiet_quit = 10000
 quiet_ticks = 0
+# do not quit mixer if true
+persist = False
 
 # sound generators for sounds not played yet
 sound_queue = [ [], [], [], [] ]

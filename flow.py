@@ -43,6 +43,7 @@ def restore(datanum=-1):
 def set_pointer(new_runmode, pos=None):
     """ Set program pointer to the given codestream and position. """
     state.basic_state.run_mode = new_runmode
+    state.console_state.sound.persist(new_runmode)
     codestream = get_codestream()
     if pos != None:
         # jump to position, if given

@@ -1696,7 +1696,7 @@ def stick_moved(joy, axis, value):
 # sound queue
 
 import Queue
-from threading import Thread
+import threading
 import time
 
 # sound capabilities - '', 'pcjr' or 'tandy'
@@ -1728,6 +1728,8 @@ AUDIO_STOP = 1
 AUDIO_NOISE = 2
 AUDIO_SYNC = 3
 AUDIO_QUIT = 4
+AUDIO_PERSIST = 6
+
 
 
 def prepare_audio():
@@ -1769,9 +1771,9 @@ class Sound(object):
 
     def __init__(self):
         """ Initialise sound queue. """
-        self.queue = [[], [], [], []]
         self.thread_queue = [Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue()]
         self.thread = None
+        
         # Tandy/PCjr noise generator
         # frequency for noise sources
         self.noise_freq = [base_freq / v for v in [1., 2., 4., 1., 1., 2., 4., 1.]]
@@ -1801,10 +1803,6 @@ class Sound(object):
         """ Rebuild from pickled state. """
         self.__dict__.update(d)
         self.thread_queue = [Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue()]
-        # re-queue unplayed notes
-        for voice in range(4):    
-            for signal in self.queue[voice]:
-                self.thread_queue[voice].put(signal)        
         
     def reset(self):
         """ Reset PLAY state (CLEAR). """
@@ -1838,14 +1836,15 @@ class Sound(object):
 
     def wait_music(self, wait_length=0):
         """ Wait until a given number of notes are left on the queue. """
-        while (audio.queue_length(0) - 1 > wait_length or
-                audio.queue_length(1) - 1 > wait_length or
-                audio.queue_length(2) - 1 > wait_length):
+        while (self.queue_length(0) > wait_length or
+                self.queue_length(1) > wait_length or
+                self.queue_length(2) > wait_length):
             wait()
 
     def wait_all_music(self):
         """ Wait until all music (not noise) has finished playing. """
-        while (audio.busy() or audio.queue_length(0) or audio.queue_length(1) or audio.queue_length(2)):
+        while (audio.busy() or audio.queue_length(0) or audio.queue_length(1) or audio.queue_length(2) or
+                self.thread_queue[0].qsize() or self.thread_queue[1].qsize() or self.thread_queue[2].qsize()):
             wait()
 
     def stop_all_sound(self):
@@ -1870,16 +1869,21 @@ class Sound(object):
     def queue_length(self, voice=0):
         """ Return the number of notes in the queue. """
         # top of sound_queue is currently playing
-        return max(0, audio.queue_length(voice)-1)
+        return max(0, self.thread_queue[voice].qsize() + audio.queue_length(voice)-1)
 
+    def persist(self, flag):
+        """ Set mixer persistence flag (runmode). """
+        self.thread_queue[0].put(AudioEvent(AUDIO_PERSIST, flag))
+        
     def launch_thread(self):
         """ Launch consumer thread. """
-        self.thread = Thread(target=self.check_queue)
+        self.thread = threading.Thread(target=self.check_queue)
         self.thread.daemon = True
         self.thread.start()
         
     def check_queue(self):
         """ Audio queue consumer thread. """
+        clear_length = -2
         while True:
             for i, q in enumerate(self.thread_queue):
                 try:
@@ -1888,26 +1892,20 @@ class Sound(object):
                     continue
                 if signal.event_type == AUDIO_TONE:
                     audio.play_sound(*signal.params)
-                    self.queue[i].append(signal)
                 elif signal.event_type == AUDIO_STOP:
                     audio.stop_all_sound()
-                    self.queue = [[], [], [], []]
                 elif signal.event_type == AUDIO_NOISE:
                     audio.play_noise(*signal.params)
-                    self.queue[i].append(signal)
                 elif signal.event_type == AUDIO_QUIT:
                     # close thread
                     return
+                elif signal.event_type == AUDIO_PERSIST:
+                    audio.persist = signal.params
                 q.task_done()
             # handle playing queues
             audio.check_sound()
-            # reads global run_mode from other thread
-            if not state.basic_state.run_mode:
-                audio.check_quit()
-            for voice in range(4):
-                # remove the notes that have started playing
-                while len(self.queue[voice]) > audio.queue_length(voice):
-                    self.queue[voice].pop(0)
+            # check if mixer can be quit
+            audio.check_quit()
             # do not hog cpu
             time.sleep(0.024)
 
