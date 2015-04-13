@@ -172,6 +172,10 @@ def start_basic():
             iolayer.close_devices()
         except (NameError, AttributeError):
             pass    
+        try:
+            state.console_state.sound.close()
+        except (NameError, AttributeError):
+            pass    
             
 def prepare_console():
     """ Initialise backend and console. """

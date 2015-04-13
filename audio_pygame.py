@@ -37,7 +37,7 @@ def prepare():
         if mixer:
             mixer.pre_init(sample_rate, -mixer_bits, channels=1, buffer=1024) #4096
 
-def init_sound():
+def init():
     """ Initialise sound system. """
     if not numpy:
         logging.warning('NumPy module not found. Failed to initialise audio.')

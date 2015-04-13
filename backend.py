@@ -1714,14 +1714,21 @@ notes = {   'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6,
 
 
 class AudioEvent(object):
+    """ Signal object for audio queue. """
+    
     def __init__(self, event_type, params=None):
+        """ Create signal. """
         self.event_type = event_type
         self.params = params
+
 
 # audio queue signals
 AUDIO_TONE = 0
 AUDIO_STOP = 1
 AUDIO_NOISE = 2
+AUDIO_SYNC = 3
+AUDIO_QUIT = 4
+
 
 def prepare_audio():
     """ Prepare the audio subsystem. """
@@ -1739,18 +1746,9 @@ def prepare_audio():
 def init_audio():
     """ Initialise the audio backend. """
     global audio
-    global audio_queue
-    if not audio or not audio.init_sound():
+    if not audio or not audio.init():
         return False
-    # rebuild sound queue
-    audio_queue = [Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue()]
-    for voice in range(4):    
-        for signal in state.console_state.sound.queue[voice]:
-            audio_queue[voice].put(signal)
-    # launch consumer thread
-    t = Thread(target=state.console_state.sound.check_queue)
-    t.setDaemon(True)
-    t.start()
+    state.console_state.sound.launch_thread()
     return True
 
 
@@ -1772,6 +1770,8 @@ class Sound(object):
     def __init__(self):
         """ Initialise sound queue. """
         self.queue = [[], [], [], []]
+        self.thread_queue = [Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue()]
+        self.thread = None
         # Tandy/PCjr noise generator
         # frequency for noise sources
         self.noise_freq = [base_freq / v for v in [1., 2., 4., 1., 1., 2., 4., 1.]]
@@ -1782,6 +1782,30 @@ class Sound(object):
         self.beep_on = True
         self.reset()
 
+    def close(self):
+        """ Close sound queue at exit. """
+        if self.thread and self.thread.is_alive() and self.thread_queue:
+            # signal quit and wait for thread to finish
+            self.thread_queue[0].put(AudioEvent(AUDIO_QUIT))
+            self.thread.join()
+
+    def __getstate__(self):
+        """ Return picklable state. """
+        # copy object dict and remove un-picklable Queues
+        d = dict(self.__dict__)
+        d['thread_queue'] = None
+        d['thread'] = None
+        return d
+
+    def __setstate__(self, d):
+        """ Rebuild from pickled state. """
+        self.__dict__.update(d)
+        self.thread_queue = [Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue()]
+        # re-queue unplayed notes
+        for voice in range(4):    
+            for signal in self.queue[voice]:
+                self.thread_queue[voice].put(signal)        
+        
     def reset(self):
         """ Reset PLAY state (CLEAR). """
         # music foreground (MF) mode        
@@ -1803,7 +1827,7 @@ class Sound(object):
             # pcjr, tandy play low frequencies as 110Hz
             frequency = 110.
         tone = AudioEvent(AUDIO_TONE, (frequency, duration, fill, loop, voice, volume))
-        audio_queue[voice].put(tone)
+        self.thread_queue[voice].put(tone)
         if voice == 2:
             # reset linked noise frequencies
             # /2 because we're using a 0x4000 rotation rather than 0x8000
@@ -1814,44 +1838,50 @@ class Sound(object):
 
     def wait_music(self, wait_length=0):
         """ Wait until a given number of notes are left on the queue. """
-        while (len(self.queue[0]) - 1 > wait_length or
-                len(self.queue[1]) - 1 > wait_length or
-                len(self.queue[2]) - 1 > wait_length):
+        while (audio.queue_length(0) - 1 > wait_length or
+                audio.queue_length(1) - 1 > wait_length or
+                audio.queue_length(2) - 1 > wait_length):
             wait()
 
     def wait_all_music(self):
         """ Wait until all music (not noise) has finished playing. """
-        while (audio.busy() or self.queue[0] or self.queue[1] or self.queue[2]):
+        while (audio.busy() or audio.queue_length(0) or audio.queue_length(1) or audio.queue_length(2)):
             wait()
 
     def stop_all_sound(self):
         """ Terminate all sounds immediately. """
-        for q in audio_queue:
+        for q in self.thread_queue:
             while not q.empty():
                 try:
                     q.get(False)
                 except Empty:
                     continue
                 q.task_done()
-        for q in audio_queue:
+        for q in self.thread_queue:
             q.put(AudioEvent(AUDIO_STOP))
         
     def play_noise(self, source, volume, duration, loop=False):
         """ Play a sound on the noise generator. """
         frequency = self.noise_freq[source]
         noise = AudioEvent(AUDIO_NOISE, (source > 3, frequency, duration, 1, loop, volume)) 
-        audio_queue[3].put(noise)
+        self.thread_queue[3].put(noise)
         # don't wait for noise
 
     def queue_length(self, voice=0):
         """ Return the number of notes in the queue. """
         # top of sound_queue is currently playing
-        return max(0, len(self.queue[voice])-1)
+        return max(0, audio.queue_length(voice)-1)
 
+    def launch_thread(self):
+        """ Launch consumer thread. """
+        self.thread = Thread(target=self.check_queue)
+        self.thread.daemon = True
+        self.thread.start()
+        
     def check_queue(self):
         """ Audio queue consumer thread. """
         while True:
-            for i, q in enumerate(audio_queue):
+            for i, q in enumerate(self.thread_queue):
                 try:
                     signal = q.get(False)
                 except Queue.Empty:
@@ -1865,6 +1895,9 @@ class Sound(object):
                 elif signal.event_type == AUDIO_NOISE:
                     audio.play_noise(*signal.params)
                     self.queue[i].append(signal)
+                elif signal.event_type == AUDIO_QUIT:
+                    # close thread
+                    return
                 q.task_done()
             # handle playing queues
             audio.check_sound()
