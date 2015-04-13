@@ -1756,17 +1756,20 @@ def init_audio():
 def check_queue():
     """ Audio queue consumer thread. """
     while True:
-        for q in audio_queue:
+        for i, q in enumerate(audio_queue):
             try:
                 signal = q.get(False)
             except Queue.Empty:
                 continue
             if signal.event_type == AUDIO_TONE:
                 audio.play_sound(*signal.params)
+                state.console_state.sound.queue[i].append(signal)
             elif signal.event_type == AUDIO_STOP:
                 audio.stop_all_sound()
+                state.console_state.sound.queue = [[], [], [], []]
             elif signal.event_type == AUDIO_NOISE:
                 audio.play_noise(*signal.params)
+                state.console_state.sound.queue[i].append(signal)
             q.task_done()
         # handle playing queues
         audio.check_sound()
@@ -1774,9 +1777,9 @@ def check_queue():
         if not state.basic_state.run_mode:
             audio.check_quit()
         for voice in range(4):
-            # remove the notes that have been sent to mixer
-            # FIXME: writes to global from other thread
-            state.console_state.sound.done(voice, audio.queue_length(voice))
+            # remove the notes that have started playing
+            while len(state.console_state.sound.queue[voice]) > audio.queue_length(voice):
+                state.console_state.sound.queue[voice].pop(0)
         # do not hog cpu
         time.sleep(0.024)
 
@@ -1831,7 +1834,6 @@ class Sound(object):
             frequency = 110.
         tone = AudioEvent(AUDIO_TONE, (frequency, duration, fill, loop, voice, volume))
         audio_queue[voice].put(tone)
-        self.queue[voice].append(tone)
         if voice == 2:
             # reset linked noise frequencies
             # /2 because we're using a 0x4000 rotation rather than 0x8000
@@ -1854,7 +1856,6 @@ class Sound(object):
 
     def stop_all_sound(self):
         """ Terminate all sounds immediately. """
-        self.queue = [ [], [], [], [] ]
         for q in audio_queue:
             while not q.empty():
                 try:
@@ -1870,7 +1871,6 @@ class Sound(object):
         frequency = self.noise_freq[source]
         noise = AudioEvent(AUDIO_NOISE, (source > 3, frequency, duration, 1, loop, volume)) 
         audio_queue[3].put(noise)
-        self.queue[3].append(noise)
         # don't wait for noise
 
     def queue_length(self, voice=0):
@@ -1878,12 +1878,6 @@ class Sound(object):
         # top of sound_queue is currently playing
         return max(0, len(self.queue[voice])-1)
 
-    def done(self, voice, number_left):
-        """ Report a sound has finished playing, remove from queue. """ 
-        # remove the notes that have been played
-        while len(self.queue[voice]) > number_left:
-            self.queue[voice].pop(0)
-        
     ### PLAY statement
 
     def play(self, mml_list):
