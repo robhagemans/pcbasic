@@ -97,7 +97,7 @@ def check_queue(thread_queue):
         # check if mixer can be quit
         check_quit()
         # do not hog cpu
-        if empty:
+        if empty and sound_queue == [[], [], [], []]:
             pygame.time.wait(tick_ms)
 
     
