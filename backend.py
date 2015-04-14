@@ -1939,11 +1939,14 @@ class Sound(object):
                                         volume=vstate.volume, voice=voice)
                         total_time[voice] += dur*vstate.tempo
                     else:
-                        self.play_sound(
-                            note_freq[(vstate.octave+next_oct)*12 + notes[note]], 
-                            dur * vstate.tempo, vstate.speed, 
-                            volume=vstate.volume, voice=voice)
-                        total_time[voice] += dur*vstate.tempo
+                        try:
+                            self.play_sound(
+                                note_freq[(vstate.octave+next_oct)*12 + notes[note]], 
+                                dur * vstate.tempo, vstate.speed, 
+                                volume=vstate.volume, voice=voice)
+                            total_time[voice] += dur*vstate.tempo
+                        except KeyError:
+                            raise error.RunError(5)
                     next_oct = 0
                 elif c == 'M':
                     c = util.skip_read(gmls, draw_and_play.ml_whitepace).upper()
