@@ -1968,7 +1968,7 @@ class Sound(object):
         max_time = max(total_time)
         for voice in range(3):
             if total_time[voice] < max_time:
-                self.play_sound(0, max_time - total_time, 1, 0, voice)
+                self.play_sound(0, max_time - total_time[voice], 1, 0, voice)
         if self.foreground:
             self.wait_music()
 
