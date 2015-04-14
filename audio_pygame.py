@@ -81,7 +81,7 @@ def check_sound():
                         current_chunk[voice] = sound_queue[voice][0].build_chunk()
                     except IndexError:
                         # sound_queue is empty
-                        break
+                        continue
                 if sound_queue[voice][0].loop:
                     loop_sound[voice] = sound_queue[voice].pop(0)
                     # any next sound in the sound queue will stop this looping sound

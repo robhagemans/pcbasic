@@ -1921,6 +1921,7 @@ class Sound(object):
             gmls.seek(0)
             gmls_list.append(gmls)
         next_oct = 0
+        total_time = [0, 0, 0, 0]
         voices = range(3)
         while True:
             if not voices:
@@ -1954,9 +1955,11 @@ class Sound(object):
                         self.play_sound(note_freq[note-1], dur*vstate.tempo, 
                                          vstate.speed, volume=vstate.volume,
                                          voice=voice)
+                        total_time[voice] += dur*vstate.tempo
                     elif note == 0:
                         self.play_sound(0, dur*vstate.tempo, vstate.speed,
                                         volume=0, voice=voice)
+                        total_time[voice] += dur*vstate.tempo
                 elif c == 'L':
                     vstate.length = 1./draw_and_play.ml_parse_number(gmls)    
                 elif c == 'T':
@@ -1998,11 +2001,13 @@ class Sound(object):
                     if note == 'P':
                         self.play_sound(0, dur * vstate.tempo, vstate.speed,
                                         volume=vstate.volume, voice=voice)
+                        total_time[voice] += dur*vstate.tempo
                     else:
                         self.play_sound(
                             note_freq[(vstate.octave+next_oct)*12 + notes[note]], 
                             dur * vstate.tempo, vstate.speed, 
                             volume=vstate.volume, voice=voice)
+                        total_time[voice] += dur*vstate.tempo
                     next_oct = 0
                 elif c == 'M':
                     c = util.skip_read(gmls, draw_and_play.ml_whitepace).upper()
@@ -2024,6 +2029,10 @@ class Sound(object):
                                     max(0, draw_and_play.ml_parse_number(gmls)))
                 else:
                     raise error.RunError(5)    
+        max_time = max(total_time)
+        for voice in range(3):
+            if total_time[voice] < max_time:
+                self.play_sound(0, max_time - total_time, 1, 0, voice)
         if self.foreground:
             self.wait_all_music()
 
