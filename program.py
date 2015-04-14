@@ -19,6 +19,8 @@ import state
 import flow
 import unicodepage
 import memory
+# ensure initialisation of state_console_state.sound
+import sound
 
 try:
     from cStringIO import StringIO
