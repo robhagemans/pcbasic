@@ -66,19 +66,32 @@ def close():
 def launch_thread():
     """ Launch consumer thread. """
     global thread
-    thread = threading.Thread(target=check_queue, args=(sound.thread_queue,))
+    thread = threading.Thread(target=consumer_thread, args=(sound.thread_queue,))
     thread.daemon = True
     thread.start()
 
-def check_queue(thread_queue):
-    """ Audio queue consumer thread. """
-    empty = True
+def consumer_thread(thread_queue):
+    """ Audio signal queue consumer thread. """
     while True:
+        empty = not drain_queue(thread_queue)
+        # handle playing queues
+        check_sound()
+        # check if mixer can be quit
+        check_quit()
+        # do not hog cpu
+        if empty and sound_queue == [[], [], [], []]:
+            pygame.time.wait(tick_ms)
+
+def drain_queue(thread_queue):
+    """ Drain signal queue. """
+    empty = False
+    while not empty:
+        empty = True
         for i, q in enumerate(thread_queue):
             try:
                 signal = q.get(False)
+                empty = False
             except Queue.Empty:
-                empty = empty and True
                 continue
             if signal.event_type == sound.AUDIO_TONE:
                 play_sound(*signal.params)
@@ -92,14 +105,7 @@ def check_queue(thread_queue):
             elif signal.event_type == sound.AUDIO_PERSIST:
                 persist = signal.params
             q.task_done()
-        # handle playing queues
-        check_sound()
-        # check if mixer can be quit
-        check_quit()
-        # do not hog cpu
-        if empty and sound_queue == [[], [], [], []]:
-            pygame.time.wait(tick_ms)
-
+    return not empty
     
 def check_sound():
     """ Update the sound queue and play sounds. """
