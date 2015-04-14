@@ -31,6 +31,7 @@ else:
 import logging
 import threading
 import Queue
+from collections import deque
 
 import sound
 
@@ -79,7 +80,7 @@ def consumer_thread(thread_queue):
         # check if mixer can be quit
         check_quit()
         # do not hog cpu
-        if empty and sound_queue == [[], [], [], []]:
+        if empty and not sound_queue[0] and not sound_queue[1] and not sound_queue[2] and not sound_queue[3]:
             pygame.time.wait(tick_ms)
 
 def drain_queue(thread_queue):
@@ -111,7 +112,9 @@ def check_sound():
     """ Update the sound queue and play sounds. """
     global loop_sound
     current_chunk = [ None, None, None, None ]
-    if sound_queue == [ [], [], [], [] ] and loop_sound == [ None, None, None, None ]:
+    if (not sound_queue[0] and not sound_queue[1] and 
+            not sound_queue[2] and not sound_queue[3] 
+            and loop_sound == [ None, None, None, None ]):
         return
     check_init_mixer()
     for voice in range(4):
@@ -126,14 +129,14 @@ def check_sound():
             elif sound_queue[voice]:
                 current_chunk[voice] = sound_queue[voice][0].build_chunk()
                 if not current_chunk[voice]:
-                    sound_queue[voice].pop(0)
+                    sound_queue[voice].popleft()
                     try:
                         current_chunk[voice] = sound_queue[voice][0].build_chunk()
                     except IndexError:
                         # sound_queue is empty
                         continue
                 if sound_queue[voice][0].loop:
-                    loop_sound[voice] = sound_queue[voice].pop(0)
+                    loop_sound[voice] = sound_queue[voice].popleft()
                     # any next sound in the sound queue will stop this looping sound
                 else:   
                     loop_sound[voice] = None
@@ -144,7 +147,7 @@ def check_sound():
 def check_quit():
     """ Quit the mixer if not running a program and sound quiet for a while. """
     global quiet_ticks
-    if sound_queue != [[], [], [], []] or busy():
+    if sound_queue[0] or sound_queue[1] or sound_queue[2] or sound_queue[3] or busy():
         # could leave out the is_quiet call but for looping sounds 
         quiet_ticks = 0
     else:
@@ -163,7 +166,7 @@ def stop_all_sound():
     for voice in range(4):
         stop_channel(voice)
     loop_sound = [None, None, None, None]
-    sound_queue = [[], [], [], []]
+    sound_queue = [deque(), deque(), deque(), deque()]
 
 def play_sound(frequency, total_duration, fill, loop, voice=0, volume=15):
     """ Queue a sound for playing. """
@@ -193,7 +196,7 @@ quiet_ticks = 0
 persist = False
 
 # sound generators for sounds not played yet
-sound_queue = [ [], [], [], [] ]
+sound_queue = [ deque(), deque(), deque(), deque() ]
 # currently looping sound
 loop_sound = [ None, None, None, None ]
 
