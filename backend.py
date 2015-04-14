@@ -1883,12 +1883,13 @@ class Sound(object):
         
     def check_queue(self):
         """ Audio queue consumer thread. """
-        clear_length = -2
+        empty = True        
         while True:
             for i, q in enumerate(self.thread_queue):
                 try:
                     signal = q.get(False)
                 except Queue.Empty:
+                    empty = empty and True
                     continue
                 if signal.event_type == AUDIO_TONE:
                     audio.play_sound(*signal.params)
@@ -1907,7 +1908,8 @@ class Sound(object):
             # check if mixer can be quit
             audio.check_quit()
             # do not hog cpu
-            time.sleep(0.024)
+            if empty:
+                time.sleep(0.024)
 
     ### PLAY statement
 
@@ -1923,6 +1925,7 @@ class Sound(object):
         next_oct = 0
         total_time = [0, 0, 0, 0]
         voices = range(3)
+        total_time = [0, 0, 0, 0]
         while True:
             if not voices:
                 break
@@ -2032,7 +2035,7 @@ class Sound(object):
         max_time = max(total_time)
         for voice in range(3):
             if total_time[voice] < max_time:
-                self.play_sound(0, max_time - total_time, 1, 0, voice)
+                self.play_sound(0, max_time - total_time[voice], 1, 0, voice)
         if self.foreground:
             self.wait_all_music()
 

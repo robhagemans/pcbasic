@@ -242,7 +242,7 @@ class SoundGenerator(object):
                 # done                
                 self.count_samples = self.num_samples
         # if loop, attach one chunk to loop, do not increment count
-        return pygame.sndarray.make_sound(chunk)   
+        return pygame.sndarray.make_sound(chunk)
 
 def stop_channel(channel):
     """ Stop sound on a channel. """
