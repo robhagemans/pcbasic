@@ -64,17 +64,20 @@ def close():
         sound.thread_queue[0].put(sound.AudioEvent(AUDIO_QUIT))
         thread.join()
 
+
+#################################
+
 def launch_thread():
     """ Launch consumer thread. """
     global thread
-    thread = threading.Thread(target=consumer_thread, args=(sound.thread_queue,))
+    thread = threading.Thread(target=consumer_thread)
     thread.daemon = True
     thread.start()
 
-def consumer_thread(thread_queue):
+def consumer_thread():
     """ Audio signal queue consumer thread. """
     while True:
-        empty = not drain_queue(thread_queue)
+        empty = not drain_queue()
         # handle playing queues
         check_sound()
         # check if mixer can be quit
@@ -83,27 +86,39 @@ def consumer_thread(thread_queue):
         if empty and not sound_queue[0] and not sound_queue[1] and not sound_queue[2] and not sound_queue[3]:
             pygame.time.wait(tick_ms)
 
-def drain_queue(thread_queue):
+def drain_queue():
     """ Drain signal queue. """
+    global sound_queue, loop_sound
     empty = False
     while not empty:
         empty = True
-        for i, q in enumerate(thread_queue):
+        for i, q in enumerate(sound.thread_queue):
             try:
                 signal = q.get(False)
                 empty = False
             except Queue.Empty:
                 continue
             if signal.event_type == sound.AUDIO_TONE:
-                play_sound(*signal.params)
+                # enqueue a tone
+                frequency, total_duration, fill, loop, voice, volume = signal.params
+                sound_queue[voice].append(SoundGenerator(signal_sources[voice], frequency, total_duration, fill, loop, volume))
             elif signal.event_type == sound.AUDIO_STOP:
-                stop_all_sound()
+                # stop all channels
+                for voice in range(4):
+                    stop_channel(voice)
+                loop_sound = [None, None, None, None]
+                sound_queue = [deque(), deque(), deque(), deque()]
             elif signal.event_type == sound.AUDIO_NOISE:
-                play_noise(*signal.params)
+                # enqueue a noise
+                is_white, frequency, total_duration, fill, loop, volume = signal.params
+                # FIXME: can't set the feedback here if the chunk generation is to happen later
+                signal_sources[3].feedback = feedback_noise if is_white else feedback_periodic
+                sound_queue[3].append(SoundGenerator(signal_sources[3], frequency, total_duration, fill, loop, volume))
             elif signal.event_type == sound.AUDIO_QUIT:
                 # close thread
                 return
             elif signal.event_type == sound.AUDIO_PERSIST:
+                # allow/disallow mixer to quit
                 persist = signal.params
             q.task_done()
     return not empty
@@ -160,22 +175,7 @@ def check_quit():
                 mixer.quit()
             quiet_ticks = 0
 
-def stop_all_sound():
-    """ Clear all sound queues and turn off all sounds. """
-    global sound_queue, loop_sound, play_queue
-    for voice in range(4):
-        stop_channel(voice)
-    loop_sound = [None, None, None, None]
-    sound_queue = [deque(), deque(), deque(), deque()]
-
-def play_sound(frequency, total_duration, fill, loop, voice=0, volume=15):
-    """ Queue a sound for playing. """
-    sound_queue[voice].append(SoundGenerator(signal_sources[voice], frequency, total_duration, fill, loop, volume))
-
-def play_noise(is_white, frequency, total_duration, fill, loop, volume=15):
-    """ Queue a noise for playing. """
-    signal_sources[3].feedback = feedback_noise if is_white else feedback_periodic
-    sound_queue[3].append(SoundGenerator(signal_sources[3], frequency, total_duration, fill, loop, volume))
+####################################
 
 def busy():
     """ Is a note playing (not looping)? """
@@ -183,7 +183,10 @@ def busy():
 
 def queue_length(voice):
     """ Number of unfinished sounds per voice. """
+    drain_queue()
     return len(sound_queue[voice])
+
+####################################
 
 # implementation
 

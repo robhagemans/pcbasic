@@ -56,7 +56,6 @@ class AudioEvent(object):
 AUDIO_TONE = 0
 AUDIO_STOP = 1
 AUDIO_NOISE = 2
-AUDIO_SYNC = 3
 AUDIO_QUIT = 4
 AUDIO_PERSIST = 6
 
