@@ -173,7 +173,7 @@ def start_basic():
         except (NameError, AttributeError):
             pass    
         try:
-            state.console_state.sound.close()
+            sound.audio.close()
         except (NameError, AttributeError):
             pass    
             

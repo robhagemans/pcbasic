@@ -29,6 +29,12 @@ else:
     import pygame.mixer as mixer
 
 import logging
+import threading
+import Queue
+
+import sound
+
+thread = None
 
 def prepare():
     """ Initialise sound module. """
@@ -47,8 +53,16 @@ def init():
     # initialise mixer as silent
     # this takes 0.7s but is necessary to be able to set channels to mono
     mixer.quit()    
+    launch_thread()
     return True
-    
+
+def close():
+    """ Close sound queue at exit. """
+    if thread and thread.is_alive() and sound.thread_queue:
+        # signal quit and wait for thread to finish
+        sound.thread_queue[0].put(sound.AudioEvent(AUDIO_QUIT))
+        thread.join()
+
 def stop_all_sound():
     """ Clear all sound queues and turn off all sounds. """
     global sound_queue, loop_sound, play_queue
@@ -56,6 +70,44 @@ def stop_all_sound():
         stop_channel(voice)
     loop_sound = [None, None, None, None]
     sound_queue = [[], [], [], []]
+
+def launch_thread():
+    """ Launch consumer thread. """
+    global thread
+    thread = threading.Thread(target=check_queue, args=(sound.thread_queue,))
+    thread.daemon = True
+    thread.start()
+
+def check_queue(thread_queue):
+    """ Audio queue consumer thread. """
+    empty = True
+    while True:
+        for i, q in enumerate(thread_queue):
+            try:
+                signal = q.get(False)
+            except Queue.Empty:
+                empty = empty and True
+                continue
+            if signal.event_type == sound.AUDIO_TONE:
+                play_sound(*signal.params)
+            elif signal.event_type == sound.AUDIO_STOP:
+                stop_all_sound()
+            elif signal.event_type == sound.AUDIO_NOISE:
+                play_noise(*signal.params)
+            elif signal.event_type == sound.AUDIO_QUIT:
+                # close thread
+                return
+            elif signal.event_type == sound.AUDIO_PERSIST:
+                persist = signal.params
+            q.task_done()
+        # handle playing queues
+        check_sound()
+        # check if mixer can be quit
+        check_quit()
+        # do not hog cpu
+        if empty:
+            pygame.time.wait(tick_ms)
+
     
 def check_sound():
     """ Update the sound queue and play sounds. """
@@ -126,6 +178,7 @@ def queue_length(voice):
 
 # implementation
 
+tick_ms = 24
 # quit sound server after quiet period of quiet_quit ticks
 # to avoid high-ish cpu load from the sound server.
 quiet_quit = 10000
