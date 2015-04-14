@@ -63,14 +63,6 @@ def close():
         sound.thread_queue[0].put(sound.AudioEvent(AUDIO_QUIT))
         thread.join()
 
-def stop_all_sound():
-    """ Clear all sound queues and turn off all sounds. """
-    global sound_queue, loop_sound, play_queue
-    for voice in range(4):
-        stop_channel(voice)
-    loop_sound = [None, None, None, None]
-    sound_queue = [[], [], [], []]
-
 def launch_thread():
     """ Launch consumer thread. """
     global thread
@@ -142,19 +134,6 @@ def check_sound():
     for voice in range(4):
         if current_chunk[voice]:
             mixer.Channel(voice).queue(current_chunk[voice])
-            
-def busy():
-    """ Is the mixer busy? """
-    return (not loop_sound[0] and not loop_sound[1] and not loop_sound[2] and not loop_sound[3]) and mixer.get_busy()
-        
-def play_sound(frequency, total_duration, fill, loop, voice=0, volume=15):
-    """ Queue a sound for playing. """
-    sound_queue[voice].append(SoundGenerator(signal_sources[voice], frequency, total_duration, fill, loop, volume))
-
-def play_noise(is_white, frequency, total_duration, fill, loop, volume=15):
-    """ Queue a noise for playing. """
-    signal_sources[3].feedback = feedback_noise if is_white else feedback_periodic
-    sound_queue[3].append(SoundGenerator(signal_sources[3], frequency, total_duration, fill, loop, volume))
 
 def check_quit():
     """ Quit the mixer if not running a program and sound quiet for a while. """
@@ -171,6 +150,27 @@ def check_quit():
             if mixer.get_init() != None:
                 mixer.quit()
             quiet_ticks = 0
+
+def stop_all_sound():
+    """ Clear all sound queues and turn off all sounds. """
+    global sound_queue, loop_sound, play_queue
+    for voice in range(4):
+        stop_channel(voice)
+    loop_sound = [None, None, None, None]
+    sound_queue = [[], [], [], []]
+
+def play_sound(frequency, total_duration, fill, loop, voice=0, volume=15):
+    """ Queue a sound for playing. """
+    sound_queue[voice].append(SoundGenerator(signal_sources[voice], frequency, total_duration, fill, loop, volume))
+
+def play_noise(is_white, frequency, total_duration, fill, loop, volume=15):
+    """ Queue a noise for playing. """
+    signal_sources[3].feedback = feedback_noise if is_white else feedback_periodic
+    sound_queue[3].append(SoundGenerator(signal_sources[3], frequency, total_duration, fill, loop, volume))
+
+def busy():
+    """ Is a note playing (not looping)? """
+    return (not loop_sound[0] and not loop_sound[1] and not loop_sound[2] and not loop_sound[3]) and mixer.get_busy()
 
 def queue_length(voice):
     """ Number of unfinished sounds per voice. """
