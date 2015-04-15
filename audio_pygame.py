@@ -145,19 +145,22 @@ def check_sound():
                 # loop the current playing sound; ok to interrupt it with play cos it's the same sound as is playing
                 current_chunk[voice] = loop_sound[voice].build_chunk()
             elif sound_queue[voice]:
-                current_chunk[voice] = sound_queue[voice][0].build_chunk()
-                if current_chunk[voice] == None:
-                    sound_queue[voice].popleft()
-                    try:
-                        current_chunk[voice] = sound_queue[voice][0].build_chunk()
-                    except IndexError:
-                        # sound_queue is empty
-                        continue
-                if sound_queue[voice][0].loop:
-                    loop_sound[voice] = sound_queue[voice].popleft()
-                    # any next sound in the sound queue will stop this looping sound
-                else:   
-                    loop_sound[voice] = None
+                current_chunk[voice] = numpy.array([], dtype=numpy.int16)
+                while len(current_chunk[voice]) < chunk_length:
+                    chunk = sound_queue[voice][0].build_chunk()
+                    if chunk == None:
+                        sound_queue[voice].popleft()
+                        try:
+                            chunk = sound_queue[voice][0].build_chunk()
+                        except IndexError:
+                            # sound_queue is empty
+                            break
+                    current_chunk[voice] = numpy.concatenate((current_chunk[voice], chunk))
+                    if sound_queue[voice][0].loop:
+                        loop_sound[voice] = sound_queue[voice].popleft()
+                        # any next sound in the sound queue will stop this looping sound
+                    else:
+                        loop_sound[voice] = None
     for voice in range(4):
         if current_chunk[voice] != None:
             sound = pygame.sndarray.make_sound(current_chunk[voice])
