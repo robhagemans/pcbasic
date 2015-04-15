@@ -146,7 +146,7 @@ def check_sound():
                 current_chunk[voice] = loop_sound[voice].build_chunk()
             elif sound_queue[voice]:
                 current_chunk[voice] = sound_queue[voice][0].build_chunk()
-                if not current_chunk[voice]:
+                if current_chunk[voice] == None:
                     sound_queue[voice].popleft()
                     try:
                         current_chunk[voice] = sound_queue[voice][0].build_chunk()
@@ -159,8 +159,9 @@ def check_sound():
                 else:   
                     loop_sound[voice] = None
     for voice in range(4):
-        if current_chunk[voice]:
-            mixer.Channel(voice).queue(current_chunk[voice])
+        if current_chunk[voice] != None:
+            sound = pygame.sndarray.make_sound(current_chunk[voice])
+            mixer.Channel(voice).queue(sound)
 
 def check_quit():
     """ Quit the mixer if not running a program and sound quiet for a while. """
@@ -251,6 +252,8 @@ amplitude = [0]*16 if not numpy else numpy.int16(max_amplitude*(step_factor**num
 # zero volume means silent
 amplitude[0] = 0
 
+# one wavelength at 37 Hz is 1192 samples at 44100 Hz
+chunk_length = 1192 * 4
 
 class SoundGenerator(object):
     """ Sound sample chunk generator. """
@@ -260,8 +263,6 @@ class SoundGenerator(object):
         # noise generator
         self.signal_source = signal_source
         self.feedback = feedback
-        # one wavelength at 37 Hz is 1192 samples at 44100 Hz
-        self.chunk_length = 1192 * 4
         # actual duration and gap length
         self.duration = fill * total_duration
         self.gap = (1-fill) * total_duration
@@ -281,10 +282,10 @@ class SoundGenerator(object):
         # work on last element of sound queue
         check_init_mixer()
         if self.frequency == 0 or self.frequency == 32767:
-            chunk = numpy.zeros(self.chunk_length, numpy.int16)
+            chunk = numpy.zeros(chunk_length, numpy.int16)
         else:
             half_wavelength = sample_rate / (2.*self.frequency)
-            num_half_waves = int(ceil(self.chunk_length / half_wavelength))
+            num_half_waves = int(ceil(chunk_length / half_wavelength))
             # generate bits
             bits = []
             for _ in range(num_half_waves):
@@ -314,7 +315,8 @@ class SoundGenerator(object):
                 # done                
                 self.count_samples = self.num_samples
         # if loop, attach one chunk to loop, do not increment count
-        return pygame.sndarray.make_sound(chunk)
+        return chunk
+#        return pygame.sndarray.make_sound(chunk)
 
 def stop_channel(channel):
     """ Stop sound on a channel. """
