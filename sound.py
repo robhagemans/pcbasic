@@ -148,8 +148,7 @@ class Sound(object):
 
     def wait_all_music(self):
         """ Wait until all music (not noise) has finished playing. """
-        while (audio.busy() or audio.queue_length(0) or audio.queue_length(1) or audio.queue_length(2) or
-                thread_queue[0].qsize() or thread_queue[1].qsize() or thread_queue[2].qsize()):
+        while (audio.busy() or audio.queue_length(0) or audio.queue_length(1) or audio.queue_length(2):
             backend.wait()
 
     def stop_all_sound(self):
@@ -174,7 +173,7 @@ class Sound(object):
     def queue_length(self, voice=0):
         """ Return the number of notes in the queue. """
         # top of sound_queue is currently playing
-        return max(0, thread_queue[voice].qsize() + audio.queue_length(voice)-1)
+        return max(0, audio.queue_length(voice)-1)
 
     def persist(self, flag):
         """ Set mixer persistence flag (runmode). """
