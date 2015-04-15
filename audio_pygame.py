@@ -59,10 +59,14 @@ def init():
 
 def close():
     """ Close sound queue at exit. """
-    if thread and thread.is_alive() and sound.thread_queue:
-        # signal quit and wait for thread to finish
+    # drain signal queue (to allow for persistence) and request exit
+    if sound.thread_queue:
+        for i in range(4):
+            sound.thread_queue[i].join()
         sound.thread_queue[0].put(sound.AudioEvent(AUDIO_QUIT))
-        thread.join()
+        if thread and thread.is_alive():
+            # signal quit and wait for thread to finish
+            thread.join()
 
 
 #################################
@@ -116,7 +120,7 @@ def drain_queue():
                 sound_queue[3].append(SoundGenerator(signal_sources[3], frequency, total_duration, fill, loop, volume))
             elif signal.event_type == sound.AUDIO_QUIT:
                 # close thread
-                return
+                return False
             elif signal.event_type == sound.AUDIO_PERSIST:
                 # allow/disallow mixer to quit
                 persist = signal.params
@@ -183,7 +187,9 @@ def busy():
 
 def queue_length(voice):
     """ Number of unfinished sounds per voice. """
-    drain_queue()
+    # wait for signal queue to drain (should be fast)
+    for i in range(4):
+        sound.thread_queue[i].join()
     return len(sound_queue[voice])
 
 ####################################
