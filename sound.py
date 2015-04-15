@@ -157,7 +157,7 @@ class Sound(object):
             while not q.empty():
                 try:
                     q.get(False)
-                except Empty:
+                except Queue.Empty:
                     continue
                 q.task_done()
         for q in thread_queue:
