@@ -52,6 +52,8 @@ def prepare():
     # we need this for PLAY event
     if config.options['syntax'] in ('pcjr', 'tandy'):
         pcjr_sound = config.options['syntax']
+    else:
+        pcjr_sound = None
 
 ###############################################################################
 # main event checker
