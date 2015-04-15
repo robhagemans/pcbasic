@@ -155,7 +155,8 @@ def check_sound():
                         except IndexError:
                             # sound_queue is empty
                             break
-                    current_chunk[voice] = numpy.concatenate((current_chunk[voice], chunk))
+                    if chunk != None:
+                        current_chunk[voice] = numpy.concatenate((current_chunk[voice], chunk))
                     if sound_queue[voice][0].loop:
                         loop_sound[voice] = sound_queue[voice].popleft()
                         # any next sound in the sound queue will stop this looping sound
