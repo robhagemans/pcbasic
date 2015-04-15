@@ -105,7 +105,7 @@ def drain_queue():
             if signal.event_type == sound.AUDIO_TONE:
                 # enqueue a tone
                 frequency, total_duration, fill, loop, voice, volume = signal.params
-                sound_queue[voice].append(SoundGenerator(signal_sources[voice], frequency, total_duration, fill, loop, volume))
+                sound_queue[voice].append(SoundGenerator(signal_sources[voice], feedback_tone, frequency, total_duration, fill, loop, volume))
             elif signal.event_type == sound.AUDIO_STOP:
                 # stop all channels
                 for voice in range(4):
@@ -115,9 +115,8 @@ def drain_queue():
             elif signal.event_type == sound.AUDIO_NOISE:
                 # enqueue a noise
                 is_white, frequency, total_duration, fill, loop, volume = signal.params
-                # FIXME: can't set the feedback here if the chunk generation is to happen later
-                signal_sources[3].feedback = feedback_noise if is_white else feedback_periodic
-                sound_queue[3].append(SoundGenerator(signal_sources[3], frequency, total_duration, fill, loop, volume))
+                feedback = feedback_noise if is_white else feedback_periodic
+                sound_queue[3].append(SoundGenerator(signal_sources[3], feedback, frequency, total_duration, fill, loop, volume))
             elif signal.event_type == sound.AUDIO_QUIT:
                 # close thread
                 return False
@@ -256,10 +255,11 @@ amplitude[0] = 0
 class SoundGenerator(object):
     """ Sound sample chunk generator. """
     
-    def __init__(self, signal_source, frequency, total_duration, fill, loop, volume):
+    def __init__(self, signal_source, feedback, frequency, total_duration, fill, loop, volume):
         """ Initialise the generator. """
         # noise generator
         self.signal_source = signal_source
+        self.feedback = feedback
         # one wavelength at 37 Hz is 1192 samples at 44100 Hz
         self.chunk_length = 1192 * 4
         # actual duration and gap length
@@ -274,6 +274,7 @@ class SoundGenerator(object):
         
     def build_chunk(self):
         """ Build a sound chunk. """
+        self.signal_source.feedback = self.feedback
         if self.count_samples >= self.num_samples:
             # done already
             return None
