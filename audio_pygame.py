@@ -162,7 +162,7 @@ def check_sound():
                     else:
                         loop_sound[voice] = None
     for voice in range(4):
-        if current_chunk[voice] != None:
+        if current_chunk[voice] != None and len(current_chunk[voice]) != 0:
             sound = pygame.sndarray.make_sound(current_chunk[voice])
             mixer.Channel(voice).queue(sound)
 
@@ -193,6 +193,7 @@ def queue_length(voice):
     # wait for signal queue to drain (should be fast)
     for i in range(4):
         sound.thread_queue[i].join()
+    # FIXME - accessing deque from other threads leads to errors, use an int fiekd
     return len(sound_queue[voice])
 
 ####################################
