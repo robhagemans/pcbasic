@@ -131,7 +131,7 @@ class Sound(object):
             frequency = 110.
         tone = AudioEvent(AUDIO_TONE, (frequency, duration, fill, loop, voice, volume))
         thread_queue[voice].put(tone)
-        if voice == 2:
+        if voice == 2 and frequency != 0:
             # reset linked noise frequencies
             # /2 because we're using a 0x4000 rotation rather than 0x8000
             self.noise_freq[3] = frequency/2.
