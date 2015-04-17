@@ -192,8 +192,9 @@ def busy():
 def queue_length(voice):
     """ Number of unfinished sounds per voice. """
     # wait for signal queue to drain (should be fast)
-    for i in range(4):
-        sound.thread_queue[i].join()
+    # don't drain fully to avoid skipping of music
+    while sound.thread_queue[voice].qsize() > 1:
+        pass
     # FIXME - accessing deque from other threads leads to errors, use an int fiekd
     return len(sound_queue[voice])
 
