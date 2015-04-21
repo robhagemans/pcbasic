@@ -3,6 +3,7 @@
 import wave
 import math
 import sys
+import cProfile
 
 crc_table = (
     0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50A5, 0x60C6, 0x70E7,
@@ -216,17 +217,20 @@ def read_record(reclen):
     record = ''
     block_num = 0
     byte_count = 0
-    block_size = 256
-    while byte_count < reclen:
+    while byte_count < reclen or reclen == None:
         data = read_block()
-        if data:
-            record += data
-            byte_count += len(data)
-            block_num += 1
-        else:
+        if not data:
             break
-    return record[:reclen]
-
+        record += data
+        byte_count += len(data)
+        if (reclen == None and 
+                (data[:4] == '\xff\xff\xff\xff' or 
+                (block_num == 0 and data[0] == '\xa5'))):
+            break
+        block_num += 1
+    if reclen != None:
+        return record[:reclen]
+    return record
 
 def parse_header(record):
     if not record or record[0] != '\xa5':
@@ -243,7 +247,7 @@ def read_file():
     global record_num
     loc = wav.tell()
     record_num = 0           
-    record = read_record(256)
+    record = read_record(None)
     header = parse_header(record)
     print "[%d:%02d:%02d]" % hms(loc),
     print "File %d:" % file_num, 
