@@ -56,49 +56,22 @@ def crc(data):
 # cf. src/arch/ibmpc/cassette.c (Hampa Hug) in PCE sources
 class IIR(object):
     
-    CAS_IIR_MUL = 16384
-
     def __init__(self, freq, srate):
-        self.a = [0, 0, 0]
-        self.b = [0, 0, 0]
-        self.x = [0, 0, 0]
-        self.y = [0, 0, 0]
         if (2 * freq) >= srate:
             freq = (srate / 2) - 1
-        #
-        om = 1.0 / math.tan((3.14159265358979312 * freq) / srate)
-        b0 = om * om + om * math.sqrt(2.0) + 1.0
-        #
-        self.a[0] = (self.CAS_IIR_MUL * 1.0 / b0)
-        self.a[1] = (self.CAS_IIR_MUL * 2.0 / b0)
-        self.a[2] = (self.CAS_IIR_MUL * 1.0 / b0)
-        #
-        self.b[0] = (self.CAS_IIR_MUL * 1.0)
-        self.b[1] = (self.CAS_IIR_MUL * 2.0 * (1.0 - om * om) / b0)
-        self.b[2] = (self.CAS_IIR_MUL * (om * om - om * math.sqrt(2.0) + 1.0) / b0)
-        #
-        self.x[0] = 0;
-        self.x[1] = 0;
-        self.x[2] = 0;
-        #
-        self.y[0] = 0;
-        self.y[1] = 0;
-        self.y[2] = 0;
+        om = 1. / math.tan((math.pi * freq) / srate)
+        b0 = om*om + om*math.sqrt(2.) + 1.
+        self.a = [1/b0, 2/b0, 1/b0]
+        self.b = [1, 2*(1-om*om)/b0, (om*om-om*math.sqrt(2)+1) / b0] 
+        self.x = [0, 0, 0]
+        self.y = [0, 0, 0]
 
     def process(self, x):
-        self.x[2] = self.x[1]
-        self.x[1] = self.x[0]
-        self.x[0] = 32 * x
-        #
-        self.y[2] = self.y[1]
-        self.y[1] = self.y[0]
-        #
-        self.y[0] = self.a[0] * self.x[0]
-        self.y[0] += self.a[1] * self.x[1] + self.a[2] * self.x[2]
-        self.y[0] -= self.b[1] * self.y[1] + self.b[2] * self.y[2]
-        #
-        self.y[0] = self.y[0] / self.CAS_IIR_MUL
-        return self.y[0] // 32
+        self.x = [x] + self.x[:2]
+        self.y = [0] + self.y[:2]
+        self.y[0] += (self.a[0]*self.x[0] + self.a[1]*self.x[1] + self.a[2]*self.x[2]
+                                          - self.b[1]*self.y[1] - self.b[2]*self.y[2])
+        return self.y[0]
 
 class Passthrough(object):
     def process(self, x):
