@@ -45,7 +45,7 @@ def crc(data):
     crc2 = 0xffff
     for d in data:
         #print d, crc2, crc2 >> 8, (crc2 >> 8) ^ d, len(crc_table)
-        crc2 = ((crc2 << 8) & 0xffff) ^ crc_table[(crc2 >> 8) ^ d]
+        crc2 = ((crc2 << 8) & 0xffff) ^ crc_table[(crc2 >> 8) ^ ord(d)]
     return crc2 ^ 0xffff
 
 
@@ -207,9 +207,9 @@ def hms(loc):
     return h, m, s
 
 
-def read_block(block_size):
+def read_block():
     count = 0
-    data_dn, data_up = [], []
+    data_dn, data_up = '', ''
     while True:
         if count == 256:
             bytes0 = read_byte()
@@ -220,55 +220,49 @@ def read_block(block_size):
             crc_up = crc(data_up)
             # if crc for either polarity matches, return that
             if crc_dn == crc_read_dn:
-                return data_dn[:block_size]
+                return data_dn
             if crc_up == crc_read_up:
-                return data_up[:block_size]
+                return data_up
             # neither matches
             warning("crc: dn %04x [%04x]  up %04x [%04x]" % (crc_read_dn, crc_dn, crc_read_up, crc_up))
-            return data_dn[:block_size]
+            return data_dn
         else:
             byte_dn, byte_up = read_byte()
             # if this is a header block, it must be 256 bytes
             if byte_dn == None or byte_up == None:
                 warning("break")
                 return []
-            data_dn.append(byte_dn)
-            data_up.append(byte_up)
+            data_dn += chr(byte_dn)
+            data_up += chr(byte_up)
             count += 1
             
 
 def read_record(reclen):
     global block_num
     seconds = read_leader() / framerate 
-    record = []
+    record = ''
     block_num = 0
     byte_count = 0
     block_size = 256
-    while True:
-        if reclen != None:
-            block_size = min(256, reclen-byte_count)
-            if block_size <= 0:
-                break
-        data = read_block(block_size)
+    while byte_count < reclen:
+        data = read_block()
         if data:
-            if reclen == None and block_num == 0 and data[0] == 0xa5:
-                reclen = 256 
             record += data
             byte_count += len(data)
             block_num += 1
         else:
             break
-    return record
+    return record[:reclen]
 
 
 def parse_header(record):
-    if not record or record[0] != 0xa5:
+    if not record or record[0] != '\xa5':
         return None
-    name = str(bytearray(record[1:9]))
-    token = record[9]
-    nbytes = record[10] + record[11] * 0x100
-    seg = record[12] + record[13] * 0x100
-    offs = record[14] + record[15] * 0x100
+    name = record[1:9]
+    token = ord(record[9])
+    nbytes = ord(record[10]) + ord(record[11]) * 0x100
+    seg = ord(record[12]) + ord(record[13]) * 0x100
+    offs = ord(record[14]) + ord(record[15]) * 0x100
     return name, token, nbytes, seg, offs
 
 
@@ -276,7 +270,7 @@ def read_file():
     global record_num
     loc = wav.tell()
     record_num = 0           
-    record = read_record(reclen)
+    record = read_record(256)
     header = parse_header(record)
     print "[%d:%02d:%02d]" % hms(loc),
     print "File %d:" % file_num, 
@@ -292,27 +286,27 @@ def read_file():
         print "load address %04x:%04x." % (seg, offs) 
         # for programs this is start address: cf to offset of next line in prgram
     file_name = file_trunk.rstrip() + '.' + file_ext + '%02x' % file_num
-        f.write(token_to_magic[file_token])
-        if file_token in (1, 0x80, 0x20, 0xa0):
+    data = token_to_magic[file_token]
+    if file_token in (1, 0x80, 0x20, 0xa0):
+        record_num += 1
+        # bsave, tokenised and protected come in one multi-block record
+        data += read_record(file_bytes)
+    else:
+        # ascii and data come as a sequence of one-block records
+        # 256 bytes less 1 length byte. CRC trailer comes after 256-byte block
+        while True:
             record_num += 1
-            # bsave, tokenised and protected come in one multi-block record
-            data = read_record(file_bytes)
-        else:
-            # ascii and data come as a sequence of one-block records
-            # 256 bytes less 1 length byte. CRC trailer comes after 256-byte block
-            while True:
-                record_num += 1
-                record = read_record(file_bytes)
-                num_bytes = record[0]
-                record = record[1:]
-                if num_bytes != 0:
-                    record = record[:num_bytes]
-                data += record
-                if num_bytes != 0:
-                    break
-        # write EOF char
-        data += ['\x1a']
-        return file_name, data
+            record = read_record(256)
+            num_bytes = ord(record[0])
+            record = record[1:]
+            if num_bytes != 0:
+                record = record[:num_bytes-1]
+            data += record
+            if num_bytes != 0:
+                break
+    # write EOF char
+    data += '\x1a'
+    return file_name, data
         
 
 #######################################
@@ -413,8 +407,7 @@ def write_file(name, token, seg, offs, data):
 
 import sys
 
-token_to_ext = {0: 'D', 1:'B', 0xa0:'P', 0x20:'P', 0x40:'A', 0x80:'B'}
-token_to_type = {0: 'Data', 1:'Memory', 0xa0:'Protected BASIC', 0x20:'Protected BASIC', 0x40:'ASCII BASIC', 0x80:'Tokenised BASIC'}
+token_to_ext = {0: 'D', 1:'M', 0xa0:'P', 0x20:'P', 0x40:'A', 0x80:'B'}
 token_to_magic = {0: '', 1:'\xfd', 0xa0:'\xfe', 0x20:'\xfe', 0x40:'', 0x80:'\xff'}
 magic_to_token = {'\xfd': 1, '\xfe': 0xa0, '\xff': 0x80}
 
@@ -422,99 +415,6 @@ def warning(msg):
     print "[%d:%02d:%02d]" % hms(wav.tell()),
     print "File %d, record %d, block %d: %s" % (file_num, record_num, block_num, msg)
 
-def read_wav__old():
-    global wav, nchannels, sampwidth, framerate, nframes, lopass, length_cut, halflength
-    global file_num, record_num, block_num
-    wav = wave.open(sys.argv[1], 'rb')
-    nchannels =  wav.getnchannels()
-    sampwidth = wav.getsampwidth()
-    framerate = wav.getframerate()
-    nframes = wav.getnframes()
-    print "Cassette image %s: WAV audio" % sys.argv[1],
-    print "%d:%02d:%02d," % hms(nframes),
-    print "%d-bit," % (sampwidth*8),
-    print "%d fps," % framerate,
-    print "%d channels" % nchannels,
-    print
-    # set low-pass filter to 3000 Hz
-    lopass = IIR(3000, framerate)
-    # 1000 us for 1, 500 us for 0; threshould for half-pulse (500 us, 250 us)
-    length_cut = 375 * framerate / 1000000
-    halflength = [250 * framerate /1000000, 500 * framerate /1000000]    
-    # find most likely polarity of pulses (down-first or up-first)
-    start_polarity()
-    # start parsing
-    file_num = 0
-    records_wanting = 0
-    expect_ascii_block = False
-    reclen = None
-    lastreclen = 0
-    while True:
-        try:
-            if records_wanting == 0:
-                print "[%d:%02d:%02d]" % hms(wav.tell()),
-                print "File %d:" % file_num, 
-                record_num = 0           
-            record = read_record(reclen)
-            if records_wanting:
-                if expect_ascii_block:
-                    # check for byte-number header on last ascii/data block
-                    num_bytes = record[0]
-                    record = record[1:]
-                    if num_bytes != 0:
-                        if records_wanting != 1:
-                            warning("Incorrect ascii/data file record header")
-                        else:
-                            record = record[:num_bytes]
-                f.write(str(bytearray(record)))
-                records_wanting -= 1
-                if records_wanting == 0:
-                    # write EOF char
-                    f.write('\x1a')
-                    f.close()
-                    reclen = None
-                    expect_ascii_block = False
-                    file_num += 1
-            elif record and record[0] != 0xa5:
-                # unknown record type
-                print "Record of unknown type."
-                with open('DATA.X%02x' % file_num, 'wb') as g:
-                    g.write(str(bytearray(record)))
-                file_num += 1
-            elif record:
-                file_trunk = str(bytearray(record[1:9]))
-                file_token = record[9]
-                file_ext = token_to_ext[file_token]
-                file_name = file_trunk.rstrip() + '.' + file_ext + '%02x' % file_num
-                file_type = token_to_type[file_token]
-                file_bytes = record[10] + record[11] * 0x100
-                seg = record[12] + record[13] * 0x100
-                offs = record[14] + record[15] * 0x100
-                print '%s "%s" of length' % (file_type, file_trunk),
-                print "%d bytes," % file_bytes,
-                print "load address %04x:%04x." % (seg, offs) 
-                # for programs this is start address: cf to offset of next line in prgram
-                if file_token in (1, 0x80, 0x20, 0xa0):
-                    # bsave, tokenised and protected come in one multi-block record
-                    records_wanting = 1
-                    reclen = file_bytes
-                else:
-                    # ascii and data come as a sequence of one-block records
-                    # 256 bytes less 1 length byte. CRC trailer comes after 256-byte block
-                    records_wanting = (file_bytes+254) // 255
-                    reclen = 256
-                    expect_ascii_block = True
-                record_num += 1
-                f = open(file_name, 'wb')
-                f.write(token_to_magic[file_token])
-            else:
-                print "Empty record."
-                file_num += 1
-        except EOF:
-            break
-    print "[%d:%02d:%02d] End of tape" % hms(wav.tell())
-    wav.close
-    
 
 def read_wav():
     global wav, nchannels, sampwidth, framerate, nframes, lopass, length_cut, halflength
@@ -543,7 +443,8 @@ def read_wav():
         try:
             file_name, data = read_file()
             with open(file_name, 'wb') as f:
-                f.write(str(bytearray(record)))
+                f.write(str(bytearray(data)))
+            file_num += 1
         except EOF:
             break
     print "[%d:%02d:%02d] End of tape" % hms(wav.tell())
