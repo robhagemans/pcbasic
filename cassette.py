@@ -287,6 +287,11 @@ def read_file():
         # for programs this is start address: cf to offset of next line in prgram
     file_name = file_trunk.rstrip() + '.' + file_ext + '%02x' % file_num
     data = token_to_magic[file_token]
+    if file_token == 0x01:
+        # bsave format: paste in 6-byte header for disk files
+        data += ''.join(map(chr, word_le(seg)))
+        data += ''.join(map(chr, word_le(offs)))
+        data += ''.join(map(chr, word_le(file_bytes)))
     if file_token in (1, 0x80, 0x20, 0xa0):
         record_num += 1
         # bsave, tokenised and protected come in one multi-block record
@@ -348,25 +353,24 @@ def word_le(word):
     return [lo, hi]
 
 def header(name, token, nbytes, seg, offs):
-    data = [0xa5] 
-    name = name[:8] + ' ' * (8-len(name))
-    data += list(bytearray(name))
-    data += [token]
+    data = '\xa5'
+    data += name[:8] + ' ' * (8-len(name))
+    data += chr(token)
     # length
-    data += word_le(nbytes)
+    data += ''.join(map(chr, word_le(nbytes)))
     # load address segment
-    data += word_le(seg)
+    data += ''.join(map(chr, word_le(seg)))
     # load address offset
-    data += word_le(offs)
+    data += ''.join(map(chr, word_le(offs)))
     # seems to end at 0x00, 0x01, then filled out with last char
-    data += [0, 1]
+    data += '\x00\x01'
     return data    
 
 def write_block(data):
     # fill out short blocks with last byte
-    data += [data[-1]]*(256-len(data))
+    data += data[-1]*(256-len(data))
     for b in data:
-        write_byte(b)
+        write_byte(ord(b))
     crc_word = crc(data)
     # crc is written big-endian
     lo, hi = word_le(crc_word)
@@ -385,8 +389,17 @@ def write_record(data):
     # write 100 ms second pause to make clear separation between blocks
     write_pause(100)
 
-def write_file(name, token, seg, offs, data):
+def write_file(name, token, data):
+    if token == 0x01:
+        # bsave 6-byte header is cut off (magic byte has been cut off before)
+        seg = ord(data[0]) + ord(data[1])*0x100
+        offs = ord(data[2]) + ord(data[3])*0x100
+        length = ord(data[4]) + ord(data[5])*0x100
+        data = data[6:6+length]
     bytes = len(data)
+    # FIXME: what values here for ascii, data? data: length 0, offset 0. ascii: length; offset of prog (0060:081e for Cass. BASIC)
+    # get tokenised and BSAVE values from data. protected file? unprotect first 3 bytes & use values
+
     # TODO: calculate seg and offs from program data, if program file
     write_record(header(name, token, bytes, seg, offs))
     if token in (1, 0x80, 0x20, 0xa0):
@@ -398,9 +411,9 @@ def write_file(name, token, seg, offs, data):
         blocks, last = divmod(bytes, 255)
         for i in range(blocks):
             offset = i*255
-            write_record([0] + data[offset:offset+255])
+            write_record('\0' + data[offset:offset+255])
         if last > 0:
-            write_record([last] + data[-last:])
+            write_record(chr(last) + data[-last:])
 
     
 #######################################
@@ -466,9 +479,8 @@ def write_wav():
         name = file_name.split('.')[0][:8]
         print "Recording %s to cassette." % file_name
         with open(file_name, 'rb') as f:
-            data = []
             magic = f.read(1)
-            data = list(bytearray(f.read()))
+            data = f.read()
             # cut off EOF marker
             if data and data[-1] == '\x1a':
                 data = data[:-1]
@@ -477,12 +489,8 @@ def write_wav():
             except KeyError:
                 # could also be data file, need some other test (extension?)
                 token = 0x40
-                data = [ord(magic)] + data
-            # FIXME: what values here for ascii, data? 
-            # get tokenised and BSAVE values from data. protected file? unprotect first 3 bytes & use values
-            seg = 0
-            offs = 0
-            write_file(name, token, seg, offs, data)
+                data = magic + data
+            write_file(name, token, data)
     wav.close()
     
 import os
