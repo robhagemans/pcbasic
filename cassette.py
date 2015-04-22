@@ -46,7 +46,6 @@ def crc(data):
     # based on  WAV2CAS v1.3 for Poisk PC. by Tronix (C) 2013
     crc2 = 0xffff
     for d in data:
-        #print d, crc2, crc2 >> 8, (crc2 >> 8) ^ d, len(crc_table)
         crc2 = ((crc2 << 8) & 0xffff) ^ crc_table[(crc2 >> 8) ^ ord(d)]
     return crc2 ^ 0xffff
 
@@ -86,15 +85,32 @@ class EOF(Exception):
 
 #############################
 
+frame_buf = []
+buf_len = 1024
+frame_idx = buf_len
+wav_pos = 0
+
 def read_frame():
-    frame = wav.readframes(1)
-    if not frame: #len(frame) < bytesperframe:
-        raise EOF
-#    val = sum(ord(frame[j*sampwidth+i]) << (i*8) for j in range(nchannels) for i in range(sampwidth)) / nchannels
-    val = sum(struct.unpack(conv_format, frame)) #/ nchannels
+    global frame_buf, frame_idx, conf_format, wav_pos
+    try:
+        val = frame_buf[frame_idx]
+        frame_idx += 1
+    except IndexError:
+        frames = wav.readframes(buf_len)
+        try:
+            frames2 = struct.unpack(conv_format, frames)
+        except struct.error:
+            if not frames:
+                raise EOF
+            frames2 = struct.unpack(conv_format[:len(frames)//sampwidth+1], frames)
+        frame_buf = [ sum(frames2[i:i+nchannels]) for i in range(0, len(frames2), nchannels) ]
+        val = frame_buf[0]
+        frame_idx = 1
+    wav_pos += 1
     if val >= threshold:
         val -= subtractor
     return lopass.process(val)
+
 
 def start_polarity_pos():
     global polarity
@@ -121,15 +137,15 @@ def start_polarity():
 
 def read_pulse():
     frame = read_frame()
-    pos = wav.tell()
+    pos = wav_pos
     while frame*polarity > 0:
         frame = read_frame()
-    length_up = wav.tell() - pos + 1
-    pos = wav.tell()
+    length_up = wav_pos - pos + 1
+    pos = wav_pos
     # move forward to positive polarity
     while frame*polarity <= 0:
         frame = read_frame()
-    length_dn = wav.tell() - pos + 1
+    length_dn = wav_pos - pos + 1
     return length_dn, length_up
 
 def read_bit():
@@ -159,7 +175,7 @@ def read_leader():
         while read_bit()[0] != 1:
             pass
         counter = 0
-        start_frame = wav.tell()
+        start_frame = wav_pos
         while True:
             b = read_bit()[0] 
             if b != 1:
@@ -242,7 +258,7 @@ def parse_header(record):
 
 def read_file():
     global record_num
-    loc = wav.tell()
+    loc = wav_pos
     record_num = 0           
     record = read_record(None)
     header = parse_header(record)
@@ -399,7 +415,7 @@ token_to_magic = {0: '', 1:'\xfd', 0xa0:'\xfe', 0x20:'\xfe', 0x40:'', 0x80:'\xff
 magic_to_token = {'\xfd': 1, '\xfe': 0xa0, '\xff': 0x80}
 
 def warning(msg):
-    print "[%d:%02d:%02d]" % hms(wav.tell()),
+    print "[%d:%02d:%02d]" % hms(wav_pos),
     print "File %d, record %d, block %d: %s" % (file_num, record_num, block_num, msg)
 
 
@@ -427,7 +443,7 @@ def read_wav():
     print
     if sampwidth > 3:
         print "Can't convert WAV files of more than 16-bit."
-    conv_format = '<' + {1:'B', 2:'h'}[sampwidth]*nchannels
+    conv_format = '<' + {1:'B', 2:'h'}[sampwidth]*nchannels*buf_len
     # set low-pass filter to 3000 Hz
     lopass = IIR(3000, framerate)
     # 1000 us for 1, 500 us for 0; threshould for half-pulse (500 us, 250 us)
@@ -445,7 +461,7 @@ def read_wav():
             file_num += 1
         except EOF:
             break
-    print "[%d:%02d:%02d] End of tape" % hms(wav.tell())
+    print "[%d:%02d:%02d] End of tape" % hms(wav_pos)
     wav.close
 
     
@@ -480,11 +496,7 @@ def write_wav():
     
 import os
 if os.path.basename(sys.argv[0]) == 'readwav.py':
-    p = cProfile.Profile()
-    p.enable()
     read_wav()
-    p.disable()
-    p.print_stats()
 elif os.path.basename(sys.argv[0]) == 'writewav.py':
     write_wav()
 
