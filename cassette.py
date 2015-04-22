@@ -139,18 +139,33 @@ def start_polarity():
         frame = read_frame()
     polarity = 1 if frame>0 else -1
 
-def read_pulse():
+def read_pulse_pos():
     frame = read_frame()
     pos = wav_pos
-    while frame*polarity > 0:
+    while frame > 0:
         frame = read_frame()
     length_up = wav_pos - pos + 1
     pos = wav_pos
     # move forward to positive polarity
-    while frame*polarity <= 0:
+    while frame <= 0:
         frame = read_frame()
     length_dn = wav_pos - pos + 1
     return length_dn, length_up
+
+def read_pulse_neg():
+    frame = read_frame()
+    pos = wav_pos
+    while frame < 0:
+        frame = read_frame()
+    length_up = wav_pos - pos + 1
+    pos = wav_pos
+    # move forward to positive polarity
+    while frame >= 0:
+        frame = read_frame()
+    length_dn = wav_pos - pos + 1
+    return length_dn, length_up
+
+
 
 def read_bit():
     pulse = read_pulse()
@@ -427,6 +442,7 @@ def read_wav():
     global wav, nchannels, sampwidth, framerate, nframes, lopass, length_cut, halflength
     global threshold, subtractor, bytesperframe, conv_format
     global file_num, record_num, block_num
+    global read_pulse
     wav = wave.open(sys.argv[1], 'rb')
     nchannels =  wav.getnchannels()
     sampwidth = wav.getsampwidth()
@@ -455,6 +471,7 @@ def read_wav():
     halflength = [250 * framerate /1000000, 500 * framerate /1000000]    
     # find most likely polarity of pulses (down-first or up-first)
     start_polarity()
+    read_pulse = read_pulse_pos if polarity > 0 else read_pulse_neg
     # start parsing
     file_num = 0
     while True:
