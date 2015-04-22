@@ -99,13 +99,15 @@ def read_frame():
         frame_idx += 1
     except IndexError:
         frames = wav.readframes(buf_len)
+        # convert bytes into ints (little-endian if 16 bit)
         try:
             frames2 = struct.unpack(conv_format, frames)
         except struct.error:
             if not frames:
                 raise EOF
             frames2 = struct.unpack(conv_format[:len(frames)//sampwidth+1], frames)
-        frame_buf = [ sum(frames2[i:i+nchannels]) for i in range(0, len(frames2), nchannels) ]
+        # sum frames over channels
+        frame_buf = map(sum, zip(*[iter(frames2)]*nchannels))
         val = frame_buf[0]
         frame_idx = 1
     wav_pos += 1
