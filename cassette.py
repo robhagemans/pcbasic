@@ -3,6 +3,7 @@
 import wave
 import math
 import sys
+import struct
 import cProfile
 
 crc_table = (
@@ -87,16 +88,12 @@ class EOF(Exception):
 
 def read_frame():
     frame = wav.readframes(1)
-    if len(frame) < nchannels*sampwidth:
+    if not frame: #len(frame) < bytesperframe:
         raise EOF
-    val = sum(ord(frame[j*sampwidth+i]) << (i*8) for j in range(nchannels) for i in range(sampwidth)) / nchannels
-    if sampwidth > 1:
-        # more than 8-bit: 2s complement signed ints
-        if val >= (1 << (sampwidth*8-1)):
-            val -= 1 << (sampwidth*8)
-    else:
-        # 8 bit: unsigned ints
-        val -= 127
+#    val = sum(ord(frame[j*sampwidth+i]) << (i*8) for j in range(nchannels) for i in range(sampwidth)) / nchannels
+    val = sum(struct.unpack(conv_format, frame)) #/ nchannels
+    if val >= threshold:
+        val -= subtractor
     return lopass.process(val)
 
 def start_polarity_pos():
@@ -408,18 +405,29 @@ def warning(msg):
 
 def read_wav():
     global wav, nchannels, sampwidth, framerate, nframes, lopass, length_cut, halflength
+    global threshold, subtractor, bytesperframe, conv_format
     global file_num, record_num, block_num
     wav = wave.open(sys.argv[1], 'rb')
     nchannels =  wav.getnchannels()
     sampwidth = wav.getsampwidth()
     framerate = wav.getframerate()
     nframes = wav.getnframes()
+    if sampwidth == 1:
+        threshold = 0
+        subtractor = 127
+    else:
+        threshold = (1 << (sampwidth*8-1))*nchannels
+        subtractor =  (1 << (sampwidth*8))*nchannels
+    bytesperframe = nchannels*sampwidth
     print "Cassette image %s: WAV audio" % sys.argv[1],
     print "%d:%02d:%02d," % hms(nframes),
     print "%d-bit," % (sampwidth*8),
     print "%d fps," % framerate,
     print "%d channels" % nchannels,
     print
+    if sampwidth > 3:
+        print "Can't convert WAV files of more than 16-bit."
+    conv_format = '<' + {1:'B', 2:'h'}[sampwidth]*nchannels
     # set low-pass filter to 3000 Hz
     lopass = IIR(3000, framerate)
     # 1000 us for 1, 500 us for 0; threshould for half-pulse (500 us, 250 us)
@@ -472,7 +480,11 @@ def write_wav():
     
 import os
 if os.path.basename(sys.argv[0]) == 'readwav.py':
+    p = cProfile.Profile()
+    p.enable()
     read_wav()
+    p.disable()
+    p.print_stats()
 elif os.path.basename(sys.argv[0]) == 'writewav.py':
     write_wav()
 
