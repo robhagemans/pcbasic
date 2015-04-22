@@ -62,15 +62,16 @@ class IIR(object):
             freq = (srate / 2) - 1
         om = 1. / math.tan((math.pi * freq) / srate)
         b0 = om*om + om*math.sqrt(2.) + 1.
-        self.a0, self.a1, self.a2 = 1/b0, 2/b0, 1/b0
-        self.b0, self.b1, self.b2 = 1, 2*(1-om*om)/b0, (om*om-om*math.sqrt(2)+1) / b0
+        self.rb0 = 1./b0
+        self.a0, self.a1, self.a2 = 1, 2, 1
+        self.b1, self.b2 = 2*(1-om*om), (om*om-om*math.sqrt(2)+1) 
         self.x = [0, 0, 0]
         self.y = [0, 0, 0]
 
     def process(self, x):
         x0, x1, x2 = x, self.x[0], self.x[1]
         y1, y2 = self.y[0], self.y[1]
-        y0 = (self.a0*x0 + self.a1*x1 + self.a2*x2 - self.b1*y1 - self.b2*y2)
+        y0 = (x0 + 2*x1 + x2 - self.b1*y1 - self.b2*y2) * self.rb0
         self.x = [x0, x1, x2]
         self.y = [y0, y1, y2]
         return y0
