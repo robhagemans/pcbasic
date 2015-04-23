@@ -474,8 +474,6 @@ def read_wav():
     if sampwidth > 3:
         print "Can't convert WAV files of more than 16-bit."
     conv_format = '<' + {1:'B', 2:'h'}[sampwidth]*nchannels*buf_len
-    # set low-pass filter to 3000 Hz
-    lopass = IIR(3000, framerate)
     # 1000 us for 1, 500 us for 0; threshould for half-pulse (500 us, 250 us)
     length_cut = 375 * framerate / 1000000
     halflength = [250 * framerate /1000000, 500 * framerate /1000000]    
