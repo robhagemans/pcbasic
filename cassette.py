@@ -98,32 +98,33 @@ class EOF(Exception):
 
 frame_buf = []
 buf_len = 1024
-frame_idx = buf_len
 wav_pos = 0
+frame_pos = 0
 
 def read_frame():
-    global frame_buf, frame_idx, conf_format, wav_pos
-    try:
-        val = frame_buf[frame_idx]
-        frame_idx += 1
-    except IndexError:
-        frames = wav.readframes(buf_len)
-        # convert bytes into ints (little-endian if 16 bit)
-        try:
-            frames2 = struct.unpack(conv_format, frames)
-        except struct.error:
-            if not frames:
-                raise EOF
-            frames2 = struct.unpack(conv_format[:len(frames)//sampwidth+1], frames)
-        # sum frames over channels
-        frames3 = map(sum, zip(*[iter(frames2)]*nchannels))
-        frame_buf = butterworth(frames3, framerate, 3000)
-        val = frame_buf[0]
-        frame_idx = 1
+    global wav_pos
     wav_pos += 1
-    if val >= threshold:
-        val -= subtractor
-    return val
+    try:
+        return frame_buf[wav_pos-frame_pos-1]
+    except IndexError:
+        fill_buffer()
+        return frame_buf[0]
+
+def fill_buffer():
+    global frame_buf, frame_pos
+    frames = wav.readframes(buf_len)
+    # convert bytes into ints (little-endian if 16 bit)
+    try:
+        frames2 = struct.unpack(conv_format, frames)
+    except struct.error:
+        if not frames:
+            raise EOF
+        frames2 = struct.unpack(conv_format[:len(frames)//sampwidth+1], frames)
+    # sum frames over channels
+    frames3 = map(sum, zip(*[iter(frames2)]*nchannels))
+    frames4 = [ x-subtractor if x >= threshold else x for x in frames3 ]
+    frame_buf = butterworth(frames3, framerate, 3000)
+    frame_pos += buf_len
 
 
 def start_polarity_pos():
