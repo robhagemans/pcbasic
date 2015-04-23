@@ -53,32 +53,41 @@ def crc(data):
 #############################
 
 
+
+# cf. http://en.wikipedia.org/wiki/Low-pass_filter#Simple_infinite_impulse_response_filter
+lowpass_last = 0
+def lowpass(x, sample_freq, cutoff_freq):
+    global lowpass_last
+    dt = 1./sample_freq
+    RC = 1./(2.*math.pi*cutoff_freq)
+    alpha = dt / (RC + dt)
+    y = [0]*len(x)
+    y[0] = alpha * x[0] + (1-alpha) * lowpass_last
+    for i in range(1, len(x)):
+        y[i] = alpha * x[i] + (1.-alpha) * y[i-1]
+    lowpass_last = y[-1]
+    return y
+
 # Second order butterworth low-pass filter
 # cf. src/arch/ibmpc/cassette.c (Hampa Hug) in PCE sources
-class IIR(object):
-    
-    def __init__(self, freq, srate):
-        if (2 * freq) >= srate:
-            freq = (srate / 2) - 1
-        om = 1. / math.tan((math.pi * freq) / srate)
-        b0 = om*om + om*math.sqrt(2.) + 1.
-        self.rb0 = 1./b0
-        self.a0, self.a1, self.a2 = 1, 2, 1
-        self.b1, self.b2 = 2*(1-om*om), (om*om-om*math.sqrt(2)+1) 
-        self.x = [0, 0, 0]
-        self.y = [0, 0, 0]
+lowpass_last1 = 0
+lowpass_x1 = 0
+lowpass_x2 = 0
+def butterworth(x, srate, freq):
+    global lowpass_x1, lowpass_x2, lowpass_last, lowpass_last1
+    om = 1. / math.tan((math.pi * freq) / srate)
+    b0 = om*om + om*math.sqrt(2.) + 1.
+    #a0, a1, a2 = 1, 2, 1
+    b1, b2 = 2*(1-om*om), (om*om-om*math.sqrt(2)+1)
+    y = [0]*len(x)
+    y[0] = (x[0] + 2*lowpass_x1 + lowpass_x2 - b1*lowpass_last - b2*lowpass_last1) / b0
+    y[1] = (x[1] + 2*x[0] + lowpass_x1 - b1*y[0] - b2*lowpass_last) / b0
+    for i in range(2, len(x)):
+        y[i] = (x[i] + 2*x[i-1] + x[i-2] - b1*y[i-1] - b2*y[i-2]) / b0
+    lowpass_x1, lowpass_x2 = x[-1], x[-2]
+    lowpass_last, lowpass_last1 = y[-1], y[-2]
+    return y
 
-    def process(self, x):
-        x0, x1, x2 = x, self.x[0], self.x[1]
-        y1, y2 = self.y[0], self.y[1]
-        y0 = (x0 + 2*x1 + x2 - self.b1*y1 - self.b2*y2) * self.rb0
-        self.x = [x0, x1, x2]
-        self.y = [y0, y1, y2]
-        return y0
-
-class Passthrough(object):
-    def process(self, x):
-        return x
 
 #############################
 
@@ -107,13 +116,14 @@ def read_frame():
                 raise EOF
             frames2 = struct.unpack(conv_format[:len(frames)//sampwidth+1], frames)
         # sum frames over channels
-        frame_buf = map(sum, zip(*[iter(frames2)]*nchannels))
+        frames3 = map(sum, zip(*[iter(frames2)]*nchannels))
+        frame_buf = butterworth(frames3, framerate, 3000)
         val = frame_buf[0]
         frame_idx = 1
     wav_pos += 1
     if val >= threshold:
         val -= subtractor
-    return lopass.process(val)
+    return val
 
 
 def start_polarity_pos():
