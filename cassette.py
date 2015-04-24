@@ -11,13 +11,12 @@ def crc(data):
     # for a lookup table version, see e.g. WAV2CAS v1.3 for Poisk PC. by Tronix (C) 2013
     # however, speed is not critical for this function
     rem = 0xffff
-    for d in data:
-        rem ^= ord(d) << 8
-        for i in range(8):
-            if rem & 0x8000:
-                rem = (rem << 1) ^ 0x1021
-            else:
-                rem <<= 1
+    for d in bytearray(data):
+        rem ^= d << 8
+        for _ in range(8):
+            rem <<= 1
+            if rem & 0x10000:
+                rem ^= 0x1021
             rem &= 0xffff
     return rem ^ 0xffff
 
