@@ -376,7 +376,8 @@ def write_record(data):
     write_byte(0xff)
     write_byte(0xff)
     write_byte(0xff)
-    write_byte(0xff)
+    for b in (1,1,1,1,1,1,0):
+        write_bit(b)
     # write 100 ms second pause to make clear separation between blocks
     write_pause(100)
 
