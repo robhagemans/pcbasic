@@ -5,6 +5,21 @@ import math
 import sys
 import struct
 import cProfile
+import sys
+
+token_to_ext = {0: 'D', 1:'M', 0xa0:'P', 0x20:'P', 0x40:'A', 0x80:'B'}
+token_to_magic = {0: '', 1:'\xfd', 0xa0:'\xfe', 0x20:'\xfe', 0x40:'', 0x80:'\xff'}
+magic_to_token = {'\xfd': 1, '\xfe': 0xa0, '\xff': 0x80}
+
+
+#############################
+
+def warning(msg):
+    print "[%d:%02d:%02d]" % hms(wav_pos),
+    print "File %d, record %d, block %d: %s" % (file_num, record_num, block_num, msg)
+
+
+#############################
 
 def crc(data):
     # crc-16-ccitt, see http://en.wikipedia.org/wiki/Computation_of_cyclic_redundancy_checks
@@ -303,6 +318,52 @@ def read_file():
     data += '\x1a'
     return file_name, data
         
+def read_wav():
+    global wav, nchannels, sampwidth, framerate, nframes, lopass, length_cut, halflength
+    global threshold, subtractor, bytesperframe, conv_format
+    global file_num, record_num, block_num
+    global read_pulse
+    wav = wave.open(sys.argv[1], 'rb')
+    nchannels =  wav.getnchannels()
+    sampwidth = wav.getsampwidth()
+    framerate = wav.getframerate()
+    nframes = wav.getnframes()
+    if sampwidth == 1:
+        threshold = 0
+        subtractor = 128
+    else:
+        threshold = (1 << (sampwidth*8-1))*nchannels
+        subtractor =  (1 << (sampwidth*8))*nchannels
+    bytesperframe = nchannels*sampwidth
+    print "Cassette image %s: WAV audio" % sys.argv[1],
+    print "%d:%02d:%02d," % hms(nframes),
+    print "%d-bit," % (sampwidth*8),
+    print "%d fps," % framerate,
+    print "%d channels" % nchannels,
+    print
+    if sampwidth > 3:
+        print "Can't convert WAV files of more than 16-bit."
+    conv_format = '<' + {1:'B', 2:'h'}[sampwidth]*nchannels*buf_len
+    # 1000 us for 1, 500 us for 0; threshould for half-pulse (500 us, 250 us)
+    length_cut = 375 * framerate / 1000000
+    halflength = [250 * framerate /1000000, 500 * framerate /1000000]
+    # find most likely polarity of pulses (down-first or up-first)
+    start_polarity()
+    read_pulse = read_pulse_pos if polarity > 0 else read_pulse_neg
+    # start parsing
+    file_num = 0
+    while True:
+        try:
+            file_name, data = read_file()
+            with open(file_name, 'wb') as f:
+                f.write(str(bytearray(data)))
+            file_num += 1
+        except EOF:
+            break
+    print "[%d:%02d:%02d] End of tape" % hms(wav_pos)
+    wav.close
+
+
 
 #######################################
 
@@ -419,66 +480,7 @@ def write_file(name, token, data):
         if last > 0:
             write_record(chr(last) + data[-last:])
 
-    
-#######################################
 
-import sys
-
-token_to_ext = {0: 'D', 1:'M', 0xa0:'P', 0x20:'P', 0x40:'A', 0x80:'B'}
-token_to_magic = {0: '', 1:'\xfd', 0xa0:'\xfe', 0x20:'\xfe', 0x40:'', 0x80:'\xff'}
-magic_to_token = {'\xfd': 1, '\xfe': 0xa0, '\xff': 0x80}
-
-def warning(msg):
-    print "[%d:%02d:%02d]" % hms(wav_pos),
-    print "File %d, record %d, block %d: %s" % (file_num, record_num, block_num, msg)
-
-
-def read_wav():
-    global wav, nchannels, sampwidth, framerate, nframes, lopass, length_cut, halflength
-    global threshold, subtractor, bytesperframe, conv_format
-    global file_num, record_num, block_num
-    global read_pulse
-    wav = wave.open(sys.argv[1], 'rb')
-    nchannels =  wav.getnchannels()
-    sampwidth = wav.getsampwidth()
-    framerate = wav.getframerate()
-    nframes = wav.getnframes()
-    if sampwidth == 1:
-        threshold = 0
-        subtractor = 128
-    else:
-        threshold = (1 << (sampwidth*8-1))*nchannels
-        subtractor =  (1 << (sampwidth*8))*nchannels
-    bytesperframe = nchannels*sampwidth
-    print "Cassette image %s: WAV audio" % sys.argv[1],
-    print "%d:%02d:%02d," % hms(nframes),
-    print "%d-bit," % (sampwidth*8),
-    print "%d fps," % framerate,
-    print "%d channels" % nchannels,
-    print
-    if sampwidth > 3:
-        print "Can't convert WAV files of more than 16-bit."
-    conv_format = '<' + {1:'B', 2:'h'}[sampwidth]*nchannels*buf_len
-    # 1000 us for 1, 500 us for 0; threshould for half-pulse (500 us, 250 us)
-    length_cut = 375 * framerate / 1000000
-    halflength = [250 * framerate /1000000, 500 * framerate /1000000]    
-    # find most likely polarity of pulses (down-first or up-first)
-    start_polarity()
-    read_pulse = read_pulse_pos if polarity > 0 else read_pulse_neg
-    # start parsing
-    file_num = 0
-    while True:
-        try:
-            file_name, data = read_file()
-            with open(file_name, 'wb') as f:
-                f.write(str(bytearray(data)))
-            file_num += 1
-        except EOF:
-            break
-    print "[%d:%02d:%02d] End of tape" % hms(wav_pos)
-    wav.close
-
-    
 def write_wav():     
     global wav, cas, halflength, framerate
     framerate = 22050
@@ -488,7 +490,7 @@ def write_wav():
     wav.setnchannels(1)
     wav.setsampwidth(1)
     wav.setframerate(framerate)
-    halflength = [250 * framerate /1000000, 500 * framerate /1000000]    
+    halflength = [250 * framerate /1000000, 500 * framerate /1000000]
     write_intro()
     # write files
     for file_name in sys.argv[2:]:
@@ -510,6 +512,8 @@ def write_wav():
     wav.close()
     cas.close()
     
+#######################################
+
 import os
 if os.path.basename(sys.argv[0]) == 'readwav.py':
     read_wav()
