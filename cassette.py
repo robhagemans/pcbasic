@@ -387,6 +387,11 @@ def write_file(name, token, data):
         offs = ord(data[2]) + ord(data[3])*0x100
         length = ord(data[4]) + ord(data[5])*0x100
         data = data[6:6+length]
+    elif token in (0x40, 0x80, 0x20, 0xa0):
+        seg = 0x60
+        offs = 0x81e
+    else:
+        seg, offs = 0, 0
     bytes = len(data)
     # FIXME: what values here for ascii, data? data: length 0, offset 0. ascii: length; offset of prog (0060:081e for Cass. BASIC)
     # get tokenised and BSAVE values from data. protected file? unprotect first 3 bytes & use values
