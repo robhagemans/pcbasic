@@ -323,13 +323,6 @@ def write_byte(byte):
 
 def write_intro():
     # write some noise to give the reader something to get started
-    intro = '0110 1010 100001 1000 01 000 00 1010  10110 1010 101101  00111 11111 01111 00000  010 111 1000  0000 01 110 0 11 01 10 000' 
-    write_pause(100)
-    for b in intro:
-        if b == ' ':
-            write_pause(1)
-        else:
-            write_bit(ord(b)- ord('0'))
     write_pause(100)
     
 
