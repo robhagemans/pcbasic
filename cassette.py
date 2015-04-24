@@ -392,21 +392,19 @@ def write_file(name, token, data):
         offs = ord(data[2]) + ord(data[3])*0x100
         length = ord(data[4]) + ord(data[5])*0x100
         data = data[6:6+length]
-    elif token in (0x40, 0x80, 0x20, 0xa0):
+    elif token in (0x80, 0x20, 0xa0):
+        # TODO: calculate seg and offs from program data, if program file
+        # protected file? unprotect first 3 bytes & use values
         seg = 0x60
         offs = 0x81e
+        bytes = len(data)
     else:
-        seg, offs = 0, 0
-    # text files have CR line endings on tape, not CR LF
-    # they should also get a NUL at the end
-    if token in (0x00, 0x40):
+        # TODO: ASCII program files: length, seg, offset are untouched, remain that of the previous file recorded!
+        seg, offs, bytes = 0, 0, 0
+        # text files have CR line endings on tape, not CR LF
+        # they should also get a NUL at the end
         data = data.replace('\r\n', '\r')
         data += '\0'
-    bytes = len(data)
-    # FIXME: what values here for ascii, data? data: length 0, offset 0. ascii: length; offset of prog (0060:081e for Cass. BASIC)
-    # get tokenised and BSAVE values from data. protected file? unprotect first 3 bytes & use values
-
-    # TODO: calculate seg and offs from program data, if program file
     write_record(header(name, token, bytes, seg, offs))
     if token in (1, 0x80, 0x20, 0xa0):
         # bsave, tokenised and protected come in one multi-block record
@@ -414,7 +412,7 @@ def write_file(name, token, data):
     else:
         # ascii and data come as a sequence of one-block records
         # 256 bytes less 1 length byte. CRC trailer comes after 256-byte block
-        blocks, last = divmod(bytes, 255)
+        blocks, last = divmod(len(data), 255)
         for i in range(blocks):
             offset = i*255
             write_record('\0' + data[offset:offset+255])
