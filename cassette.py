@@ -397,6 +397,11 @@ def write_file(name, token, data):
         offs = 0x81e
     else:
         seg, offs = 0, 0
+    # text files have CR line endings on tape, not CR LF
+    # they should also get a NUL at the end
+    if token in (0x00, 0x40):
+        data = data.replace('\r\n', '\r')
+        data += '\0'
     bytes = len(data)
     # FIXME: what values here for ascii, data? data: length 0, offset 0. ascii: length; offset of prog (0060:081e for Cass. BASIC)
     # get tokenised and BSAVE values from data. protected file? unprotect first 3 bytes & use values
