@@ -94,7 +94,7 @@ def fill_buffer():
     # sum frames over channels
     frames3 = map(sum, zip(*[iter(frames2)]*nchannels))
     frames4 = [ x-subtractor if x >= threshold else x for x in frames3 ]
-    frame_buf = butterworth(frames3, framerate, 3000)
+    frame_buf = butterworth(frames4, framerate, 3000)
     frame_pos += buf_len
 
 
@@ -432,7 +432,7 @@ def read_wav():
     nframes = wav.getnframes()
     if sampwidth == 1:
         threshold = 0
-        subtractor = 127
+        subtractor = 128
     else:
         threshold = (1 << (sampwidth*8-1))*nchannels
         subtractor =  (1 << (sampwidth*8))*nchannels
