@@ -97,7 +97,6 @@ def fill_buffer():
     frame_buf = butterworth(frames4, framerate, 3000)
     frame_pos += buf_len
 
-
 def start_polarity_pos():
     global polarity
     frame = read_frame()
@@ -315,6 +314,18 @@ def write_pause(milliseconds):
     
 def write_bit(bit):
     write_pulse(halflength[bit])
+    write_bit_cas(bit)
+
+cas_byte = 0
+cas_count = 0
+def write_bit_cas(bit):
+    global cas_byte, cas_count
+    cas_byte = (cas_byte << 1) | bit
+    cas_count += 1
+    if cas_count >= 8:
+        cas.write(chr(cas_byte))
+        cas_count = 0
+        cas_byte = 0
     
 def write_byte(byte):
     bits = [ 1 if (byte & ( 128 >> i) != 0) else 0 for i in range(8) ]
@@ -466,9 +477,10 @@ def read_wav():
 
     
 def write_wav():     
-    global wav, halflength, framerate
+    global wav, cas, halflength, framerate
     framerate = 22050
     sampwidth = 1
+    cas = open(sys.argv[1]+'.cas', 'wb')
     wav = wave.open(sys.argv[1], 'wb')
     wav.setnchannels(1)
     wav.setsampwidth(1)
@@ -493,6 +505,7 @@ def write_wav():
                 data = magic + data
             write_file(name, token, data)
     wav.close()
+    cas.close()
     
 import os
 if os.path.basename(sys.argv[0]) == 'readwav.py':
