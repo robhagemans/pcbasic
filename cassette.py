@@ -37,7 +37,7 @@ def crc(data):
 
 # cf. http://en.wikipedia.org/wiki/Low-pass_filter#Simple_infinite_impulse_response_filter
 lowpass_last = 0
-def lowpass(x, sample_freq, cutoff_freq):
+def simple_lowpass(x, sample_freq, cutoff_freq):
     global lowpass_last
     dt = 1./sample_freq
     RC = 1./(2.*math.pi*cutoff_freq)
@@ -51,23 +51,19 @@ def lowpass(x, sample_freq, cutoff_freq):
 
 # Second order butterworth low-pass filter
 # cf. src/arch/ibmpc/cassette.c (Hampa Hug) in PCE sources
-lowpass_last1 = 0
-lowpass_x1 = 0
-lowpass_x2 = 0
-def butterworth(x, srate, freq):
-    global lowpass_x1, lowpass_x2, lowpass_last, lowpass_last1
+def butterworth(srate, freq):
+    last_x, last_y = [0, 0], [0, 0]
     om = 1. / math.tan((math.pi * freq) / srate)
     b0 = om*om + om*math.sqrt(2.) + 1.
-    #a0, a1, a2 = 1, 2, 1
-    b1, b2 = 2*(1-om*om), (om*om-om*math.sqrt(2)+1)
-    y = [0]*len(x)
-    y[0] = (x[0] + 2*lowpass_x1 + lowpass_x2 - b1*lowpass_last - b2*lowpass_last1) / b0
-    y[1] = (x[1] + 2*x[0] + lowpass_x1 - b1*y[0] - b2*lowpass_last) / b0
-    for i in range(2, len(x)):
-        y[i] = (x[i] + 2*x[i-1] + x[i-2] - b1*y[i-1] - b2*y[i-2]) / b0
-    lowpass_x1, lowpass_x2 = x[-1], x[-2]
-    lowpass_last, lowpass_last1 = y[-1], y[-2]
-    return y
+    b1, b2 = 2.*(1.-om*om), (om*om-om*math.sqrt(2.)+1.)
+    y = []
+    while True:
+        x = yield y[2:]
+        y = last_y + [0]*len(x)
+        x = last_x + x
+        for i in range(2, len(x)):
+            y[i] = (x[i] + 2*x[i-1] + x[i-2] - b1*y[i-1] - b2*y[i-2]) / b0
+        last_x, last_y = x[-2:], y[-2:]
 
 
 #############################
@@ -93,7 +89,7 @@ def read_buffer():
     # sum frames over channels
     frames3 = map(sum, zip(*[iter(frames2)]*nchannels))
     frames4 = [ x-subtractor if x >= threshold else x for x in frames3 ]
-    return butterworth(frames4, framerate, 3000)
+    return lowpass.send(frames4)
 
 
 def read_halfpulse():
@@ -296,7 +292,7 @@ def read_wav(filename):
     global wav, nchannels, sampwidth, framerate, nframes, lopass, length_cut, halflength
     global threshold, subtractor, bytesperframe, conv_format
     global record_num, block_num
-    global read_bit, read_half
+    global read_bit, read_half, lowpass
     wav = wave.open(filename, 'rb')
     nchannels =  wav.getnchannels()
     sampwidth = wav.getsampwidth()
@@ -321,8 +317,12 @@ def read_wav(filename):
     # 1000 us for 1, 500 us for 0; threshould for half-pulse (500 us, 250 us)
     length_cut = 375 * framerate / 1000000
     halflength = [250 * framerate /1000000, 500 * framerate /1000000]
+    # initialise generators
+    lowpass = butterworth(framerate, 3000)
+    lowpass.send(None)
     read_half = read_halfpulse()
     read_bit = read_bit_wav()
+    # read the tape
     read_tape()
     print "[%d:%02d:%02d] End of tape" % hms(wav_pos)
     wav.close
