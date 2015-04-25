@@ -112,20 +112,6 @@ def fill_buffer():
     frame_buf = butterworth(frames4, framerate, 3000)
     frame_pos += buf_len
 
-def start_polarity_pos():
-    global polarity
-    frame = read_frame()
-    while frame <= 0:
-        frame = read_frame()
-    polarity = 1   
-
-def start_polarity_neg():
-    global polarity
-    frame = read_frame()
-    while frame > 0:
-        frame = read_frame()
-    polarity = -1   
-    
 def start_polarity():
     global polarity    
     frame = read_frame()
@@ -163,7 +149,7 @@ def read_pulse_neg():
 
 
 
-def read_bit():
+def read_bit_wav():
     pulse = read_pulse()
     dn = 1 if pulse[0] >= length_cut else 0
     up = 1 if pulse[1] >= length_cut else 0
@@ -172,6 +158,20 @@ def read_bit():
     if pulse[0] < length_cut/2 or pulse[1] < length_cut/2:
         return None, None
     return dn, up
+
+
+cas_byte_read = 0
+cas_mask = 0
+def read_bit_cas():
+    global cas_byte_read, cas_mask
+    cas_mask >>= 1
+    if cas_mask <= 0:
+        cas_byte_read = cas.read(1)
+        if not cas_byte_read:
+            raise EOF
+        cas_mask = 0x80
+    bit = 0 if (ord(cas_byte_read) & cas_mask == 0) else 1
+    return bit, bit
 
 
 def read_byte():
@@ -241,7 +241,7 @@ def read_block():
 
 def read_record(reclen):
     global block_num
-    seconds = read_leader() / framerate 
+    read_leader()
     record = ''
     block_num = 0
     byte_count = 0
@@ -274,7 +274,7 @@ def parse_header(record):
 def read_file():
     global record_num
     loc = wav_pos
-    record_num = 0           
+    record_num = 0
     record = read_record(None)
     header = parse_header(record)
     print "[%d:%02d:%02d]" % hms(loc),
@@ -318,12 +318,12 @@ def read_file():
     data += '\x1a'
     return file_name, data
         
-def read_wav():
+def read_wav(filename):
     global wav, nchannels, sampwidth, framerate, nframes, lopass, length_cut, halflength
     global threshold, subtractor, bytesperframe, conv_format
-    global file_num, record_num, block_num
-    global read_pulse
-    wav = wave.open(sys.argv[1], 'rb')
+    global record_num, block_num
+    global read_pulse, read_bit
+    wav = wave.open(filename, 'rb')
     nchannels =  wav.getnchannels()
     sampwidth = wav.getsampwidth()
     framerate = wav.getframerate()
@@ -348,8 +348,22 @@ def read_wav():
     length_cut = 375 * framerate / 1000000
     halflength = [250 * framerate /1000000, 500 * framerate /1000000]
     # find most likely polarity of pulses (down-first or up-first)
+    read_bit = read_bit_wav
     start_polarity()
     read_pulse = read_pulse_pos if polarity > 0 else read_pulse_neg
+    read_tape()
+    print "[%d:%02d:%02d] End of tape" % hms(wav_pos)
+    wav.close
+
+def read_cas(filename):
+    global read_bit, cas, framerate
+    framerate = 1
+    read_bit = read_bit_cas
+    with open(filename, 'rb') as cas:
+        read_tape()
+
+def read_tape():
+    global file_num
     # start parsing
     file_num = 0
     while True:
@@ -360,8 +374,6 @@ def read_wav():
             file_num += 1
         except EOF:
             break
-    print "[%d:%02d:%02d] End of tape" % hms(wav_pos)
-    wav.close
 
 
 
@@ -370,12 +382,14 @@ def read_wav():
 def write_pulse(half_length):
     wav.writeframes('\x00' * half_length + '\xff' * half_length)
 
-def write_pause(milliseconds):
+def write_pause_wav(milliseconds):
     wav.writeframes('\x7f' * (milliseconds * framerate / 1000))
+
+def write_pause_cas(milliseconds):
+    pass
     
-def write_bit(bit):
+def write_bit_wav(bit):
     write_pulse(halflength[bit])
-    write_bit_cas(bit)
 
 cas_byte = 0
 cas_count = 0
@@ -395,6 +409,10 @@ def write_byte(byte):
 
 def write_intro():
     # write some noise to give the reader something to get started
+    for b in bytearray('CAS1:'):
+        write_byte(b)
+    for _ in range(7):
+        write_bit(0)
     write_pause(100)
     
 
@@ -481,16 +499,7 @@ def write_file(name, token, data):
             write_record(chr(last) + data[-last:])
 
 
-def write_wav():     
-    global wav, cas, halflength, framerate
-    framerate = 22050
-    sampwidth = 1
-    cas = open(sys.argv[1]+'.cas', 'wb')
-    wav = wave.open(sys.argv[1], 'wb')
-    wav.setnchannels(1)
-    wav.setsampwidth(1)
-    wav.setframerate(framerate)
-    halflength = [250 * framerate /1000000, 500 * framerate /1000000]
+def write_tape():
     write_intro()
     # write files
     for file_name in sys.argv[2:]:
@@ -509,14 +518,45 @@ def write_wav():
                 token = 0x40
                 data = magic + data
             write_file(name, token, data)
+
+def write_wav(filename):     
+    global wav, halflength, framerate, write_bit, write_pause
+    write_bit = write_bit_wav
+    write_pause = write_pause_wav
+    framerate = 22050
+    sampwidth = 1
+    wav = wave.open(filename, 'wb')
+    wav.setnchannels(1)
+    wav.setsampwidth(1)
+    wav.setframerate(framerate)
+    halflength = [250 * framerate /1000000, 500 * framerate /1000000]
+    write_tape()
     wav.close()
-    cas.close()
+
+
+def write_cas(filename):     
+    global cas, framerate, write_bit, write_pause
+    framerate = 1
+    write_bit = write_bit_cas
+    write_pause = write_pause_cas
+    with open(filename, 'wb') as cas:
+        write_tape()
+        # ensure any buffered bits are written
+        write_byte(0xff)
+
     
 #######################################
 
 import os
 if os.path.basename(sys.argv[0]) == 'readwav.py':
-    read_wav()
+    if sys.argv[1].split('.')[-1] == 'wav':
+        read_wav(sys.argv[1])
+    else:
+        read_cas(sys.argv[1])
 elif os.path.basename(sys.argv[0]) == 'writewav.py':
-    write_wav()
+    if sys.argv[1].split('.')[-1] == 'wav':
+        write_wav(sys.argv[1])
+    else:
+        write_cas(sys.argv[1])
+    
 
