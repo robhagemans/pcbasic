@@ -86,16 +86,6 @@ frame_buf = []
 buf_len = 1024
 wav_pos = 0
 frame_pos = 0
-
-def read_frame():
-    global wav_pos
-    wav_pos += 1
-    try:
-        return frame_buf[wav_pos-frame_pos-1]
-    except IndexError:
-        fill_buffer()
-        return frame_buf[0]
-
 def fill_buffer():
     global frame_buf, frame_pos
     frames = wav.readframes(buf_len)
@@ -112,72 +102,61 @@ def fill_buffer():
     frame_buf = butterworth(frames4, framerate, 3000)
     frame_pos += buf_len
 
-def start_polarity():
-    global polarity    
-    frame = read_frame()
-    # initial threshold to determine polarity
-    threshold = (256**sampwidth)/16
-    while abs(frame) < threshold:
-        frame = read_frame()
-    polarity = 1 if frame>0 else -1
+def read_halfpulse():
+    global wav_pos
+    pos_in_frame = 0
+    length = 0
+    frame = False
+    while True:
+        try:
+            last = frame
+            frame = frame_buf[pos_in_frame] < 0
+            pos_in_frame += 1
+            length += 1
+        except IndexError:
+            fill_buffer()
+            pos_in_frame = 0
+        if last != frame:
+            wav_pos += length
+            yield length
+            length = 0
 
-def read_pulse_pos():
-    frame = read_frame()
-    pos = wav_pos
-    while frame > 0:
-        frame = read_frame()
-    length_up = wav_pos - pos + 1
-    pos = wav_pos
-    # move forward to positive polarity
-    while frame <= 0:
-        frame = read_frame()
-    length_dn = wav_pos - pos + 1
+def read_pulse():
+    length_up = read_half.next()
+    length_dn = read_half.next()
     return length_dn, length_up
-
-def read_pulse_neg():
-    frame = read_frame()
-    pos = wav_pos
-    while frame < 0:
-        frame = read_frame()
-    length_up = wav_pos - pos + 1
-    pos = wav_pos
-    # move forward to positive polarity
-    while frame >= 0:
-        frame = read_frame()
-    length_dn = wav_pos - pos + 1
-    return length_dn, length_up
-
 
 
 def read_bit_wav():
-    pulse = read_pulse()
-    dn = 1 if pulse[0] >= length_cut else 0
-    up = 1 if pulse[1] >= length_cut else 0
-    if pulse[0] > 2*length_cut or pulse[1] > 2*length_cut:
-        return None, None
-    if pulse[0] < length_cut/2 or pulse[1] < length_cut/2:
-        return None, None
-    return dn, up
+    while True:
+        pulse = read_pulse()
+        dn = 1 if pulse[0] >= length_cut else 0
+        up = 1 if pulse[1] >= length_cut else 0
+        if pulse[0] > 2*length_cut or pulse[1] > 2*length_cut:
+            dn, up = None, None
+        if pulse[0] < length_cut/2 or pulse[1] < length_cut/2:
+            dn, up = None, None
+        yield dn, up
 
 
-cas_byte_read = 0
-cas_mask = 0
 def read_bit_cas():
-    global cas_byte_read, cas_mask
-    cas_mask >>= 1
-    if cas_mask <= 0:
-        cas_byte_read = cas.read(1)
-        if not cas_byte_read:
-            raise EOF
-        cas_mask = 0x80
-    bit = 0 if (ord(cas_byte_read) & cas_mask == 0) else 1
-    return bit, bit
+    while True:
+        cas_byte_read = 0
+        cas_mask = 0
+        cas_mask >>= 1
+        if cas_mask <= 0:
+            cas_byte_read = cas.read(1)
+            if not cas_byte_read:
+                raise EOF
+            cas_mask = 0x80
+        bit = 0 if (ord(cas_byte_read) & cas_mask == 0) else 1
+        yield bit, bit
 
 
 def read_byte():
     byte_dn, byte_up = 0, 0
     for i in xrange(8):
-        bit_dn, bit_up = read_bit()
+        bit_dn, bit_up = read_bit.next()
         if bit_dn == None or bit_up == None:
             return None, None
         byte_dn += bit_dn * 128 >> i
@@ -187,12 +166,12 @@ def read_byte():
 
 def read_leader():
     while True:
-        while read_bit()[0] != 1:
+        while read_bit.next()[0] != 1:
             pass
         counter = 0
         start_frame = wav_pos
         while True:
-            b = read_bit()[0] 
+            b = read_bit.next()[0] 
             if b != 1:
                 break
             counter += 1
@@ -322,7 +301,7 @@ def read_wav(filename):
     global wav, nchannels, sampwidth, framerate, nframes, lopass, length_cut, halflength
     global threshold, subtractor, bytesperframe, conv_format
     global record_num, block_num
-    global read_pulse, read_bit
+    global read_bit, read_half
     wav = wave.open(filename, 'rb')
     nchannels =  wav.getnchannels()
     sampwidth = wav.getsampwidth()
@@ -347,10 +326,8 @@ def read_wav(filename):
     # 1000 us for 1, 500 us for 0; threshould for half-pulse (500 us, 250 us)
     length_cut = 375 * framerate / 1000000
     halflength = [250 * framerate /1000000, 500 * framerate /1000000]
-    # find most likely polarity of pulses (down-first or up-first)
-    read_bit = read_bit_wav
-    start_polarity()
-    read_pulse = read_pulse_pos if polarity > 0 else read_pulse_neg
+    read_half = read_halfpulse()
+    read_bit = read_bit_wav()
     read_tape()
     print "[%d:%02d:%02d] End of tape" % hms(wav_pos)
     wav.close
@@ -358,7 +335,7 @@ def read_wav(filename):
 def read_cas(filename):
     global read_bit, cas, framerate
     framerate = 1
-    read_bit = read_bit_cas
+    read_bit = read_bit_cas()
     with open(filename, 'rb') as cas:
         read_tape()
 
