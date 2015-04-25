@@ -262,7 +262,6 @@ def open_native_or_dos_filename(infile):
         # first try exact file name
         return open(os.path.expandvars(os.path.expanduser(infile)), 'r')
     except EnvironmentError as e:
-        print repr(e)
         # on load, accept capitalised versions and default extension
         return iolayer.open_file_or_device(0, 
                 infile, mode='L', defext='BAS')
