@@ -33,21 +33,20 @@ def crc(data):
 
 #############################
 
-
-
 # cf. http://en.wikipedia.org/wiki/Low-pass_filter#Simple_infinite_impulse_response_filter
-lowpass_last = 0
-def simple_lowpass(x, sample_freq, cutoff_freq):
-    global lowpass_last
+def simple_lowpass(sample_freq, cutoff_freq):
+    last_y = [0]
     dt = 1./sample_freq
     RC = 1./(2.*math.pi*cutoff_freq)
     alpha = dt / (RC + dt)
-    y = [0]*len(x)
-    y[0] = alpha * x[0] + (1-alpha) * lowpass_last
-    for i in range(1, len(x)):
-        y[i] = alpha * x[i] + (1.-alpha) * y[i-1]
-    lowpass_last = y[-1]
-    return y
+    y = []
+    while True:
+        x = yield y[1:]
+        y = last_y + [0]*len(x)
+        x = [0] + x
+        for i in range(1, len(x)):
+            y[i] = alpha * x[i] + (1.-alpha) * y[i-1]
+        last_y = y[-1:]
 
 # Second order butterworth low-pass filter
 # cf. src/arch/ibmpc/cassette.c (Hampa Hug) in PCE sources
