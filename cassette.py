@@ -33,36 +33,37 @@ def crc(data):
 
 #############################
 
+def passthrough():
+    x = []
+    while True:
+        x = yield x
+
 # cf. http://en.wikipedia.org/wiki/Low-pass_filter#Simple_infinite_impulse_response_filter
-def simple_lowpass(sample_freq, cutoff_freq):
-    last_y = [0]
-    dt = 1./sample_freq
+def simple_lowpass(sample_rate, cutoff_freq):
+    dt = 1./sample_rate
     RC = 1./(2.*math.pi*cutoff_freq)
     alpha = dt / (RC + dt)
-    y = []
+    y = [0]
     while True:
         x = yield y[1:]
-        y = last_y + [0]*len(x)
         x = [0] + x
+        y = y[-1:] + [0]*len(x)
         for i in range(1, len(x)):
-            y[i] = alpha * x[i] + (1.-alpha) * y[i-1]
-        last_y = y[-1:]
+            y[i] = alpha * x[i] + (1-alpha) * y[i-1]
 
 # Second order butterworth low-pass filter
 # cf. src/arch/ibmpc/cassette.c (Hampa Hug) in PCE sources
-def butterworth(srate, freq):
-    last_x, last_y = [0, 0], [0, 0]
-    om = 1. / math.tan((math.pi * freq) / srate)
-    b0 = om*om + om*math.sqrt(2.) + 1.
+def butterworth(sample_rate, cutoff_freq):
+    x, y = [0, 0], [0, 0]
+    om = 1. / math.tan((math.pi * cutoff_freq) / sample_rate)
+    rb0 = 1. / (om*om + om*math.sqrt(2.) + 1.)
     b1, b2 = 2.*(1.-om*om), (om*om-om*math.sqrt(2.)+1.)
-    y = []
     while True:
-        x = yield y[2:]
-        y = last_y + [0]*len(x)
-        x = last_x + x
+        inp = yield y[2:]
+        x = x[-2:] + inp
+        y = y[-2:] + [0]*len(inp)
         for i in range(2, len(x)):
-            y[i] = (x[i] + 2*x[i-1] + x[i-2] - b1*y[i-1] - b2*y[i-2]) / b0
-        last_x, last_y = x[-2:], y[-2:]
+            y[i] = (x[i] + 2*x[i-1] + x[i-2] - b1*y[i-1] - b2*y[i-2]) * rb0
 
 
 #############################
