@@ -1,11 +1,6 @@
-#!/usr/bin/env python2
-
 import wave
 import math
-import sys
 import struct
-import cProfile
-import sys
 
 token_to_ext = {0: 'D', 1:'M', 0xa0:'P', 0x20:'P', 0x40:'A', 0x80:'B'}
 token_to_magic = {0: '', 1:'\xfd', 0xa0:'\xfe', 0x20:'\xfe', 0x40:'', 0x80:'\xff'}
@@ -314,7 +309,7 @@ def read_wav(filename):
         threshold = (1 << (sampwidth*8-1))*nchannels
         subtractor =  (1 << (sampwidth*8))*nchannels
     bytesperframe = nchannels*sampwidth
-    print "Cassette image %s: WAV audio" % sys.argv[1],
+    print "Cassette image %s: WAV audio" % filename,
     print "%d:%02d:%02d," % hms(nframes),
     print "%d-bit," % (sampwidth*8),
     print "%d fps," % framerate,
@@ -476,10 +471,10 @@ def write_file(name, token, data):
             write_record(chr(last) + data[-last:])
 
 
-def write_tape():
+def write_tape(files):
     write_intro()
     # write files
-    for file_name in sys.argv[2:]:
+    for file_name in files:
         name = file_name.split('.')[0][:8]
         print "Recording %s to cassette." % file_name
         with open(file_name, 'rb') as f:
@@ -496,7 +491,7 @@ def write_tape():
                 data = magic + data
             write_file(name, token, data)
 
-def write_wav(filename):     
+def write_wav(filename, infiles):
     global wav, halflength, framerate, write_bit, write_pause
     write_bit = write_bit_wav
     write_pause = write_pause_wav
@@ -507,33 +502,19 @@ def write_wav(filename):
     wav.setsampwidth(1)
     wav.setframerate(framerate)
     halflength = [250 * framerate /1000000, 500 * framerate /1000000]
-    write_tape()
+    write_tape(infiles)
     wav.close()
 
 
-def write_cas(filename):     
+def write_cas(filename, infiles):
     global cas, framerate, write_bit, write_pause
     framerate = 1
     write_bit = write_bit_cas
     write_pause = write_pause_cas
     with open(filename, 'wb') as cas:
-        write_tape()
+        write_tape(infiles)
         # ensure any buffered bits are written
         write_byte(0xff)
 
-    
-#######################################
-
-import os
-if os.path.basename(sys.argv[0]) == 'readwav.py':
-    if sys.argv[1].split('.')[-1] == 'wav':
-        read_wav(sys.argv[1])
-    else:
-        read_cas(sys.argv[1])
-elif os.path.basename(sys.argv[0]) == 'writewav.py':
-    if sys.argv[1].split('.')[-1] == 'wav':
-        write_wav(sys.argv[1])
-    else:
-        write_cas(sys.argv[1])
     
 
