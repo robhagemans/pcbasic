@@ -82,12 +82,11 @@ class EOF(Exception):
 
 #############################
 
-frame_buf = []
-buf_len = 1024
 wav_pos = 0
-frame_pos = 0
-def fill_buffer():
-    global frame_buf, frame_pos
+buf_len = 1024
+
+def read_buffer():
+    frame_buf = []
     frames = wav.readframes(buf_len)
     # convert bytes into ints (little-endian if 16 bit)
     try:
@@ -99,14 +98,15 @@ def fill_buffer():
     # sum frames over channels
     frames3 = map(sum, zip(*[iter(frames2)]*nchannels))
     frames4 = [ x-subtractor if x >= threshold else x for x in frames3 ]
-    frame_buf = butterworth(frames4, framerate, 3000)
-    frame_pos += buf_len
+    return butterworth(frames4, framerate, 3000)
+
 
 def read_halfpulse():
     global wav_pos
     pos_in_frame = 0
     length = 0
     frame = False
+    frame_buf = []
     while True:
         try:
             last = frame
@@ -114,7 +114,7 @@ def read_halfpulse():
             pos_in_frame += 1
             length += 1
         except IndexError:
-            fill_buffer()
+            frame_buf = read_buffer()
             pos_in_frame = 0
         if last != frame:
             wav_pos += length
