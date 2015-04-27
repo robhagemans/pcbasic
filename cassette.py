@@ -523,10 +523,10 @@ class WAVWriter(TapeWriter):
     """ WAV-file recording interface. """
 
     def write_pulse(self, half_length):
-        self.wav.writeframes('\x00' * half_length + '\xff' * half_length)
+        self.wav.writeframesraw('\x00' * half_length + '\xff' * half_length)
 
     def write_pause(self, milliseconds):
-        self.wav.writeframes('\x7f' * (milliseconds * self.framerate / 1000))
+        self.wav.writeframesraw('\x7f' * (milliseconds * self.framerate / 1000))
 
     def gen_write_bit(self):
         while True:
