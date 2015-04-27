@@ -363,15 +363,17 @@ class CASReader(TapeReader):
     """ CAS-file cassette image reader. """
 
     #D
+    wav_pos = 0
+    #D
     def hms(self, loc):
         """ Return elapsed cassette time at given frame (dummy). """
         return 0, 0, 0
 
     def gen_read_bit(self):
         """ Generator to yield the next bit. """
+        cas_byte_read = 0
+        cas_mask = 0
         while True:
-            cas_byte_read = 0
-            cas_mask = 0
             cas_mask >>= 1
             if cas_mask <= 0:
                 cas_byte_read = self.cas.read(1)
@@ -596,7 +598,7 @@ class CASWriter(TapeWriter):
             bit = yield
             byte = (byte << 1) | bit
             count += 1
-            if cas_count >= 8:
+            if count >= 8:
                 self.cas.write(chr(byte))
                 count, byte = 0, 0
 
