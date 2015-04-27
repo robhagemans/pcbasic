@@ -105,6 +105,7 @@ class TapeReader(object):
     """ Cassette reading interface. """
 
     def read_byte(self):
+        """ Read a byte from the tape. """
         byte_dn, byte_up = 0, 0
         for i in xrange(8):
             bit_dn, bit_up = self.read_bit.next()
@@ -115,6 +116,7 @@ class TapeReader(object):
         return byte_dn, byte_up
 
     def read_leader(self):
+        """ Read the leader / pilot wave. """
         while True:
             while self.read_bit.next()[0] != 1:
                 pass
@@ -133,6 +135,7 @@ class TapeReader(object):
                     return start_frame
 
     def read_block(self):
+        """ Read a block of data from tape. """
         count = 0
         data_dn, data_up = '', ''
         while True:
@@ -159,6 +162,7 @@ class TapeReader(object):
                 count += 1
 
     def read_record(self, reclen):
+        """ Read a record from tape. """
         self.read_leader()
         record = ''
         self.block_num = 0
@@ -178,7 +182,9 @@ class TapeReader(object):
             return record[:reclen]
         return record
 
+    # TODO: optional name, as in LOAD"CAS1:" vs LOAD"CAS1:myfile"
     def read_file(self):
+        """ Read a file from tape. """
         loc = self.wav_pos
         self.record_num = 0
         record = self.read_record(None)
@@ -224,7 +230,9 @@ class TapeReader(object):
         data += '\x1a'
         return file_name, data
 
+    #D
     def read_tape(self):
+        """ Read all files from tape. """
         # start parsing
         self.file_num = 0
         while True:
@@ -237,9 +245,11 @@ class TapeReader(object):
                 break
 
     def __enter__(self):
+        """ Context guard for 'with'. """
         return self
 
     def __exit__(self, type, value, traceback):
+        """ Context guard for 'with'. """
         self.close()
 
 
@@ -352,6 +362,11 @@ class WAVReader(TapeReader):
 class CASReader(TapeReader):
     """ CAS-file cassette image reader. """
 
+    #D
+    def hms(self, loc):
+        """ Return elapsed cassette time at given frame (dummy). """
+        return 0, 0, 0
+
     def gen_read_bit(self):
         """ Generator to yield the next bit. """
         while True:
@@ -369,7 +384,6 @@ class CASReader(TapeReader):
 
     def __init__(self, filename):
         """ Initialise CAS-file for reading. """
-        self.framerate = 1
         self.read_bit = self.gen_read_bit()
         self.cas = open(filename, 'rb')
 
@@ -382,6 +396,7 @@ class CASReader(TapeReader):
 #######################################
 
 def parse_header(record):
+    """ Extract header information. """
     if not record or record[0] != '\xa5':
         return None
     name = record[1:9]
@@ -392,6 +407,7 @@ def parse_header(record):
     return name, token, nbytes, seg, offs
 
 def header(name, token, nbytes, seg, offs):
+    """ Encode header information. """
     data = '\xa5'
     data += name[:8] + ' ' * (8-len(name))
     data += chr(token)
@@ -411,12 +427,13 @@ class TapeWriter(object):
     """ Cassette recording interface. """
 
     def write_byte(self, byte):
+        """ Write a byte to WAV file. """
         bits = [ 1 if (byte & ( 128 >> i) != 0) else 0 for i in range(8) ]
         for bit in bits:
             self.write_bit.send(bit)
 
     def write_intro(self):
-        # write some noise to give the reader something to get started
+        """ write some noise to give the reader something to get started. """
         for b in bytearray('CAS1:'):
             self.write_byte(b)
         for _ in range(7):
@@ -424,12 +441,14 @@ class TapeWriter(object):
         self.write_pause(100)
 
     def write_leader(self):
+        """ Write the leader / pilot tone. """
         for _ in range(256):
             self.write_byte(0xff)
         self.write_bit.send(0)
         self.write_byte(0x16)
 
     def write_block(self, data):
+        """ Write a 256-byte block to tape. """
         # fill out short blocks with last byte
         data += data[-1]*(256-len(data))
         for b in data:
@@ -441,6 +460,7 @@ class TapeWriter(object):
         self.write_byte(lo)
 
     def write_record(self, data):
+        """ Write a data record to tape. """
         self.write_leader()
         while len(data) > 0:
             self.write_block(data[:256])
@@ -454,6 +474,7 @@ class TapeWriter(object):
         self.write_pause(100)
 
     def write_file(self, name, token, data):
+        """ Write a file to the tape. """
         if token == 0x01:
             # bsave 6-byte header is cut off (magic byte has been cut off before)
             seg = ord(data[0]) + ord(data[1])*0x100
@@ -487,8 +508,9 @@ class TapeWriter(object):
             if last > 0:
                 self.write_record(chr(last) + data[-last:])
 
-
+    #D
     def write_tape(self, files):
+        """ Write a list of files to the tape. """
         self.write_intro()
         # write files
         for file_name in files:
@@ -509,13 +531,16 @@ class TapeWriter(object):
                 self.write_file(name, token, data)
 
     def __init__(self):
+        """ Initilaise tape image. """
         self.write_bit = self.gen_write_bit()
         self.write_bit.send(None)
 
     def __enter__(self):
+        """ Context guard for 'with'. """
         return self
 
     def __exit__(self, type, value, traceback):
+        """ Context guard for 'with'. """
         self.close()
 
 
@@ -523,17 +548,21 @@ class WAVWriter(TapeWriter):
     """ WAV-file recording interface. """
 
     def write_pulse(self, half_length):
+        """ Write a single full pulse to the tape. """
         self.wav.writeframesraw('\x00' * half_length + '\xff' * half_length)
 
     def write_pause(self, milliseconds):
+        """ Write a pause of given length to the tape. """
         self.wav.writeframesraw('\x7f' * (milliseconds * self.framerate / 1000))
 
     def gen_write_bit(self):
+        """ Generator to write a bit to tape. """
         while True:
             bit = yield
             self.write_pulse(self.halflength[bit])
 
     def __init__(self, filename):
+        """ Initialise WAV tape image writer. """
         self.framerate = 22050
         self.sampwidth = 1
         self.wav = wave.open(filename, 'wb')
@@ -544,16 +573,24 @@ class WAVWriter(TapeWriter):
         TapeWriter.__init__(self)
 
     def close(self):
+        """ Close WAV tape image. """
         self.wav.close()
 
 
 class CASWriter(TapeWriter):
     """ CAS-file recording interface. """
 
+    #D
+    def hms(self, loc):
+        """ Return elapsed cassette time at given frame (dummy). """
+        return 0, 0, 0
+
     def write_pause(self, milliseconds):
+        """ Write pause to tape image (dummy). """
         pass
 
     def gen_write_bit(self):
+        """ Generator to write a bit to tape. """
         count, byte = 0, 0
         while True:
             bit = yield
@@ -564,12 +601,12 @@ class CASWriter(TapeWriter):
                 count, byte = 0, 0
 
     def __init__(self, filename):
-        #D, need this for hms calls
-        self.framerate = 1
+        """ Initialise CAS tape image writer. """
         self.cas = open(filename, 'wb')
         TapeWriter.__init__(self)
 
     def close(self):
+        """ Close CAS tape image. """
         # ensure any buffered bits are written
         self.write_byte(0xff)
         self.cas.close()
