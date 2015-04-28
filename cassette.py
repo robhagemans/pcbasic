@@ -241,6 +241,7 @@ class TapeReader(object):
                 with open(file_name, 'wb') as f:
                     f.write(str(bytearray(data)))
                 self.file_num += 1
+#                sys.exit(0)
             except EOF:
                 break
 
@@ -292,27 +293,46 @@ class WAVReader(TapeReader):
         """ Generator to read a half-pulse and yield its length. """
         pos_in_frame = 0
         length = 0
-        frame = False
+        # frame = False
+        frame = 1
         frame_buf = []
+        #
+        threshold = 1024 # (1 << (self.sampwidth*8))*self.nchannels/8192   #16 # 32 # 64
+        prezero = 1
+        #
         while True:
             try:
                 last = frame
-                frame = frame_buf[pos_in_frame] < 0
+                sample = frame_buf[pos_in_frame]
+#                print sample,
+                if sample > threshold:
+                    frame = 1
+#                    print 1,
+                elif sample < -threshold:
+                    frame = -1
+#                    print -1,
+                else:
+                    if frame != 0:
+                        prezero = frame
+                    frame = 0
+#                    print 0
+#                print frame,",",
                 pos_in_frame += 1
                 length += 1
             except IndexError:
                 frame_buf = self.read_buffer()
                 pos_in_frame = 0
-            if last != frame:
+#            if frame == 0:
+#                print "ZERO FRAME", frame, prezero
+            if last != frame and (last != 0 or frame == prezero):
+#                print "YIELD", length
                 self.wav_pos += length
                 yield length
                 length = 0
 
     def read_pulse(self):
         """ Read a pulse and return length of down and up halves. """
-        length_up = self.read_half.next()
-        length_dn = self.read_half.next()
-        return length_dn, length_up
+        return self.read_half.next(), self.read_half.next()
 
     def gen_read_bit(self):
         """ Generator to yield the next bit. """
@@ -347,7 +367,6 @@ class WAVReader(TapeReader):
         self.conv_format = '<' + {1:'B', 2:'h'}[self.sampwidth]*self.nchannels*self.buf_len
         # 1000 us for 1, 500 us for 0; threshould for half-pulse (500 us, 250 us)
         self.length_cut = 375*self.framerate/1000000
-        self.halflength = (250*self.framerate/1000000, 500*self.framerate/1000000)
         # initialise generators
         self.lowpass = butterworth(self.framerate, 3000)
         self.lowpass.send(None)
@@ -357,6 +376,169 @@ class WAVReader(TapeReader):
     def close(self):
         """ Close WAV-file. """
         self.wav.close()
+
+
+class BasicodeReader(WAVReader):
+
+    def __init__(self, filename):
+        WAVReader.__init__(self, filename)
+        # fix frequencies to Basicode standards, 1200 / 2400 Hz
+        # one = two pulses of 417 us; zero = one pulse of 833 us
+        # value is cutoff for full pulse
+        self.length_cut = 626*self.framerate/1000000
+        # initialise generators
+        self.lowpass = passthrough() #(self.framerate, 3000)
+        self.lowpass.send(None)
+
+    def gen_read_bit(self):
+        """ Generator to yield the next bit. """
+        while True:
+            pulse0 = self.read_pulse()
+            pulse1 = None
+#            if sum(pulse0) > 3*self.length_cut/4 and sum(pulse0) < 5*self.length_cut/4:
+#                print "DODGY PULSE:", pulse0
+#            print "[", pulse0,
+            # one = two pulses of 417 us; zero = one pulse of 833 us
+            if sum(pulse0) < self.length_cut:
+                pulse1 = self.read_pulse()
+#                if sum(pulse1) > 3*self.length_cut/4 and sum(pulse1) < 5*self.length_cut/4:
+#                    print "DODGY PULSE:", pulse1
+#                print pulse1, "]",
+                if sum(pulse1) < self.length_cut:
+                    dn = 1
+                else:
+                    print "[%d:%02d:%02d]" % self.hms(self.wav_pos), self.wav_pos, self.wav.tell(),
+                    print "DODGY BIT:", pulse0, pulse1
+                    dn = None
+            else:
+#                print "]",
+                dn = 0
+#            print
+#            print dn
+            yield dn, dn, pulse0, pulse1
+
+    def read_byte(self, skip_start=False):
+        """ Read a byte from the tape. """
+        if skip_start:
+            start = 0
+        else:
+            start = self.read_bit.next()[0]
+        pos = self.wav_pos
+#        print pos,
+        ###
+        # try to re-sync for incorrect start bit
+#        while start != 0:
+#            print "fwd re-syncing start bit"
+#            start = self.read_bit.next()[0]
+        ### 
+        byte = 0
+        for i in xrange(8):
+            next = self.read_bit.next()
+#            print next[2:],        
+            bit = next[0]
+            if bit == None:
+                print "UNKNOWN BIT", i
+                bit = 0
+            # bits in inverse order
+            byte += bit * 1 << i
+        # flip byte 7
+        byte ^= 0x80    
+
+#        print hex(byte), repr(chr(byte)), ", "
+        stop0 = self.read_bit.next()[0]
+        pos = self.wav.tell()
+        stop1 = self.read_bit.next()[0]
+        ###
+#        if stop0 != 1:
+#            print "fwd re-syncing stop bit"
+#            stop0, stop1 = stop1, self.read_bit.next()[0]
+        ###
+#        elif stop1 != 1:
+#            print "back re-syncing stop bit"
+#            self.wav.setpos(pos)
+            
+#        if self.wav_pos >= 2858945:
+#            sys.exit(0)
+        if start == 0 and stop0 == 1 and stop1 == 1:
+            return byte, byte
+        else:
+            print "[%d:%02d:%02d]" % self.hms(self.wav_pos), self.wav_pos,
+            print "Incorrect start/stop bits", repr(byte), repr(chr(byte)), start, stop0, stop1
+#            import sys
+#            sys.exit(0)
+            return None, None
+#            print
+            return byte, byte
+
+
+    def read_leader(self):
+        """ Read the leader / pilot wave. """
+        while True:
+            while self.read_bit.next()[0] != 1:
+                pass
+            counter = 0
+            start_frame = self.wav_pos
+            pulse = (0,0)
+            while True:
+                last = pulse
+                pos = self.wav.tell()
+                half = self.read_half.next()
+                if half > self.length_cut/2:
+                    # 2048 corresponds to 64 'bytes' of all ones (64*8*4 half-pulses)
+                    if counter > 2048:
+                        print "[%d:%02d:%02d]" % self.hms(self.wav_pos), self.wav_pos, self.wav.tell(),
+                        #  zero bit; try to sync
+                        print "fwd to post sync bit"
+                        half = self.read_half.next()
+#                        print "rewind to pre sync bit"
+#                        self.wav.setpos(pos)
+                        print "[%d:%02d:%02d]" % self.hms(self.wav_pos), self.wav_pos, self.wav.tell(), "SYNC"
+                    break
+                counter += 1
+            # sync bit 0 has been read, check sync byte 0x16
+            # at least 64*8 bits
+            if counter >= 2048:
+                print "LEADER", counter
+                # read rest of first byte
+                print "[%d:%02d:%02d]" % self.hms(self.wav_pos), self.wav_pos, self.wav.tell(),
+                sync = self.read_byte(skip_start=True)[0]
+                print "SYNC", repr(sync)
+                if sync == 0x02:
+                    return start_frame
+
+    def read_file(self):
+        """ Read a file from tape. """
+        loc = self.read_leader()
+        print "[%d:%02d:%02d]" % self.hms(loc),
+        print "File %d:" % self.file_num,
+        data = ''
+        skip_start = False
+        # xor sum includes STX byte
+        checksum = 0x02
+        while True:
+            byte = self.read_byte(skip_start)[0]
+#            print repr(chr(byte)) if byte else byte,
+            checksum ^= byte
+            if byte == 0x03:
+                print "ETX"
+#                sys.exit(0)
+                checksum_byte = self.read_byte(skip_start)[0]
+                print repr(checksum), repr(checksum_byte)
+                break
+#            print repr(byte)
+            if byte != None:
+                data += chr(byte)
+                skip_start = False
+                
+            else:
+                # incorrect start/stop bit, try to recover by shifting
+                skip_start = True
+                
+                    
+        # write EOF char
+        data += '\x1a'
+#        print repr(data)
+        return "FILE%04x.ASC" % self.file_num, data
 
 
 class CASReader(TapeReader):
