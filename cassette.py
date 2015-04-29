@@ -408,6 +408,10 @@ class BasicodeReader(WAVReader):
         self.lowpass.send(None)
         # 2048 halves = 1024 pulses = 512 1-bits = 64 bytes of leader
         self.min_leader_halves = 2048
+        # byte error correcting
+        # TODO: make read_byte a generator and keep this locally
+        self.dropbit = None
+        self.last_error_bit = None
 
     def gen_read_bit(self):
         """ Generator to yield the next bit. """
@@ -425,7 +429,7 @@ class BasicodeReader(WAVReader):
                 dn = 0
             yield dn, dn, pulse0, pulse1
 
-    def read_byte(self, skip_start=False, dropbit=None):
+    def read_byte(self, skip_start=False):
         """ Read a byte from the tape. """
         if skip_start:
             start = 0
@@ -433,29 +437,32 @@ class BasicodeReader(WAVReader):
             start = self.read_bit.next()[0]
         byte = 0
         bits = [ self.read_bit.next()[0] for _ in xrange(8) ]
-        if dropbit == 1 and self.last_error_bit == 0 and bits[-2:] == [1, 1]:
+        if self.dropbit == 1 and self.last_error_bit == 0 and bits[-2:] == [1, 1]:
             # error-correcting: have we gone one too far?
             stop0, stop1 = bits[-2:]
-            bits = [dropbit, start] + bits[:-2]
+            bits = [self.dropbit, start] + bits[:-2]
             start = self.last_error_bit
-        elif dropbit == 0 and bits[-1] == 1:
+        elif self.dropbit == 0 and bits[-1] == 1:
             # error-correcting: keep dropbit
             stop0, stop1 = bits[-1], self.read_bit.next()[0]
             bits = [start] + bits[:-1]
-            start = dropbit
+            start = self.dropbit
         else:
             # normal case, no error last time
             # or can't find a working correction
             stop0 = self.read_bit.next()[0]
             stop1 = self.read_bit.next()[0]
-        if None in bits:
-            raise PulseError()
         if start == 1 or stop0 == 0 or stop1 == 0:
             self.last_error_bit = stop1
+            # incorrect start/stop bit, try to recover by shifting
+            self.dropbit = self.read_bit.next()[0]
             raise FramingError([start] + bits + [stop0, stop1])
         else:
             # start/stopbits correct or unreadable
             self.last_error_bit = None
+            self.dropbit = None
+            if None in bits:
+                raise PulseError()
             # bits in inverse order
             byte = sum(bit << i for i, bit in enumerate(bits))
             # flip bit 7
@@ -483,36 +490,32 @@ class BasicodeReader(WAVReader):
             if counter >= self.min_leader_halves:
                 # read rest of first byte
                 try:
+                    self.last_error_bit = None
+                    self.dropbit = None
                     sync = self.read_byte(skip_start=True)[0]
+                    print "sync", sync, counter
                     if sync == 0x02:
                         return start_frame
                 except (PulseError, FramingError):
-                    pass
+                    print "error in sync byte", counter
 
     def read_file(self):
+        print "reading leader"
         """ Read a file from tape. """
         loc = self.read_leader()
         print "[%d:%02d:%02d]" % self.hms(loc),
         print "Found File %d" % self.file_num
         data = ''
-        skip_start = False
-        dropbit = None
         # xor sum includes STX byte
         checksum = 0x02
         while True:
             try:
-                byte = self.read_byte(skip_start, dropbit)[0]
-                skip_start = False
-                dropbit = None
+                byte = self.read_byte()[0]
             except (PulseError, FramingError) as e:
                 print "[%d:%02d:%02d]" % self.hms(self.wav_pos), 
                 print "%d" % self.wav_pos,
                 print e,
-                # FIXME: the below should probably go now that we master syncing
                 print
-                # incorrect start/stop bit, try to recover by shifting
-                dropbit = self.read_bit.next()[0]
-#                skip_start = True
                 # insert a zero byte as a marker for the error
                 byte = 0
             except EOF as e:
@@ -521,7 +524,7 @@ class BasicodeReader(WAVReader):
             checksum ^= byte
             if byte == 0x03:
                 try:
-                    checksum_byte = self.read_byte(skip_start)[0]
+                    checksum_byte = self.read_byte()[0]
                 except (PulseError, FrameError, EOF) as e:
                     print e
                     print "Could not read checksum byte"
