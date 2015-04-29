@@ -11,10 +11,11 @@ magic_to_token = {'\xfd': 1, '\xfe': 0xa0, '\xff': 0x80}
 
 class CassetteException(Exception):
     """ Cassette exception. """
-    def __str__(self):
 
+    def __str__(self):
         """ Return exception desription (by default, the docstring.) """
         return self.__doc__.strip()
+
 
 class EOF(CassetteException):
     """ End-of-tape exception. """
@@ -28,18 +29,31 @@ class UnknownRecord(CassetteException):
     """ Unknown record type. """
     pass
 
+
 class CRCError(CassetteException):
     """ CRC check failed. """
+
     def __init__(self, crc_read_dn, crc_dn, crc_read_up, crc_up):
         self.read_dn, self.dn, self.read_up, self.up = crc_read_dn, crc_dn, crc_read_up, crc_up
+
+    def __str__(self):
+        return self.__doc__.strip() + ' Prescribed: %04x Realised: %04x' % (self.read_dn, self.dn)
+
 
 class PulseError(CassetteException):
     """ Incorrect pulse length. """
     pass
 
+
 class FramingError(CassetteException):
     """ Framing error. """
-    pass
+
+    def __init__(self, bitlist=[]):
+        self.bits = bitlist
+
+    def __str__(self):
+        return self.__doc__.strip() + ' ' + repr(self.bits)
+
 
 #############################
 
@@ -172,6 +186,8 @@ class TapeReader(object):
             try:
                 data = self.read_block()
             except (PulseError, FramingError, CRCError) as e:
+                print "[%d:%02d:%02d]" % self.hms(self.wav_pos), 
+                print "%d" % self.wav_pos, 
                 print e
                 break
             record += data
@@ -360,7 +376,7 @@ class WAVReader(TapeReader):
             self.sub_threshold = int_max*self.nchannels/2
             self.subtractor =  int_max*self.nchannels
         # volume above/below zero that is interpreted as zero
-        self.zero_threshold = int_max*self.nchannels/64
+        self.zero_threshold = int_max*self.nchannels/256 # 128 #64
         if self.sampwidth > 3:
             raise UnsupportedFormat()
         self.conv_format = '<' + {1:'B', 2:'h'}[self.sampwidth]*self.nchannels*self.buf_len
@@ -409,30 +425,34 @@ class BasicodeReader(WAVReader):
                 dn = 0
             yield dn, dn, pulse0, pulse1
 
-    def read_byte(self, skip_start=False):
+    def read_byte(self, skip_start=False, dropbit=None):
         """ Read a byte from the tape. """
         if skip_start:
             start = 0
         else:
             start = self.read_bit.next()[0]
-        pos = self.wav_pos
-        ###
         byte = 0
-        for i in xrange(8):
-            bit = self.read_bit.next()[0]
-            if bit == None:
-                raise PulseError()
-            # bits in inverse order
-            byte += bit * 1 << i
+        bits = [ self.read_bit.next()[0] for _ in xrange(8) ]
+        if None in bits:
+            raise PulseError()
+        # bits in inverse order
+        byte = sum(bit << i for i, bit in enumerate(bits))
         # flip byte 7
         byte ^= 0x80    
         stop0 = self.read_bit.next()[0]
-        pos = self.wav.tell()
-        stop1 = self.read_bit.next()[0]
+        if dropbit != 0 or bits[-1] != 1:
+            # normal case (dropbit None) or actually drop it
+            stop1 = self.read_bit.next()[0]
+        else:
+            # keep dropbit
+            stop0, stop1 = bits[-1], stop0
+            bits = [dropbit] + bits[:-1]
         if start == 0 and stop0 == 1 and stop1 == 1:
+#            self.last_error = []
             return byte, byte
         else:
-            raise FramingError()
+#            self.last_error = bits
+            raise FramingError([start] + bits + [stop0, stop1])
 
     def read_leader(self):
         """ Read the leader / pilot wave. """
@@ -468,16 +488,25 @@ class BasicodeReader(WAVReader):
         print "Found File %d" % self.file_num
         data = ''
         skip_start = False
+        dropbit = None
         # xor sum includes STX byte
         checksum = 0x02
         while True:
             try:
-                byte = self.read_byte(skip_start)[0]
-            except FramingError:
+                byte = self.read_byte(skip_start, dropbit)[0]
+                skip_start = False
+                dropbit = None
+            except (PulseError, FramingError) as e:
+                print "[%d:%02d:%02d]" % self.hms(self.wav_pos), 
+                print "%d" % self.wav_pos,
+                print e,
                 # FIXME: the below should probably go now that we master syncing
+                print
                 # incorrect start/stop bit, try to recover by shifting
-                skip_start = True
-                continue
+                dropbit = self.read_bit.next()[0]
+#                skip_start = True
+                # insert a zero byte as a marker for the error
+                byte = 0
             checksum ^= byte
             if byte == 0x03:
                 checksum_byte = self.read_byte(skip_start)[0]
@@ -489,7 +518,6 @@ class BasicodeReader(WAVReader):
                     print "Checksum: [ ok ] "
                 break
             data += chr(byte)
-            skip_start = False
             # CR -> CRLF
             if byte == 0x0d:
                 data += '\n'
