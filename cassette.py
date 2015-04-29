@@ -433,31 +433,30 @@ class BasicodeReader(WAVReader):
             start = self.read_bit.next()[0]
         byte = 0
         bits = [ self.read_bit.next()[0] for _ in xrange(8) ]
-        if None in bits:
-            raise PulseError()
-        # bits in inverse order
-        byte = sum(bit << i for i, bit in enumerate(bits))
-        # flip byte 7
-        byte ^= 0x80    
         if dropbit != 0: # or bits[-1] != 1:
             # this includes the all-good case
             if dropbit == 1 and self.last_error_bit == 0 and bits[-2:] == [1, 1]:
                 # have we gone one too far?
                 stop0, stop1 = bits[-2:]
-                start = self.last_error_bit
                 bits = [dropbit, start] + bits[:-2] 
+                start = self.last_error_bit
             else:                 
                 # normal case (dropbit None) or actually drop it
                 stop0 = self.read_bit.next()[0]
                 stop1 = self.read_bit.next()[0]
         else:
             # keep dropbit
-            stop0 = self.read_bit.next()[0]
-            stop0, stop1 = bits[-1], stop0
-            start = dropbit
+            stop0, stop1 = bits[-1], self.read_bit.next()[0]
             bits = [start] + bits[:-1]
+            start = dropbit
+        if None in bits:
+            raise PulseError()
         if start == 0 and stop0 == 1 and stop1 == 1:
             self.last_error_bit = None
+            # bits in inverse order
+            byte = sum(bit << i for i, bit in enumerate(bits))
+            # flip bit 7
+            byte ^= 0x80
             return byte, byte
         else:
             self.last_error_bit = stop1
@@ -516,9 +515,16 @@ class BasicodeReader(WAVReader):
 #                skip_start = True
                 # insert a zero byte as a marker for the error
                 byte = 0
+            except EOF as e:
+                print e
+                break
             checksum ^= byte
             if byte == 0x03:
-                checksum_byte = self.read_byte(skip_start)[0]
+                try:
+                    checksum_byte = self.read_byte(skip_start)[0]
+                except (PulseError, FrameError, EOF) as e:
+                    print e
+                    print "Could not read checksum byte"
                 # checksum shld be 0 for even # bytes, 128 for odd
                 print "[%d:%02d:%02d]" % self.hms(self.wav_pos),
                 if checksum_byte == None or checksum^checksum_byte not in (0,128):
