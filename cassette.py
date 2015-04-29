@@ -439,19 +439,28 @@ class BasicodeReader(WAVReader):
         byte = sum(bit << i for i, bit in enumerate(bits))
         # flip byte 7
         byte ^= 0x80    
-        stop0 = self.read_bit.next()[0]
-        if dropbit != 0 or bits[-1] != 1:
-            # normal case (dropbit None) or actually drop it
-            stop1 = self.read_bit.next()[0]
+        if dropbit != 0: # or bits[-1] != 1:
+            # this includes the all-good case
+            if dropbit == 1 and self.last_error_bit == 0 and bits[-2:] == [1, 1]:
+                # have we gone one too far?
+                stop0, stop1 = bits[-2:]
+                start = self.last_error_bit
+                bits = [dropbit, start] + bits[:-2] 
+            else:                 
+                # normal case (dropbit None) or actually drop it
+                stop0 = self.read_bit.next()[0]
+                stop1 = self.read_bit.next()[0]
         else:
             # keep dropbit
+            stop0 = self.read_bit.next()[0]
             stop0, stop1 = bits[-1], stop0
-            bits = [dropbit] + bits[:-1]
+            start = dropbit
+            bits = [start] + bits[:-1]
         if start == 0 and stop0 == 1 and stop1 == 1:
-#            self.last_error = []
+            self.last_error_bit = None
             return byte, byte
         else:
-#            self.last_error = bits
+            self.last_error_bit = stop1
             raise FramingError([start] + bits + [stop0, stop1])
 
     def read_leader(self):
