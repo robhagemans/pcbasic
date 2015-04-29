@@ -433,34 +433,34 @@ class BasicodeReader(WAVReader):
             start = self.read_bit.next()[0]
         byte = 0
         bits = [ self.read_bit.next()[0] for _ in xrange(8) ]
-        if dropbit != 0: # or bits[-1] != 1:
-            # this includes the all-good case
-            if dropbit == 1 and self.last_error_bit == 0 and bits[-2:] == [1, 1]:
-                # have we gone one too far?
-                stop0, stop1 = bits[-2:]
-                bits = [dropbit, start] + bits[:-2] 
-                start = self.last_error_bit
-            else:                 
-                # normal case (dropbit None) or actually drop it
-                stop0 = self.read_bit.next()[0]
-                stop1 = self.read_bit.next()[0]
-        else:
-            # keep dropbit
+        if dropbit == 1 and self.last_error_bit == 0 and bits[-2:] == [1, 1]:
+            # error-correcting: have we gone one too far?
+            stop0, stop1 = bits[-2:]
+            bits = [dropbit, start] + bits[:-2]
+            start = self.last_error_bit
+        elif dropbit == 0 and bits[-1] == 1:
+            # error-correcting: keep dropbit
             stop0, stop1 = bits[-1], self.read_bit.next()[0]
             bits = [start] + bits[:-1]
             start = dropbit
+        else:
+            # normal case, no error last time
+            # or can't find a working correction
+            stop0 = self.read_bit.next()[0]
+            stop1 = self.read_bit.next()[0]
         if None in bits:
             raise PulseError()
-        if start == 0 and stop0 == 1 and stop1 == 1:
+        if start == 1 or stop0 == 0 or stop1 == 0:
+            self.last_error_bit = stop1
+            raise FramingError([start] + bits + [stop0, stop1])
+        else:
+            # start/stopbits correct or unreadable
             self.last_error_bit = None
             # bits in inverse order
             byte = sum(bit << i for i, bit in enumerate(bits))
             # flip bit 7
             byte ^= 0x80
             return byte, byte
-        else:
-            self.last_error_bit = stop1
-            raise FramingError([start] + bits + [stop0, stop1])
 
     def read_leader(self):
         """ Read the leader / pilot wave. """
