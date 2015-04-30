@@ -114,7 +114,7 @@ def butterband4(sample_rate, lo_freq, hi_freq):
     #
     r = math.sin(math.pi*(1.0)/(4.))
     s = b2 + 2.0*b*r + 1.0
-    A = b2/s
+    A = (b2/s)   * 2 ## *2 to gain amplitude, my addition
     d1 = 4.0*a*(1.0+b*r)/s
     d2 = 2.0*(b2-2.0*a2-1.0)/s
     d3 = 4.0*a*(1.0-b*r)/s
@@ -126,7 +126,7 @@ def butterband4(sample_rate, lo_freq, hi_freq):
         out = [0]*len(inp)
         for i, x in enumerate(inp):
             w0 = d1*w1 + d2*w2 + d3*w3 + d4*w4 + x
-            out[i] = A*(w0 - 2.0*w2 + w4)   * 2 ## *2 to gain amplitude, my addition
+            out[i] = A*(w0 - 2.0*w2 + w4)
             w4, w3, w2, w1 = w3, w2, w1, w0
 
 def butterband_sox(sample_rate, f0, width):
