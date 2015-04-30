@@ -114,6 +114,44 @@ def butterworth(sample_rate, cutoff_freq):
             y[i] = (x[i] + 2*x[i-1] + x[i-2] - b1*y[i-1] - b2*y[i-2]) * rb0
 
 
+def butterband(sample_rate, order, lo_freq, hi_freq):
+    """ nth-order Butterworth band-pass filter. """
+    # cf. http://www.exstrom.com/journal/sigproc/bwbpf.c
+    f1 = hi_freq
+    f2 = lo_freq
+    s = sample_rate
+    n = order/4
+    #
+    a = math.cos(math.pi*(f1+f2)/s) / math.cos(math.pi*(f1-f2)/s)
+    a2 = a*a
+    b = math.tan(math.pi*(f1-f2)/s)
+    b2 = b*b
+    #
+    A, d1, d2, d3, d4 = [0]*n, [0]*n, [0]*n, [0]*n, [0]*n
+    for i in xrange(n):
+        r = math.sin(math.pi*(2.0*i+1.0)/(4.*n))
+        s = b2 + 2.0*b*r + 1.0
+        A[i] = b2/s
+        d1[i] = 4.0*a*(1.0+b*r)/s
+        d2[i] = 2.0*(b2-2.0*a2-1.0)/s
+        d3[i] = 4.0*a*(1.0-b*r)/s
+        d4[i] = -(b2 - 2.0*b*r + 1.0)/s
+    w0, w1, w2, w3, w4 = [0]*n, [0]*n, [0]*n, [0]*n, [0]*n
+    out = []
+    while True:
+        inp = yield out
+        out = [0]*len(inp)
+        for j, x in enumerate(inp):
+            for i in xrange(n):
+                w0[i] = d1[i]*w1[i] + d2[i]*w2[i]+ d3[i]*w3[i]+ d4[i]*w4[i] + x
+                x = A[i]*(w0[i] - 2.0*w2[i] + w4[i])
+                w4[i] = w3[i]
+                w3[i] = w2[i]
+                w2[i] = w1[i]
+                w1[i] = w0[i]
+#            w4, w4, w2, w1 = w3, w2, w1, w0
+            out[j] = x *2 ## *2 my addition
+
 
 #############################
 
@@ -383,7 +421,7 @@ class WAVReader(TapeReader):
         # 1000 us for 1, 500 us for 0; threshold for half-pulse (500 us, 250 us)
         self.length_cut = 375*self.framerate/1000000
         # initialise generators
-        self.lowpass = butterworth(self.framerate, 3000)
+        self.lowpass = butterband(self.framerate, 4, 500, 3000)  #butterworth(self.framerate, 3000)
         self.lowpass.send(None)
         self.read_half = self.gen_read_halfpulse()
         self.read_bit = self.gen_read_bit()
@@ -404,7 +442,7 @@ class BasicodeReader(WAVReader):
         # value is cutoff for full pulse
         self.length_cut = 626*self.framerate/1000000
         # initialise generators
-        self.lowpass = passthrough() #(self.framerate, 3000)
+        self.lowpass = butterband(self.framerate, 4, 1350, 3450)
         self.lowpass.send(None)
         # 2048 halves = 1024 pulses = 512 1-bits = 64 bytes of leader
         self.min_leader_halves = 2048
