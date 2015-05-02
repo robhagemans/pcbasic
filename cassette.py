@@ -220,7 +220,6 @@ class TapeReader(object):
             while self.read_bit.next() != 1:
                 pass
             counter = 0
-            start_frame = self.wav_pos
             while True:
                 b = self.read_bit.next()
                 if b != 1:
@@ -231,7 +230,7 @@ class TapeReader(object):
             if b != None and counter >= 512:
                 sync = self.read_byte(skip_start=True)
                 if sync == self.sync_byte:
-                    return start_frame
+                    return
 
     def read_block(self):
         """ Read a block of data from tape. """
@@ -522,6 +521,7 @@ class BasicodeReader(WAVReader):
 
     def read_file(self):
         """ Read a file from tape. """
+        self.read_leader()
         self.message("Found File %d" % self.file_num)
         data = ''
         # xor sum includes STX byte
@@ -530,11 +530,11 @@ class BasicodeReader(WAVReader):
             try:
                 byte = self.read_byte()
             except (PulseError, FramingError) as e:
-                self.message("%d %s\n" % (self.wav_pos, str(e)))
+                self.message("%d %s" % (self.wav_pos, str(e)))
                 # insert a zero byte as a marker for the error
                 byte = 0
             except EOF as e:
-                self.message("%d %s\n" % (self.wav_pos, str(e)))
+                self.message("%d %s" % (self.wav_pos, str(e)))
                 break
             checksum ^= byte
             if byte == 0x03:
@@ -562,7 +562,6 @@ class BasicodeReader(WAVReader):
             while self.read_bit.next() != 1:
                 pass
             counter = 0
-            start_frame = self.wav_pos
             pulse = (0,0)
             while True:
                 last = pulse
@@ -573,8 +572,6 @@ class BasicodeReader(WAVReader):
                         half = self.read_half.next()
                     break
                 counter += 1
-            if counter > 100:
-                print counter
             # sync bit 0 has been read, check sync byte
             if counter >= self.min_leader_halves:
                 # read rest of first byte
@@ -583,7 +580,7 @@ class BasicodeReader(WAVReader):
                     self.dropbit = None
                     sync = self.read_byte(skip_start=True)
                     if sync == self.sync_byte:
-                        return start_frame
+                        return
                     else:
                         self.message("Incorrect sync byte: %02x" % sync)
                 except (PulseError, FramingError) as e:
