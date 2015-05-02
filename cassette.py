@@ -77,6 +77,12 @@ def word_le(word):
     hi, lo = divmod(word, 256)
     return [lo, hi]
 
+def hms(seconds):
+    """ Return elapsed cassette time at given frame. """
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    return h, m, s
+
 #############################
 
 def passthrough():
@@ -223,10 +229,7 @@ class TapeReader(object):
             try:
                 data = self.read_block()
             except (PulseError, FramingError, CRCError) as e:
-                print "[%d:%02d:%02d]" % self.hms(self.wav_pos), 
-                print "%d" % self.wav_pos, 
-                print e
-                break
+                self.message("%d %s" % (self.wav_pos, str(e)))
             record += data
             byte_count += len(data)
             if (reclen == None and
@@ -241,22 +244,17 @@ class TapeReader(object):
     # TODO: optional name, as in LOAD"CAS1:" vs LOAD"CAS1:myfile"
     def read_file(self):
         """ Read a file from tape. """
-        loc = self.wav_pos
         self.record_num = 0
         record = self.read_record(None)
         header = parse_header(record)
-        print "[%d:%02d:%02d]" % self.hms(loc),
-        print "File %d:" % self.file_num,
         if not header:
             # unknown record type
-            print "Record of unknown type."
+            self.message("File %d: Record of unknown type." % self.file_num)
             return 'DATA.X%02x' % self.file_num, record
         else:
             file_trunk, file_token, file_bytes, seg, offs = header
             file_ext = token_to_ext[file_token]
-            print '%s Found.' % (file_trunk + '.' + file_ext),
-            print "%d bytes," % file_bytes,
-            print "load address %04x:%04x." % (seg, offs)
+            self.message("File %d: %s Found." % (self.file_num, file_trunk + '.' + file_ext)),
             # for programs this is start address: cf to offset of next line in prgram
         file_name = file_trunk.rstrip() + '.' + file_ext + '%02x' % self.file_num
         data = token_to_magic[file_token]
@@ -284,8 +282,7 @@ class TapeReader(object):
                     break
         # write EOF char
         data += '\x1a'
-        print "[%d:%02d:%02d]" % self.hms(self.wav_pos),
-        print "End of File %d" % self.file_num
+        self.message("End of File %d" % self.file_num)
         return file_name, data
 
     #D
@@ -315,20 +312,10 @@ class TapeReader(object):
 class WAVReader(TapeReader):
     """ WAV-file cassette image reader. """
 
-    #D
-    def warning(self, msg):
-        """ Print a warning message. """
-        print "[%d:%02d:%02d]" % self.hms(self.wav_pos),
-        print "File %d, record %d, block %d: %s" % (
-                        self.file_num, self.record_num, self.block_num, msg)
-
-    #D?
-    def hms(self, loc):
-        """ Return elapsed cassette time at given frame. """
-        m, s = divmod(loc/self.framerate, 60)
-        h, m = divmod(m, 60)
-        return h, m, s
-
+    def message(self, msg):
+        """ Output a message. """
+        print "[%d:%02d:%02d]" % hms(self.wav_pos/self.framerate),
+        print msg
 
     def read_buffer(self):
         """ Fill buffer with frames and pre-process. """
@@ -446,7 +433,6 @@ class BasicodeReader(WAVReader):
         # 2048 halves = 1024 pulses = 512 1-bits = 64 bytes of leader
         self.min_leader_halves = 2048
         # byte error correcting
-        # TODO: make read_byte a generator and keep this locally
         self.dropbit = None
         self.last_error_bit = None
 
@@ -537,9 +523,7 @@ class BasicodeReader(WAVReader):
 
     def read_file(self):
         """ Read a file from tape. """
-        loc = self.read_leader()
-        print "[%d:%02d:%02d]" % self.hms(loc),
-        print "Found File %d" % self.file_num
+        self.message("Found File %d" % self.file_num)
         data = ''
         # xor sum includes STX byte
         checksum = 0x02
@@ -547,28 +531,23 @@ class BasicodeReader(WAVReader):
             try:
                 byte = self.read_byte()
             except (PulseError, FramingError) as e:
-                print "[%d:%02d:%02d]" % self.hms(self.wav_pos), 
-                print "%d" % self.wav_pos,
-                print e,
-                print
+                self.message("%d %s\n" % (self.wav_pos, str(e)))
                 # insert a zero byte as a marker for the error
                 byte = 0
             except EOF as e:
-                print e
+                self.message("%d %s\n" % (self.wav_pos, str(e)))
                 break
             checksum ^= byte
             if byte == 0x03:
                 try:
                     checksum_byte = self.read_byte()
                 except (PulseError, FrameError, EOF) as e:
-                    print e
-                    print "Could not read checksum byte"
+                    self.message("Could not read checksum: %s " % str(e))
                 # checksum shld be 0 for even # bytes, 128 for odd
-                print "[%d:%02d:%02d]" % self.hms(self.wav_pos),
                 if checksum_byte == None or checksum^checksum_byte not in (0,128):
-                    print "Checksum: [FAIL]"
+                    self.message("Checksum: [FAIL]  Required: %02x  Realised: %02x" % (checksum_byte, checksum))
                 else:
-                    print "Checksum: [ ok ] "
+                    self.message("Checksum: [ ok ] ")
                 break
             data += chr(byte)
             # CR -> CRLF
@@ -582,12 +561,9 @@ class BasicodeReader(WAVReader):
 class CASReader(TapeReader):
     """ CAS-file cassette image reader. """
 
-    #D
-    wav_pos = 0
-    #D
-    def hms(self, loc):
-        """ Return elapsed cassette time at given frame (dummy). """
-        return 0, 0, 0
+    def message(self, msg):
+        """ Output a message. """
+        print msg
 
     def gen_read_bit(self):
         """ Generator to yield the next bit. """
@@ -803,11 +779,6 @@ class WAVWriter(TapeWriter):
 
 class CASWriter(TapeWriter):
     """ CAS-file recording interface. """
-
-    #D
-    def hms(self, loc):
-        """ Return elapsed cassette time at given frame (dummy). """
-        return 0, 0, 0
 
     def write_pause(self, milliseconds):
         """ Write pause to tape image (dummy). """
