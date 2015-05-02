@@ -167,11 +167,45 @@ def butterband_sox(sample_rate, f0, width):
 
 #############################
 
+def parse_header(record):
+    """ Extract header information. """
+    if not record or record[0] != '\xa5':
+        return None
+    name = record[1:9]
+    token = ord(record[9])
+    nbytes = ord(record[10]) + ord(record[11]) * 0x100
+    seg = ord(record[12]) + ord(record[13]) * 0x100
+    offs = ord(record[14]) + ord(record[15]) * 0x100
+    return name, token, nbytes, seg, offs
+
+def header(name, token, nbytes, seg, offs):
+    """ Encode header information. """
+    data = '\xa5'
+    data += name[:8] + ' ' * (8-len(name))
+    data += chr(token)
+    # length
+    data += ''.join(map(chr, word_le(nbytes)))
+    # load address segment
+    data += ''.join(map(chr, word_le(seg)))
+    # load address offset
+    data += ''.join(map(chr, word_le(offs)))
+    # seems to end at 0x00, 0x01, then filled out with last char
+    data += '\x00\x01'
+    return data
+
+#############################
+
+
 class TapeReader(object):
     """ Cassette reading interface. """
 
-    def read_byte(self):
+    def __init__(self):
+        """ Initialise tape readers. """
+        self.sync_byte = 0x16
+
+    def read_byte(self, skip_start=False):
         """ Read a byte from the tape. """
+        # NOTE: skip_start is ignored
         byte = 0
         for i in xrange(8):
             bit = self.read_bit.next()
@@ -195,8 +229,8 @@ class TapeReader(object):
             # sync bit 0 has been read, check sync byte 0x16
             # at least 64*8 bits
             if b != None and counter >= 512:
-                sync = self.read_byte()
-                if sync == 0x16:
+                sync = self.read_byte(skip_start=True)
+                if sync == self.sync_byte:
                     return start_frame
 
     def read_block(self):
@@ -308,9 +342,45 @@ class TapeReader(object):
         self.close()
 
 
-
 class WAVReader(TapeReader):
     """ WAV-file cassette image reader. """
+
+    def __init__(self, filename):
+        """ Initialise WAV-file for reading. """
+        TapeReader.__init__(self)
+        self.wav_pos = 0
+        self.buf_len = 1024
+        self.wav = wave.open(filename, 'rb')
+        self.nchannels =  self.wav.getnchannels()
+        self.sampwidth = self.wav.getsampwidth()
+        self.framerate = self.wav.getframerate()
+        nframes = self.wav.getnframes()
+        # convert 8-bit and 16-bit values to ints
+        int_max = 1 << (self.sampwidth*8)
+        if self.sampwidth == 1:
+            self.sub_threshold = 0
+            self.subtractor = 128*self.nchannels
+        else:
+            self.sub_threshold = int_max*self.nchannels/2
+            self.subtractor =  int_max*self.nchannels
+        # volume above/below zero that is interpreted as zero
+        self.zero_threshold = int_max*self.nchannels/256 # 128 #64
+        if self.sampwidth > 3:
+            raise UnsupportedFormat()
+        self.conv_format = '<' + {1:'B', 2:'h'}[self.sampwidth]*self.nchannels*self.buf_len
+        # 1000 us for 1, 500 us for 0; threshold for half-pulse (500 us, 250 us)
+        self.length_cut = 375*self.framerate/1000000
+        self.length_max = 2*self.length_cut
+        self.length_min = self.length_cut / 2
+        # 2048 halves = 1024 pulses = 512 1-bits = 64 bytes of leader
+        self.min_leader_halves = 2048
+        # initialise generators
+        #self.lowpass = butterworth(self.framerate, 3000)
+        self.lowpass = butterband4(self.framerate, 500, 3000)
+        #self.lowpass = butterband_sox(self.framerate, 1500, 1000)
+        self.lowpass.send(None)
+        self.read_half = self.gen_read_halfpulse()
+        self.read_bit = self.gen_read_bit()
 
     def message(self, msg):
         """ Output a message. """
@@ -368,40 +438,6 @@ class WAVReader(TapeReader):
                 yield 1
             else:
                 yield 0
-
-    def __init__(self, filename):
-        """ Initialise WAV-file for reading. """
-        self.wav_pos = 0
-        self.buf_len = 1024
-        self.wav = wave.open(filename, 'rb')
-        self.nchannels =  self.wav.getnchannels()
-        self.sampwidth = self.wav.getsampwidth()
-        self.framerate = self.wav.getframerate()
-        nframes = self.wav.getnframes()
-        # convert 8-bit and 16-bit values to ints
-        int_max = 1 << (self.sampwidth*8)
-        if self.sampwidth == 1:
-            self.sub_threshold = 0
-            self.subtractor = 128*self.nchannels
-        else:
-            self.sub_threshold = int_max*self.nchannels/2
-            self.subtractor =  int_max*self.nchannels
-        # volume above/below zero that is interpreted as zero
-        self.zero_threshold = int_max*self.nchannels/256 # 128 #64
-        if self.sampwidth > 3:
-            raise UnsupportedFormat()
-        self.conv_format = '<' + {1:'B', 2:'h'}[self.sampwidth]*self.nchannels*self.buf_len
-        # 1000 us for 1, 500 us for 0; threshold for half-pulse (500 us, 250 us)
-        self.length_cut = 375*self.framerate/1000000
-        self.length_max = 2*self.length_cut
-        self.length_min = self.length_cut / 2
-        # initialise generators
-        #self.lowpass = butterworth(self.framerate, 3000)
-        self.lowpass = butterband4(self.framerate, 500, 3000)
-        #self.lowpass = butterband_sox(self.framerate, 1500, 1000)
-        self.lowpass.send(None)
-        self.read_half = self.gen_read_halfpulse()
-        self.read_bit = self.gen_read_bit()
         
     def close(self):
         """ Close WAV-file. """
@@ -414,6 +450,8 @@ class BasicodeReader(WAVReader):
     def __init__(self, filename):
         """ Initialise BASICODE WAV-file reader. """
         WAVReader.__init__(self, filename)
+        # basicode uses STX as sync byte
+        self.sync_byte = 0x02
         # fix frequencies to Basicode standards, 1200 / 2400 Hz
         # one = two pulses of 417 us; zero = one pulse of 833 us
         # value is cutoff for full pulse
@@ -424,8 +462,6 @@ class BasicodeReader(WAVReader):
         self.lowpass = butterband4(self.framerate, 1350, 3450)
         #self.lowpass = butterband_sox(self.framerate, 2100, 1500)
         self.lowpass.send(None)
-        # 2048 halves = 1024 pulses = 512 1-bits = 64 bytes of leader
-        self.min_leader_halves = 2048
         # byte error correcting
         self.dropbit = None
         self.last_error_bit = None
@@ -484,37 +520,6 @@ class BasicodeReader(WAVReader):
             byte ^= 0x80
             return byte
 
-    def read_leader(self):
-        """ Read the leader / pilot wave. """
-        while True:
-            while self.read_bit.next() != 1:
-                pass
-            counter = 0
-            start_frame = self.wav_pos
-            pulse = (0,0)
-            while True:
-                last = pulse
-                half = self.read_half.next()
-                if half > self.length_cut/2:
-                    if counter > self.min_leader_halves:
-                        #  zero bit; try to sync
-                        half = self.read_half.next()
-                    break
-                counter += 1
-            # sync bit 0 has been read, check sync byte
-            if counter >= self.min_leader_halves:
-                # read rest of first byte
-                try:
-                    self.last_error_bit = None
-                    self.dropbit = None
-                    sync = self.read_byte(skip_start=True)
-                    if sync == 0x02:
-                        return start_frame
-                    else:
-                        print "incorrect sync byte %02x" % sync
-                except (PulseError, FramingError):
-                    print "error in sync byte", counter
-
     def read_file(self):
         """ Read a file from tape. """
         self.message("Found File %d" % self.file_num)
@@ -551,6 +556,39 @@ class BasicodeReader(WAVReader):
         data += '\x1a'
         return "FILE%04x.ASC" % self.file_num, data
 
+    def read_leader(self):
+        """ Read the leader / pilot wave. """
+        while True:
+            while self.read_bit.next() != 1:
+                pass
+            counter = 0
+            start_frame = self.wav_pos
+            pulse = (0,0)
+            while True:
+                last = pulse
+                half = self.read_half.next()
+                if half > self.length_cut/2:
+                    if counter > self.min_leader_halves:
+                        #  zero bit; try to sync
+                        half = self.read_half.next()
+                    break
+                counter += 1
+            if counter > 100:
+                print counter
+            # sync bit 0 has been read, check sync byte
+            if counter >= self.min_leader_halves:
+                # read rest of first byte
+                try:
+                    self.last_error_bit = None
+                    self.dropbit = None
+                    sync = self.read_byte(skip_start=True)
+                    if sync == self.sync_byte:
+                        return start_frame
+                    else:
+                        self.message("Incorrect sync byte: %02x" % sync)
+                except (PulseError, FramingError) as e:
+                    self.message("Error in sync byte: %s" % str(e))
+
 
 class CASReader(TapeReader):
     """ CAS-file cassette image reader. """
@@ -578,6 +616,7 @@ class CASReader(TapeReader):
 
     def __init__(self, filename):
         """ Initialise CAS-file for reading. """
+        TapeReader.__init__(self)
         self.read_bit = self.gen_read_bit()
         self.cas = open(filename, 'rb')
 
@@ -585,35 +624,6 @@ class CASReader(TapeReader):
         """ Close CAS-file. """
         self.cas.close()
 
-
-
-#######################################
-
-def parse_header(record):
-    """ Extract header information. """
-    if not record or record[0] != '\xa5':
-        return None
-    name = record[1:9]
-    token = ord(record[9])
-    nbytes = ord(record[10]) + ord(record[11]) * 0x100
-    seg = ord(record[12]) + ord(record[13]) * 0x100
-    offs = ord(record[14]) + ord(record[15]) * 0x100
-    return name, token, nbytes, seg, offs
-
-def header(name, token, nbytes, seg, offs):
-    """ Encode header information. """
-    data = '\xa5'
-    data += name[:8] + ' ' * (8-len(name))
-    data += chr(token)
-    # length
-    data += ''.join(map(chr, word_le(nbytes)))
-    # load address segment
-    data += ''.join(map(chr, word_le(seg)))
-    # load address offset
-    data += ''.join(map(chr, word_le(offs)))
-    # seems to end at 0x00, 0x01, then filled out with last char
-    data += '\x00\x01'
-    return data    
 
 #######################################
 
