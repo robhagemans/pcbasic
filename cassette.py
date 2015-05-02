@@ -335,12 +335,11 @@ class WAVReader(TapeReader):
 
     def gen_read_halfpulse(self):
         """ Generator to read a half-pulse and yield its length. """
-        pos_in_frame = 0
-        start_pos = 0
         length = 0
         frame = 1
-        frame_buf = []
         prezero = 1
+        pos_in_frame = 0
+        frame_buf = []
         while True:
             try:
                 sample = frame_buf[pos_in_frame]
@@ -358,19 +357,17 @@ class WAVReader(TapeReader):
                 yield length
                 length = 0
 
-    def read_pulse(self):
-        """ Read a pulse and return length of down and up halves. """
-        return self.read_half.next(), self.read_half.next()
-
     def gen_read_bit(self):
         """ Generator to yield the next bit. """
         while True:
-            pulse = self.read_pulse()
-            bit = 1 if pulse[0] >= self.length_cut else 0
-            if (pulse[0] > 2*self.length_cut or pulse[1] > 2*self.length_cut or
-                    pulse[0] < self.length_cut/2 or pulse[1] < self.length_cut/2):
-                bit = None
-            yield bit
+            length_up, length_dn = self.read_half.next(), self.read_half.next()
+            if (length_up > self.length_max or length_dn > self.length_max or
+                    length_up < self.length_min or length_dn < self.length_min):
+                yield None
+            elif length_up >= self.length_cut:
+                yield 1
+            else:
+                yield 0
 
     def __init__(self, filename):
         """ Initialise WAV-file for reading. """
@@ -396,6 +393,8 @@ class WAVReader(TapeReader):
         self.conv_format = '<' + {1:'B', 2:'h'}[self.sampwidth]*self.nchannels*self.buf_len
         # 1000 us for 1, 500 us for 0; threshold for half-pulse (500 us, 250 us)
         self.length_cut = 375*self.framerate/1000000
+        self.length_max = 2*self.length_cut
+        self.length_min = self.length_cut / 2
         # initialise generators
         #self.lowpass = butterworth(self.framerate, 3000)
         self.lowpass = butterband4(self.framerate, 500, 3000)
@@ -419,6 +418,8 @@ class BasicodeReader(WAVReader):
         # one = two pulses of 417 us; zero = one pulse of 833 us
         # value is cutoff for full pulse
         self.length_cut = 626*self.framerate/1000000
+        self.length_max = 2*self.length_cut
+        self.length_min = self.length_cut / 2
         # initialise generators
         self.lowpass = butterband4(self.framerate, 1350, 3450)
         #self.lowpass = butterband_sox(self.framerate, 2100, 1500)
@@ -432,10 +433,10 @@ class BasicodeReader(WAVReader):
     def gen_read_bit(self):
         """ Generator to yield the next bit. """
         while True:
-            pulse0 = self.read_pulse()
+            pulse0 = (self.read_half.next(), self.read_half.next())
             # one = two pulses of 417 us; zero = one pulse of 833 us
             if sum(pulse0) < self.length_cut:
-                pulse1 = self.read_pulse()
+                pulse1 = (self.read_half.next(), self.read_half.next())
                 if sum(pulse1) < self.length_cut:
                     yield 1
                 else:
