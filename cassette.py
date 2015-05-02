@@ -336,31 +336,24 @@ class WAVReader(TapeReader):
     def gen_read_halfpulse(self):
         """ Generator to read a half-pulse and yield its length. """
         pos_in_frame = 0
+        start_pos = 0
         length = 0
-        # frame = False
         frame = 1
         frame_buf = []
-        #
         prezero = 1
-        #
         while True:
             try:
-                last = frame
                 sample = frame_buf[pos_in_frame]
-                if sample > self.zero_threshold:
-                    frame = 1
-                elif sample < -self.zero_threshold:
-                    frame = -1
-                else:
-                    if frame != 0:
-                        prezero = frame
-                    frame = 0
                 pos_in_frame += 1
-                length += 1
             except IndexError:
                 frame_buf = self.read_buffer()
                 pos_in_frame = 0
+                continue
+            length += 1
+            last, frame = frame, (sample > self.zero_threshold) + (sample >= -self.zero_threshold) - 1
             if last != frame and (last != 0 or frame == prezero):
+                if frame == 0 and last != 0:
+                    prezero = last
                 self.wav_pos += length
                 yield length
                 length = 0
