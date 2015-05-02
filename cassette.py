@@ -33,15 +33,15 @@ class UnknownRecord(CassetteException):
 class CRCError(CassetteException):
     """ CRC check failed. """
 
-    def __init__(self, crc_read_dn, crc_dn, crc_read_up, crc_up):
-        self.read_dn, self.dn, self.read_up, self.up = crc_read_dn, crc_dn, crc_read_up, crc_up
+    def __init__(self, crc_calc, crc_given):
+        self.crc_calc, self.crc_given = crc_calc, crc_given
 
     def __str__(self):
-        return self.__doc__.strip() + ' Prescribed: %04x Realised: %04x' % (self.read_dn, self.dn)
+        return self.__doc__.strip() + ' Prescribed: %04x Realised: %04x' % (self.crc_given, self.crc_calc)
 
 
 class PulseError(CassetteException):
-    """ Incorrect pulse length. """
+    """ Pulse length error. """
     pass
 
 
@@ -166,58 +166,51 @@ class TapeReader(object):
 
     def read_byte(self):
         """ Read a byte from the tape. """
-        byte_dn, byte_up = 0, 0
+        byte = 0
         for i in xrange(8):
-            bit_dn, bit_up = self.read_bit.next()
-            if bit_dn == None or bit_up == None:
-                return None, None
-            byte_dn += bit_dn * 128 >> i
-            byte_up += bit_up * 128 >> i
-        return byte_dn, byte_up
+            bit = self.read_bit.next()
+            if bit == None:
+                return None
+            byte += bit * 128 >> i
+        return byte
 
     def read_leader(self):
         """ Read the leader / pilot wave. """
         while True:
-            while self.read_bit.next()[0] != 1:
+            while self.read_bit.next() != 1:
                 pass
             counter = 0
             start_frame = self.wav_pos
             while True:
-                b = self.read_bit.next()[0]
+                b = self.read_bit.next()
                 if b != 1:
                     break
                 counter += 1
             # sync bit 0 has been read, check sync byte 0x16
             # at least 64*8 bits
             if b != None and counter >= 512:
-                sync = self.read_byte()[0]
+                sync = self.read_byte()
                 if sync == 0x16:
                     return start_frame
 
     def read_block(self):
         """ Read a block of data from tape. """
         count = 0
-        data_dn, data_up = '', ''
+        data = ''
         while True:
             if count == 256:
-                bytes0 = self.read_byte()
-                bytes1 = self.read_byte()
-                crc_read_dn = bytes0[0] * 0x100 + bytes1[0]
-                crc_read_up = bytes0[1] * 0x100 + bytes1[1]
-                crc_dn = crc(data_dn)
-                crc_up = crc(data_up)
+                bytes0, bytes1 = self.read_byte(), self.read_byte()
+                crc_given = bytes0 * 0x100 + bytes1
+                crc_calc = crc(data)
                 # if crc for either polarity matches, return that
-                if crc_dn == crc_read_dn:
-                    return data_dn
-                if crc_up == crc_read_up:
-                    return data_up
-                raise CRCError(crc_read_dn, crc_dn, crc_read_up, crc_up)
+                if crc_given == crc_calc:
+                    return data
+                raise CRCError(crc_given, crc_calc)
             else:
-                byte_dn, byte_up = self.read_byte()
-                if byte_dn == None or byte_up == None:
+                byte = self.read_byte()
+                if byte == None:
                     raise PulseError()
-                data_dn += chr(byte_dn)
-                data_up += chr(byte_up)
+                data += chr(byte)
                 count += 1
 
     def read_record(self, reclen):
@@ -393,14 +386,11 @@ class WAVReader(TapeReader):
         """ Generator to yield the next bit. """
         while True:
             pulse = self.read_pulse()
-            dn = 1 if pulse[0] >= self.length_cut else 0
-            up = 1 if pulse[1] >= self.length_cut else 0
-            if pulse[0] > 2*self.length_cut or pulse[1] > 2*self.length_cut:
-                dn, up = None, None
-            if pulse[0] < self.length_cut/2 or pulse[1] < self.length_cut/2:
-                dn, up = None, None
-            yield dn, up
-
+            bit = 1 if pulse[0] >= self.length_cut else 0
+            if (pulse[0] > 2*self.length_cut or pulse[1] > 2*self.length_cut or
+                    pulse[0] < self.length_cut/2 or pulse[1] < self.length_cut/2):
+                bit = None
+            yield bit
 
     def __init__(self, filename):
         """ Initialise WAV-file for reading. """
@@ -464,26 +454,24 @@ class BasicodeReader(WAVReader):
         """ Generator to yield the next bit. """
         while True:
             pulse0 = self.read_pulse()
-            pulse1 = None
             # one = two pulses of 417 us; zero = one pulse of 833 us
             if sum(pulse0) < self.length_cut:
                 pulse1 = self.read_pulse()
                 if sum(pulse1) < self.length_cut:
-                    dn = 1
+                    yield 1
                 else:
-                    dn = None
+                    yield None
             else:
-                dn = 0
-            yield dn, dn, pulse0, pulse1
+                yield 0
 
     def read_byte(self, skip_start=False):
         """ Read a byte from the tape. """
         if skip_start:
             start = 0
         else:
-            start = self.read_bit.next()[0]
+            start = self.read_bit.next()
         byte = 0
-        bits = [ self.read_bit.next()[0] for _ in xrange(8) ]
+        bits = [ self.read_bit.next() for _ in xrange(8) ]
         if self.dropbit == 1 and self.last_error_bit == 0 and bits[-2:] == [1, 1]:
             # error-correcting: have we gone one too far?
             stop0, stop1 = bits[-2:]
@@ -491,18 +479,18 @@ class BasicodeReader(WAVReader):
             start = self.last_error_bit
         elif self.dropbit == 0 and bits[-1] == 1:
             # error-correcting: keep dropbit
-            stop0, stop1 = bits[-1], self.read_bit.next()[0]
+            stop0, stop1 = bits[-1], self.read_bit.next()
             bits = [start] + bits[:-1]
             start = self.dropbit
         else:
             # normal case, no error last time
             # or can't find a working correction
-            stop0 = self.read_bit.next()[0]
-            stop1 = self.read_bit.next()[0]
+            stop0 = self.read_bit.next()
+            stop1 = self.read_bit.next()
         if start == 1 or stop0 == 0 or stop1 == 0:
             self.last_error_bit = stop1
             # incorrect start/stop bit, try to recover by shifting
-            self.dropbit = self.read_bit.next()[0]
+            self.dropbit = self.read_bit.next()
             raise FramingError([start] + bits + [stop0, stop1])
         else:
             # start/stopbits correct or unreadable
@@ -514,12 +502,12 @@ class BasicodeReader(WAVReader):
             byte = sum(bit << i for i, bit in enumerate(bits))
             # flip bit 7
             byte ^= 0x80
-            return byte, byte
+            return byte
 
     def read_leader(self):
         """ Read the leader / pilot wave. """
         while True:
-            while self.read_bit.next()[0] != 1:
+            while self.read_bit.next() != 1:
                 pass
             counter = 0
             start_frame = self.wav_pos
@@ -539,15 +527,15 @@ class BasicodeReader(WAVReader):
                 try:
                     self.last_error_bit = None
                     self.dropbit = None
-                    sync = self.read_byte(skip_start=True)[0]
-                    print "sync", sync, counter
+                    sync = self.read_byte(skip_start=True)
                     if sync == 0x02:
                         return start_frame
+                    else:
+                        print "incorrect sync byte %02x" % sync
                 except (PulseError, FramingError):
                     print "error in sync byte", counter
 
     def read_file(self):
-        print "reading leader"
         """ Read a file from tape. """
         loc = self.read_leader()
         print "[%d:%02d:%02d]" % self.hms(loc),
@@ -557,7 +545,7 @@ class BasicodeReader(WAVReader):
         checksum = 0x02
         while True:
             try:
-                byte = self.read_byte()[0]
+                byte = self.read_byte()
             except (PulseError, FramingError) as e:
                 print "[%d:%02d:%02d]" % self.hms(self.wav_pos), 
                 print "%d" % self.wav_pos,
@@ -571,7 +559,7 @@ class BasicodeReader(WAVReader):
             checksum ^= byte
             if byte == 0x03:
                 try:
-                    checksum_byte = self.read_byte()[0]
+                    checksum_byte = self.read_byte()
                 except (PulseError, FrameError, EOF) as e:
                     print e
                     print "Could not read checksum byte"
@@ -612,8 +600,10 @@ class CASReader(TapeReader):
                 if not cas_byte_read:
                     raise EOF
                 cas_mask = 0x80
-            bit = 0 if (ord(cas_byte_read) & cas_mask == 0) else 1
-            yield bit, bit
+            if (ord(cas_byte_read) & cas_mask == 0):
+                yield 0
+            else:
+                yield 1
 
 
     def __init__(self, filename):
