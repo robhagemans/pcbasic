@@ -1,12 +1,17 @@
 import wave
 import math
 import struct
+import logging
 
 token_to_type = {0: 'D', 1:'M', 0xa0:'P', 0x20:'P', 0x40:'A', 0x80:'B'}
 type_to_token = dict((reversed(item) for item in token_to_type.items()))
 type_to_magic = {'D': '', 'A':'', 'M':'\xfd', 'P':'\xfe', 'B':'\xff'}
 magic_to_type = {'\xfd': 'M', '\xfe': 'P', '\xff': 'B'}
 
+#############################
+
+# console to output Found and Skipped messages
+msgstream = None
 
 #############################
 
@@ -268,7 +273,7 @@ class TapeReader(object):
             try:
                 data = self.read_block()
             except (PulseError, FramingError, CRCError) as e:
-                self.message("%d %s" % (self.wav_pos, str(e)))
+                logging.warning(self.stamp() + "%d %s" % (self.wav_pos, str(e)))
             record += data
             byte_count += len(data)
             if (reclen == None):
@@ -288,16 +293,18 @@ class TapeReader(object):
             header = parse_header(record)
             if not header:
                 # unknown record type
-                self.message("Skipped record of unknown type.")
+                logging.debug(self.stamp() + "Skipped record of unknown type.")
             else:
                 file_trunk, file_token, file_bytes, seg, offs = header
                 file_ext = token_to_type[file_token]
                 if ((not trunk or file_trunk.rstrip() == trunk.rstrip()) and
                         file_ext in allowed_types):
-                    self.message("%s Found." % (file_trunk + '.' + file_ext)),
+                    msgstream.write_line("%s Found." % (file_trunk + '.' + file_ext))
+                    logging.debug(self.stamp() + "%s Found." % (file_trunk + '.' + file_ext))
+                    return file_trunk, file_ext, file_bytes, seg, offs
                 else:
-                    self.message("%s Skipped." % (file_trunk + '.' + file_ext)),
-                return file_trunk, file_ext, file_bytes, seg, offs
+                    msgstream.write_line("%s Skipped." % (file_trunk + '.' + file_ext))
+                    logging.debug(self.stamp() + "%s Skipped." % (file_trunk + '.' + file_ext))
 
     def read_file(self, file_type, file_bytes=0):
         """ Read a file from tape. """
@@ -371,10 +378,9 @@ class WAVReader(TapeReader):
         self.read_half = self.gen_read_halfpulse()
         self.read_bit = self.gen_read_bit()
 
-    def message(self, msg):
-        """ Output a message. """
-        print "[%d:%02d:%02d]" % hms(self.wav_pos/self.framerate),
-        print msg
+    def stamp(self):
+        """ Time stamp. """
+        return "[%d:%02d:%02d] " % hms(self.wav_pos/self.framerate)
 
     def read_buffer(self):
         """ Fill buffer with frames and pre-process. """
@@ -512,7 +518,8 @@ class BasicodeReader(WAVReader):
     def search_file(self, allowed_types=('A', 'D')):
         """ Play until a file record is found. """
         self.read_leader()
-        self.message("BASICODE.A Found.")
+        msgstream.write_line("BASICODE.A Found." % (file_trunk + '.' + file_ext))
+        logging.debug(self.stamp() + "BASICODE.A Found.")
         return 'BASICODE', 'A', 0, 0, 0
 
     def read_file(self, file_type='D', file_bytes=0):
@@ -526,11 +533,11 @@ class BasicodeReader(WAVReader):
             try:
                 byte = self.read_byte()
             except (PulseError, FramingError) as e:
-                self.message("%d %s" % (self.wav_pos, str(e)))
+                logging.warning(self.stamp() + "%d %s" % (self.wav_pos, str(e)))
                 # insert a zero byte as a marker for the error
                 byte = 0
             except EOF as e:
-                self.message("%d %s" % (self.wav_pos, str(e)))
+                logging.warning(self.stamp() + "%d %s" % (self.wav_pos, str(e)))
                 break
             checksum ^= byte
             if byte == 0x03:
@@ -543,12 +550,12 @@ class BasicodeReader(WAVReader):
         try:
             checksum_byte = self.read_byte()
         except (PulseError, FrameError, EOF) as e:
-            self.message("Could not read checksum: %s " % str(e))
+            logging.warning(self.stamp() + "Could not read checksum: %s " % str(e))
         # checksum shld be 0 for even # bytes, 128 for odd
         if checksum_byte == None or checksum^checksum_byte not in (0,128):
-            self.message("Checksum: [FAIL]  Required: %02x  Realised: %02x" % (checksum_byte, checksum))
+            logging.warning(self.stamp() + "Checksum: [FAIL]  Required: %02x  Realised: %02x" % (checksum_byte, checksum))
         else:
-            self.message("Checksum: [ ok ] ")
+            logging.warning(self.stamp() + "Checksum: [ ok ] ")
         return data
 
     def read_leader(self):
@@ -577,9 +584,9 @@ class BasicodeReader(WAVReader):
                     if sync == self.sync_byte:
                         return
                     else:
-                        self.message("Incorrect sync byte: %02x" % sync)
+                        logging.warning(self.stamp() + "Incorrect sync byte: %02x" % sync)
                 except (PulseError, FramingError) as e:
-                    self.message("Error in sync byte: %s" % str(e))
+                    logging.warning(self.stamp() + "Error in sync byte: %s" % str(e))
 
 
 class CASReader(TapeReader):
@@ -591,9 +598,9 @@ class CASReader(TapeReader):
         self.read_bit = self.gen_read_bit()
         self.cas = open(filename, 'rb')
 
-    def message(self, msg):
-        """ Output a message. """
-        print msg
+    def stamp(self):
+        """ Time stamp. """
+        return ''
 
     def gen_read_bit(self):
         """ Generator to yield the next bit. """
@@ -763,7 +770,12 @@ class CASWriter(TapeWriter):
     def __init__(self, filename):
         """ Initialise CAS tape image writer. """
         TapeWriter.__init__(self)
+        self.create(filename)
+
+    def create(self, filename):
+        """ Create or overwrite CAS tape image. """
         self.cas = open(filename, 'wb')
+        self.write_intro()
 
     def write_pause(self, milliseconds):
         """ Write pause to tape image (dummy). """
