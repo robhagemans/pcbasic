@@ -2,9 +2,10 @@ import wave
 import math
 import struct
 
-token_to_ext = {0: 'D', 1:'M', 0xa0:'P', 0x20:'P', 0x40:'A', 0x80:'B'}
-token_to_magic = {0: '', 1:'\xfd', 0xa0:'\xfe', 0x20:'\xfe', 0x40:'', 0x80:'\xff'}
-magic_to_token = {'\xfd': 1, '\xfe': 0xa0, '\xff': 0x80}
+token_to_type = {0: 'D', 1:'M', 0xa0:'P', 0x20:'P', 0x40:'A', 0x80:'B'}
+type_to_token = dict((reversed(item) for item in token_to_type.items()))
+type_to_magic = {'D': '', 'A':'', 'M':'\xfd', 'P':'\xfe', 'B':'\xff'}
+magic_to_type = {'\xfd': 'M', '\xfe': 'P', '\xff': 'B'}
 
 
 #############################
@@ -22,7 +23,11 @@ class EOF(CassetteException):
     pass
 
 class UnsupportedFormat(CassetteException):
-    """ Format not supported. """
+    """ Cassette format not supported. """
+    pass
+
+class UnsupportedType(CassetteException):
+    """ File type not supported. """
     pass
 
 class UnknownRecord(CassetteException):
@@ -174,6 +179,7 @@ def parse_header(record):
     name = record[1:9]
     token = ord(record[9])
     nbytes = ord(record[10]) + ord(record[11]) * 0x100
+    # for programs this is start address: cf to offset of next line in prgram
     seg = ord(record[12]) + ord(record[13]) * 0x100
     offs = ord(record[14]) + ord(record[15]) * 0x100
     return name, token, nbytes, seg, offs
@@ -238,25 +244,25 @@ class TapeReader(object):
         data = ''
         while True:
             if count == 256:
-                bytes0, bytes1 = self.read_byte(), self.read_byte()
-                crc_given = bytes0 * 0x100 + bytes1
-                crc_calc = crc(data)
-                # if crc for either polarity matches, return that
-                if crc_given == crc_calc:
-                    return data
-                raise CRCError(crc_given, crc_calc)
-            else:
-                byte = self.read_byte()
-                if byte == None:
-                    raise PulseError()
-                data += chr(byte)
-                count += 1
+                break
+            byte = self.read_byte()
+            if byte == None:
+                raise PulseError()
+            data += chr(byte)
+            count += 1
+        bytes0, bytes1 = self.read_byte(), self.read_byte()
+        crc_given = bytes0 * 0x100 + bytes1
+        crc_calc = crc(data)
+        # if crc for either polarity matches, return that
+        if crc_given == crc_calc:
+            return data
+        raise CRCError(crc_given, crc_calc)
 
     def read_record(self, reclen):
         """ Read a record from tape. """
         self.read_leader()
         record = ''
-        self.block_num = 0
+        block_num = 0
         byte_count = 0
         while byte_count < reclen or reclen == None:
             try:
@@ -265,72 +271,56 @@ class TapeReader(object):
                 self.message("%d %s" % (self.wav_pos, str(e)))
             record += data
             byte_count += len(data)
-            if (reclen == None and
-                    (data[:4] == '\xff\xff\xff\xff' or
-                    (self.block_num == 0 and data[0] == '\xa5'))):
+            if (reclen == None):
+                # and
+                #    (data[:3] == '\xff\xff\xff' or
+                #    (block_num == 0 and data[0] == '\xa5'))):
                 break
-            self.block_num += 1
+            block_num += 1
         if reclen != None:
             return record[:reclen]
         return record
 
-    # TODO: optional name, as in LOAD"CAS1:" vs LOAD"CAS1:myfile"
-    def read_file(self):
+    def search_file(self, trunk=None, allowed_types=('D', 'A', 'M', 'B', 'P')):
+        """ Play until a file record is found. """
+        while True:
+            record = self.read_record(None)
+            header = parse_header(record)
+            if not header:
+                # unknown record type
+                self.message("Skipped record of unknown type.")
+            else:
+                file_trunk, file_token, file_bytes, seg, offs = header
+                file_ext = token_to_type[file_token]
+                if ((not trunk or file_trunk.rstrip() == trunk.rstrip()) and
+                        file_ext in allowed_types):
+                    self.message("%s Found." % (file_trunk + '.' + file_ext)),
+                else:
+                    self.message("%s Skipped." % (file_trunk + '.' + file_ext)),
+                return file_trunk, file_ext, file_bytes, seg, offs
+
+    def read_file(self, file_type, file_bytes=0):
         """ Read a file from tape. """
-        self.record_num = 0
-        record = self.read_record(None)
-        header = parse_header(record)
-        if not header:
-            # unknown record type
-            self.message("File %d: Record of unknown type." % self.file_num)
-            return 'DATA.X%02x' % self.file_num, record
-        else:
-            file_trunk, file_token, file_bytes, seg, offs = header
-            file_ext = token_to_ext[file_token]
-            self.message("File %d: %s Found." % (self.file_num, file_trunk + '.' + file_ext)),
-            # for programs this is start address: cf to offset of next line in prgram
-        file_name = file_trunk.rstrip() + '.' + file_ext + '%02x' % self.file_num
-        data = token_to_magic[file_token]
-        if file_token == 0x01:
-            # bsave format: paste in 6-byte header for disk files
-            data += ''.join(map(chr, word_le(seg)))
-            data += ''.join(map(chr, word_le(offs)))
-            data += ''.join(map(chr, word_le(file_bytes)))
-        if file_token in (1, 0x80, 0x20, 0xa0):
-            self.record_num += 1
+        if file_type not in ('D', 'A', 'M', 'B', 'P'):
+            raise UnsupportedType()
+        data = ''
+        if file_type in ('M', 'B', 'P'):
             # bsave, tokenised and protected come in one multi-block record
             data += self.read_record(file_bytes)
         else:
             # ascii and data come as a sequence of one-block records
             # 256 bytes less 1 length byte. CRC trailer comes after 256-byte block
             while True:
-                self.record_num += 1
                 record = self.read_record(256)
                 num_bytes = ord(record[0])
                 record = record[1:]
                 if num_bytes != 0:
                     record = record[:num_bytes-1]
-                data += record
+                # text/data files are stored on tape with CR line endings
+                data += record.replace('\r', '\r\n')
                 if num_bytes != 0:
                     break
-        # write EOF char
-        data += '\x1a'
-        self.message("End of File %d" % self.file_num)
-        return file_name, data
-
-    #D
-    def read_tape(self):
-        """ Read all files from tape. """
-        # start parsing
-        self.file_num = 0
-        while True:
-            try:
-                file_name, data = self.read_file()
-                with open(file_name, 'wb') as f:
-                    f.write(str(bytearray(data)))
-                self.file_num += 1
-            except EOF:
-                break
+        return data
 
     def __enter__(self):
         """ Context guard for 'with'. """
@@ -519,10 +509,16 @@ class BasicodeReader(WAVReader):
             byte ^= 0x80
             return byte
 
-    def read_file(self):
-        """ Read a file from tape. """
+    def search_file(self, allowed_types=('A', 'D')):
+        """ Play until a file record is found. """
         self.read_leader()
-        self.message("Found File %d" % self.file_num)
+        self.message("BASICODE.A Found.")
+        return 'BASICODE', 'A', 0, 0, 0
+
+    def read_file(self, file_type='D', file_bytes=0):
+        """ Read a file from tape. """
+        if file_type not in ('D', 'A'):
+            raise UnsupportedType()
         data = ''
         # xor sum includes STX byte
         checksum = 0x02
@@ -538,23 +534,22 @@ class BasicodeReader(WAVReader):
                 break
             checksum ^= byte
             if byte == 0x03:
-                try:
-                    checksum_byte = self.read_byte()
-                except (PulseError, FrameError, EOF) as e:
-                    self.message("Could not read checksum: %s " % str(e))
-                # checksum shld be 0 for even # bytes, 128 for odd
-                if checksum_byte == None or checksum^checksum_byte not in (0,128):
-                    self.message("Checksum: [FAIL]  Required: %02x  Realised: %02x" % (checksum_byte, checksum))
-                else:
-                    self.message("Checksum: [ ok ] ")
                 break
             data += chr(byte)
             # CR -> CRLF
             if byte == 0x0d:
                 data += '\n'
-        # write EOF char
-        data += '\x1a'
-        return "FILE%04x.ASC" % self.file_num, data
+        # read one-byte checksum and report errors
+        try:
+            checksum_byte = self.read_byte()
+        except (PulseError, FrameError, EOF) as e:
+            self.message("Could not read checksum: %s " % str(e))
+        # checksum shld be 0 for even # bytes, 128 for odd
+        if checksum_byte == None or checksum^checksum_byte not in (0,128):
+            self.message("Checksum: [FAIL]  Required: %02x  Realised: %02x" % (checksum_byte, checksum))
+        else:
+            self.message("Checksum: [ ok ] ")
+        return data
 
     def read_leader(self):
         """ Read the leader / pilot wave. """
@@ -590,6 +585,12 @@ class BasicodeReader(WAVReader):
 class CASReader(TapeReader):
     """ CAS-file cassette image reader. """
 
+    def __init__(self, filename):
+        """ Initialise CAS-file for reading. """
+        TapeReader.__init__(self)
+        self.read_bit = self.gen_read_bit()
+        self.cas = open(filename, 'rb')
+
     def message(self, msg):
         """ Output a message. """
         print msg
@@ -610,13 +611,6 @@ class CASReader(TapeReader):
             else:
                 yield 1
 
-
-    def __init__(self, filename):
-        """ Initialise CAS-file for reading. """
-        TapeReader.__init__(self)
-        self.read_bit = self.gen_read_bit()
-        self.cas = open(filename, 'rb')
-
     def close(self):
         """ Close CAS-file. """
         self.cas.close()
@@ -627,6 +621,12 @@ class CASReader(TapeReader):
 class TapeWriter(object):
     """ Cassette recording interface. """
 
+    def __init__(self):
+        """ Initialise tape image. """
+        self.write_bit = self.gen_write_bit()
+        self.write_bit.send(None)
+        self.last_seg, self.last_offs, self.last_length = 0, 0, 0
+
     def write_byte(self, byte):
         """ Write a byte to WAV file. """
         bits = [ 1 if (byte & ( 128 >> i) != 0) else 0 for i in range(8) ]
@@ -634,9 +634,13 @@ class TapeWriter(object):
             self.write_bit.send(bit)
 
     def write_intro(self):
-        """ write some noise to give the reader something to get started. """
+        """ Write some noise to give the reader something to get started. """
+        # We just need some bits here
+        # however on a new CAS file this works like a magic-sequence...
         for b in bytearray('CAS1:'):
             self.write_byte(b)
+        # Write seven bits, so that we are byte-aligned after the sync bit
+        # (after the 256-byte pilot). Makes CAS-files easier to read in hex.
         for _ in range(7):
             self.write_bit.send(0)
         self.write_pause(100)
@@ -666,6 +670,8 @@ class TapeWriter(object):
         while len(data) > 0:
             self.write_block(data[:256])
             data = data[256:]
+        # closing sequence is 30 1-bits followed by a zero bit (based on PCE output).
+        # Not 32 1-bits as per http://fileformats.archiveteam.org/wiki/IBM_PC_data_cassette.
         self.write_byte(0xff)
         self.write_byte(0xff)
         self.write_byte(0xff)
@@ -674,29 +680,23 @@ class TapeWriter(object):
         # write 100 ms second pause to make clear separation between blocks
         self.write_pause(100)
 
-    def write_file(self, name, token, data):
+    def write_file(self, name, file_type, seg, offs, data):
         """ Write a file to the tape. """
-        if token == 0x01:
-            # bsave 6-byte header is cut off (magic byte has been cut off before)
-            seg = ord(data[0]) + ord(data[1])*0x100
-            offs = ord(data[2]) + ord(data[3])*0x100
-            length = ord(data[4]) + ord(data[5])*0x100
-            data = data[6:6+length]
-        elif token in (0x80, 0x20, 0xa0):
-            # TODO: calculate seg and offs from program data, if program file
-            # protected file? unprotect first 3 bytes & use values
-            seg = 0x60
-            offs = 0x81e
-            bytes = len(data)
-        else:
-            # TODO: ASCII program files: length, seg, offset are untouched, remain that of the previous file recorded!
-            seg, offs, bytes = 0, 0, 0
-            # text files have CR line endings on tape, not CR LF
+        if file_type not in ('D', 'A', 'M', 'B', 'P'):
+            raise UnsupportedType()
+        if file_type in ('A', 'D'):
+            # ASCII program files: length, seg, offset are untouched,
+            # remain that of the previous file recorded!
+            seg, offs, length = self.last_seg, self.last_offs, self.last_length
+            # text/data files have CR line endings on tape, not CR LF
             # they should also get a NUL at the end
             data = data.replace('\r\n', '\r')
             data += '\0'
-        self.write_record(header(name, token, bytes, seg, offs))
-        if token in (1, 0x80, 0x20, 0xa0):
+        else:
+            length = len(data)
+            self.last_seg, self.last_offs, self.last_length = seg, offs, length
+        self.write_record(header(name, type_to_token[file_type], length, seg, offs))
+        if file_type in ('M', 'B', 'P'):
             # bsave, tokenised and protected come in one multi-block record
             self.write_record(data)
         else:
@@ -709,33 +709,6 @@ class TapeWriter(object):
             if last > 0:
                 self.write_record(chr(last) + data[-last:])
 
-    #D
-    def write_tape(self, files):
-        """ Write a list of files to the tape. """
-        self.write_intro()
-        # write files
-        for file_name in files:
-            name = file_name.split('.')[0][:8]
-            print "Recording %s to cassette." % file_name
-            with open(file_name, 'rb') as f:
-                magic = f.read(1)
-                data = f.read()
-                # cut off EOF marker
-                if data and data[-1] == '\x1a':
-                    data = data[:-1]
-                try:
-                    token = magic_to_token[magic]
-                except KeyError:
-                    # could also be data file, need some other test (extension?)
-                    token = 0x40
-                    data = magic + data
-                self.write_file(name, token, data)
-
-    def __init__(self):
-        """ Initilaise tape image. """
-        self.write_bit = self.gen_write_bit()
-        self.write_bit.send(None)
-
     def __enter__(self):
         """ Context guard for 'with'. """
         return self
@@ -747,6 +720,23 @@ class TapeWriter(object):
 
 class WAVWriter(TapeWriter):
     """ WAV-file recording interface. """
+
+    def __init__(self, filename):
+        """ Initialise WAV tape image writer. """
+        TapeWriter.__init__(self)
+        self.create(filename)
+
+    def create(self, filename):
+        """ Create or overwrite WAV tape image. """
+        self.framerate = 22050
+        self.sampwidth = 1
+        self.halflength = [250*self.framerate/1000000, 500*self.framerate/1000000]
+        # create/overwrite file
+        self.wav = wave.open(filename, 'wb')
+        self.wav.setnchannels(1)
+        self.wav.setsampwidth(1)
+        self.wav.setframerate(self.framerate)
+        self.write_intro()
 
     def write_pulse(self, half_length):
         """ Write a single full pulse to the tape. """
@@ -762,17 +752,6 @@ class WAVWriter(TapeWriter):
             bit = yield
             self.write_pulse(self.halflength[bit])
 
-    def __init__(self, filename):
-        """ Initialise WAV tape image writer. """
-        self.framerate = 22050
-        self.sampwidth = 1
-        self.wav = wave.open(filename, 'wb')
-        self.wav.setnchannels(1)
-        self.wav.setsampwidth(1)
-        self.wav.setframerate(self.framerate)
-        self.halflength = [250*self.framerate/1000000, 500*self.framerate/1000000]
-        TapeWriter.__init__(self)
-
     def close(self):
         """ Close WAV tape image. """
         self.wav.close()
@@ -780,6 +759,11 @@ class WAVWriter(TapeWriter):
 
 class CASWriter(TapeWriter):
     """ CAS-file recording interface. """
+
+    def __init__(self, filename):
+        """ Initialise CAS tape image writer. """
+        TapeWriter.__init__(self)
+        self.cas = open(filename, 'wb')
 
     def write_pause(self, milliseconds):
         """ Write pause to tape image (dummy). """
@@ -795,11 +779,6 @@ class CASWriter(TapeWriter):
             if count >= 8:
                 self.cas.write(chr(byte))
                 count, byte = 0, 0
-
-    def __init__(self, filename):
-        """ Initialise CAS tape image writer. """
-        self.cas = open(filename, 'wb')
-        TapeWriter.__init__(self)
 
     def close(self):
         """ Close CAS tape image. """
