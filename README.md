@@ -1,20 +1,24 @@
 ### PC-BASIC 3.23 ###
-_A free, cross-platform emulator for GW-BASIC, BASICA, PCjr Cartridge Basic and Tandy 1000 GW-BASIC._
+_A free, cross-platform emulator for legacy Microsoft BASIC applications._
 
-PC-BASIC is an interpreter for GW-BASIC programs. It runs on Windows, Mac and Linux and other 
-Unix-based systems and targets full compatibility with GW-BASIC version 3.23. 
+PC-BASIC is a free, cross-platform interpreter for GW-BASIC, BASICA, PCjr Cartridge Basic and Tandy 1000 GW-BASIC. 
+It interprets these BASIC dialects with a high degree of accuracy, aiming for bug-for-bug compatibility. 
+PC-BASIC emulates the most common video and audio hardware supported in their time.
 PC-BASIC can run (and convert between) ASCII, bytecode and 'protected' (encrypted) .BAS files. It 
 implements floating-point arithmetic in the Microsoft Binary Format (MBF) and can therefore 
 read and write binary data files created by GW-BASIC.
 
-See also the [PC-BASIC home page at SourceForge](http://pcbasic.sourceforge.net).
-
 PC-BASIC is free and open source software released under the GPL version 3. 
 
-If you find bugs, please report them on the SourceForge discussion page at [https://sourceforge.net/p/pcbasic/discussion/bugs/](https://sourceforge.net/p/pcbasic/discussion/bugs/). It would be most helpful if you could include a short bit of BASIC code that triggers the bug.
+See also the [PC-BASIC home page at SourceForge](http://pcbasic.sourceforge.net).
 
 ----------
 
+### Quick Start Guide ###
+
+This quick start guide covers installation and elementary use of PC-BASIC. For more information, please refer to the [full PC-BASIC documentation](http://pcbasic.sourceforge.net/PC-BASIC_documentation.html) for usage, command-line options and a full GW-BASIC language reference. This documentation is also included with the current PC-BASIC release.
+
+If you find bugs, please report them on the SourceForge discussion page at [https://sourceforge.net/p/pcbasic/discussion/bugs/](https://sourceforge.net/p/pcbasic/discussion/bugs/). It would be most helpful if you could include a short bit of BASIC code that triggers the bug.
 
 #### Installation ####
 Packaged distributions are currently available for Windows XP and above, Mac OSX 10.6 and above, and Linux on 32-bit or 64-bit Intel/AMD architecture. They can be downloaded from SourceForge at [https://sourceforge.net/projects/pcbasic/files/](https://sourceforge.net/projects/pcbasic/files/).  
