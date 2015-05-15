@@ -7,6 +7,8 @@ PC-BASIC can run (and convert between) ASCII, bytecode and 'protected' (encrypte
 implements floating-point arithmetic in the Microsoft Binary Format (MBF) and can therefore 
 read and write binary data files created by GW-BASIC.
 
+See also the [http://pcbasic.sourceforge.net](PC-BASIC home page at SourceForge).
+
 PC-BASIC is free and open source software released under the GPL version 3. 
 
 If you find bugs, please report them on the SourceForge discussion page at [https://sourceforge.net/p/pcbasic/discussion/bugs/](https://sourceforge.net/p/pcbasic/discussion/bugs/). It would be most helpful if you could include a short bit of BASIC code that triggers the bug.
