@@ -110,10 +110,10 @@ def prepare():
     #TODO: move from oslayer
 
 
-
-
 ############################################################################
 # General file manipulation
+
+#TODO: enable 'with' for open_file?
 
 def open_file(number, description, filetype, mode='I', access='R', lock='', reclen=128, defext=''):
     """ Open a file on a device specified by description. """
@@ -128,24 +128,29 @@ def open_file(number, description, filetype, mode='I', access='R', lock='', recl
     inst = None
     split_colon = name.split(':')
     if len(split_colon) > 1: # : found
-        dev_name = (split_colon[0] + ':').upper()
-        dev_param = split_colon[1]
-        try:
-            # check if device exists and allows the requested mode
-            # if not exists, raise KeyError
-            device = backend.devices[dev_name]
-            if not device:
-                if len(dev_name) > 2:
-                    # device unavailable
-                    raise error.RunError(68)
-                else:
-                    # for drive letters: path not found
-                    raise error.RunError(76)
-            return device.open(number, dev_param, filetype, mode, access, lock, reclen, defext)
-        except KeyError:
+        dev_name = split_colon[0].upper() + ':'
+        dev_param = ''.join(split_colon[1:])
+    else:
+        # TODO: shld be current_device, can also be e.g. CAS1: if no disks present
+        dev_name = oslayer.current_drive.upper() + ':'
+        dev_param = name
+    print dev_name, dev_param
+    try:
+        # check if device exists and allows the requested mode
+        # if not exists, raise KeyError
+        device = backend.devices[dev_name]
+        if not device:
             if len(dev_name) > 2:
-                # devname could be A:, B:, C:, etc.. but anything longer is an error (bad file number, for some reason).
-                raise error.RunError(52)
+                # device unavailable
+                raise error.RunError(68)
+            else:
+                # for drive letters: path not found
+                raise error.RunError(76)
+        return device.open(number, dev_param, filetype, mode, access, lock, reclen, defext)
+    except KeyError:
+        if len(dev_name) > 2:
+            # devname could be A:, B:, C:, etc.. but anything longer is an error (bad file number, for some reason).
+            raise error.RunError(52)
 
 def get_file(num, mode='IOAR'):
     """ Get the file object for a file number and check allowed mode. """
@@ -165,17 +170,27 @@ def check_file_not_open(path):
         if oslayer.native_path(path) == state.io_state.files[f].name:
             raise error.RunError(55)
 
+def close_file(num):
+    """ Close a regular file. """
+    if num > 0:
+        try:
+            state.io_state.files[num].close()
+            del state.io_state.files[num]
+        except KeyError:
+            pass
+
 def close_all():
-    """ Close all non-system files. """
-    for num, f in state.io_state.files.iteritems():
-        if num > 0:
-            f.close()
+    """ Close all regular files. """
+    open_files = state.io_state.files.keys()
+    for num in open_files:
+        close_file(num)
 
 #D?
 def close_system_files():
     """ Close all files including system files. """
     for f in state.io_state.files.values():
         f.close()
+    state.io_state.files = {}
 
 ############################################################################
 # Locking (disk only)
@@ -275,12 +290,8 @@ class Device(object):
     allowed_protocols = ()
 
     def __init__(self):
+        """ Set up device. """
         self.device_file = None
-
-    def __del__(self):
-        """ Dispose of device. """
-        if self.device_file:
-            self.device_file.close()
 
     def open(self, number, param, filetype, mode, access, lock, reclen, defext):
         """ Open a file on the device. """
@@ -531,7 +542,9 @@ class CASDevice(object):
         """ Initialise tape device. """
         addr, val = parse_protocol_string(arg)
         ext = val.split('.')[-1].upper()
-        if addr == 'WAV' or (addr != 'CAS' and ext == 'WAV'):
+        if not val:
+            self.tapestream = None
+        elif addr == 'WAV' or (addr != 'CAS' and ext == 'WAV'):
             # if unspecified, determine type on the basis of filename extension
             self.tapestream = cassette.WAVStream(val)
         else:
@@ -550,7 +563,11 @@ class CASDevice(object):
             # bytecode or protected or bsave
             # also need to provide length, seg, offs for these
             file_types = ('A', )
-        self.tapestream.open(param, file_types, mode, length=0, seg=0, offs=0)
+        if not self.tapestream:
+            # device unavailable
+            raise error.RunError(68)
+        else:
+            self.tapestream.open(param, file_types, mode, length=0, seg=0, offs=0)
 
 
 #################################################################################
@@ -565,10 +582,12 @@ class NullFile(object):
         self.number = 0
         self.name = ''
 
+    def __del__(self):
+        self.close()
+
     def close(self):
         """ Close this file. """
-        if self.number != 0:
-            del state.io_state.files[self.number]
+        pass
 
     def lof(self):
         """ LOF: bad file mode. """
@@ -642,9 +661,6 @@ class RawFile(object):
         except (IOError, ValueError):
             # ignore errors on flushing
             pass    
-        # don't close the handle - for devices
-        if self.number != 0:
-            del state.io_state.files[self.number]
 
     def read_chars(self, num=-1):
         """ Read num chars as a list. If num==-1, read all available. """
@@ -805,7 +821,8 @@ class TextFile(RawFile):
             # write EOF char
             self.fhandle.write('\x1a')
         RawFile.close(self)
-        self.fhandle.close()
+        if self.fhandle:
+            self.fhandle.close()
 
     def read_line(self):
         """ Read line from text file. """
@@ -929,7 +946,8 @@ class RandomFile(RandomBase):
     def close(self):
         """ Close random-access file. """
         RandomBase.close(self)
-        self.fhandle.close()
+        if self.fhandle:
+            self.fhandle.close()
 
     def read_field(self, dummy=None):
         """ Read a record. """
@@ -1307,8 +1325,9 @@ class COMFile(RandomBase):
 
     def close(self):
         """ Close the COMn device. """
-        self.fhandle.close()
         RandomBase.close(self)
+        if self.fhandle:
+            self.fhandle.close()
 
 
 #################################################################################
@@ -1324,10 +1343,6 @@ class CASFile(NullFile):
         self.tapestream = tapestream
         self.name = name
         self.mode = mode
-
-    def close(self):
-        """ Close this device file. """
-        NullFile.close(self)
 
     def lof(self):
         """ LOF: illegal function call. """
@@ -1350,11 +1365,6 @@ class CASFile(NullFile):
     def write_line(self, s):
         """ Write string s and CR to tape file. """
         self.write(s + '\r')
-
-    def set_width(self, new_width=255):
-        """ Set device width. """
-        # WIDTH has no effect on tape - not even on text files.
-        pass
 
     def read_chars(self, n):
         """ Read a list of chars from device. """

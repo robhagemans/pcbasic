@@ -82,6 +82,7 @@ arguments = {
     'lpt1': {'type': 'string', 'default': 'PRINTER:',},
     'lpt2': {'type': 'string', 'default': '',},
     'lpt3': {'type': 'string', 'default': '',},
+    'cas1': {'type': 'string', 'default': '',},
     'com1': {'type': 'string', 'default': '',},
     'com2': {'type': 'string', 'default': '',},
     'codepage': {'type': 'string', 'choices': encodings, 'default': '437',},

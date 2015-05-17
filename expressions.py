@@ -514,12 +514,12 @@ def value_input(ins):
     util.require_read(ins, ('(',))
     num = vartypes.pass_int_unpack(parse_expression(ins))
     util.range_check(1, 255, num)
-    screen = backend.devices['KYBD:']   
+    infile = backend.kybd_file
     if util.skip_white_read_if(ins, (',',)):
-        screen = iolayer.get_file(parse_file_number_opthash(ins))
+        infile = iolayer.get_file(parse_file_number_opthash(ins))
     util.require_read(ins, (')',))
     word = bytearray()
-    for char in screen.read_chars(num):
+    for char in infile.read_chars(num):
         if len(char) > 1 and char[0] == '\x00':
             # replace some scancodes than console can return
             if char[1] in ('\x4b', '\x4d', '\x48', '\x50', '\x47', '\x49', '\x4f', '\x51', '\x53'):
@@ -558,7 +558,10 @@ def value_lpos(ins):
     num = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 3, num)
     printer = backend.devices['LPT' + max(1, num) + ':']
-    return vartypes.pack_int(printer.col)
+    if printer.device_file:
+        return vartypes.pack_int(printer.device_file.col)
+    else:
+        return vartypes.pack_int(1)
            
 ######################################################################
 # file access
