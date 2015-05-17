@@ -112,7 +112,140 @@ def prepare():
 
 
 
-######################################################
+############################################################################
+# General file manipulation
+
+def open_file(number, description, filetype, mode='I', access='R', lock='', reclen=128, defext=''):
+    """ Open a file on a device specified by description. """
+    # TODO: defext can be handled by Disk device now that we know filetype; no need to carry it for everyone
+    if (not description) or (number < 0) or (number > max_files):
+        # bad file number; also for name='', for some reason
+        raise error.RunError(52)
+    if number in state.io_state.files:
+        # file already open
+        raise error.RunError(55)
+    name, mode = str(description), mode.upper()
+    inst = None
+    split_colon = name.split(':')
+    if len(split_colon) > 1: # : found
+        dev_name = (split_colon[0] + ':').upper()
+        dev_param = split_colon[1]
+        try:
+            # check if device exists and allows the requested mode
+            # if not exists, raise KeyError
+            device = backend.devices[dev_name]
+            if not device:
+                if len(dev_name) > 2:
+                    # device unavailable
+                    raise error.RunError(68)
+                else:
+                    # for drive letters: path not found
+                    raise error.RunError(76)
+            return device.open(number, dev_param, filetype, mode, access, lock, reclen, defext)
+        except KeyError:
+            if len(dev_name) > 2:
+                # devname could be A:, B:, C:, etc.. but anything longer is an error (bad file number, for some reason).
+                raise error.RunError(52)
+
+def get_file(num, mode='IOAR'):
+    """ Get the file object for a file number and check allowed mode. """
+    try:
+        the_file = state.io_state.files[num]
+    except KeyError:
+        # bad file number
+        raise error.RunError(52)
+    if the_file.mode.upper() not in mode:
+        raise error.RunError(54)
+    return the_file
+
+def check_file_not_open(path):
+    """ Raise an error if the file is open. """
+    # TODO: this should be a disk-only thing!
+    for f in state.io_state.files:
+        if oslayer.native_path(path) == state.io_state.files[f].name:
+            raise error.RunError(55)
+
+def close_all():
+    """ Close all non-system files. """
+    for num, f in state.io_state.files.iteritems():
+        if num > 0:
+            f.close()
+
+#D?
+def close_system_files():
+    """ Close all files including system files. """
+    for f in state.io_state.files.values():
+        f.close()
+
+############################################################################
+# Locking (disk only)
+
+def find_files_by_name(name):
+    """ Find all file numbers open to the given filename."""
+    return [state.io_state.files[f] for f in state.io_state.files if state.io_state.files[f].name == name]
+
+def lock_records(nr, start, stop):
+    """ Try to lock a range of records in a file. """
+    thefile = get_file(nr)
+    if thefile.name in backend.devices:
+        # permission denied
+        raise error.RunError(70)
+    lock_list = set()
+    for f in find_files_by_name(thefile.name):
+        lock_list |= f.lock_list
+    if isinstance(thefile, TextFile):
+        bstart, bstop = 0, -1
+        if lock_list:
+            raise error.RunError(70)
+    else:
+        bstart, bstop = (start-1) * thefile.reclen, stop*thefile.reclen - 1
+        for start_1, stop_1 in lock_list:
+            if stop_1 == -1 or (bstart >= start_1 and bstart <= stop_1) or (bstop >= start_1 and bstop <= stop_1):
+                raise error.RunError(70)
+    thefile.lock_list.add((bstart, bstop))
+
+def unlock_records(nr, start, stop):
+    """ Unlock a range of records in a file. """
+    thefile = get_file(nr)
+    if thefile.name in backend.devices:
+        # permission denied
+        raise error.RunError(70)
+    if isinstance(thefile, TextFile):
+        bstart, bstop = 0, -1
+    else:
+        bstart, bstop = (start-1) * thefile.reclen, stop*thefile.reclen - 1
+    # permission denied if the exact record range wasn't given before
+    try:
+        thefile.lock_list.remove((bstart, bstop))
+    except KeyError:
+        raise error.RunError(70)
+
+def request_lock(name, lock, access):
+    """ Try to lock a file. """
+    same_files = find_files_by_name(name)
+    if not lock:
+        # default mode; don't accept default mode if SHARED/LOCK present
+        for f in same_files:
+            if f.lock:
+                raise error.RunError(70)
+    elif lock == 'RW':
+        # LOCK READ WRITE
+        raise error.RunError(70)
+    elif lock == 'S':
+        # SHARED
+        for f in same_files:
+            if not f.lock:
+                raise error.RunError(70)
+    else:
+        # LOCK READ or LOCK WRITE
+        for f in same_files:
+            if f.access == lock or lock == 'RW':
+                raise error.RunError(70)
+
+
+
+
+############################################################################
 # Device files
 #
 #  Some devices have a master file, where newly opened files inherit
@@ -420,139 +553,66 @@ class CASDevice(object):
         self.tapestream.open(param, file_types, mode, length=0, seg=0, offs=0)
 
 
-#########################
-
-def open_file(number, description, filetype, mode='I', access='R', lock='', reclen=128, defext=''):
-    """ Open a file on a device specified by description. """
-    # TODO: defext can be handled by Disk device now that we know filetype; no need to carry it for everyone
-    if (not description) or (number < 0) or (number > max_files):
-        # bad file number; also for name='', for some reason
-        raise error.RunError(52)
-    if number in state.io_state.files:
-        # file already open
-        raise error.RunError(55)
-    name, mode = str(description), mode.upper()
-    inst = None
-    split_colon = name.split(':')
-    if len(split_colon) > 1: # : found
-        dev_name = (split_colon[0] + ':').upper()
-        dev_param = split_colon[1]
-        try:
-            # check if device exists and allows the requested mode
-            # if not exists, raise KeyError
-            device = backend.devices[dev_name]
-            if not device:
-                if len(dev_name) > 2:
-                    # device unavailable
-                    raise error.RunError(68)
-                else:
-                    # for drive letters: path not found
-                    raise error.RunError(76)
-            return device.open(number, dev_param, filetype, mode, access, lock, reclen, defext)
-        except KeyError:
-            if len(dev_name) > 2:
-                # devname could be A:, B:, C:, etc.. but anything longer is an error (bad file number, for some reason).
-                raise error.RunError(52)
-
-def get_file(num, mode='IOAR'):
-    """ Get the file object for a file number and check allowed mode. """
-    try:
-        the_file = state.io_state.files[num]
-    except KeyError:
-        # bad file number
-        raise error.RunError(52)
-    if the_file.mode.upper() not in mode:
-        raise error.RunError(54)    
-    return the_file    
-
-def check_file_not_open(path):
-    """ Raise an error if the file is open. """
-    # TODO: this should be a disk-only thing!
-    for f in state.io_state.files:
-        if oslayer.native_path(path) == state.io_state.files[f].name:
-            raise error.RunError(55)
-
-def find_files_by_name(name):
-    """ Find all file numbers open to the given filename."""
-    return [state.io_state.files[f] for f in state.io_state.files if state.io_state.files[f].name == name]
-
-def close_all():
-    """ Close all non-system files. """
-    for num, f in state.io_state.files.iteritems():
-        if num > 0:
-            f.close()
-
-#D?
-def close_system_files():
-    """ Close all files including system files. """
-    for f in state.io_state.files.values():
-        f.close()
-
-############################
-
-def lock_records(nr, start, stop):
-    """ Try to lock a range of records in a file. """
-    thefile = get_file(nr)
-    if thefile.name in backend.devices:
-        # permission denied
-        raise error.RunError(70)
-    lock_list = set()
-    for f in find_files_by_name(thefile.name):
-        lock_list |= f.lock_list
-    if isinstance(thefile, TextFile):
-        bstart, bstop = 0, -1
-        if lock_list:
-            raise error.RunError(70)
-    else:
-        bstart, bstop = (start-1) * thefile.reclen, stop*thefile.reclen - 1
-        for start_1, stop_1 in lock_list:
-            if stop_1 == -1 or (bstart >= start_1 and bstart <= stop_1) or (bstop >= start_1 and bstop <= stop_1):
-                raise error.RunError(70)
-    thefile.lock_list.add((bstart, bstop))
-
-def unlock_records(nr, start, stop):
-    """ Unlock a range of records in a file. """
-    thefile = get_file(nr)
-    if thefile.name in backend.devices:
-        # permission denied
-        raise error.RunError(70)
-    if isinstance(thefile, TextFile):
-        bstart, bstop = 0, -1
-    else:
-        bstart, bstop = (start-1) * thefile.reclen, stop*thefile.reclen - 1
-    # permission denied if the exact record range wasn't given before
-    try:
-        thefile.lock_list.remove((bstart, bstop))
-    except KeyError:
-        raise error.RunError(70)
-
-def request_lock(name, lock, access):
-    """ Try to lock a file. """
-    same_files = find_files_by_name(name)
-    if not lock:
-        # default mode; don't accept default mode if SHARED/LOCK present
-        for f in same_files:
-            if f.lock:
-                raise error.RunError(70)
-    elif lock == 'RW':
-        # LOCK READ WRITE
-        raise error.RunError(70)
-    elif lock == 'S':
-        # SHARED
-        for f in same_files:
-            if not f.lock:
-                raise error.RunError(70)
-    else:
-        # LOCK READ or LOCK WRITE
-        for f in same_files:
-            if f.access == lock or lock == 'RW':
-                raise error.RunError(70)
-
 #################################################################################
+# file classes
+
+
+class NullFile(object):
+    """ Base file class. """
+
+    def __init__(self):
+        """ Initialise null file. """
+        self.number = 0
+        self.name = ''
+
+    def close(self):
+        """ Close this file. """
+        if self.number != 0:
+            del state.io_state.files[self.number]
+
+    def lof(self):
+        """ LOF: bad file mode. """
+        raise error.RunError(54)
+
+    def loc(self):
+        """ LOC: bad file mode. """
+        raise error.RunError(54)
+
+    def eof(self):
+        """ EOF: bad file mode. """
+        raise error.RunError(54)
+
+    def write(self, s):
+        """ Write string s to device. """
+        pass
+
+    def write_line(self, s):
+        """ Write string s and CR/LF to device """
+        pass
+
+    def set_width(self, new_width=255):
+        """ Set device width. """
+        pass
+
+    def read_line(self):
+        """ Read a line from device. """
+        return ''
+
+    def read_chars(self, n):
+        """ Read a list of chars from device. """
+        return []
+
+    def read(self, n):
+        """ Read a string from device. """
+        return ''
+
+    def end_of_file(self):
+        """ Check for end-of-file. """
+        return False
 
 
 class RawFile(object):
-    """ Base file object. """
+    """ File class for raw access to underlying stream. """
 
     def __init__(self, fhandle, name='', number=0, mode='A', access='RW', lock=''):
         """ Setup the basic properties of the file. """
@@ -639,8 +699,94 @@ class RawFile(object):
         self.fhandle.truncate()
 
 
+class RandomBase(RawFile):
+    """ Random-access file base object. """
+
+    # FIELD overflow
+    overflow_error = 50
+
+    def __init__(self, fhandle, name, number, mode, access, lock, reclen=128):
+        """ Initialise random-access file. """
+        RawFile.__init__(self, fhandle, name, number, mode, access, lock)
+        self.reclen = reclen
+        # replace with empty field if already exists
+        try:
+            self.field = state.io_state.fields[self.number]
+        except KeyError:
+            self.field = bytearray()
+            state.io_state.fields[self.number] = self.field
+        if self.number > 0:
+            self.field_address = memory.field_mem_start + (self.number-1)*memory.field_mem_offset
+        else:
+            self.field_address = -1
+        self.field[:] = bytearray('\x00')*reclen
+        # open a pseudo text file over the buffer stream
+        # to make WRITE# etc possible
+        # all text-file operations on a RANDOM file number actually work on the FIELD buffer
+        self.field_text_file = TextFile(ByteStream(self.field))
+        self.field_text_file.col = 1
+        # width=255 means line wrap
+        self.field_text_file.width = 255
+
+    def read_line(self):
+        """ Read line from FIELD buffer. """
+        # FIELD overflow happens if last byte in record is actually read
+        if self.field_text_file.fhandle.tell() >= self.reclen-1:
+            raise error.RunError(self.overflow_error) # FIELD overflow
+        return self.field_text_file.read_line()
+
+    def read_chars(self, num=-1):
+        """ Read num characters as list. """
+        return list(self.read(num))
+
+    def read(self, num=-1):
+        """ Read num chars as a string, from FIELD buffer. """
+        if num==-1 or self.field_text_file.fhandle.tell() + num > self.reclen-1:
+            raise error.RunError(self.overflow_error) # FIELD overflow
+        return self.field_text_file.read(num)
+
+    def write(self, s):
+        """ Write one or more chars to FIELD buffer. """
+        ins = StringIO(s)
+        while self.field_text_file.fhandle.tell() < self.reclen:
+            self.field_text_file.write(ins.read(1))
+        if ins.tell() < len(s):
+            raise error.RunError(self.overflow_error)
+
+    def peek_char(self):
+        """ Get next char to be read from FIELD buffer. """
+        return self.field_text_file.peek_char()
+
+    def seek(self, n, from_where=0):
+        """ Get file pointer location in FIELD buffer. """
+        return self.field_text_file.seek(n, from_where)
+
+    def truncate(self):
+        """ Not implemented. """
+        # this is only used when writing chr$(8)
+        # not sure how to implement for random files
+        pass
+
+    @property
+    def col(self):
+        """ Get current column. """
+        return self.field_text_file.col
+
+    @property
+    def width(self):
+        """ Get file width. """
+        return self.field_text_file.width
+
+    def set_width(self, new_width=255):
+        """ Set file width. """
+        self.field_text_file.width = new_width
+
+
+#################################################################################
+# Disk files
+
 class TextFile(RawFile):
-    """ Text file object. """
+    """ Text file on disk device. """
 
     def __init__(self, fhandle, name='', number=0, mode='A', access='RW', lock=''):
         """ Initialise text file object. """
@@ -770,91 +916,8 @@ class TextFile(RawFile):
         return lof
 
 
-class RandomBase(RawFile):
-    """ Random-access file base object. """
-
-    # FIELD overflow
-    overflow_error = 50
-
-    def __init__(self, fhandle, name, number, mode, access, lock, reclen=128):
-        """ Initialise random-access file. """
-        RawFile.__init__(self, fhandle, name, number, mode, access, lock)
-        self.reclen = reclen
-        # replace with empty field if already exists
-        try:
-            self.field = state.io_state.fields[self.number]
-        except KeyError:
-            self.field = bytearray()
-            state.io_state.fields[self.number] = self.field
-        if self.number > 0:
-            self.field_address = memory.field_mem_start + (self.number-1)*memory.field_mem_offset
-        else:
-            self.field_address = -1
-        self.field[:] = bytearray('\x00')*reclen
-        # open a pseudo text file over the buffer stream
-        # to make WRITE# etc possible
-        # all text-file operations on a RANDOM file number actually work on the FIELD buffer
-        self.field_text_file = TextFile(ByteStream(self.field))
-        self.field_text_file.col = 1
-        # width=255 means line wrap
-        self.field_text_file.width = 255
-
-    def read_line(self):
-        """ Read line from FIELD buffer. """
-        # FIELD overflow happens if last byte in record is actually read
-        if self.field_text_file.fhandle.tell() >= self.reclen-1:
-            raise error.RunError(self.overflow_error) # FIELD overflow
-        return self.field_text_file.read_line()
-
-    def read_chars(self, num=-1):
-        """ Read num characters as list. """
-        return list(self.read(num))
-
-    def read(self, num=-1):
-        """ Read num chars as a string, from FIELD buffer. """
-        if num==-1 or self.field_text_file.fhandle.tell() + num > self.reclen-1:
-            raise error.RunError(self.overflow_error) # FIELD overflow
-        return self.field_text_file.read(num)
-
-    def write(self, s):
-        """ Write one or more chars to FIELD buffer. """
-        ins = StringIO(s)
-        while self.field_text_file.fhandle.tell() < self.reclen:
-            self.field_text_file.write(ins.read(1))
-        if ins.tell() < len(s):
-            raise error.RunError(self.overflow_error)
-
-    def peek_char(self):
-        """ Get next char to be read from FIELD buffer. """
-        return self.field_text_file.peek_char()
-
-    def seek(self, n, from_where=0):
-        """ Get file pointer location in FIELD buffer. """
-        return self.field_text_file.seek(n, from_where)
-
-    def truncate(self):
-        """ Not implemented. """
-        # this is only used when writing chr$(8)
-        # not sure how to implement for random files
-        pass
-
-    @property
-    def col(self):
-        """ Get current column. """
-        return self.field_text_file.col
-
-    @property
-    def width(self):
-        """ Get file width. """
-        return self.field_text_file.width
-
-    def set_width(self, new_width=255):
-        """ Set file width. """
-        self.field_text_file.width = new_width
-
-
 class RandomFile(RandomBase):
-    """ Random-access file object. """
+    """ Random-access file on disk device. """
 
     def __init__(self, fhandle, name, number, mode, access, lock, reclen=128):
         """ Initialise random-access file. """        
@@ -909,62 +972,9 @@ class RandomFile(RandomBase):
         self.fhandle.seek(current)
         return lof
 
+
 #################################################################################
-
-
-class NullFile(object):
-    """ Base object for devices and device files. """
-
-    def __init__(self):
-        """ Initialise null file. """
-        self.number = 0
-        self.name = ''
-
-    def close(self):
-        """ Close this file. """
-        if self.number != 0:
-            del state.io_state.files[self.number]
-
-    def lof(self):
-        """ LOF: bad file mode. """
-        raise error.RunError(54)
-
-    def loc(self):
-        """ LOC: bad file mode. """
-        raise error.RunError(54)
-
-    def eof(self):
-        """ EOF: bad file mode. """
-        raise error.RunError(54)
-
-    def write(self, s):
-        """ Write string s to device. """
-        pass
-
-    def write_line(self, s):
-        """ Write string s and CR/LF to device """
-        pass
-
-    def set_width(self, new_width=255):
-        """ Set device width. """
-        pass
-
-    def read_line(self):
-        """ Read a line from device. """
-        return ''
-
-    def read_chars(self, n):
-        """ Read a list of chars from device. """
-        return []
-
-    def read(self, n):
-        """ Read a string from device. """
-        return ''
-
-    def end_of_file(self):
-        """ Check for end-of-file. """
-        return False
-
+# Console files
 
 class KYBDFile(NullFile):
     """ KYBD device: keyboard. """
@@ -1113,6 +1123,9 @@ class SCRNFile(NullFile):
             self._width = new_width
 
 
+#################################################################################
+# Parallel-port and printer files
+
 class LPTFile(RawFile):
     """ LPTn: device - line printer or parallel port. """
 
@@ -1188,6 +1201,9 @@ class LPTFile(RawFile):
             pass    
         RawFile.close(self)
 
+
+#################################################################################
+# Serial-port files
 
 class COMFile(RandomBase):
     """ COMn: device - serial port. """
@@ -1294,6 +1310,9 @@ class COMFile(RandomBase):
         self.fhandle.close()
         RandomBase.close(self)
 
+
+#################################################################################
+# Cassette files
 
 class CASFile(NullFile):
     """ Base object for devices and device files. """
