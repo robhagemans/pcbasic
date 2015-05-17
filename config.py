@@ -458,23 +458,22 @@ def build_default_config_file(file_name):
     "# options for that preset and not the system ones. This is not recommended.\n")
     argnames = sorted(arguments.keys())
     try:
-        f = open(file_name, 'w')
-        f.write(header)
-        for a in argnames:
-            try:
-                # check if it's a list
-                arguments[a]['list']
-                formatted = ', '.join(map(str, arguments[a]['default']))
-            except(KeyError, TypeError):
-                formatted = str(arguments[a]['default'])
-            f.write("# %s=%s" % (a, formatted))
-            try:
-                f.write(' # choices: %s\n' % 
+        with open(file_name, 'w') as f:
+            f.write(header)
+            for a in argnames:
+                try:
+                    # check if it's a list
+                    arguments[a]['list']
+                    formatted = ', '.join(map(str, arguments[a]['default']))
+                except(KeyError, TypeError):
+                    formatted = str(arguments[a]['default'])
+                f.write("# %s=%s" % (a, formatted))
+                try:
+                    f.write(' # choices: %s\n' %
                                 ', '.join(map(str, arguments[a]['choices'])))
-            except(KeyError, TypeError):
-                f.write('\n')
-        f.write(footer)
-        f.close()    
+                except(KeyError, TypeError):
+                    f.write('\n')
+            f.write(footer)
     except (OSError, IOError):
         # can't create file, ignore. we'll get a message later.
         pass

@@ -282,12 +282,12 @@ def exec_debug(ins):
 def exec_term(ins):
     """ TERM: load and run PCjr buitin terminal emulator program. """
     try:
-        f = open(pcjr_term, 'rb')
-    except (OSError, IOError):
+        with open(pcjr_term, 'rb') as f:
+            util.require(ins, util.end_statement)
+            program.load(f)
+    except EnvironmentError:
         # on Tandy, raises Internal Error
         raise error.RunError(51)   
-    util.require(ins, util.end_statement)
-    program.load(f)
     flow.init_program()
     reset.clear()
     flow.jump(None)
@@ -637,7 +637,8 @@ def exec_bload(ins):
         if offset < 0:
             offset += 0x10000           
     util.require(ins, util.end_statement)
-    machine.bload(iolayer.open_file(0, name, filetype='M', mode='L', defext=''), offset)
+    with iolayer.open_file(0, name, filetype='M', mode='L', defext='') as f:
+        machine.bload(f, offset)
     
 def exec_bsave(ins):
     """ BSAVE: save a block of memory to a file. Limited implementation. """
@@ -654,7 +655,8 @@ def exec_bsave(ins):
     if length < 0:
         length += 0x10000         
     util.require(ins, util.end_statement)
-    machine.bsave(iolayer.open_file(0, name, filetype='M', mode='S', defext=''), offset, length)
+    with iolayer.open_file(0, name, filetype='M', mode='S', defext='') as f:
+        machine.bsave(f, offset, length)
 
 def exec_call(ins):
     """ CALL: call an external procedure. Not implemented. """
@@ -871,7 +873,9 @@ def exec_list(ins):
     else:
         out = backend.scrn_file
     util.require(ins, util.end_statement)
-    program.list_lines(out, from_line, to_line)    
+    with out:
+        program.list_lines(out, from_line, to_line)
+        # note that closing scrn_file has no effect
 
 def exec_llist(ins):
     """ LLIST: output program lines to LPT1: """
@@ -887,7 +891,8 @@ def exec_load(ins):
     if comma:
         util.require_read(ins, 'R')
     util.require(ins, util.end_statement)
-    program.load(iolayer.open_file(0, name, filetype='ABP', mode='L', defext='BAS'))
+    with iolayer.open_file(0, name, filetype='ABP', mode='L', defext='BAS') as f:
+        program.load()
     reset.clear()
     if comma:
         # in ,R mode, don't close files; run the program
@@ -924,7 +929,8 @@ def exec_chain(ins):
     util.require(ins, util.end_statement)
     if state.basic_state.protected and action == program.merge:
             raise error.RunError(5)
-    program.chain(action, iolayer.open_file(0, name, filetype='ABP', mode='L', defext='BAS'), jumpnum, delete_lines)
+    with iolayer.open_file(0, name, filetype='ABP', mode='L', defext='BAS') as f:
+        program.chain(action, f, jumpnum, delete_lines)
     # preserve DEFtype on MERGE
     reset.clear(preserve_common=True, preserve_all=common_all, preserve_deftype=(action==program.merge))
 
@@ -954,14 +960,16 @@ def exec_save(ins):
         mode = util.skip_white_read(ins).upper()
         if mode not in ('A', 'P'):
             raise error.RunError(2)
-    program.save(iolayer.open_file(0, name, filetype=mode, mode='S', defext='BAS'), mode)
+    with iolayer.open_file(0, name, filetype=mode, mode='S', defext='BAS') as f:
+        program.save(f, mode)
     util.require(ins, util.end_statement)
     
 def exec_merge(ins):
     """ MERGE: merge lines from file into current program. """
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
-    program.merge(iolayer.open_file(0, name, filetype='A', mode='L', defext='BAS') )
+    with iolayer.open_file(0, name, filetype='A', mode='L', defext='BAS') as f:
+        program.merge(f)
     util.require(ins, util.end_statement)
     
 def exec_new(ins):
@@ -1504,7 +1512,8 @@ def exec_run(ins):
     elif c not in util.end_statement:
         name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_statement)
-        program.load(iolayer.open_file(0, name, filetype='ABP', mode='L', defext='BAS'))
+        with iolayer.open_file(0, name, filetype='ABP', mode='L', defext='BAS') as f:
+            program.load(f)
     flow.init_program()
     reset.clear(close_files=not comma)
     flow.jump(jumpnum)

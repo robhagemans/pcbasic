@@ -39,9 +39,9 @@ def main():
                 debug_details()
         elif config.options['help']:
             # in help mode, print usage and exit
-            f = open(os.path.join(plat.info_dir, 'USAGE'))
-            for line in f:
-                sys.stdout.write(line)
+            with open(os.path.join(plat.info_dir, 'USAGE')) as f:
+                for line in f:
+                    sys.stdout.write(line)
         elif config.options['convert']:
             # in converter mode, convert and exit
             convert()
@@ -87,12 +87,14 @@ def convert():
     # load & save in different format
     try:
         if infile:
-            program.load(open_native_or_dos_filename(infile))
+            with open_native_or_dos_filename(infile) as prog_file:
+                program.load(prog_file)
         elif plat.has_stdin:
             program.load(sys.stdin)
         if outfile:
             # on save from command-line, use exact file name
-            program.save(open(outfile, 'wb'), mode)
+            with open(outfile, 'wb') as prog_file:
+                program.save(prog_file, mode)
         elif plat.has_stdout:
             program.save(sys.stdout, mode)
     except error.RunError as e:
@@ -127,7 +129,8 @@ def start_basic():
             prog = config.options['run'] or config.options['load']
             if prog:
                 # on load, accept capitalised versions and default extension
-                program.load(open_native_or_dos_filename(prog))
+                with open_native_or_dos_filename(prog) as progfile:
+                    program.load(progfile)
                 reset.clear()
             print_greeting(console)
             # start the interpreter (and get out if we ran with -q)
@@ -262,8 +265,7 @@ def open_native_or_dos_filename(infile):
         # first try exact file name
         return open(os.path.expandvars(os.path.expanduser(infile)), 'r')
     except EnvironmentError as e:
-        print repr(e)
-        # on load, accept capitalised versions and default extension
+        # otherwise, accept capitalised versions and default extension
         return iolayer.open_file(0, infile, filetype='BPA', mode='L', defext='BAS')
 
 def debug_details():

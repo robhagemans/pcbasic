@@ -56,9 +56,8 @@ def unpickle_file(name, mode, pos):
     try:
         if 'w' in mode and pos > 0:
             # preserve existing contents of writable file
-            f = open(name, 'rb')
-            buf = f.read(pos)
-            f.close()
+            with open(name, 'rb') as f:
+                buf = f.read(pos)
             f = open(name, mode)
             f.write(buf)            
         else:    
@@ -102,9 +101,8 @@ def save():
     # pickle and compress
     s = zlib.compress(pickle.dumps(to_pickle, 2))
     try:
-        f = open(state_file, 'wb')
-        f.write(str(len(s)) + '\n' + s)
-        f.close()
+        with open(state_file, 'wb') as f:
+            f.write(str(len(s)) + '\n' + s)
     except IOError:
         logging.warning("Could not write to state file %s. Emulator state not saved.", state_file)
     
@@ -115,10 +113,9 @@ def load():
         return False
     # decompress and unpickle
     try:
-        f = open(state_file, 'rb')
-        length = int(f.readline())
-        from_pickle = pickle.loads(zlib.decompress(f.read(length)))
-        f.close()
+        with open(state_file, 'rb') as f:
+            length = int(f.readline())
+            from_pickle = pickle.loads(zlib.decompress(f.read(length)))
     except IOError:
         logging.warning("Could not read state file %s. Emulator state not loaded.", state_file)
         return False
