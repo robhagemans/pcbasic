@@ -107,13 +107,11 @@ def prepare():
     # cassette
     backend.devices['CAS1:'] = CASDevice(config.options['cas1'])
     # disk devices
-    #TODO: move from oslayer
+    #FIXME: move from oslayer; treat drives as devices
 
 
 ############################################################################
 # General file manipulation
-
-#TODO: enable 'with' for open_file?
 
 def open_file(number, description, filetype, mode='I', access='R', lock='', reclen=128, defext=''):
     """ Open a file on a device specified by description. """
@@ -134,11 +132,11 @@ def open_file(number, description, filetype, mode='I', access='R', lock='', recl
         # TODO: shld be current_device, can also be e.g. CAS1: if no disks present
         dev_name = oslayer.current_drive.upper() + ':'
         dev_param = name
-    print dev_name, dev_param
     try:
         # check if device exists and allows the requested mode
         # if not exists, raise KeyError
         device = backend.devices[dev_name]
+        ##D
         if not device:
             if len(dev_name) > 2:
                 # device unavailable
@@ -146,7 +144,11 @@ def open_file(number, description, filetype, mode='I', access='R', lock='', recl
             else:
                 # for drive letters: path not found
                 raise error.RunError(76)
-        return device.open(number, dev_param, filetype, mode, access, lock, reclen, defext)
+        ##D
+        new_file = device.open(number, dev_param, filetype, mode, access, lock, reclen, defext)
+        if number:
+            state.io_state.files[number] = new_file
+        return new_file
     except KeyError:
         if len(dev_name) > 2:
             # devname could be A:, B:, C:, etc.. but anything longer is an error (bad file number, for some reason).
@@ -171,26 +173,23 @@ def check_file_not_open(path):
             raise error.RunError(55)
 
 def close_file(num):
-    """ Close a regular file. """
-    if num > 0:
-        try:
-            state.io_state.files[num].close()
-            del state.io_state.files[num]
-        except KeyError:
-            pass
+    """ Close a numbered file. """
+    try:
+        state.io_state.files[num].close()
+        del state.io_state.files[num]
+    except KeyError:
+        pass
 
-def close_all():
-    """ Close all regular files. """
-    open_files = state.io_state.files.keys()
-    for num in open_files:
-        close_file(num)
-
-#D?
-def close_system_files():
-    """ Close all files including system files. """
+def close_files():
+    """ Close all files. """
     for f in state.io_state.files.values():
         f.close()
     state.io_state.files = {}
+
+def close_devices():
+    """ Close device master files. """
+    for d in state.io_state.devices:
+        d.close()
 
 ############################################################################
 # Locking (disk only)
@@ -295,11 +294,13 @@ class Device(object):
 
     def open(self, number, param, filetype, mode, access, lock, reclen, defext):
         """ Open a file on the device. """
+        if not self.device_file:
+            # device unavailable
+            raise error.RunError(68)
         if mode not in self.allowed_modes:
             # bad file mode
             raise error.RunError(54)
         new_file = self.clone_master(number, mode, access, lock, reclen)
-        state.io_state.files[number] = new_file
         return new_file
 
     def clone_master(self, number, mode, access, lock='', reclen=128):
@@ -310,10 +311,11 @@ class Device(object):
         inst.mode = mode
         inst.lock = lock
         inst.reclen = reclen
-        if number != 0:
-            state.io_state.files[number] = inst
         return inst
 
+    def close(self):
+        if self.device_file:
+            self.device_file.close()
 
 class SCRNDevice(Device):
     """ Screen device (SCRN:) """
@@ -323,6 +325,7 @@ class SCRNDevice(Device):
     def __init__(self):
         """ Initialise screen device. """
         # open a master file on the screen
+        Device.__init__(self)
         self.device_file = SCRNFile()
 
 
@@ -334,6 +337,7 @@ class KYBDDevice(Device):
     def __init__(self):
         """ Initialise keyboard device. """
         # open a master file on the keyboard
+        Device.__init__(self)
         self.device_file = KYBDFile()
 
 
@@ -345,8 +349,12 @@ class LPTDevice(Device):
 
     def __init__(self, arg, default_stream, flush_trigger):
         """ Initialise LPTn: device. """
+        Device.__init__(self)
         addr, val = parse_protocol_string(arg)
-        if val == None or addr and addr not in self.allowed_protocols:
+        self.stream = default_stream
+        if (not val):
+            pass
+        elif (addr and addr not in self.allowed_protocols):
             logging.warning('Could not attach %s to LPT device', arg)
         elif addr == 'FILE':
             try:
@@ -355,15 +363,15 @@ class LPTDevice(Device):
                 self.stream = open(val, 'r+b')
             except (IOError, OSError) as e:
                 logging.warning('Could not attach file %s to LPT device: %s', val, str(e))
-                self.stream = default_stream
         elif addr == 'PARPORT':
             # port can be e.g. /dev/parport0 on Linux or LPT1 on Windows. Just a number counting from 0 would also work.
            self.stream = serial_socket.parallel_port(val)
         else:
             # 'PRINTER' is default
             self.stream = printer.PrinterStream(val)
-        self.device_file = LPTFile(self.stream, flush_trigger)
-        self.device_file.flush_trigger = flush_trigger
+        if self.stream:
+            self.device_file = LPTFile(self.stream, flush_trigger)
+            self.device_file.flush_trigger = flush_trigger
 
     def open(self, number, param, filetype, mode, access, lock, reclen, defext):
         """ Open a file on LPTn: """
@@ -381,8 +389,12 @@ class COMDevice(Device):
 
     def __init__(self, arg, max_reclen, serial_in_size):
         """ Initialise COMn: device. """
+        Device.__init__(self)
         addr, val = parse_protocol_string(arg)
-        if val == None or addr and addr not in self.allowed_protocols:
+        self.stream = None
+        if (not val):
+            pass
+        elif (addr and addr not in self.allowed_protocols):
             logging.warning('Could not attach %s to COM device', arg)
         elif addr == 'SOCKET':
             self.stream = serial_socket.serial_for_url('socket://'+val)
@@ -390,8 +402,8 @@ class COMDevice(Device):
             # 'PORT' is default
             # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows. Or anything supported by serial_for_url (RFC 2217 etc)
             self.stream = serial_socket.serial_for_url(val)
-        # FIXME: name not defined
-        self.device_file = COMFile(self.stream)
+        if self.stream:
+            self.device_file = COMFile(self.stream)
 
     def open(self, number, param, filetype, mode, access, lock, reclen, defext):
         """ Open a file on COMn: """
@@ -473,6 +485,10 @@ class DiskDevice(object):
         # current working directory on this drive
         self.drive_cwd = cwd
 
+    def close(self):
+        """ Close disk device. """
+        pass
+
     def open(self, number, param, filetype, mode, access, lock, reclen, defext):
         """ Open a file on a disk drive. """
         # translate the file name to something DOS-ish if necessary
@@ -551,8 +567,16 @@ class CASDevice(object):
             # 'CAS' is default
             self.tapestream = cassette.CASStream(val)
 
+    def close(self):
+        """ Close tape device. """
+        if self.tapestream:
+            self.tapestream.eject()
+
     def open(self, number, param, filetype, mode, access, lock, reclen, defext):
         """ Open a file on tape. """
+        if not self.tapestream:
+            # device unavailable
+            raise error.RunError(68)
         if mode == 'L':
             file_types = ('A','B','P','M')
         elif mode in ('I', 'O'):
@@ -578,11 +602,16 @@ class NullFile(object):
     """ Base file class. """
 
     def __init__(self):
-        """ Initialise null file. """
+        """ Initialise file. """
         self.number = 0
         self.name = ''
 
-    def __del__(self):
+    def __enter__(self):
+        """ Context guard. """
+        return self
+
+    def __exit__(self):
+        """ Context guard. """
         self.close()
 
     def close(self):
@@ -630,7 +659,7 @@ class NullFile(object):
         return False
 
 
-class RawFile(object):
+class RawFile(NullFile):
     """ File class for raw access to underlying stream. """
 
     def __init__(self, fhandle, name='', number=0, mode='A', access='RW', lock=''):
@@ -643,9 +672,6 @@ class RawFile(object):
         self.access = access
         self.lock = lock
         self.lock_list = set()    
-        # TODO: let open_file handle this
-        if number != 0:
-            state.io_state.files[number] = self
     
     # set_width
     # width
@@ -656,11 +682,7 @@ class RawFile(object):
 
     def close(self):
         """ Close the file. """
-        try:
-            self.fhandle.flush()
-        except (IOError, ValueError):
-            # ignore errors on flushing
-            pass    
+        self.fhandle.close()
 
     def read_chars(self, num=-1):
         """ Read num chars as a list. If num==-1, read all available. """
@@ -820,9 +842,7 @@ class TextFile(RawFile):
         if self.mode in ('O', 'A', 'S'):
             # write EOF char
             self.fhandle.write('\x1a')
-        RawFile.close(self)
-        if self.fhandle:
-            self.fhandle.close()
+        self.fhandle.close()
 
     def read_line(self):
         """ Read line from text file. """
@@ -945,7 +965,6 @@ class RandomFile(RandomBase):
 
     def close(self):
         """ Close random-access file. """
-        RandomBase.close(self)
         if self.fhandle:
             self.fhandle.close()
 
@@ -1159,12 +1178,9 @@ class LPTFile(RawFile):
 
     def flush(self):
         """ Flush the printer buffer to the underlying stream. """
-        try:
-            self.output_stream.write(self.fhandle.getvalue())
-            self.fhandle.truncate(0)
-        except ValueError:
-            # already closed, ignore
-            pass
+        val = self.fhandle.getvalue()
+        self.output_stream.write(val)
+        self.fhandle.truncate(0)
 
     def set_width(self, new_width=255):
         """ Set the width for LPTn. """
@@ -1212,12 +1228,8 @@ class LPTFile(RawFile):
     def close(self):
         """ Close the printer device and actually print the output. """
         self.flush()
-        try:
-            self.output_stream.flush()
-        except ValueError:
-            # already closed, ignore
-            pass    
-        RawFile.close(self)
+        self.output_stream.close()
+        self.fhandle.close()
 
 
 #################################################################################
@@ -1322,12 +1334,6 @@ class COMFile(RandomBase):
     def lof(self):
         """ Returns number of bytes free in buffer. """
         return serial_in_size - self.loc()
-
-    def close(self):
-        """ Close the COMn device. """
-        RandomBase.close(self)
-        if self.fhandle:
-            self.fhandle.close()
 
 
 #################################################################################

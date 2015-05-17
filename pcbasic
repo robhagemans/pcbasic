@@ -165,8 +165,8 @@ def start_basic():
             state.save()
         try:
             # close files if we opened any
-            iolayer.close_all()
-            iolayer.close_system_files()
+            iolayer.close_files()
+            iolayer.close_devices()
         except (NameError, AttributeError):
             pass    
             
