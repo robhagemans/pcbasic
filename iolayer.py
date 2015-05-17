@@ -14,6 +14,7 @@ try:
 except ImportError:
     from StringIO import StringIO
 
+from bytestream import ByteStream
 import config
 import oslayer
 import error
@@ -24,6 +25,7 @@ import memory
 import backend
 import serial_socket
 import printer
+import cassette
 
 # file numbers
 state.io_state.files = {}
@@ -39,12 +41,6 @@ max_reclen = 128
 # buffer sizes (/c switch in GW-BASIC)
 serial_in_size = 256
 serial_out_size = 128
-
-allowed_protocols = {
-    # first protocol is default
-    'LPT': ('FILE', 'PRINTER', 'PARPORT'),
-    'COM': ('PORT', 'SOCKET')
-    }
 
 # GW-BASIC FILE CONTROL BLOCK structure:
 # source: IBM Basic reference 1982 (for BASIC-C, BASIC-D, BASIC-A) appendix I-5
@@ -85,70 +81,381 @@ nullstream = open(os.devnull, 'w')
 
 def prepare():
     """ Initialise iolayer module. """
-    global max_files, max_reclen, serial_in_size
-    global print_trigger
+    global max_files
     if config.options['max-files'] != None:
         max_files = min(16, config.options['max-files'])
+    # console
+    backend.devices['SCRN:'] = SCRNDevice()
+    backend.devices['KYBD:'] = KYBDDevice()
+    backend.scrn_file = backend.devices['SCRN:'].device_file
+    backend.kybd_file = backend.devices['KYBD:'].device_file
+    # parallel devices - LPT1: must always be defined
+    print_trigger = config.options['print-trigger']
+    backend.devices['LPT1:'] = LPTDevice(config.options['lpt1'], nullstream, print_trigger) 
+    backend.devices['LPT2:'] = LPTDevice(config.options['lpt2'], None, print_trigger)
+    backend.devices['LPT3:'] = LPTDevice(config.options['lpt3'], None, print_trigger)
+    backend.lpt1_file = backend.devices['LPT1:'].device_file
+    # serial devices
+    global max_reclen, serial_in_size
     if config.options['max-reclen'] != None:
         max_reclen = config.options['max-reclen']
         max_reclen = max(1, min(32767, max_reclen))
     if config.options['serial-buffer-size'] != None:
         serial_in_size = config.options['serial-buffer-size']
-    print_trigger = config.options['print-trigger']
-    # always defined
-    backend.devices['SCRN:'] = SCRNFile()
-    backend.devices['KYBD:'] = KYBDFile()
-    backend.devices['LPT1:'] = create_device('LPT1:', config.options['lpt1'], nullstream) 
-    # optional
-    backend.devices['LPT2:'] = create_device('LPT2:', config.options['lpt2'])
-    backend.devices['LPT3:'] = create_device('LPT3:', config.options['lpt3'])
-    backend.devices['COM1:'] = create_device('COM1:', config.options['com1'])
-    backend.devices['COM2:'] = create_device('COM2:', config.options['com2'])
+    backend.devices['COM1:'] = COMDevice(config.options['com1'], max_reclen, serial_in_size)
+    backend.devices['COM2:'] = COMDevice(config.options['com2'], max_reclen, serial_in_size)
+    # cassette
+    backend.devices['CAS1:'] = CASDevice(config.options['cas1'])
+    # disk devices
+    #TODO: move from oslayer
+
+
+
+
+######################################################
+# Device files
+#
+#  Some devices have a master file, where newly opened files inherit 
+#  width (and other?) settings from this file
+#  For example, WIDTH "SCRN:", 40 works directly on the console,
+#  whereas OPEN "SCRN:" FOR OUTPUT AS 1: WIDTH #1,23 works on the wrapper file 
+#  but does ot affect other files on SCRN: nor the console itself.
+#  Likewise, WIDTH "LPT1:" works on LLIST etc and on lpt1 for the next time it's opened.
+
+
+############################################################################
+
+def parse_protocol_string(arg):
+    """ Retrieve protocol and options from argument. """
+    argsplit = arg.split(':', 1)
+    if len(argsplit) == 1:
+        addr, val = None, argsplit[0]
+    else:
+        addr, val = argsplit[0].upper(), ''.join(argsplit[1:])
+    return addr, val
+
+            
+class Device(object):
+    """ Device interface for master-file devices. """
     
-def open_file_or_device(number, name, mode='I', access='R', lock='', reclen=128, defext=''):
-    """ Open a file or device specified by name. """
-    if (not name) or (number < 0) or (number > max_files):
+    allowed_modes = ''
+    allowed_protocols = ()
+
+    def __init__(self):
+        self.device_file = None
+
+    def __del__(self):
+        """ Dispose of device. """
+        if self.device_file:
+            self.device_file.close()
+
+    def open(self, number, param, filetype, mode, access, lock, reclen, defext):
+        """ Open a file on the device. """
+        if mode not in self.allowed_modes:
+            # bad file mode
+            raise error.RunError(54)
+        new_file = self.clone_master(number, mode, access, lock, reclen)
+        state.io_state.files[number] = new_file
+        return new_file
+
+    def clone_master(self, number, mode, access, lock='', reclen=128):
+        """ Clone device object as device file object (helper method). """
+        inst = copy.copy(self.device_file)
+        inst.number = number
+        inst.access = access
+        inst.mode = mode
+        inst.lock = lock
+        inst.reclen = reclen
+        if number != 0:
+            state.io_state.files[number] = inst
+        return inst
+                
+
+
+class SCRNDevice(Device):
+    """ Screen device (SCRN:) """
+    
+    allowed_modes = 'ORS'
+
+    def __init__(self):
+        """ Initialise screen device. """
+        # open a master file on the screen
+        self.device_file = SCRNFile()
+
+
+class KYBDDevice(Device):
+    """ Keyboard device (KYBD:) """
+    
+    allowed_modes = 'IRL'
+
+    def __init__(self):
+        """ Initialise keyboard device. """
+        # open a master file on the keyboard
+        self.device_file = KYBDFile()
+        
+
+class LPTDevice(Device):
+    """ Parallel port or printer device (LPTn:) """
+
+    allowed_protocols = ('PRINTER', 'PARPORT', 'FILE')
+    allowed_modes = 'ORS'
+
+    def __init__(self, arg, default_stream, flush_trigger):
+        """ Initialise LPTn: device. """
+        addr, val = parse_protocol_string(arg)
+        if val == None or addr and addr not in self.allowed_protocols:
+            logging.warning('Could not attach %s to LPT device', arg)
+        elif addr == 'FILE':
+            try:
+                if not os.path.exists(val):
+                    open(val, 'wb').close() 
+                self.stream = open(val, 'r+b')
+            except (IOError, OSError) as e:
+                logging.warning('Could not attach file %s to LPT device: %s', val, str(e))
+                self.stream = default_stream
+        elif addr == 'PARPORT':
+            # port can be e.g. /dev/parport0 on Linux or LPT1 on Windows. Just a number counting from 0 would also work.
+           self.stream = serial_socket.parallel_port(val)
+        else:
+            # 'PRINTER' is default
+            self.stream = printer.PrinterStream(val)
+        self.device_file = LPTFile(self.stream, flush_trigger)
+        self.device_file.flush_trigger = flush_trigger
+
+    def open(self, number, param, filetype, mode, access, lock, reclen, defext):
+        """ Open a file on LPTn: """
+        f = Device.open(self, number, param, filetype, mode, access, lock, reclen, defext)
+        # don't trigger flushes on LPT files, just on the device directly
+        f.flush_trigger = 'close'
+        return f
+
+
+class COMDevice(Device):
+    """ Serial port device (COMn:). """
+
+    allowed_protocols = ('PORT', 'SOCKET')
+    allowed_modes = 'IOARLS'
+
+    def __init__(self, arg, max_reclen, serial_in_size):
+        """ Initialise COMn: device. """
+        addr, val = parse_protocol_string(arg)
+        if val == None or addr and addr not in self.allowed_protocols:
+            logging.warning('Could not attach %s to COM device', arg)
+        elif addr == 'SOCKET':
+            self.stream = serial_socket.serial_for_url('socket://'+val)
+        else:
+            # 'PORT' is default
+            # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows. Or anything supported by serial_for_url (RFC 2217 etc)
+            self.stream = serial_socket.serial_for_url(val)
+        # FIXME: name not defined
+        self.device_file = COMFile(self.stream)
+    
+    def open(self, number, param, filetype, mode, access, lock, reclen, defext):
+        """ Open a file on COMn: """
+        # open the COM port
+        if self.stream._isOpen:
+            # file already open
+            raise error.RunError(55)
+        else:
+            try:
+                self.stream.open()
+            except serial_socket.SerialException:
+                # device timeout
+                raise error.RunError(24)
+        try:
+            self.set_parameters(param)
+        except Exception:
+            self.stream.close()
+            raise
+        return Device.open(self, number, param, filetype, mode, access, lock, reclen, defext)
+
+    def set_parameters(self, param):
+        """ Set serial port connection parameters """
+        max_param = 10
+        param_list = param.upper().split(',')
+        if len(param_list) > max_param:
+            # Bad file name
+            raise error.RunError(64)
+        param_list += ['']*(max_param-len(param_list))
+        speed, parity, data, stop, RS, CS, DS, CD, LF, PE = param_list
+        # set speed
+        if speed not in ('75', '110', '150', '300', '600', '1200', 
+                          '1800', '2400', '4800', '9600', ''):
+            # Bad file name
+            raise error.RunError(64)
+        speed = int(speed) if speed else 300
+        self.stream.baudrate = speed
+        # set parity
+        if parity not in ('S', 'M', 'O', 'E', 'N', ''):
+            raise error.RunError(64)
+        parity = parity or 'E'
+        self.stream.parity = parity
+        # set data bits
+        if data not in ('4', '5', '6', '7', '8', ''):
+            raise error.RunError(64)
+        data = int(data) if data else 7
+        bytesize = data + (parity != 'N')
+        if bytesize not in range(5, 9):
+            raise error.RunError(64)
+        self.stream.bytesize = bytesize
+        # set stopbits
+        if stop not in ('1', '2', ''):
+            raise error.RunError(64)
+        if not stop:
+            stop = 2 if (speed in (75, 110)) else 1
+        else:
+            stop = int(stop)
+        self.stream.stopbits = stop
+        if (RS not in ('RS', '') or CS[:2] not in ('CS', '')
+            or DS[:2] not in ('DS', '') or CD[:2] not in ('CD', '')
+            or LF not in ('LF', '') or PE not in ('PE', '')):
+            raise error.RunError(64)
+        # set LF
+        self.stream.linefeed = (LF != '')
+    
+
+class DiskDevice(object):
+    """ Disk device (A:, B:, C:, ...) """
+
+    allowed_modes = 'IORSL'
+
+    # posix access modes for BASIC modes INPUT, OUTPUT, RANDOM, APPEND 
+    # and internal LOAD and SAVE modes
+    access_modes = { 'I':'rb', 'O':'wb', 'R':'r+b', 'A':'ab', 'L': 'rb', 'S': 'wb' }
+    # posix access modes for BASIC ACCESS mode for RANDOM files only
+    access_access = { 'R': 'rb', 'W': 'wb', 'RW': 'r+b' }
+
+    def __init__(self, cwd):
+        """ Initialise a disk device. """
+        # current working directory on this drive
+        self.drive_cwd = cwd
+
+    def open(self, number, param, filetype, mode, access, lock, reclen, defext):
+        """ Open a file on a disk drive. """
+        # translate the file name to something DOS-ish if necessary
+        if mode in ('O', 'A'):
+            # don't open output or append files more than once
+            check_file_not_open(param)
+        if mode in ('I', 'L'):
+            name = oslayer.native_path(param, defext)
+        else:    
+            # random files: try to open matching file
+            # if it doesn't exist, create an all-caps 8.3 file name
+            name = oslayer.native_path(param, defext, make_new=True)
+        # obtain a lock
+        request_lock(name, lock, access)
+        # open the file
+        fhandle = self.open_stream(name, mode, access)
+        # apply the BASIC file wrapper
+        # TODO: instead of S, L -> use filetype in ('P', 'B', 'M')
+        #        but check what happens with ASCII program files
+        if filetype in ('S', 'L'): # save, load
+            inst = RawFile(fhandle, name, number, mode, access, lock)
+        elif mode in ('I', 'O', 'A'):
+            inst = TextFile(fhandle, name, number, mode, access, lock)
+        else:
+            inst = RandomFile(fhandle, name, number, mode, access, lock, reclen)
+
+    def open_stream(self, native_name, mode, access):
+        """ Open a stream on disk by os-native name with BASIC mode and access level. """
+        name = str(native_name)
+        if (access and mode == 'R'):
+            posix_access = self.access_access[access] 
+        else:
+            posix_access = self.access_modes[mode]  
+        try:
+            # create file if in RANDOM or APPEND mode and doesn't exist yet
+            # OUTPUT mode files are created anyway since they're opened with wb.
+            if ((mode == 'A' or (mode == 'R' and access == 'RW')) and 
+                    not os.path.exists(name)):
+                open(name, 'wb').close() 
+            if mode == 'A':
+                # APPEND mode is only valid for text files (which are seekable);
+                # first cut of EOF byte, if any.
+                f = open(name, 'r+b')
+                try:
+                    f.seek(-1, 2)
+                    if f.read(1) == '\x1a':
+                        f.seek(-1, 1)
+                        f.truncate()
+                except IOError:
+                    pass
+                f.close()
+            return open(name, posix_access)
+        except EnvironmentError as e:
+            oslayer.handle_oserror(e)
+        except TypeError:
+            # bad file number, which is what GW throws for open chr$(0)
+            raise error.RunError(52)    
+
+
+class CASDevice(object):
+    """ Cassette tape device (CASn:) """
+    
+    allowed_protocols = ('CAS', 'WAV')
+    allowed_modes = 'IOLS'
+
+    def __init__(self, arg):
+        """ Initialise tape device. """
+        addr, val = parse_protocol_string(arg)
+        ext = val.split('.')[-1].upper()
+        if addr == 'WAV' or (addr != 'CAS' and ext == 'WAV'):
+            # if unspecified, determine type on the basis of filename extension
+            self.tapestream = cassette.WAVStream(val)        
+        else:
+            # 'CAS' is default
+            self.tapestream = cassette.CASStream(val)        
+
+    def open(self, number, param, filetype, mode, access, lock, reclen, defext):
+        """ Open a file on tape. """
+        if mode == 'L':
+            file_types = ('A','B','P','M')
+        elif mode in ('I', 'O'):
+            file_types = ('D', )
+        elif mode == 'S':
+            # FIXME - need a file type parameter so that we know we're saving 
+            # (instead of writing magic byte)...
+            # bytecode or protected or bsave
+            # also need to provide length, seg, offs for these
+            file_types = ('A', )
+        self.tapestream.open(param, file_types, mode, length=0, seg=0, offs=0)
+    
+
+
+#########################
+
+def open_file(number, description, filetype, mode='I', access='R', lock='', reclen=128, defext=''):
+    """ Open a file on a device specified by description. """
+    # TODO: defext can be handled by Disk device now that we know filetype; no need to carry it for everyone
+    if (not description) or (number < 0) or (number > max_files):
         # bad file number; also for name='', for some reason
         raise error.RunError(52)
     if number in state.io_state.files:
         # file already open
         raise error.RunError(55)
-    name, mode = str(name), mode.upper()
+    name, mode = str(description), mode.upper()
     inst = None
-    split_colon = name.upper().split(':')
+    split_colon = name.split(':')
     if len(split_colon) > 1: # : found
-        dev_name = split_colon[0] + ':'
+        dev_name = (split_colon[0] + ':').upper()
         dev_param = split_colon[1] 
         try:
-            inst = device_open(dev_name, number, mode, access, lock, reclen, dev_param)
+            # check if device exists and allows the requested mode    
+            # if not exists, raise KeyError
+            device = backend.devices[dev_name]
+            if not device:
+                if len(dev_name) > 2:
+                    # device unavailable
+                    raise error.RunError(68)
+                else:
+                    # for drive letters: path not found
+                    raise error.RunError(76)
+            return device.open(number, dev_param, filetype, mode, access, lock, reclen, defext)
         except KeyError:    
             if len(dev_name) > 2:
                 # devname could be A:, B:, C:, etc.. but anything longer is an error (bad file number, for some reason).
-                raise error.RunError(52)   
-    if not inst:
-        # translate the file name to something DOS-ish if necessary
-        if mode in ('O', 'A'):
-            # don't open output or append files more than once
-            check_file_not_open(name)
-        if mode in ('I', 'L'):
-            name = oslayer.native_path(name, defext)
-        else:    
-            # random files: try to open matching file
-            # if it doesn't exist, create an all-caps 8.3 file name
-            name = oslayer.native_path(name, defext, make_new=True)
-        # obtain a lock
-        request_lock(name, lock, access)
-        # open the file
-        fhandle = oslayer.open_file(name, mode, access)
-        # apply the BASIC file wrapper
-        if mode in ('S', 'L'): # save, load
-            inst = BaseFile(fhandle, name, number, mode, access, lock)
-        elif mode in ('I', 'O', 'A'):
-            inst = TextFile(fhandle, name, number, mode, access, lock)
-        else:
-            inst = RandomFile(fhandle, name, number, mode, access, lock, reclen)
-    return inst    
-    
+                raise error.RunError(52)
+
 def get_file(num, mode='IOAR'):
     """ Get the file object for a file number and check allowed mode. """
     try:
@@ -162,6 +469,7 @@ def get_file(num, mode='IOAR'):
      
 def check_file_not_open(path):
     """ Raise an error if the file is open. """
+    # TODO: this should be a disk-only thing!
     for f in state.io_state.files:
         if oslayer.native_path(path) == state.io_state.files[f].name:
             raise error.RunError(55)
@@ -172,9 +480,17 @@ def find_files_by_name(name):
       
 def close_all():
     """ Close all non-system files. """
-    for f in list(state.io_state.files):
-        if f > 0:
-            state.io_state.files[f].close()
+    for num, f in state.io_state.files.iteritems():
+        if num > 0:
+            f.close()
+
+#D?
+def close_system_files():
+    """ Close all files including system files. """
+    for f in state.io_state.files.values():
+        f.close()
+
+############################
 
 def lock_records(nr, start, stop):
     """ Try to lock a range of records in a file. """
@@ -230,11 +546,10 @@ def request_lock(name, lock, access):
             if f.access == lock or lock == 'RW':
                 raise error.RunError(70)
 
-
 #################################################################################
 
 
-class BaseFile(object):
+class RawFile(object):
     """ Base file object. """
     
     def __init__(self, fhandle, name='', number=0, mode='A', access='RW', lock=''):
@@ -247,6 +562,7 @@ class BaseFile(object):
         self.access = access
         self.lock = lock
         self.lock_list = set()    
+        # TODO: let open_file handle this
         if number != 0:
             state.io_state.files[number] = self
     
@@ -321,12 +637,12 @@ class BaseFile(object):
         self.fhandle.truncate()
 
 
-class TextFile(BaseFile):
+class TextFile(RawFile):
     """ Text file object. """
     
     def __init__(self, fhandle, name='', number=0, mode='A', access='RW', lock=''):
         """ Initialise text file object. """
-        BaseFile.__init__(self, fhandle, name, number, mode, access, lock)
+        RawFile.__init__(self, fhandle, name, number, mode, access, lock)
         if self.mode in ('I', 'O', 'R', 'S', 'L'):
             self.fhandle.seek(0)
         else:
@@ -340,7 +656,7 @@ class TextFile(BaseFile):
         if self.mode in ('O', 'A', 'S'):
             # write EOF char
             self.fhandle.write('\x1a')
-        BaseFile.close(self)
+        RawFile.close(self)
         self.fhandle.close()
         
     # read line    
@@ -453,12 +769,15 @@ class TextFile(BaseFile):
         return lof
 
 
-class RandomBase(BaseFile):
+class RandomBase(RawFile):
     """ Random-access file base object. """
-    
+
+    # FIELD overflow
+    overflow_error = 50
+
     def __init__(self, fhandle, name, number, mode, access, lock, reclen=128):
         """ Initialise random-access file. """
-        BaseFile.__init__(self, fhandle, name, number, mode, access, lock)
+        RawFile.__init__(self, fhandle, name, number, mode, access, lock)
         self.reclen = reclen
         # replace with empty field if already exists    
         try:
@@ -536,9 +855,6 @@ class RandomBase(BaseFile):
 class RandomFile(RandomBase):
     """ Random-access file object. """
     
-    # FIELD overflow
-    overflow_error = 50
-
     def __init__(self, fhandle, name, number, mode, access, lock, reclen=128):
         """ Initialise random-access file. """        
         RandomBase.__init__(self, fhandle, name, number, mode, access, lock, reclen)
@@ -594,182 +910,17 @@ class RandomFile(RandomBase):
 
 #################################################################################
 
-class ByteStream(object):
-    """ A StringIO-like wrapper for bytearray. """
 
-    def __init__(self, contents=''):       
-        """ Create e new ByteStream. """
-        self.setvalue(contents)
-
-    def setvalue(self, contents=''):
-        """ Assign a bytearray s, move location to 0. This does not create a copy, changes affect the original bytearray. """
-        self._contents = contents
-        self._loc = 0
-    
-    def getvalue(self):
-        """ Retrieve the bytearray. changes will affect the bytestream. """
-        return self._contents
-        
-    def tell(self):
-        """ Get the current location. """    
-        return self._loc
-        
-    def seek(self, n_bytes, from_where=0):
-        """ Move loc by n bytes from start(w=0), current(w=1) or end(w=2). """    
-        if from_where == 0:
-            self._loc = n_bytes
-        elif from_where == 1:
-            self._loc += n_bytes
-        elif from_where == 2:
-            self._loc = len(self._contents)-n_bytes        
-        if self._loc < 0:
-            self._loc = 0
-        elif self._loc > len(self._contents):
-            self._loc = len(self._contents)    
-    
-    def read(self, n_bytes=None):
-        """ Get an n-length string and move the location n forward. If loc>len, return empty string. """
-        if n_bytes == None:
-            n_bytes = len(self._contents) - self._loc
-        if self._loc >= len(self._contents):
-            self._loc = len(self._contents)
-            return ''
-        peeked = self._contents[self._loc:self._loc+n_bytes]
-        self._loc += len(peeked)   
-        return peeked
-            
-    def write(self, substr):
-        """ Write a str or bytearray or char s to the current location. Overwrite, do not insert. """    
-        if self._loc >= len(self._contents):
-            self._contents += substr
-            self._loc = len(self._contents)    
-        else:    
-            self._contents[self._loc:self._loc+len(substr)] = substr
-            self._loc += len(substr)
-
-    def truncate(self, n=None):
-        """ Clip off the bytearray after position n. """
-        if n == None:
-            n = self._loc
-        self._contents = self._contents[:n]
-        if self._loc >= len(self._contents):
-            self._loc = len(self._contents)
-
-    def close(self):
-        """ Close the stream. """
-        pass            
-
-######################################################
-# Device files
-#
-#  Each device has a 'device object' with file number 0, which can be 
-#  cloned into several 'device files' with a nonzero file number.
-#  For example, WIDTH "SCRN:, 40 works directly on the console,
-#  whereas OPEN "SCRN:" FOR OUTPUT AS 1: WIDTH #1,23 works on the wrapper file.
-#  Likewise, WIDTH "LPT1:" works on lpt1 for the next time it's opened.
-
-def create_device(name, arg, default=None):
-    """ Attach a device name to a new device object. """
-    if not arg:
-        stream = default
-    else:   
-        stream = create_device_stream(arg, allowed_protocols[name[:3]])
-        if not stream:
-            logging.warning('Could not attach %s to %s.' % (name, arg))
-            stream = default
-    if stream:        
-        if name[:3] == 'COM':
-            return COMFile(stream, name)
-        else:
-            return LPTFile(stream, name, flush_trigger=print_trigger)    
-    else:
-        return None        
-
-def create_device_stream(arg, allowed):
-    """ Create a device stream based on protocal string. """
-    argsplit = arg.split(':', 1)
-    if len(argsplit) == 1:
-        # use first allowed protocol as default
-        addr, val = allowed[0], argsplit[0]
-    elif len(argsplit) == 2:
-        addr, val = argsplit[0].upper(), argsplit[1]
-    else:
-        return None
-    if addr not in allowed:
-        return None
-    if addr == 'PRINTER':
-        stream = printer.PrinterStream(val)
-    elif addr == 'FILE':
-        try:
-            if not os.path.exists(val):
-                open(val, 'wb').close() 
-            stream = open(val, 'r+b')
-        except (IOError, OSError) as e:
-            return None    
-    elif addr == 'PARPORT':
-        # port can be e.g. /dev/parport0 on Linux or LPT1 on Windows. Just a number counting from 0 would also work.
-        stream = serial_socket.parallel_port(val)
-    elif addr == 'PORT':
-        # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows. Or anything supported by serial_for_url (RFC 2217 etc)
-        stream = serial_socket.serial_for_url(val)
-    elif addr == 'SOCKET':
-        stream = serial_socket.serial_for_url('socket://'+val)
-    else:
-        # File not found
-        raise error.RunError(53)
-    return stream
-            
-def device_open(device_name, number, mode, access, lock, reclen, param=''):
-    """ Open a file on a device. """
-    # check if device exists and allows the requested mode    
-    # if not exists, raise KeyError to caller
-    device = backend.devices[str(device_name).upper()]
-    if not device:    
-        # device unavailable
-        raise error.RunError(68)      
-    if mode not in device.allowed_modes:
-        # bad file mode
-        raise error.RunError(54)
-    # don't lock devices
-    return device.open(number, mode, access, '', reclen, param)
-
-def close_devices():
-    """ Close all devices. """
-    for d in backend.devices:
-        if backend.devices[d]:
-            backend.devices[d].close()
-
-
-############################################################################
-
-def clone_device(dev, number, mode, access, lock='', reclen=128):
-    """ Clone device object as device file object (helper method). """
-    inst = copy.copy(dev)
-    inst.number = number
-    inst.access = access
-    inst.mode = mode
-    inst.lock = lock
-    inst.reclen = reclen
-    if number != 0:
-        state.io_state.files[number] = inst
-    return inst
-
-
-class NullDevice(object):
+class NullFile(object):
     """ Base object for devices and device files. """
     
     def __init__(self):
-        """ Initialse device object. """
+        """ Initialise null file. """
         self.number = 0
+        self.name = ''
 
-    def open(self, number, mode, access, lock, reclen, param=''):
-        """ Open a file on this device. """
-        if number != 0:
-            state.io_state.files[number] = self
-        return clone_device(self, number, mode, access, lock, reclen)
-    
     def close(self):
-        """ Close this device file. """
+        """ Close this file. """
         if self.number != 0:
             del state.io_state.files[self.number]
     
@@ -813,12 +964,8 @@ class NullDevice(object):
         """ Check for end-of-file. """
         return False    
 
-    def set_parameters(self, param):
-        """ Set device parameters. """
-        pass
-        
-        
-class KYBDFile(NullDevice):
+
+class KYBDFile(NullFile):
     """ KYBD device: keyboard. """
 
     input_replace = { 
@@ -827,15 +974,14 @@ class KYBDFile(NullDevice):
         '\x00\x50': '\xFF\x1F', '\x00\x51': '\xFE', '\x00\x53': '\xFF\x7F', '\x00\x52': '\xFF\x12'
         }
 
-    allowed_modes = 'IR'
     col = 0
     
     def __init__(self):
-        """ Initialise keyboard device. """
+        """ Initialise keyboard file. """
+        NullFile.__init__(self)
         self.name = 'KYBD:'
         self.mode = 'I'
         self.width = 255
-        NullDevice.__init__(self)
         
     def read_line(self):
         """ Read a line from the keyboard. """
@@ -887,19 +1033,17 @@ class KYBDFile(NullDevice):
             console.set_width(new_width)
 
 
-class SCRNFile(NullDevice):
-    """ SCRN: device, allows writing to the screen as a text file. 
-        SCRN: device *files* work as a wrapper text file. """
+class SCRNFile(NullFile):
+    """ SCRN: file, allows writing to the screen as a text file. 
+        SCRN: files work as a wrapper text file. """
 
-    allowed_modes = 'OR'
-    
     def __init__(self):
-        """ Initialise screen device. """
+        """ Initialise screen file. """
+        NullFile.__init__(self)
         self.name = 'SCRN:'
         self.mode = 'O'
         self._width = state.console_state.screen.mode.width
         self._col = state.console_state.col
-        NullDevice.__init__(self)
     
     def write(self, s):
         """ Write string s to SCRN: """
@@ -938,8 +1082,6 @@ class SCRNFile(NullDevice):
                 self._col = 1
             else:
                 self._col += 1
-                
-                
             
     def write_line(self, inp=''):
         """ Write a string to the screen and follow by CR. """
@@ -970,26 +1112,18 @@ class SCRNFile(NullDevice):
             self._width = new_width
 
 
-class LPTFile(BaseFile):
+class LPTFile(RawFile):
     """ LPTn: device - line printer or parallel port. """
-    
-    allowed_modes = 'OR'
-    
-    def __init__(self, stream, name, flush_trigger='close'):
+
+    def __init__(self, stream, flush_trigger='close'):
         """ Initialise LPTn. """
+        # we don't actually need the name for non-disk files
+        RawFile.__init__(self, StringIO(), 'LPTn:')
         # width=255 means line wrap
         self.width = 255
         self.col = 1
         self.output_stream = stream
-        BaseFile.__init__(self, StringIO(), name)
         self.flush_trigger = flush_trigger
-
-    def open(self, number, mode, access, lock, reclen, param=''):
-        """ Open a file on LPTn. """
-        f = clone_device(self, number, mode, access, lock, reclen)
-        # don't trigger flushes on LPT files, just on the device directly
-        f.flush_trigger = 'close'
-        return f
 
     def flush(self):
         """ Flush the printer buffer to the underlying stream. """
@@ -1051,46 +1185,26 @@ class LPTFile(BaseFile):
         except ValueError:
             # already closed, ignore
             pass    
-        BaseFile.close(self)
+        RawFile.close(self)
         
         
 class COMFile(RandomBase):
     """ COMn: device - serial port. """
     
-    allowed_modes = 'IOAR'
-    
     # communications buffer overflow
     overflow_error = 69
 
-    def __init__(self, stream, name):
+    def __init__(self, stream):
         """ Initialise COMn: device """
-        self._in_buffer = bytearray()
-        RandomBase.__init__(self, stream, name, 0, 'R', 'RW', '', serial_in_size)
-
-    def open(self, number, mode, access, lock, reclen, param=''):
-        """ Open a file on COMn """
-        # open the COM port
-        if self.fhandle._isOpen:
-            # file already open
-            raise error.RunError(55)
-        else:
-            try:
-                self.fhandle.open()
-            except serial_socket.SerialException:
-                # device timeout
-                raise error.RunError(24)
+        # we don't actually need the name for non-disk files
+        RandomBase.__init__(self, stream, 'COMn:', 0, 'R', 'RW', '', serial_in_size)
+        self.in_buffer = bytearray()
         self.linefeed = False
-        try:
-            self.set_parameters(param)
-        except Exception:
-            self.close()
-            raise
-        return clone_device(self, number, mode, access, lock, reclen)   
-    
+
     def check_read(self):
         """ Fill buffer at most up to buffer size; non blocking. """
         try:
-            self._in_buffer += self.fhandle.read(serial_in_size - len(self._in_buffer))
+            self.in_buffer += self.fhandle.read(serial_in_size - len(self.in_buffer))
         except (serial_socket.SerialException, ValueError):
             # device I/O
             raise error.RunError(57)
@@ -1101,9 +1215,9 @@ class COMFile(RandomBase):
         while len(out) < num:
             # non blocking read
             self.check_read()
-            to_read = min(len(self._in_buffer), num - len(out))
-            out += str(self._in_buffer[:to_read])
-            del self._in_buffer[:to_read]
+            to_read = min(len(self.in_buffer), num - len(out))
+            out += str(self.in_buffer[:to_read])
+            del self.in_buffer[:to_read]
             # allow for break & screen updates
             backend.wait()        
         return out
@@ -1130,8 +1244,8 @@ class COMFile(RandomBase):
     
     def peek_char(self):
         """ Get the next char to be read. """
-        if self._in_buffer:
-            return str(self._in_buffer[0])
+        if self.in_buffer:
+            return str(self.in_buffer[0])
         else:
             return ''    
         
@@ -1163,7 +1277,7 @@ class COMFile(RandomBase):
         # don't use inWaiting() as SocketSerial.inWaiting() returns dummy 0    
         # fill up buffer insofar possible
         self.check_read()
-        return len(self._in_buffer) 
+        return len(self.in_buffer) 
             
     def eof(self):
         """ EOF: no chars waiting. """
@@ -1179,49 +1293,74 @@ class COMFile(RandomBase):
         self.fhandle.close()
         RandomBase.close(self)
 
-    def set_parameters(self, param):
-        """ Set serial port connection parameters """
-        max_param = 10
-        param_list = param.upper().split(',')
-        if len(param_list) > max_param:
-            # Bad file name
-            raise error.RunError(64)
-        param_list += ['']*(max_param-len(param_list))
-        speed, parity, data, stop, RS, CS, DS, CD, LF, PE = param_list
-        # set speed
-        if speed not in ('75', '110', '150', '300', '600', '1200', 
-                          '1800', '2400', '4800', '9600', ''):
-            # Bad file name
-            raise error.RunError(64)
-        speed = int(speed) if speed else 300
-        self.fhandle.baudrate = speed
-        # set parity
-        if parity not in ('S', 'M', 'O', 'E', 'N', ''):
-            raise error.RunError(64)
-        parity = parity or 'E'
-        self.fhandle.parity = parity
-        # set data bits
-        if data not in ('4', '5', '6', '7', '8', ''):
-            raise error.RunError(64)
-        data = int(data) if data else 7
-        bytesize = data + (parity != 'N')
-        if bytesize not in range(5, 9):
-            raise error.RunError(64)
-        self.fhandle.bytesize = bytesize
-        # set stopbits
-        if stop not in ('1', '2', ''):
-            raise error.RunError(64)
-        if not stop:
-            stop = 2 if (speed in (75, 110)) else 1
-        else:
-            stop = int(stop)
-        self.fhandle.stopbits = stop
-        if (RS not in ('RS', '') or CS[:2] not in ('CS', '')
-            or DS[:2] not in ('DS', '') or CD[:2] not in ('CD', '')
-            or LF not in ('LF', '') or PE not in ('PE', '')):
-            raise error.RunError(64)
-        # set LF
-        self.linefeed = (LF != '')
+
+class CASFile(NullFile):
+    """ Base object for devices and device files. """
+    
+    def __init__(self, tapestream, name='', number=0, mode='A'):
+        """ Initialise file on tape. """
+        NullFile.__init__(self)
+        self.number = number
+        self.tapestream = tapestream
+        self.name = name
+        self.mode = mode        
+
+    def close(self):
+        """ Close this device file. """
+        NullFile.close(self)
+
+    def lof(self):
+        """ LOF: illegal function call. """
+        raise error.RunError(5)
+        
+    def loc(self):
+        """ LOC: illegal function call. """
+        raise error.RunError(5)
+        
+    def eof(self):
+        """ End of file. """
+        if self.mode in ('A', 'O'):
+            return False
+        return self.tapestream.eof()        
+           
+    def write(self, s):
+        """ Write string s to tape file. """
+        self.tapestream.write(s)
+
+    def write_line(self, s):
+        """ Write string s and CR to tape file. """
+        self.write(s + '\r')
+
+    def set_width(self, new_width=255):
+        """ Set device width. """
+        # WIDTH has no effect on tape - not even on text files.
+        pass
+    
+    def read_chars(self, n):
+        """ Read a list of chars from device. """
+        return list(self.read(n))
+
+    def read(self, n):
+        """ Read a string from device. """
+        return self.tapestream.read(n)
+
+    def read_line(self):
+        """ Read a line from device. """
+        if self.end_of_file():
+            # input past end
+            raise error.RunError(62)
+        # readline breaks line on LF, we can only break on CR
+        s = ''
+        while len(s) < 255:
+            c = self.tapestream.read(1)
+            if c == '':
+                break
+            elif c == '\r':
+                break
+            else:        
+                s += c    
+        return s
+
 
 prepare()
 

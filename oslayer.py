@@ -31,12 +31,6 @@ else:
     except ImportError:
         pexpect = None    
 
-# posix access modes for BASIC modes INPUT, OUTPUT, RANDOM, APPEND 
-# and internal LOAD and SAVE modes
-access_modes = { 'I':'rb', 'O':'wb', 'R':'r+b', 'A':'ab', 'L': 'rb', 'S': 'wb' }
-# posix access modes for BASIC ACCESS mode for RANDOM files only
-access_access = { 'R': 'rb', 'W': 'wb', 'RW': 'r+b' }
-
 # translate os error codes to BASIC error codes
 os_error = {
     # file not found
@@ -54,6 +48,7 @@ os_error = {
     errno.EEXIST: 75, errno.ENOTEMPTY: 75,
     }
 
+# D, move to iolayer
 # standard drive mappings
 drives = { 'Z': os.getcwd(), }
 current_drive = 'Z'
@@ -115,38 +110,6 @@ def get_env_entry(expr):
     
 #########################################
 # file system
-
-def open_file(native_name, mode, access):
-    """ Open a file by os-native name with BASIC mode and access level. """
-    name = str(native_name)
-    if (access and mode == 'R'):
-        posix_access = access_access[access] 
-    else:
-        posix_access = access_modes[mode]  
-    try:
-        # create file if in RANDOM or APPEND mode and doesn't exist yet
-        # OUTPUT mode files are created anyway since they're opened with wb.
-        if ((mode == 'A' or (mode == 'R' and access == 'RW')) and 
-                not os.path.exists(name)):
-            open(name, 'wb').close() 
-        if mode == 'A':
-            # APPEND mode is only valid for text files (which are seekable);
-            # first cut of EOF byte, if any.
-            f = open(name, 'r+b')
-            try:
-                f.seek(-1, 2)
-                if f.read(1) == '\x1a':
-                    f.seek(-1, 1)
-                    f.truncate()
-            except IOError:
-                pass
-            f.close()
-        return open(name, posix_access)
-    except EnvironmentError as e:
-        handle_oserror(e)
-    except TypeError:
-        # bad file number, which is what GW throws for open chr$(0)
-        raise error.RunError(52)    
 
 def chdir(name):
     """ Change working directory to given BASIC path. """
@@ -476,7 +439,6 @@ if plat.system == 'Windows':
 elif plat.system == 'Android':
     def disk_free(path):
         """ Return the number of free bytes on the drive. """
-        # TODO: implement with jnius
         return 0        
 else:
     def disk_free(path):

@@ -637,7 +637,7 @@ def exec_bload(ins):
         if offset < 0:
             offset += 0x10000           
     util.require(ins, util.end_statement)
-    machine.bload(iolayer.open_file_or_device(0, name, mode='L', defext=''), offset)
+    machine.bload(iolayer.open_file(0, name, filetype='M', mode='L', defext=''), offset)
     
 def exec_bsave(ins):
     """ BSAVE: save a block of memory to a file. Limited implementation. """
@@ -654,7 +654,7 @@ def exec_bsave(ins):
     if length < 0:
         length += 0x10000         
     util.require(ins, util.end_statement)
-    machine.bsave(iolayer.open_file_or_device(0, name, mode='S', defext=''), offset, length)
+    machine.bsave(iolayer.open_file(0, name, filetype='M', mode='S', defext=''), offset, length)
 
 def exec_call(ins):
     """ CALL: call an external procedure. Not implemented. """
@@ -866,9 +866,10 @@ def exec_list(ins):
     """ LIST: output program lines. """
     from_line, to_line = parse_line_range(ins)
     if util.skip_white_read_if(ins, (',',)):
-        out = iolayer.open_file_or_device(0, vartypes.pass_string_unpack(expressions.parse_expression(ins)), 'O')
+        out = iolayer.open_file(0, vartypes.pass_string_unpack(expressions.parse_expression(ins)), 
+                                filetype='A', mode='O')
     else:
-        out = backend.devices['SCRN:']
+        out = backend.scrn_file
     util.require(ins, util.end_statement)
     program.list_lines(out, from_line, to_line)    
 
@@ -886,7 +887,7 @@ def exec_load(ins):
     if comma:
         util.require_read(ins, 'R')
     util.require(ins, util.end_statement)
-    program.load(iolayer.open_file_or_device(0, name, mode='L', defext='BAS'))
+    program.load(iolayer.open_file(0, name, filetype='ABP', mode='L', defext='BAS'))
     reset.clear()
     if comma:
         # in ,R mode, don't close files; run the program
@@ -923,7 +924,7 @@ def exec_chain(ins):
     util.require(ins, util.end_statement)
     if state.basic_state.protected and action == program.merge:
             raise error.RunError(5)
-    program.chain(action, iolayer.open_file_or_device(0, name, mode='L', defext='BAS'), jumpnum, delete_lines)
+    program.chain(action, iolayer.open_file(0, name, filetype='ABP', mode='L', defext='BAS'), jumpnum, delete_lines)
     # preserve DEFtype on MERGE
     reset.clear(preserve_common=True, preserve_all=common_all, preserve_deftype=(action==program.merge))
 
@@ -953,14 +954,14 @@ def exec_save(ins):
         mode = util.skip_white_read(ins).upper()
         if mode not in ('A', 'P'):
             raise error.RunError(2)
-    program.save(iolayer.open_file_or_device(0, name, mode='S', defext='BAS'), mode)
+    program.save(iolayer.open_file(0, name, filetype=mode, mode='S', defext='BAS'), mode)
     util.require(ins, util.end_statement)
     
 def exec_merge(ins):
     """ MERGE: merge lines from file into current program. """
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
-    program.merge(iolayer.open_file_or_device(0, name, mode='L', defext='BAS') )
+    program.merge(iolayer.open_file(0, name, filetype='A', mode='L', defext='BAS') )
     util.require(ins, util.end_statement)
     
 def exec_new(ins):
@@ -1071,7 +1072,7 @@ def exec_open(ins):
     elif mode != 'R' and access and access != default_access_modes[mode]:
         raise error.RunError(2)        
     util.range_check(1, iolayer.max_reclen, reclen)        
-    iolayer.open_file_or_device(number, name, mode, access, lock, reclen) 
+    iolayer.open_file(number, name, 'D', mode, access, lock, reclen, defext='') 
     util.require(ins, util.end_statement)
                 
 def exec_close(ins):
@@ -1503,7 +1504,7 @@ def exec_run(ins):
     elif c not in util.end_statement:
         name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_statement)
-        program.load(iolayer.open_file_or_device(0, name, mode='L', defext='BAS'))
+        program.load(iolayer.open_file(0, name, filetype='ABP', mode='L', defext='BAS'))
     flow.init_program()
     reset.clear(close_files=not comma)
     flow.jump(jumpnum)
@@ -1940,7 +1941,7 @@ def exec_input(ins):
             console.write(prompt) 
             line = console.wait_screenline(write_endl=newline)
             varlist = [ v[:] for v in readvar ]
-            varlist = representation.input_vars(varlist, iolayer.BaseFile(StringIO(line), mode='I'))
+            varlist = representation.input_vars(varlist, iolayer.RawFile(StringIO(line), mode='I'))
             if not varlist:
                 console.write_line('?Redo from start')  # ... good old Redo!
             else:
