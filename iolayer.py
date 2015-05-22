@@ -150,9 +150,14 @@ def open_file(number, description, filetype, mode='I', access='R', lock='', recl
             state.io_state.files[number] = new_file
         return new_file
     except KeyError:
+        ##D
         if len(dev_name) > 2:
             # devname could be A:, B:, C:, etc.. but anything longer is an error (bad file number, for some reason).
             raise error.RunError(52)
+        else:
+            # for drive letters: path not found
+            raise error.RunError(76)
+        ##D
 
 def get_file(num, mode='IOAR'):
     """ Get the file object for a file number and check allowed mode. """
