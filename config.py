@@ -444,7 +444,7 @@ def build_default_config_file(file_name):
     "\n"
     "[pcbasic]\n"
     "# Use the [pcbasic] section to specify options you want to be enabled by default.\n"
-    "# See USAGE or run pcbasic -h for a list of available options.\n"
+    "# See the documentation or run pcbasic -h for a list of available options.\n"
     "# for example (for version '%s'):\n" % plat.version)
     footer = (
     "\n\n# To add presets, create a section header between brackets and put the \n"
