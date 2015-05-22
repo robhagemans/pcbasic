@@ -45,19 +45,18 @@ if plat.system == 'Windows':
         """ Print the buffer to a Windows printer. """
         if printer_name == '' or printer_name=='default':
             printer_name = win32print.GetDefaultPrinter()
-        f = tempfile.NamedTemporaryFile(mode='wb', prefix='pcbasic_', 
-                                        suffix='.txt', delete=False)
-        # write UTF-8 Byte Order mark to ensure Notepad recognises encoding
-        f.write('\xef\xbb\xbf')
-        f.write(printbuf)
-        # fMask = SEE_MASK_NOASYNC(0x00000100) + SEE_MASK_NOCLOSEPROCESS
-        resdict = win32com.shell.shell.ShellExecuteEx(fMask=256+64,
-                        lpVerb='printto', lpFile=f.name, 
-                        lpParameters='"%s"' % printer_name)
-        handle = resdict['hProcess']
-        if win32event.WaitForSingleProcess(handle, 500) != win32event.WAIT_OBJECT_0:
-            logging.warning('Printing process timeout')
-        f.close()
+        with tempfile.NamedTemporaryFile(mode='wb', prefix='pcbasic_',
+                                         suffix='.txt', delete=False) as f:
+            # write UTF-8 Byte Order mark to ensure Notepad recognises encoding
+            f.write('\xef\xbb\xbf')
+            f.write(printbuf)
+            # fMask = SEE_MASK_NOASYNC(0x00000100) + SEE_MASK_NOCLOSEPROCESS
+            resdict = win32com.shell.shell.ShellExecuteEx(fMask=256+64,
+                            lpVerb='printto', lpFile=f.name,
+                            lpParameters='"%s"' % printer_name)
+            handle = resdict['hProcess']
+            if win32event.WaitForSingleProcess(handle, 500) != win32event.WAIT_OBJECT_0:
+                logging.warning('Printing process timeout')
         
 elif plat.system == 'Android':
     def line_print(printbuf, printer_name):
