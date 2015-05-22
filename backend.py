@@ -996,7 +996,7 @@ class Screen(object):
                 info = self.text_data[new_width]
         except KeyError:
             # no such mode
-            info = None
+            raise error.RunError(5)
         # vpage and apage nums are persistent on mode switch with SCREEN
         # on pcjr only, reset page to zero if current page number would be too high.
         if new_vpagenum == None:    
@@ -1029,8 +1029,7 @@ class Screen(object):
                 self.mode.set_memory(self.mode.video_segment*0x10, save_mem)
         else:
             # only switch pages
-            if (not info or
-                    new_apagenum >= info.num_pages or 
+            if (new_apagenum >= info.num_pages or
                     new_vpagenum >= info.num_pages):
                 raise error.RunError(5)
             self.set_page(new_vpagenum, new_apagenum)
