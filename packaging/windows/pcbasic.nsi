@@ -27,7 +27,7 @@
 
 
 ;Name and file
-Name "PC-BASIC 3.23"
+Name "PC-BASIC"
 OutFile "pcbasic-win32.exe"
 
 !include LogicLib.nsh
