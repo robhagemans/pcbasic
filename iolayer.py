@@ -395,14 +395,12 @@ class COMDevice(Device):
 
 import os
 import errno
+from fnmatch import fnmatch
 
 import plat
 
 if plat.system == 'Windows':
     import win32api
-
-# working directories; must not start with a /
-state.io_state.drive_cwd = { 'Z:': '', }
 
 # translate os error codes to BASIC error codes
 os_error = {
@@ -426,7 +424,7 @@ os_error = {
 def prepare_disks():
     """ Initialise disk devices. """
     global current_device
-    drives = {}
+    drives = { 'Z': (os.getcwd(), '') }
     current_drive = 'Z'
     for a in config.options['mount']:
         try:
@@ -436,21 +434,22 @@ def prepare_disks():
             if not os.path.isdir(path):
                 logging.warning('Could not mount %s', a)
             else:
-                drives[letter.upper()] = path
-                state.io_state.drive_cwd[letter.upper()] = ''
+                drives[letter.upper()] = path, ''
         except (TypeError, ValueError):
             logging.warning('Could not mount %s', a)
     if config.options['map-drives']:
         drives, current_drive = map_drives()
+    print drives
     # allowable drive letters in GW-BASIC are letters or @
     for letter in '@' + string.ascii_uppercase:
         try:
-            path = drives[letter]
-            cwd = state.io_state.drive_cwd[letter]
+            path, cwd = drives[letter]
         except KeyError:
             path, cwd = None, ''
-        backend.devices[letter+':'] = DiskDevice(letter, path, cwd)
+        backend.devices[letter + ':'] = DiskDevice(letter, path, cwd)
+        print letter, path, cwd
     current_device = backend.devices[current_drive + ':']
+    print current_drive, current_device
 
 if plat.system == 'Windows':
     def map_drives():
@@ -465,8 +464,7 @@ if plat.system == 'Windows':
                 os.chdir(drive_letter + ':')
                 cwd = win32api.GetShortPathName(os.getcwd())
                 # must not start with \\
-                state.io_state.drive_cwd[drive_letter] = cwd[3:]
-                drives[drive_letter] = cwd[:3]
+                drives[drive_letter] = cwd[:3], cwd[3:]
             except WindowsError:
                 pass
         os.chdir(save_current)
@@ -477,17 +475,16 @@ else:
         # map root to C and set current to CWD:
         cwd = os.getcwd()
         # map C to root
-        drives['C'] = '/'
-        state.io_state.drive_cwd['C'] = cwd[1:]
+        drives['C'] = '/', cwd[1:]
         # map Z to cwd
-        drives['Z'] = cwd
-        state.io_state.drive_cwd['Z'] = ''
+        drives['Z'] = cwd, ''
         # map H to home
-        drives['H'] = os.path.expanduser('~')
-        if cwd[:len(drives['H'])] == drives['H']:
-            state.io_state.drive_cwd['H'] = cwd[len(drives['H'])+1:]
+        home = os.path.expanduser('~')
+        # if cwd is in home tree, set it also on H:
+        if cwd[:len(home)] == home:
+            drives['H'] = home, cwd[len(drives['H'])+1:]
         else:
-            state.io_state.drive_cwd['H'] = ''
+            drives['H'] = home, ''
         return drives, 'Z'
 
 ################################

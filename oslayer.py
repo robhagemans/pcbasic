@@ -8,7 +8,6 @@ This file is released under the GNU GPL version 3.
 
 import os 
 import subprocess
-from fnmatch import fnmatch
 import logging
 
 import plat
