@@ -202,7 +202,6 @@ class Device(object):
     """ Device interface for master-file devices. """
 
     allowed_modes = ''
-    allowed_protocols = ()
 
     def __init__(self):
         """ Set up device. """
@@ -397,6 +396,8 @@ import errno
 from fnmatch import fnmatch
 
 import plat
+# for peek
+import util
 
 if plat.system == 'Windows':
     import win32api
@@ -717,7 +718,7 @@ class DiskDevice(object):
             # undefined disk drive: path not found
             raise error.RunError(76)
         # set default extension for programs
-        if set(filetype).intersection(set(('P', 'B', 'A'))):
+        if set(filetype).intersection(set('PBA')):
             defext = 'BAS'
         else:
             defext = ''
@@ -736,12 +737,7 @@ class DiskDevice(object):
         # open the file
         fhandle = self.open_stream(name, mode, access)
         # apply the BASIC file wrapper
-        if set(filetype).intersection(set(('P', 'B', 'M'))):
-            return RawFile(fhandle, name, number, mode, access, lock)
-        elif mode in ('I', 'O', 'A'):
-            return TextFile(fhandle, name, number, mode, access, lock)
-        else:
-            return RandomFile(fhandle, name, number, mode, access, lock, reclen)
+        return open_diskfile(fhandle, filetype, mode, name, number, access, lock, reclen)
 
     def open_stream(self, native_name, mode, access):
         """ Open a stream on disk by os-native name with BASIC mode and access level. """
@@ -758,7 +754,7 @@ class DiskDevice(object):
                 open(name, 'wb').close()
             if mode == 'A':
                 # APPEND mode is only valid for text files (which are seekable);
-                # first cut of EOF byte, if any.
+                # first cut off EOF byte, if any.
                 f = open(name, 'r+b')
                 try:
                     f.seek(-1, 2)
@@ -977,6 +973,7 @@ class NullFile(object):
         """ Initialise file. """
         self.number = 0
         self.name = ''
+        self.filetype = ''
 
     def __enter__(self):
         """ Context guard. """
@@ -1043,7 +1040,7 @@ class RawFile(NullFile):
         self.mode = mode.upper()
         self.access = access
         self.lock = lock
-        self.lock_list = set()    
+        self.lock_list = set()
     
     # set_width
     # width
@@ -1194,6 +1191,45 @@ class RandomBase(RawFile):
 
 #################################################################################
 # Disk files
+
+def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock='', reclen=128):
+    """ Return the correct disk file object for this seekable stream. """
+    if set(filetype).intersection(set('ABP')):
+        # we're trying to load/save a program; even ascii programs are ProgramFile
+        return ProgramFile(fhandle, filetype, name, number, mode, access, lock)
+    elif mode in ('A', 'O'):
+        return TextFile(fhandle, name, number, mode, access, lock)
+    else:
+        return RandomFile(fhandle, name, number, mode, access, lock, reclen)
+
+
+class ProgramFile(RawFile):
+    """ File class for binary (B, P, M) files on disk device. """
+
+    magic = { 'B': '\xff', 'P': '\xfe', 'M': '\xfd', 'A': '' }
+    types = { '\xff': 'B', '\xfe': 'P', '\xfd': 'M' }
+
+    def __init__(self, fhandle, filetype, name='', number=0, mode='A', access='RW', lock=''):
+        """ Initialise program file object. """
+        RawFile.__init__(self, fhandle, name, number, mode, access, lock)
+        if self.mode == 'O':
+            self.write(self.magic[filetype])
+            self.filetype = filetype
+        else:
+            try:
+                self.filetype = self.types[util.peek(self.fhandle)]
+                self.read(1)
+            except KeyError:
+                self.filetype = 'A'
+            if self.filetype not in filetype:
+                raise error.RunError(54)
+
+    def close(self):
+        """ Close program file. """
+        if self.mode == 'O':
+            self.write('\x1a')
+        self.fhandle.close()
+
 
 class TextFile(RawFile):
     """ Text file on disk device. """

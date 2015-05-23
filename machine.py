@@ -122,8 +122,6 @@ def wait(addr, ander, xorer):
 
 def bload(g, offset):    
     """ Load a file into a block of memory. """
-    if g.read(1) != '\xfd':
-        raise error.RunError(54)
     seg = vartypes.uint_to_value(bytearray(g.read(2)))
     foffset = vartypes.uint_to_value(bytearray(g.read(2)))
     if offset == None:
@@ -136,24 +134,20 @@ def bload(g, offset):
         buf = buf[:-1]
     if tandy_syntax:
         buf = buf[:-7]        
-    g.close()
     addr = seg * 0x10 + offset
     set_memory_block(addr, buf)
 
 def bsave(g, offset, length):
     """ Save a block of memory into a file. """
-    seven_bytes = str('\xfd' + 
-                    vartypes.value_to_uint(state.basic_state.segment) +
+    six_bytes = str(vartypes.value_to_uint(state.basic_state.segment) +
                     vartypes.value_to_uint(offset) +
                     vartypes.value_to_uint(length))
-    g.write(seven_bytes)
+    g.write(six_bytes)
     addr = state.basic_state.segment * 0x10 + offset
     g.write(str(get_memory_block(addr, length)))
     # Tandys repeat the header at the end of the file
     if tandy_syntax:
-        g.write(seven_bytes)
-    g.write('\x1a')
-    g.close()
+        g.write('\xfd' + six_bytes)
 
 def varptr_file(filenum):
     """ Get address of FCB for a given file number. """

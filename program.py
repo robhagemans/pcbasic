@@ -299,35 +299,29 @@ def renum(new_line, start_line, step):
 def load(g):
     """ Load program from ascii, bytecode or protected stream. """
     erase_program()
-    c = g.read(1)
-    if c == '\xFF':
+    if g.filetype == 'B':
         # bytecode file
         state.basic_state.bytecode.truncate(0)
         state.basic_state.bytecode.write('\0')
-        while c:
+        while True:
             c = g.read(1)
+            if not c:
+                break
             state.basic_state.bytecode.write(c)
-    elif c == '\xFE':
+    elif g.filetype == 'P':
         # protected file
         state.basic_state.bytecode.truncate(0)
         state.basic_state.bytecode.write('\0')
         state.basic_state.protected = not dont_protect                
         protect.unprotect(g, state.basic_state.bytecode) 
-    elif c != '':
+    elif g.filetype == 'A':
         # ASCII file, maybe; any thing but numbers or whitespace will lead to Direct Statement in File
-        load_ascii_file(g, c)        
+        merge(g)
+    else:
+        # this shouldn't happen; bad file mode
+        raise error.RunError(54)
     # rebuild line number dict and offsets
     rebuild_line_dict()
-    
-def merge(g):
-    """ Merge program from ascii stream. """
-    c = g.read(1)
-    if c in ('\xFF', '\xFE', '\xFC', ''):
-        # bad file mode
-        raise error.RunError(54)
-    else:
-        load_ascii_file(g, c)
-
     
 def read_program_line(ins, last, cr=('\r')):
     """ readln, but break on \r rather than \n. ignore single starting LF to account for CRLF *without seeking*.
@@ -400,14 +394,14 @@ class LineGetter(object):
                 # not valid UTF8, pass through raw.
                 pass
         return line, eof
-        
-def load_ascii_file(g, first_char=''):
-    """ Load an ascii-codepage or utf8 (if utf8_files is True) encoded program from g. """
+
+def merge(g):
+    """ Merge program from ascii or utf8 (if utf8_files is True) stream. """
     eof = False
     lg = LineGetter(g, universal_newline, utf8=utf8_files)
     while not eof:
         line, eof = lg.get_line()
-        line, first_char = first_char + line, ''
+        #line, first_char = first_char + line, ''
         linebuf = tokenise.tokenise_line(line)
         if linebuf.read(1) == '\0':
             # line starts with a number, add to program memory; store_line seeks to 1 first
@@ -428,30 +422,20 @@ def chain(action, g, jumpnum, delete_lines):
     # RUN
     flow.jump(jumpnum, err=5)
 
-def save(g, mode='B'):
+def save(g):
     """ Save the program to stream g in (A)scii, (B)ytecode or (P)rotected mode. """
+    mode = g.filetype
     if state.basic_state.protected and mode != 'P':
         raise error.RunError(5)
     current = state.basic_state.bytecode.tell()
-    # skip first \x00 in bytecode, replace with appropriate magic number
+    # skip first \x00 in bytecode
     state.basic_state.bytecode.seek(1)
     if mode == 'B':
         # binary bytecode mode
-        g.write('\xff')
-        last = ''
-        while True:
-            nxt = state.basic_state.bytecode.read(1)
-            if not nxt:
-                break
-            g.write(nxt)
-            last = nxt
-        if last != '\x1a':
-            g.write('\x1a')
+        g.write(state.basic_state.bytecode.read())
     elif mode == 'P':
         # protected mode
-        g.write('\xfe')
         protect.protect(state.basic_state.bytecode, g)
-        g.write('\x1a')
     else:
         # ascii mode
         while True:

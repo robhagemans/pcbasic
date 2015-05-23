@@ -11,6 +11,10 @@ import os
 import sys
 import shutil
 import logging
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 import plat
 import ansipipe
@@ -86,17 +90,25 @@ def convert():
     mode = mode[0].upper() if mode else 'A'
     # load & save in different format
     try:
+        prog_infile = None
         if infile:
-            with open_native_or_dos_filename(infile) as prog_file:
-                program.load(prog_file)
+            prog_infile = open_native_or_dos_filename(infile)
         elif plat.has_stdin:
-            program.load(sys.stdin)
+            # use StringIO buffer for seekability
+            in_buffer = StringIO(sys.stdin.read())
+            prog_infile = iolayer.open_diskfile(in_buffer, filetype='ABP', mode='I')
+        if prog_infile:
+            with prog_infile:
+                program.load(prog_infile)
+        prog_outfile = None
         if outfile:
             # on save from command-line, use exact file name
-            with open(outfile, 'wb') as prog_file:
-                program.save(prog_file, mode)
+            prog_outfile = iolayer.open_diskfile(open(outfile, 'wb'), filetype=mode, mode='O')
         elif plat.has_stdout:
-            program.save(sys.stdout, mode)
+            prog_outfile = iolayer.open_diskfile(sys.stdout, filetype=mode, mode='O')
+        if prog_outfile:
+            with prog_outfile:
+                program.save(prog_outfile)
     except error.RunError as e:
         logging.error(error.get_message(e.err))
     except EnvironmentError as e:    
@@ -263,7 +275,7 @@ def open_native_or_dos_filename(infile):
     import error
     try:
         # first try exact file name
-        return open(os.path.expandvars(os.path.expanduser(infile)), 'r')
+        return iolayer.open_diskfile(open(os.path.expandvars(os.path.expanduser(infile)), 'r'), filetype='BPA', mode='I')
     except EnvironmentError as e:
         # otherwise, accept capitalised versions and default extension
         return iolayer.open_file(0, infile, filetype='BPA', mode='I')

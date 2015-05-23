@@ -979,7 +979,7 @@ def exec_save(ins):
         if mode not in ('A', 'P'):
             raise error.RunError(2)
     with iolayer.open_file(0, name, filetype=mode, mode='O') as f:
-        program.save(f, mode)
+        program.save(f)
     util.require(ins, util.end_statement)
     
 def exec_merge(ins):
