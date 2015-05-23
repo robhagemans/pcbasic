@@ -438,7 +438,6 @@ def prepare_disks():
             logging.warning('Could not mount %s', a)
     if config.options['map-drives']:
         drives, current_drive = map_drives()
-    print drives
     # allowable drive letters in GW-BASIC are letters or @
     for letter in '@' + string.ascii_uppercase:
         try:
@@ -446,9 +445,7 @@ def prepare_disks():
         except KeyError:
             path, cwd = None, ''
         backend.devices[letter + ':'] = DiskDevice(letter, path, cwd)
-        print letter, path, cwd
     current_device = backend.devices[current_drive + ':']
-    print current_drive, current_device
 
 if plat.system == 'Windows':
     def map_drives():
@@ -739,11 +736,9 @@ class DiskDevice(object):
         # open the file
         fhandle = self.open_stream(name, mode, access)
         # apply the BASIC file wrapper
-        # TODO: instead of S, L -> use filetype in ('P', 'B', 'M')
-        #        but check what happens with ASCII program files
-        if mode in ('S', 'L'): # save, load
+        if set(filetype).intersection(set(('P', 'B', 'M'))):
             return RawFile(fhandle, name, number, mode, access, lock)
-        elif mode in ('I', 'O', 'A'):
+        elif mode in ('I', 'O', 'A', 'L', 'S'):
             return TextFile(fhandle, name, number, mode, access, lock)
         else:
             return RandomFile(fhandle, name, number, mode, access, lock, reclen)

@@ -316,7 +316,6 @@ def load(g):
     elif c != '':
         # ASCII file, maybe; any thing but numbers or whitespace will lead to Direct Statement in File
         load_ascii_file(g, c)        
-    g.close()
     # rebuild line number dict and offsets
     rebuild_line_dict()
     
@@ -328,7 +327,6 @@ def merge(g):
         raise error.RunError(54)
     else:
         load_ascii_file(g, c)
-    g.close()
 
     
 def read_program_line(ins, last, cr=('\r')):
@@ -448,12 +446,12 @@ def save(g, mode='B'):
             g.write(nxt)
             last = nxt
         if last != '\x1a':
-            g.write('\x1a')    
+            g.write('\x1a')
     elif mode == 'P':
         # protected mode
         g.write('\xfe')
         protect.protect(state.basic_state.bytecode, g)
-        g.write('\x1a')    
+        g.write('\x1a')
     else:
         # ascii mode
         while True:
@@ -464,12 +462,9 @@ def save(g, mode='B'):
             if utf8_files:
                 output = unicodepage.UTF8Converter().to_utf8(output)
             g.write(output + '\r\n')
-        # close with ^Z if we're in GW-BASIC text file mode to match GW-BASIC files exactly
-        # don't do this in UTF8-mode as it's a bit odd to have a legacy end-of-file marker in a UTF8 text.
-        if not utf8_files:    
-            g.write('\x1a')       
+        # ascii files go to a TextFile object, which ensures it closes with ^Z
+        # TODO: don't do this in UTF8-mode as it's a bit odd to have a legacy end-of-file marker in a UTF8 text.
     state.basic_state.bytecode.seek(current)         
-    g.close()
     
 def list_lines(dev, from_line, to_line):
     """ List line range to console or device. """
