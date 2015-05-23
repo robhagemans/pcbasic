@@ -108,18 +108,8 @@ def prepare():
     # cassette
     backend.devices['CAS1:'] = CASDevice(config.options['cas1'])
     # disk devices
-    #FIXME: move from oslayer
-    # allowable drive letters in GW-BASIC are letters or @
-    for letter in '@' + string.ascii_uppercase:
-        try:
-            path = oslayer.drives[letter]
-            cwd = state.io_state.drive_cwd[letter]
-        except KeyError:
-            path, cwd = None, ''
-        backend.devices[letter+':'] = DiskDevice(letter, path, cwd)
-    global current_device
-    # current device name should be in iostate?
-    current_device = backend.devices[oslayer.current_drive+':']
+    prepare_disks()
+
 
 ############################################################################
 # General file manipulation
@@ -139,31 +129,20 @@ def open_file(number, description, filetype, mode='I', access='R', lock='', recl
     if len(split_colon) > 1: # : found
         dev_name = split_colon[0].upper() + ':'
         dev_param = ''.join(split_colon[1:])
+        try:
+            device = backend.devices[dev_name]
+        except KeyError:
+            # not an allowable device or drive name
+            # bad file number, for some reason
+            raise error.RunError(52)
     else:
-        # TODO: shld be current_device, can also be e.g. CAS1: if no disks present
-        dev_name = oslayer.current_drive.upper() + ':'
+        device = current_device
         dev_param = name
-    try:
-        # check if device exists and allows the requested mode
-        # if not exists, raise KeyError
-        device = backend.devices[dev_name]
-        ##D
-        if not device:
-            if len(dev_name) > 2:
-                # device unavailable
-                raise error.RunError(68)
-            else:
-                # for drive letters: path not found
-                raise error.RunError(76)
-        ##D
-        new_file = device.open(number, dev_param, filetype, mode, access, lock, reclen, defext)
-        if number:
-            state.io_state.files[number] = new_file
-        return new_file
-    except KeyError:
-        # not an allowable device or drive name
-        # bad file number, for some reason
-        raise error.RunError(52)
+    # check if device exists and allows the requested mode
+    new_file = device.open(number, dev_param, filetype, mode, access, lock, reclen, defext)
+    if number:
+        state.io_state.files[number] = new_file
+    return new_file
 
 def get_file(num, mode='IOAR'):
     """ Get the file object for a file number and check allowed mode. """
@@ -417,6 +396,14 @@ class COMDevice(Device):
 import os
 import errno
 
+import plat
+
+if plat.system == 'Windows':
+    import win32api
+
+# working directories; must not start with a /
+state.io_state.drive_cwd = { 'Z:': '', }
+
 # translate os error codes to BASIC error codes
 os_error = {
     # file not found
@@ -433,6 +420,77 @@ os_error = {
     # path/file access error
     errno.EEXIST: 75, errno.ENOTEMPTY: 75,
     }
+
+#####################
+
+def prepare_disks():
+    """ Initialise disk devices. """
+    global current_device
+    drives = {}
+    current_drive = 'Z'
+    for a in config.options['mount']:
+        try:
+            # the last one that's specified will stick
+            letter, path = a.split(':', 1)
+            path = os.path.realpath(path)
+            if not os.path.isdir(path):
+                logging.warning('Could not mount %s', a)
+            else:
+                drives[letter.upper()] = path
+                state.io_state.drive_cwd[letter.upper()] = ''
+        except (TypeError, ValueError):
+            logging.warning('Could not mount %s', a)
+    if config.options['map-drives']:
+        drives, current_drive = map_drives()
+    # allowable drive letters in GW-BASIC are letters or @
+    for letter in '@' + string.ascii_uppercase:
+        try:
+            path = drives[letter]
+            cwd = state.io_state.drive_cwd[letter]
+        except KeyError:
+            path, cwd = None, ''
+        backend.devices[letter+':'] = DiskDevice(letter, path, cwd)
+    current_device = backend.devices[current_drive + ':']
+
+if plat.system == 'Windows':
+    def map_drives():
+        """ Map Windows drive letters to PC-BASIC disk devices. """
+        # get all drives in use by windows
+        # if started from CMD.EXE, get the 'current working dir' for each drive
+        # if not in CMD.EXE, there's only one cwd
+        current_drive = os.path.abspath(os.getcwd()).split(':')[0]
+        save_current = os.getcwd()
+        for drive_letter in win32api.GetLogicalDriveStrings().split(':\\\x00')[:-1]:
+            try:
+                os.chdir(drive_letter + ':')
+                cwd = win32api.GetShortPathName(os.getcwd())
+                # must not start with \\
+                state.io_state.drive_cwd[drive_letter] = cwd[3:]
+                drives[drive_letter] = cwd[:3]
+            except WindowsError:
+                pass
+        os.chdir(save_current)
+        return drives, current_drive
+else:
+    def map_drives():
+        """ Map useful Unix directories to PC-BASIC disk devices. """
+        # map root to C and set current to CWD:
+        cwd = os.getcwd()
+        # map C to root
+        drives['C'] = '/'
+        state.io_state.drive_cwd['C'] = cwd[1:]
+        # map Z to cwd
+        drives['Z'] = cwd
+        state.io_state.drive_cwd['Z'] = ''
+        # map H to home
+        drives['H'] = os.path.expanduser('~')
+        if cwd[:len(drives['H'])] == drives['H']:
+            state.io_state.drive_cwd['H'] = cwd[len(drives['H'])+1:]
+        else:
+            state.io_state.drive_cwd['H'] = ''
+        return drives, 'Z'
+
+################################
 
 def safe(fnname, *fnargs):
     """ Execute OS function and handle errors. """
@@ -468,6 +526,7 @@ def get_diskdevice_and_path(path):
             raise error.RunError(68)
 
 
+################################
 # Locking (disk only)
 
 
@@ -533,6 +592,107 @@ def request_lock(name, lock, access):
             if f.access == lock or lock == 'RW':
                 raise error.RunError(70)
 
+################################
+# DOS name translation
+
+if plat.system == 'Windows':
+    def short_name(path, longname):
+        """ Get Windows short name or fake it. """
+        if not path:
+            path = current_drive
+        path_and_longname = os.path.join(str(path), str(longname))
+        try:
+            # gets the short name if it exists, keeps long name otherwise
+            path_and_name = win32api.GetShortPathName(path_and_longname)
+        except WindowsError:
+            # something went wrong - keep long name (happens for swap file)
+            path_and_name = path_and_longname
+        # last element of path is name
+        name = path_and_name.split(os.sep)[-1]
+        # if we still have a long name, shorten it now
+        return split_dosname(name.strip().upper())
+else:
+    def short_name(dummy_path, longname):
+        """ Get Windows short name or fake it. """
+        # path is only needed on Windows
+        return split_dosname(longname.strip().upper())
+
+def split_dosname(name, defext=''):
+    """ Convert filename into 8-char trunk and 3-char extension. """
+    dotloc = name.find('.')
+    if name in ('.', '..'):
+        trunk, ext = '', name[1:]
+    elif dotloc > -1:
+        trunk, ext = name[:dotloc][:8], name[dotloc+1:][:3]
+    else:
+        trunk, ext = name[:8], defext
+    return trunk, ext
+
+def join_dosname(trunk, ext):
+    """ Join trunk and extension into file name. """
+    return trunk + ('.' + ext if ext else '')
+
+def istype(path, native_name, isdir):
+    """ Return whether a file exists and is a directory or regular. """
+    name = os.path.join(str(path), str(native_name))
+    try:
+        return os.path.isdir(name) if isdir else os.path.isfile(name)
+    except TypeError:
+        # happens for name = '\0'
+        return False
+
+def dossify(longname, defext=''):
+    """ Put name in 8x3, all upper-case format and apply default extension. """
+    # convert to all uppercase; one trunk, one extension
+    name, ext = split_dosname(longname.strip().upper(), defext)
+    if ext == None:
+        ext = defext
+    # no dot if no ext
+    return join_dosname(name, ext)
+
+def match_dosname(dosname, path, isdir, find_case):
+    """ Find a matching native file name for a given 8.3 DOS name. """
+    # check if the dossified name exists as-is
+    if istype(path, dosname, isdir):
+        return dosname
+    if not find_case:
+        return None
+    # for case-sensitive filenames: find other case combinations, if present
+    for f in sorted(os.listdir(path)):
+        if f.upper() == dosname and istype(path, f, isdir):
+            return f
+    return None
+
+def match_filename(name, defext, path='', err=53,
+                   isdir=False, find_case=True, make_new=False):
+    """ Find or create a matching native file name for a given BASIC name. """
+    # check if the name exists as-is; should also match Windows short names.
+    # EXCEPT if default extension is not empty, in which case
+    # default extension must be found first. Necessary for GW compatibility.
+    if not defext and istype(path, name, isdir):
+        return name
+    # try to match dossified names with default extension
+    dosname = dossify(name, defext)
+    fullname = match_dosname(dosname, path, isdir, find_case)
+    if fullname:
+        return fullname
+    # not found
+    if make_new:
+        return dosname
+    else:
+        raise error.RunError(err)
+
+def filter_names(path, files_list, mask='*.*'):
+    """ Apply filename filter to short version of names. """
+    all_files = [short_name(path, name) for name in files_list]
+    # apply mask separately to trunk and extension, dos-style.
+    # hide dotfiles
+    trunkmask, extmask = split_dosname(mask)
+    return sorted([(t, e) for (t, e) in all_files
+        if (fnmatch(t, trunkmask.upper()) and fnmatch(e, extmask.upper()) and
+            (t or not e or e == '.'))])
+
+################################
 
 class DiskDevice(object):
     """ Disk device (A:, B:, C:, ...) """
@@ -670,7 +830,7 @@ class DiskDevice(object):
             if e:
                 # find a matching directory for every step in the path;
                 # append found name to path
-                path = os.path.join(path, oslayer.match_filename(e, '', path, err, isdir=True))
+                path = os.path.join(path, match_filename(e, '', path, err, isdir=True))
         # return drive root path, relative path, file name
         return path[:baselen], path[baselen:], name
 
@@ -683,7 +843,7 @@ class DiskDevice(object):
         path = os.path.join(drivepath, relpath)
         if name:
             path = os.path.join(path,
-                oslayer.match_filename(name, defext, path, err, isdir, find_case, make_new))
+                match_filename(name, defext, path, err, isdir, find_case, make_new))
         # get full normalised path
         return os.path.abspath(path)
 
@@ -735,20 +895,20 @@ class DiskDevice(object):
         mask = mask.upper() or '*.*'
         # output working dir in DOS format
         # NOTE: this is always the current dir, not the one being listed
-        dir_elems = [oslayer.join_dosname(*oslayer.short_name(path, e)) for e in self.cwd.split(os.sep)]
+        dir_elems = [join_dosname(*short_name(path, e)) for e in self.cwd.split(os.sep)]
         console.write_line(self.letter + ':\\' + '\\'.join(dir_elems))
         fils = ''
         if mask == '.':
-            dirs = [oslayer.split_dosname(oslayer.dossify((os.sep+relpath).split(os.sep)[-1:][0]))]
+            dirs = [split_dosname(dossify((os.sep+relpath).split(os.sep)[-1:][0]))]
         elif mask == '..':
-            dirs = [oslayer.split_dosname(oslayer.dossify((os.sep+relpath).split(os.sep)[-2:][0]))]
+            dirs = [split_dosname(dossify((os.sep+relpath).split(os.sep)[-2:][0]))]
         else:
             all_names = safe(os.listdir, path)
             dirs = [n for n in all_names if os.path.isdir(os.path.join(path, n))]
             fils = [n for n in all_names if not os.path.isdir(os.path.join(path, n))]
             # filter according to mask
-            dirs = oslayer.filter_names(path, dirs + ['.', '..'], mask)
-            fils = oslayer.filter_names(path, fils, mask)
+            dirs = filter_names(path, dirs + ['.', '..'], mask)
+            fils = filter_names(path, fils, mask)
         if not dirs and not fils:
             raise error.RunError(53)
         # format and print contents
@@ -762,8 +922,23 @@ class DiskDevice(object):
             console.write_line(line)
             # allow to break during dir listing & show names flowing on screen
             backend.check_events()
-        console.write_line(' %d Bytes free' % oslayer.disk_free(path))
+        console.write_line(' %d Bytes free' % self.get_free())
 
+    def get_free(self):
+        """ Return the number of free bytes on the drive. """
+        if plat.system == 'Windows':
+            free_bytes = ctypes.c_ulonglong(0)
+            ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(self.path),
+                                            None, None, ctypes.pointer(free_bytes))
+            return free_bytes.value
+        elif plat.system == 'Android':
+            return 0
+        else:
+            st = os.statvfs(self.path)
+            return st.f_bavail * st.f_frsize
+
+
+###################################################################
 
 class CASDevice(object):
     """ Cassette tape device (CASn:) """

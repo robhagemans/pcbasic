@@ -1,6 +1,6 @@
 """
 PC-BASIC 3.23  - oslayer.py
-Operating system utilities
+Operating system shell
  
 (c) 2013, 2014 Rob Hagemans 
 This file is released under the GNU GPL version 3. 
@@ -19,8 +19,6 @@ import console
 import backend
 
 if plat.system == 'Windows':
-    import win32api
-    import win32print
     import threading
     import time
     import ctypes
@@ -29,14 +27,6 @@ else:
         import pexpect
     except ImportError:
         pexpect = None    
-
-
-# D all, move to iolayer
-# standard drive mappings
-drives = { 'Z': os.getcwd(), }
-current_drive = 'Z'
-# working directories; must not start with a /
-state.io_state.drive_cwd = { 'Z': '', }
 
 
 shell_enabled = False
@@ -50,22 +40,6 @@ native_shell = {
 def prepare():
     """ Initialise oslayer module. """
     global shell_enabled, shell_command
-
-    for a in config.options['mount']:
-        try:
-            # the last one that's specified will stick
-            letter, path = a.split(':', 1)
-            path = os.path.realpath(path)
-            if not os.path.isdir(path):
-                logging.warning('Could not mount %s', a)
-            else:    
-                drives[letter.upper()] = path
-                state.io_state.drive_cwd[letter.upper()] = ''
-        except (TypeError, ValueError):
-            logging.warning('Could not mount %s', a)
-    if config.options['map-drives']:
-        map_drives()
-
     if config.options['shell'] and config.options['shell'] != 'none':
         if (plat.system == 'Windows' or pexpect):
             shell_enabled = True
@@ -76,7 +50,6 @@ def prepare():
         else:
             logging.warning('Pexpect module not found. SHELL command disabled.')    
             
-
 #########################################
 # calling shell environment
 
@@ -117,196 +90,6 @@ def shell(command):
     state.basic_state.key_macros_off = key_macros_save
     state.basic_state.events.suspend_all = suspend_event_save
 
-
-#########################################
-# implementation
-
-
-#D move to iolayer
-if plat.system == 'Windows':
-    def map_drives():
-        """ Map drives to Windows drive letters. """
-        global current_drive
-        # get all drives in use by windows
-        # if started from CMD.EXE, get the 'current working dir' for each drive
-        # if not in CMD.EXE, there's only one cwd
-        current_drive = os.path.abspath(os.getcwd()).split(':')[0]
-        save_current = os.getcwd()
-        for drive_letter in win32api.GetLogicalDriveStrings().split(':\\\x00')[:-1]:
-            try:
-                os.chdir(drive_letter + ':')
-                cwd = win32api.GetShortPathName(os.getcwd())
-                # must not start with \\
-                state.io_state.drive_cwd[drive_letter] = cwd[3:]  
-                drives[drive_letter] = cwd[:3]
-            except WindowsError:
-                pass    
-        os.chdir(save_current)    
-
-    def short_name(path, longname):
-        """ Get Windows short name or fake it. """
-        if not path:
-            path = current_drive
-        path_and_longname = os.path.join(str(path), str(longname)) 
-        try:
-            # gets the short name if it exists, keeps long name otherwise
-            path_and_name = win32api.GetShortPathName(path_and_longname)
-        except WindowsError:
-            # something went wrong - keep long name (happens for swap file)
-            path_and_name = path_and_longname
-        # last element of path is name    
-        name = path_and_name.split(os.sep)[-1]
-        # if we still have a long name, shorten it now
-        return split_dosname(name.strip().upper())
-        
-else:
-    def map_drives():
-        """ Map drives to Windows drive letters. """
-        global drives
-        # map root to C and set current to CWD:
-        cwd = os.getcwd()
-        # map C to root
-        drives['C'] = '/'
-        state.io_state.drive_cwd['C'] = cwd[1:]
-        # map Z to cwd
-        drives['Z'] = cwd
-        state.io_state.drive_cwd['Z'] = ''
-        # map H to home
-        drives['H'] = os.path.expanduser('~')
-        if cwd[:len(drives['H'])] == drives['H']:
-            state.io_state.drive_cwd['H'] = cwd[len(drives['H'])+1:]
-        else:    
-            state.io_state.drive_cwd['H'] = ''
-    
-    def short_name(dummy_path, longname):
-        """ Get Windows short name or fake it. """
-        # path is only needed on Windows     
-        return split_dosname(longname.strip().upper())
-   
-
-#D move to iolayer
-def split_dosname(name, defext=''):
-    """ Convert filename into 8-char trunk and 3-char extension. """
-    dotloc = name.find('.')
-    if name in ('.', '..'):
-        trunk, ext = '', name[1:]
-    elif dotloc > -1:
-        trunk, ext = name[:dotloc][:8], name[dotloc+1:][:3]
-    else:
-        trunk, ext = name[:8], defext
-    return trunk, ext
-
-#D move to iolayer
-def join_dosname(trunk, ext):
-    """ Join trunk and extension into file name. """
-    return trunk + ('.' + ext if ext else '')
-
-#D move to iolayer
-def istype(path, native_name, isdir):
-    """ Return whether a file exists and is a directory or regular. """
-    name = os.path.join(str(path), str(native_name))
-    try:
-        return os.path.isdir(name) if isdir else os.path.isfile(name)
-    except TypeError:
-        # happens for name = '\0'
-        return False
-            
-#D move to iolayer
-def dossify(longname, defext=''):
-    """ Put name in 8x3, all upper-case format and apply default extension. """ 
-    # convert to all uppercase; one trunk, one extension
-    name, ext = split_dosname(longname.strip().upper(), defext)
-    if ext == None:
-        ext = defext
-    # no dot if no ext
-    return join_dosname(name, ext)
-
-#D move to iolayer
-def match_dosname(dosname, path, isdir, find_case):
-    """ Find a matching native file name for a given 8.3 DOS name. """
-    # check if the dossified name exists as-is
-    if istype(path, dosname, isdir):    
-        return dosname
-    if not find_case:    
-        return None
-    # for case-sensitive filenames: find other case combinations, if present
-    for f in sorted(os.listdir(path)):
-        if f.upper() == dosname and istype(path, f, isdir):
-            return f
-    return None
-
-#D move to iolayer
-def match_filename(name, defext, path='', err=53, 
-                   isdir=False, find_case=True, make_new=False):
-    """ Find or create a matching native file name for a given BASIC name. """
-    # check if the name exists as-is; should also match Windows short names.
-    # EXCEPT if default extension is not empty, in which case
-    # default extension must be found first. Necessary for GW compatibility.
-    if not defext and istype(path, name, isdir):
-        return name
-    # try to match dossified names with default extension    
-    dosname = dossify(name, defext)
-    fullname = match_dosname(dosname, path, isdir, find_case)
-    if fullname:    
-        return fullname
-    # not found        
-    if make_new:
-        return dosname
-    else:    
-        raise error.RunError(err)
-
-#D move to iolayer
-def split_drive(s):
-    """ Split string in drive letter and rest; return native path for drive. """ 
-    s = str(s)
-    # don't accept forward slashes, they confuse issues.
-    if '/' in s:
-        # bad file number - this is what GW produces here
-        raise error.RunError(52)   
-    drive_and_path = s.split(':')
-    if len(drive_and_path) > 1:
-        letter, remainder = drive_and_path[0].upper(), drive_and_path[1]
-    else:
-        # no drive specified, use current drive & dir
-        letter, remainder = current_drive, s
-    try:    
-        drivepath = drives[letter]
-    except KeyError:        
-        # path not found
-        raise error.RunError(76)   
-    return letter, drivepath, remainder
-        
-#D move to iolayer
-def filter_names(path, files_list, mask='*.*'):
-    """ Apply filename filter to short version of names. """
-    all_files = [short_name(path, name) for name in files_list]
-    # apply mask separately to trunk and extension, dos-style.
-    # hide dotfiles
-    trunkmask, extmask = split_dosname(mask)
-    return sorted([(t, e) for (t, e) in all_files 
-        if (fnmatch(t, trunkmask.upper()) and fnmatch(e, extmask.upper()) and
-            (t or not e or e == '.'))])
-
-
-if plat.system == 'Windows':
-    def disk_free(path):
-        """ Return the number of free bytes on the drive. """
-        free_bytes = ctypes.c_ulonglong(0)
-        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(path), 
-                                        None, None, ctypes.pointer(free_bytes))
-        return free_bytes.value
-elif plat.system == 'Android':
-    def disk_free(path):
-        """ Return the number of free bytes on the drive. """
-        return 0        
-else:
-    def disk_free(path):
-        """ Return the number of free bytes on the drive. """
-        st = os.statvfs(path)
-        return st.f_bavail * st.f_frsize
-        
-###################################################
-# SHELL
 
 if plat.system == 'Windows':
     shell_output = ''   
