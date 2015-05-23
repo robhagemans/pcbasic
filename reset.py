@@ -21,7 +21,7 @@ def clear(close_files=False, preserve_common=False, preserve_all=False, preserve
     rnd.clear()
     if close_files:
         # close all files
-        iolayer.close_all()
+        iolayer.close_files()
     # release all disk buffers (FIELD)?
     state.io_state.fields = {}
     # clear ERR and ERL

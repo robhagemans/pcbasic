@@ -8,7 +8,6 @@ This file is released under the GNU GPL version 3.
 
 import os 
 import subprocess
-import errno
 from fnmatch import fnmatch
 import logging
 
@@ -31,29 +30,14 @@ else:
     except ImportError:
         pexpect = None    
 
-# translate os error codes to BASIC error codes
-os_error = {
-    # file not found
-    errno.ENOENT: 53, errno.EISDIR: 53, errno.ENOTDIR: 53,
-    # permission denied
-    errno.EAGAIN: 70, errno.EACCES: 70, errno.EBUSY: 70, 
-    errno.EROFS: 70, errno.EPERM: 70,
-    # disk full
-    errno.ENOSPC: 61, 
-    # disk not ready
-    errno.ENXIO: 71, errno.ENODEV: 71,
-    # disk media error
-    errno.EIO: 72,
-    # path/file access error
-    errno.EEXIST: 75, errno.ENOTEMPTY: 75,
-    }
 
-# D, move to iolayer
+# D all, move to iolayer
 # standard drive mappings
 drives = { 'Z': os.getcwd(), }
 current_drive = 'Z'
 # working directories; must not start with a /
 state.io_state.drive_cwd = { 'Z': '', }
+
 
 shell_enabled = False
 
@@ -66,6 +50,7 @@ native_shell = {
 def prepare():
     """ Initialise oslayer module. """
     global shell_enabled, shell_command
+
     for a in config.options['mount']:
         try:
             # the last one that's specified will stick
@@ -80,6 +65,7 @@ def prepare():
             logging.warning('Could not mount %s', a)
     if config.options['map-drives']:
         map_drives()
+
     if config.options['shell'] and config.options['shell'] != 'none':
         if (plat.system == 'Windows' or pexpect):
             shell_enabled = True
@@ -108,93 +94,6 @@ def get_env_entry(expr):
     else:
         return bytearray(envlist[expr-1] + '=' + os.getenv(envlist[expr-1]))   
     
-#########################################
-# file system
-
-def chdir(name):
-    """ Change working directory to given BASIC path. """
-    # get drive path and relative path
-    letter, dpath, rpath, _ = native_path_elements(name, err=76, join_name=True)
-    # set cwd for the specified drive
-    state.io_state.drive_cwd[letter] = rpath
-    if letter == current_drive:
-        safe(os.chdir, os.path.join(dpath, rpath))
-
-def mkdir(name):
-    """ Create directory at given BASIC path. """
-    safe(os.mkdir, native_path(name, err=76, isdir=True, make_new=True))
-    
-def rmdir(name):    
-    """ Remove directory at given BASIC path. """
-    safe(os.rmdir, native_path(name, err=76, isdir=True))
-
-def kill(name):
-    """ Remove regular file at given BASIC path. """
-    safe(os.remove, native_path(name))
-
-def files(pathmask):
-    """ Write directory listing to console. """
-    # forward slashes - file not found
-    # GW-BASIC sometimes allows leading or trailing slashes
-    # and then does weird things I don't understand. 
-    if '/' in str(pathmask):
-        raise error.RunError(53)   
-    drive, drivepath, relpath, mask = native_path_elements(pathmask, err=53)
-    path = os.path.join(drivepath, relpath)
-    mask = mask.upper() or '*.*'
-    # output working dir in DOS format
-    # NOTE: this is always the current dir, not the one being listed
-    dir_elems = [join_dosname(*short_name(path, e)) 
-                 for e in state.io_state.drive_cwd[drive].split(os.sep)]
-    console.write_line(drive + ':\\' + '\\'.join(dir_elems))
-    fils = ''
-    if mask == '.':
-        dirs = [split_dosname(dossify((os.sep+relpath).split(os.sep)[-1:][0]))]
-    elif mask == '..':
-        dirs = [split_dosname(dossify((os.sep+relpath).split(os.sep)[-2:][0]))]
-    else:        
-        all_names = safe(os.listdir, path)
-        dirs = [n for n in all_names if os.path.isdir(os.path.join(path, n))]
-        fils = [n for n in all_names if not os.path.isdir(os.path.join(path, n))]
-        # filter according to mask
-        dirs = filter_names(path, dirs + ['.', '..'], mask)
-        fils = filter_names(path, fils, mask)
-    if not dirs and not fils:
-        raise error.RunError(53)
-    # format and print contents
-    output = ( 
-          [('%-8s.%-3s' % (t, e) if (e or not t) else '%-8s    ' % t) + '<DIR>' for t, e in dirs]
-        + [('%-8s.%-3s' % (t, e) if e else '%-8s    ' % t) + '     ' for t, e in fils])
-    num = state.console_state.screen.mode.width // 20
-    while len(output) > 0:
-        line = ' '.join(output[:num])
-        output = output[num:]
-        console.write_line(line)       
-        # allow to break during dir listing & show names flowing on screen
-        backend.check_events()             
-    console.write_line(' %d Bytes free' % disk_free(path))
-    
-def rename(oldname, newname):    
-    """ Rename a file or directory. """
-    oldname = native_path(str(oldname), err=53, isdir=False)
-    newname = native_path(str(newname), err=76, isdir=False, make_new=True)
-    if os.path.exists(newname):
-        # file already exists
-        raise error.RunError(58)
-    safe(os.rename, oldname, newname)
-
-def native_path(path_and_name, defext='', err=53, 
-                isdir=False, find_case=True, make_new=False):
-    """ Find os-native path to match the given BASIC path. """
-    # substitute drives and cwds
-    _, drivepath, relpath, name = native_path_elements(path_and_name, err)
-    # return absolute path to file        
-    path = os.path.join(drivepath, relpath)
-    if name:
-        path = os.path.join(path, 
-            match_filename(name, defext, path, err, isdir, find_case, make_new))
-    # get full normalised path
-    return os.path.abspath(path)
 
 #########################################
 # shell
@@ -221,7 +120,9 @@ def shell(command):
 
 #########################################
 # implementation
- 
+
+
+#D move to iolayer
 if plat.system == 'Windows':
     def map_drives():
         """ Map drives to Windows drive letters. """
@@ -283,22 +184,7 @@ else:
         return split_dosname(longname.strip().upper())
    
 
-def safe(fnname, *fnargs):
-    """ Execute OS function and handle errors. """
-    try:
-        return fnname(*fnargs)
-    except EnvironmentError as e:
-        handle_oserror(e)
-
-def handle_oserror(e):     
-    """ Translate OS and I/O exceptions to BASIC errors. """   
-    try:
-        basic_err = os_error[e.errno]
-    except KeyError:
-        # unknown; internal error
-        basic_err = 51
-    raise error.RunError(basic_err) 
-        
+#D move to iolayer
 def split_dosname(name, defext=''):
     """ Convert filename into 8-char trunk and 3-char extension. """
     dotloc = name.find('.')
@@ -310,10 +196,12 @@ def split_dosname(name, defext=''):
         trunk, ext = name[:8], defext
     return trunk, ext
 
+#D move to iolayer
 def join_dosname(trunk, ext):
     """ Join trunk and extension into file name. """
     return trunk + ('.' + ext if ext else '')
 
+#D move to iolayer
 def istype(path, native_name, isdir):
     """ Return whether a file exists and is a directory or regular. """
     name = os.path.join(str(path), str(native_name))
@@ -323,6 +211,7 @@ def istype(path, native_name, isdir):
         # happens for name = '\0'
         return False
             
+#D move to iolayer
 def dossify(longname, defext=''):
     """ Put name in 8x3, all upper-case format and apply default extension. """ 
     # convert to all uppercase; one trunk, one extension
@@ -332,6 +221,7 @@ def dossify(longname, defext=''):
     # no dot if no ext
     return join_dosname(name, ext)
 
+#D move to iolayer
 def match_dosname(dosname, path, isdir, find_case):
     """ Find a matching native file name for a given 8.3 DOS name. """
     # check if the dossified name exists as-is
@@ -345,6 +235,7 @@ def match_dosname(dosname, path, isdir, find_case):
             return f
     return None
 
+#D move to iolayer
 def match_filename(name, defext, path='', err=53, 
                    isdir=False, find_case=True, make_new=False):
     """ Find or create a matching native file name for a given BASIC name. """
@@ -364,6 +255,7 @@ def match_filename(name, defext, path='', err=53,
     else:    
         raise error.RunError(err)
 
+#D move to iolayer
 def split_drive(s):
     """ Split string in drive letter and rest; return native path for drive. """ 
     s = str(s)
@@ -384,41 +276,7 @@ def split_drive(s):
         raise error.RunError(76)   
     return letter, drivepath, remainder
         
-def native_path_elements(s, err, join_name=False): 
-    """ Return elements of the native path for a given BASIC path. """
-    letter, path, s = split_drive(s)
-    # get path below drive letter
-    relpath = '' 
-    if not s or s[0] != '\\':
-        relpath = state.io_state.drive_cwd[letter]
-    # split into path elements and strip whitespace
-    elements = [ e.strip() for e in relpath.split(os.sep) + s.split('\\') ]
-    # whatever's after the last \\ is the name of the subject file or dir
-    # if the path ends in \\, there's no name
-    name = '' if (join_name or not elements) else elements.pop()
-    # parse internal .. and . (like normpath);  drop leading . and ..
-    i = 0
-    while i < len(elements):
-        if elements[i] == '.':
-            del elements[i]
-        elif elements[i] == '..':
-            del elements[i]     
-            if i > 0:
-                del elements[i-1]
-                i -= 1
-        else:
-            i += 1
-    # cut original drive path; include a joining slash
-    baselen = len(path) + (path and path[-1] != os.sep)
-    # find the native matches for each step in the path 
-    for e in elements:
-        # skip double slashes
-        if e:
-            # find a matching directory for every step in the path;
-            # append found name to path
-            path = os.path.join(path, match_filename(e, '', path, err, isdir=True))
-    return letter, path[:baselen], path[baselen:], name
-
+#D move to iolayer
 def filter_names(path, files_list, mask='*.*'):
     """ Apply filename filter to short version of names. """
     all_files = [short_name(path, name) for name in files_list]
@@ -428,7 +286,8 @@ def filter_names(path, files_list, mask='*.*'):
     return sorted([(t, e) for (t, e) in all_files 
         if (fnmatch(t, trunkmask.upper()) and fnmatch(e, extmask.upper()) and
             (t or not e or e == '.'))])
-        
+
+
 if plat.system == 'Windows':
     def disk_free(path):
         """ Return the number of free bytes on the drive. """

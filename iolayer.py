@@ -9,6 +9,7 @@ This file is released under the GNU GPL version 3.
 import os
 import copy
 import logging
+import string
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -107,8 +108,18 @@ def prepare():
     # cassette
     backend.devices['CAS1:'] = CASDevice(config.options['cas1'])
     # disk devices
-    #FIXME: move from oslayer; treat drives as devices
-
+    #FIXME: move from oslayer
+    # allowable drive letters in GW-BASIC are letters or @
+    for letter in '@' + string.ascii_uppercase:
+        try:
+            path = oslayer.drives[letter]
+            cwd = state.io_state.drive_cwd[letter]
+        except KeyError:
+            path, cwd = None, ''
+        backend.devices[letter+':'] = DiskDevice(letter, path, cwd)
+    global current_device
+    # current device name should be in iostate?
+    current_device = backend.devices[oslayer.current_drive+':']
 
 ############################################################################
 # General file manipulation
@@ -150,14 +161,9 @@ def open_file(number, description, filetype, mode='I', access='R', lock='', recl
             state.io_state.files[number] = new_file
         return new_file
     except KeyError:
-        ##D
-        if len(dev_name) > 2:
-            # devname could be A:, B:, C:, etc.. but anything longer is an error (bad file number, for some reason).
-            raise error.RunError(52)
-        else:
-            # for drive letters: path not found
-            raise error.RunError(76)
-        ##D
+        # not an allowable device or drive name
+        # bad file number, for some reason
+        raise error.RunError(52)
 
 def get_file(num, mode='IOAR'):
     """ Get the file object for a file number and check allowed mode. """
@@ -167,15 +173,9 @@ def get_file(num, mode='IOAR'):
         # bad file number
         raise error.RunError(52)
     if the_file.mode.upper() not in mode:
+        # bad file mode
         raise error.RunError(54)
     return the_file
-
-def check_file_not_open(path):
-    """ Raise an error if the file is open. """
-    # TODO: this should be a disk-only thing!
-    for f in state.io_state.files:
-        if oslayer.native_path(path) == state.io_state.files[f].name:
-            raise error.RunError(55)
 
 def close_file(num):
     """ Close a numbered file. """
@@ -195,73 +195,6 @@ def close_devices():
     """ Close device master files. """
     for d in state.io_state.devices:
         d.close()
-
-############################################################################
-# Locking (disk only)
-
-def find_files_by_name(name):
-    """ Find all file numbers open to the given filename."""
-    return [state.io_state.files[f] for f in state.io_state.files if state.io_state.files[f].name == name]
-
-def lock_records(nr, start, stop):
-    """ Try to lock a range of records in a file. """
-    thefile = get_file(nr)
-    if thefile.name in backend.devices:
-        # permission denied
-        raise error.RunError(70)
-    lock_list = set()
-    for f in find_files_by_name(thefile.name):
-        lock_list |= f.lock_list
-    if isinstance(thefile, TextFile):
-        bstart, bstop = 0, -1
-        if lock_list:
-            raise error.RunError(70)
-    else:
-        bstart, bstop = (start-1) * thefile.reclen, stop*thefile.reclen - 1
-        for start_1, stop_1 in lock_list:
-            if stop_1 == -1 or (bstart >= start_1 and bstart <= stop_1) or (bstop >= start_1 and bstop <= stop_1):
-                raise error.RunError(70)
-    thefile.lock_list.add((bstart, bstop))
-
-def unlock_records(nr, start, stop):
-    """ Unlock a range of records in a file. """
-    thefile = get_file(nr)
-    if thefile.name in backend.devices:
-        # permission denied
-        raise error.RunError(70)
-    if isinstance(thefile, TextFile):
-        bstart, bstop = 0, -1
-    else:
-        bstart, bstop = (start-1) * thefile.reclen, stop*thefile.reclen - 1
-    # permission denied if the exact record range wasn't given before
-    try:
-        thefile.lock_list.remove((bstart, bstop))
-    except KeyError:
-        raise error.RunError(70)
-
-def request_lock(name, lock, access):
-    """ Try to lock a file. """
-    same_files = find_files_by_name(name)
-    if not lock:
-        # default mode; don't accept default mode if SHARED/LOCK present
-        for f in same_files:
-            if f.lock:
-                raise error.RunError(70)
-    elif lock == 'RW':
-        # LOCK READ WRITE
-        raise error.RunError(70)
-    elif lock == 'S':
-        # SHARED
-        for f in same_files:
-            if not f.lock:
-                raise error.RunError(70)
-    else:
-        # LOCK READ or LOCK WRITE
-        for f in same_files:
-            if f.access == lock or lock == 'RW':
-                raise error.RunError(70)
-
-
 
 
 ############################################################################
@@ -321,6 +254,7 @@ class Device(object):
     def close(self):
         if self.device_file:
             self.device_file.close()
+
 
 class SCRNDevice(Device):
     """ Screen device (SCRN:) """
@@ -412,6 +346,9 @@ class COMDevice(Device):
 
     def open(self, number, param, filetype, mode, access, lock, reclen, defext):
         """ Open a file on COMn: """
+        if not self.stream:
+            # device unavailable
+            raise error.RunError(68)
         # open the COM port
         if self.stream._isOpen:
             # file already open
@@ -474,6 +411,129 @@ class COMDevice(Device):
         self.stream.linefeed = (LF != '')
 
 
+##############################################################################
+# Disk devices
+
+import os
+import errno
+
+# translate os error codes to BASIC error codes
+os_error = {
+    # file not found
+    errno.ENOENT: 53, errno.EISDIR: 53, errno.ENOTDIR: 53,
+    # permission denied
+    errno.EAGAIN: 70, errno.EACCES: 70, errno.EBUSY: 70,
+    errno.EROFS: 70, errno.EPERM: 70,
+    # disk full
+    errno.ENOSPC: 61,
+    # disk not ready
+    errno.ENXIO: 71, errno.ENODEV: 71,
+    # disk media error
+    errno.EIO: 72,
+    # path/file access error
+    errno.EEXIST: 75, errno.ENOTEMPTY: 75,
+    }
+
+def safe(fnname, *fnargs):
+    """ Execute OS function and handle errors. """
+    try:
+        return fnname(*fnargs)
+    except EnvironmentError as e:
+        handle_oserror(e)
+
+def handle_oserror(e):
+    """ Translate OS and I/O exceptions to BASIC errors. """
+    try:
+        basic_err = os_error[e.errno]
+    except KeyError:
+        # unknown; internal error
+        basic_err = 51
+    raise error.RunError(basic_err)
+
+def get_diskdevice_and_path(path):
+    """ Return the disk device and remaining path for given BASIC path. """
+    splits = str(path).upper().split(':', 1)
+    if len(splits) == 0:
+        return current_device, ''
+    elif len(splits) == 1:
+        return current_device, splits[0]
+    else:
+        # must be a disk device
+        if len(splits[0]) > 1:
+            # 68: device unavailable
+            raise error.RunError(68)
+        try:
+            return backend.devices[splits[0] + ':'], splits[1]
+        except KeyError:
+            raise error.RunError(68)
+
+
+# Locking (disk only)
+
+
+def find_files_by_name(name):
+    """ Find all file numbers open to the given filename."""
+    return [state.io_state.files[f] for f in state.io_state.files if state.io_state.files[f].name == name]
+
+def lock_records(nr, start, stop):
+    """ Try to lock a range of records in a file. """
+    thefile = get_file(nr)
+    if thefile.name in backend.devices:
+        # permission denied
+        raise error.RunError(70)
+    lock_list = set()
+    for f in find_files_by_name(thefile.name):
+        lock_list |= f.lock_list
+    if isinstance(thefile, TextFile):
+        bstart, bstop = 0, -1
+        if lock_list:
+            raise error.RunError(70)
+    else:
+        bstart, bstop = (start-1) * thefile.reclen, stop*thefile.reclen - 1
+        for start_1, stop_1 in lock_list:
+            if stop_1 == -1 or (bstart >= start_1 and bstart <= stop_1) or (bstop >= start_1 and bstop <= stop_1):
+                raise error.RunError(70)
+    thefile.lock_list.add((bstart, bstop))
+
+def unlock_records(nr, start, stop):
+    """ Unlock a range of records in a file. """
+    thefile = get_file(nr)
+    if thefile.name in backend.devices:
+        # permission denied
+        raise error.RunError(70)
+    if isinstance(thefile, TextFile):
+        bstart, bstop = 0, -1
+    else:
+        bstart, bstop = (start-1) * thefile.reclen, stop*thefile.reclen - 1
+    # permission denied if the exact record range wasn't given before
+    try:
+        thefile.lock_list.remove((bstart, bstop))
+    except KeyError:
+        raise error.RunError(70)
+
+def request_lock(name, lock, access):
+    """ Try to lock a file. """
+    same_files = find_files_by_name(name)
+    if not lock:
+        # default mode; don't accept default mode if SHARED/LOCK present
+        for f in same_files:
+            if f.lock:
+                raise error.RunError(70)
+    elif lock == 'RW':
+        # LOCK READ WRITE
+        raise error.RunError(70)
+    elif lock == 'S':
+        # SHARED
+        for f in same_files:
+            if not f.lock:
+                raise error.RunError(70)
+    else:
+        # LOCK READ or LOCK WRITE
+        for f in same_files:
+            if f.access == lock or lock == 'RW':
+                raise error.RunError(70)
+
+
 class DiskDevice(object):
     """ Disk device (A:, B:, C:, ...) """
 
@@ -485,10 +545,16 @@ class DiskDevice(object):
     # posix access modes for BASIC ACCESS mode for RANDOM files only
     access_access = { 'R': 'rb', 'W': 'wb', 'RW': 'r+b' }
 
-    def __init__(self, cwd):
+    def __init__(self, letter, path, cwd=''):
         """ Initialise a disk device. """
+        self.letter = letter
+        # mount root
+        # this is a native path, using os.sep
+        self.path = path
         # current working directory on this drive
-        self.drive_cwd = cwd
+        # this is a DOS relative path, no drive letter; including leading \\
+        # stored with os.sep but given using backslash separators
+        self.cwd = os.path.join(*cwd.split('\\'))
 
     def close(self):
         """ Close disk device. """
@@ -496,16 +562,19 @@ class DiskDevice(object):
 
     def open(self, number, param, filetype, mode, access, lock, reclen, defext):
         """ Open a file on a disk drive. """
+        if not self.path:
+            # undefined disk drive: path not found
+            raise error.RunError(76)
         # translate the file name to something DOS-ish if necessary
         if mode in ('O', 'A'):
             # don't open output or append files more than once
-            check_file_not_open(param)
+            self.check_file_not_open(param)
         if mode in ('I', 'L'):
-            name = oslayer.native_path(param, defext)
+            name = self.native_path(param, defext)
         else:
             # random files: try to open matching file
             # if it doesn't exist, create an all-caps 8.3 file name
-            name = oslayer.native_path(param, defext, make_new=True)
+            name = self.native_path(param, defext, make_new=True)
         # obtain a lock
         request_lock(name, lock, access)
         # open the file
@@ -513,12 +582,12 @@ class DiskDevice(object):
         # apply the BASIC file wrapper
         # TODO: instead of S, L -> use filetype in ('P', 'B', 'M')
         #        but check what happens with ASCII program files
-        if filetype in ('S', 'L'): # save, load
-            inst = RawFile(fhandle, name, number, mode, access, lock)
+        if mode in ('S', 'L'): # save, load
+            return RawFile(fhandle, name, number, mode, access, lock)
         elif mode in ('I', 'O', 'A'):
-            inst = TextFile(fhandle, name, number, mode, access, lock)
+            return TextFile(fhandle, name, number, mode, access, lock)
         else:
-            inst = RandomFile(fhandle, name, number, mode, access, lock, reclen)
+            return RandomFile(fhandle, name, number, mode, access, lock, reclen)
 
     def open_stream(self, native_name, mode, access):
         """ Open a stream on disk by os-native name with BASIC mode and access level. """
@@ -547,10 +616,153 @@ class DiskDevice(object):
                 f.close()
             return open(name, posix_access)
         except EnvironmentError as e:
-            oslayer.handle_oserror(e)
+            handle_oserror(e)
         except TypeError:
             # bad file number, which is what GW throws for open chr$(0)
             raise error.RunError(52)
+
+    def check_file_not_open(self, path):
+        """ Raise an error if the file is open. """
+        for f in state.io_state.files:
+            if self.native_path(path) == state.io_state.files[f].name:
+                raise error.RunError(55)
+
+    def native_path_elements(self, path_without_drive, err, join_name=False):
+        """ Return elements of the native path for a given BASIC path. """
+        path_without_drive = str(path_without_drive)
+        if '/' in path_without_drive:
+            # bad file number - this is what GW produces here
+            raise error.RunError(52)
+        if not self.path:
+            # this drive letter is not available (not mounted)
+            # path not found
+            raise error.RunError(76)
+        # get path below drive letter
+        if path_without_drive and path_without_drive[0] == '\\':
+            # absolute path specified
+            elements = path_without_drive.split('\\')
+        else:
+            elements = self.cwd.split(os.sep) + path_without_drive.split('\\')
+        # strip whitespace
+        elements = map(str.strip, elements)
+        # whatever's after the last \\ is the name of the subject file or dir
+        # if the path ends in \\, there's no name
+        name = '' if (join_name or not elements) else elements.pop()
+        # parse internal .. and . (like normpath but with \\)
+        # drop leading . and .. (this is what GW-BASIC does at drive root)
+        i = 0
+        while i < len(elements):
+            if elements[i] == '.':
+                del elements[i]
+            elif elements[i] == '..':
+                del elements[i]
+                if i > 0:
+                    del elements[i-1]
+                    i -= 1
+            else:
+                i += 1
+        # prepend drive root path to allow filename matching
+        path = self.path
+        baselen = len(path) + (path[-1] != os.sep)
+        # find the native matches for each step in the path
+        for e in elements:
+            # skip double slashes
+            if e:
+                # find a matching directory for every step in the path;
+                # append found name to path
+                path = os.path.join(path, oslayer.match_filename(e, '', path, err, isdir=True))
+        # return drive root path, relative path, file name
+        return path[:baselen], path[baselen:], name
+
+    def native_path(self, path_and_name, defext='', err=53,
+                    isdir=False, find_case=True, make_new=False):
+        """ Find os-native path to match the given BASIC path. """
+        # substitute drives and cwds
+        drivepath, relpath, name = self.native_path_elements(path_and_name, err)
+        # return absolute path to file
+        path = os.path.join(drivepath, relpath)
+        if name:
+            path = os.path.join(path,
+                oslayer.match_filename(name, defext, path, err, isdir, find_case, make_new))
+        # get full normalised path
+        return os.path.abspath(path)
+
+    def chdir(self, name):
+        """ Change working directory to given BASIC path. """
+        # get drive path and relative path
+        dpath, rpath, _ = self.native_path_elements(name, err=76, join_name=True)
+        # set cwd for the specified drive
+        self.cwd = rpath
+        # set the cwd in the underlying os (really only useful for SHELL)
+        if self == current_device:
+            safe(os.chdir, os.path.join(dpath, rpath))
+
+    def mkdir(self, name):
+        """ Create directory at given BASIC path. """
+        safe(os.mkdir, self.native_path(name, err=76, isdir=True, make_new=True))
+
+    def rmdir(self, name):
+        """ Remove directory at given BASIC path. """
+        safe(os.rmdir, self.native_path(name, err=76, isdir=True))
+
+    def kill(self, name):
+        """ Remove regular file at given BASIC path. """
+        safe(os.remove, self.native_path(name))
+
+    def rename(self, oldname, newname):
+        """ Rename a file or directory. """
+        # note that we can't rename to another drive: "Rename across disks"
+        oldname = self.native_path(str(oldname), err=53, isdir=False)
+        newname = self.native_path(str(newname), err=76, isdir=False, make_new=True)
+        if os.path.exists(newname):
+            # file already exists
+            raise error.RunError(58)
+        safe(os.rename, oldname, newname)
+
+    def files(self, pathmask):
+        """ Write directory listing to console. """
+        # forward slashes - file not found
+        # GW-BASIC sometimes allows leading or trailing slashes
+        # and then does weird things I don't understand.
+        if '/' in str(pathmask):
+            # file not found
+            raise error.RunError(53)
+        if not self.path:
+            # undefined disk drive: file not found
+            raise error.RunError(53)
+        drivepath, relpath, mask = self.native_path_elements(pathmask, err=53)
+        path = os.path.join(drivepath, relpath)
+        mask = mask.upper() or '*.*'
+        # output working dir in DOS format
+        # NOTE: this is always the current dir, not the one being listed
+        dir_elems = [oslayer.join_dosname(*oslayer.short_name(path, e)) for e in self.cwd.split(os.sep)]
+        console.write_line(self.letter + ':\\' + '\\'.join(dir_elems))
+        fils = ''
+        if mask == '.':
+            dirs = [oslayer.split_dosname(oslayer.dossify((os.sep+relpath).split(os.sep)[-1:][0]))]
+        elif mask == '..':
+            dirs = [oslayer.split_dosname(oslayer.dossify((os.sep+relpath).split(os.sep)[-2:][0]))]
+        else:
+            all_names = safe(os.listdir, path)
+            dirs = [n for n in all_names if os.path.isdir(os.path.join(path, n))]
+            fils = [n for n in all_names if not os.path.isdir(os.path.join(path, n))]
+            # filter according to mask
+            dirs = oslayer.filter_names(path, dirs + ['.', '..'], mask)
+            fils = oslayer.filter_names(path, fils, mask)
+        if not dirs and not fils:
+            raise error.RunError(53)
+        # format and print contents
+        output = (
+              [('%-8s.%-3s' % (t, e) if (e or not t) else '%-8s    ' % t) + '<DIR>' for t, e in dirs]
+            + [('%-8s.%-3s' % (t, e) if e else '%-8s    ' % t) + '     ' for t, e in fils])
+        num = state.console_state.screen.mode.width // 20
+        while len(output) > 0:
+            line = ' '.join(output[:num])
+            output = output[num:]
+            console.write_line(line)
+            # allow to break during dir listing & show names flowing on screen
+            backend.check_events()
+        console.write_line(' %d Bytes free' % oslayer.disk_free(path))
 
 
 class CASDevice(object):
@@ -615,7 +827,7 @@ class NullFile(object):
         """ Context guard. """
         return self
 
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_value, traceback):
         """ Context guard. """
         self.close()
 

@@ -702,43 +702,56 @@ def exec_wait(ins):
     util.require(ins, util.end_statement)
     machine.wait(addr, ander, xorer)
 
+
 ##########################################################
-# OS
+# Disk
     
 def exec_chdir(ins):
     """ CHDIR: change working directory. """
-    oslayer.chdir(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+    dev, path = iolayer.get_diskdevice_and_path(
+            vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+    dev.chdir(path)
     util.require(ins, util.end_statement)
 
 def exec_mkdir(ins):
     """ MKDIR: create directory. """
-    oslayer.mkdir(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+    dev, path = iolayer.get_diskdevice_and_path(
+            vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+    dev.mkdir(path)
     util.require(ins, util.end_statement)
 
 def exec_rmdir(ins):
     """ RMDIR: remove directory. """
-    oslayer.rmdir(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+    dev, path = iolayer.get_diskdevice_and_path(
+            vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+    dev.rmdir(path)
     util.require(ins, util.end_statement)
 
 def exec_name(ins):
     """ NAME: rename file or directory. """
     oldname = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    # don't rename open files
-    iolayer.check_file_not_open(oldname)
     # AS is not a tokenised word
     word = util.skip_white_read(ins) + ins.read(1)
     if word.upper() != 'AS':
         raise error.RunError(2)
     newname = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    oslayer.rename(oldname, newname)
+    dev, oldpath = iolayer.get_diskdevice_and_path(oldname)
+    newdev, newpath = iolayer.get_diskdevice_and_path(newname)
+    # don't rename open files
+    dev.check_file_not_open(oldpath)
+    if dev != newdev:
+        # rename across disks
+        raise error.RunError(74)
+    dev.rename(oldpath, newpath)
     util.require(ins, util.end_statement)
 
 def exec_kill(ins):
     """ KILL: remove file. """
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # don't delete open files
-    iolayer.check_file_not_open(name)
-    oslayer.kill(name)
+    dev, path = iolayer.get_diskdevice_and_path(name)
+    dev.check_file_not_open(path)
+    dev.kill(path)
     util.require(ins, util.end_statement)
 
 def exec_files(ins):
@@ -749,8 +762,13 @@ def exec_files(ins):
         if not pathmask:
             # bad file name
             raise error.RunError(64)
-    oslayer.files(pathmask)
+    dev, path = iolayer.get_diskdevice_and_path(pathmask)
+    dev.files(path)
     util.require(ins, util.end_statement)
+
+
+##########################################################
+# OS
     
 def exec_shell(ins):
     """ SHELL: open OS shell and optionally execute command. """
@@ -892,13 +910,13 @@ def exec_load(ins):
         util.require_read(ins, 'R')
     util.require(ins, util.end_statement)
     with iolayer.open_file(0, name, filetype='ABP', mode='L', defext='BAS') as f:
-        program.load()
+        program.load(f)
     reset.clear()
     if comma:
         # in ,R mode, don't close files; run the program
         flow.jump(None)
     else:
-        iolayer.close_all()
+        iolayer.close_files()
     state.basic_state.tron = False    
         
 def exec_chain(ins):
@@ -1000,7 +1018,7 @@ def exec_renum(ins):
 
 def exec_reset(ins):
     """ RESET: close all files. """
-    iolayer.close_all()
+    iolayer.close_files()
     util.require(ins, util.end_statement)
 
 def parse_read_write(ins):
@@ -1087,7 +1105,7 @@ def exec_close(ins):
     """ CLOSE: close a file. """
     if util.skip_white(ins) in util.end_statement:
         # allow empty CLOSE; close all open files
-        iolayer.close_all()
+        iolayer.close_files()
     else:    
         while True:
             number = expressions.parse_file_number_opthash(ins)
@@ -1385,7 +1403,7 @@ def exec_end(ins):
     # avoid NO RESUME
     state.basic_state.error_handle_mode = False
     state.basic_state.error_resume = None
-    iolayer.close_all()
+    iolayer.close_files()
     
 def exec_stop(ins):
     """ STOP: break program execution and return to interpreter. """
