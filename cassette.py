@@ -271,10 +271,10 @@ class TapeStream(object):
 
     def open(self, filename, filetype, mode, length=0, seg=0, offs=0):
         """ Open a file on the tape. """
-        if mode in ('L', 'I'):
+        if mode == 'I':
             self.play()
             return self.read_header(filename, filetype)
-        elif mode in ('S', 'O'):
+        elif mode == 'O':
             self.record()
             self.write_header(filename, filetype, length, seg, offs)
 

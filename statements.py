@@ -637,7 +637,7 @@ def exec_bload(ins):
         if offset < 0:
             offset += 0x10000           
     util.require(ins, util.end_statement)
-    with iolayer.open_file(0, name, filetype='M', mode='L') as f:
+    with iolayer.open_file(0, name, filetype='M', mode='I') as f:
         machine.bload(f, offset)
     
 def exec_bsave(ins):
@@ -655,7 +655,7 @@ def exec_bsave(ins):
     if length < 0:
         length += 0x10000         
     util.require(ins, util.end_statement)
-    with iolayer.open_file(0, name, filetype='M', mode='S') as f:
+    with iolayer.open_file(0, name, filetype='M', mode='O') as f:
         machine.bsave(f, offset, length)
 
 def exec_call(ins):
@@ -909,7 +909,7 @@ def exec_load(ins):
     if comma:
         util.require_read(ins, 'R')
     util.require(ins, util.end_statement)
-    with iolayer.open_file(0, name, filetype='ABP', mode='L') as f:
+    with iolayer.open_file(0, name, filetype='ABP', mode='I') as f:
         program.load(f)
     reset.clear()
     if comma:
@@ -947,7 +947,7 @@ def exec_chain(ins):
     util.require(ins, util.end_statement)
     if state.basic_state.protected and action == program.merge:
             raise error.RunError(5)
-    with iolayer.open_file(0, name, filetype='ABP', mode='L') as f:
+    with iolayer.open_file(0, name, filetype='ABP', mode='I') as f:
         program.chain(action, f, jumpnum, delete_lines)
     # preserve DEFtype on MERGE
     reset.clear(preserve_common=True, preserve_all=common_all, preserve_deftype=(action==program.merge))
@@ -978,7 +978,7 @@ def exec_save(ins):
         mode = util.skip_white_read(ins).upper()
         if mode not in ('A', 'P'):
             raise error.RunError(2)
-    with iolayer.open_file(0, name, filetype=mode, mode='S') as f:
+    with iolayer.open_file(0, name, filetype=mode, mode='O') as f:
         program.save(f, mode)
     util.require(ins, util.end_statement)
     
@@ -986,7 +986,7 @@ def exec_merge(ins):
     """ MERGE: merge lines from file into current program. """
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
-    with iolayer.open_file(0, name, filetype='A', mode='L') as f:
+    with iolayer.open_file(0, name, filetype='A', mode='I') as f:
         program.merge(f)
     util.require(ins, util.end_statement)
     
@@ -1530,7 +1530,7 @@ def exec_run(ins):
     elif c not in util.end_statement:
         name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_statement)
-        with iolayer.open_file(0, name, filetype='ABP', mode='L') as f:
+        with iolayer.open_file(0, name, filetype='ABP', mode='I') as f:
             program.load(f)
     flow.init_program()
     reset.clear(close_files=not comma)

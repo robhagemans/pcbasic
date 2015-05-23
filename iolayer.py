@@ -692,7 +692,7 @@ class DiskDevice(object):
 
     # posix access modes for BASIC modes INPUT, OUTPUT, RANDOM, APPEND
     # and internal LOAD and SAVE modes
-    access_modes = { 'I':'rb', 'O':'wb', 'R':'r+b', 'A':'ab', 'L': 'rb', 'S': 'wb' }
+    access_modes = { 'I':'rb', 'O':'wb', 'R':'r+b', 'A':'ab' }
     # posix access modes for BASIC ACCESS mode for RANDOM files only
     access_access = { 'R': 'rb', 'W': 'wb', 'RW': 'r+b' }
 
@@ -725,7 +725,7 @@ class DiskDevice(object):
         if mode in ('O', 'A'):
             # don't open output or append files more than once
             self.check_file_not_open(param)
-        if mode in ('I', 'L'):
+        if mode == 'I':
             name = self.native_path(param, defext)
         else:
             # random files: try to open matching file
@@ -738,7 +738,7 @@ class DiskDevice(object):
         # apply the BASIC file wrapper
         if set(filetype).intersection(set(('P', 'B', 'M'))):
             return RawFile(fhandle, name, number, mode, access, lock)
-        elif mode in ('I', 'O', 'A', 'L', 'S'):
+        elif mode in ('I', 'O', 'A'):
             return TextFile(fhandle, name, number, mode, access, lock)
         else:
             return RandomFile(fhandle, name, number, mode, access, lock, reclen)
@@ -963,21 +963,7 @@ class CASDevice(object):
         if not self.tapestream:
             # device unavailable
             raise error.RunError(68)
-        if mode == 'L':
-            file_types = ('A','B','P','M')
-        elif mode in ('I', 'O'):
-            file_types = ('D', )
-        elif mode == 'S':
-            # FIXME - need a file type parameter so that we know we're saving
-            # (instead of writing magic byte)
-            # bytecode or protected or bsave
-            # also need to provide length, seg, offs for these
-            file_types = ('A', )
-        if not self.tapestream:
-            # device unavailable
-            raise error.RunError(68)
-        else:
-            self.tapestream.open(param, file_types, mode, length=0, seg=0, offs=0)
+        self.tapestream.open(param, filetype, mode, length=0, seg=0, offs=0)
 
 
 #################################################################################
@@ -1215,7 +1201,7 @@ class TextFile(RawFile):
     def __init__(self, fhandle, name='', number=0, mode='A', access='RW', lock=''):
         """ Initialise text file object. """
         RawFile.__init__(self, fhandle, name, number, mode, access, lock)
-        if self.mode in ('I', 'O', 'R', 'S', 'L'):
+        if self.mode in ('I', 'O', 'R'):
             self.fhandle.seek(0)
         else:
             self.fhandle.seek(0, 2)
@@ -1225,7 +1211,7 @@ class TextFile(RawFile):
 
     def close(self):
         """ Close text file. """
-        if self.mode in ('O', 'A', 'S'):
+        if self.mode in ('O', 'A'):
             # write EOF char
             self.fhandle.write('\x1a')
         self.fhandle.close()
