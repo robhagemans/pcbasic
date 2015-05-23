@@ -114,9 +114,8 @@ def prepare():
 ############################################################################
 # General file manipulation
 
-def open_file(number, description, filetype, mode='I', access='R', lock='', reclen=128, defext=''):
+def open_file(number, description, filetype, mode='I', access='R', lock='', reclen=128):
     """ Open a file on a device specified by description. """
-    # TODO: defext can be handled by Disk device now that we know filetype; no need to carry it for everyone
     if (not description) or (number < 0) or (number > max_files):
         # bad file number; also for name='', for some reason
         raise error.RunError(52)
@@ -139,7 +138,7 @@ def open_file(number, description, filetype, mode='I', access='R', lock='', recl
         device = current_device
         dev_param = name
     # check if device exists and allows the requested mode
-    new_file = device.open(number, dev_param, filetype, mode, access, lock, reclen, defext)
+    new_file = device.open(number, dev_param, filetype, mode, access, lock, reclen)
     if number:
         state.io_state.files[number] = new_file
     return new_file
@@ -209,7 +208,7 @@ class Device(object):
         """ Set up device. """
         self.device_file = None
 
-    def open(self, number, param, filetype, mode, access, lock, reclen, defext):
+    def open(self, number, param, filetype, mode, access, lock, reclen):
         """ Open a file on the device. """
         if not self.device_file:
             # device unavailable
@@ -291,9 +290,9 @@ class LPTDevice(Device):
             self.device_file = LPTFile(self.stream, flush_trigger)
             self.device_file.flush_trigger = flush_trigger
 
-    def open(self, number, param, filetype, mode, access, lock, reclen, defext):
+    def open(self, number, param, filetype, mode, access, lock, reclen):
         """ Open a file on LPTn: """
-        f = Device.open(self, number, param, filetype, mode, access, lock, reclen, defext)
+        f = Device.open(self, number, param, filetype, mode, access, lock, reclen)
         # don't trigger flushes on LPT files, just on the device directly
         f.flush_trigger = 'close'
         return f
@@ -323,7 +322,7 @@ class COMDevice(Device):
         if self.stream:
             self.device_file = COMFile(self.stream)
 
-    def open(self, number, param, filetype, mode, access, lock, reclen, defext):
+    def open(self, number, param, filetype, mode, access, lock, reclen):
         """ Open a file on COMn: """
         if not self.stream:
             # device unavailable
@@ -343,7 +342,7 @@ class COMDevice(Device):
         except Exception:
             self.stream.close()
             raise
-        return Device.open(self, number, param, filetype, mode, access, lock, reclen, defext)
+        return Device.open(self, number, param, filetype, mode, access, lock, reclen)
 
     def set_parameters(self, param):
         """ Set serial port connection parameters """
@@ -642,8 +641,6 @@ def dossify(longname, defext=''):
     """ Put name in 8x3, all upper-case format and apply default extension. """
     # convert to all uppercase; one trunk, one extension
     name, ext = split_dosname(longname.strip().upper(), defext)
-    if ext == None:
-        ext = defext
     # no dot if no ext
     return join_dosname(name, ext)
 
@@ -717,11 +714,16 @@ class DiskDevice(object):
         """ Close disk device. """
         pass
 
-    def open(self, number, param, filetype, mode, access, lock, reclen, defext):
+    def open(self, number, param, filetype, mode, access, lock, reclen):
         """ Open a file on a disk drive. """
         if not self.path:
             # undefined disk drive: path not found
             raise error.RunError(76)
+        # set default extension for programs
+        if set(filetype).intersection(set(('P', 'B', 'A'))):
+            defext = 'BAS'
+        else:
+            defext = ''
         # translate the file name to something DOS-ish if necessary
         if mode in ('O', 'A'):
             # don't open output or append files more than once
@@ -961,7 +963,7 @@ class CASDevice(object):
         if self.tapestream:
             self.tapestream.eject()
 
-    def open(self, number, param, filetype, mode, access, lock, reclen, defext):
+    def open(self, number, param, filetype, mode, access, lock, reclen):
         """ Open a file on tape. """
         if not self.tapestream:
             # device unavailable

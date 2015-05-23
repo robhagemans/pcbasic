@@ -266,7 +266,7 @@ def open_native_or_dos_filename(infile):
         return open(os.path.expandvars(os.path.expanduser(infile)), 'r')
     except EnvironmentError as e:
         # otherwise, accept capitalised versions and default extension
-        return iolayer.open_file(0, infile, filetype='BPA', mode='L', defext='BAS')
+        return iolayer.open_file(0, infile, filetype='BPA', mode='L')
 
 def debug_details():
     logging.info('os: %s', plat.system)
