@@ -70,10 +70,13 @@ class CASDevice(object):
         if not self.tapestream:
             # device unavailable
             raise error.RunError(68)
-        self.tapestream.open(param, filetype, mode, length=0, seg=0, offs=0)
-        return CASFile(self.tapestream, self.tapestream.filetype, param, number, mode)
-
-
+        header = self.tapestream.open(param, filetype, mode, length=0, seg=0, offs=0)
+        if header:
+            return CASFile(self.tapestream, self.tapestream.filetype, param, number, mode)
+        else:
+            # reached end-of-tape without finding appropriate file
+            # device timeout
+            raise error.RunError(24)
 
 
 #################################################################################
@@ -157,10 +160,6 @@ class UnsupportedFormat(CassetteException):
     """ Cassette format not supported. """
     pass
 
-class UnsupportedType(CassetteException):
-    """ File type not supported. """
-    pass
-
 class UnknownRecord(CassetteException):
     """ Unknown record type. """
     pass
@@ -195,8 +194,8 @@ class IncorrectMode(CassetteException):
     pass
 
 
-#################################################################################
-
+##############################################################################
+# supporting functions
 
 def crc(data):
     """ Calculate 16-bit CRC-16-CCITT for data. """
@@ -224,7 +223,9 @@ def hms(seconds):
     h, m = divmod(m, 60)
     return h, m, s
 
-#############################
+
+##############################################################################
+# filters
 
 def passthrough():
     """ Passthrough filter. """
@@ -306,7 +307,9 @@ def butterband_sox(sample_rate, f0, width):
         for i in range(2, len(x)):
             y[i] = b0a*x[i] + b2a*x[i-2] - a1a*y[i-1] - a2a*y[i-2]
 
-#############################
+
+##############################################################################
+# cassette file header
 
 def parse_header(record):
     """ Extract header information. """
@@ -335,7 +338,7 @@ def header(name, token, nbytes, seg, offs):
     data += '\x00\x01'
     return data
 
-#############################
+##############################################################################
 
 
 class TapeStream(object):
@@ -408,7 +411,6 @@ class TapeStream(object):
             self.filetype = filetype
             self.record()
             self.write_header(filename, filetype, length, seg, offs)
-        return self
 
     def close(self):
         """ Close a file on tape. """
@@ -419,26 +421,30 @@ class TapeStream(object):
 
     def read_header(self, trunk=None, allowed_types=('D', 'A', 'M', 'B', 'P')):
         """ Play until a file header record is found. """
-        while True:
-            record = self.read_record(None)
-            header = parse_header(record)
-            if not header:
-                # unknown record type
-                logging.debug(self.stamp() + "Skipped record of unknown type.")
-            else:
-                file_trunk, file_token, file_bytes, seg, offs = header
-                file_ext = token_to_type[file_token]
-                if ((not trunk or file_trunk.rstrip() == trunk.rstrip()) and
-                        file_ext in allowed_types):
-                    msgstream.write_line("%s Found." % (file_trunk + '.' + file_ext))
-                    logging.debug(self.stamp() + "%s Found." % (file_trunk + '.' + file_ext))
-                    self.length, self.seg, self.offset = file_bytes, seg, offs
-                    self.filetype = file_ext
-                    self.record_num = 0
-                    return file_trunk, file_ext, file_bytes, seg, offs
+        try:
+            while True:
+                record = self.read_record(None)
+                header = parse_header(record)
+                if not header:
+                    # unknown record type
+                    logging.debug(self.stamp() + "Skipped record of unknown type.")
                 else:
-                    msgstream.write_line("%s Skipped." % (file_trunk + '.' + file_ext))
-                    logging.debug(self.stamp() + "%s Skipped." % (file_trunk + '.' + file_ext))
+                    file_trunk, file_token, file_bytes, seg, offs = header
+                    file_ext = token_to_type[file_token]
+                    if ((not trunk or file_trunk.rstrip() == trunk.rstrip()) and
+                            file_ext in allowed_types):
+                        msgstream.write_line("%s Found." % (file_trunk + '.' + file_ext))
+                        logging.debug(self.stamp() + "%s Found." % (file_trunk + '.' + file_ext))
+                        self.length, self.seg, self.offset = file_bytes, seg, offs
+                        self.filetype = file_ext
+                        self.record_num = 0
+                        return file_trunk, file_ext, file_bytes, seg, offs
+                    else:
+                        msgstream.write_line("%s Skipped." % (file_trunk + '.' + file_ext))
+                        logging.debug(self.stamp() + "%s Skipped." % (file_trunk + '.' + file_ext))
+                        return None
+        except EOF:
+            return None
 
     def read_leader(self):
         """ Read the leader / pilot wave. """
@@ -483,15 +489,18 @@ class TapeStream(object):
         if self.operating_mode == 'rec':
             raise IncorrectMode()
         c = ''
-        while True:
-            if nbytes > -1:
-                c += self.record_stream.read(len(c) - nbytes)
-            else:
-                c += self.record_stream.read()
-            if nbytes > -1 and len(c) == nbytes:
-                return c
-            if not self.fill_record_buffer():
-                return c
+        try:
+            while True:
+                if nbytes > -1:
+                    c += self.record_stream.read(len(c) - nbytes)
+                else:
+                    c += self.record_stream.read()
+                if nbytes > -1 and len(c) == nbytes:
+                    return c
+                if not self.fill_record_buffer():
+                    return c
+        except EOF:
+            return ''
 
     def read_record(self, reclen):
         """ Read a record from tape. """
@@ -608,8 +617,6 @@ class TapeStream(object):
 
     def write_header(self, name, filetype, length, seg, offs):
         """ Write a file header to the tape. """
-        if filetype not in ('D', 'A', 'M', 'B', 'P'):
-            raise UnsupportedType()
         if filetype in ('A', 'D'):
             # ASCII program files: length, seg, offset are untouched,
             # remain that of the previous file recorded!
@@ -660,13 +667,14 @@ class TapeStream(object):
         """ Write pause to tape image (stub). """
         pass
 
+##############################################################################
 
 
 class CASStream(TapeStream):
-    """ CAS-file cassette image reader. """
+    """ CAS-file cassette image bit stream. """
 
     def __init__(self, image_name):
-        """ Initialise CAS-file for reading. """
+        """ Initialise CAS-file. """
         TapeStream.__init__(self)
         self.operating_mode = ''
         self.cas_name = image_name
@@ -683,12 +691,19 @@ class CASStream(TapeStream):
             self.cas = open(self.cas_name, 'r+b')
             self.cas.seek(0, 2)
 
+    # -> time() in seconds?
+    def stamp(self):
+        """ Time stamp. """
+        return ''
+
+    # -> close()
     def eject(self):
         """ Close tape image. """
         # ensure any buffered bits are written
         TapeStream.eject(self)
         self.cas.close()
 
+    # -> read_bit()
     def gen_read_bit(self):
         """ Read the next bit. """
         while True:
@@ -703,6 +718,7 @@ class CASStream(TapeStream):
             else:
                 yield 1
 
+    # -> write_bit()
     def gen_write_bit(self, bit):
         """ Write a bit to tape. """
         # note that CAS-files aren't necessarily byte aligned 
@@ -715,6 +731,7 @@ class CASStream(TapeStream):
             self.current_byte |= bit * self.mask
             yield
 
+    # -> flush()
     def flush_bit_buffer(self):
         """ Write remaining bits to tape. """
         if self.operating_mode == 'rec':
@@ -722,15 +739,17 @@ class CASStream(TapeStream):
             # pad with zero if necessary to align on byte limit
             self.cas.write(self.current_byte)
 
-#######################################
+    def write_pause(self, milliseconds):
+        """ Write pause to tape image (stub). """
+        pass
 
 
-
+# TODO R/W access (can't use wave module)
 class WAVStream(TapeStream):
-    """ WAV-file cassette image reader. """
+    """ WAV-file cassette image bit stream. """
 
     def __init__(self, filename):
-        """ Initialise WAV-file for reading. """
+        """ Initialise WAV-file. """
         TapeStream.__init__(self)
         self.wav_pos = 0
         self.buf_len = 1024
@@ -738,6 +757,10 @@ class WAVStream(TapeStream):
         self.nchannels =  self.wav.getnchannels()
         self.sampwidth = self.wav.getsampwidth()
         self.framerate = self.wav.getframerate()
+        if self.sampwidth >= 3:
+            logging.warning("Couldn't attach %s to CAS device: %d-byte wave files unsupported.", filename, self.sampwidth)
+            self.wav = None
+            return
         nframes = self.wav.getnframes()
         # convert 8-bit and 16-bit values to ints
         int_max = 1 << (self.sampwidth*8)
@@ -749,8 +772,6 @@ class WAVStream(TapeStream):
             self.subtractor =  int_max*self.nchannels
         # volume above/below zero that is interpreted as zero
         self.zero_threshold = int_max*self.nchannels/256 # 128 #64
-        if self.sampwidth > 3:
-            raise UnsupportedFormat()
         self.conv_format = '<' + {1:'B', 2:'h'}[self.sampwidth]*self.nchannels*self.buf_len
         # 1000 us for 1, 500 us for 0; threshold for half-pulse (500 us, 250 us)
         self.length_cut = 375*self.framerate/1000000
@@ -764,14 +785,31 @@ class WAVStream(TapeStream):
         #self.lowpass = butterband_sox(self.framerate, 1500, 1000)
         self.lowpass = passthrough()
         self.lowpass.send(None)
-        self.read_half = self.gen_read_halfpulse()
+        self.read_half = self._gen_read_halfpulse()
         self.read_bit = self.gen_read_bit()
 
     def stamp(self):
         """ Time stamp. """
         return "[%d:%02d:%02d] " % hms(self.wav_pos/self.framerate)
 
-    def read_buffer(self):
+    def gen_read_bit(self):
+        """ Generator to yield the next bit. """
+        while True:
+            length_up, length_dn = self.read_half.next(), self.read_half.next()
+            if (length_up > self.length_max or length_dn > self.length_max or
+                    length_up < self.length_min or length_dn < self.length_min):
+                yield None
+            elif length_up >= self.length_cut:
+                yield 1
+            else:
+                yield 0
+
+    def eject(self):
+        """ Close WAV-file. """
+        TapeStream.eject(self)
+        self.wav.close()
+
+    def _fill_buffer(self):
         """ Fill buffer with frames and pre-process. """
         frame_buf = []
         frames = self.wav.readframes(self.buf_len)
@@ -787,7 +825,7 @@ class WAVStream(TapeStream):
         frames4 = [ x-self.subtractor if x >= self.sub_threshold else x for x in frames3 ]
         return self.lowpass.send(frames4)
 
-    def gen_read_halfpulse(self):
+    def _gen_read_halfpulse(self):
         """ Generator to read a half-pulse and yield its length. """
         length = 0
         frame = 1
@@ -799,7 +837,7 @@ class WAVStream(TapeStream):
                 sample = frame_buf[pos_in_frame]
                 pos_in_frame += 1
             except IndexError:
-                frame_buf = self.read_buffer()
+                frame_buf = self._fill_buffer()
                 pos_in_frame = 0
                 continue
             length += 1
@@ -811,62 +849,31 @@ class WAVStream(TapeStream):
                 yield length
                 length = 0
 
-    def gen_read_bit(self):
-        """ Generator to yield the next bit. """
+    def _create(self, filename):
+        """ Create or overwrite WAV tape image. """
+        self.framerate = 22050
+        self.sampwidth = 1
+        self.halflength = [250*self.framerate/1000000, 500*self.framerate/1000000]
+        # create/overwrite file
+        self.wav = wave.open(filename, 'wb')
+        self.wav.setnchannels(1)
+        self.wav.setsampwidth(1)
+        self.wav.setframerate(self.framerate)
+        self.write_intro()
+
+    def write_pause(self, milliseconds):
+        """ Write a pause of given length to the tape. """
+        self.wav.writeframesraw('\x7f' * (milliseconds * self.framerate / 1000))
+
+    def gen_write_bit(self):
+        """ Generator to write a bit to tape. """
         while True:
-            length_up, length_dn = self.read_half.next(), self.read_half.next()
-            if (length_up > self.length_max or length_dn > self.length_max or
-                    length_up < self.length_min or length_dn < self.length_min):
-                yield None
-            elif length_up >= self.length_cut:
-                yield 1
-            else:
-                yield 0
-        
-    def eject(self):
-        """ Close WAV-file. """
-        TapeStream.eject(self)
-        self.wav.close()
+            bit = yield
+            half_length = self.halflength[bit]
+            self.wav.writeframesraw('\x00' * half_length + '\xff' * half_length)
 
 
-#class WAVWriter(TapeWriter):
-#    """ WAV-file recording interface. """
-
-#    def __init__(self, filename):
-#        """ Initialise WAV tape image writer. """
-#        TapeWriter.__init__(self)
-#        self.create(filename)
-
-#    def create(self, filename):
-#        """ Create or overwrite WAV tape image. """
-#        self.framerate = 22050
-#        self.sampwidth = 1
-#        self.halflength = [250*self.framerate/1000000, 500*self.framerate/1000000]
-#        # create/overwrite file
-#        self.wav = wave.open(filename, 'wb')
-#        self.wav.setnchannels(1)
-#        self.wav.setsampwidth(1)
-#        self.wav.setframerate(self.framerate)
-#        self.write_intro()
-
-#    def write_pulse(self, half_length):
-#        """ Write a single full pulse to the tape. """
-#        self.wav.writeframesraw('\x00' * half_length + '\xff' * half_length)
-
-#    def write_pause(self, milliseconds):
-#        """ Write a pause of given length to the tape. """
-#        self.wav.writeframesraw('\x7f' * (milliseconds * self.framerate / 1000))
-
-#    def gen_write_bit(self):
-#        """ Generator to write a bit to tape. """
-#        while True:
-#            bit = yield
-#            self.write_pulse(self.halflength[bit])
-
-#    def close(self):
-#        """ Close WAV tape image. """
-#        self.wav.close()
-
+##############################################################################
 
 
 class BasicodeStream(WAVStream):
