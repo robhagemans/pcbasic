@@ -1045,20 +1045,13 @@ class RawFile(NullFile):
         self.lock = lock
         self.lock_list = set()
     
-    # set_width
-    # width
-    # col
-    # lof
-    # loc
-    # eof
-
     def close(self):
         """ Close the file. """
         self.fhandle.close()
 
     def read_chars(self, num=-1):
         """ Read num chars as a list. If num==-1, read all available. """
-        return list(self.fhandle.read(num))
+        return list(self.read(num))
 
     def read(self, num=-1):
         """ Read num chars as a string. If num==-1, read all available. """
@@ -1144,10 +1137,6 @@ class RandomBase(RawFile):
         if self.field_text_file.fhandle.tell() >= self.reclen-1:
             raise error.RunError(self.overflow_error) # FIELD overflow
         return self.field_text_file.read_line()
-
-    def read_chars(self, num=-1):
-        """ Read num characters as list. """
-        return list(self.read(num))
 
     def read(self, num=-1):
         """ Read num chars as a string, from FIELD buffer. """
@@ -1292,10 +1281,6 @@ class TextFile(RawFile):
             else:
                 s += c
         return s
-
-    def read_chars(self, num):
-        """ Read num characters as list. """
-        return list(self.read(num))
 
     def read(self, num=-1):
         """ Read num characters as string. """
