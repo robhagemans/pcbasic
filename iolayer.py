@@ -510,6 +510,11 @@ class RawFile(NullFile):
         """ Write contents of buffers to file. """
         self.fhandle.flush()
 
+    # needed only for representation.input_vars
+    def eof(self):
+        """ End-of-file. """
+        return (util.peek(self.fhandle) == '')
+
 
 class RandomBase(RawFile):
     """ Random-access file base object. """
