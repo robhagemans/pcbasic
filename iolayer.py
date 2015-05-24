@@ -1026,10 +1026,6 @@ class NullFile(object):
         """ Read a string from device. """
         return ''
 
-    def end_of_file(self):
-        """ Check for end-of-file. """
-        return False
-
 
 class RawFile(NullFile):
     """ File class for raw access to underlying stream. """
@@ -1088,10 +1084,6 @@ class RawFile(NullFile):
     def write_line(self, s=''):
         """ Write string or bytearray and newline to file. """ 
         self.write(str(s) + '\r\n')
-
-    def end_of_file(self):
-        """ Return whether the file pointer is at the end of file. """
-        return self.peek_char() == ''
 
     def flush(self):
         """ Write contents of buffers to file. """
@@ -1258,7 +1250,7 @@ class TextFile(RawFile):
 
     def read_line(self):
         """ Read line from text file. """
-        if self.end_of_file():
+        if self._end_of_file():
             # input past end
             raise error.RunError(62)
         # readline breaks line on LF, we can only break on CR or CRLF
@@ -1334,16 +1326,12 @@ class TextFile(RawFile):
         """ Set the line width of the file. """
         self.width = new_width
 
-    def end_of_file(self):
-        """ Check for end of file - for internal use. """
-        return (util.peek(self.fhandle) in ('', '\x1a'))
-
     def eof(self):
         """ Check for end of file EOF. """
         # for EOF(i)
         if self.mode in ('A', 'O'):
             return False
-        return (util.peek(self.fhandle) in ('', '\x1a'))
+        return self._end_of_file()
 
     def loc(self):
         """ Get file pointer LOC """
@@ -1359,6 +1347,11 @@ class TextFile(RawFile):
         lof = self.fhandle.tell()
         self.fhandle.seek(current)
         return lof
+
+    def _end_of_file(self):
+        """ Check for end of file - for internal use. """
+        return (util.peek(self.fhandle) in ('', '\x1a'))
+
 
 
 class RandomFile(RandomBase):
@@ -1790,7 +1783,7 @@ class CASFile(NullFile):
 
     def read_line(self):
         """ Read a line from device. """
-        if self.end_of_file():
+        if self.tapestream.eof():
             # input past end
             raise error.RunError(62)
         # readline breaks line on LF, we can only break on CR
@@ -1804,7 +1797,6 @@ class CASFile(NullFile):
             else:
                 s += c
         return s
-
 
 prepare()
 

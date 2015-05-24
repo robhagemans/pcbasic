@@ -493,16 +493,16 @@ def input_vars_file(readvar, text_file):
         if value == None:
             value = vartypes.null[typechar]
         # process the ending char (this may raise FIELD OVERFLOW but should avoid INPUT PAST END)
-        if not text_file.end_of_file():
+        if not text_file.eof():
             c = text_file.peek_char() 
             if c == ',':
                 text_file.read_chars(1)
             elif c not in ('', '\x1a'):
                 # WJB - Skip trailing space and an end of line 
                 text_skip(text_file, ascii_white)
-                if not text_file.end_of_file() and text_file.peek_char() == '\r':
+                if not text_file.eof() and text_file.peek_char() == '\r':
                     text_file.read_chars(1)
-                    if not text_file.end_of_file() and text_file.peek_char() == '\n':
+                    if not text_file.eof() and text_file.peek_char() == '\n':
                         text_file.read_chars(1)
         # and then set the value
         v.append(value)
@@ -533,7 +533,7 @@ def text_skip(text_file, skip_range):
     """ Skip characters from a specified range in text file. """
     d = ''
     while True:
-        if text_file.end_of_file():
+        if text_file.eof():
             break
         d = text_file.peek_char() 
         if d not in skip_range:
@@ -553,7 +553,7 @@ def input_entry(text_file, allow_quotes, end_all=(), end_not_quoted=(',',)):
         text_file.read_chars(1)
     while True:
         # read entry
-        if text_file.end_of_file():
+        if text_file.eof():
             break
         c = ''.join(text_file.read_chars(1))
         if c in end_all or (c in end_not_quoted and not quoted):
