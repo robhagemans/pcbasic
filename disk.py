@@ -19,9 +19,6 @@ import plat
 if plat.system == 'Windows':
     import win32api
     import ctypes
-else:
-    # avoid pylint errors 
-    WindowsError = OSError
     
 import config
 import error
@@ -94,7 +91,7 @@ if plat.system == 'Windows':
                 cwd = win32api.GetShortPathName(os.getcwd())
                 # must not start with \\
                 drives[drive_letter] = cwd[:3], cwd[3:]
-            except WindowsError:
+            except OSError:
                 pass
         os.chdir(save_current)
         return drives, current_drive
@@ -226,7 +223,7 @@ if plat.system == 'Windows':
         try:
             # gets the short name if it exists, keeps long name otherwise
             path_and_name = win32api.GetShortPathName(path_and_longname)
-        except WindowsError:
+        except OSError:
             # something went wrong - keep long name (happens for swap file)
             path_and_name = path_and_longname
         # last element of path is name
