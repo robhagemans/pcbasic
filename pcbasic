@@ -78,7 +78,7 @@ def prepare_logging():
 def convert():
     """ Perform file format conversion. """
     import program
-    import iolayer
+    import disk
     import error
     # set conversion output 
     # first arg, if given, is mode; second arg, if given, is outfile
@@ -96,16 +96,16 @@ def convert():
         elif plat.has_stdin:
             # use StringIO buffer for seekability
             in_buffer = StringIO(sys.stdin.read())
-            prog_infile = iolayer.open_diskfile(in_buffer, filetype='ABP', mode='I')
+            prog_infile = disk.open_diskfile(in_buffer, filetype='ABP', mode='I')
         if prog_infile:
             with prog_infile:
                 program.load(prog_infile)
         prog_outfile = None
         if outfile:
             # on save from command-line, use exact file name
-            prog_outfile = iolayer.open_diskfile(open(outfile, 'wb'), filetype=mode, mode='O')
+            prog_outfile = disk.open_diskfile(open(outfile, 'wb'), filetype=mode, mode='O')
         elif plat.has_stdout:
-            prog_outfile = iolayer.open_diskfile(sys.stdout, filetype=mode, mode='O')
+            prog_outfile = disk.open_diskfile(sys.stdout, filetype=mode, mode='O')
         if prog_outfile:
             with prog_outfile:
                 program.save(prog_outfile)
@@ -273,10 +273,11 @@ def print_greeting(console):
 def open_native_or_dos_filename(infile):
     """ If the specified file exists, open it; if not, try as DOS file name. """
     import iolayer
+    import disk
     import error
     try:
         # first try exact file name
-        return iolayer.open_diskfile(open(os.path.expandvars(os.path.expanduser(infile)), 'r'), filetype='BPA', mode='I')
+        return disk.open_diskfile(open(os.path.expandvars(os.path.expanduser(infile)), 'r'), filetype='BPA', mode='I')
     except EnvironmentError as e:
         # otherwise, accept capitalised versions and default extension
         return iolayer.open_file(0, infile, filetype='BPA', mode='I')
