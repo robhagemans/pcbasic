@@ -396,8 +396,8 @@ import errno
 from fnmatch import fnmatch
 
 import plat
-# for peek
-import util
+# for value_to_uint
+import vartypes
 
 if plat.system == 'Windows':
     import win32api
@@ -447,6 +447,8 @@ def prepare_disks():
             path, cwd = None, ''
         backend.devices[letter + ':'] = DiskDevice(letter, path, cwd)
     current_device = backend.devices[current_drive + ':']
+    # for BSAVE (type M) file header/footer
+    tandy_syntax = config.options['syntax'] == 'tandy'
 
 if plat.system == 'Windows':
     def map_drives():
@@ -1209,23 +1211,35 @@ class ProgramFile(RawFile):
     magic = { 'B': '\xff', 'P': '\xfe', 'M': '\xfd', 'A': '' }
     types = { '\xff': 'B', '\xfe': 'P', '\xfd': 'M' }
 
-    def __init__(self, fhandle, filetype, name='', number=0, mode='A', access='RW', lock=''):
-        """ Initialise program file object. """
+    def __init__(self, fhandle, filetype, name='', number=0, mode='A',
+                       access='RW', lock='', seg=0, offset=0, length=0):
+        """ Initialise program file object and write header. """
         RawFile.__init__(self, fhandle, name, number, mode, access, lock)
+        self.seg, self.offset, self.length = 0, 0, 0
         if self.mode == 'O':
             self.write(self.magic[filetype])
             self.filetype = filetype
+            if self.filetype == 'M':
+                self.write(vartypes.value_to_uint(seg) +
+                           vartypes.value_to_uint(offset) +
+                           vartypes.value_to_uint(length))
+                self.seg, self.offset, self.length = seg, offset, length
         else:
             try:
-                self.filetype = self.types[util.peek(self.fhandle)]
+                self.filetype = self.types[self.peek_char()]
                 self.read(1)
             except KeyError:
                 self.filetype = 'A'
             if self.filetype not in filetype:
                 raise error.RunError(54)
+            if self.filetype == 'M':
+                self.seg = vartypes.uint_to_value(bytearray(self.read(2)))
+                self.offset = vartypes.uint_to_value(bytearray(self.read(2)))
+                # size gets ignored: even the \x1a at the end is read
+                self.length = vartypes.uint_to_value(bytearray(self.read(2)))
 
     def close(self):
-        """ Close program file. """
+        """ Write EOF and close program file. """
         if self.mode == 'O':
             self.write('\x1a')
         self.fhandle.close()
