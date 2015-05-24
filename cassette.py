@@ -1,3 +1,11 @@
+"""
+PC-BASIC - cassette.py
+Cassette Tape Device
+
+(c) 2015 Rob Hagemans
+This file is released under the GNU GPL version 3.
+"""
+
 import wave
 import math
 import struct
@@ -8,17 +16,128 @@ try:
 except ImportError:
     from StringIO import StringIO
 
+import error
+import config
+import backend
+import iolayer
+import console
+
 token_to_type = {0: 'D', 1:'M', 0xa0:'P', 0x20:'P', 0x40:'A', 0x80:'B'}
 type_to_token = dict((reversed(item) for item in token_to_type.items()))
-type_to_magic = {'D': '', 'A':'', 'M':'\xfd', 'P':'\xfe', 'B':'\xff'}
-magic_to_type = {'\xfd': 'M', '\xfe': 'P', '\xff': 'B'}
-
-#############################
+#type_to_magic = {'D': '', 'A':'', 'M':'\xfd', 'P':'\xfe', 'B':'\xff'}
+#magic_to_type = {'\xfd': 'M', '\xfe': 'P', '\xff': 'B'}
 
 # console to output Found and Skipped messages
 msgstream = None
 
-#############################
+
+def prepare():
+    """ Initialise cassette module. """
+    global msgstream
+    backend.devices['CAS1:'] = CASDevice(config.options['cas1'])
+    msgstream = console
+
+
+#################################################################################
+# Cassette device
+
+class CASDevice(object):
+    """ Cassette tape device (CASn:) """
+
+    allowed_protocols = ('CAS', 'WAV')
+    allowed_modes = 'IOLS'
+
+    def __init__(self, arg):
+        """ Initialise tape device. """
+        addr, val = iolayer.parse_protocol_string(arg)
+        ext = val.split('.')[-1].upper()
+        if not val:
+            self.tapestream = None
+        elif addr == 'WAV' or (addr != 'CAS' and ext == 'WAV'):
+            # if unspecified, determine type on the basis of filename extension
+            self.tapestream = WAVStream(val)
+        else:
+            # 'CAS' is default
+            self.tapestream = CASStream(val)
+
+    def close(self):
+        """ Close tape device. """
+        if self.tapestream:
+            self.tapestream.eject()
+
+    def open(self, number, param, filetype, mode, access, lock, reclen):
+        """ Open a file on tape. """
+        if not self.tapestream:
+            # device unavailable
+            raise error.RunError(68)
+        self.tapestream.open(param, filetype, mode, length=0, seg=0, offs=0)
+
+
+
+
+#################################################################################
+# Cassette files
+
+class CASFile(iolayer.NullFile):
+    """ File on CASn: device. """
+
+    def __init__(self, tapestream, name='', number=0, mode='A'):
+        """ Initialise file on tape. """
+        iolayer.NullFile.__init__(self)
+        self.number = number
+        self.tapestream = tapestream
+        self.name = name
+        self.mode = mode
+
+    def lof(self):
+        """ LOF: illegal function call. """
+        raise error.RunError(5)
+
+    def loc(self):
+        """ LOC: illegal function call. """
+        raise error.RunError(5)
+
+    def eof(self):
+        """ End of file. """
+        if self.mode in ('A', 'O'):
+            return False
+        return self.tapestream.eof()
+
+    def write(self, s):
+        """ Write string s to tape file. """
+        self.tapestream.write(s)
+
+    def write_line(self, s):
+        """ Write string s and CR to tape file. """
+        self.write(s + '\r')
+
+    def read_chars(self, n):
+        """ Read a list of chars from device. """
+        return list(self.read(n))
+
+    def read(self, n):
+        """ Read a string from device. """
+        return self.tapestream.read(n)
+
+    def read_line(self):
+        """ Read a line from device. """
+        if self.tapestream.eof():
+            # input past end
+            raise error.RunError(62)
+        # readline breaks line on LF, we can only break on CR
+        s = ''
+        while len(s) < 255:
+            c = self.tapestream.read(1)
+            if c == '':
+                break
+            elif c == '\r':
+                break
+            else:
+                s += c
+        return s
+
+
+#################################################################################
 
 class CassetteException(Exception):
     """ Cassette exception. """
@@ -74,7 +193,8 @@ class IncorrectMode(CassetteException):
     pass
 
 
-#############################
+#################################################################################
+
 
 def crc(data):
     """ Calculate 16-bit CRC-16-CCITT for data. """
@@ -112,7 +232,7 @@ def passthrough():
 
 def butterworth(sample_rate, cutoff_freq):
     """ Second-order Butterworth low-pass filter. """
-    # cf. src/arch/ibmpc/cassette.c (Hampa Hug) in PCE sources
+    # cf. src/arch/ibmpc/c (Hampa Hug) in PCE sources
     x, y = [0, 0], [0, 0]
     om = 1. / math.tan((math.pi * cutoff_freq) / sample_rate)
     rb0 = 1. / (om*om + om*math.sqrt(2.) + 1.)
@@ -229,6 +349,9 @@ class TapeStream(object):
         self.mask = 0
         self.current_byte = 0
         self.record_stream = StringIO()
+        self.read_bit = self.gen_read_bit()
+        self.write_bit = self.gen_write_bit()
+        self.write_bit.send(None)
 
     def __enter__(self):
         """ Context guard for 'with'. """
@@ -368,7 +491,7 @@ class TapeStream(object):
             try:
                 data = self.read_block()
             except (PulseError, FramingError, CRCError) as e:
-                logging.warning(self.stamp() + "%d %s" % (self.wav_pos, str(e)))
+                logging.warning(self.stamp() + "%s" % str(e))
             record += data
             byte_count += len(data)
             if (reclen == None):
@@ -400,7 +523,7 @@ class TapeStream(object):
                 if num_bytes != 0:
                     record = record[:num_bytes-1]
                 # text/data files are stored on tape with CR line endings
-                self.record_buffer.write(record.replace('\r', '\r\n'))
+                self.record_stream.write(record.replace('\r', '\r\n'))
                 if num_bytes != 0:
                     break
             self.record_stream.seek(0)
@@ -461,7 +584,7 @@ class TapeStream(object):
             self.write_block(data[:256])
             data = data[256:]
         # closing sequence is 30 1-bits followed by a zero bit (based on PCE output).
-        # Not 32 1-bits as per http://fileformats.archiveteam.org/wiki/IBM_PC_data_cassette.
+        # Not 32 1-bits as per http://fileformats.archiveteam.org/wiki/IBM_PC_data_
         self.write_byte(0xff)
         self.write_byte(0xff)
         self.write_byte(0xff)
@@ -512,6 +635,19 @@ class TapeStream(object):
         """ Write remaining bits to tape (stub). """
         pass
 
+    def gen_read_bit(self):
+        """ Read the next bit (stub). """
+        yield
+
+    def gen_write_bit(self):
+        """ Write the next bit (stub). """
+        yield
+
+    def write_pause(self, milliseconds):
+        """ Write pause to tape image (stub). """
+        pass
+
+
 
 class CASStream(TapeStream):
     """ CAS-file cassette image reader. """
@@ -537,35 +673,34 @@ class CASStream(TapeStream):
     def eject(self):
         """ Close tape image. """
         # ensure any buffered bits are written
-        Tapestream.eject(self)
+        TapeStream.eject(self)
         self.cas.close()
 
-    def read_bit(self):
+    def gen_read_bit(self):
         """ Read the next bit. """
-        self.mask >>= 1
-        if self.mask <= 0:
-            self.current_byte = self.cas.read(1)
-            if not self.current_byte:
-                raise EOF
-            self.mask = 0x80
-        if (ord(self.current_byte) & self.mask == 0):
-            return 0
-        else:
-            return 1
+        while True:
+            self.mask >>= 1
+            if self.mask <= 0:
+                self.current_byte = self.cas.read(1)
+                if not self.current_byte:
+                    raise EOF
+                self.mask = 0x80
+            if (ord(self.current_byte) & self.mask == 0):
+                yield 0
+            else:
+                yield 1
 
-    def write_bit(self, bit):
+    def gen_write_bit(self, bit):
         """ Write a bit to tape. """
         # note that CAS-files aren't necessarily byte aligned 
         # the ones we make are, but PCE's ones aren't.
-        self.mask >>= 1
-        if self.mask <= 0:
-            self.cas.write(chr(self.current_byte))
-            self.mask = 0x80
-        self.current_byte |= bit * self.mask
-
-    def write_pause(self, milliseconds):
-        """ Write pause to tape image (dummy). """
-        pass
+        while True:
+            self.mask >>= 1
+            if self.mask <= 0:
+                self.cas.write(chr(self.current_byte))
+                self.mask = 0x80
+            self.current_byte |= bit * self.mask
+            yield
 
     def flush_bit_buffer(self):
         """ Write remaining bits to tape. """
@@ -799,7 +934,7 @@ class BasicodeStream(WAVStream):
     def search_file(self, allowed_types=('A', 'D')):
         """ Play until a file record is found. """
         self.read_leader()
-        msgstream.write_line("BASICODE.A Found." % (file_trunk + '.' + file_ext))
+        msgstream.write_line("BASICODE.A Found.")
         logging.debug(self.stamp() + "BASICODE.A Found.")
         return 'BASICODE', 'A', 0, 0, 0
 
@@ -830,7 +965,7 @@ class BasicodeStream(WAVStream):
         # read one-byte checksum and report errors
         try:
             checksum_byte = self.read_byte()
-        except (PulseError, FrameError, EOF) as e:
+        except (PulseError, FramingError, EOF) as e:
             logging.warning(self.stamp() + "Could not read checksum: %s " % str(e))
         # checksum shld be 0 for even # bytes, 128 for odd
         if checksum_byte == None or checksum^checksum_byte not in (0,128):
@@ -870,5 +1005,5 @@ class BasicodeStream(WAVStream):
                     logging.warning(self.stamp() + "Error in sync byte: %s" % str(e))
 
 
-
+prepare()
 

@@ -25,7 +25,6 @@ import memory
 import backend
 import serial_socket
 import printer
-import cassette
 
 # file numbers
 state.io_state.files = {}
@@ -108,8 +107,6 @@ def prepare():
         serial_in_size = config.options['serial-buffer-size']
     backend.devices['COM1:'] = COMDevice(config.options['com1'], max_reclen, serial_in_size)
     backend.devices['COM2:'] = COMDevice(config.options['com2'], max_reclen, serial_in_size)
-    # cassette
-    backend.devices['CAS1:'] = CASDevice(config.options['cas1'])
 
 
 ############################################################################
@@ -177,7 +174,7 @@ def close_devices():
 
 
 ############################################################################
-# Device files
+# Device classes
 #
 #  Some devices have a master file, where newly opened files inherit
 #  width (and other?) settings from this file
@@ -387,41 +384,6 @@ class COMDevice(Device):
             raise error.RunError(64)
         # set LF
         self.stream.linefeed = (LF != '')
-
-
-
-###################################################################
-
-class CASDevice(object):
-    """ Cassette tape device (CASn:) """
-
-    allowed_protocols = ('CAS', 'WAV')
-    allowed_modes = 'IOLS'
-
-    def __init__(self, arg):
-        """ Initialise tape device. """
-        addr, val = parse_protocol_string(arg)
-        ext = val.split('.')[-1].upper()
-        if not val:
-            self.tapestream = None
-        elif addr == 'WAV' or (addr != 'CAS' and ext == 'WAV'):
-            # if unspecified, determine type on the basis of filename extension
-            self.tapestream = cassette.WAVStream(val)
-        else:
-            # 'CAS' is default
-            self.tapestream = cassette.CASStream(val)
-
-    def close(self):
-        """ Close tape device. """
-        if self.tapestream:
-            self.tapestream.eject()
-
-    def open(self, number, param, filetype, mode, access, lock, reclen):
-        """ Open a file on tape. """
-        if not self.tapestream:
-            # device unavailable
-            raise error.RunError(68)
-        self.tapestream.open(param, filetype, mode, length=0, seg=0, offs=0)
 
 
 #################################################################################
@@ -1074,67 +1036,6 @@ class COMFile(RandomBase):
         """ Returns number of bytes free in buffer. """
         return serial_in_size - self.loc()
 
-
-#################################################################################
-# Cassette files
-
-class CASFile(NullFile):
-    """ Base object for devices and device files. """
-
-    def __init__(self, tapestream, name='', number=0, mode='A'):
-        """ Initialise file on tape. """
-        NullFile.__init__(self)
-        self.number = number
-        self.tapestream = tapestream
-        self.name = name
-        self.mode = mode
-
-    def lof(self):
-        """ LOF: illegal function call. """
-        raise error.RunError(5)
-
-    def loc(self):
-        """ LOC: illegal function call. """
-        raise error.RunError(5)
-
-    def eof(self):
-        """ End of file. """
-        if self.mode in ('A', 'O'):
-            return False
-        return self.tapestream.eof()
-
-    def write(self, s):
-        """ Write string s to tape file. """
-        self.tapestream.write(s)
-
-    def write_line(self, s):
-        """ Write string s and CR to tape file. """
-        self.write(s + '\r')
-
-    def read_chars(self, n):
-        """ Read a list of chars from device. """
-        return list(self.read(n))
-
-    def read(self, n):
-        """ Read a string from device. """
-        return self.tapestream.read(n)
-
-    def read_line(self):
-        """ Read a line from device. """
-        if self.tapestream.eof():
-            # input past end
-            raise error.RunError(62)
-        # readline breaks line on LF, we can only break on CR
-        s = ''
-        while len(s) < 255:
-            c = self.tapestream.read(1)
-            if c == '':
-                break
-            elif c == '\r':
-                break
-            else:
-                s += c
-        return s
 
 prepare()
 
