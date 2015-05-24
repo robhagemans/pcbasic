@@ -71,6 +71,7 @@ class CASDevice(object):
             # device unavailable
             raise error.RunError(68)
         self.tapestream.open(param, filetype, mode, length=0, seg=0, offs=0)
+        return CASFile(self.tapestream, self.tapestream.filetype, param, number, mode)
 
 
 
@@ -81,11 +82,12 @@ class CASDevice(object):
 class CASFile(iolayer.NullFile):
     """ File on CASn: device. """
 
-    def __init__(self, tapestream, name='', number=0, mode='A'):
+    def __init__(self, tapestream, filetype, name='', number=0, mode='A'):
         """ Initialise file on tape. """
         iolayer.NullFile.__init__(self)
         self.number = number
         self.tapestream = tapestream
+        self.filetype = filetype
         self.name = name
         self.mode = mode
 
@@ -115,7 +117,7 @@ class CASFile(iolayer.NullFile):
         """ Read a list of chars from device. """
         return list(self.read(n))
 
-    def read(self, n):
+    def read(self, n=-1):
         """ Read a string from device. """
         return self.tapestream.read(n)
 
@@ -352,6 +354,9 @@ class TapeStream(object):
         self.read_bit = self.gen_read_bit()
         self.write_bit = self.gen_write_bit()
         self.write_bit.send(None)
+        self.operating_mode = ''
+        self.filetype = ''
+        self.record_num = 0
 
     def __enter__(self):
         """ Context guard for 'with'. """
@@ -394,17 +399,21 @@ class TapeStream(object):
 
     def open(self, filename, filetype, mode, length=0, seg=0, offs=0):
         """ Open a file on the tape. """
+        self.record_num = 0
         if mode == 'I':
             self.play()
-            return self.read_header(filename, filetype)
+            header = self.read_header(filename, filetype)
+            return header
         elif mode == 'O':
+            self.filetype = filetype
             self.record()
             self.write_header(filename, filetype, length, seg, offs)
+        return self
 
     def close(self):
         """ Close a file on tape. """
         # terminate text files with NUL
-        if self.file_type in ('D', 'A'):
+        if self.filetype in ('D', 'A'):
             self.write('\0')
         self.flush_record_buffer()
 
@@ -423,12 +432,13 @@ class TapeStream(object):
                         file_ext in allowed_types):
                     msgstream.write_line("%s Found." % (file_trunk + '.' + file_ext))
                     logging.debug(self.stamp() + "%s Found." % (file_trunk + '.' + file_ext))
+                    self.length, self.seg, self.offset = file_bytes, seg, offs
+                    self.filetype = file_ext
+                    self.record_num = 0
                     return file_trunk, file_ext, file_bytes, seg, offs
                 else:
                     msgstream.write_line("%s Skipped." % (file_trunk + '.' + file_ext))
                     logging.debug(self.stamp() + "%s Skipped." % (file_trunk + '.' + file_ext))
-                self.file_type = file_ext
-                self.record_num = 0
 
     def read_leader(self):
         """ Read the leader / pilot wave. """
@@ -468,14 +478,17 @@ class TapeStream(object):
             return data
         raise CRCError(crc_given, crc_calc)
 
-    def read(self, nbytes):
+    def read(self, nbytes=-1):
         """ Read bytes from a file on tape. """
-        if self.operating_mode == 'rec' or current_file == None:
+        if self.operating_mode == 'rec':
             raise IncorrectMode()
         c = ''
         while True:
-            c += self.record_stream.read(len(c) - nbytes)
-            if len(c) == nbytes:
+            if nbytes > -1:
+                c += self.record_stream.read(len(c) - nbytes)
+            else:
+                c += self.record_stream.read()
+            if nbytes > -1 and len(c) == nbytes:
                 return c
             if not self.fill_record_buffer():
                 return c
@@ -508,9 +521,9 @@ class TapeStream(object):
         """ Read to fill the tape buffer. """
         if self.record_num > 0:
             return False
-        if self.file_type in ('M', 'B', 'P'):
+        if self.filetype in ('M', 'B', 'P'):
             # bsave, tokenised and protected come in one multi-block record
-            self.record_stream = StringIO(self.read_record(file_bytes))
+            self.record_stream = StringIO(self.read_record(self.length))
         else:
             # ascii and data come as a sequence of one-block records
             # 256 bytes less 1 length byte. CRC trailer comes after 256-byte block
@@ -593,22 +606,22 @@ class TapeStream(object):
         # write 100 ms second pause to make clear separation between blocks
         self.write_pause(100)
 
-    def write_header(self, name, file_type, length, seg, offs):
+    def write_header(self, name, filetype, length, seg, offs):
         """ Write a file header to the tape. """
-        if file_type not in ('D', 'A', 'M', 'B', 'P'):
+        if filetype not in ('D', 'A', 'M', 'B', 'P'):
             raise UnsupportedType()
-        if file_type in ('A', 'D'):
+        if filetype in ('A', 'D'):
             # ASCII program files: length, seg, offset are untouched,
             # remain that of the previous file recorded!
             seg, offs, length = self.last_seg, self.last_offs, self.last_length
         else:
             self.last_seg, self.last_offs, self.last_length = seg, offs, length
-        self.file_type = file_type
-        self.write_record(header(name, type_to_token[file_type], length, seg, offs))
+        self.filetype = filetype
+        self.write_record(header(name, type_to_token[filetype], length, seg, offs))
 
     def write(self, c):
         """ Write a string to a file on tape. """
-        if self.file_type in ('D', 'A'):
+        if self.filetype in ('D', 'A'):
             c = c.replace('\r\n', '\r')
         self.record_stream.write(c)
 
@@ -616,7 +629,7 @@ class TapeStream(object):
         """ Write the tape file buffer to tape. """
         if self.operating_mode == 'rec':
             data = self.record_stream.getvalue()
-            if self.file_type in ('M', 'B', 'P'):
+            if self.filetype in ('M', 'B', 'P'):
                 # bsave, tokenised and protected come in one multi-block record
                 self.write_record(data)
             else:
@@ -749,6 +762,7 @@ class WAVStream(TapeStream):
         #self.lowpass = butterworth(self.framerate, 3000)
         self.lowpass = butterband4(self.framerate, 500, 3000)
         #self.lowpass = butterband_sox(self.framerate, 1500, 1000)
+        self.lowpass = passthrough()
         self.lowpass.send(None)
         self.read_half = self.gen_read_halfpulse()
         self.read_bit = self.gen_read_bit()
@@ -938,9 +952,9 @@ class BasicodeStream(WAVStream):
         logging.debug(self.stamp() + "BASICODE.A Found.")
         return 'BASICODE', 'A', 0, 0, 0
 
-    def read_file(self, file_type='D', file_bytes=0):
+    def read_file(self, filetype='D', file_bytes=0):
         """ Read a file from tape. """
-        if file_type not in ('D', 'A'):
+        if filetype not in ('D', 'A'):
             raise UnsupportedType()
         data = ''
         # xor sum includes STX byte

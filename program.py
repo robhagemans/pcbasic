@@ -19,6 +19,7 @@ import state
 import flow
 import unicodepage
 import memory
+import logging
 
 try:
     from cStringIO import StringIO
@@ -312,6 +313,7 @@ def load(g):
         # anything but numbers or whitespace: Direct Statement in File
         merge(g)
     else:
+        logging.warning("Incorrect file type '%s' on LOAD", g.filetype)
         # this shouldn't happen; bad file mode
         raise error.RunError(54)
     # rebuild line number dict and offsets
