@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3.
 
 from StringIO import StringIO
 import subprocess
+import logging
 
 import unicodepage
 import plat
@@ -16,6 +17,7 @@ if plat.system == 'Windows':
     import win32print 
     import tempfile
     import win32api
+    import win32event
 
 class PrinterStream(StringIO):
     """ Stream that prints to Unix or Windows printer. """
@@ -50,7 +52,7 @@ if plat.system == 'Windows':
         f.write('\xef\xbb\xbf')
         f.write(printbuf)
         # fMask = SEE_MASK_NOASYNC(0x00000100) + SEE_MASK_NOCLOSEPROCESS
-        resdict = winshell.ShellExecuteEx(fMask=256+64, 
+        resdict = win32com.shell.shell.ShellExecuteEx(fMask=256+64, 
                         lpVerb='printto', lpFile=f.name, 
                         lpParameters='"%s"' % printer_name)
         handle = resdict['hProcess']

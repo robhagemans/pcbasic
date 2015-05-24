@@ -19,6 +19,7 @@ import config
 import backend
 import console
 import debug
+import disk
 import error
 import expressions
 import flow
@@ -708,21 +709,21 @@ def exec_wait(ins):
     
 def exec_chdir(ins):
     """ CHDIR: change working directory. """
-    dev, path = iolayer.get_diskdevice_and_path(
+    dev, path = disk.get_diskdevice_and_path(
             vartypes.pass_string_unpack(expressions.parse_expression(ins)))
     dev.chdir(path)
     util.require(ins, util.end_statement)
 
 def exec_mkdir(ins):
     """ MKDIR: create directory. """
-    dev, path = iolayer.get_diskdevice_and_path(
+    dev, path = disk.get_diskdevice_and_path(
             vartypes.pass_string_unpack(expressions.parse_expression(ins)))
     dev.mkdir(path)
     util.require(ins, util.end_statement)
 
 def exec_rmdir(ins):
     """ RMDIR: remove directory. """
-    dev, path = iolayer.get_diskdevice_and_path(
+    dev, path = disk.get_diskdevice_and_path(
             vartypes.pass_string_unpack(expressions.parse_expression(ins)))
     dev.rmdir(path)
     util.require(ins, util.end_statement)
@@ -735,8 +736,8 @@ def exec_name(ins):
     if word.upper() != 'AS':
         raise error.RunError(2)
     newname = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    dev, oldpath = iolayer.get_diskdevice_and_path(oldname)
-    newdev, newpath = iolayer.get_diskdevice_and_path(newname)
+    dev, oldpath = disk.get_diskdevice_and_path(oldname)
+    newdev, newpath = disk.get_diskdevice_and_path(newname)
     # don't rename open files
     dev.check_file_not_open(oldpath)
     if dev != newdev:
@@ -749,7 +750,7 @@ def exec_kill(ins):
     """ KILL: remove file. """
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # don't delete open files
-    dev, path = iolayer.get_diskdevice_and_path(name)
+    dev, path = disk.get_diskdevice_and_path(name)
     dev.check_file_not_open(path)
     dev.kill(path)
     util.require(ins, util.end_statement)
@@ -762,7 +763,7 @@ def exec_files(ins):
         if not pathmask:
             # bad file name
             raise error.RunError(64)
-    dev, path = iolayer.get_diskdevice_and_path(pathmask)
+    dev, path = disk.get_diskdevice_and_path(pathmask)
     dev.files(path)
     util.require(ins, util.end_statement)
 
@@ -1170,11 +1171,11 @@ def exec_lock_or_unlock(ins, action):
         lock_stop_rec = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
     if lock_start_rec < 1 or lock_start_rec > 2**25-2 or lock_stop_rec < 1 or lock_stop_rec > 2**25-2:   
         raise error.RunError(63)
-    action(thefile.number, lock_start_rec, lock_stop_rec)
+    action(iolayer.get_file(thefile.number), lock_start_rec, lock_stop_rec)
     util.require(ins, util.end_statement)
 
-exec_lock = partial(exec_lock_or_unlock, action = iolayer.lock_records)
-exec_unlock = partial(exec_lock_or_unlock, action = iolayer.unlock_records)
+exec_lock = partial(exec_lock_or_unlock, action = disk.lock_records)
+exec_unlock = partial(exec_lock_or_unlock, action = disk.unlock_records)
     
 def exec_ioctl(ins):
     """ IOCTL: send control string to I/O device. Not implemented. """

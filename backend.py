@@ -39,6 +39,10 @@ audio = None
 
 ### devices - SCRN: KYBD: LPT1: etc. These are initialised in iolayer module
 devices = {}
+scrn_file = None
+kybd_file = None
+lpt1_file = None
+
 
 ###############################################################################
 # initialisation

@@ -121,6 +121,7 @@ def start_basic():
     import error
     import state
     import iolayer
+    import disk
     import reset
     do_reset = False
     backend, console = None, None
