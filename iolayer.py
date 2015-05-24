@@ -1089,10 +1089,6 @@ class RawFile(NullFile):
         """ Write contents of buffers to file. """
         self.fhandle.flush()
 
-    def truncate(self):
-        """ Delete file from pointer position onwards. """
-        self.fhandle.truncate()
-
 
 class RandomBase(RawFile):
     """ Random-access file base object. """
@@ -1151,12 +1147,6 @@ class RandomBase(RawFile):
     def seek(self, n, from_where=0):
         """ Get file pointer location in FIELD buffer. """
         return self.field_text_file.seek(n, from_where)
-
-    def truncate(self):
-        """ Not implemented. """
-        # this is only used when writing chr$(8)
-        # not sure how to implement for random files
-        pass
 
     @property
     def col(self):
@@ -1606,7 +1596,7 @@ class LPTFile(RawFile):
                 if self.col > 1:
                     self.col -= 1
                     self.seek(-1, 1)
-                    self.truncate()  
+                    self.fhandle.truncate()  
             else:    
                 self.fhandle.write(c)
                 # nonprinting characters including tabs are not counted for WIDTH
