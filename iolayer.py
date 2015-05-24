@@ -401,6 +401,7 @@ import vartypes
 
 if plat.system == 'Windows':
     import win32api
+    import ctypes
 
 # translate os error codes to BASIC error codes
 os_error = {
@@ -424,8 +425,11 @@ os_error = {
 def prepare_disks():
     """ Initialise disk devices. """
     global current_device
-    drives = { 'Z': (os.getcwd(), '') }
-    current_drive = 'Z'
+    if config.options['map-drives']:
+        drives, current_drive = map_drives()
+    else:
+        drives = { 'Z': (os.getcwd(), '') }
+        current_drive = 'Z'
     for a in config.options['mount']:
         try:
             # the last one that's specified will stick
@@ -437,8 +441,6 @@ def prepare_disks():
                 drives[letter.upper()] = path, ''
         except (TypeError, ValueError):
             logging.warning('Could not mount %s', a)
-    if config.options['map-drives']:
-        drives, current_drive = map_drives()
     # allowable drive letters in GW-BASIC are letters or @
     for letter in '@' + string.ascii_uppercase:
         try:
@@ -458,6 +460,7 @@ if plat.system == 'Windows':
         # if not in CMD.EXE, there's only one cwd
         current_drive = os.path.abspath(os.getcwd()).split(':')[0]
         save_current = os.getcwd()
+        drives = {}
         for drive_letter in win32api.GetLogicalDriveStrings().split(':\\\x00')[:-1]:
             try:
                 os.chdir(drive_letter + ':')
@@ -471,9 +474,9 @@ if plat.system == 'Windows':
 else:
     def map_drives():
         """ Map useful Unix directories to PC-BASIC disk devices. """
-        # map root to C and set current to CWD:
-        cwd = os.getcwd()
+        drives = {}
         # map C to root
+        cwd = os.getcwd()
         drives['C'] = '/', cwd[1:]
         # map Z to cwd
         drives['Z'] = cwd, ''
@@ -594,9 +597,7 @@ def request_lock(name, lock, access):
 if plat.system == 'Windows':
     def short_name(path, longname):
         """ Get Windows short name or fake it. """
-        if not path:
-            path = current_drive
-        path_and_longname = os.path.join(str(path), str(longname))
+        path_and_longname = os.path.join(path, longname)
         try:
             # gets the short name if it exists, keeps long name otherwise
             path_and_name = win32api.GetShortPathName(path_and_longname)

@@ -20,7 +20,6 @@ import backend
 if plat.system == 'Windows':
     import threading
     import time
-    import ctypes
 else:
     try:
         import pexpect
