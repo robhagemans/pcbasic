@@ -300,21 +300,16 @@ def load(g):
     erase_program()
     if g.filetype == 'B':
         # bytecode file
-        state.basic_state.bytecode.truncate(0)
-        state.basic_state.bytecode.write('\0')
-        while True:
-            c = g.read(1)
-            if not c:
-                break
-            state.basic_state.bytecode.write(c)
+        state.basic_state.bytecode.seek(1)
+        state.basic_state.bytecode.write(g.read())
     elif g.filetype == 'P':
         # protected file
-        state.basic_state.bytecode.truncate(0)
-        state.basic_state.bytecode.write('\0')
+        state.basic_state.bytecode.seek(1)
         state.basic_state.protected = not dont_protect                
         protect.unprotect(g, state.basic_state.bytecode) 
     elif g.filetype == 'A':
-        # ASCII file, maybe; any thing but numbers or whitespace will lead to Direct Statement in File
+        # assume ASCII file
+        # anything but numbers or whitespace: Direct Statement in File
         merge(g)
     else:
         # this shouldn't happen; bad file mode
