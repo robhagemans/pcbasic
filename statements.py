@@ -28,11 +28,11 @@ import graphics
 import iolayer
 import machine
 import memory
-import oslayer
 import program
 import representation
 import reset
 import rnd
+import shell
 import state
 import timedate
 import token
@@ -784,7 +784,7 @@ def exec_shell(ins):
     # force cursor visible in all cases
     state.console_state.screen.cursor.show(True)
     # execute cms or open interactive shell
-    oslayer.shell(cmd) 
+    shell.shell(cmd) 
     # reset cursor visibility to its previous state
     state.console_state.screen.cursor.reset_visibility()
     util.require(ins, util.end_statement)

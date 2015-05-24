@@ -17,7 +17,6 @@ except ImportError:
 
 from bytestream import ByteStream
 import config
-import oslayer
 import error
 import console
 import util

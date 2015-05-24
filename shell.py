@@ -1,6 +1,6 @@
 """
-PC-BASIC 3.23  - oslayer.py
-Operating system shell
+PC-BASIC 3.23  - shell.py
+Operating system shell and environment
  
 (c) 2013, 2014 Rob Hagemans 
 This file is released under the GNU GPL version 3. 
@@ -36,7 +36,7 @@ native_shell = {
     'Unknown_OS': '/bin/sh' }
 
 def prepare():
-    """ Initialise oslayer module. """
+    """ Initialise shell module. """
     global shell_enabled, shell_command
     if config.options['shell'] and config.options['shell'] != 'none':
         if (plat.system == 'Windows' or pexpect):

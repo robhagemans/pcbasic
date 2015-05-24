@@ -18,7 +18,7 @@ import fp
 import vartypes
 import representation
 import rnd
-import oslayer
+import shell
 import util
 import error
 import var
@@ -601,11 +601,11 @@ def value_environ(ins):
     util.require_read(ins, ('$',))
     expr = parse_bracket(ins)
     if expr[0] == '$':
-        return vartypes.pack_string(oslayer.get_env(vartypes.unpack_string(expr)))
+        return vartypes.pack_string(shell.get_env(vartypes.unpack_string(expr)))
     else:
         expr = vartypes.pass_int_unpack(expr)
         util.range_check(1, 255, expr)
-        return vartypes.pack_string(oslayer.get_env_entry(expr))
+        return vartypes.pack_string(shell.get_env_entry(expr))
 
 def value_timer(ins):
     """ TIMER: get clock ticks since midnight. """
