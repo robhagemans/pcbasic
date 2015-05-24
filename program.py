@@ -235,8 +235,7 @@ def edit(from_line, bytepos=None):
         console.set_pos(state.console_state.row-newlines+pos_row, pos_col)
     else:
         console.set_pos(state.console_state.row-newlines, 1)
-    
-    
+
 def renum(new_line, start_line, step):
     """ Renumber stored program. """
     new_line = 10 if new_line == None else new_line
@@ -329,13 +328,13 @@ def read_program_line(ins, last, cr=('\r')):
         """
     d = ins.read(1)
     eof = d in ('\x1a', '')
-    out = d if (not eof and (last != '\r' or d != '\n')) else ''    
+    out = d if (not eof and (last != '\r' or d != '\n')) else ''
     while d not in cr and not eof:
         d = ins.read(1)
         eof = d in ('\x1a', '')
         if eof:
             break
-        out += d       
+        out += d
     return out, eof, d
 
 class LineGetter(object): 
@@ -445,7 +444,7 @@ def save(g):
             output = str(output)    
             if utf8_files:
                 output = unicodepage.UTF8Converter().to_utf8(output)
-            g.write(output + '\r\n')
+            g.write_line(output)
         # ascii files go to a TextFile object, which ensures it closes with ^Z
         # TODO: don't do this in UTF8-mode as it's a bit odd to have a legacy end-of-file marker in a UTF8 text.
     state.basic_state.bytecode.seek(current)         
@@ -461,7 +460,9 @@ def list_lines(dev, from_line, to_line):
     if to_line == None:
         to_line = max_list_line
     # sort by positions, not line numbers!
-    listable = sorted([ state.basic_state.line_numbers[num] for num in state.basic_state.line_numbers if num >= from_line and num <= to_line ])
+    listable = sorted([ state.basic_state.line_numbers[num]
+                            for num in state.basic_state.line_numbers
+                            if num >= from_line and num <= to_line ])
     for pos in listable:        
         state.basic_state.bytecode.seek(pos + 1)
         _, line, _ = tokenise.detokenise_line(state.basic_state.bytecode)
