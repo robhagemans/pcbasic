@@ -656,6 +656,7 @@ def exec_bsave(ins):
     if length < 0:
         length += 0x10000         
     util.require(ins, util.end_statement)
+    # FIXME: need to set seg, offs, length at open
     with iolayer.open_file(0, name, filetype='M', mode='O') as f:
         machine.bsave(f, offset, length)
 
