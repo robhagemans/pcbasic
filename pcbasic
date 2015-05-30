@@ -14,6 +14,7 @@ import logging
 
 import plat
 import ansipipe
+import printer
 
 # declare to avoid pylint errors
 config = None
@@ -50,6 +51,7 @@ def main():
             start_basic()
     finally:
         try:
+            printer.wait()
             # clean up our temp dir if we made one
             if plat.temp_dir and plat.system != 'Android':
                 shutil.rmtree(plat.temp_dir)

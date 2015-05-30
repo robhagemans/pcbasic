@@ -35,49 +35,48 @@ class PrinterStream(StringIO):
         utf8buf = unicodepage.UTF8Converter(preserve_control=True).to_utf8(printbuf)
         line_print(utf8buf, self.printer_name)
 
+# only needed on Windows
+wait = lambda x: None
 
 if plat.system == 'Windows':
-    import tempfile
-    import threading
     import os
     import win32print
     import win32api
     import win32com
     import win32com.shell.shell
     import win32event
+    # temp file in temp dir
+    printfile = os.path.join(plat.temp_dir, 'pcbasic_print.txt')
+    # handle for last printing process
+    handle = -1
 
     def line_print(printbuf, printer_name):
         """ Print the buffer to a Windows printer. """
+        global handle
         if printer_name == '' or printer_name=='default':
             printer_name = win32print.GetDefaultPrinter()
-        with tempfile.NamedTemporaryFile(mode='wb', prefix='pcbasic_',
-                                         suffix='.txt', delete=False) as f:
+        # open a file in our PC-BASIC temporary directory
+        # this will get cleaned up on exit
+        with open(printfile, 'wb') as f:
             # write UTF-8 Byte Order mark to ensure Notepad recognises encoding
             f.write('\xef\xbb\xbf')
             f.write(printbuf)
-            # flush buffer to ensure it all actually gets printed
-            f.flush()
-            # fMask = SEE_MASK_NOASYNC(0x00000100) + SEE_MASK_NOCLOSEPROCESS
+        # fMask = SEE_MASK_NOASYNC(0x00000100) + SEE_MASK_NOCLOSEPROCESS
+        try:
             resdict = win32com.shell.shell.ShellExecuteEx(fMask=256+64,
-                            lpVerb='printto', lpFile=f.name,
+                            lpVerb='printto', lpFile=printfile,
                             lpParameters='"%s"' % printer_name)
             handle = resdict['hProcess']
-            # spin off a thread as the WIndows AI timeout doesn't work
-            # all this fluff just to print a bit of plain text on Windows...
-            outp = threading.Thread(target=wait_printer, args=(handle, f.name))
-            outp.daemon = True
-            outp.start()
-
-    def wait_printer(handle, filename):
-        """ Wait for the print to finish, then delete temp file. """
-        # note that this fails to delete the temp file for print jobs on exit
-        if win32event.WaitForSingleObject(handle, -1) != win32event.WAIT_OBJECT_0:
-            logging.warning('Printing process failed')
-        try:
-            os.remove(filename)
-        except EnvironmentError as e:
+        except WindowsError as e:
             logging.warning('Error while printing: %s', str(e))
+            handle = -1
 
+    def wait():
+        """ Give printing process some time to complete. """
+        try:
+            win32event.WaitForSingleObject(handle, 1000)
+        except WindowsError:
+            pass
 
 elif plat.system == 'Android':
 
