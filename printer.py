@@ -13,14 +13,6 @@ import logging
 import unicodepage
 import plat
 
-if plat.system == 'Windows':
-    import win32print 
-    import tempfile
-    import win32api
-    import win32com
-    import win32com.shell.shell
-    import win32event
-
 class PrinterStream(StringIO):
     """ Stream that prints to Unix or Windows printer. """
     
@@ -43,7 +35,17 @@ class PrinterStream(StringIO):
         utf8buf = unicodepage.UTF8Converter(preserve_control=True).to_utf8(printbuf)
         line_print(utf8buf, self.printer_name)
 
+
 if plat.system == 'Windows':
+    import tempfile
+    import threading
+    import os
+    import win32print
+    import win32api
+    import win32com
+    import win32com.shell.shell
+    import win32event
+
     def line_print(printbuf, printer_name):
         """ Print the buffer to a Windows printer. """
         if printer_name == '' or printer_name=='default':
@@ -53,20 +55,38 @@ if plat.system == 'Windows':
             # write UTF-8 Byte Order mark to ensure Notepad recognises encoding
             f.write('\xef\xbb\xbf')
             f.write(printbuf)
+            # flush buffer to ensure it all actually gets printed
+            f.flush()
             # fMask = SEE_MASK_NOASYNC(0x00000100) + SEE_MASK_NOCLOSEPROCESS
             resdict = win32com.shell.shell.ShellExecuteEx(fMask=256+64,
                             lpVerb='printto', lpFile=f.name,
                             lpParameters='"%s"' % printer_name)
             handle = resdict['hProcess']
-            if win32event.WaitForSingleObject(handle, 500) != win32event.WAIT_OBJECT_0:
-                logging.warning('Printing process timeout')
-        
+            # spin off a thread as the WIndows AI timeout doesn't work
+            # all this fluff just to print a bit of plain text on Windows...
+            outp = threading.Thread(target=wait_printer, args=(handle, f.name))
+            outp.daemon = True
+            outp.start()
+
+    def wait_printer(handle, filename):
+        """ Wait for the print to finish, then delete temp file. """
+        # note that this fails to delete the temp file for print jobs on exit
+        if win32event.WaitForSingleObject(handle, -1) != win32event.WAIT_OBJECT_0:
+            logging.warning('Printing process failed')
+        try:
+            os.remove(filename)
+        except EnvironmentError as e:
+            logging.warning('Error while printing: %s', str(e))
+
+
 elif plat.system == 'Android':
+
     def line_print(printbuf, printer_name):
         """ Don't print anything on Android. """
         pass          
 
 elif subprocess.call("command -v paps >/dev/null 2>&1", shell=True) == 0:
+
     def line_print(printbuf, printer_name): 
         """ Print the buffer to a LPR printer using PAPS for conversion. """
         options = ''
@@ -89,6 +109,7 @@ elif subprocess.call("command -v paps >/dev/null 2>&1", shell=True) == 0:
             pr.stdin.close()
         
 else:
+
     def line_print(printbuf, printer_name): 
         """ Print the buffer to a LPR (CUPS or older UNIX) printer. """
         options = ''
