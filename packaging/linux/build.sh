@@ -1,5 +1,6 @@
 #!/bin/bash
-NAME="pcbasic-$1-linux-$2"
+ARCH=`uname -i`
+NAME="pcbasic-$1-linux-$ARCH"
 
 pyinstaller installer.spec
 
