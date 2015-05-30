@@ -2,7 +2,7 @@
 PC-BASIC 3.23 - printer.py
 Line printer output 
  
-(c) 2013, 2014 Rob Hagemans 
+(c) 2013, 2014, 2015 Rob Hagemans 
 This file is released under the GNU GPL version 3. 
 """
 
@@ -35,8 +35,8 @@ class PrinterStream(StringIO):
         utf8buf = unicodepage.UTF8Converter(preserve_control=True).to_utf8(printbuf)
         line_print(utf8buf, self.printer_name)
 
-# only needed on Windows
-wait = lambda x: None
+# empty function, only needed & defined on Windows
+wait = lambda: None
 
 if plat.system == 'Windows':
     import os
