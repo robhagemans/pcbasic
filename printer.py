@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3.
 
 from StringIO import StringIO
 import subprocess
+import logging
 
 import unicodepage
 import plat
@@ -17,6 +18,8 @@ if plat.system == 'Windows':
     import tempfile
     import win32api
     import win32com
+    import win32com.shell.shell
+    import win32event
 
 class PrinterStream(StringIO):
     """ Stream that prints to Unix or Windows printer. """
@@ -55,7 +58,7 @@ if plat.system == 'Windows':
                             lpVerb='printto', lpFile=f.name,
                             lpParameters='"%s"' % printer_name)
             handle = resdict['hProcess']
-            if win32event.WaitForSingleProcess(handle, 500) != win32event.WAIT_OBJECT_0:
+            if win32event.WaitForSingleObject(handle, 500) != win32event.WAIT_OBJECT_0:
                 logging.warning('Printing process timeout')
         
 elif plat.system == 'Android':
