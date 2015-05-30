@@ -61,15 +61,14 @@ class CASDevice(object):
     def close(self):
         """ Close tape device. """
         if self.tapestream:
-            self.tapestream.eject()
+            self.tapestream.close()
 
     def open(self, number, param, filetype, mode, access, lock, reclen):
         """ Open a file on tape. """
         if not self.tapestream:
             # device unavailable
             raise error.RunError(68)
-        return CASFile(self.tapestream, self.tapestream.filetype,
-                        param, number, mode)
+        return CASFile(self.tapestream, filetype, param, number, mode)
 
 
 
@@ -84,12 +83,14 @@ class CASFile(iolayer.NullFile):
         """ Initialise file on tape. """
         iolayer.NullFile.__init__(self)
         self.tapestream = tapestream
+        self.record_num = 0
+        self.record_stream = StringIO()
         if mode == 'I':
-            self.tapestream.play()
-            self._read_header(name, filetype)
+            self.tapestream.switch_mode('r')
+            self._read_header(name)
         elif mode == 'O':
             self.filetype = filetype
-            self.tapestream.record()
+            self.tapestream.switch_mode('w')
             self._write_header(name, filetype, length, seg, offs)
         self.number = number
         self.name = name
@@ -137,8 +138,6 @@ class CASFile(iolayer.NullFile):
 
     def read(self, nbytes=-1):
         """ Read bytes from a file on tape. """
-        if self.operating_mode == 'rec':
-            raise IncorrectMode()
         c = ''
         try:
             while True:
@@ -148,7 +147,7 @@ class CASFile(iolayer.NullFile):
                     c += self.record_stream.read()
                 if nbytes > -1 and len(c) == nbytes:
                     return c
-                if not self.fill_record_buffer():
+                if not self._fill_record_buffer():
                     return c
         except EOF:
             return ''
@@ -164,7 +163,8 @@ class CASFile(iolayer.NullFile):
         # terminate text files with NUL
         if self.filetype in ('D', 'A'):
             self.write('\0')
-        self._flush_record_buffer()
+        if self.mode == 'O':
+            self._flush_record_buffer()
 
     def _read_header(self, trunk=None):
         """ Play until a file header record is found. """
@@ -175,18 +175,20 @@ class CASFile(iolayer.NullFile):
                     # unknown record type
                     logging.debug(self.tapestream.stamp() + "Skipped record of unknown type.")
                 file_trunk = record[1:9]
+                filetype = token_to_type[ord(record[9])]
                 if (not trunk or file_trunk.rstrip() == trunk.rstrip()):
-                    message = "%s Found." % (file_trunk + '.' + file_ext)
+                    message = "%s Found." % (file_trunk + '.' + filetype)
                     msgstream.write_line(message)
                     logging.debug(self.tapestream.stamp() + message)
-                    self.filetype = token_to_type[ord(record[9])]
+                    self.filetype = filetype
                     self.length = ord(record[10]) + ord(record[11]) * 0x100
                     # for programs this is start address
                     self.seg = ord(record[12]) + ord(record[13]) * 0x100
                     self.offset = ord(record[14]) + ord(record[15]) * 0x100
                     self.record_num = 0
+                    return
                 else:
-                    message = "%s Skipped." % (file_trunk + '.' + file_ext)
+                    message = "%s Skipped." % (file_trunk + '.' + filetype)
                     msgstream.write_line(message)
                     logging.debug(self.tapestream.stamp() + message)
         except EOF:
@@ -204,7 +206,8 @@ class CASFile(iolayer.NullFile):
             self.tapestream.last = seg, offs, length
         self.filetype = filetype
         # header seems to end at 0x00, 0x01, then filled out with last char
-        header = ('\xa5' + name[:8] + ' ' * (8-len(name)) + chr(token) +
+        header = ('\xa5' + name[:8] + ' ' * (8-len(name))
+                  + chr(type_to_token[filetype]) +
                   ''.join(map(chr, word_le(length))) +
                   ''.join(map(chr, word_le(seg))) +
                   ''.join(map(chr, word_le(offs))) +
@@ -310,21 +313,20 @@ class CASFile(iolayer.NullFile):
 
     def _flush_record_buffer(self):
         """ Write the tape file buffer to tape. """
-        if self.operating_mode == 'rec':
-            data = self.record_stream.getvalue()
-            if self.filetype in ('M', 'B', 'P'):
-                # bsave, tokenised and protected come in one multi-block record
-                self._write_record(data)
-            else:
-                # ascii and data come as a sequence of one-block records
-                # 256 bytes less 1 length byte. CRC trailer comes after 256-byte block
-                # TODO: we should probably write only one block at a time
-                blocks, last = divmod(len(data), 255)
-                for i in range(blocks):
-                    offset = i*255
-                    self._write_record('\0' + data[offset:offset+255])
-                if last > 0:
-                    self._write_record(chr(last) + data[-last:])
+        data = self.record_stream.getvalue()
+        if self.filetype in ('M', 'B', 'P'):
+            # bsave, tokenised and protected come in one multi-block record
+            self._write_record(data)
+        else:
+            # ascii and data come as a sequence of one-block records
+            # 256 bytes less 1 length byte. CRC trailer comes after 256-byte block
+            # TODO: we should probably write only one block at a time
+            blocks, last = divmod(len(data), 255)
+            for i in range(blocks):
+                offset = i*255
+                self._write_record('\0' + data[offset:offset+255])
+            if last > 0:
+                self._write_record(chr(last) + data[-last:])
         self.record_stream = StringIO()
 
 
@@ -579,9 +581,9 @@ class WAVStream(TapeStream):
         else:
             return 0
 
-    def eject(self):
+    def close(self):
         """ Close WAV-file. """
-        TapeStream.eject(self)
+        TapeStream.close(self)
         self.wav.close()
 
     def _fill_buffer(self):
@@ -736,7 +738,8 @@ class BasicodeStream(WAVStream):
     def read_file(self, filetype='D', file_bytes=0):
         """ Read a file from tape. """
         if filetype not in ('D', 'A'):
-            raise UnsupportedType()
+            # not supported
+            return ''
         data = ''
         # xor sum includes STX byte
         checksum = 0x02
@@ -813,15 +816,6 @@ class EOF(CassetteException):
     """ End-of-tape exception. """
     pass
 
-class UnsupportedFormat(CassetteException):
-    """ Cassette format not supported. """
-    pass
-
-class UnknownRecord(CassetteException):
-    """ Unknown record type. """
-    pass
-
-
 class CRCError(CassetteException):
     """ CRC check failed. """
 
@@ -845,10 +839,6 @@ class FramingError(CassetteException):
 
     def __str__(self):
         return self.__doc__.strip() + ' ' + repr(self.bits)
-
-class IncorrectMode(CassetteException):
-    """ File not open for this operation. """
-    pass
 
 
 ##############################################################################
