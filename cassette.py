@@ -64,12 +64,14 @@ class CASDevice(object):
         if self.tapestream:
             self.tapestream.close()
 
-    def open(self, number, param, filetype, mode, access, lock, reclen):
+    def open(self, number, param, filetype, mode, access, lock,
+                   reclen, seg, offset, length):
         """ Open a file on tape. """
         if not self.tapestream:
             # device unavailable
             raise error.RunError(68)
-        return CASFile(self.tapestream, filetype, param, number, mode)
+        return CASFile(self.tapestream, filetype, param, number, mode,
+                        seg, offset, length)
 
 
 
@@ -142,16 +144,16 @@ class CASFile(iolayer.NullFile):
         c = ''
         try:
             while True:
+                if nbytes > -1 and len(c) >= nbytes:
+                    return c
                 if nbytes > -1:
-                    c += self.record_stream.read(len(c) - nbytes)
+                    c += self.record_stream.read(nbytes-len(c))
                 else:
                     c += self.record_stream.read()
-                if nbytes > -1 and len(c) == nbytes:
-                    return c
                 if not self._fill_record_buffer():
                     return c
         except EOF:
-            return ''
+            return c
 
     def write(self, c):
         """ Write a string to a file on tape. """
@@ -174,9 +176,13 @@ class CASFile(iolayer.NullFile):
                 record = self._read_record(None)
                 if not record or record[0] != '\xa5':
                     # unknown record type
-                    logging.debug(timestamp(self.tapestream.counter()) + "Skipped record of unknown type.")
+                    logging.debug(timestamp(self.tapestream.counter()) + "Skipped non-header record.")
+                    continue
                 file_trunk = record[1:9]
-                filetype = token_to_type[ord(record[9])]
+                try:
+                    filetype = token_to_type[ord(record[9])]
+                except KeyError:
+                    logging.debug('Unknown file type token: %x', ord(record[9]))
                 if (not trunk or file_trunk.rstrip() == trunk.rstrip()):
                     message = "%s Found." % (file_trunk + '.' + filetype)
                     msgstream.write_line(message)
@@ -309,7 +315,7 @@ class CASFile(iolayer.NullFile):
                 self.record_stream.write(record.replace('\r', '\r\n'))
                 if num_bytes != 0:
                     break
-            self.record_stream.seek(0)
+        self.record_stream.seek(0)
         return True
 
     def _flush_record_buffer(self):
@@ -342,7 +348,8 @@ class TapeStream(object):
 
     def __init__(self, mode='r'):
         """ Initialise tape interface. """
-        pass
+        # keep track of last seg, offs, length to reproduce GW-BASIC oddity
+        self.last = 0, 0, 0
 
     def __enter__(self):
         """ Context guard. """

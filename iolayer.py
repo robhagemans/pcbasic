@@ -112,7 +112,8 @@ def prepare():
 ############################################################################
 # General file manipulation
 
-def open_file(number, description, filetype, mode='I', access='R', lock='', reclen=128):
+def open_file(number, description, filetype, mode='I', access='R', lock='',
+              reclen=128, seg=0, offset=0, length=0):
     """ Open a file on a device specified by description. """
     if (not description) or (number < 0) or (number > max_files):
         # bad file number; also for name='', for some reason
@@ -136,7 +137,8 @@ def open_file(number, description, filetype, mode='I', access='R', lock='', recl
         device = current_device
         dev_param = name
     # check if device exists and allows the requested mode
-    new_file = device.open(number, dev_param, filetype, mode, access, lock, reclen)
+    new_file = device.open(number, dev_param, filetype, mode, access, lock,
+                           reclen, seg, offset, length)
     if number:
         state.io_state.files[number] = new_file
     return new_file
@@ -205,7 +207,8 @@ class Device(object):
         """ Set up device. """
         self.device_file = None
 
-    def open(self, number, param, filetype, mode, access, lock, reclen):
+    def open(self, number, param, filetype, mode, access, lock,
+                   reclen, seg, offset, length):
         """ Open a file on the device. """
         if not self.device_file:
             # device unavailable
@@ -287,7 +290,8 @@ class LPTDevice(Device):
             self.device_file = LPTFile(self.stream, flush_trigger)
             self.device_file.flush_trigger = flush_trigger
 
-    def open(self, number, param, filetype, mode, access, lock, reclen):
+    def open(self, number, param, filetype, mode, access, lock,
+                   reclen, seg, offset, length):
         """ Open a file on LPTn: """
         f = Device.open(self, number, param, filetype, mode, access, lock, reclen)
         # don't trigger flushes on LPT files, just on the device directly
@@ -319,7 +323,8 @@ class COMDevice(Device):
         if self.stream:
             self.device_file = COMFile(self.stream)
 
-    def open(self, number, param, filetype, mode, access, lock, reclen):
+    def open(self, number, param, filetype, mode, access, lock,
+                       reclen, seg, offset, length):
         """ Open a file on COMn: """
         if not self.stream:
             # device unavailable

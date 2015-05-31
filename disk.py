@@ -337,7 +337,8 @@ class DiskDevice(object):
         """ Close disk device. """
         pass
 
-    def open(self, number, param, filetype, mode, access, lock, reclen):
+    def open(self, number, param, filetype, mode, access, lock,
+                   reclen, seg, offset, length):
         """ Open a file on a disk drive. """
         if not self.path:
             # undefined disk drive: path not found
@@ -556,11 +557,13 @@ class DiskDevice(object):
 #################################################################################
 # Disk files
 
-def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock='', reclen=128):
+def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock='',
+                  reclen=128, seg=0, offset=0, length=0):
     """ Return the correct disk file object for this seekable stream. """
     if set(filetype).intersection(set('ABP')):
         # we're trying to load/save a program; even ascii programs are ProgramFile
-        return ProgramFile(fhandle, filetype, name, number, mode, access, lock)
+        return ProgramFile(fhandle, filetype, name, number, mode, access, lock,
+                            seg, offset, length)
     elif mode in ('A', 'O'):
         return TextFile(fhandle, name, number, mode, access, lock)
     else:

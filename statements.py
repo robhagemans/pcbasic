@@ -656,8 +656,9 @@ def exec_bsave(ins):
     if length < 0:
         length += 0x10000         
     util.require(ins, util.end_statement)
-    # FIXME: need to set seg, offs, length at open
-    with iolayer.open_file(0, name, filetype='M', mode='O') as f:
+    with iolayer.open_file(0, name, filetype='M', mode='O',
+                            seg=state.basic_state.segment,
+                            offset=offset, length=length) as f:
         machine.bsave(f, offset, length)
 
 def exec_call(ins):
@@ -980,7 +981,10 @@ def exec_save(ins):
         mode = util.skip_white_read(ins).upper()
         if mode not in ('A', 'P'):
             raise error.RunError(2)
-    with iolayer.open_file(0, name, filetype=mode, mode='O') as f:
+    with iolayer.open_file(0, name, filetype=mode, mode='O',
+                            seg=memory.data_segment, offset=memory.code_start,
+                            length=len(state.basic_state.bytecode.getvalue())-1
+                            ) as f:
         program.save(f)
     util.require(ins, util.end_statement)
     
