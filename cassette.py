@@ -368,6 +368,20 @@ class TapeStream(object):
         """ Tape stream can be accessed. """
         return False
 
+    def read_intro(self):
+        """ Try to read intro; ensure image not empty. """
+        for b in bytearray(self.intro):
+            c = self.read_byte()
+            if c == '':
+                # empty or short file
+                return False
+            if c != b:
+                break
+        else:
+            for _ in range(7):
+                self.read_bit()
+        return True
+
     def write_intro(self):
         """ Write some noise to give the reader something to get started. """
         # We just need some bits here
@@ -456,23 +470,23 @@ class CASStream(TapeStream):
         """ Initialise CAS-file. """
         TapeStream.__init__(self)
         # 'r' or 'w'
-        self.current_byte = '\0'
         self.cas_name = image_name
-        self.mask = 0x100
         try:
-            # try reading first to ensure failure if file does not exist
-            self.operating_mode = 'r'
-            self.cas = open(self.cas_name, 'r+b')
-            self.current_byte = self.cas.read(1)
+            if not os.path.exists(self.cas_name):
+                self._create()
+            else:
+                self.operating_mode = 'r'
+                self.mask = 0x100
+                self.cas = open(self.cas_name, 'r+b')
+                self.current_byte = self.cas.read(1)
+                if self.current_byte == '' or not self.read_intro():
+                    self.cas.close()
+                    self._create()
             self.switch_mode(mode)
-        except IOError:
-            with open(self.cas_name, 'wb') as self.cas:
-                self.operating_mode = 'w'
-                self.current_byte = '\0'
-                self.write_intro()
-            self.cas = open(self.cas_name, 'r+b')
-            self.cas.seek(0, 2)
-            self.switch_mode(mode)
+        except EnvironmentError as e:
+            logging.warning("Couldn't attach %s to CAS device: %s", self.cas_name, str(e))
+            self.cas = None
+            return
 
     def ok(self):
         """ Tape stream can be accessed. """
@@ -542,6 +556,17 @@ class CASStream(TapeStream):
         elif self.operating_mode == 'r' and new_mode == 'w':
             self.cas.seek(-1, 1)
         self.operating_mode = new_mode
+
+    def _create(self):
+        """ Create a new CAS-file. """
+        self.current_byte = '\0'
+        self.mask = 0x100
+        with open(self.cas_name, 'wb') as self.cas:
+            self.operating_mode = 'w'
+            self.current_byte = '\0'
+            self.write_intro()
+        self.cas = open(self.cas_name, 'r+b')
+        self.cas.seek(0, 2)
 
 
 class WAVStream(TapeStream):
