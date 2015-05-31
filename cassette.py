@@ -572,7 +572,6 @@ class WAVStream(TapeStream):
             return
         self.wav_pos = 0
         self.buf_len = 1024
-#        nframes = self.wav.getnframes()
         # convert 8-bit and 16-bit values to ints
         int_max = 1 << (self.sampwidth*8)
         if self.sampwidth == 1:
@@ -694,13 +693,18 @@ class WAVStream(TapeStream):
     def write_pause(self, milliseconds):
         """ Write a pause of given length to the tape. """
         length = (milliseconds * self.framerate / 1000)
-        self.wav.writeframesraw('\x7f' * length)
+        zero = { 1: '\x7f', 2: '\x00\x00'}
+        self.wav.writeframesraw(zero[self.sampwidth] * self.nchannels * length)
         self.wav_pos += length
 
     def write_bit(self, bit):
         """ Write a bit to tape. """
         half_length = self.halflength[bit]
-        self.wav.writeframesraw('\x00' * half_length + '\xff' * half_length)
+        down = { 1: '\x00', 2: '\x00\x80'}
+        up = { 1: '\xff', 2: '\xff\x7f'}
+        self.wav.writeframesraw(
+            down[self.sampwidth] * self.nchannels * half_length +
+            up[self.sampwidth] * self.nchannels * half_length)
         self.wav_pos += 2 * half_length
 
 
