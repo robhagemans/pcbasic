@@ -171,8 +171,8 @@ def start_basic():
             # fix the terminal on exit (important for ANSI terminals)
             # and save display interface state into screen state
             state.console_state.screen.close()
-        except (NameError, AttributeError):
-            pass
+        except (NameError, AttributeError) as e:
+            logging.debug('Error on closing screen: %s', e)
         # delete state if resetting 
         if do_reset:
             state.delete()
@@ -183,9 +183,12 @@ def start_basic():
         try:
             # close files if we opened any
             iolayer.close_files()
+        except (NameError, AttributeError) as e:
+            logging.debug('Error on closing files: %s', e)
+        try:
             iolayer.close_devices()
-        except (NameError, AttributeError):
-            pass    
+        except (NameError, AttributeError) as e:
+            logging.debug('Error on closing devices: %s', e)
             
 def prepare_console():
     """ Initialise backend and console. """

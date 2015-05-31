@@ -171,7 +171,7 @@ def close_files():
 
 def close_devices():
     """ Close device master files. """
-    for d in state.io_state.devices:
+    for d in backend.devices.values():
         d.close()
 
 
