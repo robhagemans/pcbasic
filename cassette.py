@@ -6,6 +6,7 @@ Cassette Tape Device
 This file is released under the GNU GPL version 3.
 """
 
+import os
 import wave
 import math
 import struct
@@ -53,10 +54,10 @@ class CASDevice(object):
             self.tapestream = None
         elif addr == 'WAV' or (addr != 'CAS' and ext == 'WAV'):
             # if unspecified, determine type on the basis of filename extension
-            self.tapestream = WAVStream(val)
+            self.tapestream = WAVStream(val, 'r')
         else:
             # 'CAS' is default
-            self.tapestream = CASStream(val)
+            self.tapestream = CASStream(val, 'r')
 
     def close(self):
         """ Close tape device. """
@@ -173,13 +174,13 @@ class CASFile(iolayer.NullFile):
                 record = self._read_record(None)
                 if not record or record[0] != '\xa5':
                     # unknown record type
-                    logging.debug(self.tapestream.stamp() + "Skipped record of unknown type.")
+                    logging.debug(timestamp(self.tapestream.counter()) + "Skipped record of unknown type.")
                 file_trunk = record[1:9]
                 filetype = token_to_type[ord(record[9])]
                 if (not trunk or file_trunk.rstrip() == trunk.rstrip()):
                     message = "%s Found." % (file_trunk + '.' + filetype)
                     msgstream.write_line(message)
-                    logging.debug(self.tapestream.stamp() + message)
+                    logging.debug(timestamp(self.tapestream.counter()) + message)
                     self.filetype = filetype
                     self.length = ord(record[10]) + ord(record[11]) * 0x100
                     # for programs this is start address
@@ -190,7 +191,7 @@ class CASFile(iolayer.NullFile):
                 else:
                     message = "%s Skipped." % (file_trunk + '.' + filetype)
                     msgstream.write_line(message)
-                    logging.debug(self.tapestream.stamp() + message)
+                    logging.debug(timestamp(self.tapestream.counter()) + message)
         except EOF:
             # reached end-of-tape without finding appropriate file
             # device timeout
@@ -225,7 +226,7 @@ class CASFile(iolayer.NullFile):
             try:
                 data = self._read_block()
             except (PulseError, FramingError, CRCError) as e:
-                logging.warning(self.tapestream.stamp() + "%s" % str(e))
+                logging.warning(timestamp(self.tapestream.counter()) + "%s" % str(e))
             record += data
             byte_count += len(data)
             if (reclen == None):
@@ -437,7 +438,7 @@ class CASStream(TapeStream):
 
     def __init__(self, image_name, mode):
         """ Initialise CAS-file. """
-        TapeStream.__init__(self, mode)
+        TapeStream.__init__(self)
         # 'r' or 'w'
         self.current_byte = '\0'
         self.cas_name = image_name
@@ -457,10 +458,10 @@ class CASStream(TapeStream):
             self.cas.seek(0, 2)
             self.switch_mode(mode)
 
-    # -> time() in seconds?
-    def stamp(self):
-        """ Time stamp. """
-        return ''
+    def counter(self):
+        """ Time stamp in seconds. """
+        # approximate: average 750 us per bit, cut on bytes
+        return self.cas.tell() * 8 * 750 / 1000000.
 
     def close(self):
         """ Close tape image. """
@@ -523,24 +524,40 @@ class CASStream(TapeStream):
         self.operating_mode = new_mode
 
 
-# TODO R/W access (can't use wave module)
 class WAVStream(TapeStream):
     """ WAV-file cassette image bit stream. """
 
-    def __init__(self, filename):
+    def __init__(self, filename, mode):
         """ Initialise WAV-file. """
         TapeStream.__init__(self)
-        self.wav_pos = 0
-        self.buf_len = 1024
-        self.wav = wave.open(filename, 'rb')
-        self.nchannels =  self.wav.getnchannels()
-        self.sampwidth = self.wav.getsampwidth()
-        self.framerate = self.wav.getframerate()
-        if self.sampwidth >= 3:
-            logging.warning("Couldn't attach %s to CAS device: %d-byte wave files unsupported.", filename, self.sampwidth)
+        self.filename = filename
+        try:
+            if not os.path.exists(filename):
+                # create/overwrite file
+                self.framerate = 22050
+                self.sampwidth = 1
+                self.nchannels = 1
+                self.wav = wave.open(self.filename, 'wb')
+                self.wav.setnchannels(self.nchannels)
+                self.wav.setsampwidth(self.sampwidth)
+                self.wav.setframerate(self.framerate)
+                self.operating_mode = 'w'
+            else:
+                # open file for reading and find wave parameters
+                self.wav = wave.open(self.filename, 'rb')
+                self.nchannels =  self.wav.getnchannels()
+                self.sampwidth = self.wav.getsampwidth()
+                if self.sampwidth >= 3:
+                    raise EnvironmentError("%d-byte wave files not supported." % self.sampwidth)
+                self.framerate = self.wav.getframerate()
+                self.operating_mode = 'r'
+        except EnvironmentError as e:
+            logging.warning("Couldn't attach %s to CAS device: %s", filename, str(e))
             self.wav = None
             return
-        nframes = self.wav.getnframes()
+        self.wav_pos = 0
+        self.buf_len = 1024
+#        nframes = self.wav.getnframes()
         # convert 8-bit and 16-bit values to ints
         int_max = 1 << (self.sampwidth*8)
         if self.sampwidth == 1:
@@ -553,6 +570,7 @@ class WAVStream(TapeStream):
         self.zero_threshold = int_max*self.nchannels/256 # 128 #64
         self.conv_format = '<' + {1:'B', 2:'h'}[self.sampwidth]*self.nchannels*self.buf_len
         # 1000 us for 1, 500 us for 0; threshold for half-pulse (500 us, 250 us)
+        self.halflength = [250*self.framerate/1000000, 500*self.framerate/1000000]
         self.length_cut = 375*self.framerate/1000000
         self.length_max = 2*self.length_cut
         self.length_min = self.length_cut / 2
@@ -560,15 +578,43 @@ class WAVStream(TapeStream):
         self.min_leader_halves = 2048
         # initialise generators
         #self.lowpass = butterworth(self.framerate, 3000)
-        self.lowpass = butterband4(self.framerate, 500, 3000)
         #self.lowpass = butterband_sox(self.framerate, 1500, 1000)
+        #self.lowpass = butterband4(self.framerate, 500, 3000)
         self.lowpass = passthrough()
         self.lowpass.send(None)
         self.read_half = self._gen_read_halfpulse()
+        # write fluff at start if this is a new file
+        if self.operating_mode == 'w':
+            self.write_intro()
+        self.switch_mode(mode)
 
-    def stamp(self):
-        """ Time stamp. """
-        return "[%d:%02d:%02d] " % hms(self.wav_pos/self.framerate)
+    def switch_mode(self, mode):
+        """ Switch tape to reading or writing mode. """
+        if mode == self.operating_mode:
+            return
+        self.wav.close()
+        try:
+            self.wav = wave.open(self.filename, 'rb')
+            # there's no set_pos on Wave_write in wave module
+            # so all we can do is read everything into a buffer and write it back
+            buf = self.wav.readframes(self.wav_pos)
+            if mode == 'r':
+                self.operating_mode = 'r'
+            else:
+                self.wav.close()
+                self.wav = wave.open(self.filename, 'wb')
+                self.wav.setnchannels(self.nchannels)
+                self.wav.setsampwidth(self.sampwidth)
+                self.wav.setframerate(self.framerate)
+                self.wav.writeframesraw(buf)
+                self.operating_mode = 'w'
+        except EnvironmentError as e:
+            logging.error('Could not access tape image: %s', str(e))
+            self.wav = None
+
+    def counter(self):
+        """ Time stamp in seconds. """
+        return self.wav_pos/(1.*self.framerate)
 
     def read_bit(self):
         """ Read the next bit. """
@@ -626,28 +672,17 @@ class WAVStream(TapeStream):
                 yield length
                 length = 0
 
-    def _create(self, filename):
-        """ Create or overwrite WAV tape image. """
-        self.framerate = 22050
-        self.sampwidth = 1
-        self.halflength = [250*self.framerate/1000000, 500*self.framerate/1000000]
-        # create/overwrite file
-        self.wav = wave.open(filename, 'wb')
-        self.wav.setnchannels(1)
-        self.wav.setsampwidth(1)
-        self.wav.setframerate(self.framerate)
-        self.write_intro()
-
     def write_pause(self, milliseconds):
         """ Write a pause of given length to the tape. """
-        self.wav.writeframesraw('\x7f' * (milliseconds * self.framerate / 1000))
+        length = (milliseconds * self.framerate / 1000)
+        self.wav.writeframesraw('\x7f' * length)
+        self.wav_pos += length
 
-    def gen_write_bit(self):
-        """ Generator to write a bit to tape. """
-        while True:
-            bit = yield
-            half_length = self.halflength[bit]
-            self.wav.writeframesraw('\x00' * half_length + '\xff' * half_length)
+    def write_bit(self, bit):
+        """ Write a bit to tape. """
+        half_length = self.halflength[bit]
+        self.wav.writeframesraw('\x00' * half_length + '\xff' * half_length)
+        self.wav_pos += 2 * half_length
 
 
 ##############################################################################
@@ -732,7 +767,7 @@ class BasicodeStream(WAVStream):
         """ Play until a file record is found. """
         self.read_leader()
         msgstream.write_line("BASICODE.A Found.")
-        logging.debug(self.stamp() + "BASICODE.A Found.")
+        logging.debug(timestamp(self.counter()) + "BASICODE.A Found.")
         return 'BASICODE', 'A', 0, 0, 0
 
     def read_file(self, filetype='D', file_bytes=0):
@@ -747,11 +782,11 @@ class BasicodeStream(WAVStream):
             try:
                 byte = self.read_byte()
             except (PulseError, FramingError) as e:
-                logging.warning(self.stamp() + "%d %s" % (self.wav_pos, str(e)))
+                logging.warning(timestamp(self.counter()) + "%d %s" % (self.wav_pos, str(e)))
                 # insert a zero byte as a marker for the error
                 byte = 0
             except EOF as e:
-                logging.warning(self.stamp() + "%d %s" % (self.wav_pos, str(e)))
+                logging.warning(timestamp(self.counter()) + "%d %s" % (self.wav_pos, str(e)))
                 break
             checksum ^= byte
             if byte == 0x03:
@@ -764,12 +799,12 @@ class BasicodeStream(WAVStream):
         try:
             checksum_byte = self.read_byte()
         except (PulseError, FramingError, EOF) as e:
-            logging.warning(self.stamp() + "Could not read checksum: %s " % str(e))
+            logging.warning(timestamp(self.counter()) + "Could not read checksum: %s " % str(e))
         # checksum shld be 0 for even # bytes, 128 for odd
         if checksum_byte == None or checksum^checksum_byte not in (0,128):
-            logging.warning(self.stamp() + "Checksum: [FAIL]  Required: %02x  Realised: %02x" % (checksum_byte, checksum))
+            logging.warning(timestamp(self.counter()) + "Checksum: [FAIL]  Required: %02x  Realised: %02x" % (checksum_byte, checksum))
         else:
-            logging.warning(self.stamp() + "Checksum: [ ok ] ")
+            logging.warning(timestamp(self.counter()) + "Checksum: [ ok ] ")
         return data
 
     def read_leader(self):
@@ -798,9 +833,9 @@ class BasicodeStream(WAVStream):
                     if sync == self.sync_byte:
                         return
                     else:
-                        logging.warning(self.stamp() + "Incorrect sync byte: %02x" % sync)
+                        logging.warning(timestamp(self.counter()) + "Incorrect sync byte: %02x" % sync)
                 except (PulseError, FramingError) as e:
-                    logging.warning(self.stamp() + "Error in sync byte: %s" % str(e))
+                    logging.warning(timestamp(self.counter()) + "Error in sync byte: %s" % str(e))
 
 #################################################################################
 
@@ -869,6 +904,10 @@ def hms(seconds):
     m, s = divmod(seconds, 60)
     h, m = divmod(m, 60)
     return h, m, s
+
+def timestamp(counter):
+    """ Time stamp. """
+    return "[%d:%02d:%02d] " % hms(counter)
 
 
 ##############################################################################
@@ -953,7 +992,6 @@ def butterband_sox(sample_rate, f0, width):
         y = y[-2:] + [0]*len(inp)
         for i in range(2, len(x)):
             y[i] = b0a*x[i] + b2a*x[i-2] - a1a*y[i-1] - a2a*y[i-2]
-
 
 prepare()
 
