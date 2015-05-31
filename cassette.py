@@ -348,6 +348,8 @@ class TapeStream(object):
 
     # sync byte for IBM PC tapes
     sync_byte = 0x16
+    # intro text
+    intro = 'PC-BASIC tape\x1a'
 
     def __init__(self, mode='r'):
         """ Initialise tape interface. """
@@ -370,7 +372,7 @@ class TapeStream(object):
         """ Write some noise to give the reader something to get started. """
         # We just need some bits here
         # however on a new CAS file this works like a magic-sequence...
-        for b in bytearray('CAS1:'):
+        for b in bytearray(self.intro):
             self.write_byte(b)
         # Write seven bits, so that we are byte-aligned after the sync bit
         # (after the 256-byte pilot). Makes CAS-files easier to read in hex.
