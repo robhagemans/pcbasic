@@ -7,10 +7,10 @@ This file is released under the GNU GPL version 3.
 """
 
 import os
-import wave
 import math
 import struct
 import logging
+from chunk import Chunk
 
 try:
     from cStringIO import StringIO
@@ -582,19 +582,13 @@ class WAVStream(TapeStream):
                 self.framerate = 22050
                 self.sampwidth = 1
                 self.nchannels = 1
-                self.wav = wave.open(self.filename, 'wb')
-                self.wav.setnchannels(self.nchannels)
-                self.wav.setsampwidth(self.sampwidth)
-                self.wav.setframerate(self.framerate)
+                self.wav = open(self.filename, 'wb')
+                self._write_wav_header()
                 self.operating_mode = 'w'
             else:
                 # open file for reading and find wave parameters
-                self.wav = wave.open(self.filename, 'rb')
-                self.nchannels =  self.wav.getnchannels()
-                self.sampwidth = self.wav.getsampwidth()
-                if self.sampwidth >= 3:
-                    raise EnvironmentError("%d-byte wave files not supported." % self.sampwidth)
-                self.framerate = self.wav.getframerate()
+                self.wav = open(self.filename, 'r+b')
+                self._read_wav_header()
                 self.operating_mode = 'r'
         except EnvironmentError as e:
             logging.warning("Couldn't attach %s to CAS device: %s", filename, str(e))
@@ -603,16 +597,14 @@ class WAVStream(TapeStream):
         self.wav_pos = 0
         self.buf_len = 1024
         # convert 8-bit and 16-bit values to ints
-        int_max = 1 << (self.sampwidth*8)
         if self.sampwidth == 1:
             self.sub_threshold = 0
             self.subtractor = 128*self.nchannels
         else:
-            self.sub_threshold = int_max*self.nchannels/2
-            self.subtractor =  int_max*self.nchannels
+            self.sub_threshold = 256*self.nchannels/2
+            self.subtractor =  256*self.nchannels
         # volume above/below zero that is interpreted as zero
-        self.zero_threshold = int_max*self.nchannels/256 # 128 #64
-        self.conv_format = '<' + {1:'B', 2:'h'}[self.sampwidth]*self.nchannels*self.buf_len
+        self.zero_threshold = self.nchannels
         # 1000 us for 1, 500 us for 0; threshold for half-pulse (500 us, 250 us)
         self.halflength = [250*self.framerate/1000000, 500*self.framerate/1000000]
         self.length_cut = 375*self.framerate/1000000
@@ -638,27 +630,7 @@ class WAVStream(TapeStream):
 
     def switch_mode(self, mode):
         """ Switch tape to reading or writing mode. """
-        if mode == self.operating_mode:
-            return
-        self.wav.close()
-        try:
-            self.wav = wave.open(self.filename, 'rb')
-            # there's no set_pos on Wave_write in wave module
-            # so all we can do is read everything into a buffer and write it back
-            buf = self.wav.readframes(self.wav_pos)
-            if mode == 'r':
-                self.operating_mode = 'r'
-            else:
-                self.wav.close()
-                self.wav = wave.open(self.filename, 'wb')
-                self.wav.setnchannels(self.nchannels)
-                self.wav.setsampwidth(self.sampwidth)
-                self.wav.setframerate(self.framerate)
-                self.wav.writeframesraw(buf)
-                self.operating_mode = 'w'
-        except EnvironmentError as e:
-            logging.error('Could not access tape image: %s', str(e))
-            self.wav = None
+        self.operating_mode = mode
 
     def counter(self):
         """ Time stamp in seconds. """
@@ -678,19 +650,21 @@ class WAVStream(TapeStream):
     def close(self):
         """ Close WAV-file. """
         TapeStream.close(self)
+        # write file length fields
+        self.wav.seek(self._form_length_pos, 0)
+        self.wav.write(struct.pack('<L', 36 + self.length))
+        self.wav.seek(self._data_length_pos, 0)
+        self.wav.write(struct.pack('<L', self.length))
         self.wav.close()
 
     def _fill_buffer(self):
         """ Fill buffer with frames and pre-process. """
         frame_buf = []
-        frames = self.wav.readframes(self.buf_len)
-        # convert bytes into ints (little-endian if 16 bit)
-        try:
-            frames2 = struct.unpack(self.conv_format, frames)
-        except struct.error:
-            if not frames:
-                raise EOF
-            frames2 = struct.unpack(self.conv_format[:len(frames)//self.sampwidth+1], frames)
+        frames = self.wav.read(self.buf_len*self.nchannels*self.sampwidth)
+        if not frames:
+            raise EOF
+        # convert MSBs to int (data stored little endian)
+        frames2 = map(ord, frames[self.sampwidth-1::self.sampwidth])
         # sum frames over channels
         frames3 = map(sum, zip(*[iter(frames2)]*self.nchannels))
         frames4 = [ x-self.subtractor if x >= self.sub_threshold else x for x in frames3 ]
@@ -724,7 +698,7 @@ class WAVStream(TapeStream):
         """ Write a pause of given length to the tape. """
         length = (milliseconds * self.framerate / 1000)
         zero = { 1: '\x7f', 2: '\x00\x00'}
-        self.wav.writeframesraw(zero[self.sampwidth] * self.nchannels * length)
+        self.wav.write(zero[self.sampwidth] * self.nchannels * length)
         self.wav_pos += length
 
     def write_bit(self, bit):
@@ -732,11 +706,58 @@ class WAVStream(TapeStream):
         half_length = self.halflength[bit]
         down = { 1: '\x00', 2: '\x00\x80'}
         up = { 1: '\xff', 2: '\xff\x7f'}
-        self.wav.writeframesraw(
+        self.wav.write(
             down[self.sampwidth] * self.nchannels * half_length +
             up[self.sampwidth] * self.nchannels * half_length)
         self.wav_pos += 2 * half_length
 
+    def _read_wav_header(self):
+        """ Read RIFF WAV header. """
+        ch = Chunk(self.wav, bigendian=0)
+        if ch.getname() != 'RIFF' or ch.read(4) != 'WAVE':
+            logging.debug('Not a WAV file.')
+            return False
+        self.form_length_pos = self.wav.tell() - 8
+        self.sampwidth, self.nchannels, self.framerate = 0, 0, 0
+        while True:
+            try:
+                chunk = Chunk(ch, bigendian=0)
+            except EOFError:
+                logging.debug('No data chunk found in WAV file.')
+                return False
+            chunkname = chunk.getname()
+            if chunkname == 'fmt ':
+                format_tag, self.nchannels, self.framerate, _, _ = struct.unpack('<HHLLH', chunk.read(14))
+                if format_tag == 1:
+                    sampwidth = struct.unpack('<H', chunk.read(2))[0]
+                    self.sampwidth = (sampwidth + 7) // 8
+                else:
+                    logging.debug('WAV file not in uncompressed PCM format.')
+                    return False
+            elif chunkname == 'data':
+                if not self.sampwidth:
+                    logging.debug('Format chunk not found.')
+                    return False
+                self.data_length_pos = self.wav.tell()
+                self.wav.read(4)
+                self.start = self.wav.tell()
+                return True
+            chunk.skip()
+
+    def _write_wav_header(self):
+        """ Write RIFF WAV header. """
+        self.wav.write('RIFF')
+        self.form_length_pos = self.wav.tell()
+        # fill in length later
+        length = 0
+        self.wav.write(struct.pack('<L4s4sLHHLLHH4s',
+            36 + length, 'WAVE', 'fmt ', 16,
+            1, self.nchannels, self.framerate,
+            self.nchannels * self.framerate * self.sampwidth,
+            self.nchannels * self.sampwidth,
+            self.sampwidth * 8, 'data'))
+        self.data_length_pos = self.wav.tell()
+        self.wav.write(struct.pack('<L', length))
 
 ##############################################################################
 
