@@ -269,9 +269,7 @@ class LPTDevice(Device):
         Device.__init__(self)
         addr, val = parse_protocol_string(arg)
         self.stream = default_stream
-        if (not val):
-            pass
-        elif (addr and addr not in self.allowed_protocols):
+        if (addr and addr not in self.allowed_protocols):
             logging.warning('Could not attach %s to LPT device', arg)
         elif addr == 'FILE':
             try:
@@ -293,9 +291,11 @@ class LPTDevice(Device):
     def open(self, number, param, filetype, mode, access, lock,
                    reclen, seg, offset, length):
         """ Open a file on LPTn: """
-        f = Device.open(self, number, param, filetype, mode, access, lock, reclen)
         # don't trigger flushes on LPT files, just on the device directly
-        f.flush_trigger = 'close'
+        f = LPTFile(self.stream, 'close')
+        # inherit width settings from device file
+        f.width = self.device_file.width
+        f.col = self.device_file.col
         return f
 
 
@@ -889,9 +889,10 @@ class LPTFile(RawFile):
 
     def flush(self):
         """ Flush the printer buffer to the underlying stream. """
-        val = self.fhandle.getvalue()
-        self.output_stream.write(val)
-        self.fhandle.truncate(0)
+        if self.fhandle:
+            val = self.fhandle.getvalue()
+            self.output_stream.write(val)
+            self.fhandle.truncate(0)
 
     def set_width(self, new_width=255):
         """ Set the width for LPTn. """
@@ -939,9 +940,9 @@ class LPTFile(RawFile):
     def close(self):
         """ Close the printer device and actually print the output. """
         self.flush()
-        self.output_stream.close()
+        self.output_stream.flush()
         self.fhandle.close()
-
+        self.fhandle = None
 
 #################################################################################
 # Serial-port files
