@@ -236,11 +236,14 @@ class CASFile(iolayer.NullFile):
             record += data
             byte_count += len(data)
             if (reclen == None):
-                # and
-                #    (data[:3] == '\xff\xff\xff' or
-                #    (block_num == 0 and data[0] == '\xa5'))):
                 break
             block_num += 1
+            # read 31-bit closing sequence
+            self.tapestream.read_byte()
+            self.tapestream.read_byte()
+            self.tapestream.read_byte()
+            for _ in xrange(7):
+                self.tapestream.read_bit()
         if reclen != None:
             return record[:reclen]
         return record
