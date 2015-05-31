@@ -67,7 +67,7 @@ class CASDevice(object):
     def open(self, number, param, filetype, mode, access, lock,
                    reclen, seg, offset, length):
         """ Open a file on tape. """
-        if not self.tapestream:
+        if not self.tapestream or not self.tapestream.ok():
             # device unavailable
             raise error.RunError(68)
         return CASFile(self.tapestream, filetype, param, number, mode,
@@ -359,6 +359,10 @@ class TapeStream(object):
         """ Context guard. """
         self.close()
 
+    def ok(self):
+        """ Tape stream can be accessed. """
+        return False
+
     def write_intro(self):
         """ Write some noise to give the reader something to get started. """
         # We just need some bits here
@@ -464,6 +468,10 @@ class CASStream(TapeStream):
             self.cas = open(self.cas_name, 'r+b')
             self.cas.seek(0, 2)
             self.switch_mode(mode)
+
+    def ok(self):
+        """ Tape stream can be accessed. """
+        return self.cas is not None
 
     def counter(self):
         """ Time stamp in seconds. """
@@ -594,6 +602,10 @@ class WAVStream(TapeStream):
         if self.operating_mode == 'w':
             self.write_intro()
         self.switch_mode(mode)
+
+    def ok(self):
+        """ Tape stream can be accessed. """
+        return self.wav is not None
 
     def switch_mode(self, mode):
         """ Switch tape to reading or writing mode. """
