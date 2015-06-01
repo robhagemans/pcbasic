@@ -98,6 +98,8 @@ class CASFile(iolayer.NullFile):
         self.number = number
         self.name = name
         self.mode = mode
+        # needed for file writing
+        self.width = 255
 
     def lof(self):
         """ LOF: illegal function call. """
@@ -111,8 +113,19 @@ class CASFile(iolayer.NullFile):
         """ End of file. """
         if self.mode in ('A', 'O'):
             return False
-#FIXME: undefined
-#        return self.tapestream.eof()
+        return self.peek_char() == ''
+
+    # peek_char and seek are needed for text files
+
+    def peek_char(self):
+        """ Get next char to be read. """
+        c = self.read(1, allow_eof=True)
+        self.record_stream.seek(-len(c), 1)
+        return c
+
+    def seek(self, num, from_where=0):
+        """ Move file pointer. """
+        self.record_stream.seek(num, from_where)
 
     def read_chars(self, n):
         """ Read a list of chars from device. """
@@ -135,11 +148,11 @@ class CASFile(iolayer.NullFile):
                 s += c
         return s
 
-    def write_line(self, s):
+    def write_line(self, s=''):
         """ Write string s and CR to tape file. """
         self.write(s + '\r')
 
-    def read(self, nbytes=-1):
+    def read(self, nbytes=-1, allow_eof=False):
         """ Read bytes from a file on tape. """
         c = ''
         try:
@@ -151,6 +164,9 @@ class CASFile(iolayer.NullFile):
                 else:
                     c += self.record_stream.read()
                 if not self._fill_record_buffer():
+                    if self.filetype == 'D' and not allow_eof:
+                        # input past end
+                        raise error.RunError(62)
                     return c
         except EOF:
             return c
