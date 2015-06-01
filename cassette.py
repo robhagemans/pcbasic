@@ -238,12 +238,12 @@ class CASFile(iolayer.NullFile):
             if (reclen == None):
                 break
             block_num += 1
-            # read 31-bit closing sequence
-            self.tapestream.read_byte()
-            self.tapestream.read_byte()
-            self.tapestream.read_byte()
-            for _ in xrange(7):
-                self.tapestream.read_bit()
+        # read 31-bit closing sequence
+        self.tapestream.read_byte()
+        self.tapestream.read_byte()
+        self.tapestream.read_byte()
+        for _ in xrange(7):
+            self.tapestream.read_bit()
         if reclen != None:
             return record[:reclen]
         return record
