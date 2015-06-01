@@ -607,9 +607,10 @@ class WAVStream(TapeStream):
         self.zero_threshold = self.nchannels
         # 1000 us for 1, 500 us for 0; threshold for half-pulse (500 us, 250 us)
         self.halflength = [250*self.framerate/1000000, 500*self.framerate/1000000]
-        self.length_cut = 375*self.framerate/1000000
-        self.length_max = 2*self.length_cut
-        self.length_min = self.length_cut / 2
+        self.halflength_cut = 375*self.framerate/1000000
+        self.halflength_max = 2*self.halflength_cut
+        self.halflength_min = self.halflength_cut / 2
+        self.length_cut = 2*self.halflength_cut
         # 2048 halves = 1024 pulses = 512 1-bits = 64 bytes of leader
         self.min_leader_halves = 2048
         # initialise generators
@@ -639,10 +640,10 @@ class WAVStream(TapeStream):
     def read_bit(self):
         """ Read the next bit. """
         length_up, length_dn = self.read_half.next(), self.read_half.next()
-        if (length_up > self.length_max or length_dn > self.length_max or
-                length_up < self.length_min or length_dn < self.length_min):
+        if (length_up > self.halflength_max or length_dn > self.halflength_max or
+                length_up < self.halflength_min or length_dn < self.halflength_min):
             return None
-        elif length_up >= self.length_cut:
+        elif length_up >= self.halflength_cut:
             return 1
         else:
             return 0
@@ -758,6 +759,37 @@ class WAVStream(TapeStream):
             self.sampwidth * 8, 'data'))
         self.data_length_pos = self.wav.tell()
         self.wav.write(struct.pack('<L', length))
+
+    def read_leader(self):
+        """ Read the leader / pilot wave. """
+        while True:
+            while self.read_bit() != 1:
+                pass
+            counter = 0
+            pulse = (0,0)
+            while True:
+                last = pulse
+                half = self.read_half.next()
+                if half < self.length_cut/2:
+                    if counter > self.min_leader_halves:
+                        #  zero bit; try to sync
+                        half = self.read_half.next()
+                    break
+                counter += 1
+            # sync bit 0 has been read, check sync byte
+            if counter >= self.min_leader_halves:
+                # read rest of first byte
+                try:
+                    self.last_error_bit = None
+                    self.dropbit = None
+                    sync = self.read_byte(skip_start=True)
+                    if sync == self.sync_byte:
+                        return
+                    else:
+                        logging.debug(timestamp(self.counter()) + "Incorrect sync byte:" + repr(sync))
+                except (PulseError, FramingError) as e:
+                    logging.debug(timestamp(self.counter()) + "Error in sync byte: %s", str(e))
+
 
 ##############################################################################
 
@@ -910,6 +942,7 @@ class BasicodeStream(WAVStream):
                         logging.warning(timestamp(self.counter()) + "Incorrect sync byte: %02x" % sync)
                 except (PulseError, FramingError) as e:
                     logging.warning(timestamp(self.counter()) + "Error in sync byte: %s" % str(e))
+
 
 #################################################################################
 
