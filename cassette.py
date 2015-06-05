@@ -690,10 +690,12 @@ class WAVStream(TapeStream):
         """ Close WAV-file. """
         TapeStream.close(self)
         # write file length fields
-        self.wav.seek(self._form_length_pos, 0)
-        self.wav.write(struct.pack('<L', 36 + self.length))
-        self.wav.seek(self._data_length_pos, 0)
-        self.wav.write(struct.pack('<L', self.length))
+        self.wav.seek(0, 2)
+        length = self.wav.tell() - self.start
+        self.wav.seek(self.form_length_pos, 0)
+        self.wav.write(struct.pack('<L', 36 + length))
+        self.wav.seek(self.data_length_pos, 0)
+        self.wav.write(struct.pack('<L', length))
         self.wav.close()
 
     def _fill_buffer(self):
@@ -703,11 +705,12 @@ class WAVStream(TapeStream):
         if not frames:
             raise EOF
         # convert MSBs to int (data stored little endian)
-        frames2 = map(ord, frames[self.sampwidth-1::self.sampwidth])
+        # note that we simply throw away all the less significant bytes
+        frames = map(ord, frames[self.sampwidth-1::self.sampwidth])
         # sum frames over channels
-        frames3 = map(sum, zip(*[iter(frames2)]*self.nchannels))
-        frames4 = [ x-self.subtractor if x >= self.sub_threshold else x for x in frames3 ]
-        return self.lowpass.send(frames4)
+        frames = map(sum, zip(*[iter(frames)]*self.nchannels))
+        frames = [ x-self.subtractor if x >= self.sub_threshold else x for x in frames ]
+        return self.lowpass.send(frames)
 
     def _gen_read_halfpulse(self):
         """ Generator to read a half-pulse and yield its length. """
@@ -797,6 +800,7 @@ class WAVStream(TapeStream):
             self.sampwidth * 8, 'data'))
         self.data_length_pos = self.wav.tell()
         self.wav.write(struct.pack('<L', length))
+        self.start = self.wav.tell()
 
     def read_leader(self):
         """ Read the leader / pilot wave. """
