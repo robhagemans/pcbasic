@@ -9,7 +9,7 @@ PC-BASIC is free and open source software released under the GPL version 3.
 
 See also the [PC-BASIC home page](http://robhagemans.github.io/pcbasic/).
 
-!(https://github.com/robhagemans/pcbasic/screenshots/PC-BASIC.png)
+![](https://robhagemans.github.io/pcbasic/screenshots/PC-BASIC.png)
 
 ----------
 
