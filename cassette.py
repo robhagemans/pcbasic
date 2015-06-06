@@ -607,6 +607,43 @@ class CASStream(TapeStream):
 # data section consists of little-endian PCM audio data
 # each sample consists of nchannels*samplewidth bytes
 
+
+# http://fileformats.archiveteam.org/wiki/IBM_PC_data_cassette
+# The format consists of 1-millisecond-long pulses for each 1 bit, and
+# 0.5-millisecond pulses for each 0 bit. A tape record starts with a leader
+# of 256 bytes of all 1 bits (hex FF), followed by a single synchronization
+# bit (0), and then a synchronization byte (hex 16, the ASCII character from
+# the C0 controls designated as SYN). This is followed by one or more 256-byte
+# data blocks. Each data block is followed by a 2-byte CRC, with the most
+# significant byte first. After the last block, a 4-byte trailer is written
+# of all 1 bits (hex FF).
+#
+# NOTE that the trailer consists of 30 1 bits and a 0 bit, not 32 1-bits as described here.
+
+# Tokenised BASIC programs and memory areas saved by IBM Cassette BASIC consist
+# of two records: the first one is a header (always 256 bytes, of which the
+# first 16 are significant), and the second one contains the data.
+# ASCII listings and data files consist of a sequence of 256-byte records; the
+# first one is a header, as above, and subsequent ones contain the data. If
+# the first byte of the record is 0, this is not the last record, and all 255
+# following bytes are valid data. Otherwise it gives the number of valid bytes
+# in the last record, plus one.
+# The header layout is:
+# Offset	Size	Description
+# 0x00	Byte	Always 0xA5
+# 0x01	8 bytes	Filename, ASCII
+# 0x09	Byte	Flags:
+# Bit	Meaning if set	Example command to create
+# 7	Tokenised BASIC	SAVE "file"
+# 6	ASCII listing	SAVE "file", A
+# 5	Protected tokenised BASIC	SAVE "file", P
+# 0	Memory area	BSAVE "file", address, length
+# No bits set	Data	OPEN "O",1,"file"
+# 0x0A	Word	Number of bytes in the following data record (little-endian word)
+# 0x0C	Word	Segment of load address (little-endian word)
+# 0x0E	Word	Offset of load address (little-endian word)
+
+
 class WAVStream(TapeStream):
     """ WAV-file cassette image bit stream. """
 
@@ -838,6 +875,58 @@ class WAVStream(TapeStream):
 
 
 ##############################################################################
+
+
+# http://en.wikipedia.org/wiki/BASICODE
+# A data block begins with the character 02 (STX, start of text), and ends with
+# the character 03 (ETX, end of text). After ETX, a check byte made up of the
+# previous bytes including STX and ETX by binary addition (XOR), is transmitted.
+# A 0D character (decimal 13) marks the end of a line during transmission.
+# Data files created by programs are able to use all characters as data and
+# must contain no control characters. They are read and written in blocks
+# of 1024 bytes.
+
+# Each byte is transmitted in the sequence "1 start bit - 8 data bits - 2 stop
+# bits". The data bits are little-endian ordered. The resulting redundancy is
+# intended for maximising compatibility with different computers. Bit 7 is
+# always 0, which is especially useful when transmitting ASCII characters,
+# because these always have bit 7 set to 0.
+
+# For the audio signals, square waves in the form of a 1200 Hz wave for a "0"
+# bit and two 2400 Hz waves for a "1" bit are used, resulting in a time of
+# 1/1200 seconds for each bit. A pause longer than 1/1800 seconds between
+# waves marks the beginning of a byte, making the following wave the start
+# bit. After the start bit and before the eight data bits is another pause of
+# at least 1/1800 seconds. A 2400 Hz signal with a length of five seconds
+# marks the beginning of a transmission and is used for synchronization of
+# the reading program. At the end of the transmission, a 2400 Hz signal with
+# a length of one second is sent.
+
+
+# NOTE
+# In actual recordings I find no 1/1800s pauses.
+# Start and stop bits are 1. Bit 7 is inverted, hence 1 for ASCII chars.
+
+
+# nostalgia8.nl/basicode
+# Het Basicode Protocol:
+# 1200 baud / 8 data bit / 2 stop bit
+
+#     Aanlooptoon
+#     Startbyte ASCII 130 (10000010)
+#     BASIC informatie
+#     (Bit nummer 7 is bij Basicode altijd 1 in plaats van de eigenlijke 0)
+#     Stopbyte ASCII 131 (10000011)
+#     Checksum byte
+#     Uitlooptoon
+
+# De data in een Basicode file bestaat uit de 'schone' ASCII  karakters van
+# Hex 20 (31 decimaal)  t/m Hex 7E (126 decimaal). De tekstregels worden
+# afgesloten met Hex 0D (13 decimaal = ASCII code carriage return).
+
+# Bij de omvorming naar AUDIO signalen wordt bit 7 (normaal 0) veranderd in
+# een 1 (geinverteerd).
+
 
 
 class BasicodeStream(WAVStream):
