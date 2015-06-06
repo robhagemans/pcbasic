@@ -44,9 +44,6 @@ def prepare():
 class CASDevice(object):
     """ Cassette tape device (CASn:) """
 
-    allowed_protocols = ('CAS', 'WAV')
-    allowed_modes = 'IOLS'
-
     def __init__(self, arg):
         """ Initialise tape device. """
         addr, val = iolayer.parse_protocol_string(arg)
