@@ -50,8 +50,12 @@ class CASDevice(object):
         """ Initialise tape device. """
         addr, val = iolayer.parse_protocol_string(arg)
         ext = val.split('.')[-1].upper()
+        self.file_cls = CASFile
         if not val:
             self.tapestream = None
+        elif addr == 'BC':
+            self.tapestream = BasicodeStream(val, 'r')
+            self.file_cls = BasicodeFile
         elif addr == 'WAV' or (addr != 'CAS' and ext == 'WAV'):
             # if unspecified, determine type on the basis of filename extension
             self.tapestream = WAVStream(val, 'r')
@@ -70,8 +74,8 @@ class CASDevice(object):
         if not self.tapestream or not self.tapestream.ok():
             # device unavailable
             raise error.RunError(68)
-        return CASFile(self.tapestream, filetype, param, number, mode,
-                        seg, offset, length)
+        return self.file_cls(self.tapestream, filetype, param, number, mode,
+                              seg, offset, length)
 
 
 
@@ -249,6 +253,7 @@ class CASFile(iolayer.NullFile):
                 data = self._read_block()
             except (PulseError, FramingError, CRCError) as e:
                 logging.warning(timestamp(self.tapestream.counter()) + "%s" % str(e))
+                raise
             record += data
             byte_count += len(data)
             if (reclen == None):
@@ -354,6 +359,65 @@ class CASFile(iolayer.NullFile):
             if last > 0:
                 self._write_record(chr(last) + data[-last:])
         self.record_stream = StringIO()
+
+
+
+class BasicodeFile(CASFile):
+    """ BASICODE-format file on cassette. """
+
+
+    def __init__(self, tapestream, filetype, name='', number=0, mode='A',
+                 seg=0, offs=0, length=0):
+        CASFile.__init__(self, tapestream, filetype, name, number, mode,
+                 seg, offs, length)
+
+    def _read_header(self, trunk=None):
+        """ Play until a file record is found. """
+        self.tapestream.read_leader()
+        msgstream.write_line("BASICODE.A Found.")
+        logging.debug(timestamp(self.tapestream.counter()) + "BASICODE.A Found.")
+        self.filetype = 'A'
+        self.length, self.seg, self.offset = 0, 0, 0
+        self.record_num = 0
+
+    def _fill_record_buffer(self):
+        """ Read a file from tape. """
+        if self.record_num > 0:
+            return False
+        self.record_num += 1
+        self.record_stream = StringIO()
+        # xor sum includes STX byte
+        checksum = 0x02
+        while True:
+            try:
+                byte = self.tapestream.read_byte()
+            except (PulseError, FramingError) as e:
+                logging.warning(timestamp(self.tapestream.counter()) + "%d %s" % (self.wav_pos, str(e)))
+                # insert a zero byte as a marker for the error
+                byte = 0
+            except EOF as e:
+                logging.warning(timestamp(self.tapestream.counter()) + "%d %s" % (self.wav_pos, str(e)))
+                break
+            checksum ^= byte
+            if byte == 0x03:
+                break
+            self.record_stream.write(chr(byte))
+            # CR -> CRLF
+            if byte == 0x0d:
+                self.record_stream.write('\n')
+        # read one-byte checksum and report errors
+        try:
+            checksum_byte = self.tapestream.read_byte()
+        except (PulseError, FramingError, EOF) as e:
+            logging.warning(timestamp(self.tapestream.counter()) +
+                             "Could not read checksum: %s " % str(e))
+        # checksum shld be 0 for even # bytes, 128 for odd
+        if checksum_byte == None or checksum^checksum_byte not in (0,128):
+            logging.warning(timestamp(self.tapestream.counter()) +
+                             "Checksum: [FAIL]  Required: %02x  Realised: %02x" % (checksum_byte, checksum))
+        self.record_stream.seek(0)
+        return True
+
 
 
 ##############################################################################
@@ -932,9 +996,9 @@ class WAVStream(TapeStream):
 class BasicodeStream(WAVStream):
     """ BASICODE-standard WAV image reader. """
 
-    def __init__(self, filename):
+    def __init__(self, filename, mode):
         """ Initialise BASICODE WAV-file reader. """
-        WAVStream.__init__(self, filename)
+        WAVStream.__init__(self, filename, mode)
         # basicode uses STX as sync byte
         self.sync_byte = 0x02
         # fix frequencies to Basicode standards, 1200 / 2400 Hz
@@ -963,6 +1027,10 @@ class BasicodeStream(WAVStream):
                 return None
         else:
             return 0
+
+    def write_bit(self, bit):
+        """ BASICODE writing not yet supported. """
+        pass
 
     def read_byte(self, skip_start=False):
         """ Read a byte from the tape. """
@@ -1003,50 +1071,6 @@ class BasicodeStream(WAVStream):
             # flip bit 7
             byte ^= 0x80
             return byte
-
-    def search_file(self, allowed_types=('A', 'D')):
-        """ Play until a file record is found. """
-        self.read_leader()
-        msgstream.write_line("BASICODE.A Found.")
-        logging.debug(timestamp(self.counter()) + "BASICODE.A Found.")
-        return 'BASICODE', 'A', 0, 0, 0
-
-    def read_file(self, filetype='D', file_bytes=0):
-        """ Read a file from tape. """
-        if filetype not in ('D', 'A'):
-            # not supported
-            return ''
-        data = ''
-        # xor sum includes STX byte
-        checksum = 0x02
-        while True:
-            try:
-                byte = self.read_byte()
-            except (PulseError, FramingError) as e:
-                logging.warning(timestamp(self.counter()) + "%d %s" % (self.wav_pos, str(e)))
-                # insert a zero byte as a marker for the error
-                byte = 0
-            except EOF as e:
-                logging.warning(timestamp(self.counter()) + "%d %s" % (self.wav_pos, str(e)))
-                break
-            checksum ^= byte
-            if byte == 0x03:
-                break
-            data += chr(byte)
-            # CR -> CRLF
-            if byte == 0x0d:
-                data += '\n'
-        # read one-byte checksum and report errors
-        try:
-            checksum_byte = self.read_byte()
-        except (PulseError, FramingError, EOF) as e:
-            logging.warning(timestamp(self.counter()) + "Could not read checksum: %s " % str(e))
-        # checksum shld be 0 for even # bytes, 128 for odd
-        if checksum_byte == None or checksum^checksum_byte not in (0,128):
-            logging.warning(timestamp(self.counter()) + "Checksum: [FAIL]  Required: %02x  Realised: %02x" % (checksum_byte, checksum))
-        else:
-            logging.warning(timestamp(self.counter()) + "Checksum: [ ok ] ")
-        return data
 
     def read_leader(self):
         """ Read the leader / pilot wave. """
