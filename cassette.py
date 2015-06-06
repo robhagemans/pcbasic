@@ -10,6 +10,7 @@ import os
 import math
 import struct
 import logging
+import string
 from chunk import Chunk
 
 try:
@@ -362,9 +363,17 @@ class CASFile(iolayer.NullFile):
 
 
 
+
 class BasicodeFile(CASFile):
     """ BASICODE-format file on cassette. """
 
+    # basicode-3 recognised keywords
+    keywords = ['PRINT', 'INPUT', 'LET', 'GOTO', 'GOSUB', 'RETURN', 'FOR', 'TO',
+        'STEP', 'NEXT', 'IF', 'THEN', 'ON', 'DIM', 'READ', 'DATA', 'RESTORE',
+        'REM', 'DEF', 'FN', 'ABS', 'SGN', 'INT', 'SQR', 'SIN', 'COS',
+        'TAN', 'ATN', 'EXP', 'LOG', 'ASC', 'VAL', 'LEN', 'CHR$', 'LEFT$', 'MID$',
+        'RIGHT$', 'AND', 'OR', 'NOT']
+    # TAB is recognised but does not get an extra space
 
     def __init__(self, tapestream, filetype, name='', number=0, mode='A',
                  seg=0, offs=0, length=0):
@@ -388,6 +397,8 @@ class BasicodeFile(CASFile):
         self.record_stream = StringIO()
         # xor sum includes STX byte
         checksum = 0x02
+        word = ''
+        is_rem, is_str = False, False
         while True:
             try:
                 byte = self.tapestream.read_byte()
@@ -401,10 +412,25 @@ class BasicodeFile(CASFile):
             checksum ^= byte
             if byte == 0x03:
                 break
-            self.record_stream.write(chr(byte))
+            c = chr(byte)
+            self.record_stream.write(c)
             # CR -> CRLF
             if byte == 0x0d:
                 self.record_stream.write('\n')
+                is_rem, is_str = False, False
+                word = ''
+            # add space to keywords
+            if c not in string.ascii_uppercase:
+                word = ''
+                if c == '"':
+                    is_str = not is_str
+            elif not is_rem and not is_str:
+                word += c
+                if word in self.keywords:
+                    self.record_stream.write(' ')
+                    if word == 'REM':
+                        is_rem = True
+                    word = ''
         # read one-byte checksum and report errors
         try:
             checksum_byte = self.tapestream.read_byte()
