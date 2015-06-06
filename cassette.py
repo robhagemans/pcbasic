@@ -691,11 +691,11 @@ class WAVStream(TapeStream):
         TapeStream.close(self)
         # write file length fields
         self.wav.seek(0, 2)
-        length = self.wav.tell() - self.start
-        self.wav.seek(self.form_length_pos, 0)
-        self.wav.write(struct.pack('<L', 36 + length))
-        self.wav.seek(self.data_length_pos, 0)
-        self.wav.write(struct.pack('<L', length))
+        end_pos = self.wav.tell()
+        self.wav.seek(self.riff_pos, 0)
+        self.wav.write(struct.pack('<4sL', 'RIFF', end_pos-self.riff_pos-8))
+        self.wav.seek(self.data_pos, 0)
+        self.wav.write(struct.pack('<4sL', 'data', end_pos-self.start))
         self.wav.close()
 
     def _fill_buffer(self):
@@ -759,7 +759,9 @@ class WAVStream(TapeStream):
         if ch.getname() != 'RIFF' or ch.read(4) != 'WAVE':
             logging.debug('Not a WAV file.')
             return False
-        self.form_length_pos = self.wav.tell() - 8
+        # this would normally be 0
+        self.riff_pos = self.wav.tell() - 12
+        riff_size = ch.getsize()
         self.sampwidth, self.nchannels, self.framerate = 0, 0, 0
         while True:
             try:
@@ -780,26 +782,28 @@ class WAVStream(TapeStream):
                 if not self.sampwidth:
                     logging.debug('Format chunk not found.')
                     return False
-                self.data_length_pos = self.wav.tell()
-                self.wav.read(4)
+                self.data_pos = self.wav.tell() - 4
+                #self.wav.read(4)
                 self.start = self.wav.tell()
                 return True
             chunk.skip()
 
     def _write_wav_header(self):
         """ Write RIFF WAV header. """
-        self.wav.write('RIFF')
-        self.form_length_pos = self.wav.tell()
-        # fill in length later
-        length = 0
-        self.wav.write(struct.pack('<L4s4sLHHLLHH4s',
-            36 + length, 'WAVE', 'fmt ', 16,
+        # "RIFF" chunk header
+        self.riff_pos = self.wav.tell()
+        # length is corrected at close
+        self.wav.write(struct.pack('<4sL4s', 'RIFF', 36, 'WAVE'))
+        # "fmt " subchunk
+        self.wav.write(struct.pack('<4sLHHLLHH', 'fmt ', 16,
             1, self.nchannels, self.framerate,
             self.nchannels * self.framerate * self.sampwidth,
             self.nchannels * self.sampwidth,
-            self.sampwidth * 8, 'data'))
-        self.data_length_pos = self.wav.tell()
-        self.wav.write(struct.pack('<L', length))
+            self.sampwidth * 8))
+        # "data" subchunk header
+        self.data_pos = self.wav.tell()
+        # length is corrected at close
+        self.wav.write(struct.pack('<4sL', 'data', 0))
         self.start = self.wav.tell()
 
     def read_leader(self):
