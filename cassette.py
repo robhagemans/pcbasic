@@ -254,7 +254,8 @@ class CASFile(iolayer.NullFile):
                 data = self._read_block()
             except (PulseError, FramingError, CRCError) as e:
                 logging.warning(timestamp(self.tapestream.counter()) + "%s" % str(e))
-                raise
+                # Device I/O error
+                raise error.RunError(57)
             record += data
             byte_count += len(data)
             if (reclen == None):
@@ -383,8 +384,8 @@ class BasicodeFile(CASFile):
     def _read_header(self, trunk=None):
         """ Play until a file record is found. """
         self.tapestream.read_leader()
-        msgstream.write_line("BASICODE.A Found.")
-        logging.debug(timestamp(self.tapestream.counter()) + "BASICODE.A Found.")
+        msgstream.write_line("        .A Found.")
+        logging.debug(timestamp(self.tapestream.counter()) + "Basicode file found")
         self.filetype = 'A'
         self.length, self.seg, self.offset = 0, 0, 0
         self.record_num = 0
@@ -403,11 +404,11 @@ class BasicodeFile(CASFile):
             try:
                 byte = self.tapestream.read_byte()
             except (PulseError, FramingError) as e:
-                logging.warning(timestamp(self.tapestream.counter()) + "%d %s" % (self.wav_pos, str(e)))
+                logging.warning(timestamp(self.tapestream.counter()) + " %s", str(e))
                 # insert a zero byte as a marker for the error
                 byte = 0
             except EOF as e:
-                logging.warning(timestamp(self.tapestream.counter()) + "%d %s" % (self.wav_pos, str(e)))
+                logging.warning(timestamp(self.tapestream.counter()) + " %s", str(e))
                 break
             checksum ^= byte
             if byte == 0x03:
@@ -442,6 +443,7 @@ class BasicodeFile(CASFile):
             logging.warning(timestamp(self.tapestream.counter()) +
                              "Checksum: [FAIL]  Required: %02x  Realised: %02x" % (checksum_byte, checksum))
         self.record_stream.seek(0)
+        self.tapestream.read_trailer()
         return True
 
 
@@ -1124,10 +1126,15 @@ class BasicodeStream(WAVStream):
                     if sync == self.sync_byte:
                         return
                     else:
-                        logging.warning(timestamp(self.counter()) + "Incorrect sync byte: %02x" % sync)
+                        logging.debug(timestamp(self.counter()) + "Incorrect sync byte after %d pulses: %02x", counter, sync)
                 except (PulseError, FramingError) as e:
-                    logging.warning(timestamp(self.counter()) + "Error in sync byte: %s" % str(e))
+                    logging.debug(timestamp(self.counter()) + "Error in sync byte after %d pulses: %s", counter, str(e))
 
+
+    def read_trailer(self):
+        """ Read the trailing wave """
+        while self.read_bit() == 1:
+            pass
 
 #################################################################################
 
