@@ -722,6 +722,7 @@ class CASStream(TapeStream):
         self.cas.seek(0, 2)
 
 
+
 # http://www.topherlee.com/software/pcm-tut-wavformat.html
 # The header of a WAV (RIFF) file is 44 bytes long and has the following format:
 
@@ -743,6 +744,11 @@ class CASStream(TapeStream):
 
 # data section consists of little-endian PCM audio data
 # each sample consists of nchannels*samplewidth bytes
+
+
+# pc cassette technical docs
+# http://en.wikipedia.org/wiki/IBM_cassette_tape
+# http://www.vintage-computer.com/vcforum/showthread.php?8829-IBM-PC-Cassette-interface/page2
 
 
 # http://fileformats.archiveteam.org/wiki/IBM_PC_data_cassette
@@ -779,6 +785,8 @@ class CASStream(TapeStream):
 # 0x0A	Word	Number of bytes in the following data record (little-endian word)
 # 0x0C	Word	Segment of load address (little-endian word)
 # 0x0E	Word	Offset of load address (little-endian word)
+
+
 
 
 class WAVStream(TapeStream):
@@ -1057,7 +1065,7 @@ class WAVStream(TapeStream):
 # Start and stop bits are 1. Bit 7 is inverted, hence 1 for ASCII chars.
 
 
-# nostalgia8.nl/basicode
+# http://www.nostalgia8.nl/basicode.htm
 # Het Basicode Protocol:
 # 1200 baud / 8 data bit / 2 stop bit
 
@@ -1202,6 +1210,8 @@ def timestamp(counter):
 
 ##############################################################################
 # filters
+# see e.g. http://www.exstrom.com/journal/sigproc/
+
 
 def passthrough():
     """ Passthrough filter. """
