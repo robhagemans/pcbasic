@@ -373,19 +373,19 @@ class BasicodeFile(CASFile):
         'RIGHT$', 'AND', 'OR', 'NOT']
     # TAB is recognised but does not get an extra space
 
-    def __init__(self, tapestream, filetype, name='', number=0, mode='A',
-                 seg=0, offs=0, length=0):
-        CASFile.__init__(self, tapestream, filetype, name, number, mode,
-                 seg, offs, length)
-
     def _read_header(self, trunk=None):
         """ Play until a file record is found. """
-        self.tapestream.read_leader()
-        msgstream.write_line("        .A Found.")
-        logging.debug(timestamp(self.tapestream.counter()) + "Basicode file found")
-        self.filetype = 'A'
-        self.length, self.seg, self.offset = 0, 0, 0
-        self.record_num = 0
+        try:
+            self.tapestream.read_leader()
+            msgstream.write_line("        .A Found.")
+            logging.debug(timestamp(self.tapestream.counter()) + "Basicode file found")
+            self.filetype = 'A'
+            self.length, self.seg, self.offset = 0, 0, 0
+            self.record_num = 0
+        except (EOF, StopIteration):
+            # reached end-of-tape without finding appropriate file
+            # device timeout
+            raise error.RunError(24)
 
     def _fill_record_buffer(self):
         """ Read a file from tape. """
@@ -440,7 +440,10 @@ class BasicodeFile(CASFile):
             logging.warning(timestamp(self.tapestream.counter()) +
                              "Checksum: [FAIL]  Required: %02x  Realised: %02x" % (checksum_byte, checksum))
         self.record_stream.seek(0)
-        self.tapestream.read_trailer()
+        try:
+            self.tapestream.read_trailer()
+        except (PulseError, FramingError, EOF, StopIteration):
+            pass
         return True
 
 
@@ -472,6 +475,10 @@ class TapeStream(object):
     def ok(self):
         """ Tape stream can be accessed. """
         return False
+
+    def counter(self):
+        """ Position on tape in seconds. """
+        return 0
 
     def read_intro(self):
         """ Try to read intro; ensure image not empty. """
@@ -563,6 +570,14 @@ class TapeStream(object):
 
     def write_pause(self, milliseconds):
         """ Write pause to tape image (stub). """
+        pass
+
+    def read_trailer(self):
+        """ Read trailing wave. """
+        pass
+
+    def write_trailer(self):
+        """ Write trailing wave. """
         pass
 
 ##############################################################################
