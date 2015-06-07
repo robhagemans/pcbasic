@@ -100,6 +100,7 @@ class CASFile(iolayer.NullFile):
         self.tapestream = tapestream
         self.record_num = 0
         self.record_stream = StringIO()
+        self.buffer_complete = False
         if mode == 'I':
             self.tapestream.switch_mode('r')
             self._read_header(name)
@@ -125,13 +126,14 @@ class CASFile(iolayer.NullFile):
         """ End of file. """
         if self.mode in ('A', 'O'):
             return False
-        return self.peek_char() == ''
+        return (self.buffer_complete and
+                self.record_stream.tell() == len(self.record_stream.getvalue()))
 
     # peek_char and seek are needed for text files
 
     def peek_char(self):
         """ Get next char to be read. """
-        c = self.read(1, allow_eof=True)
+        c = self.read(1)
         self.record_stream.seek(-len(c), 1)
         return c
 
@@ -164,22 +166,24 @@ class CASFile(iolayer.NullFile):
         """ Write string s and CR to tape file. """
         self.write(s + '\r')
 
-    def read(self, nbytes=-1, allow_eof=False):
+    def read(self, nbytes=-1):
         """ Read bytes from a file on tape. """
         c = ''
         try:
             while True:
-                if nbytes > -1 and len(c) >= nbytes:
-                    return c
                 if nbytes > -1:
                     c += self.record_stream.read(nbytes-len(c))
+                    if len(c) >= nbytes:
+                        return c
                 else:
                     c += self.record_stream.read()
-                if not self._fill_record_buffer():
-                    if self.filetype == 'D' and not allow_eof:
+                if self.buffer_complete:
+                    if self.filetype == 'D' and nbytes > -1:
                         # input past end
                         raise error.RunError(62)
-                    return c
+                    else:
+                        return c
+                self._fill_record_buffer()
         except EndOfTape:
             return c
 
@@ -188,14 +192,14 @@ class CASFile(iolayer.NullFile):
         if self.filetype in ('D', 'A'):
             c = c.replace('\r\n', '\r')
         self.record_stream.write(c)
+        self._flush_record_buffer()
 
     def close(self):
         """ Close a file on tape. """
         # terminate text files with NUL
         if self.filetype in ('D', 'A'):
             self.write('\0')
-        if self.mode == 'O':
-            self._flush_record_buffer()
+        self._close_record_buffer()
 
     def _read_header(self, trunk=None):
         """ Play until a file header record is found. """
@@ -231,6 +235,7 @@ class CASFile(iolayer.NullFile):
         self.seg = ord(record[12]) + ord(record[13]) * 0x100
         self.offset = ord(record[14]) + ord(record[15]) * 0x100
         self.record_num = 0
+        self.buffer_complete = False
 
     def _write_header(self, name, filetype, length, seg, offs):
         """ Write a file header to the tape. """
@@ -323,46 +328,53 @@ class CASFile(iolayer.NullFile):
 
     def _fill_record_buffer(self):
         """ Read to fill the tape buffer. """
-        if self.record_num > 0:
+        if self.buffer_complete:
             return False
         if self.filetype in ('M', 'B', 'P'):
             # bsave, tokenised and protected come in one multi-block record
             self.record_stream = StringIO(self._read_record(self.length))
+            self.buffer_complete = True
         else:
             # ascii and data come as a sequence of one-block records
             # 256 bytes less 1 length byte. CRC trailer comes after 256-byte block
             self.record_stream = StringIO()
-            while True:
-                record = self._read_record(256)
-                num_bytes = ord(record[0])
-                record = record[1:]
-                if num_bytes != 0:
-                    record = record[:num_bytes-1]
-                # text/data files are stored on tape with CR line endings
-                self.record_stream.write(record.replace('\r', '\r\n'))
-                if num_bytes != 0:
-                    break
+            record = self._read_record(256)
+            num_bytes = ord(record[0])
+            record = record[1:]
+            if num_bytes != 0:
+                record = record[:num_bytes-1]
+                self.buffer_complete = True
+            # text/data files are stored on tape with CR line endings
+            self.record_stream.write(record.replace('\r', '\r\n'))
         self.record_stream.seek(0)
         return True
 
     def _flush_record_buffer(self):
-        """ Write the tape file buffer to tape. """
+        """ Write the tape buffer to tape. """
+        data = self.record_stream.getvalue()
+        if self.filetype not in ('M', 'B', 'P'):
+            while True:
+                chunk, data = data[:255], data[255:]
+                if len(data) < 255:
+                    break
+                # ascii and data come as a sequence of one-block records
+                # 256 bytes less 1 length byte. CRC trailer comes after 256-byte block
+                self._write_record('\0' + chunk)
+            self.record_stream = StringIO(data)
+            self.record_stream.seek(0, 2)
+
+    def _close_record_buffer(self):
+        """ Write the tape buffer to tape and finalise. """
+        self._flush_record_buffer()
+        self.buffer_complete = True
         data = self.record_stream.getvalue()
         if self.filetype in ('M', 'B', 'P'):
             # bsave, tokenised and protected come in one multi-block record
             self._write_record(data)
         else:
-            # ascii and data come as a sequence of one-block records
-            # 256 bytes less 1 length byte. CRC trailer comes after 256-byte block
-            blocks, last = divmod(len(data), 255)
-            for i in range(blocks):
-                offset = i*255
-                self._write_record('\0' + data[offset:offset+255])
-            if last > 0:
-                self._write_record(chr(last) + data[-last:])
+            if data:
+                self._write_record(chr(len(data)) + data)
         self.record_stream = StringIO()
-
-
 
 
 class BasicodeFile(CASFile):
@@ -448,10 +460,16 @@ class BasicodeFile(CASFile):
         self.tapestream.read_trailer()
         return True
 
+    def _flush_record_buffer(self):
+        """ Write the tape buffer to tape. """
+        pass
+
+    def _close_record_buffer(self):
+        """ Write the tape buffer to tape and finalise. """
+        pass
 
 
 ##############################################################################
-
 
 
 class TapeStream(object):
