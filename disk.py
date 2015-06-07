@@ -314,7 +314,7 @@ def filter_names(path, files_list, mask='*.*'):
 class DiskDevice(object):
     """ Disk device (A:, B:, C:, ...) """
 
-    allowed_modes = 'IORSL'
+    allowed_modes = 'IOR'
 
     # posix access modes for BASIC modes INPUT, OUTPUT, RANDOM, APPEND
     # and internal LOAD and SAVE modes
@@ -564,7 +564,7 @@ def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock=
         # we're trying to load/save a program; even ascii programs are ProgramFile
         return ProgramFile(fhandle, filetype, name, number, mode, access, lock,
                             seg, offset, length)
-    elif mode in ('A', 'O'):
+    elif mode in 'IAO':
         return TextFile(fhandle, name, number, mode, access, lock)
     else:
         return RandomFile(fhandle, name, number, mode, access, lock, reclen)

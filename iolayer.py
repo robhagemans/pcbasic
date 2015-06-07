@@ -237,7 +237,7 @@ class Device(object):
 class SCRNDevice(Device):
     """ Screen device (SCRN:) """
     
-    allowed_modes = 'ORS'
+    allowed_modes = 'OR'
 
     def __init__(self):
         """ Initialise screen device. """
@@ -249,7 +249,7 @@ class SCRNDevice(Device):
 class KYBDDevice(Device):
     """ Keyboard device (KYBD:) """
     
-    allowed_modes = 'IRL'
+    allowed_modes = 'IR'
 
     def __init__(self):
         """ Initialise keyboard device. """
@@ -262,7 +262,7 @@ class LPTDevice(Device):
     """ Parallel port or printer device (LPTn:) """
 
     allowed_protocols = ('PRINTER', 'PARPORT', 'FILE')
-    allowed_modes = 'ORS'
+    allowed_modes = 'OR'
 
     def __init__(self, arg, default_stream, flush_trigger):
         """ Initialise LPTn: device. """
@@ -303,7 +303,7 @@ class COMDevice(Device):
     """ Serial port device (COMn:). """
 
     allowed_protocols = ('PORT', 'SOCKET')
-    allowed_modes = 'IOARLS'
+    allowed_modes = 'IOAR'
 
     def __init__(self, arg, max_reclen, serial_in_size):
         """ Initialise COMn: device. """
