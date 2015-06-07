@@ -579,26 +579,20 @@ class TapeStream(object):
         pass
 
     def read_trailer(self):
-        """ Read trailing wave. """
-        # read 31-bit closing sequence
+        """ Read the trailing wave """
         try:
-            self.read_byte()
-            self.read_byte()
-            self.read_byte()
-            for _ in xrange(7):
-                self.read_bit()
-        except CassetteIOError:
+            while self.read_bit() == 1:
+                pass
+        except EndOfTape:
             pass
 
     def write_trailer(self):
         """ Write trailing wave. """
         # closing sequence is 30 1-bits followed by a zero bit (based on PCE output).
         # Not 32 1-bits as per http://fileformats.archiveteam.org/wiki/IBM_PC_data_
-        self.write_byte(0xff)
-        self.write_byte(0xff)
-        self.write_byte(0xff)
-        for b in (1, 1, 1, 1, 1, 1, 0):
-            self.write_bit(b)
+        for _ in range(30):
+            self.write_bit(1)
+        self.write_bit(0)
 
 ##############################################################################
 
@@ -1179,14 +1173,6 @@ class BasicodeStream(WAVStream):
                                       timestamp(self.counter()), counter, e)
         except (EndOfTape, StopIteration):
             return False
-
-    def read_trailer(self):
-        """ Read the trailing wave """
-        try:
-            while self.read_bit() == 1:
-                pass
-        except EndOfTape:
-            pass
 
     def write_trailer(self):
         """ Write trailing wave; not implemented """
