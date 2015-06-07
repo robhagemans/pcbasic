@@ -483,8 +483,11 @@ def get_number_tokens(fors):
 
 def input_vars_file(readvar, raw_file):
     """ Read a list of variables for INPUT from a file. """
-    c = raw_file.read(1)
+    c = ''
     for v in readvar:
+        last, c = c, raw_file.read(1)
+        if last == '\r' and c == '\n':
+            last, c = c, raw_file.read(1)
         typechar = v[0][-1]
         if typechar == '$':
             valstr, c = input_entry(c, raw_file, allow_quotes=True,
@@ -501,15 +504,10 @@ def input_vars_file(readvar, raw_file):
         if not raw_file.end_of_file():
             # on reading from a KYBD: file, control char replacement takes place
             # which means we need to use read() not read_chars()
-            c = raw_file.read(1)
             if c not in ('', ',', '\x1a'):
-                # skip trailing whitespace and one end of line
+                # skip trailing whitespace
                 while c in ascii_white and not raw_file.end_of_file():
                     c = raw_file.read(1)
-                if c == '\r' and not raw_file.end_of_file():
-                    c = raw_file.read(1)
-                    if c == '\n' and not raw_file.end_of_file():
-                        c = raw_file.read(1)
         # and then set the value
         v.append(value)
     return readvar    
@@ -518,8 +516,8 @@ def input_vars(readvar, raw_file):
     """ Read a variable for INPUT. """
     # copy to allow multiple calls (for Redo)
     count_commas, count_values, has_empty = 0, 0, False
-    c = raw_file.read(1)
     for v in readvar:
+        c = raw_file.read(1)
         typechar = v[0][-1]
         valstr, c = input_entry(c, raw_file, allow_quotes=(typechar=='$'), end_all=('',))
         val = str_to_type(valstr, typechar)
@@ -529,7 +527,6 @@ def input_vars(readvar, raw_file):
             has_empty = True
         if c == ',':
             count_commas += 1
-            c = raw_file.read(1)
         else:
             break
     if count_values != len(readvar) or count_commas != len(readvar)-1 or has_empty:
