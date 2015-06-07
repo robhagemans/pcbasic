@@ -582,11 +582,11 @@ class TapeStream(object):
         """ Read trailing wave. """
         # read 31-bit closing sequence
         try:
-            self.tapestream.read_byte()
-            self.tapestream.read_byte()
-            self.tapestream.read_byte()
+            self.read_byte()
+            self.read_byte()
+            self.read_byte()
             for _ in xrange(7):
-                self.tapestream.read_bit()
+                self.read_bit()
         except CassetteIOError:
             pass
 
@@ -594,11 +594,11 @@ class TapeStream(object):
         """ Write trailing wave. """
         # closing sequence is 30 1-bits followed by a zero bit (based on PCE output).
         # Not 32 1-bits as per http://fileformats.archiveteam.org/wiki/IBM_PC_data_
-        self.tapestream.write_byte(0xff)
-        self.tapestream.write_byte(0xff)
-        self.tapestream.write_byte(0xff)
-        for b in (1,1,1,1,1,1,0):
-            self.tapestream.write_bit(b)
+        self.write_byte(0xff)
+        self.write_byte(0xff)
+        self.write_byte(0xff)
+        for b in (1, 1, 1, 1, 1, 1, 0):
+            self.write_bit(b)
 
 ##############################################################################
 
