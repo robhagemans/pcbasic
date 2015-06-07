@@ -241,7 +241,10 @@ class CASFile(iolayer.NullFile):
 
     def _read_record(self, reclen):
         """ Read a record from tape. """
-        self.tapestream.read_leader()
+        if not self.tapestream.read_leader():
+            # reached end-of-tape without finding appropriate file
+            # device timeout
+            raise error.RunError(24)
         self.record_num += 1
         record = ''
         block_num = 0
@@ -375,17 +378,15 @@ class BasicodeFile(CASFile):
 
     def _read_header(self, trunk=None):
         """ Play until a file record is found. """
-        try:
-            self.tapestream.read_leader()
-            msgstream.write_line("        .A Found.")
-            logging.debug(timestamp(self.tapestream.counter()) + "Basicode file found")
-            self.filetype = 'A'
-            self.length, self.seg, self.offset = 0, 0, 0
-            self.record_num = 0
-        except (EOF, StopIteration):
+        if not self.tapestream.read_leader():
             # reached end-of-tape without finding appropriate file
             # device timeout
             raise error.RunError(24)
+        msgstream.write_line("        .A Found.")
+        logging.debug(timestamp(self.tapestream.counter()) + "Basicode file found")
+        self.filetype = 'A'
+        self.length, self.seg, self.offset = 0, 0, 0
+        self.record_num = 0
 
     def _fill_record_buffer(self):
         """ Read a file from tape. """
@@ -440,10 +441,7 @@ class BasicodeFile(CASFile):
             logging.warning(timestamp(self.tapestream.counter()) +
                              "Checksum: [FAIL]  Required: %02x  Realised: %02x" % (checksum_byte, checksum))
         self.record_stream.seek(0)
-        try:
-            self.tapestream.read_trailer()
-        except (PulseError, FramingError, EOF, StopIteration):
-            pass
+        self.tapestream.read_trailer()
         return True
 
 
@@ -508,21 +506,24 @@ class TapeStream(object):
 
     def read_leader(self):
         """ Read the leader / pilot wave. """
-        while True:
-            while self.read_bit() != 1:
-                pass
-            counter = 0
+        try:
             while True:
-                b = self.read_bit()
-                if b != 1:
-                    break
-                counter += 1
-            # sync bit 0 has been read, check sync byte 0x16
-            # at least 64*8 bits
-            if b != None and counter >= 512:
-                sync = self.read_byte(skip_start=True)
-                if sync == self.sync_byte:
-                    return
+                while self.read_bit() != 1:
+                    pass
+                counter = 0
+                while True:
+                    b = self.read_bit()
+                    if b != 1:
+                        break
+                    counter += 1
+                # sync bit 0 has been read, check sync byte 0x16
+                # at least 64*8 bits
+                if b != None and counter >= 512:
+                    sync = self.read_byte(skip_start=True)
+                    if sync == self.sync_byte:
+                        return True
+        except (EOF, StopIteration):
+            return False
 
     def write_leader(self):
         """ Write the leader / pilot tone. """
@@ -949,34 +950,36 @@ class WAVStream(TapeStream):
 
     def read_leader(self):
         """ Read the leader / pilot wave. """
-        while True:
-            while self.read_bit() != 1:
-                pass
-            counter = 0
-            pulse = (0,0)
+        try:
             while True:
-                last = pulse
-                half = self.read_half.next()
-                if half < self.length_cut/2:
-                    if counter > self.min_leader_halves:
-                        #  zero bit; try to sync
-                        half = self.read_half.next()
-                    break
-                counter += 1
-            # sync bit 0 has been read, check sync byte
-            if counter >= self.min_leader_halves:
-                # read rest of first byte
-                try:
-                    self.last_error_bit = None
-                    self.dropbit = None
-                    sync = self.read_byte(skip_start=True)
-                    if sync == self.sync_byte:
-                        return
-                    else:
-                        logging.debug(timestamp(self.counter()) + "Incorrect sync byte:" + repr(sync))
-                except (PulseError, FramingError) as e:
-                    logging.debug(timestamp(self.counter()) + "Error in sync byte: %s", str(e))
-
+                while self.read_bit() != 1:
+                    pass
+                counter = 0
+                pulse = (0,0)
+                while True:
+                    last = pulse
+                    half = self.read_half.next()
+                    if half < self.length_cut/2:
+                        if counter > self.min_leader_halves:
+                            #  zero bit; try to sync
+                            half = self.read_half.next()
+                        break
+                    counter += 1
+                # sync bit 0 has been read, check sync byte
+                if counter >= self.min_leader_halves:
+                    # read rest of first byte
+                    try:
+                        self.last_error_bit = None
+                        self.dropbit = None
+                        sync = self.read_byte(skip_start=True)
+                        if sync == self.sync_byte:
+                            return True
+                        else:
+                            logging.debug(timestamp(self.counter()) + "Incorrect sync byte:" + repr(sync))
+                    except (PulseError, FramingError) as e:
+                        logging.debug(timestamp(self.counter()) + "Error in sync byte: %s", str(e))
+        except (EOF, StopIteration):
+            return False
 
 ##############################################################################
 
@@ -1114,38 +1117,43 @@ class BasicodeStream(WAVStream):
 
     def read_leader(self):
         """ Read the leader / pilot wave. """
-        while True:
-            while self.read_bit() != 1:
-                pass
-            counter = 0
-            pulse = (0,0)
+        try:
             while True:
-                last = pulse
-                half = self.read_half.next()
-                if half > self.length_cut/2:
-                    if counter > self.min_leader_halves:
-                        #  zero bit; try to sync
-                        half = self.read_half.next()
-                    break
-                counter += 1
-            # sync bit 0 has been read, check sync byte
-            if counter >= self.min_leader_halves:
-                # read rest of first byte
-                try:
-                    self.last_error_bit = None
-                    self.dropbit = None
-                    sync = self.read_byte(skip_start=True)
-                    if sync == self.sync_byte:
-                        return
-                    else:
-                        logging.debug(timestamp(self.counter()) + "Incorrect sync byte after %d pulses: %02x", counter, sync)
-                except (PulseError, FramingError) as e:
-                    logging.debug(timestamp(self.counter()) + "Error in sync byte after %d pulses: %s", counter, str(e))
-
+                while self.read_bit() != 1:
+                    pass
+                counter = 0
+                pulse = (0,0)
+                while True:
+                    last = pulse
+                    half = self.read_half.next()
+                    if half > self.length_cut/2:
+                        if counter > self.min_leader_halves:
+                            #  zero bit; try to sync
+                            half = self.read_half.next()
+                        break
+                    counter += 1
+                # sync bit 0 has been read, check sync byte
+                if counter >= self.min_leader_halves:
+                    # read rest of first byte
+                    try:
+                        self.last_error_bit = None
+                        self.dropbit = None
+                        sync = self.read_byte(skip_start=True)
+                        if sync == self.sync_byte:
+                            return True
+                        else:
+                            logging.debug(timestamp(self.counter()) + "Incorrect sync byte after %d pulses: %02x", counter, sync)
+                    except (PulseError, FramingError) as e:
+                        logging.debug(timestamp(self.counter()) + "Error in sync byte after %d pulses: %s", counter, str(e))
+        except (EOF, StopIteration):
+            return False
 
     def read_trailer(self):
         """ Read the trailing wave """
-        while self.read_bit() == 1:
+        try:
+            while self.read_bit() == 1:
+                pass
+        except (EOF, StopIteration):
             pass
 
 #################################################################################
