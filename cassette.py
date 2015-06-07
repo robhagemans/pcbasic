@@ -966,6 +966,10 @@ class WAVStream(TapeStream):
         self.wav.write(struct.pack('<4sL', 'data', 0))
         self.start = self.wav.tell()
 
+    def _is_leader_halfpulse(self, half):
+        """ Return whether the half pulse is of pilot wave frequency. """
+        return half >= self.length_cut/2
+
     def read_leader(self):
         """ Read the leader / pilot wave. """
         try:
@@ -977,7 +981,7 @@ class WAVStream(TapeStream):
                 while True:
                     last = pulse
                     half = next(self.read_half)
-                    if half < self.length_cut/2:
+                    if not self._is_leader_halfpulse(half):
                         if counter > self.min_leader_halves:
                             #  zero bit; try to sync
                             half = next(self.read_half)
@@ -1139,44 +1143,10 @@ class BasicodeStream(WAVStream):
             byte ^= 0x80
             return byte
 
-    def read_leader(self):
-        """ Read the leader / pilot wave. """
-        try:
-            while True:
-                while self.read_bit() != 1:
-                    pass
-                counter = 0
-                pulse = (0,0)
-                while True:
-                    last = pulse
-                    half = next(self.read_half)
-                    if half > self.length_cut/2:
-                        if counter > self.min_leader_halves:
-                            #  zero bit; try to sync
-                            half = next(self.read_half)
-                        break
-                    counter += 1
-                # sync bit 0 has been read, check sync byte
-                if counter >= self.min_leader_halves:
-                    # read rest of first byte
-                    try:
-                        self.last_error_bit = None
-                        self.dropbit = None
-                        sync = self.read_byte(skip_start=True)
-                        if sync == self.sync_byte:
-                            return True
-                        else:
-                            logging.debug("%s Incorrect sync byte after %d pulses: %02x",
-                                          timestamp(self.counter()), counter, sync)
-                    except (PulseError, FramingError) as e:
-                        logging.debug("%s Error in sync byte after %d pulses: %s",
-                                      timestamp(self.counter()), counter, e)
-        except (EndOfTape, StopIteration):
-            return False
+    def _is_leader_halfpulse(self, half):
+        """ Return whether the half pulse is of pilot wave frequency. """
+        return half <= self.length_cut/2
 
-    def write_trailer(self):
-        """ Write trailing wave; not implemented """
-        pass
 
 ##############################################################################
 # supporting functions
