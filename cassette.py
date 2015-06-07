@@ -522,7 +522,7 @@ class TapeStream(object):
                     sync = self.read_byte(skip_start=True)
                     if sync == self.sync_byte:
                         return True
-        except (EOF, StopIteration):
+        except EOF:
             return False
 
     def write_leader(self):
@@ -819,7 +819,10 @@ class WAVStream(TapeStream):
 
     def read_bit(self):
         """ Read the next bit. """
-        length_up, length_dn = self.read_half.next(), self.read_half.next()
+        try:
+            length_up, length_dn = next(self.read_half), next(self.read_half)
+        except StopIteration:
+            raise EOF
         if (length_up > self.halflength_max or length_dn > self.halflength_max or
                 length_up < self.halflength_min or length_dn < self.halflength_min):
             return None
@@ -958,11 +961,11 @@ class WAVStream(TapeStream):
                 pulse = (0,0)
                 while True:
                     last = pulse
-                    half = self.read_half.next()
+                    half = next(self.read_half)
                     if half < self.length_cut/2:
                         if counter > self.min_leader_halves:
                             #  zero bit; try to sync
-                            half = self.read_half.next()
+                            half = next(self.read_half)
                         break
                     counter += 1
                 # sync bit 0 has been read, check sync byte
@@ -1060,16 +1063,19 @@ class BasicodeStream(WAVStream):
 
     def read_bit(self):
         """ Read the next bit. """
-        pulse0 = (self.read_half.next(), self.read_half.next())
-        # one = two pulses of 417 us; zero = one pulse of 833 us
-        if sum(pulse0) < self.length_cut:
-            pulse1 = (self.read_half.next(), self.read_half.next())
-            if sum(pulse1) < self.length_cut:
-                return 1
+        try:
+            pulse0 = (next(self.read_half), next(self.read_half))
+            # one = two pulses of 417 us; zero = one pulse of 833 us
+            if sum(pulse0) < self.length_cut:
+                pulse1 = (next(self.read_half), next(self.read_half))
+                if sum(pulse1) < self.length_cut:
+                    return 1
+                else:
+                    return None
             else:
-                return None
-        else:
-            return 0
+                return 0
+        except StopIteration:
+            raise EOF
 
     def write_bit(self, bit):
         """ BASICODE writing not yet supported. """
@@ -1125,11 +1131,11 @@ class BasicodeStream(WAVStream):
                 pulse = (0,0)
                 while True:
                     last = pulse
-                    half = self.read_half.next()
+                    half = next(self.read_half)
                     if half > self.length_cut/2:
                         if counter > self.min_leader_halves:
                             #  zero bit; try to sync
-                            half = self.read_half.next()
+                            half = next(self.read_half)
                         break
                     counter += 1
                 # sync bit 0 has been read, check sync byte
@@ -1153,7 +1159,7 @@ class BasicodeStream(WAVStream):
         try:
             while self.read_bit() == 1:
                 pass
-        except (EOF, StopIteration):
+        except EOF:
             pass
 
 #################################################################################
