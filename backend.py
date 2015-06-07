@@ -188,7 +188,7 @@ class ComHandler(EventHandler):
     
     def check(self):
         """ Trigger COM-port events. """
-        if devices[self.portname] and devices[self.portname].peek_char():
+        if devices[self.portname] and devices[self.portname].char_waiting():
             self.trigger()
 
 

@@ -286,12 +286,6 @@ class BaseFile(object):
             out += c
         return out            
             
-    def peek_char(self):
-        """ Get next char to be read. """
-        s = self.fhandle.read(1)
-        self.fhandle.seek(-len(s), 1)
-        return s
-    
     def tell(self):
         """ Get position of file pointer. """
         return self.fhandle.tell()
@@ -310,7 +304,9 @@ class BaseFile(object):
 
     def end_of_file(self):
         """ Return whether the file pointer is at the end of file. """
-        return self.peek_char() == ''
+        s = self.fhandle.read(1)
+        self.fhandle.seek(-len(s), 1)
+        return s == ''
         
     def flush(self):
         """ Write contents of buffers to file. """
@@ -358,13 +354,16 @@ class TextFile(BaseFile):
             elif c == '\n':
                 s += c
                 # special: allow LFCR (!) to pass
-                if self.peek_char() == '\r':
-                    self.fhandle.read(1)
+                c = self.fhandle.read(1)
+                if c != '\r':
+                    self.fhandle.seek(-len(c), 1)
+                else:
                     s += '\r'
             elif c == '\r':
                 # check for CR/LF
-                if self.peek_char() == '\n':
-                    self.fhandle.read(1)
+                c = self.fhandle.read(1)
+                if c != '\n':
+                    self.fhandle.seek(-len(c), 1)
                 break
             else:        
                 s += c    
@@ -503,10 +502,6 @@ class RandomBase(BaseFile):
             self.field_text_file.write(ins.read(1))
         if ins.tell() < len(s):
             raise error.RunError(self.overflow_error) 
-    
-    def peek_char(self):
-        """ Get next char to be read from FIELD buffer. """
-        return self.field_text_file.peek_char()
     
     def seek(self, n, from_where=0):
         """ Get file pointer location in FIELD buffer. """
@@ -1128,13 +1123,10 @@ class COMFile(RandomBase):
             out += ''.join(c)
         return out
     
-    def peek_char(self):
-        """ Get the next char to be read. """
-        if self._in_buffer:
-            return str(self._in_buffer[0])
-        else:
-            return ''    
-        
+    def char_waiting(self):
+        """ Whether a char is present in buffer. For ON COM(n). """
+        return self._in_buffer != ''
+
     def write_line(self, s=''):
         """ Write string or bytearray and newline to port. """ 
         self.write(str(s) + '\r')    
