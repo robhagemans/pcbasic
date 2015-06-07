@@ -39,6 +39,16 @@ def prepare():
 
 
 #################################################################################
+# Exceptions
+
+class CassetteIOError(IOError): pass
+class EndOfTape(CassetteIOError): pass
+class CRCError(CassetteIOError): pass
+class PulseError(CassetteIOError): pass
+class FramingError(CassetteIOError): pass
+
+
+#################################################################################
 # Cassette device
 
 class CASDevice(object):
@@ -170,7 +180,7 @@ class CASFile(iolayer.NullFile):
                         # input past end
                         raise error.RunError(62)
                     return c
-        except EOF:
+        except EndOfTape:
             return c
 
     def write(self, c):
@@ -194,7 +204,8 @@ class CASFile(iolayer.NullFile):
                 record = self._read_record(None)
                 if not record or record[0] != '\xa5':
                     # unknown record type
-                    logging.debug(timestamp(self.tapestream.counter()) + "Skipped non-header record.")
+                    logging.debug("%s Skipped non-header record.",
+                                  timestamp(self.tapestream.counter()))
                     continue
                 file_trunk = record[1:9]
                 try:
@@ -205,21 +216,21 @@ class CASFile(iolayer.NullFile):
                     message = "%s Found." % (file_trunk + '.' + filetype)
                     msgstream.write_line(message)
                     logging.debug(timestamp(self.tapestream.counter()) + message)
-                    self.filetype = filetype
-                    self.length = ord(record[10]) + ord(record[11]) * 0x100
-                    # for programs this is start address
-                    self.seg = ord(record[12]) + ord(record[13]) * 0x100
-                    self.offset = ord(record[14]) + ord(record[15]) * 0x100
-                    self.record_num = 0
-                    return
+                    break
                 else:
                     message = "%s Skipped." % (file_trunk + '.' + filetype)
                     msgstream.write_line(message)
                     logging.debug(timestamp(self.tapestream.counter()) + message)
-        except EOF:
+        except EndOfTape:
             # reached end-of-tape without finding appropriate file
             # device timeout
             raise error.RunError(24)
+        self.filetype = filetype
+        self.length = ord(record[10]) + ord(record[11]) * 0x100
+        # for programs this is start address
+        self.seg = ord(record[12]) + ord(record[13]) * 0x100
+        self.offset = ord(record[14]) + ord(record[15]) * 0x100
+        self.record_num = 0
 
     def _write_header(self, name, filetype, length, seg, offs):
         """ Write a file header to the tape. """
@@ -253,7 +264,8 @@ class CASFile(iolayer.NullFile):
             try:
                 data = self._read_block()
             except (PulseError, FramingError, CRCError) as e:
-                logging.warning(timestamp(self.tapestream.counter()) + "%s" % str(e))
+                logging.warning("%s Cassette I/O Error during read: %s", 
+                                timestamp(self.tapestream.counter()), e)
                 # Device I/O error
                 raise error.RunError(57)
             record += data
@@ -305,7 +317,8 @@ class CASFile(iolayer.NullFile):
         # if crc for either polarity matches, return that
         if crc_given == crc_calc:
             return data
-        raise CRCError(crc_given, crc_calc)
+        raise CRCError("CRC check failed, required: %04x realised: %04x" %
+                        (crc_given, crc_calc))
 
     def _write_block(self, data):
         """ Write a 256-byte block to tape. """
@@ -383,7 +396,8 @@ class BasicodeFile(CASFile):
             # device timeout
             raise error.RunError(24)
         msgstream.write_line("        .A Found.")
-        logging.debug(timestamp(self.tapestream.counter()) + "Basicode file found")
+        logging.debug("%s Basicode file found",
+                      timestamp(self.tapestream.counter()))
         self.filetype = 'A'
         self.length, self.seg, self.offset = 0, 0, 0
         self.record_num = 0
@@ -402,11 +416,13 @@ class BasicodeFile(CASFile):
             try:
                 byte = self.tapestream.read_byte()
             except (PulseError, FramingError) as e:
-                logging.warning(timestamp(self.tapestream.counter()) + " %s", str(e))
+                logging.warning("%s Cassette I/O error during read: %s",
+                                timestamp(self.tapestream.counter()), e)
                 # insert a zero byte as a marker for the error
                 byte = 0
-            except EOF as e:
-                logging.warning(timestamp(self.tapestream.counter()) + " %s", str(e))
+            except EndOfTape as e:
+                logging.warning("%s Cassette I/O error during read: %s",
+                                timestamp(self.tapestream.counter()), e)
                 break
             checksum ^= byte
             if byte == 0x03:
@@ -433,13 +449,14 @@ class BasicodeFile(CASFile):
         # read one-byte checksum and report errors
         try:
             checksum_byte = self.tapestream.read_byte()
-        except (PulseError, FramingError, EOF) as e:
-            logging.warning(timestamp(self.tapestream.counter()) +
-                             "Could not read checksum: %s " % str(e))
+        except (PulseError, FramingError, EndOfTape) as e:
+            logging.warning("%s, Could not read checksum: %s",
+                            timestamp(self.tapestream.counter()), e)
         # checksum shld be 0 for even # bytes, 128 for odd
         if checksum_byte == None or checksum^checksum_byte not in (0,128):
-            logging.warning(timestamp(self.tapestream.counter()) +
-                             "Checksum: [FAIL]  Required: %02x  Realised: %02x" % (checksum_byte, checksum))
+            logging.warning("%s Checksum failed, required: %02x realised: %02x",
+                            timestamp(self.tapestream.counter()),
+                            checksum_byte, checksum)
         self.record_stream.seek(0)
         self.tapestream.read_trailer()
         return True
@@ -447,6 +464,7 @@ class BasicodeFile(CASFile):
 
 
 ##############################################################################
+
 
 
 class TapeStream(object):
@@ -522,7 +540,7 @@ class TapeStream(object):
                     sync = self.read_byte(skip_start=True)
                     if sync == self.sync_byte:
                         return True
-        except EOF:
+        except EndOfTape:
             return False
 
     def write_leader(self):
@@ -539,7 +557,7 @@ class TapeStream(object):
         for i in xrange(8):
             bit = self.read_bit()
             if bit == None:
-                return None
+                raise PulseError()
             byte += bit * 128 >> i
         return byte
 
@@ -605,7 +623,8 @@ class CASStream(TapeStream):
                     self._create()
             self.switch_mode(mode)
         except EnvironmentError as e:
-            logging.warning("Couldn't attach %s to CAS device: %s", self.cas_name, str(e))
+            logging.warning("Couldn't attach %s to CAS device: %s",
+                            self.cas_name, str(e))
             self.cas = None
             return
 
@@ -630,7 +649,7 @@ class CASStream(TapeStream):
         if self.mask <= 0:
             self.current_byte = self.cas.read(1)
             if not self.current_byte:
-                raise EOF
+                raise EndOfTape
             self.mask = 0x80
         if (ord(self.current_byte) & self.mask == 0):
             return 0
@@ -771,7 +790,8 @@ class WAVStream(TapeStream):
                 self._read_wav_header()
                 self.operating_mode = 'r'
         except EnvironmentError as e:
-            logging.warning("Couldn't attach %s to CAS device: %s", filename, str(e))
+            logging.warning("Couldn't attach %s to CAS device: %s",
+                            filename, str(e))
             self.wav = None
             return
         self.wav_pos = 0
@@ -822,7 +842,7 @@ class WAVStream(TapeStream):
         try:
             length_up, length_dn = next(self.read_half), next(self.read_half)
         except StopIteration:
-            raise EOF
+            raise EndOfTape
         if (length_up > self.halflength_max or length_dn > self.halflength_max or
                 length_up < self.halflength_min or length_dn < self.halflength_min):
             return None
@@ -848,7 +868,7 @@ class WAVStream(TapeStream):
         frame_buf = []
         frames = self.wav.read(self.buf_len*self.nchannels*self.sampwidth)
         if not frames:
-            raise EOF
+            raise EndOfTape
         # convert MSBs to int (data stored little endian)
         # note that we simply throw away all the less significant bytes
         frames = map(ord, frames[self.sampwidth-1::self.sampwidth])
@@ -978,10 +998,12 @@ class WAVStream(TapeStream):
                         if sync == self.sync_byte:
                             return True
                         else:
-                            logging.debug(timestamp(self.counter()) + "Incorrect sync byte:" + repr(sync))
+                            logging.debug("%s Incorrect sync byte after %d pulses: %02x",
+                                          timestamp(self.counter()), counter, sync)
                     except (PulseError, FramingError) as e:
-                        logging.debug(timestamp(self.counter()) + "Error in sync byte: %s", str(e))
-        except (EOF, StopIteration):
+                        logging.debug("%s Error in sync byte after %d pulses: %s",
+                                      timestamp(self.counter()), counter, e)
+        except (EndOfTape, StopIteration):
             return False
 
 ##############################################################################
@@ -1075,7 +1097,7 @@ class BasicodeStream(WAVStream):
             else:
                 return 0
         except StopIteration:
-            raise EOF
+            raise EndOfTape
 
     def write_bit(self, bit):
         """ BASICODE writing not yet supported. """
@@ -1108,7 +1130,8 @@ class BasicodeStream(WAVStream):
             self.last_error_bit = stop1
             # incorrect start/stop bit, try to recover by shifting
             self.dropbit = self.read_bit()
-            raise FramingError([start] + bits + [stop0, stop1])
+            raise FramingError(
+                "Byte not framed: %s " % ([start] + bits + [stop0, stop1]))
         else:
             # start/stopbits correct or unreadable
             self.last_error_bit = None
@@ -1148,10 +1171,12 @@ class BasicodeStream(WAVStream):
                         if sync == self.sync_byte:
                             return True
                         else:
-                            logging.debug(timestamp(self.counter()) + "Incorrect sync byte after %d pulses: %02x", counter, sync)
+                            logging.debug("%s Incorrect sync byte after %d pulses: %02x",
+                                          timestamp(self.counter()), counter, sync)
                     except (PulseError, FramingError) as e:
-                        logging.debug(timestamp(self.counter()) + "Error in sync byte after %d pulses: %s", counter, str(e))
-        except (EOF, StopIteration):
+                        logging.debug("%s Error in sync byte after %d pulses: %s",
+                                      timestamp(self.counter()), counter, e)
+        except (EndOfTape, StopIteration):
             return False
 
     def read_trailer(self):
@@ -1159,46 +1184,9 @@ class BasicodeStream(WAVStream):
         try:
             while self.read_bit() == 1:
                 pass
-        except EOF:
+        except EndOfTape:
             pass
 
-#################################################################################
-
-class CassetteException(Exception):
-    """ Cassette exception. """
-
-    def __str__(self):
-        """ Return exception desription (by default, the docstring.) """
-        return self.__doc__.strip()
-
-
-class EOF(CassetteException):
-    """ End-of-tape exception. """
-    pass
-
-class CRCError(CassetteException):
-    """ CRC check failed. """
-
-    def __init__(self, crc_calc, crc_given):
-        self.crc_calc, self.crc_given = crc_calc, crc_given
-
-    def __str__(self):
-        return self.__doc__.strip() + ' Prescribed: %04x Realised: %04x' % (self.crc_given, self.crc_calc)
-
-
-class PulseError(CassetteException):
-    """ Pulse length error. """
-    pass
-
-
-class FramingError(CassetteException):
-    """ Framing error. """
-
-    def __init__(self, bitlist=[]):
-        self.bits = bitlist
-
-    def __str__(self):
-        return self.__doc__.strip() + ' ' + repr(self.bits)
 
 
 ##############################################################################
