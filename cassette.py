@@ -273,12 +273,7 @@ class CASFile(iolayer.NullFile):
             if (reclen == None):
                 break
             block_num += 1
-        # read 31-bit closing sequence
-        self.tapestream.read_byte()
-        self.tapestream.read_byte()
-        self.tapestream.read_byte()
-        for _ in xrange(7):
-            self.tapestream.read_bit()
+        self.tapestream.read_trailer()
         if reclen != None:
             return record[:reclen]
         return record
@@ -289,13 +284,7 @@ class CASFile(iolayer.NullFile):
         while len(data) > 0:
             self._write_block(data[:256])
             data = data[256:]
-        # closing sequence is 30 1-bits followed by a zero bit (based on PCE output).
-        # Not 32 1-bits as per http://fileformats.archiveteam.org/wiki/IBM_PC_data_
-        self.tapestream.write_byte(0xff)
-        self.tapestream.write_byte(0xff)
-        self.tapestream.write_byte(0xff)
-        for b in (1,1,1,1,1,1,0):
-            self.tapestream.write_bit(b)
+        self.tapestream.write_trailer()
         # write 100 ms second pause to make clear separation between blocks
         self.tapestream.write_pause(100)
 
@@ -342,7 +331,6 @@ class CASFile(iolayer.NullFile):
         else:
             # ascii and data come as a sequence of one-block records
             # 256 bytes less 1 length byte. CRC trailer comes after 256-byte block
-            # TODO: we should probably read only one block at a time (when do crc errors occur?)
             self.record_stream = StringIO()
             while True:
                 record = self._read_record(256)
@@ -366,7 +354,6 @@ class CASFile(iolayer.NullFile):
         else:
             # ascii and data come as a sequence of one-block records
             # 256 bytes less 1 length byte. CRC trailer comes after 256-byte block
-            # TODO: we should probably write only one block at a time
             blocks, last = divmod(len(data), 255)
             for i in range(blocks):
                 offset = i*255
@@ -593,11 +580,25 @@ class TapeStream(object):
 
     def read_trailer(self):
         """ Read trailing wave. """
-        pass
+        # read 31-bit closing sequence
+        try:
+            self.tapestream.read_byte()
+            self.tapestream.read_byte()
+            self.tapestream.read_byte()
+            for _ in xrange(7):
+                self.tapestream.read_bit()
+        except CassetteIOError:
+            pass
 
     def write_trailer(self):
         """ Write trailing wave. """
-        pass
+        # closing sequence is 30 1-bits followed by a zero bit (based on PCE output).
+        # Not 32 1-bits as per http://fileformats.archiveteam.org/wiki/IBM_PC_data_
+        self.tapestream.write_byte(0xff)
+        self.tapestream.write_byte(0xff)
+        self.tapestream.write_byte(0xff)
+        for b in (1,1,1,1,1,1,0):
+            self.tapestream.write_bit(b)
 
 ##############################################################################
 
@@ -1187,7 +1188,9 @@ class BasicodeStream(WAVStream):
         except EndOfTape:
             pass
 
-
+    def write_trailer(self):
+        """ Write trailing wave; not implemented """
+        pass
 
 ##############################################################################
 # supporting functions
