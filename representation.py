@@ -483,7 +483,7 @@ def get_number_tokens(fors):
 
 def input_vars_file(readvar, raw_file):
     """ Read a list of variables for INPUT from a file. """
-    c = ''
+    c = raw_file.last_read
     for v in readvar:
         last, c = c, raw_file.read(1)
         if last == '\r' and c == '\n':

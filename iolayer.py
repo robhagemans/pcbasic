@@ -246,7 +246,8 @@ class BaseFile(object):
         self.mode = mode.upper()
         self.access = access
         self.lock = lock
-        self.lock_list = set()    
+        self.lock_list = set()
+        self.last_read = ''  
         if number != 0:
             state.io_state.files[number] = self
     
@@ -256,6 +257,12 @@ class BaseFile(object):
     # lof
     # loc
     # eof
+
+    #D
+    def _keep_last(self, read_str):
+        """ Remember last char read. """
+        self.last_read = read_str[-1:]
+        return read_str
 
     def close(self):
         """ Close the file. """
@@ -270,11 +277,11 @@ class BaseFile(object):
     
     def read_chars(self, num=-1):
         """ Read num chars as a list. If num==-1, read all available. """
-        return list(self.fhandle.read(num)) 
+        return list(self._keep_last(self.fhandle.read(num))) 
         
     def read(self, num=-1):
         """ Read num chars as a string. If num==-1, read all available. """
-        return self.fhandle.read(num)
+        return self._keep_last(self.fhandle.read(num))
     
     def read_line(self):
         """ Read a single line. """
@@ -284,6 +291,7 @@ class BaseFile(object):
             if c == '\r':
                 break
             out += c
+        self.last_read = c
         return out            
             
     def tell(self):
@@ -354,19 +362,23 @@ class TextFile(BaseFile):
             elif c == '\n':
                 s += c
                 # special: allow LFCR (!) to pass
-                c = self.fhandle.read(1)
-                if c != '\r':
+                d = self.fhandle.read(1)
+                if d != '\r':
                     self.fhandle.seek(-len(c), 1)
                 else:
+                    c = d
                     s += '\r'
             elif c == '\r':
                 # check for CR/LF
-                c = self.fhandle.read(1)
-                if c != '\n':
+                d = self.fhandle.read(1)
+                if d != '\n':
                     self.fhandle.seek(-len(c), 1)
+                else:
+                    c = d
                 break
             else:        
-                s += c    
+                s += c 
+        self.last_read = c   
         return s
 
     def read_chars(self, num):
@@ -390,6 +402,7 @@ class TextFile(BaseFile):
                     # input past end
                     raise error.RunError(62)
             s += c
+        self.last_read = c
         return s 
         
     def write(self, s):
@@ -493,7 +506,7 @@ class RandomBase(BaseFile):
         """ Read num chars as a string, from FIELD buffer. """
         if num==-1 or self.field_text_file.fhandle.tell() + num > self.reclen-1:
             raise error.RunError(self.overflow_error) # FIELD overflow
-        return self.field_text_file.read(num)
+        return self._keep_last(self.field_text_file.read(num))
     
     def write(self, s):
         """ Write one or more chars to FIELD buffer. """
@@ -756,6 +769,7 @@ class NullDevice(object):
     def __init__(self):
         """ Initialse device object. """
         self.number = 0
+        self.last_read = ''
 
     def open(self, number, mode, access, lock, reclen, param=''):
         """ Open a file on this device. """
@@ -811,6 +825,12 @@ class NullDevice(object):
     def set_parameters(self, param):
         """ Set device parameters. """
         pass
+
+    #D
+    def _keep_last(self, read_str):
+        """ Remember last char read. """
+        self.last_read = read_str[-1:]
+        return read_str
         
         
 class KYBDFile(NullDevice):
@@ -840,13 +860,14 @@ class KYBDFile(NullDevice):
             if c == '\r':
                 # don't check for CR/LF when reading KYBD:
                 break
-            else:        
-                s += c    
+            else:
+                s += c
+        self.last_read = c
         return s
 
     def read_chars(self, num=1):
         """ Read a list of chars from the keyboard - INPUT$ """
-        return state.console_state.keyb.read_chars(num)
+        return self._keep_last(state.console_state.keyb.read_chars(num))
 
     def read(self, n=1):
         """ Read a string from the keyboard - INPUT and LINE INPUT. """
@@ -1100,7 +1121,8 @@ class COMFile(RandomBase):
             out += str(self._in_buffer[:to_read])
             del self._in_buffer[:to_read]
             # allow for break & screen updates
-            backend.wait()        
+            backend.wait()
+        self.last_read = out[-1:]
         return out
         
     def read_chars(self, num=1):
@@ -1115,12 +1137,13 @@ class COMFile(RandomBase):
             if c == '\r':
                 if self.linefeed:
                     c = self.read(1)
-                    if c == '\n':    
+                    if c == '\n':
                         break
                     out += ''.join(c)
                 else:
                     break
             out += ''.join(c)
+        self.last_read = out[-1]
         return out
     
     def char_waiting(self):
