@@ -2,7 +2,7 @@
 PC-BASIC 3.23 - printer.py
 Line printer output 
  
-(c) 2013, 2014 Rob Hagemans 
+(c) 2013, 2014, 2015 Rob Hagemans 
 This file is released under the GNU GPL version 3. 
 """
 
@@ -12,12 +12,6 @@ import logging
 
 import unicodepage
 import plat
-
-if plat.system == 'Windows':
-    import win32print 
-    import tempfile
-    import win32api
-    import win32event
 
 class PrinterStream(StringIO):
     """ Stream that prints to Unix or Windows printer. """
@@ -41,31 +35,57 @@ class PrinterStream(StringIO):
         utf8buf = unicodepage.UTF8Converter(preserve_control=True).to_utf8(printbuf)
         line_print(utf8buf, self.printer_name)
 
+# empty function, only needed & defined on Windows
+wait = lambda: None
+
 if plat.system == 'Windows':
+    import os
+    import win32print
+    import win32api
+    import win32com
+    import win32com.shell.shell
+    import win32event
+    # temp file in temp dir
+    printfile = os.path.join(plat.temp_dir, 'pcbasic_print.txt')
+    # handle for last printing process
+    handle = -1
+
     def line_print(printbuf, printer_name):
         """ Print the buffer to a Windows printer. """
+        global handle
         if printer_name == '' or printer_name=='default':
             printer_name = win32print.GetDefaultPrinter()
-        f = tempfile.NamedTemporaryFile(mode='wb', prefix='pcbasic_', 
-                                        suffix='.txt', delete=False)
-        # write UTF-8 Byte Order mark to ensure Notepad recognises encoding
-        f.write('\xef\xbb\xbf')
-        f.write(printbuf)
+        # open a file in our PC-BASIC temporary directory
+        # this will get cleaned up on exit
+        with open(printfile, 'wb') as f:
+            # write UTF-8 Byte Order mark to ensure Notepad recognises encoding
+            f.write('\xef\xbb\xbf')
+            f.write(printbuf)
         # fMask = SEE_MASK_NOASYNC(0x00000100) + SEE_MASK_NOCLOSEPROCESS
-        resdict = win32com.shell.shell.ShellExecuteEx(fMask=256+64, 
-                        lpVerb='printto', lpFile=f.name, 
-                        lpParameters='"%s"' % printer_name)
-        handle = resdict['hProcess']
-        if win32event.WaitForSingleProcess(handle, 500) != win32event.WAIT_OBJECT_0:
-            logging.warning('Printing process timeout')
-        f.close()
-        
+        try:
+            resdict = win32com.shell.shell.ShellExecuteEx(fMask=256+64,
+                            lpVerb='printto', lpFile=printfile,
+                            lpParameters='"%s"' % printer_name)
+            handle = resdict['hProcess']
+        except WindowsError as e:
+            logging.warning('Error while printing: %s', str(e))
+            handle = -1
+
+    def wait():
+        """ Give printing process some time to complete. """
+        try:
+            win32event.WaitForSingleObject(handle, 1000)
+        except WindowsError:
+            pass
+
 elif plat.system == 'Android':
+
     def line_print(printbuf, printer_name):
         """ Don't print anything on Android. """
         pass          
 
 elif subprocess.call("command -v paps >/dev/null 2>&1", shell=True) == 0:
+
     def line_print(printbuf, printer_name): 
         """ Print the buffer to a LPR printer using PAPS for conversion. """
         options = ''
@@ -88,6 +108,7 @@ elif subprocess.call("command -v paps >/dev/null 2>&1", shell=True) == 0:
             pr.stdin.close()
         
 else:
+
     def line_print(printbuf, printer_name): 
         """ Print the buffer to a LPR (CUPS or older UNIX) printer. """
         options = ''

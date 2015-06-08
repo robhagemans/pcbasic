@@ -1,4 +1,4 @@
-# PC-BASIC 3.23 distributions
+# PC-BASIC distributions
 
 Packaged releases are provided for the following operating systems:  
 -     **Windows** (XP and later)  
@@ -10,6 +10,10 @@ You can find them on this page organised in folders by release number. There is 
 However, since PC-BASIC is based on Python, it can run on a large range of different operating systems. This is where the **source distribution** comes in. There is no difference in performance between the source and packaged releases; indeed, the packaged releases are simply the source wrapped up with a Python interpreter and all the necessary modules. The only disadvantage of the source distribution is that you will need to install Python and all dependencies. See the `README.md` file inside the source tarball for the list of Python modules you need to install.   
 
 The source distribution on this page is intended for users and does not contain all development files. In particular, tests and packaging scripts are left out. If you're interested in development, it's best to get your own full copy of the Git repository on the Sourceforge [Code](https://sourceforge.net/p/pcbasic/code/) page. 
+
+# Downloads on GitHub
+
+You can also find the [Latest PC-BASIC packaged releases](https://github.com/robhagemans/pcbasic/releases) and the [PC-BASIC source code](https://github.com/robhagemans/pcbasic/) on GitHub.
 
 # Bugs, issues, and feature requests
 

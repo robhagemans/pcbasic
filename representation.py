@@ -1,8 +1,8 @@
 """
 PC-BASIC 3.23 - representation.py
-Convert between numbers and their string representations\ 
+Convert between numbers and their string representations
 
-(c) 2013, 2014 Rob Hagemans 
+(c) 2013, 2014 Rob Hagemans
 This file is released under the GNU GPL version 3. 
 """
 
@@ -481,89 +481,80 @@ def get_number_tokens(fors):
 ########################################
 
 
-def input_vars_file(readvar, text_file):
-    """ Read a variable for INPUT from a file. """
+def input_vars_file(readvar, raw_file):
+    """ Read a list of variables for INPUT from a file. """
+    c = ''
     for v in readvar:
+        last, c = c, raw_file.read(1)
+        if last == '\r' and c == '\n':
+            last, c = c, raw_file.read(1)
         typechar = v[0][-1]
         if typechar == '$':
-            valstr = input_entry(text_file, allow_quotes=True, end_all = ('\r', '\x1a'), end_not_quoted = (',', '\n'))
+            valstr, c = input_entry(c, raw_file, allow_quotes=True,
+                                    end_all = ('\r', '\x1a'),
+                                    end_not_quoted = (',', '\n'))
         else:
-            valstr = input_entry(text_file, allow_quotes=False, end_all = ('\r', '\x1a', ',', '\n', ' '))
+            valstr, c = input_entry(c, raw_file, allow_quotes=False,
+                                    end_all = ('\r', '\x1a', ',', '\n', ' '))
         value = str_to_type(valstr, typechar)    
         if value == None:
             value = vartypes.null[typechar]
-        # process the ending char (this may raise FIELD OVERFLOW but should avoid INPUT PAST END)
-        if not text_file.eof():
-            c = text_file.peek_char() 
-            if c == ',':
-                text_file.read_chars(1)
-            elif c not in ('', '\x1a'):
-                # WJB - Skip trailing space and an end of line 
-                text_skip(text_file, ascii_white)
-                if not text_file.eof() and text_file.peek_char() == '\r':
-                    text_file.read_chars(1)
-                    if not text_file.eof() and text_file.peek_char() == '\n':
-                        text_file.read_chars(1)
+        # process the ending char
+        # this may raise FIELD OVERFLOW but should avoid INPUT PAST END
+        if not raw_file.end_of_file():
+            # on reading from a KYBD: file, control char replacement takes place
+            # which means we need to use read() not read_chars()
+            if c not in ('', ',', '\x1a'):
+                # skip trailing whitespace
+                while c in ascii_white and not raw_file.end_of_file():
+                    c = raw_file.read(1)
         # and then set the value
         v.append(value)
     return readvar    
 
-def input_vars(readvar, text_file):
+def input_vars(readvar, raw_file):
     """ Read a variable for INPUT. """
     # copy to allow multiple calls (for Redo)
     count_commas, count_values, has_empty = 0, 0, False
     for v in readvar:
+        c = raw_file.read(1)
         typechar = v[0][-1]
-        valstr = input_entry(text_file, allow_quotes=(typechar=='$'), end_all=('',))
+        valstr, c = input_entry(c, raw_file, allow_quotes=(typechar=='$'), end_all=('',))
         val = str_to_type(valstr, typechar)
         v.append(val)
         count_values += 1
         if val == None:
             has_empty = True
-        if text_file.peek_char() != ',':
-            break
-        else:
-            text_file.read_chars(1)
+        if c == ',':
             count_commas += 1
-    if count_values != len(readvar)  or count_commas != len(readvar)-1 or has_empty:
+        else:
+            break
+    if count_values != len(readvar) or count_commas != len(readvar)-1 or has_empty:
         return None
     return readvar            
             
-def text_skip(text_file, skip_range):
-    """ Skip characters from a specified range in text file. """
-    d = ''
-    while True:
-        if text_file.eof():
-            break
-        d = text_file.peek_char() 
-        if d not in skip_range:
-            break
-        text_file.read_chars(1)
-    return d
-
-def input_entry(text_file, allow_quotes, end_all=(), end_not_quoted=(',',)):
+def input_entry(first_char, raw_file, allow_quotes, end_all=(), end_not_quoted=(',',)):
     """ Read a number or string entry for INPUT """
     word, blanks = '', ''
-    # skip leading spaces and line feeds and NUL. 
-    c = text_skip(text_file, ascii_white)
+    # skip leading spaces and line feeds and NUL.
+    c = first_char
+    while c in ascii_white and not raw_file.end_of_file():
+        c = raw_file.read(1)
     if c in end_all + end_not_quoted:
-        return ''
+        return '', c
     quoted = (c == '"' and allow_quotes)
     if quoted:
-        text_file.read_chars(1)
+        c = raw_file.read(1)
     while True:
         # read entry
-        if text_file.eof():
-            break
-        c = ''.join(text_file.read_chars(1))
         if c in end_all or (c in end_not_quoted and not quoted):
-            # on KYBD: text file, this will do nothing - comma is swallowed
-            text_file.seek(-len(c), 1)
             break
         elif c == '"' and quoted:
             quoted = False
             # ignore blanks after the quotes
-            c = text_skip(text_file, ascii_white)
+            c = raw_file.read(1)
+            while c in ascii_white and not raw_file.end_of_file():
+                c = raw_file.read(1)
             break
         elif c in ascii_white and not quoted:
             blanks += c    
@@ -571,9 +562,11 @@ def input_entry(text_file, allow_quotes, end_all=(), end_not_quoted=(',',)):
             word += blanks + c
             blanks = ''
         if len(word)+len(blanks) >= 255:
-            text_file.seek(-len(c), 1)
             break
-    return word
+        if raw_file.end_of_file():
+            break
+        c = raw_file.read(1)
+    return word, c
 
 def str_to_type(word, type_char):
     """ Convert Python-string to requested type. """

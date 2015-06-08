@@ -1,21 +1,30 @@
-### PC-BASIC 3.23 ###
-_A free, cross-platform emulator for GW-BASIC, BASICA, PCjr Cartridge Basic and Tandy 1000 GW-BASIC._
+### PC-BASIC ###
+_A free, cross-platform emulator for legacy Microsoft BASIC applications._
 
-PC-BASIC is an interpreter for GW-BASIC programs. It runs on Windows, Mac and Linux and other 
-Unix-based systems and targets full compatibility with GW-BASIC version 3.23. 
-PC-BASIC can run (and convert between) ASCII, bytecode and 'protected' (encrypted) .BAS files. It 
-implements floating-point arithmetic in the Microsoft Binary Format (MBF) and can therefore 
-read and write binary data files created by GW-BASIC.
+PC-BASIC is a free, cross-platform interpreter for GW-BASIC, BASICA, PCjr Cartridge Basic and Tandy 1000 GW-BASIC.
+It interprets these BASIC dialects with a high degree of accuracy, aiming for bug-for-bug compatibility. PC-BASIC emulates the most common video and audio hardware supported in their time. PC-BASIC can run (and convert between) ASCII, bytecode and 'protected' (encrypted) .BAS files. It implements floating-point arithmetic in the Microsoft Binary Format (MBF) and can therefore 
+read and write binary data files created by GW-BASIC.  
 
-PC-BASIC is free and open source software released under the GPL version 3. 
+PC-BASIC is free and open source software released under the GPL version 3.  
 
-If you find bugs, please report them on the SourceForge discussion page at [https://sourceforge.net/p/pcbasic/discussion/bugs/](https://sourceforge.net/p/pcbasic/discussion/bugs/). It would be most helpful if you could include a short bit of BASIC code that triggers the bug.
+See also the [PC-BASIC home page](http://robhagemans.github.io/pcbasic/).
+
+![](https://robhagemans.github.io/pcbasic/screenshots/PC-BASIC.png)
 
 ----------
 
+### Quick Start Guide ###
+
+This quick start guide covers installation and elementary use of PC-BASIC. For more information, please refer to the [full PC-BASIC documentation](http://robhagemans.github.io/pcbasic/doc/) for usage, command-line options and a full GW-BASIC language reference. This documentation is also included with the current PC-BASIC release.
+
+If you find bugs, please report them on the SourceForge discussion page at [https://sourceforge.net/p/pcbasic/discussion/bugs/](https://sourceforge.net/p/pcbasic/discussion/bugs/). It would be most helpful if you could include a short bit of BASIC code that triggers the bug.
 
 #### Installation ####
-Packaged distributions are currently available for Windows XP and above, Mac OSX 10.6 and above, and Linux on 32-bit or 64-bit Intel/AMD architecture. They can be downloaded from SourceForge at [https://sourceforge.net/projects/pcbasic/files/](https://sourceforge.net/projects/pcbasic/files/).  
+Packaged distributions are currently available for Windows XP and above, Mac OSX 10.6 and above, and Linux on 32-bit or 64-bit Intel/AMD architecture. 
+
+They can be downloaded from one of the following locations:  
+- GitHub at [https://github.com/robhagemans/pcbasic/releases](https://github.com/robhagemans/pcbasic/releases).  
+- SourceForge at [https://sourceforge.net/projects/pcbasic/files/](https://sourceforge.net/projects/pcbasic/files/).  
 
 On **Windows**:  
 - run the installer  
