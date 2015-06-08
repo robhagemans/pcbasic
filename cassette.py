@@ -129,14 +129,7 @@ class CASFile(iolayer.NullFile):
         return (self.buffer_complete and
                 self.record_stream.tell() == len(self.record_stream.getvalue()))
 
-    # peek_char and seek are needed for text files
-
-    def peek_char(self):
-        """ Get next char to be read. """
-        c = self.read(1)
-        self.record_stream.seek(-len(c), 1)
-        return c
-
+    #D seek is needed for text files
     def seek(self, num, from_where=0):
         """ Move file pointer. """
         self.record_stream.seek(num, from_where)

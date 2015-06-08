@@ -487,19 +487,8 @@ class RawFile(NullFile):
             if c == '\r':
                 break
             out += c
-<<<<<<< HEAD
-        return out
-
-    def peek_char(self):
-        """ Get next char to be read. """
-        s = self.fhandle.read(1)
-        self.fhandle.seek(-len(s), 1)
-        return s
-
-=======
         return out            
             
->>>>>>> master
     def tell(self):
         """ Get position of file pointer. """
         return self.fhandle.tell()
@@ -516,15 +505,6 @@ class RawFile(NullFile):
         """ Write string or bytearray and newline to file. """ 
         self.write(str(s) + '\r\n')
 
-<<<<<<< HEAD
-=======
-    def end_of_file(self):
-        """ Return whether the file pointer is at the end of file. """
-        s = self.fhandle.read(1)
-        self.fhandle.seek(-len(s), 1)
-        return s == ''
-        
->>>>>>> master
     def flush(self):
         """ Write contents of buffers to file. """
         self.fhandle.flush()
@@ -584,10 +564,6 @@ class RandomBase(RawFile):
             self.field_text_file.write(ins.read(1))
         if ins.tell() < len(s):
             raise error.RunError(self.overflow_error)
-
-    def peek_char(self):
-        """ Get next char to be read from FIELD buffer. """
-        return self.field_text_file.peek_char()
 
     def seek(self, n, from_where=0):
         """ Get file pointer location in FIELD buffer. """
@@ -708,47 +684,6 @@ class TextFile(RawFile):
                 if ord(c) >= 32:
                     self.col += 1
 
-<<<<<<< HEAD
-=======
-    def read_chars(self, num=-1):
-        """ Read num characters as list. """
-        return list(self.read(num))
-        
-    def read(self, num=-1):
-        """ Read num chars as a string, from FIELD buffer. """
-        if num==-1 or self.field_text_file.fhandle.tell() + num > self.reclen-1:
-            raise error.RunError(self.overflow_error) # FIELD overflow
-        return self.field_text_file.read(num)
-    
-    def write(self, s):
-        """ Write one or more chars to FIELD buffer. """
-        ins = StringIO(s)
-        while self.field_text_file.fhandle.tell() < self.reclen:
-            self.field_text_file.write(ins.read(1))
-        if ins.tell() < len(s):
-            raise error.RunError(self.overflow_error) 
-    
-    def seek(self, n, from_where=0):
-        """ Get file pointer location in FIELD buffer. """
-        return self.field_text_file.seek(n, from_where)
-        
-    def truncate(self):
-        """ Not implemented. """
-        # this is only used when writing chr$(8)
-        # not sure how to implement for random files
-        pass
-        
-    @property
-    def col(self):
-        """ Get current column. """
-        return self.field_text_file.col
-    
-    @property
-    def width(self):
-        """ Get file width. """
-        return self.field_text_file.width
-    
->>>>>>> master
     def set_width(self, new_width=255):
         """ Set the line width of the file. """
         self.width = new_width
@@ -1058,20 +993,10 @@ class COMFile(RandomBase):
                     break
             out += ''.join(c)
         return out
-<<<<<<< HEAD
-
-    def peek_char(self):
-        """ Get the next char to be read. """
-        if self.in_buffer:
-            return str(self.in_buffer[0])
-        else:
-            return ''
-=======
     
     def char_waiting(self):
         """ Whether a char is present in buffer. For ON COM(n). """
         return self._in_buffer != ''
->>>>>>> master
 
     def write_line(self, s=''):
         """ Write string or bytearray and newline to port. """

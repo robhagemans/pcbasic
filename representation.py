@@ -501,12 +501,12 @@ def input_vars_file(readvar, raw_file):
             value = vartypes.null[typechar]
         # process the ending char
         # this may raise FIELD OVERFLOW but should avoid INPUT PAST END
-        if not raw_file.end_of_file():
+        if not raw_file.eof():
             # on reading from a KYBD: file, control char replacement takes place
             # which means we need to use read() not read_chars()
             if c not in ('', ',', '\x1a'):
                 # skip trailing whitespace
-                while c in ascii_white and not raw_file.end_of_file():
+                while c in ascii_white and not raw_file.eof():
                     c = raw_file.read(1)
         # and then set the value
         v.append(value)
@@ -538,7 +538,7 @@ def input_entry(first_char, raw_file, allow_quotes, end_all=(), end_not_quoted=(
     word, blanks = '', ''
     # skip leading spaces and line feeds and NUL.
     c = first_char
-    while c in ascii_white and not raw_file.end_of_file():
+    while c in ascii_white and not raw_file.eof():
         c = raw_file.read(1)
     if c in end_all + end_not_quoted:
         return '', c
@@ -553,7 +553,7 @@ def input_entry(first_char, raw_file, allow_quotes, end_all=(), end_not_quoted=(
             quoted = False
             # ignore blanks after the quotes
             c = raw_file.read(1)
-            while c in ascii_white and not raw_file.end_of_file():
+            while c in ascii_white and not raw_file.eof():
                 c = raw_file.read(1)
             break
         elif c in ascii_white and not quoted:
@@ -563,7 +563,7 @@ def input_entry(first_char, raw_file, allow_quotes, end_all=(), end_not_quoted=(
             blanks = ''
         if len(word)+len(blanks) >= 255:
             break
-        if raw_file.end_of_file():
+        if raw_file.eof():
             break
         c = raw_file.read(1)
     return word, c

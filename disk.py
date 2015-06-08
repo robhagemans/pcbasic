@@ -591,10 +591,10 @@ class ProgramFile(iolayer.RawFile):
                 self.seg, self.offset, self.length = seg, offset, length
         else:
             try:
-                self.filetype = self.types[self.peek_char()]
-                self.read(1)
+                self.filetype = self.types[self.read(1)]
             except KeyError:
                 self.filetype = 'A'
+                self.seek(-1, 1)
             if self.filetype not in filetype:
                 raise error.RunError(54)
             if self.filetype == 'M':
