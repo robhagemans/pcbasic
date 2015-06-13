@@ -71,3 +71,7 @@ class ByteStream(object):
         """ Close the stream. """
         pass
 
+    def flush(self):
+        """ Flush the stream. """
+        pass
+

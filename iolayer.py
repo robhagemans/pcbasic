@@ -545,32 +545,35 @@ class RandomBase(RawFile):
         # open a pseudo text file over the buffer stream
         # to make WRITE# etc possible
         # all text-file operations on a RANDOM file number actually work on the FIELD buffer
-        self.field_text_file = TextFile(ByteStream(self.field))
+        # set as Input-mode file to seek to start and not write EOF at close
+        # TODO this is a bit hackish - just create a FieldTextFile class?
+        self.field_text_file = TextFile(ByteStream(self.field), mode='I')
         self.field_text_file.col = 1
         # width=255 means line wrap
         self.field_text_file.width = 255
 
-    # FIXME: at FIELD OVERFLOW, shouldn't file pointer be left at end of field text file?
-
     def read_line(self):
         """ Read line from FIELD buffer. """
-        # FIELD overflow happens if last byte in record is actually read
-        if self.field_text_file.fhandle.tell() >= self.reclen-1:
-            raise error.RunError(self.overflow_error) # FIELD overflow
-        return self.field_text_file.read_line()
+        s = self.field_text_file.read_line()
+        self._check_overflow()
+        return s
 
     def read_raw(self, num=-1):
         """ Read num chars as a string, from FIELD buffer. """
-        if num==-1 or self.field_text_file.fhandle.tell() + num > self.reclen-1:
-            raise error.RunError(self.overflow_error) # FIELD overflow
-        return self.field_text_file.read(num)
+        s = self.field_text_file.read(num)
+        self._check_overflow()
+        return s
 
     def write(self, s):
         """ Write one or more chars to FIELD buffer. """
-        ins = StringIO(s)
-        while self.field_text_file.fhandle.tell() < self.reclen:
-            self.field_text_file.write(ins.read(1))
-        if ins.tell() < len(s):
+        self.field_text_file.write(s)
+        self._check_overflow(write=True)
+
+    def _check_overflow(self, write=False):
+        """ Check for FIELD OVERFLOW. """
+        # FIELD overflow happens if last byte in record has been read or written
+        if self.field_text_file.fhandle.tell() > self.reclen + write - 1:
+            # FIELD overflow
             raise error.RunError(self.overflow_error)
 
     def seek(self, n, from_where=0):
