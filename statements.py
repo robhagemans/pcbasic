@@ -1974,7 +1974,7 @@ def exec_input(ins):
             console.write(prompt) 
             line = console.wait_screenline(write_endl=newline)
             varlist = [ v[:] for v in readvar ]
-            varlist = representation.input_vars(varlist, iolayer.RawFile(StringIO(line), mode='I'))
+            varlist = representation.input_vars(varlist, StringIO(line))
             if not varlist:
                 console.write_line('?Redo from start')  # ... good old Redo!
             else:

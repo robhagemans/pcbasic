@@ -484,8 +484,6 @@ def get_number_tokens(fors):
 def input_vars_file(readvar, raw_file):
     """ Read a list of variables for INPUT from a file. """
     for v in readvar:
-        # TODO: all the checks for eof are necessary because INPUT PAST END is raised in the file object.
-        #         raise it here and in INPUT$ instead.
         c = raw_file.read(1)
         typechar = v[0][-1]
         if typechar == '$':
@@ -498,17 +496,11 @@ def input_vars_file(readvar, raw_file):
         value = str_to_type(valstr, typechar)    
         if value == None:
             value = vartypes.null[typechar]
-        # process the ending char
-        # this may raise FIELD OVERFLOW but should avoid INPUT PAST END
-        if not raw_file.eof():
-            # on reading from a KYBD: file, control char replacement takes place
-            # which means we need to use read() not read_chars()
-            if c not in ('', ',', '\x1a'):
-                # skip trailing whitespace
-                while c in ascii_white and not raw_file.eof():
-                    c = raw_file.read(1)
-                # note that ending character (',', '\r', '\x1a', '\n', ...)
-                # is swallowed here
+        while c in ascii_white:
+            # skip trailing whitespace
+            # note that ending character (',', '\r', '\x1a', '\n', ...)
+            # is swallowed here
+            c = raw_file.read(1)
         # and then set the value
         v.append(value)
     return readvar    
@@ -539,13 +531,18 @@ def input_entry(first_char, raw_file, allow_quotes, end_all=(), end_not_quoted=(
     word, blanks = '', ''
     # skip leading spaces and line feeds and NUL.
     c = first_char
-    while c in ascii_white and not raw_file.eof():
+    while c in ascii_white:
         c = raw_file.read(1)
-    if c in end_all + end_not_quoted:
-        return '', c
     quoted = (c == '"' and allow_quotes)
     if quoted:
         c = raw_file.read(1)
+    if not c:
+        # input past end
+        raise error.RunError(62)
+    # we read the ending char before breaking the loop
+    # this may raise FIELD OVERFLOW
+    # on reading from a KYBD: file, control char replacement takes place
+    # which means we need to use read() not read_chars()
     while True:
         # read entry
         if c in end_all or (c in end_not_quoted and not quoted):
@@ -553,8 +550,7 @@ def input_entry(first_char, raw_file, allow_quotes, end_all=(), end_not_quoted=(
         elif c == '"' and quoted:
             quoted = False
             # ignore blanks after the quotes
-            c = raw_file.read(1)
-            while c in ascii_white and not raw_file.eof():
+            while c in ascii_white:
                 c = raw_file.read(1)
             break
         elif c in ascii_white and not quoted:
@@ -562,11 +558,11 @@ def input_entry(first_char, raw_file, allow_quotes, end_all=(), end_not_quoted=(
         else:
             word += blanks + c
             blanks = ''
-        if len(word)+len(blanks) >= 255:
-            break
-        if raw_file.eof():
+        if len(word) + len(blanks) >= 255:
             break
         c = raw_file.read(1)
+        if not c:
+            break
     return word, c
 
 def str_to_type(word, type_char):

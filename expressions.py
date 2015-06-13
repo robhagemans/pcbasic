@@ -518,7 +518,11 @@ def value_input(ins):
     if util.skip_white_read_if(ins, (',',)):
         infile = iolayer.get_file(parse_file_number_opthash(ins))
     util.require_read(ins, (')',))
-    return vartypes.pack_string(bytearray(infile.read_raw(num)))
+    word = vartypes.pack_string(bytearray(infile.read_raw(num)))
+    if len(word) < num:
+        # input past end
+        raise error.RunError(62)
+    return word
     
 def value_inkey(ins):
     """ INKEY$: get a character from the keyboard. """

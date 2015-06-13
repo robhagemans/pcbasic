@@ -594,6 +594,9 @@ class RandomBase(RawFile):
 #################################################################################
 # Text file
 
+#TODO: handle utf8 etc (LineGetter)
+#TODO: return '' instead instead of '\x1a'
+
 class TextFile(RawFile):
     """ Text file on disk device or field buffer. """
 
