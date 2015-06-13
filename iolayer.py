@@ -421,14 +421,6 @@ class RawFile(object):
         """ Read num chars. If num==-1, read all available. """
         return self.read_raw(num)
 
-    def tell(self):
-        """ Get position of file pointer. """
-        return self.fhandle.tell()
-
-    def seek(self, num, from_where=0):
-        """ Move file pointer. """
-        self.fhandle.seek(num, from_where)
-
     def write(self, s):
         """ Write string or bytearray to file. """
         self.fhandle.write(str(s))
@@ -619,10 +611,6 @@ class RandomBase(RawFile):
             # FIELD overflow
             raise error.RunError(self.overflow_error)
 
-    def seek(self, n, from_where=0):
-        """ Get file pointer location in FIELD buffer. """
-        return self.field_text_file.seek(n, from_where)
-
     @property
     def col(self):
         """ Get current column. """
@@ -806,7 +794,7 @@ class LPTFile(TextFileBase):
     def __init__(self, stream, flush_trigger='close'):
         """ Initialise LPTn. """
         # we don't actually need the name for non-disk files
-        RawFile.__init__(self, StringIO(), 'LPTn:')
+        TextFileBase.__init__(self, StringIO(), 'LPTn:')
         # width=255 means line wrap
         self.width = 255
         self.col = 1
@@ -838,7 +826,7 @@ class LPTFile(TextFileBase):
             elif c == '\b':   # BACKSPACE
                 if self.col > 1:
                     self.col -= 1
-                    self.seek(-1, 1)
+                    self.fhandle.seek(-1, 1)
                     self.fhandle.truncate()  
             else:    
                 self.fhandle.write(c)

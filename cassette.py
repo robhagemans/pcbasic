@@ -129,11 +129,6 @@ class CASFile(iolayer.TextFileBase):
         return (self.buffer_complete and
                 self.record_stream.tell() == len(self.record_stream.getvalue()))
 
-    #D seek is needed for text files
-    def seek(self, num, from_where=0):
-        """ Move file pointer. """
-        self.record_stream.seek(num, from_where)
-
     def write_line(self, s=''):
         """ Write string s and CR to tape file. """
         self.write(str(s) + '\r')
