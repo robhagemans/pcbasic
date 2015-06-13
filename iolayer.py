@@ -344,7 +344,8 @@ class COMDevice(Device):
         except Exception:
             self.stream.close()
             raise
-        return Device.open(self, number, param, filetype, mode, access, lock, reclen)
+        return Device.open(self, number, param, filetype, mode, access, lock,
+                            reclen, seg, offset, length)
 
     def set_parameters(self, param):
         """ Set serial port connection parameters """
@@ -519,10 +520,10 @@ class RandomBase(RawFile):
 #################################################################################
 # Text file base
 
-class TextFileBase(RawFile);
+class TextFileBase(RawFile):
     """ Base for text files on disk, KYBD file, field buffer. """
 
-    def __init__(self, fhandle, name, number, mode, access=, lock):
+    def __init__(self, fhandle, name, number, mode, access, lock):
         """ Setup the basic properties of the file. """
         self.fhandle = fhandle
         self.name = name
@@ -705,14 +706,14 @@ class KYBDFile(TextFileBase):
 
     def __init__(self):
         """ Initialise keyboard file. """
-        TextFileBase.__init__(self)
+        TextFileBase.__init__(self, nullstream)
         self.name = 'KYBD:'
         self.mode = 'I'
 
-    def read_raw(self, num=1):
+    def read_raw(self, n=1):
         """ Read a list of chars from the keyboard - INPUT$ """
         word = ''
-        for c in state.console_state.keyb.read_chars(n):
+        for char in state.console_state.keyb.read_chars(n):
             if len(char) > 1 and char[0] == '\x00':
                 # replace some scancodes than console can return
                 if char[1] in ('\x4b', '\x4d', '\x48', '\x50',
@@ -763,7 +764,7 @@ class SCRNFile(RawFile):
 
     def __init__(self):
         """ Initialise screen file. """
-        RawFile.__init__(self)
+        RawFile.__init__(self, nullstream)
         self.name = 'SCRN:'
         self.mode = 'O'
         self._width = state.console_state.screen.mode.width
@@ -982,7 +983,7 @@ class COMFile(RandomBase):
     
     def char_waiting(self):
         """ Whether a char is present in buffer. For ON COM(n). """
-        return self._in_buffer != ''
+        return self.in_buffer != ''
 
     def write_line(self, s=''):
         """ Write string or bytearray and newline to port. """
