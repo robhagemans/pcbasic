@@ -481,17 +481,17 @@ def get_number_tokens(fors):
 ########################################
 
 
-def input_vars_file(readvar, raw_file):
+def input_vars_file(readvar, stream):
     """ Read a list of variables for INPUT from a file. """
     for v in readvar:
-        c = raw_file.read(1)
+        c = stream.read(1)
         typechar = v[0][-1]
         if typechar == '$':
-            valstr, c = input_entry(c, raw_file, allow_quotes=True,
+            valstr, c = input_entry(c, stream, allow_quotes=True,
                                     end_all = ('\r', '\x1a'),
                                     end_not_quoted = (',', '\n'))
         else:
-            valstr, c = input_entry(c, raw_file, allow_quotes=False,
+            valstr, c = input_entry(c, stream, allow_quotes=False,
                                     end_all = ('\r', '\x1a', ',', '\n', ' '))
         value = str_to_type(valstr, typechar)    
         if value == None:
@@ -500,19 +500,19 @@ def input_vars_file(readvar, raw_file):
             # skip trailing whitespace
             # note that ending character (',', '\r', '\x1a', '\n', ...)
             # is swallowed here
-            c = raw_file.read(1)
+            c = stream.read(1)
         # and then set the value
         v.append(value)
     return readvar    
 
-def input_vars(readvar, raw_file):
+def input_vars(readvar, stream):
     """ Read a variable for INPUT. """
     # copy to allow multiple calls (for Redo)
     count_commas, count_values, has_empty = 0, 0, False
     for v in readvar:
-        c = raw_file.read(1)
+        c = stream.read(1)
         typechar = v[0][-1]
-        valstr, c = input_entry(c, raw_file, allow_quotes=(typechar=='$'), end_all=('',))
+        valstr, c = input_entry(c, stream, allow_quotes=(typechar=='$'), end_all=('',))
         val = str_to_type(valstr, typechar)
         v.append(val)
         count_values += 1
@@ -526,16 +526,16 @@ def input_vars(readvar, raw_file):
         return None
     return readvar            
             
-def input_entry(first_char, raw_file, allow_quotes, end_all=(), end_not_quoted=(',',)):
+def input_entry(first_char, stream, allow_quotes, end_all=(), end_not_quoted=(',',)):
     """ Read a number or string entry for INPUT """
     word, blanks = '', ''
     # skip leading spaces and line feeds and NUL.
     c = first_char
     while c in ascii_white:
-        c = raw_file.read(1)
+        c = stream.read(1)
     quoted = (c == '"' and allow_quotes)
     if quoted:
-        c = raw_file.read(1)
+        c = stream.read(1)
     if not c:
         # input past end
         raise error.RunError(62)
@@ -551,7 +551,7 @@ def input_entry(first_char, raw_file, allow_quotes, end_all=(), end_not_quoted=(
             quoted = False
             # ignore blanks after the quotes
             while c in ascii_white:
-                c = raw_file.read(1)
+                c = stream.read(1)
             break
         elif c in ascii_white and not quoted:
             blanks += c    
@@ -560,7 +560,7 @@ def input_entry(first_char, raw_file, allow_quotes, end_all=(), end_not_quoted=(
             blanks = ''
         if len(word) + len(blanks) >= 255:
             break
-        c = raw_file.read(1)
+        c = stream.read(1)
         if not c:
             break
     return word, c
