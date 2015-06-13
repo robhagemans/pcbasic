@@ -2002,6 +2002,9 @@ def exec_line_input(ins):
     # read the input
     if finp:
         line = finp.read_line()
+        if line is None:
+            # input past end
+            raise error.RunError(62)
     else:    
         state.basic_state.input_mode = True
         console.write(prompt) 

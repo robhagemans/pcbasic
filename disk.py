@@ -556,46 +556,61 @@ class DiskDevice(object):
 #################################################################################
 # Disk files
 
+types = { '\xff': 'B', '\xfe': 'P', '\xfd': 'M' }
+
 def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock='',
                   reclen=128, seg=0, offset=0, length=0):
-    """ Return the correct disk file object for this seekable stream. """
-    if set(filetype).intersection(set('ABPM')):
-        # we're trying to load/save a program; even ascii programs are ProgramFile
-        return ProgramFile(fhandle, filetype, name, number, mode, access, lock,
-                            seg, offset, length)
-    elif mode in 'IAO':
-        return TextFile(fhandle, name, number, mode, access, lock)
+    """ Create disk file object of requested type. """
+    first = ''
+    # determine file type if needed
+    if len(filetype) > 1 and mode == 'I':
+        # read magic
+        first = fhandle.read(1)
+        try:
+            filetype_found = types[first]
+            if filetype_found not in filetype:
+                # bad file mode
+                raise error.RunError(54)
+            filetype = filetype_found
+        except KeyError:
+            filetype = 'A'
+    if filetype in 'BPM':
+        # binary [B]LOAD, [B]SAVE
+        return BinaryFile(fhandle, filetype, name, number, mode, access, lock,
+                           seg, offset, length)
+    elif filetype in 'DA':
+        if mode in 'IAO':
+            # text data or ascii program file
+            return TextFile(fhandle, filetype, name, number,
+                             mode, access, lock, first)
+        else:
+            return RandomFile(fhandle, name, number, mode, access, lock, reclen)
     else:
-        return RandomFile(fhandle, name, number, mode, access, lock, reclen)
+        # internal error - incorrect file type requested
+        logging.debug('Incorrect file type %s requested for mode %s',
+                      filetype, mode)
+        raise error.RunError(51)
 
 
-class ProgramFile(iolayer.RawFile):
+class BinaryFile(iolayer.RawFile):
     """ File class for binary (B, P, M) files on disk device. """
 
-    magic = { 'B': '\xff', 'P': '\xfe', 'M': '\xfd', 'A': '' }
-    types = { '\xff': 'B', '\xfe': 'P', '\xfd': 'M' }
+    magic = { 'B': '\xff', 'P': '\xfe', 'M': '\xfd' }
 
-    def __init__(self, fhandle, filetype, name='', number=0, mode='A',
-                       access='RW', lock='', seg=0, offset=0, length=0):
+    def __init__(self, fhandle, filetype, name, number, mode,
+                       access, lock, seg, offset, length):
         """ Initialise program file object and write header. """
         iolayer.RawFile.__init__(self, fhandle, name, number, mode, access, lock)
         self.seg, self.offset, self.length = 0, 0, 0
+        self.filetype = filetype
         if self.mode == 'O':
             self.write(self.magic[filetype])
-            self.filetype = filetype
             if self.filetype == 'M':
                 self.write(vartypes.value_to_uint(seg) +
                            vartypes.value_to_uint(offset) +
                            vartypes.value_to_uint(length))
                 self.seg, self.offset, self.length = seg, offset, length
         else:
-            try:
-                self.filetype = self.types[self.read(1)]
-            except KeyError:
-                self.filetype = 'A'
-                self.seek(-1, 1)
-            if self.filetype not in filetype:
-                raise error.RunError(54)
             if self.filetype == 'M':
                 self.seg = vartypes.uint_to_value(bytearray(self.read(2)))
                 self.offset = vartypes.uint_to_value(bytearray(self.read(2)))
@@ -616,6 +631,7 @@ class RandomFile(iolayer.RandomBase):
         """ Initialise random-access file. """        
         iolayer.RandomBase.__init__(self, fhandle, name, number, mode, access, lock, reclen)
         # position at start of file
+        self.filetype = 'D'
         self.recpos = 0
         self.fhandle.seek(0)
 
@@ -666,17 +682,15 @@ class RandomFile(iolayer.RandomBase):
         return lof
 
 
-
-#TODO: handle utf8 etc (LineGetter)
-
-
 class TextFile(iolayer.CRLFTextFileBase):
     """ Text file on disk device. """
 
-    def __init__(self, fhandle, name='', number=0, mode='A', access='RW', lock=''):
+    def __init__(self, fhandle, filetype, name='', number=0,
+                 mode='A', access='RW', lock='', first_char=''):
         """ Initialise text file object. """
         iolayer.CRLFTextFileBase.__init__(self, fhandle, name, number,
-                                          mode, access, lock)
+                                          mode, access, lock, first_char)
+        self.filetype = filetype
         if self.mode == 'A':
             self.fhandle.seek(0, 2)
 

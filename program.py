@@ -313,12 +313,13 @@ def load(g):
         # anything but numbers or whitespace: Direct Statement in File
         merge(g)
     else:
-        logging.warning("Incorrect file type '%s' on LOAD", g.filetype)
-        # this shouldn't happen; bad file mode
-        raise error.RunError(54)
+        logging.debug("Incorrect file type '%s' on LOAD", g.filetype)
+        # this shouldn't happen; internal error
+        raise error.RunError(51)
     # rebuild line number dict and offsets
     rebuild_line_dict()
     
+
 def read_program_line(ins, last, cr=('\r')):
     """ readln, but break on \r rather than \n. ignore single starting LF to account for CRLF *without seeking*.
         include the \r at the end of the line. break at \x1a EOF. Do not include \x1a. 
@@ -333,6 +334,9 @@ def read_program_line(ins, last, cr=('\r')):
             break
         out += d
     return out, eof, d
+
+
+#    lg = LineGetter(g, universal_newline, utf8=utf8_files)
 
 class LineGetter(object): 
     """ Buffered line reader. Enables us to take into account both universal newlines and strict GW-BASIC newlines without seek(). """
@@ -391,12 +395,14 @@ class LineGetter(object):
                 pass
         return line, eof
 
+
 def merge(g):
     """ Merge program from ascii or utf8 (if utf8_files is True) stream. """
-    eof = False
-    lg = LineGetter(g, universal_newline, utf8=utf8_files)
-    while not eof:
-        line, eof = lg.get_line()
+    while True:
+        line = g.read_line()
+        if line is None:
+            print "ends"
+            break
         #line, first_char = first_char + line, ''
         linebuf = tokenise.tokenise_line(line)
         if linebuf.read(1) == '\0':

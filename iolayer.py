@@ -445,14 +445,16 @@ class RawFile(object):
 class TextFileBase(RawFile):
     """ Base for text files on disk, KYBD file, field buffer. """
 
-    def __init__(self, fhandle, name='', number=0, mode='A', access='RW', lock=''):
+    def __init__(self, fhandle, name='', number=0,
+                 mode='A', access='RW', lock='', first_char=''):
         """ Setup the basic properties of the file. """
         RawFile.__init__(self, fhandle, name, number, mode, access, lock)
         # width=255 means line wrap
         self.width = 255
         self.col = 1
-        self.next_char = ''
-        if self.mode == 'I':
+        # allow first char to be specified (e.g. already read)
+        self.next_char = first_char
+        if self.mode == 'I' and not first_char:
             self.next_char = self.fhandle.read(1)
 
     def close(self):
@@ -469,7 +471,7 @@ class TextFileBase(RawFile):
             # (that's true in disk text files but not on LPT devices)
             if self.next_char in ('\x1a', ''):
                 break
-            s += c
+            s += self.next_char
             self.next_char = self.fhandle.read(1)
         return s
 
@@ -482,6 +484,8 @@ class TextFileBase(RawFile):
             if not c or c == '\r':
                 break
             out += c
+        if not c and not out:
+            return None
         return out
 
     def write(self, s):
@@ -531,7 +535,7 @@ class CRLFTextFileBase(TextFileBase):
     def read(self, num=-1):
         """ Read num characters, replacing CR LF with CR. """
         s = ''
-        while True:
+        while len(s) < num:
             c = self.read_raw(1)
             if not c:
                 break
@@ -546,11 +550,13 @@ class CRLFTextFileBase(TextFileBase):
         s, c = '', ''
         while len(s) < 255:
             c, last = self.read(1), c
-            if c == '\r' and last != '\n':
+            if not c or (c == '\r' and last != '\n'):
                 # break on CR, CRLF but allow LF, LFCR to pass
                 break
             else:
                 s += c
+        if not c and not s:
+            return None
         return s
 
     def write_line(self, s=''):
