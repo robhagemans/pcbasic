@@ -484,15 +484,14 @@ def get_number_tokens(fors):
 def input_vars_file(readvar, stream):
     """ Read a list of variables for INPUT from a file. """
     for v in readvar:
-        c = stream.read(1)
         typechar = v[0][-1]
         if typechar == '$':
-            valstr, c = input_entry(c, stream, allow_quotes=True,
-                                    end_all = ('\r', '\x1a'),
+            valstr, c = input_entry(stream, allow_quotes=True,
+                                    end_all = ('\r', ),
                                     end_not_quoted = (',', '\n'))
         else:
-            valstr, c = input_entry(c, stream, allow_quotes=False,
-                                    end_all = ('\r', '\x1a', ',', '\n', ' '))
+            valstr, c = input_entry(stream, allow_quotes=False,
+                                    end_all = ('\r', ',', '\n', ' '))
         value = str_to_type(valstr, typechar)    
         if value == None:
             value = vartypes.null[typechar]
@@ -510,9 +509,8 @@ def input_vars(readvar, stream):
     # copy to allow multiple calls (for Redo)
     count_commas, count_values, has_empty = 0, 0, False
     for v in readvar:
-        c = stream.read(1)
         typechar = v[0][-1]
-        valstr, c = input_entry(c, stream, allow_quotes=(typechar=='$'), end_all=('',))
+        valstr, c = input_entry(stream, allow_quotes=(typechar=='$'), end_all=('',))
         val = str_to_type(valstr, typechar)
         v.append(val)
         count_values += 1
@@ -526,7 +524,7 @@ def input_vars(readvar, stream):
         return None
     return readvar            
             
-def input_entry(first_char, stream, allow_quotes, end_all=(), end_not_quoted=(',',)):
+def input_entry(stream, allow_quotes, end_all=(), end_not_quoted=(',',)):
     """ Read a number or string entry for INPUT """
     word, blanks = '', ''
     # skip leading spaces and line feeds and NUL.
@@ -543,7 +541,7 @@ def input_entry(first_char, stream, allow_quotes, end_all=(), end_not_quoted=(',
     # this may raise FIELD OVERFLOW
     # on reading from a KYBD: file, control char replacement takes place
     # which means we need to use read() not read_chars()
-    while True:
+    while c:
         # read entry
         if c in end_all or (c in end_not_quoted and not quoted):
             break
@@ -561,8 +559,6 @@ def input_entry(first_char, stream, allow_quotes, end_all=(), end_not_quoted=(',
         if len(word) + len(blanks) >= 255:
             break
         c = stream.read(1)
-        if not c:
-            break
     return word, c
 
 def str_to_type(word, type_char):
