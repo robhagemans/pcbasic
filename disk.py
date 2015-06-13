@@ -614,7 +614,7 @@ class BinaryFile(iolayer.RawFile):
                                  mode, access, lock)
         self.seg, self.offset, self.length = 0, 0, 0
         if self.mode == 'O':
-            self.write(iolayer.magic[filetype])
+            self.write(iolayer.type_to_magic[filetype])
             if self.filetype == 'M':
                 self.write(vartypes.value_to_uint(seg) +
                            vartypes.value_to_uint(offset) +

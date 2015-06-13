@@ -219,20 +219,9 @@ class Device(object):
         if mode not in self.allowed_modes:
             # bad file mode
             raise error.RunError(54)
-        new_file = self._clone_master(filetype, number,
-                                      mode, access, lock, reclen)
+        new_file = self.device_file.clone(filetype, number,
+                                          mode, access, lock, reclen)
         return new_file
-
-    def _clone_master(self, filetype, number, mode, access, lock='', reclen=128):
-        """ Clone device object as device file object (helper method). """
-        inst = copy.copy(self.device_file)
-        inst.number = number
-        inst.access = access
-        inst.mode = mode
-        inst.lock = lock
-        inst.reclen = reclen
-        inst.filetype = filetype
-        return inst
 
     def close(self):
         if self.device_file:
@@ -427,6 +416,17 @@ class RawFile(object):
     def __exit__(self, exc_type, exc_value, traceback):
         """ Context guard. """
         self.close()
+
+    def clone(self, filetype, number, mode, access, lock='', reclen=128):
+        """ Clone device file. """
+        inst = copy.copy(self)
+        inst.number = number
+        inst.access = access
+        inst.mode = mode
+        inst.lock = lock
+        inst.reclen = reclen
+        inst.filetype = filetype
+        return inst
 
     def close(self):
         """ Close the file. """
@@ -730,6 +730,16 @@ class SCRNFile(RawFile):
         self.mode = 'O'
         self._width = state.console_state.screen.mode.width
         self._col = state.console_state.col
+        self._write_magic(filetype)
+
+    def clone(self, filetype, number, mode, access, lock='', reclen=128):
+        """ Close screen file. """
+        inst = RawFile.clone(self, filetype, number, mode, access, lock, reclen)
+        inst._write_magic(filetype)
+        return inst
+
+    def _write_magic(self, filetype):
+        """ Write magic byte. """
         # SAVE "SCRN:" includes a magic byte
         try:
             self.write(type_to_magic[filetype])
