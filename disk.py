@@ -614,9 +614,9 @@ class BinaryFile(iolayer.RawFile):
     def __init__(self, fhandle, filetype, name, number, mode,
                        access, lock, seg, offset, length):
         """ Initialise program file object and write header. """
-        iolayer.RawFile.__init__(self, fhandle, name, number, mode, access, lock)
+        iolayer.RawFile.__init__(self, fhandle, filetype, name, number,
+                                 mode, access, lock)
         self.seg, self.offset, self.length = 0, 0, 0
-        self.filetype = filetype
         if self.mode == 'O':
             self.write(self.magic[filetype])
             if self.filetype == 'M':
@@ -703,9 +703,8 @@ class TextFile(iolayer.CRLFTextFileBase):
                  mode='A', access='RW', lock='', first_char='',
                  utf8=False, universal=False):
         """ Initialise text file object. """
-        iolayer.CRLFTextFileBase.__init__(self, fhandle, name, number,
+        iolayer.CRLFTextFileBase.__init__(self, fhandle, filetype, name, number,
                                           mode, access, lock, first_char)
-        self.filetype = filetype
         self.utf8 = utf8
         self.universal = universal
         self.spaces = ''

@@ -96,7 +96,7 @@ class CASFile(iolayer.TextFileBase):
     def __init__(self, tapestream, filetype, name='', number=0, mode='A',
                  seg=0, offs=0, length=0):
         """ Initialise file on tape. """
-        iolayer.TextFileBase.__init__(self)
+        iolayer.TextFileBase.__init__(self, iolayer.nullstream, filetype)
         self.tapestream = tapestream
         self.record_num = 0
         self.record_stream = StringIO()

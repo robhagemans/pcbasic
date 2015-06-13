@@ -216,10 +216,11 @@ class Device(object):
         if mode not in self.allowed_modes:
             # bad file mode
             raise error.RunError(54)
-        new_file = self.clone_master(number, mode, access, lock, reclen)
+        new_file = self._clone_master(filetype, number,
+                                      mode, access, lock, reclen)
         return new_file
 
-    def clone_master(self, number, mode, access, lock='', reclen=128):
+    def _clone_master(self, filetype, number, mode, access, lock='', reclen=128):
         """ Clone device object as device file object (helper method). """
         inst = copy.copy(self.device_file)
         inst.number = number
@@ -227,6 +228,7 @@ class Device(object):
         inst.mode = mode
         inst.lock = lock
         inst.reclen = reclen
+        inst.filetype = filetype
         return inst
 
     def close(self):
@@ -404,9 +406,10 @@ class COMDevice(Device):
 class RawFile(object):
     """ File class for raw access to underlying stream. """
 
-    def __init__(self, fhandle, name='', number=0, mode='A', access='RW', lock=''):
+    def __init__(self, fhandle, filetype, name='', number=0, mode='A', access='RW', lock=''):
         """ Setup the basic properties of the file. """
         self.fhandle = fhandle
+        self.filetype = filetype
         self.name = name
         self.number = number
         self.mode = mode.upper()
@@ -450,10 +453,10 @@ class RawFile(object):
 class TextFileBase(RawFile):
     """ Base for text files on disk, KYBD file, field buffer. """
 
-    def __init__(self, fhandle, name='', number=0,
+    def __init__(self, fhandle, filetype, name='', number=0,
                  mode='A', access='RW', lock='', first_char=''):
         """ Setup the basic properties of the file. """
-        RawFile.__init__(self, fhandle, name, number, mode, access, lock)
+        RawFile.__init__(self, fhandle, filetype, name, number, mode, access, lock)
         # width=255 means line wrap
         self.width = 255
         self.col = 1
@@ -578,9 +581,9 @@ class RandomBase(RawFile):
     # FIELD overflow
     overflow_error = 50
 
-    def __init__(self, fhandle, name, number, mode, access, lock, reclen=128):
+    def __init__(self, fhandle, filetype, name, number, mode, access, lock, reclen=128):
         """ Initialise random-access file. """
-        RawFile.__init__(self, fhandle, name, number, mode, access, lock)
+        RawFile.__init__(self, fhandle, filetype, name, number, mode, access, lock)
         self.reclen = reclen
         # replace with empty field if already exists
         try:
@@ -596,7 +599,7 @@ class RandomBase(RawFile):
         # open a pseudo text file over the buffer stream
         # to make WRITE# etc possible
         # all text-file operations on a RANDOM file number actually work on the FIELD buffer
-        self.field_text_file = CRLFTextFileBase(ByteStream(self.field))
+        self.field_text_file = CRLFTextFileBase(ByteStream(self.field), 'D')
         self.field_text_file.col = 1
         # width=255 means line wrap
         self.field_text_file.width = 255
@@ -659,9 +662,9 @@ class KYBDFile(TextFileBase):
 
     col = 0
 
-    def __init__(self):
+    def __init__(self, filetype='D'):
         """ Initialise keyboard file. """
-        TextFileBase.__init__(self, nullstream)
+        TextFileBase.__init__(self, nullstream, filetype)
         self.name = 'KYBD:'
         self.mode = 'I'
 
@@ -717,9 +720,9 @@ class SCRNFile(RawFile):
     """ SCRN: file, allows writing to the screen as a text file. 
         SCRN: files work as a wrapper text file. """
 
-    def __init__(self):
+    def __init__(self, filetype='D'):
         """ Initialise screen file. """
-        RawFile.__init__(self, nullstream)
+        RawFile.__init__(self, nullstream, filetype)
         self.name = 'SCRN:'
         self.mode = 'O'
         self._width = state.console_state.screen.mode.width
@@ -810,10 +813,10 @@ class SCRNFile(RawFile):
 class LPTFile(TextFileBase):
     """ LPTn: device - line printer or parallel port. """
 
-    def __init__(self, stream, flush_trigger='close'):
+    def __init__(self, stream, filetype='D', flush_trigger='close'):
         """ Initialise LPTn. """
         # we don't actually need the name for non-disk files
-        TextFileBase.__init__(self, StringIO(), 'LPTn:')
+        TextFileBase.__init__(self, StringIO(), filetype, 'LPTn:')
         # width=255 means line wrap
         self.width = 255
         self.col = 1
