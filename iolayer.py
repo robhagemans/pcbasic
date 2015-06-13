@@ -391,6 +391,11 @@ class COMDevice(Device):
         # set LF
         self.stream.linefeed = (LF != '')
 
+    def char_waiting(self):
+        """ Whether a char is present in buffer. For ON COM(n). """
+        if not self.device_file:
+            return False
+        return self.device_file.in_buffer != ''
 
 #################################################################################
 # file classes
@@ -930,10 +935,6 @@ class COMFile(RandomBase):
                     break
             out += ''.join(c)
         return out
-    
-    def char_waiting(self):
-        """ Whether a char is present in buffer. For ON COM(n). """
-        return self.in_buffer != ''
 
     def write_line(self, s=''):
         """ Write string or bytearray and newline to port. """
