@@ -438,84 +438,6 @@ class RawFile(object):
         self.fhandle.flush()
 
 
-class RandomBase(RawFile):
-    """ Random-access file base object. """
-
-    # FIELD overflow
-    overflow_error = 50
-
-    def __init__(self, fhandle, name, number, mode, access, lock, reclen=128):
-        """ Initialise random-access file. """
-        RawFile.__init__(self, fhandle, name, number, mode, access, lock)
-        self.reclen = reclen
-        # replace with empty field if already exists
-        try:
-            self.field = state.io_state.fields[self.number]
-        except KeyError:
-            self.field = bytearray()
-            state.io_state.fields[self.number] = self.field
-        if self.number > 0:
-            self.field_address = memory.field_mem_start + (self.number-1)*memory.field_mem_offset
-        else:
-            self.field_address = -1
-        self.field[:] = bytearray('\x00')*reclen
-        # open a pseudo text file over the buffer stream
-        # to make WRITE# etc possible
-        # all text-file operations on a RANDOM file number actually work on the FIELD buffer
-        # set as Input-mode file to seek to start and not write EOF at close
-        # TODO this is a bit hackish - just create a FieldTextFile class?
-        self.field_text_file = TextFile(ByteStream(self.field), mode='I')
-        self.field_text_file.col = 1
-        # width=255 means line wrap
-        self.field_text_file.width = 255
-
-    def read_line(self):
-        """ Read line from FIELD buffer. """
-        s = self.field_text_file.read_line()
-        self._check_overflow()
-        return s
-
-    def read_raw(self, num=-1):
-        """ Read num chars as a string, from FIELD buffer. """
-        s = self.field_text_file.read(num)
-        self._check_overflow()
-        return s
-
-    def write(self, s):
-        """ Write one or more chars to FIELD buffer. """
-        self.field_text_file.write(s)
-        self._check_overflow(write=True)
-
-    def write_line(self, s):
-        """ Write one or more chars and CRLF to FIELD buffer. """
-        self.field_text_file.write_line(s)
-        self._check_overflow(write=True)
-
-    def _check_overflow(self, write=False):
-        """ Check for FIELD OVERFLOW. """
-        # FIELD overflow happens if last byte in record has been read or written
-        if self.field_text_file.fhandle.tell() > self.reclen + write - 1:
-            # FIELD overflow
-            raise error.RunError(self.overflow_error)
-
-    def seek(self, n, from_where=0):
-        """ Get file pointer location in FIELD buffer. """
-        return self.field_text_file.seek(n, from_where)
-
-    @property
-    def col(self):
-        """ Get current column. """
-        return self.field_text_file.col
-
-    @property
-    def width(self):
-        """ Get file width. """
-        return self.field_text_file.width
-
-    def set_width(self, new_width=255):
-        """ Set file width. """
-        self.field_text_file.width = new_width
-
 
 #################################################################################
 # Text file base
@@ -551,40 +473,33 @@ class TextFileBase(RawFile):
         """ Write string or bytearray and follow with CR or CRLF. """
         self.write(str(s) + '\r')
 
+    # TODO: rewrite w/o seek()
     def eof(self):
-        """ End-of-file. """
-        return (util.peek(self.fhandle) == '')
+        """ Check for end of file EOF. """
+        # for EOF(i)
+        if self.mode in ('A', 'O'):
+            return False
+        return (util.peek(self.fhandle) in ('', '\x1a'))
 
 
 #################################################################################
 # Text file
 
-
-
-#TODO: handle utf8 etc (LineGetter)
-
-
-class TextFile(TextFileBase):
-    """ Text file on disk device or field buffer. """
+class CRLFTextFileBase(TextFileBase):
+    """ Text file with CRLF line endings, on disk device or field buffer. """
 
     def __init__(self, fhandle, name='', number=0, mode='A', access='RW', lock=''):
         """ Initialise text file object. """
         RawFile.__init__(self, fhandle, name, number, mode, access, lock)
-        if self.mode in ('I', 'O', 'R'):
-            self.fhandle.seek(0)
-        else:
-            self.fhandle.seek(0, 2)
         # width=255 means unlimited
         self.width = 255
         self.col = 1
 
     def close(self):
         """ Close text file. """
-        if self.mode in ('O', 'A'):
-            # write EOF char
-            self.fhandle.write('\x1a')
         self.fhandle.close()
 
+    # TODO: rewrite w/o seek(). EOF handling is OK on FIELD text files.
     def read_line(self):
         """ Read line from text file. """
         # readline breaks line on LF, we can only break on CR or CRLF
@@ -667,27 +582,85 @@ class TextFile(TextFileBase):
                 if ord(c) >= 32:
                     self.col += 1
 
-    def eof(self):
-        """ Check for end of file EOF. """
-        # for EOF(i)
-        if self.mode in ('A', 'O'):
-            return False
-        return (util.peek(self.fhandle) in ('', '\x1a'))
 
-    def loc(self):
-        """ Get file pointer LOC """
-        # for LOC(i)
-        if self.mode == 'I':
-            return max(1, (127+self.fhandle.tell())/128)
-        return self.fhandle.tell()/128
+#################################################################################
+# Random-access file base
 
-    def lof(self):
-        """ Get length of file LOF. """
-        current = self.fhandle.tell()
-        self.fhandle.seek(0, 2)
-        lof = self.fhandle.tell()
-        self.fhandle.seek(current)
-        return lof
+class RandomBase(RawFile):
+    """ Random-access file base object. """
+
+    # FIELD overflow
+    overflow_error = 50
+
+    def __init__(self, fhandle, name, number, mode, access, lock, reclen=128):
+        """ Initialise random-access file. """
+        RawFile.__init__(self, fhandle, name, number, mode, access, lock)
+        self.reclen = reclen
+        # replace with empty field if already exists
+        try:
+            self.field = state.io_state.fields[self.number]
+        except KeyError:
+            self.field = bytearray()
+            state.io_state.fields[self.number] = self.field
+        if self.number > 0:
+            self.field_address = memory.field_mem_start + (self.number-1)*memory.field_mem_offset
+        else:
+            self.field_address = -1
+        self.field[:] = bytearray('\x00')*reclen
+        # open a pseudo text file over the buffer stream
+        # to make WRITE# etc possible
+        # all text-file operations on a RANDOM file number actually work on the FIELD buffer
+        self.field_text_file = CRLFTextFileBase(ByteStream(self.field))
+        self.field_text_file.col = 1
+        # width=255 means line wrap
+        self.field_text_file.width = 255
+
+    def read_line(self):
+        """ Read line from FIELD buffer. """
+        s = self.field_text_file.read_line()
+        self._check_overflow()
+        return s
+
+    def read_raw(self, num=-1):
+        """ Read num chars as a string, from FIELD buffer. """
+        s = self.field_text_file.read(num)
+        self._check_overflow()
+        return s
+
+    def write(self, s):
+        """ Write one or more chars to FIELD buffer. """
+        self.field_text_file.write(s)
+        self._check_overflow(write=True)
+
+    def write_line(self, s):
+        """ Write one or more chars and CRLF to FIELD buffer. """
+        self.field_text_file.write_line(s)
+        self._check_overflow(write=True)
+
+    def _check_overflow(self, write=False):
+        """ Check for FIELD OVERFLOW. """
+        # FIELD overflow happens if last byte in record has been read or written
+        if self.field_text_file.fhandle.tell() > self.reclen + write - 1:
+            # FIELD overflow
+            raise error.RunError(self.overflow_error)
+
+    def seek(self, n, from_where=0):
+        """ Get file pointer location in FIELD buffer. """
+        return self.field_text_file.seek(n, from_where)
+
+    @property
+    def col(self):
+        """ Get current column. """
+        return self.field_text_file.col
+
+    @property
+    def width(self):
+        """ Get file width. """
+        return self.field_text_file.width
+
+    def set_width(self, new_width=255):
+        """ Set file width. """
+        self.field_text_file.width = new_width
 
 
 #################################################################################

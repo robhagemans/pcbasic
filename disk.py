@@ -28,7 +28,6 @@ import console
 # for value_to_uint
 import vartypes
 import iolayer
-from iolayer import TextFile
 
 # translate os error codes to BASIC error codes
 os_error = {
@@ -666,6 +665,44 @@ class RandomFile(iolayer.RandomBase):
         self.fhandle.seek(current)
         return lof
 
+
+
+#TODO: handle utf8 etc (LineGetter)
+
+
+class TextFile(iolayer.CRLFTextFileBase):
+    """ Text file on disk device. """
+
+    def __init__(self, fhandle, name='', number=0, mode='A', access='RW', lock=''):
+        """ Initialise text file object. """
+        iolayer.CRLFTextFileBase.__init__(self, fhandle, name, number,
+                                          mode, access, lock)
+        if self.mode in ('I', 'O', 'R'):
+            self.fhandle.seek(0)
+        else:
+            self.fhandle.seek(0, 2)
+
+    def close(self):
+        """ Close text file. """
+        if self.mode in ('O', 'A'):
+            # write EOF char
+            self.fhandle.write('\x1a')
+        iolayer.CRLFTextFileBase.close(self)
+
+    def loc(self):
+        """ Get file pointer LOC """
+        # for LOC(i)
+        if self.mode == 'I':
+            return max(1, (127+self.fhandle.tell())/128)
+        return self.fhandle.tell()/128
+
+    def lof(self):
+        """ Get length of file LOF. """
+        current = self.fhandle.tell()
+        self.fhandle.seek(0, 2)
+        lof = self.fhandle.tell()
+        self.fhandle.seek(current)
+        return lof
 
 prepare()
 
