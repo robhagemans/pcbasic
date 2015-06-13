@@ -90,7 +90,7 @@ class CASDevice(object):
 #################################################################################
 # Cassette files
 
-class CASFile(iolayer.NullFile):
+class CASFile(iolayer.TextFileBase):
     """ File on CASn: device. """
 
     def __init__(self, tapestream, filetype, name='', number=0, mode='A',
@@ -133,20 +133,6 @@ class CASFile(iolayer.NullFile):
     def seek(self, num, from_where=0):
         """ Move file pointer. """
         self.record_stream.seek(num, from_where)
-
-    def read_line(self):
-        """ Read a line from device. """
-        # readline breaks line on LF, we can only break on CR
-        s = ''
-        while len(s) < 255:
-            c = self.read(1)
-            if c == '':
-                break
-            elif c == '\r':
-                break
-            else:
-                s += c
-        return s
 
     def write_line(self, s=''):
         """ Write string s and CR to tape file. """

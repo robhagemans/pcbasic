@@ -440,10 +440,6 @@ class NullFile(object):
         """ Set device width. """
         pass
 
-    def read_line(self):
-        """ Read a line from device. """
-        return ''
-
     def read_raw(self, n):
         """ Read a string from device, without CR/LF replacement (INPUT$). """
         return ''
@@ -479,21 +475,6 @@ class RawFile(NullFile):
         """ Read num chars. If num==-1, read all available. """
         return self.read_raw(num)
 
-    # read_line is *only* used in LINE INPUT and FIELD text files, both of which are TextFiles not RawFiles
-    # write_line should also only be used on text/ascii program streams
-
-    #D should we really have a read_line, write_line in a raw file?
-    # move to LPTFIle
-    def read_line(self):
-        """ Read a single line. """
-        out = bytearray('')
-        while len(out) < 255:
-            c = self.read(1)
-            if c == '\r':
-                break
-            out += c
-        return out            
-            
     def tell(self):
         """ Get position of file pointer. """
         return self.fhandle.tell()
@@ -506,7 +487,7 @@ class RawFile(NullFile):
         """ Write string or bytearray to file. """
         self.fhandle.write(str(s))
 
-    #D see above
+    #D write_line should also only be used on text/ascii program streams
     def write_line(self, s=''):
         """ Write string or bytearray and newline to file. """
         self.write(str(s) + '\r\n')
@@ -597,9 +578,32 @@ class RandomBase(RawFile):
 #################################################################################
 # Text file
 
+
+class TextFileBase(RawFile);
+    """ Base for text files on disk, KYBD file, field buffer. """
+
+    def read_line(self):
+        """ Read a single line. """
+        out = bytearray('')
+        while len(out) < 255:
+            c = self.read(1)
+            # don't check for CRLF on KYBD:, CAS:, etc.
+            if not c or c == '\r':
+                break
+            out += c
+        return out
+
+    def set_width(self, new_width=255):
+        """ Set the line width of the file. """
+        self.width = new_width
+
+
+
+
 #TODO: handle utf8 etc (LineGetter)
 
-class TextFile(RawFile):
+
+class TextFile(TextFileBase):
     """ Text file on disk device or field buffer. """
 
     def __init__(self, fhandle, name='', number=0, mode='A', access='RW', lock=''):
@@ -702,10 +706,6 @@ class TextFile(RawFile):
                 if ord(c) >= 32:
                     self.col += 1
 
-    def set_width(self, new_width=255):
-        """ Set the line width of the file. """
-        self.width = new_width
-
     def eof(self):
         """ Check for end of file EOF. """
         # for EOF(i)
@@ -732,7 +732,7 @@ class TextFile(RawFile):
 #################################################################################
 # Console files
 
-class KYBDFile(NullFile):
+class KYBDFile(TextFileBase):
     """ KYBD device: keyboard. """
 
     input_replace = { 
@@ -749,18 +749,6 @@ class KYBDFile(NullFile):
         self.name = 'KYBD:'
         self.mode = 'I'
         self.width = 255
-
-    def read_line(self):
-        """ Read a line from the keyboard. """
-        s = bytearray('')
-        while len(s) < 255:
-            c = self.read(1)
-            if c == '\r':
-                # don't check for CR/LF when reading KYBD:
-                break
-            else:
-                s += c
-        return s
 
     def read_raw(self, num=1):
         """ Read a list of chars from the keyboard - INPUT$ """
@@ -892,7 +880,7 @@ class SCRNFile(NullFile):
 #################################################################################
 # Parallel-port and printer files
 
-class LPTFile(RawFile):
+class LPTFile(TextFileBase):
     """ LPTn: device - line printer or parallel port. """
 
     def __init__(self, stream, flush_trigger='close'):
@@ -911,10 +899,6 @@ class LPTFile(RawFile):
             val = self.fhandle.getvalue()
             self.output_stream.write(val)
             self.fhandle.truncate(0)
-
-    def set_width(self, new_width=255):
-        """ Set the width for LPTn. """
-        self.width = new_width
 
     def write(self, s):
         """ Write a string to the printer buffer. """
