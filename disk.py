@@ -711,6 +711,9 @@ class TextFile(iolayer.CRLFTextFileBase):
         self.spaces = ''
         if self.mode == 'A':
             self.fhandle.seek(0, 2)
+        elif self.mode == 'O' and self.utf8:
+            # start UTF-8 files with BOM as many Windows readers expect this
+            self.fhandle.write('\xef\xbb\xbf')
 
     def close(self):
         """ Close text file. """
@@ -733,6 +736,12 @@ class TextFile(iolayer.CRLFTextFileBase):
         lof = self.fhandle.tell()
         self.fhandle.seek(current)
         return lof
+
+    def write_line(self, s):
+        """ Write to file in normal or UTF-8 mode. """
+        if self.utf8:
+            s = unicodepage.UTF8Converter().to_utf8(s)
+        iolayer.CRLFTextFileBase.write(self, s + '\r\n')
 
     def write(self, s):
         """ Write to file in normal or UTF-8 mode. """
@@ -763,6 +772,7 @@ class TextFile(iolayer.CRLFTextFileBase):
                 s += c
         if not c and not s:
             return None
+        return s
 
     def read_line(self):
         """ Read line from text file. """
