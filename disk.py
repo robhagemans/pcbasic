@@ -565,8 +565,6 @@ class DiskDevice(object):
 #################################################################################
 # Disk files
 
-types = { '\xff': 'B', '\xfe': 'P', '\xfd': 'M' }
-
 def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock='',
                   reclen=128, seg=0, offset=0, length=0):
     """ Create disk file object of requested type. """
@@ -576,7 +574,7 @@ def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock=
         # read magic
         first = fhandle.read(1)
         try:
-            filetype_found = types[first]
+            filetype_found = iolayer.magic_to_type[first]
             if filetype_found not in filetype:
                 # bad file mode
                 raise error.RunError(54)
@@ -609,8 +607,6 @@ def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock=
 class BinaryFile(iolayer.RawFile):
     """ File class for binary (B, P, M) files on disk device. """
 
-    magic = { 'B': '\xff', 'P': '\xfe', 'M': '\xfd' }
-
     def __init__(self, fhandle, filetype, name, number, mode,
                        access, lock, seg, offset, length):
         """ Initialise program file object and write header. """
@@ -618,7 +614,7 @@ class BinaryFile(iolayer.RawFile):
                                  mode, access, lock)
         self.seg, self.offset, self.length = 0, 0, 0
         if self.mode == 'O':
-            self.write(self.magic[filetype])
+            self.write(iolayer.magic[filetype])
             if self.filetype == 'M':
                 self.write(vartypes.value_to_uint(seg) +
                            vartypes.value_to_uint(offset) +

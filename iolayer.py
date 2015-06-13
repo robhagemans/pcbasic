@@ -81,6 +81,9 @@ nullstream = open(os.devnull, 'w')
 # set by disk.py
 current_device = None
 
+# magic chars used by some devices to indicate file type
+type_to_magic = { 'B': '\xff', 'P': '\xfe', 'M': '\xfd' }
+magic_to_type = { '\xff': 'B', '\xfe': 'P', '\xfd': 'M' }
 
 def prepare():
     """ Initialise iolayer module. """
@@ -727,6 +730,11 @@ class SCRNFile(RawFile):
         self.mode = 'O'
         self._width = state.console_state.screen.mode.width
         self._col = state.console_state.col
+        # SAVE "SCRN:" includes a magic byte
+        try:
+            self.write(type_to_magic[filetype])
+        except KeyError:
+            pass
 
     def write(self, s):
         """ Write string s to SCRN: """
