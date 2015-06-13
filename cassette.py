@@ -136,9 +136,6 @@ class CASFile(iolayer.NullFile):
 
     def read_line(self):
         """ Read a line from device. """
-        if self.eof():
-            # input past end
-            raise error.RunError(62)
         # readline breaks line on LF, we can only break on CR
         s = ''
         while len(s) < 255:
@@ -172,11 +169,7 @@ class CASFile(iolayer.NullFile):
                 else:
                     c += self.record_stream.read()
                 if self.buffer_complete:
-                    if self.filetype == 'D' and nbytes > -1:
-                        # input past end
-                        raise error.RunError(62)
-                    else:
-                        return c
+                    return c
                 self._fill_record_buffer()
         except EndOfTape:
             return c

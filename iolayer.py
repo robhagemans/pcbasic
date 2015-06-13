@@ -595,7 +595,6 @@ class RandomBase(RawFile):
 # Text file
 
 #TODO: handle utf8 etc (LineGetter)
-#TODO: return '' instead instead of '\x1a'
 
 class TextFile(RawFile):
     """ Text file on disk device or field buffer. """
@@ -620,14 +619,13 @@ class TextFile(RawFile):
 
     def read_line(self):
         """ Read line from text file. """
-        if self._end_of_file():
-            # input past end
-            raise error.RunError(62)
         # readline breaks line on LF, we can only break on CR or CRLF
         s = ''
         while len(s) < 255:
             c = self.fhandle.read(1)
             if c in ('', '\x1a'):
+                # don't continue reading on Ctrl-Z on disk text files
+                self.fhandle.seek(-len(c), 1)
                 break
             elif c == '\n':
                 s += c
@@ -660,14 +658,11 @@ class TextFile(RawFile):
                 break
             l += 1
             c = self.fhandle.read(1)
-            # check for \x1A (EOF char - this will actually stop further reading (that's true in files but not devices)
+            # check for \x1A (EOF char will actually stop further reading
+            # (that's true in disk text files but not on LPT devices)
             if c in ('\x1a', ''):
-                if num == -1:
-                    break
-                else:
-                    self.fhandle.seek(-len(c), 1)
-                    # input past end
-                    raise error.RunError(62)
+                self.fhandle.seek(-len(c), 1)
+                break
             s += c
         return s
 
@@ -713,7 +708,7 @@ class TextFile(RawFile):
         # for EOF(i)
         if self.mode in ('A', 'O'):
             return False
-        return self._end_of_file()
+        return (util.peek(self.fhandle) in ('', '\x1a'))
 
     def loc(self):
         """ Get file pointer LOC """
@@ -730,9 +725,6 @@ class TextFile(RawFile):
         self.fhandle.seek(current)
         return lof
 
-    def _end_of_file(self):
-        """ Check for end of file - for internal use. """
-        return (util.peek(self.fhandle) in ('', '\x1a'))
 
 #################################################################################
 # Console files
