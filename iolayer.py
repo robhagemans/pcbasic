@@ -986,18 +986,23 @@ class COMFile(RandomBase):
             # device I/O
             raise error.RunError(57)
 
-    # FIXME: num=1 ?
-    def read_raw(self, num=1):
+    def read_raw(self, num=-1):
         """ Read num characters from the port as a string; blocking """
-        out = ''
-        while len(out) < num:
-            # non blocking read
+        if num == -1:
+            # read whole buffer, non-blocking
             self.check_read()
-            to_read = min(len(self.in_buffer), num - len(out))
-            out += str(self.in_buffer[:to_read])
-            del self.in_buffer[:to_read]
-            # allow for break & screen updates
-            backend.wait()
+            out = self.in_buffer
+            del self.in_buffer[:]
+        else:
+            out = ''
+            while len(out) < num:
+                # non blocking read
+                self.check_read()
+                to_read = min(len(self.in_buffer), num - len(out))
+                out += str(self.in_buffer[:to_read])
+                del self.in_buffer[:to_read]
+                # allow for break & screen updates
+                backend.wait()
         return out
 
     def read_line(self):
