@@ -408,7 +408,15 @@ class RawFile(object):
         self.access = access
         self.lock = lock
         self.lock_list = set()
-    
+
+    def __enter__(self):
+        """ Context guard. """
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """ Context guard. """
+        self.close()
+
     def close(self):
         """ Close the file. """
         self.fhandle.close()
