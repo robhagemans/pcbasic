@@ -445,18 +445,34 @@ class RawFile(object):
 class TextFileBase(RawFile):
     """ Base for text files on disk, KYBD file, field buffer. """
 
-    def __init__(self, fhandle, name, number, mode, access, lock):
+    def __init__(self, fhandle, name='', number=0, mode='A', access='RW', lock=''):
         """ Setup the basic properties of the file. """
-        self.fhandle = fhandle
-        self.name = name
-        self.number = number
-        self.mode = mode.upper()
-        self.access = access
-        self.lock = lock
-        self.lock_list = set()
         RawFile.__init__(self, fhandle, name, number, mode, access, lock)
         # width=255 means line wrap
         self.width = 255
+        self.col = 1
+        self.is_eof = False
+        self.last_char = ''
+
+    def close(self):
+        """ Close text file. """
+        self.fhandle.close()
+
+    def read_raw(self, num=-1):
+        """ Read num characters as string. """
+        s = ''
+        while True:
+            if self.is_eof or (num > -1 and len(s) >= num):
+                break
+            c = self.fhandle.read(1)
+            # check for \x1A (EOF char will actually stop further reading
+            # (that's true in disk text files but not on LPT devices)
+            if c in ('\x1a', ''):
+                self.is_eof = True
+                break
+            s += c
+        self.last_char = c
+        return s
 
     def read_line(self):
         """ Read a single line. """
@@ -508,68 +524,31 @@ class TextFileBase(RawFile):
         # for EOF(i)
         if self.mode in ('A', 'O'):
             return False
-        return (util.peek(self.fhandle) in ('', '\x1a'))
+        return self.is_eof or (util.peek(self.fhandle) in ('', '\x1a'))
 
 
 class CRLFTextFileBase(TextFileBase):
     """ Text file with CRLF line endings, on disk device or field buffer. """
 
-    def __init__(self, fhandle, name='', number=0, mode='A', access='RW', lock=''):
-        """ Initialise text file object. """
-        RawFile.__init__(self, fhandle, name, number, mode, access, lock)
-        # width=255 means unlimited
-        self.width = 255
-        self.col = 1
-
-    def close(self):
-        """ Close text file. """
-        self.fhandle.close()
-
-    def read_raw(self, num=-1):
-        """ Read num characters as string. """
-        s = ''
-        l = 0
-        while True:
-            if num > -1 and l >= num:
-                break
-            l += 1
-            c = self.fhandle.read(1)
-            # check for \x1A (EOF char will actually stop further reading
-            # (that's true in disk text files but not on LPT devices)
-            if c in ('\x1a', ''):
-                self.fhandle.seek(-len(c), 1)
-                break
-            s += c
-        return s
-
     def read(self, num=-1):
         """ Read num characters, replacing CR LF with CR. """
-        return self.read_raw(num).replace('\r\n', '\r')
-
-    # TODO: rewrite w/o seek(). EOF handling is OK on FIELD text files.
-    def read_line(self):
-        """ Read line from text file. """
-        # readline breaks line on LF, we can only break on CR or CRLF
-        s = ''
-        while len(s) < 255:
-            c = self.fhandle.read(1)
-            if c in ('', '\x1a'):
-                # don't continue reading on Ctrl-Z on disk text files
-                self.fhandle.seek(-len(c), 1)
+        s, c = '', self.last_char
+        while True:
+            self.last_char, c = c, self.read_raw(1)
+            if not c:
                 break
-            elif c == '\n':
+            # ignore LF after CR
+            elif c != '\n' or self.last_char != '\r':
                 s += c
-                # special: allow LFCR (!) to pass
-                c = self.fhandle.read(1)
-                if c != '\r':
-                    self.fhandle.seek(-len(c), 1)
-                else:
-                    s += '\r'
-            elif c == '\r':
-                # check for CR/LF
-                c = self.fhandle.read(1)
-                if c != '\n':
-                    self.fhandle.seek(-len(c), 1)
+        return s
+
+    def read_line(self):
+        """ Read line from text file, break on CR or CRLF (not LF). """
+        s, c = '', ''
+        while len(s) < 255:
+            c, last = self.read(1), c
+            if c == '\r' and last != '\n':
+                # break on CR, CRLF but allow LF, LFCR to pass
                 break
             else:
                 s += c
