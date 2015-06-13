@@ -677,9 +677,7 @@ class TextFile(iolayer.CRLFTextFileBase):
         """ Initialise text file object. """
         iolayer.CRLFTextFileBase.__init__(self, fhandle, name, number,
                                           mode, access, lock)
-        if self.mode in ('I', 'O', 'R'):
-            self.fhandle.seek(0)
-        else:
+        if self.mode == 'A':
             self.fhandle.seek(0, 2)
 
     def close(self):

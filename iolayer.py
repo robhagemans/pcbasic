@@ -451,8 +451,9 @@ class TextFileBase(RawFile):
         # width=255 means line wrap
         self.width = 255
         self.col = 1
-        self.is_eof = False
-        self.last_char = ''
+        self.next_char = ''
+        if self.mode == 'I':
+            self.next_char = self.fhandle.read(1)
 
     def close(self):
         """ Close text file. """
@@ -462,16 +463,14 @@ class TextFileBase(RawFile):
         """ Read num characters as string. """
         s = ''
         while True:
-            if self.is_eof or (num > -1 and len(s) >= num):
+            if (num > -1 and len(s) >= num):
                 break
-            c = self.fhandle.read(1)
             # check for \x1A (EOF char will actually stop further reading
             # (that's true in disk text files but not on LPT devices)
-            if c in ('\x1a', ''):
-                self.is_eof = True
+            if self.next_char in ('\x1a', ''):
                 break
             s += c
-        self.last_char = c
+            self.next_char = self.fhandle.read(1)
         return s
 
     def read_line(self):
@@ -518,13 +517,12 @@ class TextFileBase(RawFile):
         """ Write string or bytearray and follow with CR or CRLF. """
         self.write(str(s) + '\r')
 
-    # TODO: rewrite w/o seek()
     def eof(self):
         """ Check for end of file EOF. """
         # for EOF(i)
         if self.mode in ('A', 'O'):
             return False
-        return self.is_eof or (util.peek(self.fhandle) in ('', '\x1a'))
+        return self.next_char in ('', '\x1a')
 
 
 class CRLFTextFileBase(TextFileBase):
@@ -532,14 +530,15 @@ class CRLFTextFileBase(TextFileBase):
 
     def read(self, num=-1):
         """ Read num characters, replacing CR LF with CR. """
-        s, c = '', self.last_char
+        s = ''
         while True:
-            self.last_char, c = c, self.read_raw(1)
+            c = self.read_raw(1)
             if not c:
                 break
+            s += c
             # ignore LF after CR
-            elif c != '\n' or self.last_char != '\r':
-                s += c
+            if c == '\r' and self.next_char == '\n':
+                self.read_raw(1)
         return s
 
     def read_line(self):
