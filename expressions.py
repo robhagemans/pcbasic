@@ -509,7 +509,7 @@ def value_screen(ins):
         return vartypes.pack_int(state.console_state.screen.apage.get_char_attr(row, col, z!=0))
     
 def value_input(ins):
-    """ INPUT$: get a string from the keyboard. """
+    """ INPUT$: get characters from the keyboard or a file. """
     util.require_read(ins, ('$',))
     util.require_read(ins, ('(',))
     num = vartypes.pass_int_unpack(parse_expression(ins))
@@ -518,16 +518,7 @@ def value_input(ins):
     if util.skip_white_read_if(ins, (',',)):
         infile = iolayer.get_file(parse_file_number_opthash(ins))
     util.require_read(ins, (')',))
-    word = bytearray()
-    for char in infile.read_chars(num):
-        if len(char) > 1 and char[0] == '\x00':
-            # replace some scancodes than console can return
-            if char[1] in ('\x4b', '\x4d', '\x48', '\x50', '\x47', '\x49', '\x4f', '\x51', '\x53'):
-                word += '\x00'
-            # ignore all others    
-        else:
-            word += char                        
-    return vartypes.pack_string(bytearray(word))
+    return vartypes.pack_string(bytearray(infile.read_raw(num)))
     
 def value_inkey(ins):
     """ INKEY$: get a character from the keyboard. """

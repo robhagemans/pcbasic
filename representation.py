@@ -483,11 +483,10 @@ def get_number_tokens(fors):
 
 def input_vars_file(readvar, raw_file):
     """ Read a list of variables for INPUT from a file. """
-    c = ''
     for v in readvar:
-        last, c = c, raw_file.read(1)
-        if last == '\r' and c == '\n':
-            last, c = c, raw_file.read(1)
+        # TODO: all the checks for eof are necessary because INPUT PAST END is raised in the file object.
+        #         raise it here and in INPUT$ instead.
+        c = raw_file.read(1)
         typechar = v[0][-1]
         if typechar == '$':
             valstr, c = input_entry(c, raw_file, allow_quotes=True,
@@ -508,6 +507,8 @@ def input_vars_file(readvar, raw_file):
                 # skip trailing whitespace
                 while c in ascii_white and not raw_file.eof():
                     c = raw_file.read(1)
+                # note that ending character (',', '\r', '\x1a', '\n', ...)
+                # is swallowed here
         # and then set the value
         v.append(value)
     return readvar    

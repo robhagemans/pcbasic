@@ -433,7 +433,7 @@ class NullFile(object):
         pass
 
     def write_line(self, s):
-        """ Write string s and CR/LF to device """
+        """ Write string s and the appropriate end-of-line to device """
         pass
 
     def set_width(self, new_width=255):
@@ -444,12 +444,12 @@ class NullFile(object):
         """ Read a line from device. """
         return ''
 
-    def read_chars(self, n):
-        """ Read a list of chars from device. """
-        return []
+    def read_raw(self, n):
+        """ Read a string from device, without CR/LF replacement (INPUT$). """
+        return ''
 
     def read(self, n):
-        """ Read a string from device. """
+        """ Read a string from device (INPUT and LINE INPUT). """
         return ''
 
 
@@ -471,14 +471,19 @@ class RawFile(NullFile):
         """ Close the file. """
         self.fhandle.close()
 
-    def read_chars(self, num=-1):
-        """ Read num chars as a list. If num==-1, read all available. """
-        return list(self.read(num))
-
-    def read(self, num=-1):
-        """ Read num chars as a string. If num==-1, read all available. """
+    def read_raw(self, num=-1):
+        """ Read num chars. If num==-1, read all available. """
         return self.fhandle.read(num)
 
+    def read(self, num=-1):
+        """ Read num chars. If num==-1, read all available. """
+        return self.read_raw(num)
+
+    # read_line is *only* used in LINE INPUT and FIELD text files, both of which are TextFiles not RawFiles
+    # write_line should also only be used on text/ascii program streams
+
+    #D should we really have a read_line, write_line in a raw file?
+    # move to LPTFIle
     def read_line(self):
         """ Read a single line. """
         out = bytearray('')
@@ -501,8 +506,9 @@ class RawFile(NullFile):
         """ Write string or bytearray to file. """
         self.fhandle.write(str(s))
 
+    #D see above
     def write_line(self, s=''):
-        """ Write string or bytearray and newline to file. """ 
+        """ Write string or bytearray and newline to file. """
         self.write(str(s) + '\r\n')
 
     def flush(self):
@@ -544,6 +550,8 @@ class RandomBase(RawFile):
         # width=255 means line wrap
         self.field_text_file.width = 255
 
+    # FIXME: at FIELD OVERFLOW, shouldn't file pointer be left at end of field text file?
+
     def read_line(self):
         """ Read line from FIELD buffer. """
         # FIELD overflow happens if last byte in record is actually read
@@ -551,7 +559,7 @@ class RandomBase(RawFile):
             raise error.RunError(self.overflow_error) # FIELD overflow
         return self.field_text_file.read_line()
 
-    def read(self, num=-1):
+    def read_raw(self, num=-1):
         """ Read num chars as a string, from FIELD buffer. """
         if num==-1 or self.field_text_file.fhandle.tell() + num > self.reclen-1:
             raise error.RunError(self.overflow_error) # FIELD overflow
@@ -636,7 +644,11 @@ class TextFile(RawFile):
                 s += c
         return s
 
-    def read(self, num=-1):
+    def write_line(self, s=''):
+        """ Write string or bytearray and newline to file. """
+        self.write(str(s) + '\r\n')
+
+    def read_raw(self, num=-1):
         """ Read num characters as string. """
         s = ''
         l = 0
@@ -650,10 +662,15 @@ class TextFile(RawFile):
                 if num == -1:
                     break
                 else:
+                    self.fhandle.seek(-len(c), 1)
                     # input past end
                     raise error.RunError(62)
             s += c
-        return s 
+        return s
+
+    def read(self, num=-1):
+        """ Read num characters, replacing CR LF with CR. """
+        return self.read_raw(num).replace('\r\n', '\r')
 
     def write(self, s):
         """ Write the string s to the file, taking care of width settings. """
@@ -747,9 +764,19 @@ class KYBDFile(NullFile):
                 s += c
         return s
 
-    def read_chars(self, num=1):
+    def read_raw(self, num=1):
         """ Read a list of chars from the keyboard - INPUT$ """
-        return state.console_state.keyb.read_chars(num)
+        word = ''
+        for c in state.console_state.keyb.read_chars(n):
+            if len(char) > 1 and char[0] == '\x00':
+                # replace some scancodes than console can return
+                if char[1] in ('\x4b', '\x4d', '\x48', '\x50',
+                                '\x47', '\x49', '\x4f', '\x51', '\x53'):
+                    word += '\x00'
+                # ignore all others
+            else:
+                word += char
+        return word
 
     def read(self, n=1):
         """ Read a string from the keyboard - INPUT and LINE INPUT. """
@@ -961,7 +988,8 @@ class COMFile(RandomBase):
             # device I/O
             raise error.RunError(57)
 
-    def read(self, num=1):
+    # FIXME: num=1 ?
+    def read_raw(self, num=1):
         """ Read num characters from the port as a string; blocking """
         out = ''
         while len(out) < num:
@@ -973,10 +1001,6 @@ class COMFile(RandomBase):
             # allow for break & screen updates
             backend.wait()
         return out
-
-    def read_chars(self, num=1):
-        """ Read num characters from the port as a list; blocking """
-        return list(self.read(num))
 
     def read_line(self):
         """ Blocking read line from the port (not the FIELD buffer!). """

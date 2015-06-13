@@ -134,10 +134,6 @@ class CASFile(iolayer.NullFile):
         """ Move file pointer. """
         self.record_stream.seek(num, from_where)
 
-    def read_chars(self, n):
-        """ Read a list of chars from device. """
-        return list(self.read(n))
-
     def read_line(self):
         """ Read a line from device. """
         if self.eof():
@@ -159,7 +155,12 @@ class CASFile(iolayer.NullFile):
         """ Write string s and CR to tape file. """
         self.write(s + '\r')
 
+
     def read(self, nbytes=-1):
+        """ Read bytes from a file on tape. """
+        return self.read_raw(nbytes)
+
+    def read_raw(self, nbytes=-1):
         """ Read bytes from a file on tape. """
         c = ''
         try:

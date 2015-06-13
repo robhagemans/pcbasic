@@ -560,7 +560,7 @@ class DiskDevice(object):
 def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock='',
                   reclen=128, seg=0, offset=0, length=0):
     """ Return the correct disk file object for this seekable stream. """
-    if set(filetype).intersection(set('ABP')):
+    if set(filetype).intersection(set('ABPM')):
         # we're trying to load/save a program; even ascii programs are ProgramFile
         return ProgramFile(fhandle, filetype, name, number, mode, access, lock,
                             seg, offset, length)
