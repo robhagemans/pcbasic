@@ -395,66 +395,11 @@ class COMDevice(Device):
 # file classes
 
 
-class NullFile(object):
-    """ Base file class. """
-
-    def __init__(self):
-        """ Initialise file. """
-        self.number = 0
-        self.name = ''
-        self.filetype = ''
-
-    def __enter__(self):
-        """ Context guard. """
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        """ Context guard. """
-        self.close()
-
-    def close(self):
-        """ Close this file. """
-        pass
-
-    def lof(self):
-        """ LOF: bad file mode. """
-        raise error.RunError(54)
-
-    def loc(self):
-        """ LOC: bad file mode. """
-        raise error.RunError(54)
-
-    def eof(self):
-        """ EOF: bad file mode. """
-        raise error.RunError(54)
-
-    def write(self, s):
-        """ Write string s to device. """
-        pass
-
-    def write_line(self, s):
-        """ Write string s and the appropriate end-of-line to device """
-        pass
-
-    def set_width(self, new_width=255):
-        """ Set device width. """
-        pass
-
-    def read_raw(self, n):
-        """ Read a string from device, without CR/LF replacement (INPUT$). """
-        return ''
-
-    def read(self, n):
-        """ Read a string from device (INPUT and LINE INPUT). """
-        return ''
-
-
-class RawFile(NullFile):
+class RawFile(object):
     """ File class for raw access to underlying stream. """
 
     def __init__(self, fhandle, name='', number=0, mode='A', access='RW', lock=''):
         """ Setup the basic properties of the file. """
-        # width=255 means line wrap
         self.fhandle = fhandle
         self.name = name
         self.number = number
@@ -487,19 +432,9 @@ class RawFile(NullFile):
         """ Write string or bytearray to file. """
         self.fhandle.write(str(s))
 
-    #D write_line should also only be used on text/ascii program streams
-    def write_line(self, s=''):
-        """ Write string or bytearray and newline to file. """
-        self.write(str(s) + '\r\n')
-
     def flush(self):
         """ Write contents of buffers to file. """
         self.fhandle.flush()
-
-    # needed only for representation.input_vars
-    def eof(self):
-        """ End-of-file. """
-        return (util.peek(self.fhandle) == '')
 
 
 class RandomBase(RawFile):
@@ -550,6 +485,11 @@ class RandomBase(RawFile):
         self.field_text_file.write(s)
         self._check_overflow(write=True)
 
+    def write_line(self, s):
+        """ Write one or more chars and CRLF to FIELD buffer. """
+        self.field_text_file.write_line(s)
+        self._check_overflow(write=True)
+
     def _check_overflow(self, write=False):
         """ Check for FIELD OVERFLOW. """
         # FIELD overflow happens if last byte in record has been read or written
@@ -575,12 +515,25 @@ class RandomBase(RawFile):
         """ Set file width. """
         self.field_text_file.width = new_width
 
-#################################################################################
-# Text file
 
+#################################################################################
+# Text file base
 
 class TextFileBase(RawFile);
     """ Base for text files on disk, KYBD file, field buffer. """
+
+    def __init__(self, fhandle, name, number, mode, access=, lock):
+        """ Setup the basic properties of the file. """
+        self.fhandle = fhandle
+        self.name = name
+        self.number = number
+        self.mode = mode.upper()
+        self.access = access
+        self.lock = lock
+        self.lock_list = set()
+        RawFile.__init__(self, fhandle, name, number, mode, access, lock)
+        # width=255 means line wrap
+        self.width = 255
 
     def read_line(self):
         """ Read a single line. """
@@ -593,10 +546,17 @@ class TextFileBase(RawFile);
             out += c
         return out
 
-    def set_width(self, new_width=255):
-        """ Set the line width of the file. """
-        self.width = new_width
+    def write_line(self, s=''):
+        """ Write string or bytearray and follow with CR or CRLF. """
+        self.write(str(s) + '\r')
 
+    def eof(self):
+        """ End-of-file. """
+        return (util.peek(self.fhandle) == '')
+
+
+#################################################################################
+# Text file
 
 
 
@@ -745,10 +705,9 @@ class KYBDFile(TextFileBase):
 
     def __init__(self):
         """ Initialise keyboard file. """
-        NullFile.__init__(self)
+        TextFileBase.__init__(self)
         self.name = 'KYBD:'
         self.mode = 'I'
-        self.width = 255
 
     def read_raw(self, num=1):
         """ Read a list of chars from the keyboard - INPUT$ """
@@ -798,13 +757,13 @@ class KYBDFile(TextFileBase):
             console.set_width(new_width)
 
 
-class SCRNFile(NullFile):
+class SCRNFile(RawFile):
     """ SCRN: file, allows writing to the screen as a text file. 
         SCRN: files work as a wrapper text file. """
 
     def __init__(self):
         """ Initialise screen file. """
-        NullFile.__init__(self)
+        RawFile.__init__(self)
         self.name = 'SCRN:'
         self.mode = 'O'
         self._width = state.console_state.screen.mode.width
@@ -876,6 +835,18 @@ class SCRNFile(NullFile):
         else:    
             self._width = new_width
 
+    def lof(self):
+        """ LOF: bad file mode. """
+        raise error.RunError(54)
+
+    def loc(self):
+        """ LOC: bad file mode. """
+        raise error.RunError(54)
+
+    def eof(self):
+        """ EOF: bad file mode. """
+        raise error.RunError(54)
+
 
 #################################################################################
 # Parallel-port and printer files
@@ -926,6 +897,10 @@ class LPTFile(TextFileBase):
                 # for lpt1 and files , nonprinting chars are not counted in LPOS; but chr$(8) will take a byte out of the buffer
                 if ord(c) >= 32:
                     self.col += 1
+
+    def write_line(self, s=''):
+        """ Write string or bytearray and newline to file. """
+        self.write(str(s) + '\r\n')
 
     def lof(self):
         """ LOF: bad file mode """
