@@ -469,6 +469,35 @@ class TextFileBase(RawFile):
             out += c
         return out
 
+    def write(self, s):
+        """ Write the string s to the file, taking care of width settings. """
+        # only break lines at the start of a new string. width 255 means unlimited width
+        s_width = 0
+        newline = False
+        # find width of first line in s
+        for c in str(s):
+            if c in ('\r', '\n'):
+                newline = True
+                break
+            if ord(c) >= 32:
+                # nonprinting characters including tabs are not counted for WIDTH
+                s_width += 1
+        if self.width != 255 and self.col != 1 and self.col-1 + s_width > self.width and not newline:
+            self.write_line()
+            self.flush()
+            self.col = 1
+        for c in str(s):
+            # don't replace CR or LF with CRLF when writing to files
+            if c in ('\n', '\r'):
+                self.fhandle.write(c)
+                self.flush()
+                self.col = 1
+            else:
+                self.fhandle.write(c)
+                # nonprinting characters including tabs are not counted for WIDTH
+                if ord(c) >= 32:
+                    self.col += 1
+
     def write_line(self, s=''):
         """ Write string or bytearray and follow with CR or CRLF. """
         self.write(str(s) + '\r')
@@ -481,9 +510,6 @@ class TextFileBase(RawFile):
             return False
         return (util.peek(self.fhandle) in ('', '\x1a'))
 
-
-#################################################################################
-# Text file
 
 class CRLFTextFileBase(TextFileBase):
     """ Text file with CRLF line endings, on disk device or field buffer. """
@@ -498,6 +524,27 @@ class CRLFTextFileBase(TextFileBase):
     def close(self):
         """ Close text file. """
         self.fhandle.close()
+
+    def read_raw(self, num=-1):
+        """ Read num characters as string. """
+        s = ''
+        l = 0
+        while True:
+            if num > -1 and l >= num:
+                break
+            l += 1
+            c = self.fhandle.read(1)
+            # check for \x1A (EOF char will actually stop further reading
+            # (that's true in disk text files but not on LPT devices)
+            if c in ('\x1a', ''):
+                self.fhandle.seek(-len(c), 1)
+                break
+            s += c
+        return s
+
+    def read(self, num=-1):
+        """ Read num characters, replacing CR LF with CR. """
+        return self.read_raw(num).replace('\r\n', '\r')
 
     # TODO: rewrite w/o seek(). EOF handling is OK on FIELD text files.
     def read_line(self):
@@ -531,56 +578,6 @@ class CRLFTextFileBase(TextFileBase):
     def write_line(self, s=''):
         """ Write string or bytearray and newline to file. """
         self.write(str(s) + '\r\n')
-
-    def read_raw(self, num=-1):
-        """ Read num characters as string. """
-        s = ''
-        l = 0
-        while True:
-            if num > -1 and l >= num:
-                break
-            l += 1
-            c = self.fhandle.read(1)
-            # check for \x1A (EOF char will actually stop further reading
-            # (that's true in disk text files but not on LPT devices)
-            if c in ('\x1a', ''):
-                self.fhandle.seek(-len(c), 1)
-                break
-            s += c
-        return s
-
-    def read(self, num=-1):
-        """ Read num characters, replacing CR LF with CR. """
-        return self.read_raw(num).replace('\r\n', '\r')
-
-    def write(self, s):
-        """ Write the string s to the file, taking care of width settings. """
-        # only break lines at the start of a new string. width 255 means unlimited width
-        s_width = 0
-        newline = False
-        # find width of first line in s
-        for c in str(s):
-            if c in ('\r', '\n'):
-                newline = True
-                break
-            if ord(c) >= 32:
-                # nonprinting characters including tabs are not counted for WIDTH
-                s_width += 1
-        if self.width != 255 and self.col != 1 and self.col-1 + s_width > self.width and not newline:
-            self.fhandle.write('\r\n')
-            self.flush()
-            self.col = 1
-        for c in str(s):
-            # don't replace CR or LF with CRLF when writing to files
-            if c in ('\n', '\r'):
-                self.fhandle.write(c)
-                self.flush()
-                self.col = 1
-            else:    
-                self.fhandle.write(c)
-                # nonprinting characters including tabs are not counted for WIDTH
-                if ord(c) >= 32:
-                    self.col += 1
 
 
 #################################################################################
