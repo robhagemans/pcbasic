@@ -151,10 +151,31 @@ def connects(c, d, bset):
 ##################################################
 # conversion
 
+
+def split_utf8(s):
+    """ Split UTF8 string into single-char byte sequences. """
+    # decode and encode each char back
+    try:
+        return [c.encode('utf-8') for c in s.decode('utf-8')]
+    except UnicodeDecodeError:
+        # not valid UTF8, pass through raw.
+        return list(s)
+
 def from_utf8(c):
     """ Convert utf8 char sequence to codepage char sequence. """
     return utf8_to_cp[c]
 
+def str_from_utf8(s):
+    """ Convert utf8 string to codepage string. """
+    chars, s = split_utf8(s), ''
+    for c in chars:
+        try:
+            # try to codepage-encode the one-char UTF8 byte sequence
+            s += from_utf8(c)
+        except KeyError:
+            # pass unknown sequences untranslated. this includes \r.
+            s += c
+    return s
 
 class UTF8Converter(object):
     """ Buffered converter to UTF8 - supports DBCS and box-drawing protection. """

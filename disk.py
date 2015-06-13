@@ -28,6 +28,7 @@ import console
 # for value_to_uint
 import vartypes
 import iolayer
+import unicodepage
 
 # translate os error codes to BASIC error codes
 os_error = {
@@ -46,10 +47,18 @@ os_error = {
     errno.EEXIST: 75, errno.ENOTEMPTY: 75,
     }
 
+# accept CR, LF and CRLF line endings; interpret as CR only if the next line starts with a number
+universal_newline = False
+# interpret "ascii" program files as UTF-8
+utf8_files = False
+
 #####################
 
 def prepare():
     """ Initialise disk devices. """
+    global utf8_files, universal_newline
+    utf8_files = config.options['utf8']
+    universal_newline = not config.options['strict-newline']
     if config.options['map-drives']:
         drives, current_drive = map_drives()
     else:
@@ -578,9 +587,14 @@ def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock=
         # binary [B]LOAD, [B]SAVE
         return BinaryFile(fhandle, filetype, name, number, mode, access, lock,
                            seg, offset, length)
-    elif filetype in 'DA':
+    elif filetype == 'A':
+        # ascii program file (UTF8 or universal newline if option given)
+        return TextFile(fhandle, filetype, name, number,
+                         mode, access, lock, first,
+                         utf8_files, universal_newline)
+    elif filetype == 'D':
         if mode in 'IAO':
-            # text data or ascii program file
+            # text data
             return TextFile(fhandle, filetype, name, number,
                              mode, access, lock, first)
         else:
@@ -646,7 +660,7 @@ class RandomFile(iolayer.RandomBase):
             self.field[:] = '\x00'*self.reclen
         else:
             self.field[:] = self.fhandle.read(self.reclen)
-        self.field_text_file.seek(0)
+        self.field_text_file.fhandle.seek(0)
         self.recpos += 1
 
     def write_field(self, dummy=None):
@@ -686,17 +700,21 @@ class TextFile(iolayer.CRLFTextFileBase):
     """ Text file on disk device. """
 
     def __init__(self, fhandle, filetype, name='', number=0,
-                 mode='A', access='RW', lock='', first_char=''):
+                 mode='A', access='RW', lock='', first_char='',
+                 utf8=False, universal=False):
         """ Initialise text file object. """
         iolayer.CRLFTextFileBase.__init__(self, fhandle, name, number,
                                           mode, access, lock, first_char)
         self.filetype = filetype
+        self.utf8 = utf8
+        self.universal = universal
+        self.spaces = ''
         if self.mode == 'A':
             self.fhandle.seek(0, 2)
 
     def close(self):
         """ Close text file. """
-        if self.mode in ('O', 'A'):
+        if self.mode in ('O', 'A') and not self.utf8:
             # write EOF char
             self.fhandle.write('\x1a')
         iolayer.CRLFTextFileBase.close(self)
@@ -715,6 +733,47 @@ class TextFile(iolayer.CRLFTextFileBase):
         lof = self.fhandle.tell()
         self.fhandle.seek(current)
         return lof
+
+    def write(self, s):
+        """ Write to file in normal or UTF-8 mode. """
+        if self.utf8:
+            s = unicodepage.UTF8Converter().to_utf8(s)
+        iolayer.CRLFTextFileBase.write(self, s)
+
+    def _read_line_universal(self):
+        """ Read line from ascii program file with universal newlines. """
+        # keep reading until any kind of line break
+        # is followed by a line starting with a number
+        s, c = self.spaces, ''
+        self.spaces = ''
+        while len(s) < 255:
+            # read converts CRLF to CR
+            c = self.read(1)
+            if not c or c in ('\r', '\n'):
+                # break on CR, CRLF, LF if next line starts with number
+                while self.next_char in (' ', '\0'):
+                    c = self.read(1)
+                    self.spaces += c
+                if self.next_char in string.digits:
+                    break
+                else:
+                    s += '\n' + self.spaces
+                    self.spaces = ''
+            else:
+                s += c
+        if not c and not s:
+            return None
+
+    def read_line(self):
+        """ Read line from text file. """
+        if not self.universal:
+            s = iolayer.CRLFTextFileBase.read_line(self)
+        else:
+            s = self._read_line_universal()
+        if self.utf8 and s is not None:
+            s = unicodepage.str_from_utf8(s)
+        return s
+
 
 prepare()
 

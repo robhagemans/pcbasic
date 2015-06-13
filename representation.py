@@ -528,7 +528,7 @@ def input_entry(stream, allow_quotes, end_all=(), end_not_quoted=(',',)):
     """ Read a number or string entry for INPUT """
     word, blanks = '', ''
     # skip leading spaces and line feeds and NUL.
-    c = first_char
+    c = stream.read(1)
     while c in ascii_white:
         c = stream.read(1)
     quoted = (c == '"' and allow_quotes)
