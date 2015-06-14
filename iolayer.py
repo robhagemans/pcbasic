@@ -427,7 +427,7 @@ class TextFileBase(RawFile):
         self.col = 1
         # allow first char to be specified (e.g. already read)
         self.next_char = first_char
-        if self.mode == 'I' and not first_char:
+        if self.mode in 'IR' and not first_char:
             self.next_char = self.fhandle.read(1)
 
     def close(self):
@@ -578,7 +578,7 @@ class RandomBase(RawFile):
         # open a pseudo text file over the buffer stream
         # to make WRITE# etc possible
         # all text-file operations on a RANDOM file actually work on the FIELD buffer
-        self.field_text_file = CRLFTextFileBase(ByteStream(self.field.buffer), 'D')
+        self.field_text_file = CRLFTextFileBase(ByteStream(self.field.buffer), filetype='D', mode='R')
 
     def read_line(self):
         """ Read line from FIELD buffer. """
