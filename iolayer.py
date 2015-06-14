@@ -955,12 +955,12 @@ class COMFile(RandomBase):
             # device I/O
             raise error.RunError(57)
 
-    def read_field(self, num):
+    def get(self, num):
         """ Read a record - GET. """
         # blocking read of num bytes
         self.field.buffer[:] = self.read(num)
 
-    def write_field(self, num):
+    def put(self, num):
         """ Write a record - PUT. """
         self.write(self.field.buffer[:num])
 

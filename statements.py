@@ -1156,13 +1156,13 @@ def parse_get_or_put_file(ins):
 def exec_put_file(ins):
     """ PUT: write record to file. """
     thefile, num_bytes = parse_get_or_put_file(ins) 
-    thefile.write_field(num_bytes)
+    thefile.put(num_bytes)
     util.require(ins, util.end_statement)
 
 def exec_get_file(ins):
     """ GET: read record from file. """
     thefile, num_bytes = parse_get_or_put_file(ins) 
-    thefile.read_field(num_bytes)
+    thefile.get(num_bytes)
     util.require(ins, util.end_statement)
     
 def exec_lock_or_unlock(ins, action):

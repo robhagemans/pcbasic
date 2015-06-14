@@ -682,7 +682,7 @@ class RandomFile(iolayer.RandomBase):
         iolayer.RandomBase.close(self)
         release_lock(self.number)
 
-    def read_field(self, dummy=None):
+    def get(self, dummy=None):
         """ Read a record. """
         if self.eof():
             self.field.buffer[:] = '\0' * self.reclen
@@ -691,7 +691,7 @@ class RandomFile(iolayer.RandomBase):
         self.field_text_file.fhandle.seek(0)
         self.recpos += 1
 
-    def write_field(self, dummy=None):
+    def put(self, dummy=None):
         """ Write a record. """
         current_length = self.lof()
         if self.recpos > current_length:
