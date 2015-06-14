@@ -368,8 +368,7 @@ def set_field_var_or_array(random_file, varname, indices, offset, length):
     if varname[-1] != '$':
         # type mismatch
         raise error.RunError(13)
-    field = random_file.field
-    if offset+length > len(field):
+    if offset+length > len(random_file.field.buffer):
         # FIELD overflow
         raise error.RunError(50)    
     str_addr = random_file.field.address + offset
