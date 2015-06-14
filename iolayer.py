@@ -427,7 +427,7 @@ class TextFileBase(RawFile):
         self.col = 1
         # allow first char to be specified (e.g. already read)
         self.next_char = first_char
-        if self.mode in 'IR' and not first_char:
+        if self.mode == 'I' and not first_char:
             self.next_char = self.fhandle.read(1)
 
     def close(self):
@@ -565,8 +565,10 @@ class RandomBase(RawFile):
     # FIELD overflow
     overflow_error = 50
 
-    def __init__(self, fhandle, filetype, field, name, mode, access, lock, reclen=128):
+    def __init__(self, fhandle, filetype, field,
+                  name, mode, access, lock, reclen=128):
         """ Initialise random-access file. """
+        # note that for random files, fhandle must be a seekable stream.
         RawFile.__init__(self, fhandle, filetype, name, mode, access, lock)
         self.reclen = reclen
         # replace with empty field if already exists
@@ -575,32 +577,54 @@ class RandomBase(RawFile):
         else:
             self.field = Field(0)
         self.field.reset(self.reclen)
-        # open a pseudo text file over the buffer stream
-        # to make WRITE# etc possible
-        # all text-file operations on a RANDOM file actually work on the FIELD buffer
-        self.field_text_file = CRLFTextFileBase(ByteStream(self.field.buffer), filetype='D', mode='R')
+        # open a pseudo text file over the (seekable) buffer stream
+        # all text-file operations on a RANDOM file (PRINT, WRITE, INPUT, ...)
+        # actually work on the FIELD buffer; the file stream itself is not
+        # touched until PUT or GET.
+        self.field_text_file = CRLFTextFileBase(ByteStream(self.field.buffer),
+                                                filetype='D', mode='I')
 
     def read_line(self):
         """ Read line from FIELD buffer. """
+        self._switch_mode('I')
         s = self.field_text_file.read_line()
         self._check_overflow()
         return s
 
     def read_raw(self, num=-1):
-        """ Read num chars as a string, from FIELD buffer. """
+        """ Read num chars from FIELD buffer. """
+        self._switch_mode('I')
+        s = self.field_text_file.read_raw(num)
+        self._check_overflow()
+        return s
+
+    def read(self, num=-1):
+        """ Read num chars from FIELD buffer. """
+        self._switch_mode('I')
         s = self.field_text_file.read(num)
         self._check_overflow()
         return s
 
     def write(self, s):
         """ Write one or more chars to FIELD buffer. """
+        self._switch_mode('O')
         self.field_text_file.write(s)
         self._check_overflow(write=True)
 
     def write_line(self, s=''):
         """ Write one or more chars and CRLF to FIELD buffer. """
+        self._switch_mode('O')
         self.field_text_file.write_line(s)
         self._check_overflow(write=True)
+
+    def _switch_mode(self, new_mode):
+        """ Switch file to reading or writing mode. """
+        if self.field_text_file.mode == 'O' and new_mode == 'I':
+            self.field_text_file.flush()
+            self.field_text_file.next_char = self.field_text_file.fhandle.read(1)
+        elif self.field_text_file.mode == 'I' and new_mode == 'O':
+            self.field_text_file.fhandle.seek(-1, 1)
+        self.field_text_file.mode = new_mode
 
     def _check_overflow(self, write=False):
         """ Check for FIELD OVERFLOW. """
