@@ -646,8 +646,8 @@ def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock=
             return TextFile(fhandle, filetype, name,
                              mode, access, lock, first)
         else:
-            return RandomFile(fhandle, name, state.io_state.fields[number],
-                               mode, access, lock, reclen)
+            return RandomFile(fhandle, state.io_state.fields[number],
+                               name, mode, access, lock, reclen)
     else:
         # internal error - incorrect file type requested
         logging.debug('Incorrect file type %s requested for mode %s',
@@ -691,10 +691,9 @@ class RandomFile(iolayer.RandomBase):
     def __init__(self, fhandle, field, name,
                         mode, access, lock, reclen=128):
         """ Initialise random-access file. """        
-        iolayer.RandomBase.__init__(self, fhandle, field, name,
+        iolayer.RandomBase.__init__(self, fhandle, 'D', field, name,
                                           mode, access, lock, reclen)
         # position at start of file
-        self.filetype = 'D'
         self.recpos = 0
         self.fhandle.seek(0)
 
