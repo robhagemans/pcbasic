@@ -170,7 +170,42 @@ else:
             drives['H'] = home, ''
         return drives, 'Z'
 
-################################
+
+##############################################################################
+# Locks
+
+# dict of native file names by number, for locking
+state.io_state.locks = {}
+
+def list_locks(name):
+    """ Retrieve a list of files open to the same disk stream. """
+    return [ state.io_state.files[fnum]
+                   for (fnum, fname) in state.io_state.locks.iteritems()
+                   if fname == name ]
+
+def acquire_lock(name, number, lock_type, access):
+    """ Try to lock a file. """
+    already_open = list_locks(name)
+    state.io_state.locks[number] = name
+    for f in already_open:
+        if (
+                # default mode: don't accept if SHARED/LOCK present
+                ((not lock_type) and f.lock_type) or
+                # LOCK READ WRITE: don't accept if already open
+                (lock_type == 'RW') or
+                # SHARED: don't accept if open in default mode
+                (lock_type == 'S' and not f.lock_type) or
+                # LOCK READ or LOCK WRITE: accept base on ACCESS of open file
+                (lock_type in f.access) or (f.lock_type in access)):
+            # permission denied
+            raise error.RunError(70)
+
+def release_lock(number):
+    """ Release the lock on a file before closing. """
+    del state.io_state.locks[number]
+
+##############################################################################
+# Exception handling
 
 def safe(fnname, *fnargs):
     """ Execute OS function and handle errors. """
@@ -206,71 +241,7 @@ def get_diskdevice_and_path(path):
             raise error.RunError(68)
 
 
-################################
-# Locking (disk only)
-
-
-def find_files_by_name(name):
-    """ Find all file numbers open to the given filename."""
-    return [state.io_state.files[f] for f in state.io_state.files if state.io_state.files[f].name == name]
-
-def lock_records(thefile, start, stop):
-    """ Try to lock a range of records in a file. """
-    if thefile.name in backend.devices:
-        # permission denied
-        raise error.RunError(70)
-    lock_list = set()
-    for f in find_files_by_name(thefile.name):
-        lock_list |= f.lock_list
-    if isinstance(thefile, TextFile):
-        bstart, bstop = 0, -1
-        if lock_list:
-            raise error.RunError(70)
-    else:
-        bstart, bstop = (start-1) * thefile.reclen, stop*thefile.reclen - 1
-        for start_1, stop_1 in lock_list:
-            if stop_1 == -1 or (bstart >= start_1 and bstart <= stop_1) or (bstop >= start_1 and bstop <= stop_1):
-                raise error.RunError(70)
-    thefile.lock_list.add((bstart, bstop))
-
-def unlock_records(thefile, start, stop):
-    """ Unlock a range of records in a file. """
-    if thefile.name in backend.devices:
-        # permission denied
-        raise error.RunError(70)
-    if isinstance(thefile, TextFile):
-        bstart, bstop = 0, -1
-    else:
-        bstart, bstop = (start-1) * thefile.reclen, stop*thefile.reclen - 1
-    # permission denied if the exact record range wasn't given before
-    try:
-        thefile.lock_list.remove((bstart, bstop))
-    except KeyError:
-        raise error.RunError(70)
-
-def request_lock(name, lock, access):
-    """ Try to lock a file. """
-    same_files = find_files_by_name(name)
-    if not lock:
-        # default mode; don't accept default mode if SHARED/LOCK present
-        for f in same_files:
-            if f.lock:
-                raise error.RunError(70)
-    elif lock == 'RW':
-        # LOCK READ WRITE
-        raise error.RunError(70)
-    elif lock == 'S':
-        # SHARED
-        for f in same_files:
-            if not f.lock:
-                raise error.RunError(70)
-    else:
-        # LOCK READ or LOCK WRITE
-        for f in same_files:
-            if f.access == lock or lock == 'RW':
-                raise error.RunError(70)
-
-################################
+##############################################################################
 # DOS name translation
 
 if plat.system == 'Windows':
@@ -416,8 +387,8 @@ class DiskDevice(object):
             # if it doesn't exist, create an all-caps 8.3 file name
             name = self.native_path(param, defext, make_new=True)
         # obtain a lock
-        request_lock(name, lock, access)
-        # open the file
+        acquire_lock(name, number, lock, access)
+        # open the underlying stream
         fhandle = self.open_stream(name, mode, access)
         # apply the BASIC file wrapper
         return open_diskfile(fhandle, filetype, mode, name, number, access, lock, reclen)
@@ -633,21 +604,20 @@ def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock=
             filetype = 'A'
     if filetype in 'BPM':
         # binary [B]LOAD, [B]SAVE
-        return BinaryFile(fhandle, filetype, name, mode, access, lock,
+        return BinaryFile(fhandle, filetype, number, name, mode,
                            seg, offset, length)
     elif filetype == 'A':
         # ascii program file (UTF8 or universal newline if option given)
-        return TextFile(fhandle, filetype, name,
+        return TextFile(fhandle, filetype, number, name,
                          mode, access, lock, first,
                          utf8_files, universal_newline)
     elif filetype == 'D':
         if mode in 'IAO':
             # text data
-            return TextFile(fhandle, filetype, name,
+            return TextFile(fhandle, filetype, number, name,
                              mode, access, lock, first)
         else:
-            return RandomFile(fhandle, state.io_state.fields[number],
-                               name, mode, access, lock, reclen)
+            return RandomFile(fhandle, number, name, mode, access, lock, reclen)
     else:
         # internal error - incorrect file type requested
         logging.debug('Incorrect file type %s requested for mode %s',
@@ -658,11 +628,14 @@ def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock=
 class BinaryFile(iolayer.RawFile):
     """ File class for binary (B, P, M) files on disk device. """
 
-    def __init__(self, fhandle, filetype, name, mode,
-                       access, lock, seg, offset, length):
+    def __init__(self, fhandle, filetype, number, name, mode,
+                       seg, offset, length):
         """ Initialise program file object and write header. """
-        iolayer.RawFile.__init__(self, fhandle, filetype, name,
-                                 mode, access, lock)
+        iolayer.RawFile.__init__(self, fhandle, filetype, mode)
+        self.number = number
+        # don't lock binary files
+        self.lock = ''
+        self.access = 'RW'
         self.seg, self.offset, self.length = 0, 0, 0
         if self.mode == 'O':
             self.write(iolayer.type_to_magic[filetype])
@@ -682,25 +655,32 @@ class BinaryFile(iolayer.RawFile):
         """ Write EOF and close program file. """
         if self.mode == 'O':
             self.write('\x1a')
-        self.fhandle.close()
+        iolayer.RawFile.close(self)
+        release_lock(self.number)
 
 
 class RandomFile(iolayer.RandomBase):
     """ Random-access file on disk device. """
 
-    def __init__(self, fhandle, field, name,
+    def __init__(self, fhandle, number, name,
                         mode, access, lock, reclen=128):
-        """ Initialise random-access file. """        
-        iolayer.RandomBase.__init__(self, fhandle, 'D', field, name,
-                                          mode, access, lock, reclen)
+        """ Initialise random-access file. """
+        iolayer.RandomBase.__init__(self, fhandle, 'D',
+                                          state.io_state.fields[number],
+                                          mode, reclen)
+        self.lock_type = lock
+        self.access = access
+        self.lock_list = set()
+        self.number = number
+        self.name = name
         # position at start of file
         self.recpos = 0
         self.fhandle.seek(0)
 
     def close(self):
         """ Close random-access file. """
-        if self.fhandle:
-            self.fhandle.close()
+        iolayer.RandomBase.close(self)
+        release_lock(self.number)
 
     def read_field(self, dummy=None):
         """ Read a record. """
@@ -743,16 +723,40 @@ class RandomFile(iolayer.RandomBase):
         self.fhandle.seek(current)
         return lof
 
+    def lock(self, start, stop, lock_list):
+        """ Lock range of records. """
+        bstart, bstop = (start-1) * self.reclen, stop*self.reclen - 1
+        other_lock_list = set.union(f.lock_list for f in list_locks(self.name))
+        for start_1, stop_1 in other_lock_list:
+            if (stop_1 == -1 or (bstart >= start_1 and bstart <= stop_1)
+                             or (bstop >= start_1 and bstop <= stop_1)):
+                raise error.RunError(70)
+        self.lock_list.add((bstart, bstop))
+
+    def unlock(self, start, stop, lock_list):
+        """ Unlock range of records. """
+        bstart, bstop = (start-1) * self.reclen, stop*self.reclen - 1
+        # permission denied if the exact record range wasn't given before
+        try:
+            self.lock_list.remove((bstart, bstop))
+        except KeyError:
+            raise error.RunError(70)
+
 
 class TextFile(iolayer.CRLFTextFileBase):
     """ Text file on disk device. """
 
-    def __init__(self, fhandle, filetype, name='',
+    def __init__(self, fhandle, filetype, number, name,
                  mode='A', access='RW', lock='', first_char='',
                  utf8=False, universal=False):
         """ Initialise text file object. """
-        iolayer.CRLFTextFileBase.__init__(self, fhandle, filetype, name,
-                                          mode, access, lock, first_char)
+        iolayer.CRLFTextFileBase.__init__(self, fhandle, filetype,
+                                          mode, first_char)
+        self.lock_list = set()
+        self.lock_type = lock
+        self.access = access
+        self.number = number
+        self.name = name
         self.utf8 = utf8
         self.universal = universal
         self.spaces = ''
@@ -768,6 +772,7 @@ class TextFile(iolayer.CRLFTextFileBase):
             # write EOF char
             self.fhandle.write('\x1a')
         iolayer.CRLFTextFileBase.close(self)
+        release_lock(self.number)
 
     def loc(self):
         """ Get file pointer LOC """
@@ -831,6 +836,18 @@ class TextFile(iolayer.CRLFTextFileBase):
             s = unicodepage.str_from_utf8(s)
         return s
 
+    def lock(self, start, stop, lock_list):
+        """ Lock the file. """
+        if set.union(f.lock_list for f in list_locks(self.name)):
+            raise error.RunError(70)
+        self.lock_list.add((0, -1))
+
+    def unlock(self, start, stop):
+        """ Unlock the file. """
+        try:
+            self.lock_list.remove((0, -1))
+        except KeyError:
+            raise error.RunError(70)
 
 prepare()
 
