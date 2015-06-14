@@ -785,7 +785,7 @@ class TextFile(iolayer.CRLFTextFileBase):
         self.fhandle.seek(current)
         return lof
 
-    def write_line(self, s):
+    def write_line(self, s=''):
         """ Write to file in normal or UTF-8 mode. """
         if self.utf8:
             s = unicodepage.UTF8Converter().to_utf8(s)

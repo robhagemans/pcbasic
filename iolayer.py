@@ -597,7 +597,7 @@ class RandomBase(RawFile):
         self.field_text_file.write(s)
         self._check_overflow(write=True)
 
-    def write_line(self, s):
+    def write_line(self, s=''):
         """ Write one or more chars and CRLF to FIELD buffer. """
         self.field_text_file.write_line(s)
         self._check_overflow(write=True)
