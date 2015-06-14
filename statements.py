@@ -1176,7 +1176,7 @@ def exec_lock_or_unlock(ins, action):
         lock_stop_rec = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
     if lock_start_rec < 1 or lock_start_rec > 2**25-2 or lock_stop_rec < 1 or lock_stop_rec > 2**25-2:   
         raise error.RunError(63)
-    action(iolayer.get_file(thefile.number), lock_start_rec, lock_stop_rec)
+    action(thefile, lock_start_rec, lock_stop_rec)
     util.require(ins, util.end_statement)
 
 exec_lock = partial(exec_lock_or_unlock, action = disk.lock_records)

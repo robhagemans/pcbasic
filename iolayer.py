@@ -28,8 +28,6 @@ import printer
 
 # file numbers
 state.io_state.files = {}
-# fields are preserved on file close, so have a separate store
-state.io_state.fields = {}
 
 # maximum file number = maximum number of open files
 # this is a command line option -f
@@ -40,42 +38,6 @@ max_reclen = 128
 # buffer sizes (/c switch in GW-BASIC)
 serial_in_size = 256
 serial_out_size = 128
-
-# GW-BASIC FILE CONTROL BLOCK structure:
-# source: IBM Basic reference 1982 (for BASIC-C, BASIC-D, BASIC-A) appendix I-5
-# byte  length  description
-# 0     1       Mode 1-input 2-output 4-random 16-append
-# 1     38      MSDOS FCB:
-# ------------------------
-# 0     1       Drive number (0=Default, 1=A, etc)
-# 01h   8       blank-padded file name
-# 09h   3       blank-padded file extension
-# 0Ch   2       current block number
-# 0Eh   2       logical record size
-# 10h   4       file size
-# 14h   2       date of last write (see #01666 at AX=5700h)
-# 16h   2       time of last write (see #01665 at AX=5700h) (DOS 1.1+)
-# 18h   8       reserved (see #01347,#01348,#01349,#01350,#01351)
-# 20h   1       record within current block
-# 21h   4       random access record number (if record size is > 64 bytes, high byte is omitted)
-# ------------------------
-# 39    2       For seq files, the number of sectors read or written. For random files, 1+the last record read or written
-# 41    1       Number of bytes in sector when read or written
-# 42    1       Number of bytes left in input buffer
-# 43    3       (reserved)
-# 46    1       Drive number 0=A, 1=B, 248=LPT3,2 250=COM2,1 252=CAS1 253=LPT1 254=SCRN 255=KYBD
-# 47    1       Device width
-# 48    1       Position in buffer for PRINT#
-# 49    1       internal use during LOAD and SAVE
-# 50    1       Output position used during tab expansion
-# 51    128     Physical data buffer for transfer between DOS and BASIC. Can examine this data in seq I/O mode.
-# 179   2       Variable length record size, default 128
-# 181   2       Current physical record number
-# 183   2       Current logical record number
-# 185   1       (reserved)
-# 186   2       Position for PRINT#, INPUT#, WRITE#
-# 188   n       FIELD buffer, default length 128 (given by /s:n)
-
 nullstream = open(os.devnull, 'w')
 
 # set by disk.py
@@ -575,6 +537,25 @@ class CRLFTextFileBase(TextFileBase):
         self.write(str(s) + '\r\n')
 
 
+############################################################################
+# FIELD buffers
+
+class Field(object):
+    """ Buffer for FIELD access. """
+
+    def __init__(self, number):
+        """ Set up empty FIELD buffer. """
+        if number > 0:
+            self.address = memory.field_mem_start + (number-1)*memory.field_mem_offset
+        else:
+            self.address = -1
+        self.buffer = bytearray()
+
+    def reset(self, reclen):
+        """ Initialise FIELD buffer to reclen NULs. """
+        self.buffer = bytearray(reclen)
+
+
 #################################################################################
 # Random-access file base
 
@@ -584,28 +565,20 @@ class RandomBase(RawFile):
     # FIELD overflow
     overflow_error = 50
 
-    def __init__(self, fhandle, filetype, name, number, mode, access, lock, reclen=128):
+    def __init__(self, fhandle, filetype, field, name, number, mode, access, lock, reclen=128):
         """ Initialise random-access file. """
         RawFile.__init__(self, fhandle, filetype, name, number, mode, access, lock)
         self.reclen = reclen
         # replace with empty field if already exists
-        try:
-            self.field = state.io_state.fields[self.number]
-        except KeyError:
-            self.field = bytearray()
-            state.io_state.fields[self.number] = self.field
-        if self.number > 0:
-            self.field_address = memory.field_mem_start + (self.number-1)*memory.field_mem_offset
+        if field:
+            self.field = field
         else:
-            self.field_address = -1
-        self.field[:] = bytearray('\x00')*reclen
+            self.field = Field(0)
+        self.field.reset(self.reclen)
         # open a pseudo text file over the buffer stream
         # to make WRITE# etc possible
         # all text-file operations on a RANDOM file number actually work on the FIELD buffer
-        self.field_text_file = CRLFTextFileBase(ByteStream(self.field), 'D')
-        self.field_text_file.col = 1
-        # width=255 means line wrap
-        self.field_text_file.width = 255
+        self.field_text_file = CRLFTextFileBase(ByteStream(self.field.buffer), 'D')
 
     def read_line(self):
         """ Read line from FIELD buffer. """
@@ -910,7 +883,8 @@ class COMFile(RandomBase):
     def __init__(self, stream):
         """ Initialise COMn: device """
         # we don't actually need the name for non-disk files
-        RandomBase.__init__(self, stream, 'COMn:', 0, 'R', 'RW', '', serial_in_size)
+        RandomBase.__init__(self, stream, None, 'COMn:', 0,
+                                  'R', 'RW', '', serial_in_size)
         self.in_buffer = bytearray()
         self.linefeed = False
 
@@ -974,11 +948,11 @@ class COMFile(RandomBase):
     def read_field(self, num):
         """ Read a record - GET. """
         # blocking read of num bytes
-        self.field[:] = self.read(num)
+        self.field.buffer[:] = self.read(num)
 
     def write_field(self, num):
         """ Write a record - PUT. """
-        self.write(self.field[:num])
+        self.write(self.field.buffer[:num])
 
     def loc(self):
         """ LOC: Returns number of chars waiting to be read. """
