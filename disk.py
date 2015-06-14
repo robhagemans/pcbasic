@@ -633,21 +633,21 @@ def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock=
             filetype = 'A'
     if filetype in 'BPM':
         # binary [B]LOAD, [B]SAVE
-        return BinaryFile(fhandle, filetype, name, number, mode, access, lock,
+        return BinaryFile(fhandle, filetype, name, mode, access, lock,
                            seg, offset, length)
     elif filetype == 'A':
         # ascii program file (UTF8 or universal newline if option given)
-        return TextFile(fhandle, filetype, name, number,
+        return TextFile(fhandle, filetype, name,
                          mode, access, lock, first,
                          utf8_files, universal_newline)
     elif filetype == 'D':
         if mode in 'IAO':
             # text data
-            return TextFile(fhandle, filetype, name, number,
+            return TextFile(fhandle, filetype, name,
                              mode, access, lock, first)
         else:
             return RandomFile(fhandle, name, state.io_state.fields[number],
-                               number, mode, access, lock, reclen)
+                               mode, access, lock, reclen)
     else:
         # internal error - incorrect file type requested
         logging.debug('Incorrect file type %s requested for mode %s',
@@ -658,10 +658,10 @@ def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock=
 class BinaryFile(iolayer.RawFile):
     """ File class for binary (B, P, M) files on disk device. """
 
-    def __init__(self, fhandle, filetype, name, number, mode,
+    def __init__(self, fhandle, filetype, name, mode,
                        access, lock, seg, offset, length):
         """ Initialise program file object and write header. """
-        iolayer.RawFile.__init__(self, fhandle, filetype, name, number,
+        iolayer.RawFile.__init__(self, fhandle, filetype, name,
                                  mode, access, lock)
         self.seg, self.offset, self.length = 0, 0, 0
         if self.mode == 'O':
@@ -688,10 +688,10 @@ class BinaryFile(iolayer.RawFile):
 class RandomFile(iolayer.RandomBase):
     """ Random-access file on disk device. """
 
-    def __init__(self, fhandle, field, name, number,
+    def __init__(self, fhandle, field, name,
                         mode, access, lock, reclen=128):
         """ Initialise random-access file. """        
-        iolayer.RandomBase.__init__(self, fhandle, field, name, number,
+        iolayer.RandomBase.__init__(self, fhandle, field, name,
                                           mode, access, lock, reclen)
         # position at start of file
         self.filetype = 'D'
@@ -748,11 +748,11 @@ class RandomFile(iolayer.RandomBase):
 class TextFile(iolayer.CRLFTextFileBase):
     """ Text file on disk device. """
 
-    def __init__(self, fhandle, filetype, name='', number=0,
+    def __init__(self, fhandle, filetype, name='',
                  mode='A', access='RW', lock='', first_char='',
                  utf8=False, universal=False):
         """ Initialise text file object. """
-        iolayer.CRLFTextFileBase.__init__(self, fhandle, filetype, name, number,
+        iolayer.CRLFTextFileBase.__init__(self, fhandle, filetype, name,
                                           mode, access, lock, first_char)
         self.utf8 = utf8
         self.universal = universal

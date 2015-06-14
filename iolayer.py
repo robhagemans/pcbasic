@@ -181,8 +181,7 @@ class Device(object):
         if mode not in self.allowed_modes:
             # bad file mode
             raise error.RunError(54)
-        new_file = self.device_file.clone(filetype, number,
-                                          mode, access, lock, reclen)
+        new_file = self.device_file.clone(filetype, mode, access, lock, reclen)
         return new_file
 
     def close(self):
@@ -360,16 +359,17 @@ class COMDevice(Device):
 class RawFile(object):
     """ File class for raw access to underlying stream. """
 
-    def __init__(self, fhandle, filetype, name='', number=0, mode='A', access='RW', lock=''):
+    def __init__(self, fhandle, filetype, name='', mode='A', access='RW', lock=''):
         """ Setup the basic properties of the file. """
         self.fhandle = fhandle
         self.filetype = filetype
         self.name = name
-        self.number = number
         self.mode = mode.upper()
         self.access = access
         self.lock = lock
         self.lock_list = set()
+        # on master-file devices, this is the master file.
+        self.is_master = True
 
     def __enter__(self):
         """ Context guard. """
@@ -379,15 +379,15 @@ class RawFile(object):
         """ Context guard. """
         self.close()
 
-    def clone(self, filetype, number, mode, access, lock='', reclen=128):
+    def clone(self, filetype, mode, access, lock='', reclen=128):
         """ Clone device file. """
         inst = copy.copy(self)
-        inst.number = number
         inst.access = access
         inst.mode = mode
         inst.lock = lock
         inst.reclen = reclen
         inst.filetype = filetype
+        inst.is_master = False
         return inst
 
     def close(self):
@@ -418,10 +418,10 @@ class RawFile(object):
 class TextFileBase(RawFile):
     """ Base for text files on disk, KYBD file, field buffer. """
 
-    def __init__(self, fhandle, filetype, name='', number=0,
+    def __init__(self, fhandle, filetype, name='',
                  mode='A', access='RW', lock='', first_char=''):
         """ Setup the basic properties of the file. """
-        RawFile.__init__(self, fhandle, filetype, name, number, mode, access, lock)
+        RawFile.__init__(self, fhandle, filetype, name, mode, access, lock)
         # width=255 means line wrap
         self.width = 255
         self.col = 1
@@ -565,9 +565,9 @@ class RandomBase(RawFile):
     # FIELD overflow
     overflow_error = 50
 
-    def __init__(self, fhandle, filetype, field, name, number, mode, access, lock, reclen=128):
+    def __init__(self, fhandle, filetype, field, name, mode, access, lock, reclen=128):
         """ Initialise random-access file. """
-        RawFile.__init__(self, fhandle, filetype, name, number, mode, access, lock)
+        RawFile.__init__(self, fhandle, filetype, name, mode, access, lock)
         self.reclen = reclen
         # replace with empty field if already exists
         if field:
@@ -577,7 +577,7 @@ class RandomBase(RawFile):
         self.field.reset(self.reclen)
         # open a pseudo text file over the buffer stream
         # to make WRITE# etc possible
-        # all text-file operations on a RANDOM file number actually work on the FIELD buffer
+        # all text-file operations on a RANDOM file actually work on the FIELD buffer
         self.field_text_file = CRLFTextFileBase(ByteStream(self.field.buffer), 'D')
 
     def read_line(self):
@@ -688,7 +688,7 @@ class KYBDFile(TextFileBase):
 
     def set_width(self, new_width=255):
         """ Setting width on KYBD device (not files) changes screen width. """
-        if self.number == 0:
+        if self.is_master:
             console.set_width(new_width)
 
 
@@ -705,9 +705,9 @@ class SCRNFile(RawFile):
         self._col = state.console_state.col
         self._write_magic(filetype)
 
-    def clone(self, filetype, number, mode, access, lock='', reclen=128):
+    def clone(self, filetype, mode, access, lock='', reclen=128):
         """ Close screen file. """
-        inst = RawFile.clone(self, filetype, number, mode, access, lock, reclen)
+        inst = RawFile.clone(self, filetype, mode, access, lock, reclen)
         inst._write_magic(filetype)
         return inst
 
@@ -722,7 +722,7 @@ class SCRNFile(RawFile):
     def write(self, s):
         """ Write string s to SCRN: """
         # writes to SCRN files should *not* be echoed
-        do_echo = (self.number == 0)
+        do_echo = self.is_master
         self._col = state.console_state.col
         # take column 80+overflow int account
         if state.console_state.overflow:
@@ -760,12 +760,12 @@ class SCRNFile(RawFile):
     def write_line(self, inp=''):
         """ Write a string to the screen and follow by CR. """
         self.write(inp)
-        console.write_line(do_echo=(self.number==0))
+        console.write_line(do_echo=self.is_master)
 
     @property
     def col(self):  
         """ Return current (virtual) column position. """
-        if self.number == 0:
+        if self.is_master:
             return state.console_state.col
         else:
             return self._col
@@ -773,14 +773,14 @@ class SCRNFile(RawFile):
     @property
     def width(self):
         """ Return (virtual) screen width. """
-        if self.number == 0:
+        if self.is_master:
             return state.console_state.screen.mode.width
         else:
             return self._width
 
     def set_width(self, new_width=255):
         """ Set (virtual) screen width. """
-        if self.number == 0:
+        if self.is_master:
             console.set_width(new_width)
         else:    
             self._width = new_width

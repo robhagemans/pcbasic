@@ -82,7 +82,7 @@ class CASDevice(object):
         if not self.tapestream or not self.tapestream.ok():
             # device unavailable
             raise error.RunError(68)
-        return self.file_cls(self.tapestream, filetype, param, number, mode,
+        return self.file_cls(self.tapestream, filetype, param, mode,
                               seg, offset, length)
 
 
@@ -93,7 +93,7 @@ class CASDevice(object):
 class CASFile(iolayer.TextFileBase):
     """ File on CASn: device. """
 
-    def __init__(self, tapestream, filetype, name='', number=0, mode='A',
+    def __init__(self, tapestream, filetype, name='', mode='A',
                  seg=0, offs=0, length=0):
         """ Initialise file on tape. """
         iolayer.TextFileBase.__init__(self, iolayer.nullstream, filetype)
@@ -108,7 +108,6 @@ class CASFile(iolayer.TextFileBase):
             self.filetype = filetype
             self.tapestream.switch_mode('w')
             self._write_header(name, filetype, length, seg, offs)
-        self.number = number
         self.name = name
         self.mode = mode
         # needed for file writing
