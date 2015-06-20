@@ -474,8 +474,10 @@ def close():
             idle()
     if android:
         pygame_android.close()
-    pygame.joystick.quit()
-    pygame.display.quit()    
+    # if pygame import failed, close() is called while pygame is None
+    if pygame:
+        pygame.joystick.quit()
+        pygame.display.quit()
 
 def get_palette_index(cattr):
     """ Find the index in the game palette for this attribute. """
