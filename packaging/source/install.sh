@@ -26,9 +26,7 @@ install_deps() {
 uninstall_deps() {
     if [ $DEB ] && [ "$(id -u)" -eq "0" ]; then
         echo "Uninstalling packages ..."
-        echo "auto $DEBDEPS"
         apt-mark auto $DEBDEPS
-        echo "manual $MANUAL"
         apt-mark manual $MANUAL
     fi
 }
