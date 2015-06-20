@@ -7,6 +7,32 @@ SPAWNED=$1
 DEPS="pygame numpy serial parallel pexpect"
 PYTHON="/usr/bin/env python2"
 
+init_package_manager() {
+    if ( command -v apt-get >/dev/null 2>&1 && command -v apt-mark >/dev/null 2>&1 ); then
+        echo "APT package manager found"
+        DEB=1
+        DEBDEPS="python2.7 python-pygame python-numpy python-serial python-parallel python-pexpect xsel"
+        MANUAL=$(apt-mark showmanual $DEBDEPS)
+    fi
+}
+
+install_deps() {
+    if [ $DEB ] && [ "$(id -u)" -eq "0" ]; then
+        echo "Installing packages $DEBDEPS ..."
+        apt-get install $DEBDEPS
+    fi
+}
+
+uninstall_deps() {
+    if [ $DEB ] && [ "$(id -u)" -eq "0" ]; then
+        echo "Uninstalling packages ..."
+        echo "auto $DEBDEPS"
+        apt-mark auto $DEBDEPS
+        echo "manual $MANUAL"
+        apt-mark manual $MANUAL
+    fi
+}
+
 do_close () {
     if [ "$SPAWNED" = "spawned" ]; then
         echo "Press ENTER to exit."
@@ -65,9 +91,6 @@ do_install () {
     echo "INSTALLATION SCRIPT"
     echo
 
-    check_python
-    check_dependencies
-
     #default installation directory
     DEFAULT_DIR="/opt/pcbasic/"
     DESKTOP_DIR="/usr/share/applications"
@@ -107,6 +130,7 @@ do_install () {
     fi
 
     check_permissions
+    init_package_manager
 
     UNINSTALLER="$INSTALL_DIR/uninstall.sh"
 
@@ -124,14 +148,21 @@ do_install () {
     echo "I will create an icon $ICON_DIR/pcbasic.png"
     echo "I will create an uninstall script $UNINSTALLER"
 
+    if [ $DEB ] && [ "$(id -u)" -eq "0" ]; then
+        echo "I will install the packages $DEBDEPS"
+    fi
+
     echo
     echo -n "Start installation [y/N] ? "
     read ANSWER
 
-    if [ "$ANSWER" != "y" -a "$ANSWER" != "Y" ]; then
+    if [ "$ANSWER" != "y" ] && [ "$ANSWER" != "Y" ]; then
         abort
     fi
 
+    install_deps
+    check_python
+    check_dependencies
 
     echo 
     echo "Compiling Python modules ... "
@@ -196,6 +227,9 @@ do_install () {
     echo "DESKTOP_DIR=$DESKTOP_DIR" >> $UNINSTALLER
     echo "ICON_DIR=$ICON_DIR" >> $UNINSTALLER
     echo "INSTALL_DIR=$INSTALL_DIR">> $UNINSTALLER
+    echo "DEB=$DEB">> $UNINSTALLER
+    echo "DEBDEPS='$DEBDEPS'">> $UNINSTALLER
+    echo "MANUAL='$MANUAL'">> $UNINSTALLER
     
     # invert dirs to delete them recursively
     INVERTED_DIRS=$(echo "$DIRS" | sed '1!G;h;$!d')
@@ -223,10 +257,13 @@ do_uninstall () {
     fi
     echo "I will delete program files from $INSTALL_DIR"
     echo
+    if [ $DEB ] && [ "$(id -u)" -eq "0" ]; then
+        echo "I will mark package dependencies for removal"
+    fi
     
     echo -n "Start un-installation [y/N] ?"
     read ANSWER
-    if [ "$ANSWER" != "y" -a "$ANSWER" != "Y" ]; then
+    if [ "$ANSWER" != "y" ] && [ "$ANSWER" != "Y" ]; then
         abort
     fi
     echo 
@@ -243,9 +280,6 @@ do_uninstall () {
     fi
     
     echo "Removing program files ... "
-#    if [ -n "$INSTALL_DIR" ]; then
-#        rm -r "$INSTALL_DIR"
-#    fi
     for file in $FILES; do
         rm "$INSTALL_DIR/$file"
     done
@@ -255,13 +289,15 @@ do_uninstall () {
     rm "$INSTALL_DIR/uninstall.sh"
     rmdir "$INSTALL_DIR"
 
+    uninstall_deps
+
     echo 
     echo "UNINSTALL COMPLETED"
 }
 
 
 if [ ! -t 1 ]; then 
-    if [ "$SPAWNED" = "spawned"  -o  -z $DISPLAY  ]; then
+    if [ "$SPAWNED" = "spawned" ] || [ -z $DISPLAY  ]; then
 	    >&2 echo "This script must be run interactively."
         exit 1
     else
