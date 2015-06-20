@@ -54,7 +54,8 @@ The following packages are needed or recommended when installing PC-BASIC from s
 | [PyWin32](https://sourceforge.net/projects/pywin32/)            | Windows | required     |  
 | [PyGame 1.9.1](http://www.pygame.org/download.shtml)            | all     | essential    | for sound and graphics  
 | [NumPy](https://sourceforge.net/projects/numpy/files/)          | all     | essential    | for sound and graphics  
-| [PySerial](https://pypi.python.org/pypi/pyserial)               | all     | recommended  | for serial/parallel port access  
+| [PySerial](https://pypi.python.org/pypi/pyserial)               | all     | recommended  | for serial port access  
+| [PyParallel](https://pypi.python.org/pypi/pyserial)             | all     | recommended  | for parallel port access  
 | [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html)| Unix    | optional     | for native `SHELL`  
 
 Note that the official Pygame release 1.9.1 has a bug in its handling of copy & paste on X11-based systems.
