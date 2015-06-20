@@ -220,6 +220,7 @@ do_install () {
     echo "Categories=Development;IDE;" >> $DESKTOP_FILE
 
     echo "Creating icon ... "
+    mkdir -p "$ICON_DIR"
     cp pcbasic.png "$ICON_DIR/pcbasic.png"
 
     echo "Creating uninstaller ... "
