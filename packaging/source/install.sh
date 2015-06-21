@@ -4,8 +4,58 @@
 SCRIPT=$0
 SPAWNED=$1
 
-DEPS="pygame numpy serial parallel pexpect"
+DEPS="xdg pygame numpy serial parallel pexpect"
 PYTHON="/usr/bin/env python2"
+
+init_package_manager() {
+    if [ "$(id -u)" -eq "0" ]; then
+        if ( command -v apt-get >/dev/null 2>&1 && command -v apt-mark >/dev/null 2>&1 ); then
+            echo "APT package manager found"
+            DEB=1
+            DEBDEPS="python2.7 python-xdg python-pygame python-numpy python-serial python-parallel python-pexpect xsel"
+            MANUAL=$(apt-mark showmanual $DEBDEPS)
+        elif ( command -v dnf >/dev/null 2>&1 ); then
+            echo "DNF package manager found"
+            RPM=1
+            # pyparallel is not provided in Fedora repos
+            RPMDEPS="python pyxdg pygame numpy pyserial python-pexpect xsel"
+            # no dependable way to find manually installed packages
+            # (yumdb seems to be broken by dnf)
+        fi
+    fi
+}
+
+install_deps() {
+    if [ "$(id -u)" -eq "0" ]; then
+        if [ $DEB ]; then
+            echo "Installing APT packages $DEBDEPS ..."
+            apt-get install $DEBDEPS
+        elif [ $RPM ]; then
+            echo "Installing RPM packages $RPMDEPS ..."
+            dnf install $RPMDEPS
+        fi
+    fi
+}
+
+uninstall_deps() {
+    if [ "$(id -u)" -eq "0" ]; then
+        if [ $DEB ]; then
+            TO_UNINSTALL=$(echo $DEBDEPS $MANUAL | tr ' ' '\n' | sort | uniq -u)
+            echo "Uninstalling dependencies ..."
+            if [ -n "$TO_UNINSTALL" ]; then
+                echo "Marking packages for apt-get autoremove: $TO_UNINSTALL." | tr '\n' ' '
+                echo
+                apt-mark auto $TO_UNINSTALL
+            fi
+            if [ -n "$MANUAL" ]; then
+                echo "Leaving the previously installed: $MANUAL." | tr '\n' ' '
+                echo
+            fi
+        elif [ $RPM ]; then
+            echo "Previously installed dependencies: $RPMDEPS. Please uninstall these packages manually if you no longer need them."
+        fi
+    fi
+}
 
 do_close () {
     if [ "$SPAWNED" = "spawned" ]; then
@@ -41,6 +91,7 @@ check_dependencies () {
     DEPS_NOT=""
     
     echo
+    echo "Checking dependencies ... "
     for DEP in $DEPS; do
         echo -n "checking Python module $DEP ... "
         if ( $PYTHON -c "import $DEP" 2>/dev/null ); then 
@@ -51,22 +102,17 @@ check_dependencies () {
         fi
     done
 
-    #
     if [ -n "$DEPS_NOT" ]; then
         echo
-        echo "WARNING: Please make sure the following Python modules are installed: $DEPS_NOT"
-        echo "Without them PC-BASIC may not work correctly."
+        echo "WARNING: The following Python modules were not found: $DEPS_NOT"
+        echo "Please install them separately to ensure all PC-BASIC functionality works correctly."
     fi
-    echo
 }
 
 do_install () {
     cat data/VERSION
     echo "INSTALLATION SCRIPT"
     echo
-
-    check_python
-    check_dependencies
 
     #default installation directory
     DEFAULT_DIR="/opt/pcbasic/"
@@ -107,6 +153,7 @@ do_install () {
     fi
 
     check_permissions
+    init_package_manager
 
     UNINSTALLER="$INSTALL_DIR/uninstall.sh"
 
@@ -124,28 +171,34 @@ do_install () {
     echo "I will create an icon $ICON_DIR/pcbasic.png"
     echo "I will create an uninstall script $UNINSTALLER"
 
+    if [ $DEB ] && [ "$(id -u)" -eq "0" ]; then
+        echo "I will install the packages $DEBDEPS"
+    fi
+
     echo
     echo -n "Start installation [y/N] ? "
     read ANSWER
 
-    if [ "$ANSWER" != "y" -a "$ANSWER" != "Y" ]; then
+    if [ "$ANSWER" != "y" ] && [ "$ANSWER" != "Y" ]; then
         abort
     fi
 
+    install_deps
+    check_python
 
     echo 
     echo "Compiling Python modules ... "
     
     # create build environment
-    mkdir build
     # suppress 'cannot copy build/ into itself' message
-    cp -R * build 2>/dev/null
-    echo
+    mkdir build
+    cp -R * build/ 2>/dev/null
 
     /usr/bin/env python2 -m compileall build/
     # don't copy source
     rm build/*.py
-    echo 
+    # this seems to have been created and filled with the first files anyway
+    rm -rf build/build
 
     echo
     echo "Copying program files ... "
@@ -158,7 +211,9 @@ do_install () {
     cd ..
     
     for dir in $DIRS; do
-        mkdir -p "$INSTALL_DIR/$dir"
+        if [ "$DIR" != "build" ]; then
+            mkdir -p "$INSTALL_DIR/$dir"
+        fi
     done
 
     for file in $FILES; do
@@ -167,6 +222,7 @@ do_install () {
 
     # cleanup build environment
     for dir in $DIRS; do
+        echo build/$dir
         rmdir "build/$dir"
     done
     rmdir build
@@ -189,6 +245,7 @@ do_install () {
     echo "Categories=Development;IDE;" >> $DESKTOP_FILE
 
     echo "Creating icon ... "
+    mkdir -p "$ICON_DIR"
     cp pcbasic.png "$ICON_DIR/pcbasic.png"
 
     echo "Creating uninstaller ... "
@@ -196,6 +253,9 @@ do_install () {
     echo "DESKTOP_DIR=$DESKTOP_DIR" >> $UNINSTALLER
     echo "ICON_DIR=$ICON_DIR" >> $UNINSTALLER
     echo "INSTALL_DIR=$INSTALL_DIR">> $UNINSTALLER
+    echo "DEB=$DEB">> $UNINSTALLER
+    echo "DEBDEPS='$DEBDEPS'">> $UNINSTALLER
+    echo "MANUAL='$MANUAL'">> $UNINSTALLER
     
     # invert dirs to delete them recursively
     INVERTED_DIRS=$(echo "$DIRS" | sed '1!G;h;$!d')
@@ -203,6 +263,8 @@ do_install () {
     echo "FILES='$FILES'" >> $UNINSTALLER
     cat $SCRIPT >> $UNINSTALLER
     chmod ugo+x $UNINSTALLER
+
+    check_dependencies
 
     echo
     echo "INSTALLATION COMPLETED."
@@ -223,10 +285,13 @@ do_uninstall () {
     fi
     echo "I will delete program files from $INSTALL_DIR"
     echo
+    if [ $DEB ] && [ "$(id -u)" -eq "0" ]; then
+        echo "I will mark package dependencies for removal"
+    fi
     
     echo -n "Start un-installation [y/N] ?"
     read ANSWER
-    if [ "$ANSWER" != "y" -a "$ANSWER" != "Y" ]; then
+    if [ "$ANSWER" != "y" ] && [ "$ANSWER" != "Y" ]; then
         abort
     fi
     echo 
@@ -243,9 +308,6 @@ do_uninstall () {
     fi
     
     echo "Removing program files ... "
-#    if [ -n "$INSTALL_DIR" ]; then
-#        rm -r "$INSTALL_DIR"
-#    fi
     for file in $FILES; do
         rm "$INSTALL_DIR/$file"
     done
@@ -255,13 +317,15 @@ do_uninstall () {
     rm "$INSTALL_DIR/uninstall.sh"
     rmdir "$INSTALL_DIR"
 
+    uninstall_deps
+
     echo 
     echo "UNINSTALL COMPLETED"
 }
 
 
 if [ ! -t 1 ]; then 
-    if [ "$SPAWNED" = "spawned"  -o  -z $DISPLAY  ]; then
+    if [ "$SPAWNED" = "spawned" ] || [ -z $DISPLAY  ]; then
 	    >&2 echo "This script must be run interactively."
         exit 1
     else

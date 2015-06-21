@@ -26,7 +26,10 @@ if plat.system == 'Android':
     numpy = None
 else:
     android = False
-    import pygame.mixer as mixer
+    if pygame:
+        import pygame.mixer as mixer
+    else:
+        mixer = None
 
 import backend
 import logging

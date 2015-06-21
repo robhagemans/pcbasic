@@ -19,8 +19,9 @@ This quick start guide covers installation and elementary use of PC-BASIC. For m
 
 If you find bugs, please report them on the SourceForge discussion page at [https://sourceforge.net/p/pcbasic/discussion/bugs/](https://sourceforge.net/p/pcbasic/discussion/bugs/). It would be most helpful if you could include a short bit of BASIC code that triggers the bug.
 
+
 #### Installation ####
-Packaged distributions are currently available for Windows XP and above, Mac OSX 10.6 and above, and Linux on 32-bit or 64-bit Intel/AMD architecture. 
+Packaged distributions are currently available for Windows XP and above and Mac OSX 10.6 and above. For Debian, Ubuntu, Mint and Fedora Linux an install script is provided in the source distribution.
 
 They can be downloaded from one of the following locations:  
 - GitHub at [https://github.com/robhagemans/pcbasic/releases](https://github.com/robhagemans/pcbasic/releases).  
@@ -28,7 +29,7 @@ They can be downloaded from one of the following locations:
 
 On **Windows**:  
 - run the installer  
-- to start, click the PC-BASIC 3.23 item in your Start menu.
+- to start, click PC-BASIC in your Start menu  
 
 On **OS X**:  
 - mount the disk image  
@@ -38,34 +39,42 @@ On **OS X**:
 On **Linux**:  
 - untar the archive  
 - run `sudo ./install.sh`  
-- to start, click the PC-BASIC 3.23 item in your Applications menu (or run `pcbasic` on the command line).  
+- to start, click PC-BASIC in your Applications menu or run `pcbasic` on the command line.  
+
 
 #### Installation from source ####
-If your system is not supported or you prefer to install from source, download the source distribution and unpack the TGZ archive. You should also make sure you have the required dependencies installed (see below).
-
-If you want, you can run the Python script `pcbasic` straight from the unpacked directory. On **Unix-like systems**, you also have the option to install PC-BASIC to a dedicated directory and create FreeDesktop menu items using the `install.sh` shell script. Run with root privileges if you wish to install to a system-wide directory and be able to access `pcbasic` from anywhere.
-
-#### Source dependencies ####
+If your system is not supported or you prefer to install from source, download the source distribution and unpack the TGZ archive. 
 The following packages are needed or recommended when installing PC-BASIC from source:
 
-| Package                                                         | OS      | Status       | Notes  
-|-----------------------------------------------------------------|---------|--------------|----------------------------  
-| [Python 2.7.6](http://www.python.org/download/releases/2.7.6/)  | all     | required     |   
-| [PyWin32](https://sourceforge.net/projects/pywin32/)            | Windows | required     |  
-| [PyGame 1.9.1](http://www.pygame.org/download.shtml)            | all     | essential    | for sound and graphics  
-| [NumPy](https://sourceforge.net/projects/numpy/files/)          | all     | essential    | for sound and graphics  
-| [PySerial](https://pypi.python.org/pypi/pyserial)               | all     | recommended  | for serial/parallel port access  
-| [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html)| Unix    | optional     | for native `SHELL`  
+| Package                                                         | OS                 | Status       | Notes  
+|-----------------------------------------------------------------|--------------------|--------------|----------------------------  
+| [Python 2.7.6](http://www.python.org/download/releases/2.7.6/)  | all                | required     |   
+| [PyWin32](https://sourceforge.net/projects/pywin32/)            | Windows            | required     |  
+| [PyXDG](http://freedesktop.org/wiki/Software/pyxdg/)            | Linux, other       | required     |  
+| [PyGame 1.9.1](http://www.pygame.org/download.shtml)            | all                | essential    | for sound and graphics  
+| [NumPy](https://sourceforge.net/projects/numpy/files/)          | all                | essential    | for sound and graphics  
+| [PySerial](https://pypi.python.org/pypi/pyserial)               | all                | recommended  | for serial port access  
+| [PyParallel](https://pypi.python.org/pypi/pyserial)             | Windows, Linux     | optional     | for parallel port access  
+| [Pexpect](http://pexpect.readthedocs.org/en/latest/install.html)| OSX, Linux, other  | optional     | for native `SHELL`  
 
-Note that the official Pygame release 1.9.1 has a bug in its handling of copy & paste on X11-based systems.
+In this list, _other_ refers to operating systems other than Windows, Linux or OSX.  
+
+On **Windows**, you should download all the required packages from the project web sites linked above.  
+
+On **OSX**, there are several versions of Python 2.7 and all downloads need to match your version and CPU architecture. It's a bit tricky, I'm afraid. The easiest option seems to be installing both Python and PyGame through MacPorts or Homebrew.  
+
+On **Linux distrubutions with APT or DNF** (including Debian, Ubuntu, Mint and Fedora), the install script will automatically install dependencies if it is run with root privileges.  
+
+The install script can also be used on **other Unix** systems or when not installing as root. Python 2.7 usually comes pre-installed; the other packages can often be installed through your package manager. For example, on Debian-based systems:   
+`sudo apt-get install python2.7 python-xdg python-pygame python-numpy python-serial python-pexpect python-parallel xsel`  
+On Fedora:  
+`sudo dnf install python pyxdg pygame numpy pyserial python-pexpect xsel`  
+On FreeBSD:  
+`sudo pkg install python27 py27-xdg py27-game py27-numpy py27-serial py27-pexpect xsel`
+Note that PyParallel is not available from the Fedora and FreeBSD repos; you'll need to install from source or do without access to physical parallel ports. It is _not_ needed for printing to `LPT1`.  
+
+The official Pygame release 1.9.1 has a bug in its handling of copy & paste on X11-based systems.
 If you run into this, install one of the [`xsel`](http://www.vergenet.net/~conrad/software/xsel/) or [`xclip`](https://sourceforge.net/projects/xclip/)  utilities and PC-BASIC will work around the issue.  
-
-On **Linux** systems, Python 2.7 usually comes pre-installed; the other packages can often be installed through your package manager. For example, on Ubuntu you can install all dependencies at once through APT:  
-`sudo apt-get install python2.7 python-pygame python-numpy python-pexpect python-serial python-parallel xsel`  
-
-On **OSX** systems, there are several versions of Python 2.7 and all downloads need to match your version and CPU architecture. It's a bit tricky, I'm afraid. The easiest option seems to be installing both Python and PyGame through MacPorts or Homebrew.
-
-On **Windows** systems, you should download all the required packages from the project web sites linked above.
 
 
 #### Usage essentials ####
