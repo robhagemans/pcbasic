@@ -1,5 +1,7 @@
 #!/bin/bash
-NAME="pcbasic-$1"
+VERSION=$(cat ../../data/VERSION)
+NAME="pcbasic-$VERSION"
+echo "building $NAME"
 rsync -rvp ../.. pcbasic/ --delete --exclude-from=excludes --delete-excluded
 cp install.sh pcbasic/
 cp pcbasic.png pcbasic/
