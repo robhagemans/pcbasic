@@ -1257,6 +1257,8 @@ if numpy:
     def put_rect(x0, y0, x1, y1, array, operation_token):
         """ Apply numpy array [y][x] of attribytes to an area. """
         global screen_changed
+        if (x1 < x0) or (y1 < y0):
+            return
         # reference the destination area
         dest_array = pygame.surfarray.pixels2d(
             canvas[apagenum].subsurface(pygame.Rect(x0, y0, x1-x0+1, y1-y0+1))) 
