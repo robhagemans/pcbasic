@@ -18,7 +18,7 @@ import fp
 import vartypes
 import representation
 import rnd
-import oslayer
+import shell
 import util
 import error
 import var
@@ -509,25 +509,20 @@ def value_screen(ins):
         return vartypes.pack_int(state.console_state.screen.apage.get_char_attr(row, col, z!=0))
     
 def value_input(ins):
-    """ INPUT$: get a string from the keyboard. """
+    """ INPUT$: get characters from the keyboard or a file. """
     util.require_read(ins, ('$',))
     util.require_read(ins, ('(',))
     num = vartypes.pass_int_unpack(parse_expression(ins))
     util.range_check(1, 255, num)
-    screen = backend.devices['KYBD:']   
+    infile = backend.kybd_file
     if util.skip_white_read_if(ins, (',',)):
-        screen = iolayer.get_file(parse_file_number_opthash(ins))
+        infile = iolayer.get_file(parse_file_number_opthash(ins))
     util.require_read(ins, (')',))
-    word = bytearray()
-    for char in screen.read_chars(num):
-        if len(char) > 1 and char[0] == '\x00':
-            # replace some scancodes than console can return
-            if char[1] in ('\x4b', '\x4d', '\x48', '\x50', '\x47', '\x49', '\x4f', '\x51', '\x53'):
-                word += '\x00'
-            # ignore all others    
-        else:
-            word += char                        
-    return vartypes.pack_string(bytearray(word))
+    word = vartypes.pack_string(bytearray(infile.read_raw(num)))
+    if len(word) < num:
+        # input past end
+        raise error.RunError(62)
+    return word
     
 def value_inkey(ins):
     """ INKEY$: get a character from the keyboard. """
@@ -558,7 +553,10 @@ def value_lpos(ins):
     num = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 3, num)
     printer = backend.devices['LPT' + max(1, num) + ':']
-    return vartypes.pack_int(printer.col)
+    if printer.device_file:
+        return vartypes.pack_int(printer.device_file.col)
+    else:
+        return vartypes.pack_int(1)
            
 ######################################################################
 # file access
@@ -598,11 +596,11 @@ def value_environ(ins):
     util.require_read(ins, ('$',))
     expr = parse_bracket(ins)
     if expr[0] == '$':
-        return vartypes.pack_string(oslayer.get_env(vartypes.unpack_string(expr)))
+        return vartypes.pack_string(shell.get_env(vartypes.unpack_string(expr)))
     else:
         expr = vartypes.pass_int_unpack(expr)
         util.range_check(1, 255, expr)
-        return vartypes.pack_string(oslayer.get_env_entry(expr))
+        return vartypes.pack_string(shell.get_env_entry(expr))
 
 def value_timer(ins):
     """ TIMER: get clock ticks since midnight. """

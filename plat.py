@@ -89,7 +89,8 @@ else:
     
 # PC_BASIC version
 try:
-    version = open(os.path.join(info_dir, 'VERSION')).read().rstrip()
-except (IOError, OSError):
+    with open(os.path.join(info_dir, 'VERSION')) as f:
+        version = f.read().rstrip()
+except EnvironmentError:
     version = ''
 

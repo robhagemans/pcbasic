@@ -9,6 +9,7 @@ This file is released under the GNU GPL version 3.
 import var
 import rnd
 import iolayer
+import disk
 import state
 
 
@@ -21,9 +22,9 @@ def clear(close_files=False, preserve_common=False, preserve_all=False, preserve
     rnd.clear()
     if close_files:
         # close all files
-        iolayer.close_all()
+        iolayer.close_files()
     # release all disk buffers (FIELD)?
-    state.io_state.fields = {}
+    disk.reset_fields()
     # clear ERR and ERL
     state.basic_state.errn, state.basic_state.errp = 0, 0
     # disable error trapping

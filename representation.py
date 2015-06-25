@@ -481,45 +481,36 @@ def get_number_tokens(fors):
 ########################################
 
 
-def input_vars_file(readvar, raw_file):
+def input_vars_file(readvar, stream):
     """ Read a list of variables for INPUT from a file. """
-    c = ''
     for v in readvar:
-        last, c = c, raw_file.read(1)
-        if last == '\r' and c == '\n':
-            last, c = c, raw_file.read(1)
         typechar = v[0][-1]
         if typechar == '$':
-            valstr, c = input_entry(c, raw_file, allow_quotes=True,
-                                    end_all = ('\r', '\x1a'),
+            valstr, c = input_entry(stream, allow_quotes=True,
+                                    end_all = ('\r', ),
                                     end_not_quoted = (',', '\n'))
         else:
-            valstr, c = input_entry(c, raw_file, allow_quotes=False,
-                                    end_all = ('\r', '\x1a', ',', '\n', ' '))
+            valstr, c = input_entry(stream, allow_quotes=False,
+                                    end_all = ('\r', ',', '\n', ' '))
         value = str_to_type(valstr, typechar)    
         if value == None:
             value = vartypes.null[typechar]
-        # process the ending char
-        # this may raise FIELD OVERFLOW but should avoid INPUT PAST END
-        if not raw_file.end_of_file():
-            # on reading from a KYBD: file, control char replacement takes place
-            # which means we need to use read() not read_chars()
-            if c not in ('', ',', '\x1a'):
-                # skip trailing whitespace
-                while c in ascii_white and not raw_file.end_of_file():
-                    c = raw_file.read(1)
+        while c in ascii_white:
+            # skip trailing whitespace
+            # note that ending character (',', '\r', '\x1a', '\n', ...)
+            # is swallowed here
+            c = stream.read(1)
         # and then set the value
         v.append(value)
     return readvar    
 
-def input_vars(readvar, raw_file):
+def input_vars(readvar, stream):
     """ Read a variable for INPUT. """
     # copy to allow multiple calls (for Redo)
     count_commas, count_values, has_empty = 0, 0, False
     for v in readvar:
-        c = raw_file.read(1)
         typechar = v[0][-1]
-        valstr, c = input_entry(c, raw_file, allow_quotes=(typechar=='$'), end_all=('',))
+        valstr, c = input_entry(stream, allow_quotes=(typechar=='$'), end_all=('',))
         val = str_to_type(valstr, typechar)
         v.append(val)
         count_values += 1
@@ -533,39 +524,41 @@ def input_vars(readvar, raw_file):
         return None
     return readvar            
             
-def input_entry(first_char, raw_file, allow_quotes, end_all=(), end_not_quoted=(',',)):
+def input_entry(stream, allow_quotes, end_all=(), end_not_quoted=(',',)):
     """ Read a number or string entry for INPUT """
     word, blanks = '', ''
     # skip leading spaces and line feeds and NUL.
-    c = first_char
-    while c in ascii_white and not raw_file.end_of_file():
-        c = raw_file.read(1)
-    if c in end_all + end_not_quoted:
-        return '', c
+    c = stream.read(1)
+    while c in ascii_white:
+        c = stream.read(1)
     quoted = (c == '"' and allow_quotes)
     if quoted:
-        c = raw_file.read(1)
-    while True:
+        c = stream.read(1)
+    if not c:
+        # input past end
+        raise error.RunError(62)
+    # we read the ending char before breaking the loop
+    # this may raise FIELD OVERFLOW
+    # on reading from a KYBD: file, control char replacement takes place
+    # which means we need to use read() not read_chars()
+    while c:
         # read entry
         if c in end_all or (c in end_not_quoted and not quoted):
             break
         elif c == '"' and quoted:
             quoted = False
             # ignore blanks after the quotes
-            c = raw_file.read(1)
-            while c in ascii_white and not raw_file.end_of_file():
-                c = raw_file.read(1)
+            while c in ascii_white:
+                c = stream.read(1)
             break
         elif c in ascii_white and not quoted:
             blanks += c    
         else:
             word += blanks + c
             blanks = ''
-        if len(word)+len(blanks) >= 255:
+        if len(word) + len(blanks) >= 255:
             break
-        if raw_file.end_of_file():
-            break
-        c = raw_file.read(1)
+        c = stream.read(1)
     return word, c
 
 def str_to_type(word, type_char):

@@ -82,7 +82,8 @@ def get_string_copy_packed(sequence):
         number = 1 + start // memory.field_mem_offset
         offset = start % memory.field_mem_offset
         try:
-            return vartypes.pack_string(state.io_state.fields[number][offset:offset+length])
+            return vartypes.pack_string(state.io_state.fields[number].buffer[
+                                                        offset : offset+length])
         except KeyError, IndexError:
             return vartypes.pack_string('\0' * length)
 
@@ -367,11 +368,10 @@ def set_field_var_or_array(random_file, varname, indices, offset, length):
     if varname[-1] != '$':
         # type mismatch
         raise error.RunError(13)
-    field = random_file.field
-    if offset+length > len(field):
+    if offset+length > len(random_file.field.buffer):
         # FIELD overflow
         raise error.RunError(50)    
-    str_addr = random_file.field_address + offset
+    str_addr = random_file.field.address + offset
     str_sequence = bytearray(chr(length)) + vartypes.value_to_uint(str_addr)
     # assign the string ptr to the variable name
     # desired side effect: if we re-assign this string variable through LET, it's no longer connected to the FIELD.
@@ -460,7 +460,8 @@ def string_assign_unpacked_into(sequence, offset, num, val):
         number = 1 + start // memory.field_mem_offset
         field_offset = start % memory.field_mem_offset
         try:
-            state.io_state.fields[number][field_offset+offset:field_offset+offset+num] = val
+            state.io_state.fields[number].buffer[
+                    field_offset+offset : field_offset+offset+num] = val
         except KeyError, IndexError:
             raise KeyError('Not a field string')
 

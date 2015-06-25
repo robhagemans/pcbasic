@@ -42,37 +42,37 @@ def load_codepage(codepage_name):
     cp_to_unicodepoint = {}
     dbcs_num_chars = 0
     try:
-        f = open(name, 'rb')
-        for line in f:
-            # ignore empty lines and comment lines (first char is #)
-            if (not line) or (line[0] == '#'):
-                continue
-            # split unicodepoint and hex string
-            splitline = line.split(':')
-            # ignore malformed lines
-            if len(splitline) < 2:
-                continue
-            try:
-                # extract codepage point
-                cp_point = splitline[0].strip().decode('hex')
-                # extract unicode point
-                ucs_point = int('0x' + splitline[1].split()[0].strip(), 16)
-                cp_to_unicodepoint[cp_point] = ucs_point
-                cp_to_utf8[cp_point] = unichr(ucs_point).encode('utf-8')
-                # track lead and trail bytes
-                if len(cp_point) == 2:
-                    lead.add(cp_point[0])
-                    trail.add(cp_point[1])
-                    dbcs_num_chars += 1
-                # track box drawing chars
-                else:
-                    for i in (0, 1):
-                        if ucs_point in box_left_unicode[i]:
-                            box_left[i].add(cp_point[0])
-                        if ucs_point in box_right_unicode[i]:
-                            box_right[i].add(cp_point[0])
-            except ValueError:
-                logging.warning('Could not parse line in unicode mapping table: %s', repr(line))
+        with open(name, 'rb') as f:
+            for line in f:
+                # ignore empty lines and comment lines (first char is #)
+                if (not line) or (line[0] == '#'):
+                    continue
+                # split unicodepoint and hex string
+                splitline = line.split(':')
+                # ignore malformed lines
+                if len(splitline) < 2:
+                    continue
+                try:
+                    # extract codepage point
+                    cp_point = splitline[0].strip().decode('hex')
+                    # extract unicode point
+                    ucs_point = int('0x' + splitline[1].split()[0].strip(), 16)
+                    cp_to_unicodepoint[cp_point] = ucs_point
+                    cp_to_utf8[cp_point] = unichr(ucs_point).encode('utf-8')
+                    # track lead and trail bytes
+                    if len(cp_point) == 2:
+                        lead.add(cp_point[0])
+                        trail.add(cp_point[1])
+                        dbcs_num_chars += 1
+                    # track box drawing chars
+                    else:
+                        for i in (0, 1):
+                            if ucs_point in box_left_unicode[i]:
+                                box_left[i].add(cp_point[0])
+                            if ucs_point in box_right_unicode[i]:
+                                box_right[i].add(cp_point[0])
+                except ValueError:
+                    logging.warning('Could not parse line in unicode mapping table: %s', repr(line))
     except IOError:
         if codepage_name == '437':
             logging.error('Could not load unicode mapping table for codepage 437.')
@@ -151,10 +151,31 @@ def connects(c, d, bset):
 ##################################################
 # conversion
 
+
+def split_utf8(s):
+    """ Split UTF8 string into single-char byte sequences. """
+    # decode and encode each char back
+    try:
+        return [c.encode('utf-8') for c in s.decode('utf-8')]
+    except UnicodeDecodeError:
+        # not valid UTF8, pass through raw.
+        return list(s)
+
 def from_utf8(c):
     """ Convert utf8 char sequence to codepage char sequence. """
     return utf8_to_cp[c]
 
+def str_from_utf8(s):
+    """ Convert utf8 string to codepage string. """
+    chars, s = split_utf8(s), ''
+    for c in chars:
+        try:
+            # try to codepage-encode the one-char UTF8 byte sequence
+            s += from_utf8(c)
+        except KeyError:
+            # pass unknown sequences untranslated. this includes \r.
+            s += c
+    return s
 
 class UTF8Converter(object):
     """ Buffered converter to UTF8 - supports DBCS and box-drawing protection. """

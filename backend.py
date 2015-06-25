@@ -39,6 +39,10 @@ audio = None
 
 ### devices - SCRN: KYBD: LPT1: etc. These are initialised in iolayer module
 devices = {}
+scrn_file = None
+kybd_file = None
+lpt1_file = None
+
 
 ###############################################################################
 # initialisation
@@ -179,13 +183,13 @@ class TimerHandler(EventHandler):
 
 class ComHandler(EventHandler):
     """ Manage COM-port events. """
-    
+
     def __init__(self, port):
         """ Initialise COM trigger. """
         EventHandler.__init__(self)
         # devices aren't initialised at this time so just keep the name
         self.portname = ('COM1:', 'COM2:')[port]
-    
+
     def check(self):
         """ Trigger COM-port events. """
         if devices[self.portname] and devices[self.portname].char_waiting():
@@ -525,7 +529,7 @@ class Keyboard(object):
                 state.console_state.screen.print_screen()
             if self.mod & modifier[scancode.CTRL]:
                 # ctrl + printscreen
-                redirect.toggle_echo(devices['LPT1:'])
+                redirect.toggle_echo(lpt1_file)
         # alt+keypad ascii replacement        
         # we can't depend on internal NUM LOCK state as it doesn't get updated
         if (self.mod & modifier[scancode.ALT] and 
@@ -1293,14 +1297,14 @@ class Screen(object):
         # set cursor back to previous state                             
         self.cursor.reset_visibility()
 
-    #D -> devices['LPT1'].write(get_text(...))
+    #D -> lpt1_file.write(get_text(...))
     def print_screen(self):
         """ Output the visible page to LPT1. """
         for crow in range(1, self.mode.height+1):
             line = ''
             for c, _ in self.vpage.row[crow-1].buf:
                 line += c
-            devices['LPT1:'].write_line(line)
+            lpt1_file.write_line(line)
 
     def clear_text_at(self, x, y):
         """ Remove the character covering a single pixel. """

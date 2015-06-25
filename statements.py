@@ -19,6 +19,7 @@ import config
 import backend
 import console
 import debug
+import disk
 import error
 import expressions
 import flow
@@ -27,11 +28,11 @@ import graphics
 import iolayer
 import machine
 import memory
-import oslayer
 import program
 import representation
 import reset
 import rnd
+import shell
 import state
 import timedate
 import token
@@ -282,12 +283,12 @@ def exec_debug(ins):
 def exec_term(ins):
     """ TERM: load and run PCjr buitin terminal emulator program. """
     try:
-        f = open(pcjr_term, 'rb')
-    except (OSError, IOError):
+        with open(pcjr_term, 'rb') as f:
+            util.require(ins, util.end_statement)
+            program.load(f)
+    except EnvironmentError:
         # on Tandy, raises Internal Error
         raise error.RunError(51)   
-    util.require(ins, util.end_statement)
-    program.load(f)
     flow.init_program()
     reset.clear()
     flow.jump(None)
@@ -637,7 +638,8 @@ def exec_bload(ins):
         if offset < 0:
             offset += 0x10000           
     util.require(ins, util.end_statement)
-    machine.bload(iolayer.open_file_or_device(0, name, mode='L', defext=''), offset)
+    with iolayer.open_file(0, name, filetype='M', mode='I') as f:
+        machine.bload(f, offset)
     
 def exec_bsave(ins):
     """ BSAVE: save a block of memory to a file. Limited implementation. """
@@ -654,7 +656,10 @@ def exec_bsave(ins):
     if length < 0:
         length += 0x10000         
     util.require(ins, util.end_statement)
-    machine.bsave(iolayer.open_file_or_device(0, name, mode='S', defext=''), offset, length)
+    with iolayer.open_file(0, name, filetype='M', mode='O',
+                            seg=state.basic_state.segment,
+                            offset=offset, length=length) as f:
+        machine.bsave(f, offset, length)
 
 def exec_call(ins):
     """ CALL: call an external procedure. Not implemented. """
@@ -700,43 +705,56 @@ def exec_wait(ins):
     util.require(ins, util.end_statement)
     machine.wait(addr, ander, xorer)
 
+
 ##########################################################
-# OS
+# Disk
     
 def exec_chdir(ins):
     """ CHDIR: change working directory. """
-    oslayer.chdir(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+    dev, path = disk.get_diskdevice_and_path(
+            vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+    dev.chdir(path)
     util.require(ins, util.end_statement)
 
 def exec_mkdir(ins):
     """ MKDIR: create directory. """
-    oslayer.mkdir(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+    dev, path = disk.get_diskdevice_and_path(
+            vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+    dev.mkdir(path)
     util.require(ins, util.end_statement)
 
 def exec_rmdir(ins):
     """ RMDIR: remove directory. """
-    oslayer.rmdir(vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+    dev, path = disk.get_diskdevice_and_path(
+            vartypes.pass_string_unpack(expressions.parse_expression(ins)))
+    dev.rmdir(path)
     util.require(ins, util.end_statement)
 
 def exec_name(ins):
     """ NAME: rename file or directory. """
     oldname = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    # don't rename open files
-    iolayer.check_file_not_open(oldname)
     # AS is not a tokenised word
     word = util.skip_white_read(ins) + ins.read(1)
     if word.upper() != 'AS':
         raise error.RunError(2)
     newname = vartypes.pass_string_unpack(expressions.parse_expression(ins))
-    oslayer.rename(oldname, newname)
+    dev, oldpath = disk.get_diskdevice_and_path(oldname)
+    newdev, newpath = disk.get_diskdevice_and_path(newname)
+    # don't rename open files
+    dev.check_file_not_open(oldpath)
+    if dev != newdev:
+        # rename across disks
+        raise error.RunError(74)
+    dev.rename(oldpath, newpath)
     util.require(ins, util.end_statement)
 
 def exec_kill(ins):
     """ KILL: remove file. """
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # don't delete open files
-    iolayer.check_file_not_open(name)
-    oslayer.kill(name)
+    dev, path = disk.get_diskdevice_and_path(name)
+    dev.check_file_not_open(path)
+    dev.kill(path)
     util.require(ins, util.end_statement)
 
 def exec_files(ins):
@@ -747,8 +765,13 @@ def exec_files(ins):
         if not pathmask:
             # bad file name
             raise error.RunError(64)
-    oslayer.files(pathmask)
+    dev, path = disk.get_diskdevice_and_path(pathmask)
+    dev.files(path)
     util.require(ins, util.end_statement)
+
+
+##########################################################
+# OS
     
 def exec_shell(ins):
     """ SHELL: open OS shell and optionally execute command. """
@@ -763,7 +786,7 @@ def exec_shell(ins):
     # force cursor visible in all cases
     state.console_state.screen.cursor.show(True)
     # execute cms or open interactive shell
-    oslayer.shell(cmd) 
+    shell.shell(cmd) 
     # reset cursor visibility to its previous state
     state.console_state.screen.cursor.reset_visibility()
     util.require(ins, util.end_statement)
@@ -866,17 +889,20 @@ def exec_list(ins):
     """ LIST: output program lines. """
     from_line, to_line = parse_line_range(ins)
     if util.skip_white_read_if(ins, (',',)):
-        out = iolayer.open_file_or_device(0, vartypes.pass_string_unpack(expressions.parse_expression(ins)), 'O')
+        out = iolayer.open_file(0, vartypes.pass_string_unpack(expressions.parse_expression(ins)), 
+                                filetype='A', mode='O')
     else:
-        out = backend.devices['SCRN:']
+        out = backend.scrn_file
     util.require(ins, util.end_statement)
-    program.list_lines(out, from_line, to_line)    
+    with out:
+        program.list_lines(out, from_line, to_line)
+        # note that closing scrn_file has no effect
 
 def exec_llist(ins):
     """ LLIST: output program lines to LPT1: """
     from_line, to_line = parse_line_range(ins)
     util.require(ins, util.end_statement)
-    program.list_lines(backend.devices['LPT1:'], from_line, to_line)
+    program.list_lines(backend.lpt1_file, from_line, to_line)
         
 def exec_load(ins):
     """ LOAD: load program from file. """
@@ -886,13 +912,14 @@ def exec_load(ins):
     if comma:
         util.require_read(ins, 'R')
     util.require(ins, util.end_statement)
-    program.load(iolayer.open_file_or_device(0, name, mode='L', defext='BAS'))
+    with iolayer.open_file(0, name, filetype='ABP', mode='I') as f:
+        program.load(f)
     reset.clear()
     if comma:
         # in ,R mode, don't close files; run the program
         flow.jump(None)
     else:
-        iolayer.close_all()
+        iolayer.close_files()
     state.basic_state.tron = False    
         
 def exec_chain(ins):
@@ -923,7 +950,8 @@ def exec_chain(ins):
     util.require(ins, util.end_statement)
     if state.basic_state.protected and action == program.merge:
             raise error.RunError(5)
-    program.chain(action, iolayer.open_file_or_device(0, name, mode='L', defext='BAS'), jumpnum, delete_lines)
+    with iolayer.open_file(0, name, filetype='ABP', mode='I') as f:
+        program.chain(action, f, jumpnum, delete_lines)
     # preserve DEFtype on MERGE
     reset.clear(preserve_common=True, preserve_all=common_all, preserve_deftype=(action==program.merge))
 
@@ -953,14 +981,19 @@ def exec_save(ins):
         mode = util.skip_white_read(ins).upper()
         if mode not in ('A', 'P'):
             raise error.RunError(2)
-    program.save(iolayer.open_file_or_device(0, name, mode='S', defext='BAS'), mode)
+    with iolayer.open_file(0, name, filetype=mode, mode='O',
+                            seg=memory.data_segment, offset=memory.code_start,
+                            length=len(state.basic_state.bytecode.getvalue())-1
+                            ) as f:
+        program.save(f)
     util.require(ins, util.end_statement)
     
 def exec_merge(ins):
     """ MERGE: merge lines from file into current program. """
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
-    program.merge(iolayer.open_file_or_device(0, name, mode='L', defext='BAS') )
+    with iolayer.open_file(0, name, filetype='A', mode='I') as f:
+        program.merge(f)
     util.require(ins, util.end_statement)
     
 def exec_new(ins):
@@ -991,7 +1024,7 @@ def exec_renum(ins):
 
 def exec_reset(ins):
     """ RESET: close all files. """
-    iolayer.close_all()
+    iolayer.close_files()
     util.require(ins, util.end_statement)
 
 def parse_read_write(ins):
@@ -1071,19 +1104,19 @@ def exec_open(ins):
     elif mode != 'R' and access and access != default_access_modes[mode]:
         raise error.RunError(2)        
     util.range_check(1, iolayer.max_reclen, reclen)        
-    iolayer.open_file_or_device(number, name, mode, access, lock, reclen) 
+    iolayer.open_file(number, name, 'D', mode, access, lock, reclen)
     util.require(ins, util.end_statement)
                 
 def exec_close(ins):
     """ CLOSE: close a file. """
     if util.skip_white(ins) in util.end_statement:
         # allow empty CLOSE; close all open files
-        iolayer.close_all()
+        iolayer.close_files()
     else:    
         while True:
             number = expressions.parse_file_number_opthash(ins)
             try:    
-                state.io_state.files[number].close()
+                iolayer.close_file(number)
             except KeyError:
                 pass    
             if not util.skip_white_read_if(ins, (',',)):
@@ -1123,13 +1156,13 @@ def parse_get_or_put_file(ins):
 def exec_put_file(ins):
     """ PUT: write record to file. """
     thefile, num_bytes = parse_get_or_put_file(ins) 
-    thefile.write_field(num_bytes)
+    thefile.put(num_bytes)
     util.require(ins, util.end_statement)
 
 def exec_get_file(ins):
     """ GET: read record from file. """
     thefile, num_bytes = parse_get_or_put_file(ins) 
-    thefile.read_field(num_bytes)
+    thefile.get(num_bytes)
     util.require(ins, util.end_statement)
     
 def exec_lock_or_unlock(ins, action):
@@ -1143,11 +1176,16 @@ def exec_lock_or_unlock(ins, action):
         lock_stop_rec = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
     if lock_start_rec < 1 or lock_start_rec > 2**25-2 or lock_stop_rec < 1 or lock_stop_rec > 2**25-2:   
         raise error.RunError(63)
-    action(thefile.number, lock_start_rec, lock_stop_rec)
+    try:
+        getattr(thefile, action)(lock_start_rec, lock_stop_rec)
+    except AttributeError:
+        # not a disk file
+        # permission denied
+        raise error.RunError(70)
     util.require(ins, util.end_statement)
 
-exec_lock = partial(exec_lock_or_unlock, action = iolayer.lock_records)
-exec_unlock = partial(exec_lock_or_unlock, action = iolayer.unlock_records)
+exec_lock = partial(exec_lock_or_unlock, action = 'lock')
+exec_unlock = partial(exec_lock_or_unlock, action = 'unlock')
     
 def exec_ioctl(ins):
     """ IOCTL: send control string to I/O device. Not implemented. """
@@ -1376,7 +1414,7 @@ def exec_end(ins):
     # avoid NO RESUME
     state.basic_state.error_handle_mode = False
     state.basic_state.error_resume = None
-    iolayer.close_all()
+    iolayer.close_files()
     
 def exec_stop(ins):
     """ STOP: break program execution and return to interpreter. """
@@ -1503,7 +1541,8 @@ def exec_run(ins):
     elif c not in util.end_statement:
         name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_statement)
-        program.load(iolayer.open_file_or_device(0, name, mode='L', defext='BAS'))
+        with iolayer.open_file(0, name, filetype='ABP', mode='I') as f:
+            program.load(f)
     flow.init_program()
     reset.clear(close_files=not comma)
     flow.jump(jumpnum)
@@ -1940,7 +1979,7 @@ def exec_input(ins):
             console.write(prompt) 
             line = console.wait_screenline(write_endl=newline)
             varlist = [ v[:] for v in readvar ]
-            varlist = representation.input_vars(varlist, iolayer.BaseFile(StringIO(line), mode='I'))
+            varlist = representation.input_vars(varlist, StringIO(line))
             if not varlist:
                 console.write_line('?Redo from start')  # ... good old Redo!
             else:
@@ -1968,6 +2007,9 @@ def exec_line_input(ins):
     # read the input
     if finp:
         line = finp.read_line()
+        if line is None:
+            # input past end
+            raise error.RunError(62)
     else:    
         state.basic_state.input_mode = True
         console.write(prompt) 
@@ -2255,7 +2297,7 @@ def exec_locate(ins):
 def exec_write(ins, output=None):
     """ WRITE: Output machine-readable expressions to the screen or a file. """
     output = expressions.parse_file_number(ins, 'OAR')
-    output = backend.devices['SCRN:'] if output == None else output
+    output = backend.scrn_file if output == None else output
     expr = expressions.parse_expression(ins, allow_empty=True)
     outstr = ''
     if expr:
@@ -2277,7 +2319,7 @@ def exec_print(ins, output=None):
     """ PRINT: Write expressions to the screen or a file. """
     if output == None:
         output = expressions.parse_file_number(ins, 'OAR')
-        output = backend.devices['SCRN:'] if output == None else output
+        output = backend.scrn_file if output == None else output
     number_zones = max(1, int(output.width/14))
     newline = True
     while True:
@@ -2317,7 +2359,7 @@ def exec_print(ins, output=None):
     if util.skip_white_read_if(ins, (token.USING,)):
         return exec_print_using(ins, output)     
     if newline:
-        if output == backend.devices['SCRN:'] and state.console_state.overflow:
+        if output == backend.scrn_file and state.console_state.overflow:
             output.write_line()
         output.write_line()
     util.require(ins, util.end_statement)      
@@ -2370,7 +2412,7 @@ def exec_print_using(ins, output):
 
 def exec_lprint(ins):
     """ LPRINT: Write expressions to printer LPT1. """
-    exec_print(ins, backend.devices['LPT1:'])
+    exec_print(ins, backend.lpt1_file)
                              
 def exec_view_print(ins):
     """ VIEW PRINT: set scroll region. """
@@ -2393,7 +2435,7 @@ def exec_width(ins):
         w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     elif d == token.LPRINT:
         ins.read(1)
-        dev = backend.devices['LPT1:']
+        dev = backend.lpt1_file
         w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     else:
         if d in token.number:
@@ -2402,14 +2444,14 @@ def exec_width(ins):
             expr = expressions.parse_expression(ins)
         if expr[0] == '$':
             try:
-                dev = backend.devices[str(vartypes.pass_string_unpack(expr)).upper()]
-            except KeyError:
+                dev = backend.devices[str(vartypes.pass_string_unpack(expr)).upper()].device_file
+            except KeyError, AttributeError:
                 # bad file name
                 raise error.RunError(64)           
             util.require_read(ins, (',',))
             w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         else:
-            dev = backend.devices['SCRN:']
+            dev = backend.scrn_file
             # IN GW-BASIC, we can do calculations, but they must be bracketed...
             #w = vartypes.pass_int_unpack(expressions.parse_expr_unit(ins))
             w = vartypes.pass_int_unpack(expr)

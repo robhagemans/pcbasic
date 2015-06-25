@@ -122,38 +122,28 @@ def wait(addr, ander, xorer):
 
 def bload(g, offset):    
     """ Load a file into a block of memory. """
-    if g.read(1) != '\xfd':
-        raise error.RunError(54)
-    seg = vartypes.uint_to_value(bytearray(g.read(2)))
-    foffset = vartypes.uint_to_value(bytearray(g.read(2)))
+    # size gets ignored; even the \x1a at the end gets dumped onto the screen.
+    seg = g.seg
     if offset == None:
-        offset = foffset
-    # size. this gets ignored; even the \x1a at the end gets dumped onto the screen.
-    vartypes.uint_to_value(bytearray(g.read(2))) 
+        offset = g.offset
     buf = bytearray(g.read())
     # remove any EOF marker at end 
     if buf and buf[-1] == 0x1a:  
         buf = buf[:-1]
     if tandy_syntax:
         buf = buf[:-7]        
-    g.close()
     addr = seg * 0x10 + offset
     set_memory_block(addr, buf)
 
 def bsave(g, offset, length):
     """ Save a block of memory into a file. """
-    seven_bytes = str('\xfd' + 
-                    vartypes.value_to_uint(state.basic_state.segment) +
-                    vartypes.value_to_uint(offset) +
-                    vartypes.value_to_uint(length))
-    g.write(seven_bytes)
     addr = state.basic_state.segment * 0x10 + offset
     g.write(str(get_memory_block(addr, length)))
     # Tandys repeat the header at the end of the file
     if tandy_syntax:
-        g.write(seven_bytes)
-    g.write('\x1a')
-    g.close()
+        g.write('\xfd' + vartypes.value_to_uint(state.basic_state.segment) +
+                vartypes.value_to_uint(offset) +
+                vartypes.value_to_uint(length))
 
 def varptr_file(filenum):
     """ Get address of FCB for a given file number. """
@@ -310,7 +300,7 @@ def get_field_memory(address):
     number = 1 + start // memory.field_mem_offset
     offset = start % memory.field_mem_offset
     try:
-        return state.io_state.fields[number][offset]
+        return state.io_state.fields[number].buffer[offset]
     except KeyError, IndexError:
         return -1   
         

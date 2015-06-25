@@ -1,9 +1,9 @@
 #!/usr/bin/env python2
 
 """
-PC-BASIC 3.23 - GW-BASIC/BASICA/Cartridge BASIC compatible interpreter 
+PC-BASIC - GW-BASIC/BASICA/Cartridge BASIC compatible interpreter 
 
-(c) 2013, 2014 Rob Hagemans 
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3. 
 """
 
@@ -11,6 +11,10 @@ import os
 import sys
 import shutil
 import logging
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 import plat
 import ansipipe
@@ -40,9 +44,9 @@ def main():
                 debug_details()
         elif config.options['help']:
             # in help mode, print usage and exit
-            f = open(os.path.join(plat.info_dir, 'USAGE'))
-            for line in f:
-                sys.stdout.write(line)
+            with open(os.path.join(plat.info_dir, 'USAGE')) as f:
+                for line in f:
+                    sys.stdout.write(line)
         elif config.options['convert']:
             # in converter mode, convert and exit
             convert()
@@ -76,7 +80,7 @@ def prepare_logging():
 def convert():
     """ Perform file format conversion. """
     import program
-    import iolayer
+    import disk
     import error
     # set conversion output 
     # first arg, if given, is mode; second arg, if given, is outfile
@@ -88,15 +92,25 @@ def convert():
     mode = mode[0].upper() if mode else 'A'
     # load & save in different format
     try:
+        prog_infile = None
         if infile:
-            program.load(open_native_or_dos_filename(infile))
+            prog_infile = open_native_or_dos_filename(infile)
         elif plat.has_stdin:
-            program.load(sys.stdin)
+            # use StringIO buffer for seekability
+            in_buffer = StringIO(sys.stdin.read())
+            prog_infile = disk.open_diskfile(in_buffer, filetype='ABP', mode='I')
+        if prog_infile:
+            with prog_infile:
+                program.load(prog_infile)
+        prog_outfile = None
         if outfile:
             # on save from command-line, use exact file name
-            program.save(open(outfile, 'wb'), mode)
+            prog_outfile = disk.open_diskfile(open(outfile, 'wb'), filetype=mode, mode='O')
         elif plat.has_stdout:
-            program.save(sys.stdout, mode)
+            prog_outfile = disk.open_diskfile(sys.stdout, filetype=mode, mode='O')
+        if prog_outfile:
+            with prog_outfile:
+                program.save(prog_outfile)
     except error.RunError as e:
         logging.error(error.get_message(e.err))
     except EnvironmentError as e:    
@@ -109,6 +123,8 @@ def start_basic():
     import error
     import state
     import iolayer
+    import disk
+    import cassette
     import reset
     do_reset = False
     backend, console = None, None
@@ -129,7 +145,8 @@ def start_basic():
             prog = config.options['run'] or config.options['load']
             if prog:
                 # on load, accept capitalised versions and default extension
-                program.load(open_native_or_dos_filename(prog))
+                with open_native_or_dos_filename(prog) as progfile:
+                    program.load(progfile)
                 reset.clear()
             print_greeting(console)
             # start the interpreter (and get out if we ran with -q)
@@ -156,8 +173,8 @@ def start_basic():
             # fix the terminal on exit (important for ANSI terminals)
             # and save display interface state into screen state
             state.console_state.screen.close()
-        except (NameError, AttributeError):
-            pass
+        except (NameError, AttributeError) as e:
+            logging.debug('Error on closing screen: %s', e)
         # delete state if resetting 
         if do_reset:
             state.delete()
@@ -167,10 +184,13 @@ def start_basic():
             state.save()
         try:
             # close files if we opened any
-            iolayer.close_all()
+            iolayer.close_files()
+        except (NameError, AttributeError) as e:
+            logging.debug('Error on closing files: %s', e)
+        try:
             iolayer.close_devices()
-        except (NameError, AttributeError):
-            pass    
+        except (NameError, AttributeError) as e:
+            logging.debug('Error on closing devices: %s', e)
             
 def prepare_console():
     """ Initialise backend and console. """
@@ -259,14 +279,15 @@ def print_greeting(console):
 def open_native_or_dos_filename(infile):
     """ If the specified file exists, open it; if not, try as DOS file name. """
     import iolayer
+    import disk
+    import cassette
     import error
     try:
         # first try exact file name
-        return open(os.path.expandvars(os.path.expanduser(infile)), 'r')
+        return disk.open_diskfile(open(os.path.expandvars(os.path.expanduser(infile)), 'r'), filetype='BPA', mode='I')
     except EnvironmentError as e:
-        # on load, accept capitalised versions and default extension
-        return iolayer.open_file_or_device(0, 
-                infile, mode='L', defext='BAS')
+        # otherwise, accept capitalised versions and default extension
+        return iolayer.open_file(0, infile, filetype='BPA', mode='I')
 
 def debug_details():
     logging.info('os: %s', plat.system)
