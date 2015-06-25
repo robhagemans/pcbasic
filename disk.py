@@ -202,7 +202,10 @@ def acquire_lock(name, number, lock_type, access):
 
 def release_lock(number):
     """ Release the lock on a file before closing. """
-    del state.io_state.locks[number]
+    try:
+        del state.io_state.locks[number]
+    except KeyError:
+        pass
 
 ##############################################################################
 # Exception handling
