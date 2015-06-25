@@ -165,7 +165,7 @@ else:
         home = os.path.expanduser('~')
         # if cwd is in home tree, set it also on H:
         if cwd[:len(home)] == home:
-            drives['H'] = home, cwd[len(drives['H'])+1:]
+            drives['H'] = home, cwd[len(home)+1:]
         else:
             drives['H'] = home, ''
         return drives, 'Z'
