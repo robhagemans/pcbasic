@@ -813,12 +813,14 @@ class TextFile(iolayer.CRLFTextFileBase):
         while len(s) < 255:
             # read converts CRLF to CR
             c = self.read(1)
-            if not c or c in ('\r', '\n'):
-                # break on CR, CRLF, LF if next line starts with number
+            if not c:
+                break
+            elif c in ('\r', '\n'):
+                # break on CR, CRLF, LF if next line starts with number or eof
                 while self.next_char in (' ', '\0'):
                     c = self.read(1)
                     self.spaces += c
-                if self.next_char in string.digits:
+                if self.next_char in string.digits or self.next_char in ('', '\x1a'):
                     break
                 else:
                     s += '\n' + self.spaces
