@@ -394,7 +394,8 @@ class DiskDevice(object):
         # open the underlying stream
         fhandle = self.open_stream(name, mode, access)
         # apply the BASIC file wrapper
-        return open_diskfile(fhandle, filetype, mode, name, number, access, lock, reclen)
+        return open_diskfile(fhandle, filetype, mode, name, number,
+                             access, lock, reclen, seg, offset, length)
 
     def open_stream(self, native_name, mode, access):
         """ Open a stream on disk by os-native name with BASIC mode and access level. """
@@ -597,6 +598,7 @@ def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock=
     if len(filetype) > 1 and mode == 'I':
         # read magic
         first = fhandle.read(1)
+        fhandle.seek(-1, 1)
         try:
             filetype_found = iolayer.magic_to_type[first]
             if filetype_found not in filetype:
@@ -648,6 +650,8 @@ class BinaryFile(iolayer.RawFile):
                            vartypes.value_to_uint(length))
                 self.seg, self.offset, self.length = seg, offset, length
         else:
+            # drop magic byte
+            self.read_raw(1)
             if self.filetype == 'M':
                 self.seg = vartypes.uint_to_value(bytearray(self.read(2)))
                 self.offset = vartypes.uint_to_value(bytearray(self.read(2)))
