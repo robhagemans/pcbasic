@@ -375,7 +375,7 @@ class DiskDevice(object):
             # undefined disk drive: path not found
             raise error.RunError(76)
         # set default extension for programs
-        if set(filetype).intersection(set('PBA')):
+        if set(filetype).intersection(set('MPBA')):
             defext = 'BAS'
         else:
             defext = ''
