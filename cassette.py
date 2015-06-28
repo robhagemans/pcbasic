@@ -166,7 +166,7 @@ class CASFile(iolayer.TextFileBase):
     def close(self):
         """ Close a file on tape. """
         # terminate text files with NUL
-        if self.filetype in ('D', 'A'):
+        if self.filetype in ('D', 'A') and self.mode == 'O':
             self.write('\0')
         self._close_record_buffer()
 
@@ -321,12 +321,12 @@ class CASFile(iolayer.TextFileBase):
 
     def _flush_record_buffer(self):
         """ Write the tape buffer to tape. """
-        data = self.record_stream.getvalue()
-        if self.filetype not in ('M', 'B', 'P'):
+        if self.filetype not in ('M', 'B', 'P') and self.mode == 'O':
+            data = self.record_stream.getvalue()
             while True:
-                chunk, data = data[:255], data[255:]
                 if len(data) < 255:
                     break
+                chunk, data = data[:255], data[255:]
                 # ascii and data come as a sequence of one-block records
                 # 256 bytes less 1 length byte. CRC trailer comes after 256-byte block
                 self._write_record('\0' + chunk)
@@ -336,15 +336,16 @@ class CASFile(iolayer.TextFileBase):
 
     def _close_record_buffer(self):
         """ Write the tape buffer to tape and finalise. """
-        self._flush_record_buffer()
-        self.buffer_complete = True
-        data = self.record_stream.getvalue()
-        if self.filetype in ('M', 'B', 'P'):
-            # bsave, tokenised and protected come in one multi-block record
-            self._write_record(data)
-        else:
-            if data:
-                self._write_record(chr(len(data)) + data)
+        if self.mode == 'O':
+            self._flush_record_buffer()
+            self.buffer_complete = True
+            data = self.record_stream.getvalue()
+            if self.filetype in ('M', 'B', 'P'):
+                # bsave, tokenised and protected come in one multi-block record
+                self._write_record(data)
+            else:
+                if data:
+                    self._write_record(chr(len(data)) + data)
         self.record_stream = StringIO()
 
 
