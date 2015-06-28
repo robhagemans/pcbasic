@@ -2,8 +2,8 @@
 PC-BASIC 3.23 - state.py
 Emulator state
 
-(c) 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+(c) 2014, 2015 Rob Hagemans
+This file is released under the GNU GPL version 3.
 """
 
 try:
@@ -20,14 +20,14 @@ import os
 import zlib
 import logging
 import plat
-import config        
+import config
 
-        
+
 class State(object):
     """ Base class for state """
     pass
 
-basic_state = State()        
+basic_state = State()
 io_state = State()
 console_state = State()
 
@@ -42,7 +42,7 @@ def prepare():
         state_file = config.options['state']
     elif os.path.exists(plat.state_name):
         state_file = plat.state_name
-    else:            
+    else:
         state_file = os.path.join(plat.state_path, plat.state_name)
     # do not load any state file from a package
     if config.package:
@@ -59,8 +59,8 @@ def unpickle_file(name, mode, pos):
             with open(name, 'rb') as f:
                 buf = f.read(pos)
             f = open(name, mode)
-            f.write(buf)            
-        else:    
+            f.write(buf)
+        else:
             f = open(name, mode)
             if pos > 0:
                 f.seek(pos)
@@ -68,7 +68,7 @@ def unpickle_file(name, mode, pos):
         logging.warning('Could not re-open file %s. Replacing with null file.', name)
         f = open(os.devnull, mode)
     return f
-        
+
 def pickle_file(f):
     """ Pickle a file object. """
     try:
@@ -83,7 +83,7 @@ def unpickle_StringIO(value, pos):
     csio = StringIO()
     csio.write(value)
     csio.seek(pos)
-    return csio             
+    return csio
 
 def pickle_StringIO(csio):
     """ Pickle a cStringIO object. """
@@ -105,7 +105,7 @@ def save():
             f.write(str(len(s)) + '\n' + s)
     except IOError:
         logging.warning("Could not write to state file %s. Emulator state not saved.", state_file)
-    
+
 def load():
     """ Load emulator state from file. """
     global console_state, io_state, basic_state, loaded
@@ -123,7 +123,7 @@ def load():
     io_state, basic_state, console_state = from_pickle.io, from_pickle.basic, from_pickle.console
     loaded = True
     return True
-    
+
 def delete():
     """ Delete emulator state file. """
     try:
@@ -132,4 +132,3 @@ def delete():
         pass
 
 prepare()
-    
