@@ -1,8 +1,8 @@
 """
 PC-BASIC 3.23 - iolayer.py
-File and Device I/O operations 
+File and Device I/O operations
 
-(c) 2013, 2014 Rob Hagemans 
+(c) 2013, 2014 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -191,7 +191,7 @@ class Device(object):
 
 class SCRNDevice(Device):
     """ Screen device (SCRN:) """
-    
+
     allowed_modes = 'OR'
 
     def __init__(self):
@@ -203,7 +203,7 @@ class SCRNDevice(Device):
 
 class KYBDDevice(Device):
     """ Keyboard device (KYBD:) """
-    
+
     allowed_modes = 'IR'
 
     def __init__(self):
@@ -646,8 +646,8 @@ class RandomBase(RawFile):
 class KYBDFile(TextFileBase):
     """ KYBD device: keyboard. """
 
-    input_replace = { 
-        '\x00\x47': '\xFF\x0B', '\x00\x48': '\xFF\x1E', '\x00\x49': '\xFE', 
+    input_replace = {
+        '\x00\x47': '\xFF\x0B', '\x00\x48': '\xFF\x1E', '\x00\x49': '\xFE',
         '\x00\x4B': '\xFF\x1D', '\x00\x4D': '\xFF\x1C', '\x00\x4F': '\xFF\x0E',
         '\x00\x50': '\xFF\x1F', '\x00\x51': '\xFE', '\x00\x53': '\xFF\x7F', '\x00\x52': '\xFF\x12'
         }
@@ -708,7 +708,7 @@ class KYBDFile(TextFileBase):
 
 
 class SCRNFile(RawFile):
-    """ SCRN: file, allows writing to the screen as a text file. 
+    """ SCRN: file, allows writing to the screen as a text file.
         SCRN: files work as a wrapper text file. """
 
     def __init__(self):
@@ -753,7 +753,7 @@ class SCRNFile(RawFile):
             elif ord(c) >= 32:
                 # nonprinting characters including tabs are not counted for WIDTH
                 s_width += 1
-        if (self.width != 255 
+        if (self.width != 255
                 and self.col != 1 and self.col-1 + s_width > self.width and not newline):
             console.write_line(do_echo=do_echo)
             self._col = 1
@@ -775,7 +775,7 @@ class SCRNFile(RawFile):
         console.write_line(do_echo=self.is_master)
 
     @property
-    def col(self):  
+    def col(self):
         """ Return current (virtual) column position. """
         if self.is_master:
             return state.console_state.col
@@ -794,7 +794,7 @@ class SCRNFile(RawFile):
         """ Set (virtual) screen width. """
         if self.is_master:
             console.set_width(new_width)
-        else:    
+        else:
             self._width = new_width
 
     def lof(self):
@@ -839,7 +839,7 @@ class LPTFile(TextFileBase):
                 self.fhandle.write('\r\n')
                 self.flush()
                 self.col = 1
-            if c in ('\n', '\r', '\f'): 
+            if c in ('\n', '\r', '\f'):
                 # don't replace CR or LF with CRLF when writing to files
                 self.fhandle.write(c)
                 self.flush()
@@ -851,8 +851,8 @@ class LPTFile(TextFileBase):
                 if self.col > 1:
                     self.col -= 1
                     self.fhandle.seek(-1, 1)
-                    self.fhandle.truncate()  
-            else:    
+                    self.fhandle.truncate()
+            else:
                 self.fhandle.write(c)
                 # nonprinting characters including tabs are not counted for WIDTH
                 # for lpt1 and files , nonprinting chars are not counted in LPOS; but chr$(8) will take a byte out of the buffer
@@ -969,7 +969,7 @@ class COMFile(RandomBase):
         # don't use inWaiting() as SocketSerial.inWaiting() returns dummy 0
         # fill up buffer insofar possible
         self.check_read()
-        return len(self.in_buffer) 
+        return len(self.in_buffer)
 
     def eof(self):
         """ EOF: no chars waiting. """
@@ -982,4 +982,3 @@ class COMFile(RandomBase):
 
 
 prepare()
-

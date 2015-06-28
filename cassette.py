@@ -235,7 +235,7 @@ class CASFile(iolayer.TextFileBase):
             try:
                 data = self._read_block()
             except (PulseError, FramingError, CRCError) as e:
-                logging.warning("%s Cassette I/O Error during read: %s", 
+                logging.warning("%s Cassette I/O Error during read: %s",
                                 timestamp(self.tapestream.counter()), e)
                 # Device I/O error
                 raise error.RunError(57)
@@ -637,7 +637,7 @@ class CASStream(TapeStream):
 
     def write_bit(self, bit):
         """ Write a bit to tape. """
-        # note that CAS-files aren't necessarily byte aligned 
+        # note that CAS-files aren't necessarily byte aligned
         # the ones we make are, but PCE's ones aren't.
         self.mask >>= 1
         if self.mask <= 0:
@@ -1260,4 +1260,3 @@ def butterband_sox(sample_rate, f0, width):
             y[i] = b0a*x[i] + b2a*x[i-2] - a1a*y[i-1] - a2a*y[i-2]
 
 prepare()
-
