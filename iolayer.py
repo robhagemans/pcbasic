@@ -38,7 +38,7 @@ max_reclen = 128
 # buffer sizes (/c switch in GW-BASIC)
 serial_in_size = 256
 serial_out_size = 128
-nullstream = open(os.devnull, 'w')
+nullstream = open(os.devnull, 'r+')
 
 # set by disk.py
 current_device = None

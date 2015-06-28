@@ -96,7 +96,7 @@ class CASFile(iolayer.TextFileBase):
     def __init__(self, tapestream, filetype, name='', mode='A',
                  seg=0, offs=0, length=0):
         """ Initialise file on tape. """
-        iolayer.TextFileBase.__init__(self, iolayer.nullstream, filetype)
+        iolayer.TextFileBase.__init__(self, iolayer.nullstream, filetype, mode)
         self.tapestream = tapestream
         self.record_num = 0
         self.record_stream = StringIO()
@@ -108,6 +108,9 @@ class CASFile(iolayer.TextFileBase):
             self.filetype = filetype
             self.tapestream.switch_mode('w')
             self._write_header(name, filetype, length, seg, offs)
+        else:
+            # bad file mode
+            raise error.RunError(54)
         self.name = name
         self.mode = mode
         # needed for file writing
@@ -298,7 +301,8 @@ class CASFile(iolayer.TextFileBase):
             return False
         if self.filetype in ('M', 'B', 'P'):
             # bsave, tokenised and protected come in one multi-block record
-            self.record_stream = StringIO(self._read_record(self.length))
+            self.record_stream = StringIO()
+            self.record_stream.write(self._read_record(self.length))
             self.buffer_complete = True
         else:
             # ascii and data come as a sequence of one-block records
@@ -326,7 +330,8 @@ class CASFile(iolayer.TextFileBase):
                 # ascii and data come as a sequence of one-block records
                 # 256 bytes less 1 length byte. CRC trailer comes after 256-byte block
                 self._write_record('\0' + chunk)
-            self.record_stream = StringIO(data)
+            self.record_stream = StringIO()
+            self.record_stream.write(data)
             self.record_stream.seek(0, 2)
 
     def _close_record_buffer(self):
