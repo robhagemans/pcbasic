@@ -502,32 +502,8 @@ else:
             shift -= bpp
         return byte_list
 
-def set_memory_cgaega(self, addr, bytes, mask=None, factor=1):
-    """ Set bytes in CGA or EGA memory. """
-    num_bytes = len(bytes)
-    ppb = factor * self.ppb
-    if mask is None:
-        # this has the effect of not working with planes
-        cmask, putmask = 1, 0xff
-    else:
-        cmask, putmask = mask, mask
-    for page, x, y, ofs, length in walk_graph_memory(self, addr, num_bytes, factor):
-        if self.coord_ok(page, x, y):
-            colours = bytes_to_interval(bytes[ofs:ofs+length], ppb, cmask)
-            self.screen.put_interval(page, x, y, colours, putmask)
-
-def get_memory_cgaega(self, addr, num_bytes, plane=0, factor=1):
-    """ Retrieve bytes from CGA or EGA memory. """
-    bytes = bytearray(num_bytes//factor)
-    ppb = factor * self.ppb
-    for page, x, y, ofs, length in walk_graph_memory(self, addr, num_bytes, factor):
-        if self.coord_ok(page, x, y):
-            attrs = self.screen.get_interval(page, x, y, length*ppb)
-            bytes[ofs:ofs+length] = interval_to_bytes(attrs, ppb, plane)
-    return bytes[:num_bytes//factor]
-
-def walk_graph_memory(self, addr, num_bytes, factor=1):
-    """ Retrieve bytes from CGA or EGA memory. """
+def walk_memory(self, addr, num_bytes, factor=1):
+    """ Yield parts of graphics memory corresponding to pixels. """
     # factor supports tandy-6 mode, which has 8 pixels per 2 bytes
     # with alternating planes in even and odd bytes (i.e. ppb==8)
     ppb = factor * self.ppb
@@ -537,7 +513,8 @@ def walk_graph_memory(self, addr, num_bytes, factor=1):
     # first row
     page, x, y = self.get_coords(addr)
     offset = min(row_size - x//ppb, num_bytes)
-    yield page, x, y, 0, offset
+    if self.coord_ok(page, x, y):
+        yield page, x, y, 0, offset
     # full rows
     bank_offset, page_offset, start_y = 0, 0, y
     while page_offset + bank_offset + offset < num_bytes:
@@ -552,7 +529,9 @@ def walk_graph_memory(self, addr, num_bytes, factor=1):
                 page += 1
                 bank_offset, offset = 0, 0
                 y, start_y = 0, 0
-        yield page, 0, y, page_offset + bank_offset + offset, row_size
+        if self.coord_ok(page, 0, y):
+            # TODO: ensure this doesn't go past the boundary
+            yield page, 0, y, page_offset + bank_offset + offset, row_size
         offset += row_size
 
 def sprite_size_to_record_ega(self, dx, dy):
@@ -696,8 +675,19 @@ class CGAMode(GraphicsMode):
         y = bank + self.interleave_times * row
         return page, x, y
 
-    get_memory = get_memory_cgaega
-    set_memory = set_memory_cgaega
+    def set_memory(self, addr, bytes):
+        """ Set bytes in CGA memory. """
+        for page, x, y, ofs, length in walk_memory(self, addr, len(bytes)):
+            self.screen.put_interval(page, x, y,
+                bytes_to_interval(bytes[ofs:ofs+length], self.ppb))
+
+    def get_memory(self, addr, num_bytes):
+        """ Retrieve bytes from CGA memory. """
+        bytes = bytearray(num_bytes)
+        for page, x, y, ofs, length in walk_memory(self, addr, num_bytes):
+            bytes[ofs:ofs+length] = interval_to_bytes(
+                self.screen.get_interval(page, x, y, length*self.ppb), self.ppb)
+        return bytes[:num_bytes]
 
     def sprite_size_to_record(self, dx, dy):
         """ Write 4-byte record of sprite size. """
@@ -780,11 +770,16 @@ class EGAMode(GraphicsMode):
         return page, x, y
 
     def get_memory(self, addr, num_bytes):
-        """ Retrieve a byte from EGA memory. """
+        """ Retrieve bytes from EGA memory. """
         plane = self.plane % (max(self.planes_used)+1)
+        bytes = bytearray(num_bytes)
         if plane not in self.planes_used:
-            return [0]*num_bytes
-        return get_memory_cgaega(self, addr, num_bytes, plane)
+            return bytes
+        for page, x, y, ofs, length in walk_memory(self, addr, num_bytes):
+            bytes[ofs:ofs+length] = interval_to_bytes(
+                self.screen.get_interval(page, x, y, length*self.ppb),
+                self.ppb, plane)
+        return bytes[:num_bytes]
 
     def set_memory(self, addr, bytes):
         """ Set bytes in EGA video memory. """
@@ -796,7 +791,9 @@ class EGAMode(GraphicsMode):
         # return immediately for unused colour planes
         if mask == 0:
             return
-        set_memory_cgaega(self, addr, bytes, mask)
+        for page, x, y, ofs, length in walk_memory(self, addr, len(bytes)):
+            self.screen.put_interval(page, x, y,
+                bytes_to_interval(bytes[ofs:ofs+length], self.ppb, mask), mask)
 
     sprite_to_array = sprite_to_array_ega
     array_to_sprite = array_to_sprite_ega
@@ -852,28 +849,29 @@ class Tandy6Mode(GraphicsMode):
         return page, x, y
 
     def get_memory(self, addr, num_bytes):
-        """ Retrieve a byte from Tandy 640x200x4 """
+        """ Retrieve bytes from Tandy 640x200x4 """
         # 8 pixels per 2 bytes
         # low attribute bits stored in even bytes, high bits in odd bytes.
-        even_bytes = get_memory_cgaega(self, addr, num_bytes, 0, factor=2)
-        odd_bytes = get_memory_cgaega(self, addr, num_bytes, 1, factor=2)
-        if addr%2:
-            even_bytes, odd_bytes = odd_bytes, even_bytes
-        return [item for pair in zip(even_bytes, odd_bytes) for item in pair]
+        half_len = (num_bytes+1) // 2
+        hbytes = bytearray(half_len), bytearray(half_len)
+        for parity in (0, 1):
+            for page, x, y, ofs, length in walk_memory(self, addr, num_bytes, 2):
+                hbytes[parity][ofs:ofs+length] = interval_to_bytes(
+                    self.screen.get_interval(page, x, y, length*self.ppb*2),
+                    self.ppb*2, parity ^ (addr%2))
+        return [item for pair in zip(*hbytes) for item in pair] [:num_bytes]
 
     def set_memory(self, addr, bytes):
-        """ Set a byte in Tandy 640x200x4 memory. """
-        # page, x, y = self.get_coords(addr)
-        # if self.coord_ok(page, x, y):
-        #     set_pixel_byte(self.screen, page, x, y, 1<<(addr%2), val)
-        even_bytes = bytes[0::2]
-        odd_bytes = bytes[1::2]
-        if addr%2:
-            even_bytes, odd_bytes = odd_bytes, even_bytes
+        """ Set bytes in Tandy 640x200x4 memory. """
+        hbytes = bytes[0::2], bytes[1::2]
         # Tandy-6 encodes 8 pixels per byte, alternating colour planes.
         # I.e. even addresses are 'colour plane 0', odd ones are 'plane 1'
-        set_memory_cgaega(self, addr, even_bytes, 1, factor=2)
-        set_memory_cgaega(self, addr, odd_bytes, 2, factor=2)
+        for parity in (0, 1):
+            mask = 2 ** (parity^(addr%2))
+            for page, x, y, ofs, length in walk_memory(self, addr, len(bytes), 2):
+                self.screen.put_interval(page, x, y,
+                    bytes_to_interval(hbytes[ofs:ofs+length], 2*self.ppb, mask),
+                    mask)
 
     sprite_to_array = sprite_to_array_ega
     array_to_sprite = array_to_sprite_ega
