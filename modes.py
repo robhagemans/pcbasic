@@ -531,35 +531,29 @@ def walk_graph_memory(self, addr, num_bytes, factor=1):
     # factor supports tandy-6 mode, which has 8 pixels per 2 bytes
     # with alternating planes in even and odd bytes (i.e. ppb==8)
     ppb = factor * self.ppb
-    bank_size_eff = self.bank_size//factor
-    page_size_eff = self.page_size//factor
-    row_size_eff = self.bytes_per_row//factor
+    page_size = self.page_size//factor
+    bank_size = self.bank_size//factor
+    row_size = self.bytes_per_row//factor
     # first row
     page, x, y = self.get_coords(addr)
-    byteshift = min(row_size_eff - x//ppb, num_bytes)
-    yield page, x, y, 0, byteshift
-    offset = byteshift
+    offset = min(row_size - x//ppb, num_bytes)
+    yield page, x, y, 0, offset
     # full rows
-    bank_offset = 0
-    page_offset = 0
-    i = y
+    bank_offset, page_offset, start_y = 0, 0, y
     while page_offset + bank_offset + offset < num_bytes:
         y += self.interleave_times
         # not an integer number of rows in a bank
-        if offset > bank_size_eff:
-            bank_offset += bank_size_eff
-            offset = 0
-            i += 1
-            y = i
-            if bank_offset > page_size_eff:
-                page_offset += page_size_eff
-                bank_offset = 0
-                offset = 0
+        if offset > bank_size:
+            bank_offset += bank_size
+            start_y += 1
+            offset, y = 0, start_y
+            if bank_offset > page_size:
+                page_offset += page_size
                 page += 1
-                y = 0
-                i = 0
-        yield page, 0, y, page_offset + bank_offset + offset, row_size_eff
-        offset += row_size_eff
+                bank_offset, offset = 0, 0
+                y, start_y = 0, 0
+        yield page, 0, y, page_offset + bank_offset + offset, row_size
+        offset += row_size
 
 def sprite_size_to_record_ega(self, dx, dy):
     """ Write 4-byte record of sprite size in EGA modes. """
