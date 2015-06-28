@@ -492,7 +492,7 @@ else:
         bpp = 8//pixels_per_byte
         attrmask = (1<<bpp) - 1
         colours = list(colours)
-        byte_list = [0]*num_bytes
+        byte_list = bytearray(num_bytes)
         shift, byte = -1, -1
         for x in xrange(num_pixels):
             if shift < 0:
@@ -504,51 +504,29 @@ else:
 
 def set_memory_cgaega(self, addr, bytes, mask=None, factor=1):
     """ Set bytes in CGA or EGA memory. """
-    # factor supports tandy-6 mode, which has 8 pixels per 2 bytes
-    # with alternating planes in even and odd bytes (i.e. ppb==8)
-    ppb = factor * self.ppb
-    bank_size_eff = self.bank_size//factor
-    page_size_eff = self.page_size//factor
-    row_size_eff = self.bytes_per_row//factor
     num_bytes = len(bytes)
+    ppb = factor * self.ppb
     if mask is None:
         # this has the effect of not working with planes
         cmask, putmask = 1, 0xff
     else:
         cmask, putmask = mask, mask
-    # first row
-    page, x, y = self.get_coords(addr)
-    byteshift = min(row_size_eff - x//ppb, num_bytes)
-    if self.coord_ok(page, x, y):
-        colours = bytes_to_interval(bytes[:byteshift], ppb, cmask)
-        self.screen.put_interval(page, x, y, colours, putmask)
-    offset = byteshift
-    # full rows
-    bank_offset = 0
-    page_offset = 0
-    i = y
-    while page_offset + bank_offset + offset < num_bytes:
-        y += self.interleave_times
-        # not an integer number of rows in a bank
-        if offset > bank_size_eff:
-            bank_offset += bank_size_eff
-            offset = 0
-            i += 1
-            y = i
-            if bank_offset > page_size_eff:
-                page_offset += page_size_eff
-                bank_offset = 0
-                offset = 0
-                page += 1
-                y = 0
-                i = 0
-        if self.coord_ok(page, 0, y):
-            ofs = page_offset + bank_offset + offset
-            colours = bytes_to_interval(bytes[ofs:ofs+row_size_eff], ppb, cmask)
-            self.screen.put_interval(page, 0, y, colours, putmask)
-        offset += row_size_eff
+    for page, x, y, ofs, length in walk_graph_memory(self, addr, num_bytes, factor):
+        if self.coord_ok(page, x, y):
+            colours = bytes_to_interval(bytes[ofs:ofs+length], ppb, cmask)
+            self.screen.put_interval(page, x, y, colours, putmask)
 
 def get_memory_cgaega(self, addr, num_bytes, plane=0, factor=1):
+    """ Retrieve bytes from CGA or EGA memory. """
+    bytes = bytearray(num_bytes//factor)
+    ppb = factor * self.ppb
+    for page, x, y, ofs, length in walk_graph_memory(self, addr, num_bytes, factor):
+        if self.coord_ok(page, x, y):
+            attrs = self.screen.get_interval(page, x, y, length*ppb)
+            bytes[ofs:ofs+length] = interval_to_bytes(attrs, ppb, plane)
+    return bytes[:num_bytes//factor]
+
+def walk_graph_memory(self, addr, num_bytes, factor=1):
     """ Retrieve bytes from CGA or EGA memory. """
     # factor supports tandy-6 mode, which has 8 pixels per 2 bytes
     # with alternating planes in even and odd bytes (i.e. ppb==8)
@@ -559,11 +537,7 @@ def get_memory_cgaega(self, addr, num_bytes, plane=0, factor=1):
     # first row
     page, x, y = self.get_coords(addr)
     byteshift = min(row_size_eff - x//ppb, num_bytes)
-    if self.coord_ok(page, x, y):
-        attrs = self.screen.get_interval(page, x, y, byteshift*ppb)
-        bytes = interval_to_bytes(attrs, ppb, plane)
-    else:
-        bytes = [0]*byteshift
+    yield page, x, y, 0, byteshift
     offset = byteshift
     # full rows
     bank_offset = 0
@@ -573,7 +547,6 @@ def get_memory_cgaega(self, addr, num_bytes, plane=0, factor=1):
         y += self.interleave_times
         # not an integer number of rows in a bank
         if offset > bank_size_eff:
-            bytes = bytes[:bank_size_eff-offset]
             bank_offset += bank_size_eff
             offset = 0
             i += 1
@@ -585,13 +558,8 @@ def get_memory_cgaega(self, addr, num_bytes, plane=0, factor=1):
                 page += 1
                 y = 0
                 i = 0
-        if self.coord_ok(page, 0, y):
-            attrs = self.screen.get_interval(page, 0, y, self.pixel_width)
-            bytes += interval_to_bytes(attrs, ppb, plane)
-        else:
-            bytes += [0] * row_size_eff
+        yield page, 0, y, page_offset + bank_offset + offset, row_size_eff
         offset += row_size_eff
-    return bytes[:num_bytes//factor]
 
 def sprite_size_to_record_ega(self, dx, dy):
     """ Write 4-byte record of sprite size in EGA modes. """
@@ -603,7 +571,7 @@ def record_to_sprite_size_ega(self, byte_array):
     dy = vartypes.uint_to_value(byte_array[2:4])
     return dx, dy
 
-def sprite_to_array_ega(self, attrs, dx, dy, byte_array, offset):
+def sprite_to_array_ega(self, attrs, dx, dy, byte_array, offs):
     """ Build the sprite byte array in EGA modes. """
     # for EGA modes, sprites have 8 pixels per byte
     # with colour planes in consecutive rows
@@ -614,12 +582,11 @@ def sprite_to_array_ega(self, attrs, dx, dy, byte_array, offset):
     # than just getting each pixel separately
     row_bytes = (dx+7) // 8
     length = dy * self.bitsperpixel * row_bytes
-    byte_array[offset:offset+length] = '\x00'*length
+    byte_array[offs:offs+length] = '\x00'*length
     for row in attrs:
         for plane in range(self.bitsperpixel):
-            byte_array[offset:offset+row_bytes] = (
-                    bytearray(interval_to_bytes(row, 8, plane)))
-            offset += row_bytes
+            byte_array[offs:offs+row_bytes] = interval_to_bytes(row, 8, plane)
+            offs += row_bytes
 
 # elementwise OR, in-place if possible
 if numpy:
@@ -748,15 +715,15 @@ class CGAMode(GraphicsMode):
         dy = vartypes.uint_to_value(byte_array[2:4])
         return dx, dy
 
-    def sprite_to_array(self, attrs, dx, dy, byte_array, offset):
+    def sprite_to_array(self, attrs, dx, dy, byte_array, offs):
         """ Build the sprite byte array. """
         row_bytes = (dx * self.bitsperpixel + 7) // 8
         length = row_bytes*dy
-        byte_array[offset:offset+length] = '\x00'*length
+        byte_array[offs:offs+length] = '\x00'*length
         for row in attrs:
-            byte_array[offset:offset+row_bytes] = (
-                bytearray(interval_to_bytes(row, 8//self.bitsperpixel, 0)))
-            offset += row_bytes
+            byte_array[offs:offs+row_bytes] = interval_to_bytes(
+                                                row, 8//self.bitsperpixel, 0)
+            offs += row_bytes
 
     def array_to_sprite(self, byte_array, offset, dx, dy):
         """ Build sprite from byte_array. """
