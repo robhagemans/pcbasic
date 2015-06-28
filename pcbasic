@@ -1,10 +1,10 @@
 #!/usr/bin/env python2
 
 """
-PC-BASIC - GW-BASIC/BASICA/Cartridge BASIC compatible interpreter 
+PC-BASIC - GW-BASIC/BASICA/Cartridge BASIC compatible interpreter
 
 (c) 2013, 2014, 2015 Rob Hagemans
-This file is released under the GNU GPL version 3. 
+This file is released under the GNU GPL version 3.
 """
 
 import os
@@ -22,7 +22,7 @@ import printer
 
 # declare to avoid pylint errors
 config = None
-            
+
 def main():
     """ Initialise and do requested operations. """
     # make imported modules available in main module
@@ -30,13 +30,13 @@ def main():
     try:
         import config
         if plat.system == 'Android':
-            # resume from existing directory (or clear it if we're not resuming) 
+            # resume from existing directory (or clear it if we're not resuming)
             if not config.options['resume'] and os.path.exists(plat.temp_dir):
                 shutil.rmtree(plat.temp_dir)
             if not os.path.exists(plat.temp_dir):
                 os.mkdir(plat.temp_dir)
         # set up the logging system
-        prepare_logging()        
+        prepare_logging()
         if config.options['version']:
             # in version mode, print version and exit
             sys.stdout.write(plat.version + '\n')
@@ -51,7 +51,7 @@ def main():
             # in converter mode, convert and exit
             convert()
         else:
-            # otherwise, go into BASIC    
+            # otherwise, go into BASIC
             start_basic()
     finally:
         try:
@@ -61,7 +61,7 @@ def main():
                 shutil.rmtree(plat.temp_dir)
         except NameError:
             pass
-     
+
 def prepare_logging():
     """ Set up the logging system. """
     logfile = config.options['logfile']
@@ -76,19 +76,19 @@ def prepare_logging():
         else:
             loglevel = logging.INFO
     logging.basicConfig(format=formatstr, level=loglevel, filename=logfile)
-        
+
 def convert():
     """ Perform file format conversion. """
     import program
     import disk
     import error
-    # set conversion output 
+    # set conversion output
     # first arg, if given, is mode; second arg, if given, is outfile
     mode = config.options['convert']
-    infile = (config.options[0] or 
+    infile = (config.options[0] or
               config.options['run'] or config.options['load'])
     outfile = config.options[1]
-    # keep uppercase first letter    
+    # keep uppercase first letter
     mode = mode[0].upper() if mode else 'A'
     # load & save in different format
     try:
@@ -113,9 +113,9 @@ def convert():
                 program.save(prog_outfile)
     except error.RunError as e:
         logging.error(error.get_message(e.err))
-    except EnvironmentError as e:    
-        logging.error(str(e))    
-        
+    except EnvironmentError as e:
+        logging.error(str(e))
+
 def start_basic():
     """ Load & run programs and commands and hand over to interactive mode. """
     import program
@@ -133,13 +133,13 @@ def start_basic():
         resume = config.options['resume'] and state.load()
         # choose the video and sound backends
         backend, console = prepare_console()
-        # greet, load and run only if not resuming   
+        # greet, load and run only if not resuming
         if resume:
             # suppress double prompt
             if not state.basic_state.execute_mode:
                 state.basic_state.prompt = False
             run.start('', False, config.options['quit'])
-        else:    
+        else:
             # load/run program
             config.options['run'] = config.options[0] or config.options['run']
             prog = config.options['run'] or config.options['load']
@@ -150,7 +150,7 @@ def start_basic():
                 reset.clear()
             print_greeting(console)
             # start the interpreter (and get out if we ran with -q)
-            run.start(config.options['exec'], config.options['run'], 
+            run.start(config.options['exec'], config.options['run'],
                       config.options['quit'])
     except error.RunError as e:
         msg = error.get_message(e.err)
@@ -159,7 +159,7 @@ def start_basic():
         if backend and backend.video:
             # close terminal to avoid garbled error message
             backend.video.close()
-            backend.video = None    
+            backend.video = None
         logging.error(msg)
     except error.Exit:
         pass
@@ -175,12 +175,12 @@ def start_basic():
             state.console_state.screen.close()
         except (NameError, AttributeError) as e:
             logging.debug('Error on closing screen: %s', e)
-        # delete state if resetting 
+        # delete state if resetting
         if do_reset:
             state.delete()
             if plat.system == 'Android':
                 shutil.rmtree(plat.temp_dir)
-        else:   
+        else:
             state.save()
         try:
             # close files if we opened any
@@ -191,7 +191,7 @@ def start_basic():
             iolayer.close_devices()
         except (NameError, AttributeError) as e:
             logging.debug('Error on closing devices: %s', e)
-            
+
 def prepare_console():
     """ Initialise backend and console. """
     import state
@@ -201,7 +201,7 @@ def prepare_console():
     import console
     import error
     import fp
-    # we need this prepared for input to work, 
+    # we need this prepared for input to work,
     # even if we don't use any function from it
     import redirect
     # hack: mark modules for inclusion by pyinstaller
@@ -220,11 +220,11 @@ def prepare_console():
         'cli': ('video_cli', 'audio_beep'),
         'text': ('video_curses', 'audio_beep'),
         'ansi': ('video_ansi', 'audio_beep'),
-        'graphical': ('video_pygame', 'audio_pygame'), 
+        'graphical': ('video_pygame', 'audio_pygame'),
         }
     if not config.options['interface']:
         config.options['interface'] = 'graphical'
-    # select interface        
+    # select interface
     video_name, audio_name = backends[config.options['interface']]
     # initialise video backend before console
     while True:
@@ -254,12 +254,12 @@ def prepare_console():
     if not backend.init_audio():
         backend.audio = __import__('audio_none')
         logging.warning('Failed to initialise sound. Sound will be disabled.')
-    if not state.loaded:    
-        console.init_mode()    
+    if not state.loaded:
+        console.init_mode()
     # set the output for maths error messages
     fp.init(error_stream=console)
     return backend, console
-    
+
 def print_greeting(console):
     """ Print the greeting and the KEY row if we're not running a program. """
     import var
@@ -267,7 +267,7 @@ def print_greeting(console):
         'PC-BASIC 3.23%s\r'
         '(C) Copyright 2013--2015 Rob Hagemans.\r'
         '%d Bytes free')
-    # following GW, don't write greeting for redirected input 
+    # following GW, don't write greeting for redirected input
     # or command-line filter run
     if (not config.options['run'] and not config.options['exec'] and
              not config.options['input'] and not config.options[0] and
@@ -275,7 +275,7 @@ def print_greeting(console):
         debugstr = ' [DEBUG mode]' if config.options['debug'] else ''
         console.write_line(greeting % (debugstr, var.fre()))
         console.show_keys(True)
-                
+
 def open_native_or_dos_filename(infile):
     """ If the specified file exists, open it; if not, try as DOS file name. """
     import iolayer
@@ -299,7 +299,6 @@ def debug_details():
             sys.stdout.write("%s: available\n" % module)
         except ImportError:
             sys.stdout.write("%s: not available\n" % module)
-                            
+
 if __name__ == "__main__":
     main()
-        
