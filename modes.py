@@ -502,24 +502,28 @@ else:
             shift -= bpp
         return byte_list
 
-def set_memory_ega(self, addr, bytes, mask=1, factor=1):
-    """ Set bytes in EGA memory. """
-    # number of pixels referenced in each byte
-    # for tandy-6, this is 8; even though it takes 2 bytes to store both planes
-    ppb = 8  # num_planes*factor*8//self.bitsperpixel
+def set_memory_cgaega(self, addr, bytes, mask=None, factor=1):
+    """ Set bytes in CGA or EGA memory. """
     # factor supports tandy-6 mode, which has 8 pixels per 2 bytes
     # with alternating planes in even and odd bytes (i.e. ppb==8)
+    ppb = factor * self.ppb
     bank_size_eff = self.bank_size//factor
     page_size_eff = self.page_size//factor
     row_size_eff = self.bytes_per_row//factor
     num_bytes = len(bytes)
-    # below is much like the CGA version
+    if mask is None:
+        # this has the effect of not working with planes
+        cmask, putmask = 1, 0xff
+    else:
+        cmask, putmask = mask, mask
+    # first row
     page, x, y = self.get_coords(addr)
     byteshift = min(row_size_eff - x//ppb, num_bytes)
     if self.coord_ok(page, x, y):
-        colours = bytes_to_interval(bytes[:byteshift], ppb, mask)
-        self.screen.put_interval(page, 0, y, colours, mask)
+        colours = bytes_to_interval(bytes[:byteshift], ppb, cmask)
+        self.screen.put_interval(page, x, y, colours, putmask)
     offset = byteshift
+    # full rows
     bank_offset = 0
     page_offset = 0
     i = y
@@ -527,7 +531,6 @@ def set_memory_ega(self, addr, bytes, mask=1, factor=1):
         y += self.interleave_times
         # not an integer number of rows in a bank
         if offset > bank_size_eff:
-            bytes = bytes[:bank_size_eff-offset]
             bank_offset += bank_size_eff
             offset = 0
             i += 1
@@ -540,23 +543,20 @@ def set_memory_ega(self, addr, bytes, mask=1, factor=1):
                 y = 0
                 i = 0
         if self.coord_ok(page, 0, y):
-            ofs = bank_offset + offset
-            colours = bytes_to_interval(bytes[ofs:ofs+row_size_eff], ppb, mask)
-            self.screen.put_interval(page, 0, y, colours, mask)
+            ofs = page_offset + bank_offset + offset
+            colours = bytes_to_interval(bytes[ofs:ofs+row_size_eff], ppb, cmask)
+            self.screen.put_interval(page, 0, y, colours, putmask)
         offset += row_size_eff
-    return bytes[:num_bytes//factor]
 
-def get_memory_ega(self, addr, num_bytes, plane=0, factor=1):
-    """ Retrieve bytes from EGA memory. """
-    # number of pixels referenced in each byte
-    # for tandy-6, this is 8; even though it takes 2 bytes to store both planes
-    ppb = 8  # num_planes*factor*8//self.bitsperpixel
+def get_memory_cgaega(self, addr, num_bytes, plane=0, factor=1):
+    """ Retrieve bytes from CGA or EGA memory. """
     # factor supports tandy-6 mode, which has 8 pixels per 2 bytes
     # with alternating planes in even and odd bytes (i.e. ppb==8)
+    ppb = factor * self.ppb
     bank_size_eff = self.bank_size//factor
     page_size_eff = self.page_size//factor
     row_size_eff = self.bytes_per_row//factor
-    # below is much like the CGA version
+    # first row
     page, x, y = self.get_coords(addr)
     byteshift = min(row_size_eff - x//ppb, num_bytes)
     if self.coord_ok(page, x, y):
@@ -565,6 +565,7 @@ def get_memory_ega(self, addr, num_bytes, plane=0, factor=1):
     else:
         bytes = [0]*byteshift
     offset = byteshift
+    # full rows
     bank_offset = 0
     page_offset = 0
     i = y
@@ -689,6 +690,8 @@ class GraphicsMode(VideoMode):
                           num_pages, False, has_blink, video_segment, page_size)
         self.is_text_mode = False
         self.bitsperpixel = int(bitsperpixel)
+        # number of pixels referenced in each byte of a plane
+        self.ppb = 8 // self.bitsperpixel
         self.num_attr = 2**self.bitsperpixel
         self.bytes_per_row = int(pixel_width) * self.bitsperpixel // 8
         self.supports_artifacts = supports_artifacts
@@ -732,77 +735,8 @@ class CGAMode(GraphicsMode):
         y = bank + self.interleave_times * row
         return page, x, y
 
-    def get_memory(self, addr, num_bytes):
-        """ Retrieve a byte from CGA memory. """
-        page, x, y = self.get_coords(addr)
-        ppb = 8//self.bitsperpixel
-        byteshift = min(self.bytes_per_row - x//ppb, num_bytes)
-        if self.coord_ok(page, x, y):
-            attrs = self.screen.get_interval(page, x, y, byteshift*ppb)
-            bytes = interval_to_bytes(attrs, ppb)
-        else:
-            bytes = [0]*byteshift
-        offset = byteshift
-        bank_offset = 0
-        page_offset = 0
-        #FIXME: should this be i=y ?
-        i = 0
-        while page_offset + bank_offset + offset < num_bytes:
-            y += self.interleave_times
-            # not an integer number of rows in a bank
-            if offset > self.bank_size:
-                bytes = bytes[:self.bank_size-offset]
-                bank_offset += self.bank_size
-                offset = 0
-                i += 1
-                y = i
-                if bank_offset > self.page_size:
-                    page_offset += self.page_size
-                    bank_offset = 0
-                    offset = 0
-                    page += 1
-                    y = 0
-                    i = 0
-            if self.coord_ok(page, 0, y):
-                attrs = self.screen.get_interval(page, 0, y, self.pixel_width)
-                bytes += interval_to_bytes(attrs, ppb)
-            else:
-                bytes += [0] * self.bytes_per_row
-            offset += self.bytes_per_row
-        return bytes[:num_bytes]
-
-    def set_memory(self, addr, bytes):
-        """ Set a list of bytes in CGA memory. """
-        # draw (potentially incomplete) first row
-        page, x, y = self.get_coords(addr)
-        ppb = 8//self.bitsperpixel
-        byteshift = min(self.bytes_per_row - x//ppb, len(bytes))
-        if self.coord_ok(page, x, y):
-            interval = bytes_to_interval(bytes[:byteshift], ppb)
-            self.screen.put_interval(page, x, y, interval)
-        offset = byteshift
-        bank_offset = 0
-        page_offset = 0
-        i = 0
-        while page_offset + bank_offset + offset < len(bytes):
-            y += self.interleave_times
-            if offset > self.bank_size:
-                bank_offset += self.bank_size
-                offset = 0
-                i += 1
-                y = i
-                if bank_offset > self.page_size:
-                    page_offset += self.page_size
-                    bank_offset = 0
-                    offset = 0
-                    page += 1
-                    y = 0
-                    i = 0
-            if self.coord_ok(page, 0, y):
-                offs = page_offset + bank_offset + offset
-                interval = bytes_to_interval(bytes[offs:offs+self.bytes_per_row], ppb)
-                self.screen.put_interval(page, 0, y, interval)
-            offset += self.bytes_per_row
+    get_memory = get_memory_cgaega
+    set_memory = set_memory_cgaega
 
     def sprite_size_to_record(self, dx, dy):
         """ Write 4-byte record of sprite size. """
@@ -855,6 +789,7 @@ class EGAMode(GraphicsMode):
                   interleave_times, bank_size,
                   num_pages, has_blink)
         # EGA uses colour planes, 1 bpp for each plane
+        self.ppb = 8
         self.bytes_per_row = pixel_width // 8
         self.video_segment = 0xa000
         self.planes_used = planes_used
@@ -888,7 +823,7 @@ class EGAMode(GraphicsMode):
         plane = self.plane % (max(self.planes_used)+1)
         if plane not in self.planes_used:
             return [0]*num_bytes
-        return get_memory_ega(self, addr, num_bytes, plane)
+        return get_memory_cgaega(self, addr, num_bytes, plane)
 
     def set_memory(self, addr, bytes):
         """ Set bytes in EGA video memory. """
@@ -900,7 +835,7 @@ class EGAMode(GraphicsMode):
         # return immediately for unused colour planes
         if mask == 0:
             return
-        set_memory_ega(self, addr, bytes, mask)
+        set_memory_cgaega(self, addr, bytes, mask)
 
     sprite_to_array = sprite_to_array_ega
     array_to_sprite = array_to_sprite_ega
@@ -959,8 +894,8 @@ class Tandy6Mode(GraphicsMode):
         """ Retrieve a byte from Tandy 640x200x4 """
         # 8 pixels per 2 bytes
         # low attribute bits stored in even bytes, high bits in odd bytes.
-        even_bytes = get_memory_ega(self, addr, num_bytes, 0, factor=2)
-        odd_bytes = get_memory_ega(self, addr, num_bytes, 1, factor=2)
+        even_bytes = get_memory_cgaega(self, addr, num_bytes, 0, factor=2)
+        odd_bytes = get_memory_cgaega(self, addr, num_bytes, 1, factor=2)
         if addr%2:
             even_bytes, odd_bytes = odd_bytes, even_bytes
         return [item for pair in zip(even_bytes, odd_bytes) for item in pair]
@@ -976,8 +911,8 @@ class Tandy6Mode(GraphicsMode):
             even_bytes, odd_bytes = odd_bytes, even_bytes
         # Tandy-6 encodes 8 pixels per byte, alternating colour planes.
         # I.e. even addresses are 'colour plane 0', odd ones are 'plane 1'
-        set_memory_ega(self, addr, even_bytes, 1, factor=2)
-        set_memory_ega(self, addr, odd_bytes, 2, factor=2)
+        set_memory_cgaega(self, addr, even_bytes, 1, factor=2)
+        set_memory_cgaega(self, addr, odd_bytes, 2, factor=2)
 
     sprite_to_array = sprite_to_array_ega
     array_to_sprite = array_to_sprite_ega
