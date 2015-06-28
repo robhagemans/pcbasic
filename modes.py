@@ -530,8 +530,11 @@ def walk_memory(self, addr, num_bytes, factor=1):
                 bank_offset, offset = 0, 0
                 y, start_y = 0, 0
         if self.coord_ok(page, 0, y):
-            # TODO: ensure this doesn't go past the boundary
-            yield page, 0, y, page_offset + bank_offset + offset, row_size
+            ofs = page_offset + bank_offset + offset
+            if ofs + row_size > num_bytes:
+                yield page, 0, y, ofs, num_bytes - ofs
+            else:
+                yield page, 0, y, ofs, row_size
         offset += row_size
 
 def sprite_size_to_record_ega(self, dx, dy):
@@ -660,6 +663,7 @@ class GraphicsMode(VideoMode):
         """ Set the current colour plane mask (EGA only). """
         pass
 
+
 class CGAMode(GraphicsMode):
     """ Default settings for a CGA graphics mode. """
 
@@ -687,7 +691,7 @@ class CGAMode(GraphicsMode):
         for page, x, y, ofs, length in walk_memory(self, addr, num_bytes):
             bytes[ofs:ofs+length] = interval_to_bytes(
                 self.screen.get_interval(page, x, y, length*self.ppb), self.ppb)
-        return bytes[:num_bytes]
+        return bytes
 
     def sprite_size_to_record(self, dx, dy):
         """ Write 4-byte record of sprite size. """
@@ -779,7 +783,7 @@ class EGAMode(GraphicsMode):
             bytes[ofs:ofs+length] = interval_to_bytes(
                 self.screen.get_interval(page, x, y, length*self.ppb),
                 self.ppb, plane)
-        return bytes[:num_bytes]
+        return bytes
 
     def set_memory(self, addr, bytes):
         """ Set bytes in EGA video memory. """
@@ -859,6 +863,7 @@ class Tandy6Mode(GraphicsMode):
                 hbytes[parity][ofs:ofs+length] = interval_to_bytes(
                     self.screen.get_interval(page, x, y, length*self.ppb*2),
                     self.ppb*2, parity ^ (addr%2))
+        # resulting array may be too long by one byte, so cut to size
         return [item for pair in zip(*hbytes) for item in pair] [:num_bytes]
 
     def set_memory(self, addr, bytes):
