@@ -82,6 +82,9 @@ class CASDevice(object):
         if not self.tapestream or not self.tapestream.ok():
             # device unavailable
             raise error.RunError(68)
+        if self.tapestream.is_open:
+            # file already open
+            raise error.RunError(55)
         return self.file_cls(self.tapestream, filetype, param, mode,
                               seg, offset, length)
 
@@ -98,6 +101,7 @@ class CASFile(iolayer.TextFileBase):
         """ Initialise file on tape. """
         iolayer.TextFileBase.__init__(self, iolayer.nullstream, filetype, mode)
         self.tapestream = tapestream
+        self.tapestream.is_open = True
         self.record_num = 0
         self.record_stream = StringIO()
         self.buffer_complete = False
@@ -169,6 +173,7 @@ class CASFile(iolayer.TextFileBase):
         if self.filetype in ('D', 'A') and self.mode == 'O':
             self.write('\0')
         self._close_record_buffer()
+        self.tapestream.is_open = False
 
     def _read_header(self, trunk=None):
         """ Play until a file header record is found. """
@@ -456,6 +461,8 @@ class TapeStream(object):
         """ Initialise tape interface. """
         # keep track of last seg, offs, length to reproduce GW-BASIC oddity
         self.last = 0, 0, 0
+        # is a file open on this stream?
+        self.is_open = False
 
     def __enter__(self):
         """ Context guard. """
