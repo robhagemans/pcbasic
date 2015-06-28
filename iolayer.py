@@ -494,6 +494,10 @@ class TextFileBase(RawFile):
             return False
         return self.next_char in ('', '\x1a')
 
+    def set_width(self, new_width=255):
+        """ Set file width. """
+        self.width = new_width
+
 
 class CRLFTextFileBase(TextFileBase):
     """ Text file with CRLF line endings, on disk device or field buffer. """
