@@ -7,7 +7,7 @@
 <pre>
 <em>y</em> = ABS(<em>x</em>)
 </pre>
-<p>Returns the absolute value of <code><em>x</em></code>. 
+<p>Returns the absolute value of <code><em>x</em></code>.
 <h4>Parameters</h4>
 <ul><li>
 <code><em>x</em></code> is an expression with a numeric value.
@@ -28,7 +28,7 @@
 <p>Returns the ASCII code for the first character of <code><em>char</em></code>. </p>
 <h4>Parameters</h4>
 <ul><li>
-<code><em>char</em></code> is an expression with 
+<code><em>char</em></code> is an expression with
 a string value.
 </li></ul>
 <h4>Errors</h4>
@@ -45,16 +45,16 @@ a string value.
 <code>ATN</code> function
 </h3>
 <pre><em>y</em> = ATN(<em>x</em>)</pre>
-<p>Returns the inverse tangent of <code><em>x</em></code>. 
+<p>Returns the inverse tangent of <code><em>x</em></code>.
 <h4>Parameters</h4>
 <ul><li>
-<code><em>x</em></code> is a numeric expression that gives 
-the angle in radians. 
+<code><em>x</em></code> is a numeric expression that gives
+the angle in radians.
 </li></ul>
 <h4>Notes</h4>
 <ul>
 <li>
-Unless PC-BASIC is run with the <code>double</code> option, this function 
+Unless PC-BASIC is run with the <code>double</code> option, this function
 returns a single-precision value.</li>
 <li>
 <code>ATN(x)</code> differs in the least significant digit from GW-BASIC.
@@ -72,23 +72,23 @@ returns a single-precision value.</li>
 AUTO</code> statement
 </h3>
 <pre>
-AUTO [ { <em>line_number</em> | . } ] [, [<em>increment</em>]] 
+AUTO [ { <em>line_number</em> | . } ] [, [<em>increment</em>]]
 </pre>
-<p>Start automatic line numbering. Line numbers 
+<p>Start automatic line numbering. Line numbers
 are automatically generated when <code class="key">Enter</code> is pressed.
-If a program line exists at a generated line number, a <code>*</code> is shown after the 
+If a program line exists at a generated line number, a <code>*</code> is shown after the
 line number. To avoid overwriting this line, leave it empty and press <code class="key">Enter</code>.
-To stop automatic line numbering, press <code class="key">Ctrl</code>+<code class="key">Break</code> or <code class="key">Ctrl</code>+<code class="key">C</code>. The line being edited at 
-that point is not saved. BASIC will return to command mode, even if <code>AUTO</code> was 
+To stop automatic line numbering, press <code class="key">Ctrl</code>+<code class="key">Break</code> or <code class="key">Ctrl</code>+<code class="key">C</code>. The line being edited at
+that point is not saved. BASIC will return to command mode, even if <code>AUTO</code> was
 run from a program line.
 <h4>Parameters</h4>
 <ul><li>
-Line numbering starts at <code><em>line_number</em></code>, if specified. If <code>.</code> is specified, line 
+Line numbering starts at <code><em>line_number</em></code>, if specified. If <code>.</code> is specified, line
 numbering starts at the last program line that was stored. Otherwise, line
 numbering starts at <code>10</code>.
-</li><li> 
-Each next line number is incremented by <code><em>increment</em></code>, if specified. If a comma 
-is used without specifying an increment, the last increment specified in an 
+</li><li>
+Each next line number is incremented by <code><em>increment</em></code>, if specified. If a comma
+is used without specifying an increment, the last increment specified in an
 <code>AUTO</code> command is used. If not, <code><em>increment</em></code> defaults to <code>10</code>.
 </li></ul>
 <h4>Errors</h4>
@@ -97,7 +97,7 @@ is used without specifying an increment, the last increment specified in an
 <code><em>line_number</em></code> is not an unsigned-integer value in <code>[0&mdash;65529]</code>:
    <code>Syntax error</code>.
 </li><li>
-When automatic line numbering is enabled and <code class="key">Enter</code> is pressed on an empty line with number larger than 
+When automatic line numbering is enabled and <code class="key">Enter</code> is pressed on an empty line with number larger than
    <code>65519</code>: <code>Undefined line number</code>.
 </li></ul>
 
@@ -121,7 +121,7 @@ BEEP { ON | OFF }
 <ul><li>
 Only legal with the <code>syntax={pcjr|tandy}</code> option.
 </li><li>
-On PCjr and Tandy computers, <code>BEEP OFF</code> would turn off the internal speaker. 
+On PCjr and Tandy computers, <code>BEEP OFF</code> would turn off the internal speaker.
     On PC-BASIC, both the internal and the external speaker are emulated through
     the same sound system.
 </li></ul>
@@ -134,7 +134,7 @@ BLOAD <em>filename</em> [, <em>offset</em> ]
 <h4>Parameters</h4>
 <ul>
 <li>
-<code><em>filename</em></code> is a string expression indicating the 
+<code><em>filename</em></code> is a string expression indicating the
 file to read from.
 </li><li>
 <code><em>offset</em></code> is a numeric expression in the range <code>[-32768&mdash;65535]</code>.
@@ -160,14 +160,14 @@ BSAVE <em>filename</em>, <em>offset</em>, <em>length</em>
 <h4>Parameters</h4>
 <ul>
 <li>
-<code><em>filename</em></code> is a string expression indicating the 
+<code><em>filename</em></code> is a string expression indicating the
 file to read from.
 </li><li>
 <code><em>offset</em></code> is a numeric expression in the range <code>[-32768&mdash;65535]</code> indicating
 the offset into the current <code>DEF SEG</code> segment from where to start reading.
 </li><li>
 <code><em>length</em></code> is a numeric expression in the range <code>[-32768&mdash;65535]</code> indicating
-the number of bytes to read. 
+the number of bytes to read.
 </li><li>
 If <code><em>offset</em></code> or <code><em>length</em></code> are negative, their two's
 complement will be used.</li>
@@ -188,13 +188,13 @@ CALL <em>address_var</em> [ ( <em>p0</em> [, <em>p1</em> [, ... ] ) ]
 <p>Does nothing.</p>
 <h4>Notes</h4>
 <ul><li>
-In GW-BASIC, <code>CALL</code> executes a machine language subroutine. 
+In GW-BASIC, <code>CALL</code> executes a machine language subroutine.
 </li><li>
-This statement is not implemented in PC-BASIC.  
+This statement is not implemented in PC-BASIC.
 </li></ul>
 <h4>Parameters</h4>
 <ul><li>
-<code><em>address_var</em></code> is a numeric variable. 
+<code><em>address_var</em></code> is a numeric variable.
 </li><li>
 <code><em>p0</em>, <em>p1</em>, ...</code> are variables.
 </li></ul>
@@ -213,13 +213,13 @@ CALLS <em>address_var</em> [ ( <em>p0</em> [, <em>p1</em> [, ... ] ) ]
 <p>Does nothing.</p>
 <h4>Notes</h4>
 <ul><li>
-In GW-BASIC, <code>CALLS</code> executes a FORTRAN subroutine. 
+In GW-BASIC, <code>CALLS</code> executes a FORTRAN subroutine.
 </li><li>
-This statement is not implemented in PC-BASIC.  
+This statement is not implemented in PC-BASIC.
 </li></ul>
 <h4>Parameters</h4>
 <ul><li>
-<code><em>address_var</em></code> is a numeric variable. 
+<code><em>address_var</em></code> is a numeric variable.
 </li><li>
 <code><em>p0</em>, <em>p1</em>, ...</code> are variables.
 </li></ul>
@@ -251,26 +251,26 @@ CHAIN [MERGE] <em>program</em> [, [<em>line_number_expr</em>] [, ALL ] [, DELETE
 </pre>
 <p>Loads <code><em>program</em></code> into memory and runs it, optionally transferring variables.</p>
 <ul>
-<li>If <code>ALL</code> is specified, all variables are transferred. If not, the variables 
+<li>If <code>ALL</code> is specified, all variables are transferred. If not, the variables
 specified in a <code>COMMON</code> statement are transferred. </li>
-<li>If <code>MERGE</code> is specified, <code><em>program</em></code> is merged into the existing program. To be 
+<li>If <code>MERGE</code> is specified, <code><em>program</em></code> is merged into the existing program. To be
 able to use this, <code><em>program</em></code> must be saved as ASCII.
 </li><li>
-If <code>DELETE</code> is specified, the <code><em>range</em></code> of line numbers is deleted from the 
+If <code>DELETE</code> is specified, the <code><em>range</em></code> of line numbers is deleted from the
 existing code before the merge. This is pointless without <code>MERGE</code>.
 </li>
 </ul>
 <h4>Parameters</h4>
 <ul><li>
-<code><em>line_number_expr</em></code> is a numeric expression. It 
-will be interpreted as a line number in the new program and execution will 
-start from this line number. If <code><em>line_number_expr</em></code> is negative, it will be 
+<code><em>line_number_expr</em></code> is a numeric expression. It
+will be interpreted as a line number in the new program and execution will
+start from this line number. If <code><em>line_number_expr</em></code> is negative, it will be
 interpreted as its two's-complement.
 </li><li>
 <code><em>range</em></code> is a line number range of which the closing line number is
 specified and exists before the merge.
 </li><li>
-<code><em>ign</em></code> is optional and ignored. 
+<code><em>ign</em></code> is optional and ignored.
 </li></ul>
 
 <h4>Notes</h4>
@@ -281,7 +281,7 @@ specified and exists before the merge.
 </li><li>
 Only if <code>ALL</code> is specified, <code>DEF FN</code> definitions are preserved.
 </li><li>
-Only if <code>MERGE</code> is specified, <code>DEFINT</code>, <code>DEFSTR</code>, <code>DEFSNG</code>, <code>DEFDBL</code> definitions 
+Only if <code>MERGE</code> is specified, <code>DEFINT</code>, <code>DEFSTR</code>, <code>DEFSNG</code>, <code>DEFDBL</code> definitions
     are preserved.
 </li><li>
 If specified, <code>ALL</code> must precede <code>DELETE</code>; if unspecified, no comma must
@@ -290,7 +290,7 @@ If specified, <code>ALL</code> must precede <code>DELETE</code>; if unspecified,
 <h4>Errors</h4>
 <ul>
 <li>
-<code>MERGE</code> is specified and <code><em>program</em></code> was not saved in ASCII mode: 
+<code>MERGE</code> is specified and <code><em>program</em></code> was not saved in ASCII mode:
 <code>Bad file mode</code>.
 </li><li>
 A line number in <code><em>range</em></code> is greater than 65529: <code>Syntax error</code>.
@@ -302,7 +302,7 @@ program is not loaded.
 <li>The closing line number in <code><em>range</em></code> does not exist: <code>Illegal function call</code></li>
 <li>
 If <code><em>line_number_expr</em></code> does not evaluate to an existing line number in the
-new program, <code>Illegal function call</code> is raised but the load or merge is 
+new program, <code>Illegal function call</code> is raised but the load or merge is
 being performed.
 </li></ul>
 
@@ -314,12 +314,12 @@ CHDIR <em>pathname</em>
 <p>Change the working directory to <code><em>pathname</em></code>.</p>
 <h4>Parameters</h4>
 <ul><li>
- <code><em>pathname</em></code> is a string expression which can be absolute or relative to the current path. 
+ <code><em>pathname</em></code> is a string expression which can be absolute or relative to the current path.
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
 <code><em>pathname</em></code>
-must be specified with MS-DOS path separators <code>\</code>. 
+must be specified with MS-DOS path separators <code>\</code>.
 </li><li>
 Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for information on how this statement matches filenames.
 </li>
@@ -336,7 +336,7 @@ No matching path is found: <code>Path not found</code>.
 <h3><code>CHR$</code> function</h3>
 <pre><em>char</em> = CHR$(<em>x</em>)
 </pre>
-<p>Returns the character with ASCII code <code><em>x</em></code>. 
+<p>Returns the character with ASCII code <code><em>x</em></code>.
 </p>
 <h4>Parameters</h4>
 <ul><li>
@@ -378,18 +378,18 @@ If <code>STEP</code> is specified, the midpoint is <code><em>x</em></code>,<code
 </li><li>
 <code><em>colour</em></code> is the colour attribute.
 </li><li>
-If <code><em>start</em></code> and <code><em>end</em></code> are specified, a sector of the ellipse is drawn from 
-<code><em>start</em></code> radians to <code><em>end</em></code> radians, with zero radians the intersection with the 
-right-hand x axis. If a negative value is specified, the arc sector is 
+If <code><em>start</em></code> and <code><em>end</em></code> are specified, a sector of the ellipse is drawn from
+<code><em>start</em></code> radians to <code><em>end</em></code> radians, with zero radians the intersection with the
+right-hand x axis. If a negative value is specified, the arc sector is
 connected by a line to the midpoint.
 </li><li>
 <code><em>aspect</em></code> specifies the ratio between the y radius and the x radius. If it is
 not specified, the standard value for the <code>SCREEN</code> mode is used (see there), so
-as to make the ellipse appear like a circle on the original hardware. 
+as to make the ellipse appear like a circle on the original hardware.
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
-For <code><em>aspect</em> <> 1</code>, the midpoint algorithm used does not pixel-perfectly 
+For <code><em>aspect</em> <> 1</code>, the midpoint algorithm used does not pixel-perfectly
    reproduce GW-BASIC's ellipses.
 </li></ul>
 <h4>Errors</h4>
@@ -406,10 +406,10 @@ For <code><em>aspect</em> <> 1</code>, the midpoint algorithm used does not pixe
 <pre>CLEAR [<em>expr</em>] [, [<em>mem_limit</em>] [, <em>stack_size</em>] ]
 </pre>
 <p>Clears all variables, arrays,<code>DEF FN</code> user functions, <code>DEF<em>type</em></code> type definitions,
-and <code>COMMON</code> declarations. Closes all files.  
+and <code>COMMON</code> declarations. Closes all files.
 Turns off all sound. Resets <code>PLAY</code> state and sets music to foreground.
-Clears all <code>ON ERROR</code> traps. Resets <code>ERR</code> and <code>ERL</code> to zero. Disables all events. 
-Turns <code>PEN</code> and <code>STRIG</code> off. Resets the random number generator. 
+Clears all <code>ON ERROR</code> traps. Resets <code>ERR</code> and <code>ERL</code> to zero. Disables all events.
+Turns <code>PEN</code> and <code>STRIG</code> off. Resets the random number generator.
 Clears the loop stack. Resets the <code>DRAW</code> state and the current graphics position.
 </p>
 <h4>Parameters</h4>
@@ -417,14 +417,14 @@ Clears the loop stack. Resets the <code>DRAW</code> state and the current graphi
 <code><em>mem_limit</em></code> specifies the upper limit of usable memory. Default is previous
 memory size. Default memory size is 65534.
 </li><li>
-<code><em>stack_size</em></code> specifies the amount of memory available to the BASIC stack. 
+<code><em>stack_size</em></code> specifies the amount of memory available to the BASIC stack.
 Default is previous stack size. Default stack size is 512.
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
   The purpose of <em>expr</em> is unknown.
 </li><li>
-  If called inside a <code>FOR</code>&mdash;<code>NEXT</code> or <code>WHILE</code>&mdash;<code>WEND</code> loop, an error will be raised at 
+  If called inside a <code>FOR</code>&mdash;<code>NEXT</code> or <code>WHILE</code>&mdash;<code>WEND</code> loop, an error will be raised at
    the iteration keyword as the loop stacks are cleared.
 </li></ul>
 <h4>Errors</h4>
@@ -450,8 +450,8 @@ Any of the arguments has a string value: <code>Type mismatch</code>.
 The hash (<code>#</code>) is optional and has no effect.</p>
 <h4>Parameters</h4>
 <ul><li>
-<code><em>file_1</em>, <em>file_2</em>, ...</code> are numeric expressions yielding 
-file numbers. 
+<code><em>file_1</em>, <em>file_2</em>, ...</code> are numeric expressions yielding
+file numbers.
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
@@ -473,7 +473,7 @@ The statement ends in a comma, <code>Missing operand</code> .
 
 <h3><code>CLS</code> statement</h3>
 <pre>CLS [<em>x</em>][,]</pre>
-<p>Clears the screen or part of it. 
+<p>Clears the screen or part of it.
 If <code><em>x</em></code> is not specified, in SCREEN 0 the text view region is cleared;
 in other screens, the graphics view region is cleared.
 The comma is optional and has no effect.</p>
@@ -509,11 +509,11 @@ characters on the screen are not affected.</p>
 <h4>Parameters</h4>
 <ul><li>
 <code><em>foreground</em></code> is a numeric expression in <code>[0&mdash;31]</code>.
-    This specifies the new foreground attribute. Attributes <code>16&mdash;31</code> are 
+    This specifies the new foreground attribute. Attributes <code>16&mdash;31</code> are
     blinking versions of attributes <code>0&mdash;15</code>.
 </li><li>
 <code><em>background</em></code> is a numeric expression in <code>[0&mdash;15]</code>.
-    This specifies the new background attribute. It is taken <code>MOD 8</code>: Values 
+    This specifies the new background attribute. It is taken <code>MOD 8</code>: Values
     <code>8&mdash;15</code> produce the same colour as <code>0&mdash;7</code>.
 </li><li>
 <code><em>border</em></code> is a numeric expression in <code>[0&mdash;15]</code> specifying the border attribute.
@@ -529,12 +529,12 @@ Any of the parameters has a string value: <code>Type mismatch</code>.
 </li><li>
 Any of the parameters is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 </li><li>
-<code><em>foreground</em></code> is not in <code>[0&mdash;31]</code>, <code><em>background</em></code> is not in 
+<code><em>foreground</em></code> is not in <code>[0&mdash;31]</code>, <code><em>background</em></code> is not in
     <code>[0&mdash;15]</code> or <code><em>border</em></code> is not in <code>[0&mdash;15]</code>: <code>Illegal function call</code>.
 </li><li>
-Statement is used in <code>SCREEN 2</code>: <code>Illegal function call</code>. 
+Statement is used in <code>SCREEN 2</code>: <code>Illegal function call</code>.
 </li></ul>
-    
+
 
 <h3><code>COLOR</code> statement (<code>SCREEN 1</code>)</h3>
 <pre>COLOR [<em>palette_0</em>] [, <em>palette</em> [, <em>override</em>] ]</pre>
@@ -542,9 +542,9 @@ Statement is used in <code>SCREEN 2</code>: <code>Illegal function call</code>.
 <ul><li>
 <code><em>palette_0</em></code> is a numeric expression  in <code>[0&mdash;255]</code>.
     This sets the palette colour associated with attribute 0; by default, the
-    background has this attribute. All pixels with this attribute will 
+    background has this attribute. All pixels with this attribute will
     change colour. The palette colour value is taken from the VGA 64-colour
-    set. <code><em>palette_0</em></code> is taken <code>MOD 64</code>.  
+    set. <code><em>palette_0</em></code> is taken <code>MOD 64</code>.
 </li><li>
 <code><em>palette</em></code> is a numeric expression in <code>[0&mdash;255]</code> that specifies the palette:
     <ul><li>
@@ -573,19 +573,19 @@ Any of the parameters is not in <code>[0&mdash;255]</code>: <code>Illegal functi
 <p>Changes the current foreground attribute and the colour for attribute 0.</p>
 <h4>Parameters</h4>
 <ul><li>
-<code><em>foreground</em></code> is a numeric expression in <code>[0&mdash;15]</code> 
+<code><em>foreground</em></code> is a numeric expression in <code>[0&mdash;15]</code>
     This sets the new foreground attribute. This applies only to new characters
     printed or pixels plotted.
 </li><li>
-<code><em>palette_0</em></code> is a numeric expression in <code>[0&mdash;15]</code> 
+<code><em>palette_0</em></code> is a numeric expression in <code>[0&mdash;15]</code>
     This sets the colour associated with attribute 0; by default, the
-    background has this attribute. All pixels with this attribute will 
-    change colour. 
-In <code>SCREEN 7</code> and <code>8</code>, the <code><em>palette_0</em></code> colour is taken from the first 8 of 
+    background has this attribute. All pixels with this attribute will
+    change colour.
+In <code>SCREEN 7</code> and <code>8</code>, the <code><em>palette_0</em></code> colour is taken from the first 8 of
 the 16-colour EGA set. <code><em>palette_0</em></code> is taken <code>MOD 8</code>.
 IN <code>SCREEN 9</code>, the colour value is taken from the 64-colour VGA set.
 </li><li>
-<code><em>dummy</em></code> is a numeric expression with a value in <code>[0&mdash;255]</code> 
+<code><em>dummy</em></code> is a numeric expression with a value in <code>[0&mdash;255]</code>
     The value of <code><em>dummy</em></code> is ignored.
 </li></ul>
 <h4>Errors</h4>
@@ -594,7 +594,7 @@ Any of the parameters has a string value: <code>Type mismatch</code>.
 </li><li>
 Any of the parameters is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>.
 </li><li>
-<code><em>foreground</em></code> is not in <code>[1&mdash;15]</code>; <code><em>background</em></code> is not in <code>[0&mdash;15]</code>; or 
+<code><em>foreground</em></code> is not in <code>[1&mdash;15]</code>; <code><em>background</em></code> is not in <code>[0&mdash;15]</code>; or
     <code><em>dummy</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
 </li></ul>
 
@@ -602,11 +602,11 @@ Any of the parameters is not in <code>[-32768&mdash;32767]</code>: <code>Overflo
 <h3><code>COM</code> statement</h3>
 <pre>COM(<em>port</em>) { ON | OFF | STOP }</pre>
 <ul>
-<li><code>ON</code>: enables <code>ON COM(<em>port</em>)</code> event trapping of the emulated serial port. 
+<li><code>ON</code>: enables <code>ON COM(<em>port</em>)</code> event trapping of the emulated serial port.
 </li><li>
 <code>OFF</code>: disables trapping.
 </li><li>
-<code>STOP</code>: halts trapping until <code>COM(<em>port</em>) ON</code> is used. Events that occur 
+<code>STOP</code>: halts trapping until <code>COM(<em>port</em>) ON</code> is used. Events that occur
 while trapping is halted will trigger immediately when trapping is re-enabled.
 </li></ul>
 <h4>Parameters</h4>
@@ -617,8 +617,8 @@ serial port (<code>COM1:</code> or <code>COM2:</code>) is trapped.
 
 <h3><code>COMMON</code> statement</h3>
 <pre>COMMON [ [<em>var_0</em>] [, [<em>var_1</em>] [, [...] ] ] ]</pre>
-<p>Specifies variables to be passed as common variables to the program called 
-with <code>CHAIN</code>. 
+<p>Specifies variables to be passed as common variables to the program called
+with <code>CHAIN</code>.
 The statement may end with one or more commas. </p>
 <h4>Parameters</h4>
 <ul><li>
@@ -639,7 +639,7 @@ Anything after the <code>CONT</code> keyword is ignored.
     direct line. As the subroutine <code>RETURN</code>s to the position after the <code>GOSUB</code> in
     the old direct line, strange things may happen if commands are given after
     <code>CONT</code>. In GW-BASIC, this can lead to strange errors in non-existing
-    program lines as the parser executes bytes that are not part of a program 
+    program lines as the parser executes bytes that are not part of a program
     line. In PC-BASIC, if the new direct line is shorter, execution stops
     after <code>RETURN</code>; but if the direct line is extended beyond the old return
     position, the parser tries to resume at that return position, with strange
@@ -647,22 +647,22 @@ Anything after the <code>CONT</code> keyword is ignored.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
-No program is loaded, a program has not been run, after a program line 
+No program is loaded, a program has not been run, after a program line
     has been modified or after <code>CLEAR</code>: <code>Can't continue</code>.
 </li><li>
-The break occurred in a direct line: <code>Can't continue</code>    
+The break occurred in a direct line: <code>Can't continue</code>
 </li></ul>
 
 
 <h3><code>COS</code> function</h3>
 <pre><em>cosine</em> = COS(<em>angle</em>)</pre>
-<p>Returns the cosine of <code><em>angle</em></code>. 
+<p>Returns the cosine of <code><em>angle</em></code>.
 Unless PC-BASIC is run with the <code>--double</code> option, this function returns a single-precision
 value.</p>
 <h4>Parameters</h4>
 <ul><li>
-<code><em>angle</em></code> is a numeric expression that 
-gives the angle in radians. 
+<code><em>angle</em></code> is a numeric expression that
+gives the angle in radians.
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
@@ -672,7 +672,7 @@ gives the angle in radians.
 <ul><li>
 <code><em>angle</em></code> has a string value: <code>Type mismatch</code>.
 </li></ul>
-     
+
 
 <h3><code>CSNG</code> function</h3>
 <pre><em>y</em> = CSNG(<em>x</em>)</pre>
@@ -685,7 +685,7 @@ Converts the numeric expression <code><em>x</em></code> to a single-precision va
 
 <h3><code>CSRLIN</code> function</h3>
 <pre><em>y</em> = CSRLIN </pre>
-<p>Returns the screen row of the cursor on the active page. 
+<p>Returns the screen row of the cursor on the active page.
 The return value is in the range <code>[1&mdash;25]</code>.</p>
 <h4>Notes</h4>
 <ul><li>
@@ -730,7 +730,7 @@ number in Microsoft Binary Format. Only the first eight bytes are used.
 <ul><li>
 <code><em>s</em></code> has a numeric value: <code>Type mismatch</code>.
 </li></ul>
- 
+
 
 <h3><code>DATA</code> statement</h3>
 <pre>DATA [<em>const_0</em>] [, [<em>const_1</em>] [, ... ] ]</pre>
@@ -748,7 +748,7 @@ statement.
 If the type of the literal does not match that of the corresponding <code>READ</code>
 statement, a <code>Syntax error</code> occurs on the <code>DATA</code> statement.
 </li></ul>
-    
+
 <h3><code>DATE$</code> function</h3>
 <pre><em>s</em> = DATE$</pre>
 <p>Returns the system date as a string in the format <code>"mm-dd-yyyy"</code>.</p>
@@ -759,15 +759,15 @@ This function has no brackets.
 
 <h3><code>DATE$</code> statement</h3>
 <pre>DATE$ = <em>date</em></pre>
-<p>Sets the system date. <code><em>date</em></code> is a string expression that represents a 
+<p>Sets the system date. <code><em>date</em></code> is a string expression that represents a
 date in one of the formats: <code>"mm-dd-yyyy"</code>, <code>"mm/dd/yyyy"</code>, <code>"mm-dd-yy"</code>, <code>"mm/dd/yy"</code>.</p>
 <p>Of these, </p>
 <ul><li>
 <code>mm</code> must be in <code>[01&mdash;12]</code>.
 </li><li>
-<code>dd</code> must be in <code>[01&mdash;31]</code>. 
+<code>dd</code> must be in <code>[01&mdash;31]</code>.
 </li><li>
-<code>yyyy</code> must be in <code>[1980&mdash;2099]</code>. 
+<code>yyyy</code> must be in <code>[1980&mdash;2099]</code>.
 </li><li>
 <code>yy</code> must be in one of the ranges:
     <ul><li>
@@ -778,7 +778,7 @@ date in one of the formats: <code>"mm-dd-yyyy"</code>, <code>"mm/dd/yyyy"</code>
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
-   The system date is not actually changed; rather, PC-BASIC remembers the 
+   The system date is not actually changed; rather, PC-BASIC remembers the
     offset from the true system date. This avoids requiring user permission
     to change the system time.
 </li><li>
@@ -796,8 +796,8 @@ date in one of the formats: <code>"mm-dd-yyyy"</code>, <code>"mm/dd/yyyy"</code>
 <h3><code>DEF FN</code> statement</h3>
 <pre>DEF FN[ ]<em>name</em>[( <em>arg_0</em> [, <em>arg_1</em> [, ...] ] )] = <em>expression</em></pre>
 <p>Defines a function called <code>FN<em>name</em></code> (or <code>FN<em> name</em></code>: spaces between <code>FN</code> and <code><em>name</em></code> are optional).
-On calling <code>FN<em>name</em>( ... )</code>, <code><em>expression</em></code> is 
-evaluated with the supplied parameters substituted. The result of the 
+On calling <code>FN<em>name</em>( ... )</code>, <code><em>expression</em></code> is
+evaluated with the supplied parameters substituted. The result of the
 evaluation is the return value of <code>FN<em>name</em></code>.
 </p>
 <h4>Notes</h4>
@@ -813,7 +813,7 @@ This statement may only be used on a program line.
 function. Variables of the same name may or may not exist in the program; their value is not affected or used by the defined function.
 </li><li>
 <code><em>expression</em></code> must be a legal PC-BASIC expression that may use the
-parameters <code><em>arg_0</em>, <em>arg_1</em>, ...</code>. 
+parameters <code><em>arg_0</em>, <em>arg_1</em>, ...</code>.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
@@ -823,33 +823,33 @@ The statement is executed directly instead of in a program line: <code>Illegal d
 
 <h3><code>DEFINT</code> statement</h3>
 <pre>DEFINT <em>letters</em></pre>
-<p>Sets the default type for variables starting with <code><em>letters</em></code> to integer (<code>%</code>). 
-This is the type that is assumed if no type character is specified. <code><em>letters</em></code> 
-are letters of the alphabet separated by commas or ranges specified with a 
+<p>Sets the default type for variables starting with <code><em>letters</em></code> to integer (<code>%</code>).
+This is the type that is assumed if no type character is specified. <code><em>letters</em></code>
+are letters of the alphabet separated by commas or ranges specified with a
 dash: for example, <code>DEFINT A,B,C-Z</code>.</p>
 
 
 <h3><code>DEFDBL</code> statement</h3>
 <pre>DEFDBL <em>letters</em></pre>
-<p>Sets the default type for variables starting with <code><em>letters</em></code> to double (<code>#</code>). 
-This is the type that is assumed if no type character is specified. <code><em>letters</em></code> 
-are letters of the alphabet separated by commas or ranges specified with a 
+<p>Sets the default type for variables starting with <code><em>letters</em></code> to double (<code>#</code>).
+This is the type that is assumed if no type character is specified. <code><em>letters</em></code>
+are letters of the alphabet separated by commas or ranges specified with a
 dash: for example, <code>DEFDBL A,B,C-Z</code>.</p>
 
 
 <h3><code>DEFSNG</code> statement</h3>
 <pre>DEFSNG <em>letters</em></pre>
-<p>Sets the default type for variables starting with <code><em>letters</em></code> to single (<code>!</code>). 
-This is the type that is assumed if no type character is specified. <code><em>letters</em></code> 
-are letters of the alphabet separated by commas or ranges specified with a 
+<p>Sets the default type for variables starting with <code><em>letters</em></code> to single (<code>!</code>).
+This is the type that is assumed if no type character is specified. <code><em>letters</em></code>
+are letters of the alphabet separated by commas or ranges specified with a
 dash: for example, <code>DEFSNG A,B,C-Z</code>. <code>DEFSNG A-Z</code> is the default setting.</p>
 
 
 <h3><code>DEFSTR</code> statement</h3>
 <pre>DEFSTR <em>letters</em></pre>
-<p>Sets the default type for variables starting with <code><em>letters</em></code> to string (<code>$</code>). 
-This is the type that is assumed if no type character is specified. <code><em>letters</em></code> 
-are letters of the alphabet separated by commas or ranges specified with a 
+<p>Sets the default type for variables starting with <code><em>letters</em></code> to string (<code>$</code>).
+This is the type that is assumed if no type character is specified. <code><em>letters</em></code>
+are letters of the alphabet separated by commas or ranges specified with a
 dash: for example, <code>DEFSTR A,B,C-Z</code>.</p>
 
 
@@ -877,13 +877,13 @@ dash: for example, <code>DEFSTR A,B,C-Z</code>.</p>
 <p>Does nothing. </p>
 <h4>Parameters</h4>
 <ul><li>
-<code><em>n</em></code> is a digit between 0 and 9 inclusive. 
+<code><em>n</em></code> is a digit between 0 and 9 inclusive.
 </li><li>
 <code><em>address</em></code> is a numeric expression in <code>[-32768&mdash;65535]</code>.
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
-   In GW-BASIC, this statement sets the starting address of an assembly-language function. 
+   In GW-BASIC, this statement sets the starting address of an assembly-language function.
 </li><li>
     This statement is not implemented in PC-BASIC.
 </li><li>
@@ -922,14 +922,14 @@ If no range is specified, the whole program will be deleted.
 </li><li>
 The range specified does not include any program lines stored: <code>Illegal function call</code>.
 </li></ul>
-    
-    
+
+
 <h3><code>DIM</code> statement</h3>
 <pre>DIM <em>name</em> { ( | [ } <em>limit_0</em> [, <em>limit_1</em> [, ...] ] { ) | } ]</pre>
-<p>Allocates memory for arrays. 
-The <code>DIM</code> statement also fixes the number of indices of the array. 
-An array can only be allocated once; to re-allocate an array, <code>ERASE</code> or 
- <code>CLEAR</code> must be executed first. 
+<p>Allocates memory for arrays.
+The <code>DIM</code> statement also fixes the number of indices of the array.
+An array can only be allocated once; to re-allocate an array, <code>ERASE</code> or
+ <code>CLEAR</code> must be executed first.
 If an array is first used without a <code>DIM</code> statement, it is automatically allocated with its maximum indices set at <code>10</code>
 for each index position used. If an array's <code>DIM</code> statement specifies no indices,
  it is allocated with a single index with maximum <code>10</code>.
@@ -937,14 +937,14 @@ The least index allowed is determined by <code>OPTION BASE</code>.
 <h4>Parameters</h4>
 <ul><li>
 <code><em>name</em></code> is a legal variable name
-specifying the array to be allocated. 
+specifying the array to be allocated.
 </li><li>
-<code><em>limit_0</em>, <em>limit_1</em>, ...</code> are numeric 
-expressions that specify the greatest index allowed at that position. 
+<code><em>limit_0</em>, <em>limit_1</em>, ...</code> are numeric
+expressions that specify the greatest index allowed at that position.
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
-Mixed brackets are allowed. 
+Mixed brackets are allowed.
 </li><li>
    The size of arrays is limited by the available BASIC memory.
 </li><li>
@@ -1021,14 +1021,14 @@ The array exceeds the size of available variable
     <td><code>M<em>x</em>,<em>y</em></code></td>
     <td>move to view region coordinate (<code><em>x</em></code>,<code><em>y</em></code>) </td>
     </tr></table>
-    <p>where <code><em>n</em></code>, <code><em>x</em></code>, <code><em>y</em></code> are integers in <code>[0&mdash;9999]</code>. 
+    <p>where <code><em>n</em></code>, <code><em>x</em></code>, <code><em>y</em></code> are integers in <code>[0&mdash;9999]</code>.
     Where optional, <code><em>n</em></code> defaults to <code>1</code>.
 </dd>
 <dt>Scale commands</dt>
 <dd>
     <table><tr>
     <td><code>S<em>n</em></code></td>
-    <td>set the step size to <code><em>n</em>/4</code>. The default step size is 1 pixel.  
+    <td>set the step size to <code><em>n</em>/4</code>. The default step size is 1 pixel.
                 <code><em>n</em></code> is an integer in <code>[1&mdash;255]</code>
     </td>
     </tr><tr>
@@ -1039,11 +1039,11 @@ The array exceeds the size of available variable
     </td>
     </tr><tr>
     <td><code>A<em>n</em></code></td>
-    <td>    
-        set the angle to 0 for <code><em>n</em>=0</code>, 
+    <td>
+        set the angle to 0 for <code><em>n</em>=0</code>,
                 90 for <code><em>n</em>=1</code>,
-                180 for <code><em>n</em>=2</code>, 
-                270 for <code><em>n</em>=3</code>.    
+                180 for <code><em>n</em>=2</code>,
+                270 for <code><em>n</em>=3</code>.
                 <code><em>n</em></code> is an integer in <code>[0&mdash;3]</code>
     </td>
     </tr></table>
@@ -1072,7 +1072,7 @@ The array exceeds the size of available variable
     </li></ul>
 </dd>
 </dl>
-    
+
 <p>Numeric variables <code><em>n</em></code>, <code><em>x</em></code>, <code><em>y</em></code>, <code><em>b</em></code> in the commands above can be:</p>
 <ul><li>
 an integer literal, e.g. <code>DRAW "U100"</code>
@@ -1084,9 +1084,9 @@ a numeric variable name <code><em>var</em></code> preceded by <code>=</code> and
 <h4>Notes</h4>
 <ul><li>
    The <code>CLS</code> statement resets the step size to 1 pixel, angle to 0 degrees and position to the
-    centre of the view region.                 
+    centre of the view region.
 </li><li>
-   The value <code><em>n</em></code> in the <code>TA</code>, <code>A</code> and <code>C</code> command can be left out but <em>only</em> if the 
+   The value <code><em>n</em></code> in the <code>TA</code>, <code>A</code> and <code>C</code> command can be left out but <em>only</em> if the
     command is terminated by a semicolon. <code><em>n</em></code> defaults to <code>0</code>.
 </li></ul>
 <h4>Errors</h4>
@@ -1103,7 +1103,7 @@ A variable referenced in the GML string is of incorrect type: <code>Type mismatc
 <pre>EDIT {<em>line_number</em> | .}</pre>
 <p>
 Displays the specified program line with the cursor positioned for editing.
-<code><em>line_number</em></code> must be a line that exists in the program, or a period (.) to 
+<code><em>line_number</em></code> must be a line that exists in the program, or a period (.) to
 indicate the last line stored.</p>
 <h4>Errors</h4>
 <ul><li>
@@ -1267,7 +1267,7 @@ This function has no brackets.
 <h3><code>ERR</code> function</h3>
 <pre><em>error_code</em> = ERR</pre>
 <p>
-Returns the number of the last error. 
+Returns the number of the last error.
 <h4>Notes</h4>
 <ul><li>
 If no error has been raised, returns 0.
@@ -1283,8 +1283,8 @@ This function has no brackets.
 <p>Raises the error with number <code><em>error_number</em></code>.
 <h4>Parameters</h4>
 <ul><li>
-<code><em>error_number</em></code> is an expression 
-with a numeric value. 
+<code><em>error_number</em></code> is an expression
+with a numeric value.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
@@ -1350,7 +1350,7 @@ value.
 region of memory of length defined by the <code>OPEN</code> statement; the default record
 length is 128 bytes. The <code>FIELD</code> statement assigns a portion of this region to
 one or more fixed-length string variables, so that the value of these strings
-is whatever happens to be in the record buffer at that location. 
+is whatever happens to be in the record buffer at that location.
 <h4>Notes</h4>
 <ul><li>
 A <code>FIELD</code> statement
@@ -1408,7 +1408,7 @@ directory. </p>
 <h4>Parameters</h4>
 <ul><li>
 <code><em>path_and_filter</em></code> is a string expression that
-consists of two optional parts: the first part is the path to the directory; 
+consists of two optional parts: the first part is the path to the directory;
 the second part is the filename filter.
 </li></ul>
 <h4>Notes</h4>
@@ -1507,7 +1507,7 @@ No <code>NEXT</code> statement is found to match the <code>FOR</code> statement:
 </li><li>
  <code><em>loop_var</em></code> is an array element: <code>Syntax error</code> .
 </li></ul>
-        
+
 
 <h3><code>FRE</code> function</h3>
 <pre><em>free_mem</em> = FRE(<em>x</em>)</pre>
@@ -1537,7 +1537,7 @@ of an open random-access file. The <code>#</code> is optional and has no effect.
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
-If the record number is beyond the end of the file, the file buffer is 
+If the record number is beyond the end of the file, the file buffer is
     filled with null bytes.
 </li></ul>
     <h4>Errors</h4>
@@ -1574,7 +1574,7 @@ and the <code>COM</code> buffer length, inclusive.
    If <code><em>bytes</em></code> is <code>32768</code> or greater, GW-BASIC hangs. This functionality is not implemented in PC-BASIC.
 </li><li>
    In GW-BASIC, <code>Device I/O error</code> is raised for overrun error, framing error,
-    and break interrupt. <code>Device fault</code> is raised if DSR is lost during I/O. 
+    and break interrupt. <code>Device fault</code> is raised if DSR is lost during I/O.
     <code>Parity error</code> is raised if parity is enabled and incorrect parity is
     encountered. This is according to the manual; it is untested.
 </li></ul>
@@ -1596,8 +1596,8 @@ If the serial input buffer is full, i.e. <code>LOF(<em>com_file_number</em>) = 0
 </li><li>
    If the carrier drops during <code>GET</code>, hangs until the <code class="key">Ctrl</code>+<code class="key">Break</code> key is pressed.
 </li></ul>
-        
-    
+
+
 <h3><code>GET</code> statement (graphics)</h3>
 <pre>GET (<em>x0</em>, <em>y0</em>) - [STEP] (<em>x1</em>, <em>y1</em>), <em>array_name</em></pre>
 <p>Stores a rectangular area of the graphics screen in an array.
@@ -1696,7 +1696,7 @@ One optional space is allowed between <code>GO</code> and <code>SUB</code>; it w
 
 <h3><code>GOTO</code> statement</h3>
 <pre>GO[ ]TO <em>line_number</em> [<em>anything</em>]</pre>
-<p>Jumps to <code><em>line_number</em></code>.  Anything after <code><em>line_number</em></code> until the end of the 
+<p>Jumps to <code><em>line_number</em></code>.  Anything after <code><em>line_number</em></code> until the end of the
 statement is ignored. If executed from a direct line, <code>GOTO</code> starts execution of the program at the specified line.
 <h4>Parameters</h4>
 <ul><li>
@@ -1740,13 +1740,13 @@ negative <code><em>x</em></code> are shown as two's-complement.
 <p>
 If <code><em>truth_value</em></code> is non-zero, executes <code><em>statements_1</em></code> or jumps to <code><em>line_number_1</em></code> .
 If it is zero, executes <code><em>statements_0</em></code> or jumps to <code><em>line_number_0</em></code> . <code><em>truth_value</em></code>
-is a numeric expression. The comma is optional and ignored. 
+is a numeric expression. The comma is optional and ignored.
 <code><em>line_number_0</em></code> and <code><em>line_number_1</em></code> are existing line numbers.
 Statements <code><em>statements_0</em></code> and <code><em>statements_1</em></code> can be compound statements with
-one or more colons (<code>:</code>) separating single statements. The compound statements 
+one or more colons (<code>:</code>) separating single statements. The compound statements
 can contain nested <code>IF&mdash;THEN&mdash;ELSE</code> statements. <code>ELSE</code> clauses are optional; they
 are bound to the innermost free <code>IF</code> statement if nested. Additional <code>ELSE</code>
-clauses that have no matching <code>IF</code> are ignored. All clauses must be on the same 
+clauses that have no matching <code>IF</code> are ignored. All clauses must be on the same
 program line.
 <h4>Notes</h4>
 <ul><li>
@@ -1761,7 +1761,7 @@ program line.
 
 <h3><code>INKEY$</code> function</h3>
 <pre><em>key</em> = INKEY$</pre>
-<p>Returns one key-press from the keyboard buffer. If the keyboard buffer is 
+<p>Returns one key-press from the keyboard buffer. If the keyboard buffer is
 empty, returns the empty string. Otherwise, the return value is either a one
 character string or a two-character string of which the first is <code>CHR$(0)</code> and
 the second a keyboard scancode.</p><h4>Notes</h4>
@@ -1850,7 +1850,7 @@ Returns the value of an emulated machine port.</p>
 <td>
     Returns the keyboard scancode for the last key pressed.
     The scancodes returned by <code>INP(&amp;H60)</code> are listed below. If the key is
-    currently down, the scancode is returned; if it has been released, 
+    currently down, the scancode is returned; if it has been released,
     the scancode is incremented by 128.
 </td>
 </tr><tr>
@@ -2070,7 +2070,7 @@ Returns the value of an emulated machine port.</p>
 </td></tr><tr>
 <td><code class="key">Del</code></td><td>53
 </tr>
-</table>        
+</table>
 
 <h3><code>INPUT</code> statement (console)</h3>
 <pre>INPUT [;] [<em>prompt</em> {;|,} ]<em>var_0</em> [, <em>var_1</em> [, ... ] ]</pre>
@@ -2094,10 +2094,10 @@ the prompt is followed by a comma, no question mark is added. </p>
    String values can be entered with or without double quotes (<code>"</code>).
 </li><li>
    If a string with a comma, leading or trailing whitespace is needed,
-    quotes are the only way to enter it. 
+    quotes are the only way to enter it.
 </li><li>
    Between a closing quote and the comma at the end of the entry, only white-
-    space is allowed.    
+    space is allowed.
 </li><li>
    If quotes are needed in the string itself, the first character must be
     neither a quote nor whitespace. It is not possible to enter a string that
@@ -2114,14 +2114,14 @@ the prompt is followed by a comma, no question mark is added. </p>
 <h4>Errors</h4>
 <ul><li>
    If the value entered for a numeric variable is not a valid numeric literal,
-    or the number of values entered does not match the number of variables in 
+    or the number of values entered does not match the number of variables in
     the statement,
     <code>?Redo from start</code> is printed and all values must be entered again.
 </li><li>
    A <code>Syntax error</code> that is caused after the prompt is printed is only raised
     after the value shave been entered. No values are stored.
 </li></ul>
-    
+
 
 <h3><code>INPUT#</code> statement (text files, devices, or random-access files)</h3>
 <pre>INPUT[ ]# <em>file_num</em>, <em>var_0</em> [, <em>var_1</em> [, ...] ]</pre>
@@ -2227,7 +2227,7 @@ Returns the location of the first occurrence of the substring <code><em>child</e
 <code><em>parent</em></code> and <code><em>child</em></code> are string expressions.
 </li><li>
 <code><em>start</em></code> is a numeric expression in <code>[1&mdash;255]</code>, specifying
-the starting position from where to look; if not specified, the search starts 
+the starting position from where to look; if not specified, the search starts
 at character 1.
 </li></ul>
 <h4>Notes</h4>
@@ -2261,7 +2261,7 @@ at character 1.
 <ul><li>
 <code><em>number</em></code> is a string expression, <code>Type mismatch</code> .
 </li></ul>
- 
+
 
 <h3><code>IOCTL</code> statement</h3>
 <pre>IOCTL [#] <em>file_num</em>, <em>control_string</em></pre>
@@ -2304,7 +2304,7 @@ at character 1.
    Otherwise: <code>Illegal function call</code>
 </li></ul>
 
-    
+
 <h3><code>KEY</code> statement (function-key macro list)</h3>
 <pre>KEY { ON | OFF | LIST }</pre>
 <p>Turns the list of function-key macros on the bottom of the screen <code>ON</code> or <code>OFF</code>.
@@ -2323,7 +2323,7 @@ Only the first 15 characters of <code><em>string_value</em></code> are stored.</
 <ul><li>
 <code><em>key_id</em></code> is a numeric expression in the range <code>[1&mdash;10]</code>.
 </li><li>
-<code><em>string_value</em></code> is a string expression. 
+<code><em>string_value</em></code> is a string expression.
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
@@ -2345,7 +2345,7 @@ Only the first 15 characters of <code><em>string_value</em></code> are stored.</
 <p>Controls event trapping of the key with identifier <code><em>key_id</em></code>.
 Event trapping is switched <code>ON</code> or <code>OFF</code>. <code>STOP</code> suspends event trapping until
 a <code>KEY() ON</code> is executed. Up to one event can be triggered during
-suspension, provided that event handling was switched on prior to suspension. 
+suspension, provided that event handling was switched on prior to suspension.
 The event triggered during suspension is handled immediately after the next <code>KEY() ON</code>
 statement.</p>
 <h4>Parameters</h4>
@@ -2408,7 +2408,7 @@ With <code>--syntax=tandy</code>, key 11 id <code class="key">F11</code> and key
 </li><li>
 <code><em>key_id</em></code> has a string value: <code>Type mismatch</code>.
 </li></ul>
- 
+
 
 <h3><code>KEY</code> statement (event-trapping key definition)</h3>
 <pre>KEY <em>key_id</em>, <em>two_char_string</em></pre>
@@ -2448,7 +2448,7 @@ Modifiers are:
 <ul><li>
    If <code><em>key_id</em></code> is not in <code>[15&mdash;20]</code>, no error is raised, but strange things can
     happen in GW-BASIC: screen anomalies and crashes suggestive of unintended
-    memory access. This is not implemented in PC-BASIC: such values are 
+    memory access. This is not implemented in PC-BASIC: such values are
     ignored.
 </li><li>
    If <code><em>key_id</em></code> is in <code>[1&mdash;10]</code>, the statement is interpreted as a string macro
@@ -2501,7 +2501,7 @@ If a syntax error occurs after the closing quote, the file is removed    anyway.
 <h4>Notes</h4>
 <ul><li>
    This statement does nothing in GW-BASIC. Presumably, it is left over from a
-    statement in older versions of MS Basic that would copy the screen to the 
+    statement in older versions of MS Basic that would copy the screen to the
     printer.
 </li></ul>
 <h4>Errors</h4>
@@ -2557,7 +2557,7 @@ expression.
 
 <h3><code>LET</code> statement</h3>
 <pre>[LET] <em>name</em> = <em>expression</em></pre>
-<p>Assigns the value of <code><em>expression</em></code> to the variable or array element <code><em>name</em></code>. 
+<p>Assigns the value of <code><em>expression</em></code> to the variable or array element <code><em>name</em></code>.
 <h4>Parameters</h4>
 <ul><li>
 <code><em>name</em></code> is a variable that may or may not already exist.
@@ -2577,26 +2577,26 @@ be assigned to each other but strings can only be assigned to strings.
 <p>Draws a line or a box in graphics mode. If <code>B</code> is not specified, a line is drawn
 from <code>(<em>x0</em>, <em>y0</em>)</code> to <code>(<em>x1</em>, <em>y1</em>)</code>, endpoints inclusive.
 If <code>B</code> is specified, a
-rectangle is drawn with sides parallel to the screen and two opposing corners 
+rectangle is drawn with sides parallel to the screen and two opposing corners
 specified by <code>(<em>x0</em>, <em>y0</em>)</code> and <code>(<em>x1</em>, <em>y1</em>)</code>. If the starting point is not given,
-the current graphics position is used as a staring point.  If <code>STEP</code> is 
+the current graphics position is used as a staring point.  If <code>STEP</code> is
 specified, <code>(<em>x0</em>, <em>y0</em>)</code> is an offset from the current position and <code>(<em>x1</em>, <em>y1</em>)</code> is an
 offset from <code>(<em>x0</em>, <em>y0</em>)</code>.
-<code>LINE</code> moves the current graphics position to the last given endpoint. 
-If <code>F</code> is specified with <code>B</code>, the rectangle is filled with the specified attribute. 
+<code>LINE</code> moves the current graphics position to the last given endpoint.
+If <code>F</code> is specified with <code>B</code>, the rectangle is filled with the specified attribute.
 <code>F</code> and <code>B</code> may be separated by zero or more spaces.
 <h4>Parameters</h4>
 <ul><li>
 <code><em>attr</em></code> is a numeric expression in <code>[0&mdash;255]</code>, which
-    specifies the colour attribute of the line. If it is not given, the current 
-    attribute is used. 
+    specifies the colour attribute of the line. If it is not given, the current
+    attribute is used.
 </li><li>
     <code><em>pattern</em></code> is a numeric expression in <code>[-32768&mdash;32767]</code>.
     This is interpreted as a 16-bit binary pattern mask
-    applied to consecutive pixels in the line: a 1 bit indicates a pixel 
-    plotted; a 0 bit indicates a pixel left untouched. The pattern starts at 
-    the most significant bit, which is applied to the topmost endpoint. If a 
-    box is drawn, the pattern is applied in the following counter-intuitive 
+    applied to consecutive pixels in the line: a 1 bit indicates a pixel
+    plotted; a 0 bit indicates a pixel left untouched. The pattern starts at
+    the most significant bit, which is applied to the topmost endpoint. If a
+    box is drawn, the pattern is applied in the following counter-intuitive
     sequence: <code>(<em>x1</em>, <em>y1</em>)&mdash;(<em>x0</em>, <em>y1</em>)</code>,
     <code>(<em>x1</em>, <em>y0</em>)&mdash;(<em>x0</em>, <em>y0</em>)</code>,
     then <code>(<em>x1</em>, <em>y0</em>)&mdash;(<em>x1</em>, <em>y1</em>)</code>,
@@ -2625,7 +2625,7 @@ Any of the parameters has a string value: <code>Type mismatch</code>.
 keyboard, storing it into the variable <code><em>string_name</em></code>. All input is read until
 <code class="key">Enter</code> is pressed; the first 255 characters are stored. If the <code>;</code> is given
 right after <code>LINE INPUT</code>, the <code class="key">Enter</code> ending user input is not echoed to the
-screen. 
+screen.
 <h4>Parameters</h4>
 <ul><li>
 <code><em>prompt_literal</em></code> is a string literal. It makes no difference whether it is
@@ -2645,9 +2645,9 @@ followed by a comma or a semicolon.
 <h3><code>LINE INPUT#</code> statement</h3>
 <pre>LINE INPUT[ ]# <em>file_num</em>, <em>string_name</em></pre>
 <p>Reads string or numeric variables from a text file, device, or the <code>FIELD</code> buffer
-of a random access file. All input is read until <code class="key">Enter</code> is pressed; the first 
-255 characters are stored. <code><em>file_num</em></code> must be the number of a file open in 
-<code>INPUT</code> mode or a device or random-access file open in <code>RANDOM</code> mode. 
+of a random access file. All input is read until <code class="key">Enter</code> is pressed; the first
+255 characters are stored. <code><em>file_num</em></code> must be the number of a file open in
+<code>INPUT</code> mode or a device or random-access file open in <code>RANDOM</code> mode.
 <h4>Parameters</h4>
 <ul><li>
 <code><em>string_name</em></code> is a string variable or array element.
@@ -2752,13 +2752,13 @@ A loaded ASCII file contains lines without line numbers:
 <p>Returns the current location in the file opened under number <code><em>file_num</em></code>.
 <ul><li>
 If the file is opened for <code>INPUT</code>, <code>OUTPUT</code> or <code>APPEND</code>, <code>LOC</code> returns the number
-of 128-byte blocks read or written since opening the file. 
+of 128-byte blocks read or written since opening the file.
 </li><li>
 If the file is opened for <code>RANDOM</code>, <code>LOC</code> returns the record number last read or
-written. 
+written.
 </li><li>
 If the file is opened to a <code>COM</code> device, <code>LOC</code> returns the number of characters
-in the input buffer, with a maximum of 255. 
+in the input buffer, with a maximum of 255.
 </li><li>
 If the file is opened to <code>KYBD:</code>, <code>LOC</code> returns 0.
 </li></ul>
@@ -2774,7 +2774,7 @@ If the file is opened to <code>KYBD:</code>, <code>LOC</code> returns 0.
     character is written,  <code>LOC</code> returns 1.
 </li><li>
    In <code>INPUT</code> mode, before any reads  <code>LOC</code> returns 1. After the <strong>129th</strong> character
-    is read, <code>LOC</code> returns 2. 
+    is read, <code>LOC</code> returns 2.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
@@ -2794,7 +2794,7 @@ If the file is opened to <code>KYBD:</code>, <code>LOC</code> returns 0.
 <pre>LOCATE [<em>row</em>] [, [<em>col</em>] [, [<em>cursor_visible</em>] [, [<em>start_line</em>] [, [<em>stop_line</em>] [ , ] ] ] ] ]</pre>
 <p>Positions the cursor at <code><em>row</em></code>, <code><em>col</em></code> on the screen and changes the cursor shape and visibility.
 <code><em>cursor_visible</em></code> may be 0 or 1. If <code><em>cursor_visible</em></code> is 0, it makes
-    the cursor invisible; if it is 1, makes the cursor visible. This works only while a program is running. 
+    the cursor invisible; if it is 1, makes the cursor visible. This works only while a program is running.
      The cursor shape is adjusted
 within a character cell to start from <code><em>start_line</em></code> and end on <code><em>end_line</em></code> where
 <code><em>start_line</em></code> and <code><em>end_line</em></code> are in <code>[0&mdash;31]</code>. If <code><em>start_line</em></code> or <code><em>end_line</em></code> is
@@ -2863,14 +2863,14 @@ Any parameter has a string value: <code>Type mismatch</code>.
 </li><li>
 <code><em>record_0</em></code> or <code><em>record_1</em></code> is not in <code>[1&mdash;2^25-2]</code>: <code>Bad record number</code>.
 </li></ul>
-    
+
 
 <h3><code>LOF</code> function</h3>
 <pre><em>length</em> = LOF(<em>file_num</em>)</pre>
 <p>Returns the number of bytes in the file open under <code><em>file_num</em></code>.
 <h4>Parameters</h4>
 <ul><li>
-<code><em>file_num</em></code> is a numeric expression in the range <code>[0&mdash;255]</code>. 
+<code><em>file_num</em></code> is a numeric expression in the range <code>[0&mdash;255]</code>.
 </li></ul>
 <h4>Notes</h4>
 <ul><li>
@@ -2914,7 +2914,7 @@ Any parameter has a string value: <code>Type mismatch</code>.
 
 <h3><code>LPOS</code> function</h3>
 <pre><em>position</em> = LPOS(<em>printer_number</em>)</pre>
-<p>Returns the column position for a printer. 
+<p>Returns the column position for a printer.
 <h4>Parameters</h4>
 <ul><li>
 <code><em>printer_number</em></code> is a numeric expression in <code>[0&mdash;3]</code>.
@@ -2924,7 +2924,7 @@ or 1, the position for <code>LPT1:</code> is returned. If it is 2, <code>LPT2:</
 <h4>Notes</h4>
 <ul><li>
    In GW-BASIC, when entering direct mode, <code>LPT1:</code> (but not other printers)
-    is flushed and its position is reset to 1. This is not implemented in 
+    is flushed and its position is reset to 1. This is not implemented in
     PC-BASIC.
 </li></ul>
 <h4>Errors</h4>
@@ -2973,8 +2973,8 @@ the <code>FIELD</code> variable. With <code>RSET</code>, it will be right-justif
 <h3><code>MERGE</code> statement</h3>
 <pre>MERGE <em>file_name</em></pre>
 <p>Overlays the lines of program <code><em>file_name</em></code> into the existing program. The loaded
-lines overwrite existing lines if they have the same line number. <code><em>file_name</em></code> 
-must be the name of an existing program file stored in ASCII format only. 
+lines overwrite existing lines if they have the same line number. <code><em>file_name</em></code>
+must be the name of an existing program file stored in ASCII format only.
 <h4>Notes</h4>
 <ul><li>
 Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for information on how this statement matches filenames.
@@ -3109,7 +3109,7 @@ precision number.</p>
 <h4>Notes</h4>
 <ul><li>
    This statement does nothing in GW-BASIC. Presumably, it is left over from a
-    statement in older versions of MS Basic that would drive the cassette tape 
+    statement in older versions of MS Basic that would drive the cassette tape
     player.
 </li></ul>
 <h4>Errors</h4>
@@ -3156,8 +3156,8 @@ Renames the file <code><em>old_name</em></code> into <code><em>new_name</em></co
 <pre>NEXT [<em>var_0</em> [, <em>var_1</em> [, ...] ] ]</pre>
 <p>Iterates a <code>FOR&mdash;NEXT</code> loop: increments the loop variable and jumps to the <code>FOR</code>
 statement. If no variables are specified, next matches the most recent <code>FOR</code>
-statement. Several nested <code>NEXT</code> statements can be consolidated into one by 
-using the variable list. If one or more variables are specified, their order 
+statement. Several nested <code>NEXT</code> statements can be consolidated into one by
+using the variable list. If one or more variables are specified, their order
 must match the order of earlier <code>FOR</code> statements.</p>
 <h4>Parameters</h4>
 <ul><li>
@@ -3228,8 +3228,8 @@ This statement is only available if <code>--syntax={pcjr|tandy}</code> is set.
 <h4>Parameters</h4>
 <ul><li>
 <code><em>x</em></code> is a
-numeric expression in <code>[-32768&mdash;65535]</code>. Values for 
-negative <code><em>x</em></code> are shown as two's-complement. 
+numeric expression in <code>[-32768&mdash;65535]</code>. Values for
+negative <code><em>x</em></code> are shown as two's-complement.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
@@ -3241,7 +3241,7 @@ negative <code><em>x</em></code> are shown as two's-complement.
 
 <h3><code>ON</code> statement (calculated jump)</h3>
 <pre>ON <em>n</em> {GOTO | GOSUB} <em>line_number_0</em> [, <em>line_number_1</em> [, ...] ]</pre>
-<p>Jumps to the <code><em>n</em></code>th line number specified in the list. If <code><em>n</em></code> is 0 or greater 
+<p>Jumps to the <code><em>n</em></code>th line number specified in the list. If <code><em>n</em></code> is 0 or greater
 than the number of line numbers in the list, no jump is performed. If <code>GOTO</code> is specified,
 the jump is unconditional; if <code>GOSUB</code> is specified, jumps to a subroutine.</p>
 <h4>Parameters</h4>
@@ -3264,7 +3264,7 @@ The line number jumped to does not exist: <code>Undefined line number</code>.
 
 <h3><code>ON</code> statement (event trapping)</h3>
 <pre>ON { COM(<em>n</em>) | KEY(<em>n</em>) | STRIG(<em>n</em>) | PEN | PLAY(<em>n</em>) | TIMER(<em>x</em>) } GOSUB <em>line_number</em></pre>
-<p>Defines an event trapping subroutine. 
+<p>Defines an event trapping subroutine.
 The type of event is given by one of the following keywords:</p>
 <table><tr>
 <td><code>COM(<em>n</em>)</code></td>
@@ -3379,7 +3379,7 @@ It is not possible to start the error handler at line number <code>0</code>.
 <td><code>"R"</code></td>
 <td><code>RANDOM</code></td>
 <td>Opens a file for random access; the file is divided in records of
-    length <code><em>rec_len</em></code>. If <code>LEN</code> is not specified, the record length defaults to 
+    length <code><em>rec_len</em></code>. If <code>LEN</code> is not specified, the record length defaults to
     128. The file contents can be accessed using <code>GET</code> and <code>PUT</code> of the <code>FIELD</code>
     buffer; the <code>FIELD</code> buffer can be accessed through <code>FIELD</code> variables or through
     <code>PRINT#</code> and <code>INPUT#</code> statements.
@@ -3429,7 +3429,7 @@ If both <code>FOR</code> and <code>ACCESS</code> are specified, any <code>ACCESS
 <p>
 If neither <code>SHARED</code> nor <code>LOCK</code> are specified. Inside this process, a file may be opened multiple
     times for <code>INPUT</code> or <code>RANDOM</code> but only once for <code>OUTPUT</code> or <code>APPEND</code>, as long as it
-    is again opened in default mode. It may not be opened in <code>SHARED</code> or any <code>LOCK</code> 
+    is again opened in default mode. It may not be opened in <code>SHARED</code> or any <code>LOCK</code>
     modes.
 </p>
 <p>
@@ -3665,7 +3665,7 @@ OUT &amp;h3C5, 2 ^ <em>plane</em></pre>
     The sequence needed to set the colour plane is:
 <pre>OUT &amp;h3CE, 4
 OUT &amp;h3CF, <em>plane</em></pre>
-The initial <code>OUT</code> statements currently have no effect in PC-BASIC.    
+The initial <code>OUT</code> statements currently have no effect in PC-BASIC.
 </li></ul>
 
 <h4>Parameters</h4>
@@ -3694,26 +3694,26 @@ The initial <code>OUT</code> statements currently have no effect in PC-BASIC.
 <ul><li>
 <code><em>x</em></code>, <code><em>y</em></code> are numeric expressions in the range <code>[-32768&mdash;32767]</code>
  If STEP is specified, <code><em>x</em></code> <code><em>y</em></code> are offsets
-from the current position. If the seed point is outside the visible screen 
+from the current position. If the seed point is outside the visible screen
 area, no flood fill is performed.
 </li><li>
 <code><em>attrib</em></code> is an expression that specifies the fill attribute or pattern. If not
-specified, the current foreground attribute is used. 
+specified, the current foreground attribute is used.
 </li><li>
 If <code><em>attrib</em></code> has a number value, it must be in <code>[0&mdash;255]</code>; it specifies the colour
-attribute used to fill. 
+attribute used to fill.
 </li><li>
 If <code><em>attrib</em></code> has a string value, it specifies a tile pattern (see below).
 </li><li>
 <code><em>border</em></code> is a numeric expression in <code>[0&mdash;255]</code>. It specifies the attribute
 of the fill boundary (see below).
 </li><li>
-<code><em>background</em></code> is a string expression that represents a background tile 
+<code><em>background</em></code> is a string expression that represents a background tile
 pattern to ignore when determining boundaries (see below).
 </li></ul>
 <h4>Tile patterns</h4>
 <p> A tile pattern can be specified by a string of up to 255 characters. The
-    interpretation of the string depends on the number of bits per pixel in 
+    interpretation of the string depends on the number of bits per pixel in
     the current screen mode.</p>
 <dl><dt>
     1 bit per pixel (e.g. <code>SCREEN 2</code>)</dt>
@@ -3731,8 +3731,8 @@ pattern to ignore when determining boundaries (see below).
 <dt>
     <code>SCREEN 7</code>, <code>8</code>, <code>9</code></dt>
 <dd>The tile pattern is always 8 pixels wide. The first character in the
-        pattern string contains the first bit of each of these 8 pixels, the 
-        second character contains the second bits, etc. 
+        pattern string contains the first bit of each of these 8 pixels, the
+        second character contains the second bits, etc.
         For example, in a 2-bits-per-pixel mode, the pattern can have many
         colours. However, the same size pattern as above in attribute &amp;h03 is:
         <pre>
@@ -3751,13 +3751,13 @@ pattern to ignore when determining boundaries (see below).
             1     .....*..    CHR$(&amp;h04)
             0     ......*.    CHR$(&amp;h02)
             1     ......*.    CHR$(&amp;h02)</pre>
-        If the pattern string is truncated before all bits of the last line 
+        If the pattern string is truncated before all bits of the last line
         have been defined, the remaining bits will be zero.
 </dd>
 <dt><code>SCREEN 1</code>, <code>3</code>, <code>4</code>, <code>5</code> , <code>6</code></dt>
 <dd>Each row of the tile pattern represents a screen row. Colours are
         encoded in consecutive bits &mdash; the more bits per pixel, the narrower the
-        pattern is. For 2 bits per pixel, the pattern is 4 pixels wide; for 4 
+        pattern is. For 2 bits per pixel, the pattern is 4 pixels wide; for 4
         bits per pixel it is 2 pixels wide. The pattern string above now encodes
         a multicoloured tile:
        <pre>
@@ -3770,7 +3770,7 @@ pattern to ignore when determining boundaries (see below).
           0010    .....*..    CHR$(&amp;h04)
           0002    ......*.    CHR$(&amp;h02) </pre>
 </dd></dl>
-<p>The tile pattern is locked to the screen; imagine a grid starting at 
+<p>The tile pattern is locked to the screen; imagine a grid starting at
     <code>(0,0)</code> and covering the screen. Whenever an area is tile-filled,
     the tiles are put into this grid. In this way, adjacent areas will have
     continuous tiling even if they were filled from different seed points.</p>
@@ -3781,7 +3781,7 @@ pattern to ignore when determining boundaries (see below).
     or that have the specified border attribute, if specified.
     A tiling flood fill stops at the specified border attribute; if no border
     attribute is specified, it stops at the current foreground attribute.
-    A tiling flood fill also stops at scan line intervals that are the same as 
+    A tiling flood fill also stops at scan line intervals that are the same as
     the tiling pattern for that line, unless a background pattern is specified
     and the interval also equals the background pattern for that line.</p>
 <h4>Errors</h4>
@@ -3805,15 +3805,15 @@ pattern to ignore when determining boundaries (see below).
 
 <h3><code>PALETTE</code> statement</h3>
 <pre>PALETTE [ <em>attrib</em>, <em>colour</em> ]</pre>
-<p>Assigns a colour to an attribute. All pixels with that attribute will change 
+<p>Assigns a colour to an attribute. All pixels with that attribute will change
 colour immediately.
 If no parameters are specified, <code>PALETTE</code> resets to the initial setting.
 <h4>Parameters</h4>
 <ul><li>
 <code><em>attrib</em></code> is a numeric expression between 0 and the current palette
-size, less one. 
+size, less one.
 </li><li>
-<code><em>colour</em></code> is a numeric expression between -1 and the maximum number of 
+<code><em>colour</em></code> is a numeric expression between -1 and the maximum number of
 colours for the current screen mode, less one. If <code><em>colour</em></code> equals -1,
 the palette remains unchanged.
 </li></ul>
@@ -3863,7 +3863,7 @@ replaced by those of <code><em>src</em></code>.</p>
 <h4>Parameters</h4>
 <ul><li>
 <code><em>src</em></code> and <code><em>dst</em></code> are numeric expressions between 0 and the current video
-mode's number of pages, less one. 
+mode's number of pages, less one.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
@@ -3907,8 +3907,8 @@ two's complement.
 <p>Controls event trapping and read access of the light pen (emulated through the mouse in PC-BASIC).
 <code>PEN ON</code> switches pen reading and trapping on.  <code>PEN OFF</code> switches it off.
 <code>PEN STOP</code> suspends <code>PEN</code> event trapping until <code>PEN ON</code> is
-executed. Up to one event can be triggered during suspension, provided that 
-event handling was switched on prior to suspension. The event triggered during 
+executed. Up to one event can be triggered during suspension, provided that
+event handling was switched on prior to suspension. The event triggered during
 suspension is handled immediately after the next <code>PEN ON</code> statement.</p>
 
 
@@ -3989,7 +3989,7 @@ suspension is handled immediately after the next <code>PEN ON</code> statement.<
 <ul><li>
 <code><em>mml_string</em></code> is a string expression in Music Macro Language (MML).
 </li><li>
-<code><em>mml_string_0</em></code>, <code><em>mml_string_1</em></code>, <code><em>mml_string_2</em></code> are string expressions in MML. 
+<code><em>mml_string_0</em></code>, <code><em>mml_string_1</em></code>, <code><em>mml_string_2</em></code> are string expressions in MML.
 </li></ul>
 <h4>Music Macro Language reference</h4>
 <dl>
@@ -4052,7 +4052,7 @@ Play a note. <code><em>note</em></code> can be
 <table><tr>
 <td><code>MB</code></td>
 <td>Turns on background mode; sound commands exit without waiting for the
-        music to finish. The music keeps playing while other commands are 
+        music to finish. The music keeps playing while other commands are
         executed. There can be up to 16 notes in the background music queue;
         if more notes are played, <code>PLAY</code> will block until there are only 16 left.
 </td>
@@ -4166,7 +4166,7 @@ are physical coordinates.</p>
 </li><li>
    In GW-BASIC, <code>PMAP</code> behaves anomalously on <code>SCREEN</code> changes, where it sometimes
     returns results as if the last <code>WINDOW</code> setting had persisted. This behaviour is not
-    implemented in PC-BASIC. 
+    implemented in PC-BASIC.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
@@ -4308,40 +4308,40 @@ foreground attribute while <code>PRESET</code> changes it to zero.</p>
 <h3><code>PRINT</code>, <code>PRINT#</code> and <code>LPRINT</code> statements</h3>
 <pre>{ LPRINT | {PRINT|?} [# <em>file_num</em>,] } [<em>expr_0</em>] [;|,|SPC(<em>n</em>)|TAB(<em>n</em>)] [<em>expr_1</em>] [...]
          [ USING <em>format</em>; [ <em>uexpr_0</em> [ {;|,} <em>uexpr_1</em> [ {;|,} ...] ] ] [;|,] ]</pre>
-<p>Writes expressions to the screen, printer, file or device. If <code>LPRINT</code> is used, 
-output goes to <code>LPT1:</code>. If <code><em>file_num</em></code> is specified, output goes to the file or 
-device open under that number. <code>?</code> is a shorthand for <code>PRINT</code> and has the same 
+<p>Writes expressions to the screen, printer, file or device. If <code>LPRINT</code> is used,
+output goes to <code>LPT1:</code>. If <code><em>file_num</em></code> is specified, output goes to the file or
+device open under that number. <code>?</code> is a shorthand for <code>PRINT</code> and has the same
 effect.</p>
 <p>Expressions can be separated by one of the following tokens:</p>
 <table><tr>
 <td><code>;</code></td>
 <td>   Attaches two expressions tight together; strings will be
-    printed without any space in between, numbers will have one space 
-    separating them, in addition to the space or minus sign that indicate 
+    printed without any space in between, numbers will have one space
+    separating them, in addition to the space or minus sign that indicate
     the sign of the number.
 </td></tr><tr>
 <td><code>,</code></td>
 <td>   The expression after will be positioned at the next available
     zone. The output file is divided in 14-character zones; if the width of the
-    file is not a multiple of 14, the remaining spaces are unused and the first 
-    zone ofn the next line is used instead. If the file has a width of less 
-    than 14 characters, the zones are determined as if the file were wrapping 
+    file is not a multiple of 14, the remaining spaces are unused and the first
+    zone ofn the next line is used instead. If the file has a width of less
+    than 14 characters, the zones are determined as if the file were wrapping
     continuously.
 </td></tr><tr>
 <td><code>SPC(<em>n</em>)</code></td>
 <td>    Produces <code><em>n</em></code> spaces, where <code><em>n</em></code> is a numeric
-    expression. if <code><em>n</em></code> is less than zero, it defaults to zero. If <code><em>n</em></code> is 
-    greater than the file width, it is taken modulo the file width.      
+    expression. if <code><em>n</em></code> is less than zero, it defaults to zero. If <code><em>n</em></code> is
+    greater than the file width, it is taken modulo the file width.
 </td></tr><tr>
 <td><code>TAB(<em>n</em>)</code></td>
 <td>    Moves to column <code><em>n</em></code>, where <code><em>n</em></code> is a numeric
-    expression. if <code><em>n</em></code> is less than zero, it defaults to zero. If <code><em>n</em></code> is 
-    greater than the file width, it is taken modulo the file width. If the 
-    current column is greater than <code><em>n</em></code>, TAB moves to column <code><em>n</em></code> on the next 
+    expression. if <code><em>n</em></code> is less than zero, it defaults to zero. If <code><em>n</em></code> is
+    greater than the file width, it is taken modulo the file width. If the
+    current column is greater than <code><em>n</em></code>, TAB moves to column <code><em>n</em></code> on the next
     line.
 </td></tr></table>
-<p>If the print statement does not end in one of these four separation tokens, a newline is 
-printed after the last expression. 
+<p>If the print statement does not end in one of these four separation tokens, a newline is
+printed after the last expression.
 String expressions can be separated by one or more spaces, which has the same
 effect as separating by semicolons.</p>
 
@@ -4350,7 +4350,7 @@ effect as separating by semicolons.</p>
 formatted string to the screen, printer, file or device. The following tables list the format tokens that can be used inside the <code><em>format</em></code> string.</p>
 <table><tr>
 <td><code>_</code></td>
-<td>   Escape character; causes the next character in the format string to be 
+<td>   Escape character; causes the next character in the format string to be
     printed as is rather than interpreted as a format token.</td>
 </tr></table>
 <p>For string expressions:</p>
@@ -4381,7 +4381,7 @@ Indicate the decimal point.
 <td><code>,</code></td>
 <td>
 Before the decimal point: cause digits to be grouped in threes separated by
-    commas. After the decimal point it is not a token. 
+    commas. After the decimal point it is not a token.
     Provides one digit position.
 </td>
 </tr></table>
@@ -4391,7 +4391,7 @@ Before the decimal point: cause digits to be grouped in threes separated by
 <td><code>+</code></td>
 <td>
    Cause the sign to be printed for positive as well as negative numbers. The sign is to be printed to the left of the
-    number. 
+    number.
 </td>
 </tr><tr>
 <td><code>**</code></td>
@@ -4421,8 +4421,8 @@ Before the decimal point: cause digits to be grouped in threes separated by
 <td><code>^^^^</code></td>
 <td>Specify that scientific notation <code>E+00</code> is to be used.</td>
 </tr></table>
-<p>Numeric expressions are always fully printed, even if they do not fit in the 
-positions specified. If the number does not fit in the allowed space, a <code>%</code> is 
+<p>Numeric expressions are always fully printed, even if they do not fit in the
+positions specified. If the number does not fit in the allowed space, a <code>%</code> is
 printed preceding it.</p>
 <ul><li>
 
@@ -4433,7 +4433,7 @@ printed preceding it.</p>
     same.
 </li><li>
    If the <code>USING</code> declaration ends in a comma or semicolon, no newline is printed at
-    the end. 
+    the end.
 </li><li>
    After a <code>USING</code> declaration, other elements of the <code>PRINT</code> syntax such as <code>SPC(</code> and <code>TAB(</code> can not
     be used.
@@ -4495,7 +4495,7 @@ of an open random-access file. The <code>#</code> is optional and has no effect.
 </li><li>
 <code><em>file_number</em></code> is not specified: <code>Missing operand</code>.
 </li></ul>
-    
+
 
 <h3><code>PUT</code> statement   (communications)</h3>
 <pre>PUT [#] <em>com_file_number</em>, [, <em>number_bytes</em>]</pre>
@@ -4525,8 +4525,8 @@ and the <code>COM</code> buffer length, inclusive.
 The serial input buffer is full, i.e. <code>LOF(<em>com_file_number</em>) = 0</code> and
     <code>LOC(<em>com_file_number</em>)=255</code>: <code>Communication buffer overflow</code>.
 </li></ul>
-        
-    
+
+
 <h3><code>PUT</code> statement (graphics)</h3>
 <pre>PUT (<em>x0</em>, <em>y0</em>), <em>array_name</em> [, { PSET | PRESET | AND | OR | XOR } ]</pre>
 <p>Displays an array to a rectangular area of the graphics screen.
@@ -4568,13 +4568,13 @@ The array does not exist: <code>Illegal function call</code>.
 
 <h3><code>RANDOMIZE</code> statement</h3>
 <pre>RANDOMIZE [<em>expr</em>]</pre>
-<p>Seeds the random number generator with <code><em>expr</em></code>. 
+<p>Seeds the random number generator with <code><em>expr</em></code>.
 If no seed is specified, <code>RANDOMIZE</code> will prompt the user
 to enter a random seed. The user-provided value is rounded to an integer.
-The random seed is formed of the last two bytes of that integer or <code><em>expr</em></code>. 
-If <code><em>expr</em></code> is a float (4 or 8 bytes), these are <code>XOR</code>ed with the preceding 2. The 
+The random seed is formed of the last two bytes of that integer or <code><em>expr</em></code>.
+If <code><em>expr</em></code> is a float (4 or 8 bytes), these are <code>XOR</code>ed with the preceding 2. The
 first 4 bytes of a double are ignored.
-The same random seed will lead to the same sequence of pseudorandom numbers 
+The same random seed will lead to the same sequence of pseudorandom numbers
 being generated by the <code>RND</code> function.
 <h4>Parameters</h4>
 <ul><li>
@@ -4598,7 +4598,7 @@ The user provides a seed outside <code>[-32768&mdash;32767]</code>: <code>Overfl
 <h3><code>READ</code> statement</h3>
 <pre>READ <em>var_0</em> [, <em>var_1</em> [, ... ] ]</pre>
 <p>Assigns data from a <code>DATA</code> statement to variables. Reading starts at the current
-<code>DATA</code> position, which is the <code>DATA</code> entry immediately after the last one read by 
+<code>DATA</code> position, which is the <code>DATA</code> entry immediately after the last one read by
 previous <code>READ</code> statements. The <code>DATA</code> position is reset to the start by the <code>RUN</code>
 and <code>RESTORE</code> statements.
 <h4>Parameters</h4>
@@ -4618,7 +4618,7 @@ The type of the variable is not compatible with that of the data entry
 <pre>{ REM | ' } [<em>anything</em>]</pre>
 <p>Ignores everything until the end of the line. The <code>REM</code> statement is intended for
 comments. Everything after <code>REM</code> will be stored in the program unaltered and
-uninterpreted. <code>'</code> (apostrophe) is an alias for <code>:REM'</code>; it can be placed at any 
+uninterpreted. <code>'</code> (apostrophe) is an alias for <code>:REM'</code>; it can be placed at any
 point in the program line and will ensure that the rest of the line is ignored.</p>
 
 
@@ -4652,7 +4652,7 @@ less than 'old remain unchanged.
 Any of the parameters is not in <code>[0&mdash;65529]</code>: <code>Syntax error</code>.
 </li><li>
 Any of the newly generated line numbers is greater than <code>65529</code>:
-    <code>Illegal function call</code>. The line numbers up to the error have not been 
+    <code>Illegal function call</code>. The line numbers up to the error have not been
     changed.
 </li><li>
 <code><em>increment</em></code> is empty or zero: <code>Illegal function call</code>.
@@ -4660,8 +4660,8 @@ Any of the newly generated line numbers is greater than <code>65529</code>:
 <code><em>old</em></code> is specified and <code><em>new</em></code> is less than or equal to an existing line
     number less than old: <code>Illegal function call</code>.
 </li></ul>
-    
-    
+
+
 <h3><code>RESET</code> statement</h3>
 <pre>RESET</pre>
 <p>Closes all open files.</p>
@@ -4681,9 +4681,9 @@ reset to the first <code>DATA</code> entry in or after <code><em>line</em></code
 
 <h3><code>RESUME</code> statement</h3>
 <pre>RESUME [ 0 | NEXT | <em>line</em> ]</pre>
-<p>Continues normal execution after an error handling routine. 
-If 0 or no option is specified, re-executes the statement that caused the 
-error. If <code>NEXT</code> is specified, executes the statement following the one that 
+<p>Continues normal execution after an error handling routine.
+If 0 or no option is specified, re-executes the statement that caused the
+error. If <code>NEXT</code> is specified, executes the statement following the one that
 caused the error. If <code><em>line</em></code> is specified, it must be a valid line number.
 <h4>Errors</h4>
 <ul><li>
@@ -4695,7 +4695,7 @@ The program ends inside an error trapping routine without a <code>RESUME</code>
 </li><li>
 <code><em>line</em></code> is not an existing line number: <code>Undefined line number</code>.
 </li></ul>
-    
+
 
 <h3><code>RETURN</code> statement</h3>
 <pre>RETURN [<em>line</em>]</pre>
@@ -4732,8 +4732,8 @@ returns <code><em>parent</em></code>.
 </li><li>
 <code><em>num_chars</em></code> is not in <code>[0&mdash;255]</code>: <code>Illegal function call</code>.
 </li></ul>
-    
-    
+
+
 <h3><code>RMDIR</code> statement</h3>
 <pre>RMDIR <em>path</em></pre>
 <p>Removes an empty directory. <code><em>path</em></code> is a string expression that specifies
@@ -4750,14 +4750,14 @@ Refer to the section on <a href="#eightpointthree">MS-DOS filenames</a> for info
 </li><li>
 No matching path is found, <code>Path not found</code> .
 </li></ul>
-    
+
 
 <h3><code>RND</code> function</h3>
 <pre>random = RND[(<em>x</em>)]</pre>
 <p>Returns a pseudorandom number in the interval <code>[0&mdash;1)</code>.
 <code><em>x</em></code> is a numeric expression. If <code><em>x</em></code> is zero, <code>RND</code> repeats the last pseudo-
-random number. If <code><em>x</em></code> is greater than zero, a new pseudorandom number is 
-returned. If <code><em>x</em></code> is negative, the value of <code><em>x</em></code> is used to generate a new 
+random number. If <code><em>x</em></code> is greater than zero, a new pseudorandom number is
+returned. If <code><em>x</em></code> is negative, the value of <code><em>x</em></code> is used to generate a new
 random number seed; after that, a new pseudorandom number is returned.
 The seed is generated in a different way than by <code>RANDOMIZE</code>.
 <h4>Errors</h4>
@@ -4765,7 +4765,7 @@ The seed is generated in a different way than by <code>RANDOMIZE</code>.
 <code><em>x</em></code> has a string value: <code>Type mismatch</code>.
 </li></ul>
 
-    
+
 <h3><code>RSET</code> statement</h3>
 <p>See <code>LSET</code>.</p>
 
@@ -4776,7 +4776,7 @@ The seed is generated in a different way than by <code>RANDOMIZE</code>.
 If <code><em>line</em></code> is specified, it must be a valid line number in the current program.
 Execution starts from this line number.
 If <code><em>filename</em></code> is specified, the file with that name is loaded and executed.
-<code>RUN ,R</code> keeps all data files open. Existing variables will be 
+<code>RUN ,R</code> keeps all data files open. Existing variables will be
 cleared and any program in memory will be erased. <code>RUN</code> implies a <code>CLEAR</code>.
 <h4>Errors</h4>
 <ul><li>
@@ -4816,7 +4816,7 @@ form.</p>
 
 <h3><code>SCREEN</code> function</h3>
 <pre><em>value</em> = SCREEN(<em>row</em>, <em>column</em> [, <em>fn</em>])</pre>
-<p>Returns the ASCII code or colour attribute for the character at position 
+<p>Returns the ASCII code or colour attribute for the character at position
 <code><em>row</em></code>, <code><em>col</em></code>.
 <h4>Parameters</h4>
 <ul><li>
@@ -4923,8 +4923,8 @@ Any parameter is not in <code>[-32768&mdash;32767]</code>: <code>Overflow</code>
 <h3><code>SHELL</code> statement</h3>
 <pre>SHELL [<em>command</em>]</pre>
 <p>Starts a subshell on the console.
-The type of shell is determined by your OS. On Unix systems, an <code>sh</code> shell is 
-started. On Windows systems, a <code>CMD.EXE</code> shell is started. 
+The type of shell is determined by your OS. On Unix systems, an <code>sh</code> shell is
+started. On Windows systems, a <code>CMD.EXE</code> shell is started.
 If <code><em>command</em></code> is specified, the command is executed on the shell and execution
 returns to the program.
 <h4>Parameters</h4>
@@ -4965,7 +4965,7 @@ value.
 <ul><li>
 <code><em>angle</em></code> has a string value: <code>Type mismatch</code>.
 </li></ul>
-     
+
 
 <h3><code>SOUND</code> statement</h3>
 <pre>SOUND <em>frequency</em>, <em>duration</em> [, <em>volume</em> [, <em>voice</em> ] ]</pre>
@@ -5002,7 +5002,7 @@ On PCjr and Tandy, Frequencies below 110 Hz are played as 110 Hz.
 If <code><em>duration</em></code> is zero, <code><em>volume</em></code> and <code><em>voice</em></code> must not be specified.
 </li><li>
    If <code><em>duration</em></code> is less than <code>.022</code> but nonzero, the sound will be played in
-    background and continue indefinitely until another sound statement is 
+    background and continue indefinitely until another sound statement is
     executed. This is also the behaviour for negative <code><em>duration</em></code>.
 </li><li>
    If <code><em>frequency</em></code> equals <code>32767</code> or <code>0</code>, a silence of length <code><em>duration</em></code> is queued.
@@ -5015,7 +5015,7 @@ Any argument has a string value: <code>Type mismatch</code>.
     <code>Illegal function call</code>.
 </li><li>
 <code><em>duration</em></code> is zero and more than two arguments are specified:
-    <code>Syntax error</code>.    
+    <code>Syntax error</code>.
 </li><li>
 <code>--syntax={ pcjr | tandy }</code> is not set and more than two arguments are specified:
     <code>Syntax error</code>.
@@ -5143,7 +5143,7 @@ execution at the next statement using <code>CONT</code>.
 <p>Switches event trapping of the joystick trigger <code><em>button</em></code> <code>ON</code> or <code>OFF</code>.
 <code>STRIG (<em>button</em>) STOP</code> suspends event trapping until
 <code>STRIG (<em>button</em>) ON</code> is executed. Up to one event can be triggered during
-suspension, provided that event handling was switched on prior to suspension. 
+suspension, provided that event handling was switched on prior to suspension.
 The event triggered during suspension is handled immediately after the next <code>STRIG (<em>button</em>) ON</code>
 statement.</p>
 <table><tr>
@@ -5290,7 +5290,7 @@ value.
 <h3><code>TERM</code> statement</h3>
 <pre>TERM</pre>
 <p>If <code>--preset=pcjr</code> is set, starts a built-in serial terminal emulator application.
-    This is a BASIC program that is loaded and run instead of the current 
+    This is a BASIC program that is loaded and run instead of the current
     program.</p>
 <p>If <code>--preset=tandy</code> is set, this statement raises <code>Internal error</code>.</p>
 <p>In the default preset, this keyword is not present. Calling <code>TERM</code> will raise <code>Syntax error</code>.</p>
@@ -5316,7 +5316,7 @@ of the form <code>"HH:mm:ss"</code> where <code>00&lt;=HH&lt;24</code>, <code>00
 <h4>Notes</h4>
 <ul><li>
    PC-BASIC stores an offset to the system time and uses this for future
-    calls to <code>TIME</code> and <code>DATE</code> functions in the same interpreter session. The 
+    calls to <code>TIME</code> and <code>DATE</code> functions in the same interpreter session. The
     system time is not changed, unlike GW-BASIC under MS-DOS.
 </li></ul>
 <h4>Errors</h4>
@@ -5343,7 +5343,7 @@ clock.</p>
 </li><li>
 This function has no brackets.
 </li></ul>
-    
+
 
 <h3><code>TRON</code> and <code>TROFF</code> statements</h3>
 <pre>{ TRON | TROFF }</pre>
@@ -5388,7 +5388,7 @@ Any parameter has a string value: <code>Type mismatch</code>.
 <p>Returns zero.</p>
 <h4>Parameters</h4>
 <ul><li>
-<code><em>n</em></code> is a digit <code>[0&mdash;9]</code>. 
+<code><em>n</em></code> is a digit <code>[0&mdash;9]</code>.
 </li><li>
 <code><em>expr</em></code> is an expression.
 </li></ul>
@@ -5408,10 +5408,10 @@ Any parameter has a string value: <code>Type mismatch</code>.
 <pre><em>value</em> = VAL(<em>string</em>)</pre>
 <p>
 Returns the numeric value of the string expression <code><em>string</em></code>.
-The interpretation is the same a that used in program lines. For instance, 
+The interpretation is the same a that used in program lines. For instance,
 spaces before or even inside a number are ignored: <code>VAL(" 1 0")</code> returns <code>10</code>.
-Parsing stops as soon as the first character is encountered that cannot be 
-part of a number. If that is the first character of the string, or the 
+Parsing stops as soon as the first character is encountered that cannot be
+part of a number. If that is the first character of the string, or the
 string is empty, <code>VAL</code> returns zero. </p>
 <h4>Errors</h4>
 <ul><li>
@@ -5553,13 +5553,13 @@ All previous <code>WHILE</code> statements have been closed by another <code>WEN
 
 <h3><code>WHILE</code> statement</h3>
 <pre>WHILE <em>expr</em></pre>
-<p>Initiates a <code>WHILE&mdash;WEND</code> loop. 
+<p>Initiates a <code>WHILE&mdash;WEND</code> loop.
 If <code><em>expr</em></code> evaluates to zero, <code>WHILE</code> jumps
 to the statement immediately after the matching <code>WEND</code>. If not, execution
 continues. </p>
 <h4>Parameters</h4>
 <ul><li>
-<code><em>expr</em></code> is a numeric expression. 
+<code><em>expr</em></code> is a numeric expression.
 </li></ul>
 <h4>Errors</h4>
 <ul><li>
@@ -5575,12 +5575,12 @@ No matching <code>WEND</code> is found: <code>WHILE without WEND</code>.
 <p><code><em>num_columns</em></code> can only be an expression
     if it is bracketed. Otherwise it must be a literal 20, 40 or 80. The trailing comma is optional and has no effect.</p>
 <pre>WIDTH { # <em>file_num</em>, | <em>device_name</em>, | LPRINT } <em>num_columns</em> </pre>
-<p>Sets the line width for a file or a device. 
+<p>Sets the line width for a file or a device.
 When a write operation passes beyond the column width, a <code>CR LF</code> sequence is
 inserted.
 </p><p>
 If a device is specified, it does not need to have a file open to it; the width setting will
-be the default width next time a file is opened to that device. 
+be the default width next time a file is opened to that device.
 </p><p>
 If <code><em>device_name</em></code> is <code>"LPT1:"</code> or <code>LPRINT</code> is specified, the device width setting
 affects <code>LPRINT</code> and <code>LLIST</code>.
@@ -5634,7 +5634,7 @@ An unbracketed expression is used in the first syntax: <code>Illegal function ca
 </li><li>
 <code><em>num_rows</em></code> is not in its accepted range: <code>Illegal function call</code>.
 </li></ul>
-    
+
 
 <h3><code>WINDOW</code> statement</h3>
 <pre>WINDOW [ [ SCREEN ] (<em>x0</em>, <em>y0</em>)-(<em>x1</em>, <em>y1</em>) ]</pre>
@@ -5729,8 +5729,8 @@ Only the first 40 characters in the name are significant. Variable names must
 not be identical to <a href="#keywords">keywords</a>. Variable
 names may start with a keyword, with the exception of <code>USR</code> and <code>FN</code>. Thus, <code>FNORD$</code>
 is not a legal variable name while <code>FRECKLE%</code> is.</p>
-<p>For each name, four different 
-variables may exist corresponding to the four types. That is, you can have <code>A$</code>, 
+<p>For each name, four different
+variables may exist corresponding to the four types. That is, you can have <code>A$</code>,
 <code>A%</code>, <code>A!</code> and <code>A#</code> as different variables. Which one of those is also known as <code>A</code> depends on
 the settings in <code>DEFINT</code>/<code>DEFDBL</code>/<code>DEFSNG</code>/<code>DEFSTR</code>. The default is <code> A = A!</code>. In addition,
 you can have <a href="#arrays">arrays</a> <code>A$()</code>, <code>A%()</code>, <code>A!()</code>, <code>A#()</code> which are separate from the scalar variables of the same name.
@@ -5790,7 +5790,7 @@ which is the last character of the variable's full name:</p>
  <td><code>#</code></td>      <td>double-precision float</td>  <td>8 bytes</td>
 </tr></table>
 <p>If no type character is specified, the first letter of the name determines
-the type according to the settings of <code>DEFINT</code>/<code>DEFDBL</code>/<code>DEFSNG</code>/<code>DEFSTR</code>. 
+the type according to the settings of <code>DEFINT</code>/<code>DEFDBL</code>/<code>DEFSNG</code>/<code>DEFSTR</code>.
 If no such setting has been made, the default type is single-precision float.</p>
 <p>Machine limits:</p>
 <ul><li>
@@ -5798,7 +5798,7 @@ If no such setting has been made, the default type is single-precision float.</p
 </li><li>
     Booleans are integers: <code>0</code> for False; <code>-1</code> or other non-zero for True.
 </li><li>
-    Integers are in <code>[-32768&mdash;32767]</code>. 
+    Integers are in <code>[-32768&mdash;32767]</code>.
 </li><li>
     Floats: largest <code>1.701412E+38</code>; smallest <code>2.938726E-39</code>
 </li><li>
@@ -5814,10 +5814,10 @@ If no such setting has been made, the default type is single-precision float.</p
 </li><li>
    Floats are represented in the Microsoft Binary Format (MBF).
 </li></ul>
-<p>GW-BASIC's floating point numbers are implemented in Microsoft Binary Format 
+<p>GW-BASIC's floating point numbers are implemented in Microsoft Binary Format
 (MBF), which differs from the now ubiquitous IEEE 754 format. PC-BASIC follows
 GW-BASIC's implementation. Consequently, binary files generated by either BASIC are
-fully compatible with each other and with some applications contemporary to 
+fully compatible with each other and with some applications contemporary to
 GW-BASIC, but not easily interchanged with other software. QBASIC, for example, uses IEEE 754
 floats. </p>
 <p>MBF differs from IEEE 754 in positioning the sign bit in a mantissa byte
@@ -5856,7 +5856,7 @@ Schematically, MBF floating point numbers are represented as follows.</p>
 <dt>sign</dt>
 <dd>If the sign bit is set, the number is negative.</dd>
 <dt>mantissa</dt>
-<dd>There is an assumed <code>1</code> bit after the radix point, so the mantissa binary 
+<dd>There is an assumed <code>1</code> bit after the radix point, so the mantissa binary
     fraction is <code>0 . 1 <em>f0 f1 f2</em> ...</code> where <code><em>f</em></code>s are the fraction bits.</dd>
 <dt>exponent</dt>
 <dd>The exponent is biased by 128: the mantissa fraction is multiplied by
@@ -5865,8 +5865,8 @@ Schematically, MBF floating point numbers are represented as follows.</p>
 <dd>Any float with the exponent byte set to <code>0</code> is interpreted as a zero.</dd>
 </dl>
 <p>A single-precision MBF float therefore has 23 bits of precision, while a double-precision MBF float has 55 bits of precision.</p>
-    
-    
+
+
 
 <h2 id="videomodes">Video modes</h2>
 <p>The video modes are as follows:</p>
@@ -6139,14 +6139,14 @@ from and output to much like normal files.</p>
 <td>
 The screen. Output to <code>SCRN:</code> has largely the same
                             effect as straight output using <code>PRINT</code>. A difference
-                            is the <code>WIDTH</code> setting which is independent of the 
+                            is the <code>WIDTH</code> setting which is independent of the
                             real screen width.
 </td>
 </tr><tr>
 <td><code>KYBD:</code></td>
        <td><code>INPUT</code></td>
 <td>
-           The keyboard. Input read from <code>KYBD:</code> is not echoed 
+           The keyboard. Input read from <code>KYBD:</code> is not echoed
                             to the screen. Special keys like arrow keys are
                             registered differently than when using <code>INPUT</code> or
                             <code>INPUT$</code> straight (see the keyword reference).
@@ -6162,65 +6162,65 @@ Parallel ports 1&mdash;3.  In PC-BASIC, <code>LPT</code> devices can be attached
 <td><code>INPUT</code> <code>OUTPUT</code> <code>APPEND</code> <code>RANDOM</code></td>
 <td>Serial ports 1&mdash;2. In PC-BASIC, <code>COM</code> devices can be attached to the physical serial port or to a network socket.
 </td>
+</tr><tr>
+<td><code>CAS1:</code></td>
+<td><code>INPUT</code> <code>OUTPUT</code></td>
+<td>Cassette tape driver. In PC-BASIC, <code>CAS</code> devices can be attached to a WAV (RIFF Wave) or a CAS (bitmap tape image) file.</td>
 </tr></table>
-<p>GW-BASIC additionally recognises the following little-used devices, which are not implemented in PC-BASIC.</p>
+<p>GW-BASIC additionally recognises the following little-used device, which is not implemented in PC-BASIC.</p>
 <table><tr>
 <th>device</th><th>      allowed modes</th><th>   description</th>
 </tr><tr>
 <td><code>CONS:</code></td>
 <td><code>OUTPUT</code></td>
 <td>The screen (console). Output to <code>CONS:</code> is displayed
-                            directly at the cursor position when <code class="key">Enter</code> is 
+                            directly at the cursor position when <code class="key">Enter</code> is
                             pressed. It does not update the end-of-line value
-                            for the interpreter, which means that it does not 
+                            for the interpreter, which means that it does not
                             move with <code class="key">Backspace</code> or <code class="key">Del</code> and is not
-                            stored in program lines if it appears beyond the 
+                            stored in program lines if it appears beyond the
                             end of the existing line. <code>CONS:</code> can be opened with
-                            any access mode, but the effect is always to open 
+                            any access mode, but the effect is always to open
                             it for <code>OUTPUT</code>.
 </td>
-</tr><tr>
-<td><code>CAS1:</code></td>
-<td><code>INPUT</code> <code>OUTPUT</code></td>
-<td>Cassette tape driver.</td>
 </tr></table>
 
 <h2 id="keywords">Keywords</h2>
 <p>Not all keywords are statements or functions. Conversely, some parts of statement or
 function syntax are not keywords. Keywords are
 not legal variable names. Therefore, you cannot name a variable <code>TO!</code> but you can
-name it <code>AS!</code>. The keywords are here listed with the bytecode token used to 
+name it <code>AS!</code>. The keywords are here listed with the bytecode token used to
 represent them in a BASIC file.</p>
 <pre>
- 81 END     82 FOR     83 NEXT    84 DATA    85 INPUT   86 DIM     87 READ  
+ 81 END     82 FOR     83 NEXT    84 DATA    85 INPUT   86 DIM     87 READ
  88 LET     89 GOTO    8A RUN     8B IF      8C RESTORE 8D <code>GOSUB</code>   8E <code>RETURN</code>
- 8F REM     90 STOP    91 PRINT   92 CLEAR   93 LIST    94 NEW     95 ON  
- 96 WAIT    97 DEF     98 POKE    99 CONT    9C OUT     9D LPRINT  9E LLIST  
- A0 WIDTH   A1 ELSE    A2 TRON    A3 TROFF   A4 SWAP    A5 ERASE   A6 EDIT  
- A7 ERROR   A8 RESUME  A9 DELETE  AA AUTO    AB RENUM   AC DEFSTR  AD DEFINT  
- AE DEFSNG  AF DEFDBL  B0 LINE    B1 WHILE   B2 WEND    B3 CALL    B7 WRITE  
- B8 OPTION B9 RANDOMIZE BA OPEN   BB CLOSE   BC LOAD    BD <code>MERGE</code>   BE SAVE      
+ 8F REM     90 STOP    91 PRINT   92 CLEAR   93 LIST    94 NEW     95 ON
+ 96 WAIT    97 DEF     98 POKE    99 CONT    9C OUT     9D LPRINT  9E LLIST
+ A0 WIDTH   A1 ELSE    A2 TRON    A3 TROFF   A4 SWAP    A5 ERASE   A6 EDIT
+ A7 ERROR   A8 RESUME  A9 DELETE  AA AUTO    AB RENUM   AC DEFSTR  AD DEFINT
+ AE DEFSNG  AF DEFDBL  B0 LINE    B1 WHILE   B2 WEND    B3 CALL    B7 WRITE
+ B8 OPTION B9 RANDOMIZE BA OPEN   BB CLOSE   BC LOAD    BD <code>MERGE</code>   BE SAVE
  BF COLOR   C0 CLS     C1 MOTOR   C2 BSAVE   C3 BLOAD   C4 SOUND   C5 BEEP
- C6 PSET    C7 PRESET  C8 SCREEN  C9 KEY     CA LOCATE  CC TO      CD THEN  
+ C6 PSET    C7 PRESET  C8 SCREEN  C9 KEY     CA LOCATE  CC TO      CD THEN
  CE TAB(    CF STEP    D0 USR     D1 FN      D2 SPC(    D3 NOT     D4 ERL
- D5 ERR     D6 STRING$ D7 USING   D8 INSTR   D9 '       DA VARPTR  DB CSRLIN  
- DC POINT   DD OFF     DE INKEY$  E6 &gt;       E7 =       E8 &lt;       E9 + 
- EA -       EB *       EC /       ED ^       EE AND     EF OR      F0 XOR  
+ D5 ERR     D6 STRING$ D7 USING   D8 INSTR   D9 '       DA VARPTR  DB CSRLIN
+ DC POINT   DD OFF     DE INKEY$  E6 &gt;       E7 =       E8 &lt;       E9 +
+ EA -       EB *       EC /       ED ^       EE AND     EF OR      F0 XOR
  F1 EQV     F2 IMP     F3 MOD     F4 \
  FD81 CVI     FD82 CVS     FD83 CVD     FD84 MKI$    FD85 MKS$    FD86 MKD$
- FD8B EXTERR  FE81 FILES   FE82 FIELD   FE83 SYSTEM  FE84 NAME    FE85 LSET  
+ FD8B EXTERR  FE81 FILES   FE82 FIELD   FE83 SYSTEM  FE84 NAME    FE85 LSET
  FE86 RSET    FE87 KILL    FE88 PUT     FE89 GET     FE8A RESET   FE8B <code>COMMON</code>
- FE8C CHAIN   FE8D DATE$   FE8E TIME$   FE8F PAINT   FE90 COM     FE91 CIRCLE 
- FE92 DRAW    FE93 PLAY    FE94 TIMER   FE95 ERDEV   FE96 IOCTL   FE97 CHDIR 
+ FE8C CHAIN   FE8D DATE$   FE8E TIME$   FE8F PAINT   FE90 COM     FE91 CIRCLE
+ FE92 DRAW    FE93 PLAY    FE94 TIMER   FE95 ERDEV   FE96 IOCTL   FE97 CHDIR
  FE98 MKDIR   FE99 RMDIR   FE9A SHELL   FE9B ENVIRON FE9C VIEW    FE9D WINDOW
- FE9E PMAP    FE9F PALETTE FEA0 LCOPY   FEA1 CALLS   FEA5 PCOPY 
+ FE9E PMAP    FE9F PALETTE FEA0 LCOPY   FEA1 CALLS   FEA5 PCOPY
  FEA7 <code>LOCK</code>    FEA8 <code>UNLOCK</code>  FF81 LEFT$   FF82 RIGHT$  FF83 MID$    FF84 SGN
- FF85 INT     FF86 ABS     FF87 SQR     FF88 RND     FF89 SIN     FF8A LOG   
- FF8B EXP     FF8C COS     FF8D TAN     FF8E ATN     FF8F FRE     FF90 INP   
- FF91 POS     FF92 LEN     FF93 STR$    FF94 VAL     FF95 ASC     FF96 CHR$   
- FF97 PEEK    FF98 SPACE$  FF99 OCT$    FF9A HEX$    FF9B LPOS    FF9C CINT  
- FF9D CSNG    FF9E CDBL    FF9F FIX     FFA0 PEN     FFA1 STICK   FFA2 STRIG  
- FFA3 EOF     FFA4 LOC     FFA5 LOF          
+ FF85 INT     FF86 ABS     FF87 SQR     FF88 RND     FF89 SIN     FF8A LOG
+ FF8B EXP     FF8C COS     FF8D TAN     FF8E ATN     FF8F FRE     FF90 INP
+ FF91 POS     FF92 LEN     FF93 STR$    FF94 VAL     FF95 ASC     FF96 CHR$
+ FF97 PEEK    FF98 SPACE$  FF99 OCT$    FF9A HEX$    FF9B LPOS    FF9C CINT
+ FF9D CSNG    FF9E CDBL    FF9F FIX     FFA0 PEN     FFA1 STICK   FFA2 STRIG
+ FFA3 EOF     FFA4 LOC     FFA5 LOF
 </pre>
 <h4>Notes</h4>
 <ul><li>
@@ -6355,4 +6355,3 @@ represent them in a BASIC file.</p>
 </tr></table>
 <p>Any error code that does not have a message associated to it will generate
 the message <code>Unprintable error</code>.</p>
-

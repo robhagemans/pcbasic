@@ -46,6 +46,25 @@ Default is <em>PC-BASIC 3.23</em>.</dd>
 <dt><code>--capture-caps[=True|=False]</code></dt>
 <dd>Handle the <code class="key">Caps Lock</code> key. This
 may collide with the operating system's own handling.</dd>
+<dt><code>--cas1=<em>type</em>:<em>value</em>[:<em>loc</em>]</code></dt>
+<dd>Attach a resource to the <code>CAS1:</code> cassette device
+and wind the virtual tape to <code><em>loc</em></code> seconds.
+<code><em>type:value</em></code> can be
+<table>
+<tr>
+<td><code>WAV:<em>wav_file</em></code></td>
+<td>Connect to a RIFF Wave file with audio in IBM PC cassette format.</td>
+</tr>
+<tr>
+<td><code>CAS:<em>cas_file</em></code></td>
+<td>Connect to a CAS tape image.
+</tr>
+<tr>
+<td><code>BC:<em>wav_file</em></code></td>
+<td>Connect to a RIFF Wave file with audio in BASICODE format.</td>
+</tr>
+</table>
+</dd>
 <dt><code>--cga-low[=True|=False]</code></dt>
 <dd>Use low-intensity palettes in CGA. This only has an effect on
 CGA, EGA or VGA card emulation.</dd>
