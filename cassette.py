@@ -57,6 +57,10 @@ class CASDevice(object):
     def __init__(self, arg):
         """ Initialise tape device. """
         addr, val = iolayer.parse_protocol_string(arg)
+        valsplit = val.split(':', 1)
+        loc = None
+        if len(valsplit) == 2:
+            val, loc = valsplit
         ext = val.split('.')[-1].upper()
         try:
             if not val:
@@ -69,6 +73,8 @@ class CASDevice(object):
             else:
                 # 'CAS' is default
                 self.tapestream = CassetteStream(CASBitStream(val, 'r'))
+            if loc:
+                self.tapestream.wind(int(loc))
         except EnvironmentError as e:
             logging.warning("Couldn't attach %s to CAS device: %s",
                             val, str(e))
@@ -200,6 +206,9 @@ class CassetteStream(object):
     def counter(self):
         """ Position on tape in seconds. """
         return self.bitstream.counter()
+
+    def wind(self, loc):
+        self.bitstream.wind(loc)
 
     def write(self, c):
         """ Write a string to a file on tape. """
@@ -509,6 +518,10 @@ class TapeBitStream(object):
         """ Position on tape in seconds. """
         return 0
 
+    def wind(self, loc):
+        """ Set position of tape in seconds. """
+        pass
+
     def read_intro(self):
         """ Try to read intro; ensure image not empty. """
         for b in bytearray(self.intro):
@@ -650,6 +663,11 @@ class CASBitStream(TapeBitStream):
         """ Time stamp in seconds. """
         # approximate: average 750 us per bit, cut on bytes
         return self.cas.tell() * 8 * 750 / 1000000.
+
+    def wind(self, loc):
+        """ Set position of tape in seconds. """
+        self.cas.seek(int(loc * 1000000 / (750 * 8)))
+        self.current_byte = self.cas.read(1)
 
     def close(self):
         """ Close tape image. """
@@ -851,6 +869,11 @@ class WAVBitStream(TapeBitStream):
     def counter(self):
         """ Time stamp in seconds. """
         return self.wav_pos/(1.*self.framerate)
+
+    def wind(self, loc):
+        """ Set position of tape in seconds. """
+        self.wav_pos = int(loc * self.framerate)
+        self.wav.seek(self.wav_pos)
 
     def read_bit(self):
         """ Read the next bit. """
