@@ -88,34 +88,16 @@ class CASDevice(object):
         if self.tapestream.is_open:
             # file already open
             raise error.RunError(55)
-        return CASFile(self.tapestream, filetype, param, mode,
-                       seg, offset, length)
-
-
-
-#################################################################################
-# Cassette files
-
-class CASFile(iolayer.TextFileBase):
-    """ File on CASn: device. """
-
-    def __init__(self, tapestream, filetype, name='', mode='I',
-                 seg=0, offs=0, length=0):
-        """ Initialise file on tape. """
-        iolayer.TextFileBase.__init__(self, iolayer.nullstream, filetype, mode)
-        self.tapestream = tapestream
         if mode == 'O':
-            self.name = name
-            self.filetype = filetype
-            self.seg, self.offset, self.length = seg, offs, length
-            self.tapestream.open_write(name, filetype, seg, offs, length)
+            self.tapestream.open_write(param, filetype, seg, offset, length)
         elif mode == 'I':
-            self.name, self.filetype, self.seg, self.offset, self.length = self._search(name, filetype)
+            _, filetype, seg, offset, length = self._search(param, filetype)
         else:
             raise error.RunError(54)
-        self.mode = mode
-        # needed for file writing
-        self.width = 255
+        if filetype in ('D', 'A'):
+            return CASTextFile(self.tapestream, filetype, mode)
+        else:
+            return CASBinaryFile(self.tapestream, filetype, mode, seg, offset, length)
 
     def _search(self, trunk_req=None, filetypes_req=None):
         """ Play until a file header record is found for the given filename. """
@@ -137,6 +119,31 @@ class CASFile(iolayer.TextFileBase):
             # device timeout
             raise error.RunError(24)
 
+#################################################################################
+# Cassette files
+
+class CASBinaryFile(iolayer.RawFile):
+    """ Program or Memory file on CASn: device. """
+
+    def __init__(self, fhandle, filetype, mode, seg, offset, length):
+        """ Initialise binary file. """
+        iolayer.RawFile.__init__(self, fhandle, filetype, mode)
+        self.seg, self.offset, self.length = seg, offset, length
+
+    def read_raw(self, nbytes=-1):
+        """ Read bytes from a file on tape. """
+        try:
+            return iolayer.RawFile.read_raw(self, nbytes)
+        except CassetteIOError as e:
+            logging.warning("%s Cassette I/O Error during read: %s",
+                            timestamp(self.fhandle.counter()), e)
+            # Device I/O error
+            raise error.RunError(57)
+
+
+class CASTextFile(iolayer.TextFileBase):
+    """ Text file on CASn: device. """
+
     def lof(self):
         """ LOF: illegal function call. """
         raise error.RunError(5)
@@ -145,44 +152,22 @@ class CASFile(iolayer.TextFileBase):
         """ LOC: illegal function call. """
         raise error.RunError(5)
 
-    def eof(self):
-        """ End of file. """
-        if self.mode in ('A', 'O'):
-            return False
-        return self.tapestream.eof()
-
-    def write_line(self, s=''):
-        """ Write string s and CR to tape file. """
-        self.write(str(s) + '\r')
-
-    def write(self, c):
-        """ Write a string to a file on tape. """
-        if self.filetype in ('D', 'A'):
-            c = c.replace('\r\n', '\r')
-        self.tapestream.write(c)
-
-    def read(self, nbytes=-1):
-        """ Read bytes from a file on tape. """
-        # text/data files are stored on tape with CR line endings
-        return self.read_raw(nbytes).replace('\r', '\r\n')
-
     def read_raw(self, nbytes=-1):
         """ Read bytes from a file on tape. """
         try:
-            return self.tapestream.read(nbytes)
+            return iolayer.TextFileBase.read_raw(self, nbytes)
         except CassetteIOError as e:
             logging.warning("%s Cassette I/O Error during read: %s",
-                            timestamp(self.tapestream.counter()), e)
+                            timestamp(self.fhandle.counter()), e)
             # Device I/O error
             raise error.RunError(57)
 
     def close(self):
         """ Close a file on tape. """
-        # terminate text files with NUL
-        if self.filetype in ('D', 'A') and self.mode == 'O':
+        # terminate cassette text files with NUL
+        if self.mode == 'O':
             self.write('\0')
-        self.tapestream.close()
-
+        iolayer.TextFileBase.close(self)
 
 
 class CassetteStream(object):
@@ -206,19 +191,13 @@ class CassetteStream(object):
             self._close_record_buffer()
             self.is_open = False
 
+    def flush(self):
+        pass
+
     def close_tape(self):
         """ Eject the tape. """
         self.close()
         self.bitstream.close()
-
-    def flush(self):
-        """ Flush buffers. """
-        pass
-
-    def eof(self):
-        """ End of file. """
-        return (self.buffer_complete and
-                self.record_stream.tell() == len(self.record_stream.getvalue()))
 
     def counter(self):
         """ Position on tape in seconds. """
@@ -382,6 +361,7 @@ class CassetteStream(object):
             if num_bytes != 0:
                 record = record[:num_bytes-1]
                 self.buffer_complete = True
+            self.record_stream.write(record)
         self.record_stream.seek(0)
         return True
 
