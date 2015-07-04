@@ -140,6 +140,11 @@ class CASBinaryFile(iolayer.RawFile):
             # Device I/O error
             raise error.RunError(57)
 
+    def close(self):
+        """ Close a file on tape. """
+        self.fhandle.is_open = False
+        iolayer.RawFile.close(self)
+
 
 class CASTextFile(iolayer.TextFileBase):
     """ Text file on CASn: device. """
@@ -167,6 +172,7 @@ class CASTextFile(iolayer.TextFileBase):
         # terminate cassette text files with NUL
         if self.mode == 'O':
             self.write('\0')
+        self.fhandle.is_open = False
         iolayer.TextFileBase.close(self)
 
 
@@ -240,15 +246,12 @@ class CassetteStream(object):
                 # unknown record type
                 logging.debug("%s Skipped non-header record.",
                               timestamp(self.bitstream.counter()))
-        file_trunk = record[1:9]
+        file_trunk, token, self.length, seg, offset = struct.unpack('<8sBHHH',
+                                                                    record[1:16])
         try:
-            self.filetype = token_to_type[ord(record[9])]
+            self.filetype = token_to_type[token]
         except KeyError:
-            logging.debug('Unknown file type token: %x', ord(record[9]))
-        self.length = ord(record[10]) + ord(record[11]) * 0x100
-        # for programs this is start address
-        seg = ord(record[12]) + ord(record[13]) * 0x100
-        offset = ord(record[14]) + ord(record[15]) * 0x100
+            logging.debug('Unknown file type token: %x', token)
         self.record_num = 0
         self.buffer_complete = False
         self.is_open = True
@@ -269,12 +272,9 @@ class CassetteStream(object):
             self.last = seg, offs, length
         self.filetype = filetype
         # header seems to end at 0x00, 0x01, then filled out with last char
-        header = ('\xa5' + name[:8] + ' ' * (8-len(name))
-                  + chr(type_to_token[filetype]) +
-                  ''.join(map(chr, word_le(length))) +
-                  ''.join(map(chr, word_le(seg))) +
-                  ''.join(map(chr, word_le(offs))) +
-                  '\x00\x01')
+        header = struct.pack('<c8sBHHHBB',
+                    '\xa5', name[:8] + ' ' * (8-len(name)),
+                    type_to_token[filetype], length, seg, offs, 0, 1)
         self._write_record(header)
         self.is_open = True
 
@@ -338,7 +338,7 @@ class CassetteStream(object):
             self.bitstream.write_byte(ord(b))
         crc_word = crc(data)
         # crc is written big-endian
-        lo, hi = word_le(crc_word)
+        lo, hi = map(ord, struct.pack('<H', crc_word))
         self.bitstream.write_byte(hi)
         self.bitstream.write_byte(lo)
 
@@ -1181,11 +1181,6 @@ def crc(data):
                 rem ^= 0x1021
             rem &= 0xffff
     return rem ^ 0xffff
-
-def word_le(word):
-    """ Convert word to little-endian list of bytes. """
-    hi, lo = divmod(word, 256)
-    return [lo, hi]
 
 def hms(seconds):
     """ Return elapsed cassette time at given frame. """
