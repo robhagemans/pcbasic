@@ -88,12 +88,17 @@ class CASDevice(object):
         if self.tapestream.is_open:
             # file already open
             raise error.RunError(55)
-        if mode == 'O':
-            self.tapestream.open_write(param, filetype, seg, offset, length)
-        elif mode == 'I':
-            _, filetype, seg, offset, length = self._search(param, filetype)
-        else:
-            raise error.RunError(54)
+        try:
+            if mode == 'O':
+                self.tapestream.open_write(param, filetype, seg, offset, length)
+            elif mode == 'I':
+                _, filetype, seg, offset, length = self._search(param, filetype)
+            else:
+                # bad file mode
+                raise error.RunError(54)
+        except EnvironmentError:
+            # device I/O Error
+            raise error.RunError(57)
         if filetype in ('D', 'A'):
             return CASTextFile(self.tapestream, filetype, mode)
         else:
@@ -130,19 +135,8 @@ class CASBinaryFile(iolayer.RawFile):
         iolayer.RawFile.__init__(self, fhandle, filetype, mode)
         self.seg, self.offset, self.length = seg, offset, length
 
-    def read_raw(self, nbytes=-1):
-        """ Read bytes from a file on tape. """
-        try:
-            return iolayer.RawFile.read_raw(self, nbytes)
-        except CassetteIOError as e:
-            logging.warning("%s Cassette I/O Error during read: %s",
-                            timestamp(self.fhandle.counter()), e)
-            # Device I/O error
-            raise error.RunError(57)
-
     def close(self):
         """ Close a file on tape. """
-        self.fhandle.close()
         iolayer.RawFile.close(self)
 
 
@@ -157,22 +151,15 @@ class CASTextFile(iolayer.TextFileBase):
         """ LOC: illegal function call. """
         raise error.RunError(5)
 
-    def read_raw(self, nbytes=-1):
-        """ Read bytes from a file on tape. """
-        try:
-            return iolayer.TextFileBase.read_raw(self, nbytes)
-        except CassetteIOError as e:
-            logging.warning("%s Cassette I/O Error during read: %s",
-                            timestamp(self.fhandle.counter()), e)
-            # Device I/O error
-            raise error.RunError(57)
-
     def close(self):
         """ Close a file on tape. """
         # terminate cassette text files with NUL
         if self.mode == 'O':
             self.write('\0')
-        self.fhandle.close()
+        try:
+            self.fhandle.close()
+        except EnvironmentError:
+            pass
         iolayer.TextFileBase.close(self)
 
 
@@ -204,8 +191,11 @@ class CassetteStream(object):
 
     def close_tape(self):
         """ Eject the tape. """
-        self.close()
-        self.bitstream.close()
+        try:
+            self.close()
+            self.bitstream.close()
+        except EnvironmentError:
+            pass
 
     def counter(self):
         """ Position on tape in seconds. """
@@ -640,7 +630,10 @@ class CASBitStream(TapeBitStream):
         else:
             self.operating_mode = 'r'
             self.mask = 0x100
-            self.cas = open(self.cas_name, 'r+b')
+            try:
+                self.cas = open(self.cas_name, 'r+b')
+            except EnvironmentError:
+                self.cas = open(self.cas_name, 'rb')
             self.current_byte = self.cas.read(1)
             if self.current_byte == '' or not self.read_intro():
                 self.cas.close()
@@ -808,7 +801,10 @@ class WAVBitStream(TapeBitStream):
             self.operating_mode = 'w'
         else:
             # open file for reading and find wave parameters
-            self.wav = open(self.filename, 'r+b')
+            try:
+                self.wav = open(self.filename, 'r+b')
+            except EnvironmentError:
+                self.wav = open(self.filename, 'rb')
             self._read_wav_header()
             self.operating_mode = 'r'
         self.wav_pos = 0

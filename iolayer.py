@@ -386,11 +386,18 @@ class RawFile(object):
 
     def close(self):
         """ Close the file. """
-        self.fhandle.close()
+        try:
+            self.fhandle.close()
+        except EnvironmentError:
+            pass
 
     def read_raw(self, num=-1):
         """ Read num chars. If num==-1, read all available. """
-        return self.fhandle.read(num)
+        try:
+            return self.fhandle.read(num)
+        except EnvironmentError:
+            # Device I/O error
+            raise error.RunError(57)
 
     def read(self, num=-1):
         """ Read num chars. If num==-1, read all available. """
@@ -398,7 +405,11 @@ class RawFile(object):
 
     def write(self, s):
         """ Write string or bytearray to file. """
-        self.fhandle.write(str(s))
+        try:
+            self.fhandle.write(str(s))
+        except EnvironmentError:
+            # Device I/O error
+            raise error.RunError(57)
 
     def flush(self):
         """ Write contents of buffers to file. """
@@ -422,10 +433,6 @@ class TextFileBase(RawFile):
         self.next_char = first_char
         if self.mode == 'I' and not first_char:
             self.next_char = self.fhandle.read(1)
-
-    def close(self):
-        """ Close text file. """
-        self.fhandle.close()
 
     def read_raw(self, num=-1):
         """ Read num characters as string. """
