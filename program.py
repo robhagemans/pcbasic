@@ -1,9 +1,9 @@
 """
 PC-BASIC 3.23  - program.py
 Program buffer utilities
- 
-(c) 2013, 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+
+(c) 2013, 2014 Rob Hagemans
+This file is released under the GNU GPL version 3.
 """
 
 import config
@@ -41,7 +41,7 @@ def prepare():
     global max_list_line, dont_protect
     global program_memory_start
     if (not config.options['strict-hidden-lines']) or config.options['convert']:
-        max_list_line = 65535    
+        max_list_line = 65535
     else:
         max_list_line = 65530
     dont_protect = (not config.options['strict-protect']) or config.options['convert']
@@ -63,14 +63,14 @@ def erase_program():
 def truncate_program(rest=''):
     """ Write bytecode and cut the program of beyond the current position. """
     state.basic_state.bytecode.write(rest if rest else '\0\0\0')
-    # cut off at current position    
-    state.basic_state.bytecode.truncate()    
-      
+    # cut off at current position
+    state.basic_state.bytecode.truncate()
+
 def get_line_number(pos):
     """ Get line number for stream position. """
     pre = -1
     for linum in state.basic_state.line_numbers:
-        linum_pos = state.basic_state.line_numbers[linum] 
+        linum_pos = state.basic_state.line_numbers[linum]
         if linum_pos <= pos and linum > pre:
             pre = linum
     return pre
@@ -86,13 +86,13 @@ def rebuild_line_dict():
         if scanline == -1:
             scanline = 65536
             # if parse_line_number returns -1, it leaves the stream pointer here: 00 _00_ 00 1A
-            break 
-        state.basic_state.line_numbers[scanline] = scanpos  
+            break
+        state.basic_state.line_numbers[scanline] = scanpos
         last = scanpos
         util.skip_to(state.basic_state.bytecode, util.end_line)
         scanpos = state.basic_state.bytecode.tell()
         offsets.append(scanpos)
-    state.basic_state.line_numbers[65536] = scanpos     
+    state.basic_state.line_numbers[65536] = scanpos
     # rebuild offsets
     state.basic_state.bytecode.seek(0)
     last = 0
@@ -124,21 +124,21 @@ def update_line_dict(pos, afterpos, length, deleteable, beyond):
         del state.basic_state.line_numbers[key]
     for key in beyond:
         state.basic_state.line_numbers[key] += length
-            
+
 def check_number_start(linebuf):
     """ Check if the given line buffer starts with a line number. """
     # get the new line number
     linebuf.seek(1)
     scanline = util.parse_line_number(linebuf)
-    c = util.skip_white_read(linebuf) 
+    c = util.skip_white_read(linebuf)
     # check if linebuf is an empty line after the line number
     empty = (c in util.end_line)
     # check if we start with a number
-    if c in token.number:        
+    if c in token.number:
         raise error.RunError(2)
-    return empty, scanline   
+    return empty, scanline
 
-def store_line(linebuf): 
+def store_line(linebuf):
     """ Store the given line buffer. """
     if state.basic_state.protected:
         raise error.RunError(5)
@@ -149,17 +149,17 @@ def store_line(linebuf):
     empty = (util.skip_white_read(linebuf) in util.end_line)
     pos, afterpos, deleteable, beyond = find_pos_line_dict(scanline, scanline)
     if empty and not deleteable:
-        raise error.RunError(8)   
+        raise error.RunError(8)
     # read the remainder of the program into a buffer to be pasted back after the write
     state.basic_state.bytecode.seek(afterpos)
     rest = state.basic_state.bytecode.read()
-    # insert    
+    # insert
     state.basic_state.bytecode.seek(pos)
     # write the line buffer to the program buffer
     length = 0
     if not empty:
         # set offsets
-        linebuf.seek(3) # pass \x00\xC0\xDE 
+        linebuf.seek(3) # pass \x00\xC0\xDE
         length = len(linebuf.getvalue())
         state.basic_state.bytecode.write( '\0' + str(vartypes.value_to_uint(program_memory_start + pos + length)) + linebuf.read())
     # write back the remainder of the program
@@ -188,11 +188,11 @@ def find_pos_line_dict(fromline, toline):
 def delete(fromline, toline):
     """ Delete range of lines from stored program. """
     fromline = fromline if fromline != None else min(state.basic_state.line_numbers)
-    toline = toline if toline != None else 65535 
+    toline = toline if toline != None else 65535
     startpos, afterpos, deleteable, beyond = find_pos_line_dict(fromline, toline)
     if not deleteable:
         # no lines selected
-        raise error.RunError(5)        
+        raise error.RunError(5)
     # do the delete
     state.basic_state.bytecode.seek(afterpos)
     rest = state.basic_state.bytecode.read()
@@ -234,8 +234,8 @@ def renum(new_line, start_line, step):
     """ Renumber stored program. """
     new_line = 10 if new_line == None else new_line
     start_line = 0 if start_line == None else start_line
-    step = 10 if step == None else step 
-    # get a sorted list of line numbers 
+    step = 10 if step == None else step
+    # get a sorted list of line numbers
     keys = sorted([ k for k in state.basic_state.line_numbers.keys() if k >= start_line])
     # assign the new numbers
     old_to_new = {}
@@ -246,19 +246,19 @@ def renum(new_line, start_line, step):
             break
         old_to_new[old_line] = new_line
         state.basic_state.last_stored = new_line
-        new_line += step    
+        new_line += step
     # write the new numbers
     for old_line in old_to_new:
         state.basic_state.bytecode.seek(state.basic_state.line_numbers[old_line])
         # skip the \x00\xC0\xDE & overwrite line number
         state.basic_state.bytecode.read(3)
         state.basic_state.bytecode.write(str(vartypes.value_to_uint(old_to_new[old_line])))
-    # rebuild the line number dictionary    
+    # rebuild the line number dictionary
     new_lines = {}
     for old_line in old_to_new:
-        new_lines[old_to_new[old_line]] = state.basic_state.line_numbers[old_line]          
+        new_lines[old_to_new[old_line]] = state.basic_state.line_numbers[old_line]
         del state.basic_state.line_numbers[old_line]
-    state.basic_state.line_numbers.update(new_lines)    
+    state.basic_state.line_numbers.update(new_lines)
     # write the indirect line numbers
     state.basic_state.bytecode.seek(0)
     while util.skip_to_read(state.basic_state.bytecode, ('\x0e',)) == '\x0e':
@@ -270,7 +270,7 @@ def renum(new_line, start_line, step):
             # not redefined, exists in program?
             if jumpnum in state.basic_state.line_numbers:
                 newjump = jumpnum
-            else:    
+            else:
                 linum = get_line_number(state.basic_state.bytecode.tell())
                 console.write_line('Undefined line ' + str(jumpnum) + ' in ' + str(linum))
         state.basic_state.bytecode.seek(-2, 1)
@@ -288,7 +288,7 @@ def renum(new_line, start_line, step):
     for handler in state.basic_state.events.all:
         if handler.gosub:
             handler.set_jump(old_to_new[handler.gosub])
-        
+
 def load(g):
     """ Load program from ascii, bytecode or protected stream. """
     erase_program()
@@ -299,8 +299,8 @@ def load(g):
     elif g.filetype == 'P':
         # protected file
         state.basic_state.bytecode.seek(1)
-        state.basic_state.protected = not dont_protect                
-        protect.unprotect(g, state.basic_state.bytecode) 
+        state.basic_state.protected = not dont_protect
+        protect.unprotect(g, state.basic_state.bytecode)
     elif g.filetype == 'A':
         # assume ASCII file
         # anything but numbers or whitespace: Direct Statement in File
@@ -327,9 +327,9 @@ def merge(g):
             # we have read the :
             if util.skip_white(linebuf) not in util.end_line:
                 # direct statement in file
-                raise error.RunError(66)   
+                raise error.RunError(66)
 
-def chain(action, g, jumpnum, delete_lines): 
+def chain(action, g, jumpnum, delete_lines):
     """ Chain load the program from g and hand over execution. """
     if delete_lines:
         # delete lines from existing code before merge (without MERGE, this is pointless)
@@ -360,14 +360,14 @@ def save(g):
             if current_line == -1 or (current_line > max_list_line):
                 break
             g.write_line(str(output))
-    state.basic_state.bytecode.seek(current)         
-    
+    state.basic_state.bytecode.seek(current)
+
 def list_lines(dev, from_line, to_line):
     """ List line range to console or device. """
     if state.basic_state.protected:
         # don't list protected files
         raise error.RunError(5)
-    # 65529 is max insertable line number for GW-BASIC 3.23. 
+    # 65529 is max insertable line number for GW-BASIC 3.23.
     # however, 65530-65535 are executed if present in tokenised form.
     # in GW-BASIC, 65530 appears in LIST, 65531 and above are hidden
     if to_line == None:
@@ -376,7 +376,7 @@ def list_lines(dev, from_line, to_line):
     listable = sorted([ state.basic_state.line_numbers[num]
                             for num in state.basic_state.line_numbers
                             if num >= from_line and num <= to_line ])
-    for pos in listable:        
+    for pos in listable:
         state.basic_state.bytecode.seek(pos + 1)
         _, line, _ = tokenise.detokenise_line(state.basic_state.bytecode)
         if dev == backend.scrn_file:
@@ -385,6 +385,5 @@ def list_lines(dev, from_line, to_line):
             dev.write_line(str(line))
     dev.close()
     flow.set_pointer(False)
-        
-prepare()     
 
+prepare()
