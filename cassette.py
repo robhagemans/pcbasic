@@ -110,25 +110,26 @@ class CASFile(iolayer.TextFileBase):
             self.seg, self.offset, self.length = seg, offs, length
             self.tapestream.open_write(name, filetype, seg, offs, length)
         elif mode == 'I':
-            self.name, self.filetype, self.seg, self.offset, self.length = self._search(name)
+            self.name, self.filetype, self.seg, self.offset, self.length = self._search(name, filetype)
         else:
             raise error.RunError(54)
         self.mode = mode
         # needed for file writing
         self.width = 255
 
-    def _search(self, trunk=None):
+    def _search(self, trunk_req=None, filetypes_req=None):
         """ Play until a file header record is found for the given filename. """
         try:
             while True:
-                file_trunk, filetype, seg, offset, length = self.tapestream.open_read()
-                if (not trunk or file_trunk.rstrip() == trunk.rstrip()):
-                    message = "%s Found." % (file_trunk + '.' + filetype)
+                trunk, filetype, seg, offset, length = self.tapestream.open_read()
+                if ((not trunk_req or trunk.rstrip() == trunk_req.rstrip()) and
+                        (not filetypes_req or filetype in filetypes_req)):
+                    message = "%s Found." % (trunk + '.' + filetype)
                     msgstream.write_line(message)
                     logging.debug(timestamp(self.tapestream.counter()) + message)
-                    return file_trunk, filetype, seg, offset, length
+                    return trunk, filetype, seg, offset, length
                 else:
-                    message = "%s Skipped." % (file_trunk + '.' + filetype)
+                    message = "%s Skipped." % (trunk + '.' + filetype)
                     msgstream.write_line(message)
                     logging.debug(timestamp(self.tapestream.counter()) + message)
         except EndOfTape:
