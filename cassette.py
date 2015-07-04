@@ -163,11 +163,18 @@ class CASFile(iolayer.TextFileBase):
 
     def read(self, nbytes=-1):
         """ Read bytes from a file on tape. """
-        return self.tapestream.read(nbytes)
+        # text/data files are stored on tape with CR line endings
+        return self.read_raw(nbytes).replace('\r', '\r\n')
 
     def read_raw(self, nbytes=-1):
         """ Read bytes from a file on tape. """
-        return self.tapestream.read(nbytes)
+        try:
+            return self.tapestream.read(nbytes)
+        except CassetteIOError as e:
+            logging.warning("%s Cassette I/O Error during read: %s",
+                            timestamp(self.tapestream.counter()), e)
+            # Device I/O error
+            raise error.RunError(57)
 
     def close(self):
         """ Close a file on tape. """
@@ -302,13 +309,7 @@ class CassetteStream(object):
         block_num = 0
         byte_count = 0
         while byte_count < reclen or reclen == None:
-            try:
-                data = self._read_block()
-            except (PulseError, FramingError, CRCError) as e:
-                logging.warning("%s Cassette I/O Error during read: %s",
-                                timestamp(self.bitstream.counter()), e)
-                # Device I/O error
-                raise error.RunError(57)
+            data = self._read_block()
             record += data
             byte_count += len(data)
             if (reclen == None):
@@ -381,8 +382,6 @@ class CassetteStream(object):
             if num_bytes != 0:
                 record = record[:num_bytes-1]
                 self.buffer_complete = True
-            # text/data files are stored on tape with CR line endings
-            self.record_stream.write(record.replace('\r', '\r\n'))
         self.record_stream.seek(0)
         return True
 
