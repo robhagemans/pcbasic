@@ -301,14 +301,12 @@ def load(g):
         state.basic_state.bytecode.seek(1)
         state.basic_state.protected = not dont_protect
         protect.unprotect(g, state.basic_state.bytecode)
-    elif g.filetype == 'A':
+    else:
+        if g.filetype != 'A':
+            logging.debug("Incorrect file type '%s' on LOAD", g.filetype)
         # assume ASCII file
         # anything but numbers or whitespace: Direct Statement in File
         merge(g)
-    else:
-        logging.debug("Incorrect file type '%s' on LOAD", g.filetype)
-        # this shouldn't happen; internal error
-        raise error.RunError(51)
     # rebuild line number dict and offsets
     rebuild_line_dict()
 
