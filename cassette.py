@@ -142,7 +142,7 @@ class CASBinaryFile(iolayer.RawFile):
 
     def close(self):
         """ Close a file on tape. """
-        self.fhandle.is_open = False
+        self.fhandle.close()
         iolayer.RawFile.close(self)
 
 
@@ -172,7 +172,7 @@ class CASTextFile(iolayer.TextFileBase):
         # terminate cassette text files with NUL
         if self.mode == 'O':
             self.write('\0')
-        self.fhandle.is_open = False
+        self.fhandle.close()
         iolayer.TextFileBase.close(self)
 
 
@@ -196,8 +196,10 @@ class CassetteStream(object):
         if self.is_open:
             self._close_record_buffer()
             self.is_open = False
+            self.rwmode = ''
 
     def flush(self):
+        """ Flush buffers (dummy). """
         pass
 
     def close_tape(self):
@@ -306,7 +308,7 @@ class CassetteStream(object):
             self._write_block(data[:256])
             data = data[256:]
         self.bitstream.write_trailer()
-        # write 100 ms second pause to make clear separation between blocks
+        # write 100 ms pause to make clear separation between blocks
         self.bitstream.write_pause(100)
 
     def _read_block(self):
