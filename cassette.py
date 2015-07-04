@@ -125,12 +125,12 @@ class CASFile(iolayer.TextFileBase):
                 if (not trunk or file_trunk.rstrip() == trunk.rstrip()):
                     message = "%s Found." % (file_trunk + '.' + filetype)
                     msgstream.write_line(message)
-                    logging.debug(timestamp(self.tapestream.counter()) + message)
+                    logging.debug(timestamp(self.tapestream.bitstream.counter()) + message)
                     return file_trunk, filetype, seg, offset, length
                 else:
                     message = "%s Skipped." % (file_trunk + '.' + filetype)
                     msgstream.write_line(message)
-                    logging.debug(timestamp(self.tapestream.counter()) + message)
+                    logging.debug(timestamp(self.tapestream.bitstream.counter()) + message)
         except EndOfTape:
             # reached end-of-tape without finding appropriate file
             # device timeout
@@ -239,27 +239,28 @@ class CassetteStream(object):
         self.record_num = 0
         self.record_stream = StringIO()
         self.buffer_complete = False
-        self.is_open = True
         self.bitstream.switch_mode('r')
         self.rwmode = 'r'
         while True:
             record = self._read_record(None)
-            if not record or record[0] != '\xa5':
+            if record and record[0] == '\xa5':
+                break
+            else:
                 # unknown record type
                 logging.debug("%s Skipped non-header record.",
                               timestamp(self.bitstream.counter()))
-                continue
-            file_trunk = record[1:9]
-            try:
-                self.filetype = token_to_type[ord(record[9])]
-            except KeyError:
-                logging.debug('Unknown file type token: %x', ord(record[9]))
+        file_trunk = record[1:9]
+        try:
+            self.filetype = token_to_type[ord(record[9])]
+        except KeyError:
+            logging.debug('Unknown file type token: %x', ord(record[9]))
         self.length = ord(record[10]) + ord(record[11]) * 0x100
         # for programs this is start address
         seg = ord(record[12]) + ord(record[13]) * 0x100
         offset = ord(record[14]) + ord(record[15]) * 0x100
         self.record_num = 0
         self.buffer_complete = False
+        self.is_open = True
         return file_trunk, self.filetype, seg, offset, self.length
 
     def open_write(self, name, filetype, seg, offs, length):
@@ -267,7 +268,6 @@ class CassetteStream(object):
         self.record_num = 0
         self.record_stream = StringIO()
         self.buffer_complete = False
-        self.is_open = True
         self.bitstream.switch_mode('w')
         self.rwmode = 'w'
         if filetype in ('A', 'D'):
@@ -285,6 +285,7 @@ class CassetteStream(object):
                   ''.join(map(chr, word_le(offs))) +
                   '\x00\x01')
         self._write_record(header)
+        self.is_open = True
 
     def _read_record(self, reclen):
         """ Read a record from tape. """
