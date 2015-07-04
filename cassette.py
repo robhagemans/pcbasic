@@ -125,12 +125,12 @@ class CASFile(iolayer.TextFileBase):
                 if (not trunk or file_trunk.rstrip() == trunk.rstrip()):
                     message = "%s Found." % (file_trunk + '.' + filetype)
                     msgstream.write_line(message)
-                    logging.debug(timestamp(self.tapestream.bitstream.counter()) + message)
+                    logging.debug(timestamp(self.tapestream.counter()) + message)
                     return file_trunk, filetype, seg, offset, length
                 else:
                     message = "%s Skipped." % (file_trunk + '.' + filetype)
                     msgstream.write_line(message)
-                    logging.debug(timestamp(self.tapestream.bitstream.counter()) + message)
+                    logging.debug(timestamp(self.tapestream.counter()) + message)
         except EndOfTape:
             # reached end-of-tape without finding appropriate file
             # device timeout
@@ -211,6 +211,10 @@ class CassetteStream(object):
         """ End of file. """
         return (self.buffer_complete and
                 self.record_stream.tell() == len(self.record_stream.getvalue()))
+
+    def counter(self):
+        """ Position on tape in seconds. """
+        return self.bitstream.counter()
 
     def write(self, c):
         """ Write a string to a file on tape. """
