@@ -2,8 +2,8 @@
 PC-BASIC 3.23  - reset.py
 CLEAR command
 
-(c) 2013, 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+(c) 2013, 2014 Rob Hagemans
+This file is released under the GNU GPL version 3.
 """
 
 import var
@@ -43,5 +43,3 @@ def clear(close_files=False, preserve_common=False, preserve_all=False, preserve
     state.console_state.sound.reset()
     # reset DRAW state (angle, scale) and current graphics position
     state.console_state.screen.drawing.reset()
-    
-    
