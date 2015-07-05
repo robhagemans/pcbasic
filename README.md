@@ -2,7 +2,7 @@
 _A free, cross-platform emulator for legacy Microsoft BASIC applications._
 
 PC-BASIC is a free, cross-platform interpreter for GW-BASIC, BASICA, PCjr Cartridge Basic and Tandy 1000 GW-BASIC.
-It interprets these BASIC dialects with a high degree of accuracy, aiming for bug-for-bug compatibility. PC-BASIC emulates the most common video and audio hardware supported in their time. PC-BASIC can run (and convert between) ASCII, bytecode and 'protected' (encrypted) .BAS files. It implements floating-point arithmetic in the Microsoft Binary Format (MBF) and can therefore 
+It interprets these BASIC dialects with a high degree of accuracy, aiming for bug-for-bug compatibility. PC-BASIC emulates the most common video and audio hardware supported in their time. PC-BASIC can run (and convert between) ASCII, bytecode and 'protected' (encrypted) .BAS files. It implements floating-point arithmetic in the Microsoft Binary Format (MBF) and can therefore
 read and write binary data files created by GW-BASIC.  
 
 PC-BASIC is free and open source software released under the GPL version 3.  
@@ -43,12 +43,12 @@ On **Linux**:
 
 
 #### Installation from source ####
-If your system is not supported or you prefer to install from source, download the source distribution and unpack the TGZ archive. 
+If your system is not supported or you prefer to install from source, download the source distribution and unpack the TGZ archive.
 The following packages are needed or recommended when installing PC-BASIC from source:
 
 | Package                                                         | OS                 | Status       | Needed for  
 |-----------------------------------------------------------------|--------------------|--------------|----------------------------  
-| [Python 2.7.6](http://www.python.org/download/releases/2.7.6/)  | all                | required     |   
+| [Python 2.7.6](http://www.python.org/download/releases/2.7.6/)  | all                | required     |
 | [PyWin32](https://sourceforge.net/projects/pywin32/)            | Windows            | required     |  
 | [PyXDG](http://freedesktop.org/wiki/Software/pyxdg/)            | Linux, other       | required     |  
 | [PyGame 1.9.1](http://www.pygame.org/download.shtml)            | all                | essential    | sound and graphics  
@@ -65,7 +65,7 @@ On **OSX**, there are several versions of Python 2.7 and all downloads need to m
 
 On **Linux distrubutions with APT or DNF** (including Debian, Ubuntu, Mint and Fedora), the install script will automatically install dependencies if it is run with root privileges.  
 
-The install script can also be used on **other Unix** systems or when not installing as root. Python 2.7 usually comes pre-installed; the other packages can often be installed through your package manager. For example, on Debian-based systems:   
+The install script can also be used on **other Unix** systems or when not installing as root. Python 2.7 usually comes pre-installed; the other packages can often be installed through your package manager. For example, on Debian-based systems:
 
         sudo apt-get install python2.7 python-xdg python-pygame python-numpy python-serial python-pexpect python-parallel xsel
 
@@ -105,7 +105,7 @@ Unfortunately, until a newer build of PyGame is released with major distribution
 
         ./configure
 
-    The script will notify you if you're missing dependencies.   
+    The script will notify you if you're missing dependencies.
 
 4. Compile
 
@@ -130,7 +130,7 @@ If you're running PC-BASIC from a GUI, you can set the required options in the c
 |------------|-------------------------------------------------------------------------  
 | Windows XP | `C:\Documents and Settings\` (your username) `\Application Data\pcbasic`  
 | Windows 7  | `C:\Users\` (your username) `\AppData\Roaming\pcbasic`  
-| OS X       | `~/Library/Application Support/pcbasic`   
+| OS X       | `~/Library/Application Support/pcbasic`
 | Linux      | `~/.config/pcbasic`  
 
 For example, you could include the following line in `PCBASIC.INI` to emulate IBM PCjr Cartridge Basic instead of GW-BASIC 3.23:
@@ -142,25 +142,25 @@ For a full list of options, run `pcbasic -h`.
 
 
 #### Basic BASIC commands ####
-PC-BASIC starts in interactive mode, where you can execute BASIC statements directly. 
+PC-BASIC starts in interactive mode, where you can execute BASIC statements directly.
 A few essential statements:  
 `SYSTEM` exits PC-BASIC.  
 `LOAD "PROGRAM"` loads `PROGRAM.BAS` but does not start it.  
 `RUN` starts the currently loaded program.  
 `RUN "PROGRAM"` loads and starts `PROGRAM.BAS`.  
 
-A full CC-licensed GW-BASIC language reference is included with PC-BASIC. This documentation aims to document the actual behaviour of GW-BASIC 3.23, on which PC-BASIC is modelled. Please note that the original Microsoft help file, which can be found on the internet, is rather hit-and-miss; GW-BASIC often behaves differently than documented by Microsoft. 
+A full CC-licensed GW-BASIC language reference is included with PC-BASIC. This documentation aims to document the actual behaviour of GW-BASIC 3.23, on which PC-BASIC is modelled. Please note that the original Microsoft help file, which can be found on the internet, is rather hit-and-miss; GW-BASIC often behaves differently than documented by Microsoft.
 
 
 #### Free BASIC compilers and saner dialects ####
-If you're starting a new project in BASIC, please consider one of the more sensible free versions of the language, such as [FreeBasic](www.freebasic.net), [QB64](http://www.qb64.net/) or [SmallBASIC](https://sourceforge.net/projects/smallbasic/). Under FreeDOS, you can use the [Bywater BASIC](https://sourceforge.net/projects/bwbasic/) interpreter. 
+If you're starting a new project in BASIC, please consider one of the more sensible free versions of the language, such as [FreeBasic](www.freebasic.net), [QB64](http://www.qb64.net/) or [SmallBASIC](https://sourceforge.net/projects/smallbasic/). Under FreeDOS, you can use the [Bywater BASIC](https://sourceforge.net/projects/bwbasic/) interpreter.
 
 
 #### GW-BASIC links and downloads ####
 [Norman De Forest's description of the tokenised file format](http://www.chebucto.ns.ca/~af380/GW-BASIC-tokens.html) is where this project started.  
 [Dan Vanderkam's online GW-BASIC decoder](http://www.danvk.org/wp/gw-basic-program-decoder/) was another inspiration.  
 
-BASIC program downloads and further links can be found on the following pages.   
+BASIC program downloads and further links can be found on the following pages.
 - [KindlyRat's geocities page](http://www.oocities.org/KindlyRat/GWBASIC.html)  
 - [PeatSoft GW-BASIC documentation](http://archive.is/AUm6G)  
 - [Neil C. Obremski's gw-basic.com](http://www.gw-basic.com/)  
@@ -172,8 +172,3 @@ BASIC program downloads and further links can be found on the following pages.
 - [cd.textfiles.com](http://cd.textfiles.com) has tons of old shareware, among which some good GW-BASIC games. Click on the image to enter, like in the olden days. Have fun digging.  
 - [Brooks deForest](http://www.brooksdeforest.com/tandy1000/)'s collection of amazing Tandy BASIC games.  
 - [TVDog's Archive](http://www.oldskool.org/guides/tvdog/) has lots of Tandy 1000 information and BASIC programs.  
-
-
-
-
-
