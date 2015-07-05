@@ -28,6 +28,7 @@ import graphics
 import devices
 import machine
 import memory
+import ports
 import program
 import representation
 import reset
@@ -1103,7 +1104,7 @@ def exec_open(ins):
         raise error.RunError(75)
     elif mode != 'R' and access and access != default_access_modes[mode]:
         raise error.RunError(2)
-    util.range_check(1, devices.max_reclen, reclen)
+    util.range_check(1, ports.max_reclen, reclen)
     devices.open_file(number, name, 'D', mode, access, lock, reclen)
     util.require(ins, util.end_statement)
 
@@ -1147,7 +1148,7 @@ def parse_get_or_put_file(ins):
     if util.skip_white_read_if(ins, (',',)):
         pos = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
         util.range_check_err(1, 2**25, pos, err=63) # not 2^32-1 as the manual boasts! pos-1 needs to fit in a single-prec mantissa
-        if not isinstance(the_file, devices.COMFile):
+        if not isinstance(the_file, ports.COMFile):
             the_file.set_pos(pos)
         else:
             num_bytes = pos
