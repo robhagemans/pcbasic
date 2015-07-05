@@ -1,8 +1,8 @@
 """
-PC-BASIC 3.23 - expressions.py
+PC-BASIC - expressions.py
 Expression parser
 
-(c) 2013, 2014 Rob Hagemans
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -31,23 +31,23 @@ import state
 import machine
 import backend
 import timedate
-import token
+import basictoken as tk
 
 # binary operator priority, lowest index is tightest bound
 # operators of the same priority are evaluated left to right
 priority = (
-    (token.O_CARET,),
-    (token.O_TIMES, token.O_DIV),
-    (token.O_INTDIV,),
-    (token.MOD,),
-    (token.O_PLUS, token.O_MINUS),
-    (token.O_GT, token.O_EQ, token.O_LT,
-     token.O_GT + token.O_EQ, token.O_LT + token.O_EQ, token.O_LT + token.O_GT),
-    (token.AND,),
-    (token.OR,),
-    (token.XOR,),
-    (token.EQV,),
-    (token.IMP,))
+    (tk.O_CARET,),
+    (tk.O_TIMES, tk.O_DIV),
+    (tk.O_INTDIV,),
+    (tk.MOD,),
+    (tk.O_PLUS, tk.O_MINUS),
+    (tk.O_GT, tk.O_EQ, tk.O_LT,
+     tk.O_GT + tk.O_EQ, tk.O_LT + tk.O_EQ, tk.O_LT + tk.O_GT),
+    (tk.AND,),
+    (tk.OR,),
+    (tk.XOR,),
+    (tk.EQV,),
+    (tk.IMP,))
 
 # flatten list
 operator_tokens = [item for sublist in priority for item in sublist]
@@ -78,19 +78,19 @@ def parse_expression(ins, allow_empty=False, empty_err=22):
             break
         else:
             ins.read(1)
-        if d in (token.O_LT, token.O_EQ, token.O_GT):
+        if d in (tk.O_LT, tk.O_EQ, tk.O_GT):
             nxt = util.skip_white(ins)
-            if nxt in (token.O_LT, token.O_EQ, token.O_GT):
+            if nxt in (tk.O_LT, tk.O_EQ, tk.O_GT):
                 ins.read(1)
                 if d == nxt:
                     raise error.RunError(2)
                 else:
                     d += nxt
-                    if d[0] == token.O_EQ:
+                    if d[0] == tk.O_EQ:
                         # =>, =<
                         d = d[1] + d[0]
-                    elif d == token.O_GT + token.O_LT: # ><
-                        d = token.O_LT + token.O_GT
+                    elif d == tk.O_GT + tk.O_LT: # ><
+                        d = tk.O_LT + tk.O_GT
         operators.append(d)
     # empty expression is a syntax error (inside brackets) or Missing Operand (in an assignment) or ok (in print)
     # PRINT 1+      :err 22
@@ -157,10 +157,10 @@ def parse_expr_unit(ins):
         outs.seek(0)
         return util.parse_value(outs)
     # number literals
-    elif d in token.number:
+    elif d in tk.number:
         return util.parse_value(ins)
     # gw-basic allows adding line numbers to numbers
-    elif d == token.T_UINT:
+    elif d == tk.T_UINT:
         return vartypes.pack_int(util.parse_jumpnum(ins))
     # brackets
     elif d == '(':
@@ -796,7 +796,7 @@ def value_varptr(ins):
 
 def value_usr(ins):
     """ USR: get value of machine-code function; not implemented. """
-    util.require_read(ins, token.digit)
+    util.require_read(ins, tk.digit)
     parse_bracket(ins)
     logging.warning("USR() function not implemented.")
     return vartypes.null['%']
@@ -894,47 +894,47 @@ def value_not(ins):
 
 def value_operator(op, left, right):
     """ Get value of binary operator expression. """
-    if op == token.O_CARET:
+    if op == tk.O_CARET:
         return vcaret(left, right)
-    elif op == token.O_TIMES:
+    elif op == tk.O_TIMES:
         return vtimes(left, right)
-    elif op == token.O_DIV:
+    elif op == tk.O_DIV:
         return vdiv(left, right)
-    elif op == token.O_INTDIV:
+    elif op == tk.O_INTDIV:
         return fp.pack(fp.div(fp.unpack(vartypes.pass_single_keep(left)).ifloor(),
                 fp.unpack(vartypes.pass_single_keep(right)).ifloor()).apply_carry().ifloor())
-    elif op == token.MOD:
+    elif op == tk.MOD:
         numerator = vartypes.pass_int_unpack(right)
         if numerator == 0:
             # simulate division by zero
             return fp.pack(fp.div(fp.unpack(vartypes.pass_single_keep(left)).ifloor(),
                     fp.unpack(vartypes.pass_single_keep(right)).ifloor()).ifloor())
         return vartypes.pack_int(vartypes.pass_int_unpack(left) % numerator)
-    elif op == token.O_PLUS:
+    elif op == tk.O_PLUS:
         return vplus(left, right)
-    elif op == token.O_MINUS:
+    elif op == tk.O_MINUS:
         return vartypes.number_add(left, vartypes.number_neg(right))
-    elif op == token.O_GT:
+    elif op == tk.O_GT:
         return vartypes.bool_to_int_keep(vartypes.gt(left,right))
-    elif op == token.O_EQ:
+    elif op == tk.O_EQ:
         return vartypes.bool_to_int_keep(vartypes.equals(left, right))
-    elif op == token.O_LT:
+    elif op == tk.O_LT:
         return vartypes.bool_to_int_keep(not(vartypes.gt(left,right) or vartypes.equals(left, right)))
-    elif op == token.O_GT + token.O_EQ:
+    elif op == tk.O_GT + tk.O_EQ:
         return vartypes.bool_to_int_keep(vartypes.gt(left,right) or vartypes.equals(left, right))
-    elif op == token.O_LT + token.O_EQ:
+    elif op == tk.O_LT + tk.O_EQ:
         return vartypes.bool_to_int_keep(not vartypes.gt(left,right))
-    elif op == token.O_LT + token.O_GT:
+    elif op == tk.O_LT + tk.O_GT:
         return vartypes.bool_to_int_keep(not vartypes.equals(left, right))
-    elif op == token.AND:
+    elif op == tk.AND:
         return vartypes.twoscomp_to_int( vartypes.pass_twoscomp(left) & vartypes.pass_twoscomp(right) )
-    elif op == token.OR:
+    elif op == tk.OR:
         return vartypes.twoscomp_to_int( vartypes.pass_twoscomp(left) | vartypes.pass_twoscomp(right) )
-    elif op == token.XOR:
+    elif op == tk.XOR:
         return vartypes.twoscomp_to_int( vartypes.pass_twoscomp(left) ^ vartypes.pass_twoscomp(right) )
-    elif op == token.EQV:
+    elif op == tk.EQV:
         return vartypes.twoscomp_to_int( ~(vartypes.pass_twoscomp(left) ^ vartypes.pass_twoscomp(right)) )
-    elif op == token.IMP:
+    elif op == tk.IMP:
         return vartypes.twoscomp_to_int( (~vartypes.pass_twoscomp(left)) | vartypes.pass_twoscomp(right) )
     else:
         raise error.RunError(2)

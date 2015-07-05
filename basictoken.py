@@ -1,9 +1,9 @@
 """
-PC-BASIC 3.23 - token.py
+PC-BASIC - basictoken.py
 BASIC keyword tokens
 
-(c) 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+(c) 2014, 2015 Rob Hagemans
+This file is released under the GNU GPL version 3.
 """
 
 # indirect line number references
@@ -218,13 +218,13 @@ TERM = '\xfe\xa6'
 DEBUG = '\xff\xff'
 
 # keyword dictionary
-to_keyword = {  
-    END: 'END', FOR: 'FOR', NEXT: 'NEXT', DATA: 'DATA', INPUT: 'INPUT', 
-    DIM: 'DIM', READ: 'READ', LET: 'LET', GOTO: 'GOTO', RUN: 'RUN', IF: 'IF', 
-    RESTORE: 'RESTORE', GOSUB: 'GOSUB', RETURN: 'RETURN', REM: 'REM', 
+to_keyword = {
+    END: 'END', FOR: 'FOR', NEXT: 'NEXT', DATA: 'DATA', INPUT: 'INPUT',
+    DIM: 'DIM', READ: 'READ', LET: 'LET', GOTO: 'GOTO', RUN: 'RUN', IF: 'IF',
+    RESTORE: 'RESTORE', GOSUB: 'GOSUB', RETURN: 'RETURN', REM: 'REM',
     STOP: 'STOP', PRINT: 'PRINT', CLEAR: 'CLEAR', LIST: 'LIST', NEW: 'NEW',
     ON: 'ON', WAIT: 'WAIT', DEF: 'DEF', POKE: 'POKE', CONT: 'CONT', OUT: 'OUT',
-    LPRINT: 'LPRINT', LLIST: 'LLIST', WIDTH: 'WIDTH', ELSE: 'ELSE', 
+    LPRINT: 'LPRINT', LLIST: 'LLIST', WIDTH: 'WIDTH', ELSE: 'ELSE',
     TRON: 'TRON', TROFF: 'TROFF', SWAP: 'SWAP', ERASE: 'ERASE', EDIT: 'EDIT',
     ERROR: 'ERROR', RESUME: 'RESUME', DELETE: 'DELETE', AUTO: 'AUTO',
     RENUM: 'RENUM', DEFSTR: 'DEFSTR', DEFINT: 'DEFINT', DEFSNG: 'DEFSNG',
@@ -233,11 +233,11 @@ to_keyword = {
     CLOSE: 'CLOSE', LOAD: 'LOAD', MERGE: 'MERGE', SAVE: 'SAVE', COLOR: 'COLOR',
     CLS: 'CLS', MOTOR: 'MOTOR', BSAVE: 'BSAVE', BLOAD: 'BLOAD', SOUND: 'SOUND',
     BEEP: 'BEEP', PSET: 'PSET', PRESET: 'PRESET', SCREEN: 'SCREEN', KEY: 'KEY',
-    LOCATE: 'LOCATE', TO: 'TO', THEN: 'THEN', TAB: 'TAB(', STEP: 'STEP', 
+    LOCATE: 'LOCATE', TO: 'TO', THEN: 'THEN', TAB: 'TAB(', STEP: 'STEP',
     USR: 'USR', FN: 'FN', SPC: 'SPC(', NOT: 'NOT', ERL: 'ERL', ERR: 'ERR',
     STRING: 'STRING$', USING: 'USING', INSTR: 'INSTR', O_REM: "'",
     VARPTR: 'VARPTR', CSRLIN: 'CSRLIN', POINT: 'POINT', OFF: 'OFF',
-    INKEY: 'INKEY$', O_GT: '>', O_EQ: '=', O_LT: '<', 
+    INKEY: 'INKEY$', O_GT: '>', O_EQ: '=', O_LT: '<',
     O_PLUS: '+', O_MINUS: '-', O_TIMES: '*', O_DIV: '/',
     O_CARET: '^', AND: 'AND', OR: 'OR', XOR: 'XOR', EQV: 'EQV', IMP: 'IMP',
     MOD: 'MOD', O_INTDIV: '\\', CVI: 'CVI', CVS: 'CVS', CVD: 'CVD', MKI: 'MKI$',
@@ -246,17 +246,17 @@ to_keyword = {
     PUT: 'PUT', GET: 'GET', RESET: 'RESET', COMMON: 'COMMON', CHAIN: 'CHAIN',
     DATE: 'DATE$', TIME: 'TIME$', PAINT: 'PAINT', COM: 'COM', CIRCLE: 'CIRCLE',
     DRAW: 'DRAW', PLAY: 'PLAY', TIMER: 'TIMER', ERDEV: 'ERDEV', IOCTL: 'IOCTL',
-    CHDIR: 'CHDIR', MKDIR: 'MKDIR', RMDIR: 'RMDIR', SHELL: 'SHELL', 
-    ENVIRON: 'ENVIRON', VIEW: 'VIEW', WINDOW: 'WINDOW', PMAP: 'PMAP', 
-    PALETTE: 'PALETTE', LCOPY: 'LCOPY', CALLS: 'CALLS', PCOPY: 'PCOPY', 
+    CHDIR: 'CHDIR', MKDIR: 'MKDIR', RMDIR: 'RMDIR', SHELL: 'SHELL',
+    ENVIRON: 'ENVIRON', VIEW: 'VIEW', WINDOW: 'WINDOW', PMAP: 'PMAP',
+    PALETTE: 'PALETTE', LCOPY: 'LCOPY', CALLS: 'CALLS', PCOPY: 'PCOPY',
     LOCK: 'LOCK', UNLOCK: 'UNLOCK', LEFT: 'LEFT$', RIGHT: 'RIGHT$', MID: 'MID$',
     SGN: 'SGN', INT: 'INT', ABS: 'ABS', SQR: 'SQR', RND: 'RND', SIN: 'SIN',
     LOG: 'LOG', EXP: 'EXP', COS: 'COS', TAN: 'TAN', ATN: 'ATN', FRE: 'FRE',
     INP: 'INP', POS: 'POS', LEN: 'LEN', STR: 'STR$', VAL: 'VAL', ASC: 'ASC',
     CHR: 'CHR$', PEEK: 'PEEK', SPACE: 'SPACE$', OCT: 'OCT$', HEX: 'HEX$',
-    LPOS: 'LPOS',  CINT: 'CINT', CSNG: 'CSNG', CDBL: 'CDBL', FIX: 'FIX', 
-    PEN: 'PEN', STICK: 'STICK', STRIG: 'STRIG', EOF: 'EOF', LOC: 'LOC', 
-    LOF: 'LOF',} 
+    LPOS: 'LPOS',  CINT: 'CINT', CSNG: 'CSNG', CDBL: 'CDBL', FIX: 'FIX',
+    PEN: 'PEN', STICK: 'STICK', STRIG: 'STRIG', EOF: 'EOF', LOC: 'LOC',
+    LOF: 'LOF',}
 
 # other keywords on http://www.chebucto.ns.ca/~af380/GW-BASIC-tokens.html :
 # Sperry PC only:
@@ -265,11 +265,9 @@ to_keyword = {
 #   0x9A,  0x9B,  0x9F,  0xB4,  0xB5,  0xB6,  0xCB,  0xDF,  0xE0,  0xE1,  0xE2
 #   0xE3,  0xE4,  0xE5,  0xF5,  0xF6,  0xF7,  0xF8,  0xF9,  0xFA,  0xFB,  0xFC
 digit = (C_0, C_1, C_2, C_3, C_4, C_5, C_6, C_7, C_8, C_9)
-number = (T_OCT, T_HEX, T_BYTE, T_INT, T_SINGLE, T_DOUBLE, 
+number = (T_OCT, T_HEX, T_BYTE, T_INT, T_SINGLE, T_DOUBLE,
           C_0, C_1, C_2, C_3, C_4, C_5, C_6, C_7, C_8, C_9, C_10)
 linenum = (T_UINT, T_UINT_PROC)
-operator = (O_GT, O_EQ, O_LT, O_PLUS, O_MINUS, 
+operator = (O_GT, O_EQ, O_LT, O_PLUS, O_MINUS,
             O_TIMES, O_DIV, O_CARET, O_INTDIV)
 with_bracket = (SPC, TAB)
-
-

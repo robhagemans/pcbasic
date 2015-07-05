@@ -1,8 +1,8 @@
 """
-PC-BASIC 3.23 - statements.py
+PC-BASIC - statements.py
 Statement parser
 
-(c) 2013, 2014 Rob Hagemans
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -36,7 +36,7 @@ import rnd
 import shell
 import state
 import timedate
-import token
+import basictoken as tk
 import util
 import var
 import vartypes
@@ -303,9 +303,9 @@ def exec_term(ins):
 def exec_def(ins):
     """ DEF: select DEF FN, DEF USR, DEF SEG. """
     c = util.skip_white(ins)
-    if util.read_if(ins, c, (token.FN,)):
+    if util.read_if(ins, c, (tk.FN,)):
         exec_def_fn(ins)
-    elif util.read_if(ins, c, (token.USR,)):
+    elif util.read_if(ins, c, (tk.USR,)):
         exec_def_usr(ins)
     elif util.skip_white_read_if(ins, ('SEG',)):
         exec_def_seg(ins)
@@ -314,14 +314,14 @@ def exec_def(ins):
 
 def exec_view(ins):
     """ VIEW: select VIEW PRINT, VIEW (graphics). """
-    if util.skip_white_read_if(ins, (token.PRINT,)):
+    if util.skip_white_read_if(ins, (tk.PRINT,)):
         exec_view_print(ins)
     else:
         exec_view_graph(ins)
 
 def exec_line(ins):
     """ LINE: select LINE INPUT, LINE (graphics). """
-    if util.skip_white_read_if(ins, (token.INPUT,)):
+    if util.skip_white_read_if(ins, (tk.INPUT,)):
         exec_line_input(ins)
     else:
         exec_line_graph(ins)
@@ -344,21 +344,21 @@ def exec_on(ins):
     """ ON: select ON ERROR, ON KEY, ON TIMER, ON PLAY, ON COM, ON PEN, ON STRIG
         or ON (jump statement). """
     c = util.skip_white(ins)
-    if util.read_if(ins, c, (token.ERROR,)):
+    if util.read_if(ins, c, (tk.ERROR,)):
         exec_on_error(ins)
-    elif util.read_if(ins, c, (token.KEY,)):
+    elif util.read_if(ins, c, (tk.KEY,)):
         exec_on_key(ins)
     elif c in ('\xFE', '\xFF'):
         c = util.peek(ins, 2)
-        if util.read_if(ins, c, (token.TIMER,)):
+        if util.read_if(ins, c, (tk.TIMER,)):
             exec_on_timer(ins)
-        elif util.read_if(ins, c, (token.PLAY,)):
+        elif util.read_if(ins, c, (tk.PLAY,)):
             exec_on_play(ins)
-        elif util.read_if(ins, c, (token.COM,)):
+        elif util.read_if(ins, c, (tk.COM,)):
             exec_on_com(ins)
-        elif util.read_if(ins, c, (token.PEN,)):
+        elif util.read_if(ins, c, (tk.PEN,)):
             exec_on_pen(ins)
-        elif util.read_if(ins, c, (token.STRIG,)):
+        elif util.read_if(ins, c, (tk.STRIG,)):
             exec_on_strig(ins)
         else:
             exec_on_jump(ins)
@@ -388,10 +388,10 @@ def exec_strig(ins):
             ins.read(1)
         else:
             raise error.RunError(2)
-    elif d == token.ON:
+    elif d == tk.ON:
         ins.read(1)
         state.console_state.stick.switch(True)
-    elif d == token.OFF:
+    elif d == tk.OFF:
         ins.read(1)
         state.console_state.stick.switch(False)
     else:
@@ -434,7 +434,7 @@ def parse_on_event(ins, bracket=True):
     num = None
     if bracket:
         num = expressions.parse_bracket(ins)
-    util.require_read(ins, (token.GOSUB,))
+    util.require_read(ins, (tk.GOSUB,))
     jumpnum = util.parse_jumpnum(ins)
     if jumpnum == 0:
         jumpnum = None
@@ -492,8 +492,8 @@ def exec_on_com(ins):
 def exec_beep(ins):
     """ BEEP: produce an alert sound or switch internal speaker on/off. """
     # Tandy/PCjr BEEP ON, OFF
-    if pcjr_syntax and util.skip_white(ins) in (token.ON, token.OFF):
-        state.console_state.beep_on = (ins.read(1) == token.ON)
+    if pcjr_syntax and util.skip_white(ins) in (tk.ON, tk.OFF):
+        state.console_state.beep_on = (ins.read(1) == tk.ON)
         util.require(ins, util.end_statement)
         return
     state.console_state.sound.beep()
@@ -505,8 +505,8 @@ def exec_beep(ins):
 def exec_sound(ins):
     """ SOUND: produce an arbitrary sound or switch external speaker on/off. """
     # Tandy/PCjr SOUND ON, OFF
-    if pcjr_syntax and util.skip_white(ins) in (token.ON, token.OFF):
-        state.console_state.sound.sound_on = (ins.read(1) == token.ON)
+    if pcjr_syntax and util.skip_white(ins) in (tk.ON, tk.OFF):
+        state.console_state.sound.sound_on = (ins.read(1) == tk.ON)
         util.require(ins, util.end_statement)
         return
     freq = vartypes.pass_int_unpack(expressions.parse_expression(ins))
@@ -611,7 +611,7 @@ def exec_poke(ins):
 def exec_def_seg(ins):
     """ DEF SEG: set the current memory segment. """
     # &hb800: text screen buffer; &h13d: data segment
-    if util.skip_white_read_if(ins, (token.O_EQ,)): #=
+    if util.skip_white_read_if(ins, (tk.O_EQ,)): #=
         state.basic_state.segment = vartypes.pass_int_unpack(expressions.parse_expression(ins), maxint=0xffff)
     else:
         state.basic_state.segment = memory.data_segment
@@ -621,8 +621,8 @@ def exec_def_seg(ins):
 
 def exec_def_usr(ins):
     """ DEF USR: Define a machine language function. Not implemented. """
-    util.require_read(ins, token.digit)
-    util.require_read(ins, (token.O_EQ,))
+    util.require_read(ins, tk.digit)
+    util.require_read(ins, (tk.O_EQ,))
     vartypes.pass_int_keep(expressions.parse_expression(ins), maxint=0xffff)
     util.require(ins, util.end_statement)
     logging.warning("DEF USR statement not implemented")
@@ -805,7 +805,7 @@ def exec_environ(ins):
 
 def exec_time(ins):
     """ TIME$: set time. """
-    util.require_read(ins, (token.O_EQ,)) #time$=
+    util.require_read(ins, (tk.O_EQ,)) #time$=
     # allowed formats:  hh   hh:mm   hh:mm:ss  where hh 0-23, mm 0-59, ss 0-59
     timestr = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
@@ -813,7 +813,7 @@ def exec_time(ins):
 
 def exec_date(ins):
     """ DATE$: set date. """
-    util.require_read(ins, (token.O_EQ,)) # date$=
+    util.require_read(ins, (tk.O_EQ,)) # date$=
     # allowed formats:
     # mm/dd/yy  or mm-dd-yy  mm 0--12 dd 0--31 yy 80--00--77
     # mm/dd/yyyy  or mm-dd-yyyy  yyyy 1980--2099
@@ -827,7 +827,7 @@ def exec_date(ins):
 def parse_line_range(ins):
     """ Helper function: parse line number ranges. """
     from_line = parse_jumpnum_or_dot(ins, allow_empty=True)
-    if util.skip_white_read_if(ins, (token.O_MINUS,)):
+    if util.skip_white_read_if(ins, (tk.O_MINUS,)):
         to_line = parse_jumpnum_or_dot(ins, allow_empty=True)
     else:
         to_line = from_line
@@ -836,7 +836,7 @@ def parse_line_range(ins):
 def parse_jumpnum_or_dot(ins, allow_empty=False, err=2):
     """ Helper function: parse jump target. """
     c = util.skip_white_read(ins)
-    if c == token.T_UINT:
+    if c == tk.T_UINT:
         return vartypes.uint_to_value(bytearray(ins.read(2)))
     elif c == '.':
         return state.basic_state.last_stored
@@ -925,7 +925,7 @@ def exec_load(ins):
 
 def exec_chain(ins):
     """ CHAIN: load program and chain execution. """
-    if util.skip_white_read_if(ins, (token.MERGE,)):
+    if util.skip_white_read_if(ins, (tk.MERGE,)):
         action = program.merge
     else:
         action = program.load
@@ -959,9 +959,9 @@ def exec_chain(ins):
 def parse_delete_clause(ins):
     """ Helper function: parse the DELETE clause of a CHAIN statement. """
     delete_lines = None
-    if util.skip_white_read_if(ins, (token.DELETE,)):
+    if util.skip_white_read_if(ins, (tk.DELETE,)):
         from_line = util.parse_jumpnum(ins, allow_empty=True)
-        if util.skip_white_read_if(ins, (token.O_MINUS,)):
+        if util.skip_white_read_if(ins, (tk.O_MINUS,)):
             to_line = util.parse_jumpnum(ins, allow_empty=True)
         else:
             to_line = from_line
@@ -1031,15 +1031,15 @@ def exec_reset(ins):
 def parse_read_write(ins):
     """ Helper function: parse access mode. """
     d = util.skip_white(ins)
-    if d == token.WRITE:
+    if d == tk.WRITE:
         ins.read(1)
         access = 'W'
-    elif d == token.READ:
+    elif d == tk.READ:
         ins.read(1)
-        access = 'RW' if util.skip_white_read_if(ins, (token.WRITE,)) else 'R'
+        access = 'RW' if util.skip_white_read_if(ins, (tk.WRITE,)) else 'R'
     return access
 
-long_modes = {token.INPUT:'I', 'OUTPUT':'O', 'RANDOM':'R', 'APPEND':'A'}
+long_modes = {tk.INPUT:'I', 'OUTPUT':'O', 'RANDOM':'R', 'APPEND':'A'}
 default_access_modes = {'I':'R', 'O':'W', 'A':'RW', 'R':'RW'}
 
 def exec_open(ins):
@@ -1063,7 +1063,7 @@ def exec_open(ins):
         # second syntax
         name = first_expr
         # FOR clause
-        if util.skip_white_read_if(ins, (token.FOR,)):
+        if util.skip_white_read_if(ins, (tk.FOR,)):
             c = util.skip_white_read(ins)
             # read word
             word = ''
@@ -1084,7 +1084,7 @@ def exec_open(ins):
             util.skip_white(ins)
             access = parse_read_write(ins)
         # LOCK clause
-        if util.skip_white_read_if(ins, (token.LOCK,)):
+        if util.skip_white_read_if(ins, (tk.LOCK,)):
             util.skip_white(ins)
             lock = parse_read_write(ins)
         elif util.skip_white_read_if(ins, ('SHARED',)):
@@ -1094,8 +1094,8 @@ def exec_open(ins):
             raise error.RunError(2)
         number = expressions.parse_file_number_opthash(ins)
         # LEN clause
-        if util.skip_white_read_if(ins, (token.LEN,)):
-            util.require_read(ins, token.O_EQ)
+        if util.skip_white_read_if(ins, (tk.LEN,)):
+            util.require_read(ins, tk.O_EQ)
             reclen = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     # mode and access must match if not a RANDOM file
     # If FOR APPEND ACCESS WRITE is specified, raises PATH/FILE ACCESS ERROR
@@ -1173,7 +1173,7 @@ def exec_lock_or_unlock(ins, action):
     if util.skip_white_read_if(ins, (',',)):
         lock_start_rec = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
     lock_stop_rec = lock_start_rec
-    if util.skip_white_read_if(ins, (token.TO,)):
+    if util.skip_white_read_if(ins, (tk.TO,)):
         lock_stop_rec = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
     if lock_start_rec < 1 or lock_start_rec > 2**25-2 or lock_stop_rec < 1 or lock_stop_rec > 2**25-2:
         raise error.RunError(63)
@@ -1208,7 +1208,7 @@ def parse_coord_bare(ins):
 
 def parse_coord_step(ins):
     """ Helper function: parse coordinate pair. """
-    step = util.skip_white_read_if(ins, (token.STEP,))
+    step = util.skip_white_read_if(ins, (tk.STEP,))
     x, y = parse_coord_bare(ins)
     return x, y, step
 
@@ -1231,11 +1231,11 @@ def exec_line_graph(ins):
     """ LINE: draw a line or box between two points. """
     if state.console_state.screen.mode.is_text_mode:
         raise error.RunError(5)
-    if util.skip_white(ins) in ('(', token.STEP):
+    if util.skip_white(ins) in ('(', tk.STEP):
         coord0 = parse_coord_step(ins)
     else:
         coord0 = None
-    util.require_read(ins, (token.O_MINUS,))
+    util.require_read(ins, (tk.O_MINUS,))
     coord1 = parse_coord_step(ins)
     c, mode, pattern = -1, '', 0xffff
     if util.skip_white_read_if(ins, (',',)):
@@ -1258,11 +1258,11 @@ def exec_view_graph(ins):
     """ VIEW: set graphics viewport and optionally draw a box. """
     if state.console_state.screen.mode.is_text_mode:
         raise error.RunError(5)
-    absolute = util.skip_white_read_if(ins, (token.SCREEN,))
+    absolute = util.skip_white_read_if(ins, (tk.SCREEN,))
     if util.skip_white(ins) == '(':
         x0, y0 = parse_coord_bare(ins)
         x0, y0 = x0.round_to_int(), y0.round_to_int()
-        util.require_read(ins, (token.O_MINUS,))
+        util.require_read(ins, (tk.O_MINUS,))
         x1, y1 = parse_coord_bare(ins)
         x1, y1 = x1.round_to_int(), y1.round_to_int()
         util.range_check(0, state.console_state.screen.mode.pixel_width-1, x0, x1)
@@ -1279,10 +1279,10 @@ def exec_window(ins):
     """ WINDOW: define logical coordinate system. """
     if state.console_state.screen.mode.is_text_mode:
         raise error.RunError(5)
-    cartesian = not util.skip_white_read_if(ins, (token.SCREEN,))
+    cartesian = not util.skip_white_read_if(ins, (tk.SCREEN,))
     if util.skip_white(ins) == '(':
         x0, y0 = parse_coord_bare(ins)
-        util.require_read(ins, (token.O_MINUS,))
+        util.require_read(ins, (tk.O_MINUS,))
         x1, y1 = parse_coord_bare(ins)
         if x0.equals(x1) or y0.equals(y1):
             raise error.RunError(5)
@@ -1362,7 +1362,7 @@ def exec_get_graph(ins):
     # don't accept STEP for first coord
     util.require(ins, ('('))
     coord0 = parse_coord_step(ins)
-    util.require_read(ins, (token.O_MINUS,))
+    util.require_read(ins, (tk.O_MINUS,))
     coord1 = parse_coord_step(ins)
     util.require_read(ins, (',',))
     array = util.get_var_name(ins)
@@ -1382,10 +1382,10 @@ def exec_put_graph(ins):
     coord = parse_coord_step(ins)
     util.require_read(ins, (',',))
     array = util.get_var_name(ins)
-    action = token.XOR
+    action = tk.XOR
     if util.skip_white_read_if(ins, (',',)):
-        util.require(ins, (token.PSET, token.PRESET,
-                           token.AND, token.OR, token.XOR))
+        util.require(ins, (tk.PSET, tk.PRESET,
+                           tk.AND, tk.OR, tk.XOR))
         action = ins.read(1)
     util.require(ins, util.end_statement)
     if array not in state.basic_state.arrays:
@@ -1445,11 +1445,11 @@ def exec_for(ins):
     vartype = varname[-1]
     if vartype == '$':
         raise error.RunError(13)
-    util.require_read(ins, (token.O_EQ,)) # =
+    util.require_read(ins, (tk.O_EQ,)) # =
     start = expressions.parse_expression(ins)
-    util.require_read(ins, (token.TO,))  # TO
+    util.require_read(ins, (tk.TO,))  # TO
     stop = vartypes.pass_type_keep(vartype, expressions.parse_expression(ins))
-    if util.skip_white_read_if(ins, (token.STEP,)): # STEP
+    if util.skip_white_read_if(ins, (tk.STEP,)): # STEP
         step = vartypes.pass_type_keep(vartype, expressions.parse_expression(ins))
     else:
         # convert 1 to vartype
@@ -1466,7 +1466,7 @@ def skip_to_next(ins, for_char, next_char, allow_comma=False):
     """ Helper function for FOR: skip over bytecode until NEXT. """
     stack = 0
     while True:
-        c = util.skip_to_read(ins, util.end_statement+(token.THEN, token.ELSE))
+        c = util.skip_to_read(ins, util.end_statement+(tk.THEN, tk.ELSE))
         # skip line number, if there
         if c == '\0' and util.parse_line_number(ins) == -1:
             break
@@ -1497,9 +1497,9 @@ def skip_to_next(ins, for_char, next_char, allow_comma=False):
 def find_next(ins, varname):
     """ Helper function for FOR: find the right NEXT. """
     current = ins.tell()
-    skip_to_next(ins, token.FOR, token.NEXT, allow_comma=True)  # FOR, NEXT
+    skip_to_next(ins, tk.FOR, tk.NEXT, allow_comma=True)  # FOR, NEXT
     # FOR without NEXT
-    util.require(ins, (token.NEXT, ','), err=26)
+    util.require(ins, (tk.NEXT, ','), err=26)
     comma = (ins.read(1)==',')
     # get position and line number just after the NEXT
     nextpos = ins.tell()
@@ -1536,7 +1536,7 @@ def exec_run(ins):
         util.require_read(ins, 'R')
     c = util.skip_white(ins)
     jumpnum = None
-    if c == token.T_UINT:
+    if c == tk.T_UINT:
         # parse line number, ignore rest of line and jump
         jumpnum = util.parse_jumpnum(ins)
     elif c not in util.end_statement:
@@ -1554,27 +1554,27 @@ def exec_if(ins):
     # avoid overflow: don't use bools.
     val = vartypes.pass_single_keep(expressions.parse_expression(ins))
     util.skip_white_read_if(ins, (',',)) # optional comma
-    util.require_read(ins, (token.THEN, token.GOTO))
+    util.require_read(ins, (tk.THEN, tk.GOTO))
     if not fp.unpack(val).is_zero():
         # TRUE: continue after THEN. line number or statement is implied GOTO
-        if util.skip_white(ins) in (token.T_UINT,):
+        if util.skip_white(ins) in (tk.T_UINT,):
             flow.jump(util.parse_jumpnum(ins))
         # continue parsing as normal, :ELSE will be ignored anyway
     else:
         # FALSE: find ELSE block or end of line; ELSEs are nesting on the line
         nesting_level = 0
         while True:
-            d = util.skip_to_read(ins, util.end_statement + (token.IF,))
-            if d == token.IF:
+            d = util.skip_to_read(ins, util.end_statement + (tk.IF,))
+            if d == tk.IF:
                 # nexting step on IF. (it's less convenient to count THENs because they could be THEN, GOTO or THEN GOTO.)
                 nesting_level += 1
             elif d == ':':
-                if util.skip_white_read_if(ins, token.ELSE): # :ELSE is ELSE; may be whitespace in between. no : means it's ignored.
+                if util.skip_white_read_if(ins, tk.ELSE): # :ELSE is ELSE; may be whitespace in between. no : means it's ignored.
                     if nesting_level > 0:
                         nesting_level -= 1
                     else:
                         # line number: jump
-                        if util.skip_white(ins) in (token.T_UINT,):
+                        if util.skip_white(ins) in (tk.T_UINT,):
                             flow.jump(util.parse_jumpnum(ins))
                         # continue execution from here
                         break
@@ -1595,8 +1595,8 @@ def exec_while(ins, first=True):
     # use double to avoid overflows
     if first:
         # find matching WEND
-        skip_to_next(ins, token.WHILE, token.WEND)
-        if ins.read(1) == token.WEND:
+        skip_to_next(ins, tk.WHILE, tk.WEND)
+        if ins.read(1) == tk.WEND:
             util.skip_to(ins, util.end_statement)
             wendpos = ins.tell()
             state.basic_state.while_wend_stack.append((whilepos, wendpos))
@@ -1641,7 +1641,7 @@ def exec_on_jump(ins):
         if d in util.end_statement:
             ins.seek(-len(d), 1)
             break
-        elif d in (token.T_UINT,):
+        elif d in (tk.T_UINT,):
             jumps.append( ins.tell()-1 )
             ins.read(2)
         elif d == ',':
@@ -1652,15 +1652,15 @@ def exec_on_jump(ins):
         raise error.RunError(2)
     elif onvar > 0 and onvar <= len(jumps):
         ins.seek(jumps[onvar-1])
-        if command == token.GOTO:
+        if command == tk.GOTO:
             flow.jump(util.parse_jumpnum(ins))
-        elif command == token.GOSUB:
+        elif command == tk.GOSUB:
             exec_gosub(ins)
     util.skip_to(ins, util.end_statement)
 
 def exec_on_error(ins):
     """ ON ERROR: define error trapping routine. """
-    util.require_read(ins, (token.GOTO,))  # GOTO
+    util.require_read(ins, (tk.GOTO,))  # GOTO
     linenum = util.parse_jumpnum(ins)
     if linenum != 0 and linenum not in state.basic_state.line_numbers:
         # undefined line number
@@ -1681,7 +1681,7 @@ def exec_resume(ins):
         # resume without error
         raise error.RunError(20)
     c = util.skip_white(ins)
-    if c == token.NEXT:
+    if c == tk.NEXT:
         ins.read(1)
         jumpnum = -1
     elif c not in util.end_statement:
@@ -1841,7 +1841,7 @@ def exec_deftype(ins, typechar):
         else:
             start = ord(d) - ord('A')
             stop = start
-        if util.skip_white_read_if(ins, (token.O_MINUS,)):
+        if util.skip_white_read_if(ins, (tk.O_MINUS,)):
             d = util.skip_white_read(ins).upper()
             if d < 'A' or d > 'Z':
                 raise error.RunError(2)
@@ -1872,7 +1872,7 @@ def exec_let(ins):
         # pre-dim even if this is not a legal statement!
         # e.g. 'a[1,1]' gives a syntax error, but even so 'a[1]' is out fo range afterwards
         var.check_dim_array(name, indices)
-    util.require_read(ins, (token.O_EQ,))
+    util.require_read(ins, (tk.O_EQ,))
     var.set_var_or_array(name, indices, expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
 
@@ -1894,7 +1894,7 @@ def exec_mid(ins):
     util.range_check(0, 255, num)
     if num > 0:
         util.range_check(1, len(s), start)
-    util.require_read(ins, (token.O_EQ,))
+    util.require_read(ins, (tk.O_EQ,))
     val = vartypes.pass_string_keep(expressions.parse_expression(ins))
     util.require(ins, util.end_statement)
     var.string_assign_into(name, indices, start - 1, num, val)
@@ -1902,7 +1902,7 @@ def exec_mid(ins):
 def exec_lset(ins, justify_right=False):
     """ LSET: assign string value in-place; left justified. """
     name, index = expressions.get_var_or_array_name(ins)
-    util.require_read(ins, (token.O_EQ,))
+    util.require_read(ins, (tk.O_EQ,))
     val = expressions.parse_expression(ins)
     var.assign_field_var_or_array(name, index, val, justify_right)
 
@@ -2051,7 +2051,7 @@ def exec_def_fn(ins):
         util.require_read(ins, (')',))
     # read code
     fncode = ''
-    util.require_read(ins, (token.O_EQ,)) #=
+    util.require_read(ins, (tk.O_EQ,)) #=
     startloc = ins.tell()
     util.skip_to(ins, util.end_statement)
     endloc = ins.tell()
@@ -2183,7 +2183,7 @@ def exec_palette(ins):
     if d in util.end_statement:
         # reset palette
         state.console_state.screen.palette.set_all(state.console_state.screen.mode.palette)
-    elif d == token.USING:
+    elif d == tk.USING:
         ins.read(1)
         exec_palette_using(ins)
     else:
@@ -2225,16 +2225,16 @@ def exec_palette_using(ins):
 def exec_key(ins):
     """ KEY: switch on/off or list function-key row on screen. """
     d = util.skip_white_read(ins)
-    if d == token.ON:
+    if d == tk.ON:
         # tandy can have VIEW PRINT 1 to 25, should raise ILLEGAN FUNCTION CALL then
         if state.console_state.scroll_height == 25:
             raise error.RunError(5)
         if not state.console_state.keys_visible:
             console.show_keys(True)
-    elif d == token.OFF:
+    elif d == tk.OFF:
         if state.console_state.keys_visible:
             console.show_keys(False)
-    elif d == token.LIST:
+    elif d == tk.LIST:
         console.list_keys()
     elif d == '(':
         # key (n)
@@ -2325,9 +2325,9 @@ def exec_print(ins, output=None):
     newline = True
     while True:
         d = util.skip_white(ins)
-        if d in util.end_statement + (token.USING,):
+        if d in util.end_statement + (tk.USING,):
             break
-        elif d in (',', ';', token.SPC, token.TAB):
+        elif d in (',', ';', tk.SPC, tk.TAB):
             ins.read(1)
             newline = False
             if d == ',':
@@ -2336,11 +2336,11 @@ def exec_print(ins, output=None):
                     output.write_line()
                 else:
                     output.write(' '*(1+14*next_zone-output.col))
-            elif d == token.SPC: #SPC(
+            elif d == tk.SPC: #SPC(
                 numspaces = max(0, vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=2), 0xffff)) % output.width
                 util.require_read(ins, (')',))
                 output.write(' ' * numspaces)
-            elif d == token.TAB: #TAB(
+            elif d == tk.TAB: #TAB(
                 pos = max(0, vartypes.pass_int_unpack(expressions.parse_expression(ins, empty_err=2), 0xffff) - 1) % output.width + 1
                 util.require_read(ins, (')',))
                 if pos < output.col:
@@ -2357,7 +2357,7 @@ def exec_print(ins, output=None):
                 word += ' '
             # output file (devices) takes care of width management; we must send a whole string at a time for this to be correct.
             output.write(str(word))
-    if util.skip_white_read_if(ins, (token.USING,)):
+    if util.skip_white_read_if(ins, (tk.USING,)):
         return exec_print_using(ins, output)
     if newline:
         if output == backend.scrn_file and state.console_state.overflow:
@@ -2421,7 +2421,7 @@ def exec_view_print(ins):
         console.unset_view()
     else:
         start = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-        util.require_read(ins, (token.TO,))
+        util.require_read(ins, (tk.TO,))
         stop = vartypes.pass_int_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_statement)
         max_line = 25 if (pcjr_syntax and not state.console_state.keys_visible) else 24
@@ -2434,12 +2434,12 @@ def exec_width(ins):
     if d == '#':
         dev = expressions.parse_file_number(ins)
         w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
-    elif d == token.LPRINT:
+    elif d == tk.LPRINT:
         ins.read(1)
         dev = backend.lpt1_file
         w = vartypes.pass_int_unpack(expressions.parse_expression(ins))
     else:
-        if d in token.number:
+        if d in tk.number:
             expr = expressions.parse_expr_unit(ins)
         else:
             expr = expressions.parse_expression(ins)

@@ -1,8 +1,12 @@
 """
-PC-BASIC 3.23 - tokenise.py
+PC-BASIC - tokenise.py
 Convert between tokenised and ASCII formats of a GW-BASIC program file
 
+<<<<<<< Updated upstream
 (c) 2013, 2014 Rob Hagemans
+=======
+(c) 2013, 2014, 2015 Rob Hagemans
+>>>>>>> Stashed changes
 This file is released under the GNU GPL version 3.
 """
 
@@ -12,7 +16,7 @@ except ImportError:
     from StringIO import StringIO
 
 import config
-import token as tk
+import basictoken as tk
 import representation
 import util
 import vartypes

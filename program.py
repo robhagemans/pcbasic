@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3.
 import config
 import error
 import vartypes
-import token
+import basictoken as tk
 import tokenise
 import protect
 import util
@@ -134,7 +134,7 @@ def check_number_start(linebuf):
     # check if linebuf is an empty line after the line number
     empty = (c in util.end_line)
     # check if we start with a number
-    if c in token.number:
+    if c in tk.number:
         raise error.RunError(2)
     return empty, scanline
 

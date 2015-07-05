@@ -1,8 +1,8 @@
 """
-PC-BASIC 3.23 - video_pygame.py
+PC-BASIC - video_pygame.py
 Graphical interface based on PyGame
 
-(c) 2013, 2014 Rob Hagemans
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -24,8 +24,8 @@ import unicodepage
 import backend
 import typeface
 import scancode
-# for operation token for PUT
-import token
+# for operation tokens for PUT
+import basictoken as tk
 
 #D
 import state
@@ -1242,11 +1242,11 @@ def get_until(x0, x1, y, c):
 
 if numpy:
     operations = {
-        token.PSET: lambda x, y: x.__setitem__(slice(len(x)), y),
-        token.PRESET: lambda x, y: x.__setitem__(slice(len(x)), y.__xor__((1<<bitsperpixel) - 1)),
-        token.AND: lambda x, y: x.__iand__(y),
-        token.OR: lambda x, y: x.__ior__(y),
-        token.XOR: lambda x, y: x.__ixor__(y),
+        tk.PSET: lambda x, y: x.__setitem__(slice(len(x)), y),
+        tk.PRESET: lambda x, y: x.__setitem__(slice(len(x)), y.__xor__((1<<bitsperpixel) - 1)),
+        tk.AND: lambda x, y: x.__iand__(y),
+        tk.OR: lambda x, y: x.__ior__(y),
+        tk.XOR: lambda x, y: x.__ixor__(y),
         }
 
     def get_rect(x0, y0, x1, y1):
@@ -1268,11 +1268,11 @@ if numpy:
 
 else:
     operations = {
-        token.PSET: lambda x, y: y,
-        token.PRESET: lambda x, y: y ^ ((1<<bitsperpixel)-1),
-        token.AND: lambda x, y: x & y,
-        token.OR: lambda x, y: x | y,
-        token.XOR: lambda x, y: x ^ y,
+        tk.PSET: lambda x, y: y,
+        tk.PRESET: lambda x, y: y ^ ((1<<bitsperpixel)-1),
+        tk.AND: lambda x, y: x & y,
+        tk.OR: lambda x, y: x | y,
+        tk.XOR: lambda x, y: x ^ y,
         }
 
     def get_rect(x0, y0, x1, y1):
