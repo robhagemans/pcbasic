@@ -20,6 +20,8 @@ if plat.system == 'Windows':
     import win32api
     import ctypes
 
+from bytestream import ByteStream
+
 import config
 import error
 import state
@@ -670,7 +672,7 @@ class BinaryFile(iolayer.RawFile):
         release_lock(self.number)
 
 
-class RandomFile(iolayer.FieldTextFile):
+class RandomFile(iolayer.CRLFTextFileBase):
     """ Random-access file on disk device. """
 
     def __init__(self, output_stream, number, name,
@@ -683,7 +685,8 @@ class RandomFile(iolayer.FieldTextFile):
         # replace with empty field if already exists
         self.field = state.io_state.fields[number]
         self.field.reset(self.reclen)
-        iolayer.FieldTextFile.__init__(self, self.field)
+        iolayer.CRLFTextFileBase.__init__(self, ByteStream(self.field.buffer), 'D', 'R')
+        self.operating_mode = 'I'
         # note that for random files, output_stream must be a seekable stream.
         self.output_stream = output_stream
         self.lock_type = lock
@@ -695,9 +698,37 @@ class RandomFile(iolayer.FieldTextFile):
         self.recpos = 0
         self.output_stream.seek(0)
 
+    def _check_overflow(self):
+        """ Check for FIELD OVERFLOW. """
+        write = self.operating_mode == 'O'
+        # FIELD overflow happens if last byte in record has been read or written
+        if self.fhandle.tell() > self.reclen + write - 1:
+            # FIELD overflow
+            raise error.RunError(50)
+
+    def read_raw(self, num=-1):
+        """ Read num characters from the field. """
+        # switch to reading mode and fix readahead buffer
+        if self.operating_mode == 'O':
+            self.flush()
+            self.next_char = self.fhandle.read(1)
+            self.operating_mode = 'I'
+        s = iolayer.CRLFTextFileBase.read_raw(self, num)
+        self._check_overflow()
+        return s
+
+    def write(self, s):
+        """ Write the string s to the field, taking care of width settings. """
+        # switch to writing mode and fix readahead buffer
+        if self.operating_mode == 'I':
+            self.fhandle.seek(-1, 1)
+            self.operating_mode = 'O'
+        iolayer.CRLFTextFileBase.write(self, s)
+        self._check_overflow()
+
     def close(self):
         """ Close random-access file. """
-        iolayer.FieldTextFile.close(self)
+        iolayer.CRLFTextFileBase.close(self)
         self.output_stream.close()
         release_lock(self.number)
 

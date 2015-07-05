@@ -15,7 +15,6 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-from bytestream import ByteStream
 import config
 import error
 import console
@@ -567,44 +566,6 @@ class Field(object):
     def reset(self, reclen):
         """ Initialise FIELD buffer to reclen NULs. """
         self.buffer = bytearray(reclen)
-
-
-class FieldTextFile(CRLFTextFileBase):
-    """ Text file over FIELD buffer.. """
-
-    def __init__(self, field):
-        """ Set up FIELD text file. """
-        CRLFTextFileBase.__init__(self, ByteStream(field.buffer), 'D', 'R')
-        self.reclen = len(field.buffer)
-        self.operating_mode = 'I'
-
-    def _check_overflow(self):
-        """ Check for FIELD OVERFLOW. """
-        write = self.operating_mode == 'O'
-        # FIELD overflow happens if last byte in record has been read or written
-        if self.fhandle.tell() > self.reclen + write - 1:
-            # FIELD overflow
-            raise error.RunError(50)
-
-    def read_raw(self, num=-1):
-        """ Read num characters from the field. """
-        # switch to reading mode and fix readahead buffer
-        if self.operating_mode == 'O':
-            self.flush()
-            self.next_char = self.fhandle.read(1)
-            self.operating_mode = 'I'
-        s = CRLFTextFileBase.read_raw(self, num)
-        self._check_overflow()
-        return s
-
-    def write(self, s):
-        """ Write the string s to the field, taking care of width settings. """
-        # switch to writing mode and fix readahead buffer
-        if self.operating_mode == 'I':
-            self.fhandle.seek(-1, 1)
-            self.operating_mode = 'O'
-        CRLFTextFileBase.write(self, s)
-        self._check_overflow()
 
 
 #################################################################################
