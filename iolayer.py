@@ -275,8 +275,9 @@ class COMDevice(Device):
             # 'PORT' is default
             # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows. Or anything supported by serial_for_url (RFC 2217 etc)
             self.stream = serial_socket.serial_for_url(val)
-        if self.stream:
-            self.device_file = COMFile(self.stream)
+        # wait until socket is open to open file on it
+        # as opening a text file atomatically reads a byte
+        self.device_file = None
 
     def open(self, number, param, filetype, mode, access, lock,
                        reclen, seg, offset, length):
@@ -291,14 +292,18 @@ class COMDevice(Device):
         else:
             try:
                 self.stream.open()
-            except serial_socket.SerialException:
+            except serial_socket.SerialException as e:
                 # device timeout
+                logging.debug("Serial exception: %s", e)
                 raise error.RunError(24)
         try:
             self.set_parameters(param)
         except Exception:
             self.stream.close()
             raise
+        # only open file on socket once socket is open
+        if not self.device_file:
+            self.device_file = COMFile(self.stream)
         return Device.open(self, number, param, filetype, mode, access, lock,
                             reclen, seg, offset, length)
 
@@ -844,7 +849,7 @@ class LPTFile(TextFileBase):
 #################################################################################
 # Serial-port files
 
-class COMFile(RawFile):
+class COMFile(CRLFTextFileBase):
     """ COMn: device - serial port. """
 
     # FIXME: where does this go now?
@@ -854,7 +859,7 @@ class COMFile(RawFile):
     def __init__(self, fhandle):
         """ Initialise COMn: file. """
         # note that for random files, fhandle must be a seekable stream.
-        RawFile.__init__(self, fhandle, 'D', 'R')
+        CRLFTextFileBase.__init__(self, fhandle, 'D', 'R')
         # create a FIELD for GET and PUT. no text file operations on COMn: FIELD
         self.field = Field(0)
         self.field.reset(serial_in_size)
