@@ -1,11 +1,12 @@
 """
-PC-BASIC 3.23 - ports.py
-1) Workaround for some limitations of SocketSerial with timeout==0
-2) Stream API for parallel port
+PC-BASIC - ports.py
+Serial and parallel port handling
 
-Contains code from PySerial (c) 2001-2013 Chris Liechtl <cliechti(at)gmx.net>; All Rights Reserved.
-as well as modifications (c) 2013, 2014, 2015 Rob Hagemans.
-This file is released under the GNU GPL version 3 or, at your option, the Python 2.7 licence.
+(c) 2013, 2014, 2015 Rob Hagemans
+This file is released under the GNU GPL version 3.
+
+SocketSerialWrapper.read is modelled on Python 2.7 licensed code from PySerial
+PySerial (c) 2001-2013 Chris Liechtl <cliechti(at)gmx.net>; All Rights Reserved.
 """
 
 import logging
@@ -23,16 +24,9 @@ try:
 except Exception:
     parallel = None
 
-def parallel_port(port):
-    """ Return a ParallelStream object for a given port. """
-    if not parallel:
-        logging.warning('Parallel module not found. Parallel port communication not available.')
-        return None
-    try:
-        return ParallelStream(port)
-    except (OSError, IOError):
-        logging.warning('Could not open parallel port %s.', port)
-        return None
+
+###############################################################################
+# COM ports
 
 def serial_for_url(url):
     """ Return a Serial object for a given url. """
@@ -47,7 +41,6 @@ def serial_for_url(url):
         return SocketSerialWrapper(stream)
     else:
         return stream
-
 
 class SocketSerialWrapper(object):
     """ Wrapper object for SocketSerial to work around timeout==0 issues. """
@@ -99,6 +92,19 @@ class SocketSerialWrapper(object):
         """ Write to socket. """
         self._serial.write(s)
 
+###############################################################################
+# LPT ports
+
+def parallel_port(port):
+    """ Return a ParallelStream object for a given port. """
+    if not parallel:
+        logging.warning('Parallel module not found. Parallel port communication not available.')
+        return None
+    try:
+        return ParallelStream(port)
+    except (OSError, IOError):
+        logging.warning('Could not open parallel port %s.', port)
+        return None
 
 
 class ParallelStream(object):
