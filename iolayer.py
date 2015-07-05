@@ -438,7 +438,10 @@ class TextFileBase(RawFile):
         self.next_char = first_char
         # Random files are derived from text files and start in 'I' operating mode
         if self.mode in 'IR' and not first_char:
-            self.next_char = self.fhandle.read(1)
+            try:
+                self.next_char = self.fhandle.read(1)
+            except IOError:
+                self.next_char = ''
 
     def read_raw(self, num=-1):
         """ Read num characters as string. """

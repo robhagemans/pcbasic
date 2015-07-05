@@ -9,6 +9,7 @@ This file is released under the GNU GPL version 3 or, at your option, the Python
 """
 
 import logging
+import socket
 
 try:
     import serial
@@ -22,9 +23,6 @@ try:
     import parallel
 except Exception:
     parallel = None
-
-import socket
-import select
 
 def parallel_port(port):
     """ Return a ParallelStream object for a given port. """
@@ -58,21 +56,6 @@ class SocketSerialWrapper(object):
     def __init__(self, socketserial):
         """ initialise the wrapper. """
         self._serial = socketserial
-        self._isOpen = self._serial._isOpen
-
-    def open(self):
-        """ Open the serial connection. """
-        self._serial.open()
-        self._isOpen = self._serial._isOpen
-
-    def close(self):
-        """ Close the serial connection. """
-        self._serial.close()
-        self._isOpen = self._serial._isOpen
-
-    def flush(self):
-        """ No buffer to flush. """
-        pass
 
     def read(self, num=1):
         """ Non-blocking read from socket. """
@@ -81,22 +64,42 @@ class SocketSerialWrapper(object):
         self._serial._socket.setblocking(0)
         if not self._serial._isOpen:
             raise serialutil.portNotOpenError
-        # poll for bytes (timeout = 0)
-        ready, _, _ = select.select([self._serial._socket], [], [], 0)
-        if not ready:
-            # no bytes present after poll
-            return ''
         try:
             # fill buffer at most up to buffer size
             return self._serial._socket.recv(num)
         except socket.timeout:
-            pass
-        except socket.error, e:
+            return ''
+        except socket.error as e:
+            # a timeout in fact raises a socket.error 11
+            # rather than a socket.timeout (at least on Linux)
+            if e.errno == 11:
+                return ''
             raise SerialException('connection failed (%s)' % e)
+
+    # delegation doesn't play ball nicely with Pickle
+    # def __getattr__(self, attr):
+    #     return getattr(self._serial, attr)
+
+    @property
+    def _isOpen(self):
+        return self._serial._isOpen
+
+    def open(self):
+        """ Open the serial connection. """
+        self._serial.open()
+
+    def close(self):
+        """ Close the serial connection. """
+        self._serial.close()
+
+    def flush(self):
+        """ No buffer to flush. """
+        pass
 
     def write(self, s):
         """ Write to socket. """
         self._serial.write(s)
+
 
 
 class ParallelStream(object):
