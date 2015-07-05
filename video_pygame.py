@@ -2,8 +2,8 @@
 PC-BASIC 3.23 - video_pygame.py
 Graphical interface based on PyGame
 
-(c) 2013, 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+(c) 2013, 2014 Rob Hagemans
+This file is released under the GNU GPL version 3.
 """
 
 import logging
@@ -20,7 +20,7 @@ except ImportError:
 
 import plat
 import config
-import unicodepage 
+import unicodepage
 import backend
 import typeface
 import scancode
@@ -52,27 +52,27 @@ composite_640 = {
         (0x53, 0x44, 0x00),        (0x00, 0xcd, 0x00),        (0x73, 0x73, 0x73),        (0x00, 0xfc, 0x7e),
         (0xff, 0x39, 0x00),        (0xe2, 0xca, 0x00),        (0xff, 0x7c, 0xf4),        (0xff, 0xff, 0xff)    ],
     'cga': [
-        (0x00, 0x00, 0x00),        (0x00, 0x6a, 0x2c),        (0x00, 0x39, 0xff),        (0x00, 0x94, 0xff),        
+        (0x00, 0x00, 0x00),        (0x00, 0x6a, 0x2c),        (0x00, 0x39, 0xff),        (0x00, 0x94, 0xff),
         (0xca, 0x00, 0x2c),        (0x77, 0x77, 0x77),        (0xff, 0x31, 0xff),        (0xc0, 0x98, 0xff),
         (0x1a, 0x57, 0x00),        (0x00, 0xd6, 0x00),        (0x77, 0x77, 0x77),        (0x00, 0xf4, 0xb8),
         (0xff, 0x57, 0x00),        (0xb0, 0xdd, 0x00),        (0xff, 0x7c, 0xb8),        (0xff, 0xff, 0xff)    ],
     'tandy': [
-        (0x00, 0x00, 0x00),        (0x7c, 0x30, 0x00),        (0x00, 0x75, 0x00),        (0x00, 0xbe, 0x00),        
-        (0x00, 0x47, 0xee),        (0x77, 0x77, 0x77),        (0x00, 0xbb, 0xc4),        (0x00, 0xfb, 0x3f),        
-        (0xb2, 0x0f, 0x9d),        (0xff, 0x1e, 0x0f),        (0x77, 0x77, 0x77),        (0xff, 0xb8, 0x00),        
-        (0xb2, 0x44, 0xff),        (0xff, 0x78, 0xff),        (0x4b, 0xba, 0xff),        (0xff, 0xff, 0xff)    ],      
+        (0x00, 0x00, 0x00),        (0x7c, 0x30, 0x00),        (0x00, 0x75, 0x00),        (0x00, 0xbe, 0x00),
+        (0x00, 0x47, 0xee),        (0x77, 0x77, 0x77),        (0x00, 0xbb, 0xc4),        (0x00, 0xfb, 0x3f),
+        (0xb2, 0x0f, 0x9d),        (0xff, 0x1e, 0x0f),        (0x77, 0x77, 0x77),        (0xff, 0xb8, 0x00),
+        (0xb2, 0x44, 0xff),        (0xff, 0x78, 0xff),        (0x4b, 0xba, 0xff),        (0xff, 0xff, 0xff)    ],
     'pcjr': [
         (0x00, 0x00, 0x00),
         (0x98, 0x20, 0xcb),        (0x9f, 0x1c, 0x00),        (0xff, 0x11, 0x71),        (0x00, 0x76, 0x00),
         (0x77, 0x77, 0x77),        (0x5b, 0xaa, 0x00),        (0xff, 0xa5, 0x00),        (0x00, 0x4e, 0xcb),
         (0x74, 0x53, 0xff),        (0x77, 0x77, 0x77),        (0xff, 0x79, 0xff),        (0x00, 0xc8, 0x71),
         (0x00, 0xcc, 0xff),        (0x00, 0xfa, 0x00),        (0xff, 0xff, 0xff) ]        }
-                    
+
 composite_artifacts = False
 composite_monitor = False
 mode_has_artifacts = False
 mono_monitor = False
-    
+
 # working palette - attribute index in blue channel
 workpalette = [(0, 0, b * 16 + f) for b in range(16) for f in range(16)]
 # display palettes for blink states 0, 1
@@ -102,75 +102,75 @@ current_attr = None
 
 # cursor shape
 cursor = None
-# screen & updating 
+# screen & updating
 canvas = []
-    
+
 screen_changed = True
 cycle = 0
 last_cycle = 0
-cycle_time = 120 
+cycle_time = 120
 blink_cycles = 5
 
 # current cursor location
 last_row = 1
-last_col = 1    
+last_col = 1
 
 under_cursor = None
 under_top_left = None
 
 # available joy sticks
-joysticks = []    
+joysticks = []
 
 if pygame:
     # these are PC keyboard scancodes
     key_to_scan = {
         # top row
-        pygame.K_ESCAPE: scancode.ESCAPE, pygame.K_1: scancode.N1, 
-        pygame.K_2: scancode.N2, pygame.K_3: scancode.N3, 
+        pygame.K_ESCAPE: scancode.ESCAPE, pygame.K_1: scancode.N1,
+        pygame.K_2: scancode.N2, pygame.K_3: scancode.N3,
         pygame.K_4: scancode.N4, pygame.K_5: scancode.N5,
-        pygame.K_6: scancode.N6, pygame.K_7: scancode.N7, 
+        pygame.K_6: scancode.N6, pygame.K_7: scancode.N7,
         pygame.K_8: scancode.N8, pygame.K_9: scancode.N9,
         pygame.K_0: scancode.N0, pygame.K_MINUS: scancode.MINUS,
-        pygame.K_EQUALS: scancode.EQUALS, 
+        pygame.K_EQUALS: scancode.EQUALS,
         pygame.K_BACKSPACE: scancode.BACKSPACE,
         # row 1
-        pygame.K_TAB: scancode.TAB, pygame.K_q: scancode.q, 
-        pygame.K_w: scancode.w, pygame.K_e: scancode.e, pygame.K_r: scancode.r, 
+        pygame.K_TAB: scancode.TAB, pygame.K_q: scancode.q,
+        pygame.K_w: scancode.w, pygame.K_e: scancode.e, pygame.K_r: scancode.r,
         pygame.K_t: scancode.t, pygame.K_y: scancode.y, pygame.K_u: scancode.u,
-        pygame.K_i: scancode.i, pygame.K_o: scancode.o, pygame.K_p: scancode.p, 
-        pygame.K_LEFTBRACKET: scancode.LEFTBRACKET, 
-        pygame.K_RIGHTBRACKET: scancode.RIGHTBRACKET, 
+        pygame.K_i: scancode.i, pygame.K_o: scancode.o, pygame.K_p: scancode.p,
+        pygame.K_LEFTBRACKET: scancode.LEFTBRACKET,
+        pygame.K_RIGHTBRACKET: scancode.RIGHTBRACKET,
         pygame.K_RETURN: scancode.RETURN, pygame.K_KP_ENTER: scancode.RETURN,
         # row 2
-        pygame.K_RCTRL: scancode.CTRL, pygame.K_LCTRL: scancode.CTRL, 
+        pygame.K_RCTRL: scancode.CTRL, pygame.K_LCTRL: scancode.CTRL,
         pygame.K_a: scancode.a, pygame.K_s: scancode.s, pygame.K_d: scancode.d,
-        pygame.K_f: scancode.f, pygame.K_g: scancode.g, pygame.K_h: scancode.h, 
-        pygame.K_j: scancode.j, pygame.K_k: scancode.k, pygame.K_l: scancode.l, 
+        pygame.K_f: scancode.f, pygame.K_g: scancode.g, pygame.K_h: scancode.h,
+        pygame.K_j: scancode.j, pygame.K_k: scancode.k, pygame.K_l: scancode.l,
         pygame.K_SEMICOLON: scancode.SEMICOLON, pygame.K_QUOTE: scancode.QUOTE,
         pygame.K_BACKQUOTE: scancode.BACKQUOTE,
-        # row 3        
-        pygame.K_LSHIFT: scancode.LSHIFT, 
+        # row 3
+        pygame.K_LSHIFT: scancode.LSHIFT,
         pygame.K_BACKSLASH: scancode.BACKSLASH,
         pygame.K_z: scancode.z, pygame.K_x: scancode.x, pygame.K_c: scancode.c,
         pygame.K_v: scancode.v, pygame.K_b: scancode.b, pygame.K_n: scancode.n,
-        pygame.K_m: scancode.m, pygame.K_COMMA: scancode.COMMA, 
+        pygame.K_m: scancode.m, pygame.K_COMMA: scancode.COMMA,
         pygame.K_PERIOD: scancode.PERIOD, pygame.K_SLASH: scancode.SLASH,
         pygame.K_RSHIFT: scancode.RSHIFT, pygame.K_PRINT: scancode.PRINT,
         pygame.K_SYSREQ: scancode.SYSREQ,
-        pygame.K_LALT: scancode.ALT, 
+        pygame.K_LALT: scancode.ALT,
         pygame.K_SPACE: scancode.SPACE, pygame.K_CAPSLOCK: scancode.CAPSLOCK,
-        # function key row    
-        pygame.K_F1: scancode.F1, pygame.K_F2: scancode.F2, 
+        # function key row
+        pygame.K_F1: scancode.F1, pygame.K_F2: scancode.F2,
         pygame.K_F3: scancode.F3, pygame.K_F4: scancode.F4,
         pygame.K_F5: scancode.F5, pygame.K_F6: scancode.F6,
         pygame.K_F7: scancode.F7, pygame.K_F8: scancode.F8,
         pygame.K_F9: scancode.F9, pygame.K_F10: scancode.F10,
         # top middle
-        pygame.K_NUMLOCK: scancode.NUMLOCK, 
+        pygame.K_NUMLOCK: scancode.NUMLOCK,
         pygame.K_SCROLLOCK: scancode.SCROLLOCK,
         # keypad
         pygame.K_KP7: scancode.KP7, pygame.K_HOME: scancode.HOME,
-        pygame.K_KP8: scancode.KP8, pygame.K_UP: scancode.UP,        
+        pygame.K_KP8: scancode.KP8, pygame.K_UP: scancode.UP,
         pygame.K_KP9: scancode.KP9, pygame.K_PAGEUP: scancode.PAGEUP,
         pygame.K_KP_MINUS: scancode.KPMINUS,
         pygame.K_KP4: scancode.KP4, pygame.K_LEFT: scancode.LEFT,
@@ -183,11 +183,11 @@ if pygame:
         pygame.K_KP0: scancode.KP0, pygame.K_INSERT: scancode.INSERT,
         # keypad dot, times, div, enter ?
         # various
-        pygame.K_DELETE: scancode.DELETE, 
+        pygame.K_DELETE: scancode.DELETE,
         pygame.K_PAUSE: scancode.BREAK,
         pygame.K_BREAK: scancode.BREAK,
     }
-    
+
 # cursor is visible
 cursor_visible = True
 
@@ -197,7 +197,7 @@ mousebutton_paste = 2
 mousebutton_pen = 3
 
 ###############################################################################
-    
+
 def prepare():
     """ Initialise video_pygame module. """
     global fullscreen, smooth, noquit, force_display_size
@@ -214,7 +214,7 @@ def prepare():
     force_square_pixel = (config.options['scaling'] == 'native')
     fullscreen = config.options['fullscreen']
     smooth = (config.options['scaling'] == 'smooth')
-    # don't catch Alt+F4    
+    # don't catch Alt+F4
     noquit = config.options['nokill']
     # monitor choice
     mono_monitor =  config.options['monitor'] == 'mono'
@@ -244,7 +244,7 @@ def prepare():
     caption = config.options['caption'] or 'PC-BASIC 3.23'
     # wait before closing window
     wait_on_close = config.options['wait']
-    
+
 ###############################################################################
 # state saving and loading
 
@@ -252,21 +252,21 @@ def save_state():
     """ Save display state as list of strings. """
     return [pygame.image.tostring(s, 'P') for s in canvas]
 
-def load_state(display_str):        
+def load_state(display_str):
     """ Restore display state. """
     global screen_changed
     try:
-        for i in range(len(canvas)):    
+        for i in range(len(canvas)):
             canvas[i] = pygame.image.fromstring(display_str[i], size, 'P')
             canvas[i].set_palette(workpalette)
-        screen_changed = True    
+        screen_changed = True
         return True
     except (IndexError, ValueError, TypeError):
         # couldn't load the state correctly
         # e.g. saved from different interface. just redraw what's unpickled.
-        # this also happens if the screen resolution has changed 
+        # this also happens if the screen resolution has changed
         return False
-        
+
 ####################################
 # initialisation
 
@@ -277,7 +277,7 @@ def init():
     # set state objects to whatever is now in state (may have been unpickled)
     if not pygame:
         logging.warning('PyGame module not found. Failed to initialise graphical interface.')
-        return False     
+        return False
     pygame.init()
     # exclude some backend drivers as they give unusable results
     if pygame.display.get_driver() == 'caca':
@@ -290,7 +290,7 @@ def init():
     # draw the icon
     pygame.display.set_icon(build_icon())
     # determine initial display size
-    display_size = find_display_size(640, 480, border_width)   
+    display_size = find_display_size(640, 480, border_width)
     # first set the screen non-resizeable, to trick things like maximus into not full-screening
     # I hate it when applications do this ;)
     if not fullscreen:
@@ -315,7 +315,7 @@ def init():
     fonts = { 8: backend.font_8, 9: backend.font_8 }
     if not load_fonts(backend.heights_needed):
         return False
-    text_mode = True    
+    text_mode = True
     set_page(0, 0)
     return True
 
@@ -326,20 +326,20 @@ def load_fonts(heights_needed):
             # already force loaded
             continue
         # load a Unifont .hex font and take the codepage subset
-        fonts[height] = typeface.load(font_families, height, 
+        fonts[height] = typeface.load(font_families, height,
                                       unicodepage.cp_to_unicodepoint)
         # fix missing code points font based on 16-line font
         if 16 not in fonts:
             # if available, load the 16-pixel font unrequested
-            font_16 = typeface.load(font_families, 16, 
+            font_16 = typeface.load(font_families, 16,
                                     unicodepage.cp_to_unicodepoint, nowarn=True)
             if font_16:
-                fonts[16] = font_16 
+                fonts[16] = font_16
         if 16 in fonts and fonts[16]:
-            typeface.fixfont(height, fonts[height], 
+            typeface.fixfont(height, fonts[height],
                              unicodepage.cp_to_unicodepoint, fonts[16])
     return True
-        
+
 def init_screen_mode(mode_info):
     """ Initialise a given text or graphics mode. """
     global glyphs, cursor
@@ -365,10 +365,10 @@ def init_screen_mode(mode_info):
         bitsperpixel = mode_info.bitsperpixel
         mode_has_artifacts = mode_info.supports_artifacts
         cursor_fixed_attr = mode_info.cursor_index
-    # logical size    
-    size = (mode_info.pixel_width, mode_info.pixel_height)    
+    # logical size
+    size = (mode_info.pixel_width, mode_info.pixel_height)
     font = fonts[font_height]
-    glyphs = [build_glyph(chr(c), font, font_width, font_height) 
+    glyphs = [build_glyph(chr(c), font, font_width, font_height)
               for c in range(256)]
     # initialise glyph colour
     set_attr(mode_info.attr)
@@ -384,7 +384,7 @@ def init_screen_mode(mode_info):
     screen_changed = True
     return True
 
-def find_display_size(canvas_x, canvas_y, border_width): 
+def find_display_size(canvas_x, canvas_y, border_width):
     """ Determine the optimal size for the display. """
     if force_display_size:
         return force_display_size
@@ -402,29 +402,29 @@ def find_display_size(canvas_x, canvas_y, border_width):
         pixel_x = int(canvas_x * (1 + border_width/100.))
         pixel_y = int(canvas_y * (1 + border_width/100.))
         # leave 5% of the screen either direction unused
-        # to account for task bars, window decorations, etc.    
+        # to account for task bars, window decorations, etc.
         xmult = max(1, int((100.-display_slack) * physical_size[0] / (100.*pixel_x)))
         ymult = max(1, int((100.-display_slack) * physical_size[1] / (100.*pixel_y)))
         # find the multipliers mx <= xmult, my <= ymult
-        # such that mx * pixel_x / my * pixel_y 
-        # is multiplicaively closest to aspect[0] / aspect[1] 
+        # such that mx * pixel_x / my * pixel_y
+        # is multiplicaively closest to aspect[0] / aspect[1]
         target = aspect[0]/(1.0*aspect[1])
-        current = xmult*canvas_x / (1.0*ymult*canvas_y) 
+        current = xmult*canvas_x / (1.0*ymult*canvas_y)
         # find the absolute multiplicative distance (always > 1)
         best = max(current, target) / min(current, target)
         apx = xmult, ymult
         for mx in range(1, xmult+1):
-            my = min(ymult, 
+            my = min(ymult,
                      int(round(mx*canvas_x*aspect[1] / (1.0*canvas_y*aspect[0]))))
-            current = mx*pixel_x / (1.0*my*pixel_y)         
+            current = mx*pixel_x / (1.0*my*pixel_y)
             dist = max(current, target) / min(current, target)
             # prefer larger multipliers if distance is equal
             if dist <= best:
                 best = dist
                 apx = mx, my
         return apx[0] * pixel_x, apx[1] * pixel_y
-    
-def resize_display(width, height, initial=False): 
+
+def resize_display(width, height, initial=False):
     """ Change the display size. """
     global display, screen_changed
     global fullscreen, smooth
@@ -434,7 +434,7 @@ def resize_display(width, height, initial=False):
         fullscreen = True
         flags |= pygame.FULLSCREEN | pygame.NOFRAME
         if (not initial and not text_mode):
-            width, height = display_size 
+            width, height = display_size
         # scale suggested dimensions to largest integer times pixel size that fits
         scale = min( physical_size[0]//width, physical_size[1]//height )
         width, height = width * scale, height * scale
@@ -444,9 +444,9 @@ def resize_display(width, height, initial=False):
     if initial and smooth and display.get_bitsize() < 24:
         logging.warning("Smooth scaling not available on this display (depth %d < 24)", display.get_bitsize())
         smooth = False
-    # load display if requested    
-    screen_changed = True    
-    
+    # load display if requested
+    screen_changed = True
+
 def build_icon():
     """ Build the ok icon. """
     icon = pygame.Surface((17, 17), depth=8)
@@ -467,7 +467,7 @@ def build_icon():
 def close():
     """ Close the pygame interface. """
     if wait_on_close:
-        pygame.display.set_caption('%s - press a key to close window' % caption)   
+        pygame.display.set_caption('%s - press a key to close window' % caption)
         show_cursor(False)
         # wait for a keystroke
         while not check_events(pause=True):
@@ -483,7 +483,7 @@ def get_palette_index(cattr):
     """ Find the index in the game palette for this attribute. """
     # NOTE: we're using mode_has_underline as a proxy to "it's an MDA" here
     # we're also counting on graphics modes not using colours beyond point 16
-    # where blink is for text mode. 
+    # where blink is for text mode.
     if not mode_has_underline:
         color = (0, 0, cattr)
         bg = (0, 0, (cattr>>4) & 7)
@@ -494,52 +494,52 @@ def get_palette_index(cattr):
             color = (0, 0, 0)
         elif cattr == 0x78:
             # dim foreground on bright background
-            color = (0, 0, 1)    
+            color = (0, 0, 1)
         elif cattr == 0xf8:
             # dim foreground on bright background, blinking
-            color = (0, 0, 0xa2)    
+            color = (0, 0, 0xa2)
         elif cattr == 0xf0:
             # black on bright background, blinking
-            color = (0, 0, 0xa0)    
+            color = (0, 0, 0xa0)
         else:
             # most % 8 == 0 points aren't actually black
             if cattr % 8 == 0:
                 cattr += 1
-            if cattr < 0x80:    
+            if cattr < 0x80:
                 color = (0, 0, cattr)
-            else:    
+            else:
                 # blink goes to black bg
                 color = (0, 0, 0x80 + cattr % 16)
         if cattr in (0x70, 0x78, 0xF0, 0xF8):
             # bright green background for these points
-            bg = (0, 0, 15)    
+            bg = (0, 0, 15)
         else:
             # background is almost always black
             bg = (0, 0, 0)
-    return color, bg    
+    return color, bg
 
 def update_palette(rgb_palette, rgb_palette1):
     """ Build the game palette. """
     global screen_changed, gamepalette
     basepalette0 = [pygame.Color(*c) for c in rgb_palette]
-    if rgb_palette1:    
+    if rgb_palette1:
         basepalette1 = [pygame.Color(*c) for c in rgb_palette1]
-    else:    
+    else:
         basepalette1 = basepalette0
     while len(basepalette0) < 16:
         basepalette0.append(pygame.Color(0, 0, 0))
     while len(basepalette1) < 16:
         basepalette1.append(pygame.Color(0, 0, 0))
-    # combining into all 256 attribute combinations for screen 0:   
+    # combining into all 256 attribute combinations for screen 0:
     # NOTE: we're using mode_has_underline as a proxy to "it's an MDA" here
     if not mode_has_underline:
         gamepalette[0] = [basepalette0[f] for b in range(16) for f in range(16)]
-        gamepalette[1] = ([basepalette1[f] for b in range(8) for f in range(16)] + 
+        gamepalette[1] = ([basepalette1[f] for b in range(8) for f in range(16)] +
                           [basepalette1[b] for b in range(8) for f in range(16)])
     else:
         # MDA has bright backgrounds
         gamepalette[0] = [basepalette0[f] for b in range(16) for f in range(16)]
-        gamepalette[1] = ([basepalette1[f] for b in range(8) for f in range(16)] + 
+        gamepalette[1] = ([basepalette1[f] for b in range(8) for f in range(16)] +
                           [basepalette1[b+8] for b in range(8) for f in range(16)])
     screen_changed = True
 
@@ -548,22 +548,22 @@ def set_border(attr):
     global border_attr, screen_changed
     border_attr = attr
     screen_changed = True
-    
+
 def set_colorburst(on, rgb_palette, rgb_palette1):
     """ Change the NTSC colorburst setting. """
     global composite_artifacts
     update_palette(rgb_palette, rgb_palette1)
     composite_artifacts = on and mode_has_artifacts and composite_monitor
-    
+
 def clear_rows(cattr, start, stop):
     """ Clear a range of screen rows. """
     global screen_changed
     _, bg = get_palette_index(cattr)
-    scroll_area = pygame.Rect(0, (start-1)*font_height, 
-                              size[0], (stop-start+1)*font_height) 
+    scroll_area = pygame.Rect(0, (start-1)*font_height,
+                              size[0], (stop-start+1)*font_height)
     canvas[apagenum].fill(bg, scroll_area)
     screen_changed = True
-    
+
 def set_page(vpage, apage):
     """ Set the visible and active page. """
     global vpagenum, apagenum, screen_changed
@@ -575,7 +575,7 @@ def copy_page(src, dst):
     global screen_changed
     canvas[dst].blit(canvas[src], (0,0))
     screen_changed = True
-    
+
 def show_cursor(cursor_on):
     """ Change visibility of cursor. """
     global screen_changed, cursor_visible
@@ -597,22 +597,22 @@ def scroll(from_line, scroll_height, attr):
     global screen_changed
     temp_scroll_area = pygame.Rect(
                     0, (from_line-1)*font_height,
-                    size[0], 
+                    size[0],
                     (scroll_height-from_line+1) * font_height)
     # scroll
     canvas[apagenum].set_clip(temp_scroll_area)
     canvas[apagenum].scroll(0, -font_height)
     # empty new line
     _, bg = get_palette_index(attr)
-    canvas[apagenum].fill(bg, (0, (scroll_height-1) * font_height, 
+    canvas[apagenum].fill(bg, (0, (scroll_height-1) * font_height,
                                size[0], font_height))
     canvas[apagenum].set_clip(None)
     screen_changed = True
-   
+
 def scroll_down(from_line, scroll_height, attr):
     """ Scroll the screen down between from_line and scroll_height. """
     global screen_changed
-    temp_scroll_area = pygame.Rect(0, (from_line-1) * font_height, size[0], 
+    temp_scroll_area = pygame.Rect(0, (from_line-1) * font_height, size[0],
                                    (scroll_height-from_line+1) * font_height)
     canvas[apagenum].set_clip(temp_scroll_area)
     canvas[apagenum].scroll(0, font_height)
@@ -627,27 +627,27 @@ def set_attr(cattr):
     """ Set the current attribute. """
     global current_attr
     current_attr = cattr
-    
+
 def putc_at(pagenum, row, col, c, for_keys=False):
     """ Put a single-byte character at a given position. """
     global screen_changed
     glyph = glyphs[ord(c)]
-    color, bg = get_palette_index(current_attr)    
+    color, bg = get_palette_index(current_attr)
     if c == '\0':
         # guaranteed to be blank, saves time on some BLOADs
-        canvas[pagenum].fill(bg, 
+        canvas[pagenum].fill(bg,
                              ((col-1)*font_width, (row-1)*font_height, 8, 8))
-    else:    
+    else:
         if glyph.get_palette_at(255) != bg:
             glyph.set_palette_at(255, bg)
         if glyph.get_palette_at(254) != color:
             glyph.set_palette_at(254, color)
-        canvas[pagenum].blit(glyph, 
+        canvas[pagenum].blit(glyph,
                              ((col-1) * font_width, (row-1) * font_height))
     if mode_has_underline and (current_attr % 8 == 1):
-        color, _ = get_palette_index(current_attr)    
+        color, _ = get_palette_index(current_attr)
         for xx in range(font_width):
-            canvas[pagenum].set_at(((col-1) * font_width + xx, 
+            canvas[pagenum].set_at(((col-1) * font_width + xx,
                                        row*font_height - 1), color)
     screen_changed = True
 
@@ -655,16 +655,16 @@ def putwc_at(pagenum, row, col, c, d, for_keys=False):
     """ Put a double-byte character at a given position. """
     global screen_changed
     glyph = build_glyph(c+d, font, 2*font_width, font_height)
-    color, bg = get_palette_index(current_attr)    
+    color, bg = get_palette_index(current_attr)
     glyph.set_palette_at(255, bg)
     glyph.set_palette_at(254, color)
     top_left = ((col-1) * font_width, (row-1) * font_height)
     canvas[pagenum].blit(glyph, top_left)
     screen_changed = True
-    
+
 # ascii codepoints for which to repeat column 8 in column 9 (box drawing)
 # Many internet sources say this should be 0xC0--0xDF. However, that would
-# exclude the shading characters. It appears to be traced back to a mistake in 
+# exclude the shading characters. It appears to be traced back to a mistake in
 # IBM's VGA docs. See https://01.org/linuxgraphics/sites/default/files/documentation/ilk_ihd_os_vol3_part1r2.pdf
 carry_col_9 = [chr(c) for c in range(0xb0, 0xdf+1)]
 # ascii codepoints for which to repeat row 8 in row 9 (box drawing)
@@ -673,7 +673,7 @@ carry_row_9 = [chr(c) for c in range(0xb0, 0xdf+1)]
 def rebuild_glyph(ordval):
     """ Rebuild a glyph after POKE. """
     if font_height == 8:
-        glyphs[ordval] = build_glyph(chr(ordval), font, font_width, 8) 
+        glyphs[ordval] = build_glyph(chr(ordval), font, font_width, 8)
 
 
 def build_glyph(c, font_face, req_width, req_height):
@@ -686,7 +686,7 @@ def build_glyph(c, font_face, req_width, req_height):
         # codepoint 0 must be blank by our definitions
         face = font_face['\0']
         c = '\0'
-    code_height = 8 if req_height == 9 else req_height    
+    code_height = 8 if req_height == 9 else req_height
     glyph_width, glyph_height = 8*len(face)//code_height, req_height
     if req_width <= glyph_width + 2:
         # allow for 9-pixel widths (18-pixel dwidths) without scaling
@@ -697,25 +697,25 @@ def build_glyph(c, font_face, req_width, req_height):
     glyph = pygame.Surface((glyph_width, glyph_height), depth=8)
     glyph.fill(bg)
     for yy in range(code_height):
-        for half in range(glyph_width//8):    
+        for half in range(glyph_width//8):
             line = ord(face[yy*(glyph_width//8)+half])
             for xx in range(8):
                 if (line >> (7-xx)) & 1 == 1:
                     glyph.set_at((half*8 + xx, yy), color)
-        # MDA/VGA 9-bit characters        
+        # MDA/VGA 9-bit characters
         if c in carry_col_9 and glyph_width == 9:
             if line & 1 == 1:
                 glyph.set_at((8, yy), color)
-    # tandy 9-bit high characters            
+    # tandy 9-bit high characters
     if c in carry_row_9 and glyph_height == 9:
         line = ord(face[7*(glyph_width//8)])
         for xx in range(8):
             if (line >> (7-xx)) & 1 == 1:
                 glyph.set_at((xx, 8), color)
     if req_width > glyph_width:
-        glyph = pygame.transform.scale(glyph, (req_width, req_height))    
-    return glyph        
-        
+        glyph = pygame.transform.scale(glyph, (req_width, req_height))
+    return glyph
+
 def build_cursor(width, height, from_line, to_line):
     """ Build a sprite for the cursor. """
     global screen_changed, cursor, under_cursor
@@ -733,7 +733,7 @@ def build_cursor(width, height, from_line, to_line):
                 pass
             else:
                 cursor.set_at((xx, yy), color)
-    screen_changed = True            
+    screen_changed = True
 
 ###############################################################################
 # event loop
@@ -745,20 +745,20 @@ def check_screen():
     blink_state = 0
     if mode_has_blink:
         blink_state = 0 if cycle < blink_cycles * 2 else 1
-        if cycle%blink_cycles == 0:    
+        if cycle%blink_cycles == 0:
             screen_changed = True
     if cursor_visible and ((cursor_row != last_row) or (cursor_col != last_col)):
         screen_changed = True
-    tock = pygame.time.get_ticks() 
+    tock = pygame.time.get_ticks()
     if (tock - last_cycle) >= (cycle_time/blink_cycles):
         last_cycle = tock
         cycle += 1
-        if cycle == blink_cycles*4: 
+        if cycle == blink_cycles*4:
             cycle = 0
         if screen_changed:
             do_flip(blink_state)
             screen_changed = False
-    
+
 def draw_cursor(screen):
     """ Draw the cursor on the screen. """
     global under_top_left, last_row, last_col
@@ -768,14 +768,14 @@ def draw_cursor(screen):
     under_top_left = (  (cursor_col-1) * font_width,
                         (cursor_row-1) * font_height)
     under_char_area = pygame.Rect(
-            (cursor_col-1) * font_width, 
-            (cursor_row-1) * font_height, 
+            (cursor_col-1) * font_width,
+            (cursor_row-1) * font_height,
             (cursor_col-1) * font_width + cursor_width,
             cursor_row * font_height)
     under_cursor.blit(screen, (0,0), area=under_char_area)
     if text_mode:
         # cursor is visible - to be done every cycle between 5 and 10, 15 and 20
-        if (cycle/blink_cycles==1 or cycle/blink_cycles==3): 
+        if (cycle/blink_cycles==1 or cycle/blink_cycles==3):
             screen.blit(cursor, (  (cursor_col-1) * font_width,
                                     (cursor_row-1) * font_height) )
     else:
@@ -786,16 +786,16 @@ def draw_cursor(screen):
         if numpy:
             # reference the destination area
             dest_array = pygame.surfarray.pixels2d(screen.subsurface(pygame.Rect(
-                                (cursor_col-1) * font_width, 
-                                (cursor_row-1) * font_height + cursor_from, 
-                                cursor_width, 
-                                cursor_to - cursor_from + 1))) 
+                                (cursor_col-1) * font_width,
+                                (cursor_row-1) * font_height + cursor_from,
+                                cursor_width,
+                                cursor_to - cursor_from + 1)))
             dest_array ^= index
         else:
-            # no surfarray if no numpy    
-            for x in range(     (cursor_col-1) * font_width, 
+            # no surfarray if no numpy
+            for x in range(     (cursor_col-1) * font_width,
                                   (cursor_col-1) * font_width + cursor_width):
-                for y in range((cursor_row-1) * font_height + cursor_from, 
+                for y in range((cursor_row-1) * font_height + cursor_from,
                                 (cursor_row-1) * font_height + cursor_to + 1):
                     pixel = get_pixel(x, y, apagenum)
                     screen.set_at((x,y), pixel^index)
@@ -812,7 +812,7 @@ def apply_composite_artifacts(screen, pixels=4):
     for p in range(1,pixels):
         s[0] = s[0]*2 + s[p]
     return pygame.surfarray.make_surface(numpy.repeat(s[0], pixels, axis=0))
-    
+
 def do_flip(blink_state):
     """ Draw the canvas to the screen. """
     # create the screen that will be stretched onto the display
@@ -835,13 +835,13 @@ def do_flip(blink_state):
         pygame_android.shift_screen(screen, border_x, border_y, size, cursor_row, font_height)
     if composite_artifacts and numpy:
         screen = apply_composite_artifacts(screen, 4//bitsperpixel)
-        screen.set_palette(composite_640_palette)    
+        screen.set_palette(composite_640_palette)
     else:
         screen.set_palette(gamepalette[blink_state])
     if smooth:
         pygame.transform.smoothscale(screen.convert(display), display.get_size(), display)
     else:
-        pygame.transform.scale(screen.convert(display), display.get_size(), display)  
+        pygame.transform.scale(screen.convert(display), display.get_size(), display)
     pygame.display.flip()
 
 ###############################################################################
@@ -849,16 +849,16 @@ def do_flip(blink_state):
 
 def pause_key():
     """ Wait for key in pause state. """
-    # pause key press waits for any key down. 
+    # pause key press waits for any key down.
     # continues to process screen events (blink) but not user events.
     while not check_events(pause=True):
         # continue playing background music
         backend.audio.check_sound()
         idle()
-        
+
 def idle():
     """ Video idle process. """
-    pygame.time.wait(cycle_time/blink_cycles/8)  
+    pygame.time.wait(cycle_time/blink_cycles/8)
 
 def check_events(pause=False):
     """ Handle screen and interface events. """
@@ -867,39 +867,39 @@ def check_events(pause=False):
     if android and pygame_android.check_events():
         # force immediate redraw of screen
         do_flip(0)
-        # force redraw on next tick  
+        # force redraw on next tick
         # we seem to have to redraw twice to see anything
         screen_changed = True
-    # check and handle pygame events    
+    # check and handle pygame events
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
             if not pause:
                 handle_key_down(event)
             else:
-                return True    
+                return True
         if event.type == pygame.KEYUP:
             if not pause:
                 handle_key_up(event)
-        elif event.type == pygame.MOUSEBUTTONDOWN: 
+        elif event.type == pygame.MOUSEBUTTONDOWN:
             # copy, paste and pen may be on the same button, so no elifs
             if event.button == mousebutton_copy:
                 # LEFT button: copy
                 pos = normalise_pos(*event.pos)
-                clipboard.start(1 + pos[1] // font_height, 
+                clipboard.start(1 + pos[1] // font_height,
                             1 + (pos[0]+font_width//2) // font_width)
             if event.button == mousebutton_paste:
                 # MIDDLE button: paste
-                clipboard.paste(mouse=True)    
+                clipboard.paste(mouse=True)
             if event.button == mousebutton_pen:
                 # right mouse button is a pen press
                 backend.pen_down(*normalise_pos(*event.pos))
-        elif event.type == pygame.MOUSEBUTTONUP: 
+        elif event.type == pygame.MOUSEBUTTONUP:
             backend.pen_up()
             if event.button == mousebutton_copy:
                 clipboard.copy(mouse=True)
                 clipboard.stop()
-        elif event.type == pygame.MOUSEMOTION: 
-            pos = normalise_pos(*event.pos) 
+        elif event.type == pygame.MOUSEMOTION:
+            pos = normalise_pos(*event.pos)
             backend.pen_moved(*pos)
             if clipboard.active():
                 clipboard.move(1 + pos[1] // font_height,
@@ -912,7 +912,7 @@ def check_events(pause=False):
                 backend.stick_up(event.joy, event.button)
         elif event.type == pygame.JOYAXISMOTION:
             if event.joy < 2 and event.axis < 2:
-                backend.stick_moved(event.joy, event.axis, 
+                backend.stick_moved(event.joy, event.axis,
                                     int(event.value*127 + 128))
         elif event.type == pygame.VIDEORESIZE:
             fullscreen = False
@@ -931,10 +931,10 @@ def handle_key_down(e):
     c = ''
     mods = pygame.key.get_mods()
     if ((e.key == pygame.K_NUMLOCK and mods & pygame.KMOD_CTRL) or
-            (e.key in (pygame.K_PAUSE, pygame.K_BREAK) and 
+            (e.key in (pygame.K_PAUSE, pygame.K_BREAK) and
              not mods & pygame.KMOD_CTRL)):
         # pause until keypress
-        pause_key()    
+        pause_key()
     elif e.key == pygame.K_MENU and android:
         # Android: toggle keyboard on menu key
         pygame_android.toggle_keyboard()
@@ -957,7 +957,7 @@ def handle_key_down(e):
                 #    c = utf8
                 # don't do this, let control codes be handled by scancode
                 # e.g. ctrl+enter should be '\n' but has e.unicode=='\r'
-                pass 
+                pass
         # double NUL characters, as single NUL signals scan code
         if len(c) == 1 and ord(c) == 0:
             c = '\0\0'
@@ -965,17 +965,17 @@ def handle_key_down(e):
         try:
             scan = key_to_scan[e.key]
         except KeyError:
-            scan = None    
+            scan = None
             if android:
-                # android hacks - send keystroke sequences 
+                # android hacks - send keystroke sequences
                 if e.key == pygame.K_ASTERISK:
-                    backend.key_down(scancode.RSHIFT, '')            
-                    backend.key_down(scancode.N8, '*')            
-                    backend.key_up(scancode.RSHIFT)            
+                    backend.key_down(scancode.RSHIFT, '')
+                    backend.key_down(scancode.N8, '*')
+                    backend.key_up(scancode.RSHIFT)
                 elif e.key == pygame.K_AT:
-                    backend.key_down(scancode.RSHIFT, '')            
-                    backend.key_down(scancode.N2, '@')            
-                    backend.key_up(scancode.RSHIFT)   
+                    backend.key_down(scancode.RSHIFT, '')
+                    backend.key_down(scancode.N2, '@')
+                    backend.key_up(scancode.RSHIFT)
             if plat.system == 'Windows':
                 # Windows 7 and above send AltGr as Ctrl+RAlt
                 # if 'altgr' option is off, Ctrl+RAlt is sent.
@@ -985,7 +985,7 @@ def handle_key_down(e):
                 if e.key == pygame.K_RALT:
                     backend.key_up(scancode.CTRL)
         # insert into keyboard queue
-        backend.key_down(scan, c) 
+        backend.key_down(scan, c)
 
 def handle_key_up(e):
     """ Handle key-up event. """
@@ -1002,18 +1002,18 @@ def normalise_pos(x, y):
     border_x = int(size[0] * border_width / 200.)
     border_y = int(size[1] * border_width / 200.)
     display_info = pygame.display.Info()
-    xscale = display_info.current_w / (1.*(size[0]+2*border_x)) 
+    xscale = display_info.current_w / (1.*(size[0]+2*border_x))
     yscale = display_info.current_h / (1.*(size[1]+2*border_y))
     xpos = min(size[0]-1, max(0, int(x//xscale - border_x)))
-    ypos = min(size[1]-1, max(0, int(y//yscale - border_y))) 
+    ypos = min(size[1]-1, max(0, int(y//yscale - border_y)))
     return xpos, ypos
-    
+
 ###############################################################################
 # clipboard handling
 
 class ClipboardInterface(object):
     """ Clipboard user interface. """
-    
+
     def __init__(self, width, height):
         """ Initialise clipboard feedback handler. """
         self.logo_pressed = False
@@ -1026,7 +1026,7 @@ class ClipboardInterface(object):
     def active(self):
         """ True if clipboard mode is active. """
         return self.logo_pressed
-        
+
     def start(self, r=None, c=None):
         """ Enter clipboard mode (Logo key pressed). """
         self.logo_pressed = True
@@ -1037,7 +1037,7 @@ class ClipboardInterface(object):
             self.select_start = [r, c]
             self.select_stop = [r, c]
         self.selection_rect = []
-        
+
     def stop(self):
         """ Leave clipboard mode (Logo key released). """
         global screen_changed
@@ -1057,26 +1057,26 @@ class ClipboardInterface(object):
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
             start, stop = stop, start
         backend.copy_clipboard(start[0], start[1], stop[0], stop[1]-1, mouse)
-        
+
     def paste(self, mouse=False):
         """ Paste from clipboard into keyboard buffer. """
         backend.paste_clipboard(mouse)
-                        
+
     def move(self, r, c):
         """ Move the head of the selection and update feedback. """
         global screen_changed
         self.select_stop = [r, c]
         start, stop = self.select_start, self.select_stop
-        if stop[1] < 1: 
+        if stop[1] < 1:
             stop[0] -= 1
             stop[1] = self.width+1
-        if stop[1] > self.width+1:        
+        if stop[1] > self.width+1:
             stop[0] += 1
             stop[1] = 1
         if stop[0] > self.height:
             stop[:] = [self.height, self.width+1]
         if stop[0] < 1:
-            stop[:] = [1, 1]            
+            stop[:] = [1, 1]
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
             start, stop = stop, start
         rect_left = (start[1] - 1) * font_width
@@ -1085,19 +1085,19 @@ class ClipboardInterface(object):
         rect_bot = stop[0] * font_height
         if start[0] == stop[0]:
             # single row selection
-            self.selection_rect = [pygame.Rect(rect_left, rect_top, 
+            self.selection_rect = [pygame.Rect(rect_left, rect_top,
                                     rect_right-rect_left, rect_bot-rect_top)]
         else:
             # multi-row selection
             self.selection_rect = [
               pygame.Rect(rect_left, rect_top, size[0]-rect_left, font_height),
-              pygame.Rect(0, rect_top + font_height, 
+              pygame.Rect(0, rect_top + font_height,
                           size[0], rect_bot - rect_top - 2*font_height),
-              pygame.Rect(0, rect_bot - font_height, 
+              pygame.Rect(0, rect_bot - font_height,
                           rect_right, font_height)]
         screen_changed = True
-    
-    
+
+
     def handle_key(self, e):
         """ Handle logo+key clipboard commands. """
         global screen_changed
@@ -1136,7 +1136,7 @@ class ClipboardInterface(object):
 
 
 
-        
+
 ###############################################################################
 # graphics backend interface
 # low-level methods (pygame implementation)
@@ -1147,7 +1147,7 @@ def put_pixel(x, y, index, pagenum):
     canvas[pagenum].set_at((x,y), index)
     screen_changed = True
 
-def get_pixel(x, y, pagenum):    
+def get_pixel(x, y, pagenum):
     """ Return the attribute a pixel on the screen. """
     return canvas[pagenum].get_at((x,y)).b
 
@@ -1205,7 +1205,7 @@ else:
             colours &= mask
             colours |= get_interval(pagenum, x, y, len(colours)) & inv_mask
         # list comprehension and ignoring result seems faster than loop
-        [canvas[pagenum].set_at((x+i, y), index) 
+        [canvas[pagenum].set_at((x+i, y), index)
                          for i, index in enumerate(colours)]
         screen_changed = True
 
@@ -1217,7 +1217,7 @@ def get_until(x0, x1, y, c):
     """ Get the attribute values of a scanline interval. """
     if x0 == x1:
         return []
-    if numpy:     
+    if numpy:
         toright = x1 > x0
         if not toright:
             x0, x1 = x1+1, x0+1
@@ -1227,7 +1227,7 @@ def get_until(x0, x1, y, c):
             if toright:
                 arr = arr[:found[0][0]]
             else:
-                arr = arr[found[0][-1]+1:]    
+                arr = arr[found[0][-1]+1:]
         return list(arr.flatten())
     else:
         interval = []
@@ -1236,7 +1236,7 @@ def get_until(x0, x1, y, c):
             if index == c:
                 break
             interval.append(index)
-        return interval    
+        return interval
 
 # sprite operations (PUT and GET)
 
@@ -1261,14 +1261,14 @@ if numpy:
             return
         # reference the destination area
         dest_array = pygame.surfarray.pixels2d(
-            canvas[apagenum].subsurface(pygame.Rect(x0, y0, x1-x0+1, y1-y0+1))) 
+            canvas[apagenum].subsurface(pygame.Rect(x0, y0, x1-x0+1, y1-y0+1)))
         # apply the operation
         operations[operation_token](dest_array, numpy.array(array).T)
         screen_changed = True
 
 else:
     operations = {
-        token.PSET: lambda x, y: y, 
+        token.PSET: lambda x, y: y,
         token.PRESET: lambda x, y: y ^ ((1<<bitsperpixel)-1),
         token.AND: lambda x, y: x & y,
         token.OR: lambda x, y: x | y,
@@ -1277,19 +1277,18 @@ else:
 
     def get_rect(x0, y0, x1, y1):
         """ Read 2D list [y][x] of attributes from target area. """
-        return [[ canvas[apagenum].get_at((x0+i, y0+j)).b 
+        return [[ canvas[apagenum].get_at((x0+i, y0+j)).b
                             for i in xrange(x1-x0+1) ]
-                                for j in xrange(y1-y0+1) ] 
+                                for j in xrange(y1-y0+1) ]
 
     def put_rect(x0, y0, x1, y1, array, operation_token):
         """ Apply a 2D list [y][x] of attributes to an area. """
         global screen_changed
         operation = operations[operation_token]
-        [[ canvas[apagenum].set_at((x0+i, y0+j), 
-                operation(canvas[apagenum].get_at((x0+i, y0+j)).b, index)) 
+        [[ canvas[apagenum].set_at((x0+i, y0+j),
+                operation(canvas[apagenum].get_at((x0+i, y0+j)).b, index))
                             for i, index in enumerate(array[j]) ]
                                 for j in xrange(y1-y0+1) ]
         screen_changed = True
 
 prepare()
-
