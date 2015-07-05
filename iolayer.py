@@ -292,7 +292,7 @@ class COMDevice(Device):
         else:
             try:
                 self.stream.open()
-            except ports.SerialException as e:
+            except EnvironmentError as e:
                 # device timeout
                 logging.debug("Serial exception: %s", e)
                 raise error.RunError(24)
@@ -873,7 +873,7 @@ class COMFile(CRLFTextFileBase):
         """ Fill buffer at most up to buffer size; non blocking. """
         try:
             self.in_buffer += self.fhandle.read(serial_in_size - len(self.in_buffer))
-        except (ports.SerialException, ValueError):
+        except (EnvironmentError, ValueError):
             # device I/O
             raise error.RunError(57)
 
@@ -922,7 +922,7 @@ class COMFile(CRLFTextFileBase):
             if self.linefeed:
                 s = s.replace('\r', '\r\n')
             self.fhandle.write(s)
-        except (ports.SerialException, ValueError):
+        except (EnvironmentError, ValueError):
             # device I/O
             raise error.RunError(57)
 
