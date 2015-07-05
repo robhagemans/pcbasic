@@ -1,6 +1,10 @@
 #!/bin/bash
 VERSION=$(cat ../../data/VERSION)
 NAME="pcbasic-$VERSION"
+echo "running prepare script"
+pushd ..
+./prepare.sh
+popd
 echo "building $NAME"
 rsync -rvp ../.. pcbasic/ --delete --exclude-from=excludes --delete-excluded
 cp install.sh pcbasic/
