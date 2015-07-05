@@ -1,9 +1,9 @@
 """
-PC-BASIC 3.23 
+PC-BASIC 3.23
 Configuration file and command-line options parser
- 
-(c) 2013, 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+
+(c) 2013, 2014 Rob Hagemans
+This file is released under the GNU GPL version 3.
 """
 
 import os
@@ -17,15 +17,15 @@ import plat
 system_config_path = os.path.join(plat.system_config_dir, plat.config_name)
 user_config_path = os.path.join(plat.user_config_dir, plat.config_name)
 
-# by default, load what's in section [pcbasic] and override with anything 
+# by default, load what's in section [pcbasic] and override with anything
 # in os-specific section [windows] [android] [linux] [osx] [unknown_os]
 default_presets = ['pcbasic', plat.system.lower()]
 
 # get supported codepages
-encodings = sorted([ x[0] for x in [ c.split('.ucp') 
+encodings = sorted([ x[0] for x in [ c.split('.ucp')
                      for c in os.listdir(plat.encoding_dir) ] if len(x)>1])
 # get supported font families
-families = sorted(list(set([ x[0] for x in [ c.split('_') 
+families = sorted(list(set([ x[0] for x in [ c.split('_')
                   for c in os.listdir(plat.font_dir) ] if len(x)>1])))
 
 # dictionary to hold all options chosen
@@ -38,23 +38,23 @@ positional = 2
 
 # GWBASIC invocation, for reference:
 # GWBASIC [prog] [<inp] [[>]>outp] [/f:n] [/i] [/s:n] [/c:n] [/m:[n][,m]] [/d]
-#   /d      Allow double-precision ATN, COS, EXP, LOG, SIN, SQR, and TAN. 
-#   /f:n    Set maximum number of open files to n. Default is 3. 
+#   /d      Allow double-precision ATN, COS, EXP, LOG, SIN, SQR, and TAN.
+#   /f:n    Set maximum number of open files to n. Default is 3.
 #           Each additional file reduces free memory by 322 bytes.
-#   /s:n    Set the maximum record length for RANDOM files. 
+#   /s:n    Set the maximum record length for RANDOM files.
 #           Default is 128, maximum is 32768.
-#   /c:n    Set the COM receive buffer to n bytes. 
-#           If n==0, disable the COM ports.   
+#   /c:n    Set the COM receive buffer to n bytes.
+#           If n==0, disable the COM ports.
 #   /i      Statically allocate file control blocks and data buffer.
 #           NOTE: this appears to be always the case in GW-BASIC, as here.
 #   /m:n,m  Set the highest memory location to n (default 65534) and maximum
-#           BASIC memory to m*16 bytes (default is all available). 
-short_args = { 
-    'd': 'double', 'f': 'max-files', 
+#           BASIC memory to m*16 bytes (default is all available).
+short_args = {
+    'd': 'double', 'f': 'max-files',
     's': 'max-reclen', 'c': 'serial-buffer-size',
     'm': 'max-memory', 'i': '',
     'b': 'interface=cli', 't': 'interface=text', 'n': 'interface=none',
-    'l': 'load', 'h': 'help',  
+    'l': 'load', 'h': 'help',
     'r': 'run', 'e': 'exec', 'q': 'quit', 'k': 'keys', 'v': 'version',
     'w': 'wait',
     }
@@ -64,7 +64,7 @@ arguments = {
     'input': {'type': 'string', 'default': '', },
     'output': {'type': 'string', 'default': '', },
     'append': {'type': 'bool', 'default': False, },
-    'interface': { 
+    'interface': {
         'type': 'string', 'default': '',
         'choices': ('', 'none', 'cli', 'ansi', 'text', 'graphical'), },
     'load': {'type': 'string', 'default': '', },
@@ -75,7 +75,7 @@ arguments = {
     'exec': {'type': 'string', 'default': '',  },
     'quit': {'type': 'bool', 'default': False,},
     'double': {'type': 'bool', 'default': False,},
-    'max-files': {'type': 'int', 'default': 3,}, 
+    'max-files': {'type': 'int', 'default': 3,},
     'max-reclen': {'type': 'int', 'default': 128,},
     'serial-buffer-size': {'type': 'int', 'default': 256,},
     'peek': {'type': 'string', 'list': '*', 'default': [],},
@@ -86,8 +86,8 @@ arguments = {
     'com1': {'type': 'string', 'default': '',},
     'com2': {'type': 'string', 'default': '',},
     'codepage': {'type': 'string', 'choices': encodings, 'default': '437',},
-    'font': { 
-        'type': 'string', 'list': '*', 'choices': families, 
+    'font': {
+        'type': 'string', 'list': '*', 'choices': families,
         'default': ['unifont', 'univga', 'freedos'],},
     'nosound': {'type': 'bool', 'default': False, },
     'dimensions': {'type': 'int', 'list': 2, 'default': None,},
@@ -100,11 +100,11 @@ arguments = {
     'mount': {'type': 'string', 'list': '*', 'default': [],},
     'resume': {'type': 'bool', 'default': False,},
     'strict-newline': {'type': 'bool', 'default': False,},
-    'syntax': { 
-        'type': 'string', 'choices': ('advanced', 'pcjr', 'tandy'), 
+    'syntax': {
+        'type': 'string', 'choices': ('advanced', 'pcjr', 'tandy'),
         'default': 'advanced',},
     'pcjr-term': {'type': 'string', 'default': '',},
-    'video': { 
+    'video': {
         'type': 'string', 'default': 'vga',
         'choices': ('vga', 'ega', 'cga', 'cga_old', 'mda', 'pcjr', 'tandy',
                      'hercules', 'olivetti'), },
@@ -114,13 +114,13 @@ arguments = {
     'utf8': {'type': 'bool', 'default': False,},
     'border': {'type': 'int', 'default': 5,},
     'pen': {
-        'type': 'string', 'default': 'left', 
+        'type': 'string', 'default': 'left',
         'choices': ('left', 'middle', 'right', 'none',), },
     'copy-paste': {'type': 'string', 'list': 2, 'default': ['left', 'middle'],
                    'choices': ('left', 'middle', 'right', 'none',),},
     'state': {'type': 'string', 'default': '',},
     'mono-tint': {'type': 'int', 'list': 3, 'default': [255, 255, 255],},
-    'monitor': { 
+    'monitor': {
         'type': 'string', 'choices': ('rgb', 'composite', 'mono'),
         'default': 'rgb',},
     'aspect': {'type': 'int', 'list': 2, 'default': [4, 3],},
@@ -163,7 +163,7 @@ def prepare():
         build_default_config_file(user_config_path)
     # store options in options dictionary
     options = get_options()
-    
+
 def get_options():
     """ Retrieve command line and option file options. """
     # convert command line arguments to string dictionary form
@@ -172,13 +172,13 @@ def get_options():
     args_program = parse_package(remaining)
     # get arguments and presets from specified config file
     conf_dict = parse_config(remaining)
-    # set defaults based on presets. 
+    # set defaults based on presets.
     args = parse_presets(remaining, conf_dict)
     # parse rest of command line
     merge_arguments(args, parse_args(remaining))
     # apply program argument
     merge_arguments(args, args_program)
-    # clean up arguments    
+    # clean up arguments
     clean_arguments(args)
     # apply builtin defaults for unspecified options
     apply_defaults(args)
@@ -186,11 +186,11 @@ def get_options():
 
 def append_arg(args, key, value):
     """ Update a single argument by appending a value """
-    if key in args and args[key]: 
+    if key in args and args[key]:
         if value:
             args[key] += ',' + value
     else:
-        args[key] = value    
+        args[key] = value
 
 def safe_split(s, sep):
     slist = s.split(sep, 1)
@@ -200,7 +200,7 @@ def safe_split(s, sep):
     else:
         s1 = ''
     return s0, s1
-    
+
 def get_arguments(argv):
     """ Convert arguments to { key: value } dictionary. """
     args = {}
@@ -218,7 +218,7 @@ def get_arguments(argv):
                         if not svalue and not skey:
                             continue
                         if (not svalue) and i == len(key)-2:
-                            # assign value to last argument specified    
+                            # assign value to last argument specified
                             append_arg(args, skey, value)
                         else:
                             append_arg(args, skey, svalue)
@@ -226,13 +226,13 @@ def get_arguments(argv):
                         logger.warning('Ignored unrecognised option "-%s"', short_arg)
             elif pos < positional:
                 # positional argument
-                args[pos] = arg  
+                args[pos] = arg
                 pos += 1
             else:
-                logger.warning('Ignored extra positional argument "%s"', arg)    
+                logger.warning('Ignored extra positional argument "%s"', arg)
         else:
             logger.warning('Ignored unrecognised option "=%s"', value)
-    return args    
+    return args
 
 def apply_defaults(args):
     """ Apply default argument where no option specified. """
@@ -245,14 +245,14 @@ def apply_defaults(args):
     for pos in range(positional):
         if pos not in args:
             args[pos] = ''
-    return args    
+    return args
 
 def parse_presets(remaining, conf_dict):
     """ Parse presets. """
     presets = default_presets
     try:
         argdict = {'preset': remaining.pop('preset')}
-    except KeyError:    
+    except KeyError:
         argdict = {}
     # apply default presets, including nested presets
     while True:
@@ -267,7 +267,7 @@ def parse_presets(remaining, conf_dict):
         try:
             presets = parse_list('preset', argdict.pop('preset'))
         except KeyError:
-            break    
+            break
     return argdict
 
 def parse_package(remaining):
@@ -284,24 +284,24 @@ def parse_package(remaining):
         # extract the package to a temp directory
         # and make that the current dir for our run
         zipfile.ZipFile(arg_package).extractall(path=plat.temp_dir)
-        os.chdir(plat.temp_dir)    
+        os.chdir(plat.temp_dir)
         # recursively rename all files to all-caps to avoid case issues on Unix
         # collisions: the last file renamed overwrites earlier ones
         for root, dirs, files in os.walk('.', topdown=False):
             for name in dirs + files:
                 try:
-                    os.rename(os.path.join(root, name), 
+                    os.rename(os.path.join(root, name),
                               os.path.join(root, name.upper()))
                 except OSError:
                     # if we can't rename, ignore
-                    pass    
+                    pass
         package = arg_package
     return args
 
 def parse_config(remaining):
     """ Find the correct config file and read it. """
     # always read default config files; private config overrides system config
-    # we update a whole preset at once, there's no joining of settings.                
+    # we update a whole preset at once, there's no joining of settings.
     conf_dict = read_config_file(system_config_path)
     conf_dict.update(read_config_file(user_config_path))
     # find any local overriding config file & read it
@@ -314,7 +314,7 @@ def parse_config(remaining):
     if config_file:
         conf_dict.update(read_config_file(config_file))
     return conf_dict
-    
+
 def read_config_file(config_file):
     """ Read config file. """
     try:
@@ -324,8 +324,8 @@ def read_config_file(config_file):
         logger.warning('Error in configuration file %s. '
                         'Configuration not loaded.', config_file)
         return {}
-    presets = { header: dict(config.items(header)) 
-                for header in config.sections() }    
+    presets = { header: dict(config.items(header))
+                for header in config.sections() }
     return presets
 
 def parse_args(remaining):
@@ -335,12 +335,12 @@ def parse_args(remaining):
     args = {d:remaining[d] for d in remaining if d in known}
     not_recognised = {d:remaining[d] for d in remaining if d not in known}
     for d in not_recognised:
-        logger.warning('Ignored unrecognised option "%s=%s"', 
+        logger.warning('Ignored unrecognised option "%s=%s"',
                         d, not_recognised[d])
     return args
 
 ################################################
-    
+
 def merge_arguments(args0, args1):
     """ Update args0 with args1. Lists of indefinite length are appended. """
     for a in args1:
@@ -351,7 +351,7 @@ def merge_arguments(args0, args1):
         except KeyError:
             pass
         # override
-        args0[a] = args1[a]        
+        args0[a] = args1[a]
 
 def clean_arguments(args):
     """ Convert arguments to required type and list length. """
@@ -359,9 +359,9 @@ def clean_arguments(args):
         try:
             args[d] = parse_list(d, args[d], arguments[d]['list'])
         except KeyError:
-            # not a list    
-            args[d] = parse_type(d, args[d]) 
-            
+            # not a list
+            args[d] = parse_type(d, args[d])
+
 def parse_type(d, arg):
     """ Convert argument to required type. """
     if d not in arguments:
@@ -377,7 +377,7 @@ def parse_type(d, arg):
                             d, str(arg), ', '.join(arguments[d]['choices']))
             arg = ''
     return arg
-    
+
 def parse_list(d, s, length='*'):
     """ Convert list strings to typed lists. """
     lst = s.split(',')
@@ -385,15 +385,15 @@ def parse_list(d, s, length='*'):
         if length == '*':
             return []
         elif length < 0:
-            return [None]*(-length)    
+            return [None]*(-length)
         else:
-            return None    
+            return None
     lst = [parse_type(d, arg) for arg in lst]
     # negative length: optional up-to
     if length < 0:
         lst += [None]*(-length-len(lst))
     if length != '*' and (len(lst) > abs(length) or len(lst) < length):
-        logger.warning('Option "%s=%s" ignored, should have %d elements', 
+        logger.warning('Option "%s=%s" ignored, should have %d elements',
                         d, s, abs(length))
     return lst
 
@@ -405,7 +405,7 @@ def parse_bool(d, s):
         if s.upper() in ('YES', 'TRUE', 'ON', '1'):
             return True
         elif s.upper() in ('NO', 'FALSE', 'OFF', '0'):
-            return False   
+            return False
     except AttributeError:
         logger.warning('Option "%s=%s" ignored; should be a boolean', d, s)
         return None
@@ -477,7 +477,6 @@ def build_default_config_file(file_name):
     except (OSError, IOError):
         # can't create file, ignore. we'll get a message later.
         pass
-            
-# initialise this module    
+
+# initialise this module
 prepare()
-    
