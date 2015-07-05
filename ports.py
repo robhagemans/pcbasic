@@ -1,10 +1,10 @@
 """
-PC-BASIC 3.23 - serial_socket.py
+PC-BASIC 3.23 - ports.py
 1) Workaround for some limitations of SocketSerial with timeout==0
 2) Stream API for parallel port
 
 Contains code from PySerial (c) 2001-2013 Chris Liechtl <cliechti(at)gmx.net>; All Rights Reserved.
-as well as modifications (c) 2013-2014 Rob Hagemans.
+as well as modifications (c) 2013, 2014, 2015 Rob Hagemans.
 This file is released under the GNU GPL version 3 or, at your option, the Python 2.7 licence.
 """
 

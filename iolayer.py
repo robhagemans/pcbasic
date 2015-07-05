@@ -23,7 +23,7 @@ import util
 import state
 import memory
 import backend
-import serial_socket
+import ports
 import printer
 
 # file numbers
@@ -235,7 +235,7 @@ class LPTDevice(Device):
                 logging.warning('Could not attach file %s to LPT device: %s', val, str(e))
         elif addr == 'PARPORT':
             # port can be e.g. /dev/parport0 on Linux or LPT1 on Windows. Just a number counting from 0 would also work.
-           self.stream = serial_socket.parallel_port(val)
+           self.stream = ports.parallel_port(val)
         else:
             # 'PRINTER' is default
             self.stream = printer.PrinterStream(val)
@@ -270,11 +270,11 @@ class COMDevice(Device):
         elif (addr and addr not in self.allowed_protocols):
             logging.warning('Could not attach %s to COM device', arg)
         elif addr == 'SOCKET':
-            self.stream = serial_socket.serial_for_url('socket://'+val)
+            self.stream = ports.serial_for_url('socket://'+val)
         else:
             # 'PORT' is default
             # port can be e.g. /dev/ttyS1 on Linux or COM1 on Windows. Or anything supported by serial_for_url (RFC 2217 etc)
-            self.stream = serial_socket.serial_for_url(val)
+            self.stream = ports.serial_for_url(val)
         # wait until socket is open to open file on it
         # as opening a text file atomatically reads a byte
         self.device_file = None
@@ -292,7 +292,7 @@ class COMDevice(Device):
         else:
             try:
                 self.stream.open()
-            except serial_socket.SerialException as e:
+            except ports.SerialException as e:
                 # device timeout
                 logging.debug("Serial exception: %s", e)
                 raise error.RunError(24)
@@ -873,7 +873,7 @@ class COMFile(CRLFTextFileBase):
         """ Fill buffer at most up to buffer size; non blocking. """
         try:
             self.in_buffer += self.fhandle.read(serial_in_size - len(self.in_buffer))
-        except (serial_socket.SerialException, ValueError):
+        except (ports.SerialException, ValueError):
             # device I/O
             raise error.RunError(57)
 
@@ -922,7 +922,7 @@ class COMFile(CRLFTextFileBase):
             if self.linefeed:
                 s = s.replace('\r', '\r\n')
             self.fhandle.write(s)
-        except (serial_socket.SerialException, ValueError):
+        except (ports.SerialException, ValueError):
             # device I/O
             raise error.RunError(57)
 
