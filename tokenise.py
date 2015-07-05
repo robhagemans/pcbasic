@@ -10,6 +10,9 @@ Convert between tokenised and ASCII formats of a GW-BASIC program file
 This file is released under the GNU GPL version 3.
 """
 
+from string import ascii_uppercase
+from string import digits as ascii_digits
+
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -22,10 +25,9 @@ import util
 import vartypes
 
 # newline is considered whitespace: ' ', '\t', '\n'
-from representation import ascii_digits, whitespace
+from representation import whitespace
 
 ascii_operators = ('+', '-', '=', '/', '\\', '^', '*', '<', '>')
-ascii_uppercase = tuple(map(chr, range(ord('A'), ord('Z')+1)))
 
 # allowable as chars 2.. in a variable name (first char must be a letter)
 name_chars = ascii_uppercase + ascii_digits + ('.',)

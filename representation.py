@@ -1,10 +1,14 @@
 """
-PC-BASIC 3.23 - representation.py
+PC-BASIC - representation.py
 Convert between numbers and their string representations
 
-(c) 2013, 2014 Rob Hagemans
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
+
+from string import digits as ascii_digits
+from string import hexdigits as ascii_hexits
+from string import octdigits as ascii_octits
 
 try:
     from cStringIO import StringIO
@@ -21,11 +25,7 @@ import vartypes
 
 # whitespace for INPUT#, INPUT
 # TAB x09 is not whitespace for input#. NUL \x00 and LF \x0a are.
-ascii_white = (' ', '\x00', '\n')
-# octal, decimal and hex digits
-ascii_octits = ('0','1','2','3','4','5','6','7')
-ascii_digits = ascii_octits + ('8','9')
-ascii_hexits = ascii_digits + ('A','B','C','D','E','F')
+ascii_white = (' ', '\0', '\n')
 
 
 def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=False):
