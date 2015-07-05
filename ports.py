@@ -102,7 +102,7 @@ def parallel_port(port):
         return None
     try:
         return ParallelStream(port)
-    except (OSError, IOError):
+    except EnvironmentError:
         logging.warning('Could not open parallel port %s.', port)
         return None
 
