@@ -172,10 +172,6 @@ class COMDevice(devices.Device):
 class COMFile(devices.CRLFTextFileBase):
     """ COMn: device - serial port. """
 
-    # FIXME: where does this go now?
-    # communications buffer overflow
-    #overflow_error = 69
-
     def __init__(self, fhandle):
         """ Initialise COMn: file. """
         # note that for random files, fhandle must be a seekable stream.
