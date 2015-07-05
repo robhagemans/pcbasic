@@ -358,6 +358,7 @@ Choose the mouse buttons for clipboard operations.
 <code><em>copy_button</em></code> and <code><em>paste_button</em></code> are
 one of <code>left</code>,<code>middle</code>,<code>right</code>,<code>none</code>.
 </dd>
+
 <dt><code>--ctrl-c-break[=True|=False]</code></dt>
 <dd>
 If <code>False</code>, follow GW-BASIC behaviour
@@ -381,6 +382,15 @@ Windows and Linux and <code>True</code> on OSX. In <code>text</code> and
 <code><em>Y</em></code> pixels. This overrides
 <code>--scaling=native</code> and <code>--aspect</code>. Graphical
 interface only.</dd>
+
+<dt><code>--current-device=<em>{A|B...|Z}</em></code></dt>
+<dd>
+Set the current disk device to the indicated PC-BASIC drive letter. The device chosen
+should be mounted to an actual location using --mount. Default is <code>Z</code>,
+with the <code>Z:</code> device mounted to your current drive.
+<code>--map-drives</code> overrides this option.
+</dd>
+
 <dt><code>-d</code><br>
 <code>--double[=True|=False]</code></dt>
 <dd>Allow double-precision transcendental math functions. This is

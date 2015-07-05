@@ -19,7 +19,7 @@ import plat
 if plat.system == 'Windows':
     import win32api
     import ctypes
-    
+
 import config
 import error
 import state
@@ -103,7 +103,7 @@ def prepare():
         drives, current_drive = map_drives()
     else:
         drives = { 'Z': (os.getcwd(), '') }
-        current_drive = 'Z'
+        current_drive = config.options['current-device']
     for a in config.options['mount']:
         try:
             # the last one that's specified will stick
@@ -122,7 +122,11 @@ def prepare():
         except KeyError:
             path, cwd = None, ''
         backend.devices[letter + ':'] = DiskDevice(letter, path, cwd)
-    iolayer.current_device = backend.devices[current_drive + ':']
+    try:
+        iolayer.current_device = backend.devices[current_drive + ':']
+    except KeyError:
+        logging.warning('Could not set current drive to %s', current_drive + ':')
+        iolayer.current_device = backend.devices['Z:']
     # initialise field buffers
     reset_fields()
 
@@ -859,4 +863,3 @@ class TextFile(iolayer.CRLFTextFileBase):
             raise error.RunError(70)
 
 prepare()
-

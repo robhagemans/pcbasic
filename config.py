@@ -2,7 +2,7 @@
 PC-BASIC 3.23
 Configuration file and command-line options parser
 
-(c) 2013, 2014 Rob Hagemans
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -140,6 +140,7 @@ arguments = {
     'altgr': {'type': 'bool', 'default': True,},
     'ctrl-c-break': {'type': 'bool', 'default': False,},
     'wait': {'type': 'bool', 'default': False,},
+    'current-device': {'type': 'string', 'default': 'Z'},
 }
 
 
