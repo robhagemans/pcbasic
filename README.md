@@ -77,7 +77,7 @@ On FreeBSD:
 
         sudo pkg install python27 py27-xdg py27-game py27-numpy py27-serial py27-pexpect xsel
 
-Note that PyParallel is not available from the Fedora and FreeBSD repos; you'll need to install from source or do without access to physical parallel ports. It is _not_ needed for printing to `LPT1`.  
+Note that PyParallel is not available from the Fedora and FreeBSD repos. PyParallel does not support BSD; on Fedora, you'll need to install from source if you need access to physical parallel ports. However, since most modern machines do not actually have parallel ports, you probably don't need it. PyParallel is _not_ needed for printing to a CUPS or Windows printer.  
 
 The official Pygame release 1.9.1 has a bug in its handling of copy & paste on X11-based systems.
 If you run into this, install one of the [`xsel`](http://www.vergenet.net/~conrad/software/xsel/) or [`xclip`](https://sourceforge.net/projects/xclip/)  utilities and PC-BASIC will work around the issue.  
