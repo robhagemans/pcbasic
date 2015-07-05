@@ -122,7 +122,7 @@ def start_basic():
     import run
     import error
     import state
-    import iolayer
+    import devices
     import disk
     import cassette
     import reset
@@ -184,11 +184,11 @@ def start_basic():
             state.save()
         try:
             # close files if we opened any
-            iolayer.close_files()
+            devices.close_files()
         except (NameError, AttributeError) as e:
             logging.debug('Error on closing files: %s', e)
         try:
-            iolayer.close_devices()
+            devices.close_devices()
         except (NameError, AttributeError) as e:
             logging.debug('Error on closing devices: %s', e)
 
@@ -278,7 +278,7 @@ def print_greeting(console):
 
 def open_native_or_dos_filename(infile):
     """ If the specified file exists, open it; if not, try as DOS file name. """
-    import iolayer
+    import devices
     import disk
     import cassette
     import error
@@ -287,7 +287,7 @@ def open_native_or_dos_filename(infile):
         return disk.open_diskfile(open(os.path.expandvars(os.path.expanduser(infile)), 'r'), filetype='BPA', mode='I')
     except EnvironmentError as e:
         # otherwise, accept capitalised versions and default extension
-        return iolayer.open_file(0, infile, filetype='BPA', mode='I')
+        return devices.open_file(0, infile, filetype='BPA', mode='I')
 
 def debug_details():
     logging.info('os: %s', plat.system)

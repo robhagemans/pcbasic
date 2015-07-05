@@ -1,6 +1,6 @@
 """
-PC-BASIC 3.23 - iolayer.py
-File and Device I/O operations
+PC-BASIC - devices.py
+Devices, Files and I/O operations
 
 (c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.

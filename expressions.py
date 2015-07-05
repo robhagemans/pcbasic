@@ -22,7 +22,7 @@ import shell
 import util
 import error
 import var
-import iolayer
+import devices
 import graphics
 import console
 # for FRE() only
@@ -285,7 +285,7 @@ def parse_file_number(ins, file_mode='IOAR'):
     if util.skip_white_read_if(ins, ('#',)):
         number = vartypes.pass_int_unpack(parse_expression(ins))
         util.range_check(0, 255, number)
-        screen = iolayer.get_file(number, file_mode)
+        screen = devices.get_file(number, file_mode)
         util.require_read(ins, (',',))
     return screen
 
@@ -516,7 +516,7 @@ def value_input(ins):
     util.range_check(1, 255, num)
     infile = backend.kybd_file
     if util.skip_white_read_if(ins, (',',)):
-        infile = iolayer.get_file(parse_file_number_opthash(ins))
+        infile = devices.get_file(parse_file_number_opthash(ins))
     util.require_read(ins, (')',))
     word = vartypes.pack_string(bytearray(infile.read_raw(num)))
     if len(word) < num:
@@ -566,7 +566,7 @@ def value_loc(ins):
     util.skip_white(ins)
     num = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
     util.range_check(0, 255, num)
-    the_file = iolayer.get_file(num)
+    the_file = devices.get_file(num)
     return vartypes.pack_int(the_file.loc())
 
 def value_eof(ins):
@@ -576,7 +576,7 @@ def value_eof(ins):
     if num == 0:
         return vartypes.null['%']
     util.range_check(0, 255, num)
-    the_file = iolayer.get_file(num, 'IR')
+    the_file = devices.get_file(num, 'IR')
     return vartypes.bool_to_int_keep(the_file.eof())
 
 def value_lof(ins):
@@ -584,7 +584,7 @@ def value_lof(ins):
     util.skip_white(ins)
     num = vartypes.pass_int_unpack(parse_bracket(ins), maxint=0xffff)
     util.range_check(0, 255, num)
-    the_file = iolayer.get_file(num)
+    the_file = devices.get_file(num)
     return vartypes.pack_int(the_file.lof() )
 
 
@@ -827,7 +827,7 @@ def value_ioctl(ins):
     util.require_read(ins, ('(',))
     num = parse_file_number_opthash(ins)
     util.require_read(ins, (')',))
-    iolayer.get_file(num)
+    devices.get_file(num)
     logging.warning("IOCTL$() function not implemented.")
     raise error.RunError(5)
 

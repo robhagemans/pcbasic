@@ -16,7 +16,7 @@ import var
 import console
 import error
 import memory
-import iolayer
+import devices
 import program
 import timedate
 
@@ -118,7 +118,7 @@ def wait(addr, ander, xorer):
     state.basic_state.events.suspend_all = True
     while (inp(addr) ^ xorer) & ander == 0:
         backend.wait()
-    state.basic_state.events.suspend_all = store_suspend     
+    state.basic_state.events.suspend_all = store_suspend
 
 def bload(g, offset):
     """ Load a file into a block of memory. """
@@ -147,7 +147,7 @@ def bsave(g, offset, length):
 
 def varptr_file(filenum):
     """ Get address of FCB for a given file number. """
-    if filenum < 1 or filenum > iolayer.max_files:
+    if filenum < 1 or filenum > devices.max_files:
         # bad file number
         raise error.RunError(52)
     return memory.field_mem_base + filenum * memory.field_mem_offset + 6

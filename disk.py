@@ -29,7 +29,7 @@ import backend
 import console
 # for value_to_uint
 import vartypes
-import iolayer
+import devices
 import unicodepage
 
 
@@ -125,18 +125,18 @@ def prepare():
             path, cwd = None, ''
         backend.devices[letter + ':'] = DiskDevice(letter, path, cwd)
     try:
-        iolayer.current_device = backend.devices[current_drive + ':']
+        devices.current_device = backend.devices[current_drive + ':']
     except KeyError:
         logging.warning('Could not set current drive to %s', current_drive + ':')
-        iolayer.current_device = backend.devices['Z:']
+        devices.current_device = backend.devices['Z:']
     # initialise field buffers
     reset_fields()
 
 def reset_fields():
     """ Initialise FIELD buffers. """
     state.io_state.fields = {}
-    for i in range(iolayer.max_files):
-        state.io_state.fields[i] = iolayer.Field(i)
+    for i in range(devices.max_files):
+        state.io_state.fields[i] = devices.Field(i)
 
 
 if plat.system == 'Windows':
@@ -236,9 +236,9 @@ def get_diskdevice_and_path(path):
     """ Return the disk device and remaining path for given BASIC path. """
     splits = str(path).upper().split(':', 1)
     if len(splits) == 0:
-        return iolayer.current_device, ''
+        return devices.current_device, ''
     elif len(splits) == 1:
-        return iolayer.current_device, splits[0]
+        return devices.current_device, splits[0]
     else:
         # must be a disk device
         if len(splits[0]) > 1:
@@ -508,7 +508,7 @@ class DiskDevice(object):
         # set cwd for the specified drive
         self.cwd = rpath
         # set the cwd in the underlying os (really only useful for SHELL)
-        if self == iolayer.current_device:
+        if self == devices.current_device:
             safe(os.chdir, os.path.join(dpath, rpath))
 
     def mkdir(self, name):
@@ -606,7 +606,7 @@ def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock=
         first = fhandle.read(1)
         fhandle.seek(-1, 1)
         try:
-            filetype_found = iolayer.magic_to_type[first]
+            filetype_found = devices.magic_to_type[first]
             if filetype_found not in filetype:
                 # bad file mode
                 raise error.RunError(54)
@@ -636,20 +636,20 @@ def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock=
         raise error.RunError(51)
 
 
-class BinaryFile(iolayer.RawFile):
+class BinaryFile(devices.RawFile):
     """ File class for binary (B, P, M) files on disk device. """
 
     def __init__(self, fhandle, filetype, number, name, mode,
                        seg, offset, length):
         """ Initialise program file object and write header. """
-        iolayer.RawFile.__init__(self, fhandle, filetype, mode)
+        devices.RawFile.__init__(self, fhandle, filetype, mode)
         self.number = number
         # don't lock binary files
         self.lock = ''
         self.access = 'RW'
         self.seg, self.offset, self.length = 0, 0, 0
         if self.mode == 'O':
-            self.write(iolayer.type_to_magic[filetype])
+            self.write(devices.type_to_magic[filetype])
             if self.filetype == 'M':
                 self.write(vartypes.value_to_uint(seg) +
                            vartypes.value_to_uint(offset) +
@@ -668,11 +668,11 @@ class BinaryFile(iolayer.RawFile):
         """ Write EOF and close program file. """
         if self.mode == 'O':
             self.write('\x1a')
-        iolayer.RawFile.close(self)
+        devices.RawFile.close(self)
         release_lock(self.number)
 
 
-class RandomFile(iolayer.CRLFTextFileBase):
+class RandomFile(devices.CRLFTextFileBase):
     """ Random-access file on disk device. """
 
     def __init__(self, output_stream, number, name,
@@ -685,7 +685,7 @@ class RandomFile(iolayer.CRLFTextFileBase):
         # replace with empty field if already exists
         self.field = state.io_state.fields[number]
         self.field.reset(self.reclen)
-        iolayer.CRLFTextFileBase.__init__(self, ByteStream(self.field.buffer), 'D', 'R')
+        devices.CRLFTextFileBase.__init__(self, ByteStream(self.field.buffer), 'D', 'R')
         self.operating_mode = 'I'
         # note that for random files, output_stream must be a seekable stream.
         self.output_stream = output_stream
@@ -713,7 +713,7 @@ class RandomFile(iolayer.CRLFTextFileBase):
             self.flush()
             self.next_char = self.fhandle.read(1)
             self.operating_mode = 'I'
-        s = iolayer.CRLFTextFileBase.read_raw(self, num)
+        s = devices.CRLFTextFileBase.read_raw(self, num)
         self._check_overflow()
         return s
 
@@ -723,12 +723,12 @@ class RandomFile(iolayer.CRLFTextFileBase):
         if self.operating_mode == 'I':
             self.fhandle.seek(-1, 1)
             self.operating_mode = 'O'
-        iolayer.CRLFTextFileBase.write(self, s)
+        devices.CRLFTextFileBase.write(self, s)
         self._check_overflow()
 
     def close(self):
         """ Close random-access file. """
-        iolayer.CRLFTextFileBase.close(self)
+        devices.CRLFTextFileBase.close(self)
         self.output_stream.close()
         release_lock(self.number)
 
@@ -794,14 +794,14 @@ class RandomFile(iolayer.CRLFTextFileBase):
             raise error.RunError(70)
 
 
-class TextFile(iolayer.CRLFTextFileBase):
+class TextFile(devices.CRLFTextFileBase):
     """ Text file on disk device. """
 
     def __init__(self, fhandle, filetype, number, name,
                  mode='A', access='RW', lock='', first_char='',
                  utf8=False, universal=False):
         """ Initialise text file object. """
-        iolayer.CRLFTextFileBase.__init__(self, fhandle, filetype,
+        devices.CRLFTextFileBase.__init__(self, fhandle, filetype,
                                           mode, first_char)
         self.lock_list = set()
         self.lock_type = lock
@@ -822,7 +822,7 @@ class TextFile(iolayer.CRLFTextFileBase):
         if self.mode in ('O', 'A') and not self.utf8:
             # write EOF char
             self.fhandle.write('\x1a')
-        iolayer.CRLFTextFileBase.close(self)
+        devices.CRLFTextFileBase.close(self)
         release_lock(self.number)
 
     def loc(self):
@@ -844,13 +844,13 @@ class TextFile(iolayer.CRLFTextFileBase):
         """ Write to file in normal or UTF-8 mode. """
         if self.utf8:
             s = unicodepage.UTF8Converter().to_utf8(s)
-        iolayer.CRLFTextFileBase.write(self, s + '\r\n')
+        devices.CRLFTextFileBase.write(self, s + '\r\n')
 
     def write(self, s):
         """ Write to file in normal or UTF-8 mode. """
         if self.utf8:
             s = unicodepage.UTF8Converter().to_utf8(s)
-        iolayer.CRLFTextFileBase.write(self, s)
+        devices.CRLFTextFileBase.write(self, s)
 
     def _read_line_universal(self):
         """ Read line from ascii program file with universal newlines. """
@@ -882,7 +882,7 @@ class TextFile(iolayer.CRLFTextFileBase):
     def read_line(self):
         """ Read line from text file. """
         if not self.universal:
-            s = iolayer.CRLFTextFileBase.read_line(self)
+            s = devices.CRLFTextFileBase.read_line(self)
         else:
             s = self._read_line_universal()
         if self.utf8 and s is not None:

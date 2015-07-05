@@ -8,7 +8,7 @@ This file is released under the GNU GPL version 3.
 
 import var
 import rnd
-import iolayer
+import devices
 import disk
 import state
 
@@ -22,7 +22,7 @@ def clear(close_files=False, preserve_common=False, preserve_all=False, preserve
     rnd.clear()
     if close_files:
         # close all files
-        iolayer.close_files()
+        devices.close_files()
     # release all disk buffers (FIELD)?
     disk.reset_fields()
     # clear ERR and ERL

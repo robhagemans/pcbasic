@@ -25,7 +25,7 @@ import expressions
 import flow
 import fp
 import graphics
-import iolayer
+import devices
 import machine
 import memory
 import program
@@ -638,7 +638,7 @@ def exec_bload(ins):
         if offset < 0:
             offset += 0x10000
     util.require(ins, util.end_statement)
-    with iolayer.open_file(0, name, filetype='M', mode='I') as f:
+    with devices.open_file(0, name, filetype='M', mode='I') as f:
         machine.bload(f, offset)
 
 def exec_bsave(ins):
@@ -656,7 +656,7 @@ def exec_bsave(ins):
     if length < 0:
         length += 0x10000
     util.require(ins, util.end_statement)
-    with iolayer.open_file(0, name, filetype='M', mode='O',
+    with devices.open_file(0, name, filetype='M', mode='O',
                             seg=state.basic_state.segment,
                             offset=offset, length=length) as f:
         machine.bsave(f, offset, length)
@@ -889,7 +889,7 @@ def exec_list(ins):
     """ LIST: output program lines. """
     from_line, to_line = parse_line_range(ins)
     if util.skip_white_read_if(ins, (',',)):
-        out = iolayer.open_file(0, vartypes.pass_string_unpack(expressions.parse_expression(ins)),
+        out = devices.open_file(0, vartypes.pass_string_unpack(expressions.parse_expression(ins)),
                                 filetype='A', mode='O')
     else:
         out = backend.scrn_file
@@ -912,14 +912,14 @@ def exec_load(ins):
     if comma:
         util.require_read(ins, 'R')
     util.require(ins, util.end_statement)
-    with iolayer.open_file(0, name, filetype='ABP', mode='I') as f:
+    with devices.open_file(0, name, filetype='ABP', mode='I') as f:
         program.load(f)
     reset.clear()
     if comma:
         # in ,R mode, don't close files; run the program
         flow.jump(None)
     else:
-        iolayer.close_files()
+        devices.close_files()
     state.basic_state.tron = False
 
 def exec_chain(ins):
@@ -950,7 +950,7 @@ def exec_chain(ins):
     util.require(ins, util.end_statement)
     if state.basic_state.protected and action == program.merge:
             raise error.RunError(5)
-    with iolayer.open_file(0, name, filetype='ABP', mode='I') as f:
+    with devices.open_file(0, name, filetype='ABP', mode='I') as f:
         program.chain(action, f, jumpnum, delete_lines)
     # preserve DEFtype on MERGE
     reset.clear(preserve_common=True, preserve_all=common_all, preserve_deftype=(action==program.merge))
@@ -981,7 +981,7 @@ def exec_save(ins):
         mode = util.skip_white_read(ins).upper()
         if mode not in ('A', 'P'):
             raise error.RunError(2)
-    with iolayer.open_file(0, name, filetype=mode, mode='O',
+    with devices.open_file(0, name, filetype=mode, mode='O',
                             seg=memory.data_segment, offset=memory.code_start,
                             length=len(state.basic_state.bytecode.getvalue())-1
                             ) as f:
@@ -992,7 +992,7 @@ def exec_merge(ins):
     """ MERGE: merge lines from file into current program. """
     name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
     # check if file exists, make some guesses (all uppercase, +.BAS) if not
-    with iolayer.open_file(0, name, filetype='A', mode='I') as f:
+    with devices.open_file(0, name, filetype='A', mode='I') as f:
         program.merge(f)
     util.require(ins, util.end_statement)
 
@@ -1024,7 +1024,7 @@ def exec_renum(ins):
 
 def exec_reset(ins):
     """ RESET: close all files. """
-    iolayer.close_files()
+    devices.close_files()
     util.require(ins, util.end_statement)
 
 def parse_read_write(ins):
@@ -1103,20 +1103,20 @@ def exec_open(ins):
         raise error.RunError(75)
     elif mode != 'R' and access and access != default_access_modes[mode]:
         raise error.RunError(2)
-    util.range_check(1, iolayer.max_reclen, reclen)
-    iolayer.open_file(number, name, 'D', mode, access, lock, reclen)
+    util.range_check(1, devices.max_reclen, reclen)
+    devices.open_file(number, name, 'D', mode, access, lock, reclen)
     util.require(ins, util.end_statement)
 
 def exec_close(ins):
     """ CLOSE: close a file. """
     if util.skip_white(ins) in util.end_statement:
         # allow empty CLOSE; close all open files
-        iolayer.close_files()
+        devices.close_files()
     else:
         while True:
             number = expressions.parse_file_number_opthash(ins)
             try:
-                iolayer.close_file(number)
+                devices.close_file(number)
             except KeyError:
                 pass
             if not util.skip_white_read_if(ins, (',',)):
@@ -1125,7 +1125,7 @@ def exec_close(ins):
 
 def exec_field(ins):
     """ FIELD: link a string variable to record buffer. """
-    the_file = iolayer.get_file(expressions.parse_file_number_opthash(ins), 'R')
+    the_file = devices.get_file(expressions.parse_file_number_opthash(ins), 'R')
     if util.skip_white_read_if(ins, (',',)):
         offset = 0
         while True:
@@ -1141,13 +1141,13 @@ def exec_field(ins):
 
 def parse_get_or_put_file(ins):
     """ Helper function: PUT and GET syntax. """
-    the_file = iolayer.get_file(expressions.parse_file_number_opthash(ins), 'R')
+    the_file = devices.get_file(expressions.parse_file_number_opthash(ins), 'R')
     # for COM files
     num_bytes = the_file.reclen
     if util.skip_white_read_if(ins, (',',)):
         pos = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
         util.range_check_err(1, 2**25, pos, err=63) # not 2^32-1 as the manual boasts! pos-1 needs to fit in a single-prec mantissa
-        if not isinstance(the_file, iolayer.COMFile):
+        if not isinstance(the_file, devices.COMFile):
             the_file.set_pos(pos)
         else:
             num_bytes = pos
@@ -1167,7 +1167,7 @@ def exec_get_file(ins):
 
 def exec_lock_or_unlock(ins, action):
     """ LOCK or UNLOCK: set file or record locks. """
-    thefile = iolayer.get_file(expressions.parse_file_number_opthash(ins))
+    thefile = devices.get_file(expressions.parse_file_number_opthash(ins))
     lock_start_rec = 1
     if util.skip_white_read_if(ins, (',',)):
         lock_start_rec = fp.unpack(vartypes.pass_single_keep(expressions.parse_expression(ins))).round_to_int()
@@ -1189,7 +1189,7 @@ exec_unlock = partial(exec_lock_or_unlock, action = 'unlock')
 
 def exec_ioctl(ins):
     """ IOCTL: send control string to I/O device. Not implemented. """
-    iolayer.get_file(expressions.parse_file_number_opthash(ins))
+    devices.get_file(expressions.parse_file_number_opthash(ins))
     logging.warning("IOCTL statement not implemented.")
     raise error.RunError(5)
 
@@ -1414,7 +1414,7 @@ def exec_end(ins):
     # avoid NO RESUME
     state.basic_state.error_handle_mode = False
     state.basic_state.error_resume = None
-    iolayer.close_files()
+    devices.close_files()
 
 def exec_stop(ins):
     """ STOP: break program execution and return to interpreter. """
@@ -1541,7 +1541,7 @@ def exec_run(ins):
     elif c not in util.end_statement:
         name = vartypes.pass_string_unpack(expressions.parse_expression(ins))
         util.require(ins, util.end_statement)
-        with iolayer.open_file(0, name, filetype='ABP', mode='I') as f:
+        with devices.open_file(0, name, filetype='ABP', mode='I') as f:
             program.load(f)
     flow.init_program()
     reset.clear(close_files=not comma)
@@ -2354,7 +2354,7 @@ def exec_print(ins, output=None):
             # numbers always followed by a space
             if expr[0] in ('%', '!', '#'):
                 word += ' '
-            # output file (iolayer) takes care of width management; we must send a whole string at a time for this to be correct.
+            # output file (devices) takes care of width management; we must send a whole string at a time for this to be correct.
             output.write(str(word))
     if util.skip_white_read_if(ins, (token.USING,)):
         return exec_print_using(ins, output)

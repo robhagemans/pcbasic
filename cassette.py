@@ -21,7 +21,7 @@ except ImportError:
 import error
 import config
 import backend
-import iolayer
+import devices
 import console
 
 token_to_type = {0: 'D', 1:'M', 0xa0:'P', 0x20:'P', 0x40:'A', 0x80:'B'}
@@ -56,7 +56,7 @@ class CASDevice(object):
 
     def __init__(self, arg):
         """ Initialise tape device. """
-        addr, val = iolayer.parse_protocol_string(arg)
+        addr, val = devices.parse_protocol_string(arg)
         valsplit = val.split(':', 1)
         loc = None
         if len(valsplit) == 2:
@@ -133,20 +133,20 @@ class CASDevice(object):
 #################################################################################
 # Cassette files
 
-class CASBinaryFile(iolayer.RawFile):
+class CASBinaryFile(devices.RawFile):
     """ Program or Memory file on CASn: device. """
 
     def __init__(self, fhandle, filetype, mode, seg, offset, length):
         """ Initialise binary file. """
-        iolayer.RawFile.__init__(self, fhandle, filetype, mode)
+        devices.RawFile.__init__(self, fhandle, filetype, mode)
         self.seg, self.offset, self.length = seg, offset, length
 
     def close(self):
         """ Close a file on tape. """
-        iolayer.RawFile.close(self)
+        devices.RawFile.close(self)
 
 
-class CASTextFile(iolayer.TextFileBase):
+class CASTextFile(devices.TextFileBase):
     """ Text file on CASn: device. """
 
     def lof(self):
@@ -166,7 +166,7 @@ class CASTextFile(iolayer.TextFileBase):
             self.fhandle.close()
         except EnvironmentError:
             pass
-        iolayer.TextFileBase.close(self)
+        devices.TextFileBase.close(self)
 
 
 class CassetteStream(object):
