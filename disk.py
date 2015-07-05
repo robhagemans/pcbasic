@@ -626,7 +626,7 @@ def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock=
             return TextFile(fhandle, filetype, number, name,
                              mode, access, lock, first)
         else:
-            return RandomFile(fhandle, number, name, mode, access, lock, reclen)
+            return RandomFile(fhandle, number, name, access, lock, reclen)
     else:
         # internal error - incorrect file type requested
         logging.debug('Incorrect file type %s requested for mode %s',
@@ -670,15 +670,22 @@ class BinaryFile(iolayer.RawFile):
         release_lock(self.number)
 
 
-class RandomFile(iolayer.RandomBase):
+class RandomFile(iolayer.FieldTextFile):
     """ Random-access file on disk device. """
 
-    def __init__(self, fhandle, number, name,
-                        mode, access, lock, reclen=128):
+    def __init__(self, output_stream, number, name,
+                        access, lock, reclen=128):
         """ Initialise random-access file. """
-        iolayer.RandomBase.__init__(self, fhandle, 'D',
-                                          state.io_state.fields[number],
-                                          mode, reclen)
+        # all text-file operations on a RANDOM file (PRINT, WRITE, INPUT, ...)
+        # actually work on the FIELD buffer; the file stream itself is not
+        # touched until PUT or GET.
+        self.reclen = reclen
+        # replace with empty field if already exists
+        self.field = state.io_state.fields[number]
+        self.field.reset(self.reclen)
+        iolayer.FieldTextFile.__init__(self, self.field)
+        # note that for random files, output_stream must be a seekable stream.
+        self.output_stream = output_stream
         self.lock_type = lock
         self.access = access
         self.lock_list = set()
@@ -686,11 +693,12 @@ class RandomFile(iolayer.RandomBase):
         self.name = name
         # position at start of file
         self.recpos = 0
-        self.fhandle.seek(0)
+        self.output_stream.seek(0)
 
     def close(self):
         """ Close random-access file. """
-        iolayer.RandomBase.close(self)
+        iolayer.FieldTextFile.close(self)
+        self.output_stream.close()
         release_lock(self.number)
 
     def get(self, dummy=None):
@@ -698,24 +706,25 @@ class RandomFile(iolayer.RandomBase):
         if self.eof():
             self.field.buffer[:] = '\0' * self.reclen
         else:
-            self.field.buffer[:] = self.fhandle.read(self.reclen)
-        self.field_text_file.fhandle.seek(0)
+            self.field.buffer[:] = self.output_stream.read(self.reclen)
+        # reset field text file loc
+        self.fhandle.seek(0)
         self.recpos += 1
 
     def put(self, dummy=None):
         """ Write a record. """
         current_length = self.lof()
         if self.recpos > current_length:
-            self.fhandle.seek(0, 2)
+            self.output_stream.seek(0, 2)
             numrecs = self.recpos-current_length
-            self.fhandle.write('\0' * numrecs * self.reclen)
-        self.fhandle.write(self.field.buffer)
+            self.output_stream.write('\0' * numrecs * self.reclen)
+        self.output_stream.write(self.field.buffer)
         self.recpos += 1
 
     def set_pos(self, newpos):
         """ Set current record number. """
         # first record is newpos number 1
-        self.fhandle.seek((newpos-1)*self.reclen)
+        self.output_stream.seek((newpos-1)*self.reclen)
         self.recpos = newpos - 1
 
     def loc(self):
@@ -728,10 +737,10 @@ class RandomFile(iolayer.RandomBase):
 
     def lof(self):
         """ Get length of file, in bytes, for LOF. """
-        current = self.fhandle.tell()
-        self.fhandle.seek(0, 2)
-        lof = self.fhandle.tell()
-        self.fhandle.seek(current)
+        current = self.output_stream.tell()
+        self.output_stream.seek(0, 2)
+        lof = self.output_stream.tell()
+        self.output_stream.seek(current)
         return lof
 
     def lock(self, start, stop, lock_list):

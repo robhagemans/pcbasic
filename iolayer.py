@@ -431,7 +431,8 @@ class TextFileBase(RawFile):
         self.col = 1
         # allow first char to be specified (e.g. already read)
         self.next_char = first_char
-        if self.mode == 'I' and not first_char:
+        # Random files are derived from text files and start in 'I' operating mode
+        if self.mode in 'IR' and not first_char:
             self.next_char = self.fhandle.read(1)
 
     def read_raw(self, num=-1):
@@ -560,95 +561,42 @@ class Field(object):
         self.buffer = bytearray(reclen)
 
 
-#################################################################################
-# Random-access file base
+class FieldTextFile(CRLFTextFileBase):
+    """ Text file over FIELD buffer.. """
 
-class RandomBase(RawFile):
-    """ Random-access file base object. """
+    def __init__(self, field):
+        """ Set up FIELD text file. """
+        CRLFTextFileBase.__init__(self, ByteStream(field.buffer), 'D', 'R')
+        self.reclen = len(field.buffer)
+        self.operating_mode = 'I'
 
-    # FIELD overflow
-    overflow_error = 50
-
-    def __init__(self, fhandle, filetype, field, mode, reclen=128):
-        """ Initialise random-access file. """
-        # note that for random files, fhandle must be a seekable stream.
-        RawFile.__init__(self, fhandle, filetype, mode)
-        self.reclen = reclen
-        # replace with empty field if already exists
-        if field:
-            self.field = field
-        else:
-            self.field = Field(0)
-        self.field.reset(self.reclen)
-        # open a pseudo text file over the (seekable) buffer stream
-        # all text-file operations on a RANDOM file (PRINT, WRITE, INPUT, ...)
-        # actually work on the FIELD buffer; the file stream itself is not
-        # touched until PUT or GET.
-        self.field_text_file = CRLFTextFileBase(ByteStream(self.field.buffer),
-                                                filetype='D', mode='I')
-
-    def read_line(self):
-        """ Read line from FIELD buffer. """
-        self._switch_mode('I')
-        s = self.field_text_file.read_line()
-        self._check_overflow()
-        return s
+    def _check_overflow(self):
+        """ Check for FIELD OVERFLOW. """
+        write = self.operating_mode == 'O'
+        # FIELD overflow happens if last byte in record has been read or written
+        if self.fhandle.tell() > self.reclen + write - 1:
+            # FIELD overflow
+            raise error.RunError(50)
 
     def read_raw(self, num=-1):
-        """ Read num chars from FIELD buffer. """
-        self._switch_mode('I')
-        s = self.field_text_file.read_raw(num)
-        self._check_overflow()
-        return s
-
-    def read(self, num=-1):
-        """ Read num chars from FIELD buffer. """
-        self._switch_mode('I')
-        s = self.field_text_file.read(num)
+        """ Read num characters from the field. """
+        # switch to reading mode and fix readahead buffer
+        if self.operating_mode == 'O':
+            self.flush()
+            self.next_char = self.fhandle.read(1)
+            self.operating_mode = 'I'
+        s = CRLFTextFileBase.read_raw(self, num)
         self._check_overflow()
         return s
 
     def write(self, s):
-        """ Write one or more chars to FIELD buffer. """
-        self._switch_mode('O')
-        self.field_text_file.write(s)
-        self._check_overflow(write=True)
-
-    def write_line(self, s=''):
-        """ Write one or more chars and CRLF to FIELD buffer. """
-        self._switch_mode('O')
-        self.field_text_file.write_line(s)
-        self._check_overflow(write=True)
-
-    def _switch_mode(self, new_mode):
-        """ Switch file to reading or writing mode. """
-        if self.field_text_file.mode == 'O' and new_mode == 'I':
-            self.field_text_file.flush()
-            self.field_text_file.next_char = self.field_text_file.fhandle.read(1)
-        elif self.field_text_file.mode == 'I' and new_mode == 'O':
-            self.field_text_file.fhandle.seek(-1, 1)
-        self.field_text_file.mode = new_mode
-
-    def _check_overflow(self, write=False):
-        """ Check for FIELD OVERFLOW. """
-        # FIELD overflow happens if last byte in record has been read or written
-        if self.field_text_file.fhandle.tell() > self.reclen + write - 1:
-            # FIELD overflow
-            raise error.RunError(self.overflow_error)
-
-    @property
-    def col(self):
-        """ Get current column. """
-        return self.field_text_file.col
-
-    @property
-    def width(self):
-        """ Get file width. """
-        return self.field_text_file.width
-
-    def set_width(self, new_width=255):
-        """ Set file width. """
-        self.field_text_file.width = new_width
+        """ Write the string s to the field, taking care of width settings. """
+        # switch to writing mode and fix readahead buffer
+        if self.operating_mode == 'I':
+            self.fhandle.seek(-1, 1)
+            self.operating_mode = 'O'
+        CRLFTextFileBase.write(self, s)
+        self._check_overflow()
 
 
 #################################################################################
@@ -896,16 +844,20 @@ class LPTFile(TextFileBase):
 #################################################################################
 # Serial-port files
 
-class COMFile(RandomBase):
+class COMFile(RawFile):
     """ COMn: device - serial port. """
 
+    # FIXME: where does this go now?
     # communications buffer overflow
-    overflow_error = 69
+    #overflow_error = 69
 
-    def __init__(self, stream):
-        """ Initialise COMn: device """
-        # we don't actually need the name for non-disk files
-        RandomBase.__init__(self, stream, None, serial_in_size)
+    def __init__(self, fhandle):
+        """ Initialise COMn: file. """
+        # note that for random files, fhandle must be a seekable stream.
+        RawFile.__init__(self, fhandle, 'D', 'R')
+        # create a FIELD for GET and PUT. no text file operations on COMn: FIELD
+        self.field = Field(0)
+        self.field.reset(serial_in_size)
         self.in_buffer = bytearray()
         self.linefeed = False
 
