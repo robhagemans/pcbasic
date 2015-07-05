@@ -42,20 +42,15 @@ def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=Fal
         return ('$', inp[1])
     elif typechar == '%':
         if screen and not write and vartypes.unpack_int(inp) >= 0:
-            return ('$', ' '+ int_to_str(vartypes.unpack_int(inp)) )
+            return ('$', ' ' + str(vartypes.unpack_int(inp)))
         else:
-            return ('$', int_to_str(vartypes.unpack_int(inp)))
+            return ('$', str(vartypes.unpack_int(inp)))
     elif typechar == '!':
         return ('$', float_to_str(fp.unpack(inp), screen, write) )
     elif typechar == '#':
         return ('$', float_to_str(fp.unpack(inp), screen, write) )
     else:
         raise error.RunError(2)
-
-#D
-def int_to_str(num):
-    """ Convert Python int to Python str. """
-    return str(num)
 
 # tokenised ints to python str
 

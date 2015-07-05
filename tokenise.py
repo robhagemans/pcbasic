@@ -84,7 +84,7 @@ def detokenise_line(ins, bytepos=None):
         # ignore up to one space after line number 0
         ins.read(1)
     # write one extra whitespace character after line number
-    output = representation.int_to_str(current_line) + bytearray(' ')
+    output = str(current_line) + bytearray(' ')
     # detokenise tokens until end of line
     while True:
         s = ins.read(1)
