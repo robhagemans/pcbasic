@@ -1,8 +1,8 @@
 """
-PC-BASIC 3.23 - audio_pygame.py
+PC-BASIC - audio_pygame.py
 Sound interface based on PyGame
 
-(c) 2013, 2014 Rob Hagemans
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -66,7 +66,7 @@ def close():
     if sound.thread_queue:
         for i in range(4):
             sound.thread_queue[i].join()
-        sound.thread_queue[0].put(sound.AudioEvent(AUDIO_QUIT))
+        sound.thread_queue[0].put(sound.AudioEvent(sound.AUDIO_QUIT))
         if thread and thread.is_alive():
             # signal quit and wait for thread to finish
             thread.join()
