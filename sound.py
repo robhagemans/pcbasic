@@ -2,8 +2,8 @@
 PC-BASIC 3.23 - sound.py
 Sound handling
 
-(c) 2013, 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+(c) 2013, 2014 Rob Hagemans
+This file is released under the GNU GPL version 3.
 """
 
 import Queue
@@ -27,7 +27,7 @@ import backend
 thread_queue = [ Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue() ]
 
 # audio plugin
-audio = None 
+audio = None
 
 # sound capabilities - '', 'pcjr' or 'tandy'
 pcjr_sound = ''
@@ -38,14 +38,14 @@ base_freq = 3579545./1024.
 # 12-tone equal temperament
 # C, C#, D, D#, E, F, F#, G, G#, A, A#, B
 note_freq = [ 440.*2**((i-33.)/12.) for i in range(84) ]
-notes = {   'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6, 
+notes = {   'C':0, 'C#':1, 'D-':1, 'D':2, 'D#':3, 'E-':3, 'E':4, 'F':5, 'F#':6,
             'G-':6, 'G':7, 'G#':8, 'A-':8, 'A':9, 'A#':10, 'B-':10, 'B':11 }
 
 
 
 class AudioEvent(object):
     """ Signal object for audio queue. """
-    
+
     def __init__(self, event_type, params=None):
         """ Create signal. """
         self.event_type = event_type
@@ -84,7 +84,7 @@ def init():
 
 class PlayState(object):
     """ State variables of the PLAY command. """
-    
+
     def __init__(self):
         """ Initialise play state. """
         self.octave = 4
@@ -111,7 +111,7 @@ class Sound(object):
 
     def reset(self):
         """ Reset PLAY state (CLEAR). """
-        # music foreground (MF) mode        
+        # music foreground (MF) mode
         self.foreground = True
         # reset all PLAY state
         self.play_state = [ PlayState(), PlayState(), PlayState() ]
@@ -124,7 +124,7 @@ class Sound(object):
         """ Play a sound on the tone generator. """
         if frequency < 0:
             frequency = 0
-        if ((pcjr_sound == 'tandy' or 
+        if ((pcjr_sound == 'tandy' or
                 (pcjr_sound == 'pcjr' and self.sound_on)) and
                 frequency < 110. and frequency != 0):
             # pcjr, tandy play low frequencies as 110Hz
@@ -137,7 +137,7 @@ class Sound(object):
             self.noise_freq[3] = frequency/2.
             self.noise_freq[7] = frequency/2.
         # at most 16 notes in the sound queue (not 32 as the guide says!)
-        self.wait_music(15)    
+        self.wait_music(15)
 
     def wait_music(self, wait_length=0):
         """ Wait until a given number of notes are left on the queue. """
@@ -162,11 +162,11 @@ class Sound(object):
                 q.task_done()
         for q in thread_queue:
             q.put(AudioEvent(AUDIO_STOP))
-        
+
     def play_noise(self, source, volume, duration, loop=False):
         """ Play a sound on the noise generator. """
         frequency = self.noise_freq[source]
-        noise = AudioEvent(AUDIO_NOISE, (source > 3, frequency, duration, 1, loop, volume)) 
+        noise = AudioEvent(AUDIO_NOISE, (source > 3, frequency, duration, 1, loop, volume))
         thread_queue[3].put(noise)
         # don't wait for noise
 
@@ -178,7 +178,7 @@ class Sound(object):
     def persist(self, flag):
         """ Set mixer persistence flag (runmode). """
         thread_queue[0].put(AudioEvent(AUDIO_PERSIST, flag))
-        
+
     ### PLAY statement
 
     def play(self, mml_list):
@@ -223,7 +223,7 @@ class Sound(object):
                         gmls.read(1)
                         dur *= 1.5
                     if note > 0 and note <= 84:
-                        self.play_sound(note_freq[note-1], dur*vstate.tempo, 
+                        self.play_sound(note_freq[note-1], dur*vstate.tempo,
                                          vstate.speed, volume=vstate.volume,
                                          voice=voice)
                         total_time[voice] += dur*vstate.tempo
@@ -232,9 +232,9 @@ class Sound(object):
                                         volume=0, voice=voice)
                         total_time[voice] += dur*vstate.tempo
                 elif c == 'L':
-                    vstate.length = 1./draw_and_play.ml_parse_number(gmls)    
+                    vstate.length = 1./draw_and_play.ml_parse_number(gmls)
                 elif c == 'T':
-                    vstate.tempo = 240./draw_and_play.ml_parse_number(gmls)    
+                    vstate.tempo = 240./draw_and_play.ml_parse_number(gmls)
                 elif c == 'O':
                     vstate.octave = min(6, max(0, draw_and_play.ml_parse_number(gmls)))
                 elif c == '>':
@@ -248,7 +248,7 @@ class Sound(object):
                 elif c in ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'P'):
                     note = c
                     dur = vstate.length
-                    while True:    
+                    while True:
                         c = util.skip(gmls, draw_and_play.ml_whitepace).upper()
                         if c == '.':
                             gmls.read(1)
@@ -257,8 +257,8 @@ class Sound(object):
                             numstr = ''
                             while c in representation.ascii_digits:
                                 gmls.read(1)
-                                numstr += c 
-                                c = util.skip(gmls, draw_and_play.ml_whitepace) 
+                                numstr += c
+                                c = util.skip(gmls, draw_and_play.ml_whitepace)
                             length = vartypes.pass_int_unpack(representation.str_to_value_keep(('$', numstr)))
                             dur = 1. / float(length)
                         elif c in ('#', '+'):
@@ -268,7 +268,7 @@ class Sound(object):
                             gmls.read(1)
                             note += '-'
                         else:
-                            break                    
+                            break
                     if note == 'P':
                         self.play_sound(0, dur * vstate.tempo, vstate.speed,
                                         volume=vstate.volume, voice=voice)
@@ -276,8 +276,8 @@ class Sound(object):
                     else:
                         try:
                             self.play_sound(
-                                note_freq[(vstate.octave+next_oct)*12 + notes[note]], 
-                                dur * vstate.tempo, vstate.speed, 
+                                note_freq[(vstate.octave+next_oct)*12 + notes[note]],
+                                dur * vstate.tempo, vstate.speed,
                                 volume=vstate.volume, voice=voice)
                             total_time[voice] += dur*vstate.tempo
                         except KeyError:
@@ -285,24 +285,24 @@ class Sound(object):
                     next_oct = 0
                 elif c == 'M':
                     c = util.skip_read(gmls, draw_and_play.ml_whitepace).upper()
-                    if c == 'N':        
+                    if c == 'N':
                         vstate.speed = 7./8.
-                    elif c == 'L':      
+                    elif c == 'L':
                         vstate.speed = 1.
-                    elif c == 'S':      
-                        vstate.speed = 3./4.        
-                    elif c == 'F':      
+                    elif c == 'S':
+                        vstate.speed = 3./4.
+                    elif c == 'F':
                         self.foreground = True
-                    elif c == 'B':      
+                    elif c == 'B':
                         self.foreground = False
                     else:
-                        raise error.RunError(5)    
-                elif c == 'V' and (pcjr_sound == 'tandy' or 
-                                    (pcjr_sound == 'pcjr' and self.sound_on)): 
-                    vstate.volume = min(15, 
+                        raise error.RunError(5)
+                elif c == 'V' and (pcjr_sound == 'tandy' or
+                                    (pcjr_sound == 'pcjr' and self.sound_on)):
+                    vstate.volume = min(15,
                                     max(0, draw_and_play.ml_parse_number(gmls)))
                 else:
-                    raise error.RunError(5)    
+                    raise error.RunError(5)
         max_time = max(total_time)
         for voice in range(3):
             if total_time[voice] < max_time:
@@ -313,6 +313,5 @@ class Sound(object):
 
 
 ###############################################################################
-         
-prepare()
 
+prepare()

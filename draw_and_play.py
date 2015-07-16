@@ -3,7 +3,7 @@ PC-BASIC 3.23 - draw_and_play.py
 DRAW and PLAY macro language stream utilities
 
 (c) 2013, 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+This file is released under the GNU GPL version 3.
 """
 
 import error
@@ -19,7 +19,7 @@ ml_whitepace = (' ')
 
 def get_value_for_varptrstr(varptrstr):
     """ Get a value given a VARPTR$ representation. """
-    if len(varptrstr) < 3:    
+    if len(varptrstr) < 3:
         raise error.RunError(5)
     varptrstr = bytearray(varptrstr)
     varptr = vartypes.uint_to_value(bytearray(varptrstr[1:3]))
@@ -32,11 +32,11 @@ def get_value_for_varptrstr(varptrstr):
     if found_name == '':
         raise error.RunError(5)
     return var.get_var(found_name)
-        
+
 def ml_parse_value(gmls, default=None):
     """ Parse a value in a macro-language string. """
     c = util.skip(gmls, ml_whitepace)
-    sgn = -1 if c == '-' else 1   
+    sgn = -1 if c == '-' else 1
     if c in ('+', '-'):
         gmls.read(1)
         c = util.peek(gmls)
@@ -55,7 +55,7 @@ def ml_parse_value(gmls, default=None):
         else:
             # varptr$
             step = get_value_for_varptrstr(gmls.read(3))
-    elif c in representation.ascii_digits:     
+    elif c in representation.ascii_digits:
         step = ml_parse_const(gmls)
     elif default != None:
         step = default
@@ -72,19 +72,19 @@ def ml_parse_number(gmls, default=None):
 def ml_parse_const(gmls):
     """ Parse and return a constant value in a macro-language string. """
     c = util.skip(gmls, ml_whitepace)
-    if c in representation.ascii_digits:     
+    if c in representation.ascii_digits:
         numstr = ''
         while c in representation.ascii_digits:
             gmls.read(1)
-            numstr += c 
-            c = util.skip(gmls, ml_whitepace) 
+            numstr += c
+            c = util.skip(gmls, ml_whitepace)
         return representation.str_to_value_keep(('$', numstr))
     else:
         raise error.RunError(5)
 
 def ml_parse_const_int(gmls):
     """ Parse a constant value in a macro-language string, return Python int. """
-    return vartypes.pass_int_unpack(ml_parse_const(gmls), err=5)    
+    return vartypes.pass_int_unpack(ml_parse_const(gmls), err=5)
 
 def ml_parse_string(gmls):
     """ Parse a string value in a macro-language string. """
@@ -116,4 +116,3 @@ def ml_parse_indices(gmls):
                 break
         util.require_read(gmls, (']', ')'))
     return indices
- 

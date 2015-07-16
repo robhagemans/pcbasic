@@ -2,8 +2,8 @@
 PC-BASIC 3.23 - util.py
 Token stream utilities
 
-(c) 2013, 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+(c) 2013, 2014 Rob Hagemans
+This file is released under the GNU GPL version 3.
 """
 
 from functools import partial
@@ -16,10 +16,10 @@ whitespace = (' ', '\t', '\x0a')
 # line ending tokens
 end_line = ('\x00', '')
 # statement ending tokens
-end_statement = end_line + (':',) 
+end_statement = end_line + (':',)
 # expression ending tokens
-# \xCC is TO, \x89 is GOTO, \x8D is GOSUB, \xCF is STEP, \xCD is THEN 
-end_expression = end_statement + (')', ']', ',', ';', '\xCC', '\x89', '\x8D', '\xCF', '\xCD') 
+# \xCC is TO, \x89 is GOTO, \x8D is GOSUB, \xCF is STEP, \xCD is THEN
+end_expression = end_statement + (')', ']', ',', ';', '\xCC', '\x89', '\x8D', '\xCF', '\xCD')
 ## tokens followed by one or more bytes to be skipped
 plus_bytes = {'\x0f':1, '\xff':1 , '\xfe':1, '\x0b':2, '\x0c':2, '\x0d':2, '\x0e':2, '\x1c':2, '\x1d':4, '\x1f':8, '\x00':4}
 
@@ -34,7 +34,7 @@ def peek(ins, n=1):
 
 def skip_read(ins, skip_range, n=1):
     """ Skip chars in skip_range, then read next. """
-    while True: 
+    while True:
         d = ins.read(1)
         # skip_range must not include ''
         if d == '' or d not in skip_range:
@@ -42,7 +42,7 @@ def skip_read(ins, skip_range, n=1):
 
 def skip(ins, skip_range, n=1):
     """ Skip chars in skip_range, then peek next. """
-    d = skip_read(ins, skip_range, n) 
+    d = skip_read(ins, skip_range, n)
     ins.seek(-len(d), 1)
     return d
 
@@ -62,29 +62,29 @@ def read_if(ins, d, in_range):
         return True
     return False
 
-def skip_to(ins, findrange, break_on_first_char=True):        
+def skip_to(ins, findrange, break_on_first_char=True):
     """ Skip until character is in findrange. """
     literal = False
     rem = False
-    while True: 
+    while True:
         c = ins.read(1)
         if c == '':
             break
         elif c == '"':
             literal = not literal
         elif c == '\x8f':
-            rem = True    
-        elif c == '\x00':   
+            rem = True
+        elif c == '\x00':
             literal = False
             rem = False
         if literal or rem:
-            continue    
+            continue
         if c in findrange:
             if break_on_first_char:
                 ins.seek(-1, 1)
                 break
-            else: 
-                break_on_first_char = True    
+            else:
+                break_on_first_char = True
         # not elif! if not break_on_first_char, c needs to be properly processed.
         if c == '\x00':  # offset and line number follow
             literal = False
@@ -113,7 +113,7 @@ def require_read(ins, in_range, err=2):
     """ Skip whitespace, read and raise error if not in range. """
     if skip_white_read(ins, n=len(in_range[0])) not in in_range:
         raise error.RunError(err)
-    
+
 def require(ins, rnge, err=2):
     """ Skip whitespace, peek and raise error if not in range. """
     a = skip_white(ins, n=len(rnge[0]))
@@ -122,10 +122,10 @@ def require(ins, rnge, err=2):
         if a != '':
             ins.read(1)
         raise error.RunError(err)
-    
+
 def parse_line_number(ins):
     """ Parse line number and leave pointer at first char of line. """
-    # if end of program or truncated, leave pointer at start of line number C0 DE or 00 00    
+    # if end of program or truncated, leave pointer at start of line number C0 DE or 00 00
     off = ins.read(2)
     if off=='\x00\x00' or len(off) < 2:
         ins.seek(-len(off),1)
@@ -136,7 +136,7 @@ def parse_line_number(ins):
         return -1
     else:
         return vartypes.uint_to_value(bytearray(off))
-  
+
 def parse_jumpnum(ins, allow_empty=False, err=2):
     """ Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc. """
     if skip_white_read_if(ins, ('\x0e',)):
@@ -162,8 +162,8 @@ def parse_value(ins):
     if d in ('\x0b', '\x0C', '\x1C'):       # octal, hex, signed int
         return ('%', val)
     elif d == '\x0f':                       # one byte constant
-        return ('%', val + '\x00') 
-    elif d >= '\x11' and d <= '\x1b':       # constants 0 to 10  
+        return ('%', val + '\x00')
+    elif d >= '\x11' and d <= '\x1b':       # constants 0 to 10
         return ('%', bytearray(chr(ord(d)-0x11) + '\x00'))
     elif d == '\x1d':                       # four byte single-precision floating point constant
         return ('!', val)
@@ -188,7 +188,7 @@ def get_var_name(ins, allow_empty=False):
         else:
             ins.seek(-len(d), 1)
     if not name and not allow_empty:
-        raise error.RunError(2)    
+        raise error.RunError(2)
     # append type specifier
     name = vartypes.complete_name(name)
     # only the first 40 chars are relevant in GW-BASIC, rest is discarded
@@ -201,11 +201,8 @@ def range_check(lower, upper, *allvars):
     for v in allvars:
         if v != None and v < lower or v > upper:
             raise error.RunError(5)
-            
+
 def range_check_err(lower, upper, v, err=5):
     """ Check if variable is within the given inclusive range. """
     if v != None and v < lower or v > upper:
         raise error.RunError(err)
-            
-            
-

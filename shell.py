@@ -1,12 +1,12 @@
 """
 PC-BASIC 3.23  - shell.py
 Operating system shell and environment
- 
-(c) 2013, 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+
+(c) 2013, 2014 Rob Hagemans
+This file is released under the GNU GPL version 3.
 """
 
-import os 
+import os
 import subprocess
 import logging
 
@@ -24,7 +24,7 @@ else:
     try:
         import pexpect
     except ImportError:
-        pexpect = None    
+        pexpect = None
 
 
 shell_enabled = False
@@ -46,8 +46,8 @@ def prepare():
             else:
                 shell_command = config.options['shell']
         else:
-            logging.warning('Pexpect module not found. SHELL command disabled.')    
-            
+            logging.warning('Pexpect module not found. SHELL command disabled.')
+
 #########################################
 # calling shell environment
 
@@ -55,16 +55,16 @@ def get_env(parm):
     """ Retrieve environment string by name. """
     if not parm:
         raise error.RunError(5)
-    return bytearray(os.getenv(str(parm)) or '')    
-        
+    return bytearray(os.getenv(str(parm)) or '')
+
 def get_env_entry(expr):
     """ Retrieve environment string by number. """
     envlist = list(os.environ)
     if expr > len(envlist):
-        return bytearray()            
+        return bytearray()
     else:
-        return bytearray(envlist[expr-1] + '=' + os.getenv(envlist[expr-1]))   
-    
+        return bytearray(envlist[expr-1] + '=' + os.getenv(envlist[expr-1]))
+
 
 #########################################
 # shell
@@ -90,19 +90,19 @@ def shell(command):
 
 
 if plat.system == 'Windows':
-    shell_output = ''   
+    shell_output = ''
 
     def process_stdout(p, stream):
         """ Retrieve SHELL output and write to console. """
         global shell_output
         while True:
             c = stream.read(1)
-            if c != '': 
+            if c != '':
                 # don't access screen in this thread
                 # the other thread already does
                 shell_output += c
             elif p.poll() != None:
-                break        
+                break
             else:
                 # don't hog cpu, sleep 1 ms
                 time.sleep(0.001)
@@ -112,8 +112,8 @@ if plat.system == 'Windows':
         global shell_output
         cmd = shell_command
         if command:
-            cmd += ' /C "' + command + '"'            
-        p = subprocess.Popen( str(cmd).split(), stdin=subprocess.PIPE, 
+            cmd += ' /C "' + command + '"'
+        p = subprocess.Popen( str(cmd).split(), stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         outp = threading.Thread(target=process_stdout, args=(p, p.stdout))
         outp.daemon = True
@@ -131,16 +131,16 @@ if plat.system == 'Windows':
                     # don't process anything but video events here
                     backend.video.check_events()
                     console.write_line(line)
-                console.write(last)    
+                console.write(last)
             if p.poll() != None:
                 # drain output then break
-                continue    
-            try:    
+                continue
+            try:
                 c = state.console_state.keyb.get_char()
             except error.Break:
-                pass    
-            if c in ('\r', '\n'): 
-                # shift the cursor left so that CMD.EXE's echo can overwrite 
+                pass
+            if c in ('\r', '\n'):
+                # shift the cursor left so that CMD.EXE's echo can overwrite
                 # the command that's already there. Note that Wine's CMD.EXE
                 # doesn't echo the command, so it's overwritten by the output...
                 console.write('\x1D' * len(word))
@@ -151,7 +151,7 @@ if plat.system == 'Windows':
                 if word:
                     word = word[:-1]
                     console.write('\x1D \x1D')
-            elif c != '':    
+            elif c != '':
                 # only send to pipe when enter is pressed
                 # needed for Wine and to handle backspace properly
                 word += c
@@ -164,7 +164,7 @@ else:
         """ Run a SHELL subprocess. """
         cmd = shell_command
         if command:
-            cmd += ' -c "' + command + '"'            
+            cmd += ' -c "' + command + '"'
         p = pexpect.spawn(str(cmd))
         while True:
             try:
@@ -179,20 +179,19 @@ else:
             while True:
                 try:
                     c = p.read_nonblocking(1, timeout=0)
-                except: 
+                except:
                     c = ''
                 if c == '' or c == '\n':
                     break
                 elif c == '\r':
-                    console.write_line()    
+                    console.write_line()
                 elif c == '\b':
                     if state.console_state.col != 1:
-                        console.set_pos(state.console_state.row, 
+                        console.set_pos(state.console_state.row,
                                         state.console_state.col-1)
                 else:
                     console.write(c)
-            if c == '' and not p.isalive(): 
+            if c == '' and not p.isalive():
                 return
 
 prepare()
-
