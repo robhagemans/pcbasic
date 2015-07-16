@@ -23,9 +23,11 @@ from fp import from_bytes, unpack
 from fp import mul, div, pow_int
 import vartypes
 
+import basictoken as tk
+
 # whitespace for INPUT#, INPUT
 # TAB x09 is not whitespace for input#. NUL \x00 and LF \x0a are.
-ascii_white = (' ', '\0', '\n')
+ascii_white = ' \0\n'
 
 
 def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=False):
@@ -80,9 +82,9 @@ def oct_to_str(s):
 
 # for to_str
 # for numbers, tab and LF are whitespace
-whitespace = (' ', '\t', '\n')
+whitespace = ' \t\n'
 # these seem to lead to a zero outcome all the time
-kill_char = ('\x1c', '\x1d', '\x1f')
+kill_char = '\x1c\x1d\x1f'
 
 # string representations
 
@@ -490,7 +492,7 @@ def input_vars_file(readvar, stream):
         value = str_to_type(valstr, typechar)
         if value == None:
             value = vartypes.null[typechar]
-        while c in ascii_white:
+        while c and c in ascii_white:
             # skip trailing whitespace
             # note that ending character (',', '\r', '\x1a', '\n', ...)
             # is swallowed here
@@ -524,7 +526,7 @@ def input_entry(stream, allow_quotes, end_all=(), end_not_quoted=(',',)):
     word, blanks = '', ''
     # skip leading spaces and line feeds and NUL.
     c = stream.read(1)
-    while c in ascii_white:
+    while c and c in ascii_white:
         c = stream.read(1)
     quoted = (c == '"' and allow_quotes)
     if quoted:
@@ -536,14 +538,11 @@ def input_entry(stream, allow_quotes, end_all=(), end_not_quoted=(',',)):
     # this may raise FIELD OVERFLOW
     # on reading from a KYBD: file, control char replacement takes place
     # which means we need to use read() not read_chars()
-    while c:
-        # read entry
-        if c in end_all or (c in end_not_quoted and not quoted):
-            break
-        elif c == '"' and quoted:
+    while c and not (c in end_all or (c in end_not_quoted and not quoted)):
+        if c == '"' and quoted:
             quoted = False
             # ignore blanks after the quotes
-            while c in ascii_white:
+            while c and c in ascii_white:
                 c = stream.read(1)
             break
         elif c in ascii_white and not quoted:
@@ -572,67 +571,71 @@ def tokenise_number(ins, outs):
     """ Convert Python-string number representation to number token. """
     c = util.peek(ins)
     # handle hex or oct constants
-    if c == '&':
+    if not c:
+        return
+    elif c == '&':
         ins.read(1)
         nxt = util.peek(ins).upper()
         if nxt == 'H': # hex constant
             ins.read(1)
             word = ''
             while True:
-                if not util.peek(ins).upper() in ascii_hexits:
+                c = util.peek(ins).upper()
+                if not c or c not in ascii_hexits:
                     break
                 else:
                     word += ins.read(1).upper()
             val = int(word, 16) if word else 0
-            outs.write('\x0C' + str(vartypes.value_to_uint(val)))
+            outs.write(tk.T_HEX + str(vartypes.value_to_uint(val)))
         else: # nxt == 'O': # octal constant
             if nxt == 'O':
                 ins.read(1)
             word = ''
             while True:
-                if not util.peek(ins).upper() in ascii_octits:
+                c = util.peek(ins).upper()
+                if not c or c not in ascii_octits:
                     break
                 else:
                     word += ins.read(1).upper()
             val = int(word, 8) if word else 0
-            outs.write('\x0B' + str(vartypes.value_to_uint(val)))
+            outs.write(tk.T_OCT + str(vartypes.value_to_uint(val)))
     # handle other numbers
     # note GW passes signs separately as a token and only stores positive numbers in the program
-    elif (c in ascii_digits or c=='.' or c in ('+','-')):
+    elif c in ascii_digits + '.+-':
         have_exp = False
         have_point = False
         word = ''
         while True:
             c = ins.read(1).upper()
-            if c == '.' and not have_point and not have_exp:
+            if not c:
+                break
+            elif c == '.' and not have_point and not have_exp:
                 have_point = True
                 word += c
-            elif c in ('E', 'D') and not have_exp:
+            elif c in 'ED' and not have_exp:
                 have_exp = True
                 word += c
-            elif c in ('-','+') and word=='':
-                # must be first token
+            elif c in '-+' and (not word or word[-1] in 'ED'):
+                # must be first token or in exponent
                 word += c
-            elif c in ('+', '-') and word[-1] in ('E', 'D'):
-                word += c
-            elif c in ascii_digits: # (c >='0' and numc <='9'):
+            elif c in ascii_digits:
                 word += c
             elif c in whitespace:
-                # we'll remove this later but need to keep it for now so we can reposition the stream on removing trainling whitespace
+                # we'll remove this later but need to keep it for now
+                # so we can reposition the stream on removing trailing whitespace
                 word += c
-            elif c in ('!', '#') and not have_exp:
+            elif c in '!#' and not have_exp:
                 word += c
                 break
             elif c == '%':
                 # swallow a %, but break parsing
                 break
             else:
-                if c != '':
-                    ins.seek(-1,1)
+                ins.seek(-1, 1)
                 break
         # don't claim trailing whitespace, don't end in D or E
-        while len(word)>0 and (word[-1] in whitespace + ('D', 'E')):
-            if word[-1] in ('D', 'E'):
+        while len(word)>0 and (word[-1] in whitespace + 'DE'):
+            if word[-1] in 'DE':
                 have_exp = False
             word = word[:-1]
             ins.seek(-1,1) # even if c==''
@@ -646,23 +649,21 @@ def tokenise_number(ins, outs):
         if len(word) == 1 and word in ascii_digits:
             # digit
             outs.write(chr(0x11+int(word)))
-        elif not (have_exp or have_point or word[-1] in ('!', '#')) and int(word) <= 0x7fff and int(word) >= -0x8000:
+        elif not (have_exp or have_point or word[-1] in '!#') and int(word) <= 0x7fff and int(word) >= -0x8000:
             if int(word) <= 0xff and int(word)>=0:
                 # one-byte constant
-                outs.write('\x0f'+chr(int(word)))
+                outs.write(tk.T_BYTE + chr(int(word)))
             else:
                 # two-byte constant
-                outs.write('\x1c'+str(vartypes.value_to_sint(int(word))))
+                outs.write(tk.T_INT + str(vartypes.value_to_sint(int(word))))
         else:
             mbf = str(from_str(word).to_bytes())
             if len(mbf) == 4:
-                # single
-                outs.write('\x1d'+mbf)
+                outs.write(tk.T_SINGLE + mbf)
             else:
-                # double
-                outs.write('\x1f'+mbf)
-    elif c!='':
-        ins.seek(-1,1)
+                outs.write(tk.T_DOUBLE + mbf)
+    else:
+        ins.seek(-1, 1)
 
 
 ##########################################
@@ -688,21 +689,21 @@ def str_to_value_keep(strval, allow_nonnum=True):
 def detokenise_number(ins, output):
     """ Convert number token to Python string. """
     s = ins.read(1)
-    if s == '\x0b':                           # 0B: octal constant (unsigned int)
+    if s == tk.T_OCT:
         output += oct_to_str(bytearray(ins.read(2)))
-    elif s == '\x0c':                           # 0C: hex constant (unsigned int)
+    elif s == tk.T_HEX:
         output += hex_to_str(bytearray(ins.read(2)))
-    elif s == '\x0f':                           # 0F: one byte constant
+    elif s == tk.T_BYTE:
         output += ubyte_to_str(bytearray(ins.read(1)))
-    elif s >= '\x11' and s < '\x1b':            # 11-1B: constants 0 to 10
+    elif s >= tk.C_0 and s < tk.C_10:
         output += chr(ord('0') + ord(s) - 0x11)
-    elif s == '\x1b':
+    elif s == tk.C_10:
         output += '10'
-    elif s == '\x1c':                           # 1C: two byte signed int
+    elif s == tk.T_INT:
         output += sint_to_str(bytearray(ins.read(2)))
-    elif s == '\x1d':                           # 1D: four-byte single-precision floating point constant
+    elif s == tk.T_SINGLE:
         output += float_to_str(fp.Single.from_bytes(bytearray(ins.read(4))), screen=False, write=False)
-    elif s == '\x1f':                           # 1F: eight byte double-precision floating point constant
+    elif s == tk.T_DOUBLE:
         output += float_to_str(fp.Double.from_bytes(bytearray(ins.read(8))), screen=False, write=False)
     else:
         ins.seek(-len(s),1)

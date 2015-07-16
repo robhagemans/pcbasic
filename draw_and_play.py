@@ -1,8 +1,8 @@
 """
-PC-BASIC 3.23 - draw_and_play.py
+PC-BASIC - draw_and_play.py
 DRAW and PLAY macro language stream utilities
 
-(c) 2013, 2014 Rob Hagemans 
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -15,7 +15,7 @@ import var
 import state
 
 # generic for both macro languages
-ml_whitepace = (' ')
+ml_whitepace = ' '
 
 def get_value_for_varptrstr(varptrstr):
     """ Get a value given a VARPTR$ representation. """
@@ -37,6 +37,8 @@ def ml_parse_value(gmls, default=None):
     """ Parse a value in a macro-language string. """
     c = util.skip(gmls, ml_whitepace)
     sgn = -1 if c == '-' else 1
+    if not c:
+        raise error.RunError(5)
     if c in ('+', '-'):
         gmls.read(1)
         c = util.peek(gmls)

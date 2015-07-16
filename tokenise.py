@@ -2,11 +2,7 @@
 PC-BASIC - tokenise.py
 Convert between tokenised and ASCII formats of a GW-BASIC program file
 
-<<<<<<< Updated upstream
-(c) 2013, 2014 Rob Hagemans
-=======
 (c) 2013, 2014, 2015 Rob Hagemans
->>>>>>> Stashed changes
 This file is released under the GNU GPL version 3.
 """
 
@@ -27,10 +23,10 @@ import vartypes
 # newline is considered whitespace: ' ', '\t', '\n'
 from representation import whitespace
 
-ascii_operators = ('+', '-', '=', '/', '\\', '^', '*', '<', '>')
+ascii_operators = '+-=/\\^*<>'
 
 # allowable as chars 2.. in a variable name (first char must be a letter)
-name_chars = ascii_uppercase + ascii_digits + ('.',)
+name_chars = ascii_uppercase + ascii_digits + '.'
 
 # keywords than can followed by one or more line numbers
 linenum_words = [

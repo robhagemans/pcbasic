@@ -1,8 +1,8 @@
 """
-PC-BASIC 3.23 - sound.py
+PC-BASIC - sound.py
 Sound handling
 
-(c) 2013, 2014 Rob Hagemans
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -250,12 +250,14 @@ class Sound(object):
                     dur = vstate.length
                     while True:
                         c = util.skip(gmls, draw_and_play.ml_whitepace).upper()
-                        if c == '.':
+                        if not c:
+                            break
+                        elif c == '.':
                             gmls.read(1)
                             dur *= 1.5
                         elif c in representation.ascii_digits:
                             numstr = ''
-                            while c in representation.ascii_digits:
+                            while c and c in representation.ascii_digits:
                                 gmls.read(1)
                                 numstr += c
                                 c = util.skip(gmls, draw_and_play.ml_whitepace)

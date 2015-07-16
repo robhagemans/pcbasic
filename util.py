@@ -1,8 +1,8 @@
 """
-PC-BASIC 3.23 - util.py
+PC-BASIC - util.py
 Token stream utilities
 
-(c) 2013, 2014 Rob Hagemans
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -10,18 +10,20 @@ from functools import partial
 import error
 import vartypes
 
+import basictoken as tk
+
 # TOKENS
 # LF is just whitespace if not preceded by CR
-whitespace = (' ', '\t', '\x0a')
+whitespace = (' ', '\t', '\n')
 # line ending tokens
-end_line = ('\x00', '')
+end_line = ('\0', '')
 # statement ending tokens
 end_statement = end_line + (':',)
 # expression ending tokens
 # \xCC is TO, \x89 is GOTO, \x8D is GOSUB, \xCF is STEP, \xCD is THEN
-end_expression = end_statement + (')', ']', ',', ';', '\xCC', '\x89', '\x8D', '\xCF', '\xCD')
+end_expression = end_statement + (')', ']', ',', ';', tk.TO, tk.GOTO, tk.GOSUB, tk.STEP, tk.THEN)
 ## tokens followed by one or more bytes to be skipped
-plus_bytes = {'\x0f':1, '\xff':1 , '\xfe':1, '\x0b':2, '\x0c':2, '\x0d':2, '\x0e':2, '\x1c':2, '\x1d':4, '\x1f':8, '\x00':4}
+plus_bytes = {tk.T_BYTE:1, '\xff':1 , '\xfe':1, '\xfd':1, tk.T_OCT:2, tk.T_HEX:2, tk.T_UINT_PROC:2, tk.T_UINT:2, tk.T_INT:2, tk.T_SINGLE:4, tk.T_DOUBLE:8, '\0':4}
 
 ###############################################################################
 # stream utilities
@@ -72,7 +74,7 @@ def skip_to(ins, findrange, break_on_first_char=True):
             break
         elif c == '"':
             literal = not literal
-        elif c == '\x8f':
+        elif c == tk.REM:
             rem = True
         elif c == '\x00':
             literal = False
@@ -86,20 +88,14 @@ def skip_to(ins, findrange, break_on_first_char=True):
             else:
                 break_on_first_char = True
         # not elif! if not break_on_first_char, c needs to be properly processed.
-        if c == '\x00':  # offset and line number follow
+        if c == '\0':  # offset and line number follow
             literal = False
             off = ins.read(2)
-            if len(off) < 2 or off == '\x00\x00':
+            if len(off) < 2 or off == '\0\0':
                 break
             ins.read(2)
-        elif c in ('\xff', '\xfe', '\xfd', '\x0f'):
-            ins.read(1)
-        elif c in ('\x0b', '\x0c', '\x0d', '\x0e', '\x1c'):
-            ins.read(2)
-        elif c == '\x1d':
-            ins.read(4)
-        elif c == '\x1f':
-            ins.read(8)
+        elif c in plus_bytes:
+            ins.read(plus_bytes[c])
 
 def skip_to_read(ins, findrange):
     """ Skip until character is in findrange, then read. """
@@ -127,7 +123,7 @@ def parse_line_number(ins):
     """ Parse line number and leave pointer at first char of line. """
     # if end of program or truncated, leave pointer at start of line number C0 DE or 00 00
     off = ins.read(2)
-    if off=='\x00\x00' or len(off) < 2:
+    if off=='\0\0' or len(off) < 2:
         ins.seek(-len(off),1)
         return -1
     off = ins.read(2)
@@ -139,7 +135,7 @@ def parse_line_number(ins):
 
 def parse_jumpnum(ins, allow_empty=False, err=2):
     """ Parses a line number pointer as in GOTO, GOSUB, LIST, RENUM, EDIT, etc. """
-    if skip_white_read_if(ins, ('\x0e',)):
+    if skip_white_read_if(ins, (tk.T_UINT,)):
         return vartypes.uint_to_value(bytearray(ins.read(2)))
     else:
         if allow_empty:
@@ -159,15 +155,15 @@ def parse_value(ins):
     if len(val) < length:
         # truncated stream
         raise error.RunError(2)
-    if d in ('\x0b', '\x0C', '\x1C'):       # octal, hex, signed int
+    if d in (tk.T_OCT, tk.T_HEX, tk.T_INT):
         return ('%', val)
-    elif d == '\x0f':                       # one byte constant
-        return ('%', val + '\x00')
-    elif d >= '\x11' and d <= '\x1b':       # constants 0 to 10
-        return ('%', bytearray(chr(ord(d)-0x11) + '\x00'))
-    elif d == '\x1d':                       # four byte single-precision floating point constant
+    elif d == tk.T_BYTE:
+        return ('%', val + '\0')
+    elif d >= tk.C_0 and d <= tk.C_10:
+        return ('%', bytearray(chr(ord(d)-0x11) + '\0'))
+    elif d == tk.T_SINGLE:
         return ('!', val)
-    elif d == '\x1f':                       # eight byte double-precision floating point constant
+    elif d == tk.T_DOUBLE:
         return ('#', val)
     return None
 
