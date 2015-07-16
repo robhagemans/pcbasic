@@ -2,8 +2,8 @@
 PC-BASIC 3.23 - audio_pygame.py
 Sound interface based on PyGame
 
-(c) 2013, 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+(c) 2013, 2014 Rob Hagemans
+This file is released under the GNU GPL version 3.
 """
 
 from math import ceil
@@ -22,7 +22,7 @@ import plat
 if plat.system == 'Android':
     android = True
     # don't do sound for now on Android
-    mixer = None   
+    mixer = None
     numpy = None
 else:
     android = False
@@ -53,10 +53,10 @@ def init():
         logging.warning('NumPy module not found. Failed to initialise audio.')
         return False
     if not mixer:
-        return False    
+        return False
     # initialise mixer as silent
     # this takes 0.7s but is necessary to be able to set channels to mono
-    mixer.quit()    
+    mixer.quit()
     launch_thread()
     return True
 
@@ -128,13 +128,13 @@ def drain_queue():
                 persist = signal.params
             q.task_done()
     return not empty
-    
+
 def check_sound():
     """ Update the sound queue and play sounds. """
     global loop_sound
     current_chunk = [ None, None, None, None ]
-    if (not sound_queue[0] and not sound_queue[1] and 
-            not sound_queue[2] and not sound_queue[3] 
+    if (not sound_queue[0] and not sound_queue[1] and
+            not sound_queue[2] and not sound_queue[3]
             and loop_sound == [ None, None, None, None ]):
         return
     check_init_mixer()
@@ -174,12 +174,12 @@ def check_quit():
     """ Quit the mixer if not running a program and sound quiet for a while. """
     global quiet_ticks
     if sound_queue[0] or sound_queue[1] or sound_queue[2] or sound_queue[3] or busy():
-        # could leave out the is_quiet call but for looping sounds 
+        # could leave out the is_quiet call but for looping sounds
         quiet_ticks = 0
     else:
-        quiet_ticks += 1    
+        quiet_ticks += 1
         if not persist and quiet_ticks > quiet_quit:
-            # mixer is quiet and we're not running a program. 
+            # mixer is quiet and we're not running a program.
             # quit to reduce pulseaudio cpu load
             # this takes quite a while and leads to missed frames...
             if mixer.get_init() != None:
@@ -224,21 +224,21 @@ sample_rate = 44100
 
 # initial condition - see dosbox source
 init_noise = 0x0f35
-# white noise feedback 
-feedback_noise = 0x4400 
+# white noise feedback
+feedback_noise = 0x4400
 # 'periodic' feedback mask (15-bit rotation)
 feedback_periodic = 0x4000
 # square wave feedback mask
-feedback_tone = 0x2 
+feedback_tone = 0x2
 
 class SignalSource(object):
     """ Linear Feedback Shift Register to generate noise or tone. """
-    
+
     def __init__(self, feedback, init=0x01):
         """ Initialise the signal source. """
-        self.lfsr = init 
+        self.lfsr = init
         self.feedback = feedback
-    
+
     def next(self):
         """ Get a sample bit. """
         bit = self.lfsr & 1
@@ -248,15 +248,15 @@ class SignalSource(object):
         return bit
 
 # three tone voices plus a noise source
-signal_sources = [ SignalSource(feedback_tone), SignalSource(feedback_tone), SignalSource(feedback_tone), 
+signal_sources = [ SignalSource(feedback_tone), SignalSource(feedback_tone), SignalSource(feedback_tone),
                         SignalSource(feedback_noise, init_noise) ]
 
 # The SN76489 attenuates the volume by 2dB for each step in the volume register.
 # see http://www.smspower.org/Development/SN76489
 max_amplitude = (1<<(mixer_bits-1)) - 1
-# 2 dB steps correspond to a voltage factor of 10**(-2./20.) as power ~ voltage**2 
+# 2 dB steps correspond to a voltage factor of 10**(-2./20.) as power ~ voltage**2
 step_factor = 10**(-2./20.)
-# geometric list of amplitudes for volume values 
+# geometric list of amplitudes for volume values
 amplitude = [0]*16 if not numpy else numpy.int16(max_amplitude*(step_factor**numpy.arange(15,-1,-1)))
 # zero volume means silent
 amplitude[0] = 0
@@ -266,7 +266,7 @@ chunk_length = 1192 * 4
 
 class SoundGenerator(object):
     """ Sound sample chunk generator. """
-    
+
     def __init__(self, signal_source, feedback, frequency, total_duration, fill, loop, volume):
         """ Initialise the generator. """
         # noise generator
@@ -281,7 +281,7 @@ class SoundGenerator(object):
         self.bit = 0
         self.count_samples = 0
         self.num_samples = int(self.duration * sample_rate)
-        
+
     def build_chunk(self):
         """ Build a sound chunk. """
         self.signal_source.feedback = self.feedback
@@ -301,15 +301,15 @@ class SoundGenerator(object):
                 bits.append(-self.amplitude if self.signal_source.next() else self.amplitude)
             # do sampling by averaging the signal over bins of given resolution
             # this allows to use numpy all the way which is *much* faster than looping over an array
-            # stretch array by half_wavelength * resolution    
+            # stretch array by half_wavelength * resolution
             resolution = 20
             matrix = numpy.repeat(numpy.array(bits, numpy.int16), int(half_wavelength*resolution))
             # cut off on round number of resolution blocks
             matrix = matrix[:len(matrix)-(len(matrix)%resolution)]
-            # average over blocks                        
+            # average over blocks
             matrix = matrix.reshape((len(matrix)/resolution, resolution))
             chunk = numpy.int16(numpy.average(matrix, axis=1))
-        if not self.loop:    
+        if not self.loop:
             # last chunk is shorter
             if self.count_samples + len(chunk) < self.num_samples:
                 self.count_samples += len(chunk)
@@ -321,7 +321,7 @@ class SoundGenerator(object):
                 if self.gap:
                     gap_chunk = numpy.zeros(int(self.gap * sample_rate), numpy.int16)
                     chunk = numpy.concatenate((chunk, gap_chunk))
-                # done                
+                # done
                 self.count_samples = self.num_samples
         # if loop, attach one chunk to loop, do not increment count
         return chunk
@@ -334,11 +334,10 @@ def stop_channel(channel):
         # play short silence to avoid blocking the channel - it won't play on queue()
         silence = pygame.sndarray.make_sound(numpy.zeros(1, numpy.int16))
         mixer.Channel(channel).play(silence)
-    
+
 def check_init_mixer():
     """ Initialise the mixer if necessary. """
     if mixer.get_init() == None:
         mixer.init()
 
 prepare()
-
