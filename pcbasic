@@ -15,6 +15,7 @@ try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
+import traceback
 
 import plat
 import ansipipe
@@ -168,6 +169,8 @@ def start_basic():
     except KeyboardInterrupt:
         if config.options['debug']:
             raise
+    except Exception as e:
+        logging.error("Unhandled exception\n%s", traceback.format_exc())
     finally:
         try:
             # fix the terminal on exit (important for ANSI terminals)
@@ -191,11 +194,16 @@ def start_basic():
             devices.close_devices()
         except (NameError, AttributeError) as e:
             logging.debug('Error on closing devices: %s', e)
+        try:
+            sound.audio.close()
+        except (NameError, AttributeError):
+            pass
 
 def prepare_console():
     """ Initialise backend and console. """
     import state
     import backend
+    import sound
     # load backend modules
     # this can't be done in backend.py as it would create circular dependency
     import console
@@ -248,11 +256,11 @@ def prepare_console():
             if video_name:
                 logging.info('Falling back to %s interface.', video_name)
     if config.options['nosound']:
-        backend.audio = __import__('audio_none')
+        sound.audio = __import__('audio_none')
     else:
-        backend.audio = __import__(audio_name)
-    if not backend.init_audio():
-        backend.audio = __import__('audio_none')
+        sound.audio = __import__(audio_name)
+    if not sound.init():
+        sound.audio = __import__('audio_none')
         logging.warning('Failed to initialise sound. Sound will be disabled.')
     if not state.loaded:
         console.init_mode()

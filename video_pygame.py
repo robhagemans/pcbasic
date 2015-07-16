@@ -852,8 +852,6 @@ def pause_key():
     # pause key press waits for any key down.
     # continues to process screen events (blink) but not user events.
     while not check_events(pause=True):
-        # continue playing background music
-        backend.audio.check_sound()
         idle()
 
 def idle():

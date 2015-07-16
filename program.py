@@ -1,8 +1,8 @@
 """
-PC-BASIC 3.23  - program.py
+PC-BASIC - program.py
 Program buffer utilities
 
-(c) 2013, 2014 Rob Hagemans
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -20,6 +20,8 @@ import flow
 import unicodepage
 import memory
 import logging
+# ensure initialisation of state_console_state.sound
+import sound
 
 try:
     from cStringIO import StringIO

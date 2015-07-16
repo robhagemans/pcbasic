@@ -34,6 +34,7 @@ import representation
 import reset
 import rnd
 import shell
+import sound
 import state
 import timedate
 import basictoken as tk
@@ -500,7 +501,7 @@ def exec_beep(ins):
     # if a syntax error happens, we still beeped.
     util.require(ins, util.end_statement)
     if state.console_state.sound.foreground:
-        state.console_state.sound.wait_music(wait_last=False)
+        state.console_state.sound.wait_music()
 
 def exec_sound(ins):
     """ SOUND: produce an arbitrary sound or switch external speaker on/off. """
@@ -533,7 +534,7 @@ def exec_sound(ins):
         return
     # Tandy only allows frequencies below 37 (but plays them as 110 Hz)
     if freq != 0:
-        util.range_check(-32768 if backend.pcjr_sound == 'tandy' else 37, 32767, freq) # 32767 is pause
+        util.range_check(-32768 if sound.pcjr_sound == 'tandy' else 37, 32767, freq) # 32767 is pause
     # calculate duration in seconds
     one_over_44 = fp.Single.from_bytes(bytearray('\x8c\x2e\x3a\x7b')) # 1/44 = 0.02272727248
     dur_sec = dur.to_value()/18.2
@@ -543,7 +544,7 @@ def exec_sound(ins):
     else:
         state.console_state.sound.play_sound(freq, dur_sec, voice=voice, volume=volume)
         if state.console_state.sound.foreground:
-            state.console_state.sound.wait_music(wait_last=False)
+            state.console_state.sound.wait_music()
 
 def exec_play(ins):
     """ PLAY: play sound sequence defined by a Music Macro Language string. """
