@@ -155,10 +155,10 @@ def parse_expr_unit(ins):
         outs = StringIO()
         representation.tokenise_number(ins, outs)
         outs.seek(0)
-        return util.parse_value(outs)
+        return representation.parse_value(outs)
     # number literals
     elif d in tk.number:
-        return util.parse_value(ins)
+        return representation.parse_value(ins)
     # gw-basic allows adding line numbers to numbers
     elif d == tk.T_UINT:
         return vartypes.pack_int(util.parse_jumpnum(ins))

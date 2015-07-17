@@ -668,6 +668,31 @@ def tokenise_number(ins, outs):
 
 ##########################################
 
+
+def parse_value(ins):
+    """ Token to value. """
+    d = ins.read(1)
+    # note that hex and oct strings are interpreted signed here, but unsigned the other way!
+    try:
+        length = tk.plus_bytes[d]
+    except KeyError:
+        length = 0
+    val = bytearray(ins.read(length))
+    if len(val) < length:
+        # truncated stream
+        raise error.RunError(2)
+    if d in (tk.T_OCT, tk.T_HEX, tk.T_INT):
+        return ('%', val)
+    elif d == tk.T_BYTE:
+        return ('%', val + '\0')
+    elif d >= tk.C_0 and d <= tk.C_10:
+        return ('%', bytearray(chr(ord(d)-0x11) + '\0'))
+    elif d == tk.T_SINGLE:
+        return ('!', val)
+    elif d == tk.T_DOUBLE:
+        return ('#', val)
+    return None
+
 def str_to_value_keep(strval, allow_nonnum=True):
     """ Convert BASIC string to BASIC value. """
     if strval == ('$', ''):
@@ -679,7 +704,7 @@ def str_to_value_keep(strval, allow_nonnum=True):
     util.skip(ins, (' ', '\n'))
     tokenise_number(ins, outs)
     outs.seek(0)
-    value = util.parse_value(outs)
+    value = parse_value(outs)
     if not allow_nonnum:
         if util.skip_white(ins) != '':
             # not everything has been parsed - error
