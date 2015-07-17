@@ -1,8 +1,8 @@
 """
-PC-BASIC 3.23 - run.py
+PC-BASIC - run.py
 Main interpreter loop
 
-(c) 2013, 2014 Rob Hagemans 
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -16,6 +16,7 @@ import state
 import backend
 import reset
 import flow
+from representation import ascii_whitespace
 
 # true if a prompt is needed on next cycle
 state.basic_state.prompt = True
@@ -132,7 +133,7 @@ def auto_step():
     else:
         console.write(' ')
         line = console.wait_screenline(from_start=True)
-    while len(line) > 0 and line[-1] in util.whitespace:
+    while len(line) > 0 and line[-1] in ascii_whitespace:
         line = line[:-1]
     # run or store it; don't clear lines or raise undefined line number
     state.basic_state.direct_line = tokenise.tokenise_line(line)

@@ -69,7 +69,7 @@ def parse_expression(ins, allow_empty=False, empty_err=22):
     units, operators = [], []
     while True:
         d = util.skip_white(ins)
-        if d in util.end_expression:
+        if d in tk.end_expression:
             break
         units.append(parse_expr_unit(ins))
         d = util.skip_white(ins)
@@ -139,7 +139,7 @@ def parse_expr_unit(ins):
         # a \00 character, even if inside a tokenised number, will break a string literal (and make the parser expect a
         # line number afterwards, etc. We follow this.
         d = ins.read(1)
-        while d not in util.end_line + ('"',):
+        while d not in tk.end_line + ('"',):
             output += d
             d = ins.read(1)
         if d == '\0':

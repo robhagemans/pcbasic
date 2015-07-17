@@ -91,7 +91,7 @@ def rebuild_line_dict():
             break
         state.basic_state.line_numbers[scanline] = scanpos
         last = scanpos
-        util.skip_to(state.basic_state.bytecode, util.end_line)
+        util.skip_to(state.basic_state.bytecode, tk.end_line)
         scanpos = state.basic_state.bytecode.tell()
         offsets.append(scanpos)
     state.basic_state.line_numbers[65536] = scanpos
@@ -134,7 +134,7 @@ def check_number_start(linebuf):
     scanline = util.parse_line_number(linebuf)
     c = util.skip_white_read(linebuf)
     # check if linebuf is an empty line after the line number
-    empty = (c in util.end_line)
+    empty = (c in tk.end_line)
     # check if we start with a number
     if c in tk.number:
         raise error.RunError(2)
@@ -148,7 +148,7 @@ def store_line(linebuf):
     linebuf.seek(1)
     scanline = util.parse_line_number(linebuf)
     # check if linebuf is an empty line after the line number
-    empty = (util.skip_white_read(linebuf) in util.end_line)
+    empty = (util.skip_white_read(linebuf) in tk.end_line)
     pos, afterpos, deleteable, beyond = find_pos_line_dict(scanline, scanline)
     if empty and not deleteable:
         raise error.RunError(8)
@@ -325,7 +325,7 @@ def merge(g):
             store_line(linebuf)
         else:
             # we have read the :
-            if util.skip_white(linebuf) not in util.end_line:
+            if util.skip_white(linebuf) not in tk.end_line:
                 # direct statement in file
                 raise error.RunError(66)
 

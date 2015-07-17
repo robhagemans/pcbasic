@@ -1,8 +1,8 @@
 """
-PC-BASIC 3.23  - flow.py
+PC-BASIC - flow.py
 Program pointer utilities
 
-(c) 2013, 2014 Rob Hagemans
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -12,6 +12,7 @@ import var
 import vartypes
 import util
 import error
+import basictoken as tk
 
 # pointer position: False for direct line, True for program
 state.basic_state.run_mode = False
@@ -145,7 +146,7 @@ def resume(jumpnum):
     elif jumpnum == -1:
         # RESUME NEXT
         set_pointer(runmode, start_statement)
-        util.skip_to(get_codestream(), util.end_statement, break_on_first_char=False)
+        util.skip_to(get_codestream(), tk.end_statement, break_on_first_char=False)
     else:
         # RESUME n
         jump(jumpnum)
@@ -166,7 +167,7 @@ def read_entry():
     """ READ a unit of DATA. """
     current = state.basic_state.bytecode.tell()
     state.basic_state.bytecode.seek(state.basic_state.data_pos)
-    if util.peek(state.basic_state.bytecode) in util.end_statement:
+    if util.peek(state.basic_state.bytecode) in tk.end_statement:
         # initialise - find first DATA
         util.skip_to(state.basic_state.bytecode, ('\x84',))  # DATA
     if state.basic_state.bytecode.read(1) not in ('\x84', ','):
@@ -180,13 +181,13 @@ def read_entry():
         else:
             c = util.peek(state.basic_state.bytecode)
         # parse char
-        if c == '' or (not literal and c == ',') or (c in util.end_line or (not literal and c in util.end_statement)):
+        if c == '' or (not literal and c == ',') or (c in tk.end_line or (not literal and c in tk.end_statement)):
             break
         elif c == '"':
             state.basic_state.bytecode.read(1)
             literal = not literal
             if not literal:
-                util.require(state.basic_state.bytecode, util.end_statement+(',',))
+                util.require(state.basic_state.bytecode, tk.end_statement + (',',))
         else:
             state.basic_state.bytecode.read(1)
             if literal:
@@ -194,7 +195,7 @@ def read_entry():
             else:
                 word += c
             # omit trailing whitespace
-            if c not in util.whitespace:
+            if c not in tk.whitespace:
                 vals += word
                 word = ''
     state.basic_state.data_pos = state.basic_state.bytecode.tell()

@@ -13,18 +13,6 @@ import error
 import vartypes
 import basictoken as tk
 
-# TOKENS
-# LF is just whitespace if not preceded by CR
-whitespace = (' ', '\t', '\n')
-# line ending tokens
-end_line = ('\0', '')
-# statement ending tokens
-end_statement = end_line + (':',)
-# expression ending tokens
-# \xCC is TO, \x89 is GOTO, \x8D is GOSUB, \xCF is STEP, \xCD is THEN
-end_expression = end_statement + (')', ']', ',', ';', tk.TO, tk.GOTO, tk.GOSUB, tk.STEP, tk.THEN)
-## tokens followed by one or more bytes to be skipped
-plus_bytes = {tk.T_BYTE:1, '\xff':1 , '\xfe':1, '\xfd':1, tk.T_OCT:2, tk.T_HEX:2, tk.T_UINT_PROC:2, tk.T_UINT:2, tk.T_INT:2, tk.T_SINGLE:4, tk.T_DOUBLE:8, '\0':4}
 
 ###############################################################################
 # stream utilities
@@ -50,9 +38,9 @@ def skip(ins, skip_range, n=1):
     return d
 
 # skip whitespace, then read next
-skip_white_read = partial(skip_read, skip_range=whitespace)
+skip_white_read = partial(skip_read, skip_range=tk.whitespace)
 # skip whitespace, then peek next
-skip_white = partial(skip, skip_range=whitespace)
+skip_white = partial(skip, skip_range=tk.whitespace)
 
 def skip_white_read_if(ins, in_range):
     """ Skip whitespace, then read if next char is in range. """
@@ -95,8 +83,8 @@ def skip_to(ins, findrange, break_on_first_char=True):
             if len(off) < 2 or off == '\0\0':
                 break
             ins.read(2)
-        elif c in plus_bytes:
-            ins.read(plus_bytes[c])
+        elif c in tk.plus_bytes:
+            ins.read(tk.plus_bytes[c])
 
 def skip_to_read(ins, findrange):
     """ Skip until character is in findrange, then read. """
@@ -124,12 +112,12 @@ def parse_line_number(ins):
     """ Parse line number and leave pointer at first char of line. """
     # if end of program or truncated, leave pointer at start of line number C0 DE or 00 00
     off = ins.read(2)
-    if off=='\0\0' or len(off) < 2:
-        ins.seek(-len(off),1)
+    if off == '\0\0' or len(off) < 2:
+        ins.seek(-len(off), 1)
         return -1
     off = ins.read(2)
     if len(off) < 2:
-        ins.seek(-len(off)-2,1)
+        ins.seek(-len(off)-2, 1)
         return -1
     else:
         return vartypes.uint_to_value(bytearray(off))
@@ -149,7 +137,7 @@ def parse_value(ins):
     d = ins.read(1)
     # note that hex and oct strings are interpreted signed here, but unsigned the other way!
     try:
-        length = plus_bytes[d]
+        length = tk.plus_bytes[d]
     except KeyError:
         length = 0
     val = bytearray(ins.read(length))
@@ -179,7 +167,7 @@ def get_var_name(ins, allow_empty=False):
         # variable name must start with a letter
         ins.seek(-len(d), 1)
     else:
-        while d in string.ascii_uppercase + string.ascii_digits + '.':
+        while d in string.ascii_uppercase + string.digits + '.':
             name += d
             d = ins.read(1).upper()
         if d in '$%!#':

@@ -271,3 +271,17 @@ linenum = (T_UINT, T_UINT_PROC)
 operator = (O_GT, O_EQ, O_LT, O_PLUS, O_MINUS,
             O_TIMES, O_DIV, O_CARET, O_INTDIV)
 with_bracket = (SPC, TAB)
+
+# LF is just whitespace if not preceded by CR
+whitespace = (' ', '\t', '\n')
+# line ending tokens
+end_line = ('\0', '')
+# statement ending tokens
+end_statement = end_line + (':',)
+# expression ending tokens
+# \xCC is TO, \x89 is GOTO, \x8D is GOSUB, \xCF is STEP, \xCD is THEN
+end_expression = end_statement + (')', ']', ',', ';', TO, GOTO, GOSUB, STEP, THEN)
+## tokens followed by one or more bytes to be skipped
+plus_bytes = {
+    T_BYTE:1, '\xff':1 , '\xfe':1, '\xfd':1, T_OCT:2, T_HEX:2,
+    T_UINT_PROC:2, T_UINT:2, T_INT:2, T_SINGLE:4, T_DOUBLE:8, '\0':4}

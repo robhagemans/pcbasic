@@ -21,7 +21,7 @@ import util
 import vartypes
 
 # newline is considered whitespace: ' ', '\t', '\n'
-from representation import whitespace
+from representation import ascii_whitespace
 
 ascii_operators = '+-=/\\^*<>'
 
@@ -86,7 +86,7 @@ def detokenise_line(ins, bytepos=None):
         s = ins.read(1)
         if not textpos and ins.tell() >= bytepos:
             textpos = len(output)
-        if s in util.end_line:
+        if s in tk.end_line:
             # \x00 ends lines and comments when listed,
             # if not inside a number constant
             # stream ended or end of line
@@ -171,11 +171,10 @@ def detokenise_keyword(ins, output):
     # except operator tokens and SPC(, TAB(, FN, USR
     nxt = util.peek(ins)
     if (not comment and
-            nxt.upper() not in util.end_line + tk.operator +
+            nxt.upper() not in tk.end_line + tk.operator +
                                 (tk.O_REM, '"', ',', ' ', ':', '(', ')', '$',
                                  '%', '!', '#', '_', '@', '~', '|', '`') and
-            s not in tk.operator + tk.with_bracket +
-                      (tk.USR, tk.FN)):
+            s not in tk.operator + tk.with_bracket + (tk.USR, tk.FN)):
         # excluding TAB( SPC( and FN. \xD9 is ', \xD1 is FN, \xD0 is USR.
         output += ' '
     return comment
@@ -188,7 +187,7 @@ def tokenise_line(line):
     ins = StringIO(line)
     outs = StringIO()
     # skip whitespace at start of line
-    d = util.skip(ins, whitespace)
+    d = util.skip(ins, ascii_whitespace)
     if d == '':
         # empty line at EOF
         return outs
@@ -213,7 +212,7 @@ def tokenise_line(line):
         elif c in ('', '\r'):
             break
         # handle whitespace
-        elif c in whitespace:
+        elif c in ascii_whitespace:
             ins.read(1)
             outs.write(c)
         # handle string literals
@@ -338,19 +337,19 @@ def tokenise_uint(ins):
     word = bytearray()
     while True:
         c = ins.read(1)
-        if c and c in ascii_digits + whitespace:
+        if c and c in ascii_digits + ascii_whitespace:
             word += c
         else:
             ins.seek(-len(c), 1)
             break
     # don't claim trailing w/s
-    while len(word)>0 and chr(word[-1]) in whitespace:
+    while len(word)>0 and chr(word[-1]) in ascii_whitespace:
         del word[-1]
         ins.seek(-1, 1)
     # remove all whitespace
     trimword = bytearray()
     for c in word:
-        if chr(c) not in whitespace:
+        if chr(c) not in ascii_whitespace:
             trimword += chr(c)
     word = trimword
     # line number (jump)
@@ -381,7 +380,7 @@ def tokenise_word(ins, outs):
                 ins.read(4)
             else:
                 # GOTO allows any number of spaces
-                nxt = util.skip(ins, whitespace)
+                nxt = util.skip(ins, ascii_whitespace)
                 if ins.read(2) == 'TO':
                     word = 'GOTO'
                 else:

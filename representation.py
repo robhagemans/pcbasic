@@ -27,7 +27,7 @@ import basictoken as tk
 
 # whitespace for INPUT#, INPUT
 # TAB x09 is not whitespace for input#. NUL \x00 and LF \x0a are.
-ascii_white = ' \0\n'
+whitespace_input = ' \0\n'
 
 
 def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=False):
@@ -82,7 +82,7 @@ def oct_to_str(s):
 
 # for to_str
 # for numbers, tab and LF are whitespace
-whitespace = ' \t\n'
+ascii_whitespace = ' \t\n'
 # these seem to lead to a zero outcome all the time
 kill_char = '\x1c\x1d\x1f'
 
@@ -312,7 +312,7 @@ def from_str(s, allow_nonnum = True):
     is_single = False
     for c in s:
         # ignore whitespace throughout (x = 1   234  56  .5  means x=123456.5 in gw!)
-        if c in whitespace:   #(' ', '\t'):
+        if c in ascii_whitespace:   #(' ', '\t'):
             continue
         if c in kill_char:
             return Single.zero
@@ -492,7 +492,7 @@ def input_vars_file(readvar, stream):
         value = str_to_type(valstr, typechar)
         if value == None:
             value = vartypes.null[typechar]
-        while c and c in ascii_white:
+        while c and c in whitespace_input:
             # skip trailing whitespace
             # note that ending character (',', '\r', '\x1a', '\n', ...)
             # is swallowed here
@@ -526,7 +526,7 @@ def input_entry(stream, allow_quotes, end_all=(), end_not_quoted=(',',)):
     word, blanks = '', ''
     # skip leading spaces and line feeds and NUL.
     c = stream.read(1)
-    while c and c in ascii_white:
+    while c and c in whitespace_input:
         c = stream.read(1)
     quoted = (c == '"' and allow_quotes)
     if quoted:
@@ -542,10 +542,10 @@ def input_entry(stream, allow_quotes, end_all=(), end_not_quoted=(',',)):
         if c == '"' and quoted:
             quoted = False
             # ignore blanks after the quotes
-            while c and c in ascii_white:
+            while c and c in whitespace_input:
                 c = stream.read(1)
             break
-        elif c in ascii_white and not quoted:
+        elif c in whitespace_input and not quoted:
             blanks += c
         else:
             word += blanks + c
@@ -620,7 +620,7 @@ def tokenise_number(ins, outs):
                 word += c
             elif c in ascii_digits:
                 word += c
-            elif c in whitespace:
+            elif c in ascii_whitespace:
                 # we'll remove this later but need to keep it for now
                 # so we can reposition the stream on removing trailing whitespace
                 word += c
@@ -634,7 +634,7 @@ def tokenise_number(ins, outs):
                 ins.seek(-1, 1)
                 break
         # don't claim trailing whitespace, don't end in D or E
-        while len(word)>0 and (word[-1] in whitespace + 'DE'):
+        while len(word)>0 and (word[-1] in ascii_whitespace + 'DE'):
             if word[-1] in 'DE':
                 have_exp = False
             word = word[:-1]
@@ -642,7 +642,7 @@ def tokenise_number(ins, outs):
         # remove all internal whitespace
         trimword = ''
         for c in word:
-            if c not in whitespace:
+            if c not in ascii_whitespace:
                 trimword += c
         word = trimword
         # write out the numbers
