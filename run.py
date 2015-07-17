@@ -3,14 +3,14 @@ PC-BASIC 3.23 - run.py
 Main interpreter loop
 
 (c) 2013, 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+This file is released under the GNU GPL version 3.
 """
 
 import error
 import util
-import tokenise 
+import tokenise
 import program
-import statements 
+import statements
 import console
 import state
 import backend
@@ -34,7 +34,7 @@ def start(cmd='', run=False, quit=False):
         store_line(cmd)
     if run:
         # run command before program
-        if cmd:        
+        if cmd:
             run_once()
         # position the pointer at start of program and enter execute mode
         flow.jump(None)
@@ -65,12 +65,12 @@ def run_once():
                     # auto step, checks events
                     auto_step()
                 except error.Break:
-                    state.basic_state.auto_mode = False    
-            else:    
+                    state.basic_state.auto_mode = False
+            else:
                 show_prompt()
                 try:
                     # input loop, checks events
-                    line = console.wait_screenline(from_start=True, alt_replace=True) 
+                    line = console.wait_screenline(from_start=True, alt_replace=True)
                     state.basic_state.prompt = not store_line(line)
                 except error.Break:
                     state.basic_state.prompt = False
@@ -79,7 +79,7 @@ def run_once():
             if switch_mode():
                 break
     except error.RunError as e:
-        handle_error(e) 
+        handle_error(e)
         state.basic_state.prompt = True
 
 def switch_mode():
@@ -89,14 +89,14 @@ def switch_mode():
         # move pointer to the start of direct line (for both on and off!)
         flow.set_pointer(False, 0)
         state.console_state.screen.cursor.reset_visibility()
-    return ((not state.basic_state.auto_mode) and 
+    return ((not state.basic_state.auto_mode) and
             (not state.basic_state.execute_mode) and last_execute)
-        
+
 def store_line(line):
     """ Store a program line or schedule a command line for execution. """
     if not line:
         return True
-    state.basic_state.direct_line = tokenise.tokenise_line(line)    
+    state.basic_state.direct_line = tokenise.tokenise_line(line)
     c = util.peek(state.basic_state.direct_line)
     if c == '\x00':
         # check for lines starting with numbers (6553 6) and empty lines
@@ -104,14 +104,14 @@ def store_line(line):
         program.store_line(state.basic_state.direct_line)
         reset.clear()
     elif c != '':
-        # it is a command, go and execute    
+        # it is a command, go and execute
         state.basic_state.execute_mode = True
     return not state.basic_state.execute_mode
-                        
+
 def show_prompt():
     """ Show the Ok or EDIT prompt, unless suppressed. """
     if state.basic_state.execute_mode:
-        return        
+        return
     if state.basic_state.edit_prompt:
         linenum, tell = state.basic_state.edit_prompt
         program.edit(linenum, tell)
@@ -119,7 +119,7 @@ def show_prompt():
     elif state.basic_state.prompt:
         console.start_line()
         console.write_line("Ok\xff")
-                   
+
 def auto_step():
     """ Generate an AUTO line number and wait for input. """
     numstr = str(state.basic_state.auto_linenum)
@@ -135,7 +135,7 @@ def auto_step():
     while len(line) > 0 and line[-1] in util.whitespace:
         line = line[:-1]
     # run or store it; don't clear lines or raise undefined line number
-    state.basic_state.direct_line = tokenise.tokenise_line(line)    
+    state.basic_state.direct_line = tokenise.tokenise_line(line)
     c = util.peek(state.basic_state.direct_line)
     if c == '\x00':
         # check for lines starting with numbers (6553 6) and empty lines
@@ -144,8 +144,8 @@ def auto_step():
             program.store_line(state.basic_state.direct_line)
             reset.clear()
         state.basic_state.auto_linenum = scanline + state.basic_state.auto_increment
-    elif c != '':    
-        # it is a command, go and execute    
+    elif c != '':
+        # it is a command, go and execute
         state.basic_state.execute_mode = True
 
 
@@ -157,31 +157,31 @@ def handle_basic_events():
     if state.basic_state.events.suspend_all or not state.basic_state.run_mode:
         return
     for event in state.basic_state.events.all:
-        if (event.enabled and event.triggered 
+        if (event.enabled and event.triggered
                 and not event.stopped and event.gosub != None):
             # release trigger
             event.triggered = False
-            # stop this event while handling it 
-            event.stopped = True 
-            # execute 'ON ... GOSUB' subroutine; 
+            # stop this event while handling it
+            event.stopped = True
+            # execute 'ON ... GOSUB' subroutine;
             # attach handler to allow un-stopping event on RETURN
             flow.jump_gosub(event.gosub, event)
-        
+
 def handle_error(s):
     """ Handle a BASIC error through trapping or error message. """
     error.set_err(s)
     # not handled by ON ERROR, stop execution
-    console.write_error_message(error.get_message(s.err), program.get_line_number(s.pos))   
+    console.write_error_message(error.get_message(s.err), program.get_line_number(s.pos))
     state.basic_state.error_handle_mode = False
     state.basic_state.execute_mode = False
-    state.basic_state.input_mode = False    
+    state.basic_state.input_mode = False
     # special case: syntax error
     if s.err == 2:
         # for some reason, err is reset to zero by GW-BASIC in this case.
         state.basic_state.errn = 0
         if s.pos != -1:
             # line edit gadget appears
-            state.basic_state.edit_prompt = (program.get_line_number(s.pos), 
+            state.basic_state.edit_prompt = (program.get_line_number(s.pos),
                                              state.basic_state.bytecode.tell())
 
 def handle_break(e):
@@ -196,6 +196,4 @@ def handle_break(e):
     else:
         console.write_error_message("Break", -1)
     state.basic_state.execute_mode = False
-    state.basic_state.input_mode = False    
-
-        
+    state.basic_state.input_mode = False
