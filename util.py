@@ -7,9 +7,10 @@ This file is released under the GNU GPL version 3.
 """
 
 from functools import partial
+import string
+
 import error
 import vartypes
-
 import basictoken as tk
 
 # TOKENS
@@ -76,7 +77,7 @@ def skip_to(ins, findrange, break_on_first_char=True):
             literal = not literal
         elif c == tk.REM:
             rem = True
-        elif c == '\x00':
+        elif c == '\0':
             literal = False
             rem = False
         if literal or rem:
@@ -172,14 +173,16 @@ def get_var_name(ins, allow_empty=False):
     """ Get variable name from token stream. """
     name = ''
     d = skip_white_read(ins).upper()
-    if not (d >= 'A' and d <= 'Z'):
+    if not d:
+        pass
+    elif d not in string.ascii_uppercase:
         # variable name must start with a letter
         ins.seek(-len(d), 1)
     else:
-        while (d>='A' and d<='Z') or (d>='0' and d<='9') or d=='.':
+        while d in string.ascii_uppercase + string.ascii_digits + '.':
             name += d
             d = ins.read(1).upper()
-        if d in ('$', '%', '!', '#'):
+        if d in '$%!#':
             name += d
         else:
             ins.seek(-len(d), 1)
@@ -195,10 +198,10 @@ def get_var_name(ins, allow_empty=False):
 def range_check(lower, upper, *allvars):
     """ Check if all variables in list are within the given inclusive range. """
     for v in allvars:
-        if v != None and v < lower or v > upper:
+        if v != None and not (lower <= v <= upper):
             raise error.RunError(5)
 
 def range_check_err(lower, upper, v, err=5):
     """ Check if variable is within the given inclusive range. """
-    if v != None and v < lower or v > upper:
+    if v != None and not (lower <= v <= upper):
         raise error.RunError(err)

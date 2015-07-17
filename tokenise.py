@@ -106,7 +106,7 @@ def detokenise_line(ins, bytepos=None):
             #     interpret as line number and carry on
             # 0E: line number (unsigned int)
             output += representation.uint_to_str(bytearray(ins.read(2)))
-        elif comment or litstring or (s >= '\x20' and s <= '\x7e'):
+        elif comment or litstring or ('\x20' <= s <= '\x7e'):
             # honest ASCII
             output += s
         else:
@@ -220,7 +220,7 @@ def tokenise_line(line):
         elif util.peek(ins) == '"':
             tokenise_literal(ins, outs)
         # handle jump numbers
-        elif allow_number and allow_jumpnum and c in ascii_digits + ('.',):
+        elif allow_number and allow_jumpnum and c in ascii_digits + '.':
             tokenise_jump_number(ins, outs)
         # handle numbers
         # numbers following var names with no operator or token in between
@@ -338,7 +338,7 @@ def tokenise_uint(ins):
     word = bytearray()
     while True:
         c = ins.read(1)
-        if c in ascii_digits + whitespace:
+        if c and c in ascii_digits + whitespace:
             word += c
         else:
             ins.seek(-len(c), 1)
