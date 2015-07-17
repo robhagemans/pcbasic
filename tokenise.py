@@ -388,16 +388,14 @@ def tokenise_word(ins, outs):
                     ins.seek(pos)
             if word in ('GOTO', 'GOSUB'):
                 nxt = util.peek(ins).upper()
-                if nxt in name_chars:
+                if nxt and nxt in name_chars:
                     ins.seek(pos)
                     word = 'GO'
-                else:
-                    pass
         if word in keyword_to_token:
             # ignore if part of a longer name, except FN, SPC(, TAB(, USR
             if word not in ('FN', 'SPC(', 'TAB(', 'USR'):
                 nxt = util.peek(ins).upper()
-                if nxt in name_chars:
+                if nxt and nxt in name_chars:
                     continue
             token = keyword_to_token[word]
             # handle special case ELSE -> :ELSE
@@ -410,10 +408,12 @@ def tokenise_word(ins, outs):
                 outs.write(token)
             break
         # allowed names: letter + (letters, numbers, .)
-        elif not(c in name_chars):
-            if c!='':
-                word = word[:-1]
-                ins.seek(-1, 1)
+        elif not c:
+            outs.write(word)
+            break
+        elif c not in name_chars:
+            word = word[:-1]
+            ins.seek(-1, 1)
             outs.write(word)
             break
     return word
