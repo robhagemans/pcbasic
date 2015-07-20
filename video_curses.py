@@ -108,6 +108,7 @@ def init():
     can_change_palette = (curses.can_change_color() and curses.COLORS >= 16 
                           and curses.COLOR_PAIRS > 128)
     sys.stdout.write(ansi.esc_set_title % caption)
+    sys.stdout.flush()
     if can_change_palette:
         default_colors = range(16, 32)
     else:    
@@ -150,6 +151,7 @@ def close():
     if wait_on_close:
         sys.stdout.write(ansi.esc_set_title % (caption + 
                                               ' - press a key to close window'))
+        sys.stdout.flush()
         # redraw in case terminal didn't recognise ansi sequence
         redraw()
         while window.getch() == -1:
@@ -328,6 +330,7 @@ def check_keyboard():
                 backend.insert_special_key('break')
             elif i == curses.KEY_RESIZE:
                 sys.stdout.write(ansi.esc_resize_term % (height, width))
+                sys.stdout.flush()
                 window.resize(height, width)
                 window.clear()
                 redraw()
