@@ -14,6 +14,9 @@ import vartypes
 import basictoken as tk
 
 
+# allowable as chars 2.. in a variable name (first char must be a letter)
+name_chars = string.ascii_uppercase + string.digits + '.'
+
 ###############################################################################
 # stream utilities
 
@@ -142,7 +145,7 @@ def get_var_name(ins, allow_empty=False):
         # variable name must start with a letter
         ins.seek(-len(d), 1)
     else:
-        while d and d in string.ascii_uppercase + string.digits + '.':
+        while d and d in name_chars:
             name += d
             d = ins.read(1).upper()
         if d in '$%!#':

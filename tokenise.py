@@ -22,11 +22,9 @@ import vartypes
 
 # newline is considered whitespace: ' ', '\t', '\n'
 from representation import ascii_whitespace
+from util import name_chars
 
 ascii_operators = '+-=/\\^*<>'
-
-# allowable as chars 2.. in a variable name (first char must be a letter)
-name_chars = ascii_uppercase + ascii_digits + '.'
 
 # keywords than can followed by one or more line numbers
 linenum_words = [
