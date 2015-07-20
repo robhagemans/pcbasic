@@ -136,6 +136,7 @@ def init_screen_mode(mode_info=None):
         window = curses.newwin(height, width, 0, 0)
     window.move(0, 0)
     sys.stdout.write(ansi.esc_resize_term % (height, width))
+    sys.stdout.flush()
     #curses.resizeterm(height, width)
     window.resize(height, width)
     window.nodelay(True)
