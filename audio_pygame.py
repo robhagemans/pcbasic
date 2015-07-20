@@ -181,9 +181,7 @@ class SoundGenerator(object):
             half_wavelength = sample_rate / (2.*self.frequency)
             num_half_waves = int(ceil(chunk_length / half_wavelength))
             # generate bits
-            bits = []
-            for _ in range(num_half_waves):
-                bits.append(-self.amplitude if self.signal_source.next() else self.amplitude)
+            bits = [ -self.amplitude if self.signal_source.next() else self.amplitude for _ in xrange(num_half_waves) ]
             # do sampling by averaging the signal over bins of given resolution
             # this allows to use numpy all the way which is *much* faster than looping over an array
             # stretch array by half_wavelength * resolution
@@ -214,7 +212,7 @@ class SoundGenerator(object):
 
 
 # three tone voices plus a noise source
-signal_sources = [  SignalSource(feedback_tone), 
+signal_sources = [  SignalSource(feedback_tone),
                     SignalSource(feedback_tone),
                     SignalSource(feedback_tone),
                     SignalSource(feedback_noise, init_noise) ]
