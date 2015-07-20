@@ -636,7 +636,8 @@ def putc_at(pagenum, row, col, c, for_keys=False):
     if c == '\0':
         # guaranteed to be blank, saves time on some BLOADs
         canvas[pagenum].fill(bg,
-                             ((col-1)*font_width, (row-1)*font_height, 8, 8))
+                             ((col-1)*font_width, (row-1)*font_height,
+                             font_width, font_height))
     else:
         if glyph.get_palette_at(255) != bg:
             glyph.set_palette_at(255, bg)
