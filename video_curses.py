@@ -1,9 +1,9 @@
 """
-PC-BASIC 3.23 - video_curses.py
+PC-BASIC - video_curses.py
 Text interface implementation for Unix
 
-(c) 2013, 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+(c) 2013, 2014, 2015 Rob Hagemans
+This file is released under the GNU GPL version 3.
 """
 
 import sys
@@ -15,7 +15,7 @@ try:
     import curses
 except ImportError:
     curses = None
-        
+
 import config
 import unicodepage
 import scancode
@@ -25,7 +25,7 @@ import backend
 import state
 
 # for a few ansi sequences not supported by curses
-# only use these if you clear the screen afterwards, 
+# only use these if you clear the screen afterwards,
 # so you don't see gibberish if the terminal doesn't support the sequence.
 import ansi
 
@@ -61,13 +61,13 @@ if curses:
         curses.KEY_RIGHT: scancode.RIGHT, curses.KEY_LEFT: scancode.LEFT,
         curses.KEY_IC: scancode.INSERT, curses.KEY_DC: scancode.DELETE,
         curses.KEY_PPAGE: scancode.PAGEUP, curses.KEY_NPAGE: scancode.PAGEDOWN,
-        curses.KEY_BACKSPACE: scancode.BACKSPACE, 
+        curses.KEY_BACKSPACE: scancode.BACKSPACE,
         curses.KEY_PRINT: scancode.PRINT, curses.KEY_CANCEL: scancode.ESCAPE,
     }
-        
+
     last_attr = None
     attr = curses.A_NORMAL
- 
+
 def prepare():
     """ Initialise the video_curses module. """
     global caption, wait_on_close
@@ -80,16 +80,16 @@ def init():
     if not curses:
         # fail silently, we're going to try ANSI
         return False
-    # find a supported UTF-8 locale, with a preference for C, en-us, default   
-    languages = (['C', 'en-US', locale.getdefaultlocale()[0]] + 
-                 [a for a in locale.locale_alias.values() 
+    # find a supported UTF-8 locale, with a preference for C, en-us, default
+    languages = (['C', 'en-US', locale.getdefaultlocale()[0]] +
+                 [a for a in locale.locale_alias.values()
                     if '.' in a and a.split('.')[1] == 'UTF-8'])
-    for lang in languages:    
+    for lang in languages:
         try:
             locale.setlocale(locale.LC_ALL,(lang, 'utf-8'))
             break
         except locale.Error:
-            pass    
+            pass
     if locale.getlocale()[1] != 'UTF-8':
         logging.warning('No supported UTF-8 locale found.')
         return False
@@ -105,22 +105,22 @@ def init():
     curses.start_color()
     screen.clear()
     # init_screen_mode()
-    can_change_palette = (curses.can_change_color() and curses.COLORS >= 16 
+    can_change_palette = (curses.can_change_color() and curses.COLORS >= 16
                           and curses.COLOR_PAIRS > 128)
     sys.stdout.write(ansi.esc_set_title % caption)
     if can_change_palette:
         default_colors = range(16, 32)
-    else:    
+    else:
         # curses colours mapped onto EGA
         default_colors = (
-            curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN, 
-            curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA, 
+            curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN,
+            curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA,
             curses.COLOR_YELLOW, curses.COLOR_WHITE,
-            curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN, 
-            curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA, 
+            curses.COLOR_BLACK, curses.COLOR_BLUE, curses.COLOR_GREEN,
+            curses.COLOR_CYAN, curses.COLOR_RED, curses.COLOR_MAGENTA,
             curses.COLOR_YELLOW, curses.COLOR_WHITE)
     return True
-    
+
 def init_screen_mode(mode_info=None):
     """ Change screen mode. """
     global window, height, width
@@ -143,11 +143,11 @@ def init_screen_mode(mode_info=None):
     window.scrollok(False)
     set_curses_palette()
     return True
-    
+
 def close():
     """ Close the text interface. """
     if wait_on_close:
-        sys.stdout.write(ansi.esc_set_title % (caption + 
+        sys.stdout.write(ansi.esc_set_title % (caption +
                                               ' - press a key to close window'))
         # redraw in case terminal didn't recognise ansi sequence
         redraw()
@@ -167,7 +167,7 @@ def check_events():
         window.move(cursor_row-1, cursor_col-1)
     window.refresh()
     check_keyboard()
-    
+
 def idle():
     """ Video idle process. """
     time.sleep(0.024)
@@ -196,8 +196,8 @@ def update_palette(new_palette, new_palette1):
     if can_change_palette:
         for i in range(len(new_palette)):
             r, g, b = new_palette[i]
-            curses.init_color(default_colors[i], (r*1000)//255, (g*1000)//255, (b*1000)//255)             
-    
+            curses.init_color(default_colors[i], (r*1000)//255, (g*1000)//255, (b*1000)//255)
+
 def move_cursor(crow, ccol):
     """ Move the cursor to a new position. """
     global cursor_row, cursor_col
@@ -249,7 +249,7 @@ def putwc_at(pagenum, row, col, c, d, for_keys=False):
             window.addstr(row-1, col-1, '  ', attr)
     except curses.error:
         pass
-        
+
 def scroll(from_line, scroll_height, attr):
     """ Scroll the screen up between from_line and scroll_height. """
     window.scrollok(True)
@@ -263,7 +263,7 @@ def scroll(from_line, scroll_height, attr):
     clear_rows(attr, scroll_height, scroll_height)
     if cursor_row > 1:
         window.move(cursor_row-2, cursor_col-1)
-    
+
 def scroll_down(from_line, scroll_height, attr):
     """ Scroll the screen down between from_line and scroll_height. """
     window.scrollok(True)
@@ -277,8 +277,8 @@ def scroll_down(from_line, scroll_height, attr):
     clear_rows(attr, from_line, from_line)
     if cursor_row < height:
         window.move(cursor_row, cursor_col-1)
-    
-        
+
+
 ###############################################################################
 # The following are no-op responses to requests from backend
 
@@ -304,7 +304,7 @@ def rebuild_glyph(ordval):
 
 ###############################################################################
 # IMPLEMENTATION
-                    
+
 def redraw():
     """ Force redrawing of the screen (callback). """
     state.console_state.screen.redraw_text_screen()
@@ -333,8 +333,8 @@ def check_keyboard():
             try:
                 # scancode, insert here and now
                 # there shouldn't be a mix of special keys and utf8 in one
-                # uninterrupted string, since the only reason an uninterrupted 
-                # string would be longer than 1 char is because it's a single 
+                # uninterrupted string, since the only reason an uninterrupted
+                # string would be longer than 1 char is because it's a single
                 # utf-8 sequence or a pasted utf-8 string, neither of which
                 # can contain special characters.
                 # however, if that does occur, this won't work correctly.
@@ -346,19 +346,19 @@ def check_keyboard():
     u = s.decode('utf-8')
     # then handle these one by one as UTF-8 sequences
     c = ''
-    for uc in u:                    
+    for uc in u:
         c += uc.encode('utf-8')
-        if c == '\x03':         
+        if c == '\x03':
             # send BREAK for ctrl-C
             backend.insert_special_key('break')
-        elif c == '\0':    
+        elif c == '\0':
             # scancode; go add next char
             continue
         else:
             try:
                 backend.insert_chars(unicodepage.from_utf8(c))
-            except KeyError:    
-                backend.insert_chars(c)    
+            except KeyError:
+                backend.insert_chars(c)
         c = ''
 
 def set_curses_palette():
@@ -378,7 +378,7 @@ def set_curses_palette():
                     curses.init_pair(back*8+fore+1, default_colors[fore], default_colors[back])
                 else:
                     curses.init_pair(back*8+fore, default_colors[fore], default_colors[back])
-            
+
 def colours(at):
     """ Convert BASIC attribute byte to curses colour. """
     back = (at>>4)&0x7
@@ -386,12 +386,12 @@ def colours(at):
     fore = (blink*0x10) + (at&0xf)
     if can_change_palette:
         cursattr = curses.color_pair(1 + (back&7)*16 + (fore&15))
-    else:        
+    else:
         if back == 0 and fore&7 == 7:
             cursattr = 0
         elif back == 0:
             cursattr = curses.color_pair(1 + (back&7)*8 + (fore&7))
-        else:    
+        else:
             cursattr = curses.color_pair((back&7)*8 + (fore&7))
         if fore&15 > 7:
             cursattr |= curses.A_BOLD
@@ -401,4 +401,3 @@ def colours(at):
 
 
 prepare()
-
