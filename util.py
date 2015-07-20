@@ -142,7 +142,7 @@ def get_var_name(ins, allow_empty=False):
         # variable name must start with a letter
         ins.seek(-len(d), 1)
     else:
-        while d in string.ascii_uppercase + string.digits + '.':
+        while d and d in string.ascii_uppercase + string.digits + '.':
             name += d
             d = ins.read(1).upper()
         if d in '$%!#':
