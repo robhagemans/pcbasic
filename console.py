@@ -156,6 +156,8 @@ def wait_interactive(from_start=False, alt_replace = True):
         if row == start_row:
             furthest_left = min(col, furthest_left)
             furthest_right = max(col, furthest_right)
+            if col == state.console_state.screen.mode.width and state.console_state.overflow:
+                furthest_right += 1
         # wait_char returns one e-ASCII code
         d = state.console_state.keyb.get_char_block()
         # insert dbcs chars from keyboard buffer two bytes at a time
