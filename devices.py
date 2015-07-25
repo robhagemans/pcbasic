@@ -254,7 +254,8 @@ class RawFile(object):
 class TextFileBase(RawFile):
     """ Base for text files on disk, KYBD file, field buffer. """
 
-    def __init__(self, fhandle, filetype, mode, first_char=''):
+    def __init__(self, fhandle, filetype, mode,
+                 first_char='', split_long_lines=True):
         """ Setup the basic properties of the file. """
         RawFile.__init__(self, fhandle, filetype, mode)
         # width=255 means line wrap
@@ -268,6 +269,8 @@ class TextFileBase(RawFile):
                 self.next_char = self.fhandle.read(1)
             except IOError:
                 self.next_char = ''
+        # handling of >255 char lines (False for programs)
+        self.split_long_lines = split_long_lines
 
     def read_raw(self, num=-1):
         """ Read num characters as string. """
@@ -286,7 +289,7 @@ class TextFileBase(RawFile):
     def read_line(self):
         """ Read a single line. """
         out = bytearray('')
-        while len(out) < 255:
+        while not self._check_long_line(out):
             c = self.read(1)
             # don't check for CRLF on KYBD:, CAS:, etc.
             if not c or c == '\r':
@@ -295,6 +298,16 @@ class TextFileBase(RawFile):
         if not c and not out:
             return None
         return out
+
+    def _check_long_line(self, line):
+        """ Check if line is longer than max length; raise error if needed. """
+        if len(line) >= 255:
+            if self.split_long_lines:
+                return True
+            else:
+                # line buffer overflow
+                raise error.RunError(23)
+        return False
 
     def write(self, s):
         """ Write the string s to the file, taking care of width settings. """
@@ -360,7 +373,7 @@ class CRLFTextFileBase(TextFileBase):
     def read_line(self):
         """ Read line from text file, break on CR or CRLF (not LF). """
         s, c = '', ''
-        while len(s) < 255:
+        while not self._check_long_line(s):
             c, last = self.read(1), c
             if not c or (c == '\r' and last != '\n'):
                 # break on CR, CRLF but allow LF, LFCR to pass

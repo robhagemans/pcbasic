@@ -105,8 +105,10 @@ class CASDevice(object):
         except EnvironmentError:
             # device I/O Error
             raise error.RunError(57)
-        if filetype in ('D', 'A'):
+        if filetype == 'D':
             return CASTextFile(self.tapestream, filetype, mode)
+        elif filetype == 'A':
+            return CASTextFile(self.tapestream, filetype, mode, split_long_lines=False)
         else:
             return CASBinaryFile(self.tapestream, filetype, mode, seg, offset, length)
 

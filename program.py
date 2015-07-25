@@ -318,7 +318,6 @@ def merge(g):
         line = g.read_line()
         if line is None:
             break
-        #line, first_char = first_char + line, ''
         linebuf = tokenise.tokenise_line(line)
         if linebuf.read(1) == '\0':
             # line starts with a number, add to program memory; store_line seeks to 1 first

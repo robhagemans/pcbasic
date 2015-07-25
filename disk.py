@@ -619,7 +619,7 @@ def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock=
     elif filetype == 'A':
         # ascii program file (UTF8 or universal newline if option given)
         return TextFile(fhandle, filetype, number, name, mode, access, lock,
-                         utf8_files, universal_newline)
+                         utf8_files, universal_newline, split_long_lines=False)
     elif filetype == 'D':
         if mode in 'IAO':
             # text data
@@ -796,9 +796,10 @@ class TextFile(devices.CRLFTextFileBase):
 
     def __init__(self, fhandle, filetype, number, name,
                  mode='A', access='RW', lock='',
-                 utf8=False, universal=False):
+                 utf8=False, universal=False, split_long_lines=True):
         """ Initialise text file object. """
-        devices.CRLFTextFileBase.__init__(self, fhandle, filetype, mode)
+        devices.CRLFTextFileBase.__init__(self, fhandle, filetype, mode,
+                                          '', split_long_lines)
         self.lock_list = set()
         self.lock_type = lock
         self.access = access
@@ -854,7 +855,7 @@ class TextFile(devices.CRLFTextFileBase):
         # is followed by a line starting with a number
         s, c = self.spaces, ''
         self.spaces = ''
-        while len(s) < 255:
+        while not self._check_long_line(s):
             # read converts CRLF to CR
             c = self.read(1)
             if not c:
