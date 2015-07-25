@@ -46,7 +46,7 @@ class EndOfTape(CassetteIOError): pass
 class CRCError(CassetteIOError): pass
 class PulseError(CassetteIOError): pass
 class FramingError(CassetteIOError): pass
-class NotImplemented(CassetteIOError): pass
+class OperationNotImplemented(CassetteIOError): pass
 
 #################################################################################
 # Cassette device
@@ -420,7 +420,8 @@ class BasicodeStream(CassetteStream):
         return ' '*8, 'A', 0, 0, 0
 
     def open_write(self, name, filetype, seg, offs, length):
-        raise NotImplemented()
+        # writing BASICODE not implemented
+        raise OperationNotImplemented()
 
     def _fill_record_buffer(self):
         """ Read a file from tape. """
