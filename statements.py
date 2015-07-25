@@ -2022,14 +2022,17 @@ def exec_def_fn(ins):
 def exec_randomize(ins):
     """ RANDOMIZE: set random number generator seed. """
     val = expressions.parse_expression(ins, allow_empty=True)
-    # prompt for random seed if not specified
-    if not val:
-        console.write("Random number seed (-32768 to 32767)? ")
-        seed = console.wait_screenline(alt_replace=True)
-        # seed entered on prompt is rounded to int
-        val = vartypes.pass_int_keep(representation.str_to_value_keep(vartypes.pack_string(seed)))
-    elif val[0] == '$':
-        raise error.RunError(5)
+    if val:
+        # don't convert to int if provided in the code
+        val = vartypes.pass_number_keep(val)
+    else:
+        # prompt for random seed if not specified
+        while not val:
+            console.write("Random number seed (-32768 to 32767)? ")
+            seed = console.wait_screenline(alt_replace=True)
+            # seed entered on prompt is rounded to int
+            val = representation.str_to_value_keep(vartypes.pack_string(seed))
+        val = vartypes.pass_int_keep(val)
     rnd.randomize(val)
     util.require(ins, util.end_statement)
 
