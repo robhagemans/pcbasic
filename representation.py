@@ -3,14 +3,14 @@ PC-BASIC 3.23 - representation.py
 Convert between numbers and their string representations
 
 (c) 2013, 2014 Rob Hagemans
-This file is released under the GNU GPL version 3. 
+This file is released under the GNU GPL version 3.
 """
 
 try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
-    
+
 import error
 import util
 import fp
@@ -20,14 +20,14 @@ from fp import mul, div, pow_int
 import vartypes
 
 # whitespace for INPUT#, INPUT
-# TAB x09 is not whitespace for input#. NUL \x00 and LF \x0a are. 
+# TAB x09 is not whitespace for input#. NUL \x00 and LF \x0a are.
 ascii_white = (' ', '\x00', '\n')
 # octal, decimal and hex digits
 ascii_octits = ('0','1','2','3','4','5','6','7')
 ascii_digits = ascii_octits + ('8','9')
 ascii_hexits = ascii_digits + ('A','B','C','D','E','F')
 
-    
+
 def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=False):
     """ Convert BASIC number to BASIC string. """
     # screen=False means in a program listing
@@ -36,7 +36,7 @@ def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=Fal
         if allow_empty_expression:
             return ('$', '')
         else:
-            raise error.RunError(2)    
+            raise error.RunError(2)
     typechar = inp[0]
     if typechar == '$':
         return ('$', inp[1])
@@ -50,12 +50,12 @@ def value_to_str_keep(inp, screen=False, write=False, allow_empty_expression=Fal
     elif typechar == '#':
         return ('$', float_to_str(fp.unpack(inp), screen, write) )
     else:
-        raise error.RunError(2)    
-        
-#D        
+        raise error.RunError(2)
+
+#D
 def int_to_str(num):
     """ Convert Python int to Python str. """
-    return str(num)   
+    return str(num)
 
 # tokenised ints to python str
 
@@ -70,7 +70,7 @@ def sint_to_str(s):
 def ubyte_to_str(s):
     """ Convert unsigned byte token to Python string. """
     return str(s[0])
-    
+
 def hex_to_str(s):
     """ Convert hex token to Python string. """
     return "&H" + hex(vartypes.uint_to_value(s))[2:].upper()
@@ -78,13 +78,13 @@ def hex_to_str(s):
 def oct_to_str(s):
     """ Convert oct token to Python string. """
     return "&O" + oct(vartypes.uint_to_value(s))[1:]
-    
+
 
 
 # floating point to string
 
 # for to_str
-# for numbers, tab and LF are whitespace    
+# for numbers, tab and LF are whitespace
 whitespace = (' ', '\t', '\n')
 # these seem to lead to a zero outcome all the time
 kill_char = ('\x1c', '\x1d', '\x1f')
@@ -96,7 +96,7 @@ Single.lim_bot = from_bytes(bytearray('\xff\x23\x74\x94')) # 999999.9, highest f
 Single.type_sign, Single.exp_sign = '!', 'E'
 
 Double.lim_top = from_bytes(bytearray('\xff\xff\x03\xbf\xc9\x1b\x0e\xb6')) # highest float less than 10e+16
-Double.lim_bot = from_bytes(bytearray('\xff\xff\x9f\x31\xa9\x5f\x63\xb2')) # highest float less than 10e+15 
+Double.lim_bot = from_bytes(bytearray('\xff\xff\x9f\x31\xa9\x5f\x63\xb2')) # highest float less than 10e+15
 Double.type_sign, Double.exp_sign = '#', 'D'
 
 
@@ -105,37 +105,37 @@ def just_under(n_in):
     # decrease mantissa by one (leaving carry unchanged)
     return n_in.__class__(n_in.neg, n_in.man - 0x100, n_in.exp)
 
-def get_digits(num, digits, remove_trailing=True):    
+def get_digits(num, digits, remove_trailing=True):
     """ Get the digits for an int. """
-    pow10 = 10L**(digits-1)  
+    pow10 = 10L**(digits-1)
     digitstr = ''
     while pow10 >= 1:
         digit = ord('0')
         while num >= pow10:
             digit += 1
             num -= pow10
-        digitstr += chr(digit)    
+        digitstr += chr(digit)
         pow10 /= 10
     if remove_trailing:
         # remove trailing zeros
-        while len(digitstr)>1 and digitstr[-1] == '0': 
+        while len(digitstr)>1 and digitstr[-1] == '0':
             digitstr = digitstr[:-1]
     return digitstr
 
 def scientific_notation(digitstr, exp10, exp_sign='E', digits_to_dot=1, force_dot=False):
     """ Put digits in scientific E-notation. """
-    valstr = digitstr[:digits_to_dot] 
-    if len(digitstr) > digits_to_dot: 
-        valstr += '.' + digitstr[digits_to_dot:] 
+    valstr = digitstr[:digits_to_dot]
+    if len(digitstr) > digits_to_dot:
+        valstr += '.' + digitstr[digits_to_dot:]
     elif len(digitstr) == digits_to_dot and force_dot:
         valstr += '.'
-    exponent = exp10-digits_to_dot+1   
-    valstr += exp_sign 
+    exponent = exp10-digits_to_dot+1
+    valstr += exp_sign
     if (exponent<0):
         valstr+= '-'
     else:
         valstr+= '+'
-    valstr += get_digits(abs(exponent),2,False)    
+    valstr += get_digits(abs(exponent),2,False)
     return valstr
 
 def decimal_notation(digitstr, exp10, type_sign='!', force_dot=False):
@@ -150,11 +150,11 @@ def decimal_notation(digitstr, exp10, type_sign='!', force_dot=False):
         if not force_dot or type_sign=='#':
             valstr += type_sign
     elif exp10 > 0:
-        valstr += digitstr[:exp10] + '.' + digitstr[exp10:]       
+        valstr += digitstr[:exp10] + '.' + digitstr[exp10:]
         if type_sign=='#':
             valstr += type_sign
     else:
-        valstr += '.' + '0'*(-exp10) + digitstr 
+        valstr += '.' + '0'*(-exp10) + digitstr
         if type_sign=='#':
             valstr += type_sign
     return valstr
@@ -163,9 +163,9 @@ def float_to_str(n_in, screen=False, write=False):
     """ Convert BASIC float to Python string. """
     # screen=True (ie PRINT) - leading space, no type sign
     # screen='w' (ie WRITE) - no leading space, no type sign
-    # default mode is for LIST    
+    # default mode is for LIST
     # zero exponent byte means zero
-    if n_in.is_zero(): 
+    if n_in.is_zero():
         if screen and not write:
             valstr = ' 0'
         else:
@@ -183,7 +183,7 @@ def float_to_str(n_in, screen=False, write=False):
     num, exp10 = mbf.bring_to_range(mbf.lim_bot, mbf.lim_top)
     digitstr = get_digits(num, mbf.digits)
     # exponent for scientific notation
-    exp10 += mbf.digits-1  
+    exp10 += mbf.digits-1
     if (exp10>mbf.digits-1 or len(digitstr)-exp10>mbf.digits+1):
         # use scientific notation
         valstr += scientific_notation(digitstr, exp10, n_in.exp_sign)
@@ -192,20 +192,20 @@ def float_to_str(n_in, screen=False, write=False):
         if screen or write:
             type_sign=''
         else:
-            type_sign = n_in.type_sign    
+            type_sign = n_in.type_sign
         valstr += decimal_notation(digitstr, exp10, type_sign)
     return valstr
-    
+
 def format_number(value, tokens, digits_before, decimals):
     """ Format a number to a format string. For PRINT USING. """
     # illegal function call if too many digits
     if digits_before + decimals > 24:
         raise error.RunError(5)
-    # extract sign, mantissa, exponent     
+    # extract sign, mantissa, exponent
     value = unpack(value)
     # dollar sign, decimal point
-    has_dollar, force_dot = '$' in tokens, '.' in tokens 
-    # leading sign, if any        
+    has_dollar, force_dot = '$' in tokens, '.' in tokens
+    # leading sign, if any
     valstr, post_sign = '', ''
     if tokens[0] == '+':
         valstr += '-' if value.neg else '+'
@@ -223,10 +223,10 @@ def format_number(value, tokens, digits_before, decimals):
             # just one of those things GW does
             if force_dot and digits_before == 0 and decimals != 0:
                 valstr += '0'
-    # take absolute value 
+    # take absolute value
     value.neg = False
     # currency sign, if any
-    valstr += '$' if has_dollar else '' 
+    valstr += '$' if has_dollar else ''
     # format to string
     if '^' in tokens:
         valstr += format_float_scientific(value, digits_before, decimals, force_dot)
@@ -240,7 +240,7 @@ def format_number(value, tokens, digits_before, decimals):
         # filler
         valstr = ('*' if '*' in tokens else ' ') * (len(tokens) - len(valstr)) + valstr
     return valstr
-    
+
 def format_float_scientific(expr, digits_before, decimals, force_dot):
     """ Put a float in scientific format. """
     work_digits = digits_before + decimals
@@ -251,9 +251,9 @@ def format_float_scientific(expr, digits_before, decimals, force_dot):
         if not force_dot:
             if expr.exp_sign == 'E':
                 return 'E+00'
-            return '0D+00'  # matches GW output. odd, odd, odd    
+            return '0D+00'  # matches GW output. odd, odd, odd
         digitstr, exp10 = '0'*(digits_before+decimals), 0
-    else:    
+    else:
         if work_digits > 0:
             # scientific representation
             lim_bot = just_under(pow_int(expr.ten, work_digits-1))
@@ -266,18 +266,18 @@ def format_float_scientific(expr, digits_before, decimals, force_dot):
         digitstr = get_digits(num, work_digits)
         if len(digitstr) < digits_before + decimals:
             digitstr += '0' * (digits_before + decimals - len(digitstr))
-    # this is just to reproduce GW results for no digits: 
+    # this is just to reproduce GW results for no digits:
     # e.g. PRINT USING "#^^^^";1 gives " E+01" not " E+00"
     if work_digits == 0:
         exp10 += 1
-    exp10 += digits_before + decimals - 1  
+    exp10 += digits_before + decimals - 1
     return scientific_notation(digitstr, exp10, expr.exp_sign, digits_to_dot=digits_before, force_dot=force_dot)
-    
+
 def format_float_fixed(expr, decimals, force_dot):
     """ Put a float in fixed-point representation. """
     unrounded = mul(expr, pow_int(expr.ten, decimals)) # expr * 10**decimals
     num = unrounded.copy().iround()
-    # find exponent 
+    # find exponent
     exp10 = 1
     pow10 = pow_int(expr.ten, exp10) # pow10 = 10L**exp10
     while num.gt(pow10) or num.equals(pow10): # while pow10 <= num:
@@ -289,13 +289,13 @@ def format_float_fixed(expr, decimals, force_dot):
         diff = exp10 - expr.digits
         num = div(unrounded, pow_int(expr.ten, diff)).iround()  # unrounded / 10**diff
         work_digits -= diff
-    num = num.trunc_to_int()   
+    num = num.trunc_to_int()
     # argument work_digits-1 means we're getting work_digits==exp10+1-diff digits
     # fill up with zeros
     digitstr = get_digits(num, work_digits-1, remove_trailing=False) + ('0' * diff)
     return decimal_notation(digitstr, work_digits-1-1-decimals+diff, '', force_dot)
 
-    
+
 ##################################
 
 def from_str(s, allow_nonnum = True):
@@ -309,7 +309,7 @@ def from_str(s, allow_nonnum = True):
     exp10 = 0
     exponent = 0
     mantissa = 0
-    digits = 0  
+    digits = 0
     zeros = 0
     is_double = False
     is_single = False
@@ -325,7 +325,7 @@ def from_str(s, allow_nonnum = True):
                 found_sign=True
                 continue
             elif c=='-':
-                found_sign=True    
+                found_sign=True
                 neg=True
                 continue
             else:
@@ -345,11 +345,11 @@ def from_str(s, allow_nonnum = True):
                         zeros+=1
                     else:
                         zeros=0
-                continue               
-            elif c=='.':
-                found_point = True    
                 continue
-            elif c.upper()=='E': 
+            elif c=='.':
+                found_point = True
+                continue
+            elif c.upper()=='E':
                 found_exp = True
                 continue
             elif c.upper()=='D':
@@ -362,10 +362,10 @@ def from_str(s, allow_nonnum = True):
                 break
             elif c=='#':
                 is_double = True
-                break    
+                break
             else:
                 if allow_nonnum:
-                    break    
+                    break
                 else:
                     return None
         elif (not found_exp_sign):
@@ -373,7 +373,7 @@ def from_str(s, allow_nonnum = True):
                 found_exp_sign = True
                 continue
             elif c=='-':
-                found_exp_sign = True    
+                found_exp_sign = True
                 exp_neg = True
                 continue
             else:
@@ -385,28 +385,28 @@ def from_str(s, allow_nonnum = True):
             continue
         else:
             if allow_nonnum:
-                break    
-            else:    
+                break
+            else:
                 return None
     if exp_neg:
         exp10 -= exponent
-    else:           
+    else:
         exp10 += exponent
     # eight or more digits means double, unless single override
     if digits - zeros > 7 and not is_single:
         is_double = True
     cls = Double if is_double else Single
-    mbf = cls(neg, mantissa * 0x100, cls.bias).normalise() 
+    mbf = cls(neg, mantissa * 0x100, cls.bias).normalise()
     while (exp10 < 0):
         mbf.idiv10()
         exp10 += 1
     while (exp10 > 0):
         mbf.imul10()
         exp10 -= 1
-    mbf.normalise()    
+    mbf.normalise()
     return mbf
-        
-        
+
+
 ########################################
 # for PRINT USING
 
@@ -419,7 +419,7 @@ def get_string_tokens(fors):
     elif c == '\\':
         word += fors.read(1)
         # count the width of the \ \ token; only spaces allowed and closing \ is necessary
-        while True: 
+        while True:
             c = fors.read(1)
             word += c
             if c == '\\':
@@ -446,9 +446,9 @@ def get_number_tokens(fors):
         if c == '*':
             digits_before += 2
             if util.peek(fors) == '$':
-                word += fors.read(1)                
+                word += fors.read(1)
         else:
-            digits_before += 1        
+            digits_before += 1
     # number field
     c = util.peek(fors)
     dot = (c == '.')
@@ -465,19 +465,19 @@ def get_number_tokens(fors):
                 if dot:
                     decimals += 1
                 else:
-                    digits_before += 1    
+                    digits_before += 1
             else:
                 break
     if digits_before + decimals == 0:
         fors.seek(-len(word), 1)
-        return '', 0, 0    
-    # post characters        
+        return '', 0, 0
+    # post characters
     if util.peek(fors, 4) == '^^^^':
         word += fors.read(4)
     if not leading_plus and util.peek(fors) in ('-', '+'):
         word += fors.read(1)
-    return word, digits_before, decimals    
-                
+    return word, digits_before, decimals
+
 ########################################
 
 
@@ -496,7 +496,7 @@ def input_vars_file(readvar, raw_file):
         else:
             valstr, c = input_entry(c, raw_file, allow_quotes=False,
                                     end_all = ('\r', '\x1a', ',', '\n', ' '))
-        value = str_to_type(valstr, typechar)    
+        value = str_to_type(valstr, typechar)
         if value == None:
             value = vartypes.null[typechar]
         # process the ending char
@@ -510,7 +510,7 @@ def input_vars_file(readvar, raw_file):
                     c = raw_file.read(1)
         # and then set the value
         v.append(value)
-    return readvar    
+    return readvar
 
 def input_vars(readvar, raw_file):
     """ Read a variable for INPUT. """
@@ -531,8 +531,8 @@ def input_vars(readvar, raw_file):
             break
     if count_values != len(readvar) or count_commas != len(readvar)-1 or has_empty:
         return None
-    return readvar            
-            
+    return readvar
+
 def input_entry(first_char, raw_file, allow_quotes, end_all=(), end_not_quoted=(',',)):
     """ Read a number or string entry for INPUT """
     word, blanks = '', ''
@@ -557,7 +557,7 @@ def input_entry(first_char, raw_file, allow_quotes, end_all=(), end_not_quoted=(
                 c = raw_file.read(1)
             break
         elif c in ascii_white and not quoted:
-            blanks += c    
+            blanks += c
         else:
             word += blanks + c
             blanks = ''
@@ -578,7 +578,7 @@ def str_to_type(word, type_char):
             return str_to_value_keep(packed, allow_nonnum=False)
         except AttributeError:
             return None
-#####      
+#####
 
 def tokenise_number(ins, outs):
     """ Convert Python-string number representation to number token. """
@@ -590,7 +590,7 @@ def tokenise_number(ins, outs):
         if nxt == 'H': # hex constant
             ins.read(1)
             word = ''
-            while True: 
+            while True:
                 if not util.peek(ins).upper() in ascii_hexits:
                     break
                 else:
@@ -600,8 +600,8 @@ def tokenise_number(ins, outs):
         else: # nxt == 'O': # octal constant
             if nxt == 'O':
                 ins.read(1)
-            word = ''    
-            while True: 
+            word = ''
+            while True:
                 if not util.peek(ins).upper() in ascii_octits:
                     break
                 else:
@@ -609,40 +609,40 @@ def tokenise_number(ins, outs):
             val = int(word, 8) if word else 0
             outs.write('\x0B' + str(vartypes.value_to_uint(val)))
     # handle other numbers
-    # note GW passes signs separately as a token and only stores positive numbers in the program        
+    # note GW passes signs separately as a token and only stores positive numbers in the program
     elif (c in ascii_digits or c=='.' or c in ('+','-')):
         have_exp = False
         have_point = False
         word = ''
-        while True: 
+        while True:
             c = ins.read(1).upper()
             if c == '.' and not have_point and not have_exp:
                 have_point = True
                 word += c
-            elif c in ('E', 'D') and not have_exp:    
+            elif c in ('E', 'D') and not have_exp:
                 have_exp = True
                 word += c
             elif c in ('-','+') and word=='':
                 # must be first token
-                word += c              
+                word += c
             elif c in ('+', '-') and word[-1] in ('E', 'D'):
                 word += c
             elif c in ascii_digits: # (c >='0' and numc <='9'):
                 word += c
             elif c in whitespace:
-                # we'll remove this later but need to keep it for now so we can reposition the stream on removing trainling whitespace 
+                # we'll remove this later but need to keep it for now so we can reposition the stream on removing trainling whitespace
                 word += c
             elif c in ('!', '#') and not have_exp:
                 word += c
                 break
             elif c == '%':
                 # swallow a %, but break parsing
-                break    
+                break
             else:
                 if c != '':
                     ins.seek(-1,1)
                 break
-        # don't claim trailing whitespace, don't end in D or E            
+        # don't claim trailing whitespace, don't end in D or E
         while len(word)>0 and (word[-1] in whitespace + ('D', 'E')):
             if word[-1] in ('D', 'E'):
                 have_exp = False
@@ -670,13 +670,13 @@ def tokenise_number(ins, outs):
             if len(mbf) == 4:
                 # single
                 outs.write('\x1d'+mbf)
-            else:    
+            else:
                 # double
                 outs.write('\x1f'+mbf)
     elif c!='':
         ins.seek(-1,1)
-            
-      
+
+
 ##########################################
 
 def str_to_value_keep(strval, allow_nonnum=True):
@@ -688,13 +688,13 @@ def str_to_value_keep(strval, allow_nonnum=True):
     outs = StringIO()
     # skip spaces and line feeds (but not NUL).
     util.skip(ins, (' ', '\n'))
-    tokenise_number(ins, outs)    
+    tokenise_number(ins, outs)
     outs.seek(0)
     value = util.parse_value(outs)
     if not allow_nonnum:
         if util.skip_white(ins) != '':
             # not everything has been parsed - error
-            return None    
+            return None
     return value
 
 def detokenise_number(ins, output):
@@ -708,7 +708,7 @@ def detokenise_number(ins, output):
         output += ubyte_to_str(bytearray(ins.read(1)))
     elif s >= '\x11' and s < '\x1b':            # 11-1B: constants 0 to 10
         output += chr(ord('0') + ord(s) - 0x11)
-    elif s == '\x1b':               
+    elif s == '\x1b':
         output += '10'
     elif s == '\x1c':                           # 1C: two byte signed int
         output += sint_to_str(bytearray(ins.read(2)))
@@ -717,6 +717,4 @@ def detokenise_number(ins, output):
     elif s == '\x1f':                           # 1F: eight byte double-precision floating point constant
         output += float_to_str(fp.Double.from_bytes(bytearray(ins.read(8))), screen=False, write=False)
     else:
-        ins.seek(-len(s),1)  
-    
-
+        ins.seek(-len(s),1)
