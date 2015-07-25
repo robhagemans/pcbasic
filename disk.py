@@ -599,7 +599,6 @@ class DiskDevice(object):
 def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock='',
                   reclen=128, seg=0, offset=0, length=0):
     """ Create disk file object of requested type. """
-    first = ''
     # determine file type if needed
     if len(filetype) > 1 and mode == 'I':
         # read magic
@@ -619,14 +618,12 @@ def open_diskfile(fhandle, filetype, mode, name='', number=0, access='RW', lock=
                            seg, offset, length)
     elif filetype == 'A':
         # ascii program file (UTF8 or universal newline if option given)
-        return TextFile(fhandle, filetype, number, name,
-                         mode, access, lock, first,
+        return TextFile(fhandle, filetype, number, name, mode, access, lock,
                          utf8_files, universal_newline)
     elif filetype == 'D':
         if mode in 'IAO':
             # text data
-            return TextFile(fhandle, filetype, number, name,
-                             mode, access, lock, first)
+            return TextFile(fhandle, filetype, number, name, mode, access, lock)
         else:
             return RandomFile(fhandle, number, name, access, lock, reclen)
     else:
@@ -798,11 +795,10 @@ class TextFile(devices.CRLFTextFileBase):
     """ Text file on disk device. """
 
     def __init__(self, fhandle, filetype, number, name,
-                 mode='A', access='RW', lock='', first_char='',
+                 mode='A', access='RW', lock='',
                  utf8=False, universal=False):
         """ Initialise text file object. """
-        devices.CRLFTextFileBase.__init__(self, fhandle, filetype,
-                                          mode, first_char)
+        devices.CRLFTextFileBase.__init__(self, fhandle, filetype, mode)
         self.lock_list = set()
         self.lock_type = lock
         self.access = access
