@@ -90,13 +90,13 @@ def set_width(to_width):
 ###############################
 # interactive mode
 
-def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
+def wait_screenline(write_endl=True, from_start=False):
     """ Enter interactive mode and read string from console. """
     # from_start means direct entry mode, otherwise input mode
     prompt_width = 0 if from_start else state.console_state.col-1
     try:
         # give control to user for interactive mode
-        prompt_row, left, right = wait_interactive(prompt_width, alt_replace)
+        prompt_row, left, right = wait_interactive(prompt_width)
     except error.Break:
         for echo in redirect.output_echos:
             # for some reason, 0E character is printed to redirects at break
@@ -183,7 +183,7 @@ def get_logical_line_input(srow, prompt_row, left, right):
                 line += '\n'
     return line
 
-def wait_interactive(prompt_width, alt_replace):
+def wait_interactive(prompt_width):
     """ Manage the interactive mode. """
     # force cursor visibility in all cases
     state.console_state.screen.cursor.show(True)
@@ -279,8 +279,6 @@ def wait_interactive(prompt_width, alt_replace):
                     # these are done on a less deep level than the fn key macros
                     letters = list(alt_key_replace[d]) + [' ']
                 except KeyError:
-                    letters = [d]
-                if not alt_replace:
                     letters = [d]
                 for d in letters:
                     # ignore eascii by this point, but not dbcs
