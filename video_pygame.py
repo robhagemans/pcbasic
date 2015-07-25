@@ -86,7 +86,7 @@ border_attr = 0
 # border widh in pixels
 border_width = 5
 # percentage of the screen to leave unused for indow decorations etc.
-display_slack = 10
+display_slack = 15
 # screen width and height in pixels
 display_size = (640, 480)
 
@@ -401,13 +401,13 @@ def find_display_size(canvas_x, canvas_y, border_width):
     else:
         pixel_x = int(canvas_x * (1 + border_width/100.))
         pixel_y = int(canvas_y * (1 + border_width/100.))
-        # leave 5% of the screen either direction unused
+        # leave part of the screen either direction unused
         # to account for task bars, window decorations, etc.
         xmult = max(1, int((100.-display_slack) * physical_size[0] / (100.*pixel_x)))
         ymult = max(1, int((100.-display_slack) * physical_size[1] / (100.*pixel_y)))
         # find the multipliers mx <= xmult, my <= ymult
         # such that mx * pixel_x / my * pixel_y
-        # is multiplicaively closest to aspect[0] / aspect[1]
+        # is multiplicatively closest to aspect[0] / aspect[1]
         target = aspect[0]/(1.0*aspect[1])
         current = xmult*canvas_x / (1.0*ymult*canvas_y)
         # find the absolute multiplicative distance (always > 1)
