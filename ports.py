@@ -114,7 +114,7 @@ class COMDevice(devices.Device):
             raise
         # only open file on socket once socket is open
         if not self.device_file:
-            self.device_file = COMFile(self.stream)
+            self.device_file = COMFile(self.stream, self.linefeed)
         return devices.Device.open(self, number, param, filetype, mode, access, lock,
                             reclen, seg, offset, length)
 
@@ -155,7 +155,7 @@ class COMDevice(devices.Device):
         else:
             stop = int(stop)
         self.stream.stopbits = stop
-        self.stream.linefeed = False
+        self.linefeed = False
         for named_param in param_list[4:]:
             if not named_param:
                 continue
@@ -173,7 +173,7 @@ class COMDevice(devices.Device):
                 pass
             elif named_param == 'LF':
                 # send a line feed at each return
-                self.stream.linefeed = True
+                self.linefeed = True
             elif named_param == 'PE':
                 # enable parity checking
                 pass
@@ -190,7 +190,7 @@ class COMDevice(devices.Device):
 class COMFile(devices.CRLFTextFileBase):
     """ COMn: device - serial port. """
 
-    def __init__(self, fhandle):
+    def __init__(self, fhandle, linefeed):
         """ Initialise COMn: file. """
         # note that for random files, fhandle must be a seekable stream.
         devices.CRLFTextFileBase.__init__(self, fhandle, 'D', 'R')
@@ -198,7 +198,7 @@ class COMFile(devices.CRLFTextFileBase):
         self.field = devices.Field(0)
         self.field.reset(serial_in_size)
         self.in_buffer = bytearray()
-        self.linefeed = False
+        self.linefeed = linefeed
 
     def check_read(self):
         """ Fill buffer at most up to buffer size; non blocking. """
