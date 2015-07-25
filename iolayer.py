@@ -1,9 +1,9 @@
 """
 PC-BASIC 3.23 - iolayer.py
-File and Device I/O operations 
- 
-(c) 2013, 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+File and Device I/O operations
+
+(c) 2013, 2014 Rob Hagemans
+This file is released under the GNU GPL version 3.
 """
 
 import os
@@ -98,13 +98,13 @@ def prepare():
     # always defined
     backend.devices['SCRN:'] = SCRNFile()
     backend.devices['KYBD:'] = KYBDFile()
-    backend.devices['LPT1:'] = create_device('LPT1:', config.options['lpt1'], nullstream) 
+    backend.devices['LPT1:'] = create_device('LPT1:', config.options['lpt1'], nullstream)
     # optional
     backend.devices['LPT2:'] = create_device('LPT2:', config.options['lpt2'])
     backend.devices['LPT3:'] = create_device('LPT3:', config.options['lpt3'])
     backend.devices['COM1:'] = create_device('COM1:', config.options['com1'])
     backend.devices['COM2:'] = create_device('COM2:', config.options['com2'])
-    
+
 def open_file_or_device(number, name, mode='I', access='R', lock='', reclen=128, defext=''):
     """ Open a file or device specified by name. """
     if (not name) or (number < 0) or (number > max_files):
@@ -118,13 +118,13 @@ def open_file_or_device(number, name, mode='I', access='R', lock='', reclen=128,
     split_colon = name.upper().split(':')
     if len(split_colon) > 1: # : found
         dev_name = split_colon[0] + ':'
-        dev_param = split_colon[1] 
+        dev_param = split_colon[1]
         try:
             inst = device_open(dev_name, number, mode, access, lock, reclen, dev_param)
-        except KeyError:    
+        except KeyError:
             if len(dev_name) > 2:
                 # devname could be A:, B:, C:, etc.. but anything longer is an error (bad file number, for some reason).
-                raise error.RunError(52)   
+                raise error.RunError(52)
     if not inst:
         # translate the file name to something DOS-ish if necessary
         if mode in ('O', 'A'):
@@ -132,7 +132,7 @@ def open_file_or_device(number, name, mode='I', access='R', lock='', reclen=128,
             check_file_not_open(name)
         if mode in ('I', 'L'):
             name = oslayer.native_path(name, defext)
-        else:    
+        else:
             # random files: try to open matching file
             # if it doesn't exist, create an all-caps 8.3 file name
             name = oslayer.native_path(name, defext, make_new=True)
@@ -147,8 +147,8 @@ def open_file_or_device(number, name, mode='I', access='R', lock='', reclen=128,
             inst = TextFile(fhandle, name, number, mode, access, lock)
         else:
             inst = RandomFile(fhandle, name, number, mode, access, lock, reclen)
-    return inst    
-    
+    return inst
+
 def get_file(num, mode='IOAR'):
     """ Get the file object for a file number and check allowed mode. """
     try:
@@ -157,9 +157,9 @@ def get_file(num, mode='IOAR'):
         # bad file number
         raise error.RunError(52)
     if the_file.mode.upper() not in mode:
-        raise error.RunError(54)    
-    return the_file    
-     
+        raise error.RunError(54)
+    return the_file
+
 def check_file_not_open(path):
     """ Raise an error if the file is open. """
     for f in state.io_state.files:
@@ -169,7 +169,7 @@ def check_file_not_open(path):
 def find_files_by_name(name):
     """ Find all file numbers open to the given filename."""
     return [state.io_state.files[f] for f in state.io_state.files if state.io_state.files[f].name == name]
-      
+
 def close_all():
     """ Close all non-system files. """
     for f in list(state.io_state.files):
@@ -188,7 +188,7 @@ def lock_records(nr, start, stop):
     if isinstance(thefile, TextFile):
         bstart, bstop = 0, -1
         if lock_list:
-            raise error.RunError(70)    
+            raise error.RunError(70)
     else:
         bstart, bstop = (start-1) * thefile.reclen, stop*thefile.reclen - 1
         for start_1, stop_1 in lock_list:
@@ -196,7 +196,7 @@ def lock_records(nr, start, stop):
                 raise error.RunError(70)
     thefile.lock_list.add((bstart, bstop))
 
-def unlock_records(nr, start, stop):    
+def unlock_records(nr, start, stop):
     """ Unlock a range of records in a file. """
     thefile = get_file(nr)
     if thefile.name in backend.devices:
@@ -211,20 +211,20 @@ def unlock_records(nr, start, stop):
         thefile.lock_list.remove((bstart, bstop))
     except KeyError:
         raise error.RunError(70)
-    
+
 def request_lock(name, lock, access):
     """ Try to lock a file. """
     same_files = find_files_by_name(name)
     if not lock: # default mode; don't accept default mode if SHARED/LOCK present
         for f in same_files:
             if f.lock:
-                raise error.RunError(70)    
+                raise error.RunError(70)
     elif lock == 'RW':  # LOCK READ WRITE
-        raise error.RunError(70)    
+        raise error.RunError(70)
     elif lock == 'S':   # SHARED
         for f in same_files:
             if not f.lock:
-                raise error.RunError(70)       
+                raise error.RunError(70)
     else:               # LOCK READ or LOCK WRITE
         for f in same_files:
             if f.access == lock or lock == 'RW':
@@ -236,7 +236,7 @@ def request_lock(name, lock, access):
 
 class BaseFile(object):
     """ Base file object. """
-    
+
     def __init__(self, fhandle, name='', number=0, mode='A', access='RW', lock=''):
         """ Setup the basic properties of the file. """
         # width=255 means line wrap
@@ -247,10 +247,10 @@ class BaseFile(object):
         self.access = access
         self.lock = lock
         self.lock_list = set()
-        self.last_read = ''  
+        self.last_read = ''
         if number != 0:
             state.io_state.files[number] = self
-    
+
     # set_width
     # width
     # col
@@ -270,19 +270,19 @@ class BaseFile(object):
             self.fhandle.flush()
         except (IOError, ValueError):
             # ignore errors on flushing
-            pass    
+            pass
         # don't close the handle - for devices
         if self.number != 0:
             del state.io_state.files[self.number]
-    
+
     def read_chars(self, num=-1):
         """ Read num chars as a list. If num==-1, read all available. """
-        return list(self._keep_last(self.fhandle.read(num))) 
-        
+        return list(self._keep_last(self.fhandle.read(num)))
+
     def read(self, num=-1):
         """ Read num chars as a string. If num==-1, read all available. """
         return self._keep_last(self.fhandle.read(num))
-    
+
     def read_line(self):
         """ Read a single line. """
         out = bytearray('')
@@ -292,30 +292,30 @@ class BaseFile(object):
                 break
             out += c
         self.last_read = c
-        return out            
-            
+        return out
+
     def tell(self):
         """ Get position of file pointer. """
         return self.fhandle.tell()
-        
+
     def seek(self, num, from_where=0):
         """ Move file pointer. """
         self.fhandle.seek(num, from_where)
-    
+
     def write(self, s):
         """ Write string or bytearray to file. """
         self.fhandle.write(str(s))
-    
+
     def write_line(self, s=''):
-        """ Write string or bytearray and newline to file. """ 
-        self.write(str(s) + '\r\n')    
+        """ Write string or bytearray and newline to file. """
+        self.write(str(s) + '\r\n')
 
     def end_of_file(self):
         """ Return whether the file pointer is at the end of file. """
         s = self.fhandle.read(1)
         self.fhandle.seek(-len(s), 1)
         return s == ''
-        
+
     def flush(self):
         """ Write contents of buffers to file. """
         self.fhandle.flush()
@@ -327,7 +327,7 @@ class BaseFile(object):
 
 class TextFile(BaseFile):
     """ Text file object. """
-    
+
     def __init__(self, fhandle, name='', number=0, mode='A', access='RW', lock=''):
         """ Initialise text file object. """
         BaseFile.__init__(self, fhandle, name, number, mode, access, lock)
@@ -338,7 +338,7 @@ class TextFile(BaseFile):
         # width=255 means unlimited
         self.width = 255
         self.col = 1
-    
+
     def close(self):
         """ Close text file. """
         if self.mode in ('O', 'A', 'S'):
@@ -346,8 +346,8 @@ class TextFile(BaseFile):
             self.fhandle.write('\x1a')
         BaseFile.close(self)
         self.fhandle.close()
-        
-    # read line    
+
+    # read line
     def read_line(self):
         """ Read line from text file. """
         if self.end_of_file():
@@ -376,9 +376,9 @@ class TextFile(BaseFile):
                 else:
                     c = d
                 break
-            else:        
-                s += c 
-        self.last_read = c   
+            else:
+                s += c
+        self.last_read = c
         return s
 
     def read_chars(self, num):
@@ -403,8 +403,8 @@ class TextFile(BaseFile):
                     raise error.RunError(62)
             s += c
         self.last_read = c
-        return s 
-        
+        return s
+
     def write(self, s):
         """ Write the string s to the file, taking care of width settings. """
         # only break lines at the start of a new string. width 255 means unlimited width
@@ -424,11 +424,11 @@ class TextFile(BaseFile):
             self.col = 1
         for c in str(s):
             # don't replace CR or LF with CRLF when writing to files
-            if c in ('\n', '\r'): 
+            if c in ('\n', '\r'):
                 self.fhandle.write(c)
                 self.flush()
                 self.col = 1
-            else:    
+            else:
                 self.fhandle.write(c)
                 # nonprinting characters including tabs are not counted for WIDTH
                 if ord(c) >= 32:
@@ -437,18 +437,18 @@ class TextFile(BaseFile):
     def set_width(self, new_width=255):
         """ Set the line width of the file. """
         self.width = new_width
-    
+
     def end_of_file(self):
         """ Check for end of file - for internal use. """
         return (util.peek(self.fhandle) in ('', '\x1a'))
-    
+
     def eof(self):
         """ Check for end of file EOF. """
         # for EOF(i)
         if self.mode in ('A', 'O'):
             return False
         return (util.peek(self.fhandle) in ('', '\x1a'))
-    
+
     def loc(self):
         """ Get file pointer LOC """
         # for LOC(i)
@@ -467,21 +467,21 @@ class TextFile(BaseFile):
 
 class RandomBase(BaseFile):
     """ Random-access file base object. """
-    
+
     def __init__(self, fhandle, name, number, mode, access, lock, reclen=128):
         """ Initialise random-access file. """
         BaseFile.__init__(self, fhandle, name, number, mode, access, lock)
         self.reclen = reclen
-        # replace with empty field if already exists    
+        # replace with empty field if already exists
         try:
             self.field = state.io_state.fields[self.number]
         except KeyError:
             self.field = bytearray()
             state.io_state.fields[self.number] = self.field
-        if self.number > 0:    
+        if self.number > 0:
             self.field_address = memory.field_mem_start + (self.number-1)*memory.field_mem_offset
         else:
-            self.field_address = -1    
+            self.field_address = -1
         self.field[:] = bytearray('\x00')*reclen
         # open a pseudo text file over the buffer stream
         # to make WRITE# etc possible
@@ -490,7 +490,7 @@ class RandomBase(BaseFile):
         self.field_text_file.col = 1
         # width=255 means line wrap
         self.field_text_file.width = 255
-    
+
     def read_line(self):
         """ Read line from FIELD buffer. """
         # FIELD overflow happens if last byte in record is actually read
@@ -501,73 +501,73 @@ class RandomBase(BaseFile):
     def read_chars(self, num=-1):
         """ Read num characters as list. """
         return list(self.read(num))
-        
+
     def read(self, num=-1):
         """ Read num chars as a string, from FIELD buffer. """
         if num==-1 or self.field_text_file.fhandle.tell() + num > self.reclen-1:
             raise error.RunError(self.overflow_error) # FIELD overflow
         return self._keep_last(self.field_text_file.read(num))
-    
+
     def write(self, s):
         """ Write one or more chars to FIELD buffer. """
         ins = StringIO(s)
         while self.field_text_file.fhandle.tell() < self.reclen:
             self.field_text_file.write(ins.read(1))
         if ins.tell() < len(s):
-            raise error.RunError(self.overflow_error) 
-    
+            raise error.RunError(self.overflow_error)
+
     def seek(self, n, from_where=0):
         """ Get file pointer location in FIELD buffer. """
         return self.field_text_file.seek(n, from_where)
-        
+
     def truncate(self):
         """ Not implemented. """
         # this is only used when writing chr$(8)
         # not sure how to implement for random files
         pass
-        
+
     @property
     def col(self):
         """ Get current column. """
         return self.field_text_file.col
-    
+
     @property
     def width(self):
         """ Get file width. """
         return self.field_text_file.width
-    
+
     def set_width(self, new_width=255):
         """ Set file width. """
         self.field_text_file.width = new_width
 
-        
+
 class RandomFile(RandomBase):
     """ Random-access file object. """
-    
+
     # FIELD overflow
     overflow_error = 50
 
     def __init__(self, fhandle, name, number, mode, access, lock, reclen=128):
-        """ Initialise random-access file. """        
+        """ Initialise random-access file. """
         RandomBase.__init__(self, fhandle, name, number, mode, access, lock, reclen)
         # position at start of file
         self.recpos = 0
         self.fhandle.seek(0)
-    
+
     def close(self):
         """ Close random-access file. """
         RandomBase.close(self)
         self.fhandle.close()
-        
+
     def read_field(self, dummy=None):
         """ Read a record. """
         if self.eof():
             self.field[:] = '\x00'*self.reclen
         else:
             self.field[:] = self.fhandle.read(self.reclen)
-        self.field_text_file.seek(0)    
+        self.field_text_file.seek(0)
         self.recpos += 1
-        
+
     def write_field(self, dummy=None):
         """ Write a record. """
         current_length = self.lof()
@@ -577,7 +577,7 @@ class RandomFile(RandomBase):
             self.fhandle.write('\x00'*numrecs*self.reclen)
         self.fhandle.write(self.field)
         self.recpos += 1
-        
+
     def set_pos(self, newpos):
         """ Set current record number. """
         # first record is newpos number 1
@@ -587,11 +587,11 @@ class RandomFile(RandomBase):
     def loc(self):
         """ Get number of record just past, for LOC. """
         return self.recpos
-        
+
     def eof(self):
         """ Return whether we're past currentg end-of-file, for EOF. """
         return self.recpos*self.reclen > self.lof()
-            
+
     def lof(self):
         """ Get length of file, in bytes, for LOF. """
         current = self.fhandle.tell()
@@ -605,7 +605,7 @@ class RandomFile(RandomBase):
 class ByteStream(object):
     """ A StringIO-like wrapper for bytearray. """
 
-    def __init__(self, contents=''):       
+    def __init__(self, contents=''):
         """ Create e new ByteStream. """
         self.setvalue(contents)
 
@@ -613,28 +613,28 @@ class ByteStream(object):
         """ Assign a bytearray s, move location to 0. This does not create a copy, changes affect the original bytearray. """
         self._contents = contents
         self._loc = 0
-    
+
     def getvalue(self):
         """ Retrieve the bytearray. changes will affect the bytestream. """
         return self._contents
-        
+
     def tell(self):
-        """ Get the current location. """    
+        """ Get the current location. """
         return self._loc
-        
+
     def seek(self, n_bytes, from_where=0):
-        """ Move loc by n bytes from start(w=0), current(w=1) or end(w=2). """    
+        """ Move loc by n bytes from start(w=0), current(w=1) or end(w=2). """
         if from_where == 0:
             self._loc = n_bytes
         elif from_where == 1:
             self._loc += n_bytes
         elif from_where == 2:
-            self._loc = len(self._contents)-n_bytes        
+            self._loc = len(self._contents)-n_bytes
         if self._loc < 0:
             self._loc = 0
         elif self._loc > len(self._contents):
-            self._loc = len(self._contents)    
-    
+            self._loc = len(self._contents)
+
     def read(self, n_bytes=None):
         """ Get an n-length string and move the location n forward. If loc>len, return empty string. """
         if n_bytes == None:
@@ -643,15 +643,15 @@ class ByteStream(object):
             self._loc = len(self._contents)
             return ''
         peeked = self._contents[self._loc:self._loc+n_bytes]
-        self._loc += len(peeked)   
+        self._loc += len(peeked)
         return peeked
-            
+
     def write(self, substr):
-        """ Write a str or bytearray or char s to the current location. Overwrite, do not insert. """    
+        """ Write a str or bytearray or char s to the current location. Overwrite, do not insert. """
         if self._loc >= len(self._contents):
             self._contents += substr
-            self._loc = len(self._contents)    
-        else:    
+            self._loc = len(self._contents)
+        else:
             self._contents[self._loc:self._loc+len(substr)] = substr
             self._loc += len(substr)
 
@@ -665,12 +665,12 @@ class ByteStream(object):
 
     def close(self):
         """ Close the stream. """
-        pass            
+        pass
 
 ######################################################
 # Device files
 #
-#  Each device has a 'device object' with file number 0, which can be 
+#  Each device has a 'device object' with file number 0, which can be
 #  cloned into several 'device files' with a nonzero file number.
 #  For example, WIDTH "SCRN:, 40 works directly on the console,
 #  whereas OPEN "SCRN:" FOR OUTPUT AS 1: WIDTH #1,23 works on the wrapper file.
@@ -680,18 +680,18 @@ def create_device(name, arg, default=None):
     """ Attach a device name to a new device object. """
     if not arg:
         stream = default
-    else:   
+    else:
         stream = create_device_stream(arg, allowed_protocols[name[:3]])
         if not stream:
             logging.warning('Could not attach %s to %s.' % (name, arg))
             stream = default
-    if stream:        
+    if stream:
         if name[:3] == 'COM':
             return COMFile(stream, name)
         else:
-            return LPTFile(stream, name, flush_trigger=print_trigger)    
+            return LPTFile(stream, name, flush_trigger=print_trigger)
     else:
-        return None        
+        return None
 
 def create_device_stream(arg, allowed):
     """ Create a device stream based on protocal string. """
@@ -710,10 +710,10 @@ def create_device_stream(arg, allowed):
     elif addr == 'FILE':
         try:
             if not os.path.exists(val):
-                open(val, 'wb').close() 
+                open(val, 'wb').close()
             stream = open(val, 'r+b')
         except (IOError, OSError) as e:
-            return None    
+            return None
     elif addr == 'PARPORT':
         # port can be e.g. /dev/parport0 on Linux or LPT1 on Windows. Just a number counting from 0 would also work.
         stream = serial_socket.parallel_port(val)
@@ -726,15 +726,15 @@ def create_device_stream(arg, allowed):
         # File not found
         raise error.RunError(53)
     return stream
-            
+
 def device_open(device_name, number, mode, access, lock, reclen, param=''):
     """ Open a file on a device. """
-    # check if device exists and allows the requested mode    
+    # check if device exists and allows the requested mode
     # if not exists, raise KeyError to caller
     device = backend.devices[str(device_name).upper()]
-    if not device:    
+    if not device:
         # device unavailable
-        raise error.RunError(68)      
+        raise error.RunError(68)
     if mode not in device.allowed_modes:
         # bad file mode
         raise error.RunError(54)
@@ -765,7 +765,7 @@ def clone_device(dev, number, mode, access, lock='', reclen=128):
 
 class NullDevice(object):
     """ Base object for devices and device files. """
-    
+
     def __init__(self):
         """ Initialse device object. """
         self.number = 0
@@ -776,24 +776,24 @@ class NullDevice(object):
         if number != 0:
             state.io_state.files[number] = self
         return clone_device(self, number, mode, access, lock, reclen)
-    
+
     def close(self):
         """ Close this device file. """
         if self.number != 0:
             del state.io_state.files[self.number]
-    
+
     def lof(self):
         """ LOF: bad file mode. """
         raise error.RunError(54)
-        
+
     def loc(self):
         """ LOC: bad file mode. """
         raise error.RunError(54)
-        
+
     def eof(self):
         """ EOF: bad file mode. """
         raise error.RunError(54)
-           
+
     def write(self, s):
         """ Write string s to device. """
         pass
@@ -805,10 +805,10 @@ class NullDevice(object):
     def set_width(self, new_width=255):
         """ Set device width. """
         pass
-    
+
     def read_line(self):
         """ Read a line from device. """
-        return ''    
+        return ''
 
     def read_chars(self, n):
         """ Read a list of chars from device. """
@@ -816,11 +816,11 @@ class NullDevice(object):
 
     def read(self, n):
         """ Read a string from device. """
-        return ''        
+        return ''
 
     def end_of_file(self):
         """ Check for end-of-file. """
-        return False    
+        return False
 
     def set_parameters(self, param):
         """ Set device parameters. """
@@ -831,27 +831,27 @@ class NullDevice(object):
         """ Remember last char read. """
         self.last_read = read_str[-1:]
         return read_str
-        
-        
+
+
 class KYBDFile(NullDevice):
     """ KYBD device: keyboard. """
 
-    input_replace = { 
-        '\x00\x47': '\xFF\x0B', '\x00\x48': '\xFF\x1E', '\x00\x49': '\xFE', 
+    input_replace = {
+        '\x00\x47': '\xFF\x0B', '\x00\x48': '\xFF\x1E', '\x00\x49': '\xFE',
         '\x00\x4B': '\xFF\x1D', '\x00\x4D': '\xFF\x1C', '\x00\x4F': '\xFF\x0E',
         '\x00\x50': '\xFF\x1F', '\x00\x51': '\xFE', '\x00\x53': '\xFF\x7F', '\x00\x52': '\xFF\x12'
         }
 
     allowed_modes = 'IR'
     col = 0
-    
+
     def __init__(self):
         """ Initialise keyboard device. """
         self.name = 'KYBD:'
         self.mode = 'I'
         self.width = 255
         NullDevice.__init__(self)
-        
+
     def read_line(self):
         """ Read a line from the keyboard. """
         s = bytearray('')
@@ -879,9 +879,9 @@ class KYBDFile(NullDevice):
                 except KeyError:
                     pass
             else:
-                word += c        
+                word += c
         return word
-        
+
     def lof(self):
         """ LOF for KYBD: is 1. """
         return 1
@@ -889,7 +889,7 @@ class KYBDFile(NullDevice):
     def loc(self):
         """ LOC for KYBD: is 0. """
         return 0
-     
+
     def eof(self):
         """ KYBD only EOF if ^Z is read. """
         if self.mode in ('A', 'O'):
@@ -904,11 +904,11 @@ class KYBDFile(NullDevice):
 
 
 class SCRNFile(NullDevice):
-    """ SCRN: device, allows writing to the screen as a text file. 
+    """ SCRN: device, allows writing to the screen as a text file.
         SCRN: device *files* work as a wrapper text file. """
 
     allowed_modes = 'OR'
-    
+
     def __init__(self):
         """ Initialise screen device. """
         self.name = 'SCRN:'
@@ -916,10 +916,10 @@ class SCRNFile(NullDevice):
         self._width = state.console_state.screen.mode.width
         self._col = state.console_state.col
         NullDevice.__init__(self)
-    
+
     def write(self, s):
         """ Write string s to SCRN: """
-        # writes to SCRN files should *not* be echoed 
+        # writes to SCRN files should *not* be echoed
         do_echo = (self.number == 0)
         self._col = state.console_state.col
         # take column 80+overflow int account
@@ -939,7 +939,7 @@ class SCRNFile(NullDevice):
             elif ord(c) >= 32:
                 # nonprinting characters including tabs are not counted for WIDTH
                 s_width += 1
-        if (self.width != 255 
+        if (self.width != 255
                 and self.col != 1 and self.col-1 + s_width > self.width and not newline):
             console.write_line(do_echo=do_echo)
             self._col = 1
@@ -954,43 +954,43 @@ class SCRNFile(NullDevice):
                 self._col = 1
             else:
                 self._col += 1
-                
-                
-            
+
+
+
     def write_line(self, inp=''):
         """ Write a string to the screen and follow by CR. """
         self.write(inp)
         console.write_line(do_echo=(self.number==0))
-            
+
     @property
-    def col(self):  
+    def col(self):
         """ Return current (virtual) column position. """
-        if self.number == 0:    
+        if self.number == 0:
             return state.console_state.col
         else:
             return self._col
-        
+
     @property
     def width(self):
         """ Return (virtual) screen width. """
-        if self.number == 0:    
+        if self.number == 0:
             return state.console_state.screen.mode.width
         else:
             return self._width
-    
+
     def set_width(self, new_width=255):
         """ Set (virtual) screen width. """
         if self.number == 0:
             console.set_width(new_width)
-        else:    
+        else:
             self._width = new_width
 
 
 class LPTFile(BaseFile):
     """ LPTn: device - line printer or parallel port. """
-    
+
     allowed_modes = 'OR'
-    
+
     def __init__(self, stream, name, flush_trigger='close'):
         """ Initialise LPTn. """
         # width=255 means line wrap
@@ -1015,7 +1015,7 @@ class LPTFile(BaseFile):
         except ValueError:
             # already closed, ignore
             pass
-        
+
     def set_width(self, new_width=255):
         """ Set the width for LPTn. """
         self.width = new_width
@@ -1027,7 +1027,7 @@ class LPTFile(BaseFile):
                 self.fhandle.write('\r\n')
                 self.flush()
                 self.col = 1
-            if c in ('\n', '\r', '\f'): 
+            if c in ('\n', '\r', '\f'):
                 # don't replace CR or LF with CRLF when writing to files
                 self.fhandle.write(c)
                 self.flush()
@@ -1039,14 +1039,14 @@ class LPTFile(BaseFile):
                 if self.col > 1:
                     self.col -= 1
                     self.seek(-1, 1)
-                    self.truncate()  
-            else:    
+                    self.truncate()
+            else:
                 self.fhandle.write(c)
                 # nonprinting characters including tabs are not counted for WIDTH
                 # for lpt1 and files , nonprinting chars are not counted in LPOS; but chr$(8) will take a byte out of the buffer
                 if ord(c) >= 32:
                     self.col += 1
-        
+
     def lof(self):
         """ LOF: bad file mode """
         raise error.RunError(54)
@@ -1058,7 +1058,7 @@ class LPTFile(BaseFile):
     def eof(self):
         """ EOF: bad file mode """
         raise error.RunError(54)
-    
+
     def close(self):
         """ Close the printer device and actually print the output. """
         self.flush()
@@ -1066,15 +1066,15 @@ class LPTFile(BaseFile):
             self.output_stream.flush()
         except ValueError:
             # already closed, ignore
-            pass    
+            pass
         BaseFile.close(self)
-        
-        
+
+
 class COMFile(RandomBase):
     """ COMn: device - serial port. """
-    
+
     allowed_modes = 'IOAR'
-    
+
     # communications buffer overflow
     overflow_error = 69
 
@@ -1101,8 +1101,8 @@ class COMFile(RandomBase):
         except Exception:
             self.close()
             raise
-        return clone_device(self, number, mode, access, lock, reclen)   
-    
+        return clone_device(self, number, mode, access, lock, reclen)
+
     def check_read(self):
         """ Fill buffer at most up to buffer size; non blocking. """
         try:
@@ -1110,7 +1110,7 @@ class COMFile(RandomBase):
         except (serial_socket.SerialException, ValueError):
             # device I/O
             raise error.RunError(57)
-        
+
     def read(self, num=1):
         """ Read num characters from the port as a string; blocking """
         out = ''
@@ -1124,11 +1124,11 @@ class COMFile(RandomBase):
             backend.wait()
         self.last_read = out[-1:]
         return out
-        
+
     def read_chars(self, num=1):
         """ Read num characters from the port as a list; blocking """
         return list(self.read(num))
-    
+
     def read_line(self):
         """ Blocking read line from the port (not the FIELD buffer!). """
         out = bytearray('')
@@ -1145,50 +1145,50 @@ class COMFile(RandomBase):
             out += ''.join(c)
         self.last_read = out[-1]
         return out
-    
+
     def char_waiting(self):
         """ Whether a char is present in buffer. For ON COM(n). """
         return self._in_buffer != ''
 
     def write_line(self, s=''):
-        """ Write string or bytearray and newline to port. """ 
-        self.write(str(s) + '\r')    
+        """ Write string or bytearray and newline to port. """
+        self.write(str(s) + '\r')
 
     def write(self, s):
         """ Write string to port. """
         try:
             if self.linefeed:
-                s = s.replace('\r', '\r\n')    
+                s = s.replace('\r', '\r\n')
             self.fhandle.write(s)
         except (serial_socket.SerialException, ValueError):
             # device I/O
             raise error.RunError(57)
-    
+
     def read_field(self, num):
         """ Read a record - GET. """
         # blocking read of num bytes
         self.field[:] = self.read(num)
-        
+
     def write_field(self, num):
         """ Write a record - PUT. """
         self.write(self.field[:num])
-        
+
     def loc(self):
-        """ LOC: Returns number of chars waiting to be read. """ 
-        # don't use inWaiting() as SocketSerial.inWaiting() returns dummy 0    
+        """ LOC: Returns number of chars waiting to be read. """
+        # don't use inWaiting() as SocketSerial.inWaiting() returns dummy 0
         # fill up buffer insofar possible
         self.check_read()
-        return len(self._in_buffer) 
-            
+        return len(self._in_buffer)
+
     def eof(self):
         """ EOF: no chars waiting. """
         # for EOF(i)
         return self.loc() <= 0
-        
+
     def lof(self):
         """ Returns number of bytes free in buffer. """
         return serial_in_size - self.loc()
-    
+
     def close(self):
         """ Close the COMn device. """
         self.fhandle.close()
@@ -1202,9 +1202,9 @@ class COMFile(RandomBase):
             # Bad file name
             raise error.RunError(64)
         param_list += ['']*(max_param-len(param_list))
-        speed, parity, data, stop, RS, CS, DS, CD, LF, PE = param_list
+        speed, parity, data, stop = param_list[:4]
         # set speed
-        if speed not in ('75', '110', '150', '300', '600', '1200', 
+        if speed not in ('75', '110', '150', '300', '600', '1200',
                           '1800', '2400', '4800', '9600', ''):
             # Bad file name
             raise error.RunError(64)
@@ -1231,12 +1231,30 @@ class COMFile(RandomBase):
         else:
             stop = int(stop)
         self.fhandle.stopbits = stop
-        if (RS not in ('RS', '') or CS[:2] not in ('CS', '')
-            or DS[:2] not in ('DS', '') or CD[:2] not in ('CD', '')
-            or LF not in ('LF', '') or PE not in ('PE', '')):
-            raise error.RunError(64)
         # set LF
-        self.linefeed = (LF != '')
+        self.linefeed = False
+        for named_param in param_list[4:]:
+            if not named_param:
+                continue
+            elif named_param == 'RS':
+                # suppress request to send
+                pass
+            elif named_param[:2] == 'CS':
+                # control CTS - clear to send
+                pass
+            elif named_param[:2] == 'DS':
+                # control DSR - data set ready
+                pass
+            elif named_param[:2] == 'CD':
+                # control CD - carrier detect
+                pass
+            elif named_param == 'LF':
+                # send a line feed at each return
+                self.linefeed = True
+            elif named_param == 'PE':
+                # enable parity checking
+                pass
+            else:
+                raise error.RunError(64)
 
 prepare()
-
