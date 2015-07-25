@@ -1,5 +1,5 @@
 """
-PC-BASIC 3.23 - printer.py
+PC-BASIC - printer.py
 Line printer output
 
 (c) 2013, 2014, 2015 Rob Hagemans
