@@ -99,7 +99,7 @@ def store_line(line):
         return True
     state.basic_state.direct_line = tokenise.tokenise_line(line)
     c = util.peek(state.basic_state.direct_line)
-    if c == '\x00':
+    if c == '\0':
         # check for lines starting with numbers (6553 6) and empty lines
         program.check_number_start(state.basic_state.direct_line)
         program.store_line(state.basic_state.direct_line)
@@ -136,7 +136,7 @@ def auto_step():
     # run or store it; don't clear lines or raise undefined line number
     state.basic_state.direct_line = tokenise.tokenise_line(line)
     c = util.peek(state.basic_state.direct_line)
-    if c == '\x00':
+    if c == '\0':
         # check for lines starting with numbers (6553 6) and empty lines
         empty, scanline = program.check_number_start(state.basic_state.direct_line)
         if not empty:

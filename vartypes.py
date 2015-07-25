@@ -11,7 +11,7 @@ import error
 import state
 
 # zeroed out
-null = { '$': ('$', ''), '%': ('%', bytearray('\x00')*2), '!': ('!', bytearray('\x00')*4), '#': ('#', bytearray('\x00')*8) }
+null = { '$': ('$', ''), '%': ('%', bytearray(2), '!': ('!', bytearray(4), '#': ('#', bytearray(8) }
 
 def complete_name(name):
     """ Add type specifier to a name, if missing. """
@@ -83,7 +83,7 @@ def pass_double_keep(num):
     elif typechar == '%':
         return fp.pack(fp.Double.from_int(unpack_int(num)))
     elif typechar == '!':
-        return ('#', bytearray('\x00\x00\x00\x00')+num[1])
+        return ('#', bytearray(4) + num[1])
     elif typechar == '$':
         raise error.RunError(13)
 
