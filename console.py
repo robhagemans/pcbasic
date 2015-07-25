@@ -128,7 +128,6 @@ def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
     return outstr[:255].rstrip(' \t\n')
 
 #TODO: INPUT and redirections get empty line if ENTER pressed below prompt line!
-#TODO: no Input Past End on empty input from screen, only from file
 
 def find_start_of_line(srow):
     """ Find the start of the logical line that includes our current position. """

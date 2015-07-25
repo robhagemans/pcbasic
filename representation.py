@@ -483,11 +483,13 @@ def input_vars_file(readvar, stream):
     for v in readvar:
         typechar = v[0][-1]
         if typechar == '$':
-            valstr, c = input_entry(stream, allow_quotes=True,
+            valstr, c = input_entry(stream,
+                                    allow_quotes=True, allow_past_end=False,
                                     end_all = ('\r', ),
                                     end_not_quoted = (',', '\n'))
         else:
-            valstr, c = input_entry(stream, allow_quotes=False,
+            valstr, c = input_entry(stream,
+                                    allow_quotes=False, allow_past_end=False,
                                     end_all = ('\r', ',', '\n', ' '))
         value = str_to_type(valstr, typechar)
         if value == None:
@@ -521,7 +523,8 @@ def input_vars(readvar, stream):
         return None
     return readvar
 
-def input_entry(stream, allow_quotes, end_all=(), end_not_quoted=(',',)):
+def input_entry(stream, allow_quotes,
+                end_all=(), end_not_quoted=(',',), allow_past_end=True):
     """ Read a number or string entry for INPUT """
     word, blanks = '', ''
     # skip leading spaces and line feeds and NUL.
@@ -531,7 +534,7 @@ def input_entry(stream, allow_quotes, end_all=(), end_not_quoted=(',',)):
     quoted = (c == '"' and allow_quotes)
     if quoted:
         c = stream.read(1)
-    if not c:
+    if not c and not allow_past_end:
         # input past end
         raise error.RunError(62)
     # we read the ending char before breaking the loop
