@@ -92,9 +92,11 @@ def set_width(to_width):
 
 def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
     """ Enter interactive mode and read string from console. """
+    # from_start means direct entry mode, otherwise input mode
+    prompt_width = 0 if from_start else state.console_state.col-1
     try:
         # give control to user for interactive mode
-        prompt_row, furthest_left, furthest_right = wait_interactive(from_start, alt_replace)
+        prompt_row, left, right = wait_interactive(prompt_width, alt_replace)
     except error.Break:
         for echo in redirect.output_echos:
             # for some reason, 0E character is printed to redirects at break
@@ -102,12 +104,11 @@ def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
         write_line()
         raise
     # get contents and of the logical line
-    # from_start means direct entry mode, otherwise input mode
     if from_start:
         outstr = get_logical_line(state.console_state.row)
     else:
         outstr = get_logical_line_input(state.console_state.row,
-                                     prompt_row, furthest_left, furthest_right)
+                                        prompt_row, left, right)
     # redirects output exactly the contents of the logical line
     # including any trailing whitespace and chars past 255
     for echo in redirect.output_echos:
@@ -182,14 +183,14 @@ def get_logical_line_input(srow, prompt_row, left, right):
                 line += '\n'
     return line
 
-def wait_interactive(from_start=False, alt_replace = True):
+def wait_interactive(prompt_width, alt_replace):
     """ Manage the interactive mode. """
     # force cursor visibility in all cases
     state.console_state.screen.cursor.show(True)
     try:
         # this is where we started
         start_row = state.console_state.row
-        furthest_left = (state.console_state.col if not from_start else 1)
+        furthest_left = 1 + prompt_width
         # this is where we arrow-keyed on the start line
         furthest_right = state.console_state.col
         while True:
@@ -232,10 +233,7 @@ def wait_interactive(from_start=False, alt_replace = True):
                 line_feed()
             elif d == '\x1b':
                 # ESC, CTRL+[
-                if from_start:
-                    clear_line(row)
-                else:
-                    clear_rest_of_line(row, furthest_left)
+                clear_line(row, furthest_left)
             elif d in ('\0\x75', '\x05'):
                 # CTRL+END, CTRL+E
                 clear_rest_of_line(row, col)
@@ -427,12 +425,12 @@ def delete_sbcs_char(crow, ccol):
             if crow > 1:
                 thepage.row[crow-2].wrap = False
 
-def clear_line(the_row):
-    """ Clear from start of logical line to end of logical line (ESC). """
-    clear_rest_of_line(find_start_of_line(the_row), 1)
+def clear_line(the_row, from_col=1):
+    """ Clear whole logical line (ESC), leaving prompt. """
+    clear_rest_of_line(find_start_of_line(the_row), from_col)
 
 def clear_rest_of_line(srow, scol):
-    """ Clear from current position to end of logical line (CTRL+END). """
+    """ Clear from given position to end of logical line (CTRL+END). """
     mode = state.console_state.screen.mode
     therow = state.console_state.screen.apage.row[srow-1]
     therow.buf = (therow.buf[:scol-1] +
