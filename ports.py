@@ -126,7 +126,7 @@ class COMDevice(devices.Device):
             # Bad file name
             raise error.RunError(64)
         param_list += ['']*(max_param-len(param_list))
-        speed, parity, data, stop, RS, CS, DS, CD, LF, PE = param_list
+        speed, parity, data, stop = param_list[:4]
         # set speed
         if speed not in ('75', '110', '150', '300', '600', '1200',
                           '1800', '2400', '4800', '9600', ''):
@@ -155,12 +155,30 @@ class COMDevice(devices.Device):
         else:
             stop = int(stop)
         self.stream.stopbits = stop
-        if (RS not in ('RS', '') or CS[:2] not in ('CS', '')
-            or DS[:2] not in ('DS', '') or CD[:2] not in ('CD', '')
-            or LF not in ('LF', '') or PE not in ('PE', '')):
-            raise error.RunError(64)
-        # set LF
-        self.stream.linefeed = (LF != '')
+        self.stream.linefeed = False
+        for named_param in param_list[4:]:
+            if not named_param:
+                continue
+            elif named_param == 'RS':
+                # suppress request to send
+                pass
+            elif named_param[:2] == 'CS':
+                # control CTS - clear to send
+                pass
+            elif named_param[:2] == 'DS':
+                # control DSR - data set ready
+                pass
+            elif named_param[:2] == 'CD':
+                # control CD - carrier detect
+                pass
+            elif named_param == 'LF':
+                # send a line feed at each return
+                self.stream.linefeed = True
+            elif named_param == 'PE':
+                # enable parity checking
+                pass
+            else:
+                raise error.RunError(64)
 
     def char_waiting(self):
         """ Whether a char is present in buffer. For ON COM(n). """
