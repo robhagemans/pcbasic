@@ -122,7 +122,7 @@ def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
         set_pos(state.console_state.row+1, 1)
     # to the parser/INPUT, only the first 255 chars are returned
     # with trailing whitespace removed
-    return outstr[:255].rstrip(' \t\n')
+    return str(outstr[:255].rstrip(' \t\n'))
 
 def find_start_of_line(srow):
     """ Find the start of the logical line that includes our current position. """
