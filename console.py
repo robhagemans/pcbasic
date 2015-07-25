@@ -102,15 +102,11 @@ def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
         write_line()
         raise
     # get contents and of the logical line
+    # from_start means direct entry mode, otherwise input mode
     if from_start:
         outstr = get_logical_line(state.console_state.row)
     else:
-        # INPUT: the prompt starts at the beginning of a logical line
-        # but the row may have moved up: this happens on line 24
-        # in this case we need to move up to the start of the logical line
-        prompt_row = find_start_of_line(prompt_row)
-        # get contents and end row of the logical line
-        outstr = get_logical_line_part(state.console_state.row,
+        outstr = get_logical_line_input(state.console_state.row,
                                      prompt_row, furthest_left, furthest_right)
     # redirects output exactly the contents of the logical line
     # including any trailing whitespace and chars past 255
@@ -126,8 +122,6 @@ def wait_screenline(write_endl=True, from_start=False, alt_replace=False):
     # to the parser/INPUT, only the first 255 chars are returned
     # with trailing whitespace removed
     return outstr[:255].rstrip(' \t\n')
-
-#TODO: INPUT and redirections get empty line if ENTER pressed below prompt line!
 
 def find_start_of_line(srow):
     """ Find the start of the logical line that includes our current position. """
@@ -160,26 +154,32 @@ def get_logical_line(srow):
             line += '\n'
     return line
 
-def get_logical_line_part(srow, prompt_row, left, right):
+def get_logical_line_input(srow, prompt_row, left, right):
     """ Get bytearray of the contents of the logical line, adapted for INPUT. """
+    # INPUT: the prompt starts at the beginning of a logical line
+    # but the row may have moved up: this happens on line 24
+    # in this case we need to move up to the start of the logical line
+    prompt_row = find_start_of_line(prompt_row)
     # find start of logical line
     srow = find_start_of_line(srow)
     line = bytearray()
-    # add lines
-    for crow in range(srow, state.console_state.screen.mode.height+1):
-        therow = state.console_state.screen.apage.row[crow-1]
-        # exclude prompt, if any; only go from furthest_left to furthest_right
-        if crow == prompt_row:
-            rowpairs = therow.buf[:therow.end][left-1:right-1]
-        else:
-            rowpairs = therow.buf[:therow.end]
-        line += bytearray(pair[0] for pair in rowpairs)
-        if not therow.wrap:
-            break
-        # wrap before end of line means LF
-        if therow.end < state.console_state.screen.mode.width:
-            line += '\n'
-    # get characters from char/attr pairs and convert to bytearray
+    # INPUT returns empty string if enter pressed below prompt row
+    if srow <= prompt_row:
+        # add all rows of the logical line
+        for crow in range(srow, state.console_state.screen.mode.height+1):
+            therow = state.console_state.screen.apage.row[crow-1]
+            # exclude prompt, if any; only go from furthest_left to furthest_right
+            if crow == prompt_row:
+                rowpairs = therow.buf[:therow.end][left-1:right-1]
+            else:
+                rowpairs = therow.buf[:therow.end]
+            # get characters from char/attr pairs and convert to bytearray
+            line += bytearray(pair[0] for pair in rowpairs)
+            if not therow.wrap:
+                break
+            # wrap before end of line means LF
+            if therow.end < state.console_state.screen.mode.width:
+                line += '\n'
     return line
 
 def wait_interactive(from_start=False, alt_replace = True):
