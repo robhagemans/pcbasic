@@ -1980,7 +1980,7 @@ def exec_input(ins):
         state.basic_state.input_mode = True
         while True:
             console.write(prompt)
-            line = console.wait_screenline(write_endl=newline)
+            line = console.wait_screenline(write_endl=newline, alt_replace=True)
             varlist = [ v[:] for v in readvar ]
             varlist = representation.input_vars(varlist, StringIO(line))
             if not varlist:
@@ -2016,7 +2016,7 @@ def exec_line_input(ins):
     else:
         state.basic_state.input_mode = True
         console.write(prompt)
-        line = console.wait_screenline(write_endl=newline)
+        line = console.wait_screenline(write_endl=newline, alt_replace=True)
         state.basic_state.input_mode = False
     var.set_var_or_array(readvar, indices, vartypes.pack_string(bytearray(line)))
 
@@ -2070,7 +2070,7 @@ def exec_randomize(ins):
     # prompt for random seed if not specified
     if not val:
         console.write("Random number seed (-32768 to 32767)? ")
-        seed = console.wait_screenline()
+        seed = console.wait_screenline(alt_replace=True)
         # seed entered on prompt is rounded to int
         val = vartypes.pass_int_keep(representation.str_to_value_keep(vartypes.pack_string(seed)))
     elif val[0] == '$':

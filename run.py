@@ -127,12 +127,12 @@ def auto_step():
     console.write(numstr)
     if state.basic_state.auto_linenum in state.basic_state.line_numbers:
         console.write('*')
-        line = console.wait_screenline(from_start=True)
+        line = console.wait_screenline(from_start=True, alt_replace=True)
         if line[:len(numstr)+1] == numstr+'*':
             line[len(numstr)] = ' '
     else:
         console.write(' ')
-        line = console.wait_screenline(from_start=True)
+        line = console.wait_screenline(from_start=True, alt_replace=True)
     while len(line) > 0 and line[-1] in ascii_whitespace:
         line = line[:-1]
     # run or store it; don't clear lines or raise undefined line number
