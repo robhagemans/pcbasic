@@ -35,8 +35,6 @@ class PrinterStream(StringIO):
         utf8buf = unicodepage.UTF8Converter(preserve_control=True).to_utf8(printbuf)
         line_print(utf8buf, self.printer_name)
 
-# empty function, only needed & defined on Windows
-wait = lambda: None
 
 if plat.system == 'Windows':
     import os
@@ -67,16 +65,9 @@ if plat.system == 'Windows':
                             lpVerb='printto', lpFile=printfile,
                             lpParameters='"%s"' % printer_name)
             handle = resdict['hProcess']
-        except WindowsError as e:
+        except OSError as e:
             logging.warning('Error while printing: %s', str(e))
             handle = -1
-
-    def wait():
-        """ Give printing process some time to complete. """
-        try:
-            win32event.WaitForSingleObject(handle, 1000)
-        except WindowsError:
-            pass
 
 elif plat.system == 'Android':
 
@@ -120,3 +111,15 @@ else:
                                   stdin=subprocess.PIPE)
             pr.stdin.write(printbuf)
             pr.stdin.close()
+
+if plat.system == 'Windows':
+    def wait():
+        """ Give printing process some time to complete. """
+        try:
+            win32event.WaitForSingleObject(handle, 1000)
+        except OSError:
+            pass
+
+else:
+    # empty function, only needed & defined on Windows
+    wait = lambda: None
