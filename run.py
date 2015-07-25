@@ -133,8 +133,6 @@ def auto_step():
     else:
         console.write(' ')
         line = console.wait_screenline(from_start=True)
-    while len(line) > 0 and line[-1] in ascii_whitespace:
-        line = line[:-1]
     # run or store it; don't clear lines or raise undefined line number
     state.basic_state.direct_line = tokenise.tokenise_line(line)
     c = util.peek(state.basic_state.direct_line)
