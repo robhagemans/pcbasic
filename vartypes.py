@@ -11,7 +11,7 @@ import error
 import state
 
 # zeroed out
-null = { '$': ('$', ''), '%': ('%', bytearray(2), '!': ('!', bytearray(4), '#': ('#', bytearray(8) }
+null = { '$': ('$', ''), '%': ('%', bytearray(2)), '!': ('!', bytearray(4)), '#': ('#', bytearray(8)) }
 
 def complete_name(name):
     """ Add type specifier to a name, if missing. """
