@@ -282,7 +282,7 @@ def wait_interactive(prompt_width):
                     letters = [d]
                 for d in letters:
                     # ignore eascii by this point, but not dbcs
-                    if d[0] not in ('\x00', '\r'):
+                    if d[0] not in ('\0', '\r'):
                         if not state.console_state.overwrite_mode:
                             for c in d:
                                 insert(row, col, c, state.console_state.screen.attr)
@@ -711,7 +711,7 @@ def show_keys(do_show):
 def write_for_keys(s, col, cattr):
     """ Write chars on the keys line; no echo, some character replacements. """
     for c in s:
-        if c == '\x00':
+        if c == '\0':
             # NUL character terminates display of a word
             break
         else:

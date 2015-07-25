@@ -148,7 +148,7 @@ if plat.system == 'Windows':
         current_drive = os.path.abspath(os.getcwd()).split(':')[0]
         save_current = os.getcwd()
         drives = {}
-        for drive_letter in win32api.GetLogicalDriveStrings().split(':\\\x00')[:-1]:
+        for drive_letter in win32api.GetLogicalDriveStrings().split(':\\\0')[:-1]:
             try:
                 os.chdir(drive_letter + ':')
                 cwd = win32api.GetShortPathName(os.getcwd())

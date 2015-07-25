@@ -37,7 +37,7 @@ def randomize(val):
     #              /xDE/xAD/xBE/xEF /xFF/x80/x00/x80 gets read as /xFF/x80 ^ /x00/x80 = /xFF/x00 -> 0x00FF = 255
     s = val[1]
     final_two = s[-2:]
-    mask = bytearray('\x00\x00')
+    mask = bytearray(2)
     if len(s) >= 4:
         mask = s[-4:-2]
     final_two = bytearray(chr(final_two[0]^mask[0]) + chr(final_two[1]^mask[1]))

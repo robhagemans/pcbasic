@@ -402,9 +402,9 @@ class KYBDFile(TextFileBase):
     """ KYBD device: keyboard. """
 
     input_replace = {
-        '\x00\x47': '\xFF\x0B', '\x00\x48': '\xFF\x1E', '\x00\x49': '\xFE',
-        '\x00\x4B': '\xFF\x1D', '\x00\x4D': '\xFF\x1C', '\x00\x4F': '\xFF\x0E',
-        '\x00\x50': '\xFF\x1F', '\x00\x51': '\xFE', '\x00\x53': '\xFF\x7F', '\x00\x52': '\xFF\x12'
+        '\0\x47': '\xFF\x0B', '\0\x48': '\xFF\x1E', '\0\x49': '\xFE',
+        '\0\x4B': '\xFF\x1D', '\0\x4D': '\xFF\x1C', '\0\x4F': '\xFF\x0E',
+        '\0\x50': '\xFF\x1F', '\0\x51': '\xFE', '\0\x53': '\xFF\x7F', '\0\x52': '\xFF\x12'
         }
 
     col = 0
@@ -418,11 +418,11 @@ class KYBDFile(TextFileBase):
         """ Read a list of chars from the keyboard - INPUT$ """
         word = ''
         for char in state.console_state.keyb.read_chars(n):
-            if len(char) > 1 and char[0] == '\x00':
+            if len(char) > 1 and char[0] == '\0':
                 # replace some scancodes than console can return
                 if char[1] in ('\x4b', '\x4d', '\x48', '\x50',
                                 '\x47', '\x49', '\x4f', '\x51', '\x53'):
-                    word += '\x00'
+                    word += '\0'
                 # ignore all others
             else:
                 word += char
@@ -432,7 +432,7 @@ class KYBDFile(TextFileBase):
         """ Read a string from the keyboard - INPUT and LINE INPUT. """
         word = ''
         for c in state.console_state.keyb.read_chars(n):
-            if len(c) > 1 and c[0] == '\x00':
+            if len(c) > 1 and c[0] == '\0':
                 try:
                     word += self.input_replace[c]
                 except KeyError:

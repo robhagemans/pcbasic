@@ -558,7 +558,7 @@ def sprite_to_array_ega(self, attrs, dx, dy, byte_array, offs):
     # than just getting each pixel separately
     row_bytes = (dx+7) // 8
     length = dy * self.bitsperpixel * row_bytes
-    byte_array[offs:offs+length] = '\x00'*length
+    byte_array[offs:offs+length] = '\0'*length
     for row in attrs:
         for plane in range(self.bitsperpixel):
             byte_array[offs:offs+row_bytes] = interval_to_bytes(row, 8, plane)
@@ -707,7 +707,7 @@ class CGAMode(GraphicsMode):
         """ Build the sprite byte array. """
         row_bytes = (dx * self.bitsperpixel + 7) // 8
         length = row_bytes*dy
-        byte_array[offs:offs+length] = '\x00'*length
+        byte_array[offs:offs+length] = '\0'*length
         for row in attrs:
             byte_array[offs:offs+row_bytes] = interval_to_bytes(
                                                 row, 8//self.bitsperpixel, 0)
