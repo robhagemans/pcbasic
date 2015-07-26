@@ -324,7 +324,7 @@ def check_quit():
             # mixer is quiet and we're not running a program.
             # quit to reduce pulseaudio cpu load
             # this takes quite a while and leads to missed frames...
-            if mixer.get_init() != None:
+            if mixer.get_init() is not None:
                 mixer.quit()
             quiet_ticks = 0
 
@@ -338,7 +338,7 @@ def stop_channel(channel):
 
 def check_init_mixer():
     """ Initialise the mixer if necessary. """
-    if mixer.get_init() == None:
+    if mixer.get_init() is None:
         mixer.init()
 
 prepare()

@@ -77,7 +77,7 @@ def drain_message_queue():
         if signal.event_type == sound.AUDIO_STOP:
             # stop all channels
             for voice in now_playing:
-                if voice and voice.poll() == None:
+                if voice and voice.poll() is None:
                     voice.terminate()
             now_playing = [None, None, None, None]
             now_looping = [None, None, None, None]
