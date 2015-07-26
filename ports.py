@@ -161,21 +161,26 @@ class COMDevice(devices.Device):
                 continue
             elif named_param == 'RS':
                 # suppress request to send
+                # not implemented
                 pass
             elif named_param[:2] == 'CS':
-                # control CTS - clear to send
-                pass
+                # set CTS timeout - clear to send
+                # not implemented
+                timeout = named_param[2:]
             elif named_param[:2] == 'DS':
-                # control DSR - data set ready
-                pass
+                # set DSR timeout - data set ready
+                # not implemented
+                timeout = named_param[2:]
             elif named_param[:2] == 'CD':
-                # control CD - carrier detect
-                pass
+                # set CD timeout - carrier detect
+                # not implemented
+                timeout = named_param[2:]
             elif named_param == 'LF':
                 # send a line feed at each return
                 self.linefeed = True
             elif named_param == 'PE':
                 # enable parity checking
+                # not implemented
                 pass
             else:
                 raise error.RunError(64)
