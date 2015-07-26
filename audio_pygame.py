@@ -240,7 +240,7 @@ def consumer_thread():
             pygame.time.wait(tick_ms)
 
 def drain_message_queue():
-    global sound_queue, sound_queue_lengths, loop_sound
+    global sound_queue, sound_queue_lengths, loop_sound, persist
     while True:
         try:
             signal = sound.message_queue.get(False)
