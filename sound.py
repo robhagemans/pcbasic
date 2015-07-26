@@ -40,7 +40,7 @@ class PersistentQueue(Queue.Queue):
         return { 'qlist': qlist }
 
     def __setstate__(self, st):
-        """ Initialise queue from picling dict. """
+        """ Initialise queue from pickling dict. """
         self.__init__()
         qlist = st['qlist']
         for item in qlist:
