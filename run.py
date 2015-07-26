@@ -60,12 +60,16 @@ def run_once():
                     if not statements.parse_statement():
                         state.basic_state.execute_mode = False
                 except error.Break as e:
+                    # ctrl-break stops foreground and background sound
+                    state.console_state.sound.stop_all_sound()
                     handle_break(e)
             elif state.basic_state.auto_mode:
                 try:
                     # auto step, checks events
                     auto_step()
                 except error.Break:
+                    # ctrl+break, ctrl-c both stop background sound
+                    state.console_state.sound.stop_all_sound()
                     state.basic_state.auto_mode = False
             else:
                 show_prompt()
@@ -74,6 +78,7 @@ def run_once():
                     line = console.wait_screenline(from_start=True)
                     state.basic_state.prompt = not store_line(line)
                 except error.Break:
+                    state.console_state.sound.stop_all_sound()
                     state.basic_state.prompt = False
                     continue
             # change loop modes
