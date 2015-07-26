@@ -10,7 +10,6 @@ import datetime
 import time
 import threading
 import Queue
-from collections import deque
 
 import sound
 
@@ -27,26 +26,21 @@ def close():
     """ Clean up and exit sound system. """
     pass
 
-def busy():
-    """ Is the mixer busy? """
-    return False
-
 def queue_length(voice):
     """ Number of unfinished sounds per voice. """
-    # wait for signal queue to drain (should be fast)
-    # don't drain fully to avoid skipping of music
-    while sound.thread_queue[voice].qsize() > 1:
-        pass
-    return sound_queue_lengths[voice]
+    # this is just sound.tone_queue[voice].unfinished_tasks but not part of API
+    return sound.tone_queue[voice].qsize() + (next_tone[voice] is not None)
+
 
 
 ##############################################################################
 # implementation
 
 tick_s = 0.024
-sound_queue = [ deque(), deque(), deque(), deque() ]
-# keep an int for the lengths to avoid counting the deque from another thread
-sound_queue_lengths = [0, 0, 0, 0]
+
+# sound generators for sounds not played yet
+next_tone = [ None, None, None, None ]
+
 
 def launch_thread():
     """ Launch consumer thread. """
@@ -58,57 +52,57 @@ def launch_thread():
 def consumer_thread():
     """ Audio signal queue consumer thread. """
     while True:
-        empty = not drain_queue()
+        drain_message_queue()
+        empty = drain_tone_queue()
         # handle playing queues
         now = datetime.datetime.now()
         for voice in range(4):
-            while sound_queue[voice] and now >= sound_queue[voice][0]:
-                sound_queue[voice].popleft()
-                sound_queue_lengths[voice] -= 1
-            empty = empty and not sound_queue[voice]
+            if next_tone[voice] is not None and now >= next_tone[voice]:
+                next_tone[voice] = None
+                sound.tone_queue[voice].task_done()
+            empty = empty and not next_tone[voice]
         # do not hog cpu
         if empty:
             time.sleep(tick_s)
 
-def drain_queue():
+def drain_message_queue():
     """ Drain signal queue. """
-    global sound_queue, sound_queue_lengths
+    global next_tone
+    while True:
+        try:
+            signal = sound.message_queue.get(False)
+        except Queue.Empty:
+            break
+        if signal.event_type == sound.AUDIO_STOP:
+            # stop all channels
+            next_tone = [None, None, None, None]
+        elif signal.event_type == sound.AUDIO_QUIT:
+            # close thread
+            return False
+        elif signal.event_type == sound.AUDIO_PERSIST:
+            # allow/disallow mixer to quit
+            pass
+        sound.message_queue.task_done()
+
+def drain_tone_queue():
+    """ Drain signal queue. """
+    global next_tone
     empty = False
     while not empty:
         empty = True
-        for i, q in enumerate(sound.thread_queue):
+        for voice, q in enumerate(sound.tone_queue):
             try:
                 signal = q.get(False)
                 empty = False
             except Queue.Empty:
                 continue
+            duration = 0
             if signal.event_type == sound.AUDIO_TONE:
                 # enqueue a tone
                 frequency, duration, fill, loop, voice, volume = signal.params
-                if sound_queue[voice]:
-                    latest = max(sound_queue[voice])
-                else:
-                    latest = datetime.datetime.now()
-                sound_queue[voice].append(latest + datetime.timedelta(seconds=duration))
-                sound_queue_lengths[voice] += 1
-            elif signal.event_type == sound.AUDIO_STOP:
-                # stop all channels
-                sound_queue = [deque(), deque(), deque(), deque()]
-                sound_queue_lengths = [0, 0, 0, 0]
             elif signal.event_type == sound.AUDIO_NOISE:
                 # enqueue a noise
                 is_white, frequency, duration, fill, loop, volume = signal.params
-                if sound_queue[voice]:
-                    latest = max(sound_queue[voice])
-                else:
-                    latest = datetime.datetime.now()
-                sound_queue[voice].append(latest + datetime.timedelta(seconds=duration))
-                sound_queue_lengths[voice] += 1
-            elif signal.event_type == sound.AUDIO_QUIT:
-                # close thread
-                return False
-            elif signal.event_type == sound.AUDIO_PERSIST:
-                # allow/disallow mixer to quit
-                pass
-            q.task_done()
-    return not empty
+            latest = next_tone[voice] or datetime.datetime.now()
+            next_tone[voice] = latest + datetime.timedelta(seconds=duration)
+    return empty

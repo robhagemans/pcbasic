@@ -34,7 +34,6 @@ else:
 import logging
 import threading
 import Queue
-from collections import deque
 
 import sound
 
