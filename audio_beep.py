@@ -1,5 +1,5 @@
 """
-PC-BASIC - sound_beep.py
+PC-BASIC - audio_beep.py
 Sound implementation through the linux beep utility
 
 (c) 2013, 2014, 2015 Rob Hagemans

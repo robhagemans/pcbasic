@@ -1,5 +1,5 @@
 """
-PC-BASIC - nosound.py
+PC-BASIC - audio_none.py
 Null sound implementation
 
 (c) 2013, 2014, 2015 Rob Hagemans
