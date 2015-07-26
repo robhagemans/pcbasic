@@ -56,9 +56,6 @@ def init():
         return False
     if not mixer:
         return False
-    # initialise mixer as silent
-    # this takes 0.7s but is necessary to be able to set channels to mono
-    mixer.quit()
     launch_thread()
     return True
 
@@ -228,6 +225,9 @@ def launch_thread():
 
 def consumer_thread():
     """ Audio signal queue consumer thread. """
+    # initialise mixer as silent
+    # this is necessary to be able to set channels to mono
+    mixer.quit()
     while True:
         empty = not drain_queue()
         # handle playing queues
