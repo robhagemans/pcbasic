@@ -240,7 +240,7 @@ def consumer_thread():
 
 def drain_queue():
     """ Drain signal queue. """
-    global sound_queue, sound_queue_lengths, loop_sound
+    global sound_queue, sound_queue_lengths, loop_sound, persist
     empty = False
     while not empty:
         empty = True
