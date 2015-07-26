@@ -62,10 +62,10 @@ def init():
 def close():
     """ Close sound queue at exit. """
     # drain signal queue (to allow for persistence) and request exit
-    if sound.thread_queue:
+    if sound.tone_queue:
         for i in range(4):
-            sound.thread_queue[i].join()
-        sound.thread_queue[0].put(sound.AudioEvent(sound.AUDIO_QUIT))
+            sound.tone_queue[i].join()
+        sound.message_queue.put(sound.AudioEvent(sound.AUDIO_QUIT))
         if thread and thread.is_alive():
             # signal quit and wait for thread to finish
             thread.join()
@@ -78,7 +78,7 @@ def queue_length(voice):
     """ Number of unfinished sounds per voice. """
     # wait for signal queue to drain (should be fast)
     # don't drain fully to avoid skipping of music
-    while sound.thread_queue[voice].qsize() > 1:
+    while sound.tone_queue[voice].qsize() > 1:
         pass
     return sound_queue_lengths[voice]
 
@@ -229,7 +229,8 @@ def consumer_thread():
     # this is necessary to be able to set channels to mono
     mixer.quit()
     while True:
-        empty = not drain_queue()
+        drain_message_queue()
+        empty = not drain_tone_queue()
         # handle playing queues
         check_sound()
         # check if mixer can be quit
@@ -238,13 +239,35 @@ def consumer_thread():
         if empty and not sound_queue[0] and not sound_queue[1] and not sound_queue[2] and not sound_queue[3]:
             pygame.time.wait(tick_ms)
 
-def drain_queue():
+def drain_message_queue():
+    global sound_queue, sound_queue_lengths, loop_sound
+    while True:
+        try:
+            signal = sound.message_queue.get(False)
+        except Queue.Empty:
+            break
+        if signal.event_type == sound.AUDIO_STOP:
+            # stop all channels
+            for voice in range(4):
+                stop_channel(voice)
+            loop_sound = [None, None, None, None]
+            sound_queue = [deque(), deque(), deque(), deque()]
+            sound_queue_lengths = [0, 0, 0, 0]
+        elif signal.event_type == sound.AUDIO_QUIT:
+            # close thread
+            return False
+        elif signal.event_type == sound.AUDIO_PERSIST:
+            # allow/disallow mixer to quit
+            persist = signal.params
+        sound.message_queue.task_done()
+
+def drain_tone_queue():
     """ Drain signal queue. """
     global sound_queue, sound_queue_lengths, loop_sound
     empty = False
     while not empty:
         empty = True
-        for i, q in enumerate(sound.thread_queue):
+        for i, q in enumerate(sound.tone_queue):
             try:
                 signal = q.get(False)
                 empty = False
@@ -255,25 +278,12 @@ def drain_queue():
                 frequency, total_duration, fill, loop, voice, volume = signal.params
                 sound_queue[voice].append(SoundGenerator(signal_sources[voice], feedback_tone, frequency, total_duration, fill, loop, volume))
                 sound_queue_lengths[voice] += 1
-            elif signal.event_type == sound.AUDIO_STOP:
-                # stop all channels
-                for voice in range(4):
-                    stop_channel(voice)
-                loop_sound = [None, None, None, None]
-                sound_queue = [deque(), deque(), deque(), deque()]
-                sound_queue_lengths = [0, 0, 0, 0]
             elif signal.event_type == sound.AUDIO_NOISE:
                 # enqueue a noise
                 is_white, frequency, total_duration, fill, loop, volume = signal.params
                 feedback = feedback_noise if is_white else feedback_periodic
                 sound_queue[3].append(SoundGenerator(signal_sources[3], feedback, frequency, total_duration, fill, loop, volume))
                 sound_queue_lengths[3] += 1
-            elif signal.event_type == sound.AUDIO_QUIT:
-                # close thread
-                return False
-            elif signal.event_type == sound.AUDIO_PERSIST:
-                # allow/disallow mixer to quit
-                persist = signal.params
             q.task_done()
     return not empty
 

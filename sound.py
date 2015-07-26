@@ -24,7 +24,8 @@ import representation
 import vartypes
 import backend
 
-thread_queue = [ Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue() ]
+message_queue = Queue.Queue()
+tone_queue = [ Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue() ]
 
 # audio plugin
 audio = None
@@ -130,7 +131,7 @@ class Sound(object):
             # pcjr, tandy play low frequencies as 110Hz
             frequency = 110.
         tone = AudioEvent(AUDIO_TONE, (frequency, duration, fill, loop, voice, volume))
-        thread_queue[voice].put(tone)
+        tone_queue[voice].put(tone)
         if voice == 2 and frequency != 0:
             # reset linked noise frequencies
             # /2 because we're using a 0x4000 rotation rather than 0x8000
@@ -153,21 +154,20 @@ class Sound(object):
 
     def stop_all_sound(self):
         """ Terminate all sounds immediately. """
-        for q in thread_queue:
+        for q in tone_queue:
             while not q.empty():
                 try:
                     q.get(False)
                 except Queue.Empty:
                     continue
                 q.task_done()
-        for q in thread_queue:
-            q.put(AudioEvent(AUDIO_STOP))
+        message_queue.put(AudioEvent(AUDIO_STOP))
 
     def play_noise(self, source, volume, duration, loop=False):
         """ Play a sound on the noise generator. """
         frequency = self.noise_freq[source]
         noise = AudioEvent(AUDIO_NOISE, (source > 3, frequency, duration, 1, loop, volume))
-        thread_queue[3].put(noise)
+        tone_queue[3].put(noise)
         # don't wait for noise
 
     def queue_length(self, voice=0):
@@ -177,7 +177,7 @@ class Sound(object):
 
     def persist(self, flag):
         """ Set mixer persistence flag (runmode). """
-        thread_queue[0].put(AudioEvent(AUDIO_PERSIST, flag))
+        message_queue.put(AudioEvent(AUDIO_PERSIST, flag))
 
     ### PLAY statement
 
