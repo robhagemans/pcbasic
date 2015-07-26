@@ -24,8 +24,31 @@ import representation
 import vartypes
 import backend
 
+
+class PersistentQueue(Queue.Queue):
+    """ Simple picklable Queue. """
+
+    def __getstate__(self):
+        """ Get pickling dict for queue. """
+        qlist = []
+        while True:
+            try:
+                qlist.append(self.get(False))
+                self.task_done()
+            except Queue.Empty:
+                break
+        return { 'qlist': qlist }
+
+    def __setstate__(self, st):
+        """ Initialise queue from picling dict. """
+        self.__init__()
+        qlist = st['qlist']
+        for item in qlist:
+            self.put(item)
+
+
 message_queue = Queue.Queue()
-tone_queue = [ Queue.Queue(), Queue.Queue(), Queue.Queue(), Queue.Queue() ]
+tone_queue = None
 
 # audio plugin
 audio = None
@@ -74,10 +97,15 @@ def prepare():
     state.console_state.sound.sound_on = (pcjr_sound == 'tandy')
     # pc-speaker on/off; (not implemented; not sure whether should be on)
     state.console_state.sound.beep_on = True
+    # persist tone queue
+    state.console_state.tone_queue = [PersistentQueue(), PersistentQueue(),
+                                      PersistentQueue(), PersistentQueue() ]
 
 def init():
     """ Initialise the audio backend. """
-    global audio
+    global audio, tone_queue
+    # NOTE that we shouldn't assign to either of these queues after this point
+    tone_queue = state.console_state.tone_queue
     if not audio or not audio.init():
         return False
     return True
@@ -131,7 +159,7 @@ class Sound(object):
             # pcjr, tandy play low frequencies as 110Hz
             frequency = 110.
         tone = AudioEvent(AUDIO_TONE, (frequency, duration, fill, loop, voice, volume))
-        tone_queue[voice].put(tone)
+        state.console_state.tone_queue[voice].put(tone)
         if voice == 2 and frequency != 0:
             # reset linked noise frequencies
             # /2 because we're using a 0x4000 rotation rather than 0x8000
@@ -154,7 +182,7 @@ class Sound(object):
 
     def stop_all_sound(self):
         """ Terminate all sounds immediately. """
-        for q in tone_queue:
+        for q in state.console_state.tone_queue:
             while not q.empty():
                 try:
                     q.get(False)
@@ -167,7 +195,7 @@ class Sound(object):
         """ Play a sound on the noise generator. """
         frequency = self.noise_freq[source]
         noise = AudioEvent(AUDIO_NOISE, (source > 3, frequency, duration, 1, loop, volume))
-        tone_queue[3].put(noise)
+        state.console_state.tone_queue[3].put(noise)
         # don't wait for noise
 
     def queue_length(self, voice=0):

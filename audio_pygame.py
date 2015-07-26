@@ -197,7 +197,6 @@ class SoundGenerator(object):
                 self.count_samples = self.num_samples
         # if loop, attach one chunk to loop, do not increment count
         return chunk
-#        return pygame.sndarray.make_sound(chunk)
 
 
 # three tone voices plus a noise source
@@ -311,8 +310,8 @@ def play_sound():
                 current_chunk[voice] = loop_sound[voice].build_chunk()
     for voice in range(4):
         if current_chunk[voice] is not None and len(current_chunk[voice]) != 0:
-            sound = pygame.sndarray.make_sound(current_chunk[voice])
-            mixer.Channel(voice).queue(sound)
+            snd = pygame.sndarray.make_sound(current_chunk[voice])
+            mixer.Channel(voice).queue(snd)
 
 def check_quit():
     """ Quit the mixer if not running a program and sound quiet for a while. """
