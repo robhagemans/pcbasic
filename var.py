@@ -50,7 +50,7 @@ class StringSpace(object):
 
     def store(self, string_buffer, address=None):
         """ Store a new string and return the 3-byte memory sequence. """
-        if address == None:
+        if address is None:
             # find new string address
             self.current -= len(string_buffer)
             address = self.current + 1
@@ -266,7 +266,7 @@ def array_size_bytes(name):
 
 def dim_array(name, dimensions):
     """ Allocate array space for an array of given dimensioned size. Raise errors if duplicate name or illegal index value. """
-    if state.basic_state.array_base == None:
+    if state.basic_state.array_base is None:
         state.basic_state.array_base = 0
     name = vartypes.complete_name(name)
     if name in state.basic_state.arrays:
@@ -412,7 +412,7 @@ def assign_field_var_or_array(name, indices, value, justify_right=False):
         raise error.RunError(13)
     s = vartypes.unpack_string(value)
     v = get_var_or_array_string_pointer(name, indices)
-    if v == None:
+    if v is None:
         # LSET has no effect if variable does not exist
         return
     # trim and pad to size
@@ -433,7 +433,7 @@ def string_assign_into(name, indices, offset, num, value):
         raise error.RunError(13)
     s = vartypes.unpack_string(value)
     v = get_var_or_array_string_pointer(name, indices)
-    if v == None:
+    if v is None:
         # illegal function call
         raise error.RunError(5)
     string_assign_unpacked_into(v, offset, num, s)

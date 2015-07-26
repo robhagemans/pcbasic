@@ -290,11 +290,11 @@ class CassetteStream(object):
         record = ''
         block_num = 0
         byte_count = 0
-        while byte_count < reclen or reclen == None:
+        while byte_count < reclen or reclen is None:
             data = self._read_block()
             record += data
             byte_count += len(data)
-            if (reclen == None):
+            if (reclen is None):
                 break
             block_num += 1
         self.bitstream.read_trailer()
@@ -320,7 +320,7 @@ class CassetteStream(object):
             if count == 256:
                 break
             byte = self.bitstream.read_byte()
-            if byte == None:
+            if byte is None:
                 raise PulseError()
             data += chr(byte)
             count += 1
@@ -476,7 +476,7 @@ class BasicodeStream(CassetteStream):
             logging.warning("%s, Could not read checksum: %s",
                             timestamp(self.bitstream.counter()), e)
         # checksum shld be 0 for even # bytes, 128 for odd
-        if checksum_byte == None or checksum^checksum_byte not in (0,128):
+        if checksum_byte is None or checksum^checksum_byte not in (0,128):
             logging.warning("%s Checksum failed, required: %02x realised: %02x",
                             timestamp(self.bitstream.counter()),
                             checksum_byte, checksum)
@@ -585,7 +585,7 @@ class TapeBitStream(object):
         byte = 0
         for i in xrange(8):
             bit = self.read_bit()
-            if bit == None:
+            if bit is None:
                 raise PulseError()
             byte += bit * 128 >> i
         return byte

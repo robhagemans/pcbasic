@@ -234,9 +234,9 @@ def edit(from_line, bytepos=None):
 
 def renum(new_line, start_line, step):
     """ Renumber stored program. """
-    new_line = 10 if new_line == None else new_line
-    start_line = 0 if start_line == None else start_line
-    step = 10 if step == None else step
+    new_line = 10 if new_line is None else new_line
+    start_line = 0 if start_line is None else start_line
+    step = 10 if step is None else step
     # get a sorted list of line numbers
     keys = sorted([ k for k in state.basic_state.line_numbers.keys() if k >= start_line])
     # assign the new numbers
@@ -369,7 +369,7 @@ def list_lines(dev, from_line, to_line):
     # 65529 is max insertable line number for GW-BASIC 3.23.
     # however, 65530-65535 are executed if present in tokenised form.
     # in GW-BASIC, 65530 appears in LIST, 65531 and above are hidden
-    if to_line == None:
+    if to_line is None:
         to_line = max_list_line
     # sort by positions, not line numbers!
     listable = sorted([ state.basic_state.line_numbers[num]

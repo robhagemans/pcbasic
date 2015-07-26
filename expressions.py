@@ -274,7 +274,7 @@ def parse_expr_list(ins, size, err=5, separators=(',',), allow_last_empty=False)
     if len(output) > size:
         raise error.RunError(err)
     # can't end on a comma: Missing Operand
-    if not allow_last_empty and output and output[-1] == None:
+    if not allow_last_empty and output and output[-1] is None:
         raise error.RunError(22)
     while len(output) < size:
         output.append(None)
@@ -304,7 +304,7 @@ def get_var_or_array_name(ins):
     if util.skip_white_read_if(ins, ('[', '(')):
         # it's an array, read indices
         indices = parse_int_list(ins, 255, 9) # subscript out of range
-        while len(indices) > 0 and indices[-1] == None:
+        while len(indices) > 0 and indices[-1] is None:
             indices = indices[:-1]
         if None in indices:
             raise error.RunError(2)
@@ -493,9 +493,9 @@ def value_screen(ins):
     """ SCREEN: get char or attribute at a location. """
     util.require_read(ins, ('(',))
     row, col, z = parse_int_list(ins, 3, 5)
-    if row == None or col == None:
+    if row is None or col is None:
         raise error.RunError(5)
-    if z == None:
+    if z is None:
         z = 0
     cmode = state.console_state.screen.mode
     util.range_check(1, cmode.height, row)
@@ -741,7 +741,7 @@ def value_pen(ins):
     fn = vartypes.pass_int_unpack(parse_bracket(ins))
     util.range_check(0, 9, fn)
     pen = state.console_state.pen.poll(fn)
-    if pen == None or not state.basic_state.events.pen.enabled:
+    if pen is None or not state.basic_state.events.pen.enabled:
         # should return 0 or char pos 1 if PEN not ON
         pen = 1 if fn >= 6 else 0
     return vartypes.pack_int(pen)

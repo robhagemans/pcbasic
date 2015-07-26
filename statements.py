@@ -863,7 +863,7 @@ def exec_edit(ins):
         # undefined line number
         raise error.RunError(8)
     from_line = parse_jumpnum_or_dot(ins, err=5)
-    if from_line == None or from_line not in state.basic_state.line_numbers:
+    if from_line is None or from_line not in state.basic_state.line_numbers:
         raise error.RunError(8)
     util.require(ins, tk.end_statement, err=5)
     # throws back to direct mode
@@ -1312,12 +1312,12 @@ def exec_circle(ins):
                 if util.skip_white_read_if(ins, (',',)):
                     aspect = fp.unpack(vartypes.pass_single_keep(
                                             expressions.parse_expression(ins)))
-                elif stop == None:
+                elif stop is None:
                     # missing operand
                     raise error.RunError(22)
-            elif start == None:
+            elif start is None:
                 raise error.RunError(22)
-        elif cval == None:
+        elif cval is None:
             raise error.RunError(22)
     util.require(ins, tk.end_statement)
     state.console_state.screen.drawing.circle(centre, r, start, stop, c, aspect)
@@ -1426,7 +1426,7 @@ def exec_stop(ins):
 
 def exec_cont(ins):
     """ CONT: continue STOPped or ENDed execution. """
-    if state.basic_state.stop == None:
+    if state.basic_state.stop is None:
         raise error.RunError(17)
     else:
         flow.set_pointer(True, state.basic_state.stop)
@@ -1677,7 +1677,7 @@ def exec_on_error(ins):
 
 def exec_resume(ins):
     """ RESUME: resume program flow after error-trap. """
-    if state.basic_state.error_resume == None:
+    if state.basic_state.error_resume is None:
         # unset error handler
         state.basic_state.on_error = 0
         # resume without error
@@ -1822,7 +1822,7 @@ def exec_dim(ins):
         if util.skip_white_read_if(ins, ('[', '(')):
             # at most 255 indices, but there's no way to fit those in a 255-byte command line...
             dimensions = parse_int_list_var(ins)
-            while len(dimensions) > 0 and dimensions[-1] == None:
+            while len(dimensions) > 0 and dimensions[-1] is None:
                 dimensions = dimensions[:-1]
             if None in dimensions:
                 raise error.RunError(2)
@@ -1887,7 +1887,7 @@ def exec_mid(ins):
         var.check_dim_array(name, indices)
     util.require_read(ins, (',',))
     arglist = expressions.parse_int_list(ins, size=2, err=2)
-    if arglist[0] == None:
+    if arglist[0] is None:
         raise error.RunError(2)
     start = arglist[0]
     num = arglist[1] if arglist[1] != None else 255
@@ -1933,7 +1933,7 @@ def exec_read(ins):
     for v in parse_var_list(ins):
         # syntax error in DATA line (not type mismatch!) if can't convert to var type
         num = representation.str_to_type(flow.read_entry(), v[0][-1])
-        if num == None:
+        if num is None:
             # set pointer for EDIT gadget
             state.basic_state.bytecode.seek(state.basic_state.data_pos)
             raise error.RunError(2, state.basic_state.data_pos-1)
@@ -2130,14 +2130,14 @@ def exec_color(ins):
         raise error.RunError(5)
     fore_old = (screen.attr>>7)*0x10 + (screen.attr&0xf)
     back_old = (screen.attr>>4) & 0x7
-    bord = 0 if bord == None else bord
+    bord = 0 if bord is None else bord
     util.range_check(0, 255, bord)
-    fore = fore_old if fore == None else fore
+    fore = fore_old if fore is None else fore
     # graphics mode bg is always 0; sets palette instead
-    if mode.is_text_mode and back == None:
+    if mode.is_text_mode and back is None:
         back = back_old
     else:
-        back = screen.palette.get_entry(0) if back == None else back
+        back = screen.palette.get_entry(0) if back is None else back
     if mode.is_text_mode:
         util.range_check(0, mode.num_attr-1, fore)
         util.range_check(0, 15, back, bord)
@@ -2166,7 +2166,7 @@ def exec_color(ins):
 def exec_color_mode_1(back, pal, override):
     """ Helper function for COLOR in SCREEN 1. """
     screen = state.console_state.screen
-    back = screen.palette.get_entry(0) if back == None else back
+    back = screen.palette.get_entry(0) if back is None else back
     if override != None:
         # uses last entry as palette if given
         pal = override
@@ -2196,7 +2196,7 @@ def exec_palette(ins):
         mode = state.console_state.screen.mode
         num_palette_entries = mode.num_attr if mode.num_attr != 32 else 16
         pair = expressions.parse_int_list(ins, 2, err=5)
-        if pair[0] == None or pair[1] == None:
+        if pair[0] is None or pair[1] is None:
             raise error.RunError(2)
         util.range_check(0, num_palette_entries-1, pair[0])
         util.range_check(-1, len(mode.colours)-1, pair[1])
@@ -2275,8 +2275,8 @@ def exec_locate(ins):
     if dummy != None:
         # can end on a 5th comma but no stuff allowed after it
         raise error.RunError(2)
-    row = state.console_state.row if row == None else row
-    col = state.console_state.col if col == None else col
+    row = state.console_state.row if row is None else row
+    col = state.console_state.col if col is None else col
     if row == cmode.height and state.console_state.keys_visible:
         raise error.RunError(5)
     elif state.console_state.view_set:
@@ -2292,7 +2292,7 @@ def exec_locate(ins):
         util.range_check(0, (255 if pcjr_syntax else 1), cursor)
         # set cursor visibility - this should set the flag but have no effect in graphics modes
         state.console_state.screen.cursor.set_visibility(cursor != 0)
-    if stop == None:
+    if stop is None:
         stop = start
     if start != None:
         util.range_check(0, 31, start, stop)
@@ -2303,7 +2303,7 @@ def exec_locate(ins):
 def exec_write(ins, output=None):
     """ WRITE: Output machine-readable expressions to the screen or a file. """
     output = expressions.parse_file_number(ins, 'OAR')
-    output = backend.scrn_file if output == None else output
+    output = backend.scrn_file if output is None else output
     expr = expressions.parse_expression(ins, allow_empty=True)
     outstr = ''
     if expr:
@@ -2323,9 +2323,9 @@ def exec_write(ins, output=None):
 
 def exec_print(ins, output=None):
     """ PRINT: Write expressions to the screen or a file. """
-    if output == None:
+    if output is None:
         output = expressions.parse_file_number(ins, 'OAR')
-        output = backend.scrn_file if output == None else output
+        output = backend.scrn_file if output is None else output
     number_zones = max(1, int(output.width/14))
     newline = True
     while True:

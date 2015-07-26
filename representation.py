@@ -492,7 +492,7 @@ def input_vars_file(readvar, stream):
                                     allow_quotes=False, allow_past_end=False,
                                     end_all = ('\r', ',', '\n', ' '))
         value = str_to_type(valstr, typechar)
-        if value == None:
+        if value is None:
             value = vartypes.null[typechar]
         while c and c in whitespace_input:
             # skip trailing whitespace
@@ -513,7 +513,7 @@ def input_vars(readvar, stream):
         val = str_to_type(valstr, typechar)
         v.append(val)
         count_values += 1
-        if val == None:
+        if val is None:
             has_empty = True
         if c == ',':
             count_commas += 1

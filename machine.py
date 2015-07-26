@@ -124,7 +124,7 @@ def bload(g, offset):
     """ Load a file into a block of memory. """
     # size gets ignored; even the \x1a at the end gets dumped onto the screen.
     seg = g.seg
-    if offset == None:
+    if offset is None:
         offset = g.offset
     buf = bytearray(g.read())
     # remove any EOF marker at end
@@ -355,7 +355,7 @@ def get_data_memory_var(address):
         if name_try <= address and name_try > name_addr:
             name_addr, var_addr = name_try, var_try
             the_var = name
-    if the_var == None:
+    if the_var is None:
         return -1
     if address >= var_addr:
         offset = address - var_addr
@@ -377,7 +377,7 @@ def get_data_memory_array(address):
         if name_try <= address and name_try > name_addr:
             name_addr, arr_addr = name_try, arr_try
             the_arr = name
-    if the_arr == None:
+    if the_arr is None:
         return -1
     if address >= state.basic_state.var_current + arr_addr:
         offset = address - arr_addr - state.basic_state.var_current
@@ -410,7 +410,7 @@ def get_data_memory_string(address):
         if str_try <= address and str_try > str_nearest:
             str_nearest = str_try
             the_var = v
-    if the_var == None:
+    if the_var is None:
         for name in state.basic_state.arrays:
             if name[-1] != '$':
                 continue

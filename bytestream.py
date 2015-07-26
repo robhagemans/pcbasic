@@ -41,7 +41,7 @@ class ByteStream(object):
 
     def read(self, n_bytes=None):
         """ Get an n-length string and move the location n forward. If loc>len, return empty string. """
-        if n_bytes == None:
+        if n_bytes is None:
             n_bytes = len(self._contents) - self._loc
         if self._loc >= len(self._contents):
             self._loc = len(self._contents)
@@ -61,7 +61,7 @@ class ByteStream(object):
 
     def truncate(self, n=None):
         """ Clip off the bytearray after position n. """
-        if n == None:
+        if n is None:
             n = self._loc
         self._contents = self._contents[:n]
         if self._loc >= len(self._contents):

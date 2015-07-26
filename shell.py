@@ -122,7 +122,7 @@ if plat.system == 'Windows':
         errp.daemon = True
         errp.start()
         word = ''
-        while p.poll() == None or shell_output:
+        while p.poll() is None or shell_output:
             if shell_output:
                 lines, shell_output = shell_output.split('\r\n'), ''
                 last = lines.pop()

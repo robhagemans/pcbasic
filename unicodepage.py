@@ -187,9 +187,9 @@ class UTF8Converter(object):
         self.protect_box = protect_box
         self.dbcs = do_dbcs
         # set dbcs and box protection defaults according to global settings
-        if protect_box == None:
+        if protect_box is None:
             self.protect_box = box_protect
-        if do_dbcs == None:
+        if do_dbcs is None:
             self.dbcs = dbcs
         self.bset = -1
         self.last = ''
@@ -215,7 +215,7 @@ class UTF8Converter(object):
     def flush(self, num=None):
         """ Empty buffer and return contents. """
         out = ''
-        if num == None:
+        if num is None:
             num = len(self.buf)
         if self.buf:
             # can be one or two-byte sequence in self.buf

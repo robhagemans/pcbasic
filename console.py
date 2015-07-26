@@ -877,7 +877,7 @@ def clear_view():
 
 def scroll(from_line=None):
     """ Scroll the scroll region up by one line, starting at from_line. """
-    if from_line == None:
+    if from_line is None:
         from_line = state.console_state.view_start
     backend.video.scroll(from_line, state.console_state.scroll_height,
                          state.console_state.screen.attr)

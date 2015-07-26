@@ -74,7 +74,7 @@ def jump_return(jumpnum):
     if handler:
         # if stopped explicitly using STOP, we wouldn't have got here; it STOP is run  inside the trap, no effect. OFF in trap: event off.
         handler.stopped = False
-    if jumpnum == None:
+    if jumpnum is None:
         # go back to position of GOSUB
         set_pointer(orig_runmode, pos)
     else:
@@ -153,7 +153,7 @@ def resume(jumpnum):
 
 def jump(jumpnum, err=8):
     """ Execute jump for a GOTO or RUN instruction. """
-    if jumpnum == None:
+    if jumpnum is None:
         set_pointer(True, 0)
     else:
         try:

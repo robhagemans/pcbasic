@@ -349,7 +349,7 @@ class Drawing(object):
         """ Draw a circle, ellipse, arc or sector (CIRCLE). """
         x0, y0 = self.view_coords(*self.get_window_physical(*lcoord))
         c = self.get_attr_index(c)
-        if aspect == None:
+        if aspect is None:
             aspect = fp.div(
                 fp.Single.from_int(self.screen.mode.pixel_aspect[0]),
                 fp.Single.from_int(self.screen.mode.pixel_aspect[1]))
@@ -519,7 +519,7 @@ class Drawing(object):
         # pattern tiling stops at intervals that equal the pattern to be drawn, unless this pattern is
         # also equal to the background pattern.
         c, border = self.get_attr_index(c), self.get_attr_index(border)
-        solid = (pattern == None)
+        solid = (pattern is None)
         if not solid:
             tile = self.screen.mode.build_tile(pattern) if pattern else None
             back = self.screen.mode.build_tile(background) if background else None

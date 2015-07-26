@@ -2,7 +2,7 @@
 PC-BASIC - video_cli.py
 Command-line interface
 
-(c) 2013, 2014, 2015 Rob Hagemans 
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -313,15 +313,15 @@ def update_position(row=None, col=None):
     """ Update screen for new cursor position. """
     global last_row, last_col
     # this happens on resume
-    if last_row == None:
+    if last_row is None:
         last_row = cursor_row
         state.console_state.screen.redraw_row(0, cursor_row, wrap=False)
-    if last_col == None:
+    if last_col is None:
         last_col = cursor_col
     # allow updating without moving the cursor
-    if row == None:
+    if row is None:
         row = cursor_row
-    if col == None:
+    if col is None:
         col = cursor_col
     # move cursor if necessary
     if row != last_row:

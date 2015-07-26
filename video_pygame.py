@@ -1029,7 +1029,7 @@ class ClipboardInterface(object):
     def start(self, r=None, c=None):
         """ Enter clipboard mode (Logo key pressed). """
         self.logo_pressed = True
-        if r == None or c == None:
+        if r is None or c is None:
             self.select_start = [cursor_row, cursor_col]
             self.select_stop = [cursor_row, cursor_col]
         else:

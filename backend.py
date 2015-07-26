@@ -964,7 +964,7 @@ class Screen(object):
                erase=1, new_width=None):
         """ SCREEN: change the video mode, colourburst, visible or active page. """
         # set default arguments
-        if new_mode == None:
+        if new_mode is None:
             new_mode = self.screen_mode
         # THIS IS HOW COLORSWITCH SHOULD WORK:
         #   SCREEN 0,0 - mono on composite, color on RGB
@@ -978,7 +978,7 @@ class Screen(object):
         #   SCREEN 1 = SCREEN 1,1 (cga, ega, vga, ...)
         # colorswitch is NOT preserved between screens when unspecified
         # colorswitch is NOT the same as colorburst (opposite on screen 1)
-        if new_colorswitch == None:
+        if new_colorswitch is None:
             if video_capabilities == 'pcjr':
                 new_colorswitch = 0
             elif video_capabilities == 'tandy':
@@ -986,7 +986,7 @@ class Screen(object):
             else:
                 new_colorswitch = 1
         new_colorswitch = (new_colorswitch != 0)
-        if new_mode == 0 and new_width == None:
+        if new_mode == 0 and new_width is None:
             # width persists on change to screen 0
             new_width = self.mode.width
             # if we switch out of a 20-col mode (Tandy screen 3), switch to 40-col.
@@ -1003,12 +1003,12 @@ class Screen(object):
             raise error.RunError(5)
         # vpage and apage nums are persistent on mode switch with SCREEN
         # on pcjr only, reset page to zero if current page number would be too high.
-        if new_vpagenum == None:
+        if new_vpagenum is None:
             new_vpagenum = self.vpagenum
             if (video_capabilities == 'pcjr' and info and
                     new_vpagenum >= info.num_pages):
                 new_vpagenum = 0
-        if new_apagenum == None:
+        if new_apagenum is None:
             new_apagenum = self.apagenum
             if (video_capabilities == 'pcjr' and info and
                     new_apagenum >= info.num_pages):
@@ -1175,9 +1175,9 @@ class Screen(object):
 
     def set_page(self, new_vpagenum, new_apagenum):
         """ Set active page & visible page, counting from 0. """
-        if new_vpagenum == None:
+        if new_vpagenum is None:
             new_vpagenum = self.vpagenum
-        if new_apagenum == None:
+        if new_apagenum is None:
             new_apagenum = self.apagenum
         if (new_vpagenum >= self.mode.num_pages or new_apagenum >= self.mode.num_pages):
             raise error.RunError(5)
@@ -1342,14 +1342,14 @@ class Screen(object):
 
     def put_pixel(self, x, y, index, pagenum=None):
         """ Put a pixel on the screen; empty character buffer. """
-        if pagenum == None:
+        if pagenum is None:
             pagenum = self.apagenum
         video.put_pixel(x, y, index, pagenum)
         self.clear_text_at(x, y)
 
     def get_pixel(self, x, y, pagenum=None):
         """ Return the attribute a pixel on the screen. """
-        if pagenum == None:
+        if pagenum is None:
             pagenum = self.apagenum
         return video.get_pixel(x, y, pagenum)
 
