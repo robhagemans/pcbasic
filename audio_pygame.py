@@ -83,8 +83,7 @@ def queue_length(voice):
     # don't drain fully to avoid skipping of music
     while sound.thread_queue[voice].qsize() > 1:
         pass
-    # FIXME - accessing deque from other threads leads to errors, use an int fiekd
-    return len(sound_queue[voice])
+    return sound_queue_lengths[voice]
 
 
 ##############################################################################
@@ -102,6 +101,8 @@ persist = False
 
 # sound generators for sounds not played yet
 sound_queue = [ deque(), deque(), deque(), deque() ]
+# keep an int for the lengths to avoid counting the deque from another thread
+sound_queue_lengths = [0, 0, 0, 0]
 # currently looping sound
 loop_sound = [ None, None, None, None ]
 
@@ -239,7 +240,7 @@ def consumer_thread():
 
 def drain_queue():
     """ Drain signal queue. """
-    global sound_queue, loop_sound
+    global sound_queue, sound_queue_lengths, loop_sound
     empty = False
     while not empty:
         empty = True
@@ -253,17 +254,20 @@ def drain_queue():
                 # enqueue a tone
                 frequency, total_duration, fill, loop, voice, volume = signal.params
                 sound_queue[voice].append(SoundGenerator(signal_sources[voice], feedback_tone, frequency, total_duration, fill, loop, volume))
+                sound_queue_lengths[voice] += 1
             elif signal.event_type == sound.AUDIO_STOP:
                 # stop all channels
                 for voice in range(4):
                     stop_channel(voice)
                 loop_sound = [None, None, None, None]
                 sound_queue = [deque(), deque(), deque(), deque()]
+                sound_queue_lengths = [0, 0, 0, 0]
             elif signal.event_type == sound.AUDIO_NOISE:
                 # enqueue a noise
                 is_white, frequency, total_duration, fill, loop, volume = signal.params
                 feedback = feedback_noise if is_white else feedback_periodic
                 sound_queue[3].append(SoundGenerator(signal_sources[3], feedback, frequency, total_duration, fill, loop, volume))
+                sound_queue_lengths[3] += 1
             elif signal.event_type == sound.AUDIO_QUIT:
                 # close thread
                 return False
@@ -297,6 +301,7 @@ def check_sound():
                     chunk = sound_queue[voice][0].build_chunk()
                     if chunk == None:
                         sound_queue[voice].popleft()
+                        sound_queue_lengths[voice] -= 1
                         try:
                             chunk = sound_queue[voice][0].build_chunk()
                         except IndexError:
@@ -306,6 +311,7 @@ def check_sound():
                         current_chunk[voice] = numpy.concatenate((current_chunk[voice], chunk))
                     if sound_queue[voice][0].loop:
                         loop_sound[voice] = sound_queue[voice].popleft()
+                        sound_queue_lengths[voice] -= 1
                         # any next sound in the sound queue will stop this looping sound
                     else:
                         loop_sound[voice] = None

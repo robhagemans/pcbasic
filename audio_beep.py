@@ -43,8 +43,7 @@ def queue_length(voice):
     # don't drain fully to avoid skipping of music
     while sound.thread_queue[voice].qsize() > 1:
         pass
-    # FIXME - accessing deque from other threads leads to errors, use an int fiekd
-    return len(sound_queue[voice])
+    return sound_queue_lengths[voice]
 
 
 ##############################################################################
@@ -54,6 +53,8 @@ import plat
 
 tick_s = 0.024
 sound_queue = [ deque(), deque(), deque(), deque() ]
+# keep an int for the lengths to avoid counting the deque from another thread
+sound_queue_lengths = [0, 0, 0, 0]
 now_playing = [None, None, None, None]
 now_loop = [None, None, None, None]
 
@@ -78,7 +79,7 @@ def consumer_thread():
 
 def drain_queue():
     """ Drain signal queue. """
-    global sound_queue, now_playing, now_loop
+    global sound_queue, sound_queue_lengths, now_playing, now_loop
     empty = False
     while not empty:
         empty = True
@@ -92,12 +93,14 @@ def drain_queue():
                 # enqueue a tone
                 frequency, duration, fill, loop, voice, volume = signal.params
                 sound_queue[voice].append((frequency, duration, fill, loop, volume))
+                sound_queue_lengths[voice] += 1
             elif signal.event_type == sound.AUDIO_STOP:
                 # stop all channels
                 for voice in now_playing:
                     if voice and voice.poll() == None:
                         voice.terminate()
                 sound_queue = [deque(), deque(), deque(), deque()]
+                sound_queue_lengths = [0, 0, 0, 0]
                 now_playing = [None, None, None, None]
                 now_loop = [None, None, None, None]
                 hush()
@@ -105,6 +108,7 @@ def drain_queue():
                 # enqueue a noise (play as regular note)
                 is_white, frequency, duration, fill, loop, volume = signal.params
                 sound_queue[voice].append((frequency, duration, fill, loop, volume))
+                sound_queue_lengths[voice] += 1
             elif signal.event_type == sound.AUDIO_QUIT:
                 # close thread
                 return False
