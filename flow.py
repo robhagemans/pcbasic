@@ -46,7 +46,7 @@ def set_pointer(new_runmode, pos=None):
     state.basic_state.run_mode = new_runmode
     state.console_state.sound.persist(new_runmode)
     codestream = get_codestream()
-    if pos != None:
+    if pos is not None:
         # jump to position, if given
         codestream.seek(pos)
     else:

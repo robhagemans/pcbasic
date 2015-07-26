@@ -66,10 +66,10 @@ class Drawing(object):
         """ Set the graphics viewport and optionally draw a box (VIEW). """
         # first unset the viewport so that we can draw the box
         self.unset_view()
-        if fill != None:
+        if fill is not None:
             self.draw_box_filled(x0, y0, x1, y1, fill)
             self.last_attr = fill
-        if border != None:
+        if border is not None:
             self.draw_box(x0-1, y0-1, x1+1, y1+1, border)
             self.last_attr = border
         # VIEW orders the coordinates
@@ -87,12 +87,12 @@ class Drawing(object):
 
     def view_is_set(self):
         """ Return whether the graphics viewport is set. """
-        return self.view != None
+        return self.view is not None
 
     def reset_view(self):
         """ Update graphics state after viewport reset. """
         self.last_point = self.get_view_mid()
-        if self.window_bounds != None:
+        if self.window_bounds is not None:
             self.set_window(*self.window_bounds)
 
     def get_view(self):
@@ -146,7 +146,7 @@ class Drawing(object):
 
     def window_is_set(self):
         """ Return whether the logical coordinate window is set. """
-        return self.window != None
+        return self.window is not None
 
     def get_window_physical(self, fx, fy, step=False):
         """ Convert logical to physical coordinates. """
@@ -376,10 +376,10 @@ class Drawing(object):
                              stop_octant, stop_coord, stop_line)
         else:
             startx, starty, stopx, stopy = -1, -1, -1, -1
-            if start != None:
+            if start is not None:
                 startx = abs(fp.mul(fp.Single.from_int(rx), fp.cos(start)).round_to_int())
                 starty = abs(fp.mul(fp.Single.from_int(ry), fp.sin(start)).round_to_int())
-            if stop != None:
+            if stop is not None:
                 stopx = abs(fp.mul(fp.Single.from_int(rx), fp.cos(stop)).round_to_int())
                 stopy = abs(fp.mul(fp.Single.from_int(ry), fp.sin(stop)).round_to_int())
             self.draw_ellipse(x0, y0, rx, ry, c,

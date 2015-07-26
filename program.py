@@ -189,8 +189,8 @@ def find_pos_line_dict(fromline, toline):
 
 def delete(fromline, toline):
     """ Delete range of lines from stored program. """
-    fromline = fromline if fromline != None else min(state.basic_state.line_numbers)
-    toline = toline if toline != None else 65535
+    fromline = fromline if fromline is not None else min(state.basic_state.line_numbers)
+    toline = toline if toline is not None else 65535
     startpos, afterpos, deleteable, beyond = find_pos_line_dict(fromline, toline)
     if not deleteable:
         # no lines selected

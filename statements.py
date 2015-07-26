@@ -227,7 +227,7 @@ def parse_statement():
     except error.RunError as e:
         error.set_err(e)
         # don't jump if we're already busy handling an error
-        if state.basic_state.on_error != None and state.basic_state.on_error != 0 and not state.basic_state.error_handle_mode:
+        if state.basic_state.on_error is not None and state.basic_state.on_error != 0 and not state.basic_state.error_handle_mode:
             state.basic_state.error_resume = state.basic_state.current_statement, state.basic_state.run_mode
             flow.jump(state.basic_state.on_error)
             state.basic_state.error_handle_mode = True
@@ -881,8 +881,8 @@ def exec_auto(ins):
         increment = util.parse_jumpnum(ins, allow_empty=True)
     util.require(ins, tk.end_statement)
     # reset linenum and increment on each call of AUTO (even in AUTO mode)
-    state.basic_state.auto_linenum = linenum if linenum != None else 10
-    state.basic_state.auto_increment = increment if increment != None else 10
+    state.basic_state.auto_linenum = linenum if linenum is not None else 10
+    state.basic_state.auto_increment = increment if increment is not None else 10
     # move program pointer to end
     flow.set_pointer(False)
     # continue input in AUTO mode
@@ -936,7 +936,7 @@ def exec_chain(ins):
     if util.skip_white_read_if(ins, (',',)):
         # check for an expression that indicates a line in the other program. This is not stored as a jumpnum (to avoid RENUM)
         expr = expressions.parse_expression(ins, allow_empty=True)
-        if expr != None:
+        if expr is not None:
             jumpnum = vartypes.pass_int_unpack(expr, maxint=0xffff)
             # negative numbers will be two's complemented into a line number
             if jumpnum < 0:
@@ -1017,7 +1017,7 @@ def exec_renum(ins):
             if util.skip_white_read_if(ins, (',',)):
                 step = util.parse_jumpnum(ins, allow_empty=True) # returns -1 if empty
     util.require(ins, tk.end_statement)
-    if step != None and step < 1:
+    if step is not None and step < 1:
         raise error.RunError(5)
     program.renum(new, old, step)
 
@@ -1890,7 +1890,7 @@ def exec_mid(ins):
     if arglist[0] is None:
         raise error.RunError(2)
     start = arglist[0]
-    num = arglist[1] if arglist[1] != None else 255
+    num = arglist[1] if arglist[1] is not None else 255
     util.require_read(ins, (')',))
     s = vartypes.pass_string_unpack(var.get_var_or_array(name, indices))
     util.range_check(0, 255, num)
@@ -1964,7 +1964,7 @@ def parse_prompt(ins, question_mark):
 def exec_input(ins):
     """ INPUT: request input from user. """
     finp = expressions.parse_file_number(ins, 'IR')
-    if finp != None:
+    if finp is not None:
         varlist = representation.input_vars_file(parse_var_list(ins), finp)
         for v in varlist:
             var.set_var_or_array(*v)
@@ -2167,11 +2167,11 @@ def exec_color_mode_1(back, pal, override):
     """ Helper function for COLOR in SCREEN 1. """
     screen = state.console_state.screen
     back = screen.palette.get_entry(0) if back is None else back
-    if override != None:
+    if override is not None:
         # uses last entry as palette if given
         pal = override
     util.range_check(0, 255, back)
-    if pal != None:
+    if pal is not None:
         util.range_check(0, 255, pal)
         screen.set_cga4_palette(pal%2)
         palette = list(screen.mode.palette)
@@ -2272,7 +2272,7 @@ def exec_locate(ins):
     """ LOCATE: Set cursor position, shape and visibility."""
     cmode = state.console_state.screen.mode
     row, col, cursor, start, stop, dummy = expressions.parse_int_list(ins, 6, 2, allow_last_empty=True)
-    if dummy != None:
+    if dummy is not None:
         # can end on a 5th comma but no stuff allowed after it
         raise error.RunError(2)
     row = state.console_state.row if row is None else row
@@ -2288,13 +2288,13 @@ def exec_locate(ins):
         # temporarily allow writing on last row
         state.console_state.bottom_row_allowed = True
     console.set_pos(row, col, scroll_ok=False)
-    if cursor != None:
+    if cursor is not None:
         util.range_check(0, (255 if pcjr_syntax else 1), cursor)
         # set cursor visibility - this should set the flag but have no effect in graphics modes
         state.console_state.screen.cursor.set_visibility(cursor != 0)
     if stop is None:
         stop = start
-    if start != None:
+    if start is not None:
         util.range_check(0, 31, start, stop)
         # cursor shape only has an effect in text mode
         if cmode.is_text_mode:
@@ -2464,7 +2464,7 @@ def exec_width(ins):
             if util.skip_white_read_if(ins, (',',)):
                 # pare dummy number rows setting
                 num_rows_dummy = expressions.parse_expression(ins, allow_empty=True)
-                if num_rows_dummy != None:
+                if num_rows_dummy is not None:
                     min_num_rows = 0 if pcjr_syntax else 25
                     util.range_check(min_num_rows, 25, vartypes.pass_int_unpack(num_rows_dummy))
                 # trailing comma is accepted

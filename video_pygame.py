@@ -780,7 +780,7 @@ def draw_cursor(screen):
             screen.blit(cursor, (  (cursor_col-1) * font_width,
                                     (cursor_row-1) * font_height) )
     else:
-        if cursor_fixed_attr != None:
+        if cursor_fixed_attr is not None:
             index = cursor_fixed_attr
         else:
             index = current_attr & 0xf

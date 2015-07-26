@@ -164,10 +164,10 @@ def get_var_name(ins, allow_empty=False):
 def range_check(lower, upper, *allvars):
     """ Check if all variables in list are within the given inclusive range. """
     for v in allvars:
-        if v != None and not (lower <= v <= upper):
+        if v is not None and not (lower <= v <= upper):
             raise error.RunError(5)
 
 def range_check_err(lower, upper, v, err=5):
     """ Check if variable is within the given inclusive range. """
-    if v != None and not (lower <= v <= upper):
+    if v is not None and not (lower <= v <= upper):
         raise error.RunError(err)

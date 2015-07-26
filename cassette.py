@@ -298,7 +298,7 @@ class CassetteStream(object):
                 break
             block_num += 1
         self.bitstream.read_trailer()
-        if reclen != None:
+        if reclen is not None:
             return record[:reclen]
         return record
 
@@ -565,7 +565,7 @@ class TapeBitStream(object):
                     counter += 1
                 # sync bit 0 has been read, check sync byte 0x16
                 # at least 64*8 bits
-                if b != None and counter >= 512:
+                if b is not None and counter >= 512:
                     sync = self.read_byte(skip_start=True)
                     if sync == self.sync_byte:
                         return True

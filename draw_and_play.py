@@ -59,7 +59,7 @@ def ml_parse_value(gmls, default=None):
             step = get_value_for_varptrstr(gmls.read(3))
     elif c in representation.ascii_digits:
         step = ml_parse_const(gmls)
-    elif default != None:
+    elif default is not None:
         step = default
     else:
         raise error.RunError(5)

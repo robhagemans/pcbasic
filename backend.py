@@ -204,7 +204,7 @@ class KeyHandler(EventHandler):
         EventHandler.__init__(self)
         self.modcode = None
         self.scancode = scancode
-        self.predefined = (scancode != None)
+        self.predefined = (scancode is not None)
 
     #D
     # access keyqueue from check() instead
@@ -499,7 +499,7 @@ class Keyboard(object):
     def key_down(self, scan, eascii='', check_full=True):
         """ Insert a key-down event. Keycode is extended ascii, including DBCS. """
         # set port and low memory address regardless of event triggers
-        if scan != None:
+        if scan is not None:
             self.last_scancode = scan
         # set modifier status
         try:
@@ -560,7 +560,7 @@ class Keyboard(object):
                 return
         except KeyError:
             pass
-        if not eascii or (scan != None and self.mod &
+        if not eascii or (scan is not None and self.mod &
                     (modifier[scancode.ALT] | modifier[scancode.CTRL])):
             # any provided e-ASCII value overrides when CTRL & ALT are off
             # this helps make keyboards do what's expected
@@ -580,7 +580,7 @@ class Keyboard(object):
 
     def key_up(self, scan):
         """ Insert a key-up event. """
-        if scan != None:
+        if scan is not None:
             self.last_scancode = 0x80 + scan
         try:
             # switch off ephemeral modifiers

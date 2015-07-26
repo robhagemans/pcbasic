@@ -162,7 +162,7 @@ def handle_basic_events():
         return
     for event in state.basic_state.events.all:
         if (event.enabled and event.triggered
-                and not event.stopped and event.gosub != None):
+                and not event.stopped and event.gosub is not None):
             # release trigger
             event.triggered = False
             # stop this event while handling it

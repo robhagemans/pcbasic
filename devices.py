@@ -35,7 +35,7 @@ magic_to_type = { '\xff': 'B', '\xfe': 'P', '\xfd': 'M' }
 def prepare():
     """ Initialise iolayer module. """
     global max_files
-    if config.options['max-files'] != None:
+    if config.options['max-files'] is not None:
         max_files = min(16, config.options['max-files'])
     # console
     backend.devices['SCRN:'] = SCRNDevice()

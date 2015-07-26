@@ -321,7 +321,7 @@ def base_array(base):
     if base not in (1, 0):
         # syntax error
         raise error.RunError(2)
-    if state.basic_state.array_base != None and base != state.basic_state.array_base:
+    if state.basic_state.array_base is not None and base != state.basic_state.array_base:
         # duplicate definition
         raise error.RunError(10)
     state.basic_state.array_base = base

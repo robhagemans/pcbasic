@@ -199,7 +199,7 @@ def term_echo(on=True):
     if (not on) and term_echo_on:
         term_attr = termios.tcgetattr(fd)
         tty.setraw(fd)
-    elif not term_echo_on and term_attr != None:
+    elif not term_echo_on and term_attr is not None:
         termios.tcsetattr(fd, termios.TCSADRAIN, term_attr)
     previous = term_echo_on
     term_echo_on = on

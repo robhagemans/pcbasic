@@ -832,7 +832,7 @@ def write_error_message(msg, linenum):
     """ Write an error message to the console. """
     start_line()
     write(msg)
-    if linenum != None and linenum > -1 and linenum < 65535:
+    if linenum is not None and linenum > -1 and linenum < 65535:
         write(' in %i' % linenum)
     write_line(' ')
 

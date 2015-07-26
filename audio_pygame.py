@@ -307,7 +307,7 @@ def check_sound():
                         except IndexError:
                             # sound_queue is empty
                             break
-                    if chunk != None:
+                    if chunk is not None:
                         current_chunk[voice] = numpy.concatenate((current_chunk[voice], chunk))
                     if sound_queue[voice][0].loop:
                         loop_sound[voice] = sound_queue[voice].popleft()
@@ -316,7 +316,7 @@ def check_sound():
                     else:
                         loop_sound[voice] = None
     for voice in range(4):
-        if current_chunk[voice] != None and len(current_chunk[voice]) != 0:
+        if current_chunk[voice] is not None and len(current_chunk[voice]) != 0:
             sound = pygame.sndarray.make_sound(current_chunk[voice])
             mixer.Channel(voice).queue(sound)
 
@@ -332,7 +332,7 @@ def check_quit():
             # mixer is quiet and we're not running a program.
             # quit to reduce pulseaudio cpu load
             # this takes quite a while and leads to missed frames...
-            if mixer.get_init() != None:
+            if mixer.get_init() is not None:
                 mixer.quit()
             quiet_ticks = 0
 

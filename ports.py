@@ -53,10 +53,10 @@ def prepare():
     backend.lpt1_file = backend.devices['LPT1:'].device_file
     # serial devices
     global max_reclen, serial_in_size
-    if config.options['max-reclen'] != None:
+    if config.options['max-reclen'] is not None:
         max_reclen = config.options['max-reclen']
         max_reclen = max(1, min(32767, max_reclen))
-    if config.options['serial-buffer-size'] != None:
+    if config.options['serial-buffer-size'] is not None:
         serial_in_size = config.options['serial-buffer-size']
     backend.devices['COM1:'] = COMDevice(config.options['com1'], max_reclen, serial_in_size)
     backend.devices['COM2:'] = COMDevice(config.options['com2'], max_reclen, serial_in_size)

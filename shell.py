@@ -101,7 +101,7 @@ if plat.system == 'Windows':
                 # don't access screen in this thread
                 # the other thread already does
                 shell_output += c
-            elif p.poll() != None:
+            elif p.poll() is not None:
                 break
             else:
                 # don't hog cpu, sleep 1 ms
@@ -132,7 +132,7 @@ if plat.system == 'Windows':
                     backend.video.check_events()
                     console.write_line(line)
                 console.write(last)
-            if p.poll() != None:
+            if p.poll() is not None:
                 # drain output then break
                 continue
             try:
