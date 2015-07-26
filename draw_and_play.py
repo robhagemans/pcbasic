@@ -74,9 +74,9 @@ def ml_parse_number(gmls, default=None):
 def ml_parse_const(gmls):
     """ Parse and return a constant value in a macro-language string. """
     c = util.skip(gmls, ml_whitepace)
-    if c in representation.ascii_digits:
+    if c and c in representation.ascii_digits:
         numstr = ''
-        while c in representation.ascii_digits:
+        while c and c in representation.ascii_digits:
             gmls.read(1)
             numstr += c
             c = util.skip(gmls, ml_whitepace)
