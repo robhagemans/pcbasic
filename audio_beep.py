@@ -105,7 +105,7 @@ def drain_tone_queue():
                     continue
                 if signal.event_type == sound.AUDIO_TONE:
                     # enqueue a tone
-                    frequency, duration, fill, loop, _, volume = signal.params
+                    frequency, duration, fill, loop, volume = signal.params
                     next_tone[voice] = (frequency, duration, fill, loop, volume)
                 elif signal.event_type == sound.AUDIO_NOISE:
                     # enqueue a noise (play as regular note)

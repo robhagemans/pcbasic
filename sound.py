@@ -158,7 +158,7 @@ class Sound(object):
                 frequency < 110. and frequency != 0):
             # pcjr, tandy play low frequencies as 110Hz
             frequency = 110.
-        tone = AudioEvent(AUDIO_TONE, (frequency, duration, fill, loop, voice, volume))
+        tone = AudioEvent(AUDIO_TONE, (frequency, duration, fill, loop, volume))
         state.console_state.tone_queue[voice].put(tone)
         if voice == 2 and frequency != 0:
             # reset linked noise frequencies
@@ -221,7 +221,6 @@ class Sound(object):
         next_oct = 0
         total_time = [0, 0, 0, 0]
         voices = range(3)
-        total_time = [0, 0, 0, 0]
         while True:
             if not voices:
                 break

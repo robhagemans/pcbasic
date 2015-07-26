@@ -6,8 +6,6 @@ Sound interface based on PyGame
 This file is released under the GNU GPL version 3.
 """
 
-from math import ceil
-
 try:
     import pygame
 except ImportError:
@@ -23,7 +21,6 @@ if plat.system == 'Android':
     android = True
     # don't do sound for now on Android
     mixer = None
-    numpy = None
 else:
     android = False
     if pygame:
@@ -31,6 +28,7 @@ else:
     else:
         mixer = None
 
+from math import ceil
 import logging
 import threading
 import Queue
@@ -266,7 +264,7 @@ def drain_tone_queue():
                 continue
             if signal.event_type == sound.AUDIO_TONE:
                 # enqueue a tone
-                frequency, total_duration, fill, loop, _, volume = signal.params
+                frequency, total_duration, fill, loop, volume = signal.params
                 next_tone[voice] = SoundGenerator(signal_sources[voice], feedback_tone, frequency, total_duration, fill, loop, volume)
             elif signal.event_type == sound.AUDIO_NOISE:
                 # enqueue a noise
