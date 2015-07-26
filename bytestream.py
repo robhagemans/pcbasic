@@ -1,8 +1,8 @@
 """
-PC-BASIC 3.23 - bytestream.py
+PC-BASIC - bytestream.py
 StringIO-like wrapper for bytearray
 
-(c) 2013, 2014 Rob Hagemans
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 

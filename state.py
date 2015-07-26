@@ -1,5 +1,5 @@
 """
-PC-BASIC 3.23 - state.py
+PC-BASIC - state.py
 Emulator state
 
 (c) 2014, 2015 Rob Hagemans

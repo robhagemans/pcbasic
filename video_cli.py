@@ -1,9 +1,9 @@
 """
-PC-BASIC 3.23 - video_cli.py
-Command-line interface 
+PC-BASIC - video_cli.py
+Command-line interface
 
-(c) 2013, 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+(c) 2013, 2014, 2015 Rob Hagemans 
+This file is released under the GNU GPL version 3.
 """
 
 import sys
@@ -30,7 +30,7 @@ fallback = 'video_none'
 cursor_visible = True
 
 # current row and column for cursor
-cursor_row = 1 
+cursor_row = 1
 cursor_col = 1
 
 # last row and column printed on
@@ -40,7 +40,7 @@ last_col = None
 def prepare():
     """ Initialise the video_cli module. """
     pass
-    
+
 def putc_at(pagenum, row, col, c, for_keys=False):
     """ Put a single-byte character at a given position. """
     global last_col
@@ -100,7 +100,7 @@ def init_screen_mode(mode_info):
     """ Change screen mode. """
     # we don't support graphics
     return mode_info.is_text_mode
-    
+
 def move_cursor(crow, ccol):
     """ Move the cursor to a new position. """
     global cursor_row, cursor_col
@@ -149,7 +149,7 @@ def update_palette(new_palette, new_palette1):
 def update_cursor_attr(attr):
     """ Change attribute of cursor (no-op). """
     pass
-    
+
 def show_cursor(cursor_on):
     """ Change visibility of cursor (no-op). """
     pass
@@ -173,7 +173,7 @@ def save_state():
 def rebuild_glyph(ordval):
     """ Rebuild a glyph after POKE. """
     pass
-            
+
 ###############################################################################
 # IMPLEMENTATION
 
@@ -202,7 +202,7 @@ def term_echo(on=True):
     elif not term_echo_on and term_attr != None:
         termios.tcsetattr(fd, termios.TCSADRAIN, term_attr)
     previous = term_echo_on
-    term_echo_on = on    
+    term_echo_on = on
     return previous
 
 def read_stdin(queue):
@@ -219,7 +219,7 @@ def getc():
     except Queue.Empty:
         return ''
 
-def get_scancode(s):    
+def get_scancode(s):
     """ Convert ANSI sequences to BASIC scancodes. """
     # s should be at most one ansi sequence, if it contains ansi sequences.
     try:
@@ -266,7 +266,7 @@ def get_key():
         return s.decode(sys.stdin.encoding).encode('utf-8'), None
     else:
         return s, None
-    
+
 def clear_line():
     """ Clear the current line. """
     sys.stdout.write(ansi.esc_clear_line)
@@ -329,7 +329,7 @@ def update_position(row=None, col=None):
         sys.stdout.flush()
         last_col = 1
         last_row = row
-        # show what's on the line where we are. 
+        # show what's on the line where we are.
         # note: recursive by one level, last_row now equals row
         # this reconstructs DBCS buffer, no need to do that
         state.console_state.screen.redraw_row(0, cursor_row, wrap=False)
@@ -338,6 +338,5 @@ def update_position(row=None, col=None):
         move_right(col-last_col)
         sys.stdout.flush()
         last_col = col
-    
-prepare()
 
+prepare()

@@ -1,8 +1,8 @@
 """
-PC-BASIC 3.23 - backend.py
+PC-BASIC - backend.py
 Event loop; video, keyboard, pen and joystick handling
 
-(c) 2013, 2014 Rob Hagemans
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 

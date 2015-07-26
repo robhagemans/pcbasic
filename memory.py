@@ -1,9 +1,9 @@
 """
-PC-BASIC 3.23 - memory.py
+PC-BASIC - memory.py
 Model memory
 
-(c) 2013, 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+(c) 2013, 2014, 2015 Rob Hagemans 
+This file is released under the GNU GPL version 3.
 """
 
 try:
@@ -29,7 +29,7 @@ ram_font_segment = 0xc000
 # 0         3757        workspace - undefined in PC-BASIC
 # 3429      6           file 0 (the program) 6-byte header
 #           188             FCB
-#           128             FIELD buffer ??       
+#           128             FIELD buffer ??
 # 3751      6           1st file 6-byte header: 0, (66*filenum)%256, 0, 0, 0, 0
 #           188             FCB
 #           128             FIELD buffer (smaller or larger depending on /s)
@@ -39,9 +39,9 @@ ram_font_segment = 0xc000
 #           128         3rd file FIELD buffer
 #                       ... (more or fewer files depending on /f)
 # 4717      3+c         program code, starting with \0, ending with \0\0
-# 4720+c    v           scalar variables 
+# 4720+c    v           scalar variables
 # 4720+c+v  a           array variables
-# 65020-s               top of string space        
+# 65020-s               top of string space
 # 65020     2           unknown
 # 65022     512         BASIC stack (size determined by CLEAR)
 # NOTE - the last two sections may be the other way around (2 bytes at end)
@@ -73,7 +73,7 @@ def prepare():
     # data memory model: start of code section
     code_start = field_mem_base + (num_files+1) * field_mem_offset
     # BASIC stack (determined by CLEAR)
-    # Initially, the stack space should be set to 512 bytes, 
+    # Initially, the stack space should be set to 512 bytes,
     # or one-eighth of the available memory, whichever is smaller.
     stack_size = 512
     # max available memory to BASIC (set by /m)
@@ -100,7 +100,7 @@ def set_stack_size(new_stack_size):
     """ Set the stack size (on CLEAR) """
     global stack_size
     stack_size = new_stack_size
-    
+
 def set_basic_memory_size(new_size):
     """ Set the data memory size (on CLEAR) """
     global total_memory
@@ -110,9 +110,7 @@ def set_basic_memory_size(new_size):
         return False
     total_memory = new_size
     return True
-    
-    
+
+
 
 prepare()
-
-

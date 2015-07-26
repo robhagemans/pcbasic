@@ -1,9 +1,9 @@
 """
-PC-BASIC 3.23 - redirect.py
+PC-BASIC - redirect.py
 I/O redirection
- 
-(c) 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+
+(c) 2014, 2015 Rob Hagemans 
+This file is released under the GNU GPL version 3.
 """
 
 import logging
@@ -59,23 +59,22 @@ def set_output(f, utf8=False):
         echo = partial(echo_ascii, f=f)
     else:
         echo = partial(echo_utf8, f=f)
-    output_echos.append(echo) 
-        
+    output_echos.append(echo)
+
 def echo_ascii(s, f):
     """ Output redirection echo as raw bytes. """
     f.write(str(s))
-    
+
 def echo_utf8(s, f):
     """ Output redirection echo as UTF-8. """
-    f.write(utf8conv.to_utf8(str(s))) 
+    f.write(utf8conv.to_utf8(str(s)))
 
 def toggle_echo(device):
     """ Toggle copying of all screen I/O to LPT1. """
     if device.write in output_echos:
         output_echos.remove(device.write)
-    else:    
+    else:
         output_echos.append(device.write)
 
 
 prepare()
-    

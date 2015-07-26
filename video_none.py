@@ -1,9 +1,9 @@
 """
-PC-BASIC 3.23 - video_none.py
+PC-BASIC - video_none.py
 Filter interface - implements basic "video" I/O for redirected input streams
 
-(c) 2013, 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+(c) 2013, 2014, 2015 Rob Hagemans
+This file is released under the GNU GPL version 3.
 """
 
 import sys
@@ -24,40 +24,40 @@ if plat.system == 'Windows':
     from msvcrt import kbhit
 else:
     import select
-    
+
     def kbhit():
         """ Return whether a character is ready to be read from the keyboard. """
         return select.select([sys.stdin], [], [], 0)[0] != []
 
 ###############################################################################
-        
+
 def prepare():
     """ Initialise video_none module. """
     global lf_to_cr
-    # on unix ttys, replace input \n with \r 
-    # setting termios won't do the trick as it will not trigger read_line, gets too complicated    
+    # on unix ttys, replace input \n with \r
+    # setting termios won't do the trick as it will not trigger read_line, gets too complicated
     if plat.system != 'Windows' and plat.stdin_is_tty:
         lf_to_cr = True
 
 ###############################################################################
-        
+
 def init():
     """ Initialise filter interface. """
-    # use redirection echos; these are not kept in state 
+    # use redirection echos; these are not kept in state
     redirect.set_output(sys.stdout, utf8=True)
-    return True    
+    return True
 
 def idle():
     """ Video idle process. """
     time.sleep(0.024)
-    
+
 def check_events():
     """ Handle screen and interface events. """
     check_keys()
 
 def check_keys():
     """ Handle keyboard events. """
-    # avoid blocking on ttys if there's no input 
+    # avoid blocking on ttys if there's no input
     if plat.stdin_is_tty and not kbhit():
         return
     s = sys.stdin.readline().decode('utf-8')
@@ -70,7 +70,7 @@ def check_keys():
             c = '\r'
         try:
             backend.insert_chars(unicodepage.from_utf8(c))
-        except KeyError:        
+        except KeyError:
             backend.insert_chars(c)
 
 def close():
@@ -83,7 +83,7 @@ def close():
 def load_state(display_str):
     """ Restore display state from file. """
     pass
-    
+
 def save_state():
     """ Save display state to file (no-op). """
     return None
@@ -104,11 +104,11 @@ def copy_page(src, dst):
 def putc_at(pagenum, row, col, c, for_keys=False):
     """ Put a single-byte character at a given position (done through echo). """
     pass
-        
+
 def putwc_at(pagenum, row, col, c, d, for_keys=False):
     """ Put a double-byte character at a given position (done through echo). """
     pass
-    
+
 def clear_rows(attr, start, stop):
     """ Clear screen rows (no-op). """
     pass
@@ -116,7 +116,7 @@ def clear_rows(attr, start, stop):
 def scroll(from_line, scroll_height, attr):
     """ Scroll the screen up between from_line and scroll_height (no-op). """
     pass
-    
+
 def scroll_down(from_line, scroll_height, attr):
     """ Scroll the screen down between from_line and scroll_height (no-op). """
     pass
@@ -124,7 +124,7 @@ def scroll_down(from_line, scroll_height, attr):
 def update_palette(new_palette, new_palette1):
     """ Build the game palette (no-op). """
     pass
-    
+
 def set_colorburst(on, palette, palette1):
     """ Change the NTSC colorburst setting (no-op). """
     pass
@@ -148,7 +148,7 @@ def update_cursor_attr(attr):
 def set_attr(cattr):
     """ Set the current attribute (no-op). """
     pass
-    
+
 def set_border(attr):
     """ Change the border attribute (no-op). """
     pass
@@ -158,4 +158,3 @@ def rebuild_glyph(ordval):
     pass
 
 prepare()
-

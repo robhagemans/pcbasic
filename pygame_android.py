@@ -1,9 +1,9 @@
 """
-PC-BASIC 3.23 - pygame_android.py
+PC-BASIC - pygame_android.py
 Android-specific helpers and workarounds for video_pygame interface
 
-(c) 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+(c) 2014, 2015 Rob Hagemans 
+This file is released under the GNU GPL version 3.
 """
 
 import pygame
@@ -95,18 +95,18 @@ def toggle_keyboard():
     global keyboard_visible
     if keyboard_visible:
         android.hide_keyboard()
-    else:    
+    else:
         android.show_keyboard()
     keyboard_visible = not keyboard_visible
 
 def shift_screen(screen, border_x, border_y, size, cursor_row, font_height):
     """ Shift the screen to keep the cursor visible when the soft keyboard is on. """
     if keyboard_visible:
-        # we can't figure out the screen dimensions relative to the keyboard 
+        # we can't figure out the screen dimensions relative to the keyboard
         # at least in PGS4A. Assume we'll have 5 rows not covered.
         display_shift = font_height*max(0, min(cursor_row-2, size[1]//font_height-5))
         screen.scroll(0, -display_shift)
-        screen.fill(0, (0, (size[1]+2*border_y)-display_shift, 
+        screen.fill(0, (0, (size[1]+2*border_y)-display_shift,
                     size[0]+2*border_x, display_shift))
 
 def check_events():
@@ -121,7 +121,7 @@ def check_events():
         android.wait_for_resume()
         return True
     return False
-        
+
 def init():
     """ Android-specific initialisation. """
     android.init()
@@ -132,5 +132,3 @@ def init():
 def close():
     """ Android-specific cleanup. """
     android.hide_keyboard()
-    
-

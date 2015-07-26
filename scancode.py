@@ -1,8 +1,8 @@
 """
-PC-BASIC 3.23 - scancode.py
+PC-BASIC - scancode.py
 Keyboard scancodes
 
-(c) 2014 Rob Hagemans
+(c) 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 
@@ -67,7 +67,7 @@ SYSREQ = 0x37
 ALT = 0x38
 SPACE = 0x39
 CAPSLOCK = 0x3A
-# function keys 
+# function keys
 F1 = 0x3B
 F2 = 0x3C
 F3 = 0x3D
@@ -113,7 +113,7 @@ F11 = 0xF9  # 0x57 on IBM PC
 F12 = 0xFA  # 0x58 on IBM PC
 
 # numeric keypad
-keypad = { 
+keypad = {
     KP0: '0', KP1: '1', KP2: '2', KP3: '3', KP4: '4',
     KP5: '5', KP6: '6', KP7: '7', KP8: '8', KP9: '9' }
 
@@ -181,7 +181,7 @@ eascii_table = {
     ALT: ('', '', '', ''),
     SPACE: (' ', ' ', '\0\x72', '\0\x46'),
     CAPSLOCK: ('', '', '', ''),
-    # function keys 
+    # function keys
     F1: ('\0\x3b', '\0\x54', '\0\x5e', '\0\x68'),
     F2: ('\0\x3c', '\0\x55', '\0\x5f', '\0\x69'),
     F3: ('\0\x3d', '\0\x56', '\0\x60', '\0\x6a'),
@@ -196,8 +196,8 @@ eascii_table = {
     SCROLLOCK: ('', '', '', ''),
     HOME: ('\0\x47', '\0\x47', '\0\x77', ''), # KP7 HOME
     UP: ('\0\x48', '\0\x48', '', ''), # KP8 UP
-    PAGEUP: ('\0\x49', '\0\x49', '\0\x84', ''), # KP9 PGUP 
-    KPMINUS: ('-', '-', '', ''), 
+    PAGEUP: ('\0\x49', '\0\x49', '\0\x84', ''), # KP9 PGUP
+    KPMINUS: ('-', '-', '', ''),
     LEFT: ('\0\x4b', '\0\x87', '\0\x73', ''), # KP4 LEFT
     KP5: ('', '5', '', '\x05'),
     RIGHT: ('\0\x4d', '\0\x88', '\0\x74', ''), # KP6 RIGHT

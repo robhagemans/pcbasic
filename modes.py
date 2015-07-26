@@ -1,8 +1,8 @@
 """
-PC-BASIC 3.23 - modes.py
+PC-BASIC - modes.py
 Emulated video modes
 
-(c) 2013, 2014 Rob Hagemans
+(c) 2013, 2014, 2015 Rob Hagemans
 This file is released under the GNU GPL version 3.
 """
 

@@ -1,9 +1,9 @@
 """
-PC-BASIC 3.23 - ansi.py
+PC-BASIC - ansi.py
 Definitions for ANSI escape sequences
 
-(c) 2013, 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+(c) 2013, 2014, 2015 Rob Hagemans 
+This file is released under the GNU GPL version 3.
 """
 
 import scancode
@@ -29,13 +29,13 @@ esc_scroll_down = '\x1b[%iT'
 esc_show_cursor = '\x1b[?25h'
 esc_hide_cursor = '\x1b[?25l'
 esc_resize_term = '\x1b[8;%i;%i;t'
-esc_move_cursor = '\x1b[%i;%if' 
+esc_move_cursor = '\x1b[%i;%if'
 esc_save_cursor_pos = '\x1b[s'
 esc_restore_cursor_pos = '\x1b[u'
 esc_request_size = '\x1b[18;t'
 esc_set_cursor_colour = '\x1b]12;%s\x07'
 esc_set_cursor_shape = '\x1b[%i q'  #% (2*(is_line+1) - blinks)    # 1 blinking block 2 block 3 blinking line 4 line
-esc_set_colour = '\x1b[%im'      
+esc_set_colour = '\x1b[%im'
 esc_set_title = '\x1b]2;%s\x07'
 esc_clear_line = '\x1b[2K'
 esc_move_right = '\x1b\x5b\x43'
@@ -66,4 +66,3 @@ esc_to_scan = {
     '\x1b\x5b\x35\x7e': scancode.PAGEUP,
     '\x1b\x5b\x36\x7e': scancode.PAGEDOWN,
     }
-

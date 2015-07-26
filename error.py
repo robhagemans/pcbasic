@@ -1,9 +1,9 @@
 """
-PC-BASIC 3.23 - error.py
-Error handling 
+PC-BASIC - error.py
+Error handling
 
-(c) 2013, 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+(c) 2013, 2014, 2015 Rob Hagemans 
+This file is released under the GNU GPL version 3.
 """
 
 import state
@@ -12,14 +12,14 @@ import state
 state.basic_state.errn = -1
 state.basic_state.errp = -1
 
-# jump line number 
+# jump line number
 state.basic_state.on_error = None
 state.basic_state.error_handle_mode = False
 state.basic_state.error_resume = None
-            
+
 default_msg = 'Unprintable error'
 errors = {
-    1: 'NEXT without FOR',                    
+    1: 'NEXT without FOR',
     2: 'Syntax error',
     3: 'RETURN without GOSUB',
     4: 'Out of DATA',
@@ -39,7 +39,7 @@ errors = {
     18: 'Undefined user function',
     19: 'No RESUME',
     20: 'RESUME without error',
-    # 21    
+    # 21
     22: 'Missing operand',
     23: 'Line buffer overflow',
     24: 'Device Timeout',
@@ -83,7 +83,7 @@ errors = {
 class Error(Exception):
     """ Base type for exceptions. """
     pass
-            
+
 class Break(Error):
     """ Program interrupt. """
     def __init__(self, stop=False):
@@ -93,38 +93,36 @@ class Break(Error):
         else:
             self.pos = state.basic_state.current_statement
         self.stop = stop
-        
+
 class Reset(Error):
     """ Reset emulator. """
     def __init__(self):
         Error.__init__(self)
-        
+
 class Exit(Error):
     """ Exit emulator. """
     def __init__(self):
         Error.__init__(self)
-            
+
 class RunError(Error):
     """ Runtime error. """
     def __init__(self, value, pos=-1):
         Error.__init__(self)
         self.err = value
         if not state.basic_state.run_mode or pos != -1:
-            self.pos = pos  
-        else: 
+            self.pos = pos
+        else:
             self.pos = state.basic_state.current_statement
 
 def set_err(e):
     """ Set the ERR and ERL values. """
     # set ERR and ERL
     state.basic_state.errn = e.err
-    state.basic_state.errp = e.pos 
-    
+    state.basic_state.errp = e.pos
+
 def get_message(errnum):
     """ Get error message for error code. """
     try:
         return errors[errnum]
     except KeyError:
         return default_msg
-
-

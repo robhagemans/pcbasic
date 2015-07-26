@@ -1,9 +1,9 @@
 """
-PC-BASIC 3.23 - unicodepage.py
+PC-BASIC - unicodepage.py
 Codepage conversions
 
-(c) 2013, 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+(c) 2013, 2014, 2015 Rob Hagemans
+This file is released under the GNU GPL version 3.
 """
 
 import config
@@ -23,7 +23,7 @@ def prepare():
     global box_protext
     codepage = config.options['codepage']
     if not codepage:
-        codepage = '437'        
+        codepage = '437'
     box_protect = not config.options['nobox']
     state.console_state.codepage = codepage
     load_codepage(codepage)
@@ -116,27 +116,27 @@ def connects(c, d, bset):
 
 # left-connecting
 ## single line:
-# 0x2500, 0x252c, 0x2534, 0x253c, 0x2510, 0x2518, 0x2524, 
-# mixed single / double 
-# 0x2556, 0x255c, 0x2562, 0x2565, 0x2568, 0x256b, 0x256e, 
+# 0x2500, 0x252c, 0x2534, 0x253c, 0x2510, 0x2518, 0x2524,
+# mixed single / double
+# 0x2556, 0x255c, 0x2562, 0x2565, 0x2568, 0x256b, 0x256e,
 # dotted lines
-# 0x2504, 0x2508, 0x254c, 
+# 0x2504, 0x2508, 0x254c,
 # mixed thick / thin line
-# 0x251a, 0x2526, 0x2527, 0x2528, 0x252e, 0x2530, 0x2532, 0x2536, 0x2538, 0x253a, 0x253e,   
+# 0x251a, 0x2526, 0x2527, 0x2528, 0x252e, 0x2530, 0x2532, 0x2536, 0x2538, 0x253a, 0x253e,
 # 0x2540, 0x2541, 0x2542, 0x2544, 0x2546, 0x254a, 0x257c
-# rounded corners and half-lines  
-# 0x256f, 0x2574, 
+# rounded corners and half-lines
+# 0x256f, 0x2574,
 ## double line:
-# 0x2550, 0x2566, 0x2569, 0x256c,0x2557, 0x255d, 0x2563, 
+# 0x2550, 0x2566, 0x2569, 0x256c,0x2557, 0x255d, 0x2563,
 # mixed single / double line
-# 0x2555, 0x255b, 0x2561, 0x2564, 0x2567, 0x256a,  
+# 0x2555, 0x255b, 0x2561, 0x2564, 0x2567, 0x256a,
 
 # right-connecting
 # single line
 ## 0x2500, 0x252c, 0x2534, 0x253c,
-## 0x250c, 0x2514, 0x251c, 
+## 0x250c, 0x2514, 0x251c,
 # dotted
-# 0x2504, 0x2508, 
+# 0x2504, 0x2508,
 # mixed
 # 0x2516, 0x251e, 0x251f, 0x2520, 0x252d,
 # 0x2530, 0x2531, 0x2535, 0x2538, 0x2539, 0x253d,
@@ -144,8 +144,8 @@ def connects(c, d, bset):
 # 0x2553, 0x2559, 0x255f, 0x2565, 0x2568, 0x256b, 0x256d, 0x2570, 0x2576, 0x257e
 # double line
 ## 0x2550, 0x2566, 0x2569, 0x256c,
-## 0x2554, 0x255a, 0x2560, 
-# 0x2552, 0x2558, 0x255e, 0x2564, 0x2567, 0x256a, 
+## 0x2554, 0x255a, 0x2560,
+# 0x2552, 0x2558, 0x255e, 0x2564, 0x2567, 0x256a,
 
 
 ##################################################
@@ -179,7 +179,7 @@ def str_from_utf8(s):
 
 class UTF8Converter(object):
     """ Buffered converter to UTF8 - supports DBCS and box-drawing protection. """
-    
+
     def __init__(self, preserve_control=False, do_dbcs=None, protect_box=None):
         """ Initialise with empty buffer. """
         self.buf = ''
@@ -211,13 +211,13 @@ class UTF8Converter(object):
             if self.buf:
                 out += cp_to_utf8[self.buf]
             return out
-            
+
     def flush(self, num=None):
         """ Empty buffer and return contents. """
         out = ''
         if num == None:
             num = len(self.buf)
-        if self.buf:        
+        if self.buf:
             # can be one or two-byte sequence in self.buf
             out = cp_to_utf8[self.buf[:num]]
         self.buf = self.buf[num:]
@@ -226,7 +226,7 @@ class UTF8Converter(object):
     def process(self, c):
         """ Process a single char, returning UTF8 char sequences when ready """
         if not self.protect_box:
-            return self.process_nobox(c)    
+            return self.process_nobox(c)
         out = ''
         if self.preserve_control and c in control:
             # control char; flush buffer as SBCS and add control char unchanged
@@ -250,8 +250,8 @@ class UTF8Converter(object):
         else:
             # not allowed
             logging.debug('DBCS buffer corrupted: %d %s', self.bset, repr(self.buf))
-        return out            
-            
+        return out
+
     def process_nobox(self, c):
         """ Process a single char, no box drawing protection """
         out = ''
@@ -263,7 +263,7 @@ class UTF8Converter(object):
             if c in trail:
                 # add a DBCS character
                 self.buf += c
-                out += self.flush()    
+                out += self.flush()
                 return out
             else:
                 # flush buffer
@@ -281,10 +281,10 @@ class UTF8Converter(object):
             out += cp_to_utf8[c]
             # goes to case 0
         else:
-            self.buf += c 
-            # goes to case 1     
+            self.buf += c
+            # goes to case 1
         return out
-        
+
     def process_case1(self, c):
         """ Process a single char with box drawing protection; case 1 """
         out = ''
@@ -301,16 +301,16 @@ class UTF8Converter(object):
             else:
                 # no connection
                 self.buf += c
-                # goes to case 2    
+                # goes to case 2
         return out
-        
+
     def process_case2(self, c):
         """ Process a single char with box drawing protection; case 2 """
         out = ''
         if c not in lead:
             out += self.flush() + cp_to_utf8[c]
             # goes to case 0
-        else:    
+        else:
             for bset in (0, 1):
                 if connects(self.buf[-1], c, bset):
                     self.bset = bset
@@ -323,15 +323,15 @@ class UTF8Converter(object):
                 # no connection found
                 out += self.flush()
                 self.buf += c
-                # goes to case 1    
+                # goes to case 1
         return out
-        
+
     def process_case3(self, c):
         """ Process a single char with box drawing protection; case 3 """
         out = ''
         if c not in lead:
             out += self.flush() + cp_to_utf8[c]
-        elif connects(self.buf[-1], c, self.bset):    
+        elif connects(self.buf[-1], c, self.bset):
             self.last = self.buf[-1]
             # output box drawing
             out += self.flush(1) + self.flush(1) + cp_to_utf8[c]
@@ -342,7 +342,7 @@ class UTF8Converter(object):
             self.bset = -1
             # goes to case 1
         return out
-        
+
     def process_case4(self, c):
         """ Process a single char with box drawing protection; case 4, continuing box drawing """
         out = ''
@@ -360,4 +360,3 @@ class UTF8Converter(object):
         return out
 
 prepare()
-

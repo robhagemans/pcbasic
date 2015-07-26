@@ -1,9 +1,9 @@
 """
-PC-BASIC 3.23 - video_curses.py
+PC-BASIC - video_ansi.py
 Text interface implementation for Unix
 
-(c) 2013, 2014 Rob Hagemans 
-This file is released under the GNU GPL version 3. 
+(c) 2013, 2014, 2015 Rob Hagemans
+This file is released under the GNU GPL version 3.
 """
 
 import sys
@@ -13,7 +13,7 @@ import logging
 import threading
 import Queue
 
-import plat        
+import plat
 import config
 import unicodepage
 import scancode
@@ -23,7 +23,7 @@ import backend
 import state
 
 # for a few ansi sequences not supported by curses
-# only use these if you clear the screen afterwards, 
+# only use these if you clear the screen afterwards,
 # so you don't see gibberish if the terminal doesn't support the sequence.
 import ansi
 
@@ -73,7 +73,7 @@ def init():
     return True
 
 #######
-    
+
 def init_screen_mode(mode_info=None):
     """ Change screen mode. """
     global window, height, width
@@ -86,11 +86,11 @@ def init_screen_mode(mode_info=None):
     sys.stdout.write(ansi.esc_clear_screen)
     sys.stdout.flush()
     return True
-    
+
 def close():
     """ Close the text interface. """
     if wait_on_close:
-        sys.stdout.write(ansi.esc_set_title % (caption + 
+        sys.stdout.write(ansi.esc_set_title % (caption +
                                               ' - press a key to close window'))
         # redraw in case terminal didn't recognise ansi sequence
         redraw()
@@ -115,7 +115,7 @@ def check_events():
         sys.stdout.flush()
         last_pos = (cursor_row, cursor_col)
     check_keyboard()
-    
+
 def idle():
     """ Video idle process. """
     time.sleep(0.024)
@@ -137,7 +137,7 @@ def clear_rows(cattr, start, stop):
         sys.stdout.write(ansi.esc_clear_line)
     sys.stdout.flush()
 
-        
+
 def move_cursor(crow, ccol):
     """ Move the cursor to a new position. """
     global cursor_row, cursor_col
@@ -160,7 +160,7 @@ def show_cursor(cursor_on):
         sys.stdout.write(ansi.esc_hide_cursor)
         last_pos = None
     sys.stdout.flush()
-    
+
 def build_cursor(width, height, from_line, to_line):
     """ Set the cursor shape. """
     if (to_line-from_line) >= 4:
@@ -171,7 +171,7 @@ def build_cursor(width, height, from_line, to_line):
     if cursor_visible:
 #        sys.stdout.write(ansi.esc_set_cursor_shape % cursor_shape)
         sys.stdout.flush()
-        
+
 last_attr = None
 def set_attr(cattr):
     """ Set the current attribute. """
@@ -191,7 +191,7 @@ def putc_at(pagenum, row, col, c, for_keys=False):
     sys.stdout.write(ansi.esc_move_cursor % (cursor_row, cursor_col))
     last_pos = (cursor_row, cursor_col)
     sys.stdout.flush()
-    
+
 def putwc_at(pagenum, row, col, c, d, for_keys=False):
     """ Put a double-byte character at a given position. """
     global last_pos
@@ -215,7 +215,7 @@ def scroll(from_line, scroll_height, attr):
         sys.stdout.write(ansi.esc_move_cursor % (cursor_row, cursor_col))
         last_pos = (cursor_row, cursor_col)
     clear_rows(attr, scroll_height, scroll_height)
-        
+
 def scroll_down(from_line, scroll_height, attr):
     """ Scroll the screen down between from_line and scroll_height. """
     sys.stdout.write(ansi.esc_set_scroll_region % (from_line, scroll_height))
@@ -225,8 +225,8 @@ def scroll_down(from_line, scroll_height, attr):
         sys.stdout.write(ansi.esc_move_cursor % (cursor_row, cursor_col))
         last_pos = (cursor_row, cursor_col)
     clear_rows(attr, from_line, from_line)
-    
-        
+
+
 ###############################################################################
 # The following are no-op responses to requests from backend
 
@@ -257,7 +257,7 @@ def update_palette(new_palette, new_palette1):
 ###############################################################################
 # IMPLEMENTATION
 
-       
+
 ###### shared with video_cli:
 
 if plat.system == 'Windows':
@@ -285,7 +285,7 @@ def term_echo(on=True):
     elif not term_echo_on and term_attr != None:
         termios.tcsetattr(fd, termios.TCSADRAIN, term_attr)
     previous = term_echo_on
-    term_echo_on = on    
+    term_echo_on = on
     return previous
 
 def read_stdin(queue):
@@ -302,7 +302,7 @@ def getc():
     except Queue.Empty:
         return ''
 
-def get_scancode(s):    
+def get_scancode(s):
     """ Convert ANSI sequences to BASIC scancodes. """
     # s should be at most one ansi sequence, if it contains ansi sequences.
     try:
@@ -382,7 +382,7 @@ def check_keyboard():
 
 
 #######
-             
+
 def redraw():
     """ Force redrawing of the screen (callback). """
     state.console_state.screen.redraw_text_screen()
@@ -404,6 +404,5 @@ def set_colours(at):
     if blink:
         sys.stdout.write(ansi.esc_set_colour % 5)
     sys.stdout.flush()
-    
-prepare()
 
+prepare()
