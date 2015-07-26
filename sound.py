@@ -149,7 +149,7 @@ class Sound(object):
 
     def wait_all_music(self):
         """ Wait until all music (not noise) has finished playing. """
-        while (audio.busy() or audio.queue_length(0) or audio.queue_length(1) or audio.queue_length(2)):
+        while (audio.queue_length(0) or audio.queue_length(1) or audio.queue_length(2)):
             backend.wait()
 
     def stop_all_sound(self):
