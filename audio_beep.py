@@ -34,8 +34,6 @@ def queue_length(voice):
     return sound.tone_queue[voice].qsize() + (now_playing[voice] is not None)
 
 
-
-
 ##############################################################################
 # implementation
 
@@ -105,12 +103,10 @@ def drain_tone_queue():
                     continue
                 if signal.event_type == sound.AUDIO_TONE:
                     # enqueue a tone
-                    frequency, duration, fill, loop, volume = signal.params
-                    next_tone[voice] = (frequency, duration, fill, loop, volume)
+                    next_tone[voice] = signal.params
                 elif signal.event_type == sound.AUDIO_NOISE:
                     # enqueue a noise (play as regular note)
-                    is_white, frequency, duration, fill, loop, volume = signal.params
-                    next_tone[voice] = (frequency, duration, fill, loop, volume)
+                    next_tone[voice] = signal.params[1:]
     return empty
 
 def play_sound():

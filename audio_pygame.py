@@ -111,7 +111,10 @@ max_amplitude = (1<<(mixer_bits-1)) - 1
 # 2 dB steps correspond to a voltage factor of 10**(-2./20.) as power ~ voltage**2
 step_factor = 10**(-2./20.)
 # geometric list of amplitudes for volume values
-amplitude = [0]*16 if not numpy else numpy.int16(max_amplitude*(step_factor**numpy.arange(15,-1,-1)))
+if numpy:
+    amplitude = numpy.int16(max_amplitude*(step_factor**numpy.arange(15,-1,-1)))
+else:
+    amplitude = [0]*16
 # zero volume means silent
 amplitude[0] = 0
 
@@ -139,7 +142,8 @@ class SignalSource(object):
 class SoundGenerator(object):
     """ Sound sample chunk generator. """
 
-    def __init__(self, signal_source, feedback, frequency, total_duration, fill, loop, volume):
+    def __init__(self, signal_source, feedback,
+                 frequency, total_duration, fill, loop, volume):
         """ Initialise the generator. """
         # noise generator
         self.signal_source = signal_source
@@ -168,12 +172,15 @@ class SoundGenerator(object):
             half_wavelength = sample_rate / (2.*self.frequency)
             num_half_waves = int(ceil(chunk_length / half_wavelength))
             # generate bits
-            bits = [ -self.amplitude if self.signal_source.next() else self.amplitude for _ in xrange(num_half_waves) ]
+            bits = [ -self.amplitude if self.signal_source.next()
+                     else self.amplitude for _ in xrange(num_half_waves) ]
             # do sampling by averaging the signal over bins of given resolution
-            # this allows to use numpy all the way which is *much* faster than looping over an array
+            # this allows to use numpy all the way
+            # which is *much* faster than looping over an array
             # stretch array by half_wavelength * resolution
             resolution = 20
-            matrix = numpy.repeat(numpy.array(bits, numpy.int16), int(half_wavelength*resolution))
+            matrix = numpy.repeat(numpy.array(bits, numpy.int16),
+                                  int(half_wavelength*resolution))
             # cut off on round number of resolution blocks
             matrix = matrix[:len(matrix)-(len(matrix)%resolution)]
             # average over blocks
@@ -189,7 +196,8 @@ class SoundGenerator(object):
                 chunk = chunk[:rest_length]
                 # append quiet gap if requested
                 if self.gap:
-                    gap_chunk = numpy.zeros(int(self.gap * sample_rate), numpy.int16)
+                    gap_chunk = numpy.zeros(int(self.gap * sample_rate),
+                                            numpy.int16)
                     chunk = numpy.concatenate((chunk, gap_chunk))
                 # done
                 self.count_samples = self.num_samples
@@ -224,7 +232,7 @@ def consumer_thread():
         # check if mixer can be quit
         check_quit()
         # do not hog cpu
-        if empty and not next_tone[0] and not next_tone[1] and not next_tone[2] and not next_tone[3]:
+        if empty and next_tone == [None, None, None, None]:
             pygame.time.wait(tick_ms)
 
 def drain_message_queue():
@@ -264,13 +272,13 @@ def drain_tone_queue():
                 continue
             if signal.event_type == sound.AUDIO_TONE:
                 # enqueue a tone
-                frequency, total_duration, fill, loop, volume = signal.params
-                next_tone[voice] = SoundGenerator(signal_sources[voice], feedback_tone, frequency, total_duration, fill, loop, volume)
+                next_tone[voice] = SoundGenerator(signal_sources[voice],
+                                                  feedback_tone, *signal.params)
             elif signal.event_type == sound.AUDIO_NOISE:
                 # enqueue a noise
-                is_white, frequency, total_duration, fill, loop, volume = signal.params
-                feedback = feedback_noise if is_white else feedback_periodic
-                next_tone[voice] = SoundGenerator(signal_sources[3], feedback, frequency, total_duration, fill, loop, volume)
+                feedback = feedback_noise if signal.params[0] else feedback_periodic
+                next_tone[voice] = SoundGenerator(signal_sources[3],
+                                                  feedback, *signal.params[1:])
     return empty
 
 def play_sound():
@@ -295,14 +303,16 @@ def play_sound():
                     sound.tone_queue[voice].task_done()
                 else:
                     current_chunk[voice] = numpy.array([], dtype=numpy.int16)
-                    while next_tone[voice] and len(current_chunk[voice]) < chunk_length:
+                    while (next_tone[voice] and
+                                    len(current_chunk[voice]) < chunk_length):
                         chunk = next_tone[voice].build_chunk()
                         if chunk is None:
                             # tone has finished
                             next_tone[voice] = None
                             sound.tone_queue[voice].task_done()
                         else:
-                            current_chunk[voice] = numpy.concatenate((current_chunk[voice], chunk))
+                            current_chunk[voice] = numpy.concatenate(
+                                                (current_chunk[voice], chunk))
             if loop_sound[voice]:
                 # currently looping sound
                 current_chunk[voice] = loop_sound[voice].build_chunk()
@@ -330,7 +340,8 @@ def stop_channel(channel):
     """ Stop sound on a channel. """
     if mixer.get_init():
         mixer.Channel(channel).stop()
-        # play short silence to avoid blocking the channel - it won't play on queue()
+        # play short silence to avoid blocking the channel
+        # otherwise it won't play on queue()
         silence = pygame.sndarray.make_sound(numpy.zeros(1, numpy.int16))
         mixer.Channel(channel).play(silence)
 
