@@ -1,5 +1,5 @@
 """
-PC-BASIC 3.23
+PC-BASIC - config.py
 Configuration file and command-line options parser
 
 (c) 2013, 2014, 2015 Rob Hagemans
@@ -132,7 +132,7 @@ arguments = {
     'max-memory': {'type': 'int', 'list': -2, 'default': [65534, 4096]},
     'allow-code-poke': {'type': 'bool', 'default': False,},
     'reserved-memory': {'type': 'int', 'default': 3429,},
-    'caption': {'type': 'string', 'default': 'PC-BASIC 3.23',},
+    'caption': {'type': 'string', 'default': 'PC-BASIC',},
     'text-width': {'type': 'int', 'choices':(40, 80), 'default': 80,},
     'video-memory': {'type': 'int', 'default': 262144,},
     'shell': {'type': 'string', 'default': 'none',},

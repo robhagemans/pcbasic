@@ -236,7 +236,7 @@ do_install () {
 
     DESKTOP_FILE="$DESKTOP_DIR/pcbasic.desktop"
     echo "[Desktop Entry]" > $DESKTOP_FILE
-    echo "Name=PC-BASIC 3.23" >> $DESKTOP_FILE
+    echo "Name=PC-BASIC" >> $DESKTOP_FILE
     echo "GenericName=GW-BASIC compatible interpreter" >> $DESKTOP_FILE
     echo "Exec=$INSTALL_DIR/pcbasic" >> $DESKTOP_FILE
     echo "Terminal=false" >> $DESKTOP_FILE

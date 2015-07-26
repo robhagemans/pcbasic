@@ -272,16 +272,17 @@ def print_greeting(console):
     """ Print the greeting and the KEY row if we're not running a program. """
     import var
     greeting = (
-        'PC-BASIC 3.23%s\r'
+        'PC-BASIC {version} {note}\r'
         '(C) Copyright 2013--2015 Rob Hagemans.\r'
-        '%d Bytes free')
+        '{free} Bytes free')
     # following GW, don't write greeting for redirected input
     # or command-line filter run
     if (not config.options['run'] and not config.options['exec'] and
              not config.options['input'] and not config.options[0] and
              not config.options['interface'] == 'none'):
         debugstr = ' [DEBUG mode]' if config.options['debug'] else ''
-        console.write_line(greeting % (debugstr, var.fre()))
+        params = { 'version': plat.version, 'note': debugstr, 'free': var.fre()}
+        console.write_line(greeting.format(**params))
         console.show_keys(True)
 
 def open_native_or_dos_filename(infile):

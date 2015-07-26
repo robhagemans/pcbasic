@@ -241,7 +241,7 @@ def prepare():
         # on Linux, AltGr is reported as mode key
         key_to_scan[pygame.K_MODE] = scancode.ALT
     # window caption/title
-    caption = config.options['caption'] or 'PC-BASIC 3.23'
+    caption = config.options['caption']
     # wait before closing window
     wait_on_close = config.options['wait']
 
