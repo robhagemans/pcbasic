@@ -75,12 +75,12 @@ check_permissions () {
         echo
         echo -n "ERROR: You do not have permission to write to "
         dirname $INSTALL_DIR
-        abort 
+        abort
     fi
 }
 
 check_python () {
-    if !( $PYTHON -c 'quit()' 2>/dev/null ); then 
+    if !( $PYTHON -c 'quit()' 2>/dev/null ); then
         echo
         echo "ERROR: Python 2 not found."
         abort
@@ -89,14 +89,14 @@ check_python () {
 
 check_dependencies () {
     DEPS_NOT=""
-    
+
     echo
     echo "Checking dependencies ... "
     for DEP in $DEPS; do
         echo -n "checking Python module $DEP ... "
-        if ( $PYTHON -c "import $DEP" 2>/dev/null ); then 
+        if ( $PYTHON -c "import $DEP" 2>/dev/null ); then
             echo "installed"
-        else 
+        else
             echo "NOT INSTALLED"
             DEPS_NOT="$DEPS_NOT $DEP"
         fi
@@ -124,9 +124,9 @@ do_install () {
         echo "which means you can install PC-BASIC for your user only."
         echo "If you wish to install to a system-wide directory, run this script with root privileges using sudo $0" 1>&2
         echo
-        
+
         DEFAULT_DIR="$HOME/pcbasic"
-        
+
         # user's runtime data
         DATA_BASE_DIR=$XDG_DATA_HOME
         if [ -z "$DATA_BASE_DIR" ]; then
@@ -186,9 +186,9 @@ do_install () {
     install_deps
     check_python
 
-    echo 
+    echo
     echo "Compiling Python modules ... "
-    
+
     # create build environment
     # suppress 'cannot copy build/ into itself' message
     mkdir build
@@ -209,7 +209,7 @@ do_install () {
     DIRS=$(find ./* -type d -print)
     FILES=$(find ./* -type f -print)
     cd ..
-    
+
     for dir in $DIRS; do
         if [ "$DIR" != "build" ]; then
             mkdir -p "$INSTALL_DIR/$dir"
@@ -256,7 +256,7 @@ do_install () {
     echo "DEB=$DEB">> $UNINSTALLER
     echo "DEBDEPS='$DEBDEPS'">> $UNINSTALLER
     echo "MANUAL='$MANUAL'">> $UNINSTALLER
-    
+
     # invert dirs to delete them recursively
     INVERTED_DIRS=$(echo "$DIRS" | sed '1!G;h;$!d')
     echo "DIRS='$INVERTED_DIRS'" >> $UNINSTALLER
@@ -274,9 +274,9 @@ do_install () {
 do_uninstall () {
     echo "UNINSTALL PC-BASIC"
     echo
-    
+
     check_permissions
-    
+
     echo "SUMMARY OF WHAT WILL BE DONE:"
     echo "I will delete the icon $ICON_DIR/pcbasic.png"
     echo "I will delete the desktop menu entry $DESKTOP_DIR/pcbasic.desktop"
@@ -288,25 +288,25 @@ do_uninstall () {
     if [ $DEB ] && [ "$(id -u)" -eq "0" ]; then
         echo "I will mark package dependencies for removal"
     fi
-    
+
     echo -n "Start un-installation [y/N] ?"
     read ANSWER
     if [ "$ANSWER" != "y" ] && [ "$ANSWER" != "Y" ]; then
         abort
     fi
-    echo 
-    
+    echo
+
     echo "Removing icon ... "
     rm "$ICON_DIR/pcbasic.png"
-    
+
     echo "Removing menu entry ... "
     rm "$DESKTOP_DIR/pcbasic.desktop"
-    
+
     if [ "$(id -u)" = "0" ]; then
         echo "Removing symlink ... "
         rm /usr/bin/pcbasic
     fi
-    
+
     echo "Removing program files ... "
     for file in $FILES; do
         rm "$INSTALL_DIR/$file"
@@ -319,19 +319,19 @@ do_uninstall () {
 
     uninstall_deps
 
-    echo 
+    echo
     echo "UNINSTALL COMPLETED"
 }
 
 
-if [ ! -t 1 ]; then 
+if [ ! -t 1 ]; then
     if [ "$SPAWNED" = "spawned" ] || [ -z $DISPLAY  ]; then
 	    >&2 echo "This script must be run interactively."
         exit 1
     else
 	    xterm -e $0 spawned &
 	    exit
-    fi  
+    fi
 fi
 
 if [ $(basename $SCRIPT) = "uninstall.sh" ]; then
@@ -339,5 +339,3 @@ if [ $(basename $SCRIPT) = "uninstall.sh" ]; then
 else
     do_install
 fi
-
-
