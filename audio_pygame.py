@@ -223,8 +223,8 @@ def consumer_thread():
     while True:
         drain_message_queue()
         empty = drain_tone_queue()
-        # handle playing queues
-        check_sound()
+        # generate and play chunks
+        play_sound()
         # check if mixer can be quit
         check_quit()
         # do not hog cpu
@@ -277,8 +277,8 @@ def drain_tone_queue():
                 next_tone[voice] = SoundGenerator(signal_sources[3], feedback, frequency, total_duration, fill, loop, volume)
     return empty
 
-def check_sound():
-    """ Update the sound queue and play sounds. """
+def play_sound():
+    """ play sounds. """
     global loop_sound
     current_chunk = [ None, None, None, None ]
     if (next_tone == [ None, None, None, None ]
@@ -296,6 +296,7 @@ def check_sound():
                     # it's a looping tone, handle there
                     loop_sound[voice] = next_tone[voice]
                     next_tone[voice] = None
+                    sound.tone_queue[voice].task_done()
                 else:
                     current_chunk[voice] = numpy.array([], dtype=numpy.int16)
                     while next_tone[voice] and len(current_chunk[voice]) < chunk_length:
@@ -303,6 +304,7 @@ def check_sound():
                         if chunk is None:
                             # tone has finished
                             next_tone[voice] = None
+                            sound.tone_queue[voice].task_done()
                         else:
                             current_chunk[voice] = numpy.concatenate((current_chunk[voice], chunk))
             if loop_sound[voice]:
