@@ -61,7 +61,7 @@ def consumer_thread():
 
 def drain_message_queue():
     """ Drain signal queue. """
-    global now_playing, now_looping
+    global next_tone, now_playing, now_looping
     while True:
         try:
             signal = sound.message_queue.get(False)
@@ -151,12 +151,15 @@ else:
 
     def beep(frequency, duration, fill):
         """ Emit a sound. """
-        return subprocess.Popen(('beep -f %f -l %d -D %d' %
-            (frequency, duration*fill*1000, duration*(1-fill)*1000)).split())
+        return subprocess.Popen(
+                'beep -f {freq} -l {dur} -D {gap}'.format(
+                    freq=frequency, dur=duration*fill*1000,
+                    gap=duration*(1-fill)*1000
+                ).split())
 
     def sleep(duration):
         """ Wait for given number of seconds. """
-        return subprocess.Popen(('sleep %f') % duration)
+        return subprocess.Popen('sleep {0}'.format(duration).split())
 
     def hush():
         """ Turn off any sound. """
@@ -169,7 +172,7 @@ def play_now(frequency, duration, fill, loop, volume, voice):
     if loop:
         duration, fill = 5, 1
         now_looping[voice] = (frequency, duration, fill, loop, volume)
-    if voice == 1:
+    if voice == 0:
         now_playing[voice] = beep(frequency, duration, fill)
     else:
         # don't play other channels as there is no mixer or noise generator
